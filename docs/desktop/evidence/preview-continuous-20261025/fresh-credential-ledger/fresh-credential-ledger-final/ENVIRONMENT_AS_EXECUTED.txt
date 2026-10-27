@@ -1,0 +1,2 @@
+PowerShell process environment: CCB_PREVIEW_NATIVE_DPAPI=1
+Native test used only task-owned test-local-app-data and invented NAI/Fish/dormant values. No real Windows credential directory was read.

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFishPickerWindowTest" tests="3" skipped="0" failures="1" errors="0" timestamp="2026-10-18T13:19:51.100Z" hostname="DD1" time="16.103">
+  <properties/>
+  <testcase name="identity scoped overlapping leases restore once in either order and remove callbacks" classname="com.example.chatbar.desktop.DesktopFishPickerWindowTest" time="0.413"/>
+  <testcase name="public main WindowScope supplies exact owner through maximize restore reopen and parent close" classname="com.example.chatbar.desktop.DesktopFishPickerWindowTest" time="15.613">
+    <failure message="kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 15000 ms" type="kotlinx.coroutines.TimeoutCancellationException">kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 15000 ms
+	at _COROUTINE._BOUNDARY._(CoroutineDebugging.kt:42)
+	at com.example.chatbar.desktop.DesktopFishPickerWindowTest.frames(DesktopFishPickerWindowTest.kt:30)
+	at com.example.chatbar.desktop.DesktopFishPickerWindowTest$public main WindowScope supplies exact owner through maximize restore reopen and parent close$1$await$2.invokeSuspend(DesktopFishPickerWindowTest.kt:104)
+	at com.example.chatbar.desktop.DesktopFishPickerWindowTest$public main WindowScope supplies exact owner through maximize restore reopen and parent close$1.invokeSuspend(DesktopFishPickerWindowTest.kt:113)
+Caused by: kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 15000 ms
+	at kotlinx.coroutines.TimeoutKt.TimeoutCancellationException(Timeout.kt:189)
+	at kotlinx.coroutines.TimeoutCoroutine.run(Timeout.kt:157)
+	at kotlinx.coroutines.EventLoopImplBase$DelayedRunnableTask.run(EventLoop.common.kt:505)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.DefaultExecutor.run(DefaultExecutor.kt:105)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+</failure>
+  </testcase>
+  <testcase name="missing explicit main owner fails closed without composing picker content" classname="com.example.chatbar.desktop.DesktopFishPickerWindowTest" time="0.077"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

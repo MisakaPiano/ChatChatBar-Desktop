@@ -1,0 +1,10 @@
+[
+  "C:\\Users\\1\\AppData\\Local\\Programs\\Python\\Python310\\python.exe",
+  "tools/desktop/windows/run_directory_guard_tests.py",
+  "--evidence",
+  "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\preview-continuous-private-20261025\\operation1-shortcut-adapter-20261027-r01\\graph-green-r01",
+  "--module",
+  "test_msi_shortcut_resource_graph",
+  "--module",
+  "test_msi_operation_contract"
+]

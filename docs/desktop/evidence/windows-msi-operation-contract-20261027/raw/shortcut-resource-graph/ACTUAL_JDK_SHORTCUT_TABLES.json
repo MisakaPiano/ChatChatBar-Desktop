@@ -1,0 +1,295 @@
+{
+  "sourceSha256": "552f3a8baf6dc6b06ec274fbf29bcf6828a80668bbf2bce17a8606c01ec2f848",
+  "sourceBytes": 593920,
+  "properties": {
+    "UpgradeCode": "{8E4FDDBD-141F-5C1D-BFB2-1B48A6E46B81}",
+    "JP_INSTALL_STARTMENU_SHORTCUT": "1",
+    "JP_INSTALL_DESKTOP_SHORTCUT": "1",
+    "WixUIRMOption": "UseRM",
+    "WIXUI_INSTALLDIR": "INSTALLDIR",
+    "ARPNOMODIFY": "1",
+    "ARPPRODUCTICON": "JpARPPRODUCTICON",
+    "Manufacturer": "\u672a\u77e5",
+    "ProductCode": "{B9D4A774-F24E-38EB-B3BB-342ECAEDF28F}",
+    "ProductLanguage": "1033",
+    "ProductName": "ChatChatBarDesktop",
+    "ProductVersion": "0.1.1116",
+    "DefaultUIFont": "WixUI_Font_Normal",
+    "WixUI_Mode": "InstallDir",
+    "ErrorDialog": "ErrorDlg",
+    "SecureCustomProperties": "JP_DOWNGRADABLE_FOUND;JP_UPGRADABLE_FOUND"
+  },
+  "tables": {
+    "Directory": [
+      [
+        "dir36c9ba6a458c36e58ef9dd370187cbce",
+        "ProgramMenuFolder",
+        "xiafuns-|ChatChatBarDesktop"
+      ],
+      [
+        "DesktopFolder",
+        "TARGETDIR",
+        "."
+      ],
+      [
+        "INSTALLDIR",
+        "LocalAppDataFolder",
+        "edbotbja|ChatChatBarDesktop"
+      ],
+      [
+        "dir40f84b56068d341da01a768174eb5e59",
+        "INSTALLDIR",
+        "app"
+      ],
+      [
+        "TARGETDIR",
+        "",
+        "SourceDir"
+      ],
+      [
+        "ProgramMenuFolder",
+        "TARGETDIR",
+        "."
+      ],
+      [
+        "LocalAppDataFolder",
+        "TARGETDIR",
+        "."
+      ]
+    ],
+    "Component": [
+      [
+        "cshortcutac7fb77bcba7304cb1e4b8101197f270",
+        "{AC7FB77B-CBA7-304C-B1E4-B8101197F270}",
+        "dir36c9ba6a458c36e58ef9dd370187cbce",
+        "260",
+        "JP_INSTALL_STARTMENU_SHORTCUT",
+        "regE7E312FEBE6104DB572E57D62CF058C6"
+      ],
+      [
+        "cshortcutcf0e72b3db4a38ee8e99bba13cfc0c25",
+        "{CF0E72B3-DB4A-38EE-8E99-BBA13CFC0C25}",
+        "DesktopFolder",
+        "260",
+        "JP_INSTALL_DESKTOP_SHORTCUT",
+        "reg61D170FD4673AD1F4FE3642F9CB0E944"
+      ],
+      [
+        "cfile42f3d76182413c60a4f50e6233e4de33",
+        "{42F3D761-8241-3C60-A4F5-0E6233E4DE33}",
+        "INSTALLDIR",
+        "260",
+        "",
+        "regE8B172B03ED5519680B4D663C69D3BB2"
+      ],
+      [
+        "cmkdire78eb718a75c3491a77dad8c792c1aa3",
+        "{E78EB718-A75C-3491-A77D-AD8C792C1AA3}",
+        "dir40f84b56068d341da01a768174eb5e59",
+        "260",
+        "",
+        "reg0BB584F8DDB311791680AF77E1F1AE0A"
+      ],
+      [
+        "crm_rf48431aecbd69377ea800d62616352f20",
+        "{BB334FED-EA03-5F42-8586-930FD87845A0}",
+        "INSTALLDIR",
+        "260",
+        "",
+        "regE909D85C9659C0E62FD508532F145F57"
+      ]
+    ],
+    "File": [
+      [
+        "file42f3d76182413c60a4f50e6233e4de33",
+        "cfile42f3d76182413c60a4f50e6233e4de33",
+        "iu14h9fn.exe|ChatChatBarDesktop.exe",
+        "42",
+        "",
+        "",
+        "512",
+        "1"
+      ]
+    ],
+    "Shortcut": [
+      [
+        "shortcutac7fb77bcba7304cb1e4b8101197f270",
+        "dir36c9ba6a458c36e58ef9dd370187cbce",
+        "eqhcbvki|ChatChatBarDesktop",
+        "cshortcutac7fb77bcba7304cb1e4b8101197f270",
+        "[#file42f3d76182413c60a4f50e6233e4de33]",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "INSTALLDIR",
+        "",
+        "",
+        "",
+        ""
+      ],
+      [
+        "shortcutcf0e72b3db4a38ee8e99bba13cfc0c25",
+        "DesktopFolder",
+        "h_fy8jod|ChatChatBarDesktop",
+        "cshortcutcf0e72b3db4a38ee8e99bba13cfc0c25",
+        "[#file42f3d76182413c60a4f50e6233e4de33]",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "INSTALLDIR",
+        "",
+        "",
+        "",
+        ""
+      ]
+    ],
+    "RemoveFile": [
+      [
+        "rm870093a091f3386f9937de8c75db98d3_1",
+        "cshortcutac7fb77bcba7304cb1e4b8101197f270",
+        "",
+        "dir36c9ba6a458c36e58ef9dd370187cbce",
+        "2"
+      ],
+      [
+        "rm8b2c667d69f337dbb804586cd131c835_1",
+        "cfile42f3d76182413c60a4f50e6233e4de33",
+        "",
+        "INSTALLDIR",
+        "2"
+      ],
+      [
+        "rm98442446b28b37358e47a8bc03b785fd_1",
+        "cmkdire78eb718a75c3491a77dad8c792c1aa3",
+        "",
+        "dir40f84b56068d341da01a768174eb5e59",
+        "2"
+      ]
+    ],
+    "CreateFolder": [
+      [
+        "dir40f84b56068d341da01a768174eb5e59",
+        "cmkdire78eb718a75c3491a77dad8c792c1aa3"
+      ]
+    ],
+    "Feature": [
+      [
+        "DefaultFeature",
+        "",
+        "\u4e3b\u8981\u529f\u80fd",
+        "",
+        "2",
+        "1",
+        "",
+        "0"
+      ]
+    ],
+    "FeatureComponents": [
+      [
+        "DefaultFeature",
+        "cshortcutac7fb77bcba7304cb1e4b8101197f270"
+      ],
+      [
+        "DefaultFeature",
+        "cshortcutcf0e72b3db4a38ee8e99bba13cfc0c25"
+      ],
+      [
+        "DefaultFeature",
+        "cfile42f3d76182413c60a4f50e6233e4de33"
+      ],
+      [
+        "DefaultFeature",
+        "cmkdire78eb718a75c3491a77dad8c792c1aa3"
+      ],
+      [
+        "DefaultFeature",
+        "crm_rf48431aecbd69377ea800d62616352f20"
+      ]
+    ],
+    "Registry": [
+      [
+        "regE7E312FEBE6104DB572E57D62CF058C6",
+        "1",
+        "Software\\\u672a\u77e5\\ChatChatBarDesktop\\0.1.1116",
+        "ProductCode",
+        "[ProductCode]",
+        "cshortcutac7fb77bcba7304cb1e4b8101197f270"
+      ],
+      [
+        "reg61D170FD4673AD1F4FE3642F9CB0E944",
+        "1",
+        "Software\\\u672a\u77e5\\ChatChatBarDesktop\\0.1.1116",
+        "ProductCode",
+        "[ProductCode]",
+        "cshortcutcf0e72b3db4a38ee8e99bba13cfc0c25"
+      ],
+      [
+        "regE8B172B03ED5519680B4D663C69D3BB2",
+        "1",
+        "Software\\\u672a\u77e5\\ChatChatBarDesktop\\0.1.1116",
+        "ProductCode",
+        "[ProductCode]",
+        "cfile42f3d76182413c60a4f50e6233e4de33"
+      ],
+      [
+        "reg0BB584F8DDB311791680AF77E1F1AE0A",
+        "1",
+        "Software\\\u672a\u77e5\\ChatChatBarDesktop\\0.1.1116",
+        "ProductCode",
+        "[ProductCode]",
+        "cmkdire78eb718a75c3491a77dad8c792c1aa3"
+      ],
+      [
+        "regE909D85C9659C0E62FD508532F145F57",
+        "1",
+        "Software\\\u672a\u77e5\\ChatChatBarDesktop\\0.1.1116",
+        "RM_RF48431AECBD69377EA800D62616352F20",
+        "[INSTALLDIR]",
+        "crm_rf48431aecbd69377ea800d62616352f20"
+      ]
+    ],
+    "AppSearch": [
+      [
+        "RM_RF48431AECBD69377EA800D62616352F20",
+        "regsearch44413c41962833c69ffb8268f3119343"
+      ]
+    ],
+    "RegLocator": [
+      [
+        "regsearch44413c41962833c69ffb8268f3119343",
+        "1",
+        "Software\\\u672a\u77e5\\ChatChatBarDesktop\\0.1.1116",
+        "RM_RF48431AECBD69377EA800D62616352F20",
+        "18"
+      ]
+    ],
+    "Signature": [],
+    "Upgrade": [
+      [
+        "{8E4FDDBD-141F-5C1D-BFB2-1B48A6E46B81}",
+        "",
+        "0.1.1116",
+        "",
+        "257",
+        "",
+        "JP_UPGRADABLE_FOUND"
+      ],
+      [
+        "{8E4FDDBD-141F-5C1D-BFB2-1B48A6E46B81}",
+        "0.1.1116",
+        "",
+        "",
+        "1",
+        "",
+        "JP_DOWNGRADABLE_FOUND"
+      ]
+    ],
+    "MsiShortcutProperty": []
+  }
+}

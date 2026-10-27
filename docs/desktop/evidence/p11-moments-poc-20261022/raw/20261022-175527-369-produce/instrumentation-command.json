@@ -1,0 +1,22 @@
+{
+  "workingDirectory": "H:\\ChatChatBar-Desktop",
+  "executable": "C:\\Users\\1\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe",
+  "arguments": [
+    "-P",
+    "5045",
+    "-s",
+    "emulator-5584",
+    "shell",
+    "am",
+    "instrument",
+    "-w",
+    "-r",
+    "-e",
+    "listener",
+    "com.example.chatbar.domain.backup.PocXmlListener",
+    "-e",
+    "class",
+    "com.example.chatbar.domain.backup.OfficialMomentsPocTest#produceOfficialArchive",
+    "com.example.chatbar.test/androidx.test.runner.AndroidJUnitRunner"
+  ]
+}

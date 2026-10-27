@@ -1,0 +1,18 @@
+{
+  "status": "PAIR_STATIC_READY_FOR_ISOLATED_NATIVE_VALIDATION",
+  "componentsEach": 218,
+  "uniqueResolvedKeyPathsEach": 218,
+  "sharedGuids": 217,
+  "changedSharedKeyPaths": 0,
+  "sameRelativeFileTargets": 217,
+  "distinctProductCodes": true,
+  "distinctPackageCodes": true,
+  "sourceArchivesKept": true,
+  "nativeInstallUpgradeRollback": "NOT_TESTED",
+  "old1307Return5": "UNRESOLVED",
+  "upstreamBaselineUnchanged": "1.4.1",
+  "hashes": {
+    "A": "af3fbb1d5f652d15d45a5072c93bf5461b47669301e217df0d5ff39cf67d424d",
+    "B": "ee186196ceb0770fb7073d3662d9996c238dcdd0018b25efe75ec8c35efdb92e"
+  }
+}

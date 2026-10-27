@@ -1,0 +1,42 @@
+{
+  "merge-root-first-20261025": {
+    "exit": 1,
+    "suites": 0,
+    "tests": 0,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "merge-root-second-20261025": {
+    "exit": 0,
+    "suites": 4,
+    "tests": 31,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "merge-root-integrated-20261025": {
+    "exit": 0,
+    "suites": 6,
+    "tests": 45,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "merge-package-fingerprint-red-20261025": {
+    "exit": 1,
+    "suites": 1,
+    "tests": 1,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "merge-root-final-20261025": {
+    "exit": 0,
+    "suites": 7,
+    "tests": 55,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

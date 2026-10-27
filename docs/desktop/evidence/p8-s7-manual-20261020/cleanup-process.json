@@ -1,0 +1,9 @@
+{
+  "utc": "2026-10-20T00:38:12.0822605+00:00",
+  "recordedHelperPidsStillPresent": [],
+  "frozenApplicationProcesses": [],
+  "appEverStarted": false,
+  "source": "008343bb26d2eb76c23cae9b98132af828a9f447",
+  "rootRunningExclusion": "NOT TESTED; app not started",
+  "privateTlsCreated": false
+}

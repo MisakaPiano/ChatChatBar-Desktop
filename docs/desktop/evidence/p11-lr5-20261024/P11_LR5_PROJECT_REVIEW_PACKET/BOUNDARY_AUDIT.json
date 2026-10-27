@@ -1,0 +1,20 @@
+{
+  "attribution": "Codex static self-check, not Project acceptance or native security proof",
+  "base": "06e5d8638d6fe89babc1f855d96e2ac1253258c9",
+  "formalAppTrackedAndUntrackedDiffEmpty": true,
+  "nativeReadonlyDependencySnapshotMatches": true,
+  "newKotlinSnapshots": 2,
+  "runnerInitReadmeSnapshotsMatch": true,
+  "realBackupRead": false,
+  "realSecretStoreOrDpapiCalled": false,
+  "actorForbiddenEntryPointMatches": 0,
+  "archiveOrProviderParserImplemented": false,
+  "newProductionCallers": 0,
+  "caveats": [
+    "Only new tool/test sources are executable in this task. Existing app source tree is unchanged.",
+    "The actor is a bounded fake 5-participant one-shot generation1-to2 experiment, not a deployable authority schema.",
+    "Native directory file identities are actual test-root witnesses; profile/protection/account/consumer facts are synthetic declarations.",
+    "Fixed OLD-present seed copies force observable mixtures; absent/tombstone credentials and general transaction chains are not proved.",
+    "Known cooperative lock/readback behavior is not an adversarial reparse/CAS, global consumer or old-binary barrier."
+  ]
+}

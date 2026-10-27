@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopMessageActionsUxTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-20T07:15:43.818Z" hostname="DD1" time="0.957">
+  <properties/>
+  <testcase name="context groups preserve eligibility and separate source and whole scopes" classname="com.example.chatbar.desktop.DesktopMessageActionsUxTest" time="0.04"/>
+  <testcase name="whole copy preserves raw multi segment Markdown and role markers" classname="com.example.chatbar.desktop.DesktopMessageActionsUxTest" time="0.001"/>
+  <testcase name="narrow toolbar scrolls left actions while image actions stay pinned right" classname="com.example.chatbar.desktop.DesktopMessageActionsUxTest" time="0.425"/>
+  <testcase name="combined toolbar disables image controls during source task and keeps one process card" classname="com.example.chatbar.desktop.DesktopMessageActionsUxTest" time="0.133"/>
+  <testcase name="middle and last copies use exact raw source ranges not display text" classname="com.example.chatbar.desktop.DesktopMessageActionsUxTest" time="0.0"/>
+  <testcase name="copy reads selected candidate only and user empty boundaries remain raw" classname="com.example.chatbar.desktop.DesktopMessageActionsUxTest" time="0.0"/>
+  <testcase name="pointer segment menus copy exact source or whole and keep edit delete ownership" classname="com.example.chatbar.desktop.DesktopMessageActionsUxTest" time="0.357"/>
+  <system-out><![CDATA[C2 initial value=0.0 max=40.0 reverse=false direction=Ltr
+C2 scrolling value=1.0 max=40.0
+C2 scrolling value=6.0 max=40.0
+C2 scrolling value=11.0 max=40.0
+C2 scrolling value=16.0 max=40.0
+C2 scrolling value=23.0 max=40.0
+C2 scrolling value=31.0 max=40.0
+C2 scrolling value=39.0 max=40.0
+C2 scrolling value=40.0 max=40.0
+C2 completed consumed=Offset(40.1, 0.0) value=40.0 max=40.0 changes=8
+C2 final value=40.0 max=40.0 completed=true
+C2 生成图片 bounds=Rect.fromLTRB(50.0, 0.0, 80.0, 30.0)
+C2 生图要求 bounds=Rect.fromLTRB(80.0, 0.0, 110.0, 30.0)
+FocusRelatedWarning: 
+   FocusRequester is not initialized. Here are some possible fixes:
+
+   1. Remember the FocusRequester: val focusRequester = remember { FocusRequester() }
+   2. Did you forget to add a Modifier.focusRequester() ?
+   3. Are you attempting to request focus during composition? Focus requests should be made in
+   response to some event. Eg Modifier.clickable { focusRequester.requestFocus() }
+
+FocusRelatedWarning: 
+   FocusRequester is not initialized. Here are some possible fixes:
+
+   1. Remember the FocusRequester: val focusRequester = remember { FocusRequester() }
+   2. Did you forget to add a Modifier.focusRequester() ?
+   3. Are you attempting to request focus during composition? Focus requests should be made in
+   response to some event. Eg Modifier.clickable { focusRequester.requestFocus() }
+
+FocusRelatedWarning: 
+   FocusRequester is not initialized. Here are some possible fixes:
+
+   1. Remember the FocusRequester: val focusRequester = remember { FocusRequester() }
+   2. Did you forget to add a Modifier.focusRequester() ?
+   3. Are you attempting to request focus during composition? Focus requests should be made in
+   response to some event. Eg Modifier.clickable { focusRequester.requestFocus() }
+
+FocusRelatedWarning: 
+   FocusRequester is not initialized. Here are some possible fixes:
+
+   1. Remember the FocusRequester: val focusRequester = remember { FocusRequester() }
+   2. Did you forget to add a Modifier.focusRequester() ?
+   3. Are you attempting to request focus during composition? Focus requests should be made in
+   response to some event. Eg Modifier.clickable { focusRequester.requestFocus() }
+
+FocusRelatedWarning: 
+   FocusRequester is not initialized. Here are some possible fixes:
+
+   1. Remember the FocusRequester: val focusRequester = remember { FocusRequester() }
+   2. Did you forget to add a Modifier.focusRequester() ?
+   3. Are you attempting to request focus during composition? Focus requests should be made in
+   response to some event. Eg Modifier.clickable { focusRequester.requestFocus() }
+
+FocusRelatedWarning: 
+   FocusRequester is not initialized. Here are some possible fixes:
+
+   1. Remember the FocusRequester: val focusRequester = remember { FocusRequester() }
+   2. Did you forget to add a Modifier.focusRequester() ?
+   3. Are you attempting to request focus during composition? Focus requests should be made in
+   response to some event. Eg Modifier.clickable { focusRequester.requestFocus() }
+
+FocusRelatedWarning: 
+   FocusRequester is not initialized. Here are some possible fixes:
+
+   1. Remember the FocusRequester: val focusRequester = remember { FocusRequester() }
+   2. Did you forget to add a Modifier.focusRequester() ?
+   3. Are you attempting to request focus during composition? Focus requests should be made in
+   response to some event. Eg Modifier.clickable { focusRequester.requestFocus() }
+
+FocusRelatedWarning: 
+   FocusRequester is not initialized. Here are some possible fixes:
+
+   1. Remember the FocusRequester: val focusRequester = remember { FocusRequester() }
+   2. Did you forget to add a Modifier.focusRequester() ?
+   3. Are you attempting to request focus during composition? Focus requests should be made in
+   response to some event. Eg Modifier.clickable { focusRequester.requestFocus() }
+
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,33 @@
+{
+  "status": "P8-S2B-UI-LAYOUT-001-R4 HOLD / RAW RED PRESERVED",
+  "sourceDraftsUncommitted": true,
+  "productionDraftsUnchanged": true,
+  "diagnosticTestDraftRetained": true,
+  "newWindowsDistribution": "NOT BUILT",
+  "manualGate": "NOT STARTED",
+  "launcherExit": "NOT TESTED / NOT STARTED",
+  "appJvmExit": "NOT TESTED / NOT STARTED",
+  "activeRootExclusion": "NOT TESTED",
+  "rootReacquire": "NOT TESTED",
+  "fakeService": "NOT STARTED",
+  "temporaryTls": "NOT CREATED",
+  "nativeTestCleanup": "Fixture finally completed owner re-enable, window dispose, scope/runtime drain and no owned mp3/part assertion without cleanup failure",
+  "testCommandExit": 1,
+  "postRunJavaProcessCount": 0,
+  "windowsMaximize": "NOT TESTED in R4",
+  "windowsAudio": "NOT TESTED in R4",
+  "winAuto001": "OPEN / not attributed as cause of this scrollbar RED",
+  "winBrand001": "OPEN / DEFERRED",
+  "protectedUserFiles": {
+    "untracked": 4,
+    "contentsRead": false,
+    "modified": false,
+    "staged": false
+  },
+  "residualLimits": [
+    "MCI/device compatibility",
+    "platform TOCTOU",
+    "physical I/O absolute deadlines",
+    "prior symlink NOT TESTED and two existing JUnit SKIPPED unchanged"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "compileSamples": 5,
+  "minAvailableBytes": 1004400640,
+  "minCommitHeadroomBytes": 12465864704,
+  "maxPagesPerSecond": 21547,
+  "postJavaCounts": [
+    0,
+    0,
+    0
+  ],
+  "postRelevantProcesses": [],
+  "resourceChanges": false,
+  "killedUserProcesses": false,
+  "oomObserved": false,
+  "note": "Sampling only; no causal claim about historical input failures"
+}

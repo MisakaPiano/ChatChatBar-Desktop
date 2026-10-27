@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.voice.FishAudioTagPolicyTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:26.381Z" hostname="DD1" time="0.033">
+  <properties/>
+  <testcase name="batch parser rejects markdown fences and unknown fields" classname="com.example.chatbar.domain.voice.FishAudioTagPolicyTest" time="0.005"/>
+  <testcase name="batch parser requests confirmation for rewritten speech" classname="com.example.chatbar.domain.voice.FishAudioTagPolicyTest" time="0.012"/>
+  <testcase name="batch parser keeps valid items while reporting unknown ids" classname="com.example.chatbar.domain.voice.FishAudioTagPolicyTest" time="0.001"/>
+  <testcase name="translation parser accepts one translated text per input id" classname="com.example.chatbar.domain.voice.FishAudioTagPolicyTest" time="0.005"/>
+  <testcase name="translation parser rejects markdown and unknown fields" classname="com.example.chatbar.domain.voice.FishAudioTagPolicyTest" time="0.001"/>
+  <testcase name="illegal tag fails while rewritten speech is distinguishable" classname="com.example.chatbar.domain.voice.FishAudioTagPolicyTest" time="0.001"/>
+  <testcase name="batch parser rejects duplicate and missing ids without plain text fallback" classname="com.example.chatbar.domain.voice.FishAudioTagPolicyTest" time="0.002"/>
+  <testcase name="s2 accepts square tags without rewriting speech" classname="com.example.chatbar.domain.voice.FishAudioTagPolicyTest" time="0.001"/>
+  <testcase name="s1 accepts parentheses and rejects square Fish tags" classname="com.example.chatbar.domain.voice.FishAudioTagPolicyTest" time="0.001"/>
+  <testcase name="translation parser reports duplicate missing unknown and blank results" classname="com.example.chatbar.domain.voice.FishAudioTagPolicyTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

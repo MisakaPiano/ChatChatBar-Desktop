@@ -52,6 +52,10 @@ object WindowsSecretRootResolver {
                 )
             }
         }
-        return secretRoot
+        return if (selectedAppDataRoot != null &&
+            com.example.chatbar.desktop.DesktopFreshRootAuthority.exists(selectedAppDataRoot.normalize())) {
+            com.example.chatbar.desktop.DesktopFreshRootAuthority(selectedAppDataRoot.normalize(), secretRoot)
+                .verifyAndResolve()
+        } else secretRoot
     }
 }

@@ -1,0 +1,14 @@
+{
+  "selectedRawFiles": 65,
+  "allRawShaAndLengthsChecked": true,
+  "selection": "Explicit synthetic build/lifecycle text only; no archives, binary payloads, DPAPI blobs, private baseline, real-data logs or credentials",
+  "knownPasswordPatternAbsent": true,
+  "knownRealSourcePathsAbsent": true,
+  "highConfidenceCredentialPatternsAbsent": true,
+  "universalSecretAbsenceProof": false,
+  "newJUnitTests": 0,
+  "nativeColdStarts": 2,
+  "allLaunchesUseExplicitSyntheticEnvironment": true,
+  "msiExecuted": false,
+  "humanVisualCheck": "PENDING"
+}

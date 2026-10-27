@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopAssistantImagePresentationTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-25T03:52:27.739Z" hostname="DD1" time="3.733">
+  <properties/>
+  <testcase name="requirements form edits are local and Cancel never saves or launches" classname="com.example.chatbar.desktop.DesktopAssistantImagePresentationTest" time="1.174"/>
+  <testcase name="clicking unconfigured source displays safe preflight reason below body without task" classname="com.example.chatbar.desktop.DesktopAssistantImagePresentationTest" time="1.744"/>
+  <testcase name="actual assistant bubble puts compact actions and successful fake task below body after user" classname="com.example.chatbar.desktop.DesktopAssistantImagePresentationTest" time="0.6"/>
+  <testcase name="one source process card shows latest task and dismiss reveals retained older terminal" classname="com.example.chatbar.desktop.DesktopAssistantImagePresentationTest" time="0.215"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

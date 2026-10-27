@@ -1,0 +1,162 @@
+[
+  {
+    "file": "nondefault-preferences.json",
+    "bytes": 149,
+    "sha256": "ad3d7a76d0a51f7c2d0dfedc626de82687c32b14cf75eaf23e1e69bf9836f74c"
+  },
+  {
+    "file": "nondefault-scope.json",
+    "bytes": 365,
+    "sha256": "6d94fa6cf575fdbec43539f9ea9867de3543091b43af3ea78910321ea4b9badb"
+  },
+  {
+    "file": "v1-code84-encrypted-false.cbbackup",
+    "bytes": 733,
+    "sha256": "35ccafa556f34a66b445242841af77f0fba0b25d9561de87096a998d74ec36b6"
+  },
+  {
+    "file": "v1-code84-encrypted-false.fields.txt",
+    "bytes": 211,
+    "sha256": "71b05bdc88606dc347ed6c57574ea65639765d2d18991aa1ba1758081032c7fd"
+  },
+  {
+    "file": "v1-code84-encrypted-false.inventory.jsonl",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": "v1-code84-encrypted-false.manifest.json",
+    "bytes": 263,
+    "sha256": "ce499256ad60fd3a331396dceb4bfff4bb80de5549e512d5f512f3b1d80135c0"
+  },
+  {
+    "file": "v1-code84-encrypted-false.preferences.json",
+    "bytes": 103,
+    "sha256": "c39ff323a78b9fb162a6856a2ce61168244098d75ce2d2b219fc6806f16a0720"
+  },
+  {
+    "file": "v1-code84-encrypted-true.cbbackup",
+    "bytes": 1040,
+    "sha256": "1afe0a7a43de66b4a83721703088eaa2bbf7ac38ea3f711d05fc1c89f88e54b4"
+  },
+  {
+    "file": "v1-code84-encrypted-true.fields.txt",
+    "bytes": 211,
+    "sha256": "71b05bdc88606dc347ed6c57574ea65639765d2d18991aa1ba1758081032c7fd"
+  },
+  {
+    "file": "v1-code84-encrypted-true.inventory.jsonl",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": "v1-code84-encrypted-true.manifest.json",
+    "bytes": 263,
+    "sha256": "ce499256ad60fd3a331396dceb4bfff4bb80de5549e512d5f512f3b1d80135c0"
+  },
+  {
+    "file": "v1-code84-encrypted-true.preferences.json",
+    "bytes": 103,
+    "sha256": "c39ff323a78b9fb162a6856a2ce61168244098d75ce2d2b219fc6806f16a0720"
+  },
+  {
+    "file": "v2-code85-encrypted-false.cbbackup",
+    "bytes": 835,
+    "sha256": "70ca813137f65642d164629962565c799ddc6975e159d6719fef111f67f82991"
+  },
+  {
+    "file": "v2-code85-encrypted-false.fields.txt",
+    "bytes": 217,
+    "sha256": "bccafbf1eebd46c11358374e05957f72df687ed84541b49b97b7d9535bc4c5e8"
+  },
+  {
+    "file": "v2-code85-encrypted-false.inventory.jsonl",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": "v2-code85-encrypted-false.manifest.json",
+    "bytes": 499,
+    "sha256": "4d8ca28e0823b8f8e7541f90221af99c3cd304d0dec8d9bd260cd8fd4f47dc9c"
+  },
+  {
+    "file": "v2-code85-encrypted-false.preferences.json",
+    "bytes": 103,
+    "sha256": "c39ff323a78b9fb162a6856a2ce61168244098d75ce2d2b219fc6806f16a0720"
+  },
+  {
+    "file": "v2-code85-encrypted-true.cbbackup",
+    "bytes": 1142,
+    "sha256": "c708cc73e81311086412098e230fabc8b308faa680ffa256168c22cf27d66932"
+  },
+  {
+    "file": "v2-code85-encrypted-true.fields.txt",
+    "bytes": 217,
+    "sha256": "bccafbf1eebd46c11358374e05957f72df687ed84541b49b97b7d9535bc4c5e8"
+  },
+  {
+    "file": "v2-code85-encrypted-true.inventory.jsonl",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": "v2-code85-encrypted-true.manifest.json",
+    "bytes": 499,
+    "sha256": "4d8ca28e0823b8f8e7541f90221af99c3cd304d0dec8d9bd260cd8fd4f47dc9c"
+  },
+  {
+    "file": "v2-code85-encrypted-true.preferences.json",
+    "bytes": 103,
+    "sha256": "c39ff323a78b9fb162a6856a2ce61168244098d75ce2d2b219fc6806f16a0720"
+  },
+  {
+    "file": "v2-code86-encrypted-false.cbbackup",
+    "bytes": 835,
+    "sha256": "06ecacf9ac87248c358981aeb5accfd42172d95864db1cecfc15c0b150a6ea27"
+  },
+  {
+    "file": "v2-code86-encrypted-false.fields.txt",
+    "bytes": 217,
+    "sha256": "bccafbf1eebd46c11358374e05957f72df687ed84541b49b97b7d9535bc4c5e8"
+  },
+  {
+    "file": "v2-code86-encrypted-false.inventory.jsonl",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": "v2-code86-encrypted-false.manifest.json",
+    "bytes": 499,
+    "sha256": "7b25510de0df371b18367c152cd4fbd4c27155c3d9017ffdfdb36a5729a701f7"
+  },
+  {
+    "file": "v2-code86-encrypted-false.preferences.json",
+    "bytes": 103,
+    "sha256": "c39ff323a78b9fb162a6856a2ce61168244098d75ce2d2b219fc6806f16a0720"
+  },
+  {
+    "file": "v2-code86-encrypted-true.cbbackup",
+    "bytes": 1142,
+    "sha256": "480e6d2dd9ec4ed95cca95715e66cfd94bb9dcfdfb92dbce2852b5313e72fca7"
+  },
+  {
+    "file": "v2-code86-encrypted-true.fields.txt",
+    "bytes": 217,
+    "sha256": "bccafbf1eebd46c11358374e05957f72df687ed84541b49b97b7d9535bc4c5e8"
+  },
+  {
+    "file": "v2-code86-encrypted-true.inventory.jsonl",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": "v2-code86-encrypted-true.manifest.json",
+    "bytes": 499,
+    "sha256": "7b25510de0df371b18367c152cd4fbd4c27155c3d9017ffdfdb36a5729a701f7"
+  },
+  {
+    "file": "v2-code86-encrypted-true.preferences.json",
+    "bytes": 103,
+    "sha256": "c39ff323a78b9fb162a6856a2ce61168244098d75ce2d2b219fc6806f16a0720"
+  }
+]

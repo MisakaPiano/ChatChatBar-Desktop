@@ -1,0 +1,5 @@
+{
+  "purpose": "validation-only helpers; not packaged",
+  "exitCode": 0,
+  "jdk": "17"
+}

@@ -1,0 +1,46 @@
+{
+  "run": "B3-01",
+  "startedUtc": "2026-10-16T09:01:40.3592802+00:00",
+  "endedUtc": "2026-10-16T09:02:45.1141911+00:00",
+  "durationSeconds": 64.7549109,
+  "closeObservedUtc": "2026-10-16T09:02:44.4876143+00:00",
+  "processLifetimeBlocked": false,
+  "allOwnedProcessesExited": true,
+  "processes": [
+    {
+      "pid": 55268,
+      "identity": {
+        "pid": 55268,
+        "parentPid": 24556,
+        "createdUtc": "2026-10-16T09:01:40.4061220Z",
+        "executablePath": "<LOCAL_GATE>\\portable-image\\ChatChatBarDesktop.exe",
+        "image": "portable-image"
+      },
+      "isLauncher": true,
+      "jvmLoaded": false,
+      "exited": true,
+      "exitCode": 0,
+      "moduleReadError": null
+    },
+    {
+      "pid": 56512,
+      "identity": {
+        "pid": 56512,
+        "parentPid": 55268,
+        "createdUtc": "2026-10-16T09:01:40.8620070Z",
+        "executablePath": "<LOCAL_GATE>\\portable-image\\ChatChatBarDesktop.exe",
+        "image": "portable-image"
+      },
+      "isLauncher": false,
+      "jvmLoaded": true,
+      "exited": true,
+      "exitCode": 0,
+      "moduleReadError": null
+    }
+  ],
+  "probeEvents": [
+    "2026-10-16T09:01:44.1854960+00:00 CREATED .portable-write-probe-211d5f82-0b16-4672-8725-fe88afb20383.tmp",
+    "2026-10-16T09:01:44.2147640+00:00 DELETED .portable-write-probe-211d5f82-0b16-4672-8725-fe88afb20383.tmp"
+  ],
+  "probeObservationErrors": []
+}

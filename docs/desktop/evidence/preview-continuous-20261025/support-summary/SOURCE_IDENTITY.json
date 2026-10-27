@@ -1,0 +1,47 @@
+{
+  "support-summary-first-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSupportSummary.kt": {
+    "bytes": 1826,
+    "sha256": "1b5580805273c70b032f43a2ceb134ea4def9038c1249d46b9665fc03504a41f",
+    "gitBlob": "c5d1a403d9c8cdcd1c7dc70c6d4ba4b7d3305a5a"
+  },
+  "support-summary-first-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopUpdatePanel.kt": {
+    "bytes": 4410,
+    "sha256": "633afe6c7a9237d90b7e0547da3621a0f85913c7c19435507edb264a01abca40",
+    "gitBlob": "9700b7ea268921f4f012d7cd9d4b971a0554242b"
+  },
+  "support-summary-first-20261025/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopSupportSummaryTest.kt": {
+    "bytes": 4641,
+    "sha256": "077486a477a7c024e598807238b8600115964cf895cbe6fa3664e268c51d6a92",
+    "gitBlob": "8960847b944580d48ec7739f0e196bba388b8075"
+  },
+  "support-summary-verified-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSupportSummary.kt": {
+    "bytes": 1826,
+    "sha256": "1b5580805273c70b032f43a2ceb134ea4def9038c1249d46b9665fc03504a41f",
+    "gitBlob": "c5d1a403d9c8cdcd1c7dc70c6d4ba4b7d3305a5a"
+  },
+  "support-summary-verified-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopUpdatePanel.kt": {
+    "bytes": 4410,
+    "sha256": "633afe6c7a9237d90b7e0547da3621a0f85913c7c19435507edb264a01abca40",
+    "gitBlob": "9700b7ea268921f4f012d7cd9d4b971a0554242b"
+  },
+  "support-summary-verified-20261025/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopSupportSummaryTest.kt": {
+    "bytes": 4706,
+    "sha256": "e838fbdf7cf1767368a45359a89cab24b65faff8ee8b24700169b6e45dd79dd4",
+    "gitBlob": "2b21130bb3b825fc237619296e74eed5eceba3c2"
+  },
+  "support-summary-final-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSupportSummary.kt": {
+    "bytes": 1826,
+    "sha256": "1b5580805273c70b032f43a2ceb134ea4def9038c1249d46b9665fc03504a41f",
+    "gitBlob": "c5d1a403d9c8cdcd1c7dc70c6d4ba4b7d3305a5a"
+  },
+  "support-summary-final-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopUpdatePanel.kt": {
+    "bytes": 4599,
+    "sha256": "c7926f476f01bcfbc667ece08789a71800200471403d13ffbb1d746a2c42db44",
+    "gitBlob": "c583ef8954582568606c695de2dd8a76936621c2"
+  },
+  "support-summary-final-20261025/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopSupportSummaryTest.kt": {
+    "bytes": 4706,
+    "sha256": "e838fbdf7cf1767368a45359a89cab24b65faff8ee8b24700169b6e45dd79dd4",
+    "gitBlob": "2b21130bb3b825fc237619296e74eed5eceba3c2"
+  }
+}

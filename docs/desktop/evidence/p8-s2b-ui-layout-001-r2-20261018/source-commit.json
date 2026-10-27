@@ -1,0 +1,20 @@
+{
+  "commit": "934a349c51eeb51c1d7b7b12799b48594cb50358",
+  "parent": "f073749a6f57490516e7c2b1df516c5e6c53d13f",
+  "files": [
+    "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt",
+    "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppIcons.kt",
+    "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishAudioPanel.kt",
+    "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerPresentation.kt",
+    "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerWindow.kt",
+    "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPresentationTest.kt",
+    "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerLayoutTest.kt",
+    "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerWindowTest.kt",
+    "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopStudioControls.kt"
+  ],
+  "stat": " .../com/example/chatbar/desktop/DesktopAppIcons.kt |   4 +\n .../chatbar/desktop/DesktopFishAudioPanel.kt       |  99 +-------\n .../desktop/DesktopFishPickerPresentation.kt       | 234 +++++++++++++++++++\n .../chatbar/desktop/DesktopFishPickerWindow.kt     |  86 +++++++\n .../chatbar/desktop/DesktopStudioControls.kt       |   5 +-\n .../kotlin/com/example/chatbar/desktop/Main.kt     |   1 +\n .../chatbar/desktop/DesktopFishPickerLayoutTest.kt | 251 +++++++++++++++++++++\n .../chatbar/desktop/DesktopFishPickerWindowTest.kt | 179 +++++++++++++++\n .../chatbar/desktop/DesktopFishPresentationTest.kt |  22 +-\n 9 files changed, 780 insertions(+), 101 deletions(-)\n",
+  "liveBeforeCommit": "f073749a6f57490516e7c2b1df516c5e6c53d13f",
+  "indexOnlyAuthorizedFiles": true,
+  "stagedBlobsMatchTestedNormalizedBytes": true,
+  "diffCheck": "PASS"
+}

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.memory.MemoryPageOrderPolicyTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:25.086Z" hostname="DD1" time="0.006">
+  <properties/>
+  <testcase name="audit reports real stored disorder even when display can sort nodes" classname="com.example.chatbar.domain.memory.MemoryPageOrderPolicyTest" time="0.005"/>
+  <testcase name="audit reports blank active body separately" classname="com.example.chatbar.domain.memory.MemoryPageOrderPolicyTest" time="0.0"/>
+  <testcase name="normalizes complete verifiable page to ascending T order" classname="com.example.chatbar.domain.memory.MemoryPageOrderPolicyTest" time="0.001"/>
+  <testcase name="does not reorder or order-warn when T proof is incomplete" classname="com.example.chatbar.domain.memory.MemoryPageOrderPolicyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

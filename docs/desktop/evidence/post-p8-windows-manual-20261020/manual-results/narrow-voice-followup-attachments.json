@@ -1,0 +1,39 @@
+{
+  "files": [
+    {
+      "path": "user-screenshots/B4-user-confirmation-dialog.png",
+      "sourceUserAttachment": "codex-clipboard-77865fb9-9e40-4602-bb3a-68b6fa77430c.png",
+      "bytes": 91549,
+      "sha256": "9739d1e090b44fa1334f997674998babf9f86ab6c9e5e49e1912f628ef3b93f4",
+      "type": "Voluntary user screenshot, no automated capture"
+    },
+    {
+      "path": "user-screenshots/narrow-voice-followup-1.png",
+      "sourceUserAttachment": "codex-clipboard-70cc3b8d-2686-4113-9513-80b129fddaab.png",
+      "bytes": 50643,
+      "sha256": "64c79dde989c1ceedb14c4f911336c27398463b861ea7d1e84a62a4dfeb0f7ce",
+      "type": "Voluntary user screenshot, no automated capture"
+    },
+    {
+      "path": "user-screenshots/narrow-voice-followup-2.png",
+      "sourceUserAttachment": "codex-clipboard-ef4b0318-9535-4bd5-b61a-ca7bf1b579f4.png",
+      "bytes": 57107,
+      "sha256": "8d540957e0ae8a726a0c28071285e73034caf9895f3e6cef8160a16b6a56d420",
+      "type": "Voluntary user screenshot, no automated capture"
+    },
+    {
+      "path": "user-screenshots/narrow-voice-followup-3.png",
+      "sourceUserAttachment": "codex-clipboard-deab22f1-03d3-40fb-a096-0dc975c93ee2.png",
+      "bytes": 44886,
+      "sha256": "cc9c30d8213372037095bafb436ab0c371de737de165b184743fbc6bfd8d7caa",
+      "type": "Voluntary user screenshot, no automated capture"
+    },
+    {
+      "path": "user-screenshots/narrow-voice-followup-4.png",
+      "sourceUserAttachment": "codex-clipboard-aa8a0638-3d23-4deb-b20e-38335add5008.png",
+      "bytes": 52579,
+      "sha256": "d416197d1adefd7ef9e961d5861225244ed572007cb267e4ecad4f1d49c8d775",
+      "type": "Voluntary user screenshot, no automated capture"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFullBackupMappingTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-21T17:32:46.334Z" hostname="DD1" time="0.887">
+  <properties/>
+  <testcase name="lightweight legacy catalog skips inline media and requires a complete JSON object" classname="com.example.chatbar.desktop.DesktopFullBackupMappingTest" time="0.013"/>
+  <testcase name="whole app mapping preserves identities versions and bytes while removing exported credentials" classname="com.example.chatbar.desktop.DesktopFullBackupMappingTest" time="0.873"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

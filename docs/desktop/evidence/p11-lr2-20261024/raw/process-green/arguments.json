@@ -1,0 +1,18 @@
+[
+    "--offline",
+    "--no-daemon",
+    "--no-build-cache",
+    "--no-configuration-cache",
+    "--max-workers=1",
+    "--no-parallel",
+    "--console=plain",
+    "-Dorg.gradle.jvmargs=-Xmx1024m -XX:ActiveProcessorCount=2 -Dfile.encoding=UTF-8",
+    "-Pkotlin.compiler.execution.strategy=in-process",
+    "-Dccb.readonly.sources=H:\\ChatChatBar-Desktop\\tools\\desktop\\interop\\lr2/src",
+    "-I",
+    "H:\\ChatChatBar-Desktop\\tools\\desktop\\interop\\lr2\\lr2.init.gradle",
+    ":desktopApp:test",
+    "--rerun",
+    "--tests",
+    "*SlotProcessProbeTest"
+]

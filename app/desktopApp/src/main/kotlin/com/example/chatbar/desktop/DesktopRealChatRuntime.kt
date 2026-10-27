@@ -176,7 +176,9 @@ class DesktopRealChatRuntime internal constructor(
             )
         }
 
-        return generate(turn, plan, observer, diagnosticsFactory).copy(inputNotice = inputNotice)
+        plan.knowledgeNotice?.let { observer.onUpdate(DesktopRealChatStreamUpdate("", "", status = it)) }
+        return generate(turn, plan, observer, diagnosticsFactory).copy(
+            inputNotice = listOfNotNull(inputNotice, plan.knowledgeNotice).joinToString("；").takeIf(String::isNotBlank))
     }
 
     suspend fun regenerate(
@@ -201,7 +203,8 @@ class DesktopRealChatRuntime internal constructor(
             if (selected.id != target.id) chatRepository.deleteMessage(selected.id, sessionId)
             val plan = requestPlanner.planRegeneration(sessionId, target.id, turn.inputs)
             observer.onUpdate(DesktopRealChatStreamUpdate("", "", target.id))
-            generate(turn, plan, observer, diagnosticsFactory, target)
+            plan.knowledgeNotice?.let { observer.onUpdate(DesktopRealChatStreamUpdate("", "", target.id, status = it)) }
+            generate(turn, plan, observer, diagnosticsFactory, target).copy(inputNotice = plan.knowledgeNotice)
         }
         control?.attach(operation)
         try {
@@ -356,6 +359,7 @@ class DesktopRealChatRuntime internal constructor(
                 ragInjectionMode = settings.ragInjectionMode,
                 assistantSegmentedBubblesEnabled = settings.assistantSegmentedBubblesEnabled,
                 supportsImages = model.isMultimodal,
+                retrievalModel = model,
             ),
         )
     }

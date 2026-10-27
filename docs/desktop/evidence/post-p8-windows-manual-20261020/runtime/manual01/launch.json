@@ -1,0 +1,16 @@
+{
+  "run": "manual01",
+  "image": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-audio-maintenance-r1-20261020\\windows-frozen-694a8bdd\\runtime-image",
+  "localEnvironment": "post-p8-profile",
+  "rootMode": "normal",
+  "launcherPid": 30452,
+  "launcherCreatedUtc": "2026-10-20T12:46:10.2600518Z",
+  "startedUtc": "2026-10-20T12:46:10.2482134+00:00",
+  "launcherPath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-audio-maintenance-r1-20261020\\windows-frozen-694a8bdd\\runtime-image\\ChatChatBarDesktop.exe",
+  "expectedDataRoot": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-windows-manual-20261020\\environments\\post-p8-profile\\ChatChatBarDesktop",
+  "injectedLocalAppData": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-windows-manual-20261020\\environments\\post-p8-profile",
+  "startupWatchdogSeconds": 180,
+  "exitWatchdogSeconds": 120,
+  "lifetimeWatchdogSeconds": null,
+  "manualSessionNoForcedExpiry": true
+}

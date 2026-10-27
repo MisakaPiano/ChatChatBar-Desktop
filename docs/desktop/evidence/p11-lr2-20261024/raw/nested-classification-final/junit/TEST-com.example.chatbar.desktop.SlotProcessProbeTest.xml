@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.SlotProcessProbeTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-23T17:16:15.249Z" hostname="DD1" time="11.961">
+  <properties/>
+  <testcase name="independent normal process reopens complete supported source fields twice" classname="com.example.chatbar.desktop.SlotProcessProbeTest" time="4.99"/>
+  <testcase name="post commit hard process exit releases lock and permits new process verification" classname="com.example.chatbar.desktop.SlotProcessProbeTest" time="3.914"/>
+  <testcase name="foreign target modification refuses before journal or repository reopening" classname="com.example.chatbar.desktop.SlotProcessProbeTest" time="3.057"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

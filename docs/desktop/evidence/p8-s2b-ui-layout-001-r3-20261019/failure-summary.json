@@ -1,0 +1,24 @@
+{
+  "test": "native persistent scrollbar drags current page and explicit page jump preserves request semantics",
+  "durationSeconds": 10.753,
+  "exception": "kotlinx.coroutines.TimeoutCancellationException",
+  "stack": "kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 10000 ms\n\tat _COROUTINE._BOUNDARY._(CoroutineDebugging.kt:42)\n\tat com.example.chatbar.desktop.DesktopFishPickerNativeUxTest$Fixture.frame(DesktopFishPickerNativeUxTest.kt:100)\n\tat com.example.chatbar.desktop.DesktopFishPickerNativeUxTest$Fixture$await$2.invokeSuspend(DesktopFishPickerNativeUxTest.kt:101)\n\tat com.example.chatbar.desktop.DesktopFishPickerNativeUxTest$native persistent scrollbar drags current page and explicit page jump preserves request semantics$1.invokeSuspend(DesktopFishPickerNativeUxTest.kt:309)\nCaused by: kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 10000 ms\n\tat kotlinx.coroutines.TimeoutKt.TimeoutCancellationException(Timeout.kt:189)\n\tat kotlinx.coroutines.TimeoutCoroutine.run(Timeout.kt:157)\n\tat kotlinx.coroutines.EventLoopImplBase$DelayedRunnableTask.run(EventLoop.common.kt:505)\n\tat kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)\n\tat kotlinx.coroutines.DefaultExecutor.run(DefaultExecutor.kt:105)\n\tat java.base/java.lang.Thread.run(Thread.java:840)\n",
+  "xmlSha256": "f032c9812a68dcfc20f61885cd9611d3c754bbd1642c4eb020412b2315b98adb",
+  "sourceLine": 309,
+  "timeoutMillis": 10000,
+  "condition": "range().value() > before after native scrollbar drag",
+  "requestedFirstWidthDp": 1100,
+  "actualGeometryAtFailingDrag": null,
+  "thumbHitAndCaptureProven": false,
+  "rootCause": "UNKNOWN",
+  "subsequentPageJumpAndNarrowBranchesInBounded": "NOT REACHED",
+  "sameMethodEarlierFocused": "PASS",
+  "otherNativeMethodsInBounded": [
+    "native Stop is top layer visible and operable during download generation and long Windows playback",
+    "native Escape closes exactly one panel then picker with and without field focus at both widths",
+    "native resize retains target text and generated cache while sample identity stays distinct"
+  ],
+  "rerunsAfterRed": 0,
+  "packagingExecuted": false,
+  "manualGateStarted": false
+}

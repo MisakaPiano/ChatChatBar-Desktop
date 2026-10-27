@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "profile": "synthetic",
+  "inputSha256": "af0202a3e3025d88c7a9096c11f5c47c2e0a2697e415994e6088e0dc09ec4b88",
+  "outputSha256": "5b2f58f9f722ac3f962d28a74d71ae7a591755c0c669c81a25cf57a3c1237e79",
+  "productVersion": "0.1.1112",
+  "applicationCabinets": {
+    "Data.cab": {
+      "bytes": 165178391,
+      "sha256": "c3631b33efcfe44d801896241f3d9a5032e39b3c4f1f4c4896a01e1059fb03b7"
+    }
+  },
+  "recursiveCleanupRemoved": true,
+  "downgradeBlocked": true,
+  "oldRemovalInsideTransaction": true,
+  "syntheticFailureAction": true,
+  "signingPerformed": false,
+  "directoryContract": 2,
+  "componentContract": 1,
+  "operationContract": 1,
+  "packageCode": {
+    "input": "{79F7CA02-D67F-4883-B2A0-0D243873F48D}",
+    "output": "{432781D2-6756-4AB8-A829-88E6AD89D32D}"
+  },
+  "directoryGuard": {
+    "bytes": 212992,
+    "sha256": "2308ce699ccb9c022520d3e8223e8f806c6af7bde18da16c24d0dad266870832"
+  }
+}

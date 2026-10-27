@@ -1,0 +1,31 @@
+{
+  "utc": "2026-10-16T09:01:34.499024+00:00",
+  "rootAlias": "environments/B2-unknown",
+  "rootExists": true,
+  "entries": [
+    {
+      "path": "ChatChatBarDesktop",
+      "kind": "directory"
+    },
+    {
+      "path": "ChatChatBarDesktop/.ccb-desktop.lock",
+      "kind": "file",
+      "bytes": 0,
+      "classification": "ownership_infrastructure"
+    },
+    {
+      "path": "ChatChatBarDesktop/entities",
+      "kind": "directory"
+    },
+    {
+      "path": "ChatChatBarDesktop/entities/document_index_transactions",
+      "kind": "directory"
+    },
+    {
+      "path": "ChatChatBarDesktop/entities/document_index_transactions/unknown.synthetic",
+      "kind": "file",
+      "bytes": 56,
+      "sha256": "e946a9317e2d54b02a6159ac60fd062658b750a6ae8e6be875cf05bda70d5f6a"
+    }
+  ]
+}

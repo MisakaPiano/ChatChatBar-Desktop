@@ -1,0 +1,14 @@
+[
+  {
+    "jar": "desktopApp.jar",
+    "removed": [
+      "com/example/chatbar/desktop/DesktopUpdatePanelKt$DesktopUpdatePanel$1$1$2$1$1.class"
+    ],
+    "added": [
+      "com/example/chatbar/desktop/DesktopSupportSummary$UpdateState.class",
+      "com/example/chatbar/desktop/DesktopSupportSummary$create$1.class",
+      "com/example/chatbar/desktop/DesktopSupportSummary.class",
+      "com/example/chatbar/desktop/DesktopUpdatePanelKt$DesktopUpdatePanel$2$3$2$1$1.class"
+    ]
+  }
+]

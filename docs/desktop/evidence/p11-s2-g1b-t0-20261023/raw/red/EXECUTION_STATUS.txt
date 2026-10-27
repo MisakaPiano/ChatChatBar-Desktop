@@ -1,0 +1,1 @@
+CONFIGURATION_REJECTED;0_TESTS_EXECUTED;copied prior XML retained separately as STALE_NOT_EXECUTED;not a new test RED

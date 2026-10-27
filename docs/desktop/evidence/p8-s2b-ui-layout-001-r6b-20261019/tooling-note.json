@@ -1,0 +1,10 @@
+{
+  "category": "Post-test evidence helper syntax error; not a Gradle or test rerun",
+  "initialScript": "freeze-evidence-initial.py",
+  "error": "SyntaxError: '(' was never closed",
+  "line": 35,
+  "effect": "Python rejected helper before execution; no evidence files or Kotlin changes made by that failed attempt",
+  "repair": "Added missing closing parenthesis to evidence-parser nodes.append; original helper retained",
+  "gateInvocations": 1,
+  "testSourceChangedAfterGate": false
+}

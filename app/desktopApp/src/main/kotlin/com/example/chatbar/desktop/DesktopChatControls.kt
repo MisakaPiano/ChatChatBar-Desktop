@@ -50,7 +50,7 @@ private fun chatControlModifier(enabled: Boolean, onClick: () -> Unit): Modifier
 @OptIn(ExperimentalFoundationApi::class)
 internal fun DesktopChatIconAction(
     label: String, icon: ImageVector, enabled: Boolean = true,
-    destructive: Boolean = false, targetDp: Int = DesktopChatControlDensity.TARGET_DP, onClick: () -> Unit,
+    destructive: Boolean = false, selected: Boolean = false, targetDp: Int = DesktopChatControlDensity.TARGET_DP, onClick: () -> Unit,
 ) {
     val colors = DesktopBootstrapColors
     TooltipArea(tooltip = {
@@ -60,7 +60,7 @@ internal fun DesktopChatIconAction(
             .semantics { contentDescription = label }
             .then(chatControlModifier(enabled, onClick)), contentAlignment = Alignment.Center) {
             Image(rememberVectorPainter(icon), null, Modifier.size(DesktopChatControlDensity.ICON_DP.dp),
-                colorFilter = ColorFilter.tint(if (destructive) colors.destructive else colors.mutedForeground))
+                colorFilter = ColorFilter.tint(if (destructive) colors.destructive else if (selected) colors.primary else colors.mutedForeground))
         }
     }
 }
@@ -138,33 +138,29 @@ internal fun DesktopChatAlternativeControls(navigation: DesktopAlternativeNaviga
 }
 
 @Composable
-internal fun DesktopChatMessageToolbar(actions: List<DesktopMessageAction>, onAction: (DesktopMessageAction) -> Unit) {
+internal fun DesktopChatMessageToolbar(actions: List<DesktopMessageAction>, onAction: (DesktopMessageAction) -> Unit,
+    onMore: () -> Unit = {}, showVoice: Boolean = false, hasVoice: Boolean = false,
+    voiceEnabled: Boolean = true, onVoice: () -> Unit = {}, userMessage: Boolean = false, imageActions: @Composable () -> Unit = {}) {
     val t = LocalDesktopUiStrings.current
-    val colors = DesktopBootstrapColors
-    val overflow = desktopOverflowMessageActions(actions)
-    var open by remember { mutableStateOf(false) }
-    Row(horizontalArrangement = Arrangement.spacedBy(DesktopChatControlDensity.GAP_DP.dp), verticalAlignment = Alignment.CenterVertically) {
-        desktopFooterMessageActions(actions).forEach { action ->
-            DesktopChatIconAction(t(action.label), if (action == DesktopMessageAction.COPY) DesktopAppIcons.Copy else DesktopAppIcons.Refresh) { onAction(action) }
+    if (userMessage) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+            DesktopChatIconAction(t(DesktopMessageAction.COPY.label), DesktopAppIcons.Copy, DesktopMessageAction.COPY in actions) { onAction(DesktopMessageAction.COPY) }
+            DesktopChatIconAction(t(DesktopMessageAction.EDIT.label), DesktopAppIcons.Edit, DesktopMessageAction.EDIT in actions) { onAction(DesktopMessageAction.EDIT) }
         }
-        if (overflow.isNotEmpty()) Box {
-            DesktopChatIconAction(t(DesktopUiText.MORE_MESSAGE_ACTIONS), DesktopAppIcons.More) { open = !open }
-            if (open) Popup(alignment = Alignment.BottomStart, onDismissRequest = { open = false }, properties = PopupProperties(focusable = true)) {
-                Column(Modifier.background(colors.card, RoundedCornerShape(6.dp)).border(1.dp, colors.border, RoundedCornerShape(6.dp)).padding(4.dp)) {
-                    overflow.forEach { action ->
-                        Row(Modifier.height(DesktopChatControlDensity.TARGET_DP.dp).then(chatControlModifier(true) {
-                            open = false
-                            onAction(action)
-                        }).padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            val tint = if (action == DesktopMessageAction.DELETE) colors.destructive else colors.mutedForeground
-                            Image(rememberVectorPainter(if (action == DesktopMessageAction.DELETE) DesktopAppIcons.Delete else DesktopAppIcons.Edit),
-                                null, Modifier.size(DesktopChatControlDensity.ICON_DP.dp), colorFilter = ColorFilter.tint(tint))
-                            BasicText(t(action.label), style = TextStyle(color = tint, fontSize = 13.sp))
-                        }
-                    }
-                }
+        return
+    }
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.weight(1f).horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically) {
+            DesktopChatIconAction(t(DesktopMessageAction.COPY.label), DesktopAppIcons.Copy, DesktopMessageAction.COPY in actions) { onAction(DesktopMessageAction.COPY) }
+            DesktopChatIconAction(t(DesktopMessageAction.REGENERATE.label), DesktopAppIcons.Refresh,
+                DesktopMessageAction.REGENERATE in actions || DesktopMessageAction.RETRY in actions) {
+                onAction(if (DesktopMessageAction.RETRY in actions) DesktopMessageAction.RETRY else DesktopMessageAction.REGENERATE)
             }
+            DesktopChatIconAction(t(DesktopUiText.MORE_MESSAGE_ACTIONS), DesktopAppIcons.More, onClick = onMore)
+            if (showVoice) DesktopChatIconAction(if (hasVoice) "播放本条语音" else "生成本条语音",
+                DesktopAppIcons.Voice, enabled = voiceEnabled, selected = hasVoice, onClick = onVoice)
         }
+        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.End) { imageActions() }
     }
 }
 

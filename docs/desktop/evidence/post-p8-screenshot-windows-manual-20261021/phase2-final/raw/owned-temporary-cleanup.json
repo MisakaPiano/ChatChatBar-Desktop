@@ -1,0 +1,19 @@
+{
+  "utc": "2026-10-20T19:11:59.1644095+00:00",
+  "ownership": "Exact JNA extraction files inside this run JAVA_TOOL_OPTIONS java.io.tmpdir; all owned application and fake processes already exited; exclusive open confirmed",
+  "deleted": [
+    {
+      "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-windows-manual-20261021\\preview-temp\\jna-49\\jna16199388222981507832.dll",
+      "bytes": 273408,
+      "sha256": "5a7ff949f6d93d86491eb5b26b1cfc60051168a60622650224b89995ac420023"
+    },
+    {
+      "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-windows-manual-20261021\\preview-temp\\jna-49\\jna16199388222981507832.dll.x",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "remainingOwnedTemporaryFiles": [],
+  "formalAudioTouched": false,
+  "recursiveDelete": false
+}

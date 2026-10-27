@@ -1,0 +1,263 @@
+diff --git a/.agents/skills/chatbar-fish-audio-voice/SKILL.md b/.agents/skills/chatbar-fish-audio-voice/SKILL.md
+index 9fd2b64a..566793d7 100644
+--- a/.agents/skills/chatbar-fish-audio-voice/SKILL.md
++++ b/.agents/skills/chatbar-fish-audio-voice/SKILL.md
+@@ -41,7 +41,7 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
+ - `DesktopVoicePlayback` provides key-independent ordered playback and stop/join. `DesktopAudioFocus` provides separate formal/preview ports over one MCI output; a superseded port cannot stop the current owner. AppContainer owns formal voice drain before preview/native output and root release.
+ - `DesktopFishGenerationCoordinator` adapts official targets, text confirmation, global five-permit batches, history/replacement and foreground autoplay. `DesktopFishVoiceTransport` reuses shared TTS serialization with one-shot/one-exchange transport and callback/body drain. Only explicit `s2.1-pro-free` is authorized; stale/paid models fail, and the dated free profile fails closed after 2026-11-30 pending re-verification. Artifact cleanup re-reads a complete strict reference inventory; uncertain commits preserve audio. Exact durable voice readback may confirm a post-write exception before refreshing the repository. `DesktopFishTtsAdmission` shares five permits across formal and picker TTS, through actual body drain.
+ 
+-- `DesktopChatVoiceRuntime` and `DesktopChatVoicePanel` wire explicit assistant segment/whole generation, bound narrator choice, auxiliary-cost confirmation, new take vs replacement, version-scoped voice bars, ordered playback, stop, export and explicit delete. Primary chat mutations drain voice jobs before editing/deleting/switching versions; foreground leases drop autoplay on screen/session leave. No assistant completion automatically requests TTS.
++- `DesktopChatVoiceRuntime` and `DesktopChatVoicePanel` wire explicit assistant segment/whole generation, bound narrator choice, auxiliary-cost confirmation, new take vs replacement, version-scoped voice bars, ordered playback, stop, export and explicit delete. Primary chat mutations drain voice jobs before editing/deleting/switching versions; foreground leases drop autoplay on screen/session leave. No assistant completion automatically requests TTS. Formal playback holds a data-operation lease through native stop/close. Existing message/image mutations retain their own normal/exclusive scopes; do not wrap image cleanup in an outer normal lease. The lazy owned auxiliary text transport drains its real sockets/executor at app shutdown.
+ 
+ - `DesktopVoiceArchiveHandoff` provides P11 audio-only JSONL/media ports and strict rollback proof. See `docs/desktop/142_PHASE8_VOICE_P11_HANDOFF.md` for token/version/mapping and ownership requirements; it is not a full archive transaction. Windows QQ native sending is unverified/BLOCKED; explicit MP3 export never claims delivery.
+ 
+diff --git a/.agents/skills/chatbar-model-request-runtime/SKILL.md b/.agents/skills/chatbar-model-request-runtime/SKILL.md
+index a79cab40..fd530849 100644
+--- a/.agents/skills/chatbar-model-request-runtime/SKILL.md
++++ b/.agents/skills/chatbar-model-request-runtime/SKILL.md
+@@ -21,6 +21,10 @@ Separate model selection, request construction, transport, and output parsing. A
+ 
+ - Desktop AI Design error presentation: `DesktopNovelAiTextTransport` maps shared provider events to fixed safe categories without exposing HTTP bodies; refusal/cancellation retain their terminal exception types. `DesktopDesignPresentation.desktopDesignFailure` and `DesktopNovelAiStudioController.runDesignTurn` own the user-facing category and failed-turn persistence, preserving the shared Designer and retry context.
+ 
++## Desktop formal voice auxiliary owner
++
++- `DesktopChatVoiceRuntime` owns one lazy `OpenAiStreamingTransport` for Fish translation/tagging. Its explicit `closeAndDrain()` API is called after collector cancellation/join, before root release, to stop real callbacks/sockets and the owned dispatcher. Existing callers retain their lifecycle unless they invoke this owner API. Fish keeps official non-token model parameters and neutral messages with thinking off and output-token caps omitted.
++
+ ## First Read
+ 
+ - Model selection and fallback: domain/model/EffectiveModelResolver.kt
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoiceRuntime.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoiceRuntime.kt
+index 541c71c7..4cdda1f1 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoiceRuntime.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoiceRuntime.kt
+@@ -27,17 +27,18 @@ internal class DesktopChatVoiceRuntime(
+     private val gate: AppDataOperationGate = NoOpAppDataOperationGate,
+     private val textBusy: (String) -> Boolean = { false },
+     transportOverride: DesktopFishVoiceTransport? = null,
+-    textGateway: FishVoiceTextGateway = FishVoiceTextGateway { _, messages, config, _ ->
+-        OpenAiStreamingTransport { settings.currentAppSettings.allowCleartextModelApi }.streamFishVoice(messages, config)
+-    },
++    textGateway: FishVoiceTextGateway? = null,
+ ) {
++    private val textTransport = lazy { OpenAiStreamingTransport { settings.currentAppSettings.allowCleartextModelApi } }
+     private val job = SupervisorJob()
+     private val scope = CoroutineScope(job + Dispatchers.IO)
+     private val mutation = Mutex()
+     private val transport = transportOverride ?: DesktopFishVoiceTransport(credentials, audio)
+-    val playback = DesktopVoicePlayback(audio, output)
++    val playback = DesktopVoicePlayback(audio, output, gate)
+     val coordinator = DesktopFishGenerationCoordinator(scope, chats, characters, settings, repository, credentials,
+-        transport, FishAudioTagService(textGateway), models, audio, playback, gate)
++        transport, FishAudioTagService(textGateway ?: FishVoiceTextGateway { _, messages, config, _ ->
++            textTransport.value.streamFishVoice(messages, config)
++        }), models, audio, playback, gate)
+     private val mutableNotice = MutableStateFlow<String?>(null)
+     val notice = mutableNotice.asStateFlow()
+     private var closed = false
+@@ -70,15 +71,17 @@ internal class DesktopChatVoiceRuntime(
+     }
+ 
+     suspend fun <T> mutateMessage(sessionId: String, messageId: String, block: suspend () -> T): T =
+-        gate.withNormalOperation { mutation.withLock {
++        mutation.withLock {
+             check(!closed)
+             coordinator.cancelAndJoinForMessage(sessionId, messageId)
+             playback.stop()
++            // Existing message/image owners acquire their own normal/exclusive scopes.
++            // Never wrap their cleanup in an outer normal lease (no upgrade deadlock).
+             block()
+-        } }
++        }
+ 
+     /** Called only after the owning chat message was explicitly deleted. */
+-    suspend fun removeDeletedMessage(sessionId: String, messageId: String) {
++    suspend fun removeDeletedMessage(sessionId: String, messageId: String) = gate.withNormalOperation {
+         check(chats.readMessageDurable(messageId, sessionId) is com.example.chatbar.data.local.JsonFileStorage.EntityReadResult.Missing) { "消息删除状态未知；录音已保留" }
+         repository.initialize() // Strict Desktop inventory must be complete before metadata deletion.
+         val removed = repository.deleteForMessage(messageId)
+@@ -86,13 +89,11 @@ internal class DesktopChatVoiceRuntime(
+     }
+ 
+     /** P11/deletion handoff: caller owns deletion of the session; no recursive directory cleanup. */
+-    suspend fun deleteSession(sessionId: String, deleteChat: suspend () -> Unit) = gate.withNormalOperation {
+-        mutation.withLock {
++    suspend fun deleteSession(sessionId: String, deleteChat: suspend () -> Unit) = mutation.withLock {
+             coordinator.cancelAndJoinForSession(sessionId); playback.stop(); repository.initialize()
+             deleteChat()
+             check(chats.readSessionDurable(sessionId) is com.example.chatbar.data.local.JsonFileStorage.EntityReadResult.Missing) { "会话删除状态未知；录音已保留" }
+-            repository.deleteForSession(sessionId).forEach { releaseIfUnreferenced(it.audioPath) }
+-        }
++            gate.withNormalOperation { repository.deleteForSession(sessionId).forEach { releaseIfUnreferenced(it.audioPath) } }
+     }
+ 
+     suspend fun deleteVoice(expected: GeneratedVoiceMessage) = guarded {
+@@ -103,7 +104,7 @@ internal class DesktopChatVoiceRuntime(
+         }
+     }
+     private suspend fun releaseIfUnreferenced(path: String) = withContext(NonCancellable) {
+-        if (!repository.isAudioReferenced(path)) audio.deleteIfOwned(path) else false
++        gate.withNormalOperation { if (!repository.isAudioReferenced(path)) audio.deleteIfOwned(path) else false }
+     }
+     suspend fun play(voice: GeneratedVoiceMessage, message: ChatMessage) = guarded {
+         gate.withNormalOperation {
+@@ -155,6 +156,8 @@ internal class DesktopChatVoiceRuntime(
+     suspend fun closeAndDrain() = withContext(NonCancellable) {
+         closed = true
+         coordinator.closeAndDrain(); job.cancelAndJoin()
+-        transport.closeAndDrain(); playback.closeAndDrain()
++        transport.closeAndDrain()
++        if (textTransport.isInitialized()) textTransport.value.closeAndDrain()
++        playback.closeAndDrain()
+     }
+ }
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoicePlayback.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoicePlayback.kt
+index 4198f428..34ad2774 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoicePlayback.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoicePlayback.kt
+@@ -1,6 +1,8 @@
+ package com.example.chatbar.desktop
+ 
+ import com.example.chatbar.data.local.entity.GeneratedVoiceMessage
++import com.example.chatbar.data.operation.AppDataOperationGate
++import com.example.chatbar.data.operation.NoOpAppDataOperationGate
+ import java.nio.file.Path
+ import kotlinx.coroutines.*
+ import kotlinx.coroutines.channels.Channel
+@@ -39,6 +41,7 @@ internal data class DesktopVoicePlaybackState(val currentVoiceId: String? = null
+  */
+ internal class DesktopVoicePlayback(private val store: DesktopVoiceAudioStore,
+     private val output: DesktopAudioOutput = DesktopWindowsAudioOutput(),
++    private val gate: AppDataOperationGate = NoOpAppDataOperationGate,
+ ) {
+     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+     private val mutex = Mutex()
+@@ -64,6 +67,8 @@ internal class DesktopVoicePlayback(private val store: DesktopVoiceAudioStore,
+             try {
+                 for (voice in pending) {
+                     synchronized(queue) { queue.removeAt(0) }
++                    gate.withNormalOperation {
++                    try {
+                     val path = store.verify(voice.audioPath)
+                     output.playFormal(path)
+                     mutable.value = DesktopVoicePlaybackState(voice.id,
+@@ -73,6 +78,8 @@ internal class DesktopVoicePlayback(private val store: DesktopVoiceAudioStore,
+                         synchronized(queue) { while (pending.tryReceive().isSuccess) { }; queue.clear() }
+                     }
+                     mutable.value = DesktopVoicePlaybackState()
++                    } finally { withContext(NonCancellable) { output.stopAndDrain() } }
++                    }
+                 }
+             } catch (e: CancellationException) { throw e }
+             catch (_: Exception) { mutable.value = DesktopVoicePlaybackState(error = "本地语音播放失败；文件已保留") }
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopVoiceSafetyTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopVoiceSafetyTest.kt
+index 4a36d0d5..716a0769 100644
+--- a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopVoiceSafetyTest.kt
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopVoiceSafetyTest.kt
+@@ -7,9 +7,35 @@ import com.example.chatbar.data.operation.AppDataOperationGate
+ import java.io.IOException
+ import java.nio.file.*
+ import kotlinx.coroutines.runBlocking
++import kotlinx.coroutines.*
+ import kotlin.test.*
+ 
+ class DesktopVoiceSafetyTest {
++    @Test fun `playback closes the native alias before releasing its data operation lease`() = runBlocking {
++        val root = Files.createTempDirectory("s7-playback-lease-")
++        val audio = DesktopVoiceAudioStore(root)
++        val clip = audio.persist("session", "artifact", fishPreviewMp3().inputStream())
++        var active = false; var alias = false; var closedUnderLease = false
++        val gate = object : AppDataOperationGate {
++            override suspend fun <T> withNormalOperation(operation: suspend () -> T): T {
++                active = true; try { return operation() } finally { assertFalse(alias); active = false }
++            }
++        }
++        val output = object : DesktopAudioOutput {
++            override suspend fun play(path: Path) { assertTrue(active); alias = true }
++            override suspend fun isPlaying() = alias
++            override suspend fun stopAndDrain() { if (alias) { assertTrue(active); closedUnderLease = true; alias = false } }
++            override suspend fun closeAndDrain() { stopAndDrain() }
++        }
++        val voice = GeneratedVoiceMessage.create("session", "message", "version", null, 0, "WHOLE_MESSAGE", "", "hello", "hello",
++            "hello", "alice", "Alice", FishAudioVoiceBinding("reference", "snapshot"), "s2.1-pro-free", clip.path, clip.durationMs, clip.byteLength)
++        val playback = DesktopVoicePlayback(audio, output, gate)
++        try {
++            playback.playSequence(listOf(voice))
++            withTimeout(3000) { while (!playback.state.value.playing) delay(10) }
++            playback.stop(); assertTrue(closedUnderLease); assertFalse(active)
++        } finally { playback.closeAndDrain() }
++    }
+     @Test fun `formal recording exceeds preview duration without weakening the preview profile`() = runBlocking {
+         val root = Files.createTempDirectory("s7-long-formal-")
+         val store = DesktopVoiceAudioStore(root)
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopVoiceTextDrainTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopVoiceTextDrainTest.kt
+new file mode 100644
+index 00000000..04c222a7
+--- /dev/null
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopVoiceTextDrainTest.kt
+@@ -0,0 +1,45 @@
++package com.example.chatbar.desktop
++
++import com.example.chatbar.data.local.entity.ModelConfig
++import com.example.chatbar.domain.chat.*
++import java.net.InetAddress
++import java.net.ServerSocket
++import java.util.concurrent.CountDownLatch
++import java.util.concurrent.TimeUnit
++import java.util.concurrent.atomic.AtomicBoolean
++import kotlinx.coroutines.*
++import kotlinx.coroutines.flow.collect
++import kotlin.test.*
++
++class DesktopVoiceTextDrainTest {
++    @Test fun `owned auxiliary stream cancellation drains real socket and executor before return`() = runBlocking {
++        val server = ServerSocket(0, 1, InetAddress.getLoopbackAddress())
++        val opened = CountDownLatch(1); val eof = AtomicBoolean(false)
++        val thread = Thread {
++            server.accept().use { socket ->
++                socket.soTimeout = 5000
++                val input = socket.getInputStream()
++                val header = StringBuilder()
++                while (!header.endsWith("\r\n\r\n")) {
++                    val byte = input.read(); check(byte >= 0); header.append(byte.toChar()); check(header.length < 8192)
++                }
++                val length = header.toString().lineSequence().first { it.startsWith("Content-Length:", true) }.substringAfter(':').trim().toInt()
++                check(input.readNBytes(length).size == length)
++                socket.getOutputStream().write(("HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nTransfer-Encoding: chunked\r\n\r\n3\r\n:\n\n\r\n").toByteArray())
++                socket.getOutputStream().flush(); opened.countDown()
++                eof.set(input.read() == -1)
++            }
++        }.also { it.name = "synthetic-voice-sse-drain"; it.start() }
++        val transport = OpenAiStreamingTransport { true }
++        val model = ModelConfig("synthetic", "synthetic", "http://127.0.0.1:${server.localPort}", "", "mock", createdAt = 1)
++        val collector = launch(Dispatchers.IO) {
++            transport.streamFishVoice(listOf(ChatApiMessage.text("system", "synthetic fixture"), ChatApiMessage.text("user", "synthetic")), model).collect()
++        }
++        try {
++            assertTrue(withContext(Dispatchers.IO) { opened.await(5, TimeUnit.SECONDS) })
++            withTimeout(5000) { collector.cancelAndJoin(); transport.closeAndDrain() }
++            withContext(Dispatchers.IO) { thread.join(5000) }
++            assertFalse(thread.isAlive); assertTrue(eof.get())
++        } finally { collector.cancelAndJoin(); transport.closeAndDrain(); server.close(); thread.join(5000) }
++    }
++}
+diff --git a/app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/OpenAiStreamingTransport.kt b/app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/OpenAiStreamingTransport.kt
+index d743a880..75296fc7 100644
+--- a/app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/OpenAiStreamingTransport.kt
++++ b/app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/OpenAiStreamingTransport.kt
+@@ -67,6 +67,16 @@ class OpenAiStreamingTransport(
+         .writeTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+         .build()
+ 
++    /** Explicit owner shutdown. Existing callers retain their lifecycle unless they invoke this.
++     * Cancel/join collectors first, then wait for real OkHttp callbacks and sockets to drain.
++     */
++    suspend fun closeAndDrain() = kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable + kotlinx.coroutines.Dispatchers.IO) {
++        client.dispatcher.cancelAll()
++        client.connectionPool.evictAll()
++        client.dispatcher.executorService.shutdown()
++        check(client.dispatcher.executorService.awaitTermination(30, TimeUnit.SECONDS)) { "辅助文本连接尚未排水" }
++    }
++
+     /** Isolated FORMAT_REPAIR/REPAIR; owns its eight-message assembly and performs one request. */
+     fun streamFormatRepair(
+         formatCard: String?,

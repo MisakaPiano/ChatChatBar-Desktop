@@ -1,0 +1,38 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.1.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+
+> Configure project :desktopApp
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/build.gradle.kts:63:31: Unresolved reference 'security'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/build.gradle.kts:68:73: Unresolved reference 'it'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/build.gradle.kts:69:101: Unresolved reference 'util'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/build.gradle.kts:72:18: Unresolved reference 'nio'.
+
+FAILURE: Build failed with an exception.
+
+* Where:
+Build file 'H:\ChatChatBar-Desktop\app\desktopApp\build.gradle.kts' line: 63
+
+* What went wrong:
+Script compilation errors:
+
+  Line 63:             val digest = java.security.MessageDigest.getInstance("SHA-256")
+                                         ^ Unresolved reference 'security'.
+
+  Line 68:             val hash = digest.digest().joinToString("") { "%02x".format(it) }
+                                                                                   ^ Unresolved reference 'it'.
+
+  Line 69:             val retained = layout.buildDirectory.dir("reports/windows-installer-safety/$name-${java.util.UUID.randomUUID()}").get().asFile
+                                                                                                               ^ Unresolved reference 'util'.
+
+  Line 72:             java.nio.file.Files.move(artifact.toPath(), raw.toPath())
+                            ^ Unresolved reference 'nio'.
+
+4 errors
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (Powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 21s

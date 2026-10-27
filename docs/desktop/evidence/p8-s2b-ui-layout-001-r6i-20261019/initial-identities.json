@@ -1,0 +1,30 @@
+{
+  "head": "8f9a96a9432a350f0d049db3d01613a8da88b6b5",
+  "parent": "06945846e970fd1ea608a3c2daf5ded71393298b",
+  "branch": "feature/phase8-fish-audio",
+  "index": [],
+  "untrackedPathsOnly": [
+    ".codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/4bb6706b-0132-41be-bd8e-03e6c0229e46/1-1000072937.jpg",
+    ".codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/b5264b76-6c08-406d-af8d-bbb2f876c7c1/1-1000072937.jpg",
+    ".codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/ea41235d-a0f1-44c3-8db1-47f5bb5b2883/1-1000072937.jpg",
+    "CCB_DESKTOP_STANDARD_CONVERSATION_HANDOFF.md",
+    "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerNativeUxTest.kt"
+  ],
+  "sources": [
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerPresentation.kt",
+      "bytes": 17883,
+      "sha256": "194d6b7fd2e270ca29eb90734303c8a7898825ecf8939cc60ab266e8d16c4917"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerWindow.kt",
+      "bytes": 4280,
+      "sha256": "a003e7ad1e31a0c356df1a4291cc7eb1e4eb9fa958a0a6353ee6a77ac8f88125"
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerNativeUxTest.kt",
+      "bytes": 57912,
+      "sha256": "933d8e8f6e20ce83fe5d61e66f57f925b6f133b090b4d75ba776a873c5f26bb8"
+    }
+  ]
+}

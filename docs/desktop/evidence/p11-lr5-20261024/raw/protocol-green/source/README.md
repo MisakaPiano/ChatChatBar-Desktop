@@ -1,0 +1,11 @@
+# LR5 synthetic durable protocol experiment
+
+Authority193/194. TEST-ONLY / UNWIRED. No source injection into main, application call sites, official serializer, SecretStore, DPAPI, environment discovery or restore integration. The actor only accepts an explicitly provided NEW fixture sandbox and UUID claim created by the tests. It is not a private archive/user-data command.
+
+Run JDK17 headless/offline on Windows with `./tools/desktop/interop/lr5/Run-Jvm.ps1 -Round <new-unique-label>`. One invocation at a time. The runner snapshots sources BEFORE Gradle and creates fresh task-owned build roots; old rounds and evidence are never overwritten. Kotlin incremental disabled to emit the opt-in relocated test source classes reliably. Existing Gradle configuration unchanged. Only SyntheticJournalTest and ExperimentWireTest selected; LR2–LR4 reruns are unnecessary because none of their code is changed.
+
+ExperimentWire has a strict bounded ASCII field/checksum format, deliberately NOT the official backup format or a proposed production schema. FakeProtector is reversible fixed-XOR on marked dummy bytes; it is NOT cryptography/DPAPI. Native test directory witnesses are object IDs, not Windows account/DPAPI identity. ALL_NEW means an independently reopened synthetic participant set only; businessAuthorized always false. OLD, NEW, source and tentative evidence are retained.
+
+Profile/old/new locks cooperate across child JVMs, while ordinary noncooperating file writes remain possible and must block later verification. File force(true), required ATOMIC_MOVE and readback are tested at explicit before/after boundaries; there is no fallback when atomic move is unsupported. Directory force support is logged. These are local process-halt facts, never power-loss durability or old-binary fencing. File/path prechecks on new task-owned roots do not prove an adversarial-host reparse/race barrier.
+
+Each child has96MiB heap and25-second test timeout; parent test384MiB and Gradle1024MiB/one worker. This fixed5-participant synthetic protocol is not a large full-backup performance test. Source paths/classpath may appear in local process arguments; no real files/keys/passwords are accepted. No retained private archive witness from LR4 is read. Raw evidence is synthetic category output, inventories, selected complete fake states and JUnit XML.

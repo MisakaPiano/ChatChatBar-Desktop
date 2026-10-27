@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFullBackupServiceTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-21T02:07:29.254Z" hostname="DD1" time="24.277">
+  <properties/>
+  <testcase name="controller discards replaces and closes inspection without removing original archive or journals" classname="com.example.chatbar.desktop.DesktopFullBackupServiceTest" time="6.31"/>
+  <testcase name="real gate seals only after schedule and startup installs before any repository opens" classname="com.example.chatbar.desktop.DesktopFullBackupServiceTest" time="2.662"/>
+  <testcase name="scheduler can finish an audio reservation before restore reserves audio" classname="com.example.chatbar.desktop.DesktopFullBackupServiceTest" time="2.623"/>
+  <testcase name="failed and cancelled restore releases mapped plaintext while pending inspection remains retryable" classname="com.example.chatbar.desktop.DesktopFullBackupServiceTest" time="2.541"/>
+  <testcase name="cancelled request waiting for operation mutex erases its password" classname="com.example.chatbar.desktop.DesktopFullBackupServiceTest" time="2.543"/>
+  <testcase name="unconfirmed audio close refuses scheduling and preserves current data for retry" classname="com.example.chatbar.desktop.DesktopFullBackupServiceTest" time="2.608"/>
+  <testcase name="cancellation during drain completes close and resumes scheduler without scheduling" classname="com.example.chatbar.desktop.DesktopFullBackupServiceTest" time="2.564"/>
+  <testcase name="changed inspected bytes cannot acquire audio or schedule restore" classname="com.example.chatbar.desktop.DesktopFullBackupServiceTest" time="2.426"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

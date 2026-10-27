@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopCharacterResourceStoreTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-17T20:54:12.628Z" hostname="DD1" time="0.059">
+  <properties/>
+  <testcase name="absolute traversal and outside deletion are rejected" classname="com.example.chatbar.desktop.DesktopCharacterResourceStoreTest" time="0.004"/>
+  <testcase name="same refs relocate from root A to root B without entity rewrite" classname="com.example.chatbar.desktop.DesktopCharacterResourceStoreTest" time="0.028"/>
+  <testcase name="materialized resources use root-relative refs and read back" classname="com.example.chatbar.desktop.DesktopCharacterResourceStoreTest" time="0.011"/>
+  <testcase name="asset refs use logical resolver and are not treated as owned paths" classname="com.example.chatbar.desktop.DesktopCharacterResourceStoreTest" time="0.006"/>
+  <testcase name="document probe distinguishes missing present unreadable and unsafe" classname="com.example.chatbar.desktop.DesktopCharacterResourceStoreTest" time="0.01"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

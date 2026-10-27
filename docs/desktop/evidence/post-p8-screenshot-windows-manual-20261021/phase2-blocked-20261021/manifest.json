@@ -1,0 +1,95 @@
+{
+  "status": "BLOCKED_BEFORE_LAUNCH",
+  "files": [
+    {
+      "path": "launch-admission.json",
+      "bytes": 457,
+      "sha256": "8be9724fbb3e752812d53d2db508a5dc88e05ccebe481c5e25cb4c46cd4f6738"
+    },
+    {
+      "path": "launch-recheck.json",
+      "bytes": 255,
+      "sha256": "7447414147831c3d0620703916a515464de6b24cee6105a18a894c90e1f2e232"
+    },
+    {
+      "path": "manual-matrix.json",
+      "bytes": 5912,
+      "sha256": "0a8b742e4070b581756bec501c9fd752480b0d969f7c928c096ba1c98ddd1364"
+    },
+    {
+      "path": "phase2-authorization.json",
+      "bytes": 388,
+      "sha256": "052ad50d035739660458f7e9bb18edb12e5115d54d53cbaaa4d16a8f9a50d190"
+    },
+    {
+      "path": "phase2-credential-proxy.command.json",
+      "bytes": 893,
+      "sha256": "eba45b6038ba129f7596a6bb4475da401b516df91e0d59ced848f04ed8b61c9a"
+    },
+    {
+      "path": "phase2-credential-proxy.result.json",
+      "bytes": 58,
+      "sha256": "4ee5682248baa4202e57641b9dcf8b6f2a88bd18d1ddef6e94fd989b9e2339cc"
+    },
+    {
+      "path": "phase2-credential-proxy.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "phase2-credential-proxy.stdout.log",
+      "bytes": 548,
+      "sha256": "e6470f37c1fe3ac403d430200557dc1498f7b80c4839050e866f938f1d5e4f2f"
+    },
+    {
+      "path": "phase2-helper-compile.result.json",
+      "bytes": 23,
+      "sha256": "ea61d7736f0b7ecb9b35158f03de77013db6b100cf1d36c957e78e6c8817c5b6"
+    },
+    {
+      "path": "phase2-helper-compile.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "phase2-helper-compile.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "phase2-identity-attempt1.json",
+      "bytes": 136,
+      "sha256": "92c0c8ed46dfc06936daf078629a63006b089c65372aafa09967ad22a105f8a2"
+    },
+    {
+      "path": "phase2-identity-attempt2.json",
+      "bytes": 102,
+      "sha256": "62f4b3e562b3b6109e331cf39f4c84be5a7407a32f2fbec2a2df2e710570f0d3"
+    },
+    {
+      "path": "phase2-immediate-identity.json",
+      "bytes": 847,
+      "sha256": "09b2dc1404a90341dba6b93bdd960d0bf645f9f139c149d891296a645a96316e"
+    },
+    {
+      "path": "phase2-immediate-resources.json",
+      "bytes": 189,
+      "sha256": "4dfa1f316264eaf11ee2c7d3702c0907d257d533f1734599986e39433991bb7a"
+    },
+    {
+      "path": "phase2-launch-resources.json",
+      "bytes": 1284,
+      "sha256": "038d278975ee2cccab16af3318ddcdda552cd694db5e5d405b4ae3c1d309bf7f"
+    },
+    {
+      "path": "Phase2CredentialCheck.java",
+      "bytes": 7867,
+      "sha256": "5eae7181cb19780a23dd156dd17a3ddbbd561a64468dc348d6d3ce0f501cb9a4"
+    },
+    {
+      "path": "PROJECT_STATUS.md",
+      "bytes": 2529,
+      "sha256": "8648cab66c3ec4cc6c68db1b8042f2edb0503acd89ae8e74f1b3cb46ce773922"
+    }
+  ]
+}

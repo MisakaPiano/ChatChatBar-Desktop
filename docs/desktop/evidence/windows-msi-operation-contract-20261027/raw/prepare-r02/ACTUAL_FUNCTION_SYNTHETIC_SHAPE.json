@@ -1,0 +1,25 @@
+﻿{
+    "containerType":  "System.Object[]",
+    "entries":  [
+                    {
+                        "bytesType":  "System.Int64",
+                        "keys":  [
+                                     "bytes",
+                                     "lastWriteUtc",
+                                     "path"
+                                 ],
+                        "bytes":  17,
+                        "type":  "System.Collections.Hashtable"
+                    },
+                    {
+                        "bytesType":  "System.Int64",
+                        "keys":  [
+                                     "bytes",
+                                     "lastWriteUtc",
+                                     "path"
+                                 ],
+                        "bytes":  29,
+                        "type":  "System.Collections.Hashtable"
+                    }
+                ]
+}

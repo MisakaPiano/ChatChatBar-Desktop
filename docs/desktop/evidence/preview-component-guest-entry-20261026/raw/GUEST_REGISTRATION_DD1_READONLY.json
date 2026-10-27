@@ -1,0 +1,13 @@
+﻿{
+    "nativeObservation":  "DD1_CURRENT_CONTEXT_READ_ONLY_NOT_DL1_GUEST",
+    "installerExecuted":  false,
+    "registration":  {
+                         "related":  [
+
+                                     ],
+                         "bFeature":  -1,
+                         "aFeature":  -1,
+                         "bProduct":  -1,
+                         "aProduct":  -1
+                     }
+}

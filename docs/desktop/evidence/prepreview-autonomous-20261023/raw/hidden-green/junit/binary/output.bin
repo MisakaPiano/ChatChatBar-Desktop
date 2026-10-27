@@ -1,0 +1,52 @@
+nmbG0R two-owners SYNTHETIC_RUNTIME_OBSERVED LIVE_OWNER_PROTECTED until last live reference removed
+nokG0R repeated-cleanup SYNTHETIC_RUNTIME_OBSERVED EXACT_CLEANUP_IDEMPOTENT NOT pending-deletion retry proof
+npœG0R partial-unlink SYNTHETIC_RUNTIME_OBSERVED OBSERVED_NONATOMIC_EXACT_CLEANUP stage=DELETE_OWNED_TYPE_CHECK ISOLATED_COPY_SURVIVES; not crash/queue proof
+nquG0R live-owner SYNTHETIC_RUNTIME_OBSERVED LIVE_OWNER_PROTECTED -> CANDIDATE_DELETED after durable reference removal
+nr}G0R isolated-copy SYNTHETIC_RUNTIME_OBSERVED ISOLATED_COPY_SURVIVES independent bytes only; production seal NOT_IMPLEMENTED
+nslG0R corrupt-authority SYNTHETIC_RUNTIME_OBSERVED FAIL_CLOSED stage=REFERENCE_PARSE ALL_CANDIDATES_RETAINED
+nt|G0R unlink-primitive SYNTHETIC_RUNTIME_OBSERVED DELETE_OWNED_IS_PRIMITIVE no reference scan; NOT a pending queue execution
+nu‘G0R external-only SYNTHETIC_RUNTIME_OBSERVED OBSERVED_UNSAFE_CURRENT_BEHAVIOR S2_DOMAIN_UNPROTECTED manifest survives, referenced image deleted
+nvƒG0R cancel-cleanup SYNTHETIC_RUNTIME_OBSERVED CANCELLED_BEFORE_EXCLUSIVE media unchanged; NOT pending-deletion cancellation proof
+nw’G0R backup-hidden SYNTHETIC_RUNTIME_OBSERVED HIDDEN_UNCLASSIFIED_REFUSED no partial archive; original historical G0R omission remains historical
+nxrG0R backup-unknown SYNTHETIC_RUNTIME_OBSERVED REJECTED UNCLASSIFIED_ROOT_ENTRY NEEDS_ADAPTER no archive produced
+ny‰G0R backup-registered SYNTHETIC_RUNTIME_OBSERVED KNOWN_INCLUDED authenticated inventory and bytes; fake media decode/restore NOT_TESTED
+{z5G0 ARCHIVE=S0_READABLE_S1_BLOCKED_PREPARED_REJECTED
+{|9G0 FULL_BACKUP_HIDDEN_VARIANT=REFUSED_ORIGINAL_RETAINED
+{}TG0 JOURNAL=UNKNOWN_PATH_REJECTED SENTINEL_OUTSIDE_ROWS_NOT_TRANSACTIONALLY_COVERED
+{~<G0 PORTABLE=ADMITTED_UNKNOWN_PAYLOAD OLD_BINARY=NOT_TESTED
+{LG0 STARTUP=ADMITTED_UNKNOWN_PAYLOAD LOCK=RELEASED LEGACY_BINARY=NOT_TESTED
+{€1G0 FULL_BACKUP=EXPLICITLY_REJECTED UNKNOWN_ROOT
+{MG0 ROOT_MIGRATION=PRESERVED_SOURCE_DESTINATION_SNAPSHOT AUTHORITY_COMMITTED
+{‚<G0 SNAPSHOT=PRESERVED_AND_RESTORED RAW_ONLY_NO_DOMAIN_SEAL
+{ƒ3G0 AUTOMATIC_RUNTIME=PRESERVED VIA_REAL_SCHEDULER
+{„ZG0 GC=INDEPENDENT_BLOB_RETAINED SHARED_LIVE_IMAGE_DELETED_SENTINEL_REFERENCE_NOT_SCANNED
+{…+G0 CHILD mode=schedule exit=0 alive=false
+{…6G0 CHILD mode=crash-during-apply exit=71 alive=false
+{…*G0 CHILD mode=recover exit=0 alive=false
+{…VG0 CRASH=REGISTERED_ROW_ROLLED_BACK SENTINEL_UNCHANGED_NOT_NEW_DOMAIN_RECOVERY_PROOF
+{†;G0 MIGRATION_CANCEL=SOURCE_RETAINED_DESTINATION_LOCK_ONLY
+ˆvfixture v1 code84 encrypted=false sha256=75b4f3c6b68fe6b0d3dd1d87504d299ed36e37d42e6f8625dca9192728095f68 length=733
+ˆvfixture v1 code85 encrypted=false sha256=12d730df36e2e819cf2d829a37461b6536e1ab3891c8215ee091eed30904f66f length=733
+ˆvfixture v1 code86 encrypted=false sha256=e13f168d0c04d49fbc107214b47ac4828853e914829a2a61bb0a3d84802c91fd length=733
+ˆvfixture v1 code84 encrypted=true sha256=44c542a1fd27c561adf7cdd0ab249c478e6e5fbd043a27cce92f22bf87185f34 length=1040
+ˆvfixture v1 code85 encrypted=true sha256=e78c401d5e26de68a3a1d093051ecfea6d4473f8397aa27eb7879c54b8cdf514 length=1040
+ˆvfixture v1 code86 encrypted=true sha256=8a86393172983538fb1b68fbaf614508c99297b11f2b81eb3611da0f6b06cf95 length=1040
+ˆvfixture v2 code85 encrypted=false sha256=d5d32e7bb51a0b85f8a3783550e622f00efd6a6587c7547c08ec6ac71ae7277d length=835
+ˆvfixture v2 code86 encrypted=false sha256=e77d2c39fcfaa8ed3bd996f3cabf78b44ce1cdd26c0318fef2f0a7fc59869ffc length=835
+ˆvfixture v2 code85 encrypted=true sha256=517e4b21d5241fbba6f2686b9ad2b448c53b70503399b9a924a16b96b3d0c8de length=1142
+ˆvfixture v2 code86 encrypted=true sha256=bcd050aa4a918216c4912f64a41810d984c1e7a2c7cadafd13634f2b2c121e03 length=1142
+ˆ‘(S0 synthetic child exit=73 alive=false
+º»#R1 v1 missing card sender=MISSING
+ºÀ7R1 unknown-only code=84 encrypted=false state=BLOCKED
+ºÀ6R1 unknown-only code=84 encrypted=true state=BLOCKED
+ºÀ7R1 unknown-only code=85 encrypted=false state=BLOCKED
+ºÀ6R1 unknown-only code=85 encrypted=true state=BLOCKED
+ºÀ7R1 unknown-only code=86 encrypted=false state=BLOCKED
+ºÀ6R1 unknown-only code=86 encrypted=true state=BLOCKED
+ºÂS1 child exit=73 alive=false
+ºÉ=R1 known-plus-unknown code=84 encrypted=false state=BLOCKED
+ºÉ<R1 known-plus-unknown code=84 encrypted=true state=BLOCKED
+ºÉ=R1 known-plus-unknown code=85 encrypted=false state=BLOCKED
+ºÉ<R1 known-plus-unknown code=85 encrypted=true state=BLOCKED
+ºÉ=R1 known-plus-unknown code=86 encrypted=false state=BLOCKED
+ºÉ<R1 known-plus-unknown code=86 encrypted=true state=BLOCKED

@@ -1,0 +1,34 @@
+[
+  {
+    "suite": "com.example.chatbar.desktop.DesktopDocumentRagReaderTest",
+    "tests": 18,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 15.225
+  },
+  {
+    "suite": "com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest",
+    "tests": 15,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 4.33
+  },
+  {
+    "suite": "com.example.chatbar.desktop.DesktopMainChatRequestAssemblerIntegrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 0.052
+  },
+  {
+    "suite": "com.example.chatbar.desktop.DesktopRealChatRuntimeTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 1.198
+  }
+]

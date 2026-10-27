@@ -1,0 +1,8 @@
+{
+  "files": [
+    "TEST-com.example.chatbar.desktop.DesktopSaveSlotArchiveTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopSaveSlotInspectorTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopVoiceArchiveHandoffTest.xml"
+  ],
+  "onlyXmlWrittenAfterStageStart": true
+}

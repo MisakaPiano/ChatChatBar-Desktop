@@ -1,0 +1,52 @@
+{
+  "stage": "04-workspace-focused",
+  "gradleExit": 0,
+  "junitTaskExecuted": true,
+  "suites": [
+    {
+      "suite": "com.example.chatbar.desktop.DesktopChatScreenshotTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "file": "TEST-com.example.chatbar.desktop.DesktopChatScreenshotTest.xml",
+      "bytes": 1599,
+      "sha256": "4786c83e6f41db991c7e7afcd3e7edc055d84f0e17b9e9c9a9f60a636884072d"
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopChatScreenshotUiTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "file": "TEST-com.example.chatbar.desktop.DesktopChatScreenshotUiTest.xml",
+      "bytes": 804,
+      "sha256": "105580383f78b71f1eb072455dddafdbb41bced32f34d85f343910a7fa3d79ae"
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopScreenshotWorkspaceTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "file": "TEST-com.example.chatbar.desktop.DesktopScreenshotWorkspaceTest.xml",
+      "bytes": 1640,
+      "sha256": "e7a83dc03612724fb4eae9ef70d9bbe39b75c18a7e1d04b143feb9c298894ab7"
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "file": "TEST-com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest.xml",
+      "bytes": 882,
+      "sha256": "dc6f2cb06ecf85c3f5e67bccf19f675e69ee669b2b3c4cb946e61e7820707ec3"
+    }
+  ],
+  "totalTests": 19,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "inheritedXmlExcluded": []
+}

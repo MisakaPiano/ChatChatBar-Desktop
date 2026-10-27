@@ -1,0 +1,4 @@
+{"path":"entities/app_settings.json","size":54,"sha256":"19aa3b471f41ecc7322434abaf422c2837524515e207dc203b7a87b781cd241b"}
+{"path":"entities/model_configs/m.json","size":157,"sha256":"4438f8ecc2fc254d865c2cde8d94267235ba8564d96e70064e6ad9a010b200fd"}
+{"path":"entities/embedding_configs/e.json","size":143,"sha256":"f9ae4fede623905247f98bc3426342a85f7930eb43f085063ba0a63a0a9cdbc1"}
+{"path":"entities/embedding_model_config.json","size":143,"sha256":"f9ae4fede623905247f98bc3426342a85f7930eb43f085063ba0a63a0a9cdbc1"}

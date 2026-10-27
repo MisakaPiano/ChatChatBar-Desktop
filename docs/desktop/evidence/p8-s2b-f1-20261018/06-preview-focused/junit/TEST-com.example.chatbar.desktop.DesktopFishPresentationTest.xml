@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFishPresentationTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-18T08:31:27.449Z" hostname="DD1" time="3.191">
+  <properties/>
+  <testcase name="free preview UI requires explicit text and click and never selects a voice" classname="com.example.chatbar.desktop.DesktopFishPresentationTest" time="1.114"/>
+  <testcase name="management voice module matches appearance heading and remains operable in narrow layout" classname="com.example.chatbar.desktop.DesktopFishPresentationTest" time="1.068"/>
+  <testcase name="structured and avatar book fields display existing snapshot without auto query or binding" classname="com.example.chatbar.desktop.DesktopFishPresentationTest" time="0.106"/>
+  <testcase name="session UI preserves three state choice and language spaces during incremental editing" classname="com.example.chatbar.desktop.DesktopFishPresentationTest" time="0.482"/>
+  <testcase name="global UI exposes stale explicit model without fallback and changes remain draft" classname="com.example.chatbar.desktop.DesktopFishPresentationTest" time="0.124"/>
+  <testcase name="voice selector offers auxiliary only model by name and retains null follow session choice" classname="com.example.chatbar.desktop.DesktopFishPresentationTest" time="0.181"/>
+  <testcase name="picker real pointer query selects only explicit result with no preview" classname="com.example.chatbar.desktop.DesktopFishPresentationTest" time="0.115"/>
+  <system-out><![CDATA[R1A_WHEEL label=语音与朗读 wheels=17 scroll=824.0 max=1902.0 bounds=Rect.fromLTRB(20.0, 589.0, 115.0, 614.0)
+R1A_WHEEL label=听书模式：关闭 wheels=4 scroll=1095.0 max=1902.0 bounds=Rect.fromLTRB(20.0, 574.0, 150.0, 622.0)
+R1A_WHEEL label=放弃设置更改 wheels=0 scroll=1220.0 max=1929.0 bounds=Rect.fromLTRB(144.0, 578.0, 260.0, 626.0)
+R1A_WHEEL label=听书模式：关闭 wheels=0 scroll=1345.0 max=1902.0 bounds=Rect.fromLTRB(20.0, 324.0, 150.0, 372.0)
+R1A_WHEEL label=保存全局设置 wheels=0 scroll=1470.0 max=1929.0 bounds=Rect.fromLTRB(20.0, 328.0, 136.0, 376.0)
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

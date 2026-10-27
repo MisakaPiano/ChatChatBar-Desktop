@@ -1,0 +1,53 @@
+{
+  "source": "d64f82f6fae4579353d77c114f92741cbf731b66",
+  "status": "P8-S2A-R5 ENGINEERING CANDIDATE / PROJECT REVIEW PENDING",
+  "engineeringGate": "HOLD_BOUNDED_REGRESSION_RED",
+  "stages": {
+    "01-frozen-focused": {
+      "suites": 12,
+      "tests": 160,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exitCode": 0,
+      "durationSeconds": 146.3502702
+    },
+    "02-shared-core": {
+      "suites": 132,
+      "tests": 889,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exitCode": 0,
+      "durationSeconds": 62.5061084
+    },
+    "03-android": {
+      "suites": 123,
+      "tests": 715,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exitCode": 0,
+      "durationSeconds": 41.9445107
+    },
+    "04-desktop-bounded": {
+      "suites": 153,
+      "tests": 1492,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 2,
+      "exitCode": 1,
+      "durationSeconds": 446.97359
+    }
+  },
+  "desktopMainCompile": "ACTUALLY_EXECUTED_PASS",
+  "desktopTestCompile": "ACTUALLY_EXECUTED_PASS",
+  "sharedCoreCompile": "UP_TO_DATE",
+  "androidCompile": "UP_TO_DATE",
+  "nativeWindows": "NOT_RUN",
+  "distribution": "NOT_GENERATED",
+  "realGetModelCalls": 0,
+  "realTtsCalls": 0,
+  "sourceOrTestChanges": false,
+  "sourceCommitCreated": false
+}

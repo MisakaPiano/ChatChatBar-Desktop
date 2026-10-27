@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFishPresentationTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-17T19:04:02.315Z" hostname="DD1" time="0.787">
+  <properties/>
+  <testcase name="structured and avatar book fields display existing snapshot without auto query or binding" classname="com.example.chatbar.desktop.DesktopFishPresentationTest" time="0.085"/>
+  <testcase name="session UI preserves three state choice and language spaces during incremental editing" classname="com.example.chatbar.desktop.DesktopFishPresentationTest" time="0.358"/>
+  <testcase name="global UI exposes stale explicit model without fallback and changes remain draft" classname="com.example.chatbar.desktop.DesktopFishPresentationTest" time="0.105"/>
+  <testcase name="voice selector offers auxiliary only model by name and retains null follow session choice" classname="com.example.chatbar.desktop.DesktopFishPresentationTest" time="0.134"/>
+  <testcase name="picker real pointer query selects only explicit result with no preview" classname="com.example.chatbar.desktop.DesktopFishPresentationTest" time="0.105"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

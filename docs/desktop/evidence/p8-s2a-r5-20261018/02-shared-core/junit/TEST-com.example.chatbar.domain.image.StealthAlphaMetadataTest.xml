@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.image.StealthAlphaMetadataTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:31:40.322Z" hostname="DD1" time="0.073">
+  <properties/>
+  <testcase name="absent header and tiny images are not metadata" classname="com.example.chatbar.domain.image.StealthAlphaMetadataTest" time="0.001"/>
+  <testcase name="invalid lengths truncated gzip and decompression bomb fail bounded" classname="com.example.chatbar.domain.image.StealthAlphaMetadataTest" time="0.072"/>
+  <testcase name="compressed and plain alpha payload use column order and UTF8" classname="com.example.chatbar.domain.image.StealthAlphaMetadataTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

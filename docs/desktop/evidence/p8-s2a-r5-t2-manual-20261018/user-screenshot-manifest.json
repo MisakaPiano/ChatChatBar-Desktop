@@ -1,0 +1,67 @@
+{
+  "files": [
+    {
+      "path": "user-screenshots/global-before.png",
+      "bytes": 61317,
+      "sha256": "b048a3a8c7f4f54cb6d60c201e9c15ce0e094deead7e067c464444e17d022cb2",
+      "source": "user-supplied chat attachment, not automated screen capture",
+      "observation": "Initial Fish controls visible: key configured, stale tag model unavailable, audiobook off."
+    },
+    {
+      "path": "user-screenshots/audiobook-dirty.png",
+      "bytes": 54404,
+      "sha256": "9f828fdde436bb420ae2794cffabb49d9b288c812fdbf9ab723786f46dbe5e7f",
+      "source": "user-supplied chat attachment, not automated screen capture",
+      "observation": "Audiobook on; unsaved-global-settings warning visible."
+    },
+    {
+      "path": "user-screenshots/audiobook-discarded.png",
+      "bytes": 52800,
+      "sha256": "0cd83aefc739d9c0719e25a389714b2f6c52b9f1da03a9128dec31db04805bd9",
+      "source": "user-supplied chat attachment, not automated screen capture",
+      "observation": "Audiobook off again; unsaved warning absent; stale tag model still unavailable."
+    },
+    {
+      "path": "user-screenshots/audiobook-saved.png",
+      "bytes": 48192,
+      "sha256": "afa82a5d8dd6be4a7fc5eeaaa975c3a8e444fa710fa067edbeaaba5150f3d15b",
+      "source": "user-supplied screenshot, not automated capture",
+      "observation": "After save instruction: audiobook on, no dirty warning, save disabled."
+    },
+    {
+      "path": "user-screenshots/audiobook-reentered.png",
+      "bytes": 48388,
+      "sha256": "8042598c1eae07814e9fadd59e105de589206992edb4be54ea74c9c172b91719",
+      "source": "user-supplied screenshot, not automated capture",
+      "observation": "Following navigate-away-and-return instruction: audiobook still on, no dirty warning."
+    },
+    {
+      "path": "user-screenshots/tts-s21-pro-saved.png",
+      "bytes": 48825,
+      "sha256": "8df4fe15c90bf631d837212d4061f0af59e0bbb2993c9ffb373c1f7496f7478a",
+      "source": "user-supplied chat screenshot",
+      "observation": "Actual saved TTS selection s2.1-pro, not the initially requested s2-pro; treated as valid observed value, not silently relabelled."
+    },
+    {
+      "path": "user-screenshots/tts-options-s2-pro.png",
+      "bytes": 42874,
+      "sha256": "b515e76126d9ec0e5e0fdc607c4648bba844c7d0e435658c46a90e2630f71ef0",
+      "source": "user-supplied chat screenshot",
+      "observation": "Dropdown visibly lists s2.1-pro-free, s2.1-pro, s2-pro, s1; s2-pro checked."
+    },
+    {
+      "path": "user-screenshots/tag-chat-model-saved.png",
+      "bytes": 49318,
+      "sha256": "e749321f30fcd95f90e04773dc1ce6559e9ec03f6cc972ab5e3190a2d23fb3d9",
+      "source": "user-supplied chat screenshot",
+      "observation": "TTS s2-pro and Tag T2 chat model visible; this is not the auxiliary-only model selection."
+    },
+    {
+      "path": "user-screenshots/tag-aux-saved-heading-issue.png",
+      "bytes": 48813,
+      "sha256": "76eebee4c134b9250e69f3f9576cb180eb0a11a186a16e8a8d879e48933e650c",
+      "source": "user-supplied screenshot",
+      "observation": "Tag auxiliary-only model selected and save disabled; voice section is rendered as muted status text directly after appearance controls. User reported module hierarchy mismatch."
+    }
+  ]
+}

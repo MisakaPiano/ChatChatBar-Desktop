@@ -1,0 +1,16 @@
+{
+  "isolated-binding-migration-red": {
+    "tests": 2,
+    "failures": 2,
+    "errors": 0,
+    "skipped": 0,
+    "suites": 1
+  },
+  "isolated-binding-migration-green": {
+    "tests": 69,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1,
+    "suites": 4
+  }
+}

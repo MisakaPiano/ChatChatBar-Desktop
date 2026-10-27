@@ -1,0 +1,55 @@
+{
+  "observedUtc": "2026-10-18T10:02:53.367201+00:00",
+  "sources": [
+    {
+      "source": "https://fish.audio/m/7f92f8afb8ec43bf81429cc1c9199cb1/",
+      "bytes": 238520,
+      "sha256": "4e418c4fdf6efb543ff9c077016f57788da56c9a25bb08518e3f3314b3980f45",
+      "originalRetainedLocal": true,
+      "publishedFull": false
+    },
+    {
+      "source": "https://fish.audio/assets/voice-card-cwn_DVY3.js",
+      "bytes": 22010,
+      "sha256": "d524519455d91aeb15c72d094474b50d21a611e8acdc381ba8bdc67d499e8b67",
+      "originalRetainedLocal": true,
+      "publishedFull": false
+    },
+    {
+      "source": "https://fish.audio/assets/agent-builder-routing-I7ErSNu-.js",
+      "bytes": 44976,
+      "sha256": "2c60474d60801dc6b3338befc3e908d0aaeac4fd1ceaaf1d5d507978670ed649",
+      "originalRetainedLocal": true,
+      "publishedFull": false
+    },
+    {
+      "source": "https://fish.audio/assets/voice-playback-Bt0cbnR-.js",
+      "bytes": 924,
+      "sha256": "d8cbbe59040a7cd63afc9ee302127a278d4a13025c04b392d0cae0adce0850c7",
+      "originalRetainedLocal": true,
+      "publishedFull": false
+    }
+  ],
+  "approvedAnonymousOrigin": "https://platform.r2.fish.audio",
+  "approvedAuthenticationOrigins": [],
+  "officialChoice": "1.4.1 first nonblank sample.previewUrl; audio field before audio_url",
+  "officialSharedPreviewDifference": "Shared preview() adds Bearer to arbitrary URL; unchanged. Desktop candidate never loads credentials for samples and never calls shared preview().",
+  "publicPageProof": "31 public model records resolved from official SSR table; 30 expose unsigned platform MP3 samples. Audio element uses sample.audio; qt(url,isCN) retains URL outside CN.",
+  "excerpts": {
+    "voiceCard": "e.jsx(\"audio\",{className:\"hidden\",src:g,controls:!1",
+    "urlMapping": "qt=(e,t)=>t?Dt(e):e",
+    "cnRewrite": "https://platform.r2.data.hanabi.ai"
+  },
+  "notApproved": [
+    "CN mirror",
+    "public-platform cover-image origin",
+    "signed Cloudflare object-storage capabilities",
+    "api.fish.audio as a sample origin",
+    "any non-HTTPS or noncanonical path"
+  ],
+  "knownReferenceChange": "F1 AD example currently has signed WAV samples, not an approved MP3 in this profile.",
+  "authenticationEvidenceLimit": "Official anonymous HTML audio path supports anonymous candidate; no actual sample GET or HTTP200 compatibility was tested before STOP.",
+  "publicationLimit": "Raw public SSR contains expiring signed capabilities, retained only local. Published derived table omits all query values. Module originals retained local; hashes and small excerpts are published.",
+  "dnsBoundary": "Candidate validates DNS addresses on direct resolution. With user-configured proxy, remote DNS belongs to that proxy; exact HTTPS origin/TLS and no Bearer remain required. No complete network/TOCTOU guarantee.",
+  "testConnectionSeam": "Only tests inject a loopback destination after metadata approval. Production default identity route, standard TLS and public-address DNS; no production setting enables fixture routing."
+}

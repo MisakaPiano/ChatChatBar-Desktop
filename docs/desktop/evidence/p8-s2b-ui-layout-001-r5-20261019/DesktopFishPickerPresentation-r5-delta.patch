@@ -1,0 +1,44 @@
+diff --git "a/H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-s2b-ui-layout-001-r5-20261019\\baseline-sources\\DesktopFishPickerPresentation.kt" "b/H:\\ChatChatBar-Desktop\\app\\desktopApp\\src\\main\\kotlin\\com\\example\\chatbar\\desktop\\DesktopFishPickerPresentation.kt"
+index 26e3863f..1e04dbb9 100644
+--- "a/H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-s2b-ui-layout-001-r5-20261019\\baseline-sources\\DesktopFishPickerPresentation.kt"
++++ "b/H:\\ChatChatBar-Desktop\\app\\desktopApp\\src\\main\\kotlin\\com\\example\\chatbar\\desktop\\DesktopFishPickerPresentation.kt"
+@@ -154,27 +154,27 @@ internal fun DesktopFishPickerContent(controller: DesktopFishPickerController, c
+                 style = LocalScrollbarStyle.current.copy(unhoverColor = DesktopBootstrapColors.mutedForeground,
+                     hoverColor = DesktopBootstrapColors.foreground))
+             }
+-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+-                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
++            FlowRow(Modifier.fillMaxWidth(), itemVerticalAlignment = Alignment.CenterVertically,
++                horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                 StudioAction("上一页", enabled = configured && !state.loading && query.pageNumber > 1,
+                     icon = DesktopAppIcons.Previous, style = StudioActionStyle.TERTIARY) {
+                     controller.search(query.copy(pageNumber = query.pageNumber - 1))
+                 }
+-                FishCaption("第 ${query.pageNumber} 页" + (pageCount?.let { " / 共 $it 页" } ?: ""), Modifier.weight(1f))
++                FishCaption("第 ${query.pageNumber} 页" + (pageCount?.let { " / 共 $it 页" } ?: ""))
++                // Keep the input and its explicit action together when the surrounding pager wraps.
++                Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
++                    Box(Modifier.width(88.dp).onPreviewKeyEvent { event ->
++                        if (event.key == Key.Enter && event.type == KeyEventType.KeyDown) { jump(); true } else false
++                    }) { DesktopFishField("跳转页码", pageInput) { pageInput = it } }
++                    StudioAction("跳转", enabled = configured && !state.loading && requestedPage != null,
++                        style = StudioActionStyle.TERTIARY) { jump() }
++                }
+                 StudioAction("下一页", enabled = configured && !state.loading && state.hasNext && query.pageNumber < Int.MAX_VALUE,
+                     icon = DesktopAppIcons.Next, style = StudioActionStyle.TERTIARY) {
+                     if (query.pageNumber < Int.MAX_VALUE) controller.search(query.copy(pageNumber = query.pageNumber + 1))
+                 }
+             }
+-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom,
+-                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+-                Box(Modifier.width(88.dp).onPreviewKeyEvent { event ->
+-                    if (event.key == Key.Enter && event.type == KeyEventType.KeyDown) { jump(); true } else false
+-                }) { DesktopFishField("跳转页码", pageInput) { pageInput = it } }
+-                StudioAction("跳转", enabled = configured && !state.loading && requestedPage != null,
+-                    style = StudioActionStyle.TERTIARY) { jump() }
+-                if (pageInput.isNotBlank() && requestedPage == null) FishCaption("请输入有效页码", Modifier.weight(1f))
+-            }
++            if (pageInput.isNotBlank() && requestedPage == null) FishCaption("请输入有效页码")
+         }
+     }
+     BoxWithConstraints(Modifier.fillMaxSize().clipToBounds().onPreviewKeyEvent(escape::handle)) {

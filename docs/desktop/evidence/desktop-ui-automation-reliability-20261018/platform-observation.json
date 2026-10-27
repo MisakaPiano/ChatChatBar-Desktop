@@ -1,0 +1,26 @@
+{
+  "probeWindowClose": "Fixture normal-closed and message-loop-exited events; fresh sky enumeration no target",
+  "probeExitCode": "NOT CAPTURED - launch API does not return a retained process handle",
+  "utc": "2026-10-17T22:03:19.0267356Z",
+  "probeProcesses": 0,
+  "dwm": [
+    {
+      "sessionId": 1
+    }
+  ],
+  "callerSessionId": 1,
+  "sessionName": null,
+  "scope": "Read-only metadata; no settings changes; no other window contents read",
+  "gpu": [
+    {
+      "driverVersion": "20.36.41.498",
+      "name": "MuMu Virtual Display Adapter"
+    },
+    {
+      "driverVersion": "32.0.15.6094",
+      "name": "NVIDIA GeForce GTX 1080 Ti"
+    }
+  ],
+  "windowsBuild": "19045",
+  "windowsVersion": "10.0.19045"
+}

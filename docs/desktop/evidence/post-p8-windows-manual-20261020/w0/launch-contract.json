@@ -1,0 +1,46 @@
+{
+  "paths": {
+    "gate": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-windows-manual-20261020",
+    "localAppData": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-windows-manual-20261020\\environments\\post-p8-profile",
+    "appDataRoot": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-windows-manual-20261020\\environments\\post-p8-profile\\ChatChatBarDesktop",
+    "secretRoot": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-windows-manual-20261020\\environments\\post-p8-profile\\ChatChatBarDesktopCredentials",
+    "mockService": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-windows-manual-20261020\\mock-service",
+    "oneUseGuard": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-windows-manual-20261020\\manual-start-once.lock",
+    "exportsPng": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-windows-manual-20261020\\exports\\png",
+    "exportsMp3": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-windows-manual-20261020\\exports\\mp3"
+  },
+  "status": "W0_READY_FOR_EXPLICIT_W1_AUTHORIZATION",
+  "startupAuthorized": false,
+  "guiStarts": 0,
+  "fakeStarts": 0,
+  "seedRuns": 0,
+  "realFishGet": 0,
+  "realFishTts": 0,
+  "paidAuxiliaryRequests": 0,
+  "automaticBackup": "MUST remain disabled; inspect actual seeded settings before launch",
+  "prelaunchSteps": [
+    "Recheck Git, resources, package212 and exact support hashes",
+    "Create new scoped helper/scripts and one-use admission; fail if guard exists",
+    "Seed only fresh root with inline synthetic fixture and DPAPI invalid typed keys, never load old/user data",
+    "Run necessary offline fixture hydrate/media/settings checks; fail closed before any fake/GUI",
+    "Ensure mock-service absent; start one loopback fake and verify readiness/listener whitelist",
+    "Start one exact frozen Launcher with isolated LOCALAPPDATA/user.home/tmp/trust/proxy; retain handles",
+    "Independent root ownership probe must refuse with75 while app is alive"
+  ],
+  "postUserCloseSteps": [
+    "Wait for actual Launcher and JVM exit; preserve actual exitcodes, no forced kill",
+    "Independent root ownership probe must reacquire/release with0",
+    "Drain fake workers/sockets and record exit; delete only its owned TLS material",
+    "Hash retained formal audio and PNG/MP3 exports; inspect owned preview mp3/part only",
+    "Verify no matching owned process/native handle uncertainty; preserve unknowns and STOP if present"
+  ],
+  "manualGate": "A/B/C NOT TESTED; guide user1-3 steps at a time after authorization; never sign USER PASS without reply",
+  "exclusions": [
+    "D-044 future only",
+    "No real migration/restore/destructive maintenance",
+    "No Robot/JUnit/bounded/Gradle",
+    "No real API or paid model",
+    "No automatic restart",
+    "No historical or user file cleanup"
+  ]
+}

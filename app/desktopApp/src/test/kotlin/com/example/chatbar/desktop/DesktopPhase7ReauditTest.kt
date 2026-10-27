@@ -34,7 +34,10 @@ class DesktopPhase7ReauditTest {
 
     @Test fun `message edit publishes references before exact cleanup and retains matching metadata`() = runBlocking { fixture { c, root ->
         val old = c.chatImages.persistUser("session", "old", listOf(pending(), pending()))
-        c.chatRepository.updateMessage(old.copy(generatedImageMetadata = old.images.map(::metadata)))
+        c.chatRepository.updateMessage(old.copy(generatedImageMetadata = old.images.map(::metadata),
+            alternatives = listOf("first", "old", "last"), alternativeVersionIds = listOf("a", "b", "c"),
+            currentAlternativeIndex = 1, currentAlternativeVersionId = "b", reasoningContent = "retained",
+            formatRepairNotice = MessageFormatRepairNotice(MessageFormatRepairNoticeKind.APPLIED, "old", "original")))
         val opening = c.chatRepository.getMessage(old.id, "session")!!
         val cleanup = DesktopOwnedImageCleanup(root, c.characterResourceStore, c.dataOperationCoordinator)
         val store = DesktopChatImages(c.characterResourceStore, c.chatRepository, c.dataOperationCoordinator, cleanup = { candidates ->
@@ -45,20 +48,49 @@ class DesktopPhase7ReauditTest {
         store.editMessage(opening, "edited", listOf(old.images[1]), listOf(pending()))
         val saved = c.chatRepository.getMessage(old.id, "session")!!
         assertEquals("edited", saved.content); assertEquals(2, saved.images.size)
+        assertEquals(listOf("first", "edited", "last"), saved.alternatives)
+        assertEquals(opening.alternativeVersionIds, saved.alternativeVersionIds)
+        assertEquals(1, saved.currentAlternativeIndex); assertEquals("b", saved.currentAlternativeVersionId)
+        assertEquals(opening.reasoningContent, saved.reasoningContent)
+        assertEquals(opening.createdAt, saved.createdAt); assertEquals(opening.orderKey, saved.orderKey)
+        assertEquals(opening.sourceTurnId, saved.sourceTurnId); assertNull(saved.formatRepairNotice)
         assertEquals(listOf(old.images[1]), saved.generatedImageMetadata.map { it.imagePath })
         assertFalse(Files.exists(root.resolve(old.images[0]))); saved.images.forEach { assertTrue(Files.exists(root.resolve(it))) }
         assertEquals(saved, com.example.chatbar.data.repository.ChatRepository(JsonFileStorage(root)).getMessage(old.id, "session"))
     } }
 
     @Test fun `edit failure after durable write retains both obsolete and newly committed images`() = runBlocking { fixture { c, root ->
-        val old = c.chatImages.persistUser("session", "old", listOf(pending()))
+        val initial = c.chatImages.persistUser("session", "old", listOf(pending()))
+        c.chatRepository.updateMessage(initial.copy(alternatives = listOf("first", "old", "last"),
+            alternativeVersionIds = listOf("a", "b", "c"), currentAlternativeIndex = 1, currentAlternativeVersionId = "b"))
+        val old = c.chatRepository.getMessage(initial.id, "session")!!
         var cleaned = false
         val store = DesktopChatImages(c.characterResourceStore, c.chatRepository, c.dataOperationCoordinator,
             cleanup = { cleaned = true }, updateMessage = { c.chatRepository.updateMessage(it); error("after commit") })
         assertFails { store.editMessage(old, "edited", emptyList(), listOf(pending())) }
         val saved = c.chatRepository.getMessage(old.id, "session")!!
+        assertEquals(listOf("first", "edited", "last"), saved.alternatives)
+        assertEquals(old.alternativeVersionIds, saved.alternativeVersionIds)
+        assertEquals("b", saved.currentAlternativeVersionId)
         assertNotEquals(old.images, saved.images); assertFalse(cleaned)
         (old.images + saved.images).forEach { assertTrue(Files.exists(root.resolve(it))) }
+    } }
+
+    @Test fun `image edit failure before publication retains every candidate and owned file`() = runBlocking { fixture { c, root ->
+        val initial = c.chatImages.persistUser("session", "middle", listOf(pending()))
+        c.chatRepository.updateMessage(initial.copy(alternatives = listOf("first", "middle", "last"),
+            alternativeVersionIds = listOf("a", "b", "c"), currentAlternativeIndex = 1, currentAlternativeVersionId = "b"))
+        val original = c.chatRepository.getMessage(initial.id, "session")!!
+        val bytes = Files.readAllBytes(root.resolve(original.images.single()))
+        var cleaned = false
+        val store = DesktopChatImages(c.characterResourceStore, c.chatRepository, c.dataOperationCoordinator,
+            cleanup = { cleaned = true }, updateMessage = { error("before publication") })
+        assertFailsWith<IllegalStateException> { store.editMessage(original, "edited", emptyList(), listOf(pending())) }
+        assertFalse(cleaned)
+        assertEquals(original, com.example.chatbar.data.repository.ChatRepository(JsonFileStorage(root)).getMessage(original.id, "session"))
+        assertContentEquals(bytes, Files.readAllBytes(root.resolve(original.images.single())))
+        // Unknown commit outcome conservatively retains the newly allocated file too.
+        assertEquals(2L, Files.list(root.resolve("images")).use { it.count() })
     } }
 
     @Test fun `stale or corrupt edit authority blocks allocation and preserves originals`() = runBlocking { fixture { c, root ->

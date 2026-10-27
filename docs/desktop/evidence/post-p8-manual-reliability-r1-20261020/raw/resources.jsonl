@@ -1,0 +1,4 @@
+{"utc":"2026-10-20T14:07:09.2295113Z","freePhysicalKiB":830780,"committedBytes":37409370112,"commitLimit":41946214400,"pagesPerSecond":3104}
+{"utc":"2026-10-20T14:11:50.7616696Z","freePhysicalKiB":786156,"committedBytes":37680742400,"commitLimit":41946214400,"pagesPerSecond":1194}
+{"utc":"2026-10-20T14:13:36.8699873Z","phase":"post-focused/pre-regression","freePhysicalKiB":1898608,"committedBytes":36344287232,"commitLimit":41946214400,"pagesPerSecond":11,"javaProcesses":[]}
+{"utc":"2026-10-20T14:18:10.9572527Z","phase":"fixed-fixture-focused","freePhysicalKiB":2232336,"committedBytes":35744722944,"commitLimit":41946214400,"pagesPerSecond":62}

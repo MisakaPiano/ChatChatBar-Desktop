@@ -1,0 +1,1 @@
+{"mode":"recover","pid":18068,"result":"PASS","sourceCommit":"70b5c30c91439e79728bf224c1a44d35b25cf733","gui":false,"providerRequests":0,"syntheticOnly":true,"assertions":["separate JVM startup gate","root lock held before repositories","3 sessions","messages/images/voice/RAG/memory restored","journal complete"]}

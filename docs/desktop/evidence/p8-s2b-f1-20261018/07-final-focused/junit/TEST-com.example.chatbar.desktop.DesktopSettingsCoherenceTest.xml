@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopSettingsCoherenceTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-18T08:33:23.548Z" hostname="DD1" time="0.13">
+  <properties/>
+  <testcase name="language survives a later backup setting mutation from stale runtime state" classname="com.example.chatbar.desktop.DesktopSettingsCoherenceTest" time="0.031"/>
+  <testcase name="invalid persisted color style fails closed without rewrite" classname="com.example.chatbar.desktop.DesktopSettingsCoherenceTest" time="0.014"/>
+  <testcase name="legacy missing color style remains neutral and read-only until explicit style action" classname="com.example.chatbar.desktop.DesktopSettingsCoherenceTest" time="0.016"/>
+  <testcase name="corrupt Desktop settings reject both owners without rewriting bytes" classname="com.example.chatbar.desktop.DesktopSettingsCoherenceTest" time="0.012"/>
+  <testcase name="interleaved field-owner saves retain both outcomes and unknown JSON" classname="com.example.chatbar.desktop.DesktopSettingsCoherenceTest" time="0.024"/>
+  <testcase name="missing Desktop settings stay absent through read-only startup" classname="com.example.chatbar.desktop.DesktopSettingsCoherenceTest" time="0.018"/>
+  <testcase name="backup mutation survives a later language change" classname="com.example.chatbar.desktop.DesktopSettingsCoherenceTest" time="0.015"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

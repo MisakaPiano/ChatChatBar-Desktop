@@ -1,0 +1,52 @@
+[
+  {
+    "name": "com.example.chatbar.desktop.DesktopChatContextUxTest",
+    "tests": "3",
+    "skipped": "0",
+    "failures": "0",
+    "errors": "0",
+    "timestamp": "2026-10-20T06:53:41.454Z",
+    "hostname": "DD1",
+    "time": "0.137"
+  },
+  {
+    "name": "com.example.chatbar.desktop.DesktopChatScreenshotTest",
+    "tests": "6",
+    "skipped": "0",
+    "failures": "0",
+    "errors": "0",
+    "timestamp": "2026-10-20T06:53:41.593Z",
+    "hostname": "DD1",
+    "time": "0.325"
+  },
+  {
+    "name": "com.example.chatbar.desktop.DesktopChatScreenshotUiTest",
+    "tests": "1",
+    "skipped": "0",
+    "failures": "0",
+    "errors": "0",
+    "timestamp": "2026-10-20T06:53:39.109Z",
+    "hostname": "DD1",
+    "time": "2.343"
+  },
+  {
+    "name": "com.example.chatbar.desktop.DesktopMessageActionsUxTest",
+    "tests": "7",
+    "skipped": "0",
+    "failures": "0",
+    "errors": "0",
+    "timestamp": "2026-10-20T06:53:41.922Z",
+    "hostname": "DD1",
+    "time": "1.07"
+  },
+  {
+    "name": "com.example.chatbar.desktop.DesktopPrimaryChatPresentationTest",
+    "tests": "13",
+    "skipped": "0",
+    "failures": "0",
+    "errors": "0",
+    "timestamp": "2026-10-20T06:53:42.994Z",
+    "hostname": "DD1",
+    "time": "0.016"
+  }
+]

@@ -1,0 +1,322 @@
+[
+  {
+    "path": "raw/diagnostic-audit.json",
+    "bytes": 188,
+    "sha256": "d3d3ec79e5d3dff1174053d82b981850556ca3cda3229aede3272fce4fa62c59"
+  },
+  {
+    "path": "raw/disk-after.json",
+    "bytes": 53,
+    "sha256": "2675d64c09ab9d4c9988aa85ef1413508d6ad1ab793587f7a8b22cd4cf179306"
+  },
+  {
+    "path": "raw/exit-code-limits.json",
+    "bytes": 328,
+    "sha256": "45fd6319e883ae45e226764f60c09dbd21b39bd2c54b64cafbb173ff741d33cb"
+  },
+  {
+    "path": "raw/green/arguments.json",
+    "bytes": 436,
+    "sha256": "577663281268fdbd08d0622a51b77fad5c362ac6abef75b7672e05f0e0b926f9"
+  },
+  {
+    "path": "raw/green/DesktopUpdateChecker.kt",
+    "bytes": 7983,
+    "sha256": "e4aa3f326ce410861c67d1a350be30006aef293ad46c1fcb27669d8f1271a7a2"
+  },
+  {
+    "path": "raw/green/DesktopUpdateCheckerTest.kt",
+    "bytes": 8392,
+    "sha256": "a69c7c7c5f38ebe07e37e63b7f8ac741648d3f04768d6bc884e956472b11c4b1"
+  },
+  {
+    "path": "raw/green/exit.txt",
+    "bytes": 3,
+    "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+  },
+  {
+    "path": "raw/green/gradle.log",
+    "bytes": 2225,
+    "sha256": "c8eecbbe6125db04be69c2a57f05d385216494ba72d528a306b5375b5b26a090"
+  },
+  {
+    "path": "raw/green/junit/binary/output.bin",
+    "bytes": 350,
+    "sha256": "7d8335cc1a807f9abcb213d5844ff158e470cce46c861b8089188b06880c8099"
+  },
+  {
+    "path": "raw/green/junit/binary/output.bin.idx",
+    "bytes": 36,
+    "sha256": "5d2be23a8bba4d763754baaca84577ac1207cf4cf9bec492197392da56f51d58"
+  },
+  {
+    "path": "raw/green/junit/binary/results.bin",
+    "bytes": 7700,
+    "sha256": "5e55193f51706d7e7026de728d7b011bfc94f96958b2363c3e8aeaccb80d3e65"
+  },
+  {
+    "path": "raw/green/junit/TEST-com.example.chatbar.desktop.DesktopProcessLifecycleTest.xml",
+    "bytes": 3039,
+    "sha256": "7247520efccc05149255d20ee5c6ff4892a85d1206fcc48c913bc46f61f19a64"
+  },
+  {
+    "path": "raw/green/junit/TEST-com.example.chatbar.desktop.DesktopStartupGateTest.xml",
+    "bytes": 3812,
+    "sha256": "023d57daf9ae87c9377401b302d080aa5c84e955f851597a5c9dcaaf1a6986f3"
+  },
+  {
+    "path": "raw/green/junit/TEST-com.example.chatbar.desktop.DesktopUpdateCheckerTest.xml",
+    "bytes": 2363,
+    "sha256": "bbb24613574e58fe8a2a17b0119adcb61f43b22f6208ca590a4a2638b27a3bae"
+  },
+  {
+    "path": "raw/junit-summary.json",
+    "bytes": 1055,
+    "sha256": "f842fe2fd270c84c847aa112d1d95a9e57f4a585199137841d3e0d037d187663"
+  },
+  {
+    "path": "raw/lock-after.json",
+    "bytes": 32,
+    "sha256": "8edd366772751a4194e2cc22432711efc4965526134ea702b7c48efcb5ec740f"
+  },
+  {
+    "path": "raw/package-901/arguments.json",
+    "bytes": 482,
+    "sha256": "69f75bc0ec7404ae48b9bc2465d670850b04961d42d8ec704dbb44272d290a8e"
+  },
+  {
+    "path": "raw/package-901/build.log",
+    "bytes": 1835,
+    "sha256": "29ec961b6f458dc25f982da31f35339948d0a268fc6517ece313fb1f6abc3fbe"
+  },
+  {
+    "path": "raw/package-901/exit.txt",
+    "bytes": 3,
+    "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+  },
+  {
+    "path": "raw/package-901/package.init.gradle",
+    "bytes": 166,
+    "sha256": "e41a4247be7fa313218fa5ace634d3340ff2a8a709901014a3db10816ba894ec"
+  },
+  {
+    "path": "raw/package-902/arguments.json",
+    "bytes": 482,
+    "sha256": "a2ec5c4a6c168decad41b26014676e930855121e0321656e655ed4de583b3b37"
+  },
+  {
+    "path": "raw/package-902/build.log",
+    "bytes": 1835,
+    "sha256": "5515865b4acb6d8f0d33137a845b63c2f47a03e365ec358acc6917afd2afcfdc"
+  },
+  {
+    "path": "raw/package-902/exit.txt",
+    "bytes": 3,
+    "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+  },
+  {
+    "path": "raw/package-902/package.init.gradle",
+    "bytes": 166,
+    "sha256": "95a378fec79cb1419e6ed15c2ea8a5c79d5528a9243e4003fb469f93d0d22f4c"
+  },
+  {
+    "path": "raw/preservation.json",
+    "bytes": 638,
+    "sha256": "de53d3f60c80c5a20d7bbc88fdc9e5d7f0409aad0a6e84ae54f8330a5e9cee86"
+  },
+  {
+    "path": "raw/processes-after.json",
+    "bytes": 4,
+    "sha256": "a5338d955b09046ec0b16f3a9625b7955c763aae07dc722e474e6078745f932f"
+  },
+  {
+    "path": "raw/red/arguments.json",
+    "bytes": 436,
+    "sha256": "577663281268fdbd08d0622a51b77fad5c362ac6abef75b7672e05f0e0b926f9"
+  },
+  {
+    "path": "raw/red/DesktopUpdateChecker.kt",
+    "bytes": 7543,
+    "sha256": "eef5fa67c1743e0266825a3ba089bcd4d2375dca807ab9a6588dbc77ac4c6132"
+  },
+  {
+    "path": "raw/red/DesktopUpdateCheckerTest.kt",
+    "bytes": 8392,
+    "sha256": "a69c7c7c5f38ebe07e37e63b7f8ac741648d3f04768d6bc884e956472b11c4b1"
+  },
+  {
+    "path": "raw/red/exit.txt",
+    "bytes": 3,
+    "sha256": "f1b2f662800122bed0ff255693df89c4487fbdcf453d3524a42d4ec20c3d9c04"
+  },
+  {
+    "path": "raw/red/gradle.log",
+    "bytes": 3109,
+    "sha256": "5107ebe48e81b9ee17bb9b10a6358bad9abbcb5c6fdd2a1e7bda3e10bb3f8c64"
+  },
+  {
+    "path": "raw/red/junit/binary/output.bin",
+    "bytes": 350,
+    "sha256": "0090c87cab15d21eadf14d9e8222705345520da19570a6cd9bb6dba81008d251"
+  },
+  {
+    "path": "raw/red/junit/binary/output.bin.idx",
+    "bytes": 36,
+    "sha256": "5139d6fdd1491c1ccc69e72da8d22307cb88664e65efdce2251630b268fc8247"
+  },
+  {
+    "path": "raw/red/junit/binary/results.bin",
+    "bytes": 17598,
+    "sha256": "6321358b1b25d2069f1848df7c7ae2de93b41ece013b9fe14d5573a3cf7b8251"
+  },
+  {
+    "path": "raw/red/junit/TEST-com.example.chatbar.desktop.DesktopProcessLifecycleTest.xml",
+    "bytes": 3040,
+    "sha256": "7e2846363b742ad65605543c3bd910ba4b38c53b42b7da795b5707ec46b03657"
+  },
+  {
+    "path": "raw/red/junit/TEST-com.example.chatbar.desktop.DesktopStartupGateTest.xml",
+    "bytes": 3814,
+    "sha256": "c9e62651f18a2ed9fa851dfd8872cdc9d0a76ee41d412c0bdc3a8947c96b9fcc"
+  },
+  {
+    "path": "raw/red/junit/TEST-com.example.chatbar.desktop.DesktopUpdateCheckerTest.xml",
+    "bytes": 12389,
+    "sha256": "38b7962a65c9c260d0c2115e83f42ee0f7a110b783d28e13eede9d0c86a82fd1"
+  },
+  {
+    "path": "raw/source-identities.json",
+    "bytes": 1427,
+    "sha256": "27a88650d30ebf159b744c48126fe252827a2a62765039f0bbe175ac5ca83ebf"
+  },
+  {
+    "path": "raw/synthetic-fixture/audio/b1.wav",
+    "bytes": 16044,
+    "sha256": "56d4af65701c26df20bd4021eda95b6e830348ce3a746086079fe89285548dc9"
+  },
+  {
+    "path": "raw/synthetic-fixture/entities/character_cards/b1c.json",
+    "bytes": 91,
+    "sha256": "1238063c28ff4d48464e8f75be3113909f1f51ba988e58f5c65a66ecd4427fbc"
+  },
+  {
+    "path": "raw/synthetic-fixture/entities/chat_drafts/b1s.json",
+    "bytes": 83,
+    "sha256": "5d38d0d179aa45ebd9356b751223d405f274ebdf2ed62ad8674160ffa6169f43"
+  },
+  {
+    "path": "raw/synthetic-fixture/entities/chat_messages/b1m.json",
+    "bytes": 269,
+    "sha256": "044fa38692fbc62c6ab7ae6fdaad4dfc569f7144d68f2a660df57b632cb7e2be"
+  },
+  {
+    "path": "raw/synthetic-fixture/entities/chat_sessions/b1s.json",
+    "bytes": 124,
+    "sha256": "85bd226265490d9055409cda9cf0d86b5f03969927b1b01072ae2e5967f9d1ad"
+  },
+  {
+    "path": "raw/synthetic-fixture/entities/player_setting.json",
+    "bytes": 128,
+    "sha256": "a7ad18ee48a7e4fffbb7cb2795ece088cc946a0c98630739f219f10a595bcdce"
+  },
+  {
+    "path": "raw/synthetic-fixture/entities/save_slots/b1a.json",
+    "bytes": 98,
+    "sha256": "d77a821a6ac61a029b60520d5b9fcc4305d46011ffc99fb86765503996a0b0f1"
+  },
+  {
+    "path": "raw/synthetic-fixture/images/b1.png",
+    "bytes": 68,
+    "sha256": "36db88ec0edf5d67057323009a65cd0003b42844c802f0fb188e020892d8eddf"
+  },
+  {
+    "path": "raw/synthetic-inputs.json",
+    "bytes": 1404,
+    "sha256": "a1a47345ebb0524d4b4a3052e6cc7aa6e405ee3690b35fe56f39b93203058e51"
+  },
+  {
+    "path": "raw/windows-901/before.json",
+    "bytes": 1136,
+    "sha256": "cce06513d8ebcae1b821b6bc1cb4db315b09bbd4daf3e6af59da9f05b30283c4"
+  },
+  {
+    "path": "raw/windows-901/exit.json",
+    "bytes": 6398,
+    "sha256": "7531b5f1e2a04db6eb11b6c41483d36fe53bb55bdf9544c3a6846a57b5dfa4cb"
+  },
+  {
+    "path": "raw/windows-901/identity.json",
+    "bytes": 176,
+    "sha256": "be153fe576f17228b6b8c88cd8c4ab1d1cc33e000ab774755a3626a68c985e70"
+  },
+  {
+    "path": "raw/windows-901/launch.json",
+    "bytes": 379,
+    "sha256": "4388482e5da095f9079e69ae4b8eb2eb8da7bead46fbde53042fcfba71bd20fd"
+  },
+  {
+    "path": "raw/windows-901/package-manifest.json",
+    "bytes": 35292,
+    "sha256": "c3b4c8d9f0d7ef4d24bfa42a81e52e19d6236d3b35cbcca4a3c7f043db1305d1"
+  },
+  {
+    "path": "raw/windows-901/stderr.log",
+    "bytes": 1181,
+    "sha256": "6e69729e176e77b3d3b26bdab89ea72f82092b40052fd288f45cda99e0539a7e"
+  },
+  {
+    "path": "raw/windows-901/stdout.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "raw/windows-902/before.json",
+    "bytes": 6069,
+    "sha256": "96d3286946e80778ff27f032c02ad077932d50ac4b243b941cbe2a41f7df2572"
+  },
+  {
+    "path": "raw/windows-902/exit.json",
+    "bytes": 6398,
+    "sha256": "7531b5f1e2a04db6eb11b6c41483d36fe53bb55bdf9544c3a6846a57b5dfa4cb"
+  },
+  {
+    "path": "raw/windows-902/identity.json",
+    "bytes": 175,
+    "sha256": "e423817d1943600a518ccf0ac571235d51118fa5f3829f006fcdb8f1984010c2"
+  },
+  {
+    "path": "raw/windows-902/launch.json",
+    "bytes": 379,
+    "sha256": "168ff55b9abd259c5e9f1c7453c3cbfa4b2ca478e36c1e685cb5b72f8b19133d"
+  },
+  {
+    "path": "raw/windows-902/lock-live.json",
+    "bytes": 30,
+    "sha256": "aeb8d2bd411147f5ab15123dd4f03823d80d5b7d32cf33a9f4400f7e64cb4cc9"
+  },
+  {
+    "path": "raw/windows-902/package-manifest.json",
+    "bytes": 35288,
+    "sha256": "6207fad56b5bb5c63960f22a06f65d876e61a6d752f484a53cd79756d1302900"
+  },
+  {
+    "path": "raw/windows-902/processes-live.json",
+    "bytes": 478,
+    "sha256": "6fb7f7359de419418730c19ad2fb3c598703aa1335925bf0d7fcc94692bfd49c"
+  },
+  {
+    "path": "raw/windows-902/stderr.log",
+    "bytes": 1175,
+    "sha256": "d154f2b55ee311589810ae240bbea972dbca69aed4c7e5add9ec361fd2bab48b"
+  },
+  {
+    "path": "raw/windows-902/stdout.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "raw/windows-ui-observations.json",
+    "bytes": 647,
+    "sha256": "b87565a910b0c76c075f2fd58d3abe5135147780b0ac7f2416dfcf1548e87aff"
+  }
+]

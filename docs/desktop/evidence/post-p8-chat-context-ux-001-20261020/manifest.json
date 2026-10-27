@@ -1,0 +1,102 @@
+[
+  {
+    "path": ".gitattributes",
+    "bytes": 9,
+    "sha256": "8b9c3028d6467ff3be7c793141927841d70f47f52d0590677438f488ca154992"
+  },
+  {
+    "path": "a-compile-01.txt",
+    "bytes": 768,
+    "sha256": "5795380d94b3e5edd3b17faf242b72c7aa31a72b073c678813d1e4c8331daf47"
+  },
+  {
+    "path": "a-compile-02.txt",
+    "bytes": 1067,
+    "sha256": "dfff8c0796912bbbc4779855d6d35922628e61ae22c5d376c03cceb68d273da1"
+  },
+  {
+    "path": "a-compile-03.txt",
+    "bytes": 2070,
+    "sha256": "e698c7a0b990f6a6f65e5851b40caf81070701fe37f05191a0cb9ce7552c5c63"
+  },
+  {
+    "path": "a-focused-01.txt",
+    "bytes": 2070,
+    "sha256": "675644df6ad8349f949e998aae60956d7397c5b2403a924792e1426c72e2868c"
+  },
+  {
+    "path": "a-focused-02.txt",
+    "bytes": 3659,
+    "sha256": "4f48992fb6ad8338ac90cf2099a491732ccccf55112c9ace742014a2e00c8904"
+  },
+  {
+    "path": "a-focused-03.txt",
+    "bytes": 3044,
+    "sha256": "b91c2e6c53271dc5eb88a4d9ec356cc7dd345f2949b240f4d11f60413dd1c8c6"
+  },
+  {
+    "path": "a-focused-04.txt",
+    "bytes": 2179,
+    "sha256": "f25207a52f53acefffaa46d79a889ac662a7ff945722801a18a87bf898e8dc9d"
+  },
+  {
+    "path": "final-xml/TEST-com.example.chatbar.desktop.DesktopChatContextUxTest.xml",
+    "bytes": 841,
+    "sha256": "190c7dead4ee2c7057794f306f5ffc7e122f76e3f1ea993af64f0fb831052d73"
+  },
+  {
+    "path": "final-xml/TEST-com.example.chatbar.desktop.DesktopMessageActionsUxTest.xml",
+    "bytes": 2010,
+    "sha256": "de1dbbe73eee3bce7dbdeff2fbb3778aca04650313f137c461f213f8786081df"
+  },
+  {
+    "path": "final-xml/TEST-com.example.chatbar.desktop.DesktopPrimaryChatPresentationTest.xml",
+    "bytes": 2689,
+    "sha256": "097d2571bc3686803a3caade40c7782d955db221a7f5b4de7fb70743ba4dd973"
+  },
+  {
+    "path": "final-xml/TEST-com.example.chatbar.desktop.DesktopPrimaryChatRepairPresentationTest.xml",
+    "bytes": 1605,
+    "sha256": "7d269f883825f4232fd12a9e923ebb11df20f1d27bdee0fced5cf3f6dc34be9c"
+  },
+  {
+    "path": "initial-red-xml/TEST-com.example.chatbar.desktop.DesktopChatContextUxTest.xml",
+    "bytes": 840,
+    "sha256": "a2eb89c369096c87b2aff6fa1589d832b565577b619d6d417e1d43ef07a3cf9a"
+  },
+  {
+    "path": "initial-red-xml/TEST-com.example.chatbar.desktop.DesktopMessageActionsUxTest.xml",
+    "bytes": 3280,
+    "sha256": "d9e732ca1da4a4755dc864684f545e92bccafef76f7e8c6748e7b13a4c154ca5"
+  },
+  {
+    "path": "initial-red-xml/TEST-com.example.chatbar.desktop.DesktopPrimaryChatPresentationTest.xml",
+    "bytes": 2690,
+    "sha256": "b102837ceab34bf512c553c1a1f84e76c3831b813a26ef6d9e66e3030a75a113"
+  },
+  {
+    "path": "initial-red-xml/TEST-com.example.chatbar.desktop.DesktopPrimaryChatRepairPresentationTest.xml",
+    "bytes": 1607,
+    "sha256": "473d1126435fe3dacbcb1e50b3dab7f98267492f85086152b44bc6fa10c039b2"
+  },
+  {
+    "path": "README.md",
+    "bytes": 2046,
+    "sha256": "53ee7a6a2f4b2b2f0226348b1935400eb9c47e0e022877ef8922e35fcd875e23"
+  },
+  {
+    "path": "results.json",
+    "bytes": 1045,
+    "sha256": "d16f8432fde31043720c658153d87a9273084393a71fb1b7956da09b0a532703"
+  },
+  {
+    "path": "source-identity.json",
+    "bytes": 1893,
+    "sha256": "7981310f53bcb0b5a2f2e0280fc2e62edf429de4de82bd3680f5f1dea791f49b"
+  },
+  {
+    "path": "source.patch",
+    "bytes": 36271,
+    "sha256": "24e86f0e83a68eb645763587894bd4a37c56b0ca85d183c206be0e0186adb012"
+  }
+]

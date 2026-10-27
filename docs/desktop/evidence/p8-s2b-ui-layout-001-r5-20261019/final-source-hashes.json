@@ -1,0 +1,17 @@
+[
+  {
+    "Algorithm": "SHA256",
+    "Hash": "194D6B7FD2E270CA29EB90734303C8A7898825ECF8939CC60AB266E8D16C4917",
+    "Path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\src\\main\\kotlin\\com\\example\\chatbar\\desktop\\DesktopFishPickerPresentation.kt"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "A003E7AD1E31A0C356DF1A4291CC7EB1E4EB9FA958A0A6353EE6A77AC8F88125",
+    "Path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\src\\main\\kotlin\\com\\example\\chatbar\\desktop\\DesktopFishPickerWindow.kt"
+  },
+  {
+    "Algorithm": "SHA256",
+    "Hash": "E10894EAC70A49A9C02BDDA2625832BD97E449B46BF9B86FBE709A88EF3B5B7D",
+    "Path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\src\\test\\kotlin\\com\\example\\chatbar\\desktop\\DesktopFishPickerNativeUxTest.kt"
+  }
+]

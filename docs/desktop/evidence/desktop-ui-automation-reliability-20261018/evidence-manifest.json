@@ -1,0 +1,52 @@
+{
+  "reviewBase": "2092806f8e4a203a1d2b0ddf7aa14549e3179dd0",
+  "scope": "All other independent automation reliability evidence; self excluded",
+  "members": 9,
+  "files": [
+    {
+      "path": ".gitattributes",
+      "bytes": 76,
+      "sha256": "30ce399e5741934c3e80f65d0aeaf542699a1c5698fe2fb7a27a4a63f76a7294"
+    },
+    {
+      "path": "AutomationProbe.cs",
+      "bytes": 1991,
+      "sha256": "7dfe99e27ea5f493856da819a28739ebe3e424bf0bf6d84422a2343184ad7d0e"
+    },
+    {
+      "path": "CAPABILITY_PROTOCOL_CN.md",
+      "bytes": 3198,
+      "sha256": "3c60173ad56ff67c8a18cb85a46af1e5b55af3225c7b001a6bb7212e3be7a6a0"
+    },
+    {
+      "path": "fixture-events.jsonl",
+      "bytes": 244,
+      "sha256": "1483dadfc53059e4a09b5d91a146bffd83154a0f2fd8f288ff0617bf064e6baa"
+    },
+    {
+      "path": "history-matrix.json",
+      "bytes": 4472,
+      "sha256": "ade513d3d882420c386349b89034902f7bcb311c45a8a5fda117ccf9b16876ac"
+    },
+    {
+      "path": "platform-observation.json",
+      "bytes": 743,
+      "sha256": "ab00f818a2e937afe916a2795e87bd2ab1329ab68ba45ccfce989ce757cc8b13"
+    },
+    {
+      "path": "probe-observations.json",
+      "bytes": 2388,
+      "sha256": "dca2cee47ebea82beaac416e0a8e71046e4a9422a2bd124ccbcb47b21c7943d9"
+    },
+    {
+      "path": "README.md",
+      "bytes": 8179,
+      "sha256": "7009a10508a35c6d12afbc918d618daaee98bcc24ff9b04b365b78be9b63df37"
+    },
+    {
+      "path": "source-ledger.json",
+      "bytes": 30415,
+      "sha256": "6d79b0fc9adf1e8fcb68a091304dbf1bf06074b4293684210aca52587a2fa71b"
+    }
+  ]
+}

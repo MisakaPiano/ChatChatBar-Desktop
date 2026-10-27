@@ -1,0 +1,61 @@
+{
+  "sourceCommit": "fa5d3f18eebbd6c34f607d7b52d47e24825cb411",
+  "manualRuns": [
+    {
+      "run": "manual01",
+      "processes": [
+        {
+          "pid": 26216,
+          "isLauncher": false,
+          "jvmLoaded": true,
+          "exitCode": 0
+        },
+        {
+          "pid": 19296,
+          "isLauncher": true,
+          "jvmLoaded": false,
+          "exitCode": 0
+        }
+      ],
+      "allOwnedProcessesExited": true,
+      "activeLockExclusionExit": 75,
+      "postExitIndependentLockExit": 0
+    },
+    {
+      "run": "manual02",
+      "processes": [
+        {
+          "pid": 13940,
+          "isLauncher": false,
+          "jvmLoaded": true,
+          "exitCode": 0
+        },
+        {
+          "pid": 38880,
+          "isLauncher": true,
+          "jvmLoaded": false,
+          "exitCode": 0
+        }
+      ],
+      "allOwnedProcessesExited": true,
+      "activeLockExclusionExit": 75,
+      "postExitIndependentLockExit": 0
+    }
+  ],
+  "fakeCleanup": {
+    "utc": "2026-10-17T21:54:55.111474+00:00",
+    "exited": true,
+    "exitCode": 0,
+    "privateKeyRemains": false,
+    "publicTrustRemains": false
+  },
+  "realFishGet": 0,
+  "realFishTts": 0,
+  "manualEvidence": "USER TEXT SIGNATURES, not automatic screenshots",
+  "oldT2CountsUnchanged": {
+    "PASS": 4,
+    "FAIL": 1,
+    "NOT TESTED": 20
+  },
+  "nextSlices": "Not started"
+}

@@ -1,0 +1,183 @@
+{
+  "checkpoint": "m1-picker-closed-owner-restored",
+  "utc": "2026-10-19T10:00:41.4393813+00:00",
+  "ownedWindows": [
+    {
+      "pid": 38324,
+      "hwnd": 18423480,
+      "visible": true,
+      "enabled": true,
+      "maximized": false,
+      "foreground": false,
+      "frame": [
+        48,
+        -1080,
+        1240,
+        2120
+      ],
+      "client": [
+        48,
+        -1080,
+        1240,
+        2120
+      ],
+      "dpi": 96,
+      "clientWidthDp": 1240.0
+    },
+    {
+      "pid": 38324,
+      "hwnd": 33686974,
+      "visible": false,
+      "enabled": true,
+      "maximized": false,
+      "foreground": false,
+      "frame": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "client": [
+        0,
+        0,
+        1,
+        1
+      ],
+      "dpi": 96,
+      "clientWidthDp": 1.0
+    },
+    {
+      "pid": 38324,
+      "hwnd": 71376652,
+      "visible": false,
+      "enabled": false,
+      "maximized": false,
+      "foreground": false,
+      "frame": [
+        -1,
+        -1,
+        136,
+        39
+      ],
+      "client": [
+        7,
+        30,
+        120,
+        0
+      ],
+      "dpi": 96,
+      "clientWidthDp": 120.0
+    },
+    {
+      "pid": 38324,
+      "hwnd": 270108,
+      "visible": false,
+      "enabled": false,
+      "maximized": false,
+      "foreground": false,
+      "frame": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "client": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "dpi": 96,
+      "clientWidthDp": 0.0
+    },
+    {
+      "pid": 38324,
+      "hwnd": 4522646,
+      "visible": false,
+      "enabled": false,
+      "maximized": false,
+      "foreground": false,
+      "frame": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "client": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "dpi": 96,
+      "clientWidthDp": 0.0
+    },
+    {
+      "pid": 38324,
+      "hwnd": 27854808,
+      "visible": false,
+      "enabled": false,
+      "maximized": false,
+      "foreground": false,
+      "frame": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "client": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "dpi": 96,
+      "clientWidthDp": 0.0
+    },
+    {
+      "pid": 38324,
+      "hwnd": 16653894,
+      "visible": false,
+      "enabled": false,
+      "maximized": false,
+      "foreground": false,
+      "frame": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "client": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "dpi": 96,
+      "clientWidthDp": 0.0
+    },
+    {
+      "pid": 38324,
+      "hwnd": 33492338,
+      "visible": false,
+      "enabled": false,
+      "maximized": false,
+      "foreground": false,
+      "frame": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "client": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "dpi": 96,
+      "clientWidthDp": 0.0
+    }
+  ],
+  "scope": "Read-only owned process geometry only; no other application contents or titles"
+}

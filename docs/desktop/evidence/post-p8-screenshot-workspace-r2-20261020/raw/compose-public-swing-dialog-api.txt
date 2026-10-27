@@ -1,0 +1,56 @@
+Compiled from "SwingDialog.desktop.kt"
+public final class androidx.compose.ui.awt.SwingDialog_desktopKt {
+  public static final void SwingDialog(boolean, kotlin.jvm.functions.Function1<? super androidx.compose.ui.input.key.KeyEvent, java.lang.Boolean>, kotlin.jvm.functions.Function1<? super androidx.compose.ui.input.key.KeyEvent, java.lang.Boolean>, kotlin.jvm.functions.Function0<androidx.compose.ui.awt.ComposeDialog>, kotlin.jvm.functions.Function1<? super androidx.compose.ui.awt.ComposeDialog, kotlin.Unit>, kotlin.jvm.functions.Function1<? super androidx.compose.ui.awt.ComposeDialog, kotlin.Unit>, kotlin.jvm.functions.Function3<? super androidx.compose.ui.window.DialogWindowScope, ? super androidx.compose.runtime.Composer, ? super java.lang.Integer, kotlin.Unit>, androidx.compose.runtime.Composer, int, int);
+  public static final void SwingDialog(kotlin.jvm.functions.Function0<kotlin.Unit>, androidx.compose.ui.window.DialogState, boolean, java.lang.String, androidx.compose.ui.graphics.painter.Painter, androidx.compose.ui.window.WindowDecoration, boolean, boolean, boolean, boolean, boolean, kotlin.jvm.functions.Function1<? super androidx.compose.ui.input.key.KeyEvent, java.lang.Boolean>, kotlin.jvm.functions.Function1<? super androidx.compose.ui.input.key.KeyEvent, java.lang.Boolean>, java.awt.Dialog$ModalityType, kotlin.jvm.functions.Function1<? super androidx.compose.ui.awt.ComposeDialog, kotlin.Unit>, kotlin.jvm.functions.Function3<? super androidx.compose.ui.window.DialogWindowScope, ? super androidx.compose.runtime.Composer, ? super java.lang.Integer, kotlin.Unit>, androidx.compose.runtime.Composer, int, int, int);
+  public static final java.awt.Dialog$ModalityType toAwtModalityType(androidx.compose.ui.window.DialogModalityType);
+  public static final kotlin.jvm.functions.Function0 access$SwingDialog$lambda$21(androidx.compose.runtime.State);
+  public static final androidx.compose.ui.window.DialogState access$SwingDialog$lambda$11(androidx.compose.runtime.State);
+}
+Compiled from "ComposeDialog.desktop.kt"
+public final class androidx.compose.ui.awt.ComposeDialog extends javax.swing.JDialog {
+  public static final int $stable;
+  public androidx.compose.ui.awt.ComposeDialog(java.awt.Window, java.awt.Dialog$ModalityType, java.awt.GraphicsConfiguration, org.jetbrains.skiko.SkiaLayerAnalytics, androidx.savedstate.SavedState);
+  public androidx.compose.ui.awt.ComposeDialog(java.awt.Window, java.awt.Dialog$ModalityType, java.awt.GraphicsConfiguration, org.jetbrains.skiko.SkiaLayerAnalytics, androidx.savedstate.SavedState, int, kotlin.jvm.internal.DefaultConstructorMarker);
+  public androidx.compose.ui.awt.ComposeDialog(java.awt.Frame, boolean, java.awt.GraphicsConfiguration, org.jetbrains.skiko.SkiaLayerAnalytics, androidx.savedstate.SavedState);
+  public androidx.compose.ui.awt.ComposeDialog(java.awt.Frame, boolean, java.awt.GraphicsConfiguration, org.jetbrains.skiko.SkiaLayerAnalytics, androidx.savedstate.SavedState, int, kotlin.jvm.internal.DefaultConstructorMarker);
+  public androidx.compose.ui.awt.ComposeDialog(org.jetbrains.skiko.SkiaLayerAnalytics, androidx.savedstate.SavedState);
+  public androidx.compose.ui.awt.ComposeDialog(org.jetbrains.skiko.SkiaLayerAnalytics, androidx.savedstate.SavedState, int, kotlin.jvm.internal.DefaultConstructorMarker);
+  public androidx.compose.ui.awt.ComposeDialog(java.awt.Window, java.awt.Dialog$ModalityType, java.awt.GraphicsConfiguration);
+  public androidx.compose.ui.awt.ComposeDialog(java.awt.Window, java.awt.Dialog$ModalityType, java.awt.GraphicsConfiguration, int, kotlin.jvm.internal.DefaultConstructorMarker);
+  public androidx.compose.ui.awt.ComposeDialog(java.awt.GraphicsConfiguration);
+  public androidx.compose.ui.awt.ComposeDialog(java.awt.GraphicsConfiguration, int, kotlin.jvm.internal.DefaultConstructorMarker);
+  public androidx.compose.ui.awt.ComposeDialog();
+  public final androidx.compose.ui.platform.PlatformContext$RootForTestListener getRootForTestListener$ui();
+  public final void setRootForTestListener$ui(androidx.compose.ui.platform.PlatformContext$RootForTestListener);
+  public java.awt.Component add(java.awt.Component);
+  public void remove(java.awt.Component);
+  public void setComponentOrientation(java.awt.ComponentOrientation);
+  public void setLocale(java.util.Locale);
+  public final void setContent(kotlin.jvm.functions.Function3<? super androidx.compose.ui.window.DialogWindowScope, ? super androidx.compose.runtime.Composer, ? super java.lang.Integer, kotlin.Unit>);
+  public final androidx.compose.ui.window.WindowExceptionHandler getExceptionHandler();
+  public final void setExceptionHandler(androidx.compose.ui.window.WindowExceptionHandler);
+  public static void getExceptionHandler$annotations();
+  public final androidx.compose.runtime.CompositionLocalContext getCompositionLocalContext();
+  public final void setCompositionLocalContext(androidx.compose.runtime.CompositionLocalContext);
+  public final void setContent(kotlin.jvm.functions.Function1<? super androidx.compose.ui.input.key.KeyEvent, java.lang.Boolean>, kotlin.jvm.functions.Function1<? super androidx.compose.ui.input.key.KeyEvent, java.lang.Boolean>, kotlin.jvm.functions.Function3<? super androidx.compose.ui.window.DialogWindowScope, ? super androidx.compose.runtime.Composer, ? super java.lang.Integer, kotlin.Unit>);
+  public static void setContent$default(androidx.compose.ui.awt.ComposeDialog, kotlin.jvm.functions.Function1, kotlin.jvm.functions.Function1, kotlin.jvm.functions.Function3, int, java.lang.Object);
+  public final float getUndecoratedResizerThickness-D9Ej5fM();
+  public final void setUndecoratedResizerThickness-0680j_4(float);
+  public final androidx.savedstate.SavedState saveState();
+  public void dispose();
+  public void setUndecorated(boolean);
+  public void setResizable(boolean);
+  public final boolean isTransparent();
+  public final void setTransparent(boolean);
+  public final void onRenderApiChanged(kotlin.jvm.functions.Function0<kotlin.Unit>);
+  public final void renderImmediately();
+  public final long getWindowHandle();
+  public final org.jetbrains.skiko.GraphicsApi getRenderApi();
+  public void addMouseListener(java.awt.event.MouseListener);
+  public void removeMouseListener(java.awt.event.MouseListener);
+  public void addMouseMotionListener(java.awt.event.MouseMotionListener);
+  public void removeMouseMotionListener(java.awt.event.MouseMotionListener);
+  public void addMouseWheelListener(java.awt.event.MouseWheelListener);
+  public void removeMouseWheelListener(java.awt.event.MouseWheelListener);
+  static {};
+}

@@ -1,0 +1,10 @@
+{
+  "terminal": "AUTOMATED_WINDOWS_CONPTY",
+  "humanTerminal": "NOT_TESTED",
+  "promptObserved": false,
+  "passwordEchoObserved": null,
+  "exit": 2,
+  "expectedExit": 0,
+  "timeout": false,
+  "status": "INCONCLUSIVE_NO_JAVA_CONSOLE"
+}

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.backup.StreamingEnvelopeProbeTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-25T02:36:46.044Z" hostname="DD1" time="3.515">
+  <properties/>
+  <testcase name="plain input is never called cryptographically authenticated" classname="com.example.chatbar.desktop.backup.StreamingEnvelopeProbeTest" time="0.001"/>
+  <testcase name="wrong password and late authentication failure never return result" classname="com.example.chatbar.desktop.backup.StreamingEnvelopeProbeTest" time="1.498"/>
+  <testcase name="budget failure closes input and does not publish result" classname="com.example.chatbar.desktop.backup.StreamingEnvelopeProbeTest" time="0.986"/>
+  <testcase name="stream authenticates multiple segments without archive semantic claim" classname="com.example.chatbar.desktop.backup.StreamingEnvelopeProbeTest" time="1.03"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,67 @@
+{
+  "startedUtc": "2026-10-16T04:12:13.9195804+00:00",
+  "endedUtc": "2026-10-16T04:23:17.0211149+00:00",
+  "durationSeconds": 663.1015345,
+  "exitCode": 0,
+  "arguments": [
+    "--offline",
+    "--no-daemon",
+    "--no-parallel",
+    "--max-workers=1",
+    "--priority=low",
+    "--console=plain",
+    "--no-configuration-cache",
+    "-Pkotlin.compiler.execution.strategy=in-process",
+    ":desktopApp:test",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopApplicationLifecycleTest",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopProcessLifecycleTest",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopDataDirectoryTest",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopPortableRootTest",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopDataRootOwnershipTest",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopIndexStartupPreflightTest"
+  ],
+  "copiedFreshJUnitXml": [
+    {
+      "name": "TEST-com.example.chatbar.desktop.DesktopApplicationLifecycleTest.xml",
+      "bytes": 7328,
+      "lastWriteUtc": "2026-10-16T04:22:47.0174382Z",
+      "sha256": "b51fc90105b3d9a319fc3dd526f7e380e3e67aca9ffb1629821aa780cadacac5"
+    },
+    {
+      "name": "TEST-com.example.chatbar.desktop.DesktopDataDirectoryTest.xml",
+      "bytes": 3280,
+      "lastWriteUtc": "2026-10-16T04:22:47.0194059Z",
+      "sha256": "c94ee437aa71ed1f8f6bbc7e4ecd06f8c005a2813487b2c820bb3190fa7b80c6"
+    },
+    {
+      "name": "TEST-com.example.chatbar.desktop.DesktopDataRootOwnershipTest.xml",
+      "bytes": 2572,
+      "lastWriteUtc": "2026-10-16T04:22:47.0204021Z",
+      "sha256": "33cd6c11db828b47c9480c08d0dbf7c29432f1580c7f9970384393343cbd02d9"
+    },
+    {
+      "name": "TEST-com.example.chatbar.desktop.DesktopIndexStartupPreflightTest.xml",
+      "bytes": 10381,
+      "lastWriteUtc": "2026-10-16T04:22:47.0213987Z",
+      "sha256": "d2b92171b58f0c441985b375f30f326d0851aae0a444032778116a1b1fc3dc22"
+    },
+    {
+      "name": "TEST-com.example.chatbar.desktop.DesktopPortableRootTest.xml",
+      "bytes": 3019,
+      "lastWriteUtc": "2026-10-16T04:22:46.9795127Z",
+      "sha256": "0fdfd5d51433a7a4e4271c809334021c1ec60f8d603fa8df50ac6ad8868329b0"
+    },
+    {
+      "name": "TEST-com.example.chatbar.desktop.DesktopProcessLifecycleTest.xml",
+      "bytes": 3036,
+      "lastWriteUtc": "2026-10-16T04:22:47.0712662Z",
+      "sha256": "3f4f275d7dac5b15927f5d6226ccd561882bc85f5906f63a881d24f296030092"
+    }
+  ]
+}

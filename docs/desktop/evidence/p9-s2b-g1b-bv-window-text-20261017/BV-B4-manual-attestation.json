@@ -1,0 +1,15 @@
+{
+  "recordType": "user response transcription",
+  "recordedUtc": "2026-10-16T15:36:35.016690+00:00",
+  "run": "BV-B4",
+  "scope": [
+    "exact fixed Chinese body",
+    "exact fixed English body",
+    "G0_DOMAIN_PRESENT_UNSUPPORTED",
+    "visible Close button",
+    "normal user close"
+  ],
+  "userAnswer": "两段正文、代码和关闭按钮均一致，已正常关闭",
+  "visualSignature": "CONFIRMED_BY_USER",
+  "historical180And600SecondTimeoutsAndPendingObservations": "RETAINED"
+}

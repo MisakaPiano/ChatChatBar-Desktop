@@ -1,0 +1,181 @@
+{
+  "scope": "T2-UI-001 narrow exact-source comparison only",
+  "files": [
+    {
+      "ref": "5e76a9cb841736bbbf3499a2e35e5789af4c5ca8",
+      "path": "app/app/src/main/java/com/example/chatbar/ui/manage/GlobalSettingsScreen.kt",
+      "gitBlob": "d7fc0f5b4464d0770fb013635be19df8a61e5e71",
+      "bytes": 58376,
+      "sha256": "ccf73f50fc6246607ee3424bef63fef27fccf2bcb3ef7e767a7be109d3f6c562",
+      "excerpt": [
+        {
+          "line": 316,
+          "text": "        SettingsCategory(\"models\", \"模型与连接\", effectiveModels.firstOrNull { it.id == effectiveDefaultModelId }?.displayName ?: \"未选择模型\"),"
+        },
+        {
+          "line": 317,
+          "text": "        SettingsCategory(\"reply\", \"回复与记忆\", \"上下文 ${draftContextWindowSize} 组 · 自动格式检查${if (automaticFormatCheckEnabled) \"开\" else \"关\"}\"),"
+        },
+        {
+          "line": 318,
+          "text": "        SettingsCategory(\"appearance\", \"外观与显示\", \"${when(themeMode) { ThemeMode.SYSTEM -> \"跟随系统\"; ThemeMode.LIGHT -> \"浅色\"; ThemeMode.DARK -> \"深色\" }} · 字号 ${bubbleFontScale}×\"),"
+        },
+        {
+          "line": 319,
+          "text": "        SettingsCategory(\"player\", \"玩家身份\", playerName.ifBlank { \"未填写玩家名称\" }),"
+        },
+        {
+          "line": 320,
+          "text": "        SettingsCategory(\"images\", \"图片生成\", \"${novelAiImageModel.displayName} · ${if (novelAiConfigured) \"已配置密钥\" else \"未配置密钥\"}\"),"
+        },
+        {
+          "line": 321,
+          "text": "        SettingsCategory(\"voice\", \"语音与朗读\", \"${if (fishAudioConfigured) \"已配置密钥\" else \"未配置密钥\"} · 听书${if (audiobookModeEnabled) \"开\" else \"关\"}\"),"
+        },
+        {
+          "line": 322,
+          "text": "        SettingsCategory(\"moments\", \"朋友圈\", if (momentsEnabled) formatMomentFrequency(draftMomentDelayRange.minHours, draftMomentDelayRange.maxHours) else \"已关闭\"),"
+        },
+        {
+          "line": 323,
+          "text": "        SettingsCategory(\"updates\", \"更新与诊断\", \"${BuildConfig.VERSION_NAME} · ${if (pendingCrashReport != null) \"有诊断报告\" else \"暂无诊断报告\"}\")"
+        },
+        {
+          "line": 324,
+          "text": "    )"
+        }
+      ]
+    },
+    {
+      "ref": "0f2f4c5d62114474c9e878f549ce97bd714a2b0a",
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishAudioPanel.kt",
+      "gitBlob": "f255e92f18b957cc39104f20b37a965c18735600",
+      "bytes": 12959,
+      "sha256": "f202f032328dd232e6aaad763689cec2d39eea9d0941d88e164c86d08cb862dd",
+      "excerpt": [
+        {
+          "line": 35,
+          "text": "@Composable"
+        },
+        {
+          "line": 36,
+          "text": "internal fun DesktopFishGlobalSettings(state: DesktopModelSettingsState, controller: DesktopModelSettingsController) {"
+        },
+        {
+          "line": 37,
+          "text": "    val draft = state.settings ?: return"
+        },
+        {
+          "line": 38,
+          "text": "    val scope = rememberCoroutineScope()"
+        },
+        {
+          "line": 39,
+          "text": "    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {"
+        },
+        {
+          "line": 40,
+          "text": "        StatusText(\"语音与朗读 · Fish Audio\")"
+        },
+        {
+          "line": 41,
+          "text": "        controller.fishCredentials?.let { DesktopFishCredentialPanel(it) }"
+        },
+        {
+          "line": 42,
+          "text": "        SearchableChoice(\"Fish TTS 模型\", FishAudioTtsModels.supported, draft.fishAudioTtsModelId, { it }) {"
+        }
+      ]
+    },
+    {
+      "ref": "0f2f4c5d62114474c9e878f549ce97bd714a2b0a",
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopManagePanel.kt",
+      "gitBlob": "50784062733ffc791cf04076d3db73616515278d",
+      "bytes": 50216,
+      "sha256": "0ce1be3fa69550030825aa897420835337e7af5a14e34be034f9caa0c90f340c",
+      "excerpt": [
+        {
+          "line": 248,
+          "text": "                StatusText(\"${t(DesktopUiText.BUBBLE_FONT_SCALE)}: ${java.lang.String.format(java.util.Locale.ROOT, \"%.1f\", state.chatBubbleFontScale)}x\")"
+        },
+        {
+          "line": 249,
+          "text": "                Slider("
+        },
+        {
+          "line": 250,
+          "text": "                    value = state.chatBubbleFontScale,"
+        },
+        {
+          "line": 251,
+          "text": "                    onValueChange = { value ->"
+        },
+        {
+          "line": 252,
+          "text": "                        scope.launch(start = CoroutineStart.UNDISPATCHED) { modelSettingsController.updateBubbleFontScale(value) }"
+        },
+        {
+          "line": 253,
+          "text": "                    },"
+        },
+        {
+          "line": 254,
+          "text": "                    valueRange = 0.5f..1.5f,"
+        },
+        {
+          "line": 255,
+          "text": "                    steps = 9,"
+        },
+        {
+          "line": 256,
+          "text": "                    enabled = state.settings != null,"
+        },
+        {
+          "line": 257,
+          "text": "                    colors = SliderDefaults.colors(thumbColor = DesktopBootstrapColors.foreground,"
+        },
+        {
+          "line": 258,
+          "text": "                        activeTrackColor = DesktopBootstrapColors.foreground,"
+        },
+        {
+          "line": 259,
+          "text": "                        inactiveTrackColor = DesktopBootstrapColors.border),"
+        },
+        {
+          "line": 260,
+          "text": "                )"
+        },
+        {
+          "line": 261,
+          "text": "                StatusText(t(DesktopUiText.BUBBLE_FONT_IMMEDIATE))"
+        },
+        {
+          "line": 262,
+          "text": "                if (state.bubbleFontScaleSaving) StatusText(t(DesktopUiText.WORKING))"
+        },
+        {
+          "line": 263,
+          "text": "                if (state.bubbleFontScaleError) StatusText(t(DesktopUiText.BUBBLE_FONT_SAVE_FAILED), DesktopBootstrapColors.destructive)"
+        },
+        {
+          "line": 264,
+          "text": "                DesktopFishGlobalSettings(state, modelSettingsController)"
+        },
+        {
+          "line": 265,
+          "text": "                DesktopAutomaticBackupSettingsPanel(backupSettingsController)"
+        },
+        {
+          "line": 266,
+          "text": "                DesktopCoreSettingsPanel("
+        },
+        {
+          "line": 267,
+          "text": "                    state = state,"
+        }
+      ]
+    }
+  ],
+  "productionChanges": ""
+}

@@ -1,0 +1,67 @@
+{
+  "manual": {
+    "GET /model": 8,
+    "GET sample": 3,
+    "POST /v1/tts": 2
+  },
+  "totalManualHttp": 13,
+  "manualCatalogPages": [
+    1,
+    1,
+    3,
+    2,
+    1,
+    1,
+    1,
+    1
+  ],
+  "waitingSampleRequests": 2,
+  "waitingBodiesDrained": 2,
+  "preparationSeparate": {
+    "catalogGet": 2,
+    "sampleGet": 1,
+    "fakeTtsPost": 1
+  },
+  "combinedSupportRequests": {
+    "catalogGet": 10,
+    "sampleGet": 4,
+    "fakeTtsPost": 3
+  },
+  "realFishGet": 0,
+  "realFishTts": 0,
+  "sampleSecretHeaderLeakObserved": false,
+  "manualAutomaticRetryCount": "Not inferred from aggregate logs; Codex did not retry operations",
+  "extraOperations": "User acknowledged extra Enter/jump/query and explained they were filling omitted items. Additional sample/POST counts retained, not erased or misclassified as proven client retries.",
+  "m3ExactSubmittedPages": {
+    "catalogPages": [
+      3,
+      2
+    ],
+    "expected": [
+      3,
+      2
+    ],
+    "catalogDelta": 2,
+    "otherHttpDelta": 0,
+    "newEvents": 2,
+    "invalid4RequestObserved": false,
+    "realFishGet": 0,
+    "realFishTts": 0
+  },
+  "m4Resize": {
+    "eventsBefore": 15,
+    "eventsAfter": 15,
+    "newEvents": [],
+    "implicitRequestObserved": false,
+    "realFishGet": 0,
+    "realFishTts": 0
+  },
+  "m4CachedReplay": {
+    "eventsBefore": 15,
+    "eventsAfter": 15,
+    "newEvents": [],
+    "cachedReplayExtraHttp": false,
+    "realFishGet": 0,
+    "realFishTts": 0
+  }
+}

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.card.CharacterAutoFillServiceTest" tests="18" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:19.315Z" hostname="DD1" time="0.122">
+  <properties/>
+  <testcase name="merge creates characters when current list is empty" classname="com.example.chatbar.domain.card.CharacterAutoFillServiceTest" time="0.048"/>
+  <testcase name="merge fills multiple blank character slots by target index" classname="com.example.chatbar.domain.card.CharacterAutoFillServiceTest" time="0.002"/>
+  <testcase name="system prompt does not mention fields outside auto fill surface" classname="com.example.chatbar.domain.card.CharacterAutoFillServiceTest" time="0.006"/>
+  <testcase name="merge fills blanks without overwriting existing fields" classname="com.example.chatbar.domain.card.CharacterAutoFillServiceTest" time="0.001"/>
+  <testcase name="prompt payload includes source image context only when image exists" classname="com.example.chatbar.domain.card.CharacterAutoFillServiceTest" time="0.026"/>
+  <testcase name="prompt payload exposes targets and locked context only" classname="com.example.chatbar.domain.card.CharacterAutoFillServiceTest" time="0.002"/>
+  <testcase name="prompt payload lets default empty card create character list" classname="com.example.chatbar.domain.card.CharacterAutoFillServiceTest" time="0.0"/>
+  <testcase name="merge appends unmatched created characters when card already has named characters" classname="com.example.chatbar.domain.card.CharacterAutoFillServiceTest" time="0.0"/>
+  <testcase name="parser accepts fenced json with surrounding text" classname="com.example.chatbar.domain.card.CharacterAutoFillServiceTest" time="0.003"/>
+  <testcase name="parser tolerates trailing commas in object and array" classname="com.example.chatbar.domain.card.CharacterAutoFillServiceTest" time="0.0"/>
+  <testcase name="merge keeps all generated characters when default empty card has more than six" classname="com.example.chatbar.domain.card.CharacterAutoFillServiceTest" time="0.001"/>
+  <testcase name="merge replaces default empty character with generated character list" classname="com.example.chatbar.domain.card.CharacterAutoFillServiceTest" time="0.001"/>
+  <testcase name="parser extracts final json after thinking text" classname="com.example.chatbar.domain.card.CharacterAutoFillServiceTest" time="0.002"/>
+  <testcase name="merge does not append unmatched targeted characters" classname="com.example.chatbar.domain.card.CharacterAutoFillServiceTest" time="0.0"/>
+  <testcase name="merge keeps documents world books and advanced prompts unchanged" classname="com.example.chatbar.domain.card.CharacterAutoFillServiceTest" time="0.0"/>
+  <testcase name="parser accepts draft with unescaped inner quotes" classname="com.example.chatbar.domain.card.CharacterAutoFillServiceTest" time="0.001"/>
+  <testcase name="blank default image prompt falls back to prompt template default" classname="com.example.chatbar.domain.card.CharacterAutoFillServiceTest" time="0.0"/>
+  <testcase name="prompt payload includes externalResearch only when brief has content" classname="com.example.chatbar.domain.card.CharacterAutoFillServiceTest" time="0.027"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

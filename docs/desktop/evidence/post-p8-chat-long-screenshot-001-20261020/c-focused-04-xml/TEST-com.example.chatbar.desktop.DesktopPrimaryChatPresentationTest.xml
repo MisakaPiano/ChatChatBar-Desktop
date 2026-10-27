@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopPrimaryChatPresentationTest" tests="13" skipped="0" failures="0" errors="0" timestamp="2026-10-20T06:51:39.728Z" hostname="DD1" time="0.02">
+  <properties/>
+  <testcase name="archived Chinese session title fills botname without mutating source message" classname="com.example.chatbar.desktop.DesktopPrimaryChatPresentationTest" time="0.002"/>
+  <testcase name="unsegmented assistant keeps whole-message text and expandable status" classname="com.example.chatbar.desktop.DesktopPrimaryChatPresentationTest" time="0.002"/>
+  <testcase name="streaming preview uses shared parser and hides speaker metadata" classname="com.example.chatbar.desktop.DesktopPrimaryChatPresentationTest" time="0.0"/>
+  <testcase name="streaming and persisted assistant use identical segmented and legacy semantics" classname="com.example.chatbar.desktop.DesktopPrimaryChatPresentationTest" time="0.002"/>
+  <testcase name="role fallback labels localize without changing placeholder content" classname="com.example.chatbar.desktop.DesktopPrimaryChatPresentationTest" time="0.0"/>
+  <testcase name="non-assistant visible text hides comments and keeps status panels" classname="com.example.chatbar.desktop.DesktopPrimaryChatPresentationTest" time="0.0"/>
+  <testcase name="speaker avatar uses card fallback for unmarked dialogue" classname="com.example.chatbar.desktop.DesktopPrimaryChatPresentationTest" time="0.001"/>
+  <testcase name="segmented assistant uses shared visible roleplay semantics and no literal markers" classname="com.example.chatbar.desktop.DesktopPrimaryChatPresentationTest" time="0.0"/>
+  <testcase name="status options expand and reasoning stays collapsed with UI-only toggles" classname="com.example.chatbar.desktop.DesktopPrimaryChatPresentationTest" time="0.001"/>
+  <testcase name="markdown covers baseline visible constructs" classname="com.example.chatbar.desktop.DesktopPrimaryChatPresentationTest" time="0.011"/>
+  <testcase name="home title and preview honor player override global fallback bot name and persisted source" classname="com.example.chatbar.desktop.DesktopPrimaryChatPresentationTest" time="0.0"/>
+  <testcase name="desktop markdown presents emphasis heading links and lists without raw delimiters" classname="com.example.chatbar.desktop.DesktopPrimaryChatPresentationTest" time="0.001"/>
+  <testcase name="present Character effective bot name wins over archived session title" classname="com.example.chatbar.desktop.DesktopPrimaryChatPresentationTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

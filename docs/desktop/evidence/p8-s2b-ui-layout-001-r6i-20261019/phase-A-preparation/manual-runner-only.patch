@@ -1,0 +1,283 @@
+--- R6H/DesktopFishPickerNativeUxTest.kt
++++ R6I-A/DesktopFishPickerNativeUxTest.kt
+@@ -50,6 +50,19 @@
+ 
+ /** Native input to exact synthetic window identities; no screen capture or global key interception. */
+ class DesktopFishPickerNativeUxTest {
++    companion object {
++        /** Explicit JavaExec entry only: never a JUnit test and never launches from test/check. */
++        @JvmStatic fun main(args: Array<String>) {
++            require(args.contentEquals(arrayOf("--r6i-physical-mouse-only")))
++            check(System.getProperty("ccb.r6i.explicitManualStart") == "true")
++            val control = Path.of(checkNotNull(System.getProperty("ccb.r6i.controlRoot"))).toAbsolutePath().normalize()
++            require(control == Path.of("H:/ChatChatBar-Desktop/app/desktopApp/build/p8-s2b-ui-layout-001-r6i-20261019/manual-control").toAbsolutePath().normalize())
++            check(DesktopFishPickerNativeUxTest().runPhysicalMouseControl(control)) {
++                "R6I physical input control did not PASS; see isolated raw records"
++            }
++        }
++    }
++
+     private val awt = object : CoroutineDispatcher() {
+         override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
+     }
+@@ -62,7 +75,23 @@
+     private data class NativeMouseTarget(val destinationVerified: Boolean, val pointerAtPlan: Boolean,
+         val thumbHit: Boolean, val leftDown: Boolean, val observation: String)
+ 
++    private class HumanMouseControl {
++        var armed = false
++        var started = false
++        var released = false
++        var classification: String? = null
++        var presses = 0
++        var drags = 0
++        var releases = 0
++        var events = 0
++        var focusLossesDuringDrag = 0
++        var beforeRange = 0f
++        var beforeFirst = ""
++        var thumb = Rectangle()
++    }
++
+     private inner class Fixture(val width: Int, val server: MockWebServer, val output: DesktopAudioOutput = PreviewOutputFake(),
++        val human: HumanMouseControl? = null,
+         catalog: (FishAudioModelQuery) -> FishAudioModelPage = {
+             FishAudioModelPage(items = listOf(FishAudioModel("r3-voice", "R3 synthetic voice",
+                 samples = listOf(FishAudioSample(audio = syntheticOfficialSample)))), total = 1)
+@@ -82,7 +111,8 @@
+         }
+         val child = AtomicReference<ComposeWindow?>()
+         val owner = AtomicReference<ComposeWindow?>()
+-        val title = "Fish R3 isolated native ${sequence.incrementAndGet()}"
++        val title = if (human == null) "Fish R3 isolated native ${sequence.incrementAndGet()}"
++            else "R6I 手动物理鼠标 · 合成音色库（非正式 CCB 数据）"
+         val robot = Robot().apply { isAutoWaitForIdle = false }
+         var open by mutableStateOf(true)
+         var closes = 0
+@@ -202,13 +232,22 @@
+             if (event is WindowEvent && event.id == WindowEvent.WINDOW_OPENED) {
+                 (event.window as? ComposeWindow)?.takeIf { it.title == title }?.let(child::set)
+             }
++            if (human?.armed == true && event is WindowEvent && event.window === child.get()) {
++                println("FISH_R6I_WINDOW id=${event.id} active=${event.window.isActive} focused=${event.window.isFocused} " +
++                    "gestureStarted=${human.started} gestureReleased=${human.released}")
++                if (human.started && !human.released && event.id in listOf(WindowEvent.WINDOW_DEACTIVATED, WindowEvent.WINDOW_LOST_FOCUS)) {
++                    human.focusLossesDuringDrag++
++                    human.classification = "FOREGROUND_OR_OCCLUSION"
++                }
++                System.out.flush()
++            }
+             if (event is KeyEvent && event.keyCode == KeyEvent.VK_ESCAPE) {
+                 val window = SwingUtilities.getWindowAncestor(event.component)
+                 if (window === child.get() || window?.owner === child.get()) {
+                     println("FISH_R3_AWT type=${event.id} consumed=${event.isConsumed} focus=${KeyboardFocusManager.getCurrentKeyboardFocusManager().focusOwner?.javaClass?.simpleName}")
+                 }
+             }
+-            if (observeScrollbar && event is MouseEvent) {
++            if (observeScrollbar && event is MouseEvent && (human == null || mouseWindow(event.component) === child.get())) {
+                 val source = event.component
+                 val oldTarget = SwingUtilities.getWindowAncestor(source)
+                 val target = mouseWindow(source)
+@@ -237,18 +276,25 @@
+                         "component=${source.javaClass.name} targetOwned=true active=${owned.isActive} ownership=$classification"
+                     mouseEvents += row
+                     println("FISH_R4_MOUSE $row")
++                    if (human != null) try { observeHumanMouse(event) } catch (failure: Throwable) {
++                        human.classification = "INCONCLUSIVE"
++                        println("FISH_R6I_OBSERVER_ERROR type=${failure.javaClass.name} noRetry=true")
++                        System.out.flush()
++                    }
+                 }
+             }
+         }
+         val scene: ImageComposeScene
+         init {
+             Toolkit.getDefaultToolkit().addAWTEventListener(observer, AWTEvent.WINDOW_EVENT_MASK or AWTEvent.KEY_EVENT_MASK or
+-                AWTEvent.MOUSE_EVENT_MASK or AWTEvent.MOUSE_MOTION_EVENT_MASK or AWTEvent.MOUSE_WHEEL_EVENT_MASK)
++                AWTEvent.MOUSE_EVENT_MASK or AWTEvent.MOUSE_MOTION_EVENT_MASK or AWTEvent.MOUSE_WHEEL_EVENT_MASK or
++                (if (human == null) 0L else AWTEvent.WINDOW_FOCUS_EVENT_MASK))
+             picker.search()
+             scene = ImageComposeScene(16, 16) {
+                 val state = rememberWindowState(width = width.dp, height = 720.dp)
+                 SideEffect { windowState = state }
+-                Window(onCloseRequest = {}, title = "R3 synthetic owner", state = rememberWindowState(width = 500.dp, height = 200.dp)) {
++                Window(onCloseRequest = {}, title = if (human == null) "R3 synthetic owner" else "R6I 合成 owner · 无真实数据",
++                    state = rememberWindowState(width = 500.dp, height = 200.dp)) {
+                     val parent = window
+                     SideEffect { owner.set(parent) }
+                     CompositionLocalProvider(LocalDesktopFishParentWindow provides parent) {
+@@ -381,6 +427,73 @@
+                 "thumbOutline=$thumbSize outlineCount=$thumbOutlineCount items=${visiblePageItems()} queries=$queries requests=${server.requestCount} bindings=$bindings")
+         }
+         fun firstVisiblePageItem() = visiblePageItems().first().substringBefore(":top=")
++
++        fun armHumanMouse() {
++            val h = checkNotNull(human)
++            check(!h.armed && !h.started)
++            val bar = node("音色列表滚动条")
++            h.thumb = Rectangle(bar.positionOnScreen.x.roundToInt(), bar.positionOnScreen.y.roundToInt(),
++                thumbSize.width.roundToInt(), thumbSize.height.roundToInt())
++            h.beforeRange = node("Fish 音色列表").config[SemanticsProperties.VerticalScrollAxisRange].value()
++            h.beforeFirst = firstVisiblePageItem()
++            check(h.beforeRange == 0f && h.thumb.width > 0 && h.thumb.height > 0)
++            scrollbarSnapshot("R6I-human-armed")
++            h.armed = true
++            println("FISH_R6I_ARMED thumb=${h.thumb} beforeRange=${h.beforeRange} beforeFirst=${h.beforeFirst} " +
++                "activationOutsideListExcluded=true maxControlledGestures=1")
++            System.out.flush()
++        }
++
++        private fun observeHumanMouse(event: MouseEvent) {
++            val h = checkNotNull(human)
++            if (!h.armed || h.released || event.id !in listOf(MouseEvent.MOUSE_PRESSED, MouseEvent.MOUSE_DRAGGED, MouseEvent.MOUSE_RELEASED)) return
++            val point = Point(event.xOnScreen, event.yOnScreen)
++            if (!h.started) {
++                if (event.id != MouseEvent.MOUSE_PRESSED || event.button != MouseEvent.BUTTON1) return
++                val list = node("Fish 音色列表")
++                val bar = node("音色列表滚动条")
++                fun rect(n: SemanticsNode) = Rectangle(n.positionOnScreen.x.roundToInt(), n.positionOnScreen.y.roundToInt(),
++                    n.boundsInRoot.width.roundToInt(), n.boundsInRoot.height.roundToInt())
++                if (!rect(list).contains(point) && !rect(bar).contains(point)) {
++                    println("FISH_R6I_MOUSE excluded=ACTIVATION_OR_NON_LIST_PRESS sourceType=${event.component.javaClass.name} screen=$point")
++                    System.out.flush()
++                    return
++                }
++                h.started = true
++                if (!h.thumb.contains(point)) h.classification = "MANUAL_HIT_MISS"
++            }
++            h.events++
++            if (h.events > 1024) {
++                h.classification = "INCONCLUSIVE"
++                h.released = event.id == MouseEvent.MOUSE_RELEASED
++                return
++            }
++            when (event.id) {
++                MouseEvent.MOUSE_PRESSED -> h.presses++
++                MouseEvent.MOUSE_DRAGGED -> h.drags++
++                MouseEvent.MOUSE_RELEASED -> { h.releases++; h.released = true }
++            }
++            val probe = nativeHitTest("R6I-event-${event.id}-${h.events}", point, h.thumb)
++            if (probe == null) h.classification = "INCONCLUSIVE"
++            else if (!probe.destinationVerified) h.classification = "FOREGROUND_OR_OCCLUSION"
++            if (h.presses != 1 || (event.id == MouseEvent.MOUSE_DRAGGED && event.modifiersEx and InputEvent.BUTTON1_DOWN_MASK == 0)) {
++                h.classification = "INCONCLUSIVE"
++            }
++            println("FISH_R6I_MOUSE id=${event.id} sourceType=${event.component.javaClass.name} targetOwned=true " +
++                "screen=$point eventWhen=${event.`when`} button=${event.button} mask=${event.modifiersEx} " +
++                "pressOnInitialThumb=${h.thumb.contains(point)} range=${node("Fish 音色列表").config[SemanticsProperties.VerticalScrollAxisRange].value()} " +
++                "first=${firstVisiblePageItem()} presses=${h.presses} drags=${h.drags} releases=${h.releases} " +
++                "classification=${h.classification ?: "PENDING"}")
++            System.out.flush()
++        }
++
++        fun probeHumanDrag() {
++            val h = checkNotNull(human)
++            if (!h.started || h.released) return
++            val probe = nativeHitTest("R6I-drag-poll", MouseInfo.getPointerInfo().location, h.thumb)
++            if (probe == null) h.classification = "INCONCLUSIVE"
++            else if (!probe.destinationVerified) h.classification = "FOREGROUND_OR_OCCLUSION"
++        }
+ 
+         fun assertPagerLayout() {
+             val w = child.get()!!
+@@ -669,6 +782,100 @@
+     private fun SemanticsNode.label(value: String) = config.getOrNull(SemanticsProperties.ContentDescription)?.contains(value) == true ||
+         config.getOrNull(SemanticsProperties.Text)?.any { it.text == value } == true
+ 
++    /** Human-only control: deliberately never calls ready/click/key/text/drag/wheel or any Robot method. */
++    private fun runPhysicalMouseControl(control: Path): Boolean = runBlocking(awt) {
++        Files.createDirectories(control)
++        check(!Files.exists(control.resolve("arm.request")) && !Files.exists(control.resolve("cancel.request")))
++        Files.createFile(control.resolve("started.lock")) // CREATE_NEW prevents an accidental second run.
++        val server = MockWebServer().also {
++            it.dispatcher = object : Dispatcher() {
++                override fun dispatch(request: RecordedRequest) = MockResponse().setResponseCode(503)
++            }
++            it.start(java.net.InetAddress.getLoopbackAddress(), 0)
++        }
++        val h = HumanMouseControl()
++        var fixture: Fixture? = null
++        var result = "NOT_EXECUTED"
++        var afterRange: Float? = null
++        var afterFirst: String? = null
++        var clean = false
++        try {
++            val f = Fixture(1100, server, human = h, catalog = { q -> FishAudioModelPage(
++                items = (1..20).map { FishAudioModel("page-${q.pageNumber}-$it", "Page ${q.pageNumber} synthetic voice $it") }, total = 120) })
++            fixture = f
++            // No toFront/requestFocus: only the user may activate this manual fixture.
++            f.await { f.child.get()?.isShowing == true && !f.picker.state.value.loading && f.thumbSize.height > 0 &&
++                f.has("Fish 音色列表") && f.node("Fish 音色列表").config[SemanticsProperties.VerticalScrollAxisRange].maxValue() > 0 }
++            check(f.owner.get()?.isEnabled == false)
++            println("FISH_R6I_READY title=${f.title} frame=${f.child.get()!!.bounds} client=${f.child.get()!!.contentPane.size} " +
++                "scale=${f.child.get()!!.graphicsConfiguration.defaultTransform} activationWaitSeconds=120 dragWaitSeconds=120 " +
++                "armFile=arm.request cancelFile=cancel.request realFishPaths=UNAVAILABLE robotInput=FORBIDDEN")
++            Files.writeString(control.resolve("ready.txt"), "R6I synthetic window ready; user activation only; not armed\n")
++            System.out.flush()
++            val activationDeadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(120)
++            while (f.open && !Files.exists(control.resolve("cancel.request")) && !Files.exists(control.resolve("arm.request")) &&
++                System.nanoTime() < activationDeadline) f.frame()
++            if (f.open && Files.exists(control.resolve("arm.request")) && !Files.exists(control.resolve("cancel.request"))) {
++                f.observeScrollbar = true
++                f.armHumanMouse()
++                val gestureDeadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(120)
++                var nextProbe = 0L
++                while (f.open && !h.released && h.classification == null && !Files.exists(control.resolve("cancel.request")) && System.nanoTime() < gestureDeadline) {
++                    if (System.nanoTime() >= nextProbe) {
++                        f.probeHumanDrag()
++                        nextProbe = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(250)
++                    }
++                    f.frame()
++                }
++                repeat(8) { f.frame() }
++                if (f.open) {
++                    afterRange = f.node("Fish 音色列表").config[SemanticsProperties.VerticalScrollAxisRange].value()
++                    afterFirst = f.firstVisiblePageItem()
++                }
++                result = when {
++                    h.classification != null -> checkNotNull(h.classification)
++                    !h.started -> "NOT_EXECUTED"
++                    !f.open || Files.exists(control.resolve("cancel.request")) || !h.released -> "INCONCLUSIVE"
++                    f.queries != 1 || f.server.requestCount != 0 || f.bindings != 0 -> "INCONCLUSIVE"
++                    h.presses != 1 || h.drags == 0 || h.releases != 1 -> "INCONCLUSIVE"
++                    afterRange != null && afterRange > h.beforeRange && afterFirst != h.beforeFirst -> "PHYSICAL_INPUT_PASS"
++                    else -> "PHYSICAL_INPUT_FAILURE"
++                }
++            }
++        } catch (failure: Throwable) {
++            result = "INCONCLUSIVE"
++            println("FISH_R6I_RUNNER_ERROR type=${failure.javaClass.name} noRetry=true")
++        } finally {
++            // Never synthesize Release. Give a physically held button bounded time to be released by its user.
++            try {
++                val releaseDeadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10)
++                while (h.started && User32.INSTANCE.GetAsyncKeyState(0x01).toInt() and 0x8000 != 0 && System.nanoTime() < releaseDeadline) delay(25)
++                if (h.started && User32.INSTANCE.GetAsyncKeyState(0x01).toInt() and 0x8000 != 0) result = "INCONCLUSIVE"
++            } catch (failure: Throwable) {
++                result = "INCONCLUSIVE"
++                println("FISH_R6I_RELEASE_PROBE_ERROR type=${failure.javaClass.name}")
++            }
++            try { fixture?.dispose(); clean = fixture != null } catch (failure: Throwable) {
++                result = "INCONCLUSIVE"
++                println("FISH_R6I_CLEANUP_ERROR type=${failure.javaClass.name}")
++            } finally {
++                try { server.close() } catch (failure: Throwable) {
++                    clean = false
++                    result = "INCONCLUSIVE"
++                    println("FISH_R6I_SERVER_CLOSE_ERROR type=${failure.javaClass.name}")
++                }
++            }
++            val summary = "classification=$result humanSignoff=NOT_SIGNED armed=${h.armed} " +
++                "presses=${h.presses} drags=${h.drags} releases=${h.releases} beforeRange=${h.beforeRange} afterRange=$afterRange " +
++                "beforeFirst=${h.beforeFirst} afterFirst=$afterFirst focusLossesDuringDrag=${h.focusLossesDuringDrag} " +
++                "queries=${fixture?.queries} mockHttp=${server.requestCount} bindings=${fixture?.bindings} cleanup=$clean realFishGet=0 realFishTts=0"
++            println("FISH_R6I_RESULT $summary")
++            Files.writeString(control.resolve("result.txt"), summary + "\n")
++            System.out.flush()
++        }
++        result == "PHYSICAL_INPUT_PASS" && clean
++    }
++
+     @Test fun `native Escape closes exactly one panel then picker with and without field focus at both widths`() = runBlocking(awt) {
+         for (width in listOf(1100, 720)) for (tool in listOf("高级筛选", "免费文本生成")) for (focusField in listOf(false, true)) {
+             val server = MockWebServer().also { it.start() }

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopImageClipboardFilesTest" tests="17" skipped="0" failures="0" errors="0" timestamp="2026-10-17T19:04:11.634Z" hostname="DD1" time="7.622">
+  <properties/>
+  <testcase name="failed publication does not start prior active release and interrupted metadata stays intact" classname="com.example.chatbar.desktop.DesktopImageClipboardFilesTest" time="0.05"/>
+  <testcase name="static result retains image flavor without staging a file" classname="com.example.chatbar.desktop.DesktopImageClipboardFilesTest" time="0.007"/>
+  <testcase name="reactivation and backwards clock restart grace without early removal" classname="com.example.chatbar.desktop.DesktopImageClipboardFilesTest" time="0.096"/>
+  <testcase name="GIF derived disguise and restored animation keep frames and timing when copied" classname="com.example.chatbar.desktop.DesktopImageClipboardFilesTest" time="0.06"/>
+  <testcase name="unavailable clipboard retains expired entries and failed publication retains staged bytes" classname="com.example.chatbar.desktop.DesktopImageClipboardFilesTest" time="0.028"/>
+  <testcase name="incomplete truncated and foreign staging remains intact while copy succeeds" classname="com.example.chatbar.desktop.DesktopImageClipboardFilesTest" time="0.028"/>
+  <testcase name="unknown modified or foreign entries never deleted" classname="com.example.chatbar.desktop.DesktopImageClipboardFilesTest" time="0.028"/>
+  <testcase name="expired superseded entries clean up but current and young files survive" classname="com.example.chatbar.desktop.DesktopImageClipboardFilesTest" time="0.048"/>
+  <testcase name="confirmed day ten release survives rollback and recovery without being shortened" classname="com.example.chatbar.desktop.DesktopImageClipboardFilesTest" time="0.102"/>
+  <testcase name="first release during rollback cannot precede day ten creation" classname="com.example.chatbar.desktop.DesktopImageClipboardFilesTest" time="0.081"/>
+  <testcase name="capacity failure preserves active file and input" classname="com.example.chatbar.desktop.DesktopImageClipboardFilesTest" time="0.019"/>
+  <testcase name="first release waits for trustworthy day eighteen observation across instances" classname="com.example.chatbar.desktop.DesktopImageClipboardFilesTest" time="0.09"/>
+  <testcase name="long active legacy copy receives seven days after confirmed release across instances" classname="com.example.chatbar.desktop.DesktopImageClipboardFilesTest" time="0.063"/>
+  <testcase name="unknown entries consume default entry and byte quotas without deletion" classname="com.example.chatbar.desktop.DesktopImageClipboardFilesTest" time="0.077"/>
+  <testcase name="legacy release preceding creation is retained as uncertain" classname="com.example.chatbar.desktop.DesktopImageClipboardFilesTest" time="0.024"/>
+  <testcase name="junction target is never inspected changed or cleaned" classname="com.example.chatbar.desktop.DesktopImageClipboardFilesTest" time="6.784"/>
+  <testcase name="disguised APNG file flavor preserves every byte marker and survives owner scope" classname="com.example.chatbar.desktop.DesktopImageClipboardFilesTest" time="0.036"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

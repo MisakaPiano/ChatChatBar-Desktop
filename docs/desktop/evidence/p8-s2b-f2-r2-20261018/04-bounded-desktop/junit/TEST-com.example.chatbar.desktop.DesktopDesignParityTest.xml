@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopDesignParityTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-18T11:02:37.670Z" hostname="DD1" time="3.869">
+  <properties/>
+  <testcase name="extra requirement persists in Studio and new Design snapshots it while old context is immutable" classname="com.example.chatbar.desktop.DesktopDesignParityTest" time="0.449"/>
+  <testcase name="leave without durable current stays new but clears transient input without reseeding legacy" classname="com.example.chatbar.desktop.DesktopDesignParityTest" time="0.045"/>
+  <testcase name="imported image reverse Prompt uses only draft requirement through the fake Designer" classname="com.example.chatbar.desktop.DesktopDesignParityTest" time="0.184"/>
+  <testcase name="scroll disposal restores same conversation and settings roundtrip while history selection opens newest" classname="com.example.chatbar.desktop.DesktopDesignParityTest" time="1.514"/>
+  <testcase name="real Studio auxiliary OS close runs leave semantics" classname="com.example.chatbar.desktop.DesktopDesignParityTest" time="0.959"/>
+  <testcase name="leaving transient new clears input attachment progress error and restores current without writes" classname="com.example.chatbar.desktop.DesktopDesignParityTest" time="0.165"/>
+  <testcase name="internal Design navigation preserves input while Return Studio ends transient tool session" classname="com.example.chatbar.desktop.DesktopDesignParityTest" time="0.552"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

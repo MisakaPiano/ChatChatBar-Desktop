@@ -1,5 +1,7 @@
 package com.example.chatbar.desktop.security
 
+import com.example.chatbar.data.operation.AppDataOperationGate
+import com.example.chatbar.data.operation.NoOpAppDataOperationGate
 import com.example.chatbar.data.local.entity.AppSettings
 import com.example.chatbar.data.local.entity.EmbeddingConfig
 import com.example.chatbar.data.local.entity.ModelConfig
@@ -28,10 +30,13 @@ class DesktopCredentialConsistencyException(
 
 class DesktopSettingsCredentialPersistencePolicy(
     private val secretStore: DesktopSecretStore,
+    private val operationGate: AppDataOperationGate = NoOpAppDataOperationGate,
 ) : SettingsCredentialPersistencePolicy {
     private val mutex = Mutex()
+    private suspend fun <T> credentialOperation(work: suspend () -> T): T =
+        operationGate.withNormalOperation { mutex.withLock { work() } }
 
-    override suspend fun hydrate(persisted: AppSettings): AppSettings = mutex.withLock {
+    override suspend fun hydrate(persisted: AppSettings): AppSettings = credentialOperation {
         if (persisted.siliconFlowApiKey.isNotBlank()) {
             throw UnsafeDesktopPlaintextCredentialException("global SiliconFlow API key")
         }
@@ -43,7 +48,7 @@ class DesktopSettingsCredentialPersistencePolicy(
     override suspend fun persist(
         runtime: AppSettings,
         persistEntity: suspend (AppSettings) -> Unit,
-    ): AppSettings = mutex.withLock {
+    ): AppSettings = credentialOperation {
         val key = DesktopCredentialKey.SiliconFlowApiKey
         val desired = runtime.siliconFlowApiKey.takeUnless(String::isBlank)
         persistWithRollback(
@@ -63,12 +68,15 @@ class DesktopSettingsCredentialPersistencePolicy(
 
 class DesktopModelCredentialPersistencePolicy(
     private val secretStore: DesktopSecretStore,
+    private val operationGate: AppDataOperationGate = NoOpAppDataOperationGate,
 ) : ModelCredentialPersistencePolicy {
     override val requireVerifiedEntityDeletion: Boolean = true
 
     private val mutex = Mutex()
+    private suspend fun <T> credentialOperation(work: suspend () -> T): T =
+        operationGate.withNormalOperation { mutex.withLock { work() } }
 
-    override suspend fun hydrate(persisted: ModelConfig): ModelConfig = mutex.withLock {
+    override suspend fun hydrate(persisted: ModelConfig): ModelConfig = credentialOperation {
         if (persisted.apiKey.isNotBlank()) {
             throw UnsafeDesktopPlaintextCredentialException("model ${persisted.id}")
         }
@@ -80,7 +88,7 @@ class DesktopModelCredentialPersistencePolicy(
     override suspend fun persist(
         runtime: ModelConfig,
         persistEntity: suspend (ModelConfig) -> Unit,
-    ): ModelConfig = mutex.withLock {
+    ): ModelConfig = credentialOperation {
         val desired = runtime.apiKey.takeUnless(String::isBlank)
         credentialTransaction(
             secretStore = secretStore,
@@ -94,7 +102,7 @@ class DesktopModelCredentialPersistencePolicy(
     override suspend fun delete(
         logicalModelId: String,
         deleteEntity: suspend () -> Unit,
-    ) = mutex.withLock {
+    ) = credentialOperation {
         credentialTransaction(
             secretStore = secretStore,
             key = DesktopCredentialKey.ModelApiKey(logicalModelId),
@@ -106,15 +114,18 @@ class DesktopModelCredentialPersistencePolicy(
 
 class DesktopEmbeddingCredentialPersistencePolicy(
     private val secretStore: DesktopSecretStore,
+    private val operationGate: AppDataOperationGate = NoOpAppDataOperationGate,
 ) : EmbeddingCredentialPersistencePolicy {
     override val requireVerifiedEntityDeletion: Boolean = true
 
     private val mutex = Mutex()
+    private suspend fun <T> credentialOperation(work: suspend () -> T): T =
+        operationGate.withNormalOperation { mutex.withLock { work() } }
 
     override suspend fun hydrate(
         scope: EmbeddingCredentialScope,
         persisted: EmbeddingConfig,
-    ): EmbeddingConfig = mutex.withLock {
+    ): EmbeddingConfig = credentialOperation {
         if (persisted.apiKey.isNotBlank()) {
             throw UnsafeDesktopPlaintextCredentialException(scope.credentialOwner())
         }
@@ -125,7 +136,7 @@ class DesktopEmbeddingCredentialPersistencePolicy(
         scope: EmbeddingCredentialScope,
         runtime: EmbeddingConfig,
         persistEntity: suspend (EmbeddingConfig) -> Unit,
-    ): EmbeddingConfig = mutex.withLock {
+    ): EmbeddingConfig = credentialOperation {
         val desired = runtime.apiKey.takeUnless(String::isBlank)
         credentialTransaction(
             secretStore = secretStore,
@@ -139,7 +150,7 @@ class DesktopEmbeddingCredentialPersistencePolicy(
     override suspend fun delete(
         scope: EmbeddingCredentialScope,
         deleteEntity: suspend () -> Unit,
-    ) = mutex.withLock {
+    ) = credentialOperation {
         credentialTransaction(
             secretStore = secretStore,
             key = scope.credentialKey(),

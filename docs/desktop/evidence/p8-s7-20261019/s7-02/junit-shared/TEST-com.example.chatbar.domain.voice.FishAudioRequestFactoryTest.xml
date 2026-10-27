@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.voice.FishAudioRequestFactoryTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-19T11:37:03.248Z" hostname="DD1" time="0.013">
+  <properties/>
+  <testcase name="model request includes auth self filters sort and paging" classname="com.example.chatbar.domain.voice.FishAudioRequestFactoryTest" time="0.003"/>
+  <testcase name="tts request uses model header reference and 64 kbps mp3" classname="com.example.chatbar.domain.voice.FishAudioRequestFactoryTest" time="0.008"/>
+  <testcase name="blank API key is rejected before network request" classname="com.example.chatbar.domain.voice.FishAudioRequestFactoryTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

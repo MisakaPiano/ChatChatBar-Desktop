@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.backup.preparation.FreshRootPreparationTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-23T20:01:12.864Z" hostname="DD1" time="0.015">
+  <properties/>
+  <testcase name="communityAndConflictCannotBecomeReady" classname="com.example.chatbar.desktop.backup.preparation.FreshRootPreparationTest" time="0.01"/>
+  <testcase name="sameModelIdCannotChangeProviderEndpointOrRemoteAccount" classname="com.example.chatbar.desktop.backup.preparation.FreshRootPreparationTest" time="0.0"/>
+  <testcase name="offlineThirdConsumerAndLegacyRetention" classname="com.example.chatbar.desktop.backup.preparation.FreshRootPreparationTest" time="0.0"/>
+  <testcase name="missingDuplicateAndConflictingParticipant" classname="com.example.chatbar.desktop.backup.preparation.FreshRootPreparationTest" time="0.001"/>
+  <testcase name="syntheticConsistentNeverAuthorizesBusiness" classname="com.example.chatbar.desktop.backup.preparation.FreshRootPreparationTest" time="0.0"/>
+  <testcase name="profileAndNativeEvidenceNotGuessed" classname="com.example.chatbar.desktop.backup.preparation.FreshRootPreparationTest" time="0.0"/>
+  <testcase name="identitiesAreRedacted" classname="com.example.chatbar.desktop.backup.preparation.FreshRootPreparationTest" time="0.0"/>
+  <testcase name="missingAndMixedRecoveryEvidenceFailClosed" classname="com.example.chatbar.desktop.backup.preparation.FreshRootPreparationTest" time="0.001"/>
+  <testcase name="cloneAndInactiveChecks" classname="com.example.chatbar.desktop.backup.preparation.FreshRootPreparationTest" time="0.0"/>
+  <testcase name="syntheticRootFilesAndFakeOldBlobsRemainUntouched" classname="com.example.chatbar.desktop.backup.preparation.FreshRootPreparationTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

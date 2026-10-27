@@ -1,0 +1,22 @@
+{
+  "syntheticBusinessAndMediaFiles": 8,
+  "allOriginalFilesByteIdentical": true,
+  "bootstrapSelectionUnchanged": true,
+  "nonCredentialOpaqueSentinelUnchanged": true,
+  "realCredentialRetention": "NOT_TESTED",
+  "packages": {
+    "901": {
+      "packageFiles": 217,
+      "packageUnchanged": true,
+      "launcherExit": 0,
+      "shutdownOwnershipReleased": true
+    },
+    "902": {
+      "packageFiles": 217,
+      "packageUnchanged": true,
+      "launcherExit": 0,
+      "shutdownOwnershipReleased": true
+    }
+  },
+  "scope": "APP_IMAGE_SIDE_BY_SIDE_SAME_SOURCE_DIFFERENT_PREVIEW_VERSION_NOT_INSTALLER_UPGRADE"
+}

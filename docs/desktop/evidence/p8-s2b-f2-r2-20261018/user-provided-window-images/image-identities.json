@@ -1,0 +1,16 @@
+[
+  {
+    "file": "UI-LAYOUT-001-01.png",
+    "bytes": 41059,
+    "sha256": "6a253f01965aa4d3be80018472d31d3e406b35ef9d77c3ed49f9965ca9d2b876",
+    "source": "User voluntarily supplied screenshot of the isolated F2 test window; original bytes preserved",
+    "automatedCapture": false
+  },
+  {
+    "file": "UI-LAYOUT-001-02.png",
+    "bytes": 53734,
+    "sha256": "c94bf9dae30a74323d7cfad86b0173524b32d162fa8ac3cc0a9b1805cbe5d283",
+    "source": "User voluntarily supplied screenshot of the isolated F2 test window; original bytes preserved",
+    "automatedCapture": false
+  }
+]

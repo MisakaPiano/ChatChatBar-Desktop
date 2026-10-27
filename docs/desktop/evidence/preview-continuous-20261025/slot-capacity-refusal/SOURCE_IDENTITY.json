@@ -1,0 +1,22 @@
+{
+  "slot-capacity-message-red-20261025/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopSaveSlotArchiveTest.kt": {
+    "bytes": 7171,
+    "sha256": "c4c814ff0411ae2b44da87f312648a53c8d5c6b7ef8f42e3093c79c6a3fa6a1c",
+    "gitBlob": "3d87eeed92f654b3f681f8e7865c4e6ebe343d95"
+  },
+  "slot-capacity-message-green-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotArchive.kt": {
+    "bytes": 6393,
+    "sha256": "d6662907b8efb6cb756b0097ec339767d45eab0c35e31106107c1e51e13e5d12",
+    "gitBlob": "661607c3088330174ac4eb06bfdd8aef2462f14b"
+  },
+  "slot-capacity-message-green-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotController.kt": {
+    "bytes": 5580,
+    "sha256": "2d328c398e31696dd34a2bceaf338a1edb4952c31fad9fe03be9dd9db9c435fd",
+    "gitBlob": "7b76e64081b7e39ad63a416892f93706f2552dd0"
+  },
+  "slot-capacity-message-green-20261025/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopSaveSlotArchiveTest.kt": {
+    "bytes": 7171,
+    "sha256": "c4c814ff0411ae2b44da87f312648a53c8d5c6b7ef8f42e3093c79c6a3fa6a1c",
+    "gitBlob": "3d87eeed92f654b3f681f8e7865c4e6ebe343d95"
+  }
+}

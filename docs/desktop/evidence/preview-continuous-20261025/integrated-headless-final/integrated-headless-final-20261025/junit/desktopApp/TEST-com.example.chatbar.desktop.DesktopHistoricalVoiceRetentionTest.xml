@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopHistoricalVoiceRetentionTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-25T03:56:21.223Z" hostname="DD1" time="0.058">
+  <properties/>
+  <testcase name="nonStrictAndroidPolicyIsUnchangedUntilUpstreamFixesItsOwnRestore" classname="com.example.chatbar.desktop.DesktopHistoricalVoiceRetentionTest" time="0.015"/>
+  <testcase name="strictDesktopRestorePreservesUnknownExplicitVersionAndNeverShowsItAsCurrent" classname="com.example.chatbar.desktop.DesktopHistoricalVoiceRetentionTest" time="0.01"/>
+  <testcase name="knownIdentityAndNullableLegacyKeepTheirExistingSemantics" classname="com.example.chatbar.desktop.DesktopHistoricalVoiceRetentionTest" time="0.019"/>
+  <testcase name="explicitHistoricalIdentityWinsEvenWhenTextMatchesCurrentVersion" classname="com.example.chatbar.desktop.DesktopHistoricalVoiceRetentionTest" time="0.014"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

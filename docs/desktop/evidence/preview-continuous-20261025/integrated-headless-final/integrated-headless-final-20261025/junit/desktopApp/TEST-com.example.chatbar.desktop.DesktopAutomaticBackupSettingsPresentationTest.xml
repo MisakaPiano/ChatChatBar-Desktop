@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopAutomaticBackupSettingsPresentationTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-25T03:52:34.058Z" hostname="DD1" time="0.047">
+  <properties/>
+  <testcase name="duration parsing is lossless at precision and range boundaries" classname="com.example.chatbar.desktop.DesktopAutomaticBackupSettingsPresentationTest" time="0.001"/>
+  <testcase name="created and cleanup warning remain distinct from execution failure" classname="com.example.chatbar.desktop.DesktopAutomaticBackupSettingsPresentationTest" time="0.004"/>
+  <testcase name="retention keeps full existing positive Int range" classname="com.example.chatbar.desktop.DesktopAutomaticBackupSettingsPresentationTest" time="0.0"/>
+  <testcase name="non ACTIVE modes and load failures never offer Apply even with a valid draft" classname="com.example.chatbar.desktop.DesktopAutomaticBackupSettingsPresentationTest" time="0.0"/>
+  <testcase name="UI wiring exposes backup section Advanced and explicit Apply without runtime bypass" classname="com.example.chatbar.desktop.DesktopAutomaticBackupSettingsPresentationTest" time="0.038"/>
+  <testcase name="short forms and ISO are exact durations" classname="com.example.chatbar.desktop.DesktopAutomaticBackupSettingsPresentationTest" time="0.001"/>
+  <testcase name="duration summaries localize whole units without losing fractional values" classname="com.example.chatbar.desktop.DesktopAutomaticBackupSettingsPresentationTest" time="0.001"/>
+  <testcase name="not due is neutral and execution failure is explicit and safe" classname="com.example.chatbar.desktop.DesktopAutomaticBackupSettingsPresentationTest" time="0.0"/>
+  <testcase name="invalid syntax overflow negative and zero validation follow existing contract" classname="com.example.chatbar.desktop.DesktopAutomaticBackupSettingsPresentationTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

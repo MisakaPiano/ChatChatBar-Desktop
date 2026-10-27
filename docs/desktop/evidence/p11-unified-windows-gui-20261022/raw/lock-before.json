@@ -1,0 +1,5 @@
+{
+  "exitCode": 0,
+  "stdout": "INDEPENDENT_JVM_ROOT_LOCK_ACQUIRED_AND_RELEASED\n",
+  "stderr": "Picked up JAVA_TOOL_OPTIONS: -Duser.home=H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-unified-acceptance-prep-20261021\\synthetic-home\n"
+}

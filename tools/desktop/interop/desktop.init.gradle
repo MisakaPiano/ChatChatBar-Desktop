@@ -1,0 +1,9 @@
+gradle.projectsEvaluated {
+    def p = gradle.rootProject.project(':desktopApp')
+    p.kotlin.sourceSets.test.kotlin.srcDir(new File(System.getProperty('ccb.interop.harness')))
+    p.tasks.withType(Test).configureEach {
+        systemProperty 'ccb.interop.scope', System.getProperty('ccb.interop.scope')
+        maxHeapSize = '768m'
+        maxParallelForks = 1
+    }
+}

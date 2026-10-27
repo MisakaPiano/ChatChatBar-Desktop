@@ -1,0 +1,12 @@
+{
+  "pid": 54264,
+  "executable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+  "identity": {
+    "version": "0.1.0-preview.1009",
+    "commit": "7b3e1534422dd6120e1e23304b679e03da884c55",
+    "installerVersion": "0.1.1009",
+    "installerVersionAssigned": "true",
+    "packagingProfile": "synthetic"
+  },
+  "jobAssignedBeforeResume": true
+}

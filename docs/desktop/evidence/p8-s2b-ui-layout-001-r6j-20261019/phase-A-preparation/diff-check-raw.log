@@ -1,0 +1,37 @@
+warning: in the working copy of 'H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6j-20261019\.gitattributes', LF will be replaced by CRLF the next time Git touches it
+H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6j-20261019\01-compile-only\gradle.stdout.log:2: trailing whitespace.
++Daemon will be stopped at the end of the build 
+H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6j-20261019\02-headless-handshake\gradle.stdout.log:2: trailing whitespace.
++Daemon will be stopped at the end of the build 
+warning: in the working copy of 'H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6j-20261019\baseline-sources\DesktopFishPickerNativeUxTest.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6j-20261019\baseline-sources\DesktopFishPickerPresentation.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6j-20261019\baseline-sources\DesktopFishPickerWindow.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6j-20261019\collect-preparation.py', LF will be replaced by CRLF the next time Git touches it
+H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6j-20261019\compiled-javap.txt:766: trailing whitespace.
++        70: tableswitch   { // 0 to 1
+H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6j-20261019\compiled-javap.txt:767: trailing whitespace.
++                       0: 92
+warning: in the working copy of 'H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6j-20261019\deterministic-checks\checks.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6j-20261019\deterministic-checks\synthetic-protocol-records-not-runtime\armed.txt', LF will be replaced by CRLF the next time Git touches it
+H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6j-20261019\handshake-only.patch:115: trailing whitespace.
++ 
+H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6j-20261019\handshake-only.patch:119: trailing whitespace.
++ 
+H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6j-20261019\handshake-only.patch:218: trailing whitespace.
++ 
+H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6j-20261019\handshake-only.patch:269: trailing whitespace.
++ 
+H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6j-20261019\handshake-only.patch:315: trailing whitespace.
++ 
+H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6j-20261019\handshake-only.patch:535: trailing whitespace.
++ 
+warning: in the working copy of 'H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6j-20261019\handshake-only.patch', LF will be replaced by CRLF the next time Git touches it
+H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6j-20261019\human-runner-body.txt:164: new blank line at EOF.
+warning: in the working copy of 'H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6j-20261019\human-runner-body.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6j-20261019\manual-runner.init.gradle', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6j-20261019\prepared-sources\DesktopFishPickerNativeUxTest.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6j-20261019\prepared-sources\DesktopFishPickerPresentation.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6j-20261019\prepared-sources\DesktopFishPickerWindow.kt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6j-20261019\README.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6j-20261019\verify-human-handshake.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'H:\ChatChatBar-Desktop\docs\desktop\evidence\p8-s2b-ui-layout-001-r6j-20261019\verify-preparation.py', LF will be replaced by CRLF the next time Git touches it

@@ -1,0 +1,1 @@
+{"exit":1,"stage":"BEFORE_NATIVE_LAUNCH","cause":"Test driver expected a 45-second source literal; retained native probe uses 40 seconds.","profileRecreated":false,"applicationLaunched":false}

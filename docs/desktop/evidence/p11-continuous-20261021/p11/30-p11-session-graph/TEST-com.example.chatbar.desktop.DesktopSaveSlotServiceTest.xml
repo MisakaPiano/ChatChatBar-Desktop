@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopSaveSlotServiceTest" tests="8" skipped="0" failures="1" errors="0" timestamp="2026-10-20T21:19:50.755Z" hostname="DD1" time="5.851">
+  <properties/>
+  <testcase name="native close failure prohibits replacement and archive library publication" classname="com.example.chatbar.desktop.DesktopSaveSlotServiceTest" time="0.869"/>
+  <testcase name="resource rebinding works while old card exists and preserves messages format and old resources" classname="com.example.chatbar.desktop.DesktopSaveSlotServiceTest" time="0.445"/>
+  <testcase name="publication failure restores source graph and permits a later explicit retry" classname="com.example.chatbar.desktop.DesktopSaveSlotServiceTest" time="1.396"/>
+  <testcase name="audio images and current memory survive duplicate under separate owned identities" classname="com.example.chatbar.desktop.DesktopSaveSlotServiceTest" time="0.199">
+    <failure message="java.io.IOException: Metadata handle unavailable" type="java.io.IOException">java.io.IOException: Metadata handle unavailable
+	at com.example.chatbar.desktop.DesktopIndexStartupPreflight$Companion.readWindowsIdentity$desktopApp(DesktopIndexStartupPreflight.kt:205)
+	at com.example.chatbar.desktop.DesktopVoiceAudioStore.identity(DesktopVoiceAudioStore.kt:106)
+	at com.example.chatbar.desktop.DesktopVoiceAudioStore.access$identity(DesktopVoiceAudioStore.kt:18)
+	at com.example.chatbar.desktop.DesktopVoiceAudioStore$persist$3$1.invokeSuspend(DesktopVoiceAudioStore.kt:61)
+	at com.example.chatbar.desktop.DesktopVoiceAudioStore$persist$3$1.invoke(DesktopVoiceAudioStore.kt)
+	at com.example.chatbar.desktop.DesktopVoiceAudioStore$persist$3$1.invoke(DesktopVoiceAudioStore.kt)
+	at kotlinx.coroutines.intrinsics.UndispatchedKt.startUndspatched(Undispatched.kt:66)
+	at kotlinx.coroutines.intrinsics.UndispatchedKt.startUndispatchedOrReturn(Undispatched.kt:43)
+	at kotlinx.coroutines.BuildersKt__Builders_commonKt.withContext(Builders.common.kt:165)
+	at kotlinx.coroutines.BuildersKt.withContext(Unknown Source)
+	at com.example.chatbar.desktop.DesktopVoiceAudioStore.persist(DesktopVoiceAudioStore.kt:26)
+	at com.example.chatbar.desktop.DesktopVoiceAudioStore.persist$default(DesktopVoiceAudioStore.kt:24)
+	at com.example.chatbar.desktop.DesktopVoiceArchiveHandoff.stage(DesktopVoiceArchiveHandoff.kt:85)
+	at com.example.chatbar.desktop.DesktopSaveSlotRestorePlan$prepare$2$4.invokeSuspend(DesktopSaveSlotRestorePlan.kt:56)
+	at com.example.chatbar.desktop.DesktopSaveSlotRestorePlan$prepare$2$4.invoke(DesktopSaveSlotRestorePlan.kt)
+	at com.example.chatbar.desktop.DesktopSaveSlotRestorePlan$prepare$2$4.invoke(DesktopSaveSlotRestorePlan.kt)
+	at com.example.chatbar.desktop.DesktopSaveSlotRestorePlan$prepare$2.invokeSuspend(DesktopSaveSlotRestorePlan.kt:92)
+	at _COROUTINE._BOUNDARY._(CoroutineDebugging.kt:42)
+	at com.example.chatbar.desktop.DesktopVoiceAudioStore.persist(DesktopVoiceAudioStore.kt:26)
+	at com.example.chatbar.desktop.DesktopVoiceArchiveHandoff.stage(DesktopVoiceArchiveHandoff.kt:85)
+	at com.example.chatbar.desktop.DesktopSaveSlotRestorePlan$prepare$2$4.invokeSuspend(DesktopSaveSlotRestorePlan.kt:56)
+	at com.example.chatbar.desktop.DesktopSaveSlotRestorePlan$prepare$2.invokeSuspend(DesktopSaveSlotRestorePlan.kt:92)
+	at com.example.chatbar.desktop.DesktopSaveSlotService$duplicate$3$1.invokeSuspend(DesktopSaveSlotService.kt:95)
+	at com.example.chatbar.desktop.DesktopSaveSlotService.duplicate(DesktopSaveSlotService.kt:89)
+	at com.example.chatbar.desktop.DesktopSaveSlotServiceTest$audio images and current memory survive duplicate under separate owned identities$1.invokeSuspend(DesktopSaveSlotServiceTest.kt:154)
+Caused by: java.io.IOException: Metadata handle unavailable
+	at com.example.chatbar.desktop.DesktopIndexStartupPreflight$Companion.readWindowsIdentity$desktopApp(DesktopIndexStartupPreflight.kt:205)
+	at com.example.chatbar.desktop.DesktopVoiceAudioStore.identity(DesktopVoiceAudioStore.kt:106)
+	at com.example.chatbar.desktop.DesktopVoiceAudioStore.access$identity(DesktopVoiceAudioStore.kt:18)
+	at com.example.chatbar.desktop.DesktopVoiceAudioStore$persist$3$1.invokeSuspend(DesktopVoiceAudioStore.kt:61)
+	at com.example.chatbar.desktop.DesktopVoiceAudioStore$persist$3$1.invoke(DesktopVoiceAudioStore.kt)
+	at com.example.chatbar.desktop.DesktopVoiceAudioStore$persist$3$1.invoke(DesktopVoiceAudioStore.kt)
+	at kotlinx.coroutines.intrinsics.UndispatchedKt.startUndspatched(Undispatched.kt:66)
+	at kotlinx.coroutines.intrinsics.UndispatchedKt.startUndispatchedOrReturn(Undispatched.kt:43)
+	at kotlinx.coroutines.BuildersKt__Builders_commonKt.withContext(Builders.common.kt:165)
+	at kotlinx.coroutines.BuildersKt.withContext(Unknown Source)
+	at com.example.chatbar.desktop.DesktopVoiceAudioStore.persist(DesktopVoiceAudioStore.kt:26)
+	at com.example.chatbar.desktop.DesktopVoiceAudioStore.persist$default(DesktopVoiceAudioStore.kt:24)
+	at com.example.chatbar.desktop.DesktopVoiceArchiveHandoff.stage(DesktopVoiceArchiveHandoff.kt:85)
+	at com.example.chatbar.desktop.DesktopSaveSlotRestorePlan$prepare$2$4.invokeSuspend(DesktopSaveSlotRestorePlan.kt:56)
+	at com.example.chatbar.desktop.DesktopSaveSlotRestorePlan$prepare$2$4.invoke(DesktopSaveSlotRestorePlan.kt)
+	at com.example.chatbar.desktop.DesktopSaveSlotRestorePlan$prepare$2$4.invoke(DesktopSaveSlotRestorePlan.kt)
+	at com.example.chatbar.desktop.DesktopSaveSlotRestorePlan$prepare$2.invokeSuspend(DesktopSaveSlotRestorePlan.kt:92)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.internal.LimitedDispatcher$Worker.run(LimitedDispatcher.kt:124)
+	at kotlinx.coroutines.scheduling.TaskImpl.run(Tasks.kt:89)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler.runSafely(CoroutineScheduler.kt:586)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.executeTask(CoroutineScheduler.kt:820)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(CoroutineScheduler.kt:717)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(CoroutineScheduler.kt:704)
+</failure>
+  </testcase>
+  <testcase name="changed source after prepare refuses commit and cancellation cannot leave partial graph" classname="com.example.chatbar.desktop.DesktopSaveSlotServiceTest" time="0.5"/>
+  <testcase name="duplicate preserves versions source turns draft and settings without changing original" classname="com.example.chatbar.desktop.DesktopSaveSlotServiceTest" time="0.571"/>
+  <testcase name="legacy import export remains independent and rejects an existing output" classname="com.example.chatbar.desktop.DesktopSaveSlotServiceTest" time="1.125"/>
+  <testcase name="restore is an atomic graph replacement with safety slot and original resources retained" classname="com.example.chatbar.desktop.DesktopSaveSlotServiceTest" time="0.746"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

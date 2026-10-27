@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.draft.WorldBookEditorDraftUiStateCodecTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-19T12:01:38.564Z" hostname="DD1" time="0.007">
+  <properties/>
+  <testcase name="unknown envelope version fails explicitly" classname="com.example.chatbar.domain.draft.WorldBookEditorDraftUiStateCodecTest" time="0.002"/>
+  <testcase name="legacy raw modal remains readable and missing state remains absent" classname="com.example.chatbar.domain.draft.WorldBookEditorDraftUiStateCodecTest" time="0.003"/>
+  <testcase name="optional post-commit marker preserves version one compatibility" classname="com.example.chatbar.domain.draft.WorldBookEditorDraftUiStateCodecTest" time="0.002"/>
+  <testcase name="production envelope includes marker and markerless unrelated data is rejected" classname="com.example.chatbar.domain.draft.WorldBookEditorDraftUiStateCodecTest" time="0.0"/>
+  <testcase name="envelope preserves modal and raw valid or incomplete numeric text" classname="com.example.chatbar.domain.draft.WorldBookEditorDraftUiStateCodecTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

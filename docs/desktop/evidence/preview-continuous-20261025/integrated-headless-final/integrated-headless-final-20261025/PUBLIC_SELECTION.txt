@@ -1,0 +1,1 @@
+Allowlisted execution evidence only. Task-owned worker profile/temp/home and all runtime payloads are deliberately excluded.

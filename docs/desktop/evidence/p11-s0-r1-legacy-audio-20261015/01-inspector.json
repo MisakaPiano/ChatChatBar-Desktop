@@ -1,0 +1,22 @@
+{
+  "stage": "01-inspector",
+  "started": "2026-10-15T16:25:28.1750944+09:00",
+  "ended": "2026-10-15T16:29:20.4666474+09:00",
+  "seconds": 232.2916656,
+  "arguments": [
+    "--offline",
+    "--no-daemon",
+    "--no-parallel",
+    "--max-workers=1",
+    "--priority=low",
+    "--console=plain",
+    "--no-configuration-cache",
+    "-Pkotlin.compiler.execution.strategy=in-process",
+    ":desktopApp:compileKotlin",
+    ":desktopApp:compileTestKotlin",
+    ":desktopApp:test",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopSaveSlotInspectorTest"
+  ],
+  "exitCode": 0
+}

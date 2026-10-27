@@ -1,0 +1,39 @@
+{
+  "utc": "2026-10-18T16:30:19.698604+00:00",
+  "branch": "feature/phase8-fish-audio",
+  "head": "3d46c6448b6748644c561ea27d3ed2b016e1b045",
+  "parent": "55366cee0706c78f545b32ef7d75750c649dcdbd",
+  "tracking": "3d46c6448b6748644c561ea27d3ed2b016e1b045",
+  "live": "3d46c6448b6748644c561ea27d3ed2b016e1b045",
+  "fetchSucceeded": true,
+  "indexEmpty": true,
+  "frozenPatchSha256": "a94aaf3526111ac364ba636a9e96306991688891c597e5cafa13152be9606f66",
+  "frozenFiles": [
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerPresentation.kt",
+      "rawBytesMatch": true,
+      "normalizedMatch": true
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerWindow.kt",
+      "rawBytesMatch": true,
+      "normalizedMatch": true
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerNativeUxTest.kt",
+      "rawBytesMatch": true,
+      "normalizedMatch": true
+    }
+  ],
+  "protectedUntracked": {
+    "personalMarkdown": 1,
+    "historicalJpegs": 3,
+    "contentsRead": false,
+    "modified": false,
+    "staged": false
+  },
+  "engineeringUntracked": [
+    "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerNativeUxTest.kt"
+  ],
+  "scope": "initial diagnosis: NativeUxTest only; two production drafts unchanged"
+}

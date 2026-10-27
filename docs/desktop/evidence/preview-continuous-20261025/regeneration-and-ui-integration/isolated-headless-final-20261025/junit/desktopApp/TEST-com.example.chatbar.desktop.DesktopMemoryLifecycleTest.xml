@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopMemoryLifecycleTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-25T03:17:39.136Z" hostname="DD1" time="3.292">
+  <properties/>
+  <testcase name="cancelled in flight memory keeps sources and releases real maintenance admission" classname="com.example.chatbar.desktop.DesktopMemoryLifecycleTest" time="1.059"/>
+  <testcase name="official archive head revisions and source invalidation work on strict Desktop storage" classname="com.example.chatbar.desktop.DesktopMemoryLifecycleTest" time="1.097"/>
+  <testcase name="budget decision compresses an official continuous episode prefix and retains child evidence" classname="com.example.chatbar.desktop.DesktopMemoryLifecycleTest" time="1.017"/>
+  <testcase name="memory patch cannot restore a deleted message preview or lose a newer setting" classname="com.example.chatbar.desktop.DesktopMemoryLifecycleTest" time="0.119"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

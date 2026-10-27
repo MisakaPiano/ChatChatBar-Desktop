@@ -1,0 +1,3 @@
+Exception in thread "main" java.io.IOException: Synthetic root required
+	at F1UiSupport.seed(F1UiSupport.java:54)
+	at F1UiSupport.main(F1UiSupport.java:24)

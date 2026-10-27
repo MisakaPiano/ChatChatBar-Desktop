@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopHistoricalSaveSlotProcessTest" tests="5" skipped="0" failures="1" errors="0" timestamp="2026-10-25T00:55:17.765Z" hostname="DD1" time="7.287">
+  <properties/>
+  <testcase name="cancelledOriginalPackageCustodyRemainsInertAndSourceUnchanged" classname="com.example.chatbar.desktop.DesktopHistoricalSaveSlotProcessTest" time="0.119"/>
+  <testcase name="historyCustodyIsExplicitAndReportsCountWithoutGrantingRestorePermission" classname="com.example.chatbar.desktop.DesktopHistoricalSaveSlotProcessTest" time="0.007"/>
+  <testcase name="historicalRecordingSurvivesActualImportRestoreProcessExitReopenAndExport" classname="com.example.chatbar.desktop.DesktopHistoricalSaveSlotProcessTest" time="7.083"/>
+  <testcase name="historicalModeStillRefusesMissingOwnerSessionAudioBlankIdentityAndWrongLength" classname="com.example.chatbar.desktop.DesktopHistoricalSaveSlotProcessTest" time="0.022"/>
+  <testcase name="custodyKeepsLegacyOriginalBytesAndUsesPackageResourceIdentityRatherThanExtension" classname="com.example.chatbar.desktop.DesktopHistoricalSaveSlotProcessTest" time="0.055">
+    <failure message="java.lang.IllegalStateException: 存档未通过校验：REFERENCE；原文件已保留" type="java.lang.IllegalStateException">java.lang.IllegalStateException: 存档未通过校验：REFERENCE；原文件已保留
+	at com.example.chatbar.desktop.DesktopSaveSlotArchive.inspect(DesktopSaveSlotArchive.kt:68)
+	at com.example.chatbar.desktop.DesktopSaveSlotArchive.access$inspect(DesktopSaveSlotArchive.kt:20)
+	at com.example.chatbar.desktop.DesktopSaveSlotArchive$prepare$2.invokeSuspend(DesktopSaveSlotArchive.kt:29)
+	at _COROUTINE._BOUNDARY._(CoroutineDebugging.kt:42)
+	at com.example.chatbar.desktop.DesktopHistoricalSaveSlotProcessTest$custodyKeepsLegacyOriginalBytesAndUsesPackageResourceIdentityRatherThanExtension$1.invokeSuspend(DesktopHistoricalSaveSlotProcessTest.kt:119)
+Caused by: java.lang.IllegalStateException: 存档未通过校验：REFERENCE；原文件已保留
+	at com.example.chatbar.desktop.DesktopSaveSlotArchive.inspect(DesktopSaveSlotArchive.kt:68)
+	at com.example.chatbar.desktop.DesktopSaveSlotArchive.access$inspect(DesktopSaveSlotArchive.kt:20)
+	at com.example.chatbar.desktop.DesktopSaveSlotArchive$prepare$2.invokeSuspend(DesktopSaveSlotArchive.kt:29)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.internal.LimitedDispatcher$Worker.run(LimitedDispatcher.kt:124)
+	at kotlinx.coroutines.scheduling.TaskImpl.run(Tasks.kt:89)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler.runSafely(CoroutineScheduler.kt:586)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.executeTask(CoroutineScheduler.kt:820)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(CoroutineScheduler.kt:717)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(CoroutineScheduler.kt:704)
+</failure>
+  </testcase>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

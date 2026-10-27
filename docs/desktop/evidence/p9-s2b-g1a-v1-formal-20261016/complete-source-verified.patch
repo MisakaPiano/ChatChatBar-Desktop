@@ -1,0 +1,1413 @@
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataDirectory.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataDirectory.kt
+index 46019224039b936d1f52a197ad58790d71136353..30a859cf5508661e6ab17aa6e928a790f4b72285 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataDirectory.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataDirectory.kt
+@@ -25,93 +25,140 @@ object DesktopDataDirectory {
+         portableActivationValidator: DesktopPortableRootActivationValidator =
+             DesktopPortableRootActivationValidator(),
+     ): DesktopDataRootResolution {
++        return when (val selected = selectRootAuthority(environment, userHome, explicitOverride,
++            applicationHomeResolution, portableRootResolver, capturePortableIdentity = false)) {
++            is DesktopStartupRootSelection.Selected -> selected.root
++            is DesktopStartupRootSelection.Failed -> selected.failure
++            is DesktopStartupRootSelection.PortablePendingActivation ->
++                portableResolution(selected, portableActivationValidator.validate(selected.candidate))
++        }
++    }
++
++    /** G1A seam only; Main still calls the legacy resolver above. Never runs the write probe. */
++    internal suspend fun selectRoot(
++        environment: Map<String, String>,
++        userHome: Path,
++        explicitOverride: Path? = null,
++        applicationHomeResolution: DesktopApplicationHomeResult? = null,
++        portableRootResolver: DesktopPortableRootResolver = DesktopPortableRootResolver(),
++    ): DesktopStartupRootSelection = selectRootAuthority(environment, userHome, explicitOverride,
++        applicationHomeResolution, portableRootResolver, capturePortableIdentity = true)
++
++    /** Requires an existing owner; this does not grant business readiness or perform G0. */
++    internal fun activatePortable(
++        selected: DesktopStartupRootSelection.PortablePendingActivation,
++        validator: DesktopPortableRootActivationValidator = DesktopPortableRootActivationValidator(),
++    ): DesktopDataRootResolution {
++        val activation = if (!DesktopDataRootOwnership.isHeld(selected.appDataRoot)) {
++            DesktopPortableActivationResult.Failure(DesktopPortableActivationFailureKind.OWNERSHIP_REQUIRED,
++                "Portable activation requires existing data-root ownership")
++        } else validator.validateOwned(selected.candidate, selected.identity)
++        return portableResolution(selected, activation)
++    }
++
++    private fun portableResolution(
++        selected: DesktopStartupRootSelection.PortablePendingActivation,
++        activation: DesktopPortableActivationResult,
++    ): DesktopDataRootResolution = when (activation) {
++        is DesktopPortableActivationResult.Validated -> DesktopDataRootResolution.Resolved(
++            activation.appDataRoot, DesktopDataRootProvenance.PORTABLE, selected.bootstrapPath)
++        is DesktopPortableActivationResult.Failure -> DesktopDataRootResolution.Failed(
++            DesktopDataRootResolutionFailureKind.PORTABLE_ACTIVATION_FAILED, selected.bootstrapPath,
++            activation.message, portableActivationFailure = activation)
++    }
++
++    private suspend fun selectRootAuthority(
++        environment: Map<String, String>,
++        userHome: Path,
++        explicitOverride: Path?,
++        applicationHomeResolution: DesktopApplicationHomeResult?,
++        portableRootResolver: DesktopPortableRootResolver,
++        capturePortableIdentity: Boolean,
++    ): DesktopStartupRootSelection {
++        fun failed(failure: DesktopDataRootResolution.Failed) = DesktopStartupRootSelection.Failed(failure)
++        fun selected(root: DesktopDataRootResolution.Resolved) = DesktopStartupRootSelection.Selected(root)
+         val platformRoot = platformRoot(environment, userHome)
+         val defaultRoot = platformRoot.resolve(DIRECTORY_NAME).normalize()
+         val bootstrapPath = platformRoot.resolve(BOOTSTRAP_FILE_NAME).normalize()
+ 
+         if (explicitOverride != null) {
+             if (!explicitOverride.isAbsolute) {
+-                return DesktopDataRootResolution.Failed(
++                return failed(DesktopDataRootResolution.Failed(
+                     kind = DesktopDataRootResolutionFailureKind.INVALID_CLI_OVERRIDE,
+                     bootstrapPath = bootstrapPath,
+                     message = "Explicit Desktop data-root override must be absolute",
+-                )
++                ))
+             }
+-            return DesktopDataRootResolution.Resolved(
++            return selected(DesktopDataRootResolution.Resolved(
+                 appDataRoot = explicitOverride.normalize(),
+                 provenance = DesktopDataRootProvenance.CLI_OVERRIDE,
+                 bootstrapPath = bootstrapPath,
+-            )
++            ))
+         }
+ 
+         when (val applicationHome = applicationHomeResolution ?: DesktopApplicationHome.resolve()) {
+             is DesktopApplicationHomeResult.Unavailable -> Unit
+-            is DesktopApplicationHomeResult.Failure -> return DesktopDataRootResolution.Failed(
++            is DesktopApplicationHomeResult.Failure -> return failed(DesktopDataRootResolution.Failed(
+                 kind = DesktopDataRootResolutionFailureKind.APPLICATION_HOME_FAILED,
+                 bootstrapPath = bootstrapPath,
+                 message = applicationHome.message,
+                 applicationHomeFailure = applicationHome,
+-            )
++            ))
+ 
+             is DesktopApplicationHomeResult.Available -> {
+                 when (val portable = portableRootResolver.resolve(applicationHome.path)) {
+                     DesktopPortableRootResolution.NoMarker -> Unit
+-                    is DesktopPortableRootResolution.Failure -> return DesktopDataRootResolution.Failed(
++                    is DesktopPortableRootResolution.Failure -> return failed(DesktopDataRootResolution.Failed(
+                         kind = DesktopDataRootResolutionFailureKind.PORTABLE_RESOLUTION_FAILED,
+                         bootstrapPath = bootstrapPath,
+                         message = portable.message,
+                         portableResolutionFailure = portable,
+-                    )
++                    ))
+ 
+                     is DesktopPortableRootResolution.PortableCandidate -> {
+-                        when (val activation = portableActivationValidator.validate(portable)) {
+-                            is DesktopPortableActivationResult.Failure ->
+-                                return DesktopDataRootResolution.Failed(
+-                                    kind = DesktopDataRootResolutionFailureKind.PORTABLE_ACTIVATION_FAILED,
+-                                    bootstrapPath = bootstrapPath,
+-                                    message = activation.message,
+-                                    portableActivationFailure = activation,
+-                                )
+-
+-                            is DesktopPortableActivationResult.Validated ->
+-                                return DesktopDataRootResolution.Resolved(
+-                                    appDataRoot = activation.appDataRoot,
+-                                    provenance = DesktopDataRootProvenance.PORTABLE,
+-                                    bootstrapPath = bootstrapPath,
+-                                )
++                        val identity = try {
++                            if (capturePortableIdentity) captureDesktopPortableIdentity(portable) else null
++                        } catch (error: Exception) {
++                            return failed(DesktopDataRootResolution.Failed(
++                                DesktopDataRootResolutionFailureKind.PORTABLE_RESOLUTION_FAILED,
++                                bootstrapPath, "Portable authority identity could not be established",
++                                portableResolutionFailure = DesktopPortableRootResolution.Failure(
++                                    DesktopPortableRootFailureKind.APPLICATION_HOME_UNSAFE,
++                                    "Portable authority identity could not be established", error)))
+                         }
++                        return DesktopStartupRootSelection.PortablePendingActivation(portable, bootstrapPath, identity)
+                     }
+                 }
+             }
+         }
+ 
+         return when (val loadResult = DesktopBootstrapSettingsStore(bootstrapPath).load()) {
+-            is DesktopBootstrapLoadResult.Missing -> DesktopDataRootResolution.Resolved(
++            is DesktopBootstrapLoadResult.Missing -> selected(DesktopDataRootResolution.Resolved(
+                 appDataRoot = defaultRoot,
+                 provenance = DesktopDataRootProvenance.MISSING_BOOTSTRAP_DEFAULT,
+                 bootstrapPath = bootstrapPath,
+-            )
++            ))
+ 
+             is DesktopBootstrapLoadResult.Loaded -> when (loadResult.document.selection.mode) {
+-                DesktopDataRootMode.DEFAULT -> DesktopDataRootResolution.Resolved(
++                DesktopDataRootMode.DEFAULT -> selected(DesktopDataRootResolution.Resolved(
+                     appDataRoot = defaultRoot,
+                     provenance = DesktopDataRootProvenance.BOOTSTRAP_DEFAULT,
+                     bootstrapPath = bootstrapPath,
+-                )
++                ))
+ 
+-                DesktopDataRootMode.CUSTOM -> DesktopDataRootResolution.Resolved(
++                DesktopDataRootMode.CUSTOM -> selected(DesktopDataRootResolution.Resolved(
+                     appDataRoot = loadResult.document.selection.customRoot!!,
+                     provenance = DesktopDataRootProvenance.BOOTSTRAP_CUSTOM,
+                     bootstrapPath = bootstrapPath,
+-                )
++                ))
+             }
+ 
+-            is DesktopBootstrapLoadResult.Failure -> DesktopDataRootResolution.Failed(
++            is DesktopBootstrapLoadResult.Failure -> failed(DesktopDataRootResolution.Failed(
+                 kind = DesktopDataRootResolutionFailureKind.BOOTSTRAP_LOAD_FAILED,
+                 bootstrapPath = bootstrapPath,
+                 message = loadResult.message,
+                 bootstrapFailure = loadResult,
+-            )
++            ))
+         }
+     }
+ 
+@@ -124,6 +171,20 @@ object DesktopDataDirectory {
+     }
+ }
+ 
++/** Selection evidence only. In particular a pending Portable root is NOT a Resolved/Ready root. */
++internal sealed interface DesktopStartupRootSelection {
++    data class Selected(val root: DesktopDataRootResolution.Resolved) : DesktopStartupRootSelection
++    data class Failed(val failure: DesktopDataRootResolution.Failed) : DesktopStartupRootSelection
++    class PortablePendingActivation internal constructor(
++        internal val candidate: DesktopPortableRootResolution.PortableCandidate,
++        val bootstrapPath: Path,
++        internal val identity: List<DesktopPortablePathIdentity>?,
++    ) : DesktopStartupRootSelection {
++        val appDataRoot: Path get() = candidate.appDataRoot
++        val provenance: DesktopDataRootProvenance get() = DesktopDataRootProvenance.PORTABLE
++    }
++}
++
+ enum class DesktopDataRootProvenance {
+     CLI_OVERRIDE,
+     PORTABLE,
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPortableRoot.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPortableRoot.kt
+index 4cd59a3072eb517fca519ac0ad8c25ff92f25cf7..a245cde291382344f9e01e870a52368c1b7e725c 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPortableRoot.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPortableRoot.kt
+@@ -13,6 +13,13 @@ import java.nio.file.Path
+ import java.nio.file.StandardOpenOption
+ import java.nio.file.attribute.BasicFileAttributes
+ import java.util.UUID
++import java.nio.file.attribute.FileTime
++import com.sun.jna.Memory
++import com.sun.jna.platform.win32.Kernel32
++import com.sun.jna.platform.win32.WinBase
++import com.sun.jna.platform.win32.WinDef.DWORD
++import com.sun.jna.platform.win32.WinNT
++import java.io.IOException
+ 
+ enum class DesktopPortableRootFailureKind {
+     APPLICATION_HOME_UNSAFE,
+@@ -185,6 +192,7 @@ class DesktopPortableRootResolver {
+ }
+ 
+ enum class DesktopPortableActivationFailureKind {
++    OWNERSHIP_REQUIRED,
+     CANDIDATE_CHANGED,
+     WRITE_PROBE_FAILED,
+     PROBE_CLEANUP_FAILED,
+@@ -218,6 +226,32 @@ class DesktopPortableRootActivationValidator internal constructor(
+         deleteProbe = Files::delete,
+     )
+ 
++    /** New explicit stage; legacy validate remains compatible until G1B switches Main. */
++    internal fun validateOwned(
++        candidate: DesktopPortableRootResolution.PortableCandidate,
++        expected: List<DesktopPortablePathIdentity>?,
++    ): DesktopPortableActivationResult {
++        fun owned() = DesktopDataRootOwnership.isHeld(candidate.appDataRoot)
++        fun unchanged(): Boolean = try {
++            val current = resolver.resolve(candidate.applicationHome)
++            current is DesktopPortableRootResolution.PortableCandidate &&
++                current.appDataRoot == candidate.appDataRoot && current.markerPath == candidate.markerPath &&
++                expected != null && captureDesktopPortableIdentity(current) == expected
++        } catch (_: Exception) { false }
++        if (!owned()) return DesktopPortableActivationResult.Failure(
++            DesktopPortableActivationFailureKind.OWNERSHIP_REQUIRED, "Portable activation requires existing data-root ownership")
++        if (!unchanged()) return DesktopPortableActivationResult.Failure(
++            DesktopPortableActivationFailureKind.CANDIDATE_CHANGED, "Portable authority changed before activation")
++        val result = validate(candidate)
++        // Preserve a failed probe's original retained-evidence classification.
++        if (result is DesktopPortableActivationResult.Failure) return result
++        if (!owned()) return DesktopPortableActivationResult.Failure(
++            DesktopPortableActivationFailureKind.OWNERSHIP_REQUIRED, "Portable ownership changed during activation")
++        if (!unchanged()) return DesktopPortableActivationResult.Failure(
++            DesktopPortableActivationFailureKind.CANDIDATE_CHANGED, "Portable authority changed during activation")
++        return result
++    }
++
+     fun validate(
+         candidate: DesktopPortableRootResolution.PortableCandidate,
+     ): DesktopPortableActivationResult {
+@@ -272,6 +306,42 @@ class DesktopPortableRootActivationValidator internal constructor(
+     }
+ }
+ 
++internal data class DesktopPortablePathIdentity(
++    val volume: Long, val fileId: List<Byte>, val created: FileTime,
++    val markerModified: FileTime?, val markerSize: Long?,
++)
++
++/** Metadata-only snapshot; folder mtime deliberately excludes ownership-lock creation. */
++internal fun captureDesktopPortableIdentity(
++    candidate: DesktopPortableRootResolution.PortableCandidate,
++): List<DesktopPortablePathIdentity> = listOf(candidate.applicationHome, candidate.markerPath, candidate.appDataRoot).map { path ->
++    if (!System.getProperty("os.name").startsWith("Windows")) throw IOException("Portable identity platform unsupported")
++    val marker = path == candidate.markerPath
++    val attrs = Files.readAttributes(path, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
++    if (attrs.isSymbolicLink || attrs.isOther || (if (marker) !attrs.isRegularFile else !attrs.isDirectory))
++        throw IOException("Unsafe portable identity")
++    val api = Kernel32.INSTANCE
++    val handle = api.CreateFile(path.toString(), WinNT.FILE_READ_ATTRIBUTES,
++        WinNT.FILE_SHARE_READ or WinNT.FILE_SHARE_WRITE or WinNT.FILE_SHARE_DELETE, null,
++        WinNT.OPEN_EXISTING, WinNT.FILE_FLAG_BACKUP_SEMANTICS or WinNT.FILE_FLAG_OPEN_REPARSE_POINT, null)
++    if (handle == WinBase.INVALID_HANDLE_VALUE) throw IOException("Portable identity unavailable")
++    try {
++        val basic = WinBase.FILE_BASIC_INFO()
++        if (!api.GetFileInformationByHandleEx(handle, 0, basic.pointer, DWORD(basic.size().toLong())))
++            throw IOException("Portable attributes unavailable")
++        basic.read()
++        if (basic.FileAttributes and 0x400 != 0 || (basic.FileAttributes and 0x10 != 0) != attrs.isDirectory)
++            throw IOException("Unsafe portable attributes")
++        Memory(24).use { info ->
++            if (!api.GetFileInformationByHandleEx(handle, 18, info, DWORD(24))) throw IOException("Portable file identity unavailable")
++            DesktopPortablePathIdentity(info.getLong(0), info.getByteArray(8,16).toList(), attrs.creationTime(),
++                attrs.lastModifiedTime().takeIf { marker }, attrs.size().takeIf { marker })
++        }
++    } finally {
++        if (!api.CloseHandle(handle)) throw IOException("Portable metadata handle close failed")
++    }
++}
++
+ private fun writeAndFlushProbe(path: Path) {
+     FileChannel.open(
+         path,
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt
+index 3c7cdcce33377ac14a803290cd6a3f9bf8d1c705..eb3a406548c2a575f9cc17e54aa5a62c7470da2d 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt
+@@ -187,19 +187,33 @@ internal fun runDesktopApplicationWithDataRootOwnership(
+ }
+ 
+ private fun Throwable.requiresDataRootOwnershipRetention(): Boolean =
+-    this is DesktopUnsafeShutdownException || this is DesktopTaskDrainTimeoutException || this is DesktopDraftDrainTimeoutException ||
++    this is DesktopLifecycleCloseIncomplete || this is DesktopLifecycleCloseUnconfirmed || this is DesktopUnsafeShutdownException || this is DesktopTaskDrainTimeoutException || this is DesktopDraftDrainTimeoutException ||
+         this is DesktopReadingPositionDrainTimeoutException ||
+         suppressed.any { it.requiresDataRootOwnershipRetention() } ||
+         cause?.requiresDataRootOwnershipRetention() == true
+ 
++/** Diagnostic marker where the original exception supports suppression. */
++private class DesktopLifecycleCloseIncomplete : IllegalStateException("Desktop lifecycle close did not complete")
++
++/**
++ * Explicit close outcome for a primary Throwable that cannot carry suppressed diagnostics.
++ * Ownership retention recognizes this type directly, independently of suppression or thread.
++ * Preserve the exact original as both cause and primaryFailure, and the exact close failure as
++ * a separate field (also when it is the same object). Never interpret this as a completed drain.
++ */
++internal class DesktopLifecycleCloseUnconfirmed(
++    val primaryFailure: Throwable,
++    val closeFailure: Throwable,
++) : IllegalStateException("Desktop lifecycle close did not complete; root ownership retained", primaryFailure)
++
+ internal fun runDesktopApplicationLifecycle(
+     initialize: suspend () -> Unit,
+     applicationBody: () -> Unit,
+     close: suspend () -> Unit,
+ ) {
+-    runBlocking { initialize() }
+     var applicationFailure: Throwable? = null
+     try {
++        runBlocking { initialize() }
+         applicationBody()
+     } catch (failure: Throwable) {
+         applicationFailure = failure
+@@ -208,7 +222,24 @@ internal fun runDesktopApplicationLifecycle(
+         try {
+             runBlocking { close() }
+         } catch (closeFailure: Throwable) {
+-            applicationFailure?.addSuppressed(closeFailure) ?: throw closeFailure
++            if (!closeFailure.requiresDataRootOwnershipRetention()) {
++                closeFailure.addSuppressed(DesktopLifecycleCloseIncomplete())
++            }
++            if (applicationFailure != null && applicationFailure !== closeFailure) {
++                applicationFailure.addSuppressed(closeFailure)
++            }
++            val primary = applicationFailure ?: closeFailure
++            // A suppression-disabled close may not carry the marker; prefer retaining the
++            // original primary identity and existing secondary order when it can carry one.
++            if (!primary.requiresDataRootOwnershipRetention()) {
++                primary.addSuppressed(DesktopLifecycleCloseIncomplete())
++            }
++            // addSuppressed can silently do nothing. Verify the propagated outcome and use an
++            // explicit carrier if the primary cannot express it; never release an unconfirmed root.
++            if (!primary.requiresDataRootOwnershipRetention()) {
++                throw DesktopLifecycleCloseUnconfirmed(primary, closeFailure)
++            }
++            if (applicationFailure == null) throw closeFailure
+         }
+     }
+ }
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopApplicationLifecycleTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopApplicationLifecycleTest.kt
+index b71de098724d8fe40166e9b9a181274b67dab629..227da8258a3aa071f78287aadd7acc32035424b5 100644
+--- a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopApplicationLifecycleTest.kt
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopApplicationLifecycleTest.kt
+@@ -13,6 +13,8 @@ import kotlin.test.assertIs
+ import kotlin.test.assertSame
+ import kotlin.test.assertTrue
+ import kotlinx.coroutines.runBlocking
++import kotlinx.coroutines.CancellationException
++import kotlinx.coroutines.yield
+ 
+ class DesktopApplicationLifecycleTest {
+     @Test
+@@ -147,43 +149,51 @@ class DesktopApplicationLifecycleTest {
+     }
+ 
+     @Test
+-    fun `initialization failure still releases outer ownership`() {
++    fun `initialization failure closes container before releasing outer ownership`() {
+         withTemporaryAppDataRoot { appDataRoot ->
+             Files.createDirectories(appDataRoot)
+             val initializationFailure = IllegalStateException("initialize")
++            var closed = false
+ 
+             val thrown = assertFailsWith<IllegalStateException> {
+                 runDesktopApplicationWithDataRootOwnership(resolvedRoot(appDataRoot)) {
+                     runDesktopApplicationLifecycle(
+                         initialize = { throw initializationFailure },
+                         applicationBody = { error("application must not start") },
+-                        close = { error("existing lifecycle does not close after init failure") },
++                        close = { closed = true },
+                     )
+                 }
+             }
+ 
+             assertSame(initializationFailure, thrown)
++            assertTrue(closed)
+             assertOwnershipAvailable(appDataRoot)
+         }
+     }
+ 
+     @Test
+-    fun `container close failure still releases ownership`() {
++    fun `unconfirmed container close retains ownership and original exception`() {
+         withTemporaryAppDataRoot { appDataRoot ->
+             Files.createDirectories(appDataRoot)
+             val containerCloseFailure = IllegalStateException("container close")
+-
+-            val thrown = assertFailsWith<IllegalStateException> {
+-                runDesktopApplicationWithDataRootOwnership(resolvedRoot(appDataRoot)) {
+-                    runDesktopApplicationLifecycle(
+-                        initialize = {},
+-                        applicationBody = {},
+-                        close = { throw containerCloseFailure },
+-                    )
++            lateinit var held: DesktopDataRootOwnership
++            try {
++                val thrown = assertFailsWith<IllegalStateException> {
++                    runDesktopApplicationWithDataRootOwnership(resolvedRoot(appDataRoot), acquireOwnership = {
++                        DesktopDataRootOwnership.acquire(it).also { result -> held = assertIs<DesktopDataRootOwnershipResult.Acquired>(result).ownership }
++                    }) {
++                        runDesktopApplicationLifecycle(
++                            initialize = {},
++                            applicationBody = {},
++                            close = { throw containerCloseFailure },
++                        )
++                    }
+                 }
+-            }
+ 
+-            assertSame(containerCloseFailure, thrown)
++                assertSame(containerCloseFailure, thrown)
++                assertTrue(thrown.suppressed.isNotEmpty())
++                assertIs<DesktopDataRootOwnershipResult.AlreadyInUse>(DesktopDataRootOwnership.acquire(resolvedRoot(appDataRoot)))
++            } finally { held.close() }
+             assertOwnershipAvailable(appDataRoot)
+         }
+     }
+@@ -335,35 +345,42 @@ class DesktopApplicationLifecycleTest {
+     }
+ 
+     @Test
+-    fun `application container and ownership failures retain suppression order`() {
++    fun `application and container failures preserve suppression while refusing ownership release`() {
+         withTemporaryAppDataRoot { appDataRoot ->
+             Files.createDirectories(appDataRoot)
+             val applicationFailure = IllegalStateException("application")
+             val containerCloseFailure = IllegalArgumentException("container close")
+-            val ownershipCloseFailure = UnsupportedOperationException("ownership close")
++            lateinit var held: DesktopDataRootOwnership
++            var ownershipCloseCalled = false
++            try {
++                val thrown = assertFailsWith<IllegalStateException> {
++                    runDesktopApplicationWithDataRootOwnership(
++                        resolvedRoot = resolvedRoot(appDataRoot),
++                        acquireOwnership = { root -> DesktopDataRootOwnership.acquire(root).also {
++                            held = assertIs<DesktopDataRootOwnershipResult.Acquired>(it).ownership
++                        } },
++                        closeOwnership = { ownership ->
++                            ownershipCloseCalled = true
++                            ownership.close()
++                        },
++                        applicationBody = {
++                            runDesktopApplicationLifecycle(
++                                initialize = {},
++                                applicationBody = { throw applicationFailure },
++                                close = { throw containerCloseFailure },
++                            )
++                        },
++                    )
++                }
+ 
+-            val thrown = assertFailsWith<IllegalStateException> {
+-                runDesktopApplicationWithDataRootOwnership(
+-                    resolvedRoot = resolvedRoot(appDataRoot),
+-                    closeOwnership = { ownership ->
+-                        ownership.close()
+-                        throw ownershipCloseFailure
+-                    },
+-                    applicationBody = {
+-                        runDesktopApplicationLifecycle(
+-                            initialize = {},
+-                            applicationBody = { throw applicationFailure },
+-                            close = { throw containerCloseFailure },
+-                        )
+-                    },
++                assertSame(applicationFailure, thrown)
++                assertEquals(
++                    listOf(containerCloseFailure),
++                    thrown.suppressed.toList(),
+                 )
+-            }
+-
+-            assertSame(applicationFailure, thrown)
+-            assertEquals(
+-                listOf(containerCloseFailure, ownershipCloseFailure),
+-                thrown.suppressed.toList(),
+-            )
++                assertFalse(ownershipCloseCalled)
++                assertIs<DesktopDataRootOwnershipResult.AlreadyInUse>(DesktopDataRootOwnership.acquire(resolvedRoot(appDataRoot)))
++            } finally { held.close() }
+             assertOwnershipAvailable(appDataRoot)
+         }
+     }
+@@ -558,7 +575,247 @@ class DesktopApplicationLifecycleTest {
+         }
+ 
+         assertSame(initializationFailure, thrown)
+-        assertEquals(listOf("initialize"), calls)
++        assertEquals(listOf("initialize", "close"), calls)
++    }
++
++    @Test
++    fun `initialization failure preserves primary and ordered shutdown secondary failures`() {
++        val initialization = IllegalArgumentException("synthetic initialization")
++        val backup = IllegalStateException("synthetic backup close")
++        val coordinator = IllegalStateException("synthetic coordinator close")
++        val migration = IllegalStateException("synthetic migration close")
++        val calls = mutableListOf<String>()
++        val thrown = assertFailsWith<IllegalArgumentException> {
++            runDesktopApplicationLifecycle({ throw initialization }, { error("body must not run") }, {
++                closeDesktopDataRuntimes(
++                    taskRuntimeClose = { calls += "task" }, draftRuntimeClose = { calls += "draft" },
++                    runtimeClose = { calls += "backup"; throw backup },
++                    coordinatorClose = { calls += "coordinator"; throw coordinator },
++                    migrationServiceClose = { calls += "migration"; throw migration })
++            })
++        }
++        assertSame(initialization, thrown)
++        assertEquals(listOf(backup), thrown.suppressed.toList())
++        assertEquals(listOf(coordinator, migration), backup.suppressed.take(2))
++        assertEquals(listOf("task", "draft", "backup", "coordinator", "migration"), calls)
++    }
++
++    @Test
++    fun `initialization cancellation still executes suspending cleanup and remains primary`() {
++        val cancellation = CancellationException("synthetic initialization cancelled")
++        var closed = false
++        val thrown = assertFailsWith<CancellationException> {
++            runDesktopApplicationLifecycle({ throw cancellation }, { error("must not enter body") }, { yield(); closed = true })
++        }
++        assertSame(cancellation, thrown)
++        assertTrue(closed)
++        assertTrue(thrown.suppressed.isEmpty())
++    }
++
++    @Test
++    fun `initialization primary with incomplete drain retains ownership without hiding cancellation`() {
++        for (cancel in listOf(false, true)) withTemporaryAppDataRoot { root ->
++            Files.createDirectories(root)
++            val primary = if (cancel) CancellationException("synthetic cancel") else IllegalStateException("synthetic init")
++            val closeFailure = IllegalStateException("synthetic incomplete close")
++            lateinit var held: DesktopDataRootOwnership
++            try {
++                val thrown = assertFailsWith<IllegalStateException> {
++                    runDesktopApplicationWithDataRootOwnership(resolvedRoot(root), acquireOwnership = {
++                        DesktopDataRootOwnership.acquire(it).also { result -> held = assertIs<DesktopDataRootOwnershipResult.Acquired>(result).ownership }
++                    }) { runDesktopApplicationLifecycle({ throw primary }, { error("no body") }, { throw closeFailure }) }
++                }
++                assertSame(primary, thrown)
++                assertEquals(listOf(closeFailure), thrown.suppressed.toList())
++                assertIs<DesktopDataRootOwnershipResult.AlreadyInUse>(DesktopDataRootOwnership.acquire(resolvedRoot(root)))
++            } finally { held.close() }
++            assertOwnershipAvailable(root)
++        }
++    }
++
++    @Test
++    fun `same exception from initialization and close does not cause self suppression`() {
++        val failure = IllegalStateException("synthetic shared failure")
++        assertSame(failure, assertFailsWith<IllegalStateException> {
++            runDesktopApplicationLifecycle({ throw failure }, {}, { throw failure })
++        })
++        assertFalse(failure.suppressed.any { it === failure })
++    }
++
++    @Test
++    fun `suppression disabled close retains ownership with explicit outcome preserving original exception`() {
++        val closeFailure = SuppressionDisabledFailure()
++        assertIncompleteCloseRetainsOwnership(null, closeFailure, expectCarrier = true)
++        assertTrue(closeFailure.suppressed.isEmpty())
++    }
++
++    @Test
++    fun `suppression disabled initialization primary cannot hide incomplete close`() {
++        for (closeFailure in listOf(SuppressionDisabledFailure(), IllegalStateException("synthetic close"),
++            DesktopTaskDrainTimeoutException("synthetic pending drain"))) {
++            val primary = SuppressionDisabledFailure()
++            assertIncompleteCloseRetainsOwnership(primary, closeFailure, expectCarrier = true)
++            assertTrue(primary.suppressed.isEmpty())
++        }
++    }
++
++    @Test
++    fun `normal primary identity and existing suppression order survive incomplete close`() {
++        val earlier = IllegalArgumentException("synthetic earlier failure")
++        val closeEarlier = IllegalArgumentException("synthetic earlier close failure")
++        val primary = IllegalStateException("synthetic initialization").apply { addSuppressed(earlier) }
++        val closeFailure = IllegalStateException("synthetic close").apply { addSuppressed(closeEarlier) }
++        assertIncompleteCloseRetainsOwnership(primary, closeFailure)
++        assertEquals(listOf(earlier, closeFailure), primary.suppressed.toList())
++        assertSame(closeEarlier, closeFailure.suppressed.first())
++        assertEquals(2, closeFailure.suppressed.size) // Existing secondary, then diagnostic marker.
++    }
++
++    @Test
++    fun `normal primary remains identical when suppression disabled close needs primary marker`() {
++        val earlier = IllegalArgumentException("synthetic earlier failure")
++        val primary = IllegalStateException("synthetic initialization").apply { addSuppressed(earlier) }
++        val closeFailure = SuppressionDisabledFailure()
++        assertIncompleteCloseRetainsOwnership(primary, closeFailure)
++        assertEquals(listOf(earlier, closeFailure), primary.suppressed.take(2))
++        assertEquals(3, primary.suppressed.size) // Append marker without reordering existing failures.
++        assertTrue(closeFailure.suppressed.isEmpty())
++    }
++
++    @Test
++    fun `cancellation primary and suppression disabled close retain ownership`() {
++        val primary = CancellationException("synthetic initialization cancellation")
++        val closeFailure = SuppressionDisabledFailure()
++        assertIncompleteCloseRetainsOwnership(primary, closeFailure)
++        assertSame(closeFailure, primary.suppressed.first())
++        assertEquals(2, primary.suppressed.size) // Exact close failure, then fallback diagnostic marker.
++    }
++
++    @Test
++    fun `close cancellation without primary retains ownership`() {
++        assertIncompleteCloseRetainsOwnership(null, CancellationException("synthetic close cancellation"))
++    }
++
++    @Test
++    fun `same initialization and close instance retains ownership without self suppression`() {
++        for (failure in listOf(SuppressionDisabledFailure(), CancellationException("synthetic shared cancellation"),
++            IllegalStateException("synthetic shared exception"))) {
++            assertIncompleteCloseRetainsOwnership(failure, failure, expectCarrier = failure is SuppressionDisabledFailure)
++            assertFalse(failure.suppressed.any { it === failure })
++        }
++    }
++
++    @Test
++    fun `confirmed suspending drain releases ownership even with suppression disabled primary`() {
++        for (primary in listOf(SuppressionDisabledFailure(), CancellationException("synthetic init cancellation"))) withTemporaryAppDataRoot { root ->
++            Files.createDirectories(root)
++            var drained = false
++            var ownershipReleased = false
++            val thrown = assertFailsWith<Throwable> {
++                runDesktopApplicationWithDataRootOwnership(resolvedRoot(root), closeOwnership = {
++                    assertTrue(drained)
++                    it.close()
++                    ownershipReleased = true
++                }) {
++                    runDesktopApplicationLifecycle({ throw primary }, { error("no UI") }, {
++                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { yield(); drained = true }
++                    })
++                }
++            }
++            assertSame(primary, thrown)
++            assertTrue(ownershipReleased)
++            assertTrue(primary.suppressed.isEmpty())
++            assertOwnershipAvailable(root)
++        }
++    }
++
++    @Test
++    fun `unconfirmed outcome does not contaminate subsequent successful lifecycle`() {
++        assertIncompleteCloseRetainsOwnership(null, SuppressionDisabledFailure(), expectCarrier = true)
++        withTemporaryAppDataRoot { root ->
++            Files.createDirectories(root)
++            runDesktopApplicationWithDataRootOwnership(resolvedRoot(root)) {
++                runDesktopApplicationLifecycle({}, {}, { yield() })
++            }
++            assertOwnershipAvailable(root)
++        }
++    }
++
++    private class SuppressionDisabledFailure : RuntimeException("synthetic suppression disabled", null, false, true)
++
++    private fun assertIncompleteCloseRetainsOwnership(
++        primary: Throwable?,
++        closeFailure: Throwable,
++        expectCarrier: Boolean = false,
++    ) {
++        withTemporaryAppDataRoot { root ->
++            Files.createDirectories(root)
++            lateinit var held: DesktopDataRootOwnership
++            var ownershipReleased = false
++            try {
++                val thrown = assertFailsWith<Throwable> {
++                    runDesktopApplicationWithDataRootOwnership(resolvedRoot(root), acquireOwnership = {
++                        DesktopDataRootOwnership.acquire(it).also { result ->
++                            held = assertIs<DesktopDataRootOwnershipResult.Acquired>(result).ownership
++                        }
++                    }, closeOwnership = { ownershipReleased = true; it.close() }) {
++                        runDesktopApplicationLifecycle({ if (primary != null) throw primary }, {}, {
++                            // Drain may suspend before failing; suspension alone is not confirmation.
++                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { yield() }
++                            throw closeFailure
++                        })
++                    }
++                }
++                if (expectCarrier) {
++                    val outcome = assertIs<DesktopLifecycleCloseUnconfirmed>(thrown)
++                    assertSame(primary ?: closeFailure, outcome.primaryFailure)
++                    assertSame(primary ?: closeFailure, outcome.cause)
++                    assertSame(closeFailure, outcome.closeFailure)
++                } else {
++                    assertSame(primary ?: closeFailure, thrown)
++                }
++                assertFalse(ownershipReleased)
++                assertIs<DesktopDataRootOwnershipResult.AlreadyInUse>(DesktopDataRootOwnership.acquire(resolvedRoot(root)))
++            } finally {
++                // This fixture has no actual writer. Only the synthetic held lock is disposed here.
++                held.close()
++            }
++            assertOwnershipAvailable(root)
++        }
++    }
++
++    @Test
++    fun `real backup scheduler started before preset failure is drained by container close`() {
++        withTemporaryAppDataRoot { root ->
++            Files.createDirectories(root)
++            val failure = IllegalStateException("synthetic preset read failure")
++            lateinit var container: DesktopAppContainer
++            var observedRunning = false
++            runDesktopApplicationWithDataRootOwnership(resolvedRoot(root)) {
++                container = DesktopAppContainer(resolvedRoot(root),
++                    secretStoreFactory = { com.example.chatbar.desktop.security.InMemoryDesktopSecretStore() },
++                    bundledAssets = {
++                        observedRunning = container.automaticBackupRuntime.state.value.schedulerRunning
++                        throw failure // Never reads bundled presets or user data.
++                    })
++                runBlocking {
++                    val store = DesktopSettingsStore(root, container.dataOperationCoordinator)
++                    val missing = assertIs<DesktopSettingsLoadResult.Missing>(store.load())
++                    store.save(missing.document, DesktopSettings(automaticBackup = DesktopAutomaticBackupSettings(
++                        enabled = true, minimumBackupInterval = Duration.ofHours(6), maximumSnapshotCount = 4,
++                        checkInterval = Duration.ofMinutes(30))))
++                }
++                assertSame(failure, assertFailsWith<IllegalStateException> {
++                    runDesktopApplicationLifecycle(container::initializePersistentState,
++                        { error("initialization failed; no application") }, container::close)
++                })
++                assertTrue(observedRunning)
++                assertFalse(container.automaticBackupRuntime.state.value.schedulerRunning)
++                assertEquals(DesktopAutomaticBackupRuntimeMode.CLOSED, container.automaticBackupRuntime.state.value.mode)
++                assertEquals(DesktopDataOperationCoordinatorState.CLOSED, container.dataOperationCoordinator.state)
++            }
++            assertOwnershipAvailable(root)
++        }
+     }
+ 
+     @Test
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopDataDirectoryTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopDataDirectoryTest.kt
+index 0e62fe646c777659e61d1b749225793e1a429c17..0176a50679a95354d39f2c8e2e245099b92c153f 100644
+--- a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopDataDirectoryTest.kt
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopDataDirectoryTest.kt
+@@ -9,8 +9,120 @@ import kotlin.test.assertFalse
+ import kotlin.test.assertIs
+ import kotlin.test.assertTrue
+ import kotlinx.coroutines.test.runTest
++import java.nio.file.LinkOption.NOFOLLOW_LINKS
++import java.nio.file.attribute.BasicFileAttributes
++import java.security.MessageDigest
+ 
+ class DesktopDataDirectoryTest {
++    @Test
++    fun `read only selection preserves default bootstrap custom and invalid authority behavior`() = runTest {
++        for (mode in listOf("missing", "default", "custom", "invalid")) withSelectionFixture { parent ->
++            val local = Files.createDirectory(parent.resolve("local"))
++            val home = Files.createDirectory(parent.resolve("image"))
++            val store = DesktopBootstrapSettingsStore(local.resolve(DesktopDataDirectory.BOOTSTRAP_FILE_NAME))
++            if (mode == "invalid") Files.writeString(local.resolve(DesktopDataDirectory.BOOTSTRAP_FILE_NAME), "{bad")
++            else if (mode != "missing") {
++                val document = assertIs<DesktopBootstrapLoadResult.Missing>(store.load()).document
++                store.save(document, if (mode == "custom") DesktopDataRootSelection.custom(parent.resolve("custom")) else DesktopDataRootSelection())
++            }
++            val result = assertSelectionReadOnly("bootstrap-$mode", parent) {
++                selectFixture(parent, home)
++            }
++            if (mode == "invalid") assertEquals(DesktopDataRootResolutionFailureKind.BOOTSTRAP_LOAD_FAILED,
++                assertIs<DesktopStartupRootSelection.Failed>(result).failure.kind)
++            else {
++                val root = assertIs<DesktopStartupRootSelection.Selected>(result).root
++                assertEquals(if (mode == "custom") parent.resolve("custom") else local.resolve(DesktopDataDirectory.DIRECTORY_NAME), root.appDataRoot)
++                assertEquals(when (mode) {
++                    "missing" -> DesktopDataRootProvenance.MISSING_BOOTSTRAP_DEFAULT
++                    "default" -> DesktopDataRootProvenance.BOOTSTRAP_DEFAULT
++                    else -> DesktopDataRootProvenance.BOOTSTRAP_CUSTOM
++                }, root.provenance)
++                assertFalse(Files.exists(root.appDataRoot))
++            }
++        }
++    }
++
++    @Test
++    fun `portable selection is pending without a probe and invalid portable never falls back`() = runTest {
++        for (mode in listOf("valid", "invalid-marker", "missing-userdata", "file-userdata")) withSelectionFixture { parent ->
++            val local = Files.createDirectory(parent.resolve("local"))
++            Files.writeString(local.resolve(DesktopDataDirectory.BOOTSTRAP_FILE_NAME), "{bad bootstrap must not win")
++            val home = Files.createDirectory(parent.resolve("image"))
++            Files.writeString(home.resolve("portable.flag"), if (mode == "invalid-marker") "invalid" else DesktopPortableRootResolver.PORTABLE_MARKER_TOKEN)
++            if (mode == "file-userdata") Files.writeString(home.resolve("UserData"), "synthetic")
++            else if (mode != "missing-userdata") Files.createDirectory(home.resolve("UserData"))
++            val result = assertSelectionReadOnly("portable-$mode", parent) { selectFixture(parent, home) }
++            if (mode == "valid") {
++                val pending = assertIs<DesktopStartupRootSelection.PortablePendingActivation>(result)
++                assertEquals(home.resolve("UserData"), pending.appDataRoot)
++                assertEquals(DesktopDataRootProvenance.PORTABLE, pending.provenance)
++                assertTrue(Files.list(pending.appDataRoot).use { it.toList() }.isEmpty())
++            } else assertEquals(DesktopDataRootResolutionFailureKind.PORTABLE_RESOLUTION_FAILED,
++                assertIs<DesktopStartupRootSelection.Failed>(result).failure.kind)
++        }
++    }
++
++    @Test
++    fun `read only CLI precedence bypasses malformed portable and bootstrap`() = runTest { withSelectionFixture { parent ->
++        val local = Files.createDirectory(parent.resolve("local"))
++        Files.writeString(local.resolve(DesktopDataDirectory.BOOTSTRAP_FILE_NAME), "{bad")
++        val override = parent.resolve("override")
++        val result = assertSelectionReadOnly("cli-precedence", parent) {
++            DesktopDataDirectory.selectRoot(mapOf("LOCALAPPDATA" to local.toString()), parent.resolve("unused"),
++                explicitOverride = override, applicationHomeResolution = DesktopApplicationHomeResult.Failure("synthetic unavailable"))
++        }
++        assertEquals(override, assertIs<DesktopStartupRootSelection.Selected>(result).root.appDataRoot)
++        val relative = assertSelectionReadOnly("relative-cli", parent) {
++            DesktopDataDirectory.selectRoot(mapOf("LOCALAPPDATA" to local.toString()), parent,
++                explicitOverride = Path.of("relative"))
++        }
++        assertEquals(DesktopDataRootResolutionFailureKind.INVALID_CLI_OVERRIDE,
++            assertIs<DesktopStartupRootSelection.Failed>(relative).failure.kind)
++    } }
++
++    @Test
++    fun `relocated application image gets a fresh pending authority without writes`() = runTest { withSelectionFixture { parent ->
++        Files.createDirectory(parent.resolve("local"))
++        val original = Files.createDirectory(parent.resolve("original"))
++        Files.writeString(original.resolve("portable.flag"), DesktopPortableRootResolver.PORTABLE_MARKER_TOKEN)
++        Files.createDirectory(original.resolve("UserData"))
++        val first = assertIs<DesktopStartupRootSelection.PortablePendingActivation>(assertSelectionReadOnly("original-home", parent) { selectFixture(parent, original) })
++        val moved = Files.move(original, parent.resolve("moved"))
++        val next = assertIs<DesktopStartupRootSelection.PortablePendingActivation>(assertSelectionReadOnly("moved-home", parent) { selectFixture(parent, moved) })
++        assertEquals(moved.resolve("UserData"), next.appDataRoot)
++        assertFalse(Files.exists(first.appDataRoot))
++        val noHome = assertSelectionReadOnly("bad-application-home", parent) {
++            DesktopDataDirectory.selectRoot(mapOf("LOCALAPPDATA" to parent.resolve("local").toString()), parent,
++                applicationHomeResolution = DesktopApplicationHomeResult.Failure("synthetic malformed"))
++        }
++        assertEquals(DesktopDataRootResolutionFailureKind.APPLICATION_HOME_FAILED,
++            assertIs<DesktopStartupRootSelection.Failed>(noHome).failure.kind)
++    } }
++
++    private suspend fun selectFixture(parent: Path, home: Path) = DesktopDataDirectory.selectRoot(
++        mapOf("LOCALAPPDATA" to parent.resolve("local").toString()), parent.resolve("unused-home"),
++        applicationHomeResolution = DesktopApplicationHomeResult.Available(home, DesktopApplicationHomeProvenance.INJECTED_DEVELOPMENT_TEST))
++
++    private suspend fun withSelectionFixture(block: suspend (Path) -> Unit) {
++        val parent = Files.createTempDirectory("g1a-root-selection-")
++        try { block(parent) } finally { parent.toFile().deleteRecursively() }
++    }
++
++    private suspend fun <T> assertSelectionReadOnly(label: String, parent: Path, block: suspend () -> T): T {
++        fun snapshot() = Files.walk(parent).use { paths -> paths.sorted().toList().associate { path ->
++            val a = Files.readAttributes(path, BasicFileAttributes::class.java, NOFOLLOW_LINKS)
++            val hash = if (a.isRegularFile) MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(path)).contentToString() else "directory"
++            parent.relativize(path).toString() to "$hash:${a.size()}:${a.creationTime()}:${a.lastModifiedTime()}"
++        } }
++        val before = snapshot()
++        val result = block()
++        val after = snapshot()
++        assertEquals(before, after)
++        println("G1A_READ_ONLY $label entries=${before.size} unchanged=true")
++        return result
++    }
++
+     @Test
+     fun `missing bootstrap preserves exact LOCALAPPDATA default without writes`() = runTest {
+         val localAppData = Path.of("local-app-data").toAbsolutePath()
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopPortableRootTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopPortableRootTest.kt
+index 065ba1db184f038c2cdc66b837e0ae516c7a2358..f87ea5e68cb433c5ffd4fabdaff8b0d21e91aaf8 100644
+--- a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopPortableRootTest.kt
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopPortableRootTest.kt
+@@ -12,10 +12,133 @@ import kotlin.test.assertEquals
+ import kotlin.test.assertFalse
+ import kotlin.test.assertIs
+ import kotlin.test.assertTrue
++import kotlinx.coroutines.runBlocking
++import java.nio.file.LinkOption.NOFOLLOW_LINKS
++import java.nio.file.attribute.BasicFileAttributes
++import java.security.MessageDigest
+ 
+ class DesktopPortableRootTest {
+     private val resolver = DesktopPortableRootResolver()
+ 
++    @Test
++    fun `explicit activation refuses absent or released ownership and leaves first stage untouched`() = withPortableCandidate { candidate ->
++        val before = portableSnapshot(candidate.applicationHome)
++        val pending = pending(candidate)
++        assertEquals(before, portableSnapshot(candidate.applicationHome))
++        val refused = assertIs<DesktopDataRootResolution.Failed>(DesktopDataDirectory.activatePortable(pending))
++        assertEquals(DesktopPortableActivationFailureKind.OWNERSHIP_REQUIRED, refused.portableActivationFailure?.kind)
++        assertEquals(before, portableSnapshot(candidate.applicationHome))
++        val owner = acquire(pending)
++        try {
++            val filesBefore = children(candidate.appDataRoot)
++            val result = assertIs<DesktopDataRootResolution.Resolved>(DesktopDataDirectory.activatePortable(pending))
++            assertEquals(candidate.appDataRoot, result.appDataRoot)
++            assertEquals(DesktopDataRootProvenance.PORTABLE, result.provenance)
++            assertEquals(filesBefore, children(candidate.appDataRoot))
++            assertTrue(DesktopDataRootOwnership.isHeld(candidate.appDataRoot))
++        } finally { owner.close() }
++        val released = portableSnapshot(candidate.applicationHome)
++        assertEquals(DesktopPortableActivationFailureKind.OWNERSHIP_REQUIRED,
++            assertIs<DesktopDataRootResolution.Failed>(DesktopDataDirectory.activatePortable(pending)).portableActivationFailure?.kind)
++        assertEquals(released, portableSnapshot(candidate.applicationHome))
++        println("G1A_ACTIVATION ownership lock classified separately; no probe before explicit owned stage")
++    }
++
++    @Test
++    fun `explicit activation rejects replaced home marker or UserData identity without a probe`() {
++        for (target in listOf("home", "marker", "userdata")) withPortableCandidate { candidate ->
++            val pending = pending(candidate)
++            when (target) {
++                "home" -> {
++                    Files.move(candidate.applicationHome, candidate.applicationHome.resolveSibling("old-image"))
++                    Files.createDirectory(candidate.applicationHome)
++                    writePortableMarker(candidate.applicationHome)
++                    Files.createDirectory(candidate.appDataRoot)
++                }
++                "marker" -> {
++                    val modified = Files.getLastModifiedTime(candidate.markerPath)
++                    Files.move(candidate.markerPath, candidate.markerPath.resolveSibling("old-marker"))
++                    writePortableMarker(candidate.applicationHome)
++                    Files.setLastModifiedTime(candidate.markerPath, modified)
++                }
++                else -> {
++                    Files.move(candidate.appDataRoot, candidate.appDataRoot.resolveSibling("old-userdata"))
++                    Files.createDirectory(candidate.appDataRoot)
++                }
++            }
++            acquire(pending).use {
++                val before = portableSnapshot(candidate.applicationHome)
++                var writes = 0
++                val validator = DesktopPortableRootActivationValidator(resolver, { "forbidden" },
++                    { writes++; error("must not write") }, Files::delete)
++                val failure = assertIs<DesktopDataRootResolution.Failed>(DesktopDataDirectory.activatePortable(pending, validator))
++                assertEquals(DesktopPortableActivationFailureKind.CANDIDATE_CHANGED, failure.portableActivationFailure?.kind)
++                assertEquals(0, writes)
++                assertEquals(before, portableSnapshot(candidate.applicationHome))
++            }
++        }
++    }
++
++    @Test
++    fun `owned activation preserves write and cleanup failures without fallback`() {
++        for (cleanup in listOf(false, true)) withPortableCandidate { candidate ->
++            val pending = pending(candidate)
++            acquire(pending).use {
++                val validator = DesktopPortableRootActivationValidator(resolver, { "owned-failure" },
++                    { path -> if (cleanup) Files.write(path, byteArrayOf(1), StandardOpenOption.CREATE_NEW)
++                        else throw IOException("synthetic write failure") },
++                    { throw IOException("synthetic cleanup failure") })
++                val failure = assertIs<DesktopDataRootResolution.Failed>(DesktopDataDirectory.activatePortable(pending, validator))
++                assertEquals(DesktopDataRootResolutionFailureKind.PORTABLE_ACTIVATION_FAILED, failure.kind)
++                assertEquals(if (cleanup) DesktopPortableActivationFailureKind.PROBE_CLEANUP_FAILED
++                    else DesktopPortableActivationFailureKind.WRITE_PROBE_FAILED, failure.portableActivationFailure?.kind)
++                val retained = failure.portableActivationFailure?.retainedProbe
++                if (cleanup) { assertTrue(Files.exists(retained)); assertEquals(1L, Files.size(retained)) }
++                else assertEquals(null, retained)
++                assertTrue(DesktopDataRootOwnership.isHeld(candidate.appDataRoot))
++            }
++        }
++    }
++
++    @Test
++    fun `missing marker before activation and ownership loss during probe are refused`() {
++        for (removeMarker in listOf(true, false)) withPortableCandidate { candidate ->
++            val pending = pending(candidate)
++            val owner = acquire(pending)
++            try {
++                if (removeMarker) Files.delete(candidate.markerPath)
++                var writes = 0
++                val validator = DesktopPortableRootActivationValidator(resolver, { "owner-loss" },
++                    { path -> writes++; Files.write(path, byteArrayOf(1), StandardOpenOption.CREATE_NEW); owner.close() }, Files::delete)
++                val failure = assertIs<DesktopDataRootResolution.Failed>(DesktopDataDirectory.activatePortable(pending, validator))
++                assertEquals(if (removeMarker) DesktopPortableActivationFailureKind.CANDIDATE_CHANGED
++                    else DesktopPortableActivationFailureKind.OWNERSHIP_REQUIRED, failure.portableActivationFailure?.kind)
++                assertEquals(if (removeMarker) 0 else 1, writes)
++                assertFalse(Files.exists(candidate.appDataRoot.resolve(".portable-write-probe-owner-loss.tmp")))
++            } finally { owner.close() }
++        }
++    }
++
++    private fun pending(candidate: DesktopPortableRootResolution.PortableCandidate) = runBlocking {
++        assertIs<DesktopStartupRootSelection.PortablePendingActivation>(DesktopDataDirectory.selectRoot(
++            mapOf("LOCALAPPDATA" to candidate.applicationHome.resolveSibling("unused-local").toString()),
++            candidate.applicationHome.resolveSibling("unused-home"), applicationHomeResolution =
++                DesktopApplicationHomeResult.Available(candidate.applicationHome, DesktopApplicationHomeProvenance.INJECTED_DEVELOPMENT_TEST)))
++    }
++
++    private fun acquire(pending: DesktopStartupRootSelection.PortablePendingActivation) =
++        assertIs<DesktopDataRootOwnershipResult.Acquired>(DesktopDataRootOwnership.acquire(
++            DesktopDataRootResolution.Resolved(pending.appDataRoot, pending.provenance, pending.bootstrapPath))).ownership
++
++    private fun portableSnapshot(home: Path): Map<String, String> = Files.walk(home).use { paths ->
++        paths.sorted().toList().associate { path ->
++            val a = Files.readAttributes(path, BasicFileAttributes::class.java, NOFOLLOW_LINKS)
++            val content = if (!a.isRegularFile) "directory" else if (path.fileName.toString() == DesktopDataRootOwnership.LOCK_FILE_NAME)
++                "OWNERSHIP" else MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(path)).contentToString()
++            home.relativize(path).toString() to "$content:${a.size()}:${a.creationTime()}:${a.lastModifiedTime()}"
++        }
++    }
++
+     @Test
+     fun `relative ApplicationHome is rejected without user dir fallback`() {
+         val result = assertIs<DesktopPortableRootResolution.Failure>(
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopProcessLifecycleTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopProcessLifecycleTest.kt
+index 37557fbf80b527a773c5e7d67445b45cd17add3b..c549d946cb281eccae463071146d8b53a47bf7bb 100644
+--- a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopProcessLifecycleTest.kt
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopProcessLifecycleTest.kt
+@@ -1,6 +1,9 @@
+ package com.example.chatbar.desktop
+ 
+ import java.nio.file.Files
++import java.nio.file.Path
++import java.util.concurrent.atomic.AtomicReference
++import java.util.concurrent.ConcurrentHashMap
+ import kotlin.test.Test
+ import kotlin.test.assertEquals
+ import kotlin.test.assertFailsWith
+@@ -13,38 +16,206 @@ import kotlinx.coroutines.awaitCancellation
+ import kotlinx.coroutines.async
+ import kotlinx.coroutines.withContext
+ import kotlinx.coroutines.withTimeout
++import kotlinx.coroutines.Dispatchers
++import kotlinx.coroutines.CoroutineScope
++import kotlinx.coroutines.Deferred
++import kotlinx.coroutines.SupervisorJob
++import kotlinx.coroutines.cancel
++import kotlinx.coroutines.withTimeoutOrNull
++import kotlin.test.assertFalse
++import kotlin.test.assertTrue
+ import com.example.chatbar.desktop.security.InMemoryDesktopSecretStore
+ 
+ class DesktopProcessLifecycleTest {
++    private val retainedSyntheticRoots = ConcurrentHashMap.newKeySet<Path>()
++    @Test fun `initialization failure keeps ownership through shutdown retry then reports original failure`() {
++        withRoot { root ->
++            val calls = mutableListOf<String>()
++            val original = IllegalStateException("synthetic init")
++            var attempts = 0
++            runDesktopApplicationWithDataRootOwnership(root) {
++                assertSame(original, assertFailsWith<IllegalStateException> {
++                    runDesktopApplicationLifecycle({ calls += "initialize"; throw original },
++                        { error("no UI") }, {
++                            closeDesktopWithRecovery(close = {
++                                calls += "close"
++                                if (attempts++ == 0) throw DesktopTaskDrainTimeoutException("synthetic pending")
++                            }, awaitRetry = {
++                                assertIs<DesktopDataRootOwnershipResult.AlreadyInUse>(DesktopDataRootOwnership.acquire(root))
++                                calls += "retry"
++                            }, observeWait = { AutoCloseable {} })
++                        })
++                })
++            }
++            assertEquals(listOf("initialize", "close", "retry", "close"), calls)
++            assertEquals(2, attempts)
++            assertIs<DesktopDataRootOwnershipResult.Acquired>(DesktopDataRootOwnership.acquire(root)).ownership.close()
++        }
++    }
++
++    @Test fun `initialization failure waits for real task cleanup before releasing root and never exits successfully`() {
++        withRoot { root -> runBlocking {
++            val fixtureScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
++            val containerRef = AtomicReference<DesktopAppContainer?>()
++            val started = CompletableDeferred<Unit>()
++            val draining = CompletableDeferred<Unit>()
++            val release = CompletableDeferred<Unit>()
++            val initFailure = IllegalStateException("synthetic initialization after writer startup")
++            val observed = mutableListOf<String>()
++            // A separately owned fixture scope prevents runBlocking's implicit child join from
++            // defeating bounded teardown if the synchronous lifecycle itself gets stuck.
++            val lifecycle = fixtureScope.async {
++                runDesktopProcessLifecycle(application = {
++                    runDesktopApplicationWithDataRootOwnership(root) {
++                        val container = DesktopAppContainer(root, secretStoreFactory = { InMemoryDesktopSecretStore() })
++                        containerRef.set(container) // Production invariant: ownership before container.
++                        runDesktopApplicationLifecycle(initialize = {
++                            container.taskRuntime.launchNovelAi("synthetic startup", "session", "message", true) {
++                                started.complete(Unit)
++                                try { awaitCancellation() } finally { withContext(NonCancellable) {
++                                    draining.complete(Unit)
++                                    release.await()
++                                    Files.writeString(root.appDataRoot.resolve("joined-write.txt"), "synthetic completed write")
++                                } }
++                            }
++                            started.await()
++                            throw initFailure
++                        }, applicationBody = { error("must not start UI") }, close = {
++                            closeDesktopWithRecovery({ container.close() }, { error("unexpected drain timeout") },
++                                observeWait = { AutoCloseable {} })
++                        })
++                    }
++                }, terminate = { observed += "exit" }, reportFailure = { observed += "failure" })
++            }
++            var primaryFailure: Throwable? = null
++            try {
++                withTimeout(10_000) { draining.await() }
++                val container = checkNotNull(containerRef.get())
++                assertEquals(false, lifecycle.isCompleted)
++                assertIs<DesktopDataRootOwnershipResult.AlreadyInUse>(DesktopDataRootOwnership.acquire(root))
++                assertEquals(DesktopDataOperationCoordinatorState.OPEN, container.dataOperationCoordinator.state)
++                release.complete(Unit)
++                withTimeout(10_000) { lifecycle.await() }
++                assertEquals(listOf("failure"), observed)
++                assertEquals("synthetic completed write", Files.readString(root.appDataRoot.resolve("joined-write.txt")))
++                assertEquals(DesktopDataOperationCoordinatorState.CLOSED, container.dataOperationCoordinator.state)
++                assertIs<DesktopDataRootOwnershipResult.Acquired>(DesktopDataRootOwnership.acquire(root)).ownership.close()
++            } catch (failure: Throwable) {
++                primaryFailure = failure
++                throw failure
++            } finally {
++                finishSyntheticLifecycle(release, lifecycle, fixtureScope, containerRef, primaryFailure, root = root.appDataRoot)
++            }
++        } }
++    }
++
+     @Test fun `image task cancellation finishes owned writes before coordinator closes`() {
+         withRoot { root -> runBlocking {
+-            val container = DesktopAppContainer(root, secretStoreFactory = { InMemoryDesktopSecretStore() })
++            val fixtureScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
++            val containerRef = AtomicReference<DesktopAppContainer?>()
++            val imageId = CompletableDeferred<String>()
+             val started = CompletableDeferred<Unit>()
++            val closeRequested = CompletableDeferred<Unit>()
+             val draining = CompletableDeferred<Unit>()
+             val release = CompletableDeferred<Unit>()
+-            val image = container.taskRuntime.launchNovelAi("shutdown fixture", "session", "message", true) {
+-                started.complete(Unit)
+-                try { awaitCancellation() } finally { withContext(NonCancellable) {
+-                    draining.complete(Unit)
+-                    release.await()
+-                    Files.writeString(root.appDataRoot.resolve("cancelled-write.txt"), "synthetic retained result")
+-                } }
++            val lifecycle = fixtureScope.async {
++                runDesktopApplicationWithDataRootOwnership(root) {
++                    val container = DesktopAppContainer(root, secretStoreFactory = { InMemoryDesktopSecretStore() })
++                    containerRef.set(container)
++                    runDesktopApplicationLifecycle(initialize = {
++                        imageId.complete(container.taskRuntime.launchNovelAi("shutdown fixture", "session", "message", true) {
++                            started.complete(Unit)
++                            try { awaitCancellation() } finally { withContext(NonCancellable) {
++                                draining.complete(Unit)
++                                release.await()
++                                Files.writeString(root.appDataRoot.resolve("cancelled-write.txt"), "synthetic retained result")
++                            } }
++                        })
++                    }, applicationBody = { runBlocking { closeRequested.await() } }, close = {
++                        closeDesktopWithRecovery({ container.close() }, { error("unexpected timeout") },
++                            observeWait = { AutoCloseable {} })
++                    })
++                }
+             }
++            var primaryFailure: Throwable? = null
+             try {
+                 withTimeout(5000) { started.await() }
+-                val close = async { closeDesktopWithRecovery({ container.close() }, { error("unexpected timeout") }) }
++                val container = checkNotNull(containerRef.get())
++                val image = withTimeout(5000) { imageId.await() }
++                closeRequested.complete(Unit)
+                 withTimeout(5000) { draining.await() }
+-                assertEquals(false, close.isCompleted)
++                assertEquals(false, lifecycle.isCompleted)
++                assertIs<DesktopDataRootOwnershipResult.AlreadyInUse>(DesktopDataRootOwnership.acquire(root))
+                 assertEquals(DesktopDataOperationCoordinatorState.OPEN, container.dataOperationCoordinator.state)
+                 release.complete(Unit)
+-                withTimeout(5000) { close.await() }
++                withTimeout(5000) { lifecycle.await() }
+                 assertEquals("synthetic retained result", Files.readString(root.appDataRoot.resolve("cancelled-write.txt")))
+                 assertEquals(DesktopTaskStatus.CANCELLED, container.taskRuntime.tasks.value.single { it.taskId == image }.status)
+                 assertEquals(DesktopDataOperationCoordinatorState.CLOSED, container.dataOperationCoordinator.state)
+-            } finally { release.complete(Unit); container.close() }
++                assertIs<DesktopDataRootOwnershipResult.Acquired>(DesktopDataRootOwnership.acquire(root)).ownership.close()
++            } catch (failure: Throwable) {
++                primaryFailure = failure
++                throw failure
++            } finally {
++                closeRequested.complete(Unit)
++                finishSyntheticLifecycle(release, lifecycle, fixtureScope, containerRef, primaryFailure, root = root.appDataRoot)
++            }
+         } }
+     }
+ 
++    @Test fun `synthetic teardown timeout reports incomplete lifecycle without claiming drain or cancelling writer`() = runBlocking {
++        val fixtureScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
++        val started = CompletableDeferred<Unit>()
++        val actualRelease = CompletableDeferred<Unit>()
++        val lifecycle = fixtureScope.async { started.complete(Unit); actualRelease.await(); Unit }
++        val original = IllegalStateException("synthetic assertion failure")
++        try {
++            withTimeout(1000) { started.await() }
++            val failure = assertFailsWith<IllegalStateException> {
++                finishSyntheticLifecycle(CompletableDeferred(), lifecycle, fixtureScope,
++                    AtomicReference<DesktopAppContainer?>(), original, timeoutMillis = 50)
++            }
++            assertSame(original, failure.cause)
++            assertTrue(failure.message.orEmpty().contains("drain NOT CONFIRMED"))
++            assertFalse(lifecycle.isCompleted)
++            assertFalse(lifecycle.isCancelled)
++        } finally {
++            // Only the synthetic fixture can signal its actual writer completion, never a timeout.
++            actualRelease.complete(Unit)
++            withContext(NonCancellable) { withTimeout(1000) { lifecycle.join() } }
++            fixtureScope.cancel()
++        }
++    }
++
++    private suspend fun finishSyntheticLifecycle(
++        release: CompletableDeferred<Unit>,
++        lifecycle: Deferred<Unit>,
++        fixtureScope: CoroutineScope,
++        containerRef: AtomicReference<DesktopAppContainer?>,
++        primaryFailure: Throwable?,
++        timeoutMillis: Long = 15_000,
++        root: Path? = null,
++    ) {
++        release.complete(Unit)
++        // The timeout is INSIDE NonCancellable, so even a cancelled test has a bounded join.
++        val joined = withContext(NonCancellable) {
++            withTimeoutOrNull(timeoutMillis) { lifecycle.join(); true }
++        } == true
++        val container = containerRef.get()
++        val coordinator = container?.dataOperationCoordinator?.state
++        if (!joined || (container != null && coordinator != DesktopDataOperationCoordinatorState.CLOSED)) {
++            // Even a lifecycle still queued before acquire must not start against a deleted root.
++            if (root != null) retainedSyntheticRoots.add(root)
++            // Do not call container.close again, cancel an in-flight write, release ownership, or
++            // delete the root. The fixture still owns its scope; withRoot retains its locked files.
++            throw IllegalStateException("Synthetic teardown drain NOT CONFIRMED: " +
++                "budgetMs=$timeoutMillis, lifecycleCompleted=${lifecycle.isCompleted}, " +
++                "lifecycleCancelled=${lifecycle.isCancelled}, coordinator=$coordinator; " +
++                "fixture scope and any held ownership retained", primaryFailure)
++        }
++        fixtureScope.cancel() // Lifecycle has joined and the real coordinator is CLOSED (or never constructed).
++    }
++
+     @Test fun `termination follows container picker and root release exactly once`() {
+         val calls = mutableListOf<String>()
+         withRoot { root ->
+@@ -139,9 +310,156 @@ class DesktopProcessLifecycleTest {
+         assertEquals(listOf(presentationFailure), timeout.suppressed.toList())
+     }
+ 
++    @Test fun `root fixture rejects unexpected ownership retention after successful body`() {
++        var root: DesktopDataRootResolution.Resolved? = null
++        var held: DesktopDataRootOwnership? = null
++        try {
++            val failure = assertFailsWith<IllegalStateException> {
++                withRoot {
++                    root = it
++                    held = assertIs<DesktopDataRootOwnershipResult.Acquired>(DesktopDataRootOwnership.acquire(it)).ownership
++                }
++            }
++            assertTrue(failure.message.orEmpty().contains("ownership release not confirmed"))
++            assertTrue(Files.exists(checkNotNull(root).appDataRoot))
++            assertIs<DesktopDataRootOwnershipResult.AlreadyInUse>(DesktopDataRootOwnership.acquire(checkNotNull(root)))
++        } finally {
++            disposeRetentionRegressionRoot(root, held)
++        }
++    }
++
++    @Test fun `root fixture preserves body failure identity and ordered cleanup diagnostic`() {
++        for (declaredIncomplete in listOf(false, true)) {
++            var root: DesktopDataRootResolution.Resolved? = null
++            var held: DesktopDataRootOwnership? = null
++            val earlier = IllegalArgumentException("synthetic earlier diagnostic")
++            val primary = IllegalStateException("synthetic body assertion").apply { addSuppressed(earlier) }
++            try {
++                val failure = assertFailsWith<IllegalStateException> {
++                    withRoot {
++                        root = it
++                        if (declaredIncomplete) retainedSyntheticRoots.add(it.appDataRoot)
++                        else held = assertIs<DesktopDataRootOwnershipResult.Acquired>(DesktopDataRootOwnership.acquire(it)).ownership
++                        throw primary
++                    }
++                }
++                assertSame(primary, failure)
++                assertSame(earlier, failure.suppressed.first())
++                assertEquals(2, failure.suppressed.size)
++                val cleanup = assertIs<IllegalStateException>(failure.suppressed.last())
++                assertTrue(cleanup.message.orEmpty().contains(
++                    if (declaredIncomplete) "drain NOT CONFIRMED" else "ownership release not confirmed"))
++                assertTrue(Files.exists(checkNotNull(root).appDataRoot))
++            } finally {
++                disposeRetentionRegressionRoot(root, held)
++            }
++        }
++    }
++
++    @Test fun `root fixture preserves suppression disabled body failure and cleanup evidence`() {
++        var root: DesktopDataRootResolution.Resolved? = null
++        var held: DesktopDataRootOwnership? = null
++        val primary = SyntheticSuppressionDisabledFailure()
++        try {
++            val failure = assertFailsWith<SyntheticRootCleanupUnconfirmed> {
++                withRoot {
++                    root = it
++                    held = assertIs<DesktopDataRootOwnershipResult.Acquired>(DesktopDataRootOwnership.acquire(it)).ownership
++                    throw primary
++                }
++            }
++            assertSame(primary, failure.primaryFailure)
++            assertSame(primary, failure.cause)
++            assertTrue(primary.suppressed.isEmpty())
++            assertTrue(failure.cleanupFailure.message.orEmpty().contains("ownership release not confirmed"))
++            assertIs<DesktopDataRootOwnershipResult.AlreadyInUse>(DesktopDataRootOwnership.acquire(checkNotNull(root)))
++            assertTrue(Files.exists(checkNotNull(root).appDataRoot))
++        } finally {
++            disposeRetentionRegressionRoot(root, held)
++        }
++    }
++
++    @Test fun `declared incomplete root cannot become green when body swallows teardown failure`() {
++        var root: DesktopDataRootResolution.Resolved? = null
++        try {
++            val failure = assertFailsWith<IllegalStateException> {
++                withRoot {
++                    root = it
++                    // Simulate finishSyntheticLifecycle's retained-root declaration after a
++                    // caller caught its failure. This is NOT permission to call teardown safe.
++                    retainedSyntheticRoots.add(it.appDataRoot)
++                }
++            }
++            assertTrue(failure.message.orEmpty().contains("drain NOT CONFIRMED"))
++            assertTrue(Files.exists(checkNotNull(root).appDataRoot))
++        } finally {
++            disposeRetentionRegressionRoot(root)
++        }
++    }
++
++    @Test fun `root fixture removes synthetic directory after confirmed ordinary completion`() {
++        var root: DesktopDataRootResolution.Resolved? = null
++        withRoot { root = it }
++        assertFalse(Files.exists(checkNotNull(root).appDataRoot))
++    }
++
++    /** These regression roots have no tasks or writers; dispose only their explicitly held test lock. */
++    private fun disposeRetentionRegressionRoot(
++        root: DesktopDataRootResolution.Resolved?,
++        held: DesktopDataRootOwnership? = null,
++    ) {
++        held?.close()
++        if (root == null) return
++        // Never delete a root that remains owned by anything other than this synthetic fixture.
++        val probe = assertIs<DesktopDataRootOwnershipResult.Acquired>(DesktopDataRootOwnership.acquire(root))
++        probe.ownership.close()
++        retainedSyntheticRoots.remove(root.appDataRoot)
++        check(root.appDataRoot.toFile().deleteRecursively()) { "Synthetic regression root cleanup failed" }
++    }
++
++    private class SyntheticSuppressionDisabledFailure :
++        RuntimeException("synthetic suppression disabled body failure", null, false, true)
++
++    /** Only used when the original test Throwable refuses to retain the cleanup diagnostic. */
++    private class SyntheticRootCleanupUnconfirmed(
++        val primaryFailure: Throwable,
++        val cleanupFailure: Throwable,
++    ) : IllegalStateException("Synthetic root cleanup unconfirmed; original test failure preserved as cause", primaryFailure)
++
+     private fun withRoot(block: (DesktopDataRootResolution.Resolved) -> Unit) {
+         val path = Files.createTempDirectory("ccb-shutdown-policy-")
+-        try { block(DesktopDataRootResolution.Resolved(path, DesktopDataRootProvenance.CLI_OVERRIDE, path.resolveSibling("unused-bootstrap.json"))) }
+-        finally { path.toFile().deleteRecursively() }
++        val root = DesktopDataRootResolution.Resolved(path, DesktopDataRootProvenance.CLI_OVERRIDE, path.resolveSibling("unused-bootstrap.json"))
++        var primaryFailure: Throwable? = null
++        try {
++            block(root)
++        } catch (failure: Throwable) {
++            primaryFailure = failure
++            throw failure
++        } finally {
++            val cleanupFailure = try {
++                check(path !in retainedSyntheticRoots) {
++                    "Synthetic shutdown root retained: bounded teardown drain NOT CONFIRMED"
++                }
++                when (val result = DesktopDataRootOwnership.acquire(root)) {
++                    is DesktopDataRootOwnershipResult.Acquired -> {
++                        result.ownership.close()
++                        check(path.toFile().deleteRecursively()) { "Synthetic shutdown root cleanup failed" }
++                    }
++                    else -> error("Synthetic shutdown root retained: ownership release not confirmed (${result.javaClass.simpleName})")
++                }
++                null
++            } catch (failure: Throwable) {
++                failure // Keep files and any held ownership; a warning alone would be false-green.
++            }
++            if (cleanupFailure != null) {
++                val primary = primaryFailure
++                if (primary == null) throw cleanupFailure
++                if (primary !== cleanupFailure) primary.addSuppressed(cleanupFailure)
++                if (primary.suppressed.none { it === cleanupFailure }) {
++                    throw SyntheticRootCleanupUnconfirmed(primary, cleanupFailure)
++                }
++                // The original throw remains in flight, with its exact identity and ordered diagnostic.
++            }
++        }
+     }
+ }

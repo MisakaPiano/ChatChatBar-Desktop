@@ -1,0 +1,16 @@
+{
+  "functions": [
+    "ProcessInfo",
+    "Startup",
+    "identity",
+    "launch_close",
+    "safe",
+    "save",
+    "task"
+  ],
+  "ordinaryProfileImageOnly": true,
+  "noInstallerFunctions": true,
+  "sourceProbeSha256": "9404e043e64d067565e4f0c74b9de4effad2ff0621d46b1a961b761cdc1f00d2",
+  "generatedProbeSha256": "8b7c54db2aac6ef2b47ec026cea390ef701147e624bf4733cc8b67bc4c2dcd3b",
+  "externalSyntheticFixtureSha256": "ffaa010b8c7ec23088ac13e3a219bebe96c9785e02baaf58bc3553fb1abfa0cf"
+}

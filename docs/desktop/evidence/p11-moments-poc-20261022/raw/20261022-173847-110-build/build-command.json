@@ -1,0 +1,18 @@
+{
+  "workingDirectory": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-moments-poc-20261022\\official\\app",
+  "arguments": [
+    ":app:assembleDebug",
+    ":app:assembleDebugAndroidTest",
+    "--offline",
+    "--no-daemon",
+    "--no-build-cache",
+    "--no-configuration-cache",
+    "--max-workers=1",
+    "--no-parallel",
+    "-Pkotlin.compiler.execution.strategy=in-process",
+    "-PCHATBAR_SILICONFLOW_API_KEY=",
+    "-PCHATBAR_SUPABASE_URL=",
+    "-PCHATBAR_SUPABASE_ANON_KEY="
+  ],
+  "executable": ".\\gradlew.bat"
+}

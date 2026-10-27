@@ -1,0 +1,267 @@
+[
+  {
+    "path": "raw/session-adapter/active-session-green-r01/COMMAND.json",
+    "bytes": 275,
+    "sha256": "7f324635253ed3603f2e2db4cfad0de7a2ca900ccf93a9b96b869b42c389a27c"
+  },
+  {
+    "path": "raw/session-adapter/active-session-green-r01/exit.txt",
+    "bytes": 3,
+    "sha256": "f1b2f662800122bed0ff255693df89c4487fbdcf453d3524a42d4ec20c3d9c04"
+  },
+  {
+    "path": "raw/session-adapter/active-session-green-r01/RESULT.json",
+    "bytes": 321,
+    "sha256": "13556b79fb8531a12701a8dd73331a7c366ed84248da42d381842f96bbe10de1"
+  },
+  {
+    "path": "raw/session-adapter/active-session-green-r01/TEST-test_msi_operation_contract.ActionGraph.xml",
+    "bytes": 607,
+    "sha256": "b37695364f4a40602c2d87b5a87d435a4d9b22818f4500465c8518c9b701b591"
+  },
+  {
+    "path": "raw/session-adapter/active-session-green-r01/TEST-test_msi_operation_contract.NativeOperationContract.xml",
+    "bytes": 1792,
+    "sha256": "afa38f2030ab50b650b32ddae2525fb3778c2efe4dc3067782f17c1381acd8bf"
+  },
+  {
+    "path": "raw/session-adapter/active-session-green-r01/TEST-test_msi_operation_contract.ResourceGraph.xml",
+    "bytes": 1015,
+    "sha256": "be00f6132871436aad4cc3bf36a33a8d8a399144242e9e20bff34a394857a36e"
+  },
+  {
+    "path": "raw/session-adapter/active-session-green-r01/unittest.log",
+    "bytes": 2701,
+    "sha256": "d7bd9f4b79e200c6ac34e07effdb82a954a2ab3500aa014c07e5f9e57a65e943"
+  },
+  {
+    "path": "raw/session-adapter/active-session-red-r01/COMMAND.json",
+    "bytes": 273,
+    "sha256": "78147849596ca0269d05f6b8650112649bcda1685e142e11fc7fb9214802a0ca"
+  },
+  {
+    "path": "raw/session-adapter/active-session-red-r01/exit.txt",
+    "bytes": 3,
+    "sha256": "f1b2f662800122bed0ff255693df89c4487fbdcf453d3524a42d4ec20c3d9c04"
+  },
+  {
+    "path": "raw/session-adapter/active-session-red-r01/PRIOR_DLL_IDENTITY.json",
+    "bytes": 661,
+    "sha256": "e117aaa000f81a4ae0646c9b4693bad6452cce5f0b8230105b2fde11d6a149a3"
+  },
+  {
+    "path": "raw/session-adapter/active-session-red-r01/RESULT.json",
+    "bytes": 321,
+    "sha256": "13556b79fb8531a12701a8dd73331a7c366ed84248da42d381842f96bbe10de1"
+  },
+  {
+    "path": "raw/session-adapter/active-session-red-r01/TEST-test_msi_operation_contract.ActionGraph.xml",
+    "bytes": 607,
+    "sha256": "b37695364f4a40602c2d87b5a87d435a4d9b22818f4500465c8518c9b701b591"
+  },
+  {
+    "path": "raw/session-adapter/active-session-red-r01/TEST-test_msi_operation_contract.NativeOperationContract.xml",
+    "bytes": 1793,
+    "sha256": "334a0c782078e2ff416ba83964b6464376a7558266d2eaefcc47f16286c9a1b9"
+  },
+  {
+    "path": "raw/session-adapter/active-session-red-r01/TEST-test_msi_operation_contract.ResourceGraph.xml",
+    "bytes": 1015,
+    "sha256": "be00f6132871436aad4cc3bf36a33a8d8a399144242e9e20bff34a394857a36e"
+  },
+  {
+    "path": "raw/session-adapter/active-session-red-r01/unittest.log",
+    "bytes": 2701,
+    "sha256": "a9a8ef3d78047fa3d4efe7e15f9bf0cbd55e29af371e5df39db804100a8af182"
+  },
+  {
+    "path": "raw/session-adapter/active-target-final-r02/COMMAND.json",
+    "bytes": 383,
+    "sha256": "1354447f83d8cba8427a32fe2c497ec00f7149e98fb2f2ae006687e338b0a3a0"
+  },
+  {
+    "path": "raw/session-adapter/active-target-final-r02/exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "raw/session-adapter/active-target-final-r02/INPUTS.json",
+    "bytes": 1495,
+    "sha256": "e271eeb7e0e206ee7cf0a4961d4e78b0d4a0d88fe7cd44507e854aad8251257e"
+  },
+  {
+    "path": "raw/session-adapter/active-target-final-r02/RESULT.json",
+    "bytes": 321,
+    "sha256": "190c7aa0e57251de151ac1897282b4815c0e85148a39efd95f98ab0b64c55702"
+  },
+  {
+    "path": "raw/session-adapter/active-target-final-r02/TEST-test_msi_operation_contract.ActionGraph.xml",
+    "bytes": 607,
+    "sha256": "b37695364f4a40602c2d87b5a87d435a4d9b22818f4500465c8518c9b701b591"
+  },
+  {
+    "path": "raw/session-adapter/active-target-final-r02/TEST-test_msi_operation_contract.NativeOperationContract.xml",
+    "bytes": 1461,
+    "sha256": "dfec2cdce35776a5962acc8f9c0e4996188a019b5f1f24f6b361267af261fd2b"
+  },
+  {
+    "path": "raw/session-adapter/active-target-final-r02/TEST-test_msi_operation_contract.ResourceGraph.xml",
+    "bytes": 1015,
+    "sha256": "be00f6132871436aad4cc3bf36a33a8d8a399144242e9e20bff34a394857a36e"
+  },
+  {
+    "path": "raw/session-adapter/active-target-final-r02/unittest.log",
+    "bytes": 2115,
+    "sha256": "4fa5400a08207cbcb4622d9ecaab2d63aeb3cd42757e35ca468760ecd795809d"
+  },
+  {
+    "path": "raw/session-adapter/active-target-final-regression-r02/PS51_RUNTIME.json",
+    "bytes": 110,
+    "sha256": "82af47146ff8d3fa3584f4754afa362caf20a4e100c92f8ef1bc41f2b4952fa8"
+  },
+  {
+    "path": "raw/session-adapter/active-target-final-regression-r02/RESULT.json",
+    "bytes": 324,
+    "sha256": "0dc621e90e197fe7c73e1093564fca36fb69474d4c27c9ed54d4cd570247b904"
+  },
+  {
+    "path": "raw/session-adapter/active-target-final-regression-r02/TEST-test_msi_component_contract.ComponentAdmission.xml",
+    "bytes": 331,
+    "sha256": "b440f2349a2ff69ec022cfb43dc6316dfbd9bcb1e1f2d43f4f46d4a34a3d43a6"
+  },
+  {
+    "path": "raw/session-adapter/active-target-final-regression-r02/TEST-test_msi_component_contract.ComponentLayout.xml",
+    "bytes": 636,
+    "sha256": "58fc08211d82f6355e1b7e7bfe888f3515817ce32d4a374417c6431c83763b6e"
+  },
+  {
+    "path": "raw/session-adapter/active-target-final-regression-r02/TEST-test_msi_component_contract.ComponentNative.xml",
+    "bytes": 1514,
+    "sha256": "890d2834a3c82b6bfe8352ffda3691b00ec8fa4be34996e3a0a63ebeb7cc9d26"
+  },
+  {
+    "path": "raw/session-adapter/active-target-final-regression-r02/TEST-test_msi_directory_guard.DirectoryGuardReuse.xml",
+    "bytes": 440,
+    "sha256": "02e7fc2c938905b39d507b70b73be4191b75cfae6332dbf7ba2f603c68ae89c2"
+  },
+  {
+    "path": "raw/session-adapter/active-target-final-regression-r02/TEST-test_msi_directory_guard.DirectoryNative.xml",
+    "bytes": 2262,
+    "sha256": "706ff109c6e1213bf3e833bc37490f4ef8360d9221b7a9336ca9c8b077a44c66"
+  },
+  {
+    "path": "raw/session-adapter/active-target-final-regression-r02/TEST-test_msi_directory_guard.DirectoryTables.xml",
+    "bytes": 1051,
+    "sha256": "33a71af442f792af50c17878853ebbab43dccdf8574b844b8f44aa0e569510ce"
+  },
+  {
+    "path": "raw/session-adapter/active-target-final-regression-r02/TEST-test_native_probe_validation.NativeProbeValidationTest.xml",
+    "bytes": 685,
+    "sha256": "65f587f1d2fab3256ddc320a86f150b79caaa2bb6ec820a466cc0463c79f2266"
+  },
+  {
+    "path": "raw/session-adapter/active-target-final-regression-r02/tests.arguments.json",
+    "bytes": 408,
+    "sha256": "da94ddd31943c4489c426057a1c023fa818cb7d2db495ad18496d029ef04f12e"
+  },
+  {
+    "path": "raw/session-adapter/active-target-final-regression-r02/tests.exit",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "raw/session-adapter/active-target-final-regression-r02/unittest.log",
+    "bytes": 4423,
+    "sha256": "6fe6312bad0782641f72d4396d5ea50a5eca09f6ed36a5f47a2e5716a383086b"
+  },
+  {
+    "path": "raw/session-adapter/ACTIVE_TABLE_DIFFERENCES.json",
+    "bytes": 160,
+    "sha256": "6129cc0741fb007df4b52ce2ade136a6d2f06cec6f2c6faee55a453d0b36cdc0"
+  },
+  {
+    "path": "raw/session-adapter/COST_STAGE_HASHES.json",
+    "bytes": 3521,
+    "sha256": "fdd3044df882da0fe701ede27510bd6ecf20bc5829bfb6b99eb981b05a6b5fe1"
+  },
+  {
+    "path": "raw/session-adapter/COSTED_TABLE_DIFFERENCES.json",
+    "bytes": 205,
+    "sha256": "204d6701d0a575c5bf1c95ef01993d14fe0819ec1f9cedd69175a84cfbd9b487"
+  },
+  {
+    "path": "raw/session-adapter/COSTED_TABLE_SCHEMAS.json",
+    "bytes": 593,
+    "sha256": "32d8fb120ec54a0860d773b658952d87626183fd25d6bcdf7bd7b45fde65a322"
+  },
+  {
+    "path": "raw/session-adapter/COSTING_GENERATED_ROWS.json",
+    "bytes": 1212,
+    "sha256": "4ab5928878771f37f9040a623f1ab8fbac5436de1d7f4a675f1c94f5b3beb982"
+  },
+  {
+    "path": "raw/session-adapter/guard-production-r10/compile-command.json",
+    "bytes": 619,
+    "sha256": "700ece74f9bb5e4d1995ee084cd2a1670db66640381a8df2b0d56ca72109ba39"
+  },
+  {
+    "path": "raw/session-adapter/guard-production-r10/compile.exit",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "raw/session-adapter/guard-production-r10/compile.log",
+    "bytes": 88,
+    "sha256": "6336808241aa6bc2b9e088509c15f655b8048583fd0c978649894f4edc623e5b"
+  },
+  {
+    "path": "raw/session-adapter/guard-production-r10/IDENTITY.json",
+    "bytes": 431,
+    "sha256": "d699bb7dc41eea1829dbe0ab936f3c8f3863afeb6e0942e13f0d3959b7715f16"
+  },
+  {
+    "path": "raw/session-adapter/guard-test-r10/compile-command.json",
+    "bytes": 626,
+    "sha256": "47e6005798287061564dc3cf3560cab897f75c611e0638e43a8688e1a5a6781e"
+  },
+  {
+    "path": "raw/session-adapter/guard-test-r10/compile.exit",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "raw/session-adapter/guard-test-r10/compile.log",
+    "bytes": 88,
+    "sha256": "6336808241aa6bc2b9e088509c15f655b8048583fd0c978649894f4edc623e5b"
+  },
+  {
+    "path": "raw/session-adapter/guard-test-r10/IDENTITY.json",
+    "bytes": 755,
+    "sha256": "9f887d27e38e550fbc797276c39216a3538062c5c7c46052c65b198eec5f3028"
+  },
+  {
+    "path": "raw/session-adapter/restricted-costing.exit",
+    "bytes": 3,
+    "sha256": "f1b2f662800122bed0ff255693df89c4487fbdcf453d3524a42d4ec20c3d9c04"
+  },
+  {
+    "path": "raw/session-adapter/restricted-costing.stderr.log",
+    "bytes": 627,
+    "sha256": "c27b530ad2be04f9a1ef1d9213143c852a88789e11d6b0658738906ec907ce2b"
+  },
+  {
+    "path": "raw/session-adapter/restricted-costing.stdout.log",
+    "bytes": 287,
+    "sha256": "05bdfa08ab79672f5504dc41d551b17225b66691f8a2a20c87558dc98fc0547e"
+  },
+  {
+    "path": "raw/session-adapter/RESTRICTED_COSTING_OBSERVATION.json",
+    "bytes": 603,
+    "sha256": "9a50082a7f878148c1122b481d9f063c936e675203431a7b36fbc195c5659410"
+  },
+  {
+    "path": "raw/session-adapter/WITHHELD_1110_IDENTITY.json",
+    "bytes": 837,
+    "sha256": "f52a1cd83e3bb4ba4dcf844f4b97c4b9b58c29e311e618398794a4b2e31fa8eb"
+  }
+]

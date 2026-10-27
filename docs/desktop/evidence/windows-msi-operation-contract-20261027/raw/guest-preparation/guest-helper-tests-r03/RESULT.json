@@ -1,0 +1,130 @@
+﻿{
+    "actualWindowOpened":  false,
+    "csharpDeclarationsCompiled":  true,
+    "actualInstallerExecuted":  false,
+    "powershell":  "5.1.19041.6456",
+    "actualRegistryQueries":  false,
+    "tests":  17,
+    "cases":  [
+                  {
+                      "windowBoundaryCalls":  0,
+                      "error":  "CONFIRM_INDEPENDENT_CLEAN_GUEST_REQUIRED",
+                      "pass":  true,
+                      "name":  "pre-confirmation",
+                      "installerBoundaryCalls":  0
+                  },
+                  {
+                      "windowBoundaryCalls":  0,
+                      "error":  "WIN10_PRO_19045_INTERACTIVE_HYPERV_GUEST_REQUIRED",
+                      "pass":  true,
+                      "name":  "pre-host",
+                      "installerBoundaryCalls":  0
+                  },
+                  {
+                      "windowBoundaryCalls":  0,
+                      "error":  "WIN10_PRO_19045_INTERACTIVE_HYPERV_GUEST_REQUIRED",
+                      "pass":  true,
+                      "name":  "pre-build",
+                      "installerBoundaryCalls":  0
+                  },
+                  {
+                      "windowBoundaryCalls":  0,
+                      "error":  "PACKAGE_HASH_MISMATCH",
+                      "pass":  true,
+                      "name":  "pre-hash",
+                      "installerBoundaryCalls":  0
+                  },
+                  {
+                      "windowBoundaryCalls":  0,
+                      "error":  "FRESH_REGISTRATION_REQUIRED_NO_RETRY",
+                      "pass":  true,
+                      "name":  "pre-registration",
+                      "installerBoundaryCalls":  0
+                  },
+                  {
+                      "windowBoundaryCalls":  0,
+                      "error":  "EXACT_PRODUCT_QUERY_FAILED_5",
+                      "pass":  true,
+                      "name":  "pre-read-error",
+                      "installerBoundaryCalls":  0
+                  },
+                  {
+                      "windowBoundaryCalls":  0,
+                      "error":  "GUEST_NEEDS_2_GIB_FREE",
+                      "pass":  true,
+                      "name":  "pre-space",
+                      "installerBoundaryCalls":  0
+                  },
+                  {
+                      "windowBoundaryCalls":  0,
+                      "error":  "NATIVE_INSTALL_FAILED_PRESERVE_NO_RETRY",
+                      "pass":  true,
+                      "name":  "post-install-failure",
+                      "installerBoundaryCalls":  1
+                  },
+                  {
+                      "windowBoundaryCalls":  0,
+                      "error":  "INSTALLER_STILL_RUNNING_PRESERVE_NO_RETRY",
+                      "pass":  true,
+                      "name":  "post-timeout",
+                      "installerBoundaryCalls":  1
+                  },
+                  {
+                      "windowBoundaryCalls":  0,
+                      "error":  "PRODUCT_FEATURE_OR_PACKAGE_REGISTRATION_MISMATCH",
+                      "pass":  true,
+                      "name":  "post-incomplete-after",
+                      "installerBoundaryCalls":  1
+                  },
+                  {
+                      "windowBoundaryCalls":  0,
+                      "error":  "INSTALLED_FILE_MISMATCH",
+                      "pass":  true,
+                      "name":  "post-file-failure",
+                      "installerBoundaryCalls":  1
+                  },
+                  {
+                      "windowBoundaryCalls":  0,
+                      "error":  null,
+                      "pass":  true,
+                      "name":  "post-success",
+                      "installerBoundaryCalls":  1
+                  },
+                  {
+                      "windowBoundaryCalls":  1,
+                      "error":  null,
+                      "pass":  true,
+                      "name":  "post-success-ui",
+                      "installerBoundaryCalls":  1
+                  },
+                  {
+                      "windowBoundaryCalls":  0,
+                      "error":  null,
+                      "pass":  true,
+                      "name":  "real-file-oracle-valid",
+                      "installerBoundaryCalls":  0
+                  },
+                  {
+                      "windowBoundaryCalls":  0,
+                      "error":  "INSTALLED_FILE_MISMATCH",
+                      "pass":  true,
+                      "name":  "real-file-oracle-wrong-size",
+                      "installerBoundaryCalls":  0
+                  },
+                  {
+                      "windowBoundaryCalls":  0,
+                      "error":  "INSTALLED_FILE_MISMATCH",
+                      "pass":  true,
+                      "name":  "real-file-oracle-wrong-hash",
+                      "installerBoundaryCalls":  0
+                  },
+                  {
+                      "windowBoundaryCalls":  0,
+                      "error":  "EXPECTED_FILE_ESCAPE",
+                      "pass":  true,
+                      "name":  "real-file-oracle-escape",
+                      "installerBoundaryCalls":  0
+                  }
+              ],
+    "failed":  0
+}

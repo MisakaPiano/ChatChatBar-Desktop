@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopMemorySafetyTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-25T03:37:57.882Z" hostname="DD1" time="0.479">
+  <properties/>
+  <testcase name="strict memory never interprets corrupt state as new empty memory" classname="com.example.chatbar.desktop.DesktopMemorySafetyTest" time="0.16"/>
+  <testcase name="memory publication holds real admission until entire journal transaction is finished" classname="com.example.chatbar.desktop.DesktopMemorySafetyTest" time="0.105"/>
+  <testcase name="strict memory reads valid local paths beyond legacy Win32 length without changing source bytes" classname="com.example.chatbar.desktop.DesktopMemorySafetyTest" time="0.19"/>
+  <testcase name="strict recovery rejects foreign session nodes and preserves journal" classname="com.example.chatbar.desktop.DesktopMemorySafetyTest" time="0.024"/>
+  <system-out><![CDATA[SYNTHETIC_LONG_PATH_METADATA rawRejected=true;rawError=3;extendedSafe=true;length=337
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-10-15T15:02:05.906Z" hostname="DD1" time="4.518">
+  <properties/>
+  <testcase name="each mutable derived table rejects and preserves original files" classname="com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest" time="0.65"/>
+  <testcase name="late derived records invalidate preflight including stopped and restored submissions" classname="com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest" time="0.466"/>
+  <testcase name="final proof and cas share exclusive scope blocking a concurrent normal writer" classname="com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest" time="0.206"/>
+  <testcase name="Windows junction is refused without following or changing foreign content" classname="com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest" time="0.255"/>
+  <testcase name="unchanged errors stopped unicode and lifecycle cancellation retain b3b contracts" classname="com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest" time="0.677"/>
+  <testcase name="production assembly admits empty derived state applies and restores across reopen" classname="com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest" time="0.375"/>
+  <testcase name="missing application ownership refuses production assembly" classname="com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest" time="0.063"/>
+  <testcase name="completed task foreign post and document pointing at live message are contradictory sources" classname="com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest" time="0.143"/>
+  <testcase name="actual shutdown after durable write retains uncertain result across exclusive unwinding" classname="com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest" time="0.195"/>
+  <testcase name="corruption unknown fields conflicting ids orphan records and interrupted entries refuse before request" classname="com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest" time="0.238"/>
+  <testcase name="document completed moment and immutable image or backup are preserved" classname="com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest" time="0.196"/>
+  <testcase name="in flight and retained source task block repair and late task cannot start during stream" classname="com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest" time="0.173"/>
+  <testcase name="actual message index and preview failures preserve uncertain evidence inside exclusive scope" classname="com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest" time="0.515"/>
+  <testcase name="production submission preserves every repository result without flattening commit evidence" classname="com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest" time="0.148"/>
+  <testcase name="unknown namespace legacy mirrors and resumable moments fail closed without mutation" classname="com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest" time="0.217"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

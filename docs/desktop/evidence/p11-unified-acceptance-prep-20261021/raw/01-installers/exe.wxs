@@ -1,0 +1,984 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+    <Product Id="{5F7E2926-B138-321F-94CC-9580FB81D415}" Codepage="936" Language="1033" Manufacturer="ChatChatBar" Name="ChatChatBarDesktop" UpgradeCode="{B06B3DAD-949D-388B-919A-79CC4ECAEA7A}" Version="0.1.0">
+        <Package Comments="This installer database contains the logic and data required to install ChatChatBarDesktop." Compressed="yes" Description="ChatChatBar Desktop" InstallerVersion="200" Languages="1033" Manufacturer="ChatChatBar" Platform="x64" />
+        <Binary Id="JpCaDll" SourceFile="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\Binary\JpCaDll" />
+        <CustomAction Id="JpCheckInstallDir" BinaryKey="JpCaDll" DllEntry="CheckInstallDir" />
+        <CustomAction Id="JpSetARPINSTALLLOCATION" Property="ARPINSTALLLOCATION" Value="[INSTALLDIR]" />
+        <CustomAction Id="JpSetARPCOMMENTS" Property="ARPCOMMENTS" Value="ChatChatBar Desktop" />
+        <CustomAction Id="JpSetARPCONTACT" Property="ARPCONTACT" Value="ChatChatBar" />
+        <CustomAction Id="JpSetARPSIZE" Property="ARPSIZE" Value="221210" />
+        <Directory Id="TARGETDIR" Name="SourceDir">
+            <Directory Id="ProgramFiles64Folder">
+                <Directory Id="INSTALLDIR" Name="ChatChatBarDesktop" ShortName="k8hrspwj">
+                    <Component Id="cfile42f3d76182413c60a4f50e6233e4de33" Guid="{42F3D761-8241-3C60-A4F5-0E6233E4DE33}" Win64="yes">
+                        <File Id="file42f3d76182413c60a4f50e6233e4de33" Name="ChatChatBarDesktop.exe" KeyPath="yes" ShortName="iu14h9fn.exe" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file42f3d76182413c60a4f50e6233e4de33" />
+                    </Component>
+                    <Component Id="crm_rf48431aecbd69377ea800d62616352f20" Guid="{89E1A278-0D7A-5DEC-BC93-A2D103291A8E}" Win64="yes">
+                        <RegistryValue Id="reg6E5B7B6E68EC215C2A3971D290A021ED" Root="HKLM" Key="Software\ChatChatBar\ChatChatBarDesktop\0.1.0" Name="RM_RF48431AECBD69377EA800D62616352F20" Value="[INSTALLDIR]" Type="string" KeyPath="yes" />
+                        <RemoveFolderEx Id="wrfEC7A67FCEBD9BA70D39E241A1CEC9074" Property="RM_RF48431AECBD69377EA800D62616352F20" On="uninstall" xmlns="http://schemas.microsoft.com/wix/UtilExtension" />
+                    </Component>
+                    <Directory Id="dir40f84b56068d341da01a768174eb5e59" Name="app">
+                        <Component Id="cfilee7b72109c1e13cfd8dedb9866da332d5" Guid="{E7B72109-C1E1-3CFD-8DED-B9866DA332D5}" Win64="yes">
+                            <File Id="filee7b72109c1e13cfd8dedb9866da332d5" Name="atomicfu-jvm-0.23.2-5e4f88ed1c37222d791f5dcadf481498.jar" KeyPath="yes" ShortName="pf3e9vic.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filee7b72109c1e13cfd8dedb9866da332d5" />
+                        </Component>
+                        <Component Id="cfile4ccb48029a183ec2818743c9d3d8e083" Guid="{4CCB4802-9A18-3EC2-8187-43C9D3D8E083}" Win64="yes">
+                            <File Id="file4ccb48029a183ec2818743c9d3d8e083" Name="runtime-retain-desktop-1.10.5-d8f31750172c21975cc646addacfd80.jar" KeyPath="yes" ShortName="u5uhehbq.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file4ccb48029a183ec2818743c9d3d8e083" />
+                        </Component>
+                        <Component Id="cfile8390dde736103343b5c8be72ff1c0877" Guid="{8390DDE7-3610-3343-B5C8-BE72FF1C0877}" Win64="yes">
+                            <File Id="file8390dde736103343b5c8be72ff1c0877" Name="kotlin-stdlib-jdk8-2.2.20-c2573686563f7aaca6f7ce98ec9a8b6.jar" KeyPath="yes" ShortName="f-d-tju8.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file8390dde736103343b5c8be72ff1c0877" />
+                        </Component>
+                        <Component Id="cfile2968063912cb3b05a3170cda93185ae8" Guid="{29680639-12CB-3B05-A317-0CDA93185AE8}" Win64="yes">
+                            <File Id="file2968063912cb3b05a3170cda93185ae8" Name="ui-unit-desktop-1.10.3-5ba072b3ad846d10195aa20b1dda94a.jar" KeyPath="yes" ShortName="djlmntse.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file2968063912cb3b05a3170cda93185ae8" />
+                        </Component>
+                        <Component Id="cfilebab09347bfd33b039e363b104dc375cc" Guid="{BAB09347-BFD3-3B03-9E36-3B104DC375CC}" Win64="yes">
+                            <File Id="filebab09347bfd33b039e363b104dc375cc" Name="collection-jvm-1.5.0-4421442c114a4f8c8fe587cf2d668237.jar" KeyPath="yes" ShortName="wa2jpw0t.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filebab09347bfd33b039e363b104dc375cc" />
+                        </Component>
+                        <Component Id="cfiled4a8a3d31cad347d97cb4b84b9a8858a" Guid="{D4A8A3D3-1CAD-347D-97CB-4B84B9A8858A}" Win64="yes">
+                            <File Id="filed4a8a3d31cad347d97cb4b84b9a8858a" Name="kotlinx-coroutines-core-jvm-1.10.2-16bb58d0777fca3b2efde66862478c.jar" KeyPath="yes" ShortName="-tms55nw.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filed4a8a3d31cad347d97cb4b84b9a8858a" />
+                        </Component>
+                        <Component Id="cfile2cac79d1cf533cbcb9509f9102db6e8f" Guid="{2CAC79D1-CF53-3CBC-B950-9F9102DB6E8F}" Win64="yes">
+                            <File Id="file2cac79d1cf533cbcb9509f9102db6e8f" Name="error_prone_annotations-2.41.0-75e3b25da8b8a2136463c4674f5e49bf.jar" KeyPath="yes" ShortName="gqdv-s0s.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file2cac79d1cf533cbcb9509f9102db6e8f" />
+                        </Component>
+                        <Component Id="cfile8959e84db0d633d4b5bbda8b7141f483" Guid="{8959E84D-B0D6-33D4-B5BB-DA8B7141F483}" Win64="yes">
+                            <File Id="file8959e84db0d633d4b5bbda8b7141f483" Name="annotation-jvm-1.9.1-1d6a04b3b9847638d0529df8ef76a.jar" KeyPath="yes" ShortName="mckzie4-.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file8959e84db0d633d4b5bbda8b7141f483" />
+                        </Component>
+                        <Component Id="cfilef521dc9951ef36cd96f25c82dc923f72" Guid="{F521DC99-51EF-36CD-96F2-5C82DC923F72}" Win64="yes">
+                            <File Id="filef521dc9951ef36cd96f25c82dc923f72" Name="core-common-2.2.0-2212d240dfe1e8a7598ee117ccc316d.jar" KeyPath="yes" ShortName="uoplod7h.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filef521dc9951ef36cd96f25c82dc923f72" />
+                        </Component>
+                        <Component Id="cfilef5330816c599336a924320d68f55dc59" Guid="{F5330816-C599-336A-9243-20D68F55DC59}" Win64="yes">
+                            <File Id="filef5330816c599336a924320d68f55dc59" Name="skiko-windows-x64.dll" KeyPath="yes" ShortName="whroqjyg.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filef5330816c599336a924320d68f55dc59" />
+                        </Component>
+                        <Component Id="cfileed621bd5369a36a68cac7a6a0988d7cc" Guid="{ED621BD5-369A-36A6-8CAC-7A6A0988D7CC}" Win64="yes">
+                            <File Id="fileed621bd5369a36a68cac7a6a0988d7cc" Name="jbr-api-1.5.0-377e771977886f74954db4278394c51.jar" KeyPath="yes" ShortName="iio-wva0.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\fileed621bd5369a36a68cac7a6a0988d7cc" />
+                        </Component>
+                        <Component Id="cfile8c1731b423893f4a972a19248afbdc13" Guid="{8C1731B4-2389-3F4A-972A-19248AFBDC13}" Win64="yes">
+                            <File Id="file8c1731b423893f4a972a19248afbdc13" Name="foundation-desktop-1.10.3-70d7b34e8681a374ed1ed640c3ba8c11.jar" KeyPath="yes" ShortName="-fml0iij.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file8c1731b423893f4a972a19248afbdc13" />
+                        </Component>
+                        <Component Id="cfileaf77784b0ad13d06a126814de8bb9015" Guid="{AF77784B-0AD1-3D06-A126-814DE8BB9015}" Win64="yes">
+                            <File Id="fileaf77784b0ad13d06a126814de8bb9015" Name="ChatChatBarDesktop.cfg" KeyPath="yes" ShortName="8tbymah1.cfg" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\fileaf77784b0ad13d06a126814de8bb9015" />
+                        </Component>
+                        <Component Id="cfile3a35e356557b33c49f3b90bc3b22c9fb" Guid="{3A35E356-557B-33C4-9F3B-90BC3B22C9FB}" Win64="yes">
+                            <File Id="file3a35e356557b33c49f3b90bc3b22c9fb" Name="protobuf-java-4.33.6-ccd3b2a8a48d15d7f3a46b6d12545d.jar" KeyPath="yes" ShortName="vujpgas4.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file3a35e356557b33c49f3b90bc3b22c9fb" />
+                        </Component>
+                        <Component Id="cfile18837be580393cbab501e450199a3238" Guid="{18837BE5-8039-3CBA-B501-E450199A3238}" Win64="yes">
+                            <File Id="file18837be580393cbab501e450199a3238" Name="lifecycle-runtime-compose-desktop-2.9.6-497e8fcabac8a5f5ee68cb2a1c8e70a4.jar" KeyPath="yes" ShortName="clottdvm.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file18837be580393cbab501e450199a3238" />
+                        </Component>
+                        <Component Id="cfile192ec0bf090c3610893fb148786ad504" Guid="{192EC0BF-090C-3610-893F-B148786AD504}" Win64="yes">
+                            <File Id="file192ec0bf090c3610893fb148786ad504" Name="ui-util-desktop-1.10.3-e987f56512148332ca73168ad7d270d.jar" KeyPath="yes" ShortName="vjdwxzk5.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file192ec0bf090c3610893fb148786ad504" />
+                        </Component>
+                        <Component Id="cfiled2a8dc8b4f963453bab5dd3adae11539" Guid="{D2A8DC8B-4F96-3453-BAB5-DD3ADAE11539}" Win64="yes">
+                            <File Id="filed2a8dc8b4f963453bab5dd3adae11539" Name="lifecycle-viewmodel-savedstate-desktop-2.9.4-cf8139ef2d41e155eece234f1b2a358.jar" KeyPath="yes" ShortName="gs7i3wap.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filed2a8dc8b4f963453bab5dd3adae11539" />
+                        </Component>
+                        <Component Id="cfile686e525091ae348cba6c70b9dd6a8c1d" Guid="{686E5250-91AE-348C-BA6C-70B9DD6A8C1D}" Win64="yes">
+                            <File Id="file686e525091ae348cba6c70b9dd6a8c1d" Name="navigationevent-desktop-1.0.2-e0291c4f5d6a6b9038dae1d32950806e.jar" KeyPath="yes" ShortName="oavyf4gs.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file686e525091ae348cba6c70b9dd6a8c1d" />
+                        </Component>
+                        <Component Id="cfile10dbafc651593060bf6b84f02a8429bb" Guid="{10DBAFC6-5159-3060-BF6B-84F02A8429BB}" Win64="yes">
+                            <File Id="file10dbafc651593060bf6b84f02a8429bb" Name="animation-core-desktop-1.10.3-a94bab3d67a320ccdc2cc2c2c973bc4.jar" KeyPath="yes" ShortName="ul8r1qoe.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file10dbafc651593060bf6b84f02a8429bb" />
+                        </Component>
+                        <Component Id="cfile05dc8dcfcd023ec4b22e15fc94e7c4b5" Guid="{05DC8DCF-CD02-3EC4-B22E-15FC94E7C4B5}" Win64="yes">
+                            <File Id="file05dc8dcfcd023ec4b22e15fc94e7c4b5" Name="jna-5.18.1-cb531ec131e1c68c45b5d45fe5b9878.jar" KeyPath="yes" ShortName="d5bliddz.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file05dc8dcfcd023ec4b22e15fc94e7c4b5" />
+                        </Component>
+                        <Component Id="cfile7184a766b1473f66a5fd48b315306efb" Guid="{7184A766-B147-3F66-A5FD-48B315306EFB}" Win64="yes">
+                            <File Id="file7184a766b1473f66a5fd48b315306efb" Name="skiko-awt-runtime-windows-x64-0.9.37.4-1d1c6cf4dac69631f6b152ff72e2845a.jar" KeyPath="yes" ShortName="d6bcxrvu.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file7184a766b1473f66a5fd48b315306efb" />
+                        </Component>
+                        <Component Id="cfile3e43eb72596431b99d5ce79dd147f003" Guid="{3E43EB72-5964-31B9-9D5C-E79DD147F003}" Win64="yes">
+                            <File Id="file3e43eb72596431b99d5ce79dd147f003" Name="savedstate-desktop-1.3.3-c3373bc168f837cab12de655ce867a18.jar" KeyPath="yes" ShortName="y_x4ubgx.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file3e43eb72596431b99d5ce79dd147f003" />
+                        </Component>
+                        <Component Id="cfile315d812bb7da336892f6d117df38a72c" Guid="{315D812B-B7DA-3368-92F6-D117DF38A72C}" Win64="yes">
+                            <File Id="file315d812bb7da336892f6d117df38a72c" Name="commonmark-0.13.0-535b94d32fa44874a37824586ab5906b.jar" KeyPath="yes" ShortName="i0ppjgdt.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file315d812bb7da336892f6d117df38a72c" />
+                        </Component>
+                        <Component Id="cfile27e69c329b4634a487cae4c65bebe228" Guid="{27E69C32-9B46-34A4-87CA-E4C65BEBE228}" Win64="yes">
+                            <File Id="file27e69c329b4634a487cae4c65bebe228" Name="kotlinx-serialization-core-jvm-1.8.1-ef302ac92198e315d9b084ca66ee5f1e.jar" KeyPath="yes" ShortName="m7ptwt9j.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file27e69c329b4634a487cae4c65bebe228" />
+                        </Component>
+                        <Component Id="cfileff815834d94e3892b7b4babe3d490db3" Guid="{FF815834-D94E-3892-B7B4-BABE3D490DB3}" Win64="yes">
+                            <File Id="fileff815834d94e3892b7b4babe3d490db3" Name="desktop-jvm-1.10.3-98023295d6f48188e5b98b192b9a30.jar" KeyPath="yes" ShortName="qjtiigse.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\fileff815834d94e3892b7b4babe3d490db3" />
+                        </Component>
+                        <Component Id="cfile6f79d71b0f3e35d2a07e56c24e3f3009" Guid="{6F79D71B-0F3E-35D2-A07E-56C24E3F3009}" Win64="yes">
+                            <File Id="file6f79d71b0f3e35d2a07e56c24e3f3009" Name="msgpack-core-0.9.12-cb664b8c2d992969e89d30fd5a90b5.jar" KeyPath="yes" ShortName="7_f38xqh.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file6f79d71b0f3e35d2a07e56c24e3f3009" />
+                        </Component>
+                        <Component Id="cfileeb6a8b9378333805ab54edfef1f117b8" Guid="{EB6A8B93-7833-3805-AB54-EDFEF1F117B8}" Win64="yes">
+                            <File Id="fileeb6a8b9378333805ab54edfef1f117b8" Name="ui-text-desktop-1.10.3-f158a42475c13d7691adfa8c41cd7d2.jar" KeyPath="yes" ShortName="qvugdg-3.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\fileeb6a8b9378333805ab54edfef1f117b8" />
+                        </Component>
+                        <Component Id="cfile24aa4490712d3194bd913315e8629d51" Guid="{24AA4490-712D-3194-BD91-3315E8629D51}" Win64="yes">
+                            <File Id="file24aa4490712d3194bd913315e8629d51" Name="skiko-awt-0.9.37.4-674c4dff5731dd62c15ac8c1527c8e7.jar" KeyPath="yes" ShortName="nlwla3pe.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file24aa4490712d3194bd913315e8629d51" />
+                        </Component>
+                        <Component Id="cfile3e7f2ce33d443fcf9ce668a4d87a88e3" Guid="{3E7F2CE3-3D44-3FCF-9CE6-68A4D87A88E3}" Win64="yes">
+                            <File Id="file3e7f2ce33d443fcf9ce668a4d87a88e3" Name="okio-jvm-3.6.0-2637180ff99a7e8a12dcaac2a70cc6e.jar" KeyPath="yes" ShortName="ovtcysqx.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file3e7f2ce33d443fcf9ce668a4d87a88e3" />
+                        </Component>
+                        <Component Id="cfile692d2372001c3de9a217e53c6ff38a1e" Guid="{692D2372-001C-3DE9-A217-E53C6FF38A1E}" Win64="yes">
+                            <File Id="file692d2372001c3de9a217e53c6ff38a1e" Name="jsoup-1.22.2-e3ceba301c43333ac7715fab5595d85b.jar" KeyPath="yes" ShortName="6hwotnjm.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file692d2372001c3de9a217e53c6ff38a1e" />
+                        </Component>
+                        <Component Id="cfilefced87e9aef13089b8636b46deca98af" Guid="{FCED87E9-AEF1-3089-B863-6B46DECA98AF}" Win64="yes">
+                            <File Id="filefced87e9aef13089b8636b46deca98af" Name="material-ripple-desktop-1.10.3-24324c2656b22bad47558022bfc18265.jar" KeyPath="yes" ShortName="e1d1hjgq.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filefced87e9aef13089b8636b46deca98af" />
+                        </Component>
+                        <Component Id="cfileecbb38dd2fa23e3684de3eb8aa5d58d8" Guid="{ECBB38DD-2FA2-3E36-84DE-3EB8AA5D58D8}" Win64="yes">
+                            <File Id="fileecbb38dd2fa23e3684de3eb8aa5d58d8" Name="okhttp-sse-4.12.0-4d44b966bd351ceba7a8f15d6b7e86.jar" KeyPath="yes" ShortName="c5sgfiom.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\fileecbb38dd2fa23e3684de3eb8aa5d58d8" />
+                        </Component>
+                        <Component Id="cfileb9bb62e5f3b43dceb1826504b6191a13" Guid="{B9BB62E5-F3B4-3DCE-B182-6504B6191A13}" Win64="yes">
+                            <File Id="fileb9bb62e5f3b43dceb1826504b6191a13" Name="skiko-windows-x64.dll.sha256" KeyPath="yes" ShortName="iobaclhz.sha" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\fileb9bb62e5f3b43dceb1826504b6191a13" />
+                        </Component>
+                        <Component Id="cfile052d33f06d03335e903715d19d21c328" Guid="{052D33F0-6D03-335E-9037-15D19D21C328}" Win64="yes">
+                            <File Id="file052d33f06d03335e903715d19d21c328" Name="savedstate-compose-desktop-1.3.6-8de11644e97845eaa45d9e74fdec755.jar" KeyPath="yes" ShortName="7l3ow4ql.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file052d33f06d03335e903715d19d21c328" />
+                        </Component>
+                        <Component Id="cfile69f1be90ad653f868767bb96a501a2b2" Guid="{69F1BE90-AD65-3F86-8767-BB96A501A2B2}" Win64="yes">
+                            <File Id="file69f1be90ad653f868767bb96a501a2b2" Name="ui-desktop-1.10.3-a87db18fb1c33d7286573c2eb6a58884.jar" KeyPath="yes" ShortName="vos1fwch.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file69f1be90ad653f868767bb96a501a2b2" />
+                        </Component>
+                        <Component Id="cfilef4a5fe41e4623e53a988b072b0cc8317" Guid="{F4A5FE41-E462-3E53-A988-B072B0CC8317}" Win64="yes">
+                            <File Id="filef4a5fe41e4623e53a988b072b0cc8317" Name="desktopApp-bcc6b40f2b23dc7a47273f263119a6.jar" KeyPath="yes" ShortName="ryoutl32.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filef4a5fe41e4623e53a988b072b0cc8317" />
+                        </Component>
+                        <Component Id="cfileac50e106b0843001a5ccd4f386bbf2cd" Guid="{AC50E106-B084-3001-A5CC-D4F386BBF2CD}" Win64="yes">
+                            <File Id="fileac50e106b0843001a5ccd4f386bbf2cd" Name="kotlinx-serialization-json-jvm-1.8.1-f061d934bcf1d0be1d6c697c320f86b.jar" KeyPath="yes" ShortName="xjcv2iru.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\fileac50e106b0843001a5ccd4f386bbf2cd" />
+                        </Component>
+                        <Component Id="cfile9b91a730d6e1359b9eee705780f693d0" Guid="{9B91A730-D6E1-359B-9EEE-705780F693D0}" Win64="yes">
+                            <File Id="file9b91a730d6e1359b9eee705780f693d0" Name="ui-graphics-desktop-1.10.3-b18b35f89c2c5b7d4c839cae550b71f.jar" KeyPath="yes" ShortName="br7twbcx.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file9b91a730d6e1359b9eee705780f693d0" />
+                        </Component>
+                        <Component Id="cfile04d4063a75d63e90abbe0549553a154e" Guid="{04D4063A-75D6-3E90-ABBE-0549553A154E}" Win64="yes">
+                            <File Id="file04d4063a75d63e90abbe0549553a154e" Name="sharedCore-9fa76f27c6c0cdd28f1280cca91c5b.jar" KeyPath="yes" ShortName="i_frvnuk.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file04d4063a75d63e90abbe0549553a154e" />
+                        </Component>
+                        <Component Id="cfile5006270812e2337bb4b089896a92ff4f" Guid="{50062708-12E2-337B-B4B0-89896A92FF4F}" Win64="yes">
+                            <File Id="file5006270812e2337bb4b089896a92ff4f" Name="icons-lucide-cmp-jvm-2.2.1-41167b6273e4f1763de74dddcba2b6.jar" KeyPath="yes" ShortName="75bjv4bo.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file5006270812e2337bb4b089896a92ff4f" />
+                        </Component>
+                        <Component Id="cfileba45891e48833e0297d94e718f0920e5" Guid="{BA45891E-4883-3E02-97D9-4E718F0920E5}" Win64="yes">
+                            <File Id="fileba45891e48833e0297d94e718f0920e5" Name="kotlin-stdlib-2.3.20-17212d4ae1611e51ce4c3c4ba28717fa.jar" KeyPath="yes" ShortName="cgmkdkgb.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\fileba45891e48833e0297d94e718f0920e5" />
+                        </Component>
+                        <Component Id="cfileec964b7072603f7da442fad66860c69e" Guid="{EC964B70-7260-3F7D-A442-FAD66860C69E}" Win64="yes">
+                            <File Id="fileec964b7072603f7da442fad66860c69e" Name="jspecify-1.0.0-9133aba420d0ca3b01dbb6ae9992cf6.jar" KeyPath="yes" ShortName="hpf8-5jh.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\fileec964b7072603f7da442fad66860c69e" />
+                        </Component>
+                        <Component Id="cfile63c3bc49f1493019b526fd3c0d5634b8" Guid="{63C3BC49-F149-3019-B526-FD3C0D5634B8}" Win64="yes">
+                            <File Id="file63c3bc49f1493019b526fd3c0d5634b8" Name="sqlite-jdbc-3.53.4.0-f4efbbf74fd258368ebb6529ec099dc.jar" KeyPath="yes" ShortName="38fj2zz4.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file63c3bc49f1493019b526fd3c0d5634b8" />
+                        </Component>
+                        <Component Id="cfilee4f268be3ffd357eb15a58b9e2188b33" Guid="{E4F268BE-3FFD-357E-B15A-58B9E2188B33}" Win64="yes">
+                            <File Id="filee4f268be3ffd357eb15a58b9e2188b33" Name="annotations-23.0.0-8484cd17d040d837983323f760b2c660.jar" KeyPath="yes" ShortName="ek6ue9on.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filee4f268be3ffd357eb15a58b9e2188b33" />
+                        </Component>
+                        <Component Id="cfile08df01560a303bebbc68129c350cbc56" Guid="{08DF0156-0A30-3BEB-BC68-129C350CBC56}" Win64="yes">
+                            <File Id="file08df01560a303bebbc68129c350cbc56" Name="lifecycle-common-jvm-2.9.4-6430746dbcfa6c26a0d997b9c76f84c.jar" KeyPath="yes" ShortName="rphortsu.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file08df01560a303bebbc68129c350cbc56" />
+                        </Component>
+                        <Component Id="cfile293a4de4b43d355ab2d99d902ac99595" Guid="{293A4DE4-B43D-355A-B2D9-9D902AC99595}" Win64="yes">
+                            <File Id="file293a4de4b43d355ab2d99d902ac99595" Name="ui-backhandler-desktop-1.10.3-82133368fc2fe04ab219636dc220ee76.jar" KeyPath="yes" ShortName="lsrvxchf.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file293a4de4b43d355ab2d99d902ac99595" />
+                        </Component>
+                        <Component Id="cfile654a2bf7bb5d32f8b0eb25e4f0a06f6d" Guid="{654A2BF7-BB5D-32F8-B0EB-25E4F0A06F6D}" Win64="yes">
+                            <File Id="file654a2bf7bb5d32f8b0eb25e4f0a06f6d" Name="foundation-layout-desktop-1.10.3-8510263615bf71e2ede4f9451f89f7dd.jar" KeyPath="yes" ShortName="jdpyqbhn.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file654a2bf7bb5d32f8b0eb25e4f0a06f6d" />
+                        </Component>
+                        <Component Id="cfile5c62faf323363764bdaf5a79533f5a83" Guid="{5C62FAF3-2336-3764-BDAF-5A79533F5A83}" Win64="yes">
+                            <File Id="file5c62faf323363764bdaf5a79533f5a83" Name="runtime-desktop-1.10.3-c25a54d26562099d86e41defd73c526.jar" KeyPath="yes" ShortName="fcibukra.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file5c62faf323363764bdaf5a79533f5a83" />
+                        </Component>
+                        <Component Id="cfile8f89e3f462253a9486edbe60a95e5726" Guid="{8F89E3F4-6225-3A94-86ED-BE60A95E5726}" Win64="yes">
+                            <File Id="file8f89e3f462253a9486edbe60a95e5726" Name="runtime-desktop-1.10.5-b9da3d6a1b578bd2c87d566819b76a65.jar" KeyPath="yes" ShortName="5kuczggy.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file8f89e3f462253a9486edbe60a95e5726" />
+                        </Component>
+                        <Component Id="cfileeb088dcb2c803fbe80b33510d4630bdf" Guid="{EB088DCB-2C80-3FBE-80B3-3510D4630BDF}" Win64="yes">
+                            <File Id="fileeb088dcb2c803fbe80b33510d4630bdf" Name="runtime-saveable-desktop-1.10.3-5e5be575eafc8b52fe238bc51bdea08e.jar" KeyPath="yes" ShortName="ij2c87pj.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\fileeb088dcb2c803fbe80b33510d4630bdf" />
+                        </Component>
+                        <Component Id="cfileea8eb6963d1b38d686b9544a3bce9348" Guid="{EA8EB696-3D1B-38D6-86B9-544A3BCE9348}" Win64="yes">
+                            <File Id="fileea8eb6963d1b38d686b9544a3bce9348" Name="jsr305-3.0.2-dd83accb899363c32b7d7a1b2e4ce40.jar" KeyPath="yes" ShortName="coibthk9.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\fileea8eb6963d1b38d686b9544a3bce9348" />
+                        </Component>
+                        <Component Id="cfileb601556ea34130db975d6c750aa8e005" Guid="{B601556E-A341-30DB-975D-6C750AA8E005}" Win64="yes">
+                            <File Id="fileb601556ea34130db975d6c750aa8e005" Name="lifecycle-runtime-desktop-2.9.4-c2c1ed6e1ecd2d037e07bfe64884c5.jar" KeyPath="yes" ShortName="uqryz7mx.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\fileb601556ea34130db975d6c750aa8e005" />
+                        </Component>
+                        <Component Id="cfile1fcca81b619330159a6e83036ae39067" Guid="{1FCCA81B-6193-3015-9A6E-83036AE39067}" Win64="yes">
+                            <File Id="file1fcca81b619330159a6e83036ae39067" Name="lifecycle-viewmodel-desktop-2.9.4-df36d8fe3a9c84b3bd8529b166e73d0.jar" KeyPath="yes" ShortName="ithlpzu6.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file1fcca81b619330159a6e83036ae39067" />
+                        </Component>
+                        <Component Id="cfilee4d6bf4a913137e69133cab2677e5e5b" Guid="{E4D6BF4A-9131-37E6-9133-CAB2677E5E5B}" Win64="yes">
+                            <File Id="filee4d6bf4a913137e69133cab2677e5e5b" Name="gson-2.13.2-a2c47e14ce5e95615458fe455f5d542.jar" KeyPath="yes" ShortName="jc7s_h5h.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filee4d6bf4a913137e69133cab2677e5e5b" />
+                        </Component>
+                        <Component Id="cfile6349405ecaab33b68ba9f2884d78d259" Guid="{6349405E-CAAB-33B6-8BA9-F2884D78D259}" Win64="yes">
+                            <File Id="file6349405ecaab33b68ba9f2884d78d259" Name="lifecycle-runtime-compose-desktop-2.9.4-8f8fe81afd5ce7cf3e8a38142f8aa2.jar" KeyPath="yes" ShortName="4s29tih2.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file6349405ecaab33b68ba9f2884d78d259" />
+                        </Component>
+                        <Component Id="cfile8cf89fab2ba93700b037250d6f530545" Guid="{8CF89FAB-2BA9-3700-B037-250D6F530545}" Win64="yes">
+                            <File Id="file8cf89fab2ba93700b037250d6f530545" Name="ui-geometry-desktop-1.10.3-74cadef60adf77a87e8bba823806b.jar" KeyPath="yes" ShortName="jnn5ogj0.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file8cf89fab2ba93700b037250d6f530545" />
+                        </Component>
+                        <Component Id="cfileef0d0369b4163402be2112e5fbec3041" Guid="{EF0D0369-B416-3402-BE21-12E5FBEC3041}" Win64="yes">
+                            <File Id="fileef0d0369b4163402be2112e5fbec3041" Name="tink-1.23.0-3653eb60c431373789b981536f639dfd.jar" KeyPath="yes" ShortName="u8ilxm3_.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\fileef0d0369b4163402be2112e5fbec3041" />
+                        </Component>
+                        <Component Id="cfileb0a5a94fbab2398584468d452e10a977" Guid="{B0A5A94F-BAB2-3985-8446-8D452E10A977}" Win64="yes">
+                            <File Id="fileb0a5a94fbab2398584468d452e10a977" Name="material-desktop-1.10.3-8f108d785527e786557d4884fe34a69.jar" KeyPath="yes" ShortName="6e818o8c.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\fileb0a5a94fbab2398584468d452e10a977" />
+                        </Component>
+                        <Component Id="cfile8ee4e5f5c7f73401a2253699e3ca563a" Guid="{8EE4E5F5-C7F7-3401-A225-3699E3CA563A}" Win64="yes">
+                            <File Id="file8ee4e5f5c7f73401a2253699e3ca563a" Name="runtime-annotation-jvm-1.10.5-b09c69fa8ca14488d4f66081b195f82d.jar" KeyPath="yes" ShortName="peijsn1w.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file8ee4e5f5c7f73401a2253699e3ca563a" />
+                        </Component>
+                        <Component Id="cfilef34bcd73bfdc3359a9d51c5ce9c49b64" Guid="{F34BCD73-BFDC-3359-A9D5-1C5CE9C49B64}" Win64="yes">
+                            <File Id="filef34bcd73bfdc3359a9d51c5ce9c49b64" Name="savedstate-compose-desktop-1.3.3-a131c55f9df3dce54e7daaa9c7f4d17.jar" KeyPath="yes" ShortName="mdgxdb5n.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filef34bcd73bfdc3359a9d51c5ce9c49b64" />
+                        </Component>
+                        <Component Id="cfiledb835106cea231d0bd8619e531211ccf" Guid="{DB835106-CEA2-31D0-BD86-19E531211CCF}" Win64="yes">
+                            <File Id="filedb835106cea231d0bd8619e531211ccf" Name="kotlin-stdlib-jdk7-2.2.20-b62df9d3ec629ebc7658228fe49529.jar" KeyPath="yes" ShortName="m-hswvjl.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filedb835106cea231d0bd8619e531211ccf" />
+                        </Component>
+                        <Component Id="cfile8014993989bb39298f5db0cd5095dda7" Guid="{80149939-89BB-3929-8F5D-B0CD5095DDA7}" Win64="yes">
+                            <File Id="file8014993989bb39298f5db0cd5095dda7" Name="okhttp-4.12.0-6acba053af88fed87e71c6c29911d7c.jar" KeyPath="yes" ShortName="swj9suds.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file8014993989bb39298f5db0cd5095dda7" />
+                        </Component>
+                        <Component Id="cfiled1ef58c5bfc136d89963ed68b5fad89a" Guid="{D1EF58C5-BFC1-36D8-9963-ED68B5FAD89A}" Win64="yes">
+                            <File Id="filed1ef58c5bfc136d89963ed68b5fad89a" Name="animation-desktop-1.10.3-d75724d6eb8bef26a6affbebcbada5.jar" KeyPath="yes" ShortName="zzhmlaro.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filed1ef58c5bfc136d89963ed68b5fad89a" />
+                        </Component>
+                        <Component Id="cfilec7e46ca46f2f360985cc22005330acfd" Guid="{C7E46CA4-6F2F-3609-85CC-22005330ACFD}" Win64="yes">
+                            <File Id="filec7e46ca46f2f360985cc22005330acfd" Name="ui-tooling-preview-desktop-1.10.3-98d4733a7ac1bc0f78fd3bc53ca7966.jar" KeyPath="yes" ShortName="ktssbt8k.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filec7e46ca46f2f360985cc22005330acfd" />
+                        </Component>
+                        <Component Id="cfile48e6d746cf333898883320cace4652ac" Guid="{48E6D746-CF33-3898-8833-20CACE4652AC}" Win64="yes">
+                            <File Id="file48e6d746cf333898883320cace4652ac" Name="icudtl.dat" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file48e6d746cf333898883320cace4652ac" />
+                        </Component>
+                        <Component Id="cfile138647ab0cc83fe6a576ec4a99ccd1b4" Guid="{138647AB-0CC8-3FE6-A576-EC4A99CCD1B4}" Win64="yes">
+                            <File Id="file138647ab0cc83fe6a576ec4a99ccd1b4" Name="jna-platform-5.18.1-a7af0779ec98bfe22dfb07b153283d.jar" KeyPath="yes" ShortName="imiv7jdz.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file138647ab0cc83fe6a576ec4a99ccd1b4" />
+                        </Component>
+                        <Component Id="cfileac9ac4d1a24e32cb9abd3e2144b50b45" Guid="{AC9AC4D1-A24E-32CB-9ABD-3E2144B50B45}" Win64="yes">
+                            <File Id="fileac9ac4d1a24e32cb9abd3e2144b50b45" Name="runtime-saveable-desktop-1.10.5-db6b23c395f87685dd7a09443777e69.jar" KeyPath="yes" ShortName="wsrgzqbd.jar" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\fileac9ac4d1a24e32cb9abd3e2144b50b45" />
+                        </Component>
+                    </Directory>
+                    <Directory Id="dire87a7d2cab5f35e0bf0a9181e38d0c09" Name="runtime">
+                        <Component Id="cfile0575f23782fc3c8088352bd75869c42c" Guid="{0575F237-82FC-3C80-8835-2BD75869C42C}" Win64="yes">
+                            <File Id="file0575f23782fc3c8088352bd75869c42c" Name="release" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file0575f23782fc3c8088352bd75869c42c" />
+                        </Component>
+                        <Directory Id="dirb314e9c4f1703a21bfb0e30d794de601" Name="bin">
+                            <Component Id="cfile7ee9ad88bf4033658b6cced645142a01" Guid="{7EE9AD88-BF40-3365-8B6C-CED645142A01}" Win64="yes">
+                                <File Id="file7ee9ad88bf4033658b6cced645142a01" Name="api-ms-win-crt-stdio-l1-1-0.dll" KeyPath="yes" ShortName="7uxm94dz.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file7ee9ad88bf4033658b6cced645142a01" />
+                            </Component>
+                            <Component Id="cfilea5c4078e9a943a1bb636e0f699735369" Guid="{A5C4078E-9A94-3A1B-B636-E0F699735369}" Win64="yes">
+                                <File Id="filea5c4078e9a943a1bb636e0f699735369" Name="api-ms-win-core-timezone-l1-1-0.dll" KeyPath="yes" ShortName="x-wefxlx.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filea5c4078e9a943a1bb636e0f699735369" />
+                            </Component>
+                            <Component Id="cfilee7956724e65a3018a487947ff29096d5" Guid="{E7956724-E65A-3018-A487-947FF29096D5}" Win64="yes">
+                                <File Id="filee7956724e65a3018a487947ff29096d5" Name="awt.dll" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filee7956724e65a3018a487947ff29096d5" />
+                            </Component>
+                            <Component Id="cfilea4dfe168ad5239e6965caa1f825a4e1e" Guid="{A4DFE168-AD52-39E6-965C-AA1F825A4E1E}" Win64="yes">
+                                <File Id="filea4dfe168ad5239e6965caa1f825a4e1e" Name="api-ms-win-core-sysinfo-l1-1-0.dll" KeyPath="yes" ShortName="0maghbm9.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filea4dfe168ad5239e6965caa1f825a4e1e" />
+                            </Component>
+                            <Component Id="cfilef4417da55e3633ffbd6c7c2ea7b520f1" Guid="{F4417DA5-5E36-33FF-BD6C-7C2EA7B520F1}" Win64="yes">
+                                <File Id="filef4417da55e3633ffbd6c7c2ea7b520f1" Name="api-ms-win-core-heap-l1-1-0.dll" KeyPath="yes" ShortName="slew62zv.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filef4417da55e3633ffbd6c7c2ea7b520f1" />
+                            </Component>
+                            <Component Id="cfilea465918cf0533db8a4519ac9b7d1c50b" Guid="{A465918C-F053-3DB8-A451-9AC9B7D1C50B}" Win64="yes">
+                                <File Id="filea465918cf0533db8a4519ac9b7d1c50b" Name="api-ms-win-core-libraryloader-l1-1-0.dll" KeyPath="yes" ShortName="yckk7yg6.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filea465918cf0533db8a4519ac9b7d1c50b" />
+                            </Component>
+                            <Component Id="cfile931bce33e20c3d7aba37e4e15d92f99a" Guid="{931BCE33-E20C-3D7A-BA37-E4E15D92F99A}" Win64="yes">
+                                <File Id="file931bce33e20c3d7aba37e4e15d92f99a" Name="api-ms-win-core-synch-l1-1-0.dll" KeyPath="yes" ShortName="l16ef_il.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file931bce33e20c3d7aba37e4e15d92f99a" />
+                            </Component>
+                            <Component Id="cfile6e25e42e145c342c9c2537107d03a10f" Guid="{6E25E42E-145C-342C-9C25-37107D03A10F}" Win64="yes">
+                                <File Id="file6e25e42e145c342c9c2537107d03a10f" Name="java.dll" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file6e25e42e145c342c9c2537107d03a10f" />
+                            </Component>
+                            <Component Id="cfiled78727bf16eb3b60a5337074e6c1866e" Guid="{D78727BF-16EB-3B60-A533-7074E6C1866E}" Win64="yes">
+                                <File Id="filed78727bf16eb3b60a5337074e6c1866e" Name="api-ms-win-crt-process-l1-1-0.dll" KeyPath="yes" ShortName="vwuvhaie.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filed78727bf16eb3b60a5337074e6c1866e" />
+                            </Component>
+                            <Component Id="cfilee9dca98c5bc43b40ab8f1f5d80729dbf" Guid="{E9DCA98C-5BC4-3B40-AB8F-1F5D80729DBF}" Win64="yes">
+                                <File Id="filee9dca98c5bc43b40ab8f1f5d80729dbf" Name="net.dll" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filee9dca98c5bc43b40ab8f1f5d80729dbf" />
+                            </Component>
+                            <Component Id="cfileb7f25dfef9c0389fb25d5bf599deae2a" Guid="{B7F25DFE-F9C0-389F-B25D-5BF599DEAE2A}" Win64="yes">
+                                <File Id="fileb7f25dfef9c0389fb25d5bf599deae2a" Name="jimage.dll" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\fileb7f25dfef9c0389fb25d5bf599deae2a" />
+                            </Component>
+                            <Component Id="cfile6d9ce4cb6bdf3f6f9b24ebfc65bac782" Guid="{6D9CE4CB-6BDF-3F6F-9B24-EBFC65BAC782}" Win64="yes">
+                                <File Id="file6d9ce4cb6bdf3f6f9b24ebfc65bac782" Name="zip.dll" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file6d9ce4cb6bdf3f6f9b24ebfc65bac782" />
+                            </Component>
+                            <Component Id="cfile6813f9ddc50d3d2ab4d55e4fa476e5b6" Guid="{6813F9DD-C50D-3D2A-B4D5-5E4FA476E5B6}" Win64="yes">
+                                <File Id="file6813f9ddc50d3d2ab4d55e4fa476e5b6" Name="api-ms-win-core-string-l1-1-0.dll" KeyPath="yes" ShortName="9zr_kkvb.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file6813f9ddc50d3d2ab4d55e4fa476e5b6" />
+                            </Component>
+                            <Component Id="cfile43b8a7edec3b3abd8b45cba46a6dd8ce" Guid="{43B8A7ED-EC3B-3ABD-8B45-CBA46A6DD8CE}" Win64="yes">
+                                <File Id="file43b8a7edec3b3abd8b45cba46a6dd8ce" Name="api-ms-win-core-memory-l1-1-0.dll" KeyPath="yes" ShortName="1vspeti0.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file43b8a7edec3b3abd8b45cba46a6dd8ce" />
+                            </Component>
+                            <Component Id="cfilea89abedbae77350582cab6b930bcd024" Guid="{A89ABEDB-AE77-3505-82CA-B6B930BCD024}" Win64="yes">
+                                <File Id="filea89abedbae77350582cab6b930bcd024" Name="api-ms-win-core-processthreads-l1-1-1.dll" KeyPath="yes" ShortName="bpbdnozr.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filea89abedbae77350582cab6b930bcd024" />
+                            </Component>
+                            <Component Id="cfile5e1f8c8e9edc3d7c961c1020ee416957" Guid="{5E1F8C8E-9EDC-3D7C-961C-1020EE416957}" Win64="yes">
+                                <File Id="file5e1f8c8e9edc3d7c961c1020ee416957" Name="api-ms-win-crt-utility-l1-1-0.dll" KeyPath="yes" ShortName="wpdaonfu.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file5e1f8c8e9edc3d7c961c1020ee416957" />
+                            </Component>
+                            <Component Id="cfilea3b21980a218327e9f589c5bec86036b" Guid="{A3B21980-A218-327E-9F58-9C5BEC86036B}" Win64="yes">
+                                <File Id="filea3b21980a218327e9f589c5bec86036b" Name="api-ms-win-crt-runtime-l1-1-0.dll" KeyPath="yes" ShortName="ehao3fkx.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filea3b21980a218327e9f589c5bec86036b" />
+                            </Component>
+                            <Component Id="cfile57f1e4a01ad83188ad0c39fda43752ed" Guid="{57F1E4A0-1AD8-3188-AD0C-39FDA43752ED}" Win64="yes">
+                                <File Id="file57f1e4a01ad83188ad0c39fda43752ed" Name="jawt.dll" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file57f1e4a01ad83188ad0c39fda43752ed" />
+                            </Component>
+                            <Component Id="cfile741fe330cc6a3e1fb2e9b69312f577ac" Guid="{741FE330-CC6A-3E1F-B2E9-B69312F577AC}" Win64="yes">
+                                <File Id="file741fe330cc6a3e1fb2e9b69312f577ac" Name="freetype.dll" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file741fe330cc6a3e1fb2e9b69312f577ac" />
+                            </Component>
+                            <Component Id="cfile8e1c572076c23e64babd0c9ef5e69ce8" Guid="{8E1C5720-76C2-3E64-BABD-0C9EF5E69CE8}" Win64="yes">
+                                <File Id="file8e1c572076c23e64babd0c9ef5e69ce8" Name="nio.dll" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file8e1c572076c23e64babd0c9ef5e69ce8" />
+                            </Component>
+                            <Component Id="cfile4b0fb6b4ed89362599d028b2e6110ad7" Guid="{4B0FB6B4-ED89-3625-99D0-28B2E6110AD7}" Win64="yes">
+                                <File Id="file4b0fb6b4ed89362599d028b2e6110ad7" Name="api-ms-win-core-handle-l1-1-0.dll" KeyPath="yes" ShortName="3l88djnr.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file4b0fb6b4ed89362599d028b2e6110ad7" />
+                            </Component>
+                            <Component Id="cfile96ab140b66c237588f0e762bd982bec5" Guid="{96AB140B-66C2-3758-8F0E-762BD982BEC5}" Win64="yes">
+                                <File Id="file96ab140b66c237588f0e762bd982bec5" Name="api-ms-win-core-file-l1-1-0.dll" KeyPath="yes" ShortName="hi_ywbtb.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file96ab140b66c237588f0e762bd982bec5" />
+                            </Component>
+                            <Component Id="cfilefe3b781367673b2f8cc1f3cf95240473" Guid="{FE3B7813-6767-3B2F-8CC1-F3CF95240473}" Win64="yes">
+                                <File Id="filefe3b781367673b2f8cc1f3cf95240473" Name="msvcp140.dll" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filefe3b781367673b2f8cc1f3cf95240473" />
+                            </Component>
+                            <Component Id="cfilebd5077779b6a3ed2aa5ef8b1a859ac9a" Guid="{BD507777-9B6A-3ED2-AA5E-F8B1A859AC9A}" Win64="yes">
+                                <File Id="filebd5077779b6a3ed2aa5ef8b1a859ac9a" Name="javajpeg.dll" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filebd5077779b6a3ed2aa5ef8b1a859ac9a" />
+                            </Component>
+                            <Component Id="cfile92005861b6c63e318442f946199376f9" Guid="{92005861-B6C6-3E31-8442-F946199376F9}" Win64="yes">
+                                <File Id="file92005861b6c63e318442f946199376f9" Name="api-ms-win-core-datetime-l1-1-0.dll" KeyPath="yes" ShortName="l1tiw3co.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file92005861b6c63e318442f946199376f9" />
+                            </Component>
+                            <Component Id="cfilea7dd5107132a300995240f15d5ad8285" Guid="{A7DD5107-132A-3009-9524-0F15D5AD8285}" Win64="yes">
+                                <File Id="filea7dd5107132a300995240f15d5ad8285" Name="prefs.dll" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filea7dd5107132a300995240f15d5ad8285" />
+                            </Component>
+                            <Component Id="cfile6ba894d434c6390bbcea2e4ba94e02ad" Guid="{6BA894D4-34C6-390B-BCEA-2E4BA94E02AD}" Win64="yes">
+                                <File Id="file6ba894d434c6390bbcea2e4ba94e02ad" Name="api-ms-win-core-processthreads-l1-1-0.dll" KeyPath="yes" ShortName="wv4mnin0.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file6ba894d434c6390bbcea2e4ba94e02ad" />
+                            </Component>
+                            <Component Id="cfileeb140c6cc49c30cfb587d0c49e93f655" Guid="{EB140C6C-C49C-30CF-B587-D0C49E93F655}" Win64="yes">
+                                <File Id="fileeb140c6cc49c30cfb587d0c49e93f655" Name="fontmanager.dll" KeyPath="yes" ShortName="srzlm1rh.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\fileeb140c6cc49c30cfb587d0c49e93f655" />
+                            </Component>
+                            <Component Id="cfile8a5efcbff12d3f488c6fc2e04d8c25b8" Guid="{8A5EFCBF-F12D-3F48-8C6F-C2E04D8C25B8}" Win64="yes">
+                                <File Id="file8a5efcbff12d3f488c6fc2e04d8c25b8" Name="api-ms-win-core-sysinfo-l1-2-0.dll" KeyPath="yes" ShortName="igpyh4j1.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file8a5efcbff12d3f488c6fc2e04d8c25b8" />
+                            </Component>
+                            <Component Id="cfileb30094b26e503dc997d6b641d7a9f486" Guid="{B30094B2-6E50-3DC9-97D6-B641D7A9F486}" Win64="yes">
+                                <File Id="fileb30094b26e503dc997d6b641d7a9f486" Name="api-ms-win-core-file-l1-2-0.dll" KeyPath="yes" ShortName="fztzifqw.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\fileb30094b26e503dc997d6b641d7a9f486" />
+                            </Component>
+                            <Component Id="cfileea93ac6aa1763cd0847af7fef0d1dceb" Guid="{EA93AC6A-A176-3CD0-847A-F7FEF0D1DCEB}" Win64="yes">
+                                <File Id="fileea93ac6aa1763cd0847af7fef0d1dceb" Name="api-ms-win-core-namedpipe-l1-1-0.dll" KeyPath="yes" ShortName="p0tumpxb.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\fileea93ac6aa1763cd0847af7fef0d1dceb" />
+                            </Component>
+                            <Component Id="cfile2dd6bbb3a639382a8b5c3f218f7da385" Guid="{2DD6BBB3-A639-382A-8B5C-3F218F7DA385}" Win64="yes">
+                                <File Id="file2dd6bbb3a639382a8b5c3f218f7da385" Name="api-ms-win-crt-convert-l1-1-0.dll" KeyPath="yes" ShortName="amfyn4mt.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file2dd6bbb3a639382a8b5c3f218f7da385" />
+                            </Component>
+                            <Component Id="cfile8712bca0fae437548b30e705a0a78ee0" Guid="{8712BCA0-FAE4-3754-8B30-E705A0A78EE0}" Win64="yes">
+                                <File Id="file8712bca0fae437548b30e705a0a78ee0" Name="api-ms-win-core-fibers-l1-1-1.dll" KeyPath="yes" ShortName="nttjioo3.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file8712bca0fae437548b30e705a0a78ee0" />
+                            </Component>
+                            <Component Id="cfile6fc62b25eb333d5486105ebd7f83f10d" Guid="{6FC62B25-EB33-3D54-8610-5EBD7F83F10D}" Win64="yes">
+                                <File Id="file6fc62b25eb333d5486105ebd7f83f10d" Name="api-ms-win-crt-locale-l1-1-0.dll" KeyPath="yes" ShortName="kntzkddr.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file6fc62b25eb333d5486105ebd7f83f10d" />
+                            </Component>
+                            <Component Id="cfile2fdb8d1b765634969f2e5e6c21529452" Guid="{2FDB8D1B-7656-3496-9F2E-5E6C21529452}" Win64="yes">
+                                <File Id="file2fdb8d1b765634969f2e5e6c21529452" Name="api-ms-win-crt-math-l1-1-0.dll" KeyPath="yes" ShortName="khh7_vds.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file2fdb8d1b765634969f2e5e6c21529452" />
+                            </Component>
+                            <Component Id="cfile5ad2c841972a3789a81a830ff17e5967" Guid="{5AD2C841-972A-3789-A81A-830FF17E5967}" Win64="yes">
+                                <File Id="file5ad2c841972a3789a81a830ff17e5967" Name="api-ms-win-crt-filesystem-l1-1-0.dll" KeyPath="yes" ShortName="ivj9a3mv.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file5ad2c841972a3789a81a830ff17e5967" />
+                            </Component>
+                            <Component Id="cfile7a5c125d70d13e0e826fdd99a4d484b2" Guid="{7A5C125D-70D1-3E0E-826F-DD99A4D484B2}" Win64="yes">
+                                <File Id="file7a5c125d70d13e0e826fdd99a4d484b2" Name="api-ms-win-crt-environment-l1-1-0.dll" KeyPath="yes" ShortName="t7w83swt.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file7a5c125d70d13e0e826fdd99a4d484b2" />
+                            </Component>
+                            <Component Id="cfile14e7cf1867b8344f93e8a2a98a764cd7" Guid="{14E7CF18-67B8-344F-93E8-A2A98A764CD7}" Win64="yes">
+                                <File Id="file14e7cf1867b8344f93e8a2a98a764cd7" Name="vcruntime140.dll" KeyPath="yes" ShortName="eqitlgdp.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file14e7cf1867b8344f93e8a2a98a764cd7" />
+                            </Component>
+                            <Component Id="cfile7901f84adcf33cb6b42f68077f876feb" Guid="{7901F84A-DCF3-3CB6-B42F-68077F876FEB}" Win64="yes">
+                                <File Id="file7901f84adcf33cb6b42f68077f876feb" Name="ucrtbase.dll" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file7901f84adcf33cb6b42f68077f876feb" />
+                            </Component>
+                            <Component Id="cfilee7fe97df1fef334caa822bd7732c5812" Guid="{E7FE97DF-1FEF-334C-AA82-2BD7732C5812}" Win64="yes">
+                                <File Id="filee7fe97df1fef334caa822bd7732c5812" Name="splashscreen.dll" KeyPath="yes" ShortName="pmkfvdxw.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filee7fe97df1fef334caa822bd7732c5812" />
+                            </Component>
+                            <Component Id="cfileacb0029ae09b3b3b85018ae2e3cf95d7" Guid="{ACB0029A-E09B-3B3B-8501-8AE2E3CF95D7}" Win64="yes">
+                                <File Id="fileacb0029ae09b3b3b85018ae2e3cf95d7" Name="api-ms-win-crt-string-l1-1-0.dll" KeyPath="yes" ShortName="uxf5dwsm.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\fileacb0029ae09b3b3b85018ae2e3cf95d7" />
+                            </Component>
+                            <Component Id="cfile82207aab4be534b1926be8df36bcbc44" Guid="{82207AAB-4BE5-34B1-926B-E8DF36BCBC44}" Win64="yes">
+                                <File Id="file82207aab4be534b1926be8df36bcbc44" Name="api-ms-win-core-util-l1-1-0.dll" KeyPath="yes" ShortName="7at_cwf9.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file82207aab4be534b1926be8df36bcbc44" />
+                            </Component>
+                            <Component Id="cfilebabbebcd7c993cc999d4231d3bb26e83" Guid="{BABBEBCD-7C99-3CC9-99D4-231D3BB26E83}" Win64="yes">
+                                <File Id="filebabbebcd7c993cc999d4231d3bb26e83" Name="api-ms-win-core-debug-l1-1-0.dll" KeyPath="yes" ShortName="k7gdfkiu.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filebabbebcd7c993cc999d4231d3bb26e83" />
+                            </Component>
+                            <Component Id="cfile36f487fed9dd38c48340ad1d3770000f" Guid="{36F487FE-D9DD-38C4-8340-AD1D3770000F}" Win64="yes">
+                                <File Id="file36f487fed9dd38c48340ad1d3770000f" Name="lcms.dll" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file36f487fed9dd38c48340ad1d3770000f" />
+                            </Component>
+                            <Component Id="cfileb54f801d4ef831aea870dee318d3e651" Guid="{B54F801D-4EF8-31AE-A870-DEE318D3E651}" Win64="yes">
+                                <File Id="fileb54f801d4ef831aea870dee318d3e651" Name="api-ms-win-core-rtlsupport-l1-1-0.dll" KeyPath="yes" ShortName="kppgvjbk.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\fileb54f801d4ef831aea870dee318d3e651" />
+                            </Component>
+                            <Component Id="cfiledb4ea206621e394aac4756e9617ce79d" Guid="{DB4EA206-621E-394A-AC47-56E9617CE79D}" Win64="yes">
+                                <File Id="filedb4ea206621e394aac4756e9617ce79d" Name="api-ms-win-core-errorhandling-l1-1-0.dll" KeyPath="yes" ShortName="xx1gflzt.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filedb4ea206621e394aac4756e9617ce79d" />
+                            </Component>
+                            <Component Id="cfile358f4cfe5b563484aeb28b7aecbd91c6" Guid="{358F4CFE-5B56-3484-AEB2-8B7AECBD91C6}" Win64="yes">
+                                <File Id="file358f4cfe5b563484aeb28b7aecbd91c6" Name="api-ms-win-crt-time-l1-1-0.dll" KeyPath="yes" ShortName="cekjt0t5.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file358f4cfe5b563484aeb28b7aecbd91c6" />
+                            </Component>
+                            <Component Id="cfile1d252731852a3cd79a427c6b087220f2" Guid="{1D252731-852A-3CD7-9A42-7C6B087220F2}" Win64="yes">
+                                <File Id="file1d252731852a3cd79a427c6b087220f2" Name="api-ms-win-crt-private-l1-1-0.dll" KeyPath="yes" ShortName="d1cqk3ig.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file1d252731852a3cd79a427c6b087220f2" />
+                            </Component>
+                            <Component Id="cfilebbef28601bf43a0fab7a0a27252e0a08" Guid="{BBEF2860-1BF4-3A0F-AB7A-0A27252E0A08}" Win64="yes">
+                                <File Id="filebbef28601bf43a0fab7a0a27252e0a08" Name="api-ms-win-core-console-l1-2-0.dll" KeyPath="yes" ShortName="qa-sebti.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filebbef28601bf43a0fab7a0a27252e0a08" />
+                            </Component>
+                            <Component Id="cfilea00d1c8e9cf43226950a03042d6ad409" Guid="{A00D1C8E-9CF4-3226-950A-03042D6AD409}" Win64="yes">
+                                <File Id="filea00d1c8e9cf43226950a03042d6ad409" Name="jsound.dll" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filea00d1c8e9cf43226950a03042d6ad409" />
+                            </Component>
+                            <Component Id="cfile2bee21ad8f5b32c899333416c52a7222" Guid="{2BEE21AD-8F5B-32C8-9933-3416C52A7222}" Win64="yes">
+                                <File Id="file2bee21ad8f5b32c899333416c52a7222" Name="api-ms-win-crt-multibyte-l1-1-0.dll" KeyPath="yes" ShortName="fufka-sy.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file2bee21ad8f5b32c899333416c52a7222" />
+                            </Component>
+                            <Component Id="cfile62d7b0fa975c373aa3fe3d51723d0c98" Guid="{62D7B0FA-975C-373A-A3FE-3D51723D0C98}" Win64="yes">
+                                <File Id="file62d7b0fa975c373aa3fe3d51723d0c98" Name="api-ms-win-core-file-l2-1-0.dll" KeyPath="yes" ShortName="beqewns4.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file62d7b0fa975c373aa3fe3d51723d0c98" />
+                            </Component>
+                            <Component Id="cfilefd7f5f4086ef35129470b8fe26a820ef" Guid="{FD7F5F40-86EF-3512-9470-B8FE26A820EF}" Win64="yes">
+                                <File Id="filefd7f5f4086ef35129470b8fe26a820ef" Name="api-ms-win-core-processenvironment-l1-1-0.dll" KeyPath="yes" ShortName="uyhdjj7b.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filefd7f5f4086ef35129470b8fe26a820ef" />
+                            </Component>
+                            <Component Id="cfile66d1d259d6b9366087fc5022a6543c88" Guid="{66D1D259-D6B9-3660-87FC-5022A6543C88}" Win64="yes">
+                                <File Id="file66d1d259d6b9366087fc5022a6543c88" Name="api-ms-win-core-localization-l1-2-0.dll" KeyPath="yes" ShortName="t5trifrh.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file66d1d259d6b9366087fc5022a6543c88" />
+                            </Component>
+                            <Component Id="cfile208055db563d3c18b3b09f490b03c0b1" Guid="{208055DB-563D-3C18-B3B0-9F490B03C0B1}" Win64="yes">
+                                <File Id="file208055db563d3c18b3b09f490b03c0b1" Name="vcruntime140_1.dll" KeyPath="yes" ShortName="op0h8fio.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file208055db563d3c18b3b09f490b03c0b1" />
+                            </Component>
+                            <Component Id="cfilec060d506679a3903b1ff75ca06aee1a8" Guid="{C060D506-679A-3903-B1FF-75CA06AEE1A8}" Win64="yes">
+                                <File Id="filec060d506679a3903b1ff75ca06aee1a8" Name="api-ms-win-crt-heap-l1-1-0.dll" KeyPath="yes" ShortName="kg5nhzsv.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filec060d506679a3903b1ff75ca06aee1a8" />
+                            </Component>
+                            <Component Id="cfilefa556ed1f3953f4d96b5186a472f1eda" Guid="{FA556ED1-F395-3F4D-96B5-186A472F1EDA}" Win64="yes">
+                                <File Id="filefa556ed1f3953f4d96b5186a472f1eda" Name="api-ms-win-core-interlocked-l1-1-0.dll" KeyPath="yes" ShortName="nm35dxin.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filefa556ed1f3953f4d96b5186a472f1eda" />
+                            </Component>
+                            <Component Id="cfile589506d5333336218bc4b6b3fc60be76" Guid="{589506D5-3333-3621-8BC4-B6B3FC60BE76}" Win64="yes">
+                                <File Id="file589506d5333336218bc4b6b3fc60be76" Name="jli.dll" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file589506d5333336218bc4b6b3fc60be76" />
+                            </Component>
+                            <Component Id="cfileeb95acfbd3d731b7b31d7042b289b3fe" Guid="{EB95ACFB-D3D7-31B7-B31D-7042B289B3FE}" Win64="yes">
+                                <File Id="fileeb95acfbd3d731b7b31d7042b289b3fe" Name="api-ms-win-crt-conio-l1-1-0.dll" KeyPath="yes" ShortName="y-i_rpiv.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\fileeb95acfbd3d731b7b31d7042b289b3fe" />
+                            </Component>
+                            <Component Id="cfile0f4f141aad343d12bd4b6a5d54ba8daa" Guid="{0F4F141A-AD34-3D12-BD4B-6A5D54BA8DAA}" Win64="yes">
+                                <File Id="file0f4f141aad343d12bd4b6a5d54ba8daa" Name="api-ms-win-core-kernel32-legacy-l1-1-1.dll" KeyPath="yes" ShortName="r3on6mle.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file0f4f141aad343d12bd4b6a5d54ba8daa" />
+                            </Component>
+                            <Component Id="cfile6f5a7dd50e5736d2b891fc060f72001b" Guid="{6F5A7DD5-0E57-36D2-B891-FC060F72001B}" Win64="yes">
+                                <File Id="file6f5a7dd50e5736d2b891fc060f72001b" Name="api-ms-win-core-fibers-l1-1-0.dll" KeyPath="yes" ShortName="aeiu4wft.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file6f5a7dd50e5736d2b891fc060f72001b" />
+                            </Component>
+                            <Component Id="cfile8c446f9e554b3b54ac0f2dd0599d5c75" Guid="{8C446F9E-554B-3B54-AC0F-2DD0599D5C75}" Win64="yes">
+                                <File Id="file8c446f9e554b3b54ac0f2dd0599d5c75" Name="verify.dll" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file8c446f9e554b3b54ac0f2dd0599d5c75" />
+                            </Component>
+                            <Component Id="cfile6f7c7d5343c83a2ca20a2c7c143169f7" Guid="{6F7C7D53-43C8-3A2C-A20A-2C7C143169F7}" Win64="yes">
+                                <File Id="file6f7c7d5343c83a2ca20a2c7c143169f7" Name="api-ms-win-core-synch-l1-2-0.dll" KeyPath="yes" ShortName="kuu1rmg5.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file6f7c7d5343c83a2ca20a2c7c143169f7" />
+                            </Component>
+                            <Component Id="cfile91d1a6b4c55c3932aed7e85b138ebb91" Guid="{91D1A6B4-C55C-3932-AED7-E85B138EBB91}" Win64="yes">
+                                <File Id="file91d1a6b4c55c3932aed7e85b138ebb91" Name="api-ms-win-core-console-l1-1-0.dll" KeyPath="yes" ShortName="gqpidres.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file91d1a6b4c55c3932aed7e85b138ebb91" />
+                            </Component>
+                            <Component Id="cfile7928fa2d45ce3375bbe9b62e245ff9d7" Guid="{7928FA2D-45CE-3375-BBE9-B62E245FF9D7}" Win64="yes">
+                                <File Id="file7928fa2d45ce3375bbe9b62e245ff9d7" Name="api-ms-win-core-profile-l1-1-0.dll" KeyPath="yes" ShortName="vkotwwmq.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file7928fa2d45ce3375bbe9b62e245ff9d7" />
+                            </Component>
+                            <Component Id="cfile5f8b27e96d1a394a93c12f03080d9d6c" Guid="{5F8B27E9-6D1A-394A-93C1-2F03080D9D6C}" Win64="yes">
+                                <File Id="file5f8b27e96d1a394a93c12f03080d9d6c" Name="mlib_image.dll" KeyPath="yes" ShortName="0wsgeoba.dll" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file5f8b27e96d1a394a93c12f03080d9d6c" />
+                            </Component>
+                            <Directory Id="dirbb362e5246873511867209e9c853d033" Name="server">
+                                <Component Id="cfile0566e653e9ae32ad84481ac3f202a898" Guid="{0566E653-E9AE-32AD-8448-1AC3F202A898}" Win64="yes">
+                                    <File Id="file0566e653e9ae32ad84481ac3f202a898" Name="jvm.dll" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file0566e653e9ae32ad84481ac3f202a898" />
+                                </Component>
+                            </Directory>
+                        </Directory>
+                        <Directory Id="dircf9a22dc840b3cff9bb0e789148cd11f" Name="lib">
+                            <Component Id="cfile04a8f862de0d3915a1afb25a95ff4bb1" Guid="{04A8F862-DE0D-3915-A1AF-B25A95FF4BB1}" Win64="yes">
+                                <File Id="file04a8f862de0d3915a1afb25a95ff4bb1" Name="jvm.lib" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file04a8f862de0d3915a1afb25a95ff4bb1" />
+                            </Component>
+                            <Component Id="cfile968edb2f3e283400922e2a9c7d3860cc" Guid="{968EDB2F-3E28-3400-922E-2A9C7D3860CC}" Win64="yes">
+                                <File Id="file968edb2f3e283400922e2a9c7d3860cc" Name="fontconfig.bfc" KeyPath="yes" ShortName="y6wdrygu.bfc" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file968edb2f3e283400922e2a9c7d3860cc" />
+                            </Component>
+                            <Component Id="cfile5bf74ba060443eadaf88032f03ff5280" Guid="{5BF74BA0-6044-3EAD-AF88-032F03FF5280}" Win64="yes">
+                                <File Id="file5bf74ba060443eadaf88032f03ff5280" Name="tzmappings" KeyPath="yes" ShortName="phjfqm0d" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file5bf74ba060443eadaf88032f03ff5280" />
+                            </Component>
+                            <Component Id="cfile7ba917fefca03dea960aaa56152e406b" Guid="{7BA917FE-FCA0-3DEA-960A-AA56152E406B}" Win64="yes">
+                                <File Id="file7ba917fefca03dea960aaa56152e406b" Name="modules" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file7ba917fefca03dea960aaa56152e406b" />
+                            </Component>
+                            <Component Id="cfile47d57676c1db364788febaaf4ed18569" Guid="{47D57676-C1DB-3647-88FE-BAAF4ED18569}" Win64="yes">
+                                <File Id="file47d57676c1db364788febaaf4ed18569" Name="fontconfig.properties.src" KeyPath="yes" ShortName="temloroe.src" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file47d57676c1db364788febaaf4ed18569" />
+                            </Component>
+                            <Component Id="cfile800505d54d373b9eb717040dad918c54" Guid="{800505D5-4D37-3B9E-B717-040DAD918C54}" Win64="yes">
+                                <File Id="file800505d54d373b9eb717040dad918c54" Name="jrt-fs.jar" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file800505d54d373b9eb717040dad918c54" />
+                            </Component>
+                            <Component Id="cfiledd66bcb1c5723659aa525cf915ab9bb6" Guid="{DD66BCB1-C572-3659-AA52-5CF915AB9BB6}" Win64="yes">
+                                <File Id="filedd66bcb1c5723659aa525cf915ab9bb6" Name="psfont.properties.ja" KeyPath="yes" ShortName="ojjxrfbw.ja" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filedd66bcb1c5723659aa525cf915ab9bb6" />
+                            </Component>
+                            <Component Id="cfileccc5c484362f3fc89af4fe8a46303381" Guid="{CCC5C484-362F-3FC8-9AF4-FE8A46303381}" Win64="yes">
+                                <File Id="fileccc5c484362f3fc89af4fe8a46303381" Name="jawt.lib" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\fileccc5c484362f3fc89af4fe8a46303381" />
+                            </Component>
+                            <Component Id="cfile890ff3bc67c135b39a538483cd362e4a" Guid="{890FF3BC-67C1-35B3-9A53-8483CD362E4A}" Win64="yes">
+                                <File Id="file890ff3bc67c135b39a538483cd362e4a" Name="psfontj2d.properties" KeyPath="yes" ShortName="rlckbqzx.pro" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file890ff3bc67c135b39a538483cd362e4a" />
+                            </Component>
+                            <Component Id="cfile035a07c4d963304887d5d42c099eadd7" Guid="{035A07C4-D963-3048-87D5-D42C099EADD7}" Win64="yes">
+                                <File Id="file035a07c4d963304887d5d42c099eadd7" Name="classlist" KeyPath="yes" ShortName="qcs_omaw" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file035a07c4d963304887d5d42c099eadd7" />
+                            </Component>
+                            <Component Id="cfile86eb86d7fca535e4b5e478d82a5c2c7d" Guid="{86EB86D7-FCA5-35E4-B5E4-78D82A5C2C7D}" Win64="yes">
+                                <File Id="file86eb86d7fca535e4b5e478d82a5c2c7d" Name="jvm.cfg" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file86eb86d7fca535e4b5e478d82a5c2c7d" />
+                            </Component>
+                            <Component Id="cfile4eea489136293baa915c65ad256e04dd" Guid="{4EEA4891-3629-3BAA-915C-65AD256E04DD}" Win64="yes">
+                                <File Id="file4eea489136293baa915c65ad256e04dd" Name="tzdb.dat" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file4eea489136293baa915c65ad256e04dd" />
+                            </Component>
+                            <Directory Id="dir2603662ba796333eb8233539121dfaa7" Name="security">
+                                <Component Id="cfileab799eb7f72c3e8e9e301dfdc98be0c7" Guid="{AB799EB7-F72C-3E8E-9E30-1DFDC98BE0C7}" Win64="yes">
+                                    <File Id="fileab799eb7f72c3e8e9e301dfdc98be0c7" Name="blocked.certs" KeyPath="yes" ShortName="p6jgkkfu.cer" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\fileab799eb7f72c3e8e9e301dfdc98be0c7" />
+                                </Component>
+                                <Component Id="cfilebc935acd2fc338329259312b6e42bca4" Guid="{BC935ACD-2FC3-3832-9259-312B6E42BCA4}" Win64="yes">
+                                    <File Id="filebc935acd2fc338329259312b6e42bca4" Name="default.policy" KeyPath="yes" ShortName="tyknzs_9.pol" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filebc935acd2fc338329259312b6e42bca4" />
+                                </Component>
+                                <Component Id="cfile6cdffda1809c37c084ea8864cfda5ad3" Guid="{6CDFFDA1-809C-37C0-84EA-8864CFDA5AD3}" Win64="yes">
+                                    <File Id="file6cdffda1809c37c084ea8864cfda5ad3" Name="public_suffix_list.dat" KeyPath="yes" ShortName="bwuxbxvo.dat" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file6cdffda1809c37c084ea8864cfda5ad3" />
+                                </Component>
+                                <Component Id="cfile13acf131414a356db4900fd4f431a6f4" Guid="{13ACF131-414A-356D-B490-0FD4F431A6F4}" Win64="yes">
+                                    <File Id="file13acf131414a356db4900fd4f431a6f4" Name="cacerts" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file13acf131414a356db4900fd4f431a6f4" />
+                                </Component>
+                            </Directory>
+                        </Directory>
+                        <Directory Id="dir231e6a506fe7391ea7fa4f2559307f5e" Name="conf">
+                            <Component Id="cfile7927518abdc036ed8538c48f2108947f" Guid="{7927518A-BDC0-36ED-8538-C48F2108947F}" Win64="yes">
+                                <File Id="file7927518abdc036ed8538c48f2108947f" Name="sound.properties" KeyPath="yes" ShortName="i1qehcro.pro" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file7927518abdc036ed8538c48f2108947f" />
+                            </Component>
+                            <Component Id="cfilef590100e993f3f718b326dedf646ce4c" Guid="{F590100E-993F-3F71-8B32-6DEDF646CE4C}" Win64="yes">
+                                <File Id="filef590100e993f3f718b326dedf646ce4c" Name="net.properties" KeyPath="yes" ShortName="hct7kqzc.pro" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filef590100e993f3f718b326dedf646ce4c" />
+                            </Component>
+                            <Component Id="cfile85a4e33d6d573f4f9ec256382ca6df24" Guid="{85A4E33D-6D57-3F4F-9EC2-56382CA6DF24}" Win64="yes">
+                                <File Id="file85a4e33d6d573f4f9ec256382ca6df24" Name="logging.properties" KeyPath="yes" ShortName="_ve4_hh2.pro" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file85a4e33d6d573f4f9ec256382ca6df24" />
+                            </Component>
+                            <Directory Id="dir94085e31dd8f390caf4ea84a1d57e751" Name="security">
+                                <Component Id="cfile49a79519aa333a2fb11ac38aadde51a0" Guid="{49A79519-AA33-3A2F-B11A-C38AADDE51A0}" Win64="yes">
+                                    <File Id="file49a79519aa333a2fb11ac38aadde51a0" Name="java.policy" KeyPath="yes" ShortName="qnjjkhh4.pol" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file49a79519aa333a2fb11ac38aadde51a0" />
+                                </Component>
+                                <Component Id="cfile7d9a506d46373ebc9edb5a25dfcefc33" Guid="{7D9A506D-4637-3EBC-9EDB-5A25DFCEFC33}" Win64="yes">
+                                    <File Id="file7d9a506d46373ebc9edb5a25dfcefc33" Name="java.security" KeyPath="yes" ShortName="lorfw6gb.sec" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file7d9a506d46373ebc9edb5a25dfcefc33" />
+                                </Component>
+                                <Directory Id="dir58ad176b945f3860a8b9d7b1deb963d3" Name="policy">
+                                    <Component Id="cfile920e0f8b040c3cba99b4e05e9c7b3cc0" Guid="{920E0F8B-040C-3CBA-99B4-E05E9C7B3CC0}" Win64="yes">
+                                        <File Id="file920e0f8b040c3cba99b4e05e9c7b3cc0" Name="README.txt" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file920e0f8b040c3cba99b4e05e9c7b3cc0" />
+                                    </Component>
+                                    <Directory Id="dir162e27f67daa35a5967791019ecd6775" Name="limited">
+                                        <Component Id="cfile5414037756733977bf977b917e94b165" Guid="{54140377-5673-3977-BF97-7B917E94B165}" Win64="yes">
+                                            <File Id="file5414037756733977bf977b917e94b165" Name="default_US_export.policy" KeyPath="yes" ShortName="xq5sku1o.pol" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file5414037756733977bf977b917e94b165" />
+                                        </Component>
+                                        <Component Id="cfile4e975aba8f563264877f7aa3ac710384" Guid="{4E975ABA-8F56-3264-877F-7AA3AC710384}" Win64="yes">
+                                            <File Id="file4e975aba8f563264877f7aa3ac710384" Name="default_local.policy" KeyPath="yes" ShortName="iq3xyozi.pol" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file4e975aba8f563264877f7aa3ac710384" />
+                                        </Component>
+                                        <Component Id="cfile6449fbc15eb7360a85b36231790d7742" Guid="{6449FBC1-5EB7-360A-85B3-6231790D7742}" Win64="yes">
+                                            <File Id="file6449fbc15eb7360a85b36231790d7742" Name="exempt_local.policy" KeyPath="yes" ShortName="uquife7c.pol" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file6449fbc15eb7360a85b36231790d7742" />
+                                        </Component>
+                                    </Directory>
+                                    <Directory Id="dir800e59f893cf30bfb9bb9a3f6e92b681" Name="unlimited" ShortName="h__w9ngy">
+                                        <Component Id="cfile9cf282d0fb2e379a9128b3b4c373e428" Guid="{9CF282D0-FB2E-379A-9128-B3B4C373E428}" Win64="yes">
+                                            <File Id="file9cf282d0fb2e379a9128b3b4c373e428" Name="default_local.policy" KeyPath="yes" ShortName="stmo_5km.pol" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file9cf282d0fb2e379a9128b3b4c373e428" />
+                                        </Component>
+                                        <Component Id="cfile987393bfbef13fc8bef210a8c99482b1" Guid="{987393BF-BEF1-3FC8-BEF2-10A8C99482B1}" Win64="yes">
+                                            <File Id="file987393bfbef13fc8bef210a8c99482b1" Name="default_US_export.policy" KeyPath="yes" ShortName="tf3rds7t.pol" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file987393bfbef13fc8bef210a8c99482b1" />
+                                        </Component>
+                                    </Directory>
+                                </Directory>
+                            </Directory>
+                        </Directory>
+                        <Directory Id="dir5391ccbfa2c03538b949e3f55c8f5005" Name="legal">
+                            <Directory Id="dircf640b19630f362c9ff2093915614c74" Name="java.desktop" ShortName="mzehp0sn">
+                                <Component Id="cfilee3e0fa642a7f318db4e675275da8a5c3" Guid="{E3E0FA64-2A7F-318D-B4E6-75275DA8A5C3}" Win64="yes">
+                                    <File Id="filee3e0fa642a7f318db4e675275da8a5c3" Name="freetype.md" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filee3e0fa642a7f318db4e675275da8a5c3" />
+                                </Component>
+                                <Component Id="cfile69b7c6bd78ba366e81adfa136c715587" Guid="{69B7C6BD-78BA-366E-81AD-FA136C715587}" Win64="yes">
+                                    <File Id="file69b7c6bd78ba366e81adfa136c715587" Name="LICENSE" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file69b7c6bd78ba366e81adfa136c715587" />
+                                </Component>
+                                <Component Id="cfile0dbcf5ef797832be87680b581d8e56a2" Guid="{0DBCF5EF-7978-32BE-8768-0B581D8E56A2}" Win64="yes">
+                                    <File Id="file0dbcf5ef797832be87680b581d8e56a2" Name="ASSEMBLY_EXCEPTION" KeyPath="yes" ShortName="_dpkypid" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file0dbcf5ef797832be87680b581d8e56a2" />
+                                </Component>
+                                <Component Id="cfile977a960d186f37a4aa8f9786b457745a" Guid="{977A960D-186F-37A4-AA8F-9786B457745A}" Win64="yes">
+                                    <File Id="file977a960d186f37a4aa8f9786b457745a" Name="harfbuzz.md" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file977a960d186f37a4aa8f9786b457745a" />
+                                </Component>
+                                <Component Id="cfilea43f830c209933f6b04eb3c2284e0eff" Guid="{A43F830C-2099-33F6-B04E-B3C2284E0EFF}" Win64="yes">
+                                    <File Id="filea43f830c209933f6b04eb3c2284e0eff" Name="colorimaging.md" KeyPath="yes" ShortName="w3gnn7os.md" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filea43f830c209933f6b04eb3c2284e0eff" />
+                                </Component>
+                                <Component Id="cfile045d8ee653bb30069cefdf65e63aadfc" Guid="{045D8EE6-53BB-3006-9CEF-DF65E63AADFC}" Win64="yes">
+                                    <File Id="file045d8ee653bb30069cefdf65e63aadfc" Name="mesa3d.md" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file045d8ee653bb30069cefdf65e63aadfc" />
+                                </Component>
+                                <Component Id="cfile14368850e73f3c8fbeb2d132b44a4808" Guid="{14368850-E73F-3C8F-BEB2-D132B44A4808}" Win64="yes">
+                                    <File Id="file14368850e73f3c8fbeb2d132b44a4808" Name="ADDITIONAL_LICENSE_INFO" KeyPath="yes" ShortName="rraw54dn" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file14368850e73f3c8fbeb2d132b44a4808" />
+                                </Component>
+                                <Component Id="cfilede8b32f80a213cdb965ed9e673af7b9e" Guid="{DE8B32F8-0A21-3CDB-965E-D9E673AF7B9E}" Win64="yes">
+                                    <File Id="filede8b32f80a213cdb965ed9e673af7b9e" Name="lcms.md" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filede8b32f80a213cdb965ed9e673af7b9e" />
+                                </Component>
+                                <Component Id="cfileef91bb691dd735ceac2288acae49c363" Guid="{EF91BB69-1DD7-35CE-AC22-88ACAE49C363}" Win64="yes">
+                                    <File Id="fileef91bb691dd735ceac2288acae49c363" Name="libpng.md" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\fileef91bb691dd735ceac2288acae49c363" />
+                                </Component>
+                                <Component Id="cfile544d7b96f30b30c4a775694f7abacc10" Guid="{544D7B96-F30B-30C4-A775-694F7ABACC10}" Win64="yes">
+                                    <File Id="file544d7b96f30b30c4a775694f7abacc10" Name="giflib.md" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file544d7b96f30b30c4a775694f7abacc10" />
+                                </Component>
+                                <Component Id="cfile69721213e9e53d81aa407c9ae4fca894" Guid="{69721213-E9E5-3D81-AA40-7C9AE4FCA894}" Win64="yes">
+                                    <File Id="file69721213e9e53d81aa407c9ae4fca894" Name="jpeg.md" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file69721213e9e53d81aa407c9ae4fca894" />
+                                </Component>
+                            </Directory>
+                            <Directory Id="dir8556c2be4e6631319320ba0f4cb85449" Name="java.logging" ShortName="ue_llt8g">
+                                <Component Id="cfilee59a3803a0dd34b5a320916fef733f8a" Guid="{E59A3803-A0DD-34B5-A320-916FEF733F8A}" Win64="yes">
+                                    <File Id="filee59a3803a0dd34b5a320916fef733f8a" Name="LICENSE" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filee59a3803a0dd34b5a320916fef733f8a" />
+                                </Component>
+                                <Component Id="cfilecd58148ae688371398ed76652841a5a6" Guid="{CD58148A-E688-3713-98ED-76652841A5A6}" Win64="yes">
+                                    <File Id="filecd58148ae688371398ed76652841a5a6" Name="ADDITIONAL_LICENSE_INFO" KeyPath="yes" ShortName="j1s9ktnb" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filecd58148ae688371398ed76652841a5a6" />
+                                </Component>
+                                <Component Id="cfilef04ea9b702033f5584194ff9e867b7ac" Guid="{F04EA9B7-0203-3F55-8419-4FF9E867B7AC}" Win64="yes">
+                                    <File Id="filef04ea9b702033f5584194ff9e867b7ac" Name="ASSEMBLY_EXCEPTION" KeyPath="yes" ShortName="dgyaz4kg" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filef04ea9b702033f5584194ff9e867b7ac" />
+                                </Component>
+                            </Directory>
+                            <Directory Id="dir50fed7ddbb9d3171bb64b4d58957ad5c" Name="java.base" ShortName="39k8w4y_">
+                                <Component Id="cfile3e9b44e681943344b82b209ee8ad73f7" Guid="{3E9B44E6-8194-3344-B82B-209EE8AD73F7}" Win64="yes">
+                                    <File Id="file3e9b44e681943344b82b209ee8ad73f7" Name="LICENSE" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file3e9b44e681943344b82b209ee8ad73f7" />
+                                </Component>
+                                <Component Id="cfile6beef31dd71d30f0b4fb1c742f738975" Guid="{6BEEF31D-D71D-30F0-B4FB-1C742F738975}" Win64="yes">
+                                    <File Id="file6beef31dd71d30f0b4fb1c742f738975" Name="public_suffix.md" KeyPath="yes" ShortName="eavaviu9.md" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file6beef31dd71d30f0b4fb1c742f738975" />
+                                </Component>
+                                <Component Id="cfile9c961237cb7b31feb185d0a70c7f6e5f" Guid="{9C961237-CB7B-31FE-B185-D0A70C7F6E5F}" Win64="yes">
+                                    <File Id="file9c961237cb7b31feb185d0a70c7f6e5f" Name="c-libutl.md" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file9c961237cb7b31feb185d0a70c7f6e5f" />
+                                </Component>
+                                <Component Id="cfile73732fc1b32e357880239e94b3c7485c" Guid="{73732FC1-B32E-3578-8023-9E94B3C7485C}" Win64="yes">
+                                    <File Id="file73732fc1b32e357880239e94b3c7485c" Name="zlib.md" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file73732fc1b32e357880239e94b3c7485c" />
+                                </Component>
+                                <Component Id="cfileed05cbd2527c3a729c1b31341a46c39b" Guid="{ED05CBD2-527C-3A72-9C1B-31341A46C39B}" Win64="yes">
+                                    <File Id="fileed05cbd2527c3a729c1b31341a46c39b" Name="siphash.md" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\fileed05cbd2527c3a729c1b31341a46c39b" />
+                                </Component>
+                                <Component Id="cfile2ff3e3ebe7d43ca99ae3624aba9bece1" Guid="{2FF3E3EB-E7D4-3CA9-9AE3-624ABA9BECE1}" Win64="yes">
+                                    <File Id="file2ff3e3ebe7d43ca99ae3624aba9bece1" Name="icu.md" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file2ff3e3ebe7d43ca99ae3624aba9bece1" />
+                                </Component>
+                                <Component Id="cfile20610d62842a3983af561cd4ad1966dd" Guid="{20610D62-842A-3983-AF56-1CD4AD1966DD}" Win64="yes">
+                                    <File Id="file20610d62842a3983af561cd4ad1966dd" Name="wepoll.md" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file20610d62842a3983af561cd4ad1966dd" />
+                                </Component>
+                                <Component Id="cfile42cd07cfa71e37f6a58a0794bb262503" Guid="{42CD07CF-A71E-37F6-A58A-0794BB262503}" Win64="yes">
+                                    <File Id="file42cd07cfa71e37f6a58a0794bb262503" Name="unicode.md" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file42cd07cfa71e37f6a58a0794bb262503" />
+                                </Component>
+                                <Component Id="cfilef642e100daf93a71bdbf649246efb735" Guid="{F642E100-DAF9-3A71-BDBF-649246EFB735}" Win64="yes">
+                                    <File Id="filef642e100daf93a71bdbf649246efb735" Name="cldr.md" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filef642e100daf93a71bdbf649246efb735" />
+                                </Component>
+                                <Component Id="cfileb240d0b2ba613621be71ab46beb48628" Guid="{B240D0B2-BA61-3621-BE71-AB46BEB48628}" Win64="yes">
+                                    <File Id="fileb240d0b2ba613621be71ab46beb48628" Name="ASSEMBLY_EXCEPTION" KeyPath="yes" ShortName="h0dglkct" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\fileb240d0b2ba613621be71ab46beb48628" />
+                                </Component>
+                                <Component Id="cfilefceb3845b44c3e8487f4958e83561f80" Guid="{FCEB3845-B44C-3E84-87F4-958E83561F80}" Win64="yes">
+                                    <File Id="filefceb3845b44c3e8487f4958e83561f80" Name="asm.md" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filefceb3845b44c3e8487f4958e83561f80" />
+                                </Component>
+                                <Component Id="cfilea9afc0450c3f3778ad893db2f8ec482f" Guid="{A9AFC045-0C3F-3778-AD89-3DB2F8EC482F}" Win64="yes">
+                                    <File Id="filea9afc0450c3f3778ad893db2f8ec482f" Name="aes.md" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filea9afc0450c3f3778ad893db2f8ec482f" />
+                                </Component>
+                                <Component Id="cfile4e6810dc2d4433ecb44e2e5a2fae04fd" Guid="{4E6810DC-2D44-33EC-B44E-2E5A2FAE04FD}" Win64="yes">
+                                    <File Id="file4e6810dc2d4433ecb44e2e5a2fae04fd" Name="ADDITIONAL_LICENSE_INFO" KeyPath="yes" ShortName="yznfv7fo" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file4e6810dc2d4433ecb44e2e5a2fae04fd" />
+                                </Component>
+                            </Directory>
+                            <Directory Id="dire97c5b787ae13ca1a5f1d02aee383b04" Name="java.xml">
+                                <Component Id="cfile2a6a8a52ed0736d489bfc71b16feb2c3" Guid="{2A6A8A52-ED07-36D4-89BF-C71B16FEB2C3}" Win64="yes">
+                                    <File Id="file2a6a8a52ed0736d489bfc71b16feb2c3" Name="xerces.md" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file2a6a8a52ed0736d489bfc71b16feb2c3" />
+                                </Component>
+                                <Component Id="cfile72c28c1bc90039819fd4dd73ae670aca" Guid="{72C28C1B-C900-3981-9FD4-DD73AE670ACA}" Win64="yes">
+                                    <File Id="file72c28c1bc90039819fd4dd73ae670aca" Name="ADDITIONAL_LICENSE_INFO" KeyPath="yes" ShortName="nbl4rcmt" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file72c28c1bc90039819fd4dd73ae670aca" />
+                                </Component>
+                                <Component Id="cfiledfd5850410b332af90d5a75a418141f8" Guid="{DFD58504-10B3-32AF-90D5-A75A418141F8}" Win64="yes">
+                                    <File Id="filedfd5850410b332af90d5a75a418141f8" Name="LICENSE" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filedfd5850410b332af90d5a75a418141f8" />
+                                </Component>
+                                <Component Id="cfile8613b7b39609354cbbe894624e87210d" Guid="{8613B7B3-9609-354C-BBE8-94624E87210D}" Win64="yes">
+                                    <File Id="file8613b7b39609354cbbe894624e87210d" Name="bcel.md" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file8613b7b39609354cbbe894624e87210d" />
+                                </Component>
+                                <Component Id="cfileef18fbff6c233858beb19712296531e3" Guid="{EF18FBFF-6C23-3858-BEB1-9712296531E3}" Win64="yes">
+                                    <File Id="fileef18fbff6c233858beb19712296531e3" Name="jcup.md" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\fileef18fbff6c233858beb19712296531e3" />
+                                </Component>
+                                <Component Id="cfileb1766a3d11ae3036b055a4a850f5da4d" Guid="{B1766A3D-11AE-3036-B055-A4A850F5DA4D}" Win64="yes">
+                                    <File Id="fileb1766a3d11ae3036b055a4a850f5da4d" Name="ASSEMBLY_EXCEPTION" KeyPath="yes" ShortName="ppuxky0r" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\fileb1766a3d11ae3036b055a4a850f5da4d" />
+                                </Component>
+                                <Component Id="cfile4b4ca80665dc395f9e2218a903abf4d1" Guid="{4B4CA806-65DC-395F-9E22-18A903ABF4D1}" Win64="yes">
+                                    <File Id="file4b4ca80665dc395f9e2218a903abf4d1" Name="xalan.md" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file4b4ca80665dc395f9e2218a903abf4d1" />
+                                </Component>
+                                <Component Id="cfilea209e42791ff3112b7fa706e072314f2" Guid="{A209E427-91FF-3112-B7FA-706E072314F2}" Win64="yes">
+                                    <File Id="filea209e42791ff3112b7fa706e072314f2" Name="dom.md" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filea209e42791ff3112b7fa706e072314f2" />
+                                </Component>
+                            </Directory>
+                            <Directory Id="dir8576eed6bf2c3a37a55feaf7a5e1364d" Name="java.transaction.xa" ShortName="huiwyobk">
+                                <Component Id="cfile27a94715f43a38f0b59792a3c935d6ba" Guid="{27A94715-F43A-38F0-B597-92A3C935D6BA}" Win64="yes">
+                                    <File Id="file27a94715f43a38f0b59792a3c935d6ba" Name="ADDITIONAL_LICENSE_INFO" KeyPath="yes" ShortName="j9nq5lej" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file27a94715f43a38f0b59792a3c935d6ba" />
+                                </Component>
+                                <Component Id="cfile27fdca3ac78b3857b78440fb823583c1" Guid="{27FDCA3A-C78B-3857-B784-40FB823583C1}" Win64="yes">
+                                    <File Id="file27fdca3ac78b3857b78440fb823583c1" Name="ASSEMBLY_EXCEPTION" KeyPath="yes" ShortName="9esisoqx" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file27fdca3ac78b3857b78440fb823583c1" />
+                                </Component>
+                                <Component Id="cfilee0d00eee1390351d96773c0985e20cda" Guid="{E0D00EEE-1390-351D-9677-3C0985E20CDA}" Win64="yes">
+                                    <File Id="filee0d00eee1390351d96773c0985e20cda" Name="LICENSE" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filee0d00eee1390351d96773c0985e20cda" />
+                                </Component>
+                            </Directory>
+                            <Directory Id="dir4bc3ae48657c3f7880ba2fc5b2010f8d" Name="jdk.crypto.ec" ShortName="-hsfkbww">
+                                <Component Id="cfile4a8f0c4145703bfc8b8695b145c28370" Guid="{4A8F0C41-4570-3BFC-8B86-95B145C28370}" Win64="yes">
+                                    <File Id="file4a8f0c4145703bfc8b8695b145c28370" Name="LICENSE" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file4a8f0c4145703bfc8b8695b145c28370" />
+                                </Component>
+                                <Component Id="cfilef64e0b1b267b36379db4b39a66689709" Guid="{F64E0B1B-267B-3637-9DB4-B39A66689709}" Win64="yes">
+                                    <File Id="filef64e0b1b267b36379db4b39a66689709" Name="ADDITIONAL_LICENSE_INFO" KeyPath="yes" ShortName="s190ytw8" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filef64e0b1b267b36379db4b39a66689709" />
+                                </Component>
+                                <Component Id="cfilec6cc04cc8a973247a7b7b2ebdee3fcca" Guid="{C6CC04CC-8A97-3247-A7B7-B2EBDEE3FCCA}" Win64="yes">
+                                    <File Id="filec6cc04cc8a973247a7b7b2ebdee3fcca" Name="ASSEMBLY_EXCEPTION" KeyPath="yes" ShortName="pf7posih" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filec6cc04cc8a973247a7b7b2ebdee3fcca" />
+                                </Component>
+                            </Directory>
+                            <Directory Id="dir83999e0e61183dc4a1a7d6d25c982bc8" Name="java.sql">
+                                <Component Id="cfiledf5ca642dd9a3a0aa3561eba8f8df28f" Guid="{DF5CA642-DD9A-3A0A-A356-1EBA8F8DF28F}" Win64="yes">
+                                    <File Id="filedf5ca642dd9a3a0aa3561eba8f8df28f" Name="ADDITIONAL_LICENSE_INFO" KeyPath="yes" ShortName="bh0p-jjq" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filedf5ca642dd9a3a0aa3561eba8f8df28f" />
+                                </Component>
+                                <Component Id="cfile7320948d67ae31f2b50b68d50db64963" Guid="{7320948D-67AE-31F2-B50B-68D50DB64963}" Win64="yes">
+                                    <File Id="file7320948d67ae31f2b50b68d50db64963" Name="ASSEMBLY_EXCEPTION" KeyPath="yes" ShortName="wxeutwxd" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file7320948d67ae31f2b50b68d50db64963" />
+                                </Component>
+                                <Component Id="cfilee5dbe130c27537c28098d77be7973906" Guid="{E5DBE130-C275-37C2-8098-D77BE7973906}" Win64="yes">
+                                    <File Id="filee5dbe130c27537c28098d77be7973906" Name="LICENSE" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filee5dbe130c27537c28098d77be7973906" />
+                                </Component>
+                            </Directory>
+                            <Directory Id="dir397c92055a9137aeb8b4873a2901dc79" Name="jdk.unsupported" ShortName="f-qdpnno">
+                                <Component Id="cfile10b7566b08743cd396d393b587f71605" Guid="{10B7566B-0874-3CD3-96D3-93B587F71605}" Win64="yes">
+                                    <File Id="file10b7566b08743cd396d393b587f71605" Name="LICENSE" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file10b7566b08743cd396d393b587f71605" />
+                                </Component>
+                                <Component Id="cfile5af03526a0a639e3af85beb12e34d9a9" Guid="{5AF03526-A0A6-39E3-AF85-BEB12E34D9A9}" Win64="yes">
+                                    <File Id="file5af03526a0a639e3af85beb12e34d9a9" Name="ASSEMBLY_EXCEPTION" KeyPath="yes" ShortName="z0t_3pa1" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file5af03526a0a639e3af85beb12e34d9a9" />
+                                </Component>
+                                <Component Id="cfilee45c4147a1313ecd89e3eedb2ea0fd75" Guid="{E45C4147-A131-3ECD-89E3-EEDB2EA0FD75}" Win64="yes">
+                                    <File Id="filee45c4147a1313ecd89e3eedb2ea0fd75" Name="ADDITIONAL_LICENSE_INFO" KeyPath="yes" ShortName="al9vsxqp" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\filee45c4147a1313ecd89e3eedb2ea0fd75" />
+                                </Component>
+                            </Directory>
+                            <Directory Id="dir1e08c79b7c55361b81b1a887233c601b" Name="java.datatransfer" ShortName="fucjg1tb">
+                                <Component Id="cfile5e290de5135b3b8499cc829dc8143504" Guid="{5E290DE5-135B-3B84-99CC-829DC8143504}" Win64="yes">
+                                    <File Id="file5e290de5135b3b8499cc829dc8143504" Name="LICENSE" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file5e290de5135b3b8499cc829dc8143504" />
+                                </Component>
+                                <Component Id="cfile1222d9ee96123796b4268002d435135a" Guid="{1222D9EE-9612-3796-B426-8002D435135A}" Win64="yes">
+                                    <File Id="file1222d9ee96123796b4268002d435135a" Name="ASSEMBLY_EXCEPTION" KeyPath="yes" ShortName="xbouxrrq" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file1222d9ee96123796b4268002d435135a" />
+                                </Component>
+                                <Component Id="cfile1fdeac3444953088bb814123683b4e1a" Guid="{1FDEAC34-4495-3088-BB81-4123683B4E1A}" Win64="yes">
+                                    <File Id="file1fdeac3444953088bb814123683b4e1a" Name="ADDITIONAL_LICENSE_INFO" KeyPath="yes" ShortName="f2t_h8sm" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file1fdeac3444953088bb814123683b4e1a" />
+                                </Component>
+                            </Directory>
+                            <Directory Id="dir1b74edbf234730278bbbbb2f2f883473" Name="java.prefs" ShortName="uacxtuhs">
+                                <Component Id="cfile4903e11c9d803525b88b35ff06f85bc5" Guid="{4903E11C-9D80-3525-B88B-35FF06F85BC5}" Win64="yes">
+                                    <File Id="file4903e11c9d803525b88b35ff06f85bc5" Name="ASSEMBLY_EXCEPTION" KeyPath="yes" ShortName="uz0rb9vo" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file4903e11c9d803525b88b35ff06f85bc5" />
+                                </Component>
+                                <Component Id="cfile2b71777a7ad638a8a4b2976bfb2541d7" Guid="{2B71777A-7AD6-38A8-A4B2-976BFB2541D7}" Win64="yes">
+                                    <File Id="file2b71777a7ad638a8a4b2976bfb2541d7" Name="ADDITIONAL_LICENSE_INFO" KeyPath="yes" ShortName="_eojinft" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file2b71777a7ad638a8a4b2976bfb2541d7" />
+                                </Component>
+                                <Component Id="cfile5f5b6ccfa7a73378967992c108a36cd8" Guid="{5F5B6CCF-A7A7-3378-9679-92C108A36CD8}" Win64="yes">
+                                    <File Id="file5f5b6ccfa7a73378967992c108a36cd8" Name="LICENSE" KeyPath="yes" DiskId="1" Source="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\File\file5f5b6ccfa7a73378967992c108a36cd8" />
+                                </Component>
+                            </Directory>
+                        </Directory>
+                    </Directory>
+                </Directory>
+            </Directory>
+        </Directory>
+        <Feature Id="DefaultFeature" Level="1" Title="主要功能">
+            <ComponentRef Id="cfilee7b72109c1e13cfd8dedb9866da332d5" />
+            <ComponentRef Id="cfilee3e0fa642a7f318db4e675275da8a5c3" />
+            <ComponentRef Id="cfile4ccb48029a183ec2818743c9d3d8e083" />
+            <ComponentRef Id="cfile8390dde736103343b5c8be72ff1c0877" />
+            <ComponentRef Id="cfile2968063912cb3b05a3170cda93185ae8" />
+            <ComponentRef Id="cfilebab09347bfd33b039e363b104dc375cc" />
+            <ComponentRef Id="cfilee59a3803a0dd34b5a320916fef733f8a" />
+            <ComponentRef Id="cfile7ee9ad88bf4033658b6cced645142a01" />
+            <ComponentRef Id="cfile3e9b44e681943344b82b209ee8ad73f7" />
+            <ComponentRef Id="cfilea5c4078e9a943a1bb636e0f699735369" />
+            <ComponentRef Id="cfiled4a8a3d31cad347d97cb4b84b9a8858a" />
+            <ComponentRef Id="cfilee7956724e65a3018a487947ff29096d5" />
+            <ComponentRef Id="cfilea4dfe168ad5239e6965caa1f825a4e1e" />
+            <ComponentRef Id="cfile5414037756733977bf977b917e94b165" />
+            <ComponentRef Id="cfile2a6a8a52ed0736d489bfc71b16feb2c3" />
+            <ComponentRef Id="cfile2cac79d1cf533cbcb9509f9102db6e8f" />
+            <ComponentRef Id="cfile72c28c1bc90039819fd4dd73ae670aca" />
+            <ComponentRef Id="cfilef4417da55e3633ffbd6c7c2ea7b520f1" />
+            <ComponentRef Id="cfile6beef31dd71d30f0b4fb1c742f738975" />
+            <ComponentRef Id="cfilea465918cf0533db8a4519ac9b7d1c50b" />
+            <ComponentRef Id="cfile8959e84db0d633d4b5bbda8b7141f483" />
+            <ComponentRef Id="cfile27a94715f43a38f0b59792a3c935d6ba" />
+            <ComponentRef Id="cfilef521dc9951ef36cd96f25c82dc923f72" />
+            <ComponentRef Id="cfile69b7c6bd78ba366e81adfa136c715587" />
+            <ComponentRef Id="cfile931bce33e20c3d7aba37e4e15d92f99a" />
+            <ComponentRef Id="cfilef5330816c599336a924320d68f55dc59" />
+            <ComponentRef Id="cfile6e25e42e145c342c9c2537107d03a10f" />
+            <ComponentRef Id="cfile0566e653e9ae32ad84481ac3f202a898" />
+            <ComponentRef Id="cfileed621bd5369a36a68cac7a6a0988d7cc" />
+            <ComponentRef Id="cfileab799eb7f72c3e8e9e301dfdc98be0c7" />
+            <ComponentRef Id="cfile4e975aba8f563264877f7aa3ac710384" />
+            <ComponentRef Id="cfile8c1731b423893f4a972a19248afbdc13" />
+            <ComponentRef Id="cfileaf77784b0ad13d06a126814de8bb9015" />
+            <ComponentRef Id="cfile9c961237cb7b31feb185d0a70c7f6e5f" />
+            <ComponentRef Id="cfile3a35e356557b33c49f3b90bc3b22c9fb" />
+            <ComponentRef Id="cfile0dbcf5ef797832be87680b581d8e56a2" />
+            <ComponentRef Id="cfiled78727bf16eb3b60a5337074e6c1866e" />
+            <ComponentRef Id="cfilee9dca98c5bc43b40ab8f1f5d80729dbf" />
+            <ComponentRef Id="cfile49a79519aa333a2fb11ac38aadde51a0" />
+            <ComponentRef Id="cfile18837be580393cbab501e450199a3238" />
+            <ComponentRef Id="cfile192ec0bf090c3610893fb148786ad504" />
+            <ComponentRef Id="cfileb7f25dfef9c0389fb25d5bf599deae2a" />
+            <ComponentRef Id="cfiled2a8dc8b4f963453bab5dd3adae11539" />
+            <ComponentRef Id="cfile4a8f0c4145703bfc8b8695b145c28370" />
+            <ComponentRef Id="cfile686e525091ae348cba6c70b9dd6a8c1d" />
+            <ComponentRef Id="cfile10dbafc651593060bf6b84f02a8429bb" />
+            <ComponentRef Id="cfile6d9ce4cb6bdf3f6f9b24ebfc65bac782" />
+            <ComponentRef Id="cfiledf5ca642dd9a3a0aa3561eba8f8df28f" />
+            <ComponentRef Id="cfile6813f9ddc50d3d2ab4d55e4fa476e5b6" />
+            <ComponentRef Id="cfile10b7566b08743cd396d393b587f71605" />
+            <ComponentRef Id="cfile73732fc1b32e357880239e94b3c7485c" />
+            <ComponentRef Id="cfile04a8f862de0d3915a1afb25a95ff4bb1" />
+            <ComponentRef Id="cfile5e290de5135b3b8499cc829dc8143504" />
+            <ComponentRef Id="cfile977a960d186f37a4aa8f9786b457745a" />
+            <ComponentRef Id="cfile968edb2f3e283400922e2a9c7d3860cc" />
+            <ComponentRef Id="cfilef64e0b1b267b36379db4b39a66689709" />
+            <ComponentRef Id="cfile05dc8dcfcd023ec4b22e15fc94e7c4b5" />
+            <ComponentRef Id="cfileed05cbd2527c3a729c1b31341a46c39b" />
+            <ComponentRef Id="cfile43b8a7edec3b3abd8b45cba46a6dd8ce" />
+            <ComponentRef Id="cfilea89abedbae77350582cab6b930bcd024" />
+            <ComponentRef Id="cfile5e1f8c8e9edc3d7c961c1020ee416957" />
+            <ComponentRef Id="cfiledfd5850410b332af90d5a75a418141f8" />
+            <ComponentRef Id="cfile7184a766b1473f66a5fd48b315306efb" />
+            <ComponentRef Id="cfilea3b21980a218327e9f589c5bec86036b" />
+            <ComponentRef Id="cfile7927518abdc036ed8538c48f2108947f" />
+            <ComponentRef Id="cfile2ff3e3ebe7d43ca99ae3624aba9bece1" />
+            <ComponentRef Id="cfile3e43eb72596431b99d5ce79dd147f003" />
+            <ComponentRef Id="cfilea43f830c209933f6b04eb3c2284e0eff" />
+            <ComponentRef Id="cfile57f1e4a01ad83188ad0c39fda43752ed" />
+            <ComponentRef Id="cfile315d812bb7da336892f6d117df38a72c" />
+            <ComponentRef Id="cfile741fe330cc6a3e1fb2e9b69312f577ac" />
+            <ComponentRef Id="cfile7320948d67ae31f2b50b68d50db64963" />
+            <ComponentRef Id="cfile27fdca3ac78b3857b78440fb823583c1" />
+            <ComponentRef Id="cfile27e69c329b4634a487cae4c65bebe228" />
+            <ComponentRef Id="cfileff815834d94e3892b7b4babe3d490db3" />
+            <ComponentRef Id="cfile6f79d71b0f3e35d2a07e56c24e3f3009" />
+            <ComponentRef Id="cfile8e1c572076c23e64babd0c9ef5e69ce8" />
+            <ComponentRef Id="cfile5bf74ba060443eadaf88032f03ff5280" />
+            <ComponentRef Id="cfileeb6a8b9378333805ab54edfef1f117b8" />
+            <ComponentRef Id="cfile24aa4490712d3194bd913315e8629d51" />
+            <ComponentRef Id="cfile20610d62842a3983af561cd4ad1966dd" />
+            <ComponentRef Id="cfile3e7f2ce33d443fcf9ce668a4d87a88e3" />
+            <ComponentRef Id="cfile4b0fb6b4ed89362599d028b2e6110ad7" />
+            <ComponentRef Id="cfile42cd07cfa71e37f6a58a0794bb262503" />
+            <ComponentRef Id="cfile692d2372001c3de9a217e53c6ff38a1e" />
+            <ComponentRef Id="cfilefced87e9aef13089b8636b46deca98af" />
+            <ComponentRef Id="cfileecbb38dd2fa23e3684de3eb8aa5d58d8" />
+            <ComponentRef Id="cfileb9bb62e5f3b43dceb1826504b6191a13" />
+            <ComponentRef Id="cfile96ab140b66c237588f0e762bd982bec5" />
+            <ComponentRef Id="cfilefe3b781367673b2f8cc1f3cf95240473" />
+            <ComponentRef Id="cfilebd5077779b6a3ed2aa5ef8b1a859ac9a" />
+            <ComponentRef Id="cfile7ba917fefca03dea960aaa56152e406b" />
+            <ComponentRef Id="cfile47d57676c1db364788febaaf4ed18569" />
+            <ComponentRef Id="cfile92005861b6c63e318442f946199376f9" />
+            <ComponentRef Id="cfile800505d54d373b9eb717040dad918c54" />
+            <ComponentRef Id="cfile052d33f06d03335e903715d19d21c328" />
+            <ComponentRef Id="cfile69f1be90ad653f868767bb96a501a2b2" />
+            <ComponentRef Id="cfile045d8ee653bb30069cefdf65e63aadfc" />
+            <ComponentRef Id="cfilea7dd5107132a300995240f15d5ad8285" />
+            <ComponentRef Id="cfile14368850e73f3c8fbeb2d132b44a4808" />
+            <ComponentRef Id="cfiledd66bcb1c5723659aa525cf915ab9bb6" />
+            <ComponentRef Id="cfilef4a5fe41e4623e53a988b072b0cc8317" />
+            <ComponentRef Id="cfilef642e100daf93a71bdbf649246efb735" />
+            <ComponentRef Id="cfile6ba894d434c6390bbcea2e4ba94e02ad" />
+            <ComponentRef Id="cfileac50e106b0843001a5ccd4f386bbf2cd" />
+            <ComponentRef Id="cfile1222d9ee96123796b4268002d435135a" />
+            <ComponentRef Id="cfileeb140c6cc49c30cfb587d0c49e93f655" />
+            <ComponentRef Id="cfile8a5efcbff12d3f488c6fc2e04d8c25b8" />
+            <ComponentRef Id="cfileb30094b26e503dc997d6b641d7a9f486" />
+            <ComponentRef Id="cfile920e0f8b040c3cba99b4e05e9c7b3cc0" />
+            <ComponentRef Id="cfileea93ac6aa1763cd0847af7fef0d1dceb" />
+            <ComponentRef Id="cfile2dd6bbb3a639382a8b5c3f218f7da385" />
+            <ComponentRef Id="cfile4903e11c9d803525b88b35ff06f85bc5" />
+            <ComponentRef Id="cfile9b91a730d6e1359b9eee705780f693d0" />
+            <ComponentRef Id="cfile04d4063a75d63e90abbe0549553a154e" />
+            <ComponentRef Id="cfilebc935acd2fc338329259312b6e42bca4" />
+            <ComponentRef Id="cfile1fdeac3444953088bb814123683b4e1a" />
+            <ComponentRef Id="cfile5006270812e2337bb4b089896a92ff4f" />
+            <ComponentRef Id="cfile8613b7b39609354cbbe894624e87210d" />
+            <ComponentRef Id="cfile8712bca0fae437548b30e705a0a78ee0" />
+            <ComponentRef Id="cfilee0d00eee1390351d96773c0985e20cda" />
+            <ComponentRef Id="cfileba45891e48833e0297d94e718f0920e5" />
+            <ComponentRef Id="cfile6fc62b25eb333d5486105ebd7f83f10d" />
+            <ComponentRef Id="cfileccc5c484362f3fc89af4fe8a46303381" />
+            <ComponentRef Id="cfile2fdb8d1b765634969f2e5e6c21529452" />
+            <ComponentRef Id="cfile5ad2c841972a3789a81a830ff17e5967" />
+            <ComponentRef Id="cfileec964b7072603f7da442fad66860c69e" />
+            <ComponentRef Id="cfile7a5c125d70d13e0e826fdd99a4d484b2" />
+            <ComponentRef Id="cfile63c3bc49f1493019b526fd3c0d5634b8" />
+            <ComponentRef Id="cfile890ff3bc67c135b39a538483cd362e4a" />
+            <ComponentRef Id="cfileb240d0b2ba613621be71ab46beb48628" />
+            <ComponentRef Id="cfilede8b32f80a213cdb965ed9e673af7b9e" />
+            <ComponentRef Id="cfilee4f268be3ffd357eb15a58b9e2188b33" />
+            <ComponentRef Id="cfile08df01560a303bebbc68129c350cbc56" />
+            <ComponentRef Id="cfile14e7cf1867b8344f93e8a2a98a764cd7" />
+            <ComponentRef Id="cfile9cf282d0fb2e379a9128b3b4c373e428" />
+            <ComponentRef Id="cfile293a4de4b43d355ab2d99d902ac99595" />
+            <ComponentRef Id="cfile654a2bf7bb5d32f8b0eb25e4f0a06f6d" />
+            <ComponentRef Id="cfile5c62faf323363764bdaf5a79533f5a83" />
+            <ComponentRef Id="cfile7901f84adcf33cb6b42f68077f876feb" />
+            <ComponentRef Id="cfile035a07c4d963304887d5d42c099eadd7" />
+            <ComponentRef Id="cfile8f89e3f462253a9486edbe60a95e5726" />
+            <ComponentRef Id="cfilee7fe97df1fef334caa822bd7732c5812" />
+            <ComponentRef Id="cfileacb0029ae09b3b3b85018ae2e3cf95d7" />
+            <ComponentRef Id="cfileeb088dcb2c803fbe80b33510d4630bdf" />
+            <ComponentRef Id="cfile82207aab4be534b1926be8df36bcbc44" />
+            <ComponentRef Id="cfileea8eb6963d1b38d686b9544a3bce9348" />
+            <ComponentRef Id="cfileb601556ea34130db975d6c750aa8e005" />
+            <ComponentRef Id="cfilebabbebcd7c993cc999d4231d3bb26e83" />
+            <ComponentRef Id="cfile36f487fed9dd38c48340ad1d3770000f" />
+            <ComponentRef Id="cfileb54f801d4ef831aea870dee318d3e651" />
+            <ComponentRef Id="cfile7d9a506d46373ebc9edb5a25dfcefc33" />
+            <ComponentRef Id="cfile1fcca81b619330159a6e83036ae39067" />
+            <ComponentRef Id="cfilee4d6bf4a913137e69133cab2677e5e5b" />
+            <ComponentRef Id="cfiledb4ea206621e394aac4756e9617ce79d" />
+            <ComponentRef Id="cfile6349405ecaab33b68ba9f2884d78d259" />
+            <ComponentRef Id="cfile8cf89fab2ba93700b037250d6f530545" />
+            <ComponentRef Id="cfile358f4cfe5b563484aeb28b7aecbd91c6" />
+            <ComponentRef Id="cfilefceb3845b44c3e8487f4958e83561f80" />
+            <ComponentRef Id="cfilee5dbe130c27537c28098d77be7973906" />
+            <ComponentRef Id="cfile5af03526a0a639e3af85beb12e34d9a9" />
+            <ComponentRef Id="cfile86eb86d7fca535e4b5e478d82a5c2c7d" />
+            <ComponentRef Id="cfile6cdffda1809c37c084ea8864cfda5ad3" />
+            <ComponentRef Id="cfile1d252731852a3cd79a427c6b087220f2" />
+            <ComponentRef Id="cfileef0d0369b4163402be2112e5fbec3041" />
+            <ComponentRef Id="cfilebbef28601bf43a0fab7a0a27252e0a08" />
+            <ComponentRef Id="cfilea00d1c8e9cf43226950a03042d6ad409" />
+            <ComponentRef Id="cfileef18fbff6c233858beb19712296531e3" />
+            <ComponentRef Id="cfile2bee21ad8f5b32c899333416c52a7222" />
+            <ComponentRef Id="cfile62d7b0fa975c373aa3fe3d51723d0c98" />
+            <ComponentRef Id="cfileef91bb691dd735ceac2288acae49c363" />
+            <ComponentRef Id="cfilea9afc0450c3f3778ad893db2f8ec482f" />
+            <ComponentRef Id="cfile42f3d76182413c60a4f50e6233e4de33" />
+            <ComponentRef Id="cfile6449fbc15eb7360a85b36231790d7742" />
+            <ComponentRef Id="cfilefd7f5f4086ef35129470b8fe26a820ef" />
+            <ComponentRef Id="cfilecd58148ae688371398ed76652841a5a6" />
+            <ComponentRef Id="cfile66d1d259d6b9366087fc5022a6543c88" />
+            <ComponentRef Id="cfile544d7b96f30b30c4a775694f7abacc10" />
+            <ComponentRef Id="cfile2b71777a7ad638a8a4b2976bfb2541d7" />
+            <ComponentRef Id="cfile5f5b6ccfa7a73378967992c108a36cd8" />
+            <ComponentRef Id="cfile208055db563d3c18b3b09f490b03c0b1" />
+            <ComponentRef Id="cfile69721213e9e53d81aa407c9ae4fca894" />
+            <ComponentRef Id="cfile4eea489136293baa915c65ad256e04dd" />
+            <ComponentRef Id="cfilef590100e993f3f718b326dedf646ce4c" />
+            <ComponentRef Id="cfileb0a5a94fbab2398584468d452e10a977" />
+            <ComponentRef Id="cfile8ee4e5f5c7f73401a2253699e3ca563a" />
+            <ComponentRef Id="cfilec060d506679a3903b1ff75ca06aee1a8" />
+            <ComponentRef Id="cfilefa556ed1f3953f4d96b5186a472f1eda" />
+            <ComponentRef Id="cfile589506d5333336218bc4b6b3fc60be76" />
+            <ComponentRef Id="cfilef34bcd73bfdc3359a9d51c5ce9c49b64" />
+            <ComponentRef Id="cfileb1766a3d11ae3036b055a4a850f5da4d" />
+            <ComponentRef Id="cfile4e6810dc2d4433ecb44e2e5a2fae04fd" />
+            <ComponentRef Id="cfilef04ea9b702033f5584194ff9e867b7ac" />
+            <ComponentRef Id="cfiledb835106cea231d0bd8619e531211ccf" />
+            <ComponentRef Id="cfile8014993989bb39298f5db0cd5095dda7" />
+            <ComponentRef Id="cfileeb95acfbd3d731b7b31d7042b289b3fe" />
+            <ComponentRef Id="cfile4b4ca80665dc395f9e2218a903abf4d1" />
+            <ComponentRef Id="cfilee45c4147a1313ecd89e3eedb2ea0fd75" />
+            <ComponentRef Id="cfile0575f23782fc3c8088352bd75869c42c" />
+            <ComponentRef Id="cfile0f4f141aad343d12bd4b6a5d54ba8daa" />
+            <ComponentRef Id="cfile85a4e33d6d573f4f9ec256382ca6df24" />
+            <ComponentRef Id="cfiled1ef58c5bfc136d89963ed68b5fad89a" />
+            <ComponentRef Id="cfilec7e46ca46f2f360985cc22005330acfd" />
+            <ComponentRef Id="cfile6f5a7dd50e5736d2b891fc060f72001b" />
+            <ComponentRef Id="cfile8c446f9e554b3b54ac0f2dd0599d5c75" />
+            <ComponentRef Id="cfile48e6d746cf333898883320cace4652ac" />
+            <ComponentRef Id="cfile138647ab0cc83fe6a576ec4a99ccd1b4" />
+            <ComponentRef Id="cfile6f7c7d5343c83a2ca20a2c7c143169f7" />
+            <ComponentRef Id="cfile13acf131414a356db4900fd4f431a6f4" />
+            <ComponentRef Id="cfileac9ac4d1a24e32cb9abd3e2144b50b45" />
+            <ComponentRef Id="cfile91d1a6b4c55c3932aed7e85b138ebb91" />
+            <ComponentRef Id="cfilea209e42791ff3112b7fa706e072314f2" />
+            <ComponentRef Id="cfile987393bfbef13fc8bef210a8c99482b1" />
+            <ComponentRef Id="cfile7928fa2d45ce3375bbe9b62e245ff9d7" />
+            <ComponentRef Id="cfilec6cc04cc8a973247a7b7b2ebdee3fcca" />
+            <ComponentRef Id="cfile5f8b27e96d1a394a93c12f03080d9d6c" />
+            <ComponentRef Id="crm_rf48431aecbd69377ea800d62616352f20" />
+        </Feature>
+        <Icon Id="JpARPPRODUCTICON" SourceFile="H:\ChatChatBar-Desktop\app\desktopApp\build\p11-unified-acceptance-prep-20261021\01-installers\exe-extracted\Icon\JpARPPRODUCTICON" />
+        <Media Id="1" Cabinet="Data.cab" EmbedCab="yes" />
+        <Property Id="ALLUSERS" Value="1" />
+        <Property Id="ARPPRODUCTICON" Value="JpARPPRODUCTICON" />
+        <Property Id="JP_DOWNGRADABLE_FOUND" Secure="yes" />
+        <Property Id="JP_UPGRADABLE_FOUND" Secure="yes" />
+        <Property Id="RM_RF48431AECBD69377EA800D62616352F20">
+            <RegistrySearch Id="regsearch44413c41962833c69ffb8268f3119343" Root="HKLM" Key="Software\ChatChatBar\ChatChatBarDesktop\0.1.0" Name="RM_RF48431AECBD69377EA800D62616352F20" Type="raw" Win64="yes" />
+        </Property>
+        <UI>
+            <Dialog Id="InstallDirNotEmptyDlg" X="50" Y="50" Width="300" Height="85" Title="[ProductName] Setup">
+                <Control Id="Yes" Type="PushButton" X="100" Y="55" Width="50" Height="15" Text="是(&amp;Y)" TabSkip="no">
+                    <Publish Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
+                </Control>
+                <Control Id="No" Type="PushButton" X="150" Y="55" Width="50" Height="15" Text="否(&amp;N)" TabSkip="no" Default="yes" Cancel="yes">
+                    <Publish Event="NewDialog" Value="InstallDirDlg">1</Publish>
+                </Control>
+                <Control Id="Text" Type="Text" X="25" Y="15" Width="250" Height="30" Text="文件夹 [INSTALLDIR] 已存在。是否仍要安装到该文件夹？" TabSkip="no" />
+            </Dialog>
+        </UI>
+        <UIRef Id="WixUI_InstallDir" />
+        <Upgrade Id="{B06B3DAD-949D-388B-919A-79CC4ECAEA7A}">
+            <UpgradeVersion Maximum="0.1.0" Property="JP_UPGRADABLE_FOUND" MigrateFeatures="yes" IncludeMinimum="yes" />
+            <UpgradeVersion Minimum="0.1.0" Property="JP_DOWNGRADABLE_FOUND" MigrateFeatures="yes" />
+        </Upgrade>
+        <InstallExecuteSequence>
+            <Custom Action="JpSetARPCOMMENTS" Sequence="1001">Not Installed</Custom>
+            <Custom Action="JpSetARPCONTACT" Sequence="1002">Not Installed</Custom>
+            <Custom Action="JpSetARPINSTALLLOCATION" Sequence="1003">Not Installed</Custom>
+            <Custom Action="JpSetARPSIZE" Sequence="1004">Not Installed</Custom>
+            <FindRelatedProducts Sequence="25" />
+            <ValidateProductID Sequence="700" />
+            <CostInitialize Sequence="800" />
+            <FileCost Sequence="900" />
+            <CostFinalize Sequence="1000" />
+            <MigrateFeatureStates Sequence="1200" />
+            <InstallValidate Sequence="1400" />
+            <InstallInitialize Sequence="1500" />
+            <ProcessComponents Sequence="1600" />
+            <UnpublishFeatures Sequence="1800" />
+            <RemoveRegistryValues Sequence="2600" />
+            <RemoveFiles Sequence="3500" />
+            <InstallFiles Sequence="4000" />
+            <WriteRegistryValues Sequence="5000" />
+            <RegisterUser Sequence="6000" />
+            <RegisterProduct Sequence="6100" />
+            <PublishFeatures Sequence="6300" />
+            <PublishProduct Sequence="6400" />
+            <InstallFinalize Sequence="6600" />
+            <RemoveExistingProducts Sequence="798" />
+        </InstallExecuteSequence>
+    </Product>
+</Wix>

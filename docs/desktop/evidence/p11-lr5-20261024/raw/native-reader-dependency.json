@@ -1,0 +1,8 @@
+{
+  "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDocumentIndexReadEvidence.kt",
+  "sourceCommit": "c093aabf0d4971c4baac9c2cd8ec08837d11216d",
+  "bytes": 7516,
+  "sha256": "5409f99d6b8a031dee30e31e0de387026cabe3badc529d5c25e57803e0c93b27",
+  "gitBlob": "b8db28d4bc09ce3efc419b8437b606c70004345b",
+  "use": "Unchanged existing metadata-only native directory observation; explicit freshly created test roots only. No data reads/DPAPI/SecretStore calls."
+}

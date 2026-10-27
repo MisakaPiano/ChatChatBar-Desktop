@@ -1,0 +1,1 @@
+[{"stage": "RESTRICTED_OPEN", "status": 0}, {"stage": "OPEN_SEAL", "valid": 0}, {"stage": "PROPERTY_SEAL", "valid": 0}, {"stage": "CostInitialize", "status": 0, "sealValid": 0}, {"stage": "FileCost", "status": 0, "sealValid": 0}, {"stage": "CostFinalize", "status": 0, "sealValid": 0}]

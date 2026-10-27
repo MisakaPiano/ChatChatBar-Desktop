@@ -1,0 +1,319 @@
+{
+  "fixtureId": "screenshot-r2-d2a4a6e4-05e4-4f1f-b0e6-8d26fc6ce35a",
+  "stage": "SCREENSHOT_AUDIO_EXCLUSION_USER_FAIL_AND_INVALID_FIXTURE_RECORDED",
+  "guiStarts": 1,
+  "items": [
+    {
+      "id": "A1",
+      "check": "独立工作窗口打开与尺寸调整",
+      "user": "NOT TESTED",
+      "technical": "NOT TESTED",
+      "evidence": [],
+      "subchecks": {
+        "open": "USER PASS",
+        "resize": "NOT TESTED"
+      }
+    },
+    {
+      "id": "A2",
+      "check": "焦点及前后台",
+      "user": "NOT TESTED",
+      "technical": "NOT TESTED",
+      "evidence": []
+    },
+    {
+      "id": "A3",
+      "check": "内部关闭后主窗口存活",
+      "user": "USER PASS",
+      "technical": "PASS",
+      "evidence": [
+        "phase2-user-checks/A3_INTERNAL_CLOSE.json"
+      ]
+    },
+    {
+      "id": "A4",
+      "check": "返回聊天后主窗口存活",
+      "user": "USER PASS",
+      "technical": "PASS",
+      "evidence": [
+        "phase2-user-checks/A4_RETURN_TO_CHAT.json"
+      ]
+    },
+    {
+      "id": "A5",
+      "check": "Esc后主窗口存活",
+      "user": "USER PASS",
+      "technical": "PASS",
+      "evidence": [
+        "phase2-user-checks/A5_ESCAPE.json"
+      ]
+    },
+    {
+      "id": "A6",
+      "check": "子窗口X后主窗口存活",
+      "user": "USER PASS",
+      "technical": "PASS",
+      "evidence": [
+        "phase2-user-checks/A6_CHILD_X.json"
+      ]
+    },
+    {
+      "id": "A7",
+      "check": "每次关闭后没有Main CLOSE_REQUESTED且根锁仍拒绝",
+      "user": "NOT APPLICABLE (technical check)",
+      "technical": "PASS",
+      "evidence": [
+        "phase2-user-checks/A3_INTERNAL_CLOSE.json",
+        "phase2-user-checks/A4_RETURN_TO_CHAT.json",
+        "phase2-user-checks/A5_ESCAPE.json",
+        "phase2-user-checks/A6_CHILD_X.json"
+      ],
+      "subchecks": {
+        "internalClose": "PASS",
+        "returnToChat": "PASS",
+        "Esc": "PASS",
+        "childX": "PASS"
+      }
+    },
+    {
+      "id": "B1",
+      "check": "User上下文及异常历史顺序",
+      "user": "NOT TESTED",
+      "technical": "NOT TESTED",
+      "evidence": [
+        "phase2-user-checks/B_GROUP_COLLAPSE_A.json"
+      ],
+      "subchecks": {
+        "sessionAUserGrouping": "USER PASS",
+        "sessionBIrregularHistory": "NOT TESTED"
+      }
+    },
+    {
+      "id": "B2",
+      "check": "每条完整回复独立展开折叠",
+      "user": "NOT TESTED",
+      "technical": "NOT TESTED",
+      "evidence": [
+        "phase2-user-checks/B_GROUP_COLLAPSE_A.json"
+      ],
+      "subchecks": {
+        "individualReplyExpand": "USER PASS",
+        "individualReplyCollapse": "NOT TESTED"
+      }
+    },
+    {
+      "id": "B3",
+      "check": "全部展开及全部折叠",
+      "user": "USER PASS",
+      "technical": "NOT TESTED",
+      "evidence": [
+        "phase2-user-checks/B_GROUP_COLLAPSE_A.json"
+      ]
+    },
+    {
+      "id": "B4",
+      "check": "全选全不选及反选",
+      "user": "USER PASS",
+      "technical": "NOT TESTED",
+      "evidence": [
+        "phase2-user-checks/B4_BATCH_SELECTION.json"
+      ]
+    },
+    {
+      "id": "B5",
+      "check": "折叠后选择保持",
+      "user": "USER PASS",
+      "technical": "NOT TESTED",
+      "evidence": [
+        "phase2-user-checks/B_GROUP_COLLAPSE_A.json"
+      ]
+    },
+    {
+      "id": "B6",
+      "check": "片段与整条选择",
+      "user": "NOT TESTED",
+      "technical": "NOT TESTED",
+      "evidence": []
+    },
+    {
+      "id": "B7",
+      "check": "录音选择可见",
+      "user": "NOT TESTED",
+      "technical": "NOT TESTED",
+      "evidence": [
+        "phase2-user-checks/B8_PRODUCT_OBJECTION.json"
+      ],
+      "subchecks": {
+        "recordingSelectionVisible": "Observed in user screenshot; no USER PASS inferred"
+      },
+      "note": "Earlier recording-selection acceptance goal superseded: user forbids all audio in screenshots. No user PASS signed."
+    },
+    {
+      "id": "B8",
+      "check": "只有录音回复进入预览",
+      "user": "BLOCKED",
+      "technical": "INVALID SYNTHETIC SCENARIO",
+      "evidence": [
+        "phase2-user-checks/B8_PRODUCT_OBJECTION.json",
+        "B8_VOICE_ONLY_PRODUCT_OBJECTION.png",
+        "phase2-user-checks/USER_SCREENSHOT_AUDIO_EXCLUSION_CONTRACT.json"
+      ],
+      "note": "User confirms voice-only reply violates required text invariant. Prior recording-only support contract superseded; evidence retained."
+    },
+    {
+      "id": "B9",
+      "check": "宽窄及最小窗口布局",
+      "user": "NOT TESTED",
+      "technical": "NOT TESTED",
+      "evidence": []
+    },
+    {
+      "id": "B10",
+      "check": "键盘可达",
+      "user": "NOT TESTED",
+      "technical": "NOT TESTED",
+      "evidence": []
+    },
+    {
+      "id": "C1",
+      "check": "纵向及横向滚动条",
+      "user": "NOT TESTED",
+      "technical": "NOT TESTED",
+      "evidence": []
+    },
+    {
+      "id": "C2",
+      "check": "Ctrl滚轮及缩放按钮",
+      "user": "NOT TESTED",
+      "technical": "NOT TESTED",
+      "evidence": []
+    },
+    {
+      "id": "C3",
+      "check": "100%及适应宽度",
+      "user": "NOT TESTED",
+      "technical": "NOT TESTED",
+      "evidence": []
+    },
+    {
+      "id": "C4",
+      "check": "适应窗口完整显示长图",
+      "user": "NOT TESTED",
+      "technical": "NOT TESTED",
+      "evidence": []
+    },
+    {
+      "id": "C5",
+      "check": "缩放及resize位置保持",
+      "user": "NOT TESTED",
+      "technical": "NOT TESTED",
+      "evidence": []
+    },
+    {
+      "id": "C6",
+      "check": "取消保存后重试",
+      "user": "NOT TESTED",
+      "technical": "NOT TESTED",
+      "evidence": []
+    },
+    {
+      "id": "C7",
+      "check": "已有合成目标拒绝覆盖",
+      "user": "NOT TESTED",
+      "technical": "NOT TESTED",
+      "evidence": []
+    },
+    {
+      "id": "C8",
+      "check": "新文件实际PNG导出",
+      "user": "NOT TESTED",
+      "technical": "NOT TESTED",
+      "evidence": []
+    },
+    {
+      "id": "C9",
+      "check": "Windows图片查看器打开与内容质量",
+      "user": "NOT TESTED",
+      "technical": "NOT TESTED",
+      "evidence": []
+    },
+    {
+      "id": "C10",
+      "check": "导出前后尺寸及字节身份",
+      "user": "NOT TESTED",
+      "technical": "NOT TESTED",
+      "evidence": []
+    },
+    {
+      "id": "D1",
+      "check": "用户主窗口X正常关闭",
+      "user": "NOT TESTED",
+      "technical": "NOT TESTED",
+      "evidence": []
+    },
+    {
+      "id": "D2",
+      "check": "Launcher及JVM退出码",
+      "user": "NOT TESTED",
+      "technical": "NOT TESTED",
+      "evidence": []
+    },
+    {
+      "id": "D3",
+      "check": "独立根锁重获",
+      "user": "NOT TESTED",
+      "technical": "NOT TESTED",
+      "evidence": []
+    },
+    {
+      "id": "D4",
+      "check": "临时文件收尾与正式音频保留",
+      "user": "NOT TESTED",
+      "technical": "NOT TESTED",
+      "evidence": []
+    },
+    {
+      "id": "D5",
+      "check": "没有本轮残留进程",
+      "user": "NOT TESTED",
+      "technical": "NOT TESTED",
+      "evidence": []
+    },
+    {
+      "id": "C11",
+      "check": "截图排除所有录音条及录音元信息/控件",
+      "user": "USER FAIL",
+      "technical": "Recording row observed in supplied preview screenshot; no new export performed",
+      "evidence": [
+        "phase2-user-checks/B8_VOICE_ONLY_PRODUCT_OBJECTION.png",
+        "phase2-user-checks/USER_SCREENSHOT_AUDIO_EXCLUSION_CONTRACT.json"
+      ],
+      "note": "User-authoritative clarification; historical matrices preserved."
+    }
+  ],
+  "historicalCloseCause": "UNKNOWN",
+  "postP8": "HOLD",
+  "realProviderRequests": 0,
+  "fakeService": "LISTENING_LOOPBACK_ONLY",
+  "technicalPreflight": {
+    "identityPackageFixture": "PASS",
+    "protectedCredentialPolicy": "PASS",
+    "exclusiveLoopbackProxySelection": "PASS (no request sent)",
+    "rootOwnershipDuringCheck": "PASS; released",
+    "resources": "BLOCKED",
+    "guiStarts": 0,
+    "fakeStarts": 0
+  },
+  "technicalStartup": {
+    "launcherPid": 38024,
+    "jvmPid": 22576,
+    "nativeMainHwnd": 30607992,
+    "visible": true,
+    "osResponding": true,
+    "independentRootLockExit": 75,
+    "mainCloseRequests": 0,
+    "fakeLoopback": "127.0.0.1:61362",
+    "fakeRequestEventsAtInitialCheck": 0,
+    "userObservation": "NOT TESTED"
+  }
+}

@@ -1,0 +1,96 @@
+{
+  "utc": "2026-10-20T18:25:58.312133+00:00",
+  "step": "A3 internal Close",
+  "userVerbatim": "出现了完全正常的",
+  "interpretation": "Response to instructions to open screenshot, use internal Close and check main remains operable; interpreted as USER PASS for this operation only. Resize and other close methods not signed.",
+  "user": "USER PASS",
+  "technical": "PASS",
+  "launcherPid": 38024,
+  "jvmPid": 22576,
+  "mainHwnd": 30607992,
+  "mainCloseRequests": 0,
+  "independentLockExit": 75,
+  "nativeChildObservations": [
+    {
+      "utc": "2026-10-20T18:24:09.5718645+00:00",
+      "window": {
+        "hwnd": 14753896,
+        "owner": 30607992,
+        "rootOwner": 30607992,
+        "pid": 22576,
+        "title": "聊天截图工作区",
+        "className": "SunAwtDialog",
+        "visible": true,
+        "enabled": true,
+        "foreground": true,
+        "bounds": {
+          "Left": 141,
+          "Top": 108,
+          "Right": 1195,
+          "Bottom": 788
+        }
+      }
+    },
+    {
+      "utc": "2026-10-20T18:24:20.6424775+00:00",
+      "window": {
+        "hwnd": 14753896,
+        "owner": 30607992,
+        "rootOwner": 30607992,
+        "pid": 22576,
+        "title": "聊天截图工作区",
+        "className": "SunAwtDialog",
+        "visible": false,
+        "enabled": true,
+        "foreground": false,
+        "bounds": {
+          "Left": 141,
+          "Top": 108,
+          "Right": 1195,
+          "Bottom": 788
+        }
+      }
+    },
+    {
+      "utc": "2026-10-20T18:24:32.2617247+00:00",
+      "window": {
+        "hwnd": 84018616,
+        "owner": 30607992,
+        "rootOwner": 30607992,
+        "pid": 22576,
+        "title": "聊天截图工作区",
+        "className": "SunAwtDialog",
+        "visible": false,
+        "enabled": true,
+        "foreground": false,
+        "bounds": {
+          "Left": 141,
+          "Top": 108,
+          "Right": 1195,
+          "Bottom": 788
+        }
+      }
+    },
+    {
+      "utc": "2026-10-20T18:24:32.5258717+00:00",
+      "window": {
+        "hwnd": 84018616,
+        "owner": 30607992,
+        "rootOwner": 30607992,
+        "pid": 22576,
+        "title": "聊天截图工作区",
+        "className": "SunAwtDialog",
+        "visible": true,
+        "enabled": true,
+        "foreground": true,
+        "bounds": {
+          "Left": 141,
+          "Top": 108,
+          "Right": 1195,
+          "Bottom": 788
+        }
+      }
+    }
+  ],
+  "boundary": "Additional open/close snapshots are not assigned to unconfirmed close methods; historical cause remains UNKNOWN."
+}

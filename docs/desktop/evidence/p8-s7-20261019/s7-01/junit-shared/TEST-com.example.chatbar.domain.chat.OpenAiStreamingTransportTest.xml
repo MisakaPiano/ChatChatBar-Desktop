@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.chat.OpenAiStreamingTransportTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-19T11:35:10.384Z" hostname="DD1" time="7.276">
+  <properties/>
+  <testcase name="failure after finish reason completes with transport failed evidence" classname="com.example.chatbar.domain.chat.OpenAiStreamingTransportTest" time="0.011"/>
+  <testcase name="diagnostics receives final adapted request and transport chunks without authorization" classname="com.example.chatbar.domain.chat.OpenAiStreamingTransportTest" time="0.006"/>
+  <testcase name="parser supports reasoning aliases array content refusal and usage" classname="com.example.chatbar.domain.chat.OpenAiStreamingTransportTest" time="0.001"/>
+  <testcase name="transport emits content reasoning usage and one done terminal" classname="com.example.chatbar.domain.chat.OpenAiStreamingTransportTest" time="0.006"/>
+  <testcase name="http 400 code 20015 retries at most twice then succeeds" classname="com.example.chatbar.domain.chat.OpenAiStreamingTransportTest" time="6.023"/>
+  <testcase name="finish reason grace retains trailing usage before exactly one completion" classname="com.example.chatbar.domain.chat.OpenAiStreamingTransportTest" time="0.004"/>
+  <testcase name="early eof and malformed data are explicit single terminal errors" classname="com.example.chatbar.domain.chat.OpenAiStreamingTransportTest" time="0.009"/>
+  <testcase name="cancellation during retry delay prevents another request" classname="com.example.chatbar.domain.chat.OpenAiStreamingTransportTest" time="1.215"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

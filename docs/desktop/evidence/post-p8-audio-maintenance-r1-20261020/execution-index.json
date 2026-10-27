@@ -1,0 +1,104 @@
+{
+  "jdk17": "C:/Program Files/Eclipse Adoptium/jdk-17.0.20.101-hotspot",
+  "cwd": "H:\\ChatChatBar-Desktop\\app",
+  "heap": "Existing Gradle profile retained; 2048MiB heap, in-process Kotlin. No clean/rerun-tasks.",
+  "gates": [
+    {
+      "log": "01-cross-regression.txt",
+      "exit": 1,
+      "result": "compileTestKotlin RED; test-only receiver/return-type issues. Main compile PASS. No new XML/test execution.",
+      "args": [
+        "--offline",
+        "--no-daemon",
+        "--no-parallel",
+        "--max-workers=1",
+        "--priority=low",
+        "--console=plain",
+        "--no-configuration-cache",
+        "-Pkotlin.compiler.execution.strategy=in-process",
+        ":desktopApp:test",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopAudioMaintenanceTest"
+      ]
+    },
+    {
+      "log": "02-cross-regression.txt",
+      "exit": 1,
+      "result": "31 executed;29 PASS/2 FAIL. Source identities and raw RED XML preserved.",
+      "args": [
+        "--offline",
+        "--no-daemon",
+        "--no-parallel",
+        "--max-workers=1",
+        "--priority=low",
+        "--console=plain",
+        "--no-configuration-cache",
+        "-Pkotlin.compiler.execution.strategy=in-process",
+        ":desktopApp:test",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopAudioMaintenanceTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest"
+      ]
+    },
+    {
+      "log": "03-cross-regression.txt",
+      "exit": 0,
+      "result": "2 suites/32 PASS/0 skips;11 maintenance +21 root-switch.",
+      "args": [
+        "--offline",
+        "--no-daemon",
+        "--no-parallel",
+        "--max-workers=1",
+        "--priority=low",
+        "--console=plain",
+        "--no-configuration-cache",
+        "-Pkotlin.compiler.execution.strategy=in-process",
+        ":desktopApp:test",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopAudioMaintenanceTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest"
+      ]
+    },
+    {
+      "log": "04-affected-focused.txt",
+      "exit": 0,
+      "result": "14 suites/151 PASS/0 skips; actual test execution.",
+      "argsFile": "04-command.json"
+    },
+    {
+      "log": "05-final-ux-focused.txt",
+      "exit": 0,
+      "result": "18 suites/124 PASS/0 skips; actual test execution; compile task up-to-date.",
+      "argsFile": "05-command.json"
+    },
+    {
+      "log": "06-package.txt",
+      "exit": 0,
+      "result": "New isolated distribution; compile from input cache, runtime/image/jar assembled.",
+      "args": [
+        "--offline",
+        "--no-daemon",
+        "--no-parallel",
+        "--max-workers=1",
+        "--priority=low",
+        "--console=plain",
+        "--no-configuration-cache",
+        "-Pkotlin.compiler.execution.strategy=in-process",
+        "-I",
+        "desktopApp/build/post-p8-audio-maintenance-r1-20261020/package.init.gradle",
+        ":desktopApp:createDistributable"
+      ]
+    }
+  ],
+  "sourceDiffCheckExit": 0,
+  "countsOverlap": true,
+  "fullBounded": "NOT RUN",
+  "robot": "NOT RUN",
+  "android": "NOT RUN",
+  "manualGui": "NOT STARTED",
+  "realFishGet": 0,
+  "realFishTts": 0,
+  "paidAuxiliary": 0
+}

@@ -1,0 +1,10 @@
+--- original-build-only-observer.ps1
++++ fixed-build-only-observer.ps1
+@@ -33,6 +33,6 @@
+  if(-not [R7WindowReadOnly]::GetWindowRect($handle,[ref]$rect)){continue}
+  $null=[R7WindowReadOnly]::GetClientRect($handle,[ref]$client);$null=[R7WindowReadOnly]::ClientToScreen($handle,[ref]$point)
+  $dpi=[R7WindowReadOnly]::GetDpiForWindow($handle)
+- [ordered]@{pid=$ownerPid;hwnd=$handle.ToInt64();visible=[R7WindowReadOnly]::IsWindowVisible($handle);enabled=[R7WindowReadOnly]::IsWindowEnabled($handle);maximized=[R7WindowReadOnly]::IsZoomed($handle);foreground=([R7WindowReadOnly]::GetForegroundWindow() -eq $handle);frame=@($rect.L,$rect.T,$rect.R-$rect.L,$rect.B-$rect.T);client=@($point.X,$point.Y,$client.R-$client.L,$client.B-$client.T);dpi=$dpi;clientWidthDp=if($dpi){($client.R-$client.L)*96.0/$dpi}else{$null}}
++ [ordered]@{pid=$ownerPid;hwnd=$handle.ToInt64();visible=[R7WindowReadOnly]::IsWindowVisible($handle);enabled=[R7WindowReadOnly]::IsWindowEnabled($handle);maximized=[R7WindowReadOnly]::IsZoomed($handle);foreground=([R7WindowReadOnly]::GetForegroundWindow() -eq $handle);frame=@($rect.L,$rect.T,($rect.R-$rect.L),($rect.B-$rect.T));client=@($point.X,$point.Y,($client.R-$client.L),($client.B-$client.T));dpi=$dpi;clientWidthDp=if($dpi){($client.R-$client.L)*96.0/$dpi}else{$null}}
+ })
+ [ordered]@{checkpoint=$Checkpoint;utc=[DateTimeOffset]::UtcNow.ToString('o');ownedWindows=$rows;scope='Read-only owned process geometry only; no other application contents or titles'} | ConvertTo-Json -Depth 7 | Set-Content -LiteralPath (Join-Path $PSScriptRoot "runs/manual01/$Checkpoint-windows.json") -Encoding utf8

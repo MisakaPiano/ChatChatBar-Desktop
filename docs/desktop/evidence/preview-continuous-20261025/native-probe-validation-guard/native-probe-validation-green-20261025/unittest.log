@@ -1,0 +1,8 @@
+test_normal_help_remains_available_without_native_action (__main__.NativeProbeValidationTest) ... ok
+test_optimized_cli_refuses_before_parsing_or_native_action (__main__.NativeProbeValidationTest) ... ok
+test_optimized_import_cannot_expose_assertion_free_actions (__main__.NativeProbeValidationTest) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.320s
+
+OK

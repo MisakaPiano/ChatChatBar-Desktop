@@ -1,0 +1,463 @@
+diff --git a/.agents/skills/chatbar-fish-audio-voice/SKILL.md b/.agents/skills/chatbar-fish-audio-voice/SKILL.md
+index 3711e4e3..de36a953 100644
+--- a/.agents/skills/chatbar-fish-audio-voice/SKILL.md
++++ b/.agents/skills/chatbar-fish-audio-voice/SKILL.md
+@@ -16,7 +16,7 @@ Use `chatbar-model-request-runtime` for shared auxiliary-model resolution or SSE
+ - Voice bindings and transfer contracts: `app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/CharacterCard.kt`, `FishAudioVoiceBinding.kt`, and `app/sharedCore/src/main/kotlin/com/example/chatbar/domain/card/CardTransferModels.kt`; Android transfer orchestration remains in `CharacterCardTransferService.kt`.
+ - Shared exact-1.4.1 core: `app/sharedCore/src/main/kotlin/com/example/chatbar/domain/voice/` owns `FishAudioModels`, `FishAudioRequestFactory` / `FishAudioTtsRequest`, `VoiceAnchorPolicy`, `VoiceGenerationPolicy`, and `VoiceMessageVersionPolicy`; voice entities are in shared `data/local/entity/FishAudioEntities.kt`. Android `domain/voice/FishAudioService.kt` executes requests and retains platform storage; do not recreate the extracted definitions.
+ - Tagging and orchestration: `domain/voice/FishAudioTagService.kt`, `FishAudioGenerationCoordinator.kt`, `domain/prompt/PromptTemplates.kt`.
+-- Android persistence adapters: `data/repository/VoiceMessageRepository.kt` and `domain/voice/FishAudioStorage.kt`; anchor/version policies and entities use the shared core above.
++- Shared `data/repository/VoiceMessageRepository.kt` retains official anchor/version/history behavior. Android uses its unchanged default read policy; Desktop opts into strict complete inventories. Android `domain/voice/FishAudioStorage.kt` remains platform-specific.
+ - Playback: `domain/voice/VoicePlaybackController.kt`.
+ - QQ voice experiment: `domain/voice/qq/`, `AndroidManifest.xml`, and `res/xml/qq_voice_accessibility_service.xml`.
+ - Chat and character UI: `ui/chat/ChatScreen.kt`, `ChatViewModel.kt`, `ui/components/ChatBubble.kt`, `ui/character/CharacterEditScreen.kt`, `CharacterEditViewModel.kt`.
+@@ -35,6 +35,11 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
+ - `DesktopWindowsAudioOutput` is a replaceable local-file JNA/winmm MCI backend. Windows supplies the decoder; no codec binary is shipped. It serializes native commands and confirms stop/close before file cleanup. MCI is legacy; codec/device availability and physical I/O deadlines are not guaranteed. AppContainer closes preview before credentials/storage and root release.
+ - Focused tests: `DesktopFishPreviewTest`, `DesktopFishPreviewWindowsTest`, `DesktopFishPresentationTest`, library/settings tests. Native status/silent fixtures do not substitute for user hearing a packaged clip. Formal voice repositories, chat autoplay, SaveSlot audio and ordinary sample downloads remain outside this preview slice.
+ 
++## Desktop formal audio foundation
++
++- `DesktopVoiceAudioStore` persists immutable MP3 artifacts under the selected root `audio/generated`, with independent ownership/hash receipts, bounded streams and atomic publication. It has no startup orphan sweep; corrupt indexes, missing receipts and unknown files remain preserved. Current clips retain the accepted 16 MiB / 120-second decoder profile.
++- `DesktopVoicePlayback` provides key-independent ordered playback and stop/join. `DesktopAudioFocus` provides separate formal/preview ports over one MCI output; a superseded port cannot stop the current owner. App/chat wiring and generation are subsequent P8 checkpoints.
++
+ ## Ownership and Isolation
+ 
+ - Keep generated voice records outside `ChatMessage`. Chat prompt assembly, RAG, source fingerprints, and long-term memory must continue reading text and existing image fields only.
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPreviewStore.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPreviewStore.kt
+index a4549146..63419301 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPreviewStore.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPreviewStore.kt
+@@ -104,7 +104,7 @@ internal class DesktopFishPreviewStore(private val directory: Path = Files.creat
+  * before play. ID3 alone, sync-byte guesses, truncated frames and trailing junk are rejected.
+  */
+ internal object DesktopMp3Validation {
+-    fun validate(path: Path, limit: Long) {
++    fun validate(path: Path, limit: Long): Long {
+         val size = Files.size(path)
+         check(size in 8..limit) { "MP3 大小无效" }
+         java.io.RandomAccessFile(path.toFile(), "r").use { input ->
+@@ -142,6 +142,7 @@ internal object DesktopMp3Validation {
+                 check(duration <= 120.0) { "预览时长超过 120 秒" }
+             }
+             check(frames >= 2 && duration > 0) { "MP3 音频帧缺失" }
++            return (duration * 1000).toLong()
+         }
+     }
+ }
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceAudioStore.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceAudioStore.kt
+new file mode 100644
+index 00000000..51948a51
+--- /dev/null
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceAudioStore.kt
+@@ -0,0 +1,106 @@
++package com.example.chatbar.desktop
++
++import com.example.chatbar.domain.voice.FishAudioStoredAudio
++import java.io.InputStream
++import java.nio.file.*
++import java.nio.file.attribute.BasicFileAttributes
++import java.security.MessageDigest
++import java.util.UUID
++import kotlinx.coroutines.*
++import kotlinx.coroutines.sync.Mutex
++import kotlinx.coroutines.sync.withLock
++
++/** Durable audio, never a preview directory. Unknown/changed files are preserved.
++ * No startup orphan sweep: an incomplete entity inventory is not deletion authority.
++ * Immutable UUID artifacts have a small ownership receipt; a crash between publication
++ * and entity commit leaves recoverable evidence rather than deleting uncertain audio.
++ */
++internal class DesktopVoiceAudioStore(dataRoot: Path) {
++    private val root = dataRoot.toAbsolutePath().normalize().resolve("audio/generated")
++    private val mutex = Mutex()
++    private val limit = 16L * 1024 * 1024
++
++    suspend fun persist(sessionId: String, artifactId: String, input: InputStream,
++        expected: Long = -1, onBytes: (Long) -> Unit = {},
++    ): FishAudioStoredAudio = mutex.withLock { withContext(Dispatchers.IO) {
++        val dir = root.resolve(segment(sessionId))
++        Files.createDirectories(dir); verifyPath(dir, true)
++        val path = dir.resolve("${segment(artifactId)}.mp3")
++        check(!Files.exists(path, LinkOption.NOFOLLOW_LINKS)) { "音频身份冲突；旧文件已保留" }
++        require(expected in -1..limit)
++        val part = dir.resolve(".${UUID.randomUUID()}.part")
++        var published = false
++        try {
++            var size = 0L
++            Files.newOutputStream(part, StandardOpenOption.CREATE_NEW).use { output ->
++                val buffer = ByteArray(16384)
++                while (true) {
++                    currentCoroutineContext().ensureActive()
++                    val count = input.read(buffer); if (count < 0) break
++                    check(count <= limit - size) { "音频超过 16 MiB" }
++                    output.write(buffer, 0, count); size += count; onBytes(size)
++                }
++            }
++            check(size > 0 && (expected < 0 || expected == size)) { "音频下载不完整" }
++            val duration = DesktopMp3Validation.validate(part, limit)
++            currentCoroutineContext().ensureActive(); verifyPath(dir, true)
++            // No replacement or non-atomic fallback. Receipt publication precedes entity admission.
++            Files.move(part, path, StandardCopyOption.ATOMIC_MOVE); published = true
++            Files.writeString(receipt(path), "$size\n${hash(path)}\n", StandardOpenOption.CREATE_NEW)
++            FishAudioStoredAudio(path.toString(), duration, size)
++        } finally {
++            // Only this invocation's uniquely created partial file; published artifacts survive errors.
++            if (!published && Files.exists(part, LinkOption.NOFOLLOW_LINKS)) {
++                verifyPath(part, false); Files.delete(part)
++            }
++        }
++    } }
++
++    suspend fun verify(raw: String): Path = mutex.withLock { withContext(Dispatchers.IO) { verifyOwned(raw) } }
++
++    suspend fun deleteIfOwned(raw: String): Boolean = mutex.withLock { withContext(Dispatchers.IO) {
++        val path = Path.of(raw).toAbsolutePath().normalize()
++        if (!path.startsWith(root) || path.parent?.parent != root) return@withContext false
++        if (!Files.exists(path, LinkOption.NOFOLLOW_LINKS)) return@withContext !Files.exists(receipt(path))
++        verifyOwned(raw) // Ambiguous identity/hash/receipt fails closed, never deletes external media.
++        Files.delete(path); Files.delete(receipt(path)); true
++    } }
++
++    private fun verifyOwned(raw: String): Path {
++        val path = Path.of(raw)
++        check(path.isAbsolute && path.normalize() == path && path.parent?.parent == root && path.startsWith(root))
++        check(path.fileName.toString().matches(Regex("[a-zA-Z0-9_-]+\\.mp3")))
++        verifyPath(path, false); verifyPath(receipt(path), false)
++        check(Files.size(receipt(path)) < 128)
++        val proof = Files.readAllLines(receipt(path))
++        check(proof.size == 2 && proof[0].toLongOrNull() == Files.size(path) && proof[1] == hash(path)) {
++            "音频身份无法确认；文件已保留"
++        }
++        DesktopMp3Validation.validate(path, limit)
++        return path
++    }
++    private fun receipt(path: Path) = path.resolveSibling("${path.fileName}.owner")
++    private fun segment(id: String): String {
++        require(id.matches(Regex("[a-zA-Z0-9_-]{1,128}"))) { "音频资源 ID 无效" }; return id
++    }
++    private fun hash(path: Path): String {
++        check(Files.size(path) <= limit)
++        val digest = MessageDigest.getInstance("SHA-256")
++        Files.newInputStream(path, LinkOption.NOFOLLOW_LINKS).use { stream ->
++            val buf = ByteArray(16384); var total = 0L
++            while (true) { val n = stream.read(buf); if (n < 0) break
++                check(n <= limit - total); total += n; digest.update(buf, 0, n) }
++        }
++        return java.util.HexFormat.of().formatHex(digest.digest())
++    }
++    private fun verifyPath(path: Path, directory: Boolean) {
++        check(path.toRealPath() == path)
++        var current: Path? = path
++        while (current != null) {
++            val attrs = Files.readAttributes(current, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
++            check(!attrs.isSymbolicLink && !attrs.isOther)
++            if (current == path) check(if (directory) attrs.isDirectory else attrs.isRegularFile)
++            current = current.parent
++        }
++    }
++}
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoicePlayback.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoicePlayback.kt
+new file mode 100644
+index 00000000..b6ac998d
+--- /dev/null
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoicePlayback.kt
+@@ -0,0 +1,90 @@
++package com.example.chatbar.desktop
++
++import com.example.chatbar.data.local.entity.GeneratedVoiceMessage
++import java.nio.file.Path
++import kotlinx.coroutines.*
++import kotlinx.coroutines.channels.Channel
++import kotlinx.coroutines.flow.MutableStateFlow
++import kotlinx.coroutines.flow.asStateFlow
++import kotlinx.coroutines.sync.Mutex
++import kotlinx.coroutines.sync.withLock
++
++/** One native output shared by formal playback and the accepted picker runtime.
++ * A superseded port cannot stop or report the other port's playback.
++ */
++internal class DesktopAudioFocus(private val output: DesktopAudioOutput = DesktopWindowsAudioOutput()) {
++    private val mutex = Mutex()
++    private var owner: Any? = null
++    fun port(): DesktopAudioOutput = object : DesktopAudioOutput {
++        private val token = Any()
++        override suspend fun play(path: Path) = mutex.withLock {
++            output.stopAndDrain(); owner = token
++            try { output.play(path) } catch (e: Throwable) { owner = null; throw e }
++        }
++        override suspend fun stopAndDrain() = mutex.withLock {
++            if (owner === token) { output.stopAndDrain(); owner = null }
++        }
++        override suspend fun hasFocus(): Boolean = mutex.withLock { owner === token }
++        override suspend fun isPlaying(): Boolean = mutex.withLock { owner === token && output.isPlaying() }
++        override suspend fun closeAndDrain() { stopAndDrain() }
++    }
++    suspend fun closeAndDrain() = mutex.withLock { output.closeAndDrain(); owner = null }
++}
++
++internal data class DesktopVoicePlaybackState(val currentVoiceId: String? = null,
++    val queueVoiceIds: List<String> = emptyList(), val playing: Boolean = false, val error: String? = null)
++
++/** Explicit playback only; never owns a network credential. Manual play replaces the queue.
++ * Stop joins the polling job before returning, releasing native file handles before deletion.
++ */
++internal class DesktopVoicePlayback(private val store: DesktopVoiceAudioStore,
++    private val output: DesktopAudioOutput = DesktopWindowsAudioOutput(),
++) {
++    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
++    private val mutex = Mutex()
++    private val mutable = MutableStateFlow(DesktopVoicePlaybackState())
++    val state = mutable.asStateFlow()
++    private var job: Job? = null
++    private val queue = mutableListOf<GeneratedVoiceMessage>()
++    private var pending = Channel<GeneratedVoiceMessage>(Channel.UNLIMITED)
++    private var closed = false
++
++    suspend fun playSequence(voices: List<GeneratedVoiceMessage>) = mutex.withLock {
++        check(!closed); stopLocked(); append(voices); startLocked()
++    }
++    suspend fun enqueueSequence(voices: List<GeneratedVoiceMessage>) = mutex.withLock {
++        check(!closed); append(voices)
++        if (job?.isActive != true) startLocked()
++    }
++    private fun append(voices: List<GeneratedVoiceMessage>) {
++        synchronized(queue) { voices.forEach { queue.add(it); check(pending.trySend(it).isSuccess) } }
++    }
++    private fun startLocked() {
++        job = scope.launch {
++            try {
++                for (voice in pending) {
++                    synchronized(queue) { queue.removeAt(0) }
++                    val path = store.verify(voice.audioPath)
++                    output.play(path)
++                    mutable.value = DesktopVoicePlaybackState(voice.id,
++                        synchronized(queue) { listOf(voice.id) + queue.map { it.id } }, true)
++                    while (output.isPlaying()) delay(100)
++                    if (!output.hasFocus()) {
++                        synchronized(queue) { while (pending.tryReceive().isSuccess) { }; queue.clear() }
++                    }
++                    mutable.value = DesktopVoicePlaybackState()
++                }
++            } catch (e: CancellationException) { throw e }
++            catch (_: Exception) { mutable.value = DesktopVoicePlaybackState(error = "本地语音播放失败；文件已保留") }
++            finally { withContext(NonCancellable) { output.stopAndDrain() } }
++        }
++    }
++    suspend fun stop() = mutex.withLock { stopLocked() }
++    private suspend fun stopLocked() {
++        job?.cancelAndJoin(); job = null; synchronized(queue) { pending.cancel(); pending = Channel(Channel.UNLIMITED); queue.clear() }
++        output.stopAndDrain(); mutable.value = DesktopVoicePlaybackState()
++    }
++    suspend fun closeAndDrain() = withContext(NonCancellable) { mutex.withLock {
++        closed = true; stopLocked(); output.closeAndDrain(); scope.cancel()
++    } }
++}
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopWindowsAudioOutput.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopWindowsAudioOutput.kt
+index b4c697c7..44538857 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopWindowsAudioOutput.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopWindowsAudioOutput.kt
+@@ -15,6 +15,7 @@ import kotlinx.coroutines.sync.withLock
+ internal interface DesktopAudioOutput {
+     suspend fun play(path: Path)
+     suspend fun stopAndDrain()
++    suspend fun hasFocus(): Boolean = true
+     suspend fun isPlaying(): Boolean
+     suspend fun closeAndDrain()
+ }
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopVoicePersistenceTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopVoicePersistenceTest.kt
+new file mode 100644
+index 00000000..319fd8b0
+--- /dev/null
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopVoicePersistenceTest.kt
+@@ -0,0 +1,87 @@
++package com.example.chatbar.desktop
++
++import com.example.chatbar.data.local.JsonFileStorage
++import com.example.chatbar.data.local.entity.*
++import com.example.chatbar.data.repository.VoiceMessageRepository
++import java.nio.file.*
++import kotlinx.coroutines.*
++import kotlin.test.*
++
++class DesktopVoicePersistenceTest {
++    private fun voice(path: String) = GeneratedVoiceMessage.create("session", "message", "version", "anchor",
++        0, "DIALOGUE", "Alice", "hello", "hello", "hello", "alice", "Alice",
++        FishAudioVoiceBinding(referenceId = "synthetic", title = "synthetic"), "s2.1-pro-free", path, 1300, 20850)
++
++    @Test fun `durable artifact and official entity survive restart without credentials`() = runBlocking {
++        val root = Files.createTempDirectory("s3-restart-")
++        val store = DesktopVoiceAudioStore(root)
++        val bytes = fishPreviewMp3()
++        val audio = store.persist("session", "artifact", bytes.inputStream(), bytes.size.toLong())
++        assertTrue(audio.durationMs > 0)
++        val repo = VoiceMessageRepository(JsonFileStorage(root), strictReads = true)
++        val v = voice(audio.path); repo.save(v)
++        val restarted = VoiceMessageRepository(JsonFileStorage(root), strictReads = true)
++        assertEquals(v, restarted.get(v.id))
++        assertEquals(Path.of(audio.path), DesktopVoiceAudioStore(root).verify(audio.path))
++        val output = PreviewOutputFake()
++        val player = DesktopVoicePlayback(store, output)
++        player.playSequence(listOf(v))
++        withTimeout(3000) { while (!player.state.value.playing) delay(10) }
++        player.stop(); assertFalse(output.playing)
++        player.closeAndDrain()
++        assertEquals(1, output.plays)
++        restarted.delete(v.id); assertTrue(store.deleteIfOwned(audio.path))
++        assertFalse(Files.exists(Path.of(audio.path)))
++    }
++
++    @Test fun `corrupt inventory fails closed and preserves all audio and unknown files`() = runBlocking {
++        val root = Files.createTempDirectory("s3-corrupt-")
++        val store = DesktopVoiceAudioStore(root)
++        val audio = store.persist("session", "kept", fishPreviewMp3().inputStream())
++        val unknown = root.resolve("audio/generated/session/unknown.mp3")
++        Files.writeString(unknown, "unknown evidence")
++        val dir = Files.createDirectories(root.resolve("entities/generated_voice_messages"))
++        Files.writeString(dir.resolve("broken.json"), "{broken")
++        assertFails { VoiceMessageRepository(JsonFileStorage(root), strictReads = true).initialize() }
++        assertTrue(Files.exists(Path.of(audio.path))); assertTrue(Files.exists(unknown))
++        assertFails { store.deleteIfOwned(unknown.toString()) }
++        assertTrue(Files.exists(unknown))
++    }
++
++    @Test fun `invalid truncated oversized and cancelled streams never publish audio`() = runBlocking {
++        val root = Files.createTempDirectory("s3-failed-")
++        val store = DesktopVoiceAudioStore(root)
++        assertFails { store.persist("session", "empty", byteArrayOf().inputStream()) }
++        assertFails { store.persist("session", "truncated", fishPreviewMp3().copyOf(100).inputStream()) }
++        assertFails { store.persist("session", "length", fishPreviewMp3().inputStream(), 7) }
++        assertFails { store.persist("session", "large", byteArrayOf().inputStream(), 17L * 1024 * 1024) }
++        assertFailsWith<CancellationException> {
++            store.persist("session", "cancel", fishPreviewMp3().inputStream()) { throw CancellationException() }
++        }
++        Files.walk(root).use { paths -> assertEquals(0, paths.filter { Files.isRegularFile(it) }.count()) }
++    }
++
++    @Test fun `path traversal replacement mutation and external deletion are rejected`() = runBlocking {
++        val root = Files.createTempDirectory("s3-owned-")
++        val store = DesktopVoiceAudioStore(root)
++        assertFails { store.persist("../outside", "bad", fishPreviewMp3().inputStream()) }
++        val audio = store.persist("session", "one", fishPreviewMp3().inputStream())
++        assertFails { store.persist("session", "one", fishPreviewMp3().inputStream()) }
++        val outside = Files.createTempFile("s3-external-", ".mp3")
++        assertFalse(store.deleteIfOwned(outside.toString())); assertTrue(Files.exists(outside))
++        Files.write(Path.of(audio.path), fishPreviewMp3().also { it[100] = 1 })
++        assertFails { store.verify(audio.path) }; assertFails { store.deleteIfOwned(audio.path) }
++        assertTrue(Files.exists(Path.of(audio.path)))
++    }
++
++    @Test fun `native focus supersedes old port without letting it stop the new owner`() = runBlocking {
++        val output = PreviewOutputFake(); val focus = DesktopAudioFocus(output)
++        val preview = focus.port(); val formal = focus.port()
++        val path = Files.createTempFile("s3-focus-", ".mp3"); Files.write(path, fishPreviewMp3())
++        preview.play(path); formal.play(path)
++        assertFalse(preview.isPlaying()); assertTrue(formal.isPlaying())
++        preview.closeAndDrain(); assertTrue(formal.isPlaying())
++        formal.stopAndDrain(); assertFalse(output.playing)
++        focus.closeAndDrain(); assertEquals(1, output.closes)
++    }
++}
+diff --git a/app/app/src/main/java/com/example/chatbar/data/repository/VoiceMessageRepository.kt b/app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/VoiceMessageRepository.kt
+similarity index 93%
+rename from app/app/src/main/java/com/example/chatbar/data/repository/VoiceMessageRepository.kt
+rename to app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/VoiceMessageRepository.kt
+index d88e1921..582b228d 100644
+--- a/app/app/src/main/java/com/example/chatbar/data/repository/VoiceMessageRepository.kt
++++ b/app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/VoiceMessageRepository.kt
+@@ -34,7 +34,8 @@ private data class VoiceAnchorStateKey(
+ )
+ 
+ class VoiceMessageRepository(
+-    private val storage: JsonFileStorage
++    private val storage: JsonFileStorage,
++    private val strictReads: Boolean = false,
+ ) {
+     private val mutex = Mutex()
+     private val _voices = MutableStateFlow<List<GeneratedVoiceMessage>>(emptyList())
+@@ -42,11 +43,30 @@ class VoiceMessageRepository(
+     private var anchorsByVersion = emptyMap<VoiceAnchorStateKey, VoiceAnchorState>()
+     private var initialized = false
+ 
++    // Android retains its existing loading policy. Desktop opts in to complete, uncached
++    // inventories: corrupt entries can never become an empty reference set for deletion.
++    private suspend fun loadVoices(): List<GeneratedVoiceMessage> = if (!strictReads) {
++        storage.loadAll(VOICE_TYPE, GeneratedVoiceMessage.serializer())
++    } else buildList {
++        storage.visitEntitiesStrict(VOICE_TYPE, GeneratedVoiceMessage.serializer()) { id, voice ->
++            check(id == voice.id && voice.sessionId.isNotBlank() && voice.messageId.isNotBlank())
++            add(voice)
++        }
++    }
++    private suspend fun loadAnchors(): List<VoiceAnchorState> = if (!strictReads) {
++        storage.loadAll(ANCHOR_TYPE, VoiceAnchorState.serializer())
++    } else buildList {
++        storage.visitEntitiesStrict(ANCHOR_TYPE, VoiceAnchorState.serializer()) { id, state ->
++            check(id == anchorStorageId(VoiceAnchorStateKey(state.messageId, state.messageVersionId)))
++            add(state)
++        }
++    }
++
+     suspend fun initialize() {
+         mutex.withLock {
+             if (initialized) return@withLock
+-            _voices.value = storage.loadAll(VOICE_TYPE, GeneratedVoiceMessage.serializer())
+-            anchorsByVersion = storage.loadAll(ANCHOR_TYPE, VoiceAnchorState.serializer())
++            _voices.value = loadVoices()
++            anchorsByVersion = loadAnchors()
+                 .associateBy { VoiceAnchorStateKey(it.messageId, it.messageVersionId) }
+             initialized = true
+         }
+@@ -301,8 +321,8 @@ class VoiceMessageRepository(
+ 
+     private suspend fun ensureInitializedLocked() {
+         if (initialized) return
+-        _voices.value = storage.loadAll(VOICE_TYPE, GeneratedVoiceMessage.serializer())
+-        anchorsByVersion = storage.loadAll(ANCHOR_TYPE, VoiceAnchorState.serializer())
++        _voices.value = loadVoices()
++        anchorsByVersion = loadAnchors()
+             .associateBy { VoiceAnchorStateKey(it.messageId, it.messageVersionId) }
+         initialized = true
+     }
+diff --git a/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/voice/VoiceRepositoryPersistenceTest.kt b/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/voice/VoiceRepositoryPersistenceTest.kt
+new file mode 100644
+index 00000000..bc809cfb
+--- /dev/null
++++ b/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/voice/VoiceRepositoryPersistenceTest.kt
+@@ -0,0 +1,37 @@
++package com.example.chatbar.domain.voice
++
++import com.example.chatbar.data.local.JsonFileStorage
++import com.example.chatbar.data.local.entity.*
++import com.example.chatbar.data.repository.VoiceMessageRepository
++import com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy
++import java.nio.file.Files
++import kotlinx.coroutines.runBlocking
++import kotlin.test.*
++
++class VoiceRepositoryPersistenceTest {
++    @Test fun `multiple takes and alternative versions retain independent snapshots through restart and edits`() = runBlocking {
++        val root = Files.createTempDirectory("s3-official-repo-")
++        val repo = VoiceMessageRepository(JsonFileStorage(root), strictReads = true)
++        val message = MessageAlternativeVersionPolicy.normalize(ChatMessage(id = "message", sessionId = "session",
++            role = MessageRole.ASSISTANT, content = "Alice：『第一句』", alternatives = listOf("Alice：『第一句』", "Alice：『第二句』"),
++            createdAt = 1, updatedAt = 1))
++        val anchored = repo.ensureAnchors(message).first()
++        fun take() = GeneratedVoiceMessage.create("session", message.id,
++            MessageAlternativeVersionPolicy.activeVersionId(message), anchored.anchor.id, 0, "DIALOGUE", "Alice", "第一句",
++            "第一句", "第一句", "alice", "Alice", FishAudioVoiceBinding(referenceId = "old", title = "old snapshot"),
++            "s2.1-pro-free", "synthetic-owned.mp3", 100, 100)
++        val first = take(); val second = take(); repo.save(first); repo.save(second)
++        assertEquals(2, repo.listForCurrentVersion(message).size)
++        val alternative = MessageAlternativeVersionPolicy.select(message, 1)
++        assertEquals(0, repo.listForCurrentVersion(alternative).size)
++        assertEquals(2, repo.listForCurrentVersion(message).size)
++        val restarted = VoiceMessageRepository(JsonFileStorage(root), strictReads = true)
++        assertEquals(listOf(first, second).sortedBy { it.id }, restarted.listForMessage(message.id).sortedBy { it.id })
++        val edited = MessageAlternativeVersionPolicy.editCurrentContent(message, "Alice：『第一句补充』")
++        restarted.ensureAnchors(edited)
++        assertEquals(setOf(first.id, second.id), restarted.listForMessage(message.id).map { it.id }.toSet())
++        assertTrue(restarted.listForMessage(message.id).all { it.voice.referenceId == "old" })
++        restarted.deleteForSession("session")
++        assertEquals(0, VoiceMessageRepository(JsonFileStorage(root), strictReads = true).listForSession("session").size)
++    }
++}

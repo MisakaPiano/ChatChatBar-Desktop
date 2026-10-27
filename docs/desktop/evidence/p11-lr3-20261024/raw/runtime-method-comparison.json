@@ -1,0 +1,44 @@
+[
+  {
+    "ref": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/chat/SaveSlotPackageStorage.kt",
+    "method": "suspend fun validate()",
+    "sharedMethodEqual": true,
+    "officialMethodSha256": "f53813de256bc98d22be2070be2b0f0eb05e19a53363c34fdb57909cb0e386ba"
+  },
+  {
+    "ref": "b4fa75d296680f777be095f3121ad0c4db979f17",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/chat/SaveSlotPackageStorage.kt",
+    "method": "suspend fun validate()",
+    "sharedMethodEqual": true,
+    "officialMethodSha256": "f53813de256bc98d22be2070be2b0f0eb05e19a53363c34fdb57909cb0e386ba"
+  },
+  {
+    "ref": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/chat/MessageAlternativeVersionPolicy.kt",
+    "method": "fun versions(",
+    "sharedMethodEqual": true,
+    "officialMethodSha256": "3b2fe7dd1f8f709e761cf28f0bb2ca08415d17352c1896c29fe1380178823062"
+  },
+  {
+    "ref": "b4fa75d296680f777be095f3121ad0c4db979f17",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/chat/MessageAlternativeVersionPolicy.kt",
+    "method": "fun versions(",
+    "sharedMethodEqual": true,
+    "officialMethodSha256": "3b2fe7dd1f8f709e761cf28f0bb2ca08415d17352c1896c29fe1380178823062"
+  },
+  {
+    "ref": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/voice/VoiceMessageVersionPolicy.kt",
+    "method": "fun inferLegacyVersionId(",
+    "sharedMethodEqual": true,
+    "officialMethodSha256": "bda97a0c6cf6a97fba401de74b75e1a0a6d8a5cb7056f9b206741dffa36a13c1"
+  },
+  {
+    "ref": "b4fa75d296680f777be095f3121ad0c4db979f17",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/voice/VoiceMessageVersionPolicy.kt",
+    "method": "fun inferLegacyVersionId(",
+    "sharedMethodEqual": true,
+    "officialMethodSha256": "bda97a0c6cf6a97fba401de74b75e1a0a6d8a5cb7056f9b206741dffa36a13c1"
+  }
+]

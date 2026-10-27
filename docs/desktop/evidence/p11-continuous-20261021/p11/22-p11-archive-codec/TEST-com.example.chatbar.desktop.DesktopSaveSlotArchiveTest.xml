@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopSaveSlotArchiveTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-20T20:56:16.916Z" hostname="DD1" time="1.05">
+  <properties/>
+  <testcase name="official codec streams v8 and omitted images are never read" classname="com.example.chatbar.desktop.DesktopSaveSlotArchiveTest" time="0.443"/>
+  <testcase name="all legacy versions remain independent validated copies" classname="com.example.chatbar.desktop.DesktopSaveSlotArchiveTest" time="0.139"/>
+  <testcase name="compressed image is bounded JPEG and exported package keeps the same pixels" classname="com.example.chatbar.desktop.DesktopSaveSlotArchiveTest" time="0.465"/>
+  <testcase name="session restore changes only official archive settings" classname="com.example.chatbar.desktop.DesktopSaveSlotArchiveTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

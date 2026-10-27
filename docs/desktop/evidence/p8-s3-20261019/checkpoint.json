@@ -1,0 +1,17 @@
+{
+  "source": "8775d1ddc0174e40738ba24a74cacaad659d001d",
+  "sourceParent": "6968a4975fcd3da0c0a6618a600b013cc94c923c",
+  "skillFollowup": "87e50f255f8cae2c6860327e190dd802aca43bc6",
+  "realFishGET": 0,
+  "realFishTTS": 0,
+  "gui": "NOT TESTED",
+  "protected": "4 user-owned paths: unread, untouched, unstaged",
+  "limits": [
+    "S3 foundation checkpoint; app/chat wiring follows in S4/S5",
+    "No orphan sweep, no deletion on incomplete inventory",
+    "MCI legacy and 120-second/16MiB clip profile retained",
+    "Power-loss/fsync and hostile concurrent filesystem replacement not certified",
+    "Android consumers deferred to final affected-consumer gate",
+    "Initial run-stage process exit handles missing for s3-01/02/03: raw BUILD outcome and XML retained; fixed handle retention in s3-04"
+  ]
+}

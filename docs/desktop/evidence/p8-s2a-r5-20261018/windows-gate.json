@@ -1,0 +1,12 @@
+{
+  "status": "NOT_RUN",
+  "reason": "REQUIRED_BOUNDED_AUTOMATION_RED",
+  "distribution": "NOT_GENERATED",
+  "nativeWindowsLaunched": 0,
+  "frameArrivedThisRun": "NOT_ATTEMPTED",
+  "launcherExitCode": "NOT_TESTED",
+  "jvmExitCode": "NOT_TESTED",
+  "rootLockReacquisition": "NOT_TESTED",
+  "manualChecklist": "WINDOWS_MANUAL_ACCEPTANCE_CN.md",
+  "computerUse": "Initialized only; no app enumeration, capture or input"
+}

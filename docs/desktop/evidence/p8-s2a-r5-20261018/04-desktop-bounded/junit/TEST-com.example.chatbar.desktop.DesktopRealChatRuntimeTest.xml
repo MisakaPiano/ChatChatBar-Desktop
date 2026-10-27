@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopRealChatRuntimeTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:39:14.312Z" hostname="DD1" time="0.774">
+  <properties/>
+  <testcase name="blank continue resumes latest unanswered user without duplicating it" classname="com.example.chatbar.desktop.DesktopRealChatRuntimeTest" time="0.098"/>
+  <testcase name="persisted history exclusion reaches shared request policy while latest assistant stays complete" classname="com.example.chatbar.desktop.DesktopRealChatRuntimeTest" time="0.344"/>
+  <testcase name="normal turn persists durable inputs before real transport and stores raw streamed assistant" classname="com.example.chatbar.desktop.DesktopRealChatRuntimeTest" time="0.159"/>
+  <testcase name="restart blank continue uses one transient user scans worldbook and persists second assistant" classname="com.example.chatbar.desktop.DesktopRealChatRuntimeTest" time="0.173"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

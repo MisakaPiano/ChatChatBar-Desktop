@@ -1,0 +1,122 @@
+[
+  {
+    "path": "domain/memory/MemoryAiGateway.kt",
+    "originalSha256": "6c11303dab854130e19be73e601840de82763998c5faa1b2198c319c61e4fec3",
+    "sharedSha256": "005af6a7f5b975a0cf83e8eae1adf490d0241ac0c3b2ce744bf1e02f41a674a9"
+  },
+  {
+    "path": "domain/memory/LongTermMemoryService.kt",
+    "originalSha256": "1f94d90e8c028831a8166014bae0f96e4beb5024226850c49aa6d8e570ddd7b0",
+    "sharedSha256": "de3b617929608c2fde8d94cd9510da17e2efa904d71394bde2f4e416f21fc064"
+  },
+  {
+    "path": "domain/memory/MemoryAiFailurePolicy.kt",
+    "originalSha256": "451fc9d9f91c24b58a80fb013ef5bb27817a639edf69156713a8ba50bf08ac7a",
+    "sharedSha256": "117201d6cb82fd302ee805d6c9194b0efe502645841d45cd73a96d8154a91763"
+  },
+  {
+    "path": "domain/memory/MemoryArchiveInjectionPolicy.kt",
+    "originalSha256": "e1f8293cb0a9c6a57bb3ccf3808d33ef0447878941871ee843b75a223f00e6f2",
+    "sharedSha256": "246f0e103ab806b41db0b9d99fce0bf7739c24ae891d3be349616f4bf977f41b"
+  },
+  {
+    "path": "domain/memory/MemoryBackfillProgress.kt",
+    "originalSha256": "bcda645b11e5f26cace9854037046f0808e2484498659294544772d73cd1abd6",
+    "sharedSha256": "bcda645b11e5f26cace9854037046f0808e2484498659294544772d73cd1abd6"
+  },
+  {
+    "path": "domain/memory/MemoryBudgetPolicy.kt",
+    "originalSha256": "4b7bbe0fbe5baf41777ce03fe25ebe9136344c06717819f4a0c336c49ab7e5e1",
+    "sharedSha256": "4b7bbe0fbe5baf41777ce03fe25ebe9136344c06717819f4a0c336c49ab7e5e1"
+  },
+  {
+    "path": "domain/memory/MemoryCompressionDecisionPolicy.kt",
+    "originalSha256": "7a720bed0bd131582ca364f9a5357ab32271eae6565dff1acebf418c7cb65e4b",
+    "sharedSha256": "7a720bed0bd131582ca364f9a5357ab32271eae6565dff1acebf418c7cb65e4b"
+  },
+  {
+    "path": "domain/memory/MemoryCompressionPolicy.kt",
+    "originalSha256": "4fba33b481c1a3d6cfa5d12d02604918f6d4c0c328467a65b6ca4f69dad7eee7",
+    "sharedSha256": "4fba33b481c1a3d6cfa5d12d02604918f6d4c0c328467a65b6ca4f69dad7eee7"
+  },
+  {
+    "path": "domain/memory/MemoryDeletionProjectionPolicy.kt",
+    "originalSha256": "dafcc16da2ede131e072bbf3600617a3539a04f6711f174452d4bc35348fc9d4",
+    "sharedSha256": "dafcc16da2ede131e072bbf3600617a3539a04f6711f174452d4bc35348fc9d4"
+  },
+  {
+    "path": "domain/memory/MemoryEpisodeSummaryPolicy.kt",
+    "originalSha256": "349711560ddb6384740c07feb6a340ce775bd4617d702a9cd42b87e03fb29ddd",
+    "sharedSha256": "349711560ddb6384740c07feb6a340ce775bd4617d702a9cd42b87e03fb29ddd"
+  },
+  {
+    "path": "domain/memory/MemoryHeadUpdatePolicy.kt",
+    "originalSha256": "3508a20a4e44473ad562f3d2e44545b11e8d00e5ba08073442c95fd7ce1e8b30",
+    "sharedSha256": "3508a20a4e44473ad562f3d2e44545b11e8d00e5ba08073442c95fd7ce1e8b30"
+  },
+  {
+    "path": "domain/memory/MemoryIntegrityAudit.kt",
+    "originalSha256": "0a2f5604621d5b46b98a4241a0fb2baf40a0ed4675431a43a8d6edae3170fea4",
+    "sharedSha256": "0a2f5604621d5b46b98a4241a0fb2baf40a0ed4675431a43a8d6edae3170fea4"
+  },
+  {
+    "path": "domain/memory/MemoryMaintenanceMailbox.kt",
+    "originalSha256": "bdc77dd683d130f992ba15ee4fe0b2430bb850bd0534ad82cf3de4444c87f045",
+    "sharedSha256": "bc18ea7f92af718c4725ed26581c022e74326628e95d3dd44a51eef3aae58c73"
+  },
+  {
+    "path": "domain/memory/MemoryModelPreflightPolicy.kt",
+    "originalSha256": "63d455e3611a5f9b4af299f1571d2d55f6e5735deb3a29bc045b6dfdcf3b88e9",
+    "sharedSha256": "41be066f56c4330c6c8137f3bc3bb58da1e16e718dad4ba941a56edd39a68f33"
+  },
+  {
+    "path": "domain/memory/MemoryNodeRegenerationPolicy.kt",
+    "originalSha256": "7138100115775f05b92660c2b57538fca2d2b20b62dc9d5778e83ace1b048073",
+    "sharedSha256": "7138100115775f05b92660c2b57538fca2d2b20b62dc9d5778e83ace1b048073"
+  },
+  {
+    "path": "domain/memory/MemoryPageOrderPolicy.kt",
+    "originalSha256": "4270308cd888d1ca5060097c47c6bb7be70ce6b75fb47c04bed2d719a5af2978",
+    "sharedSha256": "4270308cd888d1ca5060097c47c6bb7be70ce6b75fb47c04bed2d719a5af2978"
+  },
+  {
+    "path": "domain/memory/MemoryRegenerationPolicy.kt",
+    "originalSha256": "4420525f266ef936ad37155173ec0bab7a2703d3b7c541e09262a685ea1486ec",
+    "sharedSha256": "4420525f266ef936ad37155173ec0bab7a2703d3b7c541e09262a685ea1486ec"
+  },
+  {
+    "path": "domain/memory/MemoryRevisionService.kt",
+    "originalSha256": "cb95ba8ceb0779c8e9dc661dcfa8cf8087c5625cdd00ab1e50b766caaf74d39b",
+    "sharedSha256": "cb95ba8ceb0779c8e9dc661dcfa8cf8087c5625cdd00ab1e50b766caaf74d39b"
+  },
+  {
+    "path": "domain/memory/MemorySourceRepairPolicy.kt",
+    "originalSha256": "726df21e802f449d045ccdf8d4833fbf186ebd311510fa14663e21663c7860cd",
+    "sharedSha256": "726df21e802f449d045ccdf8d4833fbf186ebd311510fa14663e21663c7860cd"
+  },
+  {
+    "path": "domain/memory/MemorySourceRepairProgress.kt",
+    "originalSha256": "eee48414aa1c5dd0503076f1401c6a799076d47cc5a0b5b1c163b8c447cb0887",
+    "sharedSha256": "eee48414aa1c5dd0503076f1401c6a799076d47cc5a0b5b1c163b8c447cb0887"
+  },
+  {
+    "path": "domain/memory/MemorySummaryPolicy.kt",
+    "originalSha256": "323c14d3271e632df4004699a52620d24f15deff02af23ddde81de0a2fec4c94",
+    "sharedSha256": "323c14d3271e632df4004699a52620d24f15deff02af23ddde81de0a2fec4c94"
+  },
+  {
+    "path": "domain/memory/MemoryTaskCommitPolicy.kt",
+    "originalSha256": "147d989d2edf3377bc16067cf30043d49877a3e549384fbf506e521f49047961",
+    "sharedSha256": "147d989d2edf3377bc16067cf30043d49877a3e549384fbf506e521f49047961"
+  },
+  {
+    "path": "data/repository/MemoryRepository.kt",
+    "originalSha256": "378c6455bb7ffac526086874541344e7e7488c8be3332e78dceb341142a35fb2",
+    "sharedSha256": "378c6455bb7ffac526086874541344e7e7488c8be3332e78dceb341142a35fb2"
+  },
+  {
+    "path": "domain/rag/RetrievalPlanner.kt",
+    "originalSha256": "7de3af7fe939d5d6d339befed2d951fe4fe331697ad98e97790cf9c4dbe26329",
+    "sharedSha256": "b8f1b9cad8ee27b1bb9671da4cc3e1897e51b379ae3e92b31678ecab2f99b110"
+  }
+]

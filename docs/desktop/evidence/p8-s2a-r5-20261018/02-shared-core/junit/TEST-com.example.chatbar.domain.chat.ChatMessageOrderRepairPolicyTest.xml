@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.chat.ChatMessageOrderRepairPolicyTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:31:19.112Z" hostname="DD1" time="0.005">
+  <properties/>
+  <testcase name="already correct timeline keeps every order key" classname="com.example.chatbar.domain.chat.ChatMessageOrderRepairPolicyTest" time="0.005"/>
+  <testcase name="repair keeps chained generated images beside their anchors" classname="com.example.chatbar.domain.chat.ChatMessageOrderRepairPolicyTest" time="0.0"/>
+  <testcase name="repair restores anchored image before later source turn" classname="com.example.chatbar.domain.chat.ChatMessageOrderRepairPolicyTest" time="0.0"/>
+  <testcase name="orphaned anchor is reported and handled conservatively" classname="com.example.chatbar.domain.chat.ChatMessageOrderRepairPolicyTest" time="0.0"/>
+  <testcase name="cyclic anchors are reported and fall back to source time order" classname="com.example.chatbar.domain.chat.ChatMessageOrderRepairPolicyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,14 @@
+{
+  "status": "R3 OFFLINE PREFLIGHT PASS / USER READY REQUIRED",
+  "source": "008343bb26d2eb76c23cae9b98132af828a9f447",
+  "packageFiles": 212,
+  "guiStarts": 0,
+  "fakeStarts": 0,
+  "realFishGET": 0,
+  "realFishTTS": 0,
+  "mockServicePathAbsent": true,
+  "typedCredentialScopes": 3,
+  "credentialsInEvidence": false,
+  "studioReadScope": "actual resolver dependency path, not Compose GUI or repaired error handling",
+  "independentSingleUseLockAbsent": true
+}

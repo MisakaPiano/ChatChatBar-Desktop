@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.ui.chat.CurrentTurnMessageOrderTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:26.511Z" hostname="DD1" time="0.014">
+  <properties/>
+  <testcase name="serializedRequestsPreserveStartEndAndBothOrderForHttpsAndLocalHttp" classname="com.example.chatbar.ui.chat.CurrentTurnMessageOrderTest" time="0.008"/>
+  <testcase name="blankContinueAfterAssistantUsesRequestOnlyContinuationPrompt" classname="com.example.chatbar.ui.chat.CurrentTurnMessageOrderTest" time="0.003"/>
+  <testcase name="blankContinueReusesLatestUserExactlyOnceInSerializedRequest" classname="com.example.chatbar.ui.chat.CurrentTurnMessageOrderTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

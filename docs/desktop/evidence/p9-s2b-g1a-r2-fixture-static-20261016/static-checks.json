@@ -1,0 +1,153 @@
+{
+  "recordedUtc": "2026-10-15T22:39:10.934906+00:00",
+  "head": "4a080b49a8c107b685f5cfb4173c3ee1972542ce",
+  "trackingFeature": "4a080b49a8c107b685f5cfb4173c3ee1972542ce",
+  "liveOriginVerifiedBeforeEdits": {
+    "feature": "4a080b49a8c107b685f5cfb4173c3ee1972542ce",
+    "desktop": "5ef95428421f7c693b010ac88f51d470804ab07a"
+  },
+  "r1SourceReconstruction": "7/7 hashes matched",
+  "sourceChangedInR2": [
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopProcessLifecycleTest.kt",
+      "additions": 146,
+      "deletions": 9
+    }
+  ],
+  "sourceUnchangedFromR1": 6,
+  "priorEvidenceUnchanged": [
+    {
+      "path": "docs/desktop/evidence/p9-s2b-g1a-startup-foundation-20261016/.gitattributes",
+      "bytes": 136,
+      "sha256": "f91fb7d7a77b59899e3e6e086ff658984ebc8627c44e4fcb9ffa33c0f9290e9c"
+    },
+    {
+      "path": "docs/desktop/evidence/p9-s2b-g1a-startup-foundation-20261016/01-g1a-focused.log",
+      "bytes": 1037,
+      "sha256": "ec6fbe9e5941a8b999ed1b4f54f3403b2fde9d7ae18201ede250a8cac5896ef4"
+    },
+    {
+      "path": "docs/desktop/evidence/p9-s2b-g1a-startup-foundation-20261016/01-interrupted-stage.json",
+      "bytes": 1829,
+      "sha256": "cd076202840d84ac0746d1896db8e7931fb0cad35dde6c0c282340cbd76b8f66"
+    },
+    {
+      "path": "docs/desktop/evidence/p9-s2b-g1a-startup-foundation-20261016/01-interrupted-stage.pre-correction.json",
+      "bytes": 1831,
+      "sha256": "dfc3531a65059a688f9bb130868dbbc2736a2aa9242a5b930d03efabaaf521b0"
+    },
+    {
+      "path": "docs/desktop/evidence/p9-s2b-g1a-startup-foundation-20261016/complete-working-tree-g1a.patch",
+      "bytes": 55314,
+      "sha256": "22ea98b74c82043a52c0cfd9be590bde78b37ce82a1117bae441068b22874f68"
+    },
+    {
+      "path": "docs/desktop/evidence/p9-s2b-g1a-startup-foundation-20261016/evidence-manifest.json",
+      "bytes": 1990,
+      "sha256": "9ef77836a39101b77a5c8a28262f5917075eabc9b586e3403ab1b69002c04eda"
+    },
+    {
+      "path": "docs/desktop/evidence/p9-s2b-g1a-startup-foundation-20261016/G1A-E1-correction-record.json",
+      "bytes": 1905,
+      "sha256": "13ebcf9642d7221daf920672d0268eae548b78a23dcfa2db987c82390d4bbd9b"
+    },
+    {
+      "path": "docs/desktop/evidence/p9-s2b-g1a-startup-foundation-20261016/git-and-scope.json",
+      "bytes": 1329,
+      "sha256": "be07fdecf844724a31bcd459ac805a667ac655318bc65854cf88162c78c72dfe"
+    },
+    {
+      "path": "docs/desktop/evidence/p9-s2b-g1a-startup-foundation-20261016/raw-copy-verification.json",
+      "bytes": 922,
+      "sha256": "aa58a64b49e31b9b4c34a4b93bd11ba631305f8805573f481f6026035a99afb6"
+    },
+    {
+      "path": "docs/desktop/evidence/p9-s2b-g1a-startup-foundation-20261016/raw-copy-verification.pre-correction.json",
+      "bytes": 907,
+      "sha256": "19fae8d4c21d2c560a0d464181fe491de63c988f2e76756b66d478706c49399d"
+    },
+    {
+      "path": "docs/desktop/evidence/p9-s2b-g1a-startup-foundation-20261016/README.md",
+      "bytes": 7706,
+      "sha256": "6f07cbb9ad1e03343f2940cd36e17a4cfe4ba43760a030afd53bc79e049fbcfa"
+    },
+    {
+      "path": "docs/desktop/evidence/p9-s2b-g1a-startup-foundation-20261016/resources.jsonl",
+      "bytes": 1015,
+      "sha256": "b2310ce1d69ee26ed485915d806685c2c437d1cab83e0804a494fd0945b30d6d"
+    },
+    {
+      "path": "docs/desktop/evidence/p9-s2b-g1a-startup-foundation-20261016/run-stage.ps1",
+      "bytes": 946,
+      "sha256": "dd6cc1a4843780d382d21aa7de123ce1384d6ccc9453cb2cb1e4fd1adf182e1d"
+    },
+    {
+      "path": "docs/desktop/evidence/p9-s2b-g1a-startup-foundation-20261016/source-manifest.json",
+      "bytes": 2787,
+      "sha256": "b7f66cc1a35500f3cfba4de5296d2b36b38bf334589a3e02b56feb3476ed1aa1"
+    },
+    {
+      "path": "docs/desktop/evidence/p9-s2b-g1a-r1-static-20261016/.gitattributes",
+      "bytes": 49,
+      "sha256": "d32c594ea9951e68b05838f0308a277258c8b7d3d021286929b86c3b689105fc"
+    },
+    {
+      "path": "docs/desktop/evidence/p9-s2b-g1a-r1-static-20261016/complete-working-tree-g1a-r1.patch",
+      "bytes": 74113,
+      "sha256": "d5061fb3f2001310370b9aee71c340418ec276305757d71fa199a5d2e8fbeb37"
+    },
+    {
+      "path": "docs/desktop/evidence/p9-s2b-g1a-r1-static-20261016/evidence-manifest.json",
+      "bytes": 1009,
+      "sha256": "3d103517ba1cc42beaf8786c3bed2d059c06d2bee5845869756d1bacffb302df"
+    },
+    {
+      "path": "docs/desktop/evidence/p9-s2b-g1a-r1-static-20261016/r1-vs-reviewed-g1a.patch",
+      "bytes": 24011,
+      "sha256": "a3485b722af4492a020c5e2fac8a4b192bf38230c1cc410f96eccefd1385fe74"
+    },
+    {
+      "path": "docs/desktop/evidence/p9-s2b-g1a-r1-static-20261016/README.md",
+      "bytes": 4216,
+      "sha256": "b0848b410e97e12ce10a51478d165a069380a3fccf3af1af5ffe3219c19dec6e"
+    },
+    {
+      "path": "docs/desktop/evidence/p9-s2b-g1a-r1-static-20261016/source-manifest.json",
+      "bytes": 5646,
+      "sha256": "5afad27f71556881044138fe835b8f719d68f2737574814ab270689733bf3c62"
+    },
+    {
+      "path": "docs/desktop/evidence/p9-s2b-g1a-r1-static-20261016/static-checks.json",
+      "bytes": 4171,
+      "sha256": "d330fecf6d5f4817ab3c04101c02144be475d361c500da24cc92d1d42cc0c431"
+    },
+    {
+      "path": "docs/desktop/evidence/p9-s2b-g1a-r1-static-20261016/TEST_PLAN.md",
+      "bytes": 2653,
+      "sha256": "08151c2e1f2eabf3a9db11c8c428d4234ba61365315cf4a1284803566aa2d3ca"
+    }
+  ],
+  "protectedRefsUnchanged": [
+    "refs/heads/desktop 4c2af2576e2319e8041ffd2a6c5a205450f18246",
+    "refs/heads/master 550409689df8c51f459fb50b4e04c8ac2fa4bf35",
+    "refs/heads/sync/1.3.49 719a7a1f639913bbc513e8d89d5866053bc0e1d3",
+    "refs/heads/sync/1.4.0 475679c23b41e5258adb56f3e4e85734ca43ccd3",
+    "refs/heads/sync/1.4.1 44418b6413460a7b40ba67dca4ac8887e37102cb",
+    "refs/heads/sync/1.4.4 9b6378dbb595dd2f3ff5143a7a8e46653c99e721",
+    "refs/remotes/origin/desktop 5ef95428421f7c693b010ac88f51d470804ab07a",
+    "refs/remotes/origin/master 550409689df8c51f459fb50b4e04c8ac2fa4bf35",
+    "refs/remotes/origin/sync/1.3.49 719a7a1f639913bbc513e8d89d5866053bc0e1d3",
+    "refs/remotes/origin/sync/1.4.0 475679c23b41e5258adb56f3e4e85734ca43ccd3",
+    "refs/remotes/origin/sync/1.4.1 44418b6413460a7b40ba67dca4ac8887e37102cb",
+    "refs/remotes/origin/sync/1.4.4 9b6378dbb595dd2f3ff5143a7a8e46653c99e721"
+  ],
+  "diffCheckExitCode": 0,
+  "compile": "NOT RUN",
+  "tests": "NOT RUN",
+  "gui": "NOT RUN",
+  "packaging": "NOT RUN",
+  "G1B": "NOT STARTED",
+  "sensitiveContentReview": "PASS: manually reviewed narrow source delta and synthetic metadata; no real user data/raw logs included; high-specificity private-key and credential scan found zero matches",
+  "skillRelevance": "Test helper-only narrow scope; no existing skill facts made stale",
+  "status": "G1A-R2 STATIC CANDIDATE / PROJECT REVIEW PENDING / BUILD BLOCKED"
+}

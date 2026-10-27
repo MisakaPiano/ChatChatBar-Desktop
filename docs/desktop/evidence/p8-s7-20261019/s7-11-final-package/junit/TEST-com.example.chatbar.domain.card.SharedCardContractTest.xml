@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.card.SharedCardContractTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-19T12:31:25.693Z" hostname="DD1" time="0.004">
+  <properties/>
+  <testcase name="png text metadata round trips package JSON semantics" classname="com.example.chatbar.domain.card.SharedCardContractTest" time="0.001"/>
+  <testcase name="character schema nine round trips current fields and embedded default format" classname="com.example.chatbar.domain.card.SharedCardContractTest" time="0.001"/>
+  <testcase name="format schemas one and two preserve defaults and ordered tools" classname="com.example.chatbar.domain.card.SharedCardContractTest" time="0.0"/>
+  <testcase name="character schemas three through eight retain legacy defaults" classname="com.example.chatbar.domain.card.SharedCardContractTest" time="0.001"/>
+  <testcase name="world book schema one and entity shape round trip" classname="com.example.chatbar.domain.card.SharedCardContractTest" time="0.001"/>
+  <testcase name="format validation is authoritative for invalid random bounds and blank strong suffix" classname="com.example.chatbar.domain.card.SharedCardContractTest" time="0.0"/>
+  <testcase name="character package rejects missing resources and filters only empty placeholders" classname="com.example.chatbar.domain.card.SharedCardContractTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

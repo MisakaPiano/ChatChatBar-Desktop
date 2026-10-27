@@ -1,0 +1,71 @@
+{
+  "utc": "2026-10-20T00:47:05.535618+00:00",
+  "packageFilesReverified": 212,
+  "packageManifestSHA256": "cd15d79587869d864ea4777aecef7a557086aa95d6838146c8f7bf83f652a7f7",
+  "R1Preserved": true,
+  "singleUseR2LockRetained": true,
+  "fixtureJson": [
+    {
+      "path": "entities/app_settings.json",
+      "unchanged": false
+    },
+    {
+      "path": "entities/character_cards/p8s7-freeform.json",
+      "unchanged": true
+    },
+    {
+      "path": "entities/character_cards/p8s7-structured.json",
+      "unchanged": true
+    },
+    {
+      "path": "entities/chat_messages/p8s7-session-a_p8s7-a-assistant.json",
+      "unchanged": true
+    },
+    {
+      "path": "entities/chat_messages/p8s7-session-a_p8s7-a-user.json",
+      "unchanged": true
+    },
+    {
+      "path": "entities/chat_messages/p8s7-session-b_p8s7-b-assistant.json",
+      "unchanged": true
+    },
+    {
+      "path": "entities/chat_messages/p8s7-session-b_p8s7-b-user.json",
+      "unchanged": true
+    },
+    {
+      "path": "entities/chat_sessions/p8s7-session-a.json",
+      "unchanged": true
+    },
+    {
+      "path": "entities/chat_sessions/p8s7-session-b.json",
+      "unchanged": true
+    },
+    {
+      "path": "entities/model_configs/p8s7-aux.json",
+      "unchanged": true
+    },
+    {
+      "path": "entities/model_configs/p8s7-chat.json",
+      "unchanged": true
+    }
+  ],
+  "formalAudioFiles": [],
+  "partFiles": [],
+  "previewFiles": [
+    "jna-49/jna18316966154765494468.dll",
+    "jna-49/jna18316966154765494468.dll.x"
+  ],
+  "fakeEventsFileExists": false,
+  "fakeRequests": 0,
+  "realFishGET": 0,
+  "realFishTTS": 0,
+  "launcherJvmExitCodes": [
+    0,
+    0
+  ],
+  "fakeExit": 0,
+  "noTlsRemains": true,
+  "manualCloseSignature": "User switched to Studio, acknowledged credential error dialog, then application exited; not main-window-X close acceptance",
+  "formalPlaybackAndPersistence": "NOT TESTED; no clip generated"
+}

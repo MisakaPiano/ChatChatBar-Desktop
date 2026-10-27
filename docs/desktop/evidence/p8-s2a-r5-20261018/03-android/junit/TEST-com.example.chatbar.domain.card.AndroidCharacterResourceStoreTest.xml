@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.card.AndroidCharacterResourceStoreTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:19.127Z" hostname="DD1" time="0.115">
+  <properties/>
+  <testcase name="materialization keeps Android absolute refs and accepts whitespace base64" classname="com.example.chatbar.domain.card.AndroidCharacterResourceStoreTest" time="0.025"/>
+  <testcase name="shared transfer core keeps Android absolute entity refs and asset materialization" classname="com.example.chatbar.domain.card.AndroidCharacterResourceStoreTest" time="0.075"/>
+  <testcase name="asset image materialization delegates to Android asset reader" classname="com.example.chatbar.domain.card.AndroidCharacterResourceStoreTest" time="0.008"/>
+  <testcase name="delete owned refuses unrelated absolute path" classname="com.example.chatbar.domain.card.AndroidCharacterResourceStoreTest" time="0.007"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

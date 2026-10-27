@@ -1,0 +1,9 @@
+{
+  "terminal": "AUTOMATED_WINDOWS_CONPTY",
+  "humanTerminal": "NOT_TESTED",
+  "promptObserved": false,
+  "passwordEchoObserved": false,
+  "exit": 2,
+  "expectedExit": 0,
+  "timeout": false
+}

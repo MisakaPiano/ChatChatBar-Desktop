@@ -1,0 +1,15 @@
+{
+  "utcRecorded": "2026-10-20T12:59:00.127725+00:00",
+  "id": "B-generated-recordings-screenshot",
+  "classification": "OBSERVED / USER HEARING NOT YET SIGNED",
+  "answer": "User supplied screenshot without additional text",
+  "file": "user-screenshots\\B-playback-user-1.png",
+  "bytes": 36907,
+  "sha256": "98a0c38f4026aad4babf340a5deb3b2886bd05e0527db33c0c8d0dfdbe10e28b",
+  "observed": [
+    "Three voice bars: Alice31s, Alice31s, Bob25s",
+    "Floating player visible in playing state",
+    "Role selector appears selected Alice"
+  ],
+  "scope": "Screenshot does not itself prove audible playback, pause or resume position; no generation retry instructed"
+}

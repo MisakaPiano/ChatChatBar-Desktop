@@ -1,0 +1,35 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.1.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+:downloadWix SKIPPED
+:unzipWix SKIPPED
+:desktopApp:checkRuntime SKIPPED
+:desktopApp:checkKotlinGradlePluginConfigurationErrors SKIPPED
+:desktopApp:convertXmlValueResourcesForMain SKIPPED
+:desktopApp:copyNonXmlValueResourcesForMain SKIPPED
+:desktopApp:prepareComposeResourcesTaskForMain SKIPPED
+:desktopApp:generateResourceAccessorsForMain SKIPPED
+:desktopApp:generateActualResourceCollectorsForMain SKIPPED
+:desktopApp:generateComposeResClass SKIPPED
+:sharedCore:checkKotlinGradlePluginConfigurationErrors SKIPPED
+:sharedCore:compileKotlin SKIPPED
+:sharedCore:compileJava SKIPPED
+:sharedCore:processResources SKIPPED
+:sharedCore:classes SKIPPED
+:sharedCore:jar SKIPPED
+:desktopApp:compileKotlin SKIPPED
+:desktopApp:compileJava SKIPPED
+:desktopApp:assembleMainResources SKIPPED
+:desktopApp:syncDesktopModelCatalogResources SKIPPED
+:desktopApp:writeDesktopBuildIdentity SKIPPED
+:desktopApp:processResources SKIPPED
+:desktopApp:classes SKIPPED
+:desktopApp:createRuntimeImage SKIPPED
+:desktopApp:jar SKIPPED
+:desktopApp:prepareAppResources SKIPPED
+:desktopApp:unpackDefaultComposeDesktopJvmApplicationResources SKIPPED
+:desktopApp:verifyDesktopInstallerIdentity SKIPPED
+:desktopApp:packageMsi SKIPPED
+:desktopApp:proguardReleaseJars SKIPPED
+:desktopApp:packageReleaseExe SKIPPED
+
+BUILD SUCCESSFUL in 14s

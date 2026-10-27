@@ -1,0 +1,24 @@
+{
+  "purpose": "Inspect-only compatibility corpus; generated from inline synthetic data, never official golden",
+  "generator": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopSaveSlotInspectorTest.kt: SyntheticSaveSlotCorpus",
+  "provenance": {
+    "SYNTHETIC": "IMPLEMENTED",
+    "OFFICIAL_EXPORTED_SYNTHETIC": "PENDING: Android exporter not executed",
+    "PRIVATE_REAL_WORLD": "NOT AUTHORIZED; no files read or uploaded"
+  },
+  "cases": [
+    {"id":"simple-text-v8", "source":"SYNTHETIC", "expected":"STRUCTURE_VALID / NOT_IMPORTED / CANNOT_RESTORE"},
+    {"id":"legacy-schema-tags-1-to-7", "source":"SYNTHETIC", "expected":"bounded recognition; not historical APK golden"},
+    {"id":"candidate-source-turn-rag-memory", "source":"SYNTHETIC", "expected":"counts and provable references; Memory semantics limited"},
+    {"id":"image-none-and-included", "source":"SYNTHETIC", "expected":"omitted references distinguished from physical media; codecs unverified"},
+    {"id":"voice-audio-and-version", "source":"SYNTHETIC", "expected":"valid relation or explicit reference failure"},
+    {"id":"truncated-corrupt-manifest-crc", "source":"SYNTHETIC", "expected":"INVALID; source bytes preserved"},
+    {"id":"duplicate-record-and-zip-identity", "source":"SYNTHETIC", "expected":"INVALID"},
+    {"id":"missing-media-and-source", "source":"SYNTHETIC", "expected":"INVALID or UNSUPPORTED, never silently skipped"},
+    {"id":"unknown-fields-and-unsafe-entry", "source":"SYNTHETIC", "expected":"UNSUPPORTED or INVALID"},
+    {"id":"large-legacy-base64-jsonl-and-compression", "source":"SYNTHETIC", "expected":"BUDGET without OOM or whole unbounded media decoding"},
+    {"id":"4097-entries-and-unknown-container", "source":"SYNTHETIC", "expected":"central-directory budget before ZipFile; no false v8 identity"},
+    {"id":"bounded-300-message-and-cancel", "source":"SYNTHETIC", "expected":"streamed validation; source hash unchanged"},
+    {"id":"native-open-picker-adapter", "source":"SYNTHETIC", "expected":"OPEN only; no SAVE/import/root writes; native window manual PENDING"}
+  ]
+}

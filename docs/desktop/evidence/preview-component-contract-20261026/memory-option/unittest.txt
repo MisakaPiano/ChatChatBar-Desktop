@@ -1,0 +1,8 @@
+test_default_memory_floor_is_preserved (test_package_resource_admission.PackageResourceAdmission) ... ok
+test_explicit_pressure_option_reports_actual_standard_gate (test_package_resource_admission.PackageResourceAdmission) ... ok
+test_memory_option_never_waives_either_disk_floor (test_package_resource_admission.PackageResourceAdmission) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.001s
+
+OK

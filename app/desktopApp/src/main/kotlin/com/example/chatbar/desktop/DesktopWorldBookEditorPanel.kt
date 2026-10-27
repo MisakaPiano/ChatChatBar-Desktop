@@ -3,6 +3,9 @@ package com.example.chatbar.desktop
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,6 +28,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -111,24 +115,8 @@ internal fun DesktopWorldBookEditorOverlay(controller: DesktopWorldBookEditorCon
             WBBoolean(t(DesktopUiText.WORLD_WHOLE), book.matchWholeWords) {
                 controller.edit { it.copy(matchWholeWords = !it.matchWholeWords) }
             }
-            WBHeading("${t(DesktopUiText.WORLD_ENTRIES)} (${book.entries.size})")
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                BootstrapButton(t(DesktopUiText.WORLD_ADD_ENTRY)) { controller.openEntry(null) }
-                BootstrapButton(t(DesktopUiText.WORLD_IMPORT_CHARACTER), secondary = true) { importOpen = true }
-            }
-            book.entries.forEachIndexed { index, entry ->
-                Column(Modifier.fillMaxWidth().border(1.dp, colors.border, RoundedCornerShape(8.dp)).padding(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                    StatusText("${index + 1}. ${entry.name.ifBlank { entry.keys.joinToString(", ") }}")
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        BootstrapButton(t(DesktopUiText.EDIT), secondary = true) { controller.openEntry(index) }
-                        BootstrapButton(t(if (entry.enabled) DesktopUiText.ON else DesktopUiText.OFF), secondary = true) {
-                            controller.toggleEntry(index)
-                        }
-                        BootstrapButton(t(DesktopUiText.DELETE), secondary = true) { deleteIndex = index }
-                    }
-                }
-            }
+            DesktopWorldBookEntries(controller, state, onImport = { importOpen = true },
+                onDelete = { deleteIndex = it })
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 BootstrapButton(t(DesktopUiText.SAVE)) { scope.launch { if (controller.save()) controller.closeClean() } }
                 BootstrapButton(t(DesktopUiText.CANCEL), secondary = true) { controller.requestLeave(controller::closeClean) }
@@ -160,6 +148,71 @@ internal fun DesktopWorldBookEditorOverlay(controller: DesktopWorldBookEditorCon
             }
         }
     } }
+}
+
+@Composable
+@OptIn(ExperimentalLayoutApi::class)
+internal fun DesktopWorldBookEntries(
+    controller: DesktopWorldBookEditorController,
+    state: DesktopWorldBookEditorState,
+    onImport: () -> Unit,
+    onDelete: (Int) -> Unit,
+) {
+    val book = state.book ?: return
+    val t = LocalDesktopUiStrings.current
+    var selecting by remember(book.id, state.draftSessionId) { mutableStateOf(false) }
+    var selected by remember(book.id, state.draftSessionId) { mutableStateOf(emptySet<String>()) }
+    val ids = book.entries.mapTo(linkedSetOf()) { it.id }
+    val validSelection = selected.intersect(ids)
+    LaunchedEffect(ids) { selected = selected.intersect(ids) }
+    val editable = state.modal == null && state.problem != WorldBookEditorProblem.SAVE_COMMITTED_WARNING
+    WBHeading("${t(DesktopUiText.WORLD_ENTRIES)} (${book.entries.size})")
+    FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (!selecting) {
+            BootstrapButton(t(DesktopUiText.WORLD_ENABLE_ALL), enabled = editable && book.entries.any { !it.enabled }) {
+                controller.setEntriesEnabled(ids, true)
+            }
+            BootstrapButton(t(DesktopUiText.WORLD_START_SELECTION), enabled = editable && ids.isNotEmpty(), secondary = true) { selecting = true }
+        } else {
+            BootstrapButton(t(DesktopUiText.WORLD_SELECT_ALL), enabled = editable, secondary = true) { selected = ids }
+            BootstrapButton(t(DesktopUiText.WORLD_INVERT_SELECTION), enabled = editable, secondary = true) { selected = ids - validSelection }
+            BootstrapButton(t(DesktopUiText.WORLD_CLEAR_SELECTION), enabled = editable && validSelection.isNotEmpty(), secondary = true) { selected = emptySet() }
+            BootstrapButton(t(DesktopUiText.WORLD_ENABLE_SELECTED), enabled = editable && validSelection.isNotEmpty()) {
+                controller.setEntriesEnabled(validSelection, true)
+            }
+            BootstrapButton(t(DesktopUiText.WORLD_DISABLE_SELECTED), enabled = editable && validSelection.isNotEmpty()) {
+                controller.setEntriesEnabled(validSelection, false)
+            }
+            BootstrapButton(t(DesktopUiText.WORLD_FINISH_SELECTION), secondary = true) { selecting = false; selected = emptySet() }
+        }
+        BootstrapButton(t(DesktopUiText.WORLD_ADD_ENTRY), enabled = editable) { controller.openEntry(null) }
+        BootstrapButton(t(DesktopUiText.WORLD_IMPORT_CHARACTER), enabled = editable, secondary = true, onClick = onImport)
+    }
+    book.entries.forEachIndexed { index, entry ->
+        Column(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp)).padding(8.dp),
+            verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            val label = "${index + 1}. ${entry.name.ifBlank { entry.keys.joinToString(", ") }}"
+            if (selecting) {
+                Row(Modifier.fillMaxWidth().toggleable(value = entry.id in validSelection, enabled = editable,
+                    role = Role.Checkbox, onValueChange = { checked ->
+                        selected = if (checked) validSelection + entry.id else validSelection - entry.id
+                    }).padding(8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    StatusText(if (entry.id in validSelection) "☑" else "☐")
+                    StatusText(label)
+                }
+            } else StatusText(label)
+            if (!entry.enabled) StatusText(t(DesktopUiText.WORLD_ENTRY_DISABLED), DesktopBootstrapColors.mutedForeground)
+            FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                BootstrapButton(t(DesktopUiText.EDIT), enabled = editable, secondary = true) { controller.openEntry(index) }
+                BootstrapButton(t(if (entry.enabled) DesktopUiText.ON else DesktopUiText.OFF), enabled = editable, secondary = true) {
+                    controller.setEntriesEnabled(setOf(entry.id), !entry.enabled)
+                }
+                BootstrapButton(t(DesktopUiText.DELETE), enabled = editable, secondary = true) { onDelete(index) }
+            }
+        }
+    }
 }
 
 @Composable

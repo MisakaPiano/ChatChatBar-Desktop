@@ -1,0 +1,27 @@
+{
+  "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt": {
+    "bytes": 35959,
+    "sha256": "fc0db7492d411d32ac5f4a64183c9239ad0dbfacee549ce72dd8a535e259b34b",
+    "gitBlob": "de5f4f4e86ad790d2f80f62153db62b8b889464d"
+  },
+  "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishAudioControllers.kt": {
+    "bytes": 4502,
+    "sha256": "32b31064d5938a7725097275c6d46e2ac30d6f2864aa9150cec12f5c1e0e4c30",
+    "gitBlob": "67ab3fda7fd44b7cde4678fcd723e6906a233095"
+  },
+  "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopNovelAiSettingsController.kt": {
+    "bytes": 4158,
+    "sha256": "a3bb8ae7b4568e1cbeb115bce771b82966a89a2c91858c82b772b0866e1c21ea",
+    "gitBlob": "27bb3e4636324e499907f9be0908382ab14aa2b2"
+  },
+  "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/DesktopRepositoryCredentialPolicies.kt": {
+    "bytes": 7980,
+    "sha256": "5c555d0eae87e01ba1f27483ef75fab1c1cff46bf17c8b360d0197e3d563a4a9",
+    "gitBlob": "89095b7c9c29bfe4ac7e885b81d2e79ea85145c0"
+  },
+  "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/security/DesktopCredentialSnapshotAdmissionTest.kt": {
+    "bytes": 8242,
+    "sha256": "ed445d530c0197a7f9fa4fc34183ba5ece594356d39f02cee1b357badf2b7f45",
+    "gitBlob": "d50966873f35e0e53a2737763fc2d57f535895a1"
+  }
+}

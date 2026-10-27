@@ -1,0 +1,31 @@
+{
+  "utc": "2026-10-20T17:38:12.448695+00:00",
+  "fixtureReady": true,
+  "sessions": 3,
+  "messages": 14,
+  "formalRecordings": 5,
+  "voiceOnlyReplies": 1,
+  "longParagraphs": 240,
+  "longProof": {
+    "voiceWidth": 640,
+    "voiceHeight": 100,
+    "longWidth": 640,
+    "longHeight": 10924,
+    "offscreenOnly": true
+  },
+  "modelJsonKeysBlank": true,
+  "actualModelPolicyHydrate": "PASS before extension; model JSON unchanged",
+  "nativeAudioPersistenceAndRepository": "PASS",
+  "independentRootLockSequence": [
+    0,
+    75,
+    0
+  ],
+  "userAuthorizationRecorded": false,
+  "guiStarts": 0,
+  "fakeStarts": 0,
+  "mockDirectoryExists": false,
+  "launchGuardExists": false,
+  "freshResourcesRecheckRequiredAtLaunch": true,
+  "manualUserResults": "NOT TESTED"
+}

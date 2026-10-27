@@ -1,0 +1,17 @@
+[
+  {
+    "commit": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/backup/AppBackupModels.kt",
+    "gitBlob": "d6e256dd3b892f570674166b5274acba492dc9b7"
+  },
+  {
+    "commit": "9841e2f216ec6de5f19ecbcdd53e9a0c0ee3ad3d",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/backup/AppBackupModels.kt",
+    "gitBlob": "44bb12c3d5297babf2c79eab215a31cce9c12ee6"
+  },
+  {
+    "commit": "b4fa75d296680f777be095f3121ad0c4db979f17",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/backup/AppBackupModels.kt",
+    "gitBlob": "44bb12c3d5297babf2c79eab215a31cce9c12ee6"
+  }
+]

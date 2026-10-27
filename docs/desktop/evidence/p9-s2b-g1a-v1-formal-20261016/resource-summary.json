@@ -1,0 +1,76 @@
+{
+  "sampleCount": 64,
+  "validSampleCount": 64,
+  "firstSample": {
+    "sample": 1,
+    "utc": "2026-10-16T04:12:06.4543858+00:00",
+    "availablePhysicalBytes": 1502314496,
+    "totalPhysicalBytes": 17122840576,
+    "committedBytes": 33529368576,
+    "commitLimitBytes": 41962708992,
+    "commitHeadroomBytes": 8433340416,
+    "pagesPerSecond": 0,
+    "pagesInputPerSecond": 0,
+    "pagesOutputPerSecond": 0,
+    "javaProcesses": []
+  },
+  "lastLoopSample": {
+    "sample": 64,
+    "utc": "2026-10-16T04:23:18.8734991+00:00",
+    "availablePhysicalBytes": 1175449600,
+    "totalPhysicalBytes": 17122840576,
+    "committedBytes": 35244470272,
+    "commitLimitBytes": 41962708992,
+    "commitHeadroomBytes": 6718238720,
+    "pagesPerSecond": 1213,
+    "pagesInputPerSecond": 1213,
+    "pagesOutputPerSecond": 0,
+    "javaProcesses": [
+      {
+        "pid": 48456,
+        "ppid": 22652,
+        "name": "java.exe",
+        "createdUtc": "2026-10-16T04:12:16.5371160Z",
+        "category": "GRADLE_BUILD",
+        "workingSetBytes": 1668141056,
+        "privateBytes": 1949978624
+      }
+    ]
+  },
+  "postExitSample": {
+    "utc": "2026-10-16T04:24:04.7682399+00:00",
+    "availablePhysicalBytes": 2891419648,
+    "commitHeadroomBytes": 8875970560,
+    "pagesPerSecond": 419,
+    "javaProcesses": []
+  },
+  "minimumAvailablePhysicalBytes": 74084352,
+  "minimumCommitHeadroomBytes": 4810063872,
+  "maximumPagesPerSecond": 21048,
+  "maximumConcurrentJavaProcesses": 3,
+  "javaProcessSampledPeaks": [
+    {
+      "pid": 56044,
+      "createdUtc": "2026-10-16T04:12:14.0818470Z",
+      "category": "GRADLE_BUILD",
+      "sampledMaxWorkingSetBytes": 126906368,
+      "sampledMaxPrivateBytes": 402694144
+    },
+    {
+      "pid": 48456,
+      "createdUtc": "2026-10-16T04:12:16.5371160Z",
+      "category": "GRADLE_BUILD",
+      "sampledMaxWorkingSetBytes": 1668141056,
+      "sampledMaxPrivateBytes": 1949978624
+    },
+    {
+      "pid": 19708,
+      "createdUtc": "2026-10-16T04:21:19.6080400Z",
+      "category": "GRADLE_BUILD",
+      "sampledMaxWorkingSetBytes": 123445248,
+      "sampledMaxPrivateBytes": 406781952
+    }
+  ],
+  "policy": "No 3/8 GiB hard gate. No memory/paging/slowdown interruption. No OOM/build failure observed. No V1D resource attribution. No user process changed.",
+  "limitations": "All extrema are sampled, not absolute peaks. Working Set aggregates can double count shared pages. Browser/NAI responsiveness not tested. Zero Java processes observed in post-exit snapshot; no process termination used."
+}

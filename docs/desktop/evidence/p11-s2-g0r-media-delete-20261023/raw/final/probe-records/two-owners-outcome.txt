@@ -1,0 +1,1 @@
+LIVE_OWNER_PROTECTED until last live reference removed

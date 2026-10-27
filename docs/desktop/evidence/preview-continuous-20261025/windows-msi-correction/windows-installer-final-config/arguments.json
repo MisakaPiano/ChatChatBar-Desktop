@@ -1,0 +1,13 @@
+[
+  "H:\\ChatChatBar-Desktop\\app\\gradlew.bat",
+  "--offline",
+  "--no-daemon",
+  "--no-configuration-cache",
+  "--no-build-cache",
+  "--max-workers=1",
+  "--console=plain",
+  "-Dorg.gradle.jvmargs=-Xmx1024m -XX:ActiveProcessorCount=2 -Dfile.encoding=UTF-8",
+  ":desktopApp:verifyDesktopInstallerIdentity",
+  "-PdesktopInstallerVersion=0.1.1002",
+  "-PdesktopPackagingProfile=synthetic"
+]

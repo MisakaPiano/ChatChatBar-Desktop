@@ -1,0 +1,18 @@
+{
+  "rawFilesVerified": 111,
+  "rawBytesVerified": 369074,
+  "finalSuites": 3,
+  "finalTests": 24,
+  "finalFailures": 0,
+  "finalErrors": 0,
+  "finalSkipped": 0,
+  "sourceBlobsVerified": 9,
+  "oldMsiPinnedIdentitiesVerified": 2,
+  "secretReview": "Selected code/synthetic outputs and known-pattern checks, not universal secret absence",
+  "installerExecuted": false,
+  "actualRegistryAccessedByGuard": false,
+  "newMsiProduced": false,
+  "pushAuthorized": false,
+  "nativeLiveAdapters": "NOT_TESTED",
+  "vmOperation": "NOT_RUN"
+}

@@ -1,0 +1,31 @@
+[
+  {
+    "stage": "01-pager-geometry-single-method",
+    "exitCode": 1,
+    "durationSeconds": 82.9205413,
+    "suiteCount": 1,
+    "totals": {
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "reportedPass": 0
+    },
+    "suites": [
+      {
+        "name": "com.example.chatbar.desktop.DesktopFishPickerNativeUxTest",
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "389e0cb1e0ca8633f59bab9e1c51f83c7ec5fed2b53904a19234eb7e45ce3868"
+      }
+    ],
+    "resources": {
+      "sampleCount": 8,
+      "minAvailableBytes": 375930880,
+      "minCommitHeadroomBytes": 14337585152,
+      "maxPagesPerSecond": 8161
+    }
+  }
+]

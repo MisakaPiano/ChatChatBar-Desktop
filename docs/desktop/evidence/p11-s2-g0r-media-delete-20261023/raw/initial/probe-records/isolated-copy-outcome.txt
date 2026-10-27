@@ -1,0 +1,1 @@
+ISOLATED_COPY_SURVIVES independent bytes only; production seal NOT_IMPLEMENTED

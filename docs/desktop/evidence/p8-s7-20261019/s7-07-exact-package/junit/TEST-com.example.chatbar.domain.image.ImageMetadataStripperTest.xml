@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.image.ImageMetadataStripperTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-19T12:01:38.645Z" hostname="DD1" time="0.064">
+  <properties/>
+  <testcase name="webpRemovesExifAndXmpWithoutChangingImagePayload" classname="com.example.chatbar.domain.image.ImageMetadataStripperTest" time="0.013"/>
+  <testcase name="jpegRemovesPrivacySegmentsAndKeepsCompressedScanByteExact" classname="com.example.chatbar.domain.image.ImageMetadataStripperTest" time="0.041"/>
+  <testcase name="pngRemovesMetadataAndKeepsImageChunksByteExact" classname="com.example.chatbar.domain.image.ImageMetadataStripperTest" time="0.01"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

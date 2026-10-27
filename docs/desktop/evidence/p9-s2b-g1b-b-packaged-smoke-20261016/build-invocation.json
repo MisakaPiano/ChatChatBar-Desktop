@@ -1,0 +1,17 @@
+{
+  "startedUtc": "2026-10-16T08:46:26.5074409+00:00",
+  "sourceHead": "5294cf4502d91f810f8ad6b2b6f7d2ae2eeccd03",
+  "productionSource": "a8990b34073647169e7e1a62b2d0e969323cddf6",
+  "arguments": [
+    "--offline",
+    "--no-daemon",
+    "--no-parallel",
+    "--max-workers=1",
+    "--priority=low",
+    "--console=plain",
+    "--no-configuration-cache",
+    "-Pkotlin.compiler.execution.strategy=in-process",
+    ":desktopApp:createDistributable"
+  ],
+  "workingDirectory": "<WORKSPACE>\\app"
+}

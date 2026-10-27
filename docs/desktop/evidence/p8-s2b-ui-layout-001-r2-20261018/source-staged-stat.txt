@@ -1,0 +1,10 @@
+ .../com/example/chatbar/desktop/DesktopAppIcons.kt |   4 +
+ .../chatbar/desktop/DesktopFishAudioPanel.kt       |  99 +-------
+ .../desktop/DesktopFishPickerPresentation.kt       | 234 +++++++++++++++++++
+ .../chatbar/desktop/DesktopFishPickerWindow.kt     |  86 +++++++
+ .../chatbar/desktop/DesktopStudioControls.kt       |   5 +-
+ .../kotlin/com/example/chatbar/desktop/Main.kt     |   1 +
+ .../chatbar/desktop/DesktopFishPickerLayoutTest.kt | 251 +++++++++++++++++++++
+ .../chatbar/desktop/DesktopFishPickerWindowTest.kt | 179 +++++++++++++++
+ .../chatbar/desktop/DesktopFishPresentationTest.kt |  22 +-
+ 9 files changed, 780 insertions(+), 101 deletions(-)

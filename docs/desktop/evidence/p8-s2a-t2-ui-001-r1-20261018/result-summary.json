@@ -1,0 +1,72 @@
+{
+  "state": "HOLD / FOCUSED RED / WINDOWS GATE NOT STARTED",
+  "suites": [
+    {
+      "file": "01-fish-settings-focused/junit/TEST-com.example.chatbar.desktop.DesktopFishAudioLibraryTest.xml",
+      "suite": "com.example.chatbar.desktop.DesktopFishAudioLibraryTest",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reportedPass": 10
+    },
+    {
+      "file": "01-fish-settings-focused/junit/TEST-com.example.chatbar.desktop.DesktopFishPresentationTest.xml",
+      "suite": "com.example.chatbar.desktop.DesktopFishPresentationTest",
+      "tests": 6,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "reportedPass": 5
+    },
+    {
+      "file": "01-fish-settings-focused/junit/TEST-com.example.chatbar.desktop.DesktopFishSettingsBindingTest.xml",
+      "suite": "com.example.chatbar.desktop.DesktopFishSettingsBindingTest",
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reportedPass": 17
+    },
+    {
+      "file": "01-fish-settings-focused/junit/TEST-com.example.chatbar.desktop.DesktopModelSettingsControllerTest.xml",
+      "suite": "com.example.chatbar.desktop.DesktopModelSettingsControllerTest",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reportedPass": 14
+    },
+    {
+      "file": "01-fish-settings-focused/junit/TEST-com.example.chatbar.desktop.DesktopSettingsCoherenceTest.xml",
+      "suite": "com.example.chatbar.desktop.DesktopSettingsCoherenceTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reportedPass": 7
+    }
+  ],
+  "total": {
+    "tests": 54,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0,
+    "reportedPass": 53
+  },
+  "resourceSamples": 9,
+  "sampleMinimumAvailableBytes": 1457692672,
+  "sampleMinimumCommitHeadroomBytes": 12871274496,
+  "sampleMaximumPagesPerSecond": 6297,
+  "oomObserved": false,
+  "desktopCompileKotlin": "PASS - EXECUTED",
+  "desktopCompileTestKotlin": "PASS - EXECUTED",
+  "sharedCoreCompileKotlin": "UP-TO-DATE",
+  "android": "NOT RUN",
+  "bounded": "NOT RUN",
+  "distribution": "NOT BUILT",
+  "windowsManual": "NOT STARTED",
+  "realFishGet": 0,
+  "realFishTts": 0,
+  "sourceCommitted": false
+}

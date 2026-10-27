@@ -1,0 +1,140 @@
+{
+  "sourceCommit": "c093aabf0d4971c4baac9c2cd8ec08837d11216d",
+  "scope": "All direct DesktopSecretStore/Fish wrapper references in current desktop main outside backup/security; static only, not global closure.",
+  "sources": [
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt",
+      "bytes": 35182,
+      "sha256": "696ab9798fb14bdcfaaaab4333e8f188aa2759fce68c436546ab9dfa634cf265",
+      "gitBlob": "f83322548c7fb362c606265526b661932a91dc8b",
+      "directReferences": [
+        15,
+        36,
+        122,
+        125
+      ]
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAutomaticChatImages.kt",
+      "bytes": 5175,
+      "sha256": "ddff6f35c0e145496aa386104266a277ea66402be4e0b26be14ec7088917573a",
+      "gitBlob": "1eace8febda4ad77d1ead7b7ffda291a4a769784",
+      "directReferences": [
+        6,
+        24
+      ]
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatImageRegeneration.kt",
+      "bytes": 11289,
+      "sha256": "1e57b1d21b3bb521d31a05be4a72ca37346251ec48511fdca723320593472721",
+      "gitBlob": "4133e6a05f8bd5cb05a9dc9921f41644da6867bf",
+      "directReferences": [
+        6,
+        30
+      ]
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoiceRuntime.kt",
+      "bytes": 12189,
+      "sha256": "87bb8038e7d4ac8d1f223c68c6bf7555a36624b362cd2f32855a49c81a6ffeaf",
+      "gitBlob": "f8459b1003714e628729a7c193ecae7806ab0893",
+      "directReferences": [
+        25
+      ]
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishAudioControllers.kt",
+      "bytes": 4209,
+      "sha256": "f229d2ba54bede04d77a4ad7309ef5377dbb32edb228a35449754577434516f1",
+      "gitBlob": "3075584f8cb2e8f43b890be3e1bfbda02fe0c4cc",
+      "directReferences": [
+        16
+      ]
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishAudioLibrary.kt",
+      "bytes": 6605,
+      "sha256": "eb868aad369670dc191a4b83a03d5c5392b789f5ffacc9797671ef800bb59b25",
+      "gitBlob": "20ce4cbfdba74f94406460d5af5d142622338b17",
+      "directReferences": [
+        4,
+        23,
+        37
+      ]
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishGenerationCoordinator.kt",
+      "bytes": 45876,
+      "sha256": "a0dfd60baed01e421452b26b10dc46cac47baf2118ae10126de6b7b2bde00a71",
+      "gitBlob": "ce4b2089a51686bbcf59ec0c0ebbda3113f12901",
+      "directReferences": [
+        112
+      ]
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPreviewTransport.kt",
+      "bytes": 5775,
+      "sha256": "cb4f27c84065c0b98a64b41a2d667a0552b623c7569c050d1522e1c4b3a2e6e1",
+      "gitBlob": "79cb7971fae75a25f0e2c0010e25219b6a251818",
+      "directReferences": [
+        18
+      ]
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishVoiceTransport.kt",
+      "bytes": 6510,
+      "sha256": "e8e772f0a72388131153465a8fddbc235d27ae57f0aef46482f7564fad513c31",
+      "gitBlob": "dc5a0dba0575c84012ceaad935f008a39d377f19",
+      "directReferences": [
+        19
+      ]
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopNovelAiGenerationRuntime.kt",
+      "bytes": 4461,
+      "sha256": "44fd47cce403929e233ce8108d857c02233f637d4c6265b32bd4c4128cb4909d",
+      "gitBlob": "e885447d6499f46d7c714a40a6233c01b8083a9c",
+      "directReferences": [
+        14
+      ]
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopNovelAiGuidance.kt",
+      "bytes": 7322,
+      "sha256": "72a8913df9762c9f9ae31d66758a2d2e211ea3134d06862be9f2d2ccc9987614",
+      "gitBlob": "7fe4bb3d5df5b32a6d5df7dfd0e24d5365db2db8",
+      "directReferences": [
+        23
+      ]
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopNovelAiPostProcessor.kt",
+      "bytes": 5439,
+      "sha256": "937add4f78ba2061f629305020ed0fb7ae15a95c9b8a6488132c5c76c20bea34",
+      "gitBlob": "ec0dbec425dfad2e46e977b86527875470022c75",
+      "directReferences": [
+        11
+      ]
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopNovelAiRuntime.kt",
+      "bytes": 5314,
+      "sha256": "49715565ed59f3b6d1a852b62d13ef01b8f01f363134b90b82534185d7bf639a",
+      "gitBlob": "f3e1b2183d9f9ebcc321852975a597271ca9e5f4",
+      "directReferences": [
+        15
+      ]
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopNovelAiSettingsController.kt",
+      "bytes": 3907,
+      "sha256": "69c938eab569e0d9a517c5043810ddf4402f43060c63bceff1aae415d6710248",
+      "gitBlob": "77d7b0d1d7e62661e82c2e92929259e9678c5aef",
+      "directReferences": [
+        6,
+        25
+      ]
+    }
+  ]
+}

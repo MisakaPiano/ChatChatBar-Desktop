@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.data.local.entity.ReplyLengthSerializationTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-19T12:31:19.109Z" hostname="DD1" time="0.008">
+  <properties/>
+  <testcase name="legacyStringValuesDecodeToBoundedAbsoluteCharacterCounts" classname="com.example.chatbar.data.local.entity.ReplyLengthSerializationTest" time="0.004"/>
+  <testcase name="numericReplyLengthRoundTripsAsJsonNumber" classname="com.example.chatbar.data.local.entity.ReplyLengthSerializationTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

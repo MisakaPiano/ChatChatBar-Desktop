@@ -1,0 +1,46 @@
+{
+  "source": "4e659a40faa8a797b426ba65248c5d9cc31ecaed",
+  "parent": "623a9b6227472c9c7a34d8f88dbc2fb544c9648d",
+  "focused": [
+    {
+      "file": "TEST-com.example.chatbar.desktop.DesktopChatVoicePresentationTest.xml",
+      "tests": 1,
+      "failures": 0,
+      "skipped": 0
+    },
+    {
+      "file": "TEST-com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest.xml",
+      "tests": 3,
+      "failures": 0,
+      "skipped": 0
+    },
+    {
+      "file": "TEST-com.example.chatbar.desktop.DesktopFishGenerationTest.xml",
+      "tests": 7,
+      "failures": 0,
+      "skipped": 0
+    },
+    {
+      "file": "TEST-com.example.chatbar.desktop.DesktopFishSettingsBindingTest.xml",
+      "tests": 17,
+      "failures": 0,
+      "skipped": 0
+    },
+    {
+      "file": "TEST-com.example.chatbar.desktop.DesktopPrimaryChatControllerTest.xml",
+      "tests": 30,
+      "failures": 0,
+      "skipped": 0
+    },
+    {
+      "file": "TEST-com.example.chatbar.desktop.DesktopVoicePersistenceTest.xml",
+      "tests": 5,
+      "failures": 0,
+      "skipped": 0
+    }
+  ],
+  "realGET": 0,
+  "realTTS": 0,
+  "gui": "NOT TESTED",
+  "protected": "4 files unread/unmodified/unstaged"
+}

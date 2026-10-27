@@ -1,0 +1,226 @@
+{
+  "algorithm": "SHA-256",
+  "selfExcluded": true,
+  "members": [
+    {
+      "path": ".gitattributes",
+      "bytes": 8,
+      "sha256": "705fd4d6451a31d36b3df7de96f83f30ac976c9b4a6d1e51671d8e2f33e2d0da"
+    },
+    {
+      "path": "01-native-method/command.txt",
+      "bytes": 273,
+      "sha256": "49ea04d15c7dd31360f2785e256ded3dcd5201aec33381c58a83a283180f5d45"
+    },
+    {
+      "path": "01-native-method/gradle.stderr.log",
+      "bytes": 378,
+      "sha256": "808b9c37780b6e0d0bbbecbe61b3433d2c49544c7b723cb24d63af4f45bf0f71"
+    },
+    {
+      "path": "01-native-method/gradle.stdout.log",
+      "bytes": 2439,
+      "sha256": "7e791c8fbee96779ec328646f97b84c524691bd85a22583b739f165288d3c462"
+    },
+    {
+      "path": "01-native-method/junit/TEST-com.example.chatbar.desktop.DesktopFishPickerNativeUxTest.xml",
+      "bytes": 33572,
+      "sha256": "92ba25096fd39a87d3f6d580efb95d96bbb9cf43c752bf27376e88edd40084be"
+    },
+    {
+      "path": "01-native-method/process.json",
+      "bytes": 110,
+      "sha256": "58bf0f0f915b086f05ced41fa6d2d4f373a577cd0a33658fc291a51ef44eab4c"
+    },
+    {
+      "path": "01-native-method/resources.jsonl",
+      "bytes": 2560,
+      "sha256": "6354159a4a9e7c6cdb9b30d4e7232ec97559d6df9f81f662af7e8e92b6f9a689"
+    },
+    {
+      "path": "01-native-method/stage.json",
+      "bytes": 686,
+      "sha256": "a0c82160c3cce9c3e6e7fa4303b131b29c49725354e6ca8140893c4a1901948b"
+    },
+    {
+      "path": "A-preflight.json",
+      "bytes": 3689,
+      "sha256": "96d8aa86c750e1be9e34e24bf0cb543cd56edbb88e55adec2306e17ed0c3ba03"
+    },
+    {
+      "path": "alternative-validation-proposal.json",
+      "bytes": 825,
+      "sha256": "468cdf159d7a35a80c783d55732730c3b203bc41dc092c231fc263c3e27c69da"
+    },
+    {
+      "path": "api-use-basis.json",
+      "bytes": 989,
+      "sha256": "3d856997d3027db9e2751f85044302f2e6bcf2449bfbacd626fe2d084b010f1d"
+    },
+    {
+      "path": "baseline-sources/DesktopFishPickerNativeUxTest.kt",
+      "bytes": 49505,
+      "sha256": "8beee5971355cd894b44a4743f89b6ad857c342274ae8410cfab5e99a3bbb423"
+    },
+    {
+      "path": "baseline-sources/DesktopFishPickerPresentation.kt",
+      "bytes": 17883,
+      "sha256": "194d6b7fd2e270ca29eb90734303c8a7898825ecf8939cc60ab266e8d16c4917"
+    },
+    {
+      "path": "baseline-sources/DesktopFishPickerWindow.kt",
+      "bytes": 4280,
+      "sha256": "a003e7ad1e31a0c356df1a4291cc7eb1e4eb9fa958a0a6353ee6a77ac8f88125"
+    },
+    {
+      "path": "closing-state.json",
+      "bytes": 1056,
+      "sha256": "de9ccf5c597023160e2e00428c02ffa4a854776a5c8520d4ad364820bd162fbb"
+    },
+    {
+      "path": "collect-evidence.py",
+      "bytes": 4708,
+      "sha256": "77db9a1557e7c52f6d7d8a5f05d8a35e3c6b96b057204af59ad580420882c6ef"
+    },
+    {
+      "path": "diff-check-raw.log",
+      "bytes": 390,
+      "sha256": "1b5a8c0e80c3a75ad7124f4c79357d466acd70756903a7c68afb5916460baacc"
+    },
+    {
+      "path": "failures.json",
+      "bytes": 3053,
+      "sha256": "6c20a3624e5f3975aa4a61ba797ee141fa916bcb6ceed3f7d7b305c7ac173b7e"
+    },
+    {
+      "path": "history-preservation.json",
+      "bytes": 2362,
+      "sha256": "ddd4358368ff8b69ad323453aef46391b89a019ff03241cebd6bbc1bcf35c16b"
+    },
+    {
+      "path": "input-target-observations.json",
+      "bytes": 3540,
+      "sha256": "5c64c0da07e7ee7e7cc8c29459ff4e1c45d5fcf507ba46eef39d2f27853acd23"
+    },
+    {
+      "path": "jna-artifact-identities.json",
+      "bytes": 342,
+      "sha256": "91eeb0e22ba1bbb9f95ac3d8a5df61d35ca0aa816effe2343e3eaf0b41ce7f8e"
+    },
+    {
+      "path": "jna-public-api.txt",
+      "bytes": 764,
+      "sha256": "f429e80694b78480edea6d66cef6f636e88e45352274d5333a88de3da2f41586"
+    },
+    {
+      "path": "junit-ledger.json",
+      "bytes": 1230,
+      "sha256": "cb628f9568d0be0c9bb694aef576f366970d6a96169b4f5f7225a24fa3fa3f52"
+    },
+    {
+      "path": "native-hit-test-only.patch",
+      "bytes": 13208,
+      "sha256": "269abbe315f10202acebf7f2360026d44abb766995d7f8a70189cf51d2c54b31"
+    },
+    {
+      "path": "native-system-out.txt",
+      "bytes": 30294,
+      "sha256": "ad29623d74c66b18dfe65a8c867a1540e390c5c151c79d66eeb91b96dc43768b"
+    },
+    {
+      "path": "POST-preflight.json",
+      "bytes": 3693,
+      "sha256": "01263ee2d36675abca80675f19597550da154e8c44c87cfd3ee4b0f20c0bc98b"
+    },
+    {
+      "path": "preflight.ps1",
+      "bytes": 2640,
+      "sha256": "f1b6447fb789dabd4d80e3600be50cd5a81e752d43d1d8538832cd6be87fa760"
+    },
+    {
+      "path": "r6h-metadata.py",
+      "bytes": 10372,
+      "sha256": "8074a70ef8926f52b562dfb1508668f69660ca562da5cbd033142dd9b1a2f4c4"
+    },
+    {
+      "path": "reachability-and-cleanup.json",
+      "bytes": 2690,
+      "sha256": "e2bc724be8b722a0ccb72c823b712dd3f6c8b8f1f23280f7674ec8436cf10088"
+    },
+    {
+      "path": "README.md",
+      "bytes": 10590,
+      "sha256": "7ce1c3f5dffd172d1557493058aa20815b1807f866a5f042388a7c898daf3a36"
+    },
+    {
+      "path": "run-stage.ps1",
+      "bytes": 3081,
+      "sha256": "f7dbfe555dd26eddcfe2a99378e1df1f4906ebd93a6d505a0b3e36c95a4249a4"
+    },
+    {
+      "path": "scope-and-skill-review.json",
+      "bytes": 1034,
+      "sha256": "6e014874f92fd250f311d6a38f33c5051eb5aec7759bcea41484951a255184bb"
+    },
+    {
+      "path": "skipped-tests.json",
+      "bytes": 4,
+      "sha256": "a5338d955b09046ec0b16f3a9625b7955c763aae07dc722e474e6078745f932f"
+    },
+    {
+      "path": "source-baseline-and-tested.json",
+      "bytes": 1162,
+      "sha256": "84090e05a943b6e5a1882419bb5674be18fb9148ae899f5603b31a8194925e30"
+    },
+    {
+      "path": "source-diff-identity.json",
+      "bytes": 523,
+      "sha256": "2c3328bfaf8289d8ce1c2d309e7b31e89730370c4f949653ee0460097650c98a"
+    },
+    {
+      "path": "source-identities.json",
+      "bytes": 982,
+      "sha256": "3b0106214c42daaa21270cc82561e0ddf8d26540a5e3853f1d53f87045799c9c"
+    },
+    {
+      "path": "stage-summary.json",
+      "bytes": 728,
+      "sha256": "0434b168ad9cffd4ce2f7ad47440489beb142801ddd99b98e62443aadbdf5b64"
+    },
+    {
+      "path": "static-validation.json",
+      "bytes": 298,
+      "sha256": "004620ba355e301fb94a62f6f1c38b95c7d2992f56ddb52c37c5c5e2a18fcd78"
+    },
+    {
+      "path": "summarize-stages.py",
+      "bytes": 1543,
+      "sha256": "8e030610b413759836e6ee3f637f119793141319ba380a9749616c4889dc74ac"
+    },
+    {
+      "path": "tested-sources/DesktopFishPickerNativeUxTest.kt",
+      "bytes": 57912,
+      "sha256": "933d8e8f6e20ce83fe5d61e66f57f925b6f133b090b4d75ba776a873c5f26bb8"
+    },
+    {
+      "path": "tested-sources/DesktopFishPickerPresentation.kt",
+      "bytes": 17883,
+      "sha256": "194d6b7fd2e270ca29eb90734303c8a7898825ecf8939cc60ab266e8d16c4917"
+    },
+    {
+      "path": "tested-sources/DesktopFishPickerWindow.kt",
+      "bytes": 4280,
+      "sha256": "a003e7ad1e31a0c356df1a4291cc7eb1e4eb9fa958a0a6353ee6a77ac8f88125"
+    },
+    {
+      "path": "verify-evidence.py",
+      "bytes": 3580,
+      "sha256": "866367a3afb803ddf0c6ede597e6ff0c65ba87ed03ef41bfb9774b3e5fc49ede"
+    },
+    {
+      "path": "win32-hit-test-raw.jsonl",
+      "bytes": 919,
+      "sha256": "8e35cf60542b3113943a81510bc8945871efeb19156c74abf586c055f45d61bf"
+    }
+  ]
+}

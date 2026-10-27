@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopHistoricalSaveSlotProcessTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-25T02:51:20.123Z" hostname="DD1" time="14.163">
+  <properties/>
+  <testcase name="cancelledOriginalPackageCustodyRemainsInertAndSourceUnchanged" classname="com.example.chatbar.desktop.DesktopHistoricalSaveSlotProcessTest" time="0.154"/>
+  <testcase name="historyCustodyIsExplicitAndReportsCountWithoutGrantingRestorePermission" classname="com.example.chatbar.desktop.DesktopHistoricalSaveSlotProcessTest" time="0.007"/>
+  <testcase name="historicalRecordingSurvivesActualImportRestoreProcessExitReopenAndExport" classname="com.example.chatbar.desktop.DesktopHistoricalSaveSlotProcessTest" time="7.528"/>
+  <testcase name="historicalModeStillRefusesMissingOwnerSessionAudioBlankIdentityAndWrongLength" classname="com.example.chatbar.desktop.DesktopHistoricalSaveSlotProcessTest" time="0.041"/>
+  <testcase name="foreignRestoreGetsIndependentMessageAndAnchorIdentitiesWithoutChangingOriginalSession" classname="com.example.chatbar.desktop.DesktopHistoricalSaveSlotProcessTest" time="5.345"/>
+  <testcase name="custodyKeepsLegacyOriginalBytesAndUsesPackageResourceIdentityRatherThanExtension" classname="com.example.chatbar.desktop.DesktopHistoricalSaveSlotProcessTest" time="1.088"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

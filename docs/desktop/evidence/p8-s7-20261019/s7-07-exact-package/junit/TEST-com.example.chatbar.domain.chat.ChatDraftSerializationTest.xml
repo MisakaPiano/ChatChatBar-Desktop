@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.chat.ChatDraftSerializationTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-19T12:01:27.879Z" hostname="DD1" time="0.0">
+  <properties/>
+  <testcase name="draft round trips by session id" classname="com.example.chatbar.domain.chat.ChatDraftSerializationTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

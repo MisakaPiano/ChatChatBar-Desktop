@@ -1,0 +1,50 @@
+{
+  "historical-slot-backup-graph-red-20261025": {
+    "exit": 1,
+    "suites": 1,
+    "tests": 1,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "historical-slot-backup-graph-first-20261025": {
+    "exit": 0,
+    "suites": 4,
+    "tests": 31,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "historical-slot-custody-final-20261025": {
+    "exit": 0,
+    "suites": 5,
+    "tests": 37,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "historical-slot-custody-delivery-20261025": {
+    "exit": 1,
+    "suites": 4,
+    "tests": 40,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "historical-slot-legacy-length-red-20261025": {
+    "exit": 1,
+    "suites": 1,
+    "tests": 1,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "historical-slot-custody-complete-20261025": {
+    "exit": 0,
+    "suites": 8,
+    "tests": 73,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

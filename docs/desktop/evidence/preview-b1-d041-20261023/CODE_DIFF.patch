@@ -1,0 +1,118 @@
+diff --git a/.agents/skills/chatbar-app-update/SKILL.md b/.agents/skills/chatbar-app-update/SKILL.md
+index f3519713..1a3e0a7d 100644
+--- a/.agents/skills/chatbar-app-update/SKILL.md
++++ b/.agents/skills/chatbar-app-update/SKILL.md
+@@ -69,3 +69,4 @@ Workflow increments Android `versionCode`, commits version metadata, tags `v<ver
+ - `DesktopUpdatePanel` in Data shows version/commit, channel, date, notes and browser handoff. It performs no automatic startup request, download, install or restart. Missing notes remain visibly missing; HTTP/metadata errors remain errors.
+ - Desktop build identity is generated into `desktop-build.properties`; `desktopVersion` is independent of Android and its numeric core supplies the native package version. Engineering packaging is not publication.
+ - `DesktopUpdateCheckerTest` uses loopback only. Actual network attempts are limited per check, including HTTP 503/408 follow-ups; credentials are never injected. Native installer upgrade/data-retention acceptance remains a separate Preview Gate.
++- Desktop release metadata rejects malformed UTF-8 and coerced JSON field types; channel flags must be booleans and identity/notes fields strings (missing/null notes stay visibly absent).
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopUpdateChecker.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopUpdateChecker.kt
+index f78ca968..6fee7373 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopUpdateChecker.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopUpdateChecker.kt
+@@ -48,21 +48,31 @@ internal object DesktopUpdatePolicy {
+     fun select(bytes: ByteArray, installed: String, includePreview: Boolean): DesktopUpdateResult {
+         require(bytes.size <= MAX_BYTES)
+         val current = DesktopReleaseVersion.parse(installed)
+-        val entries = Json.parseToJsonElement(bytes.toString(Charsets.UTF_8)).jsonArray
++        val text = Charsets.UTF_8.newDecoder()
++            .onMalformedInput(java.nio.charset.CodingErrorAction.REPORT)
++            .onUnmappableCharacter(java.nio.charset.CodingErrorAction.REPORT)
++            .decode(java.nio.ByteBuffer.wrap(bytes)).toString()
++        val entries = Json.parseToJsonElement(text).jsonArray
+         require(entries.size <= 100)
+         val releases = entries.mapNotNull { entry ->
+             val obj = entry.jsonObject
+-            if (obj.getValue("draft").jsonPrimitive.boolean) return@mapNotNull null
+-            val tag = obj.getValue("tag_name").jsonPrimitive.content
++            fun boolean(key: String): Boolean = obj.getValue(key).jsonPrimitive.let {
++                require(!it.isString); requireNotNull(it.booleanOrNull)
++            }
++            fun string(key: String): String = obj.getValue(key).jsonPrimitive.let {
++                require(it.isString); it.content
++            }
++            if (boolean("draft")) return@mapNotNull null
++            val tag = string("tag_name")
+             if (!tag.startsWith(TAG_PREFIX)) return@mapNotNull null // Android/inherited tags are not Desktop versions.
+             val version = tag.removePrefix(TAG_PREFIX)
+             val parsed = DesktopReleaseVersion.parse(version)
+-            val preview = obj.getValue("prerelease").jsonPrimitive.boolean
++            val preview = boolean("prerelease")
+             require(preview == parsed.preview.isNotEmpty()) { "INCONSISTENT_RELEASE_CHANNEL" }
+-            val url = obj.getValue("html_url").jsonPrimitive.content
++            val url = string("html_url")
+             require(trustedPage(url, version)) { "UNTRUSTED_RELEASE_PAGE" }
+-            val published = Instant.parse(obj.getValue("published_at").jsonPrimitive.content)
+-            val notes = obj["body"]?.jsonPrimitive?.contentOrNull.orEmpty()
++            val published = Instant.parse(string("published_at"))
++            val notes = if (obj["body"] == null || obj["body"] == JsonNull) "" else string("body")
+             require(notes.length <= 128 * 1024 && notes.none { it.code < 32 && it !in "\n\r\t" })
+             if (!includePreview && preview) null else DesktopRelease(version, published, notes, url, preview)
+         }
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopUpdateCheckerTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopUpdateCheckerTest.kt
+index f06e0151..d6162ee8 100644
+--- a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopUpdateCheckerTest.kt
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopUpdateCheckerTest.kt
+@@ -6,6 +6,61 @@ import okhttp3.mockwebserver.*
+ import kotlin.test.*
+ 
+ class DesktopUpdateCheckerTest {
++    @Test fun `B1 string flags and non string notes are invalid metadata`() {
++        val valid = release("0.2.0", false)
++        for ((key, value) in listOf("draft" to JsonPrimitive("false"), "prerelease" to JsonPrimitive("false"), "body" to JsonPrimitive(123))) {
++            assertFails { DesktopUpdatePolicy.select(body(JsonObject(valid + (key to value))), "0.1.0", true) }
++        }
++    }
++    @Test fun `B1 malformed UTF8 cannot become valid release notes`() {
++        val valid = body(release("0.2.0", false)).toString(Charsets.UTF_8).replace("Synthetic release notes", "X")
++        val bytes = valid.toByteArray(); bytes[valid.indexOf("X")] = 0xff.toByte()
++        assertFails { DesktopUpdatePolicy.select(bytes, "0.1.0", true) }
++    }
++    @Test fun `B1 timeout offline and cancellation remain failures`() = runBlocking {
++        val client = okhttp3.OkHttpClient.Builder().callTimeout(250, java.util.concurrent.TimeUnit.MILLISECONDS).build()
++        MockWebServer().use { server ->
++            server.start(); server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.NO_RESPONSE))
++            assertFails { DesktopUpdateChecker(client, server.url("/").toString()).check("0.1.0", true) }
++            assertEquals(1, server.requestCount)
++        }
++        MockWebServer().use { server ->
++            server.start(); val url = server.url("/").toString(); server.shutdown()
++            assertFails { DesktopUpdateChecker(client, url).check("0.1.0", true) }
++        }
++        MockWebServer().use { server ->
++            server.start(); server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.NO_RESPONSE))
++            val worker = async { DesktopUpdateChecker(endpoint = server.url("/").toString()).check("0.1.0", true) }
++            withContext(Dispatchers.IO) { assertNotNull(server.takeRequest(3, java.util.concurrent.TimeUnit.SECONDS)) }
++            withTimeout(3000) { worker.cancelAndJoin() }
++            assertTrue(worker.isCancelled); assertEquals(1, server.requestCount)
++        }
++    }
++    @Test fun `B1 chunked oversized response and retry followups stay bounded`() = runBlocking {
++        MockWebServer().use { server ->
++            server.start()
++            server.enqueue(MockResponse().setChunkedBody("x".repeat(DesktopUpdatePolicy.MAX_BYTES + 1), 4096))
++            val checker = DesktopUpdateChecker(endpoint = server.url("/").toString())
++            assertFails { checker.check("0.1.0", true) }
++            server.enqueue(MockResponse().setResponseCode(408))
++            assertFails { checker.check("0.1.0", true) }
++            server.enqueue(MockResponse().setBody("[]"))
++            val next = checker.check("0.1.0", true); assertNull(next.latest); assertFalse(next.newer)
++            assertEquals(3, server.requestCount)
++            repeat(3) {
++                val request = server.takeRequest(); assertEquals("GET", request.method)
++                assertNull(request.getHeader("Authorization")); assertNull(request.getHeader("Cookie")); assertEquals(0, request.bodySize)
++            }
++        }
++    }
++    @Test fun `B1 exact trusted browser URL excludes query fragment encoding ports and schemes`() {
++        for (url in listOf("javascript:alert(1)", "file:///C:/test", "https://github.com:443/${DesktopUpdatePolicy.REPOSITORY}/releases/tag/desktop-v0.2.0",
++            "https://github.com/${DesktopUpdatePolicy.REPOSITORY}/releases/tag/desktop-v0.2.0?x=1", "https://github.com/${DesktopUpdatePolicy.REPOSITORY}/releases/tag/desktop-v0.2.0#x",
++            "https://github.com/${DesktopUpdatePolicy.REPOSITORY}/releases/tag/desktop-v0%2e2%2e0")) assertFalse(DesktopUpdatePolicy.trustedPage(url, "0.2.0"))
++        val noNotes = JsonObject(release("0.2.0", false) - "body")
++        assertEquals("", DesktopUpdatePolicy.select(body(noNotes), "0.1.0", false).latest!!.notes)
++        assertFails { DesktopUpdatePolicy.select(body(JsonObject(release("0.2.0", false) + ("published_at" to JsonPrimitive("bad")))), "0.1.0", true) }
++    }
+     private fun release(version: String, preview: Boolean, url: String = "https://github.com/${DesktopUpdatePolicy.REPOSITORY}/releases/tag/desktop-v$version",
+         tag: String = "desktop-v$version", draft: Boolean = false) = buildJsonObject {
+         put("tag_name", tag); put("draft", draft); put("prerelease", preview); put("html_url", url)

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopDataDirectoryTest" tests="13" skipped="0" failures="0" errors="0" timestamp="2026-10-18T13:43:19.459Z" hostname="DD1" time="0.195">
+  <properties/>
+  <testcase name="invalid Portable authority never falls through to bootstrap" classname="com.example.chatbar.desktop.DesktopDataDirectoryTest" time="0.007"/>
+  <testcase name="relocated application image gets a fresh pending authority without writes" classname="com.example.chatbar.desktop.DesktopDataDirectoryTest" time="0.092"/>
+  <testcase name="missing bootstrap preserves exact LOCALAPPDATA default without writes" classname="com.example.chatbar.desktop.DesktopDataDirectoryTest" time="0.001"/>
+  <testcase name="relative CLI override is rejected without reading or writing bootstrap" classname="com.example.chatbar.desktop.DesktopDataDirectoryTest" time="0.002"/>
+  <testcase name="CLI override wins without inspecting invalid Portable authority" classname="com.example.chatbar.desktop.DesktopDataDirectoryTest" time="0.001"/>
+  <testcase name="read only CLI precedence bypasses malformed portable and bootstrap" classname="com.example.chatbar.desktop.DesktopDataDirectoryTest" time="0.007"/>
+  <testcase name="read only selection preserves default bootstrap custom and invalid authority behavior" classname="com.example.chatbar.desktop.DesktopDataDirectoryTest" time="0.023"/>
+  <testcase name="missing bootstrap preserves user home AppData Local fallback" classname="com.example.chatbar.desktop.DesktopDataDirectoryTest" time="0.0"/>
+  <testcase name="no marker and unpackaged development both allow bootstrap resolution" classname="com.example.chatbar.desktop.DesktopDataDirectoryTest" time="0.004"/>
+  <testcase name="portable selection is pending without a probe and invalid portable never falls back" classname="com.example.chatbar.desktop.DesktopDataDirectoryTest" time="0.03"/>
+  <testcase name="malformed packaged ApplicationHome fails before bootstrap" classname="com.example.chatbar.desktop.DesktopDataDirectoryTest" time="0.002"/>
+  <testcase name="Portable wins over bootstrap CUSTOM and leaves bootstrap unchanged" classname="com.example.chatbar.desktop.DesktopDataDirectoryTest" time="0.02"/>
+  <testcase name="CLI override has highest precedence and is not persisted" classname="com.example.chatbar.desktop.DesktopDataDirectoryTest" time="0.005"/>
+  <system-out><![CDATA[G1A_READ_ONLY original-home entries=5 unchanged=true
+G1A_READ_ONLY moved-home entries=5 unchanged=true
+G1A_READ_ONLY bad-application-home entries=5 unchanged=true
+G1A_READ_ONLY cli-precedence entries=3 unchanged=true
+G1A_READ_ONLY relative-cli entries=3 unchanged=true
+G1A_READ_ONLY bootstrap-missing entries=3 unchanged=true
+G1A_READ_ONLY bootstrap-default entries=4 unchanged=true
+G1A_READ_ONLY bootstrap-custom entries=4 unchanged=true
+G1A_READ_ONLY bootstrap-invalid entries=4 unchanged=true
+G1A_READ_ONLY portable-valid entries=6 unchanged=true
+G1A_READ_ONLY portable-invalid-marker entries=6 unchanged=true
+G1A_READ_ONLY portable-missing-userdata entries=5 unchanged=true
+G1A_READ_ONLY portable-file-userdata entries=6 unchanged=true
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

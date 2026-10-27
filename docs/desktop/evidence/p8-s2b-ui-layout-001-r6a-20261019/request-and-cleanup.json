@@ -1,0 +1,17 @@
+{
+  "realFishGet": 0,
+  "realFishTts": 0,
+  "mockHttp": 0,
+  "catalogCalls": 0,
+  "bindings": 0,
+  "fixtureStarted": false,
+  "fixtureRootCreated": false,
+  "nativeWindowsOpened": false,
+  "audioCreated": false,
+  "launcher": "NOT STARTED",
+  "applicationJvm": "NOT STARTED",
+  "rootLock": "NOT TESTED",
+  "fakeService": "NOT STARTED",
+  "postStageJavaProcessCount": 0,
+  "cleanup": "No fixture I/O lifecycle was entered; Gradle command completed exit1; post-stage Java/javaw inventory empty"
+}

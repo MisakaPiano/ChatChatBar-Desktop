@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.P11S2OwnedMediaSafetyProbeTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-10-22T20:03:21.268Z" hostname="DD1" time="3.211">
+  <properties/>
+  <testcase name="last of two live owners must release image before GC removes it" classname="com.example.chatbar.desktop.P11S2OwnedMediaSafetyProbeTest" time="0.691"/>
+  <testcase name="repeated exact cleanup is idempotent for duplicate and already absent candidates" classname="com.example.chatbar.desktop.P11S2OwnedMediaSafetyProbeTest" time="0.04"/>
+  <testcase name="unlink failure can follow a completed unlink without rollback while sealed copy survives" classname="com.example.chatbar.desktop.P11S2OwnedMediaSafetyProbeTest" time="0.055"/>
+  <testcase name="live message retains candidate until its image reference is removed" classname="com.example.chatbar.desktop.P11S2OwnedMediaSafetyProbeTest" time="0.044"/>
+  <testcase name="isolated physical copy survives GC deletion of live original" classname="com.example.chatbar.desktop.P11S2OwnedMediaSafetyProbeTest" time="0.033"/>
+  <testcase name="hidden media is skipped although normal media and export succeed" classname="com.example.chatbar.desktop.P11S2OwnedMediaSafetyProbeTest" time="1.917"/>
+  <testcase name="corrupt authority prevents cleanup of every candidate" classname="com.example.chatbar.desktop.P11S2OwnedMediaSafetyProbeTest" time="0.051"/>
+  <testcase name="resource unlink primitive has no live reference fence and independent copy survives" classname="com.example.chatbar.desktop.P11S2OwnedMediaSafetyProbeTest" time="0.027"/>
+  <testcase name="external manifest alone cannot retain live candidate and is not itself a candidate" classname="com.example.chatbar.desktop.P11S2OwnedMediaSafetyProbeTest" time="0.02"/>
+  <testcase name="cancel while real cleanup waits for maintenance leaves media intact" classname="com.example.chatbar.desktop.P11S2OwnedMediaSafetyProbeTest" time="0.095"/>
+  <testcase name="unknown top level copy namespace blocks full backup instead of partial success" classname="com.example.chatbar.desktop.P11S2OwnedMediaSafetyProbeTest" time="0.04"/>
+  <testcase name="registered normal media enters authenticated full backup with exact fake bytes" classname="com.example.chatbar.desktop.P11S2OwnedMediaSafetyProbeTest" time="0.197"/>
+  <system-out><![CDATA[G0R two-owners SYNTHETIC_RUNTIME_OBSERVED LIVE_OWNER_PROTECTED until last live reference removed
+G0R repeated-cleanup SYNTHETIC_RUNTIME_OBSERVED EXACT_CLEANUP_IDEMPOTENT NOT pending-deletion retry proof
+G0R partial-unlink SYNTHETIC_RUNTIME_OBSERVED OBSERVED_NONATOMIC_EXACT_CLEANUP stage=DELETE_OWNED_TYPE_CHECK ISOLATED_COPY_SURVIVES; not crash/queue proof
+G0R live-owner SYNTHETIC_RUNTIME_OBSERVED LIVE_OWNER_PROTECTED -> CANDIDATE_DELETED after durable reference removal
+G0R isolated-copy SYNTHETIC_RUNTIME_OBSERVED ISOLATED_COPY_SURVIVES independent bytes only; production seal NOT_IMPLEMENTED
+G0R backup-hidden SYNTHETIC_RUNTIME_OBSERVED OBSERVED_UNSAFE_CURRENT_BEHAVIOR SKIPPED hidden bytes absent from successful archive; normal=KNOWN_INCLUDED
+G0R corrupt-authority SYNTHETIC_RUNTIME_OBSERVED FAIL_CLOSED stage=REFERENCE_PARSE ALL_CANDIDATES_RETAINED
+G0R unlink-primitive SYNTHETIC_RUNTIME_OBSERVED DELETE_OWNED_IS_PRIMITIVE no reference scan; NOT a pending queue execution
+G0R external-only SYNTHETIC_RUNTIME_OBSERVED OBSERVED_UNSAFE_CURRENT_BEHAVIOR S2_DOMAIN_UNPROTECTED manifest survives, referenced image deleted
+G0R cancel-cleanup SYNTHETIC_RUNTIME_OBSERVED CANCELLED_BEFORE_EXCLUSIVE media unchanged; NOT pending-deletion cancellation proof
+G0R backup-unknown SYNTHETIC_RUNTIME_OBSERVED REJECTED UNCLASSIFIED_ROOT_ENTRY NEEDS_ADAPTER no archive produced
+G0R backup-registered SYNTHETIC_RUNTIME_OBSERVED KNOWN_INCLUDED authenticated inventory and bytes; fake media decode/restore NOT_TESTED
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

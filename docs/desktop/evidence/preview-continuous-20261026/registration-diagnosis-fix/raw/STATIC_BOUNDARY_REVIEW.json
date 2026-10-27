@@ -1,0 +1,20 @@
+{
+  "modifiedExistingFunctions": [
+    "repair_registration"
+  ],
+  "newFunctions": [
+    "assert_repair_success",
+    "registration_diagnosis",
+    "registration_states"
+  ],
+  "allOtherProbeActionsAstUnchanged": true,
+  "diagnosticRepairInvokesSubprocess": false,
+  "onlyNewNativeApiNames": [
+    "MsiQueryProductStateW",
+    "MsiQueryFeatureStateW"
+  ],
+  "newApiTestsUseFakeLibraryOnly": true,
+  "productionKotlinAndGradleAndMsiSafetyUnchanged": true,
+  "oldStrongExitAssociationBytesPredicatePreserved": "assert_repair_success",
+  "nativeRecoveryStrategyImplemented": false
+}

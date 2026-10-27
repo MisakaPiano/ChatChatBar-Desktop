@@ -1,0 +1,278 @@
+package com.example.chatbar.desktop.backup
+
+import com.example.chatbar.data.local.entity.*
+import java.io.*
+import java.nio.file.*
+import java.util.zip.*
+import java.util.concurrent.TimeUnit
+import kotlin.test.*
+import kotlinx.coroutines.*
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.*
+
+class DesktopBackupReadOnlyInspectorTest {
+    @Test fun `R1 official 145 positive fixture has exact legacy fields and strict decoding`() {
+        for (encrypted in listOf(false, true)) {
+            val archive = fixture(version = 1, code = 84, encrypted = encrypted, scope = null)
+            val entries = wireEntries(archive, encrypted)
+            val manifest = officialWireJson.parseToJsonElement(entries.getValue("manifest.json")).jsonObject
+            val preferences = officialWireJson.parseToJsonElement(entries.getValue("preferences.json")).jsonObject
+            assertEquals(setOf("formatVersion", "appVersionCode", "appVersionName", "createdAt", "sourceFilesRoot", "counts", "fileCount", "totalBytes", "preferencesSha256"), manifest.keys)
+            assertEquals(setOf("novelAiToken", "fishAudioKey", "communitySession", "brushSize", "brushType"), preferences.keys)
+            officialWireJson.decodeFromString<Official145Manifest>(manifest.toString())
+            officialWireJson.decodeFromString<Official145Preferences>(preferences.toString())
+        }
+    }
+    private fun wireEntries(archive: ByteArray, encrypted: Boolean): Map<String, String> =
+        ZipInputStream(Official147FixtureCodec.decrypting(archive.inputStream(), if (encrypted) password else null)).use { zip ->
+            buildMap { while (true) { val entry = zip.nextEntry ?: break; put(entry.name, zip.readBytes().toString(Charsets.UTF_8)); zip.closeEntry() } }
+        }
+    private val inspector = DesktopBackupReadOnlyInspector()
+    private val password get() = "synthetic-password".toCharArray()
+    private val emptyScope = InspectionScope(emptySet(), 0, 0, 0, 0, 0, false, false, true, false)
+    private fun bytes(value: String) = value.toByteArray()
+    private fun fixture(version: Int = 2, code: Int = 86, encrypted: Boolean = false,
+        files: Map<String, ByteArray> = emptyMap(), scope: InspectionScope? = emptyScope,
+        prefs: InspectionPreferences = InspectionPreferences(), manifestChange: (JsonObject) -> JsonObject = { it },
+        wrongHash: Boolean = false, entryChange: (String) -> String = { it }): ByteArray {
+        val out = ByteArrayOutputStream()
+        ZipOutputStream(Official147FixtureCodec.encrypting(out, if (encrypted) password else null, version)).use { zip ->
+            fun entry(name: String, data: ByteArray) { zip.putNextEntry(ZipEntry(entryChange(name))); zip.write(data); zip.closeEntry() }
+            files.forEach { (name, data) -> entry("files/$name", data) }
+            val preferences = bytes(backupJson.encodeToString(prefs))
+            entry("preferences.json", preferences)
+            entry("inventory.jsonl", bytes(files.map { (name, data) -> backupJson.encodeToString(AppBackupFileRecord(name, data.size.toLong(),
+                if (wrongHash) "0".repeat(64) else DesktopBackupPolicy.digest(data))) }.joinToString("\n")))
+            val manifest = InspectionManifest(version, code, "synthetic-official-format", 1, "synthetic-source", files.keys
+                .filter { it.startsWith("entities/") }.groupingBy(DesktopBackupPolicy::entityType).eachCount(), files.size,
+                files.values.sumOf { it.size.toLong() }, DesktopBackupPolicy.digest(preferences), scope)
+            entry("manifest.json", bytes(manifestChange(backupJson.encodeToJsonElement(manifest).jsonObject).toString()))
+        }
+        return out.toByteArray()
+    }
+    private suspend fun <T> isolated(data: ByteArray, block: suspend (Path, Path) -> T): T {
+        val root = Files.createTempDirectory("s0-synthetic-")
+        try {
+            val input = root.resolve("source.cbbackup"); Files.write(input, data)
+            val live = Files.createDirectories(root.resolve("live")); Files.writeString(live.resolve("journal"), "synthetic-existing-evidence")
+            val before = Files.walk(root).use { paths -> paths.filter { Files.isRegularFile(it) }.toList().associate { it.toString() to DesktopBackupPolicy.digest(Files.readAllBytes(it)) } }
+            try { return block(input, root) } finally {
+                val after = Files.walk(root).use { paths -> paths.filter { Files.isRegularFile(it) }.toList().associate { it.toString() to DesktopBackupPolicy.digest(Files.readAllBytes(it)) } }
+                assertEquals(before, after)
+            }
+        } finally { root.toFile().deleteRecursively() }
+    }
+    @Test fun `official v1 and v2 plaintext and encrypted formats authenticate without restore admission`() = runBlocking<Unit> {
+        for (version in 1..2) for (encrypted in listOf(false, true)) for (code in if (version == 1) listOf(84, 85, 86) else listOf(85, 86)) {
+            val data = fixture(version, code, encrypted, scope = if (version == 1) null else emptyScope)
+            isolated(data) { input, _ ->
+                val result = inspector.inspect(input, if (encrypted) password else null)
+                assertEquals(version, result.envelopeVersion); assertEquals(code, result.appVersionCode)
+                assertTrue(result.formatReadable); assertFalse(result.restoreSupported); assertFalse(result.fullPortabilityAccepted)
+                assertEquals(DesktopBackupPolicy.digest(data), result.sourceSha256)
+                if (version == 2) assertEquals(DesktopBackupReadOnlyInspector.RestoreAssessment.UNSUPPORTED, result.restoreAssessment)
+                println("fixture v$version code$code encrypted=$encrypted sha256=${result.sourceSha256} length=${data.size}")
+            }
+        }
+    }
+    @Test fun `v2 can never create Prepared through existing archive entry`() = runBlocking<Unit> {
+        for (encrypted in listOf(false, true)) isolated(fixture(encrypted = encrypted)) { input, root ->
+            val work = Files.createDirectory(root.resolve("work"))
+            assertFails { DesktopFullBackupArchive(work).inspect(input, if (encrypted) password else null) }
+            assertEquals(0, Files.list(work).use { it.count() }.toInt())
+        }
+        assertFalse(DesktopFullBackupArchive.Prepared::class.java.isAssignableFrom(DesktopBackupReadOnlyInspector.ReadOnlyInspection::class.java))
+    }
+    @Test fun `all preference credentials are categories not values and no plaintext staging exists`() = runBlocking<Unit> {
+        val secret = "SYNTHETIC_NEVER_LOG_VALUE"
+        isolated(fixture(encrypted = true, prefs = InspectionPreferences(secret, secret, secret))) { input, _ ->
+            val result = inspector.inspect(input, password)
+            assertEquals(setOf(DesktopBackupReadOnlyInspector.CredentialCategory.NOVEL_AI,
+                DesktopBackupReadOnlyInspector.CredentialCategory.FISH_AUDIO, DesktopBackupReadOnlyInspector.CredentialCategory.COMMUNITY), result.credentials)
+            assertFalse(result.toString().contains(secret)); assertEquals(DesktopBackupReadOnlyInspector.RestoreAssessment.UNSUPPORTED, result.restoreAssessment)
+        }
+    }
+    @Test fun `dependency entity keys and settings keys are found without global credential selection`() = runBlocking<Unit> {
+        val files = mapOf(
+            "entities/app_settings.json" to bytes(backupJson.encodeToString(AppSettings(siliconFlowApiKey = "synthetic-secret"))),
+            "entities/model_configs/m.json" to bytes(backupJson.encodeToString(ModelConfig("m", "synthetic", "http://127.0.0.1:1", "synthetic-secret", "fake", createdAt = 1))),
+            "entities/embedding_configs/e.json" to bytes(backupJson.encodeToString(EmbeddingConfig("e", "synthetic", "http://127.0.0.1:1", "synthetic-secret", "fake"))),
+            "entities/format_cards/f.json" to bytes(backupJson.encodeToString(FormatCard("f", "synthetic", "synthetic-private-prompt", createdAt = 1))),
+            "entities/world_books/w.json" to bytes(backupJson.encodeToString(WorldBook("w", "synthetic"))))
+        isolated(fixture(files = files)) { input, _ ->
+            val result = inspector.inspect(input, null)
+            assertEquals(setOf(DesktopBackupReadOnlyInspector.CredentialCategory.SILICON_FLOW,
+                DesktopBackupReadOnlyInspector.CredentialCategory.MODEL, DesktopBackupReadOnlyInspector.CredentialCategory.EMBEDDING), result.credentials)
+            assertEquals(1, result.modelRecords); assertEquals(1, result.embeddingRecords)
+            assertEquals(1, result.formatCardRecords); assertEquals(1, result.worldBookRecords)
+            assertFalse(result.dependencyClosureVerified); assertFalse(result.toString().contains("synthetic-private-prompt"))
+            assertFalse(result.toString().contains("synthetic-secret"))
+        }
+    }
+    @Test fun `session sparse choices preserve selected empty omitted media and independent slot package`() = runBlocking<Unit> {
+        val packageBytes = ByteArrayOutputStream().also { output -> ZipOutputStream(output).use { zip ->
+            zip.putNextEntry(ZipEntry("images/synthetic.png")); zip.write(byteArrayOf(1, 2)); zip.closeEntry()
+        } }.toByteArray()
+        val files = linkedMapOf(
+            "entities/character_cards/c.json" to bytes(backupJson.encodeToString(CharacterCard("c", "synthetic", createdAt = 1, updatedAt = 1))),
+            "save_slot_packages/p.zip" to packageBytes,
+            "entities/save_slots/p.json" to bytes(backupJson.encodeToString(SaveSlot(schemaVersion = 8, id = "p", sessionId = "s1", name = "synthetic",
+                packageRef = SaveSlotPackageRef("p.zip", imageCount = 1, byteLength = packageBytes.size.toLong()), createdAt = 1)))
+        )
+        for (id in listOf("s1", "s2")) files["entities/chat_sessions/$id.json"] = bytes(backupJson.encodeToString(ChatSession(id, "c", "synthetic", createdAt = 1, updatedAt = 1)))
+        val scope = emptyScope.copy(characters = 1, sessions = 2, sessionsWithImages = 1, sessionsWithVoice = 1, sessionsWithArchives = 1,
+            sessionDefaultChoice = InspectionSessionChoice(false, false, true), sessionChoices = mapOf("s2" to InspectionSessionChoice(true, true, false)))
+        isolated(fixture(files = files, scope = scope)) { input, _ ->
+            val report = inspector.inspect(input, null)
+            assertEquals(1, report.scope!!.images.selectedEmpty); assertEquals(1, report.scope.images.notSelected)
+            assertEquals(1, report.scope.voice.selectedEmpty); assertEquals(1, report.scope.voice.notSelected)
+            assertEquals(1, report.scope.archives.selectedPresent); assertEquals(1, report.scope.archives.notSelected)
+            assertEquals(1, report.saveSlotPackages); assertFalse(report.nestedSaveSlotContentsVerified)
+        }
+        val legacy = scope.copy(sessionDefaultChoice = null, sessionChoices = emptyMap())
+        isolated(fixture(files = files, scope = legacy)) { input, _ ->
+            assertEquals(2, inspector.inspect(input, null).scope!!.images.unspecified)
+        }
+        for (invalid in listOf(scope.copy(sessionChoices = mapOf("foreign" to InspectionSessionChoice())), scope.copy(sessionsWithArchives = 2)))
+            isolated(fixture(files = files, scope = invalid)) { input, _ -> assertFailsWith<DesktopBackupReadOnlyInspector.InspectionFailure> { inspector.inspect(input, null) } }
+    }
+    @Test fun `known entity unknown fields and duplicate JSON fields are rejected`() = runBlocking<Unit> {
+        val settings = backupJson.encodeToJsonElement(AppSettings()).jsonObject
+        for (data in listOf(JsonObject(settings + ("unknown" to JsonPrimitive("synthetic-private"))).toString(),
+            "{\"siliconFlowApiKey\":\"first\",\"siliconFlowApiKey\":\"second\"}")) {
+            isolated(fixture(files = mapOf("entities/app_settings.json" to bytes(data)))) { input, _ ->
+                val error = assertFailsWith<DesktopBackupReadOnlyInspector.InspectionFailure> { inspector.inspect(input, null) }
+                assertEquals("ENTITY_SCHEMA", error.stage); assertNull(error.cause)
+            }
+        }
+        val model = backupJson.encodeToJsonElement(ModelConfig("m", "synthetic", "http://127.0.0.1:1", "", "fake", createdAt = 1)).jsonObject
+        isolated(fixture(files = mapOf("entities/model_configs/m.json" to bytes(JsonObject(model + ("apiKey" to JsonNull)).toString())))) { input, _ ->
+            assertFailsWith<DesktopBackupReadOnlyInspector.InspectionFailure> { inspector.inspect(input, null) }
+        }
+        isolated(fixture(prefs = InspectionPreferences(novelAiToken = " "))) { input, _ ->
+            assertTrue(DesktopBackupReadOnlyInspector.CredentialCategory.NOVEL_AI in inspector.inspect(input, null).credentials)
+        }
+    }
+    @Test fun `legacy moments images default is true and task contents are explicitly uninterpreted`() = runBlocking<Unit> {
+        val files = mapOf("entities/moment_tasks/t.json" to bytes("{\"id\":\"t\",\"futureUnknown\":\"opaque\"}"))
+        isolated(fixture(files = files, scope = emptyScope.copy(moments = true), manifestChange = { m ->
+            JsonObject(m + ("scope" to JsonObject(m.getValue("scope").jsonObject - "momentsImages")))
+        })) { input, _ ->
+            val result = inspector.inspect(input, null)
+            assertTrue(result.scope!!.momentsImages); assertEquals(1, result.uninterpretedEntities)
+            assertEquals(1, result.momentTasks); assertFalse(result.resourceGraphVerified)
+        }
+    }
+    @Test fun `bad scope unknown metadata and incompatible identities fail closed without payload in errors`() = runBlocking<Unit> {
+        val changes: List<(JsonObject) -> JsonObject> = listOf(
+            { JsonObject(it - "scope") },
+            { JsonObject(it + ("formatVersion" to JsonPrimitive(1))) },
+            { JsonObject(it + ("appVersionCode" to JsonPrimitive(87))) },
+            { JsonObject(it + ("future" to JsonPrimitive("SYNTHETIC_NEVER_LOG_VALUE"))) },
+            { JsonObject(it + ("scope" to JsonObject(it.getValue("scope").jsonObject + ("globalOptions" to JsonArray(listOf(JsonPrimitive("unknown"))))))) },
+            { JsonObject(it + ("scope" to JsonObject(it.getValue("scope").jsonObject + ("sessionsWithImages" to JsonPrimitive(1)))) ) }
+        )
+        for (change in changes) isolated(fixture(manifestChange = change)) { input, _ ->
+            val error = assertFailsWith<DesktopBackupReadOnlyInspector.InspectionFailure> { inspector.inspect(input, null) }
+            assertNull(error.cause); assertFalse(error.stackTraceToString().contains("SYNTHETIC_NEVER_LOG_VALUE"))
+        }
+        isolated(fixture(prefs = InspectionPreferences(retainedPreferences = setOf("novelai_credentials")))) { input, _ ->
+            assertFailsWith<DesktopBackupReadOnlyInspector.InspectionFailure> { inspector.inspect(input, null) }
+        }
+    }
+    @Test fun `wrong password truncation hash traversal central directory and duplicate entries are rejected`() = runBlocking<Unit> {
+        val encrypted = fixture(encrypted = true)
+        isolated(encrypted) { input, _ -> assertFailsWith<DesktopBackupReadOnlyInspector.InspectionFailure> { inspector.inspect(input, "wrong-password".toCharArray()) } }
+        for (data in listOf(encrypted.copyOf(encrypted.size - 1), encrypted.copyOf().also { it[it.lastIndex] = (it.last().toInt() xor 1).toByte() }))
+            isolated(data) { input, _ -> assertFailsWith<DesktopBackupReadOnlyInspector.InspectionFailure> { inspector.inspect(input, password) } }
+        for (data in listOf(
+            fixture(files = mapOf("images/a" to byteArrayOf(1)), wrongHash = true),
+            fixture(files = mapOf("images/../a" to byteArrayOf(1))),
+            fixture(files = mapOf("images/C:a" to byteArrayOf(1))),
+            fixture(files = mapOf("images/A" to byteArrayOf(1), "images/a" to byteArrayOf(2))),
+            fixture().let { it.copyOf(it.size - 8) },
+            fixture().copyOf().also { it[it.size - 6] = 0x7f }
+        )) isolated(data) { input, _ -> assertFailsWith<DesktopBackupReadOnlyInspector.InspectionFailure> { inspector.inspect(input, null) } }
+    }
+    @Test fun `exact duplicate zip names and CRC tampering fail closed`() = runBlocking<Unit> {
+        val original = fixture(files = mapOf("images/a" to byteArrayOf(1), "images/b" to byteArrayOf(2)))
+        val duplicate = original.copyOf()
+        val needle = bytes("files/images/b")
+        for (i in 0..duplicate.size - needle.size) if (needle.indices.all { duplicate[i + it] == needle[it] }) duplicate[i + needle.lastIndex] = 'a'.code.toByte()
+        isolated(duplicate) { input, _ -> assertFailsWith<DesktopBackupReadOnlyInspector.InspectionFailure> { inspector.inspect(input, null) } }
+        val corrupt = original.copyOf()
+        // Corrupt the central-directory CRC while leaving its local record untouched.
+        val central = (0..corrupt.size - 4).first { corrupt[it] == 0x50.toByte() && corrupt[it + 1] == 0x4b.toByte() && corrupt[it + 2] == 1.toByte() && corrupt[it + 3] == 2.toByte() }
+        corrupt[central + 16] = (corrupt[central + 16].toInt() xor 1).toByte()
+        isolated(corrupt) { input, _ -> assertFailsWith<DesktopBackupReadOnlyInspector.InspectionFailure> { inspector.inspect(input, null) } }
+    }
+    @Test fun `both envelope manifest mismatches and future envelope are rejected`() = runBlocking<Unit> {
+        isolated(fixture(version = 1, code = 84, scope = null, manifestChange = { JsonObject(it + ("formatVersion" to JsonPrimitive(2))) })) { input, _ ->
+            assertFailsWith<DesktopBackupReadOnlyInspector.InspectionFailure> { inspector.inspect(input, null) }
+        }
+        val data = fixture()
+        val headerSize = DataInputStream(data.inputStream(8, 4)).readInt()
+        val header = data.copyOfRange(12, 12 + headerSize).toString(Charsets.UTF_8).replace("\"version\":2", "\"version\":3")
+        val future = ByteArrayOutputStream().also { out -> DataOutputStream(out).apply {
+            write(AppBackupCodec.magic); writeInt(header.toByteArray().size); write(header.toByteArray()); write(data, 12 + headerSize, data.size - 12 - headerSize)
+        } }.toByteArray()
+        isolated(future) { input, _ -> assertFailsWith<DesktopBackupReadOnlyInspector.InspectionFailure> { inspector.inspect(input, null) } }
+    }
+    @Test fun `failure after authenticated read cannot leave scratch or leak payload cause`() = runBlocking<Unit> {
+        isolated(fixture(encrypted = true)) { input, root ->
+            val paths = Files.walk(root).use { it.toList() }
+            val failing = DesktopBackupReadOnlyInspector { throw IOException("SYNTHETIC_PRIVATE_FAILURE") }
+            val error = assertFailsWith<DesktopBackupReadOnlyInspector.InspectionFailure> { failing.inspect(input, password) }
+            assertNull(error.cause); assertFalse(error.stackTraceToString().contains("SYNTHETIC_PRIVATE_FAILURE"))
+            assertEquals(paths, Files.walk(root).use { it.toList() })
+            assertTrue(inspector.inspect(input, password).formatReadable)
+        }
+    }
+    @Test fun `hard child JVM exit after authentication leaves source and synthetic root unchanged`() = runBlocking<Unit> {
+        isolated(fixture(encrypted = true)) { input, _ ->
+            val types = listOf(S0ReadOnlyCrashChild::class.java, DesktopBackupReadOnlyInspector::class.java,
+                com.example.chatbar.data.local.entity.AppSettings::class.java, Unit::class.java,
+                kotlinx.coroutines.Job::class.java, Json::class.java, kotlinx.serialization.KSerializer::class.java,
+                com.sun.jna.Native::class.java, com.sun.jna.platform.win32.Kernel32::class.java,
+                com.google.crypto.tink.KeysetHandle::class.java, com.google.crypto.tink.proto.Keyset::class.java,
+                com.google.crypto.tink.proto.Keyset::class.java.superclass)
+            val cp = types.map { Path.of(it.protectionDomain.codeSource.location.toURI()).toString() }.distinct().joinToString(File.pathSeparator)
+            val java = Path.of(System.getProperty("java.home"), "bin", if (System.getProperty("os.name").startsWith("Windows")) "java.exe" else "java")
+            val process = ProcessBuilder(java.toString(), "-Xmx128m", "-cp", cp, S0ReadOnlyCrashChild::class.java.name, input.toString())
+                .redirectErrorStream(true).start()
+            assertTrue(process.waitFor(60, TimeUnit.SECONDS))
+            val output = process.inputStream.bufferedReader().readText()
+            assertEquals(73, process.exitValue(), output)
+            assertTrue(inspector.inspect(input, password).formatReadable)
+            println("S0 synthetic child exit=${process.exitValue()} alive=${process.isAlive}")
+        }
+    }
+    @Test fun `oversized source is refused before payload allocation`() = runBlocking<Unit> {
+        val root = Files.createTempDirectory("s0-budget-")
+        try {
+            val input = root.resolve("synthetic-large.cbbackup")
+            RandomAccessFile(input.toFile(), "rw").use { it.setLength(DesktopBackupReadOnlyInspector.MAX_COMPRESSED.toLong() + 1) }
+            val error = assertFailsWith<DesktopBackupReadOnlyInspector.InspectionFailure> { inspector.inspect(input, null) }
+            assertEquals("INPUT", error.stage)
+            assertEquals(DesktopBackupReadOnlyInspector.MAX_COMPRESSED.toLong() + 1, Files.size(input))
+            assertEquals(1, Files.list(root).use { it.count() }.toInt())
+        } finally { root.toFile().deleteRecursively() }
+    }
+    @Test fun `cancellation has no work directories or retained files`() = runBlocking<Unit> {
+        isolated(fixture(encrypted = true)) { input, _ ->
+            val job = Job()
+            var authenticated = false
+            val cancellable = DesktopBackupReadOnlyInspector { authenticated = true; job.cancel() }
+            assertFailsWith<CancellationException> { withContext(job) { cancellable.inspect(input, password) } }
+            assertTrue(authenticated); assertTrue(job.isCancelled)
+            // A second read proves the source handle was released after cancellation.
+            assertTrue(inspector.inspect(input, password).formatReadable)
+        }
+    }
+}
+
+object S0ReadOnlyCrashChild {
+    @JvmStatic fun main(args: Array<String>) = runBlocking<Unit> {
+        DesktopBackupReadOnlyInspector { Runtime.getRuntime().halt(73) }.inspect(Path.of(args.single()), "synthetic-password".toCharArray())
+    }
+}

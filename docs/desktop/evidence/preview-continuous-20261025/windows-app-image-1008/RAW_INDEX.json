@@ -1,0 +1,114 @@
+{
+  "initial-1008-driver.private.log": {
+    "bytes": 37,
+    "sha256": "e79650c332b09a973b4b3e2589a28f7dcb9d97ed91252248ac87d320e0cb636d"
+  },
+  "initial-1008-exit.txt": {
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  "initial-1008-lifecycle.json": {
+    "bytes": 473,
+    "sha256": "aa2ddae03006100b4c2a4f50ff25dd277a5cc56ef4638b94807e4317894d18e3"
+  },
+  "initial-1008-stderr-private.log": {
+    "bytes": 1363,
+    "sha256": "9d41fbb330aa3086f4ce87e5a012283801f0f39ac5123d51088aa5d1f13e601f"
+  },
+  "manual-preflight-exit.txt": {
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  "manual-preflight.log": {
+    "bytes": 53,
+    "sha256": "71eee6d75382816af4e9d4d99981bf8e1995474297d303e656c9eb88257b3d7a"
+  },
+  "native-app-image-probe.py": {
+    "bytes": 24521,
+    "sha256": "edd35c922f12c528e69978113c2ccf2f18c8f2e316a3367c5448a4a7d9205cc0"
+  },
+  "native-fixture-source.kt": {
+    "bytes": 6832,
+    "sha256": "034ed9b7c0776a773ca9b36615993f69e5dadaaeae1b698f96f87eed9fa4db5a"
+  },
+  "Open-Isolated-Preview-1008.ps1": {
+    "bytes": 2939,
+    "sha256": "6b99cc7a6fa6d15c4b802c7d5961d239d5041db16649e78b2cf79d60e5f12290"
+  },
+  "package-arguments.json": {
+    "bytes": 668,
+    "sha256": "d3f4da3d052dfa8fe6afb4bc662a0f6bea7cd60fcfb710f293f1b57d3341ea23"
+  },
+  "package-Build-SyntheticPackage.ps1": {
+    "bytes": 6394,
+    "sha256": "70009f0d746b37b783e18dcd50eda9884f4e6cc3dcbba3b0ec518ad858e22261"
+  },
+  "package-build.log": {
+    "bytes": 11050,
+    "sha256": "982905fc9967dbd13e3098b71cf0ce9adbfad6bc61ce30ec3874e99b2e5c1ec2"
+  },
+  "package-BUILD_INPUTS.json": {
+    "bytes": 166319,
+    "sha256": "6641cd7c8ca289227391e986c390b60207f384a96dc7f1712f3f448e650ab7aa"
+  },
+  "package-CLASS_COUNT_RECHECK.json": {
+    "bytes": 207,
+    "sha256": "a2128d2a25fce13b7f367ae212215c151cd6c4e83ebd51e3922717a2d0429e4f"
+  },
+  "package-CLASS_DELTA_1007.json": {
+    "bytes": 500,
+    "sha256": "148b6be9006e39882dde2fad4c9dd633258b856eaedeb27f0bd3c96a6fb4610c"
+  },
+  "package-exit.txt": {
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  "package-head.txt": {
+    "bytes": 40,
+    "sha256": "157ad77ba0ae0130ce3efc1d324cbacce39c9a36221b2b95eeb947373af7f2cd"
+  },
+  "package-package.init.gradle": {
+    "bytes": 178,
+    "sha256": "1489049eb3e6d5d966e35af13af7dd31e59dd1e2bded8d8c1df674644f788391"
+  },
+  "package-PACKAGED_BUILD_IDENTITY.properties": {
+    "bytes": 158,
+    "sha256": "fc3bf6be3daf3156c77cec3db12a5e748412790278203e8abf84391289461763"
+  },
+  "package-PACKAGE_AUDIT.json": {
+    "bytes": 297,
+    "sha256": "339b6eacf9103f823fbb81f25073d593a3f7ed7e8ecf89187eb152d73cf6dfb1"
+  },
+  "package-PACKAGE_FILES.json": {
+    "bytes": 38132,
+    "sha256": "4cf67ac55c1033b321c1cbd865d12c8a00fe24682fa243003642016801b0471d"
+  },
+  "package-PREVIOUS_IMAGE_RECHECK.json": {
+    "bytes": 169,
+    "sha256": "ca47994a15ed98439dd247dbdc9e1aefb4024d6e8d7d861c5c54d15d6686045a"
+  },
+  "RESULT.md": {
+    "bytes": 2756,
+    "sha256": "0811d49de7516afbb6cd13e7e0969b06c9d320a85f90023fc617b38010c19a0b"
+  },
+  "Run-Native1008.py": {
+    "bytes": 4308,
+    "sha256": "c00ce98027be8591ac83c2eed31bd8b1b0f2a5a2001e726f1a06c5d64f322abf"
+  },
+  "seed-driver.private.log": {
+    "bytes": 66,
+    "sha256": "458b137f717b79bece90688bfd922db1e81802249c792a9584e40a607b0321d1"
+  },
+  "seed-exit.txt": {
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  "verify-driver.private.log": {
+    "bytes": 66,
+    "sha256": "458b137f717b79bece90688bfd922db1e81802249c792a9584e40a607b0321d1"
+  },
+  "verify-exit.txt": {
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  }
+}

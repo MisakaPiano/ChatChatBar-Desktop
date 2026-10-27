@@ -1,0 +1,357 @@
+[
+  {
+    "file": "raw/environment-red/compile.exit",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "file": "raw/environment-red/compile.log",
+    "bytes": 1391,
+    "sha256": "243c38c0f1c21cb78824544c0b274c57aa4d5fe02a99719b5d020b565632150d"
+  },
+  {
+    "file": "raw/environment-red/INPUT_JARS.json",
+    "bytes": 11739,
+    "sha256": "0050657f6ff717a1cf4241f9bb1fa7fc5bc1a6689c3e54d441f10730d6be92ae"
+  },
+  {
+    "file": "raw/environment-red/RESULT.json",
+    "bytes": 45,
+    "sha256": "ad8f7674f8e92b128a66a2bac9883da34b66ac590ef14d803999b7f496b4d9b7"
+  },
+  {
+    "file": "raw/environment-red/run_synthetic.py",
+    "bytes": 7074,
+    "sha256": "e98c952ded04b7ca56b341737d3dc3c2bebb27da8df1dccc134b31011dd56372"
+  },
+  {
+    "file": "raw/environment-red/SOURCE_IDENTITY.json",
+    "bytes": 762,
+    "sha256": "a4c653c1ea218cc3661ada843f88c62267f0fa44297477eafb9cfcc0e3cc4c81"
+  },
+  {
+    "file": "raw/environment-red/SyntheticSnapshotRecoveryProbe.kt",
+    "bytes": 8905,
+    "sha256": "46e446752bf0a828315fac785559b15402057be08d69320d5b43d62bc6a70c44"
+  },
+  {
+    "file": "raw/green-before-manifest-pin/compile.exit",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "file": "raw/green-before-manifest-pin/compile.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": "raw/green-before-manifest-pin/corruption-reject.exit",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "file": "raw/green-before-manifest-pin/corruption-reject.log",
+    "bytes": 45,
+    "sha256": "e35ba4293aa16fc8be7929d59f7c085807312296dfa865a01f426473c42c9451"
+  },
+  {
+    "file": "raw/green-before-manifest-pin/corruption-seed.exit",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "file": "raw/green-before-manifest-pin/corruption-seed.log",
+    "bytes": 21,
+    "sha256": "14291cf9b71e4a87cac9da649b43569a26f8b95e806a8a8df92ae15de78f3fd5"
+  },
+  {
+    "file": "raw/green-before-manifest-pin/INPUT_JARS.json",
+    "bytes": 11739,
+    "sha256": "0050657f6ff717a1cf4241f9bb1fa7fc5bc1a6689c3e54d441f10730d6be92ae"
+  },
+  {
+    "file": "raw/green-before-manifest-pin/RESULT.json",
+    "bytes": 128,
+    "sha256": "6cba0c5307e4f8a7298e9ec4c0b84c6ba623a510f4f9a104a60d2599c35edff9"
+  },
+  {
+    "file": "raw/green-before-manifest-pin/roundtrip-reopen-1.exit",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "file": "raw/green-before-manifest-pin/roundtrip-reopen-1.log",
+    "bytes": 35,
+    "sha256": "a9062916fc46f52e41b32faa9fea06afb051afc02d5dcf52630de337841cf739"
+  },
+  {
+    "file": "raw/green-before-manifest-pin/roundtrip-reopen-2.exit",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "file": "raw/green-before-manifest-pin/roundtrip-reopen-2.log",
+    "bytes": 35,
+    "sha256": "a9062916fc46f52e41b32faa9fea06afb051afc02d5dcf52630de337841cf739"
+  },
+  {
+    "file": "raw/green-before-manifest-pin/roundtrip-restore.exit",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "file": "raw/green-before-manifest-pin/roundtrip-restore.log",
+    "bytes": 42,
+    "sha256": "498cd61b483362267a7b43052e02c7c8fa344519be68af27c4e0bf33a214f193"
+  },
+  {
+    "file": "raw/green-before-manifest-pin/roundtrip-seed.exit",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "file": "raw/green-before-manifest-pin/roundtrip-seed.log",
+    "bytes": 21,
+    "sha256": "14291cf9b71e4a87cac9da649b43569a26f8b95e806a8a8df92ae15de78f3fd5"
+  },
+  {
+    "file": "raw/green-before-manifest-pin/run_synthetic.py",
+    "bytes": 7382,
+    "sha256": "18d10c2d66d0c353870cda4f73f9d44aef6abee6879d483bd2f3ad827b3ec6a1"
+  },
+  {
+    "file": "raw/green-before-manifest-pin/SOURCE_IDENTITY.json",
+    "bytes": 952,
+    "sha256": "6bea434f38de83ce5e393a8dc897cf78246728d4294bf3a2d1f59a73507787a6"
+  },
+  {
+    "file": "raw/green-before-manifest-pin/SyntheticSnapshotRecoveryProbe.kt",
+    "bytes": 8986,
+    "sha256": "3a8a024c3e8dbcea68b36c043b06a88c8c4326a8cf022f866d7ea973dbbc0496"
+  },
+  {
+    "file": "raw/green-before-manifest-pin/TEST-SyntheticSnapshotRecoveryProcessTest.xml",
+    "bytes": 427,
+    "sha256": "6b1278ea5ab59e4cac96f088cf8f98d094341c309952aa21928e8a8ddb49965a"
+  },
+  {
+    "file": "raw/green-before-manifest-pin/unittest.log",
+    "bytes": 321,
+    "sha256": "b6df1f252aa6fcd0f3d3cbb7f67ae6071a5ca33ec99eb930ecffc4ed05e2192b"
+  },
+  {
+    "file": "raw/green-final/compile.exit",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "file": "raw/green-final/compile.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": "raw/green-final/corruption-reject.exit",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "file": "raw/green-final/corruption-reject.log",
+    "bytes": 72,
+    "sha256": "4de5130e1383da38148cf5d7f9eb1931d257a7981661ec2a32f9f0dbdcbc408f"
+  },
+  {
+    "file": "raw/green-final/corruption-seed.exit",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "file": "raw/green-final/corruption-seed.log",
+    "bytes": 48,
+    "sha256": "591e7d2830d5c726560683fb3eee2b31ab4edd05a3019717d22e71ce4e1a1e47"
+  },
+  {
+    "file": "raw/green-final/INPUT_JARS.json",
+    "bytes": 11739,
+    "sha256": "0050657f6ff717a1cf4241f9bb1fa7fc5bc1a6689c3e54d441f10730d6be92ae"
+  },
+  {
+    "file": "raw/green-final/inventories/corruption/NEW.json",
+    "bytes": 829,
+    "sha256": "09abc5ccaecf4f649cb7d232d81fc5b559a615877791b425b923048ef8339819"
+  },
+  {
+    "file": "raw/green-final/inventories/corruption/OLD.json",
+    "bytes": 692,
+    "sha256": "50797d8bdc1a6c1a84c3007f71dbd771ed933c7a8da621c0fbc2c0f7b5044e8f"
+  },
+  {
+    "file": "raw/green-final/inventories/corruption/SELECTED",
+    "bytes": 29,
+    "sha256": "fe645a1573ee9ec2e68e0ab2dc802b55adf4eca6cf30d9171fb0f1bc289c06a3"
+  },
+  {
+    "file": "raw/green-final/inventories/corruption/SELECTED_FILES.json",
+    "bytes": 832,
+    "sha256": "8b4a990513e64e86d77466bfe7331aa787bb2770e49dc3387c9030366261493a"
+  },
+  {
+    "file": "raw/green-final/inventories/roundtrip/NEW.json",
+    "bytes": 829,
+    "sha256": "79fc8c36a436ce86fc958762e10f49b3c19c162d70e0c79eb832133692f7b86e"
+  },
+  {
+    "file": "raw/green-final/inventories/roundtrip/OLD.json",
+    "bytes": 692,
+    "sha256": "97a65f8e91b3b35708babb86251b8f5d30d7aea42fb23283171fa14d416b20f9"
+  },
+  {
+    "file": "raw/green-final/inventories/roundtrip/SAFETY",
+    "bytes": 29,
+    "sha256": "6e146177c3c8823e9817b9281e9455408ed554ff4476d1839308b836c93f3bad"
+  },
+  {
+    "file": "raw/green-final/inventories/roundtrip/SELECTED",
+    "bytes": 29,
+    "sha256": "6cd14a5c45f3148fcbdb4d31b9a05c9d041c5e5e922cf3ab3130aa046484ab15"
+  },
+  {
+    "file": "raw/green-final/inventories/roundtrip/SELECTED_FILES.json",
+    "bytes": 832,
+    "sha256": "1212f162c8e5a1d48fb2e231f4ac7f3358ce9df2b4628ab41b69f5f7beb6cd75"
+  },
+  {
+    "file": "raw/green-final/RESULT.json",
+    "bytes": 128,
+    "sha256": "6cba0c5307e4f8a7298e9ec4c0b84c6ba623a510f4f9a104a60d2599c35edff9"
+  },
+  {
+    "file": "raw/green-final/roundtrip-reopen-1.exit",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "file": "raw/green-final/roundtrip-reopen-1.log",
+    "bytes": 62,
+    "sha256": "a42eb8aee100aca6f97c137cadf1d468279510e5985416ac99e096f695a4198d"
+  },
+  {
+    "file": "raw/green-final/roundtrip-reopen-2.exit",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "file": "raw/green-final/roundtrip-reopen-2.log",
+    "bytes": 62,
+    "sha256": "211e44785ab557bfe877d5dcfea64c7e83010b42b8766b20c59d9e7098cb84e1"
+  },
+  {
+    "file": "raw/green-final/roundtrip-restore.exit",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "file": "raw/green-final/roundtrip-restore.log",
+    "bytes": 69,
+    "sha256": "9d1fa5dba65114e2d385089c149ed2fe0c2d13743ec9d587c4678be4765fd605"
+  },
+  {
+    "file": "raw/green-final/roundtrip-seed.exit",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "file": "raw/green-final/roundtrip-seed.log",
+    "bytes": 48,
+    "sha256": "48f46df103002e7f5c8db765cf25f2a9d533e3b841d24f768c86cb5fa4e1b086"
+  },
+  {
+    "file": "raw/green-final/run_synthetic.py",
+    "bytes": 7803,
+    "sha256": "8e977cfea25e12ed85cc279e133af82df79cc44bef17e97da4b38e7bab7f0363"
+  },
+  {
+    "file": "raw/green-final/SOURCE_IDENTITY.json",
+    "bytes": 1086,
+    "sha256": "0930db422966c967895a5c9d2f15ecf5cc1f68ce779cb222e3b37c55e41fb360"
+  },
+  {
+    "file": "raw/green-final/SyntheticSnapshotRecoveryProbe.kt",
+    "bytes": 9058,
+    "sha256": "ba8c9d66eacc6539a97f6b49f367803854c3a72b079fc8415a4536c77d0ff151"
+  },
+  {
+    "file": "raw/green-final/TEST-SyntheticSnapshotRecoveryProcessTest.xml",
+    "bytes": 427,
+    "sha256": "379e4b9efec20959c32f6eed7c18800bda3fcdf5605a329dc3dd17fc560e474e"
+  },
+  {
+    "file": "raw/green-final/unittest.log",
+    "bytes": 321,
+    "sha256": "82ac2002961aa2c9139779a2bfd7a35f2db15d9aef064135381735e336a0a9ba"
+  },
+  {
+    "file": "raw/probe-red/compile.exit",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "file": "raw/probe-red/compile.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": "raw/probe-red/corruption-seed.exit",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "file": "raw/probe-red/corruption-seed.log",
+    "bytes": 2514,
+    "sha256": "1e87956685d73259192c047720a2c828d8724684dec92f3505a403786ced6e9b"
+  },
+  {
+    "file": "raw/probe-red/INPUT_JARS.json",
+    "bytes": 11739,
+    "sha256": "0050657f6ff717a1cf4241f9bb1fa7fc5bc1a6689c3e54d441f10730d6be92ae"
+  },
+  {
+    "file": "raw/probe-red/RESULT.json",
+    "bytes": 128,
+    "sha256": "46b106cc3591f9383e7639df1fd5cecab023f39a8ed45c1682e6c3caabd83401"
+  },
+  {
+    "file": "raw/probe-red/roundtrip-seed.exit",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "file": "raw/probe-red/roundtrip-seed.log",
+    "bytes": 2514,
+    "sha256": "1e87956685d73259192c047720a2c828d8724684dec92f3505a403786ced6e9b"
+  },
+  {
+    "file": "raw/probe-red/run_synthetic.py",
+    "bytes": 7382,
+    "sha256": "18d10c2d66d0c353870cda4f73f9d44aef6abee6879d483bd2f3ad827b3ec6a1"
+  },
+  {
+    "file": "raw/probe-red/SOURCE_IDENTITY.json",
+    "bytes": 952,
+    "sha256": "2da3ec5a7b3303fa403f1765ca6c9ce46b45e37ef28e5c28d4a5dc6097ecd7d6"
+  },
+  {
+    "file": "raw/probe-red/SyntheticSnapshotRecoveryProbe.kt",
+    "bytes": 8905,
+    "sha256": "46e446752bf0a828315fac785559b15402057be08d69320d5b43d62bc6a70c44"
+  },
+  {
+    "file": "raw/probe-red/TEST-SyntheticSnapshotRecoveryProcessTest.xml",
+    "bytes": 1351,
+    "sha256": "31f5de9fa50358827378ac1e578b5d04d8b0d5b3016182554f4d3a763e70d233"
+  },
+  {
+    "file": "raw/probe-red/unittest.log",
+    "bytes": 1718,
+    "sha256": "bb2306084b118a7530b9b01b5c699de3ca18cb926addac06e82ef06c2adece0e"
+  }
+]

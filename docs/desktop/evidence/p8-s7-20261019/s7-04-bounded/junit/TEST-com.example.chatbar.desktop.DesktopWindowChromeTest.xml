@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopWindowChromeTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-19T11:50:36.427Z" hostname="DD1" time="0.002">
+  <properties/>
+  <testcase name="migration locks routes without removing title bar or caption reserve" classname="com.example.chatbar.desktop.DesktopWindowChromeTest" time="0.0"/>
+  <testcase name="unmeasured or outside client cannot invent a draggable area" classname="com.example.chatbar.desktop.DesktopWindowChromeTest" time="0.0"/>
+  <testcase name="layout remains aligned at 100 125 150 and 200 percent with negative monitor origins" classname="com.example.chatbar.desktop.DesktopWindowChromeTest" time="0.0"/>
+  <testcase name="compact controls reserve captions and fit 330 effective pixels for both languages" classname="com.example.chatbar.desktop.DesktopWindowChromeTest" time="0.0"/>
+  <testcase name="drag and system icon areas preserve native contracts while route remains client" classname="com.example.chatbar.desktop.DesktopWindowChromeTest" time="0.0"/>
+  <testcase name="every responsive mode retains four discoverable routes and exactly one selected" classname="com.example.chatbar.desktop.DesktopWindowChromeTest" time="0.0"/>
+  <testcase name="close calls the existing request authority including deferral" classname="com.example.chatbar.desktop.DesktopWindowChromeTest" time="0.001"/>
+  <testcase name="caption visuals have their exact native hit codes" classname="com.example.chatbar.desktop.DesktopWindowChromeTest" time="0.0"/>
+  <testcase name="window commands map minimize maximize restore and close without a new placement store" classname="com.example.chatbar.desktop.DesktopWindowChromeTest" time="0.001"/>
+  <testcase name="maximized suppresses every resize edge while preserving captions" classname="com.example.chatbar.desktop.DesktopWindowChromeTest" time="0.0"/>
+  <testcase name="all eight resize directions precede title and caption areas" classname="com.example.chatbar.desktop.DesktopWindowChromeTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

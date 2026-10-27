@@ -1,0 +1,7 @@
+{
+  "classification": "ENVIRONMENT_BLOCKED_BEFORE_COMPILATION",
+  "exitCode": null,
+  "exitCodeReason": "observer failed at CIM access; owned wrapper exited before handle could be recovered",
+  "gradleError": "wrapper cache lock permission denied",
+  "testsExecuted": false
+}

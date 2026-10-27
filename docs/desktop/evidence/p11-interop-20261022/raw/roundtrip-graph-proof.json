@@ -1,0 +1,18 @@
+{
+  "result": "PASS",
+  "originalMessages": 4,
+  "returnedMessages": 6,
+  "voiceRecords": 4,
+  "mediaFiles": 5,
+  "ragChunks": 1,
+  "physicalAndroid": "NOT_TESTED",
+  "draftPortable": false,
+  "normalizations": [
+    "destination session IDs",
+    "owned voice/anchor and RAG IDs",
+    "voice restore updatedAt",
+    "media references resolved to SHA-256",
+    "Memory node graph IDs",
+    "Memory timeline and enable state independently checked against returned messages/session"
+  ]
+}

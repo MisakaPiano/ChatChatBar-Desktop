@@ -1,0 +1,23 @@
+[
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerPresentation.kt",
+    "bytes": 17883,
+    "sha256": "194d6b7fd2e270ca29eb90734303c8a7898825ecf8939cc60ab266e8d16c4917",
+    "expected": "194d6b7fd2e270ca29eb90734303c8a7898825ecf8939cc60ab266e8d16c4917",
+    "frozen": true
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerWindow.kt",
+    "bytes": 4280,
+    "sha256": "a003e7ad1e31a0c356df1a4291cc7eb1e4eb9fa958a0a6353ee6a77ac8f88125",
+    "expected": "a003e7ad1e31a0c356df1a4291cc7eb1e4eb9fa958a0a6353ee6a77ac8f88125",
+    "frozen": true
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerNativeUxTest.kt",
+    "bytes": 57912,
+    "sha256": "933d8e8f6e20ce83fe5d61e66f57f925b6f133b090b4d75ba776a873c5f26bb8",
+    "expected": "933d8e8f6e20ce83fe5d61e66f57f925b6f133b090b4d75ba776a873c5f26bb8",
+    "frozen": true
+  }
+]

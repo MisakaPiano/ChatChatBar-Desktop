@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopChatScreenshotUiTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-20T10:27:02.939Z" hostname="DD1" time="0.663">
+  <properties/>
+  <testcase name="compact and wide selection previews PNG with keyboard dismissal and no generation" classname="com.example.chatbar.desktop.DesktopChatScreenshotUiTest" time="0.663"/>
+  <system-out><![CDATA[SCREENSHOT_KEYBOARD width=360 focused=[265]
+SCREENSHOT_KEYBOARD width=1100 focused=[319]
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

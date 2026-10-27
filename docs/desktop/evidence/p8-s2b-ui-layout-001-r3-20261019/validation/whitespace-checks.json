@@ -1,0 +1,40 @@
+{
+  "default": {
+    "command": [
+      "git",
+      "diff",
+      "--cached",
+      "--check"
+    ],
+    "exitCode": 2,
+    "stdoutSha256": "7b4e6b904ebd1d79ed5176063b2003564103df6823a07d640a1e5becd72bb055"
+  },
+  "crlf": {
+    "command": [
+      "git",
+      "-c",
+      "core.whitespace=cr-at-eol",
+      "diff",
+      "--cached",
+      "--check"
+    ],
+    "exitCode": 2,
+    "stdoutSha256": "9219b981133acdd56cc352435c9621efdcf2829ae9a7a1f462564ea8c6f53732",
+    "onlyRawLogOrPatchWarnings": true
+  },
+  "metadataAndSourceCopiesCommand": [
+    "git",
+    "-c",
+    "core.whitespace=cr-at-eol",
+    "diff",
+    "--cached",
+    "--check",
+    "--",
+    "docs/desktop/evidence/p8-s2b-ui-layout-001-r3-20261019",
+    ":(exclude,glob)**/*.log",
+    ":(exclude,glob)**/*.patch"
+  ],
+  "rawBytesTrimmed": false,
+  "gitConfigurationChanged": false,
+  "defaultCompleteOutputRetainedLocally": true
+}

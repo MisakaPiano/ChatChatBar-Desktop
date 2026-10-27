@@ -1,0 +1,23 @@
+e: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/chat/SaveSlotSerializationTest.kt:143:23 Unresolved reference 'SaveSlotJsonTransfer'.
+e: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/chat/SaveSlotSerializationTest.kt:145:48 Unresolved reference 'SaveSlotJsonTransfer'.
+e: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/chat/SaveSlotSerializationTest.kt:151:62 Unresolved reference 'effectiveSynthesisText'.
+e: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/chat/SaveSlotSerializationTest.kt:152:53 Cannot infer type for type parameter 'V'. Specify it explicitly.
+e: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/chat/SaveSlotSerializationTest.kt:152:80 Unresolved reference 'data'.
+e: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/chat/SaveSlotSerializationTest.kt:215:9 Unresolved reference 'SaveSlotJsonTransfer'.
+e: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/chat/SaveSlotSerializationTest.kt:216:23 Unresolved reference 'SaveSlotJsonTransfer'.
+e: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/chat/SaveSlotSerializationTest.kt:219:55 Unresolved reference 'content'.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':sharedCore:compileTestKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.btapi.BuildToolsApiCompilationWork
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (Powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 37s

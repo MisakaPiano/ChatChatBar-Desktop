@@ -42,6 +42,17 @@ internal class DesktopCharacterResourceStore(
             Files.readAllBytes(requireReadableOwnedFile(reference))
         }
 
+    /** Screenshot reads reject oversized owned inputs before allocating their full contents. */
+    internal fun readScreenshotImageBytes(reference: String, maximumBytes: Int = 32 * 1024 * 1024): ByteArray {
+        require(maximumBytes in 1..32 * 1024 * 1024)
+        if (reference.startsWith(ASSET_PREFIX)) return readAsset(reference).also { require(it.size <= maximumBytes) }
+        require(reference.startsWith("$IMAGES_DIRECTORY/")) { "截图仅接受 owned 图片引用" }
+        val path = requireReadableOwnedFile(reference)
+        return Files.newInputStream(path).use { input ->
+            input.readNBytes(maximumBytes + 1).also { require(it.size <= maximumBytes) { "截图资源超过大小限制" } }
+        }
+    }
+
     /** Only a confirmed absent owned file is eligible for bundled document repair. */
     internal fun probeDocument(reference: String): DesktopDocumentProbe {
         if (reference.startsWith(ASSET_PREFIX)) return try {

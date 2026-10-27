@@ -1,0 +1,2 @@
+First patch command: UnicodeDecodeError: 'gbk' codec can't decode byte 0x80 in position 2194 while reading Host. Selection-only edit had completed; remaining changes had not. Its subsequent green-focused test stage is RED, never claimed GREEN.
+Remaining patch command: production/test edits completed; skill write hit PermissionError under protected .agents path. Skill-only update then completed with approved filesystem escalation. No tests ran between this partial tool failure and completed patch review.

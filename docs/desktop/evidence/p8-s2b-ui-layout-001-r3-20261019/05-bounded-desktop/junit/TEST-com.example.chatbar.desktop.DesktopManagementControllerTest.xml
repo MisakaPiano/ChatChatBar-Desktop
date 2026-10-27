@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopManagementControllerTest" tests="25" skipped="0" failures="0" errors="0" timestamp="2026-10-18T15:34:46.174Z" hostname="DD1" time="0.693">
+  <properties/>
+  <testcase name="new and existing draft listings recover original editor session for all three types" classname="com.example.chatbar.desktop.DesktopManagementControllerTest" time="0.108"/>
+  <testcase name="post commit Character delete failure reconciles without resurrection or replay" classname="com.example.chatbar.desktop.DesktopManagementControllerTest" time="0.018"/>
+  <testcase name="committed copy warning is distinct from delete and truthful about refresh" classname="com.example.chatbar.desktop.DesktopManagementControllerTest" time="0.019"/>
+  <testcase name="draft presentation separates existing badges new recovery and missing targets by type" classname="com.example.chatbar.desktop.DesktopManagementControllerTest" time="0.015"/>
+  <testcase name="Manage navigation waits until admitted mutation finishes and reconciles" classname="com.example.chatbar.desktop.DesktopManagementControllerTest" time="0.012"/>
+  <testcase name="Character draft resources removed after commit without touching durable resources" classname="com.example.chatbar.desktop.DesktopManagementControllerTest" time="0.018"/>
+  <testcase name="management construction is zero write and empty refresh creates no business files" classname="com.example.chatbar.desktop.DesktopManagementControllerTest" time="0.01"/>
+  <testcase name="Character management typed import conflict prohibits community overwrite and resolves locally" classname="com.example.chatbar.desktop.DesktopManagementControllerTest" time="0.022"/>
+  <testcase name="Format duplicate and delete preserve global default and Character bindings" classname="com.example.chatbar.desktop.DesktopManagementControllerTest" time="0.023"/>
+  <testcase name="duplicate community Character is independent editable local copy with owned resources" classname="com.example.chatbar.desktop.DesktopManagementControllerTest" time="0.029"/>
+  <testcase name="pre commit draft delete failure retains assets and recovery" classname="com.example.chatbar.desktop.DesktopManagementControllerTest" time="0.013"/>
+  <testcase name="stale discard confirmation cannot delete a replaced draft" classname="com.example.chatbar.desktop.DesktopManagementControllerTest" time="0.013"/>
+  <testcase name="navigation waits for committed delete and cancellation still reconciles" classname="com.example.chatbar.desktop.DesktopManagementControllerTest" time="0.013"/>
+  <testcase name="WorldBook guard does not add boundWorldBook or embedded book semantics" classname="com.example.chatbar.desktop.DesktopManagementControllerTest" time="0.015"/>
+  <testcase name="management refresh failure after typed commit keeps nonretryable committed notice" classname="com.example.chatbar.desktop.DesktopManagementControllerTest" time="0.016"/>
+  <testcase name="confirmed draft discard removes all types through durable authority" classname="com.example.chatbar.desktop.DesktopManagementControllerTest" time="0.039"/>
+  <testcase name="WorldBook duplicate renews entry identities and deletes when unreferenced" classname="com.example.chatbar.desktop.DesktopManagementControllerTest" time="0.018"/>
+  <testcase name="committed delete with refresh failure remains a committed warning" classname="com.example.chatbar.desktop.DesktopManagementControllerTest" time="0.012"/>
+  <testcase name="WorldBook Character guard retains bindings and bounds names to three" classname="com.example.chatbar.desktop.DesktopManagementControllerTest" time="0.044"/>
+  <testcase name="Format and WorldBook typed import conflicts keep cancel overwrite and import new semantics" classname="com.example.chatbar.desktop.DesktopManagementControllerTest" time="0.052"/>
+  <testcase name="post commit draft delete exception still cleans only draft session" classname="com.example.chatbar.desktop.DesktopManagementControllerTest" time="0.014"/>
+  <testcase name="Character delete needs confirmation and leaves session history archived" classname="com.example.chatbar.desktop.DesktopManagementControllerTest" time="0.042"/>
+  <testcase name="asset cleanup failure leaves draft deleted with nonfatal warning" classname="com.example.chatbar.desktop.DesktopManagementControllerTest" time="0.013"/>
+  <testcase name="WorldBook Session guard uses extraWorldBookIds and title" classname="com.example.chatbar.desktop.DesktopManagementControllerTest" time="0.015"/>
+  <testcase name="per item export routes use existing Character JSON PNG Format and native ST authorities" classname="com.example.chatbar.desktop.DesktopManagementControllerTest" time="0.1"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

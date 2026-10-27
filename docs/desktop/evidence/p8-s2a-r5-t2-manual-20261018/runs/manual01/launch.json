@@ -1,0 +1,16 @@
+{
+  "run": "manual01",
+  "image": "runtime-image",
+  "localEnvironment": "t2-profile",
+  "rootMode": "normal",
+  "launcherPid": 31172,
+  "launcherCreatedUtc": "2026-10-17T19:28:31.4817232Z",
+  "startedUtc": "2026-10-17T19:28:31.4696800+00:00",
+  "launcherPath": "<SYNTHETIC_GATE>\\runtime-image\\ChatChatBarDesktop.exe",
+  "expectedDataRoot": "<SYNTHETIC_GATE>\\environments\\t2-profile\\ChatChatBarDesktop",
+  "injectedLocalAppData": "<SYNTHETIC_GATE>\\environments\\t2-profile",
+  "startupWatchdogSeconds": 180,
+  "exitWatchdogSeconds": 120,
+  "lifetimeWatchdogSeconds": null,
+  "manualSessionNoForcedExpiry": true
+}

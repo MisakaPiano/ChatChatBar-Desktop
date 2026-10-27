@@ -1,0 +1,22 @@
+{
+  "integrated-oracle-correction-20261025/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopSafeClipboardTest.kt": {
+    "bytes": 7991,
+    "sha256": "c2f5539fdeb4f05e08be5fdfa8df3e81adaaa40bcb88d2ec4868ef9d25f6abf8",
+    "gitBlob": "d87738b8a06c7612f02c68b5e60f395c31ba464a"
+  },
+  "integrated-oracle-correction-20261025/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopWorkspacePresentationTest.kt": {
+    "bytes": 9662,
+    "sha256": "ca592ae674dea1539ccda6c2829ebb4982d524df3dd7e869c0969b291b5fda11",
+    "gitBlob": "5c589a0a881b3b98a43752c465bc1a88cd279698"
+  },
+  "integrated-oracle-correction-20261025/tools/desktop/interop/prepreview/src/SlotIsolatedRestoreProbe.kt": {
+    "bytes": 9302,
+    "sha256": "4fce7681821f8453dbcc7c5b9f66139d9ab9fb5aca6e84e5021b72f2043eb528",
+    "gitBlob": "8b8ff5303139ab195248c23347e07f4c6689183a"
+  },
+  "integrated-oracle-correction-20261025/tools/desktop/interop/prepreview/src/SlotIsolatedRestoreProbeTest.kt": {
+    "bytes": 2324,
+    "sha256": "537df78309de07051ef012721c47385955a34c1cb35d7070642469fb912fadf0",
+    "gitBlob": "8df70de529518eed7d4d2da15991378c2774f449"
+  }
+}

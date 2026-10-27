@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.image.NovelAiPngMetadataReaderTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:31:39.822Z" hostname="DD1" time="0.001">
+  <properties/>
+  <testcase name="parses image guidance and encoded vibe metadata" classname="com.example.chatbar.domain.image.NovelAiPngMetadataReaderTest" time="0.001"/>
+  <testcase name="parses NovelAI v4 comment metadata" classname="com.example.chatbar.domain.image.NovelAiPngMetadataReaderTest" time="0.0"/>
+  <testcase name="rejects generic JSON comment without NovelAI structure" classname="com.example.chatbar.domain.image.NovelAiPngMetadataReaderTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -25,21 +25,27 @@ internal class DesktopCoordinatedSnapshotService internal constructor(
     private val delegate: DesktopSnapshotPrimitive,
     private val coordinator: DesktopDataOperationCoordinator,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val audioMaintenance: DesktopAudioMaintenance? = null,
 ) {
     constructor(
         delegate: AppDataSnapshotService,
         coordinator: DesktopDataOperationCoordinator,
         ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-    ) : this(SharedSnapshotPrimitive(delegate), coordinator, ioDispatcher)
+        audioMaintenance: DesktopAudioMaintenance? = null,
+    ) : this(SharedSnapshotPrimitive(delegate), coordinator, ioDispatcher, audioMaintenance)
+
+    private suspend fun <T> withAudio(interrupt: Boolean, operation: suspend () -> T): T =
+        if (audioMaintenance == null) operation()
+        else audioMaintenance.withMaintenance(interrupt, { coordinator.isRestartRequired }, operation)
 
     suspend fun createSnapshot(
         purpose: SnapshotPurpose = SnapshotPurpose.MANUAL,
-    ): AppDataSnapshot = coordinator.withExclusiveMaintenance {
+    ): AppDataSnapshot = withAudio(true) { coordinator.withExclusiveMaintenance {
         withContext(ioDispatcher) { delegate.createSnapshot(purpose) }
-    }
+    } }
 
     suspend fun restoreSnapshot(snapshotDirectory: Path): SnapshotRestoreResult =
-        coordinator.withExclusiveMaintenance {
+        withAudio(true) { coordinator.withExclusiveMaintenance {
             val maintenanceScope = this
             withContext(ioDispatcher) {
                 try {
@@ -53,21 +59,21 @@ internal class DesktopCoordinatedSnapshotService internal constructor(
                     throw error
                 }
             }
-        }
+        } }
 
     suspend fun pruneAutomaticSnapshots(maximumCount: Int): AutomaticSnapshotPruneResult =
-        coordinator.withExclusiveMaintenance {
+        withAudio(true) { coordinator.withExclusiveMaintenance {
             withContext(ioDispatcher) { delegate.pruneAutomaticSnapshots(maximumCount) }
-        }
+        } }
 
     suspend fun executeAutomaticBackup(
         minimumInterval: Duration,
         maximumCount: Int,
-    ): AutomaticBackupExecutionResult = coordinator.withExclusiveMaintenance {
+    ): AutomaticBackupExecutionResult = withAudio(false) { coordinator.withExclusiveMaintenance {
         withContext(ioDispatcher) {
             delegate.executeAutomaticBackup(minimumInterval, maximumCount)
         }
-    }
+    } }
 
     suspend fun listSnapshots(): List<AppDataSnapshot> = coordinator.withNormalOperation {
         withContext(ioDispatcher) { delegate.listSnapshots() }

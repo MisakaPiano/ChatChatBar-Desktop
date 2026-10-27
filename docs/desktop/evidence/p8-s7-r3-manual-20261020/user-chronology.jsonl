@@ -1,0 +1,25 @@
+{"utc": "2026-10-20T01:55:18.049118+00:00", "step": "W1 setup", "question": "选择合成会话A并展开语音生成；确认整条/本段/朗读声线，无凭据错误", "answer": "已看到这些控件，没有凭据错误", "classification": "USER PASS for entry/controls only; generation not yet tested"}
+{"utc": "2026-10-20T01:58:31.961346+00:00", "step": "W1 single initial attempt", "answer": "需要先选择朗读音色，选择之后测试才成功的", "classification": "Initial missing-narrator FAILED state preserved; user selected narrator before successful generation", "screenshots": ["W1-before-narrator.png", "W1-no-narrator-failure.png", "W1-after-explicit-narrator.png"]}
+{"utc": "2026-10-20T01:58:31.961346+00:00", "step": "W1 single generation/listening/stop after narrator selection", "question": "Alice本段生成，明确授权，听到后停止", "answer": "PASS：录音条出现，听到声音，停止有效", "classification": "USER PASS with explicit narrator prerequisite; no claim that narrator-free attempt passed"}
+{"utc": "2026-10-20T01:59:55.910352+00:00", "step": "W1 extra-request clarification", "answer": "有额外生成／重试操作", "technicalObservation": "Two successful fake TTS requests and two Alice records; additional user generation confirmed, not evidence of automatic resend"}
+{"utc": "2026-10-20T02:01:51.464497+00:00", "step": "W1 whole fill", "question": "Alice朗读声线选中，生成整条补齐，授权，停止，核对旁白/Bob/原Alice", "answer": "PASS：旁白和 Bob 已补齐，Alice 旧录音保留，停止有效", "classification": "USER PASS"}
+{"utc": "2026-10-20T02:03:08.352455+00:00", "step": "W2 additional take", "answer": "PASS：新增独立录音，旧录音仍在", "classification": "USER PASS"}
+{"utc": "2026-10-20T02:05:29.746739+00:00", "step": "W2 replacement unresolved report", "answer": "有异常或无法确认，请说明", "classification": "UNCONFIRMED; not a PASS"}
+{"utc": "2026-10-20T02:05:29.746739+00:00", "step": "W2 replacement user clarification pending", "answer": "生成了但是我没找到提示在什么地方", "classification": "Await distinction between pre-replacement warning and completion notice; no retry requested"}
+{"utc": "2026-10-20T02:06:37.766051+00:00", "step": "W2 missing feedback clarification", "answer": "生成后的成功／完成提示", "classification": "UX observation: no clear completion notice; not proof of replacement failure"}
+{"utc": "2026-10-20T02:06:37.766051+00:00", "step": "W2 extra replacement actions", "answer": "有，操作过不止一条或多次确认", "classification": "Additional user actions confirmed; not a clean single-target isolation trial"}
+{"utc": "2026-10-20T02:06:37.766051+00:00", "step": "W2 replaced recording and history availability", "answer": "可播放，其他录音仍在", "classification": "USER PASS for availability after replacement; single-click isolation NOT independently established"}
+{"utc": "2026-10-20T02:07:54.319908+00:00", "step": "W2 MP3 export", "answer": "PASS：已保存到指定合成目录，没有错误", "classification": "USER PASS; export is file save, not QQ delivery"}
+{"utc": "2026-10-20T02:08:46.836843+00:00", "step": "W2 explicit recording deletion", "answer": "PASS：仅 Bob 录音被删除，聊天文字及其他录音保留", "classification": "USER PASS"}
+{"utc": "2026-10-20T02:10:01.091985+00:00", "step": "W3 session settings", "answer": "PASS：关闭和 English 已保存，无错误", "classification": "USER PASS"}
+{"utc": "2026-10-20T02:11:14.746107+00:00", "step": "W3 translation/tagging flow", "answer": "PASS：Bob 新录音出现，原聊天中文不变，无错误", "classification": "USER PASS for flow/text preservation; live translation quality and changed-text confirmation NOT TESTED"}
+{"utc": "2026-10-20T02:12:34.700784+00:00", "step": "W3 alternative versions", "answer": "PASS：版本隔离正确，切回后原录音仍在", "classification": "USER PASS"}
+{"utc": "2026-10-20T02:13:46.928398+00:00", "step": "W4 in-flight synthesis cancellation", "answer": "PASS：等待中可取消，无新增录音，界面正常", "classification": "USER PASS"}
+{"utc": "2026-10-20T02:15:41.446910+00:00", "step": "W4 session playback ownership", "answer": "PASS：切 B 停止且无串录音，切回 A 录音保留", "classification": "USER PASS"}
+{"utc": "2026-10-20T02:17:59.109489+00:00", "step": "W5 first normal close", "answer": "主窗口已正常关闭，没有异常", "classification": "USER PASS for normal X close, not persistence restart"}
+{"utc": "2026-10-20T02:17:59.109489+00:00", "step": "UX stale notices", "answer": "记录一下，这个底部提示是消不掉的，这个不应该显示在这里，改成弹窗比较好。", "classification": "OPEN UX finding; product unchanged"}
+{"utc": "2026-10-20T02:17:59.109489+00:00", "step": "UX stale notice duration", "answer": "刚才我们做了很多操作之后这两个提示一直在这里", "classification": "USER observed persistence across subsequent operations"}
+{"utc": "2026-10-20T03:39:41.065303+00:00", "step": "W5 authorized persistence restart local playback", "answer": "PASS：原录音仍在，播放和停止正常", "classification": "USER PASS; restarted package, existing local recordings, no new generation requested"}
+{"utc": "2026-10-20T03:40:06.372699+00:00", "step": "W5 restarted session settings", "answer": "PASS：关闭和 English 均保留，无错误", "classification": "USER PASS; persisted audiobook override and language; no settings change requested"}
+{"utc": "2026-10-20T03:40:32.240893+00:00", "step": "W5 restarted reply version isolation", "answer": "PASS：版本隔离正确，切回后原录音仍在", "classification": "USER PASS; no new generation requested"}
+{"utc": "2026-10-20T03:41:38.148256+00:00", "step": "W5 restarted instance normal X close", "answer": "主窗口已正常关闭，没有异常", "classification": "USER PASS; second authorized instance, no further restart"}

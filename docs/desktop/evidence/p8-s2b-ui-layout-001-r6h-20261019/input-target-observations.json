@@ -1,0 +1,77 @@
+{
+  "basis": "Raw JUnit system-out; sequential read-only API observations, not an atomic OS snapshot",
+  "sourceRecord": "FISH_R6H_NATIVE_HITTEST phase=before-press sampledNanos=146476475276100 available=true owned=OWNED:0x1c31cfc ownedRoot=OWNED:0x1c31cfc jvmPid=23768 planned=java.awt.Point[x=1124,y=207] awt=java.awt.Point[x=1131,y=207] native=java.awt.Point[x=1131,y=207] coordinatesMatch=true pointerAtPlan=false thumbHit=false hit=OTHER_PROCESS hitRoot=OTHER_PROCESS hitRootOwned=false hitInJvm=false foreground=OTHER_PROCESS foregroundRoot=OTHER_PROCESS foregroundOwned=false ownedRootValid=true showing=true active=true focused=true listenerRegistered=true observeScrollbar=true leftKeyState=0 leftDown=false ownedEvents=0 ownedPresses=0 windowSelfEvents=0 descendantEvents=0 regionOtherEvents=0 destinationVerified=false observation=HIT_TEST_TARGET_MISMATCH scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]",
+  "phase": "before-press",
+  "probeAvailable": true,
+  "ownedHwnd": "OWNED:0x1c31cfc",
+  "ownedRoot": "OWNED:0x1c31cfc",
+  "currentJvmPid": 23768,
+  "planned": {
+    "x": 1124,
+    "y": 207
+  },
+  "awtPointer": {
+    "x": 1131,
+    "y": 207
+  },
+  "win32Pointer": {
+    "x": 1131,
+    "y": 207
+  },
+  "driftAfterStableSamples": {
+    "x": 7,
+    "y": 0
+  },
+  "stableSamples": [
+    "FISH_R5_ADMISSION attempt=0 sample=0 planned=java.awt.Point[x=1124,y=207] actual=java.awt.Point[x=1124,y=207] thumb=java.awt.Rectangle[x=1120,y=155,width=8,height=104] matches=true",
+    "FISH_R5_ADMISSION attempt=0 sample=1 planned=java.awt.Point[x=1124,y=207] actual=java.awt.Point[x=1124,y=207] thumb=java.awt.Rectangle[x=1120,y=155,width=8,height=104] matches=true",
+    "FISH_R5_ADMISSION attempt=0 sample=2 planned=java.awt.Point[x=1124,y=207] actual=java.awt.Point[x=1124,y=207] thumb=java.awt.Rectangle[x=1120,y=155,width=8,height=104] matches=true"
+  ],
+  "actualThumb": {
+    "x": 1120,
+    "y": 155,
+    "width": 8,
+    "height": 104
+  },
+  "pointerCoordinatesAgree": true,
+  "pointerAtPlan": false,
+  "thumbHit": false,
+  "hit": "OTHER_PROCESS",
+  "hitRoot": "OTHER_PROCESS",
+  "hitRootOwned": false,
+  "hitInJvm": false,
+  "foreground": "OTHER_PROCESS",
+  "foregroundRoot": "OTHER_PROCESS",
+  "foregroundOwned": false,
+  "ownedRootValid": true,
+  "awtShowing": true,
+  "awtActive": true,
+  "awtFocused": true,
+  "listenerRegistered": true,
+  "observeScrollbar": true,
+  "prePressLeftKeyState": 0,
+  "prePressLeftDown": false,
+  "afterPressButtonState": "NOT SAMPLED: Press blocked before invocation",
+  "afterReleaseButtonState": "NOT SAMPLED: no matching Press; no Release invoked",
+  "robotPressInvocations": 0,
+  "robotReleaseInvocations": 0,
+  "ownedAwtEvents": 0,
+  "ownedAwtPresses": 0,
+  "windowSelfEvents": 0,
+  "descendantEvents": 0,
+  "regionOtherEvents": 0,
+  "observedClassifications": [
+    "HIT_TEST_TARGET_MISMATCH",
+    "FOREGROUND_MISMATCH"
+  ],
+  "notApplicableClassifications": [
+    "NATIVE_BUTTON_STATE_NOT_OBSERVED",
+    "NATIVE_DOWN_WITHOUT_AWT_EVENT",
+    "OWNED_INPUT_DELIVERED"
+  ],
+  "foreignWindowIdentifiers": "Only OTHER_PROCESS classifications recorded; no raw HWND/PID/title/command line",
+  "foreignHitEqualsForeignForeground": "UNKNOWN; not recorded and not inferred",
+  "plannedPointHit": "NOT SAMPLED: WindowFromPoint queried actual cursor, not the earlier plan",
+  "historicalR6FR6GPress0RootCause": "UNKNOWN: no historical native hit snapshot",
+  "pointerMovementAndForegroundChangeSource": "UNKNOWN"
+}

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.data.repository.CharacterTransferStrictDeleteTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-19T12:01:20.693Z" hostname="DD1" time="0.089">
+  <properties/>
+  <testcase name="strict transfer deletion stays idempotent for already absent targets" classname="com.example.chatbar.data.repository.CharacterTransferStrictDeleteTest" time="0.028"/>
+  <testcase name="WorldBook transfer rollback reports failure while durable target remains" classname="com.example.chatbar.data.repository.CharacterTransferStrictDeleteTest" time="0.021"/>
+  <testcase name="FormatCard transfer rollback reports failure while durable target remains" classname="com.example.chatbar.data.repository.CharacterTransferStrictDeleteTest" time="0.017"/>
+  <testcase name="Character transfer delete does not commit while durable target remains" classname="com.example.chatbar.data.repository.CharacterTransferStrictDeleteTest" time="0.022"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

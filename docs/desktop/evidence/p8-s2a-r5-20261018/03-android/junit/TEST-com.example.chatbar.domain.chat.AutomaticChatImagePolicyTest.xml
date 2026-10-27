@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.chat.AutomaticChatImagePolicyTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:19.919Z" hostname="DD1" time="0.02">
+  <properties/>
+  <testcase name="only explicit normal completion passes transport gate" classname="com.example.chatbar.domain.chat.AutomaticChatImagePolicyTest" time="0.001"/>
+  <testcase name="legacy session defaults off and new setting survives serialization" classname="com.example.chatbar.domain.chat.AutomaticChatImagePolicyTest" time="0.0"/>
+  <testcase name="semantic verdict accepts code wrappers including inline json prefix" classname="com.example.chatbar.domain.chat.AutomaticChatImagePolicyTest" time="0.017"/>
+  <testcase name="semantic verdict requires complete related non refusal reply" classname="com.example.chatbar.domain.chat.AutomaticChatImagePolicyTest" time="0.001"/>
+  <testcase name="code wrappers do not permit incomplete ambiguous or prose verdicts" classname="com.example.chatbar.domain.chat.AutomaticChatImagePolicyTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

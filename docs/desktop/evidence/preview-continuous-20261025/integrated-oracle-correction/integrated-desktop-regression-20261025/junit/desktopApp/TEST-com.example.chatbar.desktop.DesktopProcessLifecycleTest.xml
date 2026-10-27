@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopProcessLifecycleTest" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-10-25T02:32:18.668Z" hostname="DD1" time="0.263">
+  <properties/>
+  <testcase name="application failure presents recovery and never calls successful terminator" classname="com.example.chatbar.desktop.DesktopProcessLifecycleTest" time="0.012"/>
+  <testcase name="initialization failure waits for real task cleanup before releasing root and never exits successfully" classname="com.example.chatbar.desktop.DesktopProcessLifecycleTest" time="0.051"/>
+  <testcase name="synthetic teardown timeout reports incomplete lifecycle without claiming drain or cancelling writer" classname="com.example.chatbar.desktop.DesktopProcessLifecycleTest" time="0.058"/>
+  <testcase name="declared incomplete root cannot become green when body swallows teardown failure" classname="com.example.chatbar.desktop.DesktopProcessLifecycleTest" time="0.003"/>
+  <testcase name="root fixture preserves suppression disabled body failure and cleanup evidence" classname="com.example.chatbar.desktop.DesktopProcessLifecycleTest" time="0.002"/>
+  <testcase name="recovery presentation failure retains unsafe cause" classname="com.example.chatbar.desktop.DesktopProcessLifecycleTest" time="0.044"/>
+  <testcase name="image task cancellation finishes owned writes before coordinator closes" classname="com.example.chatbar.desktop.DesktopProcessLifecycleTest" time="0.054"/>
+  <testcase name="drain timeouts retain ownership during explicit recovery and retry before disposal" classname="com.example.chatbar.desktop.DesktopProcessLifecycleTest" time="0.015"/>
+  <testcase name="terminator is outside failure handler and invoked once" classname="com.example.chatbar.desktop.DesktopProcessLifecycleTest" time="0.0"/>
+  <testcase name="termination follows container picker and root release exactly once" classname="com.example.chatbar.desktop.DesktopProcessLifecycleTest" time="0.005"/>
+  <testcase name="root fixture rejects unexpected ownership retention after successful body" classname="com.example.chatbar.desktop.DesktopProcessLifecycleTest" time="0.002"/>
+  <testcase name="initialization failure keeps ownership through shutdown retry then reports original failure" classname="com.example.chatbar.desktop.DesktopProcessLifecycleTest" time="0.005"/>
+  <testcase name="root fixture preserves body failure identity and ordered cleanup diagnostic" classname="com.example.chatbar.desktop.DesktopProcessLifecycleTest" time="0.005"/>
+  <testcase name="non timeout close failure holds lock without retry or successful exit" classname="com.example.chatbar.desktop.DesktopProcessLifecycleTest" time="0.005"/>
+  <testcase name="root fixture removes synthetic directory after confirmed ordinary completion" classname="com.example.chatbar.desktop.DesktopProcessLifecycleTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopChatRetrievalTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-25T02:27:39.990Z" hostname="DD1" time="0.032">
+  <properties/>
+  <testcase name="OFF readonly and fake never resolve credentials or send requests" classname="com.example.chatbar.desktop.DesktopChatRetrievalTest" time="0.002"/>
+  <testcase name="planning failure stays visible and source change invalidates completed retrieval" classname="com.example.chatbar.desktop.DesktopChatRetrievalTest" time="0.028"/>
+  <testcase name="split sources each receive their own recall quota and active message exclusion" classname="com.example.chatbar.desktop.DesktopChatRetrievalTest" time="0.001"/>
+  <testcase name="empty inventory and intentionally empty plan do not send an embedding request" classname="com.example.chatbar.desktop.DesktopChatRetrievalTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

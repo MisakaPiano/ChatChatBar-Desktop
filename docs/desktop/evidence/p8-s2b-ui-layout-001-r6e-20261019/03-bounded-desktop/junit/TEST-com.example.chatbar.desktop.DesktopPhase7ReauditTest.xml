@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopPhase7ReauditTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-18T20:01:12.759Z" hostname="DD1" time="0.854">
+  <properties/>
+  <testcase name="stale or corrupt edit authority blocks allocation and preserves originals" classname="com.example.chatbar.desktop.DesktopPhase7ReauditTest" time="0.101"/>
+  <testcase name="repeated picks share pending list and independent removal with expanded composer" classname="com.example.chatbar.desktop.DesktopPhase7ReauditTest" time="0.11"/>
+  <testcase name="message edit publishes references before exact cleanup and retains matching metadata" classname="com.example.chatbar.desktop.DesktopPhase7ReauditTest" time="0.082"/>
+  <testcase name="unconfigured manual requirements fail before persistence and task admission" classname="com.example.chatbar.desktop.DesktopPhase7ReauditTest" time="0.066"/>
+  <testcase name="history uses shared filter date albums persisted preference and complete recipe detail" classname="com.example.chatbar.desktop.DesktopPhase7ReauditTest" time="0.068"/>
+  <testcase name="image edit failure before publication retains every candidate and owned file" classname="com.example.chatbar.desktop.DesktopPhase7ReauditTest" time="0.077"/>
+  <testcase name="missing guidance cannot silently mutate draft and confirmation is explicit" classname="com.example.chatbar.desktop.DesktopPhase7ReauditTest" time="0.094"/>
+  <testcase name="edit failure after durable write retains both obsolete and newly committed images" classname="com.example.chatbar.desktop.DesktopPhase7ReauditTest" time="0.074"/>
+  <testcase name="deleting generated image removes matching metadata and last empty derived message only" classname="com.example.chatbar.desktop.DesktopPhase7ReauditTest" time="0.107"/>
+  <testcase name="entry account and post-success reconciliation preserve local spending until server acknowledges" classname="com.example.chatbar.desktop.DesktopPhase7ReauditTest" time="0.073"/>
+  <testcase name="reverse progress preserves separate full content reasoning and stage with direct guidance wiring" classname="com.example.chatbar.desktop.DesktopPhase7ReauditTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

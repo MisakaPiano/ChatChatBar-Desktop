@@ -1,0 +1,35 @@
+{
+  "utc": "2026-10-20T19:12:44.812728+00:00",
+  "userNormalMainClose": "USER PASS: 关了",
+  "jvmExit": {
+    "utc": "2026-10-20T19:03:01.7027157+00:00",
+    "event": "OWNED_JVM_EXIT_OBSERVED",
+    "exitCode": 0,
+    "noKill": true
+  },
+  "launcherPid": 38024,
+  "launcherAbsent": true,
+  "launcherExitCode": null,
+  "launcherExitCodeStatus": "INCONCLUSIVE: runtime-watch failed before application close, lost retained handle",
+  "mainFinalCloseTrace": "UNKNOWN after watcher failure; early screenshot-close trace evidence remains valid",
+  "watcherFailure": "Get-CimInstance resource error at 18:46:29Z; not evidence of product OOM or minimum memory requirement",
+  "postExitLock": {
+    "utc": "2026-10-20T19:06:33.025645+00:00",
+    "exitCode": 0,
+    "expected": 0,
+    "usesRealRootOwnership": true
+  },
+  "formalAudioCount": 5,
+  "formalAudioPreserved": true,
+  "exclusiveAudioOpenAllPass": true,
+  "allKnownOwnedProcessesAbsent": true,
+  "fakeExitCode": 0,
+  "fakeNormalDrain": "Recovered through original newline/readLine protocol after supervisor retained fake on watcher error; no process kill",
+  "tlsAndOwnedTempCleaned": true,
+  "fakeProviderRequestCount": 0,
+  "realProviderRequestCount": 0,
+  "counterBasis": "No fake events file, loopback-only non-forwarding fake; screenshot-only flow; no live APIs configured",
+  "historicalCloseCause": "UNKNOWN",
+  "overallUserAcceptance": "REJECTED: core requested UI not delivered",
+  "postP8Hold": "UNCHANGED"
+}

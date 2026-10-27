@@ -1,0 +1,26 @@
+<testsuite name="Operation1CopySpacePS51" tests="24" failures="0" errors="0" skipped="0">
+  <testcase name="hashtable-array" />
+  <testcase name="single-hashtable" />
+  <testcase name="pscustomobject-array" />
+  <testcase name="mixed-object-shapes" />
+  <testcase name="empty-array" />
+  <testcase name="null-evidence" />
+  <testcase name="nested-array" />
+  <testcase name="missing-dictionary-field" />
+  <testcase name="missing-object-field" />
+  <testcase name="null-bytes" />
+  <testcase name="string-bytes" />
+  <testcase name="floating-bytes" />
+  <testcase name="boolean-bytes" />
+  <testcase name="zero-bytes" />
+  <testcase name="negative-bytes" />
+  <testcase name="uint64-out-of-range" />
+  <testcase name="sum-overflow" />
+  <testcase name="capacity-exact-integer" />
+  <testcase name="capacity-rejects-unknown-memory" />
+  <testcase name="capacity-overflow" />
+  <testcase name="original-function-reproduces-measure-error" />
+  <testcase name="original-function-output-sums-and-deduplicates-chain" />
+  <testcase name="no-original-write-command-before-failure-line" />
+  <testcase name="new-and-inspection-script-parse" />
+</testsuite>

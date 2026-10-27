@@ -1,0 +1,6 @@
+Raw log: app/desktopApp/build/f4-b4-r1-validation-20261015/01-compile-controller-ui.log
+SHA-256: a98832de5072463d50218c9e117cdcd2eb14a482f4f22ef2837653ad9e875c6d
+Original retained unchanged locally. Exact error line follows:
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMessageFormatRepairController.kt:90:66 Smart cast to 'DesktopRepairTaskIdentity' is impossible, because 'identity' is a property that has an open or custom getter.
+> Task :desktopApp:compileKotlin FAILED
+BUILD FAILED in 1m 23s

@@ -1,0 +1,60 @@
+diff --git "a/H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-s2b-ui-layout-001-r6a-20261019\\baseline-sources\\DesktopFishPickerNativeUxTest.kt" "b/H:\\ChatChatBar-Desktop\\app\\desktopApp\\src\\test\\kotlin\\com\\example\\chatbar\\desktop\\DesktopFishPickerNativeUxTest.kt"
+index ae9d6e61..a68aae23 100644
+--- "a/H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-s2b-ui-layout-001-r6a-20261019\\baseline-sources\\DesktopFishPickerNativeUxTest.kt"
++++ "b/H:\\ChatChatBar-Desktop\\app\\desktopApp\\src\\test\\kotlin\\com\\example\\chatbar\\desktop\\DesktopFishPickerNativeUxTest.kt"
+@@ -245,6 +245,55 @@ class DesktopFishPickerNativeUxTest {
+                     n.boundsInRoot.width.roundToInt(), n.boundsInRoot.height.roundToInt())
+             }
+             val controls = listOf("上一页", "第 $page 页 / 共 6 页", "跳转页码", "跳转", "下一页").associateWith(::bounds)
++            // Read-only diagnostics precede every geometry assertion, including the original adjacency predicate.
++            val marker = "FISH_R6A_PAGER_GEOMETRY"
++            println("$marker WINDOW requestedWidthDp=$width frame=${w.bounds} client=$client clientSize=${w.contentPane.size} " +
++                "scale=${w.graphicsConfiguration.defaultTransform} active=${w.isActive} focused=${w.isFocused} " +
++                "queries=$queries http=${server.requestCount} bindings=$bindings")
++            controls.keys.forEach { label ->
++                val candidates = nodes().filter { it.label(label) }
++                val chosen = node(label)
++                val reason = when {
++                    candidates.any { it.config.contains(SemanticsActions.SetText) } -> "first SetText match"
++                    candidates.any { it.config.getOrNull(SemanticsProperties.Role) == Role.Button } -> "first Role.Button match"
++                    else -> "first label match"
++                }
++                println("$marker MATCH label=$label candidates=${candidates.map { it.id }} chosen=${chosen.id} reason=$reason originalHybridRect=${controls[label]}")
++                candidates.forEach { n ->
++                    val path = generateSequence(n) { it.parent }.take(16).map { it.id }.toList()
++                    val windowOrigin = n.root.positionOnScreen - n.root.positionInWindow
++                    val screenBounds = n.boundsInWindow.translate(windowOrigin)
++                    println("$marker NODE label=$label id=${n.id} chosen=${n.id == chosen.id} parent=${n.parent?.id} " +
++                        "children=${n.children.map { it.id }} pathToRoot=$path root=${n.root.id} " +
++                        "description=${n.config.getOrNull(SemanticsProperties.ContentDescription)} text=${n.config.getOrNull(SemanticsProperties.Text)} " +
++                        "role=${n.config.getOrNull(SemanticsProperties.Role)} keys=${n.config.map { it.key.name }} " +
++                        "disabled=${n.config.contains(SemanticsProperties.Disabled)} onClick=${n.config.contains(SemanticsActions.OnClick)} " +
++                        "setText=${n.config.contains(SemanticsActions.SetText)} " +
++                        "positionOnScreen=${n.positionOnScreen} positionInWindow=${n.positionInWindow} positionInRoot=${n.positionInRoot} " +
++                        "boundsInWindow=${n.boundsInWindow} boundsInRoot=${n.boundsInRoot} touchBoundsInRoot=${n.touchBoundsInRoot} " +
++                        "rootDerivedWindowOrigin=$windowOrigin screenBoundsFromWindow=$screenBounds " +
++                        "layoutSize=${n.layoutInfo.width}x${n.layoutInfo.height} density=${n.layoutInfo.density.density} " +
++                        "fontScale=${n.layoutInfo.density.fontScale}")
++                    generateSequence(n.layoutInfo) { it.parentInfo }.take(16).forEachIndexed { depth, layout ->
++                        val coordinates = layout.coordinates
++                        println("$marker LAYOUT label=$label node=${n.id} depth=$depth identity=${System.identityHashCode(layout)} " +
++                            "semanticsId=${layout.semanticsId} parentIdentity=${layout.parentInfo?.let(System::identityHashCode)} " +
++                            "size=${layout.width}x${layout.height} coordinatesSize=${coordinates.size} placed=${layout.isPlaced} attached=${layout.isAttached} " +
++                            "screenOrigin=${coordinates.localToScreen(androidx.compose.ui.geometry.Offset.Zero)} " +
++                            "windowOrigin=${coordinates.localToWindow(androidx.compose.ui.geometry.Offset.Zero)} " +
++                            "rootOrigin=${coordinates.localToRoot(androidx.compose.ui.geometry.Offset.Zero)}")
++                    }
++                }
++            }
++            val selectedField = node("跳转页码"); val selectedJump = node("跳转")
++            val originalField = controls.getValue("跳转页码"); val originalJump = controls.getValue("跳转")
++            val overlap = minOf(originalField.y + originalField.height, originalJump.y + originalJump.height) - maxOf(originalField.y, originalJump.y)
++            println("$marker RELATION field=${selectedField.id} jump=${selectedJump.id} " +
++                "hybridScreenGap=${originalJump.x - originalField.x - originalField.width} hybridVerticalOverlap=$overlap hybridSameRow=${overlap > 0} " +
++                "windowGap=${selectedJump.boundsInWindow.left - selectedField.boundsInWindow.right} " +
++                "rootGap=${selectedJump.boundsInRoot.left - selectedField.boundsInRoot.right} " +
++                "windowVerticalOverlap=${minOf(selectedField.boundsInWindow.bottom, selectedJump.boundsInWindow.bottom) - maxOf(selectedField.boundsInWindow.top, selectedJump.boundsInWindow.top)}")
++            System.out.flush()
+             controls.forEach { (label, rect) -> assertTrue(client.contains(rect), "$label must be inside native client viewport at $width dp") }
+             val field = controls.getValue("跳转页码"); val jump = controls.getValue("跳转")
+             assertTrue(jump.x >= field.x + field.width && jump.x - field.x - field.width <= 12,

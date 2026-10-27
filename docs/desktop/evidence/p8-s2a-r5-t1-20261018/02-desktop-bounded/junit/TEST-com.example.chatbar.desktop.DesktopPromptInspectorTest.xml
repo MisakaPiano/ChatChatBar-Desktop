@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopPromptInspectorTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-17T19:04:56.368Z" hostname="DD1" time="0.412">
+  <properties/>
+  <testcase name="controllerRepresentsNoSessionsAndNoUserMessagesWithoutCrashing" classname="com.example.chatbar.desktop.DesktopPromptInspectorTest" time="0.047"/>
+  <testcase name="unresolvedStableOutletExposesNonCacheablePrefixWithoutKey" classname="com.example.chatbar.desktop.DesktopPromptInspectorTest" time="0.058"/>
+  <testcase name="explicitContextInputOverridesPersistedSessionContextWindow" classname="com.example.chatbar.desktop.DesktopPromptInspectorTest" time="0.124"/>
+  <testcase name="controllerRefreshSelectionAndInspectionRemainReadOnly" classname="com.example.chatbar.desktop.DesktopPromptInspectorTest" time="0.103"/>
+  <testcase name="inspectionIsZeroWriteAndExposesAuthoritativeTraceCacheAndWorldBookEvidence" classname="com.example.chatbar.desktop.DesktopPromptInspectorTest" time="0.08"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

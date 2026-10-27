@@ -1,0 +1,5 @@
+First evidence staged diff-check, 2026-10-16:
+docs/desktop/evidence/p9-s2b-g0-preflight-20261016/run-stage.ps1:14: new blank line at EOF.
+Exit code: 1.
+The raw runner script was preserved byte-for-byte; a path-specific evidence
+whitespace attribute permits its original blank EOF. Kotlin scope is unaffected.

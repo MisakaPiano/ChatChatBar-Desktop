@@ -1,0 +1,14 @@
+{
+  "featureHead": "4649ef96680337dea073bb26f810f57397c1cd57",
+  "packagedFrozenHead": "5294cf4502d91f810f8ad6b2b6f7d2ae2eeccd03",
+  "productionSource": "a8990b34073647169e7e1a62b2d0e969323cddf6",
+  "existingImageReadback": "636/636 PASS",
+  "manifestSha256": "d6ddd8c13f3934f9e22c5710c52a534805ec4ec86463a317be67b8a0937f0907",
+  "runtimeImagesRebuilt": false,
+  "checks": [
+    "B2-empty",
+    "B4-portable-domain",
+    "B5-invalid-marker",
+    "B5-bad-bootstrap"
+  ]
+}

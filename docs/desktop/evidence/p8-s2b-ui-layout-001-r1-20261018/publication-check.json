@@ -1,0 +1,14 @@
+{
+  "sourceFiles": 8,
+  "testedDraftsUnchanged": true,
+  "MainProviderOnly": true,
+  "sourceDiffCheckExit": 0,
+  "reversePatchDryRun": true,
+  "JUnitXML": 3,
+  "XMLRawBytesPreserved": true,
+  "protectedUserContentsRead": false,
+  "sourceCommitted": false,
+  "sensitivePatternMatches": 0,
+  "priorREDPreserved": true,
+  "futureGovernanceOnly": "WIN-BRAND-001"
+}

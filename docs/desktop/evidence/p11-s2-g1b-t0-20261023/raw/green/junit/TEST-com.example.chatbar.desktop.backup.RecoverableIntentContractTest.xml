@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.backup.RecoverableIntentContractTest" tests="20" skipped="0" failures="0" errors="0" timestamp="2026-10-23T09:40:33.986Z" hostname="DD1" time="0.014">
+  <properties/>
+  <testcase name="operation root and protected account context must be declared" classname="com.example.chatbar.desktop.backup.RecoverableIntentContractTest" time="0.003"/>
+  <testcase name="unresolved mapping and missing protected participant never complete" classname="com.example.chatbar.desktop.backup.RecoverableIntentContractTest" time="0.0"/>
+  <testcase name="extra undeclared key or malformed participant rejects" classname="com.example.chatbar.desktop.backup.RecoverableIntentContractTest" time="0.0"/>
+  <testcase name="duplicate protected and data participants reject" classname="com.example.chatbar.desktop.backup.RecoverableIntentContractTest" time="0.0"/>
+  <testcase name="data and shared secret ownership plus durable evidence are separate claims" classname="com.example.chatbar.desktop.backup.RecoverableIntentContractTest" time="0.0"/>
+  <testcase name="missing new protected evidence rejects" classname="com.example.chatbar.desktop.backup.RecoverableIntentContractTest" time="0.0"/>
+  <testcase name="generation must be present positive advancing and shared by all observations" classname="com.example.chatbar.desktop.backup.RecoverableIntentContractTest" time="0.001"/>
+  <testcase name="missing old evidence or contradictory absent proof rejects" classname="com.example.chatbar.desktop.backup.RecoverableIntentContractTest" time="0.0"/>
+  <testcase name="source identity must be complete authenticated and bound to same plan" classname="com.example.chatbar.desktop.backup.RecoverableIntentContractTest" time="0.0"/>
+  <testcase name="intent snapshots do not expose hashes or mutate with caller collection" classname="com.example.chatbar.desktop.backup.RecoverableIntentContractTest" time="0.002"/>
+  <testcase name="all old rollback requires recovering and does not imply imported success" classname="com.example.chatbar.desktop.backup.RecoverableIntentContractTest" time="0.001"/>
+  <testcase name="existing target cannot be relabeled absent to evade old protected evidence" classname="com.example.chatbar.desktop.backup.RecoverableIntentContractTest" time="0.0"/>
+  <testcase name="new state label alone is insufficient without exact protected byte evidence" classname="com.example.chatbar.desktop.backup.RecoverableIntentContractTest" time="0.0"/>
+  <testcase name="ordered candidate phases validate but never authorize business" classname="com.example.chatbar.desktop.backup.RecoverableIntentContractTest" time="0.0"/>
+  <testcase name="invalid phase edges and repeated complete reject deterministically" classname="com.example.chatbar.desktop.backup.RecoverableIntentContractTest" time="0.001"/>
+  <testcase name="all combinations of old new unknown and ambiguous forbid mixed success" classname="com.example.chatbar.desktop.backup.RecoverableIntentContractTest" time="0.005"/>
+  <testcase name="post publication ambiguous outcome blocks even when rest looks new" classname="com.example.chatbar.desktop.backup.RecoverableIntentContractTest" time="0.001"/>
+  <testcase name="unknown rollback or cancellation result cannot unlock business" classname="com.example.chatbar.desktop.backup.RecoverableIntentContractTest" time="0.0"/>
+  <testcase name="key first data first and second key failure cannot be called complete" classname="com.example.chatbar.desktop.backup.RecoverableIntentContractTest" time="0.0"/>
+  <testcase name="old absence evidence permits verified all old rollback only" classname="com.example.chatbar.desktop.backup.RecoverableIntentContractTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

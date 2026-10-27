@@ -1,0 +1,6 @@
+{
+  "exitCode": 0,
+  "command": "javac -J-Xmx128m -encoding UTF-8 -cp <new runtime-image/app/*> -d <support-classes> R7UiSupport.java",
+  "sourceSha256": "d701abe13f74d969ed21104bfbbbf2c2ccffd7b5aa3481d7143191afb1107668",
+  "productionBuildUnchanged": true
+}

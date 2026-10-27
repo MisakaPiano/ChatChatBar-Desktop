@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.memory.MemoryIdentityContractTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-19T12:01:47.327Z" hostname="DD1" time="0.003">
+  <properties/>
+  <testcase name="coverage cannot invent unknown duplicate reversed or gapped source turns" classname="com.example.chatbar.domain.memory.MemoryIdentityContractTest" time="0.0"/>
+  <testcase name="ancestry proof requires child coverage and preserves ordered source evidence" classname="com.example.chatbar.domain.memory.MemoryIdentityContractTest" time="0.001"/>
+  <testcase name="display T is derived after tombstones and duplicates without changing stable identity" classname="com.example.chatbar.domain.memory.MemoryIdentityContractTest" time="0.001"/>
+  <testcase name="verified node order uses current identity rather than legacy persisted T" classname="com.example.chatbar.domain.memory.MemoryIdentityContractTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,43 @@
+{
+  "run": "BV-B4",
+  "startedUtc": "2026-10-16T15:22:24.5179558+00:00",
+  "endedUtc": "2026-10-16T15:32:25.1497256+00:00",
+  "durationSeconds": 600.6317698,
+  "closeObservedUtc": null,
+  "processLifetimeBlocked": true,
+  "allOwnedProcessesExited": false,
+  "processes": [
+    {
+      "pid": 37952,
+      "identity": {
+        "pid": 37952,
+        "parentPid": 33924,
+        "createdUtc": "2026-10-16T15:22:35.6393720Z",
+        "executablePath": "<PACKAGE_LOCAL>\\portable-blocked-image\\ChatChatBarDesktop.exe",
+        "image": "portable-blocked-image"
+      },
+      "isLauncher": false,
+      "jvmLoaded": false,
+      "exited": false,
+      "exitCode": null,
+      "moduleReadError": null
+    },
+    {
+      "pid": 33924,
+      "identity": {
+        "pid": 33924,
+        "parentPid": 41384,
+        "createdUtc": "2026-10-16T15:22:26.3843450Z",
+        "executablePath": "<PACKAGE_LOCAL>\\portable-blocked-image\\ChatChatBarDesktop.exe",
+        "image": "portable-blocked-image"
+      },
+      "isLauncher": true,
+      "jvmLoaded": false,
+      "exited": false,
+      "exitCode": null,
+      "moduleReadError": null
+    }
+  ],
+  "probeEvents": [],
+  "probeObservationErrors": []
+}

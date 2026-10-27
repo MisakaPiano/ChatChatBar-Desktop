@@ -1,0 +1,19 @@
+{
+  "excludedAuthorizedRefs": [
+    "refs/heads/feature/phase8-fish-audio",
+    "refs/remotes/origin/feature/phase8-fish-audio"
+  ],
+  "unchangedCount": 219,
+  "canonicalSha256": "d5130535d724049010eb8ea51e85cde305496483bb2918ec8c65ef1700bd482c",
+  "selected": [
+    "refs/heads/desktop 4c2af2576e2319e8041ffd2a6c5a205450f18246",
+    "refs/heads/master 550409689df8c51f459fb50b4e04c8ac2fa4bf35",
+    "refs/heads/sync/1.3.49 719a7a1f639913bbc513e8d89d5866053bc0e1d3",
+    "refs/heads/sync/1.4.0 475679c23b41e5258adb56f3e4e85734ca43ccd3",
+    "refs/heads/sync/1.4.1 44418b6413460a7b40ba67dca4ac8887e37102cb",
+    "refs/heads/sync/1.4.4 9b6378dbb595dd2f3ff5143a7a8e46653c99e721",
+    "refs/remotes/origin/desktop 5ef95428421f7c693b010ac88f51d470804ab07a",
+    "refs/remotes/origin/master 550409689df8c51f459fb50b4e04c8ac2fa4bf35",
+    "refs/remotes/upstream/master 550409689df8c51f459fb50b4e04c8ac2fa4bf35"
+  ]
+}

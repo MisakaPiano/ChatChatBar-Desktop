@@ -1,0 +1,25 @@
+{
+  "scope": "Synthetic root card identities only",
+  "cards": [
+    {
+      "id": "2a00365b-1a1c-43af-9200-b94e823695f8",
+      "name": "卢帕/RUPA——加班，然后捡到女高中生",
+      "fileSha256": "ebd0e29f07828aa7245f622d948bd67112a3056263b05a8b0880293a1e7b644b"
+    },
+    {
+      "id": "66236675-47d0-4fcc-9280-8862098e60d6",
+      "name": "Mujica与MyGO【开放世界】",
+      "fileSha256": "7e8aa0dec2ce63d115743787715e2d30291183797aca99b81cabd063f187d3f0"
+    },
+    {
+      "id": "t2-freeform",
+      "name": "T2 自由文本测试卡",
+      "fileSha256": "af4eeca69dfc5f6fdc06e2c53d33d0b029ba266077e3a184f63cf42de2f0b29a"
+    },
+    {
+      "id": "t2-structured",
+      "name": "T2 结构化测试卡",
+      "fileSha256": "90cf366f1d00e1101d671c892745b4080776bed62516ff18c0c49724d8a925f5"
+    }
+  ]
+}

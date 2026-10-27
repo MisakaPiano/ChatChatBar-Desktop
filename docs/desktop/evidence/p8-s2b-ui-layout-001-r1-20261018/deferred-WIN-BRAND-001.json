@@ -1,0 +1,19 @@
+{
+  "id": "WIN-BRAND-001",
+  "status": "OPEN / IMPLEMENTATION PENDING",
+  "recordedUtc": "2026-10-18T13:17:47.894117+00:00",
+  "userDirectedFollowUp": true,
+  "currentSliceScopeExpanded": false,
+  "scope": "Unify official CCB Logo in system diagnostic/error JFrame windows; separately assess native Windows MessageBox branding without breaking standard error presentation.",
+  "reportedSourceEntryPoints": [
+    "DesktopStartupBlockedPresenter.kt",
+    "DesktopProcessLifecycle.kt unsafe-shutdown window",
+    "DesktopShutdownWaitObserver.kt waiting window"
+  ],
+  "assetAuthority": "Reuse DesktopBrandResources official icon; no second brand assets.",
+  "acceptance": "Real packaged Windows window logo and user verification; preserve error diagnostics, shutdown safety, root ownership, retry and process lifetime.",
+  "nextGovernanceCheckpoint": "Next safe docs-only governance checkpoint: CURRENT, Roadmap and release-before UX checklist; not this active UI implementation.",
+  "independentFrom": "WIN-AUTO-001",
+  "noHistoricalPassReuse": "P7-WIN-02 PASS does not establish this issue PASS",
+  "productionEditsAuthorizedNow": false
+}

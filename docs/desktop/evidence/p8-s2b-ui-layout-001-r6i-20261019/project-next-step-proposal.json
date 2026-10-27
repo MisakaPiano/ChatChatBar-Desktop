@@ -1,0 +1,7 @@
+{
+  "status": "PROPOSAL ONLY / NOT IMPLEMENTED / NO RESTART",
+  "minimumScope": "Test-only preparation/arming handshake; production UI unchanged",
+  "proposal": "Require explicit successful ARMED acknowledgement before instructing human to drag; separate activation and recording readiness visibly. Preserve actual pre-action baseline and strict target/event/range/item invariants; do not reset LazyList or synthesize input.",
+  "reason": "Current control rejected a nonzero late baseline before recording; user was told recording had begun without acknowledgement",
+  "decisionsForProject": "Whether and how to authorize one further manual control; keep unattended Robot and attended human acceptance distinct; no bounded exclusions added"
+}

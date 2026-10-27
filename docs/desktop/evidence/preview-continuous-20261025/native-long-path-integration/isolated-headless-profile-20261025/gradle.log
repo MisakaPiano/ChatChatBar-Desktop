@@ -1,0 +1,80 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.1.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :desktopApp:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :desktopApp:convertXmlValueResourcesForMain NO-SOURCE
+> Task :desktopApp:copyNonXmlValueResourcesForMain NO-SOURCE
+> Task :desktopApp:prepareComposeResourcesTaskForMain NO-SOURCE
+> Task :desktopApp:generateResourceAccessorsForMain SKIPPED
+> Task :desktopApp:generateActualResourceCollectorsForMain SKIPPED
+> Task :desktopApp:generateComposeResClass SKIPPED
+> Task :sharedCore:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :sharedCore:compileKotlin UP-TO-DATE
+> Task :sharedCore:compileJava NO-SOURCE
+> Task :sharedCore:processResources NO-SOURCE
+> Task :sharedCore:classes UP-TO-DATE
+> Task :sharedCore:jar UP-TO-DATE
+> Task :desktopApp:compileKotlin UP-TO-DATE
+> Task :desktopApp:compileJava NO-SOURCE
+> Task :desktopApp:assembleMainResources UP-TO-DATE
+> Task :desktopApp:syncDesktopModelCatalogResources UP-TO-DATE
+> Task :desktopApp:writeDesktopBuildIdentity UP-TO-DATE
+> Task :desktopApp:processResources UP-TO-DATE
+> Task :desktopApp:classes UP-TO-DATE
+> Task :desktopApp:jar UP-TO-DATE
+> Task :desktopApp:convertXmlValueResourcesForTest NO-SOURCE
+> Task :desktopApp:copyNonXmlValueResourcesForTest NO-SOURCE
+> Task :desktopApp:prepareComposeResourcesTaskForTest NO-SOURCE
+> Task :desktopApp:generateResourceAccessorsForTest SKIPPED
+> Task :sharedCore:compileTestFixturesKotlin UP-TO-DATE
+> Task :sharedCore:compileTestFixturesJava NO-SOURCE
+> Task :desktopApp:compileTestKotlin
+> Task :desktopApp:compileTestJava NO-SOURCE
+> Task :desktopApp:assembleTestResources UP-TO-DATE
+> Task :desktopApp:processTestResources UP-TO-DATE
+> Task :desktopApp:testClasses UP-TO-DATE
+> Task :sharedCore:processTestFixturesResources NO-SOURCE
+> Task :sharedCore:testFixturesClasses UP-TO-DATE
+> Task :sharedCore:testFixturesJar UP-TO-DATE
+> Task :desktopApp:test
+
+DesktopRegenerationTest > failure retains target and retry deletes only mapped system error FAILED
+    com.example.chatbar.desktop.DesktopDocumentRagSource$Rejected at DesktopDocumentRagSource.kt:110
+
+DesktopRegenerationTest > regeneration preserves same row and current user while excluding target from prompt and worldbook FAILED
+    com.example.chatbar.desktop.DesktopDocumentRagSource$Rejected at DesktopDocumentRagSource.kt:110
+
+DesktopRegenerationTest > stop before output keeps original without empty alternative FAILED
+    java.lang.AssertionError at DesktopRegenerationTest.kt:303
+        Caused by: java.lang.AssertionError at Assert.java:89
+
+DesktopRegenerationTest > an active send also excludes regeneration admission FAILED
+    java.lang.AssertionError at DesktopRegenerationTest.kt:303
+        Caused by: java.lang.AssertionError at Assert.java:89
+
+DesktopRegenerationTest > reasoning-only user stop appends same-id interrupted version FAILED
+    kotlinx.coroutines.TimeoutCancellationException at DesktopRegenerationTest.kt:303
+        Caused by: kotlinx.coroutines.TimeoutCancellationException at Timeout.kt:189
+
+DesktopRegenerationTest > stop partial regeneration appends exactly once and excludes overlapping send FAILED
+    kotlinx.coroutines.TimeoutCancellationException at DesktopRegenerationTest.kt:303
+        Caused by: kotlinx.coroutines.TimeoutCancellationException at Timeout.kt:189
+
+DesktopRegenerationTest > other session can send while regeneration runs and shutdown discards its partial draft FAILED
+    kotlinx.coroutines.TimeoutCancellationException at DesktopRegenerationTest.kt:303
+        Caused by: kotlinx.coroutines.TimeoutCancellationException at Timeout.kt:189
+
+67 tests completed, 7 failed
+
+> Task :desktopApp:test FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':desktopApp:test'.
+> There were failing tests. See the report at: file:///H:/ChatChatBar-Desktop/app/desktopApp/build/reports/tests/test/index.html
+
+* Try:
+> Run with --scan to generate a Build Scan (Powered by Develocity).
+
+BUILD FAILED in 4m 42s
+14 actionable tasks: 2 executed, 12 up-to-date

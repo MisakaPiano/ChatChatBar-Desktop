@@ -1,0 +1,206 @@
+{
+  "root": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-windows-manual-20261020\\environments\\post-p8-profile\\ChatChatBarDesktop",
+  "excludes": "No model credential JSON / SecretStore / real user root read or copied",
+  "files": [
+    {
+      "path": "entities/chat_messages/p8s7-session-a_p8s7-a-assistant.json",
+      "bytes": 668,
+      "sha256": "ad1b344bf039a5456a2e4ccf44f9454a90424c447221fea780ca99c7e73320f4"
+    },
+    {
+      "path": "entities/chat_messages/p8s7-session-a_p8s7-a-user.json",
+      "bytes": 273,
+      "sha256": "3c8ed61a38b85fd71deef28182c0e55d4f91ef225c0c1cb3c4d94d87646c36ba"
+    },
+    {
+      "path": "entities/chat_messages/p8s7-session-a_postp8-a-assistant-2.json",
+      "bytes": 411,
+      "sha256": "47708d0338a6d004ebdc3a6acdd927e2b9e5b3515e0949d7a0b8ff8d39f6c4c1"
+    },
+    {
+      "path": "entities/chat_messages/p8s7-session-a_postp8-a-user-2.json",
+      "bytes": 277,
+      "sha256": "2ab9aa5c636a83a7f2b57bc4a26c6cd677a59165f5dc091c5f89c379c97f83ff"
+    },
+    {
+      "path": "entities/chat_messages/p8s7-session-b_p8s7-b-assistant.json",
+      "bytes": 668,
+      "sha256": "da1146331c24da49792873956542cde30b1ea30ea7de7cdfc20b65f492a2a3bb"
+    },
+    {
+      "path": "entities/chat_messages/p8s7-session-b_p8s7-b-user.json",
+      "bytes": 177,
+      "sha256": "1b1ef1c0af3e4f4972341a2f59932f51c30c071c3084b1520d9fbb178e5b5025"
+    },
+    {
+      "path": "entities/character_cards/47e1f906-4add-427e-838e-16463e2183ef.json",
+      "bytes": 8957,
+      "sha256": "f8397d4d45e564e1839639058b8383d6653a139e7a7b73412d38cc2f77eb53e1"
+    },
+    {
+      "path": "entities/character_cards/54c14c6b-83ef-4256-bd39-0450278ed7ca.json",
+      "bytes": 37093,
+      "sha256": "6c1c685f2ceb07b2b47fff897608b40506be46c39810fcaff00c0da07d6e5589"
+    },
+    {
+      "path": "entities/character_cards/p8s7-freeform.json",
+      "bytes": 959,
+      "sha256": "4f7e7b3ed3209711769cb6be777473109d6776b5159ab615bdb778b4a1061c0c"
+    },
+    {
+      "path": "entities/character_cards/p8s7-structured.json",
+      "bytes": 964,
+      "sha256": "2b4b6335edfa067e82d5f459c34be52fb028bba0d13bafc24d77326a7811783e"
+    },
+    {
+      "path": "entities/generated_voice_messages/11ccfaf7-15d7-49c7-a250-79ba05762e36.json",
+      "bytes": 1284,
+      "sha256": "11725a524690888ae0f8b95171f91a15c50a6d20aa12259bb5ae4ab50c80b55a"
+    },
+    {
+      "path": "entities/generated_voice_messages/39efe382-37a0-4ef4-8618-7399d15167de.json",
+      "bytes": 1284,
+      "sha256": "fea5c5ce1b178858c13f32b969dadc352572eaf8a936eac3598fbeefd9724a10"
+    },
+    {
+      "path": "entities/generated_voice_messages/72cb4ffd-5a71-403b-8649-c15be8eb6d5e.json",
+      "bytes": 1240,
+      "sha256": "eee533c762df36c87692693190d903bec2800203f5c60b9b8204239f1af07659"
+    },
+    {
+      "path": "entities/generated_voice_messages/8a1c7579-2e73-47b4-aaa5-a552d0e4feaf.json",
+      "bytes": 1277,
+      "sha256": "548abe790f359d7d3124a368f095b18a2e06773c9582a8b371e718a2be0e15e2"
+    },
+    {
+      "path": "entities/generated_voice_messages/932aa796-a141-4374-9b8d-8b1f28828c98.json",
+      "bytes": 1284,
+      "sha256": "829f451a3fd8ba7b357734d0be8631033c5bbcbdc07de4edbc86d01738af9f23"
+    },
+    {
+      "path": "entities/generated_voice_messages/f1d0bb41-7c48-4232-8d6f-08489e0e059d.json",
+      "bytes": 1277,
+      "sha256": "f6b2dc1803ab5d867a0c8530e6040accc74713179884ddc6c27a9466ac807bc7"
+    },
+    {
+      "path": "entities/voice_anchor_states/70f3b9c6-70cb-3230-b080-b4b8159298d1.json",
+      "bytes": 1300,
+      "sha256": "8fcc4d29a83374164a483dad976c111c9ba928640d6df22b3acedfcf261c3cdd"
+    },
+    {
+      "path": "entities/voice_anchor_states/73dd9db7-a2de-314a-bb0d-4768d89442dc.json",
+      "bytes": 548,
+      "sha256": "3825ec18eda5ddd879654bf80f91f944f506a8fd7482f6365648d696045dc4d0"
+    },
+    {
+      "path": "entities/voice_anchor_states/c1976bb6-0f91-3446-ab87-75e37a56b3b3.json",
+      "bytes": 1291,
+      "sha256": "5b24b872e0128ba8a3038c8375915bc1d7bc99aa594bb6e75422086d0e7dd232"
+    },
+    {
+      "path": "entities/voice_anchor_states/c25c0a7e-e6ab-304c-ab11-fce3f92522b8.json",
+      "bytes": 670,
+      "sha256": "d9cffffe4c5c2db4d4653b646a3c4291c3b0c03bd3cfcb2e05be69f8544d1a6f"
+    },
+    {
+      "path": "audio/generated/p8s7-session-a/21d33a67-3cd4-4d07-8b04-c6c5ce481588.mp3",
+      "bytes": 405420,
+      "sha256": "c730e4c467f8dcf465acca9e426ea6349137e3302ff65e648f66dc2a63e3301f"
+    },
+    {
+      "path": "audio/generated/p8s7-session-a/21d33a67-3cd4-4d07-8b04-c6c5ce481588.mp3.owner",
+      "bytes": 72,
+      "sha256": "4f6b4d6bc634256029c10fbf95fde17575ae755c640758726e8140bf6d0b9710"
+    },
+    {
+      "path": "audio/generated/p8s7-session-a/39e550bf-b702-4f1e-af33-d1526f9afa86.mp3",
+      "bytes": 252860,
+      "sha256": "fb93b911ab31c264881df8f167cbb655bb42ddcd148fa372e5363cf09e3dfd94"
+    },
+    {
+      "path": "audio/generated/p8s7-session-a/39e550bf-b702-4f1e-af33-d1526f9afa86.mp3.owner",
+      "bytes": 72,
+      "sha256": "bd37db8d31e54c11e6ca6a2286088f2ffc66033cd9d0c9a0f0de954c2cbc117a"
+    },
+    {
+      "path": "audio/generated/p8s7-session-a/46e5f807-6167-4557-bb9e-9f53d30ef978.mp3",
+      "bytes": 405420,
+      "sha256": "c730e4c467f8dcf465acca9e426ea6349137e3302ff65e648f66dc2a63e3301f"
+    },
+    {
+      "path": "audio/generated/p8s7-session-a/46e5f807-6167-4557-bb9e-9f53d30ef978.mp3.owner",
+      "bytes": 72,
+      "sha256": "4f6b4d6bc634256029c10fbf95fde17575ae755c640758726e8140bf6d0b9710"
+    },
+    {
+      "path": "audio/generated/p8s7-session-a/b6ee5ae9-a8c0-4ff1-9fd7-54a37caae402.mp3",
+      "bytes": 252860,
+      "sha256": "fb93b911ab31c264881df8f167cbb655bb42ddcd148fa372e5363cf09e3dfd94"
+    },
+    {
+      "path": "audio/generated/p8s7-session-a/b6ee5ae9-a8c0-4ff1-9fd7-54a37caae402.mp3.owner",
+      "bytes": 72,
+      "sha256": "bd37db8d31e54c11e6ca6a2286088f2ffc66033cd9d0c9a0f0de954c2cbc117a"
+    },
+    {
+      "path": "audio/generated/p8s7-session-a/cb5de4fd-76ba-48f8-8855-cad043ed028b.mp3",
+      "bytes": 252860,
+      "sha256": "fb93b911ab31c264881df8f167cbb655bb42ddcd148fa372e5363cf09e3dfd94"
+    },
+    {
+      "path": "audio/generated/p8s7-session-a/cb5de4fd-76ba-48f8-8855-cad043ed028b.mp3.owner",
+      "bytes": 72,
+      "sha256": "bd37db8d31e54c11e6ca6a2286088f2ffc66033cd9d0c9a0f0de954c2cbc117a"
+    },
+    {
+      "path": "audio/generated/p8s7-session-a/d12eeac0-3b31-4b89-8083-0c199ed9a7a4.mp3",
+      "bytes": 252860,
+      "sha256": "fb93b911ab31c264881df8f167cbb655bb42ddcd148fa372e5363cf09e3dfd94"
+    },
+    {
+      "path": "audio/generated/p8s7-session-a/d12eeac0-3b31-4b89-8083-0c199ed9a7a4.mp3.owner",
+      "bytes": 72,
+      "sha256": "bd37db8d31e54c11e6ca6a2286088f2ffc66033cd9d0c9a0f0de954c2cbc117a"
+    },
+    {
+      "path": "images/card_1792500372953_1fe1180b-dccf-421e-987f-9d1bd9fdeddf.png",
+      "bytes": 1250890,
+      "sha256": "2c60ef8cea35d0cf264db648e6d8f30fcae48127c4ffadc75ee450b5257510f9"
+    },
+    {
+      "path": "images/card_1792500372953_f11f0d0f-5075-4436-9985-c07c2e2d8a85.png",
+      "bytes": 979473,
+      "sha256": "3ad0a3c0f6affbbc520483f0a706bddfc553309a02c98bf60ad942087f2f498f"
+    },
+    {
+      "path": "images/card_1792500373047_97634cf7-e802-49e3-a452-d7f075181dc8.png",
+      "bytes": 74704,
+      "sha256": "c01eb2e1f92bceaf2f084f35c2b653d40123e0d611ff012bed7abea85daba25e"
+    },
+    {
+      "path": "images/card_1792500373047_efbc8c92-46f9-46f1-9db1-99c6ab5fb421.jpg",
+      "bytes": 801049,
+      "sha256": "961654f28b4087fe40b86de6407f88dbe8539235e8593190a066c97e24184775"
+    },
+    {
+      "path": "images/post-p8-avatar-alice.png",
+      "bytes": 258,
+      "sha256": "2502c46fc835f5a9e2d65bc91a9f2977e41b72169f72fc00e07cdf1e1a797e44"
+    },
+    {
+      "path": "images/post-p8-avatar-bob.png",
+      "bytes": 259,
+      "sha256": "a866bd4dac2f2e23407b62afe3f8c27aca3bdee1bc064d6b8c9979e86e28fcc2"
+    },
+    {
+      "path": "images/post-p8-background.png",
+      "bytes": 4205,
+      "sha256": "3f3c98d118462f952d223488c3abe872408beaa83e8c3f1607f8552e8b458753"
+    },
+    {
+      "path": "images/post-p8-landscape.png",
+      "bytes": 1467,
+      "sha256": "3806c29b174f0bb087d8151a82034184443184df36e58a869152b93cc2d5bb93"
+    }
+  ]
+}

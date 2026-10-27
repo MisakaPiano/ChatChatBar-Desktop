@@ -1,0 +1,21 @@
+{
+  "samples": 12,
+  "minimumAvailableMiB": 246.17578125,
+  "minimumCommitHeadroomGiB": 5.6780853271484375,
+  "maximumPagesPerSecond": 13445.0,
+  "peakSampledJavaProcesses": 3,
+  "peakSampledAggregateWorkingSetMiB": 1064.2734375,
+  "peakSampledAggregatePrivateMiB": 1649.1171875,
+  "absoluteProcessPeaks": "UNKNOWN: periodic samples only",
+  "before": "environment.json.initialObserved",
+  "after": {
+    "utc": "2026-10-15T18:55:57.5710494Z",
+    "availableMiB": 1557.8203125,
+    "commitHeadroomGiB": 7.3182830810546875,
+    "pagesPerSec": 0,
+    "freeHGiB": 37.95203399658203,
+    "java": []
+  },
+  "foregroundResponsiveness": "NOT MEASURED; Chrome/NAI not operated",
+  "protectionStop": "No observed consecutive critical samples, OOM, disk error or lingering build Java; one paging spike retained"
+}

@@ -1,0 +1,31 @@
+{
+  "files": [
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerPresentation.kt",
+      "r5Bytes": 17883,
+      "r5Sha256": "194d6b7fd2e270ca29eb90734303c8a7898825ecf8939cc60ab266e8d16c4917",
+      "currentBytes": 17883,
+      "currentSha256": "194d6b7fd2e270ca29eb90734303c8a7898825ecf8939cc60ab266e8d16c4917",
+      "unchanged": true
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerWindow.kt",
+      "r5Bytes": 4280,
+      "r5Sha256": "a003e7ad1e31a0c356df1a4291cc7eb1e4eb9fa958a0a6353ee6a77ac8f88125",
+      "currentBytes": 4280,
+      "currentSha256": "a003e7ad1e31a0c356df1a4291cc7eb1e4eb9fa958a0a6353ee6a77ac8f88125",
+      "unchanged": true
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerNativeUxTest.kt",
+      "r5Bytes": 33038,
+      "r5Sha256": "e10894eac70a49a9c02bdda2625832bd97e449b46bf9b86fbe709a88ef3b5b7d",
+      "currentBytes": 37838,
+      "currentSha256": "991a2c839db3dd09ca9a2d1c622dd496d57a444bee33fb51a8ad1a546fe78a3b",
+      "unchanged": false
+    }
+  ],
+  "onlyDiagnosticInsertionChanged": true,
+  "sourceUnchangedAfterCompileRed": true,
+  "allOriginalAssertionsWidthsOrderAndNativeInputUnchanged": true
+}

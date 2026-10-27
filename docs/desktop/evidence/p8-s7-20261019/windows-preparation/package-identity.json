@@ -1,0 +1,33 @@
+{
+  "source": "008343bb26d2eb76c23cae9b98132af828a9f447",
+  "fileCount": 212,
+  "manifestSHA256": "cd15d79587869d864ea4777aecef7a557086aa95d6838146c8f7bf83f652a7f7",
+  "launcher": {
+    "path": "ChatChatBarDesktop.exe",
+    "sha256": "e5d45e5389e7584b9d8477efe34543de1069e6550560a3a3c53d164152958b8f"
+  },
+  "businessJars": {
+    "desktopApp-e764227624ea1bdb62c03bd0b6a8bda4.jar": {
+      "bytes": 78746762,
+      "sha256": "cc0c9117f10926d36693060e3b8b18304dba9ef6974c66acf8c10b1a19ca5fc3",
+      "classes": [
+        "com/example/chatbar/desktop/DesktopChatVoiceRuntime.class",
+        "com/example/chatbar/desktop/DesktopFishTtsAdmission.class",
+        "com/example/chatbar/desktop/DesktopVoiceArchiveHandoff.class",
+        "com/example/chatbar/desktop/DesktopVoicePlayback.class"
+      ]
+    },
+    "sharedCore-3dc1c2d555503ec5a5a5ac91ceebda26.jar": {
+      "bytes": 3970861,
+      "sha256": "ec4604e1bbe0fe1226137e4cbb880f9af6d31aa5beb084655aa03fe983b02c3a",
+      "classes": [
+        "com/example/chatbar/data/repository/VoiceMessageRepository.class",
+        "com/example/chatbar/domain/prompt/FishAudioPromptAuthority.class",
+        "com/example/chatbar/domain/voice/FishAudioTagService.class"
+      ]
+    }
+  },
+  "launcherExecution": "NOT TESTED",
+  "jvmExecution": "NOT TESTED",
+  "status": "EXACT FINAL PACKAGE BUILT; USER ACTION REQUIRED"
+}

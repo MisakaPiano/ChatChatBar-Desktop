@@ -1,0 +1,9 @@
+{
+  "scope": "Static evidence helper only; no compiler or test rerun",
+  "helperExit": 1,
+  "file": "README.md",
+  "gitCheckExit": 1,
+  "stdout": "",
+  "stderr": "warning: in the working copy of 'H:\\ChatChatBar-Desktop\\docs\\desktop\\evidence\\p8-s2b-ui-layout-001-r6i-20261019\\README.md', LF will be replaced by CRLF the next time Git touches it\n",
+  "explanation": "Repository eol attributes still produce conversion notices; classify stdout whitespace separately from known stderr notices"
+}

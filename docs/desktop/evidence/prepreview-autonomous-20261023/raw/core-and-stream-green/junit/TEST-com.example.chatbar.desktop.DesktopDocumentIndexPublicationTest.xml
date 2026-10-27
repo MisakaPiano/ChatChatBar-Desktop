@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopDocumentIndexPublicationTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-23T14:46:54.267Z" hostname="DD1" time="1.226">
+  <properties/>
+  <testcase name="cancellation during embedding leaves no journal and no normal lease" classname="com.example.chatbar.desktop.DesktopDocumentIndexPublicationTest" time="0.135"/>
+  <testcase name="failed embedding and changed source never replace an existing index" classname="com.example.chatbar.desktop.DesktopDocumentIndexPublicationTest" time="0.189"/>
+  <testcase name="startup replays incomplete undo before business and rejects foreign changes" classname="com.example.chatbar.desktop.DesktopDocumentIndexPublicationTest" time="0.163"/>
+  <testcase name="publication preserves unrelated vectors and official retrieval accepts new source" classname="com.example.chatbar.desktop.DesktopDocumentIndexPublicationTest" time="0.42"/>
+  <testcase name="publication failure restores every old file and retains unrelated records" classname="com.example.chatbar.desktop.DesktopDocumentIndexPublicationTest" time="0.318"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

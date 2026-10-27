@@ -1,0 +1,22 @@
+[
+  {
+    "path": "Open-Isolated-Preview-1006.ps1",
+    "bytes": 2939,
+    "sha256": "11d6904c3336c8c9811d808bb91675b27f3030c706d0dfe144c7177e2623a717"
+  },
+  {
+    "path": "preflight-exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "preflight-stdout.txt",
+    "bytes": 53,
+    "sha256": "567cbd1fb432eb540454641c40e53934438ed73fbef49d36991eda901844237f"
+  },
+  {
+    "path": "RESULT.md",
+    "bytes": 646,
+    "sha256": "8f45900f9c05902a465b05019f8f75fe49aae04b5521d04c2197536866190720"
+  }
+]

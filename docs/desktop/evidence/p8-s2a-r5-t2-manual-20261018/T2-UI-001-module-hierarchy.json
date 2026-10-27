@@ -1,0 +1,39 @@
+{
+  "id": "T2-UI-001",
+  "status": "CONFIRMED_SOURCE_AND_USER_SCREENSHOT / PROJECT DISPOSITION PENDING",
+  "reportedUtc": "2026-10-17T19:40:48.841187+00:00",
+  "userText": "我注意到一个问题语音和朗读的标题显示方式和其在设置里对应原CCB的模块等级不符",
+  "classification": "S2A visual/information-hierarchy mismatch; no production modification authorized in this manual gate",
+  "baseline": "5e76a9cb841736bbbf3499a2e35e5789af4c5ca8",
+  "authority": [
+    {
+      "path": "app/app/src/main/java/com/example/chatbar/ui/manage/GlobalSettingsScreen.kt",
+      "line": 318,
+      "observation": "appearance category in list of top-level settings categories"
+    },
+    {
+      "path": "app/app/src/main/java/com/example/chatbar/ui/manage/GlobalSettingsScreen.kt",
+      "line": 321,
+      "observation": "voice category in same list, peer of appearance/images/reply, not a caption under appearance"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishAudioPanel.kt",
+      "line": 40,
+      "observation": "Voice/Fish title uses StatusText, a muted status/caption surface"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopManagePanel.kt",
+      "line": 264,
+      "observation": "Fish settings called after appearance and font controls without distinct category heading/card. Calls are siblings in settings branch; source does not literally nest Fish inside appearance."
+    }
+  ],
+  "reproduction": [
+    "Open isolated T2 normal window",
+    "Management > Settings, scroll from appearance/font-size controls to Fish",
+    "Observe voice title typography/group boundary versus its official top-level category ownership"
+  ],
+  "scopePaused": "Further manual test instructions paused pending Project; existing passes and T1 automation retained",
+  "sourceChanged": false,
+  "applicationClosedAutomatically": false,
+  "realApiIncrement": 0
+}

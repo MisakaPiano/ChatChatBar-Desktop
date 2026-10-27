@@ -1,0 +1,38 @@
+{
+  "files": [
+    {
+      "path": "arm.request",
+      "bytes": 33,
+      "sha256": "9e3e313a102e19dc2261a3b3d04d2a117d587627de4736af62629696c4aaf63f",
+      "modifiedEpochNanoseconds": 1792381531801445600,
+      "modifiedUtc": "2026-10-19T03:45:31.801446+00:00"
+    },
+    {
+      "path": "ready.txt",
+      "bytes": 60,
+      "sha256": "4dee685e92f8e83063d06d15523add731d9b0d63fcb7a1ff2124ff61122843d1",
+      "modifiedEpochNanoseconds": 1792381511220022300,
+      "modifiedUtc": "2026-10-19T03:45:11.220022+00:00"
+    },
+    {
+      "path": "result.txt",
+      "bytes": 296,
+      "sha256": "c60a8274d483eb5ff3e24d4adebdcc0afad96a24ee2c18da5a18e24cd0464c5d",
+      "modifiedEpochNanoseconds": 1792381532228584300,
+      "modifiedUtc": "2026-10-19T03:45:32.228584+00:00"
+    },
+    {
+      "path": "started.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "modifiedEpochNanoseconds": 1792381508057848600,
+      "modifiedUtc": "2026-10-19T03:45:08.057849+00:00"
+    }
+  ],
+  "basis": "Copied original control files retain timestamps; raw arm timestamp is authoritative content",
+  "readyToArmSeconds": 20.5814233,
+  "armToResultSeconds": 0.4271387,
+  "pressTime": "NOT RECORDED",
+  "releaseTime": "NOT RECORDED",
+  "humanInstructionVsActualPressOrdering": "UNKNOWN at event-level precision; operator did not wait for ARMED acknowledgement"
+}

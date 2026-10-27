@@ -1,0 +1,7 @@
+{
+  "cold_native_init": "Earlier hypothesis, NOT established root cause",
+  "confirmed_fixture_issue": "MockWebServer readRequest invokes throttledTransfer for POST request body; throttleBody(1 byte/sec) delays recording complete request. Replaced by response-only body delay and .part readiness assertion.",
+  "production_race": "After stop state cleared before job unregister, immediate replay could be ignored. Completion now removes job before clearing admission state.",
+  "diagnostic_command_failure": "Stage 05 test method with spaces was split by wrapper command construction; no JUnit executed.",
+  "dependencySha256": "6784673687f4ac8f21679b9d4bc7cdb46e1a1ce1be9d3133b36bede59a741561"
+}

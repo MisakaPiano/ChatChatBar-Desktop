@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.security.DesktopSecureModelRepositoryTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-18T15:35:41.137Z" hostname="DD1" time="0.078">
+  <properties/>
+  <testcase name="model lifecycle keeps runtime cache and restart hydrated while both filename namespaces stay separate" classname="com.example.chatbar.desktop.security.DesktopSecureModelRepositoryTest" time="0.041"/>
+  <testcase name="model SecretStore failure remains explicit instead of becoming blank" classname="com.example.chatbar.desktop.security.DesktopSecureModelRepositoryTest" time="0.009"/>
+  <testcase name="failed model entity save and delete restore prior secure credential" classname="com.example.chatbar.desktop.security.DesktopSecureModelRepositoryTest" time="0.002"/>
+  <testcase name="preset ensure and restore preserve secure credential for authoritative logical model ID" classname="com.example.chatbar.desktop.security.DesktopSecureModelRepositoryTest" time="0.017"/>
+  <testcase name="unexpected plaintext model credential fails closed without rewriting entity" classname="com.example.chatbar.desktop.security.DesktopSecureModelRepositoryTest" time="0.009"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

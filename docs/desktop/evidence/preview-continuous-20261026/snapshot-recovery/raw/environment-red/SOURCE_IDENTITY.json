@@ -1,0 +1,20 @@
+{
+  "head": "c0b2ac1efb18da0816c649b96e964383cd29e8d5",
+  "sources": [
+    {
+      "file": "tools\\desktop\\windows\\snapshot-recovery\\SyntheticSnapshotRecoveryProbe.kt",
+      "sha256": "46e446752bf0a828315fac785559b15402057be08d69320d5b43d62bc6a70c44",
+      "gitBlob": "374c62cf0519fc1541fde5360ca68d14767fbd4e"
+    },
+    {
+      "file": "tools\\desktop\\windows\\snapshot-recovery\\run_synthetic.py",
+      "sha256": "e98c952ded04b7ca56b341737d3dc3c2bebb27da8df1dccc134b31011dd56372",
+      "gitBlob": "a975b09bdbddfdb9c8373f911e7617a654c07783"
+    }
+  ],
+  "compiler": {
+    "bytes": 59718536,
+    "sha256": "976f989d0b5f5d80e8e8a8ad4b73da0bfc27fdd965b9fa38362b2be79ecc1337"
+  },
+  "productionUnchangedSince": "946c3791153634b0af65286313a497d141d5c598"
+}

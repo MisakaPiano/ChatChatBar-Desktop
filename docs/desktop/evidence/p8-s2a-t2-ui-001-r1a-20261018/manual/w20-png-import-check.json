@@ -1,0 +1,38 @@
+{
+  "scope": "Native CCB PNG as-new synthetic import",
+  "newCardId": "0ef2c2cb-f0d0-49dc-baa0-f91fbe438d04",
+  "newName": "T2 自由文本测试卡 (4)",
+  "editMode": "FREEFORM",
+  "freshCardAndPersonIds": true,
+  "allExistingCardsUnchanged": true,
+  "completeBindingsRetained": true,
+  "persons": [
+    {
+      "id": "cf6668e0-e2a6-452c-93fa-d9e11055e2e1",
+      "name": "Alice 合成测试",
+      "fishAudioVoice": {
+        "referenceId": "r5-voice-community1",
+        "title": "T2 Synthetic Voice 1",
+        "authorId": null,
+        "authorName": "R5 Fixture",
+        "coverImage": null,
+        "sampleAudio": "https://sample.invalid/not-fetched.mp3",
+        "sampleText": "Synthetic example only",
+        "visibility": "public",
+        "languages": [
+          "zh"
+        ],
+        "tags": [
+          "synthetic"
+        ]
+      }
+    },
+    {
+      "id": "9386075c-9c2d-419e-949b-6fb59f85e2d6",
+      "name": "Bob 合成测试",
+      "fishAudioVoice": null
+    }
+  ],
+  "fileSha256": "96edfa184a0a456b330ff5c3e29e8a2f12c945d28fb5a3db1b5acb01357e1005",
+  "reopenUi": "PENDING"
+}

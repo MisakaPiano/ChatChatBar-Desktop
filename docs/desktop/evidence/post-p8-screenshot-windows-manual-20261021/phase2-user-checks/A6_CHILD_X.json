@@ -1,0 +1,63 @@
+{
+  "utc": "2026-10-20T18:30:19.590287+00:00",
+  "step": "A6 child window X",
+  "userVerbatim": "点击截图窗口右上角 X 后正常关闭，主 CCB 还在，滚动和切换会话都正常。",
+  "user": "USER PASS",
+  "technical": "PASS",
+  "launcherPid": 38024,
+  "jvmPid": 22576,
+  "mainHwnd": 30607992,
+  "mainCloseRequests": 0,
+  "independentLockExit": 75,
+  "latestProcess": {
+    "utc": "2026-10-20T18:30:19.3156988+00:00",
+    "processes": [
+      {
+        "pid": 22576,
+        "parentPid": 38024,
+        "createdUtc": "2026-10-20T18:16:34.7951240Z",
+        "executablePath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image\\ChatChatBarDesktop.exe",
+        "image": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image"
+      },
+      {
+        "pid": 38024,
+        "parentPid": 38340,
+        "createdUtc": "2026-10-20T18:16:33.9913620Z",
+        "executablePath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image\\ChatChatBarDesktop.exe",
+        "image": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image"
+      }
+    ],
+    "alivePids": [
+      38024,
+      22576
+    ],
+    "jvmPids": [
+      22576
+    ]
+  },
+  "latestResources": {
+    "utc": "2026-10-20T18:30:16.8218468+00:00",
+    "ownedProcesses": [
+      {
+        "Id": 38024,
+        "Responding": true,
+        "WorkingSet64": 6635520,
+        "PrivateMemorySize64": 1355776,
+        "PeakWorkingSet64": 6672384
+      },
+      {
+        "Id": 22576,
+        "Responding": true,
+        "WorkingSet64": 485953536,
+        "PrivateMemorySize64": 661270528,
+        "PeakWorkingSet64": 617254912
+      }
+    ],
+    "freePhysicalKiB": 1061224,
+    "commitHeadroomBytes": 2406477824,
+    "pagesPerSecond": 0,
+    "allocationFailureObserved": false,
+    "memoryFigureAloneBlocks": false
+  },
+  "boundary": "Current close methods passed individually. Historical Close event root cause remains UNKNOWN. Resize, focus and remaining tests not signed."
+}

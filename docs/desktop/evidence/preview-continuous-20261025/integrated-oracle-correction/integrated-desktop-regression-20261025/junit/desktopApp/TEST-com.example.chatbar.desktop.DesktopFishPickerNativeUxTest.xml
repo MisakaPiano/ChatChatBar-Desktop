@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFishPickerNativeUxTest" tests="4" skipped="0" failures="4" errors="0" timestamp="2026-10-25T02:29:35.563Z" hostname="DD1" time="0.392">
+  <properties/>
+  <testcase name="native persistent scrollbar drags current page and explicit page jump preserves request semantics" classname="com.example.chatbar.desktop.DesktopFishPickerNativeUxTest" time="0.196">
+    <failure message="java.awt.AWTException: headless environment" type="java.awt.AWTException">java.awt.AWTException: headless environment
+	at java.desktop/java.awt.Robot.checkHeadless(Robot.java:216)
+	at java.desktop/java.awt.Robot.&lt;init&gt;(Robot.java:133)
+	at com.example.chatbar.desktop.DesktopFishPickerNativeUxTest$Fixture.&lt;init&gt;(DesktopFishPickerNativeUxTest.kt:73)
+	at com.example.chatbar.desktop.DesktopFishPickerNativeUxTest$Fixture.&lt;init&gt;(DesktopFishPickerNativeUxTest.kt:52)
+	at com.example.chatbar.desktop.DesktopFishPickerNativeUxTest$native persistent scrollbar drags current page and explicit page jump preserves request semantics$1.invokeSuspend(DesktopFishPickerNativeUxTest.kt:661)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at java.desktop/java.awt.event.InvocationEvent.dispatch(InvocationEvent.java:318)
+	at java.desktop/java.awt.EventQueue.dispatchEventImpl(EventQueue.java:773)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:720)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:714)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:399)
+	at java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:86)
+	at java.desktop/java.awt.EventQueue.dispatchEvent(EventQueue.java:742)
+	at java.desktop/java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101)
+	at java.desktop/java.awt.EventDispatchThread.run(EventDispatchThread.java:90)
+</failure>
+  </testcase>
+  <testcase name="native Stop is top layer visible and operable during download generation and long Windows playback" classname="com.example.chatbar.desktop.DesktopFishPickerNativeUxTest" time="0.055">
+    <failure message="java.awt.AWTException: headless environment" type="java.awt.AWTException">java.awt.AWTException: headless environment
+	at java.desktop/java.awt.Robot.checkHeadless(Robot.java:216)
+	at java.desktop/java.awt.Robot.&lt;init&gt;(Robot.java:133)
+	at com.example.chatbar.desktop.DesktopFishPickerNativeUxTest$Fixture.&lt;init&gt;(DesktopFishPickerNativeUxTest.kt:73)
+	at com.example.chatbar.desktop.DesktopFishPickerNativeUxTest$Fixture.&lt;init&gt;(DesktopFishPickerNativeUxTest.kt:52)
+	at com.example.chatbar.desktop.DesktopFishPickerNativeUxTest$native Stop is top layer visible and operable during download generation and long Windows playback$1.invokeSuspend(DesktopFishPickerNativeUxTest.kt:590)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at java.desktop/java.awt.event.InvocationEvent.dispatch(InvocationEvent.java:318)
+	at java.desktop/java.awt.EventQueue.dispatchEventImpl(EventQueue.java:773)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:720)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:714)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:399)
+	at java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:86)
+	at java.desktop/java.awt.EventQueue.dispatchEvent(EventQueue.java:742)
+	at java.desktop/java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101)
+	at java.desktop/java.awt.EventDispatchThread.run(EventDispatchThread.java:90)
+</failure>
+  </testcase>
+  <testcase name="native Escape closes exactly one panel then picker with and without field focus at both widths" classname="com.example.chatbar.desktop.DesktopFishPickerNativeUxTest" time="0.078">
+    <failure message="java.awt.AWTException: headless environment" type="java.awt.AWTException">java.awt.AWTException: headless environment
+	at java.desktop/java.awt.Robot.checkHeadless(Robot.java:216)
+	at java.desktop/java.awt.Robot.&lt;init&gt;(Robot.java:133)
+	at com.example.chatbar.desktop.DesktopFishPickerNativeUxTest$Fixture.&lt;init&gt;(DesktopFishPickerNativeUxTest.kt:73)
+	at com.example.chatbar.desktop.DesktopFishPickerNativeUxTest$Fixture.&lt;init&gt;(DesktopFishPickerNativeUxTest.kt:52)
+	at com.example.chatbar.desktop.DesktopFishPickerNativeUxTest$native Escape closes exactly one panel then picker with and without field focus at both widths$1.invokeSuspend(DesktopFishPickerNativeUxTest.kt:559)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at java.desktop/java.awt.event.InvocationEvent.dispatch(InvocationEvent.java:318)
+	at java.desktop/java.awt.EventQueue.dispatchEventImpl(EventQueue.java:773)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:720)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:714)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:399)
+	at java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:86)
+	at java.desktop/java.awt.EventQueue.dispatchEvent(EventQueue.java:742)
+	at java.desktop/java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101)
+	at java.desktop/java.awt.EventDispatchThread.run(EventDispatchThread.java:90)
+</failure>
+  </testcase>
+  <testcase name="native resize retains target text and generated cache while sample identity stays distinct" classname="com.example.chatbar.desktop.DesktopFishPickerNativeUxTest" time="0.063">
+    <failure message="java.awt.AWTException: headless environment" type="java.awt.AWTException">java.awt.AWTException: headless environment
+	at java.desktop/java.awt.Robot.checkHeadless(Robot.java:216)
+	at java.desktop/java.awt.Robot.&lt;init&gt;(Robot.java:133)
+	at com.example.chatbar.desktop.DesktopFishPickerNativeUxTest$Fixture.&lt;init&gt;(DesktopFishPickerNativeUxTest.kt:73)
+	at com.example.chatbar.desktop.DesktopFishPickerNativeUxTest$Fixture.&lt;init&gt;(DesktopFishPickerNativeUxTest.kt:52)
+	at com.example.chatbar.desktop.DesktopFishPickerNativeUxTest$native resize retains target text and generated cache while sample identity stays distinct$1.invokeSuspend(DesktopFishPickerNativeUxTest.kt:630)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at java.desktop/java.awt.event.InvocationEvent.dispatch(InvocationEvent.java:318)
+	at java.desktop/java.awt.EventQueue.dispatchEventImpl(EventQueue.java:773)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:720)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:714)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:399)
+	at java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:86)
+	at java.desktop/java.awt.EventQueue.dispatchEvent(EventQueue.java:742)
+	at java.desktop/java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101)
+	at java.desktop/java.awt.EventDispatchThread.run(EventDispatchThread.java:90)
+</failure>
+  </testcase>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

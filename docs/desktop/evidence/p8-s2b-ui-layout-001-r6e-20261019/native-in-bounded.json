@@ -1,0 +1,46 @@
+{
+  "suite": {
+    "name": "com.example.chatbar.desktop.DesktopFishPickerNativeUxTest",
+    "tests": "4",
+    "skipped": "0",
+    "failures": "0",
+    "errors": "0",
+    "timestamp": "2026-10-18T19:59:20.215Z",
+    "hostname": "DD1",
+    "time": "31.946"
+  },
+  "testCases": [
+    {
+      "name": "native persistent scrollbar drags current page and explicit page jump preserves request semantics",
+      "classname": "com.example.chatbar.desktop.DesktopFishPickerNativeUxTest",
+      "time": "10.883"
+    },
+    {
+      "name": "native Stop is top layer visible and operable during download generation and long Windows playback",
+      "classname": "com.example.chatbar.desktop.DesktopFishPickerNativeUxTest",
+      "time": "8.644"
+    },
+    {
+      "name": "native Escape closes exactly one panel then picker with and without field focus at both widths",
+      "classname": "com.example.chatbar.desktop.DesktopFishPickerNativeUxTest",
+      "time": "10.387"
+    },
+    {
+      "name": "native resize retains target text and generated cache while sample identity stays distinct",
+      "classname": "com.example.chatbar.desktop.DesktopFishPickerNativeUxTest",
+      "time": "2.031"
+    }
+  ],
+  "xmlSha256": "b553eb7f9d9f4207027ae561dd7d8e3ef01a3d202cb78faf8bc2a99007aa816f",
+  "dragSteps": 48,
+  "physicalPresses": 3,
+  "dragCompletions": 3,
+  "wheelCompletions": 3,
+  "narrowRowRecords": [
+    "FISH_R6D_PAGER_ROWS requestedWidthDp=360 page=1 pager=322432646 items={previous=java.awt.Rectangle[x=68,y=667,width=76,height=32], caption=java.awt.Rectangle[x=152,y=675,width=86,height=16], input-and-jump=java.awt.Rectangle[x=246,y=654,width=138,height=58], next=java.awt.Rectangle[x=68,y=716,width=76,height=32]} identities={previous=1052418965, caption=1989321841, input-and-jump=798917343, next=2095736721} groups=[[input-and-jump, previous, caption], [next]] envelopes=[java.awt.Rectangle[x=68,y=654,width=316,height=58], java.awt.Rectangle[x=68,y=716,width=76,height=32]]",
+    "FISH_R6D_PAGER_ROWS requestedWidthDp=360 page=2 pager=322432646 items={previous=java.awt.Rectangle[x=68,y=667,width=76,height=32], caption=java.awt.Rectangle[x=152,y=675,width=86,height=16], input-and-jump=java.awt.Rectangle[x=246,y=654,width=138,height=58], next=java.awt.Rectangle[x=68,y=716,width=76,height=32]} identities={previous=1052418965, caption=1989321841, input-and-jump=798917343, next=2095736721} groups=[[input-and-jump, previous, caption], [next]] envelopes=[java.awt.Rectangle[x=68,y=654,width=316,height=58], java.awt.Rectangle[x=68,y=716,width=76,height=32]]"
+  ],
+  "unknownTotalRecords": [
+    "FISH_R3_SNAPSHOT phase=unknown-total-int-boundary frame=java.awt.Rectangle[x=48,y=48,width=720,height=720] client=java.awt.Dimension[width=704,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=false compact=true popup=false busy=false playing=false stopCount=0 stop=[] fieldRoots=[1995573405] ownerEnabled=false closes=0 requests=0"
+  ]
+}

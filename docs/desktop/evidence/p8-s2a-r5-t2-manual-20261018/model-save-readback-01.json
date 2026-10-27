@@ -1,0 +1,10 @@
+{
+  "recordedUtc": "2026-10-17T19:37:51.531197+00:00",
+  "source": "targeted isolated synthetic settings read only",
+  "fileSha256": "d2c813fce928c1557626a829536e4c2515d29629c8c7e7e157c4e1b7ea8638dd",
+  "fields": {
+    "fishAudioTtsModelId": "s2-pro",
+    "voiceTagModelId": "t2-chat",
+    "audiobookModeEnabled": true
+  }
+}

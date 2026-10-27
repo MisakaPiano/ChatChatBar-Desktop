@@ -1,0 +1,10 @@
+{
+  "clips": [
+    {
+      "path": "ccb-fish-preview-15092037140605728213/01815976-163c-4ac0-a36f-28a0a87bbc09.mp3",
+      "bytes": 50572,
+      "sha256": "7b057f372a03dcb208e0b0e40fd10278ca19baa9faa47b9be9c1e140bc8eb530"
+    }
+  ],
+  "liveArtifactSha256": "7b057f372a03dcb208e0b0e40fd10278ca19baa9faa47b9be9c1e140bc8eb530"
+}

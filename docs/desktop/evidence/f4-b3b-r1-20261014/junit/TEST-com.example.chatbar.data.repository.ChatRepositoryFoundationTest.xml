@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.data.repository.ChatRepositoryFoundationTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-14T11:16:47.836Z" hostname="DD1" time="1.406">
+  <properties/>
+  <testcase name="message append update delete and preview semantics remain stable" classname="com.example.chatbar.data.repository.ChatRepositoryFoundationTest" time="0.112"/>
+  <testcase name="legacy messages lazily receive stable source turns and deletion records tombstone" classname="com.example.chatbar.data.repository.ChatRepositoryFoundationTest" time="0.13"/>
+  <testcase name="index paging and source turn helpers use persisted lightweight index" classname="com.example.chatbar.data.repository.ChatRepositoryFoundationTest" time="0.79"/>
+  <testcase name="session CRUD pin draft and scroll state remain repository backed" classname="com.example.chatbar.data.repository.ChatRepositoryFoundationTest" time="0.085"/>
+  <testcase name="older or same timestamp scroll save cannot replace latest stable viewport" classname="com.example.chatbar.data.repository.ChatRepositoryFoundationTest" time="0.033"/>
+  <testcase name="first message identity uses repository timeline order including empty session" classname="com.example.chatbar.data.repository.ChatRepositoryFoundationTest" time="0.049"/>
+  <testcase name="generated message insertion preserves anchor turn and timeline ordering" classname="com.example.chatbar.data.repository.ChatRepositoryFoundationTest" time="0.083"/>
+  <testcase name="replace normalizes session ids and clears obsolete messages and scroll" classname="com.example.chatbar.data.repository.ChatRepositoryFoundationTest" time="0.087"/>
+  <testcase name="pre extraction Android JSON remains readable and semantically stable after rewrite" classname="com.example.chatbar.data.repository.ChatRepositoryFoundationTest" time="0.037"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

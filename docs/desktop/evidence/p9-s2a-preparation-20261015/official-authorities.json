@@ -1,0 +1,12 @@
+[
+  {
+    "path": "app/app/src/main/java/com/example/chatbar/domain/rag/RagManager.kt",
+    "formalBlob": "f7bf1f7fdd04f23813c568f48329ad89d660bab4",
+    "currentBlob": "f7bf1f7fdd04f23813c568f48329ad89d660bab4"
+  },
+  {
+    "path": "app/app/src/main/java/com/example/chatbar/domain/rag/RagRepository.kt",
+    "formalBlob": "17634595a3289b42050df73cb5cdb3ffe65ecc39",
+    "currentBlob": "c811be453f9a6f69d783134551816b77a86d4ad8"
+  }
+]

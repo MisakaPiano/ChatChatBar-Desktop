@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopUnifiedViewerTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:39:41.903Z" hostname="DD1" time="6.172">
+  <properties/>
+  <testcase name="chat double click opens exactly once without changing image actions" classname="com.example.chatbar.desktop.DesktopUnifiedViewerTest" time="0.766"/>
+  <testcase name="rendered arrow and footer callbacks cannot reuse a stale page between compositions" classname="com.example.chatbar.desktop.DesktopUnifiedViewerTest" time="0.186"/>
+  <testcase name="history direct viewer follows filtered order across batches without selecting or opening detail" classname="com.example.chatbar.desktop.DesktopUnifiedViewerTest" time="0.859"/>
+  <testcase name="open viewer snapshot survives source reorder removal and empty collections safely" classname="com.example.chatbar.desktop.DesktopUnifiedViewerTest" time="0.003"/>
+  <testcase name="compact saved double click opens viewer without expanding or editing draft" classname="com.example.chatbar.desktop.DesktopUnifiedViewerTest" time="0.594"/>
+  <testcase name="hover arrows occupy image sides navigate boundaries and disappear for a single image" classname="com.example.chatbar.desktop.DesktopUnifiedViewerTest" time="0.171"/>
+  <testcase name="duplicate reference positions retain page identity through pointer navigation" classname="com.example.chatbar.desktop.DesktopUnifiedViewerTest" time="0.146"/>
+  <testcase name="filmstrip double click previews without pending single selection in both layouts" classname="com.example.chatbar.desktop.DesktopUnifiedViewerTest" time="1.783"/>
+  <testcase name="history album single click still enters album but double click only opens unified collection" classname="com.example.chatbar.desktop.DesktopUnifiedViewerTest" time="1.129"/>
+  <testcase name="same keyboard callback processes consecutive events using current page without frames" classname="com.example.chatbar.desktop.DesktopUnifiedViewerTest" time="0.003"/>
+  <testcase name="studio inline double click opens once while default zoom surface retains double zoom" classname="com.example.chatbar.desktop.DesktopUnifiedViewerTest" time="0.528"/>
+  <testcase name="chat entry resolves message and image occurrence including omitted references" classname="com.example.chatbar.desktop.DesktopUnifiedViewerTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

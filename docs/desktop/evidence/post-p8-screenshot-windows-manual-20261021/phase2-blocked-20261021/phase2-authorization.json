@@ -1,0 +1,11 @@
+{
+  "utc": "2026-10-20T18:07:47.289917+00:00",
+  "authorizedBy": "Current explicit user message: Post-P8 Windows 人工验收第二阶段",
+  "generalPhase2Authorization": true,
+  "maximumGuiLaunches": 1,
+  "realProviderAccess": false,
+  "automaticRestart": false,
+  "generalAuthorizationNeedNotBeAskedAgain": true,
+  "consumedLaunches": 0,
+  "safetyGate": "BLOCKED_RESOURCES"
+}

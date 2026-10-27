@@ -1,0 +1,8 @@
+{
+  "bytes": 46006,
+  "sha256": "fdddf82225d120777c96fd8127f1584f4139c2767e5bbf0436c12db31783d238",
+  "normalizedSha256": "fdddf82225d120777c96fd8127f1584f4139c2767e5bbf0436c12db31783d238",
+  "patchSha256": "0d2102ad2de551b68b87bcb6e54ccfe6b001905f2fe3ef8258ab0f8d010e33e2",
+  "onlyOriginalNarrowElseReplaced": true,
+  "allOtherCodeAssertionsOrderAndInputUnchanged": true
+}

@@ -1,0 +1,27 @@
+test_positive_preservation_and_reexport (__main__.run.<locals>.Cases) ... ok
+test_z_duplicate_post_id (__main__.run.<locals>.Cases) ... ok
+test_z_duplicate_task_id (__main__.run.<locals>.Cases) ... ok
+test_z_duplicate_json_key (__main__.run.<locals>.Cases) ... ok
+test_z_missing_image (__main__.run.<locals>.Cases) ... ok
+test_z_dangling_post (__main__.run.<locals>.Cases) ... ok
+test_z_orphan (__main__.run.<locals>.Cases) ... ok
+test_z_unknown_field (__main__.run.<locals>.Cases) ... ok
+test_z_future_enum (__main__.run.<locals>.Cases) ... ok
+test_z_absolute (__main__.run.<locals>.Cases) ... ok
+test_z_content (__main__.run.<locals>.Cases) ... ok
+test_z_remote (__main__.run.<locals>.Cases) ... ok
+test_z_resource_limit (__main__.run.<locals>.Cases) ... ok
+test_z_duplicate_zip (__main__.run.<locals>.Cases) ... ok
+test_z_wrong_hash (__main__.run.<locals>.Cases) ... ok
+test_z_truncated (__main__.run.<locals>.Cases) ... ok
+test_z_bad_magic (__main__.run.<locals>.Cases) ... ok
+test_z_post_mismatch (__main__.run.<locals>.Cases) ... ok
+test_z_nested_unknown (__main__.run.<locals>.Cases) ... ok
+test_z_traversal (__main__.run.<locals>.Cases) ... ok
+test_z_archive_limit (__main__.run.<locals>.Cases) ... ok
+
+----------------------------------------------------------------------
+Ran 21 tests in 1.920s
+
+OK
+SYNTHETIC_EXPERIMENT_COMPLETED 21 tests 7 child interruptions

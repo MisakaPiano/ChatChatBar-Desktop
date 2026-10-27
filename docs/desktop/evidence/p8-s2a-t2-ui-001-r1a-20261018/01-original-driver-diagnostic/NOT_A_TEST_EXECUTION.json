@@ -1,0 +1,7 @@
+{
+  "classification": "COMMAND_SELECTOR_ERROR",
+  "testsExecuted": false,
+  "cause": "Wrapper did not quote test method name containing spaces; Gradle interpreted voice as task",
+  "copiedXml": "STALE COPY FROM PRIOR R1. Not this command result; retained but excluded from R1A counts",
+  "nextInvocation": "Use unique no-space wildcard *DesktopFishPresentationTest.management*; no code or assertion changed"
+}

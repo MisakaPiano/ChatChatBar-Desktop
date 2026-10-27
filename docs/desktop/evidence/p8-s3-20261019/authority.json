@@ -1,0 +1,44 @@
+{
+  "base": "6968a4975fcd3da0c0a6618a600b013cc94c923c",
+  "formalUpstream": "5e76a9cb841736bbbf3499a2e35e5789af4c5ca8",
+  "observedLatest": "979cb505958dffb1b6d64a8de657434f198ffa96",
+  "files": [
+    {
+      "path": "app/app/src/main/java/com/example/chatbar/data/repository/VoiceMessageRepository.kt",
+      "blob": "d88e192100a52eb7de94ab79fe559205f880f18d",
+      "bytes": 17218,
+      "sha256": "a588267a7ee9dac8c6d269a9ac25cab17f9b55b8451ee746ea13daae275237ad"
+    },
+    {
+      "path": "app/app/src/main/java/com/example/chatbar/domain/voice/FishAudioStorage.kt",
+      "blob": "0c74be641d168ae14a7f1fc40091fb5d024ef728",
+      "bytes": 9830,
+      "sha256": "4237b2d96748f8990a9ab279f4aafe55995d7ddefbd16d847f2c838ed05511b1"
+    },
+    {
+      "path": "app/app/src/main/java/com/example/chatbar/domain/voice/VoicePlaybackController.kt",
+      "blob": "0931dc734ad929bb777829750354832c4dd92645",
+      "bytes": 5246,
+      "sha256": "5c7ba22d8a47de722a8fc0b10c407ed9c1277e0ddfa0a173883537aa246edf5a"
+    },
+    {
+      "path": "app/app/src/main/java/com/example/chatbar/domain/voice/FishAudioGenerationCoordinator.kt",
+      "blob": "3240be06f2cdf9dc1620cb78291729c217a972aa",
+      "bytes": 39588,
+      "sha256": "bd6fc31af24888db13ec2301127ed16cf662c4bb806ae9ba1449bfb92b467b4a"
+    },
+    {
+      "path": "app/app/src/main/java/com/example/chatbar/domain/voice/FishAudioTagService.kt",
+      "blob": "718a5b4510d7dadc90a4a25a40daa7e2e30826c3",
+      "bytes": 14755,
+      "sha256": "6b6a2a2687dfa4e69b4e4b7a9cd45c6cee071fe52f53909269ade5faa42cde4d"
+    },
+    {
+      "path": "app/app/src/main/java/com/example/chatbar/domain/voice/VoicePlaybackQueuePolicy.kt",
+      "blob": "5fa72768e7d237b67b7b3a2d4390d0a6be031283",
+      "bytes": 547,
+      "sha256": "2efc740b36e8450f204541b71c59f9e9b0a3302ef0f1d0b13242f3cf9f31ec44"
+    }
+  ],
+  "scope": "Shared official repository; Desktop owned durable audio and one Windows output focus; no orphan sweep; no real requests"
+}

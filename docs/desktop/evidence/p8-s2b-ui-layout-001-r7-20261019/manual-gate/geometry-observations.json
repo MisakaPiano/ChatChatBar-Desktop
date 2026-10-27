@@ -1,0 +1,439 @@
+{
+  "observations": [
+    {
+      "file": "runs/manual01/m1-await-preparation-windows.json",
+      "checkpoint": "m1-await-preparation",
+      "utc": "2026-10-19T09:55:35.9315439+00:00",
+      "visibleOwnedWindows": [
+        {
+          "pid": 38324,
+          "hwnd": 18423480,
+          "visible": true,
+          "enabled": true,
+          "maximized": false,
+          "foreground": false,
+          "frame": [
+            48,
+            48,
+            1240,
+            800
+          ],
+          "client": [
+            48,
+            48,
+            1240,
+            800
+          ],
+          "dpi": 96,
+          "clientWidthDp": 1240.0
+        }
+      ]
+    },
+    {
+      "file": "runs/manual01/m1-compact-panel-open-windows.json",
+      "checkpoint": "m1-compact-panel-open",
+      "utc": "2026-10-19T09:58:50.4702632+00:00",
+      "visibleOwnedWindows": [
+        {
+          "pid": 38324,
+          "hwnd": 793786,
+          "visible": true,
+          "enabled": true,
+          "maximized": false,
+          "foreground": false,
+          "frame": [
+            96,
+            -1032,
+            360,
+            760
+          ],
+          "client": [
+            104,
+            -1001,
+            344,
+            721
+          ],
+          "dpi": 96,
+          "clientWidthDp": 344.0
+        },
+        {
+          "pid": 38324,
+          "hwnd": 18423480,
+          "visible": true,
+          "enabled": false,
+          "maximized": false,
+          "foreground": false,
+          "frame": [
+            48,
+            -1080,
+            1240,
+            2120
+          ],
+          "client": [
+            48,
+            -1080,
+            1240,
+            2120
+          ],
+          "dpi": 96,
+          "clientWidthDp": 1240.0
+        }
+      ]
+    },
+    {
+      "file": "runs/manual01/m1-picker-closed-owner-restored-windows.json",
+      "checkpoint": "m1-picker-closed-owner-restored",
+      "utc": "2026-10-19T10:00:41.4393813+00:00",
+      "visibleOwnedWindows": [
+        {
+          "pid": 38324,
+          "hwnd": 18423480,
+          "visible": true,
+          "enabled": true,
+          "maximized": false,
+          "foreground": false,
+          "frame": [
+            48,
+            -1080,
+            1240,
+            2120
+          ],
+          "client": [
+            48,
+            -1080,
+            1240,
+            2120
+          ],
+          "dpi": 96,
+          "clientWidthDp": 1240.0
+        }
+      ]
+    },
+    {
+      "file": "runs/manual01/m2-compact-generation-after-stop-windows.json",
+      "checkpoint": "m2-compact-generation-after-stop",
+      "utc": "2026-10-19T10:04:56.4193459+00:00",
+      "visibleOwnedWindows": [
+        {
+          "pid": 38324,
+          "hwnd": 11146064,
+          "visible": true,
+          "enabled": true,
+          "maximized": false,
+          "foreground": true,
+          "frame": [
+            96,
+            -1032,
+            1080,
+            760
+          ],
+          "client": [
+            104,
+            -1001,
+            1064,
+            721
+          ],
+          "dpi": 96,
+          "clientWidthDp": 1064.0
+        },
+        {
+          "pid": 38324,
+          "hwnd": 18423480,
+          "visible": true,
+          "enabled": false,
+          "maximized": false,
+          "foreground": false,
+          "frame": [
+            48,
+            -1080,
+            1240,
+            2120
+          ],
+          "client": [
+            48,
+            -1080,
+            1240,
+            2120
+          ],
+          "dpi": 96,
+          "clientWidthDp": 1240.0
+        }
+      ]
+    },
+    {
+      "file": "runs/manual01/m3-narrow-input-only-windows.json",
+      "checkpoint": "m3-narrow-input-only",
+      "utc": "2026-10-19T10:12:33.4292487+00:00",
+      "visibleOwnedWindows": [
+        {
+          "pid": 38324,
+          "hwnd": 11146064,
+          "visible": true,
+          "enabled": true,
+          "maximized": false,
+          "foreground": false,
+          "frame": [
+            96,
+            -1032,
+            535,
+            760
+          ],
+          "client": [
+            104,
+            -1001,
+            519,
+            721
+          ],
+          "dpi": 96,
+          "clientWidthDp": 519.0
+        },
+        {
+          "pid": 38324,
+          "hwnd": 18423480,
+          "visible": true,
+          "enabled": false,
+          "maximized": false,
+          "foreground": false,
+          "frame": [
+            48,
+            -1080,
+            1240,
+            2120
+          ],
+          "client": [
+            48,
+            -1080,
+            1240,
+            2120
+          ],
+          "dpi": 96,
+          "clientWidthDp": 1240.0
+        }
+      ]
+    },
+    {
+      "file": "runs/manual01/m3-wide-scroll-pager-windows.json",
+      "checkpoint": "m3-wide-scroll-pager",
+      "utc": "2026-10-19T10:08:19.9490993+00:00",
+      "visibleOwnedWindows": [
+        {
+          "pid": 38324,
+          "hwnd": 11146064,
+          "visible": true,
+          "enabled": true,
+          "maximized": false,
+          "foreground": false,
+          "frame": [
+            96,
+            -1032,
+            1080,
+            760
+          ],
+          "client": [
+            104,
+            -1001,
+            1064,
+            721
+          ],
+          "dpi": 96,
+          "clientWidthDp": 1064.0
+        },
+        {
+          "pid": 38324,
+          "hwnd": 18423480,
+          "visible": true,
+          "enabled": false,
+          "maximized": false,
+          "foreground": false,
+          "frame": [
+            48,
+            -1080,
+            1240,
+            2120
+          ],
+          "client": [
+            48,
+            -1080,
+            1240,
+            2120
+          ],
+          "dpi": 96,
+          "clientWidthDp": 1240.0
+        }
+      ]
+    },
+    {
+      "file": "runs/manual01/m4-after-resize-windows.json",
+      "checkpoint": "m4-after-resize",
+      "utc": "2026-10-19T10:18:36.4162106+00:00",
+      "visibleOwnedWindows": [
+        {
+          "pid": 38324,
+          "hwnd": 11146064,
+          "visible": true,
+          "enabled": true,
+          "maximized": false,
+          "foreground": false,
+          "frame": [
+            96,
+            -1032,
+            531,
+            760
+          ],
+          "client": [
+            104,
+            -1001,
+            515,
+            721
+          ],
+          "dpi": 96,
+          "clientWidthDp": 515.0
+        },
+        {
+          "pid": 38324,
+          "hwnd": 18423480,
+          "visible": true,
+          "enabled": false,
+          "maximized": false,
+          "foreground": false,
+          "frame": [
+            48,
+            -1080,
+            1240,
+            2120
+          ],
+          "client": [
+            48,
+            -1080,
+            1240,
+            2120
+          ],
+          "dpi": 96,
+          "clientWidthDp": 1240.0
+        }
+      ]
+    },
+    {
+      "file": "runs/manual01/m4-baseline-before-resize-windows.json",
+      "checkpoint": "m4-baseline-before-resize",
+      "utc": "2026-10-19T10:17:46.6368708+00:00",
+      "visibleOwnedWindows": [
+        {
+          "pid": 38324,
+          "hwnd": 11146064,
+          "visible": true,
+          "enabled": true,
+          "maximized": false,
+          "foreground": false,
+          "frame": [
+            96,
+            -1032,
+            972,
+            760
+          ],
+          "client": [
+            104,
+            -1001,
+            956,
+            721
+          ],
+          "dpi": 96,
+          "clientWidthDp": 956.0
+        },
+        {
+          "pid": 38324,
+          "hwnd": 18423480,
+          "visible": true,
+          "enabled": false,
+          "maximized": false,
+          "foreground": false,
+          "frame": [
+            48,
+            -1080,
+            1240,
+            2120
+          ],
+          "client": [
+            48,
+            -1080,
+            1240,
+            2120
+          ],
+          "dpi": 96,
+          "clientWidthDp": 1240.0
+        }
+      ]
+    },
+    {
+      "file": "runs/manual01/m4-picker-closed-owner-restored-windows.json",
+      "checkpoint": "m4-picker-closed-owner-restored",
+      "utc": "2026-10-19T10:19:24.6083732+00:00",
+      "visibleOwnedWindows": [
+        {
+          "pid": 38324,
+          "hwnd": 18423480,
+          "visible": true,
+          "enabled": true,
+          "maximized": false,
+          "foreground": false,
+          "frame": [
+            48,
+            -1080,
+            1240,
+            2120
+          ],
+          "client": [
+            48,
+            -1080,
+            1240,
+            2120
+          ],
+          "dpi": 96,
+          "clientWidthDp": 1240.0
+        }
+      ]
+    },
+    {
+      "file": "runs/manual01/startup-corrected-windows.json",
+      "checkpoint": "startup-corrected",
+      "utc": "2026-10-19T09:54:42.2770474+00:00",
+      "visibleOwnedWindows": [
+        {
+          "pid": 38324,
+          "hwnd": 18423480,
+          "visible": true,
+          "enabled": true,
+          "maximized": false,
+          "foreground": true,
+          "frame": [
+            48,
+            48,
+            1240,
+            800
+          ],
+          "client": [
+            48,
+            48,
+            1240,
+            800
+          ],
+          "dpi": 96,
+          "clientWidthDp": 1240.0
+        }
+      ]
+    }
+  ],
+  "units": "Native physical px plus DPI-derived dp",
+  "compactBreakpointDp": 800,
+  "m1ActualClientDp": 344,
+  "m3WideActualClientDp": 1064,
+  "m3NarrowActualClientDp": 519,
+  "m4BeforeResizeActualClientDp": 956,
+  "m4AfterResizeActualClientDp": 515,
+  "m2PostStopActualClientDp": 1064,
+  "m2Caveat": "User explicitly reported compact overlay Stop PASS. Native sample was taken after that report and was1064dp wide. It is not a synchronous measurement of the playing compact Popup; do not claim technical compact-Popup geometry PASS from this sample.",
+  "focusCaveat": "Users returned focus to chat to report results. Owned foreground=false in such snapshots is not proof of missing focus during their action.",
+  "noInputInjected": true,
+  "ownerDisabledWhilePickerPresent": true,
+  "ownerEnabledAfterM1AndM4Close": true
+}

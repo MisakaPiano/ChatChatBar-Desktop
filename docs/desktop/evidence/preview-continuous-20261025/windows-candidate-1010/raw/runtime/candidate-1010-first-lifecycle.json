@@ -1,0 +1,16 @@
+{
+  "identity": {
+    "version": "0.1.0-preview.1010",
+    "commit": "946c3791153634b0af65286313a497d141d5c598",
+    "installerVersion": "0.1.1010",
+    "installerVersionAssigned": "true",
+    "packagingProfile": "desktop"
+  },
+  "launcherExit": 0,
+  "maximumOwnedProcesses": 2,
+  "remainingOwnedProcesses": [],
+  "normalOwnedWindowClose": true,
+  "jobAssignedBeforeResume": true,
+  "selectedRootBusyVerified": true,
+  "providerActionsTriggered": false
+}

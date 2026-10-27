@@ -1,0 +1,13 @@
+# Internal Windows app-image 1008
+
+Source **2f75a4d3d4e5557d7bd513f2e9368a4ed5e8d1f7**, actual resource version 0.1.0-preview.1008, Windows assignment 0.1.1008, profile synthetic, 217 files. Offline packaging exit 0. This image includes the basic support copy action; that action's separate focused final tests are under support-summary.
+
+Actual native synthetic seed, one default application launch/normal close and separate-JVM data verification all exited 0. A Job was assigned before resume; both launcher/JVM processes exited, the independently observed selected-root lock was busy while open, then released after normal close. Invented character/session/message/draft/image/bootstrap and three real-DPAPI-protected invented values survived. No Provider action, system clipboard action, mouse/keyboard control or installer was performed. This is one launch, not a repeat of the previous image's two-launch count.
+
+All 63 production dependency JARs come from this immutable task-owned app-image, with a private manifest before execution. The unchanged Windows fixture JAR is outside the image; its current source snapshot is supplied and its source diff from 85d16a67 to this source was empty. All package files still matched the original manifest after execution. ZIP CRC, named private fixture/witness absence, archive/protected-blob suffix checks and supplied-password-pattern check passed; no actual user payload was read for the audit.
+
+**Count correction:** independently recounting the retained unchanged 1007 image yields **21,158 class entries**, not the 21,216 previously recorded in its raw metadata and narrative. All 217 files still match its original SHA/length manifest, so this is a reported count error, not evidence of changed package bytes. The new 1008 image has **21,161** actual class entries: one generated update lambda removed and four classes added. The complete class delta and recount are included. The older original raw record is preserved; its wrong class count is not reused. This correction does not assert an unperformed native rerun of 1007.
+
+Open-Isolated-Preview-1008.ps1 -PreflightOnly exited 0 after checking exact identity, all 217 files and reparse ancestors, with **no application launch**. The normal helper is available for a later human visual check and only sets child profile variables. The earlier 1006 helper remains unchanged. No human visual, MSI repair/upgrade/rollback, physical Android, reboot/power-loss or full Preview PASS is claimed.
+
+Raw native captures, synthetic profile/protected blobs/private baseline, real-data witnesses and private classpaths remain local and are excluded. RAW_INDEX.json records the exact selected synthetic execution files; this evidence is not a Project acceptance.

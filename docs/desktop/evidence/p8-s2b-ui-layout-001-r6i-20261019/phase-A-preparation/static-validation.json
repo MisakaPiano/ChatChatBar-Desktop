@@ -1,0 +1,20 @@
+{
+  "headUnchanged": true,
+  "trackingAndLiveEqual": true,
+  "indexEmpty": true,
+  "sourceDraftsUnstaged": true,
+  "sourceCopiesRawIdentical": true,
+  "productionDraftsFrozen": true,
+  "protectedFilesPathsOnlyUntrackedUnchanged": true,
+  "historicalEvidenceUnchanged": true,
+  "metadataAndSourceCopyWhitespaceWarnings": [],
+  "rawWarningsPreserved": true,
+  "knownLineEndingConversionNoticesPreserved": true,
+  "unknownStderrRejected": true,
+  "markdownTargetsVerified": 25,
+  "rawXmlCount": 0,
+  "manualDirectoryAbsent": true,
+  "junitAndManualTasksNotExecuted": true,
+  "evidenceCommit": null,
+  "sourceCommit": null
+}

@@ -1,0 +1,1 @@
+{"mode":"rollback","pid":38608,"result":"PASS","sourceCommit":"70b5c30c91439e79728bf224c1a44d35b25cf733","gui":false,"providerRequests":0,"syntheticOnly":true,"assertions":["partial full-restore injected failure","old app settings restored","new graph absent","journal retained","source archive retained"]}

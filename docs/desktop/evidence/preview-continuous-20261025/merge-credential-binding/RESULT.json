@@ -1,0 +1,34 @@
+{
+  "merge-credentials-first-20261025": {
+    "exit": 0,
+    "suites": 5,
+    "tests": 39,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "merge-credentials-readback-red-20261025": {
+    "exit": 1,
+    "suites": 1,
+    "tests": 7,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "merge-credentials-green-20261025": {
+    "exit": 0,
+    "suites": 11,
+    "tests": 122,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "merge-credentials-final-20261025": {
+    "exit": 0,
+    "suites": 11,
+    "tests": 122,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

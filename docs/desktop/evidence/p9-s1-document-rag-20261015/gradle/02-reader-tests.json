@@ -1,0 +1,20 @@
+{
+  "stage": "02-reader-tests",
+  "started": "2026-10-15T06:45:15.8958087+09:00",
+  "ended": "2026-10-15T06:45:44.2789491+09:00",
+  "seconds": 28.383249,
+  "arguments": [
+    "--offline",
+    "--no-daemon",
+    "--no-parallel",
+    "--max-workers=1",
+    "--priority=low",
+    "--console=plain",
+    "--no-configuration-cache",
+    "-Pkotlin.compiler.execution.strategy=in-process",
+    ":desktopApp:test",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopDocumentRagReaderTest"
+  ],
+  "exitCode": 1
+}

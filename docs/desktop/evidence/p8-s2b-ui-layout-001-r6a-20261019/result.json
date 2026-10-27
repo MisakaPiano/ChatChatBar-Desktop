@@ -1,0 +1,48 @@
+{
+  "gateInvocations": 1,
+  "exitCode": 1,
+  "failedTask": ":desktopApp:compileTestKotlin",
+  "testMethodExecuted": false,
+  "junitXmlCount": 0,
+  "junitXmlSha256": null,
+  "compileErrors": [
+    {
+      "line": 264,
+      "column": 47,
+      "member": "positionOnScreen"
+    },
+    {
+      "line": 264,
+      "column": 73,
+      "member": "positionInWindow"
+    },
+    {
+      "line": 267,
+      "column": 94,
+      "member": "id"
+    }
+  ],
+  "diagnosticCompileCause": "SemanticsNode.root returns RootForTest, not SemanticsNode; the new diagnostic wrongly uses SemanticsNode geometry/id members on it",
+  "paginationRootCause": "UNKNOWN",
+  "newGeometryRecords": 0,
+  "selectedNodeAndDuplicateAnalysis": "NOT OBSERVED",
+  "actual1100PagerRects": null,
+  "horizontalGap": null,
+  "branches": {
+    "1100dp": "NOT REACHED / compilation failed",
+    "720dp": "NOT REACHED / compilation failed",
+    "360dp": "NOT REACHED / compilation failed",
+    "drag": "NOT REACHED / compilation failed",
+    "wheel": "NOT REACHED / compilation failed",
+    "page jump": "NOT REACHED / compilation failed",
+    "unknown total": "NOT REACHED / compilation failed",
+    "Int boundary": "NOT REACHED / compilation failed"
+  },
+  "historicalR5InputPass": "Historical only; no new input gate executed",
+  "newNativeUxFull": "NOT TESTED",
+  "newBounded": "NOT TESTED",
+  "newWindowsManual": "NOT TESTED",
+  "retriesAfterRed": 0,
+  "diagnosticFixImplemented": false,
+  "nextMinimalScope": "Only the new assertPagerLayout diagnostics: obtain a typed SemanticsNode ancestor through its public parent chain or explicitly derive a consistent window origin; leave old assertions/12px/Robot/production unchanged; requires next Project authorization"
+}

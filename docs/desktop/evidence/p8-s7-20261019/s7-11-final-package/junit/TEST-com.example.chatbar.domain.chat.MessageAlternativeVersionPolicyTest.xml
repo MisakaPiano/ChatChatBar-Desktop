@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.chat.MessageAlternativeVersionPolicyTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-19T12:31:29.557Z" hostname="DD1" time="0.008">
+  <properties/>
+  <testcase name="middle edit preserves metadata and siblings through selection and serialization" classname="com.example.chatbar.domain.chat.MessageAlternativeVersionPolicyTest" time="0.0"/>
+  <testcase name="legacy ids normalize without mutating the source or losing alternatives" classname="com.example.chatbar.domain.chat.MessageAlternativeVersionPolicyTest" time="0.001"/>
+  <testcase name="new version id skips regenerated bubble message id collision" classname="com.example.chatbar.domain.chat.MessageAlternativeVersionPolicyTest" time="0.001"/>
+  <testcase name="select and edit preserve every version identity" classname="com.example.chatbar.domain.chat.MessageAlternativeVersionPolicyTest" time="0.0"/>
+  <testcase name="legacy alternatives receive deterministic stable ids" classname="com.example.chatbar.domain.chat.MessageAlternativeVersionPolicyTest" time="0.0"/>
+  <testcase name="append keeps ids paired when oldest version is trimmed" classname="com.example.chatbar.domain.chat.MessageAlternativeVersionPolicyTest" time="0.001"/>
+  <testcase name="segment edits preserve candidates while empty deletion keeps existing classification" classname="com.example.chatbar.domain.chat.MessageAlternativeVersionPolicyTest" time="0.005"/>
+  <testcase name="plain and invalid-index historical messages retain their display fallback" classname="com.example.chatbar.domain.chat.MessageAlternativeVersionPolicyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

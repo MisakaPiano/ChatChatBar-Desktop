@@ -1,0 +1,617 @@
+{
+  "files": [
+    {
+      "path": "BV-B2-after-confirmed-exit-inventory.json",
+      "originalBytes": 557,
+      "originalSha256": "4876839b568dcbfa7a711c41b8d52369a995045b0ee9501b60ea819d15d5da7d",
+      "publishedBytes": 557,
+      "publishedSha256": "4876839b568dcbfa7a711c41b8d52369a995045b0ee9501b60ea819d15d5da7d",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "BV-B2-after-confirmed-exit-lock.json",
+      "originalBytes": 251,
+      "originalSha256": "0246a1cc94e9b61290b50fae902a6ab24a7ba36ae7d5a98534ec22522adc4fd8",
+      "publishedBytes": 251,
+      "publishedSha256": "0246a1cc94e9b61290b50fae902a6ab24a7ba36ae7d5a98534ec22522adc4fd8",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "BV-B2-before.json",
+      "originalBytes": 557,
+      "originalSha256": "0721b9a145a94eaacd29417792528002539718e3c075c02dec060f452a3ff21b",
+      "publishedBytes": 557,
+      "publishedSha256": "0721b9a145a94eaacd29417792528002539718e3c075c02dec060f452a3ff21b",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "BV-B2-current-inventory.json",
+      "originalBytes": 557,
+      "originalSha256": "454207e65718ab6eb7fd0e2284a45d29ea088c0c34c809a112757b13008484ea",
+      "publishedBytes": 557,
+      "publishedSha256": "454207e65718ab6eb7fd0e2284a45d29ea088c0c34c809a112757b13008484ea",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "BV-B2-current-lock.json",
+      "originalBytes": 251,
+      "originalSha256": "3ac45745df3fe96e63c022123eeb0b2197aac1fa8f22689496a0d1a596c6a8cd",
+      "publishedBytes": 251,
+      "publishedSha256": "3ac45745df3fe96e63c022123eeb0b2197aac1fa8f22689496a0d1a596c6a8cd",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "BV-B2-final-comparison.json",
+      "originalBytes": 368,
+      "originalSha256": "481ac4ce5bdf3060cbc4499940f3a8ad4d047e4ebe506b2ff0b553a2fb87eb94",
+      "publishedBytes": 368,
+      "publishedSha256": "481ac4ce5bdf3060cbc4499940f3a8ad4d047e4ebe506b2ff0b553a2fb87eb94",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "BV-B2-final-inventory.json",
+      "originalBytes": 557,
+      "originalSha256": "37b23cde658d38b7e68e5204c8a963b91cde754f74f31496f0cfeba9c2aa74b5",
+      "publishedBytes": 557,
+      "publishedSha256": "37b23cde658d38b7e68e5204c8a963b91cde754f74f31496f0cfeba9c2aa74b5",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "BV-B2-final-lock.json",
+      "originalBytes": 251,
+      "originalSha256": "4ea0582151c304e4080699b94348222491fa1f8ba658f54940028e03b66664c5",
+      "publishedBytes": 251,
+      "publishedSha256": "4ea0582151c304e4080699b94348222491fa1f8ba658f54940028e03b66664c5",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "BV-B2-manual-attestation.json",
+      "originalBytes": 641,
+      "originalSha256": "60d5af14db6a82527f1bbbaab7aef6878040eff369c93a38596f802a8e293373",
+      "publishedBytes": 641,
+      "publishedSha256": "60d5af14db6a82527f1bbbaab7aef6878040eff369c93a38596f802a8e293373",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "BV-B4-after-signature-inventory.json",
+      "originalBytes": 435,
+      "originalSha256": "5d73c98ab54f53ffb28487a10d7e2c6bbb1c74cb6f7c5fa83daf970da4dc662f",
+      "publishedBytes": 435,
+      "publishedSha256": "5d73c98ab54f53ffb28487a10d7e2c6bbb1c74cb6f7c5fa83daf970da4dc662f",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "BV-B4-after-signature-lock.json",
+      "originalBytes": 242,
+      "originalSha256": "1d60f7949a1f45a0b01fa1657ef9201ef70c6c2f4ca7f1204fccb8fdf71adecc",
+      "publishedBytes": 242,
+      "publishedSha256": "1d60f7949a1f45a0b01fa1657ef9201ef70c6c2f4ca7f1204fccb8fdf71adecc",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "BV-B4-before.json",
+      "originalBytes": 435,
+      "originalSha256": "17a2537c2b85ea91ba5dcb2d8bf06f67cbe5f97702654ab272eb0cfc15672f7b",
+      "publishedBytes": 435,
+      "publishedSha256": "17a2537c2b85ea91ba5dcb2d8bf06f67cbe5f97702654ab272eb0cfc15672f7b",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "BV-B4-date-conversion-proof.json",
+      "originalBytes": 801,
+      "originalSha256": "fe72d1d76cd94da7800014ab854ae1909a27a0f0e9c59741cb54a3df1df1ec47",
+      "publishedBytes": 801,
+      "publishedSha256": "fe72d1d76cd94da7800014ab854ae1909a27a0f0e9c59741cb54a3df1df1ec47",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "BV-B4-extra-exit-observation.json",
+      "originalBytes": 400,
+      "originalSha256": "448b8345f599a9461f1ce6bb719eb0946af76ac4e3c9207df28fcc3ac8980e0c",
+      "publishedBytes": 400,
+      "publishedSha256": "448b8345f599a9461f1ce6bb719eb0946af76ac4e3c9207df28fcc3ac8980e0c",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "BV-B4-final-comparison.json",
+      "originalBytes": 198,
+      "originalSha256": "732ecfbc6522a46e1a8b60b0b46d1c6890251b4edc34dc468bdb2fcf39694132",
+      "publishedBytes": 198,
+      "publishedSha256": "732ecfbc6522a46e1a8b60b0b46d1c6890251b4edc34dc468bdb2fcf39694132",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "BV-B4-manual-attestation.json",
+      "originalBytes": 489,
+      "originalSha256": "83c8e9a336025ad132a1e62bfd2c77b9a4c9fee0edb7922b2eec395558444985",
+      "publishedBytes": 489,
+      "publishedSha256": "83c8e9a336025ad132a1e62bfd2c77b9a4c9fee0edb7922b2eec395558444985",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "BV-B4-owned-window.json",
+      "originalBytes": 749,
+      "originalSha256": "3a2c5935921101868ebc397733cc363e97e668aa80872cc5d3ae69111f9df0d1",
+      "publishedBytes": 605,
+      "publishedSha256": "aa03aa8e96efd85511aa600d9947a7a2a9900bee2f078e68ad99861d3bca9c80",
+      "publication": "SANITIZED_DERIVATIVE",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "BV-B4-post-signature-process-check.json",
+      "originalBytes": 204,
+      "originalSha256": "2417f6a352e23cbfe7f880e4c2ba20149cc560dac15654584e80b55b4fdbd760",
+      "publishedBytes": 204,
+      "publishedSha256": "2417f6a352e23cbfe7f880e4c2ba20149cc560dac15654584e80b55b4fdbd760",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "BV-B4-reattach-diagnostic.json",
+      "originalBytes": 633,
+      "originalSha256": "64dfaefef7105d2ce92764f4471e50f4aed7b4ee74a6d758525f16d90b1e329c",
+      "publishedBytes": 633,
+      "publishedSha256": "64dfaefef7105d2ce92764f4471e50f4aed7b4ee74a6d758525f16d90b1e329c",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "BV-B4-retained-handles.json",
+      "originalBytes": 445,
+      "originalSha256": "a12129852fcc90c7df5d7879830dcf303db578208665b5b77646634b865fad4f",
+      "publishedBytes": 312,
+      "publishedSha256": "627dda4b4456a077f5d7ab24f5f3b16b2865a0d4d360360c06febc88eaa1a811",
+      "publication": "SANITIZED_DERIVATIVE",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "BV-B4-user-waiting.json",
+      "originalBytes": 208,
+      "originalSha256": "dc1d766449f5eb6f545302ed7ba3d52c8bcf9fa894625d1c5a522a0e906d8b56",
+      "publishedBytes": 208,
+      "publishedSha256": "dc1d766449f5eb6f545302ed7ba3d52c8bcf9fa894625d1c5a522a0e906d8b56",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "BV-B5-bootstrap-after.json",
+      "originalBytes": 320,
+      "originalSha256": "f6fe8faacbde540c46921b2e65feb4e0f0b750ff491cf4db8c57905deb81fb0d",
+      "publishedBytes": 320,
+      "publishedSha256": "f6fe8faacbde540c46921b2e65feb4e0f0b750ff491cf4db8c57905deb81fb0d",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "BV-B5-bootstrap-before.json",
+      "originalBytes": 320,
+      "originalSha256": "e2eb7f41e401728343b1572fb666ff2e86c883fe6c6a0d0bd3c02618e8c76e00",
+      "publishedBytes": 320,
+      "publishedSha256": "e2eb7f41e401728343b1572fb666ff2e86c883fe6c6a0d0bd3c02618e8c76e00",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "BV-B5-bootstrap-final-comparison.json",
+      "originalBytes": 167,
+      "originalSha256": "6653bfe9d9235fd27402f75d6dd6c16e5b4ba1d54d8c28befa37be49971eb455",
+      "publishedBytes": 167,
+      "publishedSha256": "6653bfe9d9235fd27402f75d6dd6c16e5b4ba1d54d8c28befa37be49971eb455",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "BV-B5-bootstrap-manual-attestation.json",
+      "originalBytes": 432,
+      "originalSha256": "766157ffd14639703451afb01ed9d8700ba81f6ae20a733a79ddbed011902efc",
+      "publishedBytes": 432,
+      "publishedSha256": "766157ffd14639703451afb01ed9d8700ba81f6ae20a733a79ddbed011902efc",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "BV-B5-bootstrap-owned-window.json",
+      "originalBytes": 736,
+      "originalSha256": "bab3f4b96f95ba85f913bd58dc453c8f0fb5324c23e60bad6fce35f079b67cb8",
+      "publishedBytes": 592,
+      "publishedSha256": "b093d6b7cf5a8cc77aab0f2a4acd804f5614dce5cd640b5c3c11030977778939",
+      "publication": "SANITIZED_DERIVATIVE",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "BV-B5-marker-after-local.json",
+      "originalBytes": 134,
+      "originalSha256": "2a522203fc40eef51befae400e2c30b211400e0bdfab36a4b9097cd91af9ea36",
+      "publishedBytes": 134,
+      "publishedSha256": "2a522203fc40eef51befae400e2c30b211400e0bdfab36a4b9097cd91af9ea36",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "BV-B5-marker-after-portable.json",
+      "originalBytes": 136,
+      "originalSha256": "5a015803a5a4d56295aedcecd1237bddf62a034d439eab59392db3200af6795b",
+      "publishedBytes": 136,
+      "publishedSha256": "5a015803a5a4d56295aedcecd1237bddf62a034d439eab59392db3200af6795b",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "BV-B5-marker-before-local.json",
+      "originalBytes": 134,
+      "originalSha256": "c9e73e65e9a79ce63f167741dd5e4530f30a123f14fbd08bb09c5ac5fcb923e3",
+      "publishedBytes": 134,
+      "publishedSha256": "c9e73e65e9a79ce63f167741dd5e4530f30a123f14fbd08bb09c5ac5fcb923e3",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "BV-B5-marker-before-portable.json",
+      "originalBytes": 136,
+      "originalSha256": "cd6ddf95bd76e4839217cc168bfd5585fdd5f2f3ac2c13c7d0382a646662d7ae",
+      "publishedBytes": 136,
+      "publishedSha256": "cd6ddf95bd76e4839217cc168bfd5585fdd5f2f3ac2c13c7d0382a646662d7ae",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "BV-B5-marker-final-comparison.json",
+      "originalBytes": 329,
+      "originalSha256": "8ad70f86bd029171c90a81abf20f5ecebcbf7da9aac4bb5bfb60c0c33a782e31",
+      "publishedBytes": 329,
+      "publishedSha256": "8ad70f86bd029171c90a81abf20f5ecebcbf7da9aac4bb5bfb60c0c33a782e31",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "BV-B5-marker-manual-attestation.json",
+      "originalBytes": 448,
+      "originalSha256": "188fa7a5736e21190a3d63d1e4e6673de7655077d22d8049a48be7aa99730a0b",
+      "publishedBytes": 448,
+      "publishedSha256": "188fa7a5736e21190a3d63d1e4e6673de7655077d22d8049a48be7aa99730a0b",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "BV-B5-marker-owned-window.json",
+      "originalBytes": 749,
+      "originalSha256": "2a0804affd4b8b194bbb2db72a0c6984969a5d6905accd4e48517d8983b537a5",
+      "publishedBytes": 605,
+      "publishedSha256": "9c03db9f8a41d49deb49ba2513710f8ae96367182b5e1896a0c8a743634c0f05",
+      "publication": "SANITIZED_DERIVATIVE",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "BV-B5-marker-user-waiting.json",
+      "originalBytes": 215,
+      "originalSha256": "2f86ccc86e75e447bf4ee80dfc7cc17b2da1aeb7dd7eca6bd21f32f44e9036ca",
+      "publishedBytes": 215,
+      "publishedSha256": "2f86ccc86e75e447bf4ee80dfc7cc17b2da1aeb7dd7eca6bd21f32f44e9036ca",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "current-owned-process-check.json",
+      "originalBytes": 683,
+      "originalSha256": "3ebb9c68248bb11acf2dce8d7afbebedd7cda5930b59b34ae1c9be3e2a5c3b04",
+      "publishedBytes": 542,
+      "publishedSha256": "dae6eabc06fdba5be9f2976b0b79f63ca8e0ad3ca296001b8a2a0e2ececeba71",
+      "publication": "SANITIZED_DERIVATIVE",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "final-owned-process-check.json",
+      "originalBytes": 276,
+      "originalSha256": "ddc4d0c0cc7c5515a3a92eb3f4cb632f72ac7e08636d08cb1d2455d3273c9a96",
+      "publishedBytes": 276,
+      "publishedSha256": "ddc4d0c0cc7c5515a3a92eb3f4cb632f72ac7e08636d08cb1d2455d3273c9a96",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "final-summary.json",
+      "originalBytes": 2734,
+      "originalSha256": "b78b6b1f0985b99c39c2be278049a662757c5f48f7641e3ed2a54e761b5103dc",
+      "publishedBytes": 2734,
+      "publishedSha256": "b78b6b1f0985b99c39c2be278049a662757c5f48f7641e3ed2a54e761b5103dc",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "inventory-comparison-current.json",
+      "originalBytes": 210,
+      "originalSha256": "5cdf12cca3a2ae9682ca4ee1d545ff2e07cfdc25234291b27257fb2de272812f",
+      "publishedBytes": 210,
+      "publishedSha256": "5cdf12cca3a2ae9682ca4ee1d545ff2e07cfdc25234291b27257fb2de272812f",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "late-batch-B2-replies.json",
+      "originalBytes": 372,
+      "originalSha256": "6c0b59a70ca13801c1671cd7e12db80b4372caad33b873f771e84b97cd9b4970",
+      "publishedBytes": 372,
+      "publishedSha256": "6c0b59a70ca13801c1671cd7e12db80b4372caad33b873f771e84b97cd9b4970",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "late-close-process-result.json",
+      "originalBytes": 1012,
+      "originalSha256": "f405454f64c31788b17a19cacf16004dc511b609dbc4f0210b859f634b6a2546",
+      "publishedBytes": 855,
+      "publishedSha256": "40f35129b8fdc210bbe23061e66fb54a69ce0835a363f5f1c3e66fe9b557e18a",
+      "publication": "SANITIZED_DERIVATIVE",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "late-window-processes.json",
+      "originalBytes": 715,
+      "originalSha256": "bad09483106acb30e38253b92ad40ed571ea1c36f4bf2c570bf153d14c6fa321",
+      "publishedBytes": 573,
+      "publishedSha256": "5baf2712fee727789cff72524f7b35637b55c4774a76c116a0e02b4767794f53",
+      "publication": "SANITIZED_DERIVATIVE",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "observer-incidents.json",
+      "originalBytes": 776,
+      "originalSha256": "f550937d10db7b6fcd5f2610e5370378beac9b8c9fab0f8cf3d633c08874c12f",
+      "publishedBytes": 776,
+      "publishedSha256": "f550937d10db7b6fcd5f2610e5370378beac9b8c9fab0f8cf3d633c08874c12f",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "owned-process-midpoint.json",
+      "originalBytes": 673,
+      "originalSha256": "aeac3bee5fe6ee838403b3c6915afd3efb7cea8139a006c046504987a7a68192",
+      "publishedBytes": 532,
+      "publishedSha256": "90985f7cd68c2c1ac8257eb2f093b736b92d67e59a718d1635691725190463f9",
+      "publication": "SANITIZED_DERIVATIVE",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "preflight.json",
+      "originalBytes": 470,
+      "originalSha256": "5fabb7f78ed7a3b51cc78972d119e27f79a1458c60f03028475bc0d06d373432",
+      "publishedBytes": 470,
+      "publishedSha256": "5fabb7f78ed7a3b51cc78972d119e27f79a1458c60f03028475bc0d06d373432",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "source-and-history-check.json",
+      "originalBytes": 2035,
+      "originalSha256": "efb2fbb930dc153ab8dda90e364b9362bf0faf1566d4640fdf5f757aef1f98f5",
+      "publishedBytes": 2035,
+      "publishedSha256": "efb2fbb930dc153ab8dda90e364b9362bf0faf1566d4640fdf5f757aef1f98f5",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "tool-and-user-observations.json",
+      "originalBytes": 1380,
+      "originalSha256": "c2a6871ba9662e5e53e06b32497ac8ac8a8f9ff61a14fe441547b4ca85b4d275",
+      "publishedBytes": 1380,
+      "publishedSha256": "c2a6871ba9662e5e53e06b32497ac8ac8a8f9ff61a14fe441547b4ca85b4d275",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "runs/BV-B2/launch.json",
+      "originalBytes": 764,
+      "originalSha256": "bc2181de03d4853fd35d80ffdfefdf6ee93595fb0dff546162a205d15f301c4a",
+      "publishedBytes": 568,
+      "publishedSha256": "5bc042236a91f2de440fa4a7d017ce8bee17c3e66e66809f4e85f401b58038b9",
+      "publication": "SANITIZED_DERIVATIVE",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "runs/BV-B2/process-observations.jsonl",
+      "originalBytes": 87538,
+      "originalSha256": "e29a8294e6c318a5d224fff8c06370b9930b87875fae5eab8d0fbbc90eff5a9b",
+      "publishedBytes": 68964,
+      "publishedSha256": "a02bce89d601db34ca8835a5e3206bd0c36b8d71cf036b6748c207b4af546fbf",
+      "publication": "SANITIZED_DERIVATIVE",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "runs/BV-B2/process-result.json",
+      "originalBytes": 1323,
+      "originalSha256": "b7ebec1708a91b811c7adb61ae0aee2a91050662323e62fe41995aa5d827e48b",
+      "publishedBytes": 1159,
+      "publishedSha256": "36b39e0903bcf6171a0c5acdd37e28b513e5e2a8f293f546e9d360baeb9e5a01",
+      "publication": "SANITIZED_DERIVATIVE",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "runs/BV-B2/window-process.json",
+      "originalBytes": 89,
+      "originalSha256": "c2f985e6bd89991b0fab752cdff3e2baed53e107819fc6a5f2605872bf11e9bb",
+      "publishedBytes": 89,
+      "publishedSha256": "c2f985e6bd89991b0fab752cdff3e2baed53e107819fc6a5f2605872bf11e9bb",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "runs/BV-B4/launch.json",
+      "originalBytes": 772,
+      "originalSha256": "927bdf978b739a531390432d9ae1400ae80b4436fb25aab68b0ad29df4183edf",
+      "publishedBytes": 576,
+      "publishedSha256": "2bfddfb3cad81fce29694b0ba1aaae8aed68e35cb3b72c35d65b8fd6a95c3202",
+      "publication": "SANITIZED_DERIVATIVE",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "runs/BV-B4/process-observations.jsonl",
+      "originalBytes": 71638,
+      "originalSha256": "b3c33f575857ffb87b46147081c19d7733a229e0f5b6a5fe5b94a81cd7db9d16",
+      "publishedBytes": 57239,
+      "publishedSha256": "a079f64ab627689992fcdcf888ff9b88518db62e7e175dcaf0ad14a1265b3aa0",
+      "publication": "SANITIZED_DERIVATIVE",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "runs/BV-B4/process-result.json",
+      "originalBytes": 1355,
+      "originalSha256": "bede39d7ac72701c81f9d8a088486669b252d1137cd085d0be67d708de8017c7",
+      "publishedBytes": 1191,
+      "publishedSha256": "c5a4f9d7f72f29b9feb4dfa3b993f11d334153ef7f4fbda9e13c9fc715ea30bd",
+      "publication": "SANITIZED_DERIVATIVE",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "runs/BV-B4/window-process.json",
+      "originalBytes": 89,
+      "originalSha256": "8a7262ee84283cb840256e003134fab7844d179ce0a2681a8ae563d2e6dd0cb2",
+      "publishedBytes": 89,
+      "publishedSha256": "8a7262ee84283cb840256e003134fab7844d179ce0a2681a8ae563d2e6dd0cb2",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "runs/BV-B5-marker/launch.json",
+      "originalBytes": 795,
+      "originalSha256": "016ff37234d586eec8457073f374a39f113db06be2acf96b32ddcee51e714bf2",
+      "publishedBytes": 599,
+      "publishedSha256": "bb841e8535b3b63e57eb64b534f4d184629e867808fcdf3281a1e31135999798",
+      "publication": "SANITIZED_DERIVATIVE",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "runs/BV-B5-marker/process-observations.jsonl",
+      "originalBytes": 28030,
+      "originalSha256": "8d57b606d1aba9aa738b5489832fd7d4160c2cc0c4b499cf6cd438bd4824f5a8",
+      "publishedBytes": 22403,
+      "publishedSha256": "930c1238f270de611c70a803c2aa94cfee0f9b870b5f82906f499e88a2877f00",
+      "publication": "SANITIZED_DERIVATIVE",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "runs/BV-B5-marker/process-result.json",
+      "originalBytes": 1354,
+      "originalSha256": "c442d5ba557db232c36d2e1a0e8a6837a66a808f3b5b7fb0a09f7256789ccb2d",
+      "publishedBytes": 1190,
+      "publishedSha256": "f1c4b31119c6f6b8ec3671178c58ef6a68da4b01036f7c0f9deee69b8349ada7",
+      "publication": "SANITIZED_DERIVATIVE",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "runs/BV-B5-marker/stderr.log",
+      "originalBytes": 65,
+      "originalSha256": "5c394a74c687ffd62ff01dc3ad646b229bd47cbd4726002ae4986684081a053e",
+      "publishedBytes": 65,
+      "publishedSha256": "5c394a74c687ffd62ff01dc3ad646b229bd47cbd4726002ae4986684081a053e",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "runs/BV-B5-marker/stdout.log",
+      "originalBytes": 2,
+      "originalSha256": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "publishedBytes": 2,
+      "publishedSha256": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "runs/BV-B5-bootstrap/launch.json",
+      "originalBytes": 786,
+      "originalSha256": "21dff9671ec69d16a7054e782261135acc2faae82234483cf7fb1f51743ba422",
+      "publishedBytes": 590,
+      "publishedSha256": "9ca91978496d3502111fbe5330291ce233732e1dac20802de7e33266d2bfc8fb",
+      "publication": "SANITIZED_DERIVATIVE",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "runs/BV-B5-bootstrap/process-observations.jsonl",
+      "originalBytes": 12280,
+      "originalSha256": "9064bd90ee2c5b4b4782bd2a2fe61bbea470a7b956a25432a826b3ce87c98f3a",
+      "publishedBytes": 9678,
+      "publishedSha256": "8ff7ea6ef6e86e6edf161b51287f1abc4d7322d989da4b854434d5074f2bc1ed",
+      "publication": "SANITIZED_DERIVATIVE",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "runs/BV-B5-bootstrap/process-result.json",
+      "originalBytes": 1324,
+      "originalSha256": "e6dbfe3c82412482a2e7cdb0bd95fd40ad87acf6ce9bb0424572ae537a5ab14b",
+      "publishedBytes": 1160,
+      "publishedSha256": "b5f9e61d24ee8dab1a780ac35447c5ee0ab36ce258846c8f450e45dae1b09da0",
+      "publication": "SANITIZED_DERIVATIVE",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "runs/BV-B5-bootstrap/stderr.log",
+      "originalBytes": 65,
+      "originalSha256": "00802f2361b0bbf5a105943b5be188329656f8dfa9ad626b12fd599e877f8f82",
+      "publishedBytes": 65,
+      "publishedSha256": "00802f2361b0bbf5a105943b5be188329656f8dfa9ad626b12fd599e877f8f82",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "runs/BV-B5-bootstrap/stdout.log",
+      "originalBytes": 2,
+      "originalSha256": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "publishedBytes": 2,
+      "publishedSha256": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "helpers/runtime-watch.ps1",
+      "originalBytes": 6236,
+      "originalSha256": "c3cb0f784aa6a436e91e3fcb74b7940642a03c37ad3d7c9890d573089b5057c5",
+      "publishedBytes": 6236,
+      "publishedSha256": "c3cb0f784aa6a436e91e3fcb74b7940642a03c37ad3d7c9890d573089b5057c5",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "helpers/observe-window.ps1",
+      "originalBytes": 1025,
+      "originalSha256": "90d8b25b5ed7e1b3558815acf5639b9f4325bcf571d9c2faff014e4660347870",
+      "publishedBytes": 1025,
+      "publishedSha256": "90d8b25b5ed7e1b3558815acf5639b9f4325bcf571d9c2faff014e4660347870",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "helpers/inspect-fixture.py",
+      "originalBytes": 2117,
+      "originalSha256": "57bdb7f0abff2f35fd488b53b10b1b16b50934891fb5e3cc5ea7e8817458d2d5",
+      "publishedBytes": 2117,
+      "publishedSha256": "57bdb7f0abff2f35fd488b53b10b1b16b50934891fb5e3cc5ea7e8817458d2d5",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    },
+    {
+      "path": "helpers/inspect-owned-window.ps1",
+      "originalBytes": 1196,
+      "originalSha256": "f035b58e2f7674be92458cb6dd26a91aff044e8d31c643d278ec2e199e2c3df7",
+      "publishedBytes": 1196,
+      "publishedSha256": "f035b58e2f7674be92458cb6dd26a91aff044e8d31c643d278ec2e199e2c3df7",
+      "publication": "RAW_BYTE_IDENTICAL",
+      "originalRetainedLocally": true
+    }
+  ],
+  "limitation": "Path-bearing originals remain local and ignored. Public derivatives preserve status/time/hash but cannot independently prove undisclosed absolute paths."
+}

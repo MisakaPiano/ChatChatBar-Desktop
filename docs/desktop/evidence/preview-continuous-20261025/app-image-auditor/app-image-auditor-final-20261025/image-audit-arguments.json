@@ -1,0 +1,16 @@
+[
+  "-I",
+  "tools/desktop/windows/audit_app_image.py",
+  "--image",
+  "app/desktopApp/build/preview-win-startup-fix-1009/compose/binaries/main/app/ChatChatBarDesktopSynthetic",
+  "--commit",
+  "7b3e1534422dd6120e1e23304b679e03da884c55",
+  "--version",
+  "0.1.0-preview.1009",
+  "--installer-version",
+  "0.1.1009",
+  "--profile",
+  "synthetic",
+  "--report",
+  "app\\desktopApp\\build\\preview-continuous-private-20261025\\app-image-auditor-final-20261025\\IMAGE_1009_REPORT.json"
+]

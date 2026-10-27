@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopPostP8IntegrationTest" tests="5" skipped="0" failures="1" errors="0" timestamp="2026-10-20T07:24:03.064Z" hostname="DD1" time="5.279">
+  <properties/>
+  <testcase name="effective audiobook controls single line right role choice and hides it when off" classname="com.example.chatbar.desktop.DesktopPostP8IntegrationTest" time="0.057"/>
+  <testcase name="details expose independent controls for every batch including text confirmation" classname="com.example.chatbar.desktop.DesktopPostP8IntegrationTest" time="0.019"/>
+  <testcase name="multi character narration still needs explicit choice when only one voice is bound" classname="com.example.chatbar.desktop.DesktopPostP8IntegrationTest" time="0.05"/>
+  <testcase name="replacement feedback identifies committed target and is cleared before failed replacement" classname="com.example.chatbar.desktop.DesktopPostP8IntegrationTest" time="5.109">
+    <failure message="kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 5000 ms" type="kotlinx.coroutines.TimeoutCancellationException">kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 5000 ms
+	at _COROUTINE._BOUNDARY._(CoroutineDebugging.kt:42)
+	at com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest$Fixture$done$2.invokeSuspend(DesktopChatVoiceRuntimeTest.kt:92)
+	at com.example.chatbar.desktop.DesktopPostP8IntegrationTest$replacement feedback identifies committed target and is cleared before failed replacement$1.invokeSuspend(DesktopPostP8IntegrationTest.kt:111)
+Caused by: kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 5000 ms
+	at kotlinx.coroutines.TimeoutKt.TimeoutCancellationException(Timeout.kt:189)
+	at kotlinx.coroutines.TimeoutCoroutine.run(Timeout.kt:157)
+	at kotlinx.coroutines.EventLoopImplBase$DelayedRunnableTask.run(EventLoop.common.kt:505)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.DefaultExecutor.run(DefaultExecutor.kt:105)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+</failure>
+  </testcase>
+  <testcase name="same popup closes once on Escape or outside and clamps narrow width" classname="com.example.chatbar.desktop.DesktopPostP8IntegrationTest" time="0.044"/>
+  <system-out><![CDATA[CONTEXT_FOCUS_BEFORE width=360 focused=[2182]
+CONTEXT_FOCUS_READY width=360 focused=[2182]
+CONTEXT_FOCUS_BEFORE width=1100 focused=[2226]
+CONTEXT_FOCUS_READY width=1100 focused=[2226]
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

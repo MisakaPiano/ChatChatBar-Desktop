@@ -1,0 +1,30 @@
+{
+  "utc": "2026-10-18T11:22:35.051731+00:00",
+  "files": [
+    {
+      "path": "ccb-fish-preview-16705732020585918886/a935972c-56b5-4283-a1cc-e45b56d56fa7.mp3",
+      "bytes": 405420,
+      "sha256": "c730e4c467f8dcf465acca9e426ea6349137e3302ff65e648f66dc2a63e3301f"
+    },
+    {
+      "path": "ccb-fish-preview-16705732020585918886/bdec1ddd-a0fd-44b1-87f2-376aea25cd50.mp3",
+      "bytes": 50572,
+      "sha256": "7b057f372a03dcb208e0b0e40fd10278ca19baa9faa47b9be9c1e140bc8eb530"
+    },
+    {
+      "path": "ccb-fish-preview-16705732020585918886/f9d0fff4-93bc-4a86-82b5-95cbec734e1d.mp3",
+      "bytes": 50572,
+      "sha256": "7b057f372a03dcb208e0b0e40fd10278ca19baa9faa47b9be9c1e140bc8eb530"
+    },
+    {
+      "path": "jna-49/jna1883952739641125384.dll",
+      "bytes": 273408,
+      "sha256": "5a7ff949f6d93d86491eb5b26b1cfc60051168a60622650224b89995ac420023"
+    },
+    {
+      "path": "jna-49/jna1883952739641125384.dll.x",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ]
+}

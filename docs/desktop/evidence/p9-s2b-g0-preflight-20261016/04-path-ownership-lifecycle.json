@@ -1,0 +1,30 @@
+{
+  "stage": "04-path-ownership-lifecycle",
+  "started": "2026-10-16T03:53:19.9163604+09:00",
+  "ended": "2026-10-16T03:53:49.0667272+09:00",
+  "seconds": 29.1504844,
+  "arguments": [
+    "--offline",
+    "--no-daemon",
+    "--no-parallel",
+    "--max-workers=1",
+    "--priority=low",
+    "--console=plain",
+    "--no-configuration-cache",
+    "-Pkotlin.compiler.execution.strategy=in-process",
+    ":desktopApp:test",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopIndexStartupPreflightTest",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopDataRootOwnershipTest",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopDataDirectoryTest",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopPortableRootTest",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopApplicationLifecycleTest",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopProcessLifecycleTest"
+  ],
+  "exitCode": 0
+}

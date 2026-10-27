@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.voice.VoiceDownloadFileNamePolicyTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-19T11:39:00.690Z" hostname="DD1" time="0.009">
+  <properties/>
+  <testcase name="file name uses readable fallbacks and removes unsafe characters" classname="com.example.chatbar.domain.voice.VoiceDownloadFileNamePolicyTest" time="0.008"/>
+  <testcase name="file name contains sanitized chat character and download time" classname="com.example.chatbar.domain.voice.VoiceDownloadFileNamePolicyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

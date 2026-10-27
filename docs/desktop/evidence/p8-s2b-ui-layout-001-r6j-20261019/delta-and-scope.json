@@ -1,0 +1,14 @@
+{
+  "patch": "handshake-only.patch",
+  "bytes": 35961,
+  "sha256": "e02b250c292a944165c100a681ff80db3bcb011a730db5701309678bbd2f0be7",
+  "insertions": 318,
+  "deletions": 79,
+  "onlyEngineeringFile": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerNativeUxTest.kt",
+  "productionDraftsUnchanged": true,
+  "originalJUnitMethodsAndNativeDriversRawIdentical": true,
+  "skillReviewed": ".agents/skills/chatbar-fish-audio-voice/SKILL.md",
+  "skillUpdateNeeded": false,
+  "reason": "Manual test recorder protocol only; no Fish production feature/contract change",
+  "sourceCommit": null
+}

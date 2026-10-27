@@ -1,0 +1,16 @@
+{
+  "startedUtc": "2026-10-17T20:49:46.9447046+00:00",
+  "finishedUtc": "2026-10-17T20:50:08.2853952+00:00",
+  "durationSeconds": 21.3406906,
+  "exitCode": 1,
+  "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:test --rerun --tests *DesktopFishPresentationTest.management voice module matches appearance heading and remains operable in narrow layout",
+  "jdk": "Temurin 17.0.20.1",
+  "gradle": "9.1.0",
+  "heap": "-Xmx2048m",
+  "tasks": [
+    ":desktopApp:test",
+    "--rerun",
+    "--tests",
+    "*DesktopFishPresentationTest.management voice module matches appearance heading and remains operable in narrow layout"
+  ]
+}

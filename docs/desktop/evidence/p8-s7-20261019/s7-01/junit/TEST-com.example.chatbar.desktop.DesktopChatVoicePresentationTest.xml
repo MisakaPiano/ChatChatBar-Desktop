@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopChatVoicePresentationTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-19T11:35:45.341Z" hostname="DD1" time="1.934">
+  <properties/>
+  <testcase name="chat generation stays collapsed and requires explicit authorization in light and dark compact layouts" classname="com.example.chatbar.desktop.DesktopChatVoicePresentationTest" time="1.934"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

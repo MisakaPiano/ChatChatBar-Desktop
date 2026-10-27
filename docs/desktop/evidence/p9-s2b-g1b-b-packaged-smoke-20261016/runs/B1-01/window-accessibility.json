@@ -1,0 +1,15 @@
+{
+  "window": {
+    "app": "process:<LOCAL_GATE>\\ordinary-image\\ChatChatBarDesktop.exe",
+    "id": 108667610,
+    "title": "ChatChatBar"
+  },
+  "accessibility": {
+    "focused_element": "0 窗口 ChatChatBar Secondary Actions: Raise",
+    "tree": "Window: \"ChatChatBar\", App: ChatChatBarDesktop.exe.\n\t0 窗口 ChatChatBar Secondary Actions: Raise\n\t\t1 窗格\n\nThe focused UI element is 0 窗口 ChatChatBar Secondary Actions: Raise."
+  },
+  "screenshot": {
+    "status": "BLOCKED",
+    "error": "FrameArrived timed out: timed out waiting on channel"
+  }
+}

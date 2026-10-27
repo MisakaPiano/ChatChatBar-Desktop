@@ -13,6 +13,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 enum class DesktopDataRootMigrationFailureKind {
+    AUDIO_MAINTENANCE,
     PREPARATION,
     RUNTIME_PAUSE,
     PREFLIGHT,
@@ -33,6 +34,16 @@ enum class DesktopDataRootMigrationAuthorityState {
 }
 
 sealed interface DesktopDataRootMigrationResult {
+    data class ProtectedSuccess(
+        val sourceRoot: Path,
+        val destinationRoot: Path,
+        val preMigrationSnapshot: AppDataSnapshot,
+        val authorityCommit: DesktopBootstrapAuthorityCommitResult.Committed,
+        val runtimeDisposition: DesktopMaintenanceResumeResult,
+        val cleanupWarning: String? = null,
+        val retainedWorkspace: Path? = null,
+    ) : DesktopDataRootMigrationResult
+
     data class Success(
         val sourceRoot: Path,
         val destinationRoot: Path,
@@ -106,6 +117,9 @@ class DesktopDataRootMigrationService internal constructor(
     private val coordinator: DesktopDataOperationCoordinator,
     private val dependencies: DesktopDataRootMigrationDependencies,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val audioMaintenance: DesktopAudioMaintenance? = null,
+    private val boundMigrationFactory: (() -> DesktopBoundRootMigration)? = null,
+    private val taskMaintenance: suspend (suspend () -> DesktopDataRootMigrationResult) -> DesktopDataRootMigrationResult = { it() },
 ) {
     internal constructor(
         sourceResolution: DesktopDataRootResolution.Resolved,
@@ -116,6 +130,9 @@ class DesktopDataRootMigrationService internal constructor(
         materializer: DesktopDataRootMigrationMaterializer = DesktopDataRootMigrationMaterializer(),
         authorityTransaction: DesktopBootstrapAuthorityTransaction = DesktopBootstrapAuthorityTransaction(),
         ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+        audioMaintenance: DesktopAudioMaintenance? = null,
+        boundMigrationFactory: (() -> DesktopBoundRootMigration)? = null,
+        taskMaintenance: suspend (suspend () -> DesktopDataRootMigrationResult) -> DesktopDataRootMigrationResult = { it() },
     ) : this(
         sourceResolution = sourceResolution,
         runtime = runtime,
@@ -128,25 +145,51 @@ class DesktopDataRootMigrationService internal constructor(
             commitAuthority = authorityTransaction::commitCustomRoot,
         ),
         ioDispatcher = ioDispatcher,
+        audioMaintenance = audioMaintenance,
+        boundMigrationFactory = boundMigrationFactory,
+        taskMaintenance = taskMaintenance,
     )
 
     private val lifecycleMutex = Mutex()
     private var retainedDestination: DesktopPreparedMigrationDestination? = null
     private var restartSealed = false
     private var closed = false
+    private val boundOwner = lazy { requireNotNull(boundMigrationFactory).invoke() }
 
     suspend fun migrate(requestedDestination: Path): DesktopDataRootMigrationResult =
         lifecycleMutex.withLock {
             when {
                 closed -> return@withLock rejected(DesktopDataRootMigrationFailureKind.CLOSED)
-                restartSealed -> return@withLock rejected(DesktopDataRootMigrationFailureKind.RESTART_REQUIRED)
+                restartSealed || coordinator.isRestartRequired -> {
+                    restartSealed = true
+                    return@withLock rejected(DesktopDataRootMigrationFailureKind.RESTART_REQUIRED)
+                }
             }
-            migrateLocked(requestedDestination)
+            try {
+                taskMaintenance {
+                    val root = sourceResolution.appDataRoot
+                    val requiresVerifiedPublisher = DesktopFreshRootAuthority.exists(root) ||
+                        listOf("images", "audio").any { java.nio.file.Files.exists(root.resolve(it), java.nio.file.LinkOption.NOFOLLOW_LINKS) }
+                    if (boundMigrationFactory != null && requiresVerifiedPublisher) {
+                        try { boundOwner.value.migrate(requestedDestination) }
+                        finally { if (coordinator.isRestartRequired) restartSealed = true }
+                    } else if (audioMaintenance == null) migrateLocked(requestedDestination)
+                    else audioMaintenance.withMaintenance(true, { restartSealed || coordinator.isRestartRequired }) {
+                        migrateLocked(requestedDestination)
+                    }
+                }
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (failure: DesktopAudioMaintenanceBusyException) {
+                failure(DesktopDataRootMigrationFailureKind.AUDIO_MAINTENANCE, requestedDestination.toAbsolutePath().normalize(), cause = failure)
+            } catch (failure: DesktopAudioDrainException) {
+                failure(DesktopDataRootMigrationFailureKind.AUDIO_MAINTENANCE, requestedDestination.toAbsolutePath().normalize(), cause = failure)
+            }
         }
 
     suspend fun close() = lifecycleMutex.withLock {
         if (closed) return@withLock
         closed = true
+        if (boundOwner.isInitialized()) boundOwner.value.close()
         val destination = retainedDestination
         retainedDestination = null
         destination?.let(dependencies.closeDestination)
@@ -406,7 +449,7 @@ class DesktopDataRootMigrationService internal constructor(
 
         is ExclusiveOutcome.Failed -> {
             if (stabilization.resumeResult is DesktopMaintenanceResumeResult.Resumed) {
-                failure.copy(destinationCloseFailure = stabilization.closeFailure)
+                failure.copy(runtimeDisposition = stabilization.resumeResult, destinationCloseFailure = stabilization.closeFailure)
             } else {
                 failure.copy(
                     kind = DesktopDataRootMigrationFailureKind.RUNTIME_RESUME,

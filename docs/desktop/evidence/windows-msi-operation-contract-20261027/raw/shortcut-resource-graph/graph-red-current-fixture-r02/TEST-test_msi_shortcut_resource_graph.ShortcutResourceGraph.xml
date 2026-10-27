@@ -1,0 +1,26 @@
+<?xml version='1.0' encoding='utf-8'?>
+<testsuite name="test_msi_shortcut_resource_graph.ShortcutResourceGraph" tests="14" failures="2" errors="0" skipped="0"><testcase classname="test_msi_shortcut_resource_graph.ShortcutResourceGraph" name="test_arguments_working_directory_and_extra_shortcut_fields_refuse" time="0.01600000000325963" /><testcase classname="test_msi_shortcut_resource_graph.ShortcutResourceGraph" name="test_desktop_or_programs_root_is_never_an_empty_directory_remove_target" time="0.0" /><testcase classname="test_msi_shortcut_resource_graph.ShortcutResourceGraph" name="test_empty_directory_removal_never_becomes_file_or_wildcard_cleanup" time="0.0" /><testcase classname="test_msi_shortcut_resource_graph.ShortcutResourceGraph" name="test_external_component_needs_its_exact_shortcut_and_choice" time="0.0" /><testcase classname="test_msi_shortcut_resource_graph.ShortcutResourceGraph" name="test_external_create_folder_is_not_implicitly_permitted" time="0.0" /><testcase classname="test_msi_shortcut_resource_graph.ShortcutResourceGraph" name="test_fixed_jdk_optional_shortcuts_are_separate_from_program_directories" time="0.0"><failure>Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_shortcut_resource_graph.py", line 21, in test_fixed_jdk_optional_shortcuts_are_separate_from_program_directories
+    data=fixture();graph=self.graph(data)
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_shortcut_resource_graph.py", line 14, in graph
+    def graph(self,data):return m.operation_resource_graph(data['tables'],data['properties'])
+  File "H:\ChatChatBar-Desktop\app\desktopApp\build\preview-continuous-private-20261025\operation1-shortcut-adapter-20261027-r01\graph-red-current-fixture-r02\sources\msi_safety.py", line 81, in operation_resource_graph
+    else: path(key)
+  File "H:\ChatChatBar-Desktop\app\desktopApp\build\preview-continuous-private-20261025\operation1-shortcut-adapter-20261027-r01\graph-red-current-fixture-r02\sources\msi_safety.py", line 73, in path
+    parent = path(row[1], (*stack, key))
+  File "H:\ChatChatBar-Desktop\app\desktopApp\build\preview-continuous-private-20261025\operation1-shortcut-adapter-20261027-r01\graph-red-current-fixture-r02\sources\msi_safety.py", line 73, in path
+    parent = path(row[1], (*stack, key))
+  File "H:\ChatChatBar-Desktop\app\desktopApp\build\preview-continuous-private-20261025\operation1-shortcut-adapter-20261027-r01\graph-red-current-fixture-r02\sources\msi_safety.py", line 73, in path
+    parent = path(row[1], (*stack, key))
+  File "H:\ChatChatBar-Desktop\app\desktopApp\build\preview-continuous-private-20261025\operation1-shortcut-adapter-20261027-r01\graph-red-current-fixture-r02\sources\msi_safety.py", line 70, in path
+    assert key not in stack and key in directories and len(stack) &lt; 64, "DIRECTORY_GRAPH_INVALID"
+AssertionError: DIRECTORY_GRAPH_INVALID
+</failure></testcase><testcase classname="test_msi_shortcut_resource_graph.ShortcutResourceGraph" name="test_menu_leaf_remove_requires_that_leafs_own_shortcut_component" time="0.0" /><testcase classname="test_msi_shortcut_resource_graph.ShortcutResourceGraph" name="test_name_and_menu_leaf_are_fixed_to_product_identity" time="0.0" /><testcase classname="test_msi_shortcut_resource_graph.ShortcutResourceGraph" name="test_nested_or_desktop_menu_branch_is_not_a_known_menu_leaf" time="0.0" /><testcase classname="test_msi_shortcut_resource_graph.ShortcutResourceGraph" name="test_program_payload_may_not_be_owned_by_external_shortcut_component" time="0.0" /><testcase classname="test_msi_shortcut_resource_graph.ShortcutResourceGraph" name="test_shortcut_target_must_be_the_declared_main_launcher" time="0.0" /><testcase classname="test_msi_shortcut_resource_graph.ShortcutResourceGraph" name="test_synthetic_profile_still_cannot_acquire_ordinary_links" time="0.0"><failure>AssertionError: DIRECTORY_GRAPH_INVALID
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_shortcut_resource_graph.py", line 71, in test_synthetic_profile_still_cannot_acquire_ordinary_links
+    with self.assertRaisesRegex(AssertionError,'SYNTHETIC_SHORTCUT_REFUSED'):self.graph(data)
+AssertionError: "SYNTHETIC_SHORTCUT_REFUSED" does not match "DIRECTORY_GRAPH_INVALID"
+</failure></testcase><testcase classname="test_msi_shortcut_resource_graph.ShortcutResourceGraph" name="test_unknown_component_condition_or_condition_on_program_file_refuses" time="0.0" /><testcase classname="test_msi_shortcut_resource_graph.ShortcutResourceGraph" name="test_unknown_resource_family_still_fails_closed" time="0.0" /></testsuite>

@@ -1,0 +1,25 @@
+{
+  "reason": "ENVIRONMENT_NOT_PROVEN",
+  "nativeExperiment": "NOT_TESTED",
+  "hostProfileNotAuthorized": true,
+  "disposableIdentityReceiptProvided": false,
+  "processNameCounts": [],
+  "capabilities": [
+    {
+      "available": false,
+      "capability": "Get-VM"
+    },
+    {
+      "available": false,
+      "capability": "Get-VMSnapshot"
+    },
+    {
+      "available": false,
+      "capability": "VBoxManage"
+    },
+    {
+      "available": false,
+      "capability": "vmrun"
+    }
+  ]
+}

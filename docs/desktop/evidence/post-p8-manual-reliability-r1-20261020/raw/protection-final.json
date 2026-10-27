@@ -1,0 +1,19 @@
+{
+  "head": "60cc44d0159528d2e6824fcaf88ee384964da307",
+  "parent": "c4098e08bec84372911a5a8bc38c2cfa72f98978",
+  "branch": "feature/phase8-fish-audio",
+  "desktop": "4c2af2576e2319e8041ffd2a6c5a205450f18246",
+  "formalBaseline": "5e76a9cb841736bbbf3499a2e35e5789af4c5ca8",
+  "protectedPathStatusOnly": {
+    "CCB_DESKTOP_STANDARD_CONVERSATION_HANDOFF.md": "?? CCB_DESKTOP_STANDARD_CONVERSATION_HANDOFF.md",
+    ".codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/4bb6706b-0132-41be-bd8e-03e6c0229e46/1-1000072937.jpg": "?? .codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/4bb6706b-0132-41be-bd8e-03e6c0229e46/1-1000072937.jpg",
+    ".codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/b5264b76-6c08-406d-af8d-bbb2f876c7c1/1-1000072937.jpg": "?? .codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/b5264b76-6c08-406d-af8d-bbb2f876c7c1/1-1000072937.jpg",
+    ".codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/ea41235d-a0f1-44c3-8db1-47f5bb5b2883/1-1000072937.jpg": "?? .codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/ea41235d-a0f1-44c3-8db1-47f5bb5b2883/1-1000072937.jpg"
+  },
+  "contentRead": false,
+  "hashed": false,
+  "staged": false,
+  "trackedWorktreeClean": true,
+  "indexCleanBeforeEvidence": true,
+  "originalManualEvidenceChanges": ""
+}

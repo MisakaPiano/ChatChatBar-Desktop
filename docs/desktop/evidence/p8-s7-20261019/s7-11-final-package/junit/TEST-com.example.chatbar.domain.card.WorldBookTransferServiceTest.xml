@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.card.WorldBookTransferServiceTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-19T12:31:25.721Z" hostname="DD1" time="0.104">
+  <properties/>
+  <testcase name="native package schema one exports and decodes repository entity" classname="com.example.chatbar.domain.card.WorldBookTransferServiceTest" time="0.013"/>
+  <testcase name="silly tavern object entries decode all supported fields and preserve raw json" classname="com.example.chatbar.domain.card.WorldBookTransferServiceTest" time="0.002"/>
+  <testcase name="character book array entries decode embedded fields" classname="com.example.chatbar.domain.card.WorldBookTransferServiceTest" time="0.002"/>
+  <testcase name="unsupported lorebook shapes retain explicit error" classname="com.example.chatbar.domain.card.WorldBookTransferServiceTest" time="0.001"/>
+  <testcase name="silly tavern object uses fallback name and default scan depth" classname="com.example.chatbar.domain.card.WorldBookTransferServiceTest" time="0.002"/>
+  <testcase name="overwrite preserves local book identity name and creation time with upstream entry ids" classname="com.example.chatbar.domain.card.WorldBookTransferServiceTest" time="0.015"/>
+  <testcase name="repository round trip remains valid after import overwrite and export" classname="com.example.chatbar.domain.card.WorldBookTransferServiceTest" time="0.018"/>
+  <testcase name="silly tavern export uses object entries and preserves mapped fields" classname="com.example.chatbar.domain.card.WorldBookTransferServiceTest" time="0.013"/>
+  <testcase name="import new resolves conflict and creates fresh book and entry identities" classname="com.example.chatbar.domain.card.WorldBookTransferServiceTest" time="0.017"/>
+  <testcase name="duplicate creates fresh book and entry identities and clears preset provenance" classname="com.example.chatbar.domain.card.WorldBookTransferServiceTest" time="0.021"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

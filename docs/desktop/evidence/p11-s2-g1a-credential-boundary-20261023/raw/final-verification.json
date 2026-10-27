@@ -1,0 +1,23 @@
+{
+  "finalSuites": 12,
+  "finalTests": 112,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "fixtureLifetimesReleased": 32,
+  "sourceArchives": 17,
+  "buildArtifactsByteVerified": 429,
+  "productionSourcesUnchanged": 21,
+  "productionTreesUnchanged": 3,
+  "testSourceIdentities": 15,
+  "officialSourceIdentities": 9,
+  "diagnostics": {
+    "filesScanned": 15,
+    "knownSyntheticLiteralsScanned": 26,
+    "newSyntheticCredentialValuesAbsent": true,
+    "realCredentialsRead": false,
+    "fixtureBytesExcludedFromDiagnosticScan": true
+  },
+  "realDpapi": "NOT_TESTED",
+  "crossDomainAtomicity": "NOT_PROVEN"
+}

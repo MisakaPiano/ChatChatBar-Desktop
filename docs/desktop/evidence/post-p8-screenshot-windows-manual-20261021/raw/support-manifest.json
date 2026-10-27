@@ -1,0 +1,99 @@
+{
+  "files": [
+    {
+      "path": "support-src/capture-native-windows.ps1.cs",
+      "bytes": 2133,
+      "sha256": "3b2d70a87cb44b07d06f5cb989c3ddd7ac96c7721f3ee7078c4bffe51d2e42b3"
+    },
+    {
+      "path": "support-src/P8R3Preflight.java",
+      "bytes": 9373,
+      "sha256": "8e9a239a31032bd95d197ad024af551bb17b4f1e709383a5dadc56fec3cacaad"
+    },
+    {
+      "path": "support-src/P8S7Support.java",
+      "bytes": 27183,
+      "sha256": "0ad6f894d878978e259f569228228951c530f5a0dba6a027550c55d6f3fd141a"
+    },
+    {
+      "path": "support-src/RootLockHold.java",
+      "bytes": 997,
+      "sha256": "06be6d6a3295e34ed3b2694f98495c9cef364a9aafe3ac49c623156ac3c91b81"
+    },
+    {
+      "path": "support-src/runtime-watch.ps1.cs",
+      "bytes": 2171,
+      "sha256": "9aae1c46bf1f92b970ad95d344bb804339812eba5bd039bdf53b851263ccf5d1"
+    },
+    {
+      "path": "support-src/ScreenshotFixtureSupport.java",
+      "bytes": 7914,
+      "sha256": "d4ed625ae8851d388690d86c9f407e47db7367f852764028942c9dae915d1b58"
+    },
+    {
+      "path": "support-classes/P8R3Preflight$1.class",
+      "bytes": 715,
+      "sha256": "d0e7295a53f889e5cbaff2cd6b7d5a77a84455fb60492e5fc3ad471bab72af19"
+    },
+    {
+      "path": "support-classes/P8R3Preflight$SuspendCall.class",
+      "bytes": 404,
+      "sha256": "91df8d458c9fd08e2e834a02621098fb0585c744d0d93dc27150bdccbe2ddecb"
+    },
+    {
+      "path": "support-classes/P8R3Preflight.class",
+      "bytes": 18206,
+      "sha256": "7e80202eaac923cb6dada656fb0b5f5772c9d892bc04e6fbb78f1d6ad2320594"
+    },
+    {
+      "path": "support-classes/P8S7Support.class",
+      "bytes": 33478,
+      "sha256": "576de7505dafac30f5903de69a16c69286257505109fc15bf9b675578317da6a"
+    },
+    {
+      "path": "support-classes/RootLockHold.class",
+      "bytes": 2950,
+      "sha256": "47dcdffec98a9f0f34a18538d61098f45bf3b22865e5bf6608c17dd372d751f0"
+    },
+    {
+      "path": "support-classes/ScreenshotFixtureSupport.class",
+      "bytes": 21080,
+      "sha256": "47866a7637a816593171ffcf6f05470a67ec350636ae89abacab4933d000ce6c"
+    },
+    {
+      "path": "check-isolated-lock.py",
+      "bytes": 2400,
+      "sha256": "67c0e079442e155f582e57f59775bce0618074cfad6bc24fc2ebb17856e64490"
+    },
+    {
+      "path": "manual-supervisor.py",
+      "bytes": 8233,
+      "sha256": "fc78010e00dad69de1d7677d8b1d80012390d986fc1bc985e8fae530f56eeb1f"
+    },
+    {
+      "path": "prepare-fixture.py",
+      "bytes": 6913,
+      "sha256": "4de2b879635aeee018299663fa364794e6d0fc061574fc9d40d38b419c750f68"
+    },
+    {
+      "path": "capture-native-windows.ps1",
+      "bytes": 3574,
+      "sha256": "0db128e6d3ffd0a14fbc4260962a633ab70e4ba7d33ca8bf8db5933f56325500"
+    },
+    {
+      "path": "runtime-watch.ps1",
+      "bytes": 7518,
+      "sha256": "7a5d04caf1b5d269b9485ff8763d3b92bdbb3a774ff91b1cbaa5be7f2aa88331"
+    },
+    {
+      "path": "live-official-sample.mp3",
+      "bytes": 405420,
+      "sha256": "c730e4c467f8dcf465acca9e426ea6349137e3302ff65e648f66dc2a63e3301f"
+    },
+    {
+      "path": "synthetic-tts-long.mp3",
+      "bytes": 252860,
+      "sha256": "fb93b911ab31c264881df8f167cbb655bb42ddcd148fa372e5363cf09e3dfd94"
+    }
+  ]
+}

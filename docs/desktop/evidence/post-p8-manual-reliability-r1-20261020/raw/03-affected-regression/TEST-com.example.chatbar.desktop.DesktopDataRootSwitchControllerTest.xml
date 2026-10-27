@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest" tests="21" skipped="0" failures="0" errors="0" timestamp="2026-10-20T14:15:22.516Z" hostname="DD1" time="0.106">
+  <properties/>
+  <testcase name="indeterminate authority is terminal and cannot retry" classname="com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest" time="0.002"/>
+  <testcase name="Portable provenance disables persistent switching" classname="com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest" time="0.0"/>
+  <testcase name="directory selection becomes an absolute normalized confirmation candidate" classname="com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest" time="0.001"/>
+  <testcase name="source path and provenance always come from startup resolution" classname="com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest" time="0.001"/>
+  <testcase name="ordinary close is deferred while migration is running" classname="com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest" time="0.002"/>
+  <testcase name="success keeps startup source current and reports destination as next start" classname="com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest" time="0.001"/>
+  <testcase name="precommit cancellation returns to usable idle and preserves original cancellation" classname="com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest" time="0.002"/>
+  <testcase name="sealed cancellation becomes terminal without claiming next-start authority" classname="com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest" time="0.001"/>
+  <testcase name="exit callback is allowed only after terminal result" classname="com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest" time="0.002"/>
+  <testcase name="double confirmation launches exactly one migration" classname="com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest" time="0.002"/>
+  <testcase name="success becomes terminal restart required" classname="com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest" time="0.001"/>
+  <testcase name="picker cancellation stays idle and never invokes migration" classname="com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest" time="0.0"/>
+  <testcase name="restart-required failure is terminal" classname="com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest" time="0.001"/>
+  <testcase name="runtime resume failure requires exit even when source authority is known" classname="com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest" time="0.0"/>
+  <testcase name="CLI override provenance disables persistent switching" classname="com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest" time="0.0"/>
+  <testcase name="proven precommit failure with resumed runtime is retryable" classname="com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest" time="0.001"/>
+  <testcase name="controller drives real migration without relabeling current root" classname="com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest" time="0.087"/>
+  <testcase name="all bootstrap controlled provenances enable persistent switching" classname="com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest" time="0.0"/>
+  <testcase name="audio maintenance rejection stays retryable without changing root authority" classname="com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest" time="0.001"/>
+  <testcase name="materialization failure retains structured recovery evidence" classname="com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest" time="0.001"/>
+  <testcase name="confirmation cancellation returns idle without migration" classname="com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

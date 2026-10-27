@@ -1,0 +1,58 @@
+{
+  "testSource": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopImageClipboardFilesTest.kt",
+  "testSourceGitBlob": "5ffa98db6c83d7fa181bd65e35724804d496676d",
+  "noKotlinModification": true,
+  "executions": [
+    {
+      "stage": "01-junction-isolated",
+      "suite": {
+        "name": "com.example.chatbar.desktop.DesktopImageClipboardFilesTest",
+        "tests": "1",
+        "skipped": "0",
+        "failures": "0",
+        "errors": "0",
+        "timestamp": "2026-10-18T20:49:19.756Z",
+        "hostname": "DD1",
+        "time": "9.529"
+      },
+      "test": {
+        "name": "junction target is never inspected changed or cleaned",
+        "classname": "com.example.chatbar.desktop.DesktopImageClipboardFilesTest",
+        "time": "9.529",
+        "status": "PASS"
+      },
+      "xmlBytes": 503,
+      "xmlSha256": "5ded2d40046c09a82492da3263a66af7bfe2a54ba356b545d2f3a638f577f7dd",
+      "junctionCreatedAndOriginalAssertionsReached": true,
+      "basis": "Unchanged original Windows test has no early-return/mock/skip path: ProcessBuilder mklink /J then clipboard copy, target bytes unchanged, link NOFOLLOW exists, target entry count1, link removed in finally; outer fixture finally recursive cleanup",
+      "cleanup": "Original finally blocks completed without exception",
+      "independentPostCleanupFilesystemInventory": "NOT INSTRUMENTED"
+    },
+    {
+      "stage": "02-bounded-desktop",
+      "suite": {
+        "name": "com.example.chatbar.desktop.DesktopImageClipboardFilesTest",
+        "tests": "17",
+        "skipped": "0",
+        "failures": "0",
+        "errors": "0",
+        "timestamp": "2026-10-18T20:54:09.870Z",
+        "hostname": "DD1",
+        "time": "0.646"
+      },
+      "test": {
+        "name": "junction target is never inspected changed or cleaned",
+        "classname": "com.example.chatbar.desktop.DesktopImageClipboardFilesTest",
+        "time": "0.039",
+        "status": "PASS"
+      },
+      "xmlBytes": 3349,
+      "xmlSha256": "d9a0725659fa8d83f8f7e89edb4ed53d577a0cafae6af201d4df1b5de20f6771",
+      "junctionCreatedAndOriginalAssertionsReached": true,
+      "basis": "Unchanged original Windows test has no early-return/mock/skip path: ProcessBuilder mklink /J then clipboard copy, target bytes unchanged, link NOFOLLOW exists, target entry count1, link removed in finally; outer fixture finally recursive cleanup",
+      "cleanup": "Original finally blocks completed without exception",
+      "independentPostCleanupFilesystemInventory": "NOT INSTRUMENTED"
+    }
+  ],
+  "r6eHistoricalError5": "Retained FAIL; root cause UNKNOWN even if new runs PASS"
+}

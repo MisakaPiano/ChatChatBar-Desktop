@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopSaveSlotArchiveTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-25T01:06:45.856Z" hostname="DD1" time="0.958">
+  <properties/>
+  <testcase name="native archive evidence supports long local paths without weakening identity checks" classname="com.example.chatbar.desktop.DesktopSaveSlotArchiveTest" time="0.221"/>
+  <testcase name="official codec streams v8 and omitted images are never read" classname="com.example.chatbar.desktop.DesktopSaveSlotArchiveTest" time="0.286"/>
+  <testcase name="all legacy versions remain independent validated copies" classname="com.example.chatbar.desktop.DesktopSaveSlotArchiveTest" time="0.15"/>
+  <testcase name="oversized input reports capacity before creating a preparation copy" classname="com.example.chatbar.desktop.DesktopSaveSlotArchiveTest" time="0.006"/>
+  <testcase name="compressed image is bounded JPEG and exported package keeps the same pixels" classname="com.example.chatbar.desktop.DesktopSaveSlotArchiveTest" time="0.29"/>
+  <testcase name="session restore changes only official archive settings" classname="com.example.chatbar.desktop.DesktopSaveSlotArchiveTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

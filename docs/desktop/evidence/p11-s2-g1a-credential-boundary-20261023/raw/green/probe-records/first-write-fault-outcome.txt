@@ -1,0 +1,1 @@
+SYNTHETIC_OBSERVED SINGLE_KEY_ATOMIC prepublish fault1 BOTH_OLD; native move crash NOT_TESTED

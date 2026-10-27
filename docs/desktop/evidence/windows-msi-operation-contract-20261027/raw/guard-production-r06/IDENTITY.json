@@ -1,0 +1,12 @@
+{
+  "sha256": "eb42dbb797f21eb094c42c49e84d8ce6b795055319937344b62ae2c901ebd048",
+  "bytes": 207360,
+  "sourceSha256": "193a2c4e1c3d70c05692e03f5b44d62c9b15911de3dc6e1908cf5b85b5c38b80",
+  "operationSourceSha256": "9b89f7913857114bfb0f7b2829eb54106761cfe834771d0046cf11eaf7b5fa21",
+  "testExports": false,
+  "exports": [
+    "CcbResolveInstallDirectory",
+    "CcbValidateOperation"
+  ],
+  "msiBuiltOrExecuted": false
+}

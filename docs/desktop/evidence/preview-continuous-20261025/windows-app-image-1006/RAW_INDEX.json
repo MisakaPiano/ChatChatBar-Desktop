@@ -1,0 +1,157 @@
+[
+  {
+    "path": "DesktopWindowsPackageFixture.kt",
+    "bytes": 6832,
+    "sha256": "034ed9b7c0776a773ca9b36615993f69e5dadaaeae1b698f96f87eed9fa4db5a"
+  },
+  {
+    "path": "initial-1006-driver.private.log",
+    "bytes": 707,
+    "sha256": "fcee736e8e9c2a380fbc9d230a753ea841d73d7083528873bd66cfcfcd2fc29d"
+  },
+  {
+    "path": "initial-1006-exit.txt",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "path": "initial-1006-launch-close-probe-source.py",
+    "bytes": 24547,
+    "sha256": "dee466ea0aecb1067e3bfdeb30f52bd79336667fb9725efaedfc439caa70d01e"
+  },
+  {
+    "path": "initial-fixed-1006-driver.private.log",
+    "bytes": 37,
+    "sha256": "e79650c332b09a973b4b3e2589a28f7dcb9d97ed91252248ac87d320e0cb636d"
+  },
+  {
+    "path": "initial-fixed-1006-exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "initial-fixed-1006-lifecycle.json",
+    "bytes": 473,
+    "sha256": "8c2ad6c9b0fcf084936ecab22f1dce733521c6525bf196cecb10ac90450362ff"
+  },
+  {
+    "path": "initial-fixed-1006-stderr-private.log",
+    "bytes": 1381,
+    "sha256": "4beea65dc1461f9f189dab51d40532c166ee0c909de033b6fa417eb1322a050d"
+  },
+  {
+    "path": "native-app-image-probe.py",
+    "bytes": 24547,
+    "sha256": "7aececb1e1ed90ae40fb10411d6a9cea21c61a0bde60de707dcac4004a74eb77"
+  },
+  {
+    "path": "package-arguments.json",
+    "bytes": 668,
+    "sha256": "dfba0ede9bd27a131a3ab407f97f166c0c693cda9c588e1079cc154c9c70cd4b"
+  },
+  {
+    "path": "package-Build-SyntheticPackage.ps1",
+    "bytes": 6394,
+    "sha256": "70009f0d746b37b783e18dcd50eda9884f4e6cc3dcbba3b0ec518ad858e22261"
+  },
+  {
+    "path": "package-build.log",
+    "bytes": 10643,
+    "sha256": "8a0d00f06bd47f884625d793034fd62f05fa23adf88705814dadf22b60c66d1d"
+  },
+  {
+    "path": "package-BUILD_INPUTS.json",
+    "bytes": 165889,
+    "sha256": "55eefb45887b5f02b2468eb97f688840f936f04e0f82da4ab0ce8b83e7ef566a"
+  },
+  {
+    "path": "package-exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "package-head.txt",
+    "bytes": 40,
+    "sha256": "64549e8057616de0230980d483c12a98f6c72f7ad80a8c1a592672ae206a0289"
+  },
+  {
+    "path": "package-package.init.gradle",
+    "bytes": 178,
+    "sha256": "b813c092cfd43f15bf57e198f6479cddc968326cb749199d761e4a6c2a712600"
+  },
+  {
+    "path": "package-PACKAGE_AUDIT.json",
+    "bytes": 375,
+    "sha256": "53bd04b17a6aaf1f92806c998dfef8f6c844c67661cd89e8141d387218ba6fb0"
+  },
+  {
+    "path": "package-PACKAGE_AUDIT_INITIAL.json",
+    "bytes": 181,
+    "sha256": "e0ede1663184784369cfab50c0935511942e4ec6c051f4030920f6bbf93181d6"
+  },
+  {
+    "path": "package-PACKAGE_FILES.json",
+    "bytes": 38131,
+    "sha256": "53ae48299856648177eca3360c47b5900408cd4656dcf737ce6012e3331204e5"
+  },
+  {
+    "path": "package-PACKAGED_BUILD_IDENTITY.properties",
+    "bytes": 158,
+    "sha256": "580db667640cb11c30fab9cc6a735958f064d4fd4969bda6739bf2cf37ce7bfe"
+  },
+  {
+    "path": "reopen-1006-driver.private.log",
+    "bytes": 37,
+    "sha256": "e79650c332b09a973b4b3e2589a28f7dcb9d97ed91252248ac87d320e0cb636d"
+  },
+  {
+    "path": "reopen-1006-exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "reopen-1006-lifecycle.json",
+    "bytes": 473,
+    "sha256": "8c2ad6c9b0fcf084936ecab22f1dce733521c6525bf196cecb10ac90450362ff"
+  },
+  {
+    "path": "reopen-1006-stderr-private.log",
+    "bytes": 1381,
+    "sha256": "d52b8a701483f31b473172a1df853fac695ce08123f8121b38a29db201a1bbc1"
+  },
+  {
+    "path": "RESULT.md",
+    "bytes": 2835,
+    "sha256": "6d59b4e0cf925fc33f3df0271f38f3aff5373db65903e1af6c6ab770426a2a42"
+  },
+  {
+    "path": "seed-driver.private.log",
+    "bytes": 66,
+    "sha256": "458b137f717b79bece90688bfd922db1e81802249c792a9584e40a607b0321d1"
+  },
+  {
+    "path": "seed-exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "verify-driver.private.log",
+    "bytes": 66,
+    "sha256": "458b137f717b79bece90688bfd922db1e81802249c792a9584e40a607b0321d1"
+  },
+  {
+    "path": "verify-exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "verify-reopen-driver.private.log",
+    "bytes": 66,
+    "sha256": "458b137f717b79bece90688bfd922db1e81802249c792a9584e40a607b0321d1"
+  },
+  {
+    "path": "verify-reopen-exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  }
+]

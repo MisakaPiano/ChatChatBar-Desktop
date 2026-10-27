@@ -1,0 +1,17 @@
+Exception in thread "main" java.lang.IllegalStateException: R6J manual control did not PASS; see persisted stage and result after confirmed/bounded cleanup
+	at com.example.chatbar.desktop.DesktopFishPickerNativeUxTest$Companion.main(DesktopFishPickerNativeUxTest.kt:69)
+	at com.example.chatbar.desktop.DesktopFishPickerNativeUxTest.main(DesktopFishPickerNativeUxTest.kt)
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':desktopApp:runR6JHumanMouse'.
+> Process 'command 'C:\Program Files\Eclipse Adoptium\jdk-17.0.20.101-hotspot\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (Powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 3m 27s

@@ -1,0 +1,15 @@
+{
+  "run": "native01",
+  "image": "runtime-image",
+  "localEnvironment": "r5-profile",
+  "rootMode": "normal",
+  "launcherPid": 6088,
+  "launcherCreatedUtc": "2026-10-17T19:07:25.7114208Z",
+  "startedUtc": "2026-10-17T19:07:25.6987024+00:00",
+  "launcherPath": "<SYNTHETIC_GATE>\\runtime-image\\ChatChatBarDesktop.exe",
+  "expectedDataRoot": "<SYNTHETIC_GATE>\\environments\\r5-profile\\ChatChatBarDesktop",
+  "injectedLocalAppData": "<SYNTHETIC_GATE>\\environments\\r5-profile",
+  "startupWatchdogSeconds": 180,
+  "exitWatchdogSeconds": 120,
+  "lifetimeWatchdogSeconds": 600
+}

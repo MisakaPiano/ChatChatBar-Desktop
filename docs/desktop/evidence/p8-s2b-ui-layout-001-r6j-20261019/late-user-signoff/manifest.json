@@ -1,0 +1,16 @@
+{
+  "algorithm": "SHA-256",
+  "selfExcluded": true,
+  "members": [
+    {
+      "path": "README.md",
+      "bytes": 934,
+      "sha256": "f859af495b0c16d3d068ee90c3fc1860a9779ed575dd2622435677a6aeee7c70"
+    },
+    {
+      "path": "user-signoff.json",
+      "bytes": 693,
+      "sha256": "97ae10d96afd033c7c228f2ac6e70b7b3379c406bf655412315ab3d97c8d8d13"
+    }
+  ]
+}

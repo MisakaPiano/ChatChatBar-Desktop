@@ -1,0 +1,1 @@
+gradle.beforeProject { p -> if (p.path == ':desktopApp') p.layout.buildDirectory.set(new File('I:/CCB-Desktop-Preview-Private-Candidate-1010-20261025')) }

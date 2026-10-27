@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopPresetBootstrapTest" tests="14" skipped="0" failures="0" errors="0" timestamp="2026-10-25T02:32:08.442Z" hostname="DD1" time="0.557">
+  <properties/>
+  <testcase name="partial manifest binding uses existing subset and missing unimportable key is not permanent failure" classname="com.example.chatbar.desktop.DesktopPresetBootstrapTest" time="0.094"/>
+  <testcase name="unreadable existing document and removed document row are not rematerialized" classname="com.example.chatbar.desktop.DesktopPresetBootstrapTest" time="0.03"/>
+  <testcase name="document repair keeps durable committed resource after cancellation and rolls back only precommit" classname="com.example.chatbar.desktop.DesktopPresetBootstrapTest" time="0.073"/>
+  <testcase name="document repair retains new resource when exact durable state is indeterminate" classname="com.example.chatbar.desktop.DesktopPresetBootstrapTest" time="0.025"/>
+  <testcase name="exclusive maintenance waits for document repair commit and gate releases" classname="com.example.chatbar.desktop.DesktopPresetBootstrapTest" time="0.048"/>
+  <testcase name="missing character ledger reconciles world book binding without duplicating committed card" classname="com.example.chatbar.desktop.DesktopPresetBootstrapTest" time="0.018"/>
+  <testcase name="corrupt ledger is not overwritten by default" classname="com.example.chatbar.desktop.DesktopPresetBootstrapTest" time="0.019"/>
+  <testcase name="post-commit character binding failure retries linkage by durable source key without duplicate" classname="com.example.chatbar.desktop.DesktopPresetBootstrapTest" time="0.03"/>
+  <testcase name="version advancement preserves user edits and missing ledger reuses source key" classname="com.example.chatbar.desktop.DesktopPresetBootstrapTest" time="0.043"/>
+  <testcase name="missing bundled world book leaves committed character unseen until binding can complete" classname="com.example.chatbar.desktop.DesktopPresetBootstrapTest" time="0.019"/>
+  <testcase name="bundled manifest resources are reachable and decodable without fixed inventory assertions" classname="com.example.chatbar.desktop.DesktopPresetBootstrapTest" time="0.086"/>
+  <testcase name="ledger preserves unknown envelope fields and unrelated seen keys without needless rewrite" classname="com.example.chatbar.desktop.DesktopPresetBootstrapTest" time="0.012"/>
+  <testcase name="missing bundled document is rematerialized without touching valid documents or images" classname="com.example.chatbar.desktop.DesktopPresetBootstrapTest" time="0.035"/>
+  <testcase name="failed unseen import remains unseen while later entries import and next startup retries" classname="com.example.chatbar.desktop.DesktopPresetBootstrapTest" time="0.025"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[Bundled Character document repair committed for f016301a-3661-428f-ba63-2e571b950ce7; resources retained
+Bundled Character document repair indeterminate for e099eaf4-26ec-41a8-8722-9299fd702f93; created resources retained
+Bundled preset character-a failed: injected after commit
+Bundled preset world-a failed: Key presets/world_books/a.json is missing in the map.
+Bundled preset character-a failed: Bundled WorldBook import failed this startup for character-a
+Bundled preset broken failed: Key presets/formats/broken.json is missing in the map.
+]]></system-err>
+</testsuite>

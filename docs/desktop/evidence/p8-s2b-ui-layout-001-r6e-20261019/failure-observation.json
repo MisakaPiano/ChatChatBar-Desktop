@@ -1,0 +1,29 @@
+{
+  "observed": {
+    "suite": "com.example.chatbar.desktop.DesktopImageClipboardFilesTest",
+    "test": "junction target is never inspected changed or cleaned",
+    "type": "java.io.IOException",
+    "message": "java.io.IOException: Cannot run program \"cmd.exe\": CreateProcess error=5, 拒绝访问。",
+    "sourceLine": 280,
+    "operation": "ProcessBuilder(cmd.exe, /c, mklink, /J, synthetic link and target).start()",
+    "failedBeforeJunctionAssertions": true
+  },
+  "source": {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopImageClipboardFilesTest.kt",
+    "rawBytes": 19284,
+    "rawSha256": "464481eba09f1c6979bb573d0aac2a4cfc5eba0adb420670f253aa70954b1ea5",
+    "gitBlob": "5ffa98db6c83d7fa181bd65e35724804d496676d",
+    "unchangedFromStart": true
+  },
+  "inferred": "Failure occurs at auxiliary process creation, before junction target/clipboard assertions; not evidence of a Fish pagination defect.",
+  "unknown": [
+    "Underlying reason for CreateProcess error=5",
+    "Whether security policy, executable access or another cause denied process creation; not investigated or retried",
+    "No causality from memory pressure established"
+  ],
+  "notTested": [
+    "Junction target safety assertions in this failed case",
+    "New Windows package/manual acceptance"
+  ],
+  "action": "STOP / preserve new RED / no source candidate / no rerun / no policy or system configuration changes"
+}

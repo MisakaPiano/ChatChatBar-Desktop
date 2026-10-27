@@ -1,0 +1,112 @@
+{
+  "baseCommit": "ba7ad499e8113c9efd71760bbd4e4ed37f1ff673",
+  "scope": "All other evidence files; uncommitted F2 draft and first RED",
+  "count": 21,
+  "files": [
+    {
+      "path": ".gitattributes",
+      "bytes": 9,
+      "sha256": "8b9c3028d6467ff3be7c793141927841d70f47f52d0590677438f488ca154992"
+    },
+    {
+      "path": "01-new-focused/command.txt",
+      "bytes": 308,
+      "sha256": "768cf7fb26d1f6779c7aedeabe0057b29e0b2d923d81d7b9c4275111ef030aa4"
+    },
+    {
+      "path": "01-new-focused/gradle.stderr.log",
+      "bytes": 380,
+      "sha256": "ea4a2d891e1cd4e6474a2d67769da4f2520e7ca703c17b0417223e484d65ba71"
+    },
+    {
+      "path": "01-new-focused/gradle.stdout.log",
+      "bytes": 3758,
+      "sha256": "0a187266757e39b758212349d0fe9a52dccebdde0192fe53bc2bfbe1edf7c8b8"
+    },
+    {
+      "path": "01-new-focused/junit/TEST-com.example.chatbar.desktop.DesktopFishPresentationTest.xml",
+      "bytes": 2417,
+      "sha256": "ced6c5a7320c7052a5d093c9f84388f3131646616cea8408787764a7ab960909"
+    },
+    {
+      "path": "01-new-focused/junit/TEST-com.example.chatbar.desktop.DesktopFishSampleTest.xml",
+      "bytes": 8548,
+      "sha256": "9bbdfb94ab6ee7889105bf2c2d0e2b7b82d4fb9b1e67103c84899fcd494cdcd5"
+    },
+    {
+      "path": "01-new-focused/process.json",
+      "bytes": 110,
+      "sha256": "48698ba68548510063aa49104f8527cf3723c9c597ea3337847e391f809b4f93"
+    },
+    {
+      "path": "01-new-focused/resources.jsonl",
+      "bytes": 3196,
+      "sha256": "70eaa9b2e40df7b649935680023ebe59e78c113d6f04406c0219f68e6fffb427"
+    },
+    {
+      "path": "01-new-focused/stage.json",
+      "bytes": 769,
+      "sha256": "9298a9e451f79e88bd140d18aeff838402af1f6d4dc6119070f444712127bce9"
+    },
+    {
+      "path": "initial-source-manifest.json",
+      "bytes": 1088,
+      "sha256": "aeecfc5435a7152af5d1403a99c065f0ce1e1128a0db32a7171a6bc9742b4f2d"
+    },
+    {
+      "path": "initial-source.patch",
+      "bytes": 33760,
+      "sha256": "9a7654e1c50d9e472dcf86934c166f8cdd48d692898134c5aab09f0b4e692477"
+    },
+    {
+      "path": "official-sample-origins.json",
+      "bytes": 11842,
+      "sha256": "ae2402696e49ddc769e389b8f4a25169e8e38bf59d0a20a5d544f5e0d71a7cc4"
+    },
+    {
+      "path": "publication-check.json",
+      "bytes": 553,
+      "sha256": "af26ce281297338e22502368673eb0d516e110c538ad2c22103975a08c06a325"
+    },
+    {
+      "path": "raw-publication-ledger.json",
+      "bytes": 4325,
+      "sha256": "8ef2fc40fdb70d835d00e0719f39f8cba871eef2204604a4c32ac3d05e88d552"
+    },
+    {
+      "path": "README.md",
+      "bytes": 7801,
+      "sha256": "76bc842cde3e084d9894c9afbb9647fbc2be4b8b72256a9a11b6d189dfd1f232"
+    },
+    {
+      "path": "resolve-public-samples.py",
+      "bytes": 1346,
+      "sha256": "0b4e37a312838490049c46e91c95e5dc119bdabd7943c07487bac79e81127cf7"
+    },
+    {
+      "path": "run-stage.ps1",
+      "bytes": 3081,
+      "sha256": "f7dbfe555dd26eddcfe2a99378e1df1f4906ebd93a6d505a0b3e36c95a4249a4"
+    },
+    {
+      "path": "source-manifest.json",
+      "bytes": 1807,
+      "sha256": "34971fbf168d87e800327ea11a7e638235a88ea6b5dde23cebb42e5a04cc8a3b"
+    },
+    {
+      "path": "source-provenance.json",
+      "bytes": 3094,
+      "sha256": "168db8ec3b3758235508a1f27e3b5a7cb2505eebff1ecf540bdab5c71c0fbf3a"
+    },
+    {
+      "path": "source.patch",
+      "bytes": 33760,
+      "sha256": "9a7654e1c50d9e472dcf86934c166f8cdd48d692898134c5aab09f0b4e692477"
+    },
+    {
+      "path": "stage-summary.json",
+      "bytes": 1757,
+      "sha256": "507a39e55eb79196fafbdf959ad9639a44ee57d30286fe60d8298dcd6ce433f2"
+    }
+  ]
+}

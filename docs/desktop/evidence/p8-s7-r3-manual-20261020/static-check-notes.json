@@ -1,0 +1,7 @@
+{
+  "rawEvidencePreserved": true,
+  "defaultDiffCheck": "CRLF and raw stderr final blank lines reported; no product code involved",
+  "evidenceDiffCheck": "git -c core.whitespace=cr-at-eol,-blank-at-eof diff --cached --check",
+  "secretPatternScan": "no Bearer value, nonempty JSON apiKey, or long Authorization value matched; no claim of exhaustive security proof",
+  "skillRelevance": "Fish skill reviewed; evidence-only changes do not stale implemented facts"
+}

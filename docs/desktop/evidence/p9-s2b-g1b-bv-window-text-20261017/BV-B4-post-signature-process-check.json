@@ -1,0 +1,7 @@
+{
+  "utc": "2026-10-16T15:36:33.6096538+00:00",
+  "run": "BV-B4",
+  "processes": [],
+  "bothKnownProcessesAbsent": true,
+  "exitCodes": "UNKNOWN if handles ended before user close; not inferred"
+}

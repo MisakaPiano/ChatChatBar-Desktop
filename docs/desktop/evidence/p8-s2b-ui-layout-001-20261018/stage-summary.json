@@ -1,0 +1,17 @@
+{
+  "phase": "compile main only",
+  "exitCode": 1,
+  "testExecutions": 0,
+  "JUnitXML": 0,
+  "boundedRun": false,
+  "distributionBuilt": false,
+  "nativeWindowLaunched": false,
+  "userConfirmationObtained": false,
+  "realSampleGET": 0,
+  "realTTS": 0,
+  "resourceSamples": 2,
+  "minAvailableGiB": 1.7119331359863281,
+  "minCommitHeadroomGiB": 16.39935302734375,
+  "maxPagesPerSec": 3177,
+  "OOMObserved": false
+}

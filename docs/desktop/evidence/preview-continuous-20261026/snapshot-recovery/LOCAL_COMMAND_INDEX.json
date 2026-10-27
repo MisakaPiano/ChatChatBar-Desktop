@@ -1,0 +1,128 @@
+[
+  {
+    "round": "environment-red",
+    "file": "compile.command.json",
+    "bytes": 22717,
+    "sha256": "d6e30d97134cfafc9ff4b884218f3bcde6672c19a95043a17331f3bd57d3e14e",
+    "publicCopy": "REDACTED_NOT_RAW"
+  },
+  {
+    "round": "probe-red",
+    "file": "compile.command.json",
+    "bytes": 22886,
+    "sha256": "eb34260276c413a0c3f381691a236667119a33ea22d808533fb0c4030de19ee7",
+    "publicCopy": "REDACTED_NOT_RAW"
+  },
+  {
+    "round": "probe-red",
+    "file": "corruption-seed.command.json",
+    "bytes": 11702,
+    "sha256": "d6bb9a72c1f127cf8ee26d443c7bcb9f7215000281f5de4fac7bc09f037a6371",
+    "publicCopy": "REDACTED_NOT_RAW"
+  },
+  {
+    "round": "probe-red",
+    "file": "roundtrip-seed.command.json",
+    "bytes": 11701,
+    "sha256": "809e15893ce82c5abe843109d65ece8a9e9c413c92b871e9b39e56431bed03e9",
+    "publicCopy": "REDACTED_NOT_RAW"
+  },
+  {
+    "round": "green-before-manifest-pin",
+    "file": "compile.command.json",
+    "bytes": 22884,
+    "sha256": "335bd476e7df57d49f6deec5acf39dc0c4b29f5e36db3d5f4f73a0a22c9e1b9e",
+    "publicCopy": "REDACTED_NOT_RAW"
+  },
+  {
+    "round": "green-before-manifest-pin",
+    "file": "corruption-reject.command.json",
+    "bytes": 11708,
+    "sha256": "67c0a331b4726d2ffb24c9dedf0cc432a25d4cc6daab93cf508fe68d503bcbaf",
+    "publicCopy": "REDACTED_NOT_RAW"
+  },
+  {
+    "round": "green-before-manifest-pin",
+    "file": "corruption-seed.command.json",
+    "bytes": 11698,
+    "sha256": "5e26c3a08eae80e4feda18a7b0323adb5de2b6d22e8b1bd2f9702b756a6aeffb",
+    "publicCopy": "REDACTED_NOT_RAW"
+  },
+  {
+    "round": "green-before-manifest-pin",
+    "file": "roundtrip-reopen-1.command.json",
+    "bytes": 11699,
+    "sha256": "6efe4472e4df13be14217586453dd464cc7b5752188ab8c269190d5964a5c3a3",
+    "publicCopy": "REDACTED_NOT_RAW"
+  },
+  {
+    "round": "green-before-manifest-pin",
+    "file": "roundtrip-reopen-2.command.json",
+    "bytes": 11699,
+    "sha256": "6efe4472e4df13be14217586453dd464cc7b5752188ab8c269190d5964a5c3a3",
+    "publicCopy": "REDACTED_NOT_RAW"
+  },
+  {
+    "round": "green-before-manifest-pin",
+    "file": "roundtrip-restore.command.json",
+    "bytes": 11700,
+    "sha256": "6fabbb0fb3fd205639d5341132a0cea7d536d7f98e9266375e4ae63ceb1fc97b",
+    "publicCopy": "REDACTED_NOT_RAW"
+  },
+  {
+    "round": "green-before-manifest-pin",
+    "file": "roundtrip-seed.command.json",
+    "bytes": 11697,
+    "sha256": "788390ec97b26ae05189b626698cd1c928f0ed944139cc1c8a628ab78a683dfa",
+    "publicCopy": "REDACTED_NOT_RAW"
+  },
+  {
+    "round": "green-final",
+    "file": "compile.command.json",
+    "bytes": 22884,
+    "sha256": "8268da8b8574e5801ce04e9f658ffa11a44af6cd63ed73ba3824e6857f64a1fb",
+    "publicCopy": "REDACTED_NOT_RAW"
+  },
+  {
+    "round": "green-final",
+    "file": "corruption-reject.command.json",
+    "bytes": 11708,
+    "sha256": "126d827d4e93502c432f97612a99a67ae74a789543be2f76e9231b3a7c2cfa83",
+    "publicCopy": "REDACTED_NOT_RAW"
+  },
+  {
+    "round": "green-final",
+    "file": "corruption-seed.command.json",
+    "bytes": 11698,
+    "sha256": "f6bdfde27d843645da93239bbadb63dc829e46003da3dc34ce21c8ffefa39794",
+    "publicCopy": "REDACTED_NOT_RAW"
+  },
+  {
+    "round": "green-final",
+    "file": "roundtrip-reopen-1.command.json",
+    "bytes": 11699,
+    "sha256": "33e8be6e4263b00f02f2eb432bbd79e2c297c36c5e6859391844aa5018b24cde",
+    "publicCopy": "REDACTED_NOT_RAW"
+  },
+  {
+    "round": "green-final",
+    "file": "roundtrip-reopen-2.command.json",
+    "bytes": 11699,
+    "sha256": "33e8be6e4263b00f02f2eb432bbd79e2c297c36c5e6859391844aa5018b24cde",
+    "publicCopy": "REDACTED_NOT_RAW"
+  },
+  {
+    "round": "green-final",
+    "file": "roundtrip-restore.command.json",
+    "bytes": 11700,
+    "sha256": "2ed02e8fd23a9b5e78ac564a8d329110a35137cff1f592943fea6ba10b429591",
+    "publicCopy": "REDACTED_NOT_RAW"
+  },
+  {
+    "round": "green-final",
+    "file": "roundtrip-seed.command.json",
+    "bytes": 11697,
+    "sha256": "a3cbc944a84e3ef2f114648eded97af3486aa513f1bcbc68f25cc9866ceab119",
+    "publicCopy": "REDACTED_NOT_RAW"
+  }
+]

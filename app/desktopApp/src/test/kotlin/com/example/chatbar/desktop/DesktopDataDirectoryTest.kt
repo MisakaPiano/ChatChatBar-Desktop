@@ -9,8 +9,120 @@ import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlinx.coroutines.test.runTest
+import java.nio.file.LinkOption.NOFOLLOW_LINKS
+import java.nio.file.attribute.BasicFileAttributes
+import java.security.MessageDigest
 
 class DesktopDataDirectoryTest {
+    @Test
+    fun `read only selection preserves default bootstrap custom and invalid authority behavior`() = runTest {
+        for (mode in listOf("missing", "default", "custom", "invalid")) withSelectionFixture { parent ->
+            val local = Files.createDirectory(parent.resolve("local"))
+            val home = Files.createDirectory(parent.resolve("image"))
+            val store = DesktopBootstrapSettingsStore(local.resolve(DesktopDataDirectory.BOOTSTRAP_FILE_NAME))
+            if (mode == "invalid") Files.writeString(local.resolve(DesktopDataDirectory.BOOTSTRAP_FILE_NAME), "{bad")
+            else if (mode != "missing") {
+                val document = assertIs<DesktopBootstrapLoadResult.Missing>(store.load()).document
+                store.save(document, if (mode == "custom") DesktopDataRootSelection.custom(parent.resolve("custom")) else DesktopDataRootSelection())
+            }
+            val result = assertSelectionReadOnly("bootstrap-$mode", parent) {
+                selectFixture(parent, home)
+            }
+            if (mode == "invalid") assertEquals(DesktopDataRootResolutionFailureKind.BOOTSTRAP_LOAD_FAILED,
+                assertIs<DesktopStartupRootSelection.Failed>(result).failure.kind)
+            else {
+                val root = assertIs<DesktopStartupRootSelection.Selected>(result).root
+                assertEquals(if (mode == "custom") parent.resolve("custom") else local.resolve(DesktopDataDirectory.DIRECTORY_NAME), root.appDataRoot)
+                assertEquals(when (mode) {
+                    "missing" -> DesktopDataRootProvenance.MISSING_BOOTSTRAP_DEFAULT
+                    "default" -> DesktopDataRootProvenance.BOOTSTRAP_DEFAULT
+                    else -> DesktopDataRootProvenance.BOOTSTRAP_CUSTOM
+                }, root.provenance)
+                assertFalse(Files.exists(root.appDataRoot))
+            }
+        }
+    }
+
+    @Test
+    fun `portable selection is pending without a probe and invalid portable never falls back`() = runTest {
+        for (mode in listOf("valid", "invalid-marker", "missing-userdata", "file-userdata")) withSelectionFixture { parent ->
+            val local = Files.createDirectory(parent.resolve("local"))
+            Files.writeString(local.resolve(DesktopDataDirectory.BOOTSTRAP_FILE_NAME), "{bad bootstrap must not win")
+            val home = Files.createDirectory(parent.resolve("image"))
+            Files.writeString(home.resolve("portable.flag"), if (mode == "invalid-marker") "invalid" else DesktopPortableRootResolver.PORTABLE_MARKER_TOKEN)
+            if (mode == "file-userdata") Files.writeString(home.resolve("UserData"), "synthetic")
+            else if (mode != "missing-userdata") Files.createDirectory(home.resolve("UserData"))
+            val result = assertSelectionReadOnly("portable-$mode", parent) { selectFixture(parent, home) }
+            if (mode == "valid") {
+                val pending = assertIs<DesktopStartupRootSelection.PortablePendingActivation>(result)
+                assertEquals(home.resolve("UserData"), pending.appDataRoot)
+                assertEquals(DesktopDataRootProvenance.PORTABLE, pending.provenance)
+                assertTrue(Files.list(pending.appDataRoot).use { it.toList() }.isEmpty())
+            } else assertEquals(DesktopDataRootResolutionFailureKind.PORTABLE_RESOLUTION_FAILED,
+                assertIs<DesktopStartupRootSelection.Failed>(result).failure.kind)
+        }
+    }
+
+    @Test
+    fun `read only CLI precedence bypasses malformed portable and bootstrap`() = runTest { withSelectionFixture { parent ->
+        val local = Files.createDirectory(parent.resolve("local"))
+        Files.writeString(local.resolve(DesktopDataDirectory.BOOTSTRAP_FILE_NAME), "{bad")
+        val override = parent.resolve("override")
+        val result = assertSelectionReadOnly("cli-precedence", parent) {
+            DesktopDataDirectory.selectRoot(mapOf("LOCALAPPDATA" to local.toString()), parent.resolve("unused"),
+                explicitOverride = override, applicationHomeResolution = DesktopApplicationHomeResult.Failure("synthetic unavailable"))
+        }
+        assertEquals(override, assertIs<DesktopStartupRootSelection.Selected>(result).root.appDataRoot)
+        val relative = assertSelectionReadOnly("relative-cli", parent) {
+            DesktopDataDirectory.selectRoot(mapOf("LOCALAPPDATA" to local.toString()), parent,
+                explicitOverride = Path.of("relative"))
+        }
+        assertEquals(DesktopDataRootResolutionFailureKind.INVALID_CLI_OVERRIDE,
+            assertIs<DesktopStartupRootSelection.Failed>(relative).failure.kind)
+    } }
+
+    @Test
+    fun `relocated application image gets a fresh pending authority without writes`() = runTest { withSelectionFixture { parent ->
+        Files.createDirectory(parent.resolve("local"))
+        val original = Files.createDirectory(parent.resolve("original"))
+        Files.writeString(original.resolve("portable.flag"), DesktopPortableRootResolver.PORTABLE_MARKER_TOKEN)
+        Files.createDirectory(original.resolve("UserData"))
+        val first = assertIs<DesktopStartupRootSelection.PortablePendingActivation>(assertSelectionReadOnly("original-home", parent) { selectFixture(parent, original) })
+        val moved = Files.move(original, parent.resolve("moved"))
+        val next = assertIs<DesktopStartupRootSelection.PortablePendingActivation>(assertSelectionReadOnly("moved-home", parent) { selectFixture(parent, moved) })
+        assertEquals(moved.resolve("UserData"), next.appDataRoot)
+        assertFalse(Files.exists(first.appDataRoot))
+        val noHome = assertSelectionReadOnly("bad-application-home", parent) {
+            DesktopDataDirectory.selectRoot(mapOf("LOCALAPPDATA" to parent.resolve("local").toString()), parent,
+                applicationHomeResolution = DesktopApplicationHomeResult.Failure("synthetic malformed"))
+        }
+        assertEquals(DesktopDataRootResolutionFailureKind.APPLICATION_HOME_FAILED,
+            assertIs<DesktopStartupRootSelection.Failed>(noHome).failure.kind)
+    } }
+
+    private suspend fun selectFixture(parent: Path, home: Path) = DesktopDataDirectory.selectRoot(
+        mapOf("LOCALAPPDATA" to parent.resolve("local").toString()), parent.resolve("unused-home"),
+        applicationHomeResolution = DesktopApplicationHomeResult.Available(home, DesktopApplicationHomeProvenance.INJECTED_DEVELOPMENT_TEST))
+
+    private suspend fun withSelectionFixture(block: suspend (Path) -> Unit) {
+        val parent = Files.createTempDirectory("g1a-root-selection-")
+        try { block(parent) } finally { parent.toFile().deleteRecursively() }
+    }
+
+    private suspend fun <T> assertSelectionReadOnly(label: String, parent: Path, block: suspend () -> T): T {
+        fun snapshot() = Files.walk(parent).use { paths -> paths.sorted().toList().associate { path ->
+            val a = Files.readAttributes(path, BasicFileAttributes::class.java, NOFOLLOW_LINKS)
+            val hash = if (a.isRegularFile) MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(path)).contentToString() else "directory"
+            parent.relativize(path).toString() to "$hash:${a.size()}:${a.creationTime()}:${a.lastModifiedTime()}"
+        } }
+        val before = snapshot()
+        val result = block()
+        val after = snapshot()
+        assertEquals(before, after)
+        println("G1A_READ_ONLY $label entries=${before.size} unchanged=true")
+        return result
+    }
+
     @Test
     fun `missing bootstrap preserves exact LOCALAPPDATA default without writes`() = runTest {
         val localAppData = Path.of("local-app-data").toAbsolutePath()

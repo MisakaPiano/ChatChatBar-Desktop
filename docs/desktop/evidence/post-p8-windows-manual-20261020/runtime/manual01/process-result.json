@@ -1,0 +1,43 @@
+{
+  "run": "manual01",
+  "startedUtc": "2026-10-20T12:46:10.2482134+00:00",
+  "endedUtc": "2026-10-20T13:24:18.8363957+00:00",
+  "durationSeconds": 2288.5881823,
+  "closeObservedUtc": null,
+  "processLifetimeBlocked": false,
+  "allOwnedProcessesExited": true,
+  "processes": [
+    {
+      "pid": 30452,
+      "identity": {
+        "pid": 30452,
+        "parentPid": 38400,
+        "createdUtc": "2026-10-20T12:46:10.2600510Z",
+        "executablePath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-audio-maintenance-r1-20261020\\windows-frozen-694a8bdd\\runtime-image\\ChatChatBarDesktop.exe",
+        "image": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-audio-maintenance-r1-20261020\\windows-frozen-694a8bdd\\runtime-image"
+      },
+      "isLauncher": true,
+      "jvmLoaded": false,
+      "exited": true,
+      "exitCode": 0,
+      "moduleReadError": null
+    },
+    {
+      "pid": 32396,
+      "identity": {
+        "pid": 32396,
+        "parentPid": 30452,
+        "createdUtc": "2026-10-20T12:46:12.0234930Z",
+        "executablePath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-audio-maintenance-r1-20261020\\windows-frozen-694a8bdd\\runtime-image\\ChatChatBarDesktop.exe",
+        "image": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-audio-maintenance-r1-20261020\\windows-frozen-694a8bdd\\runtime-image"
+      },
+      "isLauncher": false,
+      "jvmLoaded": true,
+      "exited": true,
+      "exitCode": 0,
+      "moduleReadError": null
+    }
+  ],
+  "probeEvents": [],
+  "probeObservationErrors": []
+}

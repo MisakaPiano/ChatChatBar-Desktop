@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopSaveSlotServiceTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-20T21:57:11.954Z" hostname="DD1" time="5.791">
+  <properties/>
+  <testcase name="native close failure prohibits replacement and archive library publication" classname="com.example.chatbar.desktop.DesktopSaveSlotServiceTest" time="0.379"/>
+  <testcase name="resource rebinding works while old card exists and preserves messages format and old resources" classname="com.example.chatbar.desktop.DesktopSaveSlotServiceTest" time="0.386"/>
+  <testcase name="publication failure restores source graph and permits a later explicit retry" classname="com.example.chatbar.desktop.DesktopSaveSlotServiceTest" time="1.286"/>
+  <testcase name="audio images and current memory survive duplicate under separate owned identities" classname="com.example.chatbar.desktop.DesktopSaveSlotServiceTest" time="0.858"/>
+  <testcase name="changed source after prepare refuses commit and cancellation cannot leave partial graph" classname="com.example.chatbar.desktop.DesktopSaveSlotServiceTest" time="0.477"/>
+  <testcase name="duplicate preserves versions source turns draft and settings without changing original" classname="com.example.chatbar.desktop.DesktopSaveSlotServiceTest" time="0.55"/>
+  <testcase name="legacy import export remains independent and rejects an existing output" classname="com.example.chatbar.desktop.DesktopSaveSlotServiceTest" time="1.082"/>
+  <testcase name="restore is an atomic graph replacement with safety slot and original resources retained" classname="com.example.chatbar.desktop.DesktopSaveSlotServiceTest" time="0.772"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

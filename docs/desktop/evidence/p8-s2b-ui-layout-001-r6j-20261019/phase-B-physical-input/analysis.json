@@ -1,0 +1,74 @@
+{
+  "runId": "f45e6c7a-1aa2-4152-8499-4d6669fffd47",
+  "overall": "INCONCLUSIVE",
+  "rawClassification": "MANUAL_HIT_MISS",
+  "arming": "PASS: same-run actual file and marker verified before instruction",
+  "baselineRange": 0.0,
+  "measuredInitialThumb": {
+    "x": 1120,
+    "y": 155,
+    "width": 8,
+    "height": 104
+  },
+  "actualPress": {
+    "x": 1132,
+    "y": 184
+  },
+  "pressOutsideMeasuredRectangle": true,
+  "actualVisualThumbMissProven": false,
+  "win32Press": {
+    "ownedRoot": true,
+    "foregroundOwned": true,
+    "pointerCoordinatesMatch": true,
+    "leftDown": true
+  },
+  "legacyOwnedAwtEvents": {
+    "501": 1,
+    "506": 30,
+    "502": 1
+  },
+  "humanRecorder": {
+    "press": 1,
+    "drag": 0,
+    "release": 0,
+    "reason": "Recorder held after initial measured-thumb rejection"
+  },
+  "physicalEventChainObserved": true,
+  "completeBeforeAfterRangeAndFirstItem": false,
+  "afterRange": null,
+  "afterFirst": null,
+  "captureComplete": false,
+  "captureVerifierExit": 2,
+  "verifierCorrectlyRejectedCompletion": true,
+  "finishRequestWritten": false,
+  "closeReason": "CONFIRMATION_TIMEOUT",
+  "cleanupReported": true,
+  "manualJavaExecExit": 1,
+  "durationSeconds": 218.176369,
+  "runtimeException": "Deliberate non-PASS exit after bounded cleanup; not evidence of a product crash",
+  "rawStdoutEncoding": "cp936",
+  "rawBytesPreserved": true,
+  "resources": {
+    "samples": 21,
+    "minAvailableBytes": 254722048,
+    "minCommitHeadroomBytes": 11726454784,
+    "maxPagesPerSecond": 21933
+  },
+  "javaAfterExit": [],
+  "catalog": 1,
+  "http": 0,
+  "binding": 0,
+  "realFishGet": 0,
+  "realFishTts": 0,
+  "robotTestsExecuted": 0,
+  "junitTestsExecuted": 0,
+  "boundedExecuted": false,
+  "launches": 1,
+  "retries": 0,
+  "notProven": [
+    "Visual thumb geometry matches measured rectangle",
+    "After-range / first item change",
+    "Historical Robot Press0 cause"
+  ],
+  "nextCandidate": "Project review of measured thumb origin versus actual visible/hit layout; no repair or repeat authorized here"
+}

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.prompt.AiTaskRequestsTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:25.551Z" hostname="DD1" time="0.023">
+  <properties/>
+  <testcase name="multipleImagesAndTextPartsRemainInInputOrder" classname="com.example.chatbar.domain.prompt.AiTaskRequestsTest" time="0.0"/>
+  <testcase name="repairKeepsInputLiteralAndDoesNotNestEnvelope" classname="com.example.chatbar.domain.prompt.AiTaskRequestsTest" time="0.0"/>
+  <testcase name="httpAdaptationPreservesFinalUserAndImageAndHttpsKeepsRoles" classname="com.example.chatbar.domain.prompt.AiTaskRequestsTest" time="0.0"/>
+  <testcase name="explicitRefusalAndFilterAreTerminalButNormalNegativeJudgmentsAreNot" classname="com.example.chatbar.domain.prompt.AiTaskRequestsTest" time="0.001"/>
+  <testcase name="relatedStagesShareTaskButNeverRequestId" classname="com.example.chatbar.domain.prompt.AiTaskRequestsTest" time="0.02"/>
+  <testcase name="everySceneHasProfileAndPreservesActualMultimodalInput" classname="com.example.chatbar.domain.prompt.AiTaskRequestsTest" time="0.002"/>
+  <testcase name="userOnlyMemoryInputGetsSystemAndDoesNotBecomeAcknowledgement" classname="com.example.chatbar.domain.prompt.AiTaskRequestsTest" time="0.0"/>
+  <testcase name="responseMarkersHandleNullAndArrayContent" classname="com.example.chatbar.domain.prompt.AiTaskRequestsTest" time="0.0"/>
+  <testcase name="fingerprintsTrackTemplateSourceAndStageNotRequestId" classname="com.example.chatbar.domain.prompt.AiTaskRequestsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

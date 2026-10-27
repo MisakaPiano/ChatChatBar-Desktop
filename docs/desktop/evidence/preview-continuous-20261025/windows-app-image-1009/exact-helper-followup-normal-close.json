@@ -1,0 +1,13 @@
+{
+  "launcherExited": true,
+  "forcedTermination": false,
+  "originalProbeExit": 1,
+  "javaExited": true,
+  "normalMainWindowObserved": true,
+  "applicationWindowSucceeded": true,
+  "originalProbeFailure": "PowerShell host exited before its child window appeared",
+  "selectedRootBusyVerified": true,
+  "normalCloseRequested": true,
+  "launcherExit": null,
+  "javaExit": null
+}

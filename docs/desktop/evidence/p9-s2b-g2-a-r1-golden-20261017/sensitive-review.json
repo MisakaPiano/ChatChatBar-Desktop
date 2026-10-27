@@ -1,0 +1,6 @@
+{
+  "scannedFiles": 59,
+  "automatedFindings": [],
+  "manualReview": "Synthetic-only fixed identities and body text; raw logs/XML reviewed. No secrets, real data roots, JPEG content, private root paths or credentials.",
+  "scope": "New R1 source/resources and local R1 validation only; private ref snapshot excluded from publication"
+}

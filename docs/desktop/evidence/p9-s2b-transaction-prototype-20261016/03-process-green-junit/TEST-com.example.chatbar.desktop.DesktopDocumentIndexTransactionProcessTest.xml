@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopDocumentIndexTransactionProcessTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-15T16:20:52.979Z" hostname="DD1" time="33.584">
+  <properties/>
+  <testcase name="recovery itself can be killed and a third fresh JVM still restores old bytes" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionProcessTest" time="13.103"/>
+  <testcase name="fresh child recovery classifies interrupted installs and is byte idempotent" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionProcessTest" time="20.481"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

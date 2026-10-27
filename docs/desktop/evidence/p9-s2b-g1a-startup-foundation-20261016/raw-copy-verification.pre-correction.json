@@ -1,0 +1,32 @@
+[
+  {
+    "file": "01-g1a-focused.log",
+    "sha256": "ec6fbe9e5941a8b999ed1b4f54f3403b2fde9d7ae18201ede250a8cac5896ef4",
+    "bytes": 1037
+  },
+  {
+    "file": "01-interrupted-stage.json",
+    "sha256": "dfc3531a65059a688f9bb130868dbbc2736a2aa9242a5b930d03efabaaf521b0",
+    "bytes": 1831
+  },
+  {
+    "file": "resources.jsonl",
+    "sha256": "b2310ce1d69ee26ed485915d806685c2c437d1cab83e0804a494fd0945b30d6d",
+    "bytes": 1015
+  },
+  {
+    "file": "run-stage.ps1",
+    "sha256": "dd6cc1a4843780d382d21aa7de123ce1384d6ccc9453cb2cb1e4fd1adf182e1d",
+    "bytes": 946
+  },
+  {
+    "file": "source-manifest.json",
+    "sha256": "b7f66cc1a35500f3cfba4de5296d2b36b38bf334589a3e02b56feb3476ed1aa1",
+    "bytes": 2787
+  },
+  {
+    "file": "complete-working-tree-g1a.patch",
+    "sha256": "22ea98b74c82043a52c0cfd9be590bde78b37ce82a1117bae441068b22874f68",
+    "bytes": 55314
+  }
+]

@@ -1,0 +1,23 @@
+test_actual_metadata_contract_and_native_hash_agree (test_msi_operation_contract.NativeOperationContract) ... ok
+test_changed_table_or_unknown_family_cannot_use_old_authored_contract (test_msi_operation_contract.NativeOperationContract) ... ok
+test_locator_defaults_custom_unknown_members_and_invalid_present_input (test_msi_operation_contract.NativeOperationContract) ... test_production_exports_and_no_inventory_imports (test_msi_operation_contract.NativeOperationContract) ... ok
+test_readonly_physical_identity_existing_and_missing_paths (test_msi_operation_contract.NativeOperationContract) ... ok
+test_directory_cycle_missing_parent_escape_and_alias_collision (test_msi_operation_contract.ResourceGraph) ... ok
+test_file_duplicates_unmapped_feature_and_external_remove_directory (test_msi_operation_contract.ResourceGraph) ... ok
+test_fingerprint_preserves_values_and_is_independent_of_row_order (test_msi_operation_contract.ResourceGraph) ... ok
+test_independent_full_graph_and_long_names (test_msi_operation_contract.ResourceGraph) ... ok
+test_search_and_upgrade_cannot_target_foreign_ownership (test_msi_operation_contract.ResourceGraph) ... ok
+test_unknown_resource_family_even_when_markers_are_known (test_msi_operation_contract.ResourceGraph) ... ok
+
+======================================================================
+FAIL: test_locator_defaults_custom_unknown_members_and_invalid_present_input (test_msi_operation_contract.NativeOperationContract) (text='{"formatVersion":1,"mode":"DEFAULT",}')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_operation_contract.py", line 123, in test_locator_defaults_custom_unknown_members_and_invalid_present_input
+    self.assertEqual(int(valid), self.lib.CcbTestLocator(text, out))
+AssertionError: 0 != 1
+
+----------------------------------------------------------------------
+Ran 11 tests in 3.120s
+
+FAILED (failures=1)

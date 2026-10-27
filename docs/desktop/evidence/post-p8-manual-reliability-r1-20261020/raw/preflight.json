@@ -1,0 +1,15 @@
+{
+  "utc": "2026-10-20T14:06:30.291520+00:00",
+  "head": "c4098e08bec84372911a5a8bc38c2cfa72f98978",
+  "source": "694a8bdd6e48bd6696d2eeb59f141935c67163b0",
+  "branch": "feature/phase8-fish-audio",
+  "protectedPathsOnly": [
+    ".codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/4bb6706b-0132-41be-bd8e-03e6c0229e46/1-1000072937.jpg",
+    ".codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/b5264b76-6c08-406d-af8d-bbb2f876c7c1/1-1000072937.jpg",
+    ".codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/ea41235d-a0f1-44c3-8db1-47f5bb5b2883/1-1000072937.jpg",
+    "CCB_DESKTOP_STANDARD_CONVERSATION_HANDOFF.md",
+    "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopVoiceClickReliabilityTest.kt"
+  ],
+  "screenshotStatus": "UNKNOWN; no production close change without real event-route proof; no GUI/native window launch authorized in this engineering run",
+  "futureScreenshotContract": "Standalone owned resizable80-90% work window;User-turn selection tree;dual-axis scrollbar/zoom controls;fixed toolbars;independentClose;PNG identity/budgets/no-overwrite unchanged;PDF/Word future only;not implemented under R1"
+}

@@ -1,0 +1,9 @@
+{
+  "time": "2026-10-21T16:37:59.0457276Z",
+  "observed": "已校验192个文件，10682KiB；文件校验完成，尚未替换当前数据；恢复安全提示可见",
+  "visualCheck": "PASS",
+  "userSignoff": "截图反馈，未另行文字签署",
+  "restoreScheduled": false,
+  "secondGuiLaunch": "NOT AUTHORIZED",
+  "androidCompatibility": "NOT TESTED，来源版本文案不构成Android兼容证据"
+}

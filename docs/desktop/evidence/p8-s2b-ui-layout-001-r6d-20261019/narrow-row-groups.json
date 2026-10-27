@@ -1,0 +1,123 @@
+{
+  "algorithm": "Positive common vertical intersection, unambiguous assignment, nonoverlapping group envelopes; no equal-top or fixed-item requirement",
+  "observations": [
+    {
+      "widthDp": 360,
+      "page": 1,
+      "pagerIdentity": 1188127186,
+      "items": {
+        "previous": {
+          "x": 68,
+          "y": 667,
+          "width": 76,
+          "height": 32
+        },
+        "caption": {
+          "x": 152,
+          "y": 675,
+          "width": 86,
+          "height": 16
+        },
+        "input-and-jump": {
+          "x": 246,
+          "y": 654,
+          "width": 138,
+          "height": 58
+        },
+        "next": {
+          "x": 68,
+          "y": 716,
+          "width": 76,
+          "height": 32
+        }
+      },
+      "groups": [
+        [
+          "input-and-jump",
+          "previous",
+          "caption"
+        ],
+        [
+          "next"
+        ]
+      ],
+      "envelopes": [
+        {
+          "x": 68,
+          "y": 654,
+          "width": 316,
+          "height": 58
+        },
+        {
+          "x": 68,
+          "y": 716,
+          "width": 76,
+          "height": 32
+        }
+      ],
+      "verticalGapsPx": [
+        4
+      ],
+      "sourceRecord": "FISH_R6D_PAGER_ROWS requestedWidthDp=360 page=1 pager=1188127186 items={previous=java.awt.Rectangle[x=68,y=667,width=76,height=32], caption=java.awt.Rectangle[x=152,y=675,width=86,height=16], input-and-jump=java.awt.Rectangle[x=246,y=654,width=138,height=58], next=java.awt.Rectangle[x=68,y=716,width=76,height=32]} identities={previous=972454228, caption=422314775, input-and-jump=476413916, next=432914647} groups=[[input-and-jump, previous, caption], [next]] envelopes=[java.awt.Rectangle[x=68,y=654,width=316,height=58], java.awt.Rectangle[x=68,y=716,width=76,height=32]]"
+    },
+    {
+      "widthDp": 360,
+      "page": 2,
+      "pagerIdentity": 1188127186,
+      "items": {
+        "previous": {
+          "x": 68,
+          "y": 667,
+          "width": 76,
+          "height": 32
+        },
+        "caption": {
+          "x": 152,
+          "y": 675,
+          "width": 86,
+          "height": 16
+        },
+        "input-and-jump": {
+          "x": 246,
+          "y": 654,
+          "width": 138,
+          "height": 58
+        },
+        "next": {
+          "x": 68,
+          "y": 716,
+          "width": 76,
+          "height": 32
+        }
+      },
+      "groups": [
+        [
+          "input-and-jump",
+          "previous",
+          "caption"
+        ],
+        [
+          "next"
+        ]
+      ],
+      "envelopes": [
+        {
+          "x": 68,
+          "y": 654,
+          "width": 316,
+          "height": 58
+        },
+        {
+          "x": 68,
+          "y": 716,
+          "width": 76,
+          "height": 32
+        }
+      ],
+      "verticalGapsPx": [
+        4
+      ],
+      "sourceRecord": "FISH_R6D_PAGER_ROWS requestedWidthDp=360 page=2 pager=1188127186 items={previous=java.awt.Rectangle[x=68,y=667,width=76,height=32], caption=java.awt.Rectangle[x=152,y=675,width=86,height=16], input-and-jump=java.awt.Rectangle[x=246,y=654,width=138,height=58], next=java.awt.Rectangle[x=68,y=716,width=76,height=32]} identities={previous=972454228, caption=422314775, input-and-jump=476413916, next=432914647} groups=[[input-and-jump, previous, caption], [next]] envelopes=[java.awt.Rectangle[x=68,y=654,width=316,height=58], java.awt.Rectangle[x=68,y=716,width=76,height=32]]"
+    }
+  ]
+}

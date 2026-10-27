@@ -1,0 +1,18 @@
+{
+  "childRuns": 32,
+  "killed": 12,
+  "normal": 20,
+  "allExited": true,
+  "minimumSampleAvailableMiB": 178.0,
+  "minimumSampleCommitGiB": 6.534,
+  "maximumSamplePagesPerSec": 10568.0,
+  "maximumSampleJavaPrivateMiB": 897.8,
+  "absoluteMemoryPeak": "UNKNOWN; periodic samples only",
+  "finalSuites": 6,
+  "finalTests": 79,
+  "failures": 0,
+  "errors": 0,
+  "skips": 0,
+  "historicalNewRed": "02-process: 2 tests / 1 failure (first parent reacquire), preserved",
+  "production": "NOT IMPLEMENTED"
+}

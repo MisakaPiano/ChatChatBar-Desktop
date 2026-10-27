@@ -1,0 +1,66 @@
+{
+  "Component": {
+    "extraCount": 218,
+    "extraSample": [
+      [
+        "__cfilee7b72109c1e13cfd8dedb9866da332d565",
+        "Temporary Id",
+        "WindowsFolder",
+        "260",
+        "",
+        ""
+      ],
+      [
+        "__cfilee3e0fa642a7f318db4e675275da8a5c365",
+        "Temporary Id",
+        "WindowsFolder",
+        "260",
+        "",
+        ""
+      ],
+      [
+        "__cfile4ccb48029a183ec2818743c9d3d8e08365",
+        "Temporary Id",
+        "WindowsFolder",
+        "260",
+        "",
+        ""
+      ],
+      [
+        "__cfile8390dde736103343b5c8be72ff1c087765",
+        "Temporary Id",
+        "WindowsFolder",
+        "260",
+        "",
+        ""
+      ]
+    ],
+    "allExtraNonIdDistinctShapes": [
+      [
+        "Temporary Id",
+        "WindowsFolder",
+        "260",
+        "",
+        ""
+      ]
+    ],
+    "mutatedAuthoredCount": 0
+  },
+  "Directory": {
+    "extraCount": 1,
+    "extraSample": [
+      [
+        "WindowsFolder",
+        "TARGETDIR",
+        "?"
+      ]
+    ],
+    "allExtraNonIdDistinctShapes": [
+      [
+        "TARGETDIR",
+        "?"
+      ]
+    ],
+    "mutatedAuthoredCount": 0
+  }
+}

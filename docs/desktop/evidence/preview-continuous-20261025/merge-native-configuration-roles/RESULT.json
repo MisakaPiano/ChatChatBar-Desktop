@@ -1,0 +1,34 @@
+{
+  "merge-embedding-role-red-20261025": {
+    "exit": 1,
+    "suites": 1,
+    "tests": 1,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "merge-native-role-red-20261025": {
+    "exit": 1,
+    "suites": 2,
+    "tests": 3,
+    "failures": 3,
+    "errors": 0,
+    "skipped": 0
+  },
+  "merge-native-role-green-20261025": {
+    "exit": 0,
+    "suites": 8,
+    "tests": 50,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "merge-native-role-final-20261025": {
+    "exit": 0,
+    "suites": 8,
+    "tests": 50,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

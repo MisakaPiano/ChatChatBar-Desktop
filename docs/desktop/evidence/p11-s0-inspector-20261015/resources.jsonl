@@ -1,0 +1,134 @@
+{
+  "time": "2026-10-15T08:22:07.4379492+09:00",
+  "availableMiB": 2233.90625,
+  "commitFreeGiB": 11.368091583251953,
+  "pagesSec": 0,
+  "hFreeGiB": 37.99959182739258,
+  "java": []
+}
+{
+  "time": "2026-10-15T08:23:16.9422717+09:00",
+  "availableMiB": 1097.57421875,
+  "commitFreeGiB": 10.103702545166016,
+  "pagesSec": 488,
+  "java": [
+    {
+      "Id": 38064,
+      "WorkingSet64": 882790400,
+      "PrivateMemorySize64": 933597184
+    },
+    {
+      "Id": 43672,
+      "WorkingSet64": 113938432,
+      "PrivateMemorySize64": 393687040
+    }
+  ]
+}
+{
+  "time": "2026-10-15T08:26:24.3965919+09:00",
+  "availableMiB": 2297.9921875,
+  "commitFreeGiB": 11.603450775146484,
+  "pagesSec": 63,
+  "java": []
+}
+{
+  "time": "2026-10-15T08:30:31.4846412+09:00",
+  "availableMiB": 2302.48046875,
+  "commitFreeGiB": 11.557117462158203,
+  "pagesSec": 0,
+  "java": []
+}
+{
+  "time": "2026-10-15T08:32:20.5922158+09:00",
+  "availableMiB": 2289.99609375,
+  "commitFreeGiB": 11.538188934326172,
+  "pagesSec": 0,
+  "java": []
+}
+{
+  "time": "2026-10-15T08:34:00.3307295+09:00",
+  "availableMiB": 573.3828125,
+  "commitFreeGiB": 9.51229476928711,
+  "pagesSec": 192,
+  "java": [
+    {
+      "Id": 10836,
+      "WorkingSet64": 113094656,
+      "PrivateMemorySize64": 388300800
+    },
+    {
+      "Id": 25316,
+      "WorkingSet64": 1589452800,
+      "PrivateMemorySize64": 1707384832
+    }
+  ]
+}
+{
+  "time": "2026-10-15T08:35:27.2708181+09:00",
+  "availableMiB": 882.64453125,
+  "commitFreeGiB": 8.625988006591797,
+  "pagesSec": 3014,
+  "java": [
+    {
+      "Id": 10836,
+      "WorkingSet64": 113082368,
+      "PrivateMemorySize64": 388239360
+    },
+    {
+      "Id": 25316,
+      "WorkingSet64": 1670217728,
+      "PrivateMemorySize64": 2774962176
+    }
+  ]
+}
+{
+  "time": "2026-10-15T08:38:30.0203017+09:00",
+  "availableMiB": 202.1015625,
+  "commitFreeGiB": 8.188739776611328,
+  "pagesSec": 2020,
+  "java": [
+    {
+      "Id": 10836,
+      "CPU": 2.71875,
+      "WorkingSet64": 113246208,
+      "PrivateMemorySize64": 388640768
+    },
+    {
+      "Id": 25316,
+      "CPU": 438.125,
+      "WorkingSet64": 2596073472,
+      "PrivateMemorySize64": 2979045376
+    },
+    {
+      "Id": 31428,
+      "CPU": 1.328125,
+      "WorkingSet64": 94756864,
+      "PrivateMemorySize64": 384815104
+    }
+  ]
+}
+{
+  "time": "2026-10-15T08:39:39.1564768+09:00",
+  "availableMiB": 2830.0859375,
+  "commitFreeGiB": 11.71316146850586,
+  "pagesSec": 1939,
+  "java": []
+}
+{
+  "time": "2026-10-15T08:41:19.8034637+09:00",
+  "availableMiB": 1626.6484375,
+  "commitFreeGiB": 10.469154357910156,
+  "pagesSec": 2002,
+  "java": [
+    {
+      "Id": 23432,
+      "WorkingSet64": 770977792,
+      "PrivateMemorySize64": 817991680
+    },
+    {
+      "Id": 35916,
+      "WorkingSet64": 113950720,
+      "PrivateMemorySize64": 392622080
+    }
+  ]
+}

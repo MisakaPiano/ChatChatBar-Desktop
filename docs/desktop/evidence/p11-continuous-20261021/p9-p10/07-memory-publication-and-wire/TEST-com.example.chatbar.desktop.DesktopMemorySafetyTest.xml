@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopMemorySafetyTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-20T20:21:42.376Z" hostname="DD1" time="0.065">
+  <properties/>
+  <testcase name="strict memory never interprets corrupt state as new empty memory" classname="com.example.chatbar.desktop.DesktopMemorySafetyTest" time="0.013"/>
+  <testcase name="memory publication holds real admission until entire journal transaction is finished" classname="com.example.chatbar.desktop.DesktopMemorySafetyTest" time="0.032"/>
+  <testcase name="strict recovery rejects foreign session nodes and preserves journal" classname="com.example.chatbar.desktop.DesktopMemorySafetyTest" time="0.02"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

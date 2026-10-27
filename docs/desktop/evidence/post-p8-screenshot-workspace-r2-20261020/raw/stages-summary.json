@@ -1,0 +1,86 @@
+[
+  {
+    "stage": "01-workspace-red",
+    "gradleExit": 1,
+    "junitTaskExecuted": true,
+    "totalTests": 1,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0,
+    "inheritedXmlExcluded": []
+  },
+  {
+    "stage": "02-workspace-focused",
+    "gradleExit": 1,
+    "junitTaskExecuted": false,
+    "totalTests": 0,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "inheritedXmlExcluded": [
+      "TEST-com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest.xml"
+    ]
+  },
+  {
+    "stage": "03-workspace-focused",
+    "gradleExit": 1,
+    "junitTaskExecuted": false,
+    "totalTests": 0,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "inheritedXmlExcluded": [
+      "TEST-com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest.xml"
+    ]
+  },
+  {
+    "stage": "04-workspace-focused",
+    "gradleExit": 0,
+    "junitTaskExecuted": true,
+    "totalTests": 19,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "inheritedXmlExcluded": []
+  },
+  {
+    "stage": "05-final-focused",
+    "gradleExit": 1,
+    "junitTaskExecuted": true,
+    "totalTests": 120,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0,
+    "inheritedXmlExcluded": []
+  },
+  {
+    "stage": "06-final-focused",
+    "gradleExit": 0,
+    "junitTaskExecuted": true,
+    "totalTests": 121,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "inheritedXmlExcluded": []
+  },
+  {
+    "stage": "07-final-focused",
+    "gradleExit": 0,
+    "junitTaskExecuted": true,
+    "totalTests": 121,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "inheritedXmlExcluded": []
+  },
+  {
+    "stage": "08-package",
+    "gradleExit": 0,
+    "junitTaskExecuted": false,
+    "totalTests": 0,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "inheritedXmlExcluded": []
+  }
+]

@@ -1,0 +1,56 @@
+{
+  "stage": "02-native-class-with-pager",
+  "suites": 1,
+  "tests": 4,
+  "reportedPass": 3,
+  "failures": 1,
+  "errors": 0,
+  "skipped": 0,
+  "exitCode": 1,
+  "failedTest": {
+    "name": "native persistent scrollbar drags current page and explicit page jump preserves request semantics",
+    "classname": "com.example.chatbar.desktop.DesktopFishPickerNativeUxTest",
+    "time": "2.483"
+  },
+  "testSeconds": 28.706,
+  "failure": {
+    "message": "java.lang.AssertionError: Page input and jump must remain adjacent, including wrapped rows",
+    "type": "java.lang.AssertionError"
+  },
+  "stack": "java.lang.AssertionError: Page input and jump must remain adjacent, including wrapped rows\n\tat org.junit.Assert.fail(Assert.java:89)\n\tat kotlin.test.junit.JUnitAsserter.fail(JUnitSupport.kt:56)\n\tat kotlin.test.Asserter.assertTrue(Assertions.kt:766)\n\tat kotlin.test.junit.JUnitAsserter.assertTrue(JUnitSupport.kt:30)\n\tat kotlin.test.Asserter.assertTrue(Assertions.kt:776)\n\tat kotlin.test.junit.JUnitAsserter.assertTrue(JUnitSupport.kt:30)\n\tat kotlin.test.AssertionsKt__AssertionsKt.assertTrue(Assertions.kt:44)\n\tat kotlin.test.AssertionsKt.assertTrue(Unknown Source)\n\tat com.example.chatbar.desktop.DesktopFishPickerNativeUxTest$Fixture.assertPagerLayout(DesktopFishPickerNativeUxTest.kt:250)\n\tat com.example.chatbar.desktop.DesktopFishPickerNativeUxTest$native persistent scrollbar drags current page and explicit page jump preserves request semantics$1.invokeSuspend(DesktopFishPickerNativeUxTest.kt:472)\n\tat kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)\n\tat kotlinx.coroutines.internal.ScopeCoroutine.afterResume(Scopes.kt:35)\n\tat kotlinx.coroutines.AbstractCoroutine.resumeWith(AbstractCoroutine.kt:101)\n\tat kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:47)\n\tat kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)\n\tat java.desktop/java.awt.event.InvocationEvent.dispatch(InvocationEvent.java:318)\n\tat java.desktop/java.awt.EventQueue.dispatchEventImpl(EventQueue.java:773)\n\tat java.desktop/java.awt.EventQueue$4.run(EventQueue.java:720)\n\tat java.desktop/java.awt.EventQueue$4.run(EventQueue.java:714)\n\tat java.base/java.security.AccessController.doPrivileged(AccessController.java:399)\n\tat java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:86)\n\tat java.desktop/java.awt.EventQueue.dispatchEvent(EventQueue.java:742)\n\tat java.desktop/java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203)\n\tat java.desktop/java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124)\n\tat java.desktop/java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113)\n\tat java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109)\n\tat java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101)\n\tat java.desktop/java.awt.EventDispatchThread.run(EventDispatchThread.java:90)\n",
+  "xmlSha256": "1426ac7649dc218c3bb60ac2ae1786f26076015f7fd45329fba21b4bbfc5b3a6",
+  "failureAt": "assertPagerLayout line250; caller line472 before dragThumbFromTop",
+  "requestedFirstWidthDp": 1100,
+  "failingPredicate": "jump.x >= field.x + field.width AND jump.x - field.x - field.width <= 12",
+  "actualPagerRectsAtFailure": null,
+  "geometryLogging": "FISH_R5_PAGER println follows assertions and was not reached; cannot fabricate values",
+  "rootCause": "UNKNOWN: genuine adjacent-layout violation vs semantics-coordinate observation not distinguished",
+  "passedTests": [
+    {
+      "name": "native Stop is top layer visible and operable during download generation and long Windows playback",
+      "classname": "com.example.chatbar.desktop.DesktopFishPickerNativeUxTest",
+      "time": "10.453"
+    },
+    {
+      "name": "native Escape closes exactly one panel then picker with and without field focus at both widths",
+      "classname": "com.example.chatbar.desktop.DesktopFishPickerNativeUxTest",
+      "time": "13.429"
+    },
+    {
+      "name": "native resize retains target text and generated cache while sample identity stays distinct",
+      "classname": "com.example.chatbar.desktop.DesktopFishPickerNativeUxTest",
+      "time": "2.339"
+    }
+  ],
+  "notReached": [
+    "drag after pager change",
+    "native wheel after pager change",
+    "720/360dp pager assertions",
+    "post-layout page and Int boundary branches"
+  ],
+  "rerunsAfterRed": 0,
+  "nextFocusedStarted": false,
+  "boundedStarted": false,
+  "distributionBuilt": false,
+  "manualGateStarted": false
+}

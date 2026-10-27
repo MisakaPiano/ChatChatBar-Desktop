@@ -1,0 +1,23 @@
+{
+  "base": "55366cee0706c78f545b32ef7d75750c649dcdbd",
+  "files": [
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerPresentation.kt",
+      "sha256": "82d2ced3b09bcedc2c3bef37e8c76117361206bb36ebf6fee872c00f0482f0b9",
+      "bytes": 17709
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerWindow.kt",
+      "sha256": "a003e7ad1e31a0c356df1a4291cc7eb1e4eb9fa958a0a6353ee6a77ac8f88125",
+      "bytes": 4280
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerNativeUxTest.kt",
+      "sha256": "38d4a766e50d1580574fb7c55505bbc6f29ce7f317e2b7701bfae953364660ea",
+      "bytes": 20103
+    }
+  ],
+  "temporaryProductionPrintsRemoved": true,
+  "runtimeUnmodified": true,
+  "newPaginationAuthorization": "explicit user supplemental instruction"
+}

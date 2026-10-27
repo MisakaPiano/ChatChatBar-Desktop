@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopShutdownWaitObserverTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-21T17:33:32.855Z" hostname="DD1" time="0.019">
+  <properties/>
+  <testcase name="non recoverable failure withdraws waiting status and cannot terminate" classname="com.example.chatbar.desktop.DesktopShutdownWaitObserverTest" time="0.005"/>
+  <testcase name="waiting window is withdrawn before resumable recovery and new attempt" classname="com.example.chatbar.desktop.DesktopShutdownWaitObserverTest" time="0.002"/>
+  <testcase name="queued presentation cannot resurrect after close" classname="com.example.chatbar.desktop.DesktopShutdownWaitObserverTest" time="0.0"/>
+  <testcase name="fast close cancels deadline without creating a status window" classname="com.example.chatbar.desktop.DesktopShutdownWaitObserverTest" time="0.0"/>
+  <testcase name="backup and coordinator waits stay live with ownership until actual completion" classname="com.example.chatbar.desktop.DesktopShutdownWaitObserverTest" time="0.012"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[CCB_SHUTDOWN_WAIT VISIBILITY_REQUESTED
+CCB_SHUTDOWN_WAIT VISIBLE
+CCB_SHUTDOWN_WAIT VISIBILITY_REQUESTED
+CCB_SHUTDOWN_WAIT VISIBLE
+CCB_SHUTDOWN_WAIT VISIBILITY_REQUESTED
+CCB_SHUTDOWN_WAIT VISIBLE
+CCB_SHUTDOWN_WAIT VISIBILITY_REQUESTED
+CCB_SHUTDOWN_WAIT VISIBILITY_REQUESTED
+CCB_SHUTDOWN_WAIT VISIBLE
+]]></system-err>
+</testsuite>

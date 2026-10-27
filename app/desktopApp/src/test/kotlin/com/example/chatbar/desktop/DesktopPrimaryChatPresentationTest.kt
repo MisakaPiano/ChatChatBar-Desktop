@@ -29,7 +29,7 @@ class DesktopPrimaryChatPresentationTest {
             RoleplaySegmentKind.THOUGHT, RoleplaySegmentKind.STATUS), shown.segments.map { it.kind })
         assertEquals("Alice", shown.segments[1].speaker?.displayName)
         assertEquals("images/alice.png", shown.segments[1].speaker?.avatarReference)
-        assertTrue(shown.segments.last().statusDefaultExpanded)
+        assertFalse(shown.segments.last().statusDefaultExpanded)
         assertFalse(shown.copyText.contains("<n="))
         assertFalse(shown.copyText.contains("hidden"))
         assertFalse(shown.copyText.contains("```"))
@@ -83,7 +83,7 @@ class DesktopPrimaryChatPresentationTest {
     fun `desktop markdown presents emphasis heading links and lists without raw delimiters`() {
         val shown = desktopMarkdown("# Heading\n**bold** and *italic* with [link](https://example.test)\n- item")
 
-        assertEquals("Heading\nbold and italic with link\n• item", shown.text)
+        assertEquals("Heading\n\nbold and italic with link\n\n• item", shown.text)
         assertTrue(shown.spanStyles.isNotEmpty())
     }
 
@@ -129,10 +129,14 @@ class DesktopPrimaryChatPresentationTest {
             "## Header\n**bold** *italic* ~~gone~~ `code` [link](https://example.test)\n" +
                 "- bullet\n1. first\n> quotation\nnext line",
         )
-        assertEquals("Header\nbold italic gone code link\n• bullet\n1. first\n❝ quotation\nnext line", shown.text)
-        assertTrue(shown.spanStyles.size >= 6)
+        assertEquals("Header\n\nbold italic ~~gone~~ code link\n\n• bullet\n\n1. first\n\n❝ quotation\nnext line", shown.text)
+        // Core + HtmlPlugin has no GFM strike plugin: verify supported styles, not a legacy span count.
+        assertTrue(shown.spanStyles.any { it.item.fontWeight == androidx.compose.ui.text.font.FontWeight.Bold })
+        assertTrue(shown.spanStyles.any { it.item.fontStyle == androidx.compose.ui.text.font.FontStyle.Italic })
+        assertTrue(shown.spanStyles.any { it.item.fontFamily == androidx.compose.ui.text.font.FontFamily.Monospace })
+        assertTrue(shown.spanStyles.none { it.item.textDecoration == androidx.compose.ui.text.style.TextDecoration.LineThrough })
         val fenced = desktopMarkdown("```kotlin\nval value = 1\n```")
-        assertEquals("val value = 1", fenced.text)
+        assertEquals("val value = 1  ", fenced.text)
     }
 
     @Test
@@ -152,13 +156,13 @@ class DesktopPrimaryChatPresentationTest {
         val shown = desktopPresentMessage(message, card, null, segmentedAssistant = true)
         val status = shown.segments.filter { it.kind == RoleplaySegmentKind.STATUS }
         assertEquals(2, status.size)
-        assertTrue(status.all { it.statusDefaultExpanded })
+        assertEquals(listOf(false, true), status.map { it.statusDefaultExpanded })
         assertFalse(shown.defaultReasoningExpanded)
         val statusExpansion = DesktopPresentationExpansion(status.first().statusDefaultExpanded)
         statusExpansion.toggle()
-        assertFalse(statusExpansion.expanded)
-        statusExpansion.toggle()
         assertTrue(statusExpansion.expanded)
+        statusExpansion.toggle()
+        assertFalse(statusExpansion.expanded)
         val reasoningExpansion = DesktopPresentationExpansion(shown.defaultReasoningExpanded)
         reasoningExpansion.toggle()
         assertTrue(reasoningExpansion.expanded)

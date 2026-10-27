@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopMergeImportServiceTest" tests="5" skipped="0" failures="5" errors="0" timestamp="2026-10-24T22:57:23.991Z" hostname="DD1" time="0.206">
+  <properties/>
+  <testcase name="actual service publishes both data branches and selected protected keys with old root retained" classname="com.example.chatbar.desktop.DesktopMergeImportServiceTest" time="0.099">
+    <failure message="com.example.chatbar.desktop.backup.DesktopFullBackupSource$Refusal: FULL_BACKUP_SOURCE_ENTITY_SCHEMA" type="com.example.chatbar.desktop.backup.DesktopFullBackupSource$Refusal">com.example.chatbar.desktop.backup.DesktopFullBackupSource$Refusal: FULL_BACKUP_SOURCE_ENTITY_SCHEMA
+	at app//com.example.chatbar.desktop.backup.DesktopFullBackupSource.verify(DesktopFullBackupSource.kt:127)
+	at app//com.example.chatbar.desktop.backup.DesktopFullBackupStaging$Companion$prepare$2.invokeSuspend(DesktopFullBackupStaging.kt:37)
+	at app//kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at app//kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at app//kotlinx.coroutines.internal.LimitedDispatcher$Worker.run(LimitedDispatcher.kt:124)
+	at app//kotlinx.coroutines.scheduling.TaskImpl.run(Tasks.kt:89)
+	at app//kotlinx.coroutines.scheduling.CoroutineScheduler.runSafely(CoroutineScheduler.kt:586)
+	at app//kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.executeTask(CoroutineScheduler.kt:820)
+	at app//kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(CoroutineScheduler.kt:717)
+	at app//kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(CoroutineScheduler.kt:704)
+</failure>
+  </testcase>
+  <testcase name="bootstrap publication failure leaves original root selected and new data retained" classname="com.example.chatbar.desktop.DesktopMergeImportServiceTest" time="0.024">
+    <failure message="com.example.chatbar.desktop.backup.DesktopFullBackupSource$Refusal: FULL_BACKUP_SOURCE_ENTITY_SCHEMA" type="com.example.chatbar.desktop.backup.DesktopFullBackupSource$Refusal">com.example.chatbar.desktop.backup.DesktopFullBackupSource$Refusal: FULL_BACKUP_SOURCE_ENTITY_SCHEMA
+	at app//com.example.chatbar.desktop.backup.DesktopFullBackupSource.verify(DesktopFullBackupSource.kt:127)
+	at app//com.example.chatbar.desktop.backup.DesktopFullBackupStaging$Companion$prepare$2.invokeSuspend(DesktopFullBackupStaging.kt:37)
+	at app//kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at app//kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at app//kotlinx.coroutines.internal.LimitedDispatcher$Worker.run(LimitedDispatcher.kt:124)
+	at app//kotlinx.coroutines.scheduling.TaskImpl.run(Tasks.kt:89)
+	at app//kotlinx.coroutines.scheduling.CoroutineScheduler.runSafely(CoroutineScheduler.kt:586)
+	at app//kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.executeTask(CoroutineScheduler.kt:820)
+	at app//kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(CoroutineScheduler.kt:717)
+	at app//kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(CoroutineScheduler.kt:704)
+</failure>
+  </testcase>
+  <testcase name="ambiguous bootstrap publication seals old writers and retains destination ownership" classname="com.example.chatbar.desktop.DesktopMergeImportServiceTest" time="0.022">
+    <failure message="com.example.chatbar.desktop.backup.DesktopFullBackupSource$Refusal: FULL_BACKUP_SOURCE_ENTITY_SCHEMA" type="com.example.chatbar.desktop.backup.DesktopFullBackupSource$Refusal">com.example.chatbar.desktop.backup.DesktopFullBackupSource$Refusal: FULL_BACKUP_SOURCE_ENTITY_SCHEMA
+	at app//com.example.chatbar.desktop.backup.DesktopFullBackupSource.verify(DesktopFullBackupSource.kt:127)
+	at app//com.example.chatbar.desktop.backup.DesktopFullBackupStaging$Companion$prepare$2.invokeSuspend(DesktopFullBackupStaging.kt:37)
+	at app//kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at app//kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at app//kotlinx.coroutines.internal.LimitedDispatcher$Worker.run(LimitedDispatcher.kt:124)
+	at app//kotlinx.coroutines.scheduling.TaskImpl.run(Tasks.kt:89)
+	at app//kotlinx.coroutines.scheduling.CoroutineScheduler.runSafely(CoroutineScheduler.kt:586)
+	at app//kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.executeTask(CoroutineScheduler.kt:820)
+	at app//kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(CoroutineScheduler.kt:717)
+	at app//kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(CoroutineScheduler.kt:704)
+</failure>
+  </testcase>
+  <testcase name="cancel before final freeze keeps bootstrap original and releases new root lock" classname="com.example.chatbar.desktop.DesktopMergeImportServiceTest" time="0.021">
+    <failure message="com.example.chatbar.desktop.backup.DesktopFullBackupSource$Refusal: FULL_BACKUP_SOURCE_ENTITY_SCHEMA" type="com.example.chatbar.desktop.backup.DesktopFullBackupSource$Refusal">com.example.chatbar.desktop.backup.DesktopFullBackupSource$Refusal: FULL_BACKUP_SOURCE_ENTITY_SCHEMA
+	at app//com.example.chatbar.desktop.backup.DesktopFullBackupSource.verify(DesktopFullBackupSource.kt:127)
+	at app//com.example.chatbar.desktop.backup.DesktopFullBackupStaging$Companion$prepare$2.invokeSuspend(DesktopFullBackupStaging.kt:37)
+	at app//kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at app//kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at app//kotlinx.coroutines.internal.LimitedDispatcher$Worker.run(LimitedDispatcher.kt:124)
+	at app//kotlinx.coroutines.scheduling.TaskImpl.run(Tasks.kt:89)
+	at app//kotlinx.coroutines.scheduling.CoroutineScheduler.runSafely(CoroutineScheduler.kt:586)
+	at app//kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.executeTask(CoroutineScheduler.kt:820)
+	at app//kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(CoroutineScheduler.kt:717)
+	at app//kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(CoroutineScheduler.kt:704)
+</failure>
+  </testcase>
+  <testcase name="stale preview preserves newer computer data and cannot publish" classname="com.example.chatbar.desktop.DesktopMergeImportServiceTest" time="0.04">
+    <failure message="com.example.chatbar.desktop.backup.DesktopFullBackupSource$Refusal: FULL_BACKUP_SOURCE_ENTITY_SCHEMA" type="com.example.chatbar.desktop.backup.DesktopFullBackupSource$Refusal">com.example.chatbar.desktop.backup.DesktopFullBackupSource$Refusal: FULL_BACKUP_SOURCE_ENTITY_SCHEMA
+	at app//com.example.chatbar.desktop.backup.DesktopFullBackupSource.verify(DesktopFullBackupSource.kt:127)
+	at app//com.example.chatbar.desktop.backup.DesktopFullBackupStaging$Companion$prepare$2.invokeSuspend(DesktopFullBackupStaging.kt:37)
+	at app//kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at app//kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at app//kotlinx.coroutines.internal.LimitedDispatcher$Worker.run(LimitedDispatcher.kt:124)
+	at app//kotlinx.coroutines.scheduling.TaskImpl.run(Tasks.kt:89)
+	at app//kotlinx.coroutines.scheduling.CoroutineScheduler.runSafely(CoroutineScheduler.kt:586)
+	at app//kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.executeTask(CoroutineScheduler.kt:820)
+	at app//kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(CoroutineScheduler.kt:717)
+	at app//kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(CoroutineScheduler.kt:704)
+</failure>
+  </testcase>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

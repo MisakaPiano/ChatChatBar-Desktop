@@ -1,0 +1,24 @@
+[
+  {
+    "id": "5ea3fb85-d2b4-49c3-ba66-d6156ddd9d46",
+    "messageId": "p8s7-a-assistant",
+    "messageVersionId": "p8s7-version-1",
+    "anchorId": "d9d9782b-257d-4c7b-be91-336ba92c1557",
+    "characterId": "p8s7-structured-alice",
+    "characterName": "Alice 合成测试",
+    "durationMs": 31608,
+    "audioPath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r3-20261020\\environments\\p8s7-profile\\ChatChatBarDesktop\\audio\\generated\\p8s7-session-a\\412d0e0d-8d8e-4b09-9685-5e9af95e1867.mp3",
+    "createdAt": 1792461441682
+  },
+  {
+    "id": "8edb6b78-57d2-497a-8853-556323447fb5",
+    "messageId": "p8s7-a-assistant",
+    "messageVersionId": "p8s7-version-1",
+    "anchorId": "d9d9782b-257d-4c7b-be91-336ba92c1557",
+    "characterId": "p8s7-structured-alice",
+    "characterName": "Alice 合成测试",
+    "durationMs": 31608,
+    "audioPath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r3-20261020\\environments\\p8s7-profile\\ChatChatBarDesktop\\audio\\generated\\p8s7-session-a\\a1df4e04-fc23-402d-ba5a-08daa06c5d01.mp3",
+    "createdAt": 1792461394738
+  }
+]

@@ -1,0 +1,10 @@
+{
+  "base": "cac1a811a21e6f99181c716e438b6b8df8dbf4f7",
+  "headBeforeCommit": "8fd4f337b20d566b4104263c6c8461557de36fdb",
+  "mainDelta": [
+    "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotInspector.kt",
+    "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupMapping.kt"
+  ],
+  "baselineUnchanged": true,
+  "historicalEvidenceUnchanged": true
+}

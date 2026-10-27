@@ -1,3 +1,13 @@
+# 当前 Desktop 路线 / 2026-10-28
+
+持续接手先查 [207 当前起点与未交付任务总账](docs/desktop/207_CONTINUOUS_START_AND_DELIVERY_LEDGER.md)，再核对 live Git/包身份；旧聊天或 Project 上传截点不能冒充最新状态。
+
+当前用户协作规则：保持各对话现有模型；简单工作可用 medium，复杂工作最高 high，不使用 xhigh/max/ultra。确需人工决定或操作时一次说明动作、预期结果和独立推进项；5 分钟无回复视为用户暂时不在，沉默不算批准或验收，继续不依赖该答复的已授权工作。截图/电脑控制等具体步骤反复失败时转交用户，不反复重试或挂起整个项目。可随时只读查阅 `H:\CCB-Studio-Suite` 并直接询问 Studio 相关对话；区分固定参考与未发布工作区，不复制身份、密钥或验收结论。
+
+用户长期程序根 `H:\ChatChatBar-Desktop-App` 仅在普通候选成熟、隔离生命周期验证完成后正式安装；此前不创建、不放中间版、故障/探针、假资料/凭据、缓存、测试日志或旧包。最终根只留当前程序和持续升级必需管理文件，正常数据/凭据机制保全现用资料。发布准备持续推进，公开 pre-release 需真实用户验收结果，不能把错误弹窗确认或沉默当验收。
+
+用户最新指令见 [204](docs/desktop/204_STUDIO_NSIS_ROUTE_SWITCH_20261028.md)：Studio式 NSIS 为 Preview 主线；MSI 无限期搁置并最大程度回收废弃资源；不再需要的虚拟机彻底退役，不默认保留。原执行者仅交接，A独占源码，B负责回收。用户目标优先于审查助手最终建议；已有P11、数据与Prompt边界保留。
+
 # Desktop 用户授权入口
 
 Desktop 工作先读 [权限边界](docs/desktop/USER_AUTHORITY_AND_PROJECT_REVIEW_BOUNDARY.md)与[开发原则](docs/desktop/01_PROJECT_INSTRUCTIONS.md)。用户决定范围；Project 只后置阶段性审查，未经用户采纳的新限制仅为建议，不撤销、收窄或暂停已有授权。Codex 按已有授权跨 phase 连续定位、修复、必要验证并推进到 Preview，不在每个 checkpoint 等 Project 批准。当前交付授权已包含必要测试，下面 Android 测试默认规则不要求 Desktop 对同一授权反复确认。

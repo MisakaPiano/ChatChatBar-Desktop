@@ -1,0 +1,44 @@
+{
+  "baseline": "5e76a9cb841736bbbf3499a2e35e5789af4c5ca8",
+  "exception": "ace632cce58a3b5a57711e31990165d6a14e1c0f",
+  "exceptionDecision": "D-036",
+  "normalization": "UTF-8, LF; no trim for literal hashes",
+  "constants": {
+    "GENERAL_SYSTEM_PROMPT": {
+      "source": "5e76a9cb841736bbbf3499a2e35e5789af4c5ca8",
+      "sha256": "5e4d148a59982f1323c3209d348b90eb896c541b4e6d57d2639b3d1af0a7df5f"
+    },
+    "GENERAL_CREATOR_IDENTITY_SYSTEM_PROMPT": {
+      "source": "5e76a9cb841736bbbf3499a2e35e5789af4c5ca8",
+      "sha256": "276d55c9595cba93fcfa5381d57bedb716248f7ef158c44d10911a0727592946"
+    },
+    "GENERAL_FIRST_ACK_ASSISTANT_PROMPT": {
+      "source": "5e76a9cb841736bbbf3499a2e35e5789af4c5ca8",
+      "sha256": "266eb554f7e92e3a24637381b7a4c4b47ac1403becf4e5e6e475a5fd2b2ef373"
+    },
+    "GENERAL_CREATIVE_CONTRACT_USER_PROMPT": {
+      "source": "5e76a9cb841736bbbf3499a2e35e5789af4c5ca8",
+      "sha256": "2c588e73458b59d2e784bdb9988b36bf0e1be634b190ed755d5472f87430a5ec"
+    },
+    "GENERAL_CONTRACT_CONFIRMATION_ASSISTANT_PROMPT": {
+      "source": "ace632cce58a3b5a57711e31990165d6a14e1c0f",
+      "sha256": "72955d37970cc00d9da570465df54ee0f7efd4d7443fa01ef8a3a74359cfacaf",
+      "baselineSha256": "1ef09bb447e6faa6f071ccd5caf7d0c6c303da506178a6b2e277d4709e77c05b"
+    },
+    "GENERAL_CONTEXT_APPROVAL_ASSISTANT_PROMPT": {
+      "source": "5e76a9cb841736bbbf3499a2e35e5789af4c5ca8",
+      "sha256": "dfc5de1759a49165fa835d6c342047d24b9c5eb77b67a6bbcea92a3f59004cfa"
+    },
+    "GENERAL_POST_USER_ACK_ASSISTANT_PROMPT": {
+      "source": "5e76a9cb841736bbbf3499a2e35e5789af4c5ca8",
+      "sha256": "0d0fc6ae8a8f0dd68dcf0e70c776f0762ffa3b63b06d17d66c69230fd34d0255"
+    },
+    "GENERAL_POST_USER_IDENTITY_REMINDER_USER_PROMPT": {
+      "source": "5e76a9cb841736bbbf3499a2e35e5789af4c5ca8",
+      "sha256": "cfb08eb5c20acbd12c5fede1360e3980e8f3ec60d5a979a1ff74f6322197de3a"
+    }
+  },
+  "repairSystemSha256": "dcbd48f4cb16d035b48f16bb70f1d3048725def875b1c5da6075247c88a218de",
+  "repairMarkerSha256": "93b1c0e87ec4d6b0183315343af6e0889f1e20a2ce493e5988d05efdc3997d83",
+  "repairSourceBlockSha256": "d981742c5ea4dd2c47630062ca2b6b53d258d6072a5b097070328a1687c1610e"
+}

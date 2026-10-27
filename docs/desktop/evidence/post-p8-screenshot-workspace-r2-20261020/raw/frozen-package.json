@@ -1,0 +1,25 @@
+{
+  "utc": "2026-10-20T15:31:15.644651+00:00",
+  "sourceCommit": "3ece1366b142210f2db7c61a9c479cd156534b69",
+  "runtimeImage": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-workspace-r2-20261020\\windows-frozen-3ece1366\\runtime-image",
+  "manifestSha256": "822797ac24fa6211bf4c764c82c29d746c9e8e22730888d768877e9708cc9af7",
+  "verifiedFiles": 212,
+  "copyAndRehash": "PASS",
+  "oldPackages": [
+    {
+      "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-manual-reliability-r1-20261020\\windows-frozen-60cc44d0",
+      "verifiedFiles": 212,
+      "manifestSha256": "f912b60179d7b31debafb363b221175210b597aac84a97beb3d79f11f824c10f",
+      "status": "UNCHANGED"
+    },
+    {
+      "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-audio-maintenance-r1-20261020\\windows-frozen-694a8bdd",
+      "verifiedFiles": 212,
+      "manifestSha256": "d98691a663275c99aeee2318514db1e528e28c74a71349c232e235cc7f076ed1",
+      "status": "UNCHANGED"
+    }
+  ],
+  "guiStarted": false,
+  "fakeStarted": false,
+  "syntheticGuiRootSeeded": false
+}

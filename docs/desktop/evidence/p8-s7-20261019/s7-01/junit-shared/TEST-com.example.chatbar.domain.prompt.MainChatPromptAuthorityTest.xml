@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.prompt.MainChatPromptAuthorityTest" tests="16" skipped="0" failures="0" errors="0" timestamp="2026-10-19T11:35:26.609Z" hostname="DD1" time="0.001">
+  <properties/>
+  <testcase name="customSystemOverrideReplacesDefaultMiddle" classname="com.example.chatbar.domain.prompt.MainChatPromptAuthorityTest" time="0.0"/>
+  <testcase name="currentTurnRequirementsWithoutFormatCardUseLengthOnly" classname="com.example.chatbar.domain.prompt.MainChatPromptAuthorityTest" time="0.0"/>
+  <testcase name="sectionHeadingsAndConstantsAreExposed" classname="com.example.chatbar.domain.prompt.MainChatPromptAuthorityTest" time="0.0"/>
+  <testcase name="roleplaySpeakerFormatNormalizesAndDeduplicatesNames" classname="com.example.chatbar.domain.prompt.MainChatPromptAuthorityTest" time="0.0"/>
+  <testcase name="blankContinueBuilderTrimsAuthoritativeLiteral" classname="com.example.chatbar.domain.prompt.MainChatPromptAuthorityTest" time="0.0"/>
+  <testcase name="userToolSuffixBlockPreservesFormatting" classname="com.example.chatbar.domain.prompt.MainChatPromptAuthorityTest" time="0.0"/>
+  <testcase name="currentTurnRequirementsWithFormatCardKeepContentBeforeLength" classname="com.example.chatbar.domain.prompt.MainChatPromptAuthorityTest" time="0.0"/>
+  <testcase name="replyLengthLanguageAndTailBuildersPreserveInputs" classname="com.example.chatbar.domain.prompt.MainChatPromptAuthorityTest" time="0.001"/>
+  <testcase name="postHistoryBuilderReturnsAuthoritativeTemplate" classname="com.example.chatbar.domain.prompt.MainChatPromptAuthorityTest" time="0.0"/>
+  <testcase name="randomNumberSuffixSupportsSingleAndMultipleValues" classname="com.example.chatbar.domain.prompt.MainChatPromptAuthorityTest" time="0.0"/>
+  <testcase name="originalTokenExpandsOnlyDefaultMiddle" classname="com.example.chatbar.domain.prompt.MainChatPromptAuthorityTest" time="0.0"/>
+  <testcase name="ccbHandshakeAndTailLiteralsAreExposedAndNonBlank" classname="com.example.chatbar.domain.prompt.MainChatPromptAuthorityTest" time="0.0"/>
+  <testcase name="ragChatMemoryUsageNoteIsExposed" classname="com.example.chatbar.domain.prompt.MainChatPromptAuthorityTest" time="0.0"/>
+  <testcase name="systemPromptDefaultUsesAuthoritativeMiddle" classname="com.example.chatbar.domain.prompt.MainChatPromptAuthorityTest" time="0.0"/>
+  <testcase name="continuityNoticeIsOptInAndRequiresFormatCard" classname="com.example.chatbar.domain.prompt.MainChatPromptAuthorityTest" time="0.0"/>
+  <testcase name="blankSystemOverrideUsesDefault" classname="com.example.chatbar.domain.prompt.MainChatPromptAuthorityTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

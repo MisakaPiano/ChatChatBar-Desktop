@@ -1,0 +1,5 @@
+raw/** -text -whitespace
+integration/** -text -whitespace
+*.json -text -whitespace
+*.log -text -whitespace
+tools/** -text -whitespace

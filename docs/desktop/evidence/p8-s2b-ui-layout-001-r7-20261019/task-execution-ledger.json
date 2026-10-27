@@ -1,0 +1,115 @@
+{
+  "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:createDistributable --rerun-tasks",
+  "tasks": [
+    {
+      "task": ":downloadWix",
+      "status": "SKIPPED"
+    },
+    {
+      "task": ":unzipWix",
+      "status": "EXECUTED"
+    },
+    {
+      "task": ":desktopApp:checkRuntime",
+      "status": "EXECUTED"
+    },
+    {
+      "task": ":desktopApp:checkKotlinGradlePluginConfigurationErrors",
+      "status": "SKIPPED"
+    },
+    {
+      "task": ":desktopApp:convertXmlValueResourcesForMain",
+      "status": "NO-SOURCE"
+    },
+    {
+      "task": ":desktopApp:copyNonXmlValueResourcesForMain",
+      "status": "NO-SOURCE"
+    },
+    {
+      "task": ":desktopApp:prepareComposeResourcesTaskForMain",
+      "status": "NO-SOURCE"
+    },
+    {
+      "task": ":desktopApp:generateResourceAccessorsForMain",
+      "status": "SKIPPED"
+    },
+    {
+      "task": ":desktopApp:generateActualResourceCollectorsForMain",
+      "status": "SKIPPED"
+    },
+    {
+      "task": ":desktopApp:generateComposeResClass",
+      "status": "SKIPPED"
+    },
+    {
+      "task": ":sharedCore:checkKotlinGradlePluginConfigurationErrors",
+      "status": "SKIPPED"
+    },
+    {
+      "task": ":sharedCore:compileKotlin",
+      "status": "EXECUTED"
+    },
+    {
+      "task": ":sharedCore:compileJava",
+      "status": "NO-SOURCE"
+    },
+    {
+      "task": ":sharedCore:processResources",
+      "status": "NO-SOURCE"
+    },
+    {
+      "task": ":sharedCore:classes",
+      "status": "UP-TO-DATE"
+    },
+    {
+      "task": ":sharedCore:jar",
+      "status": "EXECUTED"
+    },
+    {
+      "task": ":desktopApp:compileKotlin",
+      "status": "EXECUTED"
+    },
+    {
+      "task": ":desktopApp:compileJava",
+      "status": "NO-SOURCE"
+    },
+    {
+      "task": ":desktopApp:assembleMainResources",
+      "status": "EXECUTED"
+    },
+    {
+      "task": ":desktopApp:syncDesktopModelCatalogResources",
+      "status": "EXECUTED"
+    },
+    {
+      "task": ":desktopApp:processResources",
+      "status": "EXECUTED"
+    },
+    {
+      "task": ":desktopApp:classes",
+      "status": "EXECUTED"
+    },
+    {
+      "task": ":desktopApp:createRuntimeImage",
+      "status": "EXECUTED"
+    },
+    {
+      "task": ":desktopApp:jar",
+      "status": "EXECUTED"
+    },
+    {
+      "task": ":desktopApp:prepareAppResources",
+      "status": "NO-SOURCE"
+    },
+    {
+      "task": ":desktopApp:unpackDefaultComposeDesktopJvmApplicationResources",
+      "status": "EXECUTED"
+    },
+    {
+      "task": ":desktopApp:createDistributable",
+      "status": "EXECUTED"
+    }
+  ],
+  "sourceCompileExecuted": true,
+  "testsExecuted": false
+}

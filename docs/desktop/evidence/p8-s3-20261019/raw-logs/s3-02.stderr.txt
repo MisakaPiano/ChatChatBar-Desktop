@@ -1,0 +1,17 @@
+e: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/voice/VoiceRepositoryPersistenceTest.kt:16:68 No value passed for parameter 'createdAt'.
+e: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/voice/VoiceRepositoryPersistenceTest.kt:16:68 No value passed for parameter 'updatedAt'.
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':sharedCore:compileTestKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.btapi.BuildToolsApiCompilationWork
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (Powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 21s

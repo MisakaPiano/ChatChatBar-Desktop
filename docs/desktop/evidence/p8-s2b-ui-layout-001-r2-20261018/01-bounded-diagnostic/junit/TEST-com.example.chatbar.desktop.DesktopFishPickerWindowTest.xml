@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFishPickerWindowTest" tests="1" skipped="0" failures="1" errors="0" timestamp="2026-10-18T13:37:48.399Z" hostname="DD1" time="15.778">
+  <properties/>
+  <testcase name="public main WindowScope supplies exact owner through maximize restore reopen and parent close" classname="com.example.chatbar.desktop.DesktopFishPickerWindowTest" time="15.778">
+    <failure message="kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 15000 ms" type="kotlinx.coroutines.TimeoutCancellationException">kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 15000 ms
+	at _COROUTINE._BOUNDARY._(CoroutineDebugging.kt:42)
+	at com.example.chatbar.desktop.DesktopFishPickerWindowTest.frames(DesktopFishPickerWindowTest.kt:34)
+	at com.example.chatbar.desktop.DesktopFishPickerWindowTest$public main WindowScope supplies exact owner through maximize restore reopen and parent close$1$await$2.invokeSuspend(DesktopFishPickerWindowTest.kt:116)
+	at com.example.chatbar.desktop.DesktopFishPickerWindowTest$public main WindowScope supplies exact owner through maximize restore reopen and parent close$1.invokeSuspend(DesktopFishPickerWindowTest.kt:136)
+Caused by: kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 15000 ms
+	at kotlinx.coroutines.TimeoutKt.TimeoutCancellationException(Timeout.kt:189)
+	at kotlinx.coroutines.TimeoutCoroutine.run(Timeout.kt:157)
+	at kotlinx.coroutines.EventLoopImplBase$DelayedRunnableTask.run(EventLoop.common.kt:505)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.DefaultExecutor.run(DefaultExecutor.kt:105)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+</failure>
+  </testcase>
+  <system-out><![CDATA[FISH_GEOMETRY phase=before-maximize placement=Floating extendedState=null bounds=null content=560 x 437 monitor=null screenInsets=null dpiTransform=null ownerIdentity=607218373 capturedIdentity=607218373 ownerEnabled=false created=1 disposed=0
+FISH_GEOMETRY phase=after-maximize-observation placement=Floating extendedState=0 bounds=java.awt.Rectangle[x=48,y=48,width=600,height=500] content=560 x 437 monitor=java.awt.Rectangle[x=0,y=0,width=1920,height=1080] screenInsets=java.awt.Insets[top=0,left=0,bottom=40,right=0] dpiTransform=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] ownerIdentity=607218373 capturedIdentity=607218373 ownerEnabled=false created=1 disposed=0
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

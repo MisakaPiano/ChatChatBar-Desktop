@@ -53,7 +53,7 @@ class DesktopB1CIntegrationTest {
             remember { DesktopAutomaticBackupSettingsController(c.automaticBackupRuntime, scope) },
             c.characterEditorController, c.formatCardEditorController, c.worldBookEditorController,
             c.uiLanguageController, c.appearanceController, c.connectionTestController,
-            c.novelAiSettingsController, c.novelAiStudioController, {})
+            c.novelAiSettingsController, c.novelAiStudioController, c.fullBackupController, {})
     }
     private suspend fun seeded(): FinalProductDesignFixture {
         val f = FinalProductDesignFixture(); f.initialize(false)

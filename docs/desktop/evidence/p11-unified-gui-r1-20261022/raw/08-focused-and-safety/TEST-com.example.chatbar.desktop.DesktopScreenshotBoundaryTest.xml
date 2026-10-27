@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopScreenshotBoundaryTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-21T17:33:31.127Z" hostname="DD1" time="0.365">
+  <properties/>
+  <testcase name="audio is excluded from selection and rejected before preview resource access" classname="com.example.chatbar.desktop.DesktopScreenshotBoundaryTest" time="0.02"/>
+  <testcase name="fit window can go below manual minimum for budget valid extreme PNG without changing export" classname="com.example.chatbar.desktop.DesktopScreenshotBoundaryTest" time="0.345"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

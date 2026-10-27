@@ -1,0 +1,35 @@
+{
+  "scope": "Synthetic structured card only",
+  "cardId": "t2-structured",
+  "editMode": "STRUCTURED",
+  "fileSha256": "13995d2a8136002983e4d42b7caf6522ea0de34bb3024537aa017c5834826b44",
+  "persons": [
+    {
+      "id": "t2-structured-alice",
+      "name": "Alice 合成测试",
+      "fishAudioVoice": {
+        "referenceId": "r5-voice-mine1",
+        "title": "T2 Synthetic Voice 1",
+        "authorId": null,
+        "authorName": "R5 Fixture",
+        "coverImage": null,
+        "sampleAudio": "https://sample.invalid/not-fetched.mp3",
+        "sampleText": "Synthetic example only",
+        "visibility": "private",
+        "languages": [
+          "zh"
+        ],
+        "tags": [
+          "synthetic"
+        ]
+      }
+    },
+    {
+      "id": "t2-structured-bob",
+      "name": "Bob 合成测试",
+      "fishAudioVoice": null
+    }
+  ],
+  "originalCardAndPersonIdsPreserved": true,
+  "onlyAliceBound": true
+}

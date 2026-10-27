@@ -1,0 +1,192 @@
+{
+  "kind": "R6B single-gate raw geometry evidence; manifest excludes itself",
+  "base": "33cf1beeb5dfcb655e261a6fadff7610310af522",
+  "memberCount": 37,
+  "files": [
+    {
+      "path": ".gitattributes",
+      "bytes": 8,
+      "sha256": "705fd4d6451a31d36b3df7de96f83f30ac976c9b4a6d1e51671d8e2f33e2d0da"
+    },
+    {
+      "path": "01-pager-geometry-single-method/command.txt",
+      "bytes": 271,
+      "sha256": "94809eb2086e7f8dedc11a91492a8805c2f5e52bda3e7daa934162ee9fc03f31"
+    },
+    {
+      "path": "01-pager-geometry-single-method/gradle.stderr.log",
+      "bytes": 378,
+      "sha256": "c5f93bf55c0e29d43cd5ca9a4afeb8ee9301df02d6b1ce8d4c0714aa461f1fdd"
+    },
+    {
+      "path": "01-pager-geometry-single-method/gradle.stdout.log",
+      "bytes": 2376,
+      "sha256": "c1a11d69388d1a2073ac152dbfdd6572393ba653d31fe62da378f105082fb05f"
+    },
+    {
+      "path": "01-pager-geometry-single-method/junit/TEST-com.example.chatbar.desktop.DesktopFishPickerNativeUxTest.xml",
+      "bytes": 28688,
+      "sha256": "389e0cb1e0ca8633f59bab9e1c51f83c7ec5fed2b53904a19234eb7e45ce3868"
+    },
+    {
+      "path": "01-pager-geometry-single-method/process.json",
+      "bytes": 110,
+      "sha256": "aaa671c63b0201891fa9e4bc6e631969005d199b42665834b00276e0da204955"
+    },
+    {
+      "path": "01-pager-geometry-single-method/resources.jsonl",
+      "bytes": 2548,
+      "sha256": "1f32a10737bba7cfeea39328bd5cfe79dfd295e815e52c384208bbe8cb05b622"
+    },
+    {
+      "path": "01-pager-geometry-single-method/stage.json",
+      "bytes": 678,
+      "sha256": "ba66b6e025001963a775e82cad9623deb3a1bd8c2ceaedf438b7a4c27b79c54c"
+    },
+    {
+      "path": "baseline-sources/DesktopFishPickerNativeUxTest.kt",
+      "bytes": 37838,
+      "sha256": "991a2c839db3dd09ca9a2d1c622dd496d57a444bee33fb51a8ad1a546fe78a3b"
+    },
+    {
+      "path": "baseline-sources/DesktopFishPickerPresentation.kt",
+      "bytes": 17883,
+      "sha256": "194d6b7fd2e270ca29eb90734303c8a7898825ecf8939cc60ab266e8d16c4917"
+    },
+    {
+      "path": "baseline-sources/DesktopFishPickerWindow.kt",
+      "bytes": 4280,
+      "sha256": "a003e7ad1e31a0c356df1a4291cc7eb1e4eb9fa958a0a6353ee6a77ac8f88125"
+    },
+    {
+      "path": "DesktopFishField-source-excerpt.txt",
+      "bytes": 605,
+      "sha256": "a661c4974eab9863a93c68a2f8fa56c2cb2340caf1f174b5690afbad1619ec12"
+    },
+    {
+      "path": "diagnostic-identity.json",
+      "bytes": 403,
+      "sha256": "926f551ef321cbc38f6ef8450f6e81ae1f3188cea34f3d66a8a0c0f91cb1b7cd"
+    },
+    {
+      "path": "diagnostic-only.patch",
+      "bytes": 2969,
+      "sha256": "bed1cb54b65ef3f704ac88e609cc75cc230f3baddebc82dd9d05c05f5cfa9307"
+    },
+    {
+      "path": "diagnostic-source.kt",
+      "bytes": 37954,
+      "sha256": "e7bffc1deed1ae9f4b2ac992c96667fa774dbba68eb6a86a925e9a3d7ea2e2ea"
+    },
+    {
+      "path": "field-source-identity.json",
+      "bytes": 552,
+      "sha256": "a8eb1556dfd128c11e69984158e0fff53c7d1877c40db30680c84204ca5a378c"
+    },
+    {
+      "path": "freeze-evidence-initial.py",
+      "bytes": 10798,
+      "sha256": "f9128e726383e8f8ebded8d2880f402fe16eb34ed5a916766f3a32e5f2774a73"
+    },
+    {
+      "path": "freeze-evidence.py",
+      "bytes": 10799,
+      "sha256": "89881f7bcd0eccba117102eff810617e5589e88d6cb11d6ef00d935d3295a6d8"
+    },
+    {
+      "path": "geometry-parsed.json",
+      "bytes": 40223,
+      "sha256": "42c75a5c608058297c911452fd2373c95da6bd9cc8e388f658e90931c062e1e4"
+    },
+    {
+      "path": "geometry-raw.jsonl",
+      "bytes": 26649,
+      "sha256": "a5724a8d5f7696905579b3374069ab8d83eb83aa2772c12a9e6030decee390f6"
+    },
+    {
+      "path": "geometry-system-out.txt",
+      "bytes": 25529,
+      "sha256": "f992e4680cd3680f58825785285becc859387eaf7a3f338d4d31dd8a0d554cad"
+    },
+    {
+      "path": "history-preservation.json",
+      "bytes": 978,
+      "sha256": "260d7f803d11e1d74a823020da7d27cddd63355b7e913c2e7f645de1a6200424"
+    },
+    {
+      "path": "post-gate-resources.json",
+      "bytes": 139,
+      "sha256": "7a1a03409786f8ebd48b0806dd9a9a12fbfede313eb5d4dc5313391e229cf5bf"
+    },
+    {
+      "path": "preflight-resources.json",
+      "bytes": 163,
+      "sha256": "8205619a1c37390774e332b4437de30f147dbff5717084040fe6a737b42cb2c2"
+    },
+    {
+      "path": "preflight.json",
+      "bytes": 1435,
+      "sha256": "c523b080b94cd07f4fe2525a210c53ecaf0ccae40c3b64361def4a9e27171b57"
+    },
+    {
+      "path": "raw-diff-check.log",
+      "bytes": 180,
+      "sha256": "25e9996a96159deeca40dc75cbed70bbc2f27251439b6f0e49174966c891155f"
+    },
+    {
+      "path": "README.md",
+      "bytes": 8247,
+      "sha256": "65e748f68c51fb6fabb4226601483a9765df8c8ed569bf1d0ee655c26b38316c"
+    },
+    {
+      "path": "requests-cleanup.json",
+      "bytes": 579,
+      "sha256": "ea31e36638d44430db1a3a7aa6aa2d23f467814ff16873c0a8084a144ee67e5d"
+    },
+    {
+      "path": "result.json",
+      "bytes": 3500,
+      "sha256": "3470380a12998323e82ee7971b00637b6b185047c2c783a0c78547e645ab0437"
+    },
+    {
+      "path": "root-cause.json",
+      "bytes": 4605,
+      "sha256": "604f887c679b74588a00d42c55c50e5948be05eaf5e6c15ff4ba58a7958d1530"
+    },
+    {
+      "path": "run-stage.ps1",
+      "bytes": 3081,
+      "sha256": "f7dbfe555dd26eddcfe2a99378e1df1f4906ebd93a6d505a0b3e36c95a4249a4"
+    },
+    {
+      "path": "skill-review.json",
+      "bytes": 247,
+      "sha256": "47db64508d21138081a67f6698cbb30d7684a4a6fedbf76997fe08a455f1fdd8"
+    },
+    {
+      "path": "source-preservation.json",
+      "bytes": 1318,
+      "sha256": "3ecd5b84b1fafa9fe5dca27acdf6ed32f2b711824a4be77b1f9abc8455154a2c"
+    },
+    {
+      "path": "stage-summary.json",
+      "bytes": 742,
+      "sha256": "2c7a19e1389b8f5b942993dd134d8d0643bc75bd230878fe3ede7cea21e902e1"
+    },
+    {
+      "path": "static-validation.json",
+      "bytes": 255,
+      "sha256": "10df4772412587dacce6c50ad9896767745c4b1b9ca2d30ba7db91a321d835a3"
+    },
+    {
+      "path": "summarize-stages.py",
+      "bytes": 1543,
+      "sha256": "8e030610b413759836e6ee3f637f119793141319ba380a9749616c4889dc74ac"
+    },
+    {
+      "path": "tooling-note.json",
+      "bytes": 498,
+      "sha256": "ccf4ab0861fb21e7f0dc9b1f553f209ce8d695906a389c025120d1bc8f8cf5b9"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+LR5-SYNTHETIC-1
+RECEIPT
+4
+choice=NEW
+generation=2
+manifest=4c80d1f677d8642866f92eb2cde54176543fba2fdef808d65509acfa3e1cd150
+participants=data|key1|key2|voice|moment
+80c26c372f65750186045b3c0a6fa9f1e3ad90bff6b2b6755b502ca4f542a139

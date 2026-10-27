@@ -1,0 +1,31 @@
+{
+  "packageFilesReverified": 212,
+  "sourceCommit": "008343bb26d2eb76c23cae9b98132af828a9f447",
+  "voiceCount": 5,
+  "voiceIdsAndAudioHashesRetained": true,
+  "sessionSettings": {
+    "audiobookModeEnabled": false,
+    "voiceLanguage": "English"
+  },
+  "syntheticCardsUnchanged": true,
+  "launcherJvmExitCodes": [
+    0,
+    0
+  ],
+  "runningLockExit": 75,
+  "postExitLockExit": 0,
+  "fakeExit": 0,
+  "fakeCleanup": {
+    "privateKeyDeleted": true,
+    "trustStoreDeleted": true,
+    "serverDrained": true
+  },
+  "fakeEndpointRequests": 0,
+  "fakeEventsFileExists": false,
+  "realFishGET": 0,
+  "realFishTTS": 0,
+  "partFiles": 0,
+  "previewMP3Files": 0,
+  "initialAndRestartLocksPreserved": true,
+  "noFurtherRestart": true
+}

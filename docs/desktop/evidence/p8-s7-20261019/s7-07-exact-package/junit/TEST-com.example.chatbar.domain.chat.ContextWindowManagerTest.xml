@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.chat.ContextWindowManagerTest" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-10-19T12:01:27.898Z" hostname="DD1" time="0.008">
+  <properties/>
+  <testcase name="getPromptMessageGroups_whenLatestIsSynthetic_movesLastContextMessageAfterSystemPrompt" classname="com.example.chatbar.domain.chat.ContextWindowManagerTest" time="0.002"/>
+  <testcase name="groupPolicy_preservesOpeningAssistantAndConsecutiveUsers" classname="com.example.chatbar.domain.chat.ContextWindowManagerTest" time="0.0"/>
+  <testcase name="openingAssistantCountsAsStandaloneHistoryGroup" classname="com.example.chatbar.domain.chat.ContextWindowManagerTest" time="0.001"/>
+  <testcase name="sourceTurnGrouping_countsAllRepliesInOneTAsOneContextGroup" classname="com.example.chatbar.domain.chat.ContextWindowManagerTest" time="0.002"/>
+  <testcase name="sourceTurnGrouping_systemMessageInsideTurnDoesNotSplitT" classname="com.example.chatbar.domain.chat.ContextWindowManagerTest" time="0.001"/>
+  <testcase name="getMessagesToArchive_whenOverWindow_returnsOlderCompleteGroups" classname="com.example.chatbar.domain.chat.ContextWindowManagerTest" time="0.0"/>
+  <testcase name="getPromptMessageGroups_whenLatestInContext_movesPreviousAfterSystemPrompt" classname="com.example.chatbar.domain.chat.ContextWindowManagerTest" time="0.0"/>
+  <testcase name="sourceTurnGrouping_withTwentyFourTurnsAndWindowFifteenArchivesOnlyT0ThroughT7" classname="com.example.chatbar.domain.chat.ContextWindowManagerTest" time="0.001"/>
+  <testcase name="getRecentMessages_incompleteCurrentUserCountsAsOneGroup" classname="com.example.chatbar.domain.chat.ContextWindowManagerTest" time="0.0"/>
+  <testcase name="getPromptMessageGroups_movesCompletePreviousTurnAfterSystemPrompt" classname="com.example.chatbar.domain.chat.ContextWindowManagerTest" time="0.0"/>
+  <testcase name="getRecentMessages_whenOverWindow_returnsLatestGroupsWithoutSplittingPair" classname="com.example.chatbar.domain.chat.ContextWindowManagerTest" time="0.0"/>
+  <testcase name="adjacentExchangeGrouping_remainsIndependentFromSourceTurns" classname="com.example.chatbar.domain.chat.ContextWindowManagerTest" time="0.0"/>
+  <testcase name="shouldRefreshSystemPrompt_onlyWhenMessageGroupCountExceedsWindow" classname="com.example.chatbar.domain.chat.ContextWindowManagerTest" time="0.0"/>
+  <testcase name="getPromptMessageGroups_whenLatestHasNoPrevious_keepsHistoryEmpty" classname="com.example.chatbar.domain.chat.ContextWindowManagerTest" time="0.0"/>
+  <testcase name="zeroWindow_keepsOnlyPreviousTurnAndArchivesAllOlderGroups" classname="com.example.chatbar.domain.chat.ContextWindowManagerTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,102 @@
+[
+  {
+    "file": "green/arguments.json",
+    "bytes": 1071,
+    "sha256": "3886163a0e2f781990b1c72f4054d7750e3ed6eaed141509e1ff25840ae09f34"
+  },
+  {
+    "file": "green/exit.txt",
+    "bytes": 3,
+    "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+  },
+  {
+    "file": "green/gradle.log",
+    "bytes": 4876,
+    "sha256": "883a178803f08d2e0831fb8392e9e982a24f8b55381e95e0cf6b8ee9f53548ed"
+  },
+  {
+    "file": "green/junit/TEST-com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest.xml",
+    "bytes": 5044,
+    "sha256": "caeacf28864b9e84519e56f3f0ae3418de9fcd3eb9c53537ec845802fd0ddda1"
+  },
+  {
+    "file": "green/junit/TEST-com.example.chatbar.desktop.backup.HistoricalVoiceUpstreamReproductionTest.xml",
+    "bytes": 1283,
+    "sha256": "e94b3b73ce9db06169a42546bf7affa751b049c57fab8efe084ee83608264583"
+  },
+  {
+    "file": "green/junit/TEST-com.example.chatbar.desktop.backup.LargeArchiveAdversarialTest.xml",
+    "bytes": 507,
+    "sha256": "6e48647787b60a871d3515b3cae0d9088a9c1ae54a45346e144f1ec1e07749e2"
+  },
+  {
+    "file": "green/junit/TEST-com.example.chatbar.desktop.backup.LargeArchiveValidationTest.xml",
+    "bytes": 3376,
+    "sha256": "9d2c3a986bd622dd410298b1518053bfd1774daf0508ef1736b41261421f0ef2"
+  },
+  {
+    "file": "green/junit/TEST-com.example.chatbar.desktop.backup.Lr2ResourceIdentityTest.xml",
+    "bytes": 707,
+    "sha256": "27cc5bf624ee1d33076521f4ca13ceaba1947d9f738fc9014754eff9acf9be33"
+  },
+  {
+    "file": "green/junit/TEST-com.example.chatbar.desktop.backup.Lr3VoiceSemanticsTest.xml",
+    "bytes": 1602,
+    "sha256": "49cf503f16476d88f17a2e1b1918479f2989c75f29e8a2de4e27ae0d0fcda7ff"
+  },
+  {
+    "file": "green/junit/TEST-com.example.chatbar.desktop.backup.Lr4ContinuationTest.xml",
+    "bytes": 1470,
+    "sha256": "8e14fed3d0aa56ba58d246be09ce1f84c2c531424b06fabab8c8eaa8fb6ac62a"
+  },
+  {
+    "file": "green/junit/TEST-com.example.chatbar.desktop.backup.Lr4PrivateWitnessTest.xml",
+    "bytes": 793,
+    "sha256": "22f673d772a785570d64b73920c266de4a44c2834edcbd52cfc90559f97698b1"
+  },
+  {
+    "file": "green/junit/TEST-com.example.chatbar.desktop.backup.Official147EntityCompatibilityTest.xml",
+    "bytes": 1619,
+    "sha256": "133bd4ab4d9a7c78b6af09ece9f791c72b6a5c6a57003c51755a395e44630336"
+  },
+  {
+    "file": "green/junit/TEST-com.example.chatbar.desktop.DesktopFullBackupArchiveTest.xml",
+    "bytes": 2495,
+    "sha256": "a4e9dbd013ab8ab8f4e14aa8bf9dae4e2462adf42eb1f1aa5ee9484efeeec7d0"
+  },
+  {
+    "file": "green/junit/TEST-com.example.chatbar.desktop.DesktopSaveSlotInspectorTest.xml",
+    "bytes": 4369,
+    "sha256": "0ec3a2f96e8ebbc170addab866aeaadf57583705f2e3ea01de29b4a1b70acc2e"
+  },
+  {
+    "file": "README.md",
+    "bytes": 1427,
+    "sha256": "daf933d4ec2cfe10fb9a36696e3e72dcdf71d1334b8185807610b4751f65e278"
+  },
+  {
+    "file": "red-executed/arguments.json",
+    "bytes": 585,
+    "sha256": "bed08de89d33607ee32dcfc58623e092b9c416d9513496051ffdb9cc23bc0acd"
+  },
+  {
+    "file": "red-executed/exit.txt",
+    "bytes": 3,
+    "sha256": "f1b2f662800122bed0ff255693df89c4487fbdcf453d3524a42d4ec20c3d9c04"
+  },
+  {
+    "file": "red-executed/gradle.log",
+    "bytes": 6091,
+    "sha256": "0b2408c1942ed569e986575784c4c5630c61bbbb2deeff74118dd2ae3b8a9395"
+  },
+  {
+    "file": "red-executed/junit/TEST-com.example.chatbar.desktop.backup.Official147EntityCompatibilityTest.xml",
+    "bytes": 26408,
+    "sha256": "20efa52213eb13db84df20617d71f3264bc651bd9be783bdd59a03d32d63acae"
+  },
+  {
+    "file": "SOURCE_IDENTITIES.json",
+    "bytes": 4412,
+    "sha256": "89af71843cab19ba7af3d4a6663097a4af303e3d9411258806cdf6ee300e4b14"
+  }
+]

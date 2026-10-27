@@ -1,0 +1,12 @@
+{
+  "before": {
+    "f2-freeform.json": "18b62b1ee945866e23cbe409428d366d486f27ef26bed2e5e25a59371b2313d7",
+    "f2-structured.json": "f8168357a2396e43dd9d678c4eae43d631e9962ac83ccf115ec20802427fbdbb"
+  },
+  "after": {
+    "f2-freeform.json": "18b62b1ee945866e23cbe409428d366d486f27ef26bed2e5e25a59371b2313d7",
+    "f2-structured.json": "f8168357a2396e43dd9d678c4eae43d631e9962ac83ccf115ec20802427fbdbb"
+  },
+  "bothCardsUnchanged": true,
+  "method": "SHA-256 of two named synthetic cards only; no real root or protected user file read"
+}

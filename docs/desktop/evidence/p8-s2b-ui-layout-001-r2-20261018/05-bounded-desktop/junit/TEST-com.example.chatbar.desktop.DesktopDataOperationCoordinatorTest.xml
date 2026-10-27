@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest" tests="14" skipped="0" failures="0" errors="0" timestamp="2026-10-18T13:43:19.656Z" hostname="DD1" time="0.05">
+  <properties/>
+  <testcase name="cancelled waiters do not leak admission state" classname="com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest" time="0.002"/>
+  <testcase name="pending maintenance drains existing operations and blocks new admission" classname="com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest" time="0.002"/>
+  <testcase name="identity marker supports A B A and does not admit unrelated coroutine" classname="com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest" time="0.003"/>
+  <testcase name="close drains in flight work and permits its nested calls" classname="com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest" time="0.002"/>
+  <testcase name="cancelled close waiter does not prevent later close" classname="com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest" time="0.001"/>
+  <testcase name="structured child remains covered until outer registration completes" classname="com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest" time="0.004"/>
+  <testcase name="JsonFileStorage preserves per entity concurrency and serialization" classname="com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest" time="0.013"/>
+  <testcase name="restart seal permanently rejects queued and future operations" classname="com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest" time="0.002"/>
+  <testcase name="independent normal operations overlap" classname="com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest" time="0.002"/>
+  <testcase name="exceptions release normal and exclusive registrations" classname="com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest" time="0.001"/>
+  <testcase name="normal upgrade and nested exclusive are rejected" classname="com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest" time="0.002"/>
+  <testcase name="JsonFileStorage callback can make nested cross entity access while maintenance waits" classname="com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest" time="0.01"/>
+  <testcase name="nested normal entry survives pending maintenance and IO context" classname="com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest" time="0.002"/>
+  <testcase name="exclusive waiters run FIFO without starvation" classname="com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

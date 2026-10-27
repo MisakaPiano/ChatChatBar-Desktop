@@ -7,12 +7,25 @@ description: Maintain and diagnose ChatBar model resolution, OpenAI-compatible r
 
 Separate model selection, request construction, transport, and output parsing. A successful HTTP call can still fail at stream or protocol parsing.
 
+- Desktop memory/RAG uses shared `MemoryRagTextClient` and `OpenAiStreamingTransport.streamMemoryRag`, through the existing isolated auxiliary envelope. Android adapts AiTaskRun without a second request builder; its constructor factories live in `AndroidMemoryAiGatewayFactory.kt` and `AndroidRetrievalPlannerFactory.kt`, avoiding JVM facade collisions with shared helpers in `MemoryAiGateway.kt`/`RetrievalPlanner.kt`. Desktop text has a 1 MiB response budget; refusal/cancel/budget failures are terminal. `DesktopEmbeddingGateway` bounds and indexes responses, verifies protected configuration, disables redirects, and marks the body one-shot to prevent HTTP 503/408 replay. Both transports close and join at app shutdown.
+
+## Shared isolated format repair transport
+
+- `OpenAiStreamingTransport.streamFormatRepair` delegates to `FormatRepairAuxiliaryTransport` and alone assembles FORMAT_REPAIR/REPAIR's frozen eight messages from rules plus full text. It reuses the existing client, parser, serializer and refusal policy; `streamMainChat` remains unchanged.
+- Repair uses isolated parameters/thinking-off, 600-second socket and meaningful-output inactivity timeouts, no absolute call deadline, redirects/authenticator retries/connection retries disabled. Heartbeats and usage do not refresh inactivity. Reasoning is only timeout/empty-result evidence, not emitted repair text.
+- `StreamEvent.Error` preserves shared failure types; `AuxiliaryProtocolException` distinguishes malformed SSE, early EOF and unconfirmed finish reasons. Observed transport failure after finish is still an error. A bounded finish grace retains trailing usage. Coroutine cancellation cancels EventSource without inventing user Stop or persistence.
+- `FormatRepairAuxiliaryTransportTest` uses the B1 golden and MockWebServer; its localhost TLS identity is generated at runtime with the current JDK keytool, loaded into memory, and removed from the dedicated temporary directory in finally. No fixed private-key fixture is tracked. Short timing/client seams are internal; no UI, task coordinator or notice strategy is implemented here.
+
 ## Desktop linked image understanding
 
 - Shared `domain/chat/ImageUnderstandingService.kt` owns direct-image vs linked-vision resolution, description indexing and unavailable/terminal behavior. Android injects `StreamingChatService::describeImageStreaming`; Desktop injects `DesktopAuxiliaryImageUnderstanding`, consuming shared GENERAL envelope/image Prompt and `ImageDescriptionRequestPolicy.forImageDescriptionRequest`.
 - Desktop appends the shared user-image description before durable user-message persistence; unavailable vision remains an explicit task notice and retains the owned attachment, while refusal/cancellation terminates the request. No separate Desktop Prompt literal is introduced.
 
 - Desktop AI Design error presentation: `DesktopNovelAiTextTransport` maps shared provider events to fixed safe categories without exposing HTTP bodies; refusal/cancellation retain their terminal exception types. `DesktopDesignPresentation.desktopDesignFailure` and `DesktopNovelAiStudioController.runDesignTurn` own the user-facing category and failed-turn persistence, preserving the shared Designer and retry context.
+
+## Desktop formal voice auxiliary owner
+
+- `DesktopChatVoiceRuntime` owns one lazy `OpenAiStreamingTransport` for Fish translation/tagging. Its explicit `closeAndDrain()` API is called after collector cancellation/join, before root release, to stop real callbacks/sockets and the owned dispatcher. Existing callers retain their lifecycle unless they invoke this owner API. Fish keeps official non-token model parameters and neutral messages with thinking off and output-token caps omitted.
 
 ## First Read
 

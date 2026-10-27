@@ -1,0 +1,41 @@
+{
+  "repository": "SaltyFishOTL/ChatChatBar",
+  "selected_ref": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+  "formal_baseline_unchanged": "5e76a9cb841736bbbf3499a2e35e5789af4c5ca8",
+  "version_code_source_blob": "dd96dce807d8af29450a62e548c32c481f8f1a8e",
+  "version_code": 84,
+  "tink_version_source_blob": "df104a298b3e7f77a7f06f08bbf505654378a39d",
+  "tink_version": "1.23.0",
+  "files": [
+    {
+      "file": "AppBackupModels.kt",
+      "reference_sha256": "417e35768bbe5ffc8b7eb6f0b5dd604ccc2636bea109ca583fa5a3ff04830da6",
+      "desktop_sha256": "9508e43307b62a29f833e6b7c5ab0de539933472fed2411d90a9895b1c505f79",
+      "identical_after_package_and_eof_normalization": true
+    },
+    {
+      "file": "AppBackupCodec.kt",
+      "reference_sha256": "cdd4c7f825b284a1566c80cfd98c16bba43433b1cb052fdae24a3bdc5b290424",
+      "desktop_sha256": "e2c2e25089d5bbe1a838157d2dcc547d9d0d0b0f32a2bb390fe5769856b3e5db",
+      "identical_after_package_and_eof_normalization": true
+    },
+    {
+      "file": "BackupDataRegistry.kt",
+      "reference_sha256": "39a39bb9783928d5d714dad1979abbeae9363107669ec9ccaa2010b5139741c9",
+      "desktop_sha256": "e16f8480c28a10329cdfe5f07ffa74cbf50c59a861bb6fcad872ec20850e6aa6",
+      "identical_after_package_and_eof_normalization": true
+    },
+    {
+      "file": "BackupJsonStream.kt",
+      "reference_sha256": "ad3e9aa579a2daf779c111d87d185ee6055604f04c183be7fcebadd1e3c813b2",
+      "desktop_sha256": "6e256e48703e20690f7ed33980e786c68947ee6d6d2694b318a2bf395f1e57dd",
+      "identical_after_package_and_eof_normalization": true
+    },
+    {
+      "file": "BackupTextIO.kt",
+      "reference_sha256": "dd126e7756f5f61b5f0b1f1ad4ae07b41b741fc38bd568e8ddeb1f0a22467ed2",
+      "desktop_sha256": "0502c21e2f12cd694a460d1de25d48e3aaac01083fb5faf6c02e65e3431c9480",
+      "identical_after_package_and_eof_normalization": true
+    }
+  ]
+}

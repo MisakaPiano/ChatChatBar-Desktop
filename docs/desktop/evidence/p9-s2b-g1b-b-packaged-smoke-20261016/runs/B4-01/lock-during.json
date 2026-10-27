@@ -1,0 +1,8 @@
+{
+  "utc": "2026-10-16T09:04:39.372590+00:00",
+  "rootAlias": "portable-blocked-image/UserData",
+  "probe": "separate-process nonblocking OS byte-range lock, existing file only",
+  "state": "HELD",
+  "errno": 13,
+  "lockBytesUnchanged": 0
+}

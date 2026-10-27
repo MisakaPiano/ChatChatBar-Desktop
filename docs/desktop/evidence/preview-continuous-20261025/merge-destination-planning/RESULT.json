@@ -1,0 +1,26 @@
+{
+  "merge-destination-first-20261025": {
+    "exit": 1,
+    "suites": 0,
+    "tests": 0,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "merge-destination-red-20261025": {
+    "exit": 1,
+    "suites": 4,
+    "tests": 27,
+    "failures": 2,
+    "errors": 0,
+    "skipped": 0
+  },
+  "merge-destination-green-20261025": {
+    "exit": 0,
+    "suites": 6,
+    "tests": 42,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

@@ -1,0 +1,87 @@
+INSTRUMENTATION_STATUS: class=com.example.chatbar.domain.backup.Official145InteropTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stream=
+com.example.chatbar.domain.backup.Official145InteropTest:
+INSTRUMENTATION_STATUS: test=desktopArchiveThroughOfficialAndroidAppAndBack
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.example.chatbar.domain.backup.Official145InteropTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=1
+INSTRUMENTATION_STATUS: stack=java.lang.AssertionError
+	at org.junit.Assert.fail(Assert.java:87)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertTrue(Assert.java:53)
+	at com.example.chatbar.domain.backup.Official145InteropTest$desktopArchiveThroughOfficialAndroidAppAndBack$1.invokeSuspend(Official145InteropTest.kt:126)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:94)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:70)
+	at kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source:1)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:48)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source:1)
+	at com.example.chatbar.domain.backup.Official145InteropTest.desktopArchiveThroughOfficialAndroidAppAndBack(Official145InteropTest.kt:61)
+	Suppressed: java.net.SocketException: Socket closed
+
+INSTRUMENTATION_STATUS: stream=
+Error in desktopArchiveThroughOfficialAndroidAppAndBack(com.example.chatbar.domain.backup.Official145InteropTest):
+java.lang.AssertionError
+	at org.junit.Assert.fail(Assert.java:87)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertTrue(Assert.java:53)
+	at com.example.chatbar.domain.backup.Official145InteropTest$desktopArchiveThroughOfficialAndroidAppAndBack$1.invokeSuspend(Official145InteropTest.kt:126)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:94)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:70)
+	at kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source:1)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:48)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source:1)
+	at com.example.chatbar.domain.backup.Official145InteropTest.desktopArchiveThroughOfficialAndroidAppAndBack(Official145InteropTest.kt:61)
+	Suppressed: java.net.SocketException: Socket closed
+
+INSTRUMENTATION_STATUS: test=desktopArchiveThroughOfficialAndroidAppAndBack
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_RESULT: stream=
+
+Time: 6.949
+There was 1 failure:
+1) desktopArchiveThroughOfficialAndroidAppAndBack(com.example.chatbar.domain.backup.Official145InteropTest)
+java.lang.AssertionError
+	at org.junit.Assert.fail(Assert.java:87)
+	at org.junit.Assert.assertTrue(Assert.java:42)
+	at org.junit.Assert.assertTrue(Assert.java:53)
+	at com.example.chatbar.domain.backup.Official145InteropTest$desktopArchiveThroughOfficialAndroidAppAndBack$1.invokeSuspend(Official145InteropTest.kt:126)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:94)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:70)
+	at kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source:1)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:48)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source:1)
+	at com.example.chatbar.domain.backup.Official145InteropTest.desktopArchiveThroughOfficialAndroidAppAndBack(Official145InteropTest.kt:61)
+	Suppressed: java.net.SocketException: Socket closed
+		at java.net.PlainSocketImpl.socketAccept(PlainSocketImpl.java:213)
+		at java.net.AbstractPlainSocketImpl.accept(AbstractPlainSocketImpl.java:451)
+		at java.net.ServerSocket.implAccept(ServerSocket.java:569)
+		at java.net.ServerSocket.accept(ServerSocket.java:537)
+		at com.example.chatbar.domain.backup.Official145InteropTest$desktopArchiveThroughOfficialAndroidAppAndBack$1$15$reply$1.invokeSuspend(Official145InteropTest.kt:101)
+		at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+		at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+		at kotlinx.coroutines.internal.LimitedDispatcher$Worker.run(LimitedDispatcher.kt:124)
+		at kotlinx.coroutines.scheduling.TaskImpl.run(Tasks.kt:89)
+		at kotlinx.coroutines.scheduling.CoroutineScheduler.runSafely(CoroutineScheduler.kt:586)
+		at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.executeTask(CoroutineScheduler.kt:820)
+		at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(CoroutineScheduler.kt:717)
+		at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(CoroutineScheduler.kt:704)
+
+FAILURES!!!
+Tests run: 1,  Failures: 1
+
+
+INSTRUMENTATION_CODE: -1

@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='utf-8'?>
+<testsuite name="test_msi_directory_guard.DirectoryGuardReuse" tests="2" failures="2" errors="0" skipped="0"><testcase classname="test_msi_directory_guard.DirectoryGuardReuse" name="test_changed_hash_and_test_build_are_refused" time="0.01599999999598367"><failure>AssertionError: OWNED_GUARD_BUILD_REQUIRED
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\app\desktopApp\build\preview-continuous-private-20261025\component-contract-20261026-r01\green-01\source\test_msi_directory_guard.py", line 29, in test_changed_hash_and_test_build_are_refused
+    with self.assertRaisesRegex(AssertionError, "GUARD_HASH_CHANGED"):
+AssertionError: "GUARD_HASH_CHANGED" does not match "OWNED_GUARD_BUILD_REQUIRED"
+</failure></testcase><testcase classname="test_msi_directory_guard.DirectoryGuardReuse" name="test_only_exact_production_build_is_reused" time="0.0"><failure>Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\app\desktopApp\build\preview-continuous-private-20261025\component-contract-20261026-r01\green-01\source\test_msi_directory_guard.py", line 25, in test_only_exact_production_build_is_reused
+    self.assertEqual(dll.resolve(), self.builder().reuse_production(dll.parent, identity["sha256"]))
+  File "H:\ChatChatBar-Desktop\app\desktopApp\build\preview-continuous-private-20261025\component-contract-20261026-r01\green-01\source\build_directory_guard.py", line 17, in reuse_production
+    assert directory.is_relative_to(root), "OWNED_GUARD_BUILD_REQUIRED"
+AssertionError: OWNED_GUARD_BUILD_REQUIRED
+</failure></testcase></testsuite>

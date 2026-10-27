@@ -1,0 +1,85 @@
+{
+  "history": [
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r3-20261019",
+      "tree": "4a5bc5283816ec92a98d50c7fa8cf3897f51ec28"
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r4-20261019",
+      "tree": "003bb44ad933fc46c29fdff0e13af2ab31bd11db"
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r5-20261019",
+      "tree": "d907228b3f94cf78ebf1e6ac2eb93211b3474b17"
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6a-20261019",
+      "tree": "492a991e49569538c52777a42a82d3b405359c99"
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6b-20261019",
+      "tree": "886e4c9e9fb7d750cc7f7901ba4c1a81352699e7"
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6c-20261019",
+      "tree": "6009faa0d7e299bad73c0c79c92163e114ec0590"
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6d-20261019",
+      "tree": "37df0e5e355ea85548cb14d71d6187e3369bf8b7"
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6e-20261019",
+      "tree": "d4b5605f3fbaee7cb25677018636d276b3192475"
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6f-20261019",
+      "tree": "d74526c58810ece3a66f6a3865895b944512bd89"
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6g-20261019",
+      "tree": "756320a15c290a6b682b928180a148dab36c69cd"
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6h-20261019",
+      "tree": "f824f17c5ae4b5bdb3639dec3e3823d8706f347e"
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019",
+      "tree": "dc1c355d52768bcee896a33efb64c86b110c14b3"
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6j-20261019",
+      "tree": "1ef9544c40fa1311d362a5e26ef0618f18e7d199"
+    }
+  ],
+  "unchanged": true,
+  "baseline": "1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8",
+  "historyClassification": {
+    "R6D": "Native4/4 PASS on earlier test identity",
+    "R6E": "Fish15/15, affected82/82, bounded Native4/4 PASS; overall bounded cmd.exe RED",
+    "R6F": "Overall bounded Robot Press0 RED, cause UNKNOWN",
+    "R6G": "Exact candidate test itself Press0 RED, cause UNKNOWN",
+    "R6I": "INCONCLUSIVE; user reported scroll; arming procedure defect",
+    "R6J": "INCONCLUSIVE; real owned physical event chain but measured thumb gate truncated capture; late user reported scroll PASS"
+  },
+  "symlink": "Two historical SKIPPED and old NOT TESTED unchanged",
+  "winAuto001": "OPEN",
+  "winBrand001": "OPEN / DEFERRED",
+  "uiLayout001": "HOLD / not closed",
+  "protectedUserFiles": [
+    ".codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/4bb6706b-0132-41be-bd8e-03e6c0229e46/1-1000072937.jpg",
+    ".codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/b5264b76-6c08-406d-af8d-bbb2f876c7c1/1-1000072937.jpg",
+    ".codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/ea41235d-a0f1-44c3-8db1-47f5bb5b2883/1-1000072937.jpg",
+    "CCB_DESKTOP_STANDARD_CONVERSATION_HANDOFF.md"
+  ],
+  "protection": "KEEP / UNTRACKED / UNREAD / UNMODIFIED / UNSTAGED",
+  "productSourceAndGradleBusinessConfigChanged": false,
+  "skillReview": {
+    "skill": ".agents/skills/chatbar-fish-audio-voice/SKILL.md",
+    "updateRequired": false,
+    "reason": "Exact-source packaging and isolated evidence only"
+  },
+  "currentParityBaselineAndOldDesktopUnchanged": true,
+  "noMergeNoRelease": true
+}

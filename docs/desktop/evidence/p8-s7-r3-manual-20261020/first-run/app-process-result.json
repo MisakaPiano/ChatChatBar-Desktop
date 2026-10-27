@@ -1,0 +1,43 @@
+{
+  "run": "manual01",
+  "startedUtc": "2026-10-20T01:53:49.2842280+00:00",
+  "endedUtc": "2026-10-20T02:16:12.4696460+00:00",
+  "durationSeconds": 1343.185418,
+  "closeObservedUtc": null,
+  "processLifetimeBlocked": false,
+  "allOwnedProcessesExited": true,
+  "processes": [
+    {
+      "pid": 26444,
+      "identity": {
+        "pid": 26444,
+        "parentPid": 7912,
+        "createdUtc": "2026-10-20T01:53:49.2995410Z",
+        "executablePath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r3-20261020\\runtime-image\\ChatChatBarDesktop.exe",
+        "image": "runtime-image"
+      },
+      "isLauncher": true,
+      "jvmLoaded": false,
+      "exited": true,
+      "exitCode": 0,
+      "moduleReadError": null
+    },
+    {
+      "pid": 17772,
+      "identity": {
+        "pid": 17772,
+        "parentPid": 26444,
+        "createdUtc": "2026-10-20T01:53:51.4041460Z",
+        "executablePath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r3-20261020\\runtime-image\\ChatChatBarDesktop.exe",
+        "image": "runtime-image"
+      },
+      "isLauncher": false,
+      "jvmLoaded": true,
+      "exited": true,
+      "exitCode": 0,
+      "moduleReadError": null
+    }
+  ],
+  "probeEvents": [],
+  "probeObservationErrors": []
+}

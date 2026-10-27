@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopMessageActionsUxTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-20T06:46:28.195Z" hostname="DD1" time="3.816">
+  <properties/>
+  <testcase name="context groups preserve eligibility and separate source and whole scopes" classname="com.example.chatbar.desktop.DesktopMessageActionsUxTest" time="0.018"/>
+  <testcase name="whole copy preserves raw multi segment Markdown and role markers" classname="com.example.chatbar.desktop.DesktopMessageActionsUxTest" time="0.04"/>
+  <testcase name="narrow toolbar scrolls left actions while image actions stay pinned right" classname="com.example.chatbar.desktop.DesktopMessageActionsUxTest" time="0.524"/>
+  <testcase name="combined toolbar disables image controls during source task and keeps one process card" classname="com.example.chatbar.desktop.DesktopMessageActionsUxTest" time="2.795"/>
+  <testcase name="middle and last copies use exact raw source ranges not display text" classname="com.example.chatbar.desktop.DesktopMessageActionsUxTest" time="0.0"/>
+  <testcase name="copy reads selected candidate only and user empty boundaries remain raw" classname="com.example.chatbar.desktop.DesktopMessageActionsUxTest" time="0.001"/>
+  <testcase name="pointer segment menus copy exact source or whole and keep edit delete ownership" classname="com.example.chatbar.desktop.DesktopMessageActionsUxTest" time="0.438"/>
+  <system-out><![CDATA[C2 initial value=0.0 max=40.0 reverse=false direction=Ltr
+C2 scrolling value=31.0 max=40.0
+C2 scrolling value=40.0 max=40.0
+C2 completed consumed=Offset(39.7, 0.0) value=40.0 max=40.0 changes=2
+C2 final value=40.0 max=40.0 completed=true
+C2 生成图片 bounds=Rect.fromLTRB(50.0, 0.0, 80.0, 30.0)
+C2 生图要求 bounds=Rect.fromLTRB(80.0, 0.0, 110.0, 30.0)
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

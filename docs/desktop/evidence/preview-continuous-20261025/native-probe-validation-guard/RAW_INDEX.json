@@ -1,0 +1,62 @@
+[
+  {
+    "path": "native-probe-validation-red-20261025/SOURCE_native_package_probe.py",
+    "bytes": 20371,
+    "sha256": "d11c3ba17e819014a241619fdcaaa8e70d64b116b2e43f022ddec15a0787e18d"
+  },
+  {
+    "path": "native-probe-validation-red-20261025/SOURCE_test_native_probe_validation.py",
+    "bytes": 2193,
+    "sha256": "2da5764356890212b72eb73d720511196236ccd3d6a10113928065eb76f121e5"
+  },
+  {
+    "path": "native-probe-validation-red-20261025/head-before.txt",
+    "bytes": 40,
+    "sha256": "7d4058a53a5d910743a4c5e1cf79e654ce91519a5f1a38301f67a54a89091bf1"
+  },
+  {
+    "path": "native-probe-validation-red-20261025/arguments.json",
+    "bytes": 83,
+    "sha256": "d07363a61835e74f3ea8975621040c0ad6dbc5f5a71c0c76cd8c66ec89ef6979"
+  },
+  {
+    "path": "native-probe-validation-red-20261025/exit.txt",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "path": "native-probe-validation-red-20261025/unittest.log",
+    "bytes": 1998,
+    "sha256": "c9278edf4c810ee840fbb4b7238e683469a4ead303306a4bae263229f4abc363"
+  },
+  {
+    "path": "native-probe-validation-green-20261025/SOURCE_native_package_probe.py",
+    "bytes": 20463,
+    "sha256": "9404e043e64d067565e4f0c74b9de4effad2ff0621d46b1a961b761cdc1f00d2"
+  },
+  {
+    "path": "native-probe-validation-green-20261025/SOURCE_test_native_probe_validation.py",
+    "bytes": 2203,
+    "sha256": "821e0b7c6eb959741ad5149eb89ec230392d67f378e81303e83c4eae6ab94b64"
+  },
+  {
+    "path": "native-probe-validation-green-20261025/head-before.txt",
+    "bytes": 40,
+    "sha256": "7d4058a53a5d910743a4c5e1cf79e654ce91519a5f1a38301f67a54a89091bf1"
+  },
+  {
+    "path": "native-probe-validation-green-20261025/arguments.json",
+    "bytes": 83,
+    "sha256": "d07363a61835e74f3ea8975621040c0ad6dbc5f5a71c0c76cd8c66ec89ef6979"
+  },
+  {
+    "path": "native-probe-validation-green-20261025/exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "native-probe-validation-green-20261025/unittest.log",
+    "bytes": 413,
+    "sha256": "25612ec060322f4b5f27f30e80da3b879697307301d3a167f881b7c700c61084"
+  }
+]

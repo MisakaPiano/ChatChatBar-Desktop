@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.memory.MemoryArchiveInjectionPolicyTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:24.974Z" hostname="DD1" time="0.014">
+  <properties/>
+  <testcase name="keepsUnverifiableActiveBodiesButOmitsBlankBodies" classname="com.example.chatbar.domain.memory.MemoryArchiveInjectionPolicyTest" time="0.013"/>
+  <testcase name="rendersOrderedBodiesWithoutTierOrTRangeLabels" classname="com.example.chatbar.domain.memory.MemoryArchiveInjectionPolicyTest" time="0.0"/>
+  <testcase name="keepsOnlySemanticWarningForLegacyReferences" classname="com.example.chatbar.domain.memory.MemoryArchiveInjectionPolicyTest" time="0.0"/>
+  <testcase name="ordersVerifiableBodiesBeforeStableUnverifiableFallback" classname="com.example.chatbar.domain.memory.MemoryArchiveInjectionPolicyTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

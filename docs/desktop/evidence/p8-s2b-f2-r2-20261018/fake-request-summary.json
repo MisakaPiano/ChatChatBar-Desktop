@@ -1,0 +1,13 @@
+{
+  "requests": 7,
+  "catalogGET": 3,
+  "sampleGET": 3,
+  "cannedTTSPOST": 1,
+  "hangingSampleGET": 1,
+  "sampleSecretHeaderEvents": 0,
+  "realExternalRequests": 0,
+  "audioIdentities": {
+    "official": "c730e4c467f8dcf465acca9e426ea6349137e3302ff65e648f66dc2a63e3301f",
+    "syntheticTTSAndControl": "7b057f372a03dcb208e0b0e40fd10278ca19baa9faa47b9be9c1e140bc8eb530"
+  }
+}

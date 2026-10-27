@@ -1,0 +1,42 @@
+{
+  "expectedHead": "7cc135b971e0dd509f2f6f387b0ff7cfe2828f9f",
+  "actualHead": "7cc135b971e0dd509f2f6f387b0ff7cfe2828f9f",
+  "branch": "feature/phase8-fish-audio",
+  "productionSource": "c38bcf274fca2eafb81a27b10cb3fcb16ed94fbe",
+  "productionDiffPaths": [],
+  "protectedPaths": [
+    {
+      "path": "CCB_DESKTOP_STANDARD_CONVERSATION_HANDOFF.md",
+      "gitStatus": "?? CCB_DESKTOP_STANDARD_CONVERSATION_HANDOFF.md",
+      "contentsRead": false,
+      "hashed": false,
+      "modified": false,
+      "staged": false
+    },
+    {
+      "path": ".codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/4bb6706b-0132-41be-bd8e-03e6c0229e46/1-1000072937.jpg",
+      "gitStatus": "?? .codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/4bb6706b-0132-41be-bd8e-03e6c0229e46/1-1000072937.jpg",
+      "contentsRead": false,
+      "hashed": false,
+      "modified": false,
+      "staged": false
+    },
+    {
+      "path": ".codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/b5264b76-6c08-406d-af8d-bbb2f876c7c1/1-1000072937.jpg",
+      "gitStatus": "?? .codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/b5264b76-6c08-406d-af8d-bbb2f876c7c1/1-1000072937.jpg",
+      "contentsRead": false,
+      "hashed": false,
+      "modified": false,
+      "staged": false
+    },
+    {
+      "path": ".codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/ea41235d-a0f1-44c3-8db1-47f5bb5b2883/1-1000072937.jpg",
+      "gitStatus": "?? .codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/ea41235d-a0f1-44c3-8db1-47f5bb5b2883/1-1000072937.jpg",
+      "contentsRead": false,
+      "hashed": false,
+      "modified": false,
+      "staged": false
+    }
+  ],
+  "skillReview": "Evidence-only changes; no feature skill facts made stale. No skill update required."
+}

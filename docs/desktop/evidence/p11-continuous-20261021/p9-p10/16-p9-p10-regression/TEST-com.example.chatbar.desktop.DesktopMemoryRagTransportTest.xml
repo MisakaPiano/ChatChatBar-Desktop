@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopMemoryRagTransportTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-20T20:39:24.033Z" hostname="DD1" time="0.085">
+  <properties/>
+  <testcase name="memory wire uses isolated envelope JSON mode and no inherited output cap" classname="com.example.chatbar.desktop.DesktopMemoryRagTransportTest" time="0.028"/>
+  <testcase name="oversized response is cancelled with a visible nonretryable memory budget failure" classname="com.example.chatbar.desktop.DesktopMemoryRagTransportTest" time="0.05"/>
+  <testcase name="transport does not hide HTTP retry or turn refusal into valid output" classname="com.example.chatbar.desktop.DesktopMemoryRagTransportTest" time="0.007"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

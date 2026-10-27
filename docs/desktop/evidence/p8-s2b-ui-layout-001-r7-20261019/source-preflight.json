@@ -1,0 +1,95 @@
+{
+  "head": "bad9f3c235dbb1a88af5e3fb6cbdf4aa7418cbd5",
+  "parent": "ec32fdbc8383853b3024b585c19db0c3b840f47f",
+  "sourceCommit": "ec32fdbc8383853b3024b585c19db0c3b840f47f",
+  "branch": "feature/phase8-fish-audio",
+  "refs": [
+    "bad9f3c235dbb1a88af5e3fb6cbdf4aa7418cbd5",
+    "bad9f3c235dbb1a88af5e3fb6cbdf4aa7418cbd5",
+    "4c2af2576e2319e8041ffd2a6c5a205450f18246",
+    "5ef95428421f7c693b010ac88f51d470804ab07a"
+  ],
+  "source": [
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerPresentation.kt",
+      "bytes": 17883,
+      "sha256": "194d6b7fd2e270ca29eb90734303c8a7898825ecf8939cc60ab266e8d16c4917",
+      "blob": "1e04dbb950757e7b88d977945a3d3416a0927162"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerWindow.kt",
+      "bytes": 4280,
+      "sha256": "a003e7ad1e31a0c356df1a4291cc7eb1e4eb9fa958a0a6353ee6a77ac8f88125",
+      "blob": "871f95e01fffc83ca53ae317f9c6de3169c3f302"
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerNativeUxTest.kt",
+      "bytes": 49505,
+      "sha256": "8beee5971355cd894b44a4743f89b6ad857c342274ae8410cfab5e99a3bbb423",
+      "blob": "f1c65560609c3e6538807d8a83073012692d3f83"
+    }
+  ],
+  "userOwnedUntrackedPathsOnly": [
+    ".codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/4bb6706b-0132-41be-bd8e-03e6c0229e46/1-1000072937.jpg",
+    ".codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/b5264b76-6c08-406d-af8d-bbb2f876c7c1/1-1000072937.jpg",
+    ".codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/ea41235d-a0f1-44c3-8db1-47f5bb5b2883/1-1000072937.jpg",
+    "CCB_DESKTOP_STANDARD_CONVERSATION_HANDOFF.md"
+  ],
+  "trackedClean": true,
+  "indexEmpty": true,
+  "history": [
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r3-20261019",
+      "tree": "4a5bc5283816ec92a98d50c7fa8cf3897f51ec28"
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r4-20261019",
+      "tree": "003bb44ad933fc46c29fdff0e13af2ab31bd11db"
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r5-20261019",
+      "tree": "d907228b3f94cf78ebf1e6ac2eb93211b3474b17"
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6a-20261019",
+      "tree": "492a991e49569538c52777a42a82d3b405359c99"
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6b-20261019",
+      "tree": "886e4c9e9fb7d750cc7f7901ba4c1a81352699e7"
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6c-20261019",
+      "tree": "6009faa0d7e299bad73c0c79c92163e114ec0590"
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6d-20261019",
+      "tree": "37df0e5e355ea85548cb14d71d6187e3369bf8b7"
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6e-20261019",
+      "tree": "d4b5605f3fbaee7cb25677018636d276b3192475"
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6f-20261019",
+      "tree": "d74526c58810ece3a66f6a3865895b944512bd89"
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6g-20261019",
+      "tree": "756320a15c290a6b682b928180a148dab36c69cd"
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6h-20261019",
+      "tree": "f824f17c5ae4b5bdb3639dec3e3823d8706f347e"
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6i-20261019",
+      "tree": "dc1c355d52768bcee896a33efb64c86b110c14b3"
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6j-20261019",
+      "tree": "1ef9544c40fa1311d362a5e26ef0618f18e7d199"
+    }
+  ],
+  "validatedUpstream": "5e76a9cb841736bbbf3499a2e35e5789af4c5ca8"
+}

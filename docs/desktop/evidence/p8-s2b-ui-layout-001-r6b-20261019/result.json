@@ -1,0 +1,35 @@
+{
+  "exitCode": 1,
+  "compilation": "PASS",
+  "suites": 1,
+  "tests": 1,
+  "reportedPass": 0,
+  "failures": 1,
+  "errors": 0,
+  "skipped": 0,
+  "testSeconds": 3.486,
+  "xmlSha256": "389e0cb1e0ca8633f59bab9e1c51f83c7ec5fed2b53904a19234eb7e45ce3868",
+  "failure": {
+    "message": "java.lang.AssertionError: Page input and jump must remain adjacent, including wrapped rows",
+    "type": "java.lang.AssertionError"
+  },
+  "stack": "java.lang.AssertionError: Page input and jump must remain adjacent, including wrapped rows\n\tat org.junit.Assert.fail(Assert.java:89)\n\tat kotlin.test.junit.JUnitAsserter.fail(JUnitSupport.kt:56)\n\tat kotlin.test.Asserter.assertTrue(Assertions.kt:766)\n\tat kotlin.test.junit.JUnitAsserter.assertTrue(JUnitSupport.kt:30)\n\tat kotlin.test.Asserter.assertTrue(Assertions.kt:776)\n\tat kotlin.test.junit.JUnitAsserter.assertTrue(JUnitSupport.kt:30)\n\tat kotlin.test.AssertionsKt__AssertionsKt.assertTrue(Assertions.kt:44)\n\tat kotlin.test.AssertionsKt.assertTrue(Unknown Source)\n\tat com.example.chatbar.desktop.DesktopFishPickerNativeUxTest$Fixture.assertPagerLayout(DesktopFishPickerNativeUxTest.kt:300)\n\tat com.example.chatbar.desktop.DesktopFishPickerNativeUxTest$native persistent scrollbar drags current page and explicit page jump preserves request semantics$1.invokeSuspend(DesktopFishPickerNativeUxTest.kt:522)\n\tat kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)\n\tat kotlinx.coroutines.internal.ScopeCoroutine.afterResume(Scopes.kt:35)\n\tat kotlinx.coroutines.AbstractCoroutine.resumeWith(AbstractCoroutine.kt:101)\n\tat kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:47)\n\tat kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)\n\tat java.desktop/java.awt.event.InvocationEvent.dispatch(InvocationEvent.java:318)\n\tat java.desktop/java.awt.EventQueue.dispatchEventImpl(EventQueue.java:773)\n\tat java.desktop/java.awt.EventQueue$4.run(EventQueue.java:720)\n\tat java.desktop/java.awt.EventQueue$4.run(EventQueue.java:714)\n\tat java.base/java.security.AccessController.doPrivileged(AccessController.java:399)\n\tat java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:86)\n\tat java.desktop/java.awt.EventQueue.dispatchEvent(EventQueue.java:742)\n\tat java.desktop/java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203)\n\tat java.desktop/java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124)\n\tat java.desktop/java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113)\n\tat java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109)\n\tat java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101)\n\tat java.desktop/java.awt.EventDispatchThread.run(EventDispatchThread.java:90)\n",
+  "assertionLine": 300,
+  "callerLine": 522,
+  "geometryRecordCount": 80,
+  "requestedWidthDp": 1100,
+  "gateInvocations": 1,
+  "retriesAfterRed": 0,
+  "branches": {
+    "first1100Geometry": "OBSERVED; adjacency assertion FAIL",
+    "width720": "NOT REACHED",
+    "width360": "NOT REACHED",
+    "drag": "NOT REACHED",
+    "wheel": "NOT REACHED",
+    "pageJump": "NOT REACHED",
+    "intBoundary": "NOT REACHED"
+  },
+  "historicalR5InputPass": "Historical only; not rerun",
+  "nextGates": "NOT TESTED / NOT STARTED",
+  "classification": "PROVEN_TEST_OBSERVATION"
+}

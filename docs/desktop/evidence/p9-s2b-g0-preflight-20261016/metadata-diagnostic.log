@@ -1,0 +1,6 @@
+component=Temp; key=null; directory=true; other=false; link=false
+component=Local; key=null; directory=true; other=false; link=false
+component=AppData; key=null; directory=true; other=false; link=false
+component=1; key=null; directory=true; other=false; link=false
+component=Users; key=null; directory=true; other=false; link=false
+component=null; key=null; directory=true; other=false; link=false

@@ -1,0 +1,7 @@
+﻿[
+    "-I",
+    "H:\\ChatChatBar-Desktop\\tools\\desktop\\windows\\build_directory_guard.py",
+    "--output",
+    "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\preview-continuous-private-20261025\\directory-guard-fix-20261026\\ps51-registered-missing-final\\test",
+    "--test"
+]

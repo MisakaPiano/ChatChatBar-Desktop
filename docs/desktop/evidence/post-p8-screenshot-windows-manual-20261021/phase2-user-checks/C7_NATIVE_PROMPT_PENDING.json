@@ -1,0 +1,14 @@
+{
+  "utc": "2026-10-20T18:46:20.744437+00:00",
+  "step": "C7 Windows existing-file confirmation pending",
+  "userVerbatim": "通过",
+  "user": "USER PASS for native overwrite confirmation prompt only",
+  "observation": "Screenshot shows native Confirm Save As dialog: keep-existing.png already exists; replace? Yes/No. No button focused. No app-side save refusal observed yet.",
+  "sentinelPath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-windows-manual-20261021\\exports\\png\\keep-existing.png",
+  "sentinelSha256": "a4c0c504342ece37158ce5ef137f32db579b51eec241d8a6b4bc8e93f7fb85c9",
+  "unchangedFromBefore": true,
+  "attachment": "C7_WINDOWS_OVERWRITE_PROMPT.png",
+  "attachmentSha256": "88a343eb53ce6f8425dcdb54bfabf9ec083cb9ace53a7fa356db065874eb330e",
+  "technical": "Native overwrite warning observed; original synthetic sentinel unchanged. Application refusal remains NOT TESTED until chooser returns existing target.",
+  "safetyBoundary": "Only explicitly prepared synthetic sentinel is in scope. No real user file may be selected or overwritten."
+}

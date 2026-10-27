@@ -1,0 +1,31 @@
+test_normal_help_remains_available_without_native_action (__main__.NativeProbeValidationTest) ... ok
+test_optimized_cli_refuses_before_parsing_or_native_action (__main__.NativeProbeValidationTest) ... test_optimized_import_cannot_expose_assertion_free_actions (__main__.NativeProbeValidationTest) ... FAIL
+
+======================================================================
+FAIL: test_optimized_cli_refuses_before_parsing_or_native_action (__main__.NativeProbeValidationTest) (flag='-O')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_native_probe_validation.py", line 34, in test_optimized_cli_refuses_before_parsing_or_native_action
+    self.assertNotEqual(0, result.returncode)
+AssertionError: 0 == 0
+
+======================================================================
+FAIL: test_optimized_cli_refuses_before_parsing_or_native_action (__main__.NativeProbeValidationTest) (flag='-OO')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_native_probe_validation.py", line 34, in test_optimized_cli_refuses_before_parsing_or_native_action
+    self.assertNotEqual(0, result.returncode)
+AssertionError: 0 == 0
+
+======================================================================
+FAIL: test_optimized_import_cannot_expose_assertion_free_actions (__main__.NativeProbeValidationTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_native_probe_validation.py", line 41, in test_optimized_import_cannot_expose_assertion_free_actions
+    self.assertNotEqual(0, result.returncode)
+AssertionError: 0 == 0
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.636s
+
+FAILED (failures=3)

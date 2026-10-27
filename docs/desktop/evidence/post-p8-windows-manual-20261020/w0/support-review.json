@@ -1,0 +1,60 @@
+{
+  "reviewedExistingTools": [
+    {
+      "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r3-20261020\\P8S7Support.java",
+      "bytes": 26883,
+      "sha256": "26df861ae1e30226cbad8ba1f0852cf6672f2095b573f7edef469d54b5eca911",
+      "readOnly": true
+    },
+    {
+      "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r3-20261020\\P8R3Preflight.java",
+      "bytes": 8680,
+      "sha256": "3c411be5902b9b6fe53deff66cdd297e0bc0b03b0e6784d6fd147f1e0e8a02f0",
+      "readOnly": true
+    },
+    {
+      "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r3-20261020\\manual-supervisor.py",
+      "bytes": 6354,
+      "sha256": "d846ea07db8a2a8b3402af3a95a30138f348948ae161e15aac9979f56362d51c",
+      "readOnly": true
+    },
+    {
+      "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r3-20261020\\runtime-watch.ps1",
+      "bytes": 6313,
+      "sha256": "ae8367f5530b5a827a2528a3bcefeff7a2293f9259e52dad3958e85f2356baa0",
+      "readOnly": true
+    },
+    {
+      "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r3-20261020\\live-official-sample.mp3",
+      "bytes": 405420,
+      "sha256": "c730e4c467f8dcf465acca9e426ea6349137e3302ff65e648f66dc2a63e3301f",
+      "readOnly": true
+    },
+    {
+      "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r3-20261020\\synthetic-tts-long.mp3",
+      "bytes": 252860,
+      "sha256": "fb93b911ab31c264881df8f167cbb655bb42ddcd148fa372e5363cf09e3dfd94",
+      "readOnly": true
+    }
+  ],
+  "newToolsImplementedOrRun": false,
+  "observed": [
+    "WindowsSecretStore uses WindowsDpapiSecretProtector; typed key scopes are separate from JSON",
+    "Model persistence policy rejects any nonblank persisted apiKey before hydrate",
+    "R3 helper stores invalid synthetic keys in ModelApiKey(chat/aux) and FishAudioApiKey; model JSON apiKey empty",
+    "R3 preflight uses actual ModelRepository + persistence policy, verifies Studio list and typed key isolation without secret logging",
+    "Fake binds loopback only; accepts CONNECT api.fish.audio:443 or platform.r2.fish.audio:443; never forwards to provider",
+    "Fake routes fixed catalog, sample, free TTS, synthetic auxiliary; other host/path/auth rejected",
+    "Mock creates its directory itself; directory must be absent before start",
+    "Runtime watcher retains real process handles and JVM module identity; has no automatic GUI lifetime or Kill call",
+    "Default DesktopAutomaticBackupSettings.enabled is false"
+  ],
+  "adaptationRequiredAfterAuthorization": [
+    "New support copy must restrict root to this new scope, never old R3",
+    "Extend inline synthetic fixture to interleaved Assistant/User replies and owned avatar/image/background resources",
+    "Hydrate and backup-disabled validation on newly seeded root must PASS before fake or GUI",
+    "Supervisor must reference frozen package directly and verify exact file set; no package copy/rebuild needed",
+    "Use fresh one-use guard; no retry or restart authority implied"
+  ],
+  "credentialExecution": "NOT TESTED: new root and new protected credentials deliberately do not exist during W0"
+}

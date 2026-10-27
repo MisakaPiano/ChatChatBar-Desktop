@@ -1,0 +1,318 @@
+{
+  "stages": [
+    {
+      "stage": "01-red-screenshot",
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "stage": "02-red-screenshot",
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exitCode": 1,
+      "finished": "2026-10-21T17:22:28.2824928Z",
+      "started": "2026-10-21T17:22:27.8800901Z"
+    },
+    {
+      "stage": "03-red-screenshot",
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "finished": "2026-10-21T17:23:59.4430411Z",
+      "started": "2026-10-21T17:22:39.8694773Z",
+      "exitCode": 1
+    },
+    {
+      "stage": "04-red-blockers",
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "finished": "2026-10-21T17:25:01.6356560Z",
+      "started": "2026-10-21T17:24:12.8527221Z",
+      "exitCode": 1
+    },
+    {
+      "stage": "05-red-blockers",
+      "tests": 3,
+      "failures": 3,
+      "errors": 0,
+      "skipped": 0,
+      "finished": "2026-10-21T17:26:56.2382000Z",
+      "started": "2026-10-21T17:25:18.7860164Z",
+      "exitCode": 1
+    },
+    {
+      "stage": "06-green-blockers",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exitCode": 0,
+      "started": "2026-10-21T17:27:17.2580529Z",
+      "finished": "2026-10-21T17:28:32.4305992Z"
+    },
+    {
+      "stage": "07-ui-and-screenshot",
+      "tests": 28,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "exitCode": 1,
+      "started": "2026-10-21T17:30:06.7903108Z",
+      "finished": "2026-10-21T17:31:10.0037648Z"
+    },
+    {
+      "stage": "08-focused-and-safety",
+      "tests": 144,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "exitCode": 1,
+      "started": "2026-10-21T17:31:51.3505443Z",
+      "finished": "2026-10-21T17:33:36.6926379Z"
+    },
+    {
+      "stage": "09-layout-refinement",
+      "tests": 7,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "finished": "2026-10-21T17:35:44.2974311Z",
+      "exitCode": 1,
+      "started": "2026-10-21T17:34:37.0255986Z"
+    },
+    {
+      "stage": "10-final-presentation",
+      "tests": 24,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "finished": "2026-10-21T17:37:20.4589681Z",
+      "started": "2026-10-21T17:36:43.7210114Z",
+      "exitCode": 0
+    },
+    {
+      "stage": "11-final-layout",
+      "tests": 18,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exitCode": 0,
+      "finished": "2026-10-21T17:39:19.7618972Z",
+      "started": "2026-10-21T17:38:23.9544908Z"
+    },
+    {
+      "stage": "12-windows-package",
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "sourceCommit": "d95501f87899be47d07537132793afc90b9f4acc",
+      "started": "2026-10-21T17:41:48.7578134Z",
+      "guiStarted": false,
+      "finished": "2026-10-21T17:42:29.1287357Z",
+      "exitCode": 0,
+      "buildDirectory": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-gui-r1-20261022\\package-d95501f8-build"
+    }
+  ],
+  "latestBySuite": {
+    "com.example.chatbar.desktop.DesktopR1LayoutMenuTest": {
+      "stage": "11-final-layout",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.example.chatbar.desktop.DesktopR1ScreenshotTest": {
+      "stage": "10-final-presentation",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.example.chatbar.desktop.DesktopChatScreenshotTest": {
+      "stage": "11-final-layout",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.example.chatbar.desktop.DesktopR1VoiceTest": {
+      "stage": "11-final-layout",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest": {
+      "stage": "11-final-layout",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.example.chatbar.desktop.DesktopVoiceClickReliabilityTest": {
+      "stage": "08-focused-and-safety",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.example.chatbar.desktop.DesktopVoiceUxTest": {
+      "stage": "08-focused-and-safety",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.example.chatbar.desktop.DesktopChatScreenshotUiTest": {
+      "stage": "08-focused-and-safety",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.example.chatbar.desktop.DesktopDataRootOwnershipProcessTest": {
+      "stage": "08-focused-and-safety",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.example.chatbar.desktop.DesktopDataRootOwnershipTest": {
+      "stage": "08-focused-and-safety",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.example.chatbar.desktop.DesktopFullBackupArchiveTest": {
+      "stage": "08-focused-and-safety",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest": {
+      "stage": "08-focused-and-safety",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.example.chatbar.desktop.DesktopFullBackupMappingTest": {
+      "stage": "08-focused-and-safety",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.example.chatbar.desktop.DesktopFullBackupServiceTest": {
+      "stage": "08-focused-and-safety",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.example.chatbar.desktop.DesktopSaveSlotArchiveTest": {
+      "stage": "08-focused-and-safety",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.example.chatbar.desktop.DesktopSaveSlotInspectorTest": {
+      "stage": "08-focused-and-safety",
+      "tests": 23,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.example.chatbar.desktop.DesktopSaveSlotServiceTest": {
+      "stage": "08-focused-and-safety",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.example.chatbar.desktop.DesktopScreenshotBoundaryTest": {
+      "stage": "08-focused-and-safety",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.example.chatbar.desktop.DesktopScreenshotWorkspaceTest": {
+      "stage": "08-focused-and-safety",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.example.chatbar.desktop.DesktopShutdownWaitObserverTest": {
+      "stage": "08-focused-and-safety",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.example.chatbar.desktop.DesktopVoiceArchiveHandoffTest": {
+      "stage": "08-focused-and-safety",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.example.chatbar.desktop.DesktopVoiceSafetyTest": {
+      "stage": "08-focused-and-safety",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.example.chatbar.desktop.DesktopVoicePauseWindowsTest": {
+      "stage": "09-layout-refinement",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.example.chatbar.desktop.DesktopChatVoicePresentationTest": {
+      "stage": "10-final-presentation",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest": {
+      "stage": "10-final-presentation",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "com.example.chatbar.desktop.DesktopResponsiveChatLayoutTest": {
+      "stage": "10-final-presentation",
+      "tests": 10,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "latestTotals": {
+    "tests": 163,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "guiStarted": false,
+  "realProviderUsed": false,
+  "productionRootUsed": false,
+  "userGuiPassClaimed": false
+}

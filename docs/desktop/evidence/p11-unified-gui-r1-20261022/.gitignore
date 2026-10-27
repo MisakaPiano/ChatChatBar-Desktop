@@ -1,0 +1,2 @@
+# Keep raw compiler/test/package output as review evidence despite the root log ignore.
+!raw/**/*.log

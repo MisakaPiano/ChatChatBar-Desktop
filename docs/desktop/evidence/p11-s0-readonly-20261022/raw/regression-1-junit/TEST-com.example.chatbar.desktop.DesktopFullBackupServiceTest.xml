@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFullBackupServiceTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-22T11:34:04.175Z" hostname="DD1" time="27.007">
+  <properties/>
+  <testcase name="leaving panel during inspection releases its eventual result without cancelling the operation" classname="com.example.chatbar.desktop.DesktopFullBackupServiceTest" time="3.339"/>
+  <testcase name="controller discards replaces and closes inspection without removing original archive or journals" classname="com.example.chatbar.desktop.DesktopFullBackupServiceTest" time="6.191"/>
+  <testcase name="real gate seals only after schedule and startup installs before any repository opens" classname="com.example.chatbar.desktop.DesktopFullBackupServiceTest" time="2.58"/>
+  <testcase name="scheduler can finish an audio reservation before restore reserves audio" classname="com.example.chatbar.desktop.DesktopFullBackupServiceTest" time="2.478"/>
+  <testcase name="failed and cancelled restore releases mapped plaintext while pending inspection remains retryable" classname="com.example.chatbar.desktop.DesktopFullBackupServiceTest" time="2.526"/>
+  <testcase name="cancelled request waiting for operation mutex erases its password" classname="com.example.chatbar.desktop.DesktopFullBackupServiceTest" time="2.477"/>
+  <testcase name="unconfirmed audio close refuses scheduling and preserves current data for retry" classname="com.example.chatbar.desktop.DesktopFullBackupServiceTest" time="2.535"/>
+  <testcase name="cancellation during drain completes close and resumes scheduler without scheduling" classname="com.example.chatbar.desktop.DesktopFullBackupServiceTest" time="2.518"/>
+  <testcase name="changed inspected bytes cannot acquire audio or schedule restore" classname="com.example.chatbar.desktop.DesktopFullBackupServiceTest" time="2.359"/>
+  <testcase name="controller cancellation before dispatch clears busy and password without opening a picker" classname="com.example.chatbar.desktop.DesktopFullBackupServiceTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

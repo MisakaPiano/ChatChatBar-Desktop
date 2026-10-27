@@ -1,0 +1,6 @@
+{
+  "authorized": true,
+  "source": "Current direct user message: 可以开始 R6I-B。",
+  "scope": "One human-only synthetic fixture; no Robot/JUnit/bounded; preserve raw evidence; no engineering commit",
+  "humanResult": "PENDING"
+}

@@ -1,0 +1,622 @@
+{
+  "reviewBase": "2092806f8e4a203a1d2b0ddf7aa14549e3179dd0",
+  "scope": "Known relevant Git records and named synthetic test artifacts; not every historical chat/tool trace",
+  "files": [
+    {
+      "authority": "COMMITTED GIT FILE",
+      "at": "2092806f8e4a203a1d2b0ddf7aa14549e3179dd0",
+      "path": "docs/desktop/75_PHASE7_B2_ACCEPTANCE.md",
+      "gitBlob": "99847459af2d9ba4e5731bbcc6ba51be8de37dfa",
+      "gitBytes": 5941,
+      "gitSha256": "1f16f7b531d6ddda2d3a531e1774d04aea8906ae0f4876a3a22a56604dd034cb",
+      "worktreeBytes": 6010,
+      "worktreeSha256": "2e9c751294698b23445f0ef26fbfcad67fc7f39c2c86137b75855845d3545dd6",
+      "normalizedIdentity": true,
+      "targetedGitLines": [
+        {
+          "line": 28,
+          "text": "Earlier RED Native gates remain historical failures, including the R2 strict run with 129 suites / 1132 tests / 1 failure in `WindowsStudioEdgeDragTest.maximized Studio outer edges remain stationary and restore remains resizable`, with foreground/Robot input diagnostics. They are not retroactively relabeled PASS or dismissed as flaky. The later controlled R3 isolation and exact-source strict full "
+        },
+        {
+          "line": 32,
+          "text": "The user explicitly confirmed the following on 2026-10-11. These are user-performed Windows checks, not Codex- or Project-executed tests."
+        }
+      ]
+    },
+    {
+      "authority": "COMMITTED GIT FILE",
+      "at": "2092806f8e4a203a1d2b0ddf7aa14549e3179dd0",
+      "path": "docs/desktop/76_PHASE7_D_ACCEPTANCE.md",
+      "gitBlob": "12326d742aeab3e457a7db00e9dd9ff65447b75c",
+      "gitBytes": 7807,
+      "gitSha256": "23f57af156ed70a7e835634977bce51b3a9727b36b6c649f236f4b3b5047a523",
+      "worktreeBytes": 7887,
+      "worktreeSha256": "b4bbbe3a422e110e7a348538df53d228fae17ce3c155cdcee600aad07048d3e9",
+      "normalizedIdentity": true,
+      "targetedGitLines": [
+        {
+          "line": 17,
+          "text": "The user explicitly confirmed all seven checks after running the P7-D Windows package. These results are **user-performed manual acceptance**, not Codex-executed or Project-executed GUI tests."
+        },
+        {
+          "line": 41,
+          "text": "| Codex local | Isolated Native foreground/Viewer verification, 3 suites / 4 tests | PASS on an intermediate local test-harness state |"
+        },
+        {
+          "line": 49,
+          "text": "The earlier full RED likewise came from foreground/pointer ownership preconditions and is **not** retroactively reclassified as passing. Neither that RED nor a pre-Viewer focus failure is evidence that Viewer product navigation failed. At the same time, **there is no exact-final-SHA strict-full 0/0/0 claim**."
+        },
+        {
+          "line": 51,
+          "text": "Project explicitly approved a **scope-limited user manual acceptance substitution for foreground-dependent Native GUI automation**, retaining the original Native/full RED evidence and all test assertions. This exception does not waive unrelated unit, protocol, data integrity or release gates. The user's direct Windows confirmation is a separate acceptance authority. No tests were rerun in this doc"
+        }
+      ]
+    },
+    {
+      "authority": "COMMITTED GIT FILE",
+      "at": "2092806f8e4a203a1d2b0ddf7aa14549e3179dd0",
+      "path": "docs/desktop/78_PHASE7_WIN_ACCEPTANCE.md",
+      "gitBlob": "708d15d584a830349d7c38a3e9610f21f2ee432d",
+      "gitBytes": 9130,
+      "gitSha256": "ae3cf7133c69ce0162e905ca54f63e6701bc372421c858b849c1ba53fc848b89",
+      "worktreeBytes": 9214,
+      "worktreeSha256": "61024cbaad85cc6105211588bd23a6fcf300606946b03274937b261970d03fca",
+      "normalizedIdentity": true,
+      "targetedGitLines": [
+        {
+          "line": 17,
+          "text": "The user explicitly confirmed all three P7-WIN checks after receiving and running the exact-source Windows package. This is **user-performed visual/interaction acceptance**. Project reviewed GitHub source, but did not personally interact with the packaged GUI. Codex did not perform the user's acceptance."
+        },
+        {
+          "line": 52,
+          "text": "Project approved a **scope-limited manual substitution for Windows foreground/visual/GUI-accessibility verification**. This exception does not waive unrelated protocol, persistence, data integrity or release gates. **No final-source strict-full 0/0/0 gate has been claimed.**"
+        },
+        {
+          "line": 71,
+          "text": "2. **GUI acceptance ownership:** source/resource correctness and compile belong to developer/Project evidence; true foreground, title/taskbar branding, scrollability and window behavior are primarily user Windows manual checks. Robot/HWND and synthetic semantics limitations must be recorded distinctly from real defects."
+        }
+      ]
+    },
+    {
+      "authority": "COMMITTED GIT FILE",
+      "at": "2092806f8e4a203a1d2b0ddf7aa14549e3179dd0",
+      "path": "docs/desktop/105_DESKTOP_SHUTDOWN_PROCESS_LIFETIME_GATE.md",
+      "gitBlob": "f72bbd93459c5e3caa2bc9ec09d41ec63ae938be",
+      "gitBytes": 11220,
+      "gitSha256": "e272871093fac75e6bbf4c31c02155c6e94e3d86409499cdf2fab41b35aba449",
+      "worktreeBytes": 11279,
+      "worktreeSha256": "a8b6d47092abb542029b054d355fb1d4156a8a94e4dbf5dc7658128f73628bf7",
+      "normalizedIdentity": true,
+      "targetedGitLines": []
+    },
+    {
+      "authority": "COMMITTED GIT FILE",
+      "at": "2092806f8e4a203a1d2b0ddf7aa14549e3179dd0",
+      "path": "docs/desktop/21_CURRENT_STATE.md",
+      "gitBlob": "7e67a6c47ba1961b56624c598c3a84701378b92f",
+      "gitBytes": 138572,
+      "gitSha256": "8c9fbe03c7d66422ddfe64d9b927bcc8cc958e29a0e8c3d826664d0b8f19049a",
+      "worktreeBytes": 139513,
+      "worktreeSha256": "ba1033b7dad2fe12f3ffbe44e167f9fe1b3a58e398cca03e1c7d3071a21db956",
+      "normalizedIdentity": true,
+      "targetedGitLines": [
+        {
+          "line": 906,
+          "text": "- computer-use capture：**BLOCKED_ENVIRONMENT**（首次 FrameArrived timeout + activation retry timeout），不判产品失败，不伪称自动 UI capture 成功。"
+        }
+      ]
+    },
+    {
+      "authority": "COMMITTED GIT FILE",
+      "at": "2092806f8e4a203a1d2b0ddf7aa14549e3179dd0",
+      "path": "docs/desktop/16_TEST_MATRIX.md",
+      "gitBlob": "e4b03bc54c6d9e61a8021656da9d0c4097e52366",
+      "gitBytes": 77449,
+      "gitSha256": "ebcc3f4173e5e75623f34001d3d9cf897e53548944f6a5d407b889a604e0b2c3",
+      "worktreeBytes": 78440,
+      "worktreeSha256": "12be9f280f523640450349005cef537393e06e803ae50deb83d0d05c6af55006",
+      "normalizedIdentity": true,
+      "targetedGitLines": [
+        {
+          "line": 134,
+          "text": "| Codex final safe-layout Native | 1 suite / 2 tests; 1 FAIL / 1 skipped (fail-fast) | Initial foreground target resolved to external `chrome.exe`; Viewer had not opened |"
+        },
+        {
+          "line": 136,
+          "text": "| User Windows manual acceptance | **D-01–D-07: 7/7 PASS** | Project-authorized substitution for unreliable foreground-dependent Native GUI automation |"
+        },
+        {
+          "line": 344,
+          "text": "- computer-use capture **BLOCKED_ENVIRONMENT**：FrameArrived timeout，唯一 activation retry 后 window capture timeout；不判产品失败，不冒充自动视觉通过。"
+        },
+        {
+          "line": 367,
+          "text": "- screenshot capture仍可能受 `FrameArrived timed out` 环境问题影响；不作为产品失败。"
+        },
+        {
+          "line": 742,
+          "text": "  - Project direct source review：27 moved literals/section constants character-for-character equal；12 moved builders/helpers preserve behavior；Android duplicate moved literals absent；`354f151...` Prompt drift not absorbed"
+        }
+      ]
+    },
+    {
+      "authority": "COMMITTED GIT FILE",
+      "at": "2092806f8e4a203a1d2b0ddf7aa14549e3179dd0",
+      "path": "docs/desktop/evidence/p9-s2b-g1b-b-packaged-smoke-20261016/README.md",
+      "gitBlob": "04d6c342a176618ea88e5526de6b617245704312",
+      "gitBytes": 10621,
+      "gitSha256": "2afb06983d3b36824588fd7cdf36d097250bfc868d1d4efd1e650f599c1c259a",
+      "worktreeBytes": 10621,
+      "worktreeSha256": "2afb06983d3b36824588fd7cdf36d097250bfc868d1d4efd1e650f599c1c259a",
+      "normalizedIdentity": true,
+      "targetedGitLines": [
+        {
+          "line": 130,
+          "text": "5. B1 screenshot failed with FrameArrived timeout. Distinct B2 capture after own-window activation"
+        },
+        {
+          "line": 131,
+          "text": "   failed with window-capture timeout. No further retry, full-desktop capture or clipboard workaround."
+        }
+      ]
+    },
+    {
+      "authority": "COMMITTED GIT FILE",
+      "at": "2092806f8e4a203a1d2b0ddf7aa14549e3179dd0",
+      "path": "docs/desktop/evidence/p9-s2b-g1b-b-packaged-smoke-20261016/runs/B1-01/window-accessibility.json",
+      "gitBlob": "e215d955e79d58f131716236e32d7619fc1a9d88",
+      "gitBytes": 565,
+      "gitSha256": "3240f389deb91e8c66c1d1700793425ae185dd30c4a2df1a8a8a20723b13c5e3",
+      "worktreeBytes": 565,
+      "worktreeSha256": "3240f389deb91e8c66c1d1700793425ae185dd30c4a2df1a8a8a20723b13c5e3",
+      "normalizedIdentity": true,
+      "targetedGitLines": [
+        {
+          "line": 13,
+          "text": "    \"error\": \"FrameArrived timed out: timed out waiting on channel\""
+        }
+      ]
+    },
+    {
+      "authority": "COMMITTED GIT FILE",
+      "at": "2092806f8e4a203a1d2b0ddf7aa14549e3179dd0",
+      "path": "docs/desktop/evidence/p9-s2b-g1b-bv-window-text-20261017/README.md",
+      "gitBlob": "7ff270713ccc829a94dabbcedd60107575d57a0a",
+      "gitBytes": 6161,
+      "gitSha256": "374a78b24da99e5a2efabebcf0fbd48bfed3a557c6e24c3fa03174ee334aaeb5",
+      "worktreeBytes": 6161,
+      "worktreeSha256": "374a78b24da99e5a2efabebcf0fbd48bfed3a557c6e24c3fa03174ee334aaeb5",
+      "normalizedIdentity": true,
+      "targetedGitLines": [
+        {
+          "line": 19,
+          "text": "Computer Use list_windows timed out on initial call, lightweight retry and post-kernel-reset retry."
+        }
+      ]
+    },
+    {
+      "authority": "COMMITTED GIT FILE",
+      "at": "2092806f8e4a203a1d2b0ddf7aa14549e3179dd0",
+      "path": "docs/desktop/evidence/p9-s2b-g1b-bv-window-text-20261017/tool-and-user-observations.json",
+      "gitBlob": "f1ab089d1798b9b06cea3cf033c494d856979d26",
+      "gitBytes": 1380,
+      "gitSha256": "c2a6871ba9662e5e53e06b32497ac8ac8a8f9ff61a14fe441547b4ca85b4d275",
+      "worktreeBytes": 1380,
+      "worktreeSha256": "c2a6871ba9662e5e53e06b32497ac8ac8a8f9ff61a14fe441547b4ca85b4d275",
+      "normalizedIdentity": true,
+      "targetedGitLines": [
+        {
+          "line": 6,
+          "text": "      \"operation\": \"list_windows\","
+        },
+        {
+          "line": 7,
+          "text": "      \"result\": \"computer-use request timed out: list_windows\""
+        },
+        {
+          "line": 10,
+          "text": "      \"operation\": \"list_windows retry after 2s\","
+        },
+        {
+          "line": 11,
+          "text": "      \"result\": \"Error: computer-use request timed out: list_windows\","
+        },
+        {
+          "line": 15,
+          "text": "      \"operation\": \"list_windows after kernel reset\","
+        },
+        {
+          "line": 16,
+          "text": "      \"result\": \"Error: computer-use request timed out: list_windows\","
+        }
+      ]
+    },
+    {
+      "authority": "COMMITTED GIT FILE",
+      "at": "2092806f8e4a203a1d2b0ddf7aa14549e3179dd0",
+      "path": "docs/desktop/evidence/p8-s2a-r5-20261018/windows-gate.json",
+      "gitBlob": "bb6fe6f8064ca9e389949cb4e8afe70e7c4a6c2a",
+      "gitBytes": 419,
+      "gitSha256": "5cfd5a490f95d4cd7643d16916c8047fcaebc49754763dc9b232554d668046a1",
+      "worktreeBytes": 419,
+      "worktreeSha256": "5cfd5a490f95d4cd7643d16916c8047fcaebc49754763dc9b232554d668046a1",
+      "normalizedIdentity": true,
+      "targetedGitLines": [
+        {
+          "line": 6,
+          "text": "  \"frameArrivedThisRun\": \"NOT_ATTEMPTED\","
+        }
+      ]
+    },
+    {
+      "authority": "COMMITTED GIT FILE",
+      "at": "2092806f8e4a203a1d2b0ddf7aa14549e3179dd0",
+      "path": "docs/desktop/evidence/p8-s2a-r5-t1-20261018/native-ui-result.json",
+      "gitBlob": "7d2255d7e2e53306fa03a1e660d2193deaebf81f",
+      "gitBytes": 1402,
+      "gitSha256": "0ba2892b2049c93678b58ab6ca285115182598633e085e9b4d1fc8dde5607f2c",
+      "worktreeBytes": 1402,
+      "worktreeSha256": "0ba2892b2049c93678b58ab6ca285115182598633e085e9b4d1fc8dde5607f2c",
+      "normalizedIdentity": true,
+      "targetedGitLines": [
+        {
+          "line": 12,
+          "text": "  \"captureResult\": \"FrameArrived timed out: timed out waiting on channel\","
+        },
+        {
+          "line": 14,
+          "text": "  \"diagnostic\": \"Fresh list_windows returned the same owned image window; screenshot=false accessibility exposed only root Window and Pane; no Fish controls or reliable visual content.\","
+        }
+      ]
+    },
+    {
+      "authority": "COMMITTED GIT FILE",
+      "at": "2092806f8e4a203a1d2b0ddf7aa14549e3179dd0",
+      "path": "docs/desktop/evidence/p8-s2a-r5-t2-manual-20261018/README.md",
+      "gitBlob": "52a1fe2a36be09c19939dbc6733603578d082aab",
+      "gitBytes": 9829,
+      "gitSha256": "a36f4fc534a51dd769ab8a8fb5c8f60ab3be40525a291ab8458f3e2a50f76cba",
+      "worktreeBytes": 9829,
+      "worktreeSha256": "a36f4fc534a51dd769ab8a8fb5c8f60ab3be40525a291ab8458f3e2a50f76cba",
+      "normalizedIdentity": true,
+      "targetedGitLines": [
+        {
+          "line": 21,
+          "text": "Evidence comprises **9 user-supplied PNGs**, byte-identical to the supplied attachments, and user text in `user-signatures.jsonl`. **No automated screenshot or FrameArrived attempt occurred in T2.** A window title or process existence is not used as UI PASS."
+        }
+      ]
+    },
+    {
+      "authority": "COMMITTED GIT FILE",
+      "at": "2092806f8e4a203a1d2b0ddf7aa14549e3179dd0",
+      "path": "docs/desktop/evidence/p8-s2a-t2-ui-001-r1a-20261018/diagnosis.json",
+      "gitBlob": "3811091db5675397567db04b419d3c1d9f4153ad",
+      "gitBytes": 1200,
+      "gitSha256": "e91db99f7cc2bda7e6010d03a2904aaae9be4493342e94c36d29b29e75c9e4d6",
+      "worktreeBytes": 1200,
+      "worktreeSha256": "e91db99f7cc2bda7e6010d03a2904aaae9be4493342e94c36d29b29e75c9e4d6",
+      "normalizedIdentity": true,
+      "targetedGitLines": [
+        {
+          "line": 15,
+          "text": "  \"diagnosticConclusion\": \"The test pumped a constant animation timestamp; active scope and nonzero range rule out those proposed causes. A frozen frame clock explains the observed lack of progress. No separate advancing-clock-only run of the old API was made; pointer driver plus advancing frames was validated.\","
+        }
+      ]
+    },
+    {
+      "authority": "FROZEN SUCCESSFUL SOURCE",
+      "at": "dde3b8f71286d8ed2aeffaf3e3a08c2a21aca75f",
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/WindowsStudioEdgeDragTest.kt",
+      "gitBlob": "a42c3f82d6f39d2286a9a3a300cc014bc5649c68",
+      "bytes": 24951,
+      "sha256": "8747db24f7c2c7224148e5eb470aa8afbbe1650dc4ebef381acaef5827e9c534",
+      "targetedLines": [
+        {
+          "line": 28,
+          "text": "import java.awt.Robot"
+        },
+        {
+          "line": 43,
+          "text": "        fun WindowFromPoint(point: POINT.ByValue): HWND"
+        },
+        {
+          "line": 61,
+          "text": "            assertTrue(user.PrintWindow(hwnd, memory, 3), \"PrintWindow client capture\")"
+        },
+        {
+          "line": 164,
+          "text": "            val target = pointerApi.WindowFromPoint(POINT.ByValue(cursor.x, cursor.y))"
+        },
+        {
+          "line": 174,
+          "text": "                \"scale=${window.graphicsConfiguration.defaultTransform} density=${composeDensity.get()} window=${rect()} client=${client()}\")"
+        },
+        {
+          "line": 189,
+          "text": "                val target = pointerApi.WindowFromPoint(POINT.ByValue(x, y))"
+        },
+        {
+          "line": 194,
+          "text": "            assertEquals(native.hwnd, pointerApi.GetAncestor(pointerApi.WindowFromPoint(POINT.ByValue(x, y)), 2),"
+        },
+        {
+          "line": 206,
+          "text": "                    transform = window.graphicsConfiguration.defaultTransform"
+        },
+        {
+          "line": 219,
+          "text": "                assertEquals(native.hwnd, pointerApi.GetAncestor(pointerApi.WindowFromPoint(POINT.ByValue(focus.x, focus.y)), 2))"
+        },
+        {
+          "line": 222,
+          "text": "                awaitReady(\"Real fixture client click grants foreground before drag input\") { user.GetForegroundWindow() == native.hwnd }"
+        },
+        {
+          "line": 227,
+          "text": "            assertEquals(native.hwnd, user.GetForegroundWindow(), \"Fixture is foreground before Robot press\")"
+        },
+        {
+          "line": 326,
+          "text": "            log += \"divider measured=$divider density=${composeDensity.get()} screen=${screen.x},${screen.y} awtScale=${window.graphicsConfiguration.defaultTransform}\""
+        }
+      ]
+    },
+    {
+      "authority": "LOCAL HISTORICAL ARTIFACT, NOT A NEW EXECUTION",
+      "path": "app/desktopApp/build/phase7-b2-r2-gate/gate-summary.json",
+      "bytes": 1615,
+      "sha256": "43a994fd92a0775e6f45249c9aa33699287e681e757135fa8f1cad52b332a10a",
+      "publicRawCopy": "NO - contains private path metadata; selected facts only"
+    },
+    {
+      "authority": "LOCAL HISTORICAL ARTIFACT, NOT A NEW EXECUTION",
+      "path": "app/desktopApp/build/phase7-b2-r3-validation-gate/gate-summary.json",
+      "bytes": 3938,
+      "sha256": "355b12ac856c1ac9294c7c10626a16c7c9c95b3ce38a0fc22c8757b1de8dcd5b",
+      "publicRawCopy": "NO - contains private path metadata; selected facts only"
+    },
+    {
+      "authority": "LOCAL HISTORICAL ARTIFACT, NOT A NEW EXECUTION",
+      "path": "app/desktopApp/build/phase7-d-r1-native-diagnostic/gate-summary.json",
+      "bytes": 2517,
+      "sha256": "90be7e7d05b0f34ac1b20a3a2a6cf145f0b8967b6d3966776573464489e4f7ae",
+      "publicRawCopy": "NO - contains private path metadata; selected facts only"
+    },
+    {
+      "authority": "LOCAL HISTORICAL ARTIFACT, NOT A NEW EXECUTION",
+      "path": "app/desktopApp/build/phase7-d-safe-layout-validation-gate/gate-summary.json",
+      "bytes": 3006,
+      "sha256": "18cb0c70ccbdbab589c706ab0baf3e24c7ad302cba77d7f0c7f136c3755b4f22",
+      "publicRawCopy": "NO - contains private path metadata; selected facts only"
+    },
+    {
+      "authority": "LOCAL HISTORICAL ARTIFACT, NOT A NEW EXECUTION",
+      "path": "app/desktopApp/build/phase8-s2a-exact-20261013-194029-gate/gate-summary.json",
+      "bytes": 19715,
+      "sha256": "4e2248ad00e7bc2c15feba6188443f0a76524bb61a56bbc079bca372de5dd4a4",
+      "publicRawCopy": "NO - contains private path metadata; selected facts only"
+    },
+    {
+      "authority": "LOCAL HISTORICAL RAW XML, NOT RERUN",
+      "path": "app/desktopApp/build/phase7-b2-r2-gate/full-xml/TEST-com.example.chatbar.desktop.WindowsStudioEdgeDragTest.xml",
+      "bytes": 5815,
+      "sha256": "9a101ea4de63084d99c290615b85e5f95226f9c8ecbf3ab4948d2313be37e2dd",
+      "tests": "1",
+      "failures": "1",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "authority": "LOCAL HISTORICAL RAW XML, NOT RERUN",
+      "path": "app/desktopApp/build/phase7-b2-r2-gate/full-xml/TEST-com.example.chatbar.desktop.WindowsWindowChromeTest.xml",
+      "bytes": 503,
+      "sha256": "401f055180bdd09e2185362ef6d577e0bfddf0c5a4d513f1ae3117ffa9864b65",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "authority": "LOCAL HISTORICAL RAW XML, NOT RERUN",
+      "path": "app/desktopApp/build/phase7-b2-r3-validation-gate/native-xml/TEST-com.example.chatbar.desktop.WindowsStudioEdgeDragTest.xml",
+      "bytes": 518,
+      "sha256": "acf13e6b4c052167b30d9140647363006088c34eece826597d31e26e42acdcb2",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "authority": "LOCAL HISTORICAL RAW XML, NOT RERUN",
+      "path": "app/desktopApp/build/phase7-b2-r3-validation-gate/native-xml/TEST-com.example.chatbar.desktop.WindowsWindowChromeTest.xml",
+      "bytes": 501,
+      "sha256": "4a41afe372c72d211b39489b1f79099559d3f5764cc065caf258ef4f9030e27e",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "authority": "LOCAL HISTORICAL RAW XML, NOT RERUN",
+      "path": "app/desktopApp/build/phase7-d-r1-native-diagnostic/xml/TEST-com.example.chatbar.desktop.WindowsBackgroundViewerTest.xml",
+      "bytes": 6602,
+      "sha256": "182e7a826b5471db2e20101cfde9e1e364788584ab6d234ececd878b9473b7de",
+      "tests": "1",
+      "failures": "1",
+      "errors": "0",
+      "skipped": "0"
+    },
+    {
+      "authority": "LOCAL HISTORICAL RAW XML, NOT RERUN",
+      "path": "app/desktopApp/build/phase7-d-safe-layout-validation-gate/native-xml/TEST-com.example.chatbar.desktop.WindowsBackgroundViewerTest.xml",
+      "bytes": 7412,
+      "sha256": "f0773eb5e6f38dc4c8fc1cd9f49970052540543f537aa175a72f4597dfa79348",
+      "tests": "2",
+      "failures": "1",
+      "errors": "0",
+      "skipped": "1"
+    },
+    {
+      "authority": "LOCAL PrintWindow OUTPUT, HASH ONLY; NOT NEW VISUAL SIGNATURE",
+      "path": "app/desktopApp/build/phase7-b2-r3-validation-gate/native-isolated/caption-drag-restored.png",
+      "bytes": 16078,
+      "sha256": "5efd42e892731d8b5edaf49a11786bbf6fbe96a92d33d95b0152941aff1ba7df"
+    },
+    {
+      "authority": "LOCAL PrintWindow OUTPUT, HASH ONLY; NOT NEW VISUAL SIGNATURE",
+      "path": "app/desktopApp/build/phase7-b2-r3-validation-gate/native-isolated/CHAT-max-edge.png",
+      "bytes": 14658,
+      "sha256": "ca7de423964dbd3004872b79599df34b97dfb54da4118e18380de5a2f6b8ac48"
+    },
+    {
+      "authority": "LOCAL PrintWindow OUTPUT, HASH ONLY; NOT NEW VISUAL SIGNATURE",
+      "path": "app/desktopApp/build/phase7-b2-r3-validation-gate/native-isolated/MANAGE-max-edge.png",
+      "bytes": 14803,
+      "sha256": "4422a34d7e4d4a8a3297d100f82fd529f342c6c87d7e60ef6d8000b2161f5936"
+    },
+    {
+      "authority": "LOCAL PrintWindow OUTPUT, HASH ONLY; NOT NEW VISUAL SIGNATURE",
+      "path": "app/desktopApp/build/phase7-b2-r3-validation-gate/native-isolated/max-after-bottom-left-pane.png",
+      "bytes": 22509,
+      "sha256": "6c2572c75e59dc25a0f1f341deabdcc19d702bf5014b2efb11591baef2f9398b"
+    },
+    {
+      "authority": "LOCAL PrintWindow OUTPUT, HASH ONLY; NOT NEW VISUAL SIGNATURE",
+      "path": "app/desktopApp/build/phase7-b2-r3-validation-gate/native-isolated/max-after-bottom-left.png",
+      "bytes": 22509,
+      "sha256": "6c2572c75e59dc25a0f1f341deabdcc19d702bf5014b2efb11591baef2f9398b"
+    },
+    {
+      "authority": "LOCAL PrintWindow OUTPUT, HASH ONLY; NOT NEW VISUAL SIGNATURE",
+      "path": "app/desktopApp/build/phase7-b2-r3-validation-gate/native-isolated/max-after-bottom-right-pane.png",
+      "bytes": 22509,
+      "sha256": "6c2572c75e59dc25a0f1f341deabdcc19d702bf5014b2efb11591baef2f9398b"
+    },
+    {
+      "authority": "LOCAL PrintWindow OUTPUT, HASH ONLY; NOT NEW VISUAL SIGNATURE",
+      "path": "app/desktopApp/build/phase7-b2-r3-validation-gate/native-isolated/max-after-bottom-right.png",
+      "bytes": 22509,
+      "sha256": "6c2572c75e59dc25a0f1f341deabdcc19d702bf5014b2efb11591baef2f9398b"
+    },
+    {
+      "authority": "LOCAL PrintWindow OUTPUT, HASH ONLY; NOT NEW VISUAL SIGNATURE",
+      "path": "app/desktopApp/build/phase7-b2-r3-validation-gate/native-isolated/max-after-left.png",
+      "bytes": 22509,
+      "sha256": "6c2572c75e59dc25a0f1f341deabdcc19d702bf5014b2efb11591baef2f9398b"
+    },
+    {
+      "authority": "LOCAL PrintWindow OUTPUT, HASH ONLY; NOT NEW VISUAL SIGNATURE",
+      "path": "app/desktopApp/build/phase7-b2-r3-validation-gate/native-isolated/max-after-right.png",
+      "bytes": 22509,
+      "sha256": "6c2572c75e59dc25a0f1f341deabdcc19d702bf5014b2efb11591baef2f9398b"
+    },
+    {
+      "authority": "LOCAL PrintWindow OUTPUT, HASH ONLY; NOT NEW VISUAL SIGNATURE",
+      "path": "app/desktopApp/build/phase7-b2-r3-validation-gate/native-isolated/max-after-top-left.png",
+      "bytes": 22509,
+      "sha256": "6c2572c75e59dc25a0f1f341deabdcc19d702bf5014b2efb11591baef2f9398b"
+    },
+    {
+      "authority": "LOCAL PrintWindow OUTPUT, HASH ONLY; NOT NEW VISUAL SIGNATURE",
+      "path": "app/desktopApp/build/phase7-b2-r3-validation-gate/native-isolated/max-after-top-right-pane.png",
+      "bytes": 22509,
+      "sha256": "6c2572c75e59dc25a0f1f341deabdcc19d702bf5014b2efb11591baef2f9398b"
+    },
+    {
+      "authority": "LOCAL PrintWindow OUTPUT, HASH ONLY; NOT NEW VISUAL SIGNATURE",
+      "path": "app/desktopApp/build/phase7-b2-r3-validation-gate/native-isolated/max-after-top-right.png",
+      "bytes": 22509,
+      "sha256": "6c2572c75e59dc25a0f1f341deabdcc19d702bf5014b2efb11591baef2f9398b"
+    },
+    {
+      "authority": "LOCAL PrintWindow OUTPUT, HASH ONLY; NOT NEW VISUAL SIGNATURE",
+      "path": "app/desktopApp/build/phase7-b2-r3-validation-gate/native-isolated/max-before.png",
+      "bytes": 22509,
+      "sha256": "6c2572c75e59dc25a0f1f341deabdcc19d702bf5014b2efb11591baef2f9398b"
+    },
+    {
+      "authority": "LOCAL PrintWindow OUTPUT, HASH ONLY; NOT NEW VISUAL SIGNATURE",
+      "path": "app/desktopApp/build/phase7-b2-r3-validation-gate/native-isolated/max-divider.png",
+      "bytes": 22591,
+      "sha256": "46c6a12a99e0ced6cefb74b98bf3f4e42dc96b92878fb43c8c35cf0e4750a5ba"
+    },
+    {
+      "authority": "LOCAL PrintWindow OUTPUT, HASH ONLY; NOT NEW VISUAL SIGNATURE",
+      "path": "app/desktopApp/build/phase7-b2-r3-validation-gate/native-isolated/normal-before.png",
+      "bytes": 15758,
+      "sha256": "2bf12ac04440284ec126f2b13127e57aeb89ece7e97651dc3520eb2988775cd8"
+    },
+    {
+      "authority": "LOCAL PrintWindow OUTPUT, HASH ONLY; NOT NEW VISUAL SIGNATURE",
+      "path": "app/desktopApp/build/phase7-b2-r3-validation-gate/native-isolated/normal-right-caption-drag.png",
+      "bytes": 15758,
+      "sha256": "2bf12ac04440284ec126f2b13127e57aeb89ece7e97651dc3520eb2988775cd8"
+    },
+    {
+      "authority": "LOCAL PrintWindow OUTPUT, HASH ONLY; NOT NEW VISUAL SIGNATURE",
+      "path": "app/desktopApp/build/phase7-b2-r3-validation-gate/native-isolated/remaximized.png",
+      "bytes": 22591,
+      "sha256": "46c6a12a99e0ced6cefb74b98bf3f4e42dc96b92878fb43c8c35cf0e4750a5ba"
+    },
+    {
+      "authority": "LOCAL PrintWindow OUTPUT, HASH ONLY; NOT NEW VISUAL SIGNATURE",
+      "path": "app/desktopApp/build/phase7-b2-r3-validation-gate/native-isolated/restore-after-bottom-left.png",
+      "bytes": 16078,
+      "sha256": "5efd42e892731d8b5edaf49a11786bbf6fbe96a92d33d95b0152941aff1ba7df"
+    },
+    {
+      "authority": "LOCAL PrintWindow OUTPUT, HASH ONLY; NOT NEW VISUAL SIGNATURE",
+      "path": "app/desktopApp/build/phase7-b2-r3-validation-gate/native-isolated/restore-after-bottom-right.png",
+      "bytes": 16078,
+      "sha256": "5efd42e892731d8b5edaf49a11786bbf6fbe96a92d33d95b0152941aff1ba7df"
+    },
+    {
+      "authority": "LOCAL PrintWindow OUTPUT, HASH ONLY; NOT NEW VISUAL SIGNATURE",
+      "path": "app/desktopApp/build/phase7-b2-r3-validation-gate/native-isolated/restore-after-bottom.png",
+      "bytes": 16105,
+      "sha256": "e8e8e995c8045d0529c5c2cc8135a4a299d7df49a939413319542302333b6a2b"
+    },
+    {
+      "authority": "LOCAL PrintWindow OUTPUT, HASH ONLY; NOT NEW VISUAL SIGNATURE",
+      "path": "app/desktopApp/build/phase7-b2-r3-validation-gate/native-isolated/restore-after-left.png",
+      "bytes": 15734,
+      "sha256": "8dbc240cc77b9d36a8fec0bc3304997dfefd2cd20995053cb80f2fb9a9567201"
+    },
+    {
+      "authority": "LOCAL PrintWindow OUTPUT, HASH ONLY; NOT NEW VISUAL SIGNATURE",
+      "path": "app/desktopApp/build/phase7-b2-r3-validation-gate/native-isolated/restore-after-right.png",
+      "bytes": 15734,
+      "sha256": "8dbc240cc77b9d36a8fec0bc3304997dfefd2cd20995053cb80f2fb9a9567201"
+    },
+    {
+      "authority": "LOCAL PrintWindow OUTPUT, HASH ONLY; NOT NEW VISUAL SIGNATURE",
+      "path": "app/desktopApp/build/phase7-b2-r3-validation-gate/native-isolated/restore-after-top-left.png",
+      "bytes": 16078,
+      "sha256": "5efd42e892731d8b5edaf49a11786bbf6fbe96a92d33d95b0152941aff1ba7df"
+    },
+    {
+      "authority": "LOCAL PrintWindow OUTPUT, HASH ONLY; NOT NEW VISUAL SIGNATURE",
+      "path": "app/desktopApp/build/phase7-b2-r3-validation-gate/native-isolated/restore-after-top-right.png",
+      "bytes": 16078,
+      "sha256": "5efd42e892731d8b5edaf49a11786bbf6fbe96a92d33d95b0152941aff1ba7df"
+    },
+    {
+      "authority": "LOCAL PrintWindow OUTPUT, HASH ONLY; NOT NEW VISUAL SIGNATURE",
+      "path": "app/desktopApp/build/phase7-b2-r3-validation-gate/native-isolated/restore-after-top.png",
+      "bytes": 16105,
+      "sha256": "e8e8e995c8045d0529c5c2cc8135a4a299d7df49a939413319542302333b6a2b"
+    },
+    {
+      "authority": "LOCAL PrintWindow OUTPUT, HASH ONLY; NOT NEW VISUAL SIGNATURE",
+      "path": "app/desktopApp/build/phase7-b2-r3-validation-gate/native-isolated/restore-before.png",
+      "bytes": 15760,
+      "sha256": "f6d35e2cfad7cd258dcd21bed53332210b0b5cc671b7f2a437e0a75b15271b98"
+    },
+    {
+      "authority": "LOCAL PrintWindow OUTPUT, HASH ONLY; NOT NEW VISUAL SIGNATURE",
+      "path": "app/desktopApp/build/phase7-b2-r3-validation-gate/native-isolated/right-caption-drag-restored.png",
+      "bytes": 16078,
+      "sha256": "5efd42e892731d8b5edaf49a11786bbf6fbe96a92d33d95b0152941aff1ba7df"
+    }
+  ]
+}

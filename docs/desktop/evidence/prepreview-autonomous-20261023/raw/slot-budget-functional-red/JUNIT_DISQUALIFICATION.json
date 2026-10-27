@@ -1,0 +1,6 @@
+{
+  "actualTestsExecuted": 0,
+  "excludedCopiedXml": 2,
+  "reason": "After the task-owned daemon was stopped, the log contained a failed test-task line. The runner copied two stale XML files from the earlier container-probe run, whose timestamps and suite names do not match this invocation. These files are retained as collection-error evidence, NOT new executions or passes.",
+  "actualExit": 1
+}

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopScreenshotWorkspaceTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-20T22:04:04.435Z" hostname="DD1" time="0.102">
+  <properties/>
+  <testcase name="wheel scrolling and control zoom preserve pointed content without changing source dimensions" classname="com.example.chatbar.desktop.DesktopScreenshotWorkspaceTest" time="0.0"/>
+  <testcase name="long preview stays bounded and maintains pointer anchor and center on resize" classname="com.example.chatbar.desktop.DesktopScreenshotWorkspaceTest" time="0.0"/>
+  <testcase name="initial owned window is eighty five percent and clamps to monitor work area" classname="com.example.chatbar.desktop.DesktopScreenshotWorkspaceTest" time="0.003"/>
+  <testcase name="groups preserve irregular repository order and do not invent source turns" classname="com.example.chatbar.desktop.DesktopScreenshotWorkspaceTest" time="0.0"/>
+  <testcase name="cancelling suspended export chooser never creates target and retains PNG" classname="com.example.chatbar.desktop.DesktopScreenshotWorkspaceTest" time="0.004"/>
+  <testcase name="both scrollbar adapters move independent axes and fit modes retain bounded extents" classname="com.example.chatbar.desktop.DesktopScreenshotWorkspaceTest" time="0.0"/>
+  <testcase name="collapse and bulk selection retain official block identities while excluding recordings" classname="com.example.chatbar.desktop.DesktopScreenshotWorkspaceTest" time="0.001"/>
+  <testcase name="actual message mutation during chooser rejects save before file creation" classname="com.example.chatbar.desktop.DesktopScreenshotWorkspaceTest" time="0.062"/>
+  <testcase name="resource identity changes reject stale export and cancellation keeps PNG retryable" classname="com.example.chatbar.desktop.DesktopScreenshotWorkspaceTest" time="0.032"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

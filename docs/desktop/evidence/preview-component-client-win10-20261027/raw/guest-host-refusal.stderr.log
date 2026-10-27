@@ -1,0 +1,7 @@
+EXISTING_ISOLATED_HYPERV_GUEST_ONLY
+At I:\Verify-Comp1GuardFix-ReadOnly.ps1:9 char:131
++ ... uter -in @('DD1','DL1')){throw 'EXISTING_ISOLATED_HYPERV_GUEST_ONLY'}
++                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (EXISTING_ISOLATED_HYPERV_GUEST_ONLY:String) [], RuntimeException
+    + FullyQualifiedErrorId : EXISTING_ISOLATED_HYPERV_GUEST_ONLY
+ 

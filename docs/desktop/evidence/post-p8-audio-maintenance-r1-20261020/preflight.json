@@ -1,0 +1,16 @@
+{
+  "utc": "2026-10-20T10:11:20.501267+00:00",
+  "base": "c6d94abd6540416d1a6a90e8d088b0240bd0e13d",
+  "frozenUx": "22d043335f7b1433d3b484ce9abcf5c74d9aba61",
+  "initial25RawIdentities": "PASS before edits",
+  "initialTrackedAndIndex": "clean",
+  "fourUserFiles": "paths only; contents unread/unhashed/unstaged",
+  "resourcePreflight": {
+    "availablePhysicalKiB": 1427504,
+    "commitLimit": 41946214400,
+    "committedBytes": 34079854592,
+    "pagesPerSec": 0,
+    "java": [],
+    "diskFreeBytes": 10770268160
+  }
+}

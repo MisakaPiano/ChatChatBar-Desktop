@@ -1,0 +1,8 @@
+Exception in thread "main" java.nio.file.FileAlreadyExistsException: H:\ChatChatBar-Desktop\app\desktopApp\build\p8-remaining-20261019\windows-final-gate\mock-service
+	at java.base/sun.nio.fs.WindowsException.translateToIOException(WindowsException.java:87)
+	at java.base/sun.nio.fs.WindowsException.rethrowAsIOException(WindowsException.java:103)
+	at java.base/sun.nio.fs.WindowsException.rethrowAsIOException(WindowsException.java:108)
+	at java.base/sun.nio.fs.WindowsFileSystemProvider.createDirectory(WindowsFileSystemProvider.java:532)
+	at java.base/java.nio.file.Files.createDirectory(Files.java:700)
+	at P8S7Support.mock(P8S7Support.java:82)
+	at P8S7Support.main(P8S7Support.java:25)

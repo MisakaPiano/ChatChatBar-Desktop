@@ -1,0 +1,645 @@
+[
+  {
+    "stage": "22-p11-archive-codec",
+    "result": {
+      "finished": "2026-10-20T20:56:22.7211749Z",
+      "started": "2026-10-20T20:55:44.1384401Z",
+      "exitCode": 1
+    },
+    "desktop": {
+      "suites": 3,
+      "tests": 30,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  {
+    "stage": "23-p11-archive-codec",
+    "result": {
+      "exitCode": 0,
+      "started": "2026-10-20T20:58:21.1633440Z",
+      "finished": "2026-10-20T20:58:58.0283020Z"
+    },
+    "desktop": {
+      "suites": 3,
+      "tests": 30,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "suites": 3,
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  {
+    "stage": "24-p11-session-journal",
+    "result": {
+      "finished": "2026-10-20T21:00:08.1434191Z",
+      "exitCode": 1,
+      "started": "2026-10-20T20:59:40.6890102Z"
+    },
+    "desktop": {
+      "suites": 4,
+      "tests": 34,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  {
+    "stage": "25-p11-reservation-journal",
+    "result": {
+      "exitCode": 0,
+      "finished": "2026-10-20T21:04:45.3019672Z",
+      "started": "2026-10-20T21:04:07.7142097Z"
+    },
+    "desktop": {
+      "suites": 4,
+      "tests": 34,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "suites": 34,
+      "tests": 172,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  {
+    "stage": "26-p11-restore-plan-compile",
+    "result": {
+      "exitCode": 1,
+      "finished": "2026-10-20T21:09:56.5281175Z",
+      "started": "2026-10-20T21:09:23.0011819Z"
+    },
+    "desktop": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  {
+    "stage": "27-p11-session-service",
+    "result": {
+      "started": "2026-10-20T21:11:40.4990099Z",
+      "exitCode": 1,
+      "finished": "2026-10-20T21:13:33.5473082Z"
+    },
+    "desktop": {
+      "suites": 5,
+      "tests": 21,
+      "failures": 4,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  {
+    "stage": "28-p11-session-service",
+    "result": {
+      "finished": "2026-10-20T21:15:15.0775327Z",
+      "started": "2026-10-20T21:14:49.0956730Z",
+      "exitCode": 1
+    },
+    "desktop": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  {
+    "stage": "29-p11-session-service",
+    "result": {
+      "exitCode": 1,
+      "started": "2026-10-20T21:15:44.2591107Z",
+      "finished": "2026-10-20T21:17:03.3784352Z"
+    },
+    "desktop": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  {
+    "stage": "30-p11-session-graph",
+    "result": {
+      "exitCode": 1,
+      "finished": "2026-10-20T21:20:03.8545615Z",
+      "started": "2026-10-20T21:18:21.9558100Z"
+    },
+    "desktop": {
+      "suites": 7,
+      "tests": 48,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  {
+    "stage": "31-p11-session-graph",
+    "result": {
+      "exitCode": 1,
+      "started": "2026-10-20T21:20:33.9758089Z",
+      "finished": "2026-10-20T21:21:30.7805662Z"
+    },
+    "desktop": {
+      "suites": 9,
+      "tests": 64,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  {
+    "stage": "32-p11-session-graph",
+    "result": {
+      "exitCode": 1,
+      "started": "2026-10-20T21:22:08.3406628Z",
+      "finished": "2026-10-20T21:22:28.1692451Z"
+    },
+    "desktop": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  {
+    "stage": "33-p11-session-streaming",
+    "result": {
+      "exitCode": 0,
+      "started": "2026-10-20T21:23:27.5473891Z",
+      "finished": "2026-10-20T21:24:17.1807628Z"
+    },
+    "desktop": {
+      "suites": 9,
+      "tests": 64,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  {
+    "stage": "34-backup-dependencies",
+    "result": {
+      "purpose": "Dependency metadata resolution only; tests remain offline",
+      "utc": "2026-10-20T21:28:25.8426461Z",
+      "exitCode": 0
+    },
+    "desktop": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  {
+    "stage": "35-backup-artifacts",
+    "result": {
+      "utc": "2026-10-20T21:29:55.1853363Z",
+      "exitCode": 0
+    },
+    "desktop": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  {
+    "stage": "36-p11-streaming-catalog",
+    "result": {
+      "finished": "2026-10-20T21:31:13.2949249Z",
+      "exitCode": 1,
+      "started": "2026-10-20T21:30:24.1743932Z"
+    },
+    "desktop": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  {
+    "stage": "37-p11-streaming-catalog",
+    "result": {
+      "finished": "2026-10-20T21:33:51.2144498Z",
+      "started": "2026-10-20T21:31:29.1537150Z",
+      "exitCode": 0
+    },
+    "desktop": {
+      "suites": 6,
+      "tests": 48,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "suites": 3,
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  {
+    "stage": "38-p11-android-adapter-compile",
+    "result": {
+      "finished": "2026-10-20T21:35:00.5087339Z",
+      "started": "2026-10-20T21:34:04.4378913Z",
+      "exitCode": 0
+    },
+    "desktop": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  {
+    "stage": "39-full-backup-format",
+    "result": {
+      "exitCode": 0,
+      "started": "2026-10-20T21:37:21.8987396Z",
+      "finished": "2026-10-20T21:38:06.6996900Z"
+    },
+    "desktop": {
+      "suites": 4,
+      "tests": 29,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  {
+    "stage": "40-full-backup-mapping-journal",
+    "result": {
+      "started": "2026-10-20T21:43:31.4364938Z",
+      "finished": "2026-10-20T21:44:01.4563258Z",
+      "exitCode": 1
+    },
+    "desktop": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  {
+    "stage": "41-full-backup-mapping-journal",
+    "result": {
+      "finished": "2026-10-20T21:44:51.0910805Z",
+      "started": "2026-10-20T21:44:13.6669646Z",
+      "exitCode": 0
+    },
+    "desktop": {
+      "suites": 5,
+      "tests": 24,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  {
+    "stage": "42-full-backup-wiring",
+    "result": {
+      "started": "2026-10-20T21:53:10.0076706Z",
+      "finished": "2026-10-20T21:54:13.0837950Z",
+      "exitCode": 1
+    },
+    "desktop": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  {
+    "stage": "43-full-backup-service",
+    "result": {
+      "started": "2026-10-20T21:55:38.3612530Z",
+      "exitCode": 0,
+      "finished": "2026-10-20T21:57:19.9618028Z"
+    },
+    "desktop": {
+      "suites": 6,
+      "tests": 45,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  {
+    "stage": "44-updates-and-full-backup",
+    "result": {
+      "finished": "2026-10-20T22:00:06.1847581Z",
+      "started": "2026-10-20T21:58:59.8530265Z",
+      "exitCode": 1
+    },
+    "desktop": {
+      "suites": 9,
+      "tests": 71,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  {
+    "stage": "45-updates-and-full-backup",
+    "result": {
+      "exitCode": 0,
+      "started": "2026-10-20T22:00:54.2961374Z",
+      "finished": "2026-10-20T22:01:50.7752079Z"
+    },
+    "desktop": {
+      "suites": 9,
+      "tests": 75,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "result": {
+      "started": "2026-10-20T22:03:02.0784722Z",
+      "exitCode": 0,
+      "finished": "2026-10-20T22:04:11.4642312Z"
+    },
+    "desktop": {
+      "suites": 37,
+      "tests": 318,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "suites": 41,
+      "tests": 206,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  {
+    "stage": "47-archive-final-drain",
+    "result": {
+      "finished": "2026-10-20T22:06:40.7321677Z",
+      "exitCode": 0,
+      "started": "2026-10-20T22:05:07.2767753Z"
+    },
+    "desktop": {
+      "suites": 6,
+      "tests": 70,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  {
+    "stage": "48-p11-android-compatibility",
+    "result": {
+      "exitCode": 0,
+      "started": "2026-10-20T22:07:17.3072640Z",
+      "finished": "2026-10-20T22:07:39.6671438Z"
+    },
+    "desktop": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  {
+    "stage": "49-windows-package",
+    "result": {
+      "buildDirectory": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-completion-20261021\\package-c609e757-build",
+      "sourceCommit": "c609e757cca94dca20015e91279c9629e5782ea6",
+      "finished": "2026-10-20T22:10:29.1628688Z",
+      "started": "2026-10-20T22:08:51.3446721Z",
+      "exitCode": 0,
+      "guiStarted": false
+    },
+    "desktop": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  {
+    "stage": "50-windows-installers",
+    "result": {
+      "finished": "2026-10-20T22:12:41.0395478Z",
+      "exitCode": 0,
+      "started": "2026-10-20T22:11:29.7757924Z",
+      "guiStarted": false,
+      "installed": false,
+      "sourceCommit": "c609e757cca94dca20015e91279c9629e5782ea6"
+    },
+    "desktop": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "shared": {
+      "suites": 0,
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  }
+]

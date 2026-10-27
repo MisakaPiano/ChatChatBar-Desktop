@@ -1,0 +1,38 @@
+{
+  "status": "R2 PREPARATION PASS; NO GUI OR FAKE STARTED",
+  "source": "008343bb26d2eb76c23cae9b98132af828a9f447",
+  "head": "3137f5083d6ae7903178844fef1219beda2f4c10",
+  "branch": "feature/phase8-fish-audio",
+  "packageFiles": 212,
+  "packageManifestSHA256": "cd15d79587869d864ea4777aecef7a557086aa95d6838146c8f7bf83f652a7f7",
+  "supportByteIdentical": true,
+  "fixtureFiles": 11,
+  "mockServicePathAbsent": true,
+  "independentSingleUseLockAbsent": true,
+  "root": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r2-20261020\\environments\\p8s7-profile\\ChatChatBarDesktop",
+  "R1Preserved": [
+    {
+      "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate\\manual-start-once.lock",
+      "bytes": 37,
+      "sha256": "9cbf6dac5d6fdacecc0c6a0e9c4ba59c8ba992b6f6f61c22371195ac153551b4"
+    },
+    {
+      "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate\\manual-status.json",
+      "bytes": 153,
+      "sha256": "536f86a49cab2a6297e10802b0211aae303ebfa768468a59bdb5fd0aefcd0ae6"
+    },
+    {
+      "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate\\mock.stderr.log",
+      "bytes": 699,
+      "sha256": "b44127f2ccfab5d18980c8074500fab3973789ea3a316d38402a1a918a5c931d"
+    },
+    {
+      "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate\\mock-final.json",
+      "bytes": 145,
+      "sha256": "37402fddb8fc7b32769448a70ad166fe5e6183bf0a2223121dc464c42d418499"
+    }
+  ],
+  "userFiles": "KEEP / UNTRACKED / UNREAD / UNMODIFIED / UNSTAGED",
+  "realFishGET": 0,
+  "realFishTTS": 0
+}

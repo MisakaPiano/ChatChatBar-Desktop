@@ -1,0 +1,17 @@
+[
+  "C:\\Users\\1\\AppData\\Local\\Programs\\Python\\Python310\\python.exe",
+  "-I",
+  "H:\\ChatChatBar-Desktop\\tools\\desktop\\windows\\audit_app_image.py",
+  "--image",
+  "I:\\CCB-Desktop-Preview-Private-Candidate-1010-20261025\\compose\\binaries\\main\\app\\ChatChatBarDesktop",
+  "--commit",
+  "946c3791153634b0af65286313a497d141d5c598",
+  "--version",
+  "0.1.0-preview.1010",
+  "--installer-version",
+  "0.1.1010",
+  "--profile",
+  "desktop",
+  "--report",
+  "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\preview-continuous-private-20261025\\windows-package-candidate-1010\\PACKAGE_AUDIT.json"
+]

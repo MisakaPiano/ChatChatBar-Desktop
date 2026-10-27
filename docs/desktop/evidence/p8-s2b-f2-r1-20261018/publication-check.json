@@ -1,0 +1,18 @@
+{
+  "sourceFilesVerified": 5,
+  "r1OnlyTwoFilesChanged": true,
+  "otherThreeDraftBytesUnchanged": true,
+  "sourceUnchangedAfterNewRed": true,
+  "frozenDeltaBaseBytesVerified": 2,
+  "priorF2ManifestMembersVerified": 21,
+  "rawJUnitByteIdentitiesVerified": 2,
+  "relativeLinksVerified": 14,
+  "profilePathsPublished": false,
+  "signedCapabilitiesPublished": false,
+  "realCredentialsRead": false,
+  "protectedUserContentsRead": false,
+  "sourceDiffCheck": "PASS",
+  "sourceCommit": null,
+  "fullSourcePatchSha256": "18849e8b1035dbf78de08944ed36069e25288f1d8d093f71b5fc0c0a702f1a0f",
+  "deltaSha256": "5c63554e6b2fe603693543f287ae808850a55fb590969c5ce2626d549774e759"
+}

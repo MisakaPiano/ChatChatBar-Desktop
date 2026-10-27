@@ -1,0 +1,37 @@
+{
+  "sourceCommit": "946c3791153634b0af65286313a497d141d5c598",
+  "files": [
+    {
+      "path": "app/desktopApp/build.gradle.kts",
+      "gitBlob": "40259e79322a236ed487ab7fd79a6325feb59c76",
+      "sha256": "813d361538613239fab28cafc18d761f5663f6aff3324f1f8c9bac71c0dc3e05",
+      "bytes": 11960
+    },
+    {
+      "path": "tools/desktop/windows/msi_safety.py",
+      "gitBlob": "3906faeabd0a16b9a6f6dbe1d8e288454d2669e8",
+      "sha256": "faca533eedebfa135fdb04335c70fbbf5034218dfdea6ec6932813e380ed9cef",
+      "bytes": 10843
+    },
+    {
+      "path": "tools/desktop/windows/native_package_probe.py",
+      "gitBlob": "85af79a3a18577887a7c6c60bed0391a6b63a250",
+      "sha256": "9404e043e64d067565e4f0c74b9de4effad2ff0621d46b1a961b761cdc1f00d2",
+      "bytes": 20463
+    },
+    {
+      "path": "tools/desktop/windows/audit_app_image.py",
+      "gitBlob": "9bf91e18f665b549dbc379db34538cf6f80bb0e9",
+      "sha256": "da888e244a3d8f1db71a15cd0ff55dbb33011a2d1eb10b5afa26c9b29fe21580",
+      "bytes": 9205
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopWindowsPackageFixture.kt",
+      "gitBlob": "ca8efe6a09057fb8a14fc5fc6a5f682d8aa50cf9",
+      "sha256": "034ed9b7c0776a773ca9b36615993f69e5dadaaeae1b698f96f87eed9fa4db5a",
+      "bytes": 6832
+    }
+  ],
+  "productionInputFileCount": 777,
+  "productionInputHashes": "raw/app-image/BUILD_INPUTS.json"
+}

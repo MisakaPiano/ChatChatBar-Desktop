@@ -1,0 +1,13 @@
+{
+  "exit": 1603,
+  "source": {
+    "ProductName": "ChatChatBarDesktopSynthetic",
+    "ProductVersion": "0.1.1003",
+    "ProductCode": "{44FF1951-13F3-372B-9509-C0779595CB38}",
+    "UpgradeCode": "{58E95FD1-709D-5813-9B5B-F518A4612BAE}",
+    "sha256": "b507cf2e2ad72efb85eb68667735e8200f37102e43bc4644a19cb6230db527fe",
+    "bytes": 166023168,
+    "safetyVersion": "1"
+  },
+  "relatedProducts": []
+}

@@ -1,0 +1,109 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.1.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :sharedCore:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :sharedCore:compileKotlin
+> Task :sharedCore:compileJava NO-SOURCE
+> Task :sharedCore:processResources NO-SOURCE
+> Task :sharedCore:classes UP-TO-DATE
+> Task :sharedCore:jar
+> Task :sharedCore:compileTestFixturesKotlin
+> Task :sharedCore:compileTestFixturesJava NO-SOURCE
+> Task :sharedCore:processTestFixturesResources NO-SOURCE
+> Task :sharedCore:testFixturesClasses UP-TO-DATE
+> Task :sharedCore:testFixturesJar UP-TO-DATE
+
+> Task :sharedCore:compileTestKotlin
+w: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/test/kotlin/com/example/chatbar/data/local/entity/ChatSessionSerializationTest.kt:12:23 Redundant creation of Json format. Creating instances for each usage can be slow.
+w: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/test/kotlin/com/example/chatbar/data/repository/ModelRepositoryMigrationTest.kt:33:23 Redundant creation of Json format. Creating instances for each usage can be slow.
+w: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/chat/PromptAssemblerCharacterModeTest.kt:19:20 Redundant creation of Json format. Creating instances for each usage can be slow.
+w: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/chat/TimelineTurnPolicyTest.kt:83:30 Redundant call of conversion method.
+w: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/chat/TimelineTurnPolicyTest.kt:84:30 Redundant call of conversion method.
+w: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/MemorySnapshotImportPolicyTest.kt:63:57 Unnecessary non-null assertion (!!) on a non-null receiver of type 'MemorySessionSnapshot'.
+w: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/MemorySnapshotImportPolicyTest.kt:64:58 Unnecessary non-null assertion (!!) on a non-null receiver of type 'MemorySessionSnapshot'.
+w: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/SessionScopedJobRegistryTest.kt:19:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/SessionScopedJobRegistryTest.kt:26:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/SessionScopedJobRegistryTest.kt:30:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/SessionScopedJobRegistryTest.kt:40:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/SessionScopedJobRegistryTest.kt:57:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/SessionScopedJobRegistryTest.kt:61:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/SessionScopedJobRegistryTest.kt:68:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/SessionScopedJobRegistryTest.kt:84:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+w: file:///H:/ChatChatBar-Desktop/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/SessionScopedJobRegistryTest.kt:102:9 This declaration needs opt-in. Its usage should be marked with '@kotlinx.coroutines.ExperimentalCoroutinesApi' or '@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)'
+
+> Task :sharedCore:compileTestJava NO-SOURCE
+> Task :sharedCore:processTestResources
+> Task :sharedCore:testClasses
+> Task :sharedCore:test
+> Task :desktopApp:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :desktopApp:convertXmlValueResourcesForMain NO-SOURCE
+> Task :desktopApp:copyNonXmlValueResourcesForMain NO-SOURCE
+> Task :desktopApp:prepareComposeResourcesTaskForMain NO-SOURCE
+> Task :desktopApp:generateResourceAccessorsForMain SKIPPED
+> Task :desktopApp:generateActualResourceCollectorsForMain SKIPPED
+> Task :desktopApp:generateComposeResClass SKIPPED
+> Task :desktopApp:compileKotlin
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorController.kt:511:64 Unnecessary safe call on a non-null receiver of type 'CharacterCard'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorController.kt:532:87 Unnecessary safe call on a non-null receiver of type 'CharacterCard'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorController.kt:533:83 Unnecessary safe call on a non-null receiver of type 'CharacterCard'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorController.kt:534:85 Unnecessary safe call on a non-null receiver of type 'CharacterCard'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorController.kt:535:89 Unnecessary safe call on a non-null receiver of type 'CharacterCard'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorController.kt:536:83 Unnecessary safe call on a non-null receiver of type 'CharacterCard'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt:887:85 Unnecessary safe call on a non-null receiver of type 'DesktopChatVoiceRuntime'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt:1121:55 Unnecessary safe call on a non-null receiver of type 'ChatSession'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceUx.kt:131:60 Unnecessary safe call on a non-null receiver of type 'DesktopVoiceFeedback'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceUx.kt:131:75 Unnecessary safe call on a non-null receiver of type 'DesktopChatVoiceRuntime'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceUx.kt:132:45 Unnecessary safe call on a non-null receiver of type 'DesktopChatVoiceRuntime'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceUx.kt:132:106 Unnecessary safe call on a non-null receiver of type 'DesktopChatVoiceRuntime'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorController.kt:511:64 Unnecessary safe call on a non-null receiver of type 'CharacterCard'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorController.kt:532:87 Unnecessary safe call on a non-null receiver of type 'CharacterCard'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorController.kt:533:83 Unnecessary safe call on a non-null receiver of type 'CharacterCard'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorController.kt:534:85 Unnecessary safe call on a non-null receiver of type 'CharacterCard'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorController.kt:535:89 Unnecessary safe call on a non-null receiver of type 'CharacterCard'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorController.kt:536:83 Unnecessary safe call on a non-null receiver of type 'CharacterCard'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt:887:85 Unnecessary safe call on a non-null receiver of type 'DesktopChatVoiceRuntime'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt:1121:55 Unnecessary safe call on a non-null receiver of type 'ChatSession'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceUx.kt:131:60 Unnecessary safe call on a non-null receiver of type 'DesktopVoiceFeedback'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceUx.kt:131:75 Unnecessary safe call on a non-null receiver of type 'DesktopChatVoiceRuntime'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceUx.kt:132:45 Unnecessary safe call on a non-null receiver of type 'DesktopChatVoiceRuntime'.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceUx.kt:132:106 Unnecessary safe call on a non-null receiver of type 'DesktopChatVoiceRuntime'.
+
+> Task :desktopApp:compileJava NO-SOURCE
+> Task :desktopApp:assembleMainResources UP-TO-DATE
+> Task :desktopApp:syncDesktopModelCatalogResources UP-TO-DATE
+> Task :desktopApp:writeDesktopBuildIdentity
+> Task :desktopApp:processResources
+> Task :desktopApp:classes
+> Task :desktopApp:jar
+> Task :desktopApp:convertXmlValueResourcesForTest NO-SOURCE
+> Task :desktopApp:copyNonXmlValueResourcesForTest NO-SOURCE
+> Task :desktopApp:prepareComposeResourcesTaskForTest NO-SOURCE
+> Task :desktopApp:generateResourceAccessorsForTest SKIPPED
+> Task :desktopApp:compileTestKotlin
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopPhase7StudioTest.kt:117:78 'fun create(contentType: MediaType?, content: ByteArray): ResponseBody' is deprecated. Moved to extension function. Put the 'content' argument first to fix Java.
+w: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopStudioPresentationTest.kt:216:36 Unnecessary non-null assertion (!!) on a non-null receiver of type 'TextLayoutResult'.
+w: file:///H:/ChatChatBar-Desktop/tools/desktop/interop/prepreview/src/StreamingEnvelopeProbe.kt:55:31 Unnecessary non-null assertion (!!) on a non-null receiver of type 'CharArray'.
+
+> Task :desktopApp:compileTestJava NO-SOURCE
+> Task :desktopApp:assembleTestResources UP-TO-DATE
+> Task :desktopApp:processTestResources UP-TO-DATE
+> Task :desktopApp:testClasses UP-TO-DATE
+> Task :desktopApp:test
+
+DesktopOfficialEntityRoundTripTest > code84ExclusionsApplyToNestedTypedSettingsButNotOpaqueUserParameters FAILED
+    kotlinx.serialization.json.internal.JsonDecodingException at DesktopOfficialEntityRoundTripTest.kt:74
+
+84 tests completed, 1 failed
+
+> Task :desktopApp:test FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':desktopApp:test'.
+> There were failing tests. See the report at: file:///H:/ChatChatBar-Desktop/app/desktopApp/build/reports/tests/test/index.html
+
+* Try:
+> Run with --scan to generate a Build Scan (Powered by Develocity).
+
+BUILD FAILED in 4m 2s
+17 actionable tasks: 12 executed, 5 up-to-date

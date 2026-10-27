@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.image.NovelAiCharacterPositionTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:31:31.405Z" hostname="DD1" time="0.01">
+  <properties/>
+  <testcase name="old drafts remain automatic and new positions survive history and reordering" classname="com.example.chatbar.domain.image.NovelAiCharacterPositionTest" time="0.001"/>
+  <testcase name="coordinates clamp and v45 uses grid centers while v5 retains free positions" classname="com.example.chatbar.domain.image.NovelAiCharacterPositionTest" time="0.0"/>
+  <testcase name="manual requests enable every coordinate flag and share positive negative centers" classname="com.example.chatbar.domain.image.NovelAiCharacterPositionTest" time="0.001"/>
+  <testcase name="automatic and empty requests never enable positioning" classname="com.example.chatbar.domain.image.NovelAiCharacterPositionTest" time="0.001"/>
+  <testcase name="png import restores positions and respects unchecked selections" classname="com.example.chatbar.domain.image.NovelAiCharacterPositionTest" time="0.007"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

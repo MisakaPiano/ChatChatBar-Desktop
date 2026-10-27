@@ -1,0 +1,61 @@
+{
+  "utc": "2026-10-20T18:41:27.389332+00:00",
+  "step": "B6 valid text segment preview",
+  "userVerbatim": "预览正常，只有选中的那段文字和头像、背景，没有录音条或其他回复。",
+  "user": "USER PASS",
+  "scope": "Only Alice text segment from complete reply 2; avatar/background retained, no other reply or audio row in selected preview.",
+  "technical": "Supplied screenshot shows selected 1 item / recording 0; no actual PNG export yet. Main process monitoring remains normal.",
+  "attachment": "B6_TEXT_SEGMENT_PREVIEW.png",
+  "sha256": "e10e575ae49c34202a333689aca86de76327c156b39db7de529742af62347c52",
+  "latestProcess": {
+    "utc": "2026-10-20T18:41:26.9076700+00:00",
+    "processes": [
+      {
+        "pid": 22576,
+        "parentPid": 38024,
+        "createdUtc": "2026-10-20T18:16:34.7951240Z",
+        "executablePath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image\\ChatChatBarDesktop.exe",
+        "image": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image"
+      },
+      {
+        "pid": 38024,
+        "parentPid": 38340,
+        "createdUtc": "2026-10-20T18:16:33.9913620Z",
+        "executablePath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image\\ChatChatBarDesktop.exe",
+        "image": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image"
+      }
+    ],
+    "alivePids": [
+      38024,
+      22576
+    ],
+    "jvmPids": [
+      22576
+    ]
+  },
+  "latestResources": {
+    "utc": "2026-10-20T18:41:23.7957209+00:00",
+    "ownedProcesses": [
+      {
+        "Id": 38024,
+        "Responding": true,
+        "WorkingSet64": 6635520,
+        "PrivateMemorySize64": 1355776,
+        "PeakWorkingSet64": 6672384
+      },
+      {
+        "Id": 22576,
+        "Responding": true,
+        "WorkingSet64": 535433216,
+        "PrivateMemorySize64": 812826624,
+        "PeakWorkingSet64": 649752576
+      }
+    ],
+    "freePhysicalKiB": 718468,
+    "commitHeadroomBytes": 1122021376,
+    "pagesPerSecond": 0,
+    "allocationFailureObserved": false,
+    "memoryFigureAloneBlocks": false
+  },
+  "boundary": "Manual deselection of audio does not fix C11 audio exclusion USER FAIL. Whole-reply behavior and actual exported file unverified."
+}

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopStudioPresentationTest" tests="14" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:39:25.808Z" hostname="DD1" time="0.753">
+  <properties/>
+  <testcase name="annotation follows glyph lines and rejects stale ranges without changing raw prompt" classname="com.example.chatbar.desktop.DesktopStudioPresentationTest" time="0.088"/>
+  <testcase name="chips are direct keyboard choices and preserve unrelated serialized draft fields" classname="com.example.chatbar.desktop.DesktopStudioPresentationTest" time="0.011"/>
+  <testcase name="small enum menu supports arrows enter escape and nullable follow default" classname="com.example.chatbar.desktop.DesktopStudioPresentationTest" time="0.034"/>
+  <testcase name="precise readout retains imported values and only large choices use search dialog" classname="com.example.chatbar.desktop.DesktopStudioPresentationTest" time="0.0"/>
+  <testcase name="inline and fullscreen text editor share annotations and leave request body unchanged" classname="com.example.chatbar.desktop.DesktopStudioPresentationTest" time="0.048"/>
+  <testcase name="random seed switch conditionally adds fixed editor and preserves stored seed" classname="com.example.chatbar.desktop.DesktopStudioPresentationTest" time="0.09"/>
+  <testcase name="field displays local translation and accepts anchored suggestion with Enter" classname="com.example.chatbar.desktop.DesktopStudioPresentationTest" time="0.321"/>
+  <testcase name="suggestion keyboard acceptance protects selection IME and empty results" classname="com.example.chatbar.desktop.DesktopStudioPresentationTest" time="0.0"/>
+  <testcase name="empty attachments occupy no row and compact chat actions retain ownership" classname="com.example.chatbar.desktop.DesktopStudioPresentationTest" time="0.013"/>
+  <testcase name="sliders and keyboard keep exact discrete values" classname="com.example.chatbar.desktop.DesktopStudioPresentationTest" time="0.021"/>
+  <testcase name="Wallpaper excludes square without modifying shared size or sampler capability" classname="com.example.chatbar.desktop.DesktopStudioPresentationTest" time="0.0"/>
+  <testcase name="anchored popup flips above near bottom and stays in viewport" classname="com.example.chatbar.desktop.DesktopStudioPresentationTest" time="0.0"/>
+  <testcase name="custom size applies valid dimensions resets preset or cancels without publication" classname="com.example.chatbar.desktop.DesktopStudioPresentationTest" time="0.117"/>
+  <testcase name="advanced disclosure starts collapsed and does not alter draft" classname="com.example.chatbar.desktop.DesktopStudioPresentationTest" time="0.01"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

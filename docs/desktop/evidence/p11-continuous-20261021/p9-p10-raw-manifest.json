@@ -1,0 +1,1582 @@
+[
+  {
+    "path": "p9-p10/03-document-publication/command.json",
+    "bytes": 659,
+    "sha256": "f48b9d30daa7272b558d8d095ecc8693b8940b9537b3a885c0b47d73e1c23a34"
+  },
+  {
+    "path": "p9-p10/03-document-publication/resources.json",
+    "bytes": 110,
+    "sha256": "6a5ac0792856f8ee3d1084c4236b86c79ae39b7aae8048603c017b4871672a25"
+  },
+  {
+    "path": "p9-p10/03-document-publication/result.json",
+    "bytes": 116,
+    "sha256": "6fd9ca349d17fec5cc74321eba282a39e09994188f1c14792a96cfa25887df04"
+  },
+  {
+    "path": "p9-p10/03-document-publication/stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "p9-p10/03-document-publication/stdout.log",
+    "bytes": 6821,
+    "sha256": "4131423228d07c016b6f2f3e89104e4aa1f094166498ee7daaf56a2b9d28d5e6"
+  },
+  {
+    "path": "p9-p10/03-document-publication/TEST-com.example.chatbar.desktop.DesktopAudioMaintenanceTest.xml",
+    "bytes": 2379,
+    "sha256": "50e182c1ad1f13a59a19d91e69b6e91b4478f976f62b64bae1ecd3fc504151b3"
+  },
+  {
+    "path": "p9-p10/03-document-publication/TEST-com.example.chatbar.desktop.DesktopDocumentIndexPublicationTest.xml",
+    "bytes": 1270,
+    "sha256": "781238456ef1f88c40ec2b579e9a6c316b616991dff8d61f79cf8dcb5d61780e"
+  },
+  {
+    "path": "p9-p10/03-document-publication/TEST-com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest.xml",
+    "bytes": 4313,
+    "sha256": "e6c6c81eff85b419b1d78bd5708da5e81ad96804347a52ccbc392c1a606e94eb"
+  },
+  {
+    "path": "p9-p10/03-document-publication/TEST-com.example.chatbar.desktop.DesktopDocumentRagReaderTest.xml",
+    "bytes": 3693,
+    "sha256": "1dac2eb7509e36aaef819395b148ead44ab6bed42ddb6751b2632ca19f46fd33"
+  },
+  {
+    "path": "p9-p10/03-document-publication/TEST-com.example.chatbar.desktop.DesktopStartupGateTest.xml",
+    "bytes": 3814,
+    "sha256": "61248d808964dc63bed44348de74b7a73224489acbda8b69413968e6c377b700"
+  },
+  {
+    "path": "p9-p10/03-document-publication/xml-provenance.json",
+    "bytes": 446,
+    "sha256": "246bb27dd525b0247d9656c687e4d286d90c6ffeedb75e10e127913fd33c15f7"
+  },
+  {
+    "path": "p9-p10/04-shared-memory-foundation/command.json",
+    "bytes": 507,
+    "sha256": "5126cd9bbb49864fac9a37b06443dc7987ed72d8217acb045f70701d90eed65a"
+  },
+  {
+    "path": "p9-p10/04-shared-memory-foundation/resources.json",
+    "bytes": 110,
+    "sha256": "dc4c51622046887cf8cfb544ef1bda2e9e80969ed03ad2091d456f0a728b680a"
+  },
+  {
+    "path": "p9-p10/04-shared-memory-foundation/result.json",
+    "bytes": 116,
+    "sha256": "3dbf47d9e2ad1f0c2b7c6fa2fe35722996b20ff050dc46248acaaed07df45b57"
+  },
+  {
+    "path": "p9-p10/04-shared-memory-foundation/stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "p9-p10/04-shared-memory-foundation/stdout.log",
+    "bytes": 6151,
+    "sha256": "0c904e68ff34fc7b727fb32e85a98ca5dc092c7e383de94b6b95c03b050e0361"
+  },
+  {
+    "path": "p9-p10/04-shared-memory-foundation/TEST-com.example.chatbar.desktop.DesktopDocumentIndexPublicationTest.xml",
+    "bytes": 1273,
+    "sha256": "a7c27206dd20ae395d556ba778b9c6332b27785c8ca3823d4d4b486fa00dab04"
+  },
+  {
+    "path": "p9-p10/04-shared-memory-foundation/xml-provenance.json",
+    "bytes": 147,
+    "sha256": "099809a2221418920bd43d62af716d53d776ce3f47b1620d4cc5f651fb931257"
+  },
+  {
+    "path": "p9-p10/05-p9-p10-integration/command.json",
+    "bytes": 730,
+    "sha256": "07712e0aecbec085091bcc4381223657343f919fa503eb4f3b2cb7d7959a0547"
+  },
+  {
+    "path": "p9-p10/05-p9-p10-integration/resources.json",
+    "bytes": 110,
+    "sha256": "e10676e6dead2cf3670255cd14e8f231cda3e15a9a130349a560d0a400308ed1"
+  },
+  {
+    "path": "p9-p10/05-p9-p10-integration/result.json",
+    "bytes": 116,
+    "sha256": "cbe649e4a7cbbfa0afc7014e54685adddfaa6d62a3801eea256341c094d21662"
+  },
+  {
+    "path": "p9-p10/05-p9-p10-integration/stderr.log",
+    "bytes": 2082,
+    "sha256": "cc74eb2388d527656a2e195e502f17427c908ca8983be14bc6a67dc7ef986bdd"
+  },
+  {
+    "path": "p9-p10/05-p9-p10-integration/stdout.log",
+    "bytes": 3486,
+    "sha256": "170924a0a454f7bd4cb361c57aa0f55b7c1b41293a9daf4e5416c6dfa51577a9"
+  },
+  {
+    "path": "p9-p10/05-p9-p10-integration/xml-provenance.json",
+    "bytes": 77,
+    "sha256": "8a849973ef7a48085d0311fd3234931f281657d8cd31589c7ffb96ab0f4db9fb"
+  },
+  {
+    "path": "p9-p10/06-memory-and-retrieval/command.json",
+    "bytes": 1030,
+    "sha256": "639a9617454dc88acaad195bd21ad8bb4add15f12050877d2f61ce0d6d98d3e2"
+  },
+  {
+    "path": "p9-p10/06-memory-and-retrieval/resources.json",
+    "bytes": 110,
+    "sha256": "63ea9b7c654033d4fa918ca279b90bd381f79af22a32f37c956709247135d3cc"
+  },
+  {
+    "path": "p9-p10/06-memory-and-retrieval/result.json",
+    "bytes": 116,
+    "sha256": "199c4ac048cdc69ac3a13c9aed93e6ecfd0c28a924134b9af3cb5290608db409"
+  },
+  {
+    "path": "p9-p10/06-memory-and-retrieval/stderr.log",
+    "bytes": 719,
+    "sha256": "697309c2b27d7bb8235bc4b43b2146e299f5681a770444710612ba4f09fa3f42"
+  },
+  {
+    "path": "p9-p10/06-memory-and-retrieval/stdout.log",
+    "bytes": 1728,
+    "sha256": "69d6a5800eef28291bb5a072cd657c7894d229e4e231ba1c6ee9c75f2ac148e1"
+  },
+  {
+    "path": "p9-p10/06-memory-and-retrieval/xml-provenance.json",
+    "bytes": 77,
+    "sha256": "8a849973ef7a48085d0311fd3234931f281657d8cd31589c7ffb96ab0f4db9fb"
+  },
+  {
+    "path": "p9-p10/07-memory-publication-and-wire/command.json",
+    "bytes": 1108,
+    "sha256": "2c7a8409476b1da18afe3435a1b775204bfe8535ca8d8dd4baae5f0b32cb1fcd"
+  },
+  {
+    "path": "p9-p10/07-memory-publication-and-wire/resources.json",
+    "bytes": 110,
+    "sha256": "ae8ca084a2c6b87a1df70e85fd4d404c32275280d2c05aae965b08e9a73fb420"
+  },
+  {
+    "path": "p9-p10/07-memory-publication-and-wire/result.json",
+    "bytes": 116,
+    "sha256": "e2f8226608533a02165e94dc86204a019ef5722f87a3d3c16cb81784468fbf73"
+  },
+  {
+    "path": "p9-p10/07-memory-publication-and-wire/stderr.log",
+    "bytes": 380,
+    "sha256": "ef5c9a6dfe238543148ddc8642b9c8a7ec5ceb5f4be31ac31a6d8a772a1a7c30"
+  },
+  {
+    "path": "p9-p10/07-memory-publication-and-wire/stdout.log",
+    "bytes": 2992,
+    "sha256": "ac48b3fb5934f3cf9a1b194a628333cb73e08ace5320444bb76a7cff14f3fc4f"
+  },
+  {
+    "path": "p9-p10/07-memory-publication-and-wire/TEST-com.example.chatbar.desktop.DesktopAudioMaintenanceTest.xml",
+    "bytes": 2378,
+    "sha256": "ffdc93e1149e6ae88be1b644f1cd7c2d5e52aabc4e4c4f761fbaa7917f1bd499"
+  },
+  {
+    "path": "p9-p10/07-memory-publication-and-wire/TEST-com.example.chatbar.desktop.DesktopChatRetrievalTest.xml",
+    "bytes": 4326,
+    "sha256": "4e970864fe8cc3addd2905b73cbedcbe7bcb3e8c65ebf3f40e054f95c05032da"
+  },
+  {
+    "path": "p9-p10/07-memory-publication-and-wire/TEST-com.example.chatbar.desktop.DesktopDocumentIndexPublicationTest.xml",
+    "bytes": 1271,
+    "sha256": "7dae67be86cd5b5bf8d5870f3a79780ae88c46d3bad339a31427af147944ac1f"
+  },
+  {
+    "path": "p9-p10/07-memory-publication-and-wire/TEST-com.example.chatbar.desktop.DesktopDocumentRagReaderTest.xml",
+    "bytes": 3692,
+    "sha256": "aac2bfcdcb40f4b6f8024417d0c7c96acb1fc9e7c2d0baf1b08cdc83695c5dfc"
+  },
+  {
+    "path": "p9-p10/07-memory-publication-and-wire/TEST-com.example.chatbar.desktop.DesktopMemoryRagTransportTest.xml",
+    "bytes": 693,
+    "sha256": "b38c1d095d0ac230d4c86ff0693eeceb3de932ae0ce2ebb30ac0297f0eb4bdbe"
+  },
+  {
+    "path": "p9-p10/07-memory-publication-and-wire/TEST-com.example.chatbar.desktop.DesktopMemorySafetyTest.xml",
+    "bytes": 850,
+    "sha256": "c875e518e6a299613bd1586f4dc86f40cc2b9fb25499bf15871389017f10734c"
+  },
+  {
+    "path": "p9-p10/07-memory-publication-and-wire/TEST-com.example.chatbar.desktop.DesktopPrimaryChatControllerTest.xml",
+    "bytes": 5973,
+    "sha256": "24d52ed4438a48bfd52c4e8d65a1ee0a11a462d617ebdbf870e4d4dacad426bb"
+  },
+  {
+    "path": "p9-p10/07-memory-publication-and-wire/TEST-com.example.chatbar.desktop.DesktopRealChatRuntimeTest.xml",
+    "bytes": 1097,
+    "sha256": "f0ff2e62f9828354aff3cb8cbc4140df0db480c640eb352d8bda20683e81232c"
+  },
+  {
+    "path": "p9-p10/07-memory-publication-and-wire/xml-provenance.json",
+    "bytes": 658,
+    "sha256": "e5c3be372d1fed0958bf3181a44f427ced6f99cf6bffe06c039d4c28c81a302c"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/command.json",
+    "bytes": 1108,
+    "sha256": "2c7a8409476b1da18afe3435a1b775204bfe8535ca8d8dd4baae5f0b32cb1fcd"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/resources.json",
+    "bytes": 110,
+    "sha256": "b44b01aa1ee53ca2096bafaf03586effac6b40df8d5dac8efebef96b7af199f7"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/result.json",
+    "bytes": 116,
+    "sha256": "d9ab6e11cc3f469504908c7904eec5d61cce66fbfa2d12cfa28f306f9e1f2c93"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/shared/TEST-com.example.chatbar.domain.memory.MemoryAiFailurePolicyTest.xml",
+    "bytes": 494,
+    "sha256": "8fd17969228b050bf3de25870beab0e8e420f8305545dff4c01d053eab15baca"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/shared/TEST-com.example.chatbar.domain.memory.MemoryAiRetryTest.xml",
+    "bytes": 1054,
+    "sha256": "e67d53b818754e0d7d68a74c712da845c6f767dc60126ef6a8da5446c33fd85f"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/shared/TEST-com.example.chatbar.domain.memory.MemoryAiTerminalFailureTest.xml",
+    "bytes": 508,
+    "sha256": "967462b3d551f48906f633d193dfba7aafc05f0c46135e45205a9d134af4e453"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/shared/TEST-com.example.chatbar.domain.memory.MemoryArchiveInjectionPolicyTest.xml",
+    "bytes": 997,
+    "sha256": "cc6411b863a2ff4f9e397a2863e206c73be57da5aae24d024fd2de5f5f872123"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/shared/TEST-com.example.chatbar.domain.memory.MemoryBackfillPolicyTest.xml",
+    "bytes": 3137,
+    "sha256": "2018ab5d82037315082d81e66cd0734b997aca2421c269077790a4c869a27943"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/shared/TEST-com.example.chatbar.domain.memory.MemoryBudgetPolicyTest.xml",
+    "bytes": 936,
+    "sha256": "98ce55307034d534943303179519cc3978e0403cb43027a90192fc3d2ce7cebc"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/shared/TEST-com.example.chatbar.domain.memory.MemoryCompressionDecisionPolicyTest.xml",
+    "bytes": 1211,
+    "sha256": "1f32163b2c0016b562f840973b09516a82492f13b75c32f4b321803ca249d581"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/shared/TEST-com.example.chatbar.domain.memory.MemoryCompressionPolicyTest.xml",
+    "bytes": 2532,
+    "sha256": "588743a21c9fb3a41fffd771d7eb020169c4bbe7d675a1654f3b5147d3b5f560"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/shared/TEST-com.example.chatbar.domain.memory.MemoryContinuityPolicyTest.xml",
+    "bytes": 980,
+    "sha256": "276c3e442a8ae95fad1bf29b90b00eb4b6346c6706781b332c2ef31240f308ed"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/shared/TEST-com.example.chatbar.domain.memory.MemoryDeletionProjectionPolicyTest.xml",
+    "bytes": 1754,
+    "sha256": "daf70312771f2421683ce6e71aee04de790f2d78c01bed6654fd35bad84ce18d"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/shared/TEST-com.example.chatbar.domain.memory.MemoryEpisodeBatchPolicyTest.xml",
+    "bytes": 986,
+    "sha256": "f92e585b3acec34d3c3d08df063e134dc5e839736ba7533bc6bcd64df656edd7"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/shared/TEST-com.example.chatbar.domain.memory.MemoryEpisodeSummaryPolicyTest.xml",
+    "bytes": 672,
+    "sha256": "1aa3ef305c0048675f8009a627fcf88bb8087850dd82010a5a6ff6161bf76602"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/shared/TEST-com.example.chatbar.domain.memory.MemoryHeadUpdatePolicyTest.xml",
+    "bytes": 1884,
+    "sha256": "ba271fed91eda5892c493fb3ab1102a1700bd4b0bfa18a76899b35926331f17e"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/shared/TEST-com.example.chatbar.domain.memory.MemoryIdentityContractTest.xml",
+    "bytes": 1080,
+    "sha256": "85a58056132fce40676ea142d57e666669928c7daada76c707303e39c6323286"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/shared/TEST-com.example.chatbar.domain.memory.MemoryMaintenanceMailboxTest.xml",
+    "bytes": 642,
+    "sha256": "c703702ff8d9609a3a285f857910908e6e37ad142166de13e0cf44d69c7dead7"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/shared/TEST-com.example.chatbar.domain.memory.MemoryModelPreflightPolicyTest.xml",
+    "bytes": 675,
+    "sha256": "a94fe797516373c4ed96471b5ac86bcc0211bc6268e3ab24578b91a901b86810"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/shared/TEST-com.example.chatbar.domain.memory.MemoryNodeContentTest.xml",
+    "bytes": 971,
+    "sha256": "533b2cf902c973b9aeee12137ed432b19cbc2c4fec329ad11de1dac44e667c14"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/shared/TEST-com.example.chatbar.domain.memory.MemoryNodeRegenerationPolicyTest.xml",
+    "bytes": 1708,
+    "sha256": "1a3c71084525ee1603b9b6ca00acbca497306c8efa3b94d7a0523bdf420e9ce8"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/shared/TEST-com.example.chatbar.domain.memory.MemoryPageOrderPolicyTest.xml",
+    "bytes": 994,
+    "sha256": "e37457dd2c2045ea1dff5b8d52c1572bcb6c9113d69b4b5676009879d8952ab6"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/shared/TEST-com.example.chatbar.domain.memory.MemoryRegenerationPolicyTest.xml",
+    "bytes": 1349,
+    "sha256": "3d9ca71f6d6a1a137d11e6e01035d55c8437ba2fd871c99d83600721fdbf6c9e"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/shared/TEST-com.example.chatbar.domain.memory.MemoryRepositoryDeletionJournalTest.xml",
+    "bytes": 914,
+    "sha256": "4f0b05ac732e05bec4053a88d3407f5a4cdb56972c2dceae5e796535c1c06c22"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/shared/TEST-com.example.chatbar.domain.memory.MemoryRevisionServiceTest.xml",
+    "bytes": 1048,
+    "sha256": "9bba81c4eab8708914b05fdc875bc25d44fe5ab2e61b0823d2b7e4f8e5220129"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/shared/TEST-com.example.chatbar.domain.memory.MemorySnapshotImportPolicyTest.xml",
+    "bytes": 696,
+    "sha256": "666fa370bf9a5b52c8d42aa2fa97155115f435cec1f5e57c1e2e5f9f8a5f4948"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/shared/TEST-com.example.chatbar.domain.memory.MemorySourceFingerprintTest.xml",
+    "bytes": 882,
+    "sha256": "49ca247f4518bc09eee2a5e7be8cce2c4981cb8b1f72ec10ee2ceb034978087d"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/shared/TEST-com.example.chatbar.domain.memory.MemorySourceRepairPolicyTest.xml",
+    "bytes": 1299,
+    "sha256": "719ea93aa56629002e2da2cbcf45f0f1a8478c4cebb426b3800ebd25077bdbb1"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/shared/TEST-com.example.chatbar.domain.memory.MemorySourceRepairSerializationTest.xml",
+    "bytes": 1013,
+    "sha256": "334bc8f287b6363164afb06321bdbb40efa41dc96aec2af295f5dfb67813ba44"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/shared/TEST-com.example.chatbar.domain.memory.MemorySummaryPolicyTest.xml",
+    "bytes": 641,
+    "sha256": "beb0e98b26f900ecfcede1acb522a5e160c7293586b78831c2f0af9395357651"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/shared/TEST-com.example.chatbar.domain.memory.MemoryTaskCommitPolicyTest.xml",
+    "bytes": 2143,
+    "sha256": "e0c5bde9180de016b7b03d75c9934bcb1409f55406c09f2aa6e7c5141aacb6c8"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/shared/TEST-com.example.chatbar.domain.memory.SessionScopedJobRegistryTest.xml",
+    "bytes": 686,
+    "sha256": "b360db7654d1db0f8c3f10f9ea8f274a3e14b1bbfc3b253483c59e285f3b2ee9"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/shared/TEST-com.example.chatbar.domain.rag.ChatMemoryIdentityTest.xml",
+    "bytes": 1087,
+    "sha256": "187a7ce84bd60a5ef170b345b65c418fc99376a6d36faf53cc6e29a688a591e9"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/shared/TEST-com.example.chatbar.ui.chat.RagRetrievalCredentialTest.xml",
+    "bytes": 790,
+    "sha256": "577225fb28e2309216170e3bdda7afd1ecea83e562b64e1c2e032c4d8735ad87"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/stdout.log",
+    "bytes": 3013,
+    "sha256": "2616bf6875d42a3c0de4d192908a442db02e4a21068513c7d506c6b8765fca70"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/TEST-com.example.chatbar.desktop.DesktopAudioMaintenanceTest.xml",
+    "bytes": 2377,
+    "sha256": "46ec0432dcbe9942467dc7b7c8e1caf05300fd2a89e2abd83adfd1710e8747d0"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/TEST-com.example.chatbar.desktop.DesktopChatRetrievalTest.xml",
+    "bytes": 1040,
+    "sha256": "772ee8291130f82b39c2cdfbb4e0d00778f30d2999ec899d26ea6391f2423140"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/TEST-com.example.chatbar.desktop.DesktopDocumentIndexPublicationTest.xml",
+    "bytes": 1271,
+    "sha256": "6452b662998dfaa890dd453474b88f66cd92062d3123539031d9b6cf867d603c"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/TEST-com.example.chatbar.desktop.DesktopDocumentRagReaderTest.xml",
+    "bytes": 3690,
+    "sha256": "f4b1d2a2f9fbe870b120e157a6797d2c1b216d95603e1eda118ac9a00aa7fea9"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/TEST-com.example.chatbar.desktop.DesktopMemoryRagTransportTest.xml",
+    "bytes": 694,
+    "sha256": "305432746409d08dda0a1d0d2b2eb76777653c35a5512b9e3f825d32db609f89"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/TEST-com.example.chatbar.desktop.DesktopMemorySafetyTest.xml",
+    "bytes": 850,
+    "sha256": "f8c8488e57cdc5eb37097a8a4a29d8a0c7097e64771020a2b34ff5ddae100e64"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/TEST-com.example.chatbar.desktop.DesktopPrimaryChatControllerTest.xml",
+    "bytes": 5969,
+    "sha256": "cec540bf6e346d3b7d45e57297f61193a2da56a3db768040285dbf238d581e81"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/TEST-com.example.chatbar.desktop.DesktopRealChatRuntimeTest.xml",
+    "bytes": 1096,
+    "sha256": "b112ad8832bcbcfae087d1a2e2e0c2b2a3efed31d2169d2bfe78411e87c65b41"
+  },
+  {
+    "path": "p9-p10/08-memory-and-retrieval/xml-provenance.json",
+    "bytes": 658,
+    "sha256": "e94a65606991cc995ad8af83206fc7df47cd0aa4e9f80c9173bbc75e4f26e9fb"
+  },
+  {
+    "path": "p9-p10/09-memory-lifecycle/command.json",
+    "bytes": 790,
+    "sha256": "44232d846fd03bafd9d85bd5c6ef6efc83346d179b1658e62534d53474160829"
+  },
+  {
+    "path": "p9-p10/09-memory-lifecycle/resources.json",
+    "bytes": 110,
+    "sha256": "592790c75df87556052735e5a14a4b2b4ac7129bb83840c438c5a07bd320baa2"
+  },
+  {
+    "path": "p9-p10/09-memory-lifecycle/result.json",
+    "bytes": 116,
+    "sha256": "fd5596e19421aded9b10ebf3b81c9e52f654215ff1e30daa31110ab2c9941704"
+  },
+  {
+    "path": "p9-p10/09-memory-lifecycle/stderr.log",
+    "bytes": 377,
+    "sha256": "95ffdda891df4f84447dcf0d6749de038213a429e9ad06b732874a84a9c588ba"
+  },
+  {
+    "path": "p9-p10/09-memory-lifecycle/stdout.log",
+    "bytes": 2251,
+    "sha256": "5b90072691198b373e848d7f2f7a82669e13eb10e1f282730d59bc11be336664"
+  },
+  {
+    "path": "p9-p10/09-memory-lifecycle/TEST-com.example.chatbar.desktop.DesktopChatRetrievalTest.xml",
+    "bytes": 1040,
+    "sha256": "21c2f797719c5a8c82fe65b12e926800a83c4a8794f584fb0e34f3246e263763"
+  },
+  {
+    "path": "p9-p10/09-memory-lifecycle/TEST-com.example.chatbar.desktop.DesktopMemoryLifecycleTest.xml",
+    "bytes": 4346,
+    "sha256": "fd7e826eecf7fcae8bb6f39ebfcd18a965539bcd8e3bbe80b16d8d198b83e7a4"
+  },
+  {
+    "path": "p9-p10/09-memory-lifecycle/TEST-com.example.chatbar.desktop.DesktopMemoryRagTransportTest.xml",
+    "bytes": 694,
+    "sha256": "47c011c739063e47f6369c2bbd272d90d854c32ee65872e0577410b36c3eec08"
+  },
+  {
+    "path": "p9-p10/09-memory-lifecycle/TEST-com.example.chatbar.desktop.DesktopMemorySafetyTest.xml",
+    "bytes": 851,
+    "sha256": "2d3c84f1a04e1ac03b04e12b7c86834106471508fff3dbe27b3312a8f7585c55"
+  },
+  {
+    "path": "p9-p10/09-memory-lifecycle/xml-provenance.json",
+    "bytes": 352,
+    "sha256": "27642f9d7da38601fb6c41f183e8f1d87d9d808cf5bb9a9957c3cd9caeec185f"
+  },
+  {
+    "path": "p9-p10/10-memory-lifecycle/command.json",
+    "bytes": 790,
+    "sha256": "44232d846fd03bafd9d85bd5c6ef6efc83346d179b1658e62534d53474160829"
+  },
+  {
+    "path": "p9-p10/10-memory-lifecycle/resources.json",
+    "bytes": 110,
+    "sha256": "9bb359995fedc04fc1c9119eb6b04e8dbd322b8deb19f4ec8507b23310074d52"
+  },
+  {
+    "path": "p9-p10/10-memory-lifecycle/result.json",
+    "bytes": 116,
+    "sha256": "aad53ce97f62cdebcfc88a94b86375cd86245aff9c6000caf19afa2eec2868f7"
+  },
+  {
+    "path": "p9-p10/10-memory-lifecycle/stderr.log",
+    "bytes": 377,
+    "sha256": "6508960022f10056059abda2bad27a3174238c0b84f9a10687672f90d43db649"
+  },
+  {
+    "path": "p9-p10/10-memory-lifecycle/stdout.log",
+    "bytes": 2324,
+    "sha256": "b171609eedbd057ea43483efff02bb2f06a9c3def820da8ca05c33fd3567fa68"
+  },
+  {
+    "path": "p9-p10/10-memory-lifecycle/TEST-com.example.chatbar.desktop.DesktopChatRetrievalTest.xml",
+    "bytes": 1040,
+    "sha256": "bdecde736158e98e1c9b59f32e5463cefde667166c41d33f0d5885933e5352af"
+  },
+  {
+    "path": "p9-p10/10-memory-lifecycle/TEST-com.example.chatbar.desktop.DesktopMemoryLifecycleTest.xml",
+    "bytes": 6726,
+    "sha256": "329e70bac9fb5e658e036271fa05646862cb32f96f67765326bc2ecdeedd0146"
+  },
+  {
+    "path": "p9-p10/10-memory-lifecycle/TEST-com.example.chatbar.desktop.DesktopMemoryRagTransportTest.xml",
+    "bytes": 694,
+    "sha256": "6a68d810d7b4b0ff10ae0b39611338ef832db9cf91fba8c8bb96888f45e6a2cb"
+  },
+  {
+    "path": "p9-p10/10-memory-lifecycle/TEST-com.example.chatbar.desktop.DesktopMemorySafetyTest.xml",
+    "bytes": 851,
+    "sha256": "c552662d75b9886e183134dbf3865761400f65f26f7b6c99e1c511c3690e4849"
+  },
+  {
+    "path": "p9-p10/10-memory-lifecycle/xml-provenance.json",
+    "bytes": 352,
+    "sha256": "061db1a5e7c60788003aecc5e3c6900f2dcf094c441f709844ed825dc3447e84"
+  },
+  {
+    "path": "p9-p10/11-memory-index-lifecycle/command.json",
+    "bytes": 940,
+    "sha256": "53ddf6a85d53ee3ff33bd11fc6d7a51f1901e706906f927779a34d77e1f0ec97"
+  },
+  {
+    "path": "p9-p10/11-memory-index-lifecycle/resources.json",
+    "bytes": 110,
+    "sha256": "d8099b37a4ecbf78ebb2d77b6a97b88bcb2dee0c4d6ab2f4b4d63948fcd5688b"
+  },
+  {
+    "path": "p9-p10/11-memory-index-lifecycle/result.json",
+    "bytes": 116,
+    "sha256": "5c87aa2e0bcb3d40c081019ffc78e8e9b47dc7d442f7d75a43df2a41a55ff25f"
+  },
+  {
+    "path": "p9-p10/11-memory-index-lifecycle/stderr.log",
+    "bytes": 377,
+    "sha256": "831a2a164dc49260dad23e3786e7edc77b1c4bc2e82783ec9cebb60f7f62111b"
+  },
+  {
+    "path": "p9-p10/11-memory-index-lifecycle/stdout.log",
+    "bytes": 2740,
+    "sha256": "f346ef1523ec6d858f83eacef0e2a724d76653ce8992b28de7f1ad77e3757f8c"
+  },
+  {
+    "path": "p9-p10/11-memory-index-lifecycle/TEST-com.example.chatbar.desktop.DesktopChatMemoryIndexTest.xml",
+    "bytes": 12512,
+    "sha256": "80c94cc9709194e26da75d8b77e4f461d2d02a14f5c3eb6dda2d2dcd7ac63d67"
+  },
+  {
+    "path": "p9-p10/11-memory-index-lifecycle/TEST-com.example.chatbar.desktop.DesktopChatRetrievalTest.xml",
+    "bytes": 1040,
+    "sha256": "12aef7aa4ce85c1d2d4a71ff44794b351b6699317a005a60918bc9acde2c2a50"
+  },
+  {
+    "path": "p9-p10/11-memory-index-lifecycle/TEST-com.example.chatbar.desktop.DesktopMemoryLifecycleTest.xml",
+    "bytes": 6058,
+    "sha256": "8415bb0c5b1669eb823c9709de89322ad7ca6290d0f808af03578dd6415ccc39"
+  },
+  {
+    "path": "p9-p10/11-memory-index-lifecycle/TEST-com.example.chatbar.desktop.DesktopMemoryRagTransportTest.xml",
+    "bytes": 694,
+    "sha256": "4b3cc22e689a930e19232087e213da0d4ec79ac795a701bb53690459e1c9b94c"
+  },
+  {
+    "path": "p9-p10/11-memory-index-lifecycle/TEST-com.example.chatbar.desktop.DesktopMemorySafetyTest.xml",
+    "bytes": 851,
+    "sha256": "188dad7e36888cacbece83442760c07dcbd1c010380628f6b916294115428548"
+  },
+  {
+    "path": "p9-p10/11-memory-index-lifecycle/TEST-com.example.chatbar.desktop.DesktopRealChatRuntimeTest.xml",
+    "bytes": 1096,
+    "sha256": "a733fc1ea7e3c7869bdfe41ccdf5c11ddd085e375de5409345da8999baed0ff7"
+  },
+  {
+    "path": "p9-p10/11-memory-index-lifecycle/xml-provenance.json",
+    "bytes": 496,
+    "sha256": "e42ee1c0c166bc4d5b2e1a0c28029f220ef5eb598cec5af64bc63155eb9f35b9"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/command.json",
+    "bytes": 1101,
+    "sha256": "3578ac3bf5e30e8cacb3388b816a6b41b3a388bb333fd51c0e56cd5df9d4c3f1"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/resources.json",
+    "bytes": 110,
+    "sha256": "8ed0fbb3700f98c78eabed545d8ba96f145d916a8acee71dd2d1c90c35776c22"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/result.json",
+    "bytes": 116,
+    "sha256": "a0b0abfc2f78da92e461393783e860763581fd1ad3b3f1eaeb9d142d4da0cd18"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/shared/TEST-com.example.chatbar.domain.memory.MemoryAiFailurePolicyTest.xml",
+    "bytes": 494,
+    "sha256": "5bf585944ec265d9023d824340459c7f4dbbe153e730491c792e8f8a7775faec"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/shared/TEST-com.example.chatbar.domain.memory.MemoryAiRetryTest.xml",
+    "bytes": 1052,
+    "sha256": "0fa7eef8a1c9bac0198a9498610f092ec0fc7b3276d272ced826a4c2cfdebd44"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/shared/TEST-com.example.chatbar.domain.memory.MemoryAiTerminalFailureTest.xml",
+    "bytes": 504,
+    "sha256": "af203d925bb809a2357555d88f031cd4a2636ca8f0a4995efd0456c1ff662396"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/shared/TEST-com.example.chatbar.domain.memory.MemoryArchiveInjectionPolicyTest.xml",
+    "bytes": 999,
+    "sha256": "f3fa75566ed475a3ca806c93b0a0fe4ef428940902a14162ba9f653a9112bf7c"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/shared/TEST-com.example.chatbar.domain.memory.MemoryBackfillPolicyTest.xml",
+    "bytes": 3143,
+    "sha256": "32745c7f913efd15bc5f08cd3fc34ddf3d8cdeda0aec5c93147a0de49deba8e7"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/shared/TEST-com.example.chatbar.domain.memory.MemoryBudgetPolicyTest.xml",
+    "bytes": 938,
+    "sha256": "03f52e37514981c455e6fb3199848fd746e343719a8ba21226daca3c32f35604"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/shared/TEST-com.example.chatbar.domain.memory.MemoryCompressionDecisionPolicyTest.xml",
+    "bytes": 1211,
+    "sha256": "f6e36d1bb4273ac5cc5846debe17eb265e0bf6850d8c9000206c0e69b262f829"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/shared/TEST-com.example.chatbar.domain.memory.MemoryCompressionPolicyTest.xml",
+    "bytes": 2532,
+    "sha256": "1a54d7e9eeec3af8b0b5652ff7511a71baab20278f231c1b4131d5b7156d2abb"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/shared/TEST-com.example.chatbar.domain.memory.MemoryContinuityPolicyTest.xml",
+    "bytes": 980,
+    "sha256": "5e43ae942d1384d0edd0ba0331ba8565997d6e4417e008dc872739d6ab4ae2e4"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/shared/TEST-com.example.chatbar.domain.memory.MemoryDeletionProjectionPolicyTest.xml",
+    "bytes": 1754,
+    "sha256": "640289e725fd740a0a1fe394e1f998df0b97091f4a308b799ca4a214916d7150"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/shared/TEST-com.example.chatbar.domain.memory.MemoryEpisodeBatchPolicyTest.xml",
+    "bytes": 984,
+    "sha256": "5d505d494c355608adac25861ef6fead2cfcf9c8b171db0c9b66bd7de81f1c56"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/shared/TEST-com.example.chatbar.domain.memory.MemoryEpisodeSummaryPolicyTest.xml",
+    "bytes": 672,
+    "sha256": "2c389ac35ce2eed8f2834531d61a2f2222443c48c73690b57536aafef72c1f9a"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/shared/TEST-com.example.chatbar.domain.memory.MemoryHeadUpdatePolicyTest.xml",
+    "bytes": 1888,
+    "sha256": "9ca34e6244efc2b110b6d1282c613ed8c1ef5ed8da58e2783544b4f721f062df"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/shared/TEST-com.example.chatbar.domain.memory.MemoryIdentityContractTest.xml",
+    "bytes": 1084,
+    "sha256": "44afefd42d08e144e8388753d41222f65a3bccb62c104fc3fab2bc82842830d6"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/shared/TEST-com.example.chatbar.domain.memory.MemoryMaintenanceMailboxTest.xml",
+    "bytes": 642,
+    "sha256": "df76b146cc6be7fe0cc8cbceb5552089103b92bc3114ae54fc830d12b363438a"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/shared/TEST-com.example.chatbar.domain.memory.MemoryModelPreflightPolicyTest.xml",
+    "bytes": 675,
+    "sha256": "e7a352a6dd2991df39b8b5333f13e7126e3f9f3ed255a5a8a2d8bae4c1ee85c1"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/shared/TEST-com.example.chatbar.domain.memory.MemoryNodeContentTest.xml",
+    "bytes": 971,
+    "sha256": "40719cd90837b5a3f2eeb8d77bd88a2cee85e6c3188c9951e440549fddb15ca9"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/shared/TEST-com.example.chatbar.domain.memory.MemoryNodeRegenerationPolicyTest.xml",
+    "bytes": 1708,
+    "sha256": "31394574ce598bba5765c4fa997cdbbc7d048c3b249cc18306367bf0f9dd85fe"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/shared/TEST-com.example.chatbar.domain.memory.MemoryPageOrderPolicyTest.xml",
+    "bytes": 996,
+    "sha256": "22879bc6d678eb3e19d3a3504350fa901bbdb71e65dbe90cc34356ca0310f9b6"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/shared/TEST-com.example.chatbar.domain.memory.MemoryRegenerationPolicyTest.xml",
+    "bytes": 1349,
+    "sha256": "5dcf6c91104a756a2e93227d7e7c5487d2edc0e98997af58618b0dd4ce69e664"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/shared/TEST-com.example.chatbar.domain.memory.MemoryRepositoryDeletionJournalTest.xml",
+    "bytes": 915,
+    "sha256": "f7682e1046b80f7311ffd9a043bb62d787b3dedc0e3c88c07aebbc59eebde000"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/shared/TEST-com.example.chatbar.domain.memory.MemoryRevisionServiceTest.xml",
+    "bytes": 1048,
+    "sha256": "430dc303c0dd5fefdac9481b2fbc50fa0a7cb2bbe90597c5520dae4c0fabf1f7"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/shared/TEST-com.example.chatbar.domain.memory.MemorySnapshotImportPolicyTest.xml",
+    "bytes": 695,
+    "sha256": "a4e45f6564db70605f205dbc6f982a81e2a81d45ec06ddce459c4d4df59b1878"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/shared/TEST-com.example.chatbar.domain.memory.MemorySourceFingerprintTest.xml",
+    "bytes": 880,
+    "sha256": "b5a86114925207bec6f13169ccc46667792ad13bfbb778a2f584e36aae690061"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/shared/TEST-com.example.chatbar.domain.memory.MemorySourceRepairPolicyTest.xml",
+    "bytes": 1299,
+    "sha256": "fc48609989d6fc1c640ba024b875903fd00f11a999926d90037f7ad42540340b"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/shared/TEST-com.example.chatbar.domain.memory.MemorySourceRepairSerializationTest.xml",
+    "bytes": 1011,
+    "sha256": "47113a2f548d13b92b15f8c20e760bd75839a83a14867b3ee487af5441bd468d"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/shared/TEST-com.example.chatbar.domain.memory.MemorySummaryPolicyTest.xml",
+    "bytes": 641,
+    "sha256": "6820d6886dc47f694a8a7f660f2e58dd62936f15f027c0fc9c3bc81f13544317"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/shared/TEST-com.example.chatbar.domain.memory.MemoryTaskCommitPolicyTest.xml",
+    "bytes": 2145,
+    "sha256": "97ceaf082033165261d305dab01b1c516d3e745a6ebdcb6645f22453e0ac77e5"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/shared/TEST-com.example.chatbar.domain.memory.SessionScopedJobRegistryTest.xml",
+    "bytes": 883,
+    "sha256": "e0aaeee1020f4cd04d78da5f055b0b169a24e51e378a5aadb862d8c76a1de94f"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/shared/TEST-com.example.chatbar.domain.rag.ChatMemoryIdentityTest.xml",
+    "bytes": 1088,
+    "sha256": "192beee9ed180d4302a56496d4501d4c43caeff5838492dd497384d68020cf92"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/shared/TEST-com.example.chatbar.ui.chat.RagRetrievalCredentialTest.xml",
+    "bytes": 792,
+    "sha256": "7b597aaa8ac0ec90fc6172254c8128611e5e1953c7ccdb98fb9d0f9d45bada65"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/stdout.log",
+    "bytes": 3932,
+    "sha256": "883fb1bd91dff911df89bf562a91c2b9dbe7ed78dd9e5d82f77db2926c55f43c"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/TEST-com.example.chatbar.desktop.DesktopChatMemoryIndexTest.xml",
+    "bytes": 710,
+    "sha256": "364671d81dab53a2a0bbd24648a0f65b2dae822c88c932718c951b221be81e29"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/TEST-com.example.chatbar.desktop.DesktopChatRetrievalTest.xml",
+    "bytes": 1039,
+    "sha256": "20c52a5919cca6c65874e8f0f0ea852ae9107cecdef09257a75bd25300f97f42"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/TEST-com.example.chatbar.desktop.DesktopDocumentIndexPublicationTest.xml",
+    "bytes": 1270,
+    "sha256": "289c178236315817091ec75e96cb19558dd8faf195a92ca0951c0c13adb79bbc"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/TEST-com.example.chatbar.desktop.DesktopDocumentRagReaderTest.xml",
+    "bytes": 3693,
+    "sha256": "6d5f39ddcce9318843a92f8e50e9480bd2c931de46eac318c40c39df10ce598c"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/TEST-com.example.chatbar.desktop.DesktopMemoryLifecycleTest.xml",
+    "bytes": 711,
+    "sha256": "cd42ccffcec42a841042f8d7cc1f0db77446bd112c171fd73bb28653bf5596b5"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/TEST-com.example.chatbar.desktop.DesktopMemoryRagTransportTest.xml",
+    "bytes": 693,
+    "sha256": "0a62f4526683388ebc8ff030dc7a0c49a364f8ddf7fc7774dedc4895411d2d18"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/TEST-com.example.chatbar.desktop.DesktopMemorySafetyTest.xml",
+    "bytes": 851,
+    "sha256": "6e833636705aeb8996a599f10ba2a9bfa334a8bd8caf6277b142091518380458"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/TEST-com.example.chatbar.desktop.DesktopRealChatRuntimeTest.xml",
+    "bytes": 1097,
+    "sha256": "dfefa796a04eed1691caaf49d40c28ae7cb1d01029c126b2c806bf0d95748785"
+  },
+  {
+    "path": "p9-p10/12-memory-index-lifecycle/xml-provenance.json",
+    "bytes": 651,
+    "sha256": "8de97d42ef3970f3ca553d203af5d501a4aabdcf0cad1ae85818c6e8b33ca9c8"
+  },
+  {
+    "path": "p9-p10/13-android-compatibility/command.json",
+    "bytes": 239,
+    "sha256": "6de86f10b17fe05a63dc8c3396b40f15962c62f2268a02c26ceda45e536ec247"
+  },
+  {
+    "path": "p9-p10/13-android-compatibility/result.json",
+    "bytes": 116,
+    "sha256": "495f3c9107d245f30d638c857f5847f200a82dbf97ae1e14660b33c1c61a71d2"
+  },
+  {
+    "path": "p9-p10/13-android-compatibility/stderr.log",
+    "bytes": 621,
+    "sha256": "e000624bcba0b109ce6dd249741824f3abfe3ec915420f2afe724234f9164292"
+  },
+  {
+    "path": "p9-p10/13-android-compatibility/stdout.log",
+    "bytes": 283,
+    "sha256": "55aca48e136b6b2c4320203140f73824e16cab2abf263c8f5decb76f8556d651"
+  },
+  {
+    "path": "p9-p10/14-android-compatibility/command.json",
+    "bytes": 239,
+    "sha256": "6de86f10b17fe05a63dc8c3396b40f15962c62f2268a02c26ceda45e536ec247"
+  },
+  {
+    "path": "p9-p10/14-android-compatibility/result.json",
+    "bytes": 116,
+    "sha256": "8256b5bde82e80e3f30aab150674b61b09be74bfa3d30c502f3af6b03be121a0"
+  },
+  {
+    "path": "p9-p10/14-android-compatibility/stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "p9-p10/14-android-compatibility/stdout.log",
+    "bytes": 1176,
+    "sha256": "a9cdd2dfdbeef8c9b3df1b032d1f8264cd621e2e09ab3a01322f1106f857bb07"
+  },
+  {
+    "path": "p9-p10/15-p9-p10-regression/command.json",
+    "bytes": 1418,
+    "sha256": "4a586e38793f9c4ef5392b7dd827cbd593b2c1db66db817a11cba560f289c629"
+  },
+  {
+    "path": "p9-p10/15-p9-p10-regression/resources.json",
+    "bytes": 110,
+    "sha256": "e2c2d2792979bcb24e11870a013da1554c005a986a317efa914daa6404e230d1"
+  },
+  {
+    "path": "p9-p10/15-p9-p10-regression/result.json",
+    "bytes": 116,
+    "sha256": "7123024a9466d71d72ecf7132a98dc7ebdf1d0f3618dc74dfe66c06f9438ad73"
+  },
+  {
+    "path": "p9-p10/15-p9-p10-regression/stderr.log",
+    "bytes": 728,
+    "sha256": "0b8ef1b8aafe503d807869030ab3a6bf8ccf5e3c44d9daaf8b31ff9259126f6f"
+  },
+  {
+    "path": "p9-p10/15-p9-p10-regression/stdout.log",
+    "bytes": 905,
+    "sha256": "db295e8187188bacb4c8626b143cb63a15148bdac7a40e578987a1685b40fef4"
+  },
+  {
+    "path": "p9-p10/15-p9-p10-regression/xml-provenance.json",
+    "bytes": 77,
+    "sha256": "8a849973ef7a48085d0311fd3234931f281657d8cd31589c7ffb96ab0f4db9fb"
+  },
+  {
+    "path": "p9-p10/16-p9-p10-regression/command.json",
+    "bytes": 1418,
+    "sha256": "4a586e38793f9c4ef5392b7dd827cbd593b2c1db66db817a11cba560f289c629"
+  },
+  {
+    "path": "p9-p10/16-p9-p10-regression/resources.json",
+    "bytes": 110,
+    "sha256": "0cd691618c63207dce58dac386bc4c9037d4e61f21d20068068bd2d40f4c5e67"
+  },
+  {
+    "path": "p9-p10/16-p9-p10-regression/result.json",
+    "bytes": 116,
+    "sha256": "85dea99dea65be97ec7616dea9f03d852573aee78a55ab3b02c2a73a158ba07a"
+  },
+  {
+    "path": "p9-p10/16-p9-p10-regression/stderr.log",
+    "bytes": 380,
+    "sha256": "8ab1241f8ba5733d4048c3510df3c0ad36ac4b860e4c1d935ef5d3a53361be99"
+  },
+  {
+    "path": "p9-p10/16-p9-p10-regression/stdout.log",
+    "bytes": 7240,
+    "sha256": "903b744aa398ddf6818c19eacae6479fcd56bfdf728f7a78de7a247df5878156"
+  },
+  {
+    "path": "p9-p10/16-p9-p10-regression/TEST-com.example.chatbar.desktop.DesktopAudioMaintenanceTest.xml",
+    "bytes": 2378,
+    "sha256": "702a164a5fa313638262d87c41335892d1d2e68ee2372e603f37764fd4ebd8c5"
+  },
+  {
+    "path": "p9-p10/16-p9-p10-regression/TEST-com.example.chatbar.desktop.DesktopChatMemoryIndexTest.xml",
+    "bytes": 709,
+    "sha256": "12d6b955dd9c99fe0acc1cc39375775e30d661dededa10ad4c27627ff0608fc8"
+  },
+  {
+    "path": "p9-p10/16-p9-p10-regression/TEST-com.example.chatbar.desktop.DesktopChatRetrievalTest.xml",
+    "bytes": 1040,
+    "sha256": "17a1c14553dcf2d4ab62d1e6f1e32ce1e59bbb7337c9b8f91e3a895f4dd63e42"
+  },
+  {
+    "path": "p9-p10/16-p9-p10-regression/TEST-com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest.xml",
+    "bytes": 2733,
+    "sha256": "db9adc938979a612a070bc54f96e8bf647528bb27bcf11c2da01d835a8c7821a"
+  },
+  {
+    "path": "p9-p10/16-p9-p10-regression/TEST-com.example.chatbar.desktop.DesktopDocumentIndexPublicationTest.xml",
+    "bytes": 1270,
+    "sha256": "4eb4e82fbf22e0068177a458744c32a1aaee9fe50c2c07634d76c740c7be046b"
+  },
+  {
+    "path": "p9-p10/16-p9-p10-regression/TEST-com.example.chatbar.desktop.DesktopDocumentRagReaderTest.xml",
+    "bytes": 3695,
+    "sha256": "ae69ad096efb697f651f9e71de5f25c207ed40218fb66df5bcd6535a02292ed5"
+  },
+  {
+    "path": "p9-p10/16-p9-p10-regression/TEST-com.example.chatbar.desktop.DesktopMemoryLifecycleTest.xml",
+    "bytes": 710,
+    "sha256": "00e9cf279b31566cf1fe9a20cc8a60eee8f4df1746f15b1976456404b5919669"
+  },
+  {
+    "path": "p9-p10/16-p9-p10-regression/TEST-com.example.chatbar.desktop.DesktopMemoryRagTransportTest.xml",
+    "bytes": 880,
+    "sha256": "08cf57ac71b513c3654118b35d0fca980f97ca5b9506916c865e5f278cba3a84"
+  },
+  {
+    "path": "p9-p10/16-p9-p10-regression/TEST-com.example.chatbar.desktop.DesktopMemorySafetyTest.xml",
+    "bytes": 851,
+    "sha256": "7b39cafee02536f0398584b7d0c25c6ec23896e6297fcc06203a391a8ea84832"
+  },
+  {
+    "path": "p9-p10/16-p9-p10-regression/TEST-com.example.chatbar.desktop.DesktopPrimaryChatControllerTest.xml",
+    "bytes": 12118,
+    "sha256": "4a9a9d9968f8c068df1e46b064b8ff4f580d98e224e514708b4b396bfb3e6d2c"
+  },
+  {
+    "path": "p9-p10/16-p9-p10-regression/TEST-com.example.chatbar.desktop.DesktopRealChatRuntimeTest.xml",
+    "bytes": 1097,
+    "sha256": "43481017ac31d5599c673c4cc86ea57d41178e110db1a65ac9c3807cd2f39b53"
+  },
+  {
+    "path": "p9-p10/16-p9-p10-regression/xml-provenance.json",
+    "bytes": 883,
+    "sha256": "08ec4c68b6c8d047bdcd23f0ec0cfa1fa5a801437bb36d399728a3de0478fc9e"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/command.json",
+    "bytes": 1182,
+    "sha256": "cba09819fff9cd4b801a0904caf131578da3941933cd64dcb1a38416db5ff629"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/resources.json",
+    "bytes": 110,
+    "sha256": "43d65e2cffa4506ee17a0c4a7d851b0dec4d38aa283e185aab596049badd598b"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/result.json",
+    "bytes": 116,
+    "sha256": "4b29de93287d52f7411fd652f50ecf0622191d2710e53a757c8b2b561849bcb4"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/shared/TEST-com.example.chatbar.domain.memory.MemoryAiFailurePolicyTest.xml",
+    "bytes": 494,
+    "sha256": "39f80b084d7959290a3bf4318496b3947770c24dbd1138d7580997dba9ce9561"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/shared/TEST-com.example.chatbar.domain.memory.MemoryAiRetryTest.xml",
+    "bytes": 1053,
+    "sha256": "228620b675685425943575ee4b3a7cb4b097f794c986665cf3064798b82c9d0e"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/shared/TEST-com.example.chatbar.domain.memory.MemoryAiTerminalFailureTest.xml",
+    "bytes": 666,
+    "sha256": "2d2f07a759846e0307dd93bb9d6ef91ed6cb15cc9f318659ad1c7cea0c3179c0"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/shared/TEST-com.example.chatbar.domain.memory.MemoryArchiveInjectionPolicyTest.xml",
+    "bytes": 999,
+    "sha256": "399d259155adf961d45279bc8b39a0a8559779d4c3069ea635c4646b5aaa68d3"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/shared/TEST-com.example.chatbar.domain.memory.MemoryBackfillPolicyTest.xml",
+    "bytes": 3132,
+    "sha256": "e6efeeff77274a72cf8cb86617906b31c009b5b1d7daa8c9d42e5c1291ae005c"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/shared/TEST-com.example.chatbar.domain.memory.MemoryBudgetPolicyTest.xml",
+    "bytes": 936,
+    "sha256": "9cfe88926af4a157dec1190d3a12542a5bee178c89f7d29e722b1f80b9c35ac2"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/shared/TEST-com.example.chatbar.domain.memory.MemoryCompressionDecisionPolicyTest.xml",
+    "bytes": 1211,
+    "sha256": "f0ea5be11dcfe67b559c9445c29741f6d25a551422e948efd45088df51a6687d"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/shared/TEST-com.example.chatbar.domain.memory.MemoryCompressionPolicyTest.xml",
+    "bytes": 2527,
+    "sha256": "2a4d12f6c8816038dafb89ce2830fd7c7cfc3b9007a05568c71ef709c39253d9"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/shared/TEST-com.example.chatbar.domain.memory.MemoryContinuityPolicyTest.xml",
+    "bytes": 980,
+    "sha256": "cef11aebafee173fdcd62cbc92db633a9093fb42238a7c37a4d531ab2b77fc00"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/shared/TEST-com.example.chatbar.domain.memory.MemoryDeletionProjectionPolicyTest.xml",
+    "bytes": 1752,
+    "sha256": "c15f20109cbb86a9d94a5ce2995d5af6ce10ace8b217707b2b56feeee9531d77"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/shared/TEST-com.example.chatbar.domain.memory.MemoryEpisodeBatchPolicyTest.xml",
+    "bytes": 986,
+    "sha256": "42bf787e279c91c285972185c5e5eb8a26925870a674ad4eae76c8d4990582b7"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/shared/TEST-com.example.chatbar.domain.memory.MemoryEpisodeSummaryPolicyTest.xml",
+    "bytes": 672,
+    "sha256": "5e558e72b5915ab96005355cd415214b365f9cd6019bca70565c2e69712e7364"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/shared/TEST-com.example.chatbar.domain.memory.MemoryHeadUpdatePolicyTest.xml",
+    "bytes": 1886,
+    "sha256": "aa959a70748bdec2c8db03c76831e331560de6dd98cb62d9506e1fa04cb3fb2b"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/shared/TEST-com.example.chatbar.domain.memory.MemoryIdentityContractTest.xml",
+    "bytes": 1080,
+    "sha256": "06c0f81fe8996cddadcc82b078ec0275b9481f401e99562c43cca55cd0223be9"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/shared/TEST-com.example.chatbar.domain.memory.MemoryMaintenanceMailboxTest.xml",
+    "bytes": 642,
+    "sha256": "4ef12d42d0519bdcac973d8d916fda5f3f003626295740f46415ab32a46a57aa"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/shared/TEST-com.example.chatbar.domain.memory.MemoryModelPreflightPolicyTest.xml",
+    "bytes": 671,
+    "sha256": "3345b00d9da960fd047913b49563dc2377240947fca3cf79f03655c05a368031"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/shared/TEST-com.example.chatbar.domain.memory.MemoryNodeContentTest.xml",
+    "bytes": 975,
+    "sha256": "77ff266ff0adaeaabecf04f5b0db190921bf009c7bbe39580c3ec74d5b9302d3"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/shared/TEST-com.example.chatbar.domain.memory.MemoryNodeRegenerationPolicyTest.xml",
+    "bytes": 1708,
+    "sha256": "d12685d7695b558ad3e46d324983d491ccc8390e2ee300e7feec67add1c99e98"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/shared/TEST-com.example.chatbar.domain.memory.MemoryPageOrderPolicyTest.xml",
+    "bytes": 996,
+    "sha256": "96cddbda8fe589b5684768620f1062be5d7130a1e7afc4e9c163050b1f2f7f33"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/shared/TEST-com.example.chatbar.domain.memory.MemoryRegenerationPolicyTest.xml",
+    "bytes": 1349,
+    "sha256": "cd57418d76ec56f71e2e3d10ebc1a5e83ef1c42d3713792634d85221d48c2f4b"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/shared/TEST-com.example.chatbar.domain.memory.MemoryRepositoryDeletionJournalTest.xml",
+    "bytes": 914,
+    "sha256": "5edfe32cade8bd7f5b2be8b6761e435b2ea53d1f306ed29c9e268dbcaa2fd960"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/shared/TEST-com.example.chatbar.domain.memory.MemoryRevisionServiceTest.xml",
+    "bytes": 1048,
+    "sha256": "1388f483778ec7235b04a24e67b5b638a5cd1097bc4b652f17edc8ea018af018"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/shared/TEST-com.example.chatbar.domain.memory.MemorySnapshotImportPolicyTest.xml",
+    "bytes": 696,
+    "sha256": "6be9089d3274654edfc96ab43267f9fbacc116e67a35164ee8624a69fa9b45a4"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/shared/TEST-com.example.chatbar.domain.memory.MemorySourceFingerprintTest.xml",
+    "bytes": 880,
+    "sha256": "e23f32895a0a8b40e28de3f2b6e6a402878d3eb4091538d55de898fc38b63bfd"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/shared/TEST-com.example.chatbar.domain.memory.MemorySourceRepairPolicyTest.xml",
+    "bytes": 1297,
+    "sha256": "97635a5c5b1cdc1c45d7e68e461f477745e38eba2f9307141888d09432185757"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/shared/TEST-com.example.chatbar.domain.memory.MemorySourceRepairSerializationTest.xml",
+    "bytes": 1011,
+    "sha256": "df63f657a7924e5837615cbae37155cd0ca039a6e04efc91afad28edd6ca58e2"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/shared/TEST-com.example.chatbar.domain.memory.MemorySummaryPolicyTest.xml",
+    "bytes": 643,
+    "sha256": "2c42d4260f9e1e43062ff0f7a616f8010b76131d3303e95011941d6a11c6a579"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/shared/TEST-com.example.chatbar.domain.memory.MemoryTaskCommitPolicyTest.xml",
+    "bytes": 2141,
+    "sha256": "37c29b74fe6e4fdd760439d8c7c72443ec6210ca4c87c877eced8145ce4f6951"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/shared/TEST-com.example.chatbar.domain.memory.SessionScopedJobRegistryTest.xml",
+    "bytes": 883,
+    "sha256": "67f0e22f264b615077aeaa3026538c1bf82cacf87e33b2f01d381244d1d1206d"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/shared/TEST-com.example.chatbar.domain.rag.ChatMemoryIdentityTest.xml",
+    "bytes": 1088,
+    "sha256": "71376943e09c5c8adc3cbdc966b8f1259ee66f6b21d82bdd5eb40d4a09b6f0aa"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/shared/TEST-com.example.chatbar.ui.chat.RagRetrievalCredentialTest.xml",
+    "bytes": 792,
+    "sha256": "f45998dfe92d96afaab1d964a2af85e9f6efb7344e133872e523bfd2725a007f"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/stdout.log",
+    "bytes": 2604,
+    "sha256": "f50dd44525c3612ac3a01976ec631dddbf16afa451005e905f5378a151b948d5"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/TEST-com.example.chatbar.desktop.DesktopAudioMaintenanceTest.xml",
+    "bytes": 2377,
+    "sha256": "7984255c3ce60b51f41fa1f629b246fdbd8ae097310e79ffb505446e8c8b9d7a"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/TEST-com.example.chatbar.desktop.DesktopChatMemoryIndexTest.xml",
+    "bytes": 710,
+    "sha256": "bf1220d40383306aabd5bad0d8c765886f8ce96d2ae0c260688c5841f5a21292"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/TEST-com.example.chatbar.desktop.DesktopChatRetrievalTest.xml",
+    "bytes": 1039,
+    "sha256": "1c38915f338b36a45c34f17b3496f5b427e968ad73df7c9c24ee67c57d51d032"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/TEST-com.example.chatbar.desktop.DesktopEmbeddingGatewayTest.xml",
+    "bytes": 501,
+    "sha256": "2f6041f3b6755d7104e13284394de891b60d006d2aab5c831ee81663b123ee3a"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/TEST-com.example.chatbar.desktop.DesktopMemoryLifecycleTest.xml",
+    "bytes": 889,
+    "sha256": "01cf16a21df358142cab944a2a1a0e80a06b3556252a8ea397661dd36e8bab2a"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/TEST-com.example.chatbar.desktop.DesktopMemoryRagTransportTest.xml",
+    "bytes": 881,
+    "sha256": "23ae7c17816534a27e670a167550d84f395f271bb139979bc30b0c6fc462d11e"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/TEST-com.example.chatbar.desktop.DesktopPrimaryChatControllerTest.xml",
+    "bytes": 5972,
+    "sha256": "c9eb6a0d311c725c4f14eb592a2546c185d4c71b9d43f1a596f2860765c94e82"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/TEST-com.example.chatbar.desktop.DesktopPromptInspectorTest.xml",
+    "bytes": 1157,
+    "sha256": "f2c207bdcdbdff4e7f9d3ec00c3ac4568d68127bf2a25cdfd69c0aacb556a614"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/TEST-com.example.chatbar.desktop.DesktopVoiceClickReliabilityTest.xml",
+    "bytes": 1662,
+    "sha256": "646cf89fbcd77149cbc6ce051d3e63b5b6be7c042c18c039130eea70d34812b3"
+  },
+  {
+    "path": "p9-p10/17-memory-session-publication/xml-provenance.json",
+    "bytes": 729,
+    "sha256": "a318501749ba25c1e5544adbffa49f67170389d6ac944ded6ed77897127b821a"
+  },
+  {
+    "path": "p9-p10/18-p9-p10-final/command.json",
+    "bytes": 1737,
+    "sha256": "851376010e7103466b475b471ffa81e898566a84e733b1abe61b2b9e62b8cde4"
+  },
+  {
+    "path": "p9-p10/18-p9-p10-final/resources.json",
+    "bytes": 110,
+    "sha256": "97ba76763193ef175fab181442614551d50663263ac4c3855e386712a12db0e3"
+  },
+  {
+    "path": "p9-p10/18-p9-p10-final/result.json",
+    "bytes": 116,
+    "sha256": "eb50bee63ec98438d3f89c47c87912f6cc99d8177ae2b44312b39727148e774e"
+  },
+  {
+    "path": "p9-p10/18-p9-p10-final/stderr.log",
+    "bytes": 378,
+    "sha256": "02399961c48dd270a83808dc649a7d7d58bf75e17c2b48835c64f16c9bce230d"
+  },
+  {
+    "path": "p9-p10/18-p9-p10-final/stdout.log",
+    "bytes": 2374,
+    "sha256": "ddb931a16aa080dbc6962fd086989375a961be393ee2ae872cb6956781cd3afb"
+  },
+  {
+    "path": "p9-p10/18-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopApplicationLifecycleTest.xml",
+    "bytes": 7325,
+    "sha256": "bde5cbd3787f51dedf7154624db8aa52d0820fdd19e73902dc20f5a9fbea2fd3"
+  },
+  {
+    "path": "p9-p10/18-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopAudioMaintenanceTest.xml",
+    "bytes": 2380,
+    "sha256": "c5871ea04bc4f3c7ccefa89e13b6a19b9059da7ef2ddfcf4d27a72a8d86e3b47"
+  },
+  {
+    "path": "p9-p10/18-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopChatMemoryIndexTest.xml",
+    "bytes": 709,
+    "sha256": "fec3f6e796da290fd82a9f7c5161f30b2e34c95139d8a27def43881dc82a4064"
+  },
+  {
+    "path": "p9-p10/18-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopChatRetrievalTest.xml",
+    "bytes": 1040,
+    "sha256": "36581a5e5add83b27df4e9224db2ffb50f9a3d118748d07d4a628804b391d96d"
+  },
+  {
+    "path": "p9-p10/18-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest.xml",
+    "bytes": 2732,
+    "sha256": "4bae623713fe4244349d895c10c48104a3fc9f91e4d88cb17249b75625133e41"
+  },
+  {
+    "path": "p9-p10/18-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopDocumentIndexPublicationTest.xml",
+    "bytes": 1270,
+    "sha256": "b7c40bd2eb07a9481ddc9d67a217518f5cc1be9b2ade0bfee4a2f485470ee592"
+  },
+  {
+    "path": "p9-p10/18-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest.xml",
+    "bytes": 4312,
+    "sha256": "544c8b6268ffa70fb0f1d536387a544399a1d6c8535f3384b730cc05a8d2da2a"
+  },
+  {
+    "path": "p9-p10/18-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopDocumentRagReaderTest.xml",
+    "bytes": 3688,
+    "sha256": "5327e1720673c5760e2c160cba1b940db27bc3f8dce9060bbc4ed414fe5fd6e1"
+  },
+  {
+    "path": "p9-p10/18-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopEmbeddingGatewayTest.xml",
+    "bytes": 501,
+    "sha256": "d2f9fbb6213030eebcc63ee3590579a765f8f631a4694316cab852e38aa7755e"
+  },
+  {
+    "path": "p9-p10/18-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopMemoryLifecycleTest.xml",
+    "bytes": 1084,
+    "sha256": "cba37cf9df80f29bf5e097c365f6a5f4ffddcbdc683fb7e322c45b5bae538526"
+  },
+  {
+    "path": "p9-p10/18-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopMemoryRagTransportTest.xml",
+    "bytes": 881,
+    "sha256": "74d223dd6ea1db12c6f9cd3affbe4b7cc51625b22176ee7307821cc12ba6367a"
+  },
+  {
+    "path": "p9-p10/18-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopMemorySafetyTest.xml",
+    "bytes": 850,
+    "sha256": "8259fca40ab8b52664ffce5ff36ecd6d93f1c58295d2bac09c9bc5ca2189e7a7"
+  },
+  {
+    "path": "p9-p10/18-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopPrimaryChatControllerTest.xml",
+    "bytes": 5971,
+    "sha256": "fe17fb419f5e23cabf7574dbb0c5fb5cccca9585b938ca5068e43987e330a35d"
+  },
+  {
+    "path": "p9-p10/18-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopPromptInspectorTest.xml",
+    "bytes": 8287,
+    "sha256": "775e9fd9e82070faf56b8f404728f31d283cec5a033b627b9bf0d86e60371cc1"
+  },
+  {
+    "path": "p9-p10/18-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopStartupGateTest.xml",
+    "bytes": 3815,
+    "sha256": "ca2b6e19d2da28e71742a3ec1a800e31e0540419f011bde2e8df886c0195da0c"
+  },
+  {
+    "path": "p9-p10/18-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopVoiceClickReliabilityTest.xml",
+    "bytes": 1661,
+    "sha256": "dedb3a60069496127f3167719a9933186d74e8bc8ffb055ac0068da8928ada53"
+  },
+  {
+    "path": "p9-p10/18-p9-p10-final/xml-provenance.json",
+    "bytes": 1263,
+    "sha256": "57687982299e0984588f2337673361c606600628a165c3e07d3f2fc7d03f2d2b"
+  },
+  {
+    "path": "p9-p10/19-p9-p10-final/command.json",
+    "bytes": 1737,
+    "sha256": "851376010e7103466b475b471ffa81e898566a84e733b1abe61b2b9e62b8cde4"
+  },
+  {
+    "path": "p9-p10/19-p9-p10-final/resources.json",
+    "bytes": 110,
+    "sha256": "05268727706997f2cb8ed1be4512e8c347c4335c14472dcc35f88be6447ef791"
+  },
+  {
+    "path": "p9-p10/19-p9-p10-final/result.json",
+    "bytes": 116,
+    "sha256": "e0ff3ea62fd4cc865adf51da0b2a41f84289f11b54a1f8a0d0e45226c44c9c67"
+  },
+  {
+    "path": "p9-p10/19-p9-p10-final/stderr.log",
+    "bytes": 378,
+    "sha256": "02399961c48dd270a83808dc649a7d7d58bf75e17c2b48835c64f16c9bce230d"
+  },
+  {
+    "path": "p9-p10/19-p9-p10-final/stdout.log",
+    "bytes": 2367,
+    "sha256": "9b00dfcce1d2351df9362348fc588c0d8c7c80278e6d1b717682f05f5c40547a"
+  },
+  {
+    "path": "p9-p10/19-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopApplicationLifecycleTest.xml",
+    "bytes": 7328,
+    "sha256": "dcf8767f26f784183fd06dc8481df84e2f9ffac54a14c3feecce58e317017600"
+  },
+  {
+    "path": "p9-p10/19-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopAudioMaintenanceTest.xml",
+    "bytes": 2378,
+    "sha256": "7bad4d54689deeab4fdedd96c9aeadc2d818ac1a80143c76cca89b5c15e56465"
+  },
+  {
+    "path": "p9-p10/19-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopChatMemoryIndexTest.xml",
+    "bytes": 709,
+    "sha256": "2915681a7faeeda37d90eea5e0ae11828cc7045a9aa2a17d3be81f18f22f90b2"
+  },
+  {
+    "path": "p9-p10/19-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopChatRetrievalTest.xml",
+    "bytes": 1039,
+    "sha256": "4579dbbf77242b30ce1609ac2a0bd21a1a669262a62ae0ce36f54a91e9e9269a"
+  },
+  {
+    "path": "p9-p10/19-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest.xml",
+    "bytes": 2733,
+    "sha256": "5356f06868564d56c078542b4708998566000ff89311f73f83c06c58c536ed24"
+  },
+  {
+    "path": "p9-p10/19-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopDocumentIndexPublicationTest.xml",
+    "bytes": 1271,
+    "sha256": "d4031dde8f0ab5e9038f7a7803d3431b182042404894dda32362e7e98ff9fa0c"
+  },
+  {
+    "path": "p9-p10/19-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest.xml",
+    "bytes": 4311,
+    "sha256": "cb3828fce871a1d4c538d64a02820ec885c888232748c0b2bb908505ce3189b8"
+  },
+  {
+    "path": "p9-p10/19-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopDocumentRagReaderTest.xml",
+    "bytes": 3695,
+    "sha256": "015c032e1b21f805448e6533a8b6e609299301889cb327e43b04651baa4c4d66"
+  },
+  {
+    "path": "p9-p10/19-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopEmbeddingGatewayTest.xml",
+    "bytes": 501,
+    "sha256": "b0fb04e834aa823f08071af8835815ccbba57391a287922dafeee1926fea0ebd"
+  },
+  {
+    "path": "p9-p10/19-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopMemoryLifecycleTest.xml",
+    "bytes": 1085,
+    "sha256": "ff41a349773710eed9c9f8657336840072c81fa9218782141143bdb184faa47f"
+  },
+  {
+    "path": "p9-p10/19-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopMemoryRagTransportTest.xml",
+    "bytes": 881,
+    "sha256": "6cc0c410ba6973a670be9d051fc9137d7ff7ea647b2b2ad34d46b9191fb7e014"
+  },
+  {
+    "path": "p9-p10/19-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopMemorySafetyTest.xml",
+    "bytes": 851,
+    "sha256": "d588164da56b92ef625f07d57added1a81d86cf3283a975e4511f8486afd6dd6"
+  },
+  {
+    "path": "p9-p10/19-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopPrimaryChatControllerTest.xml",
+    "bytes": 5969,
+    "sha256": "a2d2bb68a8684aeb9180a1aa51d8a050d2e34f5344f2c2c6daea8cf7272d8e73"
+  },
+  {
+    "path": "p9-p10/19-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopPromptInspectorTest.xml",
+    "bytes": 8453,
+    "sha256": "a6fd8c6c0a04e500e7d4cef00b0b592efbe448f23e39fc9aa1cb4d6bfa4b81d1"
+  },
+  {
+    "path": "p9-p10/19-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopStartupGateTest.xml",
+    "bytes": 3811,
+    "sha256": "82255a01ccb711b8851f32d7e1ff90c31b8e4c9f1b83e0db16268da393d4698e"
+  },
+  {
+    "path": "p9-p10/19-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopVoiceClickReliabilityTest.xml",
+    "bytes": 1659,
+    "sha256": "e5e1dd936e8e163f2db87d615d13c20a77ba875636f0c356c4d2b3add0a5ac2e"
+  },
+  {
+    "path": "p9-p10/19-p9-p10-final/xml-provenance.json",
+    "bytes": 1263,
+    "sha256": "462c5662ec2384f9c8a106294bb8a7127b778cf081b54d1b7377642de71279e2"
+  },
+  {
+    "path": "p9-p10/20-p9-p10-final/command.json",
+    "bytes": 1737,
+    "sha256": "851376010e7103466b475b471ffa81e898566a84e733b1abe61b2b9e62b8cde4"
+  },
+  {
+    "path": "p9-p10/20-p9-p10-final/resources.json",
+    "bytes": 110,
+    "sha256": "63b38f2eac969ff2f4bc4a19abb84d8253a5bacf40f05abbd258961af66f48ad"
+  },
+  {
+    "path": "p9-p10/20-p9-p10-final/result.json",
+    "bytes": 116,
+    "sha256": "c16d8301dbc72163b7642bfd0773f01b7c552dac05c5e7ba1c2e4d4e025b8245"
+  },
+  {
+    "path": "p9-p10/20-p9-p10-final/stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "p9-p10/20-p9-p10-final/stdout.log",
+    "bytes": 2405,
+    "sha256": "c45431107b1e2f0567eed6318a7520c191b319cbb04187b7b47659e94351da26"
+  },
+  {
+    "path": "p9-p10/20-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopApplicationLifecycleTest.xml",
+    "bytes": 7328,
+    "sha256": "a1ed5e7759f508f8ed7f5cd90383aaeb5a827fa1e36743a42e9324a6e571164b"
+  },
+  {
+    "path": "p9-p10/20-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopAudioMaintenanceTest.xml",
+    "bytes": 2379,
+    "sha256": "cb63f6cb7f3a9912a7e29be659d1777b93050a5657309c9da85001e7c228dcc0"
+  },
+  {
+    "path": "p9-p10/20-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopChatMemoryIndexTest.xml",
+    "bytes": 710,
+    "sha256": "b91749955b09d0ee39156d9963690eab380605432ecf8e4026e24f273b4bcbf2"
+  },
+  {
+    "path": "p9-p10/20-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopChatRetrievalTest.xml",
+    "bytes": 1040,
+    "sha256": "33baf082adc3b2bcd25dea6706e3e683e501563b1663f534f5858e652e9594c9"
+  },
+  {
+    "path": "p9-p10/20-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest.xml",
+    "bytes": 2733,
+    "sha256": "8af0307cfe0fc94abc1973e778edf611406638572cdd0f944505d06ea9695a38"
+  },
+  {
+    "path": "p9-p10/20-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopDocumentIndexPublicationTest.xml",
+    "bytes": 1271,
+    "sha256": "73a7664ee31a2f356c545676a79dbc91ef6e2920fc484b88743ac5898d1514b0"
+  },
+  {
+    "path": "p9-p10/20-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest.xml",
+    "bytes": 4312,
+    "sha256": "141a290476d195d3ce90d724bc6fefae6f1d09f867abd7b39ae340cf2b2e6e1c"
+  },
+  {
+    "path": "p9-p10/20-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopDocumentRagReaderTest.xml",
+    "bytes": 3691,
+    "sha256": "1f8c9f9de0567e4051f64ca62a422e8be36a43b79a58ab97a22dd14daca4536a"
+  },
+  {
+    "path": "p9-p10/20-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopEmbeddingGatewayTest.xml",
+    "bytes": 501,
+    "sha256": "1111e74501ab418d555e849f7efe3aa52dead1c6aa5acb39a0580b3877de43a1"
+  },
+  {
+    "path": "p9-p10/20-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopMemoryLifecycleTest.xml",
+    "bytes": 1084,
+    "sha256": "58f5b6202bda83e9f29d6f1f48f5159b26b6610cf14683449190b8afec06fb33"
+  },
+  {
+    "path": "p9-p10/20-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopMemoryRagTransportTest.xml",
+    "bytes": 881,
+    "sha256": "c79876ba798f7ebb2375a72610d96419a9ad9eb5a9aa5c3e4cc78e39903ce244"
+  },
+  {
+    "path": "p9-p10/20-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopMemorySafetyTest.xml",
+    "bytes": 851,
+    "sha256": "df5110e2b53e152c9343332cc83399b756398de0ff167cc612342c54e7bd7be4"
+  },
+  {
+    "path": "p9-p10/20-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopPrimaryChatControllerTest.xml",
+    "bytes": 5969,
+    "sha256": "3047c48d0b104c25704abf9ad4005f7392b7a6b3fbe3db9318cae84f1ee3e8c2"
+  },
+  {
+    "path": "p9-p10/20-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopPromptInspectorTest.xml",
+    "bytes": 1334,
+    "sha256": "d5500fa68d234bded2bffee74509fa2d4e89efe1c3e7508f8ef01b778e8c23d3"
+  },
+  {
+    "path": "p9-p10/20-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopStartupGateTest.xml",
+    "bytes": 3814,
+    "sha256": "b9b82d21ac2324428651fcaa9bfe671adf49920009e2be9a80c510319cf246cd"
+  },
+  {
+    "path": "p9-p10/20-p9-p10-final/TEST-com.example.chatbar.desktop.DesktopVoiceClickReliabilityTest.xml",
+    "bytes": 1661,
+    "sha256": "fce96c4b75323d8a019e25bc74d44947e648ae9cf2c015fea79c498cd8e3e04f"
+  },
+  {
+    "path": "p9-p10/20-p9-p10-final/xml-provenance.json",
+    "bytes": 1263,
+    "sha256": "57687982299e0984588f2337673361c606600628a165c3e07d3f2fc7d03f2d2b"
+  },
+  {
+    "path": "p9-p10/21-p9-p10-android-compatibility/command.json",
+    "bytes": 239,
+    "sha256": "6de86f10b17fe05a63dc8c3396b40f15962c62f2268a02c26ceda45e536ec247"
+  },
+  {
+    "path": "p9-p10/21-p9-p10-android-compatibility/result.json",
+    "bytes": 116,
+    "sha256": "d3eeaffcd02c87d03df566370dbced2965b8ebba1485f39aefaa543931cfe395"
+  },
+  {
+    "path": "p9-p10/21-p9-p10-android-compatibility/stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "p9-p10/21-p9-p10-android-compatibility/stdout.log",
+    "bytes": 1208,
+    "sha256": "5abfb1a6ee979737668bef551faabb90dd2082a134c0c23a325a421e7e1f71ee"
+  },
+  {
+    "path": "p9-p10/memory-extraction.json",
+    "bytes": 5922,
+    "sha256": "d08c038642664cfe7ab080da6093c739dc69f4bb9d90a7e04153bec60523f850"
+  },
+  {
+    "path": "p9-p10/prompt-extraction.json",
+    "bytes": 796,
+    "sha256": "7b6ddad01d8d1be58152e53cd602055cd71a074acb4a599a14cf865c90283692"
+  },
+  {
+    "path": "p9-p10/test-ledger.json",
+    "bytes": 5626,
+    "sha256": "4ccc7303a41b029af4c4e0fb8aff7d1dd357de6b069904a82aa21c128dfcc856"
+  }
+]

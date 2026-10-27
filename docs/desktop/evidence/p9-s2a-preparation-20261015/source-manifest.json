@@ -1,0 +1,45 @@
+{
+  "sourceCommit": "a3bf3ab7229d8fcfae96c7af36022560fc7665c3",
+  "parent": "b337f3da50f1d0f175e48b7f56de1ed05922f3b4",
+  "files": [
+    {
+      "path": ".agents/skills/chatbar-feature-map/SKILL.md",
+      "sha256": "6ecea2ada1492806503138f5dc2717b61bbf15baa0e251958794623fd0d7110d",
+      "gitBlob": "88cd7dc29ce38c6ffa78f63d441d8416d59e749d"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt",
+      "sha256": "9375f68dd4140c1f269446019be286a00df21ebf4d8ea58675e67c3c83fbe0de",
+      "gitBlob": "dc8e89d18d5370bd496b43e8ceba67d26cf87cd2"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDocumentRagReader.kt",
+      "sha256": "80a157afc12b233c4482f7a8ef32d2e3345b81a165608f7c50cdb800751ddb75",
+      "gitBlob": "bab47f7276074239e9b0a9cafae8595c6dac2d42"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopTaskRuntime.kt",
+      "sha256": "dad40eee677b06d1fac17c6301c9d18f330b672993c77e1e5243c0d57e0b0a7c",
+      "gitBlob": "1d886b6a1547f73dee5c77787d528b6253ee5fc6"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDocumentRagIndexPreparation.kt",
+      "sha256": "67a08f43d01b33972f009d98cf88e1afba3cddb0dffe679c688b8c5373aec919",
+      "gitBlob": "77056884ba1b718f233d3bb022a9c0b718d7ea71"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDocumentRagSource.kt",
+      "sha256": "2997b436ec9b3268b5acd4463f87b3d62d7116290b1f91cb2741a6598a84ab7c",
+      "gitBlob": "0666805738cc3a7c811e6274d5d13ad2a2b05b77"
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopDocumentRagIndexPreparationTest.kt",
+      "sha256": "e2c74a002849b83cd7f9c20d502fae342b9ed45369db96ee5d21fd9457f332e1",
+      "gitBlob": "3da631ae39b30480860e980e501be3a1e6854c22"
+    }
+  ],
+  "scope": "7 files; +693/-130",
+  "checkpointA": "8937de0686aa053a1f7ef71917cfce9cfa0e48d2",
+  "checkpointB": "b337f3da50f1d0f175e48b7f56de1ed05922f3b4",
+  "formalBaseline": "5e76a9cb841736bbbf3499a2e35e5789af4c5ca8"
+}

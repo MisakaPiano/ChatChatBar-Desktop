@@ -1,0 +1,6 @@
+{
+  "initialIndexVerification": "Assertion before commit; no commit/push executed",
+  "cause": "Manifest generator excluded any basename manifest.json, inadvertently omitting nested w0/manifest.json",
+  "correction": "Exclude only root manifest file; nested raw W0 manifest included unchanged",
+  "filesModified": "Only new evidence collection metadata; no source/data/test/GUI mutation"
+}

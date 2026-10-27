@@ -1,0 +1,93 @@
+﻿{
+    "phase":  "INITIAL",
+    "utc":  "2026-10-19T04:49:17.0972214+00:00",
+    "branch":  "feature/phase8-fish-audio",
+    "refs":  [
+                 "e0bd3c1e48a2cf2849f6eb4e5600b84bbb39e45c",
+                 "8f9a96a9432a350f0d049db3d01613a8da88b6b5",
+                 "e0bd3c1e48a2cf2849f6eb4e5600b84bbb39e45c",
+                 "4c2af2576e2319e8041ffd2a6c5a205450f18246",
+                 "5ef95428421f7c693b010ac88f51d470804ab07a"
+             ],
+    "live":  [
+                 "5ef95428421f7c693b010ac88f51d470804ab07a\trefs/heads/desktop",
+                 "e0bd3c1e48a2cf2849f6eb4e5600b84bbb39e45c\trefs/heads/feature/phase8-fish-audio"
+             ],
+    "status":  [
+                   " M app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerPresentation.kt",
+                   " M app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerWindow.kt",
+                   "?? .codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/4bb6706b-0132-41be-bd8e-03e6c0229e46/1-1000072937.jpg",
+                   "?? .codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/b5264b76-6c08-406d-af8d-bbb2f876c7c1/1-1000072937.jpg",
+                   "?? .codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/ea41235d-a0f1-44c3-8db1-47f5bb5b2883/1-1000072937.jpg",
+                   "?? CCB_DESKTOP_STANDARD_CONVERSATION_HANDOFF.md",
+                   "?? app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerNativeUxTest.kt"
+               ],
+    "index":  [
+
+              ],
+    "untracked":  [
+                      ".codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/4bb6706b-0132-41be-bd8e-03e6c0229e46/1-1000072937.jpg",
+                      ".codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/b5264b76-6c08-406d-af8d-bbb2f876c7c1/1-1000072937.jpg",
+                      ".codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/ea41235d-a0f1-44c3-8db1-47f5bb5b2883/1-1000072937.jpg",
+                      "CCB_DESKTOP_STANDARD_CONVERSATION_HANDOFF.md",
+                      "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerNativeUxTest.kt"
+                  ],
+    "source":  [
+                   {
+                       "path":  "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerPresentation.kt",
+                       "bytes":  17883,
+                       "sha256":  "194d6b7fd2e270ca29eb90734303c8a7898825ecf8939cc60ab266e8d16c4917",
+                       "expected":  "194d6b7fd2e270ca29eb90734303c8a7898825ecf8939cc60ab266e8d16c4917"
+                   },
+                   {
+                       "path":  "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerWindow.kt",
+                       "bytes":  4280,
+                       "sha256":  "a003e7ad1e31a0c356df1a4291cc7eb1e4eb9fa958a0a6353ee6a77ac8f88125",
+                       "expected":  "a003e7ad1e31a0c356df1a4291cc7eb1e4eb9fa958a0a6353ee6a77ac8f88125"
+                   },
+                   {
+                       "path":  "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerNativeUxTest.kt",
+                       "bytes":  70707,
+                       "sha256":  "8327487396a25a5fdf39463a7846e447378a1cab2726f8dd87a0c69c2be23706",
+                       "expected":  "8327487396a25a5fdf39463a7846e447378a1cab2726f8dd87a0c69c2be23706"
+                   }
+               ],
+    "samples":  [
+                    {
+                        "utc":  "2026-10-19T04:49:24.6320392+00:00",
+                        "availableBytes":  2131808256,
+                        "commitHeadroomBytes":  14781726720,
+                        "pagesPerSecond":  0,
+                        "java":  [
+
+                                 ]
+                    },
+                    {
+                        "utc":  "2026-10-19T04:49:29.9862407+00:00",
+                        "availableBytes":  2081312768,
+                        "commitHeadroomBytes":  14791004160,
+                        "pagesPerSecond":  0,
+                        "java":  [
+
+                                 ]
+                    },
+                    {
+                        "utc":  "2026-10-19T04:49:35.3378689+00:00",
+                        "availableBytes":  2087424000,
+                        "commitHeadroomBytes":  14795272192,
+                        "pagesPerSecond":  0,
+                        "java":  [
+
+                                 ]
+                    }
+                ],
+    "relevantProcesses":  [
+
+                          ],
+    "disk":  {
+                 "DeviceID":  "H:",
+                 "FreeSpace":  12767801344,
+                 "Size":  161325510656
+             },
+    "protectedUserFiles":  "Paths only; no content/hash read, no mutation or staging. No user data root accessed."
+}

@@ -1,0 +1,13 @@
+{
+  "arguments": [
+    "C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.20.101-hotspot\\bin\\java.exe",
+    "-Xmx128m",
+    "-Duser.home=H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-windows-manual-20261021\\synthetic-home",
+    "-cp",
+    "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-windows-manual-20261021\\support-classes;H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image\\app\\*",
+    "ScreenshotFixtureSupport",
+    "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-windows-manual-20261021",
+    "verify-render"
+  ],
+  "isolatedLocalAppData": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-windows-manual-20261021\\environments\\post-p8-profile"
+}

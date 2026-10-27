@@ -1,0 +1,11 @@
+{
+  "review": "explicit evidence allowlist, original XML/logs and native/live records inspected; regex is supplemental, not a guarantee",
+  "sensitivePatternFindings": [],
+  "originalJUnitFiles": 158,
+  "realCredentialsHeadersBodiesIncluded": false,
+  "actualSecretStoreBlobIncluded": false,
+  "certificatePrivateOrPublicBytesIncluded": false,
+  "profilesRuntimeBinariesAudioUserAttachmentsIncluded": false,
+  "nativeProcessPathAliasesDisclosed": true,
+  "skillsReviewedNoUpdateNeeded": true
+}

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopMergeImportServiceTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-24T22:58:46.668Z" hostname="DD1" time="4.53">
+  <properties/>
+  <testcase name="actual service publishes both data branches and selected protected keys with old root retained" classname="com.example.chatbar.desktop.DesktopMergeImportServiceTest" time="2.064"/>
+  <testcase name="bootstrap publication failure leaves original root selected and new data retained" classname="com.example.chatbar.desktop.DesktopMergeImportServiceTest" time="1.309"/>
+  <testcase name="ambiguous bootstrap publication seals old writers and retains destination ownership" classname="com.example.chatbar.desktop.DesktopMergeImportServiceTest" time="1.025"/>
+  <testcase name="cancel before final freeze keeps bootstrap original and releases new root lock" classname="com.example.chatbar.desktop.DesktopMergeImportServiceTest" time="0.062"/>
+  <testcase name="stale preview preserves newer computer data and cannot publish" classname="com.example.chatbar.desktop.DesktopMergeImportServiceTest" time="0.069"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

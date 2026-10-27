@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.worldbook.WorldBookEngineTest" tests="13" skipped="0" failures="0" errors="0" timestamp="2026-10-19T12:01:47.629Z" hostname="DD1" time="0.011">
+  <properties/>
+  <testcase name="characterFilteringEnabledConstantsAndWeightedGroupsRemainAuthoritative" classname="com.example.chatbar.domain.worldbook.WorldBookEngineTest" time="0.005"/>
+  <testcase name="recursionHonorsDelayUntilRecursionExcludeAndPreventFlags" classname="com.example.chatbar.domain.worldbook.WorldBookEngineTest" time="0.002"/>
+  <testcase name="blankKeywordsNeverActivateUnrelatedContent" classname="com.example.chatbar.domain.worldbook.WorldBookEngineTest" time="0.001"/>
+  <testcase name="delayAndIgnoreBudgetKeepExistingBoundaries" classname="com.example.chatbar.domain.worldbook.WorldBookEngineTest" time="0.0"/>
+  <testcase name="entryScanDepthOverridesBookScanDepth" classname="com.example.chatbar.domain.worldbook.WorldBookEngineTest" time="0.0"/>
+  <testcase name="wholeWordDefaultIsInheritedAndEntryCanOverride" classname="com.example.chatbar.domain.worldbook.WorldBookEngineTest" time="0.0"/>
+  <testcase name="outletsConcatenateByInsertionOrder" classname="com.example.chatbar.domain.worldbook.WorldBookEngineTest" time="0.001"/>
+  <testcase name="positionsAndPromptPlaceholderRenderingRemainSeparate" classname="com.example.chatbar.domain.worldbook.WorldBookEngineTest" time="0.0"/>
+  <testcase name="zeroProbabilityNeverActivatesAndDiagnosticExplainsBudgetRejection" classname="com.example.chatbar.domain.worldbook.WorldBookEngineTest" time="0.001"/>
+  <testcase name="stickyAndCooldownStatesAffectActivation" classname="com.example.chatbar.domain.worldbook.WorldBookEngineTest" time="0.0"/>
+  <testcase name="evaluateAllKeepsBookOrderAndEntryOrderInsideEachBook" classname="com.example.chatbar.domain.worldbook.WorldBookEngineTest" time="0.0"/>
+  <testcase name="stickyActivationDoesNotExtendItsOwnExpiry" classname="com.example.chatbar.domain.worldbook.WorldBookEngineTest" time="0.001"/>
+  <testcase name="secondaryLogicWholeWordAndRegexWork" classname="com.example.chatbar.domain.worldbook.WorldBookEngineTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

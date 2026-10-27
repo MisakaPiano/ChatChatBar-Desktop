@@ -16,6 +16,8 @@ import com.example.chatbar.domain.card.CharacterCardImageUpdater
 import com.example.chatbar.domain.card.FormatCardUserToolPolicy
 import com.example.chatbar.domain.card.NamePolicy
 import com.example.chatbar.domain.chat.ChatApiMessage
+import com.example.chatbar.domain.chat.restoreVoices
+import com.example.chatbar.domain.chat.cleanupCreatedFiles
 import com.example.chatbar.domain.chat.ChatContextGroupPolicy
 import com.example.chatbar.domain.chat.ChatHistoryPromptPolicy
 import com.example.chatbar.domain.chat.ChatHistoryPromptZone
@@ -3404,7 +3406,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         deleteRemovedImages: Boolean,
         deleteMemoryWhenTextBlank: Boolean = false
     ) {
-        val updatedMessage = MessageAlternativeVersionPolicy.collapseToEditedContent(
+        val updatedMessage = MessageAlternativeVersionPolicy.editCurrentContent(
             message = oldMessage,
             content = content
         ).copy(
@@ -3778,42 +3780,8 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                 } else {
                     emptyList()
                 }
-                val baseSlot = SaveSlot.create(
-                    sessionId = sessionId,
-                    name = NamePolicy.normalize(name),
-                    description = description?.trim()?.takeIf(String::isNotBlank)
-                ).copy(
-                    schemaVersion = com.example.chatbar.domain.chat.SaveSlotPackageStorage.SCHEMA_VERSION,
-                    playerSetting = curSession.playerSetting,
-                    playerName = curSession.playerName,
-                    supplementarySetting = curSession.supplementarySetting,
-                    modelId = curSession.modelId,
-                    imageModelId = curSession.imageModelId,
-                    novelAiImageModel = curSession.novelAiImageModel,
-                    novelAiNaturalLanguageMode = curSession.novelAiNaturalLanguageMode,
-                    automaticImageGenerationEnabled = curSession.automaticImageGenerationEnabled,
-                    formatCardId = curSession.formatCardId,
-                    replyLength = curSession.replyLength,
-                    replyLanguage = curSession.replyLanguage,
-                    roleplayStyle = curSession.roleplayStyle,
-                    chatBackground = curSession.chatBackground,
-                    audiobookModeEnabled = curSession.audiobookModeEnabled,
-                    voiceLanguage = curSession.voiceLanguage,
-                    longTermMemoryEnabled = curSession.longTermMemoryEnabled,
-                    longTermMemory = curSession.longTermMemory,
-                    longTermMemoryUpdatedThroughMessageId = curSession.longTermMemoryUpdatedThroughMessageId,
-                    nextSourceTurnOrder = curSession.nextSourceTurnOrder,
-                    sourceTurnTombstones = curSession.sourceTurnTombstones,
-                    nextTimelineTurn = curSession.nextTimelineTurn,
-                    timelineTombstones = curSession.timelineTombstones,
-                    memoryLimitChars = curSession.memoryLimitChars,
-                    memorySnapshot = memorySnapshot,
-                    contextWindowSize = curSession.contextWindowSize,
-                    extraWorldBookIds = curSession.extraWorldBookIds,
-                    timedWorldInfo = curSession.timedWorldInfo,
-                    imagePolicy = imagePolicy,
-                    includeAudio = includeAudio
-                )
+                val baseSlot = com.example.chatbar.domain.chat.SaveSlotSessionPolicy.create(curSession,
+                    NamePolicy.normalize(name), description, memorySnapshot, imagePolicy, includeAudio)
                 packagedSlot = ChatBarApp.instance.saveSlotPackageStorage.createPackage(
                     baseSlot = baseSlot,
                     imagePolicy = imagePolicy,
@@ -4003,34 +3971,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                     }
                     val messageState = chatRepository.getSession(sessionId) ?: curSession
                     chatRepository.updateSession(
-                        messageState.copy(
-                            playerSetting = slot.playerSetting,
-                            playerName = slot.playerName,
-                            supplementarySetting = slot.supplementarySetting,
-                            modelId = slot.modelId,
-                            imageModelId = slot.imageModelId,
-                            novelAiImageModel = slot.novelAiImageModel,
-                            novelAiNaturalLanguageMode = slot.novelAiNaturalLanguageMode,
-                            automaticImageGenerationEnabled = slot.automaticImageGenerationEnabled,
-                            formatCardId = slot.formatCardId,
-                            replyLength = slot.replyLength,
-                            replyLanguage = slot.replyLanguage,
-                            roleplayStyle = slot.roleplayStyle,
-                            chatBackground = restoredBackground,
-                            audiobookModeEnabled = slot.audiobookModeEnabled,
-                            voiceLanguage = slot.voiceLanguage,
-                            longTermMemoryEnabled = slot.longTermMemoryEnabled,
-                            longTermMemory = slot.longTermMemory,
-                            longTermMemoryUpdatedThroughMessageId = slot.longTermMemoryUpdatedThroughMessageId,
-                            nextSourceTurnOrder = slot.nextSourceTurnOrder,
-                            sourceTurnTombstones = slot.sourceTurnTombstones,
-                            nextTimelineTurn = slot.nextTimelineTurn,
-                            timelineTombstones = slot.timelineTombstones,
-                            memoryLimitChars = slot.memoryLimitChars,
-                            contextWindowSize = slot.contextWindowSize ?: curSession.contextWindowSize,
-                            extraWorldBookIds = slot.extraWorldBookIds,
-                            timedWorldInfo = slot.timedWorldInfo
-                        )
+                        com.example.chatbar.domain.chat.SaveSlotSessionPolicy.restore(messageState, slot, restoredBackground)
                     )
                     longTermMemoryService.loadSnapshot(sessionId, slot.memorySnapshot)
                 }
@@ -4426,267 +4367,4 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
     }
 }
 
-private fun VectorChunk.messageIds(): Set<String> {
-    val metadataIds = metadata["messageIds"]
-        ?.split(",")
-        ?.map { it.trim() }
-        ?.filter { it.isNotEmpty() }
-        .orEmpty()
-    return (metadataIds + listOfNotNull(messageId)).toSet()
-}
-
-private const val DOCUMENT_LEXICAL_ACCEPT_THRESHOLD = 0.24f
-private const val MEMORY_LEXICAL_ACCEPT_THRESHOLD = 0.18f
-private const val RRF_K = 60f
 private const val MULTIMODAL_PROMPT_TOKEN_RESERVE = 1024
-
-private data class DocumentRank(
-    val chunk: VectorChunk,
-    val vectorScore: Float,
-    val lexicalScore: Float,
-    val combinedScore: Float,
-    val vectorRank: Int? = null,
-    val lexicalRank: Int? = null,
-    val rrfScore: Float = 0f
-)
-
-private fun routeCandidateLimit(topK: Int, totalSize: Int): Int {
-    if (totalSize <= 0) return 0
-    return maxOf(topK * 6, 30).coerceAtMost(totalSize)
-}
-
-private fun rankChunksByMultiRoute(
-    chunks: List<VectorChunk>,
-    queryEmbedding: List<Float>,
-    ragQuery: String,
-    routeLimit: Int
-): List<DocumentRank> {
-    if (chunks.isEmpty() || routeLimit <= 0) return emptyList()
-
-    val vectorScores = chunks.associateWith { chunk ->
-        ChatBarApp.instance.vectorSearchEngine.cosineSimilarity(queryEmbedding, chunk.embedding)
-    }
-    val lexicalScores = chunks.associateWith { chunk -> chunk.lexicalScore(ragQuery) }
-
-    val vectorRanks = vectorScores.entries
-        .sortedByDescending { it.value }
-        .take(routeLimit)
-        .mapIndexed { index, entry -> entry.key.id to index + 1 }
-        .toMap()
-
-    val lexicalRanks = lexicalScores.entries
-        .filter { it.value > 0f }
-        .sortedByDescending { it.value }
-        .take(routeLimit)
-        .mapIndexed { index, entry -> entry.key.id to index + 1 }
-        .toMap()
-
-    val chunksById = chunks.associateBy { it.id }
-    val candidateIds = (vectorRanks.keys + lexicalRanks.keys).distinct()
-    return candidateIds.mapNotNull { id ->
-        val chunk = chunksById[id] ?: return@mapNotNull null
-        val vectorRank = vectorRanks[id]
-        val lexicalRank = lexicalRanks[id]
-        val vectorScore = vectorScores[chunk] ?: 0f
-        val lexicalScore = lexicalScores[chunk] ?: 0f
-        DocumentRank(
-            chunk = chunk,
-            vectorScore = vectorScore,
-            lexicalScore = lexicalScore,
-            combinedScore = vectorScore + lexicalScore,
-            vectorRank = vectorRank,
-            lexicalRank = lexicalRank,
-            rrfScore = vectorRank.rrfScore() + lexicalRank.rrfScore()
-        )
-    }.sortedWith(
-        compareByDescending<DocumentRank> { it.rrfScore }
-            .thenByDescending { it.combinedScore }
-    )
-}
-
-private fun Int?.rrfScore(): Float {
-    return this?.let { 1f / (RRF_K + it) } ?: 0f
-}
-
-private fun List<DocumentRank>.withSourceDiversity(topK: Int): List<DocumentRank> {
-    if (topK <= 0 || isEmpty()) return emptyList()
-    val sourceCap = maxOf(1, (topK + 1) / 2)
-    val selected = mutableListOf<DocumentRank>()
-    val sourceCounts = mutableMapOf<String, Int>()
-
-    for (rank in this) {
-        val source = rank.chunk.sourceDiversityKey()
-        val count = sourceCounts[source] ?: 0
-        if (count < sourceCap) {
-            selected += rank
-            sourceCounts[source] = count + 1
-            if (selected.size >= topK) return selected
-        }
-    }
-
-    for (rank in this) {
-        if (rank !in selected) {
-            selected += rank
-            if (selected.size >= topK) break
-        }
-    }
-    return selected
-}
-
-private fun VectorChunk.sourceDiversityKey(): String {
-    return metadata["sourceLabel"]
-        ?.substringBefore(" > ")
-        ?.trim()
-        ?.takeIf { it.isNotBlank() }
-        ?: metadata["fileName"]?.trim()?.takeIf { it.isNotBlank() }
-        ?: metadata["originalDocId"]?.trim()?.takeIf { it.isNotBlank() }
-        ?: sourceId
-}
-
-internal fun buildRagRetrievalCredentialMessages(
-    contextMsgs: List<ChatMessage>,
-    currentUserMessageId: String? = null,
-    currentUserContent: String = ""
-): List<ChatMessage> {
-    val lastAssistant = contextMsgs.asReversed().firstOrNull { msg ->
-        msg.role == MessageRole.ASSISTANT &&
-            msg.id != currentUserMessageId &&
-            msg.displayContent.isNotBlank() &&
-            msg.displayContent != currentUserContent
-    }
-    return listOfNotNull(lastAssistant)
-}
-
-internal fun buildRagQuery(currentUserContent: String, contextMsgs: List<ChatMessage>): String {
-    val lastAssistant = contextMsgs
-        .lastOrNull { it.role == MessageRole.ASSISTANT && it.displayContent.isNotBlank() }
-
-    return buildString {
-        appendLine("Current user message:")
-        appendLine(currentUserContent.trim().take(800))
-        if (lastAssistant != null) {
-            appendLine()
-            appendLine("Last assistant reply:")
-            val text = lastAssistant.displayContent.replace(Regex("\\s+"), " ").trim().take(600)
-            if (text.isNotBlank()) {
-                appendLine("assistant: $text")
-            }
-        }
-    }.trim().take(2400)
-}
-
-private fun RetrievalPlan.toRagQuery(
-    currentUserContent: String,
-    contextMsgs: List<ChatMessage>
-): String {
-    val plannedTopics = topic
-        .map { it.trim() }
-        .filter { it.isNotBlank() }
-        .distinct()
-    val plannedQueries = queries
-        .map { it.trim() }
-        .filter { it.isNotBlank() }
-        .distinct()
-    val plannedEntities = entities
-        .map { it.trim() }
-        .filter { it.isNotBlank() }
-        .distinct()
-
-    return buildString {
-        if (plannedTopics.isNotEmpty()) {
-            appendLine("Topic: ${plannedTopics.joinToString(", ")}")
-        }
-        if (plannedEntities.isNotEmpty()) {
-            appendLine("Entities: ${plannedEntities.joinToString(", ")}")
-        }
-        if (plannedQueries.isNotEmpty()) {
-            appendLine("Queries:")
-            plannedQueries.take(8).forEach { appendLine(it) }
-        }
-        if (isBlank()) {
-            appendLine(buildRagQuery(currentUserContent, contextMsgs))
-        }
-    }.trim().take(3200)
-}
-
-private fun RetrievalPlan.toDebugLog(): String {
-    return buildString {
-        appendLine("--- Retrieval Planner ---")
-        appendLine("topic=$topic")
-        appendLine("queries=$queries")
-        appendLine("entities=$entities")
-        appendLine("should_recall=$shouldRecall")
-    }.trim()
-}
-
-private fun VectorChunk.contentSourceLabel(): String? {
-    val firstLine = content.lineSequence().firstOrNull()?.trim().orEmpty()
-    return firstLine
-        .removePrefix("【来源】")
-        .takeIf { it != firstLine && it.isNotBlank() }
-}
-
-private fun VectorChunk.hasMismatchedSourceLabel(): Boolean {
-    val contentSource = contentSourceLabel() ?: return false
-    val contentFile = contentSource.substringBefore(" > ").trim()
-    val metadataFile = metadata["fileName"]?.trim()
-    val metadataSource = metadata["sourceLabel"]?.substringBefore(" > ")?.trim()
-    return listOfNotNull(metadataFile, metadataSource).any { it.isNotBlank() && it != contentFile }
-}
-
-private fun VectorChunk.lexicalScore(query: String): Float {
-    val tokens = query.searchTokens()
-    if (tokens.isEmpty()) return 0f
-
-    val haystack = buildString {
-        append(content)
-        append('\n')
-        metadata.values.forEach {
-            append(it)
-            append('\n')
-        }
-    }.lowercase(Locale.ROOT)
-
-    var score = 0f
-    for (token in tokens) {
-        if (haystack.contains(token)) {
-            score += when {
-                token.length >= 5 -> 0.34f
-                token.length == 4 -> 0.26f
-                token.length == 3 -> 0.16f
-                else -> 0.08f
-            }
-        }
-    }
-    return score.coerceAtMost(0.72f)
-}
-
-private fun String.searchTokens(): Set<String> {
-    val normalized = lowercase(Locale.ROOT)
-    val tokens = linkedSetOf<String>()
-
-    Regex("[a-z0-9_!！?？-]{2,}").findAll(normalized).forEach { match ->
-        tokens.add(match.value)
-    }
-
-    Regex("\\p{IsHan}+").findAll(normalized).forEach { match ->
-        val run = match.value
-        val maxGram = minOf(6, run.length)
-        for (size in 2..maxGram) {
-            for (start in 0..run.length - size) {
-                val token = run.substring(start, start + size)
-                if (token !in RAG_LEXICAL_STOPWORDS) {
-                    tokens.add(token)
-                }
-            }
-        }
-    }
-
-    return tokens.take(240).toSet()
-}
-
-private val RAG_LEXICAL_STOPWORDS = setOf(
-    "当前", "用户", "消息", "最近", "上下", "文中", "什么", "还有", "值得", "注意",
-    "一下", "一个", "这个", "那个", "哪些", "怎么", "如何", "我们", "你们",
-    "他们", "她们", "关于", "提到", "讨论", "对话", "内容", "相关"
-)

@@ -1,0 +1,38 @@
+[
+  {
+    "name": "TEST-com.example.chatbar.desktop.DesktopApplicationLifecycleTest.xml",
+    "bytes": 4662,
+    "lastWriteUtc": "2026-10-15T18:53:46.3969903Z",
+    "sha256": "54be312b49507a4de8eeb0467592db38ecead37da3c729c280ed5f78f0ca0460"
+  },
+  {
+    "name": "TEST-com.example.chatbar.desktop.DesktopDataDirectoryTest.xml",
+    "bytes": 1813,
+    "lastWriteUtc": "2026-10-15T18:53:46.3979887Z",
+    "sha256": "0307b0d3dae1b97ee4d0d4b93ade82b04b279099aeece7d609509c9b24ada5e4"
+  },
+  {
+    "name": "TEST-com.example.chatbar.desktop.DesktopDataRootOwnershipTest.xml",
+    "bytes": 2571,
+    "lastWriteUtc": "2026-10-15T18:53:46.3979887Z",
+    "sha256": "278885c8d167130a065e6b178ba5782b352f0ddd44558862301cb64b05097328"
+  },
+  {
+    "name": "TEST-com.example.chatbar.desktop.DesktopIndexStartupPreflightTest.xml",
+    "bytes": 10380,
+    "lastWriteUtc": "2026-10-15T18:53:46.4009798Z",
+    "sha256": "2a710f4041aac53a7afe6274599a9c7c76725692235afa5dfb674adc3012b01f"
+  },
+  {
+    "name": "TEST-com.example.chatbar.desktop.DesktopPortableRootTest.xml",
+    "bytes": 2206,
+    "lastWriteUtc": "2026-10-15T18:53:46.3949946Z",
+    "sha256": "dd351ec0d3025521ca4aeebf9424bb1f01d59599b11b6d810a3b387e98f25037"
+  },
+  {
+    "name": "TEST-com.example.chatbar.desktop.DesktopProcessLifecycleTest.xml",
+    "bytes": 1535,
+    "lastWriteUtc": "2026-10-15T18:53:46.4019805Z",
+    "sha256": "ee92fdee6ea2e99a849ffb3cd17be08978c2862259574ba23bcceacb26b24d25"
+  }
+]

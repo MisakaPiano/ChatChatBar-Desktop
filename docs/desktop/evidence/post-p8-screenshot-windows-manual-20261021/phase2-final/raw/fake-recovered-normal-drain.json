@@ -1,0 +1,8 @@
+{
+  "utc": "2026-10-20T19:10:23.654784+00:00",
+  "method": "One newline to supervisor-created unique writable 4096-byte stdin pipe 392, matching verified Popen(stdin=PIPE) ownership; no remote memory/code mutation; duplicate handle only; originals preserved",
+  "appAbsent": true,
+  "fakeExited": true,
+  "fakeExitCode": 0,
+  "forcedTermination": false
+}

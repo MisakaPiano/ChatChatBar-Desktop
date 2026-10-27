@@ -1,0 +1,6 @@
+{
+  "userRequirement": "When width permits, Previous / page caption / adjacent page-input + Jump / Next on same row; wrap only as needed",
+  "draftImplementation": "FlowRow with unweighted caption and grouped input/action Row; conditional validation below",
+  "status": "IMPLEMENTED AS UNCOMMITTED DRAFT / NEW ADJACENCY ASSERTION RED",
+  "accepted": false
+}

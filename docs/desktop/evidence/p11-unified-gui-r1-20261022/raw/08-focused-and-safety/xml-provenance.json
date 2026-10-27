@@ -1,0 +1,27 @@
+{
+  "files": [
+    "TEST-com.example.chatbar.desktop.DesktopChatScreenshotTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopChatScreenshotUiTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopDataRootOwnershipProcessTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopDataRootOwnershipTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopFullBackupArchiveTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopFullBackupMappingTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopFullBackupServiceTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopR1LayoutMenuTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopR1ScreenshotTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopR1VoiceTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopSaveSlotArchiveTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopSaveSlotInspectorTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopSaveSlotServiceTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopScreenshotBoundaryTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopScreenshotWorkspaceTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopShutdownWaitObserverTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopVoiceArchiveHandoffTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopVoiceClickReliabilityTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopVoiceSafetyTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopVoiceUxTest.xml"
+  ],
+  "onlyXmlWrittenAfterStageStart": true
+}

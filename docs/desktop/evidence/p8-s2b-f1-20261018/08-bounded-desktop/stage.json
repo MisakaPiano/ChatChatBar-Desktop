@@ -1,0 +1,15 @@
+{
+  "startedUtc": "2026-10-18T08:34:18.0331491+00:00",
+  "finishedUtc": "2026-10-18T08:39:56.2420316+00:00",
+  "durationSeconds": 338.2088825,
+  "exitCode": 0,
+  "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:test -I desktopApp/build/p8-s2b-f1-20261018/bounded.init.gradle",
+  "jdk": "Temurin 17.0.20.1",
+  "gradle": "9.1.0",
+  "heap": "-Xmx2048m",
+  "tasks": [
+    ":desktopApp:test",
+    "-I",
+    "desktopApp/build/p8-s2b-f1-20261018/bounded.init.gradle"
+  ]
+}

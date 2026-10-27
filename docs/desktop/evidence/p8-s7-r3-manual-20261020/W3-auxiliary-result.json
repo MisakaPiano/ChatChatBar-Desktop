@@ -1,0 +1,51 @@
+{
+  "bobRecords": [
+    {
+      "id": "0ca30d49-4379-45bb-911a-7814c81b5523",
+      "sourceText": "这是第二句合成语音测试。",
+      "synthesisText": "Synthetic translated voice text.",
+      "ttsText": null,
+      "fishModelId": "s2.1-pro-free",
+      "messageVersionId": "p8s7-version-1",
+      "sourceMessageVersionId": null
+    }
+  ],
+  "assistantJsonUnchanged": true,
+  "newFakeEvents": [
+    {
+      "utc": "2026-10-20T02:10:39.536000300Z",
+      "interface": "POST synthetic auxiliary",
+      "variant": "not-sample",
+      "status": 200,
+      "hanging": false,
+      "sampleSecretHeader": false,
+      "pageNumber": 1,
+      "pageSize": 20,
+      "realRequests": 0
+    },
+    {
+      "utc": "2026-10-20T02:10:39.575894700Z",
+      "interface": "POST synthetic auxiliary",
+      "variant": "not-sample",
+      "status": 200,
+      "hanging": false,
+      "sampleSecretHeader": false,
+      "pageNumber": 1,
+      "pageSize": 20,
+      "realRequests": 0
+    },
+    {
+      "utc": "2026-10-20T02:10:39.590854200Z",
+      "interface": "POST /v1/tts",
+      "variant": "not-sample",
+      "status": 200,
+      "hanging": false,
+      "sampleSecretHeader": false,
+      "pageNumber": 1,
+      "pageSize": 20,
+      "realRequests": 0
+    }
+  ],
+  "realFishGET": 0,
+  "realFishTTS": 0
+}

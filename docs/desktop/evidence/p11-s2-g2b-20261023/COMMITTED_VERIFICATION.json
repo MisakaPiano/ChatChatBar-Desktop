@@ -1,0 +1,22 @@
+{
+  "reference": "36a414596beeb850fbded9efa1386351fc83c927",
+  "rawFilesVerified": 164,
+  "testedSourcesVerified": 6,
+  "projections": [
+    {
+      "tree": "app/desktopApp/src/main",
+      "originalFiles": 246,
+      "onlyExistingChange": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupReadOnlyInspector.kt"
+    },
+    {
+      "tree": "app/sharedCore/src/main",
+      "originalFiles": 246,
+      "onlyExistingChange": null
+    },
+    {
+      "tree": "app/app/src/main",
+      "originalFiles": 269,
+      "onlyExistingChange": null
+    }
+  ]
+}

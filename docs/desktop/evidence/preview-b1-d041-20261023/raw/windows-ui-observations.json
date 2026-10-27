@@ -1,0 +1,21 @@
+{
+  "attribution": "Transcription of actual Codex Computer Use tool responses, not screenshots",
+  "901": {
+    "windowId": 205694,
+    "title": "ChatChatBar",
+    "captureErrors": [
+      "FrameArrived timed out: timed out waiting on channel",
+      "window capture timed out: timed out waiting on channel"
+    ],
+    "accessibility": "0 window ChatChatBar; 1 pane",
+    "dataPage": "NOT_TESTED",
+    "normalClose": "Alt_L+F4"
+  },
+  "902": {
+    "windowId": 336746,
+    "title": "ChatChatBar",
+    "accessibility": "0 window ChatChatBar; 1 pane",
+    "normalClose": "Alt_L+F4"
+  },
+  "noBrowserOrUpdateRequestClicked": true
+}

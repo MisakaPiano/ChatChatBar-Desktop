@@ -1,0 +1,6 @@
+{
+  "result": "PASS",
+  "reviewed": "Synthetic test data and source, compile logs, six raw XML, sanitized Java category/PID/memory records. No full process command lines, browser content, production data or credentials logged.",
+  "highSpecificityScanFindings": [],
+  "rawEvidenceModified": false
+}

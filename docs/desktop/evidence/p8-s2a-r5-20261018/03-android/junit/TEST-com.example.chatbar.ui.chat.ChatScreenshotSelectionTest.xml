@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.ui.chat.ChatScreenshotSelectionTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:26.500Z" hostname="DD1" time="0.008">
+  <properties/>
+  <testcase name="fileName_sanitizesUnsafeCharacters" classname="com.example.chatbar.ui.chat.ChatScreenshotSelectionTest" time="0.006"/>
+  <testcase name="nonErrorSystemMessage_doesNotExposeRegeneration" classname="com.example.chatbar.ui.chat.ChatScreenshotSelectionTest" time="0.0"/>
+  <testcase name="orderedMessages_followTimelineNotClickOrder" classname="com.example.chatbar.ui.chat.ChatScreenshotSelectionTest" time="0.0"/>
+  <testcase name="assistantSelection_usesLegacyTextBlockWhenSegmentationDisabled" classname="com.example.chatbar.ui.chat.ChatScreenshotSelectionTest" time="0.0"/>
+  <testcase name="toggleSelection_addsRemovesAndIgnoresUnselectable" classname="com.example.chatbar.ui.chat.ChatScreenshotSelectionTest" time="0.0"/>
+  <testcase name="latestRegenerableAssistantMessage_skipsTrailingImageOnlyMessages" classname="com.example.chatbar.ui.chat.ChatScreenshotSelectionTest" time="0.0"/>
+  <testcase name="oldGenerationError_doesNotExposeRegenerationAfterNewUserMessage" classname="com.example.chatbar.ui.chat.ChatScreenshotSelectionTest" time="0.001"/>
+  <testcase name="latestRegenerableAssistantMessage_returnsNullWhenLastNonImageIsUser" classname="com.example.chatbar.ui.chat.ChatScreenshotSelectionTest" time="0.0"/>
+  <testcase name="toggleMessageSelection_selectsAndClearsAllSelectableBlocks" classname="com.example.chatbar.ui.chat.ChatScreenshotSelectionTest" time="0.0"/>
+  <testcase name="trailingGenerationError_retriesPreviousAssistant" classname="com.example.chatbar.ui.chat.ChatScreenshotSelectionTest" time="0.0"/>
+  <testcase name="cleanSelection_removesDeletedAndSystemMessages" classname="com.example.chatbar.ui.chat.ChatScreenshotSelectionTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.chat.AuxiliaryTaskTransportTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:19.941Z" hostname="DD1" time="0.326">
+  <properties/>
+  <testcase name="allAuxiliaryInterfacesPreserveRefusalTypeAndStopBeforeRepair" classname="com.example.chatbar.domain.chat.AuxiliaryTaskTransportTest" time="0.275"/>
+  <testcase name="streamSendsOneConfirmedRequestAndKeepsUsageAfterFinish" classname="com.example.chatbar.domain.chat.AuxiliaryTaskTransportTest" time="0.026"/>
+  <testcase name="nonStreamingArrayContentPreservesProtocolText" classname="com.example.chatbar.domain.chat.AuxiliaryTaskTransportTest" time="0.025"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

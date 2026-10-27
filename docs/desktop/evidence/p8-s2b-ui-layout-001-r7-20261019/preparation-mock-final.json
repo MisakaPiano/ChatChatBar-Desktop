@@ -1,0 +1,11 @@
+{
+  "pid": 27996,
+  "exitCode": 0,
+  "cleanup": {
+    "privateKeyDeleted": true,
+    "trustStoreDeleted": true,
+    "serverDrained": true
+  },
+  "privateKeyRemains": false,
+  "trustStoreRemains": false
+}

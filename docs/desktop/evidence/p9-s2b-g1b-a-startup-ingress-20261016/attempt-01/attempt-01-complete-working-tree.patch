@@ -1,0 +1,647 @@
+diff --git a/.agents/skills/chatbar-feature-map/SKILL.md b/.agents/skills/chatbar-feature-map/SKILL.md
+index 043ef105..ed40522f 100644
+--- a/.agents/skills/chatbar-feature-map/SKILL.md
++++ b/.agents/skills/chatbar-feature-map/SKILL.md
+@@ -39,7 +39,7 @@ Use this as a first-hop map. Read a specific skill or listed files, then search
+ - Character speaker names/history: domain/card/CharacterSpeakerNamePolicy.kt, CharacterSpeakerMigration.kt, domain/chat/SpeakerTagHistoryService.kt, and ChatRepository.rewriteSpeakerTagsForCharacterCard.
+ - Settings navigation/search: ui/kit/SettingsBrowser.kt; global eight-category content in ui/manage/GlobalSettingsScreen.kt, session six-category content in ui/chat/SessionSettingsContent.kt. ChatSettingsDialog.kt retains tool tabs and session drafts; ManageScreen.kt owns the global save entry. SettingsRepository.kt and ChatRepository.kt merge edited settings fields through SettingsDraftMerge.kt. Navigation.kt carries the global unsaved-settings guard.
+ - Chat save slots/archive transfer: shared `app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/SaveSlot.kt`; Android data/repository/SaveSlotRepository.kt, domain/chat/SaveSlotJsonTransfer.kt, ChatViewModel.kt, ChatSettingsDialog.kt. Desktop read-only external-file inspection: DesktopSaveSlotInspector / DesktopSaveSlotInspectionPicker; import/restore and management UI remain pending. Use chatbar-save-slot.
+-- RAG/search/indexing and vector persistence: Android domain/rag/RagManager.kt / RagRepository.kt, shared `app/sharedCore/src/main/kotlin/com/example/chatbar/domain/rag/` ChunkingEngine / VectorSearchEngine / ChatMemoryIndexPolicy / RagSourcePlan / RetrievalModels, shared `app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/VectorChunk.kt`, shared JsonFileStorage, and domain/search/CharacterResearchService.kt. Desktop Character document cleanup is the narrow `DesktopCharacterDocumentRagCleanup`; `DesktopDocumentRagReader` provides bounded strict DOCUMENT-only retrieval over the same AppContainer storage/coordinator and owned source files, without embedding calls, indexing, CHAT_MEMORY or Prompt injection. DesktopDocumentRagSource is the shared Desktop owned-file and preallocation-budget helper. DesktopDocumentRagIndexPreparation (AppContainer explicit offline-gateway factory) runs read-only source snapshots, bounded embedding validation and final reproof; TaskRuntime registers its structured children for duplicate-source rejection and shutdown drain. It never publishes vectors or updates index status. DesktopIndexStartupPreflight is the standalone metadata-only G0 candidate-domain observer; it has no production startup caller, never opens transaction payloads, and NO_DOMAIN is not business-readiness. Full RAG index publication remains Android-owned. RAG stays independent from long-term memory; source-turn grouping changes require chatbar-long-term-memory.
++- RAG/search/indexing and vector persistence: Android domain/rag/RagManager.kt / RagRepository.kt, shared `app/sharedCore/src/main/kotlin/com/example/chatbar/domain/rag/` ChunkingEngine / VectorSearchEngine / ChatMemoryIndexPolicy / RagSourcePlan / RetrievalModels, shared `app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/VectorChunk.kt`, shared JsonFileStorage, and domain/search/CharacterResearchService.kt. Desktop Character document cleanup is the narrow `DesktopCharacterDocumentRagCleanup`; `DesktopDocumentRagReader` provides bounded strict DOCUMENT-only retrieval over the same AppContainer storage/coordinator and owned source files, without embedding calls, indexing, CHAT_MEMORY or Prompt injection. DesktopDocumentRagSource is the shared Desktop owned-file and preallocation-budget helper. DesktopDocumentRagIndexPreparation (AppContainer explicit offline-gateway factory) runs read-only source snapshots, bounded embedding validation and final reproof; TaskRuntime registers its structured children for duplicate-source rejection and shutdown drain. It never publishes vectors or updates index status. DesktopIndexStartupPreflight is the metadata-only G0 candidate-domain observer. Main uses DesktopStartupGate after read-only root selection and ownership, before pickers/container; Portable activation is between two fresh G0 checks under the same owner. DesktopStartupBlockedPresenter is pre-container and sanitized; safe startup refusal is separate from unsafe writer shutdown. G0 never opens transaction payloads, and NO_DOMAIN only permits existing startup, not whole-root or legacy-vector safety. Full RAG index publication remains Android-owned. RAG stays independent from long-term memory; source-turn grouping changes require chatbar-long-term-memory.
+ - NovelAI prompt/tag design: use chatbar-novelai-prompt, then read domain/image/NovelAiPromptDesigner.kt.
+ - Home image prompt tool, reference-image reverse prompting, or manual NovelAI prompt editing: use chatbar-novelai-prompt and chatbar-image-generation-runtime, then read ui/imageprompt/ImagePromptToolScreen.kt and ImagePromptToolViewModel.kt. Independent studio AI-design conversations and their natural-language mode use NovelAiDesignScreen.kt, NovelAiDesignViewModel.kt, domain/image/NovelAiDesignConversationModels.kt, and data/repository/NovelAiDesignConversationRepository.kt.
+ - APNG disguise/restore, static/GIF/APNG inspection, mosaic-editor image processing, or direct share/save: use chatbar-image-generation-runtime, then read ui/components/ImageMosaicEditor.kt, domain/image/ImageProcessingService.kt, domain/image/ApngDisguiseCodec.kt, and ui/components/ImageActions.kt.
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataDirectory.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataDirectory.kt
+index 30a859cf..ff1e2863 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataDirectory.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataDirectory.kt
+@@ -34,7 +34,14 @@ object DesktopDataDirectory {
+         }
+     }
+ 
+-    /** G1A seam only; Main still calls the legacy resolver above. Never runs the write probe. */
++    /** Production startup selection. Never runs the Portable write probe or creates a root. */
++    internal suspend fun selectRoot(explicitOverride: Path? = null): DesktopStartupRootSelection {
++        val userHome = System.getProperty("user.home")?.trim()?.takeIf { it.isNotEmpty() }
++            ?.let(Path::of) ?: Path.of(".").toAbsolutePath()
++        return selectRoot(System.getenv(), userHome, explicitOverride)
++    }
++
++    /** Injectable authority inputs for isolated tests; uses the same read-only selection. */
+     internal suspend fun selectRoot(
+         environment: Map<String, String>,
+         userHome: Path,
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopProcessLifecycle.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopProcessLifecycle.kt
+index 66d0e7f2..dca66a4b 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopProcessLifecycle.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopProcessLifecycle.kt
+@@ -25,15 +25,20 @@ internal fun runDesktopProcessLifecycle(
+     terminate: (Int) -> Unit = ::exitProcess,
+     reportFailure: () -> Unit = { DesktopShutdownRecoveryWindow.awaitAction(retryAllowed = false) },
+ ) {
++    var exitCode = 0
+     try {
+         application()
++    } catch (_: DesktopStartupBlockedException) {
++        // Only emitted after structured preflight/probe completion and successful ownership
++        // release (or before ownership acquisition). No business writers were constructed.
++        exitCode = 2
+     } catch (_: Throwable) {
+         DesktopShutdownTrace.record(DesktopShutdownStage.SHUTDOWN_FAILED)
+         reportFailure()
+         return
+     }
+     DesktopShutdownTrace.record(DesktopShutdownStage.SAFE_EXIT_HANDOFF)
+-    terminate(0)
++    terminate(exitCode)
+ }
+ 
+ /** Retry only the documented, resumable writer-drain timeouts, never a failed file transaction. */
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt
+index eb3a4065..bdd1b68d 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt
+@@ -22,17 +22,19 @@ import kotlinx.coroutines.runBlocking
+ private val unsafeShutdownOwnerships = ConcurrentHashMap.newKeySet<DesktopDataRootOwnership>()
+ 
+ fun main() {
+-    runDesktopProcessLifecycle(::runDesktopMain)
++    runDesktopProcessLifecycle({ runDesktopMain() })
+ }
+ 
+-private fun runDesktopMain() {
+-    val rootResolution = runBlocking { DesktopDataDirectory.resolveRoot() }
+-    val resolvedRoot = when (rootResolution) {
+-        is DesktopDataRootResolution.Resolved -> rootResolution
+-        is DesktopDataRootResolution.Failed -> throw DesktopDataRootResolutionException(rootResolution)
+-    }
++/** Tests invoke this exact production ingress, replacing only platform inputs/business UI. */
++internal fun runDesktopMain(
++    startup: DesktopStartupGate = DesktopStartupGate(),
++    business: (DesktopDataRootResolution.Resolved) -> Unit = ::runDesktopBusinessApplication,
++) {
++    startup.run(business)
++    DesktopShutdownTrace.record(DesktopShutdownStage.MAIN_RETURNED)
++}
+ 
+-    runDesktopApplicationWithDataRootOwnership(resolvedRoot) {
++private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolution.Resolved) {
+         val dialogOwner = DesktopDialogOwner()
+         DesktopPlatformPickers.create(dialogOwner).use { pickers ->
+             val appContainer = DesktopAppContainer(resolvedRoot, filePicker = pickers.files)
+@@ -128,8 +130,6 @@ private fun runDesktopMain() {
+             )
+         }
+         DesktopShutdownTrace.record(DesktopShutdownStage.PICKERS_CLOSED)
+-    }
+-    DesktopShutdownTrace.record(DesktopShutdownStage.MAIN_RETURNED)
+ }
+ 
+ /**
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopStartupBlockedPresenter.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopStartupBlockedPresenter.kt
+new file mode 100644
+index 00000000..db93a987
+--- /dev/null
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopStartupBlockedPresenter.kt
+@@ -0,0 +1,79 @@
++package com.example.chatbar.desktop
++
++import java.awt.BorderLayout
++import java.awt.EventQueue
++import java.awt.Toolkit
++import java.awt.datatransfer.StringSelection
++import java.awt.event.WindowAdapter
++import java.awt.event.WindowEvent
++import java.util.concurrent.CountDownLatch
++import java.util.concurrent.atomic.AtomicReference
++import javax.swing.JButton
++import javax.swing.JFrame
++import javax.swing.JPanel
++import javax.swing.JTextArea
++import javax.swing.WindowConstants
++
++internal fun interface DesktopStartupBlockedPresenter {
++    /** Returns after close, or throws if presentation is unavailable. Never constructs business UI. */
++    fun show(diagnostic: DesktopStartupDiagnostic)
++}
++
++/** Fixed bilingual content, independent of persisted theme/language/settings and user paths. */
++internal class DesktopStartupBlockedView(val diagnostic: DesktopStartupDiagnostic) {
++    val closeLabel = "关闭 / Close"
++    val copyLabel = "复制诊断代码 / Copy diagnostic code"
++    val message = "当前不能启动普通业务。数据没有被自动清空或恢复，请保留现有文件。\n" +
++        "Normal startup is blocked. No automatic data clearing or recovery was performed. Keep existing files.\n" +
++        if (diagnostic.retainedProbe) "可能保留 Portable 探针文件；请保留证据。\nA Portable probe file may remain. Keep the evidence."
++        else ""
++    val diagnosticText = "CCB STARTUP_BLOCKED ${diagnostic.code}"
++    fun copyDiagnostic(copy: (String) -> Unit) = copy(diagnosticText)
++    fun close(onClose: () -> Unit) = onClose()
++}
++
++/** Real pre-container native prompt. Headless verification injects the interface above. */
++internal object PlatformDesktopStartupBlockedPresenter : DesktopStartupBlockedPresenter {
++    override fun show(diagnostic: DesktopStartupDiagnostic) {
++        check(!EventQueue.isDispatchThread())
++        val closed = CountDownLatch(1)
++        val failure = AtomicReference<Throwable?>()
++        EventQueue.invokeLater {
++            var frame: JFrame? = null
++            try {
++                val view = DesktopStartupBlockedView(diagnostic)
++                frame = JFrame("ChatChatBar — 启动已阻断 / Startup blocked")
++                val window = frame
++                window.defaultCloseOperation = WindowConstants.DISPOSE_ON_CLOSE
++                window.addWindowListener(object : WindowAdapter() {
++                    override fun windowClosed(event: WindowEvent) { closed.countDown() }
++                })
++                window.add(JTextArea(view.message + "\n\n" + view.diagnosticText).apply {
++                    isEditable = false; lineWrap = true; wrapStyleWord = true
++                    border = javax.swing.BorderFactory.createEmptyBorder(16, 16, 16, 16)
++                }, BorderLayout.CENTER)
++                window.add(JPanel().apply {
++                    add(JButton(view.copyLabel).apply { addActionListener {
++                        try { view.copyDiagnostic { Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(it), null) } }
++                        catch (_: Exception) { System.err.println("CCB STARTUP_BLOCKED ${diagnostic.code} COPY_FAILED") }
++                    } })
++                    add(JButton(view.closeLabel).apply { addActionListener { view.close { window.dispose() } } })
++                }, BorderLayout.SOUTH)
++                window.setSize(600, 260)
++                window.setLocationRelativeTo(null)
++                window.isVisible = true
++            } catch (problem: Throwable) {
++                failure.set(problem)
++                try { frame?.dispose() } finally { closed.countDown() }
++            }
++        }
++        // Do not leave a queued/later window behind on interruption. No storage IO is detached.
++        var interrupted = false
++        try {
++            while (true) {
++                try { closed.await(); break } catch (_: InterruptedException) { interrupted = true }
++            }
++            failure.get()?.let { throw it }
++        } finally { if (interrupted) Thread.currentThread().interrupt() }
++    }
++}
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopStartupGate.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopStartupGate.kt
+new file mode 100644
+index 00000000..20c609bb
+--- /dev/null
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopStartupGate.kt
+@@ -0,0 +1,125 @@
++package com.example.chatbar.desktop
++
++import kotlinx.coroutines.CancellationException
++import kotlinx.coroutines.runBlocking
++
++/** Only fixed enum-derived codes cross the presentation boundary. No Throwable/path text. */
++internal data class DesktopStartupDiagnostic private constructor(
++    val code: String,
++    val retainedProbe: Boolean = false,
++) {
++    companion object {
++        fun preflight(code: DesktopIndexPreflightCode) = DesktopStartupDiagnostic("G0_${code.name}")
++        fun selection(kind: DesktopDataRootResolutionFailureKind) = DesktopStartupDiagnostic("ROOT_${kind.name}")
++        fun activation(kind: DesktopPortableActivationFailureKind, retained: Boolean) =
++            DesktopStartupDiagnostic("PORTABLE_${kind.name}", retained)
++        fun ownership(kind: DesktopDataRootOwnershipFailureKind) = DesktopStartupDiagnostic("OWNERSHIP_${kind.name}")
++        fun cancelled() = DesktopStartupDiagnostic("STARTUP_CANCELLED")
++    }
++}
++
++/** Safe refusal, never a signal that business writer drain failed. Created after lock cleanup. */
++internal class DesktopStartupBlockedException(val diagnostic: DesktopStartupDiagnostic) :
++    IllegalStateException("Desktop startup blocked: ${diagnostic.code}")
++
++/**
++ * Sole production admission sequence. G0 observes metadata, not transaction payloads. NO_DOMAIN
++ * permits the existing startup only; it proves neither legacy vector safety nor whole-root safety.
++ * runBlocking joins structured preflight IO before refusal/ownership release, including cancellation.
++ */
++internal class DesktopStartupGate(
++    private val select: suspend () -> DesktopStartupRootSelection = { DesktopDataDirectory.selectRoot() },
++    private val inspect: suspend (DesktopDataRootResolution.Resolved) -> DesktopIndexPreflightResult = {
++        DesktopIndexStartupPreflight(it.appDataRoot).inspect()
++    },
++    private val activate: (DesktopStartupRootSelection.PortablePendingActivation) -> DesktopDataRootResolution = {
++        DesktopDataDirectory.activatePortable(it)
++    },
++    private val presenter: DesktopStartupBlockedPresenter = PlatformDesktopStartupBlockedPresenter,
++    private val acquire: (DesktopDataRootResolution.Resolved) -> DesktopDataRootOwnershipResult = DesktopDataRootOwnership::acquire,
++    private val closeOwnership: (DesktopDataRootOwnership) -> Unit = DesktopDataRootOwnership::close,
++    private val alreadyInUse: DesktopAlreadyInUsePresenter = PlatformAlreadyInUsePresenter,
++    private val report: (String) -> Unit = System.err::println,
++) {
++    private class Refused(val diagnostic: DesktopStartupDiagnostic) : RuntimeException("Startup admission refused")
++
++    fun run(business: (DesktopDataRootResolution.Resolved) -> Unit) {
++        // Only preparation is caught here. Never classify a business/container failure as refusal.
++        val selected = try {
++            runBlocking { select() }
++        } catch (_: CancellationException) {
++            refuseWithoutOwnership(DesktopStartupDiagnostic.cancelled())
++        } catch (_: Exception) {
++            refuseWithoutOwnership(DesktopStartupDiagnostic.preflight(DesktopIndexPreflightCode.READ_ERROR))
++        }
++        if (selected is DesktopStartupRootSelection.Failed) {
++            refuseWithoutOwnership(DesktopStartupDiagnostic.selection(selected.failure.kind))
++        }
++        // This identity is used ONLY to acquire ownership, never passed to business as activated.
++        val ownershipTarget = when (selected) {
++            is DesktopStartupRootSelection.Selected -> selected.root
++            is DesktopStartupRootSelection.PortablePendingActivation -> DesktopDataRootResolution.Resolved(
++                selected.appDataRoot, DesktopDataRootProvenance.PORTABLE, selected.bootstrapPath)
++            is DesktopStartupRootSelection.Failed -> error("Unreachable refused selection")
++        }
++        try {
++            runDesktopApplicationWithDataRootOwnership(ownershipTarget,
++                acquireOwnership = { root ->
++                    when (val result = acquire(root)) {
++                        is DesktopDataRootOwnershipResult.Failure -> refuse(DesktopStartupDiagnostic.ownership(result.kind))
++                        else -> result
++                    }
++                }, closeOwnership = closeOwnership, alreadyInUsePresenter = alreadyInUse) {
++                val admittedRoot = try {
++                    requireNoDomain(ownershipTarget)
++                    if (selected is DesktopStartupRootSelection.PortablePendingActivation) {
++                        when (val activated = activate(selected)) {
++                            is DesktopDataRootResolution.Failed -> {
++                                val failure = activated.portableActivationFailure
++                                refuse(DesktopStartupDiagnostic.activation(
++                                    failure?.kind ?: DesktopPortableActivationFailureKind.CANDIDATE_CHANGED,
++                                    failure?.retainedProbe != null))
++                            }
++                            is DesktopDataRootResolution.Resolved -> {
++                                // Fresh inspection under the SAME owner, after probe cleanup/identity validation.
++                                requireNoDomain(activated)
++                                activated
++                            }
++                        }
++                    } else ownershipTarget
++                } catch (refused: Refused) { throw refused }
++                catch (_: CancellationException) { refuse(DesktopStartupDiagnostic.cancelled()) }
++                catch (_: Exception) { refuse(DesktopStartupDiagnostic.preflight(DesktopIndexPreflightCode.READ_ERROR)) }
++                // No picker, settings read, container or background service between proof and business.
++                business(admittedRoot)
++            }
++        } catch (refused: Refused) {
++            // The existing lifetime attaches a close failure to our suppression-enabled carrier.
++            // Such a failure is NOT confirmed safe release, so retain existing unsafe-exit handling.
++            if (refused.suppressed.isNotEmpty()) throw DesktopUnsafeShutdownException(refused)
++            throw DesktopStartupBlockedException(refused.diagnostic)
++        }
++    }
++
++    private fun requireNoDomain(root: DesktopDataRootResolution.Resolved) {
++        val result = runBlocking { inspect(root) }
++        if (result.code != DesktopIndexPreflightCode.NO_DOMAIN) refuse(DesktopStartupDiagnostic.preflight(result.code))
++    }
++
++    private fun present(diagnostic: DesktopStartupDiagnostic) {
++        try { presenter.show(diagnostic) } catch (_: Throwable) {
++            // Presentation cannot grant admission. Neither log function receives original exceptions.
++            try { report("CCB STARTUP_BLOCKED ${diagnostic.code} PRESENTATION_FAILED") } catch (_: Throwable) { }
++        }
++    }
++
++    private fun refuse(diagnostic: DesktopStartupDiagnostic): Nothing {
++        present(diagnostic)
++        throw Refused(diagnostic)
++    }
++
++    private fun refuseWithoutOwnership(diagnostic: DesktopStartupDiagnostic): Nothing {
++        present(diagnostic)
++        throw DesktopStartupBlockedException(diagnostic)
++    }
++}
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopStartupGateTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopStartupGateTest.kt
+new file mode 100644
+index 00000000..d4be91d2
+--- /dev/null
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopStartupGateTest.kt
+@@ -0,0 +1,325 @@
++package com.example.chatbar.desktop
++
++import com.example.chatbar.desktop.security.InMemoryDesktopSecretStore
++import java.io.IOException
++import java.nio.file.Files
++import java.nio.file.Path
++import java.nio.file.StandardOpenOption
++import java.security.MessageDigest
++import kotlinx.coroutines.*
++import kotlin.test.*
++
++class DesktopStartupGateTest {
++    private class Fixture : AutoCloseable {
++        val parent = Files.createTempDirectory("g1b-synthetic-")
++        val root = Files.createDirectory(parent.resolve("root"))
++        val home = Files.createDirectory(parent.resolve("image"))
++        val local = Files.createDirectory(parent.resolve("local"))
++        val domain = root.resolve("entities/document_index_transactions")
++        val resolved = DesktopDataRootResolution.Resolved(root, DesktopDataRootProvenance.CLI_OVERRIDE,
++            local.resolve(DesktopDataDirectory.BOOTSTRAP_FILE_NAME))
++        fun select() = DesktopStartupRootSelection.Selected(resolved)
++        fun portable(): DesktopStartupRootSelection.PortablePendingActivation {
++            Files.writeString(home.resolve("portable.flag"), DesktopPortableRootResolver.PORTABLE_MARKER_TOKEN)
++            Files.createDirectory(home.resolve("UserData"))
++            return runBlocking { assertIs<DesktopStartupRootSelection.PortablePendingActivation>(
++                DesktopDataDirectory.selectRoot(mapOf("LOCALAPPDATA" to local.toString()), parent,
++                    applicationHomeResolution = DesktopApplicationHome.resolve(null, home))) }
++        }
++        override fun close() {
++            // Fail instead of deleting a fixture which might still be used by a live owner.
++            assertFalse(DesktopDataRootOwnership.isHeld(root))
++            assertFalse(DesktopDataRootOwnership.isHeld(home.resolve("UserData")))
++            assertTrue(parent.toFile().deleteRecursively())
++        }
++    }
++    private inline fun fixture(body: (Fixture) -> Unit) = Fixture().use(body)
++    private fun result(code: DesktopIndexPreflightCode) = DesktopIndexPreflightResult(code, 0, 0, 0)
++    private fun snapshot(root: Path): Map<String, String> = Files.walk(root).use { paths ->
++        paths.toList().associate { path -> root.relativize(path).toString() to
++            if (Files.isDirectory(path)) "DIR" else MessageDigest.getInstance("SHA-256")
++                .digest(Files.readAllBytes(path)).joinToString("") { "%02x".format(it) } }
++    }
++    private fun blocked(f: Fixture, gate: DesktopStartupGate): DesktopStartupBlockedException {
++        val failure = assertFailsWith<DesktopStartupBlockedException> { runDesktopMain(gate) { error("business forbidden") } }
++        assertFalse(DesktopDataRootOwnership.isHeld(f.root))
++        return failure
++    }
++
++    @Test fun `Main ingress inspects under owner before business and real container initialization`() = fixture { f ->
++        val calls = mutableListOf<String>()
++        val gate = DesktopStartupGate(select = { calls += "select"; f.select() },
++            acquire = { calls += "acquire"; DesktopDataRootOwnership.acquire(it) }, inspect = {
++                assertTrue(DesktopDataRootOwnership.isHeld(it.appDataRoot))
++                val before = snapshot(f.root)
++                val checked = DesktopIndexStartupPreflight(it.appDataRoot).inspect()
++                assertEquals(before, snapshot(f.root)) // G0 only; excludes subsequent business writes.
++                calls += "G0"; checked
++            }, closeOwnership = { calls += "release"; it.close() })
++        runDesktopMain(gate) { root ->
++            calls += "container"
++            val container = DesktopAppContainer(root, secretStoreFactory = { InMemoryDesktopSecretStore() })
++            runDesktopApplicationLifecycle({ calls += "initialize"; container.initializePersistentState() },
++                { calls += "application" }, { calls += "drain"; container.close() })
++        }
++        assertEquals(listOf("select", "acquire", "G0", "container", "initialize", "application", "drain", "release"), calls)
++        assertFalse(DesktopDataRootOwnership.isHeld(f.root))
++    }
++
++    @Test fun `Main refuses every candidate domain shape without interpreting payloads or constructing business`() {
++        for (shape in listOf("empty", "active", "pending", "completed", "heads", "unknown")) fixture { f ->
++            Files.createDirectories(f.domain)
++            if (shape != "empty") Files.writeString(f.domain.resolve(shape), "not a journal; never parse")
++            var presentations = 0
++            val gate = DesktopStartupGate(select = { f.select() }, presenter = {
++                presentations++; assertEquals("G0_DOMAIN_PRESENT_UNSUPPORTED", it.code)
++                assertTrue(DesktopDataRootOwnership.isHeld(f.root))
++                val view = DesktopStartupBlockedView(it)
++                var closed = false; view.close { closed = true }; assertTrue(closed)
++            })
++            val before = snapshot(f.domain)
++            blocked(f, gate)
++            assertEquals(before, snapshot(f.domain)); assertEquals(1, presentations)
++            assertEquals(setOf("entities", DesktopDataRootOwnership.LOCK_FILE_NAME), Files.list(f.root).use { p -> p.map { it.fileName.toString() }.toList().toSet() })
++            assertIs<DesktopDataRootOwnershipResult.Acquired>(DesktopDataRootOwnership.acquire(f.resolved)).ownership.close()
++        }
++    }
++
++    @Test fun `every G0 refusal code is fixed and no business factory is reached`() {
++        for (code in DesktopIndexPreflightCode.entries.filter { it != DesktopIndexPreflightCode.NO_DOMAIN }) fixture { f ->
++            var presented: DesktopStartupDiagnostic? = null
++            val failure = blocked(f, DesktopStartupGate(select = { f.select() }, inspect = { result(code) },
++                presenter = { presented = it }))
++            assertEquals("G0_${code.name}", failure.diagnostic.code)
++            assertEquals(presented, failure.diagnostic)
++            assertEquals(setOf(DesktopDataRootOwnership.LOCK_FILE_NAME), Files.list(f.root).use { it.map { p -> p.fileName.toString() }.toList().toSet() })
++        }
++    }
++
++    @Test fun `Portable Main performs first G0 before owned probe and a fresh second G0 before business`() = fixture { f ->
++        val pending = f.portable()
++        val calls = mutableListOf<String>()
++        var acquisitions = 0
++        val validator = DesktopPortableRootActivationValidator(DesktopPortableRootResolver(), { "ordered" }, {
++            calls += "probe"; assertTrue(DesktopDataRootOwnership.isHeld(pending.appDataRoot))
++            Files.write(it, byteArrayOf(1), StandardOpenOption.CREATE_NEW)
++        }, { calls += "cleanup"; Files.delete(it) })
++        runDesktopMain(DesktopStartupGate(select = { pending }, acquire = {
++            acquisitions++; DesktopDataRootOwnership.acquire(it)
++        }, inspect = {
++            calls += "G0"; val before = snapshot(pending.appDataRoot)
++            DesktopIndexStartupPreflight(it.appDataRoot).inspect().also { assertEquals(before, snapshot(pending.appDataRoot)) }
++        }, activate = { DesktopDataDirectory.activatePortable(it, validator) })) {
++            assertEquals(pending.appDataRoot, it.appDataRoot); calls += "business"
++        }
++        assertEquals(listOf("G0", "probe", "cleanup", "G0", "business"), calls)
++        assertEquals(1, acquisitions)
++    }
++
++    @Test fun `Portable first refusal never activates or falls back`() = fixture { f ->
++        val pending = f.portable()
++        Files.createDirectories(pending.appDataRoot.resolve("entities/document_index_transactions"))
++        var activated = false
++        assertFailsWith<DesktopStartupBlockedException> { runDesktopMain(DesktopStartupGate(select = { pending },
++            activate = { activated = true; error("forbidden") }, presenter = {})) { error("forbidden") } }
++        assertFalse(activated)
++        assertFalse(Files.exists(f.local.resolve(DesktopDataDirectory.DIRECTORY_NAME)))
++        assertFalse(Files.list(pending.appDataRoot).use { it.anyMatch { p -> p.fileName.toString().startsWith(".portable-write-probe") } })
++    }
++
++    @Test fun `domain created before or during probe is refused by fresh second G0`() {
++        for (duringProbe in listOf(false, true)) fixture { f ->
++            val pending = f.portable()
++            var checks = 0
++            val domain = pending.appDataRoot.resolve("entities/document_index_transactions")
++            val validator = DesktopPortableRootActivationValidator(DesktopPortableRootResolver(), { "domain" }, {
++                Files.write(it, byteArrayOf(2), StandardOpenOption.CREATE_NEW)
++                if (duringProbe) Files.createDirectories(domain)
++            }, Files::delete)
++            val error = assertFailsWith<DesktopStartupBlockedException> { runDesktopMain(DesktopStartupGate(
++                select = { pending }, inspect = { checks++; DesktopIndexStartupPreflight(it.appDataRoot).inspect() },
++                activate = { if (!duringProbe) Files.createDirectories(domain); DesktopDataDirectory.activatePortable(it, validator) },
++                presenter = {})) { error("forbidden") } }
++            assertEquals("G0_DOMAIN_PRESENT_UNSUPPORTED", error.diagnostic.code); assertEquals(2, checks)
++            assertTrue(Files.isDirectory(domain))
++        }
++    }
++
++    @Test fun `Portable identity drift during probe blocks rather than falling back`() = fixture { f ->
++        val pending = f.portable()
++        val validator = DesktopPortableRootActivationValidator(DesktopPortableRootResolver(), { "drift" }, {
++            Files.write(it, byteArrayOf(2), StandardOpenOption.CREATE_NEW)
++            Files.move(f.home.resolve("portable.flag"), f.home.resolve("original-marker"))
++            Files.writeString(f.home.resolve("portable.flag"), DesktopPortableRootResolver.PORTABLE_MARKER_TOKEN)
++        }, Files::delete)
++        val error = assertFailsWith<DesktopStartupBlockedException> { runDesktopMain(DesktopStartupGate(select = { pending },
++            activate = { DesktopDataDirectory.activatePortable(it, validator) }, presenter = {})) { error("forbidden") } }
++        assertEquals("PORTABLE_CANDIDATE_CHANGED", error.diagnostic.code)
++        assertTrue(Files.exists(f.home.resolve("original-marker")))
++    }
++
++    @Test fun `probe and cleanup failures preserve actual retained evidence and show warning`() {
++        for (cleanup in listOf(false, true)) fixture { f ->
++            val pending = f.portable()
++            val validator = DesktopPortableRootActivationValidator(DesktopPortableRootResolver(), { "retained" }, {
++                Files.write(it, byteArrayOf(42), StandardOpenOption.CREATE_NEW)
++                if (!cleanup) throw IOException("synthetic private path must not escape")
++            }, { throw IOException("synthetic cleanup") })
++            val error = assertFailsWith<DesktopStartupBlockedException> { runDesktopMain(DesktopStartupGate(select = { pending },
++                activate = { DesktopDataDirectory.activatePortable(it, validator) }, presenter = {
++                    assertEquals(cleanup, it.retainedProbe)
++                    assertEquals(cleanup, DesktopStartupBlockedView(it).message.contains("可能保留"))
++                })) { error("forbidden") } }
++            assertEquals(if (cleanup) "PORTABLE_PROBE_CLEANUP_FAILED" else "PORTABLE_WRITE_PROBE_FAILED", error.diagnostic.code)
++            val retained = pending.appDataRoot.resolve(".portable-write-probe-retained.tmp")
++            assertEquals(cleanup, Files.exists(retained))
++            if (cleanup) assertContentEquals(byteArrayOf(42), Files.readAllBytes(retained))
++        }
++    }
++
++    @Test fun `default empty root creates only ownership infrastructure before G0`() = fixture { f ->
++        val defaultRoot = f.local.resolve(DesktopDataDirectory.DIRECTORY_NAME)
++        runDesktopMain(DesktopStartupGate(select = { DesktopDataDirectory.selectRoot(
++            mapOf("LOCALAPPDATA" to f.local.toString()), f.parent,
++            applicationHomeResolution = DesktopApplicationHome.resolve(null, f.home)) }, inspect = {
++            assertEquals(defaultRoot, it.appDataRoot)
++            assertEquals(setOf(DesktopDataRootOwnership.LOCK_FILE_NAME), Files.list(defaultRoot).use { s -> s.map { p -> p.fileName.toString() }.toList().toSet() })
++            val before = snapshot(defaultRoot)
++            DesktopIndexStartupPreflight(defaultRoot).inspect().also { assertEquals(before, snapshot(defaultRoot)) }
++        })) { assertEquals(defaultRoot, it.appDataRoot) }
++        assertFalse(DesktopDataRootOwnership.isHeld(defaultRoot))
++    }
++
++    @Test fun `second Main instance keeps existing AlreadyInUse path and never inspects or constructs business`() = fixture { f ->
++        assertIs<DesktopDataRootOwnershipResult.Acquired>(DesktopDataRootOwnership.acquire(f.resolved)).ownership.use {
++            var notices = 0
++            runDesktopMain(DesktopStartupGate(select = { f.select() }, inspect = { error("forbidden") },
++                alreadyInUse = DesktopAlreadyInUsePresenter { notices++ })) { error("forbidden") }
++            assertEquals(1, notices); assertTrue(DesktopDataRootOwnership.isHeld(f.root))
++        }
++    }
++
++    @Test fun `malformed root authority blocks without ownership or fallback`() = fixture { f ->
++        Files.writeString(f.local.resolve(DesktopDataDirectory.BOOTSTRAP_FILE_NAME), "{invalid")
++        val before = snapshot(f.parent)
++        val failure = blocked(f, DesktopStartupGate(select = { DesktopDataDirectory.selectRoot(
++            mapOf("LOCALAPPDATA" to f.local.toString()), f.parent,
++            applicationHomeResolution = DesktopApplicationHome.resolve(null, f.home)) },
++            acquire = { error("forbidden") }, presenter = {}))
++        assertEquals("ROOT_BOOTSTRAP_LOAD_FAILED", failure.diagnostic.code)
++        assertEquals(before, snapshot(f.parent))
++    }
++
++    @Test fun `CLI bypasses broken lower authorities while malformed CLI never falls back`() = fixture { f ->
++        for (valid in listOf(true, false)) {
++            var businessCalls = 0
++            val gate = DesktopStartupGate(select = { DesktopDataDirectory.selectRoot(
++                mapOf("LOCALAPPDATA" to f.local.toString()), f.parent, if (valid) f.root else Path.of("relative"),
++                applicationHomeResolution = DesktopApplicationHomeResult.Failure("private synthetic text")) }, presenter = {})
++            if (valid) runDesktopMain(gate) { businessCalls++; assertEquals(f.root, it.appDataRoot) }
++            else assertEquals("ROOT_INVALID_CLI_OVERRIDE", blocked(f, gate).diagnostic.code)
++            assertEquals(if (valid) 1 else 0, businessCalls)
++        }
++    }
++
++    @Test fun `ownership failure is safe startup refusal without constructing business`() = fixture { f ->
++        val absent = f.resolved.copy(appDataRoot = f.root.resolve("missing"))
++        val failure = blocked(f, DesktopStartupGate(select = { DesktopStartupRootSelection.Selected(absent) }, presenter = {}))
++        assertEquals("OWNERSHIP_ROOT_MISSING", failure.diagnostic.code)
++        assertFalse(Files.exists(absent.appDataRoot))
++    }
++
++    @Test fun `presenter failure remains sanitized refusal and exits nonzero without unsafe window`() = fixture { f ->
++        val reports = mutableListOf<String>()
++        val exits = mutableListOf<Int>()
++        runDesktopProcessLifecycle({ runDesktopMain(DesktopStartupGate(select = { f.select() },
++            inspect = { result(DesktopIndexPreflightCode.READ_ERROR) },
++            presenter = { throw IllegalStateException("SECRET / private / raw payload") }, report = reports::add)) { error("forbidden") } },
++            terminate = exits::add, reportFailure = { error("not unsafe shutdown") })
++        assertEquals(listOf(2), exits)
++        assertEquals(listOf("CCB STARTUP_BLOCKED G0_READ_ERROR PRESENTATION_FAILED"), reports)
++    }
++
++    @Test fun `blocked view copies only stable diagnostic and closes normally`() {
++        for (retained in listOf(false, true)) {
++            val view = DesktopStartupBlockedView(DesktopStartupDiagnostic.activation(DesktopPortableActivationFailureKind.PROBE_CLEANUP_FAILED, retained))
++            var copied = ""; var closes = 0
++            view.copyDiagnostic { copied = it }; view.close { closes++ }
++            assertEquals("CCB STARTUP_BLOCKED PORTABLE_PROBE_CLEANUP_FAILED", copied)
++            assertEquals(1, closes)
++            assertTrue(view.message.contains("数据没有被自动清空或恢复"))
++            assertTrue(view.closeLabel.contains("Close")); assertTrue(view.copyLabel.contains("Copy"))
++        }
++    }
++
++    @Test fun `unexpected selection and G0 exceptions are refused without exposing raw exception`() = fixture { f ->
++        for (inSelection in listOf(false, true)) {
++            val failure = blocked(f, DesktopStartupGate(select = {
++                if (inSelection) throw IOException("synthetic sensitive text") else f.select()
++            }, inspect = { throw IOException("synthetic sensitive text") }, presenter = {
++                assertFalse(DesktopStartupBlockedView(it).message.contains("sensitive"))
++            }))
++            assertEquals("G0_READ_ERROR", failure.diagnostic.code)
++        }
++    }
++
++    @Test fun `G0 cancellation waits for structured IO cleanup before safe refusal and owner release`() = fixture { f -> runBlocking {
++        val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
++        val childStarted = CompletableDeferred<Unit>()
++        val draining = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>()
++        val lifecycle = scope.async {
++            assertFailsWith<DesktopStartupBlockedException> { runDesktopMain(DesktopStartupGate(select = { f.select() }, inspect = {
++                coroutineScope {
++                    launch {
++                        childStarted.complete(Unit)
++                        try { awaitCancellation() } finally { withContext(NonCancellable) { draining.complete(Unit); release.await() } }
++                    }
++                    childStarted.await(); throw CancellationException("synthetic cancellation")
++                }
++            }, presenter = { assertEquals("STARTUP_CANCELLED", it.code) })) { error("forbidden") } }
++        }
++        try {
++            withTimeout(10_000) { draining.await() }
++            assertTrue(DesktopDataRootOwnership.isHeld(f.root)); assertFalse(lifecycle.isCompleted)
++            release.complete(Unit)
++            withTimeout(10_000) { lifecycle.await() }
++            assertFalse(DesktopDataRootOwnership.isHeld(f.root))
++        } finally {
++            release.complete(Unit)
++            withTimeout(10_000) { lifecycle.join() }
++            scope.cancel()
++        }
++    } }
++
++    @Test fun `business initialization failure still drains then takes original unsafe reporting path`() = fixture { f ->
++        val calls = mutableListOf<String>()
++        runDesktopProcessLifecycle({ runDesktopMain(DesktopStartupGate(select = { f.select() })) {
++            runDesktopApplicationLifecycle({ calls += "initialize"; throw IOException("synthetic") },
++                { error("forbidden") }, { calls += "drain" })
++        } }, terminate = { error("no successful exit") }, reportFailure = { calls += "failure" })
++        assertEquals(listOf("initialize", "drain", "failure"), calls)
++        assertFalse(DesktopDataRootOwnership.isHeld(f.root))
++    }
++
++    @Test fun `ownership cleanup failure cannot be misreported as safe startup refusal`() = fixture { f ->
++        var unsafe = 0
++        runDesktopProcessLifecycle({ runDesktopMain(DesktopStartupGate(select = { f.select() },
++            inspect = { result(DesktopIndexPreflightCode.READ_ERROR) }, presenter = {},
++            closeOwnership = { it.close(); throw IOException("synthetic close failure") })) { error("forbidden") } },
++            terminate = { error("must not claim safe refusal") }, reportFailure = { unsafe++ })
++        assertEquals(1, unsafe)
++    }
++
++    @Test fun `restart after refusal performs a new G0 instead of caching admission`() = fixture { f ->
++        var checks = 0; var businessCalls = 0
++        val gate = DesktopStartupGate(select = { f.select() }, inspect = {
++            checks++; DesktopIndexStartupPreflight(it.appDataRoot).inspect()
++        }, presenter = {})
++        runDesktopMain(gate) { businessCalls++ }
++        Files.createDirectories(f.domain)
++        blocked(f, gate)
++        Files.delete(f.domain)
++        runDesktopMain(gate) { businessCalls++ }
++        assertEquals(3, checks); assertEquals(2, businessCalls)
++    }
++}

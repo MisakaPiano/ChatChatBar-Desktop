@@ -1,0 +1,22 @@
+[
+  {
+    "stage": "01-pager-geometry-single-method",
+    "exitCode": 1,
+    "durationSeconds": 31.1470164,
+    "suiteCount": 0,
+    "totals": {
+      "tests": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reportedPass": 0
+    },
+    "suites": [],
+    "resources": {
+      "sampleCount": 3,
+      "minAvailableBytes": 1532669952,
+      "minCommitHeadroomBytes": 15577219072,
+      "maxPagesPerSecond": 2097
+    }
+  }
+]

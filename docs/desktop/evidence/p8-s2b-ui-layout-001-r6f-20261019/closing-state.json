@@ -1,0 +1,43 @@
+{
+  "base": "1bb342f3228c0b054a3708dc770c400aa595cd03",
+  "sourceCandidate": null,
+  "stages": [
+    {
+      "stage": "01-junction-isolated",
+      "suites": 1,
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reportedPass": 1,
+      "exitCode": 0
+    },
+    {
+      "stage": "02-bounded-desktop",
+      "suites": 159,
+      "tests": 1526,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 2,
+      "reportedPass": 1523,
+      "exitCode": 1
+    }
+  ],
+  "realFishGet": 0,
+  "realFishTts": 0,
+  "newDistribution": "NOT BUILT",
+  "windowsManual": "NOT TESTED / NOT STARTED",
+  "packagedLauncherJvmRootLock": "NOT TESTED / NOT STARTED",
+  "winAuto001": "OPEN",
+  "winBrand001": "OPEN / DEFERRED",
+  "unknownHistoricalPointerMovement": "UNKNOWN / unchanged",
+  "protectedFiles": "KEEP / UNTRACKED / UNREAD / UNMODIFIED / UNSTAGED; paths only inventoried",
+  "sourceFrozen": true,
+  "r6eError5RootCause": "UNKNOWN",
+  "r6eHistoryNotReclassified": true,
+  "gate0NoExplicitExecutableOrPermissionAnomaly": true,
+  "fishFocusedEvidence": "R6E 3/15 and8/82 reused, not R6F executions",
+  "newRed": "NativeUx physical Press observer count0 at line470",
+  "newRedUnderlyingCause": "UNKNOWN",
+  "sourceCandidateReady": false
+}

@@ -1,0 +1,15 @@
+9	0	.agents/skills/chatbar-message-format-repair/SKILL.md
+1	0	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt
+5	5	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAssistantImageActions.kt
+3	0	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopManagePanel.kt
+17	4	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMessageActions.kt
+8	1	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMessageFormatRepairController.kt
+92	0	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMessageFormatRepairUi.kt
+7	0	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopModelSettingsController.kt
+86	45	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatController.kt
+37	4	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt
+31	4	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopTaskRuntime.kt
+19	0	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopUiStrings.kt
+4	2	app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishSettingsBindingTest.kt
+167	0	app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFormatRepairInteractionTest.kt
+172	0	app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFormatRepairPresentationTest.kt

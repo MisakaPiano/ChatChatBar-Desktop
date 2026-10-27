@@ -1,0 +1,5 @@
+{
+  "firstCollectionCommand": "Python parse error before execution; no files or app state affected",
+  "error": "SyntaxError: closing parenthesis does not match opening brace in export-list printing",
+  "correction": "Fixed read-only collector syntax; no GUI retry or product change"
+}

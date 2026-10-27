@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.image.NovelAiImageRetryTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:31:31.542Z" hostname="DD1" time="8.28">
+  <properties/>
+  <testcase name="server error frame finishes without reading until peer closes stream" classname="com.example.chatbar.domain.image.NovelAiImageRetryTest" time="0.087"/>
+  <testcase name="successive complete batches finish without transport EOF so callers can save history" classname="com.example.chatbar.domain.image.NovelAiImageRetryTest" time="0.027"/>
+  <testcase name="automatic retry wait can be cancelled before sending another request" classname="com.example.chatbar.domain.image.NovelAiImageRetryTest" time="0.021"/>
+  <testcase name="ten rate limit retries allow success on eleventh request" classname="com.example.chatbar.domain.image.NovelAiImageRetryTest" time="0.026"/>
+  <testcase name="third 429 emits one final failure" classname="com.example.chatbar.domain.image.NovelAiImageRetryTest" time="0.01"/>
+  <testcase name="later generation batches keep retrying rate limits and report replacement requests" classname="com.example.chatbar.domain.image.NovelAiImageRetryTest" time="4.017"/>
+  <testcase name="automatic mode continues beyond three rate limits without counting failures as images" classname="com.example.chatbar.domain.image.NovelAiImageRetryTest" time="4.01"/>
+  <testcase name="ten rate limit retries stop after eleventh 429" classname="com.example.chatbar.domain.image.NovelAiImageRetryTest" time="0.021"/>
+  <testcase name="automatic mode does not retry non rate limit errors" classname="com.example.chatbar.domain.image.NovelAiImageRetryTest" time="0.015"/>
+  <testcase name="extra final frames in received chunk still fail the batch" classname="com.example.chatbar.domain.image.NovelAiImageRetryTest" time="0.026"/>
+  <testcase name="stream retry control frame is ignored until final image" classname="com.example.chatbar.domain.image.NovelAiImageRetryTest" time="0.012"/>
+  <testcase name="429 retries until third attempt succeeds" classname="com.example.chatbar.domain.image.NovelAiImageRetryTest" time="0.008"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

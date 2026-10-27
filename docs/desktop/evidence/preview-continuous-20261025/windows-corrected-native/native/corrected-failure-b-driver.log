@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\native_package_probe.py", line 340, in <module>
+    main()
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\native_package_probe.py", line 329, in main
+    install(base, safe(args.installer), args.label, fail_after_remove=True)
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\native_package_probe.py", line 151, in install
+    assert result.returncode == 1603 and related() == [known["ProductCode"]], "ROLLBACK_PRODUCT_NOT_RESTORED"
+AssertionError: ROLLBACK_PRODUCT_NOT_RESTORED

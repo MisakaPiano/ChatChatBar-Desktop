@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-22T19:27:10.516Z" hostname="DD1" time="1.132">
+  <properties/>
+  <testcase name="crash after a partial installation rolls back before repositories can open" classname="com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest" time="0.706"/>
+  <testcase name="failure in apply restores old data and retains source and evidence" classname="com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest" time="0.188"/>
+  <testcase name="scheduled replacement does not touch live data until owned startup recovery" classname="com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest" time="0.133"/>
+  <testcase name="foreign bytes and changed staged input block recovery without deleting evidence" classname="com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest" time="0.105"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

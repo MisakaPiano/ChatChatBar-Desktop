@@ -1,0 +1,42 @@
+[
+  {
+    "path": "s3-01.stderr.txt",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "s3-01.stdout.txt",
+    "bytes": 2126,
+    "sha256": "025f2f0fb8a9e0ad51691aa584b6095be47e0ae091066a1adfdaaf4e89f0e88f"
+  },
+  {
+    "path": "s3-02.stderr.txt",
+    "bytes": 913,
+    "sha256": "6af4c9fb84de8026319abe548c0d9deb077414add2219015688cc259b8af9f2d"
+  },
+  {
+    "path": "s3-02.stdout.txt",
+    "bytes": 963,
+    "sha256": "a9f5f0c3ec19adaaf60ec97d20268120dfc4703e5f23c6f1c30248a090f6c332"
+  },
+  {
+    "path": "s3-03.stderr.txt",
+    "bytes": 377,
+    "sha256": "2871d808a36aa4605d317b20a5c7b54971c4ee93b6368d26d51bfa4fc2f656b4"
+  },
+  {
+    "path": "s3-03.stdout.txt",
+    "bytes": 1297,
+    "sha256": "bca7e85206599e6e010652518e152866a94e62146952cd059fa294598ab106ff"
+  },
+  {
+    "path": "s3-04.stderr.txt",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "s3-04.stdout.txt",
+    "bytes": 2364,
+    "sha256": "070a2609f8d37da592b1743a1f3b2bed31be9aa3a03a86e2bcce626810bbd4d1"
+  }
+]

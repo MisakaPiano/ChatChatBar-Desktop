@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.prompt.MessageFormatRepairPromptTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:25.575Z" hostname="DD1" time="0.001">
+  <properties/>
+  <testcase name="includes only supplied rules and message" classname="com.example.chatbar.domain.prompt.MessageFormatRepairPromptTest" time="0.001"/>
+  <testcase name="android facade and FORMAT_REPAIR REPAIR context use shared contract" classname="com.example.chatbar.domain.prompt.MessageFormatRepairPromptTest" time="0.0"/>
+  <testcase name="system prompt includes unchanged result protocol marker" classname="com.example.chatbar.domain.prompt.MessageFormatRepairPromptTest" time="0.0"/>
+  <testcase name="omits empty optional rule blocks" classname="com.example.chatbar.domain.prompt.MessageFormatRepairPromptTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

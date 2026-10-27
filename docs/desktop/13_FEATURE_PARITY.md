@@ -1,6 +1,19 @@
 **用户权限边界已同步（2026-10-25 JST）。** [权限边界](USER_AUTHORITY_AND_PROJECT_REVIEW_BOUNDARY.md)与[开发原则](01_PROJECT_INSTRUCTIONS.md)记录用户指令：Project 仅做后置阶段性审查；未经用户采纳的新限制仅为建议，不撤销、收窄或暂停已有授权。只暂停真实阻断所影响的动作，其他已授权工作连续推进到 Preview。诊断与修复不自动扩张为真实数据/凭据写入、合并或发布权限；具体动作按已有用户授权执行，不重复索取。真实数据、存档和凭据不上 GitHub，包含 Actions Secrets、日志与产物。
 
+**CURRENT CHAT UX GAP REGISTRATION — 2026-10-23:** [174](174_CHAT_UX_PARITY_AND_DESKTOP_ENHANCEMENTS_REQUIREMENTS.md) records the user's deferred CHAT-U1 empty-send confirmation, CHAT-U2 action-choice draft insertion, CHAT-U3 character sidebar/status/avatar actions, CHAT-U4 per-session character availability and the existing message-format-repair PENDING. The already accepted continuation **runtime** is separate from its currently disabled empty-composer UI. This docs-only accuracy split is not new engineering evidence or a promotion. **历史范围记录；执行许可依用户后续明确授权。**
+
+**CURRENT FINAL PROJECT ACCEPTANCE — 2026-10-23:** [172](172_P11_S2_G2B_CENSUS_PROJECT_ACCEPTANCE.md) records **P11-S2-G2B CLOSED / QUALIFIED ENGINEERING ACCEPTED**, including R1 final15 suites/182 PASS (original G2B179 kept separate). Project checked two R1 source blobs,15 XML and17 raw SHA/length samples; Codex127-file self-check is separately attributed, Project did not rerun Gradle. Complete-validation census handoff only, synthetic target observation, no formal restore/SecretStore/startup activation. Earlier G2B NEXT/authorization entries below are historical; G1B transaction remains open, G2C NOT AUTHORIZED. P11 PENDING/D-038 BLOCKED/Post-P8 HOLD/Public Preview HOLD, baseline1.4.1 and parity ratings unchanged.
+
+**CURRENT PROJECT ACCEPTANCE — 2026-10-23:** [168](168_P11_S2_G2A_TYPED_CREDENTIAL_AND_INERT_INTENT_PROJECT_ACCEPTANCE.md) records **P11-S2-G2A CLOSED / QUALIFIED ENGINEERING ACCEPTED** for tested `c44a241c` / final delivery `075b86c8`: two internal unwired components, three test classes, final13 suites/150 tests with0 failures/errors/skips and exit0. Project checked five source blobs,13 XML and15 raw SHA/length samples; Codex262-item self-check remains separately attributed. Earlier authorization/next-task entries below retain their historical scope and are superseded only for G2A completion. No EXACT/EQUIVALENT promotion; decoder/target observer, durable cross-root recovery, Community sink, real DPAPI/Portable and Moments seal remain incomplete. G2B/G2C not authorized; P11/D-038/Post-P8/Public Preview HOLD and formal baseline1.4.1 unchanged.
+
+**CURRENT P11-S2-G1A EVIDENCE / 2026-10-23:** [162](162_P11_S2_G1A_CREDENTIAL_TRANSACTION_PROJECT_ACCEPTANCE.md) accepted test-only observations of multi-key partial update and data journal vs secret store non-atomicity. User R07 direct credential import target remains **NOT IMPLEMENTED**, existing `CREDENTIAL_APPROVAL_REQUIRED` remains; full app `.cbbackup` parity **PENDING** and P13 Moments production parity **PENDING**. G1B [163](163_P11_S2_G1B_UNIFIED_DATA_SECRET_TRANSACTION_DESIGN_GATE.md) is design only, not EXACT/EQUIVALENT evidence.
 # CCB Desktop Feature Parity Matrix
+
+**CURRENT P11 G2A SCOPED CODING AUTHORIZATION / 2026-10-23:** [165](165_P11_S2_G2A_USER_AUTHORIZATION_RECEIPT.md) approves only an internal nonwired typed credential planning/intent validation slice [166](166_P11_S2_G2A_AUTHORIZED_TYPED_CREDENTIAL_PLAN_CODEX_TASK.md). It does not implement protected `.cbbackup` direct credential import, cross-root rollback or usable Moments seal, so P11 full-app and P13 Moments parity remain PENDING; no EXACT/EQUIVALENT promotion.
+
+**CURRENT G0R (2026-10-23) ONLY EXPERIMENTAL EVIDENCE:** [159](159_P11_S2_G0R_OWNED_MEDIA_PROJECT_EVIDENCE_ACCEPTANCE.md) accepted the synthetic test-only GC/backup/media investigation (88 current JVM tests). Current archive preservation and credential handling are **not production**: external manifest cannot protect live image, independent copy is not a verified seal, current full backup can skip hidden content. Official full-app and P13 Moments parity remain **PENDING**; normal direct credential import under [158](158_P11_S2_G1_R07_DIRECT_IMPORT_PASSWORD_AND_CREDENTIAL_POLICY.md) is a user-approved target, not implemented.
+
+**CURRENT R07 PRODUCT POLICY / 2026-10-23:** [158](158_P11_S2_G1_R07_DIRECT_IMPORT_PASSWORD_AND_CREDENTIAL_POLICY.md) user-approved safe direct full-app import including owned API keys; current production restore still rejects such credentials and lacks accepted protected mapping/transaction. Full `.cbbackup` parity remains PENDING; S0/S1 read-only acceptance does not establish this migration capability.
 
 状态定义：
 - `PENDING`：尚未达到 parity gate
@@ -12,6 +25,12 @@
 实现过程中的“正在开发”写入 `21_CURRENT_STATE.md` / `17_ROADMAP.md`，不作为 parity 状态。完整兼容声明不得留下其他状态。
 
 **Public Preview policy:** D-037 / `93_PUBLIC_PREVIEW_POLICY.md` 只改变发布里程碑与数据安全承诺，不改变任何功能 row 的 parity 判定。Preview PASS 不会自动把 P12–P17 的 PENDING 改为 EXACT/EQUIVALENT。
+
+**CURRENT 2026-10-23 / P11-S2-G0 evidence only：** [154](154_P11_S2_G0_ROOT_BACKUP_RECOVERY_PROJECT_EVIDENCE_ACCEPTANCE.md) 仅接受合成 Root/Backup/GC 事实调查；未实现 Moments 持久域、official v1.4.5 `.cbbackup` 完整迁移或 Task runtime。Full-app `.cbbackup` 和 P13 Moments 正式 parity 继续 **PENDING**；G1 产品政策 [155](155_P11_S2_G1_DECISION_PACKAGE_AND_PORTABILITY_SAFETY.md) 尚未授权。
+
+**CURRENT S1 R1 ACCEPTANCE / 2026-10-23：** [151](151_P11_S1_MOMENTS_READONLY_GRAPH_PROJECT_ACCEPTANCE.md) 已限定接受 P11-S1 `.cbbackup` Moments raw/Task/三路径来源图 **read-only**；R1 实跑 95/95，未知 Entity 安全阻断与聚合选择歧义经审核闭合。它不是 Moments 正式 Runtime/Repository、持久封存或 Android 全量恢复；**P11 full-app `.cbbackup` 及 P13 Moments 的 parity 行继续 PENDING**，不标 EXACT/EQUIVALENT。下一步仅 S2-G0 test-only [153](153_P11_S2_G0_SYNTHETIC_LIFECYCLE_PROBE_CODEX_CONTRACT.md)，S2 production [152](152_P11_S2_PERSISTENT_PRESERVATION_READINESS_AND_DECISIONS.md) 未授权。
+
+**CURRENT 2026-10-23 scoped note:** P11 `.cbbackup` **S0 bounded v1/v2 READ-ONLY format inspection** is **CLOSED / QUALIFIED ENGINEERING ACCEPTED WITH DECLARED LIMITS** at [147](147_P11_FULL_BACKUP_V1_V2_READONLY_S0_PROJECT_ACCEPTANCE.md). This does **not** restore v2, accept Moments/task/secret migration or close the full-app interoperability parity row below (**PENDING**). S1 graph verifier is only a task contract [148](148_P11_S1_MOMENTS_ARCHIVE_READONLY_VALIDATION_CODEX_CONTRACT.md), not production. Existing P11/Preview/HOLD decisions retain authority.
 
 **D-038 additional Preview blocker:** Full-app ChatBar 1.4.5 `.cbbackup` migration is separately tracked as **P11 PENDING**, with cross-device/whole-app data-safety acceptance in `95`. It does not promote the formal validated 1.4.1 baseline, substitute for SaveSlot, or change future phase PENDING labels.
 
@@ -78,12 +97,15 @@ Phase 6 没有 UNKNOWN 项；Phase 0–6 的 EXACT/EQUIVALENT 为已接受范围
 | ModelTemplate import/export | ui/manage | EQUIVALENT | EQUIVALENT |
 | Connection-test complete UX parity | ui/manage | EQUIVALENT | EQUIVALENT |
 | request debug-log user surface | P15 DebugLogManager | EQUIVALENT | PENDING |
+| Token Budget & Usage Analytics (D-042; Desktop enhancement) | P12 editor / P15 request usage center / P17 precision | Desktop-only | PENDING |
 | Session Entity | ChatSession.kt | EXACT | EXACT |
 | Message Entity | ChatMessage.kt | EXACT | EXACT |
-| Send / blank-continuation runtime / stop (no ordinary Continue button) | ui/chat/domain | EQUIVALENT | EQUIVALENT |
+| Send / continuation request runtime / stop (blank-composer activation tracked separately) | ui/chat/domain | EQUIVALENT | EQUIVALENT |
+| Blank-composer click-to-continue + Desktop confirmation (CHAT-U1) | ChatScreen.ChatComposer / DesktopFullComposer | EQUIVALENT | PENDING |
 | Regenerate / retry invocation + runtime | ui/chat/domain | EQUIVALENT | EQUIVALENT |
 | Assistant alternatives navigation | ui/chat/ChatBubble | EQUIVALENT | EQUIVALENT |
 | Per-segment actions | ui/chat/ChatBubble | EQUIVALENT | EQUIVALENT |
+| Chat screenshot: segment/full-message/multi-select long PNG (CHAT-LONG-SCREENSHOT-001) | ChatScreenshotSelection / ChatLongScreenshot | EQUIVALENT | PENDING |
 | Full-screen / resizable / collapsible composer | ChatScreen/FullscreenTextEditor + Desktop enhancement | EQUIVALENT | EQUIVALENT |
 | Keyboard / focus / IME interaction | ChatScreen/platform input | EQUIVALENT | EQUIVALENT |
 | Previous / First / Next / Bottom + reading position | ChatScreen + Desktop navigation additions | EQUIVALENT | EQUIVALENT |
@@ -94,6 +116,9 @@ Phase 6 没有 UNKNOWN 项；Phase 0–6 的 EXACT/EQUIVALENT 为已接受范围
 | reasoning folded presentation | ChatBubble | EQUIVALENT | EQUIVALENT |
 | segmented Assistant bubble presentation | ChatBubble | EQUIVALENT | EQUIVALENT |
 | message format repair | MessageFormatRepairService | EXACT | PENDING |
+| Click valid narrative action options into composer without sending (CHAT-U2) | Desktop-only user enhancement | Desktop-only | PENDING |
+| Per-CharacterInfo left sidebar/latest status/avatar context actions (CHAT-U3) | Desktop-only user enhancement | Desktop-only | PENDING |
+| Session-scoped CharacterInfo activation controls / effective request filtering (CHAT-U4) | Desktop-only user enhancement | Desktop-only | PENDING |
 | Home session list/open/pin/rename | ui/home | EQUIVALENT | EQUIVALENT |
 | Home session placeholder rendering | ui/home | EQUIVALENT | EQUIVALENT |
 | Archived-session character relink | ui/chat | EQUIVALENT | EQUIVALENT |
@@ -188,6 +213,7 @@ Phase 6 没有 UNKNOWN 项；Phase 0–6 的 EXACT/EQUIVALENT 为已接受范围
 | Background AI platform/tray/notification completion | P15 FGS/platform adapters; accepted TaskRuntime foundation separate | EQUIVALENT | PENDING |
 | Network-loss cancellation / broader platform hardening | P15/P17 background/model; accepted chat runtime separate | EXACT/EQUIVALENT | PENDING |
 | App update check | update | EXACT | PENDING |
+| Preview update discovery + prerelease channel + safe manual upgrade (D-041) | Preview Gate B / P15 full updater | Desktop-only | PENDING |
 | APK install | Android installer | EQUIVALENT | PENDING |
 | Danbooru catalog update | update | EXACT | EXACT |
 | Desktop installer | Compose Desktop | EQUIVALENT | PENDING |
@@ -202,7 +228,7 @@ S5/S6/S7 manual editors、S8 management/presets/Complete Preset Restore/ModelTem
 - EXACT Entity/Package/runtime rows表示共享 authority 或已验证合同，不是 Desktop UI 逐像素复制。
 - FREEFORM/STRUCTURED 字段保留、default Format embed 与 Package transfer 已验证；Fish voice runtime 仍属 P8。
 - Automatic Backup runtime + settings 为 **Desktop-only data-safety enhancement**；不冒充 Android parity，P17 Backup/Recovery Center 未随之完成。
-- Virtual Conversation Scrollbar：**PENDING / explicitly deferred** until realistic long/cross-device histories；owner 为后续独立 Desktop UX 评估，最终 slice 未冻结，不是 Phase 6 defect。
+- Virtual Conversation Scrollbar：**PENDING / explicitly deferred** until realistic long/cross-device histories；owner 为后续独立 Desktop UX 评估，最终 slice 未冻结，不是 Phase 6 defect。 2026-10-22 的“双侧外置轨道/左侧用户白字与 AI 灰字消息 Minimap + hover 预览、右侧保留传统滚动条、窄屏隐藏”仅在 `17_ROADMAP.md` 原延期项下补充设计，仍未实现。
 - Cross-device Full Data Portability / BYOC Sync：**PENDING**，D-035 仅冻结设计方向，约 P11 后重访，不冻结 schema/phase。
 - formal 1.4.1 验证范围未因 observed 1.4.4 升级；Phase 6 closure 不等于所有未来 domain 的 1.0 gate。
 
@@ -271,6 +297,10 @@ P7 图像范围已实现，最终审查证据见 `38_PHASE7_FINAL_REVIEW.md`；�
 - searchable FormatCard single-select 与 WorldBook multi-select 的呈现和交互：`EQUIVALENT`。
 
 ### Fish（目标：EXACT）
+
+**CURRENT 2026-10-20**：[144](144_PHASE8_S3_S7_PROJECT_ACCEPTANCE.md) accepts the narrow S3–S7/R3 engineering and user/real Windows persistence scope only (frozen `008343bb`, evidence `23b6e6b`/`6dd2c486`). Historical bounded RED, R2 Studio error OPEN, real Fish0, incomplete user/UX coverage, QQ BLOCKED remain; **all Fish parity rows and complete P8 parity stay PENDING**. New chat right-click/voice UI and screenshot owner [145](145_CHAT_CONTEXT_VOICE_UX_AND_SCREENSHOT_CONTRACT.md) also PENDING. The following older 2026-10-19 S3 NEXT paragraph is historical.
+
+**2026-10-19 JST scoped UI acceptance only:** [141](141_PHASE8_S2B_UI_LAYOUT_001_PROJECT_ACCEPTANCE.md) 登记 **UI-LAYOUT-001 CLOSED / QUALIFIED ENGINEERING ACCEPTED WITH DECLARED LIMITS**（源码 `ec32fdbc`、R7人工证据 `dcfd61d5`）。M1–M4用户PASS、212文件实包及退出/锁/清理证据只关闭音色库UI切片；不是自动截图或full bounded GREEN。历史RED/SKIPPED/INCONCLUSIVE、M2紧凑Stop同步几何与M3 input-only技术限制保留。S2B-F1/F2按[139](139_PHASE8_S2B_F1_PROJECT_ACCEPTANCE.md)/[140](140_PHASE8_S2B_F2_PROJECT_ACCEPTANCE.md)维持各自限定接受；**本矩阵Fish各行及完整P8 Fish parity仍为PENDING，不改成EXACT/EQUIVALENT**。S3正式音频仓库/后续语音链路须独立合同，P9/P10/P11/Public Preview不升级；baseline仍1.4.1。WIN-AUTO-001 OPEN、WIN-BRAND-001 OPEN / DEFERRED；完整试听文本对照仅待UX评估，现有sample.text最多两行，不宣称完整逐字稿/自动转写。
 
 - FREEFORM `CharacterInfo` 必须保留与 STRUCTURED 相同的 Fish voice binding 能力、ID 与 speaker-name matching 语义。
 

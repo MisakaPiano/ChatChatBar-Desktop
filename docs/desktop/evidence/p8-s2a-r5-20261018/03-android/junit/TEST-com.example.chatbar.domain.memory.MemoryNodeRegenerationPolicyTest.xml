@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.memory.MemoryNodeRegenerationPolicyTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:25.080Z" hostname="DD1" time="0.005">
+  <properties/>
+  <testcase name="unrelated node checkpoint does not invalidate regeneration guard" classname="com.example.chatbar.domain.memory.MemoryNodeRegenerationPolicyTest" time="0.002"/>
+  <testcase name="regeneration rejects child coverage mismatch" classname="com.example.chatbar.domain.memory.MemoryNodeRegenerationPolicyTest" time="0.002"/>
+  <testcase name="era regeneration selects same-tier recompression protocol" classname="com.example.chatbar.domain.memory.MemoryNodeRegenerationPolicyTest" time="0.0"/>
+  <testcase name="episode regeneration reads original source turns without children" classname="com.example.chatbar.domain.memory.MemoryNodeRegenerationPolicyTest" time="0.0"/>
+  <testcase name="target replacement invalidates only that target regeneration" classname="com.example.chatbar.domain.memory.MemoryNodeRegenerationPolicyTest" time="0.0"/>
+  <testcase name="source change invalidates that node regeneration" classname="com.example.chatbar.domain.memory.MemoryNodeRegenerationPolicyTest" time="0.001"/>
+  <testcase name="arc regeneration preserves ordered episode evidence" classname="com.example.chatbar.domain.memory.MemoryNodeRegenerationPolicyTest" time="0.0"/>
+  <testcase name="regeneration keeps legacy parent child counts repairable" classname="com.example.chatbar.domain.memory.MemoryNodeRegenerationPolicyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

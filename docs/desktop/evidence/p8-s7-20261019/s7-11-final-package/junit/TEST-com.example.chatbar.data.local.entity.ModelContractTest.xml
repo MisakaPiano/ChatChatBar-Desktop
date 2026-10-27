@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.data.local.entity.ModelContractTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-19T12:31:19.088Z" hostname="DD1" time="0.02">
+  <properties/>
+  <testcase name="model values and custom parameter variants round trip" classname="com.example.chatbar.data.local.entity.ModelContractTest" time="0.014"/>
+  <testcase name="legacy model payload keeps baseline defaults" classname="com.example.chatbar.data.local.entity.ModelContractTest" time="0.0"/>
+  <testcase name="legacy preset model catalog keeps baseline defaults" classname="com.example.chatbar.data.local.entity.ModelContractTest" time="0.004"/>
+  <testcase name="embedding payload defaults dimensions and round trips credentials" classname="com.example.chatbar.data.local.entity.ModelContractTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

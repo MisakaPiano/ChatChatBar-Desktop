@@ -1,0 +1,16 @@
+{"interface":"GET /model","status":200,"mine":true,"page":1,"tlsHandshake":true,"syntheticAuthorizationMatched":true}
+{"interface":"GET /model","status":200,"mine":false,"page":2,"tlsHandshake":true,"syntheticAuthorizationMatched":true}
+{"interface":"GET /model","status":401,"mine":false,"page":1,"tlsHandshake":true,"syntheticAuthorizationMatched":true}
+{"interface":"GET /model","status":200,"mine":true,"page":1,"tlsHandshake":true,"syntheticAuthorizationMatched":true}
+{"interface":"GET /model","status":200,"mine":false,"page":1,"tlsHandshake":true,"syntheticAuthorizationMatched":true}
+{"interface":"GET /model","status":200,"mine":false,"page":2,"tlsHandshake":true,"syntheticAuthorizationMatched":true}
+{"interface":"GET /model","status":200,"mine":false,"page":1,"tlsHandshake":true,"syntheticAuthorizationMatched":true}
+{"interface":"GET /model","status":200,"mine":false,"page":1,"tlsHandshake":true,"syntheticAuthorizationMatched":true}
+{"interface":"GET /model","status":200,"mine":false,"page":1,"tlsHandshake":true,"syntheticAuthorizationMatched":true}
+{"interface":"GET /model","status":200,"mine":false,"page":1,"tlsHandshake":true,"syntheticAuthorizationMatched":true}
+{"interface":"GET /model","status":200,"mine":false,"page":1,"tlsHandshake":true,"syntheticAuthorizationMatched":true}
+{"interface":"GET /model","status":401,"mine":false,"page":1,"tlsHandshake":true,"syntheticAuthorizationMatched":true}
+{"interface":"GET /model","status":200,"mine":false,"page":1,"tlsHandshake":true,"syntheticAuthorizationMatched":true}
+{"interface":"GET /model","status":200,"mine":true,"page":1,"tlsHandshake":true,"syntheticAuthorizationMatched":true}
+{"interface":"GET /model","status":200,"mine":true,"page":1,"tlsHandshake":true,"syntheticAuthorizationMatched":true}
+{"interface":"GET /model","status":200,"mine":false,"page":1,"tlsHandshake":true,"syntheticAuthorizationMatched":true}

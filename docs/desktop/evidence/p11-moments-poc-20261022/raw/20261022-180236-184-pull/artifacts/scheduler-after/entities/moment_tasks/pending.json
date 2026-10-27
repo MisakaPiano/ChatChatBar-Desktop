@@ -1,0 +1,11 @@
+{
+    "id": "pending",
+    "characterCardId": "card",
+    "sessionId": "session",
+    "scheduledAt": 1,
+    "status": "FAILED",
+    "postId": "d2e966cd-1899-4e35-b21f-acfd524f9c8f",
+    "failureReason": "未配置可用朋友圈对话模型/API Key",
+    "createdAt": 1,
+    "updatedAt": 1792659754170
+}

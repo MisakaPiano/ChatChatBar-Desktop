@@ -1,0 +1,23 @@
+{
+  "authorization": "Direct human one controlled retry via trusted coordination transcript; no repeated retry performed afterward",
+  "operation": "same retained synthetic MSI explicit REINSTALL=ALL REINSTALLMODE=vomus registration repair",
+  "startedUtc": "2026-10-24T20:01:23.710670+00:00",
+  "endedUtc": "2026-10-24T20:01:32.880297+00:00",
+  "nativeMsiExit": 1602,
+  "driverExit": 1,
+  "productStateBefore": 1,
+  "productStateAfter": 1,
+  "relatedBefore": [],
+  "relatedAfter": [],
+  "programBytesUnchanged": true,
+  "programIdentityUnchanged": true,
+  "unmanagedFilesUnchanged": true,
+  "unmanagedFiles": 3,
+  "fixtureReopenExit": 0,
+  "privateBaselineUnchanged": true,
+  "protectionExited": "USER_REPORTED_NOT_INDEPENDENTLY_VERIFIED",
+  "securityOrAclChangesByTool": false,
+  "antivirusCausality": "UNKNOWN",
+  "hostRestart": false,
+  "ordinaryInstallationTouched": false
+}

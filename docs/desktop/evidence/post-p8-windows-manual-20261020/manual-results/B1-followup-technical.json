@@ -1,0 +1,10 @@
+{
+  "utc": "2026-10-20T12:56:14.225814+00:00",
+  "fakeCounts": {},
+  "rawEventCount": 0,
+  "realRequestsInFakeOnlyPhase": 0,
+  "alivePids": [
+    30452,
+    32396
+  ]
+}

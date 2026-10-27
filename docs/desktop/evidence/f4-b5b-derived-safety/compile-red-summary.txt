@@ -1,0 +1,6 @@
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFormatRepairDerivedSafetyTest.kt:129:30 Unresolved reference 'stop'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFormatRepairDerivedSafetyTest.kt:170:19 Unresolved reference 'stop'.
+e: file:///H:/ChatChatBar-Desktop/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFormatRepairDerivedSafetyTest.kt:187:65 Unresolved reference 'stop'.
+> Task :desktopApp:compileTestKotlin FAILED
+FAILURE: Build failed with an exception.
+BUILD FAILED in 2m 19s

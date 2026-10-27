@@ -1,0 +1,67 @@
+[
+  {
+    "path": ".gitattributes",
+    "bytes": 9,
+    "sha256": "8b9c3028d6467ff3be7c793141927841d70f47f52d0590677438f488ca154992"
+  },
+  {
+    "path": "checkpoint.json",
+    "bytes": 417,
+    "sha256": "4472a1cc839774f3af6218764023ac6f81f78ee1273c508aadc08e650e125844"
+  },
+  {
+    "path": "README.md",
+    "bytes": 404,
+    "sha256": "5b31c9b42e8a8614a268f3f4fcbc864cdc113f07fba273fd4abfde39652b029e"
+  },
+  {
+    "path": "s6-01/command.txt",
+    "bytes": 381,
+    "sha256": "b372bad0ffeb500f851431330f7d68859c329622313b5f73d1e86184e992cca7"
+  },
+  {
+    "path": "s6-01/gradle.stderr.txt",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "s6-01/gradle.stdout.txt",
+    "bytes": 2156,
+    "sha256": "bbbb9d511c739b47aae2c7c13225a36b3fba3067fd2682df3137a956c893217d"
+  },
+  {
+    "path": "s6-01/junit/TEST-com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest.xml",
+    "bytes": 868,
+    "sha256": "1ee50e7ee7bbe6936e7de99852e224be4047391040670dab9af7318d463673b9"
+  },
+  {
+    "path": "s6-01/junit/TEST-com.example.chatbar.desktop.DesktopVoiceArchiveHandoffTest.xml",
+    "bytes": 903,
+    "sha256": "ac864037ee0693f17148de5cd32a61c6d0ba6a4e3ffb6b7be46b4993d45d9af2"
+  },
+  {
+    "path": "s6-01/junit/TEST-com.example.chatbar.desktop.DesktopVoicePersistenceTest.xml",
+    "bytes": 1212,
+    "sha256": "a02acea4b7b717c38f8407912bb988717a902f92c764b293f41d568a50d06ada"
+  },
+  {
+    "path": "s6-01/process.json",
+    "bytes": 122,
+    "sha256": "e3eea8aa0ca614ed278edd1d81a04d9a23b453d46a16c65b087a19d3d4d49f19"
+  },
+  {
+    "path": "s6-01/resources.jsonl",
+    "bytes": 1271,
+    "sha256": "876ef2627ab8fe1dd022bcfb873a6e371949063aa97deacb9e95d550d583a0b0"
+  },
+  {
+    "path": "s6-01/stage.json",
+    "bytes": 938,
+    "sha256": "5652d192a725ee850c59534813fb429fc3650ac8be43e19b4e3c93fe8ff7ebd5"
+  },
+  {
+    "path": "source.patch",
+    "bytes": 19682,
+    "sha256": "9bc5f4586d2643387c1a4867c596e548dfdff5e9ff5d84316cb68bcb73510c15"
+  }
+]

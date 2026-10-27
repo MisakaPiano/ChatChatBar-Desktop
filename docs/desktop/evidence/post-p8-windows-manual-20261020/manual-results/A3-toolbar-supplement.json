@@ -1,0 +1,15 @@
+{
+  "utcRecorded": "2026-10-20T12:58:21.771723+00:00",
+  "id": "A3-toolbar-supplement",
+  "classification": "USER SUPPLIED EVIDENCE",
+  "answer": "补全一张用户气泡下面按钮位置问题的截图",
+  "file": "user-screenshots\\A3-user-toolbar-supplement.png",
+  "bytes": 36509,
+  "sha256": "c1ba73e7b0667327b4922ffbf8152cd1875be3bedb7df04ba20fb30fbbe83ae6",
+  "observed": [
+    "User bubble right-aligned",
+    "User footer actions visibly placed at left of its message area",
+    "User requests only Copy and Edit at right"
+  ],
+  "captureType": "Voluntary user attachment; not automated screenshot"
+}

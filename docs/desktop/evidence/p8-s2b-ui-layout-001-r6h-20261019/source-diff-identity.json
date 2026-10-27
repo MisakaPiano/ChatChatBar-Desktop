@@ -1,0 +1,13 @@
+{
+  "patch": "native-hit-test-only.patch",
+  "bytes": 13208,
+  "sha256": "269abbe315f10202acebf7f2360026d44abb766995d7f8a70189cf51d2c54b31",
+  "change": "Only test-private readonly Win32 diagnostics and immediate input safety preconditions",
+  "delta": {
+    "insertions": 118,
+    "deletions": 2
+  },
+  "productionDrafts": "byte-identical to start; no production edits",
+  "sourceCheckpoint": "NONE; three Kotlin drafts remain unstaged/uncommitted",
+  "baselineAndTested": "source-baseline-and-tested.json"
+}

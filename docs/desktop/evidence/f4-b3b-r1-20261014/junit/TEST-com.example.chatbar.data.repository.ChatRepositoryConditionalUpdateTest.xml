@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.data.repository.ChatRepositoryConditionalUpdateTest" tests="23" skipped="0" failures="0" errors="0" timestamp="2026-10-14T11:16:44.797Z" hostname="DD1" time="3.037">
+  <properties/>
+  <testcase name="two concurrent repairs serialize and at most one commits" classname="com.example.chatbar.data.repository.ChatRepositoryConditionalUpdateTest" time="0.398"/>
+  <testcase name="budgeted failure readback times out suspended gate and releases message mutex" classname="com.example.chatbar.data.repository.ChatRepositoryConditionalUpdateTest" time="0.155"/>
+  <testcase name="notice only preserves divergent base content candidates and metadata with no-op and stale protection" classname="com.example.chatbar.data.repository.ChatRepositoryConditionalUpdateTest" time="0.076"/>
+  <testcase name="stale user edit candidate switch regeneration notice and metadata all conflict without writes" classname="com.example.chatbar.data.repository.ChatRepositoryConditionalUpdateTest" time="0.399"/>
+  <testcase name="budgeted failure readback cancellation retains bounded evidence without duplicate writes" classname="com.example.chatbar.data.repository.ChatRepositoryConditionalUpdateTest" time="0.064"/>
+  <testcase name="matching SYSTEM snapshot rejects repair and no-op without any file changes" classname="com.example.chatbar.data.repository.ChatRepositoryConditionalUpdateTest" time="0.079"/>
+  <testcase name="ordinary edit holding message mutex completes before old repair validation" classname="com.example.chatbar.data.repository.ChatRepositoryConditionalUpdateTest" time="0.117"/>
+  <testcase name="batch deletion waits for conditional write and cannot leave a resurrected message" classname="com.example.chatbar.data.repository.ChatRepositoryConditionalUpdateTest" time="0.075"/>
+  <testcase name="plain legacy message and exact no-op preserve IDs and avoid all writes" classname="com.example.chatbar.data.repository.ChatRepositoryConditionalUpdateTest" time="0.058"/>
+  <testcase name="repairing earlier assistant preserves timeline order and latest preview after reopen" classname="com.example.chatbar.data.repository.ChatRepositoryConditionalUpdateTest" time="0.089"/>
+  <testcase name="budgeted failure readback does not impose a deadline on normal message writes" classname="com.example.chatbar.data.repository.ChatRepositoryConditionalUpdateTest" time="0.054"/>
+  <testcase name="budgeted failure readback preserves confirmed old and committed classifications" classname="com.example.chatbar.data.repository.ChatRepositoryConditionalUpdateTest" time="0.097"/>
+  <testcase name="unreadable readback after attempted write is uncertain not rollback" classname="com.example.chatbar.data.repository.ChatRepositoryConditionalUpdateTest" time="0.062"/>
+  <testcase name="old JSON with missing optional fields edits without version migration" classname="com.example.chatbar.data.repository.ChatRepositoryConditionalUpdateTest" time="0.047"/>
+  <testcase name="budgeted failure readback rejected admission preserves both errors and durable content" classname="com.example.chatbar.data.repository.ChatRepositoryConditionalUpdateTest" time="0.045"/>
+  <testcase name="deletion and missing or corrupt session never recreate records" classname="com.example.chatbar.data.repository.ChatRepositoryConditionalUpdateTest" time="0.173"/>
+  <testcase name="legacy absent IDs remain absent and invalid identities are rejected without migration" classname="com.example.chatbar.data.repository.ChatRepositoryConditionalUpdateTest" time="0.128"/>
+  <testcase name="write failure before commit is distinct from post-write index and preview failures" classname="com.example.chatbar.data.repository.ChatRepositoryConditionalUpdateTest" time="0.443"/>
+  <testcase name="corrupt and unreadable messages preserve original data without preview writes" classname="com.example.chatbar.data.repository.ChatRepositoryConditionalUpdateTest" time="0.107"/>
+  <testcase name="notice only cancellation at write and index retains bounded uncertain readback evidence" classname="com.example.chatbar.data.repository.ChatRepositoryConditionalUpdateTest" time="0.14"/>
+  <testcase name="matching snapshot commits only repair fields and reopens with index and preview" classname="com.example.chatbar.data.repository.ChatRepositoryConditionalUpdateTest" time="0.07"/>
+  <testcase name="same text and timestamp cannot conceal different version notice or metadata" classname="com.example.chatbar.data.repository.ChatRepositoryConditionalUpdateTest" time="0.079"/>
+  <testcase name="matching USER snapshot rejects repair and no-op without any file changes" classname="com.example.chatbar.data.repository.ChatRepositoryConditionalUpdateTest" time="0.077"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

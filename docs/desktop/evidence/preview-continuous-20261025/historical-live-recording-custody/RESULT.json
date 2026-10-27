@@ -1,0 +1,50 @@
+{
+  "historical-live-graph-red-20261025": {
+    "exit": 1,
+    "suites": 1,
+    "tests": 1,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "historical-live-graph-first-20261025": {
+    "exit": 0,
+    "suites": 4,
+    "tests": 33,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "historical-live-custody-complete-20261025": {
+    "exit": 1,
+    "suites": 0,
+    "tests": 0,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "historical-live-custody-final-20261025": {
+    "exit": 0,
+    "suites": 6,
+    "tests": 46,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "historical-live-custody-delivery-20261025": {
+    "exit": 0,
+    "suites": 2,
+    "tests": 16,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "historical-live-legacy-boundaries-20261025": {
+    "exit": 0,
+    "suites": 4,
+    "tests": 40,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

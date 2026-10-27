@@ -1,0 +1,7 @@
+{
+  "type": "SYNTHETIC_ONLY",
+  "sha256": "63069e451fa2f2d652593f07c5a281f3b6aa2908cf7f8fa2066d2c4ac56e2908",
+  "bytes": 1048,
+  "authority": "CensusWireFixtures + Official145 wire DTO + pinned Official147FixtureCodec version1",
+  "publicDummyPassword": "FAKE_G2B_PASSWORD_NOT_REAL"
+}

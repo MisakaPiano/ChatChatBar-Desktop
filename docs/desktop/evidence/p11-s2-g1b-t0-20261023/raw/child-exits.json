@@ -1,0 +1,10 @@
+{
+  "realChildRunsAllRounds": 84,
+  "byActualExit": {
+    "71": 28,
+    "0": 52,
+    "72": 4
+  },
+  "notJUnitCount": true,
+  "fixtures": "Includes RED and GREEN artifacts; not every tree is a GREEN result"
+}

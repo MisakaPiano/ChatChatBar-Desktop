@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopCurrentImagePresentationTest" tests="16" skipped="0" failures="1" errors="0" timestamp="2026-10-25T02:27:46.019Z" hostname="DD1" time="16.227">
+  <properties/>
+  <testcase name="chat composer cluster and assistant image actions stay compact on the right" classname="com.example.chatbar.desktop.DesktopCurrentImagePresentationTest" time="0.793"/>
+  <testcase name="role disable collapse expand and edit remain independent from generation" classname="com.example.chatbar.desktop.DesktopCurrentImagePresentationTest" time="0.246"/>
+  <testcase name="history grid grows with available tool window height" classname="com.example.chatbar.desktop.DesktopCurrentImagePresentationTest" time="1.436"/>
+  <testcase name="wide Studio uses balanced resizable panes and preserves width across modes" classname="com.example.chatbar.desktop.DesktopCurrentImagePresentationTest" time="3.529"/>
+  <testcase name="intermediate preview hides saved actions then completion restores them" classname="com.example.chatbar.desktop.DesktopCurrentImagePresentationTest" time="0.273"/>
+  <testcase name="design settings history and back retain unsent composer without draft writes" classname="com.example.chatbar.desktop.DesktopCurrentImagePresentationTest" time="0.625"/>
+  <testcase name="narrow Studio keeps compact current image actions above Prompt" classname="com.example.chatbar.desktop.DesktopCurrentImagePresentationTest" time="0.826"/>
+  <testcase name="V5 unknown is not zero and known account renders a progress bar" classname="com.example.chatbar.desktop.DesktopCurrentImagePresentationTest" time="0.116"/>
+  <testcase name="tool window exposes resize maximize and close without duplicating content title" classname="com.example.chatbar.desktop.DesktopCurrentImagePresentationTest" time="0.069">
+    <failure message="java.awt.HeadlessException" type="java.awt.HeadlessException">java.awt.HeadlessException
+	at java.desktop/sun.java2d.HeadlessGraphicsEnvironment.getDefaultScreenDevice(HeadlessGraphicsEnvironment.java:58)
+	at com.example.chatbar.desktop.DesktopImageWindowPresentationKt.rememberDesktopImageWindowSize-i1RSzL4(DesktopImageWindowPresentation.kt:29)
+	at com.example.chatbar.desktop.DesktopImageToolWindowKt.DesktopImageToolWindow-aC-nel8(DesktopImageToolWindow.kt:17)
+	at com.example.chatbar.desktop.DesktopCurrentImagePresentationTest$tool window exposes resize maximize and close without duplicating content title$1.invokeSuspend$lambda$2(DesktopCurrentImagePresentationTest.kt:431)
+	at androidx.compose.runtime.internal.ComposableLambdaImpl.invoke(ComposableLambda.kt:122)
+	at androidx.compose.runtime.internal.ComposableLambdaImpl.invoke(ComposableLambda.kt:52)
+	at androidx.compose.runtime.CompositionLocalKt.CompositionLocalProvider(CompositionLocal.kt:378)
+	at androidx.compose.ui.platform.CompositionLocals_skikoKt.ProvidePlatformCompositionLocals(CompositionLocals.skiko.kt:84)
+	at androidx.compose.ui.scene.BaseComposeScene$setContent$1$2.invoke(BaseComposeScene.skiko.kt:152)
+	at androidx.compose.ui.scene.BaseComposeScene$setContent$1$2.invoke(BaseComposeScene.skiko.kt:151)
+	at androidx.compose.runtime.internal.ComposableLambdaImpl.invoke(ComposableLambda.kt:122)
+	at androidx.compose.runtime.internal.ComposableLambdaImpl.invoke(ComposableLambda.kt:52)
+	at androidx.compose.runtime.CompositionLocalKt.CompositionLocalProvider(CompositionLocal.kt:378)
+	at androidx.compose.ui.platform.CompositionLocalsKt.ProvideCommonCompositionLocals(CompositionLocals.kt:217)
+	at androidx.compose.ui.platform.Wrapper_skikoKt.setContent$lambda$0$0(Wrapper.skiko.kt:47)
+	at androidx.compose.runtime.internal.ComposableLambdaImpl.invoke(ComposableLambda.kt:122)
+	at androidx.compose.runtime.internal.ComposableLambdaImpl.invoke(ComposableLambda.kt:52)
+	at androidx.compose.ui.platform.Wrapper_skikoKt.provide(Wrapper.skiko.kt:62)
+	at androidx.compose.ui.platform.Wrapper_skikoKt.setContent$lambda$0(Wrapper.skiko.kt:46)
+	at androidx.compose.runtime.internal.ComposableLambdaImpl.invoke(ComposableLambda.kt:122)
+	at androidx.compose.runtime.internal.ComposableLambdaImpl.invoke(ComposableLambda.kt:52)
+	at androidx.compose.runtime.internal.Expect_jvmKt.invokeComposable(Expect.jvm.kt:24)
+	at androidx.compose.runtime.ComposerImpl.doCompose-aFTiNEg(ComposerImpl.kt:2647)
+	at androidx.compose.runtime.ComposerImpl.composeContent--ZbOJvo$runtime(ComposerImpl.kt:2551)
+	at androidx.compose.runtime.CompositionImpl.composeContent(Composition.kt:835)
+	at androidx.compose.runtime.Recomposer.composeInitial$runtime(Recomposer.kt:1266)
+	at androidx.compose.runtime.CompositionImpl.composeInitial(Composition.kt:672)
+	at androidx.compose.runtime.CompositionImpl.setContent(Composition.kt:639)
+	at androidx.compose.ui.platform.Wrapper_skikoKt.setContent(Wrapper.skiko.kt:45)
+	at androidx.compose.ui.scene.CanvasLayersComposeSceneImpl.createComposition(CanvasLayersComposeScene.skiko.kt:217)
+	at androidx.compose.ui.scene.BaseComposeScene.setContent(BaseComposeScene.skiko.kt:151)
+	at androidx.compose.ui.ImageComposeScene.&lt;init&gt;(ImageComposeScene.skiko.kt:192)
+	at androidx.compose.ui.ImageComposeScene.&lt;init&gt;(ImageComposeScene.skiko.kt:142)
+	at androidx.compose.ui.ImageComposeScene.&lt;init&gt;(ImageComposeScene.skiko.kt:136)
+	at com.example.chatbar.desktop.DesktopCurrentImagePresentationTest$tool window exposes resize maximize and close without duplicating content title$1.invokeSuspend(DesktopCurrentImagePresentationTest.kt:430)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at java.desktop/java.awt.event.InvocationEvent.dispatch(InvocationEvent.java:318)
+	at java.desktop/java.awt.EventQueue.dispatchEventImpl(EventQueue.java:773)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:720)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:714)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:399)
+	at java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:86)
+	at java.desktop/java.awt.EventQueue.dispatchEvent(EventQueue.java:742)
+	at java.desktop/java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101)
+	at java.desktop/java.awt.EventDispatchThread.run(EventDispatchThread.java:90)
+</failure>
+  </testcase>
+  <testcase name="only new generation overrides explicit older result selection" classname="com.example.chatbar.desktop.DesktopCurrentImagePresentationTest" time="0.0"/>
+  <testcase name="zoom preserves cursor anchor and reset clears pan" classname="com.example.chatbar.desktop.DesktopCurrentImagePresentationTest" time="0.0"/>
+  <testcase name="history grid shift click selects visible inclusive range and refresh clears selection" classname="com.example.chatbar.desktop.DesktopCurrentImagePresentationTest" time="1.563"/>
+  <testcase name="studio wide and narrow keep result visible and share history authority" classname="com.example.chatbar.desktop.DesktopCurrentImagePresentationTest" time="2.586"/>
+  <testcase name="compact intermediate keeps externally imported image distinct without claiming History ownership" classname="com.example.chatbar.desktop.DesktopCurrentImagePresentationTest" time="0.197"/>
+  <testcase name="Studio inline zoom drag reset and image switch preserve draft" classname="com.example.chatbar.desktop.DesktopCurrentImagePresentationTest" time="3.525"/>
+  <testcase name="AI design is read only conversation with structured modules and anchored composer" classname="com.example.chatbar.desktop.DesktopCurrentImagePresentationTest" time="0.442"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[Error was captured in composition.
+java.awt.HeadlessException
+	at java.desktop/sun.java2d.HeadlessGraphicsEnvironment.getDefaultScreenDevice(HeadlessGraphicsEnvironment.java:58)
+	at com.example.chatbar.desktop.DesktopImageWindowPresentationKt.rememberDesktopImageWindowSize-i1RSzL4(DesktopImageWindowPresentation.kt:29)
+	at com.example.chatbar.desktop.DesktopImageToolWindowKt.DesktopImageToolWindow-aC-nel8(DesktopImageToolWindow.kt:17)
+	at com.example.chatbar.desktop.DesktopCurrentImagePresentationTest$tool window exposes resize maximize and close without duplicating content title$1.invokeSuspend$lambda$2(DesktopCurrentImagePresentationTest.kt:431)
+	at androidx.compose.runtime.internal.ComposableLambdaImpl.invoke(ComposableLambda.kt:122)
+	at androidx.compose.runtime.internal.ComposableLambdaImpl.invoke(ComposableLambda.kt:52)
+	at androidx.compose.runtime.CompositionLocalKt.CompositionLocalProvider(CompositionLocal.kt:378)
+	at androidx.compose.ui.platform.CompositionLocals_skikoKt.ProvidePlatformCompositionLocals(CompositionLocals.skiko.kt:84)
+	at androidx.compose.ui.scene.BaseComposeScene$setContent$1$2.invoke(BaseComposeScene.skiko.kt:152)
+	at androidx.compose.ui.scene.BaseComposeScene$setContent$1$2.invoke(BaseComposeScene.skiko.kt:151)
+	at androidx.compose.runtime.internal.ComposableLambdaImpl.invoke(ComposableLambda.kt:122)
+	at androidx.compose.runtime.internal.ComposableLambdaImpl.invoke(ComposableLambda.kt:52)
+	at androidx.compose.runtime.CompositionLocalKt.CompositionLocalProvider(CompositionLocal.kt:378)
+	at androidx.compose.ui.platform.CompositionLocalsKt.ProvideCommonCompositionLocals(CompositionLocals.kt:217)
+	at androidx.compose.ui.platform.Wrapper_skikoKt.setContent$lambda$0$0(Wrapper.skiko.kt:47)
+	at androidx.compose.runtime.internal.ComposableLambdaImpl.invoke(ComposableLambda.kt:122)
+	at androidx.compose.runtime.internal.ComposableLambdaImpl.invoke(ComposableLambda.kt:52)
+	at androidx.compose.ui.platform.Wrapper_skikoKt.provide(Wrapper.skiko.kt:62)
+	at androidx.compose.ui.platform.Wrapper_skikoKt.setContent$lambda$0(Wrapper.skiko.kt:46)
+	at androidx.compose.runtime.internal.ComposableLambdaImpl.invoke(ComposableLambda.kt:122)
+	at androidx.compose.runtime.internal.ComposableLambdaImpl.invoke(ComposableLambda.kt:52)
+	at androidx.compose.runtime.internal.Expect_jvmKt.invokeComposable(Expect.jvm.kt:24)
+	at androidx.compose.runtime.ComposerImpl.doCompose-aFTiNEg(ComposerImpl.kt:2647)
+	at androidx.compose.runtime.ComposerImpl.composeContent--ZbOJvo$runtime(ComposerImpl.kt:2551)
+	at androidx.compose.runtime.CompositionImpl.composeContent(Composition.kt:835)
+	at androidx.compose.runtime.Recomposer.composeInitial$runtime(Recomposer.kt:1266)
+	at androidx.compose.runtime.CompositionImpl.composeInitial(Composition.kt:672)
+	at androidx.compose.runtime.CompositionImpl.setContent(Composition.kt:639)
+	at androidx.compose.ui.platform.Wrapper_skikoKt.setContent(Wrapper.skiko.kt:45)
+	at androidx.compose.ui.scene.CanvasLayersComposeSceneImpl.createComposition(CanvasLayersComposeScene.skiko.kt:217)
+	at androidx.compose.ui.scene.BaseComposeScene.setContent(BaseComposeScene.skiko.kt:151)
+	at androidx.compose.ui.ImageComposeScene.<init>(ImageComposeScene.skiko.kt:192)
+	at androidx.compose.ui.ImageComposeScene.<init>(ImageComposeScene.skiko.kt:142)
+	at androidx.compose.ui.ImageComposeScene.<init>(ImageComposeScene.skiko.kt:136)
+	at com.example.chatbar.desktop.DesktopCurrentImagePresentationTest$tool window exposes resize maximize and close without duplicating content title$1.invokeSuspend(DesktopCurrentImagePresentationTest.kt:430)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at java.desktop/java.awt.event.InvocationEvent.dispatch(InvocationEvent.java:318)
+	at java.desktop/java.awt.EventQueue.dispatchEventImpl(EventQueue.java:773)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:720)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:714)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:399)
+	at java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:86)
+	at java.desktop/java.awt.EventQueue.dispatchEvent(EventQueue.java:742)
+	at java.desktop/java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101)
+	at java.desktop/java.awt.EventDispatchThread.run(EventDispatchThread.java:90)
+]]></system-err>
+</testsuite>

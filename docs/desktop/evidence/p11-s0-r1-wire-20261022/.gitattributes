@@ -1,0 +1,2 @@
+# Preserve raw evidence bytes so recorded SHA-256 survives checkout/download.
+raw/** -text whitespace=cr-at-eol

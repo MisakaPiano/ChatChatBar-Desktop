@@ -1,0 +1,31 @@
+{
+  "initialDirectoryStage": {
+    "expected": 116,
+    "staged": 86,
+    "extra": 0,
+    "missing": 30,
+    "reason": "Existing repository *.log ignore rule; reviewed logs explicitly added with git add -f, no ignore rule changed"
+  },
+  "initialWhitespaceCheck": {
+    "exitCode": 2,
+    "reason": "Raw CRLF interpreted as trailing whitespace after disabling text conversion",
+    "originalLocalLogBytes": 995360,
+    "originalLocalLogSha256": "8d56f59d689494a4aa7f81bc42a074fdd400c1d0046f2b0073296bfff0fcb806",
+    "originalLog": "PRESERVED LOCALLY",
+    "resolution": "Evidence-local whitespace=cr-at-eol recognizes CRLF while retaining blank-at-eol/blank-at-eof/space-before-tab checks; original XML/log bytes unchanged"
+  },
+  "rawConsoleWhitespace": {
+    "checkExit": 2,
+    "originalLocalLogBytes": 1764,
+    "originalLocalLogSha256": "dfffa2d1955cd4729a223787874af03a8bb92c2a59b7f83a2595a4b90d1c3014",
+    "reason": "Gradle itself emits a trailing space in its daemon-status line. Original console bytes must not be trimmed.",
+    "resolution": "Only raw *.log captures are marked Git binary data; byte hashes and raw retrieval remain authoritative. Kotlin source whitespace checks passed without exemptions; XML/JSON/Markdown retain whitespace checking with CRLF recognized."
+  },
+  "aggregationEncodingFailure": {
+    "type": "UnicodeDecodeError",
+    "codec": "gbk",
+    "cause": "Local Python default text encoding could not read the UTF-8 README after updating attributes/audit",
+    "resolution": "Explicit UTF-8 read; regenerate manifest; no raw Gradle/XML/source modification",
+    "privateInstallationTrace": "NOT PUBLISHED; fixed error description only"
+  }
+}

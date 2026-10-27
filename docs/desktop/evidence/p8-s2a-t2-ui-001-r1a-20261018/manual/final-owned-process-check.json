@@ -1,0 +1,42 @@
+{
+  "scope": "Only previously recorded owned PID candidates; no action taken; a reused PID is not treated as owned",
+  "processes": [
+    {
+      "exists": false,
+      "pid": 19296
+    },
+    {
+      "exists": false,
+      "pid": 26216
+    },
+    {
+      "exists": false,
+      "pid": 38880
+    },
+    {
+      "exists": false,
+      "pid": 13940
+    },
+    {
+      "exists": false,
+      "pid": 30756
+    },
+    {
+      "exists": false,
+      "pid": 28188
+    },
+    {
+      "exists": false,
+      "pid": 29340
+    },
+    {
+      "exists": false,
+      "pid": 39396
+    },
+    {
+      "exists": false,
+      "pid": 30676
+    }
+  ],
+  "utc": "2026-10-17T21:55:10.6468787Z"
+}

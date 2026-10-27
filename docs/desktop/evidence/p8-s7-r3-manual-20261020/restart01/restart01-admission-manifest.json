@@ -1,0 +1,186 @@
+{
+  "root": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r3-20261020\\environments\\p8s7-profile\\ChatChatBarDesktop",
+  "disposable": true,
+  "files": [
+    {
+      "path": "audio/generated/p8s7-session-a/31f253b3-6771-42ff-ada4-bee36aeceae2.mp3",
+      "bytes": 252860,
+      "sha256": "fb93b911ab31c264881df8f167cbb655bb42ddcd148fa372e5363cf09e3dfd94"
+    },
+    {
+      "path": "audio/generated/p8s7-session-a/412d0e0d-8d8e-4b09-9685-5e9af95e1867.mp3",
+      "bytes": 252860,
+      "sha256": "fb93b911ab31c264881df8f167cbb655bb42ddcd148fa372e5363cf09e3dfd94"
+    },
+    {
+      "path": "audio/generated/p8s7-session-a/6d576979-6f60-4694-94d5-bc8fb9cc9071.mp3",
+      "bytes": 252860,
+      "sha256": "fb93b911ab31c264881df8f167cbb655bb42ddcd148fa372e5363cf09e3dfd94"
+    },
+    {
+      "path": "audio/generated/p8s7-session-a/a70379b2-2677-491c-9826-b857c5e5a2cb.mp3",
+      "bytes": 405420,
+      "sha256": "c730e4c467f8dcf465acca9e426ea6349137e3302ff65e648f66dc2a63e3301f"
+    },
+    {
+      "path": "audio/generated/p8s7-session-a/c1506705-49cf-45eb-aa24-30aa2f48ac6f.mp3",
+      "bytes": 252860,
+      "sha256": "fb93b911ab31c264881df8f167cbb655bb42ddcd148fa372e5363cf09e3dfd94"
+    },
+    {
+      "path": "entities/app_settings.json",
+      "bytes": 1876,
+      "sha256": "28ef564a5d7567f87d2e2ad727f43b09212cd53f45a80aa3973863e55c49fa5e"
+    },
+    {
+      "path": "entities/character_cards/64ddba3e-58cc-4517-8be8-842a2ae50889.json",
+      "bytes": 8957,
+      "sha256": "a689c505b34349b8ab894580572f33b301ae9a078019fae30fa22e919903dafd"
+    },
+    {
+      "path": "entities/character_cards/dccc1809-221e-4363-afc3-99a77060a0e0.json",
+      "bytes": 37093,
+      "sha256": "81c6a5a79a75847163c07a11a89cf8950408bc5ff09d880d8fc2f0a33f2c12b1"
+    },
+    {
+      "path": "entities/character_cards/p8s7-freeform.json",
+      "bytes": 513,
+      "sha256": "870f6248a81e574125328cf353d76dfaf512b755e71142e7f3b6081d8d4c2b5d"
+    },
+    {
+      "path": "entities/character_cards/p8s7-structured.json",
+      "bytes": 518,
+      "sha256": "c87a7a1ce96eca7d304096097e99ee13acde84ad734d21501fb30bd969ee0f6a"
+    },
+    {
+      "path": "entities/chat_message_indexes/p8s7-session-a.json",
+      "bytes": 820,
+      "sha256": "ea16572b078e4446afa560496ed75702a7858fdbf9170504599d743f09e2621c"
+    },
+    {
+      "path": "entities/chat_message_indexes/p8s7-session-b.json",
+      "bytes": 820,
+      "sha256": "a5ebebce96b28a1cd9f79dedd17c57916981541d78574fea3fee818e3e23f31c"
+    },
+    {
+      "path": "entities/chat_messages/p8s7-session-a_p8s7-a-assistant.json",
+      "bytes": 1046,
+      "sha256": "a8e48c33bb81613c7553815e6ebe3a39997059fe1c65f88161e0d771c1cfd013"
+    },
+    {
+      "path": "entities/chat_messages/p8s7-session-a_p8s7-a-user.json",
+      "bytes": 177,
+      "sha256": "a64ec8946fcd04b96ab2368b3c398deb529aa225ef0ff9a79b14c26db08aeb33"
+    },
+    {
+      "path": "entities/chat_messages/p8s7-session-b_p8s7-b-assistant.json",
+      "bytes": 668,
+      "sha256": "da1146331c24da49792873956542cde30b1ea30ea7de7cdfc20b65f492a2a3bb"
+    },
+    {
+      "path": "entities/chat_messages/p8s7-session-b_p8s7-b-user.json",
+      "bytes": 177,
+      "sha256": "1b1ef1c0af3e4f4972341a2f59932f51c30c071c3084b1520d9fbb178e5b5025"
+    },
+    {
+      "path": "entities/chat_scroll_positions/p8s7-session-a.json",
+      "bytes": 168,
+      "sha256": "696c2b4524d720c5dd8ca9f4c599e7f5782e84adb7097bd24b5f2cc80e928dd1"
+    },
+    {
+      "path": "entities/chat_scroll_positions/p8s7-session-b.json",
+      "bytes": 162,
+      "sha256": "704397c2404672efcf4016d463ff3a1dbc7f00b06fcf5320f57c234861ff5282"
+    },
+    {
+      "path": "entities/chat_sessions/p8s7-session-a.json",
+      "bytes": 1610,
+      "sha256": "adc088d69014c34465c5645d5076882aecf19ff19b2d863335826dee826a0395"
+    },
+    {
+      "path": "entities/chat_sessions/p8s7-session-b.json",
+      "bytes": 168,
+      "sha256": "cfed204d5054710bb0fe2473a8f67a3af06f9dec24bf1a9e17b9bfb279b5baaa"
+    },
+    {
+      "path": "entities/format_cards/16466538-0128-4c72-a24d-6efd86bb29e1.json",
+      "bytes": 5342,
+      "sha256": "ddea487e2b2ec36673f291c33fb25ac5ea105477f4a89a0564af3a590224c264"
+    },
+    {
+      "path": "entities/format_cards/c3eb8590-6115-4e74-9299-a3370b631874.json",
+      "bytes": 5831,
+      "sha256": "7e9ee00a319bd55962e4bd5c1822e2f49c62bb9dfefce4d0d8278758c9176371"
+    },
+    {
+      "path": "entities/format_cards/e4863db3-81a1-4d1f-9de8-fe8dd8bc64f0.json",
+      "bytes": 4762,
+      "sha256": "e9798d2412e32d955f0953d6daa841e67d1b15b7200cb6509ae0e5aefd651ff5"
+    },
+    {
+      "path": "entities/generated_voice_messages/0ca30d49-4379-45bb-911a-7814c81b5523.json",
+      "bytes": 1288,
+      "sha256": "b65ec4852a8b6b2b0e74406b963f29332d2cfe9a2438a77b49e463916415a7ed"
+    },
+    {
+      "path": "entities/generated_voice_messages/4c8544d7-4368-4bc6-9439-c58d1c51e74c.json",
+      "bytes": 1303,
+      "sha256": "c0c94974bb4b5fdb0009da8a3d458e1bfc5633c97ed2c57d92fc0a54550896c6"
+    },
+    {
+      "path": "entities/generated_voice_messages/5ea3fb85-d2b4-49c3-ba66-d6156ddd9d46.json",
+      "bytes": 1303,
+      "sha256": "ddc7a37804364fdd3ab3d79c6cb9b1f29a371ab0767ea4a6ab3ebefd3bc79406"
+    },
+    {
+      "path": "entities/generated_voice_messages/7796cfe4-7464-4a14-ae77-10eedd81d00c.json",
+      "bytes": 1232,
+      "sha256": "4a0c714891e7803730e7f7580fbe825f965adb3173ebb343b706452470035e8e"
+    },
+    {
+      "path": "entities/generated_voice_messages/8edb6b78-57d2-497a-8853-556323447fb5.json",
+      "bytes": 1303,
+      "sha256": "e6bbcd3b2e39a94ef064b8bb25d073990c6bd969b67313a0e517fa67c532790c"
+    },
+    {
+      "path": "entities/model_configs/ccb-model-v1-703873372d617578.json",
+      "bytes": 186,
+      "sha256": "d4199e4c864a95dcfacb87b171b1f97e392dc0aebcd9bb8ab9713a1797ed98cd"
+    },
+    {
+      "path": "entities/model_configs/ccb-model-v1-703873372d63686174.json",
+      "bytes": 187,
+      "sha256": "258bb122ccd08f8d051153aa5bf133819f0654f8f4aa8c64506eff5363e8c574"
+    },
+    {
+      "path": "entities/player_setting.json",
+      "bytes": 102,
+      "sha256": "0a119187e9bfaee545619010aba24505d9b680ef053f7271390583f283e9e182"
+    },
+    {
+      "path": "entities/preset_import_state.json",
+      "bytes": 238,
+      "sha256": "5500121164bd2378e2400107d9c1c149b634b1b4362ef3ea676d712d0a9790db"
+    },
+    {
+      "path": "entities/voice_anchor_states/5fa286b9-3726-3b8c-9616-b7df0bf01ca9.json",
+      "bytes": 578,
+      "sha256": "2ed93f2e7a8f293d3e81e6f0d47dc24aafe84cbfe59fdacb7f75271877cff598"
+    },
+    {
+      "path": "entities/voice_anchor_states/c1976bb6-0f91-3446-ab87-75e37a56b3b3.json",
+      "bytes": 1291,
+      "sha256": "f2c96055010a500d1ac018aa785821fedb2556cba56759cf0c1c2bdd1c52bf34"
+    },
+    {
+      "path": "entities/voice_anchor_states/c2394b85-1e9b-393d-b6a4-9003bfe27c24.json",
+      "bytes": 1291,
+      "sha256": "4c010db1b1bf87cae5e145d1280a3acf0994beb0bb34f4fb366e7d452cc4e3ca"
+    },
+    {
+      "path": "entities/world_books/f04be7d6-f78a-4ecd-8a8b-8b591b5425a8.json",
+      "bytes": 36105,
+      "sha256": "ad77a4462a666a8c5ab7a8b0db1081191f85c3d2e6e905defca1e641df164195"
+    }
+  ]
+}

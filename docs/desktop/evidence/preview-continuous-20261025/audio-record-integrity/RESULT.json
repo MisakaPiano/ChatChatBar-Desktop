@@ -1,0 +1,23 @@
+{
+  "audio-record-integrity-red": {
+    "suites": 1,
+    "tests": 2,
+    "failures": 2,
+    "errors": 0,
+    "skipped": 0
+  },
+  "audio-record-integrity-green": {
+    "suites": 3,
+    "tests": 26,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "audio-record-integrity-persistence": {
+    "suites": 1,
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

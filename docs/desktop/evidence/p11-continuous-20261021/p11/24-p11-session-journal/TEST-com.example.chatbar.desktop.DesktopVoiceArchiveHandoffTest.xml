@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopVoiceArchiveHandoffTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-20T21:00:05.272Z" hostname="DD1" time="0.6">
+  <properties/>
+  <testcase name="precommit partial import failure rolls back only its known unreferenced audio" classname="com.example.chatbar.desktop.DesktopVoiceArchiveHandoffTest" time="0.368"/>
+  <testcase name="v8 voice JSONL and bounded audio restore remap IDs and preserve anchor version contract" classname="com.example.chatbar.desktop.DesktopVoiceArchiveHandoffTest" time="0.076"/>
+  <testcase name="legacy one through seven use inline media only and never follow stored paths" classname="com.example.chatbar.desktop.DesktopVoiceArchiveHandoffTest" time="0.156"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

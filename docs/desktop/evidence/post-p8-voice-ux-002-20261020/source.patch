@@ -1,0 +1,648 @@
+diff --git a/.agents/skills/chatbar-fish-audio-voice/SKILL.md b/.agents/skills/chatbar-fish-audio-voice/SKILL.md
+index 3319e7ad..de2ba6b2 100644
+--- a/.agents/skills/chatbar-fish-audio-voice/SKILL.md
++++ b/.agents/skills/chatbar-fish-audio-voice/SKILL.md
+@@ -42,10 +42,10 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
+ ## Desktop formal audio foundation
+ 
+ - `DesktopVoiceAudioStore` persists immutable MP3 artifacts under the selected root `audio/generated`, with independent ownership/hash receipts, bounded streams and atomic publication. It has no startup orphan sweep; corrupt indexes, missing receipts and unknown files remain preserved. Formal clips use a separate 16 MiB / 30-minute structural/native profile; picker preview stays at its accepted 16 MiB / 120 seconds. Both profiles use the same Windows backend with explicit per-port duration admission.
+-- `DesktopVoicePlayback` provides key-independent ordered playback and stop/join. `DesktopAudioFocus` provides separate formal/preview ports over one MCI output; a superseded port cannot stop the current owner. AppContainer owns formal voice drain before preview/native output and root release. Queue admission checks the originating UI foreground token inside the playback mutex; leaving and returning cannot revive a delayed click. Replacement releases a queued/active old voice through native stop before deleting its artifact.
++- `DesktopVoicePlayback` provides key-independent ordered playback, real MCI pause/position/resume and stop/join. A paused native alias retains the queue and data-operation lease until resume/stop; first UI Stop pauses, second closes. `DesktopChatVoiceRuntime.play` uses current-version placements across later assistant replies in the same session, skipping User turns without TTS (Desktop enhancement). `DesktopAudioFocus` provides separate formal/preview ports over one MCI output; a superseded port cannot stop the current owner. AppContainer owns formal voice drain before preview/native output and root release. Queue admission checks the originating UI foreground token inside the playback mutex; leaving and returning cannot revive a delayed click. Replacement releases a queued/active old voice through native stop before deleting its artifact.
+ - `DesktopFishGenerationCoordinator` adapts official targets, text confirmation, global five-permit batches, history/replacement and foreground autoplay. `DesktopFishVoiceTransport` reuses shared TTS serialization with one-shot/one-exchange transport and callback/body drain. Only explicit `s2.1-pro-free` is authorized; stale/paid models fail, and the dated free profile fails closed after 2026-11-30 pending re-verification. Artifact cleanup re-reads a complete strict reference inventory; uncertain commits preserve audio. Exact durable voice readback may confirm a post-write exception before refreshing the repository. `DesktopFishTtsAdmission` shares five permits across formal and picker TTS, through actual body drain.
+ 
+-- `DesktopChatVoiceRuntime` and `DesktopChatVoicePanel` wire explicit assistant segment/whole generation, bound narrator choice, auxiliary-cost confirmation, new take vs replacement, version-scoped voice bars, ordered playback, stop, export and explicit delete. Primary chat mutations drain voice jobs before editing/deleting/switching versions; foreground leases drop autoplay on screen/session leave. No assistant completion automatically requests TTS. Formal playback holds a data-operation lease through native stop/close. Existing message/image mutations retain their own normal/exclusive scopes; do not wrap image cleanup in an outer normal lease. The lazy owned auxiliary text transport drains its real sockets/executor at app shutdown.
++- `DesktopChatVoiceRuntime` and `DesktopChatVoicePanel` wire explicit assistant segment/whole generation, bound narrator choice, auxiliary-cost confirmation, new take vs replacement, version-scoped voice bars, ordered playback, stop, export and explicit delete. `DesktopVoiceUx` places a single-line generation deck inside the timeline, a conditional effective-audiobook 角色音色 dropdown, a floating paused/playing session and dismissible notifications. Narrator/auxiliary authorization remains on demand; replacement success is emitted after publication and old-file release. Primary chat mutations drain voice jobs before editing/deleting/switching versions; foreground leases drop autoplay on screen/session leave. No assistant completion automatically requests TTS. Formal playback holds a data-operation lease through native stop/close. Existing message/image mutations retain their own normal/exclusive scopes; do not wrap image cleanup in an outer normal lease. The lazy owned auxiliary text transport drains its real sockets/executor at app shutdown.
+ 
+ - `DesktopVoiceArchiveHandoff` provides P11 audio-only JSONL/media ports and strict rollback proof. See `docs/desktop/142_PHASE8_VOICE_P11_HANDOFF.md` for token/version/mapping and ownership requirements; it is not a full archive transaction. Windows QQ native sending is unverified/BLOCKED; explicit MP3 export never claims delivery.
+ 
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoicePanel.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoicePanel.kt
+index e17c1d60..3c718451 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoicePanel.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoicePanel.kt
+@@ -27,36 +27,6 @@ internal fun rememberDesktopVoicePlacements(runtime: DesktopChatVoiceRuntime?, m
+     return result
+ }
+ 
+-@Composable
+-internal fun DesktopVoiceProgress(runtime: DesktopChatVoiceRuntime?, sessionId: String) {
+-    if (runtime == null) return
+-    val batches by runtime.coordinator.batches.collectAsState()
+-    val playback by runtime.playback.state.collectAsState()
+-    val notice by runtime.notice.collectAsState()
+-    Column(Modifier.fillMaxWidth().heightIn(max = 220.dp).verticalScroll(rememberScrollState()),
+-        verticalArrangement = Arrangement.spacedBy(6.dp)) {
+-        if (playback.playing) StudioAction("停止语音", icon = DesktopAppIcons.Stop,
+-            style = StudioActionStyle.PRIMARY) { runtime.stop() }
+-        playback.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
+-        notice?.let { StatusText(it) }
+-        batches.filter { it.sessionId == sessionId }.forEach { batch ->
+-            StatusText("语音 · ${batch.phase} · ${batch.completedCount}/${batch.totalCount} · ${batch.receivedBytes} bytes")
+-            batch.errors.values.distinct().forEach { StatusText(it, DesktopBootstrapColors.destructive) }
+-            batch.textConfirmations.forEach { confirmation ->
+-                StatusText("${confirmation.characterName} · 原文：${confirmation.originalText}")
+-                StatusText("AI 建议：${confirmation.proposedTaggedText}")
+-            }
+-            if (batch.phase == VoiceGenerationPhase.AWAITING_TEXT_CONFIRMATION) ActionRow {
+-                StudioAction("采用 AI 文本并生成") { runtime.coordinator.resolveTextConfirmation(batch.id, true) }
+-                StudioAction("拒绝改写") { runtime.coordinator.resolveTextConfirmation(batch.id, false) }
+-            }
+-            if (batch.phase in setOf(VoiceGenerationPhase.FAILED, VoiceGenerationPhase.CANCELLED))
+-                StudioAction("关闭语音状态", style = StudioActionStyle.GHOST) { runtime.coordinator.dismiss(batch.id) }
+-            else StudioAction("取消本批语音", icon = DesktopAppIcons.Stop) { runtime.coordinator.cancel(batch.id) }
+-        }
+-    }
+-}
+-
+ @Composable
+ internal fun DesktopVoiceRows(runtime: DesktopChatVoiceRuntime?, message: ChatMessage,
+     placements: List<VoiceMessagePlacement>, state: DesktopPrimaryChatState) {
+@@ -109,45 +79,6 @@ internal fun DesktopVoiceRows(runtime: DesktopChatVoiceRuntime?, message: ChatMe
+     } }
+ }
+ 
+-@Composable
+-internal fun DesktopVoiceGenerationControls(runtime: DesktopChatVoiceRuntime?, message: ChatMessage, state: DesktopPrimaryChatState) {
+-    if (runtime == null || message.role != MessageRole.ASSISTANT) return
+-    val scope = rememberCoroutineScope()
+-    var expanded by remember(message.id) { mutableStateOf(false) }
+-    var narrator by remember(message.id) { mutableStateOf<String?>(null) }
+-    var pending by remember(message.id) { mutableStateOf<Int?>(null) }
+-    var confirm by remember(message.id) { mutableStateOf(false) }
+-    val card = state.selectedCharacter
+-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+-        StudioAction(if (expanded) "收起语音生成" else "语音生成", style = StudioActionStyle.GHOST) { expanded = !expanded }
+-        if (expanded) {
+-            StatusText("仅明确点击后生成。整条会补齐缺失片段；新录音默认保留历史。")
+-            StatusText("仅当前明确选择的免费模型可用；翻译/标签会使用配置的辅助模型，可能计费。")
+-            card?.characters?.filter { it.fishAudioVoice != null }?.let { bound ->
+-                ActionRow { bound.forEach { character ->
+-                    StudioAction("朗读声线 · ${character.name}", selected = narrator == character.id, style = StudioActionStyle.CHIP) { narrator = character.id }
+-                } }
+-            }
+-            StudioAction("生成整条回复 / 补齐语音", enabled = card != null) { pending = null; confirm = true }
+-            runtime.generationSegments(message, state.selectedSession, state.assistantSegmentedBubblesEnabled).forEach { segment ->
+-                if (segment.sourceScope != VoiceSourceScope.WHOLE_MESSAGE) StudioAction(
+-                    "生成本段 · ${segment.speakerName ?: "旁白"} · ${segment.spokenText.take(32)}",
+-                    enabled = card != null && VoiceGenerationPolicy.hasResolvableTarget(card, segment)) { pending = segment.segmentIndex; confirm = true }
+-            }
+-            if (confirm) {
+-                StatusText("确认使用当前免费 Fish 模型及所需的辅助模型？未授权的收费 Fish 模型不会发送。")
+-                ActionRow {
+-                    StudioAction("授权并开始生成", style = StudioActionStyle.PRIMARY) {
+-                        val intent = runtime.playbackIntent()
+-                        scope.launch { runtime.generate(message, narrator, pending, auxiliaryAuthorized = true, originGeneration = intent); confirm = false }
+-                    }
+-                    StudioAction("取消", style = StudioActionStyle.GHOST) { confirm = false }
+-                }
+-            }
+-        }
+-    }
+-}
+-
+ @Composable
+ private fun VoiceTextField(label: String, text: String, change: (String) -> Unit) {
+     BasicTextField(text, change, modifier = Modifier.fillMaxWidth().heightIn(max = 160.dp)
+@@ -159,18 +90,19 @@ private fun VoiceTextField(label: String, text: String, change: (String) -> Unit
+ internal fun DesktopVoiceGenerationDialog(runtime: DesktopChatVoiceRuntime?, message: ChatMessage,
+     state: DesktopPrimaryChatState, segment: Int?, onClose: () -> Unit) {
+     val scope = rememberCoroutineScope()
+-    var narrator by remember(message.id) { mutableStateOf<String?>(null) }
++    val ui = LocalDesktopVoiceUi.current
++    var narrator by remember(message.id) { mutableStateOf(ui.narrator) }
++    val bound = state.selectedCharacter?.characters.orEmpty().filter { it.fishAudioVoice != null }
+     DesktopModalSurface {
+         Column(Modifier.widthIn(max = 520.dp).background(DesktopBootstrapColors.card).padding(16.dp)
+             .verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+             androidx.compose.foundation.text.BasicText("确认生成语音", style = TextStyle(color = DesktopBootstrapColors.foreground))
+             StatusText(if (segment == null) "当前整条回复 · 补齐缺失片段" else "当前片段 · ${segment + 1}")
+             StatusText("仅使用明确选择的免费 Fish 模型；翻译和标签可能使用辅助模型并计费。")
+-            StatusText("选择朗读音色 · 角色音色")
+-            state.selectedCharacter?.characters?.filter { it.fishAudioVoice != null }?.forEach { c ->
+-                StudioAction(c.name, selected = narrator == c.id, style = StudioActionStyle.CHIP) { narrator = c.id }
+-            }
+-            StudioAction("授权并开始生成", enabled = runtime != null && state.selectedCharacter != null) {
++            // Explicit selection: hidden persistent control when audiobook is off, available on demand here.
++            DesktopNarratorDropdown(state, narrator) { narrator = it; ui.narrator = it }
++            StudioAction("授权并开始生成", enabled = runtime != null && state.selectedCharacter != null &&
++                (bound.size <= 1 || bound.any { it.id == narrator })) {
+                 val intent = runtime!!.playbackIntent()
+                 scope.launch { runtime.generate(message, narrator, segment, auxiliaryAuthorized = true, originGeneration = intent); onClose() }
+             }
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoiceRuntime.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoiceRuntime.kt
+index 60d29bf6..acc93aa0 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoiceRuntime.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoiceRuntime.kt
+@@ -45,6 +45,13 @@ internal class DesktopChatVoiceRuntime(
+     private val foregroundLock = Any()
+     @Volatile private var foregroundDrain: Job? = null
+ 
++    fun effectiveAudiobook(session: ChatSession): Boolean = VoiceGenerationPolicy.audiobookEnabled(session, settings.currentAppSettings)
++    fun dismissNotice(expected: String) { mutableNotice.compareAndSet(expected, null) }
++    fun pauseOrClose() { scope.launch { if (playback.state.value.playing) playback.pause() else coordinator.stopPlayback() } }
++    fun resumePlayback() {
++        val token = playbackIntent()
++        scope.launch { playback.resume { !closed && playbackIntent() == token } }
++    }
+     fun playbackIntent(): Long = coordinator.foregroundToken()
+     fun foreground(sessionId: String?): Job = synchronized(foregroundLock) {
+         coordinator.setForegroundSession(sessionId)
+@@ -117,7 +124,12 @@ internal class DesktopChatVoiceRuntime(
+         gate.withNormalOperation { mutation.withLock {
+             val current = chats.getMessage(message.id, message.sessionId) ?: error("消息已不存在")
+             check(current == message)
+-            val visible = repository.placementsForMessage(current).map { it.voice }
++            // Desktop enhancement: only current versions in this session, skip user turns, no synthesis.
++            val timeline = chats.getMessagesReadOnly(current.sessionId)
++            val index = timeline.indexOfFirst { it.id == current.id && it == current }
++            check(index >= 0) { "消息已变化；请重新选择" }
++            val visible = timeline.drop(index).filter { it.role == MessageRole.ASSISTANT }
++                .flatMap { repository.placementsForMessage(it).map { placement -> placement.voice } }
+             check(visible.any { it.id == voice.id })
+             coordinator.playFrom(voice, visible, originGeneration)
+         } }
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishGenerationCoordinator.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishGenerationCoordinator.kt
+index 4294ccdd..974cfee0 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishGenerationCoordinator.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishGenerationCoordinator.kt
+@@ -328,6 +328,7 @@ internal class DesktopFishGenerationCoordinator(
+                     throw error
+                 }
+                 withContext(NonCancellable) { playback.withVoiceReleased(existing.id) { releaseArtifact(existing.audioPath) } }
++                mutableFeedback.value = "录音替换成功，其他录音已保留"
+                 removeBatch(batchId)
+                 finishAutoPlay(batchId, listOf(replacement))
+             } catch (cancelled: CancellationException) {
+@@ -442,6 +443,10 @@ internal class DesktopFishGenerationCoordinator(
+         }
+     }
+ 
++    private val mutableFeedback = kotlinx.coroutines.flow.MutableStateFlow<String?>(null)
++    val feedback = mutableFeedback.asStateFlow()
++    fun dismissFeedback(expected: String) { mutableFeedback.compareAndSet(expected, null) }
++
+     fun stopPlayback() {
+         scope.launch {
+             clearAutoPlay()
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatController.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatController.kt
+index d822d3df..cf3c7d9e 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatController.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatController.kt
+@@ -188,6 +188,8 @@ internal class DesktopPrimaryChatController(
+         } catch (_: DesktopReadingPositionPersistenceException) { /* onReadingResult owns the session-specific indicator. */ }
+     }
+ 
++    fun dismissStatus(expected: String) { mutableState.update { if (it.status == expected) it.copy(status = null) else it } }
++
+     suspend fun refresh() = guarded {
+         if (blockDuringSessionSave()) return@guarded
+         stateLock.withLock { refreshSelection() }
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt
+index 4b40b075..379ee8a1 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt
+@@ -145,6 +145,7 @@ internal fun DesktopPrimaryChatPanel(
+         Unit
+     }
+     val colors = DesktopBootstrapColors
++    val voiceUi = remember(state.selectedSession?.id) { DesktopVoiceUiSelection() }
+ 
+     fun selectFromBrowser(id: String, openSettings: Boolean = false) {
+         scope.launch {
+@@ -274,7 +275,7 @@ internal fun DesktopPrimaryChatPanel(
+                     if (selected == null) {
+                         StatusText(t(DesktopUiText.SELECT_SESSION))
+                     } else {
+-                        CompositionLocalProvider(LocalClipboard provides clipboard) { key(state.selectedSession?.id) {
++                        CompositionLocalProvider(LocalClipboard provides clipboard, LocalDesktopVoiceUi provides voiceUi) { key(state.selectedSession?.id) {
+                             PrimaryTimeline(
+                                 state, running, controller, clipboard, placement, Modifier.weight(1f),
+                                 onEdit = { message -> editingMessage = message; editingText = message.displayContent },
+@@ -290,14 +291,12 @@ internal fun DesktopPrimaryChatPanel(
+                             tasks.firstOrNull { it.sessionId == selected.id }
+                                 ?.takeIf { it.operation == DesktopChatOperation.REGENERATE && it.status == DesktopTaskStatus.FAILED }
+                                 ?.let { StatusText(t.status(it.message), colors.destructive) }
+-                            state.status?.let { StatusText(t.status(it)) }
+                             tasks.firstOrNull { it.sessionId == selected.id && it.kind == DesktopTaskKind.NOVELAI && it.targetMessageId == null }?.let { imageTask ->
+                                 StatusText(imageTask.message)
+                                 if (imageTask.status == DesktopTaskStatus.RUNNING) BootstrapButton("停止图片生成") { controller.stop(imageTask.taskId) }
+                             }
+                             tasks.firstOrNull { it.sessionId == selected.id && it.kind == DesktopTaskKind.REAL_CHAT }
+                                 ?.message?.takeIf { it.contains("自动生图已跳过") || it.contains("自动生图未启动") }?.let { StatusText(it) }
+-                            DesktopVoiceProgress(controller.voices, selected.id)
+                             PrimaryComposer(composer, canLaunch, running, controller, composerLayout, workspaceHeightDp, send)
+ 
+                         }
+@@ -596,6 +595,7 @@ private fun PrimaryTimeline(
+         LazyColumn(
+             Modifier.width(placement.contentWidthDp.dp).fillMaxHeight().alpha(if (viewport.ready) 1f else 0f)
+                 .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp)).padding(8.dp),
++            contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 92.dp),
+             state = viewport.list,
+             verticalArrangement = Arrangement.spacedBy(8.dp),
+         ) {
+@@ -644,6 +644,11 @@ private fun PrimaryTimeline(
+                 PrimaryMessageBubble(streamingMessage, state, controller, clipboard)
+             }
+         }
++        Column(Modifier.align(Alignment.BottomCenter).width(placement.contentWidthDp.dp), horizontalAlignment = Alignment.CenterHorizontally) {
++            DesktopFloatingVoicePlayer(controller.voices)
++            DesktopVoiceDeck(controller.voices, state)
++        }
++        Box(Modifier.align(Alignment.TopCenter).padding(8.dp)) { DesktopChatNotifications(controller, state) }
+         if (state.readingPositionError) Box(Modifier.align(Alignment.TopStart).padding(8.dp)) {
+             StatusText(t(DesktopUiText.READING_POSITION_ERROR))
+         }
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoicePlayback.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoicePlayback.kt
+index 4fce6f98..c18eba1d 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoicePlayback.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoicePlayback.kt
+@@ -23,6 +23,9 @@ internal class DesktopAudioFocus(private val output: DesktopAudioOutput = Deskto
+             output.stopAndDrain(); owner = token
+             try { if (formal) output.playFormal(path) else output.play(path) } catch (e: Throwable) { owner = null; throw e }
+         }
++        override suspend fun pause(): Long = mutex.withLock { check(owner === token); output.pause() }
++        override suspend fun resume() = mutex.withLock { check(owner === token); output.resume() }
++        override suspend fun positionMs(): Long = mutex.withLock { check(owner === token); output.positionMs() }
+         override suspend fun stopAndDrain() = mutex.withLock {
+             if (owner === token) { output.stopAndDrain(); owner = null }
+         }
+@@ -34,7 +37,8 @@ internal class DesktopAudioFocus(private val output: DesktopAudioOutput = Deskto
+ }
+ 
+ internal data class DesktopVoicePlaybackState(val currentVoiceId: String? = null,
+-    val queueVoiceIds: List<String> = emptyList(), val playing: Boolean = false, val error: String? = null)
++    val queueVoiceIds: List<String> = emptyList(), val playing: Boolean = false, val error: String? = null,
++    val paused: Boolean = false, val positionMs: Long = 0)
+ 
+ /** Explicit playback only; never owns a network credential. Manual play replaces the queue.
+  * Stop joins the polling job before returning, releasing native file handles before deletion.
+@@ -78,7 +82,15 @@ internal class DesktopVoicePlayback(private val store: DesktopVoiceAudioStore,
+                     output.playFormal(path)
+                     mutable.value = DesktopVoicePlaybackState(voice.id,
+                         synchronized(queue) { listOf(voice.id) + queue.map { it.id } }, true)
+-                    while (output.isPlaying()) delay(100)
++                    while (true) {
++                        // A paused native alias retains its handle and the current data-operation lease.
++                        // The same mutex serializes pause/resume with completion observation.
++                        val active = mutex.withLock {
++                            if (mutable.value.paused) output.hasFocus() else output.isPlaying()
++                        }
++                        if (!active) break
++                        delay(100)
++                    }
+                     if (!output.hasFocus()) {
+                         synchronized(queue) { while (pending.tryReceive().isSuccess) { }; queue.clear() }
+                     }
+@@ -92,6 +104,26 @@ internal class DesktopVoicePlayback(private val store: DesktopVoiceAudioStore,
+             finally { withContext(NonCancellable) { output.stopAndDrain() } }
+         }
+     }
++    fun dismissError(expected: String) { synchronized(queue) { if (mutable.value.error == expected) mutable.value = mutable.value.copy(error = null) } }
++    suspend fun pause() = mutex.withLock {
++        if (!mutable.value.playing) return@withLock
++        try {
++            val position = output.pause()
++            mutable.value = mutable.value.copy(playing = false, paused = true, positionMs = position)
++        } catch (e: Exception) {
++            stopLocked(); mutable.value = DesktopVoicePlaybackState(error = "音频暂停失败；已停止播放，文件已保留")
++        }
++    }
++    suspend fun resume(eligible: () -> Boolean = { true }) = mutex.withLock {
++        if (!eligible()) { stopLocked(); return@withLock }
++        if (!mutable.value.paused) return@withLock
++        try {
++            output.resume()
++            mutable.value = mutable.value.copy(playing = true, paused = false)
++        } catch (e: Exception) {
++            stopLocked(); mutable.value = DesktopVoicePlaybackState(error = "音频续播失败；文件已保留")
++        }
++    }
+     suspend fun stop() = mutex.withLock { stopLocked() }
+     /** Serialize target removal against manual/automatic queue admission and native alias release. */
+     suspend fun <T> withVoiceReleased(id: String, block: suspend () -> T): T = mutex.withLock {
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceUx.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceUx.kt
+new file mode 100644
+index 00000000..613aef57
+--- /dev/null
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceUx.kt
+@@ -0,0 +1,124 @@
++package com.example.chatbar.desktop
++
++import androidx.compose.foundation.*
++import androidx.compose.foundation.layout.*
++import androidx.compose.foundation.shape.RoundedCornerShape
++import androidx.compose.foundation.text.BasicText
++import androidx.compose.runtime.*
++import androidx.compose.ui.*
++import androidx.compose.ui.draw.alpha
++import androidx.compose.ui.platform.testTag
++import androidx.compose.ui.text.TextStyle
++import androidx.compose.ui.text.style.TextOverflow
++import androidx.compose.ui.unit.*
++import androidx.compose.ui.window.*
++import com.example.chatbar.data.local.entity.*
++import com.example.chatbar.domain.voice.VoiceGenerationPolicy
++import kotlinx.coroutines.delay
++
++internal class DesktopVoiceUiSelection { var narrator by mutableStateOf<String?>(null) }
++internal val LocalDesktopVoiceUi = staticCompositionLocalOf { DesktopVoiceUiSelection() }
++
++@Composable
++internal fun DesktopNarratorDropdown(state: DesktopPrimaryChatState, selected: String?, choose: (String) -> Unit) {
++    var open by remember { mutableStateOf(false) }
++    val bound = state.selectedCharacter?.characters.orEmpty().filter { it.fishAudioVoice != null }
++    Row(verticalAlignment = Alignment.CenterVertically) {
++        BasicText("角色音色", maxLines = 1, style = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 12.sp))
++        Box {
++            StudioAction(bound.firstOrNull { it.id == selected }?.name?.take(8) ?: "选择", style = StudioActionStyle.GHOST) { open = true }
++            if (open) Popup(alignment = Alignment.TopEnd, properties = PopupProperties(focusable = true), onDismissRequest = { open = false }) {
++                Column(Modifier.widthIn(max = 280.dp).heightIn(max = 320.dp).background(DesktopBootstrapColors.card)
++                    .border(1.dp, DesktopBootstrapColors.border).verticalScroll(rememberScrollState()).padding(6.dp)) {
++                    if (bound.isEmpty()) StatusText("当前角色卡没有已绑定音色")
++                    bound.forEach { c -> StudioAction("${c.name} · ${c.fishAudioVoice?.title.orEmpty()}") { choose(c.id); open = false } }
++                }
++            }
++        }
++    }
++}
++
++@Composable
++internal fun DesktopVoiceDeck(runtime: DesktopChatVoiceRuntime?, state: DesktopPrimaryChatState) {
++    if (runtime == null || state.selectedSession == null) return
++    val batches by runtime.coordinator.batches.collectAsState()
++    val batch = batches.firstOrNull { it.sessionId == state.selectedSession.id }
++    val audiobook = runtime.effectiveAudiobook(state.selectedSession)
++    val ui = LocalDesktopVoiceUi.current
++    var details by remember(state.selectedSession.id) { mutableStateOf(false) }
++    if (batch == null && !audiobook) return
++    DesktopVoiceDeckRow(batch?.let { "${it.phase} · ${it.completedCount}/${it.totalCount}" } ?: "听书模式",
++        if (batch != null) ({ details = true }) else null,
++        cancel = batch?.let { b -> { if (b.phase in setOf(VoiceGenerationPhase.FAILED, VoiceGenerationPhase.CANCELLED)) runtime.coordinator.dismiss(b.id) else runtime.coordinator.cancel(b.id) } },
++        narrator = { if (audiobook) DesktopNarratorDropdown(state, ui.narrator) { ui.narrator = it } })
++    if (details && batch != null) Popup(alignment = Alignment.BottomCenter, onDismissRequest = { details = false }, properties = PopupProperties(focusable = true)) {
++        Column(Modifier.widthIn(max = 480.dp).heightIn(max = 360.dp).background(DesktopBootstrapColors.card)
++            .border(1.dp, DesktopBootstrapColors.border).verticalScroll(rememberScrollState()).padding(12.dp)) {
++            StatusText("${batch.phase} · ${batch.completedCount}/${batch.totalCount} · ${batch.receivedBytes} bytes")
++            batch.errors.values.distinct().forEach { StatusText(it, DesktopBootstrapColors.destructive) }
++            batch.textConfirmations.forEach { StatusText("${it.characterName} · 原文：${it.originalText}"); StatusText("AI 建议：${it.proposedTaggedText}") }
++            if (batch.phase == VoiceGenerationPhase.AWAITING_TEXT_CONFIRMATION) {
++                StudioAction("采用 AI 文本并生成") { runtime.coordinator.resolveTextConfirmation(batch.id, true); details = false }
++                StudioAction("拒绝改写") { runtime.coordinator.resolveTextConfirmation(batch.id, false); details = false }
++            }
++            StudioAction("关闭详情") { details = false }
++        }
++    }
++}
++
++@Composable
++internal fun DesktopVoiceDeckRow(text: String, detail: (() -> Unit)?, cancel: (() -> Unit)?, narrator: @Composable () -> Unit) {
++    Row(Modifier.fillMaxWidth().height(40.dp).testTag("voice-generation-deck")
++        .background(DesktopBootstrapColors.card).border(1.dp, DesktopBootstrapColors.border).padding(horizontal = 4.dp),
++        verticalAlignment = Alignment.CenterVertically) {
++        BasicText(text, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis,
++            style = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 11.sp))
++        if (detail != null) DesktopChatIconAction("语音生成详情", DesktopAppIcons.More, onClick = detail)
++        if (cancel != null) DesktopChatIconAction("取消或关闭本批语音", DesktopAppIcons.Stop, onClick = cancel)
++        Row(verticalAlignment = Alignment.CenterVertically) { narrator() }
++    }
++}
++
++@Composable
++internal fun DesktopFloatingVoicePlayer(runtime: DesktopChatVoiceRuntime?) {
++    if (runtime == null) return
++    val state by runtime.playback.state.collectAsState()
++    if (state.currentVoiceId == null || (!state.playing && !state.paused)) return
++    DesktopVoicePlayerRow(state, { runtime.resumePlayback() }, { runtime.pauseOrClose() })
++}
++
++@Composable
++internal fun DesktopVoicePlayerRow(state: DesktopVoicePlaybackState, resume: () -> Unit, stop: () -> Unit) {
++    var pulse by remember { mutableStateOf(false) }
++    LaunchedEffect(state.playing) { while (state.playing) { delay(450); pulse = !pulse } }
++    Row(Modifier.height(38.dp).testTag("voice-floating-player").background(DesktopBootstrapColors.card, RoundedCornerShape(19.dp))
++        .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(19.dp)).padding(horizontal = 8.dp),
++        verticalAlignment = Alignment.CenterVertically) {
++        Box(Modifier.alpha(if (!state.playing || pulse) 1f else .4f)) {
++            DesktopChatIconAction(if (state.paused) "继续播放" else "正在播放语音", if (state.paused) DesktopAppIcons.Play else DesktopAppIcons.Voice,
++                enabled = state.paused, onClick = resume)
++        }
++        BasicText(if (state.paused) "已暂停" else "播放中", Modifier.width(48.dp), maxLines = 1,
++            style = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 12.sp))
++        DesktopChatIconAction(if (state.paused) "停止并关闭播放器" else "暂停并保留位置", DesktopAppIcons.Stop, onClick = stop)
++    }
++}
++
++@Composable
++internal fun DesktopChatNotifications(controller: DesktopPrimaryChatController, state: DesktopPrimaryChatState) {
++    val runtime = controller.voices
++    val notice = runtime?.notice?.collectAsState()?.value
++    val feedback = runtime?.coordinator?.feedback?.collectAsState()?.value
++    val playbackError = runtime?.playback?.state?.collectAsState()?.value?.error
++    val text = feedback ?: notice ?: playbackError ?: state.status
++    if (text != null) {
++        fun dismiss() { if (feedback != null) runtime?.coordinator?.dismissFeedback(text)
++            else if (notice != null) runtime?.dismissNotice(text) else if (playbackError != null) runtime?.playback?.dismissError(text) else controller.dismissStatus(text) }
++        LaunchedEffect(text) { delay(8000); dismiss() }
++        Row(Modifier.widthIn(max = 540.dp).background(DesktopBootstrapColors.card).border(1.dp, DesktopBootstrapColors.border).padding(6.dp),
++            verticalAlignment = Alignment.CenterVertically) {
++            BasicText(text, Modifier.weight(1f, fill = false), maxLines = 2, style = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 12.sp))
++            DesktopChatIconAction("关闭通知", DesktopAppIcons.Close) { dismiss() }
++        }
++    }
++}
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopWindowsAudioOutput.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopWindowsAudioOutput.kt
+index 5e334efd..55becf47 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopWindowsAudioOutput.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopWindowsAudioOutput.kt
+@@ -15,6 +15,9 @@ import kotlinx.coroutines.sync.withLock
+ internal interface DesktopAudioOutput {
+     suspend fun play(path: Path)
+     suspend fun playFormal(path: Path) { play(path) }
++    suspend fun pause(): Long = error("音频后端不支持暂停")
++    suspend fun resume() { error("音频后端不支持续播") }
++    suspend fun positionMs(): Long = error("音频后端不支持位置读取")
+     suspend fun stopAndDrain()
+     suspend fun hasFocus(): Boolean = true
+     suspend fun isPlaying(): Boolean
+@@ -71,6 +74,25 @@ internal class DesktopWindowsAudioOutput(
+         Unit
+     }
+ 
++    override suspend fun positionMs(): Long = operation {
++        val name = checkNotNull(alias) { "没有可读取的播放会话" }
++        commands.send("status $name position wait").toLongOrNull()?.also { check(it >= 0) }
++            ?: error("Windows 音频位置不可用")
++    }
++    override suspend fun pause(): Long = operation {
++        val name = checkNotNull(alias) { "没有可暂停的播放会话" }
++        commands.send("pause $name wait")
++        check(commands.send("status $name mode wait") == "paused") { "Windows 音频暂停未确认" }
++        commands.send("status $name position wait").toLongOrNull()?.also { check(it >= 0) }
++            ?: error("Windows 音频位置不可用")
++    }
++    override suspend fun resume() = operation {
++        val name = checkNotNull(alias) { "没有可续播的播放会话" }
++        check(commands.send("status $name mode wait") == "paused")
++        commands.send("resume $name wait")
++        check(commands.send("status $name mode wait") in setOf("playing", "stopped"))
++        Unit
++    }
+     override suspend fun isPlaying(): Boolean = operation {
+         alias?.let { commands.send("status $it mode wait") == "playing" } ?: false
+     }
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatVoicePresentationTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatVoicePresentationTest.kt
+index a8a15522..e87e3d90 100644
+--- a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatVoicePresentationTest.kt
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatVoicePresentationTest.kt
+@@ -15,15 +15,15 @@ class DesktopChatVoicePresentationTest {
+     private val edt = object : CoroutineDispatcher() {
+         override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
+     }
+-    @Test fun `chat generation stays collapsed and requires explicit authorization in light and dark compact layouts`() = runBlocking(edt) {
++    @Test fun `chat generation modal sends nothing before explicit authorization in light and dark compact layouts`() = runBlocking(edt) {
+         DesktopChatVoiceRuntimeTest.Fixture().use { f ->
+             f.seed()
+             val card = f.characters.getById("card")!!
+             for (mode in listOf(ThemeMode.LIGHT, ThemeMode.DARK)) {
+                 val scene = ImageComposeScene(360, 900) {
+                     CompositionLocalProvider(LocalDesktopPalette provides desktopSemanticColors(mode, com.example.chatbar.domain.appearance.DefaultThemeColorHsv, false)) {
+-                        Column { DesktopVoiceGenerationControls(f.runtime, f.message,
+-                            DesktopPrimaryChatState(selectedSession = f.session, selectedCharacter = card)) }
++                        Column { DesktopVoiceGenerationDialog(f.runtime, f.message,
++                            DesktopPrimaryChatState(selectedSession = f.session, selectedCharacter = card), null) {} }
+                     }
+                 }
+                 fun nodes(): List<SemanticsNode> {
+@@ -34,11 +34,6 @@ class DesktopChatVoicePresentationTest {
+                 suspend fun frame() { repeat(4) { scene.render(System.nanoTime()).close(); yield(); delay(10) } }
+                 try {
+                     frame(); assertEquals(0, f.server.requestCount)
+-                    assertTrue(nodes().none { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("授权并开始生成") == true })
+-                    assertTrue(button("语音生成").config[SemanticsActions.OnClick].action!!())
+-                    frame()
+-                    assertTrue(button("生成整条回复 / 补齐语音").config[SemanticsActions.OnClick].action!!())
+-                    frame()
+                     val confirm = button("授权并开始生成")
+                     assertEquals(Role.Button, confirm.config[SemanticsProperties.Role])
+                     assertTrue(confirm.boundsInRoot.left >= 0 && confirm.boundsInRoot.right <= 360)
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPreviewTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPreviewTest.kt
+index aae6da6e..52dd9268 100644
+--- a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPreviewTest.kt
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPreviewTest.kt
+@@ -17,12 +17,16 @@ internal fun fishPreviewMp3(frames: Int = 50) = ByteArray(frames * 417).also { b
+ 
+ internal class PreviewOutputFake : DesktopAudioOutput {
+     var playing = false
++    var paused = false
+     var plays = 0
+     var closes = 0
+     var failClose = false
+     override suspend fun play(path: Path) { check(Files.size(path) > 0); plays++; playing = true }
++    override suspend fun pause(): Long { check(playing); playing = false; paused = true; return 1234L }
++    override suspend fun resume() { check(paused); paused = false; playing = true }
++    override suspend fun positionMs(): Long = 1234L
+     override suspend fun isPlaying() = playing
+-    override suspend fun stopAndDrain() { check(!failClose); playing = false }
++    override suspend fun stopAndDrain() { check(!failClose); playing = false; paused = false }
+     override suspend fun closeAndDrain() { stopAndDrain(); closes++ }
+ }
+ 
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopVoiceUxTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopVoiceUxTest.kt
+new file mode 100644
+index 00000000..02116347
+--- /dev/null
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopVoiceUxTest.kt
+@@ -0,0 +1,93 @@
++@file:OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class, androidx.compose.ui.InternalComposeUiApi::class)
++package com.example.chatbar.desktop
++import androidx.compose.ui.ImageComposeScene
++import androidx.compose.ui.semantics.*
++import androidx.compose.foundation.layout.*
++import com.example.chatbar.data.local.entity.*
++import java.nio.file.*
++import kotlinx.coroutines.*
++import javax.swing.SwingUtilities
++import kotlin.coroutines.CoroutineContext
++import kotlin.test.*
++
++class DesktopVoiceUxTest {
++    @Test fun `MCI resumes paused alias without opening or playing from zero again`() = runBlocking {
++        val calls=mutableListOf<String>();var mode="playing"
++        val out=DesktopWindowsAudioOutput { c-> calls+=c;when {
++            c.contains(" length ")->"12000"
++            c.startsWith("pause ")->{mode="paused";""}
++            c.startsWith("resume ")->{mode="playing";""}
++            c.contains(" mode ")->mode
++            c.contains(" position ")->"4321"
++            else->""
++        } }
++        try {out.playFormal(Path.of("synthetic.mp3"));assertEquals(4321L,out.pause());out.resume()
++            assertEquals(4321L,out.positionMs());assertEquals(1,calls.count{it.startsWith("open ")})
++            assertEquals(1,calls.count{it.contains("from 0")});assertEquals(1,calls.count{it.startsWith("resume ")})
++        } finally {out.closeAndDrain()}
++    }
++    @Test fun `manual queue crosses user turn using only current assistant audio and no network`()=runBlocking {
++        DesktopChatVoiceRuntimeTest.Fixture().use { f->
++            f.seed();f.enqueue();f.done(f.runtime.generate(f.message,"alice"))
++            f.chats.addMessage(ChatMessage("user",f.session.id,MessageRole.USER,"skip",createdAt=2,updatedAt=2))
++            val next=f.chats.addMessage(ChatMessage("next",f.session.id,MessageRole.ASSISTANT,"<n=\"Alice\"/>[next]()",createdAt=3,updatedAt=3))
++            f.enqueue();f.done(f.runtime.generate(next,"alice"))
++            val a=f.repo.placementsForMessage(f.message).single().voice;val b=f.repo.placementsForMessage(next).single().voice
++            val requests=f.server.requestCount;f.runtime.foreground(f.session.id).join();f.runtime.play(a,f.message)?.join()
++            withTimeout(5000){while(!f.runtime.playback.state.value.playing)delay(10)}
++            assertEquals(listOf(a.id,b.id),f.runtime.playback.state.value.queueVoiceIds)
++            f.output.playing=false;withTimeout(5000){while(f.runtime.playback.state.value.currentVoiceId!=b.id)delay(10)}
++            assertEquals(requests,f.server.requestCount);f.runtime.foreground(null).join();assertFalse(f.output.playing)
++        }
++    }
++    @Test fun `pause keeps real position and queue then resume or second stop releases session`()=runBlocking {
++        DesktopChatVoiceRuntimeTest.Fixture().use { f->
++            f.seed();f.enqueue();f.done(f.runtime.generate(f.message,"alice"))
++            val v=f.repo.placementsForMessage(f.message).single().voice
++            f.runtime.playback.playSequence(listOf(v,v))
++            withTimeout(3000){while(!f.runtime.playback.state.value.playing)delay(10)}
++            val plays=f.output.plays
++            f.runtime.playback.pause();delay(220)
++            assertTrue(f.runtime.playback.state.value.paused)
++            assertEquals(1234L,f.runtime.playback.state.value.positionMs)
++            assertEquals(listOf(v.id,v.id),f.runtime.playback.state.value.queueVoiceIds)
++            assertEquals(plays,f.output.plays)
++            f.runtime.playback.resume();assertTrue(f.runtime.playback.state.value.playing)
++            assertEquals(plays,f.output.plays)
++            f.runtime.playback.pause();f.runtime.playback.stop()
++            assertNull(f.runtime.playback.state.value.currentVoiceId);assertFalse(f.output.playing)
++        }
++    }
++    private val edt=object:CoroutineDispatcher(){override fun dispatch(context:CoroutineContext,block:Runnable)=SwingUtilities.invokeLater(block)}
++    @Test fun `single row deck and paused player fit compact and wide viewports`()=runBlocking(edt) {
++        for(w in listOf(360,1100)) {
++            var resumes=0;var stops=0
++            val scene=ImageComposeScene(w,160){Column {
++                DesktopVoiceDeckRow("SYNTHESIZING 1/5",{},{}, narrator={})
++                DesktopVoicePlayerRow(DesktopVoicePlaybackState("v",listOf("v"),paused=true,positionMs=4321),{resumes++},{stops++})
++            }}
++            try {repeat(4){scene.render(System.nanoTime()).close();yield()}
++                fun walk(n:SemanticsNode):List<SemanticsNode> = listOf(n)+n.children.flatMap(::walk)
++                val nodes=scene.semanticsOwners.flatMap{walk(it.rootSemanticsNode)}
++                fun node(s:String)=nodes.single{it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains(s)==true}
++                val p=node("继续播放");val s=node("停止并关闭播放器")
++                assertEquals(p.boundsInRoot.top,s.boundsInRoot.top);assertTrue(s.boundsInRoot.right<=w)
++                assertTrue(p.config.contains(SemanticsActions.RequestFocus))
++                p.config[SemanticsActions.OnClick].action!!();s.config[SemanticsActions.OnClick].action!!()
++                assertEquals(1,resumes);assertEquals(1,stops)
++            }finally{scene.close()}
++        }
++    }
++}
++class DesktopVoicePauseWindowsTest {
++    @Test fun `native Windows position remains frozen on pause and advances on resume`()=runBlocking {
++        val p=Files.createTempFile("ccb-native-pause-",".mp3");Files.write(p,fishPreviewMp3(500));val out=DesktopWindowsAudioOutput()
++        try {out.playFormal(p);withTimeout(4000){while(out.positionMs()<100)delay(20)}
++            val at=out.pause();assertTrue(at>0);delay(180);assertEquals(at,out.positionMs());out.resume()
++            withTimeout(4000){while(out.positionMs()<=at)delay(20)}
++            println("NATIVE_PAUSE_MS=$at NATIVE_RESUMED_MS=${out.positionMs()}")
++            out.stopAndDrain();java.io.RandomAccessFile(p.toFile(),"rw").use{f->f.channel.tryLock().use{assertNotNull(it)}}
++        }finally{out.closeAndDrain();Files.deleteIfExists(p)}
++        Unit
++    }
++}

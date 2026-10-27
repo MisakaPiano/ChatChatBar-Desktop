@@ -428,7 +428,7 @@ private fun terminalSummary(state: DesktopDataRootSwitchState.RestartRequired): 
             "reclassified from the cancelled operation. Exit and reopen the application."
     state.unexpectedFailure != null ->
         "The root-switch state could not be proven safe. Exit and reopen the application."
-    state.result is DesktopDataRootMigrationResult.Success ->
+    state.result is DesktopDataRootMigrationResult.Success || state.result is DesktopDataRootMigrationResult.ProtectedSuccess ->
         "Data was copied and the next-start authority was committed. Exit and reopen the application."
     (state.result as? DesktopDataRootMigrationResult.Failure)?.kind ==
         DesktopDataRootMigrationFailureKind.AUTHORITY_INDETERMINATE ->
@@ -438,6 +438,9 @@ private fun terminalSummary(state: DesktopDataRootSwitchState.RestartRequired): 
 }
 
 private fun successDetails(state: DesktopDataRootSwitchState.RestartRequired): List<String>? {
+    (state.result as? DesktopDataRootMigrationResult.ProtectedSuccess)?.let { result ->
+        return protectedRootSuccessDetails(result)
+    }
     val result = state.result as? DesktopDataRootMigrationResult.Success ?: return null
     return buildList {
         add("Safety snapshot: ${result.preMigrationSnapshot.name} (${SnapshotPurpose.MANUAL})")
@@ -449,6 +452,15 @@ private fun successDetails(state: DesktopDataRootSwitchState.RestartRequired): L
         result.materialization.cleanupWarning?.let { add("Cleanup warning: $it") }
         result.materialization.retainedWorkspace?.let { add("Retained workspace: $it") }
     }
+}
+
+internal fun protectedRootSuccessDetails(result: DesktopDataRootMigrationResult.ProtectedSuccess): List<String> = buildList {
+    add("已为新目录重新绑定已登记数据使用的受保护凭据；原目录和旧凭据保留。")
+    add("恢复前快照：${result.preMigrationSnapshot.name}")
+    add("历史快照与旧恢复现场保留在原目录，未复制到新目录；原目录不会自动清理。")
+    add("请正常退出并重新启动。")
+    result.cleanupWarning?.let { add(it) }
+    result.retainedWorkspace?.let { add("待检查的临时目录：$it") }
 }
 
 internal object DesktopBootstrapColors {

@@ -1,0 +1,17 @@
+{
+  "files": [
+    "TEST-com.example.chatbar.desktop.DesktopAudioMaintenanceTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopChatContextUxTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopChatScreenshotTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopChatScreenshotUiTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopChatVoicePresentationTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopScreenshotBoundaryTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopScreenshotWorkspaceTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopVoiceClickReliabilityTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopVoiceSafetyTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopVoiceUxTest.xml"
+  ],
+  "onlyXmlWrittenAfterStageStart": true
+}

@@ -1,0 +1,13 @@
+{
+  "kind": "SYNTHETIC_ONLY_READONLY_FAILURE_PROBE",
+  "sha256": "957a93dd41b1dbd8f680a056a44a1b98298903a73e5b03a4103632e6b4c20a62",
+  "bytes": 139264,
+  "sourceSha256": "dcf57e9d2626d75b8fc52d8d717fcd0cadb6063d6992cd42d7c7cfadc8ee2a22",
+  "testExports": true,
+  "exports": [
+    "CcbSyntheticFailAfterWrites",
+    "CcbTestSyntheticFileHash",
+    "CcbTestSyntheticWriteEvidence"
+  ],
+  "msiAuthoredOrExecuted": false
+}

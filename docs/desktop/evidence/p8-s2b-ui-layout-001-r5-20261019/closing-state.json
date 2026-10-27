@@ -1,0 +1,31 @@
+{
+  "status": "P8-S2B-UI-LAYOUT-001-R5 HOLD / RAW RED PRESERVED",
+  "sourceDraftsPreservedUncommitted": 3,
+  "sourceChangedAfterRed": false,
+  "newSourceCheckpoint": false,
+  "newDistribution": "NOT BUILT",
+  "manualGate": "NOT STARTED",
+  "launcherExit": "NOT TESTED / NOT STARTED",
+  "appJvmExit": "NOT TESTED / NOT STARTED",
+  "rootExclusion": "NOT TESTED",
+  "rootReacquire": "NOT TESTED",
+  "manualFake": "NOT STARTED",
+  "temporaryTls": "NOT CREATED",
+  "nativeFinally": "No owner/window/drain/audio-file cleanup assertion failure; stage02 finally completed",
+  "postRunJavaProcessCount": 0,
+  "automaticStage02IsNotManualPass": true,
+  "winAuto001": "OPEN; not attributed as cause of scrollbar RED",
+  "winBrand001": "OPEN / DEFERRED",
+  "protectedUserFiles": {
+    "untracked": 4,
+    "read": false,
+    "modified": false,
+    "staged": false
+  },
+  "originalLimits": [
+    "MCI/device compatibility",
+    "TOCTOU",
+    "absolute physical I/O deadline",
+    "historic symlink NOT TESTED and existing JUnit SKIPPED unchanged"
+  ]
+}

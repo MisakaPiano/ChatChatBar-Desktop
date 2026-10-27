@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopVoiceSafetyTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-19T11:50:36.121Z" hostname="DD1" time="0.2">
+  <properties/>
+  <testcase name="post commit exception has positive strict reference proof and restart retains audio" classname="com.example.chatbar.desktop.DesktopVoiceSafetyTest" time="0.03"/>
+  <testcase name="formal recording exceeds preview duration without weakening the preview profile" classname="com.example.chatbar.desktop.DesktopVoiceSafetyTest" time="0.145"/>
+  <testcase name="unknown inventory cannot authorize deleting an orphan from an interrupted commit" classname="com.example.chatbar.desktop.DesktopVoiceSafetyTest" time="0.025"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.chat.SaveSlotSerializationTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-20T21:04:42.838Z" hostname="DD1" time="0.365">
+  <properties/>
+  <testcase name="oldSaveSlotPayloadDecodesWithPortableDefaults" classname="com.example.chatbar.domain.chat.SaveSlotSerializationTest" time="0.045"/>
+  <testcase name="oldSaveSlotStringReplyLengthMigratesAndNewSlotsUseSchemaV7" classname="com.example.chatbar.domain.chat.SaveSlotSerializationTest" time="0.073"/>
+  <testcase name="saveSlotV7RoundTripsEmbeddedVoiceAudio" classname="com.example.chatbar.domain.chat.SaveSlotSerializationTest" time="0.025"/>
+  <testcase name="largeSaveSlotStreamsWithoutIntermediateJsonString" classname="com.example.chatbar.domain.chat.SaveSlotSerializationTest" time="0.211"/>
+  <testcase name="saveSlotSummaryDoesNotRetainMessagePayloads" classname="com.example.chatbar.domain.chat.SaveSlotSerializationTest" time="0.002"/>
+  <testcase name="saveSlotRoundTripsSettingsMemoryAndImages" classname="com.example.chatbar.domain.chat.SaveSlotSerializationTest" time="0.007"/>
+  <testcase name="oldGeneratedVoicePayloadUsesSourceTextAsSynthesisText" classname="com.example.chatbar.domain.chat.SaveSlotSerializationTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,13 @@
+﻿{
+    "startedUtc":  "2026-10-19T12:29:29.2340038+00:00",
+    "finishedUtc":  "2026-10-19T12:29:51.1584390+00:00",
+    "durationSeconds":  21.924435199999998,
+    "exitCode":  1,
+    "command":  ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process \u0027:sharedCore:test\u0027,\u0027:desktopApp:createDistributable\u0027,\u0027--rerun-tasks\u0027",
+    "jdk":  "Temurin 17.0.20.1",
+    "gradle":  "9.1.0",
+    "heap":  "-Xmx2048m",
+    "tasks":  [
+                  "\u0027:sharedCore:test\u0027,\u0027:desktopApp:createDistributable\u0027,\u0027--rerun-tasks\u0027"
+              ]
+}

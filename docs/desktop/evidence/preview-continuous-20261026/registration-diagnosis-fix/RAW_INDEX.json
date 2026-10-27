@@ -1,0 +1,97 @@
+[
+  {
+    "path": "raw/red/native_package_probe.py",
+    "bytes": 20463,
+    "sha256": "9404e043e64d067565e4f0c74b9de4effad2ff0621d46b1a961b761cdc1f00d2"
+  },
+  {
+    "path": "raw/red/test_native_registration_diagnosis.py",
+    "bytes": 3400,
+    "sha256": "cad1b82618269dcb25418a4f73d59a2a0db1ed86c922e7ab1700177c0f11e2fa"
+  },
+  {
+    "path": "raw/red/unittest.log",
+    "bytes": 3574,
+    "sha256": "df24a0fa40207a4ace58b3e85f0d6a0f05c18901047f9490187ed72fa415198a"
+  },
+  {
+    "path": "raw/red/exit.txt",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "path": "raw/red-installer-boundary/native_package_probe.py",
+    "bytes": 20463,
+    "sha256": "9404e043e64d067565e4f0c74b9de4effad2ff0621d46b1a961b761cdc1f00d2"
+  },
+  {
+    "path": "raw/red-installer-boundary/test_native_registration_diagnosis.py",
+    "bytes": 3507,
+    "sha256": "1de2ebb45e5428fc744a96d9cd2d96017fead39e4a8ec13f6a4ac94953e4eae2"
+  },
+  {
+    "path": "raw/red-installer-boundary/unittest.log",
+    "bytes": 2804,
+    "sha256": "1957c178294de00a37a597227eea38cda615169f1d3114357b7b93ff1d4e72cc"
+  },
+  {
+    "path": "raw/red-installer-boundary/exit.txt",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "path": "raw/green-final/native_package_probe.py",
+    "bytes": 23543,
+    "sha256": "4c89c16cb12fe5528c387821a4778614dff0a10bc1a4ca8b8ffe06c5486fc175"
+  },
+  {
+    "path": "raw/green-final/test_native_registration_diagnosis.py",
+    "bytes": 15822,
+    "sha256": "5f82b7c4fee82d877383b53af402299f97a3e4cac131bbe43ee7779f941c747f"
+  },
+  {
+    "path": "raw/green-final/test_native_probe_validation.py",
+    "bytes": 2203,
+    "sha256": "821e0b7c6eb959741ad5149eb89ec230392d67f378e81303e83c4eae6ab94b64"
+  },
+  {
+    "path": "raw/green-final/Run-Synthetic-Tests.py",
+    "bytes": 4430,
+    "sha256": "f19ed18b6bdee8f472876d53a027267b2bf5e3e21e5559f5eccd5ea84762a7ce"
+  },
+  {
+    "path": "raw/green-final/SOURCE_IDENTITY.json",
+    "bytes": 825,
+    "sha256": "03ca0bd94836f5eb4e6b0eeffb97659743c82333b9b2a93d48fba92059188a88"
+  },
+  {
+    "path": "raw/green-final/COMMAND.json",
+    "bytes": 468,
+    "sha256": "daa4185950f87da9c9b9ae8643882911594ee867672fe57d491b1ae154024508"
+  },
+  {
+    "path": "raw/green-final/unittest.log",
+    "bytes": 3460,
+    "sha256": "14d37b7ee02703cec4b98e81aae3c9e891ed2eb364f69059f07c9a8127ff494b"
+  },
+  {
+    "path": "raw/green-final/junit-unittest.xml",
+    "bytes": 4970,
+    "sha256": "0487f9c396426ab6d6e7dc889235641f053de70b3a7e52d035b598dd9d7483f8"
+  },
+  {
+    "path": "raw/green-final/RESULT.json",
+    "bytes": 108,
+    "sha256": "d4c2d07e49adf92675569ef944612cc616142d6f21f20622c3514ad0139a56a8"
+  },
+  {
+    "path": "raw/green-final/exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "raw/STATIC_BOUNDARY_REVIEW.json",
+    "bytes": 581,
+    "sha256": "a38aad30ab2dd8008b2abc6cef4ced580e126ccd5ad2b149e49b60951879613f"
+  }
+]

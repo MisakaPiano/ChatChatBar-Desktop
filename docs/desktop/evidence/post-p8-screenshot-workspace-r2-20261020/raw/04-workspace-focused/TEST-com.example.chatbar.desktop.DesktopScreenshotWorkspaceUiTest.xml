@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-20T15:12:02.864Z" hostname="DD1" time="40.756">
+  <properties/>
+  <testcase name="internal return Escape and native shell close callback leave host alive" classname="com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest" time="38.061"/>
+  <testcase name="compact and wide workspaces keep bars reachable with preview and both scrollbars" classname="com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest" time="2.438"/>
+  <testcase name="workspace exposes bulk selection and fixed export actions" classname="com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest" time="0.257"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

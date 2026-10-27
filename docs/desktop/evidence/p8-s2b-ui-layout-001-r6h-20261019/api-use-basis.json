@@ -1,0 +1,19 @@
+{
+  "jnaVersion": "5.18.1",
+  "existingDependenciesOnly": true,
+  "signatureEvidence": "jna-public-api.txt",
+  "windowFromPoint": "Not declared on User32; private StdCallLibrary interface with POINT.ByValue(int,int) and nullable HWND",
+  "existingPublicMethods": [
+    "Native.getWindowPointer",
+    "GetForegroundWindow",
+    "GetAncestor(GA_ROOT=2)",
+    "GetWindowThreadProcessId",
+    "GetAsyncKeyState(VK_LBUTTON=0x01)",
+    "GetCursorPos"
+  ],
+  "listenerRegistration": "Public Toolkit.getAWTEventListeners, identity against existing listener/proxy only",
+  "forbiddenApisUsed": [],
+  "foreignWindowData": "Only classification; no titles, process names or command lines; raw HWND emitted only for owned target/root/descendants",
+  "leftButtonInterpretation": "0x8000 high bit only; low bit not considered current down state",
+  "pressSafety": "Pre-Press failed verification throws before original pressed flag/Robot Press; no reactivation/reposition workaround"
+}

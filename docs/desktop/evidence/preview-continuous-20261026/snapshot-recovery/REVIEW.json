@@ -1,0 +1,13 @@
+{
+  "rawFilesVerified": 71,
+  "rawBytesVerified": 132987,
+  "finalIntegrationTests": 2,
+  "independentChildPids": 6,
+  "sourceBlobsVerified": 2,
+  "productionDiffEmpty": true,
+  "secretReview": "All fixtures invented; selected content and known-pattern check only, not universal secret-absence proof",
+  "commands": "Actual commands retained in local owned rounds; public18 copies explicitly redacted derivatives",
+  "gradleExecuted": false,
+  "nativeInstallerExecuted": false,
+  "credentialsAccessed": false
+}

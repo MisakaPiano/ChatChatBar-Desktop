@@ -1,0 +1,1 @@
+SYNTHETIC_OBSERVED EXISTING_SINGLE_ENTITY_ROLLBACK; not whole-root or multi-key recovery

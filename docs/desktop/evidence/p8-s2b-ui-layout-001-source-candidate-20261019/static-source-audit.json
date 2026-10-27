@@ -1,0 +1,9 @@
+{
+  "candidateTestBytes": 49505,
+  "candidateTestSha256": "8beee5971355cd894b44a4743f89b6ad857c342274ae8410cfab5e99a3bbb423",
+  "originalFourJUnitMethodsRawIdenticalToR6D": true,
+  "pagerAndRobotDriverSectionRawIdenticalToR6D": true,
+  "manualRunnerAndR6HtoJProbesAbsent": true,
+  "r6gObserverCorrectionRetained": true,
+  "notes": "Static identity only; R6G actual historical RED retained. No runtime test run."
+}

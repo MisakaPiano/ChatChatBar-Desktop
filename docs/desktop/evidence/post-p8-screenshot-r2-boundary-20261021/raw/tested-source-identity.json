@@ -1,0 +1,44 @@
+[
+  {
+    "path": ".agents/skills/chatbar-image-generation-runtime/SKILL.md",
+    "bytes": 66520,
+    "sha256": "fe0058e01d81ecb30ce1f815fc56b863c28cbce850a1e6c8ed3d6f53e65c4ff7",
+    "gitBlobSha256": "c7802e5c7922b34265de7a27e3df0f074f7035a2def5d452984ae1892a326ede"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotSelection.kt",
+    "bytes": 4422,
+    "sha256": "8199cd7d69ff2a641e34005640710c9dbb703ff68d7114df2eeedd1c049d376f",
+    "gitBlobSha256": "04dc8f3fd6eea6c095b1fba54b85ea8fb48e63ba1ce318c117fd734870587c69"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotHost.kt",
+    "bytes": 17475,
+    "sha256": "156a3aad12f3137051a4b87a6fa6dcc1928f0af05fb29300781c5633ea79e2ee",
+    "gitBlobSha256": "abf3f83082343ec55e7bae59c993deda16899c4c4f5622167ad2efe8bd6d7ecf"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopScreenshotPreview.kt",
+    "bytes": 7871,
+    "sha256": "d2b614a86481c6957aad96cc788be21871308ea5025187ae10452cadb6d3aad7",
+    "gitBlobSha256": "bf9bfe96e11a924937c461830cc2d9ffb495360fb630c9c36e247464f198f098"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopScreenshotBoundaryTest.kt",
+    "bytes": 5268,
+    "sha256": "8c47e2463cc2271aa8c9ddfa5fcb5f8c08dc759d455f4f51ee5b8e02fedb7e38",
+    "gitBlobSha256": "ab394abd1d6750d01422988d76813cda5912008dd99ff21a8d8253662d33e76e"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotTest.kt",
+    "bytes": 7606,
+    "sha256": "f509e4ef5c939a04cb980d9ec35df5538029215385a5f6f5341b507bbc891626",
+    "gitBlobSha256": "b8b286f159193c9ebc6afd00b62f758aafb6346aecae50ce0582a22d9c6e40c4"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopScreenshotWorkspaceUiTest.kt",
+    "bytes": 11349,
+    "sha256": "b1f65252f81fe2c868c32da972d4b2613171bf0daeadf1ffe3d163cfac6edc9d",
+    "gitBlobSha256": "733d14c2303848ac132dee40986b11e92c2b28832772f05d55aaa1b27b42014e"
+  }
+]

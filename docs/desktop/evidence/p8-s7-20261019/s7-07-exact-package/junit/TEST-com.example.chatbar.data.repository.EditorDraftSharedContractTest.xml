@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.data.repository.EditorDraftSharedContractTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-19T12:01:23.908Z" hostname="DD1" time="0.068">
+  <properties/>
+  <testcase name="format and worldbook hashes detect meaningful external content changes" classname="com.example.chatbar.data.repository.EditorDraftSharedContractTest" time="0.004"/>
+  <testcase name="character create and edit IDs bookkeeping and same-root restart retain the stored contract" classname="com.example.chatbar.data.repository.EditorDraftSharedContractTest" time="0.026"/>
+  <testcase name="delete and deleteForTarget remove only their logical draft IDs" classname="com.example.chatbar.data.repository.EditorDraftSharedContractTest" time="0.019"/>
+  <testcase name="initialized cache retains descending updatedAt order" classname="com.example.chatbar.data.repository.EditorDraftSharedContractTest" time="0.015"/>
+  <testcase name="character hash excludes index maintenance but detects document and character edits" classname="com.example.chatbar.data.repository.EditorDraftSharedContractTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

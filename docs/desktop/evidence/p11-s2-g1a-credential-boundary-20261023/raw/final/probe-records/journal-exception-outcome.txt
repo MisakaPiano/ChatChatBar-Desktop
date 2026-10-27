@@ -1,0 +1,1 @@
+SYNTHETIC_OBSERVED OBSERVED_NONATOMIC_SEQUENCE registered data rollback only DATA_OLD_KEY_NEW; object reopen not OS/process restart

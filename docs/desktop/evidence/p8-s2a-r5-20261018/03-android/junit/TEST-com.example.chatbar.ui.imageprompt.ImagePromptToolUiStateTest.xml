@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.ui.imageprompt.ImagePromptToolUiStateTest" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:26.571Z" hostname="DD1" time="0.031">
+  <properties/>
+  <testcase name="natural language AI design always targets V5" classname="com.example.chatbar.ui.imageprompt.ImagePromptToolUiStateTest" time="0.0"/>
+  <testcase name="selected recent image retains owning recipe for apply actions" classname="com.example.chatbar.ui.imageprompt.ImagePromptToolUiStateTest" time="0.007"/>
+  <testcase name="AI design attachment rejects incomplete or over-limit studio prompt" classname="com.example.chatbar.ui.imageprompt.ImagePromptToolUiStateTest" time="0.0"/>
+  <testcase name="failed AI design turn blocks sending until retry succeeds" classname="com.example.chatbar.ui.imageprompt.ImagePromptToolUiStateTest" time="0.001"/>
+  <testcase name="draft sync preserves active task phase" classname="com.example.chatbar.ui.imageprompt.ImagePromptToolUiStateTest" time="0.001"/>
+  <testcase name="draft sync refreshes readiness outside active task" classname="com.example.chatbar.ui.imageprompt.ImagePromptToolUiStateTest" time="0.0"/>
+  <testcase name="character card import requires loaded idle draft" classname="com.example.chatbar.ui.imageprompt.ImagePromptToolUiStateTest" time="0.0"/>
+  <testcase name="AI design conversation requires initialized usable model and nonblank input" classname="com.example.chatbar.ui.imageprompt.ImagePromptToolUiStateTest" time="0.0"/>
+  <testcase name="new AI design context excludes editable prompts from earlier conversations" classname="com.example.chatbar.ui.imageprompt.ImagePromptToolUiStateTest" time="0.0"/>
+  <testcase name="attached prompt overrides old reply and resets old research lineage" classname="com.example.chatbar.ui.imageprompt.ImagePromptToolUiStateTest" time="0.0"/>
+  <testcase name="history apply blocks editing and generation actions" classname="com.example.chatbar.ui.imageprompt.ImagePromptToolUiStateTest" time="0.0"/>
+  <testcase name="regeneration follows current natural language mode while preserving ordinary target" classname="com.example.chatbar.ui.imageprompt.ImagePromptToolUiStateTest" time="0.001"/>
+  <testcase name="fullscreen prompt session rejects an external editor revision" classname="com.example.chatbar.ui.imageprompt.ImagePromptToolUiStateTest" time="0.02"/>
+  <testcase name="AI design attachment captures only ordered positive prompts" classname="com.example.chatbar.ui.imageprompt.ImagePromptToolUiStateTest" time="0.0"/>
+  <testcase name="base prompt enables direct generation without helper model" classname="com.example.chatbar.ui.imageprompt.ImagePromptToolUiStateTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopTransferClosureTest" tests="14" skipped="0" failures="0" errors="0" timestamp="2026-10-18T11:06:25.840Z" hostname="DD1" time="0.443">
+  <properties/>
+  <testcase name="management reconciliation cancellation cannot replace the original transfer cancellation" classname="com.example.chatbar.desktop.DesktopTransferClosureTest" time="0.024"/>
+  <testcase name="A2 real cancellation at import dispatcher return consumes committed decision" classname="com.example.chatbar.desktop.DesktopTransferClosureTest" time="0.023"/>
+  <testcase name="unresolved WorldBook survives refresh navigation recovery and file import" classname="com.example.chatbar.desktop.DesktopTransferClosureTest" time="0.044"/>
+  <testcase name="WorldBook verification confirms committed new and overwrite without writing" classname="com.example.chatbar.desktop.DesktopTransferClosureTest" time="0.045"/>
+  <testcase name="A2 real cancellation at overwrite dispatcher return consumes committed decision" classname="com.example.chatbar.desktop.DesktopTransferClosureTest" time="0.021"/>
+  <testcase name="WorldBook verification releases proven precommit without replay" classname="com.example.chatbar.desktop.DesktopTransferClosureTest" time="0.049"/>
+  <testcase name="unresolved Format survives refresh navigation recovery and file import" classname="com.example.chatbar.desktop.DesktopTransferClosureTest" time="0.013"/>
+  <testcase name="cancelled strict verification retains evidence and releases busy" classname="com.example.chatbar.desktop.DesktopTransferClosureTest" time="0.01"/>
+  <testcase name="A1 import preserves original postcommit cancellation through management" classname="com.example.chatbar.desktop.DesktopTransferClosureTest" time="0.025"/>
+  <testcase name="A1 overwrite preserves original postcommit cancellation through management" classname="com.example.chatbar.desktop.DesktopTransferClosureTest" time="0.023"/>
+  <testcase name="Format corrupt readerror and mismatched target remain unresolved" classname="com.example.chatbar.desktop.DesktopTransferClosureTest" time="0.043"/>
+  <testcase name="Format verification releases proven precommit without replay" classname="com.example.chatbar.desktop.DesktopTransferClosureTest" time="0.04"/>
+  <testcase name="WorldBook corrupt readerror and mismatched target remain unresolved" classname="com.example.chatbar.desktop.DesktopTransferClosureTest" time="0.044"/>
+  <testcase name="Format verification confirms committed new and overwrite without writing" classname="com.example.chatbar.desktop.DesktopTransferClosureTest" time="0.039"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

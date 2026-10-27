@@ -1,0 +1,9 @@
+{"recordedUtc": "2026-10-18T08:47:30.873549+00:00", "item": "F1-W01", "question": "能否打开 F1 结构化卡 Alice 的 Fish 音色库并看到免费预览文本框", "answer": "已看到音色库和免费预览文本框", "result": "PASS", "source": "user text reply; voluntary screenshot", "notAutomatedCapture": true}
+{"recordedUtc": "2026-10-18T08:48:17.030622+00:00", "item": "F1-W02", "answer": "PASS：听到对应语音，停止有效", "result": "PASS", "source": "user actual hearing and stop-button operation", "actualAudioSource": "one live synthetic MP3 replayed through loopback fake in packaged app"}
+{"recordedUtc": "2026-10-18T08:49:04.161152+00:00", "item": "F1-W03", "answer": "PASS：复用第一段，提示明确，停止有效", "result": "PASS", "source": "user text after modified input and replay"}
+{"recordedUtc": "2026-10-18T08:51:59.928337+00:00", "item": "F1-W04", "answer": "PASS：生成中可关闭，Alice 仍未绑定", "result": "PASS", "source": "user actual native-window operation and text reply"}
+{"recordedUtc": "2026-10-18T08:51:59.928337+00:00", "item": "F1-W04-COUNT", "answer": "是，做过重复生成／重试", "result": "USER_CLARIFICATION", "source": "user actual native-window operation and text reply"}
+{"recordedUtc": "2026-10-18T08:51:59.928337+00:00", "item": "F1-W05-W22", "answer": "PASS：查询挂起时可正常关闭，编辑器可操作", "result": "PASS", "source": "user actual native-window operation and text reply"}
+{"recordedUtc": "2026-10-18T08:53:25.705556+00:00", "item": "F1-W06", "answer": "PASS：自由文本模式也有相同预览入口", "source": "user native-window operation and text reply", "result": "PASS_USER_OPERATION_PROCESS_RESULT_SEPARATE"}
+{"recordedUtc": "2026-10-18T08:53:25.705556+00:00", "item": "F1-W07-CLOSE", "answer": "已正常关闭，没有异常", "source": "user native-window operation and text reply", "result": "PASS_USER_OPERATION_PROCESS_RESULT_SEPARATE"}
+{"recordedUtc": "2026-10-18T08:55:26.136467+00:00", "item": "F1-W07-CLARIFICATION", "answer": "仍有主窗口，现已正常关闭", "result": "PASS_USER_NORMAL_CLOSE", "source": "user clarification; first close report did not establish main-window close"}

@@ -1,0 +1,30 @@
+[
+  {
+    "command": [
+      "C:/Users/1/AppData/Local/Android/Sdk/platform-tools/adb.exe",
+      "-P",
+      "5045",
+      "-s",
+      "emulator-5584",
+      "install",
+      "H:/ChatChatBar-Desktop/app/desktopApp/build/p11-moments-poc-20261022/official/app/app/build/outputs/apk/debug/app-debug.apk"
+    ],
+    "bytes": 104551037,
+    "sha256": "CE356751DB9BDEF7172DCA3F8F52846B6A07DBD03B7F898309F0FA224C2FDEA5",
+    "exitCode": 0
+  },
+  {
+    "command": [
+      "C:/Users/1/AppData/Local/Android/Sdk/platform-tools/adb.exe",
+      "-P",
+      "5045",
+      "-s",
+      "emulator-5584",
+      "install",
+      "H:/ChatChatBar-Desktop/app/desktopApp/build/p11-moments-poc-20261022/official/app/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk"
+    ],
+    "bytes": 1306795,
+    "sha256": "FD8329D35F85EFC920B1D70FCB0D2BC253F1B5FE607D5305236A1EAEAAA56BC6",
+    "exitCode": 0
+  }
+]

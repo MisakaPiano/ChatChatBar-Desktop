@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.chat.MessageFormatRepairPolicyTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-14T21:53:39.834Z" hostname="DD1" time="0.005">
+  <properties/>
+  <testcase name="recoverableNotice_keepsRollbackPointAcrossNoOpRepair" classname="com.example.chatbar.domain.chat.MessageFormatRepairPolicyTest" time="0.0"/>
+  <testcase name="completedRepairNotice_acceptsLargeLengthChangeAndKeepsOriginal" classname="com.example.chatbar.domain.chat.MessageFormatRepairPolicyTest" time="0.0"/>
+  <testcase name="noApplicableRecoveryDoesNotRestoreAndInvalidIndexKeepsAlternatives" classname="com.example.chatbar.domain.chat.MessageFormatRepairPolicyTest" time="0.0"/>
+  <testcase name="progressiveOverlay_hidesPossibleUnchangedMarker" classname="com.example.chatbar.domain.chat.MessageFormatRepairPolicyTest" time="0.001"/>
+  <testcase name="completedRepairNotice_keepsOriginalForNormalLengthRepair" classname="com.example.chatbar.domain.chat.MessageFormatRepairPolicyTest" time="0.0"/>
+  <testcase name="noticeIsHiddenWhenAnotherAlternativeIsSelected" classname="com.example.chatbar.domain.chat.MessageFormatRepairPolicyTest" time="0.0"/>
+  <testcase name="markerPrefixesAndEmojiRespectExistingOverlayContract" classname="com.example.chatbar.domain.chat.MessageFormatRepairPolicyTest" time="0.0"/>
+  <testcase name="replacementAndRestore_preserveOtherAlternatives" classname="com.example.chatbar.domain.chat.MessageFormatRepairPolicyTest" time="0.0"/>
+  <testcase name="repairAndRestorePreserveCandidateIdentityAndNonTargetMetadata" classname="com.example.chatbar.domain.chat.MessageFormatRepairPolicyTest" time="0.0"/>
+  <testcase name="unchangedResult_requiresExactTrimmedMarker" classname="com.example.chatbar.domain.chat.MessageFormatRepairPolicyTest" time="0.002"/>
+  <testcase name="progressiveOverlay_replacesByUnicodeCodePoint" classname="com.example.chatbar.domain.chat.MessageFormatRepairPolicyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

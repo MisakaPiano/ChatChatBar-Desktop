@@ -1,0 +1,21 @@
+{
+  "stage": "07-android-final",
+  "started": "2026-10-15T08:32:55.3272109+09:00",
+  "ended": "2026-10-15T08:38:58.0643815+09:00",
+  "seconds": 362.7372698,
+  "arguments": [
+    "--offline",
+    "--no-daemon",
+    "--no-parallel",
+    "--max-workers=1",
+    "--priority=low",
+    "--console=plain",
+    "--no-configuration-cache",
+    "-Pkotlin.compiler.execution.strategy=in-process",
+    ":app:compileDebugKotlin",
+    ":app:testDebugUnitTest",
+    "--tests",
+    "com.example.chatbar.domain.chat.SaveSlotSerializationTest"
+  ],
+  "exitCode": 0
+}

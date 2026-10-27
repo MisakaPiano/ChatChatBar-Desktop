@@ -1,0 +1,14 @@
+{
+  "utc": "2026-10-20T19:06:04.349985+00:00",
+  "userVerbatim": "长 PNG 实际导出、图片查看器检查。发给你了。通过。但是你知道其实整个部分没通过的地方在哪。",
+  "user": "USER PASS (actual long export and Windows viewer)",
+  "technical": "PASS signature, every chunk CRC, zlib and complete PNG scanline reconstruction",
+  "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-windows-manual-20261021\\exports\\png\\ChatBar_截图验收_C_·_长图边界_20261021_035815.png",
+  "width": 640,
+  "height": 10924,
+  "bytes": 2421530,
+  "sha256": "e4364344dacd0beb0694e5348fd937223156cdd0258ebeadb1ad735bb515edbb",
+  "earlierDeclined": "Preserved; superseded only for this item by later explicit completed test.",
+  "imageMultiMessageAttachment": "Screenshot shows User image and text plus assistant narration 柔和的灯光, selected 3 items / recordings 0. It does not show the requested Alice text selection. No separate explicit USER PASS for group 4 inferred.",
+  "overall": "Core UX rejection unchanged."
+}

@@ -1,0 +1,18 @@
+{
+  "base": "15d35ab8a46decdf710d09d12c9b0d3b87656444",
+  "nativeObserverDelta": {
+    "bytes": 6093,
+    "sha256": "641931b289e9072e00a283b2de7583ae35960b2c9d1ad8a63625c1e43b55747b",
+    "addedLines": 47,
+    "removedLines": 3
+  },
+  "fullDraftPatch": {
+    "bytes": 65377,
+    "sha256": "eca070e17893e51435e0ebb9e8eecd7de99d794d401710c370b73f307ee9417b",
+    "newNativeLines": 699
+  },
+  "twoProductionRawBytesUnchanged": true,
+  "sourceCheckpointCreated": false,
+  "sourceDraftsNotStaged": true,
+  "noChangeAfterGate": true
+}

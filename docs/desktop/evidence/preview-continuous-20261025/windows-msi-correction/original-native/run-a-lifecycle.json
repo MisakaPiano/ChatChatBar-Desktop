@@ -1,0 +1,15 @@
+{
+  "identity": {
+    "version": "0.1.0-preview.1000",
+    "commit": "f6c6703dd713284ad7d75f7e4e24c012da0fbc8d",
+    "installerVersion": "0.1.1000",
+    "installerVersionAssigned": "true",
+    "packagingProfile": "synthetic"
+  },
+  "launcherExit": 0,
+  "maximumOwnedProcesses": 2,
+  "remainingOwnedProcesses": [],
+  "normalOwnedWindowClose": true,
+  "jobAssignedBeforeResume": true,
+  "providerActionsTriggered": false
+}

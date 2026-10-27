@@ -1,0 +1,77 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.1.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :desktopApp:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :desktopApp:convertXmlValueResourcesForMain NO-SOURCE
+> Task :desktopApp:copyNonXmlValueResourcesForMain NO-SOURCE
+> Task :desktopApp:prepareComposeResourcesTaskForMain NO-SOURCE
+> Task :desktopApp:generateResourceAccessorsForMain SKIPPED
+> Task :desktopApp:generateActualResourceCollectorsForMain SKIPPED
+> Task :desktopApp:generateComposeResClass SKIPPED
+> Task :sharedCore:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :sharedCore:compileKotlin UP-TO-DATE
+> Task :sharedCore:compileJava NO-SOURCE
+> Task :sharedCore:processResources NO-SOURCE
+> Task :sharedCore:classes UP-TO-DATE
+> Task :sharedCore:jar UP-TO-DATE
+> Task :desktopApp:compileKotlin
+> Task :desktopApp:compileJava NO-SOURCE
+> Task :desktopApp:assembleMainResources UP-TO-DATE
+> Task :desktopApp:syncDesktopModelCatalogResources UP-TO-DATE
+> Task :desktopApp:processResources UP-TO-DATE
+> Task :desktopApp:classes UP-TO-DATE
+> Task :desktopApp:jar
+> Task :desktopApp:convertXmlValueResourcesForTest NO-SOURCE
+> Task :desktopApp:copyNonXmlValueResourcesForTest NO-SOURCE
+> Task :desktopApp:prepareComposeResourcesTaskForTest NO-SOURCE
+> Task :desktopApp:generateResourceAccessorsForTest SKIPPED
+> Task :sharedCore:compileTestFixturesKotlin UP-TO-DATE
+> Task :sharedCore:compileTestFixturesJava NO-SOURCE
+> Task :desktopApp:compileTestKotlin
+> Task :desktopApp:compileTestJava NO-SOURCE
+> Task :desktopApp:assembleTestResources UP-TO-DATE
+> Task :desktopApp:processTestResources UP-TO-DATE
+> Task :desktopApp:testClasses UP-TO-DATE
+> Task :sharedCore:processTestFixturesResources NO-SOURCE
+> Task :sharedCore:testFixturesClasses UP-TO-DATE
+> Task :sharedCore:testFixturesJar UP-TO-DATE
+
+> Task :desktopApp:test
+
+DesktopDocumentRagReaderTest > embedding key dimension finite and zero vector failures are explicit and read only FAILED
+    java.io.IOException at DesktopDocumentRagReaderTest.kt:64
+        Caused by: java.io.IOException at DesktopDocumentRagReaderTest.kt:97
+
+DesktopDocumentRagReaderTest > valid documents use official search scores threshold topK and canonical ties without writes FAILED
+    java.io.IOException at DesktopDocumentRagReaderTest.kt:64
+        Caused by: java.io.IOException at DesktopDocumentRagReaderTest.kt:68
+
+DesktopDocumentRagReaderTest > corrupt unknown fields illegal storage identity and interrupted files invalidate all results FAILED
+    java.io.IOException at DesktopDocumentRagReaderTest.kt:64
+        Caused by: java.io.IOException at DesktopDocumentRagReaderTest.kt:136
+
+DesktopDocumentRagReaderTest > cancelling an active scan releases exclusive barrier and unblocks exactly one waiting writer FAILED
+    com.example.chatbar.desktop.DesktopDataOperationRejectedException at DesktopDocumentRagReaderTest.kt:64
+
+DesktopDocumentRagReaderTest > missing document orphan and changed source hash reject without repair FAILED
+    java.io.IOException at DesktopDocumentRagReaderTest.kt:64
+        Caused by: java.io.IOException at DesktopDocumentRagReaderTest.kt:115
+
+DesktopDocumentRagReaderTest > cancellation while writer holds root releases queued reader and permits later retrieval FAILED
+    java.io.IOException at DesktopDocumentRagReaderTest.kt:64
+        Caused by: java.io.IOException at DesktopDocumentRagReaderTest.kt:192
+
+> Task :desktopApp:test FAILED
+
+15 tests completed, 6 failed
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':desktopApp:test'.
+> There were failing tests. See the report at: file:///H:/ChatChatBar-Desktop/app/desktopApp/build/reports/tests/test/index.html
+
+* Try:
+> Run with --scan to generate a Build Scan (Powered by Develocity).
+
+BUILD FAILED in 1m 6s
+13 actionable tasks: 4 executed, 9 up-to-date

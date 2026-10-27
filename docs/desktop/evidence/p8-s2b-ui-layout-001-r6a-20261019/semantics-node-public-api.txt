@@ -1,0 +1,38 @@
+Compiled from "SemanticsNode.kt"
+public final class androidx.compose.ui.semantics.SemanticsNode {
+  public static final int $stable;
+  public androidx.compose.ui.semantics.SemanticsNode(androidx.compose.ui.Modifier$Node, boolean, androidx.compose.ui.node.LayoutNode, androidx.compose.ui.semantics.SemanticsConfiguration);
+  public final androidx.compose.ui.Modifier$Node getOuterSemanticsNode$ui();
+  public final boolean getMergingEnabled();
+  public final androidx.compose.ui.node.LayoutNode getLayoutNode$ui();
+  public final androidx.compose.ui.semantics.SemanticsConfiguration getUnmergedConfig$ui();
+  public final boolean isFake$ui();
+  public final void setFake$ui(boolean);
+  public final boolean isUnmergedLeafNode$ui();
+  public final androidx.compose.ui.layout.LayoutInfo getLayoutInfo();
+  public final androidx.compose.ui.node.RootForTest getRoot();
+  public final int getId();
+  public final androidx.compose.ui.geometry.Rect getTouchBoundsInRoot();
+  public final long getSize-YbymL2g();
+  public final androidx.compose.ui.geometry.Rect getBoundsInRoot();
+  public final long getPositionInRoot-F1C5BW0();
+  public final androidx.compose.ui.geometry.Rect getBoundsInWindow();
+  public final long getPositionInWindow-F1C5BW0();
+  public final long getPositionOnScreen-F1C5BW0();
+  public final androidx.compose.ui.geometry.Rect getBoundsInParent$ui();
+  public final boolean isTransparent$ui();
+  public final int getAlignmentLinePosition(androidx.compose.ui.layout.AlignmentLine);
+  public final androidx.compose.ui.semantics.SemanticsConfiguration getConfig();
+  public final java.util.List<androidx.compose.ui.semantics.SemanticsNode> unmergedChildren$ui(java.util.List<androidx.compose.ui.semantics.SemanticsNode>, boolean, boolean);
+  public static java.util.List unmergedChildren$ui$default(androidx.compose.ui.semantics.SemanticsNode, java.util.List, boolean, boolean, int, java.lang.Object);
+  public final java.util.List<androidx.compose.ui.semantics.SemanticsNode> getChildren();
+  public final java.util.List<androidx.compose.ui.semantics.SemanticsNode> getReplacedChildren$ui();
+  public final java.util.List<androidx.compose.ui.semantics.SemanticsNode> getChildren$ui(boolean, boolean, boolean);
+  public static java.util.List getChildren$ui$default(androidx.compose.ui.semantics.SemanticsNode, boolean, boolean, boolean, int, java.lang.Object);
+  public final boolean isRoot();
+  public final androidx.compose.ui.semantics.SemanticsNode getParent();
+  static java.util.List findOneLayerOfMergingSemanticsNodes$default(androidx.compose.ui.semantics.SemanticsNode, java.util.List, java.util.List, int, java.lang.Object);
+  public final androidx.compose.ui.node.NodeCoordinator findCoordinatorToGetBounds$ui();
+  public final androidx.compose.ui.semantics.SemanticsNode copyWithMergingEnabled$ui();
+  static {};
+}

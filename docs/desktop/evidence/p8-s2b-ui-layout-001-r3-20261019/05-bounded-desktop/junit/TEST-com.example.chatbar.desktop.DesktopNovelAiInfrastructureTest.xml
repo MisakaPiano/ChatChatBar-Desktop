@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopNovelAiInfrastructureTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-18T15:34:58.285Z" hostname="DD1" time="0.165">
+  <properties/>
+  <testcase name="production rate retry is bounded while auth and cost errors never retry or expose provider body" classname="com.example.chatbar.desktop.DesktopNovelAiInfrastructureTest" time="0.009"/>
+  <testcase name="partial batch save failure rolls back only new exact files" classname="com.example.chatbar.desktop.DesktopNovelAiInfrastructureTest" time="0.01"/>
+  <testcase name="generation cancellation interrupts mock HTTP and never persists partial output" classname="com.example.chatbar.desktop.DesktopNovelAiInfrastructureTest" time="0.005"/>
+  <testcase name="Desktop auxiliary adapter preserves generate roles but merges planning and repair" classname="com.example.chatbar.desktop.DesktopNovelAiInfrastructureTest" time="0.011"/>
+  <testcase name="JDBC uses official research filtering ranking translation and ranked completion" classname="com.example.chatbar.desktop.DesktopNovelAiInfrastructureTest" time="0.11"/>
+  <testcase name="fake V5 batch has fixed launch seed and one durable authority across restart" classname="com.example.chatbar.desktop.DesktopNovelAiInfrastructureTest" time="0.02"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[10月 19, 2026 12:34:58 上午 okhttp3.mockwebserver.MockWebServer$SocketHandler handle
+警告: MockWebServer[51635] connection from /127.0.0.1 didn't make a request
+]]></system-err>
+</testsuite>

@@ -1,0 +1,167 @@
+[
+  {
+    "path": "RESULT.md",
+    "bytes": 2463,
+    "sha256": "bfcde0bed41220be9d97ebca3a5e01bd32e0be0c4cec4eac22e45a023a8a9e63"
+  },
+  {
+    "path": "staging-closure-green/arguments.json",
+    "bytes": 959,
+    "sha256": "55a27e3beaad854ff7b5764e605198c435d4f8adde97a78967c53d50e450fc42"
+  },
+  {
+    "path": "staging-closure-green/exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "staging-closure-green/gradle.log",
+    "bytes": 2214,
+    "sha256": "05ea8a4d96840964ce5362839ac23dbfb1725447a295dd3b4845b12da0c89e9c"
+  },
+  {
+    "path": "staging-closure-green/head.txt",
+    "bytes": 40,
+    "sha256": "632a13afd5eeafde44cecb7d6dfa7d940b0bb60fbf202225b6c00e6527bcfae3"
+  },
+  {
+    "path": "staging-closure-green/junit/TEST-com.example.chatbar.desktop.backup.DesktopFullBackupSourceTest.xml",
+    "bytes": 1714,
+    "sha256": "544fadaad03247914caf2bce3063ed3aba164b8ee17e1e7d16adf111284cbe42"
+  },
+  {
+    "path": "staging-closure-green/junit/TEST-com.example.chatbar.desktop.backup.DesktopFullBackupStagingTest.xml",
+    "bytes": 1401,
+    "sha256": "bdcc6bb379efc43be3d0dccc9129bc58c6a111af8a5f5ed308b7d21b4679b3e7"
+  },
+  {
+    "path": "staging-closure-green/junit/TEST-com.example.chatbar.desktop.DesktopFreshRootAuthorityTest.xml",
+    "bytes": 2586,
+    "sha256": "b7d702d873a23c462e45f1baeb9762bbc241d4f2010b5e79c6412e2a0edc16e7"
+  },
+  {
+    "path": "staging-closure-green/junit/TEST-com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest.xml",
+    "bytes": 1085,
+    "sha256": "af50a6314517df05d82c4dd303797d43d3d456db12116b8643fa88cf510beec4"
+  },
+  {
+    "path": "staging-closure-green/junit/TEST-com.example.chatbar.desktop.DesktopStartupGateTest.xml",
+    "bytes": 3813,
+    "sha256": "714889dfd555072e965214d76a3fd2a8fd427ecac7ecd1cffcfc9d113056c32e"
+  },
+  {
+    "path": "staging-closure-green/junit/TEST-com.example.chatbar.desktop.security.DesktopSecureEmbeddingRepositoryTest.xml",
+    "bytes": 1950,
+    "sha256": "23e46fb09f0dfe6ff1f81ce650245a1f20df1be0b236bb9f25530ccb3a964bb0"
+  },
+  {
+    "path": "staging-closure-green/junit/TEST-com.example.chatbar.desktop.security.DesktopSecureModelRepositoryTest.xml",
+    "bytes": 1340,
+    "sha256": "ac504dd7be467041abd4c5fcec6d42f8710a0221f0be37e1aeed949800cba07a"
+  },
+  {
+    "path": "staging-closure-green/junit/TEST-com.example.chatbar.desktop.security.DesktopSecureSettingsRepositoryTest.xml",
+    "bytes": 1513,
+    "sha256": "a550df65dfe80433e8a694f11dbc6c7331ac13358f4fc80f66db6f76a243f3c3"
+  },
+  {
+    "path": "staging-closure-green/junit/TEST-com.example.chatbar.desktop.security.WindowsSecretStoreTest.xml",
+    "bytes": 1514,
+    "sha256": "0d651cff959dcc91154d294ec0ebea196f2b2fd42873390ce6e7829340521958"
+  },
+  {
+    "path": "staging-closure-green/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupStaging.kt",
+    "bytes": 3947,
+    "sha256": "4847c4070e5ee9e3e0609ebd19f44a22e47d84cbed4839f9e5e353098de88262"
+  },
+  {
+    "path": "staging-closure-green/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopImportSecrets.kt",
+    "bytes": 5771,
+    "sha256": "393d0f660f52c31f4713a3d0b4f12450a8e3e29b6cd9ee414396f13d5649ccac"
+  },
+  {
+    "path": "staging-closure-green/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFreshRootAuthority.kt",
+    "bytes": 12159,
+    "sha256": "9bc6e6bd8e8274c1c515edac7b490967bc3bcb69429a03e750b3d894b6d2f752"
+  },
+  {
+    "path": "staging-closure-green/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/DesktopSecretStore.kt",
+    "bytes": 2440,
+    "sha256": "6150de0dbb924afc3adb9443539f742d49c07d06c546efac21fe9c250a335a9e"
+  },
+  {
+    "path": "staging-closure-green/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupStagingTest.kt",
+    "bytes": 6279,
+    "sha256": "9c104a98e428fb0adacca6d284f386816a0f587fd731f3ee373a55ca20d4a078"
+  },
+  {
+    "path": "staging-closure-green/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFreshRootAuthorityTest.kt",
+    "bytes": 12295,
+    "sha256": "7212ee24d38612ddb2767c2f91e4f5f843e137c876e7c8e36dc23ad37e7b3302"
+  },
+  {
+    "path": "staging-closure-red/arguments.json",
+    "bytes": 690,
+    "sha256": "e26c5a64f4d163cfbc872f80b9c58d16a5eddf9a2d101beab563fb356aafc944"
+  },
+  {
+    "path": "staging-closure-red/exit.txt",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "path": "staging-closure-red/gradle.log",
+    "bytes": 3747,
+    "sha256": "9b0ef7c03f943ce0e0a5fb835f272794d2e32ab47abc4b4d60f32a27b725dfd4"
+  },
+  {
+    "path": "staging-closure-red/head.txt",
+    "bytes": 40,
+    "sha256": "632a13afd5eeafde44cecb7d6dfa7d940b0bb60fbf202225b6c00e6527bcfae3"
+  },
+  {
+    "path": "staging-closure-red/junit/TEST-com.example.chatbar.desktop.backup.DesktopFullBackupSourceTest.xml",
+    "bytes": 1713,
+    "sha256": "d81e5ca9e5daf9a06207d8438db3cf8af95b72ee3e7941683ad5b7ca62b61cb0"
+  },
+  {
+    "path": "staging-closure-red/junit/TEST-com.example.chatbar.desktop.backup.DesktopFullBackupStagingTest.xml",
+    "bytes": 1399,
+    "sha256": "ff0b1e2a0c207dbd60e66adec6fa5724d6d6078b94259ac65886371bb0b960af"
+  },
+  {
+    "path": "staging-closure-red/junit/TEST-com.example.chatbar.desktop.DesktopFreshRootAuthorityTest.xml",
+    "bytes": 21355,
+    "sha256": "c75526b0fcd837c8edc15d920d940ed07df929a0dffe5b7081663b17877df396"
+  },
+  {
+    "path": "staging-closure-red/junit/TEST-com.example.chatbar.desktop.security.WindowsSecretStoreTest.xml",
+    "bytes": 1516,
+    "sha256": "a96b027f86fe710c14f58e6517cf7bb430cad61902b7bc823b1c13a5df9197b0"
+  },
+  {
+    "path": "staging-closure-red/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupStaging.kt",
+    "bytes": 3947,
+    "sha256": "4847c4070e5ee9e3e0609ebd19f44a22e47d84cbed4839f9e5e353098de88262"
+  },
+  {
+    "path": "staging-closure-red/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopImportSecrets.kt",
+    "bytes": 5771,
+    "sha256": "393d0f660f52c31f4713a3d0b4f12450a8e3e29b6cd9ee414396f13d5649ccac"
+  },
+  {
+    "path": "staging-closure-red/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/DesktopSecretStore.kt",
+    "bytes": 2440,
+    "sha256": "6150de0dbb924afc3adb9443539f742d49c07d06c546efac21fe9c250a335a9e"
+  },
+  {
+    "path": "staging-closure-red/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupStagingTest.kt",
+    "bytes": 6279,
+    "sha256": "9c104a98e428fb0adacca6d284f386816a0f587fd731f3ee373a55ca20d4a078"
+  },
+  {
+    "path": "staging-closure-red/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFreshRootAuthorityTest.kt",
+    "bytes": 12070,
+    "sha256": "bd3d306c48b46c1f5a9a1eec63a0ea64b41a4a1f2aebcc7ff9bd20a5f4836a89"
+  }
+]

@@ -1,0 +1,102 @@
+[
+  {
+    "file": "fixtures\\known-and-unknown-84-false.cbbackup",
+    "bytes": 2749,
+    "sha256": "2edf75e69b75c55183379fc27ac779471eabf0a5190fd73989457bc462115d45"
+  },
+  {
+    "file": "fixtures\\known-and-unknown-84-true.cbbackup",
+    "bytes": 3056,
+    "sha256": "621a5acb30bbfc3097fda2a28073d7fe524b7710d85cad9fff0a9ed6b53f2644"
+  },
+  {
+    "file": "fixtures\\known-and-unknown-85-false.cbbackup",
+    "bytes": 2838,
+    "sha256": "17ab898c8d553d7f9747d76e0dd6673bff22ec6118ba57165ea50daf26d93412"
+  },
+  {
+    "file": "fixtures\\known-and-unknown-85-true.cbbackup",
+    "bytes": 3145,
+    "sha256": "dc1cc6fbb9c04f71deb125c823466dc3dabb5b141b8731e41a449ef94efbf848"
+  },
+  {
+    "file": "fixtures\\known-and-unknown-86-false.cbbackup",
+    "bytes": 2837,
+    "sha256": "97950da559f5528e1c41f2d31d652b4e8bb1aca98c90c599ba7df8fda9f62dbe"
+  },
+  {
+    "file": "fixtures\\known-and-unknown-86-true.cbbackup",
+    "bytes": 3144,
+    "sha256": "9a18364607b197be9d103ad03bed40d916a275f8b447580c6513ae4941de1990"
+  },
+  {
+    "file": "fixtures\\unknown-only-84-false.cbbackup",
+    "bytes": 1043,
+    "sha256": "6be21ce1034169a3519ae358daa22de843eea518c56dd2018fbf1c78f6b73aa7"
+  },
+  {
+    "file": "fixtures\\unknown-only-84-true.cbbackup",
+    "bytes": 1350,
+    "sha256": "94b0281611b185af0bd5c955f877d97e820408408097d48772007b6d216ff247"
+  },
+  {
+    "file": "fixtures\\unknown-only-85-false.cbbackup",
+    "bytes": 1140,
+    "sha256": "26409c0926cc6665047e60b59c06b52b8d50c6b97fb8d3b5c134bcfd075da7e4"
+  },
+  {
+    "file": "fixtures\\unknown-only-85-true.cbbackup",
+    "bytes": 1447,
+    "sha256": "6b71b7a23e9fc3008b184d6b93af63d41592cb4ce1ae4e4ab0cb331d937efe88"
+  },
+  {
+    "file": "fixtures\\unknown-only-86-false.cbbackup",
+    "bytes": 1140,
+    "sha256": "8a6789817ec483474740725f5d4a1fdeea4b2ccff3428260e9ebc3d4dff9a4a1"
+  },
+  {
+    "file": "fixtures\\unknown-only-86-true.cbbackup",
+    "bytes": 1447,
+    "sha256": "bbcf3eb98648fa8e8633da9a86a65365dd6427001079e07355fc63291e98e7f8"
+  },
+  {
+    "file": "fixtures\\v1-missing-card-sender.cbbackup",
+    "bytes": 1101,
+    "sha256": "8086a9cb3912098e9374a0b9cb3b75385d5f592b5873ab7e2cfb41ce7167c05f"
+  },
+  {
+    "file": "fixtures\\v2-count-only-85-false.cbbackup",
+    "bytes": 1198,
+    "sha256": "b1dcf00f1dba9b497d1b2044a515b9f1adb2dc6bf79d38efdd40f1072124ac0c"
+  },
+  {
+    "file": "fixtures\\v2-count-only-85-true.cbbackup",
+    "bytes": 1849,
+    "sha256": "007e5c645ad42314ff6b6bb149f0099c3da81805a3c352dedafc2f8f5a40bd2d"
+  },
+  {
+    "file": "fixtures\\v2-count-only-86-false.cbbackup",
+    "bytes": 1197,
+    "sha256": "1ef5b37adc1cac7ea41bcb535d9e356c6b27eab1d02d5b47daf183256c1fd3db"
+  },
+  {
+    "file": "fixtures\\v2-count-only-86-true.cbbackup",
+    "bytes": 1849,
+    "sha256": "6477d79d928ec0477cba4cbf5385bcdd2ed9bfb127a70ad42a55f4e6c4db2cc2"
+  },
+  {
+    "file": "red-fixtures\\known-and-unknown-84-false.cbbackup",
+    "bytes": 2749,
+    "sha256": "2e93fdf7860519578b584ccb0d0ba5fcbe21c1642415053f058cb7ee7d28c7ea"
+  },
+  {
+    "file": "red-fixtures\\unknown-only-84-false.cbbackup",
+    "bytes": 1043,
+    "sha256": "6ff0099d5339b5790d8b88f2d7006fed9b78542e859ed8cdce1e81fe8db45fec"
+  },
+  {
+    "file": "red-fixtures\\v1-missing-card-sender.cbbackup",
+    "bytes": 1101,
+    "sha256": "b3f26b5f01ab155f06598bc0a1b750906fa84c4bfe0dac95e2730713dbc1ecff"
+  }
+]

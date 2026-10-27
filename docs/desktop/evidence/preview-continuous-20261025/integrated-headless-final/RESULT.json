@@ -1,0 +1,10 @@
+{
+  "integrated-headless-final-20261025": {
+    "exit": 0,
+    "suites": 247,
+    "tests": 2156,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 17
+  }
+}

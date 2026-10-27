@@ -1,0 +1,67 @@
+{
+  "status": "G1B-BV USER VISUAL SIGNATURES COMPLETE / PROJECT REVIEW PENDING",
+  "overallG1bB": "HOLD pending Project disposition of retained timing/observer/unknown-exit evidence",
+  "fourVisualSignatures": 4,
+  "automatedScreenshotsObtained": 0,
+  "computerUse": "list_windows failed initial/retry/reset; manual signature route authorized",
+  "allEightOwnedProcessGenerationsAbsent": true,
+  "testsOrBuildsRerun": false,
+  "scenarios": [
+    {
+      "run": "BV-B2",
+      "code": "G0_DOMAIN_PRESENT_UNSUPPORTED",
+      "visual": "USER SIGNED",
+      "normalClose": "USER SIGNED",
+      "launcherJvmExitCodes": [
+        2,
+        2
+      ],
+      "inventory": "UNCHANGED",
+      "lock": "REACQUIRED",
+      "history": "180s no window; 600s observer timeout retained; later window and process results separately recorded"
+    },
+    {
+      "run": "BV-B4",
+      "code": "G0_DOMAIN_PRESENT_UNSUPPORTED",
+      "visual": "USER SIGNED",
+      "normalClose": "USER SIGNED",
+      "launcherJvmExitCodes": [
+        "UNKNOWN",
+        "UNKNOWN"
+      ],
+      "processes": "both known identities independently confirmed absent after user close",
+      "inventory": "UNCHANGED",
+      "lock": "REACQUIRED",
+      "history": "180s no confirmed window, 600s protocol timeout and additional 180s pending-user observation retained. User close was not yet confirmed at those cutoffs; no agent WM_CLOSE was sent. They are not proof of failed shutdown after a close."
+    },
+    {
+      "run": "BV-B5-marker",
+      "code": "ROOT_PORTABLE_RESOLUTION_FAILED",
+      "visual": "USER SIGNED",
+      "normalClose": "USER SIGNED",
+      "launcherJvmExitCodes": [
+        2,
+        2
+      ],
+      "inventory": "Portable UserData and isolated LOCALAPPDATA unchanged; invalid marker exact bytes unchanged"
+    },
+    {
+      "run": "BV-B5-bootstrap",
+      "code": "ROOT_BOOTSTRAP_LOAD_FAILED",
+      "visual": "USER SIGNED",
+      "normalClose": "USER SIGNED",
+      "launcherJvmExitCodes": [
+        2,
+        2
+      ],
+      "inventory": "UNCHANGED including malformed bootstrap"
+    }
+  ],
+  "limitations": [
+    "No automated window-body image was captured; user declarations are explicitly transcribed, not screenshots or machine OCR.",
+    "Exact B4 process exit codes unavailable; absence and released lock are independently evidenced.",
+    "Native process-loop jvmLoaded false does not establish JVM absence; fresh independent snapshots confirmed each target child loaded jvm.dll. Cause of loop discrepancy not conclusively proven.",
+    "Original B1-B6 and BV early pending/not-run snapshots remain historical, superseded only by separate later records.",
+    "No G1B/G2 acceptance, no Writer/Recovery, no CURRENT/parity change."
+  ]
+}

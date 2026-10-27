@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.data.snapshot.AutomaticBackupRetentionPolicyTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:31:18.119Z" hostname="DD1" time="0.001">
+  <properties/>
+  <testcase name="null created-at snapshot is protected" classname="com.example.chatbar.data.snapshot.AutomaticBackupRetentionPolicyTest" time="0.0"/>
+  <testcase name="equal timestamp uses snapshot name as deterministic tie-breaker" classname="com.example.chatbar.data.snapshot.AutomaticBackupRetentionPolicyTest" time="0.0"/>
+  <testcase name="manual snapshot is protected" classname="com.example.chatbar.data.snapshot.AutomaticBackupRetentionPolicyTest" time="0.0"/>
+  <testcase name="over limit selects oldest automatic snapshot" classname="com.example.chatbar.data.snapshot.AutomaticBackupRetentionPolicyTest" time="0.0"/>
+  <testcase name="null purpose snapshot is protected" classname="com.example.chatbar.data.snapshot.AutomaticBackupRetentionPolicyTest" time="0.0"/>
+  <testcase name="exactly at limit selects no candidates" classname="com.example.chatbar.data.snapshot.AutomaticBackupRetentionPolicyTest" time="0.001"/>
+  <testcase name="invalid automatic snapshot is protected" classname="com.example.chatbar.data.snapshot.AutomaticBackupRetentionPolicyTest" time="0.0"/>
+  <testcase name="below limit selects no candidates" classname="com.example.chatbar.data.snapshot.AutomaticBackupRetentionPolicyTest" time="0.0"/>
+  <testcase name="negative maximum count is rejected" classname="com.example.chatbar.data.snapshot.AutomaticBackupRetentionPolicyTest" time="0.0"/>
+  <testcase name="pre-restore snapshot is protected" classname="com.example.chatbar.data.snapshot.AutomaticBackupRetentionPolicyTest" time="0.0"/>
+  <testcase name="zero maximum count is rejected" classname="com.example.chatbar.data.snapshot.AutomaticBackupRetentionPolicyTest" time="0.0"/>
+  <testcase name="multiple candidates are returned oldest first" classname="com.example.chatbar.data.snapshot.AutomaticBackupRetentionPolicyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

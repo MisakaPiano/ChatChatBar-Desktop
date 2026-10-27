@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopDocumentIndexTransactionPrototypeTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-15T16:48:14.799Z" hostname="DD1" time="5.763">
+  <properties/>
+  <testcase name="completed receipt revalidates live files and source without recovery writes" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionPrototypeTest" time="4.098"/>
+  <testcase name="completed receipt permits normal restart but rejects second publish before all side effects" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionPrototypeTest" time="1.665"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFishPreviewTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-19T11:37:27.858Z" hostname="DD1" time="2.337">
+  <properties/>
+  <testcase name="cancel after headers joins physical body and cleanup before runtime closes" classname="com.example.chatbar.desktop.DesktopFishPreviewTest" time="2.032"/>
+  <testcase name="HTTP failures including retry after redirect and auth never create a second physical request" classname="com.example.chatbar.desktop.DesktopFishPreviewTest" time="0.042"/>
+  <testcase name="native commands use a single thread and retained alias on close error" classname="com.example.chatbar.desktop.DesktopFishPreviewTest" time="0.009"/>
+  <testcase name="outstanding session leases bound aggregate retained cache capacity" classname="com.example.chatbar.desktop.DesktopFishPreviewTest" time="0.003"/>
+  <testcase name="cached raw bytes and file identity are rechecked and outside files stay untouched" classname="com.example.chatbar.desktop.DesktopFishPreviewTest" time="0.049"/>
+  <testcase name="bounded store rejects invalid truncated over quota and preserves unknown files" classname="com.example.chatbar.desktop.DesktopFishPreviewTest" time="0.05"/>
+  <testcase name="native release failure retains cache and later confirmed close can release it" classname="com.example.chatbar.desktop.DesktopFishPreviewTest" time="0.041"/>
+  <testcase name="blank oversized paid and stale models do not send any HTTP" classname="com.example.chatbar.desktop.DesktopFishPreviewTest" time="0.056"/>
+  <testcase name="explicit free request uses shared serialization and first result cache never resends changed text" classname="com.example.chatbar.desktop.DesktopFishPreviewTest" time="0.053"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

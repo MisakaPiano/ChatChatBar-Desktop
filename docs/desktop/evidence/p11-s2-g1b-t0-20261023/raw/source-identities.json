@@ -1,0 +1,79 @@
+[
+  {
+    "revision": "5bb326808a7138f0701cedca7793ef080b92a9c6",
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/WindowsSecretRootResolver.kt",
+    "blob": "291f3ac8d2707520314f818702cec5a37b08cfe5",
+    "sha256": "6c406060d8579a615d0509b5a77f852744fc3cde6028709b4a3213301a21bb63",
+    "bytes": 2239
+  },
+  {
+    "revision": "5bb326808a7138f0701cedca7793ef080b92a9c6",
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/DesktopSecretStore.kt",
+    "blob": "4f320bf3668ab8f718146fdecd2737d0b25ecc65",
+    "sha256": "76b5ebae7f79648c1dd37a0fbb1d2d92b9a17d1f97b76861f4b2905a4028dde2",
+    "bytes": 2102
+  },
+  {
+    "revision": "5bb326808a7138f0701cedca7793ef080b92a9c6",
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/WindowsSecretStore.kt",
+    "blob": "72bbdb33d01841ac2d0cc9a2ba8ed6c2d6dbc87a",
+    "sha256": "68f83df55fa3280ab258c2587f922c4ff3286d3b313d16d013c1243c8b100fa8",
+    "bytes": 9307
+  },
+  {
+    "revision": "5bb326808a7138f0701cedca7793ef080b92a9c6",
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupCommitJournal.kt",
+    "blob": "4110502bdc243bf638282e773a7b4b52faa60019",
+    "sha256": "3c6809a0f0ba98b0a7c2d5f5ab0843163190f0aeb4e64685131f490d028ed73b",
+    "bytes": 11367
+  },
+  {
+    "revision": "5bb326808a7138f0701cedca7793ef080b92a9c6",
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopStartupGate.kt",
+    "blob": "b0716984221f97daec75db55d6fa224c1fa70333",
+    "sha256": "0a601d98931b7fffa90c9acbdd7e83f7868e6217a1fe10b0ed0396b23c4ab072",
+    "bytes": 7721
+  },
+  {
+    "revision": "5bb326808a7138f0701cedca7793ef080b92a9c6",
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataOperationCoordinator.kt",
+    "blob": "13724cea96b6c484136c891610c5ebfa8811b8a0",
+    "sha256": "132bcef5742d4103dda5e4276fb0aeaf7b52061ec582b25ac71f8d92c0325b9c",
+    "bytes": 15295
+  },
+  {
+    "revision": "5bb326808a7138f0701cedca7793ef080b92a9c6",
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootOwnership.kt",
+    "blob": "b732c26ecdcb3125f323dc85d4e62a8df2e1c1e8",
+    "sha256": "ad21e753563835129a4313c02125841f41c332ff2b9db0d482179743875e2f87",
+    "bytes": 13744
+  },
+  {
+    "revision": "5bb326808a7138f0701cedca7793ef080b92a9c6",
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDocumentIndexReadEvidence.kt",
+    "blob": "b8db28d4bc09ce3efc419b8437b606c70004345b",
+    "sha256": "5409f99d6b8a031dee30e31e0de387026cabe3badc529d5c25e57803e0c93b27",
+    "bytes": 7516
+  },
+  {
+    "revision": "5bb326808a7138f0701cedca7793ef080b92a9c6",
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/RecoverableIntentContract.kt",
+    "blob": "6119401947bd0fd6aaef01099751b5b4d9126ecc",
+    "sha256": "54e7e9efc5197dd7ebd27ef07f6aea82bb83df992badb3af87b60c4c68984eca",
+    "bytes": 7388
+  },
+  {
+    "revision": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+    "path": ".agents/skills/chatbar-app-backup/SKILL.md",
+    "blob": "dfaeff183ae30ac2e9c54e77b9fef6bd8ab835d8",
+    "sha256": "bce40aafdc472529f8ce6ed37dd6aff036b8329dbdc02ed524a90e338958bbe9",
+    "bytes": 4348
+  },
+  {
+    "revision": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/backup/AppBackupModels.kt",
+    "blob": "d6e256dd3b892f570674166b5274acba492dc9b7",
+    "sha256": "143aad7e31a86d3034ecdf10acb5db2bf925a755e361d60c890848d4914ec9de",
+    "bytes": 1652
+  }
+]

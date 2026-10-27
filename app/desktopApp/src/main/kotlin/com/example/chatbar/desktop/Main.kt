@@ -22,16 +22,24 @@ import kotlinx.coroutines.runBlocking
 private val unsafeShutdownOwnerships = ConcurrentHashMap.newKeySet<DesktopDataRootOwnership>()
 
 fun main() {
-    val rootResolution = runBlocking { DesktopDataDirectory.resolveRoot() }
-    val resolvedRoot = when (rootResolution) {
-        is DesktopDataRootResolution.Resolved -> rootResolution
-        is DesktopDataRootResolution.Failed -> throw DesktopDataRootResolutionException(rootResolution)
-    }
+    DesktopInstalledProgram.acquire()
+    try { runDesktopProcessLifecycle({ runDesktopMain() }) }
+    finally { DesktopInstalledProgram.release() }
+}
 
-    runDesktopApplicationWithDataRootOwnership(resolvedRoot) {
+/** Tests invoke this exact production ingress, replacing only platform inputs/business UI. */
+internal fun runDesktopMain(
+    startup: DesktopStartupGate = DesktopStartupGate(),
+    business: (DesktopDataRootResolution.Resolved) -> Unit = ::runDesktopBusinessApplication,
+) {
+    startup.run(business)
+    DesktopShutdownTrace.record(DesktopShutdownStage.MAIN_RETURNED)
+}
+
+private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolution.Resolved) {
         val dialogOwner = DesktopDialogOwner()
         DesktopPlatformPickers.create(dialogOwner).use { pickers ->
-            val appContainer = DesktopAppContainer(resolvedRoot, filePicker = pickers.files)
+            val appContainer = DesktopAppContainer(resolvedRoot, filePicker = pickers.files, directoryPicker = pickers.directories)
             runDesktopApplicationLifecycle(
                 initialize = { appContainer.initializePersistentState() },
                 applicationBody = {
@@ -66,7 +74,12 @@ fun main() {
                         val navigation = remember { DesktopPrimaryNavigationController() }
                         val windowState = rememberWindowState(width = 1240.dp, height = 800.dp)
                         val requestClose: () -> Unit = {
-                            if (rootSwitchController.requestWindowClose()) exitApplication()
+                            DesktopShutdownTrace.record(DesktopShutdownStage.CLOSE_REQUESTED)
+                            if (rootSwitchController.requestWindowClose()) {
+                                appContainer.taskRuntime.stopAccepting()
+                                exitApplication()
+                            }
+                            else DesktopShutdownTrace.record(DesktopShutdownStage.CLOSE_DEFERRED)
                         }
                         Window(
                             onCloseRequest = requestClose,
@@ -75,6 +88,10 @@ fun main() {
                             title = "ChatChatBar",
                             icon = painterResource(DesktopBrandResources.LOGO_RESOURCE),
                         ) {
+                            LaunchedEffect(window) {
+                                while (!window.isShowing) kotlinx.coroutines.delay(50)
+                                DesktopInstalledProgram.ready()
+                            }
                             val chrome = rememberDesktopWindowChrome(window, requestClose)
                             DisposableEffect(window, dialogOwner) {
                                 dialogOwner.attach(window)
@@ -88,6 +105,7 @@ fun main() {
                             CompositionLocalProvider(
                                 LocalDesktopUiStrings provides DesktopUiStrings(uiLanguage),
                                 LocalDesktopPalette provides palette,
+                                LocalDesktopFishParentWindow provides window,
                             ) {
                                 DesktopPrimaryShell(
                                     chrome = chrome,
@@ -108,16 +126,25 @@ fun main() {
                                     connectionTestController = appContainer.connectionTestController,
                                     novelAiSettingsController = appContainer.novelAiSettingsController,
                                     novelAiStudioController = appContainer.novelAiStudioController,
-                                    onExitApplication = ::exitApplication,
+                                    fullBackupController = appContainer.fullBackupController,
+                                    mergeImportController = appContainer.mergeImportController,
+                                    onExitApplication = {
+                                        appContainer.taskRuntime.stopAccepting()
+                                        exitApplication()
+                                    },
                                 )
                             }
                         }
                     }
+                    DesktopShutdownTrace.record(DesktopShutdownStage.COMPOSE_RETURNED)
                 },
-                close = { appContainer.close() },
+                close = {
+                    closeDesktopWithRecovery(close = { appContainer.close() })
+                    DesktopShutdownTrace.record(DesktopShutdownStage.CONTAINER_CLOSED)
+                },
             )
         }
-    }
+        DesktopShutdownTrace.record(DesktopShutdownStage.PICKERS_CLOSED)
 }
 
 /**
@@ -157,9 +184,11 @@ internal fun runDesktopApplicationWithDataRootOwnership(
     } finally {
         if (applicationFailure?.requiresDataRootOwnershipRetention() == true) {
             unsafeShutdownOwnerships += ownership
+            DesktopShutdownTrace.record(DesktopShutdownStage.OWNERSHIP_RETAINED)
         } else {
             try {
                 closeOwnership(ownership)
+                DesktopShutdownTrace.record(DesktopShutdownStage.OWNERSHIP_RELEASED)
             } catch (closeFailure: Throwable) {
                 if (applicationFailure == null) {
                     throw closeFailure
@@ -173,19 +202,33 @@ internal fun runDesktopApplicationWithDataRootOwnership(
 }
 
 private fun Throwable.requiresDataRootOwnershipRetention(): Boolean =
-    this is DesktopTaskDrainTimeoutException || this is DesktopDraftDrainTimeoutException ||
+    this is DesktopLifecycleCloseIncomplete || this is DesktopLifecycleCloseUnconfirmed || this is DesktopUnsafeShutdownException || this is DesktopTaskDrainTimeoutException || this is DesktopDraftDrainTimeoutException ||
         this is DesktopReadingPositionDrainTimeoutException ||
         suppressed.any { it.requiresDataRootOwnershipRetention() } ||
         cause?.requiresDataRootOwnershipRetention() == true
+
+/** Diagnostic marker where the original exception supports suppression. */
+private class DesktopLifecycleCloseIncomplete : IllegalStateException("Desktop lifecycle close did not complete")
+
+/**
+ * Explicit close outcome for a primary Throwable that cannot carry suppressed diagnostics.
+ * Ownership retention recognizes this type directly, independently of suppression or thread.
+ * Preserve the exact original as both cause and primaryFailure, and the exact close failure as
+ * a separate field (also when it is the same object). Never interpret this as a completed drain.
+ */
+internal class DesktopLifecycleCloseUnconfirmed(
+    val primaryFailure: Throwable,
+    val closeFailure: Throwable,
+) : IllegalStateException("Desktop lifecycle close did not complete; root ownership retained", primaryFailure)
 
 internal fun runDesktopApplicationLifecycle(
     initialize: suspend () -> Unit,
     applicationBody: () -> Unit,
     close: suspend () -> Unit,
 ) {
-    runBlocking { initialize() }
     var applicationFailure: Throwable? = null
     try {
+        runBlocking { initialize() }
         applicationBody()
     } catch (failure: Throwable) {
         applicationFailure = failure
@@ -194,7 +237,24 @@ internal fun runDesktopApplicationLifecycle(
         try {
             runBlocking { close() }
         } catch (closeFailure: Throwable) {
-            applicationFailure?.addSuppressed(closeFailure) ?: throw closeFailure
+            if (!closeFailure.requiresDataRootOwnershipRetention()) {
+                closeFailure.addSuppressed(DesktopLifecycleCloseIncomplete())
+            }
+            if (applicationFailure != null && applicationFailure !== closeFailure) {
+                applicationFailure.addSuppressed(closeFailure)
+            }
+            val primary = applicationFailure ?: closeFailure
+            // A suppression-disabled close may not carry the marker; prefer retaining the
+            // original primary identity and existing secondary order when it can carry one.
+            if (!primary.requiresDataRootOwnershipRetention()) {
+                primary.addSuppressed(DesktopLifecycleCloseIncomplete())
+            }
+            // addSuppressed can silently do nothing. Verify the propagated outcome and use an
+            // explicit carrier if the primary cannot express it; never release an unconfirmed root.
+            if (!primary.requiresDataRootOwnershipRetention()) {
+                throw DesktopLifecycleCloseUnconfirmed(primary, closeFailure)
+            }
+            if (applicationFailure == null) throw closeFailure
         }
     }
 }

@@ -1,0 +1,46 @@
+{
+  "commit": "68bed580c4e073ba980b3993e7fa0653fbc9745e",
+  "parent": "f5d9015deb0c485461d42231767dd26060750d96",
+  "files": [
+    {
+      "path": ".agents/skills/chatbar-fish-audio-voice/SKILL.md",
+      "bytes": 20608,
+      "sha256": "35213884da40e40538e97bd997881154bb87ba0a574b6a35fce63df5cbbde496"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppIcons.kt",
+      "bytes": 4106,
+      "sha256": "a5a0de0baadc96f5c61d8f13dd9870d231d75132f330a00a64e064f16a5624bf"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatContextMenu.kt",
+      "bytes": 4023,
+      "sha256": "8b3c3a693461ba6102940ed4ca95e4a8113f112ac3798604b614541a69de08c8"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatControls.kt",
+      "bytes": 9230,
+      "sha256": "bb439740cd9ad49cc6e168a17d66d21e3f71732eef551694282792dc2dd44d7a"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoicePanel.kt",
+      "bytes": 11471,
+      "sha256": "1a400ff05bc6375db7cfd7cdf63cf503d8e4136e988f55ef05349d45d4371e0e"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt",
+      "bytes": 72463,
+      "sha256": "4584a1144fc3511d9e752777f586355810a4119048f634e54be2c04d5dbcd725"
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatContextUxTest.kt",
+      "bytes": 4250,
+      "sha256": "842da7e744d324a66ff349343a17fbbedf19b9b282b47fa9fe5a93c4ef793ab5"
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopMessageActionsUxTest.kt",
+      "bytes": 17624,
+      "sha256": "650b8e4b44ba5d46dc0dda99b2ce51c060ee2586128a29c8eb7151478f15637e"
+    }
+  ]
+}

@@ -1,0 +1,251 @@
+{
+  "sourceCommit": "a8990b34073647169e7e1a62b2d0e969323cddf6",
+  "fileCountExcludingManifest": 49,
+  "files": [
+    {
+      "path": ".gitattributes",
+      "bytes": 75,
+      "sha256": "f3ccb17677e1ea24879ac808f15b9b7a8fef1162ddd10be6bf1cf1ec7e25c9e1"
+    },
+    {
+      "path": "attempt-01/01-seven-class-validation-result.json",
+      "bytes": 4580,
+      "sha256": "b6b54c9158c5b697ec0e1441da80b197fd73ba2a8b69411cfcd0bd08e84e9469"
+    },
+    {
+      "path": "attempt-01/01-seven-class-validation.log",
+      "bytes": 9798,
+      "sha256": "7d58fdc3cf2589de0fa2bd67f4eda34e1f7a887bedaf51a590a35c77c6da37a4"
+    },
+    {
+      "path": "attempt-01/attempt-01-complete-working-tree.patch",
+      "bytes": 43246,
+      "sha256": "4b92ea0014ed1c0845d2c9cfc3fad7b7814d70181409bef32bf73ae733592400"
+    },
+    {
+      "path": "attempt-01/build-process-priorities.json",
+      "bytes": 478,
+      "sha256": "005d7906184c16ac01289cbb0503da2a9b1f23c0fbb3fd425ac3bfb5b9f867e0"
+    },
+    {
+      "path": "attempt-01/derived-summary.json",
+      "bytes": 3098,
+      "sha256": "8453203f9e417b6cde034c07bfccb1aa49f261ecc495c280be2b9b8f807d05bb"
+    },
+    {
+      "path": "attempt-01/invocation.json",
+      "bytes": 1559,
+      "sha256": "9c2ec279d3dbacdccd6516fd18052c092ef6a6f949bbf02948ca0d5a3e3c3fea"
+    },
+    {
+      "path": "attempt-01/jdk-version.log",
+      "bytes": 1190,
+      "sha256": "35d61f4fb2f2ecf7c3370cd14aaa4d82eb93a2fb1d63a7b985f30a6075dce94b"
+    },
+    {
+      "path": "attempt-01/junit/TEST-com.example.chatbar.desktop.DesktopApplicationLifecycleTest.xml",
+      "bytes": 7331,
+      "sha256": "3e1c667b08735eb3b734b1c746a6418497bab528ff7c1ac5dfb8c3626ec0e085"
+    },
+    {
+      "path": "attempt-01/junit/TEST-com.example.chatbar.desktop.DesktopDataDirectoryTest.xml",
+      "bytes": 3278,
+      "sha256": "d5b04dd663155656f3c0f2475b7fdec2f8be16d0a7aff035f8d838b2e3260a07"
+    },
+    {
+      "path": "attempt-01/junit/TEST-com.example.chatbar.desktop.DesktopDataRootOwnershipTest.xml",
+      "bytes": 2572,
+      "sha256": "fe5f4bf832beb4dbb65bdf10dd20644c64b755f9339cf41bf4a7dbb8154cb817"
+    },
+    {
+      "path": "attempt-01/junit/TEST-com.example.chatbar.desktop.DesktopIndexStartupPreflightTest.xml",
+      "bytes": 10379,
+      "sha256": "be193b7600f6e365f3ef9cd15275845d0e3f115df2e66236a4fede844d31fd04"
+    },
+    {
+      "path": "attempt-01/junit/TEST-com.example.chatbar.desktop.DesktopPortableRootTest.xml",
+      "bytes": 3019,
+      "sha256": "2ae3f86afe3ae0992d237cfd0b798353be5f51b2f2346f3a61d2c0d54e9706e6"
+    },
+    {
+      "path": "attempt-01/junit/TEST-com.example.chatbar.desktop.DesktopProcessLifecycleTest.xml",
+      "bytes": 3037,
+      "sha256": "d574fcbcaa6752272ef92e8a3dd8754da357ffb7f93ccb003b41286026cfb9a7"
+    },
+    {
+      "path": "attempt-01/junit/TEST-com.example.chatbar.desktop.DesktopStartupGateTest.xml",
+      "bytes": 18147,
+      "sha256": "9f678607a6fc746001f605d3d244a3cece067014b496fea1c7f81673ed1fa697"
+    },
+    {
+      "path": "attempt-01/monitor-resources.ps1",
+      "bytes": 2217,
+      "sha256": "fe16c6b71b5796568c7d8566421a9b9153763f443f1bfff626aa68ded9b841cc"
+    },
+    {
+      "path": "attempt-01/preexisting-junit-inventory.json",
+      "bytes": 1638,
+      "sha256": "2129ef43ecb9ed813c92656623d8c935949488013cf841aa23f4fcc434df1203"
+    },
+    {
+      "path": "attempt-01/refs-before.txt",
+      "bytes": 12311,
+      "sha256": "4bca54f31a2bf0eadf490bae486d56fa38e6d94fdd86ec4b71811ac71f8f906c"
+    },
+    {
+      "path": "attempt-01/resources.jsonl",
+      "bytes": 39280,
+      "sha256": "d8d8789c6a554e6d0e8bde2ef0ed001543e444c98234ad550b6d7c1bde172e17"
+    },
+    {
+      "path": "attempt-01/run-validation.ps1",
+      "bytes": 3353,
+      "sha256": "ab1ab813c47e5b7c84389850d3586522440ab73e84b228d3f242f92b128af6c8"
+    },
+    {
+      "path": "attempt-01/source-manifest-before-validation.json",
+      "bytes": 3392,
+      "sha256": "311b0c2459241dfd37811ae37205066322ad8492bd3e9c6056a5fdc77da87c48"
+    },
+    {
+      "path": "attempt-01/synthetic-prompt-normal-close.json",
+      "bytes": 326,
+      "sha256": "1e8f5faea0d026f2c9b923bc5c3528613caa6893e0f03388ec219a42240153ff"
+    },
+    {
+      "path": "attempt-01/worker-thread-sample.txt",
+      "bytes": 25417,
+      "sha256": "28b199ac2562d6f30bfb8e460f94383f26ab88df41bc2ef029b9789ce7ff6def"
+    },
+    {
+      "path": "attempt-01/zero-write-events.jsonl",
+      "bytes": 7309,
+      "sha256": "28894acdb0237b99876a4aab22fde36f6789a4e49ac6eeca3ce9bcb358ad9ba1"
+    },
+    {
+      "path": "attempt-02/02-seven-class-validation-result.json",
+      "bytes": 4571,
+      "sha256": "8a6b9c0dfcf0de7ae5e3a3ba90ffcfaf542234d4a5151a2eb3aa9bd1a12a3b49"
+    },
+    {
+      "path": "attempt-02/02-seven-class-validation.log",
+      "bytes": 4364,
+      "sha256": "4e3b17b48ff0cfdda2ceafb0e4b7562f5575932a023f626e166ef67ee98fb84a"
+    },
+    {
+      "path": "attempt-02/complete-working-tree.patch",
+      "bytes": 43656,
+      "sha256": "4b75631eaef1b64dba5efec5ab98acc4b1ad1d936b18a3ad00c40c9b8750ac24"
+    },
+    {
+      "path": "attempt-02/derived-summary.json",
+      "bytes": 3091,
+      "sha256": "bd9a487250837578acbe85fe5107bfc72854a7afd6fe97acbf6881f82f8695f0"
+    },
+    {
+      "path": "attempt-02/invocation.json",
+      "bytes": 1559,
+      "sha256": "d3e0f5fcf1cc0de4849b3ed35d052ca286827012a1ef17f92c88365f7f06bc40"
+    },
+    {
+      "path": "attempt-02/jdk-version.log",
+      "bytes": 1190,
+      "sha256": "8ec5ae05efb6ed3d235ab4ca5ef20364475dc77b9c60034bb2d10e1d1a68fc7a"
+    },
+    {
+      "path": "attempt-02/junit/TEST-com.example.chatbar.desktop.DesktopApplicationLifecycleTest.xml",
+      "bytes": 7328,
+      "sha256": "0234ba19bb493fc9a958f58a9a36a07276c60af2f04845057dbd2efc87ce1924"
+    },
+    {
+      "path": "attempt-02/junit/TEST-com.example.chatbar.desktop.DesktopDataDirectoryTest.xml",
+      "bytes": 3279,
+      "sha256": "c0fbc422204ee776556f47c9b027a576b3655150e3f36d89908d50630069cca5"
+    },
+    {
+      "path": "attempt-02/junit/TEST-com.example.chatbar.desktop.DesktopDataRootOwnershipTest.xml",
+      "bytes": 2572,
+      "sha256": "0baadd8739d2955e7921088a1a465094fbcd494327aa513428c67da1d1f0ba97"
+    },
+    {
+      "path": "attempt-02/junit/TEST-com.example.chatbar.desktop.DesktopIndexStartupPreflightTest.xml",
+      "bytes": 10377,
+      "sha256": "e687439122a1a9580ef053d0f6c6fbbaa5bc0e0c7e37d825b7ae6f48df3488e8"
+    },
+    {
+      "path": "attempt-02/junit/TEST-com.example.chatbar.desktop.DesktopPortableRootTest.xml",
+      "bytes": 3019,
+      "sha256": "57ce061205bc7340e4753033b6bd9a22feb2100e9dd88155c58fea3dfbfb218e"
+    },
+    {
+      "path": "attempt-02/junit/TEST-com.example.chatbar.desktop.DesktopProcessLifecycleTest.xml",
+      "bytes": 3037,
+      "sha256": "5c5d2691fe7932f59248d165aae11e53c298c60719492229f12183b0227f40da"
+    },
+    {
+      "path": "attempt-02/junit/TEST-com.example.chatbar.desktop.DesktopStartupGateTest.xml",
+      "bytes": 3813,
+      "sha256": "1c07962ab96c2978553e11c34dda6bccfb7ade99c6125ae90f4fa36cfe999629"
+    },
+    {
+      "path": "attempt-02/monitor-resources.ps1",
+      "bytes": 2217,
+      "sha256": "44e49941b17a5635272bba5b88f413127cbe270bbdfd64dbd857e8a9b028c851"
+    },
+    {
+      "path": "attempt-02/preexisting-junit-inventory.json",
+      "bytes": 1905,
+      "sha256": "01cc0ac8c77f6a1bae3c48e6b7407ef9ef48a76509356de5e7403ec45ba8139a"
+    },
+    {
+      "path": "attempt-02/resources.jsonl",
+      "bytes": 4948,
+      "sha256": "8adeb2e93c9bd36f5a05d2ff4b56e3136785c4d060de38481bbb86709c5f94fd"
+    },
+    {
+      "path": "attempt-02/run-validation.ps1",
+      "bytes": 3353,
+      "sha256": "b5907904065a24f0d4435e758b6d74d4ef2a6a88b4f162b13760b1095a1710d3"
+    },
+    {
+      "path": "attempt-02/source-commit-message.txt",
+      "bytes": 741,
+      "sha256": "08941637bd5dabac9246667a8b67316d83dd99f3d8630c8ae54fdc92b15c1a20"
+    },
+    {
+      "path": "attempt-02/source-manifest-before-validation.json",
+      "bytes": 3392,
+      "sha256": "ccb0fb28e16f7fa1b739f1a54bcbe08170503df00f3b3a4a661630c2417ac1c5"
+    },
+    {
+      "path": "attempt-02/source-static-checks.json",
+      "bytes": 261,
+      "sha256": "932c085ba86c0e76ded4dd0e94998ebf31bba99dde4c1d5e07c4db69c6f92531"
+    },
+    {
+      "path": "attempt-02/staged-source.patch",
+      "bytes": 43656,
+      "sha256": "71f3996fe714b90c6deae5bb412538e0d776db80fe7122deffaa3a80e61941da"
+    },
+    {
+      "path": "attempt-02/zero-write-events.jsonl",
+      "bytes": 7309,
+      "sha256": "478f9f277ff303283b75270b657bbb673f551514b9c2bb711e17e0c7b2d8dc00"
+    },
+    {
+      "path": "protected-ref-check.json",
+      "bytes": 13497,
+      "sha256": "0f9aee29a33a1fd33fcffcd1e01176aa660e3261c5370491821cc11e975cd55f"
+    },
+    {
+      "path": "README.md",
+      "bytes": 12058,
+      "sha256": "0b7d92eb4b52fafae0dc4310643e3f9304c91acc0140492a42203c2a02d65843"
+    },
+    {
+      "path": "source-manifest.json",
+      "bytes": 3512,
+      "sha256": "90cbbc3b868287996f159d8051420615cae8dea356af770d819bf9cb7ea8dff0"
+    }
+  ]
+}

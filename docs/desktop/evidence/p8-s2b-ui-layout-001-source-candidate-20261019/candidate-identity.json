@@ -1,0 +1,38 @@
+{
+  "base": "044919ed9fd0c75b56b1843644012ff263ce99c3",
+  "sourceCandidate": "ec32fdbc8383853b3024b585c19db0c3b840f47f",
+  "parent": "044919ed9fd0c75b56b1843644012ff263ce99c3",
+  "status": "CONDITIONAL SOURCE CANDIDATE / PROJECT DIFF REVIEW PENDING",
+  "sources": [
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerPresentation.kt",
+      "bytes": 17883,
+      "sha256": "194d6b7fd2e270ca29eb90734303c8a7898825ecf8939cc60ab266e8d16c4917",
+      "gitBlob": "1e04dbb950757e7b88d977945a3d3416a0927162"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerWindow.kt",
+      "bytes": 4280,
+      "sha256": "a003e7ad1e31a0c356df1a4291cc7eb1e4eb9fa958a0a6353ee6a77ac8f88125",
+      "gitBlob": "871f95e01fffc83ca53ae317f9c6de3169c3f302"
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerNativeUxTest.kt",
+      "bytes": 49505,
+      "sha256": "8beee5971355cd894b44a4743f89b6ad857c342274ae8410cfab5e99a3bbb423",
+      "gitBlob": "f1c65560609c3e6538807d8a83073012692d3f83"
+    }
+  ],
+  "diffstat": ".../desktop/DesktopFishPickerPresentation.kt       |  93 ++-\n .../chatbar/desktop/DesktopFishPickerWindow.kt     |  30 +-\n .../desktop/DesktopFishPickerNativeUxTest.kt       | 699 +++++++++++++++++++++\n 3 files changed, 787 insertions(+), 35 deletions(-)",
+  "formalBaseline": "1.4.1 @ 5e76a9cb841736bbbf3499a2e35e5789af4c5ca8",
+  "originDesktop": "5ef95428421f7c693b010ac88f51d470804ab07a",
+  "localDesktopUnchanged": "4c2af2576e2319e8041ffd2a6c5a205450f18246",
+  "manualRunnerBackup": {
+    "buildPath": "app\\desktopApp\\build\\p8-s2b-ui-layout-001-source-candidate-20261019\\preserved-manual-runner.kt",
+    "gitignored": true,
+    "bytes": 86411,
+    "sha256": "32777017563fc625d3678a9acbde3b18d35262178ea8afdbbb15aa1984ccde77"
+  },
+  "productionBytesUnchanged": true,
+  "r6gSource": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6g-20261019/tested-sources/DesktopFishPickerNativeUxTest.kt"
+}

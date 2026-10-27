@@ -1,0 +1,23 @@
+{
+  "directory": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-windows-manual-20261021\\exports\\png",
+  "sentinel": {
+    "path": "exports/png/keep-existing.png",
+    "bytes": 3567,
+    "sha256": "a4c0c504342ece37158ce5ef137f32db579b51eec241d8a6b4bc8e93f7fb85c9"
+  },
+  "sentinelPurpose": "Synthetic no-overwrite test only; must retain original bytes",
+  "manualExportsNotCreated": [
+    "segment.png",
+    "whole.png",
+    "voice-only.png",
+    "long.png"
+  ],
+  "preparationProofsAreNotUserExports": true,
+  "proofDimensions": {
+    "voiceWidth": 640,
+    "voiceHeight": 100,
+    "longWidth": 640,
+    "longHeight": 10924,
+    "offscreenOnly": true
+  }
+}

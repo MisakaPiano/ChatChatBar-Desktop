@@ -1,0 +1,13 @@
+{
+  "events": 40,
+  "unchangedSnapshots": 38,
+  "limits": [
+    {
+      "notTested": "REAL_ROOT_LINK_REPLACEMENT_NOT_TESTED_ACTIVE_OWNERSHIP_PREVENTS_RENAME"
+    },
+    {
+      "notTested": "SYMLINK_FIXTURE_UNAVAILABLE"
+    }
+  ],
+  "source": "unmodified original zero-write-events.jsonl; distinct from JUnit skips and the four stdout early-return fixtures"
+}

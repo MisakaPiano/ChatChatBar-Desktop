@@ -1,0 +1,249 @@
+[
+  {
+    "stage": "03-document-publication",
+    "result": {
+      "started": "2026-10-20T19:50:40.0494218Z",
+      "exitCode": 0,
+      "finished": "2026-10-20T19:53:08.1701454Z"
+    },
+    "freshSuites": 5,
+    "tests": 75,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "04-shared-memory-foundation",
+    "result": {
+      "exitCode": 0,
+      "finished": "2026-10-20T20:10:28.7554666Z",
+      "started": "2026-10-20T20:03:03.2313490Z"
+    },
+    "freshSuites": 1,
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "05-p9-p10-integration",
+    "result": {
+      "exitCode": 1,
+      "finished": "2026-10-20T20:17:03.9213884Z",
+      "started": "2026-10-20T20:14:38.1843703Z"
+    },
+    "freshSuites": 0,
+    "tests": 0,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "06-memory-and-retrieval",
+    "result": {
+      "exitCode": 1,
+      "finished": "2026-10-20T20:18:54.5275817Z",
+      "started": "2026-10-20T20:17:51.6417679Z"
+    },
+    "freshSuites": 0,
+    "tests": 0,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "07-memory-publication-and-wire",
+    "result": {
+      "started": "2026-10-20T20:20:01.9084706Z",
+      "finished": "2026-10-20T20:21:51.0908669Z",
+      "exitCode": 1
+    },
+    "freshSuites": 8,
+    "tests": 74,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "08-memory-and-retrieval",
+    "result": {
+      "exitCode": 0,
+      "started": "2026-10-20T20:23:48.4588493Z",
+      "finished": "2026-10-20T20:24:38.8288696Z"
+    },
+    "freshSuites": 39,
+    "tests": 231,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "09-memory-lifecycle",
+    "result": {
+      "started": "2026-10-20T20:26:01.3125677Z",
+      "exitCode": 1,
+      "finished": "2026-10-20T20:26:35.5013438Z"
+    },
+    "freshSuites": 4,
+    "tests": 10,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "10-memory-lifecycle",
+    "result": {
+      "finished": "2026-10-20T20:27:48.0142945Z",
+      "exitCode": 1,
+      "started": "2026-10-20T20:27:05.9511043Z"
+    },
+    "freshSuites": 4,
+    "tests": 11,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "11-memory-index-lifecycle",
+    "result": {
+      "started": "2026-10-20T20:28:49.9262293Z",
+      "exitCode": 1,
+      "finished": "2026-10-20T20:29:24.8700191Z"
+    },
+    "freshSuites": 6,
+    "tests": 17,
+    "failures": 3,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "12-memory-index-lifecycle",
+    "result": {
+      "exitCode": 0,
+      "finished": "2026-10-20T20:31:52.4073328Z",
+      "started": "2026-10-20T20:30:43.8685661Z"
+    },
+    "freshSuites": 39,
+    "tests": 195,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "13-android-compatibility",
+    "result": {
+      "started": "2026-10-20T20:32:47.4892140Z",
+      "finished": "2026-10-20T20:33:03.4644891Z",
+      "exitCode": 1
+    },
+    "freshSuites": 0,
+    "tests": 0,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "14-android-compatibility",
+    "result": {
+      "exitCode": 0,
+      "finished": "2026-10-20T20:34:50.6997535Z",
+      "started": "2026-10-20T20:33:31.0200818Z"
+    },
+    "freshSuites": 0,
+    "tests": 0,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "15-p9-p10-regression",
+    "result": {
+      "finished": "2026-10-20T20:36:03.2370128Z",
+      "exitCode": 1,
+      "started": "2026-10-20T20:35:42.5938803Z"
+    },
+    "freshSuites": 0,
+    "tests": 0,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "16-p9-p10-regression",
+    "result": {
+      "started": "2026-10-20T20:36:49.6717512Z",
+      "exitCode": 1,
+      "finished": "2026-10-20T20:39:32.7765544Z"
+    },
+    "freshSuites": 11,
+    "tests": 96,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "17-memory-session-publication",
+    "result": {
+      "finished": "2026-10-20T20:45:19.2907178Z",
+      "started": "2026-10-20T20:44:03.5338954Z",
+      "exitCode": 0
+    },
+    "freshSuites": 40,
+    "tests": 222,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "18-p9-p10-final",
+    "result": {
+      "started": "2026-10-20T20:45:37.9854695Z",
+      "finished": "2026-10-20T20:46:25.0674195Z",
+      "exitCode": 1
+    },
+    "freshSuites": 16,
+    "tests": 188,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "19-p9-p10-final",
+    "result": {
+      "exitCode": 1,
+      "started": "2026-10-20T20:47:04.3572563Z",
+      "finished": "2026-10-20T20:47:51.0902029Z"
+    },
+    "freshSuites": 16,
+    "tests": 188,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "20-p9-p10-final",
+    "result": {
+      "finished": "2026-10-20T20:48:50.5850153Z",
+      "exitCode": 0,
+      "started": "2026-10-20T20:48:04.9484179Z"
+    },
+    "freshSuites": 16,
+    "tests": 188,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "21-p9-p10-android-compatibility",
+    "result": {
+      "started": "2026-10-20T20:49:12.6621328Z",
+      "finished": "2026-10-20T20:50:01.1196036Z",
+      "exitCode": 0
+    },
+    "freshSuites": 0,
+    "tests": 0,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+]

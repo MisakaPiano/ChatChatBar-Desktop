@@ -1,0 +1,14 @@
+[
+  {
+    "file": "runtime-watch.ps1",
+    "parseErrors": []
+  },
+  {
+    "file": "observe-owned-windows.ps1",
+    "parseErrors": []
+  },
+  {
+    "file": "run-stage.ps1",
+    "parseErrors": []
+  }
+]

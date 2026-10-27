@@ -1,0 +1,35 @@
+{
+  "utc": "2026-10-20T12:56:56.525765+00:00",
+  "mode": "Read-only source inspection; no tests or product changes",
+  "avatar": {
+    "classification": "PROVEN CURRENT TEXT FALLBACK; image loss NOT PROVEN",
+    "source": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt",
+    "lines": [
+      766,
+      767,
+      940,
+      954
+    ],
+    "facts": [
+      "User passes null reference to PrimaryAvatar; only Assistant uses selectedCharacter.avatar",
+      "Fallback is first character of speaker label inside muted circular Box",
+      "No configurable User image-avatar entry found in Desktop Kotlin search"
+    ],
+    "scope": "Preserve original USER FAIL and later user qualification separately; User footer copy/edit and right alignment remains open"
+  },
+  "voice": {
+    "source": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceUx.kt",
+    "facts": [
+      "Narrator selection initially null; label displays 选择 when unselected",
+      "Label/options visibility PASS is distinct from selecting a role",
+      "User screenshot error: 多角色卡需要先选择朗读音色",
+      "No provider event was logged through this checkpoint"
+    ],
+    "unknown": [
+      "Whether user explicitly generated without choosing, or previously selected narrator became lost",
+      "Exact native bounds of visible deck overflow; screenshot is user-supplied cropped image, not a native geometry probe"
+    ],
+    "pending": "Clarify action sequence by recall only, no retry"
+  },
+  "liveSmoke": "NOT TESTED; phase remains FAKE_ONLY; authorized budgets unchanged"
+}

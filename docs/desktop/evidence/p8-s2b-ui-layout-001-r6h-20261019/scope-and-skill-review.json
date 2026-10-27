@@ -1,0 +1,25 @@
+{
+  "skillReviewed": ".agents/skills/chatbar-fish-audio-voice/SKILL.md",
+  "skillUpdateNeeded": false,
+  "reason": "Test-private input diagnostics and evidence do not change Fish feature wiring or contracts; only authorized new evidence staged",
+  "productionChanges": false,
+  "gradleDependencyChanges": false,
+  "robotMechanism": "Original mouseMove, 3 stable samples, maximum one relocation, single Press, 16 Drag steps, Release, wheel unchanged; safety guard can prevent unsafe input",
+  "preserved": [
+    "R6G ownership observer correction",
+    "pager outer measurement/12px/row assertions",
+    "all original query/cache/binding/cleanup assertions"
+  ],
+  "prohibitedApisUsed": [],
+  "noEdits": [
+    "Main/window lifecycle",
+    "Fish HTTP/Runtime/Store/player",
+    "SecretStore",
+    "Prompt/Package/Entity/schema",
+    "CURRENT/parity/baseline",
+    "R3-R6G historical evidence",
+    "four user-owned files"
+  ],
+  "screenshotsOrRecording": "NONE",
+  "realUserDataOrCredentials": "NOT ACCESSED"
+}

@@ -1,0 +1,13 @@
+﻿{
+    "startedUtc":  "2026-10-19T11:16:04.7091174+00:00",
+    "finishedUtc":  "2026-10-19T11:16:57.5156449+00:00",
+    "durationSeconds":  52.806527499999994,
+    "exitCode":  1,
+    "command":  ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :sharedCore:test --tests com.example.chatbar.domain.voice.* --tests com.example.chatbar.domain.chat.FormatRepairAuxiliaryTransportTest :desktopApp:test --tests com.example.chatbar.desktop.DesktopFishGenerationTest --tests com.example.chatbar.desktop.DesktopVoicePersistenceTest",
+    "jdk":  "Temurin 17.0.20.1",
+    "gradle":  "9.1.0",
+    "heap":  "-Xmx2048m",
+    "tasks":  [
+                  ":sharedCore:test --tests com.example.chatbar.domain.voice.* --tests com.example.chatbar.domain.chat.FormatRepairAuxiliaryTransportTest :desktopApp:test --tests com.example.chatbar.desktop.DesktopFishGenerationTest --tests com.example.chatbar.desktop.DesktopVoicePersistenceTest"
+              ]
+}

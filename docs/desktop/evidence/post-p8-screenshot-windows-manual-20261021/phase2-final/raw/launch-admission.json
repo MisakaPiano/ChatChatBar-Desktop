@@ -1,0 +1,14 @@
+{
+  "fixtureId": "screenshot-r2-d2a4a6e4-05e4-4f1f-b0e6-8d26fc6ce35a",
+  "state": "CONSUMED_RUNNING_SINGLE_GUI",
+  "guiAuthorized": true,
+  "maximumLaunches": 1,
+  "guardFile": "manual-start-once.lock",
+  "guardMustNotExistBeforeLaunch": true,
+  "automaticRetry": false,
+  "restartAuthorized": false,
+  "authorizationUtc": "2026-10-20T18:07:47.289917+00:00",
+  "authorizationSource": "Explicit current user phase-2 instruction",
+  "consumedLaunches": 1,
+  "launchGuardConsumed": true
+}

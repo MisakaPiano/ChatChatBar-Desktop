@@ -1,0 +1,24 @@
+{
+  "sourceDiffCheckExitCode": 0,
+  "evidenceDefaultDiffCheckExitCode": 2,
+  "evidenceCrAtEolDiffCheckExitCode": 2,
+  "preserveRawBytes": true,
+  "crAtEolDiagnosticSha256": "8d7c5b44b50af47d9be186b5a9e8b78ac23e7e6f31297b1e2c44729b37bd9522",
+  "diagnosticCount": 41,
+  "rawArtifacts": {
+    "docs/desktop/evidence/p8-s2b-f1-20261018/02-preview-focused/gradle.stdout.log": 1,
+    "docs/desktop/evidence/p8-s2b-f1-20261018/02-preview-focused/initial-source.patch": 1,
+    "docs/desktop/evidence/p8-s2b-f1-20261018/03-preview-focused/gradle.stdout.log": 1,
+    "docs/desktop/evidence/p8-s2b-f1-20261018/04-preview-focused/gradle.stdout.log": 1,
+    "docs/desktop/evidence/p8-s2b-f1-20261018/05-cancel-diagnostic/gradle.stdout.log": 1,
+    "docs/desktop/evidence/p8-s2b-f1-20261018/06-preview-focused/gradle.stdout.log": 1,
+    "docs/desktop/evidence/p8-s2b-f1-20261018/07-final-focused/gradle.stdout.log": 1,
+    "docs/desktop/evidence/p8-s2b-f1-20261018/08-bounded-desktop/gradle.stdout.log": 1,
+    "docs/desktop/evidence/p8-s2b-f1-20261018/09-create-distributable/gradle.stdout.log": 1,
+    "docs/desktop/evidence/p8-s2b-f1-20261018/final-source.patch": 6,
+    "docs/desktop/evidence/p8-s2b-f1-20261018/packaged-post-close-thread-diagnostic.txt": 19,
+    "docs/desktop/evidence/p8-s2b-f1-20261018/runs/manual01/stderr.log": 1,
+    "docs/desktop/evidence/p8-s2b-f1-20261018/source-commit.patch": 6
+  },
+  "explanation": "Default check also treats preserved CRLF as whitespace. cr-at-eol leaves raw process/Gradle logs, thread snapshot and patch context. Not rewritten; not reported as PASS."
+}

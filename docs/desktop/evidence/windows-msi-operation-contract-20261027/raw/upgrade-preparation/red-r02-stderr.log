@@ -1,0 +1,7 @@
+H:\ChatChatBar-Desktop\tools\desktop\windows\Test-Operation1UpgradeGuest.ps1 : The term 'Get-FileHash' is not recognize
+d as the name of a cmdlet, function, script file, or operable program. Check the spelling of the name, or if a path was
+ included, verify that the path is correct and try again.
+    + CategoryInfo          : ObjectNotFound: (Get-FileHash:String) [Test-Operation1UpgradeGuest.ps1], CommandNotFound 
+   Exception
+    + FullyQualifiedErrorId : CommandNotFoundException,Test-Operation1UpgradeGuest.ps1
+ 

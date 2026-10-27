@@ -1,0 +1,62 @@
+{
+  "head": "90182962fd1a37954c193c4cd7d5215123f0d126",
+  "status": " M .agents/skills/chatbar-feature-map/SKILL.md\n M app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataDirectory.kt\n M app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopProcessLifecycle.kt\n M app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt\n?? app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopStartupBlockedPresenter.kt\n?? app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopStartupGate.kt\n?? app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopStartupGateTest.kt\n",
+  "files": [
+    {
+      "path": ".agents/skills/chatbar-feature-map/SKILL.md",
+      "bytes": 15574,
+      "sha256": "7490d98958b772cb3835addb16bb7140e2bb755f404df0fde42396f267d9c72e",
+      "lfBytes": 15511,
+      "lfSha256": "4765f8e1f8fe38334b350141c6bd7b0dc949e2ea865cd12b63c82a001c957c05",
+      "gitBlob": "ed40522fbd5ef1d646c425eeb41945555399b0e3"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataDirectory.kt",
+      "bytes": 11914,
+      "sha256": "359b3ad8af63d3351fb40a2865082c836742dc3f38da8a5cccd7eaf0bf2f3550",
+      "lfBytes": 11679,
+      "lfSha256": "9d309e58d3026945cc79ea560cd6b00bbd2949762780a7e5f88afb650982c2d6",
+      "gitBlob": "ff1e2863411ee88faf68e7d9a04c20a29f6a4092"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopProcessLifecycle.kt",
+      "bytes": 5778,
+      "sha256": "5a83463c08b3da8600da768aeed70f6c01bc436b08cfe68b71824ce439fa55f1",
+      "lfBytes": 5662,
+      "lfSha256": "810cf68e63b5367a2e48e894ab2facfea5d7b7ce82522d539ca9860d0a408aa6",
+      "gitBlob": "dca66a4b7760188c7e2b6ea34837e7e95b9e98d3"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopStartupBlockedPresenter.kt",
+      "bytes": 4042,
+      "sha256": "38ad8d77d5a5062e0903ace1571f7850139badc6b2ed5cd2f1fbbd2f3db34702",
+      "lfBytes": 4042,
+      "lfSha256": "38ad8d77d5a5062e0903ace1571f7850139badc6b2ed5cd2f1fbbd2f3db34702",
+      "gitBlob": "db93a987504fc8d33efb53f1a0daab8a680f2f54"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopStartupGate.kt",
+      "bytes": 7153,
+      "sha256": "ea7a5a3af07bc20b313058214b99483fbe7685bf2550d33c2e0f03d34c0ef148",
+      "lfBytes": 7153,
+      "lfSha256": "ea7a5a3af07bc20b313058214b99483fbe7685bf2550d33c2e0f03d34c0ef148",
+      "gitBlob": "20c609bb0ac116b556165b057cab5a46c8246cbd"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt",
+      "bytes": 13930,
+      "sha256": "295f47c80e5423eccbc7666ee7d83e39a1ecd81098ad751d67ff775ff51be458",
+      "lfBytes": 13685,
+      "lfSha256": "9adb5a1e1e8deede780248d33a0b6737e395ee1e44109a822d6bd9109f3631fa",
+      "gitBlob": "bdd1b68d95df64b6044ab1799ba59ed453db5311"
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopStartupGateTest.kt",
+      "bytes": 20812,
+      "sha256": "2ef6f621262958ee0955b5be598df4c591e336139aaab85d8980de635cd641c5",
+      "lfBytes": 20812,
+      "lfSha256": "2ef6f621262958ee0955b5be598df4c591e336139aaab85d8980de635cd641c5",
+      "gitBlob": "cedb99628ab57953440c5609629808589480322b"
+    }
+  ]
+}

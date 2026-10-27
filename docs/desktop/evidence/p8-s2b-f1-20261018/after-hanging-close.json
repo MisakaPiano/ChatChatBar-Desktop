@@ -1,0 +1,6 @@
+{
+  "ownedAudioFiles": [],
+  "POSTHangDrainedEvents": 2,
+  "GETHangDrainedEvents": 1,
+  "scope": "before app shutdown; only isolated preview cache"
+}

@@ -1,0 +1,113 @@
+{
+  "suites": [
+    {
+      "file": "TEST-com.example.chatbar.desktop.DesktopApplicationLifecycleTest.xml",
+      "suite": "com.example.chatbar.desktop.DesktopApplicationLifecycleTest",
+      "tests": 39,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "durationSeconds": 43.787,
+      "bytes": 7328,
+      "sha256": "b51fc90105b3d9a319fc3dd526f7e380e3e67aca9ffb1629821aa780cadacac5",
+      "junitReportedPass": 39
+    },
+    {
+      "file": "TEST-com.example.chatbar.desktop.DesktopDataDirectoryTest.xml",
+      "suite": "com.example.chatbar.desktop.DesktopDataDirectoryTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "durationSeconds": 10.626,
+      "bytes": 3280,
+      "sha256": "c94ee437aa71ed1f8f6bbc7e4ecd06f8c005a2813487b2c820bb3190fa7b80c6",
+      "junitReportedPass": 13
+    },
+    {
+      "file": "TEST-com.example.chatbar.desktop.DesktopDataRootOwnershipTest.xml",
+      "suite": "com.example.chatbar.desktop.DesktopDataRootOwnershipTest",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "durationSeconds": 3.425,
+      "bytes": 2572,
+      "sha256": "33cd6c11db828b47c9480c08d0dbf7c29432f1580c7f9970384393343cbd02d9",
+      "junitReportedPass": 14
+    },
+    {
+      "file": "TEST-com.example.chatbar.desktop.DesktopIndexStartupPreflightTest.xml",
+      "suite": "com.example.chatbar.desktop.DesktopIndexStartupPreflightTest",
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "durationSeconds": 11.218,
+      "bytes": 10381,
+      "sha256": "d2b92171b58f0c441985b375f30f326d0851aae0a444032778116a1b1fc3dc22",
+      "junitReportedPass": 18
+    },
+    {
+      "file": "TEST-com.example.chatbar.desktop.DesktopPortableRootTest.xml",
+      "suite": "com.example.chatbar.desktop.DesktopPortableRootTest",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "durationSeconds": 1.175,
+      "bytes": 3019,
+      "sha256": "0fdfd5d51433a7a4e4271c809334021c1ec60f8d603fa8df50ac6ad8868329b0",
+      "junitReportedPass": 16
+    },
+    {
+      "file": "TEST-com.example.chatbar.desktop.DesktopProcessLifecycleTest.xml",
+      "suite": "com.example.chatbar.desktop.DesktopProcessLifecycleTest",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "durationSeconds": 1.524,
+      "bytes": 3036,
+      "sha256": "3f4f275d7dac5b15927f5d6226ccd561882bc85f5906f63a881d24f296030092",
+      "junitReportedPass": 15
+    }
+  ],
+  "totals": {
+    "tests": 116,
+    "junitReportedPass": 115,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1,
+    "durationSeconds": 71.755
+  },
+  "limitations": [
+    {
+      "suite": "com.example.chatbar.desktop.DesktopDataRootOwnershipTest",
+      "status": "NOT TESTED fixture branch; not a JUnit skip",
+      "marker": "SYMLINK_FIXTURE_UNAVAILABLE"
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopDataRootOwnershipTest",
+      "status": "NOT TESTED fixture branch; not a JUnit skip",
+      "marker": "SYMLINK_FIXTURE_UNAVAILABLE"
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopIndexStartupPreflightTest",
+      "test": "real symbolic links in entities and domain are refused when supported",
+      "status": "SKIPPED",
+      "reason": "SYMLINK_FIXTURE_UNAVAILABLE"
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopPortableRootTest",
+      "status": "NOT TESTED fixture branch; not a JUnit skip",
+      "marker": "SYMLINK_FIXTURE_UNAVAILABLE"
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopPortableRootTest",
+      "status": "NOT TESTED fixture branch; not a JUnit skip",
+      "marker": "SYMLINK_FIXTURE_UNAVAILABLE"
+    }
+  ],
+  "note": "JUnit success does not prove the four early-return symlink fixture branches; those remain NOT TESTED separately. No existing skip/early-return source was changed."
+}

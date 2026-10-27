@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopAlphaChatControllerTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-18T11:01:10.269Z" hostname="DD1" time="6.095">
+  <properties/>
+  <testcase name="container task and Alpha controller construction write no app data" classname="com.example.chatbar.desktop.DesktopAlphaChatControllerTest" time="0.251"/>
+  <testcase name="default Alpha refresh on fresh root creates no business data" classname="com.example.chatbar.desktop.DesktopAlphaChatControllerTest" time="0.038"/>
+  <testcase name="missing usable model disables send before user persistence" classname="com.example.chatbar.desktop.DesktopAlphaChatControllerTest" time="0.268"/>
+  <testcase name="reopened controller reconnects to application task and persisted session" classname="com.example.chatbar.desktop.DesktopAlphaChatControllerTest" time="5.466"/>
+  <testcase name="refresh with persisted session uses configured settings and model resolver" classname="com.example.chatbar.desktop.DesktopAlphaChatControllerTest" time="0.072"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

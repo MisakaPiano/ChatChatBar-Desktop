@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "profile": "desktop",
+  "inputSha256": "b70cd5c816d3620dcdbf652d6ae492cb13acd0b2a9d008ffe17b6abbe4b1b77c",
+  "outputSha256": "ef421e7ac4d7abe8ef11fc8a87b3fc39a62753dc4b0a9cb2eb222fe5d9bd3ae8",
+  "productVersion": "0.1.1010",
+  "applicationCabinets": {
+    "Data.cab": {
+      "bytes": 165175711,
+      "sha256": "c4cfce5a2f9643bfe8ffa0419492940a3f8f830162d41e41bf0abdfae93ba906"
+    }
+  },
+  "recursiveCleanupRemoved": true,
+  "downgradeBlocked": true,
+  "oldRemovalInsideTransaction": true,
+  "syntheticFailureAction": false,
+  "signingPerformed": false
+}

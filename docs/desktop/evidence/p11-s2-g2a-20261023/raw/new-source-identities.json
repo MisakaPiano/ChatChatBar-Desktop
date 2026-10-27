@@ -1,0 +1,37 @@
+[
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialImportPlan.kt",
+    "commit": null,
+    "bytes": 10870,
+    "sha256": "a7f3bf741c4e742b8a15d24e4d8dd5218bf7c6bc07ced28f592740b9a7b7718a",
+    "gitBlob": "432d66be60891a77db97ac1b9b633dd4e4a23d3d"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/RecoverableIntentContract.kt",
+    "commit": null,
+    "bytes": 7388,
+    "sha256": "54e7e9efc5197dd7ebd27ef07f6aea82bb83df992badb3af87b60c4c68984eca",
+    "gitBlob": "6119401947bd0fd6aaef01099751b5b4d9126ecc"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialImportPlanTest.kt",
+    "commit": null,
+    "bytes": 12644,
+    "sha256": "100c96524d0bdf73f1c7518ae4503b10337338cd78ba83761323288e8b693038",
+    "gitBlob": "9dde23a13f12105ef039d3d84dd4829b53b12920"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/RecoverableIntentContractTest.kt",
+    "commit": null,
+    "bytes": 11784,
+    "sha256": "98e52ac5c5dd4b24c6116f178b23b1f65a434d62b62b394b0b1faf3f694f3631",
+    "gitBlob": "36f4c9fd81398ff0c7b0683f32f98cd76a7b802a"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/G2AOfficialWireTest.kt",
+    "commit": null,
+    "bytes": 14346,
+    "sha256": "aafa6a112fd7a96dc20aa1d5dd4a116310672b26aeec906e761d4fd000caa8cc",
+    "gitBlob": "efbb53d46b0520fc77e8f871280a17dffd459f12"
+  }
+]

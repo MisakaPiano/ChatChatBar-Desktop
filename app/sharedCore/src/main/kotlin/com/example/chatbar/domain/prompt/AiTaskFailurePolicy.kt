@@ -7,6 +7,8 @@ import kotlinx.serialization.json.*
 
 enum class AiTaskFailureKind { REFUSAL, CONTENT_FILTER, FORMAT, TRUNCATED, NETWORK, AUTHENTICATION, REQUEST, CANCELLED, EMPTY }
 
+class AiTaskResponseBudgetException : IllegalStateException("辅助文本响应超过本机内存预算；已停止请求，请调整任务后重试")
+
 class AiTaskEmptyResponseException(reasoningOnly: Boolean) :
     RuntimeException(if (reasoningOnly) "AI 仅返回思考内容，没有任务结果" else "AI 返回空内容")
 
@@ -18,7 +20,7 @@ fun Throwable.rethrowIfAiTaskTerminalFailure() {
     var error: Throwable? = this
     val visited = mutableSetOf<Throwable>()
     while (error != null && visited.add(error)) {
-        if (error is CancellationException || error is AiTaskRefusalException) throw error
+        if (error is CancellationException || error is AiTaskRefusalException || error is AiTaskResponseBudgetException) throw error
         error = error.cause
     }
 }

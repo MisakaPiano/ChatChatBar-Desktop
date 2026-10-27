@@ -1,0 +1,322 @@
+[
+  {
+    "path": "preservation-integration-first/arguments.json",
+    "bytes": 740,
+    "sha256": "bcd4de052ea156497641686464bd7d6d42792d4bc7f8ecf01003cba51c25b32d"
+  },
+  {
+    "path": "preservation-integration-first/exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "preservation-integration-first/gradle.log",
+    "bytes": 2214,
+    "sha256": "8a32b57f702b2bc18367affa7114d9040b71770f9dd2864b493a3e5b2eb0eedc"
+  },
+  {
+    "path": "preservation-integration-first/head.txt",
+    "bytes": 40,
+    "sha256": "a6e758531949878ba53b185dae42df355e8f00970e493ca5deaac669ac8086fd"
+  },
+  {
+    "path": "preservation-integration-first/junit/TEST-com.example.chatbar.desktop.backup.DesktopFullBackupStagingTest.xml",
+    "bytes": 1399,
+    "sha256": "ff2b39265355cb027a7816a761c730520951f7f0ef654e9ce5a029ead3b18037"
+  },
+  {
+    "path": "preservation-integration-first/junit/TEST-com.example.chatbar.desktop.backup.DesktopPreservationStoreTest.xml",
+    "bytes": 1398,
+    "sha256": "ed1061a590cb7de3e056547d8dad22bce0f724653507bbaf09d6bdc179516a9d"
+  },
+  {
+    "path": "preservation-integration-first/junit/TEST-com.example.chatbar.desktop.DesktopFullBackupArchiveTest.xml",
+    "bytes": 2496,
+    "sha256": "14b8adea7a4da6052fe81159e8fde4eaa3ccb98cc43797c9aa18bffcae637fed"
+  },
+  {
+    "path": "preservation-integration-first/junit/TEST-com.example.chatbar.desktop.DesktopFullBackupMappingTest.xml",
+    "bytes": 725,
+    "sha256": "0775883b31044e0bf443238d768361eb776559d6d4595f7930d8f8d7e33e47a6"
+  },
+  {
+    "path": "preservation-integration-first/junit/TEST-com.example.chatbar.desktop.DesktopStartupGateTest.xml",
+    "bytes": 3813,
+    "sha256": "3236e2851fe5b92199ac13c26c687b1a9e0615c03f82f8aa43d0a465b7d1eb0d"
+  },
+  {
+    "path": "preservation-integration-first/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupPolicy.kt",
+    "bytes": 10753,
+    "sha256": "9459549b14bb4a96476cd9a472aa7e89322c28b00f30cd6d5315929b5344aac5"
+  },
+  {
+    "path": "preservation-integration-first/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupMapping.kt",
+    "bytes": 14143,
+    "sha256": "bec27341d9b3abefe3c16d3faa71f7b0ef8aea4e283f8cbae1c3f001bd679aa8"
+  },
+  {
+    "path": "preservation-integration-first/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopPreservationStore.kt",
+    "bytes": 12642,
+    "sha256": "f7c91ab8717a07ee1d1912e6e5a6fa060aea660309c0ab83f8c56e7303aa09c1"
+  },
+  {
+    "path": "preservation-integration-first/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupGraphValidation.kt",
+    "bytes": 4691,
+    "sha256": "dad26a2b36f884c4c263f2c097edb68f73f0335b070da733574ff42beb192d44"
+  },
+  {
+    "path": "preservation-integration-first/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/CensusWireFixtures.kt",
+    "bytes": 4569,
+    "sha256": "99933fac67df0c724839a49ea0e4109d624d44a11f052582fe30b04a2a162655"
+  },
+  {
+    "path": "preservation-integration-first/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopPreservationStoreTest.kt",
+    "bytes": 9318,
+    "sha256": "0edd7bc8f23873824db8b9807383b141378961ff787dadb8117eb0101e0fdd41"
+  },
+  {
+    "path": "preservation-reference-family-green/arguments.json",
+    "bytes": 900,
+    "sha256": "c0520f88988f68d8bc7a8f32f0af2d5fcdb6ee5754eaefd2c957103c1a8aeed7"
+  },
+  {
+    "path": "preservation-reference-family-green/exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "preservation-reference-family-green/gradle.log",
+    "bytes": 2224,
+    "sha256": "aaa5315c1fbaf7c63434e9681d17bf9d41b2b85da92a6a936ab960b486499317"
+  },
+  {
+    "path": "preservation-reference-family-green/head.txt",
+    "bytes": 40,
+    "sha256": "61f525a0ac22e4e3dff57b91099e33370fe8b5e98b75dcb9efc8efc1f0fd9cd6"
+  },
+  {
+    "path": "preservation-reference-family-green/junit/TEST-com.example.chatbar.desktop.backup.DesktopCredentialSourceCensusTest.xml",
+    "bytes": 6127,
+    "sha256": "c9f8a69db125cf1c6459e88441c6490222af1a85acc88b27662edaeb53b5b5a7"
+  },
+  {
+    "path": "preservation-reference-family-green/junit/TEST-com.example.chatbar.desktop.backup.DesktopFullBackupSourceTest.xml",
+    "bytes": 1712,
+    "sha256": "975693df8690337ce6b52d855de232132fe911542c1972d6e74b165ab4a78cfc"
+  },
+  {
+    "path": "preservation-reference-family-green/junit/TEST-com.example.chatbar.desktop.backup.DesktopFullBackupStagingTest.xml",
+    "bytes": 1396,
+    "sha256": "c2fca8eb03e471851b0ec7d288d80a68c9b9dd02148405a9d9ed2f182fba821e"
+  },
+  {
+    "path": "preservation-reference-family-green/junit/TEST-com.example.chatbar.desktop.backup.DesktopPreservationStoreTest.xml",
+    "bytes": 1751,
+    "sha256": "6b12bc7f9b9d0626e2b458adb5a9156b65df5b136a2d7df7d43efff5665b6ef9"
+  },
+  {
+    "path": "preservation-reference-family-green/junit/TEST-com.example.chatbar.desktop.DesktopFullBackupArchiveTest.xml",
+    "bytes": 2495,
+    "sha256": "b5cbff41f6ed62fdad07a8a0d9798e06612abd38249eb3ec7e353e6b143bbfa8"
+  },
+  {
+    "path": "preservation-reference-family-green/junit/TEST-com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest.xml",
+    "bytes": 1084,
+    "sha256": "9219ff0181cecb1b3fed05dc53ca95b3f2b0f129262229d639ec8e7da5bc09e7"
+  },
+  {
+    "path": "preservation-reference-family-green/junit/TEST-com.example.chatbar.desktop.DesktopFullBackupMappingTest.xml",
+    "bytes": 725,
+    "sha256": "c6621df5de1e36d38f25231ddfcee480ead777444c0a40f2576a66c0fff9d224"
+  },
+  {
+    "path": "preservation-reference-family-green/junit/TEST-com.example.chatbar.desktop.DesktopStartupGateTest.xml",
+    "bytes": 3811,
+    "sha256": "e810912a0ce68d1d8e2a6cf799e5e1d35925077480b69368931771535c0fb3cc"
+  },
+  {
+    "path": "preservation-reference-family-green/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupPolicy.kt",
+    "bytes": 10753,
+    "sha256": "9459549b14bb4a96476cd9a472aa7e89322c28b00f30cd6d5315929b5344aac5"
+  },
+  {
+    "path": "preservation-reference-family-green/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupMapping.kt",
+    "bytes": 14143,
+    "sha256": "bec27341d9b3abefe3c16d3faa71f7b0ef8aea4e283f8cbae1c3f001bd679aa8"
+  },
+  {
+    "path": "preservation-reference-family-green/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopPreservationStore.kt",
+    "bytes": 13030,
+    "sha256": "b7073cc53fd025d81947f5cece2c83170fda97b554d02e33385e6964a288edd1"
+  },
+  {
+    "path": "preservation-reference-family-green/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupGraphValidation.kt",
+    "bytes": 4691,
+    "sha256": "dad26a2b36f884c4c263f2c097edb68f73f0335b070da733574ff42beb192d44"
+  },
+  {
+    "path": "preservation-reference-family-green/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/CensusWireFixtures.kt",
+    "bytes": 4612,
+    "sha256": "737a659bcec665542394a7090f07310d5657527ee4df86803fa9721728d9cc95"
+  },
+  {
+    "path": "preservation-reference-family-green/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopPreservationStoreTest.kt",
+    "bytes": 11997,
+    "sha256": "c7e44126ef68724a3fc3962fb001eb59c62d590d8f7d1aa2c2328093fcee85e5"
+  },
+  {
+    "path": "preservation-reference-family-red/arguments.json",
+    "bytes": 600,
+    "sha256": "35414d762a5c385bfd8a5442f9881da50bae54b40d07dbb1520a19e2409d5703"
+  },
+  {
+    "path": "preservation-reference-family-red/exit.txt",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "path": "preservation-reference-family-red/gradle.log",
+    "bytes": 2739,
+    "sha256": "2148bdfcff5cab19a36f87844513d706ee66ff89d4ad8ae2bbb8daf154b04cf5"
+  },
+  {
+    "path": "preservation-reference-family-red/head.txt",
+    "bytes": 40,
+    "sha256": "61f525a0ac22e4e3dff57b91099e33370fe8b5e98b75dcb9efc8efc1f0fd9cd6"
+  },
+  {
+    "path": "preservation-reference-family-red/junit/TEST-com.example.chatbar.desktop.backup.DesktopPreservationStoreTest.xml",
+    "bytes": 5981,
+    "sha256": "71ac10e9097f989b9a321321e9eda31870b89e2eb19bf7efedac13f687c806bc"
+  },
+  {
+    "path": "preservation-reference-family-red/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupPolicy.kt",
+    "bytes": 10753,
+    "sha256": "9459549b14bb4a96476cd9a472aa7e89322c28b00f30cd6d5315929b5344aac5"
+  },
+  {
+    "path": "preservation-reference-family-red/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupMapping.kt",
+    "bytes": 14143,
+    "sha256": "bec27341d9b3abefe3c16d3faa71f7b0ef8aea4e283f8cbae1c3f001bd679aa8"
+  },
+  {
+    "path": "preservation-reference-family-red/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopPreservationStore.kt",
+    "bytes": 12905,
+    "sha256": "e0e7181285bbee68e5aaa2379bfb04e1527f10ee94ba58fbb57407f840b598aa"
+  },
+  {
+    "path": "preservation-reference-family-red/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupGraphValidation.kt",
+    "bytes": 4691,
+    "sha256": "dad26a2b36f884c4c263f2c097edb68f73f0335b070da733574ff42beb192d44"
+  },
+  {
+    "path": "preservation-reference-family-red/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/CensusWireFixtures.kt",
+    "bytes": 4612,
+    "sha256": "737a659bcec665542394a7090f07310d5657527ee4df86803fa9721728d9cc95"
+  },
+  {
+    "path": "preservation-reference-family-red/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopPreservationStoreTest.kt",
+    "bytes": 11997,
+    "sha256": "c7e44126ef68724a3fc3962fb001eb59c62d590d8f7d1aa2c2328093fcee85e5"
+  },
+  {
+    "path": "preservation-scope-final/arguments.json",
+    "bytes": 900,
+    "sha256": "c0520f88988f68d8bc7a8f32f0af2d5fcdb6ee5754eaefd2c957103c1a8aeed7"
+  },
+  {
+    "path": "preservation-scope-final/exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "preservation-scope-final/gradle.log",
+    "bytes": 2182,
+    "sha256": "d34929d0b91089164f332e6a64c0eed9049b62341b69fe34efad4ce0d6749806"
+  },
+  {
+    "path": "preservation-scope-final/head.txt",
+    "bytes": 40,
+    "sha256": "61f525a0ac22e4e3dff57b91099e33370fe8b5e98b75dcb9efc8efc1f0fd9cd6"
+  },
+  {
+    "path": "preservation-scope-final/junit/TEST-com.example.chatbar.desktop.backup.DesktopCredentialSourceCensusTest.xml",
+    "bytes": 6127,
+    "sha256": "be0f7275a04d1e83f0bab03180b51843911775819cb96f817b99236d1020ad9b"
+  },
+  {
+    "path": "preservation-scope-final/junit/TEST-com.example.chatbar.desktop.backup.DesktopFullBackupSourceTest.xml",
+    "bytes": 1711,
+    "sha256": "25419ae7bd07dee51f4e8c7bb899b96dea06bb831d03bf8e07d23f8347466d90"
+  },
+  {
+    "path": "preservation-scope-final/junit/TEST-com.example.chatbar.desktop.backup.DesktopFullBackupStagingTest.xml",
+    "bytes": 1400,
+    "sha256": "28144a2cda0c30a342c974fae30e24abd758bf0f3eedd655d5e8e25f2d90cbc3"
+  },
+  {
+    "path": "preservation-scope-final/junit/TEST-com.example.chatbar.desktop.backup.DesktopPreservationStoreTest.xml",
+    "bytes": 1588,
+    "sha256": "44e40be831b4530b701a7553621fcecf69f697e383912ae9217f05a505202731"
+  },
+  {
+    "path": "preservation-scope-final/junit/TEST-com.example.chatbar.desktop.DesktopFullBackupArchiveTest.xml",
+    "bytes": 2495,
+    "sha256": "f0ed733f2e2e406169653a61209a6c4760ea42b723662265a9f7e958a3325f7a"
+  },
+  {
+    "path": "preservation-scope-final/junit/TEST-com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest.xml",
+    "bytes": 1085,
+    "sha256": "886423cbbb60fd75d47192886e2b85a1b8c89a9efebdfad5d875b8a0c8a91572"
+  },
+  {
+    "path": "preservation-scope-final/junit/TEST-com.example.chatbar.desktop.DesktopFullBackupMappingTest.xml",
+    "bytes": 724,
+    "sha256": "b9da8d5c8d0cad9b674a68b4b3eb1efa198c39a63b61787838d766ce95bd804f"
+  },
+  {
+    "path": "preservation-scope-final/junit/TEST-com.example.chatbar.desktop.DesktopStartupGateTest.xml",
+    "bytes": 3812,
+    "sha256": "1733d99e58a43e8c3f5d8486fd0115263752135d97ba9e3c7c719a65b39aa7bc"
+  },
+  {
+    "path": "preservation-scope-final/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupPolicy.kt",
+    "bytes": 10753,
+    "sha256": "9459549b14bb4a96476cd9a472aa7e89322c28b00f30cd6d5315929b5344aac5"
+  },
+  {
+    "path": "preservation-scope-final/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupMapping.kt",
+    "bytes": 14143,
+    "sha256": "bec27341d9b3abefe3c16d3faa71f7b0ef8aea4e283f8cbae1c3f001bd679aa8"
+  },
+  {
+    "path": "preservation-scope-final/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopPreservationStore.kt",
+    "bytes": 12905,
+    "sha256": "e0e7181285bbee68e5aaa2379bfb04e1527f10ee94ba58fbb57407f840b598aa"
+  },
+  {
+    "path": "preservation-scope-final/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupGraphValidation.kt",
+    "bytes": 4691,
+    "sha256": "dad26a2b36f884c4c263f2c097edb68f73f0335b070da733574ff42beb192d44"
+  },
+  {
+    "path": "preservation-scope-final/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/CensusWireFixtures.kt",
+    "bytes": 4612,
+    "sha256": "737a659bcec665542394a7090f07310d5657527ee4df86803fa9721728d9cc95"
+  },
+  {
+    "path": "preservation-scope-final/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopPreservationStoreTest.kt",
+    "bytes": 11271,
+    "sha256": "4d922cbcd875b88b7a6df2b7eb8919f3262ce29256adbea764149df4480cc838"
+  },
+  {
+    "path": "SOURCE_IDENTITY.json",
+    "bytes": 2555,
+    "sha256": "99f4a50de1e30d87f75d04f5965f2ca55f681f7e3821bdbe6d5ae02010f50222"
+  },
+  {
+    "path": "TEST_SUMMARY.json",
+    "bytes": 4732,
+    "sha256": "cdeca7fe1adeedbbf7a8944e655de1d684ca4c4c90ad1e7cbb6a9c932562cc1d"
+  }
+]

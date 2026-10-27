@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.backup.DesktopFullBackupSourceTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-24T20:05:14.319Z" hostname="DD1" time="3.797">
+  <properties/>
+  <testcase name="sourceLeasePreventsConcurrentOverwriteAndNoDecryptedArchiveIsCreated" classname="com.example.chatbar.desktop.backup.DesktopFullBackupSourceTest" time="0.087"/>
+  <testcase name="authenticatesPlainAndPasswordV1V2WithExactSourceIdentity" classname="com.example.chatbar.desktop.backup.DesktopFullBackupSourceTest" time="1.821"/>
+  <testcase name="cancellationIsNotConvertedToAnArchiveFailure" classname="com.example.chatbar.desktop.backup.DesktopFullBackupSourceTest" time="0.005"/>
+  <testcase name="sourceRefusesV1WithV2ManifestScopeAndFutureVersion" classname="com.example.chatbar.desktop.backup.DesktopFullBackupSourceTest" time="0.034"/>
+  <testcase name="unknownEntityFieldsFamiliesAndInvalidUtf8FailBeforeVerification" classname="com.example.chatbar.desktop.backup.DesktopFullBackupSourceTest" time="0.019"/>
+  <testcase name="wrongPasswordTruncationAndAuthenticationDamageRefuseWithoutSecretsOrCause" classname="com.example.chatbar.desktop.backup.DesktopFullBackupSourceTest" time="1.811"/>
+  <testcase name="lateManifestAndInventoryFailureNeverReturnsVerifiedDespiteTentativeCallbacks" classname="com.example.chatbar.desktop.backup.DesktopFullBackupSourceTest" time="0.011"/>
+  <testcase name="unreadMediaStillParticipatesInHashInventoryAndCrc" classname="com.example.chatbar.desktop.backup.DesktopFullBackupSourceTest" time="0.009"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

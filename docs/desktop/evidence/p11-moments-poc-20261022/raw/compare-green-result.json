@@ -1,0 +1,4 @@
+{
+  "command": "compare.py source host official-second-export roundtrip-comparison.json",
+  "exitCode": 0
+}

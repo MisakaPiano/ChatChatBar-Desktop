@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.backup.DesktopMergeDestinationPlanTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-24T22:46:48Z" hostname="DD1" time="1.107">
+  <properties/>
+  <testcase name="both model identities use Windows safe filenames and incoming consumers follow fork" classname="com.example.chatbar.desktop.backup.DesktopMergeDestinationPlanTest" time="0.001"/>
+  <testcase name="same media path with different bytes gets distinct flat destinations" classname="com.example.chatbar.desktop.backup.DesktopMergeDestinationPlanTest" time="0.042"/>
+  <testcase name="nested historical message declarations join compact ordered fork namespace" classname="com.example.chatbar.desktop.backup.DesktopMergeDestinationPlanTest" time="0.954"/>
+  <testcase name="chosen settings fields merge without resetting unselected computer values" classname="com.example.chatbar.desktop.backup.DesktopMergeDestinationPlanTest" time="0.064"/>
+  <testcase name="missing resources case aliases and conflicting retained domains refuse" classname="com.example.chatbar.desktop.backup.DesktopMergeDestinationPlanTest" time="0.001"/>
+  <testcase name="both forks complete sessions with coherent destinations and keeps computer untouched" classname="com.example.chatbar.desktop.backup.DesktopMergeDestinationPlanTest" time="0.001"/>
+  <testcase name="cross session immutable node collision is visible before destination planning" classname="com.example.chatbar.desktop.backup.DesktopMergeDestinationPlanTest" time="0.044"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

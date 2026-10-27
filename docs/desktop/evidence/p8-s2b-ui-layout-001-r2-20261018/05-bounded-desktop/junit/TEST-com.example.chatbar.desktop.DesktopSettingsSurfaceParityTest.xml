@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopSettingsSurfaceParityTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-18T13:45:18.767Z" hostname="DD1" time="0.233">
+  <properties/>
+  <testcase name="loaded settings expose persisted bubble scale" classname="com.example.chatbar.desktop.DesktopSettingsSurfaceParityTest" time="0.016"/>
+  <testcase name="history exclusion saves both values and survives repository restart" classname="com.example.chatbar.desktop.DesktopSettingsSurfaceParityTest" time="0.02"/>
+  <testcase name="message typography scales body and markdown headings only without changing source or chrome" classname="com.example.chatbar.desktop.DesktopSettingsSurfaceParityTest" time="0.003"/>
+  <testcase name="dirty defaults coexist with immediate font save through save and discard" classname="com.example.chatbar.desktop.DesktopSettingsSurfaceParityTest" time="0.023"/>
+  <testcase name="history exclusion is a discardable draft and guards leave" classname="com.example.chatbar.desktop.DesktopSettingsSurfaceParityTest" time="0.016"/>
+  <testcase name="rapid font changes update UI before blocked storage and latest selection is durable" classname="com.example.chatbar.desktop.DesktopSettingsSurfaceParityTest" time="0.022"/>
+  <testcase name="ordinary save queued behind immediate write retains latest scale and draft values" classname="com.example.chatbar.desktop.DesktopSettingsSurfaceParityTest" time="0.022"/>
+  <testcase name="chat selection refresh and switching read latest safe scale without rewriting old value" classname="com.example.chatbar.desktop.DesktopSettingsSurfaceParityTest" time="0.065"/>
+  <testcase name="loaded settings expose persisted history exclusion" classname="com.example.chatbar.desktop.DesktopSettingsSurfaceParityTest" time="0.016"/>
+  <testcase name="font scale writes discrete safe values without dirtying ordinary defaults" classname="com.example.chatbar.desktop.DesktopSettingsSurfaceParityTest" time="0.03"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

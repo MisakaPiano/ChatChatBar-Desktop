@@ -115,7 +115,7 @@ internal class DesktopChatImages(
                 val added = additions.map { import(it.bytes) }
                 // An indeterminate update (including partial metadata/index writes) retains all files.
                 val paths = retained + added
-                updateMessage(MessageAlternativeVersionPolicy.collapseToEditedContent(original, content).copy(
+                updateMessage(MessageAlternativeVersionPolicy.editCurrentContent(original, content).copy(
                     images = paths, generatedImageMetadata = original.generatedImageMetadata.filter { it.imagePath in paths },
                     formatRepairNotice = null))
             } }

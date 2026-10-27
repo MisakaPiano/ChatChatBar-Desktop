@@ -1,0 +1,152 @@
+[
+  {
+    "path": "junit-01-initial/TEST-com.example.chatbar.desktop.DesktopSaveSlotInspectorTest.xml",
+    "sha256": "cf7bf34ea83d53c781fd84fd23c032375c51d3ee53948fcd4006425b47db1747",
+    "suite": "com.example.chatbar.desktop.DesktopSaveSlotInspectorTest",
+    "tests": 12,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 1.229
+  },
+  {
+    "path": "junit-02-desktop/TEST-com.example.chatbar.desktop.DesktopDocumentRagReaderTest.xml",
+    "sha256": "64836f70d73bbca40d87fdfe3425a8c3372ebc5031e3c08fe6320ea4ae3a9709",
+    "suite": "com.example.chatbar.desktop.DesktopDocumentRagReaderTest",
+    "tests": 18,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 14.925
+  },
+  {
+    "path": "junit-02-desktop/TEST-com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest.xml",
+    "sha256": "4490e1110bd15559725c4331c0dccb27fdecdf80b5d62d6be25d8bf276e11d9a",
+    "suite": "com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest",
+    "tests": 15,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 4.144
+  },
+  {
+    "path": "junit-02-desktop/TEST-com.example.chatbar.desktop.DesktopMainChatRequestAssemblerIntegrationTest.xml",
+    "sha256": "b28adc7d577122374cbc29863ac0c5998b572ccacba71a9e493da3d6bc406a64",
+    "suite": "com.example.chatbar.desktop.DesktopMainChatRequestAssemblerIntegrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 0.051
+  },
+  {
+    "path": "junit-02-desktop/TEST-com.example.chatbar.desktop.DesktopSaveSlotInspectorTest.xml",
+    "sha256": "a22323959d0dadeef6d3b5ecbf92dce8da213b89709d214d074e73b56f35bac2",
+    "suite": "com.example.chatbar.desktop.DesktopSaveSlotInspectorTest",
+    "tests": 13,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 1.985
+  },
+  {
+    "path": "junit-03-shared/TEST-com.example.chatbar.data.local.JsonFileStorageStrictScanTest.xml",
+    "sha256": "648b161e70f5beeefc9bce73af3e7ed7caf159bf525491bfe04fc5e8565c7d5f",
+    "suite": "com.example.chatbar.data.local.JsonFileStorageStrictScanTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 0.196
+  },
+  {
+    "path": "junit-03-shared/TEST-com.example.chatbar.domain.chat.SaveSlotSharedContractTest.xml",
+    "sha256": "4a2b2de054450603b059d07f0fa61e65f226efcf394bcb3522ae5474f4949407",
+    "suite": "com.example.chatbar.domain.chat.SaveSlotSharedContractTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 0.116
+  },
+  {
+    "path": "junit-04-shared-final/TEST-com.example.chatbar.data.local.JsonFileStorageStrictScanTest.xml",
+    "sha256": "16cac7b06f321be3246a8f94ec23668d7310d21d1d831d5edb8bb1909f7a8a49",
+    "suite": "com.example.chatbar.data.local.JsonFileStorageStrictScanTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 0.195
+  },
+  {
+    "path": "junit-04-shared-final/TEST-com.example.chatbar.data.repository.ChatMessageSerializationTest.xml",
+    "sha256": "355bc1813c88fcfbb34c5a2bd3e6b620aa0bddb2f25a0969c738388e3f34f6b3",
+    "suite": "com.example.chatbar.data.repository.ChatMessageSerializationTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 0.02
+  },
+  {
+    "path": "junit-04-shared-final/TEST-com.example.chatbar.domain.chat.SaveSlotSharedContractTest.xml",
+    "sha256": "3b0f632292417770d98591a03304a706fadeb28297d1ceee0cf59bb00d12402d",
+    "suite": "com.example.chatbar.domain.chat.SaveSlotSharedContractTest",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 0.079
+  },
+  {
+    "path": "junit-07-android-final/TEST-com.example.chatbar.domain.chat.SaveSlotSerializationTest.xml",
+    "sha256": "702e2eaeceeac3c3ea794b0bfeba8688820a1a81cd96f007462133bd0ee0d81b",
+    "suite": "com.example.chatbar.domain.chat.SaveSlotSerializationTest",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 3.764
+  },
+  {
+    "path": "junit-08-desktop-final/TEST-com.example.chatbar.desktop.DesktopDocumentRagReaderTest.xml",
+    "sha256": "862916c8b2cc5ad31f44b7aae2de9ed73b85c8e6e0c7045a4d14a56ade2eebf7",
+    "suite": "com.example.chatbar.desktop.DesktopDocumentRagReaderTest",
+    "tests": 18,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 16.058
+  },
+  {
+    "path": "junit-08-desktop-final/TEST-com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest.xml",
+    "sha256": "4525297a6c88c1c5b86be1f2e03c81b5a80e6696fd9807e36b12ba2dc3260285",
+    "suite": "com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest",
+    "tests": 15,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 4.015
+  },
+  {
+    "path": "junit-08-desktop-final/TEST-com.example.chatbar.desktop.DesktopMainChatRequestAssemblerIntegrationTest.xml",
+    "sha256": "3d39ba7729f9498d856f2c6902e4d1478676fade7e640b9cd49355d67ee98854",
+    "suite": "com.example.chatbar.desktop.DesktopMainChatRequestAssemblerIntegrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 0.049
+  },
+  {
+    "path": "junit-08-desktop-final/TEST-com.example.chatbar.desktop.DesktopSaveSlotInspectorTest.xml",
+    "sha256": "4132d09e676a7eca18d47c93219d273b82244d94ff28a1589592f11b84d6cb99",
+    "suite": "com.example.chatbar.desktop.DesktopSaveSlotInspectorTest",
+    "tests": 14,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 2.021
+  }
+]

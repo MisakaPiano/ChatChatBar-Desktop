@@ -1,0 +1,27 @@
+{
+  "authorization": "USER_DIRECT_SUPPLEMENT",
+  "candidates": [
+    {
+      "candidate": "app/desktopApp/build/p11-interop-20261022/avds",
+      "decision": "PARTIAL_RETAIN_READONLY",
+      "remains": true
+    },
+    {
+      "candidate": "app/desktopApp/build/p11-moments-poc-20261022/avds",
+      "decision": "PARTIAL_RETAIN_READONLY",
+      "remains": true
+    }
+  ],
+  "deletedLogicalBytes": 8040664629,
+  "deletedFiles": 45,
+  "retainedEvidence": {
+    "files": 647,
+    "bytes": 8341335,
+    "exactRaw": 646,
+    "canonicalText": 1
+  },
+  "volumeFreeBefore": 322097152,
+  "volumeFreeAfter": 8299012096,
+  "volumeFreeDelta": 7976914944,
+  "physicalAllocationBytes": "NOT_MEASURED_FREE_DELTA_IS_NOT_LOGICAL_FILE_SIZE"
+}

@@ -1,0 +1,26 @@
+{
+  "startedUtc": "2026-10-17T20:37:13.8627072+00:00",
+  "finishedUtc": "2026-10-17T20:38:47.6100647+00:00",
+  "durationSeconds": 93.7473575,
+  "exitCode": 1,
+  "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:compileKotlin :desktopApp:compileTestKotlin :desktopApp:test --rerun --tests *DesktopFishPresentationTest --tests *DesktopFishAudioLibraryTest --tests *DesktopFishSettingsBindingTest --tests *DesktopModelSettingsControllerTest --tests *DesktopSettingsCoherenceTest",
+  "jdk": "Temurin 17.0.20.1",
+  "gradle": "9.1.0",
+  "heap": "-Xmx2048m",
+  "tasks": [
+    ":desktopApp:compileKotlin",
+    ":desktopApp:compileTestKotlin",
+    ":desktopApp:test",
+    "--rerun",
+    "--tests",
+    "*DesktopFishPresentationTest",
+    "--tests",
+    "*DesktopFishAudioLibraryTest",
+    "--tests",
+    "*DesktopFishSettingsBindingTest",
+    "--tests",
+    "*DesktopModelSettingsControllerTest",
+    "--tests",
+    "*DesktopSettingsCoherenceTest"
+  ]
+}

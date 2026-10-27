@@ -1,0 +1,1 @@
+Evidence-copy helper failure after final tests: shutil.copytree raised FileNotFoundError on long destination paths for protected fake blob filenames. This folder is an incomplete copy, not final execution authority. Original build outputs were unchanged. The same completed run is fully collected under raw/green/. Original tool-reported copy failure was not a test/JUnit failure.

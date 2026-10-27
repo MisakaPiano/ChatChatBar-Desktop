@@ -1,0 +1,8 @@
+ISOLATED_PACKAGE_INVENTORY_MISMATCH
+At H:\ChatChatBar-Desktop\app\desktopApp\build\preview-continuous-private-20261025\windows-runtime-merge-ui-1006\Open-I
+solated-Preview-1006.ps1:11 char:28
++ ... ($rows.Count -ne 217) { throw 'ISOLATED_PACKAGE_INVENTORY_MISMATCH' }
++                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (ISOLATED_PACKAGE_INVENTORY_MISMATCH:String) [], RuntimeException
+    + FullyQualifiedErrorId : ISOLATED_PACKAGE_INVENTORY_MISMATCH
+ 

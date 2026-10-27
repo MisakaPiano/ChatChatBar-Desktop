@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFullBackupArchiveTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-10-21T02:07:12.537Z" hostname="DD1" time="14.267">
+  <properties/>
+  <testcase name="export verifies exact file and refuses existing destination with or without encryption" classname="com.example.chatbar.desktop.DesktopFullBackupArchiveTest" time="3.168"/>
+  <testcase name="encrypted source authenticates wrong password and truncated tail before plaintext staging" classname="com.example.chatbar.desktop.DesktopFullBackupArchiveTest" time="2.378"/>
+  <testcase name="encrypted export self inspection does not retain plaintext work files" classname="com.example.chatbar.desktop.DesktopFullBackupArchiveTest" time="1.438"/>
+  <testcase name="release is idempotent and preserves original encrypted archive" classname="com.example.chatbar.desktop.DesktopFullBackupArchiveTest" time="1.417"/>
+  <testcase name="unknown stores traversal case collisions and invalid hashes preserve source and refuse" classname="com.example.chatbar.desktop.DesktopFullBackupArchiveTest" time="0.071"/>
+  <testcase name="cleanup refuses foreign file identity and never recursively deletes unknown children" classname="com.example.chatbar.desktop.DesktopFullBackupArchiveTest" time="0.016"/>
+  <testcase name="successful inspection retains needed entries but not redundant decrypted zip" classname="com.example.chatbar.desktop.DesktopFullBackupArchiveTest" time="1.401"/>
+  <testcase name="changed staged record cannot be published" classname="com.example.chatbar.desktop.DesktopFullBackupArchiveTest" time="0.035"/>
+  <testcase name="official moments and nonempty credentials remain refused and desktop only metadata is honest" classname="com.example.chatbar.desktop.DesktopFullBackupArchiveTest" time="0.037"/>
+  <testcase name="official plain envelope and inventory materialize only validated records" classname="com.example.chatbar.desktop.DesktopFullBackupArchiveTest" time="0.042"/>
+  <testcase name="cancel and failure during materialization release plaintext and allow retry" classname="com.example.chatbar.desktop.DesktopFullBackupArchiveTest" time="3.314"/>
+  <testcase name="credential payload is refused before plaintext file is created" classname="com.example.chatbar.desktop.DesktopFullBackupArchiveTest" time="0.95"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

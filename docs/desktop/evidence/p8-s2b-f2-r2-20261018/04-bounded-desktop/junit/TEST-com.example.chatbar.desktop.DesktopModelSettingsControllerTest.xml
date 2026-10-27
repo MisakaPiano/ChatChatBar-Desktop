@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopModelSettingsControllerTest" tests="14" skipped="0" failures="0" errors="0" timestamp="2026-10-18T11:05:36.493Z" hostname="DD1" time="0.441">
+  <properties/>
+  <testcase name="discovery uses effective key and cleartext blank key sends no authorization" classname="com.example.chatbar.desktop.DesktopModelSettingsControllerTest" time="0.018"/>
+  <testcase name="immediate credential save is independent from chat defaults and player drafts" classname="com.example.chatbar.desktop.DesktopModelSettingsControllerTest" time="0.031"/>
+  <testcase name="format management uses settings authority and synchronizes both default repositories" classname="com.example.chatbar.desktop.DesktopModelSettingsControllerTest" time="0.053"/>
+  <testcase name="new controller and default Alpha refresh create no business files" classname="com.example.chatbar.desktop.DesktopModelSettingsControllerTest" time="0.01"/>
+  <testcase name="editor preserves current model metadata and stores typed custom parameters" classname="com.example.chatbar.desktop.DesktopModelSettingsControllerTest" time="0.022"/>
+  <testcase name="format management refuses unsaved chat defaults and missing cards without mutation" classname="com.example.chatbar.desktop.DesktopModelSettingsControllerTest" time="0.039"/>
+  <testcase name="vision binding persists only for non-multimodal models and does not return after clearing" classname="com.example.chatbar.desktop.DesktopModelSettingsControllerTest" time="0.032"/>
+  <testcase name="controller action configures local blank-key chat model for existing Alpha resolver" classname="com.example.chatbar.desktop.DesktopModelSettingsControllerTest" time="0.059"/>
+  <testcase name="deleting selected model leaves stale default visible without hidden settings mutation" classname="com.example.chatbar.desktop.DesktopModelSettingsControllerTest" time="0.028"/>
+  <testcase name="discovery failure leaves manual ID editable and URL change cancels stale result" classname="com.example.chatbar.desktop.DesktopModelSettingsControllerTest" time="0.016"/>
+  <testcase name="bundled model page is read-only until explicit restore and restore preserves secure credentials" classname="com.example.chatbar.desktop.DesktopModelSettingsControllerTest" time="0.044"/>
+  <testcase name="model create edit replace clear and delete use secure repository credential boundary" classname="com.example.chatbar.desktop.DesktopModelSettingsControllerTest" time="0.04"/>
+  <testcase name="settings draft retains untouched concurrent fields and secure fallback key" classname="com.example.chatbar.desktop.DesktopModelSettingsControllerTest" time="0.039"/>
+  <testcase name="management avatar decodes through existing controller resource authority" classname="com.example.chatbar.desktop.DesktopModelSettingsControllerTest" time="0.01"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

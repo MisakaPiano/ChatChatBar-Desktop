@@ -1,0 +1,11 @@
+[
+  "tools/desktop/windows/test_msi_safety.py",
+  "--fixture",
+  "H:/ChatChatBar-Desktop/app/desktopApp/build/preview-continuous-private-20261025/component-contract-real-msi-20261026-r01/A/safety/original-unsigned.msi",
+  "--evidence",
+  "H:/ChatChatBar-Desktop/app/desktopApp/build/preview-continuous-private-20261025/msi-operation-contract-20261027-r01/actual-transform-final-r01",
+  "--guard-build",
+  "H:/ChatChatBar-Desktop/app/desktopApp/build/preview-continuous-private-20261025/msi-operation-contract-20261027-r01/guard-production-r06",
+  "--expected-guard-sha256",
+  "eb42dbb797f21eb094c42c49e84d8ce6b795055319937344b62ae2c901ebd048"
+]

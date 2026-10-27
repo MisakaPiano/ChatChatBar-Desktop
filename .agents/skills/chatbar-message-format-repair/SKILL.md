@@ -11,14 +11,27 @@ Treat repair as a persisted reversible message mutation, not a transient text co
 
 - Persisted fields: data/local/entity/AppSettings.kt and ChatMessage.kt
 - Model selection: domain/model/EffectiveModelResolver.kt
-- Prompt builders: domain/prompt/PromptTemplates.kt
-- Streaming and pure rules: domain/chat/MessageFormatRepairService.kt, MessageFormatRepairPolicy.kt, and StreamingChatService.kt
+- Prompt builders: sharedCore domain/prompt/FormatRepairPromptAuthority.kt is the single literal/builder owner; Android domain/prompt/PromptTemplates.kt delegates.
+- Pure rules: sharedCore domain/chat/MessageFormatRepairPolicy.kt (same package, no Android duplicate). Android streaming remains domain/chat/MessageFormatRepairService.kt and StreamingChatService.kt.
 - Orchestration: ui/chat/ChatViewModel.kt
 - Message and settings UI: ui/chat/ChatScreen.kt and ui/manage/GlobalSettingsScreen.kt (回复与记忆)
 - Help entry: ui/tutorial/TutorialScreen.kt
 - Tests: MessageFormatRepairPolicyTest.kt, MessageFormatRepairServiceTest.kt, MessageFormatRepairPromptTest.kt, StreamingChatServiceThinkingTest.kt, and ChatMessageSerializationTest.kt
 
 Use chatbar-model-request-runtime for provider/request failures and chatbar-long-term-memory when a repaired historical message changes source hashes.
+
+- Shared FormatRepairPromptContractTest uses fixed 1.4.1 golden resources plus the D-036 auxiliary confirmation exception at message index 3; source-ledger.json records provenance/hashes without reproducing the superseded exception text. Policy and serialization tests run in sharedCore; Android Prompt tests verify the facade and FORMAT_REPAIR/REPAIR adapter.
+
+- Desktop/native transport entry is shared `OpenAiStreamingTransport.streamFormatRepair`; `FormatRepairAuxiliaryTransport` owns the single envelope and typed stream terminal checks. It does not implement task Stop, notices, persistence, or UI.
+
+
+## Desktop Ownership
+
+- `DesktopMessageFormatRepairController` owns first-terminal arbitration, in-memory preview, D-039 recovery-point protection and Repository conditional commits; `DesktopTaskRuntime` owns application-lifetime jobs and stable session/message/task identities. Lifecycle cancellation is separate from explicit user Stop.
+- `DesktopPrimaryChatPanel` adds whole-message repair/restore/Stop to the existing menu. `DesktopMessageFormatRepairUi` renders fixed, localized statuses and a separate preview; copy continues to read the original displayed candidate. Only applicable APPLIED/STOPPED notices offer restore. Commit uncertainty blocks both status-row and menu repair/restore, including Controller calls. Only explicit confirmCommitReload matching the displayed full snapshot against strict durable storage can reconcile it; ordinary refresh and failure readback cannot. Unverified uncertainty survives ordinary history trimming; original commit evidence stays intact.
+- `DesktopPrimaryChatController` and runtime mutation admission prevent same-session chat, repair and message mutation races. Navigation does not cancel application-owned repair, and terminal refresh must not select another session.
+- `DesktopModelSettingsController`/`DesktopManagePanel` use the existing `formatRepairModelId` draft field and all configured auxiliary text models, including chat-hidden models. Automatic checks are not wired.
+- DesktopFormatRepairDerivedSafety is the first production admission subset: bounded strict read-only inventory, valid application ownership and runtime task admission, then a fresh proof and Repository CAS within the same top-level exclusive maintenance scope. The long model stream holds no exclusive lease; a Repository receipt already returned survives cancelled scope exit, while cancellation before any receipt still propagates. Existing Memory graphs, voice/anchors, nonempty SaveSlot records, resumable tasks, unknown identities/fields/entries and uncoordinated sources remain rejected; independent DOCUMENT blocks and completed historical Moments/images are preserved. No feature-toggle shortcut, cleanup or journal recovery. `JsonFileStorage.visitEntitiesStrict` is the opt-in sequential scanner (8 MiB/file, nesting 64); existing storage APIs are unchanged. Tests: `DesktopFormatRepairDerivedSafetyTest`, `JsonFileStorageBoundedScanTest`, plus existing repair/interaction/presentation/runtime tests.
 
 ## Model and Prompt Rules
 

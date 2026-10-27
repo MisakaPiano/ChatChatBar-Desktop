@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopDataRootOwnershipTest" tests="14" skipped="0" failures="0" errors="0" timestamp="2026-10-22T17:59:21.775Z" hostname="DD1" time="0.067">
+  <properties/>
+  <testcase name="non-directory root is rejected" classname="com.example.chatbar.desktop.DesktopDataRootOwnershipTest" time="0.023"/>
+  <testcase name="pre-existing zero-length stale file does not block ownership" classname="com.example.chatbar.desktop.DesktopDataRootOwnershipTest" time="0.003"/>
+  <testcase name="first acquisition succeeds and same JVM overlap is structured" classname="com.example.chatbar.desktop.DesktopDataRootOwnershipTest" time="0.003"/>
+  <testcase name="different roots can be owned concurrently" classname="com.example.chatbar.desktop.DesktopDataRootOwnershipTest" time="0.005"/>
+  <testcase name="diagnostic paths are absolute and normalized" classname="com.example.chatbar.desktop.DesktopDataRootOwnershipTest" time="0.003"/>
+  <testcase name="symbolic-link root is rejected when fixture is available" classname="com.example.chatbar.desktop.DesktopDataRootOwnershipTest" time="0.003"/>
+  <testcase name="failed overlapping acquisition leaks no ownership" classname="com.example.chatbar.desktop.DesktopDataRootOwnershipTest" time="0.003"/>
+  <testcase name="directory lock target is rejected" classname="com.example.chatbar.desktop.DesktopDataRootOwnershipTest" time="0.003"/>
+  <testcase name="close is idempotent and never deletes lock path" classname="com.example.chatbar.desktop.DesktopDataRootOwnershipTest" time="0.002"/>
+  <testcase name="missing custom CLI and Portable roots fail without creation" classname="com.example.chatbar.desktop.DesktopDataRootOwnershipTest" time="0.002"/>
+  <testcase name="release allows reacquisition and leaves stale lock file" classname="com.example.chatbar.desktop.DesktopDataRootOwnershipTest" time="0.003"/>
+  <testcase name="missing default roots are created and validated" classname="com.example.chatbar.desktop.DesktopDataRootOwnershipTest" time="0.006"/>
+  <testcase name="non-empty existing lock target is rejected without rewrite" classname="com.example.chatbar.desktop.DesktopDataRootOwnershipTest" time="0.004"/>
+  <testcase name="symbolic-link lock target is rejected when fixture is available" classname="com.example.chatbar.desktop.DesktopDataRootOwnershipTest" time="0.002"/>
+  <system-out><![CDATA[SYMLINK_FIXTURE_UNAVAILABLE
+SYMLINK_FIXTURE_UNAVAILABLE
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

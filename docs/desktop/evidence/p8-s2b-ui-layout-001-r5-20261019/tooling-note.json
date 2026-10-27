@@ -1,0 +1,9 @@
+{
+  "category": "Evidence helper final summary print encoding failure, not a test rerun",
+  "initialScript": "freeze-hold-evidence-initial.py",
+  "error": "UnicodeDecodeError: 'gbk' codec can't decode byte 0xad in position 9931: illegal multibyte sequence",
+  "location": "Final print expression read_text() without encoding, after evidence files had all been written",
+  "effect": "Evidence and source records already copied; no test or production source affected",
+  "repair": "Explicit UTF-8 only for final summary read_text; fixed script retained but full freezing script not rerun because evidence directory already exists",
+  "testsRerunAfterRed": 0
+}

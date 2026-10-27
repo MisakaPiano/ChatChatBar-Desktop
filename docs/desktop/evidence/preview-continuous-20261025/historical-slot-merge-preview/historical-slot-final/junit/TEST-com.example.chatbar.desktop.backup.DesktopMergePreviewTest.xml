@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.backup.DesktopMergePreviewTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-24T17:07:44.026Z" hostname="DD1" time="0.047">
+  <properties/>
+  <testcase name="equalMediaBytesCompareEquallyAcrossDifferentSourcePaths" classname="com.example.chatbar.desktop.backup.DesktopMergePreviewTest" time="0.038"/>
+  <testcase name="bothUniqueSidesSurviveWithoutAnyConflictOrSourceMutation" classname="com.example.chatbar.desktop.backup.DesktopMergePreviewTest" time="0.0"/>
+  <testcase name="sameNameDifferentIdentityIsVisibleAndKeepingBothDoesNotRequirePromptOrNameEdits" classname="com.example.chatbar.desktop.backup.DesktopMergePreviewTest" time="0.002"/>
+  <testcase name="messageIdCollisionAcrossDifferentSessionsRequiresRemapAndCannotDeleteTheOtherConversation" classname="com.example.chatbar.desktop.backup.DesktopMergePreviewTest" time="0.0"/>
+  <testcase name="selectiveScopeCannotOverwriteUnselectedComputerSettingsOrInventBothForSingletonFields" classname="com.example.chatbar.desktop.backup.DesktopMergePreviewTest" time="0.003"/>
+  <testcase name="sameModelIdDifferentEndpointIsAnAccountConflict" classname="com.example.chatbar.desktop.backup.DesktopMergePreviewTest" time="0.001"/>
+  <testcase name="sameIdDifferentContentRequiresExplicitApplicableChoiceAndNeverLastWriteWins" classname="com.example.chatbar.desktop.backup.DesktopMergePreviewTest" time="0.0"/>
+  <testcase name="identicalInputIsNotAddedTwiceAndObjectOrderDoesNotChangeItsIdentity" classname="com.example.chatbar.desktop.backup.DesktopMergePreviewTest" time="0.001"/>
+  <testcase name="forkedConversationsAreWholeBundlesRatherThanTimestampSplices" classname="com.example.chatbar.desktop.backup.DesktopMergePreviewTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

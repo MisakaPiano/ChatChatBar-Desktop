@@ -1,0 +1,372 @@
+[
+  {
+    "path": "isolated-headless-correction-20261025/arguments.json",
+    "bytes": 990,
+    "sha256": "43889086a8ec331aae5724781b5ce197b626b9e1aaa28a7885493712114d2f5c"
+  },
+  {
+    "path": "isolated-headless-correction-20261025/exit.txt",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "path": "isolated-headless-correction-20261025/gradle.log",
+    "bytes": 4071,
+    "sha256": "c9258ab0f433af40ef0c1c34fae00c0280d1c8ee85ccf2ca7490974510e67c82"
+  },
+  {
+    "path": "isolated-headless-correction-20261025/head.txt",
+    "bytes": 40,
+    "sha256": "1c39004eb7aa30b37b08de2b065f1a131b922bd8760fc8d798f23d0015c574f9"
+  },
+  {
+    "path": "isolated-headless-correction-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFakeChatRuntimeTest.xml",
+    "bytes": 1928,
+    "sha256": "5c00eba84f68f3a6d0d3e70e029c0f55b87596826a53e035cfb37d971973299d"
+  },
+  {
+    "path": "isolated-headless-correction-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFormatRepairPresentationTest.xml",
+    "bytes": 3995,
+    "sha256": "97befdc140b09f1e503ae48b948fce61b3a960ccaa88f22148606150a8e539ea"
+  },
+  {
+    "path": "isolated-headless-correction-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopImageWindowPresentationTest.xml",
+    "bytes": 1057,
+    "sha256": "add4232065b21d2620aac871335ca996fc84f2c912a384b0eb9ce1d58d717d4c"
+  },
+  {
+    "path": "isolated-headless-correction-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopMessageImagePresentationTest.xml",
+    "bytes": 5994,
+    "sha256": "4a6745862cf46088afe81a6210a70887fcdc8b410e69fccc124cfd13dd3778d6"
+  },
+  {
+    "path": "isolated-headless-correction-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopPhase5VerticalAcceptanceTest.xml",
+    "bytes": 7206,
+    "sha256": "9fe184ec02cc0db88e310671b9a2f365fbb95f9d6d645c3dbe87663b29bd86a8"
+  },
+  {
+    "path": "isolated-headless-correction-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopPostP8IntegrationTest.xml",
+    "bytes": 5255,
+    "sha256": "9acf0f74ff8d391f4b4707ed110c80c2bd29d015876c6393d95d2a432384b7d6"
+  },
+  {
+    "path": "isolated-headless-correction-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopRegenerationTest.xml",
+    "bytes": 2952,
+    "sha256": "0e04c9c84384ce3db64589584ce7f713dcbf2ecc6237457a80e2e2a6ad623388"
+  },
+  {
+    "path": "isolated-headless-correction-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatRequestPlanner.kt",
+    "bytes": 17310,
+    "sha256": "aeade3869eb7bdab505404d5a651bde8a54485cf9860a99532bd8807b4fca91f"
+  },
+  {
+    "path": "isolated-headless-correction-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFormatRepairPresentationTest.kt",
+    "bytes": 13704,
+    "sha256": "7169c16da624a955efe64ba63f89867515b85c7b860ffad2f952d9576475180b"
+  },
+  {
+    "path": "isolated-headless-correction-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopImageWindowPresentationTest.kt",
+    "bytes": 6881,
+    "sha256": "2504c3bdfe11351fd38eb0541fc09a3ef406bd07b940971953e57bb3a9fe3e48"
+  },
+  {
+    "path": "isolated-headless-correction-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopMessageImagePresentationTest.kt",
+    "bytes": 38500,
+    "sha256": "d74a6dd925e5b2d26e1bcb4d69a07fa58661649f1f40fd974c14ec40dfbe0c5e"
+  },
+  {
+    "path": "isolated-headless-correction-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopPhase5VerticalAcceptanceTest.kt",
+    "bytes": 18947,
+    "sha256": "1fa0f9bcdda976a24ca5c0b26c4a0bb72c5e077beb87311ec884cf47a457d2bd"
+  },
+  {
+    "path": "isolated-headless-correction-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopPostP8IntegrationTest.kt",
+    "bytes": 11053,
+    "sha256": "47414762fe78c1ea2b084c3219f2e42971986f6907b32aac08340f7ce1feaaee"
+  },
+  {
+    "path": "isolated-headless-correction-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopRegenerationTest.kt",
+    "bytes": 22676,
+    "sha256": "e4592059a51e171c5802fa23e0effd237ddacc596bad44bc267df61f3a7c4c4e"
+  },
+  {
+    "path": "isolated-headless-correction-20261025/test-scope.init.gradle",
+    "bytes": 141,
+    "sha256": "cff9991c2ba66623b77914704e703bf8a2508bce4a08fcd504a7a43fd91d57ce"
+  },
+  {
+    "path": "isolated-headless-final-20261025/arguments.json",
+    "bytes": 1083,
+    "sha256": "d7f2e2f035c9223794d6251e6e6bbbbc89c8e147073560d26d8ae46825010eca"
+  },
+  {
+    "path": "isolated-headless-final-20261025/exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "isolated-headless-final-20261025/gradle.log",
+    "bytes": 2239,
+    "sha256": "ac9194da57d514f3da3751713690c89efcd32e2516cff32dcfa451860e829eb5"
+  },
+  {
+    "path": "isolated-headless-final-20261025/head.txt",
+    "bytes": 40,
+    "sha256": "1c39004eb7aa30b37b08de2b065f1a131b922bd8760fc8d798f23d0015c574f9"
+  },
+  {
+    "path": "isolated-headless-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFakeChatRuntimeTest.xml",
+    "bytes": 1929,
+    "sha256": "533d0934ca3068455122eb01fcc0addb4af9c0a536899fc98f93502908cd523f"
+  },
+  {
+    "path": "isolated-headless-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFormatRepairPresentationTest.xml",
+    "bytes": 1530,
+    "sha256": "375d9efb0d42a4f5beec3e4ef383986c4fd1d6cf3bc27725dbf7b7367f1747e7"
+  },
+  {
+    "path": "isolated-headless-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopImageWindowPresentationTest.xml",
+    "bytes": 1060,
+    "sha256": "1ed4e63d5b72f23f8ea6f8ace9a68f50eff4817ed16e08334be911cfa433d868"
+  },
+  {
+    "path": "isolated-headless-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopMemoryLifecycleTest.xml",
+    "bytes": 1085,
+    "sha256": "926c672e8459d5bcca949c1455c7b744102dc5b634a4050bfce92f191dfca3db"
+  },
+  {
+    "path": "isolated-headless-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopMemorySafetyTest.xml",
+    "bytes": 850,
+    "sha256": "2a4c9e93b53a2092b79bc2b5c81c8e8bdfcbc588863bd0ae8886582d2c89e6f2"
+  },
+  {
+    "path": "isolated-headless-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopMessageImagePresentationTest.xml",
+    "bytes": 3785,
+    "sha256": "150948fdc613119aa19d4fab4290c3af5f51199b9ae976e4536e5a41a9d509be"
+  },
+  {
+    "path": "isolated-headless-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopPhase5VerticalAcceptanceTest.xml",
+    "bytes": 549,
+    "sha256": "3d3f40043d629fb1d3ae3f3d937704eb8e96c0faffd8fa422be20fe62bdbc2b6"
+  },
+  {
+    "path": "isolated-headless-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopPostP8IntegrationTest.xml",
+    "bytes": 1802,
+    "sha256": "9881c8a9e1ca138ff436e1d780ecaa4d9535c5eb8f1cad851201c7633dee6330"
+  },
+  {
+    "path": "isolated-headless-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopRegenerationTest.xml",
+    "bytes": 2952,
+    "sha256": "04bad068af54c6debb9cf4001a6f71e4a976d3a4ea6c0b2907a8386ba60c82b2"
+  },
+  {
+    "path": "isolated-headless-final-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatRequestPlanner.kt",
+    "bytes": 17310,
+    "sha256": "aeade3869eb7bdab505404d5a651bde8a54485cf9860a99532bd8807b4fca91f"
+  },
+  {
+    "path": "isolated-headless-final-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFormatRepairPresentationTest.kt",
+    "bytes": 13796,
+    "sha256": "1c087bd2bda436024e64182d55fb31fc0bf1d360ef8406ee2c235a6386ec3b1f"
+  },
+  {
+    "path": "isolated-headless-final-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopImageWindowPresentationTest.kt",
+    "bytes": 6881,
+    "sha256": "2504c3bdfe11351fd38eb0541fc09a3ef406bd07b940971953e57bb3a9fe3e48"
+  },
+  {
+    "path": "isolated-headless-final-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopMessageImagePresentationTest.kt",
+    "bytes": 38565,
+    "sha256": "580e6e603139387c638a8eb6ee1295816fb5f828a339457b9cc5cc674dbf60da"
+  },
+  {
+    "path": "isolated-headless-final-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopPhase5VerticalAcceptanceTest.kt",
+    "bytes": 20003,
+    "sha256": "e827119d1b60114836540ce3cc028ac26be82961262ae49254f6631a1c2e6fea"
+  },
+  {
+    "path": "isolated-headless-final-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopPostP8IntegrationTest.kt",
+    "bytes": 11043,
+    "sha256": "64610a003bcb69aa35e95999f8853b1902e2742e117d158b9cb5fe4e5689e276"
+  },
+  {
+    "path": "isolated-headless-final-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopRegenerationTest.kt",
+    "bytes": 22676,
+    "sha256": "e4592059a51e171c5802fa23e0effd237ddacc596bad44bc267df61f3a7c4c4e"
+  },
+  {
+    "path": "isolated-headless-final-20261025/test-scope.init.gradle",
+    "bytes": 141,
+    "sha256": "cff9991c2ba66623b77914704e703bf8a2508bce4a08fcd504a7a43fd91d57ce"
+  },
+  {
+    "path": "isolated-headless-followup-20261025/arguments.json",
+    "bytes": 990,
+    "sha256": "43889086a8ec331aae5724781b5ce197b626b9e1aaa28a7885493712114d2f5c"
+  },
+  {
+    "path": "isolated-headless-followup-20261025/exit.txt",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "path": "isolated-headless-followup-20261025/gradle.log",
+    "bytes": 4659,
+    "sha256": "36436450af490a40cee324c2516156674358356295f375f8aceec0aaf4e6ad80"
+  },
+  {
+    "path": "isolated-headless-followup-20261025/head.txt",
+    "bytes": 40,
+    "sha256": "1c39004eb7aa30b37b08de2b065f1a131b922bd8760fc8d798f23d0015c574f9"
+  },
+  {
+    "path": "isolated-headless-followup-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFakeChatRuntimeTest.xml",
+    "bytes": 1930,
+    "sha256": "7ad93a80e535ae6f62713645c8cdd810aa3f165ccef842ed098ca1eb6be506ee"
+  },
+  {
+    "path": "isolated-headless-followup-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFormatRepairPresentationTest.xml",
+    "bytes": 4262,
+    "sha256": "ff386b6beadec43d0e1c982321189df196353f08cb66d78cacb76129b5021d11"
+  },
+  {
+    "path": "isolated-headless-followup-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopImageWindowPresentationTest.xml",
+    "bytes": 2345,
+    "sha256": "fd1dda7edc5e3c2525978d720f0a9a5d51da25faf0d6c8f6bbea937aa3d6dfde"
+  },
+  {
+    "path": "isolated-headless-followup-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopMessageImagePresentationTest.xml",
+    "bytes": 8189,
+    "sha256": "cedfb243d96d1cbd7d2a1653732a82b75ad78ffcc839b658886de051030baff0"
+  },
+  {
+    "path": "isolated-headless-followup-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopPhase5VerticalAcceptanceTest.xml",
+    "bytes": 7206,
+    "sha256": "a5356977afde3bf73876db8d2f63d4988454ff1574add871c3f18d5c4ab40c90"
+  },
+  {
+    "path": "isolated-headless-followup-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopPostP8IntegrationTest.xml",
+    "bytes": 6085,
+    "sha256": "474fd069ada74836698467abb9703ee86205cdcbfbddb618ff37d66cb6ba7409"
+  },
+  {
+    "path": "isolated-headless-followup-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopRegenerationTest.xml",
+    "bytes": 8766,
+    "sha256": "e71dafa05e9fe235c1fea6eb68ae9a4527a502382544d2c165ff72e30649afc8"
+  },
+  {
+    "path": "isolated-headless-followup-20261025/test-scope.init.gradle",
+    "bytes": 141,
+    "sha256": "cff9991c2ba66623b77914704e703bf8a2508bce4a08fcd504a7a43fd91d57ce"
+  },
+  {
+    "path": "isolated-headless-verified-20261025/arguments.json",
+    "bytes": 990,
+    "sha256": "43889086a8ec331aae5724781b5ce197b626b9e1aaa28a7885493712114d2f5c"
+  },
+  {
+    "path": "isolated-headless-verified-20261025/exit.txt",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "path": "isolated-headless-verified-20261025/gradle.log",
+    "bytes": 3059,
+    "sha256": "f469fce03e798c7f27bc23a3cbe86a24fc31700088cf73e9942004766bb5cd5a"
+  },
+  {
+    "path": "isolated-headless-verified-20261025/head.txt",
+    "bytes": 40,
+    "sha256": "1c39004eb7aa30b37b08de2b065f1a131b922bd8760fc8d798f23d0015c574f9"
+  },
+  {
+    "path": "isolated-headless-verified-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFakeChatRuntimeTest.xml",
+    "bytes": 1932,
+    "sha256": "f09e07037aad847b56d685e0cfce632ae3d991b7db4923c3ff46162dc4e01a76"
+  },
+  {
+    "path": "isolated-headless-verified-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFormatRepairPresentationTest.xml",
+    "bytes": 1530,
+    "sha256": "47ee6d985a4d7a5bd82189f52bb4ed810525e74c09d7ce18651a63e4086fa005"
+  },
+  {
+    "path": "isolated-headless-verified-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopImageWindowPresentationTest.xml",
+    "bytes": 1060,
+    "sha256": "72bc518600faca9ce59614977b03a39c4815ba1cf2409ed403495a153de09e52"
+  },
+  {
+    "path": "isolated-headless-verified-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopMessageImagePresentationTest.xml",
+    "bytes": 5547,
+    "sha256": "750df18908a8c98b9eb097d9aba115ad04b2e609685e20a2ce1270a54fbdea40"
+  },
+  {
+    "path": "isolated-headless-verified-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopPhase5VerticalAcceptanceTest.xml",
+    "bytes": 7206,
+    "sha256": "4f8a471c056fc505892f09418a25216e8482cb1202aa1215a06a89d31139f3b0"
+  },
+  {
+    "path": "isolated-headless-verified-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopPostP8IntegrationTest.xml",
+    "bytes": 1801,
+    "sha256": "b41d8a8249b0ba549c299096f2bda45d9bbf9c9d9b0eb3d617ea2a71370d47f4"
+  },
+  {
+    "path": "isolated-headless-verified-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopRegenerationTest.xml",
+    "bytes": 2951,
+    "sha256": "42bf113fbda75fe4ee581887bf950dadb349639c612f3a6a098476861615fb27"
+  },
+  {
+    "path": "isolated-headless-verified-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatRequestPlanner.kt",
+    "bytes": 17310,
+    "sha256": "aeade3869eb7bdab505404d5a651bde8a54485cf9860a99532bd8807b4fca91f"
+  },
+  {
+    "path": "isolated-headless-verified-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFormatRepairPresentationTest.kt",
+    "bytes": 13796,
+    "sha256": "1c087bd2bda436024e64182d55fb31fc0bf1d360ef8406ee2c235a6386ec3b1f"
+  },
+  {
+    "path": "isolated-headless-verified-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopImageWindowPresentationTest.kt",
+    "bytes": 6881,
+    "sha256": "2504c3bdfe11351fd38eb0541fc09a3ef406bd07b940971953e57bb3a9fe3e48"
+  },
+  {
+    "path": "isolated-headless-verified-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopMessageImagePresentationTest.kt",
+    "bytes": 38494,
+    "sha256": "1f4ac9cabe7730d470fd6edebac085045021b0c283f58089da27d7c3fd48a267"
+  },
+  {
+    "path": "isolated-headless-verified-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopPhase5VerticalAcceptanceTest.kt",
+    "bytes": 19529,
+    "sha256": "2461163b3c9be727b13cc012f31c9d1fc49f22f55306051e80ab56cac368929f"
+  },
+  {
+    "path": "isolated-headless-verified-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopPostP8IntegrationTest.kt",
+    "bytes": 11043,
+    "sha256": "64610a003bcb69aa35e95999f8853b1902e2742e117d158b9cb5fe4e5689e276"
+  },
+  {
+    "path": "isolated-headless-verified-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopRegenerationTest.kt",
+    "bytes": 22676,
+    "sha256": "e4592059a51e171c5802fa23e0effd237ddacc596bad44bc267df61f3a7c4c4e"
+  },
+  {
+    "path": "isolated-headless-verified-20261025/test-scope.init.gradle",
+    "bytes": 141,
+    "sha256": "cff9991c2ba66623b77914704e703bf8a2508bce4a08fcd504a7a43fd91d57ce"
+  },
+  {
+    "path": "RESULT.json",
+    "bytes": 636,
+    "sha256": "7d6b45c293f95f175d4ac69541dfbba3085b539df1108338fc652ac109b41a7a"
+  },
+  {
+    "path": "RESULT.md",
+    "bytes": 3491,
+    "sha256": "60881f685effcd82bfabe45f2aef8413f156705c98f43388404fff202704cf52"
+  },
+  {
+    "path": "SOURCE_IDENTITY.json",
+    "bytes": 6436,
+    "sha256": "135c7d655e647e2ae8df957e8e085daa4503508516604fd52e3ac125a9d69bfd"
+  }
+]

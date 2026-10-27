@@ -1,0 +1,15 @@
+{
+  "utc": "2026-10-16T09:08:37.247Z",
+  "windows": [
+    {
+      "app": "process:<LOCAL_GATE>\\ordinary-image\\ChatChatBarDesktop.exe",
+      "id": 43783268,
+      "title": "ChatChatBar"
+    },
+    {
+      "app": "process:<LOCAL_GATE>\\ordinary-image\\ChatChatBarDesktop.exe",
+      "id": 46145514,
+      "title": "ChatChatBar"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.utils.AiRequestLogTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:26.751Z" hostname="DD1" time="0.006">
+  <properties/>
+  <testcase name="credentialsAndImageBytesAreRemovedFromDiagnosticCopy" classname="com.example.chatbar.utils.AiRequestLogTest" time="0.0"/>
+  <testcase name="repairMarksPrecedingInvalidResponseWithoutChangingItsRawText" classname="com.example.chatbar.utils.AiRequestLogTest" time="0.001"/>
+  <testcase name="concurrentRequestsWithSameSessionRemainIndependent" classname="com.example.chatbar.utils.AiRequestLogTest" time="0.0"/>
+  <testcase name="smallDeltasAccumulateEstimatesAndLongLogsAreBounded" classname="com.example.chatbar.utils.AiRequestLogTest" time="0.005"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,5 @@
+{
+  "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPresentationTest.kt",
+  "sha256": "a2d4958ebd462505e18770453e5743406348406e0df4a31dd42460660b0aa743",
+  "mode": "single bounded reproduction of original known RED; no timeout increase; cancellation joined"
+}

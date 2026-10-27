@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopPostP8IntegrationTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-25T03:17:57.562Z" hostname="DD1" time="2.685">
+  <properties/>
+  <testcase name="effective audiobook controls single line right role choice and hides it when off" classname="com.example.chatbar.desktop.DesktopPostP8IntegrationTest" time="1.237"/>
+  <testcase name="message mutation invalidates an old play request waiting for player admission" classname="com.example.chatbar.desktop.DesktopPostP8IntegrationTest" time="0.681"/>
+  <testcase name="details expose independent controls for every batch including text confirmation" classname="com.example.chatbar.desktop.DesktopPostP8IntegrationTest" time="0.073"/>
+  <testcase name="cross reply playback refuses a starting voice owned by another message" classname="com.example.chatbar.desktop.DesktopPostP8IntegrationTest" time="0.132"/>
+  <testcase name="multi character narration still needs explicit choice when only one voice is bound" classname="com.example.chatbar.desktop.DesktopPostP8IntegrationTest" time="0.201"/>
+  <testcase name="replacement feedback identifies committed target and is cleared before failed replacement" classname="com.example.chatbar.desktop.DesktopPostP8IntegrationTest" time="0.216"/>
+  <testcase name="same popup closes once on Escape or outside and clamps narrow width" classname="com.example.chatbar.desktop.DesktopPostP8IntegrationTest" time="0.144"/>
+  <system-out><![CDATA[CONTEXT_FOCUS_BEFORE width=360 focused=[72]
+CONTEXT_FOCUS_READY width=360 focused=[72]
+CONTEXT_FOCUS_BEFORE width=1100 focused=[128]
+CONTEXT_FOCUS_READY width=1100 focused=[128]
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

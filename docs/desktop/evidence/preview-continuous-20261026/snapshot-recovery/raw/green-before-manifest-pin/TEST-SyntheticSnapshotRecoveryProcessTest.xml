@@ -1,0 +1,2 @@
+<?xml version='1.0' encoding='utf-8'?>
+<testsuite name="SyntheticSnapshotRecoveryProcessTest" tests="2" failures="0" errors="0" skipped="0" time="3.6090000000003783"><testcase classname="SyntheticSnapshotRecoveryProcessTest" name="test_corrupt_selected_snapshot_rejects_before_live_changes" /><testcase classname="SyntheticSnapshotRecoveryProcessTest" name="test_restore_then_two_independent_repository_reopens" /></testsuite>

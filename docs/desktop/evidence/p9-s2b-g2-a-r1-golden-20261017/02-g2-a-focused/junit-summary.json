@@ -1,0 +1,23 @@
+[
+  {
+    "suite": "com.example.chatbar.desktop.DesktopDocumentIndexReadEvidenceTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "suite": "com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorProcessTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "suite": "com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest",
+    "tests": 42,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1
+  }
+]

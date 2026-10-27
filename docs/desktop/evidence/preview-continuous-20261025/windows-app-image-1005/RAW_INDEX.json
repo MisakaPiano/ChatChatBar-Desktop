@@ -1,0 +1,93 @@
+{
+  "source": "f0da765edd42ed7b0f8bd4c14f68bd6b61ca1884",
+  "files": {
+    "default-reopen-1005-lifecycle.json": {
+      "bytes": 473,
+      "sha256": "a4e1b16a3d714d074333fdcf9d003412d7998a03db2c9978a2e7e3555107ae29"
+    },
+    "default-reopen-1005-stderr-private.log": {
+      "bytes": 1381,
+      "sha256": "f48d1bbf40a56774dfdcc0b9a9397048cdc4cf74258aaa14e722fe5d05feb073"
+    },
+    "initial-1005-lifecycle.json": {
+      "bytes": 473,
+      "sha256": "a4e1b16a3d714d074333fdcf9d003412d7998a03db2c9978a2e7e3555107ae29"
+    },
+    "initial-1005-stderr-private.log": {
+      "bytes": 1369,
+      "sha256": "de8198b6d5613dcb94ce94fd302a196ca8091a6d97ae46ed4659094cd769fe7c"
+    },
+    "native-app-image-probe.py": {
+      "bytes": 23752,
+      "sha256": "a1bf5bd76cb01df96c702d58ba6bac5e7616450f04982541b311129d7937831b"
+    },
+    "package-arguments.json": {
+      "bytes": 668,
+      "sha256": "fb8f6ab45577adeb6fd6ca71d3b0bb92bca632dbbff02e03fc85f2ae7e419e79"
+    },
+    "package-Build-SyntheticPackage.ps1": {
+      "bytes": 6394,
+      "sha256": "70009f0d746b37b783e18dcd50eda9884f4e6cc3dcbba3b0ec518ad858e22261"
+    },
+    "package-build.log": {
+      "bytes": 10643,
+      "sha256": "164ccd2c819d682a8fdafddccc40594943eeb3776b08f7f105f3497ebd9c2c3b"
+    },
+    "package-BUILD_INPUTS.json": {
+      "bytes": 165659,
+      "sha256": "7bf1f5322fc5cc6a175175574a515fa66306bd0510e365a06c50b4b229b54c1f"
+    },
+    "package-exit.txt": {
+      "bytes": 1,
+      "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+    },
+    "package-head.txt": {
+      "bytes": 40,
+      "sha256": "64372207f7ae8e0cba6d099087990e8c55fc7118db2f1eaed3c4d257f9e6a0be"
+    },
+    "package-package.init.gradle": {
+      "bytes": 178,
+      "sha256": "80c7ec52395e48b14fcdae0c39a1611ee849feb8d5dc5ee59e5fa4abcbfe75c4"
+    },
+    "package-PACKAGE_FILES.json": {
+      "bytes": 38132,
+      "sha256": "4dcc11830fa2ee2ecb8c243ece62cf84e3f0771b6a212405f7b446a4d167d146"
+    },
+    "package-PACKAGED_BUILD_IDENTITY.properties": {
+      "bytes": 158,
+      "sha256": "023c47d2ff1b858b051319977082470ab30b2dd0b25c958fdccaaa8b68fb9ee1"
+    },
+    "PACKAGE_AUDIT.json": {
+      "bytes": 297,
+      "sha256": "6860e99164c5c6376debe2364362285f56de8b3ed184c5dcf7b199985b9efa57"
+    },
+    "REAL_SOURCE_AGGREGATE_ONLY.md": {
+      "bytes": 2641,
+      "sha256": "8aef9b759f5d672c3b945e1a7ade25f81e0618bd0988e046f96b14b877c73266"
+    },
+    "RESULT.md": {
+      "bytes": 2423,
+      "sha256": "a025b20ee810d5786dce546638edbc5044036baa73aa37c0ea4f9480ec06d095"
+    },
+    "seed-exit.txt": {
+      "bytes": 1,
+      "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+    },
+    "seed-private.log": {
+      "bytes": 66,
+      "sha256": "458b137f717b79bece90688bfd922db1e81802249c792a9584e40a607b0321d1"
+    },
+    "software-1005-owned-close.json": {
+      "bytes": 267,
+      "sha256": "7b38cb643778d6b19163a6704465f9656e54d4ca2d2b89b5faf05178a5976390"
+    },
+    "verify-after-gui-exit.txt": {
+      "bytes": 1,
+      "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+    },
+    "verify-after-gui-private.log": {
+      "bytes": 66,
+      "sha256": "458b137f717b79bece90688bfd922db1e81802249c792a9584e40a607b0321d1"
+    }
+  }
+}

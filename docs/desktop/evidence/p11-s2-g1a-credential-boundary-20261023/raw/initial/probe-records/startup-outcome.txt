@@ -1,0 +1,1 @@
+SYNTHETIC_OBSERVED STARTUP_REGISTERED_ROWS_RECOVERED DATA_NEW_KEY_OLD; no input credential mapping or OS user switch

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.ui.imageprompt.StudioImageTaskCompletionTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:26.615Z" hostname="DD1" time="0.079">
+  <properties/>
+  <testcase name="cleanup failure cannot strand cancelled generation" classname="com.example.chatbar.ui.imageprompt.StudioImageTaskCompletionTest" time="0.05"/>
+  <testcase name="ordinary failure also publishes after cleanup" classname="com.example.chatbar.ui.imageprompt.StudioImageTaskCompletionTest" time="0.01"/>
+  <testcase name="cancelled generation publishes terminal state after IO cleanup" classname="com.example.chatbar.ui.imageprompt.StudioImageTaskCompletionTest" time="0.019"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

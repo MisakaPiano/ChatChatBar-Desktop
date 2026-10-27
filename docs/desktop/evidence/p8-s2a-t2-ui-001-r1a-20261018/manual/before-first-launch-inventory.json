@@ -1,0 +1,46 @@
+{
+  "scope": "isolated synthetic data root only; credential store excluded",
+  "files": [
+    {
+      "path": ".ccb-desktop.lock",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "entities/app_settings.json",
+      "bytes": 146,
+      "sha256": "e870053c26e32276626e8e813db9250786b6ee4873c681d55d18a53719360d53"
+    },
+    {
+      "path": "entities/character_cards/t2-freeform.json",
+      "bytes": 383,
+      "sha256": "1df89bf8f16f90c5f1938f5fd525c86e7e52ebc6627982b619b7d729d1da997e"
+    },
+    {
+      "path": "entities/character_cards/t2-structured.json",
+      "bytes": 388,
+      "sha256": "855cea4dbaa9ae38a85a718a916b2122adc78c8a6ab93047dc29e98649d18da2"
+    },
+    {
+      "path": "entities/chat_sessions/t2-session-a.json",
+      "bytes": 135,
+      "sha256": "5a6616dbfb1dd2d87676ca57b5d84e6b5ef7c7ec9b43c2072dd33defa73597b1"
+    },
+    {
+      "path": "entities/chat_sessions/t2-session-b.json",
+      "bytes": 133,
+      "sha256": "a27d618564b3461e2b069493eb5b3102a90ab98ff39f65267644d196362a3e09"
+    },
+    {
+      "path": "entities/model_configs/t2-aux.json",
+      "bytes": 195,
+      "sha256": "2e1230e749bc439264803f5fecba7d0f2286922bb8661235a417bb794d60234f"
+    },
+    {
+      "path": "entities/model_configs/t2-chat.json",
+      "bytes": 189,
+      "sha256": "b7a889a74483057ff931b1c66f1ced9a88740cf141670076f1371bcc15b386fd"
+    }
+  ],
+  "utc": "2026-10-17T21:00:49.729715+00:00"
+}

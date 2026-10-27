@@ -1,0 +1,35 @@
+{
+  "utc": "2026-10-20T18:51:37.102291+00:00",
+  "step": "C4 long image fit-window / existing viewer reuse request",
+  "userVerbatim": "通过，但是就像我说的，这玩意不是弹窗真的无法接受。我们不是有成熟的预览弹窗吗？加一个纵向滚轴不好吗",
+  "fitWindowUser": "USER PASS",
+  "observedPercentLabel": "4%",
+  "observation": "Supplied screenshot shows complete long image fitted into embedded preview, selected 1 item / recording 0. No actual long PNG export yet.",
+  "previewLayoutUser": "USER FAIL (reaffirmed unacceptable)",
+  "requestedDirection": "Reuse existing image preview popup and add vertical scrollbar for long image. User challenges continued embedded preview.",
+  "verifiedSourceReuseCandidates": [
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopImageViewer.kt",
+      "line": 138,
+      "function": "DesktopImageViewer",
+      "uses": "DesktopImageToolWindow and DesktopImageZoomSurface; normal chat images/Studio/background callers exist"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopImageViewer.kt",
+      "line": 237,
+      "function": "DesktopTransientImagePreview",
+      "uses": "read-only transient byte loader, independent image tool window and close-preview control"
+    }
+  ],
+  "engineeringBoundary": "Reuse candidate verified in code; do not claim existing viewer already meets long-image scrolling, screenshot resource/version verification, no-overwrite export or native close ownership requirements. No implementation during Gate.",
+  "attachment": "C4_LONG_FIT_WINDOW.png",
+  "sha256": "8e1bed2d2a484a3d961a1e0a1aab5c9d55a7647c2c5e42db9605cabe6680bdf3",
+  "unverified": [
+    "100% and 800%",
+    "dual-axis scrolling",
+    "Ctrl-wheel",
+    "sub-1% fit/window label",
+    "actual long PNG export/viewer"
+  ],
+  "postP8Hold": "UNCHANGED"
+}

@@ -1,0 +1,897 @@
+[
+  {
+    "path": "raw/02-red-screenshot/command.json",
+    "size": 336,
+    "sha256": "4547012569a5e681f62409e38d19e5e0f518f93cce2093c190123f847950aa74"
+  },
+  {
+    "path": "raw/02-red-screenshot/resources.json",
+    "size": 101,
+    "sha256": "bf9569b6b1565e10f9f1336ec806c0d935b321aa77de0cd2487c5e20db3e51c9"
+  },
+  {
+    "path": "raw/02-red-screenshot/result.json",
+    "size": 116,
+    "sha256": "9193225704e85d975d6e8f66f18ee38153865ce3dd385ae71ea6dde3958fcb1e"
+  },
+  {
+    "path": "raw/02-red-screenshot/stderr.log",
+    "size": 756,
+    "sha256": "a3000daa9c8271b2b7a77c45a91eb71f8a5212b0512d82dea207b42e2987ddbd"
+  },
+  {
+    "path": "raw/02-red-screenshot/stdout.log",
+    "size": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "raw/02-red-screenshot/xml-provenance.json",
+    "size": 77,
+    "sha256": "8a849973ef7a48085d0311fd3234931f281657d8cd31589c7ffb96ab0f4db9fb"
+  },
+  {
+    "path": "raw/03-red-screenshot/command.json",
+    "size": 336,
+    "sha256": "4547012569a5e681f62409e38d19e5e0f518f93cce2093c190123f847950aa74"
+  },
+  {
+    "path": "raw/03-red-screenshot/resources.json",
+    "size": 101,
+    "sha256": "ab406760098bb18c7e0c15d4818551fdbcd63a8f758503ce476484ccb496acb8"
+  },
+  {
+    "path": "raw/03-red-screenshot/result.json",
+    "size": 116,
+    "sha256": "e164d9f7dc82dc7a8c80ff4e94a9c4f7182251c1505a2b64bf5db0076bdf5eba"
+  },
+  {
+    "path": "raw/03-red-screenshot/stderr.log",
+    "size": 1331,
+    "sha256": "08d7904fc2ed920dcbf30d9bb256fcb35ba06d332094ed98b49adf6a28aa88a7"
+  },
+  {
+    "path": "raw/03-red-screenshot/stdout.log",
+    "size": 1835,
+    "sha256": "e10597d21e0d890f48687525c211b377002c0cf86165d32972b0ec1a0596138f"
+  },
+  {
+    "path": "raw/03-red-screenshot/xml-provenance.json",
+    "size": 77,
+    "sha256": "8a849973ef7a48085d0311fd3234931f281657d8cd31589c7ffb96ab0f4db9fb"
+  },
+  {
+    "path": "raw/04-red-blockers/command.json",
+    "size": 408,
+    "sha256": "0c4d4c0c4e6c5e1c7310c0641bae89b3f0d7a7c2b0c92cd9ac291c06b0e78e8f"
+  },
+  {
+    "path": "raw/04-red-blockers/resources.json",
+    "size": 101,
+    "sha256": "7f730b66fd18691198d3f5310ebb3fca194e3f21de894f802b809fdcf341e051"
+  },
+  {
+    "path": "raw/04-red-blockers/result.json",
+    "size": 116,
+    "sha256": "8e7d3b1972427016d6c442d47d5e5b722b0b496067a795ac26e9d81d77345eef"
+  },
+  {
+    "path": "raw/04-red-blockers/stderr.log",
+    "size": 849,
+    "sha256": "7e67eae9806b5fc9c086621a68f83d3080b28f248fad2a2aecebab4a35630922"
+  },
+  {
+    "path": "raw/04-red-blockers/stdout.log",
+    "size": 1879,
+    "sha256": "df969d905fa76309e334fd65f2a74b055e97ad187056b920326ab3620d8a6b29"
+  },
+  {
+    "path": "raw/04-red-blockers/xml-provenance.json",
+    "size": 77,
+    "sha256": "8a849973ef7a48085d0311fd3234931f281657d8cd31589c7ffb96ab0f4db9fb"
+  },
+  {
+    "path": "raw/05-red-blockers/command.json",
+    "size": 408,
+    "sha256": "0c4d4c0c4e6c5e1c7310c0641bae89b3f0d7a7c2b0c92cd9ac291c06b0e78e8f"
+  },
+  {
+    "path": "raw/05-red-blockers/resources.json",
+    "size": 101,
+    "sha256": "c5ff47cb0a76d7a345ad1596c5794ee59cc6872116f73b88fbd381cfa77017be"
+  },
+  {
+    "path": "raw/05-red-blockers/result.json",
+    "size": 116,
+    "sha256": "0f3f3568d6b3b1dea2bafc68c468875d9edc1e3e9c3fb6301d3dfe237426e203"
+  },
+  {
+    "path": "raw/05-red-blockers/stderr.log",
+    "size": 379,
+    "sha256": "64d1a9fa07ad2f70dcb7bab0c011c7bd19669f62314977b94046644b016d7085"
+  },
+  {
+    "path": "raw/05-red-blockers/stdout.log",
+    "size": 4370,
+    "sha256": "8d978189692f139de8cb8af2a859c9e1573c0025ec85827dfeb1c50de5cbcb6a"
+  },
+  {
+    "path": "raw/05-red-blockers/TEST-com.example.chatbar.desktop.DesktopR1LayoutMenuTest.xml",
+    "size": 5749,
+    "sha256": "b241755acef6b5a5d58420bed3bc32c3d6f1fd4aec716ebd26f36702488f94ca"
+  },
+  {
+    "path": "raw/05-red-blockers/TEST-com.example.chatbar.desktop.DesktopR1ScreenshotTest.xml",
+    "size": 5943,
+    "sha256": "3f00bf452954394fc654dacbb9811c795c024dc6e9e9625e8ff2bedc1a02500a"
+  },
+  {
+    "path": "raw/05-red-blockers/xml-provenance.json",
+    "size": 204,
+    "sha256": "ad284d8e05a00de78f45770aad753781e0b424c50836cc67edc8e2f7b4132b2c"
+  },
+  {
+    "path": "raw/06-green-blockers/command.json",
+    "size": 408,
+    "sha256": "0c4d4c0c4e6c5e1c7310c0641bae89b3f0d7a7c2b0c92cd9ac291c06b0e78e8f"
+  },
+  {
+    "path": "raw/06-green-blockers/resources.json",
+    "size": 101,
+    "sha256": "5db85b013d5dd3ea20166db54438f700cc4ee9f889215a79b34202e730f3040a"
+  },
+  {
+    "path": "raw/06-green-blockers/result.json",
+    "size": 116,
+    "sha256": "26b91ac3c9dd0f5027a1be251fa3ee320c4819feb73fac82146da0c29638fcad"
+  },
+  {
+    "path": "raw/06-green-blockers/stderr.log",
+    "size": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "raw/06-green-blockers/stdout.log",
+    "size": 2626,
+    "sha256": "a3a6ea967d51493eff5552dd511a683582f7aced4addf3dcfc3da15d595d7416"
+  },
+  {
+    "path": "raw/06-green-blockers/TEST-com.example.chatbar.desktop.DesktopR1LayoutMenuTest.xml",
+    "size": 972,
+    "sha256": "6b7309244cd051f9eb6bc06e4b221e00ae06ef0b2fef0f12f38e0c6f958f0651"
+  },
+  {
+    "path": "raw/06-green-blockers/TEST-com.example.chatbar.desktop.DesktopR1ScreenshotTest.xml",
+    "size": 506,
+    "sha256": "d70e55940830f3177722880349e15dca76438c5d6e94d853aefc8d55cab44b63"
+  },
+  {
+    "path": "raw/06-green-blockers/xml-provenance.json",
+    "size": 204,
+    "sha256": "ad284d8e05a00de78f45770aad753781e0b424c50836cc67edc8e2f7b4132b2c"
+  },
+  {
+    "path": "raw/07-ui-and-screenshot/command.json",
+    "size": 630,
+    "sha256": "2e63b894987bc053d3574d963d030534e65b2205f7a0fc4fb45ef7021e6789fc"
+  },
+  {
+    "path": "raw/07-ui-and-screenshot/renderer-previews/renderer-DARK.png",
+    "size": 4803,
+    "sha256": "696b45983b529028aae2b4bd5337b40e085b212d7d4b4657da15f29efe34b4aa"
+  },
+  {
+    "path": "raw/07-ui-and-screenshot/renderer-previews/renderer-LIGHT.png",
+    "size": 4599,
+    "sha256": "479c02aff61d0e51fb8c36246d4f383a2ca45f8dcb2b12fed45b39fbad9940e5"
+  },
+  {
+    "path": "raw/07-ui-and-screenshot/resources.json",
+    "size": 101,
+    "sha256": "296407a2b2a6e6e74027704b7943398ddc2764cfa6f8ca3ca83d52f53dbc8526"
+  },
+  {
+    "path": "raw/07-ui-and-screenshot/result.json",
+    "size": 116,
+    "sha256": "cf5e8734f1177602e27c4ebe1f418de922ff4a44780aa12f4d058852d6f95b7e"
+  },
+  {
+    "path": "raw/07-ui-and-screenshot/stderr.log",
+    "size": 379,
+    "sha256": "b2e47af34a241b272d2f40b069fde5001e83103b168fa752a6291ee5048dcaab"
+  },
+  {
+    "path": "raw/07-ui-and-screenshot/stdout.log",
+    "size": 4797,
+    "sha256": "fc8282742f54a023480bab9965df9d1f99a4bad5c995e8ebac306dc3ad36cd74"
+  },
+  {
+    "path": "raw/07-ui-and-screenshot/TEST-com.example.chatbar.desktop.DesktopChatScreenshotTest.xml",
+    "size": 1601,
+    "sha256": "712805b39e4eed2ae4bf469b6dbbda007fcf963674637de9afe0632f156a6a07"
+  },
+  {
+    "path": "raw/07-ui-and-screenshot/TEST-com.example.chatbar.desktop.DesktopR1LayoutMenuTest.xml",
+    "size": 971,
+    "sha256": "ff7382f4b3ea5247b7932fa7fac4c67f9c42e3ece350b660978fedfb9dec260c"
+  },
+  {
+    "path": "raw/07-ui-and-screenshot/TEST-com.example.chatbar.desktop.DesktopR1ScreenshotTest.xml",
+    "size": 504,
+    "sha256": "36d9f5250de4e2583ba951a4f7833a96fdcce5425361f178b4188ce1444a9c9c"
+  },
+  {
+    "path": "raw/07-ui-and-screenshot/TEST-com.example.chatbar.desktop.DesktopR1VoiceTest.xml",
+    "size": 2562,
+    "sha256": "78f34b8689f625646ce356109080b1345d3479cc8599f789b804686758236896"
+  },
+  {
+    "path": "raw/07-ui-and-screenshot/TEST-com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest.xml",
+    "size": 1263,
+    "sha256": "1b87dd4a0ea06d5220c97e4cec869f00f746d3ce4711c49d8995f9f4696eb243"
+  },
+  {
+    "path": "raw/07-ui-and-screenshot/TEST-com.example.chatbar.desktop.DesktopVoiceClickReliabilityTest.xml",
+    "size": 1662,
+    "sha256": "a738f2419f1ca1d37c508207a53bcfc27ea1dba57b3497e94c6053f3953e18ea"
+  },
+  {
+    "path": "raw/07-ui-and-screenshot/TEST-com.example.chatbar.desktop.DesktopVoiceUxTest.xml",
+    "size": 1001,
+    "sha256": "d3aeb31c450bd3890568416881b8d1ed387764196940195d1ae8c4d65ca68fe0"
+  },
+  {
+    "path": "raw/07-ui-and-screenshot/ui-previews/long-800-percent-viewport.png",
+    "size": 5421,
+    "sha256": "f21593f366a955c414b01c5cf03bc12f24c8d0cc80b2ce4ceba6a306242c87dc"
+  },
+  {
+    "path": "raw/07-ui-and-screenshot/ui-previews/long-source.png",
+    "size": 15016,
+    "sha256": "d10dd2e52c1ea66c15b72402d7d81caa50a00af0d18618f3acb46244a14b16a6"
+  },
+  {
+    "path": "raw/07-ui-and-screenshot/ui-previews/workspace-1100.png",
+    "size": 35779,
+    "sha256": "e33339548a78c226c5d84c8b32648919b15dd6477ff43516a7ec53406341f051"
+  },
+  {
+    "path": "raw/07-ui-and-screenshot/ui-previews/workspace-360.png",
+    "size": 12885,
+    "sha256": "b3964712acf4b2b5a3d46d9149cce748e6f3899b59caceb75309062ce24b57b7"
+  },
+  {
+    "path": "raw/07-ui-and-screenshot/xml-provenance.json",
+    "size": 559,
+    "sha256": "4e0ed9067023b27a456a5ce5ff1aa6668a29c3f78572c176515dba1cf7192cfb"
+  },
+  {
+    "path": "raw/08-focused-and-safety/boundary-previews/extreme-17389228041655312652/original.png",
+    "size": 23422,
+    "sha256": "d57dc193020aab5b84899d8f0372abf68daf25aebad734c9e2a32b9d03efc716"
+  },
+  {
+    "path": "raw/08-focused-and-safety/command.json",
+    "size": 995,
+    "sha256": "e3a8e110f2772bbc81c5698cfc4b781d9e218d52e8d7efe05a18dbe72044ee80"
+  },
+  {
+    "path": "raw/08-focused-and-safety/renderer-previews/renderer-DARK.png",
+    "size": 4803,
+    "sha256": "696b45983b529028aae2b4bd5337b40e085b212d7d4b4657da15f29efe34b4aa"
+  },
+  {
+    "path": "raw/08-focused-and-safety/renderer-previews/renderer-LIGHT.png",
+    "size": 4599,
+    "sha256": "479c02aff61d0e51fb8c36246d4f383a2ca45f8dcb2b12fed45b39fbad9940e5"
+  },
+  {
+    "path": "raw/08-focused-and-safety/resources.json",
+    "size": 101,
+    "sha256": "b7ad4ee81db7c9ffa1c1133c8874163c7602c85db761745a3d3c17696cf973aa"
+  },
+  {
+    "path": "raw/08-focused-and-safety/result.json",
+    "size": 116,
+    "sha256": "ef325ac21b46808b613147c1c6588d90bfdd61df9d1c1923ffb9c5a2cad7bacf"
+  },
+  {
+    "path": "raw/08-focused-and-safety/stderr.log",
+    "size": 381,
+    "sha256": "acfda0381c073c5ec4ad5786f6cf23e60f615bc638d164a983923651d88b937d"
+  },
+  {
+    "path": "raw/08-focused-and-safety/stdout.log",
+    "size": 2386,
+    "sha256": "a9a84d83a2e269010d437cd304014ca906d7bfdba691c9ed3af4e73aa1a710ae"
+  },
+  {
+    "path": "raw/08-focused-and-safety/TEST-com.example.chatbar.desktop.DesktopChatScreenshotTest.xml",
+    "size": 1601,
+    "sha256": "5b027072c3dbdfa0f31f6914c149eb6d4cb6cc5fc8e84942f10cba8fec19fd02"
+  },
+  {
+    "path": "raw/08-focused-and-safety/TEST-com.example.chatbar.desktop.DesktopChatScreenshotUiTest.xml",
+    "size": 804,
+    "sha256": "d93b85693c21f193ac98e7e8f186066719cf2b02b3f5f5d718a5dba8fe07aa2f"
+  },
+  {
+    "path": "raw/08-focused-and-safety/TEST-com.example.chatbar.desktop.DesktopDataRootOwnershipProcessTest.xml",
+    "size": 1034,
+    "sha256": "66dd2a51f16f0c409848b9771c2a3869873a6c7ce3037a3517753a94e235455e"
+  },
+  {
+    "path": "raw/08-focused-and-safety/TEST-com.example.chatbar.desktop.DesktopDataRootOwnershipTest.xml",
+    "size": 2573,
+    "sha256": "4cf4b958c90c50fe83f1c9316ff5094c3bafd76de05ab73ef8164b115df1397c"
+  },
+  {
+    "path": "raw/08-focused-and-safety/TEST-com.example.chatbar.desktop.DesktopFullBackupArchiveTest.xml",
+    "size": 2496,
+    "sha256": "7e1d73b750e24ca18b040bd78707e3e006a26a52caa841741f0b6c3b993365c8"
+  },
+  {
+    "path": "raw/08-focused-and-safety/TEST-com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest.xml",
+    "size": 1085,
+    "sha256": "ed78d8227717aa6d738baa46cb55cd3fed5af823a3911595025647a108c2c6ea"
+  },
+  {
+    "path": "raw/08-focused-and-safety/TEST-com.example.chatbar.desktop.DesktopFullBackupMappingTest.xml",
+    "size": 725,
+    "sha256": "c28fc7d698439919334363df102beb2005a29854eb06d0412defe87bc02b2ec0"
+  },
+  {
+    "path": "raw/08-focused-and-safety/TEST-com.example.chatbar.desktop.DesktopFullBackupServiceTest.xml",
+    "size": 2212,
+    "sha256": "f41824a8bf8eed8c2f4605fb66d7be3d24a8d8954406e9b9fe203dd3678d78f3"
+  },
+  {
+    "path": "raw/08-focused-and-safety/TEST-com.example.chatbar.desktop.DesktopR1LayoutMenuTest.xml",
+    "size": 3132,
+    "sha256": "e67588698c90d9dff4d08d7d06f693cd8087b90350f1d6a5abfc720bd96c3430"
+  },
+  {
+    "path": "raw/08-focused-and-safety/TEST-com.example.chatbar.desktop.DesktopR1ScreenshotTest.xml",
+    "size": 506,
+    "sha256": "d21943b5da5c62af88e2dcb69ac94b82b7895a936316d1d6e2dcf82344b09042"
+  },
+  {
+    "path": "raw/08-focused-and-safety/TEST-com.example.chatbar.desktop.DesktopR1VoiceTest.xml",
+    "size": 1798,
+    "sha256": "c2f11d3c73e9c83120f09421265e13e255fa9f24f78bbe99a7c08617232dad06"
+  },
+  {
+    "path": "raw/08-focused-and-safety/TEST-com.example.chatbar.desktop.DesktopSaveSlotArchiveTest.xml",
+    "size": 1179,
+    "sha256": "fb51b5fd3c4eeaffb32102914be5712d998e5a4182b7dc5bb38a2438d88d5916"
+  },
+  {
+    "path": "raw/08-focused-and-safety/TEST-com.example.chatbar.desktop.DesktopSaveSlotInspectorTest.xml",
+    "size": 4371,
+    "sha256": "20abba9cb9ec767b7c83bacd89530f2df977c091c8149dc3c84c327f91b57906"
+  },
+  {
+    "path": "raw/08-focused-and-safety/TEST-com.example.chatbar.desktop.DesktopSaveSlotServiceTest.xml",
+    "size": 3063,
+    "sha256": "f14f784310f34e696ccad52df2a1aa41b04a249e5383e5b081b526c0ab1f439c"
+  },
+  {
+    "path": "raw/08-focused-and-safety/TEST-com.example.chatbar.desktop.DesktopScreenshotBoundaryTest.xml",
+    "size": 720,
+    "sha256": "5a904f6c96eae6894335f87753ee6d6976f3959a9079a8e341d6734d5995413a"
+  },
+  {
+    "path": "raw/08-focused-and-safety/TEST-com.example.chatbar.desktop.DesktopScreenshotWorkspaceTest.xml",
+    "size": 2010,
+    "sha256": "ee86e73a3437db4c165fe0a321d2c76ea07e72b486b48d96f9b8acfbc83d662d"
+  },
+  {
+    "path": "raw/08-focused-and-safety/TEST-com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest.xml",
+    "size": 1261,
+    "sha256": "e15449ddb028a1cb1bb555b6b9674adb8457d650e23267dcc9a58ea2bedffea2"
+  },
+  {
+    "path": "raw/08-focused-and-safety/TEST-com.example.chatbar.desktop.DesktopShutdownWaitObserverTest.xml",
+    "size": 1511,
+    "sha256": "e4e070f739ad9cdc447b19167d88d26e450eda4c77303a5b35e1cf78da655f31"
+  },
+  {
+    "path": "raw/08-focused-and-safety/TEST-com.example.chatbar.desktop.DesktopVoiceArchiveHandoffTest.xml",
+    "size": 903,
+    "sha256": "ffc09971f2befb65d84b36318256c96b4a4a469937e73c1e1a148ea2d37e1dfb"
+  },
+  {
+    "path": "raw/08-focused-and-safety/TEST-com.example.chatbar.desktop.DesktopVoiceClickReliabilityTest.xml",
+    "size": 1660,
+    "sha256": "c451b8dbbe46b874d265289550bcc91efe552af6638181462cd00d3d966565ac"
+  },
+  {
+    "path": "raw/08-focused-and-safety/TEST-com.example.chatbar.desktop.DesktopVoiceSafetyTest.xml",
+    "size": 1228,
+    "sha256": "2f88dcfc661b13494c1880e2e6e6ef110a4b1b32d808b3fac4eafc540a6de518"
+  },
+  {
+    "path": "raw/08-focused-and-safety/TEST-com.example.chatbar.desktop.DesktopVoiceUxTest.xml",
+    "size": 1000,
+    "sha256": "b02d40c887ab21b2129c07c7329b5d21c25ad2a8372e8c927ca7b3e367d94ab9"
+  },
+  {
+    "path": "raw/08-focused-and-safety/ui-previews/long-800-percent-viewport.png",
+    "size": 5421,
+    "sha256": "f21593f366a955c414b01c5cf03bc12f24c8d0cc80b2ce4ceba6a306242c87dc"
+  },
+  {
+    "path": "raw/08-focused-and-safety/ui-previews/long-source.png",
+    "size": 15016,
+    "sha256": "d10dd2e52c1ea66c15b72402d7d81caa50a00af0d18618f3acb46244a14b16a6"
+  },
+  {
+    "path": "raw/08-focused-and-safety/ui-previews/workspace-1100.png",
+    "size": 35779,
+    "sha256": "e33339548a78c226c5d84c8b32648919b15dd6477ff43516a7ec53406341f051"
+  },
+  {
+    "path": "raw/08-focused-and-safety/ui-previews/workspace-360.png",
+    "size": 12885,
+    "sha256": "b3964712acf4b2b5a3d46d9149cce748e6f3899b59caceb75309062ce24b57b7"
+  },
+  {
+    "path": "raw/08-focused-and-safety/xml-provenance.json",
+    "size": 1679,
+    "sha256": "c2c4942a60eba56b29d1bac0c627ba81a98d6badbeed541d676f56b4155e0f3c"
+  },
+  {
+    "path": "raw/09-layout-refinement/command.json",
+    "size": 404,
+    "sha256": "bdd40c338ca0a50a43c552beba20dcf68a0acbdfa1b35cded5967175b28b4508"
+  },
+  {
+    "path": "raw/09-layout-refinement/layout-previews/data-sections.png",
+    "size": 50308,
+    "sha256": "f753b7944999a81632b7f612fe095ec99737638286a291968a143de0f16a35c3"
+  },
+  {
+    "path": "raw/09-layout-refinement/layout-previews/voice-1100-240.png",
+    "size": 5491,
+    "sha256": "820e64f19866d0a5ad4224b032260ba7129cfeee165501748a8ac6b40bc3093a"
+  },
+  {
+    "path": "raw/09-layout-refinement/layout-previews/voice-1100-30.png",
+    "size": 5496,
+    "sha256": "42c08a0cda503e392550cb80f9dcd3f581e3e3d696f7b9a0d37d1b62a5702a45"
+  },
+  {
+    "path": "raw/09-layout-refinement/layout-previews/voice-1100-880.png",
+    "size": 5494,
+    "sha256": "396be74aa27b3db6421122cd173aa3e4378819acbadba7d85f4d7ea6adb31fbd"
+  },
+  {
+    "path": "raw/09-layout-refinement/layout-previews/voice-280-240.png",
+    "size": 4538,
+    "sha256": "0493814b98f3412ee2ae7120989df0af904768bff8cb9a06b85c9a7de713b3d2"
+  },
+  {
+    "path": "raw/09-layout-refinement/layout-previews/voice-280-30.png",
+    "size": 4547,
+    "sha256": "b1b8e0e7169cbd80c75c9cb97353a17c68fc85e8e9006452ba04d8e8bc0904bd"
+  },
+  {
+    "path": "raw/09-layout-refinement/layout-previews/voice-280-880.png",
+    "size": 4539,
+    "sha256": "efac8ad5d168b8f60f5b46e5a9dc3ee8a56a67cd1684e2bd7bc025fb5d5d9b65"
+  },
+  {
+    "path": "raw/09-layout-refinement/layout-previews/voice-360-240.png",
+    "size": 4645,
+    "sha256": "33d51c3ba99c0f9ed0e3a3a4af7672dd41e825cf88f79e49048b9df335436a14"
+  },
+  {
+    "path": "raw/09-layout-refinement/layout-previews/voice-360-30.png",
+    "size": 4647,
+    "sha256": "dd3cf12df89b7e94a0018a948c64306fe9c2290a415f1c97c33017e34f5ee520"
+  },
+  {
+    "path": "raw/09-layout-refinement/layout-previews/voice-360-880.png",
+    "size": 4648,
+    "sha256": "fd36cb7551ce1bf3a04bf1890bb67880a230ff14b3e52a44d567637b3f12ca1f"
+  },
+  {
+    "path": "raw/09-layout-refinement/resources.json",
+    "size": 101,
+    "sha256": "a874a8dc0d0325a299a8e20508096c0c905fdca7056167b4c2e537c803f6eba1"
+  },
+  {
+    "path": "raw/09-layout-refinement/result.json",
+    "size": 116,
+    "sha256": "3dcf27ad8b271ef71f29f2007949eeea240feffead01026b6d0df5b4f4710f9b"
+  },
+  {
+    "path": "raw/09-layout-refinement/stderr.log",
+    "size": 378,
+    "sha256": "6110ba0bd3a3ca8019e0968012f181d4d735e657127d1d0d8a5c1bfe1fbadde6"
+  },
+  {
+    "path": "raw/09-layout-refinement/stdout.log",
+    "size": 2797,
+    "sha256": "45a2adabedce057ada5addbfc2ae2c911cd45db4fac09064d92649733776efa6"
+  },
+  {
+    "path": "raw/09-layout-refinement/TEST-com.example.chatbar.desktop.DesktopR1LayoutMenuTest.xml",
+    "size": 3200,
+    "sha256": "46ea0a1dc52cfdb23023be2ba28c6bf94001f70810eb89facd3e9c7ee21f635a"
+  },
+  {
+    "path": "raw/09-layout-refinement/TEST-com.example.chatbar.desktop.DesktopR1ScreenshotTest.xml",
+    "size": 506,
+    "sha256": "f37be9467794274d91124ed1c1ecd619448d4c224ed9af88a401e411003033c2"
+  },
+  {
+    "path": "raw/09-layout-refinement/TEST-com.example.chatbar.desktop.DesktopR1VoiceTest.xml",
+    "size": 1798,
+    "sha256": "f4f62e370272372f3044420dd94aed73b803619394abff805666e499ca520f15"
+  },
+  {
+    "path": "raw/09-layout-refinement/TEST-com.example.chatbar.desktop.DesktopVoicePauseWindowsTest.xml",
+    "size": 559,
+    "sha256": "5c96575e837ea6274d2dde25ffd0e3f6923a6ef1d6918ca773b425afae96e22b"
+  },
+  {
+    "path": "raw/09-layout-refinement/xml-provenance.json",
+    "size": 342,
+    "sha256": "618c534b15b38329fe9a83d453332c270fa8e01bc03cc4b2b82e870b85d78ebd"
+  },
+  {
+    "path": "raw/10-final-presentation/command.json",
+    "size": 710,
+    "sha256": "627e1f2e47d3c8286bc0d58f222c3e456f1a78ba2e6cf54cec00a617d6c4b54e"
+  },
+  {
+    "path": "raw/10-final-presentation/layout-previews/chat-1100.png",
+    "size": 57210,
+    "sha256": "b16b0a2d0bccf9688b12f4165c396c543e294105ec9634f9852991b03124d8a4"
+  },
+  {
+    "path": "raw/10-final-presentation/layout-previews/chat-360.png",
+    "size": 16998,
+    "sha256": "a0802a3d1eaa77295609f57f17501c25f82b0af171bb723e866899228fedb450"
+  },
+  {
+    "path": "raw/10-final-presentation/layout-previews/data-sections.png",
+    "size": 50308,
+    "sha256": "f753b7944999a81632b7f612fe095ec99737638286a291968a143de0f16a35c3"
+  },
+  {
+    "path": "raw/10-final-presentation/layout-previews/messages-1100-long.png",
+    "size": 30690,
+    "sha256": "eafeae4086c03ace8a452a9b3fcd0f42eddba99869e9855432dc7e6d5f89842e"
+  },
+  {
+    "path": "raw/10-final-presentation/layout-previews/messages-1100-short.png",
+    "size": 15177,
+    "sha256": "3d51041688d5569e0acf9219a5ef22932dd9b141a08f4cadaa21c25440c01f7c"
+  },
+  {
+    "path": "raw/10-final-presentation/layout-previews/messages-360-long.png",
+    "size": 18271,
+    "sha256": "f39805d487926b0dcc1b4e0ddf871397bffc0eedf98a385204eb4ee22a2efc31"
+  },
+  {
+    "path": "raw/10-final-presentation/layout-previews/messages-360-short.png",
+    "size": 11426,
+    "sha256": "a969a923cda0f22047d9adbc62d223a03ba62a74f78a8343d3c9ca65d9981989"
+  },
+  {
+    "path": "raw/10-final-presentation/layout-previews/voice-1100-240.png",
+    "size": 5491,
+    "sha256": "820e64f19866d0a5ad4224b032260ba7129cfeee165501748a8ac6b40bc3093a"
+  },
+  {
+    "path": "raw/10-final-presentation/layout-previews/voice-1100-30.png",
+    "size": 5496,
+    "sha256": "42c08a0cda503e392550cb80f9dcd3f581e3e3d696f7b9a0d37d1b62a5702a45"
+  },
+  {
+    "path": "raw/10-final-presentation/layout-previews/voice-1100-880.png",
+    "size": 5494,
+    "sha256": "396be74aa27b3db6421122cd173aa3e4378819acbadba7d85f4d7ea6adb31fbd"
+  },
+  {
+    "path": "raw/10-final-presentation/layout-previews/voice-280-240.png",
+    "size": 4538,
+    "sha256": "0493814b98f3412ee2ae7120989df0af904768bff8cb9a06b85c9a7de713b3d2"
+  },
+  {
+    "path": "raw/10-final-presentation/layout-previews/voice-280-30.png",
+    "size": 4547,
+    "sha256": "b1b8e0e7169cbd80c75c9cb97353a17c68fc85e8e9006452ba04d8e8bc0904bd"
+  },
+  {
+    "path": "raw/10-final-presentation/layout-previews/voice-280-880.png",
+    "size": 4539,
+    "sha256": "efac8ad5d168b8f60f5b46e5a9dc3ee8a56a67cd1684e2bd7bc025fb5d5d9b65"
+  },
+  {
+    "path": "raw/10-final-presentation/layout-previews/voice-360-240.png",
+    "size": 4645,
+    "sha256": "33d51c3ba99c0f9ed0e3a3a4af7672dd41e825cf88f79e49048b9df335436a14"
+  },
+  {
+    "path": "raw/10-final-presentation/layout-previews/voice-360-30.png",
+    "size": 4647,
+    "sha256": "dd3cf12df89b7e94a0018a948c64306fe9c2290a415f1c97c33017e34f5ee520"
+  },
+  {
+    "path": "raw/10-final-presentation/layout-previews/voice-360-880.png",
+    "size": 4648,
+    "sha256": "fd36cb7551ce1bf3a04bf1890bb67880a230ff14b3e52a44d567637b3f12ca1f"
+  },
+  {
+    "path": "raw/10-final-presentation/resources.json",
+    "size": 101,
+    "sha256": "4cdf693ba67b401c33f4af45142a20c34f5b34118b8bb639f10b612166f90665"
+  },
+  {
+    "path": "raw/10-final-presentation/result.json",
+    "size": 116,
+    "sha256": "afc172f504f63d976c0761ea4cf047a292863e15171ad9b98f1a85a426305bf4"
+  },
+  {
+    "path": "raw/10-final-presentation/stderr.log",
+    "size": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "raw/10-final-presentation/stdout.log",
+    "size": 2236,
+    "sha256": "19ae3f6323f8e507710099eff89508d345ef76969e19c51eb1429e44be84146e"
+  },
+  {
+    "path": "raw/10-final-presentation/TEST-com.example.chatbar.desktop.DesktopChatVoicePresentationTest.xml",
+    "size": 553,
+    "sha256": "e9e785eecdc9ad80aa672666772f461f8a866ea038472ed9bbfecbf2c6f1b45e"
+  },
+  {
+    "path": "raw/10-final-presentation/TEST-com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest.xml",
+    "size": 1397,
+    "sha256": "097aa8c894e67373726ec32fef58145db57aac58d8bb53dae3e930cec640ef5b"
+  },
+  {
+    "path": "raw/10-final-presentation/TEST-com.example.chatbar.desktop.DesktopR1LayoutMenuTest.xml",
+    "size": 1876,
+    "sha256": "40e89b9b1959df4e2acb27cfa5bee9dec2356b5ee5a0d560d684090b0af46635"
+  },
+  {
+    "path": "raw/10-final-presentation/TEST-com.example.chatbar.desktop.DesktopR1ScreenshotTest.xml",
+    "size": 506,
+    "sha256": "e9582e6236a8bba5fe4231561cb909541b7618ad94f1b7e3303b6ee02efeac3f"
+  },
+  {
+    "path": "raw/10-final-presentation/TEST-com.example.chatbar.desktop.DesktopR1VoiceTest.xml",
+    "size": 1798,
+    "sha256": "933faebe48c11f7b27835eebc7ebe8c40fe69dc01ffa7e5a4c328f7a39bfa8f8"
+  },
+  {
+    "path": "raw/10-final-presentation/TEST-com.example.chatbar.desktop.DesktopResponsiveChatLayoutTest.xml",
+    "size": 2041,
+    "sha256": "59ee34a501f4fd4fe8c44d4d2a7b57ff386bad084ae08bab614c468c014bcb9c"
+  },
+  {
+    "path": "raw/10-final-presentation/xml-provenance.json",
+    "size": 496,
+    "sha256": "011ffe805ae7762b6086accde117f5ade5b364c600faf841ba1e588bcaf3c2ef"
+  },
+  {
+    "path": "raw/11-final-layout/command.json",
+    "size": 558,
+    "sha256": "5c8c3795654bc0279acef7b4f2c714651da1ace81b6af1b4f2f03381c9e21171"
+  },
+  {
+    "path": "raw/11-final-layout/layout-previews/chat-1100.png",
+    "size": 57210,
+    "sha256": "b16b0a2d0bccf9688b12f4165c396c543e294105ec9634f9852991b03124d8a4"
+  },
+  {
+    "path": "raw/11-final-layout/layout-previews/chat-360.png",
+    "size": 22869,
+    "sha256": "bd9e8c11859434dbe4390a42baaeb41737593596ffac5e0f2c23b2b0a67f80d9"
+  },
+  {
+    "path": "raw/11-final-layout/layout-previews/data-sections.png",
+    "size": 47996,
+    "sha256": "debff9efbaf39535713d969968b6e0f25dccc4dcafda068190857b1fd3a6208f"
+  },
+  {
+    "path": "raw/11-final-layout/layout-previews/messages-1100-long.png",
+    "size": 29173,
+    "sha256": "1162e1a3dc442eacf517608160d5ec91b7f8b5e3c815c74800173a35d806d25d"
+  },
+  {
+    "path": "raw/11-final-layout/layout-previews/messages-1100-short.png",
+    "size": 14620,
+    "sha256": "cc08d8c0fae99be9782e14a332d42c820f68bc491adc77b064b180b041ee526e"
+  },
+  {
+    "path": "raw/11-final-layout/layout-previews/messages-360-long.png",
+    "size": 17480,
+    "sha256": "d537db64448442272c7f3f62dcf063ff906de16e8fa78f5cf83b7ec5139fc516"
+  },
+  {
+    "path": "raw/11-final-layout/layout-previews/messages-360-short.png",
+    "size": 10736,
+    "sha256": "87d8cfe974f8eec2fbd90d5e73c2aae342794bdb9458ddad15878d9cc474fa44"
+  },
+  {
+    "path": "raw/11-final-layout/layout-previews/voice-1100-240.png",
+    "size": 5310,
+    "sha256": "b6af41806772bc93b9b70151b47e62894ced7cfe459cc76507f5624e5d674064"
+  },
+  {
+    "path": "raw/11-final-layout/layout-previews/voice-1100-30.png",
+    "size": 5312,
+    "sha256": "eaef5901bce90543bacea79b532d7e1847a956a5adc9fae02b49f26a81333a48"
+  },
+  {
+    "path": "raw/11-final-layout/layout-previews/voice-1100-880.png",
+    "size": 5313,
+    "sha256": "a207f3454569a59d6e0b3d105b85b92a789f5e443fb46a5e792d347277fd6134"
+  },
+  {
+    "path": "raw/11-final-layout/layout-previews/voice-280-240.png",
+    "size": 4305,
+    "sha256": "1682b27cb0a6543992cec8eeae15f7ab572406b0b04290c301d11a3af343d206"
+  },
+  {
+    "path": "raw/11-final-layout/layout-previews/voice-280-30.png",
+    "size": 4301,
+    "sha256": "2fc3efb1d495cf3a4716987721fa2b434a6384696a11ddcf9e117a910632d86d"
+  },
+  {
+    "path": "raw/11-final-layout/layout-previews/voice-280-880.png",
+    "size": 4260,
+    "sha256": "f3da0bd83d0eb89ca4fefe19167fa9d2da09b346321eb7f7175e2e7b969a318d"
+  },
+  {
+    "path": "raw/11-final-layout/layout-previews/voice-360-240.png",
+    "size": 4411,
+    "sha256": "d386a0d877d07809a5df27cec17a7eea535613ca5688297cb6b8633fc49ed84f"
+  },
+  {
+    "path": "raw/11-final-layout/layout-previews/voice-360-30.png",
+    "size": 4413,
+    "sha256": "f5b69d89022a5c926dbc972affa6254c7a1b6dba14b15233ca35558b75a6c16d"
+  },
+  {
+    "path": "raw/11-final-layout/layout-previews/voice-360-880.png",
+    "size": 4380,
+    "sha256": "7cabd7953330f42439f12da745ab859705725147d7679f0145de65490db2a910"
+  },
+  {
+    "path": "raw/11-final-layout/renderer-previews/renderer-DARK.png",
+    "size": 4803,
+    "sha256": "696b45983b529028aae2b4bd5337b40e085b212d7d4b4657da15f29efe34b4aa"
+  },
+  {
+    "path": "raw/11-final-layout/renderer-previews/renderer-LIGHT.png",
+    "size": 4599,
+    "sha256": "479c02aff61d0e51fb8c36246d4f383a2ca45f8dcb2b12fed45b39fbad9940e5"
+  },
+  {
+    "path": "raw/11-final-layout/resources.json",
+    "size": 101,
+    "sha256": "42d956cc7e705fe4757773a15db44ee7cd52f71845bd8c20fe28dcada0a43475"
+  },
+  {
+    "path": "raw/11-final-layout/result.json",
+    "size": 116,
+    "sha256": "4b90d05e8c67f688b20d36bdfb493569ae2a124e15ece33d719196c3da0a01c5"
+  },
+  {
+    "path": "raw/11-final-layout/stderr.log",
+    "size": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "raw/11-final-layout/stdout.log",
+    "size": 2623,
+    "sha256": "c0d14b5ee01ef3e7fde4acbe21d3bf059d387d0985b39a5fb505ad7389da90aa"
+  },
+  {
+    "path": "raw/11-final-layout/TEST-com.example.chatbar.desktop.DesktopChatScreenshotTest.xml",
+    "size": 1601,
+    "sha256": "2a62ee35028964e93f9786287d65fe9352c885b7ffc406e387e25357abe14625"
+  },
+  {
+    "path": "raw/11-final-layout/TEST-com.example.chatbar.desktop.DesktopR1LayoutMenuTest.xml",
+    "size": 1877,
+    "sha256": "afe0c302282454e0143791eca56e08f9678fc2b38eae3888db2e6cdd10fd0597"
+  },
+  {
+    "path": "raw/11-final-layout/TEST-com.example.chatbar.desktop.DesktopR1VoiceTest.xml",
+    "size": 1798,
+    "sha256": "3651a045ef9e93c781d0477a4330b8d4d62dba66ad70be771dd7c9754bf72d56"
+  },
+  {
+    "path": "raw/11-final-layout/TEST-com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest.xml",
+    "size": 1262,
+    "sha256": "d9182b50e2ed38a353b420b324203e9a00cd09242cf8e107bb55e755480e3a42"
+  },
+  {
+    "path": "raw/11-final-layout/ui-previews/long-800-percent-viewport.png",
+    "size": 5421,
+    "sha256": "f21593f366a955c414b01c5cf03bc12f24c8d0cc80b2ce4ceba6a306242c87dc"
+  },
+  {
+    "path": "raw/11-final-layout/ui-previews/long-source.png",
+    "size": 15016,
+    "sha256": "d10dd2e52c1ea66c15b72402d7d81caa50a00af0d18618f3acb46244a14b16a6"
+  },
+  {
+    "path": "raw/11-final-layout/ui-previews/workspace-1100.png",
+    "size": 35779,
+    "sha256": "e33339548a78c226c5d84c8b32648919b15dd6477ff43516a7ec53406341f051"
+  },
+  {
+    "path": "raw/11-final-layout/ui-previews/workspace-360.png",
+    "size": 12885,
+    "sha256": "b3964712acf4b2b5a3d46d9149cce748e6f3899b59caceb75309062ce24b57b7"
+  },
+  {
+    "path": "raw/11-final-layout/xml-provenance.json",
+    "size": 348,
+    "sha256": "c7d7b6ea7e728ec127ccbb2aef67ad7b8fdc076dab5ffcb9db79d68c2ad6b3d2"
+  },
+  {
+    "path": "raw/12-windows-package/command.json",
+    "size": 372,
+    "sha256": "12ecb35a3cd840227ab389a2bb0f3849316deaec9bebc4e8e7211a13bb4a71e2"
+  },
+  {
+    "path": "raw/12-windows-package/package.init.gradle",
+    "size": 192,
+    "sha256": "c43f859cd84154852d80f027c0945adb6d944b8143e29bc848a746fff2405b5f"
+  },
+  {
+    "path": "raw/12-windows-package/resources.json",
+    "size": 101,
+    "sha256": "071544239c8d9c41ed2bacbad2e579b04524f7e5f2732669d2a9891100d9e673"
+  },
+  {
+    "path": "raw/12-windows-package/result.json",
+    "size": 320,
+    "sha256": "a9b1ffd4401aa8ad4a1578e20cb83fa4d3809a13a653bb9252783514d4584f44"
+  },
+  {
+    "path": "raw/12-windows-package/stderr.log",
+    "size": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "raw/12-windows-package/stdout.log",
+    "size": 1857,
+    "sha256": "129aac009df186e376dc9e90fcde778207a22f5d23a94a37346b3489e01f1325"
+  },
+  {
+    "path": "raw/freeze-package.py",
+    "size": 3148,
+    "sha256": "5a0aaa2f416e32fc2682ea9ff47cf8326fe8ecf6e8dafec44a0487df52f9575a"
+  },
+  {
+    "path": "raw/run-focused.ps1",
+    "size": 2987,
+    "sha256": "4ea7f836eaf91404cf21854948fe141a7acbd98e03a06098acff4b9469c05937"
+  },
+  {
+    "path": "raw/run-package-final.ps1",
+    "size": 2557,
+    "sha256": "85790737317539da187ec962a28017f675022944e6e2b463ed1bbc60622fa216"
+  },
+  {
+    "path": "raw/skia-ellipsis-bytecode.txt",
+    "size": 489,
+    "sha256": "e18a55ba3bb9d273aa07f01ee8047370831318a3268a6838ce1e6a1d280ff58b"
+  },
+  {
+    "path": "raw/verify-delivery.py",
+    "size": 1767,
+    "sha256": "b3925d6bb0eb027373f11a5e1a2e16ec234297bcb5e398e1a78b26a7eb5d11de"
+  }
+]

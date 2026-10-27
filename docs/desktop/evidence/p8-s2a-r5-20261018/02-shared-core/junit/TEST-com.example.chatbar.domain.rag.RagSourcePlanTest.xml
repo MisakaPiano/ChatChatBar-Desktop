@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.rag.RagSourcePlanTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:31:40.736Z" hostname="DD1" time="0.001">
+  <properties/>
+  <testcase name="messageGroupsOutsideContext_enablesOnlyMemoryRag" classname="com.example.chatbar.domain.rag.RagSourcePlanTest" time="0.001"/>
+  <testcase name="zeroDocumentRecall_skipsDocumentsButKeepsMemory" classname="com.example.chatbar.domain.rag.RagSourcePlanTest" time="0.0"/>
+  <testcase name="zeroMemoryRecall_skipsMemoryButKeepsDocuments" classname="com.example.chatbar.domain.rag.RagSourcePlanTest" time="0.0"/>
+  <testcase name="indexedDocumentsWithinContext_enablesOnlyDocumentRag" classname="com.example.chatbar.domain.rag.RagSourcePlanTest" time="0.0"/>
+  <testcase name="bothRecallCountsZero_skipsRag" classname="com.example.chatbar.domain.rag.RagSourcePlanTest" time="0.0"/>
+  <testcase name="noIndexedDocumentsAndNoMessagesOutsideContext_skipsRag" classname="com.example.chatbar.domain.rag.RagSourcePlanTest" time="0.0"/>
+  <testcase name="documentsWithoutCompletedIndex_doNotEnableDocumentRag" classname="com.example.chatbar.domain.rag.RagSourcePlanTest" time="0.0"/>
+  <testcase name="zeroContextWindow_allowsOlderMemoryRecall" classname="com.example.chatbar.domain.rag.RagSourcePlanTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

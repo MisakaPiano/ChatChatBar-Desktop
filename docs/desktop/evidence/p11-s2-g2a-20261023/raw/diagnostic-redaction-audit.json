@@ -1,0 +1,7 @@
+{
+  "filesChecked": 19,
+  "syntheticNeedleCount": 14,
+  "hits": [],
+  "scope": "Known synthetic test values in logs/XML, plus dedicated model-summary assertions; not a proof about arbitrary future adapter inputs.",
+  "fixtureException": "Explicitly synthetic JSON/archive fixtures intentionally retain synthetic credentials. No real values exist in this task."
+}

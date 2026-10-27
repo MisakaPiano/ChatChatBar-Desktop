@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFullBackupArchiveTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-20T21:59:38.680Z" hostname="DD1" time="5.988">
+  <properties/>
+  <testcase name="export verifies exact file and refuses existing destination with or without encryption" classname="com.example.chatbar.desktop.DesktopFullBackupArchiveTest" time="2.662"/>
+  <testcase name="encrypted source authenticates wrong password and truncated tail before plaintext staging" classname="com.example.chatbar.desktop.DesktopFullBackupArchiveTest" time="2.291"/>
+  <testcase name="unknown stores traversal case collisions and invalid hashes preserve source and refuse" classname="com.example.chatbar.desktop.DesktopFullBackupArchiveTest" time="0.05"/>
+  <testcase name="changed staged record cannot be published" classname="com.example.chatbar.desktop.DesktopFullBackupArchiveTest" time="0.027"/>
+  <testcase name="official plain envelope and inventory materialize only validated records" classname="com.example.chatbar.desktop.DesktopFullBackupArchiveTest" time="0.033"/>
+  <testcase name="credential payload is refused before plaintext file is created" classname="com.example.chatbar.desktop.DesktopFullBackupArchiveTest" time="0.924"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

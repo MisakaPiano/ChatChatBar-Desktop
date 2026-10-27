@@ -1,0 +1,12 @@
+[
+  {
+    "file": "tools/desktop/windows/directory_guard.c",
+    "sha256": "0958f8444932a2d24bb65c983c37a2423277795a8788c76c6aad4eadbf1d5e3b",
+    "gitBlob": "ed05fb365e4327571dd80ac3e42d4c4b209da173"
+  },
+  {
+    "file": "tools/desktop/windows/test_msi_component_contract.py",
+    "sha256": "ead7fb5fc4c927b103fdb97b4d081c30bfd2242994ee34b21a67716c5a15a8c2",
+    "gitBlob": "ba36bc47a84126c8f09208c0344f88fb6011fb22"
+  }
+]

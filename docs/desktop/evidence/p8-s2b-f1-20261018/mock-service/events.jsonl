@@ -1,0 +1,12 @@
+{"interface":"GET /model","status":200,"hanging":false,"syntheticAuthorizationMatched":true,"freeModelMatched":false,"realRequests":0}
+{"interface":"GET /model","status":200,"hanging":false,"syntheticAuthorizationMatched":true,"freeModelMatched":false,"realRequests":0}
+{"interface":"POST /v1/tts","status":200,"hanging":false,"syntheticAuthorizationMatched":true,"freeModelMatched":true,"realRequests":0}
+{"interface":"GET /model","status":200,"hanging":false,"syntheticAuthorizationMatched":true,"freeModelMatched":false,"realRequests":0}
+{"interface":"POST /v1/tts","status":200,"hanging":true,"syntheticAuthorizationMatched":true,"freeModelMatched":true,"realRequests":0}
+{"event":"HANG_SOCKET_DRAINED","interface":"POST"}
+{"interface":"POST /v1/tts","status":200,"hanging":true,"syntheticAuthorizationMatched":true,"freeModelMatched":true,"realRequests":0}
+{"event":"HANG_SOCKET_DRAINED","interface":"POST"}
+{"interface":"GET /model","status":200,"hanging":false,"syntheticAuthorizationMatched":true,"freeModelMatched":false,"realRequests":0}
+{"interface":"GET /model","status":200,"hanging":true,"syntheticAuthorizationMatched":true,"freeModelMatched":false,"realRequests":0}
+{"event":"HANG_SOCKET_DRAINED","interface":"GET"}
+{"interface":"GET /model","status":200,"hanging":false,"syntheticAuthorizationMatched":true,"freeModelMatched":false,"realRequests":0}

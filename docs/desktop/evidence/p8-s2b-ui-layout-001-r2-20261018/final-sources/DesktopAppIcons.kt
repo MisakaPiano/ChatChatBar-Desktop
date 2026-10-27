@@ -1,0 +1,78 @@
+package com.example.chatbar.desktop
+
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.composables.icons.lucide.CirclePlus
+import com.composables.icons.lucide.Lucide
+import com.composables.icons.lucide.Pencil
+import com.composables.icons.lucide.Star
+import com.composables.icons.lucide.MessageCircle
+import com.composables.icons.lucide.Settings
+import com.composables.icons.lucide.Wrench
+import com.composables.icons.lucide.Database
+import com.composables.icons.lucide.RefreshCw
+import com.composables.icons.lucide.PanelLeftClose
+import com.composables.icons.lucide.PanelLeftOpen
+import com.composables.icons.lucide.ChevronDown
+import com.composables.icons.lucide.ChevronRight
+import com.composables.icons.lucide.Trash2
+import com.composables.icons.lucide.Pin
+import com.composables.icons.lucide.Copy
+import com.composables.icons.lucide.Ellipsis
+import com.composables.icons.lucide.ChevronLeft
+import com.composables.icons.lucide.ArrowUp
+import com.composables.icons.lucide.ArrowDown
+import com.composables.icons.lucide.ArrowUpToLine
+import com.composables.icons.lucide.ArrowDownToLine
+import com.composables.icons.lucide.SendHorizontal
+import com.composables.icons.lucide.Square
+import com.composables.icons.lucide.Maximize
+import com.composables.icons.lucide.Undo2
+import com.composables.icons.lucide.Redo2
+import com.composables.icons.lucide.RotateCcw
+import com.composables.icons.lucide.History
+import com.composables.icons.lucide.RectangleVertical
+import com.composables.icons.lucide.RectangleHorizontal
+import com.composables.icons.lucide.ImagePlus
+import com.composables.icons.lucide.X
+import com.composables.icons.lucide.Play
+import com.composables.icons.lucide.Check
+
+/** Formal upstream semantics, with distinct Desktop reading-navigation additions. */
+internal object DesktopAppIcons {
+    val Add: ImageVector get() = Lucide.CirclePlus
+    val Edit: ImageVector get() = Lucide.Pencil
+    val Star: ImageVector get() = Lucide.Star
+    val Chat: ImageVector get() = Lucide.MessageCircle
+    val Settings: ImageVector get() = Lucide.Settings
+    val Tools: ImageVector get() = Lucide.Wrench
+    val Data: ImageVector get() = Lucide.Database
+    val Refresh: ImageVector get() = Lucide.RefreshCw
+    val Collapse: ImageVector get() = Lucide.PanelLeftClose
+    val Expand: ImageVector get() = Lucide.PanelLeftOpen
+    val DetailsOpen: ImageVector get() = Lucide.ChevronDown
+    val DetailsClosed: ImageVector get() = Lucide.ChevronRight
+    val Delete: ImageVector get() = Lucide.Trash2
+    val Pin: ImageVector get() = Lucide.Pin
+    val Copy: ImageVector get() = Lucide.Copy
+    val More: ImageVector get() = Lucide.Ellipsis
+    val Previous: ImageVector get() = Lucide.ChevronLeft
+    val Next: ImageVector get() = Lucide.ChevronRight
+    val MessagePrevious: ImageVector get() = Lucide.ArrowUp
+    val MessageNext: ImageVector get() = Lucide.ArrowDown
+    val MessageFirst: ImageVector get() = Lucide.ArrowUpToLine
+    val JumpBottom: ImageVector get() = Lucide.ArrowDownToLine
+    val Send: ImageVector get() = Lucide.SendHorizontal
+    val Stop: ImageVector get() = Lucide.Square
+    val ExpandComposer: ImageVector get() = Lucide.Maximize
+    val Undo: ImageVector get() = Lucide.Undo2
+    val Redo: ImageVector get() = Lucide.Redo2
+    val Reset: ImageVector get() = Lucide.RotateCcw
+    val History: ImageVector get() = Lucide.History
+    val Portrait: ImageVector get() = Lucide.RectangleVertical
+    val Landscape: ImageVector get() = Lucide.RectangleHorizontal
+    val Square: ImageVector get() = Lucide.Square
+    val ImageAdd: ImageVector get() = Lucide.ImagePlus
+    val Close: ImageVector get() = Lucide.X
+    val Play: ImageVector get() = Lucide.Play
+    val Check: ImageVector get() = Lucide.Check
+}

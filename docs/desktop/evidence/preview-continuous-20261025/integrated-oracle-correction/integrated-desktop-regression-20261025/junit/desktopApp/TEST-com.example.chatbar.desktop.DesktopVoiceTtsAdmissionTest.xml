@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopVoiceTtsAdmissionTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-25T02:33:19.542Z" hostname="DD1" time="0.065">
+  <properties/>
+  <testcase name="formal and picker TTS share five real request permits until body drain" classname="com.example.chatbar.desktop.DesktopVoiceTtsAdmissionTest" time="0.065"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

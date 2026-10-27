@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.image.ApngDisguiseCodecTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-19T12:01:38.573Z" hostname="DD1" time="0.06">
+  <properties/>
+  <testcase name="thirdPartyMissingMarkerForgedMarkerBrokenCrcAndSequenceAreRejected" classname="com.example.chatbar.domain.image.ApngDisguiseCodecTest" time="0.026"/>
+  <testcase name="canonicalStaticDisguiseHasMarkerCrcSequenceNoChangeSentinelAndSeparatedLogo" classname="com.example.chatbar.domain.image.ApngDisguiseCodecTest" time="0.008"/>
+  <testcase name="staticRestorePromotesFirstTruthFrameAndCannotBeRestoredAgain" classname="com.example.chatbar.domain.image.ApngDisguiseCodecTest" time="0.014"/>
+  <testcase name="gifLoopIntentMapsToApngTotalPlayCount" classname="com.example.chatbar.domain.image.ApngDisguiseCodecTest" time="0.001"/>
+  <testcase name="v2HeartbeatRemainsRestorable" classname="com.example.chatbar.domain.image.ApngDisguiseCodecTest" time="0.011"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

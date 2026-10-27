@@ -1,0 +1,18 @@
+{
+  "utc": "2026-10-20T19:16:50.263997+00:00",
+  "initialExit": 2,
+  "initialRawBytes": 1809022,
+  "initialPreservedGzip": "staged-diff-check-initial-crlf.txt.gz",
+  "initialReason": "Original CRLF evidence intentionally preserved by -text attributes; Git default treats CR as trailing whitespace. No evidence normalized or rewritten.",
+  "crlfAwareCommand": [
+    "git",
+    "-c",
+    "core.whitespace=trailing-space,space-before-tab,cr-at-eol",
+    "diff",
+    "--cached",
+    "--check"
+  ],
+  "crlfAwareExit": 0,
+  "rawBytesStillProtectedByManifests": true,
+  "scope": "Git evidence whitespace validation, not product test or relaxation of behavior assertions"
+}

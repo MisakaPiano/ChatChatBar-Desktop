@@ -1,0 +1,28 @@
+{
+  "logicalDeletedBytes": 332365824.0,
+  "rows": [
+    {
+      "bytes": 166182912,
+      "source": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\preview-continuous-private-20261025\\operation1-native-pair-1112-1113-20261027-r01\\B\\ChatChatBarDesktopSynthetic-0.1.1113.msi",
+      "sourceWriteTimeUtc": "2026-10-27T00:54:04.4210000Z",
+      "deleted": true,
+      "relativeTarget": "condition-r02/native-tables/layout-change.msi",
+      "sha256": "ab80cf68ba82c42af2ea4a61c8ccdca4d30b79f74db6ae12925ae59e892ebf8e",
+      "exclusiveReadSucceeded": true
+    },
+    {
+      "bytes": 166182912,
+      "source": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\preview-continuous-private-20261025\\operation1-native-pair-1112-1113-20261027-r01\\A\\ChatChatBarDesktopSynthetic-0.1.1112.msi",
+      "sourceWriteTimeUtc": "2026-10-27T00:23:24.0640000Z",
+      "deleted": true,
+      "relativeTarget": "condition-r02/native-tables/operation-mutation.msi",
+      "sha256": "5b2f58f9f722ac3f962d28a74d71ae7a591755c0c669c81a25cf57a3c1237e79",
+      "exclusiveReadSucceeded": true
+    }
+  ],
+  "recursiveDelete": false,
+  "originalPackagesRetained": true,
+  "volumeFreeAfter": 1483689984,
+  "volumeFreeBefore": 1151324160,
+  "rawEvidenceRetained": true
+}

@@ -1,0 +1,12 @@
+[
+  "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+  "-NoLogo",
+  "-NoProfile",
+  "-NonInteractive",
+  "-ExecutionPolicy",
+  "Bypass",
+  "-File",
+  "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\preview-continuous-private-20261025\\manual-helper-winps51-20261025\\Parse-Only.ps1",
+  "-Target",
+  "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\preview-continuous-private-20261025\\windows-runtime-merge-ui-1006\\Open-Isolated-Preview-1006.ps1"
+]

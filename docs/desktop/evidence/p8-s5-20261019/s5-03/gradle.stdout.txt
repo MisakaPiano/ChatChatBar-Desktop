@@ -1,0 +1,83 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.1.0/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :desktopApp:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :desktopApp:convertXmlValueResourcesForMain NO-SOURCE
+> Task :desktopApp:copyNonXmlValueResourcesForMain NO-SOURCE
+> Task :desktopApp:prepareComposeResourcesTaskForMain NO-SOURCE
+> Task :desktopApp:generateResourceAccessorsForMain SKIPPED
+> Task :desktopApp:generateActualResourceCollectorsForMain SKIPPED
+> Task :desktopApp:generateComposeResClass SKIPPED
+> Task :sharedCore:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :sharedCore:compileKotlin UP-TO-DATE
+> Task :sharedCore:compileJava NO-SOURCE
+> Task :sharedCore:processResources NO-SOURCE
+> Task :sharedCore:classes UP-TO-DATE
+> Task :sharedCore:jar UP-TO-DATE
+> Task :desktopApp:compileKotlin
+> Task :desktopApp:compileJava NO-SOURCE
+> Task :desktopApp:assembleMainResources UP-TO-DATE
+> Task :desktopApp:syncDesktopModelCatalogResources UP-TO-DATE
+> Task :desktopApp:processResources UP-TO-DATE
+> Task :desktopApp:classes UP-TO-DATE
+> Task :desktopApp:jar
+> Task :desktopApp:convertXmlValueResourcesForTest NO-SOURCE
+> Task :desktopApp:copyNonXmlValueResourcesForTest NO-SOURCE
+> Task :desktopApp:prepareComposeResourcesTaskForTest NO-SOURCE
+> Task :desktopApp:generateResourceAccessorsForTest SKIPPED
+> Task :sharedCore:compileTestFixturesKotlin UP-TO-DATE
+> Task :sharedCore:compileTestFixturesJava NO-SOURCE
+> Task :desktopApp:compileTestKotlin
+> Task :desktopApp:compileTestJava NO-SOURCE
+> Task :desktopApp:assembleTestResources UP-TO-DATE
+> Task :desktopApp:processTestResources UP-TO-DATE
+> Task :desktopApp:testClasses UP-TO-DATE
+> Task :sharedCore:processTestFixturesResources NO-SOURCE
+> Task :sharedCore:testFixturesClasses UP-TO-DATE
+> Task :sharedCore:testFixturesJar UP-TO-DATE
+
+> Task :desktopApp:test
+
+DesktopChatVoiceRuntimeTest > UI facade distinguishes another take replacement export and explicit deletion FAILED
+    java.util.NoSuchElementException at DesktopChatVoiceRuntimeTest.kt:51
+
+DesktopChatVoiceRuntimeTest > message deletion drains voice work and only removes explicitly owned files FAILED
+    java.util.NoSuchElementException at DesktopChatVoiceRuntimeTest.kt:79
+
+DesktopFishGenerationTest > global five permit batch preserves order and foreground eligibility FAILED
+    java.lang.AssertionError at DesktopFishGenerationTest.kt:175
+
+DesktopFishGenerationTest > whole fills missing anchors repeated single keeps takes and restart preserves snapshots FAILED
+    java.lang.AssertionError at DesktopFishGenerationTest.kt:73
+
+DesktopFishGenerationTest > partial HTTP failure keeps successes suppresses autoplay and never resends 503 FAILED
+    java.lang.AssertionError at DesktopFishGenerationTest.kt:89
+
+DesktopFishGenerationTest > cancellation drains body and cannot resurrect a deleted message FAILED
+    kotlinx.coroutines.TimeoutCancellationException at CoroutineDebugging.kt:42
+        Caused by: kotlinx.coroutines.TimeoutCancellationException at Timeout.kt:189
+
+DesktopFishGenerationTest > tag rewrite waits for explicit confirmation and rejection sends no TTS FAILED
+    java.util.NoSuchElementException at DesktopFishGenerationTest.kt:157
+
+DesktopFishGenerationTest > replacement failure preserves old recording and success replaces only its artifact FAILED
+    java.util.NoSuchElementException at DesktopFishGenerationTest.kt:127
+
+DesktopVoicePersistenceTest > durable artifact and official entity survive restart without credentials FAILED
+    java.lang.IllegalStateException at DesktopVoiceAudioStore.kt:103
+        Caused by: java.lang.IllegalStateException at DesktopVoiceAudioStore.kt:103
+
+DesktopVoicePersistenceTest > corrupt inventory fails closed and preserves all audio and unknown files FAILED
+    java.lang.IllegalStateException at DesktopVoiceAudioStore.kt:103
+        Caused by: java.lang.IllegalStateException at DesktopVoiceAudioStore.kt:103
+
+DesktopVoicePersistenceTest > path traversal replacement mutation and external deletion are rejected FAILED
+    java.lang.IllegalStateException at DesktopVoiceAudioStore.kt:103
+        Caused by: java.lang.IllegalStateException at DesktopVoiceAudioStore.kt:103
+
+DesktopVoicePersistenceTest > invalid truncated oversized and cancelled streams never publish audio FAILED
+    java.lang.AssertionError at DesktopVoicePersistenceTest.kt:51
+        Caused by: java.lang.IllegalStateException at DesktopVoiceAudioStore.kt:103
+            Caused by: java.lang.IllegalStateException at DesktopVoiceAudioStore.kt:103
+
+> Task :desktopApp:test FAILED
+13 actionable tasks: 4 executed, 9 up-to-date

@@ -1,0 +1,188 @@
+{
+  "time": "2026-10-21T16:27:03.6822507Z",
+  "sessions": [
+    {
+      "id": "bfc8ea5f-c2b1-41cd-b9e8-5ce52fb4bb06",
+      "title": "统一验收 A · 对话、语音、资料与记忆",
+      "name": null,
+      "characterCardId": "unified-card",
+      "extraWorldBookIds": [],
+      "messageIds": null
+    },
+    {
+      "id": "c03507cb-2f39-407f-bc3e-f8d127ff8447",
+      "title": "统一验收 A · 对话、语音、资料与记忆",
+      "name": null,
+      "characterCardId": "37050996-1eb1-4321-ae31-2c92fd8424f0",
+      "extraWorldBookIds": [
+        "ffd32b8c-22d3-4d70-a9c9-838a670ac4a3"
+      ],
+      "messageIds": null
+    },
+    {
+      "id": "unified-a",
+      "title": "统一验收 A · 对话、语音、资料与记忆",
+      "name": null,
+      "characterCardId": "unified-card",
+      "extraWorldBookIds": [],
+      "messageIds": null
+    },
+    {
+      "id": "unified-history",
+      "title": "统一验收 B · 分组与长图",
+      "name": null,
+      "characterCardId": "unified-card",
+      "extraWorldBookIds": [],
+      "messageIds": null
+    }
+  ],
+  "messages": [
+    {
+      "id": "bfc8ea5f-c2b1-41cd-b9e8-5ce52fb4bb06-0000000000",
+      "sessionId": "bfc8ea5f-c2b1-41cd-b9e8-5ce52fb4bb06",
+      "role": "ASSISTANT",
+      "hasRestoreMarker": false,
+      "has123": false
+    },
+    {
+      "id": "bfc8ea5f-c2b1-41cd-b9e8-5ce52fb4bb06-0000000001",
+      "sessionId": "bfc8ea5f-c2b1-41cd-b9e8-5ce52fb4bb06",
+      "role": "ASSISTANT",
+      "hasRestoreMarker": false,
+      "has123": false
+    },
+    {
+      "id": "bfc8ea5f-c2b1-41cd-b9e8-5ce52fb4bb06-0000000002",
+      "sessionId": "bfc8ea5f-c2b1-41cd-b9e8-5ce52fb4bb06",
+      "role": "USER",
+      "hasRestoreMarker": false,
+      "has123": false
+    },
+    {
+      "id": "bfc8ea5f-c2b1-41cd-b9e8-5ce52fb4bb06-0000000003",
+      "sessionId": "bfc8ea5f-c2b1-41cd-b9e8-5ce52fb4bb06",
+      "role": "USER",
+      "hasRestoreMarker": false,
+      "has123": false
+    },
+    {
+      "id": "c03507cb-2f39-407f-bc3e-f8d127ff8447-0000000000",
+      "sessionId": "c03507cb-2f39-407f-bc3e-f8d127ff8447",
+      "role": "ASSISTANT",
+      "hasRestoreMarker": false,
+      "has123": false
+    },
+    {
+      "id": "c03507cb-2f39-407f-bc3e-f8d127ff8447-0000000001",
+      "sessionId": "c03507cb-2f39-407f-bc3e-f8d127ff8447",
+      "role": "ASSISTANT",
+      "hasRestoreMarker": false,
+      "has123": false
+    },
+    {
+      "id": "c03507cb-2f39-407f-bc3e-f8d127ff8447-0000000002",
+      "sessionId": "c03507cb-2f39-407f-bc3e-f8d127ff8447",
+      "role": "ASSISTANT",
+      "hasRestoreMarker": false,
+      "has123": false
+    },
+    {
+      "id": "c03507cb-2f39-407f-bc3e-f8d127ff8447-0000000003",
+      "sessionId": "c03507cb-2f39-407f-bc3e-f8d127ff8447",
+      "role": "USER",
+      "hasRestoreMarker": true,
+      "has123": true
+    },
+    {
+      "id": "c03507cb-2f39-407f-bc3e-f8d127ff8447-0000000004",
+      "sessionId": "c03507cb-2f39-407f-bc3e-f8d127ff8447",
+      "role": "USER",
+      "hasRestoreMarker": false,
+      "has123": false
+    },
+    {
+      "id": "c03507cb-2f39-407f-bc3e-f8d127ff8447-0000000005",
+      "sessionId": "c03507cb-2f39-407f-bc3e-f8d127ff8447",
+      "role": "USER",
+      "hasRestoreMarker": false,
+      "has123": true
+    },
+    {
+      "id": "31a785eb-a70a-4628-897a-93bf0fb8c30f",
+      "sessionId": "unified-a",
+      "role": "ASSISTANT",
+      "hasRestoreMarker": false,
+      "has123": false
+    },
+    {
+      "id": "a1",
+      "sessionId": "unified-a",
+      "role": "ASSISTANT",
+      "hasRestoreMarker": false,
+      "has123": false
+    },
+    {
+      "id": "a2",
+      "sessionId": "unified-a",
+      "role": "ASSISTANT",
+      "hasRestoreMarker": false,
+      "has123": false
+    },
+    {
+      "id": "a6c67e2a-c3fe-434f-a471-e14cd4476ebc",
+      "sessionId": "unified-a",
+      "role": "USER",
+      "hasRestoreMarker": false,
+      "has123": true
+    },
+    {
+      "id": "u1",
+      "sessionId": "unified-a",
+      "role": "USER",
+      "hasRestoreMarker": false,
+      "has123": false
+    },
+    {
+      "id": "u2",
+      "sessionId": "unified-a",
+      "role": "USER",
+      "hasRestoreMarker": false,
+      "has123": true
+    },
+    {
+      "id": "history-0",
+      "sessionId": "unified-history",
+      "role": "ASSISTANT",
+      "hasRestoreMarker": false,
+      "has123": false
+    },
+    {
+      "id": "history-1",
+      "sessionId": "unified-history",
+      "role": "USER",
+      "hasRestoreMarker": false,
+      "has123": false
+    },
+    {
+      "id": "history-2",
+      "sessionId": "unified-history",
+      "role": "USER",
+      "hasRestoreMarker": false,
+      "has123": false
+    },
+    {
+      "id": "history-3",
+      "sessionId": "unified-history",
+      "role": "ASSISTANT",
+      "hasRestoreMarker": false,
+      "has123": false
+    },
+    {
+      "id": "history-4",
+      "sessionId": "unified-history",
+      "role": "ASSISTANT",
+      "hasRestoreMarker": false,
+      "has123": false
+    }
+  ]
+}

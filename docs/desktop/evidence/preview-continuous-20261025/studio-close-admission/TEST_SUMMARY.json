@@ -1,0 +1,54 @@
+[
+  {
+    "round": "studio-close-admission-red",
+    "exit": 1,
+    "suites": []
+  },
+  {
+    "round": "studio-close-admission-red-executed",
+    "exit": 1,
+    "suites": [
+      {
+        "name": "com.example.chatbar.desktop.DesktopTaskRuntimeTest",
+        "tests": "1",
+        "failures": "1",
+        "errors": "0",
+        "skipped": "0"
+      }
+    ]
+  },
+  {
+    "round": "studio-close-admission-green",
+    "exit": 0,
+    "suites": [
+      {
+        "name": "com.example.chatbar.desktop.DesktopRealChatRuntimeCancellationTest",
+        "tests": "7",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopShutdownWaitObserverTest",
+        "tests": "5",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopTaskRuntimeTest",
+        "tests": "12",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      },
+      {
+        "name": "com.example.chatbar.desktop.DesktopUpdateCheckerTest",
+        "tests": "10",
+        "failures": "0",
+        "errors": "0",
+        "skipped": "0"
+      }
+    ]
+  }
+]

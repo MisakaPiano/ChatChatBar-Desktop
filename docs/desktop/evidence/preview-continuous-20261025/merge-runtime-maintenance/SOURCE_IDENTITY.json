@@ -1,0 +1,12 @@
+{
+  "merge-runtime-maintenance-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopTaskRuntime.kt": {
+    "bytes": 27536,
+    "sha256": "1ff76e3baff061ee87bc93084ebb39bd7e5e5dd4f5b6973d369b3aa0b76e3e01",
+    "gitBlob": "818b80f8ab184720b4b66da3de2b88fb8ccea521"
+  },
+  "merge-runtime-maintenance-20261025/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopTaskRuntimeTest.kt": {
+    "bytes": 23567,
+    "sha256": "3387043eeb04ba3eac7cf2593fd409e71daf5788373c451d9a7b380f95ed726d",
+    "gitBlob": "07620ffa4a2207f321e2772594a9b8d3932612c8"
+  }
+}

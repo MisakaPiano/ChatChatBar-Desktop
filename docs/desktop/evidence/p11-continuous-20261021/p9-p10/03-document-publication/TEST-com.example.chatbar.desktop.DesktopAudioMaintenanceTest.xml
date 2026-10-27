@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopAudioMaintenanceTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-20T19:52:45.764Z" hostname="DD1" time="1.378">
+  <properties/>
+  <testcase name="cancellation completes native drain before reopening admission and skips migration transaction" classname="com.example.chatbar.desktop.DesktopAudioMaintenanceTest" time="0.407"/>
+  <testcase name="migration reservation makes concurrent automatic checks defer before scheduler join" classname="com.example.chatbar.desktop.DesktopAudioMaintenanceTest" time="0.055"/>
+  <testcase name="paused lease blocks exclusive until confirmed native drain" classname="com.example.chatbar.desktop.DesktopAudioMaintenanceTest" time="0.04"/>
+  <testcase name="migration waits for drain rejects late playback and seals after commit" classname="com.example.chatbar.desktop.DesktopAudioMaintenanceTest" time="0.054"/>
+  <testcase name="failed native close fails closed before any migration files then explicit retry recovers" classname="com.example.chatbar.desktop.DesktopAudioMaintenanceTest" time="0.048"/>
+  <testcase name="in flight real scheduler backup cannot form migration audio scheduler join cycle" classname="com.example.chatbar.desktop.DesktopAudioMaintenanceTest" time="0.149"/>
+  <testcase name="real coordinator playFrom intent resume and autoplay cannot reopen during drain" classname="com.example.chatbar.desktop.DesktopAudioMaintenanceTest" time="0.482"/>
+  <testcase name="idle backup reservation blocks check to exclusive race and migration defers without scheduler cycle" classname="com.example.chatbar.desktop.DesktopAudioMaintenanceTest" time="0.032"/>
+  <testcase name="cancellation while waiting for exclusive releases audio reservation and destination" classname="com.example.chatbar.desktop.DesktopAudioMaintenanceTest" time="0.032"/>
+  <testcase name="cancelled pending exclusive and duplicate migration release both admission owners" classname="com.example.chatbar.desktop.DesktopAudioMaintenanceTest" time="0.033"/>
+  <testcase name="automatic backup reports busy without exclusive and scheduler retries after stop" classname="com.example.chatbar.desktop.DesktopAudioMaintenanceTest" time="0.045"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

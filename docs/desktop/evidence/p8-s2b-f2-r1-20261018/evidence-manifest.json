@@ -1,0 +1,152 @@
+{
+  "baseCommit": "ade2680b97397814b4f0686c2d2766655d37be63",
+  "scope": "All other evidence files; uncommitted R1 draft, diagnosis and new repair RED",
+  "count": 29,
+  "files": [
+    {
+      "path": ".gitattributes",
+      "bytes": 8,
+      "sha256": "705fd4d6451a31d36b3df7de96f83f30ac976c9b4a6d1e51671d8e2f33e2d0da"
+    },
+    {
+      "path": "01-followup-diagnosis/command.txt",
+      "bytes": 252,
+      "sha256": "9ce774a9e8a88e0c76fcee3bdd1d01bb3ef7f413b93170ba0e0fb5835abf716b"
+    },
+    {
+      "path": "01-followup-diagnosis/gradle.stderr.log",
+      "bytes": 375,
+      "sha256": "80d524bbd119f0260dfcb0386f37f38ff47c79917cd37af40e939a897c6937aa"
+    },
+    {
+      "path": "01-followup-diagnosis/gradle.stdout.log",
+      "bytes": 2336,
+      "sha256": "4b2d8c7efb7e4a27a98c3d8699879ae289fb2749db7a01a09077e6286437b32d"
+    },
+    {
+      "path": "01-followup-diagnosis/http-followup-diagnostics.jsonl",
+      "bytes": 1762,
+      "sha256": "3cfd067e99d3e9c21c340ee7a4e4ca264fb18ff6f19f253664c04b66c0d05af8"
+    },
+    {
+      "path": "01-followup-diagnosis/junit/TEST-com.example.chatbar.desktop.DesktopFishSampleTest.xml",
+      "bytes": 8273,
+      "sha256": "434f1ff57c5d9ef10e92fbc509b6c0d1f594e75aa19084e09519967f8c41427b"
+    },
+    {
+      "path": "01-followup-diagnosis/process.json",
+      "bytes": 110,
+      "sha256": "2b08da2ae78b83531278dedc3cbf5a0ff5b8259f6b395c4bb2899debfc8fa05d"
+    },
+    {
+      "path": "01-followup-diagnosis/resources.jsonl",
+      "bytes": 1904,
+      "sha256": "797f77051651b6f1521323cc8eb18fe9c330f363a0296d10f506e466acd436c7"
+    },
+    {
+      "path": "01-followup-diagnosis/stage.json",
+      "bytes": 640,
+      "sha256": "9e906362a593062697d4f850ed1eb0bc52612c089cc51a27ec9f0d4dece7afa5"
+    },
+    {
+      "path": "02-fixed-status/command.txt",
+      "bytes": 252,
+      "sha256": "9ce774a9e8a88e0c76fcee3bdd1d01bb3ef7f413b93170ba0e0fb5835abf716b"
+    },
+    {
+      "path": "02-fixed-status/gradle.stderr.log",
+      "bytes": 375,
+      "sha256": "bee90d5e1b16a3fd32a9cca31ecd32f61256083c635b97d452a03965b58abf4d"
+    },
+    {
+      "path": "02-fixed-status/gradle.stdout.log",
+      "bytes": 2340,
+      "sha256": "70023001282b99a603df86ae6a1f61050ab120f8abea9ee68355c1ea9a34dafa"
+    },
+    {
+      "path": "02-fixed-status/http-followup-diagnostics.jsonl",
+      "bytes": 1770,
+      "sha256": "d756e86e13eae1472557f6ef74e7df29e3b8c6708c63a8c717102c99973bd14f"
+    },
+    {
+      "path": "02-fixed-status/junit/TEST-com.example.chatbar.desktop.DesktopFishSampleTest.xml",
+      "bytes": 8219,
+      "sha256": "832130648a1cc6e671d490fee7f6c340024acf9e0f29e795d90e48564757c635"
+    },
+    {
+      "path": "02-fixed-status/process.json",
+      "bytes": 109,
+      "sha256": "7431a2af293ccdb36ff5adeca899b661fccd8801cab743614b4d0c7d960b57f0"
+    },
+    {
+      "path": "02-fixed-status/resources.jsonl",
+      "bytes": 1522,
+      "sha256": "9216816da5b881a166e076095d5d0f7786c868684e172383cea2325a7d8f08ff"
+    },
+    {
+      "path": "02-fixed-status/stage.json",
+      "bytes": 640,
+      "sha256": "95ffb6c1fb2581724edd3ad0d179dddff70dfe2516104a393cb9fb64a357545d"
+    },
+    {
+      "path": "diagnostic-source-manifest.json",
+      "bytes": 1803,
+      "sha256": "fe56d8ff2d84674286cd8302bd2e6cfffee1564bafdbe5355304be4a2395ed9a"
+    },
+    {
+      "path": "diagnostic-source.patch",
+      "bytes": 36724,
+      "sha256": "07ea52b51db9c9173639d5ee740203c6bf350b0052e7cb652066524f26db2851"
+    },
+    {
+      "path": "fixed-source-manifest.json",
+      "bytes": 1803,
+      "sha256": "3ad28b1b0712bcf9acc1c8ff9163c8d97b3ebd9e904ea46a45ee639f99e40d10"
+    },
+    {
+      "path": "fixed-source.patch",
+      "bytes": 39934,
+      "sha256": "18849e8b1035dbf78de08944ed36069e25288f1d8d093f71b5fc0c0a702f1a0f"
+    },
+    {
+      "path": "freeze-source.py",
+      "bytes": 1418,
+      "sha256": "51fbcbf7136af8b49adbb300db8e8b573cc3d95115c6ac05a525992d96c31beb"
+    },
+    {
+      "path": "preflight-source.json",
+      "bytes": 2172,
+      "sha256": "91ba71afb9c7883f38c97e3b2d1200e68161460060b7e8ad4a87fe08f6467949"
+    },
+    {
+      "path": "publication-check.json",
+      "bytes": 685,
+      "sha256": "ec7b83e95e2af3b04c29b4cc1e87dad27747831aae79b609624b283278ed8d18"
+    },
+    {
+      "path": "r1-vs-frozen-draft.patch",
+      "bytes": 10578,
+      "sha256": "5c63554e6b2fe603693543f287ae808850a55fb590969c5ce2626d549774e759"
+    },
+    {
+      "path": "raw-publication-ledger.json",
+      "bytes": 7653,
+      "sha256": "3f0cb249bc7d457f3d8b6d76e857b3d3ba11948c48c73180857cb18bbde6467c"
+    },
+    {
+      "path": "README.md",
+      "bytes": 8000,
+      "sha256": "a56f8a87e0a6eca686568ca0dc95af95e95f6e06aa022929a010bb65df0c8783"
+    },
+    {
+      "path": "run-stage.ps1",
+      "bytes": 3081,
+      "sha256": "f7dbfe555dd26eddcfe2a99378e1df1f4906ebd93a6d505a0b3e36c95a4249a4"
+    },
+    {
+      "path": "stage-summary.json",
+      "bytes": 2764,
+      "sha256": "725ade7240be981ba04b8901bbf56793e86b475f3bc2e209a8d112297fb12af2"
+    }
+  ]
+}

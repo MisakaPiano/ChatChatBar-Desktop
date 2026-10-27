@@ -1,0 +1,9 @@
+{
+  "exportPath": "app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r3-20261020\\exports\\Bob-test.mp3",
+  "exists": true,
+  "bytes": 405420,
+  "sha256": "c730e4c467f8dcf465acca9e426ea6349137e3302ff65e648f66dc2a63e3301f",
+  "bobVoiceId": "c4e39f11-e87f-415f-a061-d0f3faff1308",
+  "sourceAudioPath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r3-20261020\\environments\\p8s7-profile\\ChatChatBarDesktop\\audio\\generated\\p8s7-session-a\\61a29e8f-ca27-4354-ad23-d463311339bb.mp3",
+  "matchesBob": true
+}

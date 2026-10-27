@@ -1,0 +1,990 @@
+diff --git a/.agents/skills/chatbar-fish-audio-voice/SKILL.md b/.agents/skills/chatbar-fish-audio-voice/SKILL.md
+index 5625a66c..0aefa053 100644
+--- a/.agents/skills/chatbar-fish-audio-voice/SKILL.md
++++ b/.agents/skills/chatbar-fish-audio-voice/SKILL.md
+@@ -25,10 +25,15 @@ Use `chatbar-model-request-runtime` for shared auxiliary-model resolution or SSE
+ 
+ All abbreviated source paths are under `app/app/src/main/java/com/example/chatbar/`; tests are under `app/app/src/test/java/com/example/chatbar/`.
+ 
+-## Desktop foundation (provisional)
+-
+-- `DesktopFishAudioCredentials` uses the typed `DesktopCredentialKey.FishAudioApiKey` through existing `DesktopSecretStore` / DPAPI. `DesktopAppContainer` owns lazy credentials and catalog adapters; startup makes no Fish request.
+-- `DesktopFishAudioLibrary` calls the shared GET factory, keeps cancellation attached through response-body consumption, rejects redirects and oversized catalog responses, and exposes sanitized failures. It has no TTS or preview fallback. Picker UI, audio storage/playback and coordinator wiring remain pending; catalog tests are not voice-runtime acceptance.
++## Desktop Fish settings and preview
++
++- `DesktopFishAudioPanel`, credential/settings controllers and `DesktopCharacterEditorController.bindFishVoice` own S2A settings and explicit selection in both card modes. Previewing never calls binding or writes chat/voice Entities.
++- `DesktopFishAudioLibrary` remains catalog-only: shared GET factory, bounded/sanitized responses, redirect rejection and cancellation through body drain. Its app owner drains pending catalog calls at shutdown; native hanging-query picker close still needs separate Windows evidence (W22).
++- `DesktopFishPreviewRuntime` owns app-scope picker leases, one serialized output path and the first generated clip per reference ID for each picker. A changed text does not regenerate a cached voice; UI must disclose reuse. Only explicit nonblank 1–120-character text plus a generate click can request `s2.1-pro-free`; paid/stale configured models are rejected without fallback.
++- `DesktopFishPreviewTransport` reuses shared `tts()`, sends only to the fixed Fish endpoint, disables redirects/connection retries and uses one-shot bodies plus a per-call network-exchange guard. No sample CDN URL is accepted. Credentials stay in the typed DPAPI store.
++- `DesktopFishPreviewStore` creates separate OS-temp picker directories, bounds clip/session sizes to 16/64 MiB (four outstanding leases maximum), streams `.part`, checks MP3 frame structure/120-second duration, publishes atomically and rechecks cached hashes/file identity. It only deletes recorded own files after real drain; replacement/unknown entries remain evidence.
++- `DesktopWindowsAudioOutput` is a replaceable local-file JNA/winmm MCI backend. Windows supplies the decoder; no codec binary is shipped. It serializes native commands and confirms stop/close before file cleanup. MCI is legacy; codec/device availability and physical I/O deadlines are not guaranteed. AppContainer closes preview before credentials/storage and root release.
++- Focused tests: `DesktopFishPreviewTest`, `DesktopFishPreviewWindowsTest`, `DesktopFishPresentationTest`, library/settings tests. Native status/silent fixtures do not substitute for user hearing a packaged clip. Formal voice repositories, chat autoplay, SaveSlot audio and ordinary sample downloads remain outside this preview slice.
+ 
+ ## Ownership and Isolation
+ 
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt
+index dc8e89d1..e70dbabb 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt
+@@ -56,6 +56,11 @@ class DesktopAppContainer internal constructor(
+     internal val fishAudioLibrary by fishAudioLibraryOwner
+     private val fishCredentialOwner = lazy { DesktopFishCredentialController(fishAudioCredentials) }
+     internal val fishCredentialController by fishCredentialOwner
++    private val fishPreviewOwner = lazy {
++        DesktopFishPreviewRuntime(DesktopFishPreviewTransport(fishAudioCredentials),
++            model = { settingsRepository.currentAppSettings.fishAudioTtsModelId })
++    }
++    internal val fishPreviewRuntime by fishPreviewOwner
+     internal val settingsRepository: SettingsRepository by lazy {
+         SettingsRepository(
+             storage = jsonFileStorage,
+@@ -130,6 +135,7 @@ class DesktopAppContainer internal constructor(
+             resources = DesktopCharacterDraftResources(appDataRoot, characterResourceStore),
+             fishLibrary = { fishAudioLibrary },
+             fishCredentials = fishCredentialController,
++            fishPreview = { fishPreviewRuntime },
+             json = jsonFileStorage.json,
+             filePicker = filePicker,
+             discardObsoleteResources = { previous, _ ->
+@@ -410,6 +416,7 @@ class DesktopAppContainer internal constructor(
+     suspend fun close() {
+         closeDesktopDataRuntimes(
+             taskRuntimeClose = {
++                if (fishPreviewOwner.isInitialized()) fishPreviewRuntime.closeAndDrain()
+                 if (fishAudioLibraryOwner.isInitialized()) fishAudioLibrary.closeAndDrain()
+                 if (fishCredentialOwner.isInitialized()) fishCredentialController.closeAndDrain()
+                 if (connectionTestOwner.isInitialized()) connectionTestController.closeAndDrain()
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorController.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorController.kt
+index 67fb3311..667855f2 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorController.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorController.kt
+@@ -94,6 +94,7 @@ internal class DesktopCharacterEditorController(
+     private val persistDraftMarker: suspend (EditorDraft) -> EditorDraft = drafts::save,
+     val fishLibrary: (() -> DesktopFishAudioLibrary)? = null,
+     val fishCredentials: DesktopFishCredentialController? = null,
++    val fishPreview: (() -> DesktopFishPreviewRuntime)? = null,
+ ) {
+     private val _state = MutableStateFlow(DesktopCharacterEditorState())
+     val state = _state.asStateFlow()
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishAudioPanel.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishAudioPanel.kt
+index 08384933..e9669b88 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishAudioPanel.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishAudioPanel.kt
+@@ -58,7 +58,7 @@ internal fun DesktopFishGlobalSettings(state: DesktopModelSettingsState, control
+         }
+         if (state.chatDefaultsDirty)
+             StatusText("仍有未保存的全局设置更改", DesktopBootstrapColors.warning)
+-        StatusText("仅保存设置；语音生成与试听尚未接入（PENDING）")
++        StatusText("此处保存设置；音色库支持免费文本预览，聊天语音生成尚未接入（PENDING）")
+         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+             BootstrapButton("保存全局设置", enabled = state.chatDefaultsDirty && !state.busy) {
+                 scope.launch { controller.saveAppSettings() }
+@@ -140,16 +140,19 @@ internal fun DesktopFishBindingField(entry: CharacterInfo, editor: DesktopCharac
+     }
+     if (open) {
+         val picker = remember(draftId, entry.id) { DesktopFishPickerController(scope, editor.fishLibrary!!()::listModels) }
+-        DisposableEffect(picker) { onDispose { picker.close() } }
+-        DialogWindow(onCloseRequest = { picker.close(); open = false }, title = "Fish Audio 音色库",
++        val preview = remember(picker) { runCatching { editor.fishPreview?.invoke()?.openSession() }.getOrNull() }
++        fun closePicker() { picker.close(); preview?.requestClose(); open = false }
++        DisposableEffect(picker) { onDispose { picker.close(); preview?.requestClose() } }
++        DialogWindow(onCloseRequest = ::closePicker, title = "Fish Audio 音色库",
+             icon = desktopImageWindowIcon(), resizable = true,
+             state = rememberDialogState(size = rememberDesktopImageWindowSize(740.dp, 760.dp))) {
+             Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(16.dp)) {
+-                DesktopFishPickerContent(picker, state.configured, onClose = { picker.close(); open = false }) { model ->
++                if (preview == null) StatusText("预览资源不可用；目录和显式音色选择仍可使用", DesktopBootstrapColors.warning)
++                DesktopFishPickerContent(picker, state.configured, onClose = ::closePicker, preview = preview) { model ->
+                     // Validate both dialog result ownership and editor lifetime at the actual click.
+                     if (state.configured && picker.selectable(model.id) == model)
+                         editor.bindFishVoice(draftId, entry.id, model.toBinding())
+-                    picker.close(); open = false
++                    closePicker()
+                 }
+             }
+         }
+@@ -158,11 +161,21 @@ internal fun DesktopFishBindingField(entry: CharacterInfo, editor: DesktopCharac
+ 
+ @Composable
+ internal fun DesktopFishPickerContent(controller: DesktopFishPickerController, configured: Boolean,
+-    onClose: () -> Unit, onUse: (FishAudioModel) -> Unit) {
++    onClose: () -> Unit, preview: DesktopFishPreviewRuntime.Session? = null, onUse: (FishAudioModel) -> Unit) {
+     val state by controller.state.collectAsState()
+     val query = state.query
++    val audio = preview?.state?.collectAsState()?.value ?: DesktopFishPreviewState()
+     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+-        StatusText("Fish Audio 音色库 · 试听尚未接入（PENDING）")
++        StatusText("Fish Audio 音色库")
++        var previewText by remember(controller) { mutableStateOf("") }
++        if (preview != null) {
++            DesktopFishField("免费预览文本（1–120 字）", previewText) { previewText = it }
++            StatusText("仅 s2.1-pro-free 可生成；点击生成即授权本次免费请求。首次结果在本音色库内复用，修改文字不会重新生成。")
++            audio.message?.let { StatusText(it) }
++            if (audio.busy) StatusText("正在生成免费预览…")
++            if (audio.playing) StatusText("正在播放预览")
++            BootstrapButton("停止预览", secondary = true, enabled = audio.busy || audio.playing) { preview.stop() }
++        }
+         BootstrapButton("取消 / 关闭音色库", secondary = true, onClick = onClose)
+         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
+             verticalArrangement = Arrangement.spacedBy(8.dp)) {
+@@ -194,6 +207,11 @@ internal fun DesktopFishPickerContent(controller: DesktopFishPickerController, c
+                         StatusText("${model.author?.nickname ?: "未知作者"} · ${model.visibility ?: "未知权限"}")
+                         StatusText("${model.languages.joinToString()} · ${model.tags.joinToString()}")
+                         model.samples.firstOrNull()?.text?.takeIf(String::isNotBlank)?.let { StatusText("官方示例文字 · $it") }
++                        if (preview != null) BootstrapButton("生成 / 重播免费预览 · ${model.title}",
++                            enabled = configured && !state.loading && state.error == null && previewText.isNotBlank() &&
++                                previewText.codePointCount(0, previewText.length) <= 120 && !audio.busy && !audio.playing) {
++                            if (controller.selectable(model.id) == model) preview.generate(model.id, previewText)
++                        }
+                         BootstrapButton("选择音色 · ${model.title}", enabled = configured && !state.loading && state.error == null) { onUse(model) }
+                     }
+                 } }
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPreviewRuntime.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPreviewRuntime.kt
+new file mode 100644
+index 00000000..3bc3e015
+--- /dev/null
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPreviewRuntime.kt
+@@ -0,0 +1,143 @@
++package com.example.chatbar.desktop
++
++import java.nio.file.Path
++import java.util.concurrent.atomic.AtomicBoolean
++import kotlinx.coroutines.*
++import kotlinx.coroutines.flow.MutableStateFlow
++import kotlinx.coroutines.flow.asStateFlow
++import kotlinx.coroutines.sync.Mutex
++import kotlinx.coroutines.sync.withLock
++
++internal data class DesktopFishPreviewState(
++    val busy: Boolean = false, val playing: Boolean = false, val cached: Boolean = false,
++    val message: String? = null,
++)
++
++/** App-owned scope survives picker disposal until actual network/native I/O and cleanup finish. */
++internal class DesktopFishPreviewRuntime(
++    private val transport: DesktopFishPreviewTransport,
++    private val output: DesktopAudioOutput = DesktopWindowsAudioOutput(),
++    private val model: () -> String = { "s2.1-pro-free" },
++    private val stores: () -> DesktopFishPreviewStore = { DesktopFishPreviewStore() },
++    private val failureObserver: (Exception) -> Unit = {},
++) {
++    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
++    private val lock = Any()
++    private val operations = Mutex()
++    private val sessions = mutableSetOf<Session>()
++    private var closing = false
++    private var outputOwner: Session? = null
++
++    fun openSession(): Session = synchronized(lock) {
++        check(!closing)
++        // Four outstanding leases bound retained/failed-cleanup caches to 256 MiB in total.
++        check(sessions.size < 4) { "预览会话尚未释放；请先完成关闭" }
++        Session().also { sessions += it }
++    }
++    suspend fun closeAndDrain() = withContext(NonCancellable) {
++        val pending = synchronized(lock) { closing = true; sessions.toList() }
++        pending.forEach { it.requestClose() }
++        pending.forEach { it.closeAndDrain() }
++        transport.closeAndDrain()
++        output.closeAndDrain()
++        scope.cancel()
++    }
++
++    inner class Session internal constructor() {
++        private val mutable = MutableStateFlow(DesktopFishPreviewState())
++        val state = mutable.asStateFlow()
++        private val closed = AtomicBoolean()
++        private val cleanup = Mutex()
++        private val jobs = mutableSetOf<Job>()
++        private val cache = mutableMapOf<String, Path>()
++        private var store: DesktopFishPreviewStore? = null
++        private var cleaned = false
++
++        fun generate(reference: String, text: String) = submit {
++            val selectedModel = model()
++            if (selectedModel != "s2.1-pro-free") {
++                mutable.value = DesktopFishPreviewState(message = "当前模型未获免费预览授权；请明确选择 s2.1-pro-free，不会自动替换")
++                return@submit
++            }
++            check(text.isNotBlank() && text.codePointCount(0, text.length) <= 120) { "请输入 1–120 字的预览文本" }
++            mutable.value = DesktopFishPreviewState(busy = true)
++            if (outputOwner != null) { output.stopAndDrain(); outputOwner = null }
++            val owned = store ?: stores().also { store = it }
++            val cached = cache[reference]
++            val clip = cached ?: transport.generate(reference, text, selectedModel, owned).also { cache[reference] = it }
++            currentCoroutineContext().ensureActive()
++            check(!closed.get())
++            owned.verify(clip)
++            outputOwner = this
++            output.play(clip)
++            mutable.value = DesktopFishPreviewState(playing = true, cached = cached != null,
++                message = if (cached != null) "复用本次音色库首次生成的音频；新输入未发送" else "免费预览已生成；不写入聊天或角色绑定")
++            while (!closed.get() && output.isPlaying()) delay(100)
++            output.stopAndDrain(); outputOwner = null
++        }
++
++        fun stop() {
++            val pending = synchronized(lock) { jobs.toList().also { list -> list.forEach { it.cancel() } } }
++            if (pending.isNotEmpty()) return
++            submit {
++                if (outputOwner === this) { output.stopAndDrain(); outputOwner = null }
++                mutable.value = mutable.value.copy(busy = false, playing = false, message = "预览已停止")
++            }
++        }
++
++        private fun submit(action: suspend () -> Unit) {
++            synchronized(lock) {
++                if (closed.get() || closing || mutable.value.busy || mutable.value.playing) return
++                mutable.value = mutable.value.copy(busy = true)
++                val job = scope.launch(start = CoroutineStart.LAZY) {
++                    try { operations.withLock { action() } }
++                    catch (cancelled: CancellationException) { throw cancelled }
++                    catch (failure: Exception) {
++                        failureObserver(failure)
++                        mutable.value = DesktopFishPreviewState(message = if (failure is DesktopFishPreviewHttpFailure)
++                            "Fish 预览失败（HTTP ${failure.status}）；未自动重试" else
++                            "预览失败；请检查模型、凭据、网络或音频设备。未自动重试")
++                    } finally {
++                        // Keep the owner on a failed native close so app shutdown cannot release it.
++                        try { withContext(NonCancellable) {
++                            operations.withLock {
++                                if (outputOwner === this@Session) { output.stopAndDrain(); outputOwner = null }
++                            }
++                        } } catch (_: Exception) {
++                            mutable.value = DesktopFishPreviewState(message = "音频关闭未确认；文件已保留，应用退出将重试排水")
++                        }
++                    }
++                }
++                jobs += job
++                job.invokeOnCompletion { synchronized(lock) {
++                    jobs.remove(job)
++                    mutable.value = mutable.value.copy(busy = false, playing = false)
++                } }
++                job.start()
++            }
++        }
++
++        fun requestClose() {
++            if (!closed.compareAndSet(false, true)) return
++            synchronized(lock) { jobs.toList().forEach { it.cancel() } }
++            scope.launch {
++                try { closeAndDrain() }
++                catch (_: Exception) { mutable.value = DesktopFishPreviewState(message = "预览资源尚未安全关闭；文件已保留") }
++            }
++        }
++
++        suspend fun closeAndDrain() = withContext(NonCancellable) {
++            closed.set(true)
++            val pending = synchronized(lock) { jobs.toList().also { list -> list.forEach { it.cancel() } } }
++            pending.joinAll()
++            cleanup.withLock {
++                if (cleaned) return@withLock
++                operations.withLock {
++                    if (outputOwner === this@Session) { output.stopAndDrain(); outputOwner = null }
++                    store?.close(); cache.clear(); cleaned = true
++                    synchronized(lock) { sessions.remove(this@Session) }
++                }
++            }
++        }
++    }
++}
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPreviewStore.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPreviewStore.kt
+new file mode 100644
+index 00000000..a4549146
+--- /dev/null
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPreviewStore.kt
+@@ -0,0 +1,147 @@
++package com.example.chatbar.desktop
++
++import java.io.InputStream
++import java.nio.file.*
++import java.nio.file.attribute.BasicFileAttributes
++import java.util.UUID
++
++/** One newly created picker directory, outside the business root. Only recorded own files
++ * are deleted; unknown/replaced entries are retained and reported, never recursively removed.
++ */
++internal class DesktopFishPreviewStore(private val directory: Path = Files.createTempDirectory("ccb-fish-preview-"),
++    private val maxClipBytes: Long = 16L * 1024 * 1024, private val maxSessionBytes: Long = 64L * 1024 * 1024,
++) {
++    private val directoryKey = identity(directory, true)
++    private val files = linkedMapOf<Path, Any>()
++    private val hashes = mutableMapOf<Path, String>()
++    private var total = 0L
++    init { require(maxClipBytes > 0 && maxSessionBytes >= maxClipBytes) }
++
++    fun write(input: InputStream, expected: Long, active: () -> Unit): Path {
++        verifyDirectory()
++        check(files.size < 16) { "预览缓存数量已达上限" }
++        check(expected <= maxClipBytes && expected <= maxSessionBytes - total) { "预览音频超过容量限制" }
++        val part = directory.resolve("${UUID.randomUUID()}.part")
++        Files.newOutputStream(part, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE).use { output ->
++            files[part] = identity(part, false)
++            val buffer = ByteArray(16_384)
++            var count = 0L
++            while (true) {
++                active()
++                val size = input.read(buffer)
++                if (size < 0) break
++                check(size.toLong() <= maxClipBytes - count && size.toLong() <= maxSessionBytes - total) { "预览音频超过容量限制" }
++                output.write(buffer, 0, size); count += size; total += size
++            }
++            check(count > 0 && (expected < 0 || expected == count)) { "预览音频不完整" }
++        }
++        active(); verify(part)
++        DesktopMp3Validation.validate(part, maxClipBytes)
++        active(); verifyDirectory()
++        val final = directory.resolve("${UUID.randomUUID()}.mp3")
++        // No non-atomic fallback and no replacement of another clip.
++        Files.move(part, final, StandardCopyOption.ATOMIC_MOVE)
++        files[final] = files.remove(part)!!
++        hashes[final] = hash(final)
++        verify(final)
++        return final
++    }
++
++    fun verify(path: Path) {
++        verifyDirectory()
++        check(path.parent == directory && files[path] == identity(path, false)) { "预览文件身份发生变化" }
++        hashes[path]?.let { check(it == hash(path)) { "预览音频内容发生变化" } }
++    }
++    fun close() {
++        verifyDirectory()
++        for ((path, key) in files.toMap()) {
++            check(key == identity(path, false)) { "预览清理身份不一致；文件已保留" }
++            Files.delete(path); files.remove(path); hashes.remove(path)
++        }
++        // Fails on unknown entries; never delete them to manufacture a clean cache.
++        Files.delete(directory)
++    }
++    private fun verifyDirectory() { check(directoryKey == identity(directory, true)) }
++    private fun hash(path: Path): String {
++        check(Files.size(path) <= maxClipBytes)
++        val digest = java.security.MessageDigest.getInstance("SHA-256")
++        var bytes = 0L
++        Files.newInputStream(path, LinkOption.NOFOLLOW_LINKS).use { stream ->
++            val buffer = ByteArray(16_384)
++            while (true) {
++                val n = stream.read(buffer); if (n < 0) break
++                check(n.toLong() <= maxClipBytes - bytes); bytes += n; digest.update(buffer, 0, n)
++            }
++        }
++        check(files[path] == identity(path, false))
++        return java.util.HexFormat.of().formatHex(digest.digest())
++    }
++
++    private companion object {
++        fun identity(path: Path, directory: Boolean): Any {
++            val attrs = attributes(path, directory)
++            return if (System.getProperty("os.name").startsWith("Windows"))
++                DesktopIndexStartupPreflight.readWindowsIdentity(path, directory)
++            else requireNotNull(attrs.fileKey())
++        }
++        fun attributes(path: Path, directory: Boolean): BasicFileAttributes {
++            val absolute = path.toAbsolutePath().normalize()
++            check(absolute == path && path.toRealPath() == absolute) { "不安全的预览路径" }
++            var parent: Path? = absolute
++            while (parent != null) {
++                val a = Files.readAttributes(parent, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
++                check(!a.isSymbolicLink && !a.isOther) { "不安全的预览路径" }
++                parent = parent.parent
++            }
++            return Files.readAttributes(path, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS).also {
++                check(if (directory) it.isDirectory else it.isRegularFile)
++            }
++        }
++    }
++}
++
++/** Bounded structural MP3 Layer-III validation, followed by native decoder duration validation
++ * before play. ID3 alone, sync-byte guesses, truncated frames and trailing junk are rejected.
++ */
++internal object DesktopMp3Validation {
++    fun validate(path: Path, limit: Long) {
++        val size = Files.size(path)
++        check(size in 8..limit) { "MP3 大小无效" }
++        java.io.RandomAccessFile(path.toFile(), "r").use { input ->
++            var position = 0L
++            if (input.read() == 'I'.code && input.read() == 'D'.code && input.read() == '3'.code) {
++                val version = input.read(); input.read(); val flags = input.read()
++                check(version in 2..4)
++                var tag = 0L
++                repeat(4) { val b = input.read(); check(b in 0..127); tag = tag * 128 + b }
++                position = 10 + tag + if (version == 4 && flags and 16 != 0) 10 else 0
++                check(position <= size)
++            }
++            var frames = 0
++            var duration = 0.0
++            var signature: Int? = null
++            while (position < size) {
++                input.seek(position)
++                if (size - position == 128L && input.read() == 'T'.code && input.read() == 'A'.code && input.read() == 'G'.code) break
++                input.seek(position); check(size - position >= 4)
++                val h = input.readInt()
++                val version = (h ushr 19) and 3
++                val layer = (h ushr 17) and 3
++                val rateIndex = (h ushr 10) and 3
++                val bitIndex = (h ushr 12) and 15
++                check((h ushr 21) == 0x7ff && version != 1 && layer == 1 && rateIndex != 3 && bitIndex in 1..14) { "MP3 帧无效" }
++                val sig = version * 4 + rateIndex
++                check(signature == null || signature == sig); signature = sig
++                val rate = intArrayOf(44100, 48000, 32000)[rateIndex] / when(version) { 3 -> 1; 2 -> 2; else -> 4 }
++                val rates = if (version == 3) intArrayOf(0,32,40,48,56,64,80,96,112,128,160,192,224,256,320)
++                    else intArrayOf(0,8,16,24,32,40,48,56,64,80,96,112,128,144,160)
++                val length = (if (version == 3) 144000L else 72000L) * rates[bitIndex] / rate + ((h ushr 9) and 1)
++                check(length >= 4 && length <= size - position) { "MP3 帧被截断" }
++                position += length; frames++
++                duration += (if (version == 3) 1152.0 else 576.0) / rate
++                check(duration <= 120.0) { "预览时长超过 120 秒" }
++            }
++            check(frames >= 2 && duration > 0) { "MP3 音频帧缺失" }
++        }
++    }
++}
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPreviewTransport.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPreviewTransport.kt
+new file mode 100644
+index 00000000..48d5c740
+--- /dev/null
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPreviewTransport.kt
+@@ -0,0 +1,94 @@
++package com.example.chatbar.desktop
++
++import com.example.chatbar.domain.ProxyAwareClient
++import com.example.chatbar.domain.voice.FishAudioRequestFactory
++import java.io.IOException
++import java.nio.file.Path
++import java.util.concurrent.TimeUnit
++import java.util.concurrent.atomic.AtomicInteger
++import kotlinx.coroutines.*
++import okhttp3.*
++import okio.BufferedSink
++
++internal class DesktopFishPreviewHttpFailure(val status: Int) : IllegalStateException("Fish 预览失败（HTTP $status）；未自动重试")
++
++/** Fixed-origin TTS only. Catalog sample URLs never enter this transport. */
++internal class DesktopFishPreviewTransport(
++    private val credentials: DesktopFishAudioCredentials,
++    client: OkHttpClient = ProxyAwareClient.builder().build(),
++    private val baseUrl: String = "https://api.fish.audio",
++) {
++    private class Attempts(val count: AtomicInteger = AtomicInteger())
++    private val client = client.newBuilder().dispatcher(Dispatcher()).connectionPool(ConnectionPool())
++        .connectTimeout(30, TimeUnit.SECONDS).readTimeout(60, TimeUnit.SECONDS).callTimeout(120, TimeUnit.SECONDS)
++        .retryOnConnectionFailure(false).followRedirects(false).followSslRedirects(false)
++        .authenticator(Authenticator.NONE).proxyAuthenticator(Authenticator.NONE)
++        .addNetworkInterceptor { chain ->
++            // Also stops HTTP follow-ups (e.g. 503 Retry-After:0), before a second exchange sends headers.
++            if (chain.request().tag(Attempts::class.java)!!.count.incrementAndGet() != 1) throw IOException("禁止重复 TTS 请求")
++            chain.proceed(chain.request())
++        }.build()
++    private val lock = Any()
++    private val calls = mutableMapOf<Call, CompletableDeferred<Unit>>()
++    private var closed = false
++
++    suspend fun generate(reference: String, text: String, model: String, store: DesktopFishPreviewStore): Path {
++        require(model == "s2.1-pro-free") { "本切片仅授权 s2.1-pro-free；不会替换其他模型" }
++        require(text.isNotBlank() && text.codePointCount(0, text.length) <= 120 && reference.isNotBlank() && reference.length <= 256)
++        val key = try { credentials.load() ?: error("missing") } catch (_: Exception) { error("Fish 安全凭据不可用") }
++        val original = FishAudioRequestFactory.tts(baseUrl, key, model, reference, text.trim())
++        val body = requireNotNull(original.body)
++        val request = original.newBuilder().tag(Attempts::class.java, Attempts()).method("POST", object : RequestBody() {
++            override fun contentType() = body.contentType()
++            override fun contentLength() = body.contentLength()
++            override fun isOneShot() = true
++            override fun writeTo(sink: BufferedSink) = body.writeTo(sink)
++        }).build()
++        val call = client.newCall(request)
++        val done = CompletableDeferred<Unit>()
++        synchronized(lock) { check(!closed) { "预览连接已关闭" }; calls[call] = done }
++        try {
++            return suspendCancellableCoroutine { continuation ->
++                continuation.invokeOnCancellation { call.cancel() }
++                fun finish() { synchronized(lock) { calls.remove(call) }; done.complete(Unit) }
++                try {
++                    call.enqueue(object : Callback {
++                        override fun onFailure(call: Call, e: IOException) {
++                            try { if (continuation.isActive) continuation.resumeWith(Result.failure(IllegalStateException("Fish 预览网络失败"))) }
++                            finally { finish() }
++                        }
++                        override fun onResponse(call: Call, response: Response) {
++                            try {
++                                response.use {
++                                    if (!continuation.isActive) return
++                                    val result = runCatching {
++                                        if (!it.isSuccessful) throw DesktopFishPreviewHttpFailure(it.code)
++                                        val audio = requireNotNull(it.body)
++                                        check(audio.contentType()?.let { type -> type.type == "audio" && type.subtype in setOf("mpeg", "mp3") } == true) { "预览响应不是 MP3" }
++                                        audio.byteStream().use { stream -> store.write(stream, audio.contentLength()) {
++                                            if (call.isCanceled() || !continuation.isActive) throw CancellationException("预览已取消")
++                                        } }
++                                    }
++                                    if (continuation.isActive) continuation.resumeWith(result)
++                                }
++                            } finally { finish() }
++                        }
++                    })
++                } catch (_: Exception) {
++                    finish()
++                    if (continuation.isActive) continuation.resumeWith(Result.failure(IllegalStateException("Fish 预览连接不可用")))
++                }
++            }
++        } finally {
++            // Cancellation of the coroutine is not proof that callback/body/file I/O has ended.
++            withContext(NonCancellable) { done.await() }
++        }
++    }
++
++    suspend fun closeAndDrain() = withContext(NonCancellable + Dispatchers.IO) {
++        val pending = synchronized(lock) { closed = true; calls.map { (call, done) -> call.cancel(); done } }
++        pending.forEach { it.await() }
++        client.connectionPool.evictAll(); client.dispatcher.executorService.shutdown()
++        check(client.dispatcher.executorService.awaitTermination(30, TimeUnit.SECONDS)) { "预览连接尚未排水" }
++    }
++}
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopWindowsAudioOutput.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopWindowsAudioOutput.kt
+new file mode 100644
+index 00000000..b4c697c7
+--- /dev/null
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopWindowsAudioOutput.kt
+@@ -0,0 +1,92 @@
++package com.example.chatbar.desktop
++
++import com.sun.jna.Native
++import com.sun.jna.Pointer
++import com.sun.jna.WString
++import com.sun.jna.win32.StdCallLibrary
++import java.nio.file.Path
++import java.util.UUID
++import java.util.concurrent.Executors
++import kotlinx.coroutines.*
++import kotlinx.coroutines.sync.Mutex
++import kotlinx.coroutines.sync.withLock
++
++/** Local-file output port shared by preview and future audio callers. No URL or credential input. */
++internal interface DesktopAudioOutput {
++    suspend fun play(path: Path)
++    suspend fun stopAndDrain()
++    suspend fun isPlaying(): Boolean
++    suspend fun closeAndDrain()
++}
++
++internal fun interface DesktopMciCommands { fun send(command: String): String }
++
++/** Windows supplies winmm/MPEGVideo; no decoder binary is redistributed. MCI is a legacy
++ * replaceable backend, not a cross-platform codec guarantee. All native calls use one thread.
++ * A native call has no physical deadline: failure to close retains the alias and owning files.
++ */
++internal class DesktopWindowsAudioOutput(
++    private val commands: DesktopMciCommands = object : DesktopMciCommands {
++        private val api by lazy {
++            check(System.getProperty("os.name").startsWith("Windows"))
++            Native.load("winmm", Winmm::class.java)
++        }
++        override fun send(command: String): String {
++            val buffer = CharArray(256)
++            val code = api.mciSendStringW(WString(command), buffer, buffer.size, null)
++            check(code == 0) { "Windows 音频操作失败（MCI $code）" }
++            return String(buffer).substringBefore('\u0000').trim()
++        }
++    },
++) : DesktopAudioOutput {
++    private interface Winmm : StdCallLibrary {
++        fun mciSendStringW(command: WString, result: CharArray, size: Int, callback: Pointer?): Int
++    }
++    private val dispatcher = Executors.newSingleThreadExecutor { r -> Thread(r, "ccb-audio-output") }.asCoroutineDispatcher()
++    private val mutex = Mutex()
++    private var alias: String? = null
++    private var closed = false
++
++    override suspend fun play(path: Path) = operation {
++        check(!closed)
++        stopNative()
++        val name = "ccb_audio_${UUID.randomUUID().toString().replace("-", "") }"
++        val local = path.toAbsolutePath().normalize().toString()
++        require(local.none { it == '"' || it == '\n' || it == '\r' } && !local.startsWith("\\\\"))
++        commands.send("open \"$local\" type mpegvideo alias $name wait")
++        alias = name
++        try {
++            commands.send("set $name time format milliseconds wait")
++            val length = commands.send("status $name length wait").toLongOrNull()
++            check(length != null && length in 1..120_000) { "MP3 时长不可用或超过限制" }
++            commands.send("play $name from 0")
++        } catch (failure: Throwable) {
++            try { stopNative() } catch (close: Throwable) { close.addSuppressed(failure); throw close }
++            throw failure
++        }
++        Unit
++    }
++
++    override suspend fun isPlaying(): Boolean = operation {
++        alias?.let { commands.send("status $it mode wait") == "playing" } ?: false
++    }
++    override suspend fun stopAndDrain() = operation { stopNative() }
++    override suspend fun closeAndDrain() {
++        if (closed) return
++        operation { stopNative(); closed = true }
++        dispatcher.close()
++    }
++    private suspend fun <T> operation(action: () -> T): T = withContext(NonCancellable + dispatcher) {
++        mutex.withLock { action() }
++    }
++    private fun stopNative() {
++        val name = alias ?: return
++        // close releases the device even if stop failed; never use "close all".
++        var stopFailure: Throwable? = null
++        try { commands.send("stop $name wait") } catch (failure: Throwable) { stopFailure = failure }
++        try { commands.send("close $name wait"); alias = null }
++        catch (failure: Throwable) { stopFailure?.let { failure.addSuppressed(it) }; throw failure }
++        // A successful close proves release; a failed stop is still visible to the caller.
++        stopFailure?.let { throw it }
++    }
++}
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPresentationTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPresentationTest.kt
+index 61ef97d6..926263e3 100644
+--- a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPresentationTest.kt
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPresentationTest.kt
+@@ -21,6 +21,39 @@ import kotlin.coroutines.CoroutineContext
+ import kotlin.test.*
+ 
+ class DesktopFishPresentationTest {
++    @Test fun `free preview UI requires explicit text and click and never selects a voice`() = runBlocking(awt) {
++        val server = okhttp3.mockwebserver.MockWebServer()
++        server.enqueue(okhttp3.mockwebserver.MockResponse().setHeader("Content-Type", "audio/mpeg")
++            .setBody(okio.Buffer().write(fishPreviewMp3())))
++        server.start()
++        val credentials = DesktopFishAudioCredentials(com.example.chatbar.desktop.security.InMemoryDesktopSecretStore())
++        credentials.save("synthetic-preview-only")
++        val output = PreviewOutputFake()
++        val runtime = DesktopFishPreviewRuntime(DesktopFishPreviewTransport(credentials, okhttp3.OkHttpClient(), server.url("/").toString().trimEnd('/')), output)
++        val preview = runtime.openSession()
++        val scope = CoroutineScope(SupervisorJob() + awt)
++        val voice = FishAudioModel(id = "fixture", title = "Fixture")
++        val picker = DesktopFishPickerController(scope) { FishAudioModelPage(items = listOf(voice)) }
++        var selected = false
++        picker.search()
++        val scene = ImageComposeScene(800, 1100) {
++            DesktopFishPickerContent(picker, true, onClose = { picker.close(); preview.requestClose() }, preview = preview) { selected = true }
++        }
++        try {
++            scene.until { scene.nodes().any { it.label("生成 / 重播免费预览 · Fixture") } }
++            val button = scene.nodes().single { it.label("生成 / 重播免费预览 · Fixture") }
++            assertTrue(button.config.contains(SemanticsProperties.Disabled))
++            assertEquals(0, server.requestCount)
++            scene.nodes().single { it.label("免费预览文本（1–120 字）") && it.config.contains(SemanticsActions.SetText) }
++                .config[SemanticsActions.SetText].action!!(AnnotatedString("合成测试"))
++            scene.tap("生成 / 重播免费预览 · Fixture")
++            scene.until { preview.state.value.playing }
++            assertFalse(selected); assertEquals(1, server.requestCount)
++            scene.tap("停止预览")
++            scene.until { !preview.state.value.playing && !preview.state.value.busy }
++            assertFalse(output.playing)
++        } finally { scene.close(); picker.close(); runtime.closeAndDrain(); scope.cancel(); server.close() }
++    }
+     private val awt = object : CoroutineDispatcher() {
+         override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
+     }
+@@ -172,7 +205,7 @@ class DesktopFishPresentationTest {
+         }
+         val chosen = mutableListOf<FishAudioModel>()
+         var closed = false
+-        val scene = ImageComposeScene(740, 800) { DesktopFishPickerContent(picker, true, { closed = true }, chosen::add) }
++        val scene = ImageComposeScene(740, 800) { DesktopFishPickerContent(picker, true, { closed = true }, onUse = chosen::add) }
+         try {
+             scene.until { scene.nodes().any { it.label("查询 / 重试") } }
+             assertTrue(requests.isEmpty()); assertTrue(chosen.isEmpty())
+@@ -180,7 +213,7 @@ class DesktopFishPresentationTest {
+             scene.until { scene.nodes().any { it.label("选择音色 · Fixture") } }
+             assertEquals(FishAudioLibrary.MINE, requests.single().library)
+             assertTrue(chosen.isEmpty())
+-            assertTrue(scene.nodes().any { it.label("Fish Audio 音色库 · 试听尚未接入（PENDING）") })
++            assertTrue(scene.nodes().any { it.label("Fish Audio 音色库") })
+             scene.tap("选择音色 · Fixture"); scene.until { chosen.size == 1 }
+             assertEquals("ref", chosen.single().toBinding().referenceId)
+             scene.tap("取消 / 关闭音色库"); assertTrue(closed)
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPreviewTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPreviewTest.kt
+new file mode 100644
+index 00000000..aae6da6e
+--- /dev/null
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPreviewTest.kt
+@@ -0,0 +1,195 @@
++package com.example.chatbar.desktop
++
++import com.example.chatbar.desktop.security.InMemoryDesktopSecretStore
++import java.nio.file.*
++import java.util.concurrent.CopyOnWriteArrayList
++import java.util.concurrent.TimeUnit
++import kotlinx.coroutines.*
++import okhttp3.OkHttpClient
++import okhttp3.mockwebserver.*
++import okio.Buffer
++import kotlin.test.*
++
++/** Independent MPEG-1 Layer-III silence fixture; never calls the production validator to build bytes. */
++internal fun fishPreviewMp3(frames: Int = 50) = ByteArray(frames * 417).also { bytes ->
++    repeat(frames) { n -> byteArrayOf(0xff.toByte(), 0xfb.toByte(), 0x90.toByte(), 0).copyInto(bytes, n * 417) }
++}
++
++internal class PreviewOutputFake : DesktopAudioOutput {
++    var playing = false
++    var plays = 0
++    var closes = 0
++    var failClose = false
++    override suspend fun play(path: Path) { check(Files.size(path) > 0); plays++; playing = true }
++    override suspend fun isPlaying() = playing
++    override suspend fun stopAndDrain() { check(!failClose); playing = false }
++    override suspend fun closeAndDrain() { stopAndDrain(); closes++ }
++}
++
++class DesktopFishPreviewTest {
++    @Test fun `cached raw bytes and file identity are rechecked and outside files stay untouched`() {
++        val parent = Files.createTempDirectory("f1-preservation-")
++        val sentinel = parent.resolve("outside.txt"); Files.writeString(sentinel, "synthetic outside evidence")
++        val before = Files.readAllBytes(sentinel)
++        val dir = Files.createDirectory(parent.resolve("owned"))
++        val store = DesktopFishPreviewStore(dir)
++        val bytes = fishPreviewMp3()
++        val clip = store.write(bytes.inputStream(), bytes.size.toLong()) {}
++        store.verify(clip)
++        Files.write(clip, bytes.copyOf().also { it[100] = 1 })
++        assertFails { store.verify(clip) }
++        val retained = dir.resolve("retained-original.mp3")
++        Files.move(clip, retained); Files.write(clip, bytes)
++        assertFails { store.verify(clip) }; assertFails { store.close() }
++        assertContentEquals(before, Files.readAllBytes(sentinel))
++        assertTrue(Files.exists(clip)); assertTrue(Files.exists(retained))
++        // Fixture is deliberately preserved: no production cleanup of replaced/unknown files.
++    }
++
++    @Test fun `outstanding session leases bound aggregate retained cache capacity`() = runBlocking {
++        MockWebServer().use { server ->
++            server.start()
++            val runtime = DesktopFishPreviewRuntime(transport(server), PreviewOutputFake())
++            repeat(4) { runtime.openSession() }
++            assertFails { runtime.openSession() }
++            runtime.closeAndDrain()
++            assertEquals(0, server.requestCount)
++        }
++    }
++    private suspend fun await(check: () -> Boolean) = withTimeout(8_000) { while (!check()) delay(10) }
++    private fun transport(server: MockWebServer) = DesktopFishPreviewTransport(
++        DesktopFishAudioCredentials(InMemoryDesktopSecretStore()).also { it.save("synthetic-only") },
++        OkHttpClient(), server.url("/").toString().trimEnd('/'))
++    private fun audio() = MockResponse().setHeader("Content-Type", "audio/mpeg").setBody(Buffer().write(fishPreviewMp3()))
++
++    @Test fun `explicit free request uses shared serialization and first result cache never resends changed text`() = runBlocking {
++        MockWebServer().use { server ->
++            server.enqueue(audio()); server.start()
++            val dir = Files.createTempDirectory("f1-cache-test-")
++            val output = PreviewOutputFake()
++            val runtime = DesktopFishPreviewRuntime(transport(server), output, stores = { DesktopFishPreviewStore(dir) })
++            val session = runtime.openSession()
++            try {
++                assertEquals(0, server.requestCount)
++                session.generate("fixture-voice", "初回テストです。")
++                await { session.state.value.playing }
++                val req = server.takeRequest(1, TimeUnit.SECONDS)!!
++                assertEquals("/v1/tts", req.path); assertEquals("s2.1-pro-free", req.getHeader("model"))
++                val body = req.body.readUtf8()
++                assertTrue(body.contains("\"reference_id\":\"fixture-voice\"")); assertTrue(body.contains("\"format\":\"mp3\""))
++                session.stop(); await { !session.state.value.playing && !session.state.value.busy }
++                session.generate("fixture-voice", "別のテキストです。")
++                await { session.state.value.playing && session.state.value.cached }
++                assertTrue(session.state.value.message!!.contains("新输入未发送"))
++                assertEquals(1, server.requestCount)
++            } finally { runtime.closeAndDrain() }
++            assertFalse(Files.exists(dir)); assertEquals(1, output.closes)
++        }
++    }
++
++    @Test fun `blank oversized paid and stale models do not send any HTTP`() = runBlocking {
++        for ((model, text) in listOf("s2.1-pro-free" to " ", "s2.1-pro-free" to "a".repeat(121),
++            "s2.1-pro" to "hello", "unknown" to "hello")) {
++            MockWebServer().use { server ->
++                server.start()
++                val runtime = DesktopFishPreviewRuntime(transport(server), PreviewOutputFake(), model = { model })
++                val session = runtime.openSession()
++                session.generate("fixture", text)
++                await { session.state.value.message != null }
++                runtime.closeAndDrain()
++                assertEquals(0, server.requestCount)
++            }
++        }
++    }
++
++    @Test fun `HTTP failures including retry after redirect and auth never create a second physical request`() = runBlocking {
++        for (code in listOf(301, 401, 403, 429, 503)) MockWebServer().use { server ->
++            server.start()
++            server.enqueue(MockResponse().setResponseCode(code).setHeader("Retry-After", "0")
++                .setHeader("Location", server.url("/other")).setBody("private synthetic response"))
++            server.enqueue(audio())
++            val dir = Files.createTempDirectory("f1-errors-")
++            val store = DesktopFishPreviewStore(dir)
++            val t = transport(server)
++            try {
++                val error = assertFailsWith<IllegalStateException> { t.generate("voice", "test", "s2.1-pro-free", store) }
++                assertFalse(error.toString().contains("private synthetic"))
++                assertEquals(1, server.requestCount)
++                assertEquals(0L, Files.list(dir).use { it.count() })
++            } finally { t.closeAndDrain(); store.close() }
++        }
++    }
++
++    @Test fun `cancel after headers joins physical body and cleanup before runtime closes`() = runBlocking {
++        MockWebServer().use { server ->
++            // MockWebServer throttleBody also throttles reading the POST request body, before
++            // takeRequest can return. Delay RESPONSE body only; upload must finish normally.
++            server.enqueue(audio().setBodyDelay(2, TimeUnit.SECONDS)); server.start()
++            val dir = Files.createTempDirectory("f1-cancel-")
++            val output = PreviewOutputFake()
++            // Native identity initialization is fixture setup, not the body-cancellation window.
++            val owned = DesktopFishPreviewStore(dir)
++            val failure = java.util.concurrent.atomic.AtomicReference<Exception>()
++            val runtime = DesktopFishPreviewRuntime(transport(server), output, stores = { owned }, failureObserver = { failure.set(it) })
++            val session = runtime.openSession()
++            try {
++                session.generate("fixture", "test")
++                assertNotNull(withContext(Dispatchers.IO) { server.takeRequest(3, TimeUnit.SECONDS) },
++                    "Synthetic cancellation readiness: ${session.state.value}; ${failure.get()}")
++                await { Files.list(dir).use { it.anyMatch { path -> path.toString().endsWith(".part") } } }
++            } finally { withTimeout(8_000) { runtime.closeAndDrain() } }
++            assertFalse(Files.exists(dir)); assertEquals(0, output.plays)
++        }
++    }
++
++    @Test fun `native release failure retains cache and later confirmed close can release it`() = runBlocking {
++        MockWebServer().use { server ->
++            server.enqueue(audio()); server.start()
++            val dir = Files.createTempDirectory("f1-retention-")
++            val output = PreviewOutputFake()
++            val runtime = DesktopFishPreviewRuntime(transport(server), output, stores = { DesktopFishPreviewStore(dir) })
++            runtime.openSession().generate("fixture", "test")
++            await { output.playing }; output.failClose = true
++            assertFails { runtime.closeAndDrain() }
++            assertTrue(Files.list(dir).use { it.anyMatch { path -> path.toString().endsWith(".mp3") } })
++            output.failClose = false
++            runtime.closeAndDrain(); assertFalse(Files.exists(dir))
++        }
++    }
++
++    @Test fun `bounded store rejects invalid truncated over quota and preserves unknown files`() {
++        for (bytes in listOf(byteArrayOf(), "ID3invalid".toByteArray(), fishPreviewMp3().dropLast(1).toByteArray())) {
++            val dir = Files.createTempDirectory("f1-invalid-")
++            val store = DesktopFishPreviewStore(dir)
++            assertFails { store.write(bytes.inputStream(), bytes.size.toLong()) {} }
++            store.close(); assertFalse(Files.exists(dir))
++        }
++        val dir = Files.createTempDirectory("f1-quota-")
++        val store = DesktopFishPreviewStore(dir, 100, 100)
++        assertFails { store.write(fishPreviewMp3().inputStream(), -1) {} }
++        val unknown = dir.resolve("retain.txt"); Files.writeString(unknown, "synthetic retained")
++        assertFails { store.close() }
++        assertEquals("synthetic retained", Files.readString(unknown))
++        Files.delete(unknown); store.close()
++    }
++
++    @Test fun `native commands use a single thread and retained alias on close error`() = runBlocking {
++        val commands = CopyOnWriteArrayList<String>()
++        val threads = mutableSetOf<Long>()
++        var failClose = false
++        val backend = DesktopWindowsAudioOutput { command ->
++            commands += command; threads += Thread.currentThread().id
++            if (command.startsWith("close") && failClose) error("synthetic close error")
++            if (command.contains(" length ")) "1304" else if (command.contains(" mode ")) "playing" else ""
++        }
++        val file = Files.createTempFile("f1-command-", ".mp3")
++        backend.play(file)
++        assertTrue(backend.isPlaying()); failClose = true
++        assertFails { backend.closeAndDrain() }
++        failClose = false; backend.closeAndDrain()
++        assertEquals(1, threads.size)
++        assertFalse(commands.any { it.contains("close all") })
++        assertEquals(2, commands.count { it.startsWith("close") })
++        Files.delete(file)
++    }
++}
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPreviewWindowsTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPreviewWindowsTest.kt
+new file mode 100644
+index 00000000..e5c079ce
+--- /dev/null
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPreviewWindowsTest.kt
+@@ -0,0 +1,80 @@
++package com.example.chatbar.desktop
++
++import com.example.chatbar.desktop.security.InMemoryDesktopSecretStore
++import java.io.File
++import java.nio.file.*
++import java.util.concurrent.TimeUnit
++import kotlinx.coroutines.*
++import kotlin.test.*
++
++class DesktopFishPreviewWindowsTest {
++    @Test fun `real Windows MP3 device starts stops and releases file for exclusive reopen`() = runBlocking {
++        val file = Files.createTempFile("f1-native-", ".mp3")
++        Files.write(file, fishPreviewMp3())
++        val output = DesktopWindowsAudioOutput()
++        try {
++            DesktopMp3Validation.validate(file, 100_000)
++            output.play(file)
++            assertTrue(output.isPlaying())
++            output.stopAndDrain(); assertFalse(output.isPlaying())
++            output.closeAndDrain()
++            java.io.RandomAccessFile(file.toFile(), "rw").use { it.channel.tryLock().use { lock -> assertNotNull(lock) } }
++            Files.move(file, file.resolveSibling(file.fileName.toString() + ".released"))
++            Files.delete(file.resolveSibling(file.fileName.toString() + ".released"))
++        } finally { output.closeAndDrain() }
++    }
++
++    @Test fun `actual app container owns lazy preview runtime and closes it before root release`() = runBlocking {
++        val root = Files.createTempDirectory("f1-container-")
++        val resolved = DesktopDataRootResolution.Resolved(root, DesktopDataRootProvenance.CLI_OVERRIDE, root.resolve("bootstrap.json"))
++        val owner = assertIs<DesktopDataRootOwnershipResult.Acquired>(DesktopDataRootOwnership.acquire(resolved)).ownership
++        val c = DesktopAppContainer(resolved, secretStoreFactory = { InMemoryDesktopSecretStore() })
++        val session = c.fishPreviewRuntime.openSession()
++        assertIs<DesktopDataRootOwnershipResult.AlreadyInUse>(DesktopDataRootOwnership.acquire(resolved))
++        try { c.close() } finally { owner.close() }
++        session.generate("fixture", "must not run")
++        assertFalse(session.state.value.busy)
++        assertIs<DesktopDataRootOwnershipResult.Acquired>(DesktopDataRootOwnership.acquire(resolved)).ownership.close()
++    }
++
++    @Test fun `independent audio JVM exits then another JVM reacquires root`() {
++        val root = Files.createTempDirectory("f1-process-")
++        val classpath = listOf(DesktopFishAudioChild::class.java, DesktopDataRootOwnership::class.java,
++            com.example.chatbar.data.root.AppDataRootInfrastructure::class.java, Unit::class.java, Job::class.java,
++            com.sun.jna.Native::class.java, com.sun.jna.platform.win32.Kernel32::class.java)
++            .map { Path.of(it.protectionDomain.codeSource.location.toURI()).toString() }.distinct().joinToString(File.pathSeparator)
++        for (mode in listOf("AUDIO", "LOCK")) {
++            val log = root.resolve("$mode.log")
++            val p = ProcessBuilder(Path.of(System.getProperty("java.home"), "bin/java.exe").toString(),
++                "-Xmx128m", "-XX:+UseSerialGC", "-cp", classpath, DesktopFishAudioChild::class.java.name,
++                root.toString(), mode).redirectErrorStream(true).redirectOutput(log.toFile()).start()
++            val started = p.info().startInstant().orElseThrow()
++            assertTrue(p.waitFor(60, TimeUnit.SECONDS), "Owned audio child did not exit; synthetic root retained")
++            assertEquals(0, p.exitValue(), Files.readString(log))
++            assertTrue(Files.readString(log).contains("F1_CHILD_$mode"))
++            System.getenv("CCB_G2_INSPECTOR_EVIDENCE")?.let {
++                Files.writeString(Path.of(it).resolve("audio-process.jsonl"),
++                    "{\"pid\":${p.pid()},\"startedUtc\":\"$started\",\"mode\":\"$mode\",\"exitCode\":${p.exitValue()},\"alive\":${p.isAlive}}\n",
++                    StandardOpenOption.CREATE, StandardOpenOption.APPEND)
++            }
++        }
++    }
++}
++
++object DesktopFishAudioChild {
++    @JvmStatic fun main(args: Array<String>) = runBlocking {
++        val root = Path.of(args[0])
++        val resolved = DesktopDataRootResolution.Resolved(root, DesktopDataRootProvenance.CLI_OVERRIDE, root.resolve("bootstrap.json"))
++        val owner = (DesktopDataRootOwnership.acquire(resolved) as DesktopDataRootOwnershipResult.Acquired).ownership
++        try {
++            if (args[1] == "AUDIO") {
++                val file = root.resolve("synthetic.mp3"); Files.write(file, fishPreviewMp3())
++                val output = DesktopWindowsAudioOutput()
++                try { output.play(file); check(output.isPlaying()); output.stopAndDrain() }
++                finally { output.closeAndDrain() }
++                Files.delete(file)
++            }
++        } finally { owner.close() }
++        println("F1_CHILD_${args[1]}")
++    }
++}

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopSessionCommitJournalTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-25T01:14:29.670Z" hostname="DD1" time="0.479">
+  <properties/>
+  <testcase name="session graph and new media commit together without deleting older media" classname="com.example.chatbar.desktop.DesktopSessionCommitJournalTest" time="0.177"/>
+  <testcase name="failure restores all old files and removes only newly published files" classname="com.example.chatbar.desktop.DesktopSessionCommitJournalTest" time="0.143"/>
+  <testcase name="unknown live bytes block rollback and startup keeps evidence" classname="com.example.chatbar.desktop.DesktopSessionCommitJournalTest" time="0.113"/>
+  <testcase name="publication rejects stale expected bytes and out of scope stores before live changes" classname="com.example.chatbar.desktop.DesktopSessionCommitJournalTest" time="0.046"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

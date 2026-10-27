@@ -1,0 +1,2 @@
+Reconstructed from the issued tool command; the initial command was not separately saved at invocation time.
+"C:/Program Files/Eclipse Adoptium/jdk-17.0.20.101-hotspot/bin/javac.exe" -J-Xmx128m -cp "app/desktopApp/build/p8-s2b-ui-layout-001-r2-20261018/runtime-image/app/*" -d "app/desktopApp/build/p8-s2b-ui-layout-001-r2-20261018/support-classes" "app/desktopApp/build/p8-s2b-ui-layout-001-r2-20261018/F2UiSupport.java"

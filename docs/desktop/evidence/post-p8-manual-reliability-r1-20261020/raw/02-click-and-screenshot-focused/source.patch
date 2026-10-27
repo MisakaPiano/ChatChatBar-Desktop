@@ -1,0 +1,135 @@
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoicePanel.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoicePanel.kt
+index c410fcb9..3204bd54 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoicePanel.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoicePanel.kt
+@@ -38,15 +38,19 @@ internal fun DesktopVoiceRows(runtime: DesktopChatVoiceRuntime?, message: ChatMe
+     placements: List<VoiceMessagePlacement>, state: DesktopPrimaryChatState) {
+     if (runtime == null || placements.isEmpty()) return
+     val scope = rememberCoroutineScope()
++    val playback by runtime.playback.state.collectAsState()
+     placements.forEach { placement -> key(placement.voice.id) {
+         val voice = placement.voice
++        val active = playback.currentVoiceId == voice.id && playback.playing
++        val paused = playback.currentVoiceId == voice.id && playback.paused
+         var expanded by remember { mutableStateOf(false) }
+         var tagged by remember(voice.updatedAt) { mutableStateOf(voice.taggedText) }
+         var confirm by remember { mutableStateOf<String?>(null) }
+         Column(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border).padding(8.dp),
+             verticalArrangement = Arrangement.spacedBy(6.dp)) {
+             ActionRow {
+-                StudioAction("播放 · ${voice.characterName} · ${voice.durationMs / 1000}s", icon = DesktopAppIcons.Play) {
++                StudioAction("${if (active) "暂停" else if (paused) "继续播放" else "播放"} · ${voice.characterName} · ${voice.durationMs / 1000}s",
++                    icon = if (active) DesktopAppIcons.Stop else DesktopAppIcons.Play) {
+                     val intent = runtime.playbackIntent()
+                     scope.launch { runtime.play(voice, message, intent) }
+                 }
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishGenerationCoordinator.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishGenerationCoordinator.kt
+index b0ec1244..ce4b2089 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishGenerationCoordinator.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishGenerationCoordinator.kt
+@@ -446,7 +446,7 @@ internal class DesktopFishGenerationCoordinator(
+                 if (foregroundSessionId != voice.sessionId || foregroundGeneration.get() != requestedGeneration) null
+                 else { pendingAutoPlay.clear(); foregroundGeneration.incrementAndGet() }
+             } ?: return@launch
+-            playback.playSequence(sequence, admission) {
++            playback.playSequence(sequence, admission, toggleCurrent = true) {
+                 foregroundSessionId == voice.sessionId && foregroundGeneration.get() == manualGeneration
+             }
+         }
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoicePlayback.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoicePlayback.kt
+index c0d4a3da..86d26c17 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoicePlayback.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoicePlayback.kt
+@@ -111,10 +111,23 @@ internal class DesktopVoicePlayback(private val store: DesktopVoiceAudioStore,
+     private var closed = false
+ 
+     fun admissionToken(): Long = output.playbackAdmissionToken()
+-    suspend fun playSequence(voices: List<GeneratedVoiceMessage>, admission: Long = admissionToken(), eligible: () -> Boolean = { true }) {
++    suspend fun playSequence(voices: List<GeneratedVoiceMessage>, admission: Long = admissionToken(),
++        toggleCurrent: Boolean = false, eligible: () -> Boolean = { true }) {
+         mutex.withLock {
+         if (!eligible() || !output.acceptsPlayback(admission)) return@withLock
+-        check(!closed); stopLocked(); append(voices, admission); startLocked()
++        check(!closed)
++        if (toggleCurrent && voices.firstOrNull()?.id == mutable.value.currentVoiceId && job?.isActive == true) {
++            check(drain?.failed?.get() != true) { "音频关闭未确认，请先重试停止" }
++            when {
++                mutable.value.playing -> pauseLocked()
++                mutable.value.paused -> resumeLocked(eligible)
++                // Native opening has started but not yet published playing. Coalesce the click
++                // rather than cancelling that open and creating a second playback session.
++                else -> Unit
++            }
++            return@withLock
++        }
++        stopLocked(); append(voices, admission); startLocked()
+         }
+     }
+     suspend fun enqueueSequence(voices: List<GeneratedVoiceMessage>, admission: Long = admissionToken(), eligible: () -> Boolean = { true }) {
+@@ -189,8 +202,9 @@ internal class DesktopVoicePlayback(private val store: DesktopVoiceAudioStore,
+         }
+     }
+     fun dismissError(expected: String) { synchronized(queue) { if (mutable.value.error == expected) mutable.value = mutable.value.copy(error = null) } }
+-    suspend fun pause() = mutex.withLock {
+-        if (!mutable.value.playing) return@withLock
++    suspend fun pause() = mutex.withLock { pauseLocked() }
++    private suspend fun pauseLocked() {
++        if (!mutable.value.playing) return
+         try {
+             val position = output.pause()
+             mutable.value = mutable.value.copy(playing = false, paused = true, positionMs = position)
+@@ -198,9 +212,10 @@ internal class DesktopVoicePlayback(private val store: DesktopVoiceAudioStore,
+             stopLocked(); mutable.value = DesktopVoicePlaybackState(error = "音频暂停失败；已停止播放，文件已保留")
+         }
+     }
+-    suspend fun resume(eligible: () -> Boolean = { true }) = mutex.withLock {
+-        if (!eligible()) { stopLocked(); return@withLock }
+-        if (!mutable.value.paused) return@withLock
++    suspend fun resume(eligible: () -> Boolean = { true }) = mutex.withLock { resumeLocked(eligible) }
++    private suspend fun resumeLocked(eligible: () -> Boolean) {
++        if (!eligible()) { stopLocked(); return }
++        if (!mutable.value.paused) return
+         try {
+             output.resume()
+             mutable.value = mutable.value.copy(playing = true, paused = false)
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotUiTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotUiTest.kt
+index 62a98b6e..a079a64a 100644
+--- a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotUiTest.kt
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotUiTest.kt
+@@ -11,6 +11,36 @@ import kotlin.test.*
+ 
+ class DesktopChatScreenshotUiTest {
+     private val edt=object:CoroutineDispatcher(){override fun dispatch(context:CoroutineContext,block:Runnable)=SwingUtilities.invokeLater(block)}
++    @Test fun `screenshot internal close returns to host content without invoking application close`():Unit=runBlocking(edt) {
++        val f=DesktopAssistantImageActionTest.Fixture()
++        try {
++            f.initialize();val c=f.c.primaryChatController;c.refresh();c.selectSession("session")
++            var appCloseRequests=0
++            val scene=ImageComposeScene(900,700) {
++                DesktopChatScreenshotHost(c,c.state.value) {
++                    val start=LocalDesktopChatScreenshot.current
++                    StudioAction("打开截图"){start!!(f.source,null)}
++                    StudioAction("模拟主窗口关闭请求"){appCloseRequests++}
++                }
++            }
++            fun nodes():List<SemanticsNode> {
++                fun walk(n:SemanticsNode):List<SemanticsNode> = listOf(n)+n.children.flatMap(::walk)
++                return scene.semanticsOwners.flatMap{walk(it.rootSemanticsNode)}
++            }
++            fun actions(label:String)=nodes().filter { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains(label)==true && it.config.contains(SemanticsActions.OnClick) }
++            suspend fun until(check:()->Boolean){withTimeout(7000){while(true){scene.render(System.nanoTime()).close();yield();if(check())break;delay(10)}}}
++            try {
++                until{actions("打开截图").isNotEmpty()}
++                actions("打开截图").single().config[SemanticsActions.OnClick].action!!()
++                until{actions("关闭").isNotEmpty()}
++                actions("关闭").single().config[SemanticsActions.OnClick].action!!()
++                until{actions("关闭").none { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("模拟主窗口关闭请求")!=true }}
++                assertEquals(0,appCloseRequests)
++                actions("模拟主窗口关闭请求").single().config[SemanticsActions.OnClick].action!!()
++                assertEquals(1,appCloseRequests);assertTrue(f.requests.isEmpty())
++            } finally {scene.close()}
++        } finally {f.close()}
++    }
+     @Test fun `compact and wide selection previews PNG with keyboard dismissal and no generation`():Unit=runBlocking(edt) {
+         val f=DesktopAssistantImageActionTest.Fixture()
+         try {

@@ -1,0 +1,94 @@
+[
+  {
+    "round": "first-protocol",
+    "suites": 2,
+    "tests": 25,
+    "failures": 24,
+    "errors": 0,
+    "skipped": 0,
+    "exit": 1,
+    "junit": [
+      {
+        "path": "docs/desktop/evidence/p11-lr5-20261024/raw/first-protocol/junit/TEST-com.example.chatbar.desktop.lr5.ExperimentWireTest.xml",
+        "tests": 2,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "path": "docs/desktop/evidence/p11-lr5-20261024/raw/first-protocol/junit/TEST-com.example.chatbar.desktop.lr5.SyntheticJournalTest.xml",
+        "tests": 23,
+        "failures": 23,
+        "errors": 0,
+        "skipped": 0
+      }
+    ],
+    "childInvocations": 0,
+    "childExitCounts": {}
+  },
+  {
+    "round": "native-reader",
+    "suites": 2,
+    "tests": 25,
+    "failures": 2,
+    "errors": 0,
+    "skipped": 0,
+    "exit": 1,
+    "junit": [
+      {
+        "path": "docs/desktop/evidence/p11-lr5-20261024/raw/native-reader/junit/TEST-com.example.chatbar.desktop.lr5.ExperimentWireTest.xml",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "path": "docs/desktop/evidence/p11-lr5-20261024/raw/native-reader/junit/TEST-com.example.chatbar.desktop.lr5.SyntheticJournalTest.xml",
+        "tests": 23,
+        "failures": 2,
+        "errors": 0,
+        "skipped": 0
+      }
+    ],
+    "childInvocations": 131,
+    "childExitCounts": {
+      "71": 46,
+      "2": 37,
+      "3": 1,
+      "0": 46,
+      "NOT_RECORDED": 1
+    }
+  },
+  {
+    "round": "protocol-green",
+    "suites": 2,
+    "tests": 29,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "exit": 0,
+    "junit": [
+      {
+        "path": "docs/desktop/evidence/p11-lr5-20261024/raw/protocol-green/junit/TEST-com.example.chatbar.desktop.lr5.ExperimentWireTest.xml",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "path": "docs/desktop/evidence/p11-lr5-20261024/raw/protocol-green/junit/TEST-com.example.chatbar.desktop.lr5.SyntheticJournalTest.xml",
+        "tests": 27,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ],
+    "childInvocations": 144,
+    "childExitCounts": {
+      "71": 50,
+      "2": 45,
+      "3": 2,
+      "0": 47
+    }
+  }
+]

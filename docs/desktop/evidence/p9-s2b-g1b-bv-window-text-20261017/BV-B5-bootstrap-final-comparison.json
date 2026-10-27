@@ -1,0 +1,10 @@
+{
+  "run": "BV-B5-bootstrap",
+  "setsSizesHashesUnchanged": true,
+  "entries": 1,
+  "exitCodes": [
+    2,
+    2
+  ],
+  "afterUtc": "2026-10-16T15:43:12.172953+00:00"
+}

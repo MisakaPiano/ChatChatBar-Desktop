@@ -1,0 +1,9 @@
+Get-FileHash : The term 'Get-FileHash' is not recognized as the name of a cmdlet, function, script file, or operable pr
+ogram. Check the spelling of the name, or if a path was included, verify that the path is correct and try again.
+At H:\ChatChatBar-Desktop\app\desktopApp\build\preview-continuous-private-20261025\windows-runtime-merge-ui-1006\Open-I
+solated-Preview-1006.ps1:21 char:42
++     if ($item.Length -ne $row.bytes -or (Get-FileHash -LiteralPath $f ...
++                                          ~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Get-FileHash:String) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : CommandNotFoundException
+ 

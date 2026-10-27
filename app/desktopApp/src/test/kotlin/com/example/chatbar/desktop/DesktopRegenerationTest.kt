@@ -177,6 +177,22 @@ class DesktopRegenerationTest {
         }
     }
 
+    @Test fun `earlier regeneration excludes only target while retaining other replies from its whole source turn`() = runBlocking {
+        fixture { container, _, session, target ->
+            val sibling = container.chatRepository.addMessage(target.copy(id = "retained-sibling", content = "retained-sibling-body",
+                reasoningContent = null, images = emptyList(), formatRepairNotice = null, createdAt = target.createdAt + 1,
+                updatedAt = target.updatedAt + 1))
+            val current = container.chatRepository.addMessage(ChatMessage.create(session, MessageRole.USER, "later-user-body"))
+            val plan = container.chatRequestPlanner.planRegeneration(session, target.id,
+                DesktopFakeChatInputs(effectiveContextWindowSize = 20))
+            assertEquals(current.id, plan.currentUser.id)
+            assertFalse(plan.assembly.messages.any { it.content.toString().contains("old-answer") })
+            assertTrue(plan.assembly.messages.any { it.content.toString().contains(sibling.content) })
+            assertTrue(plan.assembly.messages.any { it.content.toString().contains("real-user") })
+            assertEquals(target, container.chatRepository.getMessage(target.id, session))
+        }
+    }
+
     @Test fun `an active send also excludes regeneration admission`() = runBlocking {
         fixture { container, server, session, target ->
             server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.NO_RESPONSE))

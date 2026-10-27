@@ -1,0 +1,557 @@
+[
+  {
+    "path": ".gitattributes",
+    "bytes": 9,
+    "sha256": "8b9c3028d6467ff3be7c793141927841d70f47f52d0590677438f488ca154992"
+  },
+  {
+    "path": "checkpoints.json",
+    "bytes": 8947,
+    "sha256": "beadac65bcffde8ae55942f6903c028ab0ff47daf6257f4a26234f2bae5014d8"
+  },
+  {
+    "path": "commands.txt",
+    "bytes": 2236,
+    "sha256": "bc73556d139aaaca522bf153459927152a0822c858996095fe205d5bf0a8a114"
+  },
+  {
+    "path": "distribution-manifest.json",
+    "bytes": 39518,
+    "sha256": "2c132878d966f72cf1fa1e47a69c76c4cd47fdbb8304f333a53044f7dfff8ddd"
+  },
+  {
+    "path": "execution-exits.json",
+    "bytes": 400,
+    "sha256": "b0853c66d46e89123e1c7dd96f40a5e9a8faa6f4f42f6b6d8bfdd72c0475ff03"
+  },
+  {
+    "path": "final-focused-golden-01-xml/TEST-com.example.chatbar.desktop.DesktopAssistantImageActionTest.xml",
+    "bytes": 1419,
+    "sha256": "3cebd4087d7b77fad9f77336f2c3384883d03a4ff8e39bf2ef133cba1bbd0b73"
+  },
+  {
+    "path": "final-focused-golden-01-xml/TEST-com.example.chatbar.desktop.DesktopChatContextUxTest.xml",
+    "bytes": 843,
+    "sha256": "6835fe9642e908a6888ffab0cb8888946462a0752fb5dae18ead0a39ff5592a3"
+  },
+  {
+    "path": "final-focused-golden-01-xml/TEST-com.example.chatbar.desktop.DesktopChatFloatingNavigationTest.xml",
+    "bytes": 1567,
+    "sha256": "6c53b449cf2e13c75d70c2ba7891099fb4f94278009e7d62a3a354c1f622d5fd"
+  },
+  {
+    "path": "final-focused-golden-01-xml/TEST-com.example.chatbar.desktop.DesktopChatScreenshotTest.xml",
+    "bytes": 1436,
+    "sha256": "a99d21b19c421b1b751a8b077dad0f5c4bc7a2e807e383fe840db9a273cff540"
+  },
+  {
+    "path": "final-focused-golden-01-xml/TEST-com.example.chatbar.desktop.DesktopChatScreenshotUiTest.xml",
+    "bytes": 616,
+    "sha256": "17c66d9184a96eb831b4ac8ec16b0ac1d5d83116d3d94fdf5ae9a69c7563aa2d"
+  },
+  {
+    "path": "final-focused-golden-01-xml/TEST-com.example.chatbar.desktop.DesktopChatVoicePresentationTest.xml",
+    "bytes": 553,
+    "sha256": "39f076835720b5ee064b6d1a1ee1e6d9a996fce888ac567d8e15f43497795c57"
+  },
+  {
+    "path": "final-focused-golden-01-xml/TEST-com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest.xml",
+    "bytes": 1397,
+    "sha256": "b8f5589f2cf97796c2a710f25c8e71f4282c5cd40f50e20a5a634d0b605ed062"
+  },
+  {
+    "path": "final-focused-golden-01-xml/TEST-com.example.chatbar.desktop.DesktopFishAudioLibraryTest.xml",
+    "bytes": 2094,
+    "sha256": "61541c3b1cc842b099e807164240556c6ec4da6b6f34e0226a86bfb2417577f4"
+  },
+  {
+    "path": "final-focused-golden-01-xml/TEST-com.example.chatbar.desktop.DesktopFishPresentationTest.xml",
+    "bytes": 17123,
+    "sha256": "8a39edf55d78c00cba6f6fa5fd20f84e5d518d3465d4942cdb2bb1a1e508ff67"
+  },
+  {
+    "path": "final-focused-golden-01-xml/TEST-com.example.chatbar.desktop.DesktopFishPreviewTest.xml",
+    "bytes": 1917,
+    "sha256": "24bc19b3f23893ec05f9189fcf1c9a43ec2809c7e3bf7af753c85989f63df5f7"
+  },
+  {
+    "path": "final-focused-golden-01-xml/TEST-com.example.chatbar.desktop.DesktopFishSampleTest.xml",
+    "bytes": 4287,
+    "sha256": "59d271009564974243835c6a678845dd9da658ddd34fbd4cd0dccc06b2200780"
+  },
+  {
+    "path": "final-focused-golden-01-xml/TEST-com.example.chatbar.desktop.DesktopMessageActionsUxTest.xml",
+    "bytes": 2143,
+    "sha256": "aa5254d4a456ad5d95913efd378870affcc9c6712a84a9efd9e49e2a0f03d423"
+  },
+  {
+    "path": "final-focused-golden-01-xml/TEST-com.example.chatbar.desktop.DesktopMessageImagePresentationTest.xml",
+    "bytes": 3784,
+    "sha256": "825c351acbc860c7a5b560aa98b9de400f6110c10f6a83c144fc84ed26dfc31b"
+  },
+  {
+    "path": "final-focused-golden-01-xml/TEST-com.example.chatbar.desktop.DesktopPostP8IntegrationTest.xml",
+    "bytes": 2624,
+    "sha256": "388f31c57f863b3e52895f1e35890d008129a91ade427e245879f840a8391b36"
+  },
+  {
+    "path": "final-focused-golden-01-xml/TEST-com.example.chatbar.desktop.DesktopPrimaryChatPresentationTest.xml",
+    "bytes": 2684,
+    "sha256": "4b8c2cb0368ed70cbb38fedd326cc0e4d5e27d8f5e03021afc00532c1ddeab24"
+  },
+  {
+    "path": "final-focused-golden-01-xml/TEST-com.example.chatbar.desktop.DesktopPrimaryChatRepairPresentationTest.xml",
+    "bytes": 1601,
+    "sha256": "7a76104ef9f87cee7ec44c393f6c9a8e118038d2722d8d7c4276bf114d85d74a"
+  },
+  {
+    "path": "final-focused-golden-01-xml/TEST-com.example.chatbar.desktop.DesktopVoicePauseWindowsTest.xml",
+    "bytes": 559,
+    "sha256": "7eb6a07a1c797ea4fe6c305e455d70999d1dc0763f02dce963efc0005f77e2c0"
+  },
+  {
+    "path": "final-focused-golden-01-xml/TEST-com.example.chatbar.desktop.DesktopVoiceUxTest.xml",
+    "bytes": 1001,
+    "sha256": "7a266c36030bcce2ef467c393c8756abfed5a7f5bbe7a1963392f8365aefb8db"
+  },
+  {
+    "path": "final-focused-golden-01.txt",
+    "bytes": 4332,
+    "sha256": "dd97b5b4e9e4a3d3ac8cadafecbf0baaac6b352cc2ac3d5de45a4994a0b3e83b"
+  },
+  {
+    "path": "final-focused-golden-02-desktopApp-xml/TEST-com.example.chatbar.desktop.DesktopAssistantImageActionTest.xml",
+    "bytes": 1419,
+    "sha256": "fc4d0f7b0132bfb6975e6b27714543566926304334b16c4b54c3beef5d37e779"
+  },
+  {
+    "path": "final-focused-golden-02-desktopApp-xml/TEST-com.example.chatbar.desktop.DesktopChatContextUxTest.xml",
+    "bytes": 843,
+    "sha256": "b11cc0d41ee21392148ff3d04056e0425cd298ff79625798ceecd5384245bf22"
+  },
+  {
+    "path": "final-focused-golden-02-desktopApp-xml/TEST-com.example.chatbar.desktop.DesktopChatFloatingNavigationTest.xml",
+    "bytes": 1567,
+    "sha256": "5d025404a3fbab585b44a955f6a332ee9e1e583158d5256f8d697448b520186d"
+  },
+  {
+    "path": "final-focused-golden-02-desktopApp-xml/TEST-com.example.chatbar.desktop.DesktopChatScreenshotTest.xml",
+    "bytes": 1436,
+    "sha256": "3885772830bfcb67d8c041a7b506b498131a297b4d4f3b4cc4c5f281054f6d67"
+  },
+  {
+    "path": "final-focused-golden-02-desktopApp-xml/TEST-com.example.chatbar.desktop.DesktopChatScreenshotUiTest.xml",
+    "bytes": 612,
+    "sha256": "dac221c947390f16d931d128f9d6c0e41a61ad2727783a4a42ad16248435a0f4"
+  },
+  {
+    "path": "final-focused-golden-02-desktopApp-xml/TEST-com.example.chatbar.desktop.DesktopChatVoicePresentationTest.xml",
+    "bytes": 553,
+    "sha256": "9dc0e58f738897d18bac39bd2baa157f568e8f7374ca2b4951f308f6aa0aaf89"
+  },
+  {
+    "path": "final-focused-golden-02-desktopApp-xml/TEST-com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest.xml",
+    "bytes": 1397,
+    "sha256": "e7acb0b77a18c48fe5424c74337d59801bd2daaf24bb1764fa08e7ee9839ef06"
+  },
+  {
+    "path": "final-focused-golden-02-desktopApp-xml/TEST-com.example.chatbar.desktop.DesktopFishAudioLibraryTest.xml",
+    "bytes": 2094,
+    "sha256": "751489f5a5816fc372bf95ef3132d4115451ebb978cf30b2de969acaddc32a77"
+  },
+  {
+    "path": "final-focused-golden-02-desktopApp-xml/TEST-com.example.chatbar.desktop.DesktopFishPresentationTest.xml",
+    "bytes": 17124,
+    "sha256": "44d4bb0a18f3e8bf67e22bb85a99f0a06854e6fde2786cc06b2f3ccf795fe29d"
+  },
+  {
+    "path": "final-focused-golden-02-desktopApp-xml/TEST-com.example.chatbar.desktop.DesktopFishPreviewTest.xml",
+    "bytes": 1918,
+    "sha256": "b7c3c77cadb325214e54f69cabe5606ffe46de5f822af345175666074269bebe"
+  },
+  {
+    "path": "final-focused-golden-02-desktopApp-xml/TEST-com.example.chatbar.desktop.DesktopFishSampleTest.xml",
+    "bytes": 4289,
+    "sha256": "2ec0ead69d1ccdc12b9915aa1a9c579ceedd0d4aad99494742e5b2bca3d3509c"
+  },
+  {
+    "path": "final-focused-golden-02-desktopApp-xml/TEST-com.example.chatbar.desktop.DesktopMessageActionsUxTest.xml",
+    "bytes": 2179,
+    "sha256": "63b3bad54403ff26c883f7bfb9dd63b337459e4d0ec47b4906cba07dee08adc4"
+  },
+  {
+    "path": "final-focused-golden-02-desktopApp-xml/TEST-com.example.chatbar.desktop.DesktopMessageImagePresentationTest.xml",
+    "bytes": 3782,
+    "sha256": "25c5c7eb007feb9537ca324c220e8254191582a273444e844ba10c922057c069"
+  },
+  {
+    "path": "final-focused-golden-02-desktopApp-xml/TEST-com.example.chatbar.desktop.DesktopPostP8IntegrationTest.xml",
+    "bytes": 1619,
+    "sha256": "03f544345f3d32a7afcde83050e7442db8a22f4d6f9cffdd8ac8b37035a8af70"
+  },
+  {
+    "path": "final-focused-golden-02-desktopApp-xml/TEST-com.example.chatbar.desktop.DesktopPrimaryChatPresentationTest.xml",
+    "bytes": 2684,
+    "sha256": "29d69519cb8d0c81a9be29132e9c211988d69499e03737b489e7af261509511b"
+  },
+  {
+    "path": "final-focused-golden-02-desktopApp-xml/TEST-com.example.chatbar.desktop.DesktopPrimaryChatRepairPresentationTest.xml",
+    "bytes": 1601,
+    "sha256": "5d0b653ef0411b0645fa4f96ae856be7dd5d84ffffa9f57112a5f1f5bd108952"
+  },
+  {
+    "path": "final-focused-golden-02-desktopApp-xml/TEST-com.example.chatbar.desktop.DesktopVoicePauseWindowsTest.xml",
+    "bytes": 559,
+    "sha256": "1257bbe733bdf5e396733b29c093d1a77aacedac676aee185a8242b82cd19a83"
+  },
+  {
+    "path": "final-focused-golden-02-desktopApp-xml/TEST-com.example.chatbar.desktop.DesktopVoiceUxTest.xml",
+    "bytes": 1001,
+    "sha256": "815fa2d1b708b80080645b97dac2b3f3fadd12f122843e23320270221befe653"
+  },
+  {
+    "path": "final-focused-golden-02-sharedCore-xml/TEST-com.example.chatbar.domain.voice.FishAudioRequestFactoryTest.xml",
+    "bytes": 829,
+    "sha256": "9fe41f7010a54e84158e0e45dbda62db3940cd9bc4af3844932ce66289a4a521"
+  },
+  {
+    "path": "final-focused-golden-02-sharedCore-xml/TEST-com.example.chatbar.domain.voice.FishAudioSharedContractTest.xml",
+    "bytes": 1259,
+    "sha256": "d46de4952c2a1330bea693ef1f24327833a3076fb6878e3107a0401d31055593"
+  },
+  {
+    "path": "final-focused-golden-02-sharedCore-xml/TEST-com.example.chatbar.domain.voice.FishAudioTagGatewayTest.xml",
+    "bytes": 742,
+    "sha256": "5515ed1e9e7a296f22638c7d5a7a48b030717daf6b5c192dbf2dc0dfca7a2b28"
+  },
+  {
+    "path": "final-focused-golden-02-sharedCore-xml/TEST-com.example.chatbar.domain.voice.VoiceAnchorPolicyTest.xml",
+    "bytes": 1784,
+    "sha256": "a4be2b6037d4badfa59333572cce4ef5123d6b1a14d84f40b3d11c4a0c1f2c18"
+  },
+  {
+    "path": "final-focused-golden-02-sharedCore-xml/TEST-com.example.chatbar.domain.voice.VoiceGenerationPolicyTest.xml",
+    "bytes": 1989,
+    "sha256": "30e28586b31fa0ae3e746d34f02aa14bfc597828a82c5ff554e9a0d0e3a67d55"
+  },
+  {
+    "path": "final-focused-golden-02-sharedCore-xml/TEST-com.example.chatbar.domain.voice.VoiceMessageVersionPolicyTest.xml",
+    "bytes": 1029,
+    "sha256": "6e115f73c714263202c75e6c79b0f4c8ed5884b2e79f1606a9d189359e679896"
+  },
+  {
+    "path": "final-focused-golden-02-sharedCore-xml/TEST-com.example.chatbar.domain.voice.VoiceRepositoryPersistenceTest.xml",
+    "bytes": 554,
+    "sha256": "6388b201226fd63857e841eb5ea1c5e12a514a4213525a90c50a075faecae75c"
+  },
+  {
+    "path": "final-focused-golden-02.txt",
+    "bytes": 2399,
+    "sha256": "9636a76984508daf0bb41dee32784ca81a0952fe4d604f89cf234d1da709a7ce"
+  },
+  {
+    "path": "final-focused-golden-03-desktopApp-xml/TEST-com.example.chatbar.desktop.DesktopAssistantImageActionTest.xml",
+    "bytes": 1419,
+    "sha256": "6f55818f44c7fed04203856410705f5dcbb8923cc57df93df35b29d03e6bd2c6"
+  },
+  {
+    "path": "final-focused-golden-03-desktopApp-xml/TEST-com.example.chatbar.desktop.DesktopChatContextUxTest.xml",
+    "bytes": 842,
+    "sha256": "092b88e0bcb47b23e470aa9e92d8b01e8dac4733329784b65d458c418cd6c459"
+  },
+  {
+    "path": "final-focused-golden-03-desktopApp-xml/TEST-com.example.chatbar.desktop.DesktopChatFloatingNavigationTest.xml",
+    "bytes": 1569,
+    "sha256": "5500b9464c80a83ba69043cdc9b106d9f54956faa19d175818ac1ddba28ec76b"
+  },
+  {
+    "path": "final-focused-golden-03-desktopApp-xml/TEST-com.example.chatbar.desktop.DesktopChatScreenshotTest.xml",
+    "bytes": 1600,
+    "sha256": "0fe4991ee202b379b03ffb12d27c0ac25a15b9b218dd843e88f5da70f7322f85"
+  },
+  {
+    "path": "final-focused-golden-03-desktopApp-xml/TEST-com.example.chatbar.desktop.DesktopChatScreenshotUiTest.xml",
+    "bytes": 616,
+    "sha256": "3f91a57f8cd711ff532605fa65a03e5aadc2e131442e2a51e39371a95ec089d8"
+  },
+  {
+    "path": "final-focused-golden-03-desktopApp-xml/TEST-com.example.chatbar.desktop.DesktopChatVoicePresentationTest.xml",
+    "bytes": 553,
+    "sha256": "b828e4993e1d4b8010648503570915f8c05a6ffc1a48a668a902f8bc14553b02"
+  },
+  {
+    "path": "final-focused-golden-03-desktopApp-xml/TEST-com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest.xml",
+    "bytes": 1394,
+    "sha256": "953f5dc5094ee5bebd3e1d47df3895c3a427b7ae7b61a6a9b19ee19e806e0b5b"
+  },
+  {
+    "path": "final-focused-golden-03-desktopApp-xml/TEST-com.example.chatbar.desktop.DesktopFishAudioLibraryTest.xml",
+    "bytes": 2096,
+    "sha256": "126a4e9eebd7e3ca5b50d2fb746f2658319ce6f2c5035f34e250930c183e102c"
+  },
+  {
+    "path": "final-focused-golden-03-desktopApp-xml/TEST-com.example.chatbar.desktop.DesktopFishPresentationTest.xml",
+    "bytes": 17124,
+    "sha256": "95942c81f4298eb0431311793893d33606af9fb663aac6ba11566937b4956644"
+  },
+  {
+    "path": "final-focused-golden-03-desktopApp-xml/TEST-com.example.chatbar.desktop.DesktopFishPreviewTest.xml",
+    "bytes": 1915,
+    "sha256": "16540e961833a05da08f5b734284c31f8eacda31435cf48f1a972bb4bfe1f592"
+  },
+  {
+    "path": "final-focused-golden-03-desktopApp-xml/TEST-com.example.chatbar.desktop.DesktopFishSampleTest.xml",
+    "bytes": 4289,
+    "sha256": "df8532f3e679cd6583860d04a3d8a4f88de5b0ac1ff8406fbfb771917477b3ef"
+  },
+  {
+    "path": "final-focused-golden-03-desktopApp-xml/TEST-com.example.chatbar.desktop.DesktopMessageActionsUxTest.xml",
+    "bytes": 2176,
+    "sha256": "4d8ddb53eac38c76e3fda6d424cd78302bb1c27728132ef62397a25f4ab7b5a1"
+  },
+  {
+    "path": "final-focused-golden-03-desktopApp-xml/TEST-com.example.chatbar.desktop.DesktopMessageImagePresentationTest.xml",
+    "bytes": 3783,
+    "sha256": "cd899600434f1ba086ef51a8703cd11803596292aefec38f5d871275b446cbb3"
+  },
+  {
+    "path": "final-focused-golden-03-desktopApp-xml/TEST-com.example.chatbar.desktop.DesktopPostP8IntegrationTest.xml",
+    "bytes": 1808,
+    "sha256": "a7c2c999710fb3dbbfe2a4b5cbfa44037bc2ed1c26806fec58159cce98c110de"
+  },
+  {
+    "path": "final-focused-golden-03-desktopApp-xml/TEST-com.example.chatbar.desktop.DesktopPrimaryChatPresentationTest.xml",
+    "bytes": 2685,
+    "sha256": "ce485f2f828a5824b985cac31100e8896ec67adc601b5026f34b65f4777d90d8"
+  },
+  {
+    "path": "final-focused-golden-03-desktopApp-xml/TEST-com.example.chatbar.desktop.DesktopPrimaryChatRepairPresentationTest.xml",
+    "bytes": 1601,
+    "sha256": "18dd797e112f6a6b8e845c06bcf9113d4d17859c6c245b00b2ebaef37381ac18"
+  },
+  {
+    "path": "final-focused-golden-03-desktopApp-xml/TEST-com.example.chatbar.desktop.DesktopVoicePauseWindowsTest.xml",
+    "bytes": 559,
+    "sha256": "ad127506285dc21b1e55a00b823f636f6e4fbd2e3d7ef5c7326a75abc85a2992"
+  },
+  {
+    "path": "final-focused-golden-03-desktopApp-xml/TEST-com.example.chatbar.desktop.DesktopVoiceUxTest.xml",
+    "bytes": 1001,
+    "sha256": "7255a1df08bf5f3b095b07c3890f778351f305d5dac00608d9d9b9642d8875b5"
+  },
+  {
+    "path": "final-focused-golden-03-sharedCore-xml/TEST-com.example.chatbar.domain.voice.FishAudioRequestFactoryTest.xml",
+    "bytes": 829,
+    "sha256": "9fe41f7010a54e84158e0e45dbda62db3940cd9bc4af3844932ce66289a4a521"
+  },
+  {
+    "path": "final-focused-golden-03-sharedCore-xml/TEST-com.example.chatbar.domain.voice.FishAudioSharedContractTest.xml",
+    "bytes": 1259,
+    "sha256": "d46de4952c2a1330bea693ef1f24327833a3076fb6878e3107a0401d31055593"
+  },
+  {
+    "path": "final-focused-golden-03-sharedCore-xml/TEST-com.example.chatbar.domain.voice.FishAudioTagGatewayTest.xml",
+    "bytes": 742,
+    "sha256": "5515ed1e9e7a296f22638c7d5a7a48b030717daf6b5c192dbf2dc0dfca7a2b28"
+  },
+  {
+    "path": "final-focused-golden-03-sharedCore-xml/TEST-com.example.chatbar.domain.voice.VoiceAnchorPolicyTest.xml",
+    "bytes": 1784,
+    "sha256": "a4be2b6037d4badfa59333572cce4ef5123d6b1a14d84f40b3d11c4a0c1f2c18"
+  },
+  {
+    "path": "final-focused-golden-03-sharedCore-xml/TEST-com.example.chatbar.domain.voice.VoiceGenerationPolicyTest.xml",
+    "bytes": 1989,
+    "sha256": "30e28586b31fa0ae3e746d34f02aa14bfc597828a82c5ff554e9a0d0e3a67d55"
+  },
+  {
+    "path": "final-focused-golden-03-sharedCore-xml/TEST-com.example.chatbar.domain.voice.VoiceMessageVersionPolicyTest.xml",
+    "bytes": 1029,
+    "sha256": "6e115f73c714263202c75e6c79b0f4c8ed5884b2e79f1606a9d189359e679896"
+  },
+  {
+    "path": "final-focused-golden-03-sharedCore-xml/TEST-com.example.chatbar.domain.voice.VoiceRepositoryPersistenceTest.xml",
+    "bytes": 554,
+    "sha256": "6388b201226fd63857e841eb5ea1c5e12a514a4213525a90c50a075faecae75c"
+  },
+  {
+    "path": "final-focused-golden-03.txt",
+    "bytes": 2385,
+    "sha256": "8ab9971aff89542c2ba91b9a6d543fca86218eb57a836b716ac2e0575a3ea873"
+  },
+  {
+    "path": "final-resources.json",
+    "bytes": 270,
+    "sha256": "aa8d3a83d11b3a37789caa236c5f6f2c157df95ee874ae1b1712c83af1d897e9"
+  },
+  {
+    "path": "frozen-package.json",
+    "bytes": 435,
+    "sha256": "7b4cd99fcd8930c45c0f52dc7eade399cbe17d35d5fce5ae0266b8069a83dbc4"
+  },
+  {
+    "path": "git-before.txt",
+    "bytes": 484,
+    "sha256": "9481b7dd17a0e8298f6667c7e5b585c2300535652a7e09507b699c87ca2de953"
+  },
+  {
+    "path": "integration-focused-01.txt",
+    "bytes": 2387,
+    "sha256": "12bd6b51182a051f776c434289636a77864dd1b98129ba08e2c059f3d4649cf7"
+  },
+  {
+    "path": "integration-focused-02.txt",
+    "bytes": 3285,
+    "sha256": "9e1c813ac6f03f265b73cfa6c3f90a8459840dcba94b51c29a905a6d79ee7889"
+  },
+  {
+    "path": "integration-focused-03-xml/TEST-com.example.chatbar.desktop.DesktopChatContextUxTest.xml",
+    "bytes": 1672,
+    "sha256": "a555a154c2597a258cf6a17f443c17c3d6eaffa461104f13eb6abf15f364086f"
+  },
+  {
+    "path": "integration-focused-03-xml/TEST-com.example.chatbar.desktop.DesktopChatVoicePresentationTest.xml",
+    "bytes": 553,
+    "sha256": "800717953d065a6b46bec3193aa26dd9e2f319e0d38d11b18533e54acc332742"
+  },
+  {
+    "path": "integration-focused-03-xml/TEST-com.example.chatbar.desktop.DesktopMessageActionsUxTest.xml",
+    "bytes": 5399,
+    "sha256": "513046da36630c15643dfdd2ec159747451dd60d1cefc90e437741b0a9ae9511"
+  },
+  {
+    "path": "integration-focused-03-xml/TEST-com.example.chatbar.desktop.DesktopMessageImagePresentationTest.xml",
+    "bytes": 13022,
+    "sha256": "dd71652b11241e5a60ef429b75199d8c8367c9914c34762d6bb16fb6674165c5"
+  },
+  {
+    "path": "integration-focused-03-xml/TEST-com.example.chatbar.desktop.DesktopPostP8IntegrationTest.xml",
+    "bytes": 2445,
+    "sha256": "bea1d3cff06c1355e2903e01f717467aa22b5a9d49159eb3a5bedf9f472b1ca4"
+  },
+  {
+    "path": "integration-focused-03.txt",
+    "bytes": 3559,
+    "sha256": "e90975705306ee7bf80f375785e66969f41628305fce71c36c95469e59c34fd7"
+  },
+  {
+    "path": "integration-focused-04-xml/TEST-com.example.chatbar.desktop.DesktopChatContextUxTest.xml",
+    "bytes": 1671,
+    "sha256": "1a6d17acc2ba31c9c6d754a8a5864459667e340e4367bd9e1a5c816d2af08bcb"
+  },
+  {
+    "path": "integration-focused-04-xml/TEST-com.example.chatbar.desktop.DesktopChatVoicePresentationTest.xml",
+    "bytes": 551,
+    "sha256": "5c1edeeef661847d46b7c5052ea53660cbacebcc777d13a4191620cd8c6f0dd5"
+  },
+  {
+    "path": "integration-focused-04-xml/TEST-com.example.chatbar.desktop.DesktopMessageActionsUxTest.xml",
+    "bytes": 5463,
+    "sha256": "d600e9d0ab34e6a4e6059dd06a6d6f0f58c1ea774f647e0facd5333e8cc3b588"
+  },
+  {
+    "path": "integration-focused-04-xml/TEST-com.example.chatbar.desktop.DesktopMessageImagePresentationTest.xml",
+    "bytes": 9226,
+    "sha256": "2f1be02f63f4aed0d65d7be26c9834e19471597e1ca3191b2aafb9d60035aab2"
+  },
+  {
+    "path": "integration-focused-04-xml/TEST-com.example.chatbar.desktop.DesktopPostP8IntegrationTest.xml",
+    "bytes": 2488,
+    "sha256": "3d8442204c8ee469c4b65bd6118ca358a3fc110dfa0f1d8608c7762715551f9f"
+  },
+  {
+    "path": "integration-focused-04.txt",
+    "bytes": 3162,
+    "sha256": "a8fb2622388c17633c7b090344b4163342abca7805d7cffbc30b1c321828bd57"
+  },
+  {
+    "path": "integration-focused-05.txt",
+    "bytes": 3453,
+    "sha256": "d481ce5f212c95368a717b7d647d3a77cc829e4f436dd12cc0a150ea898c0033"
+  },
+  {
+    "path": "jpeg-focused-01-xml/TEST-com.example.chatbar.desktop.DesktopChatScreenshotTest.xml",
+    "bytes": 502,
+    "sha256": "53a586465953ec66b376d619ad9e8ca2587cb698be44a72ad6e8c4a621c035dc"
+  },
+  {
+    "path": "jpeg-focused-01.txt",
+    "bytes": 2179,
+    "sha256": "fd48d8b774887ad689c16ad7bbb14025fd5ed0a7555abbf0094b329b4d9abc57"
+  },
+  {
+    "path": "junit-results.json",
+    "bytes": 40795,
+    "sha256": "bf52bdf2a4fce368f4fa6ffbfdc7fb31084ba69c310c2efbfdd7b2aada1e6150"
+  },
+  {
+    "path": "official-selection-provenance.json",
+    "bytes": 522,
+    "sha256": "3706e8ae5079f7b1a49e2cd783975fa8792c6b994c0d5195b014f6f9e79a07b7"
+  },
+  {
+    "path": "package-01.txt",
+    "bytes": 1816,
+    "sha256": "773c00d576593d06f15a0fb999d47b7d359d5c3243c364162e103b19ae163ab7"
+  },
+  {
+    "path": "package-build-identity.json",
+    "bytes": 331,
+    "sha256": "c9042ac2def5f2c5f092e7cfd857eda24faf084bbc051a3a074ee5465a233f25"
+  },
+  {
+    "path": "package-init.txt",
+    "bytes": 199,
+    "sha256": "5bf7945e15568026af3d524981af77693a6699bd41476a43b5d1fa7e79ff5858"
+  },
+  {
+    "path": "package-verification.json",
+    "bytes": 1138,
+    "sha256": "68a578f31fccf64636b38a5663d05e5ba13fca21eed2b27d8f1ec2637082a280"
+  },
+  {
+    "path": "PROJECT_HANDOFF.md",
+    "bytes": 3695,
+    "sha256": "0d3f8d14976f76d60c555b1a32e6772214b746b50b2d1a723abf453f8c8e3cb4"
+  },
+  {
+    "path": "protection-and-requests.json",
+    "bytes": 1145,
+    "sha256": "22dc7b2324dd1dc6a611a4b1753ad1610581fc73fda9d163822a7b50bd10a5b4"
+  },
+  {
+    "path": "README.md",
+    "bytes": 5062,
+    "sha256": "be1f136fed09925bcc7449837bec63b5f8bfe35670a5833d092972fc9f810abb"
+  },
+  {
+    "path": "scope-check.json",
+    "bytes": 690,
+    "sha256": "e12018c48bc9e6ed07466f9dc2dc734d1e66af71a76a054a1fbe7155d0e7a63c"
+  },
+  {
+    "path": "source-all-slices.patch",
+    "bytes": 155096,
+    "sha256": "556b693cb1d8344ab8263f5564ac2d6e0b527e21850dd8e29f3e4a032204e284"
+  },
+  {
+    "path": "source-diffstat.txt",
+    "bytes": 1761,
+    "sha256": "518fd7fccff9e37d865dc4ba94d141e042a7316cfe4219bd635d87d552ee344a"
+  },
+  {
+    "path": "source-final-integration.patch",
+    "bytes": 65696,
+    "sha256": "9e8b3d89fdc71c72743b23fa1cc4ea67c11366668bc47816554c42ef4d3ecb87"
+  },
+  {
+    "path": "source-identity.json",
+    "bytes": 10129,
+    "sha256": "3649705644e0dc56e19b6f1c9f716971f130d5193b9e89c69ce26f11525fbb91"
+  },
+  {
+    "path": "WINDOWS_MANUAL_GATE.md",
+    "bytes": 2922,
+    "sha256": "1404eef46269fffc7568b1fe687721bc641b17d085ad075a976cb2a0150191a6"
+  }
+]

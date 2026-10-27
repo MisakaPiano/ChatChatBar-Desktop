@@ -1,0 +1,41 @@
+{
+  "suite": {
+    "name": "com.example.chatbar.desktop.DesktopFishPickerNativeUxTest",
+    "tests": "4",
+    "skipped": "0",
+    "failures": "1",
+    "errors": "0",
+    "timestamp": "2026-10-18T20:53:29.941Z",
+    "hostname": "DD1",
+    "time": "22.325"
+  },
+  "testCases": [
+    {
+      "name": "native persistent scrollbar drags current page and explicit page jump preserves request semantics",
+      "classname": "com.example.chatbar.desktop.DesktopFishPickerNativeUxTest",
+      "time": "1.411"
+    },
+    {
+      "name": "native Stop is top layer visible and operable during download generation and long Windows playback",
+      "classname": "com.example.chatbar.desktop.DesktopFishPickerNativeUxTest",
+      "time": "8.777"
+    },
+    {
+      "name": "native Escape closes exactly one panel then picker with and without field focus at both widths",
+      "classname": "com.example.chatbar.desktop.DesktopFishPickerNativeUxTest",
+      "time": "10.155"
+    },
+    {
+      "name": "native resize retains target text and generated cache while sample identity stays distinct",
+      "classname": "com.example.chatbar.desktop.DesktopFishPickerNativeUxTest",
+      "time": "1.982"
+    }
+  ],
+  "xmlSha256": "839784aac5c6549119c42da46cd5c4b757f369212b6cdad96d459f4905851842",
+  "dragSteps": 0,
+  "physicalPresses": 1,
+  "dragCompletions": 0,
+  "wheelCompletions": 0,
+  "narrowRowRecords": [],
+  "unknownTotalRecords": []
+}

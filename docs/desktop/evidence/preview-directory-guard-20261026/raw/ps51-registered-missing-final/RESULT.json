@@ -1,0 +1,10 @@
+{
+  "tests": 22,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "suites": 3,
+  "installerExecuted": false,
+  "realNativeAdapterCalled": false,
+  "exit": 0
+}

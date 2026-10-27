@@ -1,0 +1,19 @@
+{
+  "utc": "2026-10-16T08:58:19.724874+00:00",
+  "rootAlias": "environments/B2-empty",
+  "rootExists": true,
+  "entries": [
+    {
+      "path": "ChatChatBarDesktop",
+      "kind": "directory"
+    },
+    {
+      "path": "ChatChatBarDesktop/entities",
+      "kind": "directory"
+    },
+    {
+      "path": "ChatChatBarDesktop/entities/document_index_transactions",
+      "kind": "directory"
+    }
+  ]
+}

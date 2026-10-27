@@ -1,0 +1,18 @@
+{
+  "merge-progress-final-20261025": {
+    "exit": 1,
+    "suites": 0,
+    "tests": 0,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "merge-progress-verified-20261025": {
+    "exit": 0,
+    "suites": 4,
+    "tests": 43,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

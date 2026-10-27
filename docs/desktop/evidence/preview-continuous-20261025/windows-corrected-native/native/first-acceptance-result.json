@@ -1,0 +1,9 @@
+{
+  "stage": "first",
+  "passed": true,
+  "onlySyntheticProduct": true,
+  "providerRequests": false,
+  "realArchiveRead": false,
+  "powerLossAndCrossAccount": "NOT_TESTED",
+  "occupiedMsiUpgrade": "NOT_TESTED"
+}

@@ -1,0 +1,46 @@
+{
+  "base": "76f527418616e90ed469cabcf0b78c9530563b2f",
+  "sourceCandidate": null,
+  "stages": [
+    {
+      "stage": "01-fish-ui-focused",
+      "suites": 3,
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reportedPass": 15,
+      "exitCode": 0
+    },
+    {
+      "stage": "02-affected-regression",
+      "suites": 8,
+      "tests": 82,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reportedPass": 82,
+      "exitCode": 0
+    },
+    {
+      "stage": "03-bounded-desktop",
+      "suites": 159,
+      "tests": 1526,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 2,
+      "reportedPass": 1523,
+      "exitCode": 1
+    }
+  ],
+  "realFishGet": 0,
+  "realFishTts": 0,
+  "newDistribution": "NOT BUILT",
+  "windowsManual": "NOT TESTED / NOT STARTED",
+  "packagedLauncherJvmRootLock": "NOT TESTED / NOT STARTED",
+  "winAuto001": "OPEN",
+  "winBrand001": "OPEN / DEFERRED",
+  "unknownHistoricalPointerMovement": "UNKNOWN / unchanged",
+  "protectedFiles": "KEEP / UNTRACKED / UNREAD / UNMODIFIED / UNSTAGED; paths only inventoried",
+  "sourceFrozen": true
+}

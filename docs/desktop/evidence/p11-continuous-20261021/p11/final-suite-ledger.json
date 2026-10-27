@@ -1,0 +1,722 @@
+[
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.desktop.DesktopApplicationLifecycleTest",
+    "population": "desktop",
+    "tests": 39,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.desktop.DesktopAudioMaintenanceTest",
+    "population": "desktop",
+    "tests": 11,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.desktop.DesktopChatContextUxTest",
+    "population": "desktop",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.desktop.DesktopChatMemoryIndexTest",
+    "population": "desktop",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.desktop.DesktopChatRetrievalTest",
+    "population": "desktop",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.desktop.DesktopChatScreenshotTest",
+    "population": "desktop",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.desktop.DesktopChatScreenshotUiTest",
+    "population": "desktop",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.desktop.DesktopChatVoicePresentationTest",
+    "population": "desktop",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest",
+    "population": "desktop",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest",
+    "population": "desktop",
+    "tests": 14,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest",
+    "population": "desktop",
+    "tests": 21,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.desktop.DesktopDocumentIndexPublicationTest",
+    "population": "desktop",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest",
+    "population": "desktop",
+    "tests": 21,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.desktop.DesktopDocumentRagReaderTest",
+    "population": "desktop",
+    "tests": 18,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.desktop.DesktopEmbeddingGatewayTest",
+    "population": "desktop",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.desktop.DesktopFullBackupArchiveTest",
+    "population": "desktop",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest",
+    "population": "desktop",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.desktop.DesktopFullBackupMappingTest",
+    "population": "desktop",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "47-archive-final-drain",
+    "suite": "com.example.chatbar.desktop.DesktopFullBackupServiceTest",
+    "population": "desktop",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.desktop.DesktopMemoryLifecycleTest",
+    "population": "desktop",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.desktop.DesktopMemoryRagTransportTest",
+    "population": "desktop",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.desktop.DesktopMemorySafetyTest",
+    "population": "desktop",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "47-archive-final-drain",
+    "suite": "com.example.chatbar.desktop.DesktopPrimaryChatControllerTest",
+    "population": "desktop",
+    "tests": 30,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.desktop.DesktopPromptInspectorTest",
+    "population": "desktop",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.desktop.DesktopSaveSlotArchiveTest",
+    "population": "desktop",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.desktop.DesktopSaveSlotInspectorTest",
+    "population": "desktop",
+    "tests": 23,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "47-archive-final-drain",
+    "suite": "com.example.chatbar.desktop.DesktopSaveSlotServiceTest",
+    "population": "desktop",
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.desktop.DesktopScreenshotBoundaryTest",
+    "population": "desktop",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.desktop.DesktopScreenshotWorkspaceTest",
+    "population": "desktop",
+    "tests": 9,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest",
+    "population": "desktop",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.desktop.DesktopSessionCommitJournalTest",
+    "population": "desktop",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.desktop.DesktopStartupGateTest",
+    "population": "desktop",
+    "tests": 20,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "47-archive-final-drain",
+    "suite": "com.example.chatbar.desktop.DesktopUpdateCheckerTest",
+    "population": "desktop",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.desktop.DesktopVoiceArchiveHandoffTest",
+    "population": "desktop",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.desktop.DesktopVoiceClickReliabilityTest",
+    "population": "desktop",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.desktop.DesktopVoiceSafetyTest",
+    "population": "desktop",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.desktop.DesktopVoiceUxTest",
+    "population": "desktop",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.chat.SaveSlotSerializationTest",
+    "population": "shared",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.chat.SaveSlotSharedContractTest",
+    "population": "shared",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.chat.SessionCopyPolicyTest",
+    "population": "shared",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.memory.MemoryAiFailurePolicyTest",
+    "population": "shared",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.memory.MemoryAiRetryTest",
+    "population": "shared",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.memory.MemoryAiTerminalFailureTest",
+    "population": "shared",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.memory.MemoryArchiveInjectionPolicyTest",
+    "population": "shared",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.memory.MemoryBackfillPolicyTest",
+    "population": "shared",
+    "tests": 18,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.memory.MemoryBudgetPolicyTest",
+    "population": "shared",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.memory.MemoryCompressionDecisionPolicyTest",
+    "population": "shared",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.memory.MemoryCompressionPolicyTest",
+    "population": "shared",
+    "tests": 13,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.memory.MemoryContinuityPolicyTest",
+    "population": "shared",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.memory.MemoryDeletionProjectionPolicyTest",
+    "population": "shared",
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.memory.MemoryEpisodeBatchPolicyTest",
+    "population": "shared",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.memory.MemoryEpisodeSummaryPolicyTest",
+    "population": "shared",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.memory.MemoryHeadUpdatePolicyTest",
+    "population": "shared",
+    "tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.memory.MemoryIdentityContractTest",
+    "population": "shared",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.memory.MemoryMaintenanceMailboxTest",
+    "population": "shared",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.memory.MemoryModelPreflightPolicyTest",
+    "population": "shared",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.memory.MemoryNodeContentTest",
+    "population": "shared",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.memory.MemoryNodeRegenerationPolicyTest",
+    "population": "shared",
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.memory.MemoryPageOrderPolicyTest",
+    "population": "shared",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.memory.MemoryRegenerationPolicyTest",
+    "population": "shared",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.memory.MemoryRepositoryDeletionJournalTest",
+    "population": "shared",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.memory.MemoryRevisionServiceTest",
+    "population": "shared",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.memory.MemorySnapshotImportPolicyTest",
+    "population": "shared",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.memory.MemorySourceFingerprintTest",
+    "population": "shared",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.memory.MemorySourceRepairPolicyTest",
+    "population": "shared",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.memory.MemorySourceRepairSerializationTest",
+    "population": "shared",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.memory.MemorySummaryPolicyTest",
+    "population": "shared",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.memory.MemoryTaskCommitPolicyTest",
+    "population": "shared",
+    "tests": 11,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.memory.SessionScopedJobRegistryTest",
+    "population": "shared",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.rag.ChatMemoryIdentityTest",
+    "population": "shared",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.voice.FishAudioRequestFactoryTest",
+    "population": "shared",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.voice.FishAudioSharedContractTest",
+    "population": "shared",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.voice.FishAudioTagGatewayTest",
+    "population": "shared",
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.voice.VoiceAnchorPolicyTest",
+    "population": "shared",
+    "tests": 9,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.voice.VoiceGenerationPolicyTest",
+    "population": "shared",
+    "tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.voice.VoiceMessageVersionPolicyTest",
+    "population": "shared",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.domain.voice.VoiceRepositoryPersistenceTest",
+    "population": "shared",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "46-p11-final-focused",
+    "suite": "com.example.chatbar.ui.chat.RagRetrievalCredentialTest",
+    "population": "shared",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "47-archive-final-drain",
+    "suite": "com.example.chatbar.desktop.DesktopChatDraftPersistenceTest",
+    "population": "desktop",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "stage": "47-archive-final-drain",
+    "suite": "com.example.chatbar.desktop.DesktopChatReadingLifecycleTest",
+    "population": "desktop",
+    "tests": 15,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+]

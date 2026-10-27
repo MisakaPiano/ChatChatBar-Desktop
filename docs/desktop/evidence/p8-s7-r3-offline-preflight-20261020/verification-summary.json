@@ -1,0 +1,62 @@
+{
+  "status": "R3 OFFLINE PREFLIGHT PASS / USER READY REQUIRED",
+  "steps": [
+    {
+      "stage": "01-helper-compile.result",
+      "exitCode": 1,
+      "expected": 0
+    },
+    {
+      "stage": "01b-helper-compile.result",
+      "exitCode": 0,
+      "expected": 0
+    },
+    {
+      "stage": "02-auxiliary-payload-selfcheck.result",
+      "exitCode": 0,
+      "expected": 0
+    },
+    {
+      "stage": "03-protected-synthetic-seed.result",
+      "exitCode": 0,
+      "expected": 0
+    },
+    {
+      "stage": "04-real-policy-repository-hydrate.result",
+      "exitCode": 0,
+      "expected": 0
+    },
+    {
+      "stage": "05-post-preflight-independent-lock.result",
+      "exitCode": 0,
+      "expected": 0
+    }
+  ],
+  "assertionChecks": 8,
+  "models": 2,
+  "studioChatSelectableModels": 1,
+  "auxiliaryModels": 2,
+  "cards": 2,
+  "bindings": 4,
+  "sessions": 2,
+  "messages": 4,
+  "fixtureJSONCount": 11,
+  "secretScopes": 3,
+  "modelKeysEmpty": true,
+  "protectedRoundTrip": true,
+  "exactLogicalIdsVerified": true,
+  "negativeGuardStillRejects": true,
+  "guiStarts": 0,
+  "fakeStarts": 0,
+  "networkCalls": 0,
+  "realFishGET": 0,
+  "realFishTTS": 0,
+  "privateTLSCreated": false,
+  "mockServicePathAbsent": true,
+  "ownerReleased": true,
+  "postPreflightLockAcquisitionExit": 0,
+  "originalCompileRedRetained": true,
+  "StudioIssue": "OPEN / PRODUCT ERROR RECOVERY REVIEW REQUIRED",
+  "evidenceCredentialLiteralScan": "PASS",
+  "R1R2Preserved": true
+}

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFishPresentationTest" tests="6" skipped="0" failures="1" errors="0" timestamp="2026-10-17T20:38:29.004Z" hostname="DD1" time="7.78">
+  <properties/>
+  <testcase name="management voice module matches appearance heading and remains operable in narrow layout" classname="com.example.chatbar.desktop.DesktopFishPresentationTest" time="6.711">
+    <failure message="kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 5000 ms" type="kotlinx.coroutines.TimeoutCancellationException">kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 5000 ms
+	at _COROUTINE._BOUNDARY._(CoroutineDebugging.kt:42)
+	at com.example.chatbar.desktop.DesktopFishPresentationTest$until$2.invokeSuspend(DesktopFishPresentationTest.kt:34)
+	at com.example.chatbar.desktop.DesktopFishPresentationTest$management voice module matches appearance heading and remains operable in narrow layout$1$1.invokeSuspend(DesktopFishPresentationTest.kt:95)
+	at com.example.chatbar.desktop.DesktopFishSettingsBindingTestKt.fishFixture(DesktopFishSettingsBindingTest.kt:598)
+	at com.example.chatbar.desktop.DesktopFishPresentationTest$management voice module matches appearance heading and remains operable in narrow layout$1.invokeSuspend(DesktopFishPresentationTest.kt:45)
+Caused by: kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 5000 ms
+	at kotlinx.coroutines.TimeoutKt.TimeoutCancellationException(Timeout.kt:189)
+	at kotlinx.coroutines.TimeoutCoroutine.run(Timeout.kt:157)
+	at kotlinx.coroutines.EventLoopImplBase$DelayedRunnableTask.run(EventLoop.common.kt:505)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.DefaultExecutor.run(DefaultExecutor.kt:105)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+</failure>
+  </testcase>
+  <testcase name="structured and avatar book fields display existing snapshot without auto query or binding" classname="com.example.chatbar.desktop.DesktopFishPresentationTest" time="0.116"/>
+  <testcase name="session UI preserves three state choice and language spaces during incremental editing" classname="com.example.chatbar.desktop.DesktopFishPresentationTest" time="0.498"/>
+  <testcase name="global UI exposes stale explicit model without fallback and changes remain draft" classname="com.example.chatbar.desktop.DesktopFishPresentationTest" time="0.14"/>
+  <testcase name="voice selector offers auxiliary only model by name and retains null follow session choice" classname="com.example.chatbar.desktop.DesktopFishPresentationTest" time="0.189"/>
+  <testcase name="picker real pointer query selects only explicit result with no preview" classname="com.example.chatbar.desktop.DesktopFishPresentationTest" time="0.125"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

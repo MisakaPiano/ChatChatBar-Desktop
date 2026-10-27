@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopPrimaryChatRepairPresentationTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-20T06:29:05.114Z" hostname="DD1" time="0.009">
+  <properties/>
+  <testcase name="dialogue markers never receive link decoration while genuine links remain links" classname="com.example.chatbar.desktop.DesktopPrimaryChatRepairPresentationTest" time="0.003"/>
+  <testcase name="segmented structure has only grouped speaker headers and independent status" classname="com.example.chatbar.desktop.DesktopPrimaryChatRepairPresentationTest" time="0.002"/>
+  <testcase name="streaming and persisted use equivalent segmented hierarchy" classname="com.example.chatbar.desktop.DesktopPrimaryChatRepairPresentationTest" time="0.001"/>
+  <testcase name="raw coordinates and copy projection retain shared segment identity" classname="com.example.chatbar.desktop.DesktopPrimaryChatRepairPresentationTest" time="0.001"/>
+  <testcase name="wide browser collapses and restores independently of compact selection" classname="com.example.chatbar.desktop.DesktopPrimaryChatRepairPresentationTest" time="0.001"/>
+  <testcase name="diagnostic disclosure is collapsed on session changes" classname="com.example.chatbar.desktop.DesktopPrimaryChatRepairPresentationTest" time="0.001"/>
+  <testcase name="composer exposes only Send or Stop" classname="com.example.chatbar.desktop.DesktopPrimaryChatRepairPresentationTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

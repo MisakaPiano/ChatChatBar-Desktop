@@ -1,0 +1,10 @@
+{
+  "source": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-windows-manual-20261021\\exports\\png\\ChatBar.cbbackup",
+  "copy": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-unified-acceptance-prep-20261021\\exports\\cbbackup\\gui-unified-20261022.cbbackup",
+  "bytes": 10311321,
+  "sha256": "0C038BFC9A76BD0209AA7E088EF2F4F9DCDACD17BB9F4C9D26CDCAD00CE69799",
+  "copyVerified": true,
+  "originalPreserved": true,
+  "backupContentValidation": "PENDING application inspect",
+  "preparationCorrection": "Created missing empty synthetic-home/Desktop; actual requested exports/cbbackup already existed"
+}

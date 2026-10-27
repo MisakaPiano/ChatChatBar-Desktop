@@ -1,0 +1,128 @@
+{
+  "algorithm": "SHA-256",
+  "scope": "All evidence files except this manifest",
+  "originalCopiesVerified": 18,
+  "historicalEvidenceFilesVerified": 28,
+  "files": [
+    {
+      "path": ".gitattributes",
+      "bytes": 136,
+      "sha256": "4a0bb3c3350c0fef4f0fe45c7a4beadf936ccf0a3ff5ade87372bda7ced774d9"
+    },
+    {
+      "path": "01-completed-focused.json",
+      "bytes": 561,
+      "sha256": "badbd9ef5569ac8a7d3050cf4e52b0eccd440403e2e8e0b1cde4c27b411efae9"
+    },
+    {
+      "path": "01-completed-focused.log",
+      "bytes": 2179,
+      "sha256": "91abc6ca23383c0cd0e858c241b46521a0bfb8faa476286bf24a0030258e3bbe"
+    },
+    {
+      "path": "01-focused-junit/TEST-com.example.chatbar.desktop.DesktopDocumentIndexTransactionPrototypeTest.xml",
+      "bytes": 765,
+      "sha256": "f1941637f5d43354f24e3d399b8e7d094ac683577728a8ab1df2473112fdcf40"
+    },
+    {
+      "path": "02-transactions-junit/TEST-com.example.chatbar.desktop.DesktopDocumentIndexTransactionProcessTest.xml",
+      "bytes": 949,
+      "sha256": "d997bae4b8eb9b2c13ce9e4e62e63beba9a70933ce6313836cebbd0ae5e58e98"
+    },
+    {
+      "path": "02-transactions-junit/TEST-com.example.chatbar.desktop.DesktopDocumentIndexTransactionPrototypeTest.xml",
+      "bytes": 2554,
+      "sha256": "bd8b7ddae30ff351193d6293b06af23246432df8c09d76cdc48994715de3089c"
+    },
+    {
+      "path": "02-transactions.json",
+      "bytes": 641,
+      "sha256": "1307d037d0338783baba58afc2deff2d2893dadc63cd0766a9381e1963d57fff"
+    },
+    {
+      "path": "02-transactions.log",
+      "bytes": 2181,
+      "sha256": "4be9dab490c5b56d19ee8c9fafc144b2d1356da27bd8e8dbbdfb16c813ce06d6"
+    },
+    {
+      "path": "03-adjacent-junit/TEST-com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest.xml",
+      "bytes": 2731,
+      "sha256": "f61255929d11f5e1e74b5bf0aeedd4c9980b63817e542319b2733e20ff35b5ed"
+    },
+    {
+      "path": "03-adjacent-junit/TEST-com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest.xml",
+      "bytes": 4311,
+      "sha256": "a15f3d5665bd2a3eee751387ef22bd8ecb82d79c896ae7b18215135c3403972e"
+    },
+    {
+      "path": "03-adjacent-junit/TEST-com.example.chatbar.desktop.DesktopDocumentRagReaderTest.xml",
+      "bytes": 3696,
+      "sha256": "122d786f35c2f29ef3943fc9065e7300f107499d45aa9f8e5b8ca7950afd2b89"
+    },
+    {
+      "path": "03-adjacent-junit/TEST-com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest.xml",
+      "bytes": 3261,
+      "sha256": "40fd553a8b508b76a59c00d0efe7707f8f73e93c79f900a84cd33374e88f3132"
+    },
+    {
+      "path": "03-adjacent.json",
+      "bytes": 793,
+      "sha256": "939f648deaf653e6b63d95c59e622ab574bfc8d3f3664fb8d002211e4860003e"
+    },
+    {
+      "path": "03-adjacent.log",
+      "bytes": 2190,
+      "sha256": "bd139b25c0ddea7dc2f8c8de4c98502602c2edc9a2d290151c8446d9678cc7f6"
+    },
+    {
+      "path": "child-results.json",
+      "bytes": 18276,
+      "sha256": "9d60b7be2a65704263dff1708cb0d1fc695fec2c4f1a5c232b0d5542a9cfba48"
+    },
+    {
+      "path": "environment.json",
+      "bytes": 402,
+      "sha256": "8e32f3df44c2bea2d07b80e74440b3a303c451364943b788014344e66fe5e63d"
+    },
+    {
+      "path": "jdk-version.txt",
+      "bytes": 198,
+      "sha256": "ceac1a1faee87599e8e7e1f10da3907f0421452fbfce48a9b9844c733f72289a"
+    },
+    {
+      "path": "junit-summary.json",
+      "bytes": 2948,
+      "sha256": "12bb605b5d64a85cc6dec0315c1bcfc6fb32891697793691f7a0de7a5f261591"
+    },
+    {
+      "path": "README.md",
+      "bytes": 8588,
+      "sha256": "44a38c8ab468370ebdc2aa1707b8b2a8660d638d10d8720209dbbfc22ffec688"
+    },
+    {
+      "path": "resources.jsonl",
+      "bytes": 1526,
+      "sha256": "43aed23a0ac3c71c2c95fe7dc0b80313b75873e4a98b098ac8ad673a2c14931b"
+    },
+    {
+      "path": "run-stage.ps1",
+      "bytes": 934,
+      "sha256": "0911963d770216d85c48830b310ecbe35b23bf272c759f2760f1aa7a36f5bcb3"
+    },
+    {
+      "path": "source-manifest.json",
+      "bytes": 1056,
+      "sha256": "bace33c414553a5258446e034a04156ba948eb1faaf692afb408db159865117c"
+    },
+    {
+      "path": "summary.json",
+      "bytes": 451,
+      "sha256": "b4a2f0efdda860b57de33932c7e94dee5805d593f265209f1212bc401d09c305"
+    },
+    {
+      "path": "transaction-events.jsonl",
+      "bytes": 20259,
+      "sha256": "4741f5074c54c59ba9c791d4c537f7c201ca2ee8668790ef54831db42bb485c3"
+    }
+  ]
+}

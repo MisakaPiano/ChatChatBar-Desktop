@@ -1,0 +1,49 @@
+[
+  {
+    "suite": "com.example.chatbar.desktop.DesktopFishPickerLayoutTest",
+    "test": "fold resize and stale action callbacks retain text without implicit preview or binding",
+    "type": "java.lang.AssertionError",
+    "message": "java.lang.AssertionError: Expected value to be true.",
+    "ownStack": [
+      "at com.example.chatbar.desktop.DesktopFishPickerLayoutTest$fold resize and stale action callbacks retain text without implicit preview or binding$1.invokeSuspend(DesktopFishPickerLayoutTest.kt:135)"
+    ]
+  },
+  {
+    "suite": "com.example.chatbar.desktop.DesktopFishPickerLayoutTest",
+    "test": "wide sidebar compact viewport scroll themes and keyboard binding preserve query count",
+    "type": "java.lang.AssertionError",
+    "message": "java.lang.AssertionError: expected:<Button> but was:<null>",
+    "ownStack": [
+      "at com.example.chatbar.desktop.DesktopFishPickerLayoutTest$wide sidebar compact viewport scroll themes and keyboard binding preserve query count$1.invokeSuspend(DesktopFishPickerLayoutTest.kt:89)"
+    ]
+  },
+  {
+    "suite": "com.example.chatbar.desktop.DesktopFishPickerWindowTest",
+    "test": "public main WindowScope supplies exact owner through maximize restore reopen and parent close",
+    "type": "kotlinx.coroutines.TimeoutCancellationException",
+    "message": "kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 15000 ms",
+    "ownStack": [
+      "at com.example.chatbar.desktop.DesktopFishPickerWindowTest.frames(DesktopFishPickerWindowTest.kt:30)",
+      "at com.example.chatbar.desktop.DesktopFishPickerWindowTest$public main WindowScope supplies exact owner through maximize restore reopen and parent close$1$await$2.invokeSuspend(DesktopFishPickerWindowTest.kt:104)",
+      "at com.example.chatbar.desktop.DesktopFishPickerWindowTest$public main WindowScope supplies exact owner through maximize restore reopen and parent close$1.invokeSuspend(DesktopFishPickerWindowTest.kt:113)"
+    ]
+  },
+  {
+    "suite": "com.example.chatbar.desktop.DesktopFishPresentationTest",
+    "test": "free preview UI requires explicit text and click and never selects a voice",
+    "type": "java.lang.AssertionError",
+    "message": "java.lang.AssertionError: Expected value to be true.",
+    "ownStack": [
+      "at com.example.chatbar.desktop.DesktopFishPresentationTest$free preview UI requires explicit text and click and never selects a voice$1.invokeSuspend(DesktopFishPresentationTest.kt:86)"
+    ]
+  },
+  {
+    "suite": "com.example.chatbar.desktop.DesktopFishPresentationTest",
+    "test": "official sample UI plays only on explicit click without text TTS or binding",
+    "type": "java.lang.AssertionError",
+    "message": "java.lang.AssertionError: Expected value to be true.",
+    "ownStack": [
+      "at com.example.chatbar.desktop.DesktopFishPresentationTest$official sample UI plays only on explicit click without text TTS or binding$1.invokeSuspend(DesktopFishPresentationTest.kt:47)"
+    ]
+  }
+]

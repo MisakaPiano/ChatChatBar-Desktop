@@ -1,0 +1,23 @@
+[
+  "--offline",
+  "--no-daemon",
+  "--no-build-cache",
+  "--no-configuration-cache",
+  "--max-workers=1",
+  "--no-parallel",
+  "--console=plain",
+  "-Dorg.gradle.jvmargs=-Xmx1024m -XX:ActiveProcessorCount=2 -Dfile.encoding=UTF-8",
+  "-Pkotlin.compiler.execution.strategy=in-process",
+  ":desktopApp:test",
+  "--rerun",
+  "--tests",
+  "*DesktopFreshRootAuthorityTest",
+  "--tests",
+  "*WindowsSecretStoreTest",
+  "--tests",
+  "*WindowsSecretRootResolverTest",
+  "--tests",
+  "*DesktopFullBackupCommitJournalTest",
+  "--tests",
+  "*DesktopStartupGateTest"
+]

@@ -1,0 +1,170 @@
+{
+  "officialCommit": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+  "files": [
+    {
+      "path": ".agents/skills/chatbar-app-backup/SKILL.md",
+      "bytes": 4348,
+      "sha256": "bce40aafdc472529f8ce6ed37dd6aff036b8329dbdc02ed524a90e338958bbe9",
+      "anchors": [
+        {
+          "line": 27,
+          "symbol": "- API secrets/community session included by default; plaintext export warns. Destination expiration follows normal login handling. OS authorizations are rechecked; momentsAutoStartConfirmed resets."
+        }
+      ]
+    },
+    {
+      "path": ".agents/skills/chatbar-moments/SKILL.md",
+      "bytes": 13265,
+      "sha256": "c00b3b9d851c61b00f0271caa0c44dfaf0ef9eca89e979b2552e9e1734a770d7",
+      "anchors": []
+    },
+    {
+      "path": "app/app/src/main/java/com/example/chatbar/data/local/entity/MomentEntities.kt",
+      "bytes": 4617,
+      "sha256": "3280ba03073e9f20f86cf730dc08074f695d66a13369718382c0fb6d047adfbb",
+      "anchors": []
+    },
+    {
+      "path": "app/app/src/main/java/com/example/chatbar/data/local/entity/ChatMessage.kt",
+      "bytes": 4421,
+      "sha256": "15e677dcecf3205170b1dd3d5c8d1da018e427c77a031bbe1121949e0fe9126d",
+      "anchors": []
+    },
+    {
+      "path": "app/app/src/main/java/com/example/chatbar/data/repository/MomentRepository.kt",
+      "bytes": 4936,
+      "sha256": "d5002cfb52894b818b8d2c19ab6037d91813b095e5924cc1bd27f2cd9ebd0a2b",
+      "anchors": []
+    },
+    {
+      "path": "app/app/src/main/java/com/example/chatbar/domain/moment/MomentScheduler.kt",
+      "bytes": 11948,
+      "sha256": "1a9db84406f93d5ceed2151890b97333d0743b619d143fcd8c779bff3e4746a5",
+      "anchors": [
+        {
+          "line": 49,
+          "symbol": "suspend fun runOnce(reason: String = \"manual\", now: Long = System.currentTimeMillis()) = mutex.withLock {"
+        },
+        {
+          "line": 144,
+          "symbol": "private suspend fun processTask(task: MomentTask, now: Long) {"
+        }
+      ]
+    },
+    {
+      "path": "app/app/src/main/java/com/example/chatbar/domain/moment/MomentBackgroundReliability.kt",
+      "bytes": 7978,
+      "sha256": "359dd318cd1a48d34f34c95e1d3d1c8d67489c244a24c62d7dd73de235d2851e",
+      "anchors": []
+    },
+    {
+      "path": "app/app/src/main/java/com/example/chatbar/domain/moment/MomentGenerationService.kt",
+      "bytes": 28765,
+      "sha256": "1b6a1992f179eb2ade9069af7604b332bacef3bd56f53e56b6bfd7a02cc711cb",
+      "anchors": [
+        {
+          "line": 66,
+          "symbol": "data class MomentGenerationCheckpoint("
+        }
+      ]
+    },
+    {
+      "path": "app/app/src/main/java/com/example/chatbar/ui/manage/ManageViewModel.kt",
+      "bytes": 46046,
+      "sha256": "724e169651c1945d24b72395ead4e8dde07736244a70934c0bf90afe3fa00bf5",
+      "anchors": [
+        {
+          "line": 648,
+          "symbol": "ChatBarApp.instance.momentScheduler.kick(\"settings\")"
+        },
+        {
+          "line": 660,
+          "symbol": "autoStartConfirmed = settings.momentsAutoStartConfirmed"
+        },
+        {
+          "line": 680,
+          "symbol": "settingsRepository.saveAppSettings(current.copy(momentsAutoStartConfirmed = true))"
+        }
+      ]
+    },
+    {
+      "path": "app/app/src/main/java/com/example/chatbar/ChatBarApp.kt",
+      "bytes": 27942,
+      "sha256": "2b91f4cdf7da546059db3fb1943c068829b0ca61aa28482856e3fbcacceb6330",
+      "anchors": [
+        {
+          "line": 543,
+          "symbol": "momentScheduler.kick(\"startup\")"
+        }
+      ]
+    },
+    {
+      "path": "app/app/src/main/java/com/example/chatbar/domain/backup/BackupArchive.kt",
+      "bytes": 18550,
+      "sha256": "1fe39d8597e1b5773625c3cc05e99dae544b32cae0e3554c3aa3a37b9a545f7b",
+      "anchors": []
+    },
+    {
+      "path": "app/app/src/main/java/com/example/chatbar/domain/backup/BackupEntityValidator.kt",
+      "bytes": 13147,
+      "sha256": "3a8673d8e2531945c57adbe48b103b706f754e8a4ce42af956a08d32c63c72e0",
+      "anchors": []
+    },
+    {
+      "path": "app/app/src/main/java/com/example/chatbar/domain/backup/BackupJsonStream.kt",
+      "bytes": 10165,
+      "sha256": "ce61c9767c56945baf5a25c68faae8f1ffc935c5f04ee2a93f9423129d4d5e8d",
+      "anchors": []
+    },
+    {
+      "path": "app/app/src/main/java/com/example/chatbar/domain/backup/BackupDataRegistry.kt",
+      "bytes": 2988,
+      "sha256": "470603ac9ca78d5d91fb2f5fee6a33f726c52f49a9310542def83f3a63b206a2",
+      "anchors": []
+    },
+    {
+      "path": "app/app/src/main/java/com/example/chatbar/domain/backup/AppBackupService.kt",
+      "bytes": 14189,
+      "sha256": "1a2721a862cf47ae09952bf545ce34a2a310a7fe11ac223119673693a054cd7b",
+      "anchors": [
+        {
+          "line": 265,
+          "symbol": "private fun resetDeviceConfirmations(files: File) {"
+        },
+        {
+          "line": 270,
+          "symbol": "root + (\"momentsAutoStartConfirmed\" to kotlinx.serialization.json.JsonPrimitive(false))"
+        }
+      ]
+    },
+    {
+      "path": "app/app/src/main/java/com/example/chatbar/domain/backup/AppBackupBootstrap.kt",
+      "bytes": 2592,
+      "sha256": "67c30148d65ea999192989e0048cd69bdc19b6d946c6877fbc1f052e118bcff3",
+      "anchors": []
+    },
+    {
+      "path": "app/app/src/main/java/com/example/chatbar/domain/backup/BackupRestoreTransaction.kt",
+      "bytes": 10039,
+      "sha256": "2043df77459663a60b061faf5241ace9ba6d5c5377fb438b4efe80be44f0880f",
+      "anchors": []
+    },
+    {
+      "path": "app/app/src/main/java/com/example/chatbar/domain/backup/BackupPreparedSeal.kt",
+      "bytes": 4246,
+      "sha256": "585810b8451686088a9cc0f134bd56030199d3e75011b4ceb7882435d67a8f39",
+      "anchors": []
+    },
+    {
+      "path": "app/app/src/main/java/com/example/chatbar/domain/deletion/DeletionCoordinator.kt",
+      "bytes": 6869,
+      "sha256": "d60fac3c68b93f6c7d2dd6aba29d2815888d7b35cc51e576ef6bb195a9770d3e",
+      "anchors": [
+        {
+          "line": 91,
+          "symbol": "val retainedMomentFiles = momentRepository.getAllPosts()"
+        }
+      ]
+    }
+  ]
+}

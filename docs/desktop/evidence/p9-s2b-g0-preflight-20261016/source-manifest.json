@@ -1,0 +1,36 @@
+{
+  "base": "8820462db2a968b10ef59488985edef21d025973",
+  "contract": "0147960fb408ebec9c23174688421a5a4232f260",
+  "source": "1123c13f9f0826282b7b75537e82eda9732ee73c",
+  "sourceParent": "0147960fb408ebec9c23174688421a5a4232f260",
+  "files": [
+    {
+      "path": ".agents/skills/chatbar-feature-map/SKILL.md",
+      "sha256": "7453fd4920aab6da7d5cbab2b14bb4d9678aa130e5ba7a01f7c7ff46b9267111",
+      "bytes": 15276,
+      "gitBlob": "043ef1059afc375e713c0cf7cdec8ee076083f3f",
+      "workingTreeGitObject": "8f24043ca93e1dacbfc910094873f68fa53dc9b1"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopIndexStartupPreflight.kt",
+      "sha256": "b94841ef2464bd693336c3e0bf02433e103506c8026afb15085562f12bea9288",
+      "bytes": 13536,
+      "gitBlob": "03febf66c0022a22aec41a30b3d903e4d90a634c",
+      "workingTreeGitObject": "03febf66c0022a22aec41a30b3d903e4d90a634c"
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopIndexStartupPreflightTest.kt",
+      "sha256": "591e29a35394d84b6e853d9443548528520b4221404785cba157c52bb0d557de",
+      "bytes": 17506,
+      "gitBlob": "570483e6f9eb7da17af560a6ab1914bae8a56a14",
+      "workingTreeGitObject": "570483e6f9eb7da17af560a6ab1914bae8a56a14"
+    },
+    {
+      "path": "docs/desktop/129_P9_S2B_G0_STARTUP_PREFLIGHT_CONTRACT.md",
+      "sha256": "8ce86365f02384ee9b4b5bc55f10a5ad31f03b454ea7b33b39f4efdeb3cdfcb3",
+      "bytes": 4614,
+      "gitBlob": "0fb17cd57f52e0843d9075eb5bd72e8b2d42d9f3",
+      "workingTreeGitObject": "0fb17cd57f52e0843d9075eb5bd72e8b2d42d9f3"
+    }
+  ]
+}

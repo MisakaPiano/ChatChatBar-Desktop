@@ -1,0 +1,10 @@
+{
+  "fixtureId": "screenshot-r2-d2a4a6e4-05e4-4f1f-b0e6-8d26fc6ce35a",
+  "state": "AWAITING_EXPLICIT_USER_GUI_AUTHORIZATION",
+  "guiAuthorized": false,
+  "maximumLaunches": 1,
+  "guardFile": "manual-start-once.lock",
+  "guardMustNotExistBeforeLaunch": true,
+  "automaticRetry": false,
+  "restartAuthorized": false
+}

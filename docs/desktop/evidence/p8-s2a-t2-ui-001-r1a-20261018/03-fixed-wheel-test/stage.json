@@ -1,0 +1,16 @@
+{
+  "startedUtc": "2026-10-17T20:51:52.2542568+00:00",
+  "finishedUtc": "2026-10-17T20:52:33.9523162+00:00",
+  "durationSeconds": 41.6980594,
+  "exitCode": 0,
+  "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:test --rerun --tests *DesktopFishPresentationTest.management*",
+  "jdk": "Temurin 17.0.20.1",
+  "gradle": "9.1.0",
+  "heap": "-Xmx2048m",
+  "tasks": [
+    ":desktopApp:test",
+    "--rerun",
+    "--tests",
+    "*DesktopFishPresentationTest.management*"
+  ]
+}

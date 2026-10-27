@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" tests="21" skipped="0" failures="1" errors="0" timestamp="2026-10-15T14:58:40.014Z" hostname="DD1" time="7.717">
+  <properties/>
+  <testcase name="document removal during gateway rejects late vectors" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="2.809"/>
+  <testcase name="second batch failure returns no partial prepared summary and no exception text" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.067"/>
+  <testcase name="ownership loss and restart required state block final preparation" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.136"/>
+  <testcase name="vector count dimension finite norm and overflow validation reject the entire preparation" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.159"/>
+  <testcase name="final source proof shares exclusive barrier and never upgrades a normal operation" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.059"/>
+  <testcase name="body mutation during gateway is rejected by final source hash" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.055"/>
+  <testcase name="deleted card and config reject final proof without recreating entities" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.129"/>
+  <testcase name="document directory junction cannot bypass shared source validation" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="2.958"/>
+  <testcase name="pending source uses exact official ordered chunks and metadata without any persistence" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.106"/>
+  <testcase name="legacy embedding namespace is explicit and invalid config never calls gateway" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.1"/>
+  <testcase name="exclusive source snapshot excludes a queued normal writer but gateway does not" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.057"/>
+  <testcase name="high dimension batch capacity is bounded independently of document chunk count" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.087"/>
+  <testcase name="duplicate pair admission is rejected without affecting chat image or repair admission" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.132"/>
+  <testcase name="strict inventory rejects malformed unknown and contradictory source records without writes" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.156">
+    <failure message="java.lang.AssertionError: expected:&lt;SOURCE&gt; but was:&lt;INVENTORY&gt;" type="java.lang.AssertionError">java.lang.AssertionError: expected:&lt;SOURCE&gt; but was:&lt;INVENTORY&gt;
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.failNotEquals(Assert.java:835)
+	at org.junit.Assert.assertEquals(Assert.java:120)
+	at kotlin.test.junit.JUnitAsserter.assertEquals(JUnitSupport.kt:32)
+	at kotlin.test.AssertionsKt__AssertionsKt.assertEquals(Assertions.kt:63)
+	at kotlin.test.AssertionsKt.assertEquals(Unknown Source)
+	at kotlin.test.AssertionsKt__AssertionsKt.assertEquals$default(Assertions.kt:62)
+	at kotlin.test.AssertionsKt.assertEquals$default(Unknown Source)
+	at com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest.rejected(DesktopDocumentRagIndexPreparationTest.kt:75)
+	at com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest.access$rejected(DesktopDocumentRagIndexPreparationTest.kt:13)
+	at com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest$strict inventory rejects malformed unknown and contradictory source records without writes$1$1.invokeSuspend(DesktopDocumentRagIndexPreparationTest.kt:294)
+	at _COROUTINE._BOUNDARY._(CoroutineDebugging.kt:42)
+	at com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest.fixture(DesktopDocumentRagIndexPreparationTest.kt:66)
+	at com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest$strict inventory rejects malformed unknown and contradictory source records without writes$1.invokeSuspend(DesktopDocumentRagIndexPreparationTest.kt:280)
+Caused by: java.lang.AssertionError: expected:&lt;SOURCE&gt; but was:&lt;INVENTORY&gt;
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.failNotEquals(Assert.java:835)
+	at org.junit.Assert.assertEquals(Assert.java:120)
+	at kotlin.test.junit.JUnitAsserter.assertEquals(JUnitSupport.kt:32)
+	at kotlin.test.AssertionsKt__AssertionsKt.assertEquals(Assertions.kt:63)
+	at kotlin.test.AssertionsKt.assertEquals(Unknown Source)
+	at kotlin.test.AssertionsKt__AssertionsKt.assertEquals$default(Assertions.kt:62)
+	at kotlin.test.AssertionsKt.assertEquals$default(Unknown Source)
+	at com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest.rejected(DesktopDocumentRagIndexPreparationTest.kt:75)
+	at com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest.access$rejected(DesktopDocumentRagIndexPreparationTest.kt:13)
+	at com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest$strict inventory rejects malformed unknown and contradictory source records without writes$1$1.invokeSuspend(DesktopDocumentRagIndexPreparationTest.kt:294)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.internal.ScopeCoroutine.afterResume(Scopes.kt:35)
+	at kotlinx.coroutines.AbstractCoroutine.resumeWith(AbstractCoroutine.kt:101)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:47)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:98)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:94)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:70)
+	at kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:48)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source)
+	at com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest.strict inventory rejects malformed unknown and contradictory source records without writes(DesktopDocumentRagIndexPreparationTest.kt:280)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecutor.runTestClass(JUnitTestClassExecutor.java:122)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecutor.execute(JUnitTestClassExecutor.java:68)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecutor.execute(JUnitTestClassExecutor.java:43)
+	at org.gradle.api.internal.tasks.testing.junit.AbstractJUnitTestClassProcessor.processTestClass(AbstractJUnitTestClassProcessor.java:61)
+	at org.gradle.api.internal.tasks.testing.SuiteTestClassProcessor.processTestClass(SuiteTestClassProcessor.java:54)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:36)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:24)
+	at org.gradle.internal.dispatch.ContextClassLoaderDispatch.dispatch(ContextClassLoaderDispatch.java:33)
+	at org.gradle.internal.dispatch.ProxyDispatchAdapter$DispatchingInvocationHandler.invoke(ProxyDispatchAdapter.java:92)
+	at jdk.proxy1/jdk.proxy1.$Proxy4.processTestClass(Unknown Source)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker$2.run(TestWorker.java:177)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.executeAndMaintainThreadName(TestWorker.java:126)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:103)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:63)
+	at org.gradle.process.internal.worker.child.ActionExecutionWorker.execute(ActionExecutionWorker.java:56)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:122)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:72)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.run(GradleWorkerMain.java:69)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.main(GradleWorkerMain.java:74)
+</failure>
+  </testcase>
+  <testcase name="same container shutdown cancels and drains preparation without publishing late state" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.048"/>
+  <testcase name="source path rebinding cannot validate an earlier owned source" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.057"/>
+  <testcase name="indexed source with stale recorded hashes keeps actual evidence and old vectors intact" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.099"/>
+  <testcase name="embedding config mutations cannot reuse an old plan identity" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.207"/>
+  <testcase name="overwritten card identity snapshot is not silently accepted" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.053"/>
+  <testcase name="all source budgets reject before shared chunk allocation or embedding" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.173"/>
+  <testcase name="caller cancellation joins its registered child and preserves source bytes" classname="com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest" time="0.067"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

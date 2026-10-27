@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.chat.StreamingChatServiceThinkingTest" tests="14" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:24.456Z" hostname="DD1" time="0.048">
+  <properties/>
+  <testcase name="memory compression planner uses isolated unlimited non json request" classname="com.example.chatbar.domain.chat.StreamingChatServiceThinkingTest" time="0.012"/>
+  <testcase name="custom static token field remains when no explicit limit exists" classname="com.example.chatbar.domain.chat.StreamingChatServiceThinkingTest" time="0.002"/>
+  <testcase name="default chat and auxiliary requests omit output limits" classname="com.example.chatbar.domain.chat.StreamingChatServiceThinkingTest" time="0.005"/>
+  <testcase name="regular chat keeps configured effort without task override" classname="com.example.chatbar.domain.chat.StreamingChatServiceThinkingTest" time="0.001"/>
+  <testcase name="disable thinking removes reasoning parameters and forces false" classname="com.example.chatbar.domain.chat.StreamingChatServiceThinkingTest" time="0.002"/>
+  <testcase name="unlimited task omits both output aliases without mutating model settings" classname="com.example.chatbar.domain.chat.StreamingChatServiceThinkingTest" time="0.006"/>
+  <testcase name="task budgets become low for models without legacy controls" classname="com.example.chatbar.domain.chat.StreamingChatServiceThinkingTest" time="0.008"/>
+  <testcase name="both off call conventions override budgets and effort with none" classname="com.example.chatbar.domain.chat.StreamingChatServiceThinkingTest" time="0.002"/>
+  <testcase name="legacy controls survive isolated task overrides without effort injection" classname="com.example.chatbar.domain.chat.StreamingChatServiceThinkingTest" time="0.002"/>
+  <testcase name="isolated memory request strips roleplay params and configured output limits" classname="com.example.chatbar.domain.chat.StreamingChatServiceThinkingTest" time="0.001"/>
+  <testcase name="image description converts configured effort to none" classname="com.example.chatbar.domain.chat.StreamingChatServiceThinkingTest" time="0.002"/>
+  <testcase name="requests without task overrides preserve selected model configured budget" classname="com.example.chatbar.domain.chat.StreamingChatServiceThinkingTest" time="0.001"/>
+  <testcase name="memory compression planner never inherits configured thinking" classname="com.example.chatbar.domain.chat.StreamingChatServiceThinkingTest" time="0.001"/>
+  <testcase name="explicit dynamic limit removes static aliases and emits selected token field" classname="com.example.chatbar.domain.chat.StreamingChatServiceThinkingTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

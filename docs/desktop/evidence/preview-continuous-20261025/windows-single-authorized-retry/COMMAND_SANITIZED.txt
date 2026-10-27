@@ -1,0 +1,2 @@
+python -I tools/desktop/windows/native_package_probe.py repair-registration --base <OWNED_SYNTHETIC_RUNTIME> --installer <EXACT_PINNED_A_0.1.1002_MSI> --label user-authorized-repair-once
+Underlying msiexec: /i <same MSI> /qn /norestart /l*v <PRIVATE_LOG> INSTALLDIR=<OWNED_PROGRAM> REBOOT=ReallySuppress MSIRESTARTMANAGERCONTROL=Disable REINSTALL=ALL REINSTALLMODE=vomus

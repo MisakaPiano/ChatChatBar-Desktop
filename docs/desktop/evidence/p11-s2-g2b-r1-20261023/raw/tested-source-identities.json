@@ -1,0 +1,18 @@
+[
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialSourceCensus.kt",
+    "ref": null,
+    "bytes": 10747,
+    "sha256": "fd82ad1db9e4279d8437d417c6a7533aafc9275f2af1eb9b8aa2438710ca3052",
+    "canonicalSha256": "fd82ad1db9e4279d8437d417c6a7533aafc9275f2af1eb9b8aa2438710ca3052",
+    "gitBlob": "9bc54b7c8123418ee7c56694b935988fb2dab180"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialSourceCensusTest.kt",
+    "ref": null,
+    "bytes": 24345,
+    "sha256": "2b96b9661723df4a7672825f91a2a848bcf8646e1d1d45ad620c1e526907d9d8",
+    "canonicalSha256": "2b96b9661723df4a7672825f91a2a848bcf8646e1d1d45ad620c1e526907d9d8",
+    "gitBlob": "39f5d2c07dc61e719365d287acef24a0a959c8e8"
+  }
+]

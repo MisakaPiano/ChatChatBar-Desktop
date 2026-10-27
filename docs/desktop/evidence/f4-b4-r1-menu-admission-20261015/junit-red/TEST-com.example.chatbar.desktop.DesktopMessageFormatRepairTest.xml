@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" tests="31" skipped="0" failures="1" errors="0" timestamp="2026-10-14T18:20:09.262Z" hostname="DD1" time="8.081">
+  <properties/>
+  <testcase name="explicit stop persists Unicode overlay for empty short long emoji and marker prefixes" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.44"/>
+  <testcase name="production default unknown safety gate rejects on the real container repository" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.086"/>
+  <testcase name="observed exception EOF and ordinary cancellation are sealed before late stop" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.237"/>
+  <testcase name="nonassistant invalid candidate missing and corrupt target never request" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.38"/>
+  <testcase name="fault fixture cancellation at message or index write preserves actual repository outcome" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.317"/>
+  <testcase name="D039 repeated failure preserves an applicable recovery point byte for byte" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.198"/>
+  <testcase name="first terminal wins even before the parent continuation resumes" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.001"/>
+  <testcase name="done and error stop collection without waiting for post-terminal flow code" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.158"/>
+  <testcase name="fault fixture commit uncertain retains attempted original cause and durable evidence without retry" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.082"/>
+  <testcase name="uncertain second repair blocks menu and stale controller actions until exact durable reconciliation" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.143"/>
+  <testcase name="selecting B during A repair cannot redirect persistence or cancel A" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.134"/>
+  <testcase name="unset default still follows existing first available model semantics" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.207"/>
+  <testcase name="stop preceding a network cleanup failure retains the stop decision" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.082"/>
+  <testcase name="unknown unsafe and changed derived proof reject without mutation" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.199"/>
+  <testcase name="model configuration errors preserve old recovery or conditionally store notice only" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="1.308"/>
+  <testcase name="unverified commit cannot be forgotten by bounded ordinary task history" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.11"/>
+  <testcase name="same container REAL CHAT and repair deny each other without a second request" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="1.052"/>
+  <testcase name="request preparation renders placeholders and only adds global segmented rules" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.084"/>
+  <testcase name="edits candidate changes regeneration deletion and session deletion reject late results" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.397"/>
+  <testcase name="applied and restore persist across reopen preserving non-owned fields" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.092"/>
+  <testcase name="fault fixture shutdown during failure readback retains original error and durable evidence" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.078"/>
+  <testcase name="configuration error conditional commit keeps conflict storage failure and uncertain distinct" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.245"/>
+  <testcase name="no rules and stale explicit format skip without request or error notice" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.189"/>
+  <testcase name="shutdown after explicit stop but before controlled commit discards preview" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.136"/>
+  <testcase name="repair admission rejects duplicate chat and source image tasks until terminal" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.082"/>
+  <testcase name="error notice only never normalizes base content or commits prefix" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.089"/>
+  <testcase name="trusted Done or Error is not replaced by a later flow cleanup cancellation" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.201"/>
+  <testcase name="shutdown discards preview and drains without STOPPED notice" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.071"/>
+  <testcase name="empty reasoning only EOF and typed errors discard prefix with single request" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="1.017"/>
+  <testcase name="failed strict reread never clears uncertain commit or retries transport" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.089">
+    <failure message="java.io.IOException: synthetic read denied" type="java.io.IOException">java.io.IOException: synthetic read denied
+	at com.example.chatbar.desktop.DesktopMessageFormatRepairTest$failed strict reread never clears uncertain commit or retries transport$1$1$1.invokeSuspend(DesktopMessageFormatRepairTest.kt:611)
+	at com.example.chatbar.desktop.DesktopMessageFormatRepairTest$failed strict reread never clears uncertain commit or retries transport$1$1$1.invoke(DesktopMessageFormatRepairTest.kt)
+	at com.example.chatbar.desktop.DesktopMessageFormatRepairTest$failed strict reread never clears uncertain commit or retries transport$1$1$1.invoke(DesktopMessageFormatRepairTest.kt)
+	at com.example.chatbar.desktop.DesktopMessageFormatRepairTest$Gate.withNormalOperation(DesktopMessageFormatRepairTest.kt:29)
+	at com.example.chatbar.data.local.JsonFileStorage.withNormalOperation(JsonFileStorage.kt:95)
+	at com.example.chatbar.data.local.JsonFileStorage.access$withNormalOperation(JsonFileStorage.kt:38)
+	at com.example.chatbar.data.local.JsonFileStorage$OperationMutex.withLock(JsonFileStorage.kt:105)
+	at com.example.chatbar.data.local.JsonFileStorage.readEntityStrict(JsonFileStorage.kt:198)
+	at com.example.chatbar.data.repository.ChatRepository.readMessageDurable(ChatRepository.kt:464)
+	at com.example.chatbar.desktop.DesktopMessageFormatRepairController.confirmCommitReload(DesktopMessageFormatRepairController.kt:93)
+	at com.example.chatbar.desktop.DesktopMessageFormatRepairTest$failed strict reread never clears uncertain commit or retries transport$1$1.invokeSuspend(DesktopMessageFormatRepairTest.kt:612)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:94)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:70)
+	at kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source)
+	at kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:48)
+	at kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source)
+	at com.example.chatbar.desktop.DesktopMessageFormatRepairTest.failed strict reread never clears uncertain commit or retries transport(DesktopMessageFormatRepairTest.kt:608)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+	at org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecutor.runTestClass(JUnitTestClassExecutor.java:122)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecutor.execute(JUnitTestClassExecutor.java:68)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecutor.execute(JUnitTestClassExecutor.java:43)
+	at org.gradle.api.internal.tasks.testing.junit.AbstractJUnitTestClassProcessor.processTestClass(AbstractJUnitTestClassProcessor.java:61)
+	at org.gradle.api.internal.tasks.testing.SuiteTestClassProcessor.processTestClass(SuiteTestClassProcessor.java:54)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:36)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:24)
+	at org.gradle.internal.dispatch.ContextClassLoaderDispatch.dispatch(ContextClassLoaderDispatch.java:33)
+	at org.gradle.internal.dispatch.ProxyDispatchAdapter$DispatchingInvocationHandler.invoke(ProxyDispatchAdapter.java:92)
+	at jdk.proxy1/jdk.proxy1.$Proxy4.processTestClass(Unknown Source)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker$2.run(TestWorker.java:177)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.executeAndMaintainThreadName(TestWorker.java:126)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:103)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:63)
+	at org.gradle.process.internal.worker.child.ActionExecutionWorker.execute(ActionExecutionWorker.java:56)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:122)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:72)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.run(GradleWorkerMain.java:69)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.main(GradleWorkerMain.java:74)
+</failure>
+  </testcase>
+  <testcase name="unchanged marker and identical body retain applied and stopped recovery points" classname="com.example.chatbar.desktop.DesktopMessageFormatRepairTest" time="0.175"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

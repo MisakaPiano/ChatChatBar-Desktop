@@ -1,0 +1,2 @@
+<?xml version='1.0' encoding='utf-8'?>
+<testsuite name="NewFull1112RestrictedSession" tests="1" failures="0" errors="0" skipped="0"><testcase name="test_msi_operation_contract.NativeOperationContract.test_restricted_installer_session_retains_authored_seals_after_costing" time="1.125" /></testsuite>

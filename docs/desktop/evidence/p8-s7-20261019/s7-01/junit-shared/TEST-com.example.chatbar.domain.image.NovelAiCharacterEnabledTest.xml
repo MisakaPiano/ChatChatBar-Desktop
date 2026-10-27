@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.image.NovelAiCharacterEnabledTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-19T11:35:17.872Z" hostname="DD1" time="0.032">
+  <properties/>
+  <testcase name="both models omit folded positive negative text expansion and coordinates" classname="com.example.chatbar.domain.image.NovelAiCharacterEnabledTest" time="0.02"/>
+  <testcase name="automatic centers use active order and clipboard preserves folded roles beyond capacity" classname="com.example.chatbar.domain.image.NovelAiCharacterEnabledTest" time="0.007"/>
+  <testcase name="all folded roles yield base only request and disable coordinates" classname="com.example.chatbar.domain.image.NovelAiCharacterEnabledTest" time="0.002"/>
+  <testcase name="old roles default active and folded content survives draft and history reload" classname="com.example.chatbar.domain.image.NovelAiCharacterEnabledTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

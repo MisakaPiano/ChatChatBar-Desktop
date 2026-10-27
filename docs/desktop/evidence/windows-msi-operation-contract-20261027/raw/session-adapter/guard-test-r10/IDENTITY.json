@@ -1,0 +1,23 @@
+{
+  "sha256": "d852e0ae0f694f64d896bcf14da3cbf0da40f3c78e4a6ce0b9368028a985b5fd",
+  "bytes": 219648,
+  "sourceSha256": "6f4977b5200e999b87814c2d145699a776c1e3a7c5a96e41f0067e0cc930b0cc",
+  "operationSourceSha256": "790e8ff5494e33aa55583fc641cfa8f969f1cfaf6b2fd23ec36711953893cd79",
+  "testExports": true,
+  "exports": [
+    "CcbResolveInstallDirectory",
+    "CcbTestAuthoredComponents",
+    "CcbTestComponentContract",
+    "CcbTestComponentContractWithProof",
+    "CcbTestDirectory",
+    "CcbTestFullLocalPlan",
+    "CcbTestLocator",
+    "CcbTestPhysical",
+    "CcbTestProductState",
+    "CcbTestResolvedTargets",
+    "CcbTestSealedTables",
+    "CcbTestSharedLayout",
+    "CcbValidateOperation"
+  ],
+  "msiBuiltOrExecuted": false
+}

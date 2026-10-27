@@ -1,0 +1,2486 @@
+[
+  {
+    "source": "01-chain-status/command.txt",
+    "published": "01-chain-status/command.txt",
+    "originalBytes": 252,
+    "originalSha256": "9ce774a9e8a88e0c76fcee3bdd1d01bb3ef7f413b93170ba0e0fb5835abf716b",
+    "publishedBytes": 252,
+    "publishedSha256": "9ce774a9e8a88e0c76fcee3bdd1d01bb3ef7f413b93170ba0e0fb5835abf716b",
+    "redactions": []
+  },
+  {
+    "source": "01-chain-status/gradle.stderr.log",
+    "published": "01-chain-status/gradle.stderr.log",
+    "originalBytes": 0,
+    "originalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "publishedBytes": 0,
+    "publishedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "redactions": []
+  },
+  {
+    "source": "01-chain-status/gradle.stdout.log",
+    "published": "01-chain-status/gradle.stdout.log",
+    "originalBytes": 2179,
+    "originalSha256": "6076e6beb6f345f3014428a6ba80aac723844fa73bc3ea07d7688f5e63a0fdf2",
+    "publishedBytes": 2179,
+    "publishedSha256": "6076e6beb6f345f3014428a6ba80aac723844fa73bc3ea07d7688f5e63a0fdf2",
+    "redactions": []
+  },
+  {
+    "source": "01-chain-status/http-followup-diagnostics.jsonl",
+    "published": "01-chain-status/http-followup-diagnostics.jsonl",
+    "originalBytes": 2159,
+    "originalSha256": "31183f6cd8a8fe849ef1394825b5635d24f6027bf5db88877b2d44abdc0376e3",
+    "publishedBytes": 2159,
+    "publishedSha256": "31183f6cd8a8fe849ef1394825b5635d24f6027bf5db88877b2d44abdc0376e3",
+    "redactions": []
+  },
+  {
+    "source": "01-chain-status/junit/TEST-com.example.chatbar.desktop.DesktopFishSampleTest.xml",
+    "published": "01-chain-status/junit/TEST-com.example.chatbar.desktop.DesktopFishSampleTest.xml",
+    "originalBytes": 2877,
+    "originalSha256": "969d05158003465922142c782b768f03c5ab3490a5187a7d3223ea1cd8f8618a",
+    "publishedBytes": 2877,
+    "publishedSha256": "969d05158003465922142c782b768f03c5ab3490a5187a7d3223ea1cd8f8618a",
+    "redactions": []
+  },
+  {
+    "source": "01-chain-status/process.json",
+    "published": "01-chain-status/process.json",
+    "originalBytes": 110,
+    "originalSha256": "d2cc68975aede826984b97dddaed087e6230715b12aa4bd4d109623ede6d1ef6",
+    "publishedBytes": 110,
+    "publishedSha256": "d2cc68975aede826984b97dddaed087e6230715b12aa4bd4d109623ede6d1ef6",
+    "redactions": []
+  },
+  {
+    "source": "01-chain-status/resources.jsonl",
+    "published": "01-chain-status/resources.jsonl",
+    "originalBytes": 1664,
+    "originalSha256": "479671203e4625f2cbf7f3b3eedfd49e5dbc139f562917e610f9c12538381d1a",
+    "publishedBytes": 1664,
+    "publishedSha256": "479671203e4625f2cbf7f3b3eedfd49e5dbc139f562917e610f9c12538381d1a",
+    "redactions": []
+  },
+  {
+    "source": "01-chain-status/stage.json",
+    "published": "01-chain-status/stage.json",
+    "originalBytes": 640,
+    "originalSha256": "6350920dd78802e7bac1e31af194789903502f388ceb5fde4abcfdc9aa438ab4",
+    "publishedBytes": 640,
+    "publishedSha256": "6350920dd78802e7bac1e31af194789903502f388ceb5fde4abcfdc9aa438ab4",
+    "redactions": []
+  },
+  {
+    "source": "02-f2-focused/command.txt",
+    "published": "02-f2-focused/command.txt",
+    "originalBytes": 308,
+    "originalSha256": "768cf7fb26d1f6779c7aedeabe0057b29e0b2d923d81d7b9c4275111ef030aa4",
+    "publishedBytes": 308,
+    "publishedSha256": "768cf7fb26d1f6779c7aedeabe0057b29e0b2d923d81d7b9c4275111ef030aa4",
+    "redactions": []
+  },
+  {
+    "source": "02-f2-focused/gradle.stderr.log",
+    "published": "02-f2-focused/gradle.stderr.log",
+    "originalBytes": 0,
+    "originalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "publishedBytes": 0,
+    "publishedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "redactions": []
+  },
+  {
+    "source": "02-f2-focused/gradle.stdout.log",
+    "published": "02-f2-focused/gradle.stdout.log",
+    "originalBytes": 2190,
+    "originalSha256": "82b53552d5671ddc6f00b1f463531ea844d034e1c25d92040d4aa459ce217476",
+    "publishedBytes": 2190,
+    "publishedSha256": "82b53552d5671ddc6f00b1f463531ea844d034e1c25d92040d4aa459ce217476",
+    "redactions": []
+  },
+  {
+    "source": "02-f2-focused/http-followup-diagnostics.jsonl",
+    "published": "02-f2-focused/http-followup-diagnostics.jsonl",
+    "originalBytes": 2159,
+    "originalSha256": "31183f6cd8a8fe849ef1394825b5635d24f6027bf5db88877b2d44abdc0376e3",
+    "publishedBytes": 2159,
+    "publishedSha256": "31183f6cd8a8fe849ef1394825b5635d24f6027bf5db88877b2d44abdc0376e3",
+    "redactions": []
+  },
+  {
+    "source": "02-f2-focused/junit/TEST-com.example.chatbar.desktop.DesktopFishPresentationTest.xml",
+    "published": "02-f2-focused/junit/TEST-com.example.chatbar.desktop.DesktopFishPresentationTest.xml",
+    "originalBytes": 2416,
+    "originalSha256": "abea262c48813beb8f25c93bd4c64a2b7f9e8bf7afb32510a68edcedf12c0510",
+    "publishedBytes": 2416,
+    "publishedSha256": "abea262c48813beb8f25c93bd4c64a2b7f9e8bf7afb32510a68edcedf12c0510",
+    "redactions": []
+  },
+  {
+    "source": "02-f2-focused/junit/TEST-com.example.chatbar.desktop.DesktopFishSampleTest.xml",
+    "published": "02-f2-focused/junit/TEST-com.example.chatbar.desktop.DesktopFishSampleTest.xml",
+    "originalBytes": 4289,
+    "originalSha256": "434b8f9a00809e2cc93ee299512e9151dbb034d019a0a5ba4eee9a6d55ce69ea",
+    "publishedBytes": 4289,
+    "publishedSha256": "434b8f9a00809e2cc93ee299512e9151dbb034d019a0a5ba4eee9a6d55ce69ea",
+    "redactions": []
+  },
+  {
+    "source": "02-f2-focused/process.json",
+    "published": "02-f2-focused/process.json",
+    "originalBytes": 109,
+    "originalSha256": "03d4cc66b24011424d49f769ac51fb2e51f9bacbe4f4612204ed2243efb51a24",
+    "publishedBytes": 109,
+    "publishedSha256": "03d4cc66b24011424d49f769ac51fb2e51f9bacbe4f4612204ed2243efb51a24",
+    "redactions": []
+  },
+  {
+    "source": "02-f2-focused/resources.jsonl",
+    "published": "02-f2-focused/resources.jsonl",
+    "originalBytes": 1270,
+    "originalSha256": "4204804bd0dba02b4fb8fc53cbfe63b478c56b3c025c47bb58eda64cdd0abfed",
+    "publishedBytes": 1270,
+    "publishedSha256": "4204804bd0dba02b4fb8fc53cbfe63b478c56b3c025c47bb58eda64cdd0abfed",
+    "redactions": []
+  },
+  {
+    "source": "02-f2-focused/stage.json",
+    "published": "02-f2-focused/stage.json",
+    "originalBytes": 768,
+    "originalSha256": "2f75129c8e314189012f71c62c1ace81e8ba9c43ce002beb95e18b03714d40cd",
+    "publishedBytes": 768,
+    "publishedSha256": "2f75129c8e314189012f71c62c1ace81e8ba9c43ce002beb95e18b03714d40cd",
+    "redactions": []
+  },
+  {
+    "source": "03-f1-focused/audio-process.jsonl",
+    "published": "03-f1-focused/audio-process.jsonl",
+    "originalBytes": 191,
+    "originalSha256": "2794e2ee178f037e8b320080ae8c4c932c9231424e283d80b1f605d0423e79e2",
+    "publishedBytes": 191,
+    "publishedSha256": "2794e2ee178f037e8b320080ae8c4c932c9231424e283d80b1f605d0423e79e2",
+    "redactions": []
+  },
+  {
+    "source": "03-f1-focused/command.txt",
+    "published": "03-f1-focused/command.txt",
+    "originalBytes": 578,
+    "originalSha256": "692c70ca4a0b189ea9cbcea989ad7014f2eae99ebf5919a445e09cddac44a695",
+    "publishedBytes": 578,
+    "publishedSha256": "692c70ca4a0b189ea9cbcea989ad7014f2eae99ebf5919a445e09cddac44a695",
+    "redactions": []
+  },
+  {
+    "source": "03-f1-focused/gradle.stderr.log",
+    "published": "03-f1-focused/gradle.stderr.log",
+    "originalBytes": 0,
+    "originalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "publishedBytes": 0,
+    "publishedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "redactions": []
+  },
+  {
+    "source": "03-f1-focused/gradle.stdout.log",
+    "published": "03-f1-focused/gradle.stdout.log",
+    "originalBytes": 2190,
+    "originalSha256": "3cfed13a44cd7dc0f40ed47a56ac7adc0bf3b3c842741e310c6ea31e6ba419ae",
+    "publishedBytes": 2190,
+    "publishedSha256": "3cfed13a44cd7dc0f40ed47a56ac7adc0bf3b3c842741e310c6ea31e6ba419ae",
+    "redactions": []
+  },
+  {
+    "source": "03-f1-focused/junit/TEST-com.example.chatbar.desktop.DesktopFishAudioLibraryTest.xml",
+    "published": "03-f1-focused/junit/TEST-com.example.chatbar.desktop.DesktopFishAudioLibraryTest.xml",
+    "originalBytes": 2094,
+    "originalSha256": "a73b79d2cb4fb4d2ac807801bdc74294672d628ed7f7e5e3106563276bd81b33",
+    "publishedBytes": 2094,
+    "publishedSha256": "a73b79d2cb4fb4d2ac807801bdc74294672d628ed7f7e5e3106563276bd81b33",
+    "redactions": []
+  },
+  {
+    "source": "03-f1-focused/junit/TEST-com.example.chatbar.desktop.DesktopFishPreviewTest.xml",
+    "published": "03-f1-focused/junit/TEST-com.example.chatbar.desktop.DesktopFishPreviewTest.xml",
+    "originalBytes": 1916,
+    "originalSha256": "c57bbc64d61fb4511d279ff4fd288836397a3915895e4fd3f605827040aab5f3",
+    "publishedBytes": 1916,
+    "publishedSha256": "c57bbc64d61fb4511d279ff4fd288836397a3915895e4fd3f605827040aab5f3",
+    "redactions": []
+  },
+  {
+    "source": "03-f1-focused/junit/TEST-com.example.chatbar.desktop.DesktopFishPreviewWindowsTest.xml",
+    "published": "03-f1-focused/junit/TEST-com.example.chatbar.desktop.DesktopFishPreviewWindowsTest.xml",
+    "originalBytes": 874,
+    "originalSha256": "073bdd5fd5f82754f7c71049b97d085b7e2f311cd41c7d22ac365ff858628f4c",
+    "publishedBytes": 874,
+    "publishedSha256": "073bdd5fd5f82754f7c71049b97d085b7e2f311cd41c7d22ac365ff858628f4c",
+    "redactions": []
+  },
+  {
+    "source": "03-f1-focused/junit/TEST-com.example.chatbar.desktop.DesktopFishSettingsBindingTest.xml",
+    "published": "03-f1-focused/junit/TEST-com.example.chatbar.desktop.DesktopFishSettingsBindingTest.xml",
+    "originalBytes": 3564,
+    "originalSha256": "fd5728efd0940ef7a7e75e105a91d12700d355198b86d64e1de5478bf6cfe71e",
+    "publishedBytes": 3564,
+    "publishedSha256": "fd5728efd0940ef7a7e75e105a91d12700d355198b86d64e1de5478bf6cfe71e",
+    "redactions": []
+  },
+  {
+    "source": "03-f1-focused/junit/TEST-com.example.chatbar.desktop.DesktopModelSettingsControllerTest.xml",
+    "published": "03-f1-focused/junit/TEST-com.example.chatbar.desktop.DesktopModelSettingsControllerTest.xml",
+    "originalBytes": 3020,
+    "originalSha256": "4bfa69894957041f7656fb78c26f48ab8669040e9babc990bb7f73ae429a7b25",
+    "publishedBytes": 3020,
+    "publishedSha256": "4bfa69894957041f7656fb78c26f48ab8669040e9babc990bb7f73ae429a7b25",
+    "redactions": []
+  },
+  {
+    "source": "03-f1-focused/junit/TEST-com.example.chatbar.desktop.DesktopSettingsCoherenceTest.xml",
+    "published": "03-f1-focused/junit/TEST-com.example.chatbar.desktop.DesktopSettingsCoherenceTest.xml",
+    "originalBytes": 1536,
+    "originalSha256": "5e3f412250e332f36f355a8b7a454b86f3d3c77ee4a37fd01357fced97b5bd1c",
+    "publishedBytes": 1536,
+    "publishedSha256": "5e3f412250e332f36f355a8b7a454b86f3d3c77ee4a37fd01357fced97b5bd1c",
+    "redactions": []
+  },
+  {
+    "source": "03-f1-focused/process.json",
+    "published": "03-f1-focused/process.json",
+    "originalBytes": 110,
+    "originalSha256": "b47f66cc55aa4ebcb2935539db00517b7d9b2637e2feac58a796b465fc90cfe3",
+    "publishedBytes": 110,
+    "publishedSha256": "b47f66cc55aa4ebcb2935539db00517b7d9b2637e2feac58a796b465fc90cfe3",
+    "redactions": []
+  },
+  {
+    "source": "03-f1-focused/resources.jsonl",
+    "published": "03-f1-focused/resources.jsonl",
+    "originalBytes": 1270,
+    "originalSha256": "2ec1a91d42bea390791d26a54fc8b8afef169f0cdedc0795b1efc43a4717d942",
+    "publishedBytes": 1270,
+    "publishedSha256": "2ec1a91d42bea390791d26a54fc8b8afef169f0cdedc0795b1efc43a4717d942",
+    "redactions": []
+  },
+  {
+    "source": "03-f1-focused/stage.json",
+    "published": "03-f1-focused/stage.json",
+    "originalBytes": 1372,
+    "originalSha256": "3a7098a27f406ac4838fce471d603f9045ee4ac7925b43e78a564a843e5b1814",
+    "publishedBytes": 1372,
+    "publishedSha256": "3a7098a27f406ac4838fce471d603f9045ee4ac7925b43e78a564a843e5b1814",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/audio-process.jsonl",
+    "published": "04-bounded-desktop/audio-process.jsonl",
+    "originalBytes": 190,
+    "originalSha256": "3ecfdce78f699859f7d1ac24e4fea9d231fbc625a472b03bed985746a6cf6afb",
+    "publishedBytes": 190,
+    "publishedSha256": "3ecfdce78f699859f7d1ac24e4fea9d231fbc625a472b03bed985746a6cf6afb",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/child-10840-1792321362.log",
+    "published": "04-bounded-desktop/child-10840-1792321362.log",
+    "originalBytes": 19,
+    "originalSha256": "2ffc56bc08390c5112031438732395a6154c4d1f7cc043e1c4650cb77c264245",
+    "publishedBytes": 19,
+    "publishedSha256": "2ffc56bc08390c5112031438732395a6154c4d1f7cc043e1c4650cb77c264245",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/child-11672-1792321363.log",
+    "published": "04-bounded-desktop/child-11672-1792321363.log",
+    "originalBytes": 33,
+    "originalSha256": "a0810c34b60b13f8096e399a53a251fc9296c780baced55a26af08d5de66d445",
+    "publishedBytes": 33,
+    "publishedSha256": "a0810c34b60b13f8096e399a53a251fc9296c780baced55a26af08d5de66d445",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/child-18480-1792321364.log",
+    "published": "04-bounded-desktop/child-18480-1792321364.log",
+    "originalBytes": 16,
+    "originalSha256": "15c252fe691c4da45ea00c929662d9b325a9e3a3c27f2d5511f5961600cbbfd8",
+    "publishedBytes": 16,
+    "publishedSha256": "15c252fe691c4da45ea00c929662d9b325a9e3a3c27f2d5511f5961600cbbfd8",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/child-26036-1792321364.log",
+    "published": "04-bounded-desktop/child-26036-1792321364.log",
+    "originalBytes": 19,
+    "originalSha256": "2ffc56bc08390c5112031438732395a6154c4d1f7cc043e1c4650cb77c264245",
+    "publishedBytes": 19,
+    "publishedSha256": "2ffc56bc08390c5112031438732395a6154c4d1f7cc043e1c4650cb77c264245",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/child-32996-1792321369.log",
+    "published": "04-bounded-desktop/child-32996-1792321369.log",
+    "originalBytes": 19,
+    "originalSha256": "2ffc56bc08390c5112031438732395a6154c4d1f7cc043e1c4650cb77c264245",
+    "publishedBytes": 19,
+    "publishedSha256": "2ffc56bc08390c5112031438732395a6154c4d1f7cc043e1c4650cb77c264245",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/child-9084-1792321361.log",
+    "published": "04-bounded-desktop/child-9084-1792321361.log",
+    "originalBytes": 18,
+    "originalSha256": "8d33e1bc317bcbb7d52a1f92d400ed52f74d1425404b124102acafc831c94bdd",
+    "publishedBytes": 18,
+    "publishedSha256": "8d33e1bc317bcbb7d52a1f92d400ed52f74d1425404b124102acafc831c94bdd",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/command.txt",
+    "published": "04-bounded-desktop/command.txt",
+    "originalBytes": 248,
+    "originalSha256": "9667764442a0ee1c2f56be39b00dfcabfa7462e0830aad5bf19f4537e51d45cf",
+    "publishedBytes": 248,
+    "publishedSha256": "9667764442a0ee1c2f56be39b00dfcabfa7462e0830aad5bf19f4537e51d45cf",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/gradle.stderr.log",
+    "published": "04-bounded-desktop/gradle.stderr.log",
+    "originalBytes": 0,
+    "originalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "publishedBytes": 0,
+    "publishedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/gradle.stdout.log",
+    "published": "04-bounded-desktop/gradle.stdout.log",
+    "originalBytes": 2193,
+    "originalSha256": "4955e3fe159acae19630e7707febc4d4d306a24f8580d3b08a49bbd3ef89f07a",
+    "publishedBytes": 2193,
+    "publishedSha256": "4955e3fe159acae19630e7707febc4d4d306a24f8580d3b08a49bbd3ef89f07a",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/http-followup-diagnostics.jsonl",
+    "published": "04-bounded-desktop/http-followup-diagnostics.jsonl",
+    "originalBytes": 2159,
+    "originalSha256": "31183f6cd8a8fe849ef1394825b5635d24f6027bf5db88877b2d44abdc0376e3",
+    "publishedBytes": 2159,
+    "publishedSha256": "31183f6cd8a8fe849ef1394825b5635d24f6027bf5db88877b2d44abdc0376e3",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopAlphaChatControllerTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopAlphaChatControllerTest.xml",
+    "originalBytes": 1208,
+    "originalSha256": "49e54a790e9a35aa272cf870816266ed5943c4fc99c2b36a34bb817187fea2e8",
+    "publishedBytes": 1208,
+    "publishedSha256": "49e54a790e9a35aa272cf870816266ed5943c4fc99c2b36a34bb817187fea2e8",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopAppearanceControllerTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopAppearanceControllerTest.xml",
+    "originalBytes": 1416,
+    "originalSha256": "c89bc0c42e517c64e594896403634861523682057739e2147b6215d0132784c1",
+    "publishedBytes": 1416,
+    "publishedSha256": "c89bc0c42e517c64e594896403634861523682057739e2147b6215d0132784c1",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopApplicationHomeTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopApplicationHomeTest.xml",
+    "originalBytes": 1146,
+    "originalSha256": "ff56b9ad9bbeb348509b0b97c29abeee67015b05602f060c11168aeb1d969670",
+    "publishedBytes": 1146,
+    "publishedSha256": "ff56b9ad9bbeb348509b0b97c29abeee67015b05602f060c11168aeb1d969670",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopApplicationLifecycleTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopApplicationLifecycleTest.xml",
+    "originalBytes": 7328,
+    "originalSha256": "1aa96bb1d15757b6701d58f18f1a92b3d7c38b361098ff2f2facb3f544851d58",
+    "publishedBytes": 7328,
+    "publishedSha256": "1aa96bb1d15757b6701d58f18f1a92b3d7c38b361098ff2f2facb3f544851d58",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopAssistantImageActionTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopAssistantImageActionTest.xml",
+    "originalBytes": 1420,
+    "originalSha256": "a8cdb845e9d82caeac0765bc827dc92fc871ea40fcc6d62f5510503d45ee36fb",
+    "publishedBytes": 1420,
+    "publishedSha256": "a8cdb845e9d82caeac0765bc827dc92fc871ea40fcc6d62f5510503d45ee36fb",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopAssistantImagePresentationTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopAssistantImagePresentationTest.xml",
+    "originalBytes": 1133,
+    "originalSha256": "a84d7ce744e182957f1103af1231988205a915448b16bb6140148796fde024b0",
+    "publishedBytes": 1133,
+    "publishedSha256": "a84d7ce744e182957f1103af1231988205a915448b16bb6140148796fde024b0",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopAutomaticBackupRuntimeTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopAutomaticBackupRuntimeTest.xml",
+    "originalBytes": 3414,
+    "originalSha256": "41a5fe904bb61f75d24b28e39d65676a73015ec81baebe894ee4cefe72e5d7b1",
+    "publishedBytes": 3414,
+    "publishedSha256": "41a5fe904bb61f75d24b28e39d65676a73015ec81baebe894ee4cefe72e5d7b1",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopAutomaticBackupSchedulerTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopAutomaticBackupSchedulerTest.xml",
+    "originalBytes": 2247,
+    "originalSha256": "7cd17e03a5bee31fe16154f10c2809ff8f9c8870ad72e140850dae8e387f81ca",
+    "publishedBytes": 2247,
+    "publishedSha256": "7cd17e03a5bee31fe16154f10c2809ff8f9c8870ad72e140850dae8e387f81ca",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopAutomaticBackupSettingsControllerTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopAutomaticBackupSettingsControllerTest.xml",
+    "originalBytes": 3142,
+    "originalSha256": "9f126683f866f3ac303b28795ebbe142452c2d699dab6bfd4aedccfe10504681",
+    "publishedBytes": 3142,
+    "publishedSha256": "9f126683f866f3ac303b28795ebbe142452c2d699dab6bfd4aedccfe10504681",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopAutomaticBackupSettingsPresentationTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopAutomaticBackupSettingsPresentationTest.xml",
+    "originalBytes": 2044,
+    "originalSha256": "42ade8d627ef02c4bf3c7ff1b5782dd914a76958fd76dfd098728ba7cc803b7a",
+    "publishedBytes": 2044,
+    "publishedSha256": "42ade8d627ef02c4bf3c7ff1b5782dd914a76958fd76dfd098728ba7cc803b7a",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopB1CIntegrationTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopB1CIntegrationTest.xml",
+    "originalBytes": 890,
+    "originalSha256": "1143de7eba8ba67fa567a19c1dc31fed25fd2da9fa9e139841e8b9d0c12a07db",
+    "publishedBytes": 890,
+    "publishedSha256": "1143de7eba8ba67fa567a19c1dc31fed25fd2da9fa9e139841e8b9d0c12a07db",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopBootstrapAuthorityProcessTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopBootstrapAuthorityProcessTest.xml",
+    "originalBytes": 864,
+    "originalSha256": "1e5414f37d4f7f2f750e76e8d00929d4be24d14cd65629b5a7276a1e7a6f6cc6",
+    "publishedBytes": 864,
+    "publishedSha256": "1e5414f37d4f7f2f750e76e8d00929d4be24d14cd65629b5a7276a1e7a6f6cc6",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopBootstrapAuthorityTransactionTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopBootstrapAuthorityTransactionTest.xml",
+    "originalBytes": 3425,
+    "originalSha256": "72b25c235a019f18a961bd38aa576a605b0a163be82f7be0c92fc3ce7d7b14d6",
+    "publishedBytes": 3425,
+    "publishedSha256": "72b25c235a019f18a961bd38aa576a605b0a163be82f7be0c92fc3ce7d7b14d6",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopBootstrapScreenSemanticsTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopBootstrapScreenSemanticsTest.xml",
+    "originalBytes": 521,
+    "originalSha256": "2bc5a25ccd223e97ce9087871fb775e3805ed0f93929f510594ebc411e41c6c5",
+    "publishedBytes": 521,
+    "publishedSha256": "2bc5a25ccd223e97ce9087871fb775e3805ed0f93929f510594ebc411e41c6c5",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopBootstrapSettingsStoreTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopBootstrapSettingsStoreTest.xml",
+    "originalBytes": 2194,
+    "originalSha256": "e24b06b0ff2801c46caa61dc7ab6d46bc0eb1d90d2d1b19e73591a689c0af579",
+    "publishedBytes": 2194,
+    "publishedSha256": "e24b06b0ff2801c46caa61dc7ab6d46bc0eb1d90d2d1b19e73591a689c0af579",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopBundledAssetReaderTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopBundledAssetReaderTest.xml",
+    "originalBytes": 678,
+    "originalSha256": "542ec6c757a7c05c1589d8c6d04588c8a473c00eeed374a01954840b4aeb5dc7",
+    "publishedBytes": 678,
+    "publishedSha256": "542ec6c757a7c05c1589d8c6d04588c8a473c00eeed374a01954840b4aeb5dc7",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopCharacterCardPngRendererTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopCharacterCardPngRendererTest.xml",
+    "originalBytes": 675,
+    "originalSha256": "4091c9149e9da33fc464dedb75c1cdfb742813b2225dc542b18f20f01a90f959",
+    "publishedBytes": 675,
+    "publishedSha256": "4091c9149e9da33fc464dedb75c1cdfb742813b2225dc542b18f20f01a90f959",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopCharacterDocumentRagCleanupTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopCharacterDocumentRagCleanupTest.xml",
+    "originalBytes": 519,
+    "originalSha256": "40ce1b4c9d1e760747cb1ef4b0455c318731b719cb7d401eb1f4257b21f2a2e0",
+    "publishedBytes": 519,
+    "publishedSha256": "40ce1b4c9d1e760747cb1ef4b0455c318731b719cb7d401eb1f4257b21f2a2e0",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopCharacterEditorControllerTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopCharacterEditorControllerTest.xml",
+    "originalBytes": 10670,
+    "originalSha256": "c8d0092472b9e149d26dc1ecec577994ba186d69a1667bfa6e8408f121a1008a",
+    "publishedBytes": 10670,
+    "publishedSha256": "c8d0092472b9e149d26dc1ecec577994ba186d69a1667bfa6e8408f121a1008a",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopCharacterResourceStoreTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopCharacterResourceStoreTest.xml",
+    "originalBytes": 1202,
+    "originalSha256": "98c61fcc68467a2eefaeedadd457c5fec2c60851d04febe1085fb958d8cb33f4",
+    "publishedBytes": 1202,
+    "publishedSha256": "98c61fcc68467a2eefaeedadd457c5fec2c60851d04febe1085fb958d8cb33f4",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopCharacterSessionIntegrationTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopCharacterSessionIntegrationTest.xml",
+    "originalBytes": 536,
+    "originalSha256": "b510ebf53e6007419947c25be4acb63e1e8d00e69333a47238b3174c8748b6fd",
+    "publishedBytes": 536,
+    "publishedSha256": "b510ebf53e6007419947c25be4acb63e1e8d00e69333a47238b3174c8748b6fd",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopCharacterTransferGateTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopCharacterTransferGateTest.xml",
+    "originalBytes": 510,
+    "originalSha256": "f7c18837e2bbc611d04fb24d65eb0356e8899150fdf38ebf82cec787026f1e86",
+    "publishedBytes": 510,
+    "publishedSha256": "f7c18837e2bbc611d04fb24d65eb0356e8899150fdf38ebf82cec787026f1e86",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopCharacterTransferIntegrationTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopCharacterTransferIntegrationTest.xml",
+    "originalBytes": 722,
+    "originalSha256": "88e2adbb1cec27cb2c9a4ecf9d1098572e930afee2fe919a3b4d93ce6309514f",
+    "publishedBytes": 722,
+    "publishedSha256": "88e2adbb1cec27cb2c9a4ecf9d1098572e930afee2fe919a3b4d93ce6309514f",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopChatBubbleParityTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopChatBubbleParityTest.xml",
+    "originalBytes": 2486,
+    "originalSha256": "0155f28b3c5e5549536be8edeba080d715cba814ce11ae9fed5ad917258c1bc4",
+    "publishedBytes": 2486,
+    "publishedSha256": "0155f28b3c5e5549536be8edeba080d715cba814ce11ae9fed5ad917258c1bc4",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopChatDensityTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopChatDensityTest.xml",
+    "originalBytes": 1482,
+    "originalSha256": "f56df2a898fd38409fe7d832b662d992cdbd2440fce59b00becc062bdafe06bc",
+    "publishedBytes": 1482,
+    "publishedSha256": "f56df2a898fd38409fe7d832b662d992cdbd2440fce59b00becc062bdafe06bc",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopChatDraftPersistenceTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopChatDraftPersistenceTest.xml",
+    "originalBytes": 1384,
+    "originalSha256": "d6a573221463c43a104767a21dadac6ba3c3fb02f16ddd83e1b28d724622ba95",
+    "publishedBytes": 1384,
+    "publishedSha256": "d6a573221463c43a104767a21dadac6ba3c3fb02f16ddd83e1b28d724622ba95",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopChatFloatingNavigationTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopChatFloatingNavigationTest.xml",
+    "originalBytes": 1565,
+    "originalSha256": "90c627704f7bb30a4db9bc05d8094bf5329dce74f0afc786702293ca8f22a964",
+    "publishedBytes": 1565,
+    "publishedSha256": "90c627704f7bb30a4db9bc05d8094bf5329dce74f0afc786702293ca8f22a964",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopChatImageProcessCardTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopChatImageProcessCardTest.xml",
+    "originalBytes": 930,
+    "originalSha256": "b2961a33606d99cea2947cf3d6d5bfd16fc9429112b51056852d4d1a698e5955",
+    "publishedBytes": 930,
+    "publishedSha256": "b2961a33606d99cea2947cf3d6d5bfd16fc9429112b51056852d4d1a698e5955",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopChatNavigationTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopChatNavigationTest.xml",
+    "originalBytes": 1688,
+    "originalSha256": "30cf864e916c52c807220510dc7ac2fe56e5f6ed909b264799fab812328377c4",
+    "publishedBytes": 1688,
+    "publishedSha256": "30cf864e916c52c807220510dc7ac2fe56e5f6ed909b264799fab812328377c4",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopChatReadingLifecycleTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopChatReadingLifecycleTest.xml",
+    "originalBytes": 2905,
+    "originalSha256": "7da4004f2565d6a75ddabbfbb3bcde9f5378ae3e91dbcbc0c14475d02f50d69c",
+    "publishedBytes": 2905,
+    "publishedSha256": "7da4004f2565d6a75ddabbfbb3bcde9f5378ae3e91dbcbc0c14475d02f50d69c",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopChatReadingPositionWriterTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopChatReadingPositionWriterTest.xml",
+    "originalBytes": 1422,
+    "originalSha256": "2da33f079388ca4f5f90b895f025ff54793ad12f135dddc179d8190ecad0320e",
+    "publishedBytes": 1422,
+    "publishedSha256": "2da33f079388ca4f5f90b895f025ff54793ad12f135dddc179d8190ecad0320e",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopChatViewportTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopChatViewportTest.xml",
+    "originalBytes": 2983,
+    "originalSha256": "08948c77dcd5dba1f5ed987f2ce533b634922c6c84e40875a2d41c09befb5d57",
+    "publishedBytes": 2983,
+    "publishedSha256": "08948c77dcd5dba1f5ed987f2ce533b634922c6c84e40875a2d41c09befb5d57",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopCompactChatNavigationTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopCompactChatNavigationTest.xml",
+    "originalBytes": 1288,
+    "originalSha256": "27e8df71ca50018e0aa222b04adc45e0e843741b79263f85d641ef8f8b41d46c",
+    "publishedBytes": 1288,
+    "publishedSha256": "27e8df71ca50018e0aa222b04adc45e0e843741b79263f85d641ef8f8b41d46c",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopConnectionTestControllerTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopConnectionTestControllerTest.xml",
+    "originalBytes": 1559,
+    "originalSha256": "1d729826698df19f075121ca7a8ab810fb135477b6bc45df9ee727f74188ee9e",
+    "publishedBytes": 1559,
+    "publishedSha256": "1d729826698df19f075121ca7a8ab810fb135477b6bc45df9ee727f74188ee9e",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopCoordinatedSnapshotServiceTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopCoordinatedSnapshotServiceTest.xml",
+    "originalBytes": 1572,
+    "originalSha256": "701cdd766fa0941eee53ae97f9e8f1486f1f45011485c8458cdfe9d3d73d85a3",
+    "publishedBytes": 1572,
+    "publishedSha256": "701cdd766fa0941eee53ae97f9e8f1486f1f45011485c8458cdfe9d3d73d85a3",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopCurrentImageIntegrationTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopCurrentImageIntegrationTest.xml",
+    "originalBytes": 2070,
+    "originalSha256": "b62f912f4e01d0d7e9770142f3ab6ad99b72e32cd99d15bccaa88799738cc7d7",
+    "publishedBytes": 2070,
+    "publishedSha256": "b62f912f4e01d0d7e9770142f3ab6ad99b72e32cd99d15bccaa88799738cc7d7",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopCurrentImagePresentationTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopCurrentImagePresentationTest.xml",
+    "originalBytes": 3260,
+    "originalSha256": "24d5a0749542c4089ebac5af070334f2660e33474e688bc6ebbac99883338114",
+    "publishedBytes": 3260,
+    "publishedSha256": "24d5a0749542c4089ebac5af070334f2660e33474e688bc6ebbac99883338114",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDataDirectoryTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDataDirectoryTest.xml",
+    "originalBytes": 3276,
+    "originalSha256": "9dec3023d66178bca4d7f9241f788b959724ba3af01ce3635a4a6f2aebcb812d",
+    "publishedBytes": 3276,
+    "publishedSha256": "9dec3023d66178bca4d7f9241f788b959724ba3af01ce3635a4a6f2aebcb812d",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest.xml",
+    "originalBytes": 2731,
+    "originalSha256": "e596ce798c4d6c7719bad502406021ef3c1c4bd4d92f1b9b6e66d3758052e760",
+    "publishedBytes": 2731,
+    "publishedSha256": "e596ce798c4d6c7719bad502406021ef3c1c4bd4d92f1b9b6e66d3758052e760",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDataRootMigrationMaterializerTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDataRootMigrationMaterializerTest.xml",
+    "originalBytes": 4318,
+    "originalSha256": "1e2223703e89c07dd5277e8e1013cdf5ce3a6ee5b2ccc9b3fc51ed1a075930d0",
+    "publishedBytes": 4318,
+    "publishedSha256": "1e2223703e89c07dd5277e8e1013cdf5ce3a6ee5b2ccc9b3fc51ed1a075930d0",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDataRootMigrationServiceTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDataRootMigrationServiceTest.xml",
+    "originalBytes": 3272,
+    "originalSha256": "2182d6ea0633bb5a8c951005307be4566e71f3f34840782db5f85b60018b6692",
+    "publishedBytes": 3272,
+    "publishedSha256": "2182d6ea0633bb5a8c951005307be4566e71f3f34840782db5f85b60018b6692",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDataRootOwnershipProcessTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDataRootOwnershipProcessTest.xml",
+    "originalBytes": 1034,
+    "originalSha256": "54f5390e6714f08c707daef5d2cf79150db60f29cb0b726f2e2caff5eea09dee",
+    "publishedBytes": 1034,
+    "publishedSha256": "54f5390e6714f08c707daef5d2cf79150db60f29cb0b726f2e2caff5eea09dee",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDataRootOwnershipTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDataRootOwnershipTest.xml",
+    "originalBytes": 2572,
+    "originalSha256": "d93c805a09d68556d4599fc746a254bb09c32da71b515f47eda8011cfd10e73e",
+    "publishedBytes": 2572,
+    "publishedSha256": "d93c805a09d68556d4599fc746a254bb09c32da71b515f47eda8011cfd10e73e",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest.xml",
+    "originalBytes": 3760,
+    "originalSha256": "5b5e132e4422a8e241832b897e547c7f16d33dc8e9a46419d55829382b605773",
+    "publishedBytes": 3760,
+    "publishedSha256": "5b5e132e4422a8e241832b897e547c7f16d33dc8e9a46419d55829382b605773",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDefaultModelVisibilityTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDefaultModelVisibilityTest.xml",
+    "originalBytes": 2003,
+    "originalSha256": "e86074f79bc3b7e611d526deab3b806e3446f394e14ff65fe2baf6059d9f3190",
+    "publishedBytes": 2003,
+    "publishedSha256": "e86074f79bc3b7e611d526deab3b806e3446f394e14ff65fe2baf6059d9f3190",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDesignAuthenticationTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDesignAuthenticationTest.xml",
+    "originalBytes": 514,
+    "originalSha256": "d8bbf06fbf1d896844a93a2b7c6f903ac0b459a78535d9e32c959b9b525d12cd",
+    "publishedBytes": 514,
+    "publishedSha256": "d8bbf06fbf1d896844a93a2b7c6f903ac0b459a78535d9e32c959b9b525d12cd",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDesignParityTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDesignParityTest.xml",
+    "originalBytes": 1644,
+    "originalSha256": "c1d5b0651aed50f2310444dadea02706929872d088cbee1b2d33e0d238e15aa0",
+    "publishedBytes": 1644,
+    "publishedSha256": "c1d5b0651aed50f2310444dadea02706929872d088cbee1b2d33e0d238e15aa0",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDocumentIndexReadEvidenceTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDocumentIndexReadEvidenceTest.xml",
+    "originalBytes": 527,
+    "originalSha256": "c47541f10f1e13b3c6e960c817a458c092e6fc897beeff46340aac6b3e08f34d",
+    "publishedBytes": 527,
+    "publishedSha256": "c47541f10f1e13b3c6e960c817a458c092e6fc897beeff46340aac6b3e08f34d",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorProcessTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorProcessTest.xml",
+    "originalBytes": 969,
+    "originalSha256": "da090155f63c4f0b8d8c77417987d8586b8b3cda33c74ddc6f2fd40d7c41c438",
+    "publishedBytes": 969,
+    "publishedSha256": "da090155f63c4f0b8d8c77417987d8586b8b3cda33c74ddc6f2fd40d7c41c438",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest.xml",
+    "originalBytes": 13736,
+    "originalSha256": "39cc90ae19ba18a529f1ce44aeb3138f0e698f05de23dd1247bee9022e97c9c6",
+    "publishedBytes": 13736,
+    "publishedSha256": "39cc90ae19ba18a529f1ce44aeb3138f0e698f05de23dd1247bee9022e97c9c6",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDocumentIndexTransactionProcessTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDocumentIndexTransactionProcessTest.xml",
+    "originalBytes": 949,
+    "originalSha256": "7014f551f9bb5210b6e8361b6507b66e6a80e29355ade98ffd6838f00540aebc",
+    "publishedBytes": 949,
+    "publishedSha256": "7014f551f9bb5210b6e8361b6507b66e6a80e29355ade98ffd6838f00540aebc",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDocumentIndexTransactionPrototypeTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDocumentIndexTransactionPrototypeTest.xml",
+    "originalBytes": 2555,
+    "originalSha256": "e934c3a57a2586ae671dc0bbe0ae4605f606c4cf843417889ce5bcc439f7721a",
+    "publishedBytes": 2555,
+    "publishedSha256": "e934c3a57a2586ae671dc0bbe0ae4605f606c4cf843417889ce5bcc439f7721a",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest.xml",
+    "originalBytes": 4313,
+    "originalSha256": "b4668ddb2fb3560b0530cbcc24d7632df7d525acf652d8ddf3098a07a8de5135",
+    "publishedBytes": 4313,
+    "publishedSha256": "b4668ddb2fb3560b0530cbcc24d7632df7d525acf652d8ddf3098a07a8de5135",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDocumentRagReaderTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDocumentRagReaderTest.xml",
+    "originalBytes": 3693,
+    "originalSha256": "a0af81ae390edd2705c9bc0082107677200b411a75c3de02ea50d1273c4bb4f7",
+    "publishedBytes": 3693,
+    "publishedSha256": "a0af81ae390edd2705c9bc0082107677200b411a75c3de02ea50d1273c4bb4f7",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopEditorDraftCleanupTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopEditorDraftCleanupTest.xml",
+    "originalBytes": 865,
+    "originalSha256": "8cfc2cabf9d4498f998a42b8188c6117e25abae6ff353c65e83aa2aad68a8e0f",
+    "publishedBytes": 865,
+    "publishedSha256": "8cfc2cabf9d4498f998a42b8188c6117e25abae6ff353c65e83aa2aad68a8e0f",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopEditorDraftRepositoryIntegrationTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopEditorDraftRepositoryIntegrationTest.xml",
+    "originalBytes": 552,
+    "originalSha256": "716b089040c28cb62c4539dfa2512cde68690c550cb8f1ba2053a9363bfb1c17",
+    "publishedBytes": 552,
+    "publishedSha256": "716b089040c28cb62c4539dfa2512cde68690c550cb8f1ba2053a9363bfb1c17",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopExternalFileWriterTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopExternalFileWriterTest.xml",
+    "originalBytes": 683,
+    "originalSha256": "d80c5bade42bdf1a4d58cf16a5a4b282385ae936d281f69caa37806f635085b1",
+    "publishedBytes": 683,
+    "publishedSha256": "d80c5bade42bdf1a4d58cf16a5a4b282385ae936d281f69caa37806f635085b1",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopFakeChatRuntimeTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopFakeChatRuntimeTest.xml",
+    "originalBytes": 1930,
+    "originalSha256": "edaec4cd7de98955d2ac2a43fd9e38674e5627e52ba7e6cad72171a9f20e1b8e",
+    "publishedBytes": 1930,
+    "publishedSha256": "edaec4cd7de98955d2ac2a43fd9e38674e5627e52ba7e6cad72171a9f20e1b8e",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopFinalProductTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopFinalProductTest.xml",
+    "originalBytes": 2976,
+    "originalSha256": "efc260aa4ea397259dad53559a096504c03be17731b05017ccf12a1688c60e74",
+    "publishedBytes": 2976,
+    "publishedSha256": "efc260aa4ea397259dad53559a096504c03be17731b05017ccf12a1688c60e74",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopFishAudioLibraryTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopFishAudioLibraryTest.xml",
+    "originalBytes": 2094,
+    "originalSha256": "f97870e52252040801416e38faa50a1b14b948eeb390d0a50d7d8ac2f068c362",
+    "publishedBytes": 2094,
+    "publishedSha256": "f97870e52252040801416e38faa50a1b14b948eeb390d0a50d7d8ac2f068c362",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopFishPresentationTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopFishPresentationTest.xml",
+    "originalBytes": 2416,
+    "originalSha256": "85c26c289b5d5bbfd2b6346b1518b30a545a90fd8166449938f11c807e59d3b1",
+    "publishedBytes": 2416,
+    "publishedSha256": "85c26c289b5d5bbfd2b6346b1518b30a545a90fd8166449938f11c807e59d3b1",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopFishPreviewTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopFishPreviewTest.xml",
+    "originalBytes": 1918,
+    "originalSha256": "ea1c381e6d40d9a94c5f21524d3dde8b8ac6824fbe4221c87c01a4336166b4dd",
+    "publishedBytes": 1918,
+    "publishedSha256": "ea1c381e6d40d9a94c5f21524d3dde8b8ac6824fbe4221c87c01a4336166b4dd",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopFishPreviewWindowsTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopFishPreviewWindowsTest.xml",
+    "originalBytes": 875,
+    "originalSha256": "8dfdce8bce819ead7f1914830451d29994d923151e494ac9570c2c084ffcb8ba",
+    "publishedBytes": 875,
+    "publishedSha256": "8dfdce8bce819ead7f1914830451d29994d923151e494ac9570c2c084ffcb8ba",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopFishSampleTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopFishSampleTest.xml",
+    "originalBytes": 4289,
+    "originalSha256": "920784918181540b13b5de29d2372c13caac33b0435c5c42f28a96a6cfe9ec3b",
+    "publishedBytes": 4289,
+    "publishedSha256": "920784918181540b13b5de29d2372c13caac33b0435c5c42f28a96a6cfe9ec3b",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopFishSettingsBindingTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopFishSettingsBindingTest.xml",
+    "originalBytes": 3565,
+    "originalSha256": "7c2d5636ee8bb259e1b517d933edf70c93b6a1e160b5243db78ec813af1a6062",
+    "publishedBytes": 3565,
+    "publishedSha256": "7c2d5636ee8bb259e1b517d933edf70c93b6a1e160b5243db78ec813af1a6062",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopFormatCardEditorControllerTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopFormatCardEditorControllerTest.xml",
+    "originalBytes": 5058,
+    "originalSha256": "c86a3cd47efe1f52f27b7b22970324838972ee70d7fe0fdaeaf2a05945bad22a",
+    "publishedBytes": 5058,
+    "publishedSha256": "c86a3cd47efe1f52f27b7b22970324838972ee70d7fe0fdaeaf2a05945bad22a",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest.xml",
+    "originalBytes": 3261,
+    "originalSha256": "366f1c621a16ae49349929652c8e05bf7f6d984594cf8a257ddc63e6a9335b53",
+    "publishedBytes": 3261,
+    "publishedSha256": "366f1c621a16ae49349929652c8e05bf7f6d984594cf8a257ddc63e6a9335b53",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopFormatRepairInteractionTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopFormatRepairInteractionTest.xml",
+    "originalBytes": 1866,
+    "originalSha256": "5ef57fc0588fd8721181bc88ddd795fbfa02a43bc9222bb61c45c98f03624f88",
+    "publishedBytes": 1866,
+    "publishedSha256": "5ef57fc0588fd8721181bc88ddd795fbfa02a43bc9222bb61c45c98f03624f88",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopFormatRepairPresentationTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopFormatRepairPresentationTest.xml",
+    "originalBytes": 1530,
+    "originalSha256": "bca7c7dd4afef2aaa89b71596fa50c6dbbb3f9538ae598797acb18395db94c58",
+    "publishedBytes": 1530,
+    "publishedSha256": "bca7c7dd4afef2aaa89b71596fa50c6dbbb3f9538ae598797acb18395db94c58",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopFullComposerTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopFullComposerTest.xml",
+    "originalBytes": 3150,
+    "originalSha256": "f849a6439c4cc9173fd5f48014457b00a7bd4cf6af1a9ba0f969eba2349dddda",
+    "publishedBytes": 3150,
+    "publishedSha256": "f849a6439c4cc9173fd5f48014457b00a7bd4cf6af1a9ba0f969eba2349dddda",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopImageClipboardFilesTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopImageClipboardFilesTest.xml",
+    "originalBytes": 3351,
+    "originalSha256": "e40be400cef9c95caadd222bd71cdd3937a34bb52509d1da655f2feadb7408cb",
+    "publishedBytes": 3351,
+    "publishedSha256": "e40be400cef9c95caadd222bd71cdd3937a34bb52509d1da655f2feadb7408cb",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopImageClosureR1DesignTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopImageClosureR1DesignTest.xml",
+    "originalBytes": 1505,
+    "originalSha256": "7389ff10c20322e016a507fe9fca4441bc7f40572f40956888b5b2604333c4b9",
+    "publishedBytes": 1505,
+    "publishedSha256": "7389ff10c20322e016a507fe9fca4441bc7f40572f40956888b5b2604333c4b9",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopImageClosureR1GifTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopImageClosureR1GifTest.xml",
+    "originalBytes": 1247,
+    "originalSha256": "55c514ca6e0910730fccd161e99b19d277cc82f69baf912e2dc0c1dca1f58847",
+    "publishedBytes": 1247,
+    "publishedSha256": "55c514ca6e0910730fccd161e99b19d277cc82f69baf912e2dc0c1dca1f58847",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopImageTaskProgressTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopImageTaskProgressTest.xml",
+    "originalBytes": 2870,
+    "originalSha256": "556c7a74297362dca599bde75fd77bb50f7349d20f26cd406cd7ea6c0fc05b69",
+    "publishedBytes": 2870,
+    "publishedSha256": "556c7a74297362dca599bde75fd77bb50f7349d20f26cd406cd7ea6c0fc05b69",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopImageWindowPresentationTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopImageWindowPresentationTest.xml",
+    "originalBytes": 875,
+    "originalSha256": "c5b1159aef9607dd799776cd511d5c1257f2d51b01fbf42b32ca1fa5ea7916d9",
+    "publishedBytes": 875,
+    "publishedSha256": "c5b1159aef9607dd799776cd511d5c1257f2d51b01fbf42b32ca1fa5ea7916d9",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopIndexStartupPreflightTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopIndexStartupPreflightTest.xml",
+    "originalBytes": 10263,
+    "originalSha256": "95ace7cee90d45aa19c63641135769af8ae65cb9b05f7f7fcbc002ca70d8638b",
+    "publishedBytes": 10263,
+    "publishedSha256": "95ace7cee90d45aa19c63641135769af8ae65cb9b05f7f7fcbc002ca70d8638b",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopInputFocusSceneTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopInputFocusSceneTest.xml",
+    "originalBytes": 1240,
+    "originalSha256": "9592c2c45d66f46c06bbab323ac37ff55a120049505ee164a8bba6c57e94d8ac",
+    "publishedBytes": 1240,
+    "publishedSha256": "9592c2c45d66f46c06bbab323ac37ff55a120049505ee164a8bba6c57e94d8ac",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopInputFocusTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopInputFocusTest.xml",
+    "originalBytes": 1750,
+    "originalSha256": "7786707b7b7f374c8b7627ae77174115f87e778a7fe8a95b809003475865bd2e",
+    "publishedBytes": 1750,
+    "publishedSha256": "7786707b7b7f374c8b7627ae77174115f87e778a7fe8a95b809003475865bd2e",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopMainChatRequestAssemblerIntegrationTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopMainChatRequestAssemblerIntegrationTest.xml",
+    "originalBytes": 556,
+    "originalSha256": "249e08727a733775efabb9c554523674e2b300258fe2a6609de89818229c4d4d",
+    "publishedBytes": 556,
+    "publishedSha256": "249e08727a733775efabb9c554523674e2b300258fe2a6609de89818229c4d4d",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopManagementBrandTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopManagementBrandTest.xml",
+    "originalBytes": 1197,
+    "originalSha256": "b078dcd3bbda5a5a2ffffb17a62c5afe152baa8ce2d71f1d592c37fd1c4259c0",
+    "publishedBytes": 1197,
+    "publishedSha256": "b078dcd3bbda5a5a2ffffb17a62c5afe152baa8ce2d71f1d592c37fd1c4259c0",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopManagementControllerTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopManagementControllerTest.xml",
+    "originalBytes": 4894,
+    "originalSha256": "b7a892fec80cf1c1cd51bdcd3abb030bbe1f420805f223a04b1b41873690c1ce",
+    "publishedBytes": 4894,
+    "publishedSha256": "b7a892fec80cf1c1cd51bdcd3abb030bbe1f420805f223a04b1b41873690c1ce",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopMarkdownParityTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopMarkdownParityTest.xml",
+    "originalBytes": 1936,
+    "originalSha256": "a358be217846c9901b51afab4129b8909dc334d80bae71fe0c49cb43af10ed75",
+    "publishedBytes": 1936,
+    "publishedSha256": "a358be217846c9901b51afab4129b8909dc334d80bae71fe0c49cb43af10ed75",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopMessageActionsUxTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopMessageActionsUxTest.xml",
+    "originalBytes": 2151,
+    "originalSha256": "1c8e3def73867dff071d7531fbc6d5b931d7a749dc97651bd0c20ccdca5530e5",
+    "publishedBytes": 2151,
+    "publishedSha256": "1c8e3def73867dff071d7531fbc6d5b931d7a749dc97651bd0c20ccdca5530e5",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopMessageFormatRepairTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopMessageFormatRepairTest.xml",
+    "originalBytes": 6017,
+    "originalSha256": "71349c4354d7e8f9fe72c7880102f9bda732102f9632049985bf207f2e269db5",
+    "publishedBytes": 6017,
+    "publishedSha256": "71349c4354d7e8f9fe72c7880102f9bda732102f9632049985bf207f2e269db5",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopMessageImagePresentationTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopMessageImagePresentationTest.xml",
+    "originalBytes": 3780,
+    "originalSha256": "34a41267ef1446067571b28083a537fd9a9fa157f2e98f6335677bb626e4ace3",
+    "publishedBytes": 3780,
+    "publishedSha256": "34a41267ef1446067571b28083a537fd9a9fa157f2e98f6335677bb626e4ace3",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopMigrationDestinationPreparerTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopMigrationDestinationPreparerTest.xml",
+    "originalBytes": 2850,
+    "originalSha256": "a937b5d77f6ef2783b7c9ed2bb9a3772530926f23d69473cbe51c9cf721e5842",
+    "publishedBytes": 2850,
+    "publishedSha256": "a937b5d77f6ef2783b7c9ed2bb9a3772530926f23d69473cbe51c9cf721e5842",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopModelDiagnosticsTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopModelDiagnosticsTest.xml",
+    "originalBytes": 895,
+    "originalSha256": "ae48ba448025895e05a12c01af9e5511ba901f38d66e903debab86035fda290f",
+    "publishedBytes": 895,
+    "publishedSha256": "ae48ba448025895e05a12c01af9e5511ba901f38d66e903debab86035fda290f",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopModelEditorLifecycleTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopModelEditorLifecycleTest.xml",
+    "originalBytes": 890,
+    "originalSha256": "0ece4568a84fc32eae229cdea3e7b3819bc2ee895fae674175a7b506ba8387f3",
+    "publishedBytes": 890,
+    "publishedSha256": "0ece4568a84fc32eae229cdea3e7b3819bc2ee895fae674175a7b506ba8387f3",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopModelSettingsControllerTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopModelSettingsControllerTest.xml",
+    "originalBytes": 3017,
+    "originalSha256": "bb8f1fe4326438160eb9cf72de1c7b549f9561b64b939a909bbe552725219809",
+    "publishedBytes": 3017,
+    "publishedSha256": "bb8f1fe4326438160eb9cf72de1c7b549f9561b64b939a909bbe552725219809",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopModelTemplateTransferControllerTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopModelTemplateTransferControllerTest.xml",
+    "originalBytes": 3123,
+    "originalSha256": "615094de8042e8542de852450f747097a0223cff70352e2de64ce062df0a33b5",
+    "publishedBytes": 3123,
+    "publishedSha256": "615094de8042e8542de852450f747097a0223cff70352e2de64ce062df0a33b5",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopNovelAiCatalogUpdateTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopNovelAiCatalogUpdateTest.xml",
+    "originalBytes": 740,
+    "originalSha256": "a676bc27d2c17d26e9e1bac55070fea8cd1a7039d5f8dc82eb66f84c9c742799",
+    "publishedBytes": 740,
+    "publishedSha256": "a676bc27d2c17d26e9e1bac55070fea8cd1a7039d5f8dc82eb66f84c9c742799",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopNovelAiInfrastructureTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopNovelAiInfrastructureTest.xml",
+    "originalBytes": 1632,
+    "originalSha256": "f0ff9710d232c17067361530bad9d7705ade268009429506f7c3e2437f0910e7",
+    "publishedBytes": 1632,
+    "publishedSha256": "f0ff9710d232c17067361530bad9d7705ade268009429506f7c3e2437f0910e7",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopNovelAiSafetyTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopNovelAiSafetyTest.xml",
+    "originalBytes": 2543,
+    "originalSha256": "e1cefa9b2d16439971bc1e8777d23fc5fefd485df4af42697c938d77842f3d7e",
+    "publishedBytes": 2543,
+    "publishedSha256": "e1cefa9b2d16439971bc1e8777d23fc5fefd485df4af42697c938d77842f3d7e",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPhase5VerticalAcceptanceTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPhase5VerticalAcceptanceTest.xml",
+    "originalBytes": 549,
+    "originalSha256": "e8be3cc9f33a1eec2f587d1e681ce82215940cda39c5d520f852adedff52ec2a",
+    "publishedBytes": 549,
+    "publishedSha256": "e8be3cc9f33a1eec2f587d1e681ce82215940cda39c5d520f852adedff52ec2a",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPhase7ImagesTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPhase7ImagesTest.xml",
+    "originalBytes": 2433,
+    "originalSha256": "a75d640d6e763306e138cc36154f32445147feaf0dd3759da7d88aa70d812fc9",
+    "publishedBytes": 2433,
+    "publishedSha256": "a75d640d6e763306e138cc36154f32445147feaf0dd3759da7d88aa70d812fc9",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPhase7R2R1Test.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPhase7R2R1Test.xml",
+    "originalBytes": 1528,
+    "originalSha256": "f45c32a5cedcfe739b19f7bd80c57f2dcc6f70e910cbe6114461cd0057238aab",
+    "publishedBytes": 1528,
+    "publishedSha256": "f45c32a5cedcfe739b19f7bd80c57f2dcc6f70e910cbe6114461cd0057238aab",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPhase7R2SceneTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPhase7R2SceneTest.xml",
+    "originalBytes": 504,
+    "originalSha256": "2e350fef20ab94b2c7be3647670242d894a76cf61ce3c18a2b6f7ad35d76e1c0",
+    "publishedBytes": 504,
+    "publishedSha256": "2e350fef20ab94b2c7be3647670242d894a76cf61ce3c18a2b6f7ad35d76e1c0",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPhase7R2Test.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPhase7R2Test.xml",
+    "originalBytes": 1185,
+    "originalSha256": "5d06951fb2ed0855552c9aa8fe8c9c5cc6eeb646d45216da19d3740ccf5e4173",
+    "publishedBytes": 1185,
+    "publishedSha256": "5d06951fb2ed0855552c9aa8fe8c9c5cc6eeb646d45216da19d3740ccf5e4173",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPhase7ReauditTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPhase7ReauditTest.xml",
+    "originalBytes": 2355,
+    "originalSha256": "3854f229bb50b4829f773aa67d9b7baf0bf17164b2b9cf66c69ce31e9470d5bb",
+    "publishedBytes": 2355,
+    "publishedSha256": "3854f229bb50b4829f773aa67d9b7baf0bf17164b2b9cf66c69ce31e9470d5bb",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPhase7StudioTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPhase7StudioTest.xml",
+    "originalBytes": 2118,
+    "originalSha256": "93cb0dde161bd663572f311a9494fe45a8e158cbbf954609de441604c6c7f8bd",
+    "publishedBytes": 2118,
+    "publishedSha256": "93cb0dde161bd663572f311a9494fe45a8e158cbbf954609de441604c6c7f8bd",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPlatformPickerContractTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPlatformPickerContractTest.xml",
+    "originalBytes": 531,
+    "originalSha256": "fe620a84e00b1f687ca49a736d1402d73346a3a026219bf3615f9d61fccd9f1d",
+    "publishedBytes": 531,
+    "publishedSha256": "fe620a84e00b1f687ca49a736d1402d73346a3a026219bf3615f9d61fccd9f1d",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPortableRootTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPortableRootTest.xml",
+    "originalBytes": 3018,
+    "originalSha256": "2b951414be2d07fe49bfd1e2412d07bd47476045d2a6f230846a6145bcd72647",
+    "publishedBytes": 3018,
+    "publishedSha256": "2b951414be2d07fe49bfd1e2412d07bd47476045d2a6f230846a6145bcd72647",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPresetBootstrapTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPresetBootstrapTest.xml",
+    "originalBytes": 3495,
+    "originalSha256": "489f1cafe9c3bec36fc443b5717478670aca654169faf23a2187eb5963325ba0",
+    "publishedBytes": 3495,
+    "publishedSha256": "489f1cafe9c3bec36fc443b5717478670aca654169faf23a2187eb5963325ba0",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPresetModelCatalogSourceTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPresetModelCatalogSourceTest.xml",
+    "originalBytes": 540,
+    "originalSha256": "c4ce9f2a1996accea63dc4c77ac9739d132ff6b6b65e5e5887c09627498b4df8",
+    "publishedBytes": 540,
+    "publishedSha256": "c4ce9f2a1996accea63dc4c77ac9739d132ff6b6b65e5e5887c09627498b4df8",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPresetRecoveryTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPresetRecoveryTest.xml",
+    "originalBytes": 1408,
+    "originalSha256": "3ea4c695d9f239b98054ee186c365d54648f6ff289b75bd06c168ac6d432a1b6",
+    "publishedBytes": 1408,
+    "publishedSha256": "3ea4c695d9f239b98054ee186c365d54648f6ff289b75bd06c168ac6d432a1b6",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest.xml",
+    "originalBytes": 7876,
+    "originalSha256": "b5013fb1bff3835dbaf0f54ce063360a12919907d40a392edea262d3ce6e739a",
+    "publishedBytes": 7876,
+    "publishedSha256": "b5013fb1bff3835dbaf0f54ce063360a12919907d40a392edea262d3ce6e739a",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPrimaryChatBrowserStateTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPrimaryChatBrowserStateTest.xml",
+    "originalBytes": 1450,
+    "originalSha256": "b2b6bd20f0a57db636b0acd52e05742f9520c6478a1002e4be099da9c8e85dfe",
+    "publishedBytes": 1450,
+    "publishedSha256": "b2b6bd20f0a57db636b0acd52e05742f9520c6478a1002e4be099da9c8e85dfe",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPrimaryChatControllerTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPrimaryChatControllerTest.xml",
+    "originalBytes": 5969,
+    "originalSha256": "56e2d7ef3eec386c1690d57a46f2f8c9ba83ad6a36467f8266acce2fc9e4b933",
+    "publishedBytes": 5969,
+    "publishedSha256": "56e2d7ef3eec386c1690d57a46f2f8c9ba83ad6a36467f8266acce2fc9e4b933",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPrimaryChatDraftLifetimeTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPrimaryChatDraftLifetimeTest.xml",
+    "originalBytes": 1930,
+    "originalSha256": "12c896a385143227c296b7f2b63a7107fa9df3cf00e40646245dabd81698871a",
+    "publishedBytes": 1930,
+    "publishedSha256": "12c896a385143227c296b7f2b63a7107fa9df3cf00e40646245dabd81698871a",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPrimaryChatPresentationTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPrimaryChatPresentationTest.xml",
+    "originalBytes": 2680,
+    "originalSha256": "7d2069e6146172a133ba96309db4c25f26fb9009541f19c3e2c70f4a56989209",
+    "publishedBytes": 2680,
+    "publishedSha256": "7d2069e6146172a133ba96309db4c25f26fb9009541f19c3e2c70f4a56989209",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPrimaryChatRepairPresentationTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPrimaryChatRepairPresentationTest.xml",
+    "originalBytes": 1597,
+    "originalSha256": "145248c48368b8b1c2dbe1c6f73bfbf500471572743deb0dcb89601af22dd8ec",
+    "publishedBytes": 1597,
+    "publishedSha256": "145248c48368b8b1c2dbe1c6f73bfbf500471572743deb0dcb89601af22dd8ec",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPrimaryNavigationTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPrimaryNavigationTest.xml",
+    "originalBytes": 1040,
+    "originalSha256": "084b84c15bea20712fada85f36fa229395d79927fbe85b4e5cc03fa64ab03ce7",
+    "publishedBytes": 1040,
+    "publishedSha256": "084b84c15bea20712fada85f36fa229395d79927fbe85b4e5cc03fa64ab03ce7",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopProcessLifecycleTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopProcessLifecycleTest.xml",
+    "originalBytes": 3038,
+    "originalSha256": "6e4615b7696ae695aa9fbf0accfbc7f3c724805207e8948cecee8f150de53669",
+    "publishedBytes": 3038,
+    "publishedSha256": "6e4615b7696ae695aa9fbf0accfbc7f3c724805207e8948cecee8f150de53669",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPromptInspectorTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPromptInspectorTest.xml",
+    "originalBytes": 1157,
+    "originalSha256": "947709edc51a644d2793d62809206af52538660df56d78bfdb266b6fb1476bdf",
+    "publishedBytes": 1157,
+    "publishedSha256": "947709edc51a644d2793d62809206af52538660df56d78bfdb266b6fb1476bdf",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopRealChatRuntimeCancellationTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopRealChatRuntimeCancellationTest.xml",
+    "originalBytes": 1695,
+    "originalSha256": "543a69bf0aaf965beb5f369c19e5c7c16f8564f0de7ad57bec14c65563bed4b0",
+    "publishedBytes": 1695,
+    "publishedSha256": "543a69bf0aaf965beb5f369c19e5c7c16f8564f0de7ad57bec14c65563bed4b0",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopRealChatRuntimeResolutionTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopRealChatRuntimeResolutionTest.xml",
+    "originalBytes": 1281,
+    "originalSha256": "2f908404cf3da1e676c8a8f3a84c8ec87b1df885221e02d12509b984bfd99500",
+    "publishedBytes": 1281,
+    "publishedSha256": "2f908404cf3da1e676c8a8f3a84c8ec87b1df885221e02d12509b984bfd99500",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopRealChatRuntimeTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopRealChatRuntimeTest.xml",
+    "originalBytes": 1096,
+    "originalSha256": "b50d145648116c20b6843d8083dea77203ca473b7fe86e8d2bdc84d1219e5887",
+    "publishedBytes": 1096,
+    "publishedSha256": "b50d145648116c20b6843d8083dea77203ca473b7fe86e8d2bdc84d1219e5887",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopRegenerationTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopRegenerationTest.xml",
+    "originalBytes": 2750,
+    "originalSha256": "e6e2eddd19ce6cb8abdd9402243a4fc2495c4db98300200bb944d3cb462ceb92",
+    "publishedBytes": 2750,
+    "publishedSha256": "e6e2eddd19ce6cb8abdd9402243a4fc2495c4db98300200bb944d3cb462ceb92",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopResponsiveChatLayoutTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopResponsiveChatLayoutTest.xml",
+    "originalBytes": 2037,
+    "originalSha256": "85fcad19512ced777be5c082102067fb1cfc9fd003c0efe141c2f86c7b1d0642",
+    "publishedBytes": 2037,
+    "publishedSha256": "85fcad19512ced777be5c082102067fb1cfc9fd003c0efe141c2f86c7b1d0642",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopResponsiveChatWiringTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopResponsiveChatWiringTest.xml",
+    "originalBytes": 1581,
+    "originalSha256": "528ffeb1ba6db8e92fc519a207eae3c762330a7cf83fad9dc8b4f45241bfaf27",
+    "publishedBytes": 1581,
+    "publishedSha256": "528ffeb1ba6db8e92fc519a207eae3c762330a7cf83fad9dc8b4f45241bfaf27",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopSafeClipboardTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopSafeClipboardTest.xml",
+    "originalBytes": 1821,
+    "originalSha256": "5f46fbed2f1679d83a353c8101a62b82ea5539d347e484b5ca0c50f4e64abbd2",
+    "publishedBytes": 1821,
+    "publishedSha256": "5f46fbed2f1679d83a353c8101a62b82ea5539d347e484b5ca0c50f4e64abbd2",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopSaveSlotInspectorTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopSaveSlotInspectorTest.xml",
+    "originalBytes": 4370,
+    "originalSha256": "63e0f55e9ba5678215f9204a780c7b995c701c879ef38fbf4d88ab8428a159f4",
+    "publishedBytes": 4370,
+    "publishedSha256": "63e0f55e9ba5678215f9204a780c7b995c701c879ef38fbf4d88ab8428a159f4",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopSecondInstanceStartupTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopSecondInstanceStartupTest.xml",
+    "originalBytes": 2423,
+    "originalSha256": "b1e97d292ee334aef6fd040f93ca6997a1c8b08389d68134cad6f3620c58b78e",
+    "publishedBytes": 2423,
+    "publishedSha256": "b1e97d292ee334aef6fd040f93ca6997a1c8b08389d68134cad6f3620c58b78e",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopSecureRepositoryWiringTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopSecureRepositoryWiringTest.xml",
+    "originalBytes": 701,
+    "originalSha256": "f05760d92db67068074c2066f32082fcf1e8d4e55d7c3f82ddb45acb6d29c44d",
+    "publishedBytes": 701,
+    "publishedSha256": "f05760d92db67068074c2066f32082fcf1e8d4e55d7c3f82ddb45acb6d29c44d",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopSettingsCoherenceTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopSettingsCoherenceTest.xml",
+    "originalBytes": 1535,
+    "originalSha256": "b3b2543b4417d57af23e5f2f88b449c9451fc15e9b4d20a707a783044b778cd3",
+    "publishedBytes": 1535,
+    "publishedSha256": "b3b2543b4417d57af23e5f2f88b449c9451fc15e9b4d20a707a783044b778cd3",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopSettingsStoreTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopSettingsStoreTest.xml",
+    "originalBytes": 2508,
+    "originalSha256": "576e1d28a6c07f06ae44e79cd0641b228e2a6c308c3562023dea4e2c888f6e33",
+    "publishedBytes": 2508,
+    "publishedSha256": "576e1d28a6c07f06ae44e79cd0641b228e2a6c308c3562023dea4e2c888f6e33",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopSettingsSurfaceParityTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopSettingsSurfaceParityTest.xml",
+    "originalBytes": 2142,
+    "originalSha256": "398dbf70e2b243ceb4c52cf910cd799c188c4cabd09f50f05db057bfca92f2df",
+    "publishedBytes": 2142,
+    "publishedSha256": "398dbf70e2b243ceb4c52cf910cd799c188c4cabd09f50f05db057bfca92f2df",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopShellLayoutPolicyTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopShellLayoutPolicyTest.xml",
+    "originalBytes": 479,
+    "originalSha256": "7ec2ebc40ad4852f0c76bdc970a8adc2e311564d6067f0c9f24055991b04efe5",
+    "publishedBytes": 479,
+    "publishedSha256": "7ec2ebc40ad4852f0c76bdc970a8adc2e311564d6067f0c9f24055991b04efe5",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopShutdownWaitObserverTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopShutdownWaitObserverTest.xml",
+    "originalBytes": 1511,
+    "originalSha256": "3b5287cb661aa73f7d49ccaa37221aad1123499131df114dcbbf9e348e54f538",
+    "publishedBytes": 1511,
+    "publishedSha256": "3b5287cb661aa73f7d49ccaa37221aad1123499131df114dcbbf9e348e54f538",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopStartupGateTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopStartupGateTest.xml",
+    "originalBytes": 3814,
+    "originalSha256": "e12e73f8c529393275a3ebf5fd44b9a58a463e208bf998225759fc73edb3ee54",
+    "publishedBytes": 3814,
+    "publishedSha256": "e12e73f8c529393275a3ebf5fd44b9a58a463e208bf998225759fc73edb3ee54",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopStudioFilmstripTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopStudioFilmstripTest.xml",
+    "originalBytes": 717,
+    "originalSha256": "4558f12ac3c50a05b46e98cb9d98784c985234045667e15fa9ad424f968505d5",
+    "publishedBytes": 717,
+    "publishedSha256": "4558f12ac3c50a05b46e98cb9d98784c985234045667e15fa9ad424f968505d5",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopStudioFooterTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopStudioFooterTest.xml",
+    "originalBytes": 521,
+    "originalSha256": "6e33f227907144ea2fe7919b1ce6baaf050cd19afe89417b4fe87fbe10fce488",
+    "publishedBytes": 521,
+    "publishedSha256": "6e33f227907144ea2fe7919b1ce6baaf050cd19afe89417b4fe87fbe10fce488",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopStudioGenerateGateTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopStudioGenerateGateTest.xml",
+    "originalBytes": 2578,
+    "originalSha256": "b290a133d386f38aa62efc6df37235bc7d5abdf1b6947c2754ca9169d3ee29ea",
+    "publishedBytes": 2578,
+    "publishedSha256": "b290a133d386f38aa62efc6df37235bc7d5abdf1b6947c2754ca9169d3ee29ea",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopStudioPresentationTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopStudioPresentationTest.xml",
+    "originalBytes": 2837,
+    "originalSha256": "50e427f6528906bae69734a25a15a030175eecbf21e8c7d80ab93ec2655c2584",
+    "publishedBytes": 2837,
+    "publishedSha256": "50e427f6528906bae69734a25a15a030175eecbf21e8c7d80ab93ec2655c2584",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopStudioWorkspaceTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopStudioWorkspaceTest.xml",
+    "originalBytes": 885,
+    "originalSha256": "1c9c848f3d4297c27c51c31e992759ba1732a24410ced086f2cb4dc809e3fd36",
+    "publishedBytes": 885,
+    "publishedSha256": "1c9c848f3d4297c27c51c31e992759ba1732a24410ced086f2cb4dc809e3fd36",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopTaskRuntimeTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopTaskRuntimeTest.xml",
+    "originalBytes": 2057,
+    "originalSha256": "fed0541ef94f076c23215f0dbfe7a6b3a18a1315192f753f4d53f8ac37429cd3",
+    "publishedBytes": 2057,
+    "publishedSha256": "fed0541ef94f076c23215f0dbfe7a6b3a18a1315192f753f4d53f8ac37429cd3",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopTransferClosureTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopTransferClosureTest.xml",
+    "originalBytes": 2776,
+    "originalSha256": "2f4d148c8b2e45f42c66627100ab762b56e43b87c2237a439c913f08ea9a90e1",
+    "publishedBytes": 2776,
+    "publishedSha256": "2f4d148c8b2e45f42c66627100ab762b56e43b87c2237a439c913f08ea9a90e1",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopTransportDiagnosticsTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopTransportDiagnosticsTest.xml",
+    "originalBytes": 1217,
+    "originalSha256": "0afc1ac207cd664c97e3a152c2ce72e8d7204423fbdb8c75e68796e05c5142cc",
+    "publishedBytes": 1217,
+    "publishedSha256": "0afc1ac207cd664c97e3a152c2ce72e8d7204423fbdb8c75e68796e05c5142cc",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopTypedTransferControllerTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopTypedTransferControllerTest.xml",
+    "originalBytes": 2766,
+    "originalSha256": "66b4ad7c50bca3eb9cd99137ebffeb2514ee4d025d46d5226dcf0ec8ff6c2b9c",
+    "publishedBytes": 2766,
+    "publishedSha256": "66b4ad7c50bca3eb9cd99137ebffeb2514ee4d025d46d5226dcf0ec8ff6c2b9c",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopUiLanguageControllerTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopUiLanguageControllerTest.xml",
+    "originalBytes": 1386,
+    "originalSha256": "dac853443c6e26c38d14ef8ec596e92417e574b6ad551f67c96c59b06aedfdbe",
+    "publishedBytes": 1386,
+    "publishedSha256": "dac853443c6e26c38d14ef8ec596e92417e574b6ad551f67c96c59b06aedfdbe",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopUnifiedViewerTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopUnifiedViewerTest.xml",
+    "originalBytes": 2528,
+    "originalSha256": "3b16c36e200b66de60b6af0e0e989826e6c3d71b390fe320b4e6871477ed36ab",
+    "publishedBytes": 2528,
+    "publishedSha256": "3b16c36e200b66de60b6af0e0e989826e6c3d71b390fe320b4e6871477ed36ab",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopWindowChromeContractTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopWindowChromeContractTest.xml",
+    "originalBytes": 715,
+    "originalSha256": "2beed707eef10bdd7c6283c59aa61042595b3271d983e1fa57b41499d268ef72",
+    "publishedBytes": 715,
+    "publishedSha256": "2beed707eef10bdd7c6283c59aa61042595b3271d983e1fa57b41499d268ef72",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopWindowChromeTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopWindowChromeTest.xml",
+    "originalBytes": 2186,
+    "originalSha256": "34c62dbdaf1c7338ac77bf91cb2502e723516eecc47225a036620a59e7778463",
+    "publishedBytes": 2186,
+    "publishedSha256": "34c62dbdaf1c7338ac77bf91cb2502e723516eecc47225a036620a59e7778463",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopWorkspacePresentationTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopWorkspacePresentationTest.xml",
+    "originalBytes": 2581,
+    "originalSha256": "d127e313498c46430db42d5893a4a7347e4c4637cc0974c882118bbf6f428301",
+    "publishedBytes": 2581,
+    "publishedSha256": "d127e313498c46430db42d5893a4a7347e4c4637cc0974c882118bbf6f428301",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopWorldBookBulkPresentationTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopWorldBookBulkPresentationTest.xml",
+    "originalBytes": 1089,
+    "originalSha256": "70ef415ba518672ff29f07f7aea15890e90de59313247a71e8c518e1cb09da2c",
+    "publishedBytes": 1089,
+    "publishedSha256": "70ef415ba518672ff29f07f7aea15890e90de59313247a71e8c518e1cb09da2c",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest.xml",
+    "originalBytes": 5971,
+    "originalSha256": "6f328882c5b7e83b5462afd4d38b91fed3b3cf1d7f0b319d8bb4eabec8f0fafa",
+    "publishedBytes": 5971,
+    "publishedSha256": "6f328882c5b7e83b5462afd4d38b91fed3b3cf1d7f0b319d8bb4eabec8f0fafa",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopWorldBookRequestPlannerIntegrationTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopWorldBookRequestPlannerIntegrationTest.xml",
+    "originalBytes": 555,
+    "originalSha256": "4ac0fe723211a2880ea23e069606e8c4f22a9d966adc54864301a561f5a2f903",
+    "publishedBytes": 555,
+    "publishedSha256": "4ac0fe723211a2880ea23e069606e8c4f22a9d966adc54864301a561f5a2f903",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.Phase3FDesktopInteropTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.Phase3FDesktopInteropTest.xml",
+    "originalBytes": 822,
+    "originalSha256": "522cf692dedc93326b95957919e1a344db8336e72b213283e2abc97f35dd1e33",
+    "publishedBytes": 822,
+    "publishedSha256": "522cf692dedc93326b95957919e1a344db8336e72b213283e2abc97f35dd1e33",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.security.DesktopSecureEmbeddingRepositoryTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.security.DesktopSecureEmbeddingRepositoryTest.xml",
+    "originalBytes": 1951,
+    "originalSha256": "9c70842ae8bde248771d02311b88d3d87bc2379793630791923d5ae94aefaa99",
+    "publishedBytes": 1951,
+    "publishedSha256": "9c70842ae8bde248771d02311b88d3d87bc2379793630791923d5ae94aefaa99",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.security.DesktopSecureModelRepositoryTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.security.DesktopSecureModelRepositoryTest.xml",
+    "originalBytes": 1341,
+    "originalSha256": "5bce834270f8b0250505c1faa22dd8042b23dcee781d50fff3849dd1e6b42c10",
+    "publishedBytes": 1341,
+    "publishedSha256": "5bce834270f8b0250505c1faa22dd8042b23dcee781d50fff3849dd1e6b42c10",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.security.DesktopSecureSettingsRepositoryTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.security.DesktopSecureSettingsRepositoryTest.xml",
+    "originalBytes": 1512,
+    "originalSha256": "33b212fecf25273d1936f16fe02d8b077bd4e127120f70af8519d97c09e11599",
+    "publishedBytes": 1512,
+    "publishedSha256": "33b212fecf25273d1936f16fe02d8b077bd4e127120f70af8519d97c09e11599",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.security.WindowsDpapiSecretProtectorTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.security.WindowsDpapiSecretProtectorTest.xml",
+    "originalBytes": 547,
+    "originalSha256": "8efd3d773d92c306463d9edf0348aa8313385b6a194f34093b0b0de296889e5b",
+    "publishedBytes": 547,
+    "publishedSha256": "8efd3d773d92c306463d9edf0348aa8313385b6a194f34093b0b0de296889e5b",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.security.WindowsSecretRootResolverTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.security.WindowsSecretRootResolverTest.xml",
+    "originalBytes": 723,
+    "originalSha256": "a44eab03500f18271a215ef607d2f0e3ebafa20d534951a98f75d67bf8dcea35",
+    "publishedBytes": 723,
+    "publishedSha256": "a44eab03500f18271a215ef607d2f0e3ebafa20d534951a98f75d67bf8dcea35",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.security.WindowsSecretStoreTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.security.WindowsSecretStoreTest.xml",
+    "originalBytes": 1516,
+    "originalSha256": "348ddaaeb25678e86dda1e77bde59a1610ea98fb584ac446fad2f40ceab94686",
+    "publishedBytes": 1516,
+    "publishedSha256": "348ddaaeb25678e86dda1e77bde59a1610ea98fb584ac446fad2f40ceab94686",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.WindowsCommonItemDialogTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.WindowsCommonItemDialogTest.xml",
+    "originalBytes": 1745,
+    "originalSha256": "b4f0886e71f93182b39a584c318284f3f618b1471fd6fc8d07d48ca31d3ab484",
+    "publishedBytes": 1745,
+    "publishedSha256": "b4f0886e71f93182b39a584c318284f3f618b1471fd6fc8d07d48ca31d3ab484",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.WindowsNativeDialogIntegrationTest.xml",
+    "published": "04-bounded-desktop/junit/TEST-com.example.chatbar.desktop.WindowsNativeDialogIntegrationTest.xml",
+    "originalBytes": 732,
+    "originalSha256": "5c252929274ab28298880d173444953f6b615d16127feea177fcfcdf1095260c",
+    "publishedBytes": 732,
+    "publishedSha256": "5c252929274ab28298880d173444953f6b615d16127feea177fcfcdf1095260c",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/process-events.jsonl",
+    "published": "04-bounded-desktop/process-events.jsonl",
+    "originalBytes": 1553,
+    "originalSha256": "c05fa16dd2ee0de79e53bf6e70c0424b882ed0a4b454b2634bbdb1ed6de01be4",
+    "publishedBytes": 1553,
+    "publishedSha256": "c05fa16dd2ee0de79e53bf6e70c0424b882ed0a4b454b2634bbdb1ed6de01be4",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/process-inventories.jsonl",
+    "published": "04-bounded-desktop/process-inventories.jsonl",
+    "originalBytes": 32220,
+    "originalSha256": "a14eec5801c2003e0beaac56cacb79e6b0151b93a45836a28ff5ea38adaa4e04",
+    "publishedBytes": 32220,
+    "publishedSha256": "a14eec5801c2003e0beaac56cacb79e6b0151b93a45836a28ff5ea38adaa4e04",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/process.json",
+    "published": "04-bounded-desktop/process.json",
+    "originalBytes": 110,
+    "originalSha256": "cc294dc5aae3ff60f668ba2f4d5a8ea2130b6f544b8abb7445d543505713c1bf",
+    "publishedBytes": 110,
+    "publishedSha256": "cc294dc5aae3ff60f668ba2f4d5a8ea2130b6f544b8abb7445d543505713c1bf",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/resources.jsonl",
+    "published": "04-bounded-desktop/resources.jsonl",
+    "originalBytes": 13400,
+    "originalSha256": "fe3f44209f58818382041f26c8aa8a51840c7e2912f920409da1db965f1f1499",
+    "publishedBytes": 13400,
+    "publishedSha256": "fe3f44209f58818382041f26c8aa8a51840c7e2912f920409da1db965f1f1499",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/stage.json",
+    "published": "04-bounded-desktop/stage.json",
+    "originalBytes": 633,
+    "originalSha256": "382d5e2a83b81d1e2432e7daf338fc8ecebb12a1f5c062496bd1e7c1ce998b98",
+    "publishedBytes": 633,
+    "publishedSha256": "382d5e2a83b81d1e2432e7daf338fc8ecebb12a1f5c062496bd1e7c1ce998b98",
+    "redactions": []
+  },
+  {
+    "source": "04-bounded-desktop/zero-write-events.jsonl",
+    "published": "04-bounded-desktop/zero-write-events.jsonl",
+    "originalBytes": 1029963,
+    "originalSha256": "cef31a318f73482cb6bd92843143e68d640750fb57890d97aeba9d548a0564c9",
+    "publishedBytes": 1029963,
+    "publishedSha256": "cef31a318f73482cb6bd92843143e68d640750fb57890d97aeba9d548a0564c9",
+    "redactions": []
+  },
+  {
+    "source": "05-create-distributable/command.txt",
+    "published": "05-create-distributable/command.txt",
+    "originalBytes": 201,
+    "originalSha256": "85ba92ba9ab47f0eae2beb699761e677a22e7307f8b4e3396267acf8fbb5ed02",
+    "publishedBytes": 201,
+    "publishedSha256": "85ba92ba9ab47f0eae2beb699761e677a22e7307f8b4e3396267acf8fbb5ed02",
+    "redactions": []
+  },
+  {
+    "source": "05-create-distributable/gradle.stderr.log",
+    "published": "05-create-distributable/gradle.stderr.log",
+    "originalBytes": 0,
+    "originalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "publishedBytes": 0,
+    "publishedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "redactions": []
+  },
+  {
+    "source": "05-create-distributable/gradle.stdout.log",
+    "published": "05-create-distributable/gradle.stdout.log",
+    "originalBytes": 1832,
+    "originalSha256": "8733aa2eb9756b176ed3639572852d45aebcc067b734282e338b94e52dd7100b",
+    "publishedBytes": 1832,
+    "publishedSha256": "8733aa2eb9756b176ed3639572852d45aebcc067b734282e338b94e52dd7100b",
+    "redactions": []
+  },
+  {
+    "source": "05-create-distributable/process.json",
+    "published": "05-create-distributable/process.json",
+    "originalBytes": 109,
+    "originalSha256": "926f06580e73d2d2112789521399948415a5eb1c4ad21e0b6aaf4f4f8f3008ff",
+    "publishedBytes": 109,
+    "publishedSha256": "926f06580e73d2d2112789521399948415a5eb1c4ad21e0b6aaf4f4f8f3008ff",
+    "redactions": []
+  },
+  {
+    "source": "05-create-distributable/resources.jsonl",
+    "published": "05-create-distributable/resources.jsonl",
+    "originalBytes": 884,
+    "originalSha256": "de51659daf9b356f076a1ced2fe6f2ce12cdb99fd10da2bbcb896c05019af75d",
+    "publishedBytes": 884,
+    "publishedSha256": "de51659daf9b356f076a1ced2fe6f2ce12cdb99fd10da2bbcb896c05019af75d",
+    "redactions": []
+  },
+  {
+    "source": "05-create-distributable/stage.json",
+    "published": "05-create-distributable/stage.json",
+    "originalBytes": 522,
+    "originalSha256": "de4c320d2f0671784ea073ac9c1221a9449f8d5f364d90ab0f3c222a8ee6f008",
+    "publishedBytes": 522,
+    "publishedSha256": "de4c320d2f0671784ea073ac9c1221a9449f8d5f364d90ab0f3c222a8ee6f008",
+    "redactions": []
+  },
+  {
+    "source": "preflight.py",
+    "published": "preflight.py",
+    "originalBytes": 1161,
+    "originalSha256": "8acee7891d84dc97f16960487ea9c4d59698edf5fe050f815a70608f59f2daaa",
+    "publishedBytes": 1161,
+    "publishedSha256": "8acee7891d84dc97f16960487ea9c4d59698edf5fe050f815a70608f59f2daaa",
+    "redactions": []
+  },
+  {
+    "source": "preflight-source.json",
+    "published": "preflight-source.json",
+    "originalBytes": 1898,
+    "originalSha256": "5573ce9850f2e2fe9ab73b002c70f81d3c4abc60b85b5d172c8591537985b505",
+    "publishedBytes": 1898,
+    "publishedSha256": "5573ce9850f2e2fe9ab73b002c70f81d3c4abc60b85b5d172c8591537985b505",
+    "redactions": []
+  },
+  {
+    "source": "freeze-source.py",
+    "published": "freeze-source.py",
+    "originalBytes": 1399,
+    "originalSha256": "dee457e39a10984f97a470fb500b076045453e084f46140527da6b1036e2cd90",
+    "publishedBytes": 1399,
+    "publishedSha256": "dee457e39a10984f97a470fb500b076045453e084f46140527da6b1036e2cd90",
+    "redactions": []
+  },
+  {
+    "source": "r2-source.patch",
+    "published": "r2-source.patch",
+    "originalBytes": 41925,
+    "originalSha256": "7d76db7a44f69f7d58f3d8dcda5ed7e6e7c6dc8dc1bc0b23a244f72f8f3d54ad",
+    "publishedBytes": 41925,
+    "publishedSha256": "7d76db7a44f69f7d58f3d8dcda5ed7e6e7c6dc8dc1bc0b23a244f72f8f3d54ad",
+    "redactions": []
+  },
+  {
+    "source": "r2-source-manifest.json",
+    "published": "r2-source-manifest.json",
+    "originalBytes": 1803,
+    "originalSha256": "e6abadcc4c97c142f7af1fdde2a2f865c6671b37d5eddcc6fc81f52c22a477e2",
+    "publishedBytes": 1803,
+    "publishedSha256": "e6abadcc4c97c142f7af1fdde2a2f865c6671b37d5eddcc6fc81f52c22a477e2",
+    "redactions": []
+  },
+  {
+    "source": "r2-vs-r1-test-only.patch",
+    "published": "r2-vs-r1-test-only.patch",
+    "originalBytes": 4132,
+    "originalSha256": "b2fecd0a8d0034420ccf51d6464b08640f645d134f4370d5211acb069e182303",
+    "publishedBytes": 4132,
+    "publishedSha256": "b2fecd0a8d0034420ccf51d6464b08640f645d134f4370d5211acb069e182303",
+    "redactions": []
+  },
+  {
+    "source": "source-checkpoint.json",
+    "published": "source-checkpoint.json",
+    "originalBytes": 2229,
+    "originalSha256": "9dfcfa12cc04e45685db0810643caa4c905f2d657d01ef9dd113cb498551c44c",
+    "publishedBytes": 2229,
+    "publishedSha256": "9dfcfa12cc04e45685db0810643caa4c905f2d657d01ef9dd113cb498551c44c",
+    "redactions": []
+  },
+  {
+    "source": "source-commit.patch",
+    "published": "source-commit.patch",
+    "originalBytes": 41975,
+    "originalSha256": "ea66a23a203d52981c6b07dbcb26cdd52a81cf00251fd71e938b3c86e1488b38",
+    "publishedBytes": 41975,
+    "publishedSha256": "ea66a23a203d52981c6b07dbcb26cdd52a81cf00251fd71e938b3c86e1488b38",
+    "redactions": []
+  },
+  {
+    "source": "skill-review.json",
+    "published": "skill-review.json",
+    "originalBytes": 378,
+    "originalSha256": "ee073e1b4e125db4b4020cb8042500f61fc05aec714c903ba11e89ae26672b05",
+    "publishedBytes": 378,
+    "publishedSha256": "ee073e1b4e125db4b4020cb8042500f61fc05aec714c903ba11e89ae26672b05",
+    "redactions": []
+  },
+  {
+    "source": "stage-summary.json",
+    "published": "stage-summary.json",
+    "originalBytes": 1712,
+    "originalSha256": "c40779f4d96beaa878acdba03ed76ddee62014777f6fb5f8be05c13c4bd33603",
+    "publishedBytes": 1712,
+    "publishedSha256": "c40779f4d96beaa878acdba03ed76ddee62014777f6fb5f8be05c13c4bd33603",
+    "redactions": []
+  },
+  {
+    "source": "historical-evidence-preservation.json",
+    "published": "historical-evidence-preservation.json",
+    "originalBytes": 874,
+    "originalSha256": "5a26fa0edeb1d099a3fb3511dcc0cca0cd22bbd807a9037c61a894a876cd9f5a",
+    "publishedBytes": 874,
+    "publishedSha256": "5a26fa0edeb1d099a3fb3511dcc0cca0cd22bbd807a9037c61a894a876cd9f5a",
+    "redactions": []
+  },
+  {
+    "source": "run-stage.ps1",
+    "published": "run-stage.ps1",
+    "originalBytes": 3081,
+    "originalSha256": "f7dbfe555dd26eddcfe2a99378e1df1f4906ebd93a6d505a0b3e36c95a4249a4",
+    "publishedBytes": 3081,
+    "publishedSha256": "f7dbfe555dd26eddcfe2a99378e1df1f4906ebd93a6d505a0b3e36c95a4249a4",
+    "redactions": []
+  },
+  {
+    "source": "bounded.init.gradle",
+    "published": "bounded.init.gradle",
+    "originalBytes": 550,
+    "originalSha256": "0f749115d0d5ae8366fbbe17f9ad84c1ad350f263c014049e961e65eeb247648",
+    "publishedBytes": 550,
+    "publishedSha256": "0f749115d0d5ae8366fbbe17f9ad84c1ad350f263c014049e961e65eeb247648",
+    "redactions": []
+  },
+  {
+    "source": "distribution-manifest.json",
+    "published": "distribution-manifest.json",
+    "originalBytes": 45281,
+    "originalSha256": "d83c7a8f0ed342a25c4a76d46bdbc03b448e6ff5b6e35b2f702eca7629b3c054",
+    "publishedBytes": 45281,
+    "publishedSha256": "d83c7a8f0ed342a25c4a76d46bdbc03b448e6ff5b6e35b2f702eca7629b3c054",
+    "redactions": []
+  },
+  {
+    "source": "freeze-package.py",
+    "published": "freeze-package.py",
+    "originalBytes": 2843,
+    "originalSha256": "835e91716ee98588bf606ca8e512f27340b54f2c7dffd4b8c5fc669427270793",
+    "publishedBytes": 2843,
+    "publishedSha256": "835e91716ee98588bf606ca8e512f27340b54f2c7dffd4b8c5fc669427270793",
+    "redactions": []
+  },
+  {
+    "source": "image-verification-before-manual.json",
+    "published": "image-verification-before-manual.json",
+    "originalBytes": 38,
+    "originalSha256": "c7e314dae1dc882712cacfb13e4e4fb166df7056d087d4b14d81fe570744e77e",
+    "publishedBytes": 38,
+    "publishedSha256": "c7e314dae1dc882712cacfb13e4e4fb166df7056d087d4b14d81fe570744e77e",
+    "redactions": []
+  },
+  {
+    "source": "image-verification-after-manual.json",
+    "published": "image-verification-after-manual.json",
+    "originalBytes": 156,
+    "originalSha256": "10d4266c5c1434fdeee8e952c68eea3b6fe3b94cff89788328a85d749ca4c65f",
+    "publishedBytes": 156,
+    "publishedSha256": "10d4266c5c1434fdeee8e952c68eea3b6fe3b94cff89788328a85d749ca4c65f",
+    "redactions": []
+  },
+  {
+    "source": "live-source-basis.json",
+    "published": "live-source-basis.json",
+    "originalBytes": 909,
+    "originalSha256": "4991f5fee95529cedf76324ea0ffbd9bb083075547d6251a972da50a3c56a4c4",
+    "publishedBytes": 909,
+    "publishedSha256": "4991f5fee95529cedf76324ea0ffbd9bb083075547d6251a972da50a3c56a4c4",
+    "redactions": []
+  },
+  {
+    "source": "source-basis.py",
+    "published": "source-basis.py",
+    "originalBytes": 2746,
+    "originalSha256": "3244d97e9d7de3749977c3e20d921d73e0f1f94e5fd0351454b6d0b1ffeb2b6f",
+    "publishedBytes": 2746,
+    "publishedSha256": "3244d97e9d7de3749977c3e20d921d73e0f1f94e5fd0351454b6d0b1ffeb2b6f",
+    "redactions": []
+  },
+  {
+    "source": "F2SampleLiveSupport.java",
+    "published": "F2SampleLiveSupport.java",
+    "originalBytes": 3559,
+    "originalSha256": "285adc22d13e9c88df0dbc0effb364ca2c1e1169349d5d20b692907c32e7a015",
+    "publishedBytes": 3559,
+    "publishedSha256": "285adc22d13e9c88df0dbc0effb364ca2c1e1169349d5d20b692907c32e7a015",
+    "redactions": []
+  },
+  {
+    "source": "run-live-sample.py",
+    "published": "run-live-sample.py",
+    "originalBytes": 1597,
+    "originalSha256": "e0ea754d4c912e55dd213d5610ddc95675fe0adcb8100a445df78c51f7a74f77",
+    "publishedBytes": 1597,
+    "publishedSha256": "e0ea754d4c912e55dd213d5610ddc95675fe0adcb8100a445df78c51f7a74f77",
+    "redactions": []
+  },
+  {
+    "source": "live-sample-process.json",
+    "published": "live-sample-process.json",
+    "originalBytes": 167,
+    "originalSha256": "7dfef2569c76ae53a294aae28a6d573307d076a4cdeb1a1c57e13e4efeecbe12",
+    "publishedBytes": 167,
+    "publishedSha256": "7dfef2569c76ae53a294aae28a6d573307d076a4cdeb1a1c57e13e4efeecbe12",
+    "redactions": []
+  },
+  {
+    "source": "live-sample-exit.json",
+    "published": "live-sample-exit.json",
+    "originalBytes": 88,
+    "originalSha256": "74566e25858314bc655ddca733a9e830419ac1a3b87b90aabff3ea1879c1ec27",
+    "publishedBytes": 88,
+    "publishedSha256": "74566e25858314bc655ddca733a9e830419ac1a3b87b90aabff3ea1879c1ec27",
+    "redactions": []
+  },
+  {
+    "source": "live-sample-result.json",
+    "published": "live-sample-result.json",
+    "originalBytes": 419,
+    "originalSha256": "e9a57b5398df543865cfc2138b29674df73891b6f8ef69ca00e0ddbc2997a40c",
+    "publishedBytes": 419,
+    "publishedSha256": "e9a57b5398df543865cfc2138b29674df73891b6f8ef69ca00e0ddbc2997a40c",
+    "redactions": []
+  },
+  {
+    "source": "live-sample.stdout.log",
+    "published": "live-sample.stdout.log",
+    "originalBytes": 31,
+    "originalSha256": "fe44dad98f5309ec0afe985329db984025957e56d81f26cb58ff97c156be1d68",
+    "publishedBytes": 31,
+    "publishedSha256": "fe44dad98f5309ec0afe985329db984025957e56d81f26cb58ff97c156be1d68",
+    "redactions": []
+  },
+  {
+    "source": "live-sample.stderr.log",
+    "published": "live-sample.stderr.log",
+    "originalBytes": 0,
+    "originalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "publishedBytes": 0,
+    "publishedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "redactions": []
+  },
+  {
+    "source": "F2UiSupport.java",
+    "published": "F2UiSupport.java",
+    "originalBytes": 15538,
+    "originalSha256": "38131251db7fa3e464dbb99107f7c790799071e2e2e792bec39dbf641b332ad5",
+    "publishedBytes": 15538,
+    "publishedSha256": "38131251db7fa3e464dbb99107f7c790799071e2e2e792bec39dbf641b332ad5",
+    "redactions": []
+  },
+  {
+    "source": "helper-compile.json",
+    "published": "helper-compile.json",
+    "originalBytes": 94,
+    "originalSha256": "a200a85a9cac5cf55c886e7e9ee50c0b101d00d36057106bb86864a80727796b",
+    "publishedBytes": 94,
+    "publishedSha256": "a200a85a9cac5cf55c886e7e9ee50c0b101d00d36057106bb86864a80727796b",
+    "redactions": []
+  },
+  {
+    "source": "helper-compile.stdout.log",
+    "published": "helper-compile.stdout.log",
+    "originalBytes": 0,
+    "originalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "publishedBytes": 0,
+    "publishedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "redactions": []
+  },
+  {
+    "source": "helper-compile.stderr.log",
+    "published": "helper-compile.stderr.log",
+    "originalBytes": 0,
+    "originalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "publishedBytes": 0,
+    "publishedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "redactions": []
+  },
+  {
+    "source": "manual-supervisor.py",
+    "published": "manual-supervisor.py",
+    "originalBytes": 4548,
+    "originalSha256": "def66cdc1a1707941c3629d6630cac1c0c53bae8fad75737605b745f3e2cd5f5",
+    "publishedBytes": 4548,
+    "publishedSha256": "def66cdc1a1707941c3629d6630cac1c0c53bae8fad75737605b745f3e2cd5f5",
+    "redactions": []
+  },
+  {
+    "source": "runtime-watch.ps1",
+    "published": "runtime-watch.ps1",
+    "originalBytes": 6313,
+    "originalSha256": "ae8367f5530b5a827a2528a3bcefeff7a2293f9259e52dad3958e85f2356baa0",
+    "publishedBytes": 6313,
+    "publishedSha256": "ae8367f5530b5a827a2528a3bcefeff7a2293f9259e52dad3958e85f2356baa0",
+    "redactions": []
+  },
+  {
+    "source": "synthetic-seed.result.json",
+    "published": "synthetic-seed.result.json",
+    "originalBytes": 87,
+    "originalSha256": "c2bdebb51f31a3b60b0508a12cdb953d416341d0100a326e428aecd6ba1ca7bd",
+    "publishedBytes": 87,
+    "publishedSha256": "c2bdebb51f31a3b60b0508a12cdb953d416341d0100a326e428aecd6ba1ca7bd",
+    "redactions": []
+  },
+  {
+    "source": "synthetic-seed.stdout.log",
+    "published": "synthetic-seed.stdout.log",
+    "originalBytes": 28,
+    "originalSha256": "1edb272900864ab0959869dd356e3e858e750a78d4393c11da8c26a86bb9fba4",
+    "publishedBytes": 28,
+    "publishedSha256": "1edb272900864ab0959869dd356e3e858e750a78d4393c11da8c26a86bb9fba4",
+    "redactions": []
+  },
+  {
+    "source": "synthetic-seed.stderr.log",
+    "published": "synthetic-seed.stderr.log",
+    "originalBytes": 0,
+    "originalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "publishedBytes": 0,
+    "publishedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "redactions": []
+  },
+  {
+    "source": "before-synthetic-cards.json",
+    "published": "before-synthetic-cards.json",
+    "originalBytes": 212,
+    "originalSha256": "8ad5a823c0741d355d582d532b005cb089959850927f6295e8d3b23560e6e18d",
+    "publishedBytes": 212,
+    "publishedSha256": "8ad5a823c0741d355d582d532b005cb089959850927f6295e8d3b23560e6e18d",
+    "redactions": []
+  },
+  {
+    "source": "after-synthetic-cards.json",
+    "published": "after-synthetic-cards.json",
+    "originalBytes": 212,
+    "originalSha256": "8ad5a823c0741d355d582d532b005cb089959850927f6295e8d3b23560e6e18d",
+    "publishedBytes": 212,
+    "publishedSha256": "8ad5a823c0741d355d582d532b005cb089959850927f6295e8d3b23560e6e18d",
+    "redactions": []
+  },
+  {
+    "source": "active-lock.result.json",
+    "published": "active-lock.result.json",
+    "originalBytes": 171,
+    "originalSha256": "16d2c9931bc13670474825d2f344eab8ba999d1f34d4c083a13e6d58465e8e45",
+    "publishedBytes": 171,
+    "publishedSha256": "16d2c9931bc13670474825d2f344eab8ba999d1f34d4c083a13e6d58465e8e45",
+    "redactions": []
+  },
+  {
+    "source": "active-lock.stdout.log",
+    "published": "active-lock.stdout.log",
+    "originalBytes": 16,
+    "originalSha256": "d0af78380372f3ab6ef15bf423bb437bd4053f5d056eaa17cbe0d0811c93f8ca",
+    "publishedBytes": 16,
+    "publishedSha256": "d0af78380372f3ab6ef15bf423bb437bd4053f5d056eaa17cbe0d0811c93f8ca",
+    "redactions": []
+  },
+  {
+    "source": "active-lock.stderr.log",
+    "published": "active-lock.stderr.log",
+    "originalBytes": 0,
+    "originalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "publishedBytes": 0,
+    "publishedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "redactions": []
+  },
+  {
+    "source": "post-exit-lock.result.json",
+    "published": "post-exit-lock.result.json",
+    "originalBytes": 87,
+    "originalSha256": "d112be6089fb058b92c05b930534cee7d29eb422ff0b50e26610c3561c18a5bc",
+    "publishedBytes": 87,
+    "publishedSha256": "d112be6089fb058b92c05b930534cee7d29eb422ff0b50e26610c3561c18a5bc",
+    "redactions": []
+  },
+  {
+    "source": "post-exit-lock.stdout.log",
+    "published": "post-exit-lock.stdout.log",
+    "originalBytes": 35,
+    "originalSha256": "2bb4f4e261dfe8672a4b23076ced9fc7ae677432693796fa0e99947004e034a3",
+    "publishedBytes": 35,
+    "publishedSha256": "2bb4f4e261dfe8672a4b23076ced9fc7ae677432693796fa0e99947004e034a3",
+    "redactions": []
+  },
+  {
+    "source": "post-exit-lock.stderr.log",
+    "published": "post-exit-lock.stderr.log",
+    "originalBytes": 402,
+    "originalSha256": "d8fef0430e2e605ba71247d05ae4f6e68c2a6f209c378b4d2512d7407ba2a976",
+    "publishedBytes": 402,
+    "publishedSha256": "d8fef0430e2e605ba71247d05ae4f6e68c2a6f209c378b4d2512d7407ba2a976",
+    "redactions": []
+  },
+  {
+    "source": "stopped-audio-handle-check.json",
+    "published": "stopped-audio-handle-check.json",
+    "originalBytes": 953,
+    "originalSha256": "a0e030f399c0793a33d41581e05d166ddc4876eced8556c5f0013fdc6fb24ad5",
+    "publishedBytes": 953,
+    "publishedSha256": "a0e030f399c0793a33d41581e05d166ddc4876eced8556c5f0013fdc6fb24ad5",
+    "redactions": []
+  },
+  {
+    "source": "cache-observation-at-reported-mismatch.json",
+    "published": "cache-observation-at-reported-mismatch.json",
+    "originalBytes": 1075,
+    "originalSha256": "3744785564e0e738181dfc13abb2a1c6009b0c619acc7dfbf1da0e1c5275b993",
+    "publishedBytes": 1075,
+    "publishedSha256": "3744785564e0e738181dfc13abb2a1c6009b0c619acc7dfbf1da0e1c5275b993",
+    "redactions": []
+  },
+  {
+    "source": "hang-close-observation.json",
+    "published": "hang-close-observation.json",
+    "originalBytes": 594,
+    "originalSha256": "b7a7b04064350e039d33ba383f7024787d0704cdfa474cd51fdcb90f7ded3477",
+    "publishedBytes": 594,
+    "publishedSha256": "b7a7b04064350e039d33ba383f7024787d0704cdfa474cd51fdcb90f7ded3477",
+    "redactions": []
+  },
+  {
+    "source": "user-signatures.jsonl",
+    "published": "user-signatures.jsonl",
+    "originalBytes": 6026,
+    "originalSha256": "f826448c6cd46cac9ba53ad746bdaee03532b58c34a4f9f87662a854b3592358",
+    "publishedBytes": 6026,
+    "publishedSha256": "f826448c6cd46cac9ba53ad746bdaee03532b58c34a4f9f87662a854b3592358",
+    "redactions": []
+  },
+  {
+    "source": "manual-status.json",
+    "published": "manual-status.json",
+    "originalBytes": 153,
+    "originalSha256": "683432ff840ff3f81d78303743fb135f380d9f00eef11a86cef3670283ca63a2",
+    "publishedBytes": 153,
+    "publishedSha256": "683432ff840ff3f81d78303743fb135f380d9f00eef11a86cef3670283ca63a2",
+    "redactions": []
+  },
+  {
+    "source": "mock-process.json",
+    "published": "mock-process.json",
+    "originalBytes": 97,
+    "originalSha256": "0bf6d4870406b247fe1b77d86d4699338b6c073430188f7165238877c3d0be34",
+    "publishedBytes": 97,
+    "publishedSha256": "0bf6d4870406b247fe1b77d86d4699338b6c073430188f7165238877c3d0be34",
+    "redactions": []
+  },
+  {
+    "source": "mock-final.json",
+    "published": "mock-final.json",
+    "originalBytes": 145,
+    "originalSha256": "d19a7c5370a870c3be19adb388cb82c8f2d00b2c422957bbd948356bd5f18cb8",
+    "publishedBytes": 145,
+    "publishedSha256": "d19a7c5370a870c3be19adb388cb82c8f2d00b2c422957bbd948356bd5f18cb8",
+    "redactions": []
+  },
+  {
+    "source": "mock.stdout.log",
+    "published": "mock.stdout.log",
+    "originalBytes": 24,
+    "originalSha256": "849563ede3f417f521e76ef6dd656e1df809f8b8ff0cc1586d3f8a93ee4d4e20",
+    "publishedBytes": 24,
+    "publishedSha256": "849563ede3f417f521e76ef6dd656e1df809f8b8ff0cc1586d3f8a93ee4d4e20",
+    "redactions": []
+  },
+  {
+    "source": "mock.stderr.log",
+    "published": "mock.stderr.log",
+    "originalBytes": 0,
+    "originalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "publishedBytes": 0,
+    "publishedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "redactions": []
+  },
+  {
+    "source": "manual01.watch.stdout.log",
+    "published": "manual01.watch.stdout.log",
+    "originalBytes": 82,
+    "originalSha256": "efcedd1d86e2cbb57657f342b69d61b66b1b4c100bd4da5d8edd411c09d91394",
+    "publishedBytes": 82,
+    "publishedSha256": "efcedd1d86e2cbb57657f342b69d61b66b1b4c100bd4da5d8edd411c09d91394",
+    "redactions": []
+  },
+  {
+    "source": "manual01.watch.stderr.log",
+    "published": "manual01.watch.stderr.log",
+    "originalBytes": 0,
+    "originalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "publishedBytes": 0,
+    "publishedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "redactions": []
+  },
+  {
+    "source": "post-exit-preview-files.json",
+    "published": "post-exit-preview-files.json",
+    "originalBytes": 21,
+    "originalSha256": "9979c686d4f4ef4af012e250578c75eaa6f8e60ae5e6f3780f58a2db5169a267",
+    "publishedBytes": 21,
+    "publishedSha256": "9979c686d4f4ef4af012e250578c75eaa6f8e60ae5e6f3780f58a2db5169a267",
+    "redactions": []
+  },
+  {
+    "source": "runs/manual01/close-request.json",
+    "published": "runs/manual01/close-request.json",
+    "originalBytes": 150,
+    "originalSha256": "e38ba173b074082e40bd207ea4854ea1fac1ff9d881e98afb79660b727eaed69",
+    "publishedBytes": 150,
+    "publishedSha256": "e38ba173b074082e40bd207ea4854ea1fac1ff9d881e98afb79660b727eaed69",
+    "redactions": []
+  },
+  {
+    "source": "runs/manual01/launch.json",
+    "published": "runs/manual01/launch.json",
+    "originalBytes": 795,
+    "originalSha256": "bda4ae19f040a98804f6506ba8746944ef151195997794cc6845dff273f3235d",
+    "publishedBytes": 795,
+    "publishedSha256": "bda4ae19f040a98804f6506ba8746944ef151195997794cc6845dff273f3235d",
+    "redactions": []
+  },
+  {
+    "source": "runs/manual01/process-observations.jsonl",
+    "published": "runs/manual01/process-observations.jsonl",
+    "originalBytes": 131529,
+    "originalSha256": "47f30eee572eab530833303c3bcb1150f05a8a0def254af4f0c9a3bb84f31c89",
+    "publishedBytes": 131529,
+    "publishedSha256": "47f30eee572eab530833303c3bcb1150f05a8a0def254af4f0c9a3bb84f31c89",
+    "redactions": []
+  },
+  {
+    "source": "runs/manual01/process-result.json",
+    "published": "runs/manual01/process-result.json",
+    "originalBytes": 1297,
+    "originalSha256": "05fe6a1b1bb6250641bb904c255511c88fffb95f9ba742fd333381572cbbb950",
+    "publishedBytes": 1297,
+    "publishedSha256": "05fe6a1b1bb6250641bb904c255511c88fffb95f9ba742fd333381572cbbb950",
+    "redactions": []
+  },
+  {
+    "source": "runs/manual01/stderr.log",
+    "published": "runs/manual01/stderr.log",
+    "originalBytes": 1475,
+    "originalSha256": "c58b48be7cb4e4a8459bceab95fbc9be72ca3b59c285f8b4f240111ffb6a0faf",
+    "publishedBytes": 1475,
+    "publishedSha256": "c58b48be7cb4e4a8459bceab95fbc9be72ca3b59c285f8b4f240111ffb6a0faf",
+    "redactions": []
+  },
+  {
+    "source": "runs/manual01/stdout.log",
+    "published": "runs/manual01/stdout.log",
+    "originalBytes": 2,
+    "originalSha256": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+    "publishedBytes": 2,
+    "publishedSha256": "7eb70257593da06f682a3ddda54a9d260d4fc514f645237f5ca74b08f8da61a6",
+    "redactions": []
+  },
+  {
+    "source": "user-provided-window-images/image-identities.json",
+    "published": "user-provided-window-images/image-identities.json",
+    "originalBytes": 595,
+    "originalSha256": "dda1e66182a3dd68f40e62ea7626df06e1c2ab8ae3eb285694bc88b5c6be5ed7",
+    "publishedBytes": 595,
+    "publishedSha256": "dda1e66182a3dd68f40e62ea7626df06e1c2ab8ae3eb285694bc88b5c6be5ed7",
+    "redactions": []
+  },
+  {
+    "source": "user-provided-window-images/UI-LAYOUT-001-01.png",
+    "published": "user-provided-window-images/UI-LAYOUT-001-01.png",
+    "originalBytes": 41059,
+    "originalSha256": "6a253f01965aa4d3be80018472d31d3e406b35ef9d77c3ed49f9965ca9d2b876",
+    "publishedBytes": 41059,
+    "publishedSha256": "6a253f01965aa4d3be80018472d31d3e406b35ef9d77c3ed49f9965ca9d2b876",
+    "redactions": []
+  },
+  {
+    "source": "user-provided-window-images/UI-LAYOUT-001-02.png",
+    "published": "user-provided-window-images/UI-LAYOUT-001-02.png",
+    "originalBytes": 53734,
+    "originalSha256": "c94bf9dae30a74323d7cfad86b0173524b32d162fa8ac3cc0a9b1805cbe5d283",
+    "publishedBytes": 53734,
+    "publishedSha256": "c94bf9dae30a74323d7cfad86b0173524b32d162fa8ac3cc0a9b1805cbe5d283",
+    "redactions": []
+  },
+  {
+    "source": "mock-service/ready.json",
+    "published": "mock-service/ready.json",
+    "originalBytes": 59,
+    "originalSha256": "1d4661cbc2d837f60ad02abb7af709730c44a32265e7cce7d4de6ac76fa07fb6",
+    "publishedBytes": 59,
+    "publishedSha256": "1d4661cbc2d837f60ad02abb7af709730c44a32265e7cce7d4de6ac76fa07fb6",
+    "redactions": []
+  },
+  {
+    "source": "mock-service/events.jsonl",
+    "published": "mock-service/events.jsonl",
+    "originalBytes": 1251,
+    "originalSha256": "a5f1529d25ed3476ee9839cf416a934fd2f728c4efc1d5b181d9c7794d058df3",
+    "publishedBytes": 1251,
+    "publishedSha256": "a5f1529d25ed3476ee9839cf416a934fd2f728c4efc1d5b181d9c7794d058df3",
+    "redactions": []
+  },
+  {
+    "source": "mock-service/cleanup.json",
+    "published": "mock-service/cleanup.json",
+    "originalBytes": 72,
+    "originalSha256": "e60180ca7d398320c654a28a0f71d631df5696660336df837ec5d5b426fab543",
+    "publishedBytes": 72,
+    "publishedSha256": "e60180ca7d398320c654a28a0f71d631df5696660336df837ec5d5b426fab543",
+    "redactions": []
+  }
+]

@@ -1,0 +1,831 @@
+diff --git a/.agents/skills/chatbar-fish-audio-voice/SKILL.md b/.agents/skills/chatbar-fish-audio-voice/SKILL.md
+index 64c83a10..f5730fbd 100644
+--- a/.agents/skills/chatbar-fish-audio-voice/SKILL.md
++++ b/.agents/skills/chatbar-fish-audio-voice/SKILL.md
+@@ -38,9 +38,11 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
+ ## Desktop formal audio foundation
+ 
+ - `DesktopVoiceAudioStore` persists immutable MP3 artifacts under the selected root `audio/generated`, with independent ownership/hash receipts, bounded streams and atomic publication. It has no startup orphan sweep; corrupt indexes, missing receipts and unknown files remain preserved. Current clips retain the accepted 16 MiB / 120-second decoder profile.
+-- `DesktopVoicePlayback` provides key-independent ordered playback and stop/join. `DesktopAudioFocus` provides separate formal/preview ports over one MCI output; a superseded port cannot stop the current owner. App/chat wiring is a subsequent P8 checkpoint.
++- `DesktopVoicePlayback` provides key-independent ordered playback and stop/join. `DesktopAudioFocus` provides separate formal/preview ports over one MCI output; a superseded port cannot stop the current owner. AppContainer owns formal voice drain before preview/native output and root release.
+ - `DesktopFishGenerationCoordinator` adapts official targets, text confirmation, global five-permit batches, history/replacement and foreground autoplay. `DesktopFishVoiceTransport` reuses shared TTS serialization with one-shot/one-exchange transport and callback/body drain. Only explicit `s2.1-pro-free` is authorized; stale/paid models fail, and the dated free profile fails closed after 2026-11-30 pending re-verification. Artifact cleanup re-reads a complete strict reference inventory; uncertain commits preserve audio.
+ 
++- `DesktopChatVoiceRuntime` and `DesktopChatVoicePanel` wire explicit assistant segment/whole generation, bound narrator choice, auxiliary-cost confirmation, new take vs replacement, version-scoped voice bars, ordered playback, stop, export and explicit delete. Primary chat mutations drain voice jobs before editing/deleting/switching versions; foreground leases drop autoplay on screen/session leave. No assistant completion automatically requests TTS.
++
+ ## Ownership and Isolation
+ 
+ - Keep generated voice records outside `ChatMessage`. Chat prompt assembly, RAG, source fingerprints, and long-term memory must continue reading text and existing image fields only.
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt
+index e70dbabb..b63bfb76 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt
+@@ -56,8 +56,17 @@ class DesktopAppContainer internal constructor(
+     internal val fishAudioLibrary by fishAudioLibraryOwner
+     private val fishCredentialOwner = lazy { DesktopFishCredentialController(fishAudioCredentials) }
+     internal val fishCredentialController by fishCredentialOwner
++    private val audioFocusOwner = lazy { DesktopAudioFocus() }
++    private val voiceRepositoryOwner = lazy { com.example.chatbar.data.repository.VoiceMessageRepository(jsonFileStorage, strictReads = true) }
++    internal val voiceRepository by voiceRepositoryOwner
++    internal val voiceAudioStore by lazy { DesktopVoiceAudioStore(appDataRoot) }
++    private val chatVoiceOwner = lazy { DesktopChatVoiceRuntime(chatRepository, characterRepository, settingsRepository,
++        effectiveModelResolver, voiceRepository, voiceAudioStore, fishAudioCredentials, audioFocusOwner.value.port(),
++        picker = filePicker, gate = dataOperationCoordinator,
++        textBusy = { sessionId -> taskRuntime.tasks.value.any { it.sessionId == sessionId && it.status == DesktopTaskStatus.RUNNING } }) }
++    internal val chatVoiceRuntime by chatVoiceOwner
+     private val fishPreviewOwner = lazy {
+-        DesktopFishPreviewRuntime(DesktopFishPreviewTransport(fishAudioCredentials),
++        DesktopFishPreviewRuntime(DesktopFishPreviewTransport(fishAudioCredentials), output = audioFocusOwner.value.port(),
+             model = { settingsRepository.currentAppSettings.fishAudioTtsModelId })
+     }
+     internal val fishPreviewRuntime by fishPreviewOwner
+@@ -326,6 +335,7 @@ class DesktopAppContainer internal constructor(
+             },
+             taskRuntime = taskRuntime,
+             imageStore = chatImages,
++            voices = chatVoiceRuntime,
+             formatRepair = messageFormatRepairController,
+             imagePicker = filePicker,
+             backgroundLibrary = DesktopCharacterBackgrounds(jsonFileStorage, characterResourceStore,
+@@ -416,7 +426,9 @@ class DesktopAppContainer internal constructor(
+     suspend fun close() {
+         closeDesktopDataRuntimes(
+             taskRuntimeClose = {
++                if (chatVoiceOwner.isInitialized()) chatVoiceRuntime.closeAndDrain()
+                 if (fishPreviewOwner.isInitialized()) fishPreviewRuntime.closeAndDrain()
++                if (audioFocusOwner.isInitialized()) audioFocusOwner.value.closeAndDrain()
+                 if (fishAudioLibraryOwner.isInitialized()) fishAudioLibrary.closeAndDrain()
+                 if (fishCredentialOwner.isInitialized()) fishCredentialController.closeAndDrain()
+                 if (connectionTestOwner.isInitialized()) connectionTestController.closeAndDrain()
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoicePanel.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoicePanel.kt
+new file mode 100644
+index 00000000..05851268
+--- /dev/null
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoicePanel.kt
+@@ -0,0 +1,153 @@
++package com.example.chatbar.desktop
++
++import androidx.compose.foundation.*
++import androidx.compose.foundation.layout.*
++import androidx.compose.foundation.text.BasicTextField
++import androidx.compose.runtime.*
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.semantics.contentDescription
++import androidx.compose.ui.semantics.semantics
++import androidx.compose.ui.text.TextStyle
++import androidx.compose.ui.unit.dp
++import com.example.chatbar.data.local.entity.*
++import com.example.chatbar.data.repository.VoiceMessagePlacement
++import com.example.chatbar.domain.voice.*
++import kotlinx.coroutines.launch
++
++@Composable
++internal fun rememberDesktopVoicePlacements(runtime: DesktopChatVoiceRuntime?, message: ChatMessage): List<VoiceMessagePlacement> {
++    if (runtime == null || message.role != MessageRole.ASSISTANT) return emptyList()
++    val records by runtime.repository.voices.collectAsState()
++    var failed by remember(message) { mutableStateOf(false) }
++    val result by produceState(emptyList<VoiceMessagePlacement>(), runtime, message, records) {
++        try { value = runtime.repository.placementsForMessage(message); failed = false }
++        catch (_: Exception) { value = emptyList(); failed = true }
++    }
++    if (failed) StatusText("语音记录读取失败；已有文件已保留", DesktopBootstrapColors.destructive)
++    return result
++}
++
++@Composable
++internal fun DesktopVoiceProgress(runtime: DesktopChatVoiceRuntime?, sessionId: String) {
++    if (runtime == null) return
++    val batches by runtime.coordinator.batches.collectAsState()
++    val playback by runtime.playback.state.collectAsState()
++    val notice by runtime.notice.collectAsState()
++    Column(Modifier.fillMaxWidth().heightIn(max = 220.dp).verticalScroll(rememberScrollState()),
++        verticalArrangement = Arrangement.spacedBy(6.dp)) {
++        if (playback.playing) StudioAction("停止语音", icon = DesktopAppIcons.Stop,
++            style = StudioActionStyle.PRIMARY) { runtime.stop() }
++        playback.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
++        notice?.let { StatusText(it) }
++        batches.filter { it.sessionId == sessionId }.forEach { batch ->
++            StatusText("语音 · ${batch.phase} · ${batch.completedCount}/${batch.totalCount} · ${batch.receivedBytes} bytes")
++            batch.errors.values.distinct().forEach { StatusText(it, DesktopBootstrapColors.destructive) }
++            batch.textConfirmations.forEach { confirmation ->
++                StatusText("${confirmation.characterName} · 原文：${confirmation.originalText}")
++                StatusText("AI 建议：${confirmation.proposedTaggedText}")
++            }
++            if (batch.phase == VoiceGenerationPhase.AWAITING_TEXT_CONFIRMATION) ActionRow {
++                StudioAction("采用 AI 文本并生成") { runtime.coordinator.resolveTextConfirmation(batch.id, true) }
++                StudioAction("拒绝改写") { runtime.coordinator.resolveTextConfirmation(batch.id, false) }
++            }
++            if (batch.phase in setOf(VoiceGenerationPhase.FAILED, VoiceGenerationPhase.CANCELLED))
++                StudioAction("关闭语音状态", style = StudioActionStyle.GHOST) { runtime.coordinator.dismiss(batch.id) }
++            else StudioAction("取消本批语音", icon = DesktopAppIcons.Stop) { runtime.coordinator.cancel(batch.id) }
++        }
++    }
++}
++
++@Composable
++internal fun DesktopVoiceRows(runtime: DesktopChatVoiceRuntime?, message: ChatMessage,
++    placements: List<VoiceMessagePlacement>, state: DesktopPrimaryChatState) {
++    if (runtime == null || placements.isEmpty()) return
++    val scope = rememberCoroutineScope()
++    placements.forEach { placement -> key(placement.voice.id) {
++        val voice = placement.voice
++        var expanded by remember { mutableStateOf(false) }
++        var tagged by remember(voice.updatedAt) { mutableStateOf(voice.taggedText) }
++        var confirm by remember { mutableStateOf<String?>(null) }
++        Column(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border).padding(8.dp),
++            verticalArrangement = Arrangement.spacedBy(6.dp)) {
++            ActionRow {
++                StudioAction("播放 · ${voice.characterName} · ${voice.durationMs / 1000}s", icon = DesktopAppIcons.Play) {
++                    scope.launch { runtime.play(voice, message) }
++                }
++                StudioAction(if (expanded) "收起录音操作" else "录音操作", style = StudioActionStyle.GHOST) { expanded = !expanded }
++            }
++            if (expanded) {
++                StatusText("音色快照：${voice.voice.title} · ${voice.fishModelId}")
++                StatusText("口播文本：${voice.effectiveSynthesisText}")
++                ActionRow {
++                    StudioAction("再生成一条（保留旧录音）") { confirm = "additional" }
++                    StudioAction("编辑标签 / 替换录音") { confirm = "replace" }
++                    StudioAction("保存 MP3") { scope.launch { runtime.save(voice, state.selectedSession?.title ?: "聊天") } }
++                    StudioAction("删除此录音") { confirm = "delete" }
++                }
++            }
++            confirm?.let { action ->
++                if (action == "replace") {
++                    StatusText("成功后替换此录音并删除旧文件；失败保留原录音。标签文本由你确认。")
++                    VoiceTextField("已确认的合成标签文本", tagged) { tagged = it }
++                } else StatusText(if (action == "delete") "确认仅删除这条录音？" else "新建独立录音，保留旧录音；翻译/标签可能使用所选辅助模型并计费。")
++                ActionRow {
++                    StudioAction("确认${if (action == "delete") "删除" else "生成"}") {
++                        scope.launch {
++                            if (action == "delete") runtime.deleteVoice(voice)
++                            else runtime.generate(message, voice.characterId, auxiliaryAuthorized = true,
++                                replace = voice.takeIf { action == "replace" }, editedTaggedText = tagged,
++                                additional = voice.takeIf { action == "additional" })
++                            confirm = null
++                        }
++                    }
++                    StudioAction("取消", style = StudioActionStyle.GHOST) { confirm = null }
++                }
++            }
++        }
++    } }
++}
++
++@Composable
++internal fun DesktopVoiceGenerationControls(runtime: DesktopChatVoiceRuntime?, message: ChatMessage, state: DesktopPrimaryChatState) {
++    if (runtime == null || message.role != MessageRole.ASSISTANT) return
++    val scope = rememberCoroutineScope()
++    var expanded by remember(message.id) { mutableStateOf(false) }
++    var narrator by remember(message.id) { mutableStateOf<String?>(null) }
++    var pending by remember(message.id) { mutableStateOf<Int?>(null) }
++    var confirm by remember(message.id) { mutableStateOf(false) }
++    val card = state.selectedCharacter
++    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
++        StudioAction(if (expanded) "收起语音生成" else "语音生成", style = StudioActionStyle.GHOST) { expanded = !expanded }
++        if (expanded) {
++            StatusText("仅明确点击后生成。整条会补齐缺失片段；新录音默认保留历史。")
++            StatusText("仅当前明确选择的免费模型可用；翻译/标签会使用配置的辅助模型，可能计费。")
++            card?.characters?.filter { it.fishAudioVoice != null }?.let { bound ->
++                ActionRow { bound.forEach { character ->
++                    StudioAction("朗读声线 · ${character.name}", selected = narrator == character.id, style = StudioActionStyle.CHIP) { narrator = character.id }
++                } }
++            }
++            StudioAction("生成整条回复 / 补齐语音", enabled = card != null) { pending = null; confirm = true }
++            runtime.generationSegments(message, state.selectedSession, state.assistantSegmentedBubblesEnabled).forEach { segment ->
++                if (segment.sourceScope != VoiceSourceScope.WHOLE_MESSAGE) StudioAction(
++                    "生成本段 · ${segment.speakerName ?: "旁白"} · ${segment.spokenText.take(32)}",
++                    enabled = card != null && VoiceGenerationPolicy.hasResolvableTarget(card, segment)) { pending = segment.segmentIndex; confirm = true }
++            }
++            if (confirm) {
++                StatusText("确认使用当前免费 Fish 模型及所需的辅助模型？未授权的收费 Fish 模型不会发送。")
++                ActionRow {
++                    StudioAction("授权并开始生成", style = StudioActionStyle.PRIMARY) {
++                        scope.launch { runtime.generate(message, narrator, pending, auxiliaryAuthorized = true); confirm = false }
++                    }
++                    StudioAction("取消", style = StudioActionStyle.GHOST) { confirm = false }
++                }
++            }
++        }
++    }
++}
++
++@Composable
++private fun VoiceTextField(label: String, text: String, change: (String) -> Unit) {
++    BasicTextField(text, change, modifier = Modifier.fillMaxWidth().heightIn(max = 160.dp)
++        .semantics { contentDescription = label }.border(1.dp, DesktopBootstrapColors.border).padding(8.dp),
++        textStyle = TextStyle(color = DesktopBootstrapColors.foreground))
++}
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoiceRuntime.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoiceRuntime.kt
+new file mode 100644
+index 00000000..541c71c7
+--- /dev/null
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoiceRuntime.kt
+@@ -0,0 +1,160 @@
++package com.example.chatbar.desktop
++
++import com.example.chatbar.data.local.entity.*
++import com.example.chatbar.data.repository.*
++import com.example.chatbar.domain.chat.*
++import com.example.chatbar.domain.model.EffectiveModelResolver
++import com.example.chatbar.domain.voice.*
++import com.example.chatbar.data.operation.AppDataOperationGate
++import com.example.chatbar.data.operation.NoOpAppDataOperationGate
++import java.nio.file.*
++import java.util.UUID
++import kotlinx.coroutines.*
++import kotlinx.coroutines.flow.MutableStateFlow
++import kotlinx.coroutines.flow.asStateFlow
++import kotlinx.coroutines.sync.Mutex
++import kotlinx.coroutines.sync.withLock
++
++/** App-owned formal voice feature. No automatic synthesis on assistant completion.
++ * All entry points re-read ownership before network work or destructive mutation.
++ */
++internal class DesktopChatVoiceRuntime(
++    private val chats: ChatRepository, private val characters: CharacterRepository,
++    private val settings: SettingsRepository, private val models: EffectiveModelResolver,
++    val repository: VoiceMessageRepository, val audio: DesktopVoiceAudioStore,
++    credentials: DesktopFishAudioCredentials, output: DesktopAudioOutput,
++    private val picker: DesktopFilePicker = UnconfiguredDesktopFilePicker,
++    private val gate: AppDataOperationGate = NoOpAppDataOperationGate,
++    private val textBusy: (String) -> Boolean = { false },
++    transportOverride: DesktopFishVoiceTransport? = null,
++    textGateway: FishVoiceTextGateway = FishVoiceTextGateway { _, messages, config, _ ->
++        OpenAiStreamingTransport { settings.currentAppSettings.allowCleartextModelApi }.streamFishVoice(messages, config)
++    },
++) {
++    private val job = SupervisorJob()
++    private val scope = CoroutineScope(job + Dispatchers.IO)
++    private val mutation = Mutex()
++    private val transport = transportOverride ?: DesktopFishVoiceTransport(credentials, audio)
++    val playback = DesktopVoicePlayback(audio, output)
++    val coordinator = DesktopFishGenerationCoordinator(scope, chats, characters, settings, repository, credentials,
++        transport, FishAudioTagService(textGateway), models, audio, playback, gate)
++    private val mutableNotice = MutableStateFlow<String?>(null)
++    val notice = mutableNotice.asStateFlow()
++    private var closed = false
++
++    fun foreground(sessionId: String?) {
++        coordinator.setForegroundSession(sessionId)
++        scope.launch { playback.stop() }
++    }
++
++    suspend fun generate(expected: ChatMessage, narrator: String?, segment: Int? = null,
++        auxiliaryAuthorized: Boolean = false, replace: GeneratedVoiceMessage? = null,
++        editedTaggedText: String? = null, additional: GeneratedVoiceMessage? = null): String? = guarded {
++        gate.withNormalOperation { mutation.withLock {
++            check(!closed && !textBusy(expected.sessionId)) { "当前会话仍有文本任务，请稍后操作" }
++            val current = chats.getMessage(expected.id, expected.sessionId) ?: error("消息已不存在")
++            check(current == expected) { "消息已变化；请重新打开语音操作" }
++            val session = chats.getSession(current.sessionId) ?: error("会话已不存在")
++            val configured = settings.getAppSettings()
++            val needsAuxiliary = !VoiceGenerationPolicy.audiobookEnabled(session, configured) || !session.voiceLanguage.isNullOrBlank()
++            check(replace != null || !needsAuxiliary || auxiliaryAuthorized) { "翻译或标签需要明确授权所选辅助模型" }
++            if (replace != null) {
++                check(repository.get(replace.id) == replace && replace.messageId == current.id && replace.sessionId == current.sessionId)
++                coordinator.regenerate(replace.id, checkNotNull(editedTaggedText))
++            } else if (additional != null) {
++                check(repository.get(additional.id) == additional && additional.messageId == current.id && additional.sessionId == current.sessionId)
++                coordinator.generateAdditional(current.sessionId, current.id, additional.anchorId, narrator)
++            } else if (segment == null) coordinator.generateWhole(current.sessionId, current.id, narrator)
++            else coordinator.generateSingle(current.sessionId, current.id, segment, narrator)
++        } }
++    }
++
++    suspend fun <T> mutateMessage(sessionId: String, messageId: String, block: suspend () -> T): T =
++        gate.withNormalOperation { mutation.withLock {
++            check(!closed)
++            coordinator.cancelAndJoinForMessage(sessionId, messageId)
++            playback.stop()
++            block()
++        } }
++
++    /** Called only after the owning chat message was explicitly deleted. */
++    suspend fun removeDeletedMessage(sessionId: String, messageId: String) {
++        check(chats.readMessageDurable(messageId, sessionId) is com.example.chatbar.data.local.JsonFileStorage.EntityReadResult.Missing) { "消息删除状态未知；录音已保留" }
++        repository.initialize() // Strict Desktop inventory must be complete before metadata deletion.
++        val removed = repository.deleteForMessage(messageId)
++        removed.forEach { releaseIfUnreferenced(it.audioPath) }
++    }
++
++    /** P11/deletion handoff: caller owns deletion of the session; no recursive directory cleanup. */
++    suspend fun deleteSession(sessionId: String, deleteChat: suspend () -> Unit) = gate.withNormalOperation {
++        mutation.withLock {
++            coordinator.cancelAndJoinForSession(sessionId); playback.stop(); repository.initialize()
++            deleteChat()
++            check(chats.readSessionDurable(sessionId) is com.example.chatbar.data.local.JsonFileStorage.EntityReadResult.Missing) { "会话删除状态未知；录音已保留" }
++            repository.deleteForSession(sessionId).forEach { releaseIfUnreferenced(it.audioPath) }
++        }
++    }
++
++    suspend fun deleteVoice(expected: GeneratedVoiceMessage) = guarded {
++        mutateMessage(expected.sessionId, expected.messageId) {
++            check(repository.get(expected.id) == expected) { "录音已变化；请重新确认" }
++            repository.delete(expected.id)?.let { releaseIfUnreferenced(it.audioPath) }
++            mutableNotice.value = "已删除所选录音"
++        }
++    }
++    private suspend fun releaseIfUnreferenced(path: String) = withContext(NonCancellable) {
++        if (!repository.isAudioReferenced(path)) audio.deleteIfOwned(path) else false
++    }
++    suspend fun play(voice: GeneratedVoiceMessage, message: ChatMessage) = guarded {
++        gate.withNormalOperation {
++            val current = chats.getMessage(message.id, message.sessionId) ?: error("消息已不存在")
++            check(current == message)
++            val visible = repository.placementsForMessage(current).map { it.voice }
++            check(visible.any { it.id == voice.id })
++            coordinator.playFrom(voice, visible)
++        }
++    }
++    fun stop() { coordinator.stopPlayback() }
++    fun generationSegments(message: ChatMessage, session: ChatSession?, segmented: Boolean): List<CurrentVoiceSegment> =
++        if (session == null) emptyList() else VoiceGenerationPolicy.generationSegments(message.displayContent,
++            VoiceGenerationPolicy.audiobookEnabled(session, settings.currentAppSettings), segmented)
++
++    suspend fun save(voice: GeneratedVoiceMessage, chatTitle: String) = guarded {
++        val destination = withContext(Dispatchers.IO) {
++            picker.pickSaveFile(DesktopFileType("MP3 音频", listOf("mp3")), buildVoiceDownloadFileName(chatTitle, voice.characterName))
++        } ?: return@guarded
++        gate.withNormalOperation { withContext(Dispatchers.IO) {
++            val source = audio.verify(voice.audioPath)
++            val target = destination.toAbsolutePath().normalize()
++            check(!Files.exists(target, LinkOption.NOFOLLOW_LINKS)) { "目标文件已存在；请选择新文件名" }
++            check(target.parent.toRealPath() == target.parent)
++            val part = target.resolveSibling(".${UUID.randomUUID()}.part")
++            try {
++                Files.newInputStream(source, LinkOption.NOFOLLOW_LINKS).use { input ->
++                    Files.newOutputStream(part, StandardOpenOption.CREATE_NEW).use { output ->
++                        val bytes = ByteArray(16384); var copied = 0L
++                        while (true) {
++                            currentCoroutineContext().ensureActive()
++                            val n = input.read(bytes); if (n < 0) break
++                            check(n <= voice.byteLength - copied); output.write(bytes, 0, n); copied += n
++                        }
++                        check(copied == voice.byteLength)
++                    }
++                }
++                audio.verify(voice.audioPath); currentCoroutineContext().ensureActive()
++                Files.move(part, target, StandardCopyOption.ATOMIC_MOVE)
++                mutableNotice.value = "MP3 已保存；未向 QQ 或其他联系人发送"
++            } finally { Files.deleteIfExists(part) }
++        } }
++    }
++
++    private suspend fun <T> guarded(block: suspend () -> T): T? = try { block() }
++        catch (e: CancellationException) { throw e }
++        catch (e: Exception) { mutableNotice.value = e.message ?: "语音操作失败；已有音频已保留"; null }
++
++    suspend fun closeAndDrain() = withContext(NonCancellable) {
++        closed = true
++        coordinator.closeAndDrain(); job.cancelAndJoin()
++        transport.closeAndDrain(); playback.closeAndDrain()
++    }
++}
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishGenerationCoordinator.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishGenerationCoordinator.kt
+index cbe66211..04120ea4 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishGenerationCoordinator.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishGenerationCoordinator.kt
+@@ -1,6 +1,8 @@
+ package com.example.chatbar.desktop
+ 
+ import com.example.chatbar.domain.voice.*
++import com.example.chatbar.data.operation.AppDataOperationGate
++import com.example.chatbar.data.operation.NoOpAppDataOperationGate
+ 
+ import com.example.chatbar.data.local.entity.CharacterCard
+ import com.example.chatbar.data.local.entity.CharacterInfo
+@@ -110,13 +112,23 @@ internal class DesktopFishGenerationCoordinator(
+     private val tagService: FishAudioTagService,
+     private val modelResolver: EffectiveModelResolver,
+     private val storage: DesktopVoiceAudioStore,
+-    private val playback: DesktopVoicePlayback
++    private val playback: DesktopVoicePlayback,
++    private val operationGate: AppDataOperationGate = NoOpAppDataOperationGate,
+ ) {
+     private val admission = Any()
+     private var accepting = true
+     private fun registerJob(id: String, job: Job) = synchronized(admission) {
+         if (!accepting) { job.cancel(); error("语音协调器正在关闭") }
+-        jobs[id] = job; job.start()
++        jobs[id] = job
++        job.invokeOnCompletion { error ->
++            jobs.remove(id, job)
++            if (error is CancellationException) markCancelled(id)
++            else if (error != null) failBatch(id, error)
++        }
++        job.start()
++    }
++    private fun launchVoiceJob(block: suspend () -> Unit): Job = scope.launch(start = CoroutineStart.LAZY) {
++        operationGate.withNormalOperation { block() }
+     }
+     private fun strictFishModel(model: String): String {
+         require(model in FishAudioTtsModels.supported) { "所选 Fish 模型已失效；不会自动替换" }
+@@ -234,7 +246,7 @@ internal class DesktopFishGenerationCoordinator(
+                 totalCount = 1
+             )
+         )
+-        val job = scope.launch(start = CoroutineStart.LAZY) {
++        val job = launchVoiceJob {
+             try {
+                 val existing = voiceRepository.get(voiceId) ?: error("语音消息不存在")
+                 updateBatch(batchId) {
+@@ -317,6 +329,16 @@ internal class DesktopFishGenerationCoordinator(
+         return batchId
+     }
+ 
++    /** Explicit new take, distinct from regenerate(existing ID)'s replacement contract. */
++    fun generateAdditional(sessionId: String, messageId: String, anchorId: String?, narratorCharacterId: String?): String =
++        launchBatch(sessionId, messageId) { batchId, screenGeneration ->
++            val context = loadContext(sessionId, messageId)
++            val target = resolveTargets(context, narratorCharacterId).firstOrNull { it.anchorId == anchorId }
++                ?: error("源片段已变化；请从当前片段重新生成")
++            registerAutoPlay(batchId, context, screenGeneration)
++            runGeneration(batchId, context, listOf(target), false)
++        }
++
+     fun resolveTextConfirmation(batchId: String, useAiText: Boolean) {
+         val pending = pendingTextConfirmations.remove(batchId) ?: return
+         updateBatch(batchId) {
+@@ -325,7 +347,7 @@ internal class DesktopFishGenerationCoordinator(
+                 textConfirmations = emptyList()
+             )
+         }
+-        val job = scope.launch(start = CoroutineStart.LAZY) {
++        val job = launchVoiceJob {
+             try {
+                 val confirmedText = if (useAiText) {
+                     pending.tagResult.confirmationRequiredById
+@@ -430,7 +452,7 @@ internal class DesktopFishGenerationCoordinator(
+             )
+         )
+         val screenGeneration = foregroundGeneration.get()
+-        val job = scope.launch(start = CoroutineStart.LAZY) {
++        val job = launchVoiceJob {
+             try {
+                 block(batchId, screenGeneration)
+             } catch (cancelled: CancellationException) {
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatController.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatController.kt
+index 5a0675f1..d822d3df 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatController.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatController.kt
+@@ -127,7 +127,12 @@ internal class DesktopPrimaryChatController(
+     val imageRegeneration: DesktopChatImageRegeneration? = null,
+     val backgroundLibrary: DesktopCharacterBackgrounds? = null,
+     val formatRepair: DesktopMessageFormatRepairController? = null,
++    val voices: DesktopChatVoiceRuntime? = null,
+ ) {
++    private suspend fun <T> withMessageMutation(sessionId: String, messageId: String, block: suspend () -> T): T =
++        if (voices == null) taskRuntime.withMessageMutation(sessionId, block)
++        else voices.mutateMessage(sessionId, messageId) { taskRuntime.withMessageMutation(sessionId, block) }
++
+     private val pendingBySession = mutableMapOf<String, List<DesktopPendingImage>>()
+     private val stateLock = Mutex()
+     private val draftLock = Mutex()
+@@ -687,14 +692,15 @@ internal class DesktopPrimaryChatController(
+         var taskId: String? = null
+         guarded {
+             val session = state.value.selectedSession ?: return@guarded
+-            taskId = taskRuntime.launchRegeneration(session.id, messageId)
++            taskId = if (voices == null) taskRuntime.launchRegeneration(session.id, messageId)
++            else voices.mutateMessage(session.id, messageId) { taskRuntime.launchRegeneration(session.id, messageId) }
+         }
+         return taskId
+     }
+ 
+     suspend fun selectAssistantAlternative(messageId: String, direction: Int) = guarded {
+         val session = state.value.selectedSession ?: return@guarded
+-        taskRuntime.withMessageMutation(session.id) {
++        withMessageMutation(session.id, messageId) {
+             val message = chats.getMessage(messageId, session.id) ?: return@withMessageMutation
+             if (message.role != MessageRole.ASSISTANT || message.alternatives.size <= 1) return@withMessageMutation
+             val size = settings.getAppSettings().defaultContextWindowSize.coerceAtLeast(0)
+@@ -721,7 +727,7 @@ internal class DesktopPrimaryChatController(
+         guarded {
+             val session = state.value.selectedSession ?: return@guarded
+             check(!hasActiveTask(session.id)) { "Message editing is unavailable during generation" }
+-            taskRuntime.withMessageMutation(session.id) {
++            withMessageMutation(session.id, messageId) {
+                 val message = chats.getMessage(messageId, session.id) ?: error("Message no longer exists")
+                 check(expected == null || message == expected) { "Message changed; reopen editing" }
+                 val retained = retainedImages ?: message.images
+@@ -743,7 +749,7 @@ internal class DesktopPrimaryChatController(
+         var deleted = false
+         guarded {
+             check(!hasActiveTask(original.sessionId)) { "Image deletion is unavailable during generation" }
+-            taskRuntime.withMessageMutation(original.sessionId) {
++            withMessageMutation(original.sessionId, original.id) {
+                 val warning = requireNotNull(imageStore).deleteImage(original, reference)
+                 refreshAfterTerminalTask(original.sessionId)
+                 if (warning != null) mutableState.update { it.copy(status = warning) }
+@@ -759,7 +765,7 @@ internal class DesktopPrimaryChatController(
+         guarded {
+             val session = state.value.selectedSession ?: return@guarded
+             check(!hasActiveTask(session.id)) { "Message editing is unavailable during generation" }
+-            taskRuntime.withMessageMutation(session.id) {
++            withMessageMutation(session.id, messageId) {
+                 val message = chats.getMessage(messageId, session.id) ?: error("Message no longer exists")
+                 require(message.role == MessageRole.ASSISTANT) { "Only Assistant segments can be edited" }
+                 check(expectedContent == null || message.displayContent == expectedContent) { "Message changed; reopen segment actions" }
+@@ -788,7 +794,7 @@ internal class DesktopPrimaryChatController(
+         guarded {
+             val session = state.value.selectedSession ?: return@guarded
+             check(!hasActiveTask(session.id)) { "Message deletion is unavailable during generation" }
+-            taskRuntime.withMessageMutation(session.id) {
++            withMessageMutation(session.id, messageId) {
+                 val cleanupWarning = deleteOwnedMessage(session.id, messageId)
+                 refreshAfterTerminalTask(session.id)
+                 if (cleanupWarning != null) mutableState.update { it.copy(status = cleanupWarning) }
+@@ -801,6 +807,7 @@ internal class DesktopPrimaryChatController(
+     private suspend fun deleteOwnedMessage(sessionId: String, messageId: String): String? {
+         val message = chats.getMessage(messageId, sessionId) ?: error("Message no longer exists")
+         chats.deleteMessage(messageId, sessionId)
++        voices?.removeDeletedMessage(sessionId, messageId)
+         return imageStore?.cleanupRemoved(message.images)
+     }
+ 
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt
+index 008c9ef2..80e3d44f 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt
+@@ -82,6 +82,10 @@ internal fun DesktopPrimaryChatPanel(
+ ) {
+     val t = LocalDesktopUiStrings.current
+     val state by controller.state.collectAsState()
++    androidx.compose.runtime.DisposableEffect(controller.voices, state.selectedSession?.id) {
++        controller.voices?.foreground(state.selectedSession?.id)
++        onDispose { controller.voices?.foreground(null) }
++    }
+     val tasks by controller.taskRuntime.tasks.collectAsState()
+     val repairTasks by controller.taskRuntime.repairTasks.collectAsState()
+     val repairStates = controller.formatRepair?.states?.collectAsState()?.value.orEmpty()
+@@ -288,6 +292,7 @@ internal fun DesktopPrimaryChatPanel(
+                             }
+                             tasks.firstOrNull { it.sessionId == selected.id && it.kind == DesktopTaskKind.REAL_CHAT }
+                                 ?.message?.takeIf { it.contains("自动生图已跳过") || it.contains("自动生图未启动") }?.let { StatusText(it) }
++                            DesktopVoiceProgress(controller.voices, selected.id)
+                             PrimaryComposer(composer, canLaunch, running, controller, composerLayout, workspaceHeightDp, send)
+ 
+                         }
+@@ -684,6 +689,7 @@ internal fun PrimaryMessageBubble(
+             session = state.selectedSession,
+         )
+     }
++    val voicePlacements = rememberDesktopVoicePlacements(controller.voices, message)
+     val colors = DesktopBootstrapColors
+     val imageOnly = desktopImageOnlyMessage(message, presented)
+     val imageTaskRunning = imageOnly && controller.taskRuntime.tasks.collectAsState().value.any {
+@@ -732,6 +738,7 @@ internal fun PrimaryMessageBubble(
+                 DesktopMarkdownText(reasoning, colors.mutedForeground)
+             }
+         }
++        if (presented.segmented) DesktopVoiceRows(controller.voices, message, voicePlacements.filter { it.segmentIndex == null }, state)
+         presented.segments.forEachIndexed { index, segment ->
+             ContextMenuDataProvider(items = {
+                 desktopMessageContextActions(actions, presented.segmented && segment.source != null).map { entry ->
+@@ -789,8 +796,12 @@ internal fun PrimaryMessageBubble(
+                     }
+                 }
+             }
++            if (presented.segmented) DesktopVoiceRows(controller.voices, message,
++                voicePlacements.filter { it.segmentIndex != null && it.segmentIndex == segment.index }, state)
+         }
++        if (!presented.segmented) DesktopVoiceRows(controller.voices, message, voicePlacements, state)
+         }
++        DesktopVoiceGenerationControls(controller.voices, message, state)
+         // Actions keep their existing ownership independently of bubble presentation.
+         val navigation = if (sessionRepairBusy) null else desktopAlternativeNavigation(message, state.alternativeEligibleIds)
+         DesktopAssistantImageActions(message, state, controller, normalActions = actions.isNotEmpty(),
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceAudioStore.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceAudioStore.kt
+index 51948a51..7054907b 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceAudioStore.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceAudioStore.kt
+@@ -16,7 +16,8 @@ import kotlinx.coroutines.sync.withLock
+  * and entity commit leaves recoverable evidence rather than deleting uncertain audio.
+  */
+ internal class DesktopVoiceAudioStore(dataRoot: Path) {
+-    private val root = dataRoot.toAbsolutePath().normalize().resolve("audio/generated")
++    private val dataRoot = dataRoot.toAbsolutePath().normalize()
++    private val root = this.dataRoot.resolve("audio/generated")
+     private val mutex = Mutex()
+     private val limit = 16L * 1024 * 1024
+ 
+@@ -24,15 +25,18 @@ internal class DesktopVoiceAudioStore(dataRoot: Path) {
+         expected: Long = -1, onBytes: (Long) -> Unit = {},
+     ): FishAudioStoredAudio = mutex.withLock { withContext(Dispatchers.IO) {
+         val dir = root.resolve(segment(sessionId))
+-        Files.createDirectories(dir); verifyPath(dir, true)
++        ensureDirectory(dir)
++        val directoryIdentity = identity(dir)
+         val path = dir.resolve("${segment(artifactId)}.mp3")
+         check(!Files.exists(path, LinkOption.NOFOLLOW_LINKS)) { "音频身份冲突；旧文件已保留" }
+         require(expected in -1..limit)
+         val part = dir.resolve(".${UUID.randomUUID()}.part")
+         var published = false
++        var partIdentity: Any? = null
+         try {
+             var size = 0L
+             Files.newOutputStream(part, StandardOpenOption.CREATE_NEW).use { output ->
++                partIdentity = identity(part)
+                 val buffer = ByteArray(16384)
+                 while (true) {
+                     currentCoroutineContext().ensureActive()
+@@ -42,8 +46,10 @@ internal class DesktopVoiceAudioStore(dataRoot: Path) {
+                 }
+             }
+             check(size > 0 && (expected < 0 || expected == size)) { "音频下载不完整" }
++            check(partIdentity == identity(part)) { "下载文件身份变化；已保留" }
+             val duration = DesktopMp3Validation.validate(part, limit)
+             currentCoroutineContext().ensureActive(); verifyPath(dir, true)
++            check(directoryIdentity == identity(dir) && partIdentity == identity(part))
+             // No replacement or non-atomic fallback. Receipt publication precedes entity admission.
+             Files.move(part, path, StandardCopyOption.ATOMIC_MOVE); published = true
+             Files.writeString(receipt(path), "$size\n${hash(path)}\n", StandardOpenOption.CREATE_NEW)
+@@ -51,7 +57,8 @@ internal class DesktopVoiceAudioStore(dataRoot: Path) {
+         } finally {
+             // Only this invocation's uniquely created partial file; published artifacts survive errors.
+             if (!published && Files.exists(part, LinkOption.NOFOLLOW_LINKS)) {
+-                verifyPath(part, false); Files.delete(part)
++                verifyPath(part, false)
++                if (partIdentity == identity(part) && directoryIdentity == identity(dir)) Files.delete(part)
+             }
+         }
+     } }
+@@ -93,6 +100,21 @@ internal class DesktopVoiceAudioStore(dataRoot: Path) {
+         }
+         return java.util.HexFormat.of().formatHex(digest.digest())
+     }
++    private fun identity(path: Path): Any {
++        val attrs = Files.readAttributes(path, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
++        return if (System.getProperty("os.name").startsWith("Windows"))
++            DesktopIndexStartupPreflight.readWindowsIdentity(path, attrs.isDirectory)
++        else checkNotNull(attrs.fileKey())
++    }
++    private fun ensureDirectory(directory: Path) {
++        verifyPath(dataRoot, true)
++        var current = dataRoot
++        dataRoot.relativize(directory).forEach { name ->
++            current = current.resolve(name)
++            if (!Files.exists(current, LinkOption.NOFOLLOW_LINKS)) Files.createDirectory(current)
++            verifyPath(current, true)
++        }
++    }
+     private fun verifyPath(path: Path, directory: Boolean) {
+         check(path.toRealPath() == path)
+         var current: Path? = path
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatVoicePresentationTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatVoicePresentationTest.kt
+new file mode 100644
+index 00000000..a8a15522
+--- /dev/null
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatVoicePresentationTest.kt
+@@ -0,0 +1,53 @@
++@file:OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class, androidx.compose.ui.InternalComposeUiApi::class)
++package com.example.chatbar.desktop
++
++import androidx.compose.foundation.layout.*
++import androidx.compose.runtime.*
++import androidx.compose.ui.ImageComposeScene
++import androidx.compose.ui.semantics.*
++import com.example.chatbar.data.local.entity.ThemeMode
++import kotlinx.coroutines.*
++import javax.swing.SwingUtilities
++import kotlin.coroutines.CoroutineContext
++import kotlin.test.*
++
++class DesktopChatVoicePresentationTest {
++    private val edt = object : CoroutineDispatcher() {
++        override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
++    }
++    @Test fun `chat generation stays collapsed and requires explicit authorization in light and dark compact layouts`() = runBlocking(edt) {
++        DesktopChatVoiceRuntimeTest.Fixture().use { f ->
++            f.seed()
++            val card = f.characters.getById("card")!!
++            for (mode in listOf(ThemeMode.LIGHT, ThemeMode.DARK)) {
++                val scene = ImageComposeScene(360, 900) {
++                    CompositionLocalProvider(LocalDesktopPalette provides desktopSemanticColors(mode, com.example.chatbar.domain.appearance.DefaultThemeColorHsv, false)) {
++                        Column { DesktopVoiceGenerationControls(f.runtime, f.message,
++                            DesktopPrimaryChatState(selectedSession = f.session, selectedCharacter = card)) }
++                    }
++                }
++                fun nodes(): List<SemanticsNode> {
++                    fun walk(n: SemanticsNode): List<SemanticsNode> = listOf(n) + n.children.flatMap(::walk)
++                    return scene.semanticsOwners.flatMap { walk(it.rootSemanticsNode) }
++                }
++                fun button(label: String) = nodes().single { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains(label) == true && it.config.contains(SemanticsActions.OnClick) }
++                suspend fun frame() { repeat(4) { scene.render(System.nanoTime()).close(); yield(); delay(10) } }
++                try {
++                    frame(); assertEquals(0, f.server.requestCount)
++                    assertTrue(nodes().none { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("授权并开始生成") == true })
++                    assertTrue(button("语音生成").config[SemanticsActions.OnClick].action!!())
++                    frame()
++                    assertTrue(button("生成整条回复 / 补齐语音").config[SemanticsActions.OnClick].action!!())
++                    frame()
++                    val confirm = button("授权并开始生成")
++                    assertEquals(Role.Button, confirm.config[SemanticsProperties.Role])
++                    assertTrue(confirm.boundsInRoot.left >= 0 && confirm.boundsInRoot.right <= 360)
++                    assertTrue(confirm.config.contains(SemanticsActions.RequestFocus))
++                    assertEquals(0, f.server.requestCount)
++                    button("取消").config[SemanticsActions.OnClick].action!!(); frame()
++                    assertEquals(0, f.server.requestCount)
++                } finally { scene.close() }
++            }
++        }
++    }
++}
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatVoiceRuntimeTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatVoiceRuntimeTest.kt
+new file mode 100644
+index 00000000..3b35345f
+--- /dev/null
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatVoiceRuntimeTest.kt
+@@ -0,0 +1,92 @@
++package com.example.chatbar.desktop
++
++import com.example.chatbar.data.local.JsonFileStorage
++import com.example.chatbar.data.local.entity.*
++import com.example.chatbar.data.repository.*
++import com.example.chatbar.domain.model.*
++import com.example.chatbar.domain.voice.*
++import com.example.chatbar.desktop.security.InMemoryDesktopSecretStore
++import java.nio.file.*
++import java.time.LocalDate
++import kotlinx.coroutines.*
++import okhttp3.OkHttpClient
++import okhttp3.mockwebserver.*
++import okio.Buffer
++import kotlin.test.*
++
++class DesktopChatVoiceRuntimeTest {
++    internal class Fixture : AutoCloseable {
++        val root = Files.createTempDirectory("s5-chat-")
++        val storage = JsonFileStorage(root); val chats = ChatRepository(storage)
++        val characters = CharacterRepository(storage); val settings = SettingsRepository(storage)
++        val models = EffectiveModelResolver(ModelRepository(storage), settings, object : PresetModelCatalogSource {
++            override val catalog = PresetModelCatalog(); override val modelCatalogVersion: Int? = null
++        })
++        val repo = VoiceMessageRepository(storage, strictReads = true); val audio = DesktopVoiceAudioStore(root)
++        val output = PreviewOutputFake(); val credentials = DesktopFishAudioCredentials(InMemoryDesktopSecretStore()).also { it.save("synthetic") }
++        val server = MockWebServer().also { it.start() }
++        val target = root.resolve("exported.mp3")
++        val picker = object : DesktopFilePicker {
++            override fun pickOpenFile(type: DesktopFileType): Path? = null
++            override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path = target
++        }
++        val transport = DesktopFishVoiceTransport(credentials, audio, OkHttpClient(), server.url("/").toString().trimEnd('/'), { LocalDate.of(2026,10,19) })
++        val runtime = DesktopChatVoiceRuntime(chats, characters, settings, models, repo, audio, credentials, output,
++            picker = picker, transportOverride = transport, textGateway = FishVoiceTextGateway { _, _, _, _ -> error("Unapproved auxiliary request") })
++        lateinit var session: ChatSession; lateinit var message: ChatMessage
++        suspend fun seed() {
++            characters.save(CharacterCard("card", "synthetic", characters = listOf(CharacterInfo("alice", "Alice",
++                fishAudioVoice = FishAudioVoiceBinding("reference", "snapshot"))), createdAt = 1, updatedAt = 1))
++            session = ChatSession.create("card", "synthetic").copy(audiobookModeEnabled = true)
++            chats.createSession(session)
++            message = chats.addMessage(ChatMessage("message", session.id, MessageRole.ASSISTANT, "<n=\"Alice\"/>[hello]()", createdAt = 1, updatedAt = 1))
++        }
++        fun enqueue() { server.enqueue(MockResponse().setHeader("Content-Type", "audio/mpeg").setBody(Buffer().write(fishPreviewMp3()))) }
++        suspend fun done(id: String?) { assertNotNull(id); withTimeout(5000) {
++            while (runtime.coordinator.batches.value.any { it.id == id && it.phase !in setOf(VoiceGenerationPhase.FAILED, VoiceGenerationPhase.CANCELLED) }) delay(10)
++        } }
++        override fun close() { runBlocking { runtime.closeAndDrain() }; server.shutdown() }
++    }
++
++    @Test fun `UI facade distinguishes another take replacement export and explicit deletion`() = runBlocking {
++        Fixture().use { f ->
++            f.seed(); f.repo.initialize(); assertEquals(0, f.server.requestCount)
++            f.enqueue(); f.done(f.runtime.generate(f.message, "alice"))
++            val first = f.repo.listForSession(f.session.id).single()
++            f.enqueue(); f.done(f.runtime.generate(f.message, "alice", auxiliaryAuthorized = true, additional = first))
++            assertEquals(2, f.repo.listForSession(f.session.id).size); assertTrue(Files.exists(Path.of(first.audioPath)))
++            f.enqueue(); f.done(f.runtime.generate(f.message, "alice", replace = first, editedTaggedText = "hello"))
++            val replaced = assertNotNull(f.repo.get(first.id)); assertNotEquals(first.audioPath, replaced.audioPath)
++            assertEquals(2, f.repo.listForSession(f.session.id).size); assertFalse(Files.exists(Path.of(first.audioPath)))
++            f.runtime.save(replaced, "synthetic"); assertContentEquals(Files.readAllBytes(Path.of(replaced.audioPath)), Files.readAllBytes(f.target))
++            f.runtime.deleteVoice(replaced); assertNull(f.repo.get(first.id)); assertFalse(Files.exists(Path.of(replaced.audioPath)))
++            assertTrue(Files.exists(f.target)); assertEquals(1, f.repo.listForSession(f.session.id).size)
++        }
++    }
++
++    @Test fun `stale UI target and unapproved auxiliary model never send network`() = runBlocking {
++        Fixture().use { f ->
++            f.seed()
++            f.chats.updateMessage(f.message.copy(content = "changed"))
++            assertNull(f.runtime.generate(f.message, "alice", auxiliaryAuthorized = true))
++            f.chats.updateSession(f.session.copy(audiobookModeEnabled = false))
++            val current = assertNotNull(f.chats.getMessage(f.message.id, f.session.id))
++            assertNull(f.runtime.generate(current, "alice", auxiliaryAuthorized = false))
++            assertEquals(0, f.server.requestCount)
++        }
++    }
++
++    @Test fun `message deletion drains voice work and only removes explicitly owned files`() = runBlocking {
++        Fixture().use { f ->
++            f.seed(); f.enqueue(); f.done(f.runtime.generate(f.message, "alice"))
++            val old = f.repo.listForSession(f.session.id).single()
++            val unknown = f.root.resolve("audio/generated/unknown.mp3"); Files.writeString(unknown, "keep")
++            f.runtime.mutateMessage(f.session.id, f.message.id) {
++                f.chats.deleteMessage(f.message.id, f.session.id)
++                f.runtime.removeDeletedMessage(f.session.id, f.message.id)
++            }
++            assertTrue(f.repo.listForSession(f.session.id).isEmpty()); assertFalse(Files.exists(Path.of(old.audioPath)))
++            assertTrue(Files.exists(unknown))
++        }
++    }
++}

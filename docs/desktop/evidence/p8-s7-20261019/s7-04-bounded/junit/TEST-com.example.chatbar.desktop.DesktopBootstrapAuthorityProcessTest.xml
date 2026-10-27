@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopBootstrapAuthorityProcessTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-19T11:44:59.300Z" hostname="DD1" time="0.668">
+  <properties/>
+  <testcase name="normal child release allows authority transaction reacquire" classname="com.example.chatbar.desktop.DesktopBootstrapAuthorityProcessTest" time="0.324"/>
+  <testcase name="child-held authority lock rejects second process" classname="com.example.chatbar.desktop.DesktopBootstrapAuthorityProcessTest" time="0.187"/>
+  <testcase name="forced child termination leaves stale file and releases authority lock" classname="com.example.chatbar.desktop.DesktopBootstrapAuthorityProcessTest" time="0.157"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

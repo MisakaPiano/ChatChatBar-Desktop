@@ -1,0 +1,18 @@
+{
+  "slot-capacity-message-red-20261025": {
+    "exit": 1,
+    "suites": 1,
+    "tests": 1,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "slot-capacity-message-green-20261025": {
+    "exit": 0,
+    "suites": 3,
+    "tests": 26,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

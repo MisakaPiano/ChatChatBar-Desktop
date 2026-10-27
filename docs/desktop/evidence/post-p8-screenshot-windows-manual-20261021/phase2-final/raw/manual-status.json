@@ -1,0 +1,7 @@
+{
+  "state": "BLOCKED_RETAINING_FAKE_FOR_OWNED_APP",
+  "utc": "2026-10-20T18:46:29.506181+00:00",
+  "supervisorPid": 27476,
+  "phase": "FAKE_ONLY",
+  "realRequestsThisProcess": 0
+}

@@ -1,0 +1,49 @@
+Picked up JAVA_TOOL_OPTIONS: -Duser.home="H:\ChatChatBar-Desktop\app\desktopApp\build\p8-remaining-20261019\windows-final-gate-r2-20261020\synthetic-home" -Dhttp.proxyHost=127.0.0.1 -Dhttp.proxyPort=49906 -Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=49906 -Djavax.net.ssl.trustStore="H:\ChatChatBar-Desktop\app\desktopApp\build\p8-remaining-20261019\windows-final-gate-r2-20261020\mock-service\public-trust.jks" -Djava.io.tmpdir="H:\ChatChatBar-Desktop\app\desktopApp\build\p8-remaining-20261019\windows-final-gate-r2-20261020\preview-temp" -Djdk.net.unixdomain.tmpdir="H:\ChatChatBar-Desktop\app\desktopApp\build\p8-remaining-20261019\windows-final-gate-r2-20261020\uds"
+Exception in thread "AWT-EventQueue-0" com.example.chatbar.desktop.security.UnsafeDesktopPlaintextCredentialException: Desktop JSON contains an unsafe plaintext credential for model p8s7-aux; explicit recovery is required
+	at com.example.chatbar.desktop.security.DesktopModelCredentialPersistencePolicy.hydrate(DesktopRepositoryCredentialPolicies.kt:73)
+	at com.example.chatbar.data.repository.ModelRepository.refreshModelCache(ModelRepository.kt:60)
+	at com.example.chatbar.data.repository.ModelRepository.access$refreshModelCache(ModelRepository.kt:22)
+	at com.example.chatbar.data.repository.ModelRepository$refreshModelCache$1.invokeSuspend(ModelRepository.kt)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.UndispatchedCoroutine.afterResume(CoroutineContext.kt:266)
+	at kotlinx.coroutines.AbstractCoroutine.resumeWith(AbstractCoroutine.kt:101)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:47)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at androidx.compose.ui.platform.FlushCoroutineDispatcher$dispatch$2.invokeSuspend$lambda$0(FlushCoroutineDispatcher.skiko.kt:62)
+	at androidx.compose.ui.platform.FlushCoroutineDispatcher.performRun(FlushCoroutineDispatcher.skiko.kt:105)
+	at androidx.compose.ui.platform.FlushCoroutineDispatcher.access$performRun(FlushCoroutineDispatcher.skiko.kt:35)
+	at androidx.compose.ui.platform.FlushCoroutineDispatcher$dispatch$2.invokeSuspend(FlushCoroutineDispatcher.skiko.kt:57)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at java.desktop/java.awt.event.InvocationEvent.dispatch(Unknown Source)
+	at java.desktop/java.awt.EventQueue.dispatchEventImpl(Unknown Source)
+	at java.desktop/java.awt.EventQueue$4.run(Unknown Source)
+	at java.desktop/java.awt.EventQueue$4.run(Unknown Source)
+	at java.base/java.security.AccessController.doPrivileged(Unknown Source)
+	at java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(Unknown Source)
+	at java.desktop/java.awt.EventQueue.dispatchEvent(Unknown Source)
+	at java.desktop/java.awt.EventDispatchThread.pumpOneEventForFilters(Unknown Source)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForFilter(Unknown Source)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForHierarchy(Unknown Source)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(Unknown Source)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(Unknown Source)
+	at java.desktop/java.awt.EventDispatchThread.run(Unknown Source)
+	Suppressed: kotlinx.coroutines.internal.DiagnosticCoroutineContextException: [androidx.compose.runtime.BroadcastFrameClock@601236d3, androidx.compose.runtime.LaunchedEffectImpl@3b858a93, StandaloneCoroutine{Cancelling}@74b5b652, FlushCoroutineDispatcher@4d46e2d]
+CCB_SHUTDOWN 2026-10-20T00:46:11.422612700Z CLOSE_REQUESTED
+CCB_SHUTDOWN 2026-10-20T00:46:11.542213600Z COMPOSE_RETURNED
+CCB_SHUTDOWN 2026-10-20T00:46:11.561162Z TASK_DRAIN_BEGIN
+CCB_SHUTDOWN 2026-10-20T00:46:11.577119500Z TASK_DRAIN_END
+CCB_SHUTDOWN 2026-10-20T00:46:11.577119500Z DRAFT_DRAIN_BEGIN
+CCB_SHUTDOWN 2026-10-20T00:46:11.586096100Z DRAFT_DRAIN_END
+CCB_SHUTDOWN 2026-10-20T00:46:11.586096100Z BACKUP_CLOSE_BEGIN
+CCB_SHUTDOWN 2026-10-20T00:46:11.586096100Z BACKUP_CLOSE_END
+CCB_SHUTDOWN 2026-10-20T00:46:11.586096100Z COORDINATOR_CLOSE_BEGIN
+CCB_SHUTDOWN 2026-10-20T00:46:11.587094200Z COORDINATOR_CLOSE_END
+CCB_SHUTDOWN 2026-10-20T00:46:11.587094200Z MIGRATION_CLOSE_BEGIN
+CCB_SHUTDOWN 2026-10-20T00:46:11.587094200Z MIGRATION_CLOSE_END
+CCB_SHUTDOWN 2026-10-20T00:46:11.588091Z CONTAINER_CLOSED
+CCB_SHUTDOWN 2026-10-20T00:46:11.588091Z PICKERS_CLOSED
+CCB_SHUTDOWN 2026-10-20T00:46:11.588091Z OWNERSHIP_RELEASED
+CCB_SHUTDOWN 2026-10-20T00:46:11.588091Z MAIN_RETURNED
+CCB_SHUTDOWN 2026-10-20T00:46:11.588091Z SAFE_EXIT_HANDOFF
+

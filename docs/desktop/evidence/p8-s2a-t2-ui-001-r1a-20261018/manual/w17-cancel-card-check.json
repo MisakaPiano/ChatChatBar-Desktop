@@ -1,0 +1,17 @@
+{
+  "scope": "Two synthetic cards only; no selection made",
+  "cards": [
+    {
+      "id": "t2-structured",
+      "fileSha256": "855cea4dbaa9ae38a85a718a916b2122adc78c8a6ab93047dc29e98649d18da2",
+      "matchesBefore": true,
+      "allBindingsNull": true
+    },
+    {
+      "id": "t2-freeform",
+      "fileSha256": "1df89bf8f16f90c5f1938f5fd525c86e7e52ebc6627982b619b7d729d1da997e",
+      "matchesBefore": true,
+      "allBindingsNull": true
+    }
+  ]
+}

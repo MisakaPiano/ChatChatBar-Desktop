@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.backup.DesktopMergeGraphRemapperTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-25T02:50:16.516Z" hostname="DD1" time="0.018">
+  <properties/>
+  <testcase name="typed spaces collision guards and compact message budget are enforced" classname="com.example.chatbar.desktop.backup.DesktopMergeGraphRemapperTest" time="0.0"/>
+  <testcase name="changed descendant proof propagates when immediate parent identities stay unchanged" classname="com.example.chatbar.desktop.backup.DesktopMergeGraphRemapperTest" time="0.009"/>
+  <testcase name="map key collision cancellation and resource paths cannot become silent success" classname="com.example.chatbar.desktop.backup.DesktopMergeGraphRemapperTest" time="0.001"/>
+  <testcase name="cyclic missing and conflicting nodes are refused with fixed errors" classname="com.example.chatbar.desktop.backup.DesktopMergeGraphRemapperTest" time="0.001"/>
+  <testcase name="fork keeps original user payload version and source turn identities" classname="com.example.chatbar.desktop.backup.DesktopMergeGraphRemapperTest" time="0.0"/>
+  <testcase name="nested snapshot uses same proof but natural coverage text is never replaced" classname="com.example.chatbar.desktop.backup.DesktopMergeGraphRemapperTest" time="0.004"/>
+  <testcase name="three tier fork recalculates ancestry and leaves formal text unchanged" classname="com.example.chatbar.desktop.backup.DesktopMergeGraphRemapperTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

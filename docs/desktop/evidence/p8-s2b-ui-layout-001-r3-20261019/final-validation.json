@@ -1,0 +1,20 @@
+{
+  "base": "55366cee0706c78f545b32ef7d75750c649dcdbd",
+  "sourceDraftCount": 3,
+  "sourceDraftsRemainUncommitted": true,
+  "sourceDraftHashesMatchFocusedAndBounded": true,
+  "indexEmptyBeforeEvidence": true,
+  "onlyExpectedUntrackedPaths": true,
+  "protectedUserOwnedFiles": 4,
+  "protectedUserContentsRead": false,
+  "protectedFilesModifiedOrStaged": false,
+  "sourceWhitespace": "PASS",
+  "markdownLinks": "PASS",
+  "xmlParsed": 173,
+  "sourceCommitCreated": false,
+  "windowsDistributionBuilt": false,
+  "newManualGate": "NOT TESTED",
+  "realFishGetIncrement": 0,
+  "realFishTtsIncrement": 0,
+  "rerunsAfterRed": 0
+}

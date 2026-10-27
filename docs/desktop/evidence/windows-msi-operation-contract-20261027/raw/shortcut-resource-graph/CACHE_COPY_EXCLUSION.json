@@ -1,0 +1,11 @@
+{
+  "removedPublicCopy": "raw/shortcut-resource-graph/graph-red-current-fixture-r02/sources/__pycache__/msi_safety.cpython-310.pyc",
+  "bytes": 41236,
+  "sha256": "84d45f283526b58272bd6583283f777ab7c4ea107a33e9b77d072ce8dadc5a0b",
+  "reason": "Generated Python import cache; not source or a test result. Accidentally included by recursive evidence assembly.",
+  "privateOriginalRetained": true,
+  "originalManifestAndTestLogsUnchanged": true,
+  "originalCommit": "71fa95f2c8d7aa9d93a58aafa669be99110a05ea",
+  "historyRewritten": false,
+  "testRerunRequired": false
+}

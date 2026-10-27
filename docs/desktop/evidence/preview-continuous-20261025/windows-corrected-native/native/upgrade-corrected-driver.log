@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\native_acceptance.py", line 95, in <module>
+    main()
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\native_acceptance.py", line 78, in main
+    run(base, "fail-upgrade", args.second, "corrected-failure-b")
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\native_acceptance.py", line 39, in run
+    assert result.returncode == 0, "OWNED_NATIVE_ACTION_FAILED_SEE_RETAINED_LOG"
+AssertionError: OWNED_NATIVE_ACTION_FAILED_SEE_RETAINED_LOG

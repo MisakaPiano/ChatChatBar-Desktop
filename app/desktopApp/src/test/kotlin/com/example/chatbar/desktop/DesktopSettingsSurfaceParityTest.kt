@@ -226,8 +226,8 @@ class DesktopSettingsSurfaceParityTest {
             assertEquals(14.sp, chrome.fontSize)
             val raw = "# Header\n**Body**"
             val markdown = desktopMarkdown(raw, typography)
-            assertEquals((19 * scale).sp, markdown.spanStyles.first().item.fontSize)
-            assertEquals("Header\nBody", markdown.text)
+            assertEquals((28 * scale).sp, markdown.spanStyles.first().item.fontSize)
+            assertEquals("Header\n\nBody", markdown.text)
             val persisted = ChatMessage.create("s", MessageRole.ASSISTANT, raw)
             val streaming = desktopStreamingMessage("s", "task", raw, "")
             assertEquals(desktopMarkdown(persisted.content, typography), desktopMarkdown(streaming.content, typography))

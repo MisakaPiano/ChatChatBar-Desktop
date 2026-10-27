@@ -1,0 +1,68 @@
+[
+  {
+    "path": "docs/desktop/00_PROJECT_SOURCE_MAP.md",
+    "bytes": 62791,
+    "sha256": "4e31007aa75407a5982fdadc420c48822bff0422c88373b9156884992934f636",
+    "holdMentions": 35
+  },
+  {
+    "path": "docs/desktop/10_UPSTREAM_BASELINE.json",
+    "bytes": 3105,
+    "sha256": "92416c369073a05ea64b112862ae19deed2c47c45b24cb6e088b24b46b041a88",
+    "holdMentions": 0
+  },
+  {
+    "path": "docs/desktop/21_CURRENT_STATE.md",
+    "bytes": 177947,
+    "sha256": "f63ab451c8d08e761e7cbe49aae3ec2585368ebe12f08900a1577a1b98ed44a9",
+    "holdMentions": 57
+  },
+  {
+    "path": "docs/desktop/13_FEATURE_PARITY.md",
+    "bytes": 33387,
+    "sha256": "d17e46e9d340f0487d72c30b2c4aee614ad90c429afd5b2fa26de58dfd8011dd",
+    "holdMentions": 6
+  },
+  {
+    "path": "docs/desktop/14_UPSTREAM_COMPAT.md",
+    "bytes": 47826,
+    "sha256": "719de602f572f73c33c2c4af6166b571295a54b0a4c28ffd7beca5f09fcf37fd",
+    "holdMentions": 0
+  },
+  {
+    "path": "docs/desktop/93_PUBLIC_PREVIEW_POLICY.md",
+    "bytes": 11632,
+    "sha256": "04886d35bdf1ddd66e8fdaa5ab7e300f5cd51435f482f00e2b744a12179ae834",
+    "holdMentions": 0
+  },
+  {
+    "path": "docs/desktop/95_PREVIEW_FULL_APP_BACKUP_PORTABILITY_GATE.md",
+    "bytes": 9460,
+    "sha256": "e027fd90ba3e4830da670ab548dd7932264c61183ae1e288062c56174960c295",
+    "holdMentions": 0
+  },
+  {
+    "path": "docs/desktop/158_P11_S2_G1_R07_DIRECT_IMPORT_PASSWORD_AND_CREDENTIAL_POLICY.md",
+    "bytes": 10543,
+    "sha256": "4d85bf3aef968c25f9d726748ed32c5a4d7710a9a42240ee7807b7ec4178437f",
+    "holdMentions": 2
+  },
+  {
+    "path": "docs/desktop/160_P11_S2_G1_INTEGRATED_PRESERVATION_AND_CREDENTIAL_SAFETY_BLUEPRINT.md",
+    "bytes": 9497,
+    "sha256": "256b85909e64e0a25ba5d3e39bab947cbf68b7dcac631da949749c9fab1d1e3f",
+    "holdMentions": 2
+  },
+  {
+    "path": "docs/desktop/163_P11_S2_G1B_UNIFIED_DATA_SECRET_TRANSACTION_DESIGN_GATE.md",
+    "bytes": 9653,
+    "sha256": "148c473b0c1f9c3ba98e8d8f7ff2dd820f80605e5ec05d4f3910753b1735f2df",
+    "holdMentions": 1
+  },
+  {
+    "path": "docs/desktop/169_P11_S2_G1B_CROSS_ROOT_TRANSACTION_DESIGN_REVIEW.md",
+    "bytes": 20811,
+    "sha256": "cfa4083c3f8b55c892480dbae472c80b4203857bdf969d4dadad00e1de48c44b",
+    "holdMentions": 1
+  }
+]

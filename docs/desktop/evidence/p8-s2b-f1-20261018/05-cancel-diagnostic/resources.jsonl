@@ -1,0 +1,2 @@
+{"utc":"2026-10-18T08:28:51.7745289+00:00","availableBytes":2401062912,"totalBytes":17122840576,"commitBytes":24652820480,"commitLimitBytes":41946800128,"pagesPerSecond":3,"java":[{"pid":37040,"workingSetBytes":102113280,"privateBytes":396685312}]}
+{"utc":"2026-10-18T08:29:02.1925942+00:00","availableBytes":1979797504,"totalBytes":17122840576,"commitBytes":25114259456,"commitLimitBytes":41946800128,"pagesPerSecond":0,"java":[{"pid":34624,"workingSetBytes":354156544,"privateBytes":451760128},{"pid":37040,"workingSetBytes":113463296,"privateBytes":393805824}]}

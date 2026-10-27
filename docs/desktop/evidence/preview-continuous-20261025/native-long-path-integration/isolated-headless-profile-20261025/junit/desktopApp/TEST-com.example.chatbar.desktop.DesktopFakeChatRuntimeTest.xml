@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFakeChatRuntimeTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-25T03:27:43.794Z" hostname="DD1" time="3.435">
+  <properties/>
+  <testcase name="createSessionDelegatesGreetingPersistenceIncludingBlankGreeting" classname="com.example.chatbar.desktop.DesktopFakeChatRuntimeTest" time="2.246"/>
+  <testcase name="sharedFormatWorldBookPlayerAndUserToolPoliciesReachCapturedRequest" classname="com.example.chatbar.desktop.DesktopFakeChatRuntimeTest" time="0.812"/>
+  <testcase name="staleSessionFormatFallsBackToSuppliedLiveDefault" classname="com.example.chatbar.desktop.DesktopFakeChatRuntimeTest" time="0.066"/>
+  <testcase name="openSessionReadsPersistedStateWithoutWriting" classname="com.example.chatbar.desktop.DesktopFakeChatRuntimeTest" time="0.047"/>
+  <testcase name="unchangedWorldBookTimedStateDoesNotRewriteSession" classname="com.example.chatbar.desktop.DesktopFakeChatRuntimeTest" time="0.068"/>
+  <testcase name="persistedUserRebuildAfterContainerRestartIsSemanticallyIdenticalAndWriteFree" classname="com.example.chatbar.desktop.DesktopFakeChatRuntimeTest" time="0.053"/>
+  <testcase name="rebuildRejectsMissingOrNonUserMessage" classname="com.example.chatbar.desktop.DesktopFakeChatRuntimeTest" time="0.019"/>
+  <testcase name="normalSubmissionPersistsUserBeforeCaptureAndNeverCreatesFakeAssistant" classname="com.example.chatbar.desktop.DesktopFakeChatRuntimeTest" time="0.036"/>
+  <testcase name="missingCharacterFailsBeforeUserPersistence" classname="com.example.chatbar.desktop.DesktopFakeChatRuntimeTest" time="0.022"/>
+  <testcase name="explicitEffectiveContextWindowControlsSelectionInsteadOfSessionField" classname="com.example.chatbar.desktop.DesktopFakeChatRuntimeTest" time="0.065"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

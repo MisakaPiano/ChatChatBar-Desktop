@@ -1,0 +1,9 @@
+{
+  "skills": [
+    "chatbar-fish-audio-voice",
+    "chatbar-shadcn-compose"
+  ],
+  "reviewedBeforeStaging": true,
+  "changedSkills": [],
+  "reason": "Existing Fish panel remains the feature entry point; this scoped presentation candidate changes no documented API, storage, runtime or Android feature contract. No accepted runtime map or authority is promoted. Prior unrelated skill debt is not bundled into this narrow change."
+}

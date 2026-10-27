@@ -1,0 +1,74 @@
+[
+  {
+    "path": "tools/desktop/interop/lr3/.gitattributes",
+    "bytes": 86,
+    "sha256": "0f0e2b69d93c1b06b828e4942abfb5794ce24c4d6171a64a15f352242f4794d7",
+    "gitBlob": "0352552b07c21254d40eb1b37c073bb711a976b9"
+  },
+  {
+    "path": "tools/desktop/interop/lr3/lr3.init.gradle",
+    "bytes": 1237,
+    "sha256": "4117448821db4322dba71586370e7696e0bf4533ac622578b8a885390487d748",
+    "gitBlob": "ab48028048ac73813c31ad2ac041973ba0f8d1c8"
+  },
+  {
+    "path": "tools/desktop/interop/lr3/Run-Jvm.ps1",
+    "bytes": 2343,
+    "sha256": "a9aecb97afc5b878ca6712d54f3030b40bd87ec49298b4040ea4dd254ab400e2",
+    "gitBlob": "118066855b0ca1ab7d13d34b29cd29b4dde11869"
+  },
+  {
+    "path": "tools/desktop/interop/lr3/src/LargeArchiveAdversarialTest.kt",
+    "bytes": 826,
+    "sha256": "68648a02792993abbab09349073f1ce4dd1af180fa5acf810fa7724eef3bbfd6",
+    "gitBlob": "ab394169f53a6d79468a2a5d9c331ae40cdb03b2"
+  },
+  {
+    "path": "tools/desktop/interop/lr3/src/LargeArchiveReadOnly.kt",
+    "bytes": 14472,
+    "sha256": "7d9c2342563e67365806bac762bc2756325f5d31555a3d2e808f48398624e92d",
+    "gitBlob": "d5bf82cde65f041035d4a1d0050829d2f3e95a39"
+  },
+  {
+    "path": "tools/desktop/interop/lr3/src/LargeArchiveTool.kt",
+    "bytes": 3506,
+    "sha256": "b05c9513c21d87f24017927aacbf5d0530c0c026d473c0fcac574af8589c53ed",
+    "gitBlob": "6405972fb8386597f232770848a9b875da8f64ba"
+  },
+  {
+    "path": "tools/desktop/interop/lr3/src/LargeArchiveValidationTest.kt",
+    "bytes": 9544,
+    "sha256": "f5f87f49af757d7e4c4befa01e2376cf1f8496ef425ccf89ddf8ae722b8e35c0",
+    "gitBlob": "db2bc1fe0b3c184309cbeb419feb778dfbc2d202"
+  },
+  {
+    "path": "tools/desktop/interop/lr3/src/Lr2ResourceIdentityTest.kt",
+    "bytes": 1452,
+    "sha256": "23952e4a493c5be6bc5ffe9eff122019b4acae714be0b896914a374517caa950",
+    "gitBlob": "8bc4b99697c6b1b9a7d67f153bc5a82b39cc2e88"
+  },
+  {
+    "path": "tools/desktop/interop/lr3/src/Lr3VoiceSemanticsTest.kt",
+    "bytes": 4840,
+    "sha256": "595a495ab7d555daa0ac6668000c0a3744e8923292e185563488e818253415f3",
+    "gitBlob": "102b53e8ef40389767ff265f9b82d474ae981bdb"
+  },
+  {
+    "path": "tools/desktop/interop/lr3/src/NestedSlotClaims.kt",
+    "bytes": 6639,
+    "sha256": "bb5c6fa8219e91868614016b64c8fc79d9bac3d8c2f4746f39c20d52c4931b66",
+    "gitBlob": "eb50b4900c39ef20af41ea4a43af4ffbae6966bb"
+  },
+  {
+    "path": "tools/desktop/interop/lr3/src/StrictStreamingZip.kt",
+    "bytes": 9893,
+    "sha256": "c5fc4d44a2b46e136396a474bbe6544c415d8f532ea2d3e9d3b1e247d871421a",
+    "gitBlob": "8a8361d05f82a77a0025faea946895aa8f23ff62"
+  },
+  {
+    "path": "tools/desktop/interop/lr3/src/VoiceReferenceDiagnosis.kt",
+    "bytes": 1161,
+    "sha256": "92832734ad55d34d7e8c9534b649f39dde93bc588dbb95d52a1ec51e5d13d31f",
+    "gitBlob": "f0744307055db787e7ce4f7245628d8542ea305e"
+  }
+]

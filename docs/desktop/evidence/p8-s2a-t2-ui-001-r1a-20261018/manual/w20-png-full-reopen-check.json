@@ -1,0 +1,10 @@
+{
+  "utcReceived": "2026-10-17T21:54:45.150470+00:00",
+  "item": "W20-PNG-import-full-app-reopen",
+  "result": "PASS",
+  "userText": "和预期一样",
+  "evidenceType": "USER TEXT SIGNATURE - no screenshot",
+  "scope": "Native second-process reopen of T2 自由文本测试卡 (4): FREEFORM, Alice T2 Synthetic Voice 1, Bob unbound; view only",
+  "technicalSupport": "Persisted imported card byte hash unchanged since import",
+  "sha256": "96edfa184a0a456b330ff5c3e29e8a2f12c945d28fb5a3db1b5acb01357e1005"
+}

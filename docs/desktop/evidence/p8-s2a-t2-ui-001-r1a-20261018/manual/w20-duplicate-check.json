@@ -1,0 +1,39 @@
+{
+  "scope": "One native duplicate in synthetic root",
+  "newCardId": "215e7025-7fa3-4acc-854d-3d1b7ee7d971",
+  "newName": "T2 自由文本测试卡 (2)",
+  "editMode": "FREEFORM",
+  "sourceCardId": "t2-freeform",
+  "sourceBytesUnchanged": true,
+  "freshCardAndPersonIds": true,
+  "fullBindingsRetained": true,
+  "persons": [
+    {
+      "id": "7777bed5-9e19-4ed0-b773-9e229bb19d30",
+      "name": "Alice 合成测试",
+      "fishAudioVoice": {
+        "referenceId": "r5-voice-community1",
+        "title": "T2 Synthetic Voice 1",
+        "authorId": null,
+        "authorName": "R5 Fixture",
+        "coverImage": null,
+        "sampleAudio": "https://sample.invalid/not-fetched.mp3",
+        "sampleText": "Synthetic example only",
+        "visibility": "public",
+        "languages": [
+          "zh"
+        ],
+        "tags": [
+          "synthetic"
+        ]
+      }
+    },
+    {
+      "id": "8f564f84-5cba-42c4-9014-87bf34c123c0",
+      "name": "Bob 合成测试",
+      "fishAudioVoice": null
+    }
+  ],
+  "fileSha256": "4a03887a5eaf5ff8cb8ea73072f4a98e73817dc7195f12e07d47fe4c6f780648",
+  "expectedNameCorrection": "Operator prompt said name includes 副本; actual existing NamePolicy uses numbered suffix. Not product failure."
+}

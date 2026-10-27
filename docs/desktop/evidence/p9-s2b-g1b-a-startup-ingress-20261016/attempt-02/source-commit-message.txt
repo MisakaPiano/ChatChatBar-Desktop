@@ -1,0 +1,13 @@
+feat(desktop): gate startup with read-only index preflight
+
+G1B-A source candidate: ownership before G0; owned Portable activation
+between two fresh checks; pre-container sanitized startup refusal.
+Preserve existing unsafe writer drain/ownership-retention lifecycle.
+
+Desktop main/test compilation executed. Focused final: 7 suites,
+136 tests, 135 reported PASS, 1 SKIPPED, 0 failures/errors.
+Four additional symlink fixture early returns remain NOT TESTED.
+First attempt's 3 synthetic snapshot failures and normal prompt cleanup
+are preserved separately; only the new test fixture changed for rerun.
+No packaged Windows smoke, GUI acceptance, recovery, writer or G2.
+G1B-A CODEX ENGINEERING CANDIDATE / PROJECT REVIEW PENDING.

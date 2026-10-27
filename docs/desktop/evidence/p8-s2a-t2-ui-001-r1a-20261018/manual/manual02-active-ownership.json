@@ -1,0 +1,8 @@
+{
+  "pid": 26688,
+  "startedUtc": "2026-10-17T21:52:11.3687881Z",
+  "exitCode": 75,
+  "expectedExitCode": 75,
+  "meaning": "Second app run independent ownership exclusion",
+  "success": true
+}

@@ -1,0 +1,15 @@
+{"utc":"2026-10-19T09:58:08.745789100Z","interface":"GET /model","variant":"not-sample","status":200,"hanging":false,"sampleSecretHeader":false,"pageNumber":1,"pageSize":20,"realRequests":0}
+{"utc":"2026-10-19T10:01:09.742256700Z","interface":"GET /model","variant":"not-sample","status":200,"hanging":false,"sampleSecretHeader":false,"pageNumber":1,"pageSize":20,"realRequests":0}
+{"utc":"2026-10-19T10:01:13.456982700Z","interface":"GET sample","variant":"sample-control-A","status":200,"hanging":false,"sampleSecretHeader":false,"pageNumber":1,"pageSize":20,"realRequests":0}
+{"utc":"2026-10-19T10:04:22.847536600Z","interface":"POST /v1/tts","variant":"not-sample","status":200,"hanging":false,"sampleSecretHeader":false,"pageNumber":1,"pageSize":20,"realRequests":0}
+{"utc":"2026-10-19T10:05:50.335380500Z","interface":"POST /v1/tts","variant":"not-sample","status":200,"hanging":false,"sampleSecretHeader":false,"pageNumber":1,"pageSize":20,"realRequests":0}
+{"utc":"2026-10-19T10:05:52.999987100Z","interface":"GET sample","variant":"waiting-sample","status":200,"hanging":true,"sampleSecretHeader":false,"pageNumber":1,"pageSize":20,"realRequests":0}
+{"utc":"2026-10-19T10:05:59.545005900Z","event":"HANG_SOCKET_DRAINED","interface":"preview body"}
+{"utc":"2026-10-19T10:05:59.590650Z","interface":"GET sample","variant":"waiting-sample","status":200,"hanging":true,"sampleSecretHeader":false,"pageNumber":1,"pageSize":20,"realRequests":0}
+{"utc":"2026-10-19T10:06:00.744105600Z","event":"HANG_SOCKET_DRAINED","interface":"preview body"}
+{"utc":"2026-10-19T10:08:50.063893300Z","interface":"GET /model","variant":"not-sample","status":200,"hanging":false,"sampleSecretHeader":false,"pageNumber":3,"pageSize":20,"realRequests":0}
+{"utc":"2026-10-19T10:09:14.503294800Z","interface":"GET /model","variant":"not-sample","status":200,"hanging":false,"sampleSecretHeader":false,"pageNumber":2,"pageSize":20,"realRequests":0}
+{"utc":"2026-10-19T10:11:27.544389300Z","interface":"GET /model","variant":"not-sample","status":200,"hanging":false,"sampleSecretHeader":false,"pageNumber":1,"pageSize":20,"realRequests":0}
+{"utc":"2026-10-19T10:12:42.519850Z","interface":"GET /model","variant":"not-sample","status":200,"hanging":false,"sampleSecretHeader":false,"pageNumber":1,"pageSize":20,"realRequests":0}
+{"utc":"2026-10-19T10:15:33.650608600Z","interface":"GET /model","variant":"not-sample","status":200,"hanging":false,"sampleSecretHeader":false,"pageNumber":1,"pageSize":20,"realRequests":0}
+{"utc":"2026-10-19T10:15:43.872457600Z","interface":"GET /model","variant":"not-sample","status":200,"hanging":false,"sampleSecretHeader":false,"pageNumber":1,"pageSize":20,"realRequests":0}

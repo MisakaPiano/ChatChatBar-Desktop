@@ -1,0 +1,22 @@
+<testsuite name="Comp1FreshGuestOrchestration" tests="16" failures="2" errors="0" skipped="0">
+  <testcase name="confirmation_required_before_observation" classname="Comp1FreshGuestOrchestration" />
+  <testcase name="physical_host_refused" classname="Comp1FreshGuestOrchestration" />
+  <testcase name="dl1_host_refused" classname="Comp1FreshGuestOrchestration" />
+  <testcase name="system_identity_refused" classname="Comp1FreshGuestOrchestration" />
+  <testcase name="fixed_pair_mismatch_refused" classname="Comp1FreshGuestOrchestration" />
+  <testcase name="registration_read_failure_not_absent" classname="Comp1FreshGuestOrchestration" />
+  <testcase name="partial_registration_refused" classname="Comp1FreshGuestOrchestration" />
+  <testcase name="foreign_related_product_refused" classname="Comp1FreshGuestOrchestration" />
+  <testcase name="disk_failure_before_mutation" classname="Comp1FreshGuestOrchestration" />
+  <testcase name="success_fake_boundary_and_no_second_install" classname="Comp1FreshGuestOrchestration" />
+  <testcase name="preserves_failure_bad-exit" classname="Comp1FreshGuestOrchestration" />
+  <testcase name="preserves_failure_bad-after" classname="Comp1FreshGuestOrchestration" />
+  <testcase name="preserves_failure_identity-fail" classname="Comp1FreshGuestOrchestration" />
+  <testcase name="preserves_failure_timeout" classname="Comp1FreshGuestOrchestration" />
+  <testcase name="actual_jar_identity_wrong_commit_False" classname="Comp1FreshGuestOrchestration">
+    <failure>Unable to find type [IO.Compression.ZipArchiveMode].</failure>
+  </testcase>
+  <testcase name="actual_jar_identity_wrong_commit_True" classname="Comp1FreshGuestOrchestration">
+    <failure>Unable to find type [IO.Compression.ZipArchiveMode].</failure>
+  </testcase>
+</testsuite>

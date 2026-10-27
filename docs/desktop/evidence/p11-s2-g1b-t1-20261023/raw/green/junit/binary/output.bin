@@ -1,0 +1,77 @@
+SYMLINK_FIXTURE_UNAVAILABLE
+'SYMLINK_FIXTURE_UNAVAILABLE
+ED G1A model-mapping SYNTHETIC_OBSERVED exact model ID only; same-name different ID UNMAPPED_DEPENDENCY; same ID changed endpoint not independently authenticated
+EF‚G1A startup SYNTHETIC_OBSERVED STARTUP_REGISTERED_ROWS_RECOVERED DATA_NEW_KEY_OLD; no input credential mapping or OS user switch
+EGrG1A data-first SYNTHETIC_OBSERVED OBSERVED_NONATOMIC_SEQUENCE DATA_NEW_KEY_OLD CROSS_DOMAIN_ATOMICITY_NOT_PROVEN
+EHtG1A entity-rollback-fault SYNTHETIC_OBSERVED EXPLICIT_ROLLBACK_FAILURE DATA_OLD_KEY_NEW; recovery requires adapter
+EInG1A entity-rollback SYNTHETIC_OBSERVED EXISTING_SINGLE_ENTITY_ROLLBACK; not whole-root or multi-key recovery
+EJqG1A key-first SYNTHETIC_OBSERVED OBSERVED_NONATOMIC_SEQUENCE DATA_OLD_KEY_NEW CROSS_DOMAIN_ATOMICITY_NOT_PROVEN
+EKaG1A wrong-password SYNTHETIC_OBSERVED AUTHENTICATION_REJECTED source and fake secrets unchanged
+ELnG1A buffer-wipe SYNTHETIC_OBSERVED OWNED_BYTE_BUFFERS_ZEROED; immutable Strings and OS DPAPI heap NOT_PROVEN
+EMbG1A wire-empty-false SYNTHETIC_OBSERVED v1 credential-free Prepared closed; no restore scheduled
+EM­G1A wire-novel_ai-false SYNTHETIC_OBSERVED CURRENT_PRODUCTION_REJECTION category=NOVEL_AI no Prepared source/secrets unchanged; approved direct-import goal NOT_IMPLEMENTED
+EM«G1A wire-fish-false SYNTHETIC_OBSERVED CURRENT_PRODUCTION_REJECTION category=FISH_AUDIO no Prepared source/secrets unchanged; approved direct-import goal NOT_IMPLEMENTED
+EM¯G1A wire-community-false SYNTHETIC_OBSERVED CURRENT_PRODUCTION_REJECTION category=COMMUNITY no Prepared source/secrets unchanged; approved direct-import goal NOT_IMPLEMENTED
+EM§G1A wire-model-false SYNTHETIC_OBSERVED CURRENT_PRODUCTION_REJECTION category=MODEL no Prepared source/secrets unchanged; approved direct-import goal NOT_IMPLEMENTED
+EM¶G1A wire-legacy_embedding-false SYNTHETIC_OBSERVED CURRENT_PRODUCTION_REJECTION category=EMBEDDING no Prepared source/secrets unchanged; approved direct-import goal NOT_IMPLEMENTED
+EM¹G1A wire-singleton_embedding-false SYNTHETIC_OBSERVED CURRENT_PRODUCTION_REJECTION category=EMBEDDING no Prepared source/secrets unchanged; approved direct-import goal NOT_IMPLEMENTED
+EM±G1A wire-settings-false SYNTHETIC_OBSERVED CURRENT_PRODUCTION_REJECTION category=SILICON_FLOW no Prepared source/secrets unchanged; approved direct-import goal NOT_IMPLEMENTED
+EMaG1A wire-empty-true SYNTHETIC_OBSERVED v1 credential-free Prepared closed; no restore scheduled
+EM¬G1A wire-novel_ai-true SYNTHETIC_OBSERVED CURRENT_PRODUCTION_REJECTION category=NOVEL_AI no Prepared source/secrets unchanged; approved direct-import goal NOT_IMPLEMENTED
+EMªG1A wire-fish-true SYNTHETIC_OBSERVED CURRENT_PRODUCTION_REJECTION category=FISH_AUDIO no Prepared source/secrets unchanged; approved direct-import goal NOT_IMPLEMENTED
+EM®G1A wire-community-true SYNTHETIC_OBSERVED CURRENT_PRODUCTION_REJECTION category=COMMUNITY no Prepared source/secrets unchanged; approved direct-import goal NOT_IMPLEMENTED
+EM¦G1A wire-model-true SYNTHETIC_OBSERVED CURRENT_PRODUCTION_REJECTION category=MODEL no Prepared source/secrets unchanged; approved direct-import goal NOT_IMPLEMENTED
+EMµG1A wire-legacy_embedding-true SYNTHETIC_OBSERVED CURRENT_PRODUCTION_REJECTION category=EMBEDDING no Prepared source/secrets unchanged; approved direct-import goal NOT_IMPLEMENTED
+EM¸G1A wire-singleton_embedding-true SYNTHETIC_OBSERVED CURRENT_PRODUCTION_REJECTION category=EMBEDDING no Prepared source/secrets unchanged; approved direct-import goal NOT_IMPLEMENTED
+EM°G1A wire-settings-true SYNTHETIC_OBSERVED CURRENT_PRODUCTION_REJECTION category=SILICON_FLOW no Prepared source/secrets unchanged; approved direct-import goal NOT_IMPLEMENTED
+EN…G1A embedding-mapping SYNTHETIC_OBSERVED EXISTING_SUPPORTED distinct embedding scopes; source-to-target scope mapping NEEDS_ADAPTER
+EOxG1A protect-fault SYNTHETIC_OBSERVED SINGLE_KEY_ATOMIC protection failure preserves OLD; fake protector not real DPAPI
+EPpG1A second-write-fault SYNTHETIC_OBSERVED MULTI_KEY_PARTIAL A_NEW_B_OLD after fault2; no multi-key transaction
+EQrG1A identity SYNTHETIC_OBSERVED EXISTING_SUPPORTED 9 distinct namespaced keys; import account mapping NOT_PROVEN
+ER˜G1A journal-cancel SYNTHETIC_OBSERVED OBSERVED_NONATOMIC_SEQUENCE registered data rollback only DATA_OLD_KEY_NEW; object reopen not OS/process restart
+ES£G1A postpublish-fault SYNTHETIC_OBSERVED WHOLE_KEY_PUBLISHED_CALL_FAILED injected writer boundary; failure does not universally imply OLD; not native-fault proof
+ET›G1A journal-exception SYNTHETIC_OBSERVED OBSERVED_NONATOMIC_SEQUENCE registered data rollback only DATA_OLD_KEY_NEW; object reopen not OS/process restart
+EUuG1A first-write-fault SYNTHETIC_OBSERVED SINGLE_KEY_ATOMIC prepublish fault1 BOTH_OLD; native move crash NOT_TESTED
+WX6T0_CHILD mode=gate-B expected=0 actual=0 alive=false
+WX6T0_CHILD mode=gate-B expected=0 actual=0 alive=false
+WY?T0_CHILD mode=before-intent expected=71 actual=71 alive=false
+WY>T0_CHILD mode=after-intent expected=71 actual=71 alive=false
+WY7T0_CHILD mode=recover expected=0 actual=0 alive=false
+WY?T0_CHILD mode=before-intent expected=71 actual=71 alive=false
+WY>T0_CHILD mode=after-intent expected=71 actual=71 alive=false
+WY7T0_CHILD mode=recover expected=0 actual=0 alive=false
+WZ5T0_LIMIT UNKNOWN_SHARED_CONSUMER_CLOSURE_NOT_PROVEN
+W[7T0_CHILD mode=apply expected=71 actual=71 alive=false
+W[7T0_CHILD mode=apply expected=71 actual=71 alive=false
+W\7T0_CHILD mode=recover expected=0 actual=0 alive=false
+W\7T0_CHILD mode=recover expected=0 actual=0 alive=false
+Wb7T0_CHILD mode=apply expected=71 actual=71 alive=false
+Wb?T0_CHILD mode=recover-crash expected=72 actual=72 alive=false
+Wb7T0_CHILD mode=recover expected=0 actual=0 alive=false
+Wb7T0_CHILD mode=recover expected=0 actual=0 alive=false
+Wb7T0_CHILD mode=apply expected=71 actual=71 alive=false
+Wb?T0_CHILD mode=recover-crash expected=72 actual=72 alive=false
+Wb7T0_CHILD mode=recover expected=0 actual=0 alive=false
+Wb7T0_CHILD mode=recover expected=0 actual=0 alive=false
+Wc7T0_CHILD mode=apply expected=71 actual=71 alive=false
+Wc7T0_CHILD mode=recover expected=0 actual=0 alive=false
+Wc7T0_CHILD mode=apply expected=71 actual=71 alive=false
+Wc7T0_CHILD mode=recover expected=0 actual=0 alive=false
+We7T0_CHILD mode=apply expected=71 actual=71 alive=false
+We7T0_CHILD mode=recover expected=0 actual=0 alive=false
+We7T0_CHILD mode=recover expected=0 actual=0 alive=false
+We7T0_CHILD mode=apply expected=71 actual=71 alive=false
+We7T0_CHILD mode=recover expected=0 actual=0 alive=false
+We7T0_CHILD mode=recover expected=0 actual=0 alive=false
+We7T0_CHILD mode=apply expected=71 actual=71 alive=false
+We7T0_CHILD mode=recover expected=0 actual=0 alive=false
+We7T0_CHILD mode=recover expected=0 actual=0 alive=false
+We7T0_CHILD mode=apply expected=71 actual=71 alive=false
+We7T0_CHILD mode=recover expected=0 actual=0 alive=false
+We7T0_CHILD mode=recover expected=0 actual=0 alive=false
+Wg5T0_CHILD mode=apply expected=0 actual=0 alive=false
+Wg7T0_CHILD mode=recover expected=0 actual=0 alive=false
+Wg7T0_CHILD mode=recover expected=0 actual=0 alive=false
+Wg5T0_CHILD mode=apply expected=0 actual=0 alive=false
+Wg7T0_CHILD mode=recover expected=0 actual=0 alive=false
+Wg7T0_CHILD mode=recover expected=0 actual=0 alive=false

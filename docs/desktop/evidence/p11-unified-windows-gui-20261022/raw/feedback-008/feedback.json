@@ -1,0 +1,8 @@
+{
+  "time": "2026-10-21T16:19:41.5785199Z",
+  "evidence": "用户提供复制进度、完成提示和副本2聊天截图",
+  "observed": "副本2创建成功，离线回复、123及31秒录音可见",
+  "visualCheck": "PASS",
+  "notYetObserved": "副本顶部图片；用户切回原会话确认",
+  "productionModified": false
+}

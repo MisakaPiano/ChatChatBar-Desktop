@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.data.local.JsonFileStorageSafetyTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-14T20:06:38.052Z" hostname="DD1" time="0.373">
+  <properties/>
+  <testcase name="observation does not read disk before explicit load" classname="com.example.chatbar.data.local.JsonFileStorageSafetyTest" time="0.016"/>
+  <testcase name="failed streaming write keeps previous singleton and removes temporary file" classname="com.example.chatbar.data.local.JsonFileStorageSafetyTest" time="0.034"/>
+  <testcase name="concurrent singleton reads only see complete writes" classname="com.example.chatbar.data.local.JsonFileStorageSafetyTest" time="0.138"/>
+  <testcase name="unreadable path is read failure and successful retry clears it" classname="com.example.chatbar.data.local.JsonFileStorageSafetyTest" time="0.011"/>
+  <testcase name="concurrent singleton updates remain serialized" classname="com.example.chatbar.data.local.JsonFileStorageSafetyTest" time="0.124"/>
+  <testcase name="corrupt singleton is neither missing nor overwritable after restart" classname="com.example.chatbar.data.local.JsonFileStorageSafetyTest" time="0.009"/>
+  <testcase name="cancellation is not converted into corruption" classname="com.example.chatbar.data.local.JsonFileStorageSafetyTest" time="0.011"/>
+  <testcase name="missing singleton returns null without failure" classname="com.example.chatbar.data.local.JsonFileStorageSafetyTest" time="0.006"/>
+  <testcase name="partial batch failure publishes only completed files" classname="com.example.chatbar.data.local.JsonFileStorageSafetyTest" time="0.024"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

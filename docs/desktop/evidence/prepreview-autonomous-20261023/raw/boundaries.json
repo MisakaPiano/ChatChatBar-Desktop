@@ -1,0 +1,9 @@
+{
+  "base": "cac1a811a21e6f99181c716e438b6b8df8dbf4f7",
+  "existingMainChanged": [
+    "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupMapping.kt"
+  ],
+  "expectedOnlyMapping": true,
+  "formalBaselineBlobUnchanged": true,
+  "historicalEvidenceUnchanged": true
+}

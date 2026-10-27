@@ -1,0 +1,10 @@
+{
+  "base": "1bb342f3228c0b054a3708dc770c400aa595cd03",
+  "originalBase": "76f527418616e90ed469cabcf0b78c9530563b2f",
+  "reusedFrom": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6e-20261019/frozen-source.patch",
+  "basesDifferOnlyByEvidence": true,
+  "bytes": 61834,
+  "sha256": "c77d1af8cdff6f4d70e574b9c09379867780a1e02590570ee3dbcdfca44e4de7",
+  "sourceCheckpointCreated": false,
+  "sourceNotStaged": true
+}

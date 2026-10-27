@@ -1,0 +1,20 @@
+{
+  "stage": "01-completed-focused",
+  "started": "2026-10-16T01:47:23.5674007+09:00",
+  "ended": "2026-10-16T01:48:23.8010729+09:00",
+  "seconds": 60.2337723,
+  "arguments": [
+    "--offline",
+    "--no-daemon",
+    "--no-parallel",
+    "--max-workers=1",
+    "--priority=low",
+    "--console=plain",
+    "--no-configuration-cache",
+    "-Pkotlin.compiler.execution.strategy=in-process",
+    ":desktopApp:test",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopDocumentIndexTransactionPrototypeTest.completed*"
+  ],
+  "exitCode": 0
+}

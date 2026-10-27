@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.backup.BackupMergeJsonStreamTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-24T20:46:37.844Z" hostname="DD1" time="0.013">
+  <properties/>
+  <testcase name="large unmapped text remains streaming and cancellation remains cancellation" classname="com.example.chatbar.desktop.backup.BackupMergeJsonStreamTest" time="0.005"/>
+  <testcase name="streamed replacements suppress discarded identity observations" classname="com.example.chatbar.desktop.backup.BackupMergeJsonStreamTest" time="0.002"/>
+  <testcase name="typed map keys and resource dictionary keys use separate namespaces" classname="com.example.chatbar.desktop.backup.BackupMergeJsonStreamTest" time="0.0"/>
+  <testcase name="typed identity mapping preserves user text and escaped payload tokens" classname="com.example.chatbar.desktop.backup.BackupMergeJsonStreamTest" time="0.003"/>
+  <testcase name="replacing a value still strictly validates its original subtree" classname="com.example.chatbar.desktop.backup.BackupMergeJsonStreamTest" time="0.0"/>
+  <testcase name="sequence mapping keeps record ordering and object observation balanced" classname="com.example.chatbar.desktop.backup.BackupMergeJsonStreamTest" time="0.003"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

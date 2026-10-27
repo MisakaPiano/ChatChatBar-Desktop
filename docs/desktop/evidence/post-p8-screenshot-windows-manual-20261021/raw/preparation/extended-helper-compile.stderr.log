@@ -1,0 +1,18 @@
+app\desktopApp\build\post-p8-screenshot-windows-manual-20261021\support-src\ScreenshotFixtureSupport.java:32: ����: �����ݵ�����: ����������Ч
+   List<CharacterCard> cards=P8R3Preflight.await(characters::getAll);
+                                                 ^
+    �����ݵ�����: Continuation<CAP#1>�޷�ת��ΪContinuation<? super List<CharacterCard>>
+  ����, T�����ͱ���:
+    T��չ���ڷ��� <T>await(SuspendCall<T>)��������Object
+  ����, CAP#1�������ͱ���:
+    CAP#1��? super T�Ĳ�����չObject �� T
+app\desktopApp\build\post-p8-screenshot-windows-manual-20261021\support-src\ScreenshotFixtureSupport.java:60: ����: �����ݵ�����: ����������Ч
+   List<ChatSession> sessions=P8R3Preflight.await(chats::getAllSessions);check(sessions.size()==3,"SESSIONS");
+                                                  ^
+    �����ݵ�����: Continuation<CAP#1>�޷�ת��ΪContinuation<? super List<ChatSession>>
+  ����, T�����ͱ���:
+    T��չ���ڷ��� <T>await(SuspendCall<T>)��������Object
+  ����, CAP#1�������ͱ���:
+    CAP#1��? super T�Ĳ�����չObject �� T
+ע: ĳЩ��Ϣ�Ѿ�����; ��ʹ�� -Xdiags:verbose ���±����Ի���������
+2 ������

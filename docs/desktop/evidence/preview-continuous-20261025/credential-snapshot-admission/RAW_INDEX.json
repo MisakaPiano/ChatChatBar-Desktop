@@ -1,0 +1,230 @@
+{
+  "credential-admission-complete-20261025/arguments.json": {
+    "bytes": 880,
+    "sha256": "f2c1b6feb339ec46df9d9b87e4659ab5f414ae6187659f726828b7eeeaea4f24"
+  },
+  "credential-admission-complete-20261025/exit.txt": {
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  "credential-admission-complete-20261025/gradle.log": {
+    "bytes": 2236,
+    "sha256": "8c98eab355c08a252630d22a66e08c6b706e0a298d90e2c35c4a42029611c976"
+  },
+  "credential-admission-complete-20261025/head.txt": {
+    "bytes": 40,
+    "sha256": "6716f0970f68b7b0790ef21679664dcc8b73c3bad76bd2179a281102dfb701ad"
+  },
+  "credential-admission-complete-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopMergeCredentialsTest.xml": {
+    "bytes": 1875,
+    "sha256": "751f8220392578de7e5440ce1d465832d17112589e1748bc2f5bdb3530031b4d"
+  },
+  "credential-admission-complete-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopMergeRootPreparationTest.xml": {
+    "bytes": 1143,
+    "sha256": "2143a4a90ca0d9eb4bc8c1820cafd151677a92cf3e9f3ee636398ae53ffccb42"
+  },
+  "credential-admission-complete-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopApplicationLifecycleTest.xml": {
+    "bytes": 7330,
+    "sha256": "3acf9939de72b4498cd7eb820c2fd2454bbde1ebe4cc61e3a08b367d0e46a62f"
+  },
+  "credential-admission-complete-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.security.DesktopCredentialSnapshotAdmissionTest.xml": {
+    "bytes": 1142,
+    "sha256": "2590ae9d9e9c6d5a079be9dace678decc2b151bade3537dc4279b4bf937b4ce6"
+  },
+  "credential-admission-complete-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.security.DesktopSecureEmbeddingRepositoryTest.xml": {
+    "bytes": 1951,
+    "sha256": "3bdd5a101f91ee533e194ec35ee9360e81493eea3fd0c005d5db2a2b3381b62c"
+  },
+  "credential-admission-complete-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.security.DesktopSecureModelRepositoryTest.xml": {
+    "bytes": 1340,
+    "sha256": "f4beb0abe8eb78f2dab4185ac867eba2a356d640efc41d44a83ee4d46492048d"
+  },
+  "credential-admission-complete-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.security.DesktopSecureSettingsRepositoryTest.xml": {
+    "bytes": 1511,
+    "sha256": "ec8b2c0cecaaf799d4e9fdb7cc1edac19c2482d8142406f29ab98099503ca07a"
+  },
+  "credential-admission-complete-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt": {
+    "bytes": 35959,
+    "sha256": "fc0db7492d411d32ac5f4a64183c9239ad0dbfacee549ce72dd8a535e259b34b"
+  },
+  "credential-admission-complete-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishAudioControllers.kt": {
+    "bytes": 4502,
+    "sha256": "32b31064d5938a7725097275c6d46e2ac30d6f2864aa9150cec12f5c1e0e4c30"
+  },
+  "credential-admission-complete-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopNovelAiSettingsController.kt": {
+    "bytes": 4158,
+    "sha256": "a3bb8ae7b4568e1cbeb115bce771b82966a89a2c91858c82b772b0866e1c21ea"
+  },
+  "credential-admission-complete-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/DesktopRepositoryCredentialPolicies.kt": {
+    "bytes": 7980,
+    "sha256": "5c555d0eae87e01ba1f27483ef75fab1c1cff46bf17c8b360d0197e3d563a4a9"
+  },
+  "credential-admission-complete-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/security/DesktopCredentialSnapshotAdmissionTest.kt": {
+    "bytes": 8242,
+    "sha256": "ed445d530c0197a7f9fa4fc34183ba5ece594356d39f02cee1b357badf2b7f45"
+  },
+  "credential-admission-final-20261025/arguments.json": {
+    "bytes": 880,
+    "sha256": "f2c1b6feb339ec46df9d9b87e4659ab5f414ae6187659f726828b7eeeaea4f24"
+  },
+  "credential-admission-final-20261025/exit.txt": {
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  "credential-admission-final-20261025/gradle.log": {
+    "bytes": 3500,
+    "sha256": "7a8b45ebdf6ce259042dc4d3e533da374c57c25118602423238e78d31719e3db"
+  },
+  "credential-admission-final-20261025/head.txt": {
+    "bytes": 40,
+    "sha256": "6716f0970f68b7b0790ef21679664dcc8b73c3bad76bd2179a281102dfb701ad"
+  },
+  "credential-admission-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopMergeCredentialsTest.xml": {
+    "bytes": 1877,
+    "sha256": "41f2d2bce40908ed8afa8a32e8d2c1bb51728b6aa2e7c4a53e4a92efa346011f"
+  },
+  "credential-admission-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopMergeRootPreparationTest.xml": {
+    "bytes": 1142,
+    "sha256": "1b8acd0c79ccf76b10b47084f2a014d4ab1afb92f35be8a448fe4d9dbaec6a4c"
+  },
+  "credential-admission-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopApplicationLifecycleTest.xml": {
+    "bytes": 7328,
+    "sha256": "be2bdf4dcbbc2258c9a3cc4455fbc647fab18248177c6cbddf33e2474d1299db"
+  },
+  "credential-admission-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.security.DesktopCredentialSnapshotAdmissionTest.xml": {
+    "bytes": 8912,
+    "sha256": "9650a8f5ea0e6aab2c908b2c665f9079147b982f25e8d6cfa2b6e9c4e3dac78d"
+  },
+  "credential-admission-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.security.DesktopSecureEmbeddingRepositoryTest.xml": {
+    "bytes": 1951,
+    "sha256": "941a1cd82e17b016d0e685c9eaee9826b8d27d9eadbac170a5be28791cfff540"
+  },
+  "credential-admission-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.security.DesktopSecureModelRepositoryTest.xml": {
+    "bytes": 1340,
+    "sha256": "9efdafe7ca578d8cb5557905b607de09a1f65a34576e238097c21bf0b7c3cab7"
+  },
+  "credential-admission-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.security.DesktopSecureSettingsRepositoryTest.xml": {
+    "bytes": 1512,
+    "sha256": "b15fb38b859a3e99d442b010931f813f60e830ac95cc9b540f174fb64b1d5162"
+  },
+  "credential-admission-final-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt": {
+    "bytes": 35959,
+    "sha256": "fc0db7492d411d32ac5f4a64183c9239ad0dbfacee549ce72dd8a535e259b34b"
+  },
+  "credential-admission-final-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishAudioControllers.kt": {
+    "bytes": 4502,
+    "sha256": "32b31064d5938a7725097275c6d46e2ac30d6f2864aa9150cec12f5c1e0e4c30"
+  },
+  "credential-admission-final-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopNovelAiSettingsController.kt": {
+    "bytes": 4158,
+    "sha256": "a3bb8ae7b4568e1cbeb115bce771b82966a89a2c91858c82b772b0866e1c21ea"
+  },
+  "credential-admission-final-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/DesktopRepositoryCredentialPolicies.kt": {
+    "bytes": 7980,
+    "sha256": "5c555d0eae87e01ba1f27483ef75fab1c1cff46bf17c8b360d0197e3d563a4a9"
+  },
+  "credential-admission-final-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/security/DesktopCredentialSnapshotAdmissionTest.kt": {
+    "bytes": 8234,
+    "sha256": "6b12cdf74ffb6fdaf07240c7230f26581f12909715c5e2f5e6280d1717d0de59"
+  },
+  "credential-admission-green-20261025/arguments.json": {
+    "bytes": 880,
+    "sha256": "f2c1b6feb339ec46df9d9b87e4659ab5f414ae6187659f726828b7eeeaea4f24"
+  },
+  "credential-admission-green-20261025/exit.txt": {
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  "credential-admission-green-20261025/gradle.log": {
+    "bytes": 4664,
+    "sha256": "4b02cae15efe86f0c3ee729e906c39b66a9d8bae81e56a006e7f3b78fb32c73b"
+  },
+  "credential-admission-green-20261025/head.txt": {
+    "bytes": 40,
+    "sha256": "6716f0970f68b7b0790ef21679664dcc8b73c3bad76bd2179a281102dfb701ad"
+  },
+  "credential-admission-green-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopMergeCredentialsTest.xml": {
+    "bytes": 1876,
+    "sha256": "a2883706356b63a1aa5da985e26b835e7905e5ef0faafa3a7233128a40d741b7"
+  },
+  "credential-admission-green-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopMergeRootPreparationTest.xml": {
+    "bytes": 1144,
+    "sha256": "6f395f048340e71d6435e2886e0ef390f34871ba3fbae0ad01eb03c0907db60e"
+  },
+  "credential-admission-green-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopApplicationLifecycleTest.xml": {
+    "bytes": 7330,
+    "sha256": "7d1bb96eea59311d0d74bfd355c54eb05e215500e6d976508e4a6530072dfac7"
+  },
+  "credential-admission-green-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.security.DesktopCredentialSnapshotAdmissionTest.xml": {
+    "bytes": 551,
+    "sha256": "fe669610ceb748f0964504d5973129b5346bac37ffb3c7d7c05aa4585da95ae1"
+  },
+  "credential-admission-green-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.security.DesktopSecureEmbeddingRepositoryTest.xml": {
+    "bytes": 1951,
+    "sha256": "20a306f84fc3d633b356c0e7db0818a945741c47ca0b2fcfd892d0e914c03d2b"
+  },
+  "credential-admission-green-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.security.DesktopSecureModelRepositoryTest.xml": {
+    "bytes": 1342,
+    "sha256": "e06fa193bebf077e79a86e5a4f39a405957afc38485996ff41c2dd25e11abd72"
+  },
+  "credential-admission-green-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.security.DesktopSecureSettingsRepositoryTest.xml": {
+    "bytes": 1513,
+    "sha256": "fd3c8c2aff33a44b93a5b48475a29925d2c0f3f405f818c0d5890b59519bd8a6"
+  },
+  "credential-admission-green-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt": {
+    "bytes": 35959,
+    "sha256": "fc0db7492d411d32ac5f4a64183c9239ad0dbfacee549ce72dd8a535e259b34b"
+  },
+  "credential-admission-green-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishAudioControllers.kt": {
+    "bytes": 4502,
+    "sha256": "32b31064d5938a7725097275c6d46e2ac30d6f2864aa9150cec12f5c1e0e4c30"
+  },
+  "credential-admission-green-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopNovelAiSettingsController.kt": {
+    "bytes": 4158,
+    "sha256": "a3bb8ae7b4568e1cbeb115bce771b82966a89a2c91858c82b772b0866e1c21ea"
+  },
+  "credential-admission-green-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/DesktopRepositoryCredentialPolicies.kt": {
+    "bytes": 7794,
+    "sha256": "194616fa2f66240699d0ef1a25a1b13403cb6cd58b018e12093f226af89fd054"
+  },
+  "credential-admission-green-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/security/DesktopCredentialSnapshotAdmissionTest.kt": {
+    "bytes": 2941,
+    "sha256": "34829815c3e13edd353d3a3056c3b1c641a82039d0d81d3ade01cae163413979"
+  },
+  "credential-admission-red-20261025/arguments.json": {
+    "bytes": 556,
+    "sha256": "0bec312931e055f63a4f768a9a442889820a38f5f54dd79608b6c1139b1bf08c"
+  },
+  "credential-admission-red-20261025/exit.txt": {
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  "credential-admission-red-20261025/gradle.log": {
+    "bytes": 2775,
+    "sha256": "547924939d7fcb8ce2896da66c5bd229a2f224e7d8ce4ce89ab5c654ee315d13"
+  },
+  "credential-admission-red-20261025/head.txt": {
+    "bytes": 40,
+    "sha256": "6716f0970f68b7b0790ef21679664dcc8b73c3bad76bd2179a281102dfb701ad"
+  },
+  "credential-admission-red-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.security.DesktopCredentialSnapshotAdmissionTest.xml": {
+    "bytes": 8141,
+    "sha256": "d821e22cea43be0537bd10f3967c63ede890c2ce0cf90e9480e20c69040827a8"
+  },
+  "credential-admission-red-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/security/DesktopCredentialSnapshotAdmissionTest.kt": {
+    "bytes": 2941,
+    "sha256": "34829815c3e13edd353d3a3056c3b1c641a82039d0d81d3ade01cae163413979"
+  },
+  "RESULT.json": {
+    "bytes": 637,
+    "sha256": "2c6521dda7578b12f60eed797c165c2be9ab1fb9b850a8567252f83516e3cb4f"
+  },
+  "RESULT.md": {
+    "bytes": 1659,
+    "sha256": "07857804260576f47d090e190fa8ae19e1a9dabb1bef7381acc9a28aee952a62"
+  },
+  "SOURCE_IDENTITY.json": {
+    "bytes": 1370,
+    "sha256": "78b4b76d4c37d01328b9c3350d41dd2b5ff8bb3a7a66ab66924e4cb0e472ab11"
+  }
+}

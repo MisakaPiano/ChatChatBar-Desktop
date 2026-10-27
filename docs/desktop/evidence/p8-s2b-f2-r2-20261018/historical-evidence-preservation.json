@@ -1,0 +1,22 @@
+[
+  {
+    "commit": "ade2680b97397814b4f0686c2d2766655d37be63",
+    "path": "docs/desktop/evidence/p8-s2b-f2-20261018",
+    "allTreeBlobsUnchanged": true,
+    "entries": 22,
+    "treeLedgerSha256": "a237b0ea75c249b499ec1ac4f753e135fef8407bd91da2a30bb19d52cbbaaba2",
+    "manifestSha256": "dbc5ee84e2e072a2cb2c937e254c407e6d32ad0a0912773ff637d8aaca1bb645",
+    "manifestBytes": 3706,
+    "originalREDReclassified": false
+  },
+  {
+    "commit": "e3e0dcc1ee3324caf5e1f8f321b03449e716a061",
+    "path": "docs/desktop/evidence/p8-s2b-f2-r1-20261018",
+    "allTreeBlobsUnchanged": true,
+    "entries": 30,
+    "treeLedgerSha256": "63bb04884523b2ad75f6bc51e5e6f65efcb151403f758c8b13390016bdc11a15",
+    "manifestSha256": "6a1cc407c8f8239896d1eae556428958a720fd080e7fe65d46a58174d66acb22",
+    "manifestBytes": 5164,
+    "originalREDReclassified": false
+  }
+]

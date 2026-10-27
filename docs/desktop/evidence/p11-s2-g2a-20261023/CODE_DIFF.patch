@@ -1,0 +1,825 @@
+diff --git a/.agents/skills/chatbar-desktop-full-backup/SKILL.md b/.agents/skills/chatbar-desktop-full-backup/SKILL.md
+index 8a152159..db824590 100644
+--- a/.agents/skills/chatbar-desktop-full-backup/SKILL.md
++++ b/.agents/skills/chatbar-desktop-full-backup/SKILL.md
+@@ -17,6 +17,8 @@ description: Maintain Desktop whole-app cbbackup export, offline inspection, cre
+ - `DesktopFullBackupGraphValidation`: offline message/version/voice, memory graph, media and SaveSlot checks; no model calls or default-filling repair.
+ - `DesktopFullBackupService`, `Controller`, `Panel`: app-owned operation and explicit replacement confirmation on the Data page. Passwords are volatile and cleared. No SecretStore interface is injected; nonempty incoming credential fields are rejected before plaintext staging.
+ 
++- G2A `DesktopCredentialImportPlan` and `RecoverableIntentContract` are internal, unwired metadata contracts only. Inputs are trusted decoder/target-observation facts, not archives or keys; Community has no sink, endpoint/provider and name conflicts block candidates. Intent checks reject missing participants, old/new proof, generations and mixed/ambiguous completion; they never write, authorize business, or prove durability. Focused tests: DesktopCredentialImportPlanTest, RecoverableIntentContractTest, G2AOfficialWireTest. The strict test-only wire subset is not a production credential decoder.
++
+ ## Restore lifecycle
+ 
+ - Prepare and verify under normal admission; flush the chat composer before snapshot/schedule. Join the automatic backup scheduler before reserving audio. Confirm audio stop/close, then enter exclusive coordination.
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialImportPlan.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialImportPlan.kt
+new file mode 100644
+index 00000000..432d66be
+--- /dev/null
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialImportPlan.kt
+@@ -0,0 +1,165 @@
++package com.example.chatbar.desktop.backup
++
++import com.example.chatbar.data.local.entity.ModelTemplate
++import com.example.chatbar.desktop.security.DesktopCredentialKey
++import java.net.URI
++
++/** G2A metadata only. A future authenticated, strict decoder must supply these facts.
++ * This module neither decodes archives nor receives credential values or accesses a store.
++ * Code84/v1 is the pinned official 1.4.5 contract (1198a13c AppBackupModels/build source).
++ */
++internal enum class ImportCredentialKind { NOVEL_AI, FISH, SILICON_FLOW, MODEL, LEGACY_EMBEDDING, SINGLETON_EMBEDDING, COMMUNITY, UNKNOWN }
++internal enum class ImportCredentialLocation { PREFERENCES_NOVEL_AI, PREFERENCES_FISH, APP_SETTINGS, MODEL_CONFIG, LEGACY_EMBEDDING_CONFIG, SINGLETON_EMBEDDING_CONFIG, PREFERENCES_COMMUNITY, UNKNOWN }
++internal enum class ImportSecretPresence { ABSENT, EMPTY, NONEMPTY }
++internal enum class ExistingSecretRelation { ABSENT, SAME, DIFFERENT, UNKNOWN }
++internal enum class CredentialPlanStatus { CANDIDATE, NO_SECRET, UNMAPPED, CONFLICT, REQUIRES_CONFIRMATION }
++internal enum class CredentialPlanReason {
++    MAPPED, NO_INCOMING_SECRET, SOURCE_IDENTITY_INVALID, SOURCE_FORMAT_UNSUPPORTED,
++    UNKNOWN_KIND, LOCATION_MISMATCH, NO_PROTECTED_SINK, TARGET_STATE_UNKNOWN,
++    DUPLICATE_SOURCE, DUPLICATE_TARGET, ENDPOINT_OR_PROVIDER_CONFLICT, NAME_COLLISION,
++    EXISTING_SECRET_DIFFERS,
++}
++
++/** Identity is retained for exact comparison, never used as diagnostic text or a value digest. */
++internal class ImportAccountIdentity(
++    private val id: String,
++    private val displayName: String,
++    private val endpoint: String,
++    private val remoteModel: String,
++    private val template: ModelTemplate? = null,
++) {
++    internal fun valid(kind: ImportCredentialKind): Boolean = try {
++        val uri = URI(endpoint)
++        id.isNotBlank() && displayName.isNotBlank() && remoteModel.isNotBlank() &&
++            listOf(id, displayName, remoteModel).none { value -> value.any(Char::isISOControl) } &&
++            uri.scheme in setOf("http", "https") && !uri.host.isNullOrBlank() &&
++            uri.rawUserInfo == null && uri.rawQuery == null && uri.rawFragment == null &&
++            !uri.path.orEmpty().split('/').any { it == "." || it == ".." } &&
++            ((kind == ImportCredentialKind.MODEL) == (template != null))
++    } catch (_: Exception) { false }
++
++    internal fun key(kind: ImportCredentialKind): DesktopCredentialKey? = when (kind) {
++        ImportCredentialKind.MODEL -> if (id.isNotBlank()) DesktopCredentialKey.ModelApiKey(id) else null
++        ImportCredentialKind.LEGACY_EMBEDDING -> if (id.isNotBlank()) DesktopCredentialKey.LegacyEmbeddingApiKey(id) else null
++        ImportCredentialKind.SINGLETON_EMBEDDING -> DesktopCredentialKey.SingletonEmbeddingApiKey
++        else -> null
++    }
++    internal fun sameAccount(other: ImportAccountIdentity): Boolean =
++        id == other.id && endpoint == other.endpoint && template == other.template && remoteModel == other.remoteModel
++    internal fun nameCollision(other: ImportAccountIdentity): Boolean = displayName == other.displayName && id != other.id
++    override fun toString(): String = "ImportAccountIdentity(REDACTED)"
++}
++
++/** No serializable DTO, raw token, JSON, path or password is accepted. */
++internal class ImportCredentialSource(
++    val kind: ImportCredentialKind,
++    val location: ImportCredentialLocation,
++    val presence: ImportSecretPresence,
++    val account: ImportAccountIdentity? = null,
++) {
++    override fun toString(): String = "ImportCredentialSource($kind,$location,$presence)"
++}
++
++internal class ImportCredentialTarget(
++    val kind: ImportCredentialKind,
++    val relation: ExistingSecretRelation,
++    val account: ImportAccountIdentity? = null,
++) {
++    override fun toString(): String = "ImportCredentialTarget($kind,$relation)"
++}
++
++/** Wrap the existing key to prevent its generated toString from emitting an imported ID. */
++internal class ImportCredentialCandidate internal constructor(private val key: DesktopCredentialKey) {
++    internal fun matches(expected: DesktopCredentialKey): Boolean = key == expected
++    override fun equals(other: Any?): Boolean = other is ImportCredentialCandidate && key == other.key
++    override fun hashCode(): Int = key.hashCode()
++    override fun toString(): String = "ImportCredentialCandidate(REDACTED)"
++}
++
++internal data class CredentialMappingDecision(
++    val ordinal: Int,
++    val kind: ImportCredentialKind,
++    val status: CredentialPlanStatus,
++    val reason: CredentialPlanReason,
++    val candidate: ImportCredentialCandidate? = null,
++    val expectedOldAbsent: Boolean? = null,
++)
++
++internal class DesktopCredentialImportPlan private constructor(
++    decisions: List<CredentialMappingDecision>,
++    val sourceProblem: CredentialPlanReason?,
++    private val sourceSha256: String?,
++) {
++    val decisions: List<CredentialMappingDecision> = decisions.toList()
++    val candidateConsistent: Boolean get() = sourceProblem == null && decisions.all {
++        it.status in setOf(CredentialPlanStatus.CANDIDATE, CredentialPlanStatus.NO_SECRET)
++    }
++    // This is never a restore authorization, even for a consistent empty plan.
++    val restoreAuthorized: Boolean get() = false
++    internal fun belongsTo(source: String?): Boolean = sourceProblem == null && sourceSha256 == source
++    override fun toString(): String = "DesktopCredentialImportPlan($sourceProblem,$decisions)"
++
++    companion object {
++        fun classify(
++            envelopeVersion: Int, manifestVersion: Int, appVersionCode: Int, sourceSha256: String,
++            sources: List<ImportCredentialSource>?, targets: List<ImportCredentialTarget>,
++            protectedSinkAvailable: Boolean,
++        ): DesktopCredentialImportPlan {
++            val problem = when {
++                envelopeVersion != 1 || manifestVersion != 1 || appVersionCode != 84 -> CredentialPlanReason.SOURCE_FORMAT_UNSUPPORTED
++                !sourceSha256.matches(Regex("[a-f0-9]{64}")) || sources == null -> CredentialPlanReason.SOURCE_IDENTITY_INVALID
++                else -> null
++            }
++            if (problem != null) return DesktopCredentialImportPlan(emptyList(), problem, null)
++            val records = requireNotNull(sources)
++            val decisions = records.mapIndexed { ordinal, source ->
++                val key = key(source.kind, source.account)
++                val matching = targets.filter { key(it.kind, it.account) == key && key != null }
++                fun result(status: CredentialPlanStatus, reason: CredentialPlanReason, key: DesktopCredentialKey? = null) =
++                    CredentialMappingDecision(ordinal, source.kind, status, reason, key?.let(::ImportCredentialCandidate),
++                        if (key == null) null else matching.single().relation == ExistingSecretRelation.ABSENT)
++                when {
++                    source.kind == ImportCredentialKind.UNKNOWN -> result(CredentialPlanStatus.UNMAPPED, CredentialPlanReason.UNKNOWN_KIND)
++                    source.location != location(source.kind) -> result(CredentialPlanStatus.CONFLICT, CredentialPlanReason.LOCATION_MISMATCH)
++                    !validAccount(source.kind, source.account) -> result(CredentialPlanStatus.UNMAPPED, CredentialPlanReason.SOURCE_IDENTITY_INVALID)
++                    records.count { it.kind == source.kind && (key(it.kind, it.account) == key) } > 1 ->
++                        result(CredentialPlanStatus.CONFLICT, CredentialPlanReason.DUPLICATE_SOURCE)
++                    source.presence != ImportSecretPresence.NONEMPTY -> result(CredentialPlanStatus.NO_SECRET, CredentialPlanReason.NO_INCOMING_SECRET)
++                    source.kind == ImportCredentialKind.COMMUNITY || !protectedSinkAvailable -> result(CredentialPlanStatus.UNMAPPED, CredentialPlanReason.NO_PROTECTED_SINK)
++                    matching.size > 1 -> result(CredentialPlanStatus.CONFLICT, CredentialPlanReason.DUPLICATE_TARGET)
++                    matching.isEmpty() || matching.single().relation == ExistingSecretRelation.UNKNOWN -> result(CredentialPlanStatus.UNMAPPED, CredentialPlanReason.TARGET_STATE_UNKNOWN)
++                    !validAccount(matching.single().kind, matching.single().account) -> result(CredentialPlanStatus.UNMAPPED, CredentialPlanReason.SOURCE_IDENTITY_INVALID)
++                    source.account != null && !source.account.sameAccount(requireNotNull(matching.single().account)) ->
++                        result(CredentialPlanStatus.CONFLICT, CredentialPlanReason.ENDPOINT_OR_PROVIDER_CONFLICT)
++                    source.account != null && (targets.any { it.kind == source.kind && it.account?.nameCollision(source.account) == true } ||
++                        records.any { it !== source && it.kind == source.kind && it.account?.nameCollision(source.account) == true }) ->
++                        result(CredentialPlanStatus.REQUIRES_CONFIRMATION, CredentialPlanReason.NAME_COLLISION)
++                    matching.single().relation == ExistingSecretRelation.DIFFERENT -> result(CredentialPlanStatus.REQUIRES_CONFIRMATION, CredentialPlanReason.EXISTING_SECRET_DIFFERS)
++                    else -> result(CredentialPlanStatus.CANDIDATE, CredentialPlanReason.MAPPED, requireNotNull(key))
++                }
++            }
++            return DesktopCredentialImportPlan(decisions, null, sourceSha256)
++        }
++
++        private fun validAccount(kind: ImportCredentialKind, account: ImportAccountIdentity?): Boolean = when (kind) {
++            ImportCredentialKind.MODEL, ImportCredentialKind.LEGACY_EMBEDDING, ImportCredentialKind.SINGLETON_EMBEDDING -> account?.valid(kind) == true
++            else -> account == null
++        }
++        private fun key(kind: ImportCredentialKind, account: ImportAccountIdentity?): DesktopCredentialKey? = when (kind) {
++            ImportCredentialKind.NOVEL_AI -> DesktopCredentialKey.NovelAiToken
++            ImportCredentialKind.FISH -> DesktopCredentialKey.FishAudioApiKey
++            ImportCredentialKind.SILICON_FLOW -> DesktopCredentialKey.SiliconFlowApiKey
++            else -> account?.key(kind)
++        }
++        private fun location(kind: ImportCredentialKind): ImportCredentialLocation = when (kind) {
++            ImportCredentialKind.NOVEL_AI -> ImportCredentialLocation.PREFERENCES_NOVEL_AI
++            ImportCredentialKind.FISH -> ImportCredentialLocation.PREFERENCES_FISH
++            ImportCredentialKind.SILICON_FLOW -> ImportCredentialLocation.APP_SETTINGS
++            ImportCredentialKind.MODEL -> ImportCredentialLocation.MODEL_CONFIG
++            ImportCredentialKind.LEGACY_EMBEDDING -> ImportCredentialLocation.LEGACY_EMBEDDING_CONFIG
++            ImportCredentialKind.SINGLETON_EMBEDDING -> ImportCredentialLocation.SINGLETON_EMBEDDING_CONFIG
++            ImportCredentialKind.COMMUNITY -> ImportCredentialLocation.PREFERENCES_COMMUNITY
++            ImportCredentialKind.UNKNOWN -> ImportCredentialLocation.UNKNOWN
++        }
++    }
++}
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/RecoverableIntentContract.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/RecoverableIntentContract.kt
+new file mode 100644
+index 00000000..61194019
+--- /dev/null
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/RecoverableIntentContract.kt
+@@ -0,0 +1,105 @@
++package com.example.chatbar.desktop.backup
++
++import java.util.UUID
++
++/** G2A pure model derived from 163. Phase labels are assertions, never durable receipts.
++ * Evidence booleans/digests must be proved by future adapters. No IO, locks, serialization or apply.
++ */
++internal enum class CandidateIntentPhase { SOURCE_VERIFIED, PREPARED, INTENT_DURABLE, APPLYING, RECOVERING, COMPLETE }
++internal enum class CandidateParticipantDomain { DATA, PROTECTED_CREDENTIAL }
++internal enum class CandidateObservedState { OLD, NEW, UNKNOWN, POST_PUBLICATION_AMBIGUOUS }
++internal enum class CandidateRecoveryOutcome { ALL_OLD, ALL_NEW }
++internal enum class CandidateIntentFailure {
++    INVALID_TRANSITION, SOURCE_INCOMPLETE, PLAN_UNRESOLVED, GENERATION_MISSING, CONTEXT_INCOMPLETE,
++    PARTICIPANT_MISSING, PARTICIPANT_DUPLICATE, OLD_EVIDENCE_MISSING, NEW_EVIDENCE_MISSING,
++    OWNERSHIP_UNPROVEN, INTENT_UNPROVEN, OBSERVATION_INCOMPLETE, MIXED_STATE, AMBIGUOUS_PUBLICATION,
++}
++
++/** Evidence is for data bytes or OS-protected blobs, NEVER plaintext credential-value digests. */
++internal class CandidateParticipant(
++    val domain: CandidateParticipantDomain,
++    val credential: ImportCredentialCandidate? = null,
++    val dataOrdinal: Int? = null,
++    val oldAbsent: Boolean = false,
++    val oldEvidenceSha256: String? = null,
++    val newEvidenceSha256: String? = null,
++    val observed: CandidateObservedState = CandidateObservedState.UNKNOWN,
++    val observedGeneration: Long? = null,
++    val observedEvidenceSha256: String? = null,
++) {
++    override fun toString(): String = "CandidateParticipant($domain,$credential,$dataOrdinal,$observed)"
++}
++
++internal class CandidateRecoveryIntent(
++    val sourceSha256: String?, val sourceFullyVerified: Boolean,
++    val mappingPlan: DesktopCredentialImportPlan,
++    val oldGeneration: Long?, val targetGeneration: Long?,
++    participants: List<CandidateParticipant>,
++    val dataOwnershipProven: Boolean = false, val sharedSecretOwnershipProven: Boolean = false,
++    val intentEvidenceProven: Boolean = false,
++    val operationId: UUID? = null, val dataRootIdentity: UUID? = null,
++    val protectedContextIdentity: UUID? = null,
++) {
++    val participants: List<CandidateParticipant> = participants.toList()
++    override fun toString(): String = "CandidateRecoveryIntent(REDACTED,participants=${participants.size})"
++}
++
++internal data class CandidateIntentCheck(val failure: CandidateIntentFailure? = null) {
++    val modelConsistent: Boolean get() = failure == null
++    val authorizesBusiness: Boolean get() = false
++}
++
++internal object RecoverableIntentContract {
++    fun check(
++        intent: CandidateRecoveryIntent, from: CandidateIntentPhase, to: CandidateIntentPhase,
++        outcome: CandidateRecoveryOutcome? = null,
++    ): CandidateIntentCheck {
++        fun fail(reason: CandidateIntentFailure) = CandidateIntentCheck(reason)
++        val allowed = when (from) {
++            CandidateIntentPhase.SOURCE_VERIFIED -> setOf(CandidateIntentPhase.PREPARED)
++            CandidateIntentPhase.PREPARED -> setOf(CandidateIntentPhase.INTENT_DURABLE)
++            CandidateIntentPhase.INTENT_DURABLE -> setOf(CandidateIntentPhase.APPLYING, CandidateIntentPhase.RECOVERING)
++            CandidateIntentPhase.APPLYING -> setOf(CandidateIntentPhase.RECOVERING, CandidateIntentPhase.COMPLETE)
++            CandidateIntentPhase.RECOVERING -> setOf(CandidateIntentPhase.COMPLETE)
++            CandidateIntentPhase.COMPLETE -> emptySet()
++        }
++        if (to !in allowed) return fail(CandidateIntentFailure.INVALID_TRANSITION)
++        if (!intent.sourceFullyVerified || !digest(intent.sourceSha256) || !intent.mappingPlan.belongsTo(intent.sourceSha256)) return fail(CandidateIntentFailure.SOURCE_INCOMPLETE)
++        if (!intent.mappingPlan.candidateConsistent) return fail(CandidateIntentFailure.PLAN_UNRESOLVED)
++        if (intent.operationId == null || intent.dataRootIdentity == null ||
++            (intent.mappingPlan.decisions.any { it.candidate != null } && intent.protectedContextIdentity == null))
++            return fail(CandidateIntentFailure.CONTEXT_INCOMPLETE)
++        if (intent.oldGeneration == null || intent.oldGeneration < 0 || intent.targetGeneration == null ||
++            intent.targetGeneration <= intent.oldGeneration) return fail(CandidateIntentFailure.GENERATION_MISSING)
++        val rows = intent.participants
++        val required = intent.mappingPlan.decisions.mapNotNull { it.candidate }.toSet()
++        val protected = rows.filter { it.domain == CandidateParticipantDomain.PROTECTED_CREDENTIAL }
++        if (rows.none { it.domain == CandidateParticipantDomain.DATA } ||
++            protected.map { it.credential }.toSet() != required ||
++            rows.any { (it.domain == CandidateParticipantDomain.DATA && (it.dataOrdinal == null || it.dataOrdinal < 0 || it.credential != null)) ||
++                (it.domain == CandidateParticipantDomain.PROTECTED_CREDENTIAL && (it.credential == null || it.dataOrdinal != null)) })
++            return fail(CandidateIntentFailure.PARTICIPANT_MISSING)
++        if (rows.filter { it.domain == CandidateParticipantDomain.DATA }.map { it.dataOrdinal }.distinct().size != rows.count { it.domain == CandidateParticipantDomain.DATA } ||
++            protected.map { it.credential }.distinct().size != protected.size) return fail(CandidateIntentFailure.PARTICIPANT_DUPLICATE)
++        if (rows.any { if (it.oldAbsent) it.oldEvidenceSha256 != null else !digest(it.oldEvidenceSha256) }) return fail(CandidateIntentFailure.OLD_EVIDENCE_MISSING)
++        if (protected.any { row -> intent.mappingPlan.decisions.single { it.candidate == row.credential }.expectedOldAbsent != row.oldAbsent })
++            return fail(CandidateIntentFailure.OLD_EVIDENCE_MISSING)
++        if (rows.any { !digest(it.newEvidenceSha256) }) return fail(CandidateIntentFailure.NEW_EVIDENCE_MISSING)
++        if (!intent.dataOwnershipProven || (protected.isNotEmpty() && !intent.sharedSecretOwnershipProven)) return fail(CandidateIntentFailure.OWNERSHIP_UNPROVEN)
++        if (to != CandidateIntentPhase.PREPARED && !intent.intentEvidenceProven) return fail(CandidateIntentFailure.INTENT_UNPROVEN)
++        if (to == CandidateIntentPhase.COMPLETE) {
++            if (rows.any { it.observed == CandidateObservedState.POST_PUBLICATION_AMBIGUOUS }) return fail(CandidateIntentFailure.AMBIGUOUS_PUBLICATION)
++            if (outcome == null || rows.any { it.observed == CandidateObservedState.UNKNOWN }) return fail(CandidateIntentFailure.OBSERVATION_INCOMPLETE)
++            val state = if (outcome == CandidateRecoveryOutcome.ALL_NEW) CandidateObservedState.NEW else CandidateObservedState.OLD
++            val generation = if (outcome == CandidateRecoveryOutcome.ALL_NEW) intent.targetGeneration else intent.oldGeneration
++            if (rows.any {
++                val expected = if (outcome == CandidateRecoveryOutcome.ALL_NEW) it.newEvidenceSha256 else it.oldEvidenceSha256
++                it.observed != state || it.observedGeneration != generation || it.observedEvidenceSha256 != expected
++            }) return fail(CandidateIntentFailure.MIXED_STATE)
++            if (outcome == CandidateRecoveryOutcome.ALL_OLD && from != CandidateIntentPhase.RECOVERING) return fail(CandidateIntentFailure.INVALID_TRANSITION)
++        }
++        return CandidateIntentCheck()
++    }
++
++    private fun digest(value: String?): Boolean = value?.matches(Regex("[a-f0-9]{64}")) == true
++}
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialImportPlanTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialImportPlanTest.kt
+new file mode 100644
+index 00000000..9dde23a1
+--- /dev/null
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialImportPlanTest.kt
+@@ -0,0 +1,166 @@
++package com.example.chatbar.desktop.backup
++
++import com.example.chatbar.data.local.entity.ModelTemplate
++import com.example.chatbar.desktop.security.DesktopCredentialKey
++import kotlin.test.*
++
++internal object G2AMetadata {
++    const val SOURCE = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
++    fun account(kind: ImportCredentialKind, id: String = "synthetic-id", name: String = "Synthetic", endpoint: String = "https://synthetic.invalid/v1", model: String = "synthetic", template: ModelTemplate = ModelTemplate.OPENAI) =
++        ImportAccountIdentity(id, name, endpoint, model, if (kind == ImportCredentialKind.MODEL) template else null)
++    fun location(kind: ImportCredentialKind) = when (kind) {
++        ImportCredentialKind.NOVEL_AI -> ImportCredentialLocation.PREFERENCES_NOVEL_AI
++        ImportCredentialKind.FISH -> ImportCredentialLocation.PREFERENCES_FISH
++        ImportCredentialKind.SILICON_FLOW -> ImportCredentialLocation.APP_SETTINGS
++        ImportCredentialKind.MODEL -> ImportCredentialLocation.MODEL_CONFIG
++        ImportCredentialKind.LEGACY_EMBEDDING -> ImportCredentialLocation.LEGACY_EMBEDDING_CONFIG
++        ImportCredentialKind.SINGLETON_EMBEDDING -> ImportCredentialLocation.SINGLETON_EMBEDDING_CONFIG
++        ImportCredentialKind.COMMUNITY -> ImportCredentialLocation.PREFERENCES_COMMUNITY
++        ImportCredentialKind.UNKNOWN -> ImportCredentialLocation.UNKNOWN
++    }
++    fun source(kind: ImportCredentialKind, presence: ImportSecretPresence = ImportSecretPresence.NONEMPTY,
++        account: ImportAccountIdentity? = if (kind in scoped) account(kind) else null) =
++        ImportCredentialSource(kind, location(kind), presence, account)
++    fun target(source: ImportCredentialSource, relation: ExistingSecretRelation = ExistingSecretRelation.ABSENT) =
++        ImportCredentialTarget(source.kind, relation, source.account)
++    fun plan(sources: List<ImportCredentialSource> = listOf(source(ImportCredentialKind.NOVEL_AI), source(ImportCredentialKind.FISH)),
++        targets: List<ImportCredentialTarget> = sources.map { target(it) }, sink: Boolean = true, sha: String = SOURCE,
++        envelope: Int = 1, manifest: Int = 1, code: Int = 84) =
++        DesktopCredentialImportPlan.classify(envelope, manifest, code, sha, sources, targets, sink)
++    val scoped = setOf(ImportCredentialKind.MODEL, ImportCredentialKind.LEGACY_EMBEDDING, ImportCredentialKind.SINGLETON_EMBEDDING)
++}
++
++class DesktopCredentialImportPlanTest {
++    @Test fun `six protected families map to existing disjoint key contracts`() {
++        val expected = linkedMapOf(
++            ImportCredentialKind.NOVEL_AI to DesktopCredentialKey.NovelAiToken,
++            ImportCredentialKind.FISH to DesktopCredentialKey.FishAudioApiKey,
++            ImportCredentialKind.SILICON_FLOW to DesktopCredentialKey.SiliconFlowApiKey,
++            ImportCredentialKind.MODEL to DesktopCredentialKey.ModelApiKey("synthetic-id"),
++            ImportCredentialKind.LEGACY_EMBEDDING to DesktopCredentialKey.LegacyEmbeddingApiKey("synthetic-id"),
++            ImportCredentialKind.SINGLETON_EMBEDDING to DesktopCredentialKey.SingletonEmbeddingApiKey,
++        )
++        val plan = G2AMetadata.plan(expected.keys.map { G2AMetadata.source(it) })
++        assertTrue(plan.candidateConsistent); assertFalse(plan.restoreAuthorized)
++        plan.decisions.zip(expected.values).forEach { (decision, key) ->
++            assertEquals(CredentialPlanStatus.CANDIDATE, decision.status)
++            assertTrue(requireNotNull(decision.candidate).matches(key))
++        }
++        assertEquals(6, plan.decisions.map { it.candidate }.toSet().size)
++    }
++    @Test fun `community has no protected sink and blocks whole candidate`() {
++        val sources = listOf(G2AMetadata.source(ImportCredentialKind.NOVEL_AI), G2AMetadata.source(ImportCredentialKind.COMMUNITY))
++        val plan = G2AMetadata.plan(sources)
++        assertEquals(CredentialPlanReason.NO_PROTECTED_SINK, plan.decisions.last().reason)
++        assertFalse(plan.candidateConsistent); assertNull(plan.decisions.last().candidate)
++    }
++    @Test fun `null and empty credentials mean no incoming change never target clearing`() {
++        for (presence in listOf(ImportSecretPresence.ABSENT, ImportSecretPresence.EMPTY)) {
++            val records = ImportCredentialKind.entries.filter { it != ImportCredentialKind.UNKNOWN }.map { G2AMetadata.source(it, presence) }
++            val plan = G2AMetadata.plan(records, targets = emptyList(), sink = false)
++            assertTrue(plan.candidateConsistent)
++            assertTrue(plan.decisions.all { it.status == CredentialPlanStatus.NO_SECRET && it.candidate == null })
++        }
++    }
++    @Test fun `unknown family cannot be discarded even when empty`() {
++        for (presence in ImportSecretPresence.entries) {
++            val plan = G2AMetadata.plan(listOf(G2AMetadata.source(ImportCredentialKind.UNKNOWN, presence)))
++            assertEquals(CredentialPlanReason.UNKNOWN_KIND, plan.decisions.single().reason); assertFalse(plan.candidateConsistent)
++        }
++    }
++    @Test fun `contradictory location and double source fail closed`() {
++        val source = G2AMetadata.source(ImportCredentialKind.NOVEL_AI)
++        val mismatch = ImportCredentialSource(source.kind, ImportCredentialLocation.PREFERENCES_FISH, source.presence)
++        assertEquals(CredentialPlanReason.LOCATION_MISMATCH, G2AMetadata.plan(listOf(mismatch)).decisions.single().reason)
++        val duplicate = G2AMetadata.plan(listOf(source, source))
++        assertTrue(duplicate.decisions.all { it.reason == CredentialPlanReason.DUPLICATE_SOURCE })
++        assertFalse(duplicate.candidateConsistent)
++    }
++    @Test fun `double empty or absent source is still structurally invalid`() {
++        val sources = listOf(G2AMetadata.source(ImportCredentialKind.FISH, ImportSecretPresence.ABSENT), G2AMetadata.source(ImportCredentialKind.FISH, ImportSecretPresence.EMPTY))
++        assertFalse(G2AMetadata.plan(sources).candidateConsistent)
++    }
++    @Test fun `same model ID with changed endpoint provider or remote model is a conflict`() {
++        val source = G2AMetadata.source(ImportCredentialKind.MODEL)
++        val changed = listOf(
++            G2AMetadata.account(source.kind, endpoint = "https://other.invalid/v1"),
++            G2AMetadata.account(source.kind, template = ModelTemplate.CLAUDE),
++            G2AMetadata.account(source.kind, model = "other-model"),
++            G2AMetadata.account(source.kind, endpoint = "https://synthetic.invalid/v1/"),
++        )
++        for (identity in changed) {
++            val plan = G2AMetadata.plan(listOf(source), listOf(ImportCredentialTarget(source.kind, ExistingSecretRelation.SAME, identity)))
++            assertEquals(CredentialPlanReason.ENDPOINT_OR_PROVIDER_CONFLICT, plan.decisions.single().reason)
++            assertFalse(plan.candidateConsistent)
++        }
++    }
++    @Test fun `same display name different IDs never auto binds or overrides`() {
++        val source = G2AMetadata.source(ImportCredentialKind.MODEL)
++        val other = ImportCredentialTarget(source.kind, ExistingSecretRelation.SAME, G2AMetadata.account(source.kind, id = "other"))
++        val plan = G2AMetadata.plan(listOf(source), listOf(G2AMetadata.target(source), other))
++        assertEquals(CredentialPlanStatus.REQUIRES_CONFIRMATION, plan.decisions.single().status)
++        assertEquals(CredentialPlanReason.NAME_COLLISION, plan.decisions.single().reason)
++        assertFalse(plan.candidateConsistent)
++    }
++    @Test fun `colliding source names are also explicit`() {
++        val sources = listOf(G2AMetadata.source(ImportCredentialKind.MODEL),
++            G2AMetadata.source(ImportCredentialKind.MODEL, account = G2AMetadata.account(ImportCredentialKind.MODEL, id = "other")))
++        assertTrue(G2AMetadata.plan(sources).decisions.all { it.reason == CredentialPlanReason.NAME_COLLISION })
++    }
++    @Test fun `same ID legacy and singleton embedding remain separate`() {
++        val sources = listOf(G2AMetadata.source(ImportCredentialKind.LEGACY_EMBEDDING), G2AMetadata.source(ImportCredentialKind.SINGLETON_EMBEDDING))
++        val plan = G2AMetadata.plan(sources)
++        assertTrue(plan.candidateConsistent); assertNotEquals(plan.decisions[0].candidate, plan.decisions[1].candidate)
++        assertFalse(G2AMetadata.plan(listOf(sources[0]), listOf(G2AMetadata.target(sources[1]))).candidateConsistent)
++    }
++    @Test fun `existing different secrets require explicit future conflict resolution`() {
++        val source = G2AMetadata.source(ImportCredentialKind.FISH)
++        val plan = G2AMetadata.plan(listOf(source), listOf(G2AMetadata.target(source, ExistingSecretRelation.DIFFERENT)))
++        assertEquals(CredentialPlanReason.EXISTING_SECRET_DIFFERS, plan.decisions.single().reason)
++        assertFalse(plan.candidateConsistent)
++        assertTrue(G2AMetadata.plan(listOf(source), listOf(G2AMetadata.target(source, ExistingSecretRelation.SAME))).candidateConsistent)
++    }
++    @Test fun `duplicate target and unknown target state are not guessed`() {
++        val source = G2AMetadata.source(ImportCredentialKind.FISH); val target = G2AMetadata.target(source)
++        assertEquals(CredentialPlanReason.DUPLICATE_TARGET, G2AMetadata.plan(listOf(source), listOf(target, target)).decisions.single().reason)
++        for (targets in listOf(emptyList(), listOf(G2AMetadata.target(source, ExistingSecretRelation.UNKNOWN)))) {
++            assertEquals(CredentialPlanReason.TARGET_STATE_UNKNOWN, G2AMetadata.plan(listOf(source), targets).decisions.single().reason)
++        }
++    }
++    @Test fun `unavailable protected store cannot yield a mapped candidate`() {
++        assertTrue(G2AMetadata.plan(sink = false).decisions.all { it.reason == CredentialPlanReason.NO_PROTECTED_SINK })
++    }
++    @Test fun `absent malformed and misplaced account metadata fails closed with safe diagnostics`() {
++        val kind = ImportCredentialKind.MODEL
++        val cases = listOf(null, G2AMetadata.account(kind, id = ""), G2AMetadata.account(kind, endpoint = "PRIVATE_BAD_ENDPOINT"),
++            G2AMetadata.account(kind, endpoint = "file:///PRIVATE_PATH"), G2AMetadata.account(kind, endpoint = "https://user:PRIVATE_KEY@synthetic.invalid"),
++            G2AMetadata.account(kind, endpoint = "https://synthetic.invalid?PRIVATE_KEY"), G2AMetadata.account(kind, endpoint = "https://synthetic.invalid#PRIVATE_KEY"),
++            G2AMetadata.account(kind, endpoint = "https://synthetic.invalid/a/../b"), G2AMetadata.account(kind, id = "bad\nID"))
++        for (account in cases) {
++            val plan = G2AMetadata.plan(listOf(G2AMetadata.source(kind, account = account)))
++            assertEquals(CredentialPlanReason.SOURCE_IDENTITY_INVALID, plan.decisions.single().reason)
++            assertFalse(plan.toString().contains("PRIVATE")); assertFalse(plan.candidateConsistent)
++        }
++        val misplaced = G2AMetadata.source(ImportCredentialKind.FISH, account = G2AMetadata.account(kind))
++        assertFalse(G2AMetadata.plan(listOf(misplaced)).candidateConsistent)
++    }
++    @Test fun `source format and provenance cannot be forged through empty successful plan`() {
++        for (plan in listOf(G2AMetadata.plan(envelope = 2), G2AMetadata.plan(manifest = 2), G2AMetadata.plan(code = 85), G2AMetadata.plan(code = 86), G2AMetadata.plan(sha = "PRIVATE_INVALID"),
++            DesktopCredentialImportPlan.classify(1, 1, 84, G2AMetadata.SOURCE, null, emptyList(), true))) {
++            assertNotNull(plan.sourceProblem); assertFalse(plan.candidateConsistent); assertFalse(plan.restoreAuthorized)
++        }
++    }
++    @Test fun `summaries never expose account strings target key IDs endpoints or value digests`() {
++        val identity = G2AMetadata.account(ImportCredentialKind.MODEL, id = "PRIVATE_ID", name = "PRIVATE_NAME", endpoint = "https://private.invalid/PRIVATE_PATH", model = "PRIVATE_MODEL")
++        val source = G2AMetadata.source(ImportCredentialKind.MODEL, account = identity)
++        val target = G2AMetadata.target(source); val plan = G2AMetadata.plan(listOf(source), listOf(target))
++        val summary = listOf(identity, source, target, plan, plan.decisions, plan.decisions.single().candidate).joinToString()
++        for (private in listOf("PRIVATE_", "private.invalid", G2AMetadata.SOURCE)) assertFalse(summary.contains(private))
++        assertTrue(plan.candidateConsistent)
++    }
++    @Test fun `caller list mutation cannot rewrite a frozen plan`() {
++        val sources = mutableListOf(G2AMetadata.source(ImportCredentialKind.FISH))
++        val plan = G2AMetadata.plan(sources); sources.clear()
++        assertEquals(1, plan.decisions.size); assertTrue(plan.candidateConsistent)
++    }
++}
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/G2AOfficialWireTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/G2AOfficialWireTest.kt
+new file mode 100644
+index 00000000..efbb53d4
+--- /dev/null
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/G2AOfficialWireTest.kt
+@@ -0,0 +1,199 @@
++package com.example.chatbar.desktop.backup
++
++import java.io.ByteArrayOutputStream
++import java.nio.ByteBuffer
++import java.nio.charset.CodingErrorAction
++import java.nio.file.Files
++import java.nio.file.Path
++import java.security.MessageDigest
++import java.util.zip.ZipEntry
++import java.util.zip.ZipOutputStream
++import kotlinx.coroutines.runBlocking
++import kotlinx.serialization.Serializable
++import kotlinx.serialization.encodeToString
++import kotlinx.serialization.json.*
++import kotlin.test.*
++
++/** Independent minimal official145 raw positives, NOT an Android-exported archive.
++ * The strict test decoder deliberately accepts only the small wire subset used here.
++ * Full archive authentication/schema/inventory validation is performed first by unchanged S0.
++ * No production decoder, serializer, restore adapter or credential transport is added.
++ */
++class G2AOfficialWireTest {
++    @Serializable private data class ModelWire(
++        val id: String, val displayName: String, val baseUrl: String, val apiKey: String,
++        val modelName: String, val templateType: String = "OPENAI", val createdAt: Long,
++    )
++    @Serializable private data class EmbeddingWire(
++        val id: String, val displayName: String, val baseUrl: String, val apiKey: String,
++        val modelName: String, val dimensions: Int = 1536,
++    )
++    @Serializable private data class SettingsWire(val siliconFlowApiKey: String = "")
++    @Serializable private data class CommunityWire(
++        val accessToken: String, val refreshToken: String? = null, val tokenType: String = "bearer",
++        val expiresAtMillis: Long = 0, val userId: String, val displayName: String,
++    )
++    private class SafeFixtureFailure : IllegalArgumentException("G2A_TEST_WIRE_REJECTED")
++    private fun text(bytes: ByteArray) = Charsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT)
++        .onUnmappableCharacter(CodingErrorAction.REPORT).decode(ByteBuffer.wrap(bytes)).toString()
++    private fun metadata(prefs: ByteArray, files: Map<String, ByteArray>): List<ImportCredentialSource> = try {
++        val p = officialWireJson.decodeFromString<Official145Preferences>(text(prefs))
++        fun presence(value: String?) = when { value == null -> ImportSecretPresence.ABSENT; value.isEmpty() -> ImportSecretPresence.EMPTY; else -> ImportSecretPresence.NONEMPTY }
++        val records = mutableListOf(
++            G2AMetadata.source(ImportCredentialKind.NOVEL_AI, presence(p.novelAiToken)),
++            G2AMetadata.source(ImportCredentialKind.FISH, presence(p.fishAudioKey)),
++            G2AMetadata.source(ImportCredentialKind.COMMUNITY, presence(p.communitySession)),
++        )
++        if (!p.communitySession.isNullOrEmpty()) officialWireJson.decodeFromString<CommunityWire>(p.communitySession)
++        files.forEach { (path, bytes) ->
++            val json = text(bytes)
++            when {
++                path == "entities/app_settings.json" -> records += G2AMetadata.source(ImportCredentialKind.SILICON_FLOW, presence(officialWireJson.decodeFromString<SettingsWire>(json).siliconFlowApiKey))
++                path.startsWith("entities/model_configs/") -> {
++                    val model = officialWireJson.decodeFromString<ModelWire>(json)
++                    val template = com.example.chatbar.data.local.entity.ModelTemplate.valueOf(model.templateType)
++                    records += G2AMetadata.source(ImportCredentialKind.MODEL, presence(model.apiKey),
++                        ImportAccountIdentity(model.id, model.displayName, model.baseUrl, model.modelName, template))
++                }
++                path.startsWith("entities/embedding_configs/") || path == "entities/embedding_model_config.json" -> {
++                    val model = officialWireJson.decodeFromString<EmbeddingWire>(json)
++                    val kind = if (path == "entities/embedding_model_config.json") ImportCredentialKind.SINGLETON_EMBEDDING else ImportCredentialKind.LEGACY_EMBEDDING
++                    records += G2AMetadata.source(kind, presence(model.apiKey), ImportAccountIdentity(model.id, model.displayName, model.baseUrl, model.modelName))
++                }
++                else -> throw SafeFixtureFailure()
++            }
++        }
++        records
++    } catch (_: Exception) { throw SafeFixtureFailure() }
++
++    private fun files() = linkedMapOf(
++        "entities/app_settings.json" to """{"siliconFlowApiKey":"FAKE_G2A_GLOBAL_NOT_REAL"}""".toByteArray(),
++        "entities/model_configs/m.json" to """{"id":"m","displayName":"Model","baseUrl":"https://model.invalid/v1","apiKey":"FAKE_G2A_MODEL_NOT_REAL","modelName":"synthetic","createdAt":1}""".toByteArray(),
++        "entities/embedding_configs/e.json" to """{"id":"e","displayName":"Embedding","baseUrl":"https://embedding.invalid/v1","apiKey":"FAKE_G2A_EMBEDDING_NOT_REAL","modelName":"synthetic"}""".toByteArray(),
++        "entities/embedding_model_config.json" to """{"id":"e","displayName":"Embedding","baseUrl":"https://embedding.invalid/v1","apiKey":"FAKE_G2A_SINGLETON_NOT_REAL","modelName":"synthetic"}""".toByteArray(),
++    )
++    private fun prefs(community: Boolean = false) = officialWireJson.encodeToString(Official145Preferences(
++        novelAiToken = "FAKE_G2A_NAI_NOT_REAL", fishAudioKey = "FAKE_G2A_FISH_NOT_REAL",
++        communitySession = if (community) """{"accessToken":"FAKE_G2A_COMMUNITY_NOT_REAL","userId":"synthetic-user","displayName":"Synthetic"}""" else null)).toByteArray()
++    private fun archive(preferences: ByteArray, files: Map<String, ByteArray>, encrypted: Boolean): Pair<ByteArray, ByteArray> {
++        val counts = files.keys.groupingBy { it.removePrefix("entities/").substringBefore('/').removeSuffix(".json") }.eachCount()
++        val manifest = officialWireJson.encodeToString(Official145Manifest(appVersionCode = 84, appVersionName = "1.4.5", createdAt = 1,
++            sourceFilesRoot = "/data/user/0/synthetic.ccb/files", counts = counts, fileCount = files.size,
++            totalBytes = files.values.sumOf { it.size.toLong() }, preferencesSha256 = digest(preferences))).toByteArray()
++        val inventory = files.entries.joinToString("\n", postfix = "\n") { (path, bytes) ->
++            officialWireJson.encodeToString(OfficialWireFileRecord(path, bytes.size.toLong(), digest(bytes))) }.toByteArray()
++        val result = ByteArrayOutputStream().also { out ->
++            val password = if (encrypted) PASSWORD.toCharArray() else null
++            try {
++                ZipOutputStream(Official147FixtureCodec.encrypting(out, password, 1)).use { zip ->
++                    (files.mapKeys { "files/${it.key}" } + mapOf("preferences.json" to preferences, "inventory.jsonl" to inventory, "manifest.json" to manifest)).forEach { (name, bytes) ->
++                        zip.putNextEntry(ZipEntry(name)); zip.write(bytes); zip.closeEntry()
++                    }
++                }
++            } finally { password?.fill('\u0000') }
++        }.toByteArray()
++        return result to manifest
++    }
++    private suspend fun isolated(bytes: ByteArray, action: suspend (Path, Path) -> Unit) {
++        val base = Files.createTempDirectory("p11-g2a-wire-").toAbsolutePath().normalize()
++        try {
++            val input = Files.write(base.resolve("source.cbbackup"), bytes)
++            val before = digest(Files.readAllBytes(input)); val work = Files.createDirectory(base.resolve("inspection-work"))
++            action(input, work)
++            assertTrue(before == digest(Files.readAllBytes(input)))
++        } finally {
++            check(base.parent == Path.of(System.getProperty("java.io.tmpdir")).toAbsolutePath().normalize())
++            check(base.fileName.toString().startsWith("p11-g2a-wire-")); check(base.toFile().deleteRecursively())
++        }
++    }
++    private fun retain(name: String, bytes: ByteArray) {
++        val out = Files.createDirectories(Path.of("build/p11-s2-g2a/fixtures"))
++        Files.write(out.resolve(name), bytes)
++    }
++
++    @Test fun `authenticated official code84 plain and password map all six protected families without enabling restore`() = runBlocking {
++        val p = prefs(); val files = files()
++        for (encrypted in listOf(false, true)) {
++            val (bytes, manifest) = archive(p, files, encrypted)
++            val label = if (encrypted) "password" else "plain"
++            retain("$label.cbbackup", bytes); retain("manifest.json", manifest); retain("preferences.json", p)
++            files.entries.forEachIndexed { i, (_, value) -> retain("entity-$i.json", value) }
++            isolated(bytes) { input, work ->
++                val password = if (encrypted) PASSWORD.toCharArray() else null
++                try {
++                    val report = DesktopBackupReadOnlyInspector().inspect(input, password)
++                    assertTrue(report.formatReadable); assertFalse(report.restoreSupported); assertFalse(report.fullPortabilityAccepted)
++                    assertEquals(84, report.appVersionCode); assertEquals(1, report.envelopeVersion)
++                    val records = metadata(p, files)
++                    val plan = G2AMetadata.plan(records, sha = report.sourceSha256)
++                    assertTrue(plan.candidateConsistent); assertFalse(plan.restoreAuthorized)
++                    assertEquals(6, plan.decisions.count { it.status == CredentialPlanStatus.CANDIDATE })
++                    val failure = assertFailsWith<DesktopBackupCompatibilityException> { DesktopFullBackupArchive(work).inspect(input, password).close() }
++                    assertEquals(DesktopBackupCompatibility.CREDENTIAL_APPROVAL_REQUIRED, failure.kind)
++                    assertFalse(plan.toString().contains("FAKE_G2A"))
++                } finally { password?.fill('\u0000') }
++            }
++        }
++    }
++    @Test fun `official145 exact transport field sets and independent default behavior`() {
++        val p = prefs(); val (_, manifest) = archive(p, files(), false)
++        val m = officialWireJson.parseToJsonElement(text(manifest)).jsonObject
++        assertEquals(setOf("formatVersion", "appVersionCode", "appVersionName", "createdAt", "sourceFilesRoot", "counts", "fileCount", "totalBytes", "preferencesSha256"), m.keys)
++        assertEquals(setOf("novelAiToken", "fishAudioKey", "communitySession", "brushSize", "brushType"), officialWireJson.parseToJsonElement(text(p)).jsonObject.keys)
++        officialWireJson.decodeFromString<Official145Manifest>(text(manifest))
++        val model = officialWireJson.decodeFromString<ModelWire>(text(files().getValue("entities/model_configs/m.json")))
++        val embedding = officialWireJson.decodeFromString<EmbeddingWire>(text(files().getValue("entities/embedding_configs/e.json")))
++        assertEquals("OPENAI", model.templateType); assertEquals(1536, embedding.dimensions)
++        retain("field-contract.txt", ("Manifest: ${m.keys.sorted()}\nPreferences: novelAiToken,fishAudioKey,communitySession,brushSize,brushType\nOmitted: scope,retainedPreferences,templateType,dimensions\nDefaults: OPENAI,1536\n").toByteArray())
++    }
++    @Test fun `community strict default metadata becomes unmapped without exposing session`() = runBlocking {
++        val p = prefs(true); val (bytes, _) = archive(p, emptyMap(), false)
++        retain("community.cbbackup", bytes)
++        isolated(bytes) { input, _ ->
++            val report = DesktopBackupReadOnlyInspector().inspect(input, null)
++            val plan = G2AMetadata.plan(metadata(p, emptyMap()), sha = report.sourceSha256)
++            assertFalse(plan.candidateConsistent)
++            assertEquals(CredentialPlanReason.NO_PROTECTED_SINK, plan.decisions.last().reason)
++            assertFalse(plan.toString().contains("FAKE_G2A"))
++        }
++    }
++    @Test fun `absent empty corrupt DTO unknown fields family and invalid UTF8 fail closed at test decoder boundary`() {
++        val empty = metadata("{}".toByteArray(), emptyMap())
++        assertTrue(empty.all { it.presence == ImportSecretPresence.ABSENT })
++        val nullEmpty = metadata("""{"novelAiToken":null,"fishAudioKey":""}""".toByteArray(), emptyMap())
++        assertEquals(ImportSecretPresence.ABSENT, nullEmpty[0].presence); assertEquals(ImportSecretPresence.EMPTY, nullEmpty[1].presence)
++        val cases = listOf(
++            byteArrayOf(0xc3.toByte(), 0x28) to emptyMap(),
++            "null".toByteArray() to emptyMap(), "{bad".toByteArray() to emptyMap(),
++            """{"novelAiToken":3}""".toByteArray() to emptyMap(),
++            """{"retainedPreferences":[]}""".toByteArray() to emptyMap(),
++            "{}".toByteArray() to mapOf("entities/unknown/x.json" to "{}".toByteArray()),
++            "{}".toByteArray() to mapOf("entities/model_configs/m.json" to "{}".toByteArray()),
++            "{}".toByteArray() to mapOf("entities/embedding_configs/e.json" to byteArrayOf(0xff.toByte())),
++            """{"communitySession":"PRIVATE_BROKEN_SESSION"}""".toByteArray() to emptyMap(),
++        )
++        for ((p, files) in cases) {
++            val error = assertFailsWith<SafeFixtureFailure> { metadata(p, files) }
++            assertNull(error.cause); assertFalse(error.stackTraceToString().contains("PRIVATE_BROKEN_SESSION"))
++        }
++    }
++    @Test fun `wrong password and authenticated invalid UTF8 never reach mapping`() = runBlocking {
++        val (bytes, _) = archive(prefs(), files(), true)
++        retain("wrong-password-source.cbbackup", bytes)
++        isolated(bytes) { input, _ ->
++            var mapped = false
++            val error = assertFailsWith<DesktopBackupReadOnlyInspector.InspectionFailure> {
++                val report = DesktopBackupReadOnlyInspector().inspect(input, "FAKE_G2A_WRONG_PASSWORD".toCharArray())
++                G2AMetadata.plan(metadata(prefs(), files()), sha = report.sourceSha256); mapped = true
++            }
++            assertFalse(mapped); assertEquals("AUTHENTICATION", error.stage); assertNull(error.cause)
++        }
++        val (invalid, _) = archive(byteArrayOf(0xc3.toByte(), 0x28), emptyMap(), false)
++        isolated(invalid) { input, _ ->
++            val error = assertFailsWith<DesktopBackupReadOnlyInspector.InspectionFailure> { DesktopBackupReadOnlyInspector().inspect(input, null) }
++            assertNull(error.cause)
++        }
++    }
++    private fun digest(bytes: ByteArray) = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
++    companion object { private const val PASSWORD = "FAKE_G2A_ARCHIVE_PASSWORD_NOT_REAL" }
++}
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/RecoverableIntentContractTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/RecoverableIntentContractTest.kt
+new file mode 100644
+index 00000000..36f4c9fd
+--- /dev/null
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/RecoverableIntentContractTest.kt
+@@ -0,0 +1,147 @@
++package com.example.chatbar.desktop.backup
++
++import java.util.UUID
++import kotlin.test.*
++
++/** Pure invariant checks, NOT OS durability or actual recovery execution. */
++class RecoverableIntentContractTest {
++    private val old = "1".repeat(64)
++    private val next = "2".repeat(64)
++    private val plan = G2AMetadata.plan(targets = listOf(ImportCredentialKind.NOVEL_AI, ImportCredentialKind.FISH)
++        .map { G2AMetadata.target(G2AMetadata.source(it), ExistingSecretRelation.SAME) })
++    private val operation = UUID.fromString("00000000-0000-0000-0000-000000000001")
++    private val root = UUID.fromString("00000000-0000-0000-0000-000000000002")
++    private val context = UUID.fromString("00000000-0000-0000-0000-000000000003")
++    private fun rows(states: List<CandidateObservedState> = List(3) { CandidateObservedState.NEW }) =
++        (listOf<ImportCredentialCandidate?>(null) + plan.decisions.map { it.candidate }).mapIndexed { i, key ->
++            val state = states[i]
++            CandidateParticipant(if (i == 0) CandidateParticipantDomain.DATA else CandidateParticipantDomain.PROTECTED_CREDENTIAL,
++                credential = key, dataOrdinal = if (i == 0) 0 else null, oldEvidenceSha256 = old, newEvidenceSha256 = next,
++                observed = state, observedGeneration = if (state == CandidateObservedState.OLD) 3 else 4,
++                observedEvidenceSha256 = if (state == CandidateObservedState.OLD) old else next)
++        }
++    private fun intent(rows: List<CandidateParticipant> = rows(), source: String? = G2AMetadata.SOURCE, verified: Boolean = true,
++        mapping: DesktopCredentialImportPlan = plan, oldGeneration: Long? = 3, generation: Long? = 4,
++        dataOwned: Boolean = true, secretsOwned: Boolean = true, durable: Boolean = true,
++        operation: UUID? = this.operation, root: UUID? = this.root, context: UUID? = this.context) =
++        CandidateRecoveryIntent(source, verified, mapping, oldGeneration, generation, rows, dataOwned, secretsOwned, durable, operation, root, context)
++    private fun complete(intent: CandidateRecoveryIntent = intent(), outcome: CandidateRecoveryOutcome = CandidateRecoveryOutcome.ALL_NEW) =
++        RecoverableIntentContract.check(intent, CandidateIntentPhase.RECOVERING, CandidateIntentPhase.COMPLETE, outcome)
++
++    @Test fun `ordered candidate phases validate but never authorize business`() {
++        val phases = CandidateIntentPhase.entries
++        for ((from, to) in phases.zipWithNext()) {
++            val result = RecoverableIntentContract.check(intent(), from, to, CandidateRecoveryOutcome.ALL_NEW)
++            assertTrue(result.modelConsistent); assertFalse(result.authorizesBusiness)
++        }
++    }
++    @Test fun `invalid phase edges and repeated complete reject deterministically`() {
++        val valid = setOf(0 to 1, 1 to 2, 2 to 3, 2 to 4, 3 to 4, 3 to 5, 4 to 5)
++        for (from in CandidateIntentPhase.entries) for (to in CandidateIntentPhase.entries) {
++            val result = RecoverableIntentContract.check(intent(), from, to, CandidateRecoveryOutcome.ALL_NEW)
++            assertEquals((from.ordinal to to.ordinal) in valid, result.modelConsistent)
++            assertFalse(result.authorizesBusiness)
++        }
++    }
++    @Test fun `source identity must be complete authenticated and bound to same plan`() {
++        for (value in listOf(intent(source = null), intent(source = "bad"), intent(verified = false), intent(source = "3".repeat(64)))) {
++            assertEquals(CandidateIntentFailure.SOURCE_INCOMPLETE, complete(value).failure)
++        }
++    }
++    @Test fun `unresolved mapping and missing protected participant never complete`() {
++        val unresolved = G2AMetadata.plan(listOf(G2AMetadata.source(ImportCredentialKind.COMMUNITY)))
++        assertEquals(CandidateIntentFailure.PLAN_UNRESOLVED, complete(intent(mapping = unresolved)).failure)
++        assertEquals(CandidateIntentFailure.PARTICIPANT_MISSING, complete(intent(rows().dropLast(1))).failure)
++        assertEquals(CandidateIntentFailure.PARTICIPANT_MISSING, complete(intent(rows().drop(1))).failure)
++    }
++    @Test fun `duplicate protected and data participants reject`() {
++        for (duplicate in rows()) {
++            assertEquals(CandidateIntentFailure.PARTICIPANT_DUPLICATE, complete(intent(rows() + duplicate)).failure)
++        }
++    }
++    @Test fun `extra undeclared key or malformed participant rejects`() {
++        val extraPlan = G2AMetadata.plan(listOf(G2AMetadata.source(ImportCredentialKind.SILICON_FLOW)))
++        val extra = CandidateParticipant(CandidateParticipantDomain.PROTECTED_CREDENTIAL, extraPlan.decisions.single().candidate, oldEvidenceSha256 = old, newEvidenceSha256 = next)
++        assertEquals(CandidateIntentFailure.PARTICIPANT_MISSING, complete(intent(rows() + extra)).failure)
++        assertEquals(CandidateIntentFailure.PARTICIPANT_MISSING, complete(intent(listOf(CandidateParticipant(CandidateParticipantDomain.DATA, dataOrdinal = -1)) + rows().drop(1))).failure)
++    }
++    @Test fun `missing old evidence or contradictory absent proof rejects`() {
++        for (row in listOf(CandidateParticipant(CandidateParticipantDomain.DATA, dataOrdinal = 0, newEvidenceSha256 = next),
++            CandidateParticipant(CandidateParticipantDomain.DATA, dataOrdinal = 0, oldAbsent = true, oldEvidenceSha256 = old, newEvidenceSha256 = next))) {
++            assertEquals(CandidateIntentFailure.OLD_EVIDENCE_MISSING, complete(intent(listOf(row) + rows().drop(1))).failure)
++        }
++    }
++    @Test fun `missing new protected evidence rejects`() {
++        val invalid = CandidateParticipant(CandidateParticipantDomain.PROTECTED_CREDENTIAL, plan.decisions[0].candidate, oldEvidenceSha256 = old)
++        assertEquals(CandidateIntentFailure.NEW_EVIDENCE_MISSING, complete(intent(listOf(rows()[0], invalid, rows()[2]))).failure)
++    }
++    @Test fun `operation root and protected account context must be declared`() {
++        for (value in listOf(intent(operation = null), intent(root = null), intent(context = null))) {
++            assertEquals(CandidateIntentFailure.CONTEXT_INCOMPLETE, complete(value).failure)
++        }
++    }
++    @Test fun `existing target cannot be relabeled absent to evade old protected evidence`() {
++        val row = CandidateParticipant(CandidateParticipantDomain.PROTECTED_CREDENTIAL, plan.decisions[0].candidate,
++            oldAbsent = true, newEvidenceSha256 = next, observed = CandidateObservedState.NEW, observedGeneration = 4, observedEvidenceSha256 = next)
++        assertEquals(CandidateIntentFailure.OLD_EVIDENCE_MISSING, complete(intent(listOf(rows()[0], row, rows()[2]))).failure)
++    }
++    @Test fun `generation must be present positive advancing and shared by all observations`() {
++        for ((oldGen, newGen) in listOf(null to 4L, 3L to null, -1L to 4L, 3L to 3L, 3L to 2L)) {
++            assertEquals(CandidateIntentFailure.GENERATION_MISSING, complete(intent(oldGeneration = oldGen, generation = newGen)).failure)
++        }
++        val bad = CandidateParticipant(CandidateParticipantDomain.DATA, dataOrdinal = 0, oldEvidenceSha256 = old, newEvidenceSha256 = next,
++            observed = CandidateObservedState.NEW, observedGeneration = 99, observedEvidenceSha256 = next)
++        assertEquals(CandidateIntentFailure.MIXED_STATE, complete(intent(listOf(bad) + rows().drop(1))).failure)
++    }
++    @Test fun `data and shared secret ownership plus durable evidence are separate claims`() {
++        assertEquals(CandidateIntentFailure.OWNERSHIP_UNPROVEN, complete(intent(dataOwned = false)).failure)
++        assertEquals(CandidateIntentFailure.OWNERSHIP_UNPROVEN, complete(intent(secretsOwned = false)).failure)
++        assertEquals(CandidateIntentFailure.INTENT_UNPROVEN, complete(intent(durable = false)).failure)
++        assertTrue(RecoverableIntentContract.check(intent(durable = false), CandidateIntentPhase.SOURCE_VERIFIED, CandidateIntentPhase.PREPARED).modelConsistent)
++    }
++    @Test fun `key first data first and second key failure cannot be called complete`() {
++        val O = CandidateObservedState.OLD; val N = CandidateObservedState.NEW
++        for (states in listOf(listOf(O, N, O), listOf(N, O, O), listOf(N, N, O), listOf(O, N, N))) {
++            assertEquals(CandidateIntentFailure.MIXED_STATE, complete(intent(rows(states))).failure)
++        }
++    }
++    @Test fun `all combinations of old new unknown and ambiguous forbid mixed success`() {
++        for (data in CandidateObservedState.entries) for (a in CandidateObservedState.entries) for (b in CandidateObservedState.entries) {
++            val states = listOf(data, a, b)
++            for (outcome in CandidateRecoveryOutcome.entries) {
++                val expected = if (outcome == CandidateRecoveryOutcome.ALL_NEW) CandidateObservedState.NEW else CandidateObservedState.OLD
++                assertEquals(states.all { it == expected }, complete(intent(rows(states)), outcome).modelConsistent)
++            }
++        }
++    }
++    @Test fun `post publication ambiguous outcome blocks even when rest looks new`() {
++        assertEquals(CandidateIntentFailure.AMBIGUOUS_PUBLICATION, complete(intent(rows(listOf(CandidateObservedState.NEW, CandidateObservedState.POST_PUBLICATION_AMBIGUOUS, CandidateObservedState.NEW)))).failure)
++    }
++    @Test fun `unknown rollback or cancellation result cannot unlock business`() {
++        assertEquals(CandidateIntentFailure.OBSERVATION_INCOMPLETE, complete(intent(rows(listOf(CandidateObservedState.OLD, CandidateObservedState.UNKNOWN, CandidateObservedState.OLD))), CandidateRecoveryOutcome.ALL_OLD).failure)
++        val check = RecoverableIntentContract.check(intent(), CandidateIntentPhase.APPLYING, CandidateIntentPhase.RECOVERING)
++        assertTrue(check.modelConsistent); assertFalse(check.authorizesBusiness)
++        assertEquals(CandidateIntentFailure.OBSERVATION_INCOMPLETE, RecoverableIntentContract.check(intent(), CandidateIntentPhase.RECOVERING, CandidateIntentPhase.COMPLETE).failure)
++    }
++    @Test fun `all old rollback requires recovering and does not imply imported success`() {
++        val allOld = intent(rows(List(3) { CandidateObservedState.OLD }))
++        assertTrue(complete(allOld, CandidateRecoveryOutcome.ALL_OLD).modelConsistent)
++        assertEquals(CandidateIntentFailure.INVALID_TRANSITION, RecoverableIntentContract.check(allOld, CandidateIntentPhase.APPLYING, CandidateIntentPhase.COMPLETE, CandidateRecoveryOutcome.ALL_OLD).failure)
++        assertFalse(complete(allOld, CandidateRecoveryOutcome.ALL_OLD).authorizesBusiness)
++    }
++    @Test fun `new state label alone is insufficient without exact protected byte evidence`() {
++        val row = CandidateParticipant(CandidateParticipantDomain.PROTECTED_CREDENTIAL, plan.decisions[0].candidate,
++            oldEvidenceSha256 = old, newEvidenceSha256 = next, observed = CandidateObservedState.NEW, observedGeneration = 4, observedEvidenceSha256 = old)
++        assertEquals(CandidateIntentFailure.MIXED_STATE, complete(intent(listOf(rows()[0], row, rows()[2]))).failure)
++    }
++    @Test fun `old absence evidence permits verified all old rollback only`() {
++        val row = CandidateParticipant(CandidateParticipantDomain.DATA, dataOrdinal = 0, oldAbsent = true, newEvidenceSha256 = next,
++            observed = CandidateObservedState.OLD, observedGeneration = 3)
++        assertTrue(complete(intent(listOf(row) + rows(List(3) { CandidateObservedState.OLD }).drop(1)), CandidateRecoveryOutcome.ALL_OLD).modelConsistent)
++    }
++    @Test fun `intent snapshots do not expose hashes or mutate with caller collection`() {
++        val rows = rows().toMutableList(); val value = intent(rows)
++        rows.clear(); assertEquals(3, value.participants.size)
++        assertFalse(value.toString().contains(G2AMetadata.SOURCE)); assertFalse(value.participants.toString().contains(next))
++    }
++}

@@ -1,0 +1,16 @@
+{
+  "catalogPages": [
+    3,
+    2
+  ],
+  "expected": [
+    3,
+    2
+  ],
+  "catalogDelta": 2,
+  "otherHttpDelta": 0,
+  "newEvents": 2,
+  "invalid4RequestObserved": false,
+  "realFishGet": 0,
+  "realFishTts": 0
+}

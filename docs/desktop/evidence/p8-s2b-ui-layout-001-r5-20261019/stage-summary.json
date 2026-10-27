@@ -1,0 +1,60 @@
+[
+  {
+    "stage": "01-native-input-admission",
+    "exitCode": 0,
+    "durationSeconds": 62.2540592,
+    "suiteCount": 1,
+    "totals": {
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "reportedPass": 1
+    },
+    "suites": [
+      {
+        "name": "com.example.chatbar.desktop.DesktopFishPickerNativeUxTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "07ce354f11b72f46f1ac6de8cc673d8c5eac0f5d89f321b34e5ca091f4887fbe"
+      }
+    ],
+    "resources": {
+      "sampleCount": 6,
+      "minAvailableBytes": 1409716224,
+      "minCommitHeadroomBytes": 14985154560,
+      "maxPagesPerSecond": 22502
+    }
+  },
+  {
+    "stage": "02-native-class-with-pager",
+    "exitCode": 1,
+    "durationSeconds": 83.4270649,
+    "suiteCount": 1,
+    "totals": {
+      "tests": 4,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "reportedPass": 3
+    },
+    "suites": [
+      {
+        "name": "com.example.chatbar.desktop.DesktopFishPickerNativeUxTest",
+        "tests": 4,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "1426ac7649dc218c3bb60ac2ae1786f26076015f7fd45329fba21b4bbfc5b3a6"
+      }
+    ],
+    "resources": {
+      "sampleCount": 8,
+      "minAvailableBytes": 593559552,
+      "minCommitHeadroomBytes": 13896781824,
+      "maxPagesPerSecond": 17490
+    }
+  }
+]

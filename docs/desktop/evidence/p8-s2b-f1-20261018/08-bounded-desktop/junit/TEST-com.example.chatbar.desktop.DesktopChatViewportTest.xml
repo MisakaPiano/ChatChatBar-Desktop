@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopChatViewportTest" tests="17" skipped="0" failures="0" errors="0" timestamp="2026-10-18T08:35:32.780Z" hostname="DD1" time="0.002">
+  <properties/>
+  <testcase name="stable capture is gated by initial restore and scrolling" classname="com.example.chatbar.desktop.DesktopChatViewportTest" time="0.0"/>
+  <testcase name="message and lazy indices round trip with or without older row" classname="com.example.chatbar.desktop.DesktopChatViewportTest" time="0.0"/>
+  <testcase name="synthetic older row captures first actual visible message with its own offset" classname="com.example.chatbar.desktop.DesktopChatViewportTest" time="0.0"/>
+  <testcase name="saved anchor offset maps past older row" classname="com.example.chatbar.desktop.DesktopChatViewportTest" time="0.0"/>
+  <testcase name="bottom follows only after restore and when idle" classname="com.example.chatbar.desktop.DesktopChatViewportTest" time="0.0"/>
+  <testcase name="previous from stream only targets last real message" classname="com.example.chatbar.desktop.DesktopChatViewportTest" time="0.0"/>
+  <testcase name="stale layout from replaced page must not be captured" classname="com.example.chatbar.desktop.DesktopChatViewportTest" time="0.0"/>
+  <testcase name="old window is never latest bottom even if last item fits" classname="com.example.chatbar.desktop.DesktopChatViewportTest" time="0.0"/>
+  <testcase name="earlier affordances are meaningful for partial first and older pages only" classname="com.example.chatbar.desktop.DesktopChatViewportTest" time="0.0"/>
+  <testcase name="hidden regeneration target does not shift source message indices" classname="com.example.chatbar.desktop.DesktopChatViewportTest" time="0.0"/>
+  <testcase name="historical reader never follows streaming growth" classname="com.example.chatbar.desktop.DesktopChatViewportTest" time="0.0"/>
+  <testcase name="deleted anchor uses formal bounded fallback and accepts a new valid anchor" classname="com.example.chatbar.desktop.DesktopChatViewportTest" time="0.0"/>
+  <testcase name="no saved position targets visual bottom including stream" classname="com.example.chatbar.desktop.DesktopChatViewportTest" time="0.0"/>
+  <testcase name="partial message goes to preceding real message or start of first" classname="com.example.chatbar.desktop.DesktopChatViewportTest" time="0.0"/>
+  <testcase name="previous within loaded window skips synthetic rows" classname="com.example.chatbar.desktop.DesktopChatViewportTest" time="0.001"/>
+  <testcase name="stream and newer rows can never be persisted anchors" classname="com.example.chatbar.desktop.DesktopChatViewportTest" time="0.0"/>
+  <testcase name="latest bottom includes stream and oversized last content" classname="com.example.chatbar.desktop.DesktopChatViewportTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

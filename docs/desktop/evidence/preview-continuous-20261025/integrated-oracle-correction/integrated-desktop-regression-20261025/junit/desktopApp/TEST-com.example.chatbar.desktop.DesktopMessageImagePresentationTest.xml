@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" tests="19" skipped="0" failures="2" errors="0" timestamp="2026-10-25T02:31:54.377Z" hostname="DD1" time="3.451">
+  <properties/>
+  <testcase name="actual message images fit landscape portrait small and narrow scenes and keep preview click" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.441"/>
+  <testcase name="image More popup avoids narrow right edge and each image keeps its own anchor" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.356"/>
+  <testcase name="changing image reference never carries previous source dimensions" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.209"/>
+  <testcase name="display size observes both 280dp caps aspect density and native pixels" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.0"/>
+  <testcase name="image menu never acquires whole-message actions" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.002"/>
+  <testcase name="decode failure remains visible without image actions taking over" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.068"/>
+  <testcase name="JPEG EXIF orientation supplies orientation-correct source dimensions" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.004"/>
+  <testcase name="image-only and mixed messages share footer while image actions remain separately scoped" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.109">
+    <failure message="java.lang.AssertionError: expected:&lt;1&gt; but was:&lt;0&gt;" type="java.lang.AssertionError">java.lang.AssertionError: expected:&lt;1&gt; but was:&lt;0&gt;
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.failNotEquals(Assert.java:835)
+	at org.junit.Assert.assertEquals(Assert.java:120)
+	at kotlin.test.junit.JUnitAsserter.assertEquals(JUnitSupport.kt:32)
+	at kotlin.test.AssertionsKt__AssertionsKt.assertEquals(Assertions.kt:63)
+	at kotlin.test.AssertionsKt.assertEquals(Unknown Source)
+	at kotlin.test.AssertionsKt__AssertionsKt.assertEquals$default(Assertions.kt:62)
+	at kotlin.test.AssertionsKt.assertEquals$default(Unknown Source)
+	at com.example.chatbar.desktop.DesktopMessageImagePresentationTest$image-only and mixed messages share footer while image actions remain separately scoped$1.invokeSuspend(DesktopMessageImagePresentationTest.kt:380)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at java.desktop/java.awt.event.InvocationEvent.dispatch(InvocationEvent.java:318)
+	at java.desktop/java.awt.EventQueue.dispatchEventImpl(EventQueue.java:773)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:720)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:714)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:399)
+	at java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:86)
+	at java.desktop/java.awt.EventQueue.dispatchEvent(EventQueue.java:742)
+	at java.desktop/java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101)
+	at java.desktop/java.awt.EventDispatchThread.run(EventDispatchThread.java:90)
+</failure>
+  </testcase>
+  <testcase name="image More popup stays beside button after parent offset and scroll" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.328"/>
+  <testcase name="image More and right click expose the same metadata actions" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.256"/>
+  <testcase name="running image task retains footer and disables all scoped destructive actions" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.116">
+    <failure message="java.lang.AssertionError: expected:&lt;1&gt; but was:&lt;0&gt;" type="java.lang.AssertionError">java.lang.AssertionError: expected:&lt;1&gt; but was:&lt;0&gt;
+	at org.junit.Assert.fail(Assert.java:89)
+	at org.junit.Assert.failNotEquals(Assert.java:835)
+	at org.junit.Assert.assertEquals(Assert.java:120)
+	at kotlin.test.junit.JUnitAsserter.assertEquals(JUnitSupport.kt:32)
+	at kotlin.test.AssertionsKt__AssertionsKt.assertEquals(Assertions.kt:63)
+	at kotlin.test.AssertionsKt.assertEquals(Unknown Source)
+	at kotlin.test.AssertionsKt__AssertionsKt.assertEquals$default(Assertions.kt:62)
+	at kotlin.test.AssertionsKt.assertEquals$default(Unknown Source)
+	at com.example.chatbar.desktop.DesktopMessageImagePresentationTest$running image task retains footer and disables all scoped destructive actions$1.invokeSuspend(DesktopMessageImagePresentationTest.kt:516)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at java.desktop/java.awt.event.InvocationEvent.dispatch(InvocationEvent.java:318)
+	at java.desktop/java.awt.EventQueue.dispatchEventImpl(EventQueue.java:773)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:720)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:714)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:399)
+	at java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:86)
+	at java.desktop/java.awt.EventQueue.dispatchEvent(EventQueue.java:742)
+	at java.desktop/java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101)
+	at java.desktop/java.awt.EventDispatchThread.run(EventDispatchThread.java:90)
+</failure>
+  </testcase>
+  <testcase name="source dimensions survive preview sampling at high display density" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.349"/>
+  <testcase name="one image More stays beside bottom edge while right click stays image scoped" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.18"/>
+  <testcase name="right click opens the current image context actions" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.192"/>
+  <testcase name="consecutive segmented image-only messages have no synthetic headers in wide and narrow scenes" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.416"/>
+  <testcase name="multiple images each retain image-only More and right-click targets" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.191"/>
+  <testcase name="confirmation Cancel never invokes image deletion" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.051"/>
+  <testcase name="each image menu follows its own metadata and running permission" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.0"/>
+  <testcase name="segmented image-only never synthesizes a speaker header for message actions" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.182"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

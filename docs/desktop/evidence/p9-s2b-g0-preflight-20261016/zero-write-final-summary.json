@@ -1,0 +1,281 @@
+{
+  "observation": "Derived final-stage suffix of original append-only zero-write-events.jsonl",
+  "precedingLines": 48,
+  "finalObservations": 40,
+  "unchangedCases": 38,
+  "changedCases": 0,
+  "platformLimits": [
+    "REAL_ROOT_LINK_REPLACEMENT_NOT_TESTED_ACTIVE_OWNERSHIP_PREVENTS_RENAME",
+    "SYMLINK_FIXTURE_UNAVAILABLE"
+  ],
+  "cases": [
+    {
+      "case": "no-entities-first",
+      "result": "NO_DOMAIN",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 3,
+      "snapshotHash": "8beece7f42dfa0ca9e55e7da93d31520032390105690d0b7b0449ddd219085b1"
+    },
+    {
+      "case": "no-entities-repeat",
+      "result": "NO_DOMAIN",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 3,
+      "snapshotHash": "8beece7f42dfa0ca9e55e7da93d31520032390105690d0b7b0449ddd219085b1"
+    },
+    {
+      "case": "domain-added-after-first-result",
+      "result": "DOMAIN_PRESENT_UNSUPPORTED",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 5,
+      "snapshotHash": "b4ab7b5f33fedfda8b8e2239ad2529e938b6f0e727871aa3ba28ae023b01fb18"
+    },
+    {
+      "case": "target-race-true",
+      "result": "CHANGED_DURING_CHECK",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 5,
+      "snapshotHash": "0a933af6841c6ebde203cc502183d9ef3aad62ea25ed41f291e2f56c0fda8343"
+    },
+    {
+      "case": "target-race-false",
+      "result": "CHANGED_DURING_CHECK",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 4,
+      "snapshotHash": "5602ef0b72d51a1a482104c5a983004c21431251454b426af4496d3c03698dd8"
+    },
+    {
+      "case": "simulated-root-file-replacement",
+      "result": "UNSAFE_PATH",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 3,
+      "snapshotHash": "1203a09237c0152c3e8ff73716dfe3535f76563549fa8ebf86d36305fca14413"
+    },
+    {
+      "case": "ownership-loss-at-recheck",
+      "result": "OWNERSHIP_MISSING",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 3,
+      "snapshotHash": "13e08922e81a84974b9f387ff567299bc13a775eac9042132d0062634d5c177a"
+    },
+    {
+      "case": "simulated-case-collision",
+      "result": "UNSAFE_PATH",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 5,
+      "snapshotHash": "d78648f87f4c810a0a45210783c8682d7a971fdac9ee89f90c2a104d1c121828"
+    },
+    {
+      "case": "ownership-absent",
+      "result": "OWNERSHIP_MISSING",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 2,
+      "snapshotHash": "1c0da94b0be43a948a8aaab5be718d290471afe377614b04b905c0499005dd7d"
+    },
+    {
+      "case": "ownership-present",
+      "result": "NO_DOMAIN",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 3,
+      "snapshotHash": "480480ce390b31e85aefb15d77e3fe89dedb9ad107accc86603d7f7c0c147964"
+    },
+    {
+      "case": "ownership-released",
+      "result": "OWNERSHIP_MISSING",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 3,
+      "snapshotHash": "480480ce390b31e85aefb15d77e3fe89dedb9ad107accc86603d7f7c0c147964"
+    },
+    {
+      "case": "metadata-size-long-max",
+      "result": "BUDGET_EXCEEDED",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 6,
+      "snapshotHash": "73387f541cb05dd11b6d40341f415e7ca46dffe6d1ae709195f851b3d505332c"
+    },
+    {
+      "case": "root-identity-race",
+      "result": "CHANGED_DURING_CHECK",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 3,
+      "snapshotHash": "01dda0862a61b3b4eb2a901305148468bcd361acf79910baaacc7690bc48c2a0"
+    },
+    {
+      "case": "legacy-empty",
+      "result": "NO_DOMAIN",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 3,
+      "snapshotHash": "a8fbca8b09699c67f54fbea6951c9e6bb14d7bd6eaa1668a9b3d6654bb61cdf9"
+    },
+    {
+      "case": "legacy-legacy",
+      "result": "NO_DOMAIN",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 5,
+      "snapshotHash": "7cce884296f2184008f7325e4e8b88b86339a5258479a1cafcca66d4fc5dd133"
+    },
+    {
+      "case": "legacy-damaged-vectors",
+      "result": "NO_DOMAIN",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 7,
+      "snapshotHash": "7f3c522ce816b5cc7badeae5479afb4f981633c33020317d91d2d43b0ed13412"
+    },
+    {
+      "case": "empty-domain",
+      "result": "DOMAIN_PRESENT_UNSUPPORTED",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 5,
+      "snapshotHash": "b6319ac4ef90f9c915d330ba8aadd45355b84b8e6adcd085bd24f27a1360c314"
+    },
+    {
+      "case": "file-instead-of-directory-false",
+      "result": "UNSAFE_PATH",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 4,
+      "snapshotHash": "a1a98e4995d200c40e914286ff8af1688e165cbfed23e95ea8ceb636f05f7988"
+    },
+    {
+      "case": "file-instead-of-directory-true",
+      "result": "UNSAFE_PATH",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 5,
+      "snapshotHash": "021bcda77630a8b58f97a995801554326e4bf198169e6b629d73f1e58e4231c0"
+    },
+    {
+      "case": "hardlink-true",
+      "result": "UNSAFE_PATH",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 7,
+      "snapshotHash": "5c8a353ed5b982270d5949d2111380acd9cd91dc30f7cb8a5bba4b70bf92219f"
+    },
+    {
+      "case": "hardlink-false",
+      "result": "DOMAIN_PRESENT_UNSUPPORTED",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 7,
+      "snapshotHash": "7453d93d93b28c2f707327054eba2ee930c04bdacea94167708d33e5b16e55ae"
+    },
+    {
+      "case": "after-cancellation",
+      "result": "NO_DOMAIN",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 3,
+      "snapshotHash": "4de61c68292ac5de96b270a2d5b2c3aceef8f4078a4ce38ce36b846c77ec8f6f"
+    },
+    {
+      "case": "cancelled-open-directory",
+      "result": "CANCELLED",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 3,
+      "snapshotHash": "4de61c68292ac5de96b270a2d5b2c3aceef8f4078a4ce38ce36b846c77ec8f6f"
+    },
+    {
+      "case": "unsupported-active",
+      "result": "DOMAIN_PRESENT_UNSUPPORTED",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 8,
+      "snapshotHash": "6c2581a296ca4e42c7e5d385675b8410f0dd8b10b0f9e78f9333a1f11b279585"
+    },
+    {
+      "case": "unsupported-pending",
+      "result": "DOMAIN_PRESENT_UNSUPPORTED",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 8,
+      "snapshotHash": "0abb2d9d82f138c21d9a7383ae4640d46fc5e3cb4e6a1c66aeb73f16149a5e7e"
+    },
+    {
+      "case": "unsupported-completed",
+      "result": "DOMAIN_PRESENT_UNSUPPORTED",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 8,
+      "snapshotHash": "cd496c14800cc17b40f4e6c1b75ad37104904191645fd66185014c393082b0cf"
+    },
+    {
+      "case": "unsupported-heads",
+      "result": "DOMAIN_PRESENT_UNSUPPORTED",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 8,
+      "snapshotHash": "59d1bc7e7121d4d261785d97a913510ab3a5ead70237185d3c17100d49dc0098"
+    },
+    {
+      "case": "unsupported-history",
+      "result": "DOMAIN_PRESENT_UNSUPPORTED",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 8,
+      "snapshotHash": "585a7b842635a86f7de28cebe2fa9a203ebde718e8c5dbc2901f08d8c5ad6943"
+    },
+    {
+      "case": "real-junction-entities",
+      "result": "UNSAFE_PATH",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 6,
+      "snapshotHash": "d66b79ce6b27abfb13b4bec5c8d3cd5a30fe86142b733414b25ed4a12e1d1922"
+    },
+    {
+      "case": "real-junction-domain",
+      "result": "UNSAFE_PATH",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 7,
+      "snapshotHash": "54d0dd0f3f3753adcb7a19b2ccf2d1e26a79fedfdda76d9ac2cf318257aa4ab7"
+    },
+    {
+      "case": "file-identity-unavailable",
+      "result": "UNSAFE_PATH",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 3,
+      "snapshotHash": "83687033f05752ab8e1eb87b765319db3d2a481f05256cbf878edb0d7ff1d0d9"
+    },
+    {
+      "case": "budget-entries",
+      "result": "BUDGET_EXCEEDED",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 8,
+      "snapshotHash": "20cfc3d8ca12c36b96cd7acbdd8a0c8cd13a9d821259d8a059a799ce742da68e"
+    },
+    {
+      "case": "budget-depth",
+      "result": "BUDGET_EXCEEDED",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 8,
+      "snapshotHash": "7629912ebc4200f7f612544a0a1d43077e049932247601a02a0956576c326913"
+    },
+    {
+      "case": "budget-names",
+      "result": "BUDGET_EXCEEDED",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 8,
+      "snapshotHash": "3d0d79dde6a4c01380c2457f429c0bb8ff051b008f351657064f5151f5c54003"
+    },
+    {
+      "case": "budget-paths",
+      "result": "BUDGET_EXCEEDED",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 8,
+      "snapshotHash": "6352ae6bc4d8f52b19e6071dbb6a387dcbc8174c6e587741152b1ff5fd83e47d"
+    },
+    {
+      "case": "budget-bytes",
+      "result": "BUDGET_EXCEEDED",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 8,
+      "snapshotHash": "b827c97aff4453f26e538267557da102cc9947d8a729b810611282ae6c822605"
+    },
+    {
+      "case": "injected-access-denied-false",
+      "result": "READ_ERROR",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 3,
+      "snapshotHash": "8d1477a48b8da9e7bd9461f52b1d34e01866f042c8e3d814770158fbd30daa1b"
+    },
+    {
+      "case": "injected-access-denied-true",
+      "result": "READ_ERROR",
+      "filesAndDirectoriesUnchanged": true,
+      "entries": 3,
+      "snapshotHash": "348f966087a6bd2b57f9c3b19fecb2ca5109b33e51f00c744d58c6a19b8426f9"
+    }
+  ],
+  "ownershipArtifact": "Acquired before probe snapshots; .ccb-desktop.lock tracked separately as OWNERSHIP metadata, not G0 write",
+  "raceAccounting": "Synthetic actor mutations use after-actor baseline; identity/type substitution uses explicit read-only metadata seams"
+}

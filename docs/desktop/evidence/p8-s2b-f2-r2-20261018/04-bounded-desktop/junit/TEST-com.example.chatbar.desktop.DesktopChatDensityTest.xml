@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopChatDensityTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-18T11:01:37.590Z" hostname="DD1" time="0.13">
+  <properties/>
+  <testcase name="status expansion respects either default and independent alternative state" classname="com.example.chatbar.desktop.DesktopChatDensityTest" time="0.0"/>
+  <testcase name="active generation keeps mutation controls unavailable" classname="com.example.chatbar.desktop.DesktopChatDensityTest" time="0.0"/>
+  <testcase name="chat controls use compact pointer targets icons and chrome spacing" classname="com.example.chatbar.desktop.DesktopChatDensityTest" time="0.001"/>
+  <testcase name="user assistant and retry actions retain authoritative eligibility" classname="com.example.chatbar.desktop.DesktopChatDensityTest" time="0.126"/>
+  <testcase name="toolbar partitions existing eligibility without adding or losing actions" classname="com.example.chatbar.desktop.DesktopChatDensityTest" time="0.003"/>
+  <testcase name="grouped alternatives preserve one based count and boundary availability" classname="com.example.chatbar.desktop.DesktopChatDensityTest" time="0.0"/>
+  <testcase name="reasoning starts collapsed and toggles only presentation state" classname="com.example.chatbar.desktop.DesktopChatDensityTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

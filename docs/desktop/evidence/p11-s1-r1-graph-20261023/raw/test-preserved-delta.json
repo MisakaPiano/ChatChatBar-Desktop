@@ -1,0 +1,15 @@
+{
+  "control": "3fc458135b68c5c03623d027bc3c1c5c0c06b594",
+  "originalS1Tests": 10,
+  "addedR1Tests": 6,
+  "originalClassTailByteEquivalentAfterLineNormalization": true,
+  "otherSuitesUnchanged": [
+    "DesktopBackupReadOnlyInspectorTest",
+    "DesktopReadOnlyBackupRedTest",
+    "DesktopFullBackupArchiveTest",
+    "DesktopFullBackupServiceTest",
+    "DesktopFullBackupCommitJournalTest",
+    "DesktopDataRootOwnershipTest",
+    "DesktopStartupGateTest"
+  ]
+}

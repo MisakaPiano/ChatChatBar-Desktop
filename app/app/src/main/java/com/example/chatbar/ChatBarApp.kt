@@ -264,7 +264,7 @@ class ChatBarApp : Application() {
         }
         fishAudioStorage = FishAudioStorage(this)
         fishAudioService = FishAudioService(fishAudioStorage)
-        fishAudioTagService = FishAudioTagService(streamingChatService)
+        fishAudioTagService = FishAudioTagService(com.example.chatbar.domain.voice.AndroidFishVoiceTextGateway(streamingChatService))
         voicePlaybackController = VoicePlaybackController(this)
         qqVoiceTransferCoordinator = QqVoiceTransferCoordinator()
         qqVoiceGestureGateway = QqVoiceGestureGatewayRegistry()

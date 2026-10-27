@@ -1,0 +1,508 @@
+diff --git a/.agents/skills/chatbar-fish-audio-voice/SKILL.md b/.agents/skills/chatbar-fish-audio-voice/SKILL.md
+index 68ee6ead..9fd2b64a 100644
+--- a/.agents/skills/chatbar-fish-audio-voice/SKILL.md
++++ b/.agents/skills/chatbar-fish-audio-voice/SKILL.md
+@@ -37,9 +37,9 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
+ 
+ ## Desktop formal audio foundation
+ 
+-- `DesktopVoiceAudioStore` persists immutable MP3 artifacts under the selected root `audio/generated`, with independent ownership/hash receipts, bounded streams and atomic publication. It has no startup orphan sweep; corrupt indexes, missing receipts and unknown files remain preserved. Current clips retain the accepted 16 MiB / 120-second decoder profile.
++- `DesktopVoiceAudioStore` persists immutable MP3 artifacts under the selected root `audio/generated`, with independent ownership/hash receipts, bounded streams and atomic publication. It has no startup orphan sweep; corrupt indexes, missing receipts and unknown files remain preserved. Formal clips use a separate 16 MiB / 30-minute structural/native profile; picker preview stays at its accepted 16 MiB / 120 seconds. Both profiles use the same Windows backend with explicit per-port duration admission.
+ - `DesktopVoicePlayback` provides key-independent ordered playback and stop/join. `DesktopAudioFocus` provides separate formal/preview ports over one MCI output; a superseded port cannot stop the current owner. AppContainer owns formal voice drain before preview/native output and root release.
+-- `DesktopFishGenerationCoordinator` adapts official targets, text confirmation, global five-permit batches, history/replacement and foreground autoplay. `DesktopFishVoiceTransport` reuses shared TTS serialization with one-shot/one-exchange transport and callback/body drain. Only explicit `s2.1-pro-free` is authorized; stale/paid models fail, and the dated free profile fails closed after 2026-11-30 pending re-verification. Artifact cleanup re-reads a complete strict reference inventory; uncertain commits preserve audio.
++- `DesktopFishGenerationCoordinator` adapts official targets, text confirmation, global five-permit batches, history/replacement and foreground autoplay. `DesktopFishVoiceTransport` reuses shared TTS serialization with one-shot/one-exchange transport and callback/body drain. Only explicit `s2.1-pro-free` is authorized; stale/paid models fail, and the dated free profile fails closed after 2026-11-30 pending re-verification. Artifact cleanup re-reads a complete strict reference inventory; uncertain commits preserve audio. Exact durable voice readback may confirm a post-write exception before refreshing the repository. `DesktopFishTtsAdmission` shares five permits across formal and picker TTS, through actual body drain.
+ 
+ - `DesktopChatVoiceRuntime` and `DesktopChatVoicePanel` wire explicit assistant segment/whole generation, bound narrator choice, auxiliary-cost confirmation, new take vs replacement, version-scoped voice bars, ordered playback, stop, export and explicit delete. Primary chat mutations drain voice jobs before editing/deleting/switching versions; foreground leases drop autoplay on screen/session leave. No assistant completion automatically requests TTS.
+ 
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt
+index b63bfb76..d05c6612 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt
+@@ -61,7 +61,7 @@ class DesktopAppContainer internal constructor(
+     internal val voiceRepository by voiceRepositoryOwner
+     internal val voiceAudioStore by lazy { DesktopVoiceAudioStore(appDataRoot) }
+     private val chatVoiceOwner = lazy { DesktopChatVoiceRuntime(chatRepository, characterRepository, settingsRepository,
+-        effectiveModelResolver, voiceRepository, voiceAudioStore, fishAudioCredentials, audioFocusOwner.value.port(),
++        effectiveModelResolver, voiceRepository, voiceAudioStore, fishAudioCredentials, audioFocusOwner.value.port(formal = true),
+         picker = filePicker, gate = dataOperationCoordinator,
+         textBusy = { sessionId -> taskRuntime.tasks.value.any { it.sessionId == sessionId && it.status == DesktopTaskStatus.RUNNING } }) }
+     internal val chatVoiceRuntime by chatVoiceOwner
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishGenerationCoordinator.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishGenerationCoordinator.kt
+index 04120ea4..3db25f26 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishGenerationCoordinator.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishGenerationCoordinator.kt
+@@ -141,6 +141,18 @@ internal class DesktopFishGenerationCoordinator(
+         pending.joinAll(); pendingTextConfirmations.clear(); clearAutoPlay(); playback.stop()
+     }
+ 
++    private suspend fun persistPublishedVoice(voice: GeneratedVoiceMessage) {
++        try { voiceRepository.save(voice) }
++        catch (error: Exception) {
++            // A post-write failure is not proof of no commit. Confirm exact durable bytes before
++            // admitting success; unknown/different records preserve audio and fail visibly.
++            val observed = voiceRepository.readDurable(voice.id)
++            if (observed is com.example.chatbar.data.local.JsonFileStorage.EntityReadResult.Valid && observed.value == voice) {
++                voiceRepository.reload()
++            } else throw error
++        }
++    }
++
+     private suspend fun releaseArtifact(path: String): Boolean = withContext(NonCancellable) {
+         if (voiceRepository.isAudioReferenced(path)) false else storage.deleteIfOwned(path)
+     }
+@@ -306,7 +318,7 @@ internal class DesktopFishGenerationCoordinator(
+                     updatedAt = System.currentTimeMillis()
+                 )
+                 try {
+-                    withContext(NonCancellable) { voiceRepository.replace(replacement) }
++                    withContext(NonCancellable) { persistPublishedVoice(replacement) }
+                 } catch (error: Throwable) {
+                     releaseArtifact(audio.path)
+                     throw error
+@@ -770,7 +782,7 @@ internal class DesktopFishGenerationCoordinator(
+                 durationMs = audio.durationMs,
+                 byteLength = audio.byteLength
+             )
+-            withContext(NonCancellable) { voiceRepository.save(voice) }
++            withContext(NonCancellable) { persistPublishedVoice(voice) }
+             TargetGenerationResult(target, voice = voice)
+         } catch (error: Throwable) {
+             withContext(NonCancellable) { releaseArtifact(audio.path) }
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPreviewStore.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPreviewStore.kt
+index 63419301..3ff14df6 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPreviewStore.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPreviewStore.kt
+@@ -104,7 +104,8 @@ internal class DesktopFishPreviewStore(private val directory: Path = Files.creat
+  * before play. ID3 alone, sync-byte guesses, truncated frames and trailing junk are rejected.
+  */
+ internal object DesktopMp3Validation {
+-    fun validate(path: Path, limit: Long): Long {
++    fun validate(path: Path, limit: Long, maximumDurationMs: Long = 120_000): Long {
++        require(maximumDurationMs in 1..1_800_000)
+         val size = Files.size(path)
+         check(size in 8..limit) { "MP3 大小无效" }
+         java.io.RandomAccessFile(path.toFile(), "r").use { input ->
+@@ -139,7 +140,7 @@ internal object DesktopMp3Validation {
+                 check(length >= 4 && length <= size - position) { "MP3 帧被截断" }
+                 position += length; frames++
+                 duration += (if (version == 3) 1152.0 else 576.0) / rate
+-                check(duration <= 120.0) { "预览时长超过 120 秒" }
++                check(duration * 1000 <= maximumDurationMs) { "音频时长超过 $maximumDurationMs ms 限制" }
+             }
+             check(frames >= 2 && duration > 0) { "MP3 音频帧缺失" }
+             return (duration * 1000).toLong()
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPreviewTransport.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPreviewTransport.kt
+index 48d5c740..79cb7971 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPreviewTransport.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPreviewTransport.kt
+@@ -7,6 +7,7 @@ import java.nio.file.Path
+ import java.util.concurrent.TimeUnit
+ import java.util.concurrent.atomic.AtomicInteger
+ import kotlinx.coroutines.*
++import kotlinx.coroutines.sync.withPermit
+ import okhttp3.*
+ import okio.BufferedSink
+ 
+@@ -32,7 +33,7 @@ internal class DesktopFishPreviewTransport(
+     private val calls = mutableMapOf<Call, CompletableDeferred<Unit>>()
+     private var closed = false
+ 
+-    suspend fun generate(reference: String, text: String, model: String, store: DesktopFishPreviewStore): Path {
++    suspend fun generate(reference: String, text: String, model: String, store: DesktopFishPreviewStore): Path = DesktopFishTtsAdmission.slots.withPermit {
+         require(model == "s2.1-pro-free") { "本切片仅授权 s2.1-pro-free；不会替换其他模型" }
+         require(text.isNotBlank() && text.codePointCount(0, text.length) <= 120 && reference.isNotBlank() && reference.length <= 256)
+         val key = try { credentials.load() ?: error("missing") } catch (_: Exception) { error("Fish 安全凭据不可用") }
+@@ -48,7 +49,7 @@ internal class DesktopFishPreviewTransport(
+         val done = CompletableDeferred<Unit>()
+         synchronized(lock) { check(!closed) { "预览连接已关闭" }; calls[call] = done }
+         try {
+-            return suspendCancellableCoroutine { continuation ->
++            return@withPermit suspendCancellableCoroutine { continuation ->
+                 continuation.invokeOnCancellation { call.cancel() }
+                 fun finish() { synchronized(lock) { calls.remove(call) }; done.complete(Unit) }
+                 try {
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishTtsAdmission.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishTtsAdmission.kt
+new file mode 100644
+index 00000000..11edd95c
+--- /dev/null
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishTtsAdmission.kt
+@@ -0,0 +1,8 @@
++package com.example.chatbar.desktop
++
++import kotlinx.coroutines.sync.Semaphore
++
++/** Process-wide synthesis admission includes formal chat and the accepted free picker preview. */
++internal object DesktopFishTtsAdmission {
++    val slots = Semaphore(5)
++}
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishVoiceTransport.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishVoiceTransport.kt
+index 8eea80dc..dc5a0dba 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishVoiceTransport.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishVoiceTransport.kt
+@@ -8,6 +8,7 @@ import java.time.ZoneOffset
+ import java.util.concurrent.TimeUnit
+ import java.util.concurrent.atomic.AtomicInteger
+ import kotlinx.coroutines.*
++import kotlinx.coroutines.sync.withPermit
+ import okhttp3.*
+ import okio.BufferedSink
+ 
+@@ -37,7 +38,7 @@ internal class DesktopFishVoiceTransport(
+ 
+     suspend fun synthesize(modelId: String, referenceId: String, text: String, sessionId: String,
+         voiceId: String, onProgress: (FishAudioDownloadProgress.Downloading) -> Unit = {},
+-    ): FishAudioStoredAudio {
++    ): FishAudioStoredAudio = DesktopFishTtsAdmission.slots.withPermit {
+         check(modelId == FishAudioTtsModels.S2_1_PRO_FREE) { "仅免费模型已获授权；收费或失效模型不会被替换" }
+         check(!today().isAfter(LocalDate.of(2026, 11, 30))) { "免费资格需要重新核验；未发送请求" }
+         require(referenceId.isNotBlank() && referenceId.length <= 256 && text.isNotBlank())
+@@ -54,7 +55,7 @@ internal class DesktopFishVoiceTransport(
+         val call = client.newCall(request); val done = CompletableDeferred<Unit>()
+         synchronized(lock) { check(!closed); calls[call] = done }
+         try {
+-            return suspendCancellableCoroutine { continuation ->
++            return@withPermit suspendCancellableCoroutine { continuation ->
+                 continuation.invokeOnCancellation { call.cancel() }
+                 fun finish() { synchronized(lock) { calls.remove(call) }; done.complete(Unit) }
+                 fun failure(): Throwable = attempt.status?.takeIf { it !in 200..299 }?.let {
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceAudioStore.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceAudioStore.kt
+index 7054907b..ba4ac6ad 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceAudioStore.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceAudioStore.kt
+@@ -47,7 +47,7 @@ internal class DesktopVoiceAudioStore(dataRoot: Path) {
+             }
+             check(size > 0 && (expected < 0 || expected == size)) { "音频下载不完整" }
+             check(partIdentity == identity(part)) { "下载文件身份变化；已保留" }
+-            val duration = DesktopMp3Validation.validate(part, limit)
++            val duration = DesktopMp3Validation.validate(part, limit, 1_800_000)
+             currentCoroutineContext().ensureActive(); verifyPath(dir, true)
+             check(directoryIdentity == identity(dir) && partIdentity == identity(part))
+             // No replacement or non-atomic fallback. Receipt publication precedes entity admission.
+@@ -83,7 +83,7 @@ internal class DesktopVoiceAudioStore(dataRoot: Path) {
+         check(proof.size == 2 && proof[0].toLongOrNull() == Files.size(path) && proof[1] == hash(path)) {
+             "音频身份无法确认；文件已保留"
+         }
+-        DesktopMp3Validation.validate(path, limit)
++        DesktopMp3Validation.validate(path, limit, 1_800_000)
+         return path
+     }
+     private fun receipt(path: Path) = path.resolveSibling("${path.fileName}.owner")
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoicePlayback.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoicePlayback.kt
+index b6ac998d..4198f428 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoicePlayback.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoicePlayback.kt
+@@ -15,11 +15,11 @@ import kotlinx.coroutines.sync.withLock
+ internal class DesktopAudioFocus(private val output: DesktopAudioOutput = DesktopWindowsAudioOutput()) {
+     private val mutex = Mutex()
+     private var owner: Any? = null
+-    fun port(): DesktopAudioOutput = object : DesktopAudioOutput {
++    fun port(formal: Boolean = false): DesktopAudioOutput = object : DesktopAudioOutput {
+         private val token = Any()
+         override suspend fun play(path: Path) = mutex.withLock {
+             output.stopAndDrain(); owner = token
+-            try { output.play(path) } catch (e: Throwable) { owner = null; throw e }
++            try { if (formal) output.playFormal(path) else output.play(path) } catch (e: Throwable) { owner = null; throw e }
+         }
+         override suspend fun stopAndDrain() = mutex.withLock {
+             if (owner === token) { output.stopAndDrain(); owner = null }
+@@ -65,7 +65,7 @@ internal class DesktopVoicePlayback(private val store: DesktopVoiceAudioStore,
+                 for (voice in pending) {
+                     synchronized(queue) { queue.removeAt(0) }
+                     val path = store.verify(voice.audioPath)
+-                    output.play(path)
++                    output.playFormal(path)
+                     mutable.value = DesktopVoicePlaybackState(voice.id,
+                         synchronized(queue) { listOf(voice.id) + queue.map { it.id } }, true)
+                     while (output.isPlaying()) delay(100)
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopWindowsAudioOutput.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopWindowsAudioOutput.kt
+index 44538857..5e334efd 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopWindowsAudioOutput.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopWindowsAudioOutput.kt
+@@ -14,6 +14,7 @@ import kotlinx.coroutines.sync.withLock
+ /** Local-file output port shared by preview and future audio callers. No URL or credential input. */
+ internal interface DesktopAudioOutput {
+     suspend fun play(path: Path)
++    suspend fun playFormal(path: Path) { play(path) }
+     suspend fun stopAndDrain()
+     suspend fun hasFocus(): Boolean = true
+     suspend fun isPlaying(): Boolean
+@@ -48,7 +49,9 @@ internal class DesktopWindowsAudioOutput(
+     private var alias: String? = null
+     private var closed = false
+ 
+-    override suspend fun play(path: Path) = operation {
++    override suspend fun play(path: Path) = playBounded(path, 120_000)
++    override suspend fun playFormal(path: Path) = playBounded(path, 1_800_000)
++    private suspend fun playBounded(path: Path, maximumDurationMs: Long) = operation {
+         check(!closed)
+         stopNative()
+         val name = "ccb_audio_${UUID.randomUUID().toString().replace("-", "") }"
+@@ -59,7 +62,7 @@ internal class DesktopWindowsAudioOutput(
+         try {
+             commands.send("set $name time format milliseconds wait")
+             val length = commands.send("status $name length wait").toLongOrNull()
+-            check(length != null && length in 1..120_000) { "MP3 时长不可用或超过限制" }
++            check(length != null && length in 1..maximumDurationMs) { "MP3 时长不可用或超过限制" }
+             commands.send("play $name from 0")
+         } catch (failure: Throwable) {
+             try { stopNative() } catch (close: Throwable) { close.addSuppressed(failure); throw close }
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishGenerationTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishGenerationTest.kt
+index d14aa83e..b2803774 100644
+--- a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishGenerationTest.kt
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishGenerationTest.kt
+@@ -193,4 +193,40 @@ class DesktopFishGenerationTest {
+         }
+     }
+ 
++    @Test fun `explicit translation preserves source snapshot and audiobook skips only tagging`() = runBlocking {
++        Fixture().use { f ->
++            f.seed()
++            f.models.saveModel(ModelConfig("model", "synthetic", "https://example.invalid", "synthetic", "mock", createdAt = 1))
++            f.chats.updateSession(f.session.copy(audiobookModeEnabled = true, modelId = "model", voiceLanguage = "English"))
++            f.textReply = { task, messages ->
++                assertEquals(FishVoiceTextTask.TRANSLATE, task)
++                val inputs = Json.parseToJsonElement(messages.last().content.jsonPrimitive.content.lineSequence().filter { it.isNotBlank() }.last()).jsonArray
++                buildJsonObject { put("segments", buildJsonArray { inputs.forEach { input -> add(buildJsonObject {
++                    put("id", input.jsonObject["id"]!!); put("translatedText", "translated hello")
++                }) } }) }.toString()
++            }
++            f.server.enqueue(f.audio()); f.done(f.coordinator.generateWhole(f.session.id, f.message.id))
++            val v = f.voices.listForSession(f.session.id).single()
++            assertEquals("hello", v.sourceText); assertEquals("translated hello", v.synthesisText)
++            assertTrue(f.server.takeRequest().body.readUtf8().contains("translated hello")); assertEquals(1, f.textCalls)
++        }
++    }
++
++    @Test fun `multi character whole audiobook requires an explicitly selected current binding`() = runBlocking {
++        Fixture().use { f ->
++            f.seed("Synthetic whole narration")
++            val card = f.characters.getById("card")!!
++            f.characters.save(card.copy(characters = card.characters + CharacterInfo("bob", "Bob",
++                fishAudioVoice = FishAudioVoiceBinding("bob-reference", "Bob snapshot"))))
++            f.settings.updateAppSettings { it.copy(assistantSegmentedBubblesEnabled = false) }
++            f.done(f.coordinator.generateWhole(f.session.id, f.message.id))
++            assertEquals(0, f.server.requestCount)
++            f.server.enqueue(f.audio()); f.done(f.coordinator.generateWhole(f.session.id, f.message.id, "bob"))
++            val voice = f.voices.listForSession(f.session.id).single()
++            assertEquals("bob-reference", voice.voice.referenceId)
++            assertEquals(VoiceGenerationPolicy.WHOLE_MESSAGE_SOURCE_KIND, voice.sourceSegmentKind)
++            assertNull(voice.anchorId); assertEquals(0, f.textCalls)
++        }
++    }
++
+ }
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopVoiceSafetyTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopVoiceSafetyTest.kt
+new file mode 100644
+index 00000000..4a36d0d5
+--- /dev/null
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopVoiceSafetyTest.kt
+@@ -0,0 +1,62 @@
++package com.example.chatbar.desktop
++
++import com.example.chatbar.data.local.JsonFileStorage
++import com.example.chatbar.data.local.entity.*
++import com.example.chatbar.data.repository.VoiceMessageRepository
++import com.example.chatbar.data.operation.AppDataOperationGate
++import java.io.IOException
++import java.nio.file.*
++import kotlinx.coroutines.runBlocking
++import kotlin.test.*
++
++class DesktopVoiceSafetyTest {
++    @Test fun `formal recording exceeds preview duration without weakening the preview profile`() = runBlocking {
++        val root = Files.createTempDirectory("s7-long-formal-")
++        val store = DesktopVoiceAudioStore(root)
++        val bytes = fishPreviewMp3(5000) // about 130 seconds, bounded to about 2 MiB
++        val audio = store.persist("session", "long-formal", bytes.inputStream())
++        assertTrue(audio.durationMs > 120_000)
++        assertFails { DesktopMp3Validation.validate(Path.of(audio.path), 16L * 1024 * 1024) }
++        val commands = DesktopMciCommands { command -> if (command.contains(" length ")) "130612" else "" }
++        val native = DesktopWindowsAudioOutput(commands)
++        try {
++            assertFails { native.play(Path.of(audio.path)) }
++            native.playFormal(Path.of(audio.path)); native.stopAndDrain()
++        } finally { native.closeAndDrain() }
++    }
++    @Test fun `post commit exception has positive strict reference proof and restart retains audio`() = runBlocking {
++        val root = Files.createTempDirectory("s7-uncertain-voice-")
++        var fail = true
++        val gate = object : AppDataOperationGate {
++            override suspend fun <T> withNormalOperation(operation: suspend () -> T): T {
++                val result = operation()
++                if (fail && Files.exists(root.resolve("entities/generated_voice_messages"))) {
++                    fail = false; throw IOException("synthetic post-write failure")
++                }
++                return result
++            }
++        }
++        val audio = DesktopVoiceAudioStore(root)
++        val clip = audio.persist("session", "artifact", fishPreviewMp3().inputStream())
++        val voice = GeneratedVoiceMessage.create("session", "message", "version", null, 0, "WHOLE_MESSAGE", "", "hello", "hello",
++            "hello", "alice", "Alice", FishAudioVoiceBinding("reference", "snapshot"), "s2.1-pro-free", clip.path, clip.durationMs, clip.byteLength)
++        val repo = VoiceMessageRepository(JsonFileStorage(root, gate), strictReads = true)
++        assertFailsWith<IOException> { repo.save(voice) }
++        assertEquals(voice, (repo.readDurable(voice.id) as JsonFileStorage.EntityReadResult.Valid).value)
++        assertTrue(repo.isAudioReferenced(clip.path)); repo.reload(); assertEquals(voice, repo.get(voice.id))
++        assertEquals(voice, VoiceMessageRepository(JsonFileStorage(root), strictReads = true).get(voice.id))
++        assertTrue(Files.exists(Path.of(clip.path)))
++    }
++
++    @Test fun `unknown inventory cannot authorize deleting an orphan from an interrupted commit`() = runBlocking {
++        val root = Files.createTempDirectory("s7-orphan-preserve-")
++        val store = DesktopVoiceAudioStore(root)
++        val clip = store.persist("session", "crash-before-entity", fishPreviewMp3().inputStream())
++        val dir = Files.createDirectories(root.resolve("entities/generated_voice_messages"))
++        Files.writeString(dir.resolve("future.json"), """{"futureSchema":999}""")
++        val repo = VoiceMessageRepository(JsonFileStorage(root), strictReads = true)
++        assertFails { repo.isAudioReferenced(clip.path) }
++        assertFails { repo.initialize() }
++        assertEquals(Path.of(clip.path), DesktopVoiceAudioStore(root).verify(clip.path))
++    }
++}
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopVoiceTtsAdmissionTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopVoiceTtsAdmissionTest.kt
+new file mode 100644
+index 00000000..b12c0905
+--- /dev/null
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopVoiceTtsAdmissionTest.kt
+@@ -0,0 +1,49 @@
++package com.example.chatbar.desktop
++
++import com.example.chatbar.desktop.security.InMemoryDesktopSecretStore
++import java.nio.file.Files
++import java.time.LocalDate
++import java.util.concurrent.CountDownLatch
++import java.util.concurrent.TimeUnit
++import kotlinx.coroutines.*
++import okhttp3.OkHttpClient
++import okhttp3.mockwebserver.*
++import okio.Buffer
++import kotlin.test.*
++
++class DesktopVoiceTtsAdmissionTest {
++    @Test fun `formal and picker TTS share five real request permits until body drain`() = runBlocking {
++        val server = MockWebServer()
++        val entered = CountDownLatch(5); val release = CountDownLatch(1)
++        server.dispatcher = object : okhttp3.mockwebserver.Dispatcher() {
++            override fun dispatch(request: RecordedRequest): MockResponse {
++                entered.countDown()
++                check(release.await(8, TimeUnit.SECONDS))
++                return MockResponse().setHeader("Content-Type", "audio/mpeg").setBody(Buffer().write(fishPreviewMp3()))
++            }
++        }
++        server.start()
++        val credentials = DesktopFishAudioCredentials(InMemoryDesktopSecretStore()).also { it.save("synthetic-only") }
++        val store = DesktopVoiceAudioStore(Files.createTempDirectory("s7-mixed-slots-"))
++        val formal = DesktopFishVoiceTransport(credentials, store, OkHttpClient(), server.url("/").toString().trimEnd('/'), { LocalDate.of(2026,10,19) })
++        val preview = DesktopFishPreviewTransport(credentials, OkHttpClient(), server.url("/").toString().trimEnd('/'))
++        val previews = List(3) { DesktopFishPreviewStore() }
++        val jobs = (0..2).map { n -> async(Dispatchers.IO) {
++            formal.synthesize("s2.1-pro-free", "reference", "synthetic", "session", "artifact-$n")
++        } } + (0..2).map { n -> async(Dispatchers.IO) {
++            preview.generate("reference", "synthetic", "s2.1-pro-free", previews[n]); null
++        } }
++        try {
++            assertTrue(withContext(Dispatchers.IO) { entered.await(5, TimeUnit.SECONDS) })
++            assertEquals(5, server.requestCount)
++            assertEquals(0, DesktopFishTtsAdmission.slots.availablePermits)
++            release.countDown()
++            val results = withTimeout(8000) { jobs.awaitAll() }
++            assertEquals(6, server.requestCount); assertEquals(5, DesktopFishTtsAdmission.slots.availablePermits)
++            results.filterNotNull().forEach { store.deleteIfOwned(it.path) }
++        } finally {
++            release.countDown(); jobs.forEach { it.cancelAndJoin() }
++            formal.closeAndDrain(); preview.closeAndDrain(); previews.forEach { it.close() }; server.shutdown()
++        }
++    }
++}
+diff --git a/app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/VoiceMessageRepository.kt b/app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/VoiceMessageRepository.kt
+index f04da01a..03f89d85 100644
+--- a/app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/VoiceMessageRepository.kt
++++ b/app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/VoiceMessageRepository.kt
+@@ -95,6 +95,17 @@ class VoiceMessageRepository(
+         return referenced
+     }
+ 
++    suspend fun readDurable(id: String) = storage.readEntityStrict(VOICE_TYPE, id, GeneratedVoiceMessage.serializer())
++
++    /** Explicit refresh after a proven durable voice commit; never resets damaged data. */
++    suspend fun reload() = mutex.withLock {
++        val loaded = loadVoices()
++        val anchors = loadAnchors()
++        anchorsByVersion = anchors.associateBy { VoiceAnchorStateKey(it.messageId, it.messageVersionId) }
++        _voices.value = loaded
++        initialized = true
++    }
++
+     suspend fun listForSession(sessionId: String): List<GeneratedVoiceMessage> {
+         initialize()
+         return _voices.value.filter { it.sessionId == sessionId }
+diff --git a/app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/FormatRepairAuxiliaryTransport.kt b/app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/FormatRepairAuxiliaryTransport.kt
+index c93d0e4b..7c4da949 100644
+--- a/app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/FormatRepairAuxiliaryTransport.kt
++++ b/app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/FormatRepairAuxiliaryTransport.kt
+@@ -71,6 +71,7 @@ internal fun isolatedAuxiliaryTextStream(
+     client: OkHttpClient, allowCleartextHttp: Boolean, inputMessages: List<ChatApiMessage>, model: ModelConfig,
+     diagnostics: ProviderTransportDiagnostics = ProviderTransportDiagnostics.NONE,
+     timing: AuxiliaryStreamTiming = AuxiliaryStreamTiming(),
++    isolatedTaskParameters: Boolean = true,
+ ): Flow<StreamEvent> = callbackFlow {
+     val messages = AuxiliaryMessageAssembler.assemble(inputMessages, preservesInputRoles = false)
+     // Envelope fields belong to this task, never to custom model parameters. Keep the saved model untouched.
+@@ -78,7 +79,7 @@ internal fun isolatedAuxiliaryTextStream(
+         it !in setOf("messages", "model", "stream", "stream_options", "prompt_cache_key")
+     })
+     val body = OpenAiChatRequestSerializer.serialize(messages, requestModel, stream = true,
+-        allowCleartextHttp = allowCleartextHttp, disableThinking = true, isolatedTaskParameters = true,
++        allowCleartextHttp = allowCleartextHttp, disableThinking = true, isolatedTaskParameters = isolatedTaskParameters,
+         includeStreamUsage = model.supportsOpenAiPromptCacheInstrumentation())
+     val url = "${model.baseUrl.trimEnd('/')}/chat/completions"
+     diagnostics.onRequest(ProviderRequestEvidence(url, body))
+diff --git a/app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/OpenAiStreamingTransport.kt b/app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/OpenAiStreamingTransport.kt
+index 1dded1fa..d743a880 100644
+--- a/app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/OpenAiStreamingTransport.kt
++++ b/app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/OpenAiStreamingTransport.kt
+@@ -81,7 +81,8 @@ class OpenAiStreamingTransport(
+     /** Explicit Fish translation/tagging only; no retries, thinking or output-token cap. */
+     fun streamFishVoice(messages: List<ChatApiMessage>, modelConfig: ModelConfig,
+         diagnostics: ProviderTransportDiagnostics = ProviderTransportDiagnostics.NONE): Flow<StreamEvent> =
+-        isolatedAuxiliaryTextStream(client, allowCleartextHttp(), messages, modelConfig.withoutOutputTokenLimit(), diagnostics)
++        isolatedAuxiliaryTextStream(client, allowCleartextHttp(), messages, modelConfig.withoutOutputTokenLimit(), diagnostics,
++            isolatedTaskParameters = false)
+ 
+     fun streamMainChat(
+         messages: List<ChatApiMessage>,
+diff --git a/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/voice/FishAudioTagGatewayTest.kt b/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/voice/FishAudioTagGatewayTest.kt
+index 43efcceb..0ca6673a 100644
+--- a/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/voice/FishAudioTagGatewayTest.kt
++++ b/app/sharedCore/src/test/kotlin/com/example/chatbar/domain/voice/FishAudioTagGatewayTest.kt
+@@ -10,7 +10,7 @@ import kotlin.test.*
+ 
+ class FishAudioTagGatewayTest {
+     private val model = ModelConfig("synthetic", "synthetic", "https://example.invalid", "synthetic-key", "mock", createdAt = 1,
+-        maxOutputTokens = 12)
++        maxOutputTokens = 12, customParams = mapOf("temperature" to com.example.chatbar.data.local.entity.ParamValue.NumberValue(0.35)))
+ 
+     @Test fun `migrated prompts and final serialized messages equal frozen official inputs for both tasks`() = runBlocking {
+         val captured = mutableListOf<Pair<FishVoiceTextTask, List<ChatApiMessage>>>()
+@@ -36,7 +36,7 @@ class FishAudioTagGatewayTest {
+                 FishAudioTagPolicy.promptPolicy("s2.1-pro-free"), "synthetic previous", "synthetic response", segments)
+             fun body(messages: List<ChatApiMessage>) = OpenAiChatRequestSerializer.serialize(
+                 AuxiliaryMessageAssembler.assemble(messages, false), model.withoutOutputTokenLimit(), stream = true,
+-                disableThinking = true, isolatedTaskParameters = true)
++                disableThinking = true, isolatedTaskParameters = false)
+             assertEquals(body(listOf(ChatApiMessage.text("system", system.trim()), ChatApiMessage.text("user", user))), body(actual))
+             val json = Json.parseToJsonElement(body(actual)).jsonObject
+             assertEquals(8, json["messages"]!!.jsonArray.size)
+diff --git a/docs/desktop/142_PHASE8_VOICE_P11_HANDOFF.md b/docs/desktop/142_PHASE8_VOICE_P11_HANDOFF.md
+index 3caced15..db81e38d 100644
+--- a/docs/desktop/142_PHASE8_VOICE_P11_HANDOFF.md
++++ b/docs/desktop/142_PHASE8_VOICE_P11_HANDOFF.md
+@@ -12,7 +12,7 @@ Android `domain/chat/SaveSlotPackageStorage.kt` writes `voices.jsonl`, `media/au
+ 
+ P11 must validate the entire package, manifest counts, duplicate entries, original message relationships and media inventory before calling this adapter. Supply already-normalized mapped assistant messages and a resource-ID-to-validated-stream callback. Invoke under the app-data operation owner; cancel/join generation and stop playback first. Stage all required media BEFORE atomic entity/session replacement; do not call shared destructive restore in isolation as an application transaction. P11 owns rollback of message/entity sets and D-038 backups. After a confirmed entity commit, retain staged audio. On failure/cancellation/uncertain commit, `rollbackUnreferenced` re-reads strict complete voice references and deletes only known unreferenced files; an unreadable index preserves files. Never recursively delete the generated audio directory.
+ 
+-Current adapter budget: 16 MiB/MP3, structural MP3 validation and 120-second native profile, 64 MiB/staging lease, 10,000 metadata records. P11 must explicitly budget large archives and cannot silently bypass these limits by partial commits. Missing/unsupported media is an error, not successful entity-only import. Historical Android WAV/other decoder formats are not asserted compatible.
++Current adapter budget: 16 MiB/MP3, structural MP3 validation and 30-minute formal native profile (preview retains 120 seconds), 64 MiB/staging lease, 10,000 metadata records. P11 must explicitly budget large archives and cannot silently bypass these limits by partial commits. Missing/unsupported media is an error, not successful entity-only import. Historical Android WAV/other decoder formats are not asserted compatible.
+ 
+ ## Cross-platform verification required by P11
+ 

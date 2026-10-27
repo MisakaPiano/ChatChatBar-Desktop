@@ -1,0 +1,10 @@
+{
+  "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFishPickerNativeUxTest.kt",
+  "bytes": 42187,
+  "sha256": "e0209f44e85e9326aa4f1e4fb1a111348e6f7e704898db1113a46227df667af0",
+  "normalizedSha256": "e0209f44e85e9326aa4f1e4fb1a111348e6f7e704898db1113a46227df667af0",
+  "patchSha256": "6492f715b12debf60d495634130a920b770f6c6f2e6fad792b825d9bfcb2588e",
+  "scopeOnlyAssertPagerLayout": true,
+  "originalAssertionBlockByteEquivalentAfterLineEndingNormalization": true,
+  "allCodeOutsideMethodUnchanged": true
+}

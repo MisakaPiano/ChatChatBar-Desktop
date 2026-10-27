@@ -1,0 +1,12 @@
+{
+  "workingDirectory": "H:\\ChatChatBar-Desktop",
+  "arguments": [
+    "-P",
+    "5045",
+    "-s",
+    "emulator-5584",
+    "emu",
+    "kill"
+  ],
+  "executable": "C:\\Users\\1\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe"
+}

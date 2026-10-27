@@ -1,0 +1,473 @@
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/g1bt0/T0RecoveryLab.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/g1bt0/T0RecoveryLab.kt
+new file mode 100644
+index 00000000..bf2b0c78
+--- /dev/null
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/g1bt0/T0RecoveryLab.kt
+@@ -0,0 +1,236 @@
++package com.example.chatbar.desktop
++
++import com.example.chatbar.desktop.backup.BackupJsonStream
++import com.example.chatbar.desktop.security.*
++import java.nio.ByteBuffer
++import java.nio.channels.FileChannel
++import java.nio.file.*
++import java.security.MessageDigest
++import java.util.UUID
++import kotlinx.serialization.json.*
++
++/** EXPERIMENT ONLY: file protocol for cooperating synthetic processes. Never a production schema. */
++internal class T0RecoveryLab(val base: Path) {
++    enum class Topology { SHARED, PER_ROOT }
++    enum class Admission { ALL_OLD, ALL_NEW, BLOCKED }
++    class Blocked : IllegalStateException("T0_BLOCKED")
++    class FakeProtector(private val context: String = "fake-context") : SecretProtector {
++        override fun protect(plaintext: ByteArray): ByteArray = context.toByteArray() + byteArrayOf(0) + plaintext.map { (it.toInt() xor 90).toByte() }.toByteArray()
++        override fun unprotect(ciphertext: ByteArray): ByteArray {
++            val prefix = context.toByteArray() + byteArrayOf(0)
++            if (!ciphertext.take(prefix.size).toByteArray().contentEquals(prefix)) throw Blocked()
++            return ciphertext.drop(prefix.size).map { (it.toInt() xor 90).toByte() }.toByteArray()
++        }
++    }
++    val config get() = read(base.resolve("config.json"))
++    val topology get() = Topology.valueOf(config.getValue("topology").jsonPrimitive.content)
++    fun root(name: String) = base.resolve("data-$name")
++    fun partition(name: String) = if (topology == Topology.SHARED) "shared" else name
++    fun home(name: String = "A") = base.resolve("txn-${partition(name)}")
++    fun secretRoot(name: String) = if (topology == Topology.SHARED)
++        WindowsSecretRootResolver.resolve(mapOf("LOCALAPPDATA" to base.resolve("profile").toString()), root(name))
++        else base.resolve("test-namespaces/$name")
++    fun store(name: String, context: String = "fake-context") = WindowsSecretStore(secretRoot(name), FakeProtector(context))
++    fun targets(name: String): List<Path> = (if (topology == Topology.SHARED) listOf(root("A"), root("B")) else listOf(root(name)))
++        .map { it.resolve("data") } + KEYS.map { store(name).secretPath(it) }
++    private fun roots(name: String) = if (topology == Topology.SHARED) listOf("A", "B") else listOf(name)
++    private fun relative(p: Path) = p.toAbsolutePath().normalize().also { if (!it.startsWith(base)) throw Blocked() }.let { base.relativize(it).toString().replace('\\', '/') }
++    private fun path(s: String): Path {
++        if (s.split('/').any { it.isBlank() || it == "." || it == ".." } || ':' in s || '\\' in s) throw Blocked()
++        return base.resolve(s).normalize().also { if (!it.startsWith(base)) throw Blocked() }
++    }
++    private fun identity(name: String): String {
++        val stamp = kotlinx.coroutines.runBlocking { DesktopDocumentIndexReadEvidence({}, extendedPaths = true).observe(root(name), directory = true) }
++        return Files.readString(root(name).resolve("root.id")) + ":${stamp.volume}:${stamp.id}:" + hash(root(name).resolve("binding"))
++    }
++    private fun registry(name: String) {
++        val registered = read(base.resolve("registry.json"))
++        roots(name).forEach { if (identity(it) != registered.getValue(it).jsonPrimitive.content) throw Blocked() }
++    }
++    fun <T> locked(name: String = "A", body: () -> T): T {
++        FileChannel.open(base.resolve("coord-${partition(name)}.lock"), StandardOpenOption.CREATE, StandardOpenOption.WRITE).use { channel ->
++            val lock = try { channel.tryLock() } catch (_: Exception) { null } ?: throw Blocked()
++            lock.use {
++                val owners = mutableListOf<DesktopDataRootOwnership>()
++                try {
++                    registry(name)
++                    roots(name).sorted().forEach { n ->
++                        val result = DesktopDataRootOwnership.acquire(DesktopDataRootResolution.Resolved(root(n), DesktopDataRootProvenance.CLI_OVERRIDE, base.resolve("unused-bootstrap")))
++                        if (result !is DesktopDataRootOwnershipResult.Acquired) throw Blocked()
++                        owners += result.ownership
++                    }
++                    return body()
++                } finally { owners.reversed().forEach { it.close() } }
++            }
++        }
++    }
++    fun prepare(name: String = "A", consent: Boolean = true, community: Boolean = false) = locked(name) {
++        if (!consent || community || gateUnlocked(name) != Admission.ALL_OLD) throw Blocked()
++        if (topology == Topology.SHARED && Files.readString(root("A").resolve("binding")) != Files.readString(root("B").resolve("binding"))) throw Blocked()
++        val work = home(name); Files.createDirectories(work.resolve("old")); Files.createDirectories(work.resolve("new"))
++        val prepared = WindowsSecretStore(work.resolve("prepared-secrets"), FakeProtector())
++        KEYS.forEachIndexed { i, key -> prepared.save(key, "FAKE_T0_NEW_$i") }
++        val rows = targets(name).mapIndexed { i, target ->
++            val old = Files.readAllBytes(target)
++            val next = if (i < roots(name).size) "SYNTHETIC_DATA_GEN_2".toByteArray() else Files.readAllBytes(prepared.secretPath(KEYS[i - roots(name).size]))
++            write(work.resolve("old/$i"), old); write(work.resolve("new/$i"), next)
++            if (i >= roots(name).size) write(work.resolve("old-secrets").resolve(target.fileName), old)
++            buildJsonObject { put("target", relative(target)); put("old", digest(old)); put("new", digest(next)); put("key", i >= roots(name).size) }
++        }
++        val m = buildJsonObject {
++            put("version", 1); put("op", UUID.randomUUID().toString()); put("context", "fake-context")
++            put("roots", buildJsonObject { roots(name).forEach { put(it, identity(it)) } })
++            put("rows", JsonArray(rows))
++        }
++        write(work.resolve("manifest.json"), m.toString().toByteArray())
++        write(work.resolve("manifest.sha"), hash(work.resolve("manifest.json")).toByteArray())
++    }
++    fun publish(name: String = "A") = locked(name) {
++        val work = home(name)
++        write(work.resolve("reservation"), Files.readAllBytes(work.resolve("manifest.sha")))
++        write(work.resolve("intent.part"), Files.readAllBytes(work.resolve("manifest.sha")))
++        Files.move(work.resolve("intent.part"), work.resolve("intent"), StandardCopyOption.ATOMIC_MOVE)
++    }
++    private fun manifest(name: String, context: String): JsonObject {
++        val work = home(name)
++        if (Files.readString(work.resolve("reservation")) != hash(work.resolve("manifest.json")) ||
++            Files.readString(work.resolve("intent")) != hash(work.resolve("manifest.json")) ||
++            Files.readString(work.resolve("manifest.sha")) != hash(work.resolve("manifest.json"))) throw Blocked()
++        val m = read(work.resolve("manifest.json"))
++        if (m.keys != setOf("version", "op", "context", "roots", "rows") || m.getValue("version").jsonPrimitive.int != 1 ||
++            m.getValue("context").jsonPrimitive.content != context) throw Blocked()
++        if (m.getValue("roots").jsonObject != buildJsonObject { roots(name).forEach { put(it, identity(it)) } }) throw Blocked()
++        val rows = m.getValue("rows").jsonArray
++        if (rows.map { path(it.jsonObject.getValue("target").jsonPrimitive.content) } != targets(name)) throw Blocked()
++        rows.forEachIndexed { i, value ->
++            val row = value.jsonObject
++            if (row.keys != setOf("target", "old", "new", "key")) throw Blocked()
++            if (hash(work.resolve("old/$i")) != row.getValue("old").jsonPrimitive.content ||
++                hash(work.resolve("new/$i")) != row.getValue("new").jsonPrimitive.content ||
++                hash(path(row.getValue("target").jsonPrimitive.content)) !in setOf(row.getValue("old").jsonPrimitive.content, row.getValue("new").jsonPrimitive.content)) throw Blocked()
++            // Exercise the actual envelope decoder plus the explicitly NON-CRYPTOGRAPHIC test protector.
++            if (row.getValue("key").jsonPrimitive.boolean) for ((suffix, directory) in listOf("old" to "old-secrets", "new" to "prepared-secrets")) {
++                val key = KEYS[i - roots(name).size]
++                val evidenceStore = WindowsSecretStore(work.resolve(directory), FakeProtector(context))
++                if (hash(evidenceStore.secretPath(key)) != hash(work.resolve("$suffix/$i")) || evidenceStore.load(key) == null) throw Blocked()
++            }
++        }
++        return m
++    }
++    fun apply(order: String, cut: String = "NONE", name: String = "A") = locked(name) {
++        val m = manifest(name, "fake-context"); val rows = m.getValue("rows").jsonArray
++        val indices = rows.indices.sortedBy { if (rows[it].jsonObject.getValue("key").jsonPrimitive.boolean) (if (order == "KEY_FIRST") 0 else 1) else (if (order == "KEY_FIRST") 1 else 0) }
++        var keys = 0
++        indices.forEachIndexed { ordinal, i ->
++            val row = rows[i].jsonObject; val key = row.getValue("key").jsonPrimitive.boolean
++            if (key && ++keys == 2 && cut == "SECOND_KEY_FAIL") throw java.io.IOException("T0_SECOND_KEY_FAIL")
++            val target = path(row.getValue("target").jsonPrimitive.content)
++            val bytes = Files.readAllBytes(home(name).resolve("new/$i"))
++            if (key) AtomicSecretBlobWriter.write(target, bytes) else install(target, bytes)
++            if (ordinal == 0 && cut == "FIRST_WRITE") Runtime.getRuntime().halt(71)
++        }
++        if (cut == "ALL_WRITES") Runtime.getRuntime().halt(71)
++        finish(name, Admission.ALL_NEW, cut)
++    }
++    fun recover(name: String = "A", context: String = "fake-context", hardExit: Boolean = false): Admission = locked(name) {
++        val work = home(name)
++        if (!Files.exists(work.resolve("reservation"))) return@locked gateUnlocked(name)
++        val m = manifest(name, context)
++        if (Files.exists(work.resolve("decision"))) return@locked gateUnlocked(name)
++        // A prior completion receipt without its decision is lost authority, not unfinished APPLYING.
++        if (Files.exists(work.resolve("receipt")) || Files.exists(work.resolve("receipt.sha"))) throw Blocked()
++        m.getValue("rows").jsonArray.forEachIndexed { i, value ->
++            install(path(value.jsonObject.getValue("target").jsonPrimitive.content), Files.readAllBytes(work.resolve("old/$i")))
++            if (i == 0 && hardExit) Runtime.getRuntime().halt(72)
++        }
++        finish(name, Admission.ALL_OLD)
++        gateUnlocked(name)
++    }
++    private fun finish(name: String, outcome: Admission, cut: String = "NONE") {
++        // Test receipt protocol only; no claim of authenticated authority or power-loss durability.
++        val work = home(name); write(work.resolve("decision"), outcome.name.toByteArray())
++        if (cut == "DECISION_ONLY") Runtime.getRuntime().halt(71)
++        val receipt = "${hash(work.resolve("manifest.json"))}:${outcome.name}".toByteArray()
++        write(work.resolve("receipt"), receipt); write(work.resolve("receipt.sha"), digest(receipt).toByteArray())
++    }
++    fun gate(name: String = "A"): Admission = try { locked(name) { gateUnlocked(name) } } catch (_: Exception) { Admission.BLOCKED }
++    private fun gateUnlocked(name: String): Admission {
++        registry(name)
++        val work = home(name)
++        val expected = if (!Files.exists(work.resolve("reservation"))) read(base.resolve("baseline-${partition(name)}.json")) else {
++            val m = manifest(name, "fake-context")
++            val receipt = Files.readString(work.resolve("receipt"))
++            val decision = Admission.valueOf(Files.readString(work.resolve("decision")))
++            if (decision == Admission.BLOCKED || receipt != "${hash(work.resolve("manifest.json"))}:${decision.name}" || hash(work.resolve("receipt")) != Files.readString(work.resolve("receipt.sha"))) throw Blocked()
++            val key = if (decision == Admission.ALL_NEW) "new" else "old"
++            val hashes = buildJsonObject { m.getValue("rows").jsonArray.forEach { value -> val row = value.jsonObject; put(row.getValue("target").jsonPrimitive.content, row.getValue(key)) } }
++            if (!matches(hashes)) throw Blocked()
++            return decision
++        }
++        if (!matches(expected)) throw Blocked()
++        return Admission.ALL_OLD
++    }
++    private fun matches(hashes: JsonObject) = hashes.all { (p, value) -> hash(path(p)) == value.jsonPrimitive.content }
++    fun consume(name: String = "A"): Admission {
++        // This callback fence is prototype-only. No production Repository/Provider is constructed.
++        return try { locked(name) {
++            val admitted = gateUnlocked(name)
++            KEYS.forEach { if (store(name).load(it) == null) throw Blocked() }
++            Files.readAllBytes(root(name).resolve("data"))
++            Files.writeString(base.resolve("business-$name"), admitted.name + "\n", StandardOpenOption.CREATE, StandardOpenOption.APPEND)
++            admitted
++        } } catch (_: Exception) { Admission.BLOCKED }
++    }
++    fun seed(topology: Topology) {
++        write(base.resolve("config.json"), buildJsonObject { put("topology", topology.name) }.toString().toByteArray())
++        for (name in listOf("A", "B")) {
++            Files.createDirectories(root(name)); write(root(name).resolve("root.id"), UUID.randomUUID().toString().toByteArray())
++            write(root(name).resolve("data"), "SYNTHETIC_DATA_GEN_1".toByteArray()); write(root(name).resolve("binding"), "same-model|provider|https://alpha.invalid".toByteArray())
++            KEYS.forEachIndexed { i, key -> store(name).save(key, "FAKE_T0_OLD_$i") }
++        }
++        write(base.resolve("registry.json"), buildJsonObject { listOf("A", "B").forEach { put(it, identity(it)) } }.toString().toByteArray())
++        for (name in if (topology == Topology.SHARED) listOf("A") else listOf("A", "B")) {
++            write(base.resolve("baseline-${partition(name)}.json"), buildJsonObject { targets(name).forEach { put(relative(it), hash(it)) } }.toString().toByteArray())
++        }
++        write(base.resolve("source.synthetic"), "SYNTHETIC_SOURCE_NOT_A_CBBackup".toByteArray())
++    }
++    companion object {
++        val KEYS = listOf(DesktopCredentialKey.ModelApiKey("same-model"), DesktopCredentialKey.FishAudioApiKey)
++        fun digest(bytes: ByteArray) = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
++        fun hash(path: Path) = digest(Files.readAllBytes(path))
++        fun write(path: Path, bytes: ByteArray) {
++            Files.createDirectories(path.parent)
++            FileChannel.open(path, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE).use { c ->
++                val buffer = ByteBuffer.wrap(bytes); while (buffer.hasRemaining()) c.write(buffer); c.force(true)
++            }
++        }
++        fun install(path: Path, bytes: ByteArray) {
++            val temp = path.resolveSibling(path.fileName.toString() + ".t0-part")
++            write(temp, bytes); Files.move(temp, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
++        }
++        fun read(path: Path): JsonObject {
++            if (Files.size(path) > 32768) throw Blocked()
++            val out = java.io.StringWriter()
++            Files.newBufferedReader(path).use { BackupJsonStream(it, out) { value, _ -> value }.copy() }
++            return Json.parseToJsonElement(out.toString()).jsonObject
++        }
++    }
++}
++
++/** Child never reads profile env, DPAPI or user roots; only a parent-created build fixture. */
++object T0SyntheticChild {
++    @JvmStatic fun main(args: Array<String>) {
++        val base = Path.of(args[0]).toAbsolutePath().normalize()
++        check(base.startsWith(Path.of("build/g1b-t0").toAbsolutePath().normalize()))
++        val lab = T0RecoveryLab(base)
++        when (args[1]) {
++            "before-intent" -> { lab.prepare(); Runtime.getRuntime().halt(71) }
++            "after-intent" -> { lab.prepare(); lab.publish(); Runtime.getRuntime().halt(71) }
++            "apply" -> { lab.prepare(); lab.publish(); lab.apply(args[2], args[3]) }
++            "recover-crash" -> lab.recover(hardExit = true)
++            "recover" -> println("T0_RECOVERY=" + lab.recover())
++            "gate-B" -> println("T0_GATE=" + lab.consume("B"))
++            else -> error("T0_UNKNOWN_CHILD_MODE")
++        }
++    }
++}
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/g1bt0/T0RecoveryLabTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/g1bt0/T0RecoveryLabTest.kt
+new file mode 100644
+index 00000000..fab49650
+--- /dev/null
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/g1bt0/T0RecoveryLabTest.kt
+@@ -0,0 +1,225 @@
++package com.example.chatbar.desktop
++
++import com.example.chatbar.desktop.security.*
++import java.io.File
++import java.nio.file.*
++import java.util.concurrent.TimeUnit
++import kotlinx.serialization.json.*
++import kotlin.test.*
++
++class T0RecoveryLabTest {
++    private fun fixture(label: String, topology: T0RecoveryLab.Topology): T0RecoveryLab {
++        val parent = Files.createDirectories(Path.of("build/g1b-t0")).toAbsolutePath().normalize()
++        return T0RecoveryLab(Files.createTempDirectory(parent, "$label-${topology.name}-")).also { it.seed(topology) }
++    }
++    private fun both(block: (T0RecoveryLab) -> Unit) = T0RecoveryLab.Topology.entries.forEach { block(fixture("case", it)) }
++    private fun blocked(lab: T0RecoveryLab) {
++        assertEquals(T0RecoveryLab.Admission.BLOCKED, lab.consume())
++        assertFalse(Files.exists(lab.base.resolve("business-A")))
++        assertEquals("SYNTHETIC_SOURCE_NOT_A_CBBackup", Files.readString(lab.base.resolve("source.synthetic")))
++    }
++    private fun old(lab: T0RecoveryLab) {
++        assertEquals(T0RecoveryLab.Admission.ALL_OLD, lab.gate())
++        T0RecoveryLab.KEYS.forEachIndexed { i, key -> assertTrue(lab.store("A").load(key) == "FAKE_T0_OLD_$i") }
++        assertTrue(Files.readString(lab.root("A").resolve("data")).endsWith("GEN_1"))
++    }
++    private fun snapshot(path: Path) = Files.walk(path).use { paths -> paths.filter { Files.isRegularFile(it) }.toList()
++        .associate { path.relativize(it).toString() to T0RecoveryLab.hash(it) } }
++    private fun child(lab: T0RecoveryLab, mode: String, expected: Int = 0, order: String = "KEY_FIRST", cut: String = "NONE"): String {
++        val cp = listOf(T0SyntheticChild::class.java, DesktopDataRootOwnership::class.java,
++            com.example.chatbar.data.operation.AppDataOperationGate::class.java, Unit::class.java,
++            kotlinx.coroutines.Job::class.java, Json::class.java, kotlinx.serialization.KSerializer::class.java,
++            com.sun.jna.Native::class.java, com.sun.jna.platform.win32.Kernel32::class.java).map {
++            Path.of(it.protectionDomain.codeSource.location.toURI()).toString()
++        }.distinct().joinToString(File.pathSeparator)
++        val log = lab.base.resolve("child-$mode-${System.nanoTime()}.log")
++        val process = ProcessBuilder(Path.of(System.getProperty("java.home"), "bin/java.exe").toString(),
++            "-Xmx96m", "-XX:+UseSerialGC", "-XX:ActiveProcessorCount=1", "-cp", cp,
++            T0SyntheticChild::class.java.name, lab.base.toString(), mode, order, cut)
++            .redirectErrorStream(true).redirectOutput(log.toFile()).start()
++        try {
++            assertTrue(process.waitFor(40, TimeUnit.SECONDS), "T0_OWNED_CHILD_TIMEOUT")
++            assertEquals(expected, process.exitValue(), "T0_CHILD_EXIT_MISMATCH")
++            Files.writeString(log.resolveSibling(log.fileName.toString() + ".exit"), process.exitValue().toString())
++            println("T0_CHILD mode=$mode expected=$expected actual=${process.exitValue()} alive=${process.isAlive}")
++            return Files.readString(log)
++        } finally { if (process.isAlive) process.destroyForcibly() } // Only this invocation's known child.
++    }
++
++    @Test fun `real resolver shares logical keys while test namespaces separate equal model IDs`() {
++        val a = fixture("resolver", T0RecoveryLab.Topology.SHARED)
++        assertEquals(a.secretRoot("A"), a.secretRoot("B"))
++        a.store("A").save(T0RecoveryLab.KEYS[0], "FAKE_T0_OTHER_ACCOUNT")
++        assertTrue(a.store("B").load(T0RecoveryLab.KEYS[0]) == "FAKE_T0_OTHER_ACCOUNT")
++        val b = fixture("resolver", T0RecoveryLab.Topology.PER_ROOT)
++        assertNotEquals(b.secretRoot("A"), b.secretRoot("B"))
++        b.store("A").save(T0RecoveryLab.KEYS[0], "FAKE_T0_OTHER_ACCOUNT")
++        assertTrue(b.store("B").load(T0RecoveryLab.KEYS[0]) == "FAKE_T0_OLD_0")
++    }
++    @Test fun `hard KEY FIRST and DATA FIRST exits block business and fresh processes recover OLD`() = both { lab ->
++        // Each ordering has a separate retained transaction, not a reset of the same evidence.
++        for (order in listOf("KEY_FIRST", "DATA_FIRST")) {
++            val f = fixture("hard-first", lab.topology)
++            child(f, "apply", 71, order, "FIRST_WRITE")
++            blocked(f)
++            assertTrue(child(f, "recover").contains("T0_RECOVERY=ALL_OLD"))
++            old(f); assertTrue(Files.exists(f.home().resolve("old/0")))
++            val proof = snapshot(f.home())
++            child(f, "recover"); assertEquals(proof, snapshot(f.home()))
++            assertEquals(T0RecoveryLab.Admission.ALL_OLD, f.consume())
++        }
++    }
++    @Test fun `all NEW bytes without completion receipt cannot activate and roll back after restart`() = both { lab ->
++        child(lab, "apply", 71, cut = "ALL_WRITES")
++        blocked(lab); assertTrue(Files.readString(lab.root("A").resolve("data")).endsWith("GEN_2"))
++        child(lab, "recover"); old(lab)
++    }
++    @Test fun `second protected key failure retains mixed evidence and is recoverable`() = both { lab ->
++        lab.prepare(); lab.publish()
++        assertFailsWith<java.io.IOException> { lab.apply("KEY_FIRST", "SECOND_KEY_FAIL") }
++        assertTrue(lab.store("A").load(T0RecoveryLab.KEYS[0]) == "FAKE_T0_NEW_0")
++        assertTrue(lab.store("A").load(T0RecoveryLab.KEYS[1]) == "FAKE_T0_OLD_1")
++        blocked(lab); child(lab, "recover"); old(lab)
++    }
++    @Test fun `before intent hard exit has no live writes and after intent exit blocks before fresh recovery`() = both { lab ->
++        child(lab, "before-intent", 71); old(lab)
++        assertFalse(Files.exists(lab.home().resolve("reservation")))
++        val after = fixture("published", lab.topology)
++        child(after, "after-intent", 71); blocked(after)
++        child(after, "recover"); old(after)
++    }
++    @Test fun `successful NEW receipt is revalidated on every repeated fresh startup`() = both { lab ->
++        child(lab, "apply")
++        assertEquals(T0RecoveryLab.Admission.ALL_NEW, lab.consume())
++        val proof = snapshot(lab.home()); child(lab, "recover"); child(lab, "recover")
++        assertEquals(T0RecoveryLab.Admission.ALL_NEW, lab.gate()); assertEquals(proof, snapshot(lab.home()))
++    }
++    @Test fun `interrupted recovery is idempotent across another hard exit`() = both { lab ->
++        child(lab, "apply", 71, cut = "ALL_WRITES")
++        child(lab, "recover-crash", 72); blocked(lab)
++        child(lab, "recover"); old(lab)
++        val proof = snapshot(lab.home()); child(lab, "recover"); assertEquals(proof, snapshot(lab.home()))
++    }
++    @Test fun `decision published without receipt fails closed even when all live bytes are NEW`() = both { lab ->
++        child(lab, "apply", 71, cut = "DECISION_ONLY")
++        blocked(lab); assertFails { lab.recover() }; blocked(lab)
++    }
++    @Test fun completedReceiptWithoutDecisionMustRemainBlocked() = both { lab ->
++        lab.prepare(); lab.publish(); lab.apply("DATA_FIRST")
++        Files.copy(lab.home().resolve("receipt"), lab.home().resolve("receipt.original"))
++        Files.move(lab.home().resolve("decision"), lab.home().resolve("decision.unavailable"))
++        blocked(lab)
++        assertFails { lab.recover() }
++        assertTrue(Files.readString(lab.root("A").resolve("data")).endsWith("GEN_2"))
++    }
++    @Test fun `lost corrupt conflicting receipts retain bytes and cannot activate`() {
++        for (topology in T0RecoveryLab.Topology.entries) for (fault in listOf("lost", "corrupt", "conflict")) {
++            val lab = fixture("receipt-$fault", topology)
++            lab.prepare(); lab.publish(); lab.apply("DATA_FIRST")
++            val receipt = lab.home().resolve("receipt")
++            Files.copy(receipt, lab.home().resolve("receipt.original"))
++            when (fault) {
++                "lost" -> Files.move(receipt, lab.home().resolve("receipt.unavailable"))
++                "corrupt" -> Files.writeString(receipt, "DAMAGED")
++                else -> Files.writeString(lab.home().resolve("decision"), "ALL_OLD")
++            }
++            val bytes = lab.targets("A").map { T0RecoveryLab.hash(it) }
++            blocked(lab); assertFails { lab.recover() }
++            assertEquals(bytes, lab.targets("A").map { T0RecoveryLab.hash(it) })
++        }
++    }
++    @Test fun `lost intent and changed rollback evidence are unknown rather than empty`() {
++        for (topology in T0RecoveryLab.Topology.entries) for (fault in listOf("intent", "old")) {
++            val lab = fixture("evidence-$fault", topology)
++            lab.prepare(); lab.publish()
++            if (fault == "intent") Files.move(lab.home().resolve("intent"), lab.home().resolve("intent.unavailable"))
++            else Files.writeString(lab.home().resolve("old/0"), "FOREIGN")
++            blocked(lab); assertFails { lab.recover() }
++        }
++    }
++    @Test fun `external data generation or protected key change cannot be overwritten by recovery`() {
++        for (topology in T0RecoveryLab.Topology.entries) for (fault in listOf("data", "key", "binding")) {
++            val lab = fixture("external-$fault", topology)
++            lab.prepare(); lab.publish()
++            if (fault == "data") Files.writeString(lab.root("A").resolve("data"), "FOREIGN_GEN_99")
++            else if (fault == "key") lab.store("A").save(T0RecoveryLab.KEYS[0], "FAKE_T0_FOREIGN_ACCOUNT")
++            else Files.writeString(lab.root("A").resolve("binding"), "same-model|foreign-account|https://foreign.invalid")
++            val before = lab.targets("A").map { T0RecoveryLab.hash(it) }
++            blocked(lab); assertFails { lab.recover() }
++            assertEquals(before, lab.targets("A").map { T0RecoveryLab.hash(it) })
++        }
++    }
++    @Test fun `offline registered B blocks shared changes but disjoint namespace A retains unavailable B`() {
++        for (topology in T0RecoveryLab.Topology.entries) {
++            val lab = fixture("offline", topology)
++            val before = snapshot(lab.root("B")); val blobs = snapshot(lab.secretRoot("B"))
++            Files.move(lab.root("B"), lab.base.resolve("offline-B")) // Synthetic unavailable path, not physical disk/ACL evidence.
++            if (topology == T0RecoveryLab.Topology.SHARED) {
++                assertFails { lab.prepare() }; blocked(lab)
++            } else {
++                lab.prepare(); lab.publish(); lab.apply("DATA_FIRST")
++                assertEquals(T0RecoveryLab.Admission.ALL_NEW, lab.consume())
++                assertEquals(blobs, snapshot(lab.secretRoot("B")))
++            }
++            assertEquals(before, snapshot(lab.base.resolve("offline-B")))
++        }
++    }
++    @Test fun `same model ID different provider endpoint blocks shared binding and is isolated per root`() {
++        for (topology in T0RecoveryLab.Topology.entries) {
++            val lab = fixture("endpoints", topology)
++            Files.writeString(lab.root("B").resolve("binding"), "same-model|other-provider|https://beta.invalid")
++            if (topology == T0RecoveryLab.Topology.SHARED) assertFails { lab.prepare() }
++            else {
++                val before = snapshot(lab.secretRoot("B")); lab.prepare(); lab.publish(); lab.apply("DATA_FIRST")
++                assertEquals(before, snapshot(lab.secretRoot("B"))); assertEquals(T0RecoveryLab.Admission.ALL_NEW, lab.gate())
++            }
++        }
++    }
++    @Test fun `directory clone replacement root switch and Portable relocation need rebind approval`() {
++        for (topology in T0RecoveryLab.Topology.entries) for (mode in listOf("clone", "move")) {
++            val lab = fixture("identity-$mode", topology); lab.prepare(); lab.publish()
++            val original = lab.root("A"); Files.move(original, lab.base.resolve("retained-A"))
++            if (mode == "clone") {
++                Files.createDirectory(original)
++                Files.list(lab.base.resolve("retained-A")).use { it.filter { Files.isRegularFile(it) }.forEach { Files.copy(it, original.resolve(it.fileName)) } }
++            }
++            blocked(lab); assertFails { lab.recover() }
++            assertTrue(Files.exists(lab.base.resolve("retained-A/root.id")))
++        }
++    }
++    @Test fun `invalid fake protection context and inaccessible key location cannot become ABSENT`() = both { lab ->
++        lab.prepare(); lab.publish()
++        assertFails { lab.recover(context = "other-context") }; blocked(lab)
++        val target = lab.store("A").secretPath(T0RecoveryLab.KEYS[0])
++        Files.move(target, target.resolveSibling("retained.ccbsecret")); Files.createDirectory(target)
++        assertFails { lab.store("A").load(T0RecoveryLab.KEYS[0]) }
++        assertFails { lab.recover() }; blocked(lab)
++    }
++    @Test fun `Community no protected sink and missing conflict consent cannot prepare a transaction`() = both { lab ->
++        val before = lab.targets("A").map { T0RecoveryLab.hash(it) }
++        assertFails { lab.prepare(community = true) }; assertFails { lab.prepare(consent = false) }
++        assertEquals(before, lab.targets("A").map { T0RecoveryLab.hash(it) }); assertFalse(Files.exists(lab.home()))
++    }
++    @Test fun `cross process gates exclude shared consumers but permit independent namespaces`() = both { lab ->
++        lab.locked {
++            val output = child(lab, "gate-B")
++            assertTrue(output.contains(if (lab.topology == T0RecoveryLab.Topology.SHARED) "T0_GATE=BLOCKED" else "T0_GATE=ALL_OLD"))
++        }
++    }
++    @Test fun `legacy writer bypasses new locks so marker cannot prove downgrade protection`() = both { lab ->
++        lab.prepare(); lab.publish()
++        lab.locked { lab.store("A").save(T0RecoveryLab.KEYS[0], "FAKE_T0_LEGACY_WRITER") }
++        blocked(lab); assertFails { lab.recover() }
++        assertTrue(lab.store("A").load(T0RecoveryLab.KEYS[0]) == "FAKE_T0_LEGACY_WRITER")
++    }
++    @Test fun `unregistered shared consumer proves the closed registry assumption is not global proof`() {
++        val lab = fixture("unknown-consumer", T0RecoveryLab.Topology.SHARED)
++        val c = Files.createDirectory(lab.base.resolve("unregistered-C"))
++        Files.writeString(c.resolve("data"), "SYNTHETIC_DATA_GEN_1")
++        lab.prepare(); lab.publish(); lab.apply("DATA_FIRST")
++        // Negative observation: a non-cooperating unknown consumer could still combine OLD data with NEW key.
++        assertTrue(Files.readString(c.resolve("data")).endsWith("GEN_1"))
++        assertTrue(lab.store("B").load(T0RecoveryLab.KEYS[0]) == "FAKE_T0_NEW_0")
++        println("T0_LIMIT UNKNOWN_SHARED_CONSUMER_CLOSURE_NOT_PROVEN")
++    }
++}

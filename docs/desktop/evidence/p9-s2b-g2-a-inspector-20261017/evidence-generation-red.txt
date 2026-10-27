@@ -1,0 +1,3 @@
+Evidence aggregation failure (not a Gradle/test RED):
+ValueError: Invalid isoformat string: '2026-10-17T11:32:57.3033619Z'
+The local Python parser did not accept this timestamp representation. Raw timestamps/logs/resources were NOT changed. Resume verified every partial copy byte-identical. Derived durations now subtract whole UTC seconds and Decimal fractional seconds directly; both original Z timestamps remain in stage files.

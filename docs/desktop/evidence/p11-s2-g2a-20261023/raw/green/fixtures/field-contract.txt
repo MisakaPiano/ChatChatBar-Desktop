@@ -1,0 +1,4 @@
+Manifest: [appVersionCode, appVersionName, counts, createdAt, fileCount, formatVersion, preferencesSha256, sourceFilesRoot, totalBytes]
+Preferences: novelAiToken,fishAudioKey,communitySession,brushSize,brushType
+Omitted: scope,retainedPreferences,templateType,dimensions
+Defaults: OPENAI,1536

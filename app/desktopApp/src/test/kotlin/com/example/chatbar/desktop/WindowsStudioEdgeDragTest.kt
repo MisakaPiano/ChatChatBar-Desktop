@@ -68,6 +68,7 @@ class WindowsStudioEdgeDragTest {
         }
     }
     @Test fun `maximized Studio outer edges remain stationary and restore remains resizable`() {
+        requireDesktopGraphicsForNativeTest()
         assumeTrue(DesktopWindowChrome.isWindows)
         val user = User32.INSTANCE
         val api = Native.load("user32", ChromeUser32::class.java)

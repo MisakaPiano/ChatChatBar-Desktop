@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopChatNavigationTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-25T02:27:20.605Z" hostname="DD1" time="7.42">
+  <properties/>
+  <testcase name="deleted anchor falls back and next stable snapshot replaces it" classname="com.example.chatbar.desktop.DesktopChatNavigationTest" time="0.848"/>
+  <testcase name="deleting loaded historical anchor refreshes nearby contiguous window" classname="com.example.chatbar.desktop.DesktopChatNavigationTest" time="1.731"/>
+  <testcase name="container restart restores durable anchor window and offset" classname="com.example.chatbar.desktop.DesktopChatNavigationTest" time="0.913"/>
+  <testcase name="selection loads a bounded window around saved historical anchor rather than latest" classname="com.example.chatbar.desktop.DesktopChatNavigationTest" time="0.779"/>
+  <testcase name="first then refresh before durable save stays one contiguous first window" classname="com.example.chatbar.desktop.DesktopChatNavigationTest" time="0.824"/>
+  <testcase name="A B A reading positions and composer drafts remain independent" classname="com.example.chatbar.desktop.DesktopChatNavigationTest" time="0.787"/>
+  <testcase name="no saved position loads latest and load older remains available" classname="com.example.chatbar.desktop.DesktopChatNavigationTest" time="0.772"/>
+  <testcase name="first latest and newer navigation use overlapping bounded windows" classname="com.example.chatbar.desktop.DesktopChatNavigationTest" time="0.764"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

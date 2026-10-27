@@ -1,0 +1,24 @@
+{
+  "state": "HOLD / PRE-GUI FIXTURE STARTUP FAILURE",
+  "classification": "PROVEN_FIXTURE_PREPARATION_DEFECT",
+  "observed": "Files.createDirectory(mock-service) rejected existing empty pre-created directory; fake exit 1 before readiness; no watcher/launcher started",
+  "actualAppStarts": 0,
+  "actualFakeStartAttempts": 1,
+  "realFishGET": 0,
+  "realFishTTS": 0,
+  "manual": {
+    "W1": "NOT TESTED",
+    "W2": "NOT TESTED",
+    "W3": "NOT TESTED",
+    "W4": "NOT TESTED",
+    "W5": "NOT TESTED"
+  },
+  "singleUseLockPreserved": true,
+  "runsDirectoryExists": false,
+  "mockDirectoryMembers": [],
+  "previewFiles": [],
+  "tlsFiles": [],
+  "sourceUnmodified": true,
+  "nextAttempt": "Requires user authorization; no retry performed",
+  "utc": "2026-10-20T00:38:11.907622+00:00"
+}

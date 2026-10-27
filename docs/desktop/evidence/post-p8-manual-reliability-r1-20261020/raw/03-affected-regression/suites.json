@@ -1,0 +1,21 @@
+[
+  "DesktopVoiceClickReliabilityTest",
+  "DesktopVoiceUxTest",
+  "DesktopVoicePauseWindowsTest",
+  "DesktopVoiceSafetyTest",
+  "DesktopChatVoiceRuntimeTest",
+  "DesktopAudioMaintenanceTest",
+  "DesktopFishGenerationTest",
+  "DesktopVoicePersistenceTest",
+  "DesktopChatVoicePresentationTest",
+  "DesktopDataOperationCoordinatorTest",
+  "DesktopCoordinatedSnapshotServiceTest",
+  "DesktopAutomaticBackupSchedulerTest",
+  "DesktopAutomaticBackupRuntimeTest",
+  "DesktopDataRootMigrationServiceTest",
+  "DesktopDataRootSwitchControllerTest",
+  "DesktopApplicationLifecycleTest",
+  "DesktopChatScreenshotUiTest",
+  "DesktopChatScreenshotTest",
+  "DesktopWindowChromeContractTest"
+]

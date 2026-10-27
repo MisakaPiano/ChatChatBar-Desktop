@@ -1,0 +1,177 @@
+M	.agents/skills/chatbar-app-update/SKILL.md
+A	.agents/skills/chatbar-desktop-full-backup/SKILL.md
+M	.agents/skills/chatbar-feature-map/SKILL.md
+M	.agents/skills/chatbar-fish-audio-voice/SKILL.md
+M	.agents/skills/chatbar-image-generation-runtime/SKILL.md
+M	.agents/skills/chatbar-long-term-memory/SKILL.md
+M	.agents/skills/chatbar-model-request-runtime/SKILL.md
+M	.agents/skills/chatbar-prompt-pipeline/SKILL.md
+M	.agents/skills/chatbar-save-slot/SKILL.md
+M	app/app/src/main/java/com/example/chatbar/domain/chat/SaveSlotPackageStorage.kt
+M	app/app/src/main/java/com/example/chatbar/domain/memory/LongTermMemoryAutoMaintenanceCoordinator.kt
+M	app/app/src/main/java/com/example/chatbar/domain/memory/LongTermMemoryService.kt
+M	app/app/src/main/java/com/example/chatbar/domain/memory/MemoryAiGateway.kt
+A	app/app/src/main/java/com/example/chatbar/domain/prompt/AndroidMemoryRagTextClient.kt
+M	app/app/src/main/java/com/example/chatbar/domain/prompt/PromptTemplates.kt
+M	app/app/src/main/java/com/example/chatbar/domain/rag/RetrievalPlanner.kt
+M	app/app/src/main/java/com/example/chatbar/ui/chat/ChatViewModel.kt
+D	app/app/src/test/java/com/example/chatbar/domain/memory/SessionScopedJobRegistryTest.kt
+M	app/desktopApp/build.gradle.kts
+M	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt
+A	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopArchiveFiles.kt
+M	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorController.kt
+M	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterEditorPanel.kt
+M	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatContextMenu.kt
+M	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatControls.kt
+M	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatDraftPersistence.kt
+A	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatMemoryIndex.kt
+M	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatRequestPlanner.kt
+A	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatRetrieval.kt
+M	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotHost.kt
+M	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotRenderer.kt
+M	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotSelection.kt
+M	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoicePanel.kt
+M	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoiceRuntime.kt
+M	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDocumentIndexReadEvidence.kt
+A	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDocumentIndexService.kt
+M	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDocumentIndexTransactionInspector.kt
+M	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDocumentRagReader.kt
+A	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopEmbeddingGateway.kt
+M	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFakeChatRuntime.kt
+A	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupCommitJournal.kt
+A	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupController.kt
+A	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupGraphValidation.kt
+A	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupPanel.kt
+A	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupService.kt
+A	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopIndexCommitJournal.kt
+M	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopIndexStartupPreflight.kt
+M	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopManagePanel.kt
+A	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMemoryController.kt
+A	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMemoryPanel.kt
+A	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMemoryRagTextClient.kt
+A	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMemorySources.kt
+M	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopModelSettingsController.kt
+M	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatController.kt
+M	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt
+M	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryShell.kt
+M	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPromptInspector.kt
+M	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPromptInspectorPanel.kt
+A	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopRagController.kt
+M	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopRealChatRuntime.kt
+A	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotArchive.kt
+A	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotController.kt
+M	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotInspector.kt
+A	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotPanel.kt
+A	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotRestorePlan.kt
+A	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotService.kt
+A	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotSummaryReader.kt
+M	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopScreenshotPreview.kt
+M	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopScreenshotWindow.kt
+A	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSessionCommitJournal.kt
+A	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSessionInventory.kt
+M	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopStartupGate.kt
+A	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopUpdateChecker.kt
+A	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopUpdatePanel.kt
+M	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceAudioStore.kt
+M	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceUx.kt
+M	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt
+A	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/AppBackupCodec.kt
+A	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/AppBackupModels.kt
+A	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/BackupDataRegistry.kt
+A	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/BackupJsonStream.kt
+A	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/BackupTextIO.kt
+A	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupPolicy.kt
+A	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupArchive.kt
+A	app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupMapping.kt
+M	app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopB1CIntegrationTest.kt
+M	app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatContextUxTest.kt
+A	app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatMemoryIndexTest.kt
+M	app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatReadingLifecycleTest.kt
+A	app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatRetrievalTest.kt
+M	app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotTest.kt
+M	app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotUiTest.kt
+A	app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopDocumentIndexPublicationTest.kt
+A	app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopEmbeddingGatewayTest.kt
+A	app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFullBackupArchiveTest.kt
+A	app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFullBackupCommitJournalTest.kt
+A	app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFullBackupMappingTest.kt
+A	app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFullBackupServiceTest.kt
+A	app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopMemoryLifecycleTest.kt
+A	app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopMemoryRagTransportTest.kt
+A	app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopMemorySafetyTest.kt
+M	app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopPromptInspectorTest.kt
+A	app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopSaveSlotArchiveTest.kt
+A	app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopSaveSlotServiceTest.kt
+M	app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopScreenshotBoundaryTest.kt
+M	app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopScreenshotWorkspaceTest.kt
+M	app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopScreenshotWorkspaceUiTest.kt
+A	app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopSessionCommitJournalTest.kt
+A	app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopUpdateCheckerTest.kt
+M	app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopVoiceUxTest.kt
+M	app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/ChatRepository.kt
+R066	app/app/src/main/java/com/example/chatbar/data/repository/MemoryRepository.kt	app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/MemoryRepository.kt
+M	app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/VoiceMessageRepository.kt
+M	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/FormatRepairAuxiliaryTransport.kt
+M	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/OpenAiStreamingTransport.kt
+A	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/SaveSlotAudioRestorePort.kt
+R100	app/app/src/main/java/com/example/chatbar/domain/chat/SaveSlotJsonTransfer.kt	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/SaveSlotJsonTransfer.kt
+A	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/SaveSlotPackageStorage.kt
+A	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/SaveSlotSessionPolicy.kt
+R100	app/app/src/main/java/com/example/chatbar/domain/chat/SessionCopyPolicy.kt	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/SessionCopyPolicy.kt
+A	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/memory/LongTermMemoryAutoMaintenanceCoordinator.kt
+A	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/memory/LongTermMemoryService.kt
+R095	app/app/src/main/java/com/example/chatbar/domain/memory/MemoryAiFailurePolicy.kt	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/memory/MemoryAiFailurePolicy.kt
+A	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/memory/MemoryAiGateway.kt
+R079	app/app/src/main/java/com/example/chatbar/domain/memory/MemoryArchiveInjectionPolicy.kt	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/memory/MemoryArchiveInjectionPolicy.kt
+R100	app/app/src/main/java/com/example/chatbar/domain/memory/MemoryBackfillProgress.kt	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/memory/MemoryBackfillProgress.kt
+R100	app/app/src/main/java/com/example/chatbar/domain/memory/MemoryBudgetPolicy.kt	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/memory/MemoryBudgetPolicy.kt
+R100	app/app/src/main/java/com/example/chatbar/domain/memory/MemoryCompressionDecisionPolicy.kt	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/memory/MemoryCompressionDecisionPolicy.kt
+R100	app/app/src/main/java/com/example/chatbar/domain/memory/MemoryCompressionPolicy.kt	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/memory/MemoryCompressionPolicy.kt
+R100	app/app/src/main/java/com/example/chatbar/domain/memory/MemoryDeletionProjectionPolicy.kt	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/memory/MemoryDeletionProjectionPolicy.kt
+R100	app/app/src/main/java/com/example/chatbar/domain/memory/MemoryEpisodeSummaryPolicy.kt	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/memory/MemoryEpisodeSummaryPolicy.kt
+R100	app/app/src/main/java/com/example/chatbar/domain/memory/MemoryHeadUpdatePolicy.kt	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/memory/MemoryHeadUpdatePolicy.kt
+R100	app/app/src/main/java/com/example/chatbar/domain/memory/MemoryIntegrityAudit.kt	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/memory/MemoryIntegrityAudit.kt
+R097	app/app/src/main/java/com/example/chatbar/domain/memory/MemoryMaintenanceMailbox.kt	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/memory/MemoryMaintenanceMailbox.kt
+A	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/memory/MemoryMaintenancePlatform.kt
+R091	app/app/src/main/java/com/example/chatbar/domain/memory/MemoryModelPreflightPolicy.kt	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/memory/MemoryModelPreflightPolicy.kt
+R100	app/app/src/main/java/com/example/chatbar/domain/memory/MemoryNodeRegenerationPolicy.kt	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/memory/MemoryNodeRegenerationPolicy.kt
+R100	app/app/src/main/java/com/example/chatbar/domain/memory/MemoryPageOrderPolicy.kt	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/memory/MemoryPageOrderPolicy.kt
+R100	app/app/src/main/java/com/example/chatbar/domain/memory/MemoryRegenerationPolicy.kt	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/memory/MemoryRegenerationPolicy.kt
+R100	app/app/src/main/java/com/example/chatbar/domain/memory/MemoryRevisionService.kt	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/memory/MemoryRevisionService.kt
+R100	app/app/src/main/java/com/example/chatbar/domain/memory/MemorySourceRepairPolicy.kt	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/memory/MemorySourceRepairPolicy.kt
+R100	app/app/src/main/java/com/example/chatbar/domain/memory/MemorySourceRepairProgress.kt	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/memory/MemorySourceRepairProgress.kt
+R100	app/app/src/main/java/com/example/chatbar/domain/memory/MemorySummaryPolicy.kt	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/memory/MemorySummaryPolicy.kt
+R100	app/app/src/main/java/com/example/chatbar/domain/memory/MemoryTaskCommitPolicy.kt	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/memory/MemoryTaskCommitPolicy.kt
+M	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/prompt/AiTaskFailurePolicy.kt
+A	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/prompt/MemoryRagPromptAuthority.kt
+A	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/prompt/MemoryRagTextClient.kt
+R099	app/app/src/main/java/com/example/chatbar/domain/rag/RagManager.kt	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/rag/RagManager.kt
+R098	app/app/src/main/java/com/example/chatbar/domain/rag/RagRepository.kt	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/rag/RagRepository.kt
+A	app/sharedCore/src/main/kotlin/com/example/chatbar/domain/rag/RetrievalPlanner.kt
+A	app/sharedCore/src/main/kotlin/com/example/chatbar/ui/chat/RagRetrievalPolicy.kt
+R100	app/app/src/test/java/com/example/chatbar/domain/chat/SaveSlotSerializationTest.kt	app/sharedCore/src/test/kotlin/com/example/chatbar/domain/chat/SaveSlotSerializationTest.kt
+R100	app/app/src/test/java/com/example/chatbar/domain/chat/SessionCopyPolicyTest.kt	app/sharedCore/src/test/kotlin/com/example/chatbar/domain/chat/SessionCopyPolicyTest.kt
+R100	app/app/src/test/java/com/example/chatbar/domain/memory/MemoryAiFailurePolicyTest.kt	app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/MemoryAiFailurePolicyTest.kt
+R100	app/app/src/test/java/com/example/chatbar/domain/memory/MemoryAiRetryTest.kt	app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/MemoryAiRetryTest.kt
+R051	app/app/src/test/java/com/example/chatbar/domain/memory/MemoryAiTerminalFailureTest.kt	app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/MemoryAiTerminalFailureTest.kt
+R100	app/app/src/test/java/com/example/chatbar/domain/memory/MemoryArchiveInjectionPolicyTest.kt	app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/MemoryArchiveInjectionPolicyTest.kt
+R100	app/app/src/test/java/com/example/chatbar/domain/memory/MemoryBudgetPolicyTest.kt	app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/MemoryBudgetPolicyTest.kt
+R100	app/app/src/test/java/com/example/chatbar/domain/memory/MemoryCompressionDecisionPolicyTest.kt	app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/MemoryCompressionDecisionPolicyTest.kt
+R100	app/app/src/test/java/com/example/chatbar/domain/memory/MemoryCompressionPolicyTest.kt	app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/MemoryCompressionPolicyTest.kt
+R100	app/app/src/test/java/com/example/chatbar/domain/memory/MemoryDeletionProjectionPolicyTest.kt	app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/MemoryDeletionProjectionPolicyTest.kt
+R100	app/app/src/test/java/com/example/chatbar/domain/memory/MemoryEpisodeSummaryPolicyTest.kt	app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/MemoryEpisodeSummaryPolicyTest.kt
+R100	app/app/src/test/java/com/example/chatbar/domain/memory/MemoryHeadUpdatePolicyTest.kt	app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/MemoryHeadUpdatePolicyTest.kt
+R100	app/app/src/test/java/com/example/chatbar/domain/memory/MemoryMaintenanceMailboxTest.kt	app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/MemoryMaintenanceMailboxTest.kt
+R100	app/app/src/test/java/com/example/chatbar/domain/memory/MemoryModelPreflightPolicyTest.kt	app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/MemoryModelPreflightPolicyTest.kt
+R100	app/app/src/test/java/com/example/chatbar/domain/memory/MemoryNodeContentTest.kt	app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/MemoryNodeContentTest.kt
+R100	app/app/src/test/java/com/example/chatbar/domain/memory/MemoryNodeRegenerationPolicyTest.kt	app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/MemoryNodeRegenerationPolicyTest.kt
+R100	app/app/src/test/java/com/example/chatbar/domain/memory/MemoryPageOrderPolicyTest.kt	app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/MemoryPageOrderPolicyTest.kt
+R100	app/app/src/test/java/com/example/chatbar/domain/memory/MemoryRegenerationPolicyTest.kt	app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/MemoryRegenerationPolicyTest.kt
+R100	app/app/src/test/java/com/example/chatbar/domain/memory/MemoryRepositoryDeletionJournalTest.kt	app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/MemoryRepositoryDeletionJournalTest.kt
+R100	app/app/src/test/java/com/example/chatbar/domain/memory/MemoryRevisionServiceTest.kt	app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/MemoryRevisionServiceTest.kt
+R100	app/app/src/test/java/com/example/chatbar/domain/memory/MemorySourceRepairPolicyTest.kt	app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/MemorySourceRepairPolicyTest.kt
+R100	app/app/src/test/java/com/example/chatbar/domain/memory/MemorySummaryPolicyTest.kt	app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/MemorySummaryPolicyTest.kt
+R100	app/app/src/test/java/com/example/chatbar/domain/memory/MemoryTaskCommitPolicyTest.kt	app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/MemoryTaskCommitPolicyTest.kt
+A	app/sharedCore/src/test/kotlin/com/example/chatbar/domain/memory/SessionScopedJobRegistryTest.kt
+R100	app/app/src/test/java/com/example/chatbar/domain/rag/ChatMemoryIdentityTest.kt	app/sharedCore/src/test/kotlin/com/example/chatbar/domain/rag/ChatMemoryIdentityTest.kt
+R100	app/app/src/test/java/com/example/chatbar/ui/chat/RagRetrievalCredentialTest.kt	app/sharedCore/src/test/kotlin/com/example/chatbar/ui/chat/RagRetrievalCredentialTest.kt

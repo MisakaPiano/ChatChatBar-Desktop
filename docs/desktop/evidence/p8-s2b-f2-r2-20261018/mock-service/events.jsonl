@@ -1,0 +1,8 @@
+{"utc":"2026-10-18T11:17:37.522356900Z","interface":"GET /model","variant":"not-sample","status":200,"hanging":false,"sampleSecretHeader":false,"realRequests":0}
+{"utc":"2026-10-18T11:17:40.181936600Z","interface":"GET sample","variant":"official-local-replay","status":200,"hanging":false,"sampleSecretHeader":false,"realRequests":0}
+{"utc":"2026-10-18T11:18:54.780652300Z","interface":"GET sample","variant":"synthetic-control","status":200,"hanging":false,"sampleSecretHeader":false,"realRequests":0}
+{"utc":"2026-10-18T11:21:10.217680400Z","interface":"POST /v1/tts","variant":"not-sample","status":200,"hanging":false,"sampleSecretHeader":false,"realRequests":0}
+{"utc":"2026-10-18T11:24:37.647527Z","interface":"GET /model","variant":"not-sample","status":200,"hanging":false,"sampleSecretHeader":false,"realRequests":0}
+{"utc":"2026-10-18T11:24:43.127107500Z","interface":"GET sample","variant":"official-local-replay","status":200,"hanging":true,"sampleSecretHeader":false,"realRequests":0}
+{"utc":"2026-10-18T11:24:43.772515Z","event":"HANG_SOCKET_DRAINED","interface":"GET sample"}
+{"utc":"2026-10-18T11:25:27.003354Z","interface":"GET /model","variant":"not-sample","status":200,"hanging":false,"sampleSecretHeader":false,"realRequests":0}

@@ -1,0 +1,22 @@
+app\desktopApp\build\p8-s2b-ui-layout-001-r2-20261018\F2UiSupport.java:75: ����: ���� GBK �Ĳ���ӳ���ַ� (0xB9)
+              {"_id":"f2-official","title":"F2 官方样本（本机回放）","visibility":"public","author":{"nickname":"F2 Fixture"},"samples":[{"text":"匿名下载的官�? MP3，本机隔离回�?","audio":"https://platform.r2.fish.audio%s"}]},
+                                                                                                                                                       ^
+app\desktopApp\build\p8-s2b-ui-layout-001-r2-20261018\F2UiSupport.java:75: ����: ���� GBK �Ĳ���ӳ���ַ� (0xBE)
+              {"_id":"f2-official","title":"F2 官方样本（本机回放）","visibility":"public","author":{"nickname":"F2 Fixture"},"samples":[{"text":"匿名下载的官�? MP3，本机隔离回�?","audio":"https://platform.r2.fish.audio%s"}]},
+                                                                                                                                                                      ^
+app\desktopApp\build\p8-s2b-ui-layout-001-r2-20261018\F2UiSupport.java:76: ����: ���� GBK �Ĳ���ӳ���ַ� (0xBA)
+              {"_id":"f2-control","title":"F2 合成对照音色（本�? fake�?","visibility":"public","author":{"nickname":"F2 Fixture"},"samples":[{"text":"合成对照，不发�?�真�? TTS","audio":"https://platform.r2.fish.audio%s"}]}
+                                                           ^
+app\desktopApp\build\p8-s2b-ui-layout-001-r2-20261018\F2UiSupport.java:76: ����: ���� GBK �Ĳ���ӳ���ַ� (0x89)
+              {"_id":"f2-control","title":"F2 合成对照音色（本�? fake�?","visibility":"public","author":{"nickname":"F2 Fixture"},"samples":[{"text":"合成对照，不发�?�真�? TTS","audio":"https://platform.r2.fish.audio%s"}]}
+                                                                  ^
+app\desktopApp\build\p8-s2b-ui-layout-001-r2-20261018\F2UiSupport.java:76: ����: ���� GBK �Ĳ���ӳ���ַ� (0x80)
+              {"_id":"f2-control","title":"F2 合成对照音色（本�? fake�?","visibility":"public","author":{"nickname":"F2 Fixture"},"samples":[{"text":"合成对照，不发�?�真�? TTS","audio":"https://platform.r2.fish.audio%s"}]}
+                                                                                                                                                             ^
+app\desktopApp\build\p8-s2b-ui-layout-001-r2-20261018\F2UiSupport.java:76: ����: ���� GBK �Ĳ���ӳ���ַ� (0x9E)
+              {"_id":"f2-control","title":"F2 合成对照音色（本�? fake�?","visibility":"public","author":{"nickname":"F2 Fixture"},"samples":[{"text":"合成对照，不发�?�真�? TTS","audio":"https://platform.r2.fish.audio%s"}]}
+                                                                                                                                                                 ^
+app\desktopApp\build\p8-s2b-ui-layout-001-r2-20261018\F2UiSupport.java:45: ����: �Ƿ��ַ�: '\'
+            {Path file=root.resolve("entities/character_cards/f2-freeform.json");Files.createDirectories(file.getParent());write(file,"{\"id\":\"f2-freeform\",\"name\":\"F2 自由文本测试卡\",\"editMode\":\"FREEFORM\",\"characters\":[{\"id\":\"f2-freeform-alice\",\"name\":\"Alice 合成测试\"},{\"id\":\"f2-freeform-bob\",\"name\":\"Bob 合成测试\"}],\"basicSetting\":\"Synthetic offline manual gate only\",\"freeformCharacterText\":\"Alice and Bob are synthetic test characters.\",\"greeting\":\"F2 synthetic greeting\",\"createdAt\":1,\"updatedAt\":1}");}
+                                                                                                                                                                                          ^
+7 ������

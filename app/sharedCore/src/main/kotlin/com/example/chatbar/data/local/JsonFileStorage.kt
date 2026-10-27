@@ -25,6 +25,10 @@ import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
 import java.nio.file.NoSuchFileException
 import java.nio.file.Path
+import java.nio.file.LinkOption
+import java.nio.file.attribute.BasicFileAttributes
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import java.nio.file.StandardCopyOption
 import java.util.concurrent.ConcurrentHashMap
 import java.util.UUID
@@ -247,6 +251,73 @@ class JsonFileStorage(
                         EntityFileRead(storageId, decoded)
                     }
             }
+        }
+    }
+
+    /** Opt-in bounded, uncached read-only inventory. No directory creation, recovery or skipped files.
+     * The caller validates storage identity/relationships; exceptions invalidate the entire proof.
+     * One file is retained at a time. Unknown fields and interrupted/foreign directory entries fail.
+     */
+    suspend fun <T : Any> visitEntitiesStrict(
+        entityType: String,
+        serializer: KSerializer<T>,
+        maximumFileBytes: Int = 8 * 1024 * 1024,
+        validatePath: (Path) -> Unit = {},
+        visit: suspend (String, T) -> Unit,
+    ): Long = mutexFor(entityType).withLock {
+        require(entityType.matches(Regex("[a-z_]+")))
+        require(maximumFileBytes in 1..8 * 1024 * 1024)
+        withContext(Dispatchers.IO) {
+            val strictJson = Json(json) { ignoreUnknownKeys = false }
+            val directory = appDataRoot.toAbsolutePath().normalize().resolve(ENTITIES_DIR).resolve(entityType)
+            var ancestor = directory.root
+            for (part in directory) {
+                ancestor = ancestor.resolve(part)
+                val attributes = try {
+                    Files.readAttributes(ancestor, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+                } catch (_: NoSuchFileException) { return@withContext 0L }
+                if (!attributes.isDirectory || attributes.isSymbolicLink || attributes.isOther)
+                    throw IOException("Unsafe inventory directory")
+                validatePath(ancestor)
+            }
+            var count = 0L
+            Files.newDirectoryStream(directory).use { entries ->
+                for (path in entries) {
+                    currentCoroutineContext().ensureActive()
+                    val attributes = Files.readAttributes(path, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+                    if (!attributes.isRegularFile || attributes.isSymbolicLink || attributes.isOther)
+                        throw IOException("Unsafe inventory entry")
+                    validatePath(path)
+                    val name = path.fileName.toString()
+                    if (!name.endsWith(".json") || name.length == 5 || attributes.size() > maximumFileBytes)
+                        throw IOException("Unknown or oversized inventory entry")
+                    val bytes = Files.newInputStream(path, LinkOption.NOFOLLOW_LINKS).use {
+                        it.readNBytes(maximumFileBytes + 1)
+                    }
+                    if (bytes.size > maximumFileBytes) throw IOException("Inventory entry exceeded read budget")
+                    val text = Charsets.UTF_8.newDecoder().decode(java.nio.ByteBuffer.wrap(bytes)).toString()
+                    // Bound decoder recursion for hostile/corrupt read-only inventory records.
+                    // Syntax and field authority still belong exclusively to kotlinx.serialization.
+                    var depth = 0
+                    var quoted = false
+                    var escaped = false
+                    for (character in text) {
+                        if (quoted) {
+                            if (escaped) escaped = false
+                            else if (character == '\\') escaped = true
+                            else if (character == '"') quoted = false
+                        } else when (character) {
+                            '"' -> quoted = true
+                            '{', '[' -> if (++depth > 64) throw IOException("Inventory nesting exceeded read budget")
+                            '}', ']' -> depth--
+                        }
+                    }
+                    val value = strictJson.decodeFromString(serializer, text)
+                    visit(name.removeSuffix(".json"), value)
+                    count++
+                }
+            }
+            count
         }
     }
 

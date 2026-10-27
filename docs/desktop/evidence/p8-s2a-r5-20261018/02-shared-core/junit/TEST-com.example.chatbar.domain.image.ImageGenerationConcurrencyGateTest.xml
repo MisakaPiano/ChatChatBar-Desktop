@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.image.ImageGenerationConcurrencyGateTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:31:31.184Z" hostname="DD1" time="0.073">
+  <properties/>
+  <testcase name="cancelled queued task never starts" classname="com.example.chatbar.domain.image.ImageGenerationConcurrencyGateTest" time="0.047"/>
+  <testcase name="third task waits until one of two running tasks finishes" classname="com.example.chatbar.domain.image.ImageGenerationConcurrencyGateTest" time="0.025"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

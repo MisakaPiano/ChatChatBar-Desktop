@@ -1,0 +1,6 @@
+{
+  "utc": "2026-10-16T08:59:40.322Z",
+  "status": "BLOCKED",
+  "afterOwnedWindowActivation": true,
+  "error": "Error: window capture timed out: timed out waiting on channel"
+}

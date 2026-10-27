@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopDocumentIndexTransactionPrototypeTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-18T20:53:00.074Z" hostname="DD1" time="10.046">
+  <properties/>
+  <testcase name="real repository and storage caches refresh only after a verified decision" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionPrototypeTest" time="0.518"/>
+  <testcase name="cancellation leaves a recoverable closed gate and no detached writer" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionPrototypeTest" time="0.232"/>
+  <testcase name="manual orphan unknown and damaged vector records are never swept or overwritten" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionPrototypeTest" time="0.259"/>
+  <testcase name="unknown prototype journal namespace makes existing production F4 safety reject" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionPrototypeTest" time="0.262"/>
+  <testcase name="journal old new and marker corruption retain all evidence and refuse recovery writes" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionPrototypeTest" time="1.248"/>
+  <testcase name="source edits deletion replacement and config changes block before any index installation" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionPrototypeTest" time="0.766"/>
+  <testcase name="actual file fault matrix never opens a mixed or unproven generation" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionPrototypeTest" time="3.636"/>
+  <testcase name="recovery can itself stop after removal or restore and then converge idempotently" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionPrototypeTest" time="0.551"/>
+  <testcase name="actual filesystem write error cannot be mislabeled as complete rollback or success" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionPrototypeTest" time="0.138"/>
+  <testcase name="completed receipt revalidates live files and source without recovery writes" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionPrototypeTest" time="1.805"/>
+  <testcase name="completed receipt permits normal restart but rejects second publish before all side effects" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionPrototypeTest" time="0.63"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,3 @@
+# Preserve the explicitly audited raw test logs despite repository-wide log ignores.
+!raw/
+!raw/**

@@ -1,0 +1,31 @@
+{
+  "defaultDiffCheck": "CRLF evidence lines reported as trailing whitespace after -text raw preservation; original bytes intentionally not normalized",
+  "platformAwareCheck": {
+    "command": "git -c core.whitespace=blank-at-eol,space-before-tab,cr-at-eol diff --cached --check",
+    "exitCode": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "stagingNote": "Root ignore rules excluded .log files from ordinary directory add; next command explicitly force-adds only this new evidence directory so manifest members are all retained.",
+  "productDiff": "NONE; no source test threshold altered",
+  "priorCheckScope": "Initial ordinary add excluded ignored logs; its zero result was partial, not all-raw final check",
+  "afterRawLogStaging": {
+    "exitCode": 2,
+    "observed": "runtime/manual01/stderr.log:19: new blank line at EOF",
+    "disposition": "Preserve original stdout/stderr bytes including blank EOF; not a product/test failure"
+  },
+  "finalRawFormattingReview": {
+    "command": [
+      "git",
+      "-c",
+      "core.whitespace=blank-at-eol,space-before-tab,cr-at-eol,-blank-at-eof",
+      "diff",
+      "--cached",
+      "--check"
+    ],
+    "exitCode": 0,
+    "stdout": "",
+    "stderr": "",
+    "scope": "Recognize Windows CRLF and retain raw log blank EOF; still check actual trailing blanks and space-before-tab. No product source/test relaxation."
+  }
+}

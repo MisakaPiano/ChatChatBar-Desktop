@@ -1,0 +1,59 @@
+{
+  "utc": "2026-10-20T12:59:00.127725+00:00",
+  "fakeCounts": {
+    "POST /v1/tts": 3
+  },
+  "rawEvents": [
+    {
+      "utc": "2026-10-20T12:58:09.872657200Z",
+      "interface": "POST /v1/tts",
+      "variant": "not-sample",
+      "status": 200,
+      "hanging": false,
+      "sampleSecretHeader": false,
+      "pageNumber": 1,
+      "pageSize": 20,
+      "realRequests": 0
+    },
+    {
+      "utc": "2026-10-20T12:58:09.876649400Z",
+      "interface": "POST /v1/tts",
+      "variant": "not-sample",
+      "status": 200,
+      "hanging": false,
+      "sampleSecretHeader": false,
+      "pageNumber": 1,
+      "pageSize": 20,
+      "realRequests": 0
+    },
+    {
+      "utc": "2026-10-20T12:58:09.877645600Z",
+      "interface": "POST /v1/tts",
+      "variant": "not-sample",
+      "status": 200,
+      "hanging": false,
+      "sampleSecretHeader": false,
+      "pageNumber": 1,
+      "pageSize": 20,
+      "realRequests": 0
+    }
+  ],
+  "realRequestsInFakeOnlyPhase": 0,
+  "formalAudio": [
+    {
+      "path": "audio/generated/p8s7-session-a/21d33a67-3cd4-4d07-8b04-c6c5ce481588.mp3",
+      "bytes": 405420,
+      "sha256": "c730e4c467f8dcf465acca9e426ea6349137e3302ff65e648f66dc2a63e3301f"
+    },
+    {
+      "path": "audio/generated/p8s7-session-a/39e550bf-b702-4f1e-af33-d1526f9afa86.mp3",
+      "bytes": 252860,
+      "sha256": "fb93b911ab31c264881df8f167cbb655bb42ddcd148fa372e5363cf09e3dfd94"
+    },
+    {
+      "path": "audio/generated/p8s7-session-a/d12eeac0-3b31-4b89-8083-0c199ed9a7a4.mp3",
+      "bytes": 252860,
+      "sha256": "fb93b911ab31c264881df8f167cbb655bb42ddcd148fa372e5363cf09e3dfd94"
+    }
+  ]
+}

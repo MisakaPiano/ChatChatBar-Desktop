@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.backup.HistoricalVoiceUpstreamReproductionTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-25T04:00:54.042Z" hostname="DD1" time="0.154">
+  <properties/>
+  <testcase name="knownExplicitVersionIsNotRewritten" classname="com.example.chatbar.desktop.backup.HistoricalVoiceUpstreamReproductionTest" time="0.04"/>
+  <testcase name="defaultFiveVersionAppendCanLeaveExplicitVoiceIdentityOutsideRetainedVersions" classname="com.example.chatbar.desktop.backup.HistoricalVoiceUpstreamReproductionTest" time="0.0"/>
+  <testcase name="observedSharedRestoreRebindsExplicitMissingVersionAndMakesUnrelatedAudioVisible" classname="com.example.chatbar.desktop.backup.HistoricalVoiceUpstreamReproductionTest" time="0.024"/>
+  <testcase name="missingLegacyIdentityRemainsADifferentCase" classname="com.example.chatbar.desktop.backup.HistoricalVoiceUpstreamReproductionTest" time="0.008"/>
+  <testcase name="observedSharedPackageReaderAcceptsMediaWhileStrictDiagnosisDetectsHistoricVersion" classname="com.example.chatbar.desktop.backup.HistoricalVoiceUpstreamReproductionTest" time="0.082"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

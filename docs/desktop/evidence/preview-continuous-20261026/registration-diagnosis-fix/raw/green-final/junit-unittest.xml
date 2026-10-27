@@ -1,0 +1,35 @@
+<?xml version='1.0' encoding='utf-8'?>
+<testsuites tests="28" failures="0" errors="0" skipped="0">
+  <testsuite name="synthetic_suite_0.NativeRegistrationDiagnosisTest" tests="25" failures="0" errors="0" skipped="0">
+    <testcase classname="synthetic_suite_0.NativeRegistrationDiagnosisTest" name="test_advertised_registration_is_not_installed_success" time="0.000000" />
+    <testcase classname="synthetic_suite_0.NativeRegistrationDiagnosisTest" name="test_advertised_residue_refuses_before_installer" time="0.000000" />
+    <testcase classname="synthetic_suite_0.NativeRegistrationDiagnosisTest" name="test_association_change_during_observation_refuses" time="0.016000" />
+    <testcase classname="synthetic_suite_0.NativeRegistrationDiagnosisTest" name="test_cancellation_propagates_without_installer_or_success_report" time="0.016000" />
+    <testcase classname="synthetic_suite_0.NativeRegistrationDiagnosisTest" name="test_consistent_observation_does_not_authorize_repair_or_prove_os_health" time="0.000000" />
+    <testcase classname="synthetic_suite_0.NativeRegistrationDiagnosisTest" name="test_exact_source_identity_and_safety_guards_precede_observation" time="0.031000" />
+    <testcase classname="synthetic_suite_0.NativeRegistrationDiagnosisTest" name="test_existing_association_guard_is_not_relaxed" time="0.015000" />
+    <testcase classname="synthetic_suite_0.NativeRegistrationDiagnosisTest" name="test_foreign_duplicate_or_multiple_associations_are_identity_conflicts" time="0.000000" />
+    <testcase classname="synthetic_suite_0.NativeRegistrationDiagnosisTest" name="test_local_feature_without_product_association_is_not_clean_absence" time="0.000000" />
+    <testcase classname="synthetic_suite_0.NativeRegistrationDiagnosisTest" name="test_malformed_observations_are_redacted_unavailable" time="0.000000" />
+    <testcase classname="synthetic_suite_0.NativeRegistrationDiagnosisTest" name="test_nothing_reported_is_not_a_verified_safe_reinstall" time="0.000000" />
+    <testcase classname="synthetic_suite_0.NativeRegistrationDiagnosisTest" name="test_other_native_states_remain_unknown_not_absent" time="0.000000" />
+    <testcase classname="synthetic_suite_0.NativeRegistrationDiagnosisTest" name="test_partial_reader_failure_does_not_keep_a_successful_half_observation" time="0.016000" />
+    <testcase classname="synthetic_suite_0.NativeRegistrationDiagnosisTest" name="test_program_version_guard_is_not_relaxed" time="0.000000" />
+    <testcase classname="synthetic_suite_0.NativeRegistrationDiagnosisTest" name="test_reader_only_queries_the_explicit_product_and_default_feature" time="0.000000" />
+    <testcase classname="synthetic_suite_0.NativeRegistrationDiagnosisTest" name="test_reader_permission_error_is_unavailable_without_exception_value" time="0.000000" />
+    <testcase classname="synthetic_suite_0.NativeRegistrationDiagnosisTest" name="test_registered_product_without_upgrade_association_is_partial" time="0.016000" />
+    <testcase classname="synthetic_suite_0.NativeRegistrationDiagnosisTest" name="test_retained_success_oracle_accepts_only_all_matching_synthetic_conditions" time="0.000000" />
+    <testcase classname="synthetic_suite_0.NativeRegistrationDiagnosisTest" name="test_retained_success_oracle_rejects_missing_foreign_or_duplicate_association" time="0.000000" />
+    <testcase classname="synthetic_suite_0.NativeRegistrationDiagnosisTest" name="test_retained_success_oracle_rejects_modified_added_removed_or_renamed_program" time="0.000000" />
+    <testcase classname="synthetic_suite_0.NativeRegistrationDiagnosisTest" name="test_retained_success_oracle_rejects_nonzero_exit" time="0.000000" />
+    <testcase classname="synthetic_suite_0.NativeRegistrationDiagnosisTest" name="test_second_association_read_failure_is_unavailable_and_redacted" time="0.000000" />
+    <testcase classname="synthetic_suite_0.NativeRegistrationDiagnosisTest" name="test_unavailable_observation_is_not_absence_or_permission_to_reinstall" time="0.015000" />
+    <testcase classname="synthetic_suite_0.NativeRegistrationDiagnosisTest" name="test_unsafe_label_refuses_without_creating_outside_report" time="0.000000" />
+    <testcase classname="synthetic_suite_0.NativeRegistrationDiagnosisTest" name="test_used_labels_cannot_overwrite_command_result_or_diagnosis" time="0.032000" />
+  </testsuite>
+  <testsuite name="synthetic_suite_1.NativeProbeValidationTest" tests="3" failures="0" errors="0" skipped="0">
+    <testcase classname="synthetic_suite_1.NativeProbeValidationTest" name="test_normal_help_remains_available_without_native_action" time="0.109000" />
+    <testcase classname="synthetic_suite_1.NativeProbeValidationTest" name="test_optimized_cli_refuses_before_parsing_or_native_action" time="0.406000" />
+    <testcase classname="synthetic_suite_1.NativeProbeValidationTest" name="test_optimized_import_cannot_expose_assertion_free_actions" time="0.110000" />
+  </testsuite>
+</testsuites>

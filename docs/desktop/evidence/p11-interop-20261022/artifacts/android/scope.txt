@@ -1,0 +1,4 @@
+official=1198a13cf3008de1358b8a69aa5e40b64797c8d9
+physicalDevice=NOT_TESTED
+draftPortable=false
+destinationDraftRetained=true

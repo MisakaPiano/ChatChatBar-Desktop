@@ -1,0 +1,18 @@
+[
+  {
+    "path": "app/desktopApp/build.gradle.kts",
+    "stagedGitBlob": "96b5e1c8d4a4a05321cef42487a352bedde646d5",
+    "gitSha256": "6f04be97d9c8661c191ecb244c3735ff25e209100f88fd2c1b9dd3e06c2da305",
+    "testedBytesSha256": "70daba8efb803236d554d5e58c6ea005bc2deadd8f12efa7110c4b54a0e51469",
+    "byteExact": false,
+    "equalIgnoringCRLFOnly": true
+  },
+  {
+    "path": "tools/desktop/windows/verify_installer_identity.py",
+    "stagedGitBlob": "35227d9d997aebb1b4b6adff38881a7574742a1a",
+    "gitSha256": "78d5f29fde663780454c170d38f2e1461e3f15dfbca82c66b89fd35063296073",
+    "testedBytesSha256": "78d5f29fde663780454c170d38f2e1461e3f15dfbca82c66b89fd35063296073",
+    "byteExact": true,
+    "equalIgnoringCRLFOnly": true
+  }
+]

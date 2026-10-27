@@ -1,3 +1,11 @@
+## 2026-10-28 当前路线（用户最新直接指令）
+
+以 [204 路线切换](204_STUDIO_NSIS_ROUTE_SWITCH_20261028.md) 为当前安装与引继入口。用户目标优先于审查助手建议：Studio式 NSIS 为 Preview 主线；MSI 无限期搁置，仅保留最小有价值档案并优先实际回收空间。**虚拟机若不再需要则彻底退役，不默认保留任何一台。** A 接管源码，B 回收废弃大产物，原执行者交接后停止。旧“继续MSI/完整失败VM保留/保持原执行者”安排已被本轮明确调整；其他 P11、数据与 Prompt 边界继续。新 NSIS 尚未验收，旧失败不改为 PASS。
+
+执行分别见 [A 主线](205_NSIS_PRIMARY_HANDOFF_20261028.md)、[B 回收](206_MSI_RECLAIM_HANDOFF_20261028.md)。这次不增加 Project 审批，不重开无关审计；已有有效证据复用。云端 Project 文件同步须取得真实回执，不能用本地副本冒充。
+
+---
+
 # CCB Desktop Project Source Map
 
 用户已于 2026-10-25 明确把**合并式迁移纳入当前 P11→Preview 任务**：保留电脑已有数据，将手机数据合并进来，冲突由用户选择。现有执行者在本轮连续实现、验证并推进到 Preview；不另开审计、合同或 Project 审批门槛。详见 [203](203_P11_TO_PUBLIC_PREVIEW_CONTINUOUS_CODEX_TASK.md)。
@@ -5,6 +13,8 @@
 更新：2026-10-25 JST。此文件负责定位资料；不产生执行权限。
 
 ## 开发与审查入口
+
+当前持续查询入口：[207 起点与未交付任务总账](207_CONTINUOUS_START_AND_DELIVERY_LEDGER.md)。先查活动分支上的当前版本，再沿具体证据定位。
 
 1. [USER_AUTHORITY_AND_PROJECT_REVIEW_BOUNDARY.md](USER_AUTHORITY_AND_PROJECT_REVIEW_BOUNDARY.md)：用户授权与 Project 后置审查边界。
 2. [01_PROJECT_INSTRUCTIONS.md](01_PROJECT_INSTRUCTIONS.md)：与 Project Settings 同步的开发原则。

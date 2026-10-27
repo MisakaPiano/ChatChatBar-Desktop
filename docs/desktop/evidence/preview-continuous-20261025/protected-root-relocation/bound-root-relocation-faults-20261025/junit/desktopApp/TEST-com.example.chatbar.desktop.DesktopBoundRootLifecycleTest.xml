@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopBoundRootLifecycleTest" tests="6" skipped="0" failures="1" errors="0" timestamp="2026-10-25T05:28:24.020Z" hostname="DD1" time="7.484">
+  <properties/>
+  <testcase name="cancellation after captured key read keeps old selection keys and admission" classname="com.example.chatbar.desktop.DesktopBoundRootLifecycleTest" time="1.275"/>
+  <testcase name="bound root relocation preserves protected consumers and rebases owned media" classname="com.example.chatbar.desktop.DesktopBoundRootLifecycleTest" time="1.91"/>
+  <testcase name="protected target failure leaves inert root original keys and working admission" classname="com.example.chatbar.desktop.DesktopBoundRootLifecycleTest" time="1.562"/>
+  <testcase name="accepted task final write is drained before relocation and further mutation stays stopped" classname="com.example.chatbar.desktop.DesktopBoundRootLifecycleTest" time="1.703">
+    <failure message="com.example.chatbar.desktop.DesktopDataOperationRejectedException: Desktop data operation rejected: RESTART_REQUIRED" type="com.example.chatbar.desktop.DesktopDataOperationRejectedException">com.example.chatbar.desktop.DesktopDataOperationRejectedException: Desktop data operation rejected: RESTART_REQUIRED
+	at app//com.example.chatbar.desktop.DesktopDataOperationCoordinator.rejection(DesktopDataOperationCoordinator.kt:335)
+	at app//com.example.chatbar.desktop.DesktopDataOperationCoordinator.acquireNormal(DesktopDataOperationCoordinator.kt:153)
+	at app//com.example.chatbar.desktop.DesktopDataOperationCoordinator.withNormalOperation(DesktopDataOperationCoordinator.kt:73)
+	at app//com.example.chatbar.data.local.JsonFileStorage.withNormalOperation(JsonFileStorage.kt:99)
+	at app//com.example.chatbar.data.local.JsonFileStorage.access$withNormalOperation(JsonFileStorage.kt:42)
+	at app//com.example.chatbar.data.local.JsonFileStorage$OperationMutex.withLock(JsonFileStorage.kt:109)
+	at app//com.example.chatbar.data.local.JsonFileStorage.mapByIdPrefixUncached(JsonFileStorage.kt:484)
+	at app//com.example.chatbar.data.repository.ChatRepository.getMessagesReadOnly(ChatRepository.kt:242)
+	at app//com.example.chatbar.desktop.DesktopBoundRootLifecycleTest$accepted task final write is drained before relocation and further mutation stays stopped$1$1.invokeSuspend(DesktopBoundRootLifecycleTest.kt:143)
+	at app//kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at app//kotlinx.coroutines.UndispatchedCoroutine.afterResume(CoroutineContext.kt:266)
+	at app//kotlinx.coroutines.AbstractCoroutine.resumeWith(AbstractCoroutine.kt:101)
+	at app//kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:47)
+	at app//kotlinx.coroutines.UndispatchedCoroutine.afterResume(CoroutineContext.kt:266)
+	at app//kotlinx.coroutines.AbstractCoroutine.resumeWith(AbstractCoroutine.kt:101)
+	at app//kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:47)
+	at app//kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at app//kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at app//kotlinx.coroutines.BlockingCoroutine.joinBlocking(Builders.kt:94)
+	at app//kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking(Builders.kt:70)
+	at app//kotlinx.coroutines.BuildersKt.runBlocking(Unknown Source)
+	at app//kotlinx.coroutines.BuildersKt__BuildersKt.runBlocking$default(Builders.kt:48)
+	at app//kotlinx.coroutines.BuildersKt.runBlocking$default(Unknown Source)
+	at app//com.example.chatbar.desktop.DesktopBoundRootLifecycleTest.accepted task final write is drained before relocation and further mutation stays stopped(DesktopBoundRootLifecycleTest.kt:129)
+	at java.base@17.0.20.1/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base@17.0.20.1/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base@17.0.20.1/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base@17.0.20.1/java.lang.reflect.Method.invoke(Method.java:569)
+	at app//org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:59)
+	at app//org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at app//org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:56)
+	at app//org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at app//org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at app//org.junit.runners.BlockJUnit4ClassRunner$1.evaluate(BlockJUnit4ClassRunner.java:100)
+	at app//org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:366)
+	at app//org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:103)
+	at app//org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:63)
+	at app//org.junit.runners.ParentRunner$4.run(ParentRunner.java:331)
+	at app//org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:79)
+	at app//org.junit.runners.ParentRunner.runChildren(ParentRunner.java:329)
+	at app//org.junit.runners.ParentRunner.access$100(ParentRunner.java:66)
+	at app//org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:293)
+	at app//org.junit.runners.ParentRunner$3.evaluate(ParentRunner.java:306)
+	at app//org.junit.runners.ParentRunner.run(ParentRunner.java:413)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecutor.runTestClass(JUnitTestClassExecutor.java:122)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecutor.execute(JUnitTestClassExecutor.java:68)
+	at org.gradle.api.internal.tasks.testing.junit.JUnitTestClassExecutor.execute(JUnitTestClassExecutor.java:43)
+	at org.gradle.api.internal.tasks.testing.junit.AbstractJUnitTestClassProcessor.processTestClass(AbstractJUnitTestClassProcessor.java:61)
+	at org.gradle.api.internal.tasks.testing.SuiteTestClassProcessor.processTestClass(SuiteTestClassProcessor.java:54)
+	at jdk.internal.reflect.GeneratedMethodAccessor6.invoke(Unknown Source)
+	at java.base@17.0.20.1/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base@17.0.20.1/java.lang.reflect.Method.invoke(Method.java:569)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:36)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:24)
+	at org.gradle.internal.dispatch.ContextClassLoaderDispatch.dispatch(ContextClassLoaderDispatch.java:33)
+	at org.gradle.internal.dispatch.ProxyDispatchAdapter$DispatchingInvocationHandler.invoke(ProxyDispatchAdapter.java:92)
+	at jdk.proxy1/jdk.proxy1.$Proxy4.processTestClass(Unknown Source)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker$2.run(TestWorker.java:177)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.executeAndMaintainThreadName(TestWorker.java:126)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:103)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:63)
+	at org.gradle.process.internal.worker.child.ActionExecutionWorker.execute(ActionExecutionWorker.java:56)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:122)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:72)
+	at app//worker.org.gradle.process.internal.worker.GradleWorkerMain.run(GradleWorkerMain.java:69)
+	at app//worker.org.gradle.process.internal.worker.GradleWorkerMain.main(GradleWorkerMain.java:74)
+</failure>
+  </testcase>
+  <testcase name="a preexisting global restart seal rejects relocation before creating destination" classname="com.example.chatbar.desktop.DesktopBoundRootLifecycleTest" time="0.433"/>
+  <testcase name="external source edit after capture refuses publication and keeps newer source and keys" classname="com.example.chatbar.desktop.DesktopBoundRootLifecycleTest" time="0.601"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

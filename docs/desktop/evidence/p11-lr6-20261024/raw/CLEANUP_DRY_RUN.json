@@ -1,0 +1,62 @@
+{
+  "lr5Evidence": {
+    "attribution": "CODEX_SELF_CHECK_NOT_PROJECT",
+    "checked": 1332,
+    "raw": 1325,
+    "tools": 7,
+    "failures": 0,
+    "headTreeBinding": true,
+    "historicalIndexUnmodified": true
+  },
+  "candidates": [
+    {
+      "candidate": "app/desktopApp/build/tmp/compileKotlin",
+      "decision": "NOT_PRESENT",
+      "reason": "NO_ITEM"
+    },
+    {
+      "candidate": "app/desktopApp/build/tmp/compileTestKotlin",
+      "decision": "NOT_PRESENT",
+      "reason": "NO_ITEM"
+    },
+    {
+      "candidate": "app/sharedCore/build/tmp/compileKotlin",
+      "decision": "NOT_PRESENT",
+      "reason": "NO_ITEM"
+    },
+    {
+      "candidate": "app/sharedCore/build/tmp/compileTestKotlin",
+      "decision": "NOT_PRESENT",
+      "reason": "NO_ITEM"
+    },
+    {
+      "candidate": "app/desktopApp/build/p11-lr5/first-protocol",
+      "files": 288,
+      "logicalBytes": 13368,
+      "decision": "RETAIN_UNKNOWN",
+      "reason": "EXCLUSIVE_OWNERSHIP_AND_ALTERNATE_STREAMS_NOT_PROVEN",
+      "acceptedSnapshotFilesMatch": true,
+      "note": "Bytes preserved in Git; file/stream/active-use deletion authority remains unproven. No delete attempted."
+    },
+    {
+      "candidate": "app/desktopApp/build/p11-lr5/native-reader",
+      "files": 1593,
+      "logicalBytes": 203741,
+      "decision": "RETAIN_UNKNOWN",
+      "reason": "EXCLUSIVE_OWNERSHIP_AND_ALTERNATE_STREAMS_NOT_PROVEN",
+      "acceptedSnapshotFilesMatch": true,
+      "note": "Bytes preserved in Git; file/stream/active-use deletion authority remains unproven. No delete attempted."
+    },
+    {
+      "candidate": "app/desktopApp/build/p11-lr5/protocol-green",
+      "files": 1783,
+      "logicalBytes": 291246,
+      "decision": "RETAIN_UNKNOWN",
+      "reason": "EXCLUSIVE_OWNERSHIP_AND_ALTERNATE_STREAMS_NOT_PROVEN",
+      "acceptedSnapshotFilesMatch": true,
+      "note": "Bytes preserved in Git; file/stream/active-use deletion authority remains unproven. No delete attempted."
+    }
+  ],
+  "deletedFiles": 0,
+  "deletedLogicalBytes": 0
+}

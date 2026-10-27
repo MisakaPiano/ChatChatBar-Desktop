@@ -1,0 +1,16 @@
+{
+  "run": "restart01",
+  "image": "runtime-image",
+  "localEnvironment": "p8s7-profile",
+  "rootMode": "normal",
+  "launcherPid": 38324,
+  "launcherCreatedUtc": "2026-10-20T03:39:00.0047232Z",
+  "startedUtc": "2026-10-20T03:38:59.9867754+00:00",
+  "launcherPath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r3-20261020\\runtime-image\\ChatChatBarDesktop.exe",
+  "expectedDataRoot": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r3-20261020\\environments\\p8s7-profile\\ChatChatBarDesktop",
+  "injectedLocalAppData": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r3-20261020\\environments\\p8s7-profile",
+  "startupWatchdogSeconds": 180,
+  "exitWatchdogSeconds": 120,
+  "lifetimeWatchdogSeconds": null,
+  "manualSessionNoForcedExpiry": true
+}

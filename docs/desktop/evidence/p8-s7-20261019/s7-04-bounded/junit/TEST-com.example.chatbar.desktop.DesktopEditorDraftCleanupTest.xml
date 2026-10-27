@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopEditorDraftCleanupTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-19T11:47:42.397Z" hostname="DD1" time="0.035">
+  <properties/>
+  <testcase name="physical removal remains committed when delete reports post-delete cache failure" classname="com.example.chatbar.desktop.DesktopEditorDraftCleanupTest" time="0.013"/>
+  <testcase name="no-op delete remains blocking while draft physically exists" classname="com.example.chatbar.desktop.DesktopEditorDraftCleanupTest" time="0.01"/>
+  <testcase name="physical deletion and failed cache refresh remain separate results" classname="com.example.chatbar.desktop.DesktopEditorDraftCleanupTest" time="0.012"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

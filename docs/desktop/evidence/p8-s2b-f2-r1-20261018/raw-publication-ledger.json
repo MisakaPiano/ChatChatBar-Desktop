@@ -1,0 +1,186 @@
+[
+  {
+    "path": "01-followup-diagnosis/command.txt",
+    "originalBytes": 252,
+    "originalSha256": "9ce774a9e8a88e0c76fcee3bdd1d01bb3ef7f413b93170ba0e0fb5835abf716b",
+    "publishedBytes": 252,
+    "publishedSha256": "9ce774a9e8a88e0c76fcee3bdd1d01bb3ef7f413b93170ba0e0fb5835abf716b",
+    "profileRedacted": false
+  },
+  {
+    "path": "01-followup-diagnosis/gradle.stderr.log",
+    "originalBytes": 375,
+    "originalSha256": "80d524bbd119f0260dfcb0386f37f38ff47c79917cd37af40e939a897c6937aa",
+    "publishedBytes": 375,
+    "publishedSha256": "80d524bbd119f0260dfcb0386f37f38ff47c79917cd37af40e939a897c6937aa",
+    "profileRedacted": false
+  },
+  {
+    "path": "01-followup-diagnosis/gradle.stdout.log",
+    "originalBytes": 2336,
+    "originalSha256": "4b2d8c7efb7e4a27a98c3d8699879ae289fb2749db7a01a09077e6286437b32d",
+    "publishedBytes": 2336,
+    "publishedSha256": "4b2d8c7efb7e4a27a98c3d8699879ae289fb2749db7a01a09077e6286437b32d",
+    "profileRedacted": false
+  },
+  {
+    "path": "01-followup-diagnosis/http-followup-diagnostics.jsonl",
+    "originalBytes": 1762,
+    "originalSha256": "3cfd067e99d3e9c21c340ee7a4e4ca264fb18ff6f19f253664c04b66c0d05af8",
+    "publishedBytes": 1762,
+    "publishedSha256": "3cfd067e99d3e9c21c340ee7a4e4ca264fb18ff6f19f253664c04b66c0d05af8",
+    "profileRedacted": false
+  },
+  {
+    "path": "01-followup-diagnosis/junit/TEST-com.example.chatbar.desktop.DesktopFishSampleTest.xml",
+    "originalBytes": 8273,
+    "originalSha256": "434f1ff57c5d9ef10e92fbc509b6c0d1f594e75aa19084e09519967f8c41427b",
+    "publishedBytes": 8273,
+    "publishedSha256": "434f1ff57c5d9ef10e92fbc509b6c0d1f594e75aa19084e09519967f8c41427b",
+    "profileRedacted": false
+  },
+  {
+    "path": "01-followup-diagnosis/process.json",
+    "originalBytes": 110,
+    "originalSha256": "2b08da2ae78b83531278dedc3cbf5a0ff5b8259f6b395c4bb2899debfc8fa05d",
+    "publishedBytes": 110,
+    "publishedSha256": "2b08da2ae78b83531278dedc3cbf5a0ff5b8259f6b395c4bb2899debfc8fa05d",
+    "profileRedacted": false
+  },
+  {
+    "path": "01-followup-diagnosis/resources.jsonl",
+    "originalBytes": 1904,
+    "originalSha256": "797f77051651b6f1521323cc8eb18fe9c330f363a0296d10f506e466acd436c7",
+    "publishedBytes": 1904,
+    "publishedSha256": "797f77051651b6f1521323cc8eb18fe9c330f363a0296d10f506e466acd436c7",
+    "profileRedacted": false
+  },
+  {
+    "path": "01-followup-diagnosis/stage.json",
+    "originalBytes": 640,
+    "originalSha256": "9e906362a593062697d4f850ed1eb0bc52612c089cc51a27ec9f0d4dece7afa5",
+    "publishedBytes": 640,
+    "publishedSha256": "9e906362a593062697d4f850ed1eb0bc52612c089cc51a27ec9f0d4dece7afa5",
+    "profileRedacted": false
+  },
+  {
+    "path": "02-fixed-status/command.txt",
+    "originalBytes": 252,
+    "originalSha256": "9ce774a9e8a88e0c76fcee3bdd1d01bb3ef7f413b93170ba0e0fb5835abf716b",
+    "publishedBytes": 252,
+    "publishedSha256": "9ce774a9e8a88e0c76fcee3bdd1d01bb3ef7f413b93170ba0e0fb5835abf716b",
+    "profileRedacted": false
+  },
+  {
+    "path": "02-fixed-status/gradle.stderr.log",
+    "originalBytes": 375,
+    "originalSha256": "bee90d5e1b16a3fd32a9cca31ecd32f61256083c635b97d452a03965b58abf4d",
+    "publishedBytes": 375,
+    "publishedSha256": "bee90d5e1b16a3fd32a9cca31ecd32f61256083c635b97d452a03965b58abf4d",
+    "profileRedacted": false
+  },
+  {
+    "path": "02-fixed-status/gradle.stdout.log",
+    "originalBytes": 2340,
+    "originalSha256": "70023001282b99a603df86ae6a1f61050ab120f8abea9ee68355c1ea9a34dafa",
+    "publishedBytes": 2340,
+    "publishedSha256": "70023001282b99a603df86ae6a1f61050ab120f8abea9ee68355c1ea9a34dafa",
+    "profileRedacted": false
+  },
+  {
+    "path": "02-fixed-status/http-followup-diagnostics.jsonl",
+    "originalBytes": 1770,
+    "originalSha256": "d756e86e13eae1472557f6ef74e7df29e3b8c6708c63a8c717102c99973bd14f",
+    "publishedBytes": 1770,
+    "publishedSha256": "d756e86e13eae1472557f6ef74e7df29e3b8c6708c63a8c717102c99973bd14f",
+    "profileRedacted": false
+  },
+  {
+    "path": "02-fixed-status/junit/TEST-com.example.chatbar.desktop.DesktopFishSampleTest.xml",
+    "originalBytes": 8219,
+    "originalSha256": "832130648a1cc6e671d490fee7f6c340024acf9e0f29e795d90e48564757c635",
+    "publishedBytes": 8219,
+    "publishedSha256": "832130648a1cc6e671d490fee7f6c340024acf9e0f29e795d90e48564757c635",
+    "profileRedacted": false
+  },
+  {
+    "path": "02-fixed-status/process.json",
+    "originalBytes": 109,
+    "originalSha256": "7431a2af293ccdb36ff5adeca899b661fccd8801cab743614b4d0c7d960b57f0",
+    "publishedBytes": 109,
+    "publishedSha256": "7431a2af293ccdb36ff5adeca899b661fccd8801cab743614b4d0c7d960b57f0",
+    "profileRedacted": false
+  },
+  {
+    "path": "02-fixed-status/resources.jsonl",
+    "originalBytes": 1522,
+    "originalSha256": "9216816da5b881a166e076095d5d0f7786c868684e172383cea2325a7d8f08ff",
+    "publishedBytes": 1522,
+    "publishedSha256": "9216816da5b881a166e076095d5d0f7786c868684e172383cea2325a7d8f08ff",
+    "profileRedacted": false
+  },
+  {
+    "path": "02-fixed-status/stage.json",
+    "originalBytes": 640,
+    "originalSha256": "95ffb6c1fb2581724edd3ad0d179dddff70dfe2516104a393cb9fb64a357545d",
+    "publishedBytes": 640,
+    "publishedSha256": "95ffb6c1fb2581724edd3ad0d179dddff70dfe2516104a393cb9fb64a357545d",
+    "profileRedacted": false
+  },
+  {
+    "path": "preflight-source.json",
+    "originalBytes": 2172,
+    "originalSha256": "91ba71afb9c7883f38c97e3b2d1200e68161460060b7e8ad4a87fe08f6467949",
+    "publishedBytes": 2172,
+    "publishedSha256": "91ba71afb9c7883f38c97e3b2d1200e68161460060b7e8ad4a87fe08f6467949",
+    "profileRedacted": false
+  },
+  {
+    "path": "diagnostic-source.patch",
+    "originalBytes": 36724,
+    "originalSha256": "07ea52b51db9c9173639d5ee740203c6bf350b0052e7cb652066524f26db2851",
+    "publishedBytes": 36724,
+    "publishedSha256": "07ea52b51db9c9173639d5ee740203c6bf350b0052e7cb652066524f26db2851",
+    "profileRedacted": false
+  },
+  {
+    "path": "diagnostic-source-manifest.json",
+    "originalBytes": 1803,
+    "originalSha256": "fe56d8ff2d84674286cd8302bd2e6cfffee1564bafdbe5355304be4a2395ed9a",
+    "publishedBytes": 1803,
+    "publishedSha256": "fe56d8ff2d84674286cd8302bd2e6cfffee1564bafdbe5355304be4a2395ed9a",
+    "profileRedacted": false
+  },
+  {
+    "path": "fixed-source.patch",
+    "originalBytes": 39934,
+    "originalSha256": "18849e8b1035dbf78de08944ed36069e25288f1d8d093f71b5fc0c0a702f1a0f",
+    "publishedBytes": 39934,
+    "publishedSha256": "18849e8b1035dbf78de08944ed36069e25288f1d8d093f71b5fc0c0a702f1a0f",
+    "profileRedacted": false
+  },
+  {
+    "path": "fixed-source-manifest.json",
+    "originalBytes": 1803,
+    "originalSha256": "3ad28b1b0712bcf9acc1c8ff9163c8d97b3ebd9e904ea46a45ee639f99e40d10",
+    "publishedBytes": 1803,
+    "publishedSha256": "3ad28b1b0712bcf9acc1c8ff9163c8d97b3ebd9e904ea46a45ee639f99e40d10",
+    "profileRedacted": false
+  },
+  {
+    "path": "run-stage.ps1",
+    "originalBytes": 3081,
+    "originalSha256": "f7dbfe555dd26eddcfe2a99378e1df1f4906ebd93a6d505a0b3e36c95a4249a4",
+    "publishedBytes": 3081,
+    "publishedSha256": "f7dbfe555dd26eddcfe2a99378e1df1f4906ebd93a6d505a0b3e36c95a4249a4",
+    "profileRedacted": false
+  },
+  {
+    "path": "freeze-source.py",
+    "originalBytes": 1418,
+    "originalSha256": "51fbcbf7136af8b49adbb300db8e8b573cc3d95115c6ac05a525992d96c31beb",
+    "publishedBytes": 1418,
+    "publishedSha256": "51fbcbf7136af8b49adbb300db8e8b573cc3d95115c6ac05a525992d96c31beb",
+    "profileRedacted": false
+  }
+]

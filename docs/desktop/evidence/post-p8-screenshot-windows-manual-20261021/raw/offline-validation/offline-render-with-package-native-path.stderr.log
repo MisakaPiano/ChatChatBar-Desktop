@@ -1,0 +1,5 @@
+SCREENSHOT_FIXTURE_FAILED type=java.lang.IllegalStateException
+AT ScreenshotFixtureSupport.check(ScreenshotFixtureSupport.java:15)
+AT ScreenshotFixtureSupport.run(ScreenshotFixtureSupport.java:88)
+AT ScreenshotFixtureSupport.main(ScreenshotFixtureSupport.java:17)
+CHECK LONG_HEIGHT

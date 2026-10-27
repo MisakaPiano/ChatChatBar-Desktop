@@ -1,0 +1,14 @@
+[
+  {
+    "path": "tools/desktop/windows/native_package_probe.py",
+    "bytes": 20463,
+    "sha256": "9404e043e64d067565e4f0c74b9de4effad2ff0621d46b1a961b761cdc1f00d2",
+    "gitBlob": "85af79a3a18577887a7c6c60bed0391a6b63a250"
+  },
+  {
+    "path": "tools/desktop/windows/test_native_probe_validation.py",
+    "bytes": 2203,
+    "sha256": "821e0b7c6eb959741ad5149eb89ec230392d67f378e81303e83c4eae6ab94b64",
+    "gitBlob": "2f287b5fa6b1d8fbc5b7fab98d6fbab6fef8a52d"
+  }
+]

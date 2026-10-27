@@ -1,0 +1,77 @@
+[
+  {
+    "phase": "R2",
+    "commit": "55366cee0706c78f545b32ef7d75750c649dcdbd",
+    "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r2-20261018/05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopImageClipboardFilesTest.xml",
+    "bytes": 3349,
+    "sha256": "3e9975f643596d082d7d0bc20130072c0ff5ff04b53fc99cbfd7e32ae7f09837",
+    "suite": {
+      "name": "com.example.chatbar.desktop.DesktopImageClipboardFilesTest",
+      "tests": "17",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-10-18T13:44:48.764Z",
+      "hostname": "DD1",
+      "time": "0.51"
+    },
+    "junction": {
+      "name": "junction target is never inspected changed or cleaned",
+      "classname": "com.example.chatbar.desktop.DesktopImageClipboardFilesTest",
+      "time": "0.038",
+      "status": "PASS"
+    },
+    "testSourceGitBlob": "5ffa98db6c83d7fa181bd65e35724804d496676d",
+    "notR6fExecution": true
+  },
+  {
+    "phase": "R3",
+    "commit": "3d46c6448b6748644c561ea27d3ed2b016e1b045",
+    "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r3-20261019/05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopImageClipboardFilesTest.xml",
+    "bytes": 3351,
+    "sha256": "e20a2885897df18d7ae3ff48e58375d26e6d35c25295397311043a98bb4e552f",
+    "suite": {
+      "name": "com.example.chatbar.desktop.DesktopImageClipboardFilesTest",
+      "tests": "17",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-10-18T15:34:42.843Z",
+      "hostname": "DD1",
+      "time": "0.553"
+    },
+    "junction": {
+      "name": "junction target is never inspected changed or cleaned",
+      "classname": "com.example.chatbar.desktop.DesktopImageClipboardFilesTest",
+      "time": "0.039",
+      "status": "PASS"
+    },
+    "testSourceGitBlob": "5ffa98db6c83d7fa181bd65e35724804d496676d",
+    "notR6fExecution": true
+  },
+  {
+    "phase": "R6E",
+    "commit": "1bb342f3228c0b054a3708dc770c400aa595cd03",
+    "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r6e-20261019/03-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopImageClipboardFilesTest.xml",
+    "bytes": 8410,
+    "sha256": "83ff87c830bb458d6d4cc3edce42a91495221f8315f82bb8af3725f407ac316c",
+    "suite": {
+      "name": "com.example.chatbar.desktop.DesktopImageClipboardFilesTest",
+      "tests": "17",
+      "skipped": "0",
+      "failures": "1",
+      "errors": "0",
+      "timestamp": "2026-10-18T20:00:12.083Z",
+      "hostname": "DD1",
+      "time": "34.601"
+    },
+    "junction": {
+      "name": "junction target is never inspected changed or cleaned",
+      "classname": "com.example.chatbar.desktop.DesktopImageClipboardFilesTest",
+      "time": "33.685",
+      "status": "FAIL"
+    },
+    "testSourceGitBlob": "5ffa98db6c83d7fa181bd65e35724804d496676d",
+    "notR6fExecution": true
+  }
+]

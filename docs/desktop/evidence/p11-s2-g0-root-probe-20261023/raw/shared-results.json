@@ -1,0 +1,23 @@
+[
+  {
+    "suite": "com.example.chatbar.data.snapshot.AppDataSnapshotRestoreTest",
+    "tests": 17,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "suite": "com.example.chatbar.data.snapshot.AppDataSnapshotServiceTest",
+    "tests": 22,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  {
+    "suite": "com.example.chatbar.data.snapshot.AutomaticBackupExecutionTest",
+    "tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+]

@@ -1,0 +1,13 @@
+{
+  "time": "2026-10-21T16:24:34.5424109Z",
+  "userVerbatim": "pass",
+  "status": "USER PASS",
+  "scope": [
+    "专用临时存档创建及删除确认",
+    "删除后列表刷新，其他存档保留",
+    "返回聊天后图片和已有录音仍可用"
+  ],
+  "evidence": "6张用户截图及明确PASS；截图可见删除完成提示、其他存档和音频播放状态",
+  "productionModified": false,
+  "collectionNote": "首次保全命令发生PowerShell解析错误，未执行；修正命令后完成。"
+}

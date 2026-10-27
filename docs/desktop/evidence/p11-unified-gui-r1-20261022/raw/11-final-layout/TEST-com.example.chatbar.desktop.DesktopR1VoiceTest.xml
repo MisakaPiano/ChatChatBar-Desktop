@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopR1VoiceTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-21T17:39:15.251Z" hostname="DD1" time="1.482">
+  <properties/>
+  <testcase name="recording widths and player controls stay usable and stable across states" classname="com.example.chatbar.desktop.DesktopR1VoiceTest" time="0.257"/>
+  <testcase name="actual output position advances freezes on pause resumes and unknown is visible" classname="com.example.chatbar.desktop.DesktopR1VoiceTest" time="1.225"/>
+  <system-out><![CDATA[R1_VOICE viewport=280 textWidth=30.0 row=Rect.fromLTRB(0.0, 0.0, 200.0, 32.0) player=Rect.fromLTRB(0.0, 32.0, 124.0, 70.0)
+R1_VOICE viewport=280 textWidth=240.0 row=Rect.fromLTRB(0.0, 0.0, 240.0, 32.0) player=Rect.fromLTRB(0.0, 32.0, 124.0, 70.0)
+R1_VOICE viewport=280 textWidth=880.0 row=Rect.fromLTRB(0.0, 0.0, 280.0, 32.0) player=Rect.fromLTRB(0.0, 32.0, 124.0, 70.0)
+R1_VOICE viewport=360 textWidth=30.0 row=Rect.fromLTRB(0.0, 0.0, 200.0, 32.0) player=Rect.fromLTRB(0.0, 32.0, 124.0, 70.0)
+R1_VOICE viewport=360 textWidth=240.0 row=Rect.fromLTRB(0.0, 0.0, 240.0, 32.0) player=Rect.fromLTRB(0.0, 32.0, 124.0, 70.0)
+R1_VOICE viewport=360 textWidth=880.0 row=Rect.fromLTRB(0.0, 0.0, 360.0, 32.0) player=Rect.fromLTRB(0.0, 32.0, 124.0, 70.0)
+R1_VOICE viewport=1100 textWidth=30.0 row=Rect.fromLTRB(0.0, 0.0, 200.0, 32.0) player=Rect.fromLTRB(0.0, 32.0, 124.0, 70.0)
+R1_VOICE viewport=1100 textWidth=240.0 row=Rect.fromLTRB(0.0, 0.0, 240.0, 32.0) player=Rect.fromLTRB(0.0, 32.0, 124.0, 70.0)
+R1_VOICE viewport=1100 textWidth=880.0 row=Rect.fromLTRB(0.0, 0.0, 880.0, 32.0) player=Rect.fromLTRB(0.0, 32.0, 124.0, 70.0)
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

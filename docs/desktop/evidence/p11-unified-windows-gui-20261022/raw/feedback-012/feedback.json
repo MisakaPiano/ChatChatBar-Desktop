@@ -1,0 +1,8 @@
+{
+  "time": "2026-10-21T16:27:13.5105596Z",
+  "binding": "技术核对PASS：副本2持久化characterCardId与extraWorldBookIds为所选预设；截图显示重绑定前保全及聊天内容",
+  "anomaly": "副本2持久化USER消息含恢复测试；原会话当前无此标记。复制完成截图中副本2无标记，后续截图中有。",
+  "cause": "UNKNOWN：需确认用户是否在副本2手动编辑过，不据此直接宣称跨会话污染",
+  "action": "暂停进一步写入，保留现场，询问操作回忆",
+  "productionModified": false
+}

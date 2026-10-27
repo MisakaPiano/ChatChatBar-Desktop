@@ -1,0 +1,12 @@
+{
+  "utc": "2026-10-20T13:23:15.415459+00:00",
+  "fakeCounts": {
+    "POST /v1/tts": 6,
+    "POST synthetic auxiliary": 1
+  },
+  "realRequestsInFakeOnlyPhase": 0,
+  "chatMessageFiles": 6,
+  "messageByteDriftSinceInitialSeed": [],
+  "newPngDestination": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-windows-manual-20261020\\exports\\png\\segment-light.png",
+  "destinationAbsent": true
+}

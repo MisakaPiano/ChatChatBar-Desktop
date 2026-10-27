@@ -1,0 +1,11 @@
+{
+  "nativeFixturesExecuted": 1,
+  "ownedWindows": "Synthetic picker and logical owner; diagnostics create no extra Window",
+  "finally": "Original finally returned without replacing Press assertion: owner restore, window disposal, runtime/scope drain and mp3/part absence checks unchanged",
+  "postJavaCount": 0,
+  "postResourceFile": "POST-preflight.json",
+  "emptyTempDirectories": "May remain; no broad deletion or independent post-fixture inventory",
+  "newLauncherJvm": "NOT STARTED",
+  "formalRootLock": "NOT TESTED",
+  "systemPrivilegeOrConfigurationChange": false
+}

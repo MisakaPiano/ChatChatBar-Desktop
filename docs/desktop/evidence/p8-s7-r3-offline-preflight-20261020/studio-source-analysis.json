@@ -1,0 +1,187 @@
+{
+  "issue": "STUDIO-CREDENTIAL-ERROR-PATH-001",
+  "status": "OPEN / PRODUCT ERROR RECOVERY REVIEW REQUIRED",
+  "source": "008343bb26d2eb76c23cae9b98132af828a9f447",
+  "sources": [
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopNovelAiStudioPanel.kt",
+      "gitBlob": "f5160f41713c0a7254f2b2f2fbf6161966bd2581",
+      "sha256": "7c057bf43774681e2e691d41b225d6eeb197e49779a353e762f3c0302e3830e6",
+      "excerpts": [
+        {
+          "start": 55,
+          "end": 74,
+          "lines": [
+            "    var imageError by remember { mutableStateOf(\"\") }",
+            "    var authRevision by remember { mutableStateOf(0) }",
+            "    val authentication by produceState(DesktopDesignAuthentication(), draft?.aiDesignModelId, auxiliary, authRevision) { value = controller.designAuthentication() }",
+            "    LaunchedEffect(controller) { controller.load(); translation = controller.translationEnabled() }",
+            "    fun edit(change: (NovelAiStudioDraft) -> NovelAiStudioDraft) { scope.launch { controller.edit(change) } }",
+            "    fun imageAction(work: suspend () -> Unit) { scope.launch {",
+            "        try { imageError = \"\"; work() }",
+            "        catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }",
+            "        catch (_: Exception) { imageError = \"图片操作未完成；来源保持不变，请检查文件\" }",
+            "    } }",
+            "    val d = draft",
+            "    if (d == null) {",
+            "        DesktopStudioWorkspace(workspace, navigation = navigation, captions = captions, chromeRecorder = chromeRecorder,",
+            "            compact = {}, editor = { StatusText(\"正在加载 Studio…\") }, footer = {}, preview = {})",
+            "        return",
+            "    }",
+            "    val cards by produceState(emptyList<com.example.chatbar.data.local.entity.CharacterCard>(), controller) { value = controller.availableCards() }",
+            "    val models by produceState(emptyList<com.example.chatbar.data.local.entity.ModelConfig>(), controller) { value = controller.availableModels() }",
+            "    val usage by produceState<NovelAiPromptTokenUsage?>(null, d.toPromptPlan(), d.selectedModel) {",
+            "        value = controller.infrastructure.countTokens(d.toPromptPlan(), d.selectedModel)"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopNovelAiStudioController.kt",
+      "gitBlob": "20c850ea6d9ef7c49ad683ab5e80e3f8856b5b1f",
+      "sha256": "fe07be4e41f067511e81c05e5d483fd9767d88e5540d02325368c7e1f05ec013",
+      "excerpts": [
+        {
+          "start": 234,
+          "end": 239,
+          "lines": [
+            "        replace { it.clearPrompts(card?.defaultImageNegativePrompt) }",
+            "    }",
+            "",
+            "    suspend fun availableCards() = characters.getAll()",
+            "    suspend fun availableModels() = resolver.availableChatModels().map { it.copy(apiKey = \"\") }",
+            "    suspend fun vibeCacheMisses(draft: NovelAiStudioDraft) = withContext(Dispatchers.IO) { guidance.vibeCacheMisses(draft) }"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/DesktopRepositoryCredentialPolicies.kt",
+      "gitBlob": "ad2323a1997ba835e6b3f215fb51700566f12a33",
+      "sha256": "721fa6f1bbbab39eb424b8f43fba9a99accf0ba542715f47bb0f27549f65bd5b",
+      "excerpts": [
+        {
+          "start": 13,
+          "end": 17,
+          "lines": [
+            "class UnsafeDesktopPlaintextCredentialException(",
+            "    credentialOwner: String,",
+            ") : IllegalStateException(",
+            "    \"Desktop JSON contains an unsafe plaintext credential for $credentialOwner; explicit recovery is required\",",
+            ")"
+          ]
+        },
+        {
+          "start": 63,
+          "end": 78,
+          "lines": [
+            "",
+            "class DesktopModelCredentialPersistencePolicy(",
+            "    private val secretStore: DesktopSecretStore,",
+            ") : ModelCredentialPersistencePolicy {",
+            "    override val requireVerifiedEntityDeletion: Boolean = true",
+            "",
+            "    private val mutex = Mutex()",
+            "",
+            "    override suspend fun hydrate(persisted: ModelConfig): ModelConfig = mutex.withLock {",
+            "        if (persisted.apiKey.isNotBlank()) {",
+            "            throw UnsafeDesktopPlaintextCredentialException(\"model ${persisted.id}\")",
+            "        }",
+            "        persisted.copy(",
+            "            apiKey = secretStore.load(DesktopCredentialKey.ModelApiKey(persisted.id)).orEmpty(),",
+            "        )",
+            "    }"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/ModelRepository.kt",
+      "gitBlob": "7344d2385aaee21e43226af3a65f128802d7ff01",
+      "sha256": "d4ee151143d0b237c11037b7aa31850b31dc5cd37cf20f1f6feb4f60e174bda0",
+      "excerpts": [
+        {
+          "start": 47,
+          "end": 63,
+          "lines": [
+            "    private var initialized = false",
+            "",
+            "    suspend fun initialize() = initializationMutex.withLock {",
+            "        if (initialized) return@withLock",
+            "        migrateLegacyPlanningModel()",
+            "        refreshModelCache()",
+            "        refreshEmbeddingCache()",
+            "        refreshEmbeddingModelCache()",
+            "        initialized = true",
+            "    }",
+            "",
+            "    private suspend fun refreshModelCache() {",
+            "        _models.value = storage.loadAll(MODEL_TYPE, ModelConfig.serializer())",
+            "            .map { credentialPersistencePolicy.hydrate(it) }",
+            "            .sortedBy { it.displayName }",
+            "    }",
+            ""
+          ]
+        },
+        {
+          "start": 139,
+          "end": 149,
+          "lines": [
+            "",
+            "    suspend fun getAllModels(): List<ModelConfig> {",
+            "        initialize()",
+            "        return _models.value",
+            "    }",
+            "",
+            "    suspend fun getModel(id: String): ModelConfig? {",
+            "        initialize()",
+            "        return loadModelEntity(id)",
+            "    }",
+            ""
+          ]
+        }
+      ]
+    },
+    {
+      "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/model/EffectiveModelResolver.kt",
+      "gitBlob": "15fbab0c220ee0f8ee20e110cf9a8f62e04a90b9",
+      "sha256": "9951f1eef1d78e14c71790e12abd5dcc2f614285c5a3718a7282b2a69328caad",
+      "excerpts": [
+        {
+          "start": 18,
+          "end": 27,
+          "lines": [
+            "class EffectiveModelResolver(",
+            "    private val models: ModelRepository,",
+            "    private val settings: SettingsRepository,",
+            "    private val presets: PresetModelCatalogSource",
+            ") {",
+            "    suspend fun availableChatModels(): List<ModelConfig> = availableChatModels(settings.getAppSettings())",
+            "",
+            "    suspend fun availableChatModels(appSettings: AppSettings): List<ModelConfig> =",
+            "        repositoryChatModels(appSettings).ifEmpty { presetChatModels(appSettings) }",
+            ""
+          ]
+        },
+        {
+          "start": 144,
+          "end": 152,
+          "lines": [
+            "",
+            "    private suspend fun repositoryChatModels(appSettings: AppSettings): List<ModelConfig> =",
+            "        models.getAllModels()",
+            "            .asSequence()",
+            "            .filter { it.selectableForChat }",
+            "            .filter { it.baseUrl.isNotBlank() && PresetModelPolicy.isConfigured(it.modelName) }",
+            "            .map { it.withEffectiveApiKey(appSettings) }",
+            "            .toList()",
+            ""
+          ]
+        }
+      ]
+    }
+  ],
+  "productionFix": "NOT IMPLEMENTED",
+  "runtimeStudioErrorRecovery": "NOT TESTED",
+  "actualPreflightScope": "Real resolver dependency path only, with real Desktop policy/repository"
+}

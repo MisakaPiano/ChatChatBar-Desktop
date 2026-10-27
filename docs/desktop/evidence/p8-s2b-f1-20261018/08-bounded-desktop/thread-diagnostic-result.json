@@ -1,0 +1,6 @@
+{
+  "status": "NOT_COLLECTED_WORKER_ALREADY_EXITED",
+  "threadSnapshotExecuted": false,
+  "tests": "Gradle subsequently reported BUILD SUCCESSFUL",
+  "processesAltered": false
+}

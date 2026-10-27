@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.backup.RealArchiveReadOnlyToolTest" tests="23" skipped="0" failures="0" errors="0" timestamp="2026-10-23T07:44:57.412Z" hostname="DD1" time="8.786">
+  <properties/>
+  <testcase name="passwordReaderExceptionDoesNotLeakItsMessage" classname="com.example.chatbar.desktop.backup.RealArchiveReadOnlyToolTest" time="0.512"/>
+  <testcase name="junctionAncestorIsRejectedBeforePasswordInput" classname="com.example.chatbar.desktop.backup.RealArchiveReadOnlyToolTest" time="0.031"/>
+  <testcase name="wrongPasswordIsSanitizedAndWiped" classname="com.example.chatbar.desktop.backup.RealArchiveReadOnlyToolTest" time="0.971"/>
+  <testcase name="fileSelectionArgumentsNeverPromptOrScan" classname="com.example.chatbar.desktop.backup.RealArchiveReadOnlyToolTest" time="0.001"/>
+  <testcase name="encryptedCode84UsesVolatileMaskedInputAndWipesIt" classname="com.example.chatbar.desktop.backup.RealArchiveReadOnlyToolTest" time="1.914"/>
+  <testcase name="pathPolicyRejectsRelativeUncAdsAndWrongExtension" classname="com.example.chatbar.desktop.backup.RealArchiveReadOnlyToolTest" time="0.001"/>
+  <testcase name="tooShortEnteredPasswordIsRejectedAndWiped" classname="com.example.chatbar.desktop.backup.RealArchiveReadOnlyToolTest" time="0.472"/>
+  <testcase name="readOnlyGuardDeniesConcurrentWriteAndReleasesHandle" classname="com.example.chatbar.desktop.backup.RealArchiveReadOnlyToolTest" time="1.855"/>
+  <testcase name="characterChatSaveSlotAndMediaRemainReadableWithIncompleteCensus" classname="com.example.chatbar.desktop.backup.RealArchiveReadOnlyToolTest" time="0.013"/>
+  <testcase name="plainCredentialsAreCategoriesOnly" classname="com.example.chatbar.desktop.backup.RealArchiveReadOnlyToolTest" time="0.009"/>
+  <testcase name="directoryAndMissingFileRejectedWithoutPrompt" classname="com.example.chatbar.desktop.backup.RealArchiveReadOnlyToolTest" time="0.017"/>
+  <testcase name="missingMaskedConsoleHasNoStdinFallback" classname="com.example.chatbar.desktop.backup.RealArchiveReadOnlyToolTest" time="0.468"/>
+  <testcase name="finalInventoryFailureDoesNotPublishAnyCensus" classname="com.example.chatbar.desktop.backup.RealArchiveReadOnlyToolTest" time="0.005"/>
+  <testcase name="cancellationReturnsFixedCodeAndWipesPassword" classname="com.example.chatbar.desktop.backup.RealArchiveReadOnlyToolTest" time="0.463"/>
+  <testcase name="existingV2ReadabilityIsSeparateFromUnsupportedCensus" classname="com.example.chatbar.desktop.backup.RealArchiveReadOnlyToolTest" time="0.008"/>
+  <testcase name="unknownEntityIsReadableButNotCensusCompleteOrMomentVerified" classname="com.example.chatbar.desktop.backup.RealArchiveReadOnlyToolTest" time="0.011"/>
+  <testcase name="authenticationTagCorruptionIsRejected" classname="com.example.chatbar.desktop.backup.RealArchiveReadOnlyToolTest" time="0.937"/>
+  <testcase name="plainCode84UsesThreeSeparateReports" classname="com.example.chatbar.desktop.backup.RealArchiveReadOnlyToolTest" time="0.009"/>
+  <testcase name="realChildJvmRejectsEncryptedFileWithoutConsole" classname="com.example.chatbar.desktop.backup.RealArchiveReadOnlyToolTest" time="1.07"/>
+  <testcase name="oversizedSourceRejectedBeforeReadingOrPassword" classname="com.example.chatbar.desktop.backup.RealArchiveReadOnlyToolTest" time="0.002"/>
+  <testcase name="unknownEnvelopeVersionCannotReachPasswordPrompt" classname="com.example.chatbar.desktop.backup.RealArchiveReadOnlyToolTest" time="0.004"/>
+  <testcase name="momentsSchemaFailureDoesNotRenameReadableFormatAsCorrupt" classname="com.example.chatbar.desktop.backup.RealArchiveReadOnlyToolTest" time="0.008"/>
+  <testcase name="damagedZipRejectedWithoutDumpingPayload" classname="com.example.chatbar.desktop.backup.RealArchiveReadOnlyToolTest" time="0.005"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

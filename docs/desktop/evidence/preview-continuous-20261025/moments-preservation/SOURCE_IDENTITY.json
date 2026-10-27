@@ -1,0 +1,50 @@
+[
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupGraphValidation.kt",
+    "stagedGitBlob": "979c2f66f2985b2026a240680d0bbf1e2eac6447",
+    "gitSha256": "dad26a2b36f884c4c263f2c097edb68f73f0335b070da733574ff42beb192d44",
+    "testedBytesSha256": "dad26a2b36f884c4c263f2c097edb68f73f0335b070da733574ff42beb192d44",
+    "byteExact": true,
+    "equalIgnoringCRLFOnly": true
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupPolicy.kt",
+    "stagedGitBlob": "808063b14aed8bd95dc82543be0a337b9edf6516",
+    "gitSha256": "9459549b14bb4a96476cd9a472aa7e89322c28b00f30cd6d5315929b5344aac5",
+    "testedBytesSha256": "9459549b14bb4a96476cd9a472aa7e89322c28b00f30cd6d5315929b5344aac5",
+    "byteExact": true,
+    "equalIgnoringCRLFOnly": true
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupMapping.kt",
+    "stagedGitBlob": "ce0c5c104b62ec863be4ff93fc315e4ae043a2ee",
+    "gitSha256": "bec27341d9b3abefe3c16d3faa71f7b0ef8aea4e283f8cbae1c3f001bd679aa8",
+    "testedBytesSha256": "bec27341d9b3abefe3c16d3faa71f7b0ef8aea4e283f8cbae1c3f001bd679aa8",
+    "byteExact": true,
+    "equalIgnoringCRLFOnly": true
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopPreservationStore.kt",
+    "stagedGitBlob": "8d3e46cf141a324c5d7f96f460823273553a7f6c",
+    "gitSha256": "b7073cc53fd025d81947f5cece2c83170fda97b554d02e33385e6964a288edd1",
+    "testedBytesSha256": "b7073cc53fd025d81947f5cece2c83170fda97b554d02e33385e6964a288edd1",
+    "byteExact": true,
+    "equalIgnoringCRLFOnly": true
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/CensusWireFixtures.kt",
+    "stagedGitBlob": "27d67fb08f4a822e5a336964556a91f29b29008a",
+    "gitSha256": "737a659bcec665542394a7090f07310d5657527ee4df86803fa9721728d9cc95",
+    "testedBytesSha256": "737a659bcec665542394a7090f07310d5657527ee4df86803fa9721728d9cc95",
+    "byteExact": true,
+    "equalIgnoringCRLFOnly": true
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopPreservationStoreTest.kt",
+    "stagedGitBlob": "6360cdead7c4040925585c27aae952b41438d55f",
+    "gitSha256": "c7e44126ef68724a3fc3962fb001eb59c62d590d8f7d1aa2c2328093fcee85e5",
+    "testedBytesSha256": "c7e44126ef68724a3fc3962fb001eb59c62d590d8f7d1aa2c2328093fcee85e5",
+    "byteExact": true,
+    "equalIgnoringCRLFOnly": true
+  }
+]

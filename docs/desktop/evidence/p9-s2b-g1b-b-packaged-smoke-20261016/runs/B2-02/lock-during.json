@@ -1,0 +1,8 @@
+{
+  "utc": "2026-10-16T09:01:07.352831+00:00",
+  "rootAlias": "environments/B2-unknown/ChatChatBarDesktop",
+  "probe": "separate-process nonblocking OS byte-range lock, existing file only",
+  "state": "HELD",
+  "errno": 13,
+  "lockBytesUnchanged": 0
+}

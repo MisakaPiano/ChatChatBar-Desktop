@@ -1,0 +1,170 @@
+{
+  "sources": [
+    {
+      "path": "tools/desktop/windows/Invoke-Operation1FreshGuest.ps1",
+      "bytes": 13392,
+      "sha256": "6297fb0deb6ee93e808563580d74da709ec08d00809086816ecd2def7ef1af2c",
+      "gitBlob": "9e5dab41750f2e1039ca16692266e7f290c49908"
+    },
+    {
+      "path": "tools/desktop/windows/Create-Operation1TestCopy.ps1",
+      "bytes": 4215,
+      "sha256": "69379321976a3ae6912560bed290e49544af1c1ca63ed078d8b040c2835c8869",
+      "gitBlob": "2673dc52ba3c60ece49942d2c2079d196ad40d4b"
+    },
+    {
+      "path": "tools/desktop/windows/Test-Operation1FreshGuest.ps1",
+      "bytes": 7271,
+      "sha256": "dc11adcbbc2b353d3d55c41622ab7be8cf7f98987c7154c534a4216a423754ec",
+      "gitBlob": "5c27cdddab92584d387ef55af6ab73b13017784a"
+    },
+    {
+      "path": "tools/desktop/windows/build_operation_guest_bundle.py",
+      "bytes": 6821,
+      "sha256": "12532c232d3d3ebfc6bf5d52748d4867c1a0f75780891d8e609dde98c450d11a",
+      "gitBlob": "19287cb38aea18d9831ebe997dedefb445d611ef"
+    }
+  ],
+  "rawFiles": [
+    {
+      "path": "raw/guest-preparation/full-1112/app-image.command.json",
+      "bytes": 781,
+      "sha256": "2e23e9eca9033665c874697efc8bd1a5351bdfb850d36bf1ebc4580f9d303455"
+    },
+    {
+      "path": "raw/guest-preparation/full-1112/app-image.exit",
+      "bytes": 1,
+      "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+    },
+    {
+      "path": "raw/guest-preparation/full-1112/BUDGET.json",
+      "bytes": 324,
+      "sha256": "90bf2bea44d1b50d1d29a70a4c70300d89eb595b1b51e3c8471c558b117e6e3a"
+    },
+    {
+      "path": "raw/guest-preparation/full-1112/bundle.command.json",
+      "bytes": 528,
+      "sha256": "e6103db8cc76f44149350caa22ebc203f25354a08348069ee2f4bb01e90d29fa"
+    },
+    {
+      "path": "raw/guest-preparation/full-1112/bundle.exit",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+    },
+    {
+      "path": "raw/guest-preparation/full-1112/bundle.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "raw/guest-preparation/full-1112/bundle.stdout.log",
+      "bytes": 229,
+      "sha256": "f2a7b3a1b49d36277e9dc9e351a1ff9e7b8018f6caa1610baee7d9c1c994f0df"
+    },
+    {
+      "path": "raw/guest-preparation/full-1112/IDENTITY_OVERLAY.json",
+      "bytes": 379,
+      "sha256": "9a27d1a9f23fdb177d88ebc1794b25d841eb828ce962f7f7861c560b6a8b13e9"
+    },
+    {
+      "path": "raw/guest-preparation/full-1112/raw-msi.command.json",
+      "bytes": 885,
+      "sha256": "b82c00a92b64994c1ef6f3d7edfa348d4051ce6071e1c59d3443fe0269baae6d"
+    },
+    {
+      "path": "raw/guest-preparation/full-1112/raw-msi.exit",
+      "bytes": 1,
+      "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+    },
+    {
+      "path": "raw/guest-preparation/full-1112/restricted-RESULT.json",
+      "bytes": 251,
+      "sha256": "4a5eeeb21cb2701760ace555786891b4ae917fe9e197f1e3a0c65c81fd1c9f26"
+    },
+    {
+      "path": "raw/guest-preparation/full-1112/restricted-TEST-NewFull1112RestrictedSession.xml",
+      "bytes": 300,
+      "sha256": "d595d1c99d4534d2fc4c9c34c483a005b340c4b590848afe7a706ca63fdcf4c1"
+    },
+    {
+      "path": "raw/guest-preparation/full-1112/restricted-unittest.log",
+      "bytes": 235,
+      "sha256": "95dd652e759e63c7adad7ccfd063ca068f11205affb27a4a4e96ac7f1da2df7c"
+    },
+    {
+      "path": "raw/guest-preparation/full-1112/RESULT.json",
+      "bytes": 837,
+      "sha256": "fd9d516d6f8b5f6841a48e60a6a14b0c61a7b86886de71fa839c469e0f5558de"
+    },
+    {
+      "path": "raw/guest-preparation/full-1112/SAFETY_RECEIPT.json",
+      "bytes": 948,
+      "sha256": "7369a23dbf5a7c656a28f394685c7d79387040f192d66daf9fa8d778de5bdac2"
+    },
+    {
+      "path": "raw/guest-preparation/full-1112/SOURCE.json",
+      "bytes": 325,
+      "sha256": "5ab6afa1814c447618933e90ab411bac1f3013ea67f3d118d099645015b1f468"
+    },
+    {
+      "path": "raw/guest-preparation/full-1112/TRANSFER_1112.json",
+      "bytes": 1701,
+      "sha256": "d55f03b0c98c009dfa92e506cb82fd121c9fbdfebf3b4254136e9290caa887dc"
+    },
+    {
+      "path": "raw/guest-preparation/guest-helper-tests-r01/driver.command.json",
+      "bytes": 289,
+      "sha256": "43633c31c244b997fb407bbda937d544a674fba4dabfba839b7085a5223da5c0"
+    },
+    {
+      "path": "raw/guest-preparation/guest-helper-tests-r01/driver.exit",
+      "bytes": 3,
+      "sha256": "f1b2f662800122bed0ff255693df89c4487fbdcf453d3524a42d4ec20c3d9c04"
+    },
+    {
+      "path": "raw/guest-preparation/guest-helper-tests-r01/driver.stderr.log",
+      "bytes": 477,
+      "sha256": "963f890ae2947575f4ea11b82d99fbd405e0e4880a5d9e8de15231d286feb8d1"
+    },
+    {
+      "path": "raw/guest-preparation/guest-helper-tests-r01/driver.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "raw/guest-preparation/guest-helper-tests-r01/RESULT.json",
+      "bytes": 4180,
+      "sha256": "08a838801ed88d5435b638fae121eb1fe1f61228a1214c67d4b681a40bf8e0fd"
+    },
+    {
+      "path": "raw/guest-preparation/guest-helper-tests-r03/driver.command.json",
+      "bytes": 289,
+      "sha256": "0f9475521f61786893ac5585a026e23d5c40db60217248ade8259744a8bdedfe"
+    },
+    {
+      "path": "raw/guest-preparation/guest-helper-tests-r03/driver.exit",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+    },
+    {
+      "path": "raw/guest-preparation/guest-helper-tests-r03/driver.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "raw/guest-preparation/guest-helper-tests-r03/driver.stdout.log",
+      "bytes": 53,
+      "sha256": "b0ca0cec4476234e097992ccdbc458cea5647ca19e85b5572a90167e2fa77892"
+    },
+    {
+      "path": "raw/guest-preparation/guest-helper-tests-r03/RESULT.json",
+      "bytes": 5369,
+      "sha256": "df0df4e9cd7dfe90cda375ecf07a8776dc370edf7f2020b4792933762b1405a4"
+    },
+    {
+      "path": "raw/guest-preparation/guest-helper-tests-r03/TEST-Operation1GuestFakeBoundaries.xml",
+      "bytes": 793,
+      "sha256": "e531034a546d88c22a224d8957bab2b8b2dfffec71802d731bda7ad8c89e6fe9"
+    }
+  ]
+}

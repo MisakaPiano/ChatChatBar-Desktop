@@ -1,0 +1,10 @@
+{
+  "onlyXmlWrittenAfterStageStart": true,
+  "files": [
+    "TEST-com.example.chatbar.desktop.DesktopFullBackupArchiveTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopFullBackupMappingTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopFullBackupServiceTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopSaveSlotServiceTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopVoicePersistenceTest.xml"
+  ]
+}

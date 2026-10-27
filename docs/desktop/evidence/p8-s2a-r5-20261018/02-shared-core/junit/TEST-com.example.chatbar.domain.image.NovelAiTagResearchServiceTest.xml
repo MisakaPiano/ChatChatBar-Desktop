@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.image.NovelAiTagResearchServiceTest" tests="22" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:31:39.963Z" hostname="DD1" time="0.184">
+  <properties/>
+  <testcase name="reused vision description is not marked as a newly planned scene" classname="com.example.chatbar.domain.image.NovelAiTagResearchServiceTest" time="0.024"/>
+  <testcase name="user cancellation stops active planner without fallback work" classname="com.example.chatbar.domain.image.NovelAiTagResearchServiceTest" time="0.019"/>
+  <testcase name="batch keeps eight candidates per query and twenty four globally" classname="com.example.chatbar.domain.image.NovelAiTagResearchServiceTest" time="0.021"/>
+  <testcase name="revision with no new tag queries still recalls codex using only user modification" classname="com.example.chatbar.domain.image.NovelAiTagResearchServiceTest" time="0.012"/>
+  <testcase name="batch search preserves partial successes when another query fails" classname="com.example.chatbar.domain.image.NovelAiTagResearchServiceTest" time="0.023"/>
+  <testcase name="research calls planner once and searches all queries concurrently" classname="com.example.chatbar.domain.image.NovelAiTagResearchServiceTest" time="0.015"/>
+  <testcase name="revision evidence insertion keeps final modification request as last user message" classname="com.example.chatbar.domain.image.NovelAiTagResearchServiceTest" time="0.0"/>
+  <testcase name="moment debug exchanges include batch planning and Danbooru catalog results" classname="com.example.chatbar.domain.image.NovelAiTagResearchServiceTest" time="0.002"/>
+  <testcase name="same planner queries drive local codex retrieval with diversity key" classname="com.example.chatbar.domain.image.NovelAiTagResearchServiceTest" time="0.01"/>
+  <testcase name="prompt progress accumulates batch search design and repair in order" classname="com.example.chatbar.domain.image.NovelAiTagResearchServiceTest" time="0.001"/>
+  <testcase name="empty query plan skips Danbooru catalog but still recalls codex from scene draft" classname="com.example.chatbar.domain.image.NovelAiTagResearchServiceTest" time="0.009"/>
+  <testcase name="one timed out query does not cancel other concurrent searches" classname="com.example.chatbar.domain.image.NovelAiTagResearchServiceTest" time="0.019"/>
+  <testcase name="planner request contains reference image in one user message" classname="com.example.chatbar.domain.image.NovelAiTagResearchServiceTest" time="0.001"/>
+  <testcase name="planner parses scene draft and deduplicated queries capped at six" classname="com.example.chatbar.domain.image.NovelAiTagResearchServiceTest" time="0.0"/>
+  <testcase name="revision query planner accepts empty query JSON without scene description" classname="com.example.chatbar.domain.image.NovelAiTagResearchServiceTest" time="0.002"/>
+  <testcase name="planner accepts concise nonblank scene draft" classname="com.example.chatbar.domain.image.NovelAiTagResearchServiceTest" time="0.001"/>
+  <testcase name="planner may run beyond old twenty second timeout" classname="com.example.chatbar.domain.image.NovelAiTagResearchServiceTest" time="0.016"/>
+  <testcase name="planner streaming progress keeps reasoning and output visible" classname="com.example.chatbar.domain.image.NovelAiTagResearchServiceTest" time="0.002"/>
+  <testcase name="user cancellation cancels every active batch request" classname="com.example.chatbar.domain.image.NovelAiTagResearchServiceTest" time="0.003"/>
+  <testcase name="Danbooru query normalizes English spaces to underscores and Chinese spaces away" classname="com.example.chatbar.domain.image.NovelAiTagResearchServiceTest" time="0.0"/>
+  <testcase name="planner removes queries already covered by character prompts" classname="com.example.chatbar.domain.image.NovelAiTagResearchServiceTest" time="0.003"/>
+  <testcase name="planner infers finish or search from scene draft and queries" classname="com.example.chatbar.domain.image.NovelAiTagResearchServiceTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

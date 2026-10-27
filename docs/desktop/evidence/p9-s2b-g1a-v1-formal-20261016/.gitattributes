@@ -1,0 +1,5 @@
+* -text whitespace=cr-at-eol
+*.log -whitespace
+*.xml -whitespace
+*.jsonl -whitespace
+*.patch -whitespace

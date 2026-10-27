@@ -1,0 +1,12 @@
+[
+  "python",
+  "tools/desktop/windows/build_operation_upgrade_bundle.py",
+  "--pair-root",
+  "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\preview-continuous-private-20261025\\operation1-native-pair-1112-1113-20261027-r01",
+  "--a-delivery",
+  "I:/CCB-OP1-DL1-20261027-r01",
+  "--b-image",
+  "I:/CCB-OP1-20261027-1113-r01/image/ChatChatBarDesktopSynthetic",
+  "--output",
+  "I:/CCB-OP1-UPGRADE-DL1-20261027-r01"
+]

@@ -1,0 +1,14 @@
+{
+  "recordType": "user response transcription",
+  "recordedUtc": "2026-10-16T15:40:51.822503+00:00",
+  "run": "BV-B5-marker",
+  "scope": [
+    "exact fixed Chinese body",
+    "exact fixed English body",
+    "ROOT_PORTABLE_RESOLUTION_FAILED",
+    "visible Close button",
+    "normal user close"
+  ],
+  "userAnswer": "两段正文、ROOT_PORTABLE_RESOLUTION_FAILED 和关闭按钮一致，已正常关闭",
+  "visualSignature": "CONFIRMED_BY_USER"
+}

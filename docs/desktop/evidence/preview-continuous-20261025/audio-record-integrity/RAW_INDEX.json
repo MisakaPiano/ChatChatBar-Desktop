@@ -1,0 +1,122 @@
+[
+  {
+    "path": "audio-record-integrity-green/arguments.json",
+    "bytes": 694,
+    "sha256": "3a0df290d1c1797d2873e0ebb7da92c746460f7cc02176c8b4b6860c186a8bef"
+  },
+  {
+    "path": "audio-record-integrity-green/exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "audio-record-integrity-green/gradle.log",
+    "bytes": 2228,
+    "sha256": "ad8500a524950e9e457a655cc66e9d626a6c801a6542d28809dfa6b154650910"
+  },
+  {
+    "path": "audio-record-integrity-green/head.txt",
+    "bytes": 40,
+    "sha256": "7113fc9439a151fe5684613ceaa17399cf60ea81278274c74f5ad39561af7169"
+  },
+  {
+    "path": "audio-record-integrity-green/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFullBackupArchiveTest.xml",
+    "bytes": 2494,
+    "sha256": "9f3a5695fe91edb9eb961e540d04165bc9b4352c924d666780be4f92f10daca0"
+  },
+  {
+    "path": "audio-record-integrity-green/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFullBackupMappingTest.xml",
+    "bytes": 1077,
+    "sha256": "8561ec117d16f1af45ec54137637b2e61a75a298fcfb143ea757ea52ca389412"
+  },
+  {
+    "path": "audio-record-integrity-green/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFullBackupServiceTest.xml",
+    "bytes": 2211,
+    "sha256": "64c581d4e3e8f1e423ff6711fe17e0d55a8e649a41a6e997e5e0faa923beed52"
+  },
+  {
+    "path": "audio-record-integrity-green/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupMapping.kt",
+    "bytes": 14597,
+    "sha256": "eef6c7493472b3f4f4dc00b6c9e176d1fe0de12bf4e7df32b87a081ca047c6ca"
+  },
+  {
+    "path": "audio-record-integrity-green/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFullBackupMappingTest.kt",
+    "bytes": 9222,
+    "sha256": "dd35bee987c0273e8188b1cc406c33f96a33d59f07020637aa5ef6a5a3cd7bc2"
+  },
+  {
+    "path": "audio-record-integrity-persistence/arguments.json",
+    "bytes": 545,
+    "sha256": "a7969807d9d0aba7ebcc1dfd1976a68ad6c330bb02f75f2e433ae177d95a260d"
+  },
+  {
+    "path": "audio-record-integrity-persistence/exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "audio-record-integrity-persistence/gradle.log",
+    "bytes": 2247,
+    "sha256": "c27196f32c24bfbb4ec171ab1ba9640ed656f4eb12be674577e0a6c44aad8a18"
+  },
+  {
+    "path": "audio-record-integrity-persistence/head.txt",
+    "bytes": 40,
+    "sha256": "7113fc9439a151fe5684613ceaa17399cf60ea81278274c74f5ad39561af7169"
+  },
+  {
+    "path": "audio-record-integrity-persistence/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopVoicePersistenceTest.xml",
+    "bytes": 1213,
+    "sha256": "87c4d4d7d3d3d95eabbc2056b759d58e1a2195e165c3f892844ad16ece9e1ba0"
+  },
+  {
+    "path": "audio-record-integrity-persistence/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupMapping.kt",
+    "bytes": 14597,
+    "sha256": "eef6c7493472b3f4f4dc00b6c9e176d1fe0de12bf4e7df32b87a081ca047c6ca"
+  },
+  {
+    "path": "audio-record-integrity-persistence/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFullBackupMappingTest.kt",
+    "bytes": 9222,
+    "sha256": "dd35bee987c0273e8188b1cc406c33f96a33d59f07020637aa5ef6a5a3cd7bc2"
+  },
+  {
+    "path": "audio-record-integrity-red/arguments.json",
+    "bytes": 741,
+    "sha256": "e5e9f148d7dfb65f42c5cf8f5f4c1506d33ed32cafb78eaf0efd8c2c7117cf3e"
+  },
+  {
+    "path": "audio-record-integrity-red/exit.txt",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "path": "audio-record-integrity-red/gradle.log",
+    "bytes": 2939,
+    "sha256": "4531634255a0cab4b79f62369747a4560bc4cea83ae90192b49a825448a2895f"
+  },
+  {
+    "path": "audio-record-integrity-red/head.txt",
+    "bytes": 40,
+    "sha256": "7113fc9439a151fe5684613ceaa17399cf60ea81278274c74f5ad39561af7169"
+  },
+  {
+    "path": "audio-record-integrity-red/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFullBackupMappingTest.xml",
+    "bytes": 11939,
+    "sha256": "52ac52cc7b9549d06aefc1936c8d99439bf7ebdcb1fc1d3cd345eb7e1ff3626c"
+  },
+  {
+    "path": "audio-record-integrity-red/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFullBackupMappingTest.kt",
+    "bytes": 9222,
+    "sha256": "dd35bee987c0273e8188b1cc406c33f96a33d59f07020637aa5ef6a5a3cd7bc2"
+  },
+  {
+    "path": "RESULT.json",
+    "bytes": 412,
+    "sha256": "4036e15a549cc9a2b566b1ea8f8b54c44c26ea1bdeb99afc35f5222c8a83416d"
+  },
+  {
+    "path": "RESULT.md",
+    "bytes": 1149,
+    "sha256": "a97d70161adbd4ce2f60e26cb8dfaed3467f83b500996912750a3a182cdba484"
+  }
+]

@@ -1,0 +1,9 @@
+{
+  "reviewedBeforeCommit": true,
+  "skills": [
+    "chatbar-fish-audio-voice",
+    "chatbar-shadcn-compose"
+  ],
+  "changes": [],
+  "reason": "Evidence-only HOLD checkpoint does not promote the uncommitted candidate as accepted product capability; no current skill fact changed by diagnostic evidence"
+}

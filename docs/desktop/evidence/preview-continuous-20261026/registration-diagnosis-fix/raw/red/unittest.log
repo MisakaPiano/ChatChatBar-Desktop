@@ -1,0 +1,47 @@
+test_advertised_residue_refuses_before_installer (__main__.NativeRegistrationDiagnosisTest) ... FAIL
+test_unavailable_observation_is_not_absence_or_permission_to_reinstall (__main__.NativeRegistrationDiagnosisTest) ... FAIL
+
+======================================================================
+FAIL: test_advertised_residue_refuses_before_installer (__main__.NativeRegistrationDiagnosisTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_native_registration_diagnosis.py", line 46, in test_advertised_residue_refuses_before_installer
+    probe.repair_registration(base, installer, 'synthetic-partial')
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\native_package_probe.py", line 195, in repair_registration
+    before = {str(path.relative_to(program)): sha(safe(path)) for path in program.rglob("*") if path.is_file()}
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\native_package_probe.py", line 195, in <dictcomp>
+    before = {str(path.relative_to(program)): sha(safe(path)) for path in program.rglob("*") if path.is_file()}
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\native_package_probe.py", line 31, in safe
+    kernel = C.WinDLL("kernel32", use_last_error=True)
+  File "C:\Users\1\AppData\Local\Programs\Python\Python310\lib\unittest\mock.py", line 1104, in __call__
+    return self._mock_call(*args, **kwargs)
+  File "C:\Users\1\AppData\Local\Programs\Python\Python310\lib\unittest\mock.py", line 1108, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+  File "C:\Users\1\AppData\Local\Programs\Python\Python310\lib\unittest\mock.py", line 1163, in _execute_mock_call
+    raise effect
+AssertionError: REAL_NATIVE_API_FORBIDDEN
+
+======================================================================
+FAIL: test_unavailable_observation_is_not_absence_or_permission_to_reinstall (__main__.NativeRegistrationDiagnosisTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_native_registration_diagnosis.py", line 52, in test_unavailable_observation_is_not_absence_or_permission_to_reinstall
+    probe.repair_registration(base, installer, 'synthetic-unavailable')
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\native_package_probe.py", line 195, in repair_registration
+    before = {str(path.relative_to(program)): sha(safe(path)) for path in program.rglob("*") if path.is_file()}
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\native_package_probe.py", line 195, in <dictcomp>
+    before = {str(path.relative_to(program)): sha(safe(path)) for path in program.rglob("*") if path.is_file()}
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\native_package_probe.py", line 31, in safe
+    kernel = C.WinDLL("kernel32", use_last_error=True)
+  File "C:\Users\1\AppData\Local\Programs\Python\Python310\lib\unittest\mock.py", line 1104, in __call__
+    return self._mock_call(*args, **kwargs)
+  File "C:\Users\1\AppData\Local\Programs\Python\Python310\lib\unittest\mock.py", line 1108, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+  File "C:\Users\1\AppData\Local\Programs\Python\Python310\lib\unittest\mock.py", line 1163, in _execute_mock_call
+    raise effect
+AssertionError: REAL_NATIVE_API_FORBIDDEN
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.032s
+
+FAILED (failures=2)

@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\app\desktopApp\build\preview-continuous-private-20261025\windows-runtime-merge-ui-1006\native-app-image-probe.py", line 419, in <module>
+    main()
+  File "H:\ChatChatBar-Desktop\app\desktopApp\build\preview-continuous-private-20261025\windows-runtime-merge-ui-1006\native-app-image-probe.py", line 414, in main
+    launch_close(base, args.label)
+  File "H:\ChatChatBar-Desktop\app\desktopApp\build\preview-continuous-private-20261025\windows-runtime-merge-ui-1006\native-app-image-probe.py", line 268, in launch_close
+    assert before["commit"] == owner["sourceCommit"] and before["version"] == "0.1.0-preview.1005"
+AssertionError

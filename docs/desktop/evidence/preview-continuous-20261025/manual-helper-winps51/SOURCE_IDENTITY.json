@@ -1,0 +1,12 @@
+{
+  "head": "ad4ed1018805dd68a74d1b9b30622a6922f683a3",
+  "existingMainKotlinChanged": false,
+  "formalGradleChanged": false,
+  "sourceKind": "TASK_OWNED_SYNTHETIC_MANUAL_HELPERS",
+  "copiedRawFiles": 90,
+  "rawBytesMatch": true,
+  "testFramework": "Windows PowerShell 5.1 native subprocess, NOT JUnit",
+  "credentialsRead": false,
+  "uiLaunchedByThisRegression": false,
+  "installerExecuted": false
+}

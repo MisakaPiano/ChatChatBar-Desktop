@@ -1,0 +1,56 @@
+[
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupReadOnlyInspector.kt",
+    "commit": null,
+    "bytes": 18846,
+    "sha256": "fb18f507794a93cf0dd4520bd4d805407ed0b27d048e855ab9521cc44a2a5dd3",
+    "canonicalSha256": "4ed51222bfe4e3541d9ad52d08d1cec5cf76f39fc63bae1f4ae1b51eb72ec007",
+    "canonicalBytes": 18569,
+    "gitBlob": "dfcab926b6d95670546f9f6b4650727c22ee8f5f"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialSourceCensus.kt",
+    "commit": null,
+    "bytes": 10614,
+    "sha256": "f763d27f4350a87aa11c3603afb0290fce1492eed4f531c44f91ee256848b980",
+    "canonicalSha256": "f763d27f4350a87aa11c3603afb0290fce1492eed4f531c44f91ee256848b980",
+    "canonicalBytes": 10614,
+    "gitBlob": "2f58bb43687a687da1d43e8261cf872720ec6f54"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/VerifiedCredentialSourceMetadata.kt",
+    "commit": null,
+    "bytes": 3716,
+    "sha256": "6c1f1864e1282deaac31c659fe12204fbf99966d0ba24bbe4b9d2058c353dab9",
+    "canonicalSha256": "6c1f1864e1282deaac31c659fe12204fbf99966d0ba24bbe4b9d2058c353dab9",
+    "canonicalBytes": 3716,
+    "gitBlob": "560b6c65ccae78d4c17b4716a080f406e395ab0a"
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialTargetObservation.kt",
+    "commit": null,
+    "bytes": 1200,
+    "sha256": "737662afb251ec4d4ad8deb1b95f8429f90be1912cf575953dad487d0458d083",
+    "canonicalSha256": "737662afb251ec4d4ad8deb1b95f8429f90be1912cf575953dad487d0458d083",
+    "canonicalBytes": 1200,
+    "gitBlob": "7c2f48d7f67cb9fe0c82f69858c25ebe95bb7e36"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/CensusWireFixtures.kt",
+    "commit": null,
+    "bytes": 4569,
+    "sha256": "99933fac67df0c724839a49ea0e4109d624d44a11f052582fe30b04a2a162655",
+    "canonicalSha256": "99933fac67df0c724839a49ea0e4109d624d44a11f052582fe30b04a2a162655",
+    "canonicalBytes": 4569,
+    "gitBlob": "ccf64cc39eaa119d19bc483b1371509a5ec86cdc"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialSourceCensusTest.kt",
+    "commit": null,
+    "bytes": 21263,
+    "sha256": "7f68e06f171744935cce09a694a1bcfe9acd301fe11bfad81f60e0ae7697a05e",
+    "canonicalSha256": "7f68e06f171744935cce09a694a1bcfe9acd301fe11bfad81f60e0ae7697a05e",
+    "canonicalBytes": 21263,
+    "gitBlob": "fbb72806c56e442df7b0ecf8091a1b638394a59d"
+  }
+]

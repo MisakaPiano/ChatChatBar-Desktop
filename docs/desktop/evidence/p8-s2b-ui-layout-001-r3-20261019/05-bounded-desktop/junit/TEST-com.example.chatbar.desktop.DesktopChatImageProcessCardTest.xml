@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopChatImageProcessCardTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-18T15:32:05.652Z" hostname="DD1" time="1.802">
+  <properties/>
+  <testcase name="expanded collapsed Stop sibling geometry is safe at wide and narrow widths with real pointer" classname="com.example.chatbar.desktop.DesktopChatImageProcessCardTest" time="1.308"/>
+  <testcase name="generation transition retains research then terminal retry dismiss and fresh task reset" classname="com.example.chatbar.desktop.DesktopChatImageProcessCardTest" time="0.494"/>
+  <testcase name="task association uses kind session message and ignores selected session coincidence" classname="com.example.chatbar.desktop.DesktopChatImageProcessCardTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,43 @@
+{
+  "records": [
+    {
+      "kind": "R2 readiness",
+      "question": "R2 准备期间确认一下：你现在仍在 Windows 电脑前，方便稍后进行人工操作吗？确认后我才会启动新的 R2 窗口。",
+      "answer": "现在方便，可以在准备完成后启动 R2"
+    },
+    {
+      "kind": "W1 setup",
+      "answer": "界面或控件与描述不同",
+      "screenshot": "W1-user-startup-error.png",
+      "result": "BLOCKED; generation NOT TESTED"
+    },
+    {
+      "kind": "initial close clarification",
+      "question": "是你亲自点了主窗口 X 正常关闭，还是你没有点关闭、窗口自行消失？",
+      "answer": "没有点关闭，窗口自行消失"
+    },
+    {
+      "kind": "error dialog screenshot",
+      "screenshot": "W1-user-error-dialog.png",
+      "sha256": "f6431ba09886c3095e4a2f9bfa30651aa7bf79c6fcbfa3ee8690f722d7c839af"
+    },
+    {
+      "kind": "final close clarification",
+      "answer": "等一下，我是点了这个确认，然后窗口自己就关了",
+      "meaning": "User clicked the error dialog confirmation, not the main-window X; application then exited"
+    },
+    {
+      "kind": "final operation-sequence clarification",
+      "answer": "我切换标签到studio了，然后弹出这个确认框，我点了一下就自动关了。",
+      "sequence": [
+        "Chat page showed credential error and no sessions",
+        "User switched tab to Studio",
+        "Error dialog appeared",
+        "User clicked dialog confirmation",
+        "Application exited"
+      ]
+    }
+  ],
+  "normalCloseUserSignature": "NOT A NORMAL-CLOSE PASS; Studio navigation then error-dialog acknowledgment followed by exit",
+  "note": "Final user clarification is authoritative; preserve earlier wording as chronological evidence. Technical exit0/0 does not sign W5 normal-close PASS."
+}

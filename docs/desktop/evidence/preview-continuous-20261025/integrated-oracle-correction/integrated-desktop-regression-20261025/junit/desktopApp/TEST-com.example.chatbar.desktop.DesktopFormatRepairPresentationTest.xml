@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFormatRepairPresentationTest" tests="6" skipped="0" failures="2" errors="0" timestamp="2026-10-25T02:30:04.226Z" hostname="DD1" time="18.435">
+  <properties/>
+  <testcase name="uncertain commit warning is distinct and offers no automatic or recovery action" classname="com.example.chatbar.desktop.DesktopFormatRepairPresentationTest" time="0.082"/>
+  <testcase name="terminal states render distinct localized outcomes without retaining running preview" classname="com.example.chatbar.desktop.DesktopFormatRepairPresentationTest" time="0.228"/>
+  <testcase name="format model selector includes hidden auxiliary models and retains explicit unavailable ID" classname="com.example.chatbar.desktop.DesktopFormatRepairPresentationTest" time="1.211"/>
+  <testcase name="persisted notice after restart is sanitized and only valid recovery shows button" classname="com.example.chatbar.desktop.DesktopFormatRepairPresentationTest" time="0.195"/>
+  <testcase name="real uncertain second repair hides pointer menu actions until explicit verified read" classname="com.example.chatbar.desktop.DesktopFormatRepairPresentationTest" time="8.558">
+    <failure message="kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 8000 ms" type="kotlinx.coroutines.TimeoutCancellationException">kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 8000 ms
+	at _COROUTINE._BOUNDARY._(CoroutineDebugging.kt:42)
+	at com.example.chatbar.desktop.DesktopFormatRepairPresentationTest$until$2.invokeSuspend(DesktopFormatRepairPresentationTest.kt:29)
+	at com.example.chatbar.desktop.DesktopFormatRepairPresentationTest$real uncertain second repair hides pointer menu actions until explicit verified read$1.invokeSuspend(DesktopFormatRepairPresentationTest.kt:147)
+Caused by: kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 8000 ms
+	at kotlinx.coroutines.TimeoutKt.TimeoutCancellationException(Timeout.kt:189)
+	at kotlinx.coroutines.TimeoutCoroutine.run(Timeout.kt:157)
+	at kotlinx.coroutines.EventLoopImplBase$DelayedRunnableTask.run(EventLoop.common.kt:505)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.DefaultExecutor.run(DefaultExecutor.kt:105)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+</failure>
+  </testcase>
+  <testcase name="segment pointer menu launches full candidate repair and Stop restores through same repository" classname="com.example.chatbar.desktop.DesktopFormatRepairPresentationTest" time="8.161">
+    <failure message="kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 8000 ms" type="kotlinx.coroutines.TimeoutCancellationException">kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 8000 ms
+	at _COROUTINE._BOUNDARY._(CoroutineDebugging.kt:42)
+	at com.example.chatbar.desktop.DesktopFormatRepairPresentationTest$until$2.invokeSuspend(DesktopFormatRepairPresentationTest.kt:29)
+	at com.example.chatbar.desktop.DesktopFormatRepairPresentationTest$segment pointer menu launches full candidate repair and Stop restores through same repository$1$1.invokeSuspend(DesktopFormatRepairPresentationTest.kt:64)
+	at com.example.chatbar.desktop.DesktopFishSettingsBindingTestKt.fishFixture(DesktopFishSettingsBindingTest.kt:598)
+	at com.example.chatbar.desktop.DesktopFormatRepairPresentationTest$segment pointer menu launches full candidate repair and Stop restores through same repository$1.invokeSuspend(DesktopFormatRepairPresentationTest.kt:40)
+Caused by: kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 8000 ms
+	at kotlinx.coroutines.TimeoutKt.TimeoutCancellationException(Timeout.kt:189)
+	at kotlinx.coroutines.TimeoutCoroutine.run(Timeout.kt:157)
+	at kotlinx.coroutines.EventLoopImplBase$DelayedRunnableTask.run(EventLoop.common.kt:505)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.DefaultExecutor.run(DefaultExecutor.kt:105)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+</failure>
+  </testcase>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

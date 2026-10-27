@@ -11,6 +11,7 @@ import com.example.chatbar.data.local.entity.ChatMessageOrderBackupEntry
 import com.example.chatbar.data.local.entity.ChatScrollPosition
 import com.example.chatbar.data.local.entity.ChatSession
 import com.example.chatbar.data.local.entity.MessageRole
+import com.example.chatbar.data.local.entity.MessageFormatRepairNotice
 import com.example.chatbar.data.local.entity.SpeakerTagRename
 import com.example.chatbar.data.local.entity.toIndexEntry
 import com.example.chatbar.domain.chat.ChatMessageOrdering
@@ -28,11 +29,21 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 
 /**
  * 聊天仓库 - 管理会话和消息
  */
-class ChatRepository(private val storage: JsonFileStorage) {
+class ChatRepository internal constructor(
+    private val storage: JsonFileStorage,
+    private val repairFailureReadbackMillis: Long,
+) {
+    constructor(storage: JsonFileStorage) : this(storage, 2_500L)
+
+    init { require(repairFailureReadbackMillis > 0) }
 
     companion object {
         private const val SESSION_TYPE = "chat_sessions"
@@ -67,6 +78,13 @@ class ChatRepository(private val storage: JsonFileStorage) {
                 compareByDescending<ChatSession> { it.isPinned }
                     .thenByDescending { it.lastMessageTime ?: it.createdAt }
             )
+    }
+
+    /** Call only after an externally coordinated, durable session graph commit. */
+    suspend fun reloadAfterSessionCommit(sessionId: String) = messageAppendMutex.withLock {
+        messageIndexMutex.withLock { messageIndexes.remove(sessionId) }
+        refreshSessionCache()
+        initialized = true
     }
 
     // ===== 会话操作 =====
@@ -169,12 +187,14 @@ class ChatRepository(private val storage: JsonFileStorage) {
             storage.deleteEntity<ChatScrollPosition>(SCROLL_POSITION_TYPE, sessionId)
         }
 
-    suspend fun deleteSession(id: String) {
-        deleteSessionRecord(id)
-        deleteMessagesForSession(id)
+    suspend fun deleteSession(id: String): Unit = messageAppendMutex.withLock {
+        deleteSessionRecordLocked(id)
+        deleteMessagesForSessionLocked(id)
     }
 
-    suspend fun deleteSessionRecord(id: String) {
+    suspend fun deleteSessionRecord(id: String) = messageAppendMutex.withLock { deleteSessionRecordLocked(id) }
+
+    private suspend fun deleteSessionRecordLocked(id: String) {
         storage.deleteEntity<ChatSession>(SESSION_TYPE, id)
         deleteSessionDraft(id)
         deleteScrollPosition(id)
@@ -183,13 +203,13 @@ class ChatRepository(private val storage: JsonFileStorage) {
 
     suspend fun pinSession(id: String) {
         getSession(id)?.let { session ->
-            updateSession(session.copy(isPinned = true))
+            saveSessionSettingsDraft(session,session.copy(isPinned = true))
         }
     }
 
     suspend fun unpinSession(id: String) {
         getSession(id)?.let { session ->
-            updateSession(session.copy(isPinned = false))
+            saveSessionSettingsDraft(session,session.copy(isPinned = false))
         }
     }
 
@@ -197,7 +217,7 @@ class ChatRepository(private val storage: JsonFileStorage) {
         val normalized = SessionDisplayTitlePolicy.normalize(displayTitle)
         getSession(id)?.let { session ->
             if (session.displayTitleOverride != normalized) {
-                updateSession(session.copy(displayTitleOverride = normalized))
+                saveSessionSettingsDraft(session,session.copy(displayTitleOverride = normalized))
             }
         }
     }
@@ -469,7 +489,7 @@ class ChatRepository(private val storage: JsonFileStorage) {
         val latest = latestMessage(assigned.sessionId)
         if (latest?.id == assigned.id) {
             getSession(assigned.sessionId)?.let { session ->
-                updateSession(
+                saveSessionSettingsDraft(session,
                     session.copy(
                         lastMessagePreview = assigned.previewText(),
                         lastMessageTime = assigned.createdAt,
@@ -533,7 +553,7 @@ class ChatRepository(private val storage: JsonFileStorage) {
 
         val latest = latestMessage(message.sessionId)
         getSession(message.sessionId)?.let { session ->
-            updateSession(
+            saveSessionSettingsDraft(session,
                 session.copy(
                     lastMessagePreview = latest?.previewText(),
                     lastMessageTime = latest?.createdAt,
@@ -572,7 +592,7 @@ class ChatRepository(private val storage: JsonFileStorage) {
         val latest = latestMessage(updated.sessionId)
         if (latest?.id == updated.id) {
             getSession(updated.sessionId)?.let { session ->
-                updateSession(
+                saveSessionSettingsDraft(session,
                     session.copy(
                         lastMessagePreview = updated.previewText(),
                         lastMessageTime = updated.createdAt,
@@ -581,6 +601,137 @@ class ChatRepository(private val storage: JsonFileStorage) {
                 )
             }
         }
+    }
+
+    /**
+     * Compare the complete durable snapshot and mutate only repair-owned fields under the same
+     * mutex as ordinary edits, candidate selection, deletion and batch replacement. This is a
+     * single-repository-instance guarantee, not a cross-process filesystem transaction.
+     */
+    suspend fun updateMessageForFormatRepair(
+        sessionId: String,
+        messageId: String,
+        expected: ChatMessage,
+        replacementContent: String,
+        notice: MessageFormatRepairNotice?,
+    ): ConditionalMessageUpdateResult = mutateMessageForFormatRepair(sessionId, messageId, expected, replacementContent, notice)
+
+    /** Notice-only outcomes must not normalize a legacy base content to its displayed candidate. */
+    suspend fun updateMessageFormatRepairNotice(
+        sessionId: String,
+        messageId: String,
+        expected: ChatMessage,
+        notice: MessageFormatRepairNotice?,
+    ): ConditionalMessageUpdateResult = mutateMessageForFormatRepair(sessionId, messageId, expected, null, notice)
+
+    private suspend fun mutateMessageForFormatRepair(
+        sessionId: String,
+        messageId: String,
+        expected: ChatMessage,
+        replacementContent: String?,
+        notice: MessageFormatRepairNotice?,
+    ): ConditionalMessageUpdateResult = messageAppendMutex.withLock {
+        if (expected.sessionId != sessionId || expected.id != messageId) {
+            return@withLock ConditionalMessageUpdateResult.Conflict("Expected identity does not match target")
+        }
+        var stage = MessageUpdateStage.READ_MESSAGE
+        var attempted: ChatMessage? = null
+        try {
+            val current = when (val read = readMessageDurable(messageId, sessionId)) {
+                is JsonFileStorage.EntityReadResult.Valid -> read.value
+                JsonFileStorage.EntityReadResult.Missing -> return@withLock ConditionalMessageUpdateResult.Missing(stage)
+                is JsonFileStorage.EntityReadResult.Corrupt -> return@withLock ConditionalMessageUpdateResult.Corrupt(stage, read.cause)
+                is JsonFileStorage.EntityReadResult.ReadError -> return@withLock ConditionalMessageUpdateResult.StorageFailure(stage, read.cause)
+            }
+            if (current != expected || !current.hasSafeRepairVersionIdentity()) {
+                return@withLock ConditionalMessageUpdateResult.Conflict("Snapshot or candidate identity changed or invalid")
+            }
+            if (current.role != MessageRole.ASSISTANT) {
+                return@withLock ConditionalMessageUpdateResult.Conflict("Format repair requires an assistant message")
+            }
+            stage = MessageUpdateStage.READ_SESSION
+            when (val read = readSessionDurable(sessionId)) {
+                is JsonFileStorage.EntityReadResult.Valid -> if (read.value.id != sessionId) {
+                    return@withLock ConditionalMessageUpdateResult.Conflict("Session identity mismatch")
+                }
+                JsonFileStorage.EntityReadResult.Missing -> return@withLock ConditionalMessageUpdateResult.Missing(stage)
+                is JsonFileStorage.EntityReadResult.Corrupt -> return@withLock ConditionalMessageUpdateResult.Corrupt(stage, read.cause)
+                is JsonFileStorage.EntityReadResult.ReadError -> return@withLock ConditionalMessageUpdateResult.StorageFailure(stage, read.cause)
+            }
+            if ((replacementContent == null || current.displayContent == replacementContent) && current.formatRepairNotice == notice) {
+                return@withLock ConditionalMessageUpdateResult.Success(current, changed = false)
+            }
+            val updated = current.copy(
+                content = replacementContent ?: current.content,
+                alternatives = current.alternatives.mapIndexed { index, text ->
+                    if (replacementContent != null && index == current.currentAlternativeIndex) replacementContent else text
+                },
+                formatRepairNotice = notice,
+                updatedAt = System.currentTimeMillis(),
+            )
+            stage = MessageUpdateStage.PREPARE_INDEX
+            val index = loadMessageIndex(sessionId)
+            stage = MessageUpdateStage.WRITE_MESSAGE
+            attempted = updated
+            saveMessageRecord(updated, updateIndex = false)
+            stage = MessageUpdateStage.WRITE_INDEX
+            updateMessageIndex(sessionId, index) { entries ->
+                entries.filterNot { it.messageId == messageId } + updated.toIndexEntry()
+            }
+            stage = MessageUpdateStage.WRITE_PREVIEW
+            if (loadMessageIndex(sessionId).entries.lastOrNull()?.messageId == messageId) {
+                sessionSettingsMutex.withLock {
+                    val session = when (val read = readSessionDurable(sessionId)) {
+                        is JsonFileStorage.EntityReadResult.Valid -> read.value
+                        JsonFileStorage.EntityReadResult.Missing -> error("Session missing after message commit")
+                        is JsonFileStorage.EntityReadResult.Corrupt -> throw read.cause
+                        is JsonFileStorage.EntityReadResult.ReadError -> throw read.cause
+                    }
+                    updateSessionLocked(session.copy(
+                        lastMessagePreview = updated.previewText(),
+                        lastMessageTime = updated.createdAt,
+                        lastMessageRole = updated.role,
+                    ))
+                }
+            }
+            ConditionalMessageUpdateResult.Success(updated, changed = true)
+        } catch (error: Exception) {
+            val proposed = attempted
+            if (proposed == null) {
+                if (error is CancellationException) throw error
+                ConditionalMessageUpdateResult.StorageFailure(stage, error)
+            } else {
+                // A dispatch/cancellation failure may occur after durable rename. Never infer rollback.
+                val durable = try {
+                    withContext(NonCancellable) {
+                        // Budget only failure evidence, including cancellable gate/mutex waits.
+                        // Blocking filesystem I/O still relies on safe storage shutdown/ownership.
+                        try {
+                            withTimeout(repairFailureReadbackMillis) { readMessageDurable(messageId, sessionId) }
+                        } catch (readError: Exception) {
+                            JsonFileStorage.EntityReadResult.ReadError(readError)
+                        }
+                    }
+                } finally {
+                    messageIndexes.remove(sessionId)
+                }
+                if (stage == MessageUpdateStage.WRITE_MESSAGE &&
+                    durable is JsonFileStorage.EntityReadResult.Valid && durable.value == expected
+                ) ConditionalMessageUpdateResult.StorageFailure(stage, error)
+                else ConditionalMessageUpdateResult.CommitUncertain(proposed, stage, error, durable)
+            }
+        }
+    }
+
+    private fun ChatMessage.hasSafeRepairVersionIdentity(): Boolean {
+        if (currentAlternativeVersionId != null && currentAlternativeVersionId.isBlank()) return false
+        if (alternatives.isEmpty()) return currentAlternativeIndex == 0 && alternativeVersionIds.isEmpty()
+        if (currentAlternativeIndex !in alternatives.indices) return false
+        // Completely absent IDs are a supported legacy shape; do not normalize or migrate them here.
+        if (alternativeVersionIds.isEmpty()) return true
+        return alternativeVersionIds.size == alternatives.size && alternativeVersionIds.none(String::isBlank) &&
+            alternativeVersionIds.distinct().size == alternativeVersionIds.size &&
+            (currentAlternativeVersionId == null || currentAlternativeVersionId == alternativeVersionIds[currentAlternativeIndex])
     }
 
     private suspend fun latestMessage(sessionId: String): ChatMessage? {
@@ -660,7 +811,7 @@ class ChatRepository(private val storage: JsonFileStorage) {
         }
         val latest = reordered.sortedWith(ChatMessage.TimelineComparator).lastOrNull()
         getSession(sessionId)?.let { session ->
-            updateSession(
+            saveSessionSettingsDraft(session,
                 session.copy(
                     lastMessagePreview = latest?.previewText(),
                     lastMessageTime = latest?.createdAt,
@@ -702,7 +853,7 @@ class ChatRepository(private val storage: JsonFileStorage) {
             } else {
                 session.timelineTombstones
             }
-            updateSession(
+            saveSessionSettingsDraft(session,
                 session.copy(
                     lastMessagePreview = latest?.previewText(),
                     lastMessageTime = latest?.createdAt,
@@ -714,7 +865,11 @@ class ChatRepository(private val storage: JsonFileStorage) {
         }
     }
 
-    suspend fun deleteMessagesForSession(sessionId: String): Int {
+    suspend fun deleteMessagesForSession(sessionId: String): Int = messageAppendMutex.withLock {
+        deleteMessagesForSessionLocked(sessionId)
+    }
+
+    private suspend fun deleteMessagesForSessionLocked(sessionId: String): Int {
         val deleted = storage.deleteByIdPrefixUncached(MESSAGE_TYPE, "${sessionId}_")
         storage.deleteEntityUncached(MESSAGE_INDEX_TYPE, sessionId)
         messageIndexes.remove(sessionId)
@@ -723,12 +878,12 @@ class ChatRepository(private val storage: JsonFileStorage) {
     }
 
     /** 批量替换会话消息，避免逐条更新会话预览与反复全量加载。 */
-    suspend fun replaceMessagesForSession(sessionId: String, messages: List<ChatMessage>) {
+    suspend fun replaceMessagesForSession(sessionId: String, messages: List<ChatMessage>): Unit = messageAppendMutex.withLock {
         val entities = messages.associate { message ->
             val normalized = if (message.sessionId == sessionId) message else message.copy(sessionId = sessionId)
             messageStorageId(sessionId, normalized.id) to normalized
         }
-        deleteMessagesForSession(sessionId)
+        deleteMessagesForSessionLocked(sessionId)
         deleteScrollPosition(sessionId)
         storage.saveAllUncached(MESSAGE_TYPE, entities, ChatMessage.serializer())
         messageIndexMutex.withLock {
@@ -740,7 +895,7 @@ class ChatRepository(private val storage: JsonFileStorage) {
         getSession(sessionId)?.let { session ->
             val nextSource = messages.mapNotNull { it.sourceTurnOrder }.maxOrNull()?.plus(1) ?: 1
             val nextLegacy = messages.mapNotNull { it.timelineTurn }.maxOrNull()?.plus(1) ?: nextSource
-            updateSession(
+            saveSessionSettingsDraft(session,
                 session.copy(
                     nextSourceTurnOrder = maxOf(session.nextSourceTurnOrder, nextSource),
                     nextTimelineTurn = maxOf(session.nextTimelineTurn, nextLegacy)
@@ -787,7 +942,7 @@ class ChatRepository(private val storage: JsonFileStorage) {
             writeMessageIndexLocked(sessionId, entries.sortedWith(indexComparator))
         }
         getSession(sessionId)?.let { session ->
-            updateSession(
+            saveSessionSettingsDraft(session,
                 session.copy(
                     lastMessagePreview = latest?.previewText(),
                     lastMessageTime = latest?.createdAt,
@@ -810,7 +965,7 @@ class ChatRepository(private val storage: JsonFileStorage) {
         ) {
             val next = messages.mapNotNull { it.sourceTurnOrder }.maxOrNull()?.plus(1) ?: 1
             if (session.nextSourceTurnOrder < next) {
-                updateSession(session.copy(nextSourceTurnOrder = next))
+                saveSessionSettingsDraft(session,session.copy(nextSourceTurnOrder = next))
             }
             return@withLock messages
         }
@@ -823,7 +978,7 @@ class ChatRepository(private val storage: JsonFileStorage) {
         val migrated = result.messages
         migrated.forEach { saveMessageRecord(it, updateIndex = false) }
         messageIndexMutex.withLock { rebuildMessageIndexLocked(sessionId) }
-        updateSession(
+        saveSessionSettingsDraft(session,
             session.copy(
                 nextTimelineTurn = result.nextTimelineTurn,
                 nextSourceTurnOrder = result.nextSourceTurnOrder
@@ -849,7 +1004,7 @@ class ChatRepository(private val storage: JsonFileStorage) {
             newSourceTurnId = UUID.randomUUID().toString()
         )
         if (assignment != null && assignment.sourceTurnOrder >= session.nextSourceTurnOrder) {
-            updateSession(
+            saveSessionSettingsDraft(session,
                 session.copy(
                     nextSourceTurnOrder = maxOf(
                         session.nextSourceTurnOrder,
@@ -977,8 +1132,8 @@ class ChatRepository(private val storage: JsonFileStorage) {
     suspend fun rewriteSpeakerTagsForCharacterCard(
         characterCardId: String,
         renames: List<SpeakerTagRename>
-    ): Int {
-        if (renames.isEmpty()) return 0
+    ): Int = messageAppendMutex.withLock {
+        if (renames.isEmpty()) return@withLock 0
         initialize()
         var updatedCount = 0
         _sessions.value.filter { it.characterCardId == characterCardId }.forEach { session ->
@@ -1003,7 +1158,7 @@ class ChatRepository(private val storage: JsonFileStorage) {
             }
             if (sessionChanged) {
                 val latest = updatedMessages.lastOrNull()
-                updateSession(
+                saveSessionSettingsDraft(session,
                     session.copy(
                         lastMessagePreview = latest?.previewText(),
                         lastMessageTime = latest?.createdAt,
@@ -1012,7 +1167,7 @@ class ChatRepository(private val storage: JsonFileStorage) {
                 )
             }
         }
-        return updatedCount
+        updatedCount
     }
 
     /**

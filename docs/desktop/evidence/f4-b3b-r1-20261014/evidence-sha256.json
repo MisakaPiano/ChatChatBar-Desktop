@@ -1,0 +1,54 @@
+[
+  {
+    "Path": "commands.json",
+    "Sha256": "8C6521A9A091C654FFEFC81D5381FD9A044F203E6C9F9AEE76E156352F94B32B"
+  },
+  {
+    "Path": "junit-review.json",
+    "Sha256": "77639A9121EF433B003E914C61086C9104486F0DC861F910AAE10A97D0C73B48"
+  },
+  {
+    "Path": "README.md",
+    "Sha256": "A74CBEE79A9F88DED7F42F7BA2D3C950B28470819D926DD57DC4A59CABB3E3CE"
+  },
+  {
+    "Path": "resource-summary.json",
+    "Sha256": "8B6C0E3874ED31D8EF8AD763B6148FCDCE403A96E04F37A71BA59FE3921735EC"
+  },
+  {
+    "Path": "source-sha256.json",
+    "Sha256": "71D589B788D747C675FE5A7E0CD6AAD82BFF9A332AA05F77B48522526CA0D90A"
+  },
+  {
+    "Path": "stage-results.json",
+    "Sha256": "E6857FF91DF6898D05498609E66A1E90F149DFC18C886F503D319399F9E16B63"
+  },
+  {
+    "Path": "junit/TEST-com.example.chatbar.data.repository.ChatMessageSerializationTest.xml",
+    "Sha256": "33BB3DA4D3F6B50BFC4939A20A7A4BCCB7B6631E39F072F902932B01362AA87E"
+  },
+  {
+    "Path": "junit/TEST-com.example.chatbar.data.repository.ChatRepositoryConditionalUpdateTest.xml",
+    "Sha256": "F3B8CA1D4BF547A6C9EA24FFA25557F876E88E42C80D72EE7FE11EBED4840952"
+  },
+  {
+    "Path": "junit/TEST-com.example.chatbar.data.repository.ChatRepositoryFoundationTest.xml",
+    "Sha256": "77C367C2EACAA6AE6511B52CFE7A4A36F82F2A4763D330235B99EC7BD804CAE1"
+  },
+  {
+    "Path": "junit/TEST-com.example.chatbar.desktop.DesktopMessageFormatRepairTest.xml",
+    "Sha256": "30EA1F4A88E45F80D38D161F8CCE4F8F61AA0E8769BA9C170BA0929BBB52E8C8"
+  },
+  {
+    "Path": "junit/TEST-com.example.chatbar.desktop.DesktopTaskRuntimeTest.xml",
+    "Sha256": "6BF238FE0D5370D0A3BC43057CEE225654820186E0D0612DB9747602DA74C3C3"
+  },
+  {
+    "Path": "junit/TEST-com.example.chatbar.domain.chat.FormatRepairAuxiliaryTransportTest.xml",
+    "Sha256": "35A2C85D8B896249C75E38AC4EB2B007A2FCBF955D903CFD2A3BA41AD0153A5A"
+  },
+  {
+    "Path": "junit/TEST-com.example.chatbar.domain.chat.MessageFormatRepairPolicyTest.xml",
+    "Sha256": "8EF2808F173D2DAE5FD7E837A0E16C114D3B78FE9396DA4778C6C2EAFBF280C8"
+  }
+]

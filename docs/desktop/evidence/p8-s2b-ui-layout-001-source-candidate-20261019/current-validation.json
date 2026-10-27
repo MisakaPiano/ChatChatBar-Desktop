@@ -1,0 +1,21 @@
+{
+  "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:compileTestKotlin",
+  "exit": 0,
+  "seconds": 41.8857188,
+  "compileTestKotlin": "FROM-CACHE / SUCCESS",
+  "freshKotlinCompilerInvocation": false,
+  "newJUnitTests": 0,
+  "newRobotTests": 0,
+  "newManualRunnerLaunches": 0,
+  "bounded": "NOT RUN",
+  "distribution": "NOT BUILT",
+  "windowsManual": "NOT TESTED",
+  "realFishGet": 0,
+  "realFishTts": 0,
+  "junitXml": "NONE; compilation only",
+  "sourceDiffCheck": "PASS",
+  "minAvailableBytes": 573714432,
+  "minCommitHeadroomBytes": 11555471360,
+  "maxPagesPerSecond": 6699,
+  "javaAfter": []
+}

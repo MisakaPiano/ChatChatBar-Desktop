@@ -1,0 +1,7 @@
+{
+  "priorFailure": "expected opens2 actual3",
+  "cause": "seed leaves session foreground; additional generation legitimately autoplays before manual test",
+  "fix": "foreground(null).join before generating fixture take, foreground(session).join afterwards, assert opens0 before original manual opens2 assertion",
+  "productionChange": "NONE in this iteration",
+  "noTimeoutOrThresholdChange": true
+}

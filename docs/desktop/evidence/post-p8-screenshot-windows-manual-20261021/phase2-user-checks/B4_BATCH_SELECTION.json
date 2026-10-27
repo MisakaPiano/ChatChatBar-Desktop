@@ -1,0 +1,61 @@
+{
+  "utc": "2026-10-20T18:35:57.338966+00:00",
+  "step": "B4 batch selection",
+  "userVerbatim": "没错",
+  "instruction": "Select all and note total and recording counts; select none and confirm zero; invert and confirm original counts restored.",
+  "user": "USER PASS",
+  "technical": "NOT TESTED (UI behavior confirmed by user)",
+  "reportedTotalCount": null,
+  "reportedVoiceCount": null,
+  "countBoundary": "User confirmed behavior but did not supply numerical counts; no values inferred.",
+  "latestProcess": {
+    "utc": "2026-10-20T18:35:57.0287677+00:00",
+    "processes": [
+      {
+        "pid": 22576,
+        "parentPid": 38024,
+        "createdUtc": "2026-10-20T18:16:34.7951240Z",
+        "executablePath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image\\ChatChatBarDesktop.exe",
+        "image": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image"
+      },
+      {
+        "pid": 38024,
+        "parentPid": 38340,
+        "createdUtc": "2026-10-20T18:16:33.9913620Z",
+        "executablePath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image\\ChatChatBarDesktop.exe",
+        "image": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image"
+      }
+    ],
+    "alivePids": [
+      38024,
+      22576
+    ],
+    "jvmPids": [
+      22576
+    ]
+  },
+  "latestResources": {
+    "utc": "2026-10-20T18:35:52.9091419+00:00",
+    "ownedProcesses": [
+      {
+        "Id": 38024,
+        "Responding": true,
+        "WorkingSet64": 6635520,
+        "PrivateMemorySize64": 1355776,
+        "PeakWorkingSet64": 6672384
+      },
+      {
+        "Id": 22576,
+        "Responding": true,
+        "WorkingSet64": 537485312,
+        "PrivateMemorySize64": 812777472,
+        "PeakWorkingSet64": 649752576
+      }
+    ],
+    "freePhysicalKiB": 607312,
+    "commitHeadroomBytes": 1730220032,
+    "pagesPerSecond": 0,
+    "allocationFailureObserved": false,
+    "memoryFigureAloneBlocks": false
+  }
+}

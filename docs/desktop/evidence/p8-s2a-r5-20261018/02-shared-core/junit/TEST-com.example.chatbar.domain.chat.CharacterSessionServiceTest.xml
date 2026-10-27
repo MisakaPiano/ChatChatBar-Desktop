@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.chat.CharacterSessionServiceTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:31:18.836Z" hostname="DD1" time="0.267">
+  <properties/>
+  <testcase name="stale default format binding becomes null and reports warning" classname="com.example.chatbar.domain.chat.CharacterSessionServiceTest" time="0.045"/>
+  <testcase name="valid default format binding is copied into new session" classname="com.example.chatbar.domain.chat.CharacterSessionServiceTest" time="0.037"/>
+  <testcase name="existing session keeps binding after character default changes" classname="com.example.chatbar.domain.chat.CharacterSessionServiceTest" time="0.058"/>
+  <testcase name="blank greeting still creates exactly one blank assistant message" classname="com.example.chatbar.domain.chat.CharacterSessionServiceTest" time="0.047"/>
+  <testcase name="blank default format binding becomes null without warning" classname="com.example.chatbar.domain.chat.CharacterSessionServiceTest" time="0.044"/>
+  <testcase name="legacy character JSON has no format binding" classname="com.example.chatbar.domain.chat.CharacterSessionServiceTest" time="0.0"/>
+  <testcase name="missing character fails without creating a session" classname="com.example.chatbar.domain.chat.CharacterSessionServiceTest" time="0.007"/>
+  <testcase name="session title id and opening greeting come from current character" classname="com.example.chatbar.domain.chat.CharacterSessionServiceTest" time="0.029"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

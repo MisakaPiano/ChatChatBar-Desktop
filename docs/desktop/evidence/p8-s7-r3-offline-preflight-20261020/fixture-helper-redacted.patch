@@ -1,0 +1,55 @@
+--- R2/P8S7Support.java (prior credential literal redacted)
++++ R3/P8S7Support.java
+@@ -17,12 +17,23 @@
+ import okhttp3.*;
+ 
+ public final class P8S7Support {
+-    static final String FAKE="[REDACTED PRIOR SYNTHETIC CREDENTIAL]";
++    static String FAKE;
++    static final Set<String> MODEL_KEYS=new HashSet<>();
+     static void write(Path path,String s)throws Exception{Files.writeString(path,s,StandardCharsets.UTF_8);}
+     public static void main(String[] args)throws Exception{
+         switch(args[0]){
+-            case "seed" -> seed(Path.of(args[1]));
+-            case "mock" -> mock(Path.of(args[1]));
++            case "seed" -> { FAKE="synthetic-invalid-"+UUID.randomUUID(); seed(Path.of(args[1])); }
++            case "mock" -> {
++                Path folder=Path.of(args[1]);
++                var store=WindowsSecretStore.Companion.create(folder.getParent().resolve("environments/p8s7-profile/ChatChatBarDesktop"));
++                FAKE=store.load(DesktopCredentialKey.FishAudioApiKey.INSTANCE);
++                if(FAKE==null||!FAKE.startsWith("synthetic-invalid-"))throw new IOException("Synthetic Fish credential required");
++                for(String id:List.of("p8s7-chat","p8s7-aux")) {
++                    String key=store.load(new DesktopCredentialKey.ModelApiKey(id));
++                    if(key==null||!key.startsWith("synthetic-invalid-")||key.equals(FAKE)||!MODEL_KEYS.add(key))throw new IOException("Synthetic model credential required");
++                }
++                mock(folder);
++            }
+             case "lock" -> {
+                 Path root=Path.of(args[1]);
+                 DesktopDataRootResolution.Resolved resolution=new DesktopDataRootResolution.Resolved(root,DesktopDataRootProvenance.CLI_OVERRIDE,root.getParent().resolve("synthetic-bootstrap.json"));
+@@ -60,10 +71,13 @@
+             {Path file=root.resolve("entities/chat_sessions/p8s7-session-b.json");Files.createDirectories(file.getParent());write(file,"{\"id\":\"p8s7-session-b\",\"characterCardId\":\"p8s7-freeform\",\"title\":\"P8 S7 合成会话 B\",\"modelId\":\"p8s7-chat\",\"longTermMemoryEnabled\":false,\"createdAt\":1,\"updatedAt\":2}");}
+             {Path file=root.resolve("entities/chat_messages/p8s7-session-b_p8s7-b-user.json");Files.createDirectories(file.getParent());write(file,"{\"id\":\"p8s7-b-user\",\"sessionId\":\"p8s7-session-b\",\"role\":\"USER\",\"content\":\"请两位合成角色各说一句测试。\",\"createdAt\":1000000,\"updatedAt\":1000000,\"orderKey\":1000000}");}
+             {Path file=root.resolve("entities/chat_messages/p8s7-session-b_p8s7-b-assistant.json");Files.createDirectories(file.getParent());write(file,"{\"id\":\"p8s7-b-assistant\",\"sessionId\":\"p8s7-session-b\",\"role\":\"ASSISTANT\",\"content\":\"柔和的灯光。\\n<n=\\\"Alice 合成测试\\\"/>[这是第一句合成语音测试。](平静)\\n<n=\\\"Bob 合成测试\\\"/>[这是第二句合成语音测试。](微笑)\",\"createdAt\":2000000,\"updatedAt\":2000000,\"orderKey\":2000000,\"alternatives\":[\"柔和的灯光。\\n<n=\\\"Alice 合成测试\\\"/>[这是第一句合成语音测试。](平静)\\n<n=\\\"Bob 合成测试\\\"/>[这是第二句合成语音测试。](微笑)\",\"<n=\\\"Alice 合成测试\\\"/>[这是替代回复的测试。]()\"],\"alternativeVersionIds\":[\"p8s7-version-1\",\"p8s7-version-2\"],\"currentAlternativeVersionId\":\"p8s7-version-1\"}");}
+-            {Path file=root.resolve("entities/model_configs/p8s7-chat.json");Files.createDirectories(file.getParent());write(file,"{\"id\":\"p8s7-chat\",\"displayName\":\"P8 S7 本机合成chat模型\",\"baseUrl\":\"https://api.fish.audio/mock-llm\",\"apiKey\":\"[REDACTED PRIOR SYNTHETIC CREDENTIAL]\",\"modelName\":\"p8s7-mock-text\",\"selectableForChat\":true,\"createdAt\":1}");}
+-            {Path file=root.resolve("entities/model_configs/p8s7-aux.json");Files.createDirectories(file.getParent());write(file,"{\"id\":\"p8s7-aux\",\"displayName\":\"P8 S7 本机合成aux模型\",\"baseUrl\":\"https://api.fish.audio/mock-llm\",\"apiKey\":\"[REDACTED PRIOR SYNTHETIC CREDENTIAL]\",\"modelName\":\"p8s7-mock-text\",\"selectableForChat\":false,\"createdAt\":1}");}
++            {Path file=root.resolve("entities/model_configs/"+com.example.chatbar.data.repository.WindowsSafeModelStorageKeyPolicy.INSTANCE.storageKey("p8s7-chat")+".json");Files.createDirectories(file.getParent());write(file,"{\"id\":\"p8s7-chat\",\"displayName\":\"P8 S7 本机合成chat模型\",\"baseUrl\":\"https://api.fish.audio/mock-llm\",\"apiKey\":\"\",\"modelName\":\"p8s7-mock-text\",\"selectableForChat\":true,\"createdAt\":1}");}
++            {Path file=root.resolve("entities/model_configs/"+com.example.chatbar.data.repository.WindowsSafeModelStorageKeyPolicy.INSTANCE.storageKey("p8s7-aux")+".json");Files.createDirectories(file.getParent());write(file,"{\"id\":\"p8s7-aux\",\"displayName\":\"P8 S7 本机合成aux模型\",\"baseUrl\":\"https://api.fish.audio/mock-llm\",\"apiKey\":\"\",\"modelName\":\"p8s7-mock-text\",\"selectableForChat\":false,\"createdAt\":1}");}
+             {Path file=root.resolve("entities/app_settings.json");Files.createDirectories(file.getParent());write(file,"{\"defaultModelId\":\"p8s7-chat\",\"voiceTagModelId\":\"p8s7-aux\",\"fishAudioTtsModelId\":\"s2.1-pro-free\",\"audiobookModeEnabled\":true,\"momentsEnabled\":false,\"automaticFormatCheckEnabled\":false,\"tutorialVersion\":999}");}
+-            WindowsSecretStore.Companion.create(root).save(DesktopCredentialKey.FishAudioApiKey.INSTANCE,FAKE);
++            var syntheticStore=WindowsSecretStore.Companion.create(root);
++            syntheticStore.save(DesktopCredentialKey.FishAudioApiKey.INSTANCE,FAKE);
++            for(String id:List.of("p8s7-chat","p8s7-aux"))
++                syntheticStore.save(new DesktopCredentialKey.ModelApiKey(id),"synthetic-invalid-"+UUID.randomUUID());
+         }
+         System.out.println("P8 S7_SYNTHETIC_FIXTURE_READY");
+     }
+@@ -138,7 +152,7 @@
+                                 String catalogJson=catalog(query,page,pageSize,primary,other,waiting);
+                                 boolean sampleRoute=primarySample||otherSample||waitSample;
+                                 boolean hasSecretHeader=request.lines().anyMatch(l->{String low=l.toLowerCase(Locale.ROOT);return low.startsWith("authorization:")||low.startsWith("cookie:")||low.startsWith("proxy-authorization:");});
+-                                boolean validApi=request.contains("Authorization: Bearer "+FAKE+"\r\n");
++                                boolean validApi=auxiliary?MODEL_KEYS.stream().anyMatch(k->request.contains("Authorization: Bearer "+k+"\r\n")):request.contains("Authorization: Bearer "+FAKE+"\r\n");
+                                 boolean free=request.contains("model: s2.1-pro-free\r\n");
+                                 int code=(sampleRoute&&!hasSecretHeader)||(validApi&&(catalog||auxiliary||(post&&free)))?200:403;
+                                 boolean hang=code==200&&(waitSample||(post&&reference.equals("p8s7-004"))||

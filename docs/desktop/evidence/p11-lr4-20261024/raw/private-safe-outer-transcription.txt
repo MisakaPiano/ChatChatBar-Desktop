@@ -1,0 +1,35 @@
+TOOL_RESPONSE_TRANSCRIPTION_NOT_ORIGINAL_PRIVATE_STDOUT
+First full outer pass used frozen-final tool snapshot. Final repeat used identity-witness-final snapshot and retained private hashes in a NEW ignored task directory.
+Both produced the same transport/category/count results. ANSI padding omitted; no private filename, ID, digest, dialogue, Token or password included.
+
+LR4_ZIP_CENTRAL_INVENTORY=VERIFIED
+LR4_REMAINING_ENTRIES=FULLY_SCANNED
+LR4_OUTER_AUTHENTICATION=VERIFIED_ENCRYPTED_EOF
+LR4_INNER_GRAPH=BLOCKED_OR_UNVERIFIED
+LR4_ENVELOPE=2
+LR4_CODE=86
+LR4_ENCRYPTED=true
+LR4_FILES=5625
+LR4_TYPED_RECORDS=3135
+LR4_UNSUPPORTED_RECORDS=11
+LR4_RESOURCE_REFERENCES=2882
+LR4_MISSING_RESOURCES=0
+LR4_UNINTERPRETED_RESOURCES=0
+LR4_DEPENDENCY_ISSUES=0
+LR4_HISTORIC_VOICES=108
+LR4_NESTED_PACKAGES=5
+LR4_SCOPE=EXPLICIT_SELECTION_COUNTS_CHECKED
+LR4_MOMENTS=BLOCKED
+LR4_REASON=ALL_DOMAIN_GRAPH_ADAPTERS_INCOMPLETE
+LR4_REASON=CREDENTIAL_TRANSACTION_NOT_AUTHORIZED
+LR4_REASON=ENTITY_SCHEMA_UNSUPPORTED
+LR4_REASON=HISTORIC_VOICE_REQUIRES_DORMANT_PRESERVATION
+LR4_REASON=NESTED_SAVESLOT_DOMAIN_GRAPH_NOT_VERIFIED
+LR4_REASON=WINDOWS_NAMES_REQUIRE_MATERIALIZATION_ADAPTER
+LR4_SEMANTICS=SEMANTICALLY_BLOCKED
+LR4_RESTORE_SUPPORTED=false
+LR4_PRIVATE_WITNESS=RETAINED_LOCAL_ONLY
+LR4_SOURCE_BYTES=UNCHANGED
+LR4_PRIVATE_READ_EXIT=0
+
+The private-witness token occurred on the final repeat only. Historic108 combines unknown nonnull versions and nonnull blank historical representations; this receipt does not assert all108 are nonblank or prove historical causation. Counts0 cover recognized references/basic checked dependencies only, NOT complete all-domain closure. Exit0 is readonly completion, not restore permission.

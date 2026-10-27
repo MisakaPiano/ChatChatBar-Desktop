@@ -28,6 +28,8 @@ internal data class DesktopPresentedSegment(
     val source: RoleplayTextSegment? = null,
     val index: Int? = null,
     val blockId: String? = null,
+    /** Display input with CCB markers intact; never a clipboard or persistence authority. */
+    val markdownSource: String = text,
 )
 
 internal data class DesktopPresentedMessage(
@@ -35,6 +37,7 @@ internal data class DesktopPresentedMessage(
     val segments: List<DesktopPresentedSegment>,
     val segmented: Boolean,
     val reasoning: String?,
+    /** Visible projection only; clipboard actions must use the raw source policies below. */
     val copyText: String,
     val defaultReasoningExpanded: Boolean = false,
     val speakerHeaderIndexes: Set<Int> = emptySet(),
@@ -106,30 +109,38 @@ internal fun desktopPresentMessage(
         DesktopPresentedSegment(
             kind = segment.kind,
             text = PlaceholderRenderer.render(
-                desktopSanitizeRoleplayMarkdown(stripRoleplaySpeakerMarkers(segment.displayText)), playerName, botName,
+                if (segment.kind == RoleplaySegmentKind.STATUS) segment.displayText
+                else desktopSanitizeRoleplayMarkdown(stripRoleplaySpeakerMarkers(segment.displayText)), playerName, botName,
             ),
             speaker = speaker,
-            statusDefaultExpanded = segment.kind == RoleplaySegmentKind.STATUS || segment.statusDefaultExpanded,
+            statusDefaultExpanded = segment.statusDefaultExpanded,
             source = segment,
             index = index,
             blockId = roleplayTextBlockId(message.id, index),
+            markdownSource = PlaceholderRenderer.render(segment.displayText, playerName, botName),
         )
     }
     val visibleText = parsed.joinToString("") { it.text }.trim()
     val segmented = message.role == MessageRole.ASSISTANT && segmentedAssistant
     val presentedSegments = if (segmented) parsed else buildList {
         val body = StringBuilder()
+        val markdownBody = StringBuilder()
         fun flushBody() {
             if (body.isNotEmpty()) {
-                add(DesktopPresentedSegment(RoleplaySegmentKind.NARRATION, body.toString(), null, false))
+                add(DesktopPresentedSegment(RoleplaySegmentKind.NARRATION, body.toString(), null, false,
+                    markdownSource = markdownBody.toString()))
                 body.clear()
+                markdownBody.clear()
             }
         }
         parsed.forEach { segment ->
             if (segment.kind == RoleplaySegmentKind.STATUS) {
                 flushBody()
                 add(segment.copy(speaker = null))
-            } else body.append(segment.text)
+            } else {
+                body.append(segment.text)
+                markdownBody.append(segment.markdownSource)
+            }
         }
         flushBody()
     }
@@ -177,6 +188,36 @@ internal fun desktopRenderSessionText(
     playerName = session.playerName?.takeIf(String::isNotBlank)
         ?: globalPlayerName?.takeIf(String::isNotBlank),
     botName = card?.effectiveBotName ?: session.title,
+)
+
+/** Same source as Android ChatScreen: current candidate, without presentation cleanup. */
+internal fun desktopWholeMessageCopyText(
+    message: ChatMessage,
+    session: ChatSession?,
+    card: CharacterCard?,
+    globalPlayerName: String?,
+): String = desktopCopySourceText(message.displayContent, session, card, globalPlayerName)
+
+/** Android ChatBubble copies the raw range, not segment.displayText or the rendered Markdown. */
+internal fun desktopSegmentCopyText(
+    message: ChatMessage,
+    segment: RoleplayTextSegment,
+    session: ChatSession?,
+    card: CharacterCard?,
+    globalPlayerName: String?,
+): String {
+    val content = message.displayContent
+    val start = segment.start.coerceIn(0, content.length)
+    val end = segment.endExclusive.coerceIn(start, content.length)
+    return desktopCopySourceText(content.substring(start, end), session, card, globalPlayerName)
+}
+
+private fun desktopCopySourceText(
+    text: String, session: ChatSession?, card: CharacterCard?, globalPlayerName: String?,
+): String = PlaceholderRenderer.render(
+    text,
+    session?.playerName?.takeIf(String::isNotBlank) ?: globalPlayerName?.takeIf(String::isNotBlank),
+    card?.effectiveBotName ?: session?.title ?: "",
 )
 
 internal fun desktopRenderedSessionTitle(

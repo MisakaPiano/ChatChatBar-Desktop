@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFishPickerNativeUxTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-18T15:28:58.022Z" hostname="DD1" time="33.511">
+  <properties/>
+  <testcase name="native persistent scrollbar drags current page and explicit page jump preserves request semantics" classname="com.example.chatbar.desktop.DesktopFishPickerNativeUxTest" time="7.953"/>
+  <testcase name="native Stop is top layer visible and operable during download generation and long Windows playback" classname="com.example.chatbar.desktop.DesktopFishPickerNativeUxTest" time="9.811"/>
+  <testcase name="native Escape closes exactly one panel then picker with and without field focus at both widths" classname="com.example.chatbar.desktop.DesktopFishPickerNativeUxTest" time="13.183"/>
+  <testcase name="native resize retains target text and generated cache while sample identity stays distinct" classname="com.example.chatbar.desktop.DesktopFishPickerNativeUxTest" time="2.564"/>
+  <system-out><![CDATA[FISH_R3_SNAPSHOT phase=page-input-and-scrollbar frame=java.awt.Rectangle[x=48,y=48,width=1100,height=720] client=java.awt.Dimension[width=1084,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=true compact=false popup=false busy=false playing=false stopCount=0 stop=[] fieldRoots=[1216614703] ownerEnabled=false closes=0 requests=0
+FISH_R3_SNAPSHOT phase=page-input-and-scrollbar frame=java.awt.Rectangle[x=48,y=48,width=720,height=720] client=java.awt.Dimension[width=704,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=false compact=true popup=false busy=false playing=false stopCount=0 stop=[] fieldRoots=[921984954] ownerEnabled=false closes=0 requests=0
+FISH_R3_SNAPSHOT phase=unknown-total-int-boundary frame=java.awt.Rectangle[x=48,y=48,width=720,height=720] client=java.awt.Dimension[width=704,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=false compact=true popup=false busy=false playing=false stopCount=0 stop=[] fieldRoots=[2109837075] ownerEnabled=false closes=0 requests=0
+FISH_R3_SNAPSHOT phase=Stop-1100-generate-false-playing-false frame=java.awt.Rectangle[x=48,y=48,width=1100,height=720] client=java.awt.Dimension[width=1084,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=true compact=false popup=false busy=true playing=false stopCount=1 stop=[1305:Rect.fromLTRB(977.0, 58.0, 1066.0, 90.0):Offset(1033.0, 137.0):root1460416415] fieldRoots=[1460416415] ownerEnabled=false closes=0 requests=1
+FISH_R3_SNAPSHOT phase=Stop-1100-generate-false-playing-true frame=java.awt.Rectangle[x=48,y=48,width=1100,height=720] client=java.awt.Dimension[width=1084,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=true compact=false popup=false busy=false playing=true stopCount=1 stop=[1406:Rect.fromLTRB(977.0, 58.0, 1066.0, 90.0):Offset(1033.0, 137.0):root733045770] fieldRoots=[733045770] ownerEnabled=false closes=0 requests=1
+FISH_R3_SNAPSHOT phase=Stop-1100-generate-true-playing-false frame=java.awt.Rectangle[x=48,y=48,width=1100,height=720] client=java.awt.Dimension[width=1084,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=true compact=false popup=false busy=true playing=false stopCount=1 stop=[1521:Rect.fromLTRB(977.0, 58.0, 1066.0, 90.0):Offset(1033.0, 137.0):root1079010573] fieldRoots=[1079010573] ownerEnabled=false closes=0 requests=1
+FISH_R3_SNAPSHOT phase=Stop-1100-generate-true-playing-true frame=java.awt.Rectangle[x=48,y=48,width=1100,height=720] client=java.awt.Dimension[width=1084,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=true compact=false popup=false busy=false playing=true stopCount=1 stop=[1618:Rect.fromLTRB(977.0, 58.0, 1066.0, 90.0):Offset(1033.0, 137.0):root1599793646] fieldRoots=[1599793646] ownerEnabled=false closes=0 requests=1
+FISH_R3_SNAPSHOT phase=Stop-720-generate-false-playing-false frame=java.awt.Rectangle[x=48,y=48,width=720,height=720] client=java.awt.Dimension[width=704,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=false compact=true popup=true busy=true playing=false stopCount=1 stop=[1715:Rect.fromLTRB(425.0, 259.0, 514.0, 291.0):Offset(481.0, 338.0):root1886502723] fieldRoots=[700308280, 1886502723] ownerEnabled=false closes=0 requests=1
+FISH_R3_SNAPSHOT phase=Stop-720-generate-false-playing-true frame=java.awt.Rectangle[x=48,y=48,width=720,height=720] client=java.awt.Dimension[width=704,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=false compact=true popup=true busy=false playing=true stopCount=1 stop=[1830:Rect.fromLTRB(425.0, 259.0, 514.0, 291.0):Offset(481.0, 338.0):root944178016] fieldRoots=[606769743, 944178016] ownerEnabled=false closes=0 requests=1
+FISH_R3_SNAPSHOT phase=Stop-720-generate-true-playing-false frame=java.awt.Rectangle[x=48,y=48,width=720,height=720] client=java.awt.Dimension[width=704,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=false compact=true popup=true busy=true playing=false stopCount=1 stop=[1950:Rect.fromLTRB(425.0, 260.0, 514.0, 292.0):Offset(481.0, 339.0):root2072157355] fieldRoots=[436490876, 2072157355] ownerEnabled=false closes=0 requests=1
+FISH_R3_SNAPSHOT phase=Stop-720-generate-true-playing-true frame=java.awt.Rectangle[x=48,y=48,width=720,height=720] client=java.awt.Dimension[width=704,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=false compact=true popup=true busy=false playing=true stopCount=1 stop=[2053:Rect.fromLTRB(425.0, 260.0, 514.0, 292.0):Offset(481.0, 339.0):root791094834] fieldRoots=[957447361, 791094834] ownerEnabled=false closes=0 requests=1
+FISH_R3_SNAPSHOT phase=before-Escape-高级筛选-focus-false frame=java.awt.Rectangle[x=48,y=48,width=1100,height=720] client=java.awt.Dimension[width=1084,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=true compact=false popup=false busy=false playing=false stopCount=0 stop=[] fieldRoots=[920190464] ownerEnabled=false closes=0 requests=0
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_AWT type=402 consumed=false focus=
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_AWT type=402 consumed=false focus=
+FISH_R3_SNAPSHOT phase=panel-closed-before-second-Escape frame=java.awt.Rectangle[x=48,y=48,width=1100,height=720] client=java.awt.Dimension[width=1084,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=true compact=false popup=false busy=false playing=false stopCount=0 stop=[] fieldRoots=[920190464] ownerEnabled=false closes=0 requests=0
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_AWT type=402 consumed=false focus=
+FISH_R3_SNAPSHOT phase=before-Escape-高级筛选-focus-true frame=java.awt.Rectangle[x=48,y=48,width=1100,height=720] client=java.awt.Dimension[width=1084,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=true compact=false popup=false busy=false playing=false stopCount=0 stop=[] fieldRoots=[1737168022] ownerEnabled=false closes=0 requests=0
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_AWT type=402 consumed=false focus=
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_AWT type=402 consumed=false focus=
+FISH_R3_SNAPSHOT phase=panel-closed-before-second-Escape frame=java.awt.Rectangle[x=48,y=48,width=1100,height=720] client=java.awt.Dimension[width=1084,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=true compact=false popup=false busy=false playing=false stopCount=0 stop=[] fieldRoots=[1737168022] ownerEnabled=false closes=0 requests=0
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_AWT type=402 consumed=false focus=
+FISH_R3_SNAPSHOT phase=before-Escape-免费文本生成-focus-false frame=java.awt.Rectangle[x=48,y=48,width=1100,height=720] client=java.awt.Dimension[width=1084,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=true compact=false popup=false busy=false playing=false stopCount=0 stop=[] fieldRoots=[1912746146] ownerEnabled=false closes=0 requests=0
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_AWT type=402 consumed=false focus=
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_AWT type=402 consumed=false focus=
+FISH_R3_SNAPSHOT phase=panel-closed-before-second-Escape frame=java.awt.Rectangle[x=48,y=48,width=1100,height=720] client=java.awt.Dimension[width=1084,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=true compact=false popup=false busy=false playing=false stopCount=0 stop=[] fieldRoots=[1912746146] ownerEnabled=false closes=0 requests=0
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_AWT type=402 consumed=false focus=
+FISH_R3_SNAPSHOT phase=before-Escape-免费文本生成-focus-true frame=java.awt.Rectangle[x=48,y=48,width=1100,height=720] client=java.awt.Dimension[width=1084,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=true compact=false popup=false busy=false playing=false stopCount=0 stop=[] fieldRoots=[884500857] ownerEnabled=false closes=0 requests=0
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_AWT type=402 consumed=false focus=
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_AWT type=402 consumed=false focus=
+FISH_R3_SNAPSHOT phase=panel-closed-before-second-Escape frame=java.awt.Rectangle[x=48,y=48,width=1100,height=720] client=java.awt.Dimension[width=1084,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=true compact=false popup=false busy=false playing=false stopCount=0 stop=[] fieldRoots=[884500857] ownerEnabled=false closes=0 requests=0
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_AWT type=402 consumed=false focus=
+FISH_R3_SNAPSHOT phase=before-Escape-高级筛选-focus-false frame=java.awt.Rectangle[x=48,y=48,width=720,height=720] client=java.awt.Dimension[width=704,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=false compact=true popup=true busy=false playing=false stopCount=0 stop=[] fieldRoots=[836156816, 827637579] ownerEnabled=false closes=0 requests=0
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_AWT type=402 consumed=false focus=
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_AWT type=402 consumed=false focus=
+FISH_R3_SNAPSHOT phase=panel-closed-before-second-Escape frame=java.awt.Rectangle[x=48,y=48,width=720,height=720] client=java.awt.Dimension[width=704,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=false compact=true popup=false busy=false playing=false stopCount=0 stop=[] fieldRoots=[836156816] ownerEnabled=false closes=0 requests=0
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_AWT type=402 consumed=false focus=
+FISH_R3_SNAPSHOT phase=before-Escape-高级筛选-focus-true frame=java.awt.Rectangle[x=48,y=48,width=720,height=720] client=java.awt.Dimension[width=704,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=false compact=true popup=true busy=false playing=false stopCount=0 stop=[] fieldRoots=[1132002186, 1915907573] ownerEnabled=false closes=0 requests=0
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_AWT type=402 consumed=false focus=
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_AWT type=402 consumed=false focus=
+FISH_R3_SNAPSHOT phase=panel-closed-before-second-Escape frame=java.awt.Rectangle[x=48,y=48,width=720,height=720] client=java.awt.Dimension[width=704,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=false compact=true popup=false busy=false playing=false stopCount=0 stop=[] fieldRoots=[1132002186] ownerEnabled=false closes=0 requests=0
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_AWT type=402 consumed=false focus=
+FISH_R3_SNAPSHOT phase=before-Escape-免费文本生成-focus-false frame=java.awt.Rectangle[x=48,y=48,width=720,height=720] client=java.awt.Dimension[width=704,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=false compact=true popup=true busy=false playing=false stopCount=0 stop=[] fieldRoots=[219327610, 1389506344] ownerEnabled=false closes=0 requests=0
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_AWT type=402 consumed=false focus=
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_AWT type=402 consumed=false focus=
+FISH_R3_SNAPSHOT phase=panel-closed-before-second-Escape frame=java.awt.Rectangle[x=48,y=48,width=720,height=720] client=java.awt.Dimension[width=704,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=false compact=true popup=false busy=false playing=false stopCount=0 stop=[] fieldRoots=[219327610] ownerEnabled=false closes=0 requests=0
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_AWT type=402 consumed=false focus=
+FISH_R3_SNAPSHOT phase=before-Escape-免费文本生成-focus-true frame=java.awt.Rectangle[x=48,y=48,width=720,height=720] client=java.awt.Dimension[width=704,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=false compact=true popup=true busy=false playing=false stopCount=0 stop=[] fieldRoots=[940013003, 472792608] ownerEnabled=false closes=0 requests=0
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_AWT type=402 consumed=false focus=
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_AWT type=402 consumed=false focus=
+FISH_R3_SNAPSHOT phase=panel-closed-before-second-Escape frame=java.awt.Rectangle[x=48,y=48,width=720,height=720] client=java.awt.Dimension[width=704,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=false compact=true popup=false busy=false playing=false stopCount=0 stop=[] fieldRoots=[940013003] ownerEnabled=false closes=0 requests=0
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_AWT type=402 consumed=false focus=
+FISH_R3_SNAPSHOT phase=resize-generated-cache frame=java.awt.Rectangle[x=48,y=48,width=720,height=720] client=java.awt.Dimension[width=704,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] wide=false compact=true popup=true busy=false playing=false stopCount=0 stop=[] fieldRoots=[1951511181, 869144406] ownerEnabled=false closes=0 requests=1
+FISH_R3_AWT type=401 consumed=false focus=
+FISH_R3_AWT type=402 consumed=false focus=
+]]></system-out>
+  <system-err><![CDATA[10月 19, 2026 12:29:06 上午 okhttp3.mockwebserver.MockWebServer$SocketHandler handle
+警告: MockWebServer[51158] connection from /127.0.0.1 didn't make a request
+10月 19, 2026 12:29:09 上午 okhttp3.mockwebserver.MockWebServer$SocketHandler handle
+警告: MockWebServer[51162] connection from /127.0.0.1 didn't make a request
+10月 19, 2026 12:29:11 上午 okhttp3.mockwebserver.MockWebServer$SocketHandler handle
+警告: MockWebServer[51166] connection from /127.0.0.1 didn't make a request
+10月 19, 2026 12:29:13 上午 okhttp3.mockwebserver.MockWebServer$SocketHandler handle
+警告: MockWebServer[51173] connection from /127.0.0.1 didn't make a request
+]]></system-err>
+</testsuite>

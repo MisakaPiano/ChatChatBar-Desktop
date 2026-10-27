@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\tools\desktop\experiments\p11-moments-preservation\compare.py", line 28, in <module>
+    require(ar==cr,'REFERENCE_MAP_DIFFER')
+  File "H:\ChatChatBar-Desktop\tools\desktop\experiments\p11-moments-preservation\poc.py", line 37, in require
+    raise Refusal(category)
+poc.Refusal: REFERENCE_MAP_DIFFER

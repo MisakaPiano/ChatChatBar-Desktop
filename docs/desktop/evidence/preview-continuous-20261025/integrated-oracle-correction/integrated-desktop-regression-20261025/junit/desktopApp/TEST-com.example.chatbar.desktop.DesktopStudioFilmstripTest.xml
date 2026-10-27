@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopStudioFilmstripTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-25T02:32:48.407Z" hostname="DD1" time="0.37">
+  <properties/>
+  <testcase name="twenty image filmstrip reveals selection and shares wheel with visible scrollbar" classname="com.example.chatbar.desktop.DesktopStudioFilmstripTest" time="0.172"/>
+  <testcase name="vertical rail virtualizes twenty images and follows selection without stealing it on refresh" classname="com.example.chatbar.desktop.DesktopStudioFilmstripTest" time="0.198"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

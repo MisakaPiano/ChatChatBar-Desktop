@@ -1,0 +1,25 @@
+{
+  "files": [
+    {
+      "path": "user-screenshots\\B1-followup-user-1.png",
+      "sourceUserAttachment": "codex-clipboard-7fe3d28d-e397-4947-ac66-e7b2cd8475f0.png",
+      "bytes": 23880,
+      "sha256": "d5d01ab4bdde093c059a578eda51594b78319b866bc36571761e7850a723e81e",
+      "captureType": "User supplied; no automatic screenshot"
+    },
+    {
+      "path": "user-screenshots\\B1-followup-user-2.png",
+      "sourceUserAttachment": "codex-clipboard-bfb3dece-d050-4452-a6c3-d698ca083c32.png",
+      "bytes": 25418,
+      "sha256": "59979845d61d8e445259030e08ed547e9d330c32c3f82d2927bfbcc13791235a",
+      "captureType": "User supplied; no automatic screenshot"
+    },
+    {
+      "path": "user-screenshots\\B1-followup-user-3.png",
+      "sourceUserAttachment": "codex-clipboard-d8d1a4e9-1d75-4c03-9ccc-375bb20ced27.png",
+      "bytes": 21908,
+      "sha256": "d775ae2a76e8a50235bd8f1a1b5b639b8ff3537e915d3c65d24b547370c26b1f",
+      "captureType": "User supplied; no automatic screenshot"
+    }
+  ]
+}

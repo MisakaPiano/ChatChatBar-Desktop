@@ -1,0 +1,6 @@
+{
+  "reference": "8b05d47b30878da017925aab4f7ff10455892fb9",
+  "rawVerified": 127,
+  "testedSources": 2,
+  "onlyProductionChange": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialSourceCensus.kt"
+}

@@ -1,0 +1,87 @@
+{
+  "rawSnapshotPreserved": "cache-replay-fake-count.json",
+  "snapshotCaveat": "Sample was taken after next hanging-generation phase had already started; raw total is not a replay-only counter.",
+  "normalPreviewPOST": 1,
+  "hangingPOST": 2,
+  "userClarification": "Repeated generation/retry was performed during hanging test.",
+  "cacheReplaySentNewNormalPOST": false,
+  "events": [
+    {
+      "interface": "GET /model",
+      "status": 200,
+      "hanging": false,
+      "syntheticAuthorizationMatched": true,
+      "freeModelMatched": false,
+      "realRequests": 0
+    },
+    {
+      "interface": "GET /model",
+      "status": 200,
+      "hanging": false,
+      "syntheticAuthorizationMatched": true,
+      "freeModelMatched": false,
+      "realRequests": 0
+    },
+    {
+      "interface": "POST /v1/tts",
+      "status": 200,
+      "hanging": false,
+      "syntheticAuthorizationMatched": true,
+      "freeModelMatched": true,
+      "realRequests": 0
+    },
+    {
+      "interface": "GET /model",
+      "status": 200,
+      "hanging": false,
+      "syntheticAuthorizationMatched": true,
+      "freeModelMatched": false,
+      "realRequests": 0
+    },
+    {
+      "interface": "POST /v1/tts",
+      "status": 200,
+      "hanging": true,
+      "syntheticAuthorizationMatched": true,
+      "freeModelMatched": true,
+      "realRequests": 0
+    },
+    {
+      "event": "HANG_SOCKET_DRAINED",
+      "interface": "POST"
+    },
+    {
+      "interface": "POST /v1/tts",
+      "status": 200,
+      "hanging": true,
+      "syntheticAuthorizationMatched": true,
+      "freeModelMatched": true,
+      "realRequests": 0
+    },
+    {
+      "event": "HANG_SOCKET_DRAINED",
+      "interface": "POST"
+    },
+    {
+      "interface": "GET /model",
+      "status": 200,
+      "hanging": false,
+      "syntheticAuthorizationMatched": true,
+      "freeModelMatched": false,
+      "realRequests": 0
+    },
+    {
+      "interface": "GET /model",
+      "status": 200,
+      "hanging": true,
+      "syntheticAuthorizationMatched": true,
+      "freeModelMatched": false,
+      "realRequests": 0
+    },
+    {
+      "event": "HANG_SOCKET_DRAINED",
+      "interface": "GET"
+    }
+  ],
+  "realApiIncrement": 0
+}

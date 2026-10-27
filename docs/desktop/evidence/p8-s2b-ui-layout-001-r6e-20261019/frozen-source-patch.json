@@ -1,0 +1,9 @@
+{
+  "base": "76f527418616e90ed469cabcf0b78c9530563b2f",
+  "bytes": 61834,
+  "sha256": "c77d1af8cdff6f4d70e574b9c09379867780a1e02590570ee3dbcdfca44e4de7",
+  "trackedDiff": "64\t29\tapp/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerPresentation.kt\n24\t6\tapp/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPickerWindow.kt\n",
+  "untrackedNativeLines": 655,
+  "sourceCheckpointCreated": false,
+  "sourceNotStaged": true
+}

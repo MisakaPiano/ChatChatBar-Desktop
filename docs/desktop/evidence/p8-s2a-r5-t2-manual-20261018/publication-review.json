@@ -1,0 +1,17 @@
+{
+  "scope": "explicit evidence allowlist plus visual review of user-supplied synthetic-app screenshots; regex supplemental, not a complete confidentiality guarantee",
+  "sensitiveFindings": [],
+  "syntheticSourceException": [
+    {
+      "path": "R5T2Support.java",
+      "category": "explicitly synthetic fixture credential in helper source only"
+    }
+  ],
+  "userScreenshots": 9,
+  "screenshotContents": "CCB synthetic window only; configured indicators, no real keys or unrelated desktop",
+  "realFishApiIncrement": 0,
+  "skillsReviewed": "Fish skill; evidence-only records introduce no implementation-contract change",
+  "productionOrTestSourceChanged": false,
+  "actualSecretProfilesCredentialsCertificatesRuntimeBinariesNotCopied": true,
+  "userSuppliedSyntheticWindowScreenshotsIncluded": 9
+}

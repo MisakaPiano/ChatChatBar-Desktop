@@ -1,0 +1,9 @@
+{
+  "command": [
+    "python",
+    "tools/desktop/experiments/p11-moments-preservation/poc.py",
+    "run",
+    "H:/ChatChatBar-Desktop/app/desktopApp/build/p11-moments-poc-20261022/raw/20261022-175659-672-pull/artifacts/official-source.cbbackup",
+    "H:/ChatChatBar-Desktop/app/desktopApp/build/p11-moments-poc-20261022/host-run-01"
+  ]
+}

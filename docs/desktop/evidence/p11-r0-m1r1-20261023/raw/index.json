@@ -1,0 +1,262 @@
+[
+  {
+    "path": "raw/boundaries.json",
+    "bytes": 201,
+    "sha256": "23ab575d27d49e11ada6b064f02715a12ee19678ebd1899075a9811e81600b10"
+  },
+  {
+    "path": "raw/conpty/correct.json",
+    "bytes": 199,
+    "sha256": "24598a30a86db8d9d06972564aea547c38418c26a54819021dd3c39229314343"
+  },
+  {
+    "path": "raw/conpty/correct.txt",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "raw/conpty-final/correct.json",
+    "bytes": 243,
+    "sha256": "aa056c627245a93285039fc3549ee10f3a5eb03d2b6f864b8c7461d69d75c7ac"
+  },
+  {
+    "path": "raw/conpty-final/correct.txt",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "raw/conpty-final-exit.txt",
+    "bytes": 3,
+    "sha256": "df4e26a04a444901b95afef44e4a96cfae34690fff2ad2c66389c70079cdff2b"
+  },
+  {
+    "path": "raw/conpty-final-run.log",
+    "bytes": 292,
+    "sha256": "61b1ddc25b3e3e29495ac1344b3c4332bb95b34c80ca0d0223f4343651e71968"
+  },
+  {
+    "path": "raw/conpty-first/correct.json",
+    "bytes": 199,
+    "sha256": "24598a30a86db8d9d06972564aea547c38418c26a54819021dd3c39229314343"
+  },
+  {
+    "path": "raw/conpty-first/correct.txt",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "raw/conpty-first/probe.py",
+    "bytes": 6211,
+    "sha256": "27ca25f2b9057b92a31c727d4eaf6a0c7e62e3f9f8bf6c8d430318a5d239bb41"
+  },
+  {
+    "path": "raw/conpty-second/correct.json",
+    "bytes": 199,
+    "sha256": "de39e42070c59759ff7f1c30bb1646451b46780fc44f9e8433019b3d5f57d483"
+  },
+  {
+    "path": "raw/conpty-second/correct.txt",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "raw/conpty-second/probe.py",
+    "bytes": 6328,
+    "sha256": "e72a0ee271491dad07f089d93c7be90435593e7ba2117a5113ca5f0e1fcf7872"
+  },
+  {
+    "path": "raw/conpty-third/correct.json",
+    "bytes": 199,
+    "sha256": "24598a30a86db8d9d06972564aea547c38418c26a54819021dd3c39229314343"
+  },
+  {
+    "path": "raw/conpty-third/correct.txt",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "path": "raw/conpty-third/probe.py",
+    "bytes": 6589,
+    "sha256": "fb74ac70825236a0a5ff414598609245de0e96423895ab76a7f172ceb5950693"
+  },
+  {
+    "path": "raw/final-source/ConPTY-SyntheticProbe.py",
+    "bytes": 7014,
+    "sha256": "86add7675986c17482300f3b7391d9103ca98d51802691fae84b4b510b4ed816"
+  },
+  {
+    "path": "raw/final-source/M1SyntheticFixture.kt",
+    "bytes": 2257,
+    "sha256": "dc77ff953cff115309a97a135be96188ba7618671098a1880ada22d5bcc89bb0"
+  },
+  {
+    "path": "raw/final-source/readonly.init.gradle",
+    "bytes": 1092,
+    "sha256": "3ac8ab20d7ea84270fe42a02d8cc65deb40da73c4e7880db9a2b9a8bbe11652c"
+  },
+  {
+    "path": "raw/fixture/exit.txt",
+    "bytes": 3,
+    "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+  },
+  {
+    "path": "raw/fixture/generate.log",
+    "bytes": 146,
+    "sha256": "ff5de42746eec57a6a8a758600b17a2df14dffcd1585d9fa8f82a3c0cfbdc2b9"
+  },
+  {
+    "path": "raw/fixture/identity.json",
+    "bytes": 290,
+    "sha256": "119f6530974429d347748b348895cae7a322a219019895157e36a6b7d67efe50"
+  },
+  {
+    "path": "raw/fixture/plain-exit.txt",
+    "bytes": 3,
+    "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+  },
+  {
+    "path": "raw/fixture/plain-generate.log",
+    "bytes": 25,
+    "sha256": "5c37156b6e724e39f4e1920ed6acdc06ec5e3e5a0c1adc655386dc95f557d351"
+  },
+  {
+    "path": "raw/fixture/SYNTHETIC-code84-encrypted.cbbackup",
+    "bytes": 1048,
+    "sha256": "63069e451fa2f2d652593f07c5a281f3b6aa2908cf7f8fa2066d2c4ac56e2908"
+  },
+  {
+    "path": "raw/green/arguments.json",
+    "bytes": 921,
+    "sha256": "2c082730f530bece1b864d0a1bd62ea365f633aeb83c7f2474daf7f34f2b95ec"
+  },
+  {
+    "path": "raw/green/exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "raw/green/gradle.log",
+    "bytes": 2299,
+    "sha256": "624edafea4bada7b0a768c00af4643b8cc1c247d260b2eac96f243954c1263f7"
+  },
+  {
+    "path": "raw/green/jdk.log",
+    "bytes": 196,
+    "sha256": "2c05c59b13a701146c37d79936303eb8080cd353e096756dfab1cd833a306423"
+  },
+  {
+    "path": "raw/green/junit/binary/output.bin",
+    "bytes": 2075,
+    "sha256": "dedc0e946d22f82aef58887efeb350ae986a8c090b1aa270b14eb41e666955ad"
+  },
+  {
+    "path": "raw/green/junit/binary/output.bin.idx",
+    "bytes": 203,
+    "sha256": "e033c9a0cbbc8a287737d348d4cf71011ff84cdbd10179f6514fb7e0c4a695b8"
+  },
+  {
+    "path": "raw/green/junit/binary/results.bin",
+    "bytes": 18322,
+    "sha256": "e60b4a88392cbc7c4f5ad1b06e6b3ba72bbcb7ab8e1fb31ff41cdbf790a6a349"
+  },
+  {
+    "path": "raw/green/junit/TEST-com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest.xml",
+    "bytes": 5042,
+    "sha256": "ebc7f35968b0b47d0b893a99d05c42d520bf0fa1164c862b4d38bd3c4e72fd20"
+  },
+  {
+    "path": "raw/green/junit/TEST-com.example.chatbar.desktop.backup.DesktopCredentialImportPlanTest.xml",
+    "bytes": 3338,
+    "sha256": "19787761959aad7994e17d28e0419c1738afc8daca98596708b4a0b8fee32293"
+  },
+  {
+    "path": "raw/green/junit/TEST-com.example.chatbar.desktop.backup.DesktopCredentialSourceCensusTest.xml",
+    "bytes": 6128,
+    "sha256": "7d264e63f007528335938e94314344350ed69cd6662b5d850556b135d8c6a975"
+  },
+  {
+    "path": "raw/green/junit/TEST-com.example.chatbar.desktop.backup.DesktopReadOnlyBackupRedTest.xml",
+    "bytes": 514,
+    "sha256": "dc0c6c92b686df7dd63231768985c34ee54a920dede49330adcd438d25ab49d7"
+  },
+  {
+    "path": "raw/green/junit/TEST-com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest.xml",
+    "bytes": 4106,
+    "sha256": "7d0b4f5d3acf47fafbb76fa49d7d22dd8c55b87f577e9cf991060dba7c1e8400"
+  },
+  {
+    "path": "raw/green/junit/TEST-com.example.chatbar.desktop.backup.RealArchiveReadOnlyToolTest.xml",
+    "bytes": 3931,
+    "sha256": "45cd0625d2dce0327ef200219a52cc03fa85a79e341ffbab9c60c570085c79c3"
+  },
+  {
+    "path": "raw/green/junit/TEST-com.example.chatbar.desktop.DesktopFullBackupArchiveTest.xml",
+    "bytes": 2496,
+    "sha256": "d472f91f311e25008d5349c84f2a2005020d9c3a31ece85d9c3865a248b963fa"
+  },
+  {
+    "path": "raw/junit-summary.json",
+    "bytes": 1176,
+    "sha256": "e8ca1efb9b576da72f9d56ef2f76645c18f3c78cba0f498037d7c3115196c658"
+  },
+  {
+    "path": "raw/launcher/dangerous-options.log",
+    "bytes": 31,
+    "sha256": "c54dfe55e3e656337deb1ca86ac1ab7cc9b533735b6d7240cb47d5f8ed237c72"
+  },
+  {
+    "path": "raw/launcher/exits.json",
+    "bytes": 67,
+    "sha256": "6e308598833e499044592a6fcc7d56612f355e7a8ec4fa94d086832db5e44b3f"
+  },
+  {
+    "path": "raw/launcher/no-console.log",
+    "bytes": 74,
+    "sha256": "0d06591b1554dbdb2373bff2820647756b0d6875695ce6d4df073a72f7664a9a"
+  },
+  {
+    "path": "raw/launcher/plain.log",
+    "bytes": 436,
+    "sha256": "d24f19d3b4fbb60cb118561944c3e076b868f75fa152568e064c7ba0f895114b"
+  },
+  {
+    "path": "raw/prepare-after/exit.txt",
+    "bytes": 3,
+    "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+  },
+  {
+    "path": "raw/prepare-after/output.log",
+    "bytes": 2103,
+    "sha256": "c7b118b9d6456069f9f25c0d94acd5330c13a4f31a1f4ff46fbfa4e1c9a2a51b"
+  },
+  {
+    "path": "raw/prepare-before/exit.txt",
+    "bytes": 3,
+    "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+  },
+  {
+    "path": "raw/prepare-before/output.log",
+    "bytes": 2061,
+    "sha256": "1ca7b5bc58ac736cae2eb8b823280aa2da85856f4b9454a74de7f1af28f569f7"
+  },
+  {
+    "path": "raw/red/exit.txt",
+    "bytes": 3,
+    "sha256": "f1b2f662800122bed0ff255693df89c4487fbdcf453d3524a42d4ec20c3d9c04"
+  },
+  {
+    "path": "raw/red/prepare.log",
+    "bytes": 1453,
+    "sha256": "5443163d7981771ff769b4cb5811bb8169c343960138d14686fd59dac55b06c7"
+  },
+  {
+    "path": "raw/red/readonly.init.gradle",
+    "bytes": 863,
+    "sha256": "6a402bac95dbfaf714c20baebe2e8a4cf4be0a14a06505bf2a67cbd8748fd4e7"
+  },
+  {
+    "path": "raw/redaction.json",
+    "bytes": 187,
+    "sha256": "423bd2a3b09dfd5724f7dc9c4fbb24fc1d7a845ba87a55a02ec7ec5e27541cf8"
+  }
+]

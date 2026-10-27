@@ -21,7 +21,7 @@ class DesktopPrimaryChatRepairPresentationTest {
         assertNull(shown.segments.first().speaker)
         assertEquals("images/alice.png", shown.segments[1].speaker?.avatarReference)
         assertEquals(shown.segments[1].speaker, shown.segments[2].speaker)
-        assertTrue(shown.segments.last().statusDefaultExpanded)
+        assertFalse(shown.segments.last().statusDefaultExpanded)
         assertTrue(desktopPresentMessage(message, card, "Player", false).enclosingCard)
         assertTrue(desktopPresentMessage(message, card, "Player", false).showWholeMessageHeader)
         assertEquals(content, message.content)
@@ -41,7 +41,7 @@ class DesktopPrimaryChatRepairPresentationTest {
         val shown = desktopPresentMessage(message, card, null, true)
         val markdown = desktopMarkdown(shown.copyText)
         assertEquals("See docs", markdown.text)
-        assertTrue(markdown.spanStyles.any { it.item.textDecoration == TextDecoration.Underline })
+        assertTrue(markdown.spanStyles.none { it.item.textDecoration == TextDecoration.Underline })
     }
 
     @Test fun `raw coordinates and copy projection retain shared segment identity`() {

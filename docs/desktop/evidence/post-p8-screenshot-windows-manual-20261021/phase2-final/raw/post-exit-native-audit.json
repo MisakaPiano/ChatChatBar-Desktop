@@ -1,0 +1,44 @@
+{
+  "utc": "2026-10-20T19:09:48.6985918+00:00",
+  "exclusiveAudioChecks": [
+    {
+      "path": "audio/generated/p8s7-session-a/shot-p8s7-a-assistant-0.mp3",
+      "exclusiveReadOpenSucceeded": true
+    },
+    {
+      "path": "audio/generated/p8s7-session-a/shot-p8s7-a-assistant-1.mp3",
+      "exclusiveReadOpenSucceeded": true
+    },
+    {
+      "path": "audio/generated/p8s7-session-a/shot-postp8-a-assistant-2-0.mp3",
+      "exclusiveReadOpenSucceeded": true
+    },
+    {
+      "path": "audio/generated/p8s7-session-a/shot-postp8-a-assistant-2-1.mp3",
+      "exclusiveReadOpenSucceeded": true
+    },
+    {
+      "path": "audio/generated/p8s7-session-a/shot-shot-a-voice-only-0.mp3",
+      "exclusiveReadOpenSucceeded": true
+    }
+  ],
+  "remainingKnownOwnedProcesses": [
+    {
+      "ProcessId": 27476,
+      "ParentProcessId": 23756,
+      "Name": "python.exe",
+      "CreationDate": "2026-10-21T03:16:28.167139+09:00",
+      "ExecutablePath": "C:\\Users\\1\\AppData\\Local\\Programs\\Python\\Python310\\python.exe"
+    },
+    {
+      "ProcessId": 16352,
+      "ParentProcessId": 27476,
+      "Name": "java.exe",
+      "CreationDate": "2026-10-21T03:16:30.896278+09:00",
+      "ExecutablePath": "C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.20.101-hotspot\\bin\\java.exe"
+    }
+  ],
+  "fakeCleanupExists": false,
+  "ephemeralKeyRemains": true,
+  "publicTrustRemains": true
+}

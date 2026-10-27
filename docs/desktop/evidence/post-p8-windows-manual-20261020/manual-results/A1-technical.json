@@ -1,0 +1,16 @@
+{
+  "utc": "2026-10-20T12:47:51.519679+00:00",
+  "checkpoint": "A1",
+  "fakeCounts": {},
+  "rawEventCount": 0,
+  "realRequestsInFakeOnlyPhase": 0,
+  "supervisorStatus": {
+    "state": "STARTING_WAITING_FOR_WINDOW",
+    "utc": "2026-10-20T12:46:08.876841+00:00",
+    "supervisorPid": 32344,
+    "phase": "FAKE_ONLY",
+    "realRequestsThisProcess": 0,
+    "watchPid": 38400,
+    "manualLifetime": "User-controlled; no automatic GUI closure"
+  }
+}

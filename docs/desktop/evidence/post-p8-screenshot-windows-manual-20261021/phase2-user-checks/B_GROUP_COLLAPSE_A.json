@@ -1,0 +1,59 @@
+{
+  "utc": "2026-10-20T18:34:38.086008+00:00",
+  "step": "B grouping and collapse in session A",
+  "userVerbatim": "没有问题",
+  "instruction": "Check User context groups with complete replies beneath; expand all, note selection count, collapse all without count change, then individually expand a reply and confirm selection preserved.",
+  "user": "USER PASS",
+  "technical": "NOT TESTED (visual semantics confirmed by user only)",
+  "latestProcess": {
+    "utc": "2026-10-20T18:34:35.0865460+00:00",
+    "processes": [
+      {
+        "pid": 22576,
+        "parentPid": 38024,
+        "createdUtc": "2026-10-20T18:16:34.7951240Z",
+        "executablePath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image\\ChatChatBarDesktop.exe",
+        "image": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image"
+      },
+      {
+        "pid": 38024,
+        "parentPid": 38340,
+        "createdUtc": "2026-10-20T18:16:33.9913620Z",
+        "executablePath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image\\ChatChatBarDesktop.exe",
+        "image": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\post-p8-screenshot-r2-boundary-20261021\\windows-frozen-c38bcf27\\runtime-image"
+      }
+    ],
+    "alivePids": [
+      38024,
+      22576
+    ],
+    "jvmPids": [
+      22576
+    ]
+  },
+  "latestResources": {
+    "utc": "2026-10-20T18:34:36.9385092+00:00",
+    "ownedProcesses": [
+      {
+        "Id": 38024,
+        "Responding": true,
+        "WorkingSet64": 6635520,
+        "PrivateMemorySize64": 1355776,
+        "PeakWorkingSet64": 6672384
+      },
+      {
+        "Id": 22576,
+        "Responding": true,
+        "WorkingSet64": 536875008,
+        "PrivateMemorySize64": 812113920,
+        "PeakWorkingSet64": 649752576
+      }
+    ],
+    "freePhysicalKiB": 799996,
+    "commitHeadroomBytes": 1959768064,
+    "pagesPerSecond": 11,
+    "allocationFailureObserved": false,
+    "memoryFigureAloneBlocks": false
+  },
+  "boundary": "Session B irregular history, individual full toggle cycle, batch selection, recording-only preview, resizing and keyboard remain untested. Historical Close root cause UNKNOWN."
+}

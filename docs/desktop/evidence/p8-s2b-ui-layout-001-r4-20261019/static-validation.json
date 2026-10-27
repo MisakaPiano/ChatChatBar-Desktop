@@ -1,0 +1,13 @@
+{
+  "sourceDraftDiffCheckExit": 0,
+  "metadataAndSourceCopiesDiffCheckExit": 0,
+  "excludedRawPatterns": [
+    "*.log",
+    "*.patch"
+  ],
+  "fullRawEvidenceDiffCheckExit": 2,
+  "rawWhitespacePreserved": true,
+  "initialStagedBlobsCompared": 37,
+  "initialStagedRawBytesAllMatch": true,
+  "finalCommitRecheckRequired": true
+}

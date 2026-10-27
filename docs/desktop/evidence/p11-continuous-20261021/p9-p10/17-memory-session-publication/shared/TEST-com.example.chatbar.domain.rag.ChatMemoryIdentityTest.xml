@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.rag.ChatMemoryIdentityTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-20T20:45:17.775Z" hostname="DD1" time="0.009">
+  <properties/>
+  <testcase name="manualChunk_survivesMessageOrphanPruning" classname="com.example.chatbar.domain.rag.ChatMemoryIdentityTest" time="0.002"/>
+  <testcase name="stableChunkId_usesSessionAndSourceTurnIdentity" classname="com.example.chatbar.domain.rag.ChatMemoryIdentityTest" time="0.004"/>
+  <testcase name="pairChunk_isPrunedWhenEitherMessageIsMissing" classname="com.example.chatbar.domain.rag.ChatMemoryIdentityTest" time="0.0"/>
+  <testcase name="automaticReplacement_removesOldPairButPreservesNewTurnAndManualChunks" classname="com.example.chatbar.domain.rag.ChatMemoryIdentityTest" time="0.002"/>
+  <testcase name="prune_removesOrphansAndKeepsNewestDuplicate" classname="com.example.chatbar.domain.rag.ChatMemoryIdentityTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

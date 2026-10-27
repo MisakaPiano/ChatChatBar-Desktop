@@ -1,0 +1,144 @@
+﻿{
+    "actualRegistryQueried":  false,
+    "cases":  [
+                  {
+                      "error":  "CONFIRM_SAME_INDEPENDENT_GUEST_REQUIRED",
+                      "pass":  true,
+                      "name":  "pre-confirmation",
+                      "installerBoundaryCalls":  0
+                  },
+                  {
+                      "error":  "WIN10_PRO_19045_INTERACTIVE_HYPERV_GUEST_REQUIRED",
+                      "pass":  true,
+                      "name":  "pre-host",
+                      "installerBoundaryCalls":  0
+                  },
+                  {
+                      "error":  "IDENTITY_HASH_MISMATCH",
+                      "pass":  true,
+                      "name":  "pre-identity",
+                      "installerBoundaryCalls":  0
+                  },
+                  {
+                      "error":  "SUCCESSFUL_SAME_USER_1112_RECEIPT_REQUIRED",
+                      "pass":  true,
+                      "name":  "pre-first-receipt",
+                      "installerBoundaryCalls":  0
+                  },
+                  {
+                      "error":  "CLOSE_SYNTHETIC_WINDOW_BEFORE_UPGRADE",
+                      "pass":  true,
+                      "name":  "pre-open-window",
+                      "installerBoundaryCalls":  0
+                  },
+                  {
+                      "error":  "EXACT_PRODUCT_QUERY_FAILED_5",
+                      "pass":  true,
+                      "name":  "pre-native-read-failure",
+                      "installerBoundaryCalls":  0
+                  },
+                  {
+                      "error":  "B_ALREADY_REGISTERED_NO_RETRY",
+                      "pass":  true,
+                      "name":  "pre-b-present",
+                      "installerBoundaryCalls":  0
+                  },
+                  {
+                      "error":  "INSTALLED_FILE_MISMATCH",
+                      "pass":  true,
+                      "name":  "pre-files",
+                      "installerBoundaryCalls":  0
+                  },
+                  {
+                      "error":  "GUEST_NEEDS_2_GIB_FREE",
+                      "pass":  true,
+                      "name":  "pre-space",
+                      "installerBoundaryCalls":  0
+                  },
+                  {
+                      "error":  "NEW_UPGRADE_RESULT_REQUIRED_NO_RETRY",
+                      "pass":  true,
+                      "name":  "pre-existing-output",
+                      "installerBoundaryCalls":  0
+                  },
+                  {
+                      "error":  null,
+                      "pass":  true,
+                      "name":  "post-success",
+                      "installerBoundaryCalls":  1
+                  },
+                  {
+                      "error":  "NATIVE_UPGRADE_FAILED_PRESERVE_NO_RETRY",
+                      "pass":  true,
+                      "name":  "post-native-failure",
+                      "installerBoundaryCalls":  1
+                  },
+                  {
+                      "error":  "INSTALLER_STILL_RUNNING_PRESERVE_NO_RETRY",
+                      "pass":  true,
+                      "name":  "post-timeout",
+                      "installerBoundaryCalls":  1
+                  },
+                  {
+                      "error":  "EXACT_INSTALLED_PRODUCT_FEATURE_PACKAGE_REQUIRED",
+                      "pass":  true,
+                      "name":  "post-b-incomplete",
+                      "installerBoundaryCalls":  1
+                  },
+                  {
+                      "error":  "OLD_PRODUCT_REGISTRATION_REMAINED",
+                      "pass":  true,
+                      "name":  "post-old-remained",
+                      "installerBoundaryCalls":  1
+                  },
+                  {
+                      "error":  "UPGRADE_SELECTED_DIRECTORY_NOT_PRESERVED",
+                      "pass":  true,
+                      "name":  "post-location",
+                      "installerBoundaryCalls":  1
+                  },
+                  {
+                      "error":  "OLD_ONLY_REGISTRY_VALUE_REMAINED",
+                      "pass":  true,
+                      "name":  "post-old-registry",
+                      "installerBoundaryCalls":  1
+                  },
+                  {
+                      "error":  "B_PACKAGE_HASH_MISMATCH",
+                      "pass":  true,
+                      "name":  "post-source-change",
+                      "installerBoundaryCalls":  1
+                  },
+                  {
+                      "error":  "PARENT_UPGRADE_AND_OLD_CHILD_ADMISSION_REQUIRED",
+                      "pass":  true,
+                      "name":  "post-child-not-admitted",
+                      "installerBoundaryCalls":  1
+                  },
+                  {
+                      "error":  null,
+                      "pass":  true,
+                      "name":  "real-canary-byte-match"
+                  },
+                  {
+                      "error":  "Exception calling \"Open\" with \"4\" argument(s): \"The file \u0027H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\preview-continuous-private-20261025\\operation1-upgrade-preparation-20261027-r01\\red-r03\\tiny-canary\\CCB_OPERATION1_UNMANAGED_CANARY_1112_1113.txt\u0027 already exists.\"",
+                      "pass":  true,
+                      "name":  "real-canary-exclusive-create"
+                  },
+                  {
+                      "error":  "NONPACKAGE_CANARY_CHANGED",
+                      "pass":  true,
+                      "name":  "real-canary-change-refused"
+                  },
+                  {
+                      "pass":  false,
+                      "name":  "real-powershell-entry-confirmation-survives-dot-source",
+                      "exit":  1
+                  }
+              ],
+    "powershell":  "5.1.19041.6456",
+    "actualWindowOpened":  false,
+    "tests":  23,
+    "failed":  1,
+    "actualInstallerExecuted":  false
+}

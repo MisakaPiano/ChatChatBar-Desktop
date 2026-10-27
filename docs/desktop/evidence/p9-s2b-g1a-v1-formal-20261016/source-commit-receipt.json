@@ -1,0 +1,61 @@
+{
+  "sourceCommit": "806785a11446457fdc6bf7e9a6a313e391a9f32b",
+  "parent": "d047d48c529e28c2c0979ada80073551bcabbd0a",
+  "files": [
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataDirectory.kt",
+      "windowsWorkingTreeBytes": 11486,
+      "windowsWorkingTreeSHA256": "30796bae4944bd3881fdfea3cc886ca164b9caab45fb00f12a6854be3aae955b",
+      "gitBlob": "30a859cf5508661e6ab17aa6e928a790f4b72285",
+      "gitBlobBytes": 11258
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPortableRoot.kt",
+      "windowsWorkingTreeBytes": 16221,
+      "windowsWorkingTreeSHA256": "59ef10946309e172450a87cb485dc9d1376fe6e8f1b3e857074b4d1b352a7ad8",
+      "gitBlob": "a245cde291382344f9e01e870a52368c1b7e725c",
+      "gitBlobBytes": 15864
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt",
+      "windowsWorkingTreeBytes": 13923,
+      "windowsWorkingTreeSHA256": "11edcb561c911e17e90f6c4e98b9f72c3651214fc1be8051384f9ea32b40afa1",
+      "gitBlob": "eb3a406548c2a575f9cc17e54aa5a62c7470da2d",
+      "gitBlobBytes": 13678
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopApplicationLifecycleTest.kt",
+      "windowsWorkingTreeBytes": 42208,
+      "windowsWorkingTreeSHA256": "7b26980776475aa351794b0e0b27e2a23203440e5e9d952864d90eb78f7116e5",
+      "gitBlob": "227da8258a3aa071f78287aadd7acc32035424b5",
+      "gitBlobBytes": 41283
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopDataDirectoryTest.kt",
+      "windowsWorkingTreeBytes": 18608,
+      "windowsWorkingTreeSHA256": "087ce66f5af232ecbfa94901211e2028656fdface0ffdc622e058855b151b2e0",
+      "gitBlob": "0176a50679a95354d39f2c8e2e245099b92c153f",
+      "gitBlobBytes": 18269
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopPortableRootTest.kt",
+      "windowsWorkingTreeBytes": 17741,
+      "windowsWorkingTreeSHA256": "206a5b7ba37e32f7f703190a02ec237cc26601a5e07a55edcb28595e0a9b9ae7",
+      "gitBlob": "f87ea5e68cb433c5ffd4fabdaff8b0d21e91aaf8",
+      "gitBlobBytes": 17388
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopProcessLifecycleTest.kt",
+      "windowsWorkingTreeBytes": 25241,
+      "windowsWorkingTreeSHA256": "028082193954719cb94dcbba603b6a61e428016fe97571276b0825ef92e4c4a7",
+      "gitBlob": "c549d946cb281eccae463071146d8b53a47bf7bb",
+      "gitBlobBytes": 25241
+    }
+  ],
+  "diffstat": "+1057/-85; 7 files",
+  "validatedSourcePatchSHA256": "e18b10b53d577e21ca97b656147df668849f9ae29f5b514d5d42178e19cef4d8",
+  "stagedPatchMatchedValidatedPatch": true,
+  "sourceHashesUnchangedAfterCommit": 7,
+  "validationExecutedOn": "parent d047d48 plus exact R2 seven-source working-tree draft; identical normalized Git source in this commit",
+  "projectAcceptance": "PENDING"
+}

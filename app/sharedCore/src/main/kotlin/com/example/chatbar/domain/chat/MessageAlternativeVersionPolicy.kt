@@ -115,18 +115,20 @@ object MessageAlternativeVersionPolicy {
         )
     }
 
-    fun collapseToEditedContent(
+    // Selectively ported from official v1.4.6; the formal app baseline remains 1.4.1.
+    fun editCurrentContent(
         message: ChatMessage,
         content: String,
         updatedAt: Long = System.currentTimeMillis()
-    ): ChatMessage = message.copy(
-        content = content,
-        alternatives = emptyList(),
-        alternativeVersionIds = emptyList(),
-        currentAlternativeIndex = 0,
-        currentAlternativeVersionId = activeVersionId(message),
-        updatedAt = updatedAt
-    )
+    ): ChatMessage {
+        return normalize(message).copy(
+            content = content,
+            alternatives = message.alternatives.mapIndexed { index, previous ->
+                if (index == message.currentAlternativeIndex) content else previous
+            },
+            updatedAt = updatedAt
+        )
+    }
 
     private fun alignedVersionIds(message: ChatMessage): List<String> {
         val used = mutableSetOf<String>()

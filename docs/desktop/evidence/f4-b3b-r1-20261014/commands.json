@@ -1,0 +1,136 @@
+[
+  {
+    "Stage": "01-shared-main",
+    "Start": "2026-10-14T20:03:58.6052909+09:00",
+    "Arguments": [
+      "--offline",
+      "--no-daemon",
+      "--no-parallel",
+      "--max-workers=1",
+      "--priority=low",
+      "--console=plain",
+      "--no-configuration-cache",
+      "-Pkotlin.compiler.execution.strategy=in-process",
+      ":sharedCore:compileKotlin"
+    ]
+  },
+  {
+    "Stage": "02-desktop-main",
+    "Start": "2026-10-14T20:04:52.8064604+09:00",
+    "Arguments": [
+      "--offline",
+      "--no-daemon",
+      "--no-parallel",
+      "--max-workers=1",
+      "--priority=low",
+      "--console=plain",
+      "--no-configuration-cache",
+      "-Pkotlin.compiler.execution.strategy=in-process",
+      ":desktopApp:compileKotlin"
+    ]
+  },
+  {
+    "Stage": "03-shared-test-compile",
+    "Start": "2026-10-14T20:08:45.5850522+09:00",
+    "Arguments": [
+      "--offline",
+      "--no-daemon",
+      "--no-parallel",
+      "--max-workers=1",
+      "--priority=low",
+      "--console=plain",
+      "--no-configuration-cache",
+      "-Pkotlin.compiler.execution.strategy=in-process",
+      ":sharedCore:compileTestKotlin"
+    ]
+  },
+  {
+    "Stage": "04-desktop-test-compile",
+    "Start": "2026-10-14T20:11:27.3723749+09:00",
+    "Arguments": [
+      "--offline",
+      "--no-daemon",
+      "--no-parallel",
+      "--max-workers=1",
+      "--priority=low",
+      "--console=plain",
+      "--no-configuration-cache",
+      "-Pkotlin.compiler.execution.strategy=in-process",
+      ":desktopApp:compileTestKotlin"
+    ]
+  },
+  {
+    "Stage": "05-desktop-controller-tests",
+    "Start": "2026-10-14T20:14:30.355026+09:00",
+    "Arguments": [
+      "--offline",
+      "--no-daemon",
+      "--no-parallel",
+      "--max-workers=1",
+      "--priority=low",
+      "--console=plain",
+      "--no-configuration-cache",
+      "-Pkotlin.compiler.execution.strategy=in-process",
+      ":desktopApp:test",
+      "--tests",
+      "com.example.chatbar.desktop.DesktopMessageFormatRepairTest"
+    ]
+  },
+  {
+    "Stage": "06-desktop-task-runtime-tests",
+    "Start": "2026-10-14T20:15:31.8080832+09:00",
+    "Arguments": [
+      "--offline",
+      "--no-daemon",
+      "--no-parallel",
+      "--max-workers=1",
+      "--priority=low",
+      "--console=plain",
+      "--no-configuration-cache",
+      "-Pkotlin.compiler.execution.strategy=in-process",
+      ":desktopApp:test",
+      "--tests",
+      "com.example.chatbar.desktop.DesktopTaskRuntimeTest"
+    ]
+  },
+  {
+    "Stage": "07-shared-focused-tests",
+    "Start": "2026-10-14T20:16:22.9551698+09:00",
+    "Arguments": [
+      "--offline",
+      "--no-daemon",
+      "--no-parallel",
+      "--max-workers=1",
+      "--priority=low",
+      "--console=plain",
+      "--no-configuration-cache",
+      "-Pkotlin.compiler.execution.strategy=in-process",
+      ":sharedCore:test",
+      "--tests",
+      "com.example.chatbar.data.repository.ChatRepositoryConditionalUpdateTest",
+      "--tests",
+      "com.example.chatbar.data.repository.ChatRepositoryFoundationTest",
+      "--tests",
+      "com.example.chatbar.data.repository.ChatMessageSerializationTest",
+      "--tests",
+      "com.example.chatbar.domain.chat.MessageFormatRepairPolicyTest",
+      "--tests",
+      "com.example.chatbar.domain.chat.FormatRepairAuxiliaryTransportTest"
+    ]
+  },
+  {
+    "Stage": "08-android-compile",
+    "Start": "2026-10-14T20:17:23.8890646+09:00",
+    "Arguments": [
+      "--offline",
+      "--no-daemon",
+      "--no-parallel",
+      "--max-workers=1",
+      "--priority=low",
+      "--console=plain",
+      "--no-configuration-cache",
+      "-Pkotlin.compiler.execution.strategy=in-process",
+      ":app:compileDebugKotlin"
+    ]
+  }
+]

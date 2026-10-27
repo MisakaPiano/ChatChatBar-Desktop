@@ -1,0 +1,11 @@
+[
+  "tools/desktop/windows/build_operation_guest_bundle.py",
+  "--package",
+  "H:/ChatChatBar-Desktop/app/desktopApp/build/preview-continuous-private-20261025/operation1-native-pair-1112-1113-20261027-r01/A/ChatChatBarDesktopSynthetic-0.1.1112.msi",
+  "--image",
+  "I:/CCB-OP1-20261027-1112-r01/image/ChatChatBarDesktopSynthetic",
+  "--guard-build",
+  "app/desktopApp/build/preview-continuous-private-20261025/msi-operation-contract-20261027-r01/guard-production-r10",
+  "--output",
+  "I:/CCB-OP1-DL1-20261027-r01"
+]

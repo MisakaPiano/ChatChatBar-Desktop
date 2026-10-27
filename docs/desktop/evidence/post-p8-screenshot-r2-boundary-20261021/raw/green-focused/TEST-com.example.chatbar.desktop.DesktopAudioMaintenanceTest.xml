@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopAudioMaintenanceTest" tests="11" skipped="0" failures="1" errors="0" timestamp="2026-10-20T16:12:28.645Z" hostname="DD1" time="25.907">
+  <properties/>
+  <testcase name="cancellation completes native drain before reopening admission and skips migration transaction" classname="com.example.chatbar.desktop.DesktopAudioMaintenanceTest" time="12.722"/>
+  <testcase name="migration reservation makes concurrent automatic checks defer before scheduler join" classname="com.example.chatbar.desktop.DesktopAudioMaintenanceTest" time="5.952">
+    <failure message="kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 3000 ms" type="kotlinx.coroutines.TimeoutCancellationException">kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 3000 ms
+	at _COROUTINE._BOUNDARY._(CoroutineDebugging.kt:42)
+	at com.example.chatbar.desktop.DesktopAudioMaintenanceTest$migration reservation makes concurrent automatic checks defer before scheduler join$1$3.invokeSuspend(DesktopAudioMaintenanceTest.kt:231)
+	at com.example.chatbar.desktop.DesktopAudioMaintenanceTest$migration reservation makes concurrent automatic checks defer before scheduler join$1.invokeSuspend(DesktopAudioMaintenanceTest.kt:231)
+	at com.example.chatbar.desktop.DesktopAudioMaintenanceTest$maintenanceTest$1.invokeSuspend(DesktopAudioMaintenanceTest.kt:333)
+Caused by: kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 3000 ms
+	at kotlinx.coroutines.TimeoutKt.TimeoutCancellationException(Timeout.kt:189)
+	at kotlinx.coroutines.TimeoutCoroutine.run(Timeout.kt:157)
+	at kotlinx.coroutines.EventLoopImplBase$DelayedRunnableTask.run(EventLoop.common.kt:505)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.DefaultExecutor.run(DefaultExecutor.kt:105)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+</failure>
+  </testcase>
+  <testcase name="paused lease blocks exclusive until confirmed native drain" classname="com.example.chatbar.desktop.DesktopAudioMaintenanceTest" time="0.63"/>
+  <testcase name="migration waits for drain rejects late playback and seals after commit" classname="com.example.chatbar.desktop.DesktopAudioMaintenanceTest" time="1.687"/>
+  <testcase name="failed native close fails closed before any migration files then explicit retry recovers" classname="com.example.chatbar.desktop.DesktopAudioMaintenanceTest" time="0.161"/>
+  <testcase name="in flight real scheduler backup cannot form migration audio scheduler join cycle" classname="com.example.chatbar.desktop.DesktopAudioMaintenanceTest" time="0.43"/>
+  <testcase name="real coordinator playFrom intent resume and autoplay cannot reopen during drain" classname="com.example.chatbar.desktop.DesktopAudioMaintenanceTest" time="3.705"/>
+  <testcase name="idle backup reservation blocks check to exclusive race and migration defers without scheduler cycle" classname="com.example.chatbar.desktop.DesktopAudioMaintenanceTest" time="0.112"/>
+  <testcase name="cancellation while waiting for exclusive releases audio reservation and destination" classname="com.example.chatbar.desktop.DesktopAudioMaintenanceTest" time="0.103"/>
+  <testcase name="cancelled pending exclusive and duplicate migration release both admission owners" classname="com.example.chatbar.desktop.DesktopAudioMaintenanceTest" time="0.057"/>
+  <testcase name="automatic backup reports busy without exclusive and scheduler retries after stop" classname="com.example.chatbar.desktop.DesktopAudioMaintenanceTest" time="0.348"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

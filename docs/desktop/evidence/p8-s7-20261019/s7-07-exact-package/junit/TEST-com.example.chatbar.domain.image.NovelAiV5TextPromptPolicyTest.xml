@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.image.NovelAiV5TextPromptPolicyTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-19T12:01:47.097Z" hostname="DD1" time="0.002">
+  <properties/>
+  <testcase name="onlyPositiveV5RequestCopyChanges" classname="com.example.chatbar.domain.image.NovelAiV5TextPromptPolicyTest" time="0.0"/>
+  <testcase name="onlyFirstBaseChunkIsExpandedAndRandomizerPipesArePreserved" classname="com.example.chatbar.domain.image.NovelAiV5TextPromptPolicyTest" time="0.0"/>
+  <testcase name="singleQuotesPreserveContractionsAndPossessives" classname="com.example.chatbar.domain.image.NovelAiV5TextPromptPolicyTest" time="0.001"/>
+  <testcase name="repeatedTextIsRetainedAndExpansionIsIdempotent" classname="com.example.chatbar.domain.image.NovelAiV5TextPromptPolicyTest" time="0.0"/>
+  <testcase name="cjkThresholdUsesAllFieldsAndIsStrictlyGreaterThanThirtyPercent" classname="com.example.chatbar.domain.image.NovelAiV5TextPromptPolicyTest" time="0.0"/>
+  <testcase name="explicitTextDetectionMatchesOfficialBoundaries" classname="com.example.chatbar.domain.image.NovelAiV5TextPromptPolicyTest" time="0.0"/>
+  <testcase name="unmatchedEmptyAndUnsupportedQuotesDoNotProduceText" classname="com.example.chatbar.domain.image.NovelAiV5TextPromptPolicyTest" time="0.0"/>
+  <testcase name="cjkReversesWithinEachFieldButPreservesCharacterOrder" classname="com.example.chatbar.domain.image.NovelAiV5TextPromptPolicyTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

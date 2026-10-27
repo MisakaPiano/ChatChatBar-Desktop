@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopStudioGenerateGateTest" tests="13" skipped="0" failures="0" errors="0" timestamp="2026-10-18T20:01:42.030Z" hostname="DD1" time="0.235">
+  <properties/>
+  <testcase name="guidance validity follows shared model rules without clearing references" classname="com.example.chatbar.desktop.DesktopStudioGenerateGateTest" time="0.0"/>
+  <testcase name="initial loading with credential enables valid input without a false free claim" classname="com.example.chatbar.desktop.DesktopStudioGenerateGateTest" time="0.054"/>
+  <testcase name="credential disappearing before runtime launch rejects before transport or persistence" classname="com.example.chatbar.desktop.DesktopStudioGenerateGateTest" time="0.029"/>
+  <testcase name="blank base prompt is ineligible" classname="com.example.chatbar.desktop.DesktopStudioGenerateGateTest" time="0.0"/>
+  <testcase name="unreadable credential fails closed with a safe error and no account call" classname="com.example.chatbar.desktop.DesktopStudioGenerateGateTest" time="0.028"/>
+  <testcase name="refresh rechecks credential save and removal without account calls when missing" classname="com.example.chatbar.desktop.DesktopStudioGenerateGateTest" time="0.027"/>
+  <testcase name="account fetch failure retains eligibility warning and conservative cost" classname="com.example.chatbar.desktop.DesktopStudioGenerateGateTest" time="0.027"/>
+  <testcase name="unknown account cost retains shared encoding and extra vibe details" classname="com.example.chatbar.desktop.DesktopStudioGenerateGateTest" time="0.0"/>
+  <testcase name="refresh failure after known account does not retain a false free cost" classname="com.example.chatbar.desktop.DesktopStudioGenerateGateTest" time="0.028"/>
+  <testcase name="active size validation follows shared authority" classname="com.example.chatbar.desktop.DesktopStudioGenerateGateTest" time="0.0"/>
+  <testcase name="busy always presents Stop independent of account or credential state" classname="com.example.chatbar.desktop.DesktopStudioGenerateGateTest" time="0.012"/>
+  <testcase name="configured known account retains shared free allowance and paid costs" classname="com.example.chatbar.desktop.DesktopStudioGenerateGateTest" time="0.028"/>
+  <testcase name="readiness and history application block new generation only" classname="com.example.chatbar.desktop.DesktopStudioGenerateGateTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

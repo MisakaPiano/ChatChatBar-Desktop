@@ -1,0 +1,30 @@
+{
+  "sourceCommit": "fa5d3f18eebbd6c34f607d7b52d47e24825cb411",
+  "createDistributableExecutedOnce": true,
+  "originalAndIsolatedCopyMatch": true,
+  "fileCount": 212,
+  "launcher": {
+    "path": "ChatChatBarDesktop.exe",
+    "bytes": 484352,
+    "sha256": "e5d45e5389e7584b9d8477efe34543de1069e6550560a3a3c53d164152958b8f"
+  },
+  "businessJar": {
+    "path": "app/desktopApp-deb6401b9483b0fee6f562fbe6b48.jar",
+    "sha256": "a3c1a27586366c97d6d718fcf06726c6a9784cf947a3b0c0b9c2d9c36b206847"
+  },
+  "classes": [
+    {
+      "entry": "com/example/chatbar/desktop/DesktopFishAudioPanelKt.class",
+      "sha256": "a5107ab010fd563f4c752750e72bbc843e242a485be68a1f06e34de28d793f45",
+      "matchesCurrentCompiledClass": true
+    },
+    {
+      "entry": "com/example/chatbar/desktop/DesktopManagePanelKt.class",
+      "sha256": "ebb36a8bd77768bd7568eb530dacb462f204034e1c981457d675a9c85e57337e",
+      "matchesCurrentCompiledClass": true
+    }
+  ],
+  "applicationHome": "-Dchatbar.desktop.applicationHome=$ROOTDIR",
+  "sharedCoreRuntime": "reused unchanged; compile UP-TO-DATE",
+  "olderT1BusinessJarNotReused": true
+}

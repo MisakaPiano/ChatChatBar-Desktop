@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.search.CharacterResearchPlannerTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:25.659Z" hostname="DD1" time="0.018">
+  <properties/>
+  <testcase name="parsePlan accepts query with unescaped inner quotes" classname="com.example.chatbar.domain.search.CharacterResearchPlannerTest" time="0.006"/>
+  <testcase name="parsePlan accepts string query array" classname="com.example.chatbar.domain.search.CharacterResearchPlannerTest" time="0.001"/>
+  <testcase name="parsePlan accepts fenced json sorts and caps queries" classname="com.example.chatbar.domain.search.CharacterResearchPlannerTest" time="0.002"/>
+  <testcase name="parsePlan returns null for bad json" classname="com.example.chatbar.domain.search.CharacterResearchPlannerTest" time="0.003"/>
+  <testcase name="research prompt templates render editable placeholders" classname="com.example.chatbar.domain.search.CharacterResearchPlannerTest" time="0.001"/>
+  <testcase name="research prompt templates keep long planner input and brief sources" classname="com.example.chatbar.domain.search.CharacterResearchPlannerTest" time="0.002"/>
+  <testcase name="parsePlan disables search when all queries are blank" classname="com.example.chatbar.domain.search.CharacterResearchPlannerTest" time="0.002"/>
+  <testcase name="parsePlan accepts single query field" classname="com.example.chatbar.domain.search.CharacterResearchPlannerTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

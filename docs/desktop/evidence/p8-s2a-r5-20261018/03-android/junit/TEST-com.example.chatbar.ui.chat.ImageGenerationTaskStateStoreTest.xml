@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.ui.chat.ImageGenerationTaskStateStoreTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:26.527Z" hostname="DD1" time="0.002">
+  <properties/>
+  <testcase name="task updates and removal do not affect other tasks" classname="com.example.chatbar.ui.chat.ImageGenerationTaskStateStoreTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

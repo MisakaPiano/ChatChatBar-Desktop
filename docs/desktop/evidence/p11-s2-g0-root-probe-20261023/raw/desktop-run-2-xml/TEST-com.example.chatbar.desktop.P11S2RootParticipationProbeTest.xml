@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.P11S2RootParticipationProbeTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-10-22T19:23:31.257Z" hostname="DD1" time="2.458">
+  <properties/>
+  <testcase name="unknown archive entity is S0 readable S1 blocked and cannot become Prepared" classname="com.example.chatbar.desktop.P11S2RootParticipationProbeTest" time="0.061"/>
+  <testcase name="journal rejects sentinel paths but registered replacement leaves it outside transaction" classname="com.example.chatbar.desktop.P11S2RootParticipationProbeTest" time="0.107"/>
+  <testcase name="portable activation admits sentinel without a future capability barrier" classname="com.example.chatbar.desktop.P11S2RootParticipationProbeTest" time="0.037"/>
+  <testcase name="startup admits unknown sentinel and owns root through recovery and business" classname="com.example.chatbar.desktop.P11S2RootParticipationProbeTest" time="0.021"/>
+  <testcase name="full backup service rejects unknown root entry instead of silently skipping" classname="com.example.chatbar.desktop.P11S2RootParticipationProbeTest" time="0.022"/>
+  <testcase name="real migration service copies sentinel snapshots and commits isolated authority" classname="com.example.chatbar.desktop.P11S2RootParticipationProbeTest" time="0.079"/>
+  <testcase name="manual snapshot includes and restores unknown sentinel bytes" classname="com.example.chatbar.desktop.P11S2RootParticipationProbeTest" time="0.06"/>
+  <testcase name="hidden sentinel inside registered media root is silently skipped by full backup" classname="com.example.chatbar.desktop.P11S2RootParticipationProbeTest" time="0.125"/>
+  <testcase name="real automatic scheduler invokes coordinated snapshot including sentinel" classname="com.example.chatbar.desktop.P11S2RootParticipationProbeTest" time="0.043"/>
+  <testcase name="owned live GC ignores sentinel references and cannot sweep its independent blob" classname="com.example.chatbar.desktop.P11S2RootParticipationProbeTest" time="0.018"/>
+  <testcase name="owned child crash rolls back registered journal while sentinel remains outside rows" classname="com.example.chatbar.desktop.P11S2RootParticipationProbeTest" time="1.864"/>
+  <testcase name="cancelled materialization retains source and leaves destination lock only" classname="com.example.chatbar.desktop.P11S2RootParticipationProbeTest" time="0.02"/>
+  <system-out><![CDATA[G0 ARCHIVE=S0_READABLE_S1_BLOCKED_PREPARED_REJECTED
+G0 JOURNAL=UNKNOWN_PATH_REJECTED SENTINEL_OUTSIDE_ROWS_NOT_TRANSACTIONALLY_COVERED
+G0 PORTABLE=ADMITTED_UNKNOWN_PAYLOAD OLD_BINARY=NOT_TESTED
+G0 STARTUP=ADMITTED_UNKNOWN_PAYLOAD LOCK=RELEASED LEGACY_BINARY=NOT_TESTED
+G0 FULL_BACKUP=EXPLICITLY_REJECTED UNKNOWN_ROOT
+G0 ROOT_MIGRATION=PRESERVED_SOURCE_DESTINATION_SNAPSHOT AUTHORITY_COMMITTED
+G0 SNAPSHOT=PRESERVED_AND_RESTORED RAW_ONLY_NO_DOMAIN_SEAL
+G0 FULL_BACKUP_HIDDEN_VARIANT=SILENTLY_SKIPPED WHILE_EXPORT_SUCCEEDED
+G0 AUTOMATIC_RUNTIME=PRESERVED VIA_REAL_SCHEDULER
+G0 GC=INDEPENDENT_BLOB_RETAINED SHARED_LIVE_IMAGE_DELETED_SENTINEL_REFERENCE_NOT_SCANNED
+G0 CHILD mode=schedule exit=0 alive=false
+G0 CHILD mode=crash-during-apply exit=71 alive=false
+G0 CHILD mode=recover exit=0 alive=false
+G0 CRASH=REGISTERED_ROW_ROLLED_BACK SENTINEL_UNCHANGED_NOT_NEW_DOMAIN_RECOVERY_PROOF
+G0 MIGRATION_CANCEL=SOURCE_RETAINED_DESTINATION_LOCK_ONLY
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

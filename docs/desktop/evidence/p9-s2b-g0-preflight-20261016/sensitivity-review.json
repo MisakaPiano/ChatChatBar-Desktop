@@ -1,0 +1,7 @@
+{
+  "scope": "Copied XML/log/jsonl reviewed for credentials, private-key material and non-synthetic payloads",
+  "patternFindings": 0,
+  "rawFiles": 17,
+  "origin": "Only authorized synthetic G0 and existing focused test execution; no real user data or browser reads",
+  "qualification": "Pattern checks supplement source/scope review; not an absolute secrets guarantee"
+}

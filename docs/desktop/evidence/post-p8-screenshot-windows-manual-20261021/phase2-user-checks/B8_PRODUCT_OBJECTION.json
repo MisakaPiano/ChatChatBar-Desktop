@@ -1,0 +1,14 @@
+{
+  "utc": "2026-10-20T18:38:06.537439+00:00",
+  "step": "B8 recording-only preview",
+  "userVerbatim": "你解释一下这是什么意思，我为什么要给录音截图？有任何人需要给录音截图吗？",
+  "user": "NOT TESTED (no USER PASS; product intent challenged)",
+  "observation": "User attachment shows 1 selected item / 1 recording, complete reply 3 selected, preview containing a static Alice recording row with 25s duration. Screenshot viewed by Codex; not proof of PNG export or user acceptance.",
+  "technical": "Preview visible in supplied screenshot; export NOT TESTED",
+  "contractOrigin": "Current manual Gate explicitly includes recording-only replies entering preview, inherited from R2-R1 boundary repair. This is an engineering coverage requirement, not evidence of a user need.",
+  "productConcern": "User questions why recordings belong in chat screenshots at all. PNG is a static representation and cannot contain playable audio. Do not infer removal authorization or modify product during this Gate. Escalate screenshot inclusion semantics to Project.",
+  "nextBoundary": "Do not continue recording-only export or sign this item as USER PASS pending product clarification. Ordinary text/image screenshot checks remain in scope.",
+  "attachment": "B8_VOICE_ONLY_PRODUCT_OBJECTION.png",
+  "sha256": "1009bcd0f4c32cc10b7e0d8f6683a9092fcea8bb1b904532a3efd22dd5f0c30b",
+  "historicalCloseCause": "UNKNOWN"
+}

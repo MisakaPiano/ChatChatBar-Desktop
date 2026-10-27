@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='utf-8'?>
+<testsuite name="SyntheticSnapshotRecoveryProcessTest" tests="2" failures="2" errors="0" skipped="0" time="1.1880000000001019"><testcase classname="SyntheticSnapshotRecoveryProcessTest" name="test_corrupt_selected_snapshot_rejects_before_live_changes"><failure>Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\snapshot-recovery\run_synthetic.py", line 111, in test_corrupt_selected_snapshot_rejects_before_live_changes
+    child("corruption-seed", "seed", directory)
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\snapshot-recovery\run_synthetic.py", line 92, in child
+    assert execute(label, command) == 0, label
+AssertionError: corruption-seed
+</failure></testcase><testcase classname="SyntheticSnapshotRecoveryProcessTest" name="test_restore_then_two_independent_repository_reopens"><failure>Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\snapshot-recovery\run_synthetic.py", line 104, in test_restore_then_two_independent_repository_reopens
+    child("roundtrip-seed", "seed", directory)
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\snapshot-recovery\run_synthetic.py", line 92, in child
+    assert execute(label, command) == 0, label
+AssertionError: roundtrip-seed
+</failure></testcase></testsuite>

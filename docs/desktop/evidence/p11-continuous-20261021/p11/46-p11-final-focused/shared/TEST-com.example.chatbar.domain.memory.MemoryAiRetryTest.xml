@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.memory.MemoryAiRetryTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-20T22:04:09.226Z" hostname="DD1" time="0.041">
+  <properties/>
+  <testcase name="retryableTransportFailureStopsAfterThreeRequests" classname="com.example.chatbar.domain.memory.MemoryAiRetryTest" time="0.036"/>
+  <testcase name="compressionPlannerRetriesFiveTruncatedOutputs" classname="com.example.chatbar.domain.memory.MemoryAiRetryTest" time="0.002"/>
+  <testcase name="memoryAiRetriesFiveInvalidOutputsBeforeFailing" classname="com.example.chatbar.domain.memory.MemoryAiRetryTest" time="0.0"/>
+  <testcase name="succeedsWithoutUsingRemainingAttempts" classname="com.example.chatbar.domain.memory.MemoryAiRetryTest" time="0.0"/>
+  <testcase name="nonRetryableRequestStopsImmediatelyWithStage" classname="com.example.chatbar.domain.memory.MemoryAiRetryTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.chat.SessionCopyPolicyTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-20T20:58:56.544Z" hostname="DD1" time="0.028">
+  <properties/>
+  <testcase name="session settings survive while runtime identity resets" classname="com.example.chatbar.domain.chat.SessionCopyPolicyTest" time="0.008"/>
+  <testcase name="each copy owns distinct messages even when copying a copy" classname="com.example.chatbar.domain.chat.SessionCopyPolicyTest" time="0.001"/>
+  <testcase name="copy remaps image anchors and retains version and source evidence" classname="com.example.chatbar.domain.chat.SessionCopyPolicyTest" time="0.012"/>
+  <testcase name="copy names avoid collisions without exceeding display title limit" classname="com.example.chatbar.domain.chat.SessionCopyPolicyTest" time="0.002"/>
+  <testcase name="rag references point only to copied messages and retain vectors" classname="com.example.chatbar.domain.chat.SessionCopyPolicyTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

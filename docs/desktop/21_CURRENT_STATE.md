@@ -1,4 +1,14 @@
+## 2026-10-28 当前路线（用户最新直接指令）
+
+以 [204 路线切换](204_STUDIO_NSIS_ROUTE_SWITCH_20261028.md) 为当前安装与引继入口。用户目标优先于审查助手建议：Studio式 NSIS 为 Preview 主线；MSI 无限期搁置，仅保留最小有价值档案并优先实际回收空间。**虚拟机若不再需要则彻底退役，不默认保留任何一台。** A 接管源码，B 回收废弃大产物，原执行者交接后停止。旧“继续MSI/完整失败VM保留/保持原执行者”安排已被本轮明确调整；其他 P11、数据与 Prompt 边界继续。新 NSIS 尚未验收，旧失败不改为 PASS。
+
+执行分别见 [A 主线](205_NSIS_PRIMARY_HANDOFF_20261028.md)、[B 回收](206_MSI_RECLAIM_HANDOFF_20261028.md)。这次不增加 Project 审批，不重开无关审计；已有有效证据复用。云端 Project 文件同步须取得真实回执，不能用本地副本冒充。
+
+---
+
 # CCB Desktop Current State
+
+最新实施起点与全部未交付项以活动分支 [207 持续总账](207_CONTINUOUS_START_AND_DELIVERY_LEDGER.md) 为查询入口；本文件下方保留各历史截点，不以旧状态覆盖新回执。
 
 用户已于 2026-10-25 明确把**合并式迁移纳入当前 P11→Preview 任务**：保留电脑已有数据，将手机数据合并进来，冲突由用户选择。现有执行者在本轮连续实现、验证并推进到 Preview；不另开审计、合同或 Project 审批门槛。详见 [203](203_P11_TO_PUBLIC_PREVIEW_CONTINUOUS_CODEX_TASK.md)。
 
@@ -13,6 +23,10 @@
 旧 LR 合同、未审计、未签字 0/7 不构成开发冻结；真实缺陷定位到字段/类型/调用链，只影响依赖动作。必要人工验收由 Codex 直接交用户。授权与事实分开，诊断不自动扩大为真实数据/凭据写入、合并或发布权限；已有许可不重复确认。
 
 ## 工程事实与剩余工作
+
+- 2026-10-27 用户选定 MSI operation1 修订，替换组件库存/普遍客户端排他准入；[P0 源码及测试候选证据](evidence/windows-msi-operation-contract-20261027/README.md)记录有限资源合同、最终目标准入和回滚门禁。新生产 guard 无全组件/客户端枚举导入；61 项限定测试通过不等于真实安装通过。接续先生成全新 synthetic 包并在独立 Win10 19045 guest 完成真实首装，保留1102失败现场；随后连续完成生命周期、实际写入后回滚和有限旧包兼容。普通 Desktop Shortcut 适配及新设计原生验收尚未完成，不因 Project 尚未复核停止独立工程。
+- 首轮完整1110候选在交付前的 restricted Installer 会话检查中暴露了 costing 临时表/成本记录误判，已保留 RED 并暂扣该包。[会话适配修复](evidence/windows-msi-operation-contract-20261027/SESSION_ADAPTER_FIX.md)按精确内部结构保留原资源严格校验，并验证实际子目录目标逃逸仍拒绝；该检查点实际复跑17+38项通过。后续已冻结完整1112首装包及1113升级包，尚无新设计完整原生安装 PASS；[升级准备证据](evidence/windows-msi-operation-contract-20261027/UPGRADE_1112_1113_PREPARATION.md)不能替代 DL1 实际结果。
+- 2026-10-27 DD1 继续修复[普通包快捷方式资源图](evidence/windows-msi-operation-contract-20261027/SHORTCUT_RESOURCE_GRAPH_CHECKPOINT.md)：匹配实际 JDK17 条件组件和独立菜单目录，保留严格的固定链接与删除目标边界。最终37项限定测试通过；普通包的条件组件维护、原生目标/已登记所有权和实际生命周期仍未实现/验收，现有拒绝不放宽。已发1112及准备1113哈希不变；本轮没有运行安装器、虚拟机或真实资料操作。
 
 - 正式 validated upstream baseline 仍为 ChatBar 1.4.1 @ `5e76a9cb841736bbbf3499a2e35e5789af4c5ca8`；具体观察及构建配置查 10_UPSTREAM_BASELINE.json。本次不提升 baseline 或 parity。
 - D-038 采用的官方 1.4.5 backup 参考为 `1198a13cf3008de1358b8a69aa5e40b64797c8d9`；用户实际 code86/v2 输入与其分开，不冒称生产 APK 身份或新版完整兼容。

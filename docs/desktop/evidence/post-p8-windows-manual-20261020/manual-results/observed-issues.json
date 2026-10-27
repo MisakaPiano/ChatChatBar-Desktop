@@ -1,0 +1,31 @@
+{
+  "status": "OPEN / PROJECT REVIEW REQUIRED; no in-gate production fix",
+  "issues": [
+    {
+      "utcRecorded": "2026-10-20T12:52:36.642466+00:00",
+      "id": "A3",
+      "classification": "USER FAIL",
+      "question": "Narrow window user avatar/name/bubble alignment, toolbar grouping, nonwrapping accessible menu",
+      "answer": "不完全pass，用户没有头像，并且用户的下部按钮不仅有复制，而且位置不在最右侧，用户对话下面的按钮应该只有复制和编辑。",
+      "observed": [
+        "User reports avatar missing",
+        "User footer shows extra controls and is not pinned to far right"
+      ],
+      "requiredFollowup": "User footer only Copy and Edit, right aligned; review expected avatar presentation",
+      "limits": "Other A3 observations not separately signed. Fixture contains no custom User avatar, so avatar storage/load defect is not established.",
+      "evidenceType": "User text signature plus voluntary screenshots"
+    },
+    {
+      "utcRecorded": "2026-10-20T12:52:36.642466+00:00",
+      "id": "A-menu-row1-refinement",
+      "classification": "USER REQUIREMENT / OBSERVED LAYOUT MISMATCH",
+      "answer": "第一行两个按钮应该平分空间之后居中才对。",
+      "requiredFollowup": "Regenerate and Repair Format divide first-row action area equally; icon/text centered within each half, including disabled state",
+      "observed": "User screenshot shows both actions clustered on the left",
+      "evidenceType": "User text requirement and voluntary screenshot; not an automatic screenshot or product change"
+    }
+  ],
+  "priorA1A2": "Scoped USER PASS remains historical; does not imply full A acceptance",
+  "B": "NOT TESTED",
+  "C": "NOT TESTED"
+}

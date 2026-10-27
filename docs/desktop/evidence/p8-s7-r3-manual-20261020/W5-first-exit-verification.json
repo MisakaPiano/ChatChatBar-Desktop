@@ -1,0 +1,26 @@
+{
+  "packageFilesReverified": 212,
+  "formalVoiceCount": 5,
+  "formalVoiceFilesAndHashesRetained": true,
+  "launcherJvmExitCodes": [
+    0,
+    0
+  ],
+  "runningRootProbeExit": 75,
+  "postExitRootProbeExit": 0,
+  "fakeExit": 0,
+  "privateTLSRemaining": false,
+  "partFiles": [],
+  "previewFiles": [
+    "jna-49/jna15807299106625117325.dll",
+    "jna-49/jna15807299106625117325.dll.x"
+  ],
+  "fakeRequests": {
+    "POST /v1/tts": 13,
+    "POST synthetic auxiliary": 4
+  },
+  "realFishGET": 0,
+  "realFishTTS": 0,
+  "initialLockRetained": true,
+  "restart": "NOT STARTED; USER AUTHORIZATION REQUIRED"
+}

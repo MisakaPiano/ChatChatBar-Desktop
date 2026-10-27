@@ -1,0 +1,82 @@
+[
+  {
+    "File": "junit-final/TEST-com.example.chatbar.desktop.DesktopFormatRepairInteractionTest.xml",
+    "Suite": "com.example.chatbar.desktop.DesktopFormatRepairInteractionTest",
+    "Tests": 8,
+    "Failures": 0,
+    "Errors": 0,
+    "Skipped": 0,
+    "Seconds": 1.418,
+    "Sha256": "8fa6abc7b9f9b7eefae627a38aba6eccc18de0e15e1b8c6b801145b5f257393b"
+  },
+  {
+    "File": "junit-final/TEST-com.example.chatbar.desktop.DesktopFormatRepairPresentationTest.xml",
+    "Suite": "com.example.chatbar.desktop.DesktopFormatRepairPresentationTest",
+    "Tests": 6,
+    "Failures": 0,
+    "Errors": 0,
+    "Skipped": 0,
+    "Seconds": 2.847,
+    "Sha256": "c8be476288f37935925d5b433781d3aa73c2c1a237313367c1bd0d967bd72071"
+  },
+  {
+    "File": "junit-final/TEST-com.example.chatbar.desktop.DesktopMessageActionsUxTest.xml",
+    "Suite": "com.example.chatbar.desktop.DesktopMessageActionsUxTest",
+    "Tests": 7,
+    "Failures": 0,
+    "Errors": 0,
+    "Skipped": 0,
+    "Seconds": 0.792,
+    "Sha256": "70d3056b56b763bffd258513a738136918806d570c925fdb0fd76da783021830"
+  },
+  {
+    "File": "junit-final/TEST-com.example.chatbar.desktop.DesktopMessageFormatRepairTest.xml",
+    "Suite": "com.example.chatbar.desktop.DesktopMessageFormatRepairTest",
+    "Tests": 31,
+    "Failures": 0,
+    "Errors": 0,
+    "Skipped": 0,
+    "Seconds": 8.919,
+    "Sha256": "ef419b0903c49efc06db3bd124d68d7f3b5adf297077ea212d65e0641a8fc695"
+  },
+  {
+    "File": "junit-red/TEST-com.example.chatbar.desktop.DesktopFormatRepairInteractionTest.xml",
+    "Suite": "com.example.chatbar.desktop.DesktopFormatRepairInteractionTest",
+    "Tests": 8,
+    "Failures": 0,
+    "Errors": 0,
+    "Skipped": 0,
+    "Seconds": 8.588,
+    "Sha256": "f8312880f90da03ad08f6c07ea88153b2daa629077080f4a2af36db173ab36da"
+  },
+  {
+    "File": "junit-red/TEST-com.example.chatbar.desktop.DesktopFormatRepairPresentationTest.xml",
+    "Suite": "com.example.chatbar.desktop.DesktopFormatRepairPresentationTest",
+    "Tests": 6,
+    "Failures": 0,
+    "Errors": 0,
+    "Skipped": 0,
+    "Seconds": 4.802,
+    "Sha256": "79d43e6b41ab149692d7e3eef6448aff8ef499d8d021c01bd3bd9ff7d3cf4cc8"
+  },
+  {
+    "File": "junit-red/TEST-com.example.chatbar.desktop.DesktopMessageActionsUxTest.xml",
+    "Suite": "com.example.chatbar.desktop.DesktopMessageActionsUxTest",
+    "Tests": 7,
+    "Failures": 0,
+    "Errors": 0,
+    "Skipped": 0,
+    "Seconds": 1.322,
+    "Sha256": "86c94a559a40324bf1b1a7b22250de8161c52a1c312133c9a720e600cdafc3ff"
+  },
+  {
+    "File": "junit-red/TEST-com.example.chatbar.desktop.DesktopMessageFormatRepairTest.xml",
+    "Suite": "com.example.chatbar.desktop.DesktopMessageFormatRepairTest",
+    "Tests": 31,
+    "Failures": 1,
+    "Errors": 0,
+    "Skipped": 0,
+    "Seconds": 8.081,
+    "Sha256": "9bc92f0cb63114c6f3e1c149c3438962b0a6a4bb1cad03a18ffc2e1df76119fe"
+  }
+]

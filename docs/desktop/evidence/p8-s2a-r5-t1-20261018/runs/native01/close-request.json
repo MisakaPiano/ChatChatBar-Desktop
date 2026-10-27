@@ -1,0 +1,6 @@
+{
+  "utc": "2026-10-17T19:07:57.6293004+00:00",
+  "method": "Computer Use Alt+F4 on observed owned window",
+  "capture": "FrameArrived timed out",
+  "boundedDiagnosis": "single accessibility-only observation: root window and pane, no operable Fish controls"
+}

@@ -1,0 +1,46 @@
+TOOL_RESPONSE_TRANSCRIPTION_NOT_ORIGINAL_PRIVATE_STDOUT
+Authorized source: previously designated single v8 SaveSlot; no private filename/digest/content included.
+Private source, isolated root, original logs and witness remain in ignored task-owned build storage.
+
+Producer (separate OS JVM, existing service):
+LR2_PROCESS_RESTORE=COMMITTED
+LR2_PID=42208
+LR2_RESTORE_PROCESS_EXIT=0
+
+First independent reopen (earlier harness):
+LR2_STEP=BEFORE_REOPEN_WITNESS
+LR2_STEP=JOURNAL_RECOVERY
+LR2_STEP=SEMANTIC_COMPARISON
+LR2_STEP=MESSAGES
+LR2_STEP=SESSION
+LR2_STEP=RAG
+LR2_STEP=MEMORY
+LR2_SLOT_PROCESS=REFUSED
+LR2_REOPEN_PROCESS_EXIT=2
+
+Corrected harness, SAME retained isolated root, no second restore:
+LR2_STEP=BEFORE_REOPEN_WITNESS
+LR2_STEP=JOURNAL_RECOVERY
+LR2_STEP=SEMANTIC_COMPARISON
+LR2_STEP=MESSAGES
+LR2_STEP=SESSION
+LR2_STEP=RAG
+LR2_STEP=MEMORY
+LR2_STEP=MEDIA
+LR2_MESSAGE_ALL_FIELDS_EXCEPT_RESOURCE_RELOCATION=VERIFIED
+LR2_SESSION_ARCHIVE_FIELDS=VERIFIED_EXCEPT_DERIVED_MEMORY_CACHE
+LR2_RAG_ALL_FIELDS_EXCEPT_IDENTITIES=VERIFIED
+LR2_RAG_COUNT=0
+LR2_MEMORY=CURRENT_SNAPSHOT_FIELDS_AND_GRAPH_VERIFIED
+LR2_VOICE_FIELDS_EXCEPT_REBUILT_ID_ANCHOR_DURATION_TIME=VERIFIED
+LR2_MEDIA_BYTES=VERIFIED
+LR2_MESSAGES=59
+LR2_AUDIO=244
+LR2_CROSS_PROCESS_BYTES=UNCHANGED
+LR2_PID=25340
+LR2_REOPEN_PROCESS_EXIT=0
+
+Consumer source: raw/compatibility-final/source/src/SlotProcessProbe.kt (unchanged since that run).
+Memory comparison excludes recomputed sourceHash/coverageHash and normalizes IDs/status; voice excludes regenerated ID/anchor/duration/time. See PROTOCOL_PARITY.
+RAG real source has zero entries, not real nonempty-RAG proof. Synthetic nonempty RAG is separately exercised.
+Actual process restart and root-lock reacquisition, not Windows reboot or power-loss.

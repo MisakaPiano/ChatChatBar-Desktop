@@ -186,6 +186,7 @@ class DesktopDataRootSwitchController internal constructor(
         result: DesktopDataRootMigrationResult,
     ): DesktopDataRootSwitchState = when (result) {
         is DesktopDataRootMigrationResult.Success -> restartRequired(destination, result)
+        is DesktopDataRootMigrationResult.ProtectedSuccess -> restartRequired(destination, result)
         is DesktopDataRootMigrationResult.Failure -> if (result.isRetryableFromRunningSource()) {
             DesktopDataRootSwitchState.RetryableFailure(
                 currentRoot = resolvedRoot.appDataRoot,
@@ -207,6 +208,7 @@ class DesktopDataRootSwitchController internal constructor(
         destinationRoot = destination,
         nextStartRoot = when (result) {
             is DesktopDataRootMigrationResult.Success -> destination
+            is DesktopDataRootMigrationResult.ProtectedSuccess -> destination
             is DesktopDataRootMigrationResult.Failure -> destination.takeIf {
                 result.authorityState == DesktopDataRootMigrationAuthorityState.DESTINATION
             }
@@ -240,6 +242,7 @@ class DesktopDataRootSwitchController internal constructor(
             return false
         }
         val eligibleKind = kind in setOf(
+            DesktopDataRootMigrationFailureKind.AUDIO_MAINTENANCE,
             DesktopDataRootMigrationFailureKind.PREPARATION,
             DesktopDataRootMigrationFailureKind.PREFLIGHT,
             DesktopDataRootMigrationFailureKind.SAFETY_SNAPSHOT,
@@ -248,6 +251,7 @@ class DesktopDataRootSwitchController internal constructor(
         )
         if (!eligibleKind) return false
         return when (kind) {
+            DesktopDataRootMigrationFailureKind.AUDIO_MAINTENANCE,
             DesktopDataRootMigrationFailureKind.PREPARATION -> runtimeDisposition == null
             else -> runtimeDisposition is DesktopMaintenanceResumeResult.Resumed
         }

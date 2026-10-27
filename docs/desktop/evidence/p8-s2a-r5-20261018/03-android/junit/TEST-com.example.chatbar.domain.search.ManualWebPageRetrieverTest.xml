@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.search.ManualWebPageRetrieverTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:26.064Z" hostname="DD1" time="0.228">
+  <properties/>
+  <testcase name="retriever falls back to fandom html" classname="com.example.chatbar.domain.search.ManualWebPageRetrieverTest" time="0.12"/>
+  <testcase name="retriever uses pixiv and generic selectors and removes clutter" classname="com.example.chatbar.domain.search.ManualWebPageRetrieverTest" time="0.018"/>
+  <testcase name="manual urls normalize reject duplicates and cap count" classname="com.example.chatbar.domain.search.ManualWebPageRetrieverTest" time="0.001"/>
+  <testcase name="retriever validates redirects and keeps final url" classname="com.example.chatbar.domain.search.ManualWebPageRetrieverTest" time="0.007"/>
+  <testcase name="combined mode enables search and manual url capabilities" classname="com.example.chatbar.domain.search.ManualWebPageRetrieverTest" time="0.0"/>
+  <testcase name="manual urls report cleartext warning" classname="com.example.chatbar.domain.search.ManualWebPageRetrieverTest" time="0.0"/>
+  <testcase name="retriever extracts fandom api before html page" classname="com.example.chatbar.domain.search.ManualWebPageRetrieverTest" time="0.006"/>
+  <testcase name="research signature changes with mode or normalized url list" classname="com.example.chatbar.domain.search.ManualWebPageRetrieverTest" time="0.0"/>
+  <testcase name="retriever rejects binary oversized and timed out bodies" classname="com.example.chatbar.domain.search.ManualWebPageRetrieverTest" time="0.06"/>
+  <testcase name="retriever rejects private target and dangerous redirect" classname="com.example.chatbar.domain.search.ManualWebPageRetrieverTest" time="0.011"/>
+  <testcase name="cleaner removes chinese english and japanese prompt injection" classname="com.example.chatbar.domain.search.ManualWebPageRetrieverTest" time="0.0"/>
+  <testcase name="retriever accepts text and json" classname="com.example.chatbar.domain.search.ManualWebPageRetrieverTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

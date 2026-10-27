@@ -1,0 +1,13 @@
+# Minimal external checks — preparation only
+
+## Physical Android
+
+NOT TESTED. First obtain explicit execution permission and prove a spare device or isolated Android user with no existing CCB data. Verify official APK package/signature/version/hash against pinned145; a debug label does not prove installation isolation. Stop on shared package/data identity, unauthorized/offline ADB or ambiguous device. Never uninstall/clear data/change settings to force a pass.
+
+In the approved isolated user, use a synthetic Desktop v8 archive with known alternatives/source turns, two images, voice, RAG and current Memory. Record source SHA privately. Import → open → select versions → view images/play voice → continue using an approved offline synthetic provider → export. Phone loopback is not PC loopback; ADB reverse or network service requires separately named permission, port and lifetime. Transfer only the chosen synthetic return file. Desktop uses a newly created isolated root and existing service, then separate JVM reopen; compare semantic fields, resource SHA and references. Re-export for the reverse direction. Save both original files on any failure; keep data/logs local and report fixed categories. At exit inventory exact test files/ports/processes and revoke only test-owned mappings; do not uninstall or remove data without permission. Genuine official145 full `.cbbackup` remains a separate test, not inferred from code86.
+
+## Windows installed upgrade and support
+
+NOT TESTED here: native control is unavailable, no disposable profile/VM supplied. No daily installation or real DPAPI touched. Before execution obtain an explicitly disposable Windows user/VM, two authenticated engineering installer builds, isolated synthetic data and fake credential authorization. Take VM snapshot; record install/data/credential boundaries and initial synthetic identities. Install N, inspect rendered Data/update version+commit and offline/error/preview/stable state. Exit normally; record launcher and JVM exit plus root-lock acquisition. Install N+1 into the approved target; re-open same selected data root and prove data/media and protected fake credentials retained. Test rollback/uninstall only against the disposable snapshot and preserve all evidence. Old-binary write attempts and VM reboot/power-loss require separately explicit scope. Never infer these results from JVM tests or an app-image build.
+
+Existing903 app-image has documented version0.1.0-preview.903/commit5160acbc; LR2 changes only test tools/docs, so rebuilding identical production bytes would not close the missing GUI/installer evidence. Previous176/181 results retain their original limits. The focused update-checker rerun is regression evidence only, not Gate B signoff.

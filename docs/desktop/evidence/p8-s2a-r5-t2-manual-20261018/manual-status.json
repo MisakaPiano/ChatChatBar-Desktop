@@ -1,0 +1,7 @@
+{
+  "state": "CLOSED_NO_APP_OR_SERVICE",
+  "utc": "2026-10-17T19:44:10.413159+00:00",
+  "supervisorPid": 14488,
+  "realFishRequests": 0,
+  "root": "environments/t2-profile/ChatChatBarDesktop"
+}

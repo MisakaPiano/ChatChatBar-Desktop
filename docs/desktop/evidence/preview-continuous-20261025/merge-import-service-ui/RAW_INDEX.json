@@ -1,0 +1,254 @@
+{
+  "merge-import-controller-first-20261025/arguments.json": {
+    "bytes": 791,
+    "sha256": "a9e3941f4e63ed3130d24c3d361ecfd4f02e52397e7424ded63e274a87c17037"
+  },
+  "merge-import-controller-first-20261025/exit.txt": {
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  "merge-import-controller-first-20261025/gradle.log": {
+    "bytes": 3017,
+    "sha256": "0a2a85af4e9a8611ab9856f89bf568a2ecdbf5433ff9efbc7a23970480728664"
+  },
+  "merge-import-controller-first-20261025/head.txt": {
+    "bytes": 40,
+    "sha256": "93d77d26238d96a7f7f74237628c85d8bb79115a16ff2798f96aeb6578fd42cf"
+  },
+  "merge-import-controller-first-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopMergeCredentialsTest.xml": {
+    "bytes": 2069,
+    "sha256": "324e088382fb6b3af0c23381332916ed5578ebed5fef7c6da63deaf312a1d69a"
+  },
+  "merge-import-controller-first-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopMergeRootPreparationTest.xml": {
+    "bytes": 1528,
+    "sha256": "0a9750c06ce1ba7ac1ba09671e1990b5a44a12b0cd1aa6fa491b92fdf35e657e"
+  },
+  "merge-import-controller-first-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopBootstrapAuthorityTransactionTest.xml": {
+    "bytes": 3426,
+    "sha256": "ffe138805409a8e05d042f5a893151013d2359856ddb4444ec3e0b40d3ace542"
+  },
+  "merge-import-controller-first-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFullBackupServiceTest.xml": {
+    "bytes": 2211,
+    "sha256": "968f7ffeeb70d05ebce2852a1cb429d34b6947a27c2a57258ab785ac1b504bdb"
+  },
+  "merge-import-controller-first-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopMergeImportServiceTest.xml": {
+    "bytes": 1661,
+    "sha256": "6de042c4fdb79466658573892b65c94c5c145b04f4eca2bacae283b4229c2e74"
+  },
+  "merge-import-controller-first-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopTaskRuntimeTest.xml": {
+    "bytes": 2727,
+    "sha256": "4f3e3081bae777808a7836577bc05e9287b99de357fa6c721ed0c7f367f7d52b"
+  },
+  "merge-import-controller-first-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt": {
+    "bytes": 37569,
+    "sha256": "332eb3cfa55fcc40c96fd7819fa362d523e8b3888e5b0f0a7d73a0d8241a87bc"
+  },
+  "merge-import-controller-first-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupPanel.kt": {
+    "bytes": 4046,
+    "sha256": "6cfddc02bedf82a3b635a81f1d687f0b1c58afa09f7ed4e89070233f8171a8af"
+  },
+  "merge-import-controller-first-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMergeImportController.kt": {
+    "bytes": 5997,
+    "sha256": "05db6e4a16c81d6474b1a10778e236ed6e5cea59300c505b2ee516cdf8d1ce60"
+  },
+  "merge-import-controller-first-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMergeImportPanel.kt": {
+    "bytes": 7017,
+    "sha256": "5237687e5880e4b4b5488ceb9ba6268080a7f23920b2ab068eef0d23ba22867d"
+  },
+  "merge-import-controller-first-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMergeImportService.kt": {
+    "bytes": 12080,
+    "sha256": "3bb1ede7209f460a5217157366c8c1b5f7f380bc88d61595fa4c6bdad2a23dc0"
+  },
+  "merge-import-controller-first-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryShell.kt": {
+    "bytes": 9983,
+    "sha256": "98c226b666b0d5c4bd3ea0a7b510b4adc1ba9a471bc2141db7d9835ec42a4a0d"
+  },
+  "merge-import-controller-first-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt": {
+    "bytes": 14240,
+    "sha256": "135bb859fa9f52d8aabea54583ee3770be9a01a1784035ae6de66554a6d97489"
+  },
+  "merge-import-controller-first-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopMergeImportServiceTest.kt": {
+    "bytes": 15074,
+    "sha256": "4b18daad0b38d10c8fb9ca46d56962fbcde2a3ca86367fc43a25ad68df82e0c1"
+  },
+  "merge-import-service-first-20261025/arguments.json": {
+    "bytes": 791,
+    "sha256": "a9e3941f4e63ed3130d24c3d361ecfd4f02e52397e7424ded63e274a87c17037"
+  },
+  "merge-import-service-first-20261025/exit.txt": {
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  "merge-import-service-first-20261025/gradle.log": {
+    "bytes": 4013,
+    "sha256": "76c835d7e95aef8fcdd5779c2f0a5374131a4a2525857a419190c9610df6c6fe"
+  },
+  "merge-import-service-first-20261025/head.txt": {
+    "bytes": 40,
+    "sha256": "93d77d26238d96a7f7f74237628c85d8bb79115a16ff2798f96aeb6578fd42cf"
+  },
+  "merge-import-service-first-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopMergeCredentialsTest.xml": {
+    "bytes": 2071,
+    "sha256": "e07168d1e6bd6928fe5caa51975ae4ff73942d000e03fe7a8bd8a85a6f635a09"
+  },
+  "merge-import-service-first-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.backup.DesktopMergeRootPreparationTest.xml": {
+    "bytes": 1528,
+    "sha256": "d27ffda5028ac5b98f7af2b2058b6bbc46585c12477c5ce48d17cd25e5662dea"
+  },
+  "merge-import-service-first-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopBootstrapAuthorityTransactionTest.xml": {
+    "bytes": 3424,
+    "sha256": "a8294e0e2052ba76645672d3f0d7a081f8ea10f35cc16bf572e734c5e89a310e"
+  },
+  "merge-import-service-first-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFullBackupServiceTest.xml": {
+    "bytes": 2211,
+    "sha256": "750069a182f0cb668524accd8b4571052b3777bcbcbe2e7186ecf4b9477f5568"
+  },
+  "merge-import-service-first-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopMergeImportServiceTest.xml": {
+    "bytes": 7759,
+    "sha256": "04ec863a2494cd7fbedcd8e754fa2439cb8de95c6be76149fa3137762aa44fe5"
+  },
+  "merge-import-service-first-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopTaskRuntimeTest.xml": {
+    "bytes": 2729,
+    "sha256": "a0c7436e35d43495d5464936f5e79e32fc3415025f4916fb5b9685fcbb28171b"
+  },
+  "merge-import-service-first-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt": {
+    "bytes": 37418,
+    "sha256": "2d81e3d38746e2d5090f72eb9519de3a8cda84b4a618e1134f1b4800379da280"
+  },
+  "merge-import-service-first-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupPanel.kt": {
+    "bytes": 4046,
+    "sha256": "6cfddc02bedf82a3b635a81f1d687f0b1c58afa09f7ed4e89070233f8171a8af"
+  },
+  "merge-import-service-first-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMergeImportController.kt": {
+    "bytes": 5997,
+    "sha256": "05db6e4a16c81d6474b1a10778e236ed6e5cea59300c505b2ee516cdf8d1ce60"
+  },
+  "merge-import-service-first-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMergeImportPanel.kt": {
+    "bytes": 7017,
+    "sha256": "5237687e5880e4b4b5488ceb9ba6268080a7f23920b2ab068eef0d23ba22867d"
+  },
+  "merge-import-service-first-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMergeImportService.kt": {
+    "bytes": 11604,
+    "sha256": "c21a4e4caa90a3670b7ba85363e06c9cdde44955c93220db9ec2801f97494850"
+  },
+  "merge-import-service-first-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryShell.kt": {
+    "bytes": 9983,
+    "sha256": "98c226b666b0d5c4bd3ea0a7b510b4adc1ba9a471bc2141db7d9835ec42a4a0d"
+  },
+  "merge-import-service-first-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt": {
+    "bytes": 14240,
+    "sha256": "135bb859fa9f52d8aabea54583ee3770be9a01a1784035ae6de66554a6d97489"
+  },
+  "merge-import-service-first-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopMergeImportServiceTest.kt": {
+    "bytes": 10401,
+    "sha256": "28ca699ca19888fa5936847bbd7a03a54a6a7a8427fd09e5ebfa7879ee78f3f1"
+  },
+  "merge-import-service-fixture-corrected-20261025/arguments.json": {
+    "bytes": 533,
+    "sha256": "b2b0df97f6f012b8d2a2249139eb36903febc6e560ae0eddb1b5963d3ad64e09"
+  },
+  "merge-import-service-fixture-corrected-20261025/exit.txt": {
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  "merge-import-service-fixture-corrected-20261025/gradle.log": {
+    "bytes": 2236,
+    "sha256": "7b258f841503879d2c07b61f9e1351a485c9199f792474059be509ea8a0b7271"
+  },
+  "merge-import-service-fixture-corrected-20261025/head.txt": {
+    "bytes": 40,
+    "sha256": "93d77d26238d96a7f7f74237628c85d8bb79115a16ff2798f96aeb6578fd42cf"
+  },
+  "merge-import-service-fixture-corrected-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopMergeImportServiceTest.xml": {
+    "bytes": 1269,
+    "sha256": "4734035e0612dda69bcaf700a3de3ec1f121de19b60176cab5048ca585370e5f"
+  },
+  "merge-import-service-fixture-corrected-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt": {
+    "bytes": 37418,
+    "sha256": "2d81e3d38746e2d5090f72eb9519de3a8cda84b4a618e1134f1b4800379da280"
+  },
+  "merge-import-service-fixture-corrected-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupPanel.kt": {
+    "bytes": 4046,
+    "sha256": "6cfddc02bedf82a3b635a81f1d687f0b1c58afa09f7ed4e89070233f8171a8af"
+  },
+  "merge-import-service-fixture-corrected-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMergeImportController.kt": {
+    "bytes": 5997,
+    "sha256": "05db6e4a16c81d6474b1a10778e236ed6e5cea59300c505b2ee516cdf8d1ce60"
+  },
+  "merge-import-service-fixture-corrected-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMergeImportPanel.kt": {
+    "bytes": 7017,
+    "sha256": "5237687e5880e4b4b5488ceb9ba6268080a7f23920b2ab068eef0d23ba22867d"
+  },
+  "merge-import-service-fixture-corrected-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMergeImportService.kt": {
+    "bytes": 11604,
+    "sha256": "c21a4e4caa90a3670b7ba85363e06c9cdde44955c93220db9ec2801f97494850"
+  },
+  "merge-import-service-fixture-corrected-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryShell.kt": {
+    "bytes": 9983,
+    "sha256": "98c226b666b0d5c4bd3ea0a7b510b4adc1ba9a471bc2141db7d9835ec42a4a0d"
+  },
+  "merge-import-service-fixture-corrected-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt": {
+    "bytes": 14240,
+    "sha256": "135bb859fa9f52d8aabea54583ee3770be9a01a1784035ae6de66554a6d97489"
+  },
+  "merge-import-service-fixture-corrected-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopMergeImportServiceTest.kt": {
+    "bytes": 10415,
+    "sha256": "57f8a26a50cec7ea78f07a55f871a582433348b0565f6d4058af015ab956c1a8"
+  },
+  "merge-import-ui-compile-20261025/arguments.json": {
+    "bytes": 491,
+    "sha256": "757490894744616c0f78e807bac9f14fd4ca4f30f20046b810b69f6b7b53698f"
+  },
+  "merge-import-ui-compile-20261025/exit.txt": {
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  "merge-import-ui-compile-20261025/gradle.log": {
+    "bytes": 2702,
+    "sha256": "69954553f35689c78c3435dd7cd4b1e5ade83b91e02f5635d5a4b8ed7fe2b6f6"
+  },
+  "merge-import-ui-compile-20261025/head.txt": {
+    "bytes": 40,
+    "sha256": "93d77d26238d96a7f7f74237628c85d8bb79115a16ff2798f96aeb6578fd42cf"
+  },
+  "merge-import-ui-compile-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt": {
+    "bytes": 37418,
+    "sha256": "2d81e3d38746e2d5090f72eb9519de3a8cda84b4a618e1134f1b4800379da280"
+  },
+  "merge-import-ui-compile-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupPanel.kt": {
+    "bytes": 4046,
+    "sha256": "6cfddc02bedf82a3b635a81f1d687f0b1c58afa09f7ed4e89070233f8171a8af"
+  },
+  "merge-import-ui-compile-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMergeImportController.kt": {
+    "bytes": 5997,
+    "sha256": "05db6e4a16c81d6474b1a10778e236ed6e5cea59300c505b2ee516cdf8d1ce60"
+  },
+  "merge-import-ui-compile-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMergeImportPanel.kt": {
+    "bytes": 7017,
+    "sha256": "5237687e5880e4b4b5488ceb9ba6268080a7f23920b2ab068eef0d23ba22867d"
+  },
+  "merge-import-ui-compile-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMergeImportService.kt": {
+    "bytes": 11604,
+    "sha256": "c21a4e4caa90a3670b7ba85363e06c9cdde44955c93220db9ec2801f97494850"
+  },
+  "merge-import-ui-compile-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryShell.kt": {
+    "bytes": 9983,
+    "sha256": "98c226b666b0d5c4bd3ea0a7b510b4adc1ba9a471bc2141db7d9835ec42a4a0d"
+  },
+  "merge-import-ui-compile-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt": {
+    "bytes": 14240,
+    "sha256": "135bb859fa9f52d8aabea54583ee3770be9a01a1784035ae6de66554a6d97489"
+  },
+  "RESULT.json": {
+    "bytes": 647,
+    "sha256": "007242d4e15ed0c87d6afb53261d4ae1d2334e108a9bf23256eeddeb58f54ae0"
+  },
+  "RESULT.md": {
+    "bytes": 1965,
+    "sha256": "0075ee41fcd68d4dac237af4cb451f2e7501046bffb61c4ba495a6f47ffb020f"
+  },
+  "SOURCE_IDENTITY.json": {
+    "bytes": 9291,
+    "sha256": "57faac7c5d0bfb354be53610d86bd692938d9cbd615a1d0ac35d4a05810fb5a9"
+  }
+}

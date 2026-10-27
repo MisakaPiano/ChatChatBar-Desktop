@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopPlatformPickerContractTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-18T13:45:07.678Z" hostname="DD1" time="0.04">
+  <properties/>
+  <testcase name="production uses one injected picker authority and attaches its window owner" classname="com.example.chatbar.desktop.DesktopPlatformPickerContractTest" time="0.04"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

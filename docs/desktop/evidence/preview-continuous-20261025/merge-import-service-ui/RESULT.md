@@ -1,0 +1,9 @@
+# Actual Desktop merge service and UI wiring
+
+The default Data-page merge entry now owns source verification, frozen PC preview plus credentials, explicit data/global-key/image-preference choices, new owned directory, safety snapshot, exact fresh namespace preparation, final source CAS, protected completion and bootstrap publication. Source data/global keys stay unchanged. Root ownership survives publication until container storage shutdown. Neither an unsupported CLI/Portable source nor a stale preview is silently accepted.
+
+Actual first run: 61 tests / 5 failures, all five new service fixtures were invalid official wire (CharacterCard used displayName instead of required name; ChatSession used characterId and lacked required title). This is fixture RED, not a production schema relaxation. Corrected fixtures: 5/5 PASS. Final 6 suites / 63 PASS, zero failures/errors/skips, exit0. Compile-only round is 0 executed tests. Per-round XML/counts remain separate.
+
+Final tests cover actual service success, selected old/new fake keys, both branches, old source preservation, stale preview, prepublication failure, ambiguous bootstrap write and cancellation. Actual AppContainer/controller wiring additionally starts a final writer, rejects stale data after its drain, then publishes after a fresh preview; old task admission stays stopped and destination lock survives until container close. Picker cancellation clears its synthetic password without preparing input. No real DPAPI, real archive, GUI, Windows reboot or installer acceptance is claimed by this checkpoint. Isolated native/real-source validation and current format export remain next work.
+
+Legacy v1 replacement service remains separate, unchanged; its old public button is not yet the final candidate's restore contract. Modern merge does not turn v2 S0 inspections into legacy Prepared/scheduleRestore objects. No Studio application dependency/identity/endpoint/trust was imported.

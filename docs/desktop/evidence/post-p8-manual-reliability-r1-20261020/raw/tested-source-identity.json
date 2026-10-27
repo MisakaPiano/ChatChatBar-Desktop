@@ -1,0 +1,35 @@
+{
+  "base": "c4098e08bec84372911a5a8bc38c2cfa72f98978",
+  "files": [
+    {
+      "path": ".agents/skills/chatbar-fish-audio-voice/SKILL.md",
+      "rawBytes": 23493,
+      "rawSha256": "eedea7f063966aeef165f7923ff146286f8e6ca2634ffb49dc22b3c67454b0e4"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoicePanel.kt",
+      "rawBytes": 8285,
+      "rawSha256": "9d20ee88f997c125904205e403d06d35dd47a5a66bbce93af0511aa384b8a684"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishGenerationCoordinator.kt",
+      "rawBytes": 45876,
+      "rawSha256": "a0dfd60baed01e421452b26b10dc46cac47baf2118ae10126de6b7b2bde00a71"
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoicePlayback.kt",
+      "rawBytes": 13806,
+      "rawSha256": "6a9182b8b27712cb70597b2ce7c91f0213a9a2af878ed0ce63e7c3e68c5a5538"
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotUiTest.kt",
+      "rawBytes": 5521,
+      "rawSha256": "18d4073bed13655fb8ee40c66d8028c167857daee0bdb1470aa25833c39899b0"
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopVoiceClickReliabilityTest.kt",
+      "rawBytes": 9917,
+      "rawSha256": "0ee17913dbc3800742e76e8cd7e53fc779ca5e40090eee0f24c53a32ef0bff3b"
+    }
+  ]
+}

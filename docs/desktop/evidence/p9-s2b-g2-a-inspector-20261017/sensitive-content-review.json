@@ -1,0 +1,8 @@
+{
+  "result": "PASS",
+  "scope": "Every published raw XML/log, source identity and synthetic inventory",
+  "realUserData": false,
+  "secrets": false,
+  "jpegBytesRead": false,
+  "notes": "Synthetic UUIDs/public claims/hashes are not credentials; original JUnit host metadata retained."
+}

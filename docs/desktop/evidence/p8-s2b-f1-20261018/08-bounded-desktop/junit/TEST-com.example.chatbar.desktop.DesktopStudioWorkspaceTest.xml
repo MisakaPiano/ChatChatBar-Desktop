@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopStudioWorkspaceTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-18T08:39:21.034Z" hostname="DD1" time="10.13">
+  <properties/>
+  <testcase name="tool navigation stays on one row with diagnostics at the right edge" classname="com.example.chatbar.desktop.DesktopStudioWorkspaceTest" time="1.209"/>
+  <testcase name="actual Studio root geometry modes diagnostics and narrow drawer preserve data" classname="com.example.chatbar.desktop.DesktopStudioWorkspaceTest" time="6.806"/>
+  <testcase name="real divider drag snaps restores and clamps while editor composition survives mode and resize" classname="com.example.chatbar.desktop.DesktopStudioWorkspaceTest" time="2.115"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.security.DesktopSecureSettingsRepositoryTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-22T21:04:11.112Z" hostname="DD1" time="0.101">
+  <properties/>
+  <testcase name="same global secret hydrates sanitized settings after app-data root change" classname="com.example.chatbar.desktop.security.DesktopSecureSettingsRepositoryTest" time="0.053"/>
+  <testcase name="failed settings entity persistence restores prior secure credential" classname="com.example.chatbar.desktop.security.DesktopSecureSettingsRepositoryTest" time="0.002"/>
+  <testcase name="settings save update draft restart and clear keep JSON sanitized and runtime hydrated" classname="com.example.chatbar.desktop.security.DesktopSecureSettingsRepositoryTest" time="0.027"/>
+  <testcase name="failed settings rollback surfaces compound consistency failure" classname="com.example.chatbar.desktop.security.DesktopSecureSettingsRepositoryTest" time="0.004"/>
+  <testcase name="missing secret hydrates blank while secret failure remains explicit" classname="com.example.chatbar.desktop.security.DesktopSecureSettingsRepositoryTest" time="0.009"/>
+  <testcase name="unexpected plaintext settings credential fails closed without rewriting JSON" classname="com.example.chatbar.desktop.security.DesktopSecureSettingsRepositoryTest" time="0.006"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

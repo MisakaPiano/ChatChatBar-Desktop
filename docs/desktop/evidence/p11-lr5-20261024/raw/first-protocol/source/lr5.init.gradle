@@ -1,0 +1,13 @@
+// Opt-in test-only source injection. No formal Gradle edits or production source injection.
+gradle.projectsEvaluated {
+    def p = gradle.rootProject.project(':desktopApp')
+    p.kotlin.sourceSets.test.kotlin.srcDir(new File(System.getProperty('ccb.lr5.sources')))
+    p.tasks.withType(Test).configureEach {
+        maxHeapSize = '384m'
+        maxParallelForks = 1
+        systemProperty 'java.awt.headless', 'true'
+        systemProperty 'ccb.lr5.sandboxes', System.getProperty('ccb.lr5.sandboxes')
+        systemProperty 'ccb.lr5.evidence', System.getProperty('ccb.lr5.evidence')
+        doFirst { systemProperty 'ccb.lr5.classpath', p.sourceSets.test.runtimeClasspath.asPath }
+    }
+}

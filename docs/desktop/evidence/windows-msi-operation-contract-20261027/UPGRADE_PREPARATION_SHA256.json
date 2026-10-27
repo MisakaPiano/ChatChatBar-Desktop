@@ -1,0 +1,209 @@
+{
+  "files": [
+    {
+      "path": "raw/upgrade-preparation/build-source/build_operation_upgrade_bundle.py",
+      "bytes": 7788,
+      "sha256": "b4054d56c872d4f6a53ff4d0beae5fe7e3a73f1b31baa51c19f208770ca1a439"
+    },
+    {
+      "path": "raw/upgrade-preparation/BUILD_BUNDLE.command.json",
+      "bytes": 431,
+      "sha256": "b98493a41d8fecbbb402c69ea8e1c54b22843206ef93a2fb6ae0f1f838721110"
+    },
+    {
+      "path": "raw/upgrade-preparation/BUILD_BUNDLE.exit.txt",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+    },
+    {
+      "path": "raw/upgrade-preparation/BUILD_BUNDLE.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "raw/upgrade-preparation/BUILD_BUNDLE.stdout.log",
+      "bytes": 182,
+      "sha256": "17e08b4908589a0e8e0d07b14e2d891e0a2050e2c30f7bdaf935fe6f3a0871f5"
+    },
+    {
+      "path": "raw/upgrade-preparation/CONDITION_R02_DUPLICATE_RECLAMATION.json",
+      "bytes": 1276,
+      "sha256": "c94557af1b35ebfafe4225c31fb7937426b3f6c5d2af9cc7c44b2a4c8a72cff1"
+    },
+    {
+      "path": "raw/upgrade-preparation/FINAL_SOURCE_IDENTITY.json",
+      "bytes": 964,
+      "sha256": "0ca6d0ce507c52fb73d4decddee657e428275645aec8d81d18ce5e2adda08494"
+    },
+    {
+      "path": "raw/upgrade-preparation/green-command.json",
+      "bytes": 548,
+      "sha256": "1a7a2ed8df6a45ca20fa6376788f78f5d924ac6fc57db9c518342cc560e8b4f6"
+    },
+    {
+      "path": "raw/upgrade-preparation/green-exit.txt",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+    },
+    {
+      "path": "raw/upgrade-preparation/green-r01/fake-entry-error.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "raw/upgrade-preparation/green-r01/fake-entry-output.log",
+      "bytes": 50,
+      "sha256": "c40fdd5f31388c7e7e7be38986edc7f94b892f191412ddcfed8cfc43ce90b5e7"
+    },
+    {
+      "path": "raw/upgrade-preparation/green-r01/RESULT.json",
+      "bytes": 6125,
+      "sha256": "962de742ab8c6d82041aff6683b38bd71efe25ced46d4d6a123cf8d0f52a3243"
+    },
+    {
+      "path": "raw/upgrade-preparation/green-r01/TEST-Operation1UpgradeFakeBoundaries.xml",
+      "bytes": 1082,
+      "sha256": "277fa3723e9c49a54dfa5d52513b51e08b4ae9269f2dbdc08f56ed7d61b748ec"
+    },
+    {
+      "path": "raw/upgrade-preparation/green-source/Invoke-Operation1FreshGuest.ps1",
+      "bytes": 13392,
+      "sha256": "6297fb0deb6ee93e808563580d74da709ec08d00809086816ecd2def7ef1af2c"
+    },
+    {
+      "path": "raw/upgrade-preparation/green-source/Invoke-Operation1UpgradeGuest.ps1",
+      "bytes": 9771,
+      "sha256": "f37e93d24ee3fa3d922a185dd4b5b38b17fd8f8b8d240186328617bc3a15e6bb"
+    },
+    {
+      "path": "raw/upgrade-preparation/green-source/SOURCE.json",
+      "bytes": 737,
+      "sha256": "e4603460892100bc562d28f3e49adaf3185ecb33cebe70ec1a4efc48a0b2b059"
+    },
+    {
+      "path": "raw/upgrade-preparation/green-source/Test-Operation1UpgradeGuest.ps1",
+      "bytes": 9529,
+      "sha256": "3e4b7543cc2d35403a360c3e38cb0e82dacaf5229475f296f01821cba6b8b1f5"
+    },
+    {
+      "path": "raw/upgrade-preparation/green-stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "raw/upgrade-preparation/green-stdout.log",
+      "bytes": 44,
+      "sha256": "5244f0c1f89a7a75623f44470a8b208a71233e4b30d0adcd33d0593fc1a666ae"
+    },
+    {
+      "path": "raw/upgrade-preparation/red-command.json",
+      "bytes": 388,
+      "sha256": "831dcd41d39a9487d5793f2ba8673e0191c2e1cab522c42d6e9c601a9327dbde"
+    },
+    {
+      "path": "raw/upgrade-preparation/red-exit.txt",
+      "bytes": 3,
+      "sha256": "f1b2f662800122bed0ff255693df89c4487fbdcf453d3524a42d4ec20c3d9c04"
+    },
+    {
+      "path": "raw/upgrade-preparation/red-r02-command.json",
+      "bytes": 588,
+      "sha256": "67c394cd01d012a8ff4c8c920489391ff62eef32153c9acebebafc99e273a960"
+    },
+    {
+      "path": "raw/upgrade-preparation/red-r02-exit.txt",
+      "bytes": 3,
+      "sha256": "f1b2f662800122bed0ff255693df89c4487fbdcf453d3524a42d4ec20c3d9c04"
+    },
+    {
+      "path": "raw/upgrade-preparation/red-r02-stderr.log",
+      "bytes": 527,
+      "sha256": "94cc3edba0ea41d2916af440cbb33010c0f7186d20d14860940623b19d72963d"
+    },
+    {
+      "path": "raw/upgrade-preparation/red-r02-stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "raw/upgrade-preparation/red-r03/fake-entry-error.log",
+      "bytes": 585,
+      "sha256": "596edc8072aa76dc2bcc9534584837fd7d76b5a563bddddbae0f98571142b078"
+    },
+    {
+      "path": "raw/upgrade-preparation/red-r03/fake-entry-output.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "raw/upgrade-preparation/red-r03/RESULT.json",
+      "bytes": 6124,
+      "sha256": "d342e28037a1272591cdd3312b065e842b5fdb24db0423d70e5c673417f7db43"
+    },
+    {
+      "path": "raw/upgrade-preparation/red-r03/TEST-Operation1UpgradeFakeBoundaries.xml",
+      "bytes": 1207,
+      "sha256": "cb7bb1ddb77c400aaea212459e049152c0f4060a7e5cf1a13a10dfad25a1f4da"
+    },
+    {
+      "path": "raw/upgrade-preparation/red-r03-command.json",
+      "bytes": 718,
+      "sha256": "d801919add124bdda5b0cd1e566ccf8d717968b434fc13dfa76fa85f8001d35e"
+    },
+    {
+      "path": "raw/upgrade-preparation/red-r03-exit.txt",
+      "bytes": 3,
+      "sha256": "f1b2f662800122bed0ff255693df89c4487fbdcf453d3524a42d4ec20c3d9c04"
+    },
+    {
+      "path": "raw/upgrade-preparation/red-r03-stderr.log",
+      "bytes": 438,
+      "sha256": "7abc111f7882288ae1605be3f7d178dba5bf55934ef2a862a6ca3f96ce55dd03"
+    },
+    {
+      "path": "raw/upgrade-preparation/red-r03-stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "raw/upgrade-preparation/red-source/Invoke-Operation1FreshGuest.ps1",
+      "bytes": 13392,
+      "sha256": "6297fb0deb6ee93e808563580d74da709ec08d00809086816ecd2def7ef1af2c"
+    },
+    {
+      "path": "raw/upgrade-preparation/red-source/Invoke-Operation1UpgradeGuest.ps1",
+      "bytes": 9570,
+      "sha256": "bc2672535e376e268135d567d1de97839f1bf028d9f6a51007ecedb9f80c8c29"
+    },
+    {
+      "path": "raw/upgrade-preparation/red-source/SOURCE.json",
+      "bytes": 737,
+      "sha256": "c435b5557cec9003823828f9425dfe87cd13378ad738bdc5f3cf72d0643abcc4"
+    },
+    {
+      "path": "raw/upgrade-preparation/red-source/Test-Operation1UpgradeGuest.ps1",
+      "bytes": 9529,
+      "sha256": "3e4b7543cc2d35403a360c3e38cb0e82dacaf5229475f296f01821cba6b8b1f5"
+    },
+    {
+      "path": "raw/upgrade-preparation/red-stderr.log",
+      "bytes": 527,
+      "sha256": "94cc3edba0ea41d2916af440cbb33010c0f7186d20d14860940623b19d72963d"
+    },
+    {
+      "path": "raw/upgrade-preparation/red-stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "raw/upgrade-preparation/SYNTHETIC_FILES_FINAL.json",
+      "bytes": 13522,
+      "sha256": "ab349e3a24c1328244c5489a04ce4507249d9f7efa768f2080968c11bb304961"
+    },
+    {
+      "path": "raw/upgrade-preparation/TRANSFER_UPGRADE_1112_1113.json",
+      "bytes": 2286,
+      "sha256": "3fd7dbb0ad49bbe3839d2b692f2daa3a87209028b48e4e3f6b6921913e43dc7d"
+    }
+  ]
+}

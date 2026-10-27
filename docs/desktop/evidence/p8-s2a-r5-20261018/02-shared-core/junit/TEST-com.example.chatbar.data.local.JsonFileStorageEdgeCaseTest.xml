@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.data.local.JsonFileStorageEdgeCaseTest" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:31:09.756Z" hostname="DD1" time="0.559">
+  <properties/>
+  <testcase name="new storage instance restores entity from the same app root" classname="com.example.chatbar.data.local.JsonFileStorageEdgeCaseTest" time="0.073"/>
+  <testcase name="map raw files returns storage IDs and bytes while skipping transform failures" classname="com.example.chatbar.data.local.JsonFileStorageEdgeCaseTest" time="0.023"/>
+  <testcase name="load by IDs preserves requested order and skips missing and corrupt IDs" classname="com.example.chatbar.data.local.JsonFileStorageEdgeCaseTest" time="0.06"/>
+  <testcase name="file set signature tracks only matching prefix and changes with length and membership" classname="com.example.chatbar.data.local.JsonFileStorageEdgeCaseTest" time="0.032"/>
+  <testcase name="blank streaming storage ID fails before switching originals and cleans staging" classname="com.example.chatbar.data.local.JsonFileStorageEdgeCaseTest" time="0.037"/>
+  <testcase name="map by ID prefix excludes nonmatching files and skips corrupt matches" classname="com.example.chatbar.data.local.JsonFileStorageEdgeCaseTest" time="0.026"/>
+  <testcase name="streaming path traversal fails before switching originals and cleans staging" classname="com.example.chatbar.data.local.JsonFileStorageEdgeCaseTest" time="0.029"/>
+  <testcase name="uncached mutations change disk without updating cache until load all" classname="com.example.chatbar.data.local.JsonFileStorageEdgeCaseTest" time="0.033"/>
+  <testcase name="missing entity reads create their entity type directories" classname="com.example.chatbar.data.local.JsonFileStorageEdgeCaseTest" time="0.026"/>
+  <testcase name="duplicate streaming storage ID fails before switching originals and cleans staging" classname="com.example.chatbar.data.local.JsonFileStorageEdgeCaseTest" time="0.029"/>
+  <testcase name="installation failure restores originals and removes transaction directories" classname="com.example.chatbar.data.local.JsonFileStorageEdgeCaseTest" time="0.04"/>
+  <testcase name="for each uncached processes each valid predicate match once and skips corrupt JSON" classname="com.example.chatbar.data.local.JsonFileStorageEdgeCaseTest" time="0.032"/>
+  <testcase name="replace where replaces predicate matches preserves others and does not update cache" classname="com.example.chatbar.data.local.JsonFileStorageEdgeCaseTest" time="0.061"/>
+  <testcase name="copy raw entity preserves exact bytes flushes and keeps missing exception semantics" classname="com.example.chatbar.data.local.JsonFileStorageEdgeCaseTest" time="0.023"/>
+  <testcase name="query uncached filters valid entities skips corrupt JSON and leaves cache empty" classname="com.example.chatbar.data.local.JsonFileStorageEdgeCaseTest" time="0.03"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

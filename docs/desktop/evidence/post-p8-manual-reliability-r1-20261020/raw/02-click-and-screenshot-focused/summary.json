@@ -1,0 +1,22 @@
+{
+  "suites": [
+    {
+      "suite": "DesktopVoiceClickReliabilityTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "bytes": 1662,
+      "sha256": "2cbcef87343778c4073416b93ca9e5762106e5430556b8c956079cf06c220706"
+    },
+    {
+      "suite": "DesktopChatScreenshotUiTest",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "bytes": 801,
+      "sha256": "4c428b1bc4662138bc82d8b6953b3fe907a682cc6b32b01ecb51cef3b1826996"
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "files": [
+    {
+      "path": "manual-supervisor.py",
+      "bytes": 6354,
+      "sha256": "d846ea07db8a2a8b3402af3a95a30138f348948ae161e15aac9979f56362d51c"
+    },
+    {
+      "path": "P8R3Preflight.java",
+      "bytes": 8680,
+      "sha256": "3c411be5902b9b6fe53deff66cdd297e0bc0b03b0e6784d6fd147f1e0e8a02f0"
+    },
+    {
+      "path": "P8S7Support.java",
+      "bytes": 26883,
+      "sha256": "26df861ae1e30226cbad8ba1f0852cf6672f2095b573f7edef469d54b5eca911"
+    },
+    {
+      "path": "runtime-watch.ps1",
+      "bytes": 6313,
+      "sha256": "ae8367f5530b5a827a2528a3bcefeff7a2293f9259e52dad3958e85f2356baa0"
+    },
+    {
+      "path": "support-classes/P8R3Preflight$1.class",
+      "bytes": 715,
+      "sha256": "d0e7295a53f889e5cbaff2cd6b7d5a77a84455fb60492e5fc3ad471bab72af19"
+    },
+    {
+      "path": "support-classes/P8R3Preflight$SuspendCall.class",
+      "bytes": 404,
+      "sha256": "91df8d458c9fd08e2e834a02621098fb0585c744d0d93dc27150bdccbe2ddecb"
+    },
+    {
+      "path": "support-classes/P8R3Preflight.class",
+      "bytes": 16985,
+      "sha256": "3e83f7d2f8ea4d6cb7b0382c05912abb61b816f8fe2fa45d11097c83cdfbd443"
+    },
+    {
+      "path": "support-classes/P8S7Support.class",
+      "bytes": 33454,
+      "sha256": "df2f702429cfcab35b86e1934687ba8d65c9c5f9d483f63b2207b73d8b94d3f8"
+    }
+  ]
+}

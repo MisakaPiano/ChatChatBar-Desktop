@@ -1,0 +1,17 @@
+{
+  "attribution": "CODEX_SELF_CHECK_NOT_PROJECT_INDEPENDENT_REVIEW",
+  "checkpointHead": "3c789ee5ab6b065b7303fb410efda3e46e043411",
+  "appTree": "b148fecde3f3604cdf2298d089dfc14eb362ae1a",
+  "appAndBaselineAndPolicyUnchanged": true,
+  "raw90ShaLengthAndGitBlobPass": true,
+  "productionSourceSnapshots": 45,
+  "selectedOfficialEarlier": 7,
+  "officialSupplement": "SELECTED_OFFICIAL_SUPPLEMENT.json",
+  "publicPrivacyPatternHits": 0,
+  "privacyLimit": "Pattern check plus bounded synthetic/static provenance, not exhaustive secret detection",
+  "packetLocalLinksChecked": 17,
+  "privateLedgerGitTracked": false,
+  "newJUnit": "N/A_NO_JVM_OR_NATIVE_VM_TEST_RUN",
+  "nativeWindowsVm": "ENVIRONMENT_NOT_PROVEN_NOT_TESTED",
+  "businessWiring": "UNCHANGED_NO_APP_TREE_DIFF"
+}

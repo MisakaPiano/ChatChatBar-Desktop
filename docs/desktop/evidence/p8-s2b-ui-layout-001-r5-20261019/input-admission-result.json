@@ -1,0 +1,82 @@
+{
+  "stage": "01-native-input-admission",
+  "suites": 1,
+  "tests": 1,
+  "reportedPass": 1,
+  "failures": 0,
+  "exitCode": 0,
+  "testSeconds": 12.631,
+  "xmlSha256": "07ce354f11b72f46f1ac6de8cc673d8c5eac0f5d89f321b34e5ca091f4887fbe",
+  "requestedWidthsDp": [
+    1100,
+    720
+  ],
+  "observedFrameWidths": [
+    1100,
+    720
+  ],
+  "dpiScale": [
+    1,
+    1
+  ],
+  "thumbRects": [
+    {
+      "x": 1120,
+      "y": 155,
+      "width": 8,
+      "height": 89
+    },
+    {
+      "x": 740,
+      "y": 261,
+      "width": 8,
+      "height": 54
+    }
+  ],
+  "admittedPresses": [
+    {
+      "planned": [
+        1124,
+        200
+      ],
+      "system": [
+        1124,
+        200
+      ],
+      "awt": [
+        1124,
+        200
+      ]
+    },
+    {
+      "planned": [
+        744,
+        288
+      ],
+      "system": [
+        744,
+        288
+      ],
+      "awt": [
+        744,
+        288
+      ]
+    }
+  ],
+  "stablePointerSamplesPerWidth": 3,
+  "relocationsUsed": 0,
+  "physicalPressesPerDrag": 1,
+  "continuousDragStepsPerWidth": 16,
+  "releaseVerified": true,
+  "beforeFirstVisibleItem": 1,
+  "afterFirstVisibleItems": [
+    9,
+    9
+  ],
+  "semanticRangeIncreased": true,
+  "queryCountAtDragCompletionPerFixture": 1,
+  "mockHttpPerFixture": 0,
+  "bindingCountPerFixture": 0,
+  "originalPageValidationAndUnknownTotalIntBranches": "PASS in this stage before pager layout change",
+  "rootCauseLimits": "This run demonstrates correct admitted native input; extra R4 movement origin and historic R3 root cause remain UNKNOWN"
+}

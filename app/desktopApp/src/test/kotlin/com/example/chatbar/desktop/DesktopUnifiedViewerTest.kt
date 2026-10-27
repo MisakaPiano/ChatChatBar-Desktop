@@ -267,6 +267,7 @@ class DesktopUnifiedViewerTest {
                 val field = scene.nodes().first { it.config.getOrNull(SemanticsActions.SetText) != null }
                 field.config[SemanticsActions.SetText].action!!(AnnotatedString("matched"))
                 scene.until { scene.nodes().count { it.label("配方详情") && it.config.getOrNull(SemanticsActions.OnClick) != null } == 4 }
+                scene.until { scene.nodes().count { it.label("图片") } >= 2 }
                 val expected = com.example.chatbar.ui.imageprompt.NovelAiHistoryFilterPolicy.filter(c.history.first(), "matched", null).map { it.image.path }
                 scene.double(scene.nodes().filter { it.label("图片") }[1].boundsInRoot.center)
                 scene.until { opens.isNotEmpty() }; delay(400); scene.frames()

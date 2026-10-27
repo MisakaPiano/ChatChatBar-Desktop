@@ -3,6 +3,8 @@ package com.example.chatbar.domain.image
 import com.example.chatbar.domain.prompt.CharacterNaiPromptDefaults
 import java.util.UUID
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 
 @Serializable
 enum class NovelAiSampler(val apiId: String, val displayName: String) {
@@ -11,6 +13,7 @@ enum class NovelAiSampler(val apiId: String, val displayName: String) {
     DPM_PLUS_PLUS_2S_ANCESTRAL("k_dpmpp_2s_ancestral", "DPM++ 2S Ancestral"),
     DPM_PLUS_PLUS_2M("k_dpmpp_2m", "DPM++ 2M"),
     DPM_PLUS_PLUS_SDE("k_dpmpp_sde", "DPM++ SDE"),
+    DPM_PLUS_PLUS_2M_SDE("k_dpmpp_2m_sde", "DPM++ 2M SDE"),
     DDIM("ddim_v3", "DDIM")
 }
 
@@ -28,6 +31,7 @@ enum class NovelAiAspectRatio(val displayName: String) {
 }
 
 @Serializable
+@OptIn(ExperimentalSerializationApi::class)
 data class NovelAiGenerationSettings(
     val model: NovelAiImageModel = NovelAiImageModel.V4_5_FULL,
     val sizeTier: NovelAiSizeTier = NovelAiSizeTier.NORMAL,
@@ -39,6 +43,8 @@ data class NovelAiGenerationSettings(
     val seed: Long = 0L,
     val sampler: NovelAiSampler = NovelAiSampler.EULER_ANCESTRAL,
     val cfgRescale: Float = 0f,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val varietyPlus: Boolean = false,
     val customWidth: Int? = null,
     val customHeight: Int? = null,
     val useCharacterPositions: Boolean = false

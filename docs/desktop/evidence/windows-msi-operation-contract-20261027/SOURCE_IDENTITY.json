@@ -1,0 +1,72 @@
+{
+  "base": "b02aa6f445eb416a96a23b99d006bfd9c8bd189c",
+  "sources": [
+    {
+      "path": "tools/desktop/windows/directory_guard.c",
+      "bytes": 26380,
+      "sha256": "193a2c4e1c3d70c05692e03f5b44d62c9b15911de3dc6e1908cf5b85b5c38b80",
+      "gitBlob": "538f854916f48cd71f74efc7756fd8ffe18c6c2e"
+    },
+    {
+      "path": "tools/desktop/windows/operation_guard.h",
+      "bytes": 41304,
+      "sha256": "9b89f7913857114bfb0f7b2829eb54106761cfe834771d0046cf11eaf7b5fa21",
+      "gitBlob": "3da38d2761374421cd63ce5c87942b534890de51"
+    },
+    {
+      "path": "tools/desktop/windows/build_directory_guard.py",
+      "bytes": 6188,
+      "sha256": "c50d58619bba2742cf9f7778e231515a1504e8cad622a5bf02a4abd31336d240",
+      "gitBlob": "c468594ac02b2179a0a9362156a45398dfc43519"
+    },
+    {
+      "path": "tools/desktop/windows/msi_safety.py",
+      "bytes": 38796,
+      "sha256": "ddbd2290be067d16f3253306fdd97b84a38ed2021b7a47ed8482888361fef3f9",
+      "gitBlob": "72592fdbeea5006ea179eca742e5149da2ce25a3"
+    },
+    {
+      "path": "tools/desktop/windows/test_msi_operation_contract.py",
+      "bytes": 14603,
+      "sha256": "a56bba30b024e41c6fa5672fe1e0a4a98b1cf8b375b85c24fa6baebd363b843f",
+      "gitBlob": "89672b52ff98710ff558d446f619bc535ee46b86"
+    },
+    {
+      "path": "tools/desktop/windows/test_msi_directory_guard.py",
+      "bytes": 17616,
+      "sha256": "b8c3cd46b816fa08961a1198ab3cb4b0d0aadad252e6c7f7b06e68fa0b17c17b",
+      "gitBlob": "09810bb83d9b13a81cf6b3dd677aa57561ac6e77"
+    },
+    {
+      "path": "tools/desktop/windows/test_msi_component_contract.py",
+      "bytes": 14049,
+      "sha256": "0960cd589db489782565a3d58ec44d19535a29a0e4607e32fdb1d280cda63364",
+      "gitBlob": "82a12ee3888f10428b42ef8fe54286dca0ad1851"
+    },
+    {
+      "path": "tools/desktop/windows/test_msi_safety.py",
+      "bytes": 6253,
+      "sha256": "a461f4e06d3e14afbb4098f5b233320127f2be78ae5ad0e8f155943ef001429e",
+      "gitBlob": "2560ad8b7b962271017c7456644c66f58bfcd62b"
+    },
+    {
+      "path": "tools/desktop/windows/run_directory_guard_tests.py",
+      "bytes": 3820,
+      "sha256": "03752061246eac80aa756c73a963922cdaa7bf4b72252abf5db0fa7e3c5f0592",
+      "gitBlob": "5cb64a45f788b3c77e73a635a58e3e9e6be9c46d"
+    },
+    {
+      "path": "tools/desktop/windows/Invoke-DirectoryGuardChecks.ps1",
+      "bytes": 6360,
+      "sha256": "d839d034efead9a3bc87c829b53234faa8ef426a791ae8444e093070bde395a1",
+      "gitBlob": "19c04f5c2f0807ab20a10ac11c9ba348d93c80da"
+    },
+    {
+      "path": "tools/desktop/windows/build_directory_contract_fixture.py",
+      "bytes": 11819,
+      "sha256": "88f1f71d7e59e24f4a780d29006d519259cd6dd4a78448f7cca2fed30a62b9a3",
+      "gitBlob": "357a00fb6d998f30d8c2366eadcfb8af0a80de1f"
+    }
+  ],
+  "finalIndependentTestCount": 61
+}

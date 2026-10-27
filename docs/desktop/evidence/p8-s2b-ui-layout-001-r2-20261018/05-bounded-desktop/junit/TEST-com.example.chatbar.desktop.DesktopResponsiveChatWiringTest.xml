@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopResponsiveChatWiringTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-18T13:45:16.899Z" hostname="DD1" time="0.013">
+  <properties/>
+  <testcase name="only the handle consumes vertical drags with density conversion and stable callback" classname="com.example.chatbar.desktop.DesktopResponsiveChatWiringTest" time="0.001"/>
+  <testcase name="shell lifetime preference has no persistence or session key" classname="com.example.chatbar.desktop.DesktopResponsiveChatWiringTest" time="0.01"/>
+  <testcase name="workspace uses actual remaining width and a separate rail allowance" classname="com.example.chatbar.desktop.DesktopResponsiveChatWiringTest" time="0.0"/>
+  <testcase name="composer preserves multiline value and composition guarded Ctrl Enter" classname="com.example.chatbar.desktop.DesktopResponsiveChatWiringTest" time="0.0"/>
+  <testcase name="height preference is shell owned and drag handle never belongs to text field" classname="com.example.chatbar.desktop.DesktopResponsiveChatWiringTest" time="0.001"/>
+  <testcase name="normal and collapsed share the same guarded Send Stop action" classname="com.example.chatbar.desktop.DesktopResponsiveChatWiringTest" time="0.0"/>
+  <testcase name="all composer heights keep attachment fullscreen and send in one action rail" classname="com.example.chatbar.desktop.DesktopResponsiveChatWiringTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

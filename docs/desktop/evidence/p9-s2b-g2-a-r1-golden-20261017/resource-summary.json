@@ -1,0 +1,11 @@
+{
+  "samples": 10,
+  "minAvailableGiB": 4.737983703613281,
+  "minCommitHeadroomGiB": 4.435428619384766,
+  "maxPagesPerSecond": 2949,
+  "maxJavaCount": 4,
+  "maxSampledJavaWorkingSetBytes": 1096126464,
+  "maxSampledJavaPrivateBytes": 1735856128,
+  "absolutePeaks": "UNKNOWN",
+  "frontendResponsiveness": "NOT TESTED"
+}

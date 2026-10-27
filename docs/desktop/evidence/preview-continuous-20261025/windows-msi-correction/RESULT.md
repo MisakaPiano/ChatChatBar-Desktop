@@ -1,0 +1,11 @@
+# Windows MSI correction checkpoint
+
+Application tested before correction: f6c6703dd713284ad7d75f7e4e24c012da0fbc8d; synthetic numeric versions 0.1.1000 and 0.1.1001. Actual per-user install/upgrade and owned-window close completed (exit 0); independent JVM reopen verified synthetic chat/draft/image/bootstrap and three invented real-DPAPI keys. Original native probe did not yet have the stronger selected-root-busy assertion. The later source snapshot is not claimed identical to every intermediate probe.
+
+**RED:** an unmanaged program-directory sentinel was deleted during upgrade. Private verbose MSI evidence directly contains WixRemoveFoldersEx recursion and FileRemove of that exact file. The public extract is sanitized; complete original logs stay local because MSI includes account metadata. No security-software cause is inferred. The unsafe synthetic product was retired after proving all 216 remaining installed files were managed and no unknown files remained. Its external data/credential fixture was retained.
+
+**Candidate verification:** six Python tests execute actual MSI database transformations, cabinet-byte comparisons and conservative refusal checks; no install performed by these six tests. The initial Kotlin DSL import/shadowing configuration failure (zero tests), corrected configurations and final test-fixture preparation (zero tests) are retained separately. Existing JVM suites are not counted again.
+
+Correction removes recursive unknown-file deletion, moves old-product removal inside MSI rollback, blocks downgrade, separates default program/data paths and excludes uncorrected bootstrap EXE generation. Synthetic MSI alone has a failure-injection action. Corrected SOURCE and TARGET must both receive native verification; an older unsafe uninstaller cannot be fixed by a new target MSI.
+
+**Not yet claimed here:** corrected native upgrade, rollback, downgrade rejection, occupied-install behavior or uninstall retention. Original A MSI was replaced in the shared build output before downgrade could run; original downgrade is NOT TESTED. Build driver now pins MSI independently. No power-loss, host reboot, cross-account DPAPI or real-archive migration evidence. Continue engineering without a checkpoint approval pause.

@@ -1,0 +1,547 @@
+{
+  "attribution": "CODEX_SELF_CHECK_NOT_PROJECT_REVIEW",
+  "checkpoint": "STORAGE",
+  "rawCount": 90,
+  "raw": [
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/.gitattributes",
+      "bytes": 20,
+      "sha256": "e97602ab9cac70102245345c5ab0fc9830df8b17f1072b188265a662a3a547ae",
+      "gitBlobRaw": "bd2de00cda30e433943ceb23971ade38d5a3fc86"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audit-after-enumeration.exit",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354",
+      "gitBlobRaw": "18748286e5b8b4de5db905f87cdfed1a7d48fe60"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audit-after-enumeration.log",
+      "bytes": 112,
+      "sha256": "facf37e8c75d154ae90627943ee22855b78945cfee9894bc9a9750d5411f8f61",
+      "gitBlobRaw": "8d6b2bcd4f6cdb0703cb2e5703d7adc3f93700f1"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audit-after.exit",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354",
+      "gitBlobRaw": "18748286e5b8b4de5db905f87cdfed1a7d48fe60"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audit-after.log",
+      "bytes": 100,
+      "sha256": "695c2f349d38f97b1404a5a94c1313ad63b9a5ed94ed014987dc55d04abc70e6",
+      "gitBlobRaw": "46606fc06aa48855aff1c1a2b7787e9f5d9f7466"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupPolicy.kt",
+      "bytes": 10654,
+      "sha256": "786b1e62d86dc0086e5a4ad91d84102aab304053cb3bb765ac3ee068b841e603",
+      "gitBlobRaw": "598322cc4b4716d74aad5db4a05c1799d278be8e"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialImportPlan.kt",
+      "bytes": 10870,
+      "sha256": "a7f3bf741c4e742b8a15d24e4d8dd5218bf7c6bc07ced28f592740b9a7b7718a",
+      "gitBlobRaw": "432d66be60891a77db97ac1b9b633dd4e4a23d3d"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialSourceCensus.kt",
+      "bytes": 10747,
+      "sha256": "fd82ad1db9e4279d8437d417c6a7533aafc9275f2af1eb9b8aa2438710ca3052",
+      "gitBlobRaw": "9bc54b7c8123418ee7c56694b935988fb2dab180"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupMapping.kt",
+      "bytes": 14095,
+      "sha256": "c38392eb32fc577f2a70bfe5fbd389f995a2c468d231317f61494ceb2d74dae5",
+      "gitBlobRaw": "7ff280fb58ba0bb51400fbc610a7735876e14ac5"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/RecoverableIntentContract.kt",
+      "bytes": 7388,
+      "sha256": "54e7e9efc5197dd7ebd27ef07f6aea82bb83df992badb3af87b60c4c68984eca",
+      "gitBlobRaw": "6119401947bd0fd6aaef01099751b5b4d9126ecc"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt",
+      "bytes": 35182,
+      "sha256": "696ab9798fb14bdcfaaaab4333e8f188aa2759fce68c436546ab9dfa634cf265",
+      "gitBlobRaw": "f83322548c7fb362c606265526b661932a91dc8b"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAutomaticBackupRuntime.kt",
+      "bytes": 15911,
+      "sha256": "1b0f19a18814d05d414f71d3d6ff6d5503468ecf33fd0848ecf165faa4c795aa",
+      "gitBlobRaw": "b14ebe6d8b90e55a5b4decb0ad09cc714e918c26"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAutomaticChatImages.kt",
+      "bytes": 5175,
+      "sha256": "ddff6f35c0e145496aa386104266a277ea66402be4e0b26be14ec7088917573a",
+      "gitBlobRaw": "87d4ee6f65c15d0530e206410221de73276fb8a4"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopBootstrapAuthorityTransaction.kt",
+      "bytes": 21376,
+      "sha256": "3c69aedccdf6bd891ea6d4a06cfb4a3f68bac8ed6da3d72c2684fb7460e8ed1d",
+      "gitBlobRaw": "2f608f247394d02bf835239960fbe41f0e8fe0ad"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatImageRegeneration.kt",
+      "bytes": 11289,
+      "sha256": "1e57b1d21b3bb521d31a05be4a72ca37346251ec48511fdca723320593472721",
+      "gitBlobRaw": "29b5dad831f43014c4e96492f6d3959ab8e25d99"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoiceRuntime.kt",
+      "bytes": 12189,
+      "sha256": "87bb8038e7d4ac8d1f223c68c6bf7555a36624b362cd2f32855a49c81a6ffeaf",
+      "gitBlobRaw": "5c653443425828f56622f6d63632318f74a48dd6"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCoordinatedSnapshotService.kt",
+      "bytes": 5264,
+      "sha256": "26912bb483d1f91a33a41e6321e6ae4f84899433767f1e8d9061069b3f4e2d1f",
+      "gitBlobRaw": "72f03633930041a22c75385ddf05250a091f44f7"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataDirectory.kt",
+      "bytes": 11914,
+      "sha256": "359b3ad8af63d3351fb40a2865082c836742dc3f38da8a5cccd7eaf0bf2f3550",
+      "gitBlobRaw": "8ded3d2296aa9bbf40e376f5a4a376d68e7db61d"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataOperationCoordinator.kt",
+      "bytes": 15702,
+      "sha256": "f85a15ce1fd80e7349a3cc722f6a053e012e60fd021289bd30c72934e8ec4fd3",
+      "gitBlobRaw": "70abb3ac74cbca18bbac0e74964d2b8d9bae9253"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootMigrationMaterializer.kt",
+      "bytes": 49513,
+      "sha256": "91cdd97dd4636df831bb216e87b0a244142fa4ff73a853b2c1e29ac923b86bb8",
+      "gitBlobRaw": "e7e815afaa71323370e1ee2abc83127c87a3d724"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootMigrationService.kt",
+      "bytes": 24791,
+      "sha256": "dcc692343ab6715176282d5e3cb581ea3806c461f8e81fbc9e96b76707954242",
+      "gitBlobRaw": "503f8a6e1b205b3e6bbfc77d9634c86491254bc3"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootOwnership.kt",
+      "bytes": 14087,
+      "sha256": "68b32776c758b3be5bd85c9df0262b13da4e9a56622c0ab595b901f29e08eee6",
+      "gitBlobRaw": "ab00338c3d00aead6343af0dbd71e47670a5f5c0"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDocumentIndexReadEvidence.kt",
+      "bytes": 7516,
+      "sha256": "5409f99d6b8a031dee30e31e0de387026cabe3badc529d5c25e57803e0c93b27",
+      "gitBlobRaw": "b8db28d4bc09ce3efc419b8437b606c70004345b"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishAudioControllers.kt",
+      "bytes": 4209,
+      "sha256": "f229d2ba54bede04d77a4ad7309ef5377dbb32edb228a35449754577434516f1",
+      "gitBlobRaw": "ae8832a9255dd027980a122259e42525506537a2"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishAudioLibrary.kt",
+      "bytes": 6605,
+      "sha256": "eb868aad369670dc191a4b83a03d5c5392b789f5ffacc9797671ef800bb59b25",
+      "gitBlobRaw": "8d7102ab5304e7e3049ad6867e8f1ddc83dea741"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishGenerationCoordinator.kt",
+      "bytes": 45876,
+      "sha256": "a0dfd60baed01e421452b26b10dc46cac47baf2118ae10126de6b7b2bde00a71",
+      "gitBlobRaw": "b8feb512c55117deab246f632bfa4e55962621d4"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPreviewTransport.kt",
+      "bytes": 5775,
+      "sha256": "cb4f27c84065c0b98a64b41a2d667a0552b623c7569c050d1522e1c4b3a2e6e1",
+      "gitBlobRaw": "79cb7971fae75a25f0e2c0010e25219b6a251818"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishVoiceTransport.kt",
+      "bytes": 6510,
+      "sha256": "e8e772f0a72388131153465a8fddbc235d27ae57f0aef46482f7564fad513c31",
+      "gitBlobRaw": "dc5a0dba0575c84012ceaad935f008a39d377f19"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupCommitJournal.kt",
+      "bytes": 11570,
+      "sha256": "f0e0bbd18af6d87e09e708569192d7df7124490e69e883980edc2db012262271",
+      "gitBlobRaw": "299ea101dbd836b50768f186e217414f676b6966"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullBackupService.kt",
+      "bytes": 4260,
+      "sha256": "39f71327a651a04ff52cb5da3fc3e72c6cef3efd9597f3639c0babdb22893e42",
+      "gitBlobRaw": "464766fee6514f3e5895a351ca463f0b8b2b714b"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopIndexCommitJournal.kt",
+      "bytes": 10821,
+      "sha256": "5c60439228366cf5c99cc492332cf7e7414ffc43e7663d1e669f8ab5a9a0ba45",
+      "gitBlobRaw": "47b1400384c3e42985294381f03336ba55442bda"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopNovelAiGenerationRuntime.kt",
+      "bytes": 4461,
+      "sha256": "44fd47cce403929e233ce8108d857c02233f637d4c6265b32bd4c4128cb4909d",
+      "gitBlobRaw": "bcb2b9f828fc71f39d1e666bd4912196b9ff786c"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopNovelAiGuidance.kt",
+      "bytes": 7322,
+      "sha256": "72a8913df9762c9f9ae31d66758a2d2e211ea3134d06862be9f2d2ccc9987614",
+      "gitBlobRaw": "d9a4c413224c2d86724e8ba4adae7564c4ce088b"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopNovelAiPostProcessor.kt",
+      "bytes": 5439,
+      "sha256": "937add4f78ba2061f629305020ed0fb7ae15a95c9b8a6488132c5c76c20bea34",
+      "gitBlobRaw": "4f28d744242a869427ab75907a751a7950097170"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopNovelAiRuntime.kt",
+      "bytes": 5314,
+      "sha256": "49715565ed59f3b6d1a852b62d13ef01b8f01f363134b90b82534185d7bf639a",
+      "gitBlobRaw": "b72ef13e0e977cac21e9b46aa9ce420ff1e79d22"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopNovelAiSettingsController.kt",
+      "bytes": 3907,
+      "sha256": "69c938eab569e0d9a517c5043810ddf4402f43060c63bceff1aae415d6710248",
+      "gitBlobRaw": "b88ba1704e3bc1cb5fe1da046c22f4348940771b"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopOwnedImageCleanup.kt",
+      "bytes": 3103,
+      "sha256": "517b87d014c0e6837ffb678a2cc2d74e8aa6211533b653a2f1c3e5d0c791a029",
+      "gitBlobRaw": "e91cb0104bef7c1064db593b7bbfc6fe7f50c7c1"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPortableRoot.kt",
+      "bytes": 16221,
+      "sha256": "59ef10946309e172450a87cb485dc9d1376fe6e8f1b3e857074b4d1b352a7ad8",
+      "gitBlobRaw": "729d40ba87cd3480954a719712c8635eb1dbd060"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopRagController.kt",
+      "bytes": 5448,
+      "sha256": "438a91e05fa1b1f1e647128a892263406276cf2c7a62baa2a50193aa1d3590ca",
+      "gitBlobRaw": "77e9d0676fc02c427dec5ec6fc5fc41562b076cc"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSessionCommitJournal.kt",
+      "bytes": 12069,
+      "sha256": "1a58e069a5f30649b7cff7a15997dd053e1800b9ccc2ae14cca6633ac079c6c4",
+      "gitBlobRaw": "e88e0ebb704d6a5450b754b6970ce4f710c64fea"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopStartupGate.kt",
+      "bytes": 7721,
+      "sha256": "0a601d98931b7fffa90c9acbdd7e83f7868e6217a1fe10b0ed0396b23c4ab072",
+      "gitBlobRaw": "b0716984221f97daec75db55d6fa224c1fa70333"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/Main.kt",
+      "bytes": 14104,
+      "sha256": "f118ab550880950cb5ad563ef7b45d45fab3a05efdb75ee0c46d7abd9364f12e",
+      "gitBlobRaw": "0c239070ee248d9e4964b9f7d76f022201322448"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/DesktopRepositoryCredentialPolicies.kt",
+      "bytes": 7115,
+      "sha256": "721fa6f1bbbab39eb424b8f43fba9a99accf0ba542715f47bb0f27549f65bd5b",
+      "gitBlobRaw": "bd684118a3abd564a33b1a6855bf86374f59866c"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/DesktopSecretStore.kt",
+      "bytes": 2159,
+      "sha256": "952a6390dd37df40fd6b36c55daddd79c6302d970e367ce35e4cc9e8936c812d",
+      "gitBlobRaw": "a5b09696e450f2efa8fc4b081ac8fc62c7cfdb95"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/WindowsDpapiSecretProtector.kt",
+      "bytes": 2131,
+      "sha256": "214e44adf3d7f83c01640077a71eae4371434700764de7093d9d119ed5431478",
+      "gitBlobRaw": "6025a9c8ad2badc7777ce5835fda15857c040d22"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/WindowsSecretRootResolver.kt",
+      "bytes": 2296,
+      "sha256": "8f8db04865f762c9e715e6ae25d3b5d9c4294930fb9c6e90cab7d2087fab6037",
+      "gitBlobRaw": "b51d0a12e20740565edd2bea73b40a51437c3828"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/security/WindowsSecretStore.kt",
+      "bytes": 9554,
+      "sha256": "f627a5eb91e646c5d62248c6721382296b114e85f047285f4bb3f91835d3d034",
+      "gitBlobRaw": "f54d5bab1826e8fbfb5cb1d85be9f1079ea67590"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/ModelRepository.kt",
+      "bytes": 14262,
+      "sha256": "d4ee151143d0b237c11037b7aa31850b31dc5cd37cf20f1f6feb4f60e174bda0",
+      "gitBlobRaw": "a72a4c8d19b927a08309da94422104758fb5cd69"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/sharedCore/src/main/kotlin/com/example/chatbar/data/snapshot/AppDataSnapshotService.kt",
+      "bytes": 48880,
+      "sha256": "caf1b4bd97dc7a47ef68fb5c7ebb6a5ff1a1cf2adbff28087bbb7df1c3d1f0c5",
+      "gitBlobRaw": "ad604e2378e8610c6a89cc43bdf8f08b2ab02eff"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/audited-source/app/sharedCore/src/main/kotlin/com/example/chatbar/domain/model/EffectiveModelResolver.kt",
+      "bytes": 12057,
+      "sha256": "9951f1eef1d78e14c71790e12abd5dcc2f614285c5a3718a7282b2a69328caad",
+      "gitBlobRaw": "3854374aa8a7fa6fefb4b9b4d53d9620d1da96be"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/avd-apply-readonly-skip.exit",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354",
+      "gitBlobRaw": "18748286e5b8b4de5db905f87cdfed1a7d48fe60"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/avd-apply-readonly-skip.log",
+      "bytes": 625,
+      "sha256": "c6dce200278cae64de90d5c7843a7ee0788eaf0bf10f6ff5654bf623dea9e8b0",
+      "gitBlobRaw": "20ceee31c28eff647fdc53186a59fd90c7c6965f"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/avd-apply.exit",
+      "bytes": 3,
+      "sha256": "df4e26a04a444901b95afef44e4a96cfae34690fff2ad2c66389c70079cdff2b",
+      "gitBlobRaw": "78c6baefdd2d13b3080b53d794e90471df3c4bf2"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/avd-apply.log",
+      "bytes": 98,
+      "sha256": "f25a222c6587bdd0cd0606b2979ef2698facf593ce1914b1cd3fd85518f4e8b5",
+      "gitBlobRaw": "6cc0f2e599f030dd574f6d9bbe686ba1ca71957b"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/avd-plan-readonly-skip.exit",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354",
+      "gitBlobRaw": "18748286e5b8b4de5db905f87cdfed1a7d48fe60"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/avd-plan-readonly-skip.log",
+      "bytes": 812,
+      "sha256": "e5187dca77ef97e0e959eeb68a2aa34254c713a2351c1be431d583cc1cdce926",
+      "gitBlobRaw": "b7a70d03dc758ba07edc10c1b29107b4b8ea0896"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/avd-plan.exit",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354",
+      "gitBlobRaw": "18748286e5b8b4de5db905f87cdfed1a7d48fe60"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/avd-plan.log",
+      "bytes": 756,
+      "sha256": "01e65f0d613ea2f87d2f4f8a629520f32721e7a0e50d380c69956250a21cb35c",
+      "gitBlobRaw": "b3f583f7a5b75f085c049d5cc73db881d0e11682"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/AVD_CLEANUP_DECISION_LEDGER-readonly-skip.json",
+      "bytes": 751,
+      "sha256": "851bc0f2b42279ef7ef157d0f5282b9c3215d92af394fb08dd950804fb931eca",
+      "gitBlobRaw": "9d5e26880f96197556d7fd0241eb2e0b8e7c3bba"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/AVD_CLEANUP_DRY_RUN-readonly-skip.json",
+      "bytes": 993,
+      "sha256": "a03a22942e60dcd1854844d36d13baaed091f4e531c5256095fb26114199b1fb",
+      "gitBlobRaw": "8d76bec5720b91cb3ccb6dfeb5a1471a9889a290"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/AVD_CLEANUP_DRY_RUN.json",
+      "bytes": 923,
+      "sha256": "85857485fe00f94524c47d88b2c4caa18dfa11fd61722af2c114972cc4eb6d42",
+      "gitBlobRaw": "4700e26f1bea38d0f5ae1b807ff8fa7a5b97cff8"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/cleanup-policy-tests.exit",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354",
+      "gitBlobRaw": "18748286e5b8b4de5db905f87cdfed1a7d48fe60"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/cleanup-policy-tests.log",
+      "bytes": 1638,
+      "sha256": "e61829053de39f36a34a52b3b0dbb6c2a720eeeb37c63bb8938a94ed6462d7d5",
+      "gitBlobRaw": "0a23b9cb6247629e6ff931b60e8835e46c4a248e"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/CLEANUP_DECISION_LEDGER.json",
+      "bytes": 907,
+      "sha256": "e376246e7243dbbaaa0bdd26efa1810e02274528679c253533da4dcb533b7f38",
+      "gitBlobRaw": "8c733e20c016784ab2c84b925b6cd7691a67b924"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/CLEANUP_DRY_RUN.json",
+      "bytes": 2091,
+      "sha256": "5fb2e1a5afdb2c8a538301a49e46c78611b5fba4a5207829eddd12054b8e1dba",
+      "gitBlobRaw": "9edfef6d498ebfe94f2ff7c95b72617df9479f61"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/enumeration-policy-tests.exit",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354",
+      "gitBlobRaw": "18748286e5b8b4de5db905f87cdfed1a7d48fe60"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/enumeration-policy-tests.log",
+      "bytes": 1638,
+      "sha256": "18ba16ee40b0dcc65e6f1c2c1a4eedeceab118125da0fc952d8d0e54d3fde7b2",
+      "gitBlobRaw": "fc5b7a167ab50a20a84d85f36c0ce4bb89c6512c"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/LOCAL_DISK_AUDIT_AFTER-ENUMERATION.json",
+      "bytes": 5016,
+      "sha256": "aeea62424eaa04efa1eaeee671caf5c12da857cbdc40a478072ebbb43e2cd1b6",
+      "gitBlobRaw": "261f86ed08442644b5ee69085cd3aecfc1545834"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/LOCAL_DISK_AUDIT_AFTER.json",
+      "bytes": 5019,
+      "sha256": "5348f06ba3d8ecc4179b04fd0d5ae090ebfdfcf94da7271b83233c9287b37fb7",
+      "gitBlobRaw": "75b59a024db5967bd27b6665f5c06d79821d37b8"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/LOCAL_DISK_AUDIT_BEFORE.json",
+      "bytes": 5007,
+      "sha256": "f8f5e4d09bb23f3f259f7c65adf680334c625aeb9a1f68e27800d9f3edb8cdcb",
+      "gitBlobRaw": "59acb8d18bac715bdc5529c711e3787991a311d4"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/platform-precondition.json",
+      "bytes": 518,
+      "sha256": "bbcb8116dc6ef58904e597a6c6e60576874010e709dcb95dc38205d04ac4a444",
+      "gitBlobRaw": "a5f7bfcfca4e3490529f93697b1df546068e0285"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/policy-tests-final.exit",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354",
+      "gitBlobRaw": "18748286e5b8b4de5db905f87cdfed1a7d48fe60"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/policy-tests-final.log",
+      "bytes": 1197,
+      "sha256": "c1ae3152568eec127ff1e48d857622c3b7124340ff31d128b436cdc79fe58a4b",
+      "gitBlobRaw": "dedc2b3a5aa4dbefdbbd81c5d156f7b4d0bbf339"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/policy-tests-initial.exit",
+      "bytes": 3,
+      "sha256": "f1b2f662800122bed0ff255693df89c4487fbdcf453d3524a42d4ec20c3d9c04",
+      "gitBlobRaw": "f33dfa25aa16a97ca941fe1d9cabdc3689179f3f"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/policy-tests-initial.log",
+      "bytes": 3811,
+      "sha256": "ea413398786e8b4b5586a8ad7f899861a9883af1ba5136cf524ecb791bc1651c",
+      "gitBlobRaw": "c6115d8783827f03c8a2f6b5bf7ed8ed180ec98b"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/readonly-skip-policy-tests.exit",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354",
+      "gitBlobRaw": "18748286e5b8b4de5db905f87cdfed1a7d48fe60"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/readonly-skip-policy-tests.log",
+      "bytes": 1638,
+      "sha256": "65ac3e48d0135a249636aba7938e0ff0a3f263a33184858be082f29e05834827",
+      "gitBlobRaw": "9c6e5e54303326ebc5a23b93112fc7161c9e0e5b"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/source-audit-current.json",
+      "bytes": 17092,
+      "sha256": "070b402d218bb29e39992355fa73067f5ace00a8cd4c263f0dd11d28e9b920d6",
+      "gitBlobRaw": "20fd02442c3dcc79393f6fd45b78e601e45d0c2d"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/source-audit.exit",
+      "bytes": 3,
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354",
+      "gitBlobRaw": "18748286e5b8b4de5db905f87cdfed1a7d48fe60"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/source-audit.log",
+      "bytes": 122,
+      "sha256": "2dbf6f39858d3ad95671297979b87aa0db558e6fa9469d383f146a706350c752",
+      "gitBlobRaw": "1faaa6ccec5bc7efb230d12e95810e52c838dc8e"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/source-before-cleanup-tests/RetireAuthorizedAvds.py",
+      "bytes": 10329,
+      "sha256": "5c94cc663caa8c53d7a87de86fe34f1d69471e3b85d9e1c870288d7cb9c08199",
+      "gitBlobRaw": "7664bbc4336ccd082eb3e2579441aaf2709ca276"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/source-before-cleanup-tests/StorageAudit.py",
+      "bytes": 9814,
+      "sha256": "d60bc2cf25c699d539e42f92eabfa64c4860c3e15780c10ef1fc9752c2a081f5",
+      "gitBlobRaw": "c3664ab97f727c0a4f0d9ac5b2a58b823cf2899f"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/source-before-cleanup-tests/test_cleanup_guard.py",
+      "bytes": 2468,
+      "sha256": "faee6230600789e9c646369bcf39cd79fd711821cc1cc58eaea8ff34cb5a2c7b",
+      "gitBlobRaw": "9d49d75f59234cb38ecb87106473d57f2b803521"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/source-before-cleanup-tests/test_storage_audit.py",
+      "bytes": 4741,
+      "sha256": "3ff407f209000122f446ec07a400b0e0fdefe26eb1dcdebabdb57cf148af94a0",
+      "gitBlobRaw": "36548b13610b5ad159ed7ee2d456f8d90038e494"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/source-before-enumeration-tests/StorageAudit.py",
+      "bytes": 10173,
+      "sha256": "ece9343dc010e230fa7cf003c6cb905b8cd5a3eb37f1dae857433c154c60c26c",
+      "gitBlobRaw": "6fdb56ba0d5fbff432f13e4f177580e80100c0e1"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/source-before-policy-final/StorageAudit.py",
+      "bytes": 9814,
+      "sha256": "d60bc2cf25c699d539e42f92eabfa64c4860c3e15780c10ef1fc9752c2a081f5",
+      "gitBlobRaw": "c3664ab97f727c0a4f0d9ac5b2a58b823cf2899f"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/source-before-policy-final/test_storage_audit.py",
+      "bytes": 4741,
+      "sha256": "3ff407f209000122f446ec07a400b0e0fdefe26eb1dcdebabdb57cf148af94a0",
+      "gitBlobRaw": "36548b13610b5ad159ed7ee2d456f8d90038e494"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/source-before-policy-tests/StorageAudit.py",
+      "bytes": 9676,
+      "sha256": "af99a70d16977e2132b92356a34390ddca6f251446bdd510b9cd51a4948ca4ba",
+      "gitBlobRaw": "dd696e5674ec1a1629ec7e89ed17d97b3312c1c3"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/source-before-policy-tests/test_storage_audit.py",
+      "bytes": 4741,
+      "sha256": "3ff407f209000122f446ec07a400b0e0fdefe26eb1dcdebabdb57cf148af94a0",
+      "gitBlobRaw": "36548b13610b5ad159ed7ee2d456f8d90038e494"
+    },
+    {
+      "path": "docs/desktop/evidence/p11-lr6-20261024/raw/source-before-readonly-skip-tests/RetireAuthorizedAvds.py",
+      "bytes": 11318,
+      "sha256": "6d4eacd2a2f27730502ec147a54758634d06358a6ded1c896cf671a45cd7def0",
+      "gitBlobRaw": "35622ee58595f68a606eb47f9f12117a7d880230"
+    }
+  ]
+}

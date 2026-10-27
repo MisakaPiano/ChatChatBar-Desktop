@@ -1,0 +1,5 @@
+Get-CimInstance: H:\ChatChatBar-Desktop\app\desktopApp\build\post-p8-screenshot-windows-manual-20261021\runtime-watch.ps1:70
+Line |
+  70 |    $rows=@(Get-CimInstance Win32_Process -Filter "Name='ChatChatBarDes …
+     |            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | 内存资源不足，无法完成此操作。 

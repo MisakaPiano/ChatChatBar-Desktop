@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.image.NovelAiStudioImageImportTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-19T11:35:26.144Z" hostname="DD1" time="0.0">
+  <properties/>
+  <testcase name="unchecked sections do not change draft" classname="com.example.chatbar.domain.image.NovelAiStudioImageImportTest" time="0.0"/>
+  <testcase name="applies selected metadata sections and preserves studio-only fields" classname="com.example.chatbar.domain.image.NovelAiStudioImageImportTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

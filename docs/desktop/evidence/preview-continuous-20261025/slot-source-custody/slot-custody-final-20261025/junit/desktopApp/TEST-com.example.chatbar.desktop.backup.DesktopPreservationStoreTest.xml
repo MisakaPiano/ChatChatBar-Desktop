@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.backup.DesktopPreservationStoreTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-24T21:29:03.234Z" hostname="DD1" time="2.123">
+  <properties/>
+  <testcase name="changedBytesUnknownIndexFieldsAndExtraFilesNeverPassInventory" classname="com.example.chatbar.desktop.backup.DesktopPreservationStoreTest" time="0.5"/>
+  <testcase name="v2RetainsExactScopeAndDistinguishesUnselectedMediaFromMissingHistoricalAvatar" classname="com.example.chatbar.desktop.backup.DesktopPreservationStoreTest" time="0.202"/>
+  <testcase name="cancellationAndPublicationFailureRetainUnpublishedEvidenceButBlockReuse" classname="com.example.chatbar.desktop.backup.DesktopPreservationStoreTest" time="0.286"/>
+  <testcase name="noMomentsWritesNoDomainAndUnownedRootIsRejected" classname="com.example.chatbar.desktop.backup.DesktopPreservationStoreTest" time="0.015"/>
+  <testcase name="missingResourcesAndDanglingTaskFailWithoutActivatingOrDiscardingSource" classname="com.example.chatbar.desktop.backup.DesktopPreservationStoreTest" time="0.2"/>
+  <testcase name="originalRecordBytesAndAllThreeImagesAreIndependentlyOwnedAndIdempotent" classname="com.example.chatbar.desktop.backup.DesktopPreservationStoreTest" time="0.208"/>
+  <testcase name="omittedMediaDoesNotAuthorizeNonImageReferenceFamilies" classname="com.example.chatbar.desktop.backup.DesktopPreservationStoreTest" time="0.093"/>
+  <testcase name="liveGcSnapshotAndWholeBackupPreserveIndependentDormantCopies" classname="com.example.chatbar.desktop.backup.DesktopPreservationStoreTest" time="0.619"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

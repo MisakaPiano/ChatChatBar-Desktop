@@ -1,0 +1,51 @@
+{
+  "sourceTestEvidenceCommit": "ea02b0cc9974a837761c74d114c19c73a4ddea6c",
+  "base": "5c7238e55ebbfb65ea5a78cad32d5437a598de43",
+  "gitArchiveRawFilesVerified": 171,
+  "finalCanonicalToolFilesVerified": 6,
+  "testedKotlinSnapshotsVerified": 2,
+  "launcherFinalSnapshotVerified": 1,
+  "unchangedMainTrees": 3,
+  "completeToolDiffVerified": true,
+  "changedPaths": 186,
+  "tooling": [
+    {
+      "path": "tools/desktop/interop/readonly-r0/Invoke-ReadOnlyTool.ps1",
+      "blob": "5097f62e66832b401894e9f535dbcef21604c853",
+      "canonicalSha256": "2c3d59f70d3ec9a9aeb0c974758c7e9d43ef0ea8f337a6e4369d06d03680044b",
+      "archiveExportCRLFOnly": true
+    },
+    {
+      "path": "tools/desktop/interop/readonly-r0/Prepare-ReadOnlyTool.ps1",
+      "blob": "a13fbfe21b96115c8bf55356ef757646c1009251",
+      "canonicalSha256": "1aa6b7363755c3e480cf6365e78c9a2f3e36ea41c97650424dcb964fb115fb5f",
+      "archiveExportCRLFOnly": true
+    },
+    {
+      "path": "tools/desktop/interop/readonly-r0/README.md",
+      "blob": "30f8950b7160aacfff623e9ccb33d0495f40bcbd",
+      "canonicalSha256": "0a2a05b1ba725a6570d5e30865125f29e37e76f660e09a6971a6661b8ba5d748",
+      "archiveExportCRLFOnly": true
+    },
+    {
+      "path": "tools/desktop/interop/readonly-r0/readonly.init.gradle",
+      "blob": "8d53950e2def3f6a43fbca7f37e7ebce207ea597",
+      "canonicalSha256": "6a402bac95dbfaf714c20baebe2e8a4cf4be0a14a06505bf2a67cbd8748fd4e7",
+      "archiveExportCRLFOnly": true
+    },
+    {
+      "path": "tools/desktop/interop/readonly-r0/src/RealArchiveReadOnlyTool.kt",
+      "blob": "01c4d18d42998988505b4c50cd5141bd5dd5abda",
+      "canonicalSha256": "376315cc11444b2ecd7d5456d82e64580576200ebd5c3811b5741ab933b1fe39",
+      "archiveExportCRLFOnly": true
+    },
+    {
+      "path": "tools/desktop/interop/readonly-r0/src/RealArchiveReadOnlyToolTest.kt",
+      "blob": "0322636d655556cd47abb6035529fd4ff7bcd786",
+      "canonicalSha256": "738b36afccc50808be11978e03695503468a3b87c256947ff08a7c30e478e24c",
+      "archiveExportCRLFOnly": true
+    }
+  ],
+  "archiveConversionNote": "Initial exact-tool-archive-byte assertion failed because git archive applies CRLF to text:auto exports in this Windows configuration. Canonical Git blobs and raw tested snapshots match exactly; raw/** -text preserves all indexed evidence bytes. No source change or rerun was used to hide the check failure.",
+  "attribution": "Codex byte verification only; Project independent review still required"
+}

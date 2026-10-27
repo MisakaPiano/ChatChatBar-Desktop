@@ -1,0 +1,18 @@
+{
+  "merge-graph-red-20261025": {
+    "exit": 1,
+    "suites": 1,
+    "tests": 7,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "merge-graph-green-20261025": {
+    "exit": 0,
+    "suites": 5,
+    "tests": 37,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

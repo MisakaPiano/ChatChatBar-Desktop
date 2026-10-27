@@ -1,0 +1,12 @@
+[
+  {
+    "file": "tools/desktop/windows/Invoke-Comp1FreshGuest.ps1",
+    "gitBlob": "9ff224a9d6d10af329cba7630beb32a895ca96e7",
+    "sha256": "019b6ba5806bb633b551262b45569f7e36aa1905d8592b72a06b5e8bb5a7f438"
+  },
+  {
+    "file": "tools/desktop/windows/Test-Comp1FreshGuest.ps1",
+    "gitBlob": "00110fbd66656d30eaa8ec2c435cd05d6cf41557",
+    "sha256": "f9133ab8981cdea85cd26684ba97f7f133f312221a1d8c7a56ad7b34f7e1102c"
+  }
+]

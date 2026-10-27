@@ -1,0 +1,60 @@
+{
+    "schemaVersion": 9,
+    "exportedAt": 1792273123422,
+    "card": {
+        "name": "T2 结构化测试卡",
+        "botName": "",
+        "avatarResourceId": null,
+        "characters": [
+            {
+                "name": "Alice 合成测试",
+                "profile": "",
+                "appearance": "",
+                "appearanceImageResourceId": null,
+                "clothing": "",
+                "abilities": "",
+                "habits": "",
+                "background": "",
+                "relationships": "",
+                "speakingStyle": "",
+                "imagePrompt": "",
+                "fishAudioVoice": null
+            },
+            {
+                "name": "Bob 合成测试",
+                "profile": "",
+                "appearance": "",
+                "appearanceImageResourceId": null,
+                "clothing": "",
+                "abilities": "",
+                "habits": "",
+                "background": "",
+                "relationships": "",
+                "speakingStyle": "",
+                "imagePrompt": "",
+                "fishAudioVoice": null
+            }
+        ],
+        "greeting": "T2 synthetic greeting",
+        "alternateGreetings": [],
+        "chatBackgroundResourceId": null,
+        "editMode": "STRUCTURED",
+        "basicSetting": "Synthetic offline manual gate only",
+        "freeformCharacterText": "Alice and Bob are synthetic test characters.",
+        "defaultImagePrompt": "",
+        "defaultImageNegativePrompt": "worst quality, bad quality, lowres, blurry, very displeasing, jpeg artifacts, chromatic aberration, film grain, halftone, unfinished,\ndeformed, distorted anatomy, bad proportions, bad hands, bad eyes, asymmetrical face, 3.8::extra fingers, fewer digits, artist collaboration::, extra hands, extra legs,\ncensored, watermark, user_interface, logo, signature, multiple views, turnaround, reference, 4koma, 2koma,\nhigh contrast, overexposure, toon, oekaki, chibi, old,\n3::dark areola, dark pussy::, dark penis",
+        "defaultNovelAiImageModel": null,
+        "systemPrompt": "",
+        "postHistoryInstructions": "",
+        "mesExample": "",
+        "creatorNotes": "",
+        "tags": [],
+        "creator": "",
+        "characterVersion": "",
+        "extensions": "",
+        "characterBook": null
+    },
+    "documents": [],
+    "images": {},
+    "worldBooks": []
+}

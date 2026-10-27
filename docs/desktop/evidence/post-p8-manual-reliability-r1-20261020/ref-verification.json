@@ -1,0 +1,11 @@
+{
+  "utc": "2026-10-20T14:30:20.559903+00:00",
+  "sourceCommit": "60cc44d0159528d2e6824fcaf88ee384964da307",
+  "initialEvidenceCommit": "9ef7578a801f0d0ed4b2766d9f2f5c4c179164f5",
+  "localDesktop": "4c2af2576e2319e8041ffd2a6c5a205450f18246",
+  "remoteDesktop": "5ef95428421f7c693b010ac88f51d470804ab07a",
+  "localDesktopLastReflog": "4c2af2576e2319e8041ffd2a6c5a205450f18246 desktop@{2026-10-12 06:11:13 +0900} merge origin/desktop: Fast-forward",
+  "desktopRefChangedThisTask": false,
+  "sourceOrPackageChangedByCorrection": false,
+  "correction": "Only distinguish stale local desktop from current remote; original raw protection-final.json is preserved."
+}

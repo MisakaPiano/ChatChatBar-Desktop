@@ -1,0 +1,6 @@
+{
+  "testsStarted": false,
+  "kind": "environment-preflight",
+  "reason": "Get-CimInstance denied by sandbox",
+  "exitCode": 1
+}

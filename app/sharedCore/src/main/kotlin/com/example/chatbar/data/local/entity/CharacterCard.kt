@@ -1,6 +1,7 @@
 package com.example.chatbar.data.local.entity
 
 import com.example.chatbar.domain.image.NovelAiImageModel
+import com.example.chatbar.domain.image.NovelAiCharacterImageSettings
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
@@ -29,6 +30,8 @@ data class CharacterCard(
     val defaultImageNegativePrompt: String = "",
     /** null 表示跟随全局 NovelAI 生图模型。 */
     val defaultNovelAiImageModel: NovelAiImageModel? = null,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val defaultImageGenerationSettings: NovelAiCharacterImageSettings? = null,
     val systemPrompt: String = "",
     val postHistoryInstructions: String = "",
     val mesExample: String = "",

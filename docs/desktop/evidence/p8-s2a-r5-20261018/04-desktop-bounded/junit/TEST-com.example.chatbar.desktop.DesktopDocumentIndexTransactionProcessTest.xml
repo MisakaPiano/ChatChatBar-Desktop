@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopDocumentIndexTransactionProcessTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:36:36.780Z" hostname="DD1" time="54.134">
+  <properties/>
+  <testcase name="recovery itself can be killed and a third fresh JVM still restores old bytes" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionProcessTest" time="9.504"/>
+  <testcase name="fresh child recovery classifies interrupted installs and is byte idempotent" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionProcessTest" time="21.819"/>
+  <testcase name="completed live tampering and second publish are checked by independent JVM restarts" classname="com.example.chatbar.desktop.DesktopDocumentIndexTransactionProcessTest" time="22.811"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

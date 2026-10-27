@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.data.repository.ChatRepositoryTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:16.586Z" hostname="DD1" time="0.654">
+  <properties/>
+  <testcase name="rewriteSessionTitlesForCharacterCard skips empty or identical rename" classname="com.example.chatbar.data.repository.ChatRepositoryTest" time="0.234"/>
+  <testcase name="message order undo refuses content changed after repair" classname="com.example.chatbar.data.repository.ChatRepositoryTest" time="0.136"/>
+  <testcase name="display title override is normalized without changing source title" classname="com.example.chatbar.data.repository.ChatRepositoryTest" time="0.044"/>
+  <testcase name="rewriteSessionTitlesForCharacterCard renames bound session titles" classname="com.example.chatbar.data.repository.ChatRepositoryTest" time="0.047"/>
+  <testcase name="character rename preserves display title override" classname="com.example.chatbar.data.repository.ChatRepositoryTest" time="0.02"/>
+  <testcase name="message order repair refuses stale preview" classname="com.example.chatbar.data.repository.ChatRepositoryTest" time="0.06"/>
+  <testcase name="message order repair persists backup and undo restores original keys" classname="com.example.chatbar.data.repository.ChatRepositoryTest" time="0.112"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,22 @@
+[
+  {
+    "round": "windows-package-safe-a-20261025",
+    "exit": "1",
+    "installed": false
+  },
+  {
+    "round": "windows-safe-a-jpackage-diagnostic",
+    "exit": "1",
+    "installed": false
+  },
+  {
+    "round": "windows-safe-a-gradle-diagnostic",
+    "exit": "1",
+    "installed": false
+  },
+  {
+    "round": "windows-safe-a-short-temp-diagnostic",
+    "exit": "1",
+    "installed": false
+  }
+]

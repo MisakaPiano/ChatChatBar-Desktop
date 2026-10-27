@@ -1,0 +1,37 @@
+[
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/AppBackupCodec.kt",
+    "sha256": "779978b0ec30701ece315f64c8850191f44a807715ba8f8bd29ad9a6f8ca6eed",
+    "length": 6225
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/BackupInspectionModels.kt",
+    "sha256": "f1f0810dff5fe9beaf982a6cc64cbbbe101ed836f0cd6a595452e4f78f93be5f",
+    "length": 3027
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupReadOnlyInspector.kt",
+    "sha256": "3a0ab11afa8c19e384aab38d50365b03d591a9fdf5d415073dc833f72f8c94e5",
+    "length": 16397
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/InspectionZipDirectory.kt",
+    "sha256": "f00c3277fdbb2f7c795ac8b39588c3b0984c93f954a27093d718aed33242263a",
+    "length": 3664
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/Official147FixtureCodec.kt",
+    "sha256": "2ef369b19cff8b081b84e5d534dd1d89a0e69ebec01a15d5a3e27edbf7e3a688",
+    "length": 5657
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopBackupReadOnlyInspectorTest.kt",
+    "sha256": "45a6a71837224dc3ab069246c9c25c1430a09f886b63a996a7c61d335338542b",
+    "length": 21019
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopReadOnlyBackupRedTest.kt",
+    "sha256": "71723290402e5b7f651a5bdf3830a656415afbfca1275d0e599f695d0b7faa5c",
+    "length": 826
+  }
+]

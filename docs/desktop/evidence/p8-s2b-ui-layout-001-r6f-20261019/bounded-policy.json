@@ -1,0 +1,14 @@
+{
+  "source": "docs/desktop/evidence/p8-s2b-ui-layout-001-r3-20261019/bounded.init.gradle",
+  "bytes": 550,
+  "sha256": "0f749115d0d5ae8366fbbe17f9ad84c1ad350f263c014049e961e65eeb247648",
+  "identicalRawBytes": true,
+  "exclusions": [
+    "WindowsBackgroundViewerTest",
+    "WindowsStudioEdgeDragTest",
+    "WindowsWindowChromeTest",
+    "DesktopImageWindowPresentationTest.short tool workspace scrolls all actions without consuming preview space"
+  ],
+  "nativeUxExcluded": false,
+  "newExclusions": 0
+}

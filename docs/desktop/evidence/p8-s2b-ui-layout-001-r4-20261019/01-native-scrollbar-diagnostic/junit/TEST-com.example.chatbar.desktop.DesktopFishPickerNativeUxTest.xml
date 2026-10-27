@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFishPickerNativeUxTest" tests="1" skipped="0" failures="1" errors="0" timestamp="2026-10-18T16:30:04.418Z" hostname="DD1" time="13.667">
+  <properties/>
+  <testcase name="native persistent scrollbar drags current page and explicit page jump preserves request semantics" classname="com.example.chatbar.desktop.DesktopFishPickerNativeUxTest" time="13.667">
+    <failure message="kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 10000 ms" type="kotlinx.coroutines.TimeoutCancellationException">kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 10000 ms
+	at _COROUTINE._BOUNDARY._(CoroutineDebugging.kt:42)
+	at com.example.chatbar.desktop.DesktopFishPickerNativeUxTest$Fixture.frame(DesktopFishPickerNativeUxTest.kt:131)
+	at com.example.chatbar.desktop.DesktopFishPickerNativeUxTest$Fixture$await$2.invokeSuspend(DesktopFishPickerNativeUxTest.kt:132)
+	at com.example.chatbar.desktop.DesktopFishPickerNativeUxTest$native persistent scrollbar drags current page and explicit page jump preserves request semantics$1.invokeSuspend(DesktopFishPickerNativeUxTest.kt:375)
+Caused by: kotlinx.coroutines.TimeoutCancellationException: Timed out waiting for 10000 ms
+	at kotlinx.coroutines.TimeoutKt.TimeoutCancellationException(Timeout.kt:189)
+	at kotlinx.coroutines.TimeoutCoroutine.run(Timeout.kt:157)
+	at kotlinx.coroutines.EventLoopImplBase$DelayedRunnableTask.run(EventLoop.common.kt:505)
+	at kotlinx.coroutines.EventLoopImplBase.processNextEvent(EventLoop.common.kt:263)
+	at kotlinx.coroutines.DefaultExecutor.run(DefaultExecutor.kt:105)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+</failure>
+  </testcase>
+  <system-out><![CDATA[FISH_R4_SCROLL phase=ready-before-original-drag requestedWidthDp=1100 frame=java.awt.Rectangle[x=48,y=48,width=1100,height=720] clientOrigin=java.awt.Point[x=56,y=79] client=java.awt.Dimension[width=1084,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] active=true focused=true focus=androidx.compose.ui.awt.ComposeWindow ownerMatches=false ownerEnabled=false range=0.0/100.0 reverse=false listScreen=Offset(372.0, 155.0) listBounds=Rect.fromLTRB(316.0, 76.0, 1058.0, 563.0) trackScreen=Offset(1120.0, 155.0) trackBounds=Rect.fromLTRB(1064.0, 76.0, 1072.0, 563.0) thumbOutline=Size(8.0, 89.0) outlineCount=2 items=[[预览目标 · Page 1 synthetic voice 1]:top=155.0:height=126:offsetFromViewport=0.0, [预览目标 · Page 1 synthetic voice 2]:top=289.0:height=126:offsetFromViewport=-134.0, [预览目标 · Page 1 synthetic voice 3]:top=423.0:height=126:offsetFromViewport=-268.0, [预览目标 · Page 1 synthetic voice 4]:top=557.0:height=126:offsetFromViewport=-402.0] queries=1 requests=0 bindings=0
+FISH_R4_ROBOT originalPress=1124,163 destination=1124,399 thumbAtTop=true thumbHeight=89.0 pressInsideThumb=true
+FISH_R4_MOUSE id=504 screen=1124,163 local=1068,84 button=0 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=503 screen=1118,162 local=1062,83 button=0 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=501 screen=1118,162 local=1062,83 button=1 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=506 screen=1069,154 local=1013,75 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=506 screen=1064,154 local=1008,75 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=506 screen=1061,154 local=1005,75 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=506 screen=1059,154 local=1003,75 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=506 screen=1057,154 local=1001,75 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=506 screen=1056,153 local=1000,74 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=506 screen=1055,153 local=999,74 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=506 screen=1054,153 local=998,74 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=506 screen=1053,153 local=997,74 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=506 screen=1052,153 local=996,74 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_SCROLL phase=original-pressed requestedWidthDp=1100 frame=java.awt.Rectangle[x=48,y=48,width=1100,height=720] clientOrigin=java.awt.Point[x=56,y=79] client=java.awt.Dimension[width=1084,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] active=true focused=true focus=org.jetbrains.skiko.SkiaLayer$1 ownerMatches=false ownerEnabled=false range=0.0/100.0 reverse=false listScreen=Offset(372.0, 155.0) listBounds=Rect.fromLTRB(316.0, 76.0, 1058.0, 563.0) trackScreen=Offset(1120.0, 155.0) trackBounds=Rect.fromLTRB(1064.0, 76.0, 1072.0, 563.0) thumbOutline=Size(8.0, 89.0) outlineCount=2 items=[[预览目标 · Page 1 synthetic voice 1]:top=155.0:height=126:offsetFromViewport=0.0, [预览目标 · Page 1 synthetic voice 2]:top=289.0:height=126:offsetFromViewport=-134.0, [预览目标 · Page 1 synthetic voice 3]:top=423.0:height=126:offsetFromViewport=-268.0, [预览目标 · Page 1 synthetic voice 4]:top=557.0:height=126:offsetFromViewport=-402.0] queries=1 requests=0 bindings=0
+FISH_R4_MOUSE id=506 screen=1124,399 local=1068,320 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=506 screen=1124,398 local=1068,319 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=506 screen=1123,398 local=1067,319 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=506 screen=1122,397 local=1066,318 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=506 screen=1121,397 local=1065,318 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=506 screen=1120,397 local=1064,318 button=0 mask=1024 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_SCROLL phase=original-dragged requestedWidthDp=1100 frame=java.awt.Rectangle[x=48,y=48,width=1100,height=720] clientOrigin=java.awt.Point[x=56,y=79] client=java.awt.Dimension[width=1084,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] active=true focused=true focus=org.jetbrains.skiko.SkiaLayer$1 ownerMatches=false ownerEnabled=false range=0.0/100.0 reverse=false listScreen=Offset(372.0, 155.0) listBounds=Rect.fromLTRB(316.0, 76.0, 1058.0, 563.0) trackScreen=Offset(1120.0, 155.0) trackBounds=Rect.fromLTRB(1064.0, 76.0, 1072.0, 563.0) thumbOutline=Size(8.0, 89.0) outlineCount=2 items=[[预览目标 · Page 1 synthetic voice 1]:top=155.0:height=126:offsetFromViewport=0.0, [预览目标 · Page 1 synthetic voice 2]:top=289.0:height=126:offsetFromViewport=-134.0, [预览目标 · Page 1 synthetic voice 3]:top=423.0:height=126:offsetFromViewport=-268.0, [预览目标 · Page 1 synthetic voice 4]:top=557.0:height=126:offsetFromViewport=-402.0] queries=1 requests=0 bindings=0
+FISH_R4_MOUSE id=502 screen=1120,397 local=1064,318 button=1 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=503 screen=1119,397 local=1063,318 button=0 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=503 screen=1118,397 local=1062,318 button=0 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=503 screen=1117,397 local=1061,318 button=0 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=503 screen=1116,397 local=1060,318 button=0 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=503 screen=1115,397 local=1059,318 button=0 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=503 screen=1114,397 local=1058,318 button=0 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=503 screen=1113,397 local=1057,318 button=0 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=503 screen=1112,397 local=1056,318 button=0 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=503 screen=1111,397 local=1055,318 button=0 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=503 screen=1111,398 local=1055,319 button=0 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=503 screen=1111,399 local=1055,320 button=0 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=503 screen=1110,399 local=1054,320 button=0 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=503 screen=1109,399 local=1053,320 button=0 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=503 screen=1108,399 local=1052,320 button=0 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_MOUSE id=503 screen=1108,400 local=1052,321 button=0 mask=0 consumed=false component=org.jetbrains.skiko.SkiaLayer$1 targetOwned=true active=true
+FISH_R4_SCROLL phase=original-after-release-or-timeout requestedWidthDp=1100 frame=java.awt.Rectangle[x=48,y=48,width=1100,height=720] clientOrigin=java.awt.Point[x=56,y=79] client=java.awt.Dimension[width=1084,height=681] scale=AffineTransform[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]] active=true focused=true focus=org.jetbrains.skiko.SkiaLayer$1 ownerMatches=false ownerEnabled=false range=0.0/100.0 reverse=false listScreen=Offset(372.0, 155.0) listBounds=Rect.fromLTRB(316.0, 76.0, 1058.0, 563.0) trackScreen=Offset(1120.0, 155.0) trackBounds=Rect.fromLTRB(1064.0, 76.0, 1072.0, 563.0) thumbOutline=Size(8.0, 89.0) outlineCount=2 items=[[预览目标 · Page 1 synthetic voice 1]:top=155.0:height=126:offsetFromViewport=0.0, [预览目标 · Page 1 synthetic voice 2]:top=289.0:height=126:offsetFromViewport=-134.0, [预览目标 · Page 1 synthetic voice 3]:top=423.0:height=126:offsetFromViewport=-268.0, [预览目标 · Page 1 synthetic voice 4]:top=557.0:height=126:offsetFromViewport=-402.0] queries=1 requests=0 bindings=0
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

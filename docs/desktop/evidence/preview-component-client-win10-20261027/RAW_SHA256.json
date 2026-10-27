@@ -1,0 +1,247 @@
+[
+  {
+    "file": "raw/DL1_DISTINCT_FAILURE_RECEIPT.json",
+    "bytes": 449,
+    "sha256": "8b0142c9c76890cc8a8cd0dc092fa24f2c33e6f7758f16b3e1a37bad8cc74e66"
+  },
+  {
+    "file": "raw/green-01.arguments.json",
+    "bytes": 771,
+    "sha256": "aef3e812137532d91cbf3decb50cea1e7c88a1d506b2c4de47ad85885c150049"
+  },
+  {
+    "file": "raw/green-01.stdout.log",
+    "bytes": 46,
+    "sha256": "be2fdd9eeb10e9777373a51bad2c897b99c189be49a60dc9377019bf90b034bb"
+  },
+  {
+    "file": "raw/green-01.stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": "raw/green-01.exit",
+    "bytes": 3,
+    "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+  },
+  {
+    "file": "raw/DD1_NATIVE_INVENTORY_ADAPTER.json",
+    "bytes": 457,
+    "sha256": "677fa334e183d7377ec194176a6998d0f8d8c4f66f84a3a66349d877762fd804"
+  },
+  {
+    "file": "raw/NATIVE_INVENTORY_SCOPE_CORRECTION.json",
+    "bytes": 438,
+    "sha256": "46a6d5321365cc856ff1ace53934f2c329cf9fc63a48af86f68b2bb57cada865"
+  },
+  {
+    "file": "raw/probe_native_inventory.py",
+    "bytes": 2093,
+    "sha256": "f5c386cba418db5debd2dfabdccd32c5b74b80f158b4420552f89287586b8a7e"
+  },
+  {
+    "file": "raw/native-inventory.stdout.log",
+    "bytes": 457,
+    "sha256": "677fa334e183d7377ec194176a6998d0f8d8c4f66f84a3a66349d877762fd804"
+  },
+  {
+    "file": "raw/native-inventory.stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": "raw/native-inventory.exit",
+    "bytes": 3,
+    "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+  },
+  {
+    "file": "raw/DD1_POST_CANDIDATE_REGISTRATION.json",
+    "bytes": 99,
+    "sha256": "827c12a04e81beb1185f69be9421f888795f42a678d5fdeb67dcd61e7a5374ec"
+  },
+  {
+    "file": "raw/guest-parse.stdout.log",
+    "bytes": 21,
+    "sha256": "09eef807fbdddd2710659ec4d863e0d798db3c5e967dd526376522007cdedcae"
+  },
+  {
+    "file": "raw/guest-parse.stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": "raw/guest-parse.exit",
+    "bytes": 3,
+    "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+  },
+  {
+    "file": "raw/guest-host-refusal.stdout.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": "raw/guest-host-refusal.stderr.log",
+    "bytes": 427,
+    "sha256": "056a4abeacf743328528f6b9006ed90da7b275c8eafb5d4e032d8da7f79caedc"
+  },
+  {
+    "file": "raw/guest-host-refusal.exit",
+    "bytes": 3,
+    "sha256": "f1b2f662800122bed0ff255693df89c4487fbdcf453d3524a42d4ec20c3d9c04"
+  },
+  {
+    "file": "raw/DIAGNOSTIC_DELIVERY.json",
+    "bytes": 389,
+    "sha256": "c9f78706254ffc52c60d5e46792c2063844ff607a141168e31d6e99494255ded"
+  },
+  {
+    "file": "raw/native-server-candidate/SERVER_PROBE.json",
+    "bytes": 240,
+    "sha256": "c2ebfc3ad249a2b53e5b9e96a8f798fc6055a7b4a8f8b500a1c0344da48aff65"
+  },
+  {
+    "file": "raw/native-server-candidate/server.stdout.log",
+    "bytes": 240,
+    "sha256": "c2ebfc3ad249a2b53e5b9e96a8f798fc6055a7b4a8f8b500a1c0344da48aff65"
+  },
+  {
+    "file": "raw/native-server-candidate/server.stderr.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": "raw/native-server-candidate/server-probe.exit",
+    "bytes": 3,
+    "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354"
+  },
+  {
+    "file": "raw/native-server-candidate/probe_server_guard.py",
+    "bytes": 5273,
+    "sha256": "013c0dc51a7ba3946acf823d7ff9a239ccf51cde9d1d93c6d5b4300cdba849a7"
+  },
+  {
+    "file": "raw/native-server-candidate/server-command.json",
+    "bytes": 687,
+    "sha256": "862f62b702ce3b5a7548a61233fdba1122efb7a6f2f68448cfd7d6cf4afb789f"
+  },
+  {
+    "file": "raw/green-01/RESULT.json",
+    "bytes": 170,
+    "sha256": "fbfbdefe30b6ca65af31e3e84a6a952dba847be60d9d47a37c5ba5aa5259c15a"
+  },
+  {
+    "file": "raw/green-01/SOURCE_SHA.json",
+    "bytes": 1348,
+    "sha256": "491e0cb7eb320cc2f3f1db809d0e329271dc667b9b4533f5a291c4bcf96fc56e"
+  },
+  {
+    "file": "raw/green-01/tests.arguments.json",
+    "bytes": 364,
+    "sha256": "a537ba39bde9e56f5ccfc757640c3c2f4dbb65f833d7edae716ce96fbe9ed153"
+  },
+  {
+    "file": "raw/green-01/unittest.log",
+    "bytes": 4422,
+    "sha256": "5d72707a489098b5ab48e336ab32389627c40e384cb893ef949120e101edc03a"
+  },
+  {
+    "file": "raw/green-01/PS51_RUNTIME.json",
+    "bytes": 111,
+    "sha256": "a9cb56b9ee6ad2b50a37b2d520cedd5cac57d460b45ca469b64dc5f51099baf9"
+  },
+  {
+    "file": "raw/green-01/production/IDENTITY.json",
+    "bytes": 250,
+    "sha256": "cf77e1da2077a3a823c86a84eed59e27a0a294098b69ecd3746cd555bfaa2cfa"
+  },
+  {
+    "file": "raw/green-01/production/compile-command.json",
+    "bytes": 585,
+    "sha256": "9a46b0bd59c34a4c17d41f6eca7b75461790f1dc4994df568cd48cefdacf6c61"
+  },
+  {
+    "file": "raw/green-01/production/compile.exit",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "file": "raw/green-01/production/compile.log",
+    "bytes": 88,
+    "sha256": "6336808241aa6bc2b9e088509c15f655b8048583fd0c978649894f4edc623e5b"
+  },
+  {
+    "file": "raw/green-01/test/IDENTITY.json",
+    "bytes": 249,
+    "sha256": "1aa1eb47de2baaa409e3249e5f63e54426c4f89d1b9727b39911766ca72da0cb"
+  },
+  {
+    "file": "raw/green-01/test/compile-command.json",
+    "bytes": 592,
+    "sha256": "333ec0a7144d7d1648e77e158e7b0076774d4e395a00287d9499b339cb52cfeb"
+  },
+  {
+    "file": "raw/green-01/test/compile.exit",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "file": "raw/green-01/test/compile.log",
+    "bytes": 88,
+    "sha256": "6336808241aa6bc2b9e088509c15f655b8048583fd0c978649894f4edc623e5b"
+  },
+  {
+    "file": "raw/green-01/TEST-test_msi_component_contract.ComponentAdmission.xml",
+    "bytes": 331,
+    "sha256": "1dce988be23454fbfbd327cac2613919a944d35dc4d9aedce205b584b2a90286"
+  },
+  {
+    "file": "raw/green-01/TEST-test_msi_component_contract.ComponentLayout.xml",
+    "bytes": 636,
+    "sha256": "0e919c148492fda1c3fafc66be5a53c9b21960c580ce35b8ee499456a83d5ff8"
+  },
+  {
+    "file": "raw/green-01/TEST-test_msi_component_contract.ComponentNative.xml",
+    "bytes": 1497,
+    "sha256": "506ea97a93723cd05e0bd24de542423e4c640b58f96281686c2624ba2ca2505a"
+  },
+  {
+    "file": "raw/green-01/TEST-test_msi_directory_guard.DirectoryGuardReuse.xml",
+    "bytes": 438,
+    "sha256": "ebc41dd8f28c0eaff22bc964106fe7901c6e5594aa5f9da2b03cd51f2c56a6f0"
+  },
+  {
+    "file": "raw/green-01/TEST-test_msi_directory_guard.DirectoryNative.xml",
+    "bytes": 2278,
+    "sha256": "8e52372384aff53dfd2360ea8b8cd68227294456c4a7e7f548dc209bf428de13"
+  },
+  {
+    "file": "raw/green-01/TEST-test_msi_directory_guard.DirectoryTables.xml",
+    "bytes": 1053,
+    "sha256": "7a9c12b52fd60d1b5de3dd2d30f2e08bc561a83e2be5ffdcacf237d4139fb259"
+  },
+  {
+    "file": "raw/green-01/TEST-test_native_probe_validation.NativeProbeValidationTest.xml",
+    "bytes": 684,
+    "sha256": "570f9df44ddc838c9f7a8dd538f6bc905fe655a4779b1ee426a349825dd421e1"
+  },
+  {
+    "file": "raw/green-01/source/directory_guard.c",
+    "bytes": 27432,
+    "sha256": "0958f8444932a2d24bb65c983c37a2423277795a8788c76c6aad4eadbf1d5e3b"
+  },
+  {
+    "file": "raw/green-01/source/test_msi_component_contract.py",
+    "bytes": 14016,
+    "sha256": "ead7fb5fc4c927b103fdb97b4d081c30bfd2242994ee34b21a67716c5a15a8c2"
+  },
+  {
+    "file": "raw/green-01/source/Invoke-DirectoryGuardChecks.ps1",
+    "bytes": 6214,
+    "sha256": "7ee8756f2a0b340a1accbd7d231e6975cb1dbb3d40bf966938eef44b6300201b"
+  },
+  {
+    "file": "raw/green-01/source/run_directory_guard_tests.py",
+    "bytes": 3655,
+    "sha256": "0e5eacf98fa24d5bc73c240b9c8c9cb3fd2e87db6de9046f5539e314c7339453"
+  }
+]

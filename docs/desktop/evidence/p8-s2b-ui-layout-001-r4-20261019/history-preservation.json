@@ -1,0 +1,51 @@
+[
+  {
+    "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-20261018",
+    "gitTreeAtStart": "29d9568e8790f38607e95ef75159bb12aa1b8ae1",
+    "gitTreeNow": "29d9568e8790f38607e95ef75159bb12aa1b8ae1",
+    "trackedWorktreeChanges": false,
+    "unchanged": true
+  },
+  {
+    "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r1-20261018",
+    "gitTreeAtStart": "ee647f8462d3d4b9a8f9d8a0d66f2fcf93b7283e",
+    "gitTreeNow": "ee647f8462d3d4b9a8f9d8a0d66f2fcf93b7283e",
+    "trackedWorktreeChanges": false,
+    "unchanged": true
+  },
+  {
+    "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r2-20261018",
+    "gitTreeAtStart": "a83e75ae19d16de5d178b43e3e34cd46e5b9f479",
+    "gitTreeNow": "a83e75ae19d16de5d178b43e3e34cd46e5b9f479",
+    "trackedWorktreeChanges": false,
+    "unchanged": true
+  },
+  {
+    "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r3-20261019",
+    "gitTreeAtStart": "4a5bc5283816ec92a98d50c7fa8cf3897f51ec28",
+    "gitTreeNow": "4a5bc5283816ec92a98d50c7fa8cf3897f51ec28",
+    "trackedWorktreeChanges": false,
+    "unchanged": true
+  },
+  {
+    "path": "docs/desktop/evidence/p8-s2b-f2-20261018",
+    "gitTreeAtStart": "e805eb88d028c32ae05dd12d10975bde2e13b348",
+    "gitTreeNow": "e805eb88d028c32ae05dd12d10975bde2e13b348",
+    "trackedWorktreeChanges": false,
+    "unchanged": true
+  },
+  {
+    "path": "docs/desktop/evidence/p8-s2b-f2-r1-20261018",
+    "gitTreeAtStart": "cf7c903479b65b842e0dadcc715a5e825774b7f5",
+    "gitTreeNow": "cf7c903479b65b842e0dadcc715a5e825774b7f5",
+    "trackedWorktreeChanges": false,
+    "unchanged": true
+  },
+  {
+    "path": "docs/desktop/evidence/p8-s2b-f2-r2-20261018",
+    "gitTreeAtStart": "b33d7dcbad0f1c1b17c10ef1f15bb3c21a1fd74e",
+    "gitTreeNow": "b33d7dcbad0f1c1b17c10ef1f15bb3c21a1fd74e",
+    "trackedWorktreeChanges": false,
+    "unchanged": true
+  }
+]

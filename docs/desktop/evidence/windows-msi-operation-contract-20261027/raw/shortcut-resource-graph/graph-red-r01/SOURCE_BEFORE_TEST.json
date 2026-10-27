@@ -1,0 +1,26 @@
+[
+  {
+    "path": "tools/desktop/windows/msi_safety.py",
+    "bytes": 43476,
+    "sha256": "212247b952d5189ea01db40bd25074756c8e8dca2275783780a3a1ad08bb8179",
+    "gitBlob": "dff2dfa75543d3cbf08424f82cdaeecbd8731e91"
+  },
+  {
+    "path": "tools/desktop/windows/test_msi_shortcut_resource_graph.py",
+    "bytes": 4402,
+    "sha256": "e8a75b3b86a1caab5f6acd6bb1fb7179614ad9f15055d36f4907bafd293a80d1",
+    "gitBlob": "cd0610b8c44eebb21d5a1a4eee776db07aebc6a6"
+  },
+  {
+    "path": "tools/desktop/windows/fixtures/jdk17_shortcut_graph.json",
+    "bytes": 7111,
+    "sha256": "d9e76687b17c5bf549ee44f2f61099e43adde78c2e821c8d06e3bf2e97691477",
+    "gitBlob": "c4a97e55d5d207485a20524e5446235c7656ff4b"
+  },
+  {
+    "path": "tools/desktop/windows/run_directory_guard_tests.py",
+    "bytes": 4142,
+    "sha256": "26cac28b1af0d860fcc52a4ab76a97e846171cdb78f97b3f4811677ee80af95b",
+    "gitBlob": "2ebdd3185be349d7edcf69561567ecaad438edac"
+  }
+]

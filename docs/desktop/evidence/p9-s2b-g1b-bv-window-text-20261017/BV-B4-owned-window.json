@@ -1,0 +1,23 @@
+{
+  "run": "BV-B4",
+  "utc": "2026-10-16T15:32:00.9695938+00:00",
+  "jsonDateKind": "String",
+  "processes": [
+    {
+      "pid": 37952,
+      "parentPid": 33924,
+      "createdUtc": "2026-10-16T15:22:35.6393727Z",
+      "path": "<PACKAGE_LOCAL>\\portable-blocked-image\\ChatChatBarDesktop.exe",
+      "windowHandle": 16653692,
+      "jvmLoaded": true
+    },
+    {
+      "pid": 33924,
+      "parentPid": 41384,
+      "createdUtc": "2026-10-16T15:22:26.3843456Z",
+      "path": "<PACKAGE_LOCAL>\\portable-blocked-image\\ChatChatBarDesktop.exe",
+      "windowHandle": 0,
+      "jvmLoaded": false
+    }
+  ]
+}

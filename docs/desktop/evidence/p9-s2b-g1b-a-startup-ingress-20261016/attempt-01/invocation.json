@@ -1,0 +1,33 @@
+﻿{
+    "startedUtc":  "2026-10-16T07:29:58.9736754+00:00",
+    "workingDirectory":  "H:\\ChatChatBar-Desktop\\app",
+    "JAVA_HOME":  "C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.20.101-hotspot",
+    "arguments":  [
+                      "--offline",
+                      "--no-daemon",
+                      "--no-parallel",
+                      "--max-workers=1",
+                      "--priority=low",
+                      "--console=plain",
+                      "--no-configuration-cache",
+                      "-Pkotlin.compiler.execution.strategy=in-process",
+                      ":desktopApp:test",
+                      "--tests",
+                      "com.example.chatbar.desktop.DesktopStartupGateTest",
+                      "--tests",
+                      "com.example.chatbar.desktop.DesktopApplicationLifecycleTest",
+                      "--tests",
+                      "com.example.chatbar.desktop.DesktopProcessLifecycleTest",
+                      "--tests",
+                      "com.example.chatbar.desktop.DesktopDataDirectoryTest",
+                      "--tests",
+                      "com.example.chatbar.desktop.DesktopPortableRootTest",
+                      "--tests",
+                      "com.example.chatbar.desktop.DesktopDataRootOwnershipTest",
+                      "--tests",
+                      "com.example.chatbar.desktop.DesktopIndexStartupPreflightTest"
+                  ],
+    "resourceHardGate":  "REMOVED by user",
+    "rerunTasks":  false,
+    "clean":  false
+}

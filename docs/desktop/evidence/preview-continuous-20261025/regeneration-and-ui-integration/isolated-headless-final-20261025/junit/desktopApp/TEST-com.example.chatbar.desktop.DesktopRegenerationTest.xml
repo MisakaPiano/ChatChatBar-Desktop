@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopRegenerationTest" tests="13" skipped="0" failures="0" errors="0" timestamp="2026-10-25T03:18:13.192Z" hostname="DD1" time="2.89">
+  <properties/>
+  <testcase name="failure retains target and retry deletes only mapped system error" classname="com.example.chatbar.desktop.DesktopRegenerationTest" time="1.279"/>
+  <testcase name="regeneration preserves same row and current user while excluding target from prompt and worldbook" classname="com.example.chatbar.desktop.DesktopRegenerationTest" time="0.247"/>
+  <testcase name="stop before output keeps original without empty alternative" classname="com.example.chatbar.desktop.DesktopRegenerationTest" time="0.154"/>
+  <testcase name="regenerating an earlier active reply uses the latest contextual user as upstream does" classname="com.example.chatbar.desktop.DesktopRegenerationTest" time="0.084"/>
+  <testcase name="an active send also excludes regeneration admission" classname="com.example.chatbar.desktop.DesktopRegenerationTest" time="0.117"/>
+  <testcase name="regeneration planner retains current-turn roles positions tools placeholders and stable cache" classname="com.example.chatbar.desktop.DesktopRegenerationTest" time="0.101"/>
+  <testcase name="primary actions use shared target mapping and hide only running target" classname="com.example.chatbar.desktop.DesktopRegenerationTest" time="0.008"/>
+  <testcase name="reasoning-only user stop appends same-id interrupted version" classname="com.example.chatbar.desktop.DesktopRegenerationTest" time="0.195"/>
+  <testcase name="stop partial regeneration appends exactly once and excludes overlapping send" classname="com.example.chatbar.desktop.DesktopRegenerationTest" time="0.116"/>
+  <testcase name="greeting regeneration with no user omits current user and user tools" classname="com.example.chatbar.desktop.DesktopRegenerationTest" time="0.074"/>
+  <testcase name="other session can send while regeneration runs and shutdown discards its partial draft" classname="com.example.chatbar.desktop.DesktopRegenerationTest" time="0.191"/>
+  <testcase name="old direct-context reply is rejected without message mutation or request" classname="com.example.chatbar.desktop.DesktopRegenerationTest" time="0.248"/>
+  <testcase name="earlier regeneration excludes only target while retaining other replies from its whole source turn" classname="com.example.chatbar.desktop.DesktopRegenerationTest" time="0.075"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[10月 25, 2026 12:18:14 下午 okhttp3.mockwebserver.MockWebServer$SocketHandler handle
+警告: MockWebServer[57845] connection from /127.0.0.1 didn't make a request
+10月 25, 2026 12:18:15 下午 okhttp3.mockwebserver.MockWebServer$SocketHandler handle
+警告: MockWebServer[57848] connection from /127.0.0.1 didn't make a request
+]]></system-err>
+</testsuite>

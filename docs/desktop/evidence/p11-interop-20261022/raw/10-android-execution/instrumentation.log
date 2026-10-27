@@ -1,0 +1,48 @@
+INSTRUMENTATION_STATUS: class=com.example.chatbar.domain.backup.Official145InteropTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stream=
+com.example.chatbar.domain.backup.Official145InteropTest:
+INSTRUMENTATION_STATUS: test=desktopArchiveThroughOfficialAndroidAppAndBack
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.example.chatbar.domain.backup.Official145InteropTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=2
+INSTRUMENTATION_STATUS: stack=kotlin.UninitializedPropertyAccessException: lateinit property jsonFileStorage has not been initialized
+	at com.example.chatbar.ChatBarApp.getJsonFileStorage(ChatBarApp.kt:64)
+	at com.example.chatbar.ChatBarApp.initializePersistentStateLocked(ChatBarApp.kt:555)
+	at com.example.chatbar.ChatBarApp.access$initializePersistentStateLocked(ChatBarApp.kt:51)
+	at com.example.chatbar.ChatBarApp$initializePersistentState$1.invokeSuspend(ChatBarApp.kt:536)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.internal.LimitedDispatcher$Worker.run(LimitedDispatcher.kt:124)
+	at kotlinx.coroutines.scheduling.TaskImpl.run(Tasks.kt:89)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler.runSafely(CoroutineScheduler.kt:586)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.executeTask(CoroutineScheduler.kt:820)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(CoroutineScheduler.kt:717)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(CoroutineScheduler.kt:704)
+	Suppressed: kotlinx.coroutines.internal.DiagnosticCoroutineContextException: [StandaloneCoroutine{Cancelling}@9931496, Dispatchers.IO]
+
+INSTRUMENTATION_STATUS: stream=
+Process crashed while executing desktopArchiveThroughOfficialAndroidAppAndBack(com.example.chatbar.domain.backup.Official145InteropTest):
+kotlin.UninitializedPropertyAccessException: lateinit property jsonFileStorage has not been initialized
+	at com.example.chatbar.ChatBarApp.getJsonFileStorage(ChatBarApp.kt:64)
+	at com.example.chatbar.ChatBarApp.initializePersistentStateLocked(ChatBarApp.kt:555)
+	at com.example.chatbar.ChatBarApp.access$initializePersistentStateLocked(ChatBarApp.kt:51)
+	at com.example.chatbar.ChatBarApp$initializePersistentState$1.invokeSuspend(ChatBarApp.kt:536)
+	at kotlin.coroutines.jvm.internal.BaseContinuationImpl.resumeWith(ContinuationImpl.kt:34)
+	at kotlinx.coroutines.DispatchedTask.run(DispatchedTask.kt:100)
+	at kotlinx.coroutines.internal.LimitedDispatcher$Worker.run(LimitedDispatcher.kt:124)
+	at kotlinx.coroutines.scheduling.TaskImpl.run(Tasks.kt:89)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler.runSafely(CoroutineScheduler.kt:586)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.executeTask(CoroutineScheduler.kt:820)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.runWorker(CoroutineScheduler.kt:717)
+	at kotlinx.coroutines.scheduling.CoroutineScheduler$Worker.run(CoroutineScheduler.kt:704)
+	Suppressed: kotlinx.coroutines.internal.DiagnosticCoroutineContextException: [StandaloneCoroutine{Cancelling}@9931496, Dispatchers.IO]
+
+INSTRUMENTATION_STATUS: test=desktopArchiveThroughOfficialAndroidAppAndBack
+INSTRUMENTATION_STATUS_CODE: -2
+INSTRUMENTATION_RESULT: shortMsg=Process crashed.
+INSTRUMENTATION_CODE: 0

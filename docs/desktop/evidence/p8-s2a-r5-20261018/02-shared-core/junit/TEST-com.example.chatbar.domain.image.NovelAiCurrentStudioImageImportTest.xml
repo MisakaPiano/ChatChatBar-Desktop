@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.image.NovelAiCurrentStudioImageImportTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:31:31.438Z" hostname="DD1" time="0.002">
+  <properties/>
+  <testcase name="unchecked sections do not change draft" classname="com.example.chatbar.domain.image.NovelAiCurrentStudioImageImportTest" time="0.0"/>
+  <testcase name="missing roles never erase existing roles and append empty list is a no-op" classname="com.example.chatbar.domain.image.NovelAiCurrentStudioImageImportTest" time="0.002"/>
+  <testcase name="applies selected metadata sections and preserves studio-only fields" classname="com.example.chatbar.domain.image.NovelAiCurrentStudioImageImportTest" time="0.0"/>
+  <testcase name="off preserves roles and replace retains previous overwrite behavior" classname="com.example.chatbar.domain.image.NovelAiCurrentStudioImageImportTest" time="0.0"/>
+  <testcase name="append preserves existing role identity content disabled state and ordering" classname="com.example.chatbar.domain.image.NovelAiCurrentStudioImageImportTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

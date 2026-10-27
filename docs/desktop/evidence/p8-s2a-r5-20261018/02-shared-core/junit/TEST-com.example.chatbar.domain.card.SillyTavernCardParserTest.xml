@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.card.SillyTavernCardParserTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:31:18.719Z" hostname="DD1" time="0.001">
+  <properties/>
+  <testcase name="parsesRepresentativeV2Fields" classname="com.example.chatbar.domain.card.SillyTavernCardParserTest" time="0.0"/>
+  <testcase name="missingCharaChunkReturnsNull" classname="com.example.chatbar.domain.card.SillyTavernCardParserTest" time="0.0"/>
+  <testcase name="extractsCaseInsensitiveCharaUsingMimeBase64AndRetainsOriginalPng" classname="com.example.chatbar.domain.card.SillyTavernCardParserTest" time="0.0"/>
+  <testcase name="v2RequiresData" classname="com.example.chatbar.domain.card.SillyTavernCardParserTest" time="0.0"/>
+  <testcase name="parsesRepresentativeV1AndToleratesUnknownFields" classname="com.example.chatbar.domain.card.SillyTavernCardParserTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

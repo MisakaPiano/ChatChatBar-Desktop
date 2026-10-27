@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopApplicationHomeTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-17T20:53:57.054Z" hostname="DD1" time="0.003">
+  <properties/>
+  <testcase name="relative and blank packaged properties fail structurally" classname="com.example.chatbar.desktop.DesktopApplicationHomeTest" time="0.001"/>
+  <testcase name="literal jpackage macro is unavailable instead of a filesystem path" classname="com.example.chatbar.desktop.DesktopApplicationHomeTest" time="0.001"/>
+  <testcase name="absent property is unpackaged development and never uses user dir" classname="com.example.chatbar.desktop.DesktopApplicationHomeTest" time="0.0"/>
+  <testcase name="packaged launcher property resolves absolute normalized home" classname="com.example.chatbar.desktop.DesktopApplicationHomeTest" time="0.001"/>
+  <testcase name="injected development home has distinct provenance" classname="com.example.chatbar.desktop.DesktopApplicationHomeTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

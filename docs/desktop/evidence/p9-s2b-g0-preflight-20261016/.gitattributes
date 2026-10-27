@@ -1,0 +1,6 @@
+* -text whitespace=cr-at-eol
+*.xml -whitespace
+*.log -whitespace
+*.jsonl -whitespace
+jdk-version.txt whitespace=cr-at-eol,-blank-at-eof
+run-stage.ps1 whitespace=cr-at-eol,-blank-at-eof

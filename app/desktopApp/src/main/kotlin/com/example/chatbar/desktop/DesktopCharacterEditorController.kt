@@ -92,6 +92,11 @@ internal class DesktopCharacterEditorController(
     private val discardObsoleteResources: suspend (CharacterCard, List<CharacterCard>) -> Unit = resources::discardObsolete,
     private val discardDraftAssets: (String) -> Unit = resources::discardSession,
     private val persistDraftMarker: suspend (EditorDraft) -> EditorDraft = drafts::save,
+    val fishLibrary: (() -> DesktopFishAudioLibrary)? = null,
+    val fishCredentials: DesktopFishCredentialController? = null,
+    val fishPreview: (() -> DesktopFishPreviewRuntime)? = null,
+    private val dataGate: com.example.chatbar.data.operation.AppDataOperationGate = com.example.chatbar.data.operation.NoOpAppDataOperationGate,
+    val documentIndex: DesktopRagController? = null,
 ) {
     private val _state = MutableStateFlow(DesktopCharacterEditorState())
     val state = _state.asStateFlow()
@@ -234,6 +239,15 @@ internal class DesktopCharacterEditorController(
                 it == CharacterEditorProblem.SOURCE_CHANGED || it == CharacterEditorProblem.SOURCE_DELETED
             }, detail = null)
         scheduleDraft()
+    }
+
+    /** A picker belongs to one draft lifetime and one existing person, never a list position. */
+    fun bindFishVoice(draftSessionId: String, personId: String,
+        binding: com.example.chatbar.data.local.entity.FishAudioVoiceBinding?): Boolean {
+        if (_state.value.draftSessionId != draftSessionId ||
+            _state.value.card?.characters?.none { it.id == personId } != false) return false
+        updateCharacter(personId) { it.copy(fishAudioVoice = binding) }
+        return _state.value.card?.characters?.firstOrNull { it.id == personId }?.fishAudioVoice == binding
     }
 
     fun addCharacter() = edit { it.copy(characters = it.characters + CharacterInfo.create("")) }
@@ -454,7 +468,9 @@ internal class DesktopCharacterEditorController(
         left.map { listOf(it.id, it.fileName, it.filePath, it.fileType, it.addedAt.toString()) } ==
             right.map { listOf(it.id, it.fileName, it.filePath, it.fileType, it.addedAt.toString()) }
 
-    suspend fun save(): Boolean {
+    suspend fun save(): Boolean = dataGate.withNormalOperation { saveWithinDataOperation() }
+
+    private suspend fun saveWithinDataOperation(): Boolean {
         flushDraft()
         val before = _state.value
         val card = before.card ?: return false

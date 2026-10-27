@@ -1,0 +1,27 @@
+{
+  "status": "PROVEN PROCEDURE EXPECTATION ERROR for unconditional narrator dropdown expectation",
+  "observed": "User confirmed audiobook-off persistent dropdown hidden; screenshot consent popup has no narrator field",
+  "source": [
+    {
+      "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/voice/VoiceGenerationPolicy.kt",
+      "lines": [
+        18,
+        28,
+        73,
+        80
+      ],
+      "facts": "Audiobook off excludes narration; narrator selection only for whole-message scope/narration when multiple characters."
+    },
+    {
+      "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoicePanel.kt",
+      "lines": [
+        103,
+        105,
+        116
+      ],
+      "facts": "Dropdown appears only when requiresNarratorSelection is true."
+    }
+  ],
+  "conclusion": "For off-mode dialogue-only targets no narrator dropdown is required. Original B4 user partial result and screenshot remain; do not count the entire multi-part B4 as USER PASS or classify omission as proven regression.",
+  "notTested": "Other target profiles requiring narrator choice while off; cancel completion not separately confirmed"
+}

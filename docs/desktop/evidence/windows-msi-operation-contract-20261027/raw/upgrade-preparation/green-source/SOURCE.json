@@ -1,0 +1,20 @@
+[
+  {
+    "path": "tools/desktop/windows/Invoke-Operation1UpgradeGuest.ps1",
+    "bytes": 9771,
+    "sha256": "f37e93d24ee3fa3d922a185dd4b5b38b17fd8f8b8d240186328617bc3a15e6bb",
+    "gitBlob": "e90699783b7ba99607c56a415493863495dc9e32"
+  },
+  {
+    "path": "tools/desktop/windows/Test-Operation1UpgradeGuest.ps1",
+    "bytes": 9529,
+    "sha256": "3e4b7543cc2d35403a360c3e38cb0e82dacaf5229475f296f01821cba6b8b1f5",
+    "gitBlob": "48c69074906a2166d51edc381f33b7f3eb2a06a7"
+  },
+  {
+    "path": "tools/desktop/windows/Invoke-Operation1FreshGuest.ps1",
+    "bytes": 13392,
+    "sha256": "6297fb0deb6ee93e808563580d74da709ec08d00809086816ecd2def7ef1af2c",
+    "gitBlob": "9e5dab41750f2e1039ca16692266e7f290c49908"
+  }
+]

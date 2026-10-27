@@ -1,0 +1,10 @@
+{
+  "scope": "Evidence-only static helper; not compilation, JUnit, GUI or manual execution",
+  "helperExit": 1,
+  "failure": "AssertionError in allowed Git no-index check exit codes [0,1,2] on preserved raw Gradle stdout",
+  "recheckedRawNoIndexExit": 3,
+  "rawWhitespaceWarnings": "H:\\ChatChatBar-Desktop\\docs\\desktop\\evidence\\p8-s2b-ui-layout-001-r6i-20261019\\01-compile-only\\gradle.stdout.log:2: trailing whitespace.\n+Daemon will be stopped at the end of the build \n",
+  "explanation": "git diff --no-index combines differences bit1 and whitespace-check bit2; exit3 is preserved raw-warning result",
+  "sourceChanged": false,
+  "testsRerun": false
+}

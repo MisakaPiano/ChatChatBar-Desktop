@@ -1,0 +1,42 @@
+{
+  "groupResults": [
+    {
+      "id": "M1",
+      "manual": "PASS",
+      "scope": "344dp single-column floating filter; focus tag input; Escape dismisses panel then Picker; editor restores",
+      "technical": "Native344dp and owner disable/restore recorded; exact key delivery is user report"
+    },
+    {
+      "id": "M2",
+      "manual": "PASS",
+      "scope": "Actual sample sound/Stop; generated Chinese Stop reported in compact panel; waiting sample Stop; no binding",
+      "technical": "Sample and fakeTTS recorded; two incomplete sample bodies drained; no current playback-position telemetry. Compact Popup playing geometry not synchronously verified"
+    },
+    {
+      "id": "M3",
+      "manual": "PASS WITH DECLARED OBSERVATION LIMIT",
+      "scope": "Physical scrollbar drag+wheel; wide same-row pager; Enter3/click2/invalid4; narrow accessible paired input/jump",
+      "technical": "Queries3 then2 exactly, no4; input-only branch contaminated by acknowledged extra submissions and is NOT INDEPENDENTLY VERIFIED"
+    },
+    {
+      "id": "M4",
+      "manual": "PASS",
+      "scope": "R7 title/A target/original text retained across wide/narrow; first generated cache replay disclosed; sample/generated sound distinct; editor recovered/unbound",
+      "technical": "Resize and cached replay HTTP delta0; persisted synthetic cards unchanged; parent input enabled after close"
+    }
+  ],
+  "userGroupSignatures": "4 PASS reports; M3 has explicit technical observation limit",
+  "manualFailuresReported": 0,
+  "userJournalRecords": 17,
+  "rawRecords": "manual-user-records.jsonl",
+  "normalCloseUserReply": "主窗口已正常关闭，没有异常",
+  "notTestedOrNotIndependentlyVerified": [
+    "Strict input-only no-query technical branch after extra submissions",
+    "Synchronous compact-Popup Stop playing geometry",
+    "Separate generation-wait cancellation branch",
+    "Native zero/negative/unknown-total/Int-limit cases this round",
+    "New freeform entry/maximize/device-error manual retest",
+    "Real provider GET/TTS and live CDN behavior"
+  ],
+  "sampleTextQuestion": "User asked about transcript preview; source shows max2-line sample.text, fixture metadata is a descriptor not verbatim audio text. No UI/fixture change; complete expand/transcription capability not claimed."
+}

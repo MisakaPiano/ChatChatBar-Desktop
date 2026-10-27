@@ -1,0 +1,36 @@
+{
+  "status": "G1A EVIDENCE PUBLISHED / SOURCE UNVALIDATED / BUILD BLOCKED / PROJECT STATIC REVIEW PENDING",
+  "scope": "G1A-E1 derived duration correction only; no source edits or validation rerun",
+  "approvedParent": "a03fbb997de75084cda1a836663042ee183156b5",
+  "field": "approximateSecondsFromLogCreation",
+  "logCreated": "2026-10-15T20:49:51.3008984Z",
+  "stopObservedUtc": "2026-10-15T20:51:37.9442493Z",
+  "calculation": "DateTimeOffset UTC subtraction using original seven-digit timestamps; ticks / TimeSpan.TicksPerSecond",
+  "previousSeconds": 32506.6433509,
+  "correctedSeconds": 106.6433509,
+  "differenceSeconds": 32400.0,
+  "cause": "NOT FINALLY PROVEN; 9-hour difference observed, timezone mixing is not asserted as confirmed root cause",
+  "qualification": "Interval from log creation to stop observation, not precise Gradle execution time",
+  "original": {
+    "sha256": "dfc3531a65059a688f9bb130868dbbc2736a2aa9242a5b930d03efabaaf521b0",
+    "bytes": 1831,
+    "path": "01-interrupted-stage.pre-correction.json"
+  },
+  "corrected": {
+    "sha256": "cd076202840d84ac0746d1896db8e7931fb0cad35dde6c0c282340cbd76b8f66",
+    "bytes": 1829,
+    "path": "01-interrupted-stage.json"
+  },
+  "correctionLimitedToSingleNumericToken": true,
+  "originalTimestampsUnchanged": true,
+  "rawCopyLedger": {
+    "current": "raw-copy-verification.json",
+    "history": "raw-copy-verification.pre-correction.json",
+    "change": "Map only the interrupted-stage entry to preserved pre-correction copy; all six original hashes/lengths retained",
+    "historySHA256": "19fae8d4c21d2c560a0d464181fe491de63c988f2e76756b66d478706c49399d"
+  },
+  "previousEvidenceManifestSHA256": "5daa201ee444c3a44c0228627d02d6ab58c386d8bcfd526fc0f8986eed453a8b",
+  "sourcePatchUnchanged": "22ea98b74c82043a52c0cfd9be590bde78b37ce82a1117bae441068b22874f68",
+  "testsRun": 0,
+  "gradleRun": 0
+}

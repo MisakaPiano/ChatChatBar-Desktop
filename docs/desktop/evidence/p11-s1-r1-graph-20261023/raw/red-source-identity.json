@@ -1,0 +1,14 @@
+[
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/MomentArchiveReadOnlyValidator.kt",
+    "bytes": 9110,
+    "sha256": "e44adc61d9b0a0a84897301150bc31fb52d705ad400cedcf089d4976cf2ea6b7",
+    "gitBlob": "507811ae75d151354d1de354f2ded70ae8542381"
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/MomentArchiveReadOnlyValidatorTest.kt",
+    "bytes": 21298,
+    "sha256": "cec1d96535770950438bb1eb68feabb9ceca95b80178ed3b1b8b27b97700fdf0",
+    "gitBlob": "e3924f8141565bf25fd736e4c1d1b56e2bad35ed"
+  }
+]

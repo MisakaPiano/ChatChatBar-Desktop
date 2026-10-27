@@ -1,0 +1,8 @@
+{
+  "eventsBefore": 11,
+  "eventsAfter": 12,
+  "queryDelta": 1,
+  "inputOnlyAutoQuery": "UNKNOWN; unexpected event delta",
+  "realFishGet": 0,
+  "realFishTts": 0
+}

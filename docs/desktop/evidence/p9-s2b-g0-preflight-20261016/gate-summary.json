@@ -1,0 +1,174 @@
+{
+  "status": "CODEX CANDIDATE / PROJECT REVIEW PENDING",
+  "stages": [
+    {
+      "stage": "01-g0",
+      "started": "2026-10-16T03:42:52.9948829+09:00",
+      "ended": "2026-10-16T03:45:43.2352752+09:00",
+      "seconds": 170.2404939,
+      "arguments": [
+        "--offline",
+        "--no-daemon",
+        "--no-parallel",
+        "--max-workers=1",
+        "--priority=low",
+        "--console=plain",
+        "--no-configuration-cache",
+        "-Pkotlin.compiler.execution.strategy=in-process",
+        ":desktopApp:test",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopIndexStartupPreflightTest"
+      ],
+      "exitCode": 1
+    },
+    {
+      "stage": "02-g0-iterator-fix",
+      "started": "2026-10-16T03:46:03.8726558+09:00",
+      "ended": "2026-10-16T03:48:38.3847061+09:00",
+      "seconds": 154.5121398,
+      "arguments": [
+        "--offline",
+        "--no-daemon",
+        "--no-parallel",
+        "--max-workers=1",
+        "--priority=low",
+        "--console=plain",
+        "--no-configuration-cache",
+        "-Pkotlin.compiler.execution.strategy=in-process",
+        ":desktopApp:test",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopIndexStartupPreflightTest"
+      ],
+      "exitCode": 1
+    },
+    {
+      "stage": "03-g0-windows-identity",
+      "started": "2026-10-16T03:51:39.5278249+09:00",
+      "ended": "2026-10-16T03:53:03.017476+09:00",
+      "seconds": 83.4897753,
+      "arguments": [
+        "--offline",
+        "--no-daemon",
+        "--no-parallel",
+        "--max-workers=1",
+        "--priority=low",
+        "--console=plain",
+        "--no-configuration-cache",
+        "-Pkotlin.compiler.execution.strategy=in-process",
+        ":desktopApp:test",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopIndexStartupPreflightTest"
+      ],
+      "exitCode": 0
+    },
+    {
+      "stage": "04-path-ownership-lifecycle",
+      "started": "2026-10-16T03:53:19.9163604+09:00",
+      "ended": "2026-10-16T03:53:49.0667272+09:00",
+      "seconds": 29.1504844,
+      "arguments": [
+        "--offline",
+        "--no-daemon",
+        "--no-parallel",
+        "--max-workers=1",
+        "--priority=low",
+        "--console=plain",
+        "--no-configuration-cache",
+        "-Pkotlin.compiler.execution.strategy=in-process",
+        ":desktopApp:test",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopIndexStartupPreflightTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopDataRootOwnershipTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopDataDirectoryTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopPortableRootTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopApplicationLifecycleTest",
+        "--tests",
+        "com.example.chatbar.desktop.DesktopProcessLifecycleTest"
+      ],
+      "exitCode": 0
+    }
+  ],
+  "finalSuites": [
+    {
+      "suite": "com.example.chatbar.desktop.DesktopApplicationLifecycleTest",
+      "tests": 25,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 2.741
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopDataDirectoryTest",
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.134
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopDataRootOwnershipTest",
+      "tests": 14,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.152
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopIndexStartupPreflightTest",
+      "tests": 19,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1,
+      "seconds": 1.919
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopPortableRootTest",
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.162
+    },
+    {
+      "suite": "com.example.chatbar.desktop.DesktopProcessLifecycleTest",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "seconds": 0.211
+    }
+  ],
+  "finalTotals": {
+    "suites": 6,
+    "tests": 86,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1,
+    "passed": 85
+  },
+  "compile": {
+    "sharedCore": "UP-TO-DATE, not newly compiled",
+    "desktopTest": "EXECUTED PASS in stage03",
+    "desktopMain": "EXECUTED PASS in stage03",
+    "android": "NOT RUN"
+  },
+  "red": {
+    "stage01": "Test compilation failed: Iterator vs MutableIterator",
+    "stage02": "19 tests: 15 failed, 0 errors, 0 skips; Windows null fileKey and unsupported held-root rename fixture; cancellation test hit 30s guard"
+  },
+  "limits": [
+    "No production caller",
+    "No payload reads/recovery/writes",
+    "No business readiness",
+    "Real symlinks unavailable",
+    "Root replacement tested via seams, not actual OS rename",
+    "Existing ownership/portable XML contains four SYMLINK_FIXTURE_UNAVAILABLE branches not represented as JUnit skips",
+    "No complete Windows TOCTOU or external-hardlink absence proof",
+    "No physical file IO absolute timeout guarantee",
+    "No Windows EXE, packaging, full P9/P11/Android regression or network API"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "scope": "New R1A synthetic settings only",
+  "sourceSha256": "6478bf6c303cedced4dc8fb512def66002f59380cdc13481418e55b6f816be3e",
+  "voiceTagModelIdPresent": true,
+  "voiceTagModelId": null,
+  "nullFollowSessionConfirmed": true,
+  "fishAudioTtsModelId": "s2.1-pro-free",
+  "audiobookModeEnabled": false,
+  "observedUtc": "2026-10-17T21:15:32.203818+00:00"
+}

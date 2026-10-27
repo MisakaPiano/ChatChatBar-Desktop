@@ -1,0 +1,13 @@
+gradle.projectsEvaluated {
+    def owned = new File('H:/ChatChatBar-Desktop/app/desktopApp/build/preview-continuous-private-20261025/isolated-headless-profile-20261025/profile')
+    ['local-app-data','roaming','temp','home'].each { new File(owned,it).mkdirs() }
+    gradle.rootProject.project(':desktopApp').tasks.withType(Test).configureEach {
+        forkEvery = 1
+        environment 'LOCALAPPDATA', new File(owned,'local-app-data').absolutePath
+        environment 'APPDATA', new File(owned,'roaming').absolutePath
+        environment 'TEMP', new File(owned,'temp').absolutePath
+        environment 'TMP', new File(owned,'temp').absolutePath
+        systemProperty 'java.io.tmpdir', new File(owned,'temp').absolutePath
+        systemProperty 'user.home', new File(owned,'home').absolutePath
+    }
+}

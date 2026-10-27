@@ -1,0 +1,7 @@
+{
+  "state": "PREPARATION_OR_LIFETIME_BLOCKED",
+  "utc": "2026-10-18T08:44:45.521088+00:00",
+  "supervisorPid": 18244,
+  "realFishRequestsIncrement": 0,
+  "errorType": "RuntimeError"
+}

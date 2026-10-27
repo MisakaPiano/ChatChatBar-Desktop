@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopBoundRootLifecycleTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-25T09:00:06.347Z" hostname="DD1" time="11.186">
+  <properties/>
+  <testcase name="native DPAPI protected relocation uses only invented values and owned roots" classname="com.example.chatbar.desktop.DesktopBoundRootLifecycleTest" time="3.306"/>
+  <testcase name="cancellation after captured key read keeps old selection keys and admission" classname="com.example.chatbar.desktop.DesktopBoundRootLifecycleTest" time="1.014"/>
+  <testcase name="bound root relocation preserves protected consumers and rebases owned media" classname="com.example.chatbar.desktop.DesktopBoundRootLifecycleTest" time="1.568"/>
+  <testcase name="protected target failure leaves inert root original keys and working admission" classname="com.example.chatbar.desktop.DesktopBoundRootLifecycleTest" time="1.278"/>
+  <testcase name="accepted task final write is drained before relocation and further mutation stays stopped" classname="com.example.chatbar.desktop.DesktopBoundRootLifecycleTest" time="1.875"/>
+  <testcase name="a preexisting global restart seal rejects relocation before creating destination" classname="com.example.chatbar.desktop.DesktopBoundRootLifecycleTest" time="0.349"/>
+  <testcase name="legacy unbound root with owned media moves recordings off the original directory" classname="com.example.chatbar.desktop.DesktopBoundRootLifecycleTest" time="1.181"/>
+  <testcase name="external source edit after capture refuses publication and keeps newer source and keys" classname="com.example.chatbar.desktop.DesktopBoundRootLifecycleTest" time="0.614"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

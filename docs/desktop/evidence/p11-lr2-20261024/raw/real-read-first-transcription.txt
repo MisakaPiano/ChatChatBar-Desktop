@@ -1,0 +1,5 @@
+TOOL_RESPONSE_TRANSCRIPTION_NOT_ORIGINAL_PRIVATE_STDOUT
+Tested tool snapshot: raw/final-frozen/source/src (before diagnostic-only phase labels).
+LR2=REFUSED_AUTHENTICATION_OR_ZIP
+LR2_PRIVATE_READ_EXIT=2
+No semantic result published. No private paths, values, source digests or raw archive uploaded.

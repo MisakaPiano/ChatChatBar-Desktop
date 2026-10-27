@@ -1,0 +1,14 @@
+ .agents/skills/chatbar-fish-audio-voice/SKILL.md   |   1 +
+ .../example/chatbar/desktop/DesktopAppContainer.kt |   6 +
+ .../chatbar/desktop/DesktopAudioMaintenance.kt     |  52 ++++
+ .../chatbar/desktop/DesktopChatVoiceRuntime.kt     |   1 +
+ .../desktop/DesktopCoordinatedSnapshotService.kt   |  24 +-
+ .../desktop/DesktopDataRootMigrationService.kt     |  18 +-
+ .../desktop/DesktopDataRootSwitchController.kt     |   2 +
+ .../desktop/DesktopFishGenerationCoordinator.kt    |  10 +-
+ .../chatbar/desktop/DesktopVoicePlayback.kt        | 147 +++++++--
+ .../chatbar/desktop/DesktopWindowsAudioOutput.kt   |   6 +
+ .../chatbar/desktop/DesktopAudioMaintenanceTest.kt | 339 +++++++++++++++++++++
+ .../chatbar/desktop/DesktopChatVoiceRuntimeTest.kt |  11 +-
+ .../desktop/DesktopDataRootSwitchControllerTest.kt |  10 +
+ 13 files changed, 587 insertions(+), 40 deletions(-)

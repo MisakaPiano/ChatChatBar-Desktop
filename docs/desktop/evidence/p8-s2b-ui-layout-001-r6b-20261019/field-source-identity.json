@@ -1,0 +1,9 @@
+{
+  "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishAudioPanel.kt",
+  "gitBlob": "366d688b41e284ba86b3bba2ca2559f5cbce3fce",
+  "rawSha256": "fc1d8591c1072b53fe8700fb97ed19b4476c514c45c875e6a774017d75ae1334",
+  "normalizedSha256": "fc1d8591c1072b53fe8700fb97ed19b4476c514c45c875e6a774017d75ae1334",
+  "worktreeEqualsGitNormalized": true,
+  "excerptStartLine": 23,
+  "excerptPurpose": "Existing 8dp padding and fillMaxWidth establish that editable semantics bounds describe inner text, not painted input border"
+}

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.data.repository.MomentRepositoryTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:17.291Z" hostname="DD1" time="0.075">
+  <properties/>
+  <testcase name="updatePostText rejects blank and placeholder content" classname="com.example.chatbar.data.repository.MomentRepositoryTest" time="0.047"/>
+  <testcase name="updatePostText changes only text and updated timestamp" classname="com.example.chatbar.data.repository.MomentRepositoryTest" time="0.028"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

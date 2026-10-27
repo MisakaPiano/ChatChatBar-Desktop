@@ -19,6 +19,8 @@ data class DesktopFakeChatInputs(
     val ragInjectionMode: String = "OFF",
     val assistantSegmentedBubblesEnabled: Boolean = false,
     val supportsImages: Boolean = false,
+    /** Only a real generation supplies its already-resolved model; inspectors/fakes cannot invoke retrieval APIs. */
+    val retrievalModel: com.example.chatbar.data.local.entity.ModelConfig? = null,
 )
 
 data class DesktopFakeChatRequest(

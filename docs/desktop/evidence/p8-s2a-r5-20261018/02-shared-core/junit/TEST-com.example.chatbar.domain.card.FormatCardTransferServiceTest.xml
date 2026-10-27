@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.card.FormatCardTransferServiceTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:31:18.506Z" hostname="DD1" time="0.135">
+  <properties/>
+  <testcase name="import new resolves name conflict without replacing existing and applies provenance precedence" classname="com.example.chatbar.domain.card.FormatCardTransferServiceTest" time="0.044"/>
+  <testcase name="overwrite preserves local identity default and creation time while replacing transferable fields" classname="com.example.chatbar.domain.card.FormatCardTransferServiceTest" time="0.037"/>
+  <testcase name="character default reuses only exact normalized name content and ordered tools" classname="com.example.chatbar.domain.card.FormatCardTransferServiceTest" time="0.02"/>
+  <testcase name="schema two export preserves ordered tools and preset provenance" classname="com.example.chatbar.domain.card.FormatCardTransferServiceTest" time="0.011"/>
+  <testcase name="schema two decodes ordered user tools" classname="com.example.chatbar.domain.card.FormatCardTransferServiceTest" time="0.002"/>
+  <testcase name="duplicate uses fresh identity copy name and clears default and preset provenance" classname="com.example.chatbar.domain.card.FormatCardTransferServiceTest" time="0.019"/>
+  <testcase name="schema one decodes with empty user tools" classname="com.example.chatbar.domain.card.FormatCardTransferServiceTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

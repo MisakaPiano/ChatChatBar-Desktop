@@ -1,0 +1,95 @@
+{
+  "initialStagedEvidenceFiles": 314,
+  "sourceCommitDiffCheck": "PASS before source checkpoint",
+  "fullRawDefaultDiffCheckExitCode": 2,
+  "fullRawDefaultOutputSha256": "f7ebdef8f41941fb045252a7212634743d3b21eac6bc8a13c295ed0330fcfaa2",
+  "fullRawDefaultOutputRetainedLocally": true,
+  "crlfAwareInitialRawDiffCheckExitCode": 2,
+  "crlfAwareWarnings": [
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r2-20261018/01-bounded-diagnostic/gradle.stdout.log",
+      "line": 2,
+      "kind": "trailing whitespace."
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r2-20261018/02-repaired-methods/gradle.stdout.log",
+      "line": 2,
+      "kind": "trailing whitespace."
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r2-20261018/03-fish-ui-window/gradle.stdout.log",
+      "line": 2,
+      "kind": "trailing whitespace."
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r2-20261018/04-affected-regression/gradle.stdout.log",
+      "line": 2,
+      "kind": "trailing whitespace."
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r2-20261018/05-bounded-desktop/gradle.stdout.log",
+      "line": 2,
+      "kind": "trailing whitespace."
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r2-20261018/06-create-distributable/gradle.stdout.log",
+      "line": 2,
+      "kind": "trailing whitespace."
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r2-20261018/final-source.patch",
+      "line": 11,
+      "kind": "trailing whitespace."
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r2-20261018/final-source.patch",
+      "line": 143,
+      "kind": "trailing whitespace."
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r2-20261018/r2-vs-r1.patch",
+      "line": 13,
+      "kind": "trailing whitespace."
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r2-20261018/r2-vs-r1.patch",
+      "line": 37,
+      "kind": "trailing whitespace."
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r2-20261018/r2-vs-r1.patch",
+      "line": 46,
+      "kind": "trailing whitespace."
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r2-20261018/r2-vs-r1.patch",
+      "line": 104,
+      "kind": "trailing whitespace."
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r2-20261018/r2-vs-r1.patch",
+      "line": 215,
+      "kind": "trailing whitespace."
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r2-20261018/runs/manual01/stderr.log",
+      "line": 24,
+      "kind": "new blank line at EOF."
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r2-20261018/source-staged.patch",
+      "line": 11,
+      "kind": "trailing whitespace."
+    },
+    {
+      "path": "docs/desktop/evidence/p8-s2b-ui-layout-001-r2-20261018/source-staged.patch",
+      "line": 475,
+      "kind": "trailing whitespace."
+    }
+  ],
+  "allNonCrLfWarningsOnlyRawLogsOrPatchContext": true,
+  "commandScopedCrLfAllowance": true,
+  "repositoryOrGlobalGitConfigurationChanged": false,
+  "crlfAwareMetadataAndSourceCopiesExitCode": 0,
+  "rawBytesTrimmed": false
+}

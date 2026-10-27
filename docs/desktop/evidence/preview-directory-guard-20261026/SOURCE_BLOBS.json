@@ -1,0 +1,47 @@
+[
+  {
+    "file": "app/desktopApp/build.gradle.kts",
+    "pretestSnapshotSha256": "03efeffbfdd661e0e976aceb2f6d60bec924d50a18a271f5c97b4eb7b033fd5d",
+    "gitBlob": "cc32738df0d1796185367e461493fa124b25e045"
+  },
+  {
+    "file": "tools/desktop/windows/build_directory_guard.py",
+    "pretestSnapshotSha256": "42425d62f3204d4cff8b4ea6f23156417ee86cff7ae154a0eb5072783e1ed94f",
+    "gitBlob": "fe732650a171894d3f80b1b16b119ce8af00330e"
+  },
+  {
+    "file": "tools/desktop/windows/directory_guard.c",
+    "pretestSnapshotSha256": "212abde7813f6189e24cbf775d8c4b198c6097cc2d6a5fc2b29e7052e556f8a7",
+    "gitBlob": "5e10481f9a0fccd1fd02beb7e1f3c977a53f9be7"
+  },
+  {
+    "file": "tools/desktop/windows/Invoke-DirectoryGuardChecks.ps1",
+    "pretestSnapshotSha256": "b551c1ce439dcf00f1599bc5f09b2eea7a53f5efacad700d619fd196facafcd5",
+    "gitBlob": "04231599b1c9b00326b3581aaa57b106e1a89a59"
+  },
+  {
+    "file": "tools/desktop/windows/msi_safety.py",
+    "pretestSnapshotSha256": "923a972295d6f80bdaa6313d753ac25e0293fe42e79a9edb7b60a9c58389ea79",
+    "gitBlob": "55a4b93becd0dcda154ac15ae64281653c695bcf"
+  },
+  {
+    "file": "tools/desktop/windows/native_package_probe.py",
+    "pretestSnapshotSha256": "a46f7cb2fe9266a8e12e9246a11b8bdd1b708a8e90832d2a8d88bb0db328d36a",
+    "gitBlob": "98e4ff8f1893b1a868b675b871e2e3812562eb69"
+  },
+  {
+    "file": "tools/desktop/windows/run_directory_guard_tests.py",
+    "pretestSnapshotSha256": "354207d2dd5fb99d948d73e050b1f0da9c330318feb95af7bb9b9144cfb728f4",
+    "gitBlob": "194aa63e473028fb63d6acf305575e93fb4b8415"
+  },
+  {
+    "file": "tools/desktop/windows/test_msi_directory_guard.py",
+    "pretestSnapshotSha256": "0d5ff7d8e91da16b366f97958c27c0333334bce8bd4d2de5ceb8b762df9b2a79",
+    "gitBlob": "c94d5507148dc0dd529fa11b168b03d8bac67eb9"
+  },
+  {
+    "file": "tools/desktop/windows/test_native_probe_validation.py",
+    "pretestSnapshotSha256": "821e0b7c6eb959741ad5149eb89ec230392d67f378e81303e83c4eae6ab94b64",
+    "gitBlob": "2f287b5fa6b1d8fbc5b7fab98d6fbab6fef8a52d"
+  }
+]

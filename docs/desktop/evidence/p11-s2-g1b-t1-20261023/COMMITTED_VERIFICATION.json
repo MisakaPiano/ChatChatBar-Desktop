@@ -1,0 +1,10 @@
+{
+  "sourceTestMainEvidenceCommit": "c05570ab3cc02833d586c341a07e2994cce74d5e",
+  "base": "e90fc229e6ea057bbbc05d12b943608811885cbe",
+  "rawSHAAndLengthVerified": 82,
+  "newSourceBlobsAndFinalSnapshotsVerified": 3,
+  "existingMainBlobsUnchanged": 764,
+  "completeCodeDiffVerified": true,
+  "allowedDiffFiles": 96,
+  "attribution": "Codex self-verification; not independent Project review"
+}

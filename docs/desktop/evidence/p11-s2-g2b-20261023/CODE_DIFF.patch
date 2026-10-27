@@ -1,0 +1,635 @@
+diff --git a/.agents/skills/chatbar-desktop-full-backup/SKILL.md b/.agents/skills/chatbar-desktop-full-backup/SKILL.md
+index db824590..16581f37 100644
+--- a/.agents/skills/chatbar-desktop-full-backup/SKILL.md
++++ b/.agents/skills/chatbar-desktop-full-backup/SKILL.md
+@@ -19,6 +19,8 @@ description: Maintain Desktop whole-app cbbackup export, offline inspection, cre
+ 
+ - G2A `DesktopCredentialImportPlan` and `RecoverableIntentContract` are internal, unwired metadata contracts only. Inputs are trusted decoder/target-observation facts, not archives or keys; Community has no sink, endpoint/provider and name conflicts block candidates. Intent checks reject missing participants, old/new proof, generations and mixed/ambiguous completion; they never write, authorize business, or prove durability. Focused tests: DesktopCredentialImportPlanTest, RecoverableIntentContractTest, G2AOfficialWireTest. The strict test-only wire subset is not a production credential decoder.
+ 
++- G2B `inspectCredentialSources` is opt-in inside the same S0 scan and publishes only after final validation. `DesktopCredentialSourceCensus` covers pinned145/code84/v1 preferences, settings and model/embedding metadata; unknown entities, media/packages and opaque custom parameters make it incomplete. `VerifiedCredentialSourceMetadata` owns copied char buffers and must be closed; comparison/plan integration consumes it. Target readers are injected synthetic-only assertions, never OS identity/CAS evidence; Community is never offered to a key comparator. Existing inspect/inspectMoments and restore guards remain separate. Focused suite: DesktopCredentialSourceCensusTest.
++
+ ## Restore lifecycle
+ 
+ - Prepare and verify under normal admission; flush the chat composer before snapshot/schedule. Join the automatic backup scheduler before reserving audio. Confirm audio stop/close, then enter exclusive coordination.
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupReadOnlyInspector.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupReadOnlyInspector.kt
+index 083739f7..dfcab926 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupReadOnlyInspector.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupReadOnlyInspector.kt
+@@ -43,6 +43,18 @@ internal class DesktopBackupReadOnlyInspector(private val afterAuthentication: (
+ 
+     suspend fun inspect(source: Path, password: CharArray?): ReadOnlyInspection = scan(source, password)
+ 
++    /** Opt-in only; no census escapes until the same scan passes every final check. */
++    suspend fun inspectCredentialSources(source: Path, password: CharArray?): VerifiedCredentialSourceMetadata {
++        val builder = DesktopCredentialSourceCensus()
++        var result: VerifiedCredentialSourceMetadata? = null
++        try {
++            scan(source, password, census = builder, censusValidated = { result = it })
++            currentCoroutineContext().ensureActive()
++            return requireNotNull(result)
++        } catch (failure: Throwable) { result?.close(); throw failure
++        } finally { builder.close() }
++    }
++
+     suspend fun inspectMoments(source: Path, password: CharArray?): MomentArchiveReadOnlyValidator.Report {
+         var report: MomentArchiveReadOnlyValidator.Report? = null
+         val context = currentCoroutineContext()
+@@ -53,6 +65,8 @@ internal class DesktopBackupReadOnlyInspector(private val afterAuthentication: (
+     }
+ 
+     private suspend fun scan(source: Path, password: CharArray?,
++        census: DesktopCredentialSourceCensus? = null,
++        censusValidated: ((VerifiedCredentialSourceMetadata) -> Unit)? = null,
+         validated: ((InspectionManifest, Map<String, AppBackupFileRecord>, Map<String, JsonObject>, String, Set<CredentialCategory>) -> Unit)? = null
+     ): ReadOnlyInspection = withContext(Dispatchers.IO) {
+         var stage = "INPUT"
+@@ -99,6 +113,7 @@ internal class DesktopBackupReadOnlyInspector(private val afterAuthentication: (
+                         require(expected.size == bytes.size.toLong() && expected.crc == entry.crc)
+                         val sha = DesktopBackupPolicy.digest(bytes)
+                         if (!metadata) {
++                            census?.file(path)
+                             seen[path] = AppBackupFileRecord(path, bytes.size.toLong(), sha)
+                             if (entity) {
+                                 stage = "ENTITY_SCHEMA"
+@@ -112,11 +127,16 @@ internal class DesktopBackupReadOnlyInspector(private val afterAuthentication: (
+                                     DesktopBackupPolicy.entity(path, bytes, exporting = true)
+                                 } else uninterpreted++
+                                 entities[path] = value
++                                census?.json(path, value, sha, bytes.size.toLong())
+                             }
+                         } else {
+                             stage = "METADATA"
+                             when (path) {
+-                                "manifest.json" -> manifest = backupJson.decodeFromJsonElement(strictJson(bytes))
++                                "manifest.json" -> {
++                                    val value = strictJson(bytes)
++                                    manifest = backupJson.decodeFromJsonElement(value)
++                                    census?.manifest(value.jsonObject)
++                                }
+                                 "preferences.json" -> {
+                                     val prefs = backupJson.decodeFromJsonElement<InspectionPreferences>(strictJson(bytes))
+                                     require(prefs.retainedPreferences.isEmpty())
+@@ -125,6 +145,7 @@ internal class DesktopBackupReadOnlyInspector(private val afterAuthentication: (
+                                     if (!prefs.fishAudioKey.isNullOrEmpty()) credentials += CredentialCategory.FISH_AUDIO
+                                     if (!prefs.communitySession.isNullOrEmpty()) credentials += CredentialCategory.COMMUNITY
+                                     preferenceHash = sha
++                                    census?.json(path, strictJson(bytes).jsonObject, sha, bytes.size.toLong())
+                                 }
+                                 "inventory.jsonl" -> {
+                                     val records = linkedMapOf<String, AppBackupFileRecord>()
+@@ -158,6 +179,7 @@ internal class DesktopBackupReadOnlyInspector(private val afterAuthentication: (
+             val scope = m.scope?.let { scopeReport(it, counts, entities) }
+             context.ensureActive()
+             validated?.invoke(m, seen, entities, hash, credentials)
++            census?.let { builder -> censusValidated?.invoke(builder.publish(m, version, hash, sourceBytes.size.toLong())) }
+             ReadOnlyInspection(hash, version, m.formatVersion, m.appVersionCode, encrypted, m.fileCount, m.totalBytes,
+                 scope, credentials.toSet(), uninterpreted, counts.count("model_configs") + counts.count("retrieval_model_config"),
+                 counts.count("embedding_configs") + counts.count("embedding_model_config"), counts.count("format_cards"), counts.count("world_books"),
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialSourceCensus.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialSourceCensus.kt
+new file mode 100644
+index 00000000..2f58bb43
+--- /dev/null
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialSourceCensus.kt
+@@ -0,0 +1,131 @@
++package com.example.chatbar.desktop.backup
++
++import com.example.chatbar.data.local.entity.ModelTemplate
++import kotlinx.serialization.json.*
++
++internal enum class CredentialFieldState { MISSING, EXPLICIT_NULL, EMPTY, NONEMPTY }
++internal enum class CensusLimitation { SOURCE_VERSION, UNKNOWN_ENTITY, NESTED_CONTENT, UNKNOWN_FIELD, IDENTITY, DUPLICATE_ID }
++
++/** No source value, source path or account ID is rendered. Record SHA is of whole validated file bytes. */
++internal class CredentialSourceRecord internal constructor(
++    val source: ImportCredentialSource, val fieldState: CredentialFieldState,
++    val fileSha256: String, val fileLength: Long,
++    private val recordIdentity: String,
++) {
++    override fun toString(): String = "CredentialSourceRecord(${source.kind},$fieldState,$fileLength)"
++}
++
++/** Invocation-owned volatile builder; only Inspector may publish after the complete scan. */
++internal class DesktopCredentialSourceCensus : AutoCloseable {
++    private val records = mutableListOf<CredentialSourceRecord>()
++    private val values = mutableListOf<CharArray?>()
++    private val limitations = linkedSetOf<CensusLimitation>()
++    private val identities = hashSetOf<Pair<String, String>>()
++    private var preferencesSeen = false
++    private var published = false
++
++    fun manifest(value: JsonObject) {
++        if (value.keys != setOf("formatVersion", "appVersionCode", "appVersionName", "createdAt", "sourceFilesRoot", "counts", "fileCount", "totalBytes", "preferencesSha256"))
++            limitations += CensusLimitation.UNKNOWN_FIELD
++    }
++
++    fun file(path: String) {
++        if (!path.startsWith("entities/")) limitations += CensusLimitation.NESTED_CONTENT
++    }
++
++    fun json(path: String, value: JsonObject, sha: String, length: Long) {
++        if (path == "preferences.json") {
++            preferencesSeen = true
++            if (value.keys.any { it !in preferenceFields }) limitations += CensusLimitation.UNKNOWN_FIELD
++            add(value, "novelAiToken", ImportCredentialKind.NOVEL_AI, ImportCredentialLocation.PREFERENCES_NOVEL_AI, sha, length, path)
++            add(value, "fishAudioKey", ImportCredentialKind.FISH, ImportCredentialLocation.PREFERENCES_FISH, sha, length, path)
++            add(value, "communitySession", ImportCredentialKind.COMMUNITY, ImportCredentialLocation.PREFERENCES_COMMUNITY, sha, length, path)
++            // Session JSON is nested serialized data: validate its exact known wire fields, never substitute an API key.
++            val session = value["communitySession"]
++            if (session is JsonPrimitive && session.isString && session.content.isNotEmpty()) {
++                try {
++                    val writer = java.io.StringWriter()
++                    BackupJsonStream(session.content.reader(), writer) { text, _ -> text }.copy()
++                    val obj = backupJson.parseToJsonElement(writer.toString()).jsonObject
++                    require(obj.keys.all { it in communityFields })
++                    require(listOf("accessToken", "userId", "displayName").all { obj[it] is JsonPrimitive && obj[it]!!.jsonPrimitive.isString })
++                    require(obj["refreshToken"] == null || obj["refreshToken"] == JsonNull || obj["refreshToken"]!!.jsonPrimitive.isString)
++                    require(obj["tokenType"] == null || obj["tokenType"]!!.jsonPrimitive.isString)
++                    require(obj["expiresAtMillis"] == null || obj["expiresAtMillis"]!!.jsonPrimitive.longOrNull != null)
++                } catch (_: Exception) { limitations += CensusLimitation.NESTED_CONTENT }
++            }
++            return
++        }
++        val type = DesktopBackupPolicy.entityType(path)
++        if (type !in setOf("app_settings", "model_configs", "embedding_configs", "embedding_model_config")) {
++            limitations += CensusLimitation.UNKNOWN_ENTITY; return
++        }
++        if (type == "app_settings") {
++            if (!identities.add(type to "singleton")) limitations += CensusLimitation.DUPLICATE_ID
++            if (value.keys.any { it !in settingsFields }) limitations += CensusLimitation.UNKNOWN_FIELD
++            // Official appearance objects contain numbers only. Other nested payloads are not inferred safe.
++            for ((key, child) in value) if (child is JsonObject || child is JsonArray) {
++                val colors = when (key) { "themeColor" -> listOf(child); "themeColorHistory" -> (child as? JsonArray)?.toList(); else -> null }
++                if (colors == null || colors.any { color -> color !is JsonObject || color.keys.any { it !in colorFields } || color.values.any { it !is JsonPrimitive || it.isString || it.floatOrNull?.isFinite() != true } })
++                    limitations += CensusLimitation.NESTED_CONTENT
++            }
++            add(value, "siliconFlowApiKey", ImportCredentialKind.SILICON_FLOW, ImportCredentialLocation.APP_SETTINGS, sha, length, path)
++            return
++        }
++        val model = type == "model_configs"
++        if (value.keys.any { it !in if (model) modelFields else embeddingFields }) limitations += CensusLimitation.UNKNOWN_FIELD
++        if ((value["customParams"] as? JsonObject)?.isNotEmpty() == true || value.any { (key, child) ->
++                (child is JsonObject || child is JsonArray) && !(key == "customParams" && child is JsonObject && child.isEmpty()) })
++            limitations += CensusLimitation.NESTED_CONTENT
++        val id = (value["id"] as? JsonPrimitive)?.takeIf { it.isString }?.content.orEmpty()
++        if (!identities.add(type to if (type == "embedding_model_config") "singleton" else id)) limitations += CensusLimitation.DUPLICATE_ID
++        val kind = if (model) ImportCredentialKind.MODEL else if (type == "embedding_configs") ImportCredentialKind.LEGACY_EMBEDDING else ImportCredentialKind.SINGLETON_EMBEDDING
++        val location = if (model) ImportCredentialLocation.MODEL_CONFIG else if (type == "embedding_configs") ImportCredentialLocation.LEGACY_EMBEDDING_CONFIG else ImportCredentialLocation.SINGLETON_EMBEDDING_CONFIG
++        val account = try {
++            fun string(key: String) = value.getValue(key).jsonPrimitive.also { require(it.isString) }.content
++            ImportAccountIdentity(string("id"), string("displayName"), string("baseUrl"), string("modelName"),
++                if (model) ModelTemplate.valueOf(value["templateType"]?.jsonPrimitive?.content ?: "OPENAI") else null)
++                .also { require(it.valid(kind)) }
++        } catch (_: Exception) { limitations += CensusLimitation.IDENTITY; null }
++        add(value, "apiKey", kind, location, sha, length, id, account)
++    }
++
++    private fun add(obj: JsonObject, field: String, kind: ImportCredentialKind, location: ImportCredentialLocation,
++        sha: String, length: Long, identity: String, account: ImportAccountIdentity? = null) {
++        val element = obj[field]
++        val state = when {
++            element == null -> CredentialFieldState.MISSING
++            element == JsonNull -> CredentialFieldState.EXPLICIT_NULL
++            element is JsonPrimitive && element.isString -> if (element.content.isEmpty()) CredentialFieldState.EMPTY else CredentialFieldState.NONEMPTY
++            else -> { limitations += CensusLimitation.UNKNOWN_FIELD; return }
++        }
++        val presence = when (state) {
++            CredentialFieldState.MISSING, CredentialFieldState.EXPLICIT_NULL -> ImportSecretPresence.ABSENT
++            CredentialFieldState.EMPTY -> ImportSecretPresence.EMPTY
++            CredentialFieldState.NONEMPTY -> ImportSecretPresence.NONEMPTY
++        }
++        records += CredentialSourceRecord(ImportCredentialSource(kind, location, presence, account), state, sha, length, identity)
++        values += if (state == CredentialFieldState.NONEMPTY) element!!.jsonPrimitive.content.toCharArray() else null
++    }
++
++    fun publish(manifest: InspectionManifest, envelopeVersion: Int, sourceSha: String, sourceLength: Long): VerifiedCredentialSourceMetadata {
++        check(!published)
++        if (manifest.appVersionCode != 84 || manifest.formatVersion != 1 || envelopeVersion != 1 || manifest.scope != null)
++            limitations += CensusLimitation.SOURCE_VERSION
++        check(preferencesSeen)
++        published = true
++        return VerifiedCredentialSourceMetadata(sourceSha, sourceLength, envelopeVersion, manifest.formatVersion,
++            manifest.appVersionCode, records.toList(), limitations.toSet(), values.toList()).also { values.clear() }
++    }
++    override fun close() { values.forEach { it?.fill('\u0000') }; values.clear(); records.clear() }
++
++    companion object {
++        private val preferenceFields = setOf("novelAiToken", "fishAudioKey", "communitySession", "brushSize", "brushType")
++        private val communityFields = setOf("accessToken", "refreshToken", "tokenType", "expiresAtMillis", "userId", "displayName")
++        private val colorFields = setOf("hueDegrees", "saturation", "value")
++        private val embeddingFields = setOf("id", "displayName", "baseUrl", "apiKey", "modelName", "dimensions")
++        private val modelFields = setOf("id", "displayName", "baseUrl", "apiKey", "modelName", "selectableForChat", "isMultimodal", "visionModelId", "templateType", "customParams", "reasoningEffort", "enableThinking", "maxOutputTokens", "outputTokenParameter", "formatPromptPosition", "supportsJsonMode", "supportsDisableThinking", "sourcePresetKey", "sourcePresetVersion", "createdAt")
++        // Fixed official145 AppSettings declaration; future fields must not inherit census completeness.
++        private val settingsFields = "defaultModelId defaultImageModelId modelConfigurationMode presetDefaultModelKey siliconFlowApiKey allowCleartextModelApi defaultEmbeddingId defaultFormatCardId automaticFormatCheckEnabled formatRepairModelId memoryRagTopK memoryRagSimilarityThreshold docRagTopK docRagSimilarityThreshold ragInjectionMode defaultContextWindowSize episodeMaxSourceTurns excludeAssistantStatusFromHistory themeMode themeColor themeColorHistory chatBubbleFontScale chatBackgroundImageOpacity assistantSegmentedBubblesEnabled tutorialVersion webSearchSettingsVersion webSearchEnabled characterAutoFillWebSearchEnabled characterRewriteWebSearchEnabled characterAutoFillResearchSourceMode characterRewriteResearchSourceMode worldBookAiResearchSourceMode webSearchMaxResultsPerQuery novelAiImageModel novelAiImageAspectRatio novelAiPromptTranslationConsent imagePromptToolPreference fishAudioTtsModelId voiceTagModelId audiobookModeEnabled momentsEnabled momentsImagesEnabled momentsMinDelayHours momentsMaxDelayHours momentsBackgroundGuideDismissed momentsAutoStartConfirmed lastSeenMomentsAt lastSeenChatAt".split(' ').toSet()
++    }
++}
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialTargetObservation.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialTargetObservation.kt
+new file mode 100644
+index 00000000..7c2f48d7
+--- /dev/null
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialTargetObservation.kt
+@@ -0,0 +1,21 @@
++package com.example.chatbar.desktop.backup
++
++internal enum class TargetObservationStatus { SOURCE_INCOMPLETE, SOURCE_CLOSED, CONTEXT_UNVERIFIED, GENERATION_OR_CONTEXT_CHANGED, OBSERVED }
++internal data class CredentialTargetObservationResult(val status: TargetObservationStatus, val plan: DesktopCredentialImportPlan? = null)
++
++/** Test-injected read-only snapshot contract. No production store or ambient environment adapter exists. */
++internal interface SyntheticCredentialTargetReader {
++    fun stamp(): SyntheticObservationStamp
++    fun observe(source: ImportCredentialSource, comparison: ScopedCredentialComparison): ImportCredentialTarget?
++}
++
++/** Opaque short-lived comparator. Retention cannot retain access after its scope closes. */
++internal class ScopedCredentialComparison internal constructor(private var source: CharArray?) : AutoCloseable {
++    private var active = true
++    fun matches(syntheticTarget: CharArray): Boolean {
++        check(active) { "CREDENTIAL_COMPARISON_CLOSED" }
++        return source?.contentEquals(syntheticTarget) == true
++    }
++    override fun close() { active = false; source = null }
++    override fun toString(): String = "ScopedCredentialComparison(REDACTED)"
++}
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/VerifiedCredentialSourceMetadata.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/VerifiedCredentialSourceMetadata.kt
+new file mode 100644
+index 00000000..560b6c65
+--- /dev/null
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/VerifiedCredentialSourceMetadata.kt
+@@ -0,0 +1,50 @@
++package com.example.chatbar.desktop.backup
++
++import java.util.UUID
++import kotlinx.coroutines.CancellationException
++
++/** Only the Inspector's completed opt-in scan publishes this invocation-owned, nonserialized result.
++ * Complete means the declared known-location subset, not arbitrary hidden secrets/portability.
++ * Close clears copied char buffers; parser Strings/JSON and JVM heap erasure are not guaranteed.
++ */
++internal class VerifiedCredentialSourceMetadata internal constructor(
++    val sourceSha256: String, val sourceLength: Long,
++    val envelopeVersion: Int, val manifestVersion: Int, val appVersionCode: Int,
++    records: List<CredentialSourceRecord>, limitations: Set<CensusLimitation>,
++    private val secrets: List<CharArray?>,
++) : AutoCloseable {
++    val records = records.toList()
++    val limitations = limitations.toSet()
++    val complete: Boolean get() = limitations.isEmpty()
++    private var closed = false
++    val restoreAuthorized: Boolean get() = false
++    override fun toString(): String = "VerifiedCredentialSourceMetadata(complete=$complete,limitations=$limitations,records=${records.size})"
++
++    /** No target is accessed for an incomplete census. No value leaves the scoped comparator. */
++    @Synchronized fun observeAndPlan(reader: SyntheticCredentialTargetReader, expected: SyntheticObservationStamp): CredentialTargetObservationResult {
++        if (closed || !complete) return CredentialTargetObservationResult(if (closed) TargetObservationStatus.SOURCE_CLOSED else TargetObservationStatus.SOURCE_INCOMPLETE)
++        val targets = mutableListOf<ImportCredentialTarget>()
++        val comparisons = mutableListOf<ScopedCredentialComparison>()
++        try {
++            val initial = try { reader.stamp() } catch (cancelled: CancellationException) { throw cancelled } catch (_: Exception) { null }
++            val usable = initial == expected && expected.consumersKnown && expected.generation >= 0
++            for ((i, record) in records.withIndex()) {
++                val source = record.source
++                val comparison = ScopedCredentialComparison(secrets[i]); comparisons += comparison
++                // No protected destination exists for a Community session. Never offer its payload to a key comparator.
++                val target = if (usable && source.kind != ImportCredentialKind.COMMUNITY) try { reader.observe(source, comparison) } catch (cancelled: CancellationException) { throw cancelled } catch (_: Exception) { null } else null
++                comparison.close()
++                targets += if (target?.kind == source.kind) target else ImportCredentialTarget(source.kind, ExistingSecretRelation.UNKNOWN, source.account)
++            }
++            val final = try { reader.stamp() } catch (cancelled: CancellationException) { throw cancelled } catch (_: Exception) { null }
++            val stable = usable && final == initial
++            if (!stable) return CredentialTargetObservationResult(if (usable) TargetObservationStatus.GENERATION_OR_CONTEXT_CHANGED else TargetObservationStatus.CONTEXT_UNVERIFIED)
++            return CredentialTargetObservationResult(TargetObservationStatus.OBSERVED, DesktopCredentialImportPlan.classify(envelopeVersion, manifestVersion, appVersionCode, sourceSha256,
++                records.map { it.source }, targets, protectedSinkAvailable = true))
++        } finally { comparisons.forEach { it.close() }; close() }
++    }
++    @Synchronized override fun close() { secrets.forEach { it?.fill('\u0000') }; closed = true }
++}
++
++/** Explicit synthetic context assertions, never native lock/profile/CAS evidence. */
++internal data class SyntheticObservationStamp(val root: UUID, val context: UUID, val generation: Long, val consumersKnown: Boolean)
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/CensusWireFixtures.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/CensusWireFixtures.kt
+new file mode 100644
+index 00000000..ccf64cc3
+--- /dev/null
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/CensusWireFixtures.kt
+@@ -0,0 +1,58 @@
++package com.example.chatbar.desktop.backup
++
++import java.io.ByteArrayOutputStream
++import java.nio.file.Files
++import java.nio.file.Path
++import java.security.MessageDigest
++import java.util.zip.ZipEntry
++import java.util.zip.ZipOutputStream
++import kotlinx.serialization.encodeToString
++
++/** Independent145 raw wire source; no Inspector DTO or production census builder creates inputs. */
++internal object CensusWireFixtures {
++    const val SECRET = "FAKE_G2B_SOURCE_NOT_A_REAL_KEY"
++    const val PASSWORD = "FAKE_G2B_PASSWORD_NOT_REAL"
++    fun model(id: String = "m", key: String = "\"$SECRET\"", extra: String = "") =
++        """{"id":"$id","displayName":"Synthetic","baseUrl":"https://synthetic.invalid/v1","apiKey":$key,"modelName":"synthetic","createdAt":1$extra}"""
++    fun embedding(id: String = "e") = """{"id":"$id","displayName":"Synthetic","baseUrl":"https://embedding.invalid/v1","apiKey":"$SECRET","modelName":"synthetic"}"""
++    fun files() = linkedMapOf("entities/app_settings.json" to """{"siliconFlowApiKey":"$SECRET"}""".toByteArray(),
++        "entities/model_configs/m.json" to model().toByteArray(), "entities/embedding_configs/e.json" to embedding().toByteArray(),
++        "entities/embedding_model_config.json" to embedding().toByteArray())
++    fun bytes(prefs: String = """{"novelAiToken":"$SECRET","fishAudioKey":"$SECRET"}""", files: Map<String, ByteArray> = files(),
++        encrypted: Boolean = false, badInventory: Boolean = false, badManifest: Boolean = false,
++        version: Int = 1, code: Int = 84, manifestExtra: String = ""): ByteArray {
++        val preferences = prefs.toByteArray()
++        val counts = files.keys.filter { it.startsWith("entities/") }.groupingBy { it.removePrefix("entities/").substringBefore('/').removeSuffix(".json") }.eachCount()
++        val manifest = if (version == 1) officialWireJson.encodeToString(Official145Manifest(appVersionCode = code,
++            appVersionName = "1.4.5", createdAt = 1, sourceFilesRoot = "/data/user/0/synthetic.ccb/files", counts = counts,
++            fileCount = files.size + if (badManifest) 1 else 0, totalBytes = files.values.sumOf { it.size.toLong() }, preferencesSha256 = digest(preferences)))
++        else officialWireJson.encodeToString(OfficialModernManifest(formatVersion = 2, appVersionCode = code, appVersionName = "synthetic",
++            createdAt = 1, sourceFilesRoot = "/data/user/0/synthetic.ccb/files", counts = counts, fileCount = files.size,
++            totalBytes = files.values.sumOf { it.size.toLong() }, preferencesSha256 = digest(preferences),
++            scope = OfficialWireScope(emptySet(), 0, 0, 0, 0, 0, false, false, false, false)))
++        val inventory = files.entries.joinToString("\n", postfix = "\n") { (path, value) ->
++            officialWireJson.encodeToString(OfficialWireFileRecord(path, value.size.toLong(), if (badInventory) "0".repeat(64) else digest(value))) }
++        return ByteArrayOutputStream().also { out ->
++            val password = if (encrypted) PASSWORD.toCharArray() else null
++            try { ZipOutputStream(Official147FixtureCodec.encrypting(out, password, version)).use { zip ->
++                (files.mapKeys { "files/${it.key}" } + mapOf("preferences.json" to preferences, "inventory.jsonl" to inventory.toByteArray(), "manifest.json" to (manifest.dropLast(1) + manifestExtra + "}").toByteArray())).forEach { (name, value) ->
++                    zip.putNextEntry(ZipEntry(name)); zip.write(value); zip.closeEntry()
++                }
++            } } finally { password?.fill('\u0000') }
++        }.toByteArray()
++    }
++    suspend fun <T> input(bytes: ByteArray, label: String, action: suspend (Path) -> T): T {
++        val base = Files.createTempDirectory("p11-g2b-").toAbsolutePath().normalize()
++        val out = Files.createDirectories(Path.of("build/p11-s2-g2b/fixtures"))
++        Files.write(out.resolve("$label.cbbackup"), bytes)
++        try {
++            val source = Files.write(base.resolve("source.cbbackup"), bytes)
++            try { return action(source) } finally { check(Files.readAllBytes(source).contentEquals(bytes)) }
++        } finally {
++            check(base.parent == Path.of(System.getProperty("java.io.tmpdir")).toAbsolutePath().normalize())
++            check(base.fileName.toString().startsWith("p11-g2b-")); check(base.toFile().deleteRecursively())
++            Files.writeString(out.resolve("$label-cleanup.txt"), "SOURCE_BYTES_UNCHANGED;OWNED_TEMP_REMOVED")
++        }
++    }
++    fun digest(bytes: ByteArray) = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
++}
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialSourceCensusTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialSourceCensusTest.kt
+new file mode 100644
+index 00000000..fbb72806
+--- /dev/null
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialSourceCensusTest.kt
+@@ -0,0 +1,258 @@
++package com.example.chatbar.desktop.backup
++
++import java.nio.file.Files
++import java.nio.file.Path
++import java.util.UUID
++import kotlinx.coroutines.*
++import kotlin.test.*
++
++class DesktopCredentialSourceCensusTest {
++    private val inspector = DesktopBackupReadOnlyInspector()
++    private val stamp = SyntheticObservationStamp(UUID(0, 1), UUID(0, 2), 4, true)
++    private class Reader(val stampValue: SyntheticObservationStamp, val relation: ExistingSecretRelation = ExistingSecretRelation.SAME) : SyntheticCredentialTargetReader {
++        var accesses = 0
++        var reads = 0
++        var secondStamp: SyntheticObservationStamp? = null
++        var failRead = false
++        var failStamp = false
++        var cancel = false
++        var held: ScopedCredentialComparison? = null
++        var targetAccount: ImportAccountIdentity? = null
++        override fun stamp(): SyntheticObservationStamp { accesses++; if (failStamp) error("PRIVATE_G2B_STAMP"); return if (accesses > 1) secondStamp ?: stampValue else stampValue }
++        override fun observe(source: ImportCredentialSource, comparison: ScopedCredentialComparison): ImportCredentialTarget {
++            reads++; held = comparison
++            if (cancel) throw CancellationException("SYNTHETIC_CANCEL")
++            if (failRead) error("PRIVATE_G2B_TARGET_FAILURE")
++            if (source.presence == ImportSecretPresence.NONEMPTY) {
++                val bytes = CensusWireFixtures.SECRET.toCharArray()
++                try { assertTrue(comparison.matches(bytes)) } finally { bytes.fill('\u0000') }
++            }
++            return ImportCredentialTarget(source.kind, relation, targetAccount ?: source.account)
++        }
++    }
++    private suspend fun census(bytes: ByteArray = CensusWireFixtures.bytes(), label: String = "default", action: (VerifiedCredentialSourceMetadata) -> Unit) =
++        CensusWireFixtures.input(bytes, label) { path -> inspector.inspectCredentialSources(path, null).use(action) }
++
++    @Test fun `official v1 code84 plain and password have authenticated complete six-family sources`() = runBlocking {
++        for (encrypted in listOf(false, true)) {
++            val bytes = CensusWireFixtures.bytes(encrypted = encrypted)
++            CensusWireFixtures.input(bytes, "positive-$encrypted") { path ->
++                val password = if (encrypted) CensusWireFixtures.PASSWORD.toCharArray() else null
++                try { inspector.inspectCredentialSources(path, password).use { source ->
++                    assertTrue(source.complete); assertFalse(source.restoreAuthorized)
++                    assertEquals(CensusWireFixtures.digest(bytes), source.sourceSha256); assertEquals(bytes.size.toLong(), source.sourceLength)
++                    assertEquals(7, source.records.size)
++                    assertEquals(6, source.records.count { it.fieldState == CredentialFieldState.NONEMPTY })
++                    assertEquals(84, source.appVersionCode); assertEquals(1, source.envelopeVersion)
++                    val result = source.observeAndPlan(Reader(stamp), stamp)
++                    assertEquals(TargetObservationStatus.OBSERVED, result.status)
++                    assertTrue(requireNotNull(result.plan).candidateConsistent); assertFalse(result.plan.restoreAuthorized)
++                } } finally { password?.fill('\u0000') }
++            }
++        }
++    }
++    @Test fun `four source field states retain evidence and explicit G2A presence mapping`() = runBlocking {
++        for ((raw, expected) in listOf("{}" to CredentialFieldState.MISSING, "{\"novelAiToken\":null}" to CredentialFieldState.EXPLICIT_NULL,
++            "{\"novelAiToken\":\"\"}" to CredentialFieldState.EMPTY, "{\"novelAiToken\":\"${CensusWireFixtures.SECRET}\"}" to CredentialFieldState.NONEMPTY)) {
++            census(CensusWireFixtures.bytes(raw, emptyMap()), "state-${expected.name}") {
++                val record = it.records.first(); assertEquals(expected, record.fieldState)
++                assertEquals(raw.toByteArray().size.toLong(), record.fileLength)
++                assertEquals(CensusWireFixtures.digest(raw.toByteArray()), record.fileSha256)
++                assertEquals(when (expected) { CredentialFieldState.MISSING, CredentialFieldState.EXPLICIT_NULL -> ImportSecretPresence.ABSENT; CredentialFieldState.EMPTY -> ImportSecretPresence.EMPTY; else -> ImportSecretPresence.NONEMPTY }, record.source.presence)
++            }
++        }
++    }
++    @Test fun `model and embedding default fields use exact distinct scoped identities`() = runBlocking {
++        census(label = "defaults") {
++            val records = it.records.filter { record -> record.source.account != null }
++            assertEquals(3, records.size)
++            assertTrue(records.all { record -> record.source.account!!.valid(record.source.kind) })
++            val result = it.observeAndPlan(Reader(stamp, ExistingSecretRelation.ABSENT), stamp)
++            assertEquals(6, result.plan!!.decisions.mapNotNull { d -> d.candidate }.distinct().size)
++        }
++    }
++    @Test fun `source record file SHA and length bind actual original model bytes`() = runBlocking {
++        val files = CensusWireFixtures.files()
++        census(CensusWireFixtures.bytes(files = files), "record-proof") {
++            val record = it.records.single { r -> r.source.kind == ImportCredentialKind.MODEL }
++            val bytes = files.getValue("entities/model_configs/m.json")
++            assertEquals(bytes.size.toLong(), record.fileLength); assertEquals(CensusWireFixtures.digest(bytes), record.fileSha256)
++        }
++    }
++    @Test fun `unknown entity and nested package never mean no credentials or access target`() = runBlocking {
++        for ((name, files) in listOf("unknown" to mapOf("entities/future/x.json" to "{}".toByteArray()),
++            "package" to mapOf("save_slot_packages/slot.bin" to byteArrayOf(1, 2)),
++            "custom" to mapOf("entities/model_configs/m.json" to CensusWireFixtures.model(extra = ",\"customParams\":{\"private\":{\"type\":\"string\",\"value\":\"HIDDEN\"}}").toByteArray()))) {
++            census(CensusWireFixtures.bytes(files = files), "incomplete-$name") {
++                assertFalse(it.complete); val reader = Reader(stamp)
++                assertEquals(TargetObservationStatus.SOURCE_INCOMPLETE, it.observeAndPlan(reader, stamp).status)
++                assertEquals(0, reader.accesses); assertEquals(0, reader.reads)
++            }
++        }
++    }
++    @Test fun `duplicate model and singleton identities make source incomplete`() = runBlocking {
++        val base = CensusWireFixtures.files()
++        val variants = listOf(base + ("entities/model_configs/other.json" to CensusWireFixtures.model().toByteArray()),
++            base + ("entities/embedding_model_config/other.json" to CensusWireFixtures.embedding().toByteArray()))
++        for ((i, files) in variants.withIndex()) census(CensusWireFixtures.bytes(files = files), "duplicate-id-$i") {
++            assertFalse(it.complete); assertTrue(CensusLimitation.DUPLICATE_ID in it.limitations)
++        }
++    }
++    @Test fun `duplicate JSON fields and escaped equivalent keys are rejected by shared strict parser`() = runBlocking {
++        for ((i, prefs) in listOf("{\"novelAiToken\":null,\"novelAiToken\":\"PRIVATE\"}", "{\"novelAiToken\":null,\"novelAi\\u0054oken\":\"PRIVATE\"}").withIndex())
++            rejected(CensusWireFixtures.bytes(prefs), "duplicate-field-$i")
++    }
++    @Test fun `unknown preference field wrong field type and invalid model reject without publication`() = runBlocking {
++        rejected(CensusWireFixtures.bytes("{\"unknownSecret\":\"PRIVATE\"}"), "unknown-pref")
++        rejected(CensusWireFixtures.bytes("{\"novelAiToken\":3}"), "wrong-type")
++        rejected(CensusWireFixtures.bytes(files = mapOf("entities/model_configs/m.json" to "{}".toByteArray())), "missing-model")
++    }
++    @Test fun `malformed or future community session is incomplete and no target is consulted`() = runBlocking {
++        for ((i, session) in listOf("PRIVATE_BROKEN", "{\\\"future\\\":true}").withIndex()) {
++            census(CensusWireFixtures.bytes("{\"communitySession\":\"$session\"}", emptyMap()), "bad-community-$i") { assertFalse(it.complete) }
++        }
++    }
++    @Test fun `valid official community defaults retain unmapped status`() = runBlocking {
++        val prefs = """{"communitySession":"{\"accessToken\":\"${CensusWireFixtures.SECRET}\",\"userId\":\"synthetic\",\"displayName\":\"Synthetic\"}"}"""
++        census(CensusWireFixtures.bytes(prefs, emptyMap()), "community") {
++            assertTrue(it.complete)
++            val plan = it.observeAndPlan(Reader(stamp), stamp).plan!!
++            assertFalse(plan.candidateConsistent); assertEquals(CredentialPlanReason.NO_PROTECTED_SINK, plan.decisions.last().reason)
++        }
++    }
++    @Test fun `invalid endpoint preserves redacted incomplete source identity`() = runBlocking {
++        val files = CensusWireFixtures.files().toMutableMap()
++        files["entities/model_configs/m.json"] = CensusWireFixtures.model().replace("https://synthetic.invalid/v1", "https://user:PRIVATE@synthetic.invalid").toByteArray()
++        census(CensusWireFixtures.bytes(files = files), "bad-endpoint") { assertFalse(it.complete); assertFalse(it.toString().contains("PRIVATE")) }
++    }
++    @Test fun `same different absent unknown observations remain explicit and nonrestorable`() = runBlocking {
++        for (relation in ExistingSecretRelation.entries) census(label = "relation-$relation") {
++            val result = it.observeAndPlan(Reader(stamp, relation), stamp)
++            val plan = result.plan!!; assertFalse(plan.restoreAuthorized)
++            assertEquals(relation in setOf(ExistingSecretRelation.ABSENT, ExistingSecretRelation.SAME), plan.candidateConsistent)
++            if (relation == ExistingSecretRelation.UNKNOWN) assertTrue(plan.decisions.filter { d -> d.kind != ImportCredentialKind.COMMUNITY }.all { d -> d.reason == CredentialPlanReason.TARGET_STATE_UNKNOWN })
++        }
++    }
++    @Test fun `target read failure is unknown not absent and private cause is discarded`() = runBlocking {
++        census(label = "read-fault") {
++            val reader = Reader(stamp).also { r -> r.failRead = true }
++            val result = it.observeAndPlan(reader, stamp)
++            assertFalse(result.plan!!.candidateConsistent); assertFalse(result.toString().contains("PRIVATE"))
++            assertTrue(result.plan.decisions.filter { d -> d.kind != ImportCredentialKind.COMMUNITY }.all { d -> d.reason == CredentialPlanReason.TARGET_STATE_UNKNOWN })
++        }
++    }
++    @Test fun `wrong root context unknown consumers and failed stamp cannot create a plan`() = runBlocking {
++        for ((i, observed) in listOf(stamp.copy(root = UUID(0, 3)), stamp.copy(context = UUID(0, 3)), stamp.copy(consumersKnown = false)).withIndex())
++            census(label = "context-$i") {
++                val reader = Reader(observed); assertNull(it.observeAndPlan(reader, stamp).plan); assertEquals(0, reader.reads)
++            }
++        census(label = "stamp-fault") { assertNull(it.observeAndPlan(Reader(stamp).also { r -> r.failStamp = true }, stamp).plan) }
++    }
++    @Test fun `generation or context changes during observation invalidate the whole plan`() = runBlocking {
++        for ((i, changed) in listOf(stamp.copy(generation = 5), stamp.copy(context = UUID(0, 9))).withIndex()) census(label = "changed-$i") {
++            val result = it.observeAndPlan(Reader(stamp).also { r -> r.secondStamp = changed }, stamp)
++            assertEquals(TargetObservationStatus.GENERATION_OR_CONTEXT_CHANGED, result.status); assertNull(result.plan)
++        }
++    }
++    @Test fun `model endpoint and name conflicts flow to G2A without automatic binding`() = runBlocking {
++        census(label = "endpoint-conflict") {
++            val reader = Reader(stamp).also { r -> r.targetAccount = ImportAccountIdentity("m", "Synthetic", "https://other.invalid/v1", "synthetic", com.example.chatbar.data.local.entity.ModelTemplate.OPENAI) }
++            assertFalse(it.observeAndPlan(reader, stamp).plan!!.candidateConsistent)
++        }
++    }
++    @Test fun `closed source and escaped comparator cannot be reused`() = runBlocking {
++        census(label = "lifetime") {
++            val reader = Reader(stamp); val result = it.observeAndPlan(reader, stamp)
++            assertNotNull(result.plan); assertFailsWith<IllegalStateException> { reader.held!!.matches(charArrayOf()) }
++            assertEquals(TargetObservationStatus.SOURCE_CLOSED, it.observeAndPlan(reader, stamp).status)
++        }
++    }
++    @Test fun `observer cancellation closes copied buffers and comparison scope`() = runBlocking {
++        census(label = "observer-cancel") {
++            val reader = Reader(stamp).also { r -> r.cancel = true }
++            assertFailsWith<CancellationException> { it.observeAndPlan(reader, stamp) }
++            assertFailsWith<IllegalStateException> { reader.held!!.matches(charArrayOf()) }
++            assertEquals(TargetObservationStatus.SOURCE_CLOSED, it.observeAndPlan(reader, stamp).status)
++        }
++    }
++    @Test fun `authentication success followed by bad inventory or manifest never publishes or accesses observer`() = runBlocking {
++        for ((i, bytes) in listOf(CensusWireFixtures.bytes(badInventory = true), CensusWireFixtures.bytes(badManifest = true)).withIndex()) {
++            var authenticated = false; val reader = Reader(stamp)
++            CensusWireFixtures.input(bytes, "late-failure-$i") { path ->
++                assertFailsWith<DesktopBackupReadOnlyInspector.InspectionFailure> {
++                    DesktopBackupReadOnlyInspector { authenticated = true }.inspectCredentialSources(path, null).use { it.observeAndPlan(reader, stamp) }
++                }
++            }
++            assertTrue(authenticated); assertEquals(0, reader.accesses)
++        }
++    }
++    @Test fun `wrong password tag and truncated source fail authentication without values in errors`() = runBlocking {
++        val bytes = CensusWireFixtures.bytes(encrypted = true)
++        CensusWireFixtures.input(bytes, "wrong-password") { path ->
++            val failure = assertFailsWith<DesktopBackupReadOnlyInspector.InspectionFailure> { inspector.inspectCredentialSources(path, "FAKE_G2B_WRONG_PASSWORD".toCharArray()) }
++            assertEquals("AUTHENTICATION", failure.stage); assertNull(failure.cause)
++        }
++        val tampered = bytes.copyOf().also { it[it.lastIndex] = (it.last().toInt() xor 1).toByte() }
++        for ((i, input) in listOf(tampered, bytes.copyOf(bytes.size - 12)).withIndex()) CensusWireFixtures.input(input, "auth-tamper-$i") { path ->
++            assertFailsWith<DesktopBackupReadOnlyInspector.InspectionFailure> { inspector.inspectCredentialSources(path, CensusWireFixtures.PASSWORD.toCharArray()) }
++        }
++    }
++    @Test fun `invalid UTF8 duplicate zip central CRC and path violation fail closed`() = runBlocking {
++        rejected(CensusWireFixtures.bytes(files = mapOf("entities/app_settings.json" to byteArrayOf(0xc3.toByte(), 0x28))), "utf8")
++        rejected(CensusWireFixtures.bytes(files = mapOf("images/../bad" to byteArrayOf(1))), "path")
++        val crc = CensusWireFixtures.bytes()
++        val central = (0..crc.size - 4).first { crc[it] == 0x50.toByte() && crc[it+1] == 0x4b.toByte() && crc[it+2] == 1.toByte() && crc[it+3] == 2.toByte() }
++        crc[central + 16] = (crc[central + 16].toInt() xor 1).toByte(); rejected(crc, "crc")
++        val duplicates = CensusWireFixtures.bytes(files = mapOf("images/a" to byteArrayOf(1), "images/b" to byteArrayOf(2)))
++        val needle = "files/images/b".toByteArray()
++        for (i in 0..duplicates.size - needle.size) if (needle.indices.all { duplicates[i+it] == needle[it] }) duplicates[i+needle.lastIndex] = 'a'.code.toByte()
++        rejected(duplicates, "duplicate-zip")
++    }
++    @Test fun `v2 and later source codes remain readable but census unsupported`() = runBlocking {
++        for ((i, bytes) in listOf(CensusWireFixtures.bytes("{}", emptyMap(), version = 2, code = 85), CensusWireFixtures.bytes("{}", emptyMap(), code = 85)).withIndex()) census(bytes, "unsupported-$i") {
++            assertFalse(it.complete); assertTrue(CensusLimitation.SOURCE_VERSION in it.limitations)
++        }
++    }
++    @Test fun `scan cancellation after authentication never publishes and handles release`() = runBlocking {
++        val bytes = CensusWireFixtures.bytes()
++        CensusWireFixtures.input(bytes, "scan-cancel") { path ->
++            val job = Job()
++            assertFailsWith<CancellationException> { withContext(job) { DesktopBackupReadOnlyInspector { job.cancel() }.inspectCredentialSources(path, null) } }
++            inspector.inspectCredentialSources(path, null).close()
++        }
++    }
++    @Test fun `metadata diagnostics do not contain secret value raw JSON private account or path`() = runBlocking {
++        census(label = "redaction") {
++            val output = listOf(it.toString(), it.records.toString(), it.observeAndPlan(Reader(stamp), stamp).toString()).joinToString()
++            assertFalse(output.contains(CensusWireFixtures.SECRET)); assertFalse(output.contains("https://synthetic")); assertFalse(output.contains("apiKey"))
++        }
++    }
++    @Test fun `owned copied character buffers are zeroed on success close and cancellation`() = runBlocking {
++        for (mode in 0..2) census(label = "buffer-wipe-$mode") {
++            val field = VerifiedCredentialSourceMetadata::class.java.getDeclaredField("secrets").also { f -> f.isAccessible = true }
++            @Suppress("UNCHECKED_CAST") val copies = field.get(it) as List<CharArray?>
++            assertTrue(copies.any { value -> value?.any { c -> c != '\u0000' } == true })
++            when (mode) {
++                0 -> it.observeAndPlan(Reader(stamp), stamp)
++                1 -> it.close()
++                else -> assertFailsWith<CancellationException> { it.observeAndPlan(Reader(stamp).also { r -> r.cancel = true }, stamp) }
++            }
++            assertTrue(copies.all { value -> value == null || value.all { c -> c == '\u0000' } })
++        }
++    }
++    @Test fun `legacy transport cannot claim official145 completeness with modern nullable fields`() = runBlocking {
++        census(CensusWireFixtures.bytes(manifestExtra = ",\"scope\":null"), "modern-manifest") { assertFalse(it.complete) }
++        census(CensusWireFixtures.bytes("{\"retainedPreferences\":[]}"), "modern-prefs") { assertFalse(it.complete) }
++    }
++    @Test fun `full pinned model fields and known nested appearance settings stay interpreted`() = runBlocking {
++        val extra = """, "selectableForChat":true,"isMultimodal":false,"visionModelId":null,"templateType":"OPENAI","customParams":{},"reasoningEffort":null,"enableThinking":null,"maxOutputTokens":null,"outputTokenParameter":"MAX_TOKENS","formatPromptPosition":"BOTH","supportsJsonMode":false,"supportsDisableThinking":false,"sourcePresetKey":null,"sourcePresetVersion":null"""
++        val settings = """{"defaultModelId":null,"defaultImageModelId":null,"modelConfigurationMode":"CUSTOM_API","presetDefaultModelKey":null,"siliconFlowApiKey":"${CensusWireFixtures.SECRET}","allowCleartextModelApi":false,"defaultEmbeddingId":null,"defaultFormatCardId":null,"automaticFormatCheckEnabled":false,"formatRepairModelId":null,"memoryRagTopK":3,"memoryRagSimilarityThreshold":0.35,"docRagTopK":3,"docRagSimilarityThreshold":0.55,"ragInjectionMode":"STANDARD","defaultContextWindowSize":20,"episodeMaxSourceTurns":2,"excludeAssistantStatusFromHistory":true,"themeMode":"SYSTEM","themeColor":{"hueDegrees":168.0,"saturation":0.5,"value":0.5},"themeColorHistory":[{"hueDegrees":168.0,"saturation":0.5,"value":0.5}],"chatBubbleFontScale":1.0,"chatBackgroundImageOpacity":0.16,"assistantSegmentedBubblesEnabled":true,"tutorialVersion":0,"webSearchSettingsVersion":0,"webSearchEnabled":true,"characterAutoFillWebSearchEnabled":true,"characterRewriteWebSearchEnabled":true,"characterAutoFillResearchSourceMode":"ENCYCLOPEDIA_SEARCH","characterRewriteResearchSourceMode":"ENCYCLOPEDIA_SEARCH","worldBookAiResearchSourceMode":"ENCYCLOPEDIA_SEARCH","webSearchMaxResultsPerQuery":1,"novelAiImageModel":"V4_5_FULL","novelAiImageAspectRatio":"","novelAiPromptTranslationConsent":"DISABLED","imagePromptToolPreference":"","fishAudioTtsModelId":"s2.1-pro-free","voiceTagModelId":null,"audiobookModeEnabled":false,"momentsEnabled":false,"momentsImagesEnabled":true,"momentsMinDelayHours":2,"momentsMaxDelayHours":13,"momentsBackgroundGuideDismissed":false,"momentsAutoStartConfirmed":false,"lastSeenMomentsAt":0,"lastSeenChatAt":0}"""
++        census(CensusWireFixtures.bytes(files = mapOf("entities/model_configs/m.json" to CensusWireFixtures.model(extra = extra).toByteArray(), "entities/app_settings.json" to settings.toByteArray())), "full-pinned-fields") {
++            assertTrue(it.complete); assertTrue(it.observeAndPlan(Reader(stamp), stamp).plan!!.candidateConsistent)
++        }
++    }
++    private suspend fun rejected(bytes: ByteArray, label: String) = CensusWireFixtures.input(bytes, label) { path ->
++        val error = assertFailsWith<DesktopBackupReadOnlyInspector.InspectionFailure> { inspector.inspectCredentialSources(path, null) }
++        assertNull(error.cause); assertFalse(error.toString().contains("PRIVATE")); assertFalse(error.toString().contains(CensusWireFixtures.SECRET))
++    }
++}

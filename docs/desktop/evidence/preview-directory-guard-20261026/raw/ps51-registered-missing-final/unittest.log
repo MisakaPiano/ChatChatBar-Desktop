@@ -1,0 +1,27 @@
+test_desktop_profile_requires_its_own_upgrade_identity (test_msi_directory_guard.DirectoryNative) ... ok
+test_fresh_default_and_explicit_safe_directory (test_msi_directory_guard.DirectoryNative) ... ok
+test_fresh_existing_unknown_content_or_unreadable_target_refuses (test_msi_directory_guard.DirectoryNative) ... ok
+test_maintenance_uninstall_and_upgrade_child_restore_saved_directory (test_msi_directory_guard.DirectoryNative) ... ok
+test_missing_unreadable_and_stale_saved_records_refuse (test_msi_directory_guard.DirectoryNative) ... ok
+test_multiple_invalid_or_self_old_product_refuses_before_lookup (test_msi_directory_guard.DirectoryNative) ... ok
+test_property_and_public_identity_failures_are_redacted (test_msi_directory_guard.DirectoryNative) ... ok
+test_registered_directory_physically_missing_refuses_before_changes (test_msi_directory_guard.DirectoryNative) ... ok
+test_reparse_file_denied_and_unavailable_drive_refuse (test_msi_directory_guard.DirectoryNative) ... ok
+test_requested_directory_conflict_never_silently_redirects (test_msi_directory_guard.DirectoryNative) ... ok
+test_revalidation_accepts_trailing_separator_but_refuses_changes (test_msi_directory_guard.DirectoryNative) ... ok
+test_revalidation_rechecks_unowned_content_and_reparse (test_msi_directory_guard.DirectoryNative) ... ok
+test_session_write_failure_does_not_become_success (test_msi_directory_guard.DirectoryNative) ... ok
+test_unsafe_paths_refuse (test_msi_directory_guard.DirectoryNative) ... ok
+test_verified_new_contract_upgrade_and_legacy_refusal (test_msi_directory_guard.DirectoryNative) ... ok
+test_authored_contract_and_existing_safety_rules_on_in_memory_tables (test_msi_directory_guard.DirectoryTables) ... ok
+test_production_binary_has_no_test_export (test_msi_directory_guard.DirectoryTables) ... ok
+test_safety1_legacy_package_is_not_current_directory_contract (test_msi_directory_guard.DirectoryTables) ... ok
+test_unknown_saved_registry_layout_or_colliding_sequence_refuses (test_msi_directory_guard.DirectoryTables) ... ok
+test_normal_help_remains_available_without_native_action (test_native_probe_validation.NativeProbeValidationTest) ... ok
+test_optimized_cli_refuses_before_parsing_or_native_action (test_native_probe_validation.NativeProbeValidationTest) ... ok
+test_optimized_import_cannot_expose_assertion_free_actions (test_native_probe_validation.NativeProbeValidationTest) ... ok
+
+----------------------------------------------------------------------
+Ran 22 tests in 0.477s
+
+OK

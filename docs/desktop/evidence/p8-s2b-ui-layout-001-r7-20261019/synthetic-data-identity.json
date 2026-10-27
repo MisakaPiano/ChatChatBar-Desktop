@@ -1,0 +1,13 @@
+{
+  "localAppData": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-s2b-ui-layout-001-r7-20261019\\environments\\r7-profile",
+  "selectedDataRoot": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-s2b-ui-layout-001-r7-20261019\\environments\\r7-profile\\ChatChatBarDesktop",
+  "selection": "DEFAULT in isolated bootstrap",
+  "settings": "Synthetic explicit s2.1-pro-free; no automatic AI or real model credentials",
+  "cards": {
+    "r7-freeform.json": "5d7294b3c76f7971588161a70373313417daa96f238c5bf2475c3b51fb2f69dc",
+    "r7-structured.json": "db3aa1e230dd9da1bc3f92348f103849a081c48a754d1312aa4773cc531554f9"
+  },
+  "userDataAccess": false,
+  "credential": "New synthetic string written to the fresh root DPAPI store; never read real Fish credentials",
+  "bootstrapSha256": "d5cbd0b470a38058fa600934fd00fe8280f2081ce1f6d685a319b77cdde229d3"
+}

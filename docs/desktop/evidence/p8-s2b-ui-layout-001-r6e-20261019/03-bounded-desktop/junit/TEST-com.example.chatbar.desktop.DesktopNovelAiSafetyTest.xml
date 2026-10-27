@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopNovelAiSafetyTest" tests="13" skipped="0" failures="0" errors="0" timestamp="2026-10-18T20:01:09.179Z" hostname="DD1" time="0.574">
+  <properties/>
+  <testcase name="successful fake response hydrates secure token preserves output and records resolved seed" classname="com.example.chatbar.desktop.DesktopNovelAiSafetyTest" time="0.102"/>
+  <testcase name="free gate rejects every disallowed mode and ambiguous account" classname="com.example.chatbar.desktop.DesktopNovelAiSafetyTest" time="0.001"/>
+  <testcase name="owned output and exact regeneration inputs survive storage restart" classname="com.example.chatbar.desktop.DesktopNovelAiSafetyTest" time="0.039"/>
+  <testcase name="credential UI stores and reloads status without JSON or state disclosure" classname="com.example.chatbar.desktop.DesktopNovelAiSafetyTest" time="0.082"/>
+  <testcase name="Anlas change after fake success prevents artifact publication and blocks future live requests" classname="com.example.chatbar.desktop.DesktopNovelAiSafetyTest" time="0.032"/>
+  <testcase name="credential store exceptions are not reflected by controller" classname="com.example.chatbar.desktop.DesktopNovelAiSafetyTest" time="0.003"/>
+  <testcase name="fake HTTP 429 is one request with no retry no secret error and durable stop" classname="com.example.chatbar.desktop.DesktopNovelAiSafetyTest" time="0.027"/>
+  <testcase name="real secure client disallows redirects retries and foreign destinations" classname="com.example.chatbar.desktop.DesktopNovelAiSafetyTest" time="0.001"/>
+  <testcase name="cancellation stops actual mock HTTP and preserves consumed slot" classname="com.example.chatbar.desktop.DesktopNovelAiSafetyTest" time="0.048"/>
+  <testcase name="crash corrupt and failed records never reset themselves" classname="com.example.chatbar.desktop.DesktopNovelAiSafetyTest" time="0.016"/>
+  <testcase name="durable fuse enforces interval window phase cap and cross instance concurrency" classname="com.example.chatbar.desktop.DesktopNovelAiSafetyTest" time="0.152"/>
+  <testcase name="no confirmation means zero HTTP and no generation journal" classname="com.example.chatbar.desktop.DesktopNovelAiSafetyTest" time="0.005"/>
+  <testcase name="auth and ambiguous account block before image generation" classname="com.example.chatbar.desktop.DesktopNovelAiSafetyTest" time="0.064"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

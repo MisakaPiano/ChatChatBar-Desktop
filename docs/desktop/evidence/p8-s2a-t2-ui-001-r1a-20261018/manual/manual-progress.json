@@ -1,0 +1,519 @@
+{
+  "sourceCommit": "fa5d3f18eebbd6c34f607d7b52d47e24825cb411",
+  "phase": "CLOSED - evidence preparation",
+  "oldT2ImmutableCounts": {
+    "PASS": 4,
+    "FAIL": 1,
+    "NOT TESTED": 20
+  },
+  "newRun": "manual02",
+  "newUserSignatures": [
+    {
+      "utcReceived": "2026-10-17T21:03:06.964730+00:00",
+      "item": "W02-R1",
+      "question": "Heading parity, independent voice module, narrow window scrolling/reachability in new isolated R1A app",
+      "userText": "PASS：标题同级、模块清楚，窄窗滚动正常",
+      "result": "PASS",
+      "evidenceType": "USER TEXT SIGNATURE - no screenshot",
+      "oldT2W02": "FAIL - unchanged"
+    },
+    {
+      "utcReceived": "2026-10-17T21:04:13.447543+00:00",
+      "item": "W03",
+      "result": "PASS",
+      "userText": "PASS：取消后仍已配置，其他设置未变",
+      "evidenceType": "USER TEXT SIGNATURE",
+      "technicalSupport": "Synthetic credential ciphertext unchanged and no additional fake request"
+    },
+    {
+      "utcReceived": "2026-10-17T21:06:45.902044+00:00",
+      "item": "W04-save",
+      "result": "PASS",
+      "userText": "PASS：已保存，输入框关闭且无错误",
+      "evidenceType": "USER TEXT SIGNATURE",
+      "scope": "Ordinary replacement/save with synthetic credential; no failure/reopen claim"
+    },
+    {
+      "utcReceived": "2026-10-17T21:10:47.806532+00:00",
+      "item": "W04-retain",
+      "result": "PASS",
+      "userText": "PASS：保留后仍已配置，没有错误",
+      "evidenceType": "USER TEXT SIGNATURE",
+      "technicalSupport": "Synthetic encrypted credential bytes and fake request count unchanged"
+    },
+    {
+      "utcReceived": "2026-10-17T21:14:06.503610+00:00",
+      "item": "W04-clear",
+      "result": "PASS",
+      "userText": "PASS：已变为未配置，没有错误",
+      "evidenceType": "USER TEXT SIGNATURE",
+      "scope": "Synthetic profile ordinary confirmed clear; no injected-failure claim"
+    },
+    {
+      "utcReceived": "2026-10-17T21:14:39.438911+00:00",
+      "item": "W04-restore",
+      "result": "PASS",
+      "userText": "PASS：已恢复为已配置，没有错误",
+      "evidenceType": "USER TEXT SIGNATURE",
+      "scope": "Ordinary synthetic save/retain/clear/restore passed; manual fault injection NOT TESTED"
+    },
+    {
+      "utcReceived": "2026-10-17T21:15:32.203818+00:00",
+      "item": "W05-null-follow",
+      "result": "PASS",
+      "userText": "PASS：当前会话对话模型已保存，提示正确",
+      "evidenceType": "USER TEXT SIGNATURE",
+      "technicalSupport": "Synthetic persisted voiceTagModelId absent/null, matching official null-follow-session semantics"
+    },
+    {
+      "utcReceived": "2026-10-17T21:16:06.633342+00:00",
+      "item": "W07-ordinary-save",
+      "result": "PASS",
+      "userText": "PASS：开启已保存，没有错误或未保存提示",
+      "evidenceType": "USER TEXT SIGNATURE",
+      "technicalSupport": "Synthetic persisted audiobookModeEnabled=true",
+      "limits": "Concurrency and full app reopen not manually verified yet"
+    },
+    {
+      "utcReceived": "2026-10-17T21:16:41.586183+00:00",
+      "item": "W08-open-session-A",
+      "result": "OBSERVED",
+      "userText": "已打开 T2 会话 A 的会话设置",
+      "evidenceType": "USER TEXT SIGNATURE",
+      "limits": "Voice controls not yet inspected"
+    },
+    {
+      "utcReceived": "2026-10-17T21:17:18.564383+00:00",
+      "item": "W08",
+      "result": "PASS",
+      "userText": "PASS：两项可见，跟随全局且语言为空",
+      "evidenceType": "USER TEXT SIGNATURE"
+    },
+    {
+      "utcReceived": "2026-10-17T21:18:03.500782+00:00",
+      "item": "W09-on-save-language",
+      "result": "PASS",
+      "userText": "PASS：空格正常，开启和完整语言均已保存",
+      "evidenceType": "USER TEXT SIGNATURE",
+      "technicalSupport": "Synthetic session A persisted true / Brazilian Portuguese"
+    },
+    {
+      "utcReceived": "2026-10-17T21:18:46.292457+00:00",
+      "item": "W10-unsaved-prompt",
+      "result": "PASS",
+      "userText": "PASS：出现未保存确认，选项正常",
+      "evidenceType": "USER TEXT SIGNATURE",
+      "actions": "Mode off, language 日语, Close without Save; leave confirmation shown",
+      "technicalSupport": "Synthetic durable A remains on / Brazilian Portuguese"
+    },
+    {
+      "utcReceived": "2026-10-17T21:19:21.615521+00:00",
+      "item": "W10-discard-reopen-A",
+      "result": "PASS",
+      "userText": "PASS：放弃后恢复开启及 Brazilian Portuguese",
+      "evidenceType": "USER TEXT SIGNATURE"
+    },
+    {
+      "utcReceived": "2026-10-17T21:19:53.789293+00:00",
+      "item": "W10-B-isolation",
+      "result": "PASS",
+      "userText": "PASS：B 仍跟随全局，语言为空",
+      "evidenceType": "USER TEXT SIGNATURE",
+      "technicalSupport": "Synthetic durable B retains null/null"
+    },
+    {
+      "utcReceived": "2026-10-17T21:20:14.118588+00:00",
+      "item": "W10-return-A",
+      "result": "PASS",
+      "userText": "PASS：A 仍开启，语言仍为 Brazilian Portuguese",
+      "evidenceType": "USER TEXT SIGNATURE"
+    },
+    {
+      "utcReceived": "2026-10-17T21:20:53.348657+00:00",
+      "item": "W12-navigation",
+      "result": "OBSERVED",
+      "userText": "两张 T2 测试卡都能找到",
+      "evidenceType": "USER TEXT SIGNATURE"
+    },
+    {
+      "utcReceived": "2026-10-17T21:22:35.920113+00:00",
+      "item": "W12",
+      "result": "PASS",
+      "userText": "PASS：结构化卡可以打开音色库，控件可见",
+      "evidenceType": "USER TEXT SIGNATURE",
+      "scope": "STRUCTURED synthetic card Alice opens real Fish picker; no selection yet"
+    },
+    {
+      "utcReceived": "2026-10-17T21:23:55.040093+00:00",
+      "item": "W14",
+      "result": "PASS",
+      "userText": "PASS：个人和社区列表正常，权限文字对应变化",
+      "evidenceType": "USER TEXT SIGNATURE",
+      "technicalSupport": "Native phase includes personal/community mock GET200. Personal query already existed at entry snapshot; exact click timing not claimed."
+    },
+    {
+      "utcReceived": "2026-10-17T21:24:42.397717+00:00",
+      "item": "W15-pagination",
+      "result": "PASS",
+      "userText": "PASS：下一页和上一页显示正确",
+      "evidenceType": "USER TEXT SIGNATURE"
+    },
+    {
+      "utcReceived": "2026-10-17T21:25:18.110902+00:00",
+      "item": "W15-title-filter",
+      "result": "PASS",
+      "userText": "PASS：显示空结果，旧音色不可选",
+      "evidenceType": "USER TEXT SIGNATURE",
+      "actions": "title=empty; explicit Query; no selection"
+    },
+    {
+      "utcReceived": "2026-10-17T21:25:51.414563+00:00",
+      "item": "W15-tag-filter",
+      "result": "PASS",
+      "userText": "PASS：标签筛选返回空结果，旧音色不可选",
+      "evidenceType": "USER TEXT SIGNATURE",
+      "actions": "title cleared, tag=absent; explicit Query"
+    },
+    {
+      "utcReceived": "2026-10-17T21:26:28.268892+00:00",
+      "item": "W15-language-filter",
+      "result": "PASS",
+      "userText": "PASS：语言筛选返回空结果，旧音色不可选",
+      "evidenceType": "USER TEXT SIGNATURE",
+      "actions": "tags cleared, language=absent; explicit Query"
+    },
+    {
+      "utcReceived": "2026-10-17T21:27:28.255830+00:00",
+      "item": "W15-sort-and-restore",
+      "result": "PASS",
+      "userText": "PASS：筛选清空后列表恢复，最新排序和页码正确",
+      "evidenceType": "USER TEXT SIGNATURE",
+      "actions": "Language cleared, sort=latest, explicit Query; first page restored"
+    },
+    {
+      "utcReceived": "2026-10-17T21:28:26.090256+00:00",
+      "item": "W16-mock401",
+      "result": "PASS",
+      "userText": "PASS：错误提示清楚且脱敏，音色不可选",
+      "evidenceType": "USER TEXT SIGNATURE",
+      "limits": "403/429/malformed/oversize UI branches not manually repeated"
+    },
+    {
+      "utcReceived": "2026-10-17T21:29:34.204654+00:00",
+      "item": "W16-recover-W17-cancel",
+      "result": "PASS",
+      "userText": "PASS：正常查询恢复，关闭后 Alice 仍未绑定",
+      "evidenceType": "USER TEXT SIGNATURE",
+      "technicalSupport": "Both synthetic card bytes identical to pre-picker baseline, all person bindings null",
+      "limits": "No delayed-response/card-switch race manually staged"
+    },
+    {
+      "utcReceived": "2026-10-17T21:30:43.177739+00:00",
+      "item": "W18-structured-explicit-draft",
+      "result": "PASS",
+      "userText": "PASS：明确选择后 Alice 显示所选音色",
+      "evidenceType": "USER TEXT SIGNATURE",
+      "technicalSupport": "Durable card remains unbound until explicit card Save"
+    },
+    {
+      "utcReceived": "2026-10-17T21:31:30.834277+00:00",
+      "item": "W18-structured-save-close",
+      "result": "PASS",
+      "userText": "PASS：保存无错误，已回到角色列表",
+      "evidenceType": "USER TEXT SIGNATURE",
+      "technicalSupport": "Original card/person IDs preserved; Alice full binding persisted; Bob remains unbound"
+    },
+    {
+      "utcReceived": "2026-10-17T21:32:50.531996+00:00",
+      "item": "W18-structured-reopen",
+      "result": "PASS",
+      "userText": "PASS：重开后 Alice 绑定保留，Bob 未被误绑定",
+      "evidenceType": "USER TEXT SIGNATURE"
+    },
+    {
+      "utcReceived": "2026-10-17T21:33:54.132738+00:00",
+      "item": "W19-discard-removal",
+      "result": "PASS",
+      "userText": "PASS：已放弃移除并回到列表，没有错误",
+      "evidenceType": "USER TEXT SIGNATURE",
+      "technicalSupport": "Committed card bytes and full Alice binding remain identical"
+    },
+    {
+      "utcReceived": "2026-10-17T21:34:16.432344+00:00",
+      "item": "W19-reopen-after-discard",
+      "result": "PASS",
+      "userText": "PASS：原绑定仍在",
+      "evidenceType": "USER TEXT SIGNATURE"
+    },
+    {
+      "utcReceived": "2026-10-17T21:35:00.240376+00:00",
+      "item": "W19-explicit-removal-save",
+      "result": "PASS",
+      "userText": "PASS：明确移除已保存，关闭无错误",
+      "evidenceType": "USER TEXT SIGNATURE",
+      "technicalSupport": "Durable Alice binding now null; original card/person IDs and edit mode preserved"
+    },
+    {
+      "utcReceived": "2026-10-17T21:36:09.456340+00:00",
+      "item": "W13",
+      "result": "PASS",
+      "userText": "PASS：自由文本模式也可打开同一音色库",
+      "evidenceType": "USER TEXT SIGNATURE",
+      "scope": "FREEFORM synthetic card, avatar book Alice; no conversion to structured mode"
+    },
+    {
+      "utcReceived": "2026-10-17T21:36:54.839077+00:00",
+      "item": "W21-W18-freeform-draft",
+      "result": "PASS",
+      "userText": "PASS：PENDING 说明正确，无音频操作按钮，Alice 已显示绑定",
+      "evidenceType": "USER TEXT SIGNATURE",
+      "scope": "Native picker PENDING/no audio buttons; explicit community voice selected for FREEFORM Alice, not yet saved"
+    },
+    {
+      "utcReceived": "2026-10-17T21:37:14.620731+00:00",
+      "item": "W18-freeform-save-close",
+      "result": "PASS",
+      "userText": "PASS：自由文本卡保存并关闭正常",
+      "evidenceType": "USER TEXT SIGNATURE",
+      "technicalSupport": "FREEFORM/card/person identity unchanged; Alice complete community binding persisted; Bob unbound",
+      "reopen": "Pending full application reopen later"
+    },
+    {
+      "utcReceived": "2026-10-17T21:41:00.199310+00:00",
+      "item": "W20-JSON-export-attempt01",
+      "result": "TARGET MISMATCH",
+      "userText": "PASS：JSON 已保存到指定合成目录",
+      "evidenceType": "USER TEXT SIGNATURE + ACTUAL ARTIFACT CHECK",
+      "actualResult": "Save succeeded, but exported STRUCTURED rather than requested FREEFORM card; cause unconfirmed; file retained"
+    },
+    {
+      "utcReceived": "2026-10-17T21:42:16.798393+00:00",
+      "item": "W20-JSON-export-attempt02",
+      "result": "PASS",
+      "userText": "已确认自由文本卡所在行，并完成新文件导出",
+      "evidenceType": "USER TEXT SIGNATURE + ACTUAL ARTIFACT CHECK",
+      "technicalSupport": "Correct FREEFORM card and complete binding snapshots match committed source"
+    },
+    {
+      "utcReceived": "2026-10-17T21:42:16.799391+00:00",
+      "item": "W20-attempt01-cause-resolution",
+      "result": "USER CONFIRMED WRONG ROW",
+      "userText": "第一次我选错地方选了结构卡了",
+      "evidenceType": "USER TEXT CLARIFICATION",
+      "scope": "First artifact/initial mismatch record retained; cause now confirmed as user selected structured row, not a production defect"
+    },
+    {
+      "utcReceived": "2026-10-17T21:42:46.813856+00:00",
+      "item": "W20-PNG-preview",
+      "result": "PASS",
+      "userText": "PASS：封面预览和导出 PNG 按钮正常出现",
+      "evidenceType": "USER TEXT SIGNATURE",
+      "scope": "Default synthetic card cover; no image replacement or generation"
+    },
+    {
+      "utcReceived": "2026-10-17T21:43:21.845490+00:00",
+      "item": "W20-PNG-export",
+      "result": "PASS",
+      "userText": "PASS：PNG 已保存，封面窗口正常关闭",
+      "evidenceType": "USER TEXT SIGNATURE + RAW PNG CHECK",
+      "technicalSupport": "Valid chunk CRC and embedded Package card/full binding matches correct native JSON; only export timestamp may differ"
+    },
+    {
+      "utcReceived": "2026-10-17T21:45:05.599442+00:00",
+      "item": "W20-duplicate",
+      "result": "PASS",
+      "userText": "pass，但是不叫副本，是原名后面带个括号2，这个和CCB原版一致",
+      "evidenceType": "USER TEXT SIGNATURE + CLARIFICATION",
+      "actualName": "T2 自由文本测试卡 (2)",
+      "technicalSupport": "One new FREEFORM card; fresh card/person IDs; full snapshots preserved; original bytes unchanged",
+      "promptCorrection": "Expected name wording was inaccurate, existing numbered suffix is valid"
+    },
+    {
+      "utcReceived": "2026-10-17T21:45:53.889347+00:00",
+      "item": "W20-JSON-import-conflict",
+      "result": "OBSERVED",
+      "userText": "已出现名称冲突，尚未覆盖或导入",
+      "evidenceType": "USER TEXT SIGNATURE",
+      "scope": "Pending conflict only; as-new resolution not yet executed"
+    },
+    {
+      "utcReceived": "2026-10-17T21:46:33.082925+00:00",
+      "item": "W20-JSON-import-as-new",
+      "result": "PASS",
+      "userText": "导入成功，回到角色列表",
+      "evidenceType": "USER TEXT SIGNATURE",
+      "technicalSupport": "One fresh card/person namespace; full bindings retained; all previous card bytes unchanged",
+      "newName": "T2 自由文本测试卡 (3)"
+    },
+    {
+      "utcReceived": "2026-10-17T21:47:33.277003+00:00",
+      "item": "W20-PNG-import-as-new",
+      "result": "PASS",
+      "userText": "PASS：PNG 已作为新条目导入，没有错误",
+      "evidenceType": "USER TEXT SIGNATURE",
+      "technicalSupport": "One fresh FREEFORM card/person namespace; complete binding retained, every existing card unchanged",
+      "newName": "T2 自由文本测试卡 (4)"
+    },
+    {
+      "utcReceived": "2026-10-17T21:49:07.699116+00:00",
+      "item": "W23-W24-manual01-close",
+      "result": "PASS",
+      "userText": "已正常关闭主窗口，没有异常",
+      "evidenceType": "USER TEXT SIGNATURE + RETAINED PROCESS HANDLES",
+      "technicalSupport": "Launcher19296 exit0; child26216 jvm.dll loaded exit0; independent root lock reacquire/release exit0",
+      "closeObservedUtc": "Not invented - raw watcher close marker was absent; user close text and actual exits recorded separately"
+    },
+    {
+      "utcReceived": "2026-10-17T21:51:02.966301+00:00",
+      "item": "W25-global-settings-reopen",
+      "result": "PASS",
+      "userText": "PASS：重开后上述值和标题均保留",
+      "evidenceType": "USER TEXT SIGNATURE",
+      "scope": "Second actual Launcher/JVM, same synthetic profile: configured credential status, null-follow tag, audiobook on, peer heading remain"
+    },
+    {
+      "utcReceived": "2026-10-17T21:52:11.300214+00:00",
+      "item": "W18-W25-freeform-full-app-reopen",
+      "result": "PASS",
+      "userText": "PASS：重启后原自由文本卡及 Alice 绑定保留",
+      "evidenceType": "USER TEXT SIGNATURE",
+      "technicalSupport": "Original synthetic freeform card bytes unchanged since explicit save, including full binding snapshot and stable person IDs"
+    },
+    {
+      "utcReceived": "2026-10-17T21:54:45.150470+00:00",
+      "item": "W20-PNG-import-full-app-reopen",
+      "result": "PASS",
+      "userText": "和预期一样",
+      "evidenceType": "USER TEXT SIGNATURE - no screenshot",
+      "scope": "Native second-process reopen of T2 自由文本测试卡 (4): FREEFORM, Alice T2 Synthetic Voice 1, Bob unbound; view only",
+      "technicalSupport": "Persisted imported card byte hash unchanged since import",
+      "sha256": "96edfa184a0a456b330ff5c3e29e8a2f12c945d28fb5a3db1b5acb01357e1005"
+    },
+    {
+      "utcReceived": "2026-10-17T21:56:15.548189+00:00",
+      "item": "W23-W24-manual02-close",
+      "result": "PASS",
+      "userText": "关闭了",
+      "evidenceType": "USER TEXT SIGNATURE + RETAINED PROCESS HANDLES",
+      "technicalSupport": "Launcher38880 exit0; child13940 with jvm.dll exit0; independent root lock reacquire/release exit0; fake service then gracefully exited0",
+      "closeObservedUtc": "Not recorded by watcher; not inferred from user response reception"
+    }
+  ],
+  "newWholeItemStates": {
+    "W01": "PASS",
+    "W02": "PASS",
+    "W03": "PASS",
+    "W04": "NOT TESTED",
+    "W05": "NOT TESTED",
+    "W06": "NOT TESTED",
+    "W07": "NOT TESTED",
+    "W08": "PASS",
+    "W09": "NOT TESTED",
+    "W10": "PASS",
+    "W11": "NOT TESTED",
+    "W12": "PASS",
+    "W13": "PASS",
+    "W14": "PASS",
+    "W15": "NOT TESTED",
+    "W16": "NOT TESTED",
+    "W17": "NOT TESTED",
+    "W18": "PASS",
+    "W19": "PASS",
+    "W20": "PASS",
+    "W21": "PASS",
+    "W22": "NOT TESTED",
+    "W23": "PASS",
+    "W24": "PASS",
+    "W25": "PASS"
+  },
+  "newW02R1": "PASS",
+  "activeRootLockExclusion": "Both manual01/manual02 independent helpers exit75 while application active",
+  "launcher": 38880,
+  "jvm": 13940,
+  "realFishGet": 0,
+  "realFishTts": 0,
+  "processExit": "manual01 0/0; manual02 0/0, retained handles",
+  "postExitLock": "Both independent acquire/release exit0",
+  "fakeCleanup": "Graceful exit0; server drained; ephemeral private P12/public truststore deleted, synthetic data retained",
+  "partialItems": {
+    "W04": {
+      "ordinarySaveRetainClearRestore": "PASS",
+      "manualFailurePreservation": "NOT TESTED - covered only by existing automated technical evidence",
+      "reopenConfiguredStatus": "PASS"
+    },
+    "W05": {
+      "newNullFollowSession": "PASS",
+      "ttsChoicesAndAuxiliaryModel": "Prior T2 user evidence retained, not newly repeated",
+      "newAppReopen": "PASS for null-follow and configured selected value"
+    },
+    "W07": {
+      "ordinarySave": "PASS",
+      "manualConcurrentSave": "NOT TESTED - existing automated evidence only",
+      "fullAppReopen": "PASS"
+    },
+    "W09": {
+      "initialInheritedEmpty": "PASS via W08",
+      "onAndSpacedLanguageSave": "PASS",
+      "offSelection": "PASS - dirty off selection reached leave prompt"
+    },
+    "W10": {
+      "dirtyLeavePrompt": "PASS",
+      "discardAndReopenA": "PASS",
+      "ABIsolation": "PASS A->B->A"
+    },
+    "W11": {
+      "manualRace": "NOT TESTED - no rapid-click race inference",
+      "technicalEvidence": "Existing focused Fish/Settings tests and unchanged concurrency logic"
+    },
+    "W15": {
+      "pagination": "PASS",
+      "filters": "PASS - title/tag/language ordinary cases",
+      "titleFilter": "PASS",
+      "tagFilter": "PASS",
+      "languageFilter": "PASS",
+      "sortAndRestore": "PASS",
+      "lateQueryRace": "Not inferred from manual ordinary actions",
+      "scopeClarification": "Ordinary pagination/filter/sort PASS; late-result race not manually staged, so full composite checklist item stays NOT TESTED"
+    },
+    "W16": {
+      "nativeMock401": "PASS",
+      "otherFaultUiBranches": "NOT TESTED - automated technical evidence only",
+      "recovery": "PASS"
+    },
+    "W17": {
+      "ordinaryCancelWithoutBinding": "PASS",
+      "delayedResponseAndCardSwitchRace": "NOT TESTED - deterministic automated evidence only"
+    },
+    "W18": {
+      "structuredExplicitDraft": "PASS",
+      "structuredSaveReopen": "PASS",
+      "freeformSaveReopen": "PASS - full second-process app reopen",
+      "freeformExplicitDraft": "PASS",
+      "freeformSave": "PASS"
+    },
+    "W19": {
+      "discardRemoval": "PASS - durable original unchanged",
+      "reopenAfterDiscard": "PASS",
+      "explicitRemovalSave": "PASS"
+    },
+    "W20": {
+      "jsonAttempt01": "Preserved wrong target; user confirmed selected structured row",
+      "jsonAttempt02": "PASS - full binding matches",
+      "pngExport": "PASS",
+      "duplicate": "PASS - numbered name, fresh identities, full snapshots",
+      "import": "PASS",
+      "pngPreview": "PASS",
+      "jsonImport": "PASS",
+      "pngImport": "PASS",
+      "pngFullAppReopen": "PASS",
+      "copyAndJsonImportUiReopen": "NOT TESTED separately; complete persisted snapshots verified"
+    },
+    "W25": {
+      "globalSettingsReopen": "PASS",
+      "originalBindingReopen": "PASS",
+      "pngImportedBindingReopen": "PASS",
+      "locks": "Both active exclusion75 and post-exit acquire/release0",
+      "sessionFullRestartUi": "NOT TESTED separately; durable synthetic A/B fields verified"
+    }
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "root": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-gate\\environments\\p8s7-profile\\ChatChatBarDesktop",
+  "disposable": true,
+  "expectedBootstrap": {
+    "formatVersion": 1,
+    "mode": "DEFAULT"
+  },
+  "files": [
+    {
+      "path": "entities/app_settings.json",
+      "bytes": 206,
+      "sha256": "6150e20b19682e41fc3c3b7d444a7de7c1065eef6d769ee4b557eda5fe622ad0"
+    },
+    {
+      "path": "entities/character_cards/p8s7-freeform.json",
+      "bytes": 513,
+      "sha256": "870f6248a81e574125328cf353d76dfaf512b755e71142e7f3b6081d8d4c2b5d"
+    },
+    {
+      "path": "entities/character_cards/p8s7-structured.json",
+      "bytes": 518,
+      "sha256": "c87a7a1ce96eca7d304096097e99ee13acde84ad734d21501fb30bd969ee0f6a"
+    },
+    {
+      "path": "entities/chat_messages/p8s7-session-a_p8s7-a-assistant.json",
+      "bytes": 668,
+      "sha256": "ad1b344bf039a5456a2e4ccf44f9454a90424c447221fea780ca99c7e73320f4"
+    },
+    {
+      "path": "entities/chat_messages/p8s7-session-a_p8s7-a-user.json",
+      "bytes": 177,
+      "sha256": "a64ec8946fcd04b96ab2368b3c398deb529aa225ef0ff9a79b14c26db08aeb33"
+    },
+    {
+      "path": "entities/chat_messages/p8s7-session-b_p8s7-b-assistant.json",
+      "bytes": 668,
+      "sha256": "da1146331c24da49792873956542cde30b1ea30ea7de7cdfc20b65f492a2a3bb"
+    },
+    {
+      "path": "entities/chat_messages/p8s7-session-b_p8s7-b-user.json",
+      "bytes": 177,
+      "sha256": "1b1ef1c0af3e4f4972341a2f59932f51c30c071c3084b1520d9fbb178e5b5025"
+    },
+    {
+      "path": "entities/chat_sessions/p8s7-session-a.json",
+      "bytes": 170,
+      "sha256": "372ca178da15437a8c31040892c5780592dbc7729076779b51cec7c299778a26"
+    },
+    {
+      "path": "entities/chat_sessions/p8s7-session-b.json",
+      "bytes": 168,
+      "sha256": "cfed204d5054710bb0fe2473a8f67a3af06f9dec24bf1a9e17b9bfb279b5baaa"
+    },
+    {
+      "path": "entities/model_configs/p8s7-aux.json",
+      "bytes": 217,
+      "sha256": "80b376ffdb41715601d459e47a35dbaaee60aed2f6777b6520c20a611a2fec4f"
+    },
+    {
+      "path": "entities/model_configs/p8s7-chat.json",
+      "bytes": 218,
+      "sha256": "4e5968a4d9f9d087ff3c72d4b278d6e1d2a82a3ab939f1586e515cd168d21a1f"
+    }
+  ]
+}

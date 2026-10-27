@@ -1,0 +1,16 @@
+{
+  "provenance": "Fixed-token transcription of actual tool session26321; original private process log remains gitignored, not uploaded",
+  "exit": 0,
+  "classification": "REAL_ANDROID_ARCHIVE_ISOLATED_RESTORE",
+  "source_bytes": "UNCHANGED",
+  "isolated_restore": "COMMITTED",
+  "message_text_versions_turns": "PRESERVED",
+  "media_bytes": "PRESERVED",
+  "messages": 59,
+  "images": 33,
+  "audio": 244,
+  "repository_reopen": "COUNTS_VERIFIED_SAME_JVM",
+  "private_test_root": "RETAINED",
+  "provider_secretstore_gui": "NOT_USED",
+  "not_tested": ["OS_RESTART", "ANDROID_REAL_DEVICE", "ALL_RAG_MEMORY_SEMANTICS", "ALL_SESSION_FIELDS", "PROVIDER_CONTINUATION", "REAL_FULL_BACKUP_RESTORE"]
+}

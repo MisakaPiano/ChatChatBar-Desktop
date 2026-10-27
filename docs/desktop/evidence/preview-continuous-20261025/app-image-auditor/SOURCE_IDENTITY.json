@@ -1,0 +1,14 @@
+[
+  {
+    "path": "tools/desktop/windows/audit_app_image.py",
+    "bytes": 9205,
+    "sha256": "da888e244a3d8f1db71a15cd0ff55dbb33011a2d1eb10b5afa26c9b29fe21580",
+    "gitBlob": "9bf91e18f665b549dbc379db34538cf6f80bb0e9"
+  },
+  {
+    "path": "tools/desktop/windows/test_audit_app_image.py",
+    "bytes": 9817,
+    "sha256": "237f1a72d786a890b356791eead11c1399870ee7e1f08a644fefc20a16acf416",
+    "gitBlob": "c2e90e87c1ce6c294f53a7f9bd65aa8eaa5e3d93"
+  }
+]

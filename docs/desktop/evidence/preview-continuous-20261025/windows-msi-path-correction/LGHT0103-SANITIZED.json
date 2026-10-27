@@ -1,0 +1,8 @@
+{
+  "sourceBytes": 13093,
+  "sourceSha256": "025f2cdb35726b0df1120727fed8cb9077035ce01a60a7c68dd2af33583e3a99",
+  "extractOnly": true,
+  "lines": [
+    "    <REPOSITORY>\\app\\desktopApp\\build\\preview-continuous-private-20261025\\windows-safe-a-gradle-diagnostic\\jpackage-temp\\config\\bundle.wxf(407) : error LGHT0103 : The system cannot find the file '<REPOSITORY>\\app\\desktopApp\\build\\preview-continuous-private-20261025\\windows-safe-a-gradle-diagnostic\\jpackage-temp\\images\\win-msi.image\\ChatChatBarDesktopSynthetic\\app\\lifecycle-viewmodel-savedstate-desktop-2.9.4-cf8139ef2d41e155eece234f1b2a358.jar'."
+  ]
+}

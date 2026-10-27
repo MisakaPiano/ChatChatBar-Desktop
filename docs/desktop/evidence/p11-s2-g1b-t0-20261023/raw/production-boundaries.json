@@ -1,0 +1,17 @@
+[
+  {
+    "path": "app/desktopApp/src/main",
+    "gitTree": "260a735b991436c2464edbc78faf9088087ab227",
+    "worktreeDiff": "UNCHANGED"
+  },
+  {
+    "path": "app/sharedCore/src/main",
+    "gitTree": "5d0848e81bb957ef1f29a1b2f8f134040990a91f",
+    "worktreeDiff": "UNCHANGED"
+  },
+  {
+    "path": "app/app/src/main",
+    "gitTree": "27f256a64a318d7b9772a962723b53072da866ed",
+    "worktreeDiff": "UNCHANGED"
+  }
+]

@@ -1,0 +1,17 @@
+{
+  "pid": 38272,
+  "exitCode": 0,
+  "command": [
+    "C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.20.101-hotspot\\bin\\keytool.exe",
+    "-exportcert",
+    "-rfc",
+    "-alias",
+    "r7",
+    "-keystore",
+    "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-s2b-ui-layout-001-r7-20261019\\preparation-mock-service\\public-trust.jks",
+    "-storepass",
+    "",
+    "-file",
+    "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-s2b-ui-layout-001-r7-20261019\\preparation-mock-service\\public-only.pem"
+  ]
+}

@@ -1,5 +1,11 @@
 # CCB Desktop Decisions
 
+**CURRENT USER G2A ENGINEERING AUTHORIZATION / 2026-10-23 (no new D-number):** [165](165_P11_S2_G2A_USER_AUTHORIZATION_RECEIPT.md) records explicit approval of **bounded new nonwired Kotlin/JVM `src/main` credential import plan/intent validation core**; [166](166_P11_S2_G2A_AUTHORIZED_TYPED_CREDENTIAL_PLAN_CODEX_TASK.md) is the executable Codex contract. This approves **only** typed classification/conflict/phase checking and synthetic tests, not data+SecretStore commit, removal of current credential guards, UI/Startup changes, live Moments seal, C2 advanced UX, real key/root testing or a release. User offered to provide real data on specific request, but no source/password/path or permission to read any existing file was given; see [167](167_P11_REAL_DATA_INTEROP_READONLY_PREPARATION_NOT_AUTHORIZED.md). [164](164_P11_S2_G2A_BOUNDED_IMPLEMENTATION_CODEX_CONTRACT_DRAFT_NOT_AUTHORIZED.md) remains an earlier draft, not the current authorization. R01/R02/R03/R07 directions and D-037/D-038/P11/Public Preview holds continue.
+
+**CURRENT R07 USER DECISION / 2026-10-23 (no new D-number):** [158](158_P11_S2_G1_R07_DIRECT_IMPORT_PASSWORD_AND_CREDENTIAL_POLICY.md) records original `.cbbackup` custody A (user keeps file; no automatic copy) and direct secure import of supported data **and user-owned API Key/Token**. Mere key presence must not block the whole backup. Mature C2 multi-account transfer is future; default C1 stripping is not equivalent. Current `CREDENTIAL_APPROVAL_REQUIRED` is old production behavior until secure DPAPI/SecretStore identity mapping and coordinated data+secret rollback pass acceptance; do not simply remove checks. Ordinary shareable Desktop export remains without keys by default; password-encrypted credential-bearing export is distinct design scope. D-037/D-038/Preview/baseline/S2 holds unchanged.
+
+**CURRENT 2026-10-23 / P11-S2-G1 PARTIAL USER DECISION (no new D-number):** [157_P11_S2_G1_USER_CONFIRMED_PARTIAL_POLICY_DIRECTIONS.md](157_P11_S2_G1_USER_CONFIRMED_PARTIAL_POLICY_DIRECTIONS.md) registers user-confirmed policy directions for R01/R04 C-A non-running Moment archival, R02 original JSON+independent media/no auto-delete/insufficient-space refusal, and R03 no unsafe old-binary downgrade writes. **R07 remains under user discussion**; S2 implementation, quota/retention details, legacy write-barrier verification, C1/C2, full D-038 and Preview Gate are not authorized by this partial decision. D-037/D-038/D-041 remain unchanged.
+
 用来避免以后重复讨论已经确定的问题。
 
 ---
@@ -483,6 +489,116 @@ Phase 6 分类补充：Automatic Backup runtime/settings 为 Desktop-only data-s
 
 详细数据合同、风险与 Preview 阻断验收项以 `95_PREVIEW_FULL_APP_BACKUP_PORTABILITY_GATE.md` 为准。此决定不修改当前数据、schema、代码或 P7 验收记录。
 
+---
+
+## D-039：Desktop F4-B3 ERROR 恢复点保护策略 B
+
+状态：**USER APPROVED / PROJECT FROZEN / NOT IMPLEMENTED**。
+
+用户已批准：AI 消息格式修复失败或失败后的重试，不得摧毁仍适用于当前候选正文的有效恢复点。这是 Desktop 有意的数据安全增强，不宣称与官方现有 ERROR 覆盖行为完全等价，也不改变正式 1.4.1 基线或 D-036 Prompt 例外。
+
+本次 F4-B3A 只提供完整快照与候选身份校验后的 repository 条件更新基础能力；ERROR/STOPPED coordinator、恢复点策略 B、用户 Stop 与 UI 尚未实施，留待独立 F4-B3B 合同与审查。官方共享 MessageFormatRepairPolicy 的纯语义保持不变。
+
+### 实施状态补记（2026-10-14）
+
+以上 `NOT IMPLEMENTED` 状态及 B3A 说明保留为原决定时的历史记录。Project 已独立审查 F4-B3B R1 源码 `e1099f91b13068852eb60045c99312929695fc53`、证据 `c78bc8c350a0afd66ecae3c56ac20e27a824908e` 和七份原始 JUnit XML，裁定 **F4-B3B R1 QUALIFIED ENGINEERING ACCEPTED**。六文件 +1025/-4；八阶段退出码全部为 0，7 suites/104 tests PASS，0 failures/errors/skips。D-039 策略 B 已在无新增 UI 的 Desktop 修复生命周期中实施并获得限定工程验收：模型配置或传输失败及失败重试保留仍适用的 APPLIED/STOPPED 恢复点；无适用旧恢复点时使用 notice-only CAS 提交 ERROR notice，独立报告存储失败、冲突和提交不确定。
+
+该增强仍是 Desktop 有意的数据安全决定，不宣称与官方 ERROR 覆盖语义完全等价。生产派生门禁默认 UNKNOWN → REJECTED，阻塞 I/O 无物理绝对超时保证；UI、自动修复和完整用户可用性仍 PENDING。Windows GUI 人工、全量回归、打包及实际付费 Provider 均 NOT RUN。完整验收边界见 `115_F4_B3B_R1_PROJECT_ACCEPTANCE.md`；不改写候选证据、不提升 `13` 完整 parity，不扩展 Fish/P9/P10/P11/Public Preview 状态，也不改变 1.4.1 baseline 或 D-036 Prompt。
+
+---
+
+## D-040：Existing Session Resource Rebinding
+
+状态：**USER APPROVED / P11 OWNER / NOT IMPLEMENTED**（2026-10-15）。
+
+用户批准将已有会话资源重新绑定作为 P11 的独立功能项；本次只登记产品方向，不授权实现或迁移数据。
+
+- 支持已有会话从旧 CharacterCard ID 切换到新版 CharacterCard ID，即使旧卡仍存在也可明确选择切换。区分原 ID 的覆盖更新与新 ID 导入，不将二者当作同一种迁移。
+- 支持会话附加 WorldBook 的重新绑定；对角色卡继承 WorldBook 的独立覆盖，须先审查数据合同，不直接假设 `extraWorldBookIds` 已足够。
+- 保持 session ID、聊天正文、alternatives、source-turn、历史资源和存档；默认单会话操作，要求明确确认、迁移前快照、严格资源身份校验及可验证的失败恢复。
+- 新角色卡的默认格式卡不得静默覆盖原会话设置。P11 实施前须评估 WorldBook `timedWorldInfo` 的保留/失效规则，以及资源重新绑定对历史气泡实时渲染的影响。
+- SaveSlot 中角色卡资源绑定与恢复语义交由 P11 正式审计，不据此擅自修改 Package 或持久化合同。
+
+本决定不修改 Prompt 文本或正式 validated upstream 1.4.1 baseline，不改变 D-036/D-039；F4-B5B、P8 Fish、P9/P10、P11 及 Public Preview Gate 的既有验收状态均不提升。功能实施与验收需后续独立合同和 Project 审查。
+
+---
+
+## D-041：首次 Public Preview 应用内检查更新与安全手动升级
+
+状态：**USER APPROVED / PREVIEW GATE B NEW BLOCKER / NOT IMPLEMENTED**（2026-10-20 正式登记用户既有同意）。
+
+第一版公开 Preview 前提供应用内手动版本检查、新版通知/版本号/发布时间/更新说明、可信官方 Desktop 下载页外部浏览器跳转，并能识别 Preview/prerelease 与 stable release 通道。比较的是 Desktop build/version identity，不得错用 Android upstream 版本。离线、非法/不可信元数据或版本无法验证时 fail closed，不能假称更新成功或阻碍原程序使用。可信发行源及 release URL/asset 身份在实施时冻结并验证，不臆造链接。
+
+普通 Windows 用户可安装 EXE/MSI、干净安装和 Preview N→N+1 保留选中数据目录、设置、SecretStore 凭据、语音/媒体和 SaveSlot 的覆盖升级证据必须通过；卸载不会默认销毁 production-valued 数据。无 full automatic updater 时仍可手动安装，但仅有外部下载页、应用内没有最低检查能力已**不再足够通过 Gate B**。
+
+P15 仍持有完整应用内自动下载安装、下载真实性/校验、退出旧进程、启动安装器、重启/恢复以及 OS 关联；D-037/D-038、P11 前置与 Preview 数据安全承诺不变。不得在实现前提升 parity 或宣称 Preview Gate PASS。详见 `93_PUBLIC_PREVIEW_POLICY.md`。
+
+**2026-10-22 跨项目参考（仅审查来源，不是 CCB Desktop 实施或 Gate PASS）：** [CCB Studio Suite Windows 安装与更新参考](https://github.com/MisakaPiano/CCB-Studio-Suite/blob/14f32b32046206ff40843b9d214c24e33e151848/docs/rc/WINDOWS_UPDATE_REFERENCE.md)；固定实现源码 [`271eef55fcd7d3421f3cd93eb227f8d54889e78d`](https://github.com/MisakaPiano/CCB-Studio-Suite/tree/271eef55fcd7d3421f3cd93eb227f8d54889e78d)。
+
+- Suite 已以**隔离合成资料**验证真实 GitHub Release 下载、测试 Preview **100 → 101** 安装/退出/重启、新版启动和再次检查 `UP_TO_DATE`；10 条合成资产、工作区状态和安装清单核对一致。该跨项目证据不替代 Desktop 自身的 Windows 安装升级、凭据保全或 Preview 验收。
+- 值得借鉴的是程序目录与用户资料目录分离、TUF 签名元数据/固定 GitHub 发行源与下载 hash、退出并排空写入后由外部辅助进程安装、安装前后清单校验、新版启动回执绑定版本/nonce/数据快照，以及失败保留旧程序和用户资料。实现必须适配 Desktop 的 Kotlin/JVM、Compose、SecretStore 和数据根事务，不能整套照搬 Suite Python runtime。
+- **安全限制**：该测试使用一次性签名根，长期密钥托管、备份和续签尚未完成；测试凭据在升级前已缺失，不能证明有效凭据的升级保全；未完成 Windows 发布者代码签名或长期发行验收。不得复用 Suite 的签名密钥、信任根、产品/仓库/频道身份和发布 URL。
+- **D-041 范围不变**：首个 Desktop Public Preview 仍只强制应用内可信手动检查/版本说明/浏览器打开下载页及 Windows 安全手动升级的真实数据保留证据；完整自动下载、安装与重启继续归 P15，须另行决定和验收。不提升 P11 / Preview Gate / parity。
+
+
+---
+
+## D-042：Token Budget & Usage Analytics（后期增强）
+
+状态：**USER APPROVED FEATURE PLAN / PENDING / NOT FIRST PREVIEW BLOCKER**（2026-10-20）。
+
+P12 附近在 CharacterCard、FormatCard、WorldBook 各字段/条目显示可解释的**估算 Token 预算**，并展示目标模型上下文预算、当前 WorldBook 激活、变量替换、记忆/RAG/历史截断等按请求实际构造层的占用；不能把 Package 字段文本、内部 Entity 或 Preview 误当最终 Prompt。Prompt 真值取**最终序列化 API messages/request**，官方 Prompt ownership 与原文不为计数而修改。
+
+P15 的 AI request-log surface 增设独立统计面板，按 provider/model/session/request/time（天/周/月）、请求类型分组实际输入/输出/缓存/重试用量；使用供应商报告的 usage（现有 `OpenAiSseParser`/`ProviderStreamEvent.Usage` 可复用），缺失标记为 UNREPORTED，估算值与实测值明确分隔，不能记成0或虚构计费。P17 验证不同 tokenizer/provider、缓存与多模态精度。默认只持久化必要聚合/请求元数据，不默认存完整 Prompt/chat body/Secrets。Fish TTS 音频时长/字符与 LLM Token 不混算。不阻塞首个 Preview，另行实现和验收。
+
+---
+
+## D-043：P8 后续聊天上下文菜单、语音播放器及截图补缺
+
+状态：**USER REQUIREMENTS FROZEN FOR NEXT UX IMPLEMENTATION / NOT IMPLEMENTED**（2026-10-20）。
+
+权威需求见 [145](145_CHAT_CONTEXT_VOICE_UX_AND_SCREENSHOT_CONTRACT.md)：右键消息正文和该消息底部左对齐「…」共享三行紧凑图标+文字菜单（行1 回复级重新生成/修复格式；行2 本段复制/编辑/删除/截图/生成语音；行3 整条复制/编辑/删除/截图/生成语音；行内不换行；非最新合法回复禁重新生成；点击外部/Esc 关闭）。
+
+消息底部必须**左侧 [复制][重新生成][…][喇叭]、右侧 [生成图片][生图要求]**；喇叭是**左侧组最右**，不是整个工具栏的最右。没录音默认色触发整条生成，有录音主题色从该条第一条有效语音播放。两个生图按钮恢复右对齐，User 头像/名称/气泡对齐右侧。
+
+对话视口内最下端单行低高度生成 Deck；有效听书开时「角色音色」标签与 dropdown 同一行右侧，关时隐藏常驻选择而保留官方按需旁白选择。播放状态为底部中央不占布局的浮窗，首次停止暂停保存真位置，再播放原位继续，再停止关闭；跨 User 发言依次播放后续 Assistant 已有音频（不播放 User、不自动 TTS），需新的 Windows pause/position 合同及安全队列；永久提示改为有明确生命周期的可关闭通知。
+
+官方 Android 现有 chat segment/full-message/multi-select 长截图 Desktop 漏项单列 **CHAT-LONG-SCREENSHOT-001 / EQUIVALENT target / PENDING**，与本次 UI 共用菜单入口但分域测试/验收。上述新增 UI/播放增强未纳入冻结 R3 包，不修改官方 Prompt/Entity/Package；保留 QQ BLOCKED、Studio 异常处理 OPEN、P11/Preview Gate。
+
+---
+
+## D-044：多 API 账户档案与真实 Provider 身份展示
+
+状态：**USER REQUESTED / REQUIREMENTS CAPTURED / DESIGN AUDIT PENDING / NOT IMPLEMENTED**（2026-10-20）。
+
+用户明确提出：LLM、NovelAI 生图、Fish Audio 分别支持保存并快速切换**多个 API/Token**，每个账号可自定义别名（备注账号名、主号/副号等）；**LLM 在调用入口及运行中明确展示本次实际服务平台**。同一平台也可能有多个独立账号，协议模板 OpenAI-compatible 不等于 OpenAI 平台。
+
+候选实现需将平台/账户身份、模型配置、Endpoint 和受 Windows SecretStore 保护的真实凭据分离；当前 LLM 已有逐模型 Key，NovelAI/Fish 主要采用 singleton secret 槽。账户选择、模型/会话绑定、已有 fallback 优先级、切换中的请求身份冻结、跨账号禁止隐式轮换、旧凭据无损升级、Portable/backup/restore、Fish 个人音色授权及 NovelAI 配额均须先独立审计。**本次不批准 persisted schema、Prompt 改动或具体迁移算法。**
+
+未来跨域候选：P17 统一账户设置 UX、P15 请求身份显示/日志统计与 D-042 对齐，P7/P8 对应平台适配。**不启动实施，不阻塞已准备的 P8 Windows Gate，不自动提升 parity 或新增 Public Preview release blocker**。详细条款：[146_MULTI_API_ACCOUNT_PROFILES_CONTRACT.md](146_MULTI_API_ACCOUNT_PROFILES_CONTRACT.md)。
+
+---
+
+## D-045：P11 生产方向 B+新根、历史录音无损休眠封存与 C-A Moment 原字节封存
+
+**2026-10-25 当前补充：** 以下 LR4 限界为当时历史；当前实现权限按 D-046 与用户后续直接授权执行，不再等下一份 Project 合同。B+新根用于准备电脑+手机的合并结果，旧根保全不能代替合并；冲突用户选择，详见 203。
+
+状态：**USER APPROVED PRODUCT DIRECTIONS / BOUNDED LR4 ENGINEERING AUTHORIZED / PRODUCTION IMPLEMENTATION AND P11 GATE PENDING**（2026-10-24）。
+
+用户明确批准 [188](188_P11_PRODUCTION_DIRECTION_USER_DECISION_CANDIDATE.md) 的三项产品方向，授权边界正式登记在 [189](189_P11_LR4_USER_DIRECTION_AND_BOUNDED_ENGINEERING_AUTHORIZATION.md)，具体可执行 Codex 任务为 [190](190_P11_LR4_AUTHORIZED_UNWIRED_ENGINEERING_CODEX_TASK.md)。本次决定选择**产品目标方向**，不是确认可部署的持久 schema、Windows SecretStore/DPAPI 移交、安全恢复事务或旧 EXE 隔离机制已经可行。
+
+- **G1B：优先 B + inactive fresh root。** 独立新数据根及根范围受保护凭据参与者先完整准备，之后仅在正式安全验证、用户确认及可恢复 authority 成立时才考虑切换；旧根、原 Key 必须保全。默认不跨账户 fallback、覆盖、删除。Community protected sink、旧版防写、Portable/clone/DPAPI、离线未知 consumer 与真实 crash recovery 仍阻塞生产实现。
+- **历史录音：无损而非猜测修复。** 无法匹配当前版本的非空显式录音版本 ID 保留原始记录和媒体，未来仅作为不自动播放/不运行的独立保护对象；不能默默映射至当前消息版本或删除。若无法证明完整、可恢复、可重新导出的保全，则导入提交前拒绝**整包**。LR3 的 199/36 是第一个失败内嵌 SaveSlot 的分类，不能当成完整全备验证或证明历史剪枝原因。
+- **C-A：MomentPost/Task 原始 JSON + 三路径独立媒体副本。** 保留 senderAvatar、imagePath、generatedImageMetadata.imagePath 关系和原字节；不自动启动 Task/Scheduler、不调用模型、不自动删除；容量不足、未知来源与不能证明资源所有权时拒绝新封存。FullBackup、Snapshot、GC、Portable、root-switch、P13 接管/回滚仍要另行设计和验收。
+
+**LR4 授权仅限**新建内部未接线 typed preparation contract、合成隔离根测试及真正只读的大备份全流验证（语义不完整仍 BLOCKED），并允许此前明确授权的 `H:\手机CCB导出` 目录只读读取。**不授权**写真实 SecretStore、实际 DPAPI、持久身份/namespace/intent schema、正式恢复链/Startup/GC 接线、G2C、旧版 EXE 和安装/Android 实机执行、Prompt 改动、合并、发布或提升 upstream baseline。
+
+下次门禁：先由 Codex 将 [190](190_P11_LR4_AUTHORIZED_UNWIRED_ENGINEERING_CODEX_TASK.md) 的工程交付为 `P11-LR4 PROJECT CODE REVIEW CANDIDATE`，Project 审查真实 source/test/证据；若拟进入持久化和 G2C，再由 Project 提出准确 diff、事务协议、真实平台验证要求取得**额外明确批准**。
+
+`G1B OPEN / G2C NOT AUTHORIZED / P11 PENDING / D-038 BLOCKED / Post-P8 HOLD / Public Preview HOLD / A–G 0/7 signed`。正式 validated upstream 仍 1.4.1，既有 EXACT/EQUIVALENT/PENDING 不因本决定自动改变。
+
+---
+
 ## D-046：按用户授权连续交付，Project 仅后置审查
 
 当前协作规则依用户于 2026-10-25 明确要求同步的 [USER_AUTHORITY_AND_PROJECT_REVIEW_BOUNDARY.md](USER_AUTHORITY_AND_PROJECT_REVIEW_BOUNDARY.md)，完整开发原则在 [01](01_PROJECT_INSTRUCTIONS.md)。
@@ -507,3 +623,7 @@ Phase 6 分类补充：Automatic Backup runtime/settings 为 Desktop-only data-s
 保留手机原件；迁移前保全电脑状态，取消或失败不改变当前有效状态。提交前若电脑数据已变化，重新核对受影响合并项；不能用过期预览覆盖新数据。验证电脑和手机各自独有内容、重复导入、冲突各选项、资源/引用、凭据绑定、取消/失败/重启与导出再导入。该一次性、用户驱动的合并迁移属于当前 P11；自动双向同步/multi-master/live watcher 仍是后续独立功能。
 
 这次同步不新增审批门槛，也不把审查建议等同用户拒绝授权。此前 D-046 的不同措辞统一由本条和权限边界解释，历史决定/合同只按原日期与用户后续指令适用。
+
+## 2026-10-28 — 用户决定切换 Studio式 NSIS 并实际回收 MSI 资源
+
+详见 [204](204_STUDIO_NSIS_ROUTE_SWITCH_20261028.md)。A接管源码推进P11→Preview；B最小封存并实际回收，MSI无限期搁置。虚拟机无用途则彻底退役，不默认保留。用户目标优先于审查助手最终建议；本轮允许向其他对话下达引继指令。此决定不宣称新安装路线已通过验收。

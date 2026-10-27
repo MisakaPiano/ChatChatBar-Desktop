@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopBackupCompatibilityTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-21T19:26:35.505Z" hostname="DD1" time="0.154">
+  <properties/>
+  <testcase name="unsupported official Moments remain whole archive blockers with payload free diagnostics" classname="com.example.chatbar.desktop.DesktopBackupCompatibilityTest" time="0.11"/>
+  <testcase name="entity name alone does not authorize unknown fields or external credentials" classname="com.example.chatbar.desktop.DesktopBackupCompatibilityTest" time="0.043"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

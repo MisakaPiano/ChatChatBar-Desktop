@@ -1,0 +1,8 @@
+{"time":"2026-10-16T01:46:56.6623972+09:00","availableMiB":3268,"commitHeadroomGiB":11.339,"pagesPerSec":672,"HfreeGiB":37.97,"java":[]}
+{"time":"2026-10-16T01:47:54.2150059+09:00","availableMiB":2427,"commitHeadroomGiB":10.181,"pagesPerSec":1187,"java":[{"Id":29736,"workingSetMiB":107.9,"privateMiB":370.3},{"Id":37792,"workingSetMiB":725.1,"privateMiB":769.4}]}
+{"time":"2026-10-16T01:49:07.1395917+09:00","availableMiB":3452,"commitHeadroomGiB":11.473,"pagesPerSec":0,"java":[]}
+{"time":"2026-10-16T01:49:44.3748770+09:00","availableMiB":2054,"commitHeadroomGiB":9.469,"pagesPerSec":110,"java":[{"Id":21912,"workingSetMiB":754.8,"privateMiB":808.9},{"Id":25344,"workingSetMiB":109.0,"privateMiB":371.0},{"Id":37456,"workingSetMiB":100.9,"privateMiB":378.2},{"Id":38952,"workingSetMiB":2.1,"privateMiB":0.4}]}
+{"time":"2026-10-16T01:50:33.2428182+09:00","availableMiB":1847,"commitHeadroomGiB":9.415,"pagesPerSec":2436,"java":[{"Id":21912,"workingSetMiB":766.3,"privateMiB":818.3},{"Id":25344,"workingSetMiB":109.1,"privateMiB":371.1},{"Id":26800,"workingSetMiB":64.7,"privateMiB":136.6},{"Id":37456,"workingSetMiB":128.2,"privateMiB":378.2}]}
+{"time":"2026-10-16T01:51:35.9302559+09:00","availableMiB":2505,"commitHeadroomGiB":11.122,"pagesPerSec":0,"java":[]}
+{"time":"2026-10-16T01:52:27.3074641+09:00","availableMiB":2550,"commitHeadroomGiB":11.17,"pagesPerSec":0,"java":[]}
+{"time":"2026-10-16T01:53:59.2599677+09:00","availableMiB":2420,"commitHeadroomGiB":10.933,"pagesPerSec":0,"HfreeGiB":37.962,"java":[]}

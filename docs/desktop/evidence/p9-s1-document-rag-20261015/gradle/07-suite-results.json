@@ -1,0 +1,66 @@
+[
+  {
+    "suite": "com.example.chatbar.data.local.JsonFileStorageStrictScanTest",
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 0.212
+  },
+  {
+    "suite": "com.example.chatbar.data.repository.ChatRepositoryConditionalUpdateTest",
+    "tests": 23,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 2.771
+  },
+  {
+    "suite": "com.example.chatbar.data.repository.ChatRepositoryFoundationTest",
+    "tests": 9,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 1.193
+  },
+  {
+    "suite": "com.example.chatbar.domain.chat.MessageFormatRepairPolicyTest",
+    "tests": 11,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 0.005
+  },
+  {
+    "suite": "com.example.chatbar.domain.chat.OpenAiChatRequestSerializerTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 0.023
+  },
+  {
+    "suite": "com.example.chatbar.domain.prompt.FormatRepairPromptContractTest",
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 0.069
+  },
+  {
+    "suite": "com.example.chatbar.domain.rag.RagCoreContractTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 0.011
+  },
+  {
+    "suite": "com.example.chatbar.domain.rag.RagSourcePlanTest",
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 0.003
+  }
+]

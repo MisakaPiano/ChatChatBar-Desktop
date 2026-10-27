@@ -1,0 +1,181 @@
+{
+  "parent": "732e0e0ea9fece5295a864d170e011001b10351e",
+  "files": [
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopDocumentIndexTransactionInspectorTest.kt",
+      "bytes": 31408,
+      "worktreeSha256": "5093d567a6f04237e0b3e29b0964fcdc71a80faa0f0401dcb1074bbd71658632",
+      "gitBlob": "d4ca62c9aa1be4260d67179a70f6d37d6dca3307",
+      "gitBytes": 31408,
+      "gitSha256": "5093d567a6f04237e0b3e29b0964fcdc71a80faa0f0401dcb1074bbd71658632"
+    },
+    {
+      "path": "app/desktopApp/src/test/resources/g2-a-j-v1-golden/.gitattributes",
+      "bytes": 8,
+      "worktreeSha256": "705fd4d6451a31d36b3df7de96f83f30ac976c9b4a6d1e51671d8e2f33e2d0da",
+      "gitBlob": "fa1385d99a319b43c06f5309d1aae9fdd3adea46",
+      "gitBytes": 8,
+      "gitSha256": "705fd4d6451a31d36b3df7de96f83f30ac976c9b4a6d1e51671d8e2f33e2d0da"
+    },
+    {
+      "path": "app/desktopApp/src/test/resources/g2-a-j-v1-golden/README.md",
+      "bytes": 1109,
+      "worktreeSha256": "e0c2dd3e1810e79c1071bf1a3b7c62e68fad3056ac98bae1ad786e3a8e83b2a9",
+      "gitBlob": "ab3763d040fe80472a85d59aa1d815f1d5a583aa",
+      "gitBytes": 1109,
+      "gitSha256": "e0c2dd3e1810e79c1071bf1a3b7c62e68fad3056ac98bae1ad786e3a8e83b2a9"
+    },
+    {
+      "path": "app/desktopApp/src/test/resources/g2-a-j-v1-golden/manifest.json",
+      "bytes": 5037,
+      "worktreeSha256": "b4afa563dc58b9830188d0d8d76b1d08a42259cfba795aacebaa2d4d8ad09bde",
+      "gitBlob": "146e5784e6207e6a94ad9ae98274e1d77519ea86",
+      "gitBytes": 5037,
+      "gitSha256": "b4afa563dc58b9830188d0d8d76b1d08a42259cfba795aacebaa2d4d8ad09bde"
+    },
+    {
+      "path": "app/desktopApp/src/test/resources/g2-a-j-v1-golden/root/documents/golden.md",
+      "bytes": 67,
+      "worktreeSha256": "ab9d3bde901849287a31369ed458b063db7b6f28806f8385953fda51e2d3feb6",
+      "gitBlob": "67899cfb306dddffe357ca84e0ca05c490eb85d4",
+      "gitBytes": 67,
+      "gitSha256": "ab9d3bde901849287a31369ed458b063db7b6f28806f8385953fda51e2d3feb6"
+    },
+    {
+      "path": "app/desktopApp/src/test/resources/g2-a-j-v1-golden/root/entities/character_cards/golden_card.json",
+      "bytes": 497,
+      "worktreeSha256": "b4643bd1db4abe46b95fe0b658d8eaea2b75c02870b4b037d06a5988671fc259",
+      "gitBlob": "265f5c7b5d0823f045d6c2b5297b32f006624eab",
+      "gitBytes": 497,
+      "gitSha256": "b4643bd1db4abe46b95fe0b658d8eaea2b75c02870b4b037d06a5988671fc259"
+    },
+    {
+      "path": "app/desktopApp/src/test/resources/g2-a-j-v1-golden/root/entities/document_index_transactions/domain.json",
+      "bytes": 206,
+      "worktreeSha256": "fdf25553e4f4efe26dd5e01a0fca5248b03a8501224d18791d4a4f8639cb9155",
+      "gitBlob": "436256bf21a8dc3dedb05924ecdc928ad490fe2d",
+      "gitBytes": 206,
+      "gitSha256": "fdf25553e4f4efe26dd5e01a0fca5248b03a8501224d18791d4a4f8639cb9155"
+    },
+    {
+      "path": "app/desktopApp/src/test/resources/g2-a-j-v1-golden/root/entities/document_index_transactions/heads/golden_card.json",
+      "bytes": 1540,
+      "worktreeSha256": "1f2f4a2326c8d377d55925d9ceb4cda0fa2d4b906622352fe1c113ee50803967",
+      "gitBlob": "ec662bf5e8c3f281e8a7dcc011e743dc0d54a1a4",
+      "gitBytes": 1540,
+      "gitSha256": "1f2f4a2326c8d377d55925d9ceb4cda0fa2d4b906622352fe1c113ee50803967"
+    },
+    {
+      "path": "app/desktopApp/src/test/resources/g2-a-j-v1-golden/root/entities/document_index_transactions/history/66666666-6666-4666-8666-666666666666/commit.json",
+      "bytes": 1339,
+      "worktreeSha256": "7f6dadacff5dcdd32a4246a7073302ae400e94855a0dcfc9a85b05e3b50d3004",
+      "gitBlob": "75215623b70ecc54d77813fb42095822443a2a27",
+      "gitBytes": 1339,
+      "gitSha256": "7f6dadacff5dcdd32a4246a7073302ae400e94855a0dcfc9a85b05e3b50d3004"
+    },
+    {
+      "path": "app/desktopApp/src/test/resources/g2-a-j-v1-golden/root/entities/document_index_transactions/history/66666666-6666-4666-8666-666666666666/intent.json",
+      "bytes": 2350,
+      "worktreeSha256": "c99023718e2d4523c9f24bd7a0d42ed32eef6aa4ae5d605a0a36d81d2e9cfe7c",
+      "gitBlob": "477e86ffbdd8d3647990c3a3430a2a040acab2fe",
+      "gitBytes": 2350,
+      "gitSha256": "c99023718e2d4523c9f24bd7a0d42ed32eef6aa4ae5d605a0a36d81d2e9cfe7c"
+    },
+    {
+      "path": "app/desktopApp/src/test/resources/g2-a-j-v1-golden/root/entities/document_index_transactions/history/66666666-6666-4666-8666-666666666666/new-set.jsonl",
+      "bytes": 242,
+      "worktreeSha256": "e641cd7d48e272450031ce6b3f3ffb99966ccc06779697161d1abbb757338d5b",
+      "gitBlob": "63e794ab5e8efbb2bb9f2d99a9586540f11a3725",
+      "gitBytes": 242,
+      "gitSha256": "e641cd7d48e272450031ce6b3f3ffb99966ccc06779697161d1abbb757338d5b"
+    },
+    {
+      "path": "app/desktopApp/src/test/resources/g2-a-j-v1-golden/root/entities/document_index_transactions/history/66666666-6666-4666-8666-666666666666/old-set.jsonl",
+      "bytes": 0,
+      "worktreeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "gitBlob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "gitBytes": 0,
+      "gitSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "app/desktopApp/src/test/resources/g2-a-j-v1-golden/root/entities/document_index_transactions/history/66666666-6666-4666-8666-666666666666/old/card.json",
+      "bytes": 379,
+      "worktreeSha256": "72a391cacdc30802a2729f0581cbede1f4c6820f98539acd55e351186bb48568",
+      "gitBlob": "ca1fb5f5d51817ef1016a0e1377d45427effd978",
+      "gitBytes": 379,
+      "gitSha256": "72a391cacdc30802a2729f0581cbede1f4c6820f98539acd55e351186bb48568"
+    },
+    {
+      "path": "app/desktopApp/src/test/resources/g2-a-j-v1-golden/root/entities/document_index_transactions/history/66666666-6666-4666-8666-666666666666/receipt.json",
+      "bytes": 1445,
+      "worktreeSha256": "d7995af773a0b3a265b50090c9adad4bee15dee050e108c639eb32357e6bb44e",
+      "gitBlob": "436560e5e29da0bc566a63b0befa175025ea80b9",
+      "gitBytes": 1445,
+      "gitSha256": "d7995af773a0b3a265b50090c9adad4bee15dee050e108c639eb32357e6bb44e"
+    },
+    {
+      "path": "app/desktopApp/src/test/resources/g2-a-j-v1-golden/root/entities/document_index_transactions/history/66666666-6666-4666-8666-666666666666/seal.json",
+      "bytes": 865,
+      "worktreeSha256": "809b3f4ecfc02d2af920e2008a04561ed2ca2d38e885d5444f919dea9029d926",
+      "gitBlob": "b5cb31027ffa4e60ade02804ed74618cb42c5008",
+      "gitBytes": 865,
+      "gitSha256": "809b3f4ecfc02d2af920e2008a04561ed2ca2d38e885d5444f919dea9029d926"
+    },
+    {
+      "path": "app/desktopApp/src/test/resources/g2-a-j-v1-golden/root/entities/document_index_transactions/history/66666666-6666-4666-8666-666666666666/source.bin",
+      "bytes": 67,
+      "worktreeSha256": "ab9d3bde901849287a31369ed458b063db7b6f28806f8385953fda51e2d3feb6",
+      "gitBlob": "67899cfb306dddffe357ca84e0ca05c490eb85d4",
+      "gitBytes": 67,
+      "gitSha256": "ab9d3bde901849287a31369ed458b063db7b6f28806f8385953fda51e2d3feb6"
+    },
+    {
+      "path": "app/desktopApp/src/test/resources/g2-a-j-v1-golden/root/entities/document_index_transactions/history/66666666-6666-4666-8666-666666666666/stage/card.json",
+      "bytes": 497,
+      "worktreeSha256": "b4643bd1db4abe46b95fe0b658d8eaea2b75c02870b4b037d06a5988671fc259",
+      "gitBlob": "265f5c7b5d0823f045d6c2b5297b32f006624eab",
+      "gitBytes": 497,
+      "gitSha256": "b4643bd1db4abe46b95fe0b658d8eaea2b75c02870b4b037d06a5988671fc259"
+    },
+    {
+      "path": "app/desktopApp/src/test/resources/g2-a-j-v1-golden/root/entities/document_index_transactions/history/66666666-6666-4666-8666-666666666666/stage/vectors/golden_vector_01.json",
+      "bytes": 484,
+      "worktreeSha256": "3dd866d3b5f397fcb721b7e4bad4e66cd90489277f777d30276bcab86ffa0c9b",
+      "gitBlob": "acc3ca2f57dbfdb90d6b68072787eb3181b47692",
+      "gitBytes": 484,
+      "gitSha256": "3dd866d3b5f397fcb721b7e4bad4e66cd90489277f777d30276bcab86ffa0c9b"
+    },
+    {
+      "path": "app/desktopApp/src/test/resources/g2-a-j-v1-golden/root/entities/document_index_transactions/history/66666666-6666-4666-8666-666666666666/stage/vectors/golden_vector_02.json",
+      "bytes": 484,
+      "worktreeSha256": "bd9b659cb04d0616001cd5e178517273f249e3a44644623290aab527c14cf18a",
+      "gitBlob": "c3d824bdb4a70ecffd4384fbfed2f5f4993751dc",
+      "gitBytes": 484,
+      "gitSha256": "bd9b659cb04d0616001cd5e178517273f249e3a44644623290aab527c14cf18a"
+    },
+    {
+      "path": "app/desktopApp/src/test/resources/g2-a-j-v1-golden/root/entities/document_index_transactions/history/66666666-6666-4666-8666-666666666666/unrelated.jsonl",
+      "bytes": 0,
+      "worktreeSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "gitBlob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "gitBytes": 0,
+      "gitSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "app/desktopApp/src/test/resources/g2-a-j-v1-golden/root/entities/vector_chunks/golden_vector_01.json",
+      "bytes": 484,
+      "worktreeSha256": "3dd866d3b5f397fcb721b7e4bad4e66cd90489277f777d30276bcab86ffa0c9b",
+      "gitBlob": "acc3ca2f57dbfdb90d6b68072787eb3181b47692",
+      "gitBytes": 484,
+      "gitSha256": "3dd866d3b5f397fcb721b7e4bad4e66cd90489277f777d30276bcab86ffa0c9b"
+    },
+    {
+      "path": "app/desktopApp/src/test/resources/g2-a-j-v1-golden/root/entities/vector_chunks/golden_vector_02.json",
+      "bytes": 484,
+      "worktreeSha256": "bd9b659cb04d0616001cd5e178517273f249e3a44644623290aab527c14cf18a",
+      "gitBlob": "c3d824bdb4a70ecffd4384fbfed2f5f4993751dc",
+      "gitBytes": 484,
+      "gitSha256": "bd9b659cb04d0616001cd5e178517273f249e3a44644623290aab527c14cf18a"
+    }
+  ]
+}

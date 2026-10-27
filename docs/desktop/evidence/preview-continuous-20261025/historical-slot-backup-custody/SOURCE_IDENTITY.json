@@ -1,0 +1,132 @@
+{
+  "historical-slot-backup-graph-red-20261025/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopHistoricalSaveSlotProcessTest.kt": {
+    "bytes": 8773,
+    "sha256": "c667cf0f1213844b9f01c0caf88b9919490c8f8f858232d75b6ba1f2d406ce97",
+    "gitBlob": "f2455b401cad0a9ed14a9a48158eb17cf11d4424"
+  },
+  "historical-slot-backup-graph-first-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotRestorePlan.kt": {
+    "bytes": 13541,
+    "sha256": "bdc67b1555f8b248d4ecbc3f71d5b16eea56bcf31d829a144b12e039f8ddb953",
+    "gitBlob": "5386654258a3c70794a25053f44ecc3c1adf530e"
+  },
+  "historical-slot-backup-graph-first-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSessionCommitJournal.kt": {
+    "bytes": 12223,
+    "sha256": "2eb431b8594d48944fa88ac4d3197c27e3bf180533d3d41e1da578e6c6b428da",
+    "gitBlob": "daada7fbd090bf06fefa454db15217e2bd9c614b"
+  },
+  "historical-slot-backup-graph-first-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopHistoricalVoiceCustody.kt": {
+    "bytes": 15333,
+    "sha256": "281b2621860906dcd1867fd57fbc7f315f5f46bdf34bf4137b1b873650e9b438",
+    "gitBlob": "82bdfba08b8875a4a7745f2de8eb2e217622ae5b"
+  },
+  "historical-slot-backup-graph-first-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopSlotHistoricalVoiceCustody.kt": {
+    "bytes": 10974,
+    "sha256": "157324e8289586d829880b285b6b8955f3a4cc1259b5ce05c54ca1660a9e1b78",
+    "gitBlob": "9951d7178a8f747560f81c6b5a6eb1fa225fa1ed"
+  },
+  "historical-slot-backup-graph-first-20261025/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopHistoricalSaveSlotProcessTest.kt": {
+    "bytes": 8773,
+    "sha256": "c667cf0f1213844b9f01c0caf88b9919490c8f8f858232d75b6ba1f2d406ce97",
+    "gitBlob": "f2455b401cad0a9ed14a9a48158eb17cf11d4424"
+  },
+  "historical-slot-custody-final-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotRestorePlan.kt": {
+    "bytes": 13541,
+    "sha256": "bdc67b1555f8b248d4ecbc3f71d5b16eea56bcf31d829a144b12e039f8ddb953",
+    "gitBlob": "5386654258a3c70794a25053f44ecc3c1adf530e"
+  },
+  "historical-slot-custody-final-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSessionCommitJournal.kt": {
+    "bytes": 12223,
+    "sha256": "2eb431b8594d48944fa88ac4d3197c27e3bf180533d3d41e1da578e6c6b428da",
+    "gitBlob": "daada7fbd090bf06fefa454db15217e2bd9c614b"
+  },
+  "historical-slot-custody-final-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopHistoricalVoiceCustody.kt": {
+    "bytes": 15333,
+    "sha256": "281b2621860906dcd1867fd57fbc7f315f5f46bdf34bf4137b1b873650e9b438",
+    "gitBlob": "82bdfba08b8875a4a7745f2de8eb2e217622ae5b"
+  },
+  "historical-slot-custody-final-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopSlotHistoricalVoiceCustody.kt": {
+    "bytes": 11031,
+    "sha256": "c5ca999c85dfc3fb2bec5cefa43f5da589b587ee7e272b10e3e9f31d2ea08a8f",
+    "gitBlob": "15712b831a78f048ddae548f5995b79cf8776762"
+  },
+  "historical-slot-custody-final-20261025/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopHistoricalSaveSlotProcessTest.kt": {
+    "bytes": 13576,
+    "sha256": "feef2865a3e1ec766dddae67fb4e86dd981c333ee7913ab056ab895d3754525b",
+    "gitBlob": "596b44bd363b526c4e39c5fb170d82a1045c5e75"
+  },
+  "historical-slot-custody-delivery-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotRestorePlan.kt": {
+    "bytes": 13541,
+    "sha256": "bdc67b1555f8b248d4ecbc3f71d5b16eea56bcf31d829a144b12e039f8ddb953",
+    "gitBlob": "5386654258a3c70794a25053f44ecc3c1adf530e"
+  },
+  "historical-slot-custody-delivery-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSessionCommitJournal.kt": {
+    "bytes": 12223,
+    "sha256": "2eb431b8594d48944fa88ac4d3197c27e3bf180533d3d41e1da578e6c6b428da",
+    "gitBlob": "daada7fbd090bf06fefa454db15217e2bd9c614b"
+  },
+  "historical-slot-custody-delivery-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopHistoricalVoiceCustody.kt": {
+    "bytes": 15333,
+    "sha256": "281b2621860906dcd1867fd57fbc7f315f5f46bdf34bf4137b1b873650e9b438",
+    "gitBlob": "82bdfba08b8875a4a7745f2de8eb2e217622ae5b"
+  },
+  "historical-slot-custody-delivery-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopSlotHistoricalVoiceCustody.kt": {
+    "bytes": 11236,
+    "sha256": "951e318a62fb95cb251e802dce5fa4e02f4ba76b176f8ab5c34a46ff6ef2fde2",
+    "gitBlob": "ff0d0f8db041b0c7f135dde80b978f2b7196c5d2"
+  },
+  "historical-slot-custody-delivery-20261025/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopHistoricalSaveSlotProcessTest.kt": {
+    "bytes": 15638,
+    "sha256": "ae6080262c806ecd31f05df6778ba5626d29ce4e82a55f6df0273eb680fc1baa",
+    "gitBlob": "e25e4d8101cea1dc0cb29fcfb6985b7757aad04a"
+  },
+  "historical-slot-legacy-length-red-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotRestorePlan.kt": {
+    "bytes": 13541,
+    "sha256": "bdc67b1555f8b248d4ecbc3f71d5b16eea56bcf31d829a144b12e039f8ddb953",
+    "gitBlob": "5386654258a3c70794a25053f44ecc3c1adf530e"
+  },
+  "historical-slot-legacy-length-red-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSessionCommitJournal.kt": {
+    "bytes": 12223,
+    "sha256": "2eb431b8594d48944fa88ac4d3197c27e3bf180533d3d41e1da578e6c6b428da",
+    "gitBlob": "daada7fbd090bf06fefa454db15217e2bd9c614b"
+  },
+  "historical-slot-legacy-length-red-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopHistoricalVoiceCustody.kt": {
+    "bytes": 15333,
+    "sha256": "281b2621860906dcd1867fd57fbc7f315f5f46bdf34bf4137b1b873650e9b438",
+    "gitBlob": "82bdfba08b8875a4a7745f2de8eb2e217622ae5b"
+  },
+  "historical-slot-legacy-length-red-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopSlotHistoricalVoiceCustody.kt": {
+    "bytes": 11236,
+    "sha256": "951e318a62fb95cb251e802dce5fa4e02f4ba76b176f8ab5c34a46ff6ef2fde2",
+    "gitBlob": "ff0d0f8db041b0c7f135dde80b978f2b7196c5d2"
+  },
+  "historical-slot-legacy-length-red-20261025/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopHistoricalSaveSlotProcessTest.kt": {
+    "bytes": 15728,
+    "sha256": "6e8ee00b240fe04d6e5d48729fcce59f9283f8ef9f725ddb664890b5a2288cb3",
+    "gitBlob": "c73ce1d429d6f7514fee3a80af8d5bd120df78e9"
+  },
+  "historical-slot-custody-complete-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotRestorePlan.kt": {
+    "bytes": 13541,
+    "sha256": "bdc67b1555f8b248d4ecbc3f71d5b16eea56bcf31d829a144b12e039f8ddb953",
+    "gitBlob": "5386654258a3c70794a25053f44ecc3c1adf530e"
+  },
+  "historical-slot-custody-complete-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSessionCommitJournal.kt": {
+    "bytes": 12223,
+    "sha256": "2eb431b8594d48944fa88ac4d3197c27e3bf180533d3d41e1da578e6c6b428da",
+    "gitBlob": "daada7fbd090bf06fefa454db15217e2bd9c614b"
+  },
+  "historical-slot-custody-complete-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopHistoricalVoiceCustody.kt": {
+    "bytes": 15333,
+    "sha256": "281b2621860906dcd1867fd57fbc7f315f5f46bdf34bf4137b1b873650e9b438",
+    "gitBlob": "82bdfba08b8875a4a7745f2de8eb2e217622ae5b"
+  },
+  "historical-slot-custody-complete-20261025/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopSlotHistoricalVoiceCustody.kt": {
+    "bytes": 11507,
+    "sha256": "7e7fcbaf133516bf18e62fbc971a9f8262ec5add83f94c93e9c13d0f09fde1e2",
+    "gitBlob": "495475b004fe6c02ee0e5ec5758b3a1394ee2c2e"
+  },
+  "historical-slot-custody-complete-20261025/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopHistoricalSaveSlotProcessTest.kt": {
+    "bytes": 15728,
+    "sha256": "6e8ee00b240fe04d6e5d48729fcce59f9283f8ef9f725ddb664890b5a2288cb3",
+    "gitBlob": "c73ce1d429d6f7514fee3a80af8d5bd120df78e9"
+  }
+}

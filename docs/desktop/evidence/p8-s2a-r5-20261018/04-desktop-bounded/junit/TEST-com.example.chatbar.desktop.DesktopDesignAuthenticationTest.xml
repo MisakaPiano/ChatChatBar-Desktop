@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopDesignAuthenticationTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:36:14.453Z" hostname="DD1" time="0.076">
+  <properties/>
+  <testcase name="secureRepositoryHydrationGatesTheRealControllerBeforeTransport" classname="com.example.chatbar.desktop.DesktopDesignAuthenticationTest" time="0.076"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

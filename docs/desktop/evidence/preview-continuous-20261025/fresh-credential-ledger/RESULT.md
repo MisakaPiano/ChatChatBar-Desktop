@@ -1,0 +1,7 @@
+# Fresh-root credential publication ledger
+
+Two actual REDs proved completion could adopt an externally added validly named credential or a changed planned credential simply by enumerating the directory at completion. Both tests use injected fake protection and isolated roots; no user keys.
+
+The preparation writer now records only its own successfully forced-new protected envelope hashes. Completion requires the exact recorded file set and unchanged ciphertext before publishing genesis proof. Pending load/save/delete also stay bound to the native credential directory identity; load/delete require the recorded key's unchanged bytes. Unknown/replaced evidence is never deleted to make the check pass. Existing protected context schema and normal runtime WindowsSecretStore remain unchanged. A third test replaces the namespace directory and confirms a retained preparation handle cannot read/write/delete its replacement.
+
+Initial repair4 suites/49 PASS. Final repair4 suites/50 PASS,0 failures/errors/skips,exit0. Native opt-in flag was actually enabled: the existing Windows DPAPI test ran, writing/reading only three invented values under its explicit task-owned directory. This is current-account fake-key DPAPI evidence; not real credential import, cross-account, VM restart, power failure, global consumer closure or a Windows installer rollback result. RED2 tests/2 FAIL/exit1 retained. No new persistent registry/schema or ordinary-root write.

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.chat.InterruptedReplyPolicyTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:20.281Z" hostname="DD1" time="0.065">
+  <properties/>
+  <testcase name="nonblank interrupted assistant reply remains a normal source turn message" classname="com.example.chatbar.domain.chat.InterruptedReplyPolicyTest" time="0.06"/>
+  <testcase name="reasoning only interrupted regeneration replaces active old body" classname="com.example.chatbar.domain.chat.InterruptedReplyPolicyTest" time="0.004"/>
+  <testcase name="empty placeholder and user drafts are not persisted" classname="com.example.chatbar.domain.chat.InterruptedReplyPolicyTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

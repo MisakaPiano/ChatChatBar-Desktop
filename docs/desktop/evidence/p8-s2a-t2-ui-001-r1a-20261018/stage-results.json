@@ -1,0 +1,1651 @@
+[
+  {
+    "startedUtc": "2026-10-17T20:49:46.9447046+00:00",
+    "finishedUtc": "2026-10-17T20:50:08.2853952+00:00",
+    "durationSeconds": 21.3406906,
+    "exitCode": 1,
+    "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:test --rerun --tests *DesktopFishPresentationTest.management voice module matches appearance heading and remains operable in narrow layout",
+    "jdk": "Temurin 17.0.20.1",
+    "gradle": "9.1.0",
+    "heap": "-Xmx2048m",
+    "tasks": [
+      ":desktopApp:test",
+      "--rerun",
+      "--tests",
+      "*DesktopFishPresentationTest.management voice module matches appearance heading and remains operable in narrow layout"
+    ],
+    "stage": "01-original-driver-diagnostic",
+    "junitCurrentExecution": false,
+    "suites": [],
+    "totals": {
+      "tests": 0,
+      "reportedPass": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "resourceSummary": {
+      "samples": 2,
+      "minimumAvailableBytes": 2746445824,
+      "minimumCommitHeadroomBytes": 14239174656,
+      "maximumPagesPerSecond": 87,
+      "sampledExtremaOnly": true
+    }
+  },
+  {
+    "startedUtc": "2026-10-17T20:50:18.8516039+00:00",
+    "finishedUtc": "2026-10-17T20:51:00.5765913+00:00",
+    "durationSeconds": 41.7249874,
+    "exitCode": 1,
+    "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:test --rerun --tests *DesktopFishPresentationTest.management*",
+    "jdk": "Temurin 17.0.20.1",
+    "gradle": "9.1.0",
+    "heap": "-Xmx2048m",
+    "tasks": [
+      ":desktopApp:test",
+      "--rerun",
+      "--tests",
+      "*DesktopFishPresentationTest.management*"
+    ],
+    "stage": "02-original-driver-diagnostic",
+    "junitCurrentExecution": true,
+    "suites": [
+      {
+        "file": "02-original-driver-diagnostic/junit/TEST-com.example.chatbar.desktop.DesktopFishPresentationTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopFishPresentationTest",
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 0
+      }
+    ],
+    "totals": {
+      "tests": 1,
+      "reportedPass": 0,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0
+    },
+    "resourceSummary": {
+      "samples": 4,
+      "minimumAvailableBytes": 1881874432,
+      "minimumCommitHeadroomBytes": 13344190464,
+      "maximumPagesPerSecond": 454,
+      "sampledExtremaOnly": true
+    }
+  },
+  {
+    "startedUtc": "2026-10-17T20:51:52.2542568+00:00",
+    "finishedUtc": "2026-10-17T20:52:33.9523162+00:00",
+    "durationSeconds": 41.6980594,
+    "exitCode": 0,
+    "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:test --rerun --tests *DesktopFishPresentationTest.management*",
+    "jdk": "Temurin 17.0.20.1",
+    "gradle": "9.1.0",
+    "heap": "-Xmx2048m",
+    "tasks": [
+      ":desktopApp:test",
+      "--rerun",
+      "--tests",
+      "*DesktopFishPresentationTest.management*"
+    ],
+    "stage": "03-fixed-wheel-test",
+    "junitCurrentExecution": true,
+    "suites": [
+      {
+        "file": "03-fixed-wheel-test/junit/TEST-com.example.chatbar.desktop.DesktopFishPresentationTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopFishPresentationTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 1
+      }
+    ],
+    "totals": {
+      "tests": 1,
+      "reportedPass": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "resourceSummary": {
+      "samples": 4,
+      "minimumAvailableBytes": 1854369792,
+      "minimumCommitHeadroomBytes": 13305032704,
+      "maximumPagesPerSecond": 241,
+      "sampledExtremaOnly": true
+    }
+  },
+  {
+    "startedUtc": "2026-10-17T20:52:41.4525270+00:00",
+    "finishedUtc": "2026-10-17T20:53:12.7578747+00:00",
+    "durationSeconds": 31.3053477,
+    "exitCode": 0,
+    "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:compileKotlin :desktopApp:compileTestKotlin :desktopApp:test --rerun --tests *DesktopFishPresentationTest --tests *DesktopFishAudioLibraryTest --tests *DesktopFishSettingsBindingTest --tests *DesktopModelSettingsControllerTest --tests *DesktopSettingsCoherenceTest",
+    "jdk": "Temurin 17.0.20.1",
+    "gradle": "9.1.0",
+    "heap": "-Xmx2048m",
+    "tasks": [
+      ":desktopApp:compileKotlin",
+      ":desktopApp:compileTestKotlin",
+      ":desktopApp:test",
+      "--rerun",
+      "--tests",
+      "*DesktopFishPresentationTest",
+      "--tests",
+      "*DesktopFishAudioLibraryTest",
+      "--tests",
+      "*DesktopFishSettingsBindingTest",
+      "--tests",
+      "*DesktopModelSettingsControllerTest",
+      "--tests",
+      "*DesktopSettingsCoherenceTest"
+    ],
+    "stage": "04-fish-settings-focused",
+    "junitCurrentExecution": true,
+    "suites": [
+      {
+        "file": "04-fish-settings-focused/junit/TEST-com.example.chatbar.desktop.DesktopFishAudioLibraryTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopFishAudioLibraryTest",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 10
+      },
+      {
+        "file": "04-fish-settings-focused/junit/TEST-com.example.chatbar.desktop.DesktopFishPresentationTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopFishPresentationTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 6
+      },
+      {
+        "file": "04-fish-settings-focused/junit/TEST-com.example.chatbar.desktop.DesktopFishSettingsBindingTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopFishSettingsBindingTest",
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 17
+      },
+      {
+        "file": "04-fish-settings-focused/junit/TEST-com.example.chatbar.desktop.DesktopModelSettingsControllerTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopModelSettingsControllerTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 14
+      },
+      {
+        "file": "04-fish-settings-focused/junit/TEST-com.example.chatbar.desktop.DesktopSettingsCoherenceTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopSettingsCoherenceTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 7
+      }
+    ],
+    "totals": {
+      "tests": 54,
+      "reportedPass": 54,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "resourceSummary": {
+      "samples": 3,
+      "minimumAvailableBytes": 2247397376,
+      "minimumCommitHeadroomBytes": 13358915584,
+      "maximumPagesPerSecond": 314,
+      "sampledExtremaOnly": true
+    }
+  },
+  {
+    "startedUtc": "2026-10-17T20:53:32.3630849+00:00",
+    "finishedUtc": "2026-10-17T20:58:44.1724940+00:00",
+    "durationSeconds": 311.8094091,
+    "exitCode": 0,
+    "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process -I desktopApp/build/p8-s2a-t2-ui-001-r1a-20261018/bounded.init.gradle :desktopApp:test --rerun",
+    "jdk": "Temurin 17.0.20.1",
+    "gradle": "9.1.0",
+    "heap": "-Xmx2048m",
+    "tasks": [
+      "-I",
+      "desktopApp/build/p8-s2a-t2-ui-001-r1a-20261018/bounded.init.gradle",
+      ":desktopApp:test",
+      "--rerun"
+    ],
+    "stage": "05-bounded-desktop",
+    "junitCurrentExecution": true,
+    "suites": [
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopAlphaChatControllerTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopAlphaChatControllerTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 5
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopAppearanceControllerTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopAppearanceControllerTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 6
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopApplicationHomeTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopApplicationHomeTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 5
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopApplicationLifecycleTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopApplicationLifecycleTest",
+        "tests": 39,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 39
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopAssistantImageActionTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopAssistantImageActionTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 6
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopAssistantImagePresentationTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopAssistantImagePresentationTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 4
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopAutomaticBackupRuntimeTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopAutomaticBackupRuntimeTest",
+        "tests": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 18
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopAutomaticBackupSchedulerTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopAutomaticBackupSchedulerTest",
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 11
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopAutomaticBackupSettingsControllerTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopAutomaticBackupSettingsControllerTest",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 15
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopAutomaticBackupSettingsPresentationTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopAutomaticBackupSettingsPresentationTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 9
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopB1CIntegrationTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopB1CIntegrationTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 3
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopBootstrapAuthorityProcessTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopBootstrapAuthorityProcessTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 3
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopBootstrapAuthorityTransactionTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopBootstrapAuthorityTransactionTest",
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 17
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopBootstrapScreenSemanticsTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopBootstrapScreenSemanticsTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 1
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopBootstrapSettingsStoreTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopBootstrapSettingsStoreTest",
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 11
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopBundledAssetReaderTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopBundledAssetReaderTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 2
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopCharacterCardPngRendererTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopCharacterCardPngRendererTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 2
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopCharacterDocumentRagCleanupTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopCharacterDocumentRagCleanupTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 1
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopCharacterEditorControllerTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopCharacterEditorControllerTest",
+        "tests": 57,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 57
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopCharacterResourceStoreTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopCharacterResourceStoreTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 5
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopCharacterSessionIntegrationTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopCharacterSessionIntegrationTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 1
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopCharacterTransferGateTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopCharacterTransferGateTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 1
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopCharacterTransferIntegrationTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopCharacterTransferIntegrationTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 2
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopChatBubbleParityTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopChatBubbleParityTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 7
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopChatDensityTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopChatDensityTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 7
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopChatDraftPersistenceTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopChatDraftPersistenceTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 6
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopChatFloatingNavigationTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopChatFloatingNavigationTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 7
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopChatImageProcessCardTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopChatImageProcessCardTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 3
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopChatNavigationTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopChatNavigationTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 8
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopChatReadingLifecycleTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopChatReadingLifecycleTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 14
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopChatReadingPositionWriterTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopChatReadingPositionWriterTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 6
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopChatViewportTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopChatViewportTest",
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 17
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopCompactChatNavigationTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopCompactChatNavigationTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 5
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopConnectionTestControllerTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopConnectionTestControllerTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 5
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopCoordinatedSnapshotServiceTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopCoordinatedSnapshotServiceTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 7
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopCurrentImageIntegrationTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopCurrentImageIntegrationTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 8
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopCurrentImagePresentationTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopCurrentImagePresentationTest",
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 16
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDataDirectoryTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopDataDirectoryTest",
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 13
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 14
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDataRootMigrationMaterializerTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopDataRootMigrationMaterializerTest",
+        "tests": 21,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 21
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDataRootMigrationServiceTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopDataRootMigrationServiceTest",
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 16
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDataRootOwnershipProcessTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopDataRootOwnershipProcessTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 4
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDataRootOwnershipTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopDataRootOwnershipTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 14
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest",
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 20
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDefaultModelVisibilityTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopDefaultModelVisibilityTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 9
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDesignAuthenticationTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopDesignAuthenticationTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 1
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDesignParityTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopDesignParityTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 7
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDocumentIndexReadEvidenceTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopDocumentIndexReadEvidenceTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 1
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorProcessTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorProcessTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 3
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopDocumentIndexTransactionInspectorTest",
+        "tests": 42,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1,
+        "reportedPass": 41
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDocumentIndexTransactionProcessTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopDocumentIndexTransactionProcessTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 3
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDocumentIndexTransactionPrototypeTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopDocumentIndexTransactionPrototypeTest",
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 11
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest",
+        "tests": 21,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 21
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopDocumentRagReaderTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopDocumentRagReaderTest",
+        "tests": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 18
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopEditorDraftCleanupTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopEditorDraftCleanupTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 3
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopEditorDraftRepositoryIntegrationTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopEditorDraftRepositoryIntegrationTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 1
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopExternalFileWriterTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopExternalFileWriterTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 2
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopFakeChatRuntimeTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopFakeChatRuntimeTest",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 10
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopFinalProductTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopFinalProductTest",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 15
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopFishAudioLibraryTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopFishAudioLibraryTest",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 10
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopFishPresentationTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopFishPresentationTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 6
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopFishSettingsBindingTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopFishSettingsBindingTest",
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 17
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopFormatCardEditorControllerTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopFormatCardEditorControllerTest",
+        "tests": 26,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 26
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 15
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopFormatRepairInteractionTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopFormatRepairInteractionTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 8
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopFormatRepairPresentationTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopFormatRepairPresentationTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 6
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopFullComposerTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopFullComposerTest",
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 17
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopImageClipboardFilesTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopImageClipboardFilesTest",
+        "tests": 17,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 17
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopImageClosureR1DesignTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopImageClosureR1DesignTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 6
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopImageClosureR1GifTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopImageClosureR1GifTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 5
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopImageTaskProgressTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopImageTaskProgressTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 14
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopImageWindowPresentationTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopImageWindowPresentationTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 3
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopIndexStartupPreflightTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopIndexStartupPreflightTest",
+        "tests": 19,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1,
+        "reportedPass": 18
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopInputFocusSceneTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopInputFocusSceneTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 5
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopInputFocusTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopInputFocusTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 9
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopMainChatRequestAssemblerIntegrationTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopMainChatRequestAssemblerIntegrationTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 1
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopManagementBrandTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopManagementBrandTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 5
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopManagementControllerTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopManagementControllerTest",
+        "tests": 25,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 25
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopMarkdownParityTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopMarkdownParityTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 9
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopMessageActionsUxTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopMessageActionsUxTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 7
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopMessageFormatRepairTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopMessageFormatRepairTest",
+        "tests": 31,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 31
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopMessageImagePresentationTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopMessageImagePresentationTest",
+        "tests": 19,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 19
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopMigrationDestinationPreparerTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopMigrationDestinationPreparerTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 14
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopModelDiagnosticsTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopModelDiagnosticsTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 3
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopModelEditorLifecycleTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopModelEditorLifecycleTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 3
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopModelSettingsControllerTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopModelSettingsControllerTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 14
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopModelTemplateTransferControllerTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopModelTemplateTransferControllerTest",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 15
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopNovelAiCatalogUpdateTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopNovelAiCatalogUpdateTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 2
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopNovelAiInfrastructureTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopNovelAiInfrastructureTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 6
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopNovelAiSafetyTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopNovelAiSafetyTest",
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 13
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPhase5VerticalAcceptanceTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopPhase5VerticalAcceptanceTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 1
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPhase7ImagesTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopPhase7ImagesTest",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 12
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPhase7R2R1Test.xml",
+        "suite": "com.example.chatbar.desktop.DesktopPhase7R2R1Test",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 7
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPhase7R2SceneTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopPhase7R2SceneTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 1
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPhase7R2Test.xml",
+        "suite": "com.example.chatbar.desktop.DesktopPhase7R2Test",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 5
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPhase7ReauditTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopPhase7ReauditTest",
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 11
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPhase7StudioTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopPhase7StudioTest",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 10
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPlatformPickerContractTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopPlatformPickerContractTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 1
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPortableRootTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopPortableRootTest",
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 16
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPresetBootstrapTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopPresetBootstrapTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 14
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPresetModelCatalogSourceTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopPresetModelCatalogSourceTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 1
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPresetRecoveryTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopPresetRecoveryTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 6
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopPresetSuiteRestoreServiceTest",
+        "tests": 40,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 40
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPrimaryChatBrowserStateTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopPrimaryChatBrowserStateTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 6
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPrimaryChatControllerTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopPrimaryChatControllerTest",
+        "tests": 30,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 30
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPrimaryChatDraftLifetimeTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopPrimaryChatDraftLifetimeTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 9
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPrimaryChatPresentationTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopPrimaryChatPresentationTest",
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 13
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPrimaryChatRepairPresentationTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopPrimaryChatRepairPresentationTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 7
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPrimaryNavigationTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopPrimaryNavigationTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 4
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopProcessLifecycleTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopProcessLifecycleTest",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 15
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopPromptInspectorTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopPromptInspectorTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 5
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopRealChatRuntimeCancellationTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopRealChatRuntimeCancellationTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 7
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopRealChatRuntimeResolutionTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopRealChatRuntimeResolutionTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 5
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopRealChatRuntimeTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopRealChatRuntimeTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 4
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopRegenerationTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopRegenerationTest",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 12
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopResponsiveChatLayoutTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopResponsiveChatLayoutTest",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 10
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopResponsiveChatWiringTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopResponsiveChatWiringTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 7
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopSafeClipboardTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopSafeClipboardTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 9
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopSaveSlotInspectorTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopSaveSlotInspectorTest",
+        "tests": 23,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 23
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopSecondInstanceStartupTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopSecondInstanceStartupTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 8
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopSecureRepositoryWiringTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopSecureRepositoryWiringTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 2
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopSettingsCoherenceTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopSettingsCoherenceTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 7
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopSettingsStoreTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopSettingsStoreTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 14
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopSettingsSurfaceParityTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopSettingsSurfaceParityTest",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 10
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopShellLayoutPolicyTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopShellLayoutPolicyTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 1
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopShutdownWaitObserverTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopShutdownWaitObserverTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 5
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopStartupGateTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopStartupGateTest",
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 20
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopStudioFilmstripTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopStudioFilmstripTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 2
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopStudioFooterTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopStudioFooterTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 1
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopStudioGenerateGateTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopStudioGenerateGateTest",
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 13
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopStudioPresentationTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopStudioPresentationTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 14
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopStudioWorkspaceTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopStudioWorkspaceTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 3
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopTaskRuntimeTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopTaskRuntimeTest",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 10
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopTransferClosureTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopTransferClosureTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 14
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopTransportDiagnosticsTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopTransportDiagnosticsTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 5
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopTypedTransferControllerTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopTypedTransferControllerTest",
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 13
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopUiLanguageControllerTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopUiLanguageControllerTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 6
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopUnifiedViewerTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopUnifiedViewerTest",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 12
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopWindowChromeContractTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopWindowChromeContractTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 2
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopWindowChromeTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopWindowChromeTest",
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 11
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopWorkspacePresentationTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopWorkspacePresentationTest",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 12
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopWorldBookBulkPresentationTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopWorldBookBulkPresentationTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 4
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopWorldBookEditorControllerTest",
+        "tests": 31,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 31
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.DesktopWorldBookRequestPlannerIntegrationTest.xml",
+        "suite": "com.example.chatbar.desktop.DesktopWorldBookRequestPlannerIntegrationTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 1
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.Phase3FDesktopInteropTest.xml",
+        "suite": "com.example.chatbar.desktop.Phase3FDesktopInteropTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 3
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.security.DesktopSecureEmbeddingRepositoryTest.xml",
+        "suite": "com.example.chatbar.desktop.security.DesktopSecureEmbeddingRepositoryTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 8
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.security.DesktopSecureModelRepositoryTest.xml",
+        "suite": "com.example.chatbar.desktop.security.DesktopSecureModelRepositoryTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 5
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.security.DesktopSecureSettingsRepositoryTest.xml",
+        "suite": "com.example.chatbar.desktop.security.DesktopSecureSettingsRepositoryTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 6
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.security.WindowsDpapiSecretProtectorTest.xml",
+        "suite": "com.example.chatbar.desktop.security.WindowsDpapiSecretProtectorTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 1
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.security.WindowsSecretRootResolverTest.xml",
+        "suite": "com.example.chatbar.desktop.security.WindowsSecretRootResolverTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 2
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.security.WindowsSecretStoreTest.xml",
+        "suite": "com.example.chatbar.desktop.security.WindowsSecretStoreTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 7
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.WindowsCommonItemDialogTest.xml",
+        "suite": "com.example.chatbar.desktop.WindowsCommonItemDialogTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 8
+      },
+      {
+        "file": "05-bounded-desktop/junit/TEST-com.example.chatbar.desktop.WindowsNativeDialogIntegrationTest.xml",
+        "suite": "com.example.chatbar.desktop.WindowsNativeDialogIntegrationTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "reportedPass": 2
+      }
+    ],
+    "totals": {
+      "tests": 1493,
+      "reportedPass": 1491,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 2
+    },
+    "resourceSummary": {
+      "samples": 30,
+      "minimumAvailableBytes": 1570766848,
+      "minimumCommitHeadroomBytes": 12805799936,
+      "maximumPagesPerSecond": 718,
+      "sampledExtremaOnly": true
+    }
+  },
+  {
+    "startedUtc": "2026-10-17T20:59:25.0608332+00:00",
+    "finishedUtc": "2026-10-17T20:59:56.3988349+00:00",
+    "durationSeconds": 31.3380017,
+    "exitCode": 0,
+    "command": ".\\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process :desktopApp:createDistributable",
+    "jdk": "Temurin 17.0.20.1",
+    "gradle": "9.1.0",
+    "heap": "-Xmx2048m",
+    "tasks": [
+      ":desktopApp:createDistributable"
+    ],
+    "stage": "06-create-distributable",
+    "junitCurrentExecution": true,
+    "suites": [],
+    "totals": {
+      "tests": 0,
+      "reportedPass": 0,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "resourceSummary": {
+      "samples": 3,
+      "minimumAvailableBytes": 2262515712,
+      "minimumCommitHeadroomBytes": 13844082688,
+      "maximumPagesPerSecond": 1958,
+      "sampledExtremaOnly": true
+    }
+  }
+]

@@ -1,0 +1,45 @@
+package com.example.chatbar.desktop.backup
+
+import java.io.ByteArrayOutputStream
+import java.nio.file.Files
+import java.nio.file.Path
+import java.security.MessageDigest
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
+import kotlinx.coroutines.*
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.*
+import kotlin.test.*
+
+class MomentArchiveReadOnlyValidatorTest {
+    private fun sha(bytes: ByteArray) = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
+    private val post = """{ "id":"p", "characterCardId":"c", "sessionId":"s", "senderName":"synthetic", "text":"synthetic", "scheduledAt":1, "generatedAt":2 }"""
+    private fun archive(code: Int = 86, encrypted: Boolean = false, files: Map<String, ByteArray> = mapOf("entities/moment_posts/p.json" to post.toByteArray()), images: Boolean = true, moments: Boolean = true): ByteArray {
+        val version = if (code == 84) 1 else 2
+        val prefs = if (code == 84) officialWireJson.encodeToString(Official145Preferences()) else officialWireJson.encodeToString(OfficialModernPreferences())
+        val counts = files.keys.filter { it.startsWith("entities/") }.groupingBy { it.removePrefix("entities/").substringBefore('/') }.eachCount()
+        val manifest = if (code == 84) officialWireJson.encodeToString(Official145Manifest(1, code, "synthetic", 1, "synthetic", counts, files.size, files.values.sumOf { it.size.toLong() }, sha(prefs.toByteArray()))) else
+            officialWireJson.encodeToString(OfficialModernManifest(2, code, "synthetic", 1, "synthetic", counts, files.size, files.values.sumOf { it.size.toLong() }, sha(prefs.toByteArray()),
+                OfficialWireScope(emptySet(), counts["character_cards"] ?: 0, counts["chat_sessions"] ?: 0, 0, 0, 0, false, false, true, moments, images)))
+        return ByteArrayOutputStream().also { out -> ZipOutputStream(Official147FixtureCodec.encrypting(out, if (encrypted) "synthetic-password".toCharArray() else null, version)).use { zip ->
+            fun entry(name: String, data: ByteArray) { zip.putNextEntry(ZipEntry(name)); zip.write(data); zip.closeEntry() }
+            files.forEach { (name, data) -> entry("files/$name", data) }
+            entry("preferences.json", prefs.toByteArray())
+            entry("inventory.jsonl", files.map { (name, data) -> officialWireJson.encodeToString(OfficialWireFileRecord(name, data.size.toLong(), sha(data))) }.joinToString("\n").toByteArray())
+            entry("manifest.json", manifest.toByteArray())
+        } }.toByteArray()
+    }
+    private suspend fun <T> isolated(bytes: ByteArray, block: suspend (Path) -> T): T {
+        val root = Files.createTempDirectory("s1-synthetic-")
+        try {
+            val source = Files.write(root.resolve("source.cbbackup"), bytes)
+            Files.writeString(root.resolve("journal"), "synthetic-existing")
+            fun inventory() = Files.walk(root).use { stream -> stream.filter { Files.isRegularFile(it) }.toList().associate { root.relativize(it).toString() to sha(Files.readAllBytes(it)) } }
+            val before = inventory()
+            try { return block(source) } finally { assertEquals(before, inventory()) }
+        } finally { root.toFile().deleteRecursively() }
+    }
+    @Test fun `S0 cannot prove moments graph`() = runBlocking {
+        isolated(archive()) { source -> assertTrue(DesktopBackupReadOnlyInspector().inspect(source, null).resourceGraphVerified) }
+    }
+}

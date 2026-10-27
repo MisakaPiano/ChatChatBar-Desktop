@@ -1,0 +1,24 @@
+{
+  "path": "I:\\CCB-OP1-PREPARE-FIX-20261027-r02.zip",
+  "bytes": 12218,
+  "sha256": "03e61c98be44af4c868d5055f7d404ad6ead84501041d9c88344fcaafe7c4aa3",
+  "files": [
+    {
+      "name": "Create-Operation1TestCopy-r02.ps1",
+      "bytes": 3711,
+      "sha256": "fb6bebfa4cc56ac28f4e65cc82f5f1e9b39c0a615e4c38ee6eceb7c69b5c17be"
+    },
+    {
+      "name": "Operation1CopyMetadata-r02.ps1",
+      "bytes": 2471,
+      "sha256": "83eb08b1209a120b66d926193b90d9160c74dc20eec3ef8164e4ac8b827fe0ce"
+    },
+    {
+      "name": "Inspect-Operation1PrepareFailure-r01.ps1",
+      "bytes": 2781,
+      "sha256": "9508c1d6160e887ffe10757e151c0e5c142938ebd8e3caac970201d8ade42f00"
+    }
+  ],
+  "oldPackageRebuilt": false,
+  "vmOrInstallerActionExecuted": false
+}

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.backup.DesktopTargetIdentityEvidenceTest" tests="23" skipped="0" failures="0" errors="0" timestamp="2026-10-25T02:36:07.005Z" hostname="DD1" time="4.242">
+  <properties/>
+  <testcase name="overlappingDataAndCredentialRootsRemainConflicting" classname="com.example.chatbar.desktop.backup.DesktopTargetIdentityEvidenceTest" time="1.903"/>
+  <testcase name="undeclaredThirdConsumerIsNeverRuledOut" classname="com.example.chatbar.desktop.backup.DesktopTargetIdentityEvidenceTest" time="0.07"/>
+  <testcase name="cancellationStopsObservationWithoutReturningPartialEvidence" classname="com.example.chatbar.desktop.backup.DesktopTargetIdentityEvidenceTest" time="0.095"/>
+  <testcase name="malformedAccountAndOversizedMetadataCannotLookVerified" classname="com.example.chatbar.desktop.backup.DesktopTargetIdentityEvidenceTest" time="0.072"/>
+  <testcase name="metadataGenerationAndConfigurationChangeDuringObservationIsConflict" classname="com.example.chatbar.desktop.backup.DesktopTargetIdentityEvidenceTest" time="0.405"/>
+  <testcase name="fileIdentityReadFailureIsUnavailableAndRedacted" classname="com.example.chatbar.desktop.backup.DesktopTargetIdentityEvidenceTest" time="0.189"/>
+  <testcase name="duplicateRootDeclarationsAreConflictingEvidence" classname="com.example.chatbar.desktop.backup.DesktopTargetIdentityEvidenceTest" time="0.047"/>
+  <testcase name="unknownCommunityAndDuplicateConflictsAreNotDowngraded" classname="com.example.chatbar.desktop.backup.DesktopTargetIdentityEvidenceTest" time="0.005"/>
+  <testcase name="unknownKindNegativeGenerationAndInvalidInvocationRemainIncomplete" classname="com.example.chatbar.desktop.backup.DesktopTargetIdentityEvidenceTest" time="0.585"/>
+  <testcase name="outOfScopeRelativeMissingAndFilePathsAreRejectedWithoutCreation" classname="com.example.chatbar.desktop.backup.DesktopTargetIdentityEvidenceTest" time="0.004"/>
+  <testcase name="observationIsReadOnlyAndDiagnosticsOmitPathsIdsAndMetadata" classname="com.example.chatbar.desktop.backup.DesktopTargetIdentityEvidenceTest" time="0.041"/>
+  <testcase name="globalKeysHaveUnknownConsumersEvenWithTwoObservedRoots" classname="com.example.chatbar.desktop.backup.DesktopTargetIdentityEvidenceTest" time="0.009"/>
+  <testcase name="storeAndMetadataAccessUnavailableNeverMeansAbsent" classname="com.example.chatbar.desktop.backup.DesktopTargetIdentityEvidenceTest" time="0.007"/>
+  <testcase name="replacedDirectoryAndCredentialDirectoryAreRejected" classname="com.example.chatbar.desktop.backup.DesktopTargetIdentityEvidenceTest" time="0.103"/>
+  <testcase name="offlineDeclaredRootRemainsUnavailableNotAbsent" classname="com.example.chatbar.desktop.backup.DesktopTargetIdentityEvidenceTest" time="0.527"/>
+  <testcase name="separateStoreDirectoriesDoNotResolveLogicalAccountConflictOrSelectTopology" classname="com.example.chatbar.desktop.backup.DesktopTargetIdentityEvidenceTest" time="0.008"/>
+  <testcase name="directoryMutationDuringMetadataObservationIsDetected" classname="com.example.chatbar.desktop.backup.DesktopTargetIdentityEvidenceTest" time="0.006"/>
+  <testcase name="nameCollisionAndInvalidAccountDoNotAuthorizeReplacement" classname="com.example.chatbar.desktop.backup.DesktopTargetIdentityEvidenceTest" time="0.013"/>
+  <testcase name="nativeDirectoriesAreObservedWithoutWindowsAccountOrClosureClaims" classname="com.example.chatbar.desktop.backup.DesktopTargetIdentityEvidenceTest" time="0.027"/>
+  <testcase name="sharedModelIdWithDifferentEndpointOrProviderReportsConflict" classname="com.example.chatbar.desktop.backup.DesktopTargetIdentityEvidenceTest" time="0.06"/>
+  <testcase name="verifiedG2BCensusAndT1MetadataStillCannotProduceUsableTargetPlan" classname="com.example.chatbar.desktop.backup.DesktopTargetIdentityEvidenceTest" time="0.049"/>
+  <testcase name="missingBaselineCannotBecomeVerified" classname="com.example.chatbar.desktop.backup.DesktopTargetIdentityEvidenceTest" time="0.011"/>
+  <testcase name="cloneWithIdenticalContentsAndUuidDoesNotInheritNativeIdentity" classname="com.example.chatbar.desktop.backup.DesktopTargetIdentityEvidenceTest" time="0.006"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

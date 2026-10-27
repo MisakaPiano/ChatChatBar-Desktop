@@ -1,0 +1,15 @@
+{
+  "attribution": "Codex scoped self-check, not universal secret detection or Project review",
+  "finalChildStdoutFiles": 144,
+  "fixedCategoryStdoutOnly": true,
+  "finalChildExitsComplete": true,
+  "rawCbbackupOrCbsaveFiles": 0,
+  "realSourceOpenedThisRun": false,
+  "realSecretStoreOrDpapiAccess": false,
+  "sourceOfPayloads": "New task-owned roots, fixed synthetic bytes/fake protector only",
+  "limits": [
+    "Source/build paths can appear in local process argv and original Gradle logs.",
+    "Fake keys/context and native synthetic-root witnesses are intentionally retained as test evidence.",
+    "No claim of OS-wide confidentiality or a scan for arbitrary unknown real secrets; private archives/old private witnesses were not accessed."
+  ]
+}

@@ -1,0 +1,71 @@
+{
+  "SourceCommit": "46598a9edec0edbef04c88184020bf16572c05aa",
+  "Parent": "67777a2214ffdb53872d3d14a65838ccf7ddca47",
+  "Branch": "feature/phase8-fish-audio",
+  "ValidationSource": "parent plus exact final Kotlin working tree, Desktop stage 14; unchanged shared source tested stage 08; Skill documentation only",
+  "Files": [
+    {
+      "Path": ".agents/skills/chatbar-message-format-repair/SKILL.md",
+      "Bytes": 8778,
+      "WorkingFileSHA256": "833287996e977b295c84aba382448c68c2e424372efccb29dae4e4ac62972bbe",
+      "GitNormalizedSHA256": "20234a8fb438f5da21b11562d31980ad079b10bbf4c3474d5d0456b3b9752b24",
+      "GitBlob": "9d04955697de7b36bcca4fe9704d8caa183c774e"
+    },
+    {
+      "Path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt",
+      "Bytes": 25566,
+      "WorkingFileSHA256": "1aa9ba0c8a3f59d15dc26e1dcc7d97184c164e8306aaafa4613da782a4e34e38",
+      "GitNormalizedSHA256": "0fa3967af99271913e9f7ac482c4db7ae3e590bce79d0ec5efd80f6debd68cfe",
+      "GitBlob": "14dcb2a9c4814657a8f7395b0748c8e3b10ce646"
+    },
+    {
+      "Path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootOwnership.kt",
+      "Bytes": 14087,
+      "WorkingFileSHA256": "68b32776c758b3be5bd85c9df0262b13da4e9a56622c0ab595b901f29e08eee6",
+      "GitNormalizedSHA256": "ad21e753563835129a4313c02125841f41c332ff2b9db0d482179743875e2f87",
+      "GitBlob": "b732c26ecdcb3125f323dc85d4e62a8df2e1c1e8"
+    },
+    {
+      "Path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFormatRepairDerivedSafety.kt",
+      "Bytes": 16838,
+      "WorkingFileSHA256": "a1400d3eba9935ac276421ae9a4de88afbb04ecdf924c0d4ff1b639b7db7ac8e",
+      "GitNormalizedSHA256": "a1400d3eba9935ac276421ae9a4de88afbb04ecdf924c0d4ff1b639b7db7ac8e",
+      "GitBlob": "a43dc0f531ce654f8fc2b58f60782a4f6369f029"
+    },
+    {
+      "Path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMessageFormatRepairController.kt",
+      "Bytes": 18609,
+      "WorkingFileSHA256": "d8546d499c93ff34cae85d0f9158003568429f9f4d92f9ac9d1018b6df720d9b",
+      "GitNormalizedSHA256": "d8546d499c93ff34cae85d0f9158003568429f9f4d92f9ac9d1018b6df720d9b",
+      "GitBlob": "080abdc4fa7401ae599bfc600a8f65e8771e5a80"
+    },
+    {
+      "Path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopTaskRuntime.kt",
+      "Bytes": 24544,
+      "WorkingFileSHA256": "131f4110d8113d629edfdd6bb14b42ee2afbe11c1f2cd95d46242a1841247bed",
+      "GitNormalizedSHA256": "5fe28fbf4d0efebc1af3c8abfb1834f40be16d1740391adca897ae42438d0174",
+      "GitBlob": "80657e3e5f2bdc167b731b29ff005f2d838eea58"
+    },
+    {
+      "Path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFormatRepairDerivedSafetyTest.kt",
+      "Bytes": 26380,
+      "WorkingFileSHA256": "66fe0a45de8fde2427154be8dcf4ccce839e3d6375dae7286656d98bb1dbe07f",
+      "GitNormalizedSHA256": "66fe0a45de8fde2427154be8dcf4ccce839e3d6375dae7286656d98bb1dbe07f",
+      "GitBlob": "a900514fd946bfe8f4f883bcc3d0156d1a8cb106"
+    },
+    {
+      "Path": "app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/JsonFileStorage.kt",
+      "Bytes": 38903,
+      "WorkingFileSHA256": "69edc41f61c03c6bc1ddb0c20fbf1f4c8642ce692a0b1c2434ab1b8b87b727d4",
+      "GitNormalizedSHA256": "df90d713ab4d1daa9e9511fc36ebcf1f2feefda3a6eaccf5d5f0beaed792165b",
+      "GitBlob": "494c2067012ece17e04b3e36d5788276b0b9f833"
+    },
+    {
+      "Path": "app/sharedCore/src/test/kotlin/com/example/chatbar/data/local/JsonFileStorageBoundedScanTest.kt",
+      "Bytes": 4574,
+      "WorkingFileSHA256": "d862b1648620909072092ce5b60dfa0ba5fa50747f00ed1cd74aebe5cdfc7569",
+      "GitNormalizedSHA256": "d862b1648620909072092ce5b60dfa0ba5fa50747f00ed1cd74aebe5cdfc7569",
+      "GitBlob": "c59a4ef2315a779b64aecdf7ab2950d0f096c9ad"
+    }
+  ]
+}

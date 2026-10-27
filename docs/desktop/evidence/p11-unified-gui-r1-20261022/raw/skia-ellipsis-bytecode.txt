@@ -1,0 +1,17 @@
+
+>   public boolean getDidExceedMaxLines();
+      Code:
+         0: aload_0
+         1: getfield      #64                 // Field paragraph:Lorg/jetbrains/skia/paragraph/Paragraph;
+         4: invokevirtual #248                // Method org/jetbrains/skia/paragraph/Paragraph.didExceedMaxLines:()Z
+         7: ireturn
+  
+>   public boolean isLineEllipsized(int);
+      Code:
+         0: iconst_0
+         1: ireturn
+  
+    public int getLineForOffset(int);
+      Code:
+
+

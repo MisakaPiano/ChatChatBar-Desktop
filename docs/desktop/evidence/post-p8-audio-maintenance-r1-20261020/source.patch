@@ -1,0 +1,919 @@
+diff --git a/.agents/skills/chatbar-fish-audio-voice/SKILL.md b/.agents/skills/chatbar-fish-audio-voice/SKILL.md
+index 36db9894..c34b0d2c 100644
+--- a/.agents/skills/chatbar-fish-audio-voice/SKILL.md
++++ b/.agents/skills/chatbar-fish-audio-voice/SKILL.md
+@@ -45,6 +45,7 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
+ 
+ - `DesktopVoiceAudioStore` persists immutable MP3 artifacts under the selected root `audio/generated`, with independent ownership/hash receipts, bounded streams and atomic publication. It has no startup orphan sweep; corrupt indexes, missing receipts and unknown files remain preserved. Formal clips use a separate 16 MiB / 30-minute structural/native profile; picker preview stays at its accepted 16 MiB / 120 seconds. Both profiles use the same Windows backend with explicit per-port duration admission.
+ - `DesktopVoicePlayback` provides key-independent ordered playback, real MCI pause/position/resume and stop/join. A paused native alias retains the queue and data-operation lease until resume/stop; first UI Stop pauses, second closes. `DesktopChatVoiceRuntime.play` uses current-version placements across later assistant replies in the same session, skipping User turns without TTS (Desktop enhancement). `DesktopAudioFocus` provides separate formal/preview ports over one MCI output; a superseded port cannot stop the current owner. AppContainer owns formal voice drain before preview/native output and root release. Queue admission checks the originating UI foreground token inside the playback mutex; leaving and returning cannot revive a delayed click. Replacement releases a queued/active old voice through native stop before deleting its artifact.
++- `DesktopAudioMaintenance` reserves that same focus owner before migration/snapshot exclusive admission. Migration explicitly stops/joins formal playback and confirms native close before destination preparation and scheduler stop; automatic backup takes only an idle reservation, otherwise reports a retryable scheduler failure (never successful/not-due). Reservations do not wait for each other or hold the focus mutex across scheduler/coordinator waits. Audio epochs invalidate queued formal opens; restart seals admission. Failed close keeps the player's original normal registration until an explicit stop retry confirms release; failed drain quarantines focus. `DesktopAudioMaintenanceTest` combines the real coordinator, scheduler and migration adapter with controlled native close signals. Migration `AUDIO_MAINTENANCE` is precommit/retryable; actual source-runtime resume results remain attached to other precommit failures.
+ - `DesktopFishGenerationCoordinator` adapts official targets, text confirmation, global five-permit batches, history/replacement and foreground autoplay. `DesktopFishVoiceTransport` reuses shared TTS serialization with one-shot/one-exchange transport and callback/body drain. Only explicit `s2.1-pro-free` is authorized; stale/paid models fail, and the dated free profile fails closed after 2026-11-30 pending re-verification. Artifact cleanup re-reads a complete strict reference inventory; uncertain commits preserve audio. Exact durable voice readback may confirm a post-write exception before refreshing the repository. `DesktopFishTtsAdmission` shares five permits across formal and picker TTS, through actual body drain.
+ 
+ - `DesktopChatVoiceRuntime` and `DesktopChatVoicePanel` wire explicit assistant segment/whole generation, bound narrator choice, auxiliary-cost confirmation, new take vs replacement, version-scoped voice bars, ordered playback, stop, export and explicit delete. `DesktopVoiceUx` places a single-line generation deck inside the timeline, a conditional effective-audiobook 角色音色 dropdown, a floating paused/playing session and dismissible notifications. On-demand narrator selection follows shared `requiresNarratorSelection` even with a single bound voice in a multi-character card; idle audiobook mode keeps only the right role dock. Batch details retain independent controls for every session batch. Replacement feedback carries session/message/voice identity, is cleared before a replacement attempt, and is emitted after publication and old-file release. Primary chat mutations invalidate pending play intents and stop/join before draining voice jobs for editing/deleting/switching versions; foreground leases drop autoplay on screen/session leave. No assistant completion automatically requests TTS. Formal playback holds a data-operation lease through native stop/close. Existing message/image mutations retain their own normal/exclusive scopes; do not wrap image cleanup in an outer normal lease. The lazy owned auxiliary text transport drains its real sockets/executor at app shutdown.
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt
+index d05c6612..10f3fb00 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt
+@@ -57,6 +57,10 @@ class DesktopAppContainer internal constructor(
+     private val fishCredentialOwner = lazy { DesktopFishCredentialController(fishAudioCredentials) }
+     internal val fishCredentialController by fishCredentialOwner
+     private val audioFocusOwner = lazy { DesktopAudioFocus() }
++    private val audioMaintenance = DesktopAudioMaintenance(
++        focus = { audioFocusOwner.value },
++        stopPlayback = { if (chatVoiceOwner.isInitialized()) chatVoiceRuntime.stopForMaintenance() },
++    )
+     private val voiceRepositoryOwner = lazy { com.example.chatbar.data.repository.VoiceMessageRepository(jsonFileStorage, strictReads = true) }
+     internal val voiceRepository by voiceRepositoryOwner
+     internal val voiceAudioStore by lazy { DesktopVoiceAudioStore(appDataRoot) }
+@@ -209,6 +213,7 @@ class DesktopAppContainer internal constructor(
+     internal val coordinatedSnapshotService = DesktopCoordinatedSnapshotService(
+         delegate = appDataSnapshotService,
+         coordinator = dataOperationCoordinator,
++        audioMaintenance = audioMaintenance,
+     )
+     private val desktopSettingsStore = DesktopSettingsStore(appDataRoot, dataOperationCoordinator)
+     internal val uiLanguageController = DesktopUiLanguageController(desktopSettingsStore)
+@@ -222,6 +227,7 @@ class DesktopAppContainer internal constructor(
+         runtime = automaticBackupRuntime,
+         coordinator = dataOperationCoordinator,
+         snapshotService = appDataSnapshotService,
++        audioMaintenance = audioMaintenance,
+     )
+ 
+     private val characterDocumentRagCleanup = DesktopCharacterDocumentRagCleanup(jsonFileStorage)
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAudioMaintenance.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAudioMaintenance.kt
+new file mode 100644
+index 00000000..b888c262
+--- /dev/null
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAudioMaintenance.kt
+@@ -0,0 +1,52 @@
++package com.example.chatbar.desktop
++
++import kotlinx.coroutines.NonCancellable
++import kotlinx.coroutines.currentCoroutineContext
++import kotlinx.coroutines.ensureActive
++import kotlinx.coroutines.withContext
++
++/** A retryable scheduler failure, never a successful/not-due backup result. */
++internal class DesktopAudioMaintenanceBusyException : IllegalStateException(
++    "音频正在使用或维护中；本次维护已延期，可稍后重试",
++)
++
++internal class DesktopAudioDrainException(cause: Throwable) : IllegalStateException(
++    "音频排水未确认；未开始数据维护，原数据已保留，请重试排水或安全退出", cause,
++)
++
++/** One app-owned reservation over the existing formal/preview native output.
++ * Reserve -> drain -> scheduler stop/join -> data exclusive; never hold the focus mutex while
++ * joining scheduler/player. Automatic attempts fail immediately if the reservation/audio is busy.
++ */
++internal class DesktopAudioMaintenance(
++    private val focus: () -> DesktopAudioFocus,
++    private val stopPlayback: suspend () -> Unit,
++) {
++    suspend fun <T> withMaintenance(
++        interruptPlayback: Boolean,
++        restartRequired: () -> Boolean,
++        operation: suspend () -> T,
++    ): T {
++        val audio = focus()
++        val token = audio.reserveMaintenance(interruptPlayback)
++        var drained = !interruptPlayback // Idle reservation proves no owner and no uncertain release.
++        try {
++            if (interruptPlayback) {
++                // Complete the real close handshake even if the initiating UI is cancelled.
++                withContext(NonCancellable) {
++                    try {
++                        stopPlayback()
++                        audio.drainMaintenance(token)
++                        drained = true
++                    } catch (failure: Throwable) { throw DesktopAudioDrainException(failure) }
++                }
++            }
++            currentCoroutineContext().ensureActive()
++            return operation()
++        } finally {
++            withContext(NonCancellable) {
++                audio.releaseMaintenance(token, drained, restartRequired())
++            }
++        }
++    }
++}
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoiceRuntime.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoiceRuntime.kt
+index bfb7520c..d0fc958a 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoiceRuntime.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoiceRuntime.kt
+@@ -137,6 +137,7 @@ internal class DesktopChatVoiceRuntime(
+         } }
+     }
+     fun stop() { coordinator.stopPlayback() }
++    suspend fun stopForMaintenance() { coordinator.stopPlaybackAndJoin() }
+     fun generationSegments(message: ChatMessage, session: ChatSession?, segmented: Boolean): List<CurrentVoiceSegment> =
+         if (session == null) emptyList() else VoiceGenerationPolicy.generationSegments(message.displayContent,
+             VoiceGenerationPolicy.audiobookEnabled(session, settings.currentAppSettings), segmented)
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCoordinatedSnapshotService.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCoordinatedSnapshotService.kt
+index d0ae6239..4ed2883d 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCoordinatedSnapshotService.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCoordinatedSnapshotService.kt
+@@ -25,21 +25,27 @@ internal class DesktopCoordinatedSnapshotService internal constructor(
+     private val delegate: DesktopSnapshotPrimitive,
+     private val coordinator: DesktopDataOperationCoordinator,
+     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
++    private val audioMaintenance: DesktopAudioMaintenance? = null,
+ ) {
+     constructor(
+         delegate: AppDataSnapshotService,
+         coordinator: DesktopDataOperationCoordinator,
+         ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+-    ) : this(SharedSnapshotPrimitive(delegate), coordinator, ioDispatcher)
++        audioMaintenance: DesktopAudioMaintenance? = null,
++    ) : this(SharedSnapshotPrimitive(delegate), coordinator, ioDispatcher, audioMaintenance)
++
++    private suspend fun <T> withAudio(interrupt: Boolean, operation: suspend () -> T): T =
++        if (audioMaintenance == null) operation()
++        else audioMaintenance.withMaintenance(interrupt, { coordinator.isRestartRequired }, operation)
+ 
+     suspend fun createSnapshot(
+         purpose: SnapshotPurpose = SnapshotPurpose.MANUAL,
+-    ): AppDataSnapshot = coordinator.withExclusiveMaintenance {
++    ): AppDataSnapshot = withAudio(true) { coordinator.withExclusiveMaintenance {
+         withContext(ioDispatcher) { delegate.createSnapshot(purpose) }
+-    }
++    } }
+ 
+     suspend fun restoreSnapshot(snapshotDirectory: Path): SnapshotRestoreResult =
+-        coordinator.withExclusiveMaintenance {
++        withAudio(true) { coordinator.withExclusiveMaintenance {
+             val maintenanceScope = this
+             withContext(ioDispatcher) {
+                 try {
+@@ -53,21 +59,21 @@ internal class DesktopCoordinatedSnapshotService internal constructor(
+                     throw error
+                 }
+             }
+-        }
++        } }
+ 
+     suspend fun pruneAutomaticSnapshots(maximumCount: Int): AutomaticSnapshotPruneResult =
+-        coordinator.withExclusiveMaintenance {
++        withAudio(true) { coordinator.withExclusiveMaintenance {
+             withContext(ioDispatcher) { delegate.pruneAutomaticSnapshots(maximumCount) }
+-        }
++        } }
+ 
+     suspend fun executeAutomaticBackup(
+         minimumInterval: Duration,
+         maximumCount: Int,
+-    ): AutomaticBackupExecutionResult = coordinator.withExclusiveMaintenance {
++    ): AutomaticBackupExecutionResult = withAudio(false) { coordinator.withExclusiveMaintenance {
+         withContext(ioDispatcher) {
+             delegate.executeAutomaticBackup(minimumInterval, maximumCount)
+         }
+-    }
++    } }
+ 
+     suspend fun listSnapshots(): List<AppDataSnapshot> = coordinator.withNormalOperation {
+         withContext(ioDispatcher) { delegate.listSnapshots() }
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootMigrationService.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootMigrationService.kt
+index 3349f75d..1ff655a1 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootMigrationService.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootMigrationService.kt
+@@ -13,6 +13,7 @@ import kotlinx.coroutines.sync.withLock
+ import kotlinx.coroutines.withContext
+ 
+ enum class DesktopDataRootMigrationFailureKind {
++    AUDIO_MAINTENANCE,
+     PREPARATION,
+     RUNTIME_PAUSE,
+     PREFLIGHT,
+@@ -106,6 +107,7 @@ class DesktopDataRootMigrationService internal constructor(
+     private val coordinator: DesktopDataOperationCoordinator,
+     private val dependencies: DesktopDataRootMigrationDependencies,
+     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
++    private val audioMaintenance: DesktopAudioMaintenance? = null,
+ ) {
+     internal constructor(
+         sourceResolution: DesktopDataRootResolution.Resolved,
+@@ -116,6 +118,7 @@ class DesktopDataRootMigrationService internal constructor(
+         materializer: DesktopDataRootMigrationMaterializer = DesktopDataRootMigrationMaterializer(),
+         authorityTransaction: DesktopBootstrapAuthorityTransaction = DesktopBootstrapAuthorityTransaction(),
+         ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
++        audioMaintenance: DesktopAudioMaintenance? = null,
+     ) : this(
+         sourceResolution = sourceResolution,
+         runtime = runtime,
+@@ -128,6 +131,7 @@ class DesktopDataRootMigrationService internal constructor(
+             commitAuthority = authorityTransaction::commitCustomRoot,
+         ),
+         ioDispatcher = ioDispatcher,
++        audioMaintenance = audioMaintenance,
+     )
+ 
+     private val lifecycleMutex = Mutex()
+@@ -141,7 +145,17 @@ class DesktopDataRootMigrationService internal constructor(
+                 closed -> return@withLock rejected(DesktopDataRootMigrationFailureKind.CLOSED)
+                 restartSealed -> return@withLock rejected(DesktopDataRootMigrationFailureKind.RESTART_REQUIRED)
+             }
+-            migrateLocked(requestedDestination)
++            try {
++                if (audioMaintenance == null) migrateLocked(requestedDestination)
++                else audioMaintenance.withMaintenance(true, { restartSealed || coordinator.isRestartRequired }) {
++                    migrateLocked(requestedDestination)
++                }
++            } catch (cancelled: CancellationException) { throw cancelled }
++            catch (failure: DesktopAudioMaintenanceBusyException) {
++                failure(DesktopDataRootMigrationFailureKind.AUDIO_MAINTENANCE, requestedDestination.toAbsolutePath().normalize(), cause = failure)
++            } catch (failure: DesktopAudioDrainException) {
++                failure(DesktopDataRootMigrationFailureKind.AUDIO_MAINTENANCE, requestedDestination.toAbsolutePath().normalize(), cause = failure)
++            }
+         }
+ 
+     suspend fun close() = lifecycleMutex.withLock {
+@@ -406,7 +420,7 @@ class DesktopDataRootMigrationService internal constructor(
+ 
+         is ExclusiveOutcome.Failed -> {
+             if (stabilization.resumeResult is DesktopMaintenanceResumeResult.Resumed) {
+-                failure.copy(destinationCloseFailure = stabilization.closeFailure)
++                failure.copy(runtimeDisposition = stabilization.resumeResult, destinationCloseFailure = stabilization.closeFailure)
+             } else {
+                 failure.copy(
+                     kind = DesktopDataRootMigrationFailureKind.RUNTIME_RESUME,
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootSwitchController.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootSwitchController.kt
+index 3947e52c..8a912aa0 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootSwitchController.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootSwitchController.kt
+@@ -240,6 +240,7 @@ class DesktopDataRootSwitchController internal constructor(
+             return false
+         }
+         val eligibleKind = kind in setOf(
++            DesktopDataRootMigrationFailureKind.AUDIO_MAINTENANCE,
+             DesktopDataRootMigrationFailureKind.PREPARATION,
+             DesktopDataRootMigrationFailureKind.PREFLIGHT,
+             DesktopDataRootMigrationFailureKind.SAFETY_SNAPSHOT,
+@@ -248,6 +249,7 @@ class DesktopDataRootSwitchController internal constructor(
+         )
+         if (!eligibleKind) return false
+         return when (kind) {
++            DesktopDataRootMigrationFailureKind.AUDIO_MAINTENANCE,
+             DesktopDataRootMigrationFailureKind.PREPARATION -> runtimeDisposition == null
+             else -> runtimeDisposition is DesktopMaintenanceResumeResult.Resumed
+         }
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishGenerationCoordinator.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishGenerationCoordinator.kt
+index a7fbf6a4..b0ec1244 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishGenerationCoordinator.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishGenerationCoordinator.kt
+@@ -437,10 +437,16 @@ internal class DesktopFishGenerationCoordinator(
+     ): Job {
+         val sequence = VoicePlaybackQueuePolicy.sequenceFrom(voice, orderedVisibleVoices)
+         val requestedGeneration = originGeneration
++        val admission = playback.admissionToken()
+         return scope.launch {
+             if (foregroundSessionId != voice.sessionId || foregroundGeneration.get() != requestedGeneration) return@launch
+-            val manualGeneration = clearAutoPlay()
+-            playback.playSequence(sequence) {
++            // Recheck inside the autoplay mutex: maintenance/leave may invalidate a click
++            // after the initial check while it is waiting to clear the automatic queue.
++            val manualGeneration = autoPlayMutex.withLock {
++                if (foregroundSessionId != voice.sessionId || foregroundGeneration.get() != requestedGeneration) null
++                else { pendingAutoPlay.clear(); foregroundGeneration.incrementAndGet() }
++            } ?: return@launch
++            playback.playSequence(sequence, admission) {
+                 foregroundSessionId == voice.sessionId && foregroundGeneration.get() == manualGeneration
+             }
+         }
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoicePlayback.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoicePlayback.kt
+index c18eba1d..c0d4a3da 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoicePlayback.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoicePlayback.kt
+@@ -4,12 +4,14 @@ import com.example.chatbar.data.local.entity.GeneratedVoiceMessage
+ import com.example.chatbar.data.operation.AppDataOperationGate
+ import com.example.chatbar.data.operation.NoOpAppDataOperationGate
+ import java.nio.file.Path
++import java.util.concurrent.atomic.AtomicBoolean
+ import kotlinx.coroutines.*
+ import kotlinx.coroutines.channels.Channel
+ import kotlinx.coroutines.flow.MutableStateFlow
+ import kotlinx.coroutines.flow.asStateFlow
+ import kotlinx.coroutines.sync.Mutex
+ import kotlinx.coroutines.sync.withLock
++import kotlinx.coroutines.selects.select
+ 
+ /** One native output shared by formal playback and the accepted picker runtime.
+  * A superseded port cannot stop or report the other port's playback.
+@@ -17,17 +19,62 @@ import kotlinx.coroutines.sync.withLock
+ internal class DesktopAudioFocus(private val output: DesktopAudioOutput = DesktopWindowsAudioOutput()) {
+     private val mutex = Mutex()
+     private var owner: Any? = null
++    @Volatile private var maintenance: Any? = null
++    @Volatile private var sealed = false
++    @Volatile private var uncertain = false
++    @Volatile private var generation = 0L
++
++    private fun requirePlaybackAdmission() {
++        check(!sealed && !uncertain && maintenance == null) { "音频维护期间或排水未确认，暂不接受播放" }
++    }
++
++    /** Reservation never waits for another maintenance owner. No mutex is held across scheduler/gate waits. */
++    suspend fun reserveMaintenance(interrupt: Boolean): Any {
++        if (interrupt) return mutex.withLock { reserveLocked(true) }
++        if (!mutex.tryLock()) throw DesktopAudioMaintenanceBusyException()
++        try { return reserveLocked(false) } finally { mutex.unlock() }
++    }
++    private fun reserveLocked(interrupt: Boolean): Any {
++        if (sealed || maintenance != null || (!interrupt && (owner != null || uncertain))) {
++            throw DesktopAudioMaintenanceBusyException()
++        }
++        return Any().also { maintenance = it; generation++ }
++    }
++    suspend fun drainMaintenance(token: Any) = mutex.withLock {
++        check(maintenance === token)
++        try { output.stopAndDrain(); owner = null; uncertain = false }
++        catch (failure: Throwable) { uncertain = true; throw failure }
++    }
++    suspend fun releaseMaintenance(token: Any, drained: Boolean, restartRequired: Boolean) = mutex.withLock {
++        check(maintenance === token)
++        if (!drained) uncertain = true
++        sealed = sealed || restartRequired
++        maintenance = null
++    }
+     fun port(formal: Boolean = false): DesktopAudioOutput = object : DesktopAudioOutput {
+         private val token = Any()
+-        override suspend fun play(path: Path) = mutex.withLock {
+-            output.stopAndDrain(); owner = token
+-            try { if (formal) output.playFormal(path) else output.play(path) } catch (e: Throwable) { owner = null; throw e }
++        override fun playbackAdmissionToken(): Long = generation
++        override fun acceptsPlayback(token: Long): Boolean =
++            token == generation && maintenance == null && !sealed && !uncertain
++        private suspend fun start(path: Path, expected: Long?, formalRequest: Boolean) = mutex.withLock {
++            requirePlaybackAdmission()
++            check(expected == null || expected == generation) { "播放请求已被音频维护撤销" }
++            try {
++                output.stopAndDrain(); owner = token
++                if (formalRequest) output.playFormal(path) else output.play(path)
++            } catch (e: Throwable) { uncertain = true; throw e }
+         }
++        override suspend fun play(path: Path) = start(path, null, formal)
++        override suspend fun playFormal(path: Path) = start(path, null, true)
++        override suspend fun playFormal(path: Path, token: Long) = start(path, token, true)
+         override suspend fun pause(): Long = mutex.withLock { check(owner === token); output.pause() }
+-        override suspend fun resume() = mutex.withLock { check(owner === token); output.resume() }
++        override suspend fun resume() = mutex.withLock { requirePlaybackAdmission(); check(owner === token); output.resume() }
+         override suspend fun positionMs(): Long = mutex.withLock { check(owner === token); output.positionMs() }
+         override suspend fun stopAndDrain() = mutex.withLock {
+-            if (owner === token) { output.stopAndDrain(); owner = null }
++            if (owner === token) {
++                try { output.stopAndDrain(); owner = null }
++                catch (failure: Throwable) { uncertain = true; throw failure }
++            }
+         }
+         override suspend fun hasFocus(): Boolean = mutex.withLock { owner === token }
+         override suspend fun isPlaying(): Boolean = mutex.withLock { owner === token && output.isPlaying() }
+@@ -52,36 +99,53 @@ internal class DesktopVoicePlayback(private val store: DesktopVoiceAudioStore,
+     private val mutable = MutableStateFlow(DesktopVoicePlaybackState())
+     val state = mutable.asStateFlow()
+     private var job: Job? = null
+-    private val queue = mutableListOf<GeneratedVoiceMessage>()
+-    private var pending = Channel<GeneratedVoiceMessage>(Channel.UNLIMITED)
++    private class DrainControl {
++        val failed = AtomicBoolean()
++        val firstFailure = CompletableDeferred<Throwable>()
++        val retries = Channel<CompletableDeferred<Result<Unit>>>(Channel.UNLIMITED)
++    }
++    private var drain: DrainControl? = null
++    private data class QueuedVoice(val voice: GeneratedVoiceMessage, val admission: Long)
++    private val queue = mutableListOf<QueuedVoice>()
++    private var pending = Channel<QueuedVoice>(Channel.UNLIMITED)
+     private var closed = false
+ 
+-    suspend fun playSequence(voices: List<GeneratedVoiceMessage>, eligible: () -> Boolean = { true }) = mutex.withLock {
+-        if (!eligible()) return@withLock
+-        check(!closed); stopLocked(); append(voices); startLocked()
++    fun admissionToken(): Long = output.playbackAdmissionToken()
++    suspend fun playSequence(voices: List<GeneratedVoiceMessage>, admission: Long = admissionToken(), eligible: () -> Boolean = { true }) {
++        mutex.withLock {
++        if (!eligible() || !output.acceptsPlayback(admission)) return@withLock
++        check(!closed); stopLocked(); append(voices, admission); startLocked()
++        }
+     }
+-    suspend fun enqueueSequence(voices: List<GeneratedVoiceMessage>, eligible: () -> Boolean = { true }) = mutex.withLock {
+-        if (!eligible()) return@withLock
+-        check(!closed); append(voices)
++    suspend fun enqueueSequence(voices: List<GeneratedVoiceMessage>, admission: Long = admissionToken(), eligible: () -> Boolean = { true }) {
++        mutex.withLock {
++        if (!eligible() || !output.acceptsPlayback(admission)) return@withLock
++        check(drain?.failed?.get() != true) { "音频关闭未确认，请先重试停止" }
++        check(!closed); append(voices, admission)
+         if (job?.isActive != true) startLocked()
++        }
+     }
+-    private fun append(voices: List<GeneratedVoiceMessage>) {
+-        synchronized(queue) { voices.forEach { queue.add(it); check(pending.trySend(it).isSuccess) } }
++    private fun append(voices: List<GeneratedVoiceMessage>, admission: Long) {
++        synchronized(queue) { voices.forEach { val item = QueuedVoice(it, admission); queue.add(item); check(pending.trySend(item).isSuccess) } }
+     }
+     private fun startLocked() {
++        val control = DrainControl()
++        drain = control
+         job = scope.launch {
+             try {
+-                for (voice in pending) {
++                for (item in pending) {
++                    val voice = item.voice
+                     synchronized(queue) {
+                         queue.removeAt(0)
+-                        mutable.value = DesktopVoicePlaybackState(voice.id, listOf(voice.id) + queue.map { it.id })
++                        mutable.value = DesktopVoicePlaybackState(voice.id, listOf(voice.id) + queue.map { it.voice.id })
+                     }
+                     gate.withNormalOperation {
+                     try {
++                    if (!output.acceptsPlayback(item.admission)) return@withNormalOperation
+                     val path = store.verify(voice.audioPath)
+-                    output.playFormal(path)
++                    output.playFormal(path, item.admission)
+                     mutable.value = DesktopVoicePlaybackState(voice.id,
+-                        synchronized(queue) { listOf(voice.id) + queue.map { it.id } }, true)
++                        synchronized(queue) { listOf(voice.id) + queue.map { it.voice.id } }, true)
+                     while (true) {
+                         // A paused native alias retains its handle and the current data-operation lease.
+                         // The same mutex serializes pause/resume with completion observation.
+@@ -95,13 +159,33 @@ internal class DesktopVoicePlayback(private val store: DesktopVoiceAudioStore,
+                         synchronized(queue) { while (pending.tryReceive().isSuccess) { }; queue.clear() }
+                     }
+                     } finally { withContext(NonCancellable) {
+-                        output.stopAndDrain(); mutable.value = DesktopVoicePlaybackState()
++                        drainNative(control)
++                        mutable.value = DesktopVoicePlaybackState()
+                     } }
+                     }
+                 }
+             } catch (e: CancellationException) { throw e }
+             catch (_: Exception) { mutable.value = mutable.value.copy(playing = false, error = "本地语音播放失败；文件已保留") }
+-            finally { withContext(NonCancellable) { output.stopAndDrain() } }
++            finally { withContext(NonCancellable) {
++                try { output.stopAndDrain() }
++                catch (_: Exception) { mutable.value = mutable.value.copy(playing = false, error = "音频关闭未确认；文件已保留，维护将拒绝继续") }
++            } }
++        }
++    }
++    /** Failed close keeps the original normal registration alive. Only an explicit stop/retry
++     * commands another close; no timer retry and no false lease release while the alias is unknown.
++     */
++    private suspend fun drainNative(control: DrainControl) {
++        try { output.stopAndDrain(); return }
++        catch (failure: Exception) {
++            control.failed.set(true)
++            mutable.value = mutable.value.copy(playing = false, error = "音频关闭未确认；文件和数据登记已保留，请重试停止")
++            control.firstFailure.complete(failure)
++        }
++        while (true) {
++            val reply = control.retries.receive()
++            try { output.stopAndDrain(); reply.complete(Result.success(Unit)); return }
++            catch (failure: Exception) { reply.complete(Result.failure(failure)) }
+         }
+     }
+     fun dismissError(expected: String) { synchronized(queue) { if (mutable.value.error == expected) mutable.value = mutable.value.copy(error = null) } }
+@@ -127,12 +211,29 @@ internal class DesktopVoicePlayback(private val store: DesktopVoiceAudioStore,
+     suspend fun stop() = mutex.withLock { stopLocked() }
+     /** Serialize target removal against manual/automatic queue admission and native alias release. */
+     suspend fun <T> withVoiceReleased(id: String, block: suspend () -> T): T = mutex.withLock {
+-        val queued = synchronized(queue) { mutable.value.currentVoiceId == id || queue.any { it.id == id } }
++        val queued = synchronized(queue) { mutable.value.currentVoiceId == id || queue.any { it.voice.id == id } }
+         if (queued) stopLocked()
+         block()
+     }
+     private suspend fun stopLocked() {
+-        job?.cancelAndJoin(); job = null; synchronized(queue) { pending.cancel(); pending = Channel(Channel.UNLIMITED); queue.clear() }
++        val current = job
++        val control = drain
++        if (current != null && !current.isCompleted) {
++            current.cancel()
++            if (control?.failed?.get() == true) {
++                val reply = CompletableDeferred<Result<Unit>>()
++                control.retries.send(reply)
++                reply.await().getOrThrow()
++            } else if (control != null) {
++                select<Unit> {
++                    current.onJoin { }
++                    control.firstFailure.onAwait { throw it }
++                }
++            }
++            current.join()
++        }
++        job = null; drain = null
++        synchronized(queue) { pending.cancel(); pending = Channel(Channel.UNLIMITED); queue.clear() }
+         output.stopAndDrain(); mutable.value = DesktopVoicePlaybackState()
+     }
+     suspend fun closeAndDrain() = withContext(NonCancellable) { mutex.withLock {
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopWindowsAudioOutput.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopWindowsAudioOutput.kt
+index 55becf47..c089c7d8 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopWindowsAudioOutput.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopWindowsAudioOutput.kt
+@@ -15,6 +15,12 @@ import kotlinx.coroutines.sync.withLock
+ internal interface DesktopAudioOutput {
+     suspend fun play(path: Path)
+     suspend fun playFormal(path: Path) { play(path) }
++    fun playbackAdmissionToken(): Long = 0L
++    fun acceptsPlayback(token: Long): Boolean = true
++    suspend fun playFormal(path: Path, token: Long) {
++        check(acceptsPlayback(token)) { "播放请求已被音频维护撤销" }
++        playFormal(path)
++    }
+     suspend fun pause(): Long = error("音频后端不支持暂停")
+     suspend fun resume() { error("音频后端不支持续播") }
+     suspend fun positionMs(): Long = error("音频后端不支持位置读取")
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopAudioMaintenanceTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopAudioMaintenanceTest.kt
+new file mode 100644
+index 00000000..afbc4d34
+--- /dev/null
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopAudioMaintenanceTest.kt
+@@ -0,0 +1,339 @@
++package com.example.chatbar.desktop
++
++import com.example.chatbar.data.local.entity.*
++import com.example.chatbar.data.snapshot.*
++import java.nio.file.Files
++import java.nio.file.Path
++import java.time.Duration
++import java.time.Instant
++import java.util.concurrent.atomic.AtomicInteger
++import java.util.concurrent.CountDownLatch
++import java.util.concurrent.TimeUnit
++import kotlinx.coroutines.*
++import kotlinx.coroutines.channels.Channel
++import kotlinx.coroutines.flow.first
++import kotlinx.coroutines.test.*
++import kotlinx.serialization.json.buildJsonObject
++import kotlin.test.*
++
++@OptIn(ExperimentalCoroutinesApi::class)
++class DesktopAudioMaintenanceTest {
++    private class Native : DesktopAudioOutput {
++        @Volatile var alias = false
++        @Volatile var paused = false
++        @Volatile var failClose = false
++        var closeEntered: CompletableDeferred<Unit>? = null
++        var closeRelease: CompletableDeferred<Unit>? = null
++        val starts = Channel<Unit>(Channel.UNLIMITED)
++        val plays = AtomicInteger()
++        val closeAttempts = AtomicInteger()
++        override suspend fun play(path: Path) { alias = true; paused = false; plays.incrementAndGet(); starts.send(Unit) }
++        override suspend fun pause(): Long { check(alias); paused = true; return 4321 }
++        override suspend fun resume() { check(alias && paused); paused = false }
++        override suspend fun isPlaying() = alias && !paused
++        override suspend fun stopAndDrain() {
++            if (!alias) return
++            closeAttempts.incrementAndGet()
++            closeEntered?.complete(Unit)
++            closeRelease?.await()
++            if (failClose) error("synthetic close failure")
++            alias = false; paused = false
++        }
++        override suspend fun closeAndDrain() { stopAndDrain() }
++    }
++    private class Fixture private constructor(val root: Path, val voice: GeneratedVoiceMessage) {
++        val gate = DesktopDataOperationCoordinator()
++        val native = Native()
++        val focus = DesktopAudioFocus(native)
++        val port = focus.port(formal = true)
++        val player = DesktopVoicePlayback(DesktopVoiceAudioStore(root), port, gate)
++        val audio = DesktopAudioMaintenance({ focus }) { player.stop() }
++        val primitive = Primitive(gate)
++        val snapshots = DesktopCoordinatedSnapshotService(primitive, gate, audioMaintenance = audio)
++        val backup = DesktopAutomaticBackupRuntime(DesktopSettingsStore(root, gate), snapshots, gate)
++        val services = mutableListOf<DesktopDataRootMigrationService>()
++        var prepares = 0; var preflights = 0; var materializations = 0; var commits = 0
++        var preflight: suspend () -> Unit = {}
++        var rejectPreflight = false
++        suspend fun playPaused() {
++            player.playSequence(listOf(voice)); withTimeout(3000) { native.starts.receive() }
++            // pause() is serialized with the player's completion/state publication.
++            withTimeout(3000) { player.state.first { it.playing } }
++            player.pause(); assertTrue(player.state.value.paused)
++        }
++        fun migration(): DesktopDataRootMigrationService {
++            val resolution = DesktopDataRootResolution.Resolved(root, DesktopDataRootProvenance.BOOTSTRAP_CUSTOM, root.parent.resolve("bootstrap.json"))
++            return DesktopDataRootMigrationService(resolution, backup, gate,
++                dependencies = DesktopDataRootMigrationDependencies(
++                    prepareDestination = { source, target -> prepares++; DesktopMigrationDestinationPreparer().prepare(source, target) },
++                    preflight = { _, _ ->
++                        preflights++; assertFalse(native.alias); assertEquals(DesktopDataOperationCoordinatorState.EXCLUSIVE, gate.state)
++                        preflight()
++                        if (rejectPreflight) DesktopMigrationMaterializationPreflightResult.Failure(
++                            DesktopMigrationMaterializationResult.Failure(DesktopMigrationMaterializationFailureKind.PRECONDITION_FAILED, "synthetic preflight"))
++                        else DesktopMigrationMaterializationPreflightResult.Ready
++                    },
++                    createSafetySnapshot = { snapshot(root, it) },
++                    materialize = { _, dest -> materializations++; DesktopMigrationMaterializationResult.Materialized(dest.destinationRoot,
++                        DesktopMigrationMaterializationSummary(0, 0, 0, emptyList()), emptyList()) },
++                    commitAuthority = { _, dest -> commits++; DesktopBootstrapAuthorityCommitResult.Committed(dest,
++                        DesktopBootstrapDocument(DesktopDataRootSelection.custom(dest), buildJsonObject {})) },
++                ), audioMaintenance = audio,
++            ).also { services += it }
++        }
++        suspend fun close() {
++            native.failClose = false; native.closeRelease?.complete(Unit)
++            player.closeAndDrain(); focus.closeAndDrain(); backup.close()
++            services.forEach { it.close() }; gate.closeAndDrain()
++            assertFalse(native.alias); assertEquals(DesktopDataOperationCoordinatorState.CLOSED, gate.state)
++            check(root.parent.fileName.toString().startsWith("post-audio-maint-"))
++            Files.walk(root.parent).use { paths -> paths.sorted(Comparator.reverseOrder()).forEach(Files::delete) }
++        }
++        companion object {
++            suspend fun create(): Fixture {
++                val root = Files.createDirectory(Files.createTempDirectory("post-audio-maint-").resolve("source"))
++                val clip = DesktopVoiceAudioStore(root).persist("session", "clip", fishPreviewMp3().inputStream())
++                val v = GeneratedVoiceMessage.create("session", "message", "version", null, 0, "WHOLE_MESSAGE", "", "hello", "hello", "hello",
++                    "alice", "Alice", FishAudioVoiceBinding("ref", "synthetic"), "s2.1-pro-free", clip.path, clip.durationMs, clip.byteLength)
++                return Fixture(root, v).also { it.backup.initialize() }
++            }
++        }
++    }
++    private class Primitive(val gate: DesktopDataOperationCoordinator) : DesktopSnapshotPrimitive {
++        var automaticCalls = 0
++        var onAutomatic: () -> Unit = {}
++        override fun executeAutomaticBackup(minimumInterval: Duration, maximumCount: Int): AutomaticBackupExecutionResult {
++            assertEquals(DesktopDataOperationCoordinatorState.EXCLUSIVE, gate.state)
++            automaticCalls++; onAutomatic(); return AutomaticBackupExecutionResult.SkippedNotDue
++        }
++        override fun createSnapshot(purpose: SnapshotPurpose) = snapshot(Path.of("synthetic"), purpose)
++        override fun restoreSnapshot(snapshotDirectory: Path) = error("not used")
++        override fun pruneAutomaticSnapshots(maximumCount: Int) = AutomaticSnapshotPruneResult(emptyList())
++        override fun listSnapshots() = emptyList<AppDataSnapshot>()
++        override fun validateSnapshot(snapshotDirectory: Path) = SnapshotValidation.VALID
++    }
++
++    @Test fun `paused lease blocks exclusive until confirmed native drain`(): Unit = maintenanceTest {
++        val f = Fixture.create()
++        try {
++            f.playPaused()
++            val entered = CompletableDeferred<Unit>()
++            val exclusive = async(start = CoroutineStart.UNDISPATCHED) { f.gate.withExclusiveMaintenance { entered.complete(Unit) } }
++            assertEquals(DesktopDataOperationCoordinatorState.MAINTENANCE_PENDING, f.gate.state); assertFalse(entered.isCompleted)
++            f.native.closeEntered = CompletableDeferred(); f.native.closeRelease = CompletableDeferred()
++            val stop = async { f.player.stop() }
++            withTimeout(3000) { f.native.closeEntered!!.await() }
++            assertFalse(entered.isCompleted); assertTrue(f.native.alias)
++            f.native.closeRelease!!.complete(Unit); withTimeout(3000) { stop.await(); exclusive.await() }
++            assertFalse(f.native.alias); assertEquals(DesktopDataOperationCoordinatorState.OPEN, f.gate.state)
++        } finally { f.close() }
++    }
++
++    @Test fun `migration waits for drain rejects late playback and seals after commit`(): Unit = maintenanceTest {
++        val f = Fixture.create()
++        try {
++            f.playPaused(); f.native.closeEntered = CompletableDeferred(); f.native.closeRelease = CompletableDeferred()
++            val tx = f.migration(); val migration = async { tx.migrate(f.root.parent.resolve("destination")) }
++            withTimeout(3000) { f.native.closeEntered!!.await() }
++            assertEquals(0, f.prepares); assertEquals(0, f.preflights); assertEquals(0, f.materializations); assertEquals(0, f.commits)
++            val entered = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>()
++            f.preflight = { entered.complete(Unit); release.await() }
++            val oldAdmission = f.port.playbackAdmissionToken() - 1
++            val latePlay = async { f.player.playSequence(listOf(f.voice), oldAdmission) }
++            val lateQueue = async { f.player.enqueueSequence(listOf(f.voice)) }
++            val resume = async { f.player.resume() }
++            f.native.closeRelease!!.complete(Unit)
++            withTimeout(3000) { entered.await(); latePlay.await(); lateQueue.await(); resume.await() }
++            assertEquals(1, f.native.plays.get()); assertFalse(f.native.alias)
++            assertFails { f.port.playFormal(Path.of(f.voice.audioPath)) }
++            release.complete(Unit)
++            assertIs<DesktopDataRootMigrationResult.Success>(withTimeout(3000) { migration.await() })
++            assertEquals(1, f.materializations); assertEquals(1, f.commits); assertTrue(f.gate.isRestartRequired)
++            assertFails { f.port.playFormal(Path.of(f.voice.audioPath)) }
++            assertFailsWith<DesktopAudioMaintenanceBusyException> { f.audio.withMaintenance(false, { false }) {} }
++        } finally { f.close() }
++    }
++
++    @Test fun `failed native close fails closed before any migration files then explicit retry recovers`(): Unit = maintenanceTest {
++        val f = Fixture.create()
++        try {
++            f.playPaused(); val original = Files.readAllBytes(Path.of(f.voice.audioPath)); f.native.failClose = true
++            val tx = f.migration()
++            val failed = assertIs<DesktopDataRootMigrationResult.Failure>(tx.migrate(f.root.parent.resolve("failed")))
++            assertEquals(DesktopDataRootMigrationFailureKind.AUDIO_MAINTENANCE, failed.kind)
++            assertTrue(failed.sourceStillAuthoritative == true); assertFalse(failed.restartRequired)
++            assertEquals(0, f.prepares); assertEquals(0, f.materializations); assertEquals(0, f.commits)
++            assertTrue(f.native.alias); assertContentEquals(original, Files.readAllBytes(Path.of(f.voice.audioPath)))
++            val unsafeExclusive = async(start = CoroutineStart.UNDISPATCHED) { f.gate.withExclusiveMaintenance { error("alias still open") } }
++            assertEquals(DesktopDataOperationCoordinatorState.MAINTENANCE_PENDING, f.gate.state)
++            unsafeExclusive.cancelAndJoin()
++            assertEquals(1, f.native.closeAttempts.get()) // No autonomous close retry hides the failure.
++            assertFails { f.port.playFormal(Path.of(f.voice.audioPath)) }
++            assertFailsWith<DesktopAudioMaintenanceBusyException> { f.snapshots.executeAutomaticBackup(Duration.ZERO, 2) }
++            f.native.failClose = false; f.rejectPreflight = true
++            val retry = assertIs<DesktopDataRootMigrationResult.Failure>(tx.migrate(f.root.parent.resolve("retry")))
++            assertEquals(DesktopDataRootMigrationFailureKind.PREFLIGHT, retry.kind)
++            assertIs<DesktopMaintenanceResumeResult.Resumed>(retry.runtimeDisposition)
++            f.port.playFormal(Path.of(f.voice.audioPath)); f.port.stopAndDrain()
++            assertFalse(f.native.alias); assertEquals(DesktopDataOperationCoordinatorState.OPEN, f.gate.state)
++        } finally { f.close() }
++    }
++
++    @Test fun `automatic backup reports busy without exclusive and scheduler retries after stop`(): Unit = maintenanceTest {
++        val f = Fixture.create()
++        val clock = TestCoroutineScheduler()
++        val primitive = Primitive(f.gate)
++        val dispatcher = StandardTestDispatcher(clock)
++        val service = DesktopCoordinatedSnapshotService(primitive, f.gate, dispatcher, f.audio)
++        val events = mutableListOf<DesktopAutomaticBackupEvent>()
++        val scheduler = DesktopAutomaticBackupScheduler(service::executeAutomaticBackup, dispatcher) { events += it }
++        try {
++            f.playPaused(); scheduler.start(DesktopAutomaticBackupSchedule(Duration.ZERO, 2, Duration.ofSeconds(1))); clock.runCurrent()
++            assertEquals(1, events.size); assertIs<DesktopAudioMaintenanceBusyException>(assertIs<DesktopAutomaticBackupEvent.Failed>(events.single()).error)
++            assertEquals(0, primitive.automaticCalls); assertEquals(DesktopDataOperationCoordinatorState.OPEN, f.gate.state)
++            assertTrue(f.native.alias && f.native.paused)
++            f.player.stop(); clock.advanceTimeBy(1000); clock.runCurrent()
++            assertEquals(1, primitive.automaticCalls); assertIs<DesktopAutomaticBackupEvent.SkippedNotDue>(events.last())
++        } finally {
++            val closing = async(start = CoroutineStart.UNDISPATCHED) { scheduler.close() }
++            clock.runCurrent(); closing.await(); f.close()
++        }
++    }
++
++    @Test fun `idle backup reservation blocks check to exclusive race and migration defers without scheduler cycle`(): Unit = maintenanceTest {
++        val f = Fixture.create()
++        try {
++            val normalEntered = CompletableDeferred<Unit>(); val releaseNormal = CompletableDeferred<Unit>()
++            val normal = async { f.gate.withNormalOperation { normalEntered.complete(Unit); releaseNormal.await() } }
++            normalEntered.await()
++            val backup = async(start = CoroutineStart.UNDISPATCHED) { f.snapshots.executeAutomaticBackup(Duration.ZERO, 2) }
++            assertEquals(DesktopDataOperationCoordinatorState.MAINTENANCE_PENDING, f.gate.state)
++            val requests = f.native.plays.get(); f.player.playSequence(listOf(f.voice)); f.player.enqueueSequence(listOf(f.voice))
++            assertEquals(requests, f.native.plays.get())
++            val result = assertIs<DesktopDataRootMigrationResult.Failure>(f.migration().migrate(f.root.parent.resolve("busy")))
++            assertEquals(DesktopDataRootMigrationFailureKind.AUDIO_MAINTENANCE, result.kind); assertEquals(0, f.prepares)
++            releaseNormal.complete(Unit); withTimeout(3000) { normal.await(); backup.await() }
++            f.rejectPreflight = true
++            assertEquals(DesktopDataRootMigrationFailureKind.PREFLIGHT,
++                assertIs<DesktopDataRootMigrationResult.Failure>(f.migration().migrate(f.root.parent.resolve("after-backup"))).kind)
++            assertEquals(DesktopDataOperationCoordinatorState.OPEN, f.gate.state)
++        } finally { f.close() }
++    }
++
++    @Test fun `migration reservation makes concurrent automatic checks defer before scheduler join`(): Unit = maintenanceTest {
++        val f = Fixture.create()
++        try {
++            val entered = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>(); f.rejectPreflight = true
++            f.preflight = { entered.complete(Unit); release.await() }
++            val migration = async { f.migration().migrate(f.root.parent.resolve("destination")) }
++            entered.await()
++            assertFailsWith<DesktopAudioMaintenanceBusyException> { f.snapshots.executeAutomaticBackup(Duration.ZERO, 2) }
++            release.complete(Unit); withTimeout(3000) { migration.await() }
++            assertEquals(DesktopDataOperationCoordinatorState.OPEN, f.gate.state)
++        } finally { f.close() }
++    }
++
++    @Test fun `in flight real scheduler backup cannot form migration audio scheduler join cycle`(): Unit = maintenanceTest {
++        val f = Fixture.create()
++        val entered = CompletableDeferred<Unit>(); val release = CountDownLatch(1)
++        try {
++            f.primitive.onAutomatic = { entered.complete(Unit); check(release.await(5, TimeUnit.SECONDS)) }
++            f.backup.applySettings(DesktopSettings(automaticBackup = DesktopAutomaticBackupSettings(enabled = true)))
++            entered.await()
++            val busy = assertIs<DesktopDataRootMigrationResult.Failure>(f.migration().migrate(f.root.parent.resolve("during-scheduler")))
++            assertEquals(DesktopDataRootMigrationFailureKind.AUDIO_MAINTENANCE, busy.kind)
++            assertEquals(0, f.prepares)
++            release.countDown()
++            f.backup.applySettings(DesktopSettings(automaticBackup = DesktopAutomaticBackupSettings(enabled = false)))
++            f.rejectPreflight = true
++            assertEquals(DesktopDataRootMigrationFailureKind.PREFLIGHT,
++                assertIs<DesktopDataRootMigrationResult.Failure>(f.migration().migrate(f.root.parent.resolve("after-scheduler"))).kind)
++            assertEquals(DesktopDataOperationCoordinatorState.OPEN, f.gate.state)
++        } finally { release.countDown(); f.close() }
++    }
++
++    @Test fun `cancellation completes native drain before reopening admission and skips migration transaction`(): Unit = maintenanceTest {
++        val f = Fixture.create()
++        try {
++            f.playPaused(); f.native.closeEntered = CompletableDeferred(); f.native.closeRelease = CompletableDeferred()
++            val migration = async { f.migration().migrate(f.root.parent.resolve("cancelled")) }
++            f.native.closeEntered!!.await(); migration.cancel()
++            assertFalse(migration.isCompleted); assertTrue(f.native.alias); assertEquals(0, f.prepares)
++            f.native.closeRelease!!.complete(Unit); withTimeout(3000) { migration.join() }
++            assertTrue(migration.isCancelled); assertFalse(f.native.alias); assertEquals(0, f.materializations)
++            f.port.playFormal(Path.of(f.voice.audioPath)); f.port.stopAndDrain()
++            assertEquals(DesktopDataOperationCoordinatorState.OPEN, f.gate.state)
++        } finally { f.close() }
++    }
++
++    @Test fun `cancelled pending exclusive and duplicate migration release both admission owners`(): Unit = maintenanceTest {
++        val f = Fixture.create()
++        try {
++            val entered = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>(); f.rejectPreflight = true
++            f.preflight = { entered.complete(Unit); release.await() }
++            val tx = f.migration(); val first = async { tx.migrate(f.root.parent.resolve("first")) }
++            entered.await()
++            val duplicate = async(start = CoroutineStart.UNDISPATCHED) { tx.migrate(f.root.parent.resolve("second")) }
++            assertEquals(1, f.prepares); duplicate.cancelAndJoin(); first.cancelAndJoin()
++            assertEquals(DesktopAutomaticBackupRuntimeMode.ACTIVE, f.backup.state.value.mode)
++            assertEquals(DesktopDataOperationCoordinatorState.OPEN, f.gate.state)
++            f.port.playFormal(Path.of(f.voice.audioPath)); f.port.stopAndDrain()
++        } finally { f.close() }
++    }
++
++    @Test fun `cancellation while waiting for exclusive releases audio reservation and destination`(): Unit = maintenanceTest {
++        val f = Fixture.create()
++        try {
++            val entered = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>()
++            val normal = async { f.gate.withNormalOperation { entered.complete(Unit); release.await() } }
++            entered.await()
++            val tx = f.migration()
++            val migration = async(start = CoroutineStart.UNDISPATCHED) { tx.migrate(f.root.parent.resolve("cancel-pending")) }
++            assertEquals(DesktopDataOperationCoordinatorState.MAINTENANCE_PENDING, f.gate.state)
++            migration.cancelAndJoin()
++            assertEquals(0, f.materializations); assertEquals(0, f.commits)
++            release.complete(Unit); normal.await()
++            f.port.playFormal(Path.of(f.voice.audioPath)); f.port.stopAndDrain()
++            assertEquals(DesktopDataOperationCoordinatorState.OPEN, f.gate.state)
++        } finally { f.close() }
++    }
++
++    @Test fun `real coordinator playFrom intent resume and autoplay cannot reopen during drain`(): Unit = maintenanceTest {
++        val gate = DesktopDataOperationCoordinator(); val native = Native(); val focus = DesktopAudioFocus(native)
++        DesktopChatVoiceRuntimeTest.Fixture(gate, { focus.port(formal = true) }).use { f ->
++            try {
++                f.seed(); f.runtime.foreground(f.session.id).join()
++                val clip = f.audio.persist(f.session.id, "manual", fishPreviewMp3().inputStream())
++                val v = GeneratedVoiceMessage.create(f.session.id, f.message.id,
++                    com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy.activeVersionId(f.message), null, 0, "WHOLE_MESSAGE", "", "hello", "hello", "hello",
++                    "alice", "Alice", FishAudioVoiceBinding("reference", "snapshot"), "s2.1-pro-free", clip.path, clip.durationMs, clip.byteLength)
++                f.repo.save(v)
++                f.runtime.coordinator.playFrom(v, listOf(v)).join()
++                withTimeout(3000) { native.starts.receive(); f.runtime.playback.state.first { it.playing } }
++                f.runtime.playback.pause()
++                val old = f.runtime.playbackIntent(); val admission = f.runtime.playback.admissionToken()
++                native.closeEntered = CompletableDeferred(); native.closeRelease = CompletableDeferred()
++                val inMaintenance = CompletableDeferred<Unit>(); val finish = CompletableDeferred<Unit>()
++                val audio = DesktopAudioMaintenance({ focus }) { f.runtime.stopForMaintenance() }
++                val work = async { audio.withMaintenance(true, { false }) { inMaintenance.complete(Unit); finish.await() } }
++                native.closeEntered!!.await()
++                f.runtime.coordinator.playFrom(v, listOf(v), old).join()
++                val resume = async { f.runtime.playback.resume() }
++                val automatic = async { f.runtime.playback.enqueueSequence(listOf(v), admission) }
++                native.closeRelease!!.complete(Unit)
++                withTimeout(3000) { inMaintenance.await(); resume.await(); automatic.await() }
++                assertEquals(1, native.plays.get()); assertFalse(native.alias); assertEquals(0, f.server.requestCount)
++                finish.complete(Unit); work.await()
++            } finally { native.closeRelease?.complete(Unit); f.runtime.stopForMaintenance(); focus.closeAndDrain() }
++        }
++        gate.closeAndDrain(); assertFalse(native.alias)
++    }
++
++    private fun maintenanceTest(block: suspend CoroutineScope.() -> Unit): Unit = runBlocking {
++        withTimeout(15000, block)
++    }
++
++    private companion object {
++        fun snapshot(root: Path, purpose: SnapshotPurpose) = AppDataSnapshot("synthetic", root.resolve("snapshot"), Instant.EPOCH, purpose, SnapshotValidation.VALID)
++    }
++}
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatVoiceRuntimeTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatVoiceRuntimeTest.kt
+index ad7f791f..b1f16a6d 100644
+--- a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatVoiceRuntimeTest.kt
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatVoiceRuntimeTest.kt
+@@ -61,9 +61,12 @@ class DesktopChatVoiceRuntimeTest {
+             assertEquals(0, f.output.plays); assertFalse(f.output.playing)
+         }
+     }
+-    internal class Fixture : AutoCloseable {
++    internal class Fixture(
++        gate: com.example.chatbar.data.operation.AppDataOperationGate = com.example.chatbar.data.operation.NoOpAppDataOperationGate,
++        outputFactory: (PreviewOutputFake) -> DesktopAudioOutput = { it },
++    ) : AutoCloseable {
+         val root = Files.createTempDirectory("s5-chat-")
+-        val storage = JsonFileStorage(root); val chats = ChatRepository(storage)
++        val storage = JsonFileStorage(root, gate); val chats = ChatRepository(storage)
+         val characters = CharacterRepository(storage); val settings = SettingsRepository(storage)
+         val models = EffectiveModelResolver(ModelRepository(storage), settings, object : PresetModelCatalogSource {
+             override val catalog = PresetModelCatalog(); override val modelCatalogVersion: Int? = null
+@@ -77,8 +80,8 @@ class DesktopChatVoiceRuntimeTest {
+             override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path = target
+         }
+         val transport = DesktopFishVoiceTransport(credentials, audio, OkHttpClient(), server.url("/").toString().trimEnd('/'), { LocalDate.of(2026,10,19) })
+-        val runtime = DesktopChatVoiceRuntime(chats, characters, settings, models, repo, audio, credentials, output,
+-            picker = picker, transportOverride = transport, textGateway = FishVoiceTextGateway { _, _, _, _ -> error("Unapproved auxiliary request") })
++        val runtime = DesktopChatVoiceRuntime(chats, characters, settings, models, repo, audio, credentials, outputFactory(output),
++            picker = picker, gate = gate, transportOverride = transport, textGateway = FishVoiceTextGateway { _, _, _, _ -> error("Unapproved auxiliary request") })
+         lateinit var session: ChatSession; lateinit var message: ChatMessage
+         suspend fun seed() {
+             characters.save(CharacterCard("card", "synthetic", characters = listOf(CharacterInfo("alice", "Alice",
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopDataRootSwitchControllerTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopDataRootSwitchControllerTest.kt
+index 33b73954..cbac957f 100644
+--- a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopDataRootSwitchControllerTest.kt
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopDataRootSwitchControllerTest.kt
+@@ -180,6 +180,16 @@ class DesktopDataRootSwitchControllerTest {
+         assertIs<DesktopDataRootMigrationResult.Success>(state.result)
+     }
+ 
++    @Test
++    fun `audio maintenance rejection stays retryable without changing root authority`() = runTest {
++        val fixture = fixture(result = failure(DesktopDataRootMigrationFailureKind.AUDIO_MAINTENANCE))
++        fixture.controller.chooseDestination()
++        fixture.controller.confirmMigration()
++        assertIs<DesktopDataRootSwitchState.RetryableFailure>(fixture.controller.state.value)
++        fixture.controller.retryCandidate()
++        assertIs<DesktopDataRootSwitchState.CandidateSelected>(fixture.controller.state.value)
++    }
++
+     @Test
+     fun `success keeps startup source current and reports destination as next start`() = runTest {
+         val source = Path.of("source").toAbsolutePath()

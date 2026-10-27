@@ -1,0 +1,11 @@
+{
+  "id": "b1m",
+  "sessionId": "b1s",
+  "role": "USER",
+  "content": "B1 synthetic preservation text",
+  "images": [
+    "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\preview-b1\\isolated\\data\\images\\b1.png"
+  ],
+  "createdAt": 1,
+  "updatedAt": 1
+}

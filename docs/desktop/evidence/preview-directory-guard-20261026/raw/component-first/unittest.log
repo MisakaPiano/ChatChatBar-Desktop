@@ -1,0 +1,16 @@
+test_fresh_default_and_explicit_safe_directory (test_msi_directory_guard.DirectoryNative) ... ok
+test_fresh_existing_unknown_content_or_unreadable_target_refuses (test_msi_directory_guard.DirectoryNative) ... ok
+test_maintenance_uninstall_and_upgrade_child_restore_saved_directory (test_msi_directory_guard.DirectoryNative) ... ok
+test_missing_unreadable_and_stale_saved_records_refuse (test_msi_directory_guard.DirectoryNative) ... ok
+test_multiple_invalid_or_self_old_product_refuses_before_lookup (test_msi_directory_guard.DirectoryNative) ... ok
+test_property_and_public_identity_failures_are_redacted (test_msi_directory_guard.DirectoryNative) ... ok
+test_reparse_file_denied_and_unavailable_drive_refuse (test_msi_directory_guard.DirectoryNative) ... ok
+test_requested_directory_conflict_never_silently_redirects (test_msi_directory_guard.DirectoryNative) ... ok
+test_revalidation_accepts_trailing_separator_but_refuses_changes (test_msi_directory_guard.DirectoryNative) ... ok
+test_unsafe_paths_refuse (test_msi_directory_guard.DirectoryNative) ... ok
+test_verified_new_contract_upgrade_and_legacy_refusal (test_msi_directory_guard.DirectoryNative) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 0.017s
+
+OK

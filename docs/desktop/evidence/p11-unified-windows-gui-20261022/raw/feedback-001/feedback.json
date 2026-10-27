@@ -1,0 +1,14 @@
+{
+  "recordedAt": "2026-10-21T15:59:55.5286049Z",
+  "userVerbatim": "语音条上播放时候用的这个图形太简陋了吧，明明可以用更标准的暂停键和音频播放图形。我建议播放的时候下面的小图标右边是暂停，暂停之后右边才变成停止。",
+  "result": "USER FAIL",
+  "scope": "语音播放图标及底部播放器状态与动作表达",
+  "requestedBehavior": [
+    "语音条使用标准暂停与音频播放图标",
+    "底部播放器播放中右侧为暂停",
+    "暂停后右侧变为停止"
+  ],
+  "functionalPauseResume": "NOT CONFIRMED BY USER",
+  "toolbarAndMenu": "截图可见改善，尚无用户明确签署",
+  "productionModified": false
+}

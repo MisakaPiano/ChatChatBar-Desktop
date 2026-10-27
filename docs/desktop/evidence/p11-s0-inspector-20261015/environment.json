@@ -1,0 +1,23 @@
+{
+  "os": "Windows",
+  "jdk": "Eclipse Temurin 17.0.20.1",
+  "javaHome": "C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.20.101-hotspot",
+  "gradle": "9.1.0",
+  "heap": "existing -Xmx2048m",
+  "androidSdk": "C:\\Users\\1\\AppData\\Local\\Android\\Sdk",
+  "androidEnv": "ANDROID_HOME and ANDROID_SDK_ROOT set for child process only after stage 05; no local.properties edits",
+  "androidPlatform": "android-36",
+  "buildTools": [
+    "34.0.0",
+    "36.0.0"
+  ],
+  "offline": true,
+  "workers": 1,
+  "parallel": false,
+  "kotlinExecution": "in-process",
+  "priority": "low",
+  "installedSoftware": false,
+  "accountWeeklyUsedPercent": 62,
+  "quotaReadUtc": "2026-10-14T23:45:25Z",
+  "taskExactCharge": "UNKNOWN; shared account reading is not a per-task charge"
+}

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.data.repository.ModelRepositoryMigrationTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:31:15.121Z" hostname="DD1" time="0.117">
+  <properties/>
+  <testcase name="old catalog planner field is ignored and restoring it cannot recreate a dedicated model" classname="com.example.chatbar.data.repository.ModelRepositoryMigrationTest" time="0.028"/>
+  <testcase name="legacy planner keeps explicit binding and credentials as ordinary model across restarts" classname="com.example.chatbar.data.repository.ModelRepositoryMigrationTest" time="0.025"/>
+  <testcase name="interruption after ordinary model save does not duplicate migration" classname="com.example.chatbar.data.repository.ModelRepositoryMigrationTest" time="0.027"/>
+  <testcase name="colliding ordinary model survives migration and legacy config is preserved separately" classname="com.example.chatbar.data.repository.ModelRepositoryMigrationTest" time="0.037"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

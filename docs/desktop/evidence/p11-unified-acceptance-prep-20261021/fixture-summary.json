@@ -1,0 +1,31 @@
+{
+  "root": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-unified-acceptance-prep-20261021\\environments\\manual-ready\\app-data",
+  "entityCounts": {
+    "character_cards": 1,
+    "chat_drafts": 1,
+    "chat_messages": 13,
+    "chat_message_indexes": 3,
+    "chat_sessions": 3,
+    "generated_voice_messages": 8,
+    "memory_nodes": 2,
+    "memory_states": 2,
+    "model_configs": 1,
+    "save_slots": 3,
+    "vector_chunks": 3,
+    "voice_anchor_states": 8
+  },
+  "primarySession": "unified-a",
+  "longAudioDurationsMs": [
+    31608,
+    31608,
+    31608,
+    31608
+  ],
+  "recordingsAlwaysHaveText": true,
+  "modelEndpointsLoopbackOnly": true,
+  "modelJsonHasNoCredentials": true,
+  "automaticBackup": false,
+  "memory": "Synthetic legacy-reference snapshot plus HEAD; not an AI-generated Episode/Arc/Era result",
+  "rag": "Synthetic persisted chat and document vectors; not real-provider embedding quality evidence",
+  "sourceArchivePreserved": true
+}

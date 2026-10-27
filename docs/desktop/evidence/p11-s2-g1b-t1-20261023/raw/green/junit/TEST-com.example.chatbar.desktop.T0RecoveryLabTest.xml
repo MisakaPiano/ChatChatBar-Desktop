@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.T0RecoveryLabTest" tests="20" skipped="0" failures="0" errors="0" timestamp="2026-10-23T11:07:13.188Z" hostname="DD1" time="91.886">
+  <properties/>
+  <testcase name="real resolver shares logical keys while test namespaces separate equal model IDs" classname="com.example.chatbar.desktop.T0RecoveryLabTest" time="0.913"/>
+  <testcase name="cross process gates exclude shared consumers but permit independent namespaces" classname="com.example.chatbar.desktop.T0RecoveryLabTest" time="1.87"/>
+  <testcase name="before intent hard exit has no live writes and after intent exit blocks before fresh recovery" classname="com.example.chatbar.desktop.T0RecoveryLabTest" time="7.943"/>
+  <testcase name="unregistered shared consumer proves the closed registry assumption is not global proof" classname="com.example.chatbar.desktop.T0RecoveryLabTest" time="2.385"/>
+  <testcase name="decision published without receipt fails closed even when all live bytes are NEW" classname="com.example.chatbar.desktop.T0RecoveryLabTest" time="5.595"/>
+  <testcase name="second protected key failure retains mixed evidence and is recoverable" classname="com.example.chatbar.desktop.T0RecoveryLabTest" time="6.756"/>
+  <testcase name="external data generation or protected key change cannot be overwritten by recovery" classname="com.example.chatbar.desktop.T0RecoveryLabTest" time="7.08"/>
+  <testcase name="lost corrupt conflicting receipts retain bytes and cannot activate" classname="com.example.chatbar.desktop.T0RecoveryLabTest" time="7.459"/>
+  <testcase name="invalid fake protection context and inaccessible key location cannot become ABSENT" classname="com.example.chatbar.desktop.T0RecoveryLabTest" time="2.007"/>
+  <testcase name="legacy writer bypasses new locks so marker cannot prove downgrade protection" classname="com.example.chatbar.desktop.T0RecoveryLabTest" time="2.147"/>
+  <testcase name="Community no protected sink and missing conflict consent cannot prepare a transaction" classname="com.example.chatbar.desktop.T0RecoveryLabTest" time="0.92"/>
+  <testcase name="interrupted recovery is idempotent across another hard exit" classname="com.example.chatbar.desktop.T0RecoveryLabTest" time="8.419"/>
+  <testcase name="all NEW bytes without completion receipt cannot activate and roll back after restart" classname="com.example.chatbar.desktop.T0RecoveryLabTest" time="7.245"/>
+  <testcase name="completedReceiptWithoutDecisionMustRemainBlocked" classname="com.example.chatbar.desktop.T0RecoveryLabTest" time="5.646"/>
+  <testcase name="hard KEY FIRST and DATA FIRST exits block business and fresh processes recover OLD" classname="com.example.chatbar.desktop.T0RecoveryLabTest" time="11.016"/>
+  <testcase name="directory clone replacement root switch and Portable relocation need rebind approval" classname="com.example.chatbar.desktop.T0RecoveryLabTest" time="3.946"/>
+  <testcase name="successful NEW receipt is revalidated on every repeated fresh startup" classname="com.example.chatbar.desktop.T0RecoveryLabTest" time="5.067"/>
+  <testcase name="lost intent and changed rollback evidence are unknown rather than empty" classname="com.example.chatbar.desktop.T0RecoveryLabTest" time="2.756"/>
+  <testcase name="same model ID different provider endpoint blocks shared binding and is isolated per root" classname="com.example.chatbar.desktop.T0RecoveryLabTest" time="1.348"/>
+  <testcase name="offline registered B blocks shared changes but disjoint namespace A retains unavailable B" classname="com.example.chatbar.desktop.T0RecoveryLabTest" time="1.368"/>
+  <system-out><![CDATA[T0_CHILD mode=gate-B expected=0 actual=0 alive=false
+T0_CHILD mode=gate-B expected=0 actual=0 alive=false
+T0_CHILD mode=before-intent expected=71 actual=71 alive=false
+T0_CHILD mode=after-intent expected=71 actual=71 alive=false
+T0_CHILD mode=recover expected=0 actual=0 alive=false
+T0_CHILD mode=before-intent expected=71 actual=71 alive=false
+T0_CHILD mode=after-intent expected=71 actual=71 alive=false
+T0_CHILD mode=recover expected=0 actual=0 alive=false
+T0_LIMIT UNKNOWN_SHARED_CONSUMER_CLOSURE_NOT_PROVEN
+T0_CHILD mode=apply expected=71 actual=71 alive=false
+T0_CHILD mode=apply expected=71 actual=71 alive=false
+T0_CHILD mode=recover expected=0 actual=0 alive=false
+T0_CHILD mode=recover expected=0 actual=0 alive=false
+T0_CHILD mode=apply expected=71 actual=71 alive=false
+T0_CHILD mode=recover-crash expected=72 actual=72 alive=false
+T0_CHILD mode=recover expected=0 actual=0 alive=false
+T0_CHILD mode=recover expected=0 actual=0 alive=false
+T0_CHILD mode=apply expected=71 actual=71 alive=false
+T0_CHILD mode=recover-crash expected=72 actual=72 alive=false
+T0_CHILD mode=recover expected=0 actual=0 alive=false
+T0_CHILD mode=recover expected=0 actual=0 alive=false
+T0_CHILD mode=apply expected=71 actual=71 alive=false
+T0_CHILD mode=recover expected=0 actual=0 alive=false
+T0_CHILD mode=apply expected=71 actual=71 alive=false
+T0_CHILD mode=recover expected=0 actual=0 alive=false
+T0_CHILD mode=apply expected=71 actual=71 alive=false
+T0_CHILD mode=recover expected=0 actual=0 alive=false
+T0_CHILD mode=recover expected=0 actual=0 alive=false
+T0_CHILD mode=apply expected=71 actual=71 alive=false
+T0_CHILD mode=recover expected=0 actual=0 alive=false
+T0_CHILD mode=recover expected=0 actual=0 alive=false
+T0_CHILD mode=apply expected=71 actual=71 alive=false
+T0_CHILD mode=recover expected=0 actual=0 alive=false
+T0_CHILD mode=recover expected=0 actual=0 alive=false
+T0_CHILD mode=apply expected=71 actual=71 alive=false
+T0_CHILD mode=recover expected=0 actual=0 alive=false
+T0_CHILD mode=recover expected=0 actual=0 alive=false
+T0_CHILD mode=apply expected=0 actual=0 alive=false
+T0_CHILD mode=recover expected=0 actual=0 alive=false
+T0_CHILD mode=recover expected=0 actual=0 alive=false
+T0_CHILD mode=apply expected=0 actual=0 alive=false
+T0_CHILD mode=recover expected=0 actual=0 alive=false
+T0_CHILD mode=recover expected=0 actual=0 alive=false
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

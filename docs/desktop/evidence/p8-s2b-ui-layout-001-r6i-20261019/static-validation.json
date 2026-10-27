@@ -1,0 +1,16 @@
+{
+  "metadataAndSourceCopiesDiffCheckExit": 0,
+  "rawFullDiffCheckExit": 2,
+  "rawWarningsPreserved": true,
+  "excerptIsVerbatimSourceNotStandaloneNewKotlin": true,
+  "markdownTargetsChecked": 23,
+  "allTargetsExist": true,
+  "phaseAManifestReverified": true,
+  "sourceDraftsFrozenUnstaged": true,
+  "historicalEvidenceUnchanged": true,
+  "protectedUserFilesPathsOnly": true,
+  "manualLaunches": 1,
+  "retries": 0,
+  "junitInvocations": 0,
+  "onlyNewEvidenceStaged": true
+}

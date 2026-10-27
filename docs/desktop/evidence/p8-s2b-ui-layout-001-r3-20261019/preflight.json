@@ -1,0 +1,12 @@
+{
+  "head": "55366cee0706c78f545b32ef7d75750c649dcdbd",
+  "parent": "934a349c51eeb51c1d7b7b12799b48594cb50358",
+  "tracking": "55366cee0706c78f545b32ef7d75750c649dcdbd",
+  "branch": "feature/phase8-fish-audio",
+  "indexEmpty": true,
+  "trackedWorktreeCleanBeforeDiagnostic": true,
+  "protectedUserOwnedUntracked": 4,
+  "protectedContentsRead": false,
+  "userAuthorizedPaginationAddition": "输入页码直接跳转，很多多页时候的常驻可拖动滚动条。可以像一般的多页网页一样设计。",
+  "diagnosticPolicy": "one bounded native observation; historical UX outcomes recorded, runtime mismatch must fail and stop"
+}

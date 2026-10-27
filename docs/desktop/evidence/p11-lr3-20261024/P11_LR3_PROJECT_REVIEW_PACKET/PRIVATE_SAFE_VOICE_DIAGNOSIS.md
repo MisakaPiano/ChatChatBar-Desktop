@@ -1,0 +1,15 @@
+# Private-safe voice diagnosis — scoped local observation
+
+One explicitly selected real encrypted full backup from the already authorized source directory was read using masked Console and the frozen opt-in LR3 tool. Source file remained native read-locked against write/delete; private full byte hash matched before/after even on refusal. No extraction, original modification, real restore, user-root or SecretStore operation. Only fixed aggregate tokens were published. Source paths can be visible in local process arguments; no OS-level total secrecy claim.
+
+Actual result: exit2 at outer record3148. This ordinal is not a user ID. In the first failing nested v8 package,235 voices were examined:199 matched known versions,36 had a NONNULL messageVersionId outside their owner's current official version set. Missing-owner, cross-session and null-legacy categories were zero in this package. This is not an all-package census or full-file semantic acceptance.
+
+Interpretation: the merged LR2 category is now resolved to unknown explicit versions, not missing messages. No positive evidence establishes scope omission or exact historic pruning. The official append policy can prune old alternatives; official session voice selection/Reader do not require version closure. Independent source-derived synthetic pruning demonstrates that a structurally Reader-valid package can retain a historic recording. That is a possible explanation, not proven private provenance.
+
+No scanner admission false-positive was established. Structural readability and full relation-safe restoration remain different claims. Existing official repository restore can infer for unknown explicit versions; reproducing that mutation in the diagnostic would violate185/186, so it was not invoked and no record was dropped/rebound. A future full-fidelity non-runnable preservation adapter needs separate approved ownership/migration policy.
+
+The nested ZIP had been scanned before relation classification, but the outer stream stopped early: final outer authentication/central/inventory publication was NOT reached. Prior181 envelope evidence is historical and separate. Code86 does not attest exact producing APK commit; selected147 is the traceable official comparison source. Original archive is not declared corrupt.
+
+raw/private-safe-transcription.txt is a tool-response transcription, NOT original private stdout or Project-independent private rehash. Private data/digests remain outside Git. Exact byte equality is a source witness, not a replacement for authenticating unconsumed outer EOF.
+
+Final follow-up at code d70a6e7: the classifier additionally distinguished nonnull blank/whitespace legacy representation (official isNullOrBlank semantics) without admitting it. Same result199 known/36 unknown nonblank versions; null/blank legacy, missing owner and cross-session were all zero in the first failing package. Second private source equality witness passed, exit2 retained. raw/private-safe-final-transcription.txt is the authoritative final scoped receipt; the earlier transcript remains historical.

@@ -1,0 +1,8 @@
+[
+  "-I",
+  "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\preview-continuous-private-20261025\\component-contract-20261026-r01\\memory-option-tests\\source\\run_directory_guard_tests.py",
+  "--evidence",
+  "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\preview-continuous-private-20261025\\component-contract-20261026-r01\\memory-option-tests",
+  "--module",
+  "test_package_resource_admission"
+]

@@ -1,0 +1,41 @@
+{
+  "recordType": "agent transcription of actual tool/user responses; not an API raw export",
+  "recordedUtc": "2026-10-16T15:14:24.648961+00:00",
+  "computerUse": [
+    {
+      "operation": "list_windows",
+      "result": "computer-use request timed out: list_windows"
+    },
+    {
+      "operation": "list_windows retry after 2s",
+      "result": "Error: computer-use request timed out: list_windows",
+      "responseUtc": "2026-10-16T15:11:46.178Z"
+    },
+    {
+      "operation": "list_windows after kernel reset",
+      "result": "Error: computer-use request timed out: list_windows",
+      "responseUtc": "2026-10-16T15:12:31.460Z"
+    }
+  ],
+  "manualAttestation": [
+    {
+      "sequence": 1,
+      "userAnswer": "我刚才没有在看电脑屏幕，你可以再试一次然后马上问我",
+      "attestation": "NONE"
+    },
+    {
+      "sequence": 2,
+      "target": "same still-running BV-B2; no second launch",
+      "userAnswer": "屏幕上没有这个窗口",
+      "attestation": "NO_WINDOW_OBSERVED"
+    }
+  ],
+  "bodyVisualVerified": false,
+  "copyDiagnosticTested": false,
+  "screenshotAttempted": false,
+  "screenshotObtained": false,
+  "furtherScenarios": "B4, B5 invalid marker and B5 bad bootstrap NOT RUN because initial owned processes not confirmed exited",
+  "noForcedTermination": true,
+  "noClipboardAccess": true,
+  "noProductionModification": true
+}

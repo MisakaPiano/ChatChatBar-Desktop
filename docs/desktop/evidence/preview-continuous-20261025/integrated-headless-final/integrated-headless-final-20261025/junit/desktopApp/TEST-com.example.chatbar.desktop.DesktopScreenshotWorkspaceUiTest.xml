@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-25T03:57:32.131Z" hostname="DD1" time="1.106">
+  <properties/>
+  <testcase name="very long PNG at high zoom renders only a bounded viewport and saves original pixels" classname="com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest" time="0.226"/>
+  <testcase name="internal return Escape and native shell close callback leave host alive" classname="com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest" time="0.176"/>
+  <testcase name="compact and wide workspaces keep bars reachable with preview and both scrollbars" classname="com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest" time="0.433"/>
+  <testcase name="workspace exposes bulk selection and fixed export actions" classname="com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest" time="0.109"/>
+  <testcase name="persisted recording opens workspace and independent preview without audio content" classname="com.example.chatbar.desktop.DesktopScreenshotWorkspaceUiTest" time="0.162"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

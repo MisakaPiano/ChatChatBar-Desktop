@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.chat.ChatHistoryPromptPolicyTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:31:19.107Z" hostname="DD1" time="0.003">
+  <properties/>
+  <testcase name="statusExclusionAppliesOnlyToEarlierAssistantHistory" classname="com.example.chatbar.domain.chat.ChatHistoryPromptPolicyTest" time="0.003"/>
+  <testcase name="formatContinuityNoticeRequiresExclusionFormatCardAndEarlierAssistant" classname="com.example.chatbar.domain.chat.ChatHistoryPromptPolicyTest" time="0.0"/>
+  <testcase name="blankAssistantBodyIsOmitted" classname="com.example.chatbar.domain.chat.ChatHistoryPromptPolicyTest" time="0.0"/>
+  <testcase name="blankCompletedAssistantResponseCannotBePersisted" classname="com.example.chatbar.domain.chat.ChatHistoryPromptPolicyTest" time="0.0"/>
+  <testcase name="statusOnlyAssistantBodyDoesNotProduceTimelineOnlyPayloadAfterExclusion" classname="com.example.chatbar.domain.chat.ChatHistoryPromptPolicyTest" time="0.0"/>
+  <testcase name="statusOnlyPreviousAssistantRemainsAvailableWhileEarlierHistoryCanBeOmitted" classname="com.example.chatbar.domain.chat.ChatHistoryPromptPolicyTest" time="0.0"/>
+  <testcase name="repeatedBlankAssistantImageRecordsAreAllOmitted" classname="com.example.chatbar.domain.chat.ChatHistoryPromptPolicyTest" time="0.0"/>
+  <testcase name="blankUserBodyIsAllowedOnlyWhenSupportedImageExists" classname="com.example.chatbar.domain.chat.ChatHistoryPromptPolicyTest" time="0.0"/>
+  <testcase name="nonBlankBodyContainsNoTimelinePrefix" classname="com.example.chatbar.domain.chat.ChatHistoryPromptPolicyTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

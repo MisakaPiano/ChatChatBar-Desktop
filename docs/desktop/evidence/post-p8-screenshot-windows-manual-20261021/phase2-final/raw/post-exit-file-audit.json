@@ -1,0 +1,108 @@
+{
+  "utc": "2026-10-20T19:09:28.470995+00:00",
+  "formalAudioCount": 5,
+  "mediaChecks": [
+    {
+      "path": "audio/generated/p8s7-session-a/shot-p8s7-a-assistant-0.mp3",
+      "bytes": 405420,
+      "matchesInitial": true
+    },
+    {
+      "path": "audio/generated/p8s7-session-a/shot-p8s7-a-assistant-0.mp3.owner",
+      "bytes": 72,
+      "matchesInitial": true
+    },
+    {
+      "path": "audio/generated/p8s7-session-a/shot-p8s7-a-assistant-1.mp3",
+      "bytes": 252860,
+      "matchesInitial": true
+    },
+    {
+      "path": "audio/generated/p8s7-session-a/shot-p8s7-a-assistant-1.mp3.owner",
+      "bytes": 72,
+      "matchesInitial": true
+    },
+    {
+      "path": "audio/generated/p8s7-session-a/shot-postp8-a-assistant-2-0.mp3",
+      "bytes": 405420,
+      "matchesInitial": true
+    },
+    {
+      "path": "audio/generated/p8s7-session-a/shot-postp8-a-assistant-2-0.mp3.owner",
+      "bytes": 72,
+      "matchesInitial": true
+    },
+    {
+      "path": "audio/generated/p8s7-session-a/shot-postp8-a-assistant-2-1.mp3",
+      "bytes": 252860,
+      "matchesInitial": true
+    },
+    {
+      "path": "audio/generated/p8s7-session-a/shot-postp8-a-assistant-2-1.mp3.owner",
+      "bytes": 72,
+      "matchesInitial": true
+    },
+    {
+      "path": "audio/generated/p8s7-session-a/shot-shot-a-voice-only-0.mp3",
+      "bytes": 405420,
+      "matchesInitial": true
+    },
+    {
+      "path": "audio/generated/p8s7-session-a/shot-shot-a-voice-only-0.mp3.owner",
+      "bytes": 72,
+      "matchesInitial": true
+    },
+    {
+      "path": "images/post-p8-avatar-alice.png",
+      "bytes": 258,
+      "matchesInitial": true
+    },
+    {
+      "path": "images/post-p8-avatar-bob.png",
+      "bytes": 259,
+      "matchesInitial": true
+    },
+    {
+      "path": "images/post-p8-background.png",
+      "bytes": 4205,
+      "matchesInitial": true
+    },
+    {
+      "path": "images/post-p8-landscape.png",
+      "bytes": 1467,
+      "matchesInitial": true
+    }
+  ],
+  "characterCardsMatchBefore": true,
+  "exports": [
+    {
+      "path": "exports\\png\\ChatBar_截图验收_C_·_长图边界_20261021_035815.png",
+      "bytes": 2421530,
+      "sha256": "e4364344dacd0beb0694e5348fd937223156cdd0258ebeadb1ad735bb515edbb"
+    },
+    {
+      "path": "exports\\png\\keep-existing.png",
+      "bytes": 3567,
+      "sha256": "a4c0c504342ece37158ce5ef137f32db579b51eec241d8a6b4bc8e93f7fb85c9"
+    },
+    {
+      "path": "exports\\png\\segment.png",
+      "bytes": 6694,
+      "sha256": "155670b1bfdf08b5fbf016c9d369ce78a4c6f13bf71dee0ea1bd7bd025b9d2a9"
+    }
+  ],
+  "ownedTemporaryFiles": [
+    {
+      "path": "preview-temp\\jna-49\\jna16199388222981507832.dll",
+      "bytes": 273408
+    },
+    {
+      "path": "preview-temp\\jna-49\\jna16199388222981507832.dll.x",
+      "bytes": 0
+    }
+  ],
+  "partFiles": [],
+  "credentialStore": "Excluded; not read/copied/hashed",
+  "rootLock": "Retained, never deleted; separate lock probe rc0",
+  "noCleanupOfFormalAudio": true
+}

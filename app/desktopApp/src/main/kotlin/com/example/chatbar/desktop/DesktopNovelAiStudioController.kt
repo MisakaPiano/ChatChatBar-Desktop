@@ -224,8 +224,11 @@ internal class DesktopNovelAiStudioController(
 
     suspend fun importCard(id: String) {
         val card = requireNotNull(characters.getById(id))
-        replace { current -> current.importCharacterCardPromptSources(card.id, card.defaultImagePrompt, card.defaultImageNegativePrompt,
-            card.characters.map { NovelAiCharacterPromptSource(it.name, it.imagePrompt) }) }
+        replace { current ->
+            val configured = current.importCharacterCardPromptSources(card.id, card.defaultImagePrompt, card.defaultImageNegativePrompt,
+                card.characters.map { NovelAiCharacterPromptSource(it.name, it.imagePrompt) })
+            card.defaultImageGenerationSettings?.let { configured.withActiveSettings(it.applyTo(configured.activeSettings)) } ?: configured
+        }
     }
 
     suspend fun clearPrompts() {

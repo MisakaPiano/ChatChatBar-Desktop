@@ -1,0 +1,44 @@
+[
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDocumentIndexTransactionInspector.kt",
+    "baselineGitBlob": "49938171aebab38fd64d1a61962df0c887c7720a",
+    "currentWorktreeSha256": "dea2244df3af150e345d84030c95c8d382ceb7ffd731239ad7cf6955039f3546",
+    "productionUnchanged": true
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDocumentIndexTransactionReadContract.kt",
+    "baselineGitBlob": "cc03d3ef61b06f4438aad8abbe9483ccc096f2a0",
+    "currentWorktreeSha256": "25f7331b952bbd91f17d1c892f48ccf3733a831aaefa79f51fc1e5f7cc25a060",
+    "productionUnchanged": true
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDocumentIndexReadEvidence.kt",
+    "baselineGitBlob": "10ef68216feb8c99256790d1fafefb264cf2de92",
+    "currentWorktreeSha256": "32317a614ea038a4a014900dd9f4a07dafab55a5e2e985c749bd5d878b36cbdd",
+    "productionUnchanged": true
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopDocumentIndexTransactionInspectorTest.kt",
+    "baselineGitBlob": "714a7957225a4823289adfbc781de1c854a0fd48",
+    "currentWorktreeSha256": "5093d567a6f04237e0b3e29b0964fcdc71a80faa0f0401dcb1074bbd71658632",
+    "productionUnchanged": false
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopDocumentIndexTransactionInspectorProcessTest.kt",
+    "baselineGitBlob": "b0b0bf537f5d9d91d31322277ac4edb5df0300eb",
+    "currentWorktreeSha256": "058cff16cf30f9eeb270621fa0bd9a02d0cb7562a987a9e6553fa620494bd756",
+    "productionUnchanged": false
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopDocumentIndexTransactionSyntheticFixture.kt",
+    "baselineGitBlob": "418b00f96021145212ad47cb18a5304f3bf2e695",
+    "currentWorktreeSha256": "fd8cc628d7013fa6d8f883514853e57b33a362389072b2f22964922c18303fd6",
+    "productionUnchanged": false
+  },
+  {
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopDocumentIndexReadEvidenceTest.kt",
+    "baselineGitBlob": "2fae24d7f06d3409a4c42488df33645eb4a6ff1c",
+    "currentWorktreeSha256": "db75697f02dfcb0597ea0cc0eb61cf13404da00f32c5094fefc85e620754f5d4",
+    "productionUnchanged": false
+  }
+]

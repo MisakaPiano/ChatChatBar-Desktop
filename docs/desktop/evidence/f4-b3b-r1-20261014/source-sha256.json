@@ -1,0 +1,38 @@
+[
+  {
+    "Path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt",
+    "Sha256": "0AA09B9A69A79EBD04551C42F46E6D11A7D7BF8AEF86F0C8C27829FD6B697E06",
+    "MatchesR1": true,
+    "GitBlob": "8df61f6ebf7ec4593c3130b41e11ac300fbfb5d2"
+  },
+  {
+    "Path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopTaskRuntime.kt",
+    "Sha256": "FC278AEE87B3864980AF1FB4C4CBA1735DF1FC6399F1695625754650B40A2075",
+    "MatchesR1": true,
+    "GitBlob": "df2de32240be68d04f367daf8bea76d656a75aff"
+  },
+  {
+    "Path": "app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/ChatRepository.kt",
+    "Sha256": "5BC87C824EE835B864050333D750AB8C67854A0B901045ED02CDEA45EEAADDEC",
+    "MatchesR1": true,
+    "GitBlob": "71986f9c707c29ebfaed6c48a2b766c36b716194"
+  },
+  {
+    "Path": "app/sharedCore/src/test/kotlin/com/example/chatbar/data/repository/ChatRepositoryConditionalUpdateTest.kt",
+    "Sha256": "2C47113DC3961C24863D23A787312A4973090F5A8150F698B56CCD9DD2736ACA",
+    "MatchesR1": true,
+    "GitBlob": "907e5b26e7d510c4e5498d46bf346ae9e116809b"
+  },
+  {
+    "Path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMessageFormatRepairController.kt",
+    "Sha256": "B710059E6C05BDC73E08D6A706F2DE641A165D9ACDCC2437EC3AF6C855FD3556",
+    "MatchesR1": true,
+    "GitBlob": "11edc3a4cc096f230813926a56b1c829bbe891f1"
+  },
+  {
+    "Path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopMessageFormatRepairTest.kt",
+    "Sha256": "F57AD8722A00DF5E560798178992CDD40AE3290EC3FAA2551024224A39AAFBAF",
+    "MatchesR1": true,
+    "GitBlob": "46c8b4f697840882ab959394d1aa2a333ec6e23b"
+  }
+]

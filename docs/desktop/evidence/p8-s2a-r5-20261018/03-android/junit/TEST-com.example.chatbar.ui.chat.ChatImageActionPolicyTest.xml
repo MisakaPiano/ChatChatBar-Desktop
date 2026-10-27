@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.ui.chat.ChatImageActionPolicyTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:26.471Z" hostname="DD1" time="0.025">
+  <properties/>
+  <testcase name="screenshot selection keeps image long press disabled" classname="com.example.chatbar.ui.chat.ChatImageActionPolicyTest" time="0.024"/>
+  <testcase name="text response does not disable image long press" classname="com.example.chatbar.ui.chat.ChatImageActionPolicyTest" time="0.0"/>
+  <testcase name="regeneration draft exposes all saved prompts and applies edits" classname="com.example.chatbar.ui.chat.ChatImageActionPolicyTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

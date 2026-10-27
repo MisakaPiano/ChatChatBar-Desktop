@@ -1,0 +1,11 @@
+{
+  "onlyXmlWrittenAfterStageStart": true,
+  "files": [
+    "TEST-com.example.chatbar.desktop.DesktopChatMemoryIndexTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopChatRetrievalTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopMemoryLifecycleTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopMemoryRagTransportTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopMemorySafetyTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopRealChatRuntimeTest.xml"
+  ]
+}

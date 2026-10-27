@@ -1,0 +1,39 @@
+{
+  "scope": "Only two R1A synthetic cards",
+  "cards": [
+    {
+      "id": "t2-structured",
+      "editMode": "STRUCTURED",
+      "fileSha256": "855cea4dbaa9ae38a85a718a916b2122adc78c8a6ab93047dc29e98649d18da2",
+      "characters": [
+        {
+          "id": "t2-structured-alice",
+          "name": "Alice 合成测试",
+          "fishAudioVoice": null
+        },
+        {
+          "id": "t2-structured-bob",
+          "name": "Bob 合成测试",
+          "fishAudioVoice": null
+        }
+      ]
+    },
+    {
+      "id": "t2-freeform",
+      "editMode": "FREEFORM",
+      "fileSha256": "1df89bf8f16f90c5f1938f5fd525c86e7e52ebc6627982b619b7d729d1da997e",
+      "characters": [
+        {
+          "id": "t2-freeform-alice",
+          "name": "Alice 合成测试",
+          "fishAudioVoice": null
+        },
+        {
+          "id": "t2-freeform-bob",
+          "name": "Bob 合成测试",
+          "fishAudioVoice": null
+        }
+      ]
+    }
+  ]
+}

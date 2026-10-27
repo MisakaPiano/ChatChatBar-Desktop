@@ -1,0 +1,299 @@
+private final okhttp3.mockwebserver.RecordedRequest readRequest(java.net.Socket, okio.BufferedSource, okio.BufferedSink, int) throws java.io.IOException;
+    Code:
+       0: aconst_null
+       1: astore        5
+       3: ldc_w         #674                // String
+       6: astore        5
+       8: new           #712                // class okhttp3/Headers$Builder
+      11: dup
+      12: invokespecial #713                // Method okhttp3/Headers$Builder."<init>":()V
+      15: astore        6
+      17: ldc2_w        #714                // long -1l
+      20: lstore        7
+      22: iconst_0
+      23: istore        9
+      25: iconst_0
+      26: istore        10
+      28: new           #717                // class okhttp3/mockwebserver/MockWebServer$TruncatingBuffer
+      31: dup
+      32: aload_0
+      33: getfield      #76                 // Field bodyLimit:J
+      36: invokespecial #719                // Method okhttp3/mockwebserver/MockWebServer$TruncatingBuffer."<init>":(J)V
+      39: astore        11
+      41: new           #721                // class java/util/ArrayList
+      44: dup
+      45: invokespecial #722                // Method java/util/ArrayList."<init>":()V
+      48: checkcast     #216                // class java/util/List
+      51: astore        12
+      53: aconst_null
+      54: astore        13
+      56: nop
+      57: aload_2
+      58: invokeinterface #727,  1          // InterfaceMethod okio/BufferedSource.readUtf8LineStrict:()Ljava/lang/String;
+      63: astore        5
+      65: aload         5
+      67: checkcast     #729                // class java/lang/CharSequence
+      70: invokeinterface #732,  1          // InterfaceMethod java/lang/CharSequence.length:()I
+      75: ifne          82
+      78: iconst_1
+      79: goto          83
+      82: iconst_0
+      83: ifeq          97
+      86: new           #734                // class java/net/ProtocolException
+      89: dup
+      90: ldc_w         #736                // String no request because the stream is exhausted
+      93: invokespecial #737                // Method java/net/ProtocolException."<init>":(Ljava/lang/String;)V
+      96: athrow
+      97: nop
+      98: aload_2
+      99: invokeinterface #727,  1          // InterfaceMethod okio/BufferedSource.readUtf8LineStrict:()Ljava/lang/String;
+     104: astore        14
+     106: aload         14
+     108: checkcast     #729                // class java/lang/CharSequence
+     111: invokeinterface #732,  1          // InterfaceMethod java/lang/CharSequence.length:()I
+     116: ifne          123
+     119: iconst_1
+     120: goto          124
+     123: iconst_0
+     124: ifeq          130
+     127: goto          323
+     130: aload         6
+     132: aload         14
+     134: invokestatic  #743                // Method okhttp3/internal/Internal.addHeaderLenient:(Lokhttp3/Headers$Builder;Ljava/lang/String;)Lokhttp3/Headers$Builder;
+     137: pop
+     138: aload         14
+     140: astore        16
+     142: getstatic     #749                // Field java/util/Locale.US:Ljava/util/Locale;
+     145: dup
+     146: ldc_w         #750                // String US
+     149: invokestatic  #195                // Method kotlin/jvm/internal/Intrinsics.checkNotNullExpressionValue:(Ljava/lang/Object;Ljava/lang/String;)V
+     152: aload         16
+     154: swap
+     155: invokevirtual #754                // Method java/lang/String.toLowerCase:(Ljava/util/Locale;)Ljava/lang/String;
+     158: dup
+     159: ldc_w         #756                // String this as java.lang.String).toLowerCase(locale)
+     162: invokestatic  #195                // Method kotlin/jvm/internal/Intrinsics.checkNotNullExpressionValue:(Ljava/lang/Object;Ljava/lang/String;)V
+     165: astore        15
+     167: lload         7
+     169: ldc2_w        #714                // long -1l
+     172: lcmp
+     173: ifne          219
+     176: aload         15
+     178: ldc_w         #758                // String content-length:
+     181: iconst_0
+     182: iconst_2
+     183: aconst_null
+     184: invokestatic  #764                // Method kotlin/text/StringsKt.startsWith$default:(Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Z
+     187: ifeq          219
+     190: nop
+     191: aload         14
+     193: bipush        15
+     195: invokevirtual #768                // Method java/lang/String.substring:(I)Ljava/lang/String;
+     198: dup
+     199: ldc_w         #770                // String this as java.lang.String).substring(startIndex)
+     202: invokestatic  #195                // Method kotlin/jvm/internal/Intrinsics.checkNotNullExpressionValue:(Ljava/lang/Object;Ljava/lang/String;)V
+     205: checkcast     #729                // class java/lang/CharSequence
+     208: invokestatic  #774                // Method kotlin/text/StringsKt.trim:(Ljava/lang/CharSequence;)Ljava/lang/CharSequence;
+     211: invokevirtual #149                // Method java/lang/Object.toString:()Ljava/lang/String;
+     214: invokestatic  #780                // Method java/lang/Long.parseLong:(Ljava/lang/String;)J
+     217: lstore        7
+     219: aload         15
+     221: ldc_w         #782                // String transfer-encoding:
+     224: iconst_0
+     225: iconst_2
+     226: aconst_null
+     227: invokestatic  #764                // Method kotlin/text/StringsKt.startsWith$default:(Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Z
+     230: ifeq          269
+     233: nop
+     234: aload         15
+     236: bipush        18
+     238: invokevirtual #768                // Method java/lang/String.substring:(I)Ljava/lang/String;
+     241: dup
+     242: ldc_w         #770                // String this as java.lang.String).substring(startIndex)
+     245: invokestatic  #195                // Method kotlin/jvm/internal/Intrinsics.checkNotNullExpressionValue:(Ljava/lang/Object;Ljava/lang/String;)V
+     248: checkcast     #729                // class java/lang/CharSequence
+     251: invokestatic  #774                // Method kotlin/text/StringsKt.trim:(Ljava/lang/CharSequence;)Ljava/lang/CharSequence;
+     254: invokevirtual #149                // Method java/lang/Object.toString:()Ljava/lang/String;
+     257: ldc_w         #784                // String chunked
+     260: invokestatic  #788                // Method kotlin/jvm/internal/Intrinsics.areEqual:(Ljava/lang/Object;Ljava/lang/Object;)Z
+     263: ifeq          269
+     266: iconst_1
+     267: istore        9
+     269: aload         15
+     271: ldc_w         #790                // String expect:
+     274: iconst_0
+     275: iconst_2
+     276: aconst_null
+     277: invokestatic  #764                // Method kotlin/text/StringsKt.startsWith$default:(Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Z
+     280: ifeq          97
+     283: nop
+     284: aload         15
+     286: bipush        7
+     288: invokevirtual #768                // Method java/lang/String.substring:(I)Ljava/lang/String;
+     291: dup
+     292: ldc_w         #770                // String this as java.lang.String).substring(startIndex)
+     295: invokestatic  #195                // Method kotlin/jvm/internal/Intrinsics.checkNotNullExpressionValue:(Ljava/lang/Object;Ljava/lang/String;)V
+     298: checkcast     #729                // class java/lang/CharSequence
+     301: invokestatic  #774                // Method kotlin/text/StringsKt.trim:(Ljava/lang/CharSequence;)Ljava/lang/CharSequence;
+     304: invokevirtual #149                // Method java/lang/Object.toString:()Ljava/lang/String;
+     307: ldc_w         #792                // String 100-continue
+     310: iconst_1
+     311: invokestatic  #796                // Method kotlin/text/StringsKt.equals:(Ljava/lang/String;Ljava/lang/String;Z)Z
+     314: ifeq          97
+     317: iconst_1
+     318: istore        10
+     320: goto          97
+     323: aload_0
+     324: getfield      #85                 // Field dispatcher:Lokhttp3/mockwebserver/Dispatcher;
+     327: invokevirtual #520                // Method okhttp3/mockwebserver/Dispatcher.peek:()Lokhttp3/mockwebserver/MockResponse;
+     330: invokevirtual #524                // Method okhttp3/mockwebserver/MockResponse.getSocketPolicy:()Lokhttp3/mockwebserver/SocketPolicy;
+     333: astore        14
+     335: iload         10
+     337: ifeq          348
+     340: aload         14
+     342: getstatic     #799                // Field okhttp3/mockwebserver/SocketPolicy.EXPECT_CONTINUE:Lokhttp3/mockwebserver/SocketPolicy;
+     345: if_acmpeq     356
+     348: aload         14
+     350: getstatic     #802                // Field okhttp3/mockwebserver/SocketPolicy.CONTINUE_ALWAYS:Lokhttp3/mockwebserver/SocketPolicy;
+     353: if_acmpne     392
+     356: aload_3
+     357: ldc_w         #804                // String HTTP/1.1 100 Continue\r\n
+     360: invokeinterface #810,  2          // InterfaceMethod okio/BufferedSink.writeUtf8:(Ljava/lang/String;)Lokio/BufferedSink;
+     365: pop
+     366: aload_3
+     367: ldc_w         #812                // String Content-Length: 0\r\n
+     370: invokeinterface #810,  2          // InterfaceMethod okio/BufferedSink.writeUtf8:(Ljava/lang/String;)Lokio/BufferedSink;
+     375: pop
+     376: aload_3
+     377: ldc_w         #814                // String \r\n
+     380: invokeinterface #810,  2          // InterfaceMethod okio/BufferedSink.writeUtf8:(Ljava/lang/String;)Lokio/BufferedSink;
+     385: pop
+     386: aload_3
+     387: invokeinterface #817,  1          // InterfaceMethod okio/BufferedSink.flush:()V
+     392: iconst_0
+     393: istore        15
+     395: aload_0
+     396: getfield      #85                 // Field dispatcher:Lokhttp3/mockwebserver/Dispatcher;
+     399: invokevirtual #520                // Method okhttp3/mockwebserver/Dispatcher.peek:()Lokhttp3/mockwebserver/MockResponse;
+     402: astore        16
+     404: aload         16
+     406: invokevirtual #524                // Method okhttp3/mockwebserver/MockResponse.getSocketPolicy:()Lokhttp3/mockwebserver/SocketPolicy;
+     409: getstatic     #820                // Field okhttp3/mockwebserver/SocketPolicy.DO_NOT_READ_REQUEST_BODY:Lokhttp3/mockwebserver/SocketPolicy;
+     412: if_acmpeq     548
+     415: lload         7
+     417: ldc2_w        #714                // long -1l
+     420: lcmp
+     421: ifeq          460
+     424: lload         7
+     426: lconst_0
+     427: lcmp
+     428: ifle          435
+     431: iconst_1
+     432: goto          436
+     435: iconst_0
+     436: istore        15
+     438: aload_0
+     439: aload         16
+     441: aload_1
+     442: aload_2
+     443: aload         11
+     445: checkcast     #822                // class okio/Sink
+     448: invokestatic  #828                // Method okio/Okio.buffer:(Lokio/Sink;)Lokio/BufferedSink;
+     451: lload         7
+     453: iconst_1
+     454: invokespecial #832                // Method throttledTransfer:(Lokhttp3/mockwebserver/MockResponse;Ljava/net/Socket;Lokio/BufferedSource;Lokio/BufferedSink;JZ)V
+     457: goto          548
+     460: iload         9
+     462: ifeq          548
+     465: iconst_1
+     466: istore        15
+     468: nop
+     469: aload_2
+     470: invokeinterface #727,  1          // InterfaceMethod okio/BufferedSource.readUtf8LineStrict:()Ljava/lang/String;
+     475: checkcast     #729                // class java/lang/CharSequence
+     478: invokestatic  #774                // Method kotlin/text/StringsKt.trim:(Ljava/lang/CharSequence;)Ljava/lang/CharSequence;
+     481: invokevirtual #149                // Method java/lang/Object.toString:()Ljava/lang/String;
+     484: bipush        16
+     486: invokestatic  #838                // Method kotlin/text/CharsKt.checkRadix:(I)I
+     489: invokestatic  #844                // Method java/lang/Integer.parseInt:(Ljava/lang/String;I)I
+     492: istore        17
+     494: iload         17
+     496: ifne          507
+     499: aload_0
+     500: aload_2
+     501: invokespecial #848                // Method readEmptyLine:(Lokio/BufferedSource;)V
+     504: goto          548
+     507: aload         12
+     509: iload         17
+     511: invokestatic  #852                // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;
+     514: invokeinterface #853,  2          // InterfaceMethod java/util/List.add:(Ljava/lang/Object;)Z
+     519: pop
+     520: aload_0
+     521: aload         16
+     523: aload_1
+     524: aload_2
+     525: aload         11
+     527: checkcast     #822                // class okio/Sink
+     530: invokestatic  #828                // Method okio/Okio.buffer:(Lokio/Sink;)Lokio/BufferedSink;
+     533: iload         17
+     535: i2l
+     536: iconst_1
+     537: invokespecial #832                // Method throttledTransfer:(Lokhttp3/mockwebserver/MockResponse;Ljava/net/Socket;Lokio/BufferedSource;Lokio/BufferedSink;JZ)V
+     540: aload_0
+     541: aload_2
+     542: invokespecial #848                // Method readEmptyLine:(Lokio/BufferedSource;)V
+     545: goto          468
+     548: aload         5
+     550: bipush        32
+     552: aconst_null
+     553: iconst_2
+     554: aconst_null
+     555: invokestatic  #857                // Method kotlin/text/StringsKt.substringBefore$default:(Ljava/lang/String;CLjava/lang/String;ILjava/lang/Object;)Ljava/lang/String;
+     558: astore        17
+     560: iload         15
+     562: ifeq          573
+     565: aload         17
+     567: invokestatic  #863                // Method okhttp3/internal/http/HttpMethod.permitsRequestBody:(Ljava/lang/String;)Z
+     570: ifeq          577
+     573: iconst_1
+     574: goto          578
+     577: iconst_0
+     578: ifne          626
+     581: iconst_0
+     582: istore        18
+     584: new           #225                // class java/lang/StringBuilder
+     587: dup
+     588: invokespecial #226                // Method java/lang/StringBuilder."<init>":()V
+     591: ldc_w         #865                // String Request must not have a body:
+     594: invokevirtual #232                // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;
+     597: aload         5
+     599: invokevirtual #232                // Method java/lang/StringBuilder.append:(Ljava/lang/String;)Ljava/lang/StringBuilder;
+     602: invokevirtual #236                // Method java/lang/StringBuilder.toString:()Ljava/lang/String;
+     605: astore        18
+     607: new           #238                // class java/lang/IllegalArgumentException
+     610: dup
+     611: aload         18
+     613: invokevirtual #149                // Method java/lang/Object.toString:()Ljava/lang/String;
+     616: invokespecial #239                // Method java/lang/IllegalArgumentException."<init>":(Ljava/lang/String;)V
+     619: athrow
+     620: astore        14
+     622: aload         14
+     624: astore        13
+     626: new           #385                // class okhttp3/mockwebserver/RecordedRequest
+     629: dup
+     630: aload         5
+     632: aload         6
+     634: invokevirtual #868                // Method okhttp3/Headers$Builder.build:()Lokhttp3/Headers;
+     637: aload         12
+     639: aload         11
+     641: invokevirtual #871                // Method okhttp3/mockwebserver/MockWebServer$TruncatingBuffer.getReceivedByteCount$mockwebserver:()J
+     644: aload         11
+     646: invokevirtual #875                // Method okhttp3/mockwebserver/MockWebServer$TruncatingBuffer.getBuffer$mockwebserver:()Lokio/Buffer;
+     649: iload         4
+     651: aload_1
+     652: aload         13
+     654: invokespecial #878                // Method okhttp3/mockwebserver/RecordedRequest."<init>":(Ljava/lang/String;Lokhttp3/Headers;Ljava/util/List;JLokio/Buffer;ILjava/net/Socket;Ljava/io/IOException;)V
+     657: areturn
+    Exception table:
+       from    to  target type
+          56   620   620   Class java/io/IOException

@@ -1,0 +1,8 @@
+{
+  "documentationCommitDiffCheckExit": 0,
+  "draftSourceDiffCheckExit": 2,
+  "sourceWhitespaceIssue": "DesktopFishAudioPanel.kt:155 additional terminal blank line; retained with frozen RED draft",
+  "testsRun": 0,
+  "untrackedSourceScope": 2,
+  "scope": "Only docs acceptance plus independent RED evidence will be committed; four production UI drafts remain local"
+}

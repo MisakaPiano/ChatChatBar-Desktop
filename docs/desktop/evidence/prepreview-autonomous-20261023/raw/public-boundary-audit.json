@@ -1,0 +1,8 @@
+{
+  "scope": "changed tracked files only; no real archive bodies read",
+  "checkedFiles": 272,
+  "privateSourceFilenameHits": 0,
+  "rawArchiveMagicHits": 0,
+  "secretValueEnumeration": "NOT_PERFORMED",
+  "outputReview": "fixed enum/count readers; isolated process logs kept ignored; no real credential DTO values parsed"
+}

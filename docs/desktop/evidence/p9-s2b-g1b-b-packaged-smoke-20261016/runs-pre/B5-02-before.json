@@ -1,0 +1,13 @@
+{
+  "utc": "2026-10-16T09:06:02.050550+00:00",
+  "rootAlias": "environments/B5-bootstrap",
+  "rootExists": true,
+  "entries": [
+    {
+      "path": "ChatChatBarDesktop.bootstrap.json",
+      "kind": "file",
+      "bytes": 30,
+      "sha256": "bb6d28c364d1e64d4baa350cb78bca02964ec3cf64e9d19fdaa664e0b88081e8"
+    }
+  ]
+}

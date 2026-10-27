@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.backup.StreamingContainerProbeTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-25T02:36:42.791Z" hostname="DD1" time="3.251">
+  <properties/>
+  <testcase name="truncated final authentication and wrong password cannot publish" classname="com.example.chatbar.desktop.backup.StreamingContainerProbeTest" time="1.413"/>
+  <testcase name="unknown entities remain explicitly unknown without private type names" classname="com.example.chatbar.desktop.backup.StreamingContainerProbeTest" time="0.023"/>
+  <testcase name="independent official plain and encrypted v1 v2 inventories" classname="com.example.chatbar.desktop.backup.StreamingContainerProbeTest" time="1.813"/>
+  <testcase name="bad inventory manifest and unknown fields cannot publish" classname="com.example.chatbar.desktop.backup.StreamingContainerProbeTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

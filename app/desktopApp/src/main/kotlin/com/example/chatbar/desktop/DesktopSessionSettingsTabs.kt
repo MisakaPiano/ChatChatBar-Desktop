@@ -12,7 +12,7 @@ import androidx.compose.ui.input.key.*
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 
-internal enum class DesktopSessionSettingsTab(val label: String) { BASIC("基础"), CONTEXT("Prompt / 上下文"), IMAGES("图片"), ADVANCED("高级") }
+internal enum class DesktopSessionSettingsTab(val label: String) { BASIC("基础"), CONTEXT("Prompt / 上下文"), IMAGES("图片"), VOICE("语音与朗读"), ADVANCED("高级") }
 
 /** The controller draft and immediate writes remain outside tab composition. */
 @OptIn(ExperimentalLayoutApi::class)

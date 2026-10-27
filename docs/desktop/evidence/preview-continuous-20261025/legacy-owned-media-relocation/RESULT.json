@@ -1,0 +1,18 @@
+{
+  "legacy-owned-media-relocation-red-20261025": {
+    "exit": 1,
+    "suites": 1,
+    "tests": 1,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "legacy-owned-media-relocation-final-20261025": {
+    "exit": 0,
+    "suites": 13,
+    "tests": 170,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

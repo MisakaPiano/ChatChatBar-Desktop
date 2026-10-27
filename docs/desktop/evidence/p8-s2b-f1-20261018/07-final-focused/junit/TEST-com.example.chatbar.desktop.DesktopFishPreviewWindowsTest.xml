@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFishPreviewWindowsTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-18T08:33:18.401Z" hostname="DD1" time="2.647">
+  <properties/>
+  <testcase name="actual app container owns lazy preview runtime and closes it before root release" classname="com.example.chatbar.desktop.DesktopFishPreviewWindowsTest" time="0.013"/>
+  <testcase name="real Windows MP3 device starts stops and releases file for exclusive reopen" classname="com.example.chatbar.desktop.DesktopFishPreviewWindowsTest" time="0.327"/>
+  <testcase name="independent audio JVM exits then another JVM reacquires root" classname="com.example.chatbar.desktop.DesktopFishPreviewWindowsTest" time="2.307"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

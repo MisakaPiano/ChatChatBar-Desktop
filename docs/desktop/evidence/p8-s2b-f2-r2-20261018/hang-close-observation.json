@@ -1,0 +1,24 @@
+{
+  "utc": "2026-10-18T11:25:03.772570+00:00",
+  "hangingResponses": [
+    {
+      "utc": "2026-10-18T11:24:43.127107500Z",
+      "interface": "GET sample",
+      "variant": "official-local-replay",
+      "status": 200,
+      "hanging": true,
+      "sampleSecretHeader": false,
+      "realRequests": 0
+    }
+  ],
+  "clientSocketEOF": [
+    {
+      "utc": "2026-10-18T11:24:43.772515Z",
+      "event": "HANG_SOCKET_DRAINED",
+      "interface": "GET sample"
+    }
+  ],
+  "remainingPreviewFiles": [],
+  "partBytesInitiallySent": 128,
+  "naturalReadTimeoutClaimed": false
+}

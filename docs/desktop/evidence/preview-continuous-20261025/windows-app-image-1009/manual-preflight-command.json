@@ -1,0 +1,11 @@
+[
+  "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+  "-NoLogo",
+  "-NoProfile",
+  "-NonInteractive",
+  "-ExecutionPolicy",
+  "Bypass",
+  "-File",
+  "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\preview-continuous-private-20261025\\windows-runtime-startup-fix-1009-r2\\Open-Isolated-Preview-1009.ps1",
+  "-PreflightOnly"
+]

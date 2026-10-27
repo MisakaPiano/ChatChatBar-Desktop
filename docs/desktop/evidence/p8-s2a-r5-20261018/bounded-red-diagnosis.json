@@ -1,0 +1,25 @@
+{
+  "status": "OPEN_OUT_OF_S2A_SCOPE",
+  "suite": "DesktopChatDensityTest",
+  "test": "toolbar partitions existing eligibility without adding or losing actions",
+  "line": 62,
+  "source": "d64f82f6fae4579353d77c114f92741cbf731b66",
+  "observedFailure": "java.lang.AssertionError",
+  "diagnosis": "All DesktopMessageAction enum subsets are enumerated; overflow assertion allows EDIT/DELETE only. F4 format actions are now legitimate overflow actions.",
+  "minimalCounterexample": {
+    "eligible": [
+      "REPAIR_FORMAT"
+    ],
+    "footer": [],
+    "overflow": [
+      "REPAIR_FORMAT"
+    ],
+    "oldAssertion": false
+  },
+  "productionBehaviorChangedByThisTask": false,
+  "testModifiedByThisTask": false,
+  "testBlame": "eea723ecc",
+  "messageActionLastCommit": "e9901a0ce7a3f764d74d3d83f0518a18e9bb8640",
+  "impact": "Required bounded gate RED; no package, Windows or live gate started",
+  "followUp": "Project to authorize a narrowly scoped chat-action test-contract correction and necessary rerun; no S2A workaround or new exclusion"
+}

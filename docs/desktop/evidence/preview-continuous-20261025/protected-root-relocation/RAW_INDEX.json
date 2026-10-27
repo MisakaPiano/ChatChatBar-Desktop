@@ -1,0 +1,642 @@
+[
+  {
+    "path": "bound-root-relocation-admission-red-20261025/arguments.json",
+    "bytes": 564,
+    "sha256": "7da2e1bef93d109d9903d6021e09769800de35d629f82904f9312b7f3959533c"
+  },
+  {
+    "path": "bound-root-relocation-admission-red-20261025/exit.txt",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "path": "bound-root-relocation-admission-red-20261025/gradle.log",
+    "bytes": 2807,
+    "sha256": "5e3f6ad08bdc428462d50aef4c53925903c79a0cc58f46d80a133dea0a093899"
+  },
+  {
+    "path": "bound-root-relocation-admission-red-20261025/head.txt",
+    "bytes": 40,
+    "sha256": "b97989e9467f98624cc05e063da4ffe3eebf589bd9bc6f56eae78fe7e62e11fe"
+  },
+  {
+    "path": "bound-root-relocation-admission-red-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopBoundRootLifecycleTest.xml",
+    "bytes": 8246,
+    "sha256": "4b0350153fc98de0aaacb1854a646a7ccb9f30841ed24109918e92c73599c99a"
+  },
+  {
+    "path": "bound-root-relocation-admission-red-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopBoundRootLifecycleTest.kt",
+    "bytes": 6984,
+    "sha256": "64e7de99e676c35397c365da025deeac1959688fdb238baade40c6de9f5d1b5c"
+  },
+  {
+    "path": "bound-root-relocation-comparison-diagnostic-20261025/arguments.json",
+    "bytes": 564,
+    "sha256": "7da2e1bef93d109d9903d6021e09769800de35d629f82904f9312b7f3959533c"
+  },
+  {
+    "path": "bound-root-relocation-comparison-diagnostic-20261025/exit.txt",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "path": "bound-root-relocation-comparison-diagnostic-20261025/gradle.log",
+    "bytes": 3401,
+    "sha256": "16d95935ffc14080b928b384b490ec94a73856286c257a3c6b1586c088528f9f"
+  },
+  {
+    "path": "bound-root-relocation-comparison-diagnostic-20261025/head.txt",
+    "bytes": 40,
+    "sha256": "b97989e9467f98624cc05e063da4ffe3eebf589bd9bc6f56eae78fe7e62e11fe"
+  },
+  {
+    "path": "bound-root-relocation-comparison-diagnostic-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopBoundRootLifecycleTest.xml",
+    "bytes": 6535,
+    "sha256": "52274f9484b9c13383040d1b3cab9e329a9081a4ee89cea743987f8df8c91283"
+  },
+  {
+    "path": "bound-root-relocation-comparison-diagnostic-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt",
+    "bytes": 38825,
+    "sha256": "d255f5560a319867899c23ddc2eb77429d294c827a3dca2f4f4e962d2d66e5c8"
+  },
+  {
+    "path": "bound-root-relocation-comparison-diagnostic-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopBootstrapScreen.kt",
+    "bytes": 23637,
+    "sha256": "87c4fc0d774416fbacae7c04beb1ef6c9e059bbf398305e67ba2edcb38c27dff"
+  },
+  {
+    "path": "bound-root-relocation-comparison-diagnostic-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopBoundRootMigration.kt",
+    "bytes": 7696,
+    "sha256": "280df480c35abd605ffa112cda6f7117ef2e0e14672eadc482ec94269a5e32cc"
+  },
+  {
+    "path": "bound-root-relocation-comparison-diagnostic-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootMigrationService.kt",
+    "bytes": 26384,
+    "sha256": "a1c3a48c3a27ebff6d1ad428033c5e172f0f694f00b900abe48b6e6da9e80797"
+  },
+  {
+    "path": "bound-root-relocation-comparison-diagnostic-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootSwitchController.kt",
+    "bytes": 10966,
+    "sha256": "33b2e3e92925594141ddfd7df00eace6036d71d66ba9c6cdd275069297404155"
+  },
+  {
+    "path": "bound-root-relocation-comparison-diagnostic-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMergeImportService.kt",
+    "bytes": 16013,
+    "sha256": "2c77255136d05f52fa45f1ccfa2f11069bc43bb7fe2be90d3940e20dd056d7e6"
+  },
+  {
+    "path": "bound-root-relocation-comparison-diagnostic-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopBoundRootLifecycleTest.kt",
+    "bytes": 7193,
+    "sha256": "d335ab5c410ff578034f7033dd541a754cbcb79f7641252717a6196c564124ae"
+  },
+  {
+    "path": "bound-root-relocation-faults-20261025/arguments.json",
+    "bytes": 945,
+    "sha256": "d78ddbf8ccdf6b623f4540523a46a5d0b1cec71a3c4719eec3c9551e38309610"
+  },
+  {
+    "path": "bound-root-relocation-faults-20261025/exit.txt",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "path": "bound-root-relocation-faults-20261025/gradle.log",
+    "bytes": 3162,
+    "sha256": "eab7517d92dce676ef3f5ed2f81bbd246bba5c54b3ec748525ecd190319bc899"
+  },
+  {
+    "path": "bound-root-relocation-faults-20261025/head.txt",
+    "bytes": 40,
+    "sha256": "b97989e9467f98624cc05e063da4ffe3eebf589bd9bc6f56eae78fe7e62e11fe"
+  },
+  {
+    "path": "bound-root-relocation-faults-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopAutomaticBackupRuntimeTest.xml",
+    "bytes": 3415,
+    "sha256": "f780fc47640098caeba04a49b6ef857b9d36b95aadcde5eb033d250963912897"
+  },
+  {
+    "path": "bound-root-relocation-faults-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopBootstrapSettingsStoreTest.xml",
+    "bytes": 2192,
+    "sha256": "6de22c5a288cac2fcc8e9b58abbdb5be815e9ab5f1ddeccd61c003d1c04d16b2"
+  },
+  {
+    "path": "bound-root-relocation-faults-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopBoundRootLifecycleTest.xml",
+    "bytes": 8301,
+    "sha256": "341e74a2098894de6841d4b6de810c2074eeb2539883d5901040c15349dd0426"
+  },
+  {
+    "path": "bound-root-relocation-faults-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopDataRootMigrationMaterializerTest.xml",
+    "bytes": 4695,
+    "sha256": "4f32924e03af7b2cd3f04a4969bb6ad18ff2b0cecf52a9c6c181a7ea73c0423c"
+  },
+  {
+    "path": "bound-root-relocation-faults-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopDataRootMigrationServiceTest.xml",
+    "bytes": 3275,
+    "sha256": "8d4fabfd8d3f438a6c6d90bbf6f45cc8ea0295182aba7713e84640b357fe99cd"
+  },
+  {
+    "path": "bound-root-relocation-faults-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest.xml",
+    "bytes": 3944,
+    "sha256": "83d7aa81d82edbbb1c43b5425afb0cc3790f9d53c188901168d91784c66d187d"
+  },
+  {
+    "path": "bound-root-relocation-faults-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopMergeImportServiceTest.xml",
+    "bytes": 2221,
+    "sha256": "e24ff3cae626be92b35f4455c13014c53b2fc270cf04322eef754adb8cda3105"
+  },
+  {
+    "path": "bound-root-relocation-faults-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopTaskRuntimeTest.xml",
+    "bytes": 2727,
+    "sha256": "49c883cd07dd738bf743db1600eb0bdeeeb74c13c6739870e67b812aa4d57761"
+  },
+  {
+    "path": "bound-root-relocation-faults-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt",
+    "bytes": 38825,
+    "sha256": "d255f5560a319867899c23ddc2eb77429d294c827a3dca2f4f4e962d2d66e5c8"
+  },
+  {
+    "path": "bound-root-relocation-faults-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopBootstrapScreen.kt",
+    "bytes": 23637,
+    "sha256": "87c4fc0d774416fbacae7c04beb1ef6c9e059bbf398305e67ba2edcb38c27dff"
+  },
+  {
+    "path": "bound-root-relocation-faults-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopBoundRootMigration.kt",
+    "bytes": 8022,
+    "sha256": "0ac441796b8cf20f661ce4f0aa2e12152d5ab8e52920391b59a51dfd9b1b887a"
+  },
+  {
+    "path": "bound-root-relocation-faults-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootMigrationService.kt",
+    "bytes": 26384,
+    "sha256": "a1c3a48c3a27ebff6d1ad428033c5e172f0f694f00b900abe48b6e6da9e80797"
+  },
+  {
+    "path": "bound-root-relocation-faults-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootSwitchController.kt",
+    "bytes": 10966,
+    "sha256": "33b2e3e92925594141ddfd7df00eace6036d71d66ba9c6cdd275069297404155"
+  },
+  {
+    "path": "bound-root-relocation-faults-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMergeImportService.kt",
+    "bytes": 16013,
+    "sha256": "2c77255136d05f52fa45f1ccfa2f11069bc43bb7fe2be90d3940e20dd056d7e6"
+  },
+  {
+    "path": "bound-root-relocation-faults-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopBoundRootLifecycleTest.kt",
+    "bytes": 15516,
+    "sha256": "30dd4b722f4d908875d987f01be803a353d9a5566f88f9e7648fa238912022c6"
+  },
+  {
+    "path": "bound-root-relocation-final-20261025/arguments.json",
+    "bytes": 1222,
+    "sha256": "88fafa98b77eca25a155ac2574800fcf404e2b52eefe0306b2f32f321964a291"
+  },
+  {
+    "path": "bound-root-relocation-final-20261025/exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "bound-root-relocation-final-20261025/gradle.log",
+    "bytes": 2513,
+    "sha256": "f4becca3ce08e0471c459759a29e77a6e5731e0179b775aeafaaeb95b1533a62"
+  },
+  {
+    "path": "bound-root-relocation-final-20261025/head.txt",
+    "bytes": 40,
+    "sha256": "b97989e9467f98624cc05e063da4ffe3eebf589bd9bc6f56eae78fe7e62e11fe"
+  },
+  {
+    "path": "bound-root-relocation-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopAudioMaintenanceTest.xml",
+    "bytes": 2379,
+    "sha256": "4544a668f3e5f21131dea97cd6414532936b4e4103f35c40a3ce3889f5f1cb9e"
+  },
+  {
+    "path": "bound-root-relocation-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopAutomaticBackupRuntimeTest.xml",
+    "bytes": 3415,
+    "sha256": "fa9f14d58d37920494d2bddbd899547d246dedad0a9f683d776df69c7329b79e"
+  },
+  {
+    "path": "bound-root-relocation-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopBootstrapAuthorityTransactionTest.xml",
+    "bytes": 3427,
+    "sha256": "37769c2506d8cf5d8991eacdd525c4969c52f0ff6720f8f40db2707eafd04286"
+  },
+  {
+    "path": "bound-root-relocation-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopBootstrapScreenSemanticsTest.xml",
+    "bytes": 720,
+    "sha256": "77932de721b510c84bf420b7dfbd1abe8600d3b9f6be848287ba32b9148443b1"
+  },
+  {
+    "path": "bound-root-relocation-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopBootstrapSettingsStoreTest.xml",
+    "bytes": 2194,
+    "sha256": "c4069cfa7bd87f0f2f644cc04f384213ae46942383a02d7d05e36090403d9135"
+  },
+  {
+    "path": "bound-root-relocation-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopBoundRootLifecycleTest.xml",
+    "bytes": 1461,
+    "sha256": "fa89eea501c3dc0064836321b2e6a26b83896a450bb76f892a7bef0ff1d63ff7"
+  },
+  {
+    "path": "bound-root-relocation-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopCoordinatedSnapshotServiceTest.xml",
+    "bytes": 1573,
+    "sha256": "ab3b1a354320e328878ba162c004f2f832927d97e934e141089d79407ce9cd98"
+  },
+  {
+    "path": "bound-root-relocation-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopDataRootMigrationMaterializerTest.xml",
+    "bytes": 4696,
+    "sha256": "8443286e572374599357cfc05d1be27f5f1e201beac98bc2cb1f90dd4ff604ef"
+  },
+  {
+    "path": "bound-root-relocation-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopDataRootMigrationServiceTest.xml",
+    "bytes": 3274,
+    "sha256": "0de22b371439aecff824f2b329005b18416951f83cbdc204c3a1883d22439dbb"
+  },
+  {
+    "path": "bound-root-relocation-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest.xml",
+    "bytes": 4131,
+    "sha256": "38923de3d10cf5cccca29e05417dc983281337c5ddb136fc1df023a01e555dc8"
+  },
+  {
+    "path": "bound-root-relocation-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFullBackupServiceTest.xml",
+    "bytes": 2414,
+    "sha256": "a3a0f0462c784b5ea4888c69010c18b4b0a3790cfc2946b349bbf304e53d2ee5"
+  },
+  {
+    "path": "bound-root-relocation-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopMergeImportServiceTest.xml",
+    "bytes": 2222,
+    "sha256": "7e163e26fe5dddc61a1f2d1b15d19cd9ff64161d711f19ca738c5c727fa9f825"
+  },
+  {
+    "path": "bound-root-relocation-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopTaskRuntimeTest.xml",
+    "bytes": 2723,
+    "sha256": "cbd59ce75f5f88fcb91210115b7ba7101c4d46489d54b119a092aed895b78bd6"
+  },
+  {
+    "path": "bound-root-relocation-final-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt",
+    "bytes": 38825,
+    "sha256": "d255f5560a319867899c23ddc2eb77429d294c827a3dca2f4f4e962d2d66e5c8"
+  },
+  {
+    "path": "bound-root-relocation-final-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopBootstrapScreen.kt",
+    "bytes": 23734,
+    "sha256": "da8543b3dcf6c7c2cdd90dfcd582e8bd942f8db2678f2b9e98c8ed8677f7bfbe"
+  },
+  {
+    "path": "bound-root-relocation-final-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopBoundRootMigration.kt",
+    "bytes": 8022,
+    "sha256": "0ac441796b8cf20f661ce4f0aa2e12152d5ab8e52920391b59a51dfd9b1b887a"
+  },
+  {
+    "path": "bound-root-relocation-final-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootMigrationService.kt",
+    "bytes": 26384,
+    "sha256": "a1c3a48c3a27ebff6d1ad428033c5e172f0f694f00b900abe48b6e6da9e80797"
+  },
+  {
+    "path": "bound-root-relocation-final-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootSwitchController.kt",
+    "bytes": 10966,
+    "sha256": "33b2e3e92925594141ddfd7df00eace6036d71d66ba9c6cdd275069297404155"
+  },
+  {
+    "path": "bound-root-relocation-final-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMergeImportService.kt",
+    "bytes": 16013,
+    "sha256": "2c77255136d05f52fa45f1ccfa2f11069bc43bb7fe2be90d3940e20dd056d7e6"
+  },
+  {
+    "path": "bound-root-relocation-final-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopBootstrapScreenSemanticsTest.kt",
+    "bytes": 3749,
+    "sha256": "16126b86fac21d033605f4fbdfffd7c6d1d5f0c37d63774fde875fc994cb0202"
+  },
+  {
+    "path": "bound-root-relocation-final-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopBoundRootLifecycleTest.kt",
+    "bytes": 15726,
+    "sha256": "6fee6ee14f8d1c77a0c2e547991bdbaf8da4f3917ec3179bc0f1984b462eafa4"
+  },
+  {
+    "path": "bound-root-relocation-final-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopDataRootSwitchControllerTest.kt",
+    "bytes": 23698,
+    "sha256": "e0b97cd04b75cbcb996d9f90466515bb0cc72559d79d2e79f38eb17cebd14e2f"
+  },
+  {
+    "path": "bound-root-relocation-first-20261025/arguments.json",
+    "bytes": 564,
+    "sha256": "7da2e1bef93d109d9903d6021e09769800de35d629f82904f9312b7f3959533c"
+  },
+  {
+    "path": "bound-root-relocation-first-20261025/exit.txt",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "path": "bound-root-relocation-first-20261025/gradle.log",
+    "bytes": 4269,
+    "sha256": "16e5eab1e92ae04ab843b18ac3035107c4853538753eac1a25ef5fbcc9a8ca65"
+  },
+  {
+    "path": "bound-root-relocation-first-20261025/head.txt",
+    "bytes": 40,
+    "sha256": "b97989e9467f98624cc05e063da4ffe3eebf589bd9bc6f56eae78fe7e62e11fe"
+  },
+  {
+    "path": "bound-root-relocation-first-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopBoundRootLifecycleTest.xml",
+    "bytes": 7498,
+    "sha256": "8b8824d15059ad500d637ae448c06747dfed5c561bd8d63478ba349b2f75ccfa"
+  },
+  {
+    "path": "bound-root-relocation-first-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt",
+    "bytes": 38825,
+    "sha256": "d255f5560a319867899c23ddc2eb77429d294c827a3dca2f4f4e962d2d66e5c8"
+  },
+  {
+    "path": "bound-root-relocation-first-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopBootstrapScreen.kt",
+    "bytes": 23619,
+    "sha256": "8196156f21d7c1f9f1a6e31f938aadf8f4a6c2fe005c026a9ddc70efd575b8a3"
+  },
+  {
+    "path": "bound-root-relocation-first-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopBoundRootMigration.kt",
+    "bytes": 6724,
+    "sha256": "c313d3ef21cfdd521577d8fb02806e0188aa7d9eb0851afb94c4baee8ebbcc3d"
+  },
+  {
+    "path": "bound-root-relocation-first-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootMigrationService.kt",
+    "bytes": 26300,
+    "sha256": "ca549e56c9d45878175d8549a35250da409ecd8221103cc5ad247fd9ac11dd1a"
+  },
+  {
+    "path": "bound-root-relocation-first-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootSwitchController.kt",
+    "bytes": 10966,
+    "sha256": "33b2e3e92925594141ddfd7df00eace6036d71d66ba9c6cdd275069297404155"
+  },
+  {
+    "path": "bound-root-relocation-first-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMergeImportService.kt",
+    "bytes": 16013,
+    "sha256": "2c77255136d05f52fa45f1ccfa2f11069bc43bb7fe2be90d3940e20dd056d7e6"
+  },
+  {
+    "path": "bound-root-relocation-first-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopBoundRootLifecycleTest.kt",
+    "bytes": 6984,
+    "sha256": "64e7de99e676c35397c365da025deeac1959688fdb238baade40c6de9f5d1b5c"
+  },
+  {
+    "path": "bound-root-relocation-native-20261025/arguments.json",
+    "bytes": 667,
+    "sha256": "de3d3ab5bbdf2222cd0f0ba6de356f3de4eb7c37bd74ec27d29d5f8067769bcb"
+  },
+  {
+    "path": "bound-root-relocation-native-20261025/exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "bound-root-relocation-native-20261025/explicit-native-environment.json",
+    "bytes": 127,
+    "sha256": "2f2d0988a8d729f282daa67fdf73832d193503667430648129ceb6110fd8ff4e"
+  },
+  {
+    "path": "bound-root-relocation-native-20261025/gradle.log",
+    "bytes": 2532,
+    "sha256": "5069bc3bd6ee5a2c7736e5aa2bd25082066eefe287a7088b19b1dda52f2a6e4d"
+  },
+  {
+    "path": "bound-root-relocation-native-20261025/head.txt",
+    "bytes": 40,
+    "sha256": "b97989e9467f98624cc05e063da4ffe3eebf589bd9bc6f56eae78fe7e62e11fe"
+  },
+  {
+    "path": "bound-root-relocation-native-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopBoundRootLifecycleTest.xml",
+    "bytes": 521,
+    "sha256": "ad8326e416d3b4db6e4471be8d45acaa63f23e9222b5fece115e01710dd3996f"
+  },
+  {
+    "path": "bound-root-relocation-native-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt",
+    "bytes": 38825,
+    "sha256": "d255f5560a319867899c23ddc2eb77429d294c827a3dca2f4f4e962d2d66e5c8"
+  },
+  {
+    "path": "bound-root-relocation-native-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopBootstrapScreen.kt",
+    "bytes": 23734,
+    "sha256": "da8543b3dcf6c7c2cdd90dfcd582e8bd942f8db2678f2b9e98c8ed8677f7bfbe"
+  },
+  {
+    "path": "bound-root-relocation-native-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopBoundRootMigration.kt",
+    "bytes": 8022,
+    "sha256": "0ac441796b8cf20f661ce4f0aa2e12152d5ab8e52920391b59a51dfd9b1b887a"
+  },
+  {
+    "path": "bound-root-relocation-native-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootMigrationService.kt",
+    "bytes": 26384,
+    "sha256": "a1c3a48c3a27ebff6d1ad428033c5e172f0f694f00b900abe48b6e6da9e80797"
+  },
+  {
+    "path": "bound-root-relocation-native-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootSwitchController.kt",
+    "bytes": 10966,
+    "sha256": "33b2e3e92925594141ddfd7df00eace6036d71d66ba9c6cdd275069297404155"
+  },
+  {
+    "path": "bound-root-relocation-native-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMergeImportService.kt",
+    "bytes": 16013,
+    "sha256": "2c77255136d05f52fa45f1ccfa2f11069bc43bb7fe2be90d3940e20dd056d7e6"
+  },
+  {
+    "path": "bound-root-relocation-native-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopBootstrapScreenSemanticsTest.kt",
+    "bytes": 3749,
+    "sha256": "16126b86fac21d033605f4fbdfffd7c6d1d5f0c37d63774fde875fc994cb0202"
+  },
+  {
+    "path": "bound-root-relocation-native-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopBoundRootLifecycleTest.kt",
+    "bytes": 16155,
+    "sha256": "74d628edbda3e6b59e16716e3802cfcd4d5f08668d0c12e79dd3f8c7d4fd68b4"
+  },
+  {
+    "path": "bound-root-relocation-native-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopDataRootSwitchControllerTest.kt",
+    "bytes": 23698,
+    "sha256": "e0b97cd04b75cbcb996d9f90466515bb0cc72559d79d2e79f38eb17cebd14e2f"
+  },
+  {
+    "path": "bound-root-relocation-red-20261025/arguments.json",
+    "bytes": 564,
+    "sha256": "7da2e1bef93d109d9903d6021e09769800de35d629f82904f9312b7f3959533c"
+  },
+  {
+    "path": "bound-root-relocation-red-20261025/exit.txt",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "path": "bound-root-relocation-red-20261025/gradle.log",
+    "bytes": 9016,
+    "sha256": "0ef4f3fefd33a7c5cbb32ea8ecc4eec588c4e83cf92e6fa3a79e013831feb51c"
+  },
+  {
+    "path": "bound-root-relocation-red-20261025/head.txt",
+    "bytes": 40,
+    "sha256": "b97989e9467f98624cc05e063da4ffe3eebf589bd9bc6f56eae78fe7e62e11fe"
+  },
+  {
+    "path": "bound-root-relocation-red-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopBoundRootLifecycleTest.kt",
+    "bytes": 7061,
+    "sha256": "65fe71bb3f872989cbfc6f2b1ad56cd9557c41bccd2321ba91f526e1081bbd62"
+  },
+  {
+    "path": "bound-root-relocation-runtime-red-20261025/arguments.json",
+    "bytes": 564,
+    "sha256": "7da2e1bef93d109d9903d6021e09769800de35d629f82904f9312b7f3959533c"
+  },
+  {
+    "path": "bound-root-relocation-runtime-red-20261025/exit.txt",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "path": "bound-root-relocation-runtime-red-20261025/gradle.log",
+    "bytes": 2814,
+    "sha256": "a86e949f2a4fa2e6440703f1ae5f5fb5ba04dcce5056f90f75748e88e4efc991"
+  },
+  {
+    "path": "bound-root-relocation-runtime-red-20261025/head.txt",
+    "bytes": 40,
+    "sha256": "b97989e9467f98624cc05e063da4ffe3eebf589bd9bc6f56eae78fe7e62e11fe"
+  },
+  {
+    "path": "bound-root-relocation-runtime-red-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopBoundRootLifecycleTest.xml",
+    "bytes": 6254,
+    "sha256": "043a6ef1c43099dc50192749f10dd050be31bf3b296b23ff2e0be9cc94d0635b"
+  },
+  {
+    "path": "bound-root-relocation-runtime-red-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopBoundRootLifecycleTest.kt",
+    "bytes": 7034,
+    "sha256": "8ceedaad4f247eb38e9798d8e341cd6f31344fbbbe1174c5ae58eac5766300fd"
+  },
+  {
+    "path": "bound-root-relocation-second-20261025/arguments.json",
+    "bytes": 564,
+    "sha256": "7da2e1bef93d109d9903d6021e09769800de35d629f82904f9312b7f3959533c"
+  },
+  {
+    "path": "bound-root-relocation-second-20261025/exit.txt",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "path": "bound-root-relocation-second-20261025/gradle.log",
+    "bytes": 3177,
+    "sha256": "347ed1f99f03e533bc409f4cd48c99b87424f5c03183e69b73b86b1399ce1328"
+  },
+  {
+    "path": "bound-root-relocation-second-20261025/head.txt",
+    "bytes": 40,
+    "sha256": "b97989e9467f98624cc05e063da4ffe3eebf589bd9bc6f56eae78fe7e62e11fe"
+  },
+  {
+    "path": "bound-root-relocation-second-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopBoundRootLifecycleTest.xml",
+    "bytes": 6460,
+    "sha256": "d722c4ba371369bd59a496722dace59252c818602a1d611ec41a6c089f80f9d0"
+  },
+  {
+    "path": "bound-root-relocation-second-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt",
+    "bytes": 38825,
+    "sha256": "d255f5560a319867899c23ddc2eb77429d294c827a3dca2f4f4e962d2d66e5c8"
+  },
+  {
+    "path": "bound-root-relocation-second-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopBootstrapScreen.kt",
+    "bytes": 23637,
+    "sha256": "87c4fc0d774416fbacae7c04beb1ef6c9e059bbf398305e67ba2edcb38c27dff"
+  },
+  {
+    "path": "bound-root-relocation-second-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopBoundRootMigration.kt",
+    "bytes": 7165,
+    "sha256": "c7ed26b10134067e257daf64b56ec0abe815ad4960b335e086528d18074041b8"
+  },
+  {
+    "path": "bound-root-relocation-second-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootMigrationService.kt",
+    "bytes": 26384,
+    "sha256": "a1c3a48c3a27ebff6d1ad428033c5e172f0f694f00b900abe48b6e6da9e80797"
+  },
+  {
+    "path": "bound-root-relocation-second-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootSwitchController.kt",
+    "bytes": 10966,
+    "sha256": "33b2e3e92925594141ddfd7df00eace6036d71d66ba9c6cdd275069297404155"
+  },
+  {
+    "path": "bound-root-relocation-second-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMergeImportService.kt",
+    "bytes": 16013,
+    "sha256": "2c77255136d05f52fa45f1ccfa2f11069bc43bb7fe2be90d3940e20dd056d7e6"
+  },
+  {
+    "path": "bound-root-relocation-second-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopBoundRootLifecycleTest.kt",
+    "bytes": 7193,
+    "sha256": "d335ab5c410ff578034f7033dd541a754cbcb79f7641252717a6196c564124ae"
+  },
+  {
+    "path": "bound-root-relocation-verified-20261025/arguments.json",
+    "bytes": 564,
+    "sha256": "7da2e1bef93d109d9903d6021e09769800de35d629f82904f9312b7f3959533c"
+  },
+  {
+    "path": "bound-root-relocation-verified-20261025/exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "bound-root-relocation-verified-20261025/gradle.log",
+    "bytes": 2625,
+    "sha256": "478239015ec318b3f84b2cbb14e1e552cfac0e1580cf22200977ed21b458ac0c"
+  },
+  {
+    "path": "bound-root-relocation-verified-20261025/head.txt",
+    "bytes": 40,
+    "sha256": "b97989e9467f98624cc05e063da4ffe3eebf589bd9bc6f56eae78fe7e62e11fe"
+  },
+  {
+    "path": "bound-root-relocation-verified-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopBoundRootLifecycleTest.xml",
+    "bytes": 523,
+    "sha256": "bbc761629b92309c80345362f513ebd2298b23b810e09be6a6a42bd73c1d0489"
+  },
+  {
+    "path": "bound-root-relocation-verified-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt",
+    "bytes": 38825,
+    "sha256": "d255f5560a319867899c23ddc2eb77429d294c827a3dca2f4f4e962d2d66e5c8"
+  },
+  {
+    "path": "bound-root-relocation-verified-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopBootstrapScreen.kt",
+    "bytes": 23637,
+    "sha256": "87c4fc0d774416fbacae7c04beb1ef6c9e059bbf398305e67ba2edcb38c27dff"
+  },
+  {
+    "path": "bound-root-relocation-verified-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopBoundRootMigration.kt",
+    "bytes": 8022,
+    "sha256": "0ac441796b8cf20f661ce4f0aa2e12152d5ab8e52920391b59a51dfd9b1b887a"
+  },
+  {
+    "path": "bound-root-relocation-verified-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootMigrationService.kt",
+    "bytes": 26384,
+    "sha256": "a1c3a48c3a27ebff6d1ad428033c5e172f0f694f00b900abe48b6e6da9e80797"
+  },
+  {
+    "path": "bound-root-relocation-verified-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootSwitchController.kt",
+    "bytes": 10966,
+    "sha256": "33b2e3e92925594141ddfd7df00eace6036d71d66ba9c6cdd275069297404155"
+  },
+  {
+    "path": "bound-root-relocation-verified-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopMergeImportService.kt",
+    "bytes": 16013,
+    "sha256": "2c77255136d05f52fa45f1ccfa2f11069bc43bb7fe2be90d3940e20dd056d7e6"
+  },
+  {
+    "path": "bound-root-relocation-verified-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopBoundRootLifecycleTest.kt",
+    "bytes": 7193,
+    "sha256": "d335ab5c410ff578034f7033dd541a754cbcb79f7641252717a6196c564124ae"
+  },
+  {
+    "path": "RESULT.json",
+    "bytes": 1624,
+    "sha256": "36d2122c2ffb7ae045a3ce8c1bad82305cfc8e83d2bb1085ef76316dca604db3"
+  },
+  {
+    "path": "RESULT.md",
+    "bytes": 4910,
+    "sha256": "70dcfa7aa934c6f3ccab1fd20e1b3db8dafa85c0c9fea3a0d56f69c050b62e3e"
+  },
+  {
+    "path": "SOURCE_IDENTITY.json",
+    "bytes": 17170,
+    "sha256": "04929f240d8df800980a012e1d5addea79b5fd710ec9a4ae0fb885c7eaf9d1af"
+  }
+]

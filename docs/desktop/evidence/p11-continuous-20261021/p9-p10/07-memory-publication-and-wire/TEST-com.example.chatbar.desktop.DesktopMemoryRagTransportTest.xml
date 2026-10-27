@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopMemoryRagTransportTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-20T20:21:42.291Z" hostname="DD1" time="0.083">
+  <properties/>
+  <testcase name="memory wire uses isolated envelope JSON mode and no inherited output cap" classname="com.example.chatbar.desktop.DesktopMemoryRagTransportTest" time="0.073"/>
+  <testcase name="transport does not hide HTTP retry or turn refusal into valid output" classname="com.example.chatbar.desktop.DesktopMemoryRagTransportTest" time="0.01"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

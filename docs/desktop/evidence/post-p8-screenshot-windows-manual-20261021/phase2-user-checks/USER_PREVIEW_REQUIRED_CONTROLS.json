@@ -1,0 +1,11 @@
+{
+  "utc": "2026-10-20T18:52:18.391605+00:00",
+  "type": "INDEPENDENT_PREVIEW_REQUIRED_CONTROLS",
+  "userVerbatim": "不过适应宽度还是很好的一个按钮，原比例也是很需要的按钮",
+  "requirements": [
+    "Independent preview must retain a clearly accessible 适应宽度 control.",
+    "Independent preview must retain a clearly accessible 原比例 / 100% control.",
+    "Reuse of existing viewer must preserve these screenshot-preview functions rather than dropping them."
+  ],
+  "boundary": "Product requirement confirmation only; does not sign current fit-width/100% operation tests as USER PASS. Preview zoom must not alter exported PNG. No product/source/package changes."
+}

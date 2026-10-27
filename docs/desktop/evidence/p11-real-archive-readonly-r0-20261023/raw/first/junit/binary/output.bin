@@ -1,0 +1,25 @@
+vfixture v1 code84 encrypted=false sha256=9c3fada61cad1575c221f3b7de25c6169ced51a7e10a6db9313fa61c4202e939 length=733
+vfixture v1 code85 encrypted=false sha256=b3d64e646710e3e2972c236cb40bf6de44fe5c07dd9b508b1e32c3547dc315fd length=733
+vfixture v1 code86 encrypted=false sha256=f2b6e014625ef31a42533d58e344e058baa9eb21d33b320d4129c4dea0dfa057 length=733
+vfixture v1 code84 encrypted=true sha256=443dd654ad518ebc78a637d00d9a4587cc7011a740f974b7770ffd5c1e6ab708 length=1040
+vfixture v1 code85 encrypted=true sha256=41ccda7088a639ca5ced797017a859c1e62b501ce39c59808b039783ea3771c8 length=1040
+vfixture v1 code86 encrypted=true sha256=7599ddbf5ddbca035762f06cc433532ee24bb3cc78868375cb14ac40bd1e0493 length=1040
+vfixture v2 code85 encrypted=false sha256=0981a03c165cd099b53bb220b6ccc550b679c87deb44d0d9bc7470865ca9c9fb length=835
+vfixture v2 code86 encrypted=false sha256=540418bb17376efde689d3b393b211927521716e1d452caacaf35fdf5a9d9fa1 length=835
+vfixture v2 code85 encrypted=true sha256=bcbb4a54a0e2f18fbadb4543ef6799168a5d2330c9e2da7210086c285706d69b length=1142
+vfixture v2 code86 encrypted=true sha256=888efec5a614fc95a524164f3e37726da837db2cd4fc2913e1886941d2236548 length=1142
+(S0 synthetic child exit=73 alive=false
+UV#R1 v1 missing card sender=MISSING
+U[7R1 unknown-only code=84 encrypted=false state=BLOCKED
+U[6R1 unknown-only code=84 encrypted=true state=BLOCKED
+U[7R1 unknown-only code=85 encrypted=false state=BLOCKED
+U[6R1 unknown-only code=85 encrypted=true state=BLOCKED
+U[7R1 unknown-only code=86 encrypted=false state=BLOCKED
+U[6R1 unknown-only code=86 encrypted=true state=BLOCKED
+U]S1 child exit=73 alive=false
+Ud=R1 known-plus-unknown code=84 encrypted=false state=BLOCKED
+Ud<R1 known-plus-unknown code=84 encrypted=true state=BLOCKED
+Ud=R1 known-plus-unknown code=85 encrypted=false state=BLOCKED
+Ud<R1 known-plus-unknown code=85 encrypted=true state=BLOCKED
+Ud=R1 known-plus-unknown code=86 encrypted=false state=BLOCKED
+Ud<R1 known-plus-unknown code=86 encrypted=true state=BLOCKED

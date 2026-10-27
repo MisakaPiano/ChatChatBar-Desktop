@@ -1,0 +1,27 @@
+{
+  "base": "b531ff0263ab70857c716730049771e8a103fd51",
+  "preservedInspectorTests": [
+    "official v1 and v2 plaintext and encrypted formats authenticate without restore admission",
+    "v2 can never create Prepared through existing archive entry",
+    "all preference credentials are categories not values and no plaintext staging exists",
+    "dependency entity keys and settings keys are found without global credential selection",
+    "session sparse choices preserve selected empty omitted media and independent slot package",
+    "known entity unknown fields and duplicate JSON fields are rejected",
+    "legacy moments images default is true and task contents are explicitly uninterpreted",
+    "bad scope unknown metadata and incompatible identities fail closed without payload in errors",
+    "wrong password truncation hash traversal central directory and duplicate entries are rejected",
+    "exact duplicate zip names and CRC tampering fail closed",
+    "both envelope manifest mismatches and future envelope are rejected",
+    "failure after authenticated read cannot leave scratch or leak payload cause",
+    "hard child JVM exit after authentication leaves source and synthetic root unchanged",
+    "oversized source is refused before payload allocation",
+    "cancellation has no work directories or retained files"
+  ],
+  "addedInspectorTests": [
+    "R1 official 145 positive fixture has exact legacy fields and strict decoding",
+    "R1 modern wire omits default scope choices and retained preferences",
+    "R1 modern nondefault choices and retained preferences serialize explicitly"
+  ],
+  "otherUnchangedSuite": "DesktopReadOnlyBackupRedTest",
+  "missing": []
+}

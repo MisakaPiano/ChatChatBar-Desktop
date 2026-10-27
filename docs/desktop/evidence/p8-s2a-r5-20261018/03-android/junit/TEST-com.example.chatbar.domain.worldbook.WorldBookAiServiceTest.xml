@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.worldbook.WorldBookAiServiceTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:26.435Z" hostname="DD1" time="0.008">
+  <properties/>
+  <testcase name="old app settings json receives world book encyclopedia default" classname="com.example.chatbar.domain.worldbook.WorldBookAiServiceTest" time="0.0"/>
+  <testcase name="create continuation follows hasMore cap and no progress guards" classname="com.example.chatbar.domain.worldbook.WorldBookAiServiceTest" time="0.004"/>
+  <testcase name="apply created entries uses defaults and ignores unchecked candidates" classname="com.example.chatbar.domain.worldbook.WorldBookAiServiceTest" time="0.0"/>
+  <testcase name="apply fill changes only selected still-empty content and preserves advanced fields" classname="com.example.chatbar.domain.worldbook.WorldBookAiServiceTest" time="0.001"/>
+  <testcase name="created entries normalize keys and remove duplicate names and key sets" classname="com.example.chatbar.domain.worldbook.WorldBookAiServiceTest" time="0.001"/>
+  <testcase name="checkpoint becomes incompatible when any input signature changes" classname="com.example.chatbar.domain.worldbook.WorldBookAiServiceTest" time="0.0"/>
+  <testcase name="created batch is capped at five and total limit is fifty" classname="com.example.chatbar.domain.worldbook.WorldBookAiServiceTest" time="0.0"/>
+  <testcase name="checkpoint retains current batch candidates research and raw output" classname="com.example.chatbar.domain.worldbook.WorldBookAiServiceTest" time="0.001"/>
+  <testcase name="fill constraints reject unknown duplicate nonempty and blank targets" classname="com.example.chatbar.domain.worldbook.WorldBookAiServiceTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

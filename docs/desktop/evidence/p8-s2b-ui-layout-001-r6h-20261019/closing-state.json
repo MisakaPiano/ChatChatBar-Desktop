@@ -1,0 +1,34 @@
+{
+  "base": "06945846e970fd1ea608a3c2daf5ded71393298b",
+  "sourceCandidate": null,
+  "stages": [
+    {
+      "stage": "01-native-method",
+      "suites": 1,
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "reportedPass": 0,
+      "exitCode": 1
+    }
+  ],
+  "realFishGet": 0,
+  "realFishTts": 0,
+  "newDistribution": "NOT BUILT",
+  "windowsManual": "NOT TESTED / NOT STARTED",
+  "packagedLauncherJvmRootLock": "NOT TESTED / NOT STARTED",
+  "winAuto001": "OPEN",
+  "winBrand001": "OPEN / DEFERRED",
+  "unknownHistoricalPointerMovement": "UNKNOWN / unchanged",
+  "protectedFiles": "KEEP / UNTRACKED / UNREAD / UNMODIFIED / UNSTAGED; paths only inventoried",
+  "sourceFrozen": true,
+  "status": "R6H HOLD / INPUT DESTINATION UNVERIFIED / PROJECT REVIEW PENDING",
+  "observations": [
+    "HIT_TEST_TARGET_MISMATCH",
+    "FOREGROUND_MISMATCH"
+  ],
+  "historicalPress0RootCause": "UNKNOWN",
+  "robotPressSent": false,
+  "nextGate": "STOP; no R6I/native class/bounded/package/manual started"
+}

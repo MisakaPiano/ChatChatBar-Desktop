@@ -1,0 +1,17 @@
+{
+  "utc": "2026-10-20T18:03:31.829063+00:00",
+  "head": "7cc135b971e0dd509f2f6f387b0ff7cfe2828f9f",
+  "packageFiles": 212,
+  "manifestSha256": "51f91f5bcd1f9b943467f3e6ecddcebbac1e46807a8cba7ab327f8829743fa7d",
+  "fixtureJsonMediaSupportIdentity": "PASS",
+  "fixtureReseeded": false,
+  "modelJsonKeysBlank": true,
+  "protectedPathStatusOnly": [
+    ".codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/4bb6706b-0132-41be-bd8e-03e6c0229e46/1-1000072937.jpg",
+    ".codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/b5264b76-6c08-406d-af8d-bbb2f876c7c1/1-1000072937.jpg",
+    ".codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/ea41235d-a0f1-44c3-8db1-47f5bb5b2883/1-1000072937.jpg",
+    "CCB_DESKTOP_STANDARD_CONVERSATION_HANDOFF.md"
+  ],
+  "guiGuardAbsent": true,
+  "fakeDirectoryAbsent": true
+}

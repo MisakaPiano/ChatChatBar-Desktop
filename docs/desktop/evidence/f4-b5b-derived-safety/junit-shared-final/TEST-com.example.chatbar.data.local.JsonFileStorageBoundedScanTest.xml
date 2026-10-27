@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.data.local.JsonFileStorageBoundedScanTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-14T20:06:35.942Z" hostname="DD1" time="1.924">
+  <properties/>
+  <testcase name="many embeddings are delivered one record at a time without accumulating results" classname="com.example.chatbar.data.local.JsonFileStorageBoundedScanTest" time="1.827"/>
+  <testcase name="excessive json recursion is refused before decoder allocation" classname="com.example.chatbar.data.local.JsonFileStorageBoundedScanTest" time="0.047"/>
+  <testcase name="missing directories remain missing" classname="com.example.chatbar.data.local.JsonFileStorageBoundedScanTest" time="0.005"/>
+  <testcase name="unknown fields corrupt utf8 side files and oversized entries fail closed" classname="com.example.chatbar.data.local.JsonFileStorageBoundedScanTest" time="0.026"/>
+  <testcase name="callback failure or cancellation does not retain the entity mutex" classname="com.example.chatbar.data.local.JsonFileStorageBoundedScanTest" time="0.019"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

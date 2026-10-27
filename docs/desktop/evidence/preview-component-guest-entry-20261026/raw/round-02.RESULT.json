@@ -1,0 +1,74 @@
+﻿{
+    "cases":  [
+                  {
+                      "pass":  true,
+                      "name":  "confirmation_required_before_observation"
+                  },
+                  {
+                      "pass":  true,
+                      "name":  "physical_host_refused"
+                  },
+                  {
+                      "pass":  true,
+                      "name":  "dl1_host_refused"
+                  },
+                  {
+                      "pass":  true,
+                      "name":  "system_identity_refused"
+                  },
+                  {
+                      "pass":  true,
+                      "name":  "fixed_pair_mismatch_refused"
+                  },
+                  {
+                      "pass":  true,
+                      "name":  "registration_read_failure_not_absent"
+                  },
+                  {
+                      "pass":  true,
+                      "name":  "partial_registration_refused"
+                  },
+                  {
+                      "pass":  true,
+                      "name":  "foreign_related_product_refused"
+                  },
+                  {
+                      "pass":  true,
+                      "name":  "disk_failure_before_mutation"
+                  },
+                  {
+                      "pass":  true,
+                      "name":  "success_fake_boundary_and_no_second_install"
+                  },
+                  {
+                      "pass":  true,
+                      "name":  "preserves_failure_bad-exit"
+                  },
+                  {
+                      "pass":  true,
+                      "name":  "preserves_failure_bad-after"
+                  },
+                  {
+                      "pass":  true,
+                      "name":  "preserves_failure_identity-fail"
+                  },
+                  {
+                      "pass":  true,
+                      "name":  "preserves_failure_timeout"
+                  },
+                  {
+                      "error":  "JAR_READER_FAILED:Cannot convert argument \"options\", with value: \"2\", for \"Split\" to type \"System.StringSplitOptions\": \"Cannot convert value \"2\" to type \"System.StringSplitOptions\" due to enumeration values that are not valid. Specify one of the following enumeration values and try again. The possible enumeration values are \"None,RemoveEmptyEntries\".\"",
+                      "pass":  false,
+                      "name":  "actual_jar_identity_wrong_commit_False"
+                  },
+                  {
+                      "error":  "WRONG_COMMIT_ACCEPTED:Cannot convert argument \"options\", with value: \"2\", for \"Split\" to type \"System.StringSplitOptions\": \"Cannot convert value \"2\" to type \"System.StringSplitOptions\" due to enumeration values that are not valid. Specify one of the following enumeration values and try again. The possible enumeration values are \"None,RemoveEmptyEntries\".\"",
+                      "pass":  false,
+                      "name":  "actual_jar_identity_wrong_commit_True"
+                  }
+              ],
+    "suite":  "Comp1FreshGuestOrchestration",
+    "tests":  16,
+    "nativeInstallerExecuted":  false,
+    "failures":  2
+}

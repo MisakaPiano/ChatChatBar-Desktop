@@ -1,0 +1,14 @@
+[
+  "--offline",
+  "--no-daemon",
+  "--no-configuration-cache",
+  "--max-workers=1",
+  "--no-parallel",
+  "--console=plain",
+  "-Dorg.gradle.jvmargs=-Xmx1024m -XX:ActiveProcessorCount=2 -Dfile.encoding=UTF-8",
+  "-Pkotlin.compiler.execution.strategy=in-process",
+  "-PdesktopVersion=0.1.0-preview.902",
+  "-I",
+  "H:\\ChatChatBar-Desktop\\docs\\desktop\\evidence\\preview-b1-d041-20261023\\raw\\package-902\\package.init.gradle",
+  ":desktopApp:createDistributable"
+]

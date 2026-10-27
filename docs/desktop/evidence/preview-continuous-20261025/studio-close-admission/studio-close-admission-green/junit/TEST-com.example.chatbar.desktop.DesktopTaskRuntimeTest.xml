@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopTaskRuntimeTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-10-24T17:29:18.600Z" hostname="DD1" time="6.297">
+  <properties/>
+  <testcase name="provider error result maps to failed task after durable assistant error" classname="com.example.chatbar.desktop.DesktopTaskRuntimeTest" time="2.191"/>
+  <testcase name="transport diagnostics retain actual final request and real retry evidence" classname="com.example.chatbar.desktop.DesktopTaskRuntimeTest" time="3.175"/>
+  <testcase name="container shutdown cancels task generically before storage coordinator closes" classname="com.example.chatbar.desktop.DesktopTaskRuntimeTest" time="0.102"/>
+  <testcase name="completed task history is bounded while newer tasks remain visible" classname="com.example.chatbar.desktop.DesktopTaskRuntimeTest" time="0.27"/>
+  <testcase name="same session admission rejects overlap and explicit stop persists draft" classname="com.example.chatbar.desktop.DesktopTaskRuntimeTest" time="0.1"/>
+  <testcase name="shutdown before task dispatch retires admission without persisting user" classname="com.example.chatbar.desktop.DesktopTaskRuntimeTest" time="0.069"/>
+  <testcase name="close helper waits for task drain and leaves data runtimes open when drain fails" classname="com.example.chatbar.desktop.DesktopTaskRuntimeTest" time="0.003"/>
+  <testcase name="container rejects new work while an earlier feature is still draining" classname="com.example.chatbar.desktop.DesktopTaskRuntimeTest" time="0.012"/>
+  <testcase name="blank continue task sends provider request without another user entity" classname="com.example.chatbar.desktop.DesktopTaskRuntimeTest" time="0.167"/>
+  <testcase name="primary route switches do not cancel application-owned active chat task" classname="com.example.chatbar.desktop.DesktopTaskRuntimeTest" time="0.098"/>
+  <testcase name="image process Stop leaves held REAL CHAT in the same session running across routes" classname="com.example.chatbar.desktop.DesktopTaskRuntimeTest" time="0.102"/>
+  <testcase name="closing admission is idempotent and does not cancel an admitted response" classname="com.example.chatbar.desktop.DesktopTaskRuntimeTest" time="0.005"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

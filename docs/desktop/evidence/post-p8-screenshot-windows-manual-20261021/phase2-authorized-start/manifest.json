@@ -1,0 +1,105 @@
+{
+  "stage": "INITIAL_STARTUP_ONLY",
+  "files": [
+    {
+      "path": "a0-main-started.native-windows.json",
+      "bytes": 3296,
+      "sha256": "cc3a77b583260819a0a3c86a41f4e727d66143617f866368b056f356a5542f63"
+    },
+    {
+      "path": "a0-running-lock.result.json",
+      "bytes": 75,
+      "sha256": "ddec871c75a7f25981218103210513e121ce71f3a1d58d333aff562faaf2b5ea"
+    },
+    {
+      "path": "a0-running-lock.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "a0-running-lock.stdout.log",
+      "bytes": 16,
+      "sha256": "d0af78380372f3ab6ef15bf423bb437bd4053f5d056eaa17cbe0d0811c93f8ca"
+    },
+    {
+      "path": "a0-startup-technical.json",
+      "bytes": 814,
+      "sha256": "e21677447a443ea666f77596a7a279f02a6b699a7e812b162df64ea3d00b8584"
+    },
+    {
+      "path": "launch-admission.json",
+      "bytes": 498,
+      "sha256": "bae4374e80b9cf1a7df45fbab614edb3f522a50494aa3d3a0355d9c511de7a16"
+    },
+    {
+      "path": "launch-recheck-before-resource-policy-adjustment.json",
+      "bytes": 255,
+      "sha256": "7447414147831c3d0620703916a515464de6b24cee6105a18a894c90e1f2e232"
+    },
+    {
+      "path": "launch-recheck.json",
+      "bytes": 697,
+      "sha256": "c0d516ece34bd207ed1eb1e2aaff9e7d3a975038635ad2076e6362d2bdc72fa1"
+    },
+    {
+      "path": "launch.json",
+      "bytes": 1012,
+      "sha256": "bd85477f79b5f3aa454466e0d0e01027de37c4f6effedd961cc4185a073cbbc2"
+    },
+    {
+      "path": "manual-matrix.json",
+      "bytes": 6282,
+      "sha256": "6ac607bdfb7973e41f38aa49077f9afb1864733e9464e63cce54e2adbf47e033"
+    },
+    {
+      "path": "manual-start-once.lock",
+      "bytes": 151,
+      "sha256": "ad179dc481057e3484c3c5d8b295cf6517aaab4496af91f57d311e94dcba227d"
+    },
+    {
+      "path": "mock-ready.json",
+      "bytes": 59,
+      "sha256": "d32fbe00d39331b5584a21092661a6a50f66582166be708377a85df61b48de37"
+    },
+    {
+      "path": "phase2-resource-policy-adjustment-recheck.json",
+      "bytes": 654,
+      "sha256": "e3aded12823c906a0933ee04d99b498591cef870653ce24964e416bf7da56e92"
+    },
+    {
+      "path": "policy-adjustment-credential.result.json",
+      "bytes": 37,
+      "sha256": "e1e2252b3aee16033e0ab29555f60b6fe7736cadae8208d1d39c08d2fe1d7567"
+    },
+    {
+      "path": "policy-adjustment-credential.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "policy-adjustment-credential.stdout.log",
+      "bytes": 548,
+      "sha256": "e6470f37c1fe3ac403d430200557dc1498f7b80c4839050e866f938f1d5e4f2f"
+    },
+    {
+      "path": "resource-observer-process.json",
+      "bytes": 171,
+      "sha256": "a184350a1a4f9852afd599cba65c69a46a2281b97e37460e5185a4c157cbb5d7"
+    },
+    {
+      "path": "resource-policy-adjustment-authorization.json",
+      "bytes": 331,
+      "sha256": "ee4f09061c199d4d36e737974b09eca12420e8958ded2634ea3e4fcc949872fc"
+    },
+    {
+      "path": "START_STATUS.md",
+      "bytes": 1423,
+      "sha256": "8228fca0d5b68b18bcedcae8180471d11de8c7db62b70a77a25e34852a6dbccf"
+    },
+    {
+      "path": "supervisor-process.json",
+      "bytes": 220,
+      "sha256": "52acdba5e7b073c0cc23a6149d64dcfc8e79656db38eaab7dadec67d0a3b844e"
+    }
+  ]
+}

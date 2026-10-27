@@ -1,0 +1,20 @@
+[
+  {
+    "path": "app/desktopApp/src/main",
+    "controlTree": "4730313819edafb9f5d577effb574a2c8d482ef9",
+    "trackedDiffEmpty": true,
+    "note": "New untracked G2A files are separately indexed; projection is rechecked after commit."
+  },
+  {
+    "path": "app/sharedCore/src/main",
+    "controlTree": "5d0848e81bb957ef1f29a1b2f8f134040990a91f",
+    "trackedDiffEmpty": true,
+    "note": "New untracked G2A files are separately indexed; projection is rechecked after commit."
+  },
+  {
+    "path": "app/app/src/main",
+    "controlTree": "27f256a64a318d7b9772a962723b53072da866ed",
+    "trackedDiffEmpty": true,
+    "note": "New untracked G2A files are separately indexed; projection is rechecked after commit."
+  }
+]

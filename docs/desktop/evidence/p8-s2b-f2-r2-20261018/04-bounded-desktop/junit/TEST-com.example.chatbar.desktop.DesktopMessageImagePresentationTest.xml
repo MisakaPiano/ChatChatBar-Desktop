@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" tests="19" skipped="0" failures="0" errors="0" timestamp="2026-10-18T11:05:31.151Z" hostname="DD1" time="3.58">
+  <properties/>
+  <testcase name="actual message images fit landscape portrait small and narrow scenes and keep preview click" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.413"/>
+  <testcase name="image More popup avoids narrow right edge and each image keeps its own anchor" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.328"/>
+  <testcase name="image-only bubble has distinct pointer menus while mixed and omitted keep toolbar" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.43"/>
+  <testcase name="changing image reference never carries previous source dimensions" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.193"/>
+  <testcase name="running image task tightens both pointer menus without a synthetic message button" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.195"/>
+  <testcase name="display size observes both 280dp caps aspect density and native pixels" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.0"/>
+  <testcase name="image menu never acquires whole-message actions" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.001"/>
+  <testcase name="decode failure remains visible without image actions taking over" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.048"/>
+  <testcase name="JPEG EXIF orientation supplies orientation-correct source dimensions" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.007"/>
+  <testcase name="image More popup stays beside button after parent offset and scroll" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.278"/>
+  <testcase name="image More and right click expose the same metadata actions" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.279"/>
+  <testcase name="source dimensions survive preview sampling at high display density" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.276"/>
+  <testcase name="one image More stays beside bottom edge while right click stays image scoped" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.146"/>
+  <testcase name="right click opens the current image context actions" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.186"/>
+  <testcase name="consecutive segmented image-only messages have no synthetic headers in wide and narrow scenes" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.375"/>
+  <testcase name="multiple images each retain image-only More and right-click targets" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.191"/>
+  <testcase name="confirmation Cancel never invokes image deletion" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.049"/>
+  <testcase name="each image menu follows its own metadata and running permission" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.0"/>
+  <testcase name="segmented image-only never synthesizes a speaker header for message actions" classname="com.example.chatbar.desktop.DesktopMessageImagePresentationTest" time="0.185"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

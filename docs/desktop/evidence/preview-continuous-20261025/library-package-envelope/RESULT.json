@@ -1,0 +1,34 @@
+{
+  "library-package-envelope-red-20261025": {
+    "exit": 1,
+    "suites": 1,
+    "tests": 1,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "library-package-envelope-green-20261025": {
+    "exit": 1,
+    "suites": 5,
+    "tests": 34,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "library-package-envelope-final-20261025": {
+    "exit": 1,
+    "suites": 9,
+    "tests": 72,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0
+  },
+  "library-package-envelope-verified-20261025": {
+    "exit": 0,
+    "suites": 9,
+    "tests": 72,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "utc": "2026-10-16T15:15:39.0086530+00:00",
+  "processes": [
+    {
+      "pid": 47052,
+      "parentPid": 23864,
+      "createdUtc": "2026-10-16T15:09:53.9246450Z",
+      "executablePath": "<PACKAGE_LOCAL>\\ordinary-image\\ChatChatBarDesktop.exe",
+      "windowHandle": 0
+    },
+    {
+      "pid": 49636,
+      "parentPid": 47052,
+      "createdUtc": "2026-10-16T15:10:00.3297530Z",
+      "executablePath": "<PACKAGE_LOCAL>\\ordinary-image\\ChatChatBarDesktop.exe",
+      "windowHandle": 0
+    }
+  ],
+  "allOwnedExited": false
+}

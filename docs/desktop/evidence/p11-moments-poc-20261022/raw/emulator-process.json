@@ -1,0 +1,8 @@
+{
+  "serverPort": 5045,
+  "created": "2026-10-22T17:42:58.6264685+09:00",
+  "avd": "ccb-p11-moments-poc-20261022",
+  "arguments": "-no-window -no-audio -no-snapshot -memory 1536 -cores 2 -gpu swiftshader_indirect",
+  "pid": 26732,
+  "serial": "emulator-5584"
+}

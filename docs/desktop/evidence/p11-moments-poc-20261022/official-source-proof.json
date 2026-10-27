@@ -1,0 +1,10 @@
+{
+  "officialCommit": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+  "verifiedMainAndBuildFiles": 378,
+  "result": "PASS",
+  "crlfNormalizedFiles": 378,
+  "comparison": "Git blob SHA-1; Windows CRLF normalized only when required",
+  "officialReleaseSignature": false,
+  "instrumentationSeparateFromMain": true,
+  "presetAssetContentsTested": false
+}

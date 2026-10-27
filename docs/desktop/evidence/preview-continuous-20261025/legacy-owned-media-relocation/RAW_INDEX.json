@@ -1,0 +1,157 @@
+[
+  {
+    "path": "legacy-owned-media-relocation-final-20261025/arguments.json",
+    "bytes": 1222,
+    "sha256": "88fafa98b77eca25a155ac2574800fcf404e2b52eefe0306b2f32f321964a291"
+  },
+  {
+    "path": "legacy-owned-media-relocation-final-20261025/exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "legacy-owned-media-relocation-final-20261025/explicit-native-environment.json",
+    "bytes": 91,
+    "sha256": "3fdcacc33d0d2e7a43158975c09febb3c45d0a7d4bb6df8ae795ab5dbfe6f251"
+  },
+  {
+    "path": "legacy-owned-media-relocation-final-20261025/gradle.log",
+    "bytes": 3212,
+    "sha256": "bcf3f615c9eae3a2a1f5549a21aaa77fc9472d5e03e6dee7225a54ab9f34d714"
+  },
+  {
+    "path": "legacy-owned-media-relocation-final-20261025/head.txt",
+    "bytes": 40,
+    "sha256": "19ae67d942182f1805d57e94a91f26889bf91e17f207e2b43d1988ad5d96cf79"
+  },
+  {
+    "path": "legacy-owned-media-relocation-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopAudioMaintenanceTest.xml",
+    "bytes": 2380,
+    "sha256": "ff710a440ce27b6ebd848e69da4e5bb62dfc9a342e414abb146ed18e7ebdea63"
+  },
+  {
+    "path": "legacy-owned-media-relocation-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopAutomaticBackupRuntimeTest.xml",
+    "bytes": 3416,
+    "sha256": "69657cdcc78a57dd9c3bda2584a4b6b6871fc5bc602cb462bff76b137c581b40"
+  },
+  {
+    "path": "legacy-owned-media-relocation-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopBootstrapAuthorityTransactionTest.xml",
+    "bytes": 3426,
+    "sha256": "052fb6336755562033eb4272b71c133ec077e7fab7f299750f40a0de60695027"
+  },
+  {
+    "path": "legacy-owned-media-relocation-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopBootstrapScreenSemanticsTest.xml",
+    "bytes": 720,
+    "sha256": "2f0b76a07f9932bd2f02817122002aee5a247b9d9028c1f781c85bdd2e99659e"
+  },
+  {
+    "path": "legacy-owned-media-relocation-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopBootstrapSettingsStoreTest.xml",
+    "bytes": 2193,
+    "sha256": "83deebafaa8df3050cc2c0e7293ea760a789669b47ae9704fcf0653bee1568be"
+  },
+  {
+    "path": "legacy-owned-media-relocation-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopBoundRootLifecycleTest.xml",
+    "bytes": 1828,
+    "sha256": "8f37ddf45563c13b60cd930316a200de427a073e60eab180d32ae35a3f6227dc"
+  },
+  {
+    "path": "legacy-owned-media-relocation-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopCoordinatedSnapshotServiceTest.xml",
+    "bytes": 1573,
+    "sha256": "5a657b2b80969580fcf7ba99da4f2e89067d578369515ae8677e26f6eb1c760e"
+  },
+  {
+    "path": "legacy-owned-media-relocation-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopDataRootMigrationMaterializerTest.xml",
+    "bytes": 4694,
+    "sha256": "0b78cc63e315c1e537cbf37dd88f92b99b5d8e0ab6e2e945e29c993551ae4f23"
+  },
+  {
+    "path": "legacy-owned-media-relocation-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopDataRootMigrationServiceTest.xml",
+    "bytes": 3273,
+    "sha256": "b00340e35a73f113e48b879d7a71c0409c084fd46d4ef87d7678cba96f00ad28"
+  },
+  {
+    "path": "legacy-owned-media-relocation-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopDataRootSwitchControllerTest.xml",
+    "bytes": 4130,
+    "sha256": "ba1d3434b0838d914fd1879bad17c3fdbd8611a0e471f2fb5f74d7eaed987d27"
+  },
+  {
+    "path": "legacy-owned-media-relocation-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopFullBackupServiceTest.xml",
+    "bytes": 2415,
+    "sha256": "dbc36dcc08653b7b4d5ad36db4775c2545a9b4254fa70a295770d5861225c64a"
+  },
+  {
+    "path": "legacy-owned-media-relocation-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopMergeImportServiceTest.xml",
+    "bytes": 2224,
+    "sha256": "f0208a333a6f5206ffac09ec9f58fbaee109d4fce242cfc989ded05a2e262deb"
+  },
+  {
+    "path": "legacy-owned-media-relocation-final-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopTaskRuntimeTest.xml",
+    "bytes": 2729,
+    "sha256": "262accb5ffb2dc3e3baaacc4c5597799adfac0e9f899ffa2806ea0f63f32df4b"
+  },
+  {
+    "path": "legacy-owned-media-relocation-final-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt",
+    "bytes": 38867,
+    "sha256": "a0d8b99c5a4fe294e20ceff339c42a6df8223dc7b384233e28b9f0ef47f36519"
+  },
+  {
+    "path": "legacy-owned-media-relocation-final-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopBoundRootMigration.kt",
+    "bytes": 8024,
+    "sha256": "dd301b20ae2ce720283570e029fbade6dfd77d8c8041230478526c834d0dc886"
+  },
+  {
+    "path": "legacy-owned-media-relocation-final-20261025/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootMigrationService.kt",
+    "bytes": 26648,
+    "sha256": "b44fb1b1c4ad989c0279a5f8452260e760a1d25e87dccbadde97b872a22c73c7"
+  },
+  {
+    "path": "legacy-owned-media-relocation-final-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopBoundRootLifecycleTest.kt",
+    "bytes": 17956,
+    "sha256": "f85be292ebca507e5ff35be228d04c919a605998f5776a448ff02d2bfbff9f14"
+  },
+  {
+    "path": "legacy-owned-media-relocation-red-20261025/arguments.json",
+    "bytes": 672,
+    "sha256": "0062136e1e09a9fd115d1234cd33aeeb554fb84b8ae5f2a40423f9050ad9d5de"
+  },
+  {
+    "path": "legacy-owned-media-relocation-red-20261025/exit.txt",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "path": "legacy-owned-media-relocation-red-20261025/gradle.log",
+    "bytes": 3128,
+    "sha256": "ea6a7ce0006748370270808d320abd9c6b7edbf359ed8686865ca49b82a84587"
+  },
+  {
+    "path": "legacy-owned-media-relocation-red-20261025/head.txt",
+    "bytes": 40,
+    "sha256": "19ae67d942182f1805d57e94a91f26889bf91e17f207e2b43d1988ad5d96cf79"
+  },
+  {
+    "path": "legacy-owned-media-relocation-red-20261025/junit/desktopApp/TEST-com.example.chatbar.desktop.DesktopBoundRootLifecycleTest.xml",
+    "bytes": 2740,
+    "sha256": "c9c1078199f643b87198e5999c2a3eb159b4c2490925adf8f67725242b1da242"
+  },
+  {
+    "path": "legacy-owned-media-relocation-red-20261025/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopBoundRootLifecycleTest.kt",
+    "bytes": 17956,
+    "sha256": "f85be292ebca507e5ff35be228d04c919a605998f5776a448ff02d2bfbff9f14"
+  },
+  {
+    "path": "RESULT.json",
+    "bytes": 338,
+    "sha256": "17d6aacada253c1bd71b1faa346d68cca7301cb41b73139ea6d01b04f57f3392"
+  },
+  {
+    "path": "RESULT.md",
+    "bytes": 2168,
+    "sha256": "c4367848738e07026ead13281acec4ff8d515bf354a981628285dfec6e2cf957"
+  },
+  {
+    "path": "SOURCE_IDENTITY.json",
+    "bytes": 1560,
+    "sha256": "51753a11d099627b11e6f5c5b25f1e6b8d24c101503d72f4be3a649ebfa1e38c"
+  }
+]

@@ -1,0 +1,40 @@
+{
+  "result": "PASS",
+  "responses": [
+    {
+      "interface": "catalog",
+      "bytes": 6120,
+      "sha256": "c64a7a7864d99bdd08343eb2918c3b59ece2a04ec34401fa030b51be9b18bca4",
+      "destination": "127.0.0.1",
+      "realRequests": 0
+    },
+    {
+      "interface": "catalog",
+      "bytes": 6039,
+      "sha256": "919ae94cafc99b075e8734131ae4a87bccf95338a4cd613e8303c9d09d77d1d1",
+      "destination": "127.0.0.1",
+      "realRequests": 0
+    },
+    {
+      "interface": "anonymous-sample",
+      "bytes": 405420,
+      "sha256": "c730e4c467f8dcf465acca9e426ea6349137e3302ff65e648f66dc2a63e3301f",
+      "destination": "127.0.0.1",
+      "realRequests": 0
+    },
+    {
+      "interface": "fake-tts",
+      "bytes": 252860,
+      "sha256": "fb93b911ab31c264881df8f167cbb655bb42ddcd148fa372e5363cf09e3dfd94",
+      "destination": "127.0.0.1",
+      "realRequests": 0
+    }
+  ],
+  "unknownOriginConnectRefused": true,
+  "catalogQueries": 2,
+  "sampleGet": 1,
+  "fakeTtsPost": 1,
+  "realFishGet": 0,
+  "realFishTts": 0,
+  "scope": "Support fixture readiness only; not packaged app acceptance or audio output proof"
+}

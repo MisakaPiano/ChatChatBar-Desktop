@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopAssistantImageActionTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-18T19:56:08.208Z" hostname="DD1" time="2.886">
+  <properties/>
+  <testcase name="missing explicit model uses existing resolver fallback" classname="com.example.chatbar.desktop.DesktopAssistantImageActionTest" time="0.875"/>
+  <testcase name="footer visibility excludes user system blank streaming archive and stale states" classname="com.example.chatbar.desktop.DesktopAssistantImageActionTest" time="0.081"/>
+  <testcase name="per-run requirements can leave session preference unchanged" classname="com.example.chatbar.desktop.DesktopAssistantImageActionTest" time="0.345"/>
+  <testcase name="deterministic preflight failures admit no task or transport and do not save preference" classname="com.example.chatbar.desktop.DesktopAssistantImageActionTest" time="0.808"/>
+  <testcase name="direct action completes real persistence with fake transports and existing preference" classname="com.example.chatbar.desktop.DesktopAssistantImageActionTest" time="0.371"/>
+  <testcase name="requirements reaches shared designer and persists only preference" classname="com.example.chatbar.desktop.DesktopAssistantImageActionTest" time="0.406"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,1 @@
+SYNTHETIC_OBSERVED EXISTING_SUPPORTED distinct embedding scopes; source-to-target scope mapping NEEDS_ADAPTER

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.SlotIsolatedRestoreProbeTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-25T02:39:19.928Z" hostname="DD1" time="2.756">
+  <properties/>
+  <testcase name="foreign messages preserve versions turns and generated-from links under independent target identities" classname="com.example.chatbar.desktop.SlotIsolatedRestoreProbeTest" time="2.115"/>
+  <testcase name="synthetic archive commits only in a new isolated root and reopens" classname="com.example.chatbar.desktop.SlotIsolatedRestoreProbeTest" time="0.641"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

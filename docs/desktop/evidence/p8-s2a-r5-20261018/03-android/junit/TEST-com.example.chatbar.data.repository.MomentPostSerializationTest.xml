@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.data.repository.MomentPostSerializationTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:17.242Z" hostname="DD1" time="0.036">
+  <properties/>
+  <testcase name="generatedImageMetadata_roundTripsAllEditablePrompts" classname="com.example.chatbar.data.repository.MomentPostSerializationTest" time="0.035"/>
+  <testcase name="oldPayload_defaultsGeneratedImageMetadataToNull" classname="com.example.chatbar.data.repository.MomentPostSerializationTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

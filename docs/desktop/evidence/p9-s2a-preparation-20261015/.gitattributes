@@ -1,0 +1,3 @@
+*.xml -text -whitespace
+*.log -text -whitespace
+run-stage.ps1 -text -whitespace

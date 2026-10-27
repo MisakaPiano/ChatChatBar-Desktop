@@ -1,0 +1,10 @@
+{
+  "utc": "2026-10-20T19:12:44.812728+00:00",
+  "fileCount": 212,
+  "missing": [],
+  "extra": [],
+  "mismatched": [],
+  "manifestSha256": "51f91f5bcd1f9b943467f3e6ecddcebbac1e46807a8cba7ab327f8829743fa7d",
+  "sourceCommit": "c38bcf274fca2eafb81a27b10cb3fcb16ed94fbe",
+  "packageModified": false
+}

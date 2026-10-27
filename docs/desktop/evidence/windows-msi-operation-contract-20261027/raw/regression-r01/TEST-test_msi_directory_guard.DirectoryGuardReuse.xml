@@ -1,0 +1,2 @@
+<?xml version='1.0' encoding='utf-8'?>
+<testsuite name="test_msi_directory_guard.DirectoryGuardReuse" tests="2" failures="0" errors="0" skipped="0"><testcase classname="test_msi_directory_guard.DirectoryGuardReuse" name="test_changed_hash_and_test_build_are_refused" time="0.0" /><testcase classname="test_msi_directory_guard.DirectoryGuardReuse" name="test_only_exact_production_build_is_reused" time="0.0" /></testsuite>

@@ -1,0 +1,20 @@
+{
+  "stage": "01-prototype",
+  "started": "2026-10-16T01:15:51.7946994+09:00",
+  "ended": "2026-10-16T01:17:59.7047386+09:00",
+  "seconds": 127.9101513,
+  "arguments": [
+    "--offline",
+    "--no-daemon",
+    "--no-parallel",
+    "--max-workers=1",
+    "--priority=low",
+    "--console=plain",
+    "--no-configuration-cache",
+    "-Pkotlin.compiler.execution.strategy=in-process",
+    ":desktopApp:test",
+    "--tests",
+    "com.example.chatbar.desktop.DesktopDocumentIndexTransactionPrototypeTest"
+  ],
+  "exitCode": 0
+}

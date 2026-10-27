@@ -1,0 +1,5 @@
+{
+  "diagnosticsChecked": 113,
+  "knownDummyCredentialHits": [],
+  "limitations": "Sentinel/manual source review, not arbitrary-secret/heap/OS erasure proof; synthetic input bytes deliberately excluded"
+}

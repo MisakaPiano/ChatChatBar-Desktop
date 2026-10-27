@@ -1,0 +1,38 @@
+[
+  {
+    "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/JsonFileStorage.kt",
+    "initialBlob": "494c2067012ece17e04b3e36d5788276b0b9f833",
+    "currentBlob": "494c2067012ece17e04b3e36d5788276b0b9f833",
+    "unchanged": true
+  },
+  {
+    "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/rag/ChunkingEngine.kt",
+    "initialBlob": "06211ac148b4ed5a39897dbfa667d9dd52afe6cd",
+    "currentBlob": "06211ac148b4ed5a39897dbfa667d9dd52afe6cd",
+    "unchanged": true
+  },
+  {
+    "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/rag/VectorSearchEngine.kt",
+    "initialBlob": "ba7a881dd53061dfb721e8c420c76ef0376f677e",
+    "currentBlob": "ba7a881dd53061dfb721e8c420c76ef0376f677e",
+    "unchanged": true
+  },
+  {
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFormatRepairDerivedSafety.kt",
+    "initialBlob": "a43dc0f531ce654f8fc2b58f60782a4f6369f029",
+    "currentBlob": "a43dc0f531ce654f8fc2b58f60782a4f6369f029",
+    "unchanged": true
+  },
+  {
+    "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/prompt/MainChatPromptAuthority.kt",
+    "initialBlob": "cb9bdbd3cb4d4bf293b3eb5e58f6c8fea3880736",
+    "currentBlob": "cb9bdbd3cb4d4bf293b3eb5e58f6c8fea3880736",
+    "unchanged": true
+  },
+  {
+    "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/PromptAssembler.kt",
+    "initialBlob": "cdf51a0a121e2815cb5cef5250a940dd22e82dd5",
+    "currentBlob": "cdf51a0a121e2815cb5cef5250a940dd22e82dd5",
+    "unchanged": true
+  }
+]

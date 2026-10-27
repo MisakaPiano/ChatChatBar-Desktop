@@ -1,0 +1,30 @@
+{
+  "reason": "No tests executed: selector error. These stale copies remain local and match historical R1; excluded from new test statistics.",
+  "files": [
+    {
+      "file": "TEST-com.example.chatbar.desktop.DesktopFishAudioLibraryTest.xml",
+      "bytes": 2094,
+      "sha256": "943f650c7b78487824d9f03eac42dd0669256ebd1ec6d5c274d518be6b5bb681"
+    },
+    {
+      "file": "TEST-com.example.chatbar.desktop.DesktopFishPresentationTest.xml",
+      "bytes": 2947,
+      "sha256": "48bb8b09b518a40dcfd195983c3534896aaabf06ba22bf7be4b2a4612daf89d5"
+    },
+    {
+      "file": "TEST-com.example.chatbar.desktop.DesktopFishSettingsBindingTest.xml",
+      "bytes": 3564,
+      "sha256": "6043f40a1c5c1f17d548d34c69c4b2414b0a99c80c9028ba9a78d5f2adadda95"
+    },
+    {
+      "file": "TEST-com.example.chatbar.desktop.DesktopModelSettingsControllerTest.xml",
+      "bytes": 3019,
+      "sha256": "ad5c3a033f8c8289460933c2c0ea3f7516518a2fe2ad9bf10558baa2cb951a1f"
+    },
+    {
+      "file": "TEST-com.example.chatbar.desktop.DesktopSettingsCoherenceTest.xml",
+      "bytes": 1535,
+      "sha256": "6b77bd6787da60f5666985be74539606a93c833ecec2dc70d692cdbc1d790fde"
+    }
+  ]
+}

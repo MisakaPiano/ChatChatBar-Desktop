@@ -1,0 +1,23 @@
+[
+  {
+    "path": "app/desktopApp/src/main",
+    "controlTree": "4730313819edafb9f5d577effb574a2c8d482ef9",
+    "headTree": "4730313819edafb9f5d577effb574a2c8d482ef9",
+    "equal": true,
+    "workspaceDiffEmpty": true
+  },
+  {
+    "path": "app/sharedCore/src/main",
+    "controlTree": "5d0848e81bb957ef1f29a1b2f8f134040990a91f",
+    "headTree": "5d0848e81bb957ef1f29a1b2f8f134040990a91f",
+    "equal": true,
+    "workspaceDiffEmpty": true
+  },
+  {
+    "path": "app/app/src/main",
+    "controlTree": "27f256a64a318d7b9772a962723b53072da866ed",
+    "headTree": "27f256a64a318d7b9772a962723b53072da866ed",
+    "equal": true,
+    "workspaceDiffEmpty": true
+  }
+]

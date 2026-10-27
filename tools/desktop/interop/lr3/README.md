@@ -1,0 +1,11 @@
+# LR3 opt-in private-safe diagnosis
+
+Authority185/186. Entire implementation is a fork of the accepted LR2 test-classpath harness; LR2 originals and application Gradle/src/main are unchanged. Run-Jvm.ps1 uses lr3.init.gradle and a new evidence directory, no default app integration. No production recovery, secret storage, Task, Provider or user-root writes.
+
+NestedSlotClaims keeps structural/media/count/identity failures and all unresolved voice relations as refusals. VoiceReferenceDiagnosis returns only fixed category counts for a completely scanned inner package; it does not infer missing owner means scope omission or historical pruning. Null legacy and unknown nonnull versions are different. Cross-session or duplicate/malformed identity refuses. No original value is printed or rebound.
+
+Main class remains com.example.chatbar.desktop.backup.LargeArchiveTool, with LR3 tokens. After preparation it takes one explicitly selected ordinary cbbackup and optional --password; password only Console.readPassword, never argv/env/file. Before Java reject JAVA_TOOL_OPTIONS/JDK_JAVA_OPTIONS/_JAVA_OPTIONS. Use JDK17, -Xmx256m, -XX:+DisableAttachMechanism, -XX:-HeapDumpOnOutOfMemoryError, -Djava.awt.headless=true and the ignored prepared runtime-classpath. No directory scan in the tool, no plaintext ZIP output. Native source lock denies write/deletion; source SHA is compared privately even after a content refusal, emitting only equality. Source paths can appear in local process arguments.
+
+Same LR2 limits remain:4GiB source/decrypted/expanded,256MiB entry,8MiB metadata/central,64MiB total structured input,40003 entries and ratio1000 after1MiB tolerance; nested256MiB/16MiB/4096. JVM JSON Strings are not reliably wipeable; no heap dump/attach. Source read witness does not authenticate unconsumed outer EOF. A first-failing nested package diagnosis is not an all-package census.
+
+Run tests only by explicit round label, never reuse logs. Final source snapshots are copied before execution. Raw attributes preserve original XML/log bytes including UTF-16LE PowerShell logs. Fake credentials in inherited fixtures are synthetic. Private real archives/logs/hashes never enter the evidence index. See the Project packet for limits and production decisions.

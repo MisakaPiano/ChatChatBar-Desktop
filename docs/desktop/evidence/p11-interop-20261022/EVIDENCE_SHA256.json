@@ -1,0 +1,412 @@
+[
+  {
+    "path": "artifacts/android/android-result.txt",
+    "bytes": 70,
+    "sha256": "f7ecb1e26f8145aabb8e690fa0ac369dd956ad1beb004bec91610cd0a5ff0053"
+  },
+  {
+    "path": "artifacts/android/android-return.cbsave",
+    "bytes": 997064,
+    "sha256": "bf201b8a20847755c34aa8fff60e2101e80cede75ba5bcfbd46a11e0474dcc83"
+  },
+  {
+    "path": "artifacts/android/media-before.txt",
+    "bytes": 354,
+    "sha256": "ec5190b3793d1c822fed06a890cdcc83d754bc06282d15d6f27218f0131c0be0"
+  },
+  {
+    "path": "artifacts/android/official-backup-result.txt",
+    "bytes": 96,
+    "sha256": "ae1347ea8522793da23bee91cbf0a7df7fc3aed00cd02d05419e603d321b0692"
+  },
+  {
+    "path": "artifacts/android/official-credential.cbbackup",
+    "bytes": 2131,
+    "sha256": "187bb1fa1183f7fba7f4aa1bac4e7854e4db1bc796b4034eef8600381fb1f42e"
+  },
+  {
+    "path": "artifacts/android/official-encrypted.cbbackup",
+    "bytes": 2417,
+    "sha256": "af0f53ae25babb4e96d7b33f17d4f04c68fa63c4997cb8f007473a05fbe20ef7"
+  },
+  {
+    "path": "artifacts/android/official-moment-post.cbbackup",
+    "bytes": 2571,
+    "sha256": "b60ad4049ccd14b12e160ba56b74cc64786bc548957cd8c3823376c93b52a805"
+  },
+  {
+    "path": "artifacts/android/official-moment-task.cbbackup",
+    "bytes": 2464,
+    "sha256": "0862c3ce04c0c6d00359ab01c2315e4f33bfc164064d44be1e1d6b5a86b636e1"
+  },
+  {
+    "path": "artifacts/android/official-supported.cbbackup",
+    "bytes": 2109,
+    "sha256": "56b4cc1b982db9e22bc505b09ad3a7301db6cd38b29b8e9718dda979d6d8a49f"
+  },
+  {
+    "path": "artifacts/android/official-unknown-field.cbbackup",
+    "bytes": 1405,
+    "sha256": "1ef2daeb25127460b790b42b1663c1bae3bfd4ee29047896a4517f99e603e40e"
+  },
+  {
+    "path": "artifacts/android/scope.txt",
+    "bytes": 126,
+    "sha256": "2a050c02e90fb3f21f79e191416405fbe9922fff7e0d53866621d19631d4ab00"
+  },
+  {
+    "path": "artifacts/desktop/desktop-supported.cbbackup",
+    "bytes": 2102,
+    "sha256": "b4deba1b5e274310fe48d600eae9ae5ed91a0b35f1b58e2fc4c3456a55948254"
+  },
+  {
+    "path": "artifacts/desktop/desktop.cbsave",
+    "bytes": 996605,
+    "sha256": "3f8494d23da3caf77f93f342b8b3b94d4579d6d2b2bad7e4ad84532696174c52"
+  },
+  {
+    "path": "artifacts/README.md",
+    "bytes": 1914,
+    "sha256": "02f8021b3de54a2c575f989193dbab7f09cd95b0c85b548bffdb237ad7c646ec"
+  },
+  {
+    "path": "artifacts/seed.cbsave",
+    "bytes": 996500,
+    "sha256": "4b28739135484f3fc33b148db1b0d248a86eab23640b0b28df370f93cdb12da4"
+  },
+  {
+    "path": "raw/01-official-build/output.log",
+    "bytes": 1118,
+    "sha256": "818e25b52856f3cf4029edb9f0affe42eeadf88a2123667a48478edd22855180"
+  },
+  {
+    "path": "raw/01-official-build/result.json",
+    "bytes": 108,
+    "sha256": "73396404cc6cecdd5816a5b3dc2820332c953c370526e300f34172f46b713877"
+  },
+  {
+    "path": "raw/02-official-build/output.log",
+    "bytes": 1693,
+    "sha256": "b61481e9c0afa8656ee7564286dc2dee54c1563a6171ac226a4b876a4f9f5dcf"
+  },
+  {
+    "path": "raw/02-official-build/result.json",
+    "bytes": 23,
+    "sha256": "c34bc644b4dfc96082e294ccb49ac40bdf34a3c659c956ffef43981ed30b2234"
+  },
+  {
+    "path": "raw/03-official-build/output.log",
+    "bytes": 9038,
+    "sha256": "95faad1fbf371d3a47dcf16f616c02ae2df71788ceca1f1e2df94df7672fba8d"
+  },
+  {
+    "path": "raw/03-official-build/result.json",
+    "bytes": 23,
+    "sha256": "ea61d7736f0b7ecb9b35158f03de77013db6b100cf1d36c957e78e6c8817c5b6"
+  },
+  {
+    "path": "raw/04-desktop-produce/output.log",
+    "bytes": 4638,
+    "sha256": "5bc213145cddce6445c6b5a08e44f5057a3730f9659497dbe9f19a2d5d27b63d"
+  },
+  {
+    "path": "raw/04-desktop-produce/result.json",
+    "bytes": 23,
+    "sha256": "c34bc644b4dfc96082e294ccb49ac40bdf34a3c659c956ffef43981ed30b2234"
+  },
+  {
+    "path": "raw/05-desktop-produce/junit/TEST-com.example.chatbar.desktop.DesktopBackupCompatibilityTest.xml",
+    "bytes": 722,
+    "sha256": "aa8afbe399b5764fdd64191e3090b1457e059b47e355ece46cbb4f92bb407636"
+  },
+  {
+    "path": "raw/05-desktop-produce/output.log",
+    "bytes": 2273,
+    "sha256": "987320efcf23be3f18c3a46180e82e3fce17aa1474f7458c873630067f53e967"
+  },
+  {
+    "path": "raw/05-desktop-produce/result.json",
+    "bytes": 23,
+    "sha256": "ea61d7736f0b7ecb9b35158f03de77013db6b100cf1d36c957e78e6c8817c5b6"
+  },
+  {
+    "path": "raw/06-official-test-build/output.log",
+    "bytes": 2390,
+    "sha256": "9fc3a3c799fcacaade97d9ed9bae887e92458b3b2859d8b1a0f1c1ecf35707a6"
+  },
+  {
+    "path": "raw/06-official-test-build/result.json",
+    "bytes": 23,
+    "sha256": "c34bc644b4dfc96082e294ccb49ac40bdf34a3c659c956ffef43981ed30b2234"
+  },
+  {
+    "path": "raw/07-desktop-materials-versions/junit/TEST-com.example.chatbar.desktop.DesktopBackupCompatibilityTest.xml",
+    "bytes": 721,
+    "sha256": "c86fad68da2e878a22153de394419d83914aa5e350eceb854e1e6d94f7c06638"
+  },
+  {
+    "path": "raw/07-desktop-materials-versions/junit/TEST-com.example.chatbar.desktop.DesktopFullBackupProcessTest.xml",
+    "bytes": 28448,
+    "sha256": "51930699ed924ad4fd5155b9f25599afe4bd4460b08fdf44261572944fef20b6"
+  },
+  {
+    "path": "raw/07-desktop-materials-versions/output.log",
+    "bytes": 3167,
+    "sha256": "7069cf14ee50d5def60da32a578b587c45be8534e199daab957c90280c2e719c"
+  },
+  {
+    "path": "raw/07-desktop-materials-versions/result.json",
+    "bytes": 23,
+    "sha256": "c34bc644b4dfc96082e294ccb49ac40bdf34a3c659c956ffef43981ed30b2234"
+  },
+  {
+    "path": "raw/08-desktop-materials-versions/junit/TEST-com.example.chatbar.desktop.DesktopBackupCompatibilityTest.xml",
+    "bytes": 719,
+    "sha256": "bd233cedc90e0dd07380d47e719e1bc0ecff2e513fcc5813dbba639ca8f3273b"
+  },
+  {
+    "path": "raw/08-desktop-materials-versions/junit/TEST-com.example.chatbar.desktop.DesktopFullBackupProcessTest.xml",
+    "bytes": 1355,
+    "sha256": "74b41beb7554597323e898db807b637975b727315611cfa6b0a4c9a61d596f9b"
+  },
+  {
+    "path": "raw/08-desktop-materials-versions/junit/TEST-com.example.chatbar.desktop.DesktopInteropHarnessTest.xml",
+    "bytes": 465,
+    "sha256": "4dbd361146f8409a64c5dfd239774bf6d93bd45c474ec9fe17ec547a44c72fb3"
+  },
+  {
+    "path": "raw/08-desktop-materials-versions/output.log",
+    "bytes": 2238,
+    "sha256": "1965f0cb22ac9286bbee4d2d7da7dc849c477dd90e8752ca049f0252f589103f"
+  },
+  {
+    "path": "raw/08-desktop-materials-versions/result.json",
+    "bytes": 23,
+    "sha256": "ea61d7736f0b7ecb9b35158f03de77013db6b100cf1d36c957e78e6c8817c5b6"
+  },
+  {
+    "path": "raw/09-official-test-build/output.log",
+    "bytes": 3215,
+    "sha256": "289dadc62429e4fb0cf2090a020685c5eda8a55935913891fa17734b20c80248"
+  },
+  {
+    "path": "raw/09-official-test-build/result.json",
+    "bytes": 23,
+    "sha256": "ea61d7736f0b7ecb9b35158f03de77013db6b100cf1d36c957e78e6c8817c5b6"
+  },
+  {
+    "path": "raw/10-android-execution/install-app.log",
+    "bytes": 38,
+    "sha256": "c4aa470acafcf8576c15b0f0b5ae7e852d1ec5413372d0e6a9272e788e1306d3"
+  },
+  {
+    "path": "raw/10-android-execution/install-test.log",
+    "bytes": 38,
+    "sha256": "c4aa470acafcf8576c15b0f0b5ae7e852d1ec5413372d0e6a9272e788e1306d3"
+  },
+  {
+    "path": "raw/10-android-execution/instrumentation.log",
+    "bytes": 3565,
+    "sha256": "32e3b0de263cf4411c21024e71e0b72c613c65024d81984e317724da0b3fcbe5"
+  },
+  {
+    "path": "raw/10-android-execution/result.json",
+    "bytes": 60,
+    "sha256": "bd2fe4eaa8efc0f30d9031b09e9811016aae9ceb81fcb19ad5c55d9eccaf0211"
+  },
+  {
+    "path": "raw/11-android-backup/instrumentation.log",
+    "bytes": 850,
+    "sha256": "93556a78e52f39749cf5c89cfb443b6e684ec251957ce5cfb4676472d746f123"
+  },
+  {
+    "path": "raw/12-official-test-build/output.log",
+    "bytes": 3500,
+    "sha256": "cda05b6fcce15d28ab9375bfdd6ee108bb6e71ba06102a717bf0a80e81634456"
+  },
+  {
+    "path": "raw/12-official-test-build/result.json",
+    "bytes": 23,
+    "sha256": "ea61d7736f0b7ecb9b35158f03de77013db6b100cf1d36c957e78e6c8817c5b6"
+  },
+  {
+    "path": "raw/13-android-roundtrip/install-test.log",
+    "bytes": 38,
+    "sha256": "c4aa470acafcf8576c15b0f0b5ae7e852d1ec5413372d0e6a9272e788e1306d3"
+  },
+  {
+    "path": "raw/13-android-roundtrip/instrumentation.log",
+    "bytes": 5667,
+    "sha256": "a384790bf4055a484bc2bf5546996e5aa13ed879bc279e9676664acb3c5728e4"
+  },
+  {
+    "path": "raw/14-official-test-build/output.log",
+    "bytes": 3500,
+    "sha256": "14903350e824dcd30aa598b424ab847968bf8506b13b10bb880c82a7362d198d"
+  },
+  {
+    "path": "raw/14-official-test-build/result.json",
+    "bytes": 23,
+    "sha256": "ea61d7736f0b7ecb9b35158f03de77013db6b100cf1d36c957e78e6c8817c5b6"
+  },
+  {
+    "path": "raw/15-android-roundtrip/install-test.log",
+    "bytes": 38,
+    "sha256": "c4aa470acafcf8576c15b0f0b5ae7e852d1ec5413372d0e6a9272e788e1306d3"
+  },
+  {
+    "path": "raw/15-android-roundtrip/instrumentation.log",
+    "bytes": 849,
+    "sha256": "acd708fa8b9b0a517931aa2864fe90c135f02064e7a9342d483d59da69b503c1"
+  },
+  {
+    "path": "raw/16-graph-proof/INITIAL_RED.md",
+    "bytes": 844,
+    "sha256": "4fbe8edd9f7d512d4cb10da0302807fb58112743f32bff183db837c325a25a3e"
+  },
+  {
+    "path": "raw/16-graph-proof/output.log",
+    "bytes": 440,
+    "sha256": "7894210810f80a1b557eff0cb00398daee29fd28576d2bf29444a61401760ebd"
+  },
+  {
+    "path": "raw/apk-identity.json",
+    "bytes": 311,
+    "sha256": "d3ecb38e2eba33f835bc55a6702a28e0897dbd6f2f1d34efd6632be6869d2f4c"
+  },
+  {
+    "path": "raw/emulator-2-process.json",
+    "bytes": 159,
+    "sha256": "009199377d29ffa9c7cc510cf193f5c1eba67ecd0e411f165ec79de39e44e4b4"
+  },
+  {
+    "path": "raw/emulator-3-process.json",
+    "bytes": 139,
+    "sha256": "ca6ed1ae15cc62de75ab214f3cfd26f4fae0a8447882a07586a6fa19a6503f2a"
+  },
+  {
+    "path": "raw/emulator-4-process.json",
+    "bytes": 139,
+    "sha256": "8fb1add0e3280e111da28c96331572a4dbdf7d910f0008316c096f800153b4ae"
+  },
+  {
+    "path": "raw/emulator-process.json",
+    "bytes": 159,
+    "sha256": "da50aab5d7163ba044164a4fc6af37c9bd2b95cc888f67610170b3607988d122"
+  },
+  {
+    "path": "raw/official-source-proof.json",
+    "bytes": 359,
+    "sha256": "1416fbdfe99f1a0eec5f50ee27cdc705932a431d352dcb588daaed1a6e5c7727"
+  },
+  {
+    "path": "raw/regression-summary.json",
+    "bytes": 2017,
+    "sha256": "c7cc87871de6abf59b939f43a08a76eccafdc046daa8552dce5ade5a55136017"
+  },
+  {
+    "path": "raw/roundtrip-graph-proof.json",
+    "bytes": 505,
+    "sha256": "8892e4acde3466eac03055987765bb654d4d802f4a62b630365147738b8dd924"
+  },
+  {
+    "path": "raw/run-consume-20261021-194248-175/junit/TEST-com.example.chatbar.desktop.DesktopInteropHarnessTest.xml",
+    "bytes": 473,
+    "sha256": "6a76ab1ca75eceeb5eb26e0b4495adda48fadfcfbc00c0497f8eebf54e7ba58e"
+  },
+  {
+    "path": "raw/run-consume-20261021-194248-175/output.log",
+    "bytes": 2247,
+    "sha256": "e5de23158aa8a517a183d0e39b27544e262c440f20cd0ecf0849c20d0e164695"
+  },
+  {
+    "path": "raw/run-consume-20261021-194248-175/result.json",
+    "bytes": 46,
+    "sha256": "a82ee323553a88bf0c13fc9531cf7963ab677d38654419741a672cebf010569a"
+  },
+  {
+    "path": "raw/run-consume-20261021-194829-891/junit/TEST-com.example.chatbar.desktop.DesktopInteropHarnessTest.xml",
+    "bytes": 471,
+    "sha256": "ef1cb873abcb57bb05dcad34f9752d3b0f2fc5330b357b9c6c61fab7c624995f"
+  },
+  {
+    "path": "raw/run-consume-20261021-194829-891/output.log",
+    "bytes": 2236,
+    "sha256": "a5b641dd61cbcf944cd8b64b8cb07477b5dc26ddd71e8151b3d30469d7db5ba8"
+  },
+  {
+    "path": "raw/run-consume-20261021-194829-891/result.json",
+    "bytes": 46,
+    "sha256": "a82ee323553a88bf0c13fc9531cf7963ab677d38654419741a672cebf010569a"
+  },
+  {
+    "path": "raw/run-regression-20261021-194400-116/junit/TEST-com.example.chatbar.desktop.DesktopBackupCompatibilityTest.xml",
+    "bytes": 720,
+    "sha256": "af1f1c935e3879fbb178feb62419913265962b8da226e5591520855ebf6395d2"
+  },
+  {
+    "path": "raw/run-regression-20261021-194400-116/junit/TEST-com.example.chatbar.desktop.DesktopFullBackupArchiveTest.xml",
+    "bytes": 2497,
+    "sha256": "ea6aae69bf6677744707697ab6d082b5c3eee2e6566338e142ace4e1acb569e8"
+  },
+  {
+    "path": "raw/run-regression-20261021-194400-116/junit/TEST-com.example.chatbar.desktop.DesktopFullBackupCommitJournalTest.xml",
+    "bytes": 1084,
+    "sha256": "aab78b33be4b26cbe3e12f4c2b52246f068c3daba405a3bff451e5351dacf278"
+  },
+  {
+    "path": "raw/run-regression-20261021-194400-116/junit/TEST-com.example.chatbar.desktop.DesktopFullBackupMappingTest.xml",
+    "bytes": 725,
+    "sha256": "d85cfb1daea4ca17e9255463bae8c78e7c24b6f2b27077a755e990c21799a177"
+  },
+  {
+    "path": "raw/run-regression-20261021-194400-116/junit/TEST-com.example.chatbar.desktop.DesktopFullBackupProcessTest.xml",
+    "bytes": 1355,
+    "sha256": "cecb929286c142abc3ea718d32ab1aabc90b815719901579223c10bc5a421d08"
+  },
+  {
+    "path": "raw/run-regression-20261021-194400-116/junit/TEST-com.example.chatbar.desktop.DesktopFullBackupServiceTest.xml",
+    "bytes": 2212,
+    "sha256": "d8dd6b6c2e646a4adb0093fe3df96c172ea5a0d184e9546b7a5e14f3af4c6083"
+  },
+  {
+    "path": "raw/run-regression-20261021-194400-116/junit/TEST-com.example.chatbar.desktop.DesktopSaveSlotArchiveTest.xml",
+    "bytes": 1178,
+    "sha256": "6c831b3b3deb069881b80daa411fcae46ba763cc4daddf29331aba248b6e51de"
+  },
+  {
+    "path": "raw/run-regression-20261021-194400-116/junit/TEST-com.example.chatbar.desktop.DesktopSaveSlotInspectorTest.xml",
+    "bytes": 4371,
+    "sha256": "0dbafc54e19de71abb71480ae031cfe3e24a6d2a759bfb57371d3b258be6d628"
+  },
+  {
+    "path": "raw/run-regression-20261021-194400-116/junit/TEST-com.example.chatbar.desktop.DesktopSaveSlotServiceTest.xml",
+    "bytes": 3062,
+    "sha256": "66700257bdc4559a4aff0a245d92f4215e6de7a89394d57871347dda6d08e3b9"
+  },
+  {
+    "path": "raw/run-regression-20261021-194400-116/junit/TEST-com.example.chatbar.desktop.DesktopSessionCommitJournalTest.xml",
+    "bytes": 1061,
+    "sha256": "92fd80dbd1c485748a465d0b8250fa3a18cdf5159d95f9d26b4d88d2987a9d0e"
+  },
+  {
+    "path": "raw/run-regression-20261021-194400-116/junit/TEST-com.example.chatbar.desktop.DesktopStartupGateTest.xml",
+    "bytes": 3814,
+    "sha256": "58e514c5751a13e49b5391adb7534a7948ce0b028def89852410a9b19b3aefc5"
+  },
+  {
+    "path": "raw/run-regression-20261021-194400-116/output.log",
+    "bytes": 2239,
+    "sha256": "20e20aba85697ef7e84871728e0716fcd45ab54f93bab6ae825b9f1d31e6098b"
+  },
+  {
+    "path": "raw/run-regression-20261021-194400-116/result.json",
+    "bytes": 49,
+    "sha256": "3d5e6aa02ccaf546d23014a841143587cbee13355c53f8971fc30077d1fdd0f1"
+  },
+  {
+    "path": "raw/safety-closeout.json",
+    "bytes": 319,
+    "sha256": "b0b82d1a45bc5e2e2b779038205324d118849bae5340d009bf07972f2c235385"
+  }
+]

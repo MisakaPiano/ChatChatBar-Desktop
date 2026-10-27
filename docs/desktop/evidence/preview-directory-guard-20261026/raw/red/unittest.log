@@ -1,0 +1,13 @@
+F
+======================================================================
+FAIL: test_safety1_legacy_package_is_not_current_directory_contract (test_msi_directory_guard.DirectoryTables)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_directory_guard.py", line 16, in test_safety1_legacy_package_is_not_current_directory_contract
+    with self.assertRaisesRegex(AssertionError, "DIRECTORY_CONTRACT_REQUIRED"):
+AssertionError: AssertionError not raised
+
+----------------------------------------------------------------------
+Ran 1 test in 0.010s
+
+FAILED (failures=1)

@@ -1,0 +1,19 @@
+{
+  "sourceCommit": "70b5c30c91439e79728bf224c1a44d35b25cf733",
+  "controlHead": "ec2b3a8e52b0d5ad6bb8bb78126266f78e77d141",
+  "portableFilesVerified": 217,
+  "outputs": [
+    {
+      "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-unified-acceptance-prep-20261021\\01-installers\\msi\\ChatChatBarDesktop-0.1.0.msi",
+      "size": 165507755,
+      "sha256": "08b1923201f67e83792d89d7f64f1b49ae30794ba1f45157be7bb5860ff8fc46"
+    },
+    {
+      "path": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p11-unified-acceptance-prep-20261021\\01-installers\\exe\\ChatChatBarDesktop-0.1.0.exe",
+      "size": 166063104,
+      "sha256": "1a5b63a1ca0b40b8807fde393ae45a91e20200188e5505d60cb6040cdf9b3266"
+    }
+  ],
+  "guiStarted": false,
+  "installed": false
+}

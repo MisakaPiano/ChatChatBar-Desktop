@@ -1,0 +1,649 @@
+diff --git a/.agents/skills/chatbar-fish-audio-voice/SKILL.md b/.agents/skills/chatbar-fish-audio-voice/SKILL.md
+index de2ba6b2..03ad41dd 100644
+--- a/.agents/skills/chatbar-fish-audio-voice/SKILL.md
++++ b/.agents/skills/chatbar-fish-audio-voice/SKILL.md
+@@ -39,6 +39,8 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
+ 
+ - `DesktopChatContextMenu` owns the three non-wrapping scope rows shared by message secondary click and footer ellipsis. Ellipsis has no implicit segment; screenshot actions are supplied by a separate composition-local owner. `DesktopChatMessageToolbar` keeps voice last in its left group and image actions pinned right; a history window with newer messages must not expose regeneration eligibility. `DesktopVoiceGenerationDialog` retains explicit auxiliary authorization and message/segment identity.
+ 
++- `DesktopChatScreenshotHost` supplies the message-menu screenshot owner; `DesktopChatScreenshotSelection` retains baseline pure selection/file-name policies and shared roleplay block IDs. Independent `DesktopChatScreenshotRenderer` reuses Markdown/segment presentation, snapshots versions/voice placements, bounds raster/resources and exports new PNG destinations. `DesktopCharacterResourceStore.readScreenshotImageBytes` is the bounded image-only port; screenshot selection never requests audio generation.
++
+ ## Desktop formal audio foundation
+ 
+ - `DesktopVoiceAudioStore` persists immutable MP3 artifacts under the selected root `audio/generated`, with independent ownership/hash receipts, bounded streams and atomic publication. It has no startup orphan sweep; corrupt indexes, missing receipts and unknown files remain preserved. Formal clips use a separate 16 MiB / 30-minute structural/native profile; picker preview stays at its accepted 16 MiB / 120 seconds. Both profiles use the same Windows backend with explicit per-port duration admission.
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterResourceStore.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterResourceStore.kt
+index a099aadf..a48333cd 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterResourceStore.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterResourceStore.kt
+@@ -42,6 +42,17 @@ internal class DesktopCharacterResourceStore(
+             Files.readAllBytes(requireReadableOwnedFile(reference))
+         }
+ 
++    /** Screenshot reads reject oversized owned inputs before allocating their full contents. */
++    internal fun readScreenshotImageBytes(reference: String, maximumBytes: Int = 32 * 1024 * 1024): ByteArray {
++        require(maximumBytes in 1..32 * 1024 * 1024)
++        if (reference.startsWith(ASSET_PREFIX)) return readAsset(reference).also { require(it.size <= maximumBytes) }
++        require(reference.startsWith("$IMAGES_DIRECTORY/")) { "截图仅接受 owned 图片引用" }
++        val path = requireReadableOwnedFile(reference)
++        return Files.newInputStream(path).use { input ->
++            input.readNBytes(maximumBytes + 1).also { require(it.size <= maximumBytes) { "截图资源超过大小限制" } }
++        }
++    }
++
+     /** Only a confirmed absent owned file is eligible for bundled document repair. */
+     internal fun probeDocument(reference: String): DesktopDocumentProbe {
+         if (reference.startsWith(ASSET_PREFIX)) return try {
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotHost.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotHost.kt
+new file mode 100644
+index 00000000..3b0d4025
+--- /dev/null
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotHost.kt
+@@ -0,0 +1,141 @@
++package com.example.chatbar.desktop
++
++import androidx.compose.foundation.*
++import androidx.compose.foundation.layout.*
++import androidx.compose.foundation.lazy.LazyColumn
++import androidx.compose.foundation.lazy.items
++import androidx.compose.foundation.text.BasicText
++import androidx.compose.runtime.*
++import androidx.compose.ui.*
++import androidx.compose.ui.graphics.*
++import androidx.compose.ui.unit.dp
++import androidx.compose.ui.window.Popup
++import androidx.compose.ui.window.PopupProperties
++import androidx.compose.ui.text.TextStyle
++import androidx.compose.ui.input.key.*
++import androidx.compose.ui.focus.FocusRequester
++import androidx.compose.ui.focus.focusRequester
++import com.example.chatbar.data.local.entity.*
++import com.example.chatbar.data.repository.VoiceMessagePlacement
++import com.example.chatbar.domain.chat.*
++import kotlinx.coroutines.*
++import org.jetbrains.skia.Image as SkiaImage
++
++/** Selection owns immutable message/version snapshots. Preview/export fail if ownership changes. */
++@Composable
++internal fun DesktopChatScreenshotHost(controller: DesktopPrimaryChatController, state: DesktopPrimaryChatState,
++    content: @Composable ()->Unit) {
++    val scope=rememberCoroutineScope()
++    var messages by remember(state.selectedSession?.id) { mutableStateOf<List<ChatMessage>?>(null) }
++    var voices by remember(state.selectedSession?.id) { mutableStateOf<Map<String,List<VoiceMessagePlacement>>>(emptyMap()) }
++    var selected by remember(state.selectedSession?.id) { mutableStateOf<Set<String>>(emptySet()) }
++    var expanded by remember(state.selectedSession?.id) { mutableStateOf<Map<String,Boolean>>(emptyMap()) }
++    var png by remember(state.selectedSession?.id) { mutableStateOf<DesktopScreenshotPng?>(null) }
++    var busy by remember { mutableStateOf(false) }
++    var error by remember { mutableStateOf<String?>(null) }
++    var saved by remember { mutableStateOf(false) }
++    val colors=LocalDesktopPalette.current
++    val screenshotFocus=remember { FocusRequester() }
++    val start:(ChatMessage,String?)->Unit = { clicked,block ->
++        scope.launch {
++            if(!busy) {
++                busy=true;error=null;saved=false
++                try {
++                    val timeline=controller.screenshotTimeline()
++                    check(timeline.any { it==clicked }) { "消息已变化，请重新选择" }
++                    val currentVoices=linkedMapOf<String,List<VoiceMessagePlacement>>()
++                    for(m in timeline) currentVoices[m.id]=controller.voices?.repository?.placementsForMessage(m).orEmpty()
++                    val ids=roleplayScreenshotBlockIds(clicked,state.assistantSegmentedBubblesEnabled,currentVoices[clicked.id].orEmpty().map { it.voice.id })
++                    check(block==null || block in ids) { "截图片段已变化，请重新选择" }
++                    messages=timeline;voices=currentVoices;selected=if(block==null)ids.toSet() else setOf(block);expanded=emptyMap();png=null
++                } catch(e:CancellationException){throw e}
++                catch(_:Exception){error="无法读取截图内容，请检查消息和资源后重新选择"}
++                finally{busy=false}
++            }
++        }
++    }
++    CompositionLocalProvider(LocalDesktopChatScreenshot provides start, content=content)
++    val snapshot=messages
++    if(snapshot!=null) Popup(alignment=Alignment.Center, onDismissRequest={if(!busy){messages=null;png=null;error=null}}, properties=PopupProperties(focusable=true)) {
++        LaunchedEffect(snapshot,png) { screenshotFocus.requestFocus() }
++        Column(Modifier.fillMaxSize().onPreviewKeyEvent { event ->
++            if(event.key == Key.Escape && event.type == KeyEventType.KeyDown && !busy) { messages=null;png=null;error=null;true } else false
++        }.focusRequester(screenshotFocus).focusable().background(DesktopBootstrapColors.background).padding(12.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
++            Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
++                BasicText(if(png==null)"选择长截图内容" else "PNG 截图预览",Modifier.weight(1f),style=TextStyle(color=DesktopBootstrapColors.foreground))
++                StudioAction("关闭",enabled=!busy) { messages=null;png=null;error=null }
++            }
++            error?.let{StatusText(it,DesktopBootstrapColors.destructive)}
++            if(saved)StatusText("PNG 已保存")
++            val result=png
++            if(result==null) {
++                val all=snapshot.flatMap { m->roleplayScreenshotBlockIds(m,state.assistantSegmentedBubblesEnabled,voices[m.id].orEmpty().map{it.voice.id}) }.toSet()
++                LazyColumn(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(6.dp)) {
++                    items(snapshot,key={it.id}) { m ->
++                        val ids=roleplayScreenshotBlockIds(m,state.assistantSegmentedBubblesEnabled,voices[m.id].orEmpty().map{it.voice.id})
++                        if(ids.isNotEmpty()) Column {
++                            StudioAction("整条 · ${m.role} · ${m.displayContent.take(36)}",selected=ids.all{it in selected},enabled=!busy) {
++                                selected=toggleChatScreenshotMessageSelection(selected,ids,all)
++                            }
++                            ids.forEach { id->
++                                val label=when {
++                                    "::image::" in id->"图片 ${id.substringAfterLast("::")}"
++                                    "::voice::" in id->"录音 ${voices[m.id].orEmpty().firstOrNull{roleplayVoiceBlockId(m.id,it.voice.id)==id}?.voice?.characterName.orEmpty()}"
++                                    id.endsWith("::legacy")->m.displayContent.take(80)
++                                    else->parseRoleplayTextSegments(m.displayContent).getOrNull(id.substringAfterLast("::").toIntOrNull()?:-1)?.displayText?.take(80).orEmpty()
++                                }
++                                StudioAction("${if(id in selected) "☑" else "☐"} $label",enabled=!busy) { selected=toggleChatScreenshotSelection(selected,id,all) }
++                                val segmentIndex=id.substringAfterLast("::").toIntOrNull()
++                                val seg=segmentIndex?.let{parseRoleplayTextSegments(m.displayContent).getOrNull(it)}
++                                if("::text::" in id && seg?.kind==RoleplaySegmentKind.STATUS) StudioAction("截图中的状态：${if(expanded[id]?:seg.statusDefaultExpanded)"展开" else "收起"}",enabled=!busy) {
++                                    expanded=expanded+(id to !(expanded[id]?:seg.statusDefaultExpanded))
++                                }
++                            }
++                        }
++                    }
++                }
++                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
++                    StudioAction("取消选择",enabled=!busy){selected=emptySet()}
++                    StudioAction(if(busy)"正在生成预览…" else "预览 PNG · ${selected.size}项",enabled=!busy && selected.isNotEmpty()) {
++                        scope.launch {
++                            busy=true;error=null
++                            try {
++                                val chosen=orderedChatScreenshotMessages(snapshot,selected,state.assistantSegmentedBubblesEnabled)
++                                controller.verifyScreenshotMessages(chosen,voices)
++                                val preferred=state.selectedCharacter?.id?.let{controller.backgroundLibrary?.preferred(it)}
++                                val background=desktopEffectiveBackground(state.selectedSession?.chatBackground,preferred,state.selectedCharacter?.chatBackground).first
++                                val request=DesktopScreenshotRequest(state.selectedSession?.title?:"聊天",state,chosen,selected,voices,expanded,background)
++                                val rendered=DesktopChatScreenshotRenderer.render(request,colors,{ ref -> controller.characterResources.readScreenshotImageBytes(ref) })
++                                controller.verifyScreenshotMessages(chosen,voices)
++                                png=rendered
++                            } catch(e:CancellationException){throw e}
++                            catch(_:Exception){error="截图生成失败或内容已变化；请减少选择、检查图片资源后重试，原数据未修改"}
++                            finally{busy=false}
++                        }
++                    }
++                }
++            } else {
++                val image=remember(result){SkiaImage.makeFromEncoded(result.bytes)}
++                DisposableEffect(image){onDispose{image.close()}}
++                BoxWithConstraints(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
++                    Image(image.toComposeImageBitmap(),"聊天截图预览",Modifier.width(maxWidth).height((result.height.toFloat()/result.width*maxWidth.value).coerceAtLeast(1f).dp))
++                }
++                Row(Modifier.horizontalScroll(rememberScrollState())) {
++                    StudioAction("返回选择",enabled=!busy){png=null;saved=false}
++                    StudioAction("保存 PNG",enabled=!busy){scope.launch {
++                        busy=true;error=null
++                        try {
++                            val chosen=orderedChatScreenshotMessages(snapshot,selected,state.assistantSegmentedBubblesEnabled)
++                            controller.verifyScreenshotMessages(chosen,voices)
++                            val target=withContext(Dispatchers.IO){controller.imagePicker.pickSaveFile(DesktopFileType("PNG 图片",listOf("png")),buildChatScreenshotFileName(state.selectedSession?.title?:"聊天"))}
++                            if(target!=null){controller.verifyScreenshotMessages(chosen,voices);withContext(Dispatchers.IO){DesktopChatScreenshotRenderer.save(result,target)};saved=true}
++                        }catch(e:CancellationException){throw e}
++                        catch(_:Exception){error="无法保存 PNG；请确认新文件名、目录和消息版本，预览已保留"}
++                        finally{busy=false}
++                    }}
++                }
++            }
++        }
++    }
++    else error?.let { text->Row(Modifier.background(DesktopBootstrapColors.card).padding(8.dp)){StatusText(text);StudioAction("关闭提示"){error=null}} }
++}
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotRenderer.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotRenderer.kt
+new file mode 100644
+index 00000000..4eb02e0e
+--- /dev/null
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotRenderer.kt
+@@ -0,0 +1,168 @@
++@file:OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
++package com.example.chatbar.desktop
++
++import androidx.compose.foundation.*
++import androidx.compose.foundation.layout.*
++import androidx.compose.foundation.shape.CircleShape
++import androidx.compose.foundation.text.BasicText
++import androidx.compose.runtime.*
++import androidx.compose.ui.*
++import androidx.compose.ui.graphics.*
++import androidx.compose.ui.draw.drawBehind
++import androidx.compose.ui.layout.*
++import androidx.compose.ui.text.TextStyle
++import androidx.compose.ui.unit.*
++import com.example.chatbar.data.local.entity.*
++import com.example.chatbar.data.repository.VoiceMessagePlacement
++import com.example.chatbar.domain.chat.*
++import org.jetbrains.skia.EncodedImageFormat
++import org.jetbrains.skia.Image as SkiaImage
++import java.nio.file.*
++import java.nio.file.Path
++import java.util.UUID
++import kotlinx.coroutines.*
++import javax.swing.SwingUtilities
++import kotlin.coroutines.CoroutineContext
++
++internal data class DesktopScreenshotRequest(
++    val title: String, val state: DesktopPrimaryChatState, val messages: List<ChatMessage>,
++    val selected: Set<String>, val voices: Map<String,List<VoiceMessagePlacement>> = emptyMap(),
++    val statusExpanded: Map<String,Boolean> = emptyMap(), val background: String? = null,
++)
++internal data class DesktopScreenshotPng(val bytes: ByteArray, val width: Int, val height: Int)
++
++/** Static CCB rendering, never OS/Robot capture. Every resource is supplied by an owned resource reader. */
++internal object DesktopChatScreenshotRenderer {
++    const val MAX_HEIGHT = 32_000
++    const val MAX_PIXELS = 8_000_000L
++    private val edt = object: CoroutineDispatcher() {
++        override fun isDispatchNeeded(context: CoroutineContext) = !SwingUtilities.isEventDispatchThread()
++        override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
++    }
++    fun validatePlan(width: Int, height: Int) {
++        require(width in 320..1600 && height in 1..MAX_HEIGHT && width.toLong()*height <= MAX_PIXELS) { "截图尺寸超过安全限制，请减少选择内容" }
++    }
++    suspend fun render(request: DesktopScreenshotRequest, colors: DesktopSemanticColors,
++        read: (String)->ByteArray, width: Int = 640): DesktopScreenshotPng {
++        require(width in 320..1600)
++        require(request.messages.isNotEmpty() && request.messages.sumOf { it.displayContent.length.toLong() } <= 200_000)
++        require(request.selected.isNotEmpty()) { "请选择截图内容" }
++        val valid=request.messages.flatMap { roleplayScreenshotBlockIds(it,request.state.assistantSegmentedBubblesEnabled,
++            request.voices[it.id].orEmpty().map { p->p.voice.id }) }.toSet()
++        require(request.selected.all { it in valid }) { "截图选择已失效" }
++        val images=linkedMapOf<String,SkiaImage>()
++        var resourcePixels=0L
++        var encodedBytes=0L
++        try {
++            val references=buildSet {
++                request.background?.let(::add)
++                request.messages.forEach { m ->
++                    m.images.forEachIndexed { i,ref->if(roleplayImageBlockId(m.id,i) in request.selected) add(ref) }
++                    val presented=desktopPresentMessage(m,request.state.selectedCharacter,request.state.globalPlayerName,
++                        request.state.assistantSegmentedBubblesEnabled,session=request.state.selectedSession)
++                    if(m.role==MessageRole.ASSISTANT) presented.segments.forEach { seg->desktopPresentedAvatarReference(seg.speaker,request.state.selectedCharacter)?.let(::add) }
++                }
++            }
++            require(references.size<=40) { "截图图片数量超过限制" }
++            withContext(Dispatchers.IO) { references.forEach { ref->
++                val bytes=read(ref);encodedBytes+=bytes.size;require(encodedBytes<=32L*1024*1024) { "截图资源总大小超过限制" }
++                val image=SkiaImage.makeFromEncoded(bytes)
++                if (image.width.toLong()*image.height>MAX_PIXELS || resourcePixels+image.width.toLong()*image.height>MAX_PIXELS) {
++                    image.close();error("截图图片像素超过安全限制")
++                }
++                resourcePixels+=image.width.toLong()*image.height;images[ref]=image
++            } }
++            return withContext(edt) {
++                var height=0
++                val body:@Composable ()->Unit = {
++                    CompositionLocalProvider(LocalDesktopPalette provides colors) {
++                        DesktopScreenshotContent(request,images.mapValues { it.value.toComposeImageBitmap() },Modifier
++                            .width(width.dp).wrapContentHeight(unbounded=true).onSizeChanged { height=it.height })
++                    }
++                }
++                // Measurement uses a one-pixel surface; no unbounded raster allocation.
++                renderComposeScene(width,1,content=body).close()
++                validatePlan(width,height)
++                val measured=height
++                renderComposeScene(width,measured,content=body).use { image->
++                    check(height==measured) { "截图布局发生变化，请重新预览" }
++                    val data=checkNotNull(image.encodeToData(EncodedImageFormat.PNG))
++                    data.use { DesktopScreenshotPng(it.bytes,width,measured) }
++                }
++            }
++        } finally { images.values.forEach { it.close() } }
++    }
++
++    /** Explicit new destination only; no external file overwrite and no broad cleanup. */
++    fun save(png: DesktopScreenshotPng, target: Path) {
++        val absolute=target.toAbsolutePath().normalize()
++        require(absolute.fileName.toString().endsWith(".png",true)) { "请选择 PNG 文件名" }
++        require(!Files.exists(absolute,LinkOption.NOFOLLOW_LINKS)) { "文件已存在，请选择新文件名" }
++        val parent=absolute.parent.toRealPath();require(parent==absolute.parent) { "保存目录已变化" }
++        val part=parent.resolve(".ccb-screenshot-${UUID.randomUUID()}.part")
++        try {
++            Files.newOutputStream(part,StandardOpenOption.CREATE_NEW).use { it.write(png.bytes) }
++            check(parent.toRealPath()==parent)
++            Files.move(part,absolute)
++        } finally { Files.deleteIfExists(part) }
++    }
++}
++
++@Composable
++private fun DesktopScreenshotContent(r:DesktopScreenshotRequest, images:Map<String,ImageBitmap>,modifier:Modifier) {
++    val c=LocalDesktopPalette.current
++    Column(modifier.background(c.background).drawBehind {
++        images[r.background]?.let { bitmap ->
++            val w=size.width.toInt().coerceAtLeast(1)
++            val h=(bitmap.height.toDouble()*w/bitmap.width).toInt().coerceAtLeast(1)
++            var y=0
++            while(y<size.height) { drawImage(bitmap,dstOffset=IntOffset(0,y),dstSize=IntSize(w,h));y+=h }
++            drawRect(c.background.copy(alpha=.84f))
++        }
++    }) {
++        BasicText(r.title,Modifier.fillMaxWidth().background(c.card).padding(12.dp),style=TextStyle(color=c.foreground,fontSize=18.sp))
++        r.messages.forEach { m ->
++            val p=desktopPresentMessage(m,r.state.selectedCharacter,r.state.globalPlayerName,r.state.assistantSegmentedBubblesEnabled,session=r.state.selectedSession)
++            val selectedForMessage=r.selected.filter { roleplayBlockMessageId(it)==m.id }
++            if(selectedForMessage.isNotEmpty()) Column(Modifier.fillMaxWidth().padding(10.dp),verticalArrangement=Arrangement.spacedBy(7.dp),
++                horizontalAlignment=if(m.role==MessageRole.USER)Alignment.End else Alignment.Start) {
++                if(p.showWholeMessageHeader) Row(Modifier.fillMaxWidth(),horizontalArrangement=if(m.role==MessageRole.USER)Arrangement.End else Arrangement.Start,
++                    verticalAlignment=Alignment.CenterVertically) {
++                    val avatar=if(m.role==MessageRole.ASSISTANT) images[r.state.selectedCharacter?.avatar] else null
++                    if(avatar!=null)Image(avatar,null,Modifier.size(36.dp))
++                    else Box(Modifier.size(36.dp).background(c.muted,CircleShape),contentAlignment=Alignment.Center) { BasicText(p.speakerLabel.take(1),style=TextStyle(color=c.foreground)) }
++                    BasicText(p.speakerLabel,Modifier.padding(start=6.dp),style=TextStyle(color=c.mutedForeground,fontSize=12.sp))
++                }
++                m.images.forEachIndexed { index,ref -> if(roleplayImageBlockId(m.id,index) in r.selected) {
++                    val bitmap=images[ref] ?: error("截图图片未加载")
++                    Image(bitmap,null,Modifier.fillMaxWidth().heightIn(max=400.dp))
++                } }
++                if(p.segmented) DesktopScreenshotVoiceRows(r,m,r.voices[m.id].orEmpty().filter { it.segmentIndex==null })
++                p.segments.forEachIndexed { index,seg ->
++                    val id=if(p.segmented)checkNotNull(seg.blockId) else roleplayLegacyTextBlockId(m.id)
++                    if(id in r.selected) DesktopRoleplaySegmentSurface(seg.kind,p.segmented,index in p.speakerHeaderIndexes,seg.speaker?.displayName,"export-$id",avatar={
++                        val ref=desktopPresentedAvatarReference(seg.speaker,r.state.selectedCharacter)
++                        val bitmap=images[ref]
++                        if(bitmap!=null)Image(bitmap,null,Modifier.size(40.dp))
++                        else Box(Modifier.size(40.dp).background(c.muted,CircleShape),contentAlignment=Alignment.Center){BasicText((seg.speaker?.displayName?:p.speakerLabel).take(1),style=TextStyle(color=c.foreground))}
++                    }) { color,style ->
++                        if(seg.kind==RoleplaySegmentKind.STATUS) {
++                            BasicText("状态 / 选项",style=TextStyle(color=c.mutedForeground,fontSize=12.sp))
++                            if(r.statusExpanded[id]?:seg.statusDefaultExpanded)BasicText(seg.text,style=style.copy(color=color))
++                        } else DesktopMarkdownText(seg.markdownSource,color,typography=DesktopChatTypography(r.state.chatBubbleFontScale),textStyle=style)
++                    }
++                    if(p.segmented) DesktopScreenshotVoiceRows(r,m,r.voices[m.id].orEmpty().filter { it.segmentIndex==seg.index && it.segmentIndex!=null })
++                }
++                if(!p.segmented) DesktopScreenshotVoiceRows(r,m,r.voices[m.id].orEmpty())
++            }
++        }
++    }
++}
++
++@Composable
++private fun DesktopScreenshotVoiceRows(r:DesktopScreenshotRequest,m:ChatMessage,rows:List<VoiceMessagePlacement>) {
++    rows.filter { roleplayVoiceBlockId(m.id,it.voice.id) in r.selected }.forEach { v->
++        BasicText("▶ ${v.voice.characterName} · ${v.voice.durationMs/1000}s",Modifier.border(1.dp,DesktopBootstrapColors.border).padding(8.dp),
++            style=TextStyle(color=DesktopBootstrapColors.foreground,fontSize=12.sp))
++    }
++}
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotSelection.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotSelection.kt
+new file mode 100644
+index 00000000..60808618
+--- /dev/null
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotSelection.kt
+@@ -0,0 +1,91 @@
++package com.example.chatbar.desktop
++
++import com.example.chatbar.data.local.entity.ChatMessage
++import com.example.chatbar.data.local.entity.MessageRole
++import com.example.chatbar.domain.chat.roleplayBlockMessageId
++import com.example.chatbar.domain.chat.roleplayScreenshotBlockIds
++import java.text.SimpleDateFormat
++import java.util.Date
++import java.util.LinkedHashSet
++import java.util.Locale
++
++fun ChatMessage.isSelectableForChatScreenshot(
++    assistantSegmentedBubblesEnabled: Boolean = true
++): Boolean =
++    roleplayScreenshotBlockIds(this, assistantSegmentedBubblesEnabled).isNotEmpty()
++
++fun toggleChatScreenshotSelection(
++    currentIds: Set<String>,
++    blockId: String,
++    selectableIds: Set<String>
++): Set<String> {
++    if (blockId !in selectableIds) return currentIds
++    val next = LinkedHashSet(currentIds)
++    if (blockId in next) {
++        next.remove(blockId)
++    } else {
++        next.add(blockId)
++    }
++    return next
++}
++
++fun toggleChatScreenshotMessageSelection(
++    currentIds: Set<String>,
++    messageBlockIds: Collection<String>,
++    selectableIds: Set<String>
++): Set<String> {
++    val selectableMessageIds = messageBlockIds.filterTo(LinkedHashSet()) { it in selectableIds }
++    if (selectableMessageIds.isEmpty()) return currentIds
++    val next = LinkedHashSet(currentIds)
++    if (selectableMessageIds.all(next::contains)) {
++        next.removeAll(selectableMessageIds)
++    } else {
++        next.addAll(selectableMessageIds)
++    }
++    return next
++}
++
++fun cleanChatScreenshotSelection(
++    currentIds: Set<String>,
++    messages: List<ChatMessage>,
++    assistantSegmentedBubblesEnabled: Boolean = true,
++    voiceIdsByMessage: Map<String, List<String>> = emptyMap()
++): Set<String> {
++    val selectableIds = messages
++        .flatMap { message ->
++            roleplayScreenshotBlockIds(
++                message,
++                assistantSegmentedBubblesEnabled,
++                voiceIdsByMessage[message.id].orEmpty()
++            )
++        }
++        .toSet()
++    return currentIds.filterTo(LinkedHashSet()) { it in selectableIds }
++}
++
++fun orderedChatScreenshotMessages(
++    messages: List<ChatMessage>,
++    selectedBlockIds: Set<String>,
++    assistantSegmentedBubblesEnabled: Boolean = true
++): List<ChatMessage> =
++    messages.filter { message ->
++        message.isSelectableForChatScreenshot(assistantSegmentedBubblesEnabled) &&
++            selectedBlockIds.any { roleplayBlockMessageId(it) == message.id }
++    }
++
++fun buildChatScreenshotFileName(
++    title: String,
++    timestampMillis: Long = System.currentTimeMillis()
++): String {
++    val safeTitle = sanitizeChatScreenshotFileSegment(title).ifBlank { "聊天" }
++    val stamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date(timestampMillis))
++    return "ChatBar_${safeTitle}_$stamp.png"
++}
++
++internal fun sanitizeChatScreenshotFileSegment(value: String): String =
++    value
++        .trim()
++        .replace(Regex("[\\\\/:*?\"<>|\\p{Cntrl}]"), "_")
++        .replace(Regex("\\s+"), "_")
++        .take(40)
++        .trim('_', '.', ' ')
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatController.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatController.kt
+index cf3c7d9e..bef15c9a 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatController.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatController.kt
+@@ -188,6 +188,22 @@ internal class DesktopPrimaryChatController(
+         } catch (_: DesktopReadingPositionPersistenceException) { /* onReadingResult owns the session-specific indicator. */ }
+     }
+ 
++    suspend fun screenshotTimeline(): List<ChatMessage> {
++        val sessionId = checkNotNull(state.value.selectedSession?.id)
++        val messages = chats.getMessagesReadOnly(sessionId)
++        check(state.value.selectedSession?.id == sessionId)
++        return messages
++    }
++    suspend fun verifyScreenshotMessages(expected: List<ChatMessage>, expectedVoices: Map<String, List<com.example.chatbar.data.repository.VoiceMessagePlacement>>? = null) {
++        val sessionId = checkNotNull(state.value.selectedSession?.id)
++        check(expected.isNotEmpty() && expected.all { it.sessionId == sessionId })
++        expected.forEach {
++            check(chats.getMessage(it.id,sessionId) == it) { "截图消息版本已变化" }
++            if (expectedVoices != null) check(voices?.repository?.placementsForMessage(it).orEmpty() == expectedVoices[it.id].orEmpty()) { "截图录音已变化" }
++        }
++        check(state.value.selectedSession?.id == sessionId)
++    }
++
+     fun dismissStatus(expected: String) { mutableState.update { if (it.status == expected) it.copy(status = null) else it } }
+ 
+     suspend fun refresh() = guarded {
+diff --git a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt
+index 379ee8a1..4c6e1646 100644
+--- a/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt
++++ b/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt
+@@ -276,13 +276,13 @@ internal fun DesktopPrimaryChatPanel(
+                         StatusText(t(DesktopUiText.SELECT_SESSION))
+                     } else {
+                         CompositionLocalProvider(LocalClipboard provides clipboard, LocalDesktopVoiceUi provides voiceUi) { key(state.selectedSession?.id) {
+-                            PrimaryTimeline(
++                            DesktopChatScreenshotHost(controller, state) { PrimaryTimeline(
+                                 state, running, controller, clipboard, placement, Modifier.weight(1f),
+                                 onEdit = { message -> editingMessage = message; editingText = message.displayContent },
+                                 onDelete = { deletingMessage = it },
+                                 onEditSegment = { message, segment -> editingSegment = message to segment; segmentText = segment.source!!.rawText },
+                                 onDeleteSegment = { message, segment -> deletingSegment = message to segment },
+-                            )
++                            ) }
+                         } }
+                         Column(Modifier.width(placement.contentWidthDp.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                             if (clipboard.unavailable) StatusText(t(DesktopUiText.CLIPBOARD_UNAVAILABLE), colors.warning)
+@@ -725,7 +725,7 @@ internal fun PrimaryMessageBubble(
+                     clipboard.copyText(desktopSegmentCopyText(message, requireNotNull(segment.source), state.selectedSession, state.selectedCharacter, state.globalPlayerName)) } } },
+                 entry("编辑", DesktopAppIcons.Edit, segments != null && mutable) { segments?.let(onEditSegment) },
+                 entry("删除", DesktopAppIcons.Delete, segments != null && DesktopMessageAction.DELETE in actions, true) { segments?.let(onDeleteSegment) },
+-                entry("截图", DesktopAppIcons.Screenshot, screenshot != null && selectedSegment != null) { screenshot?.invoke(message, selectedSegment?.blockId) },
++                entry("截图", DesktopAppIcons.Screenshot, screenshot != null && selectedSegment != null) { screenshot?.invoke(message, if (presented.segmented) selectedSegment?.blockId else com.example.chatbar.domain.chat.roleplayLegacyTextBlockId(message.id)) },
+                 entry("生成语音", DesktopAppIcons.Voice, segments != null && message.role == MessageRole.ASSISTANT && !sessionRepairBusy) { requestVoice(segments?.index) }),
+             "整条" to listOf(
+                 entry("复制", DesktopAppIcons.Copy, DesktopMessageAction.COPY in actions) { onAction(DesktopMessageAction.COPY) },
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotTest.kt
+new file mode 100644
+index 00000000..8d46dc49
+--- /dev/null
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotTest.kt
+@@ -0,0 +1,79 @@
++package com.example.chatbar.desktop
++import com.example.chatbar.data.local.entity.*
++import com.example.chatbar.domain.chat.*
++import com.example.chatbar.domain.appearance.DefaultThemeColorHsv
++import kotlinx.coroutines.*
++import java.nio.file.*
++import java.io.ByteArrayInputStream
++import javax.imageio.ImageIO
++import kotlin.test.*
++
++class DesktopChatScreenshotTest {
++    private fun message(id:String="m",text:String="旁白\n<n=\"Alice\"/>[**你好**]()")=ChatMessage(id,"s",MessageRole.ASSISTANT,text,createdAt=1,updatedAt=1)
++    @Test fun `official block selection supports segment whole multi ordering and rejects foreign ids`() {
++        val a=message();val b=message("b","第二条");val all=roleplayScreenshotBlockIds(a)+roleplayScreenshotBlockIds(b)
++        var selected=toggleChatScreenshotSelection(emptySet(),all.first(),all.toSet())
++        assertEquals(setOf(all.first()),selected)
++        assertEquals(selected,toggleChatScreenshotSelection(selected,"foreign::text::0",all.toSet()))
++        selected=toggleChatScreenshotMessageSelection(selected,roleplayScreenshotBlockIds(b),all.toSet())
++        assertEquals(listOf(a,b),orderedChatScreenshotMessages(listOf(a,b),selected))
++        assertEquals(roleplayScreenshotBlockIds(b).toSet(),cleanChatScreenshotSelection(selected,listOf(b)))
++        assertTrue(roleplayScreenshotBlockIds(a.copy(role=MessageRole.USER)).contains(roleplayLegacyTextBlockId(a.id)))
++        assertTrue(roleplayScreenshotBlockIds(a,true,listOf("v")).contains(roleplayVoiceBlockId(a.id,"v")))
++    }
++    @Test fun `independent renderer exports actual PNG for selected segments and whole message in both themes`(): Unit =runBlocking {
++        val m=message();val state=DesktopPrimaryChatState(messages=listOf(m))
++        for(mode in listOf(ThemeMode.LIGHT,ThemeMode.DARK)) {
++            val colors=desktopSemanticColors(mode,DefaultThemeColorHsv,false)
++            val ids=roleplayScreenshotBlockIds(m)
++            val segment=DesktopChatScreenshotRenderer.render(DesktopScreenshotRequest("截图测试",state,listOf(m),setOf(ids.first())),colors,{error("unexpected resource")})
++            val whole=DesktopChatScreenshotRenderer.render(DesktopScreenshotRequest("截图测试",state,listOf(m),ids.toSet()),colors,{error("unexpected resource")})
++            assertEquals(640,segment.width);assertTrue(whole.height>=segment.height)
++            val decoded=ImageIO.read(ByteArrayInputStream(whole.bytes));assertEquals(640,decoded.width);assertEquals(whole.height,decoded.height)
++            assertTrue(whole.bytes.size>100)
++            val evidence=Path.of("build/post-p8-chat-ux-20261020/exports")
++            Files.createDirectories(evidence);Files.write(evidence.resolve("renderer-${mode.name}.png"),whole.bytes)
++        }
++    }
++    @Test fun `render rejects stale or unknown blocks before resource reads and enforces bounded plan`(): Unit =runBlocking {
++        val m=message();var reads=0
++        assertFailsWith<IllegalArgumentException>{DesktopChatScreenshotRenderer.render(DesktopScreenshotRequest("x",DesktopPrimaryChatState(),listOf(m),setOf("other::text::0")),desktopSemanticColors(ThemeMode.LIGHT,DefaultThemeColorHsv,false),{reads++;byteArrayOf()})}
++        assertEquals(0,reads)
++        assertFailsWith<IllegalArgumentException>{DesktopChatScreenshotRenderer.validatePlan(640,32001)}
++        assertFailsWith<IllegalArgumentException>{DesktopChatScreenshotRenderer.validatePlan(1600,32000)}
++        assertFailsWith<IllegalArgumentException>{DesktopChatScreenshotRenderer.validatePlan(0,10)}
++    }
++    @Test fun `PNG export never overwrites external target and removes only its own incomplete file`() {
++        val root=Files.createTempDirectory("ccb-screenshot-export-")
++        val existing=root.resolve("keep.png");val target=root.resolve("new.png")
++        Files.writeString(existing,"sentinel")
++        try {
++            val png=DesktopScreenshotPng(byteArrayOf(1,2,3),1,1)
++            assertFailsWith<IllegalArgumentException>{DesktopChatScreenshotRenderer.save(png,existing)}
++            assertEquals("sentinel",Files.readString(existing))
++            DesktopChatScreenshotRenderer.save(png,target);assertContentEquals(png.bytes,Files.readAllBytes(target))
++            assertFalse(Files.list(root).use { s->s.anyMatch { it.fileName.toString().endsWith(".part") } })
++            assertFalse(buildChatScreenshotFileName("a/b:*?",0).contains('/'))
++        } finally {Files.deleteIfExists(target);Files.deleteIfExists(existing);Files.delete(root)}
++    }
++    @Test fun `screenshot reader is bounded and rejects documents and outside references`() {
++        val root=Files.createTempDirectory("ccb-shot-reader-");val images=Files.createDirectory(root.resolve("images"))
++        val file=images.resolve("fixture.png");Files.write(file,ByteArray(128))
++        try {
++            val reader=DesktopCharacterResourceStore(root)
++            assertFailsWith<IllegalArgumentException>{reader.readScreenshotImageBytes("images/fixture.png",16)}
++            assertFailsWith<IllegalArgumentException>{reader.readScreenshotImageBytes("../outside.png")}
++            assertFailsWith<IllegalArgumentException>{reader.readScreenshotImageBytes("documents/fixture.png")}
++            assertEquals(128,reader.readScreenshotImageBytes("images/fixture.png",128).size)
++        } finally {Files.delete(file);Files.delete(images);Files.delete(root)}
++    }
++    @Test fun `captured message version must still match before preview or save`(): Unit =runBlocking {
++        val f=DesktopAssistantImageActionTest.Fixture()
++        try {
++            f.initialize();val controller=f.c.primaryChatController;controller.refresh();controller.selectSession("session")
++            val snapshot=controller.screenshotTimeline();assertTrue(snapshot.isNotEmpty());controller.verifyScreenshotMessages(snapshot)
++            f.c.chatRepository.updateMessage(snapshot.first().copy(content="changed",updatedAt=System.currentTimeMillis()))
++            assertFailsWith<IllegalStateException>{controller.verifyScreenshotMessages(snapshot)}
++        } finally {f.close()}
++    }
++}
+diff --git a/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotUiTest.kt b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotUiTest.kt
+new file mode 100644
+index 00000000..62a98b6e
+--- /dev/null
++++ b/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatScreenshotUiTest.kt
+@@ -0,0 +1,49 @@
++@file:OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class, androidx.compose.ui.InternalComposeUiApi::class)
++package com.example.chatbar.desktop
++import androidx.compose.runtime.*
++import androidx.compose.ui.ImageComposeScene
++import androidx.compose.ui.semantics.*
++import androidx.compose.ui.input.key.*
++import kotlinx.coroutines.*
++import javax.swing.SwingUtilities
++import kotlin.coroutines.CoroutineContext
++import kotlin.test.*
++
++class DesktopChatScreenshotUiTest {
++    private val edt=object:CoroutineDispatcher(){override fun dispatch(context:CoroutineContext,block:Runnable)=SwingUtilities.invokeLater(block)}
++    @Test fun `compact and wide selection previews PNG with keyboard dismissal and no generation`():Unit=runBlocking(edt) {
++        val f=DesktopAssistantImageActionTest.Fixture()
++        try {
++            f.initialize();val c=f.c.primaryChatController;c.refresh();c.selectSession("session")
++            for(width in listOf(360,1100)) {
++                val state=c.state.value
++                val scene=ImageComposeScene(width,800) {
++                    DesktopChatScreenshotHost(c,state) {
++                        val start=LocalDesktopChatScreenshot.current
++                        StudioAction("打开截图"){start!!(f.source,null)}
++                    }
++                }
++                fun nodes():List<SemanticsNode> {
++                    fun walk(n:SemanticsNode):List<SemanticsNode> = listOf(n)+n.children.flatMap(::walk)
++                    return scene.semanticsOwners.flatMap{walk(it.rootSemanticsNode)}
++                }
++                fun node(label:String)=nodes().single {it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains(label)==true && it.config.contains(SemanticsActions.OnClick)}
++                suspend fun until(check:()->Boolean){withTimeout(7000){while(true){scene.render(System.nanoTime()).close();yield();if(check())break;delay(10)}}}
++                try {
++                    until{nodes().any{it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("打开截图")==true}}
++                    node("打开截图").config[SemanticsActions.OnClick].action!!()
++                    until{nodes().any{it.config.getOrNull(SemanticsProperties.ContentDescription)?.any{s->s.startsWith("预览 PNG") }==true}}
++                    val preview=nodes().single{it.config.getOrNull(SemanticsProperties.ContentDescription)?.any{s->s.startsWith("预览 PNG") }==true}
++                    assertTrue(preview.boundsInRoot.right<=width)
++                    preview.config[SemanticsActions.OnClick].action!!()
++                    until{nodes().any{it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("保存 PNG")==true}}
++                    assertTrue(node("保存 PNG").config.contains(SemanticsActions.RequestFocus))
++                    println("SCREENSHOT_KEYBOARD width=$width focused=${nodes().filter { it.config.getOrNull(SemanticsProperties.Focused)==true }.map { it.id }}")
++                    scene.sendKeyEvent(KeyEvent(Key.Escape,KeyEventType.KeyDown));scene.sendKeyEvent(KeyEvent(Key.Escape,KeyEventType.KeyUp))
++                    until{nodes().none{it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("保存 PNG")==true}}
++                    assertTrue(f.requests.isEmpty())
++                }finally{scene.close()}
++            }
++        }finally{f.close()}
++    }
++}

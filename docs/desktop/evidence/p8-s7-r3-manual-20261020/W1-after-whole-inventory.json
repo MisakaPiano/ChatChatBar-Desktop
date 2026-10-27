@@ -1,0 +1,42 @@
+[
+  {
+    "id": "5ea3fb85-d2b4-49c3-ba66-d6156ddd9d46",
+    "character": "Alice 合成测试",
+    "anchor": "d9d9782b-257d-4c7b-be91-336ba92c1557",
+    "sourceText": "这是第一句合成语音测试。",
+    "durationMs": 31608,
+    "audioPath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r3-20261020\\environments\\p8s7-profile\\ChatChatBarDesktop\\audio\\generated\\p8s7-session-a\\412d0e0d-8d8e-4b09-9685-5e9af95e1867.mp3",
+    "audioBytes": 252860,
+    "audioSHA256": "fb93b911ab31c264881df8f167cbb655bb42ddcd148fa372e5363cf09e3dfd94"
+  },
+  {
+    "id": "7796cfe4-7464-4a14-ae77-10eedd81d00c",
+    "character": "Alice 合成测试",
+    "anchor": "709449b3-0e5e-4573-829f-6a61fe132131",
+    "sourceText": "柔和的灯光。",
+    "durationMs": 31608,
+    "audioPath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r3-20261020\\environments\\p8s7-profile\\ChatChatBarDesktop\\audio\\generated\\p8s7-session-a\\31f253b3-6771-42ff-ada4-bee36aeceae2.mp3",
+    "audioBytes": 252860,
+    "audioSHA256": "fb93b911ab31c264881df8f167cbb655bb42ddcd148fa372e5363cf09e3dfd94"
+  },
+  {
+    "id": "8edb6b78-57d2-497a-8853-556323447fb5",
+    "character": "Alice 合成测试",
+    "anchor": "d9d9782b-257d-4c7b-be91-336ba92c1557",
+    "sourceText": "这是第一句合成语音测试。",
+    "durationMs": 31608,
+    "audioPath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r3-20261020\\environments\\p8s7-profile\\ChatChatBarDesktop\\audio\\generated\\p8s7-session-a\\a1df4e04-fc23-402d-ba5a-08daa06c5d01.mp3",
+    "audioBytes": 252860,
+    "audioSHA256": "fb93b911ab31c264881df8f167cbb655bb42ddcd148fa372e5363cf09e3dfd94"
+  },
+  {
+    "id": "c4e39f11-e87f-415f-a061-d0f3faff1308",
+    "character": "Bob 合成测试",
+    "anchor": "d38f6066-3560-494c-a01c-5467dcb10583",
+    "sourceText": "这是第二句合成语音测试。",
+    "durationMs": 25338,
+    "audioPath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-remaining-20261019\\windows-final-gate-r3-20261020\\environments\\p8s7-profile\\ChatChatBarDesktop\\audio\\generated\\p8s7-session-a\\61a29e8f-ca27-4354-ad23-d463311339bb.mp3",
+    "audioBytes": 405420,
+    "audioSHA256": "c730e4c467f8dcf465acca9e426ea6349137e3302ff65e648f66dc2a63e3301f"
+  }
+]

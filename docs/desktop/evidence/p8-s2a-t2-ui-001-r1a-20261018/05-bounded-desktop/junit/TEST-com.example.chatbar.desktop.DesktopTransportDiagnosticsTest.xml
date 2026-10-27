@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopTransportDiagnosticsTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-17T20:58:23.739Z" hostname="DD1" time="0.005">
+  <properties/>
+  <testcase name="credential fields bearer image payload url query and known key are redacted" classname="com.example.chatbar.desktop.DesktopTransportDiagnosticsTest" time="0.001"/>
+  <testcase name="retained request is final cleartext serialization and https roles remain untouched" classname="com.example.chatbar.desktop.DesktopTransportDiagnosticsTest" time="0.0"/>
+  <testcase name="large request preview truncates without altering supplied provider body" classname="com.example.chatbar.desktop.DesktopTransportDiagnosticsTest" time="0.004"/>
+  <testcase name="malformed request url fails closed in diagnostics" classname="com.example.chatbar.desktop.DesktopTransportDiagnosticsTest" time="0.0"/>
+  <testcase name="retry chunks terminal state and retained history are bounded" classname="com.example.chatbar.desktop.DesktopTransportDiagnosticsTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

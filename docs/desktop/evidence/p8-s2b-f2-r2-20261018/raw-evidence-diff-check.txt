@@ -1,0 +1,33 @@
+docs/desktop/evidence/p8-s2b-f2-r2-20261018/01-chain-status/gradle.stdout.log:2: trailing whitespace.
++Daemon will be stopped at the end of the build 
+docs/desktop/evidence/p8-s2b-f2-r2-20261018/02-f2-focused/gradle.stdout.log:2: trailing whitespace.
++Daemon will be stopped at the end of the build 
+docs/desktop/evidence/p8-s2b-f2-r2-20261018/03-f1-focused/gradle.stdout.log:2: trailing whitespace.
++Daemon will be stopped at the end of the build 
+docs/desktop/evidence/p8-s2b-f2-r2-20261018/04-bounded-desktop/gradle.stdout.log:2: trailing whitespace.
++Daemon will be stopped at the end of the build 
+docs/desktop/evidence/p8-s2b-f2-r2-20261018/05-create-distributable/gradle.stdout.log:2: trailing whitespace.
++Daemon will be stopped at the end of the build 
+docs/desktop/evidence/p8-s2b-f2-r2-20261018/r2-source.patch:39: trailing whitespace.
++ 
+docs/desktop/evidence/p8-s2b-f2-r2-20261018/r2-source.patch:47: trailing whitespace.
++ 
+docs/desktop/evidence/p8-s2b-f2-r2-20261018/r2-source.patch:75: trailing whitespace.
++ 
+docs/desktop/evidence/p8-s2b-f2-r2-20261018/r2-source.patch:118: trailing whitespace.
++ 
+docs/desktop/evidence/p8-s2b-f2-r2-20261018/r2-source.patch:149: trailing whitespace.
++ 
+docs/desktop/evidence/p8-s2b-f2-r2-20261018/r2-vs-r1-test-only.patch:37: trailing whitespace.
++ 
+docs/desktop/evidence/p8-s2b-f2-r2-20261018/runs/manual01/stderr.log:19: new blank line at EOF.
+docs/desktop/evidence/p8-s2b-f2-r2-20261018/source-commit.patch:39: trailing whitespace.
++ 
+docs/desktop/evidence/p8-s2b-f2-r2-20261018/source-commit.patch:47: trailing whitespace.
++ 
+docs/desktop/evidence/p8-s2b-f2-r2-20261018/source-commit.patch:75: trailing whitespace.
++ 
+docs/desktop/evidence/p8-s2b-f2-r2-20261018/source-commit.patch:118: trailing whitespace.
++ 
+docs/desktop/evidence/p8-s2b-f2-r2-20261018/source-commit.patch:293: trailing whitespace.
++ 

@@ -5,6 +5,8 @@ import com.example.chatbar.data.repository.SettingsRepository
 import com.example.chatbar.desktop.security.DesktopCredentialKey
 import com.example.chatbar.desktop.security.DesktopSecretStore
 import com.example.chatbar.domain.image.NovelAiImageModel
+import com.example.chatbar.data.operation.AppDataOperationGate
+import com.example.chatbar.data.operation.NoOpAppDataOperationGate
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,6 +26,7 @@ internal data class DesktopNovelAiSettingsState(
 internal class DesktopNovelAiSettingsController(
     private val secrets: DesktopSecretStore,
     private val settings: SettingsRepository,
+    private val operationGate: AppDataOperationGate = NoOpAppDataOperationGate,
 ) {
     private val mutex = Mutex()
     private val mutableState = MutableStateFlow(DesktopNovelAiSettingsState())
@@ -66,7 +69,7 @@ internal class DesktopNovelAiSettingsController(
 
     private suspend fun operation(block: suspend () -> Unit) = mutex.withLock {
         mutableState.update { it.copy(busy = true, error = null, status = null) }
-        try { withContext(Dispatchers.IO) { block() } }
+        try { withContext(Dispatchers.IO) { operationGate.withNormalOperation { block() } } }
         catch (cancelled: CancellationException) { throw cancelled }
         // Never propagate an OS/provider exception (including its cause) into diagnostics/UI.
         catch (_: Exception) { mutableState.update { it.copy(error = "NovelAI 安全存储或设置操作失败，请检查输入与存储权限") } }

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFishGenerationTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-19T11:25:12.690Z" hostname="DD1" time="1.936">
+  <properties/>
+  <testcase name="global five permit batch preserves order and foreground eligibility" classname="com.example.chatbar.desktop.DesktopFishGenerationTest" time="0.34"/>
+  <testcase name="paid stale and expired free profile never send requests" classname="com.example.chatbar.desktop.DesktopFishGenerationTest" time="0.082"/>
+  <testcase name="whole fills missing anchors repeated single keeps takes and restart preserves snapshots" classname="com.example.chatbar.desktop.DesktopFishGenerationTest" time="0.128"/>
+  <testcase name="partial HTTP failure keeps successes suppresses autoplay and never resends 503" classname="com.example.chatbar.desktop.DesktopFishGenerationTest" time="0.068"/>
+  <testcase name="cancellation drains body and cannot resurrect a deleted message" classname="com.example.chatbar.desktop.DesktopFishGenerationTest" time="1.05"/>
+  <testcase name="tag rewrite waits for explicit confirmation and rejection sends no TTS" classname="com.example.chatbar.desktop.DesktopFishGenerationTest" time="0.157"/>
+  <testcase name="replacement failure preserves old recording and success replaces only its artifact" classname="com.example.chatbar.desktop.DesktopFishGenerationTest" time="0.109"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

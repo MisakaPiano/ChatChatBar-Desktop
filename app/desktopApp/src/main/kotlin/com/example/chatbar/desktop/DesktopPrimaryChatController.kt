@@ -14,6 +14,7 @@ import com.example.chatbar.data.repository.FormatCardRepository
 import com.example.chatbar.data.repository.ModelRepository
 import com.example.chatbar.data.repository.SettingsRepository
 import com.example.chatbar.data.repository.WorldBookRepository
+import com.example.chatbar.data.repository.mergeSettingsDraft
 import com.example.chatbar.domain.chat.CharacterSessionService
 import com.example.chatbar.domain.chat.ContextWindowManager
 import com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy
@@ -73,6 +74,7 @@ internal data class DesktopPrimaryChatState(
     val sessionSettingsDraft: ChatSession? = null,
     val sessionReplyLengthInput: String = "",
     val sessionSettingsDirty: Boolean = false,
+    val sessionSettingsSaving: Boolean = false,
     val sessionSettingsLeavePrompt: Boolean = false,
     val modelChoices: List<DesktopPrimaryChoice> = emptyList(),
     val effectiveModels: DesktopEffectiveModelPresentation = DesktopEffectiveModelPresentation(),
@@ -124,14 +126,30 @@ internal class DesktopPrimaryChatController(
     val imagePicker: DesktopFilePicker = UnconfiguredDesktopFilePicker,
     val imageRegeneration: DesktopChatImageRegeneration? = null,
     val backgroundLibrary: DesktopCharacterBackgrounds? = null,
+    val formatRepair: DesktopMessageFormatRepairController? = null,
+    val voices: DesktopChatVoiceRuntime? = null,
+    val memory: DesktopMemoryController? = null,
+    val rag: DesktopRagController? = null,
+    val saveSlots: DesktopSaveSlotController? = null,
 ) {
+    private suspend fun <T> withMessageMutation(sessionId: String, messageId: String, block: suspend () -> T): T {
+        val result = if (voices == null) taskRuntime.withMessageMutation(sessionId, block)
+        else voices.mutateMessage(sessionId, messageId) { taskRuntime.withMessageMutation(sessionId, block) }
+        memory?.sourceChanged(sessionId)
+        return result
+    }
+
     private val pendingBySession = mutableMapOf<String, List<DesktopPendingImage>>()
     private val stateLock = Mutex()
     private val draftLock = Mutex()
     private val mutableState = MutableStateFlow(DesktopPrimaryChatState())
     val state: StateFlow<DesktopPrimaryChatState> = mutableState.asStateFlow()
     private var settingsBaseline: ChatSession? = null
+    // Short, non-suspending draft transitions only. The existing stateLock owns async selection/save.
+    private val sessionSettingsLock = Any()
+    private val sessionSaveGeneration = AtomicLong()
     private var pendingSessionSettingsLeave: (suspend () -> Unit)? = null
+    private var sessionSettingsLeavesInProgress = 0
     private val searchGeneration = AtomicLong()
     private val composerLock = Any()
     private var pendingComposerClear: DesktopDraftRevision? = null
@@ -176,23 +194,54 @@ internal class DesktopPrimaryChatController(
         } catch (_: DesktopReadingPositionPersistenceException) { /* onReadingResult owns the session-specific indicator. */ }
     }
 
+    suspend fun screenshotTimeline(): List<ChatMessage> {
+        val sessionId = checkNotNull(state.value.selectedSession?.id)
+        val messages = chats.getMessagesReadOnly(sessionId)
+        check(state.value.selectedSession?.id == sessionId)
+        return messages
+    }
+    /** Audio is not screenshot content. Verify only the captured visual message identities. */
+    suspend fun verifyScreenshotMessages(expected: List<ChatMessage>) {
+        val sessionId = checkNotNull(state.value.selectedSession?.id) { "SCREENSHOT_SESSION" }
+        check(expected.isNotEmpty() && expected.all { it.sessionId == sessionId }) { "SCREENSHOT_SESSION" }
+        val timeline = chats.getMessagesReadOnly(sessionId)
+        val positions = expected.map { message -> timeline.indexOfFirst { it.id == message.id } }
+        check(positions.all { it >= 0 } && positions.zipWithNext().all { (a, b) -> a < b }) { "SCREENSHOT_ORDER" }
+        expected.forEach {
+            check(chats.getMessage(it.id, sessionId) == it) { "SCREENSHOT_VERSION" }
+        }
+        check(state.value.selectedSession?.id == sessionId) { "SCREENSHOT_SESSION" }
+    }
+
+    fun dismissStatus(expected: String) { mutableState.update { if (it.status == expected) it.copy(status = null) else it } }
+
     suspend fun refresh() = guarded {
-        stateLock.withLock {
-            val characterItems = characters.getAll().map { DesktopPrimaryChoice(it.id, it.name) }
-            val allSessions = sessionItems(characterItems, "")
-            val sessions = if (state.value.sessionQuery.isBlank()) allSessions else
-                sessionItems(characterItems, state.value.sessionQuery)
-            val selectedId = state.value.selectedSession?.id
-                ?.takeIf { id -> allSessions.any { it.id == id } }
-                ?: allSessions.firstOrNull()?.id
-            if (selectedId == null) {
-                settingsBaseline = null
-                mutableState.value = DesktopPrimaryChatState(
-                    characters = characterItems, sessions = sessions, sessionQuery = state.value.sessionQuery,
-                )
-            } else {
-                loadSelection(selectedId, characterItems, sessions, preserveWindow = true)
+        if (blockDuringSessionSave()) return@guarded
+        stateLock.withLock { refreshSelection() }
+    }
+
+    /** Caller owns stateLock, including the save's post-commit presentation refresh. */
+    private suspend fun refreshSelection() {
+        val characterItems = characters.getAll().map { DesktopPrimaryChoice(it.id, it.name) }
+        val allSessions = sessionItems(characterItems, "")
+        val sessions = if (state.value.sessionQuery.isBlank()) allSessions else
+            sessionItems(characterItems, state.value.sessionQuery)
+        val selectedId = state.value.selectedSession?.id
+            ?.takeIf { id -> allSessions.any { it.id == id } }
+            ?: allSessions.firstOrNull()?.id
+        if (selectedId == null) {
+            synchronized(sessionSettingsLock) {
+                if (state.value.sessionSettingsDirty || state.value.sessionSettingsSaving) {
+                    mutableState.update { it.copy(error = "会话已不可用；设置草稿已保留") }
+                } else {
+                    settingsBaseline = null
+                    mutableState.value = DesktopPrimaryChatState(
+                        characters = characterItems, sessions = sessions, sessionQuery = state.value.sessionQuery,
+                    )
+                }
             }
+        } else {
+            loadSelection(selectedId, characterItems, sessions, preserveWindow = true)
         }
     }
 
@@ -208,12 +257,19 @@ internal class DesktopPrimaryChatController(
     }
 
     suspend fun selectSession(id: String): Unit = guarded {
+        val generation = sessionSaveGeneration.get()
+        if (blockDuringSessionSave()) return@guarded
         if (state.value.sessionSettingsDirty && state.value.selectedSession?.id != id) {
             requestSessionSettingsLeave { selectSession(id) }
             return@guarded
         }
         draftLock.withLock {
-            stateLock.withLock {
+            stateLock.withLock selection@ {
+                if (generation != sessionSaveGeneration.get()) {
+                    mutableState.update { it.copy(status = "保存期间的切换请求未执行，请重新选择会话") }
+                    return@selection
+                }
+                if (state.value.selectedSession?.id != id && deferSessionSettingsLeave { selectSession(id) }) return@selection
                 val characterItems = characters.getAll().map { DesktopPrimaryChoice(it.id, it.name) }
                 val allSessions = sessionItems(characterItems, "")
                 val sessions = sessionItems(characterItems, state.value.sessionQuery)
@@ -223,29 +279,40 @@ internal class DesktopPrimaryChatController(
         }
     }
 
-    suspend fun createSession(characterId: String) = guarded {
-        require(characters.getById(characterId) != null) { "Character no longer exists" }
-        val modelStatus = models.status(settings.getAppSettings())
-        if (!modelStatus.isUsable) {
-            val message = modelStatus.errors.firstOrNull() ?: "Configure a usable chat model"
-            mutableState.update {
-                it.copy(
-                    configurationMessage = if (it.selectedSession == null) message else it.configurationMessage,
-                    error = message,
-                )
-            }
+    suspend fun createSession(characterId: String): Unit = guarded {
+        val generation = sessionSaveGeneration.get()
+        if (blockDuringSessionSave()) return@guarded
+        if (state.value.sessionSettingsDirty) {
+            requestSessionSettingsLeave { createSession(characterId) }
             return@guarded
         }
-        val id = sessionService.createSessionForCharacter(characterId)
-        searchGeneration.incrementAndGet()
-        stateLock.withLock {
+        draftLock.withLock { stateLock.withLock creation@ {
+            if (generation != sessionSaveGeneration.get()) {
+                mutableState.update { it.copy(status = "保存期间的新建请求未执行，请完成后重试") }
+                return@creation
+            }
+            if (deferSessionSettingsLeave { createSession(characterId) }) return@creation
+            require(characters.getById(characterId) != null) { "Character no longer exists" }
+            val modelStatus = models.status(settings.getAppSettings())
+            if (!modelStatus.isUsable) {
+                val message = modelStatus.errors.firstOrNull() ?: "Configure a usable chat model"
+                mutableState.update {
+                    it.copy(
+                        configurationMessage = if (it.selectedSession == null) message else it.configurationMessage,
+                        error = message,
+                    )
+                }
+                return@creation
+            }
+            val id = sessionService.createSessionForCharacter(characterId)
+            searchGeneration.incrementAndGet()
             val characterItems = characters.getAll().map { DesktopPrimaryChoice(it.id, it.name) }
             val sessions = sessionItems(characterItems, "")
             mutableState.update {
                 it.copy(sessionQuery = "", sessions = sessions)
             }
-        }
-        selectSession(id)
+            loadSelection(id, characterItems, sessions, preserveWindow = false)
+        } }
     }
 
     suspend fun loadOlder() = guarded {
@@ -323,76 +390,164 @@ internal class DesktopPrimaryChatController(
         refresh()
     }
 
-    fun editSessionSettings(change: (ChatSession) -> ChatSession) {
+    fun editSessionSettings(change: (ChatSession) -> ChatSession) = synchronized(sessionSettingsLock) {
         mutableState.update {
             val changed = it.sessionSettingsDraft?.let(change)
             it.copy(sessionSettingsDraft = changed,
-                sessionSettingsDirty = changed != null && (changed != settingsBaseline ||
+                sessionSettingsDirty = changed != null && (changed.withNormalizedVoiceLanguage() != settingsBaseline?.withNormalizedVoiceLanguage() ||
                     it.sessionReplyLengthInput != settingsBaseline?.replyLength?.toString()), error = null)
         }
     }
 
-    fun editSessionReplyLengthInput(value: String) {
+    fun editSessionReplyLengthInput(value: String) = synchronized(sessionSettingsLock) {
         mutableState.update { current ->
             val valid = value.toIntOrNull()?.takeIf { it > 0 }
             val draft = current.sessionSettingsDraft?.let { if (valid == null) it else it.copy(replyLength = valid) }
             current.copy(sessionReplyLengthInput = value, sessionSettingsDraft = draft,
-                sessionSettingsDirty = draft != null && (draft != settingsBaseline ||
+                sessionSettingsDirty = draft != null && (draft.withNormalizedVoiceLanguage() != settingsBaseline?.withNormalizedVoiceLanguage() ||
                     value != settingsBaseline?.replyLength?.toString()), error = null)
         }
     }
 
-    fun discardSessionSettings() {
+    fun discardSessionSettings() = synchronized(sessionSettingsLock) {
+        if (blockDuringSessionSave()) return@synchronized
         mutableState.update { it.copy(sessionSettingsDraft = settingsBaseline,
             sessionReplyLengthInput = settingsBaseline?.replyLength?.toString().orEmpty(),
             sessionSettingsDirty = false) }
     }
 
     suspend fun requestSessionSettingsLeave(action: suspend () -> Unit) {
-        if (state.value.sessionSettingsDirty) {
-            pendingSessionSettingsLeave = action
-            mutableState.update { it.copy(sessionSettingsLeavePrompt = true) }
-        } else action()
+        val leave = synchronized(sessionSettingsLock) {
+            if (blockDuringSessionSave()) return
+            if (state.value.sessionSettingsDirty) {
+                pendingSessionSettingsLeave = action
+                mutableState.update { it.copy(sessionSettingsLeavePrompt = true) }
+                false
+            } else {
+                sessionSettingsLeavesInProgress++
+                true
+            }
+        }
+        if (leave) performSessionSettingsLeave(action)
     }
 
-    fun continueSessionSettingsEditing() {
+    // Navigation already holding stateLock may queue a prompt, but must never invoke navigation
+    // recursively under that non-reentrant mutex if a concurrent discard just cleared dirty.
+    private fun deferSessionSettingsLeave(action: suspend () -> Unit): Boolean = synchronized(sessionSettingsLock) {
+        if (!state.value.sessionSettingsDirty) return@synchronized false
+        pendingSessionSettingsLeave = action
+        mutableState.update { it.copy(sessionSettingsLeavePrompt = true) }
+        true
+    }
+
+    fun continueSessionSettingsEditing() = synchronized(sessionSettingsLock) {
         pendingSessionSettingsLeave = null
         mutableState.update { it.copy(sessionSettingsLeavePrompt = false) }
     }
 
     suspend fun resolveSessionSettingsLeave(save: Boolean) {
-        val action = pendingSessionSettingsLeave ?: return
+        val (action, sourceSessionId) = synchronized(sessionSettingsLock) {
+            if (blockDuringSessionSave()) return
+            (pendingSessionSettingsLeave ?: return) to state.value.selectedSession?.id
+        }
         if (save) {
-            saveSessionSettings()
-            if (state.value.error != null || state.value.sessionSettingsDirty) return
+            if (!saveSessionSettings()) return
         } else discardSessionSettings()
-        pendingSessionSettingsLeave = null
-        mutableState.update { it.copy(sessionSettingsLeavePrompt = false) }
-        action()
+        synchronized(sessionSettingsLock) {
+            if (blockDuringSessionSave() || (save && state.value.error != null) || state.value.sessionSettingsDirty ||
+                pendingSessionSettingsLeave !== action || state.value.selectedSession?.id != sourceSessionId) return
+            pendingSessionSettingsLeave = null
+            mutableState.update { it.copy(sessionSettingsLeavePrompt = false) }
+            sessionSettingsLeavesInProgress++
+        }
+        performSessionSettingsLeave(action)
     }
 
-    suspend fun saveSessionSettings() = guarded {
-        if (state.value.sessionReplyLengthInput.toIntOrNull()?.let { it > 0 } != true) {
-            mutableState.update { it.copy(error = "Reply length must be positive") }
-            return@guarded
+    private suspend fun performSessionSettingsLeave(action: suspend () -> Unit) {
+        try { action() }
+        finally { synchronized(sessionSettingsLock) { sessionSettingsLeavesInProgress-- } }
+    }
+
+    private fun blockDuringSessionSave(): Boolean {
+        if (!state.value.sessionSettingsSaving) return false
+        mutableState.update { it.copy(status = "会话设置正在保存，请完成后重试此操作") }
+        return true
+    }
+
+    /** No queued save: direct callers have the same admission rule as the disabled UI button. */
+    suspend fun saveSessionSettings(): Boolean {
+        if (!stateLock.tryLock()) {
+            mutableState.update { it.copy(status = "会话正在加载或保存，请稍后重试") }
+            return false
         }
-        val baseline = settingsBaseline ?: return@guarded
-        val draft = state.value.sessionSettingsDraft ?: return@guarded
-        val saved = chats.saveSessionSettingsDraft(baseline, draft)
-        settingsBaseline = saved
-        val modelStatus = models.status(saved.modelId, settings.getAppSettings())
-        mutableState.update {
-            it.copy(
-                selectedSession = saved,
-                sessionSettingsDraft = saved,
-                sessionReplyLengthInput = saved.replyLength.toString(),
-                sessionSettingsDirty = false,
-                modelUsable = modelStatus.isUsable,
-                configurationMessage = modelStatus.errors.firstOrNull(),
-                status = "Session settings saved",
-            )
+        var sessionId: String? = null
+        var committed = false
+        try {
+            val (baseline, submitted) = synchronized(sessionSettingsLock) {
+                if (sessionSettingsLeavesInProgress != 0) {
+                    mutableState.update { it.copy(status = "正在离开会话设置，请完成后重试保存") }
+                    return false
+                }
+                val current = state.value
+                if (current.sessionReplyLengthInput.toIntOrNull()?.let { it > 0 } != true) {
+                    mutableState.update { it.copy(error = "Reply length must be positive") }
+                    return false
+                }
+                val baseline = settingsBaseline ?: return false
+                val draft = current.sessionSettingsDraft ?: return false
+                check(baseline.id == draft.id && current.selectedSession?.id == draft.id)
+                sessionId = draft.id
+                sessionSaveGeneration.incrementAndGet()
+                mutableState.update { it.copy(sessionSettingsSaving = true, error = null, status = null) }
+                baseline to current
+            }
+            val draft = requireNotNull(submitted.sessionSettingsDraft)
+            val saved = chats.saveSessionSettingsDraft(baseline, draft.withNormalizedVoiceLanguage())
+            // Acknowledge durable success before any further suspension. Only edits after submission
+            // override saved fields; preserve the raw language/reply input still being edited.
+            synchronized(sessionSettingsLock) {
+                if (state.value.selectedSession?.id == sessionId) {
+                    settingsBaseline = saved
+                    mutableState.update { current ->
+                        val latestDraft = requireNotNull(current.sessionSettingsDraft)
+                        val reconciled = mergeSettingsDraft(ChatSession.serializer(), draft, latestDraft, saved)
+                        val reply = if (current.sessionReplyLengthInput == submitted.sessionReplyLengthInput)
+                            saved.replyLength.toString() else current.sessionReplyLengthInput
+                        current.copy(selectedSession = saved, sessionSettingsDraft = reconciled,
+                            sessionReplyLengthInput = reply,
+                            sessionSettingsDirty = reconciled.withNormalizedVoiceLanguage() != saved.withNormalizedVoiceLanguage() ||
+                                reply != saved.replyLength.toString(),
+                            status = "Session settings saved", error = null)
+                    }
+                }
+                committed = true
+            }
+            val modelStatus = models.status(saved.modelId, settings.getAppSettings())
+            mutableState.update { if (it.selectedSession?.id != sessionId) it else it.copy(
+                modelUsable = modelStatus.isUsable, configurationMessage = modelStatus.errors.firstOrNull()) }
+            if (state.value.selectedSession?.id == sessionId) refreshSelection()
+        } catch (cancelled: CancellationException) {
+            synchronized(sessionSettingsLock) {
+                pendingSessionSettingsLeave = null
+                mutableState.update { it.copy(sessionSettingsLeavePrompt = false,
+                    error = if (committed) "设置已保存；后续刷新已取消，请重新检查后离开"
+                        else "保存等待已取消；未确认保存完成，草稿已保留，请检查后重试") }
+            }
+            throw cancelled
+        } catch (failure: Throwable) {
+            synchronized(sessionSettingsLock) {
+                pendingSessionSettingsLeave = null
+                mutableState.update { it.copy(sessionSettingsLeavePrompt = false,
+                    error = failure.message ?: failure::class.simpleName) }
+            }
+            return false
+        } finally {
+            synchronized(sessionSettingsLock) {
+                mutableState.update { it.copy(sessionSettingsSaving = false) }
+            }
+            stateLock.unlock()
         }
-        refresh()
+        return committed && state.value.error == null
     }
 
     /** Capture the session and latest edit before returning; the application writer owns persistence. */
@@ -412,6 +567,12 @@ internal class DesktopPrimaryChatController(
     /** Optional flush for tests/callers; normal UI edits already schedule their own persistence. */
     suspend fun persistComposer() = guarded {
         state.value.selectedSession?.id?.let { draftPersistence.flush(it) }
+    }
+
+    /** Archive preparation must observe a failed persistence instead of exporting older text. */
+    internal suspend fun flushComposerForSnapshot() {
+        draftPersistence.drain()
+        readingPositions.drain()
     }
 
     suspend fun closeDraftPersistence(timeoutMillis: Long = 10_000L) {
@@ -521,24 +682,66 @@ internal class DesktopPrimaryChatController(
 
     fun stop(taskId: String): Boolean = taskRuntime.requestUserStop(taskId)
 
+    suspend fun checkMessageFormat(message: ChatMessage): String? {
+        var task: String? = null
+        guarded {
+            require(message.role == MessageRole.ASSISTANT)
+            check(!desktopRepairCommitBlocked(message, desktopRepairStateFor(message, requireNotNull(formatRepair).states.value))) {
+                "提交结果未确认，请重新加载并核对消息"
+            }
+            task = requireNotNull(formatRepair).repair(message.sessionId, message.id)
+        }
+        return task
+    }
+
+    suspend fun restoreMessageFormat(message: ChatMessage): String? {
+        var task: String? = null
+        guarded {
+            check(desktopCanRestoreFormat(message)) { "当前候选没有可用的原文恢复点" }
+            check(!desktopRepairCommitBlocked(message, desktopRepairStateFor(message, requireNotNull(formatRepair).states.value))) {
+                "提交结果未确认，请重新加载并核对消息"
+            }
+            task = requireNotNull(formatRepair).restore(message.sessionId, message.id)
+        }
+        return task
+    }
+
+    suspend fun verifyMessageFormatCommit(message: ChatMessage): Boolean {
+        var confirmed = false
+        guarded {
+            confirmed = requireNotNull(formatRepair).confirmCommitReload(message)
+            refreshAfterTerminalTask(message.sessionId)
+        }
+        return confirmed
+    }
+
+    fun stopMessageFormat(message: ChatMessage,
+        taskId: String? = taskRuntime.runningRepair(message.sessionId, message.id)?.taskId): Boolean {
+        val active = taskRuntime.runningRepair(message.sessionId, message.id) ?: return false
+        return active.taskId == taskId && taskRuntime.requestUserStop(active.taskId)
+    }
+
     suspend fun regenerate(messageId: String): String? {
         var taskId: String? = null
         guarded {
             val session = state.value.selectedSession ?: return@guarded
-            taskId = taskRuntime.launchRegeneration(session.id, messageId)
+            taskId = if (voices == null) taskRuntime.launchRegeneration(session.id, messageId)
+            else voices.mutateMessage(session.id, messageId) { taskRuntime.launchRegeneration(session.id, messageId) }
         }
         return taskId
     }
 
     suspend fun selectAssistantAlternative(messageId: String, direction: Int) = guarded {
         val session = state.value.selectedSession ?: return@guarded
-        val message = chats.getMessage(messageId, session.id) ?: return@guarded
-        if (message.role != MessageRole.ASSISTANT || message.alternatives.size <= 1) return@guarded
-        val size = settings.getAppSettings().defaultContextWindowSize.coerceAtLeast(0)
-        if (messageId !in eligibleAlternativeIds(session.id, size)) return@guarded
-        val next = (message.currentAlternativeIndex + direction).coerceIn(0, message.alternatives.lastIndex)
-        if (next == message.currentAlternativeIndex) return@guarded
-        chats.updateMessage(MessageAlternativeVersionPolicy.select(message, next))
+        withMessageMutation(session.id, messageId) {
+            val message = chats.getMessage(messageId, session.id) ?: return@withMessageMutation
+            if (message.role != MessageRole.ASSISTANT || message.alternatives.size <= 1) return@withMessageMutation
+            val size = settings.getAppSettings().defaultContextWindowSize.coerceAtLeast(0)
+            if (messageId !in eligibleAlternativeIds(session.id, size)) return@withMessageMutation
+            val next = (message.currentAlternativeIndex + direction).coerceIn(0, message.alternatives.lastIndex)
+            if (next == message.currentAlternativeIndex) return@withMessageMutation
+            chats.updateMessage(MessageAlternativeVersionPolicy.select(message, next))
+        }
         refreshAfterTerminalTask(session.id)
     }
 
@@ -557,18 +760,20 @@ internal class DesktopPrimaryChatController(
         guarded {
             val session = state.value.selectedSession ?: return@guarded
             check(!hasActiveTask(session.id)) { "Message editing is unavailable during generation" }
-            val message = chats.getMessage(messageId, session.id) ?: error("Message no longer exists")
-            check(expected == null || message == expected) { "Message changed; reopen editing" }
-            val retained = retainedImages ?: message.images
-            require(content.isNotBlank() || retained.isNotEmpty() || additions.isNotEmpty()) { "Message cannot be empty" }
-            val warning = if (retainedImages != null || additions.isNotEmpty()) requireNotNull(imageStore).editMessage(message, content, retained, additions)
-            else { chats.updateMessage(
-                MessageAlternativeVersionPolicy.collapseToEditedContent(message, content)
-                    .copy(formatRepairNotice = null),
-            ); null }
-            refreshAfterTerminalTask(session.id)
-            if (warning != null) mutableState.update { it.copy(status = warning) }
-            saved = true
+            withMessageMutation(session.id, messageId) {
+                val message = chats.getMessage(messageId, session.id) ?: error("Message no longer exists")
+                check(expected == null || message == expected) { "Message changed; reopen editing" }
+                val retained = retainedImages ?: message.images
+                require(content.isNotBlank() || retained.isNotEmpty() || additions.isNotEmpty()) { "Message cannot be empty" }
+                val warning = if (retainedImages != null || additions.isNotEmpty()) requireNotNull(imageStore).editMessage(message, content, retained, additions)
+                else { chats.updateMessage(
+                    MessageAlternativeVersionPolicy.editCurrentContent(message, content)
+                        .copy(formatRepairNotice = null),
+                ); null }
+                refreshAfterTerminalTask(session.id)
+                if (warning != null) mutableState.update { it.copy(status = warning) }
+                saved = true
+            }
         }
         return saved
     }
@@ -577,10 +782,12 @@ internal class DesktopPrimaryChatController(
         var deleted = false
         guarded {
             check(!hasActiveTask(original.sessionId)) { "Image deletion is unavailable during generation" }
-            val warning = requireNotNull(imageStore).deleteImage(original, reference)
-            refreshAfterTerminalTask(original.sessionId)
-            if (warning != null) mutableState.update { it.copy(status = warning) }
-            deleted = true
+            withMessageMutation(original.sessionId, original.id) {
+                val warning = requireNotNull(imageStore).deleteImage(original, reference)
+                refreshAfterTerminalTask(original.sessionId)
+                if (warning != null) mutableState.update { it.copy(status = warning) }
+                deleted = true
+            }
         }
         return deleted
     }
@@ -591,19 +798,25 @@ internal class DesktopPrimaryChatController(
         guarded {
             val session = state.value.selectedSession ?: return@guarded
             check(!hasActiveTask(session.id)) { "Message editing is unavailable during generation" }
-            val message = chats.getMessage(messageId, session.id) ?: error("Message no longer exists")
-            require(message.role == MessageRole.ASSISTANT) { "Only Assistant segments can be edited" }
-            check(expectedContent == null || message.displayContent == expectedContent) { "Message changed; reopen segment actions" }
-            require(parseRoleplayTextSegments(message.displayContent).any {
-                it.start == start && it.endExclusive == endExclusive
-            }) { "Message segment changed; reopen segment actions" }
-            val outcome = editRoleplayMessageSegment(message, start, endExclusive, replacement)
-            val updated = outcome.message
-            if (updated == null) saved = deleteMessage(messageId)
-            else {
-                chats.updateMessage(updated.copy(formatRepairNotice = null))
-                refreshAfterTerminalTask(session.id)
-                saved = true
+            withMessageMutation(session.id, messageId) {
+                val message = chats.getMessage(messageId, session.id) ?: error("Message no longer exists")
+                require(message.role == MessageRole.ASSISTANT) { "Only Assistant segments can be edited" }
+                check(expectedContent == null || message.displayContent == expectedContent) { "Message changed; reopen segment actions" }
+                require(parseRoleplayTextSegments(message.displayContent).any {
+                    it.start == start && it.endExclusive == endExclusive
+                }) { "Message segment changed; reopen segment actions" }
+                val outcome = editRoleplayMessageSegment(message, start, endExclusive, replacement)
+                val updated = outcome.message
+                if (updated == null) {
+                    val warning = deleteOwnedMessage(session.id, messageId)
+                    refreshAfterTerminalTask(session.id)
+                    if (warning != null) mutableState.update { it.copy(status = warning) }
+                    saved = true
+                } else {
+                    chats.updateMessage(updated.copy(formatRepairNotice = null))
+                    refreshAfterTerminalTask(session.id)
+                    saved = true
+                }
             }
         }
         return saved
@@ -614,14 +827,21 @@ internal class DesktopPrimaryChatController(
         guarded {
             val session = state.value.selectedSession ?: return@guarded
             check(!hasActiveTask(session.id)) { "Message deletion is unavailable during generation" }
-            val message = chats.getMessage(messageId, session.id) ?: error("Message no longer exists")
-            chats.deleteMessage(messageId, session.id)
-            val cleanupWarning = imageStore?.cleanupRemoved(message.images)
-            refreshAfterTerminalTask(session.id)
-            if (cleanupWarning != null) mutableState.update { it.copy(status = cleanupWarning) }
-            deleted = true
+            withMessageMutation(session.id, messageId) {
+                val cleanupWarning = deleteOwnedMessage(session.id, messageId)
+                refreshAfterTerminalTask(session.id)
+                if (cleanupWarning != null) mutableState.update { it.copy(status = cleanupWarning) }
+                deleted = true
+            }
         }
         return deleted
+    }
+
+    private suspend fun deleteOwnedMessage(sessionId: String, messageId: String): String? {
+        val message = chats.getMessage(messageId, sessionId) ?: error("Message no longer exists")
+        chats.deleteMessage(messageId, sessionId)
+        voices?.removeDeletedMessage(sessionId, messageId)
+        return imageStore?.cleanupRemoved(message.images)
     }
 
     suspend fun relinkArchivedSession(characterId: String): Boolean {
@@ -743,11 +963,11 @@ internal class DesktopPrimaryChatController(
         sessions: List<DesktopPrimarySessionItem>,
         preserveWindow: Boolean,
     ) {
+        memory?.selectSession(id)
         selection@ while (true) {
             val session = chats.getSession(id) ?: error("Session no longer exists")
             val initial = synchronized(readingLock) { state.value }
             val sameSession = initial.selectedSession?.id == id
-            val previous = initial.takeIf { sameSession && preserveWindow }
             val position = if (!sameSession) readingPositions.load(id) else initial.readingPosition
             val restorePosition = if (sameSession) initial.viewportRestorePosition else
                 listOfNotNull(position, readingPositions.latestPosition(id)).maxByOrNull { it.capturedAt }
@@ -776,6 +996,7 @@ internal class DesktopPrimaryChatController(
                 draftPersistence.flush(id)
                 chats.getSessionDraft(id)
             }
+            val deferredSelection: suspend () -> Unit = { selectSession(id) }
             // Edits may arrive while selection reads suspend. Commit a switch only after the outgoing
             // revision is durable, checking it again under the same lock used to capture edits.
             while (true) {
@@ -784,13 +1005,24 @@ internal class DesktopPrimaryChatController(
                 }
                 draftPersistence.await(outgoing)
                 var obsoleteWindow = false
-                val selected = synchronized(composerLock) { synchronized(readingLock) {
+                val selected = synchronized(composerLock) { synchronized(readingLock) { synchronized(sessionSettingsLock) {
                     val current = state.value
+                    // Reads may suspend while the user edits. Never publish the earlier draft snapshot,
+                    // nor switch away from edits that arrived after navigation was requested.
+                    if (current.selectedSession?.id != id && current.sessionSettingsDirty) {
+                        pendingSessionSettingsLeave = deferredSelection
+                        mutableState.update { it.copy(sessionSettingsLeavePrompt = true) }
+                        return
+                    }
                     val latest = current.selectedSession?.id?.takeIf { it != id }?.let(draftPersistence::latestRevision)
                     obsoleteWindow = if (sameSession) current.messageWindowRevision != initial.messageWindowRevision
                         else (readingPositions.latestPosition(id)?.capturedAt ?: Long.MIN_VALUE) > (restorePosition?.capturedAt ?: Long.MIN_VALUE)
                     if (latest != outgoing || obsoleteWindow) false else {
-                        if (previous == null) settingsBaseline = session
+                        val keepDraft = current.selectedSession?.id == id && (preserveWindow ||
+                            current.sessionSettingsDirty || current.sessionSettingsDraft != settingsBaseline ||
+                            current.sessionReplyLengthInput != settingsBaseline?.replyLength?.toString())
+                        if (current.selectedSession?.id != id) pendingSessionSettingsLeave = null
+                        if (!keepDraft) settingsBaseline = session
                         mutableState.value = current.copy(
                             characters = characterItems,
                             sessions = sessions,
@@ -813,10 +1045,10 @@ internal class DesktopPrimaryChatController(
                             modelUsable = modelStatus.isUsable,
                             modelDiagnostic = diagnostic,
                             configurationMessage = modelStatus.errors.firstOrNull(),
-                            sessionSettingsDraft = if (previous == null) session else previous.sessionSettingsDraft,
-                            sessionReplyLengthInput = if (previous == null) session.replyLength.toString()
-                                else previous.sessionReplyLengthInput,
-                            sessionSettingsDirty = if (previous == null) false else previous.sessionSettingsDirty,
+                            sessionSettingsDraft = if (keepDraft) current.sessionSettingsDraft else session,
+                            sessionReplyLengthInput = if (keepDraft) current.sessionReplyLengthInput else session.replyLength.toString(),
+                            sessionSettingsDirty = keepDraft && current.sessionSettingsDirty,
+                            sessionSettingsLeavePrompt = current.selectedSession?.id == id && current.sessionSettingsLeavePrompt,
                             modelChoices = modelChoices,
                             effectiveModels = effectiveModels,
                             formatChoices = formatChoices,
@@ -830,7 +1062,7 @@ internal class DesktopPrimaryChatController(
                         )
                         true
                     }
-                } }
+                } } }
                 if (obsoleteWindow) continue@selection
                 if (selected) return
             }
@@ -847,9 +1079,7 @@ internal class DesktopPrimaryChatController(
         return candidates.firstOrNull { chats.getMessage(it.id, id) != null }?.id
     }
 
-    private fun hasActiveTask(sessionId: String): Boolean = taskRuntime.tasks.value.any {
-        it.sessionId == sessionId && it.status == DesktopTaskStatus.RUNNING
-    }
+    fun hasActiveTask(sessionId: String): Boolean = taskRuntime.hasActiveSessionTask(sessionId)
 
     private suspend fun eligibleAlternativeIds(sessionId: String, contextSize: Int): Set<String> {
         val candidates = chats.getContextCandidateMessagesReadOnly(sessionId, contextSize + 4)
@@ -868,3 +1098,7 @@ internal class DesktopPrimaryChatController(
         }
     }
 }
+
+/** Match the official session save boundary while preserving text during editing. */
+private fun ChatSession.withNormalizedVoiceLanguage(): ChatSession =
+    copy(voiceLanguage = voiceLanguage?.trim()?.takeIf(String::isNotEmpty))

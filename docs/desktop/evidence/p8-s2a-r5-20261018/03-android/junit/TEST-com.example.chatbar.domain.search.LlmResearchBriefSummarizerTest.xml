@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.search.LlmResearchBriefSummarizerTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:26.048Z" hostname="DD1" time="0.013">
+  <properties/>
+  <testcase name="parseSummary accepts brief with unescaped inner quotes" classname="com.example.chatbar.domain.search.LlmResearchBriefSummarizerTest" time="0.003"/>
+  <testcase name="parseSummary accepts wiki brief schema" classname="com.example.chatbar.domain.search.LlmResearchBriefSummarizerTest" time="0.002"/>
+  <testcase name="summary prompt keeps ten source blocks without template truncation" classname="com.example.chatbar.domain.search.LlmResearchBriefSummarizerTest" time="0.004"/>
+  <testcase name="parseSummary recovers facts from truncated json" classname="com.example.chatbar.domain.search.LlmResearchBriefSummarizerTest" time="0.002"/>
+  <testcase name="raw fallback brief returns null when ai output is blank" classname="com.example.chatbar.domain.search.LlmResearchBriefSummarizerTest" time="0.001"/>
+  <testcase name="raw fallback brief keeps full ai output as facts" classname="com.example.chatbar.domain.search.LlmResearchBriefSummarizerTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

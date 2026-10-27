@@ -1,0 +1,90 @@
+[
+  {
+    "suite": "com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest",
+    "tests": 14,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 0.402
+  },
+  {
+    "suite": "com.example.chatbar.desktop.DesktopDataRootOwnershipTest",
+    "tests": 14,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 0.132
+  },
+  {
+    "suite": "com.example.chatbar.desktop.DesktopDocumentRagReaderTest",
+    "tests": 15,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 8.254
+  },
+  {
+    "suite": "com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest",
+    "tests": 15,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 4.324
+  },
+  {
+    "suite": "com.example.chatbar.desktop.DesktopFormatRepairInteractionTest",
+    "tests": 8,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 1.287
+  },
+  {
+    "suite": "com.example.chatbar.desktop.DesktopFormatRepairPresentationTest",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 3.18
+  },
+  {
+    "suite": "com.example.chatbar.desktop.DesktopMainChatRequestAssemblerIntegrationTest",
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 0.013
+  },
+  {
+    "suite": "com.example.chatbar.desktop.DesktopMessageActionsUxTest",
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 0.778
+  },
+  {
+    "suite": "com.example.chatbar.desktop.DesktopMessageFormatRepairTest",
+    "tests": 31,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 6.895
+  },
+  {
+    "suite": "com.example.chatbar.desktop.DesktopRealChatRuntimeTest",
+    "tests": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 0.848
+  },
+  {
+    "suite": "com.example.chatbar.desktop.DesktopTaskRuntimeTest",
+    "tests": 10,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "seconds": 4.009
+  }
+]

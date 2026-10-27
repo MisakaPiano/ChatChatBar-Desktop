@@ -1,0 +1,24 @@
+{
+  "status": "TECHNICAL_PASS",
+  "launcherExitCode": 0,
+  "jvmHostExitCode": 0,
+  "processesGone": true,
+  "rootLockReleased": true,
+  "fakeStopped": true,
+  "backupScratchEntries": 0,
+  "persistentVoiceFilesRetained": 8,
+  "sourceArchiveUnchanged": true,
+  "frozenPackageFilesVerified": 217,
+  "pngExports": [
+    {
+      "name": "ChatBar_统一验收_A_·_对话、语音、资料与记忆_20261022_031409.png",
+      "size": 21069,
+      "sha256": "497554ecb3d46fda3482e8e26c8d34c878165e9c0dc18ef062b5f673fbaeeedf",
+      "width": 640,
+      "height": 672
+    }
+  ],
+  "guiLaunches": 1,
+  "realProviderRequests": 0,
+  "gatePromotion": false
+}

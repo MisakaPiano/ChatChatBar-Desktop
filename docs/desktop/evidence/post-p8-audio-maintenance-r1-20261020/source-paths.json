@@ -1,0 +1,15 @@
+[
+  ".agents/skills/chatbar-fish-audio-voice/SKILL.md",
+  "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt",
+  "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatVoiceRuntime.kt",
+  "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCoordinatedSnapshotService.kt",
+  "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootMigrationService.kt",
+  "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopDataRootSwitchController.kt",
+  "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishGenerationCoordinator.kt",
+  "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoicePlayback.kt",
+  "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopWindowsAudioOutput.kt",
+  "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopChatVoiceRuntimeTest.kt",
+  "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopDataRootSwitchControllerTest.kt",
+  "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAudioMaintenance.kt",
+  "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopAudioMaintenanceTest.kt"
+]

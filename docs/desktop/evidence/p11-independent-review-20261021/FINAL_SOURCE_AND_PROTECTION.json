@@ -1,0 +1,39 @@
+{
+  "base": "e436f4223c70cf14d99ac84dfc6c128efda38249",
+  "production": "70b5c30c91439e79728bf224c1a44d35b25cf733",
+  "branch": "feature/phase8-fish-audio",
+  "protected": [
+    {
+      "path": "CCB_DESKTOP_STANDARD_CONVERSATION_HANDOFF.md",
+      "status": "UNTRACKED / UNSTAGED",
+      "contentRead": false,
+      "hashed": false,
+      "modified": false
+    },
+    {
+      "path": ".codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/4bb6706b-0132-41be-bd8e-03e6c0229e46/1-1000072937.jpg",
+      "status": "UNTRACKED / UNSTAGED",
+      "contentRead": false,
+      "hashed": false,
+      "modified": false
+    },
+    {
+      "path": ".codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/b5264b76-6c08-406d-af8d-bbb2f876c7c1/1-1000072937.jpg",
+      "status": "UNTRACKED / UNSTAGED",
+      "contentRead": false,
+      "hashed": false,
+      "modified": false
+    },
+    {
+      "path": ".codex-remote-attachments/01a10e16-9252-7930-afe1-f07cb92177e6/ea41235d-a0f1-44c3-8db1-47f5bb5b2883/1-1000072937.jpg",
+      "status": "UNTRACKED / UNSTAGED",
+      "contentRead": false,
+      "hashed": false,
+      "modified": false
+    }
+  ],
+  "historicalEvidenceChanges": [],
+  "productionWorkingTreeClean": true,
+  "realApiRequests": 0,
+  "guiStarted": false
+}

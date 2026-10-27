@@ -1,0 +1,27 @@
+{
+  "attribution": "Codex static self-check only",
+  "sourceEvidenceCommit": "35eac76229696e9fe09813a1bf1af88615e6fd1a",
+  "existingApplicationCallers": [],
+  "productionAdditions": [
+    "A\tapp/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/preparation/.gitattributes",
+    "A\tapp/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/preparation/DormantPreservationPreparation.kt",
+    "A\tapp/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/preparation/FreshRootPreparation.kt"
+  ],
+  "existingProductionModified": false,
+  "unchangedProtectedPaths": [
+    "app/app",
+    "app/sharedCore",
+    "app/desktopApp/build.gradle.kts",
+    "docs/desktop/10_UPSTREAM_BASELINE.json",
+    "tools/desktop/interop/lr2",
+    "tools/desktop/interop/lr3"
+  ],
+  "runtimeWiringAdded": false,
+  "restoreAuthorized": false,
+  "notes": [
+    "No new preparation symbol references outside the new preparation package in desktop src/main.",
+    "No native platform identity, durable transaction or absence of arbitrary third-party consumers is proved by this textual check.",
+    "Skill maintenance was reviewed; only compact entry-point additions were required, committed with implementation.",
+    "Initial audit path filter also counted evidence snapshots; corrected to anchor actual app/ source paths. This was an audit-script assertion, not a Gradle/test failure."
+  ]
+}

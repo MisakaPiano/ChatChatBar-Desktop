@@ -1,0 +1,21 @@
+{
+  "sourceCheckpoint": "934a349c51eeb51c1d7b7b12799b48594cb50358",
+  "evidenceParent": "934a349c51eeb51c1d7b7b12799b48594cb50358",
+  "tracking": "f073749a6f57490516e7c2b1df516c5e6c53d13f",
+  "liveOrigin": "f073749a6f57490516e7c2b1df516c5e6c53d13f",
+  "pushPerformed": false,
+  "packageFilesRecheckedAfterExit": 212,
+  "packageManifestSha256": "1366681596bc857c0f388863566f6305ebb0525abeb3e163cc1fc1ce1f6cd0e7",
+  "xmlFilesParsed": 175,
+  "manualRawTextRecords": 8,
+  "codeChangesAfterWindowsFail": false,
+  "sourceWorktreeMatchesTestedHashes": true,
+  "trackedWorktreeUnchanged": true,
+  "indexEmptyBeforeEvidence": true,
+  "protectedUserOwnedUntrackedFiles": 4,
+  "protectedUserContentsRead": false,
+  "protectedUserFilesStaged": false,
+  "markdownLinks": "PASS",
+  "supervisorExitCode": 0,
+  "finalState": "WINDOWS_MANUAL_HOLD"
+}

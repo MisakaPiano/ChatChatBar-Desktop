@@ -1,0 +1,1 @@
+Python locale GBK decoding failed while reading Host after applying Selection change only. Remaining patch not applied. The following green-focused invocation is an INCOMPLETE-PATCH attempt, not final GREEN. Original RED-boundaries remains unchanged.

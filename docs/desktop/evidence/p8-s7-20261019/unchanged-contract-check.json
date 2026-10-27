@@ -1,0 +1,14 @@
+{
+  "paths": [
+    "app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity",
+    "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/voice/FishAudioRequestFactory.kt",
+    "docs/desktop/10_UPSTREAM_BASELINE.json",
+    "docs/desktop/13_FEATURE_PARITY.md",
+    "docs/desktop/21_CURRENT_STATE.md"
+  ],
+  "diff": "",
+  "formalUpstream": "5e76a9cb841736bbbf3499a2e35e5789af4c5ca8",
+  "observedMaster": "979cb505958dffb1b6d64a8de657434f198ffa96",
+  "upstreamSync": false,
+  "promptGolden": "FishAudioTagGatewayTest compares byte-preserved official fixture and serialized API messages; prior S4 authority block SHA fb4072e46a81cf0f6d8e161e3a80490f33faa95f8f5090e2163857206a65e7bd"
+}

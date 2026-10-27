@@ -1,0 +1,8 @@
+{
+  "initialStagedDiffCheck": "FAIL: WINDOWS_MANUAL_ACCEPTANCE_CN.md:54: new blank line at EOF.",
+  "category": "derived-document whitespace only; not compile/test RED",
+  "correction": "remove terminal empty line in new derived manual checklist only",
+  "beforeSha256": "4f8596566472bcbaeec1692ca8546bec51044859ad669f01643314529e551d23",
+  "afterSha256": "3d596ab57251b9a0363aba5e9e9074f8e6d996650de82d9815e41d5859c7aa31",
+  "rawTestXmlLogsUnchanged": true
+}

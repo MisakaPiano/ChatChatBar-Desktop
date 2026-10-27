@@ -1,0 +1,25 @@
+{
+  "source": "synthetic fixtures only; not real user data",
+  "cards": 2,
+  "personsPerCard": 2,
+  "sessions": [
+    "T2 会话 A",
+    "T2 会话 B"
+  ],
+  "models": [
+    "t2-chat",
+    "t2-aux"
+  ],
+  "initialStaleTagModel": "t2-missing-model",
+  "fakeKeys": [
+    "r5-synthetic-no-valid-account",
+    "r5-synthetic-replacement"
+  ],
+  "filterSeams": [
+    "title=error ->401",
+    "title=empty ->empty",
+    "tag=absent ->empty",
+    "language=absent ->empty"
+  ],
+  "liveApiAllowed": false
+}

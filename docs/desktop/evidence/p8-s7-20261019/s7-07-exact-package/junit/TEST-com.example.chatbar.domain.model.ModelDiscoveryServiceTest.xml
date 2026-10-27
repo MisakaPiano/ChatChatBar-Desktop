@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.model.ModelDiscoveryServiceTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-19T12:01:47.458Z" hostname="DD1" time="0.053">
+  <properties/>
+  <testcase name="cancellation cancels an in flight discovery call" classname="com.example.chatbar.domain.model.ModelDiscoveryServiceTest" time="0.017"/>
+  <testcase name="fetch uses models endpoint optional auth and sorted distinct IDs" classname="com.example.chatbar.domain.model.ModelDiscoveryServiceTest" time="0.01"/>
+  <testcase name="url api key validation and cleartext policy fail before hidden fallback" classname="com.example.chatbar.domain.model.ModelDiscoveryServiceTest" time="0.003"/>
+  <testcase name="status mapping and redirect policy remain explicit" classname="com.example.chatbar.domain.model.ModelDiscoveryServiceTest" time="0.015"/>
+  <testcase name="incompatible and empty payloads are explicit failures" classname="com.example.chatbar.domain.model.ModelDiscoveryServiceTest" time="0.008"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[10月 19, 2026 9:01:47 下午 okhttp3.mockwebserver.MockWebServer$SocketHandler handle
+警告: MockWebServer[53235] connection from /127.0.0.1 didn't make a request
+]]></system-err>
+</testsuite>

@@ -1,0 +1,26 @@
+diff --git "a/H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-s2b-ui-layout-001-r6b-20261019\\baseline-sources\\DesktopFishPickerNativeUxTest.kt" "b/H:\\ChatChatBar-Desktop\\app\\desktopApp\\src\\test\\kotlin\\com\\example\\chatbar\\desktop\\DesktopFishPickerNativeUxTest.kt"
+index a68aae23..5082b105 100644
+--- "a/H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-s2b-ui-layout-001-r6b-20261019\\baseline-sources\\DesktopFishPickerNativeUxTest.kt"
++++ "b/H:\\ChatChatBar-Desktop\\app\\desktopApp\\src\\test\\kotlin\\com\\example\\chatbar\\desktop\\DesktopFishPickerNativeUxTest.kt"
+@@ -261,17 +261,18 @@ class DesktopFishPickerNativeUxTest {
+                 println("$marker MATCH label=$label candidates=${candidates.map { it.id }} chosen=${chosen.id} reason=$reason originalHybridRect=${controls[label]}")
+                 candidates.forEach { n ->
+                     val path = generateSequence(n) { it.parent }.take(16).map { it.id }.toList()
+-                    val windowOrigin = n.root.positionOnScreen - n.root.positionInWindow
++                    val semanticRoot = generateSequence(n) { it.parent }.last()
++                    val windowOrigin = semanticRoot.positionOnScreen - semanticRoot.positionInWindow
+                     val screenBounds = n.boundsInWindow.translate(windowOrigin)
+                     println("$marker NODE label=$label id=${n.id} chosen=${n.id == chosen.id} parent=${n.parent?.id} " +
+-                        "children=${n.children.map { it.id }} pathToRoot=$path root=${n.root.id} " +
++                        "children=${n.children.map { it.id }} pathToRoot=$path semanticRootId=${semanticRoot.id} " +
+                         "description=${n.config.getOrNull(SemanticsProperties.ContentDescription)} text=${n.config.getOrNull(SemanticsProperties.Text)} " +
+                         "role=${n.config.getOrNull(SemanticsProperties.Role)} keys=${n.config.map { it.key.name }} " +
+                         "disabled=${n.config.contains(SemanticsProperties.Disabled)} onClick=${n.config.contains(SemanticsActions.OnClick)} " +
+                         "setText=${n.config.contains(SemanticsActions.SetText)} " +
+                         "positionOnScreen=${n.positionOnScreen} positionInWindow=${n.positionInWindow} positionInRoot=${n.positionInRoot} " +
+                         "boundsInWindow=${n.boundsInWindow} boundsInRoot=${n.boundsInRoot} touchBoundsInRoot=${n.touchBoundsInRoot} " +
+-                        "rootDerivedWindowOrigin=$windowOrigin screenBoundsFromWindow=$screenBounds " +
++                        "semanticRootDerivedWindowOrigin=$windowOrigin screenBoundsFromWindow=$screenBounds " +
+                         "layoutSize=${n.layoutInfo.width}x${n.layoutInfo.height} density=${n.layoutInfo.density.density} " +
+                         "fontScale=${n.layoutInfo.density.fontScale}")
+                     generateSequence(n.layoutInfo) { it.parentInfo }.take(16).forEachIndexed { depth, layout ->

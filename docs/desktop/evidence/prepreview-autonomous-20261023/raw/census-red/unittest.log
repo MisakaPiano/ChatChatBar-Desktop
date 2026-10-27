@@ -1,0 +1,20 @@
+test_corrupt_zip (test_archive_census.CensusTests) ... ok
+test_duplicate_header (test_archive_census.CensusTests) ... ok
+test_encrypted_header_never_claims_authentication (test_archive_census.CensusTests) ... ok
+test_future_version_uninterpreted (test_archive_census.CensusTests) ... ok
+test_header_types_and_unknowns (test_archive_census.CensusTests) ... ok
+test_traversal_and_duplicate (test_archive_census.CensusTests) ... test_truncated_and_unrecognized (test_archive_census.CensusTests) ... ok
+test_zip_crc_and_redaction (test_archive_census.CensusTests) ... ok
+
+======================================================================
+FAIL: test_traversal_and_duplicate (test_archive_census.CensusTests) (names=('x\\y',))
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\tools\desktop\interop\prepreview\test_archive_census.py", line 52, in test_traversal_and_duplicate
+    with self.subTest(names=names), self.assertRaises(Refused):
+AssertionError: Refused not raised
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.003s
+
+FAILED (failures=1)

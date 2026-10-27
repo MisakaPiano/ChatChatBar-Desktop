@@ -1,0 +1,10 @@
+[
+  "C:\\Users\\1\\AppData\\Local\\Programs\\Python\\Python310\\python.exe",
+  "-I",
+  "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\preview-continuous-private-20261025\\windows-runtime-startup-fix-1009-r2\\native-1009-retained-profile-probe.py",
+  "launch-close",
+  "--base",
+  "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\preview-continuous-private-20261025\\windows-runtime-merge-ui-1008",
+  "--label",
+  "cold-1009-second"
+]

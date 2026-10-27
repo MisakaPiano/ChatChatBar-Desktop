@@ -1,0 +1,90 @@
+{
+  "initial-1004-capture.json": {
+    "bytes": 97,
+    "sha256": "8297aaaa0df56bb0d65e9cd0b02a2295e10be10f39f9a48451714ab746f26005"
+  },
+  "initial-1004-lifecycle.json": {
+    "bytes": 473,
+    "sha256": "79d4c0fa98061e9a4d52cad1dc49c8307f2cd1233d89f7cc096cc7268d26f9ca"
+  },
+  "initial-1004-stderr-private.log": {
+    "bytes": 1378,
+    "sha256": "627aa4e28d2153a76fd5212c7fac5f6afaeb5a04dfafdd0692f157b7e9684923"
+  },
+  "interactive-1004-lifecycle.json": {
+    "bytes": 473,
+    "sha256": "79d4c0fa98061e9a4d52cad1dc49c8307f2cd1233d89f7cc096cc7268d26f9ca"
+  },
+  "interactive-1004-stderr-private.log": {
+    "bytes": 1378,
+    "sha256": "3f9696382405273ffdd0d354359358a99b7e9328935a58f49aa2a65f08204ded"
+  },
+  "native-app-image-probe.py": {
+    "bytes": 23662,
+    "sha256": "b24c821b84edab1b0e84d4b6e14794677811b6b1ada51945a937746fa050d24b"
+  },
+  "package-arguments.json": {
+    "bytes": 668,
+    "sha256": "31a713bb3c4bb82026fd652b947240c22de4b63256a677381ec6a3ff32b4ccc1"
+  },
+  "package-Build-SyntheticPackage.ps1": {
+    "bytes": 6394,
+    "sha256": "70009f0d746b37b783e18dcd50eda9884f4e6cc3dcbba3b0ec518ad858e22261"
+  },
+  "package-build.log": {
+    "bytes": 10690,
+    "sha256": "c36ce7587218c8a743083aca31629d7309dbee02c5834acf8af5a09ff3f267db"
+  },
+  "package-BUILD_INPUTS.json": {
+    "bytes": 165426,
+    "sha256": "04a1518692ee28853fba833cef22c77fd94a4935c5c3a48b429547dd27c8002f"
+  },
+  "package-exit.txt": {
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  "package-head.txt": {
+    "bytes": 40,
+    "sha256": "25fcbffa233b14e68e7adbacfd6a09cce0b03e7e715f0f678d2c9d1ac2a4fcb8"
+  },
+  "package-package.init.gradle": {
+    "bytes": 178,
+    "sha256": "4be186290e7dfa719d8e1076ec4f9e5ee59e35a0498e1014100c407e01ec2c72"
+  },
+  "package-PACKAGE_FILES.json": {
+    "bytes": 38132,
+    "sha256": "292eaf128d7464c71a96f600fd912a94d06b0a00a1bcd4b5ff7c46d197d34fde"
+  },
+  "package-PACKAGED_BUILD_IDENTITY.properties": {
+    "bytes": 158,
+    "sha256": "bf7e394db6e39b4341a4242cadc7aca340f9b9691b23dd490b4f97e4f117e5c5"
+  },
+  "PACKAGE_AUDIT.json": {
+    "bytes": 297,
+    "sha256": "0eb276b33d2eceeccfef6e6dbd6e9a865a3bd41b8e9e041704f0c9f41406f58f"
+  },
+  "REAL_SOURCE_AGGREGATE_ONLY.md": {
+    "bytes": 2550,
+    "sha256": "a5526d9bad9ee5f607b32d20405cc0d912049079c015fbecbb5bcd7dfa922fba"
+  },
+  "RESULT.md": {
+    "bytes": 2256,
+    "sha256": "14066a1e2881503415309a9e058d11c36437b8ea697f7baee211029d0b40e148"
+  },
+  "seed-exit.txt": {
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  "seed-private.log": {
+    "bytes": 66,
+    "sha256": "458b137f717b79bece90688bfd922db1e81802249c792a9584e40a607b0321d1"
+  },
+  "verify-after-gui-exit.txt": {
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  "verify-after-gui-private.log": {
+    "bytes": 66,
+    "sha256": "458b137f717b79bece90688bfd922db1e81802249c792a9584e40a607b0321d1"
+  }
+}

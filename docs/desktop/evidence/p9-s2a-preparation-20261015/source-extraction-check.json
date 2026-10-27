@@ -1,0 +1,8 @@
+{
+  "matched": true,
+  "baseline": "b337f3da50f1d0f175e48b7f56de1ed05922f3b4",
+  "source": "a3bf3ab7229d8fcfae96c7af36022560fc7665c3",
+  "normalization": "Visibility of extracted methods and LF/CRLF only; one extra filename cap at shared helper entry is removed for comparison (Reader already checked it before calling)",
+  "compared": "readDocument, checkPlanBudget, requireIdentity, safeWindowsPath, validVector; bodies match",
+  "sharedChunkingEngine": "unchanged sharedCore tree"
+}

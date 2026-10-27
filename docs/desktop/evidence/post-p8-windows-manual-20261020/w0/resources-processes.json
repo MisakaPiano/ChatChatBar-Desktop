@@ -1,0 +1,13 @@
+{
+  "utc": "2026-10-20T12:24:39.8773049Z",
+  "freePhysicalKiB": 1111124,
+  "totalPhysicalKiB": 16721524,
+  "committedBytes": 34232283136,
+  "commitLimit": 41946214400,
+  "pagesPerSecond": 0,
+  "hFreeBytes": 9962434560,
+  "matchingProcesses": [],
+  "processesTerminated": 0,
+  "newRootLockCheck": "NOT TESTED: new synthetic root deliberately absent",
+  "resourceInterpretation": "Limited free RAM; no pressure/OOM observed in snapshot; recheck before W1. No fixed arbitrary threshold."
+}

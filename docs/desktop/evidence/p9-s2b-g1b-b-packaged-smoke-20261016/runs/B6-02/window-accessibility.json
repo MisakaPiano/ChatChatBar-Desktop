@@ -1,0 +1,14 @@
+{
+  "run": "B6-02",
+  "observedUtc": "2026-10-16T09:08:37.214Z",
+  "window": {
+    "app": "process:<LOCAL_GATE>\\ordinary-image\\ChatChatBarDesktop.exe",
+    "id": 43783268,
+    "title": "ChatChatBar"
+  },
+  "accessibility": {
+    "focused_element": "0 对话框 ChatChatBar Secondary Actions: Raise",
+    "tree": "Window: \"ChatChatBar\", App: ChatChatBarDesktop.exe.\n\t0 对话框 ChatChatBar Secondary Actions: Raise\n\t\t1 按钮 确定 ID: 2\n\t\t2 图像 ID: 20\n\t\t3 文本 ChatChatBar 已在运行 当前数据目录正在被另一个 ChatChatBar Desktop 实例使用。 为保护数据，同一数据目录不能同时由多个实例写入。 请切换到已经打开的 ChatChatBar 窗口，或先关闭它后再试。 数据目录： <LOCAL_GATE>\\environments\\B6-shared\\ChatChatBarDesktop ID: 65535\n\t\t4 标题栏 (settable, string) Value: ChatChatBar\n\t\t\t5 按钮 关闭\n\nThe focused UI element is 0 对话框 ChatChatBar Secondary Actions: Raise."
+  },
+  "screenshot": "NOT RETRIED - FrameArrived blocked"
+}

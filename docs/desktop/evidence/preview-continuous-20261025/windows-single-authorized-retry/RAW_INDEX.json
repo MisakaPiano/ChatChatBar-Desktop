@@ -1,0 +1,17 @@
+[
+  {
+    "path": "COMMAND_SANITIZED.txt",
+    "bytes": 373,
+    "sha256": "92ae422029735ae20bdc6ae5f052eb4bf618051c45f7fc92294782aba63e8260"
+  },
+  {
+    "path": "RESULT.json",
+    "bytes": 903,
+    "sha256": "8bee6f76d6d9c4259418ad96aff8b0656e80cb8309a62f3ee64e739aa354ad4f"
+  },
+  {
+    "path": "RESULT.md",
+    "bytes": 1282,
+    "sha256": "10461eb3fc2899a556b929b95e4091915c111727e793406ff912387e92345594"
+  }
+]

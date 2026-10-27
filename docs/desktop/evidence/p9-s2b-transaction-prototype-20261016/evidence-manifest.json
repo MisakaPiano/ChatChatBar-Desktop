@@ -1,0 +1,147 @@
+{
+  "algorithm": "SHA-256",
+  "scope": "All evidence files except this manifest; original gate copies byte-verified",
+  "originalCopiesVerified": 21,
+  "files": [
+    {
+      "path": ".gitattributes",
+      "bytes": 136,
+      "sha256": "4a0bb3c3350c0fef4f0fe45c7a4beadf936ccf0a3ff5ade87372bda7ced774d9"
+    },
+    {
+      "path": "01-prototype-junit/TEST-com.example.chatbar.desktop.DesktopDocumentIndexTransactionPrototypeTest.xml",
+      "bytes": 2145,
+      "sha256": "2e5941ccfd5f2b8b41c661543d3accb937003f8aa936488c327d48d9c06d5056"
+    },
+    {
+      "path": "01-prototype.json",
+      "bytes": 543,
+      "sha256": "aa9e2eb4f9fe658e41bd225dc6f8fcf81d97d8f2bd9c0d7dffea1507ec09c56d"
+    },
+    {
+      "path": "01-prototype.log",
+      "bytes": 2181,
+      "sha256": "d3f0062ee14021067d221153c2de1ef95fa231eb9364db4056d1f898571c0494"
+    },
+    {
+      "path": "02-process-red-junit/TEST-com.example.chatbar.desktop.DesktopDocumentIndexTransactionProcessTest.xml",
+      "bytes": 7798,
+      "sha256": "9cfa659724eba6ec647ad31b7129c4900fa8c29f3222c05b50d74dd5ee566ce8"
+    },
+    {
+      "path": "02-process.json",
+      "bytes": 538,
+      "sha256": "2c153e1a7a6316b061240c02407e1b9e6ef8a68c554f1722456246c68feacebe"
+    },
+    {
+      "path": "02-process.log",
+      "bytes": 2792,
+      "sha256": "35977b631b46c84a02338d58f63da907e0747af4da35d9fc0a6c9d9e3be5628b"
+    },
+    {
+      "path": "03-process-green-junit/TEST-com.example.chatbar.desktop.DesktopDocumentIndexTransactionProcessTest.xml",
+      "bytes": 747,
+      "sha256": "cee38717272a4efeb4a9b39d23797147393d8cd296383aac9d039ef6a9cbe9b0"
+    },
+    {
+      "path": "03-process-recheck.json",
+      "bytes": 547,
+      "sha256": "4c0563add56b80e2d966b7784adf269bd844c166c86b9caa65543f7c71ef0866"
+    },
+    {
+      "path": "03-process-recheck.log",
+      "bytes": 2182,
+      "sha256": "df83064f82dbe73ea8b8c400c43c15594157e3bf693bc6dd3bf57b32e5f60b77"
+    },
+    {
+      "path": "04-adjacent-junit/TEST-com.example.chatbar.desktop.DesktopDataOperationCoordinatorTest.xml",
+      "bytes": 2730,
+      "sha256": "d9340178b866e55c3fb1843632309c2add9ce29111d2636b82ca445802f83401"
+    },
+    {
+      "path": "04-adjacent-junit/TEST-com.example.chatbar.desktop.DesktopDocumentRagIndexPreparationTest.xml",
+      "bytes": 4313,
+      "sha256": "54325fd8be15c17e8359639cea39d594650baf276ce831980b066d4af955a3b1"
+    },
+    {
+      "path": "04-adjacent-junit/TEST-com.example.chatbar.desktop.DesktopDocumentRagReaderTest.xml",
+      "bytes": 3695,
+      "sha256": "e8cc9836e13c9d8c6c0b7349402cb1e441530d1ea36b0ce1f6c373f097831e19"
+    },
+    {
+      "path": "04-adjacent-junit/TEST-com.example.chatbar.desktop.DesktopFormatRepairDerivedSafetyTest.xml",
+      "bytes": 3262,
+      "sha256": "892f6f02d4590537d9390e4c3fec600100f4836601c569b16ad0b9b07743c213"
+    },
+    {
+      "path": "04-adjacent.json",
+      "bytes": 793,
+      "sha256": "7255fb38b3f2b241ea0cf6e8000d3979ae895072fac63e63154cd8542913dbad"
+    },
+    {
+      "path": "04-adjacent.log",
+      "bytes": 2190,
+      "sha256": "ff41700bf6d9af74512875ddb5a5a3a36acda8e8c9431887230b858682abe6ad"
+    },
+    {
+      "path": "environment.json",
+      "bytes": 444,
+      "sha256": "d3c87371483a548f12d1d2343e9ead8eb49c1e5683e4b9e09d5d8a11bb82a608"
+    },
+    {
+      "path": "events-through-process-green.jsonl",
+      "bytes": 13346,
+      "sha256": "415689b8cac717ebcad8c74e8520ddeb5bdd15de86ff16c58fc91307fcc27252"
+    },
+    {
+      "path": "final-child-results.json",
+      "bytes": 10293,
+      "sha256": "cd56ec2630cd351fa5dfc5cc36a287619c2d31e049ac48ecdeab6f38872cbc9a"
+    },
+    {
+      "path": "jdk-version.txt",
+      "bytes": 198,
+      "sha256": "ceac1a1faee87599e8e7e1f10da3907f0421452fbfce48a9b9844c733f72289a"
+    },
+    {
+      "path": "junit-summary.json",
+      "bytes": 2948,
+      "sha256": "cd7e0fd971c4f27f26d9afa6c692702260838e19e4d8f2c640de46e40791896a"
+    },
+    {
+      "path": "README.md",
+      "bytes": 10864,
+      "sha256": "e28127cbd653cf4664b448a596b4ebdbe664609c035f009546659554081c5397"
+    },
+    {
+      "path": "resource-samples.json",
+      "bytes": 3030,
+      "sha256": "4302e34d8c9f29ff353ba5b6134b0b29fecabcbc0e6144e85a511ba4eef82afe"
+    },
+    {
+      "path": "resources.jsonl",
+      "bytes": 1980,
+      "sha256": "f45ac5a56e3debdca32156bc8fe19d7f8c4faed9366d48363377d66425cc7400"
+    },
+    {
+      "path": "run-stage.ps1",
+      "bytes": 931,
+      "sha256": "0210e4fecd396d45796c74d6b8bb911c4e11c2451f9eae38bb28fa53fc4bf6cd"
+    },
+    {
+      "path": "source-manifest.json",
+      "bytes": 1056,
+      "sha256": "387960b4d98fe99f74b79b1094475d2d54bbd4d8fbb2e685bec62956d946e2df"
+    },
+    {
+      "path": "summary.json",
+      "bytes": 517,
+      "sha256": "30fd1d626bd1966a3a476b152e7d86623c50af2fea891f59c77e232893b2fa38"
+    },
+    {
+      "path": "transaction-events.jsonl",
+      "bytes": 13346,
+      "sha256": "415689b8cac717ebcad8c74e8520ddeb5bdd15de86ff16c58fc91307fcc27252"
+    }
+  ]
+}

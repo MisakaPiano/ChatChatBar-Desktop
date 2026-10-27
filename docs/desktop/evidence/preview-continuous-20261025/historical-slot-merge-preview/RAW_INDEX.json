@@ -1,0 +1,397 @@
+[
+  {
+    "path": "historical-slot-and-merge-green/arguments.json",
+    "bytes": 907,
+    "sha256": "6e9bd613f9d334109dcc06b0c31b26f1c8edd8586279d867f1a4004d8a5d49ea"
+  },
+  {
+    "path": "historical-slot-and-merge-green/exit.txt",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "path": "historical-slot-and-merge-green/gradle.log",
+    "bytes": 2179,
+    "sha256": "e2191c16cc33bd0eeea64f11930d7a5a31a100b74c4d69ddc512f2b5fa88baf5"
+  },
+  {
+    "path": "historical-slot-and-merge-green/head.txt",
+    "bytes": 40,
+    "sha256": "e2f80f21e048ce7e07fe2d84bf2d958d644a038a89d8cec5be43ac7ad1a3a116"
+  },
+  {
+    "path": "historical-slot-and-merge-green/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopMergePreview.kt",
+    "bytes": 10107,
+    "sha256": "717d766aa3573c692cdb479610408e75ac62bb521566b6b84254b7971652f592"
+  },
+  {
+    "path": "historical-slot-and-merge-green/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotArchive.kt",
+    "bytes": 5957,
+    "sha256": "c9e072f0611fa83139166978521a77ba02a7497505f1dbc13819bd2f5c87b678"
+  },
+  {
+    "path": "historical-slot-and-merge-green/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotInspector.kt",
+    "bytes": 24379,
+    "sha256": "92e8bc880782efbc8126c11348f1ae6947c3dfbce6624e2b4c21b80e84f00713"
+  },
+  {
+    "path": "historical-slot-and-merge-green/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotRestorePlan.kt",
+    "bytes": 12554,
+    "sha256": "f8cabab9036469fefeaa0128f9cac19b1d09c507041493030796ca6c0974f824"
+  },
+  {
+    "path": "historical-slot-and-merge-green/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceArchiveHandoff.kt",
+    "bytes": 6880,
+    "sha256": "071d9ff71578a99ecd3d7e086f920989e80df7492a4c972fe875671cd3ecf69c"
+  },
+  {
+    "path": "historical-slot-and-merge-green/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopMergePreviewTest.kt",
+    "bytes": 7211,
+    "sha256": "ca19d7ee22e4448da1c5e0b56db76e989beecb564e890073f24f5d1f0edca81b"
+  },
+  {
+    "path": "historical-slot-and-merge-green/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopHistoricalSaveSlotProcessTest.kt",
+    "bytes": 6793,
+    "sha256": "d80c492201cf52f93bc44afd4e61a56db987837745d03f095f4f385790dc2cb0"
+  },
+  {
+    "path": "historical-slot-and-merge-verified/arguments.json",
+    "bytes": 907,
+    "sha256": "6e9bd613f9d334109dcc06b0c31b26f1c8edd8586279d867f1a4004d8a5d49ea"
+  },
+  {
+    "path": "historical-slot-and-merge-verified/child/0/export.log",
+    "bytes": 24,
+    "sha256": "f637db0e604a8506b634bfafcdbe3953dbcde784bc21a3c709fe45f1823712dd"
+  },
+  {
+    "path": "historical-slot-and-merge-verified/child/0/reopen.log",
+    "bytes": 24,
+    "sha256": "361dfc00f35a3c319143599ccbc4203aece1d6c5931e16d9842777cdee6217c5"
+  },
+  {
+    "path": "historical-slot-and-merge-verified/child/0/restore.log",
+    "bytes": 25,
+    "sha256": "4b6f58eb3602a3203a2f5e1ebbdc000b9312e5489885fc7b87d40444d96ec24f"
+  },
+  {
+    "path": "historical-slot-and-merge-verified/exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "historical-slot-and-merge-verified/gradle.log",
+    "bytes": 2214,
+    "sha256": "40646dc34ba34800bd30e8029667e28c56c051888c28799fbb8a24488a1346b5"
+  },
+  {
+    "path": "historical-slot-and-merge-verified/head.txt",
+    "bytes": 40,
+    "sha256": "e2f80f21e048ce7e07fe2d84bf2d958d644a038a89d8cec5be43ac7ad1a3a116"
+  },
+  {
+    "path": "historical-slot-and-merge-verified/junit/TEST-com.example.chatbar.desktop.backup.DesktopMergePreviewTest.xml",
+    "bytes": 1913,
+    "sha256": "8b7abb20d03d8ed89fb26290ca87006e25af6018fa4fa177fe631c969b9f8cf3"
+  },
+  {
+    "path": "historical-slot-and-merge-verified/junit/TEST-com.example.chatbar.desktop.DesktopHistoricalSaveSlotProcessTest.xml",
+    "bytes": 534,
+    "sha256": "e8aab5d37855f5b1628689a42eb91d2abf571ff1a86ba2a99bb0dbb867d13cc3"
+  },
+  {
+    "path": "historical-slot-and-merge-verified/junit/TEST-com.example.chatbar.desktop.DesktopHistoricalVoiceRetentionTest.xml",
+    "bytes": 1054,
+    "sha256": "5e8c02bf5a73585e4f162fd4c2f5df04e544c7b723626b1583a5d7bf82036658"
+  },
+  {
+    "path": "historical-slot-and-merge-verified/junit/TEST-com.example.chatbar.desktop.DesktopSaveSlotArchiveTest.xml",
+    "bytes": 1180,
+    "sha256": "99ee5dde89cfc174b80b85ae0880ef8beac33016a64b20e746df93a4dc22990f"
+  },
+  {
+    "path": "historical-slot-and-merge-verified/junit/TEST-com.example.chatbar.desktop.DesktopSaveSlotInspectorTest.xml",
+    "bytes": 4372,
+    "sha256": "0ebfe0299b67d800db8cd5185f1e20fa33636c512818e76bc6622685af14c092"
+  },
+  {
+    "path": "historical-slot-and-merge-verified/junit/TEST-com.example.chatbar.desktop.DesktopSaveSlotServiceTest.xml",
+    "bytes": 3061,
+    "sha256": "ee5322aa4613f50b8027fda27674934664aacc00628097c6e829ff6b38d7e617"
+  },
+  {
+    "path": "historical-slot-and-merge-verified/junit/TEST-com.example.chatbar.desktop.DesktopSessionCommitJournalTest.xml",
+    "bytes": 1061,
+    "sha256": "d96e616a797bc2130f224d7d9b8ec2efcf171690be3dcd030390e54d6a8d1a45"
+  },
+  {
+    "path": "historical-slot-and-merge-verified/junit/TEST-com.example.chatbar.desktop.DesktopVoiceArchiveHandoffTest.xml",
+    "bytes": 904,
+    "sha256": "ef541c434f4eb0450940c869338a51cbad005c0c9ecf0ee0eecc66afc8a58f6f"
+  },
+  {
+    "path": "historical-slot-and-merge-verified/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopMergePreview.kt",
+    "bytes": 10107,
+    "sha256": "717d766aa3573c692cdb479610408e75ac62bb521566b6b84254b7971652f592"
+  },
+  {
+    "path": "historical-slot-and-merge-verified/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotArchive.kt",
+    "bytes": 5957,
+    "sha256": "c9e072f0611fa83139166978521a77ba02a7497505f1dbc13819bd2f5c87b678"
+  },
+  {
+    "path": "historical-slot-and-merge-verified/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotInspector.kt",
+    "bytes": 24342,
+    "sha256": "7f4fb134c6f6ce8cfcd797141011a8f4385bec9e1bc408e5baf9c7b8dd1b43fb"
+  },
+  {
+    "path": "historical-slot-and-merge-verified/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotRestorePlan.kt",
+    "bytes": 12554,
+    "sha256": "f8cabab9036469fefeaa0128f9cac19b1d09c507041493030796ca6c0974f824"
+  },
+  {
+    "path": "historical-slot-and-merge-verified/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceArchiveHandoff.kt",
+    "bytes": 6869,
+    "sha256": "1899d243b031c739f3c758b98a411be9624f828cc6c2b54f6789f7963a338f57"
+  },
+  {
+    "path": "historical-slot-and-merge-verified/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopMergePreviewTest.kt",
+    "bytes": 7211,
+    "sha256": "ca19d7ee22e4448da1c5e0b56db76e989beecb564e890073f24f5d1f0edca81b"
+  },
+  {
+    "path": "historical-slot-and-merge-verified/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopHistoricalSaveSlotProcessTest.kt",
+    "bytes": 6793,
+    "sha256": "d80c492201cf52f93bc44afd4e61a56db987837745d03f095f4f385790dc2cb0"
+  },
+  {
+    "path": "historical-slot-and-merge-verified/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopSaveSlotInspectorTest.kt",
+    "bytes": 24381,
+    "sha256": "dca85ea3fcbca5041d958a516f209065f1dbe33e9d88a1aeea703d54ce422ba7"
+  },
+  {
+    "path": "historical-slot-final/arguments.json",
+    "bytes": 907,
+    "sha256": "6e9bd613f9d334109dcc06b0c31b26f1c8edd8586279d867f1a4004d8a5d49ea"
+  },
+  {
+    "path": "historical-slot-final/child/0/export.log",
+    "bytes": 24,
+    "sha256": "f637db0e604a8506b634bfafcdbe3953dbcde784bc21a3c709fe45f1823712dd"
+  },
+  {
+    "path": "historical-slot-final/child/0/reopen.log",
+    "bytes": 24,
+    "sha256": "361dfc00f35a3c319143599ccbc4203aece1d6c5931e16d9842777cdee6217c5"
+  },
+  {
+    "path": "historical-slot-final/child/0/restore.log",
+    "bytes": 25,
+    "sha256": "4b6f58eb3602a3203a2f5e1ebbdc000b9312e5489885fc7b87d40444d96ec24f"
+  },
+  {
+    "path": "historical-slot-final/exit.txt",
+    "bytes": 1,
+    "sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9"
+  },
+  {
+    "path": "historical-slot-final/gradle.log",
+    "bytes": 2236,
+    "sha256": "24cdc4dac1711d4698992414c0abc387b0a1b09d371d663f773e2b0365b96da7"
+  },
+  {
+    "path": "historical-slot-final/head.txt",
+    "bytes": 40,
+    "sha256": "e2f80f21e048ce7e07fe2d84bf2d958d644a038a89d8cec5be43ac7ad1a3a116"
+  },
+  {
+    "path": "historical-slot-final/junit/TEST-com.example.chatbar.desktop.backup.DesktopMergePreviewTest.xml",
+    "bytes": 1911,
+    "sha256": "806aed33b1286cc4a2780380770aa98f1d29ffe185a2bcb735ac56394fbf8b82"
+  },
+  {
+    "path": "historical-slot-final/junit/TEST-com.example.chatbar.desktop.DesktopHistoricalSaveSlotProcessTest.xml",
+    "bytes": 908,
+    "sha256": "24fd5cb9aeb3cefbad40d06388857f9c2dfddbcfcceceb453d1c7a1ae8a4f157"
+  },
+  {
+    "path": "historical-slot-final/junit/TEST-com.example.chatbar.desktop.DesktopHistoricalVoiceRetentionTest.xml",
+    "bytes": 1054,
+    "sha256": "94d52d46b77e9305ae6ff9f9ca4eadd5f6bf82c881aaa8cf3009e2d16c855eed"
+  },
+  {
+    "path": "historical-slot-final/junit/TEST-com.example.chatbar.desktop.DesktopSaveSlotArchiveTest.xml",
+    "bytes": 1180,
+    "sha256": "f4cdfa30a48ab708c0c26eafa24e9ecb131a538250316df0ca49a4e0f25d976d"
+  },
+  {
+    "path": "historical-slot-final/junit/TEST-com.example.chatbar.desktop.DesktopSaveSlotInspectorTest.xml",
+    "bytes": 4368,
+    "sha256": "fad7004c4e7c78d22112425abf496060c352c3f1a0827cd446de2a7dc0d88ebe"
+  },
+  {
+    "path": "historical-slot-final/junit/TEST-com.example.chatbar.desktop.DesktopSaveSlotServiceTest.xml",
+    "bytes": 3062,
+    "sha256": "e0991007bcbefce62c53648ffbac55275959e8b8f37c57c7a6b5697336b8ca63"
+  },
+  {
+    "path": "historical-slot-final/junit/TEST-com.example.chatbar.desktop.DesktopSessionCommitJournalTest.xml",
+    "bytes": 1060,
+    "sha256": "ac2783a38f949798c1afb15e555c83fe7fef27df03f12cecdece37826596eb48"
+  },
+  {
+    "path": "historical-slot-final/junit/TEST-com.example.chatbar.desktop.DesktopVoiceArchiveHandoffTest.xml",
+    "bytes": 904,
+    "sha256": "5439b729b546bc232c330a043ae607bb5a77d1100d5562d74fddbacbcdfd32c3"
+  },
+  {
+    "path": "historical-slot-final/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopMergePreview.kt",
+    "bytes": 10107,
+    "sha256": "717d766aa3573c692cdb479610408e75ac62bb521566b6b84254b7971652f592"
+  },
+  {
+    "path": "historical-slot-final/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotArchive.kt",
+    "bytes": 5957,
+    "sha256": "c9e072f0611fa83139166978521a77ba02a7497505f1dbc13819bd2f5c87b678"
+  },
+  {
+    "path": "historical-slot-final/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotInspector.kt",
+    "bytes": 24342,
+    "sha256": "7f4fb134c6f6ce8cfcd797141011a8f4385bec9e1bc408e5baf9c7b8dd1b43fb"
+  },
+  {
+    "path": "historical-slot-final/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopSaveSlotRestorePlan.kt",
+    "bytes": 12554,
+    "sha256": "f8cabab9036469fefeaa0128f9cac19b1d09c507041493030796ca6c0974f824"
+  },
+  {
+    "path": "historical-slot-final/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopVoiceArchiveHandoff.kt",
+    "bytes": 6869,
+    "sha256": "1899d243b031c739f3c758b98a411be9624f828cc6c2b54f6789f7963a338f57"
+  },
+  {
+    "path": "historical-slot-final/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopMergePreviewTest.kt",
+    "bytes": 7211,
+    "sha256": "ca19d7ee22e4448da1c5e0b56db76e989beecb564e890073f24f5d1f0edca81b"
+  },
+  {
+    "path": "historical-slot-final/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopHistoricalSaveSlotProcessTest.kt",
+    "bytes": 8661,
+    "sha256": "3879db6ed91c738d85a63573a3557187471fbfa665ea74c2a39fe12e5af3311b"
+  },
+  {
+    "path": "historical-slot-final/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopSaveSlotInspectorTest.kt",
+    "bytes": 24381,
+    "sha256": "dca85ea3fcbca5041d958a516f209065f1dbe33e9d88a1aeea703d54ce422ba7"
+  },
+  {
+    "path": "historical-slot-process-red/arguments.json",
+    "bytes": 554,
+    "sha256": "eb0f649f20b74497a0b5dae42e7a2e52090e3b654d8a7c80ceb0c2d971bb6d12"
+  },
+  {
+    "path": "historical-slot-process-red/exit.txt",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "path": "historical-slot-process-red/gradle.log",
+    "bytes": 5252,
+    "sha256": "01a5a3bcda4ee735272ee59dc0f8c5ac181c72441ab25b8ac8cdd1d7fd110a5b"
+  },
+  {
+    "path": "historical-slot-process-red/head.txt",
+    "bytes": 40,
+    "sha256": "e2f80f21e048ce7e07fe2d84bf2d958d644a038a89d8cec5be43ac7ad1a3a116"
+  },
+  {
+    "path": "historical-slot-process-red/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopHistoricalSaveSlotProcessTest.kt",
+    "bytes": 6503,
+    "sha256": "9ed3b2a4cfb2684fbefe1623d1437e93a8ee9a375627db6c46ee8ea61c44e1f4"
+  },
+  {
+    "path": "historical-slot-process-red-admission/arguments.json",
+    "bytes": 554,
+    "sha256": "eb0f649f20b74497a0b5dae42e7a2e52090e3b654d8a7c80ceb0c2d971bb6d12"
+  },
+  {
+    "path": "historical-slot-process-red-admission/child/0/restore.log",
+    "bytes": 1109,
+    "sha256": "24287475c048c2117db2e3119d105e897d8b380cedbd60fa46b605a6c8f26660"
+  },
+  {
+    "path": "historical-slot-process-red-admission/exit.txt",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "path": "historical-slot-process-red-admission/gradle.log",
+    "bytes": 2818,
+    "sha256": "aa736b2d4a29a082468ffacfd1230aaf4c2446872ca701ce2ba322e5e71d8eee"
+  },
+  {
+    "path": "historical-slot-process-red-admission/head.txt",
+    "bytes": 40,
+    "sha256": "e2f80f21e048ce7e07fe2d84bf2d958d644a038a89d8cec5be43ac7ad1a3a116"
+  },
+  {
+    "path": "historical-slot-process-red-admission/junit/TEST-com.example.chatbar.desktop.DesktopHistoricalSaveSlotProcessTest.xml",
+    "bytes": 7460,
+    "sha256": "a915a78f97a280a63453d9c9cf47cf149683363288aff5a6070326e9467c5d2f"
+  },
+  {
+    "path": "historical-slot-process-red-admission/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopMergePreview.kt",
+    "bytes": 10107,
+    "sha256": "717d766aa3573c692cdb479610408e75ac62bb521566b6b84254b7971652f592"
+  },
+  {
+    "path": "historical-slot-process-red-admission/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopHistoricalSaveSlotProcessTest.kt",
+    "bytes": 6793,
+    "sha256": "d80c492201cf52f93bc44afd4e61a56db987837745d03f095f4f385790dc2cb0"
+  },
+  {
+    "path": "historical-slot-process-red-runtime/arguments.json",
+    "bytes": 554,
+    "sha256": "eb0f649f20b74497a0b5dae42e7a2e52090e3b654d8a7c80ceb0c2d971bb6d12"
+  },
+  {
+    "path": "historical-slot-process-red-runtime/child/0/restore.log",
+    "bytes": 1094,
+    "sha256": "fd17d0ad63f7188ffab3bea5087e4fde2b8d3867af794441a29295ddb7385f67"
+  },
+  {
+    "path": "historical-slot-process-red-runtime/exit.txt",
+    "bytes": 1,
+    "sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+  },
+  {
+    "path": "historical-slot-process-red-runtime/gradle.log",
+    "bytes": 2812,
+    "sha256": "f267eac896c5c5bbbc3e5bb701041a5ef7acd9752295828c8d6bdce6b9c2cbe7"
+  },
+  {
+    "path": "historical-slot-process-red-runtime/head.txt",
+    "bytes": 40,
+    "sha256": "e2f80f21e048ce7e07fe2d84bf2d958d644a038a89d8cec5be43ac7ad1a3a116"
+  },
+  {
+    "path": "historical-slot-process-red-runtime/junit/TEST-com.example.chatbar.desktop.DesktopHistoricalSaveSlotProcessTest.xml",
+    "bytes": 6329,
+    "sha256": "7fd1f145df6c0184443c020b10ac65946654f37d6f0450533f62a0359e7a1d8a"
+  },
+  {
+    "path": "historical-slot-process-red-runtime/source/app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopMergePreview.kt",
+    "bytes": 10107,
+    "sha256": "717d766aa3573c692cdb479610408e75ac62bb521566b6b84254b7971652f592"
+  },
+  {
+    "path": "historical-slot-process-red-runtime/source/app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopHistoricalSaveSlotProcessTest.kt",
+    "bytes": 6768,
+    "sha256": "a71efe05006e3c831676bb06f461bee509f9a914d47b60d18f6ddeabf223938f"
+  },
+  {
+    "path": "RESULT.md",
+    "bytes": 3574,
+    "sha256": "de32d158b6c3afd0c66612b6b743cc39d8db8dc6a5f94555cac21ae6575d68ea"
+  }
+]

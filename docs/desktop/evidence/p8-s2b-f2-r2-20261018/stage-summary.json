@@ -1,0 +1,72 @@
+[
+  {
+    "stage": "01-chain-status",
+    "exitCode": 0,
+    "durationSeconds": 60.2642929,
+    "suites": 1,
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "resourceSamples": 5,
+    "minAvailableGiB": 1.5506935119628906,
+    "minCommitHeadroomGiB": 15.493282318115234,
+    "maxPagesPerSec": 5114
+  },
+  {
+    "stage": "02-f2-focused",
+    "exitCode": 0,
+    "durationSeconds": 41.8486141,
+    "suites": 2,
+    "tests": 16,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "resourceSamples": 4,
+    "minAvailableGiB": 1.79901123046875,
+    "minCommitHeadroomGiB": 16.029659271240234,
+    "maxPagesPerSec": 1283
+  },
+  {
+    "stage": "03-f1-focused",
+    "exitCode": 0,
+    "durationSeconds": 41.7183152,
+    "suites": 6,
+    "tests": 60,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "resourceSamples": 4,
+    "minAvailableGiB": 1.8147659301757812,
+    "minCommitHeadroomGiB": 15.809822082519531,
+    "maxPagesPerSec": 162
+  },
+  {
+    "stage": "04-bounded-desktop",
+    "exitCode": 0,
+    "durationSeconds": 352.8932044,
+    "suites": 156,
+    "tests": 1515,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 2,
+    "resourceSamples": 34,
+    "minAvailableGiB": 1.3455848693847656,
+    "minCommitHeadroomGiB": 15.34182357788086,
+    "maxPagesPerSec": 3863
+  },
+  {
+    "stage": "05-create-distributable",
+    "exitCode": 0,
+    "durationSeconds": 31.7277119,
+    "suites": 0,
+    "tests": 0,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "resourceSamples": 3,
+    "minAvailableGiB": 2.01239013671875,
+    "minCommitHeadroomGiB": 16.719009399414062,
+    "maxPagesPerSec": 7
+  }
+]

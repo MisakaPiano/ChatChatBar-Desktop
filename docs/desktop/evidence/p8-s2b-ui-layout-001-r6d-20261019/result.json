@@ -1,0 +1,49 @@
+{
+  "gateInvocations": 1,
+  "compilation": "PASS",
+  "exitCode": 0,
+  "suites": 1,
+  "tests": 4,
+  "reportedPass": 4,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "testSeconds": 45.641,
+  "testCases": [
+    {
+      "name": "native persistent scrollbar drags current page and explicit page jump preserves request semantics",
+      "classname": "com.example.chatbar.desktop.DesktopFishPickerNativeUxTest",
+      "time": "18.042"
+    },
+    {
+      "name": "native Stop is top layer visible and operable during download generation and long Windows playback",
+      "classname": "com.example.chatbar.desktop.DesktopFishPickerNativeUxTest",
+      "time": "11.099"
+    },
+    {
+      "name": "native Escape closes exactly one panel then picker with and without field focus at both widths",
+      "classname": "com.example.chatbar.desktop.DesktopFishPickerNativeUxTest",
+      "time": "13.785"
+    },
+    {
+      "name": "native resize retains target text and generated cache while sample identity stays distinct",
+      "classname": "com.example.chatbar.desktop.DesktopFishPickerNativeUxTest",
+      "time": "2.715"
+    }
+  ],
+  "xmlSha256": "758d6715b46f7cc8cb2ed28f78cdb059c2109bc15804b25b746ffce217a58203",
+  "sourceChangedAfterGate": false,
+  "reruns": 0,
+  "nativeGateOnly": true,
+  "newRed": false,
+  "newUnknown": false,
+  "historicalUnknownsUnchanged": true,
+  "restoreFurtherGates": "NativeUx prerequisite now PASS; Project approval and fresh resource preflight required; no additional Gate started",
+  "notTested": [
+    "Full Fish focused",
+    "bounded",
+    "new distribution",
+    "Windows manual/hearing",
+    "packaged Launcher/JVM exit and formal root lock"
+  ]
+}

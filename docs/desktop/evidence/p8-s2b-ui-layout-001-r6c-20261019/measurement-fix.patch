@@ -1,0 +1,85 @@
+diff --git "a/H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-s2b-ui-layout-001-r6c-20261019\\baseline-sources\\DesktopFishPickerNativeUxTest.kt" "b/H:\\ChatChatBar-Desktop\\app\\desktopApp\\src\\test\\kotlin\\com\\example\\chatbar\\desktop\\DesktopFishPickerNativeUxTest.kt"
+index 5082b105..211eb3a0 100644
+--- "a/H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-s2b-ui-layout-001-r6c-20261019\\baseline-sources\\DesktopFishPickerNativeUxTest.kt"
++++ "b/H:\\ChatChatBar-Desktop\\app\\desktopApp\\src\\test\\kotlin\\com\\example\\chatbar\\desktop\\DesktopFishPickerNativeUxTest.kt"
+@@ -239,12 +239,60 @@ class DesktopFishPickerNativeUxTest {
+             val w = child.get()!!
+             val client = Rectangle(w.contentPane.locationOnScreen, w.contentPane.size)
+             val page = picker.state.value.query.pageNumber
++            val input = node("跳转页码")
++            val jumpButton = node("跳转")
++            assertTrue(input.config.contains(SemanticsActions.SetText), "Pager input must be the editable functional node")
++            assertEquals(Role.Button, jumpButton.config.getOrNull(SemanticsProperties.Role))
++            assertTrue(jumpButton.config.contains(SemanticsActions.OnClick))
++            assertSame(input.root, jumpButton.root, "Pager controls must belong to the same native semantics owner")
++            fun ancestry(layout: androidx.compose.ui.layout.LayoutInfo): List<androidx.compose.ui.layout.LayoutInfo> {
++                val result = mutableListOf<androidx.compose.ui.layout.LayoutInfo>()
++                var current: androidx.compose.ui.layout.LayoutInfo? = layout
++                while (current != null) {
++                    val value = current
++                    assertFalse(result.any { it === value }, "Cycle in pager LayoutInfo ancestry")
++                    result += value
++                    current = value.parentInfo
++                }
++                return result
++            }
++            val inputPath = ancestry(input.layoutInfo)
++            val buttonPath = ancestry(jumpButton.layoutInfo)
++            val pair = assertNotNull(inputPath.firstOrNull { candidate -> buttonPath.any { it === candidate } },
++                "Pager input and button must share a real layout ancestor")
++            val inputItem = assertNotNull(inputPath.firstOrNull { it.parentInfo === pair },
++                "Pager input must have a direct outer layout item in the pair")
++            assertFalse(inputItem === input.layoutInfo, "Cannot substitute internal editable geometry for the outer input item")
++            assertSame(pair, jumpButton.layoutInfo.parentInfo, "Jump button must be a direct child of the same pair Row")
++            val pager = assertNotNull(node("上一页").layoutInfo.parentInfo)
++            assertSame(pager, node("第 $page 页 / 共 6 页").layoutInfo.parentInfo)
++            assertSame(pager, node("下一页").layoutInfo.parentInfo)
++            assertSame(pager, pair.parentInfo, "The direct input/button pair must be a sibling of the other pager items")
++            val coordinates = inputItem.coordinates
++            assertTrue(inputItem.isAttached && inputItem.isPlaced && coordinates.isAttached)
++            assertTrue(inputItem.width > 0 && inputItem.height > 0)
++            assertEquals(inputItem.width, coordinates.size.width, "Outer input coordinates must cover the whole layout item")
++            assertEquals(inputItem.height, coordinates.size.height, "Outer input must not expose padded inner coordinates")
++            val inputOrigin = coordinates.localToScreen(androidx.compose.ui.geometry.Offset.Zero)
++            val inputBounds = Rectangle(inputOrigin.x.roundToInt(), inputOrigin.y.roundToInt(), inputItem.width, inputItem.height)
+             fun bounds(label: String): Rectangle {
++                if (label == "跳转页码") return inputBounds
+                 val n = node(label)
+-                return Rectangle(n.positionOnScreen.x.roundToInt(), n.positionOnScreen.y.roundToInt(),
+-                    n.boundsInRoot.width.roundToInt(), n.boundsInRoot.height.roundToInt())
++                val root = generateSequence(n) { it.parent }.last()
++                val screen = n.boundsInWindow.translate(root.positionOnScreen - root.positionInWindow)
++                if (label == "跳转") {
++                    assertEquals(jumpButton.layoutInfo.width.toFloat(), screen.width, "Button semantics must cover its full layout width")
++                    assertEquals(jumpButton.layoutInfo.height.toFloat(), screen.height, "Button semantics must cover its full layout height")
++                }
++                return Rectangle(screen.left.roundToInt(), screen.top.roundToInt(), screen.width.roundToInt(), screen.height.roundToInt())
+             }
+             val controls = listOf("上一页", "第 $page 页 / 共 6 页", "跳转页码", "跳转", "下一页").associateWith(::bounds)
++            println("FISH_R6C_PAGER_OUTER requestedWidthDp=$width page=$page inputNode=${input.id} buttonNode=${jumpButton.id} " +
++                "inputItem=${System.identityHashCode(inputItem)} inputParent=${inputItem.parentInfo?.let(System::identityHashCode)} " +
++                "buttonParent=${jumpButton.layoutInfo.parentInfo?.let(System::identityHashCode)} pair=${System.identityHashCode(pair)} " +
++                "pager=${System.identityHashCode(pager)} inputScreen=$inputBounds buttonScreen=${controls.getValue("跳转")} " +
++                "gap=${controls.getValue("跳转").x - inputBounds.x - inputBounds.width} " +
++                "overlap=${minOf(inputBounds.y + inputBounds.height, controls.getValue("跳转").y + controls.getValue("跳转").height) - maxOf(inputBounds.y, controls.getValue("跳转").y)}")
+             // Read-only diagnostics precede every geometry assertion, including the original adjacency predicate.
+             val marker = "FISH_R6A_PAGER_GEOMETRY"
+             println("$marker WINDOW requestedWidthDp=$width frame=${w.bounds} client=$client clientSize=${w.contentPane.size} " +
+@@ -258,7 +306,7 @@ class DesktopFishPickerNativeUxTest {
+                     candidates.any { it.config.getOrNull(SemanticsProperties.Role) == Role.Button } -> "first Role.Button match"
+                     else -> "first label match"
+                 }
+-                println("$marker MATCH label=$label candidates=${candidates.map { it.id }} chosen=${chosen.id} reason=$reason originalHybridRect=${controls[label]}")
++                println("$marker MATCH label=$label candidates=${candidates.map { it.id }} chosen=${chosen.id} reason=$reason measuredControlRect=${controls[label]}")
+                 candidates.forEach { n ->
+                     val path = generateSequence(n) { it.parent }.take(16).map { it.id }.toList()
+                     val semanticRoot = generateSequence(n) { it.parent }.last()
+@@ -290,7 +338,7 @@ class DesktopFishPickerNativeUxTest {
+             val originalField = controls.getValue("跳转页码"); val originalJump = controls.getValue("跳转")
+             val overlap = minOf(originalField.y + originalField.height, originalJump.y + originalJump.height) - maxOf(originalField.y, originalJump.y)
+             println("$marker RELATION field=${selectedField.id} jump=${selectedJump.id} " +
+-                "hybridScreenGap=${originalJump.x - originalField.x - originalField.width} hybridVerticalOverlap=$overlap hybridSameRow=${overlap > 0} " +
++                "controlScreenGap=${originalJump.x - originalField.x - originalField.width} controlVerticalOverlap=$overlap controlSameRow=${overlap > 0} " +
+                 "windowGap=${selectedJump.boundsInWindow.left - selectedField.boundsInWindow.right} " +
+                 "rootGap=${selectedJump.boundsInRoot.left - selectedField.boundsInRoot.right} " +
+                 "windowVerticalOverlap=${minOf(selectedField.boundsInWindow.bottom, selectedJump.boundsInWindow.bottom) - maxOf(selectedField.boundsInWindow.top, selectedJump.boundsInWindow.top)}")

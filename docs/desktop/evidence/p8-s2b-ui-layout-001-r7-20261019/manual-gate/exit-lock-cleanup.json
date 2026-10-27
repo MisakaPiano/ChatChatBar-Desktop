@@ -1,0 +1,51 @@
+{
+  "launcherAndJvm": [
+    {
+      "pid": 38324,
+      "identity": {
+        "pid": 38324,
+        "parentPid": 4480,
+        "createdUtc": "2026-10-19T09:53:36.8858160Z",
+        "executablePath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-s2b-ui-layout-001-r7-20261019\\runtime-image\\ChatChatBarDesktop.exe",
+        "image": "runtime-image"
+      },
+      "isLauncher": false,
+      "jvmLoaded": true,
+      "exited": true,
+      "exitCode": 0,
+      "moduleReadError": null
+    },
+    {
+      "pid": 4480,
+      "identity": {
+        "pid": 4480,
+        "parentPid": 22620,
+        "createdUtc": "2026-10-19T09:53:36.1901760Z",
+        "executablePath": "H:\\ChatChatBar-Desktop\\app\\desktopApp\\build\\p8-s2b-ui-layout-001-r7-20261019\\runtime-image\\ChatChatBarDesktop.exe",
+        "image": "runtime-image"
+      },
+      "isLauncher": true,
+      "jvmLoaded": false,
+      "exited": true,
+      "exitCode": 0,
+      "moduleReadError": null
+    }
+  ],
+  "launcherJvmExit": "0/0",
+  "allOwnedExited": true,
+  "activeRootLockAcquireExit": 75,
+  "postExitIndependentRootAcquireAndReleaseExit": 0,
+  "fakeExit": 0,
+  "fakeDrain": "PASS",
+  "temporaryTlsPrivateAndTrustDeleted": true,
+  "previewMp3OrPartRemaining": 0,
+  "syntheticCardHashesBeforeAfterEqual": true,
+  "noRemainingJava": true,
+  "noRemainingOwnedApp": true,
+  "appClosedByUser": true,
+  "automaticGuiClose": false,
+  "manualLifetimeSeconds": 1577.3936913,
+  "closeObservedUtcInWatch": null,
+  "closeMarkerCaveat": "No close-request marker was written before user closure; raw watch field remains null. Actual production CLOSE_REQUESTED and complete shutdown stages are in stderr.log; user independently signed normal closure.",
+  "retained": "Frozen package, synthetic data and fixed canned audio fixtures retained. Only run-scoped TLS materials and production-owned preview cache were removed; root lock file was not deleted."
+}

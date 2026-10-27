@@ -1,0 +1,176 @@
+package com.example.chatbar.domain.chat
+
+import com.example.chatbar.data.local.entity.ChatMessage
+import com.example.chatbar.data.local.entity.MessageFormatRepairNotice
+import com.example.chatbar.data.local.entity.MessageFormatRepairNoticeKind
+import com.example.chatbar.data.local.entity.MessageRole
+import com.example.chatbar.domain.prompt.FormatRepairPromptAuthority
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+import kotlin.test.Test
+
+class MessageFormatRepairPolicyTest {
+    @Test
+    fun progressiveOverlay_replacesByUnicodeCodePoint() {
+        assertEquals("修😀尾", MessageFormatRepairPolicy.progressiveOverlay("原😀尾", "修😀"))
+        assertEquals("完整更长", MessageFormatRepairPolicy.progressiveOverlay("原文", "完整更长"))
+        assertEquals("原文", MessageFormatRepairPolicy.progressiveOverlay("原文", ""))
+    }
+
+    @Test
+    fun progressiveOverlay_hidesPossibleUnchangedMarker() {
+        val marker = FormatRepairPromptAuthority.MESSAGE_FORMAT_REPAIR_UNCHANGED_MARKER
+
+        assertEquals("原文", MessageFormatRepairPolicy.progressiveOverlay("原文", "[[CHAT"))
+        assertEquals("原文", MessageFormatRepairPolicy.progressiveOverlay("原文", "\n$marker"))
+        assertEquals("修文", MessageFormatRepairPolicy.progressiveOverlay("原文", "修"))
+    }
+
+    @Test
+    fun unchangedResult_requiresExactTrimmedMarker() {
+        val marker = FormatRepairPromptAuthority.MESSAGE_FORMAT_REPAIR_UNCHANGED_MARKER
+
+        assertTrue(MessageFormatRepairPolicy.isUnchangedResult(marker))
+        assertTrue(MessageFormatRepairPolicy.isUnchangedResult("\n$marker \n"))
+        assertFalse(MessageFormatRepairPolicy.isUnchangedResult("$marker\n额外内容"))
+        assertFalse(MessageFormatRepairPolicy.isUnchangedResult("原文"))
+    }
+
+    @Test
+    fun completedRepairNotice_keepsOriginalForNormalLengthRepair() {
+        val original = "原始回复"
+        val repaired = "错误回复"
+        val notice = MessageFormatRepairPolicy.completedRepairNotice(original, repaired)
+
+        assertEquals(MessageFormatRepairNoticeKind.APPLIED, notice.kind)
+        assertEquals(original, notice.originalContent)
+        assertEquals(repaired, notice.targetContent)
+
+        val updated = MessageFormatRepairPolicy.replaceCurrentDisplayContent(
+            message = message().copy(content = original),
+            replacement = repaired,
+            notice = notice,
+            updatedAt = 9
+        )
+        val restored = MessageFormatRepairPolicy.restoreOriginal(updated, updatedAt = 10)
+
+        assertEquals(original, restored?.displayContent)
+        assertNull(restored?.formatRepairNotice)
+    }
+
+    @Test
+    fun completedRepairNotice_acceptsLargeLengthChangeAndKeepsOriginal() {
+        val notice = MessageFormatRepairPolicy.completedRepairNotice("原始回复很长", "坏")
+
+        assertEquals(MessageFormatRepairNoticeKind.APPLIED, notice.kind)
+        assertEquals("原始回复很长", notice.originalContent)
+        assertEquals("坏", notice.targetContent)
+    }
+
+    @Test
+    fun recoverableNotice_keepsRollbackPointAcrossNoOpRepair() {
+        val notice = MessageFormatRepairPolicy.completedRepairNotice("原始回复", "修复回复")
+        val repaired = message().copy(
+            content = "修复回复",
+            formatRepairNotice = notice
+        )
+
+        assertEquals(notice, MessageFormatRepairPolicy.recoverableNotice(repaired))
+
+        val failed = repaired.copy(
+            formatRepairNotice = MessageFormatRepairNotice(
+                kind = MessageFormatRepairNoticeKind.ERROR,
+                targetContent = repaired.displayContent
+            )
+        )
+        assertNull(MessageFormatRepairPolicy.recoverableNotice(failed))
+    }
+
+    @Test
+    fun replacementAndRestore_preserveOtherAlternatives() {
+        val notice = MessageFormatRepairNotice(
+            kind = MessageFormatRepairNoticeKind.STOPPED,
+            targetContent = "fixed-b",
+            originalContent = "b"
+        )
+        val updated = MessageFormatRepairPolicy.replaceCurrentDisplayContent(
+            message = message().copy(
+                content = "b",
+                alternatives = listOf("a", "b", "c"),
+                currentAlternativeIndex = 1
+            ),
+            replacement = "fixed-b",
+            notice = notice,
+            updatedAt = 9
+        )
+
+        assertEquals(listOf("a", "fixed-b", "c"), updated.alternatives)
+        assertEquals("fixed-b", updated.content)
+        assertEquals(notice, MessageFormatRepairPolicy.applicableNotice(updated))
+
+        val restored = MessageFormatRepairPolicy.restoreOriginal(updated, updatedAt = 10)
+        assertEquals(listOf("a", "b", "c"), restored?.alternatives)
+        assertEquals("b", restored?.content)
+        assertNull(restored?.formatRepairNotice)
+    }
+
+    @Test
+    fun noticeIsHiddenWhenAnotherAlternativeIsSelected() {
+        val message = message().copy(
+            content = "fixed",
+            alternatives = listOf("fixed", "other"),
+            currentAlternativeIndex = 1,
+            formatRepairNotice = MessageFormatRepairNotice(
+                kind = MessageFormatRepairNoticeKind.LENGTH_ANOMALY,
+                targetContent = "fixed",
+                originalContent = "original"
+            )
+        )
+
+        assertNull(MessageFormatRepairPolicy.applicableNotice(message))
+    }
+
+    @Test
+    fun markerPrefixesAndEmojiRespectExistingOverlayContract() {
+        val marker = FormatRepairPromptAuthority.MESSAGE_FORMAT_REPAIR_UNCHANGED_MARKER
+        for (size in 0..marker.length) {
+            assertEquals("😀原文", MessageFormatRepairPolicy.progressiveOverlay("😀原文", " "+marker.take(size)))
+        }
+        assertEquals("🐟尾", MessageFormatRepairPolicy.progressiveOverlay("😀尾", "🐟"))
+        assertEquals("🐟😀", MessageFormatRepairPolicy.progressiveOverlay("原文", "🐟😀"))
+        assertFalse(MessageFormatRepairPolicy.isUnchangedResult(marker + "extra"))
+    }
+
+    @Test
+    fun repairAndRestorePreserveCandidateIdentityAndNonTargetMetadata() {
+        val original = message().copy(content = "b", alternatives = listOf("a", "b", "c"),
+            alternativeVersionIds = listOf("va", "vb", "vc"), currentAlternativeIndex = 1,
+            currentAlternativeVersionId = "vb", images = listOf("owned.png"),
+            reasoningContent = "reason", sourceTurnId = "turn", sourceTurnOrder = 7, orderKey = 55)
+        val notice = MessageFormatRepairPolicy.completedRepairNotice("b", "fixed")
+        val repaired = MessageFormatRepairPolicy.replaceCurrentDisplayContent(original, "fixed", notice, 9)
+        assertEquals(original.copy(content = "fixed", alternatives = listOf("a", "fixed", "c"),
+            formatRepairNotice = notice, updatedAt = 9), repaired)
+        assertEquals(original.copy(updatedAt = 10), MessageFormatRepairPolicy.restoreOriginal(repaired, 10))
+    }
+
+    @Test
+    fun noApplicableRecoveryDoesNotRestoreAndInvalidIndexKeepsAlternatives() {
+        assertNull(MessageFormatRepairPolicy.restoreOriginal(message()))
+        val invalid = message().copy(alternatives = listOf("a"), currentAlternativeIndex = 9)
+        val replaced = MessageFormatRepairPolicy.replaceCurrentDisplayContent(invalid, "new", updatedAt = 5)
+        assertEquals(listOf("a"), replaced.alternatives)
+        assertEquals("new", replaced.displayContent)
+    }
+
+    private fun message() = ChatMessage(
+        id = "m",
+        sessionId = "s",
+        role = MessageRole.ASSISTANT,
+        content = "text",
+        createdAt = 1,
+        updatedAt = 1
+    )
+}

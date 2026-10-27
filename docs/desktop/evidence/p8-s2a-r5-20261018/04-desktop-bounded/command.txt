@@ -1,0 +1,1 @@
+.\gradlew.bat --offline --no-daemon --no-parallel --max-workers=1 --priority=low --console=plain --no-configuration-cache -Pkotlin.compiler.execution.strategy=in-process -I desktopApp/build/p8-s2a-r5-20261018/bounded.init.gradle :desktopApp:compileKotlin --rerun :desktopApp:compileTestKotlin --rerun :desktopApp:test --rerun

@@ -1,0 +1,27 @@
+Picked up JAVA_TOOL_OPTIONS: -Duser.home=H:\ChatChatBar-Desktop\app\desktopApp\build\p11-gui-r1-windows-20261022\synthetic-home
+H:\ChatChatBar-Desktop\app\desktopApp\build\p11-gui-r1-windows-20261022\RestoreFixture.java:18: 错误: 不兼容的类型: try-with-resources 不适用于变量类型
+   try(var prepared=BuildersKt.runBlocking(EmptyCoroutineContext.INSTANCE,(s,c)->archive.inspect(Path.of(args[1]),"synthetic-unified-only".toCharArray(),c))) {
+           ^
+    (Object无法转换为AutoCloseable)
+H:\ChatChatBar-Desktop\app\desktopApp\build\p11-gui-r1-windows-20261022\RestoreFixture.java:19: 错误: 不兼容的类型: Object无法转换为Prepared
+    try(var plan=BuildersKt.runBlocking(EmptyCoroutineContext.INSTANCE,(s,c)->mapping.restore(prepared,c))) {
+                                                                                              ^
+H:\ChatChatBar-Desktop\app\desktopApp\build\p11-gui-r1-windows-20261022\RestoreFixture.java:19: 错误: 不兼容的类型: try-with-resources 不适用于变量类型
+    try(var plan=BuildersKt.runBlocking(EmptyCoroutineContext.INSTANCE,(s,c)->mapping.restore(prepared,c))) {
+            ^
+    (Object无法转换为AutoCloseable)
+H:\ChatChatBar-Desktop\app\desktopApp\build\p11-gui-r1-windows-20261022\RestoreFixture.java:20: 错误: 不兼容的类型: Object无法转换为Restore
+     BuildersKt.runBlocking(EmptyCoroutineContext.INSTANCE,(s,c)->mapping.verify(plan,c));
+                                                                                 ^
+H:\ChatChatBar-Desktop\app\desktopApp\build\p11-gui-r1-windows-20261022\RestoreFixture.java:22: 错误: 找不到符号
+     Map<String,String> old=new LinkedHashMap<>(); plan.getFiles().keySet().forEach(k->old.put(k,null));
+                                                       ^
+  符号:   方法 getFiles()
+  位置: 类型为Object的变量 plan
+H:\ChatChatBar-Desktop\app\desktopApp\build\p11-gui-r1-windows-20261022\RestoreFixture.java:23: 错误: 找不到符号
+     BuildersKt.runBlocking(EmptyCoroutineContext.INSTANCE,(s,c)->journal.schedule(plan.getFiles(),old,()->Unit.INSTANCE,c));
+                                                                                       ^
+  符号:   方法 getFiles()
+  位置: 类型为Object的变量 plan
+注: 某些消息已经过简化; 请使用 -Xdiags:verbose 重新编译以获得完整输出
+6 个错误

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopAutomaticBackupSettingsControllerTest" tests="15" skipped="0" failures="0" errors="0" timestamp="2026-10-18T11:01:23.798Z" hostname="DD1" time="0.221">
+  <properties/>
+  <testcase name="default disabled stopped and read-only construction observation" classname="com.example.chatbar.desktop.DesktopAutomaticBackupSettingsControllerTest" time="0.037"/>
+  <testcase name="unusual durations round trip through Apply without quantization" classname="com.example.chatbar.desktop.DesktopAutomaticBackupSettingsControllerTest" time="0.029"/>
+  <testcase name="maintenance mode rejected in controller even without UI observation update" classname="com.example.chatbar.desktop.DesktopAutomaticBackupSettingsControllerTest" time="0.005"/>
+  <testcase name="Apply request outlives settings composition scope without replay on reopen" classname="com.example.chatbar.desktop.DesktopAutomaticBackupSettingsControllerTest" time="0.015"/>
+  <testcase name="NEW and CLOSED neither initialize nor write on controller actions" classname="com.example.chatbar.desktop.DesktopAutomaticBackupSettingsControllerTest" time="0.006"/>
+  <testcase name="failed atomic save retains exact draft and old durable settings" classname="com.example.chatbar.desktop.DesktopAutomaticBackupSettingsControllerTest" time="0.017"/>
+  <testcase name="backup controller Apply preserves language and color latest owner updates" classname="com.example.chatbar.desktop.DesktopAutomaticBackupSettingsControllerTest" time="0.02"/>
+  <testcase name="corrupt invalid unsupported settings cannot be overwritten" classname="com.example.chatbar.desktop.DesktopAutomaticBackupSettingsControllerTest" time="0.022"/>
+  <testcase name="editing and reopening observation keep draft without writes or scheduler changes" classname="com.example.chatbar.desktop.DesktopAutomaticBackupSettingsControllerTest" time="0.005"/>
+  <testcase name="saved but scheduler start failure is not presented as Apply success" classname="com.example.chatbar.desktop.DesktopAutomaticBackupSettingsControllerTest" time="0.012"/>
+  <testcase name="invalid inputs cannot bypass controller Apply guard" classname="com.example.chatbar.desktop.DesktopAutomaticBackupSettingsControllerTest" time="0.007"/>
+  <testcase name="restart required rejects Apply and preserves draft" classname="com.example.chatbar.desktop.DesktopAutomaticBackupSettingsControllerTest" time="0.005"/>
+  <testcase name="busy rejects duplicate Apply edits and discard while real runtime drains execution" classname="com.example.chatbar.desktop.DesktopAutomaticBackupSettingsControllerTest" time="0.016"/>
+  <testcase name="discard uses actual runtime values without writes" classname="com.example.chatbar.desktop.DesktopAutomaticBackupSettingsControllerTest" time="0.004"/>
+  <testcase name="enable Apply starts real runtime and disable Apply stops it" classname="com.example.chatbar.desktop.DesktopAutomaticBackupSettingsControllerTest" time="0.02"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

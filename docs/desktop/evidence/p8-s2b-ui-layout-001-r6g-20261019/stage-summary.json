@@ -1,0 +1,31 @@
+[
+  {
+    "stage": "01-native-method",
+    "exitCode": 1,
+    "durationSeconds": 62.3695832,
+    "suiteCount": 1,
+    "totals": {
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "skipped": 0,
+      "reportedPass": 0
+    },
+    "suites": [
+      {
+        "name": "com.example.chatbar.desktop.DesktopFishPickerNativeUxTest",
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "c013ea1007a1bd44b054889bd38f85cfa133df08ea528f30b1bdaf6c990e1cf5"
+      }
+    ],
+    "resources": {
+      "sampleCount": 6,
+      "minAvailableBytes": 1033793536,
+      "minCommitHeadroomBytes": 12768600064,
+      "maxPagesPerSecond": 25307
+    }
+  }
+]

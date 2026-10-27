@@ -1,0 +1,36 @@
+{
+  "startedUtc": "2026-10-16T15:20:35.0942875+00:00",
+  "endedUtc": "2026-10-16T15:21:54.0627870+00:00",
+  "budgetSeconds": 180,
+  "reattached": [
+    {
+      "pid": 47052,
+      "createdUtc": "2026-10-16T15:09:53.9246453Z",
+      "path": "<PACKAGE_LOCAL>\\ordinary-image\\ChatChatBarDesktop.exe",
+      "windowHandle": 0,
+      "jvmLoaded": false,
+      "state": "REATTACHED_WITH_HANDLE"
+    },
+    {
+      "pid": 49636,
+      "createdUtc": "2026-10-16T15:10:00.3297532Z",
+      "path": "<PACKAGE_LOCAL>\\ordinary-image\\ChatChatBarDesktop.exe",
+      "windowHandle": 10028700,
+      "jvmLoaded": true,
+      "state": "REATTACHED_WITH_HANDLE"
+    }
+  ],
+  "results": [
+    {
+      "pid": 49636,
+      "exited": true,
+      "exitCode": 2
+    },
+    {
+      "pid": 47052,
+      "exited": true,
+      "exitCode": 2
+    }
+  ],
+  "noForceTermination": true
+}

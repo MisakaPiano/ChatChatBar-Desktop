@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.data.snapshot.AppDataSnapshotRestoreTest" tests="17" skipped="0" failures="0" errors="0" timestamp="2026-10-22T19:24:58.140Z" hostname="DD1" time="0.891">
+  <properties/>
+  <testcase name="post-commit cleanup failure retains restored state and returns warning" classname="com.example.chatbar.data.snapshot.AppDataSnapshotRestoreTest" time="0.256"/>
+  <testcase name="empty snapshot restore removes all active payload and preserves backup history" classname="com.example.chatbar.data.snapshot.AppDataSnapshotRestoreTest" time="0.043"/>
+  <testcase name="restore rejects external staging and restore workspace directories" classname="com.example.chatbar.data.snapshot.AppDataSnapshotRestoreTest" time="0.024"/>
+  <testcase name="partial active switch failure rolls back entries already moved to recovery" classname="com.example.chatbar.data.snapshot.AppDataSnapshotRestoreTest" time="0.064"/>
+  <testcase name="unsupported snapshot format is rejected without active mutation" classname="com.example.chatbar.data.snapshot.AppDataSnapshotRestoreTest" time="0.018"/>
+  <testcase name="restore workspace is excluded from snapshot listing" classname="com.example.chatbar.data.snapshot.AppDataSnapshotRestoreTest" time="0.013"/>
+  <testcase name="pre-restore safety snapshot failure leaves active payload unchanged" classname="com.example.chatbar.data.snapshot.AppDataSnapshotRestoreTest" time="0.017"/>
+  <testcase name="reserved backups payload is rejected before active mutation" classname="com.example.chatbar.data.snapshot.AppDataSnapshotRestoreTest" time="0.018"/>
+  <testcase name="symbolic link snapshot directory is rejected when fixture is supported" classname="com.example.chatbar.data.snapshot.AppDataSnapshotRestoreTest" time="0.013"/>
+  <testcase name="restored entity is readable by a new JsonFileStorage instance" classname="com.example.chatbar.data.snapshot.AppDataSnapshotRestoreTest" time="0.241"/>
+  <testcase name="missing snapshot payload file is rejected without active mutation" classname="com.example.chatbar.data.snapshot.AppDataSnapshotRestoreTest" time="0.015"/>
+  <testcase name="tampered snapshot hash is rejected without active mutation or transaction residue" classname="com.example.chatbar.data.snapshot.AppDataSnapshotRestoreTest" time="0.016"/>
+  <testcase name="malformed snapshot manifest is rejected without active mutation" classname="com.example.chatbar.data.snapshot.AppDataSnapshotRestoreTest" time="0.015"/>
+  <testcase name="restore preserves live root ownership lock and accepts it during installed validation" classname="com.example.chatbar.data.snapshot.AppDataSnapshotRestoreTest" time="0.032"/>
+  <testcase name="empty snapshot restore preserves live root ownership lock" classname="com.example.chatbar.data.snapshot.AppDataSnapshotRestoreTest" time="0.024"/>
+  <testcase name="unsafe snapshot path is rejected without active mutation" classname="com.example.chatbar.data.snapshot.AppDataSnapshotRestoreTest" time="0.016"/>
+  <testcase name="restore replaces active payload preserves backups and creates safety snapshot" classname="com.example.chatbar.data.snapshot.AppDataSnapshotRestoreTest" time="0.064"/>
+  <system-out><![CDATA[POST_COMMIT_CLEANUP_FAILURE_FIXTURE_SUPPORTED
+POST_MUTATION_ROLLBACK_FIXTURE_SUPPORTED
+RESTORE_SYMLINK_FIXTURE_UNAVAILABLE
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

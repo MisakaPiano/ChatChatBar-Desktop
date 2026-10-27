@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.card.SharedImportClassifierCoreTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-19T11:35:06.573Z" hostname="DD1" time="0.013">
+  <properties/>
+  <testcase name="manualTargetUsesStrictDecoder" classname="com.example.chatbar.domain.card.SharedImportClassifierCoreTest" time="0.004"/>
+  <testcase name="classifiesChatBarAndSillyTavernPngBeforePlainImage" classname="com.example.chatbar.domain.card.SharedImportClassifierCoreTest" time="0.003"/>
+  <testcase name="ordinaryNovelAiAndGifMetadataRemainImageActions" classname="com.example.chatbar.domain.card.SharedImportClassifierCoreTest" time="0.0"/>
+  <testcase name="classifiesSharedChatBarPackagesAndTypedModelExtension" classname="com.example.chatbar.domain.card.SharedImportClassifierCoreTest" time="0.004"/>
+  <testcase name="classifiesSillyTavernWorldInfoObjectAndArrayEntries" classname="com.example.chatbar.domain.card.SharedImportClassifierCoreTest" time="0.001"/>
+  <testcase name="bomAmbiguityInvalidPayloadAndForeignTextKeepExistingClassification" classname="com.example.chatbar.domain.card.SharedImportClassifierCoreTest" time="0.0"/>
+  <testcase name="classifiesSillyTavernV1AndV2Characters" classname="com.example.chatbar.domain.card.SharedImportClassifierCoreTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

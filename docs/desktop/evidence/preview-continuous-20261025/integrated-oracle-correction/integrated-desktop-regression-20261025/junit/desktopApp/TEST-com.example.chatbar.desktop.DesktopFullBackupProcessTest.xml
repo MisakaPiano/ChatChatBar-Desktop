@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopFullBackupProcessTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-25T02:30:41.988Z" hostname="DD1" time="5.202">
+  <properties/>
+  <testcase name="separate JVM schedules then fresh JVM restores with old snapshot retained" classname="com.example.chatbar.desktop.DesktopFullBackupProcessTest" time="2.312"/>
+  <testcase name="hard process exit during apply is rolled back by independent JVM" classname="com.example.chatbar.desktop.DesktopFullBackupProcessTest" time="1.757"/>
+  <testcase name="fresh process rejects changed journal evidence retaining live and source bytes" classname="com.example.chatbar.desktop.DesktopFullBackupProcessTest" time="1.133"/>
+  <system-out><![CDATA[synthetic-child mode=schedule pid=49480 exit=0 alive=false
+synthetic-child mode=recover pid=52260 exit=0 alive=false
+synthetic-child mode=recover pid=49512 exit=0 alive=false
+synthetic-child mode=schedule pid=52676 exit=0 alive=false
+synthetic-child mode=crash-during-apply pid=49932 exit=71 alive=false
+synthetic-child mode=recover pid=53732 exit=0 alive=false
+synthetic-child mode=schedule pid=47388 exit=0 alive=false
+synthetic-child mode=reject pid=50252 exit=0 alive=false
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

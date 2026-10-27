@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.desktop.DesktopPortableRootTest" tests="16" skipped="0" failures="0" errors="0" timestamp="2026-10-17T12:06:16.829Z" hostname="DD1" time="0.24">
+  <properties/>
+  <testcase name="marker directory is rejected" classname="com.example.chatbar.desktop.DesktopPortableRootTest" time="0.005"/>
+  <testcase name="missing UserData fails without creating it" classname="com.example.chatbar.desktop.DesktopPortableRootTest" time="0.005"/>
+  <testcase name="exact marker token with conventional line endings resolves existing UserData" classname="com.example.chatbar.desktop.DesktopPortableRootTest" time="0.018"/>
+  <testcase name="activation write failure is structured and cleans possible residue" classname="com.example.chatbar.desktop.DesktopPortableRootTest" time="0.009"/>
+  <testcase name="owned activation preserves write and cleanup failures without fallback" classname="com.example.chatbar.desktop.DesktopPortableRootTest" time="0.024"/>
+  <testcase name="explicit activation rejects replaced home marker or UserData identity without a probe" classname="com.example.chatbar.desktop.DesktopPortableRootTest" time="0.048"/>
+  <testcase name="moving complete portable image resolves moved UserData" classname="com.example.chatbar.desktop.DesktopPortableRootTest" time="0.008"/>
+  <testcase name="activation cleanup failure is reported with retained probe" classname="com.example.chatbar.desktop.DesktopPortableRootTest" time="0.008"/>
+  <testcase name="explicit activation refuses absent or released ownership and leaves first stage untouched" classname="com.example.chatbar.desktop.DesktopPortableRootTest" time="0.049"/>
+  <testcase name="wrong marker token fails without rewrite" classname="com.example.chatbar.desktop.DesktopPortableRootTest" time="0.005"/>
+  <testcase name="relative ApplicationHome is rejected without user dir fallback" classname="com.example.chatbar.desktop.DesktopPortableRootTest" time="0.001"/>
+  <testcase name="symbolic link marker and UserData are rejected when fixtures are available" classname="com.example.chatbar.desktop.DesktopPortableRootTest" time="0.013"/>
+  <testcase name="missing marker before activation and ownership loss during probe are refused" classname="com.example.chatbar.desktop.DesktopPortableRootTest" time="0.021"/>
+  <testcase name="no marker returns NoMarker without creating anything" classname="com.example.chatbar.desktop.DesktopPortableRootTest" time="0.003"/>
+  <testcase name="UserData file is rejected" classname="com.example.chatbar.desktop.DesktopPortableRootTest" time="0.005"/>
+  <testcase name="activation probe is flushed and removed" classname="com.example.chatbar.desktop.DesktopPortableRootTest" time="0.017"/>
+  <system-out><![CDATA[G1A_ACTIVATION ownership lock classified separately; no probe before explicit owned stage
+SYMLINK_FIXTURE_UNAVAILABLE
+SYMLINK_FIXTURE_UNAVAILABLE
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,155 @@
+{
+  "exitCode": 0,
+  "commandWallDurationSeconds": 663.1015345,
+  "gradleSelfReportedDuration": "10m 51s",
+  "tasks": [
+    {
+      "task": ":desktopApp:checkKotlinGradlePluginConfigurationErrors",
+      "status": "SKIPPED"
+    },
+    {
+      "task": ":desktopApp:convertXmlValueResourcesForMain",
+      "status": "NO-SOURCE"
+    },
+    {
+      "task": ":desktopApp:copyNonXmlValueResourcesForMain",
+      "status": "NO-SOURCE"
+    },
+    {
+      "task": ":desktopApp:prepareComposeResourcesTaskForMain",
+      "status": "NO-SOURCE"
+    },
+    {
+      "task": ":desktopApp:generateResourceAccessorsForMain",
+      "status": "SKIPPED"
+    },
+    {
+      "task": ":desktopApp:generateActualResourceCollectorsForMain",
+      "status": "SKIPPED"
+    },
+    {
+      "task": ":desktopApp:generateComposeResClass",
+      "status": "SKIPPED"
+    },
+    {
+      "task": ":sharedCore:checkKotlinGradlePluginConfigurationErrors",
+      "status": "SKIPPED"
+    },
+    {
+      "task": ":sharedCore:compileKotlin",
+      "status": "UP-TO-DATE"
+    },
+    {
+      "task": ":sharedCore:compileJava",
+      "status": "NO-SOURCE"
+    },
+    {
+      "task": ":sharedCore:processResources",
+      "status": "NO-SOURCE"
+    },
+    {
+      "task": ":sharedCore:classes",
+      "status": "UP-TO-DATE"
+    },
+    {
+      "task": ":sharedCore:jar",
+      "status": "UP-TO-DATE"
+    },
+    {
+      "task": ":desktopApp:compileKotlin",
+      "status": "EXECUTED"
+    },
+    {
+      "task": ":desktopApp:compileJava",
+      "status": "NO-SOURCE"
+    },
+    {
+      "task": ":desktopApp:assembleMainResources",
+      "status": "UP-TO-DATE"
+    },
+    {
+      "task": ":desktopApp:syncDesktopModelCatalogResources",
+      "status": "UP-TO-DATE"
+    },
+    {
+      "task": ":desktopApp:processResources",
+      "status": "UP-TO-DATE"
+    },
+    {
+      "task": ":desktopApp:classes",
+      "status": "UP-TO-DATE"
+    },
+    {
+      "task": ":desktopApp:jar",
+      "status": "EXECUTED"
+    },
+    {
+      "task": ":desktopApp:convertXmlValueResourcesForTest",
+      "status": "NO-SOURCE"
+    },
+    {
+      "task": ":desktopApp:copyNonXmlValueResourcesForTest",
+      "status": "NO-SOURCE"
+    },
+    {
+      "task": ":desktopApp:prepareComposeResourcesTaskForTest",
+      "status": "NO-SOURCE"
+    },
+    {
+      "task": ":desktopApp:generateResourceAccessorsForTest",
+      "status": "SKIPPED"
+    },
+    {
+      "task": ":sharedCore:compileTestFixturesKotlin",
+      "status": "UP-TO-DATE"
+    },
+    {
+      "task": ":sharedCore:compileTestFixturesJava",
+      "status": "NO-SOURCE"
+    },
+    {
+      "task": ":desktopApp:compileTestKotlin",
+      "status": "EXECUTED"
+    },
+    {
+      "task": ":desktopApp:compileTestJava",
+      "status": "NO-SOURCE"
+    },
+    {
+      "task": ":desktopApp:assembleTestResources",
+      "status": "UP-TO-DATE"
+    },
+    {
+      "task": ":desktopApp:processTestResources",
+      "status": "UP-TO-DATE"
+    },
+    {
+      "task": ":desktopApp:testClasses",
+      "status": "UP-TO-DATE"
+    },
+    {
+      "task": ":sharedCore:processTestFixturesResources",
+      "status": "NO-SOURCE"
+    },
+    {
+      "task": ":sharedCore:testFixturesClasses",
+      "status": "UP-TO-DATE"
+    },
+    {
+      "task": ":sharedCore:testFixturesJar",
+      "status": "UP-TO-DATE"
+    },
+    {
+      "task": ":desktopApp:test",
+      "status": "EXECUTED"
+    }
+  ],
+  "summary": "13 actionable tasks: 4 executed, 9 up-to-date",
+  "compileMain": "PASS EXECUTED",
+  "compileTest": "PASS EXECUTED",
+  "focusedTest": "PASS EXECUTED, known platform limitations retained",
+  "warnings": [
+    "Existing Kotlin deprecation/unnecessary-nullability warnings",
+    "Detected multiple Kotlin daemon sessions at (warning only; no Kotlin compiler daemon process observed in resource samples)"
+  ]
+}

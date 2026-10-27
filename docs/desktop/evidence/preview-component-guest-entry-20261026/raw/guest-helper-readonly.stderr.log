@@ -1,0 +1,9 @@
+Get-Item : Cannot find path 'H:\ChatChatBar-Desktop\app\desktopApp\build\preview-continuous-private-20261025\component-
+contract-real-msi-20261026-r01\handoff\ChatChatBarDesktopSynthetic-0.1.1102.msi' because it does not exist.
+At H:\ChatChatBar-Desktop\tools\desktop\windows\Invoke-Comp1FreshGuest.ps1:32 char:14
++         if ((Get-Item -LiteralPath $file -Force).PSIsContainer -or (G ...
++              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (H:\ChatChatBar-...ic-0.1.1102.msi:String) [Get-Item], ItemNotFoundExcep 
+   tion
+    + FullyQualifiedErrorId : PathNotFound,Microsoft.PowerShell.Commands.GetItemCommand
+ 

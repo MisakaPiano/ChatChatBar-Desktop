@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.chatbar.domain.card.StructuredCharacterFreeformConverterTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-17T18:32:19.917Z" hostname="DD1" time="0.001">
+  <properties/>
+  <testcase name="transition targets freeform mode" classname="com.example.chatbar.domain.card.StructuredCharacterFreeformConverterTest" time="0.001"/>
+  <testcase name="converts model-facing fields into readable sections" classname="com.example.chatbar.domain.card.StructuredCharacterFreeformConverterTest" time="0.0"/>
+  <testcase name="reports no convertible content for blank characters" classname="com.example.chatbar.domain.card.StructuredCharacterFreeformConverterTest" time="0.0"/>
+  <testcase name="excludes image and voice configuration fields" classname="com.example.chatbar.domain.card.StructuredCharacterFreeformConverterTest" time="0.0"/>
+  <testcase name="omits blank fields and preserves character order" classname="com.example.chatbar.domain.card.StructuredCharacterFreeformConverterTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

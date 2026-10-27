@@ -1,0 +1,24 @@
+{
+  "sourceCommit": "2368280a54f206b999cce6ba57eee8d7fb69be3a",
+  "parent": "6fb37e3a9ce9349436865d13db655e1f0628d630",
+  "files": [
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopDocumentIndexTransactionProcessTest.kt",
+      "blob": "c7aa2aeb9ea88727da8fa0710038d37bc7daab8b",
+      "sha256": "64388eca4fbc1a64088a45ca2390fc859088776941efb5293c8b808c6503fb80",
+      "bytes": 13385
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopDocumentIndexTransactionPrototype.kt",
+      "blob": "3949c39b7c2217074a3eca98ce41b0ca9d05db6b",
+      "sha256": "4e98b3f6137668435b9ab4229cd83779d45d232f7be767cc674be4ffd5c9462e",
+      "bytes": 28332
+    },
+    {
+      "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopDocumentIndexTransactionPrototypeTest.kt",
+      "blob": "dce9e9687e4cc2c30297c8cbdca2f369c150d3f6",
+      "sha256": "4b2058d2c019b46bea999cf86f9ae62396589fcda0ed22100112cec8ef1ceb13",
+      "bytes": 18271
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "onlyXmlWrittenAfterStageStart": true,
+  "files": [
+    "TEST-com.example.chatbar.desktop.DesktopChatVoicePresentationTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopChatVoiceRuntimeTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopR1LayoutMenuTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopR1ScreenshotTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopR1VoiceTest.xml",
+    "TEST-com.example.chatbar.desktop.DesktopResponsiveChatLayoutTest.xml"
+  ]
+}

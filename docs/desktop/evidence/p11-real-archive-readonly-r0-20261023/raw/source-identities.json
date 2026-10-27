@@ -1,0 +1,149 @@
+[
+  {
+    "revision": "5c7238e55ebbfb65ea5a78cad32d5437a598de43",
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupReadOnlyInspector.kt",
+    "gitBlob": "dfcab926b6d95670546f9f6b4650727c22ee8f5f",
+    "sha256": "4ed51222bfe4e3541d9ad52d08d1cec5cf76f39fc63bae1f4ae1b51eb72ec007",
+    "bytes": 18569
+  },
+  {
+    "revision": "5c7238e55ebbfb65ea5a78cad32d5437a598de43",
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/MomentArchiveReadOnlyValidator.kt",
+    "gitBlob": "64befc435e099dc9abedcbf670b087c0213206ed",
+    "sha256": "74c92bdf22eb7fac7dd404e5199869b74c79ff68e0d113ee9b766d72cfdcb658",
+    "bytes": 9660
+  },
+  {
+    "revision": "5c7238e55ebbfb65ea5a78cad32d5437a598de43",
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialSourceCensus.kt",
+    "gitBlob": "9bc54b7c8123418ee7c56694b935988fb2dab180",
+    "sha256": "fd82ad1db9e4279d8437d417c6a7533aafc9275f2af1eb9b8aa2438710ca3052",
+    "bytes": 10747
+  },
+  {
+    "revision": "5c7238e55ebbfb65ea5a78cad32d5437a598de43",
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/VerifiedCredentialSourceMetadata.kt",
+    "gitBlob": "560b6c65ccae78d4c17b4716a080f406e395ab0a",
+    "sha256": "6c1f1864e1282deaac31c659fe12204fbf99966d0ba24bbe4b9d2058c353dab9",
+    "bytes": 3716
+  },
+  {
+    "revision": "5c7238e55ebbfb65ea5a78cad32d5437a598de43",
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/AppBackupCodec.kt",
+    "gitBlob": "4fe9802dcb28be7983f61d0eb82aaf4fbb1d04f2",
+    "sha256": "835a8ef65b88a05957975826d3165fd3ba8d47959f188f48db3182e85e106a87",
+    "bytes": 6104
+  },
+  {
+    "revision": "5c7238e55ebbfb65ea5a78cad32d5437a598de43",
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopBackupPolicy.kt",
+    "gitBlob": "598322cc4b4716d74aad5db4a05c1799d278be8e",
+    "sha256": "786b1e62d86dc0086e5a4ad91d84102aab304053cb3bb765ac3ee068b841e603",
+    "bytes": 10654
+  },
+  {
+    "revision": "5c7238e55ebbfb65ea5a78cad32d5437a598de43",
+    "path": "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopArchiveFiles.kt",
+    "gitBlob": "2beafc3af0f87dff86aeed20a574e5e71a0e6600",
+    "sha256": "9b30360213add29a9beadebb474b5e5e93edba0f8585502688489a7b2c21b5ef",
+    "bytes": 3716
+  },
+  {
+    "revision": "5c7238e55ebbfb65ea5a78cad32d5437a598de43",
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/OfficialBackupWireFixtures.kt",
+    "gitBlob": "e1f3e5404c83e917dee5fa77ea5d143dd7b89241",
+    "sha256": "a0878ded598094f7a548371b9112d036a28052ade012e9bcddda56baf2576d37",
+    "bytes": 2871
+  },
+  {
+    "revision": "5c7238e55ebbfb65ea5a78cad32d5437a598de43",
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/Official147FixtureCodec.kt",
+    "gitBlob": "dc8786b16b685089ebae03125cdac96cad164774",
+    "sha256": "2ef369b19cff8b081b84e5d534dd1d89a0e69ebec01a15d5a3e27edbf7e3a688",
+    "bytes": 5657
+  },
+  {
+    "revision": "5c7238e55ebbfb65ea5a78cad32d5437a598de43",
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/CensusWireFixtures.kt",
+    "gitBlob": "ccf64cc39eaa119d19bc483b1371509a5ec86cdc",
+    "sha256": "99933fac67df0c724839a49ea0e4109d624d44a11f052582fe30b04a2a162655",
+    "bytes": 4569
+  },
+  {
+    "revision": "5c7238e55ebbfb65ea5a78cad32d5437a598de43",
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopBackupReadOnlyInspectorTest.kt",
+    "gitBlob": "a8be5d122da37cbf096127e33f464ea7412270d5",
+    "sha256": "164b615c43c3d8844e39d2d5c79b9708828dbeb04473c5eb0c831e4a855e7871",
+    "bytes": 27885
+  },
+  {
+    "revision": "5c7238e55ebbfb65ea5a78cad32d5437a598de43",
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopReadOnlyBackupRedTest.kt",
+    "gitBlob": "ecb3bf2d2080a6629b2ac1138584030af43e046a",
+    "sha256": "71723290402e5b7f651a5bdf3830a656415afbfca1275d0e599f695d0b7faa5c",
+    "bytes": 826
+  },
+  {
+    "revision": "5c7238e55ebbfb65ea5a78cad32d5437a598de43",
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/MomentArchiveReadOnlyValidatorTest.kt",
+    "gitBlob": "34e293174549b77b71513946486244980346b0ca",
+    "sha256": "b320017ce6138d7e634962d9bc8a6672135d5bc029185a73768c53d94760db10",
+    "bytes": 25350
+  },
+  {
+    "revision": "5c7238e55ebbfb65ea5a78cad32d5437a598de43",
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialSourceCensusTest.kt",
+    "gitBlob": "39f5d2c07dc61e719365d287acef24a0a959c8e8",
+    "sha256": "2b96b9661723df4a7672825f91a2a848bcf8646e1d1d45ad620c1e526907d9d8",
+    "bytes": 24345
+  },
+  {
+    "revision": "5c7238e55ebbfb65ea5a78cad32d5437a598de43",
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/DesktopCredentialImportPlanTest.kt",
+    "gitBlob": "9dde23a13f12105ef039d3d84dd4829b53b12920",
+    "sha256": "100c96524d0bdf73f1c7518ae4503b10337338cd78ba83761323288e8b693038",
+    "bytes": 12644
+  },
+  {
+    "revision": "5c7238e55ebbfb65ea5a78cad32d5437a598de43",
+    "path": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopFullBackupArchiveTest.kt",
+    "gitBlob": "bbdb7d3ac0c093ac81f8858348cfa7082a221791",
+    "sha256": "2ae9129d26eaa196b06b9743c5486015abb11764f90b3c0bf9e3b03ef24e357f",
+    "bytes": 12266
+  },
+  {
+    "revision": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+    "path": ".agents/skills/chatbar-app-backup/SKILL.md",
+    "gitBlob": "dfaeff183ae30ac2e9c54e77b9fef6bd8ab835d8",
+    "sha256": "bce40aafdc472529f8ce6ed37dd6aff036b8329dbdc02ed524a90e338958bbe9",
+    "bytes": 4348
+  },
+  {
+    "revision": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+    "path": "app/app/build.gradle.kts",
+    "gitBlob": "dd96dce807d8af29450a62e548c32c481f8f1a8e",
+    "sha256": "a0a31a8e693f156462bf0b90d51c6ac9e40cdc5a7b71a264b9d2cc59c7f81929",
+    "bytes": 7123
+  },
+  {
+    "revision": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/backup/AppBackupModels.kt",
+    "gitBlob": "d6e256dd3b892f570674166b5274acba492dc9b7",
+    "sha256": "143aad7e31a86d3034ecdf10acb5db2bf925a755e361d60c890848d4914ec9de",
+    "bytes": 1652
+  },
+  {
+    "revision": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/backup/AppBackupCodec.kt",
+    "gitBlob": "3efc2601a09923a9583cf891c88c100dca58d75c",
+    "sha256": "216940b7d2b080ec1ffccd1e7792f90edc90f7cdc8195056050f5fade08ae8fa",
+    "bytes": 5432
+  },
+  {
+    "revision": "1198a13cf3008de1358b8a69aa5e40b64797c8d9",
+    "path": "app/app/src/main/java/com/example/chatbar/domain/backup/BackupDataRegistry.kt",
+    "gitBlob": "cacf48ea9fe10cf407b34122080258f1cfbda98e",
+    "sha256": "470603ac9ca78d5d91fb2f5fee6a33f726c52f49a9310542def83f3a63b206a2",
+    "bytes": 2988
+  }
+]

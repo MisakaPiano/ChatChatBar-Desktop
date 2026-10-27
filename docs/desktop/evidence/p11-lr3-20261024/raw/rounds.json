@@ -1,0 +1,65 @@
+[
+  {
+    "round": "classified-green",
+    "suites": 4,
+    "tests": 22,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0,
+    "exit": "1"
+  },
+  {
+    "round": "combined-category-red",
+    "suites": 0,
+    "tests": 0,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "exit": "1"
+  },
+  {
+    "round": "combined-category-red-retry",
+    "suites": 1,
+    "tests": 1,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0,
+    "exit": "1"
+  },
+  {
+    "round": "final-green",
+    "suites": 4,
+    "tests": 31,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "exit": "0"
+  },
+  {
+    "round": "final-identity-green",
+    "suites": 4,
+    "tests": 31,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "exit": "0"
+  },
+  {
+    "round": "prepare-final",
+    "suites": 0,
+    "tests": 0,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "exit": "0"
+  },
+  {
+    "round": "semantic-red",
+    "suites": 1,
+    "tests": 10,
+    "failures": 5,
+    "errors": 0,
+    "skipped": 0,
+    "exit": "1"
+  }
+]

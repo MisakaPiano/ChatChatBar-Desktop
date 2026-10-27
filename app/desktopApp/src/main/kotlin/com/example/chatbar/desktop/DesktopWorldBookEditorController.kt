@@ -276,6 +276,17 @@ internal class DesktopWorldBookEditorController(
         })
     }
 
+    /** One draft edit, keyed by stable identity; never mutate an open entry modal's source. */
+    fun setEntriesEnabled(ids: Set<String>, enabled: Boolean) {
+        if (ids.isEmpty() || mutableState.value.modal != null) return
+        edit { book ->
+            if (book.entries.none { it.id in ids && it.enabled != enabled }) book
+            else book.copy(entries = book.entries.map { entry ->
+                if (entry.id in ids && entry.enabled != enabled) entry.copy(enabled = enabled) else entry
+            })
+        }
+    }
+
     fun importCharacters(cardId: String, characterIds: Set<String>): WorldBookCharacterImportResult? {
         val before = mutableState.value
         if (before.problem == WorldBookEditorProblem.SAVE_COMMITTED_WARNING) return null
