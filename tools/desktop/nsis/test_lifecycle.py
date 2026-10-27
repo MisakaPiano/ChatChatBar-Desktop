@@ -288,6 +288,27 @@ class Lifecycle(unittest.TestCase):
         self.assertEqual(1, len(logs))
         self.assertIn('READY ' + first, logs[0].read_text(encoding='utf-8'))
 
+    def test_new_program_directory_has_private_write_permissions(self):
+        command = r'''
+$ErrorActionPreference='Stop'
+$acl=[IO.Directory]::GetAccessControl($env:CCB_TEST_PROGRAM_ROOT)
+$me=[Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+$trusted=@($me,'S-1-5-18','S-1-5-32-544')
+$rules=$acl.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier])
+$other=@($rules | Where-Object {$_.AccessControlType -eq [Security.AccessControl.AccessControlType]::Allow -and $_.IdentityReference.Value -notin $trusted -and ($_.FileSystemRights -band ([Security.AccessControl.FileSystemRights]::WriteData -bor [Security.AccessControl.FileSystemRights]::Delete -bor [Security.AccessControl.FileSystemRights]::ChangePermissions)) -ne 0})
+$self=@($rules | Where-Object {$_.IdentityReference.Value -eq $me -and $_.AccessControlType -eq [Security.AccessControl.AccessControlType]::Allow -and ($_.FileSystemRights -band [Security.AccessControl.FileSystemRights]::FullControl) -eq [Security.AccessControl.FileSystemRights]::FullControl})
+@{protected=$acl.AreAccessRulesProtected;otherWriteGrants=$other.Count;currentUserFullControl=($self.Count -gt 0)} | ConvertTo-Json -Compress
+'''
+        env = dict(os.environ, CCB_TEST_PROGRAM_ROOT=str(self.root))
+        env['PSModulePath'] = str(Path(os.environ.get('WINDIR', 'C:/Windows')) / 'System32/WindowsPowerShell/v1.0/Modules')
+        result = subprocess.run(['powershell.exe', '-NoProfile', '-Command', command], env=env,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)
+        self.assertEqual(0, result.returncode, result.stderr.decode('utf-8', errors='replace'))
+        permissions = json.loads(result.stdout.decode('utf-8-sig'))
+        self.assertTrue(permissions['protected'])
+        self.assertTrue(permissions['currentUserFullControl'])
+        self.assertEqual(0, permissions['otherWriteGrants'])
+
 
 if __name__ == '__main__':
     unittest.main()

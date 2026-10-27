@@ -12,6 +12,8 @@ using System.Windows.Forms;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 using Microsoft.Win32;
+using System.Security.AccessControl;
+using System.Security.Principal;
 
 internal static class Launcher {
 #if SYNTHETIC
@@ -115,6 +117,18 @@ internal static class Launcher {
         try { using (var m = Mutex.OpenExisting("Local\\" + Registration + "-Extraction")) return true; }
         catch (WaitHandleCannotBeOpenedException) { return false; }
     }
+    static void SecureNewProgramDirectory() {
+        // Only the newly selected empty program directory; never alter a data root or its parent.
+        var security = new DirectorySecurity();
+        security.SetAccessRuleProtection(true, false);
+        var inheritance = InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit;
+        foreach (var sid in new[] { WindowsIdentity.GetCurrent().User,
+            new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null),
+            new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null) })
+            security.AddAccessRule(new FileSystemAccessRule(sid, FileSystemRights.FullControl,
+                inheritance, PropagationFlags.None, AccessControlType.Allow));
+        Directory.SetAccessControl(Root, security);
+    }
     static bool Overlaps(string a, string b) {
         a = Path.GetFullPath(a).TrimEnd('\\'); b = Path.GetFullPath(b).TrimEnd('\\');
         return String.Equals(a, b, StringComparison.OrdinalIgnoreCase) ||
@@ -153,7 +167,7 @@ internal static class Launcher {
         Require(drive.AvailableFreeSpace > requiredSpace, "INSTALL_SPACE_REQUIRED");
         using (File.Open(LogPath(), FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read)) {}
         if (Directory.Exists(Root) && Directory.EnumerateFileSystemEntries(Root).Any()) Owned();
-        else { Directory.CreateDirectory(Root); Atomic(Path.Combine(Root, "install-owner.txt"), Product); }
+        else { Directory.CreateDirectory(Root); SecureNewProgramDirectory(); Atomic(Path.Combine(Root, "install-owner.txt"), Product); }
         // A new installer may not silently replace an incompatible stable entry point.
         var stable = Path.Combine(Root, "ChatChatBar.exe");
         var resourceReceipt = Path.Combine(Root, "generated-resources.json");
