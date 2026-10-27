@@ -1,0 +1,23 @@
+{
+  "existingIssuedPair": [
+    {
+      "version": "0.1.1112",
+      "sourceSha256": "5b2f58f9f722ac3f962d28a74d71ae7a591755c0c669c81a25cf57a3c1237e79",
+      "files": 216,
+      "shortcutResources": 0,
+      "verified": true
+    },
+    {
+      "version": "0.1.1113",
+      "sourceSha256": "ab80cf68ba82c42af2ea4a61c8ccdca4d30b79f74db6ae12925ae59e892ebf8e",
+      "files": 216,
+      "shortcutResources": 0,
+      "verified": true
+    }
+  ],
+  "sourceFilesUnchanged": true,
+  "currentOrdinaryComponentAdmission": "COMPONENT_ATTRIBUTES_OR_CONDITION_UNSUPPORTED",
+  "nativeShortcutAdapter": "UNIMPLEMENTED_FAIL_CLOSED",
+  "nativeSourceModified": false,
+  "installerExecuted": false
+}

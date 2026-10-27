@@ -1,0 +1,9 @@
+{
+  "rawSha256": "eafeaf810271ff002495f243578e9e3e95f31af946992edd4b22859b9f6b278d",
+  "rawBytes": 262144,
+  "blockedSha256": "20ac382da7f91f91159221947242757d81dff0bbd54ff2cf56db1aa41abb8d1c",
+  "blockedBytes": 262144,
+  "allFiveEntrySequencesBlockedAt1": true,
+  "metadataOnly": true,
+  "installerExecuted": false
+}

@@ -1,0 +1,13 @@
+{
+  "tests": 37,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "suites": 5,
+  "installerExecuted": false,
+  "liveRegistryOrInstallerSessionCalled": true,
+  "restrictedInstallerSessionOnly": true,
+  "installerOrProductMutationExecuted": false,
+  "nativeReadOnlyFileAndMetadataChecks": true,
+  "exit": 0
+}

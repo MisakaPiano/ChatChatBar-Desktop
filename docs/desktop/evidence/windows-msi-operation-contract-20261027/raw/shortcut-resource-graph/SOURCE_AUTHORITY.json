@@ -1,0 +1,21 @@
+{
+  "jdk": "C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.20.101-hotspot",
+  "entry": "jdk.jpackage/jdk/jpackage/internal/WixAppImageFragmentBuilder.java",
+  "entryBytes": 32655,
+  "entrySha256": "fd3cadd36a59f6aaf2e12b0ae8633808f33174a04369e8c9162f8ffe97b9d409",
+  "fixtureImageFiles": [
+    {
+      "path": "ChatChatBarDesktop.exe",
+      "bytes": 42,
+      "sha256": "630f52425d0d7181147f596a9f6d963240e4bb1353782b143256fa669bd9ce1b"
+    },
+    {
+      "path": "app\\.jpackage.xml",
+      "bytes": 199,
+      "sha256": "23b274925cc1cd501655ddef1cbc3826e698429431f27e197b8663b1b734ca36"
+    }
+  ],
+  "fixtureOnly": true,
+  "realApplicationPayload": false,
+  "installerExecuted": false
+}

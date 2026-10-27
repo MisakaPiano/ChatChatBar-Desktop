@@ -1,0 +1,51 @@
+test_arguments_working_directory_and_extra_shortcut_fields_refuse (test_msi_shortcut_resource_graph.ShortcutResourceGraph) ... ok
+test_desktop_or_programs_root_is_never_an_empty_directory_remove_target (test_msi_shortcut_resource_graph.ShortcutResourceGraph) ... ok
+test_empty_directory_removal_never_becomes_file_or_wildcard_cleanup (test_msi_shortcut_resource_graph.ShortcutResourceGraph) ... ok
+test_external_component_needs_its_exact_shortcut_and_choice (test_msi_shortcut_resource_graph.ShortcutResourceGraph) ... ok
+test_external_create_folder_is_not_implicitly_permitted (test_msi_shortcut_resource_graph.ShortcutResourceGraph) ... ok
+test_fixed_jdk_optional_shortcuts_are_separate_from_program_directories (test_msi_shortcut_resource_graph.ShortcutResourceGraph) ... FAIL
+test_menu_leaf_remove_requires_that_leafs_own_shortcut_component (test_msi_shortcut_resource_graph.ShortcutResourceGraph) ... ok
+test_name_and_menu_leaf_are_fixed_to_product_identity (test_msi_shortcut_resource_graph.ShortcutResourceGraph) ... ok
+test_nested_or_desktop_menu_branch_is_not_a_known_menu_leaf (test_msi_shortcut_resource_graph.ShortcutResourceGraph) ... ok
+test_program_payload_may_not_be_owned_by_external_shortcut_component (test_msi_shortcut_resource_graph.ShortcutResourceGraph) ... ok
+test_shortcut_target_must_be_the_declared_main_launcher (test_msi_shortcut_resource_graph.ShortcutResourceGraph) ... ok
+test_synthetic_profile_still_cannot_acquire_ordinary_links (test_msi_shortcut_resource_graph.ShortcutResourceGraph) ... FAIL
+test_unknown_component_condition_or_condition_on_program_file_refuses (test_msi_shortcut_resource_graph.ShortcutResourceGraph) ... ok
+test_unknown_resource_family_still_fails_closed (test_msi_shortcut_resource_graph.ShortcutResourceGraph) ... ok
+
+======================================================================
+FAIL: test_fixed_jdk_optional_shortcuts_are_separate_from_program_directories (test_msi_shortcut_resource_graph.ShortcutResourceGraph)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_shortcut_resource_graph.py", line 21, in test_fixed_jdk_optional_shortcuts_are_separate_from_program_directories
+    data=fixture();graph=self.graph(data)
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_shortcut_resource_graph.py", line 14, in graph
+    def graph(self,data):return m.operation_resource_graph(data['tables'],data['properties'])
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\msi_safety.py", line 81, in operation_resource_graph
+    else: path(key)
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\msi_safety.py", line 73, in path
+    parent = path(row[1], (*stack, key))
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\msi_safety.py", line 73, in path
+    parent = path(row[1], (*stack, key))
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\msi_safety.py", line 73, in path
+    parent = path(row[1], (*stack, key))
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\msi_safety.py", line 70, in path
+    assert key not in stack and key in directories and len(stack) < 64, "DIRECTORY_GRAPH_INVALID"
+AssertionError: DIRECTORY_GRAPH_INVALID
+
+======================================================================
+FAIL: test_synthetic_profile_still_cannot_acquire_ordinary_links (test_msi_shortcut_resource_graph.ShortcutResourceGraph)
+----------------------------------------------------------------------
+AssertionError: DIRECTORY_GRAPH_INVALID
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "H:\ChatChatBar-Desktop\tools\desktop\windows\test_msi_shortcut_resource_graph.py", line 71, in test_synthetic_profile_still_cannot_acquire_ordinary_links
+    with self.assertRaisesRegex(AssertionError,'SYNTHETIC_SHORTCUT_REFUSED'):self.graph(data)
+AssertionError: "SYNTHETIC_SHORTCUT_REFUSED" does not match "DIRECTORY_GRAPH_INVALID"
+
+----------------------------------------------------------------------
+Ran 14 tests in 0.012s
+
+FAILED (failures=2)

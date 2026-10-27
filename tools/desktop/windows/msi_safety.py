@@ -59,7 +59,8 @@ def operation_resource_graph(tables, properties):
         assert name and name not in (".", "..") and not re.search(r'[\\/:*?"<>|\x00-\x1f%\[\]]', name) and name[-1] not in ". ", "RESOURCE_NAME_UNSUPPORTED"
         assert not re.fullmatch(r"(?i)(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\..*)?", name), "RESOURCE_DEVICE_NAME"
         return name
-    directories = unique("Directory"); components = unique("Component")
+    directories = unique("Directory"); components = unique("Component"); shortcuts = unique("Shortcut")
+    assert properties["ProductName"] != PRODUCTS["synthetic"][0] or not shortcuts, "SYNTHETIC_SHORTCUT_REFUSED"
     assert 1 < len(components) <= 1024 and "INSTALLDIR" in directories, "RESOURCE_COMPONENT_OR_ROOT_MISSING"
     assert directories["TARGETDIR"] == ["TARGETDIR", "", "SourceDir"]
     assert directories["LocalAppDataFolder"] == ["LocalAppDataFolder", "TARGETDIR", "."]
@@ -74,17 +75,33 @@ def operation_resource_graph(tables, properties):
         paths[key] = parent + ("\\" if parent else "") + segment(row[2])
         return paths[key]
     external = {"DesktopFolder", "ProgramMenuFolder"}
+    shortcut_directories = {}
+    for key, row in directories.items():
+        if key == "DesktopFolder":
+            shortcut_directories[key] = {"knownFolder": "DesktopFolder", "relative": ""}
+        elif row[1] == "ProgramMenuFolder":
+            assert shortcuts and segment(row[2]) == properties["ProductName"], "MENU_LEAF_IDENTITY_UNSUPPORTED"
+            shortcut_directories[key] = {"knownFolder": "ProgramMenuFolder", "relative": properties["ProductName"]}
     for key in directories:
         if key in ("TARGETDIR", "LocalAppDataFolder"): continue
         if key in external:
             assert directories[key][1:] == ["TARGETDIR", "."], "SHORTCUT_DIRECTORY_UNSUPPORTED"
+        elif key in shortcut_directories: continue
         else: path(key)
     assert len({v.casefold() for v in paths.values()}) == len(paths), "DIRECTORY_ALIAS_COLLISION"
-    assert all(r[2] in paths for r in components.values()), "COMPONENT_DIRECTORY_UNSUPPORTED"
+    choices = {"DesktopFolder": "JP_INSTALL_DESKTOP_SHORTCUT", "ProgramMenuFolder": "JP_INSTALL_STARTMENU_SHORTCUT"}
+    for row in components.values():
+        assert row[3] == "260", "COMPONENT_ATTRIBUTES_UNSUPPORTED"
+        if row[2] in paths:
+            assert not row[4], "PROGRAM_COMPONENT_CONDITION_UNSUPPORTED"
+        else:
+            assert row[2] in shortcut_directories, "COMPONENT_DIRECTORY_UNSUPPORTED"
+            assert row[4] == choices[shortcut_directories[row[2]]["knownFolder"]], "SHORTCUT_CHOICE_UNSUPPORTED"
     assert all(not p or p.split("\\")[0].casefold() not in ("userdata", "portable.flag") for p in paths.values()), "PORTABLE_DATA_RESOURCE_REFUSED"
     files = unique("File"); targets = {}
     for key, row in files.items():
         assert row[1] in components, "FILE_OWNER_UNKNOWN"
+        assert components[row[1]][2] in paths, "PROGRAM_FILE_EXTERNAL_OWNER"
         base = paths[components[row[1]][2]]
         target = base + ("\\" if base else "") + segment(row[2])
         assert target.casefold() not in {v.casefold() for v in targets.values()}, "FILE_TARGET_COLLISION"
@@ -97,15 +114,26 @@ def operation_resource_graph(tables, properties):
     assert len({tuple(r) for r in mapping}) == len(mapping) and all(r[0] in features and r[1] in components for r in mapping), "FEATURE_MAP_INVALID"
     assert {r[1] for r in mapping} == set(components), "FEATURE_COMPONENT_CLOSURE_INCOMPLETE"
     for row in tables.get("RemoveFile", []):
-        assert row[1] in components and not row[2] and row[3] in paths and row[4] == "2", "REMOVE_TARGET_UNSUPPORTED"
+        assert row[1] in components and not row[2] and row[4] == "2", "REMOVE_TARGET_UNSUPPORTED"
+        assert components[row[1]][2] == row[3], "REMOVE_COMPONENT_DIRECTORY_MISMATCH"
+        assert row[3] in paths or (row[3] in shortcut_directories and shortcut_directories[row[3]]["knownFolder"] == "ProgramMenuFolder"), "REMOVE_TARGET_UNSUPPORTED"
     for row in tables.get("CreateFolder", []):
-        assert row[0] in paths and row[1] in components, "CREATE_FOLDER_UNSUPPORTED"
-    shortcuts = unique("Shortcut")
-    assert properties["ProductName"] != PRODUCTS["synthetic"][0] or not shortcuts, "SYNTHETIC_SHORTCUT_REFUSED"
-    for row in shortcuts.values():
-        assert row[1] in external and row[3] in components and row[4] in ("[#" + k + "]" for k in files), "SHORTCUT_TARGET_UNSUPPORTED"
-        assert not row[5] and row[11] == "INSTALLDIR" and not any(row[12:]), "SHORTCUT_ARGUMENTS_OR_ADVERTISEMENT_UNSUPPORTED"
-        segment(row[2])
+        assert row[0] in paths and row[1] in components and components[row[1]][2] == row[0], "CREATE_FOLDER_UNSUPPORTED"
+    shortcut_graph = {}
+    for key, row in shortcuts.items():
+        assert row[1] in shortcut_directories and row[3] in components and components[row[3]][2] == row[1], "SHORTCUT_COMPONENT_OWNER_UNSUPPORTED"
+        match = re.fullmatch(r"\[#([A-Za-z_][A-Za-z0-9_.]{0,71})\]", row[4])
+        assert match and targets.get(match[1]) == properties["ProductName"] + ".exe", "SHORTCUT_TARGET_UNSUPPORTED"
+        assert not any(row[5:11]) and row[11] == "INSTALLDIR" and not any(row[12:]), "SHORTCUT_ARGUMENTS_OR_ADVERTISEMENT_UNSUPPORTED"
+        assert segment(row[2]) == properties["ProductName"], "SHORTCUT_NAME_IDENTITY_UNSUPPORTED"
+        shortcut_graph[key] = {"directory": row[1], "name": properties["ProductName"] + ".lnk", "targetFile": match[1],
+                               "component": row[3], "choiceProperty": components[row[3]][4]}
+    external_components = {r[0] for r in components.values() if r[2] not in paths}
+    assert external_components == {r["component"] for r in shortcut_graph.values()}, "SHORTCUT_COMPONENT_CLOSURE_INCOMPLETE"
+    if shortcuts:
+        assert len(shortcuts) == 2 and len({r["directory"] for r in shortcut_graph.values()}) == 2, "FIXED_SHORTCUT_SET_REQUIRED"
+        assert {shortcut_directories[r["directory"]]["knownFolder"] for r in shortcut_graph.values()} == external, "FIXED_SHORTCUT_SET_REQUIRED"
+        assert set(shortcut_directories) == {r["directory"] for r in shortcut_graph.values()}, "UNUSED_SHORTCUT_DIRECTORY_REFUSED"
     assert not tables.get("MsiShortcutProperty"), "SHORTCUT_PROPERTY_UNSUPPORTED"
     searches = unique("AppSearch"); locators = unique("RegLocator")
     assert not tables.get("Signature") and {r[1] for r in searches.values()} == set(locators), "SEARCH_GRAPH_UNSUPPORTED"
@@ -117,7 +145,7 @@ def operation_resource_graph(tables, properties):
     assert {tuple(r[1:]) for r in upgrades} == {( "", properties["ProductVersion"], "", "257", "", "JP_UPGRADABLE_FOUND"),
         (properties["ProductVersion"], "", "", "1", "", "JP_DOWNGRADABLE_FOUND")}, "UPGRADE_RANGE_UNSUPPORTED"
     assert all(r[0].upper() == properties["UpgradeCode"].upper() for r in upgrades), "UPGRADE_FAMILY_UNSUPPORTED"
-    return {"directories": paths, "files": targets}
+    return {"directories": paths, "files": targets, "shortcutDirectories": shortcut_directories, "shortcuts": shortcut_graph}
 
 
 def operation_tables(db):

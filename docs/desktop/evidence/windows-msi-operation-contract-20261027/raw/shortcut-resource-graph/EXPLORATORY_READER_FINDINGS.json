@@ -1,0 +1,8 @@
+{
+  "findings": {
+    "extraDirectoryChooserCurrentReaderRefusal": "RESOURCE_TABLE_UNSUPPORTED:ListBox",
+    "defaultVendorCurrentGraphRefusal": "SEARCH_OWNER_UNSUPPORTED"
+  },
+  "installerExecuted": false,
+  "notAdditionalJUnitTests": true
+}

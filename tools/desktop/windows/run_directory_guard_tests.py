@@ -41,7 +41,7 @@ class Results(unittest.TextTestResult):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--evidence", type=Path, required=True)
-    parser.add_argument("--module", action="append", choices=("test_msi_directory_guard", "test_native_probe_validation", "test_msi_component_contract", "test_package_resource_admission", "test_msi_operation_contract", "test_synthetic_write_fault"))
+    parser.add_argument("--module", action="append", choices=("test_msi_directory_guard", "test_native_probe_validation", "test_msi_component_contract", "test_package_resource_admission", "test_msi_operation_contract", "test_synthetic_write_fault", "test_msi_shortcut_resource_graph"))
     args = parser.parse_args()
     evidence = args.evidence.resolve()
     assert evidence.is_dir() and not (evidence / "RESULT.json").exists()
