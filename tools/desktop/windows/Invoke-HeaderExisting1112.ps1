@@ -15,7 +15,13 @@ $guestPath=Join-Path $PSScriptRoot 'HeaderExisting1112Guest.ps1'
 $policy=Get-Content -LiteralPath (Join-Path $PSScriptRoot 'BASELINE_EXPECTED.json') -Raw|ConvertFrom-Json
 $commonCode=Get-Content -LiteralPath $commonPath -Raw
 $guestCode=Get-Content -LiteralPath $guestPath -Raw
-$report=Invoke-Existing1112HostFlow $commonCode $guestCode $policy $ProbeGuestDirectory $OriginalGuestDirectory ([bool]$ExecuteOnce) ([bool]$ConfirmInstallerInternalWrites)
-$report|ConvertTo-Json -Depth 16
-if($report.status -eq 'HOST_OR_GUEST_STOP_PRESERVE_NO_RETRY'){exit 2}
-exit 0
+try{
+    $report=Invoke-Existing1112HostFlow $commonCode $guestCode $policy $ProbeGuestDirectory $OriginalGuestDirectory ([bool]$ExecuteOnce) ([bool]$ConfirmInstallerInternalWrites)
+    if($report.succeeded -isnot [bool]){throw 'HOST_REPORT_SUCCESS_FLAG_INVALID'}
+    $report|ConvertTo-Json -Depth 18
+    if(-not $report.succeeded){exit 2}
+    exit 0
+}catch{
+    @{status='ENTRY_STOP_PRESERVE_NO_RETRY';succeeded=$false;error=[string]$_.Exception.Message}|ConvertTo-Json -Depth 4
+    exit 2
+}

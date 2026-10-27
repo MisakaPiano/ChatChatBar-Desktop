@@ -30,8 +30,8 @@ function Refuses([scriptblock]$Body,[string]$Prefix){
     throw ('DID_NOT_REFUSE_'+$Prefix)
 }
 function Absent-Native {
-    return @{products=@(@{unmanaged='ABSENT';managed='ABSENT';machine='ABSENT';feature=-1},
-                       @{unmanaged='ABSENT';managed='ABSENT';machine='ABSENT';feature=-1});related=@()}
+    return @{products=@(@{product='{882AF0EF-CDB0-466F-93D9-3AC6D4F156DF}';unmanaged='ABSENT';managed='ABSENT';machine='ABSENT';feature=-1},
+                       @{product='{57CF060B-D0A1-3993-834A-15B88CB00D5D}';unmanaged='ABSENT';managed='ABSENT';machine='ABSENT';feature=-1});related=@()}
 }
 function Reset-Fakes {
     $script:caseNumber++;$script:root=Join-Path $Evidence ('case-'+$script:caseNumber)
@@ -65,6 +65,7 @@ function Reset-Fakes {
         vmName='CCB-MSI-Op1-1112-1113';vmState='Running';transport='New-PSSession-VMId';sessionInstanceId='11111111-2222-4333-8444-555555555555'}
     $script:free=[long]2GB;$script:nativeCalls=0;$script:activityCalls=0;$script:registrationCalls=0;$script:guestCalls=0
     $script:activityFailure=$false;$script:registrationFailure=$false;$script:busyAt=0;$script:activity='AVAILABLE'
+    $script:contextUnknown=$false
     $script:nativeExit=1603;$script:headerResult='PASS';$script:registrationConflict=$false
     $script:hostVmName='CCB-MSI-Op1-1112-1113';$script:hostVmState='Running';$script:hostVmId=$script:binding.vmId
     $script:hostFree=[long]3GB;$script:hostQueryFailure=$false;$script:networkConnected=$false
@@ -87,6 +88,7 @@ function Get-HeaderFileProof([string]$Path){
     return $real
 }
 function Get-HeaderGuest {$script:guestCalls++;return $script:guest}
+function Get-Existing1112AccountContext {return @{status=$(if($script:contextUnknown){'UNKNOWN'}else{'OBSERVED'});sid=$script:guest.sid;accountName='SYNTHETIC-WIN10\TEST';elevationType=3;isElevated=$false;integritySid='S-1-16-8192';integrityRid=8192;impersonationLevel='None'}}
 function Get-Existing1112FreeBytes([string]$Path){return $script:free}
 function Get-Existing1112InstallerActivity {
     $script:activityCalls++
@@ -105,6 +107,11 @@ function Execute {return (Invoke-Existing1112Diagnostic $script:source $script:o
 
 try{
 Case 'valid-readonly-preflight-does-not-create-output-or-run-msi' {$r=Preflight;Equal $r.mode 'EXISTING_1112_FAILURE_HEADER_ONLY';Equal $script:nativeCalls 0;Equal (Test-Path -LiteralPath $r.output) $false}
+Case 'current-token-recorded-without-claiming-original-or-ca-equivalence' {
+    $r=New-Existing1112Receipt (Preflight) $false;Equal $r.accountContext.sid $script:guest.sid;Equal $r.accountContext.integrityRid 8192
+    Equal $r.contextEquivalence 'UNKNOWN';Equal $r.caContext.status 'NOT_OBSERVED';Equal $r.caContext.sid $null
+}
+Case 'unknown-current-token-refuses-before-installation' {$script:contextUnknown=$true;Refuses {Preflight} 'CURRENT_ACCOUNT_CONTEXT_UNKNOWN_OR_SID_MISMATCH';Equal $script:nativeCalls 0}
 Case 'wrong-vm-refused-before-guest-observation' {$script:binding.vmId='74876b21-e684-4e33-a46c-98a7a7d5dc72';Refuses {Preflight} 'EXACT_1112_HOST_SESSION_BINDING_REQUIRED';Equal $script:guestCalls 0}
 Case 'typed-id-without-new-psdirect-session-refused' {$script:binding.transport='USER_TYPED_UUID';Refuses {Preflight} 'EXACT_1112_HOST_SESSION_BINDING_REQUIRED'}
 Case 'missing-session-identity-refused' {$script:binding.sessionInstanceId='';Refuses {Preflight} 'EXACT_1112_HOST_SESSION_BINDING_REQUIRED'}
@@ -180,7 +187,8 @@ function Remove-PSSession {[CmdletBinding()]param($Session);$script:sessionClose
 function Invoke-Existing1112GuestSession($Session,$CommonCode,$GuestCode,$Binding,$Policy,[string]$Source,[string]$Original,[bool]$Execute){
     $script:remoteCalls++;$script:usedSessionId=[string]$Session.InstanceId;Assert-Existing1112Binding $Binding
     if($script:remoteFail){throw 'SYNTHETIC_REMOTE_FAILURE'}
-    return @{mode='EXISTING_1112_FAILURE_HEADER_ONLY';executionRequested=$Execute;fakeOnly=$true}
+    if($Execute){return (Invoke-Existing1112Diagnostic $Source $Original $Policy $Binding $true)}
+    return (New-Existing1112Receipt (Get-Existing1112Preflight $Source $Original $Policy $Binding) $false)
 }
 function Read-Existing1112FailureReceipt($Session){$script:receiptReads++;return @{found=$true;attribution='FAKE_CURRENT_SESSION_RECEIPT';result=@{status='STOP_PRESERVE_NO_RETRY'}}}
 function Host-Inspect {return (Invoke-Existing1112HostFlow 'FAKE_COMMON' 'FAKE_GUEST' $script:policy $script:source $script:original $false $false)}

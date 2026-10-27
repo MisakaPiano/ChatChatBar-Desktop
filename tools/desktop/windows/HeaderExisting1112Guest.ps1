@@ -27,6 +27,24 @@ public static class Existing1112MutexNative {
  [DllImport("advapi32.dll",CharSet=CharSet.Unicode,SetLastError=true)] static extern IntPtr OpenServiceW(IntPtr manager,string name,uint access);
  [DllImport("advapi32.dll",SetLastError=true)] static extern bool QueryServiceStatusEx(IntPtr service,int level,[Out] byte[] buffer,uint size,out uint needed);
  [DllImport("advapi32.dll",SetLastError=true)] static extern bool CloseServiceHandle(IntPtr handle);
+ [DllImport("advapi32.dll",SetLastError=true)] static extern bool GetTokenInformation(IntPtr token,int kind,IntPtr buffer,uint size,out uint needed);
+ static uint TokenUInt(IntPtr token,int kind) {
+  IntPtr b=Marshal.AllocHGlobal(4);
+  try {uint needed;if(!GetTokenInformation(token,kind,b,4,out needed)||needed!=4)throw new InvalidOperationException("CURRENT_TOKEN_QUERY_UNKNOWN");return unchecked((uint)Marshal.ReadInt32(b));}
+  finally{Marshal.FreeHGlobal(b);}
+ }
+ public static string[] CurrentTokenContext() {
+  using(var identity=System.Security.Principal.WindowsIdentity.GetCurrent()) {
+   uint needed;
+   if(GetTokenInformation(identity.Token,25,IntPtr.Zero,0,out needed)||Marshal.GetLastWin32Error()!=122||needed==0||needed>65536)throw new InvalidOperationException("CURRENT_INTEGRITY_SIZE_UNKNOWN");
+   IntPtr b=Marshal.AllocHGlobal((int)needed);
+   try {
+    if(!GetTokenInformation(identity.Token,25,b,needed,out needed))throw new InvalidOperationException("CURRENT_INTEGRITY_QUERY_UNKNOWN");
+    string integrity=new System.Security.Principal.SecurityIdentifier(Marshal.ReadIntPtr(b)).Value;
+    return new string[]{identity.User.Value,identity.Name,TokenUInt(identity.Token,18).ToString(),TokenUInt(identity.Token,20).ToString(),integrity,identity.ImpersonationLevel.ToString()};
+   } finally{Marshal.FreeHGlobal(b);}
+  }
+ }
  public static uint[] ServiceStatus() {
   IntPtr manager=OpenSCManagerW(null,null,1),service=IntPtr.Zero;
   if(manager==IntPtr.Zero)throw new InvalidOperationException("MSI_SERVICE_MANAGER_QUERY_UNKNOWN");
@@ -49,6 +67,26 @@ function Get-Existing1112ServiceControlStatus {
     Initialize-Existing1112ObservationNative
     $status=[Existing1112MutexNative]::ServiceStatus()
     return @{state=$status[0];controlsAccepted=$status[1];pid=$status[2]}
+}
+function Get-Existing1112AccountContext {
+    Initialize-Existing1112ObservationNative
+    $value=[Existing1112MutexNative]::CurrentTokenContext()
+    if($value.Count -ne 6){throw 'CURRENT_ACCOUNT_TOKEN_CONTEXT_UNKNOWN'}
+    $integrity=[regex]::Match($value[4],'^S-1-16-(\d+)$')
+    if($value[0] -notmatch '^S-1-5-21-\d+-\d+-\d+-\d+$' -or -not $value[1] -or
+       $value[2] -notin @('1','2','3') -or $value[3] -notin @('0','1') -or -not $integrity.Success -or
+       ($value[2] -eq '2' -and $value[3] -ne '1') -or ($value[2] -eq '3' -and $value[3] -ne '0') -or
+       $value[5] -cnotin @('None','Anonymous','Identification','Impersonation','Delegation')){throw 'CURRENT_ACCOUNT_TOKEN_CONTEXT_UNKNOWN'}
+    return @{status='OBSERVED';sid=$value[0];accountName=$value[1];elevationType=[int]$value[2];isElevated=($value[3] -eq '1');
+        integritySid=$value[4];integrityRid=[uint32]$integrity.Groups[1].Value;impersonationLevel=$value[5]}
+}
+function New-Existing1112Receipt($Plan,[bool]$Execute) {
+    return @{receiptVersion=1;kind=$(if($Execute){'DIAGNOSTIC'}else{'PREFLIGHT'});mode='EXISTING_1112_FAILURE_HEADER_ONLY';
+        status=$(if($Execute){'PREPARED'}else{'PREFLIGHT_READY_NOT_EXECUTED'});binding=$Plan.binding;guest=$Plan.guest;accountContext=$Plan.accountContext;
+        contextEquivalence='UNKNOWN';contextEquivalenceReason='ORIGINAL_TOKEN_AND_CA_CONTEXT_NOT_RECORDED';
+        caContext=@{status='NOT_OBSERVED';bitness=$null;invocation=$null;sid=$null;elevationType=$null;isElevated=$null;integritySid=$null;equivalence='UNKNOWN';probeMsiSha256=$Plan.identity.sha256};
+        baseline=$Plan.baselineProof;before=$Plan.before;after=$null;installerInvoked=$false;nativeExit=$null;observed=$null;error=$null;retry=$false;noCleanup=$true;
+        resultDirectory=$Plan.output;originalPackageSha256=$Plan.identity.sourceSha256;probePackageSha256=$Plan.identity.sha256;probeManifestSha256=$Plan.probeManifestSha256}
 }
 function Get-Existing1112MutexState([string]$Name) {
     Initialize-Existing1112ObservationNative
@@ -147,6 +185,8 @@ function Get-Existing1112Preflight([string]$Source,[string]$OriginalDirectory,$P
     if($guest.computer -in @('DD1','DL1') -or $guest.manufacturer -ne 'Microsoft Corporation' -or $guest.model -ne 'Virtual Machine' -or
        $guest.bits -ne 64 -or $guest.build -ne '19045' -or $guest.edition -ne 'Professional' -or
        $guest.sid -notmatch '^S-1-5-21-\d+-\d+-\d+-\d+$'){throw 'FIXED_1112_WINDOWS_GUEST_REQUIRED'}
+    $accountContext=Get-Existing1112AccountContext
+    if($accountContext.status -ne 'OBSERVED' -or $accountContext.sid -ne $guest.sid){throw 'CURRENT_ACCOUNT_CONTEXT_UNKNOWN_OR_SID_MISMATCH'}
     $baseline=Assert-HeaderPath (Join-Path $env:LOCALAPPDATA 'CCB-OP1-First-1112-r01')
     $baselineProof=@(Assert-Existing1112Baseline $baseline $Policy.baseline)
     $prior=Get-Content -LiteralPath (Join-Path $baseline 'RESULT.json') -Raw|ConvertFrom-Json
@@ -161,17 +201,16 @@ function Get-Existing1112Preflight([string]$Source,[string]$OriginalDirectory,$P
     if($null -eq $free -or $free -isnot [long] -or $free -lt 1GB){throw 'GUEST_FREE_SPACE_UNKNOWN_OR_BELOW_1_GIB'}
     $registration=Get-HeaderRegistration $identity $guest.sid;Assert-HeaderAbsent $registration
     $activity=Get-Existing1112InstallerActivity;Assert-Existing1112InstallerIdle $activity
-    return @{mode='EXISTING_1112_FAILURE_HEADER_ONLY';guest=$guest;binding=$Binding;source=$source;original=$original;
+    return @{mode='EXISTING_1112_FAILURE_HEADER_ONLY';guest=$guest;accountContext=$accountContext;binding=$Binding;source=$source;original=$original;
         identity=$identity;baseline=$baseline;baselineProof=$baselineProof;output=$output;guestFreeBytes=$free;
+        probeManifestSha256=$Policy.probeManifestSha256;
         before=$registration;installerActivity=$activity;readOnlyPreflight=$true;actualInstallerInvoked=$false;
         baselineRuntimePreserved=$false;noGlobalNoWriteClaim=$true}
 }
 function Invoke-Existing1112Diagnostic([string]$Source,[string]$OriginalDirectory,$Policy,$Binding,[bool]$Confirmed) {
     if(-not $Confirmed){throw 'EXISTING_1112_INSTALLER_WRITES_NOT_CONFIRMED'}
     $plan=Get-Existing1112Preflight $Source $OriginalDirectory $Policy $Binding
-    $created=$false;$result=@{status='PREPARED';mode=$plan.mode;binding=$Binding;guest=$plan.guest;
-        before=$plan.before;baseline=$plan.baselineProof;installerInvoked=$false;retry=$false;noCleanup=$true;
-        notReadOnly=$true;originalRuntimeWillChange=$true}
+    $created=$false;$result=New-Existing1112Receipt $plan $true
     try{
         $null=New-Item -ItemType Directory -Path $plan.output -ErrorAction Stop;$created=$true
         $null=New-Item -ItemType Directory -Path (Join-Path $plan.output 'baseline') -ErrorAction Stop
@@ -188,10 +227,15 @@ function Invoke-Existing1112Diagnostic([string]$Source,[string]$OriginalDirector
         $null=Assert-Existing1112Baseline $plan.baseline $plan.baselineProof
         if((Get-HeaderFileProof (Join-Path $plan.original 'ChatChatBarDesktopSynthetic-0.1.1112.msi')).sha256 -cne $plan.identity.sourceSha256 -or
            (Get-HeaderFileProof (Join-Path $plan.source $plan.identity.fileName)).sha256 -cne $plan.identity.sha256){throw 'INPUT_PACKAGE_CHANGED'}
-        $result.observed=Test-HeaderLog (Get-Content -LiteralPath (Join-Path $plan.output 'probe.log') -Raw) $result.nativeExit
+        $logText=Get-Content -LiteralPath (Join-Path $plan.output 'probe.log') -Raw
+        # This fixed MSI logs bitness/impersonated invocation, but no actual CA
+        # SID/elevation/integrity. Do not substitute the PowerShell token for it.
+        if($logText -match 'Invoking 64bit Impersonated custom action server'){
+            $result.caContext.status='LIMITED_LOG_ONLY';$result.caContext.bitness=64;$result.caContext.invocation='Impersonated'
+        }
+        $result.observed=Test-HeaderLog $logText $result.nativeExit
         $result.status='HEADER_DIAGNOSTIC_OBSERVED_NOT_INSTALL_ACCEPTANCE'
     }catch{$result.status='STOP_PRESERVE_NO_RETRY';$result.error=[string]$_.Exception.Message;throw}
-    finally{if($created){$result|ConvertTo-Json -Depth 14|Set-Content -LiteralPath (Join-Path $plan.output 'RESULT.json') -Encoding UTF8
-        Write-Output ('RESULT_DIRECTORY='+$plan.output)}}
+    finally{if($created){$result|ConvertTo-Json -Depth 14|Set-Content -LiteralPath (Join-Path $plan.output 'RESULT.json') -Encoding UTF8}}
     return $result
 }
