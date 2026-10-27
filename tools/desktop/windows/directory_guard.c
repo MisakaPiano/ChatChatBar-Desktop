@@ -495,8 +495,12 @@ static void __stdcall real_log(void *context, const wchar_t *code) {
     if (record) { MsiRecordSetStringW(record, 0, code); MsiProcessMessage((MSIHANDLE)(UINT_PTR)context, INSTALLMESSAGE_INFO, record); MsiCloseHandle(record); }
 }
 #include "operation_guard.h"
+#ifdef CCB_HEADER_PROBE_ONLY
+#include "header_probe_only.h"
+#else
 __declspec(dllexport) UINT __stdcall CcbResolveInstallDirectory(MSIHANDLE handle) { return operation_run(handle, 0); }
 __declspec(dllexport) UINT __stdcall CcbValidateOperation(MSIHANDLE handle) { return operation_run(handle, 1); }
+#endif
 #ifdef CCB_GUARD_TEST
 __declspec(dllexport) int __stdcall CcbTestPackageHeader(MSIHANDLE db,const wchar_t *product,const wchar_t *name,const wchar_t *upgrade,const wchar_t *ver,HeaderDiagnosticSink sink) {
     HeaderDiagnosticSink saved=header_diagnostic_sink;int result;header_diagnostic_sink=sink;
