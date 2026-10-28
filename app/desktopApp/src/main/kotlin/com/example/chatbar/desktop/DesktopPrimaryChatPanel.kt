@@ -143,8 +143,10 @@ internal fun DesktopPrimaryChatPanel(
     // Workspace ownership survives either presentation closing; existing controller accepts/rejects Send.
     val send: () -> Unit = {
         scope.launch {
-            if (controller.state.value.selectedSession?.id == composer.sessionId)
-                composer.send(canLaunch, controller::send)
+            if (controller.state.value.selectedSession?.id == composer.sessionId) {
+                if (composer.canSend(canLaunch)) composer.send(canLaunch, controller::send)
+                else composer.requestContinuation(canLaunch)
+            }
         }
         Unit
     }
@@ -325,6 +327,15 @@ internal fun DesktopPrimaryChatPanel(
                 onPickImage = { scope.launch { controller.pickImage() } },
                 ingressModifier = Modifier.desktopImageIngress(canLaunch, controller::imageIngressFailure) { input -> scope.launch { controller.receiveImages(input) } })
         }
+        if (composer.continuationPending) DesktopContinuationConfirmation(
+            enabled = composer.canClickSend(canLaunch) && !composer.hasAttachments && composer.input.text.isBlank(),
+            onCancel = composer::cancelContinuation,
+            onConfirm = { scope.launch {
+                if (controller.state.value.selectedSession?.id == composer.sessionId)
+                    composer.confirmContinuation(canLaunch) { controller.continueEmptyComposer(composer.sessionId) }
+                else composer.cancelContinuation()
+            } },
+        )
         if (browser.settingsSessionId == state.selectedSession?.id && browser.settingsSessionId != null) {
             DesktopModalSurface { Column(
                 Modifier.fillMaxSize().background(colors.overlay).padding(20.dp),
@@ -1013,7 +1024,7 @@ private fun PrimaryComposer(
         DesktopChatAttachmentAction(running == null) { scope.launch { controller.pickImage() } }
         DesktopChatIconAction(t(DesktopUiText.EXPAND_COMPOSER), DesktopAppIcons.ExpandComposer,
             enabled = canLaunch, targetDp = 48) { composer.open(canLaunch) }
-        PrimaryComposerAction(running, composer.canSend(canLaunch), iconOnly = true, onClick = performAction)
+        PrimaryComposerAction(running, composer.canClickSend(canLaunch), iconOnly = true, onClick = performAction)
         }
     }
     if (!collapsed) StatusText(t(DesktopUiText.COMPOSER_HINT))

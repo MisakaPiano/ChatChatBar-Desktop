@@ -550,13 +550,35 @@ class DesktopPrimaryChatControllerTest {
                 val controller = container.primaryChatController
                 controller.refresh()
                 server.enqueue(success("continued"))
-                val taskId = assertNotNull(controller.continueReply())
+                val composer = DesktopComposerInput(id, "")
+                composer.requestContinuation(true)
+                assertEquals(0, server.requestCount)
+                var accepted: String? = null
+                composer.confirmContinuation(true) { controller.continueEmptyComposer(id).also { accepted = it } }
+                val taskId = assertNotNull(accepted)
                 awaitTask(container, taskId) { it.status == DesktopTaskStatus.COMPLETED }
                 controller.refreshAfterTerminalTask(id)
                 controller.refreshAfterTerminalTask(id)
                 assertEquals(0, container.chatRepository.getMessages(id).count { it.role == MessageRole.USER })
                 assertEquals(1, controller.state.value.messages.count { it.content == "continued" })
                 assertEquals(controller.state.value.messages.size, controller.state.value.messages.map(ChatMessage::id).toSet().size)
+            }
+        }
+    }
+
+    @Test
+    fun `continuation confirmation cannot follow a changed session and does not clear its draft`() = runBlocking {
+        withContainer { container ->
+            MockWebServer().use { server ->
+                val id = prepare(container, server)
+                val controller = container.primaryChatController
+                controller.refresh()
+                controller.editComposer("keep this draft")
+                assertNull(controller.continueReply("another-session"))
+                assertNull(controller.continueEmptyComposer(id))
+                assertEquals(0, server.requestCount)
+                assertEquals("keep this draft", controller.state.value.composerDraft)
+                assertEquals(0, container.chatRepository.getMessages(id).count { it.role == MessageRole.USER })
             }
         }
     }

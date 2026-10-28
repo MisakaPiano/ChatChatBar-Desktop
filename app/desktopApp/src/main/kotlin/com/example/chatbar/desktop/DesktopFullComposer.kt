@@ -26,21 +26,45 @@ internal class DesktopComposerInput(val sessionId: String?, draft: String) {
         private set
     var returnFocus by mutableStateOf(0)
         private set
+    var continuationPending by mutableStateOf(false)
+        private set
+    private var submitting by mutableStateOf(false)
 
-    fun echo(draft: String) { input = desktopComposerDraftEcho(input, draft) }
+    fun echo(draft: String) {
+        val next = desktopComposerDraftEcho(input, draft)
+        if (next.text != input.text) continuationPending = false
+        input = next
+    }
     fun open(canLaunch: Boolean) { if (sessionId != null && canLaunch) expanded = true }
     fun close() { if (expanded) { expanded = false; returnFocus++ } }
     fun edit(full: Boolean, value: TextFieldValue, persist: (String) -> Unit) {
         // Ignore focus-loss echoes from the now-covered/removed text field, not active IME edits.
         if (full != expanded) return
+        if (value.text != input.text || value.composition != input.composition) continuationPending = false
         input = value
         persist(value.text)
     }
     var hasAttachments by mutableStateOf(false)
 
-    fun canSend(canLaunch: Boolean) = sessionId != null && canLaunch && (input.text.isNotBlank() || hasAttachments)
+    fun canClickSend(canLaunch: Boolean) = sessionId != null && canLaunch && !submitting && input.composition == null
+    fun canSend(canLaunch: Boolean) = canClickSend(canLaunch) && (input.text.isNotBlank() || hasAttachments)
+    fun requestContinuation(canLaunch: Boolean) {
+        if (canClickSend(canLaunch) && input.text.isBlank() && !hasAttachments) continuationPending = true
+    }
+    fun cancelContinuation() { continuationPending = false }
+    suspend fun confirmContinuation(canLaunch: Boolean, continueReply: suspend () -> String?) {
+        if (!continuationPending) return
+        continuationPending = false
+        if (!canClickSend(canLaunch) || input.text.isNotBlank() || hasAttachments) return
+        submitting = true
+        try { if (continueReply() != null) close() }
+        finally { submitting = false }
+    }
     suspend fun send(canLaunch: Boolean, send: suspend () -> String?) {
-        if (canSend(canLaunch) && send() != null) close()
+        if (!canSend(canLaunch)) return
+        submitting = true
+        try { if (send() != null) close() }
+        finally { submitting = false }
         // Never clear input here: only the controller's accepted-send draft echo may do so.
     }
 }
@@ -112,7 +136,7 @@ internal fun DesktopFullComposer(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box(Modifier.weight(1f)) { StatusText(t(DesktopUiText.COMPOSER_HINT)) }
                 onPickImage?.let { DesktopChatAttachmentAction(canLaunch, it) }
-                BootstrapButton(t(DesktopUiText.SEND), enabled = composer.canSend(canLaunch), onClick = onSend)
+                BootstrapButton(t(DesktopUiText.SEND), enabled = composer.canClickSend(canLaunch), onClick = onSend)
             }
         }
     }

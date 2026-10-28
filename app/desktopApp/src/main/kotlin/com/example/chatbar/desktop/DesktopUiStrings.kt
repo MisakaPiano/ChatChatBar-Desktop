@@ -151,6 +151,8 @@ internal enum class DesktopUiText(val zhCn: String, val en: String) {
     JUMP_BOTTOM("跳到底部", "Jump to bottom"),
     READING_POSITION_ERROR("阅读位置保存失败", "Could not save reading position"),
     SEND("发送", "Send"), CONTINUE("继续生成", "Continue"), STOP("停止", "Stop"),
+    CONTINUE_CONFIRM("继续生成？", "Continue generating?"),
+    CONTINUE_CONFIRM_DESCRIPTION("输入框为空。确认后会继续生成，不新增用户消息。", "The composer is empty. Continue generating without adding a user message."),
     REGENERATE("重新生成", "Regenerate"), RETRY_GENERATION("重试生成", "Retry generation"),
     COMPOSER_HINT("Ctrl+Enter 发送；Enter / Shift+Enter 换行", "Ctrl+Enter sends; Enter / Shift+Enter inserts a newline"),
     EXPAND_COMPOSER("全屏编辑", "Expand composer"), FULL_COMPOSER("全屏撰写", "Full-screen composer"),

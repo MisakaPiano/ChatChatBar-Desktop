@@ -678,7 +678,13 @@ internal class DesktopPrimaryChatController(
 
     suspend fun send(): String? = launch(continuation = false)
 
-    suspend fun continueReply(): String? = launch(continuation = true)
+    suspend fun continueReply(): String? = continueReply(state.value.selectedSession?.id)
+
+    suspend fun continueReply(expectedSessionId: String?): String? =
+        expectedSessionId?.let { launch(continuation = true, expectedSessionId = it) }
+
+    suspend fun continueEmptyComposer(expectedSessionId: String?): String? =
+        expectedSessionId?.let { launch(continuation = true, expectedSessionId = it, requireEmptyComposer = true) }
 
     fun stop(taskId: String): Boolean = taskRuntime.requestUserStop(taskId)
 
@@ -866,7 +872,8 @@ internal class DesktopPrimaryChatController(
         return relinked
     }
 
-    private suspend fun launch(continuation: Boolean): String? {
+    private suspend fun launch(continuation: Boolean, expectedSessionId: String? = null,
+        requireEmptyComposer: Boolean = false): String? {
         var accepted: String? = null
         guarded {
             draftLock.withLock {
@@ -875,6 +882,11 @@ internal class DesktopPrimaryChatController(
                     snapshot to snapshot.selectedSession?.id?.let(draftPersistence::latestRevision)
                 }
                 val session = current.selectedSession ?: return@withLock
+                if (expectedSessionId != null && session.id != expectedSessionId) return@withLock
+                if (requireEmptyComposer && (current.composerDraft.isNotBlank() || current.pendingImages.isNotEmpty())) {
+                    mutableState.update { it.copy(error = "草稿或附件已变化，请重新发送") }
+                    return@withLock
+                }
                 if (current.selectedCharacterMissing || characters.getById(session.characterCardId) == null) {
                     mutableState.update {
                         it.copy(selectedCharacterMissing = true, error = "Archived session: character is missing")
