@@ -7,9 +7,15 @@ import com.example.chatbar.data.local.entity.SessionCharacterParticipation
 
 /** Request-only structured-person view; no changes to card entities or historical context. */
 object SessionCharacterParticipationPolicy {
+    fun cardAllows(card: CharacterCard, personId: String): Boolean = card.editMode != CharacterEditMode.STRUCTURED ||
+        card.characters.singleOrNull { it.id == personId }?.desktopEnabled == true
+
     fun isEnabled(session: ChatSession?, card: CharacterCard, personId: String): Boolean =
-        session == null || session.characterCardId != card.id || card.editMode != CharacterEditMode.STRUCTURED ||
-            personId !in session.desktopCharacterParticipation.singleOrNull { it.cardId == card.id }?.disabledPersonIds.orEmpty()
+        card.editMode != CharacterEditMode.STRUCTURED || (cardAllows(card, personId) &&
+            (session == null || session.characterCardId != card.id ||
+                session.desktopCharacterParticipation.singleOrNull { it.cardId == card.id }?.let {
+                    personId !in it.disabledPersonIds && (!session.desktopAutoPauseAbsentPeople || personId !in it.automaticallyPausedPersonIds)
+                } != false))
 
     fun effectiveCard(session: ChatSession, card: CharacterCard): CharacterCard {
         val active = card.characters.filter { isEnabled(session, card, it.id) }
@@ -20,13 +26,40 @@ object SessionCharacterParticipationPolicy {
         require(session.characterCardId == card.id) { "人物不属于当前会话角色卡" }
         require(card.editMode == CharacterEditMode.STRUCTURED) { "自由文本卡尚不支持逐人物关闭" }
         require(personId.isNotBlank() && card.characters.count { it.id == personId } == 1) { "人物已变化或身份不唯一" }
-        val index = session.desktopCharacterParticipation.indexOfFirst { it.cardId == card.id }
-        val before = session.desktopCharacterParticipation.getOrNull(index)?.disabledPersonIds.orEmpty()
-        val after = if (enabled) before - personId else before + personId
-        val overrides = session.desktopCharacterParticipation.toMutableList()
-        if (after.isEmpty()) { if (index >= 0) overrides.removeAt(index) }
-        else if (index >= 0) overrides[index] = SessionCharacterParticipation(card.id, after)
-        else overrides.add(SessionCharacterParticipation(card.id, after))
-        return session.copy(desktopCharacterParticipation = overrides.toList())
+        require(!enabled || cardAllows(card, personId)) { "人物已在角色卡中关闭，请先到角色卡编辑器启用" }
+        val before = session.desktopCharacterParticipation.singleOrNull { it.cardId == card.id }
+            ?: SessionCharacterParticipation(card.id, emptySet())
+        return replace(session, before.copy(
+            disabledPersonIds = if (enabled) before.disabledPersonIds - personId else before.disabledPersonIds + personId,
+            automaticallyPausedPersonIds = before.automaticallyPausedPersonIds - personId))
+    }
+
+    /** Only the owner of a newly retained reply invokes this; loading history never re-enables people. */
+    fun afterReply(session: ChatSession, card: CharacterCard, present: Set<String>, absentForTwoTurns: Set<String>): ChatSession {
+        require(session.characterCardId == card.id)
+        if (card.editMode != CharacterEditMode.STRUCTURED) return session
+        val before = session.desktopCharacterParticipation.singleOrNull { it.cardId == card.id }
+            ?: SessionCharacterParticipation(card.id, emptySet())
+        val eligibleSeen = present.filterTo(mutableSetOf()) { cardAllows(card, it) }
+        val manual = before.disabledPersonIds - eligibleSeen
+        val automatic = if (session.desktopAutoPauseAbsentPeople)
+            (before.automaticallyPausedPersonIds - eligibleSeen + absentForTwoTurns.filter { it !in eligibleSeen && cardAllows(card, it) }) - manual
+            else emptySet()
+        return replace(session, before.copy(disabledPersonIds = manual, automaticallyPausedPersonIds = automatic))
+    }
+
+    fun withAutomaticPause(session: ChatSession, enabled: Boolean): ChatSession = session.copy(
+        desktopAutoPauseAbsentPeople = enabled,
+        desktopCharacterParticipation = if (enabled) session.desktopCharacterParticipation else
+            session.desktopCharacterParticipation.map { it.copy(automaticallyPausedPersonIds = emptySet()) }
+                .filter { it.disabledPersonIds.isNotEmpty() })
+
+    private fun replace(session: ChatSession, entry: SessionCharacterParticipation): ChatSession {
+        val entries = session.desktopCharacterParticipation.toMutableList()
+        val index = entries.indexOfFirst { it.cardId == entry.cardId }
+        if (entry.disabledPersonIds.isEmpty() && entry.automaticallyPausedPersonIds.isEmpty()) {
+            if (index >= 0) entries.removeAt(index)
+        } else if (index >= 0) entries[index] = entry else entries.add(entry)
+        return session.copy(desktopCharacterParticipation = entries)
     }
 }

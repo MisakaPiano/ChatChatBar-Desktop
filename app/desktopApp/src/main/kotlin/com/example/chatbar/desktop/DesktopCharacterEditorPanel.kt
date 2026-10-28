@@ -410,6 +410,7 @@ private fun CharacterPersonWorkspace(
     val t = LocalDesktopUiStrings.current
     val workspace = desktopPersonWorkspace(card, selectedId)
     if (workspace.avatarBook) EditorHeading(t(DesktopUiText.PERSON_AVATAR_BOOK))
+    else StatusText(t(DesktopUiText.CARD_PERSON_GATE_SCOPE))
     BootstrapButton(t(DesktopUiText.ADD_CHARACTER_INFO), icon = DesktopAppIcons.Add) {
         controller.addCharacter()
         onSelect(controller.state.value.card?.characters?.lastOrNull()?.id)
@@ -477,6 +478,12 @@ private fun CharacterPersonRow(
             }
             person.profile?.let { BasicText(it, maxLines = 1, overflow = TextOverflow.Ellipsis,
                 style = TextStyle(color = colors.mutedForeground, fontSize = 12.sp)) }
+        }
+        controller.state.value.card?.takeIf { it.editMode == CharacterEditMode.STRUCTURED }?.let { card ->
+            card.characters.singleOrNull { it.id == person.id }?.let { entry ->
+                BootstrapButton(t(if (entry.desktopEnabled) DesktopUiText.ON else DesktopUiText.OFF),
+                    secondary = !entry.desktopEnabled) { controller.setCharacterEntryEnabled(person.id, !entry.desktopEnabled) }
+            }
         }
         DesktopIconAction(t(DesktopUiText.EDIT), DesktopAppIcons.Edit, onClick = onSelect)
         DesktopIconAction(t(DesktopUiText.DELETE), DesktopAppIcons.Delete, destructive = true, onClick = onDelete)

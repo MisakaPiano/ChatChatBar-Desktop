@@ -14,20 +14,23 @@ class DesktopSaveSlotServiceTest {
     @Test fun `participation survives real package export import restore with original card scope`() = runBlocking {
         Fixture().use { f ->
             f.seed()
-            val overrides = listOf(SessionCharacterParticipation(f.session.characterCardId, setOf("disabled-person")),
+            val overrides = listOf(SessionCharacterParticipation(f.session.characterCardId, setOf("disabled-person"), setOf("automatic-person")),
                 SessionCharacterParticipation("other-card", setOf("other-person")))
-            f.chats.saveSessionSettingsDraft(f.session, f.session.copy(desktopCharacterParticipation = overrides))
+            f.chats.saveSessionSettingsDraft(f.session, f.session.copy(desktopCharacterParticipation = overrides, desktopAutoPauseAbsentPeople = true))
             val service = f.service()
             val slot = service.create("s", "Participation", SaveSlotImagePolicy.ORIGINAL, false)
             assertEquals(overrides, slot.desktopCharacterParticipation)
+            assertTrue(slot.desktopAutoPauseAbsentPeople)
             val output = f.root.resolve("participation.cbsave")
             service.export(slot.id, output)
             val imported = service.import(output, "s")
             assertEquals(overrides, imported.desktopCharacterParticipation)
+            assertTrue(imported.desktopAutoPauseAbsentPeople)
             val current = f.chats.getSession("s")!!
-            f.chats.saveSessionSettingsDraft(current, current.copy(desktopCharacterParticipation = emptyList()))
+            f.chats.saveSessionSettingsDraft(current, current.copy(desktopCharacterParticipation = emptyList(), desktopAutoPauseAbsentPeople = false))
             service.restore(imported.id, "s")
             assertEquals(overrides, f.chats.getSession("s")!!.desktopCharacterParticipation)
+            assertTrue(f.chats.getSession("s")!!.desktopAutoPauseAbsentPeople)
             assertEquals(f.session.characterCardId, f.chats.getSession("s")!!.characterCardId)
         }
     }

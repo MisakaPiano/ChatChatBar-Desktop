@@ -129,6 +129,7 @@ internal class DesktopPrimaryChatController(
     val backgroundLibrary: DesktopCharacterBackgrounds? = null,
     val formatRepair: DesktopMessageFormatRepairController? = null,
     val voices: DesktopChatVoiceRuntime? = null,
+    val residency: DesktopCharacterResidency? = null,
     val memory: DesktopMemoryController? = null,
     val rag: DesktopRagController? = null,
     val saveSlots: DesktopSaveSlotController? = null,

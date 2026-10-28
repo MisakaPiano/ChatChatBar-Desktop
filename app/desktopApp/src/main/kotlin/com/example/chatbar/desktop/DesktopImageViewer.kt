@@ -142,6 +142,7 @@ internal fun DesktopImageViewer(references: List<String>, initialIndex: Int,
     val index = selection.index
     val count = selection.references.size
     var resetRevision by remember(reference) { mutableStateOf(0) }
+    val zoom = remember(reference) { DesktopImageZoomState() }
     var status by remember { mutableStateOf<String?>(null) }
     var tools by remember { mutableStateOf<ByteArray?>(null) }
     val scope = rememberCoroutineScope()
@@ -155,33 +156,31 @@ internal fun DesktopImageViewer(references: List<String>, initialIndex: Int,
     tools?.let { DesktopImageToolsDialog(it, picker, { tools = null }) }
     DesktopImageToolWindow("图片 ${index + 1} / $count", onClose, width = 960.dp, height = 800.dp,
         onKey = desktopViewerKeyHandler(selection, onClose)) {
-        Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background),
+            verticalArrangement = Arrangement.spacedBy(4.dp)) {
             DesktopViewerImageRegion(index, count, selection::previous, selection::next, Modifier.weight(1f).fillMaxWidth()) {
-                DesktopImageZoomSurface(reference, resources::readBytes, Modifier.fillMaxSize(), resetRevision)
+                DesktopImageZoomSurface(reference, resources::readBytes, Modifier.fillMaxSize(), resetRevision, zoomState = zoom)
             }
             status?.let { StatusText(it) }
-            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                DesktopViewerPageButtons(selection)
-                BootstrapButton("重置") { resetRevision++ }
-                BootstrapButton("保存 PNG") { act {
+            DesktopImageViewerToolbar(zoom, selection) {
+                ViewerToolbarSeparator()
+                DesktopChatIconAction("保存 PNG", DesktopAppIcons.SaveImage) { act {
                     val target = picker.pickSaveFile(DesktopFileType("PNG", listOf("png")), "image.png") ?: return@act
                     val bytes = resources.readBytes(reference)
                     val png = bytes.size >= 8 && bytes[0] == 0x89.toByte()
                     if (!png) DesktopImageEditing.requireStatic(bytes)
                     DesktopExternalFileWriter.writeBytes(target, if (png) bytes else DesktopImageEditing.png(DesktopImageEditing.decode(bytes)))
                 } }
-                BootstrapButton("复制图片") { act {
+                DesktopChatIconAction("复制图片", DesktopAppIcons.Copy) { act {
                     val bytes = resources.readBytes(reference)
                     copyDesktopImage(bytes, if (reference.startsWith("asset:")) null else resources.resolveOwnedReference(reference))
                 } }
-                BootstrapButton("在文件夹中显示", enabled = !reference.startsWith("asset:")) { act {
+                DesktopChatIconAction("在文件夹中显示", DesktopAppIcons.Folder, enabled = !reference.startsWith("asset:")) { act {
                     resources.readBytes(reference) // Validate regular owned file before handing it to Explorer.
                     val path = resources.resolveOwnedReference(reference)
                     ProcessBuilder("explorer.exe", "/select,", path.toString()).start()
                 } }
-                BootstrapButton("图像工具") { act { tools = resources.readBytes(reference) } }
-                BootstrapButton("关闭", onClick = onClose)
+                DesktopChatIconAction("图像工具", DesktopAppIcons.Tools) { act { tools = resources.readBytes(reference) } }
             }
         }
     }
@@ -235,13 +234,10 @@ internal fun DesktopPendingImageStrip(images: List<DesktopPendingImage>, enabled
 /** Pending/imported images have no owned reference yet. Read-only viewer retains original animation. */
 @Composable
 internal fun DesktopTransientImagePreview(reference: String, read: (String) -> ByteArray, onClose: () -> Unit) {
-    var resetRevision by remember(reference) { mutableStateOf(0) }
+    val zoom = remember(reference) { DesktopImageZoomState() }
     DesktopImageToolWindow("图片预览", onClose, width = 960.dp, height = 800.dp) {
-        DesktopImageZoomSurface(reference, read, Modifier.weight(1f).fillMaxWidth(), resetRevision)
-        StudioActions {
-            StudioAction("重置") { resetRevision++ }
-            StudioAction("关闭预览", icon = DesktopAppIcons.Close, onClick = onClose)
-        }
+        DesktopImageZoomSurface(reference, read, Modifier.weight(1f).fillMaxWidth(), zoomState = zoom)
+        DesktopImageViewerToolbar(zoom)
     }
 }
 

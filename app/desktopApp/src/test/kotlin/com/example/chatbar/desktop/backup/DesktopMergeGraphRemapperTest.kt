@@ -9,7 +9,7 @@ import kotlin.test.*
 
 class DesktopMergeGraphRemapperTest {
     @Test fun `participation remaps both card key and nested person IDs without rewriting unrelated text`() {
-        val source = record("chat_sessions", obj("""{"id":"s","characterCardId":"id","desktopCharacterParticipation":[{"cardId":"id","disabledPersonIds":["p"]}],"title":"id p"}"""))
+        val source = record("chat_sessions", obj("""{"id":"s","characterCardId":"id","desktopAutoPauseAbsentPeople":true,"desktopCharacterParticipation":[{"cardId":"id","disabledPersonIds":["p"],"automaticallyPausedPersonIds":["p"]}],"title":"id p"}"""))
         val ids = DesktopMergeIdentity().apply { bind("chat_sessions", "s", "fork-s"); bind("character_cards", "id", "fork-c"); bind("characters", "p", "fork-p") }
         assertFalse(ids.declarations(source).any { it.first == "characters" })
         val result = DesktopMergeGraphRemapper(listOf(source), ids).rewrite(source)
@@ -18,6 +18,8 @@ class DesktopMergeGraphRemapperTest {
         val participation = result.getValue("desktopCharacterParticipation").jsonArray.single().jsonObject
         assertEquals("fork-c", participation.getValue("cardId").jsonPrimitive.content)
         assertEquals(listOf("fork-p"), participation.getValue("disabledPersonIds").jsonArray.map { it.jsonPrimitive.content })
+        assertEquals(listOf("fork-p"), participation.getValue("automaticallyPausedPersonIds").jsonArray.map { it.jsonPrimitive.content })
+        assertTrue(result.getValue("desktopAutoPauseAbsentPeople").jsonPrimitive.boolean)
         assertEquals("id p", result.getValue("title").jsonPrimitive.content)
     }
 

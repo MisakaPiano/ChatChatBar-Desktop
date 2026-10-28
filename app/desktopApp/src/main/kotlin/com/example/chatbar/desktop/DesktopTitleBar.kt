@@ -64,20 +64,21 @@ internal fun DesktopTitleBar(
     recorder: DesktopChromeLayoutRecorder,
     navigationVisible: Boolean = true,
     captionsVisible: Boolean = true,
+    windowTitle: String? = null,
     onNavigate: (DesktopPrimaryRoute) -> Unit,
 ) {
     val colors = LocalDesktopPalette.current
     val t = LocalDesktopUiStrings.current
     val state by chrome.state.collectAsState()
     val presentation = desktopTitleBarPresentation(shellSize, route, locked)
-    DisposableEffect(recorder, navigationVisible, captionsVisible) {
+    DisposableEffect(recorder, navigationVisible, captionsVisible, windowTitle != null) {
         onDispose {
-            if (navigationVisible) recorder.clearNavigation()
+            if (navigationVisible || windowTitle != null) recorder.clearNavigation()
             if (captionsVisible) recorder.clearCaptions()
         }
     }
     Row(Modifier.fillMaxWidth().height(44.dp).background(colors.card)
-        .then(if (navigationVisible) Modifier.onGloballyPositioned(recorder::title) else Modifier),
+        .then(if (navigationVisible || windowTitle != null) Modifier.onGloballyPositioned(recorder::title) else Modifier),
         verticalAlignment = Alignment.CenterVertically) {
         if (navigationVisible) {
             Row(Modifier.width(if (presentation.showBrandName) 160.dp else 40.dp),
@@ -121,7 +122,14 @@ internal fun DesktopTitleBar(
                 }
             }
         }
-        Spacer(Modifier.weight(1f))
+        if (!navigationVisible && windowTitle != null) {
+            Box(Modifier.width(40.dp).fillMaxHeight().onGloballyPositioned(recorder::icon), contentAlignment = Alignment.Center) {
+                Image(painterResource(DesktopBrandResources.LOGO_RESOURCE), "ChatChatBar", Modifier.size(24.dp))
+            }
+            BasicText(windowTitle, Modifier.weight(1f).padding(end = 12.dp), maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                style = TextStyle(color = colors.foreground, fontSize = 13.sp))
+        } else Spacer(Modifier.weight(1f))
         if (navigationVisible && state.failure != null) BasicText("!", Modifier.padding(4.dp).semantics { contentDescription = state.failure!! },
             style = TextStyle(color = colors.destructive))
         if (captionsVisible && DesktopWindowChrome.isWindows) listOf(ChromeHit.MINIMIZE, ChromeHit.MAXIMIZE, ChromeHit.CLOSE).forEach { hit ->

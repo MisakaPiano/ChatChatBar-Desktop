@@ -17,20 +17,31 @@ import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.domain.voice.VoiceGenerationPolicy
 import kotlinx.coroutines.delay
 
-internal class DesktopVoiceUiSelection { var narrator by mutableStateOf<String?>(null) }
+internal class DesktopVoiceUiSelection {
+    var narrator by mutableStateOf<String?>(null)
+    var narratorCollapsed by mutableStateOf(false)
+}
 internal val LocalDesktopVoiceUi = staticCompositionLocalOf { DesktopVoiceUiSelection() }
 
+internal fun desktopNarratorChoices(state: DesktopPrimaryChatState) =
+    state.participatingCharacter?.characters.orEmpty().filter { !it.fishAudioVoice?.referenceId.isNullOrBlank() }
+
 @Composable
-internal fun DesktopNarratorDropdown(state: DesktopPrimaryChatState, selected: String?, choose: (String) -> Unit) {
+internal fun DesktopNarratorDropdown(state: DesktopPrimaryChatState, selected: String?, collapse: () -> Unit = {},
+    choose: (String) -> Unit) {
     var open by remember { mutableStateOf(false) }
-    val bound = state.participatingCharacter?.characters.orEmpty().filter { it.fishAudioVoice != null }
+    val bound = desktopNarratorChoices(state)
+    if (bound.isEmpty()) return
     BoxWithConstraints(Modifier.fillMaxWidth().height(38.dp).background(DesktopBootstrapColors.card, RoundedCornerShape(19.dp))
         .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(19.dp))) {
         val name = bound.firstOrNull { it.id == selected }?.name ?: "选择角色"
         val label = if (maxWidth < 76.dp) "旁白" else "旁白：$name"
-        BasicText(label, Modifier.fillMaxSize().semantics { contentDescription = "选择角色音色 · $name" }
+        Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+        BasicText(label, Modifier.weight(1f).fillMaxHeight().semantics { contentDescription = "选择角色音色 · $name" }
             .clickable { open = true }.wrapContentHeight(Alignment.CenterVertically).padding(horizontal = 8.dp),
             maxLines = 1, overflow = TextOverflow.Ellipsis, style = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 12.sp))
+        DesktopChatIconAction("折叠音色选择", DesktopAppIcons.DetailsClosed, targetDp = 28, onClick = collapse)
+        }
         if (open) Popup(alignment = Alignment.TopEnd, properties = PopupProperties(focusable = true), onDismissRequest = { open = false }) {
             Column(Modifier.width(IntrinsicSize.Max).widthIn(max = 280.dp).heightIn(max = 320.dp).background(DesktopBootstrapColors.card)
                 .border(1.dp, DesktopBootstrapColors.border).verticalScroll(rememberScrollState()).padding(6.dp)) {
@@ -46,6 +57,18 @@ internal fun DesktopNarratorDropdown(state: DesktopPrimaryChatState, selected: S
 }
 
 @Composable
+internal fun DesktopNarratorDock(state: DesktopPrimaryChatState, ui: DesktopVoiceUiSelection) {
+    if (desktopNarratorChoices(state).isEmpty()) return
+    if (ui.narratorCollapsed) Box(Modifier.size(38.dp).testTag("voice-role-ball")
+        .background(DesktopBootstrapColors.card, androidx.compose.foundation.shape.CircleShape)
+        .border(1.dp, DesktopBootstrapColors.border, androidx.compose.foundation.shape.CircleShape)
+        .semantics { contentDescription = "展开音色选择" }.clickable { ui.narratorCollapsed = false },
+        contentAlignment = Alignment.Center) {
+        BasicText("音色", style = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 12.sp))
+    } else DesktopNarratorDropdown(state, ui.narrator, { ui.narratorCollapsed = true }) { ui.narrator = it }
+}
+
+@Composable
 internal fun DesktopVoiceDeck(runtime: DesktopChatVoiceRuntime?, state: DesktopPrimaryChatState) {
     if (runtime == null || state.selectedSession == null) return
     val batches by runtime.coordinator.batches.collectAsState()
@@ -54,14 +77,15 @@ internal fun DesktopVoiceDeck(runtime: DesktopChatVoiceRuntime?, state: DesktopP
     val sessionBatches = batches.filter { it.sessionId == state.selectedSession.id }
     val batch = sessionBatches.firstOrNull()
     val audiobook = runtime.effectiveAudiobook(state.selectedSession)
+    val showNarrator = audiobook && desktopNarratorChoices(state).isNotEmpty()
     val ui = LocalDesktopVoiceUi.current
     var details by remember(state.selectedSession.id) { mutableStateOf(false) }
-    if (batch == null && !audiobook && !playerVisible) return
+    if (batch == null && !showNarrator && !playerVisible) return
     DesktopVoiceDeckRow(batch?.let { "${desktopVoicePhaseLabel(it.phase)} · ${it.completedCount}/${it.totalCount}" }.orEmpty(),
         if (batch != null) ({ details = true }) else null,
         cancel = batch?.let { b -> { if (b.phase in setOf(VoiceGenerationPhase.FAILED, VoiceGenerationPhase.CANCELLED)) runtime.coordinator.dismiss(b.id) else runtime.coordinator.cancel(b.id) } },
         player = { if (playerVisible) DesktopVoicePlayerRow(playback, { runtime.resumePlayback() }, { runtime.pauseOrClose() }) },
-        narrator = { if (audiobook) DesktopNarratorDropdown(state, ui.narrator) { ui.narrator = it } })
+        narrator = { if (showNarrator) DesktopNarratorDock(state, ui) })
     if (details && batch != null) Popup(alignment = Alignment.BottomCenter, onDismissRequest = { details = false }, properties = PopupProperties(focusable = true)) {
         Column(Modifier.widthIn(max = 480.dp).heightIn(max = 360.dp).background(DesktopBootstrapColors.card)
             .border(1.dp, DesktopBootstrapColors.border).verticalScroll(rememberScrollState()).padding(12.dp)) {
@@ -122,15 +146,18 @@ internal fun DesktopVoicePlayerRow(state: DesktopVoicePlaybackState, resume: () 
 @Composable
 internal fun DesktopChatNotifications(controller: DesktopPrimaryChatController, state: DesktopPrimaryChatState) {
     val runtime = controller.voices
+    val residency = controller.residency
+    val residentNotice = residency?.notices?.collectAsState()?.value?.get(state.selectedSession?.id)
     val notice = runtime?.notice?.collectAsState()?.value
     val feedbackEvent = runtime?.coordinator?.feedback?.collectAsState()?.value?.takeIf { it.sessionId == state.selectedSession?.id }
     val feedback = feedbackEvent?.text
     val playbackError = runtime?.playback?.state?.collectAsState()?.value?.error
-    val text = feedback ?: notice ?: playbackError ?: state.status
+    val text = feedback ?: notice ?: playbackError ?: residentNotice?.text ?: state.status
     if (text != null) {
         fun dismiss() { if (feedback != null) feedbackEvent?.let { runtime?.coordinator?.dismissFeedback(it) }
-            else if (notice != null) runtime?.dismissNotice(text) else if (playbackError != null) runtime?.playback?.dismissError(text) else controller.dismissStatus(text) }
-        LaunchedEffect(feedbackEvent, notice, playbackError, state.status) { delay(8000); dismiss() }
+            else if (notice != null) runtime?.dismissNotice(text) else if (playbackError != null) runtime?.playback?.dismissError(text)
+            else if (residentNotice != null) residency?.dismiss(residentNotice) else controller.dismissStatus(text) }
+        LaunchedEffect(feedbackEvent, notice, playbackError, residentNotice, state.status) { delay(8000); dismiss() }
         Row(Modifier.widthIn(max = 540.dp).background(DesktopBootstrapColors.card).border(1.dp, DesktopBootstrapColors.border).padding(6.dp),
             verticalAlignment = Alignment.CenterVertically) {
             BasicText(text, Modifier.weight(1f, fill = false), maxLines = 2, style = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 12.sp))

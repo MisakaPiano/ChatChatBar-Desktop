@@ -1174,6 +1174,105 @@ class DesktopPrimaryChatControllerTest {
         } finally { parent.toFile().deleteRecursively() }
     }
 
+    @Test fun `card gate survives visible disabled speaker output and all subsequent real requests`() = runBlocking {
+        withContainer { c -> MockWebServer().use { server ->
+            server.start(); configure(c, server.url("/v1").toString().trimEnd('/'))
+            val active = com.example.chatbar.data.local.entity.CharacterInfo.create("Active").copy(profile = "ACTIVE_PROFILE_SENTINEL")
+            val disabled = com.example.chatbar.data.local.entity.CharacterInfo.create("Blocked").copy(profile = "BLOCKED_PROFILE_SENTINEL", desktopEnabled = false)
+            val card = CharacterCard.create("Variant").copy(characters = listOf(active, disabled))
+            c.characterRepository.save(card)
+            val controller = c.primaryChatController
+            controller.refresh(); controller.createSession(card.id)
+            controller.editSessionSettings { it.copy(longTermMemoryEnabled = false) }
+            assertTrue(controller.saveSessionSettings())
+            val id = controller.state.value.selectedSession!!.id
+            controller.setCharacterEnabled(id, card.id, disabled.id, true)
+            assertFalse(controller.state.value.people.last().enabled)
+            suspend fun send(text: String): String {
+                val encoded = kotlinx.serialization.json.JsonPrimitive(text).toString()
+                server.enqueue(MockResponse().addHeader("Content-Type", "text/event-stream")
+                    .setBody("data: {\"choices\":[{\"delta\":{\"content\":$encoded},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"))
+                controller.editComposer("Next")
+                awaitTask(c, assertNotNull(controller.send())) { it.status != DesktopTaskStatus.RUNNING }
+                controller.refresh()
+                return assertNotNull(server.takeRequest(3, TimeUnit.SECONDS)).body.readUtf8()
+            }
+            val first = send("<n=\"Blocked\"/>[Back]()\n---\n姓名：Blocked\n状态：在场\n---")
+            assertTrue("ACTIVE_PROFILE_SENTINEL" in first); assertFalse("BLOCKED_PROFILE_SENTINEL" in first)
+            assertFalse(controller.state.value.people.last().enabled)
+            assertTrue(controller.state.value.people.last().resident)
+            controller.setCharacterEnabled(id, card.id, disabled.id, true)
+            val second = send("<n=\"Active\"/>[Hello]()")
+            assertFalse("BLOCKED_PROFILE_SENTINEL" in second)
+            assertFalse(controller.state.value.people.last().enabled)
+            assertEquals(card, c.characterRepository.getById(card.id)); assertEquals(2, server.requestCount)
+        } }
+    }
+
+    @Test fun `resident completion only changes entry injection when opted in and new appearance restores session pause`() = runBlocking {
+        withContainer { c -> MockWebServer().use { server ->
+            server.start(); configure(c, server.url("/v1").toString().trimEnd('/'))
+            val alice = com.example.chatbar.data.local.entity.CharacterInfo.create("Alice").copy(profile = "ALICE_PROFILE_SENTINEL")
+            val bob = com.example.chatbar.data.local.entity.CharacterInfo.create("Bob").copy(profile = "BOB_PROFILE_SENTINEL")
+            val card = CharacterCard.create("Presence").copy(characters = listOf(alice, bob))
+            c.characterRepository.save(card)
+            val controller = c.primaryChatController
+            controller.refresh(); controller.createSession(card.id)
+            controller.editSessionSettings { it.copy(longTermMemoryEnabled = false) }
+            assertTrue(controller.saveSessionSettings())
+            val id = controller.state.value.selectedSession!!.id
+            suspend fun send(text: String): String {
+                val encoded = kotlinx.serialization.json.JsonPrimitive(text).toString()
+                server.enqueue(MockResponse().addHeader("Content-Type", "text/event-stream")
+                    .setBody("data: {\"choices\":[{\"delta\":{\"content\":$encoded},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"))
+                controller.editComposer("Next")
+                awaitTask(c, assertNotNull(controller.send())) { it.status != DesktopTaskStatus.RUNNING }
+                controller.refresh()
+                return assertNotNull(server.takeRequest(3, TimeUnit.SECONDS)).body.readUtf8()
+            }
+            send("The room is quiet."); send("Time passes.")
+            assertTrue(controller.state.value.people.none { it.resident })
+            assertTrue(controller.state.value.people.all { it.enabled })
+            controller.editSessionSettings { it.copy(desktopAutoPauseAbsentPeople = true) }
+            assertTrue(controller.saveSessionSettings())
+            send("Still quiet.")
+            assertTrue(controller.state.value.people.none { it.enabled })
+            val returningRequest = send("<n=\"Alice\"/>[I am here]()")
+            assertFalse("ALICE_PROFILE_SENTINEL" in returningRequest); assertFalse("BOB_PROFILE_SENTINEL" in returningRequest)
+            assertTrue(controller.state.value.people.first().enabled); assertFalse(controller.state.value.people.last().enabled)
+            assertTrue(c.characterResidency.notices.value[id]?.text?.contains("Alice") == true)
+            controller.setCharacterEnabled(id, card.id, alice.id, false)
+            controller.refresh(); controller.selectSession(id)
+            assertFalse(controller.state.value.people.first().enabled, "Old retained appearance cannot undo a new manual close")
+            send("---\n姓名：Alice\n状态：回来了\n---")
+            assertTrue(controller.state.value.people.first().enabled)
+            controller.editSessionSettings { it.copy(desktopAutoPauseAbsentPeople = false) }
+            assertTrue(controller.saveSessionSettings())
+            assertTrue(controller.state.value.people.all { it.enabled })
+            assertEquals(card, c.characterRepository.getById(card.id)); assertEquals(5, server.requestCount)
+        } }
+    }
+
+    @Test fun `completion for an older retained reply cannot undo a current manual participation close`() = runBlocking {
+        withContainer { c ->
+            val person = com.example.chatbar.data.local.entity.CharacterInfo.create("Alice")
+            val card = CharacterCard.create("Older reply").copy(characters = listOf(person))
+            c.characterRepository.save(card); configure(c)
+            val controller = c.primaryChatController
+            controller.refresh(); controller.createSession(card.id)
+            val session = controller.state.value.selectedSession!!
+            val user = c.chatRepository.addMessage(ChatMessage.create(session.id, MessageRole.USER, "First"))
+            val older = c.chatRepository.addMessage(ChatMessage.create(session.id, MessageRole.ASSISTANT, "<n=\"Alice\"/>[Earlier]()"))
+            c.chatRepository.addMessage(ChatMessage.create(session.id, MessageRole.USER, "Later"))
+            c.chatRepository.addMessage(ChatMessage.create(session.id, MessageRole.ASSISTANT, "The room is empty."))
+            controller.setCharacterEnabled(session.id, card.id, person.id, false)
+            c.characterResidency.completed(DesktopRealChatResult(user, false, older, null)) { false }
+            controller.refresh()
+            assertFalse(controller.state.value.people.single().enabled)
+            assertTrue(c.characterResidency.notices.value.isEmpty())
+        }
+    }
+
     private suspend fun configure(container: DesktopAppContainer, baseUrl: String = "http://127.0.0.1:12345/v1") {
         val model = ModelConfig(
             id = "model", displayName = "Model", modelName = "fake-model", baseUrl = baseUrl,

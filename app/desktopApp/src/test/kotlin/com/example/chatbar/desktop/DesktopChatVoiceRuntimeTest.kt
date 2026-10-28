@@ -15,6 +15,27 @@ import okio.Buffer
 import kotlin.test.*
 
 class DesktopChatVoiceRuntimeTest {
+    @Test fun `automatic presence pause preserves admitted voice snapshot and only blocks future generation`() = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            f.server.enqueue(MockResponse().setHeader("Content-Type", "audio/mpeg").setBody(Buffer().write(fishPreviewMp3()))
+                .setBodyDelay(700, java.util.concurrent.TimeUnit.MILLISECONDS))
+            val task = f.runtime.generate(f.message, "alice")
+            assertNotNull(withContext(Dispatchers.IO) { f.server.takeRequest(3, java.util.concurrent.TimeUnit.SECONDS) })
+            f.runtime.withAutomaticParticipationUpdate {
+                val current = f.chats.getSession(f.session.id)!!
+                f.chats.saveSessionSettingsDraft(current, current.copy(desktopAutoPauseAbsentPeople = true,
+                    desktopCharacterParticipation = listOf(SessionCharacterParticipation("card", emptySet(), setOf("alice")))))
+            }
+            f.done(task)
+            val original = f.repo.listForSession(f.session.id).single()
+            assertEquals("reference", original.voice.referenceId)
+            assertTrue(Files.exists(Path.of(original.audioPath)))
+            f.runtime.generate(f.message, "alice", replace = original, editedTaggedText = "replace")?.let { f.done(it) }
+            assertEquals(1, f.server.requestCount)
+            assertEquals(original, f.repo.get(original.id)); assertTrue(Files.exists(Path.of(original.audioPath)))
+        }
+    }
     @Test fun `disabled character cannot create or replace audio while historical recording remains`() = runBlocking {
         Fixture().use { f ->
             f.seed(); f.enqueue(); f.done(f.runtime.generate(f.message, "alice"))

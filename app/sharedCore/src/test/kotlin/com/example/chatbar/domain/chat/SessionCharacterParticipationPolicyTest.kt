@@ -12,6 +12,43 @@ class SessionCharacterParticipationPolicyTest {
     private val session = ChatSession.create(card.id, "Chat")
     private val json = Json { encodeDefaults = true }
 
+    @Test fun `residency does not pause by default and optional pause never overrides the card gate`() {
+        val absent = SessionCharacterParticipationPolicy.afterReply(session, card, emptySet(), setOf(second.id))
+        assertEquals(session, absent)
+        val auto = SessionCharacterParticipationPolicy.withAutomaticPause(session, true)
+        val paused = SessionCharacterParticipationPolicy.afterReply(auto, card, emptySet(), setOf(second.id))
+        assertFalse(SessionCharacterParticipationPolicy.isEnabled(paused, card, second.id))
+        val manuallyClosed = SessionCharacterParticipationPolicy.change(paused, card, first.id, false)
+        val optionOff = SessionCharacterParticipationPolicy.withAutomaticPause(manuallyClosed, false)
+        assertFalse(SessionCharacterParticipationPolicy.isEnabled(optionOff, card, first.id))
+        assertTrue(SessionCharacterParticipationPolicy.isEnabled(optionOff, card, second.id))
+        val reopened = SessionCharacterParticipationPolicy.afterReply(manuallyClosed, card, setOf(first.id, second.id), emptySet())
+        assertTrue(reopened.desktopCharacterParticipation.isEmpty())
+        val hardClosed = card.copy(characters = listOf(first.copy(desktopEnabled = false), second))
+        val kept = SessionCharacterParticipationPolicy.afterReply(manuallyClosed, hardClosed, setOf(first.id, second.id), emptySet())
+        assertFalse(SessionCharacterParticipationPolicy.isEnabled(kept, hardClosed, first.id))
+        assertTrue(first.id in kept.desktopCharacterParticipation.single().disabledPersonIds)
+        val slot = SaveSlotSessionPolicy.create(manuallyClosed, "Snapshot", null, null, SaveSlotImagePolicy.ORIGINAL, false)
+        val restored = SaveSlotSessionPolicy.restore(session, slot, null)
+        assertTrue(restored.desktopAutoPauseAbsentPeople)
+        assertEquals(manuallyClosed.desktopCharacterParticipation, restored.desktopCharacterParticipation)
+        assertFalse("desktopAutoPauseAbsentPeople" in json.encodeToString(ChatSession.serializer(), session))
+    }
+
+    @Test fun `card variant gate beats session enable and never removes source fields`() {
+        val variant = card.copy(characters = listOf(first, second.copy(desktopEnabled = false)))
+        assertEquals(listOf(first), SessionCharacterParticipationPolicy.effectiveCard(session, variant).characters)
+        assertFalse(SessionCharacterParticipationPolicy.isEnabled(null, variant, second.id))
+        assertFailsWith<IllegalArgumentException> { SessionCharacterParticipationPolicy.change(session, variant, second.id, true) }
+        assertEquals(second.profile, variant.characters.last().profile)
+        assertEquals(second.fishAudioVoice, variant.characters.last().fishAudioVoice)
+        val encoded = json.encodeToString(CharacterCard.serializer(), variant)
+        assertEquals(variant, json.decodeFromString(CharacterCard.serializer(), encoded))
+        assertFalse("desktopEnabled" in json.encodeToString(CharacterCard.serializer(), card))
+        val freeform = variant.copy(editMode = CharacterEditMode.FREEFORM)
+        assertSame(freeform, SessionCharacterParticipationPolicy.effectiveCard(session, freeform))
+    }
+
     @Test fun `clearing omitted defaults persists while unrelated latest runtime and unedited participation survive`() {
         val disabled = SessionCharacterParticipationPolicy.change(session, card, second.id, false)
         val latest = disabled.copy(lastMessagePreview = "new runtime preview", replyLength = 1234)

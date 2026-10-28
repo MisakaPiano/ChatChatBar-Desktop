@@ -402,8 +402,20 @@ class DesktopAppContainer internal constructor(
             launch = { sessionId, messageId, work -> taskRuntime.launchNovelAi("自动聊天图片", sessionId, messageId, retryable = true, work = work) })
     }
 
+    internal val characterResidency by lazy {
+        DesktopCharacterResidency(chatRepository, characterRepository, dataOperationCoordinator) { _, change ->
+            chatVoiceRuntime.withAutomaticParticipationUpdate(change)
+        }
+    }
+
     internal val taskRuntime: DesktopTaskRuntime by lazy {
         DesktopTaskRuntime(createRealChatRuntime(), onChatCompleted = { result, stopped ->
+            val residencyNotice = try { characterResidency.completed(result, stopped) }
+                catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+                catch (_: Exception) {
+                    characterResidency.reportFailure(result.assistant.sessionId, result.assistant.id)
+                    "人物驻场更新未完成，请检查会话人物设置"
+                }
             memoryController.afterReply(result.assistant.sessionId)
             val imageNotice = automaticChatImages.completed(result, stopped)
             val prefs = settingsRepository.getAppSettings()
@@ -414,7 +426,7 @@ class DesktopAppContainer internal constructor(
                 catch (_: DesktopAudioMaintenanceBusyException) { indexNotice = "历史索引暂缓：音频正在使用；下一次回复后重试" }
                 catch (_: Exception) { indexNotice = "历史索引未完成；旧数据保留，请检查向量模型后重试" }
             }
-            listOfNotNull(imageNotice, indexNotice).joinToString("；").takeIf(String::isNotBlank)
+            listOfNotNull(residencyNotice, imageNotice, indexNotice).joinToString("；").takeIf(String::isNotBlank)
         })
     }
 
@@ -467,6 +479,7 @@ class DesktopAppContainer internal constructor(
             taskRuntime = taskRuntime,
             imageStore = chatImages,
             voices = chatVoiceRuntime,
+            residency = characterResidency,
             memory = memoryController,
             rag = ragController,
             saveSlots = saveSlotController,

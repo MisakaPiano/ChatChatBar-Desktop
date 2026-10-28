@@ -1119,6 +1119,14 @@ internal fun DesktopSessionSettingsBody(
     }
     val draft = state.sessionSettingsDraft ?: return
     if (tab == DesktopSessionSettingsTab.BASIC) {
+    if (state.selectedCharacter?.editMode == com.example.chatbar.data.local.entity.CharacterEditMode.STRUCTURED) {
+        StudioToggle("退场后自动暂停人物条目注入", draft.desktopAutoPauseAbsentPeople) {
+            // Runtime participation may have changed since this draft opened. Only edit the
+            // option; the repository clears automatic reasons on the freshly merged session.
+            controller.editSessionSettings { it.copy(desktopAutoPauseAbsentPeople = !it.desktopAutoPauseAbsentPeople) }
+        }
+        StatusText("默认关闭。新回复完成后，连续两轮没有头像发言且未出现在结尾状态的人物退出驻场；开启后同时暂停其条目。重新出场会恢复会话开关，卡内关闭始终优先。不会额外注入状态或调用 AI。")
+    }
     PrimaryChoiceField(t(DesktopUiText.CHAT_MODEL), draft.modelId, state.modelChoices,
         inheritedLabel = "${t(DesktopUiText.INHERIT_GLOBAL_CHAT_MODEL)} · ${state.effectiveModels.chat?.name ?: t(DesktopUiText.NOT_CONFIGURED)}") { id ->
         controller.editSessionSettings { it.copy(modelId = id) }

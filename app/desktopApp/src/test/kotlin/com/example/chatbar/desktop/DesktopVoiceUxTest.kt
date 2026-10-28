@@ -1,6 +1,7 @@
 @file:OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class, androidx.compose.ui.InternalComposeUiApi::class)
 package com.example.chatbar.desktop
 import androidx.compose.ui.ImageComposeScene
+import androidx.compose.runtime.*
 import androidx.compose.ui.semantics.*
 import androidx.compose.foundation.layout.*
 import com.example.chatbar.data.local.entity.*
@@ -64,7 +65,7 @@ class DesktopVoiceUxTest {
             var resumes=0;var stops=0
             val scene=ImageComposeScene(w,160){
                 DesktopVoiceDeckRow("SYNTHESIZING 1/5",{},{}, narrator={
-                    DesktopNarratorDropdown(DesktopPrimaryChatState(), null) {}
+                    DesktopNarratorDropdown(voicedState(), null) {}
                 }, player={ DesktopVoicePlayerRow(DesktopVoicePlaybackState("v",listOf("v"),paused=true,positionMs=4321),{resumes++},{stops++}) })
             }
             try {repeat(4){scene.render(System.nanoTime()).close();yield()}
@@ -83,6 +84,36 @@ class DesktopVoiceUxTest {
                 assertEquals(1,resumes);assertEquals(1,stops)
             }finally{scene.close()}
         }
+    }
+    private fun voicedState() = DesktopPrimaryChatState(selectedCharacter = CharacterCard.create("Card").copy(
+        characters = listOf(CharacterInfo(id = "alice", name = "Alice", fishAudioVoice = FishAudioVoiceBinding("voice", "Voice")))))
+
+    @Test fun `unbound cards have no narrator control and collapsed dock preserves selection`() = runBlocking(edt) {
+        var state by androidx.compose.runtime.mutableStateOf(DesktopPrimaryChatState(selectedCharacter = CharacterCard.create("Empty")))
+        val ui = DesktopVoiceUiSelection().apply { narrator = "alice" }
+        val scene = ImageComposeScene(360, 100) { DesktopNarratorDock(state, ui) }
+        fun nodes(): List<SemanticsNode> {
+            fun walk(n: SemanticsNode): List<SemanticsNode> = listOf(n) + n.children.flatMap(::walk)
+            return scene.semanticsOwners.flatMap { walk(it.rootSemanticsNode) }
+        }
+        suspend fun frames() { repeat(5) { scene.render().close(); yield() } }
+        fun labels() = nodes().flatMap { it.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty() }
+        fun click(label: String) { nodes().single { label in it.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty() }
+            .config[SemanticsActions.OnClick].action!!() }
+        try {
+            frames(); assertFalse(labels().any { it.contains("音色") })
+            state = voicedState(); frames(); assertTrue(labels().any { it.startsWith("选择角色音色") })
+            click("折叠音色选择"); frames(); assertTrue(ui.narratorCollapsed)
+            assertTrue("展开音色选择" in labels()); assertFalse(labels().any { it.startsWith("选择角色音色") })
+            assertEquals("alice", ui.narrator)
+            state = state.copy(selectedCharacter = state.selectedCharacter!!.copy(characters = emptyList()))
+            frames(); assertFalse("展开音色选择" in labels())
+            state = voicedState(); frames(); click("展开音色选择"); frames()
+            assertFalse(ui.narratorCollapsed); assertEquals("alice", ui.narrator)
+            state = state.copy(selectedCharacter = state.selectedCharacter!!.copy(characters = listOf(
+                CharacterInfo(id = "invalid", name = "Invalid", fishAudioVoice = FishAudioVoiceBinding("  ", "Invalid")))))
+            frames(); assertTrue(desktopNarratorChoices(state).isEmpty()); assertFalse(labels().any { it.contains("音色") })
+        } finally { scene.close() }
     }
 }
 class DesktopVoicePauseWindowsTest {

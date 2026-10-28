@@ -52,9 +52,7 @@ internal fun DesktopImageWorkspace(
                 .toComposeImageBitmap()
         }
     }
-    DialogWindow(onCloseRequest = { if (!busy) onCancel() }, title = title,
-        icon = desktopImageWindowIcon(), resizable = true,
-        state = rememberDialogState(size = rememberDesktopImageWindowSize(760.dp, 780.dp))) {
+    DesktopImageToolWindow(title, { if (!busy) onCancel() }, width = 760.dp, height = 780.dp) {
         Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
             StatusText("拖动定位 · 滚轮缩放 · 应用后创建新图片")

@@ -23,6 +23,20 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class CharacterCardTransferCoreTest {
+    @Test fun `Desktop variant gate survives export and reimport without removing character data`() = runTest {
+        val f = fixture()
+        val base = completePackage()
+        val source = base.copy(card = base.card.copy(characters = base.card.characters.map { it.copy(desktopEnabled = false) }))
+        val imported = f.core.importNew(source)
+        assertTrue(imported.characters.isNotEmpty())
+        assertTrue(imported.characters.none { it.desktopEnabled })
+        val encoded = f.core.exportJson(imported.id)
+        val decoded = Json { ignoreUnknownKeys = false }.decodeFromString(CharacterCardPackage.serializer(), encoded)
+        assertTrue(decoded.card.characters.none { it.desktopEnabled })
+        val second = fixture().core.importNew(decoded)
+        assertEquals(imported.characters.map { Triple(it.name, it.profile, it.desktopEnabled) },
+            second.characters.map { Triple(it.name, it.profile, it.desktopEnabled) })
+    }
     @Test
     fun `opt-in exact durable evidence preserves committed resources without callback`() = runTest {
         for (overwrite in listOf(false, true)) {

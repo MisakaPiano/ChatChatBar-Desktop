@@ -25,9 +25,12 @@ data class SourceTurnTombstone(
 )
 
 @Serializable
-data class SessionCharacterParticipation(val cardId: String, val disabledPersonIds: Set<String>) {
+@OptIn(ExperimentalSerializationApi::class)
+data class SessionCharacterParticipation(val cardId: String, val disabledPersonIds: Set<String>,
+    @EncodeDefault(EncodeDefault.Mode.NEVER) val automaticallyPausedPersonIds: Set<String> = emptySet()) {
     init {
         require(cardId.isNotBlank() && disabledPersonIds.all(String::isNotBlank))
+        require(automaticallyPausedPersonIds.all(String::isNotBlank))
     }
 }
 
@@ -64,6 +67,8 @@ data class ChatSession(
     /** Desktop-only per-card participation; absent legacy data enables every person. */
     @EncodeDefault(EncodeDefault.Mode.NEVER)
     val desktopCharacterParticipation: List<SessionCharacterParticipation> = emptyList(),
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val desktopAutoPauseAbsentPeople: Boolean = false,
     val longTermMemoryEnabled: Boolean = true,
     val longTermMemory: String = "",
     val longTermMemoryUpdatedThroughMessageId: String? = null,

@@ -42,7 +42,7 @@ internal class DesktopMergeIdentity(private val copy: Boolean = false,
         if (opaque(fields)) return null
         if ("desktopCharacterParticipation" in fields) {
             if (field == "cardId") return "character_cards"
-            if (field == "disabledPersonIds") return "characters"
+            if (field in setOf("disabledPersonIds", "automaticallyPausedPersonIds")) return "characters"
         }
         if (field == "id") {
             if (fields.size == 1) return record.type.takeUnless { record.singleton && record.type !in setOf("retrieval_model_config", "embedding_model_config") }
@@ -135,6 +135,6 @@ internal class DesktopMergeIdentity(private val copy: Boolean = false,
             "legacyReferenceNodeIds", "pendingRootNodeIds", "addedNodeIds", "removedNodeIds", "snapshotNodeIds", "consumedNodeIds", "resultNodeId",
             "episodeNodeIds", "arcNodeIds", "eraNodeIds", "activeEpisodeNodeIds", "activeArcNodeIds", "activeEraNodeIds", "deleteNodeIds", "currentRevisionId",
             "parentRevisionId", "sourceRevisionId", "targetRevisionId", "deleteRevisionIds", "transactionId", "deleteTransactionIds", "memoryHeadCommitId",
-            "parentCommitId", "sourceId", "desktopCharacterParticipation", "cardId", "disabledPersonIds")
+            "parentCommitId", "sourceId", "desktopCharacterParticipation", "cardId", "disabledPersonIds", "automaticallyPausedPersonIds")
     }
 }

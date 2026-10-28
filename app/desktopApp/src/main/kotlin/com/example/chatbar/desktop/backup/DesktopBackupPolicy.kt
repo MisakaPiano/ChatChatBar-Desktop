@@ -54,8 +54,15 @@ internal object DesktopBackupPolicy {
     fun isDesktopOnly(path: String): Boolean = path.startsWith("${DesktopHistoricalVoiceCustody.ROOT}/") || path.startsWith("${DesktopPreservationStore.ROOT}/") || path.startsWith("${DesktopSaveSlotSourceCustody.ROOT}/") ||
         path.startsWith("entities/") && (entityType(path).startsWith("desktop_") || entityType(path) == "retrieval_model_config")
     fun hasDesktopParticipation(value: JsonObject): Boolean =
+        (value["desktopAutoPauseAbsentPeople"] as? JsonPrimitive)?.booleanOrNull == true ||
         (value["desktopCharacterParticipation"] as? JsonArray)?.any { entry ->
-            ((entry as? JsonObject)?.get("disabledPersonIds") as? JsonArray)?.isNotEmpty() == true } == true
+            (entry as? JsonObject)?.let { scope ->
+                listOf("disabledPersonIds", "automaticallyPausedPersonIds").any {
+                    (scope[it] as? JsonArray)?.isNotEmpty() == true
+                }
+            } == true } == true ||
+            (value["characters"] as? JsonArray)?.any { person ->
+                ((person as? JsonObject)?.get("desktopEnabled") as? JsonPrimitive)?.booleanOrNull == false } == true
     private val secrets = setOf("apiKey", "siliconFlowApiKey") + preferenceSecrets
     private val json = Json { ignoreUnknownKeys = false; encodeDefaults = true }
 

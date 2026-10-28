@@ -274,6 +274,11 @@ internal class DesktopCharacterEditorController(
 
     fun addCharacter() = edit { it.copy(characters = it.characters + CharacterInfo.create("")) }
 
+    fun setCharacterEntryEnabled(id: String, enabled: Boolean) = edit { card ->
+        if (card.editMode != CharacterEditMode.STRUCTURED || card.characters.count { it.id == id } != 1) card
+        else card.copy(characters = card.characters.map { if (it.id == id) it.copy(desktopEnabled = enabled) else it })
+    }
+
     fun updateCharacter(id: String, transform: (CharacterInfo) -> CharacterInfo) = edit { card ->
         card.copy(characters = card.characters.map { if (it.id == id) transform(it) else it })
     }

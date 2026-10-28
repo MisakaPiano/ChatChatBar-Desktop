@@ -37,6 +37,8 @@ data class SaveSlot(
     /** Desktop extension; older official clients do not implement this participation setting. */
     @EncodeDefault(EncodeDefault.Mode.NEVER)
     val desktopCharacterParticipation: List<SessionCharacterParticipation> = emptyList(),
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val desktopAutoPauseAbsentPeople: Boolean = false,
     val longTermMemoryEnabled: Boolean = true,
     val longTermMemory: String = "",
     val longTermMemoryUpdatedThroughMessageId: String? = null,

@@ -108,6 +108,13 @@ internal class DesktopChatVoiceRuntime(
         block()
     }
 
+    /** Automatic presence updates affect future admissions. Existing batches retain their immutable
+     * GenerationContext/targets, confirmation text, bindings and recordings; no cancellation or TTS. */
+    suspend fun withAutomaticParticipationUpdate(block: suspend () -> Unit) = mutation.withLock {
+        check(!closed)
+        block()
+    }
+
     /** Called only after the owning chat message was explicitly deleted. */
     suspend fun removeDeletedMessage(sessionId: String, messageId: String) = gate.withNormalOperation {
         check(chats.readMessageDurable(messageId, sessionId) is com.example.chatbar.data.local.JsonFileStorage.EntityReadResult.Missing) { "消息删除状态未知；录音已保留" }

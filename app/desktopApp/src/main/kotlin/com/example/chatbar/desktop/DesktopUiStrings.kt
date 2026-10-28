@@ -167,6 +167,8 @@ internal enum class DesktopUiText(val zhCn: String, val en: String) {
     PERSON_DISABLED("已关闭", "Disabled"), PERSON_DISABLED_HISTORY("该人物已关闭；以下为保留的历史状态。", "This character is disabled; the status below is retained history."),
     PERSON_PARTICIPATION_SCOPE("人物开关只影响本会话的后续人物设定和新语音生成；历史、记忆、其他引用和已有录音保留。任务完成或停止后可切换。", "Participation affects subsequent character settings and new speech in this chat. History, memory, other references and existing recordings are retained. Change it after active tasks finish or stop."),
     PERSON_TOGGLE_FREEFORM("自由模式也支持人物、头像和声线；正文尚未绑定人物段落，暂不能按人物排除设定。", "Freeform cards support characters, avatars and voices. The settings text has no per-character bindings yet, so individual settings cannot be excluded."),
+    CARD_PERSON_GATE_SCOPE("此处关闭会作用于这张卡的所有会话；原设定保留，会话开关与重新出场不能自动启用。修改后保存角色卡。此为Desktop设置，旧版手机端不支持。", "Disabled entries stay intact and are excluded in all chats using this card. Chat controls and reappearance cannot enable them. Save the card to apply. This Desktop setting is unsupported on older Android versions."),
+    CARD_PERSON_DISABLED("已在角色卡中关闭；请到角色卡编辑器启用。", "Disabled in the character card. Enable it in the card editor."),
     EXPAND_COMPOSER("全屏编辑", "Expand composer"), FULL_COMPOSER("全屏撰写", "Full-screen composer"),
     COMPOSER_TEXT("新消息草稿", "New message draft"),
     RESIZE_COMPOSER("拖动调整输入区高度", "Drag to resize composer"),

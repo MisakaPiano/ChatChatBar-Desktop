@@ -15,11 +15,14 @@ internal data class DesktopChatPerson(
     val identityUnique: Boolean,
     val status: DesktopPersonStatus?,
     val enabled: Boolean = true,
+    val cardEnabled: Boolean = true,
+    val resident: Boolean = true,
 )
 
 /** Read-only projection of persisted current alternatives, independent of the paged viewport. */
 internal fun desktopChatPeople(card: CharacterCard?, messages: List<ChatMessage>, session: ChatSession? = null): List<DesktopChatPerson> {
     if (card == null) return emptyList()
+    val presence = com.example.chatbar.domain.chat.CharacterResidencyPolicy.recent(card, messages)
     val ids = card.characters.groupingBy { it.id }.eachCount()
     val names = card.characters.groupBy { it.name.trim().lowercase() }
     val statuses = mutableMapOf<String, DesktopPersonStatus>()
@@ -49,7 +52,9 @@ internal fun desktopChatPeople(card: CharacterCard?, messages: List<ChatMessage>
         }
     return card.characters.map { person -> DesktopChatPerson(card.id, person,
         person.id.isNotBlank() && ids[person.id] == 1, statuses[person.id],
-        com.example.chatbar.domain.chat.SessionCharacterParticipationPolicy.isEnabled(session, card, person.id)) }
+        com.example.chatbar.domain.chat.SessionCharacterParticipationPolicy.isEnabled(session, card, person.id),
+        com.example.chatbar.domain.chat.SessionCharacterParticipationPolicy.cardAllows(card, person.id),
+        person.id !in presence.absentForTwoTurns) }
 }
 
 internal val DesktopPrimaryChatState.participatingCharacter: CharacterCard?

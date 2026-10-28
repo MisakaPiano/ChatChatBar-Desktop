@@ -135,8 +135,10 @@ class ChatRepository internal constructor(
         sessionSettingsMutex.withLock {
             val latest = getSession(baseline.id) ?: error("会话已不存在")
             val merged = mergeSettingsDraft(ChatSession.serializer(), baseline, draft, latest)
-            updateSessionLocked(merged)
-            merged
+            val normalized = if (merged.desktopAutoPauseAbsentPeople) merged else
+                com.example.chatbar.domain.chat.SessionCharacterParticipationPolicy.withAutomaticPause(merged, false)
+            updateSessionLocked(normalized)
+            normalized
         }
 
     private suspend fun updateSessionLocked(session: ChatSession) {

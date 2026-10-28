@@ -49,7 +49,7 @@ internal fun DesktopChatPersonTarget(person: DesktopChatPerson?, onOwnContext: (
         },
         DesktopChatMenuEntry(t(if (person.enabled) DesktopUiText.DISABLE_PERSON else DesktopUiText.ENABLE_PERSON),
             if (person.enabled) DesktopAppIcons.Stop else DesktopAppIcons.Add,
-            person.identityUnique && actions.toggleEnabled && actions.setEnabled != null) { actions.setEnabled?.invoke(person, !person.enabled) },
+            person.identityUnique && person.cardEnabled && actions.toggleEnabled && actions.setEnabled != null) { actions.setEnabled?.invoke(person, !person.enabled) },
     ))) { menu = false }
     TooltipArea(tooltip = {
         if (actions.previewEnabled && !menu) {
@@ -78,8 +78,8 @@ internal fun DesktopChatPeopleRail(people: List<DesktopChatPerson>, controller: 
     val t = LocalDesktopUiStrings.current
     Column(Modifier.width(96.dp).fillMaxHeight().verticalScroll(rememberScrollState()).padding(end = 8.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        StatusText(t(DesktopUiText.CARD_PEOPLE))
-        people.forEachIndexed { index, person -> key(index, person.cardId, person.character.id) {
+        StatusText("驻场人物")
+        people.filter { it.resident }.forEachIndexed { index, person -> key(index, person.cardId, person.character.id) {
             DesktopChatPersonTarget(person) {
                 Column(Modifier.width(80.dp).padding(4.dp), horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -114,6 +114,8 @@ internal fun DesktopChatPeopleDialog(people: List<DesktopChatPerson>, selectedId
                     people.forEach { person -> BootstrapButton(person.character.name + if (!person.enabled) " · ${t(DesktopUiText.PERSON_DISABLED)}" else "", secondary = true,
                         enabled = person.identityUnique) { onSelect(person.character.id) } }
                 } else {
+                    StatusText(if (selected.resident) "当前驻场" else "已退场 · 连续两轮未出现头像发言或结尾状态；可查看历史状态")
+                    if (!selected.cardEnabled) StatusText(t(DesktopUiText.CARD_PERSON_DISABLED))
                     if (!selected.enabled) StatusText(t(DesktopUiText.PERSON_DISABLED_HISTORY))
                     selected.status?.let { status ->
                         val time = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneId.systemDefault())
@@ -126,7 +128,7 @@ internal fun DesktopChatPeopleDialog(people: List<DesktopChatPerson>, selectedId
                         onEdit(selected.cardId, selected.character.id)
                     }
                     if (onSetEnabled != null) BootstrapButton(t(if (selected.enabled) DesktopUiText.DISABLE_PERSON else DesktopUiText.ENABLE_PERSON),
-                        secondary = true, enabled = toggleEnabled && selected.identityUnique) { onSetEnabled(selected, !selected.enabled) }
+                        secondary = true, enabled = toggleEnabled && selected.identityUnique && selected.cardEnabled) { onSetEnabled(selected, !selected.enabled) }
                 }
             }
         }

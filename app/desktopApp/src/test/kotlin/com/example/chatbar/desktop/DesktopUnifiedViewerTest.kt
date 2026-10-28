@@ -188,11 +188,13 @@ class DesktopUnifiedViewerTest {
             scene.frames(); assertEquals(1, opened)
         } finally { scene.close() }
         // Without the opt-in callback the existing Viewer interaction remains in-place.
-        val viewer = ImageComposeScene(400, 300) { DesktopImageZoomSurface("saved", { bytes }, Modifier.fillMaxSize()) }
+        val zoom = DesktopImageZoomState()
+        val viewer = ImageComposeScene(400, 300) { DesktopImageZoomSurface("saved", { bytes }, Modifier.fillMaxSize(), zoomState = zoom) }
         try {
-            viewer.until { viewer.nodes().any { it.label("图片") } }
+            viewer.until { zoom.sourceSize.width == 40 && zoom.fitScale > 1f }
             val fit = viewer.pixels()
             viewer.double(Offset(200f, 150f)); assertNotEquals(fit, viewer.pixels()); assertEquals(1, opened)
+            assertEquals(100, zoom.percent)
             viewer.double(Offset(200f, 150f)); assertEquals(fit, viewer.pixels())
         }
         finally { viewer.close() }

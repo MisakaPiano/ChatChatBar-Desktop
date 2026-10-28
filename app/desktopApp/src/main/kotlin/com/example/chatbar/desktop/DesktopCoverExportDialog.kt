@@ -49,9 +49,8 @@ internal fun DesktopCoverExportDialog(draft: DesktopCoverExportDraft, controller
     }
     if (editingCopy && sourceBytes != null) DesktopImageToolsDialog(sourceBytes, UnconfiguredDesktopFilePicker,
         { editingCopy = false }, onImageApply = { commit(options to it) })
-    val initialSize = rememberDesktopImageWindowSize(900.dp, 820.dp)
-    if (!editingCopy) DialogWindow(onCloseRequest = controller::cancelCoverExport, title = "CCB PNG 封面 · ${draft.card.name}",
-        icon = desktopImageWindowIcon(), resizable = true, state = rememberDialogState(size = initialSize)) {
+    if (!editingCopy) DesktopImageToolWindow("CCB PNG 封面 · ${draft.card.name}", controller::cancelCoverExport,
+        width = 900.dp, height = 820.dp) {
         Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)) {
             StatusText("拖动 / 滚轮调整构图。替换图仅用于本次导出，不修改角色背景或 Package 图片。")

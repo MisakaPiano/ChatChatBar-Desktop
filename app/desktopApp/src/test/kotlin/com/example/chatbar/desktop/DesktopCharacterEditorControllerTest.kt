@@ -34,6 +34,23 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class DesktopCharacterEditorControllerTest {
+    @Test fun `quick card variant toggle preserves fields and requires ordinary save`() = runBlocking {
+        fixture { _, container, controller ->
+            val person = CharacterInfo.create("Variant person").copy(profile = "kept profile", imagePrompt = "kept prompt")
+            val card = CharacterCard.create("Variant card", greeting = "Hi").copy(characters = listOf(person))
+            container.characterRepository.save(card)
+            controller.openExisting(card.id)
+            controller.setCharacterEntryEnabled(person.id, false)
+            assertTrue(controller.state.value.dirty)
+            assertTrue(container.characterRepository.getById(card.id)!!.characters.single().desktopEnabled)
+            assertTrue(controller.save())
+            assertEquals(person.copy(desktopEnabled = false), container.characterRepository.getById(card.id)!!.characters.single())
+            controller.openExisting(card.id)
+            controller.setCharacterEntryEnabled(person.id, true)
+            assertTrue(controller.save())
+            assertEquals(person, container.characterRepository.getById(card.id)!!.characters.single())
+        }
+    }
     @Test fun `open person focuses exact ID and keeps same card unsaved edits`() = runBlocking {
         fixture { _, container, controller ->
             val first = CharacterInfo.create("First")

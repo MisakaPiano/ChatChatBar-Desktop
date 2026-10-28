@@ -10,16 +10,19 @@ import kotlin.test.*
 class DesktopFullBackupServiceTest {
     @Test fun `whole backup keeps participation as Desktop extension in legacy and modern envelopes`() = runBlocking {
         for (modern in listOf(false, true)) Fixture().use { f ->
-            val person = CharacterInfo.create("Synthetic")
-            val card = CharacterCard.create("Synthetic card").copy(id = "apiKey", characters = listOf(person))
+            val person = CharacterInfo.create("Synthetic").copy(desktopEnabled = false)
+            val auto = CharacterInfo.create("Automatic")
+            val card = CharacterCard.create("Synthetic card").copy(id = "apiKey", characters = listOf(person, auto))
             val session = ChatSession.create(card.id, "Synthetic chat").copy(
-                desktopCharacterParticipation = listOf(SessionCharacterParticipation(card.id, setOf(person.id))))
+                desktopAutoPauseAbsentPeople = true,
+                desktopCharacterParticipation = listOf(SessionCharacterParticipation(card.id, setOf(person.id), setOf(auto.id))))
             val cardFile = f.root.resolve("entities/character_cards/${card.id}.json")
             val sessionFile = f.root.resolve("entities/chat_sessions/${session.id}.json")
             Files.createDirectories(cardFile.parent); Files.createDirectories(sessionFile.parent)
             Files.writeString(cardFile, backupJson.encodeToString(CharacterCard.serializer(), card))
             Files.writeString(sessionFile, backupJson.encodeToString(ChatSession.serializer(), session))
             val original = Files.readAllBytes(sessionFile)
+            val originalCard = Files.readAllBytes(cardFile)
             val output = f.base.resolve("participation.cbbackup")
             if (modern) {
                 f.service.exportModern(output, null)
@@ -27,6 +30,9 @@ class DesktopFullBackupServiceTest {
                     val value = staged.entities.getValue("entities/chat_sessions/${session.id}.json")
                     assertTrue(DesktopBackupPolicy.hasDesktopParticipation(value))
                     assertEquals(session, backupJson.decodeFromJsonElement(ChatSession.serializer(), value))
+                    val cardValue = staged.entities.getValue("entities/character_cards/${card.id}.json")
+                    assertTrue(DesktopBackupPolicy.hasDesktopParticipation(cardValue))
+                    assertEquals(card, backupJson.decodeFromJsonElement(CharacterCard.serializer(), cardValue))
                 }
             } else {
                 f.service.export(output, null)
@@ -34,9 +40,12 @@ class DesktopFullBackupServiceTest {
                     assertTrue(prepared.desktopOnly)
                     val value = Files.readString(prepared.files.getValue("entities/chat_sessions/${session.id}.json"))
                     assertEquals(session, backupJson.decodeFromString(ChatSession.serializer(), value))
+                    val cardValue = Files.readString(prepared.files.getValue("entities/character_cards/${card.id}.json"))
+                    assertEquals(card, backupJson.decodeFromString(CharacterCard.serializer(), cardValue))
                 }
             }
             assertContentEquals(original, Files.readAllBytes(sessionFile))
+            assertContentEquals(originalCard, Files.readAllBytes(cardFile))
         }
     }
 
