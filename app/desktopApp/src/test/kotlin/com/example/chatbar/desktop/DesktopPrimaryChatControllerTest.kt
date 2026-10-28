@@ -1092,6 +1092,26 @@ class DesktopPrimaryChatControllerTest {
         } finally { parent.toFile().deleteRecursively() }
     }
 
+    @Test fun `person status projection includes old messages outside viewport and refresh drops deleted sources`() = runBlocking {
+        withContainer { container ->
+            val person = com.example.chatbar.data.local.entity.CharacterInfo.create("Alice")
+            val card = CharacterCard.create("History status", greeting = "Hi").copy(characters = listOf(person))
+            container.characterRepository.save(card); configure(container)
+            val id = container.characterSessionService.createSessionForCharacter(card.id)
+            val source = container.chatRepository.addMessage(ChatMessage.create(id, MessageRole.ASSISTANT,
+                "---\n姓名：Alice\n心情：calm\n---"))
+            repeat(85) { container.chatRepository.addMessage(ChatMessage.create(id, MessageRole.USER, "Later $it")) }
+            val controller = container.primaryChatController
+            controller.refresh()
+            assertFalse(controller.state.value.messages.any { it.id == source.id })
+            assertEquals(source.id, controller.state.value.people.single().status!!.source.id)
+            container.chatRepository.deleteMessage(source.id, id)
+            controller.refresh()
+            assertNull(controller.state.value.people.single().status)
+            assertEquals(card.characters, container.characterRepository.getById(card.id)!!.characters)
+        }
+    }
+
     private suspend fun configure(container: DesktopAppContainer, baseUrl: String = "http://127.0.0.1:12345/v1") {
         val model = ModelConfig(
             id = "model", displayName = "Model", modelName = "fake-model", baseUrl = baseUrl,

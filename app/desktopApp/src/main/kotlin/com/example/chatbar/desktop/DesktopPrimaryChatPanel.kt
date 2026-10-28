@@ -86,6 +86,7 @@ internal fun DesktopPrimaryChatPanel(
     composerLayout: DesktopComposerLayoutState,
     onOpenStudio: () -> Unit = {},
     compactNavigation: DesktopCompactChatNavigation = remember { DesktopCompactChatNavigation() },
+    onEditPerson: (String, String) -> Unit = { _, _ -> },
 ) {
     val t = LocalDesktopUiStrings.current
     val state by controller.state.collectAsState()
@@ -113,6 +114,11 @@ internal fun DesktopPrimaryChatPanel(
         mutableStateOf(DesktopDiagnosticDisclosure(state.selectedSession?.id))
     }
     var backgroundOpen by remember { mutableStateOf(false) }
+    var peopleOpen by remember(state.selectedSession?.id) { mutableStateOf(false) }
+    var inspectedPersonId by remember(state.selectedSession?.id) { mutableStateOf<String?>(null) }
+    val peopleActions = DesktopChatPeopleActions(state.people,
+        inspect = { inspectedPersonId = it.character.id; peopleOpen = true }, edit = onEditPerson,
+        previewEnabled = !peopleOpen)
     var settingsTab by remember(state.selectedSession?.id) { mutableStateOf(DesktopSessionSettingsTab.BASIC) }
     var relinkOpen by remember { mutableStateOf(false) }
     var relinkCharacterId by remember { mutableStateOf<String?>(null) }
@@ -255,6 +261,9 @@ internal fun DesktopPrimaryChatPanel(
                             }) else null,
                         ) {
                             if (selected != null) {
+                                if (state.people.isNotEmpty()) BootstrapButton(t(DesktopUiText.CARD_PEOPLE), secondary = true) {
+                                    inspectedPersonId = null; peopleOpen = true
+                                }
                                 controller.saveSlots?.let { slots ->
                                     BootstrapButton("存档", secondary = true) { scope.launch {
                                         if (state.sessionSettingsDirty) controller.requestSessionSettingsLeave { slots.open(selected.id) }
@@ -287,9 +296,15 @@ internal fun DesktopPrimaryChatPanel(
                     if (selected == null) {
                         StatusText(t(DesktopUiText.SELECT_SESSION))
                     } else {
-                        CompositionLocalProvider(LocalClipboard provides clipboard, LocalDesktopVoiceUi provides voiceUi) { key(state.selectedSession?.id) {
+                        CompositionLocalProvider(LocalClipboard provides clipboard, LocalDesktopVoiceUi provides voiceUi,
+                            LocalDesktopChatPeople provides peopleActions) { key(state.selectedSession?.id) {
+                            val railWidth = if (placement.contentWidthDp >= 760f && state.people.isNotEmpty()) 96f else 0f
+                            val timelinePlacement = DesktopChatNavigationPlacementPolicy.resolve(placement.workspaceWidthDp - railWidth)
+                            Row(Modifier.weight(1f).fillMaxWidth()) {
+                            if (railWidth > 0) DesktopChatPeopleRail(state.people, controller)
+                            Box(Modifier.weight(1f).fillMaxHeight()) {
                             DesktopChatScreenshotHost(controller, state) { PrimaryTimeline(
-                                state, running, controller, clipboard, placement, Modifier.weight(1f),
+                                state, running, controller, clipboard, timelinePlacement, Modifier.fillMaxSize(),
                                 onEdit = { message -> editingMessage = message; editingText = message.displayContent },
                                 onDelete = { deletingMessage = it },
                                 onEditSegment = { message, segment -> editingSegment = message to segment; segmentText = segment.source!!.rawText },
@@ -302,6 +317,8 @@ internal fun DesktopPrimaryChatPanel(
                                     }
                                 }; Unit },
                             ) }
+                            }
+                            }
                         } }
                         Column(Modifier.width(placement.contentWidthDp.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             if (clipboard.unavailable) StatusText(t(DesktopUiText.CLIPBOARD_UNAVAILABLE), colors.warning)
@@ -325,6 +342,10 @@ internal fun DesktopPrimaryChatPanel(
             }
         }
         if (backgroundOpen) DesktopChatBackgroundPanel(controller) { backgroundOpen = false }
+        if (peopleOpen) DesktopChatPeopleDialog(state.people, inspectedPersonId,
+            onSelect = { inspectedPersonId = it },
+            onEdit = { card, person -> peopleOpen = false; onEditPerson(card, person) },
+            onClose = { peopleOpen = false })
         if (composer.expanded) {
             DesktopFullComposer(composer, canLaunch, state.configurationMessage, state.error,
                 onDraft = controller::editComposer, onSend = send,
@@ -862,8 +883,11 @@ internal fun PrimaryMessageBubble(
                 DesktopRoleplaySegmentSurface(segment.kind, presented.segmented,
                     showSpeaker = index in presented.speakerHeaderIndexes, speakerName = speakerName,
                     tag = "message-segment-$index", onContentWidth = { segmentWidth = it; messageTextWidth = it }, avatar = {
+                        DesktopChatPersonTarget(desktopChatPersonForSpeaker(LocalDesktopChatPeople.current?.people.orEmpty(),
+                            segment.source?.speakerName), onOwnContext = { menuAnchor = null }) {
                         PrimaryAvatar(desktopPresentedAvatarReference(speaker, state.selectedCharacter),
                             speakerName ?: presented.speakerLabel, controller, 40.dp)
+                        }
                     }) { textColor, textStyle ->
                     if (segment.kind == RoleplaySegmentKind.STATUS) {
                         val expansion = remember(message.id, message.currentAlternativeIndex, index,
@@ -987,7 +1011,7 @@ internal fun desktopImageOnlyMessage(message: ChatMessage, presented: DesktopPre
         presented.copyText.isBlank() && presented.reasoning.isNullOrBlank()
 
 @Composable
-private fun PrimaryAvatar(reference: String?, fallbackName: String, controller: DesktopPrimaryChatController, size: Dp = 30.dp) {
+internal fun PrimaryAvatar(reference: String?, fallbackName: String, controller: DesktopPrimaryChatController, size: Dp = 30.dp) {
     val bitmap by produceState<ImageBitmap?>(initialValue = null, reference, controller) {
         value = reference?.let { ref ->
             withContext(Dispatchers.IO) {

@@ -1,9 +1,12 @@
+@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 package com.example.chatbar.desktop
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -127,6 +130,8 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
     val t = LocalDesktopUiStrings.current
     val scope = rememberCoroutineScope()
     var selectedEntry by remember(card.id) { mutableStateOf<String?>(null) }
+    val personFocus = remember(card.id) { BringIntoViewRequester() }
+    val personFocusExtent = with(androidx.compose.ui.platform.LocalDensity.current) { 600.dp.toPx() }
     var selectedDocument by remember(card.id) { mutableStateOf<String?>(null) }
     var confirmClearDocuments by remember { mutableStateOf(false) }
     var importOpen by remember(card.id) { mutableStateOf(false) }
@@ -135,6 +140,13 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
     val presentation = desktopCharacterEditorPresentation(state)
     val communityReadOnly = presentation.communityReadOnly
     val readOnly = presentation.readOnly
+    LaunchedEffect(card.id, state.personFocusRevision, readOnly) {
+        if (!readOnly) state.personFocusId?.takeIf { id -> card.characters.count { it.id == id } == 1 }?.let {
+            selectedEntry = it
+            androidx.compose.runtime.withFrameNanos { }
+            personFocus.bringIntoView(androidx.compose.ui.geometry.Rect(0f, 0f, 1f, personFocusExtent))
+        }
+    }
     DesktopModalSurface { Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.overlay).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
@@ -198,7 +210,7 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
                 } else EditorField(t(DesktopUiText.FREEFORM_BODY), card.freeformCharacterText, multiline = true) { value ->
                     controller.edit { it.copy(freeformCharacterText = value) }
                 }
-                CharacterPersonWorkspace(card, selectedEntry, controller) { selectedEntry = it }
+                CharacterPersonWorkspace(card, selectedEntry, controller, personFocus) { selectedEntry = it }
             }
             EditorSection(t(DesktopUiText.BASIC_SETTING)) {
                 EditorField(t(DesktopUiText.BASIC_SETTING), card.basicSetting, true) { value -> controller.edit { it.copy(basicSetting = value) } }
@@ -392,7 +404,8 @@ private fun CharacterTextSection.uiText(): DesktopUiText = when (this) {
 
 @Composable
 private fun CharacterPersonWorkspace(
-    card: CharacterCard, selectedId: String?, controller: DesktopCharacterEditorController, onSelect: (String?) -> Unit,
+    card: CharacterCard, selectedId: String?, controller: DesktopCharacterEditorController,
+    personFocus: BringIntoViewRequester, onSelect: (String?) -> Unit,
 ) {
     val t = LocalDesktopUiStrings.current
     val workspace = desktopPersonWorkspace(card, selectedId)
@@ -419,6 +432,9 @@ private fun CharacterPersonWorkspace(
                 val selected = workspace.selected
                 if (selected == null) StatusText(t(DesktopUiText.SELECT_PERSON))
                 else key(controller.state.value.draftSessionId, selected.id, workspace.detailKind) {
+                    Box(Modifier.fillMaxWidth().bringIntoViewRequester(personFocus)) {
+                        EditorHeading("${t(DesktopUiText.PERSON)} · ${selected.name}")
+                    }
                     DesktopFishBindingField(selected, controller)
                     when (workspace.detailKind) {
                         DesktopPersonDetailKind.STRUCTURED_FIELDS -> CharacterEntryFields(selected, controller)
@@ -567,4 +583,5 @@ private fun CharacterEditorProblem.uiText(): DesktopUiText = when (this) {
     CharacterEditorProblem.DOCUMENT_READ_FAILED -> DesktopUiText.CHARACTER_DOCUMENT_READ_FAILED
     CharacterEditorProblem.SAVE_COMMITTED_WARNING -> DesktopUiText.CHARACTER_SAVE_COMMITTED_WARNING
     CharacterEditorProblem.CLEAN_DRAFT_WARNING -> DesktopUiText.CHARACTER_CLEAN_DRAFT_WARNING
+    CharacterEditorProblem.PERSON_UNAVAILABLE -> DesktopUiText.PERSON_UNAVAILABLE
 }

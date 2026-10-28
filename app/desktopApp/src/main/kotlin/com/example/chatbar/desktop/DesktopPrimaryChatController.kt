@@ -56,6 +56,7 @@ internal data class DesktopPrimaryChatState(
     val selectedCharacter: CharacterCard? = null,
     val selectedCharacterMissing: Boolean = false,
     val messages: List<ChatMessage> = emptyList(),
+    val people: List<DesktopChatPerson> = emptyList(),
     val hasOlderMessages: Boolean = false,
     val hasNewerMessages: Boolean = false,
     val readingPosition: ChatScrollPosition? = null,
@@ -1019,6 +1020,10 @@ internal class DesktopPrimaryChatController(
             )
             val playerSetting = settings.getPlayerSetting()
             val selectedCharacter = characters.getById(session.characterCardId)
+            val people = if (selectedCharacter?.characters.isNullOrEmpty()) emptyList() else {
+                val timeline = chats.getMessagesReadOnly(id)
+                withContext(Dispatchers.Default) { desktopChatPeople(selectedCharacter, timeline) }
+            }
             val modelStatus = models.status(session.modelId, appSettings)
             val effective = models.resolveChatModel(session.modelId, appSettings)
             val diagnostic = desktopModelDiagnostic(
@@ -1068,6 +1073,7 @@ internal class DesktopPrimaryChatController(
                             selectedCharacter = selectedCharacter,
                             selectedCharacterMissing = selectedCharacter == null,
                             messages = page.messages,
+                            people = people,
                             hasOlderMessages = page.hasOlder,
                             hasNewerMessages = page.hasNewer,
                             readingPosition = if (sameSession) current.readingPosition else position,

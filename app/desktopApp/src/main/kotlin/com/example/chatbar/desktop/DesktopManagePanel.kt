@@ -139,6 +139,7 @@ internal fun DesktopManagePanel(
     novelAiSettingsController: DesktopNovelAiSettingsController,
     onStartCharacterChat: (String) -> Unit = {},
     initialModels: Boolean = false, initialModelId: String? = null, onInitialModelsConsumed: () -> Unit = {},
+    initialPerson: Pair<String, String>? = null, onInitialPersonConsumed: () -> Unit = {},
 ) {
     val t = LocalDesktopUiStrings.current
     val uiLanguage by uiLanguageController.language.collectAsState()
@@ -162,6 +163,13 @@ internal fun DesktopManagePanel(
             modelSettingsController.loadModels()
             initialModelId?.let { modelSettingsController.startEdit(it) }
             onInitialModelsConsumed()
+        }
+    }
+    LaunchedEffect(initialPerson) {
+        initialPerson?.let { (cardId, personId) ->
+            section = ManageSection.CHARACTERS
+            characterEditorController.openPerson(cardId, personId)
+            onInitialPersonConsumed()
         }
     }
     LaunchedEffect(modelTransferState.pendingTargetId, modelTransferState.deliveryAttempt) {

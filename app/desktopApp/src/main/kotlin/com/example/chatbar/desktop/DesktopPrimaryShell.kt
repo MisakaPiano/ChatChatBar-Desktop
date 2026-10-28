@@ -66,6 +66,7 @@ internal fun DesktopPrimaryShell(
     val compactChatNavigation = remember { DesktopCompactChatNavigation() }
     var requestedDesignModel by remember { mutableStateOf<String?>(null) }
     var openDesignModels by remember { mutableStateOf(false) }
+    var requestedPerson by remember { mutableStateOf<Pair<String, String>?>(null) }
 
     fun navigate(destination: DesktopPrimaryRoute) {
         if (backupLocked) return
@@ -108,7 +109,14 @@ internal fun DesktopPrimaryShell(
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when (route) {
                     DesktopPrimaryRoute.CHAT -> DesktopPrimaryChatPanel(primaryChatController, size, composerLayout,
-                        onOpenStudio = { navigate(DesktopPrimaryRoute.TOOLS) }, compactNavigation = compactChatNavigation)
+                        onOpenStudio = { navigate(DesktopPrimaryRoute.TOOLS) }, compactNavigation = compactChatNavigation,
+                        onEditPerson = { card, person -> scope.launch {
+                            primaryChatController.requestSessionSettingsLeave {
+                                navigation.navigate(DesktopPrimaryRoute.MANAGE, rootState)
+                                openDesignModels = false; requestedDesignModel = null
+                                requestedPerson = card to person
+                            }
+                        }; Unit })
                     DesktopPrimaryRoute.MANAGE -> DesktopManagePanel(
                         transferController = transferController,
                         modelTemplateController = modelTemplateController,
@@ -124,6 +132,7 @@ internal fun DesktopPrimaryShell(
                         novelAiSettingsController = novelAiSettingsController,
                         initialModels = openDesignModels, initialModelId = requestedDesignModel,
                         onInitialModelsConsumed = { openDesignModels = false; requestedDesignModel = null },
+                        initialPerson = requestedPerson, onInitialPersonConsumed = { requestedPerson = null },
                         onStartCharacterChat = { id -> scope.launch {
                             val before = primaryChatController.state.value.sessions.map { it.id }.toSet()
                             primaryChatController.createSession(id)

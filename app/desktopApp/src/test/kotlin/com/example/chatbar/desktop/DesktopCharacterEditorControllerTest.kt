@@ -34,6 +34,44 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class DesktopCharacterEditorControllerTest {
+    @Test fun `open person focuses exact ID and keeps same card unsaved edits`() = runBlocking {
+        fixture { _, container, controller ->
+            val first = CharacterInfo.create("First")
+            val second = CharacterInfo.create("Second")
+            val card = CharacterCard.create("Person focus", greeting = "Hi").copy(characters = listOf(first, second))
+            container.characterRepository.save(card)
+            controller.openPerson(card.id, second.id)
+            assertEquals(second.id, controller.state.value.personFocusId)
+            controller.updateCharacter(second.id) { it.copy(profile = "unsaved profile") }
+            val draft = controller.state.value.card
+            controller.openPerson(card.id, first.id)
+            assertEquals(first.id, controller.state.value.personFocusId)
+            assertEquals(draft, controller.state.value.card)
+            assertTrue(controller.state.value.dirty)
+            assertEquals("", container.characterRepository.getById(card.id)!!.characters.last().profile)
+            controller.openPerson(card.id, "missing")
+            assertEquals(CharacterEditorProblem.PERSON_UNAVAILABLE, controller.state.value.problem)
+            assertEquals(draft, controller.state.value.card)
+        }
+    }
+
+    @Test fun `person navigation across cards obeys existing dirty draft leave prompt`() = runBlocking {
+        fixture { _, container, controller ->
+            val p = CharacterInfo.create("Target")
+            val target = CharacterCard.create("Target card", greeting = "Hi").copy(characters = listOf(p))
+            container.characterRepository.save(target)
+            controller.openNew()
+            controller.edit { it.copy(name = "Unsaved card", greeting = "Hi") }
+            val draft = controller.state.value.card
+            controller.openPerson(target.id, p.id)
+            assertTrue(controller.state.value.leavePrompt)
+            assertEquals(draft, controller.state.value.card)
+            assertNull(controller.state.value.personFocusId)
+            controller.continueEditing()
+            assertEquals(draft, controller.state.value.card)
+        }
+    }
+
     @Test fun `avatar book mode switches and name edits preserve every hidden person field`() = runBlocking {
         fixture { _, _, controller ->
             controller.openNew()
