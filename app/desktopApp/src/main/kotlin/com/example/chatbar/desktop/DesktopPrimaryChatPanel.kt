@@ -985,7 +985,7 @@ internal fun DesktopRoleplaySegmentSurface(
     val style = if (segmented) TextStyle(fontSize = metrics.fontSize.sp,
         lineHeight = (metrics.fontSize + metrics.lineExtra).sp) else TextStyle(fontSize = 14.sp, lineHeight = 16.sp)
     BoxWithConstraints(if (segmented) Modifier.fillMaxWidth() else Modifier, contentAlignment =
-        if (segmented && !speakerSegment) Alignment.TopCenter else Alignment.TopStart) {
+        if (segmented && kind == RoleplaySegmentKind.NARRATION) Alignment.TopCenter else Alignment.TopStart) {
         val limit = maxWidth * if (segmented) metrics.widthFraction else 1f
         val surface: @Composable () -> Unit = {
             val background = if (!segmented && kind != RoleplaySegmentKind.STATUS) Color.Transparent else when (kind) {

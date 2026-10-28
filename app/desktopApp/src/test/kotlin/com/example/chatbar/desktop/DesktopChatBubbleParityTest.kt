@@ -112,6 +112,36 @@ class DesktopChatBubbleParityTest {
         } finally { f.close() }
     }
 
+    @Test fun `short status cards align left in both bubble modes while narration stays centered`() = runBlocking(awt) {
+        val f = DesktopAssistantImageActionTest.Fixture()
+        try {
+            f.initialize()
+            val message = f.source.copy(content = "Narration\n---\n♟姓名：Alice\n位置：门口\n---")
+            for (segmented in listOf(true, false)) {
+                val state = DesktopPrimaryChatState(selectedSession = f.c.chatRepository.getSession("session"),
+                    selectedCharacter = f.c.characterRepository.getById("card"), assistantSegmentedBubblesEnabled = segmented)
+                val scene = ImageComposeScene(800, 1000) {
+                    PrimaryMessageBubble(message, state, f.c.primaryChatController, isolatedClipboard)
+                }
+                try {
+                    scene.until { scene.nodes().any { it.label("♟姓名：Alice\n位置：门口") } }
+                    val status = scene.tag("message-segment-1").boundsInRoot
+                    val narration = scene.tag("message-segment-0").boundsInRoot
+                    assertEquals(if (segmented) 0f else narration.left, status.left, 1f)
+                    assertTrue(status.width < 400f)
+                    if (segmented) assertEquals(16f, narration.left, 1f)
+                    System.getProperty("chatbar.test.screenshot.dir")?.let { directory ->
+                        val target = java.nio.file.Path.of(directory)
+                        java.nio.file.Files.createDirectories(target)
+                        scene.render(System.nanoTime()).use { image -> image.encodeToData()?.let {
+                            java.nio.file.Files.write(target.resolve("sf04-status-left-$segmented.png"), it.bytes)
+                        } }
+                    }
+                } finally { scene.close() }
+            }
+        } finally { f.close() }
+    }
+
     @Test fun `narrow long bubbles remain bounded in both presentation modes`() = runBlocking(awt) {
         val f = DesktopAssistantImageActionTest.Fixture()
         try {

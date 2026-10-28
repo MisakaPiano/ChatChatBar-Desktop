@@ -6,6 +6,7 @@ import com.example.chatbar.data.local.entity.ChatMessage
 import com.example.chatbar.data.local.entity.ChatSession
 import com.example.chatbar.data.local.entity.MessageRole
 import com.example.chatbar.domain.chat.RoleplaySegmentKind
+import com.example.chatbar.domain.chat.RoleplayStatusOwnership
 import com.example.chatbar.domain.chat.parseRoleplayTextSegments
 
 internal data class DesktopPersonStatus(val text: String, val source: ChatMessage)
@@ -32,21 +33,11 @@ internal fun desktopChatPeople(card: CharacterCard?, messages: List<ChatMessage>
         .forEach { message ->
             parseRoleplayTextSegments(message.displayContent).asReversed().forEach segment@ { segment ->
                 if (segment.kind != RoleplaySegmentKind.STATUS) return@segment
-                val raw = segment.rawText.trim().replace("\r\n", "\n").lines()
-                val closed = (raw.firstOrNull() == "---" && raw.lastOrNull() == "---") ||
-                    (raw.firstOrNull()?.trim() in setOf("```", "```状态", "```状态栏", "```status") && raw.lastOrNull() == "```")
-                if (!closed || raw.size < 3) return@segment
-                val lines = segment.displayText.lines().map(String::trim).filter(String::isNotEmpty)
-                if (lines.any { it.contains("行动选项") || it.contains("可选行动") ||
-                        it.equals("action choices", true) || it.equals("action options", true) }) return@segment
-                val owners = lines.mapNotNull { line ->
-                    personNameField.matchEntire(line)?.groupValues?.get(1)?.trim()
-                        ?: personHeading.matchEntire(line)?.groupValues?.get(1)?.trim()
-                }.distinctBy { it.lowercase() }
+                val owners = RoleplayStatusOwnership.ownerNames(segment)
                 // No ownership inferred from adjacency, a mention in prose, or the number of voices.
                 val name = owners.singleOrNull() ?: return@segment
                 val person = names[name.lowercase()]?.singleOrNull() ?: return@segment
-                if (person.id.isBlank() || ids[person.id] != 1 || lines.size < 2) return@segment
+                if (person.id.isBlank() || ids[person.id] != 1) return@segment
                 statuses.putIfAbsent(person.id, DesktopPersonStatus(segment.displayText.trim(), message))
             }
         }
@@ -61,9 +52,6 @@ internal val DesktopPrimaryChatState.participatingCharacter: CharacterCard?
     get() = selectedCharacter?.let { card -> selectedSession?.let {
         com.example.chatbar.domain.chat.SessionCharacterParticipationPolicy.effectiveCard(it, card)
     } ?: card }
-
-private val personNameField = Regex("(?:姓名|人物|角色|Name|Character)\\s*[:：]\\s*(.+)", RegexOption.IGNORE_CASE)
-private val personHeading = Regex("(?:【|\\[)([^]】]+?)(?:状态栏|状态)(?:】|])")
 
 /** Display-name/avatar matching alone never authorizes an edit target. */
 internal fun desktopChatPersonForSpeaker(people: List<DesktopChatPerson>, speakerName: String?): DesktopChatPerson? {

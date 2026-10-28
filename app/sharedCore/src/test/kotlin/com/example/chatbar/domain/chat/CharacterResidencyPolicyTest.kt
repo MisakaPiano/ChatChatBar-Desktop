@@ -43,4 +43,13 @@ class CharacterResidencyPolicyTest {
         assertTrue(a.id in CharacterResidencyPolicy.recent(card, first + second + third + turn(4, "<n=\"甲\"/>[走吧。]()")).residentPersonIds)
         assertTrue(CharacterResidencyPolicy.recent(card, turn(1, "只有旁白。")).absentForTwoTurns.isEmpty())
     }
+
+    @Test fun `decorated explicit status labels renew presence without prose inference`() {
+        for (owner in listOf("♟姓名:甲", "👤 **姓名：**甲", "- **姓名：甲**", "🧑‍🦰Name: 甲", "✨【甲状态】")) {
+            assertEquals(setOf(a.id), CharacterResidencyPolicy.presentPersonIds(card,
+                reply("---\n$owner\n位置：门口\n---")), owner)
+        }
+        assertTrue(CharacterResidencyPolicy.presentPersonIds(card,
+            reply("---\n👤心情：甲很开心\n位置：门口\n---")).isEmpty())
+    }
 }

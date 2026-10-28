@@ -72,4 +72,18 @@ class DesktopChatPeoplePolicyTest {
         assertEquals(source, people.first().status!!.source)
         assertNull(people.last().status)
     }
+
+    @Test fun `emoji and markdown owner labels expose full latest status without changing source`() {
+        for (owner in listOf("♟姓名:Alice", "👤 **姓名：**Alice", "- **Name: Alice**", "✨【Alice状态】")) {
+            val text = "---\n$owner\n位置：门口\n关系：等待Bob\n---"
+            val source = message(text)
+            val people = desktopChatPeople(card, listOf(source))
+            assertEquals(source, people.first().status?.source, owner)
+            assertTrue(people.first().status!!.text.contains("位置：门口"))
+            assertNull(people.last().status)
+            assertEquals(text, source.content)
+        }
+        val mixed = message("---\n👤姓名：Alice\n👤姓名：Bob\n位置：门口\n---")
+        assertTrue(desktopChatPeople(card, listOf(mixed)).all { it.status == null })
+    }
 }

@@ -6,9 +6,6 @@ import com.example.chatbar.data.local.entity.MessageRole
 
 /** Local output evidence only; never requests AI, interprets prose mentions, or changes prompts. */
 object CharacterResidencyPolicy {
-    private val ownerField = Regex("(?:姓名|人物|角色|Name|Character)\\s*[:：]\\s*(.+)", RegexOption.IGNORE_CASE)
-    private val ownerHeading = Regex("(?:【|\\[)([^]】]+?)(?:状态栏|状态)(?:】|])")
-
     fun presentPersonIds(card: CharacterCard, reply: ChatMessage): Set<String> {
         if (reply.role != MessageRole.ASSISTANT) return emptySet()
         val names = card.characters.groupBy { it.name.trim().lowercase() }
@@ -22,16 +19,7 @@ object CharacterResidencyPolicy {
                 .mapNotNull { identify(it.speakerName) }.forEach(::add)
             // Only the ending status sequence participates. Ordinary code and action options do not.
             for (segment in segments.asReversed().takeWhile { it.kind == RoleplaySegmentKind.STATUS }) {
-                val raw = segment.rawText.trim().replace("\r\n", "\n").lines()
-                val closed = raw.size >= 3 && ((raw.first() == "---" && raw.last() == "---") ||
-                    (raw.first().trim() in setOf("```", "```状态", "```状态栏", "```status") && raw.last() == "```"))
-                if (!closed) continue
-                val lines = segment.displayText.lines().map(String::trim).filter(String::isNotEmpty)
-                if (lines.any { it.contains("行动选项") || it.contains("可选行动") ||
-                        it.equals("action choices", true) || it.equals("action options", true) }) continue
-                if (lines.size < 2) continue
-                lines.mapNotNull { line -> identify(ownerField.matchEntire(line)?.groupValues?.get(1)
-                    ?: ownerHeading.matchEntire(line)?.groupValues?.get(1)) }.forEach(::add)
+                RoleplayStatusOwnership.ownerNames(segment).mapNotNull(::identify).forEach(::add)
             }
         }
     }
