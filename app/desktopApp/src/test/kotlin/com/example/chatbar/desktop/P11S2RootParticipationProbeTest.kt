@@ -131,7 +131,8 @@ class P11S2RootParticipationProbeTest {
             assertFails { DesktopFullBackupArchive(work).inspect(source, null) }
             assertEquals(0L, Files.list(work).use { it.count() })
             assertEquals(before, digest(Files.readAllBytes(source))); f.retained(); f.capture("rejected")
-            Files.copy(source, Path.of("build", "p11-s2-g0-probe", "unknown.fixture.cbbackup"), StandardCopyOption.REPLACE_EXISTING)
+            val evidence = Files.createDirectories(Path.of("build", "p11-s2-g0-probe"))
+            Files.copy(source, evidence.resolve("unknown.fixture.cbbackup"), StandardCopyOption.REPLACE_EXISTING)
             println("G0 ARCHIVE=S0_READABLE_S1_BLOCKED_PREPARED_REJECTED")
         }
     }

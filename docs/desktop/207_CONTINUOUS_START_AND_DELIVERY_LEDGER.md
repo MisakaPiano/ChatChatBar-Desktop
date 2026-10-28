@@ -1,12 +1,30 @@
 # 207 CCB Desktop 持续起点与交付总账
 
-更新截点：2026-10-28T05:12:01+09:00。用户要求本轮结束后，本地Codex和GPT Project仍能持续查询最新起点，并保留所有未交付任务。**NSIS跨本轮持续实施，不因本轮协调记录交付而结束。**
+更新截点：2026-10-28T10:02:49+09:00。用户要求本轮结束后，本地Codex和GPT Project仍能持续查询最新起点，并保留所有未交付任务。**NSIS跨本轮持续实施，不因本轮协调记录交付而结束。**
 
 ## 查询入口
 
 本文件是公开脱敏的稳定入口：[活动分支当前207](https://github.com/MisakaPiano/ChatChatBar-Desktop/blob/feature/phase8-fish-audio/docs/desktop/207_CONTINUOUS_START_AND_DELIVERY_LEDGER.md)。每次接手读取该地址当前版本，先核对真实branch/HEAD/status，不把任何固定SHA或旧Project上传快照当作永久最新状态。
 
 本地完整任务和证据位于 I:\CCB-Desktop-Continuity\CURRENT_START.md、TASK_LEDGER.json、EVENTS.ndjson、EVIDENCE_INDEX.json。这里不存原始用户资料或凭据；私有路径/原始日志的详细表留本机，不能上传GitHub。
+
+## 1208 已正式安装，未公开
+
+最新已完成a77ba048 / run40612680338：Android成功；Windows2118项1失败17跳过，NSIS19项全部执行通过。默认temp4项、history viewer12项和clipboard17项云端均无失败/跳过；剩余设置页初次点击超时。源码在管理/迁移刷新busy时有意拒绝切页，用例只等按钮可见，未等点击准入；现补等待三个busy清零，保留真实指针点击、字体对齐、窄屏实际滚轮、可见性和保存/放弃断言，FishPresentation本机8项全部执行通过。新head完整CI以实际结果为准，不改变已冻结1208程序内容。报告ZIP服务端SHA256 `398fae8fccfd64cb1fcf35b087d41b0456961d0f9db70320201e81e321c2726b`已下载核对。
+
+1208普通包已正式升级H长期根，窗口/218清单文件/原bootstrap/快捷方式及清理COMPLETE，现用只有1208；用户新版验收待回复，公开仍1207。隔离测试安装已用自己的uninstaller退役，独立资料/媒体/bootstrap三假DPAPI保持，普通H当前指针未动。a77运行源码/安装工具与frozen fc无差异，仅测试/CI/记录变化；完整CI run40612680338运行中。
+
+新版限定使用验收请求已交用户；沉默不是通过。a77相对frozen fc仅测试/CI/记录变化，实际程序内容未变；CI与公开结果后续按真实回执追加。
+
+## 1208 修复候选检查点（尚未正式安装或公开）
+
+普通1208已构建：源码 `fc610845de98bedca693868864047039a34511c0`，155,272,689B，SHA256 `d4be0d6f540355b19692c172eab05d3e111470ae8428189fd2b61a09466e7bfb`。实际程序JAR在独立JVM中长/短temp写入、校验、清理及junction拒绝通过。独立安装身份使用同一普通app-image完成1207→1208窗口、正常退出/Job归零、隔离资料/媒体/bootstrap与三项假DPAPI保持；专属shell目录下快捷方式和旧版本回收均COMPLETE。普通H登记与原bootstrap保持，H仍1207。
+
+最初本机CreateProcess error5及原剪贴板cmd拒绝保留；用户要求“你再试一次”并确认看见360提示，按原API原包重试后完成上述验证，不宣称用户手动执行或1208真人验收。新人工入口的登记路径写法错误已修正；初次隔离快捷方式遇已有同名外来链接而DEFERRED，之后补专属测试shell后COMPLETE，外来链接保留。这些为测试入口问题，未修改生产保护。
+
+fc610845 / run40610588565：Android成功，Windows2118项1失败17跳过，NSIS未执行。唯一剩余history viewer用例以semantics遍历次序定位“第二张”，实际点到视觉第四格；现按屏幕位置定位且保留完整过滤顺序、index、无选择/无草稿修改断言。该suite及原剪贴板suite本机全部通过，cmd拒绝未再现；新head完整CI待实际结果。NSIS helper改为准备好源码后独立运行，即使Desktop测试失败也会给出真实结果，整体失败不隐藏。
+
+1208只有未公开草稿及核对过的EXE/SHA资产；公开仍等新版实际验收。1207原资产/标签/限定验收保持，不把本轮source或测试结果说成1207已修复。
 
 ## 当前实现起点与普通候选
 
@@ -15,6 +33,20 @@
 当前普通NSIS `0.1.0-preview.1207` / Windows `0.1.1207`，155,270,013 B，SHA256 `7bf2961f44b66971a9c2ed7da0559e38e128e1177c22407c56fe1b38405b4735`。19个唯一Windows helper全部通过；1206→1207升级、1207全新首装/运行中拒绝/正常退出/卸载与隔离资料、媒体、bootstrap、三项假DPAPI保持通过。长期 `H:\ChatChatBar-Desktop-App` 已由普通安装器正式安装并显示窗口；218个清单文件逐项核验、稳定根cwd/当前用户登记/快捷方式正确、bootstrap元数据未变，程序根只留当前版本与管理文件，无测试资料或日志。
 
 用户本轮真实验收选择“已按步骤检查，全部通过”：版本、原有内容、离线草稿正常退出后重开保持；截图为对应界面限定证据。原1204故障弹窗确认不是该验收。普通EXE与SHA256已于2026-10-28 05:19 JST公开为[Desktop Preview 1207](https://github.com/MisakaPiano/ChatChatBar-Desktop/releases/tag/desktop-v0.1.0-preview.1207)；公开API/列表/发行页/下载响应/校验文件均核对通过，实际发行包中的更新选择代码能识别当前及旧版本。源码PR已正常合并；Android CI原有门面冲突与构建缓存问题已修复，本地16项相关测试、缓存存储和复用通过，云端全组结果单列。完整说明及A–G范围见[当前实施进度](PREVIEW_IMPLEMENTATION_PROGRESS.md)与[候选说明](PREVIEW_CANDIDATE_USER_NOTES_DRAFT.md)。
+
+## CI后续当前事实（2026-10-28）
+
+1207确认存在默认JVM临时目录8.3短名导致Fish试听缓存被拒的生产问题，公开Release已披露；默认目录创建修复正在验证，将另发1208/新SHA，不覆盖1207。剪贴板同源短名测试通过，未改该业务。f499/run40607172047已结束：Android通过，Windows2114项4失败17跳过，NSIS步骤未执行；报告ZIP服务端SHA已核对。四项为测试时限、源准入更早拒绝symlink、模拟HTTP服务未读POST导致Windows RST、测试目录创建依赖，当前修复保留原业务断言和安全检查，尚待新head完整CI。
+
+1207原包独立JVM以同一合成目录长名启动成功、短名启动拒绝，确认是已发布问题；仅运行中改System属性的首轮因JDK缓存未复现，旧失败证据保留。修复只在内部默认OS temp入口拒绝reparse父链、NOFOLLOW展开短名并核对同一目录；显式外部别名仍拒绝，文件归属/摘要/清理边界保持。新4项默认temp回归曾全部执行通过，当前最终小修及邻近用例继续验证；不能把未提交源码称已安装或已发布。
+
+Windows云端前提实测原temp含RUNNER~1，长名为runneradmin，卷为NTFS且waveOut设备为0；规范临时根修订后由291失败降至4失败。a41/run40581546331旧报告2114项291失败14跳过仍保留。无音频设备的三项物理播放是NOT_TESTED；本机6设备4项原生播放/暂停全部执行通过。较早本机配置修复后7 suites40项通过，不代替云端全组。下一步新head完整Windows/NSIS与Android检查、1208隔离普通升级，再按授权正式H升级及真实限定验收。
+
+run40576758285 对应 aa4928bb，已 completed/failure：`:desktopApp:test` 实际2114项、254失败、17跳过，运行平台Ubuntu。先前Android工厂门面编译与构建身份缓存两错未再出现；剩余失败包含Windows DPAPI/JNA原生句柄、winmm、java.exe、Chrome和Windows路径语义，不能一概称为Windows产品失败，也不能未补验就一概称无影响。8bc08731没有对应PR工作流运行，不把旧head结果冒充最新head。
+
+[PR2](https://github.com/MisakaPiano/ChatChatBar-Desktop/pull/2)将Linux任务限定为完整Android测试/仪器编译/APK及sharedCore测试，并在Windows运行完整Desktop测试和NSIS合成helper。首轮8e263558 / run40579518673 的Windows job在checkout因历史证据长路径失败，尚未执行测试；当前修订在临时Windows runner启用Git长路径，并按PR取消旧版本重复运行。后续以实际head检查为准，不用本地16项代替完整云CI。
+
+公开1207原资产和标签未改。公开下载现有证据是服务端digest、公开校验文本和HEAD大小，加本机原包安装全链；没有从公开下载重新执行整条安装全链。安装目录改名/移动后继续更新、现代全备Android完整恢复/物理设备往返、完整断电恢复/历史大快照、跨Windows账户及全部媒体/凭据语义仍未测或按既有证据限定。用户最短验收不提升为全部业务验收。
 
 ## 停电恢复事实
 
@@ -36,7 +68,7 @@
 | T14 | C盘未清小项 | 活动缓存/helper/未证明同blob稿件保留；87B旧scratch已退役；其余有理由保留项继续维护。 |
 | T15 | DL1 全范围回收转发指令 | 完整新转发说明留本地总账，交 DL1 本机 Codex 或用户执行；指令交付与执行回执分开。 |
 | T16 | DL1 全范围已授权 MSI 资源回收及实际回执 | WAITING_DL1_LOCAL_EXECUTOR / NO_REMOTE_RECEIPT。包含宿主/客机 MSI 任务工作区、传输 ZIP、展开副本及无用专属 VM/磁盘/检查点，非仅 VM；只挂起此远端依赖，本机继续。 |
-| T17 | NSIS与Preview实际候选 | 1207已正式安装、真人限定验收并公开发布；PR源码已正常集成，云端Android全组CI单独跟踪，未测范围不提升。 |
+| T17 | NSIS与Preview实际候选 | 1207已发布并有真人限定验收，后续确认默认短名temp试听缺陷已公开披露；1208修复、完整CI与新包验证进行中。 |
 | T18 | P11及Public Preview A–G既有任务 | 按203继续；复用有效证据，不把历史限定PASS提升为全部正式关闭。 |
 | T19 | 可持续查询记录 | 本轮交付；A在实质检查点继续维护，不新增签字门槛。 |
 | T20 | 成熟普通候选安装到长期 H 程序根并交付验收 | COMPLETE_WITH_SCOPE：普通1207已正式安装；窗口/清单/登记/快捷方式正确。用户确认版本、原有内容与退出重开草稿保持通过。长期根不放故障/假资料/日志，既有数据按正式机制保留。 |
@@ -61,4 +93,4 @@ P11退役副本的原档案、成功后继完整复核根、必要小日志/源�
 相关入口：[204路线](204_STUDIO_NSIS_ROUTE_SWITCH_20261028.md)、[205主线](205_NSIS_PRIMARY_HANDOFF_20261028.md)、[206回收](206_MSI_RECLAIM_HANDOFF_20261028.md)、[203连续任务](203_P11_TO_PUBLIC_PREVIEW_CONTINUOUS_CODEX_TASK.md)。
 
 
-PR #1 已通过普通merge集成到desktop，提交 `b58485b115b0d1b25740da2803d385e9e37bdcf1`；其文件树与定向验证的aa4928bb一致。无强制/绕过选项。云端Android全组检查[40576758285](https://github.com/MisakaPiano/ChatChatBar-Desktop/actions/runs/40576758285)仍在运行，单独跟踪；本地16项相关测试和配置缓存存储/复用已通过，不能冒称云端全组通过。
+PR #1 已通过普通merge集成到desktop，提交 `b58485b115b0d1b25740da2803d385e9e37bdcf1`；其文件树与定向验证的aa4928bb一致。无强制/绕过选项。云端旧run40576758285后续失败，当前PR2修正中，见上文；本地16项相关测试和配置缓存存储/复用已通过，不能冒称云端全组通过。

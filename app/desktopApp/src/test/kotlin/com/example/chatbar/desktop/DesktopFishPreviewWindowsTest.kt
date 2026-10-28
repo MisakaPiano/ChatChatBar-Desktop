@@ -9,6 +9,7 @@ import kotlin.test.*
 
 class DesktopFishPreviewWindowsTest {
     @Test fun `real Windows MP3 device starts stops and releases file for exclusive reopen`() = runBlocking {
+        requireWindowsAudioOutputForNativeTest()
         val file = Files.createTempFile("f1-native-", ".mp3")
         Files.write(file, fishPreviewMp3())
         val output = DesktopWindowsAudioOutput()
@@ -38,6 +39,7 @@ class DesktopFishPreviewWindowsTest {
     }
 
     @Test fun `independent audio JVM exits then another JVM reacquires root`() {
+        requireWindowsAudioOutputForNativeTest()
         val root = Files.createTempDirectory("f1-process-")
         val classpath = listOf(DesktopFishAudioChild::class.java, DesktopDataRootOwnership::class.java,
             com.example.chatbar.data.root.AppDataRootInfrastructure::class.java, Unit::class.java, Job::class.java,

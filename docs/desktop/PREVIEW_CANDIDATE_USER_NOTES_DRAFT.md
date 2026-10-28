@@ -1,3 +1,29 @@
+## 当前1208已正式安装，公开与新版验收待完成
+
+最新已完成a77ba048 / run40612680338：Android成功；Windows2118项1失败17跳过，NSIS19项全部执行通过。默认temp4项、history viewer12项和clipboard17项云端均无失败/跳过；剩余设置页初次点击超时。源码在管理/迁移刷新busy时有意拒绝切页，用例只等按钮可见，未等点击准入；现补等待三个busy清零，保留真实指针点击、字体对齐、窄屏实际滚轮、可见性和保存/放弃断言，FishPresentation本机8项全部执行通过。新head完整CI以实际结果为准，不改变已冻结1208程序内容。报告ZIP服务端SHA256 `398fae8fccfd64cb1fcf35b087d41b0456961d0f9db70320201e81e321c2726b`已下载核对。
+
+普通1208已正式升级长期H程序根并打开，218清单文件、原bootstrap、两快捷方式、shell/cleanup COMPLETE，仅保留当前1208程序。隔离安装已正常卸载，隔离资料/媒体/bootstrap及三假DPAPI保持。包仍为frozen fc610845 / SHA d4be0d6f540355b19692c172eab05d3e111470ae8428189fd2b61a09466e7bfb，155272689B；后续a77仅测试/CI/记录变化。新版限定用户检查请求已交，尚未回复；a77完整CI运行中，公开仍1207，1208仅草稿。最新实际回执以[207总账](207_CONTINUOUS_START_AND_DELIVERY_LEDGER.md)为准，下面旧截点仅保留历史。
+
+---
+
+## 历史检查点：1208 修复候选尚未正式安装或公开
+
+普通1208已构建：源码 `fc610845de98bedca693868864047039a34511c0`，155,272,689B，SHA256 `d4be0d6f540355b19692c172eab05d3e111470ae8428189fd2b61a09466e7bfb`。实际程序JAR在独立JVM中长/短temp写入、校验、清理及junction拒绝通过。独立安装身份使用同一普通app-image完成1207→1208窗口、正常退出/Job归零、隔离资料/媒体/bootstrap与三项假DPAPI保持；专属shell目录下快捷方式和旧版本回收均COMPLETE。普通H登记与原bootstrap保持，H仍1207。
+
+最初本机CreateProcess error5及原剪贴板cmd拒绝保留；用户要求“你再试一次”并确认看见360提示，按原API原包重试后完成上述验证，不宣称用户手动执行或1208真人验收。新人工入口的登记路径写法错误已修正；初次隔离快捷方式遇已有同名外来链接而DEFERRED，之后补专属测试shell后COMPLETE，外来链接保留。这些为测试入口问题，未修改生产保护。
+
+fc610845 / run40610588565：Android成功，Windows2118项1失败17跳过，NSIS未执行。唯一剩余history viewer用例以semantics遍历次序定位“第二张”，实际点到视觉第四格；现按屏幕位置定位且保留完整过滤顺序、index、无选择/无草稿修改断言。该suite及原剪贴板suite本机全部通过，cmd拒绝未再现；新head完整CI待实际结果。NSIS helper改为准备好源码后独立运行，即使Desktop测试失败也会给出真实结果，整体失败不隐藏。
+
+1208只有未公开草稿及核对过的EXE/SHA资产；公开仍等新版实际验收。1207原资产/标签/限定验收保持，不把本轮source或测试结果说成1207已修复。
+
+---
+
+## 后续修复检查点：1207 已确认问题，1208 尚未交付
+
+2026-10-28T09:40:01+09:00：1207确认存在默认JVM临时目录8.3短名导致Fish试听缓存被拒的生产问题，公开Release已披露；默认目录创建修复正在验证，将另发1208/新SHA，不覆盖1207。剪贴板同源短名测试通过，未改该业务。f499/run40607172047已结束：Android通过，Windows2114项4失败17跳过，NSIS步骤未执行；报告ZIP服务端SHA已核对。四项为测试时限、源准入更早拒绝symlink、模拟HTTP服务未读POST导致Windows RST、测试目录创建依赖，当前修复保留原业务断言和安全检查，尚待新head完整CI。
+
+---
+
 # Desktop Preview 1207 发行说明
 
 当前已公开发布 `0.1.0-preview.1207`，Windows 安装版本 `0.1.1207`，构建源码 `bd385a995fbb506e16607dc92403755951a591a4`。普通安装包使用当前用户 NSIS EXE；此前 MSI 路线无限期搁置。实际包摘要、原生验证和安装状态以 [207 当前总账](207_CONTINUOUS_START_AND_DELIVERY_LEDGER.md) 为准。用户已完成本机版本、原有内容及草稿正常退出重开限定验收。[公开发行页](https://github.com/MisakaPiano/ChatChatBar-Desktop/releases/tag/desktop-v0.1.0-preview.1207)提供安装包和校验文件。
@@ -40,3 +66,8 @@
 ## 发布依据与未交付项
 
 [D-016](18_DECISIONS.md#d-016公开-release-的授权依据)记录作者直接授权开发与发布；原授权截图或消息回执尚未独立定位，不伪造文字、文件或 LICENSE，也不要求重授同一权限。本次用户已完成版本、原有内容及草稿退出重开限定验收，明确确认全部通过；普通包与说明已公开发布，精确结果见207及[发行页](https://github.com/MisakaPiano/ChatChatBar-Desktop/releases/tag/desktop-v0.1.0-preview.1207)。完整剩余任务保留在 207 与本地总账，云端 Project 上传和远端 DL1 回收没有回执时不标完成。
+
+
+## 后续检查状态
+
+完整云端CI尚未全绿：旧Android Linux入口曾误跑Windows Desktop测试，254项失败；PR2正拆分平台并验证。Windows普通包首装/升级/卸载与用户离线草稿验收范围不扩大。安装目录改名或移动后继续升级、从公开下载重新进行完整安装链尚未实测，不能继承Studio的结果。真实Fish服务、长期RAG/记忆和全部Provider的端到端使用仍按既有各自证据说明。

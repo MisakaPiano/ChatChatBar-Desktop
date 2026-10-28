@@ -87,6 +87,7 @@ class DesktopVoiceUxTest {
 }
 class DesktopVoicePauseWindowsTest {
     @Test fun `native Windows position remains frozen on pause and advances on resume`()=runBlocking {
+        requireWindowsAudioOutputForNativeTest()
         val p=Files.createTempFile("ccb-native-pause-",".mp3");Files.write(p,fishPreviewMp3(500));val out=DesktopWindowsAudioOutput()
         try {out.playFormal(p);withTimeout(4000){while(out.positionMs()<100)delay(20)}
             val at=out.pause();assertTrue(at>0);delay(180);assertEquals(at,out.positionMs());out.resume()

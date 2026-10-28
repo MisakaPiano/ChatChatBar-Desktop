@@ -8,7 +8,7 @@ import java.util.UUID
 /** One newly created picker directory, outside the business root. Only recorded own files
  * are deleted; unknown/replaced entries are retained and reported, never recursively removed.
  */
-internal class DesktopFishPreviewStore(private val directory: Path = Files.createTempDirectory("ccb-fish-preview-"),
+internal class DesktopFishPreviewStore(private val directory: Path = createDirectory(),
     private val maxClipBytes: Long = 16L * 1024 * 1024, private val maxSessionBytes: Long = 64L * 1024 * 1024,
 ) {
     private val directoryKey = identity(directory, true)
@@ -78,6 +78,23 @@ internal class DesktopFishPreviewStore(private val directory: Path = Files.creat
     }
 
     private companion object {
+        fun createDirectory(): Path {
+            val raw = Path.of(System.getProperty("java.io.tmpdir"))
+            check(raw.isAbsolute && raw.normalize() == raw) { "不安全的预览路径" }
+            var parent: Path? = raw
+            while (parent != null) {
+                val attrs = Files.readAttributes(parent, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+                check(attrs.isDirectory && !attrs.isSymbolicLink && !attrs.isOther) { "不安全的预览路径" }
+                parent = parent.parent
+            }
+            // Expand the OS-provided 8.3 spelling before creating our directory, without
+            // following links or changing the validation of externally supplied paths.
+            val canonical = raw.toRealPath(LinkOption.NOFOLLOW_LINKS)
+            attributes(canonical, true)
+            check(Files.isSameFile(raw, canonical)) { "预览临时目录身份发生变化" }
+            return Files.createTempDirectory(canonical, "ccb-fish-preview-")
+        }
+
         fun identity(path: Path, directory: Boolean): Any {
             val attrs = attributes(path, directory)
             return if (System.getProperty("os.name").startsWith("Windows"))
