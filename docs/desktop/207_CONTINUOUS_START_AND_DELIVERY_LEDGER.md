@@ -1,6 +1,6 @@
 # 207 CCB Desktop 持续起点与交付总账
 
-更新截点：2026-10-28T05:12:01+09:00。用户要求本轮结束后，本地Codex和GPT Project仍能持续查询最新起点，并保留所有未交付任务。**NSIS跨本轮持续实施，不因本轮协调记录交付而结束。**
+更新截点：2026-10-28T09:11:19+09:00。用户要求本轮结束后，本地Codex和GPT Project仍能持续查询最新起点，并保留所有未交付任务。**NSIS跨本轮持续实施，不因本轮协调记录交付而结束。**
 
 ## 查询入口
 
@@ -17,6 +17,8 @@
 用户本轮真实验收选择“已按步骤检查，全部通过”：版本、原有内容、离线草稿正常退出后重开保持；截图为对应界面限定证据。原1204故障弹窗确认不是该验收。普通EXE与SHA256已于2026-10-28 05:19 JST公开为[Desktop Preview 1207](https://github.com/MisakaPiano/ChatChatBar-Desktop/releases/tag/desktop-v0.1.0-preview.1207)；公开API/列表/发行页/下载响应/校验文件均核对通过，实际发行包中的更新选择代码能识别当前及旧版本。源码PR已正常合并；Android CI原有门面冲突与构建缓存问题已修复，本地16项相关测试、缓存存储和复用通过，云端全组结果单列。完整说明及A–G范围见[当前实施进度](PREVIEW_IMPLEMENTATION_PROGRESS.md)与[候选说明](PREVIEW_CANDIDATE_USER_NOTES_DRAFT.md)。
 
 ## CI后续当前事实（2026-10-28）
+
+最新已完成的 a41a0728 / run40581546331：Android/sharedCore/仪器编译/APK检查成功；云端Windows全组2114项、291失败、14跳过，不能继续记运行中或当作通过。已下载报告ZIP并核对服务端SHA256 `6ff606a2a7d826a90cb33de237a2f75d6efefce61393624943de4ec824b4fd57`。本机旧配置全组2114项中17失败/16跳过，均为启动输出污染或缺少子进程classpath；修正后所有失败所在7 suites共40项通过，配置缓存存储通过。云端额外失败大量在UNSAFE_PATH前置检查，另三项MCI277；当前修订在临时NTFS系统盘工作树/规范临时目录验证，并先上传原始/规范路径、文件系统及真实音频设备数。仅实际waveOut设备数为0的物理音频用例标NOT_TESTED；有设备继续全部原断言。未放宽生产路径保护或改动1207公开资产。新结果以本PR实际head检查为准。
 
 run40576758285 对应 aa4928bb，已 completed/failure：`:desktopApp:test` 实际2114项、254失败、17跳过，运行平台Ubuntu。先前Android工厂门面编译与构建身份缓存两错未再出现；剩余失败包含Windows DPAPI/JNA原生句柄、winmm、java.exe、Chrome和Windows路径语义，不能一概称为Windows产品失败，也不能未补验就一概称无影响。8bc08731没有对应PR工作流运行，不把旧head结果冒充最新head。
 

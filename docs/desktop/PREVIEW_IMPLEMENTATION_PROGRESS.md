@@ -1,5 +1,7 @@
 ## CI后续当前事实（2026-10-28）
 
+最新已完成的 a41a0728 / run40581546331：Android/sharedCore/仪器编译/APK检查成功；云端Windows全组2114项、291失败、14跳过，不能继续记运行中或当作通过。已下载报告ZIP并核对服务端SHA256 `6ff606a2a7d826a90cb33de237a2f75d6efefce61393624943de4ec824b4fd57`。本机旧配置全组2114项中17失败/16跳过，均为启动输出污染或缺少子进程classpath；修正后所有失败所在7 suites共40项通过，配置缓存存储通过。云端额外失败大量在UNSAFE_PATH前置检查，另三项MCI277；当前修订在临时NTFS系统盘工作树/规范临时目录验证，并先上传原始/规范路径、文件系统及真实音频设备数。仅实际waveOut设备数为0的物理音频用例标NOT_TESTED；有设备继续全部原断言。未放宽生产路径保护或改动1207公开资产。新结果以本PR实际head检查为准。
+
 run40576758285 对应 aa4928bb，已 completed/failure：`:desktopApp:test` 实际2114项、254失败、17跳过，运行平台Ubuntu。先前Android工厂门面编译与构建身份缓存两错未再出现；剩余失败包含Windows DPAPI/JNA原生句柄、winmm、java.exe、Chrome和Windows路径语义，不能一概称为Windows产品失败，也不能未补验就一概称无影响。8bc08731没有对应PR工作流运行，不把旧head结果冒充最新head。
 
 [PR2](https://github.com/MisakaPiano/ChatChatBar-Desktop/pull/2)将Linux任务限定为完整Android测试/仪器编译/APK及sharedCore测试，并在Windows运行完整Desktop测试和NSIS合成helper。首轮8e263558 / run40579518673 的Windows job在checkout因历史证据长路径失败，尚未执行测试；当前修订在临时Windows runner启用Git长路径，并按PR取消旧版本重复运行。后续以实际head检查为准，不用本地16项代替完整云CI。

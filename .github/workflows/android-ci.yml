@@ -89,19 +89,69 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Prepare supported NTFS workspace and record native prerequisites
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $jvmSettings = (& java -XshowSettings:properties -version 2>&1 | Out-String)
+          $originalTemp = [regex]::Match($jvmSettings, 'java.io.tmpdir\s*=\s*(.+)').Groups[1].Value.Trim()
+          Add-Type @'
+          using System;
+          using System.Text;
+          using System.Runtime.InteropServices;
+          using Microsoft.Win32.SafeHandles;
+          public static class DesktopCiNativePrerequisites {
+            [DllImport("kernel32.dll", CharSet=CharSet.Unicode)] static extern uint GetLongPathName(string path, StringBuilder result, uint size);
+            [DllImport("kernel32.dll", CharSet=CharSet.Unicode)] static extern SafeFileHandle CreateFile(string path, uint access, uint sharing, IntPtr security, uint creation, uint flags, IntPtr template);
+            [DllImport("kernel32.dll", CharSet=CharSet.Unicode)] static extern uint GetFinalPathNameByHandle(SafeFileHandle handle, StringBuilder result, uint size, uint flags);
+            [DllImport("winmm.dll")] public static extern uint waveOutGetNumDevs();
+            public static string LongPath(string path) { var b=new StringBuilder(32768); return GetLongPathName(path,b,32768)>0 ? b.ToString() : null; }
+            public static string FinalPath(string path) { using(var h=CreateFile(path,0x80,7,IntPtr.Zero,3,0x02000000,IntPtr.Zero)) { if(h.IsInvalid)return null; var b=new StringBuilder(32768); return GetFinalPathNameByHandle(h,b,32768,0)>0 ? b.ToString() : null; } }
+          }
+          '@
+          $ciRoot = Join-Path ($env:SystemDrive + '\') ('c' + [Guid]::NewGuid().ToString('N').Substring(0, 7))
+          $volume = [IO.DriveInfo]::new([IO.Path]::GetPathRoot($ciRoot))
+          if ($volume.DriveFormat -ne 'NTFS') { throw 'DESKTOP_TEST_NTFS_REQUIRED' }
+          New-Item -ItemType Directory -Path $ciRoot -ErrorAction Stop | Out-Null
+          $testTemp = New-Item -ItemType Directory -Path (Join-Path $ciRoot 'temp') -ErrorAction Stop
+          $source = Join-Path $ciRoot 'source'
+          git worktree add --detach $source HEAD
+          if ($LASTEXITCODE -ne 0) { throw 'DESKTOP_NTFS_WORKTREE_FAILED' }
+          $facts = [ordered]@{
+            originalJvmTemp = $originalTemp
+            originalLongPath = [DesktopCiNativePrerequisites]::LongPath($originalTemp)
+            originalFinalPath = [DesktopCiNativePrerequisites]::FinalPath($originalTemp)
+            originalTempAttributes = [string][IO.File]::GetAttributes($originalTemp)
+            workspaceVolumeFormat = ([IO.DriveInfo]::new([IO.Path]::GetPathRoot($env:GITHUB_WORKSPACE))).DriveFormat
+            selectedVolumeFormat = $volume.DriveFormat
+            selectedTemp = $testTemp.FullName
+            selectedFinalPath = [DesktopCiNativePrerequisites]::FinalPath($testTemp.FullName)
+            nativeWaveOutputDevices = [DesktopCiNativePrerequisites]::waveOutGetNumDevs()
+            sourceCommit = (git rev-parse HEAD)
+          }
+          $facts | ConvertTo-Json | Set-Content (Join-Path $env:RUNNER_TEMP 'desktop-native-prerequisites.json') -Encoding utf8
+          $facts | ConvertTo-Json
+          @("TEMP=$($testTemp.FullName)", "TMP=$($testTemp.FullName)", "CCB_CI_SOURCE=$source") | Add-Content $env:GITHUB_ENV -Encoding utf8
+
+      - name: Upload Windows prerequisite facts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-native-prerequisites
+          path: ${{ runner.temp }}/desktop-native-prerequisites.json
+
       - name: Test Desktop on Windows
-        working-directory: app
+        working-directory: ${{ env.CCB_CI_SOURCE }}/app
         run: .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace
 
       - name: Test NSIS manager lifecycle with synthetic programs
+        working-directory: ${{ env.CCB_CI_SOURCE }}
         run: python -m unittest discover -s tools/desktop/nsis -p test_lifecycle.py -v
 
       - name: Upload Desktop test reports
-        if: always()
+        if: always() && env.CCB_CI_SOURCE != ''
         uses: actions/upload-artifact@v4
         with:
           name: windows-desktop-test-reports
           path: |
-            app/desktopApp/build/reports/tests/
-            app/desktopApp/build/test-results/
-            app/desktopApp/build/reports/problems/
+            ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/tests/
+            ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/test-results/
+            ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/problems/
