@@ -66,13 +66,22 @@ class DesktopChatConfigurationException(message: String) : IllegalStateException
 class DesktopChatGenerationControl {
     private val activeOperation = AtomicReference<Job?>(null)
     private val stopRequested = AtomicBoolean(false)
+    private val stopForward = AtomicReference<(() -> Unit)?>(null)
 
     internal fun isStopRequested(): Boolean = stopRequested.get()
 
     fun requestUserStop(): Boolean {
         stopRequested.set(true)
         activeOperation.get()?.cancel(DesktopUserStoppedChatException())
+        stopForward.get()?.invoke()
         return true
+    }
+
+    /** The same chat admission can hand Stop to a later, independently terminalized stage. */
+    internal fun forwardStopTo(action: () -> Unit): AutoCloseable {
+        check(stopForward.compareAndSet(null, action)) { "停止操作已绑定其他阶段" }
+        if (stopRequested.get()) action()
+        return AutoCloseable { stopForward.compareAndSet(action, null) }
     }
 
     internal fun attach(operation: Job) {
@@ -246,8 +255,7 @@ class DesktopRealChatRuntime internal constructor(
             val updated = MessageAlternativeVersionPolicy.append(
                 old, message.content, MessageAlternativeVersionPolicy.newVersionId(old),
             ).copy(reasoningContent = message.reasoningContent, formatRepairNotice = null)
-            chatRepository.updateMessage(updated)
-            return updated
+            return chatRepository.updateMessageReturningSnapshot(updated)
         }
 
         try {

@@ -427,19 +427,26 @@ class DesktopAppContainer internal constructor(
                 catch (_: Exception) { indexNotice = "历史索引未完成；旧数据保留，请检查向量模型后重试" }
             }
             listOfNotNull(residencyNotice, imageNotice, indexNotice).joinToString("；").takeIf(String::isNotBlank)
-        })
+        }, postProcessReply = { id, result, control -> automaticFormatRepair.completed(id, result, control) })
     }
 
-    // First production subset proves absence again inside the final exclusive/CAS scope.
+    private val formatRepairSafety by lazy {
+        DesktopFormatRepairSourceSafety(appDataRoot, jsonFileStorage, dataOperationCoordinator, taskRuntime,
+            audioMaintenance, { chatVoiceRuntime }, { memoryController.sourceChanged(it) })
+    }
+    private val automaticFormatRepair by lazy {
+        DesktopAutomaticFormatRepair(settingsRepository, { messageFormatRepairController }, { formatRepairSafety })
+    }
+
     internal val messageFormatRepairController by lazy {
         createMessageFormatRepairController()
     }
 
-    /** Transport-only seam: tests exercise the same production ownership, inventory and CAS scope. */
+    /** Transport-only seam: tests exercise the same production source ownership and CAS scope. */
     internal fun createMessageFormatRepairController(
         stream: ((DesktopRepairRequest) -> kotlinx.coroutines.flow.Flow<com.example.chatbar.domain.chat.StreamEvent>)? = null,
     ): DesktopMessageFormatRepairController {
-        val safety = DesktopFormatRepairDerivedSafety(appDataRoot, jsonFileStorage, dataOperationCoordinator, taskRuntime)
+        val safety = formatRepairSafety
         return if (stream == null) DesktopMessageFormatRepairController(chatRepository, settingsRepository,
             characterRepository, formatCardRepository, effectiveModelResolver, taskRuntime, safety)
         else DesktopMessageFormatRepairController(chatRepository, settingsRepository, characterRepository,

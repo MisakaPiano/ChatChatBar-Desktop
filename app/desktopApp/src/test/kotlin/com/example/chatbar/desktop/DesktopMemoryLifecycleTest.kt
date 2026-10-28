@@ -10,6 +10,28 @@ import kotlinx.coroutines.*
 import kotlin.test.*
 
 class DesktopMemoryLifecycleTest {
+    @Test fun `format repair source CAS invalidates old memory before injection without an extra AI request`(): Unit = runBlocking {
+        val f = Fixture()
+        try {
+            f.setup()
+            assertEquals(1, f.service.updateArchiveAfterReply(f.session.id, f.model, 1, maxEpisodeBatches = 1).committedEpisodes)
+            val node = f.service.activeNodes(f.session.id).single()
+            assertTrue(f.service.promptView(f.session.id).archive.contains(node.body))
+            val source = f.chats.getMessages(f.session.id).first { it.sourceTurnId in node.sourceTurnIds && it.role == MessageRole.ASSISTANT }
+            val before = f.calls
+            val repaired = "合成历史改为旅人在车站与同伴会合。"
+            val result = assertIs<ConditionalMessageUpdateResult.Success>(f.chats.updateMessageForFormatRepair(
+                f.session.id, source.id, source, repaired,
+                MessageFormatRepairNotice(MessageFormatRepairNoticeKind.APPLIED, repaired, source.displayContent)))
+            assertEquals(source.sourceTurnId, result.message.sourceTurnId)
+            assertFalse(f.service.promptView(f.session.id).archive.contains(node.body))
+            assertTrue(f.repository.getState(f.session.id)!!.staleSourcesByNodeId.isNotEmpty())
+            assertNotNull(f.repository.getNode(node.id))
+            assertEquals(source.displayContent, result.message.formatRepairNotice?.originalContent)
+            assertEquals(before, f.calls)
+        } finally { f.close() }
+    }
+
     @Test fun `memory patch cannot restore a deleted message preview or lose a newer setting`(): Unit = runBlocking {
         val f = Fixture()
         try {

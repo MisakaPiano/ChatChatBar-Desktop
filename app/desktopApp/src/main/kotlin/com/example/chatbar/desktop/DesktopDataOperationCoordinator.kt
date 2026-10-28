@@ -24,6 +24,7 @@ internal enum class DesktopDataOperationRejectionReason {
     NORMAL_TO_EXCLUSIVE_UPGRADE,
     NESTED_EXCLUSIVE,
     CLOSE_FROM_ACTIVE_OPERATION,
+    MAINTENANCE_BUSY,
 }
 
 internal class DesktopDataOperationRejectedException(
@@ -77,6 +78,21 @@ internal class DesktopDataOperationCoordinator : AppDataOperationGate {
         } finally {
             releaseNormal(waiter)
         }
+    }
+
+    /** Opportunistic, bounded source mutations must not wait for maintenance while owning a
+     * message/voice mutex. Reuses an existing admission; otherwise refuses instead of queuing. */
+    suspend fun <T> withImmediateNormalOperation(operation: suspend () -> T): T {
+        val inherited = currentCoroutineContext()[DesktopDataOperationContext]
+        if (inherited?.containsNormalOrExclusive(identity) == true) return operation()
+        val waiter = synchronized(stateLock) {
+            if (currentState != DesktopDataOperationCoordinatorState.OPEN)
+                throw DesktopDataOperationRejectedException(DesktopDataOperationRejectionReason.MAINTENANCE_BUSY,
+                    "数据维护正在进行，本次消息修复未提交")
+            NormalWaiter().also { it.granted = true; activeNormalCount++ }
+        }
+        try { return withContext(inherited.orEmpty().withNormal(identity)) { operation() } }
+        finally { releaseNormal(waiter) }
     }
 
     suspend fun <T> withExclusiveMaintenance(

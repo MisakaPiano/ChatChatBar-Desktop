@@ -408,7 +408,9 @@ class DesktopMessageFormatRepairTest {
                     assertTrue(f.container.effectiveModelResolver.availableAuxiliaryTextModels().isEmpty())
                 }
                 2, 3 -> {
-                    f.settings { it.copy(allowCleartextModelApi = mode == 3) }
+                    // These are invalid configurations. Explicitly allowed keyless localhost
+                    // is supported and covered by the real-request automatic integration test.
+                    f.settings { it.copy(allowCleartextModelApi = false) }
                     f.container.modelRepository.saveModel(ModelConfig("model", "Synthetic",
                         if (mode == 3) "http://127.0.0.1:1/v1" else "https://invalid.example/v1", "", "fake-model", createdAt = 1))
                 }

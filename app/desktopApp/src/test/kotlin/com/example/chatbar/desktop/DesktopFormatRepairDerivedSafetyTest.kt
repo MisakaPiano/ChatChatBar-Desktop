@@ -27,9 +27,10 @@ class DesktopFormatRepairDerivedSafetyTest {
         }
     }
 
-    private fun production(f: DesktopMessageFormatRepairTest.Fixture) = f.container.createMessageFormatRepairController {
-        f.requests.incrementAndGet(); f.response(it)
-    }
+    // Frozen legacy absence-proof subset; production now uses coordinated source mutation.
+    private fun production(f: DesktopMessageFormatRepairTest.Fixture) = DesktopMessageFormatRepairController(
+        f.chats, f.container.settingsRepository, f.container.characterRepository, f.container.formatCardRepository,
+        f.container.effectiveModelResolver, f.runtime, safety(f), { f.requests.incrementAndGet(); f.response(it) })
     private suspend fun run(f: DesktopMessageFormatRepairTest.Fixture, c: DesktopMessageFormatRepairController,
         restore: Boolean = false) = f.await(if (restore) c.restore("s", "m") else c.repair("s", "m"), c)
     private fun hash(path: java.nio.file.Path) = MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(path)).toList()

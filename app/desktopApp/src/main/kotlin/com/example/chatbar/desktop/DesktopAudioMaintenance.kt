@@ -22,6 +22,8 @@ internal class DesktopAudioMaintenance(
     private val focus: () -> DesktopAudioFocus,
     private val stopPlayback: suspend () -> Unit,
 ) {
+    fun isIdle(): Boolean = focus().isIdleForMaintenance()
+
     suspend fun <T> withMaintenance(
         interruptPlayback: Boolean,
         restartRequired: () -> Boolean,

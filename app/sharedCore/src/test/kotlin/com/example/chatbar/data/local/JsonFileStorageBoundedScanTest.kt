@@ -8,6 +8,49 @@ import kotlinx.serialization.builtins.serializer
 import kotlin.test.*
 
 class JsonFileStorageBoundedScanTest {
+    @Test fun `single proof is durable bounded and does not scan or alter sibling entries`() = runBlocking {
+        val root = Files.createTempDirectory("bounded-single-")
+        try {
+            val storage = JsonFileStorage(root)
+            assertIs<JsonFileStorage.EntityReadResult.Missing>(storage.readEntityBoundedStrict("items", "absent", String.serializer()))
+            assertFalse(Files.exists(root.resolve("entities")))
+            assertFailsWith<IllegalArgumentException> { storage.readEntityBoundedStrict("items", "../other", String.serializer()) }
+            storage.saveEntity("items", "x", "first", String.serializer())
+            val directory = root.resolve("entities/items")
+            Files.writeString(directory.resolve("unrelated.tmp"), "preserve")
+            assertEquals("first", assertIs<JsonFileStorage.EntityReadResult.Valid<String>>(
+                storage.readEntityBoundedStrict("items", "x", String.serializer())).value)
+            Files.writeString(directory.resolve("x.json"), "\"second\"")
+            assertEquals("second", assertIs<JsonFileStorage.EntityReadResult.Valid<String>>(
+                storage.readEntityBoundedStrict("items", "x", String.serializer())).value)
+            assertIs<JsonFileStorage.EntityReadResult.ReadError>(storage.readEntityBoundedStrict("items", "x", String.serializer(), maximumFileBytes = 3))
+            assertEquals("preserve", Files.readString(directory.resolve("unrelated.tmp")))
+            assertEquals("\"second\"", Files.readString(directory.resolve("x.json")))
+        } finally { root.toFile().deleteRecursively() }
+    }
+
+    @Test fun `single proof rejects unknown fields invalid utf8 and deep nesting while keeping exact bytes`() = runBlocking {
+        val root = Files.createTempDirectory("bounded-single-errors-")
+        try {
+            val storage = JsonFileStorage(root)
+            val path = Files.createDirectories(root.resolve("entities/vector_chunks")).resolve("x.json")
+            val valid = storage.json.encodeToString(VectorChunk.serializer(), VectorChunk("x", ChunkSourceType.DOCUMENT, "card", content = "body", embedding = emptyList(), createdAt = 1))
+            val unknown = (valid.dropLast(1) + ",\"unexpected\":true}").toByteArray()
+            Files.write(path, unknown)
+            assertIs<JsonFileStorage.EntityReadResult.Corrupt>(storage.readEntityBoundedStrict("vector_chunks", "x", VectorChunk.serializer()))
+            assertContentEquals(unknown, Files.readAllBytes(path))
+            Files.write(path, byteArrayOf(0xc3.toByte(), 0x28))
+            assertIs<JsonFileStorage.EntityReadResult.ReadError>(storage.readEntityBoundedStrict("vector_chunks", "x", VectorChunk.serializer()))
+            Files.writeString(path, "[".repeat(70) + "0" + "]".repeat(70))
+            assertIs<JsonFileStorage.EntityReadResult.ReadError>(storage.readEntityBoundedStrict("vector_chunks", "x", kotlinx.serialization.json.JsonElement.serializer()))
+            Files.writeString(path, valid)
+            assertFailsWith<kotlinx.coroutines.CancellationException> {
+                storage.readEntityBoundedStrict("vector_chunks", "x", VectorChunk.serializer(), validatePath = { throw kotlinx.coroutines.CancellationException() })
+            }
+            assertIs<JsonFileStorage.EntityReadResult.Valid<VectorChunk>>(storage.readEntityBoundedStrict("vector_chunks", "x", VectorChunk.serializer()))
+            Unit
+        } finally { root.toFile().deleteRecursively() }
+    }
     @Test fun `missing directories remain missing`() = runBlocking {
         val root = Files.createTempDirectory("bounded-scan-")
         try {

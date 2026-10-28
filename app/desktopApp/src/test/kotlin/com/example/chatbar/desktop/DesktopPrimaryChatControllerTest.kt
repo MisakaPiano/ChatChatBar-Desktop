@@ -1273,6 +1273,26 @@ class DesktopPrimaryChatControllerTest {
         }
     }
 
+    @Test fun `stopped and stale candidate completions cannot reenable a manually closed person`() = runBlocking {
+        withContainer { c ->
+            val person = com.example.chatbar.data.local.entity.CharacterInfo.create("Alice")
+            val card = CharacterCard.create("Stopped reply").copy(characters = listOf(person))
+            c.characterRepository.save(card); configure(c)
+            val controller = c.primaryChatController
+            controller.refresh(); controller.createSession(card.id)
+            val session = controller.state.value.selectedSession!!
+            val user = c.chatRepository.addMessage(ChatMessage.create(session.id, MessageRole.USER, "Next"))
+            val reply = c.chatRepository.addMessage(ChatMessage.create(session.id, MessageRole.ASSISTANT, "<n=\"Alice\"/>[Here]()"))
+            controller.setCharacterEnabled(session.id, card.id, person.id, false)
+            c.characterResidency.completed(DesktopRealChatResult(user, false, reply, null)) { true }
+            controller.refresh(); assertFalse(controller.state.value.people.single().enabled)
+            c.chatRepository.updateMessage(reply.copy(content = "Another retained candidate."))
+            c.characterResidency.completed(DesktopRealChatResult(user, false, reply, null)) { false }
+            controller.refresh(); assertFalse(controller.state.value.people.single().enabled)
+            assertTrue(c.characterResidency.notices.value.isEmpty())
+        }
+    }
+
     private suspend fun configure(container: DesktopAppContainer, baseUrl: String = "http://127.0.0.1:12345/v1") {
         val model = ModelConfig(
             id = "model", displayName = "Model", modelName = "fake-model", baseUrl = baseUrl,

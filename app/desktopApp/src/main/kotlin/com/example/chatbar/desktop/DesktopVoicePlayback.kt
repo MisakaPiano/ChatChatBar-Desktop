@@ -29,6 +29,12 @@ internal class DesktopAudioFocus(private val output: DesktopAudioOutput = Deskto
     }
 
     /** Reservation never waits for another maintenance owner. No mutex is held across scheduler/gate waits. */
+    fun isIdleForMaintenance(): Boolean {
+        if (!mutex.tryLock()) return false
+        try { return !sealed && !uncertain && maintenance == null && owner == null }
+        finally { mutex.unlock() }
+    }
+
     suspend fun reserveMaintenance(interrupt: Boolean): Any {
         if (interrupt) return mutex.withLock { reserveLocked(true) }
         if (!mutex.tryLock()) throw DesktopAudioMaintenanceBusyException()

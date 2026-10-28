@@ -445,6 +445,10 @@ private fun DesktopSettingsDraftOverlay(
                 DesktopFormatRepairModelSetting(state) { value ->
                     controller.editSettings { it.copy(formatRepairModelId = value) }
                 }
+                ToggleField(t(DesktopUiText.AUTOMATIC_FORMAT_CHECK), draft.automaticFormatCheckEnabled) {
+                    controller.editSettings { it.copy(automaticFormatCheckEnabled = !it.automaticFormatCheckEnabled) }
+                }
+                StatusText(t(DesktopUiText.AUTOMATIC_FORMAT_CHECK_NOTE))
             } else {
                 LabeledField(t(DesktopUiText.PLAYER_NAME), draft.playerName) { value ->
                     controller.editSettings { it.copy(playerName = value) }

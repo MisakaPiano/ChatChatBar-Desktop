@@ -90,6 +90,7 @@ internal data class DesktopSettingsDraft(
     val defaultContextWindowSize: String = "20",
     val defaultFormatCardId: String? = null,
     val formatRepairModelId: String? = null,
+    val automaticFormatCheckEnabled: Boolean = false,
     val assistantSegmentedBubblesEnabled: Boolean = true,
     val excludeAssistantStatusFromHistory: Boolean = true,
     val hasSavedFallbackCredential: Boolean = false,
@@ -203,6 +204,7 @@ internal class DesktopModelSettingsController(
                     defaultContextWindowSize = app.defaultContextWindowSize.toString(),
                     defaultFormatCardId = app.defaultFormatCardId,
                     formatRepairModelId = app.formatRepairModelId,
+                    automaticFormatCheckEnabled = app.automaticFormatCheckEnabled,
                     assistantSegmentedBubblesEnabled = app.assistantSegmentedBubblesEnabled,
                     excludeAssistantStatusFromHistory = app.excludeAssistantStatusFromHistory,
                     fishAudioTtsModelId = app.fishAudioTtsModelId,
@@ -488,6 +490,7 @@ internal class DesktopModelSettingsController(
                 defaultContextWindowSize = baseline.defaultContextWindowSize.toString(),
                 defaultFormatCardId = baseline.defaultFormatCardId,
                 formatRepairModelId = baseline.formatRepairModelId,
+                automaticFormatCheckEnabled = baseline.automaticFormatCheckEnabled,
                 assistantSegmentedBubblesEnabled = baseline.assistantSegmentedBubblesEnabled,
                 excludeAssistantStatusFromHistory = baseline.excludeAssistantStatusFromHistory,
                 fishAudioTtsModelId = baseline.fishAudioTtsModelId,
@@ -571,6 +574,7 @@ internal class DesktopModelSettingsController(
             defaultContextWindowSize = contextSize,
             defaultFormatCardId = draft.defaultFormatCardId,
             formatRepairModelId = draft.formatRepairModelId,
+            automaticFormatCheckEnabled = draft.automaticFormatCheckEnabled,
             assistantSegmentedBubblesEnabled = draft.assistantSegmentedBubblesEnabled,
             excludeAssistantStatusFromHistory = draft.excludeAssistantStatusFromHistory,
             fishAudioTtsModelId = draft.fishAudioTtsModelId,
@@ -799,6 +803,7 @@ private fun DesktopSettingsDraft.hasChatDefaultsChanges(baseline: AppSettings): 
         defaultContextWindowSize != baseline.defaultContextWindowSize.toString() ||
         defaultFormatCardId != baseline.defaultFormatCardId ||
         formatRepairModelId != baseline.formatRepairModelId ||
+        automaticFormatCheckEnabled != baseline.automaticFormatCheckEnabled ||
         assistantSegmentedBubblesEnabled != baseline.assistantSegmentedBubblesEnabled ||
         excludeAssistantStatusFromHistory != baseline.excludeAssistantStatusFromHistory ||
         fishAudioTtsModelId != baseline.fishAudioTtsModelId ||
@@ -819,6 +824,8 @@ private fun DesktopSettingsDraft.reconcileAppSettingsSave(
         saved.defaultFormatCardId else defaultFormatCardId,
     formatRepairModelId = if (formatRepairModelId == submitted.formatRepairModelId)
         saved.formatRepairModelId else formatRepairModelId,
+    automaticFormatCheckEnabled = if (automaticFormatCheckEnabled == submitted.automaticFormatCheckEnabled)
+        saved.automaticFormatCheckEnabled else automaticFormatCheckEnabled,
     assistantSegmentedBubblesEnabled = if (assistantSegmentedBubblesEnabled == submitted.assistantSegmentedBubblesEnabled)
         saved.assistantSegmentedBubblesEnabled else assistantSegmentedBubblesEnabled,
     excludeAssistantStatusFromHistory = if (excludeAssistantStatusFromHistory == submitted.excludeAssistantStatusFromHistory)
