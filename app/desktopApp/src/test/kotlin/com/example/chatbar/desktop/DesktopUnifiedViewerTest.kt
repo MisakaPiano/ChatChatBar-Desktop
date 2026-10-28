@@ -267,9 +267,13 @@ class DesktopUnifiedViewerTest {
                 val field = scene.nodes().first { it.config.getOrNull(SemanticsActions.SetText) != null }
                 field.config[SemanticsActions.SetText].action!!(AnnotatedString("matched"))
                 scene.until { scene.nodes().count { it.label("配方详情") && it.config.getOrNull(SemanticsActions.OnClick) != null } == 4 }
-                scene.until { scene.nodes().count { it.label("图片") } >= 2 }
                 val expected = com.example.chatbar.ui.imageprompt.NovelAiHistoryFilterPolicy.filter(c.history.first(), "matched", null).map { it.image.path }
-                scene.double(scene.nodes().filter { it.label("图片") }[1].boundsInRoot.center)
+                scene.until { scene.nodes().count { it.label("图片") } == expected.size }
+                // Lazy grid semantics traversal can retain a different insertion order
+                // after filtering. Click the second visible cell in screen order.
+                val cells = scene.nodes().filter { it.label("图片") }
+                    .sortedWith(compareBy({ it.boundsInRoot.top }, { it.boundsInRoot.left }))
+                scene.double(cells[1].boundsInRoot.center)
                 scene.until { opens.isNotEmpty() }; delay(400); scene.frames()
                 assertEquals(listOf(expected to 1), opens)
                 assertTrue(c.state.value.selected.isEmpty()); assertEquals(draft, c.draft.value)

@@ -1,12 +1,22 @@
 # 207 CCB Desktop 持续起点与交付总账
 
-更新截点：2026-10-28T09:40:01+09:00。用户要求本轮结束后，本地Codex和GPT Project仍能持续查询最新起点，并保留所有未交付任务。**NSIS跨本轮持续实施，不因本轮协调记录交付而结束。**
+更新截点：2026-10-28T10:02:49+09:00。用户要求本轮结束后，本地Codex和GPT Project仍能持续查询最新起点，并保留所有未交付任务。**NSIS跨本轮持续实施，不因本轮协调记录交付而结束。**
 
 ## 查询入口
 
 本文件是公开脱敏的稳定入口：[活动分支当前207](https://github.com/MisakaPiano/ChatChatBar-Desktop/blob/feature/phase8-fish-audio/docs/desktop/207_CONTINUOUS_START_AND_DELIVERY_LEDGER.md)。每次接手读取该地址当前版本，先核对真实branch/HEAD/status，不把任何固定SHA或旧Project上传快照当作永久最新状态。
 
 本地完整任务和证据位于 I:\CCB-Desktop-Continuity\CURRENT_START.md、TASK_LEDGER.json、EVENTS.ndjson、EVIDENCE_INDEX.json。这里不存原始用户资料或凭据；私有路径/原始日志的详细表留本机，不能上传GitHub。
+
+## 1208 修复候选检查点（尚未正式安装或公开）
+
+普通1208已构建：源码 `fc610845de98bedca693868864047039a34511c0`，155,272,689B，SHA256 `d4be0d6f540355b19692c172eab05d3e111470ae8428189fd2b61a09466e7bfb`。实际程序JAR在独立JVM中长/短temp写入、校验、清理及junction拒绝通过。独立安装身份使用同一普通app-image完成1207→1208窗口、正常退出/Job归零、隔离资料/媒体/bootstrap与三项假DPAPI保持；专属shell目录下快捷方式和旧版本回收均COMPLETE。普通H登记与原bootstrap保持，H仍1207。
+
+最初本机CreateProcess error5及原剪贴板cmd拒绝保留；用户要求“你再试一次”并确认看见360提示，按原API原包重试后完成上述验证，不宣称用户手动执行或1208真人验收。新人工入口的登记路径写法错误已修正；初次隔离快捷方式遇已有同名外来链接而DEFERRED，之后补专属测试shell后COMPLETE，外来链接保留。这些为测试入口问题，未修改生产保护。
+
+fc610845 / run40610588565：Android成功，Windows2118项1失败17跳过，NSIS未执行。唯一剩余history viewer用例以semantics遍历次序定位“第二张”，实际点到视觉第四格；现按屏幕位置定位且保留完整过滤顺序、index、无选择/无草稿修改断言。该suite及原剪贴板suite本机全部通过，cmd拒绝未再现；新head完整CI待实际结果。NSIS helper改为准备好源码后独立运行，即使Desktop测试失败也会给出真实结果，整体失败不隐藏。
+
+1208只有未公开草稿及核对过的EXE/SHA资产；公开仍等新版实际验收。1207原资产/标签/限定验收保持，不把本轮source或测试结果说成1207已修复。
 
 ## 当前实现起点与普通候选
 

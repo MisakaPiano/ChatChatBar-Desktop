@@ -143,6 +143,7 @@ jobs:
         run: .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace
 
       - name: Test NSIS manager lifecycle with synthetic programs
+        if: ${{ !cancelled() && env.CCB_CI_SOURCE != '' }}
         working-directory: ${{ env.CCB_CI_SOURCE }}
         run: python -m unittest discover -s tools/desktop/nsis -p test_lifecycle.py -v
 
