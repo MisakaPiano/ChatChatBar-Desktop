@@ -1,12 +1,22 @@
 # 207 CCB Desktop 持续起点与交付总账
 
-更新截点：2026-10-28T10:02:49+09:00。用户要求本轮结束后，本地Codex和GPT Project仍能持续查询最新起点，并保留所有未交付任务。**NSIS跨本轮持续实施，不因本轮协调记录交付而结束。**
+更新截点：2026-10-28T10:39:46+09:00。用户要求本轮结束后，本地Codex和GPT Project仍能持续查询最新起点，并保留所有未交付任务。**NSIS跨本轮持续实施，不因本轮协调记录交付而结束。**
 
 ## 查询入口
 
 本文件是公开脱敏的稳定入口：[活动分支当前207](https://github.com/MisakaPiano/ChatChatBar-Desktop/blob/feature/phase8-fish-audio/docs/desktop/207_CONTINUOUS_START_AND_DELIVERY_LEDGER.md)。每次接手读取该地址当前版本，先核对真实branch/HEAD/status，不把任何固定SHA或旧Project上传快照当作永久最新状态。
 
 本地完整任务和证据位于 I:\CCB-Desktop-Continuity\CURRENT_START.md、TASK_LEDGER.json、EVENTS.ndjson、EVIDENCE_INDEX.json。这里不存原始用户资料或凭据；私有路径/原始日志的详细表留本机，不能上传GitHub。
+
+## 最新收尾：1208 已安装，完整CI通过，待本版用户验收
+
+1208已正式升级长期H根，普通包来源fc610845de98bedca693868864047039a34511c0，155,272,689B，SHA256 d4be0d6f540355b19692c172eab05d3e111470ae8428189fd2b61a09466e7bfb。窗口、218文件、原bootstrap选择、两快捷方式及清理COMPLETE；隔离升级/退出/三项假DPAPI保持与正常卸载通过。1208现只有未公开草稿，用户本版检查请求尚未回复；1207原限定验收和原发布资产保持，沉默不算新版通过。
+
+验证源码4edf692aa5048f9e525e00aaff216beffad6a13f，完整run40614709884两job均completed/success：Android/sharedCore单元检查、仪器测试编译、APK构建成功；Windows2118项，2101通过、0失败/错误、17跳过；NSIS19项全部执行通过。跳过为14项需原生图形桌面、3项需物理音频设备，明确NOT_TESTED，不充当真人/原生验收。报告ZIP SHA256 c0017869016646b48b8c912159fbde3093f999f0b9a00431fe86e856dea81802 已下载核对，XML总数与原始日志均核验。
+
+[PR2](https://github.com/MisakaPiano/ChatChatBar-Desktop/pull/2)已按实际成功head正常merge，提交67b6f12d75a33aa32b0bc36489542c619f7f0291；无强制或绕过。merge树与验证head一致，后续相对构建源fc仅测试/CI/记录变化，未改1208程序或安装器内容。旧失败、测试入口错误及限定范围均保留在下面历史记录，不能把新绿结果倒改成旧包已修复。
+
+剩余真人新版验收到达后才公开草稿426148571。现代Android全备完整恢复/物理往返、完整断电/历史大快照、跨账户/全部媒体凭据语义及公开下载后的完整再安装链等原未测范围继续保留。云端Project仍无实际上传/读回回执。
 
 ## 1208 已正式安装，未公开
 
@@ -68,10 +78,10 @@ run40576758285 对应 aa4928bb，已 completed/failure：`:desktopApp:test` 实�
 | T14 | C盘未清小项 | 活动缓存/helper/未证明同blob稿件保留；87B旧scratch已退役；其余有理由保留项继续维护。 |
 | T15 | DL1 全范围回收转发指令 | 完整新转发说明留本地总账，交 DL1 本机 Codex 或用户执行；指令交付与执行回执分开。 |
 | T16 | DL1 全范围已授权 MSI 资源回收及实际回执 | WAITING_DL1_LOCAL_EXECUTOR / NO_REMOTE_RECEIPT。包含宿主/客机 MSI 任务工作区、传输 ZIP、展开副本及无用专属 VM/磁盘/检查点，非仅 VM；只挂起此远端依赖，本机继续。 |
-| T17 | NSIS与Preview实际候选 | 1207已发布并有真人限定验收，后续确认默认短名temp试听缺陷已公开披露；1208修复、完整CI与新包验证进行中。 |
+| T17 | NSIS与Preview实际候选 | 1208已正式安装、完整4edf CI与NSIS19通过、PR2正常集成；仅待新版真实用户验收后公开，公开仍1207。 |
 | T18 | P11及Public Preview A–G既有任务 | 按203继续；复用有效证据，不把历史限定PASS提升为全部正式关闭。 |
 | T19 | 可持续查询记录 | 本轮交付；A在实质检查点继续维护，不新增签字门槛。 |
-| T20 | 成熟普通候选安装到长期 H 程序根并交付验收 | COMPLETE_WITH_SCOPE：普通1207已正式安装；窗口/清单/登记/快捷方式正确。用户确认版本、原有内容与退出重开草稿保持通过。长期根不放故障/假资料/日志，既有数据按正式机制保留。 |
+| T20 | 成熟普通候选安装到长期 H 程序根并交付验收 | 1208_FORMAL_INSTALLED_ACCEPTANCE_PENDING：218清单/窗口/原bootstrap/两快捷方式/清理COMPLETE，只留当前1208；新版检查请求已交，未收到回复。1207旧限定验收仍只对应旧版。 |
 
 ## 回收后的可恢复边界
 
