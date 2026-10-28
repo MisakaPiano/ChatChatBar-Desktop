@@ -515,6 +515,10 @@ class DesktopTaskRuntimeTest {
         val character = CharacterCard.create("Character", greeting = "Greeting")
         container.characterRepository.save(character)
         val sessionId = container.characterSessionService.createSessionForCharacter(character.id)
+        // These cases own the main/repair transport, not background HEAD maintenance. The
+        // third turn must not race an unrelated memory request for the same response queue.
+        container.chatRepository.updateSession(requireNotNull(container.chatRepository.getSession(sessionId))
+            .copy(longTermMemoryEnabled = false))
         val model = ModelConfig(
             id = "model",
             displayName = "Model",
