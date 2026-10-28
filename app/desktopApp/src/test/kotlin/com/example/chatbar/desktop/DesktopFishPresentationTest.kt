@@ -154,7 +154,12 @@ class DesktopFishPresentationTest {
                 frame()
             }
             try {
-                awaitFrame { scene.nodes().any { it.label("设置") } }
+                // Startup refresh intentionally blocks section changes while management
+                // or transfers are busy; a visible tab is not yet click admission.
+                awaitFrame {
+                    scene.nodes().any { it.label("设置") } && !management.state.value.busy &&
+                        !transfer.state.value.busy && !templates.state.value.busy
+                }
                 pointerClick("设置")
                 awaitFrame { scene.nodes().any { it.label("语音与朗读") } }
                 fun layout(node: SemanticsNode): TextLayoutResult {

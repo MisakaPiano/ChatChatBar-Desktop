@@ -8,6 +8,14 @@
 
 本地完整任务和证据位于 I:\CCB-Desktop-Continuity\CURRENT_START.md、TASK_LEDGER.json、EVENTS.ndjson、EVIDENCE_INDEX.json。这里不存原始用户资料或凭据；私有路径/原始日志的详细表留本机，不能上传GitHub。
 
+## 1208 已正式安装，未公开
+
+最新已完成a77ba048 / run40612680338：Android成功；Windows2118项1失败17跳过，NSIS19项全部执行通过。默认temp4项、history viewer12项和clipboard17项云端均无失败/跳过；剩余设置页初次点击超时。源码在管理/迁移刷新busy时有意拒绝切页，用例只等按钮可见，未等点击准入；现补等待三个busy清零，保留真实指针点击、字体对齐、窄屏实际滚轮、可见性和保存/放弃断言，FishPresentation本机8项全部执行通过。新head完整CI以实际结果为准，不改变已冻结1208程序内容。报告ZIP服务端SHA256 `398fae8fccfd64cb1fcf35b087d41b0456961d0f9db70320201e81e321c2726b`已下载核对。
+
+1208普通包已正式升级H长期根，窗口/218清单文件/原bootstrap/快捷方式及清理COMPLETE，现用只有1208；用户新版验收待回复，公开仍1207。隔离测试安装已用自己的uninstaller退役，独立资料/媒体/bootstrap三假DPAPI保持，普通H当前指针未动。a77运行源码/安装工具与frozen fc无差异，仅测试/CI/记录变化；完整CI run40612680338运行中。
+
+新版限定使用验收请求已交用户；沉默不是通过。a77相对frozen fc仅测试/CI/记录变化，实际程序内容未变；CI与公开结果后续按真实回执追加。
+
 ## 1208 修复候选检查点（尚未正式安装或公开）
 
 普通1208已构建：源码 `fc610845de98bedca693868864047039a34511c0`，155,272,689B，SHA256 `d4be0d6f540355b19692c172eab05d3e111470ae8428189fd2b61a09466e7bfb`。实际程序JAR在独立JVM中长/短temp写入、校验、清理及junction拒绝通过。独立安装身份使用同一普通app-image完成1207→1208窗口、正常退出/Job归零、隔离资料/媒体/bootstrap与三项假DPAPI保持；专属shell目录下快捷方式和旧版本回收均COMPLETE。普通H登记与原bootstrap保持，H仍1207。
