@@ -96,10 +96,14 @@ class DesktopB1CIntegrationTest {
             scene.frames(); assertTrue(chrome.layout.captions.keys.containsAll(listOf(ChromeHit.MINIMIZE, ChromeHit.MAXIMIZE, ChromeHit.CLOSE)))
             navigation.navigate(DesktopPrimaryRoute.TOOLS, idle); scene.frames()
             val bounds = scene.nodes().first { it.matches("Studio 全高预览面板") }.boundsInRoot
-            assertEquals(0f, bounds.top, 1f); assertEquals(800f, bounds.bottom, 1f)
-            assertTrue(chrome.layout.dragRegions.isNotEmpty())
-            val drag = chrome.layout.dragRegions.single()
-            assertEquals(ChromeHit.CAPTION, DesktopChromeHitTest.hit((drag.left + drag.right) / 2, 22f, 1240f, 800f, 8f, false, chrome.layout))
+            val status = scene.nodes().single { it.config.getOrNull(SemanticsProperties.TestTag) == "studio-global-status" }.boundsInRoot
+            assertEquals(assertNotNull(chrome.layout.title).bottom, bounds.top, 1f)
+            assertEquals(status.top, bounds.bottom, 1f)
+            assertTrue(bounds.height > 600f); assertEquals(800f, status.bottom, 1f)
+            assertTrue(chrome.layout.dragRegions.isEmpty())
+            val title = assertNotNull(chrome.layout.title)
+            val captionGap = (chrome.layout.interactive.maxOf { it.right } + chrome.layout.captions.values.minOf { it.left }) / 2
+            assertEquals(ChromeHit.CAPTION, DesktopChromeHitTest.hit(captionGap, (title.top + title.bottom) / 2, 1240f, 800f, 8f, false, chrome.layout))
             assertTrue(chrome.layout.captions.keys.containsAll(listOf(ChromeHit.MINIMIZE, ChromeHit.MAXIMIZE, ChromeHit.CLOSE)))
             scene.shot("wide-studio-shell")
             navigation.navigate(DesktopPrimaryRoute.CHAT, idle); scene.frames()

@@ -125,9 +125,15 @@ class DesktopChatPeoplePresentationTest {
             }
             try {
                 withTimeout(7_000) {
-                    do { frames(scene) } while (requested != null || nodes(scene).none {
-                        it.config.getOrNull(SemanticsProperties.EditableText)?.text == person.profile
-                    })
+                    do {
+                        frames(scene)
+                        val current = nodes(scene)
+                        val targetHeading = current.singleOrNull { it.config.getOrNull(SemanticsProperties.Text)?.any { text -> text.text == "人物 · Target person" } == true }?.boundsInRoot
+                        val targetField = current.singleOrNull { it.config.getOrNull(SemanticsProperties.EditableText)?.text == person.profile }?.boundsInRoot
+                        val ready = requested == null && targetHeading != null && targetHeading.height > 0 &&
+                            targetHeading.top >= 64 && targetHeading.bottom <= 900 && targetField != null &&
+                            targetField.height > 0 && targetField.top >= 64 && targetField.bottom <= 836
+                    } while (!ready)
                 }
                 frames(scene)
                 assertEquals(person.id, container.characterEditorController.state.value.personFocusId)

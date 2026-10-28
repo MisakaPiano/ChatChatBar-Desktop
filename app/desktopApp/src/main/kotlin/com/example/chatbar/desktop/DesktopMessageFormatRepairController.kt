@@ -195,14 +195,20 @@ internal class DesktopMessageFormatRepairController(
             return commit(session, snapshot, restored.content, null, DesktopRepairStatus.RESTORED, gate = gate)
         }
         val appSettings = settings.getAppSettings()
-        val character = characters.getById(session.characterCardId)?.let { SessionCharacterParticipationPolicy.effectiveCard(session, it) }
+        val owningCard = characters.getById(session.characterCardId)
+        val character = owningCard?.let { SessionCharacterParticipationPolicy.effectiveCard(session, it) }
         val player = session.playerName?.takeIf(String::isNotBlank) ?: settings.getPlayerSetting().playerName
         val formatId = session.formatCardId ?: appSettings.defaultFormatCardId
         val format = formatId?.let { formats.getById(it)?.content }?.let {
             PlaceholderRenderer.render(it, player, character?.effectiveBotName ?: session.title)
         }?.takeIf(String::isNotBlank)
+        // An already identified speaker may return through history/world-book content. Repair
+        // must recognize that name without injecting the disabled person's profile or enabling it.
+        val visibleSpeakers = owningCard?.let { CharacterResidencyPolicy.presentPersonIds(it, snapshot) }.orEmpty()
+        val activeSpeakers = character?.characters?.mapTo(hashSetOf()) { it.id }.orEmpty()
+        val repairNames = owningCard?.characters?.filter { it.id in activeSpeakers || it.id in visibleSpeakers }?.map { it.name }.orEmpty()
         val segmented = if (appSettings.assistantSegmentedBubblesEnabled)
-            MainChatPromptAuthority.roleplaySpeakerFormatSystemPrompt(character?.characters?.map { it.name }.orEmpty()) else null
+            MainChatPromptAuthority.roleplaySpeakerFormatSystemPrompt(repairNames) else null
         if (format == null && segmented.isNullOrBlank()) return rejected("NO_RULES")
         // Reuse the repository's complete candidate/role validation without writing any fields.
         when (val validated = chats.updateMessageFormatRepairNotice(sessionId, messageId, snapshot, snapshot.formatRepairNotice)) {

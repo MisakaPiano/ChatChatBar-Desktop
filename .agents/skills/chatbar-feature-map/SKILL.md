@@ -17,6 +17,8 @@ Use this as a first-hop map. Read a specific skill or listed files, then search 
 
 ## Feature Rows
 
+- Desktop person editor focus: `DesktopCharacterEditorPanel` selects the requested person, waits for that detail's `onGloballyPositioned` before `BringIntoViewRequester`, and consumes the focus revision after scrolling. A fixed one-frame wait can target the previous detail; test both heading and profile viewport geometry in `DesktopChatPeoplePresentationTest`.
+
 - Desktop residency: shared `CharacterResidencyPolicy` recognizes known speaker output and explicit owners in the ending status sequence over source-turn groups. `DesktopCharacterResidency` runs only for a newly retained completion; `DesktopChatPeoplePolicy` derives display without changing settings on load/scroll. `desktopAutoPauseAbsentPeople` defaults off. The settings draft edits only that Boolean; `ChatRepository.saveSessionSettingsDraft` clears automatic reasons after merging the latest session, retaining current manual reasons.
 
 - App wiring and navigation: app/app/src/main/java/com/example/chatbar/ChatBarApp.kt, Navigation.kt, NavigationKeys.kt.

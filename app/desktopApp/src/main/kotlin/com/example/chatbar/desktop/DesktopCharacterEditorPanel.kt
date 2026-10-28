@@ -39,6 +39,8 @@ import androidx.compose.runtime.key
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.Alignment
@@ -132,6 +134,7 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
     var selectedEntry by remember(card.id) { mutableStateOf<String?>(null) }
     val personFocus = remember(card.id) { BringIntoViewRequester() }
     val personFocusExtent = with(androidx.compose.ui.platform.LocalDensity.current) { 600.dp.toPx() }
+    var handledPersonFocus by remember(card.id) { mutableStateOf<Long?>(null) }
     var selectedDocument by remember(card.id) { mutableStateOf<String?>(null) }
     var confirmClearDocuments by remember { mutableStateOf(false) }
     var importOpen by remember(card.id) { mutableStateOf(false) }
@@ -143,8 +146,6 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
     LaunchedEffect(card.id, state.personFocusRevision, readOnly) {
         if (!readOnly) state.personFocusId?.takeIf { id -> card.characters.count { it.id == id } == 1 }?.let {
             selectedEntry = it
-            androidx.compose.runtime.withFrameNanos { }
-            personFocus.bringIntoView(androidx.compose.ui.geometry.Rect(0f, 0f, 1f, personFocusExtent))
         }
     }
     DesktopModalSurface { Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.overlay).padding(16.dp),
@@ -210,7 +211,9 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
                 } else EditorField(t(DesktopUiText.FREEFORM_BODY), card.freeformCharacterText, multiline = true) { value ->
                     controller.edit { it.copy(freeformCharacterText = value) }
                 }
-                CharacterPersonWorkspace(card, selectedEntry, controller, personFocus) { selectedEntry = it }
+                CharacterPersonWorkspace(card, selectedEntry, controller, personFocus,
+                    state.personFocusId?.let { it to state.personFocusRevision }?.takeUnless { it.second == handledPersonFocus },
+                    personFocusExtent, { handledPersonFocus = it }) { selectedEntry = it }
             }
             EditorSection(t(DesktopUiText.BASIC_SETTING)) {
                 EditorField(t(DesktopUiText.BASIC_SETTING), card.basicSetting, true) { value -> controller.edit { it.copy(basicSetting = value) } }
@@ -405,7 +408,8 @@ private fun CharacterTextSection.uiText(): DesktopUiText = when (this) {
 @Composable
 private fun CharacterPersonWorkspace(
     card: CharacterCard, selectedId: String?, controller: DesktopCharacterEditorController,
-    personFocus: BringIntoViewRequester, onSelect: (String?) -> Unit,
+    personFocus: BringIntoViewRequester, focusRequest: Pair<String, Long>?, focusExtent: Float,
+    onFocusHandled: (Long) -> Unit, onSelect: (String?) -> Unit,
 ) {
     val t = LocalDesktopUiStrings.current
     val workspace = desktopPersonWorkspace(card, selectedId)
@@ -433,7 +437,16 @@ private fun CharacterPersonWorkspace(
                 val selected = workspace.selected
                 if (selected == null) StatusText(t(DesktopUiText.SELECT_PERSON))
                 else key(controller.state.value.draftSessionId, selected.id, workspace.detailKind) {
-                    Box(Modifier.fillMaxWidth().bringIntoViewRequester(personFocus)) {
+                    val positioned = remember(selected.id, focusRequest) { CompletableDeferred<Unit>() }
+                    LaunchedEffect(selected.id, focusRequest) {
+                        val request = focusRequest?.takeIf { it.first == selected.id } ?: return@LaunchedEffect
+                        positioned.await()
+                        personFocus.bringIntoView(androidx.compose.ui.geometry.Rect(0f, 0f, 1f, focusExtent))
+                        onFocusHandled(request.second)
+                    }
+                    Box(Modifier.fillMaxWidth().bringIntoViewRequester(personFocus).onGloballyPositioned {
+                        if (it.isAttached && it.size.height > 0) positioned.complete(Unit)
+                    }) {
                         EditorHeading("${t(DesktopUiText.PERSON)} · ${selected.name}")
                     }
                     DesktopFishBindingField(selected, controller)

@@ -107,6 +107,36 @@ class DesktopAutomaticFormatRepairTest {
         }
     } }
 
+    @Test fun `format check recognizes an already returned disabled speaker without injecting profile or bypassing card gate`() = runBlocking<Unit> {
+        for (cardDisabled in listOf(false, true)) fixture { f -> MockWebServer().use { server ->
+            val session = f.chats.getSession("s")!!
+            val person = CharacterInfo.create("ReturnedPerson").copy(profile = "NEVER_INJECT_DISABLED_PROFILE", desktopEnabled = !cardDisabled)
+            val card = f.container.characterRepository.getById(session.characterCardId)!!.copy(characters = listOf(person))
+            f.container.characterRepository.save(card)
+            f.chats.updateSession(com.example.chatbar.domain.chat.SessionCharacterParticipationPolicy.change(session, card, person.id, false))
+            prepareHttp(f, server)
+            f.settings { it.copy(assistantSegmentedBubblesEnabled = true) }
+            server.enqueue(success("<n=\"ReturnedPerson\"/>[I returned]()"))
+            server.enqueue(success("[[CHATBAR_FORMAT_OK]]"))
+            val task = awaitChat(f, f.runtime.launchChat("s", "Next"))
+            assertEquals(DesktopTaskStatus.COMPLETED, task.status, task.message)
+            val main = server.takeRequest(1, TimeUnit.SECONDS)!!.body.readUtf8()
+            val repair = server.takeRequest(1, TimeUnit.SECONDS)!!.body.readUtf8()
+            assertFalse(main.contains(person.profile)); assertFalse(repair.contains(person.profile))
+            val envelope = kotlinx.serialization.json.Json.parseToJsonElement(repair) as kotlinx.serialization.json.JsonObject
+            val messages = envelope["messages"] as kotlinx.serialization.json.JsonArray
+            val target = "<n=\"ReturnedPerson\"/>[I returned]()"
+            assertEquals(target, f.chats.getMessages("s").last().displayContent)
+            val input = assertNotNull(messages.map { ((it as kotlinx.serialization.json.JsonObject)["content"] as kotlinx.serialization.json.JsonPrimitive).content }
+                .singleOrNull { it.contains(target) })
+            assertTrue(input.substringBefore(target).contains(person.name), "Name must occur before the target text, in the rules")
+            val retained = f.chats.getSession("s")!!
+            assertEquals(!cardDisabled, com.example.chatbar.domain.chat.SessionCharacterParticipationPolicy.isEnabled(retained, card, person.id))
+            assertEquals(card, f.container.characterRepository.getById(card.id))
+            assertEquals(2, server.requestCount)
+        } }
+    }
+
     @Test fun `unchanged marker and auxiliary error preserve the completed reply`() = runBlocking<Unit> {
         for (unchanged in listOf(true, false)) fixture { f ->
             MockWebServer().use { server ->
