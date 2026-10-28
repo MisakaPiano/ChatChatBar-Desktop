@@ -15,7 +15,7 @@ internal class DesktopFullBackupArchive(private val workspace: Path, private val
     data class Prepared(val directory: Path, val source: Path, val sourceHash: String,
         val summary: AppBackupSummary, val records: Map<String, AppBackupFileRecord>,
         val files: Map<String, Path>, val preferences: BackupPreferences,
-        private val scratch: DesktopBackupScratch) : AutoCloseable {
+        private val scratch: DesktopBackupScratch, val desktopOnly: Boolean = false) : AutoCloseable {
         override fun close() = scratch.close()
     }
 
@@ -44,6 +44,7 @@ internal class DesktopFullBackupArchive(private val workspace: Path, private val
         var preferenceHash: String? = null
         var records: Map<String, AppBackupFileRecord>? = null
         var allBytes = 0L
+        var desktopOnly = false
         input().use { raw ->
             AppBackupCodec.decrypting(raw, password).use { plain ->
                 val zip = ZipInputStream(object : FilterInputStream(plain) { override fun close() {} })
@@ -63,7 +64,11 @@ internal class DesktopFullBackupArchive(private val workspace: Path, private val
                     val sha = hex(digest.digest())
                     zip.closeEntry() // Includes CRC/length validation, even for ignored binary content.
                     if (!metadata) {
-                        if (entity) DesktopBackupPolicy.entity(relative, requireNotNull(buffer).toByteArray(), false)
+                        if (entity) {
+                            val value = DesktopBackupPolicy.entity(relative, requireNotNull(buffer).toByteArray(), false)
+                            desktopOnly = desktopOnly || DesktopBackupPolicy.hasDesktopParticipation(value)
+                        }
+                        desktopOnly = desktopOnly || DesktopBackupPolicy.isDesktopOnly(relative)
                         seen[relative] = AppBackupFileRecord(relative, size, sha)
                     } else when (relative) {
                         "manifest.json" -> summary = backupJson.decodeFromString(buffer!!.toString(Charsets.UTF_8))
@@ -128,7 +133,7 @@ internal class DesktopFullBackupArchive(private val workspace: Path, private val
         }
         scratch.remove(payload)
         check(DesktopArchiveFiles.hash(copy, DesktopBackupPolicy.MAX_TOTAL) == hash)
-        Prepared(work, copy, hash, manifest, seen, files, requireNotNull(preferences), scratch).also { delivered = it }
+        Prepared(work, copy, hash, manifest, seen, files, requireNotNull(preferences), scratch, desktopOnly).also { delivered = it }
         } finally { lock.release(); channel.close() }
         } catch (error: Throwable) {
             try { scratch.close() } catch (cleanup: Throwable) { error.addSuppressed(cleanup) }

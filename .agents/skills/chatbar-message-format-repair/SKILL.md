@@ -27,6 +27,8 @@ Use chatbar-model-request-runtime for provider/request failures and chatbar-long
 
 ## Desktop Ownership
 
+- Desktop speaker-format rule names use the session's effective structured-person view. The full owning historical message still goes to repair; participation does not strip text from that target.
+
 - `DesktopMessageFormatRepairController` owns first-terminal arbitration, in-memory preview, D-039 recovery-point protection and Repository conditional commits; `DesktopTaskRuntime` owns application-lifetime jobs and stable session/message/task identities. Lifecycle cancellation is separate from explicit user Stop.
 - `DesktopPrimaryChatPanel` adds whole-message repair/restore/Stop to the existing menu. `DesktopMessageFormatRepairUi` renders fixed, localized statuses and a separate preview; copy continues to read the original displayed candidate. Only applicable APPLIED/STOPPED notices offer restore. Commit uncertainty blocks both status-row and menu repair/restore, including Controller calls. Only explicit confirmCommitReload matching the displayed full snapshot against strict durable storage can reconcile it; ordinary refresh and failure readback cannot. Unverified uncertainty survives ordinary history trimming; original commit evidence stays intact.
 - `DesktopPrimaryChatController` and runtime mutation admission prevent same-session chat, repair and message mutation races. Navigation does not cancel application-owned repair, and terminal refresh must not select another session.

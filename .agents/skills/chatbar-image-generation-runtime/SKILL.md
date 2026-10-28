@@ -20,6 +20,8 @@ Keep prompt design, HTTP generation, persistence, and feature UI as separate own
 
 ## Desktop image foundation (P7-A)
 
+- Chat-bound automatic and manual image design resolve `SessionCharacterParticipationPolicy.effectiveCard` before passing card references to the designer. This filters active structured person references; original messages/card defaults and the separate Studio import workflow retain their own owners.
+
 - Desktop platform files live in `app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/`: `DesktopChatImages` deep-copies PNG/JPEG/WebP/GIF with source metadata and original GIF animation bytes intact (canonical APNG disguise ingress restores a new true-content copy through the shared codec), uses strict repository commit evidence, and coordinates durable writes with the app-data gate. New attachment/background references use existing root-relative `images/card_*_p7*` resources. Pending picker bytes are session-local memory only.
 - `DesktopOwnedImageCleanup` checks only explicit replaced/deleted candidates under exclusive maintenance. It parses all entity/draft/singleton JSON before unlinking; unknown or corrupt authority retains files and surfaces a cleanup warning. Character editor cleanup also retains existing document ownership through this path. `DesktopCharacterResourceStore` and draft writes never remove a preexisting file after CREATE_NEW collision.
 - `DesktopImageEditing` handles bounded decoding, JPEG EXIF orientation and raster output. `DesktopImageWorkspace`/`DesktopImageViewport` share pan/wheel/slider geometry with `DesktopCoverExportDialog`. Shared `ImageCropMath.centeredImageCrop` is the single normalized-center crop authority for Android/desktop CCB renderers and this workspace.

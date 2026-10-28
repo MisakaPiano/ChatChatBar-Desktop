@@ -1112,6 +1112,68 @@ class DesktopPrimaryChatControllerTest {
         }
     }
 
+    @Test fun `participation affects actual request roster and profile without rewriting card or another session`() = runBlocking {
+        withContainer { container ->
+            val enabled = com.example.chatbar.data.local.entity.CharacterInfo.create("EnabledPerson_X").copy(profile = "ENABLED_PROFILE_X")
+            val disabled = com.example.chatbar.data.local.entity.CharacterInfo.create("DisabledPerson_Y").copy(profile = "DISABLED_PROFILE_Y")
+            val card = CharacterCard.create("Participation", greeting = "Hi").copy(characters = listOf(enabled, disabled))
+            container.characterRepository.save(card)
+            MockWebServer().use { server ->
+                server.start()
+                configure(container, server.url("/v1").toString().trimEnd('/'))
+                val controller = container.primaryChatController
+                controller.refresh(); controller.createSession(card.id)
+                val id = controller.state.value.selectedSession!!.id
+                controller.setCharacterEnabled(id, card.id, disabled.id, false)
+                assertFalse(controller.state.value.people.last().enabled)
+                assertEquals(card, container.characterRepository.getById(card.id))
+                server.enqueue(success("Reply").setBodyDelay(500, TimeUnit.MILLISECONDS))
+                controller.editComposer("Continue the scene")
+                val task = assertNotNull(controller.send())
+                controller.setCharacterEnabled(id, card.id, disabled.id, true)
+                assertFalse(controller.state.value.people.last().enabled)
+                awaitTask(container, task) { it.status != DesktopTaskStatus.RUNNING }
+                val request = assertNotNull(server.takeRequest(3, TimeUnit.SECONDS)).body.readUtf8()
+                assertTrue("ENABLED_PROFILE_X" in request)
+                assertFalse("DISABLED_PROFILE_Y" in request)
+                assertFalse("DisabledPerson_Y" in request)
+                assertEquals(1, server.requestCount)
+                controller.createSession(card.id)
+                assertTrue(controller.state.value.people.all { it.enabled })
+                controller.selectSession(id)
+                assertFalse(controller.state.value.people.last().enabled)
+                controller.setCharacterEnabled("wrong-session", card.id, disabled.id, true)
+                assertFalse(controller.state.value.people.last().enabled)
+                controller.setCharacterEnabled(id, card.id, disabled.id, true)
+                assertTrue(controller.state.value.people.all { it.enabled })
+            }
+        }
+    }
+
+    @Test fun `participation survives normal controller shutdown and data root reopen`() = runBlocking {
+        val parent = Files.createTempDirectory("participation-reopen-")
+        val person = com.example.chatbar.data.local.entity.CharacterInfo.create("Participant")
+        val card = CharacterCard.create("Participation reopen", greeting = "Hi").copy(characters = listOf(person))
+        var sessionId: String? = null
+        try {
+            val first = container(parent)
+            try {
+                first.characterRepository.save(card); configure(first)
+                val controller = first.primaryChatController
+                controller.refresh(); controller.createSession(card.id)
+                sessionId = controller.state.value.selectedSession!!.id
+                controller.setCharacterEnabled(sessionId!!, card.id, person.id, false)
+                assertFalse(controller.state.value.people.single().enabled)
+            } finally { first.close() }
+            val reopened = container(parent)
+            try {
+                reopened.primaryChatController.refresh(); reopened.primaryChatController.selectSession(sessionId!!)
+                assertFalse(reopened.primaryChatController.state.value.people.single().enabled)
+                assertEquals(card, reopened.characterRepository.getById(card.id))
+            } finally { reopened.close() }
+        } finally { parent.toFile().deleteRecursively() }
+    }
+
     private suspend fun configure(container: DesktopAppContainer, baseUrl: String = "http://127.0.0.1:12345/v1") {
         val model = ModelConfig(
             id = "model", displayName = "Model", modelName = "fake-model", baseUrl = baseUrl,

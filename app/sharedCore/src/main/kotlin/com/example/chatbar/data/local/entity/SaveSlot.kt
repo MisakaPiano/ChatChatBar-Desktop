@@ -2,6 +2,8 @@ package com.example.chatbar.data.local.entity
 
 import com.example.chatbar.domain.image.NovelAiImageModel
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -9,6 +11,7 @@ import kotlin.uuid.Uuid
  * 存档槽位 - 保存会话完整状态快照
  */
 @Serializable
+@OptIn(ExperimentalSerializationApi::class)
 data class SaveSlot(
     val schemaVersion: Int = 4,
     val id: String,
@@ -31,6 +34,9 @@ data class SaveSlot(
     val chatBackground: String? = null,
     val audiobookModeEnabled: Boolean? = null,
     val voiceLanguage: String? = null,
+    /** Desktop extension; older official clients do not implement this participation setting. */
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val desktopCharacterParticipation: List<SessionCharacterParticipation> = emptyList(),
     val longTermMemoryEnabled: Boolean = true,
     val longTermMemory: String = "",
     val longTermMemoryUpdatedThroughMessageId: String? = null,
@@ -57,6 +63,7 @@ data class SaveSlot(
     val packageRef: SaveSlotPackageRef? = null,
     val createdAt: Long
 ) {
+    init { require(desktopCharacterParticipation.map { it.cardId }.distinct().size == desktopCharacterParticipation.size) }
     companion object {
         @OptIn(ExperimentalUuidApi::class)
         fun create(

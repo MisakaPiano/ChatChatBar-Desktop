@@ -3,6 +3,8 @@ package com.example.chatbar.data.local.entity
 import com.example.chatbar.domain.image.NovelAiImageModel
 import com.example.chatbar.domain.image.NovelAiImageModelResolution
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -22,10 +24,18 @@ data class SourceTurnTombstone(
     val sourceOrder: Long
 )
 
+@Serializable
+data class SessionCharacterParticipation(val cardId: String, val disabledPersonIds: Set<String>) {
+    init {
+        require(cardId.isNotBlank() && disabledPersonIds.all(String::isNotBlank))
+    }
+}
+
 /**
  * 聊天会话
  */
 @Serializable
+@OptIn(ExperimentalSerializationApi::class)
 data class ChatSession(
     val id: String,
     val characterCardId: String,
@@ -51,6 +61,9 @@ data class ChatSession(
     val audiobookModeEnabled: Boolean? = null,
     /** null 表示语音直接使用气泡原文。 */
     val voiceLanguage: String? = null,
+    /** Desktop-only per-card participation; absent legacy data enables every person. */
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val desktopCharacterParticipation: List<SessionCharacterParticipation> = emptyList(),
     val longTermMemoryEnabled: Boolean = true,
     val longTermMemory: String = "",
     val longTermMemoryUpdatedThroughMessageId: String? = null,
@@ -80,6 +93,7 @@ data class ChatSession(
     val createdAt: Long,
     val updatedAt: Long
 ) {
+    init { require(desktopCharacterParticipation.map { it.cardId }.distinct().size == desktopCharacterParticipation.size) }
     fun resolvedNovelAiImageModel(
         characterDefault: NovelAiImageModel?,
         globalDefault: NovelAiImageModel

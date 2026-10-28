@@ -31,7 +31,7 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
         val result = service.inspect(path, password)
         prepared = result
         mutable.update { it.copy(summary = result.summary,
-            desktopOnly = result.records.keys.any(DesktopBackupPolicy::isDesktopOnly)) }
+            desktopOnly = result.desktopOnly || result.records.keys.any(DesktopBackupPolicy::isDesktopOnly)) }
         "文件校验完成；尚未替换当前数据。请检查摘要后决定是否恢复。"
     }
 

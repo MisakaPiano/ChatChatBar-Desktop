@@ -82,6 +82,13 @@ class DesktopChatPeoplePresentationTest {
                     assertTrue(nodes(scene).any { it.config.getOrNull(SemanticsProperties.Text)?.any { text -> text.text.contains("心情：calm") } == true })
                     assertFalse(nodes(scene).any { it.config.getOrNull(SemanticsProperties.Text)?.any { text ->
                         text.text == DesktopUiText.PERSON_STATUS_OPEN.zhCn } == true })
+                    click(scene, "关闭人物")
+                    withTimeout(5_000) { do { frames(scene) } while (controller.state.value.people.single().enabled) }
+                    assertTrue(nodes(scene).any { it.config.getOrNull(SemanticsProperties.Text)?.any { text ->
+                        text.text == DesktopUiText.PERSON_DISABLED_HISTORY.zhCn } == true })
+                    assertEquals(card, container.characterRepository.getById(card.id))
+                    click(scene, "启用人物")
+                    withTimeout(5_000) { do { frames(scene) } while (!controller.state.value.people.single().enabled) }
                     capture(scene, "sf03-status-$width.png")
                     click(scene, "编辑人物"); frames(scene)
                     assertEquals(card.id to person.id, edit)

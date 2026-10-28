@@ -116,9 +116,6 @@ internal fun DesktopPrimaryChatPanel(
     var backgroundOpen by remember { mutableStateOf(false) }
     var peopleOpen by remember(state.selectedSession?.id) { mutableStateOf(false) }
     var inspectedPersonId by remember(state.selectedSession?.id) { mutableStateOf<String?>(null) }
-    val peopleActions = DesktopChatPeopleActions(state.people,
-        inspect = { inspectedPersonId = it.character.id; peopleOpen = true }, edit = onEditPerson,
-        previewEnabled = !peopleOpen)
     var settingsTab by remember(state.selectedSession?.id) { mutableStateOf(DesktopSessionSettingsTab.BASIC) }
     var relinkOpen by remember { mutableStateOf(false) }
     var relinkCharacterId by remember { mutableStateOf<String?>(null) }
@@ -146,6 +143,17 @@ internal fun DesktopPrimaryChatPanel(
     val repairBusy = repairTasks.any { (id, status) -> status == DesktopRepairStatus.RUNNING &&
         controller.taskRuntime.repairIdentities.value[id]?.sessionId == state.selectedSession?.id }
     val canLaunch = state.modelUsable && !state.selectedCharacterMissing && running == null && !repairBusy
+    val voiceBatches = controller.voices?.coordinator?.batches?.collectAsState()?.value.orEmpty()
+    val participationAvailable = state.selectedCharacter?.editMode == com.example.chatbar.data.local.entity.CharacterEditMode.STRUCTURED
+    val participationBusy = state.sessionSettingsSaving || repairBusy ||
+        tasks.any { it.sessionId == state.selectedSession?.id && it.status == DesktopTaskStatus.RUNNING } ||
+        voiceBatches.any { it.sessionId == state.selectedSession?.id && it.phase !in setOf(VoiceGenerationPhase.FAILED, VoiceGenerationPhase.CANCELLED) }
+    val peopleActions = DesktopChatPeopleActions(state.people,
+        inspect = { inspectedPersonId = it.character.id; peopleOpen = true }, edit = onEditPerson,
+        previewEnabled = !peopleOpen, toggleEnabled = participationAvailable && !participationBusy,
+        setEnabled = { person, enabled -> state.selectedSession?.id?.let { sessionId -> scope.launch {
+            controller.setCharacterEnabled(sessionId, person.cardId, person.character.id, enabled)
+        } }; Unit })
     // Workspace ownership survives either presentation closing; existing controller accepts/rejects Send.
     val send: () -> Unit = {
         scope.launch {
@@ -345,6 +353,8 @@ internal fun DesktopPrimaryChatPanel(
         if (peopleOpen) DesktopChatPeopleDialog(state.people, inspectedPersonId,
             onSelect = { inspectedPersonId = it },
             onEdit = { card, person -> peopleOpen = false; onEditPerson(card, person) },
+            onSetEnabled = peopleActions.setEnabled, toggleEnabled = peopleActions.toggleEnabled,
+            participationAvailable = participationAvailable,
             onClose = { peopleOpen = false })
         if (composer.expanded) {
             DesktopFullComposer(composer, canLaunch, state.configurationMessage, state.error,
@@ -782,7 +792,7 @@ internal fun PrimaryMessageBubble(
     fun requestVoice(segment: Int? = null) { voiceRequest = segment; voiceRequestOpen = true }
     val mutable = DesktopMessageAction.EDIT in imageOnlyMessageActions
     val voiceTargets = controller.voices?.generationSegments(message, state.selectedSession, state.assistantSegmentedBubblesEnabled).orEmpty()
-    fun canGenerate(segment: Int? = null): Boolean = state.selectedCharacter?.let { card ->
+    fun canGenerate(segment: Int? = null): Boolean = state.participatingCharacter?.let { card ->
         voiceTargets.any { (segment == null || it.segmentIndex == segment) && com.example.chatbar.domain.voice.VoiceGenerationPolicy.hasResolvableTarget(card, it) }
     } == true
     val selectedSegment = menuSegment

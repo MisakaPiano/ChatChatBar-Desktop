@@ -871,7 +871,8 @@ internal class DesktopFishGenerationCoordinator(
         val session = chatRepository.getSession(sessionId) ?: error("会话不存在")
         val message = chatRepository.getMessage(messageId, sessionId) ?: error("消息不存在")
         require(message.role == MessageRole.ASSISTANT) { "只支持助手消息生成语音" }
-        val card = characterRepository.getById(session.characterCardId) ?: error("角色卡不存在")
+        val originalCard = characterRepository.getById(session.characterCardId) ?: error("角色卡不存在")
+        val card = com.example.chatbar.domain.chat.SessionCharacterParticipationPolicy.effectiveCard(session, originalCard)
         val settings = settingsRepository.getAppSettings()
         val previousUser = chatRepository.getMessages(sessionId)
             .filter { it.role == MessageRole.USER && it.orderKey < message.orderKey }

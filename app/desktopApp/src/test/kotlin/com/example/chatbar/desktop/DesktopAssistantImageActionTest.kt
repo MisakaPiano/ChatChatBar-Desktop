@@ -16,6 +16,25 @@ import org.msgpack.core.MessagePack
 import kotlin.test.*
 
 class DesktopAssistantImageActionTest {
+    @Test fun `chat image design omits disabled person references without changing original card`() = runBlocking {
+        val f = Fixture()
+        try {
+            f.initialize()
+            val first = CharacterInfo.create("ActiveReference_X").copy(imagePrompt = "active_reference_tag_x")
+            val second = CharacterInfo.create("InactiveReference_Y").copy(imagePrompt = "inactive_reference_tag_y")
+            val card = f.c.characterRepository.getById("card")!!.copy(characters = listOf(first, second))
+            f.c.characterRepository.save(card)
+            val session = f.c.chatRepository.getSession("session")!!
+            f.c.chatRepository.saveSessionSettingsDraft(session,
+                com.example.chatbar.domain.chat.SessionCharacterParticipationPolicy.change(session, card, second.id, false))
+            success(f)
+            val contents = f.design.requests.flatten().joinToString("\n") { it.content.toString() }
+            assertTrue("active_reference_tag_x" in contents)
+            assertFalse("inactive_reference_tag_y" in contents)
+            assertEquals(card, f.c.characterRepository.getById(card.id))
+        } finally { f.close() }
+    }
+
     internal class Fixture {
         val design = FinalProductDesignFixture()
         val c = design.container

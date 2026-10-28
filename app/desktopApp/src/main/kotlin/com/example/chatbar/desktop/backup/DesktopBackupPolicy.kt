@@ -53,6 +53,9 @@ internal object DesktopBackupPolicy {
     private val preferenceSecrets = setOf("novelAiToken", "fishAudioKey", "communitySession")
     fun isDesktopOnly(path: String): Boolean = path.startsWith("${DesktopHistoricalVoiceCustody.ROOT}/") || path.startsWith("${DesktopPreservationStore.ROOT}/") || path.startsWith("${DesktopSaveSlotSourceCustody.ROOT}/") ||
         path.startsWith("entities/") && (entityType(path).startsWith("desktop_") || entityType(path) == "retrieval_model_config")
+    fun hasDesktopParticipation(value: JsonObject): Boolean =
+        (value["desktopCharacterParticipation"] as? JsonArray)?.any { entry ->
+            ((entry as? JsonObject)?.get("disabledPersonIds") as? JsonArray)?.isNotEmpty() == true } == true
     private val secrets = setOf("apiKey", "siliconFlowApiKey") + preferenceSecrets
     private val json = Json { ignoreUnknownKeys = false; encodeDefaults = true }
 

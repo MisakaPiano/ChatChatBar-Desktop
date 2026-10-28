@@ -21,6 +21,27 @@ import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
 
 class DesktopMessageFormatRepairTest {
+    @Test fun `repair speaker roster follows participation while preserving full historical source text`() = runBlocking { fixture { f ->
+        val session = f.chats.getSession("s")!!
+        val first = CharacterInfo.create("ActiveReference_X")
+        val second = CharacterInfo.create("InactiveReference_Y")
+        val card = f.container.characterRepository.getById(session.characterCardId)!!.copy(characters = listOf(first, second))
+        f.container.characterRepository.save(card)
+        f.chats.saveSessionSettingsDraft(session, SessionCharacterParticipationPolicy.change(session, card, second.id, false))
+        val settings = f.container.settingsRepository.getAppSettings()
+        f.container.settingsRepository.saveAppSettings(settings.copy(assistantSegmentedBubblesEnabled = true))
+        var observed = false
+        f.response = { request ->
+            assertTrue(request.segmentedFormat.orEmpty().contains(first.name))
+            assertFalse(request.segmentedFormat.orEmpty().contains(second.name))
+            assertEquals(f.original.displayContent, request.original)
+            observed = true
+            flowOf(StreamEvent.Delta(FormatRepairPromptAuthority.MESSAGE_FORMAT_REPAIR_UNCHANGED_MARKER), StreamEvent.Done)
+        }
+        assertEquals(DesktopRepairStatus.UNCHANGED, f.run().status)
+        assertTrue(observed)
+    } }
+
     internal class Gate : AppDataOperationGate {
         val calls = AtomicInteger()
         var hook: suspend (Int, Boolean) -> Unit = { _, _ -> }

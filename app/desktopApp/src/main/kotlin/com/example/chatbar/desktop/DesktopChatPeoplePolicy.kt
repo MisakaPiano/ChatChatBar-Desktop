@@ -3,6 +3,7 @@ package com.example.chatbar.desktop
 import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.local.entity.CharacterInfo
 import com.example.chatbar.data.local.entity.ChatMessage
+import com.example.chatbar.data.local.entity.ChatSession
 import com.example.chatbar.data.local.entity.MessageRole
 import com.example.chatbar.domain.chat.RoleplaySegmentKind
 import com.example.chatbar.domain.chat.parseRoleplayTextSegments
@@ -13,10 +14,11 @@ internal data class DesktopChatPerson(
     val character: CharacterInfo,
     val identityUnique: Boolean,
     val status: DesktopPersonStatus?,
+    val enabled: Boolean = true,
 )
 
 /** Read-only projection of persisted current alternatives, independent of the paged viewport. */
-internal fun desktopChatPeople(card: CharacterCard?, messages: List<ChatMessage>): List<DesktopChatPerson> {
+internal fun desktopChatPeople(card: CharacterCard?, messages: List<ChatMessage>, session: ChatSession? = null): List<DesktopChatPerson> {
     if (card == null) return emptyList()
     val ids = card.characters.groupingBy { it.id }.eachCount()
     val names = card.characters.groupBy { it.name.trim().lowercase() }
@@ -46,8 +48,14 @@ internal fun desktopChatPeople(card: CharacterCard?, messages: List<ChatMessage>
             }
         }
     return card.characters.map { person -> DesktopChatPerson(card.id, person,
-        person.id.isNotBlank() && ids[person.id] == 1, statuses[person.id]) }
+        person.id.isNotBlank() && ids[person.id] == 1, statuses[person.id],
+        com.example.chatbar.domain.chat.SessionCharacterParticipationPolicy.isEnabled(session, card, person.id)) }
 }
+
+internal val DesktopPrimaryChatState.participatingCharacter: CharacterCard?
+    get() = selectedCharacter?.let { card -> selectedSession?.let {
+        com.example.chatbar.domain.chat.SessionCharacterParticipationPolicy.effectiveCard(it, card)
+    } ?: card }
 
 private val personNameField = Regex("(?:姓名|人物|角色|Name|Character)\\s*[:：]\\s*(.+)", RegexOption.IGNORE_CASE)
 private val personHeading = Regex("(?:【|\\[)([^]】]+?)(?:状态栏|状态)(?:】|])")

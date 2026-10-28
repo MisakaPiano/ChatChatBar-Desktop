@@ -11,7 +11,7 @@ internal data class DesktopMergeImportState(val busy: Boolean = false, val ready
     val modelDetails: Map<String, DesktopMergeImportService.ModelDetails> = emptyMap(), val conflicts: List<DesktopMergePreview.Conflict> = emptyList(),
     val credentials: List<DesktopMergeCredentials.GlobalConflict> = emptyList(),
     val imagePreferencesChoiceRequired: Boolean = false, val message: String = "", val error: String? = null,
-    val restartRequired: Boolean = false, val destination: Path? = null)
+    val restartRequired: Boolean = false, val destination: Path? = null, val desktopParticipation: Boolean = false)
 
 /** Holds secret-bearing preparation privately; UI state contains only presentation metadata. */
 internal class DesktopMergeImportController(private val service: DesktopMergeImportService,
@@ -32,7 +32,8 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
         preview = result
         mutable.update { it.copy(ready = true, code = result.code, files = result.fileCount, versionName = result.versionName, modelDetails = result.modelDetails,
             conflicts = result.data.conflicts, credentials = result.credentialConflicts,
-            imagePreferencesChoiceRequired = result.imagePreferencesChoiceRequired) }
+            imagePreferencesChoiceRequired = result.imagePreferencesChoiceRequired,
+            desktopParticipation = result.hasDesktopParticipation) }
         "已校验备份。请选择冲突处理方式；电脑当前数据尚未改变。"
     }
     fun commit(choices: Map<String, DesktopMergePreview.Choice>, credentials: Map<ImportCredentialKind, DesktopMergeCredentials.Choice>,

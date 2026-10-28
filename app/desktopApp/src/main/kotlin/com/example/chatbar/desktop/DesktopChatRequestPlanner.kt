@@ -139,7 +139,8 @@ internal class DesktopChatRequestPlanner(
         val session = requireNotNull(chatRepository.getSession(sessionId)) { "对话不存在" }
         require(currentUser.sessionId == session.id) { "当前用户消息不属于该对话" }
         require(currentUser.role == MessageRole.USER) { "当前消息必须是USER" }
-        val card = requireNotNull(characterRepository.getById(session.characterCardId)) { "角色卡不存在" }
+        val originalCard = requireNotNull(characterRepository.getById(session.characterCardId)) { "角色卡不存在" }
+        val card = com.example.chatbar.domain.chat.SessionCharacterParticipationPolicy.effectiveCard(session, originalCard)
         val playerName = session.playerName?.takeIf(String::isNotBlank)
             ?: inputs.globalPlayerName?.takeIf(String::isNotBlank)
         val playerSetting = session.playerSetting?.takeIf(String::isNotBlank)

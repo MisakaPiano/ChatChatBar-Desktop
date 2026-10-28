@@ -37,6 +37,7 @@ internal fun DesktopMergeImportPanel(controller: DesktopMergeImportController, o
         }
         if (state.ready && !state.restartRequired) {
             StatusText("已校验 ${state.files} 个文件 · 来源 ${state.versionName.take(80)}")
+            if (state.desktopParticipation) StatusText("该备份包含 Desktop 会话人物开关；旧版手机端不支持此设置。", DesktopBootstrapColors.warning)
             if (state.conflicts.isEmpty()) StatusText("未发现需要选择的数据冲突。电脑和手机各自独有内容将保留。")
             state.conflicts.forEach { conflict ->
                 StatusText("${mergeCategory(conflict.category)} · ${conflict.label.ifBlank { "未命名" }}")

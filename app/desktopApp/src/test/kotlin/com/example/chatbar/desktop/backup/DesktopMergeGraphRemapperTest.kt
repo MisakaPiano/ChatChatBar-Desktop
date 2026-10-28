@@ -8,6 +8,19 @@ import org.junit.Test
 import kotlin.test.*
 
 class DesktopMergeGraphRemapperTest {
+    @Test fun `participation remaps both card key and nested person IDs without rewriting unrelated text`() {
+        val source = record("chat_sessions", obj("""{"id":"s","characterCardId":"id","desktopCharacterParticipation":[{"cardId":"id","disabledPersonIds":["p"]}],"title":"id p"}"""))
+        val ids = DesktopMergeIdentity().apply { bind("chat_sessions", "s", "fork-s"); bind("character_cards", "id", "fork-c"); bind("characters", "p", "fork-p") }
+        assertFalse(ids.declarations(source).any { it.first == "characters" })
+        val result = DesktopMergeGraphRemapper(listOf(source), ids).rewrite(source)
+        assertEquals("fork-s", result.getValue("id").jsonPrimitive.content)
+        assertEquals("fork-c", result.getValue("characterCardId").jsonPrimitive.content)
+        val participation = result.getValue("desktopCharacterParticipation").jsonArray.single().jsonObject
+        assertEquals("fork-c", participation.getValue("cardId").jsonPrimitive.content)
+        assertEquals(listOf("fork-p"), participation.getValue("disabledPersonIds").jsonArray.map { it.jsonPrimitive.content })
+        assertEquals("id p", result.getValue("title").jsonPrimitive.content)
+    }
+
     private fun obj(text: String) = backupJson.parseToJsonElement(text).jsonObject
     private fun record(type: String, value: JsonObject) = DesktopMergeRecord("entities/$type/item.json", value)
     private fun record(node: MemoryNode) = record("memory_nodes", backupJson.encodeToJsonElement(MemoryNode.serializer(), node).jsonObject)

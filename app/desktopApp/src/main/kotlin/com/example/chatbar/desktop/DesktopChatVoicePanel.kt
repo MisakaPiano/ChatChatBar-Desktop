@@ -112,11 +112,11 @@ internal fun DesktopVoiceGenerationDialog(runtime: DesktopChatVoiceRuntime?, mes
     val scope = rememberCoroutineScope()
     val ui = LocalDesktopVoiceUi.current
     var narrator by remember(message.id) { mutableStateOf(ui.narrator) }
-    val bound = state.selectedCharacter?.characters.orEmpty().filter { it.fishAudioVoice != null }
+    val bound = state.participatingCharacter?.characters.orEmpty().filter { it.fishAudioVoice != null }
     val targets = runtime?.generationSegments(message, state.selectedSession, state.assistantSegmentedBubblesEnabled).orEmpty()
         .filter { segment == null || it.segmentIndex == segment }
-    val needsNarrator = state.selectedCharacter?.let { VoiceGenerationPolicy.requiresNarratorSelection(it, targets) } == true
-    val hasTarget = state.selectedCharacter?.let { card -> targets.any { VoiceGenerationPolicy.hasResolvableTarget(card, it) } } == true
+    val needsNarrator = state.participatingCharacter?.let { VoiceGenerationPolicy.requiresNarratorSelection(it, targets) } == true
+    val hasTarget = state.participatingCharacter?.let { card -> targets.any { VoiceGenerationPolicy.hasResolvableTarget(card, it) } } == true
     val focus = remember { FocusRequester() }
     Popup(alignment = Alignment.Center, onDismissRequest = onClose, properties = PopupProperties(focusable = true)) {
         LaunchedEffect(Unit) { focus.requestFocus() }

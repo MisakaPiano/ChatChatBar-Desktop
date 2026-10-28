@@ -101,6 +101,13 @@ internal class DesktopChatVoiceRuntime(
         block()
     }
 
+    suspend fun <T> withCharacterParticipationChange(sessionId: String, block: suspend () -> T): T = mutation.withLock {
+        check(!closed)
+        check(coordinator.batches.value.none { it.sessionId == sessionId && it.phase !in
+            setOf(VoiceGenerationPhase.FAILED, VoiceGenerationPhase.CANCELLED) }) { "语音任务进行中，请完成或停止后再切换人物" }
+        block()
+    }
+
     /** Called only after the owning chat message was explicitly deleted. */
     suspend fun removeDeletedMessage(sessionId: String, messageId: String) = gate.withNormalOperation {
         check(chats.readMessageDurable(messageId, sessionId) is com.example.chatbar.data.local.JsonFileStorage.EntityReadResult.Missing) { "消息删除状态未知；录音已保留" }

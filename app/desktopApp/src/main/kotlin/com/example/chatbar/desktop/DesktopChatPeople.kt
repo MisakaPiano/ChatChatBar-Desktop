@@ -28,6 +28,8 @@ internal data class DesktopChatPeopleActions(
     val inspect: (DesktopChatPerson) -> Unit,
     val edit: (String, String) -> Unit,
     val previewEnabled: Boolean = true,
+    val toggleEnabled: Boolean = true,
+    val setEnabled: ((DesktopChatPerson, Boolean) -> Unit)? = null,
 )
 internal val LocalDesktopChatPeople = staticCompositionLocalOf<DesktopChatPeopleActions?> { null }
 
@@ -45,6 +47,9 @@ internal fun DesktopChatPersonTarget(person: DesktopChatPerson?, onOwnContext: (
         DesktopChatMenuEntry(t(DesktopUiText.EDIT_PERSON), DesktopAppIcons.Edit, person.identityUnique) {
             actions.edit(person.cardId, person.character.id)
         },
+        DesktopChatMenuEntry(t(if (person.enabled) DesktopUiText.DISABLE_PERSON else DesktopUiText.ENABLE_PERSON),
+            if (person.enabled) DesktopAppIcons.Stop else DesktopAppIcons.Add,
+            person.identityUnique && actions.toggleEnabled && actions.setEnabled != null) { actions.setEnabled?.invoke(person, !person.enabled) },
     ))) { menu = false }
     TooltipArea(tooltip = {
         if (actions.previewEnabled && !menu) {
@@ -52,6 +57,7 @@ internal fun DesktopChatPersonTarget(person: DesktopChatPerson?, onOwnContext: (
             .border(1.dp, colors.border, RoundedCornerShape(8.dp)).padding(12.dp).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(6.dp)) {
             StatusText(person.character.name)
+            if (!person.enabled) StatusText(t(DesktopUiText.PERSON_DISABLED_HISTORY))
             StatusText(person.status?.text ?: t(DesktopUiText.PERSON_STATUS_UNKNOWN))
             StatusText(t(DesktopUiText.PERSON_STATUS_OPEN))
         }
@@ -79,6 +85,7 @@ internal fun DesktopChatPeopleRail(people: List<DesktopChatPerson>, controller: 
                     verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     PrimaryAvatar(person.character.appearanceImage, person.character.name, controller, 40.dp)
                     BasicText(person.character.name, style = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 12.sp))
+                    if (!person.enabled) StatusText(t(DesktopUiText.PERSON_DISABLED))
                 }
             }
         } }
@@ -87,7 +94,9 @@ internal fun DesktopChatPeopleRail(people: List<DesktopChatPerson>, controller: 
 
 @Composable
 internal fun DesktopChatPeopleDialog(people: List<DesktopChatPerson>, selectedId: String?,
-    onSelect: (String) -> Unit, onEdit: (String, String) -> Unit, onClose: () -> Unit) {
+    onSelect: (String) -> Unit, onEdit: (String, String) -> Unit,
+    onSetEnabled: ((DesktopChatPerson, Boolean) -> Unit)? = null, toggleEnabled: Boolean = true,
+    participationAvailable: Boolean = true, onClose: () -> Unit) {
     val t = LocalDesktopUiStrings.current
     val colors = DesktopBootstrapColors
     val selected = people.firstOrNull { it.character.id == selectedId }
@@ -100,10 +109,12 @@ internal fun DesktopChatPeopleDialog(people: List<DesktopChatPerson>, selectedId
             }
             Column(Modifier.weight(1f, fill = false).fillMaxWidth().verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                StatusText(t(if (participationAvailable) DesktopUiText.PERSON_PARTICIPATION_SCOPE else DesktopUiText.PERSON_TOGGLE_FREEFORM))
                 if (selected == null) {
-                    people.forEach { person -> BootstrapButton(person.character.name, secondary = true,
+                    people.forEach { person -> BootstrapButton(person.character.name + if (!person.enabled) " · ${t(DesktopUiText.PERSON_DISABLED)}" else "", secondary = true,
                         enabled = person.identityUnique) { onSelect(person.character.id) } }
                 } else {
+                    if (!selected.enabled) StatusText(t(DesktopUiText.PERSON_DISABLED_HISTORY))
                     selected.status?.let { status ->
                         val time = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneId.systemDefault())
                             .format(Instant.ofEpochMilli(status.source.createdAt))
@@ -114,6 +125,8 @@ internal fun DesktopChatPeopleDialog(people: List<DesktopChatPerson>, selectedId
                     BootstrapButton(t(DesktopUiText.EDIT_PERSON), secondary = true, enabled = selected.identityUnique) {
                         onEdit(selected.cardId, selected.character.id)
                     }
+                    if (onSetEnabled != null) BootstrapButton(t(if (selected.enabled) DesktopUiText.DISABLE_PERSON else DesktopUiText.ENABLE_PERSON),
+                        secondary = true, enabled = toggleEnabled && selected.identityUnique) { onSetEnabled(selected, !selected.enabled) }
                 }
             }
         }

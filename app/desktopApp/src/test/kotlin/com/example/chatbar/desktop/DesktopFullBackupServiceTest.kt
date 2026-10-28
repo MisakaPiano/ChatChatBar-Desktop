@@ -8,6 +8,38 @@ import kotlinx.coroutines.flow.first
 import kotlin.test.*
 
 class DesktopFullBackupServiceTest {
+    @Test fun `whole backup keeps participation as Desktop extension in legacy and modern envelopes`() = runBlocking {
+        for (modern in listOf(false, true)) Fixture().use { f ->
+            val person = CharacterInfo.create("Synthetic")
+            val card = CharacterCard.create("Synthetic card").copy(id = "apiKey", characters = listOf(person))
+            val session = ChatSession.create(card.id, "Synthetic chat").copy(
+                desktopCharacterParticipation = listOf(SessionCharacterParticipation(card.id, setOf(person.id))))
+            val cardFile = f.root.resolve("entities/character_cards/${card.id}.json")
+            val sessionFile = f.root.resolve("entities/chat_sessions/${session.id}.json")
+            Files.createDirectories(cardFile.parent); Files.createDirectories(sessionFile.parent)
+            Files.writeString(cardFile, backupJson.encodeToString(CharacterCard.serializer(), card))
+            Files.writeString(sessionFile, backupJson.encodeToString(ChatSession.serializer(), session))
+            val original = Files.readAllBytes(sessionFile)
+            val output = f.base.resolve("participation.cbbackup")
+            if (modern) {
+                f.service.exportModern(output, null)
+                DesktopFullBackupStaging.prepare(output, null, Files.createDirectory(f.base.resolve("inspect"))).use { staged ->
+                    val value = staged.entities.getValue("entities/chat_sessions/${session.id}.json")
+                    assertTrue(DesktopBackupPolicy.hasDesktopParticipation(value))
+                    assertEquals(session, backupJson.decodeFromJsonElement(ChatSession.serializer(), value))
+                }
+            } else {
+                f.service.export(output, null)
+                f.service.inspect(output, null).use { prepared ->
+                    assertTrue(prepared.desktopOnly)
+                    val value = Files.readString(prepared.files.getValue("entities/chat_sessions/${session.id}.json"))
+                    assertEquals(session, backupJson.decodeFromString(ChatSession.serializer(), value))
+                }
+            }
+            assertContentEquals(original, Files.readAllBytes(sessionFile))
+        }
+    }
+
     private class Fixture : AutoCloseable {
         val base = Files.createTempDirectory("whole-app-service-")
         val root = Files.createDirectory(base.resolve("root"))

@@ -11,6 +11,27 @@ import kotlinx.coroutines.*
 import kotlin.test.*
 
 class DesktopSaveSlotServiceTest {
+    @Test fun `participation survives real package export import restore with original card scope`() = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            val overrides = listOf(SessionCharacterParticipation(f.session.characterCardId, setOf("disabled-person")),
+                SessionCharacterParticipation("other-card", setOf("other-person")))
+            f.chats.saveSessionSettingsDraft(f.session, f.session.copy(desktopCharacterParticipation = overrides))
+            val service = f.service()
+            val slot = service.create("s", "Participation", SaveSlotImagePolicy.ORIGINAL, false)
+            assertEquals(overrides, slot.desktopCharacterParticipation)
+            val output = f.root.resolve("participation.cbsave")
+            service.export(slot.id, output)
+            val imported = service.import(output, "s")
+            assertEquals(overrides, imported.desktopCharacterParticipation)
+            val current = f.chats.getSession("s")!!
+            f.chats.saveSessionSettingsDraft(current, current.copy(desktopCharacterParticipation = emptyList()))
+            service.restore(imported.id, "s")
+            assertEquals(overrides, f.chats.getSession("s")!!.desktopCharacterParticipation)
+            assertEquals(f.session.characterCardId, f.chats.getSession("s")!!.characterCardId)
+        }
+    }
+
     private class Fixture : AutoCloseable {
         val root = Files.createTempDirectory("desktop-slot-service-")
         val owner = assertIs<DesktopDataRootOwnershipResult.Acquired>(DesktopDataRootOwnership.acquire(

@@ -15,6 +15,41 @@ import okio.Buffer
 import kotlin.test.*
 
 class DesktopChatVoiceRuntimeTest {
+    @Test fun `disabled character cannot create or replace audio while historical recording remains`() = runBlocking {
+        Fixture().use { f ->
+            f.seed(); f.enqueue(); f.done(f.runtime.generate(f.message, "alice"))
+            val original = f.repo.listForSession(f.session.id).single()
+            val card = f.characters.getById("card")!!
+            val disabled = com.example.chatbar.domain.chat.SessionCharacterParticipationPolicy.change(f.session, card, "alice", false)
+            f.chats.saveSessionSettingsDraft(f.session, disabled)
+            f.runtime.generate(f.message, "alice", replace = original, editedTaggedText = "replacement")?.let { f.done(it) }
+            assertEquals(1, f.server.requestCount)
+            assertEquals(original, f.repo.get(original.id))
+            assertTrue(Files.exists(Path.of(original.audioPath)))
+            f.runtime.foreground(f.session.id).join()
+            val play = f.runtime.play(original, f.message)
+            withTimeout(3_000) { while (!f.output.playing) delay(10) }
+            f.runtime.stopForMaintenance(); play?.join()
+            assertEquals(original, f.repo.get(original.id))
+        }
+    }
+
+    @Test fun `participation change rejects active voice generation rather than racing its frozen identity`() = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            f.server.enqueue(MockResponse().setHeader("Content-Type", "audio/mpeg").setBody(Buffer().write(fishPreviewMp3()))
+                .setBodyDelay(500, java.util.concurrent.TimeUnit.MILLISECONDS))
+            val id = f.runtime.generate(f.message, "alice")
+            var enteredWhileBusy = false
+            assertFailsWith<IllegalStateException> { f.runtime.withCharacterParticipationChange(f.session.id) { enteredWhileBusy = true } }
+            assertFalse(enteredWhileBusy)
+            f.done(id)
+            var admitted = false
+            f.runtime.withCharacterParticipationChange(f.session.id) { admitted = true }
+            assertTrue(admitted)
+        }
+    }
+
     @Test fun `UI click intent cannot become a new autoplay intent after a leave and return`() = runBlocking {
         Fixture().use { f ->
             f.seed(); f.enqueue(); f.done(f.runtime.generate(f.message, "alice"))

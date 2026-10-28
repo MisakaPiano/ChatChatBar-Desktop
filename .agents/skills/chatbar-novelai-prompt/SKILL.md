@@ -29,6 +29,8 @@ Use chatbar-image-generation-runtime for NovelAI HTTP generation, streaming fram
 
 ## Shared NovelAI Entry
 
+- Desktop chat automatic/manual image callers pass the session's effective structured-person card view to `NovelAiPromptDesigner`. Original chat text remains input; standalone Studio card references are independent of chat participation.
+
 - Phase 7 shared `domain/image/NovelAiPromptPlan.kt` owns plan serialization, delimiter normalization and `NovelAiPromptComposition` (style joining/fallback centers). Designer compatibility helpers delegate there. `NovelAiPromptDesigner`, research/planner, codex retrieval, post-processing, tokenization, annotations and completion now share their JVM-neutral implementations. `NovelAiTextTransport` is the only design transport seam; Android adapter retains withAiTaskRun/debug identity, Desktop adapter uses shared AuxiliaryMessageAssembler and OpenAiStreamingTransport. GENERATE preserves roles; PLAN/REPAIR use merged input. Completion callbacks are deltas for research, accumulated text for designer progress.
 
 - Text-model scene/query planning declares IMAGE_RESEARCH/PLAN; design declares IMAGE_DESIGN with GENERATE or REPAIR. Shared transport combines feature/evidence systems into the first GENERAL_* system. IMAGE_DESIGN/GENERATE preserves non-system messages as actual conversation roles; other stages retain the eight-message merged-input envelope. The fixed acknowledgement/reminder tail follows. Actual request logging is transport-owned; do not restore NovelAiPromptDesigner's old duplicate logical-body record. Source-only revision wording lives in PromptTemplates.novelAiRevisionWithCharacterReference.

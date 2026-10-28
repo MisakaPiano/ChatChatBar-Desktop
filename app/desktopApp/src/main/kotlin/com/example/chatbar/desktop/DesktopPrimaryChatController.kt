@@ -591,6 +591,24 @@ internal class DesktopPrimaryChatController(
         return result
     }
 
+    suspend fun setCharacterEnabled(expectedSessionId: String, cardId: String, personId: String, enabled: Boolean) = guarded {
+        if (blockDuringSessionSave()) return@guarded
+        val change: suspend () -> Unit = {
+            taskRuntime.withMessageMutation(expectedSessionId) {
+                stateLock.withLock {
+                    check(state.value.selectedSession?.id == expectedSessionId) { "会话已变化，请重新选择人物" }
+                    val session = requireNotNull(chats.getSession(expectedSessionId))
+                    check(session.characterCardId == cardId) { "角色卡已变化，请重新选择人物" }
+                    val card = requireNotNull(characters.getById(cardId))
+                    val next = com.example.chatbar.domain.chat.SessionCharacterParticipationPolicy.change(session, card, personId, enabled)
+                    chats.saveSessionSettingsDraft(session, next)
+                    refreshSelection()
+                }
+            }
+        }
+        if (voices == null) change() else voices.withCharacterParticipationChange(expectedSessionId, change)
+    }
+
     /** Optional flush for tests/callers; normal UI edits already schedule their own persistence. */
     suspend fun persistComposer() = guarded {
         state.value.selectedSession?.id?.let { draftPersistence.flush(it) }
@@ -1022,7 +1040,7 @@ internal class DesktopPrimaryChatController(
             val selectedCharacter = characters.getById(session.characterCardId)
             val people = if (selectedCharacter?.characters.isNullOrEmpty()) emptyList() else {
                 val timeline = chats.getMessagesReadOnly(id)
-                withContext(Dispatchers.Default) { desktopChatPeople(selectedCharacter, timeline) }
+                withContext(Dispatchers.Default) { desktopChatPeople(selectedCharacter, timeline, session) }
             }
             val modelStatus = models.status(session.modelId, appSettings)
             val effective = models.resolveChatModel(session.modelId, appSettings)

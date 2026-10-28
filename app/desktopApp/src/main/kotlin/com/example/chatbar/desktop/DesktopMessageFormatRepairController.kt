@@ -169,7 +169,7 @@ internal class DesktopMessageFormatRepairController(
             return commit(session, snapshot, restored.content, null, DesktopRepairStatus.RESTORED)
         }
         val appSettings = settings.getAppSettings()
-        val character = characters.getById(session.characterCardId)
+        val character = characters.getById(session.characterCardId)?.let { SessionCharacterParticipationPolicy.effectiveCard(session, it) }
         val player = session.playerName?.takeIf(String::isNotBlank) ?: settings.getPlayerSetting().playerName
         val formatId = session.formatCardId ?: appSettings.defaultFormatCardId
         val format = formatId?.let { formats.getById(it)?.content }?.let {

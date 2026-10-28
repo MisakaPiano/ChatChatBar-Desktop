@@ -23,7 +23,7 @@ internal val LocalDesktopVoiceUi = staticCompositionLocalOf { DesktopVoiceUiSele
 @Composable
 internal fun DesktopNarratorDropdown(state: DesktopPrimaryChatState, selected: String?, choose: (String) -> Unit) {
     var open by remember { mutableStateOf(false) }
-    val bound = state.selectedCharacter?.characters.orEmpty().filter { it.fishAudioVoice != null }
+    val bound = state.participatingCharacter?.characters.orEmpty().filter { it.fishAudioVoice != null }
     BoxWithConstraints(Modifier.fillMaxWidth().height(38.dp).background(DesktopBootstrapColors.card, RoundedCornerShape(19.dp))
         .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(19.dp))) {
         val name = bound.firstOrNull { it.id == selected }?.name ?: "选择角色"
@@ -34,7 +34,7 @@ internal fun DesktopNarratorDropdown(state: DesktopPrimaryChatState, selected: S
         if (open) Popup(alignment = Alignment.TopEnd, properties = PopupProperties(focusable = true), onDismissRequest = { open = false }) {
             Column(Modifier.width(IntrinsicSize.Max).widthIn(max = 280.dp).heightIn(max = 320.dp).background(DesktopBootstrapColors.card)
                 .border(1.dp, DesktopBootstrapColors.border).verticalScroll(rememberScrollState()).padding(6.dp)) {
-                if (bound.isEmpty()) StatusText("当前角色卡没有已绑定音色")
+                if (bound.isEmpty()) StatusText("当前启用人物没有已绑定音色")
                 bound.forEach { c ->
                     BasicText("${c.name} · ${c.fishAudioVoice?.title.orEmpty()}", Modifier.fillMaxWidth()
                         .semantics { contentDescription = "选择 ${c.name}" }.clickable { choose(c.id); open = false }.padding(8.dp),

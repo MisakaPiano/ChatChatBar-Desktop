@@ -11,6 +11,43 @@ import kotlin.test.*
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DesktopImageTaskProgressTest {
+    @Test fun `automatic image design uses active reference view and can stop before any image request`() = runBlocking {
+        val f = DesktopAssistantImageActionTest.Fixture()
+        try {
+            f.initialize()
+            val first = com.example.chatbar.data.local.entity.CharacterInfo.create("ActiveReference_X").copy(imagePrompt = "active_reference_tag_x")
+            val second = com.example.chatbar.data.local.entity.CharacterInfo.create("InactiveReference_Y").copy(imagePrompt = "inactive_reference_tag_y")
+            val card = f.c.characterRepository.getById("card")!!.copy(characters = listOf(first, second))
+            f.c.characterRepository.save(card)
+            val session = f.c.chatRepository.getSession("session")!!
+            val participating = SessionCharacterParticipationPolicy.change(session, card, second.id, false)
+            f.c.chatRepository.saveSessionSettingsDraft(session, participating.copy(automaticImageGenerationEnabled = true))
+            val captured = CompletableDeferred<String>()
+            val transport = object : NovelAiTextTransport {
+                override fun streamText(stage: NovelAiTextStage, messages: List<ChatApiMessage>, modelConfig: com.example.chatbar.data.local.entity.ModelConfig) = kotlinx.coroutines.flow.flow {
+                    if (stage == NovelAiTextStage.PLAN) {
+                        emit(StreamEvent.Delta("""{"sceneDescription":"adult reading","queries":[]}""")); emit(StreamEvent.Done)
+                    } else { captured.complete(messages.joinToString("\n") { it.content.toString() }); awaitCancellation() }
+                }
+            }
+            val designer = NovelAiPromptDesigner(transport, NovelAiTagResearchService(LlmNovelAiTagSearchPlanner(transport),
+                object : NovelAiTagSearchClient { override suspend fun search(query: String) = NovelAiTagSearchOutcome(query, emptyList()) }), NovelAiPromptPostProcessor(emptyList()))
+            val automatic = DesktopAutomaticChatImages(f.c.chatRepository, f.c.characterRepository, f.c.settingsRepository,
+                f.resolver, { designer }, f.c.characterResourceStore, f.c.dataOperationCoordinator, f.c.desktopSecretStore,
+                launch = { s, m, work -> f.c.taskRuntime.launchNovelAi("automatic", s, m, retryable = true, work = work) })
+            val messages = f.c.chatRepository.getMessages("session")
+            automatic.completed(DesktopRealChatResult(messages.first(), true, f.source, ProviderCompletionMetadata("stop"))) { false }
+            val contents = withTimeout(10_000) { captured.await() }
+            assertTrue("active_reference_tag_x" in contents)
+            assertFalse("inactive_reference_tag_y" in contents)
+            val task = f.c.taskRuntime.tasks.value.single().taskId
+            assertTrue(f.c.taskRuntime.requestUserStop(task))
+            assertEquals(DesktopTaskStatus.USER_STOPPED, f.terminal(task).status)
+            assertTrue(f.requests.isEmpty())
+            assertEquals(card, f.c.characterRepository.getById(card.id))
+        } finally { f.close() }
+    }
+
     @Test fun `repeated credentials cannot reveal a fragment from the prefix lookahead boundary`() {
         val key = "fixture-secret-crossing-boundary-A"
         val sentinel = "LATEST_PREFIX_REPAIR_931"

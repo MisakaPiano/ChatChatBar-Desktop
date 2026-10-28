@@ -2,7 +2,7 @@ package com.example.chatbar.domain.chat
 
 import com.example.chatbar.data.local.entity.*
 
-/** Official SaveSlot session fields. Character identity, title and live runtime are not archive settings. */
+/** Official settings plus namespaced Desktop participation. Card identity, title and live runtime stay outside archive settings. */
 object SaveSlotSessionPolicy {
     fun create(session: ChatSession, name: String, description: String?, memorySnapshot: MemorySnapshot?,
         imagePolicy: SaveSlotImagePolicy, includeAudio: Boolean): SaveSlot = SaveSlot.create(
@@ -26,6 +26,7 @@ object SaveSlotSessionPolicy {
         chatBackground = session.chatBackground,
         audiobookModeEnabled = session.audiobookModeEnabled,
         voiceLanguage = session.voiceLanguage,
+        desktopCharacterParticipation = session.desktopCharacterParticipation,
         longTermMemoryEnabled = session.longTermMemoryEnabled,
         longTermMemory = session.longTermMemory,
         longTermMemoryUpdatedThroughMessageId = session.longTermMemoryUpdatedThroughMessageId,
@@ -59,6 +60,7 @@ object SaveSlotSessionPolicy {
         chatBackground = restoredBackground,
         audiobookModeEnabled = slot.audiobookModeEnabled,
         voiceLanguage = slot.voiceLanguage,
+        desktopCharacterParticipation = slot.desktopCharacterParticipation,
         longTermMemoryEnabled = slot.longTermMemoryEnabled,
         longTermMemory = slot.longTermMemory,
         longTermMemoryUpdatedThroughMessageId = slot.longTermMemoryUpdatedThroughMessageId,
