@@ -354,19 +354,17 @@ class DesktopDataRootMigrationMaterializerTest {
     }
 
     @Test
-    fun `unsafe backups root fails rather than becoming active payload`() = runBlocking {
+    fun `unsafe backups link is refused by source admission before becoming payload`() = runBlocking {
         withFixture {
             val actual = Files.createDirectory(parent.resolve("external-backups"))
             val link = sourceRoot.resolve("backups")
-            if (runCatching { Files.createSymbolicLink(link, actual) }.isFailure) {
-                println("D2_BACKUPS_SYMLINK_FIXTURE_SKIPPED")
-                return@withFixture
-            }
+            org.junit.Assume.assumeTrue("Native symlink unavailable: NOT_TESTED",
+                runCatching { Files.createSymbolicLink(link, actual) }.isSuccess)
             println("D2_BACKUPS_SYMLINK_FIXTURE_EXECUTED")
 
             val result = assertIs<DesktopMigrationMaterializationResult.Failure>(materialize())
 
-            assertEquals(DesktopMigrationMaterializationFailureKind.BACKUPS_ROOT_UNSAFE, result.kind)
+            assertEquals(DesktopMigrationMaterializationFailureKind.SOURCE_UNSAFE, result.kind)
             assertLockOnly(destinationRoot)
         }
     }

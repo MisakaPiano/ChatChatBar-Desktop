@@ -1,3 +1,9 @@
+## 后续修复检查点：1207 已确认问题，1208 尚未交付
+
+2026-10-28T09:40:01+09:00：1207确认存在默认JVM临时目录8.3短名导致Fish试听缓存被拒的生产问题，公开Release已披露；默认目录创建修复正在验证，将另发1208/新SHA，不覆盖1207。剪贴板同源短名测试通过，未改该业务。f499/run40607172047已结束：Android通过，Windows2114项4失败17跳过，NSIS步骤未执行；报告ZIP服务端SHA已核对。四项为测试时限、源准入更早拒绝symlink、模拟HTTP服务未读POST导致Windows RST、测试目录创建依赖，当前修复保留原业务断言和安全检查，尚待新head完整CI。
+
+---
+
 # Desktop Preview 1207 发行说明
 
 当前已公开发布 `0.1.0-preview.1207`，Windows 安装版本 `0.1.1207`，构建源码 `bd385a995fbb506e16607dc92403755951a591a4`。普通安装包使用当前用户 NSIS EXE；此前 MSI 路线无限期搁置。实际包摘要、原生验证和安装状态以 [207 当前总账](207_CONTINUOUS_START_AND_DELIVERY_LEDGER.md) 为准。用户已完成本机版本、原有内容及草稿正常退出重开限定验收。[公开发行页](https://github.com/MisakaPiano/ChatChatBar-Desktop/releases/tag/desktop-v0.1.0-preview.1207)提供安装包和校验文件。

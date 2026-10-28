@@ -271,8 +271,20 @@ private class TruncatedDesktopSseServer(payload: String) : AutoCloseable {
     val baseUrl = "http://127.0.0.1:${server.localPort}/v1"
     private val worker = thread(name = "desktop-truncated-sse", isDaemon = true) {
         server.accept().use { socket ->
-            val reader = socket.getInputStream().bufferedReader(Charsets.UTF_8)
-            while (!reader.readLine().isNullOrEmpty()) Unit
+            // Drain the POST before closing the response. An unread request body makes
+            // Windows send RST and can discard the intended complete SSE event.
+            val input = socket.getInputStream().buffered()
+            val requestHeaders = buildString {
+                while (!endsWith("\r\n\r\n")) {
+                    check(length < 65_536)
+                    val next = input.read(); check(next >= 0); append(next.toChar())
+                }
+            }
+            val requestLength = requestHeaders.lineSequence().firstOrNull {
+                it.startsWith("Content-Length:", ignoreCase = true)
+            }?.substringAfter(':')?.trim()?.toInt() ?: 0
+            check(requestLength in 0..1_048_576)
+            check(input.readNBytes(requestLength).size == requestLength)
             val body = "data: $payload\n\n".toByteArray(Charsets.UTF_8)
             val headers = buildString {
                 append("HTTP/1.1 200 OK\r\n")

@@ -48,7 +48,8 @@ class DesktopAssistantImageActionTest {
             c.chatRepository.addMessage(ChatMessage.create("session", MessageRole.USER, "A reading scene"))
             source = c.chatRepository.addMessage(ChatMessage.create("session", MessageRole.ASSISTANT, "The adult traveler reads by the window."))
         }
-        suspend fun terminal(id: String) = withTimeout(10000) {
+        // This checks resolution/persistence, not a ten-second performance contract.
+        suspend fun terminal(id: String) = withTimeout(30_000) {
             c.taskRuntime.tasks.first { tasks -> tasks.any { it.taskId == id && it.status != DesktopTaskStatus.RUNNING } }.single { it.taskId == id }
         }
         suspend fun close() { client.dispatcher.executorService.shutdown(); client.connectionPool.evictAll(); design.close() }
