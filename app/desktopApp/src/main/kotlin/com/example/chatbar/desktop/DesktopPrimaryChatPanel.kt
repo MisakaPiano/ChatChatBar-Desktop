@@ -294,6 +294,13 @@ internal fun DesktopPrimaryChatPanel(
                                 onDelete = { deletingMessage = it },
                                 onEditSegment = { message, segment -> editingSegment = message to segment; segmentText = segment.source!!.rawText },
                                 onDeleteSegment = { message, segment -> deletingSegment = message to segment },
+                                onActionChoice = { message, choice -> scope.launch {
+                                    controller.actionChoiceForDraft(message, choice)?.let { text ->
+                                        composer.insertChoice(text) { before, after ->
+                                            controller.editComposerIfCurrent(composer.sessionId, before, after)
+                                        }
+                                    }
+                                }; Unit },
                             ) }
                         } }
                         Column(Modifier.width(placement.contentWidthDp.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -321,6 +328,9 @@ internal fun DesktopPrimaryChatPanel(
         if (composer.expanded) {
             DesktopFullComposer(composer, canLaunch, state.configurationMessage, state.error,
                 onDraft = controller::editComposer, onSend = send,
+                onUndoChoice = { composer.undoChoiceInsertion { before, after ->
+                    controller.editComposerIfCurrent(composer.sessionId, before, after)
+                }; Unit },
                 attachments = { DesktopPendingImageStrip(state.pendingImages, canLaunch,
                     onRemove = { scope.launch { controller.removePendingImage(it) } }, onPick = {}, showPicker = false,
                     onReorder = { id, to -> scope.launch { controller.reorderPendingImage(id, to) } }) },
@@ -594,6 +604,7 @@ private fun PrimaryTimeline(
     onDelete: (ChatMessage) -> Unit,
     onEditSegment: (ChatMessage, DesktopPresentedSegment) -> Unit,
     onDeleteSegment: (ChatMessage, DesktopPresentedSegment) -> Unit,
+    onActionChoice: (ChatMessage, DesktopActionChoice) -> Unit,
 ) {
     val t = LocalDesktopUiStrings.current
     val scope = rememberCoroutineScope()
@@ -656,7 +667,8 @@ private fun PrimaryTimeline(
                 }
                 PrimaryMessageBubble(message, state, controller, clipboard, actions, perform,
                     onEditSegment = { onEditSegment(message, it) },
-                    onDeleteSegment = { onDeleteSegment(message, it) })
+                    onDeleteSegment = { onDeleteSegment(message, it) },
+                    onActionChoice = { onActionChoice(message, it) })
             }
             if (state.hasNewerMessages) item(key = "newer") {
                 BootstrapButton(t(DesktopUiText.LOAD_NEWER), secondary = true) { scope.launch { viewport.loadAdjacent(controller, older = false) } }
@@ -703,6 +715,7 @@ internal fun PrimaryMessageBubble(
     onAction: (DesktopMessageAction) -> Unit = {},
     onEditSegment: (DesktopPresentedSegment) -> Unit = {},
     onDeleteSegment: (DesktopPresentedSegment) -> Unit = {},
+    onActionChoice: ((DesktopActionChoice) -> Unit)? = null,
 ) {
     val t = LocalDesktopUiStrings.current
     val scope = rememberCoroutineScope()
@@ -735,6 +748,9 @@ internal fun PrimaryMessageBubble(
     val imageOnlyMessageActions = if (imageOnly && imageTaskRunning)
         actions.filter { it == DesktopMessageAction.COPY } else actions
     val voicePlacements = rememberDesktopVoicePlacements(controller.voices, message)
+    val actionChoices = remember(message, onActionChoice != null) {
+        if (onActionChoice == null) emptyList() else desktopActionChoices(message)
+    }
     var messageTextWidth by remember(message) { mutableStateOf(0) }
     var menuAnchor by remember(message) { mutableStateOf<Rect?>(null) }
     var menuSegment by remember(message) { mutableStateOf<DesktopPresentedSegment?>(null) }
@@ -855,7 +871,10 @@ internal fun PrimaryMessageBubble(
                             DesktopPresentationExpansion(segment.statusDefaultExpanded)
                         }
                         DesktopChatDisclosure(t(DesktopUiText.STATUS_OPTIONS), expansion)
-                        if (expansion.expanded) SelectionContainer {
+                        val choices = actionChoices.filter { it.blockStart == segment.source?.start }
+                        if (expansion.expanded && choices.isNotEmpty()) {
+                            DesktopActionChoiceList(choices, enabled = !sessionRepairBusy) { onActionChoice?.invoke(it) }
+                        } else if (expansion.expanded) SelectionContainer {
                             // Android RoleplayStatusPanel displays literal status text, not Markdown.
                             BasicText(segment.text.trim(), style = TextStyle(color = colors.foreground,
                                 fontSize = 12.sp, lineHeight = 16.sp))
@@ -1028,6 +1047,9 @@ private fun PrimaryComposer(
         }
     }
     if (!collapsed) StatusText(t(DesktopUiText.COMPOSER_HINT))
+    DesktopChoiceUndo(composer) { composer.undoChoiceInsertion { before, after ->
+        controller.editComposerIfCurrent(composer.sessionId, before, after)
+    } }
     }
     running?.let { StatusText("${t(DesktopUiText.TASK)}: ${t.status(it.message)}") }
 }

@@ -14,6 +14,7 @@ import androidx.compose.ui.input.key.*
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -29,10 +30,13 @@ internal class DesktopComposerInput(val sessionId: String?, draft: String) {
     var continuationPending by mutableStateOf(false)
         private set
     private var submitting by mutableStateOf(false)
+    private data class ChoiceEdit(val before: TextFieldValue, val after: TextFieldValue)
+    private val choiceEdits = mutableStateListOf<ChoiceEdit>()
+    val canUndoChoiceInsertion get() = choiceEdits.isNotEmpty() && input.composition == null && !submitting
 
     fun echo(draft: String) {
         val next = desktopComposerDraftEcho(input, draft)
-        if (next.text != input.text) continuationPending = false
+        if (next.text != input.text) { continuationPending = false; choiceEdits.clear() }
         input = next
     }
     fun open(canLaunch: Boolean) { if (sessionId != null && canLaunch) expanded = true }
@@ -40,9 +44,36 @@ internal class DesktopComposerInput(val sessionId: String?, draft: String) {
     fun edit(full: Boolean, value: TextFieldValue, persist: (String) -> Unit) {
         // Ignore focus-loss echoes from the now-covered/removed text field, not active IME edits.
         if (full != expanded) return
+        if (value.text != input.text) choiceEdits.clear()
         if (value.text != input.text || value.composition != input.composition) continuationPending = false
         input = value
         persist(value.text)
+    }
+    /** Insert after the current selection without replacing any existing draft characters. */
+    fun insertChoice(text: String, persist: (String, String) -> Boolean): Boolean {
+        if (sessionId == null || submitting || input.composition != null || text.isBlank()) return false
+        val before = input
+        val at = before.selection.max.coerceIn(0, before.text.length)
+        val prefix = before.text.substring(0, at)
+        val suffix = before.text.substring(at)
+        val inserted = (if (prefix.isNotEmpty() && !prefix.last().isWhitespace()) "\n" else "") + text +
+            (if (suffix.isNotEmpty() && !suffix.first().isWhitespace()) "\n" else "")
+        val after = TextFieldValue(prefix + inserted + suffix, TextRange(at + inserted.length))
+        if (!persist(before.text, after.text)) return false
+        input = after
+        choiceEdits.add(ChoiceEdit(before, after))
+        continuationPending = false
+        returnFocus++
+        return true
+    }
+    fun undoChoiceInsertion(persist: (String, String) -> Boolean): Boolean {
+        if (!canUndoChoiceInsertion) return false
+        val edit = choiceEdits.last()
+        if (input.text != edit.after.text || !persist(input.text, edit.before.text)) return false
+        input = edit.before
+        choiceEdits.removeAt(choiceEdits.lastIndex)
+        returnFocus++
+        return true
     }
     var hasAttachments by mutableStateOf(false)
 
@@ -88,7 +119,7 @@ internal fun DesktopComposerTextField(
     val focus = remember(composer) { FocusRequester() }
     val t = LocalDesktopUiStrings.current
     LaunchedEffect(composer, composer.returnFocus) {
-        if (full || composer.returnFocus > 0) focus.requestFocus()
+        if (full == composer.expanded && (full || composer.returnFocus > 0)) focus.requestFocus()
     }
     BasicTextField(
         value = composer.input,
@@ -113,6 +144,7 @@ internal fun DesktopFullComposer(
     onSend: () -> Unit,
     attachments: @Composable () -> Unit = {},
     onPickImage: (() -> Unit)? = null,
+    onUndoChoice: () -> Unit = {},
     ingressModifier: Modifier = Modifier,
 ) {
     val t = LocalDesktopUiStrings.current
@@ -128,6 +160,7 @@ internal fun DesktopFullComposer(
             configurationMessage?.let { StatusText(t.status(it), colors.warning) }
             error?.let { StatusText(t.status(it), colors.destructive) }
             attachments()
+            DesktopChoiceUndo(composer, onUndoChoice)
             DesktopComposerTextField(composer, full = true, canLaunch, onDraft, onSend,
                 Modifier.weight(1f).fillMaxWidth()
                     .border(1.dp, colors.border, RoundedCornerShape(8.dp))
@@ -140,4 +173,10 @@ internal fun DesktopFullComposer(
             }
         }
     }
+}
+
+@Composable
+internal fun DesktopChoiceUndo(composer: DesktopComposerInput, undo: () -> Unit) {
+    if (composer.canUndoChoiceInsertion) BootstrapButton(LocalDesktopUiStrings.current(DesktopUiText.UNDO_ACTION_CHOICE),
+        secondary = true, onClick = undo)
 }

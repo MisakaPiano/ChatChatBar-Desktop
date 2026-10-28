@@ -1028,6 +1028,70 @@ class DesktopPrimaryChatControllerTest {
         return container.characterSessionService.createSessionForCharacter(character.id)
     }
 
+    @Test fun `action choices persist only a draft reject stale source and cannot cross session or newer edits`() = runBlocking {
+        withContainer { container ->
+            val card = CharacterCard.create("Choice card", greeting = "---\n行动选项\n1. Wait\n2. Leave\n---")
+            container.characterRepository.save(card)
+            configure(container)
+            val controller = container.primaryChatController
+            controller.refresh(); controller.createSession(card.id)
+            val session = controller.state.value.selectedSession!!.id
+            val messages = container.chatRepository.getMessages(session)
+            val message = messages.single()
+            val choice = desktopActionChoices(message).first()
+            controller.editComposer("existing draft")
+            val composer = DesktopComposerInput(session, "existing draft")
+            val text = assertNotNull(controller.actionChoiceForDraft(message, choice))
+            assertTrue(composer.insertChoice(text) { before, after -> controller.editComposerIfCurrent(session, before, after) })
+            controller.persistComposer()
+            val persisted = controller.state.value.composerDraft
+            controller.createSession(card.id)
+            val second = controller.state.value.selectedSession!!.id
+            assertNull(controller.actionChoiceForDraft(message, choice))
+            assertFalse(controller.editComposerIfCurrent(session, persisted, "wrong session"))
+            assertEquals("", controller.state.value.composerDraft)
+            controller.selectSession(session)
+            assertEquals(persisted, controller.state.value.composerDraft)
+            controller.editComposer("newer draft")
+            assertFalse(composer.undoChoiceInsertion { before, after -> controller.editComposerIfCurrent(session, before, after) })
+            assertEquals("newer draft", controller.state.value.composerDraft)
+            assertNull(controller.actionChoiceForDraft(message.copy(content = "stale"), choice))
+            assertNull(controller.actionChoiceForDraft(message, choice.copy(text = "forged")))
+            assertEquals(messages, container.chatRepository.getMessages(session))
+            assertEquals(1, container.chatRepository.getMessages(second).size)
+            assertTrue(container.taskRuntime.tasks.value.isEmpty())
+        }
+    }
+
+    @Test fun `choice draft survives closing and reopening its data root`() = runBlocking {
+        val parent = Files.createTempDirectory("action-choice-draft-")
+        var session: String? = null
+        try {
+            val first = container(parent)
+            try {
+                val card = CharacterCard.create("Choice reopen", greeting = "---\n行动选项\n1. Wait\n2. Leave\n---")
+                first.characterRepository.save(card)
+                configure(first)
+                val controller = first.primaryChatController
+                controller.refresh(); controller.createSession(card.id)
+                session = controller.state.value.selectedSession!!.id
+                val message = first.chatRepository.getMessages(session!!).single()
+                val choice = desktopActionChoices(message).last()
+                val text = assertNotNull(controller.actionChoiceForDraft(message, choice))
+                assertTrue(controller.editComposerIfCurrent(session, "", text))
+                controller.persistComposer()
+            } finally { first.close() }
+            val reopened = container(parent)
+            try {
+                reopened.primaryChatController.refresh()
+                reopened.primaryChatController.selectSession(session!!)
+                assertEquals("Leave", reopened.primaryChatController.state.value.composerDraft)
+                assertEquals(1, reopened.chatRepository.getMessages(session!!).size)
+                assertTrue(reopened.taskRuntime.tasks.value.isEmpty())
+            } finally { reopened.close() }
+        } finally { parent.toFile().deleteRecursively() }
+    }
+
     private suspend fun configure(container: DesktopAppContainer, baseUrl: String = "http://127.0.0.1:12345/v1") {
         val model = ModelConfig(
             id = "model", displayName = "Model", modelName = "fake-model", baseUrl = baseUrl,

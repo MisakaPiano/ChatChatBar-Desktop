@@ -564,6 +564,32 @@ internal class DesktopPrimaryChatController(
         }
     }
 
+    /** A suspended choice lookup must never write into a newer session or replace a newer draft. */
+    internal fun editComposerIfCurrent(sessionId: String?, before: String, after: String): Boolean = synchronized(composerLock) {
+        if (sessionId == null || state.value.selectedSession?.id != sessionId || state.value.composerDraft != before)
+            return@synchronized false
+        try {
+            draftPersistence.submit(sessionId, after)
+            pendingComposerClear = null
+            mutableState.update { it.copy(composerDraft = after, error = null) }
+            true
+        } catch (_: IllegalStateException) {
+            mutableState.update { it.copy(error = "Chat draft persistence is closing") }
+            false
+        }
+    }
+
+    internal suspend fun actionChoiceForDraft(expected: ChatMessage, choice: DesktopActionChoice): String? {
+        var result: String? = null
+        guarded { stateLock.withLock {
+            check(state.value.selectedSession?.id == expected.sessionId &&
+                chats.getMessage(expected.id, expected.sessionId) == expected) { "行动选项已变化，请重新选择" }
+            result = desktopActionChoices(expected).firstOrNull { it == choice }?.text
+            check(result != null) { "行动选项已变化，请重新选择" }
+        } }
+        return result
+    }
+
     /** Optional flush for tests/callers; normal UI edits already schedule their own persistence. */
     suspend fun persistComposer() = guarded {
         state.value.selectedSession?.id?.let { draftPersistence.flush(it) }

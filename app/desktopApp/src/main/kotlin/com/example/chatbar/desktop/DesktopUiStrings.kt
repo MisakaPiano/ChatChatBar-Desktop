@@ -155,6 +155,8 @@ internal enum class DesktopUiText(val zhCn: String, val en: String) {
     CONTINUE_CONFIRM_DESCRIPTION("输入框为空。确认后会继续生成，不新增用户消息。", "The composer is empty. Continue generating without adding a user message."),
     REGENERATE("重新生成", "Regenerate"), RETRY_GENERATION("重试生成", "Retry generation"),
     COMPOSER_HINT("Ctrl+Enter 发送；Enter / Shift+Enter 换行", "Ctrl+Enter sends; Enter / Shift+Enter inserts a newline"),
+    ACTION_CHOICES_HINT("点击选项填入草稿，检查后再发送", "Click a choice to insert it into the draft; review before sending"),
+    UNDO_ACTION_CHOICE("撤销选项填入", "Undo choice insertion"),
     EXPAND_COMPOSER("全屏编辑", "Expand composer"), FULL_COMPOSER("全屏撰写", "Full-screen composer"),
     COMPOSER_TEXT("新消息草稿", "New message draft"),
     RESIZE_COMPOSER("拖动调整输入区高度", "Drag to resize composer"),
