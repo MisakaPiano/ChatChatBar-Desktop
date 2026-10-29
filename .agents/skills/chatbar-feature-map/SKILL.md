@@ -17,7 +17,7 @@ Use this as a first-hop map. Read a specific skill or listed files, then search 
 
 ## Feature Rows
 
-- Explicit status ownership: shared `RoleplayStatusOwnership` validates closed STATUS blocks and owner labels, including emoji/bullet prefixes and Markdown emphasis. `CharacterResidencyPolicy` uses it only for the ending status sequence; `DesktopChatPeoplePolicy` requires one unique owner per block for the latest-status projection. Ordinary prose, unknown/ambiguous names, code and action choices stay excluded. `DesktopRoleplaySegmentSurface` left-aligns STATUS in both chat and screenshot export while narration retains its existing centered layout.
+- Explicit status ownership: shared `RoleplayStatusOwnership` validates closed STATUS blocks and owner labels, including emoji/bullet prefixes and Markdown emphasis. Plain-text fence labels `text`/`plaintext`/`txt` are accepted alongside unlabelled and status fences; programming-language fences remain excluded. `CharacterResidencyPolicy` uses it only for the ending status sequence; `DesktopChatPeoplePolicy` requires one unique owner per block for the latest-status projection. Ordinary prose, unknown/ambiguous names and action choices stay excluded. `DesktopRoleplaySegmentSurface` left-aligns STATUS in both chat and screenshot export while narration retains its existing centered layout.
 
 - Desktop person editor focus: `DesktopCharacterEditorPanel` selects the requested person, waits for that detail's `onGloballyPositioned` before `BringIntoViewRequester`, and consumes the focus revision after scrolling. A fixed one-frame wait can target the previous detail; test both heading and profile viewport geometry in `DesktopChatPeoplePresentationTest`.
 

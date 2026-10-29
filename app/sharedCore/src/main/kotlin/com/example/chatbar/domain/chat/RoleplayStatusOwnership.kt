@@ -11,7 +11,8 @@ object RoleplayStatusOwnership {
         if (segment.kind != RoleplaySegmentKind.STATUS) return emptyList()
         val raw = segment.rawText.trim().replace("\r\n", "\n").lines()
         val closed = raw.size >= 3 && ((raw.first() == "---" && raw.last() == "---") ||
-            (raw.first().trim() in setOf("```", "```状态", "```状态栏", "```status") && raw.last() == "```"))
+            (raw.first().trim().lowercase() in setOf("```", "```状态", "```状态栏", "```status",
+                "```text", "```plaintext", "```txt") && raw.last() == "```"))
         if (!closed) return emptyList()
         val lines = segment.displayText.lines().map(String::trim).filter(String::isNotEmpty)
         if (lines.size < 2 || lines.any { it.contains("行动选项") || it.contains("可选行动") ||

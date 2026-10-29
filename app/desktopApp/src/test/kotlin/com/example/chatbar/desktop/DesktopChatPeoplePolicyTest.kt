@@ -86,4 +86,14 @@ class DesktopChatPeoplePolicyTest {
         val mixed = message("---\n👤姓名：Alice\n👤姓名：Bob\n位置：门口\n---")
         assertTrue(desktopChatPeople(card, listOf(mixed)).all { it.status == null })
     }
+
+    @Test fun `plain text code fences expose each separate named status without accepting program code`() {
+        val source = message("```text\n👤姓名：Alice\n时间：傍晚\n位置：门口\n```\n\n" +
+            "```text\n👤姓名：Bob\n时间：傍晚\n位置：走廊\n```")
+        val people = desktopChatPeople(card, listOf(source))
+        assertTrue(people[0].status!!.text.contains("位置：门口"))
+        assertTrue(people[1].status!!.text.contains("位置：走廊"))
+        assertTrue(people.all { it.status!!.source == source })
+        assertTrue(desktopChatPeople(card, listOf(message("```python\n👤姓名：Alice\n位置：门口\n```"))).all { it.status == null })
+    }
 }

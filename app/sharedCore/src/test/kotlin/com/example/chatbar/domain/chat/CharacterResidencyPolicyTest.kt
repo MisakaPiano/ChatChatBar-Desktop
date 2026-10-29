@@ -52,4 +52,14 @@ class CharacterResidencyPolicyTest {
         assertTrue(CharacterResidencyPolicy.presentPersonIds(card,
             reply("---\n👤心情：甲很开心\n位置：门口\n---")).isEmpty())
     }
+
+    @Test fun `plain text fences used by persisted replies establish status ownership`() {
+        for (header in listOf("text", "plaintext", "txt", "TEXT")) {
+            val text = "```$header\n👤姓名：甲\n位置：门口\n```"
+            assertEquals(setOf(a.id), CharacterResidencyPolicy.presentPersonIds(card, reply(text)), header)
+            assertTrue(CharacterResidencyPolicy.presentPersonIds(card, reply(text + "\n故事继续。")).isEmpty())
+        }
+        assertTrue(CharacterResidencyPolicy.presentPersonIds(card,
+            reply("```python\n👤姓名：甲\n位置：门口\n```")).isEmpty())
+    }
 }

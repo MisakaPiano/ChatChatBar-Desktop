@@ -45,7 +45,7 @@ class DesktopChatPeoplePresentationTest {
             secretStoreFactory = { InMemoryDesktopSecretStore() })
         try {
             val person = CharacterInfo.create("Alice")
-            val card = CharacterCard.create("People card", greeting = "<n=\"Alice\"/>[Hello]()\n---\n♟姓名：Alice\n心情：calm\n---")
+            val card = CharacterCard.create("People card", greeting = "<n=\"Alice\"/>[Hello]()\n```text\n👤姓名：Alice\n心情：calm\n```")
                 .copy(characters = listOf(person))
             container.characterRepository.save(card)
             container.characterSessionService.createSessionForCharacter(card.id)
