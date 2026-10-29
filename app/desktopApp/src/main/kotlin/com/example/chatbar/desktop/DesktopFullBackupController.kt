@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.*
 
 internal data class DesktopFullBackupState(val busy: Boolean = false, val message: String = "",
     val error: String? = null, val summary: AppBackupSummary? = null,
-    val desktopOnly: Boolean = false, val restartRequired: Boolean = false)
+    val desktopOnly: Boolean = false, val restartRequired: Boolean = false, val catalog: BackupExportCatalog? = null)
 
 /** The application owns the operation; leaving the panel cannot abandon a scheduled restore. */
 internal class DesktopFullBackupController(private val service: DesktopFullBackupService,
@@ -19,10 +19,16 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
     private var operation: Job? = null
     private var prepared: DesktopFullBackupArchive.Prepared? = null
 
-    fun export(password: CharArray?) = action(password) {
+    fun refreshExportCatalog() = action(null) {
+        val catalog = service.catalog()
+        mutable.update { it.copy(catalog = catalog) }
+        "已读取导出清单"
+    }
+
+    fun export(password: CharArray?, includeCredentials: Boolean = false, selection: AppBackupSelection? = null) = action(password) {
         val path = picker.pickSaveFile(TYPE, "ChatBar.cbbackup") ?: return@action "已取消保存，可以重新选择目标"
-        service.exportModern(path, password)
-        "备份已导出至新文件。API 密钥和受保护凭据未导出。"
+        service.exportModern(path, password, includeCredentials, selection)
+        if (includeCredentials) "备份已按所选范围导出，包含所选凭据及关联模型密钥。" else "备份已导出至新文件，不含 API 密钥等凭据。"
     }
 
     fun inspect(password: CharArray?) = action(password) {
@@ -86,7 +92,10 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
                         is DesktopBackupScratchCleanupException -> "临时文件清理尚未确认，已保留异常现场；请勿自行清理恢复记录。"
                         is DesktopAudioDrainException -> "音频尚未确认安全停止，恢复未提交。"
                         is DesktopDataOperationRejectedException -> "数据操作暂不可用，请检查是否需要正常退出。"
-                        else -> "操作未完成。请检查密码、格式、资源、可用空间及文件名。含凭据或不支持的数据会拒绝恢复；原文件与证据保留。"
+                        is DesktopBackupExportFailure -> "备份导出未完成（${failure.stage}）。原数据与凭据保留，请核对文件和资源。"
+                        is DesktopBackupMissingResource -> "“${failure.ownerLabel}”缺少资源“${failure.resourceName}”。请补回文件，或在导出清单中取消对应角色卡；原数据未修改。"
+                        is DesktopFullBackupWriter.Refusal -> "备份导出未完成（${failure.stage}）。请核对目标文件、可用空间和备份密码。"
+                        else -> "操作未完成。请检查密码、格式、资源、可用空间及文件名；原文件与证据保留。"
                     }
                     mutable.update { it.copy(error = reason, message = "") }
                 } finally {

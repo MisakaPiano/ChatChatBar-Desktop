@@ -21,7 +21,7 @@ internal object DesktopBackupPolicy {
     val roots = BackupDataRegistry.roots + DesktopPreservationStore.ROOT + DesktopSaveSlotSourceCustody.ROOT + DesktopHistoricalVoiceCustody.ROOT
     // These are not portable content. Restore preserves them in the destination.
     val localRoots = setOf("backups", ".ccb-desktop.lock", "desktop-settings.json",
-        "shared-import", "diagnostics", "updates", "prompt_dictionary", "tag_completion")
+        "shared-import", "diagnostics", "updates", "prompt_dictionary", "tag_completion", "auxiliary")
     val schemas: Map<String, KSerializer<*>> = mapOf(
         "app_settings" to AppSettings.serializer(), "player_setting" to PlayerSetting.serializer(),
         "character_cards" to CharacterCard.serializer(), "format_cards" to FormatCard.serializer(),

@@ -14,20 +14,21 @@ internal fun DesktopFullBackupPanel(controller: DesktopFullBackupController, onE
     DisposableEffect(controller) { onDispose { controller.leavePanel() } }
     val state by controller.state.collectAsState()
     var password by remember { mutableStateOf("") }
+    var exportOpen by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         DesktopDataSectionHeading("整应用备份与旧版文件检查")
         StatusText("备份角色、聊天、版本、记忆、图片、录音、存档和独立保全内容。恢复和手机迁移请使用上方合并入口。")
-        StatusText("备份不含已配置的 API 密钥或受保护凭据。本机目录与凭据不因导出而改变。旧版文件检查仅用于核对。")
+        StatusText("可随备份保存已配置的 API 密钥等凭据；导出不会改变本机目录或凭据。旧版文件检查仅用于核对。")
         StatusText("包含 Desktop 专有数据时仅支持 Desktop 恢复。Android 双向迁移尚需独立设备验收，不保证所有历史或未来格式可用。")
         if (!state.restartRequired) {
-            StatusText("可选备份密码（加密导出至少 8 个字符；检查加密文件时输入原密码）")
+            StatusText("旧版文件检查密码（加密文件填写；未加密留空）")
             BasicTextField(password, { password = it.take(1024) }, Modifier.fillMaxWidth()
                 .border(1.dp, DesktopBootstrapColors.border).padding(10.dp),
                 enabled = !state.busy, singleLine = true, visualTransformation = PasswordVisualTransformation(),
                 textStyle = TextStyle(color = DesktopBootstrapColors.foreground))
             ActionRow {
-                BootstrapButton("导出整应用备份", enabled = !state.busy && (password.isEmpty() || password.length >= 8)) {
-                    val secret = password.takeIf { it.isNotEmpty() }?.toCharArray(); password = ""; controller.export(secret)
+                BootstrapButton("选择导出内容…", enabled = !state.busy) {
+                    exportOpen = true; controller.refreshExportCatalog()
                 }
                 BootstrapButton("选择备份并检查…", secondary = true, enabled = !state.busy) {
                     val secret = password.takeIf { it.isNotEmpty() }?.toCharArray(); password = ""; controller.inspect(secret)
@@ -48,4 +49,6 @@ internal fun DesktopFullBackupPanel(controller: DesktopFullBackupController, onE
             BootstrapButton("正常退出应用", onClick = onExit)
         }
     }
+    if (exportOpen) DesktopBackupExportDialog(state, controller::refreshExportCatalog,
+        onClose = { exportOpen = false }, onExport = { selection, secret -> controller.export(secret, true, selection) }, onStop = controller::stop)
 }

@@ -10,7 +10,7 @@ import java.util.zip.ZipOutputStream
 import kotlinx.coroutines.*
 import kotlinx.serialization.json.*
 
-/** Writes a frozen, mapped, credential-free snapshot. It neither reads SecretStore nor activates a root.
+/** Writes a frozen mapped snapshot, optionally overlaying an explicitly captured credential snapshot.
  * The selected transport schema is official147/code86/v2, not the Desktop validated upstream baseline.
  * Desktop-only domains stay explicit and are never represented as Android full portability.
  */
@@ -20,7 +20,9 @@ internal object DesktopFullBackupWriter {
     class Refusal(val stage: String) : IllegalStateException("FULL_BACKUP_EXPORT_$stage")
 
     suspend fun export(files: Map<String, Path>, destination: Path, password: CharArray?,
-        preferences: BackupPreferences = BackupPreferences(), beforePublish: suspend () -> Unit = {}): String =
+        preferences: BackupPreferences = BackupPreferences(), credentials: DesktopBackupExportCredentials? = null,
+        selection: AppBackupSelection? = null,
+        beforePublish: suspend () -> Unit = {}): String =
         try { withContext(Dispatchers.IO) {
             var stage = "INPUT"
             try {
@@ -31,6 +33,8 @@ internal object DesktopFullBackupWriter {
                 require(preferences.brushSize.isFinite() && preferences.brushSize > 0 && preferences.brushType.length <= 100)
                 val entities = linkedMapOf<String, JsonObject>()
                 val proof = linkedMapOf<String, AppBackupFileRecord>()
+                val sourceProof = linkedMapOf<String, String>()
+                val transported = linkedMapOf<String, ByteArray>()
                 var structured = 0L; var total = 0L
                 for ((name, path) in files.toSortedMap()) {
                     currentCoroutineContext().ensureActive()
@@ -38,26 +42,42 @@ internal object DesktopFullBackupWriter {
                     DesktopArchiveFiles.safe(path, false)
                     val size = Files.size(path)
                     require(size in 0..DesktopFullBackupSource.MAX_FILE)
-                    total += size; require(total <= StrictBackupZipReader.Limits().expanded)
+                    sourceProof[name] = DesktopArchiveFiles.hash(path, DesktopFullBackupSource.MAX_FILE)
                     if (name.startsWith("entities/")) {
                         require(size <= DesktopBackupPolicy.MAX_JSON)
                         structured += size; require(structured <= DesktopFullBackupSource.MAX_STRUCTURED)
                         val bytes = Files.readAllBytes(path)
-                        try { entities[name] = DesktopBackupPolicy.entity(name, bytes, false, wireVersionCode = 86) }
+                        try {
+                            val original = DesktopBackupPolicy.entity(name, bytes, false, wireVersionCode = 86)
+                            val value = credentials?.entity(name, original) ?: original
+                            entities[name] = value
+                            if (value != original) transported[name] = value.toString().toByteArray()
+                        }
                         finally { bytes.fill(0) }
                     }
-                    proof[name] = AppBackupFileRecord(name, size, DesktopArchiveFiles.hash(path, DesktopFullBackupSource.MAX_FILE))
+                    val bytes = transported[name]
+                    val length = bytes?.size?.toLong() ?: size
+                    total += length; require(total <= StrictBackupZipReader.Limits().expanded)
+                    proof[name] = AppBackupFileRecord(name, length, bytes?.let(DesktopBackupPolicy::digest) ?: sourceProof.getValue(name))
                 }
                 val counts = entities.keys.groupingBy(DesktopBackupPolicy::entityType).eachCount()
                 val sessions = counts["chat_sessions"] ?: 0
-                val scope = InspectionScope(inspectionGlobalOptions - excludedOptions,
+                val choices = selection?.sessions?.mapValues { (_, choice) -> InspectionSessionChoice(choice.images, choice.voice, choice.archives) }
+                val scope = InspectionScope(selection?.globalOptions ?: if (credentials == null) inspectionGlobalOptions - excludedOptions else inspectionGlobalOptions,
                     characters = counts["character_cards"] ?: 0, sessions = sessions,
-                    sessionsWithImages = sessions, sessionsWithVoice = sessions, sessionsWithArchives = sessions,
+                    sessionsWithImages = choices?.values?.count { it.images } ?: sessions,
+                    sessionsWithVoice = choices?.values?.count { it.voice } ?: sessions,
+                    sessionsWithArchives = choices?.values?.count { it.archives } ?: sessions,
                     studioSettings = counts.keys.any { it.startsWith("novelai_studio_") || it.startsWith("novelai_design_") },
-                    studioHistory = (counts["novelai_generation_history"] ?: 0) > 0, studioHistoryImages = true,
-                    moments = false, momentsImages = true, sessionDefaultChoice = InspectionSessionChoice())
+                    studioHistory = selection?.studioHistory ?: ((counts["novelai_generation_history"] ?: 0) > 0),
+                    studioHistoryImages = selection?.studioHistoryImages ?: true,
+                    moments = false, momentsImages = true, sessionChoices = choices.orEmpty(),
+                    sessionDefaultChoice = if (choices == null) InspectionSessionChoice() else null)
                 DesktopBackupReadOnlyInspector().scopeReport(scope, counts, entities)
+                val capturedPreferences = credentials?.preferences(preferences) ?: preferences
                 val prefs = wire.encodeToString(InspectionPreferences.serializer(), InspectionPreferences(
+                    novelAiToken = capturedPreferences.novelAiToken, fishAudioKey = capturedPreferences.fishAudioKey,
+                    communitySession = capturedPreferences.communitySession,
                     brushSize = preferences.brushSize, brushType = preferences.brushType)).toByteArray()
                 val manifest = InspectionManifest(formatVersion = 2, appVersionCode = 86,
                     appVersionName = "CCB Desktop / official 1.4.7 transport compatibility", createdAt = System.currentTimeMillis(),
@@ -73,7 +93,10 @@ internal object DesktopFullBackupWriter {
                                 currentCoroutineContext().ensureActive()
                                 zip.putNextEntry(ZipEntry("files/$name"))
                                 var copied = 0L
-                                val hash = DesktopArchiveFiles.read(files.getValue(name), DesktopFullBackupSource.MAX_FILE) { buffer, count ->
+                                val replacement = transported[name]
+                                val hash = if (replacement != null) {
+                                    zip.write(replacement); copied = replacement.size.toLong(); DesktopBackupPolicy.digest(replacement)
+                                } else DesktopArchiveFiles.read(files.getValue(name), DesktopFullBackupSource.MAX_FILE) { buffer, count ->
                                     currentCoroutineContext().ensureActive(); zip.write(buffer, 0, count); copied += count
                                 }
                                 require(hash == expected.sha256 && copied == expected.size)
@@ -100,9 +123,10 @@ internal object DesktopFullBackupWriter {
                     require(verified.inventory == proof && verified.manifest == manifest)
                     stage = "SOURCE_RECHECK"
                     beforePublish()
-                    for ((name, record) in proof) {
+                    credentials?.verifyUnchanged()
+                    for ((name, hash) in sourceProof) {
                         context.ensureActive()
-                        require(DesktopArchiveFiles.hash(files.getValue(name), DesktopFullBackupSource.MAX_FILE) == record.sha256)
+                        require(DesktopArchiveFiles.hash(files.getValue(name), DesktopFullBackupSource.MAX_FILE) == hash)
                     }
                     stage = "PUBLISH"
                     context.ensureActive()

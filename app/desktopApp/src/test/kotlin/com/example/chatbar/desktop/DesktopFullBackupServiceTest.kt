@@ -8,6 +8,40 @@ import kotlinx.coroutines.flow.first
 import kotlin.test.*
 
 class DesktopFullBackupServiceTest {
+    @Test fun `selected modern service reads protected credentials only for requested export and keeps live settings unchanged`() = runBlocking {
+        Fixture().use { f ->
+            Files.createDirectories(f.settings.parent)
+            Files.writeString(f.settings, backupJson.encodeToString(AppSettings.serializer(), AppSettings()))
+            val original = Files.readAllBytes(f.settings)
+            var reads = 0
+            val store = object : com.example.chatbar.desktop.security.DesktopSecretStore {
+                override fun load(key: com.example.chatbar.desktop.security.DesktopCredentialKey): String? {
+                    reads++
+                    return if (key == com.example.chatbar.desktop.security.DesktopCredentialKey.NovelAiToken) "SYNTHETIC_NAI_SERVICE_SECRET" else null
+                }
+                override fun save(key: com.example.chatbar.desktop.security.DesktopCredentialKey, secret: String) = error("Export must not write credentials")
+                override fun delete(key: com.example.chatbar.desktop.security.DesktopCredentialKey) = error("Export must not delete credentials")
+            }
+            val focus = DesktopAudioFocus()
+            val service = DesktopFullBackupService(f.root, f.gate, DesktopAudioMaintenance({ focus }) {}, secretStore = { store })
+            service.exportModern(f.base.resolve("without-secret.cbbackup"), null)
+            assertEquals(0, reads)
+            val choice = AppBackupSelection(globalOptions = setOf("novelAiCredentials"))
+            val output = f.base.resolve("with-secret.cbbackup")
+            service.exportModern(output, null, true, choice)
+            var token: String? = null
+            val result = DesktopFullBackupSource.verify(output, null, object : DesktopFullBackupSource.TentativeSink {
+                override fun entity(path: String, original: kotlinx.serialization.json.JsonObject, raw: ByteArray) {}
+                override fun preferences(original: kotlinx.serialization.json.JsonObject) {
+                    token = (original["novelAiToken"] as kotlinx.serialization.json.JsonPrimitive).content
+                }
+                override fun media(path: String, input: java.io.InputStream) {}
+            })
+            assertEquals("SYNTHETIC_NAI_SERVICE_SECRET", token)
+            assertEquals(setOf("novelAiCredentials"), result.manifest.scope!!.globalOptions)
+            assertTrue(reads > 0); assertContentEquals(original, Files.readAllBytes(f.settings))
+        }
+    }
     @Test fun `whole backup keeps participation as Desktop extension in legacy and modern envelopes`() = runBlocking {
         for (modern in listOf(false, true)) Fixture().use { f ->
             val person = CharacterInfo.create("Synthetic").copy(desktopEnabled = false)

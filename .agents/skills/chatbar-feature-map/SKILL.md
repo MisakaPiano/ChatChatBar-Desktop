@@ -68,6 +68,8 @@ All abbreviated source paths are relative to app/app/src/main/java/com/example/c
 
 ## Stop Conditions
 
+- Desktop selected full backup: `DesktopBackupExportDialog.kt`, `DesktopFullBackupController/Service`, `backup/BackupExportSelection.kt` and `DesktopBackupExportCredentials.kt`; use chatbar-desktop-full-backup. Selection reaches mapping before resource resolution; per-session omission and final scope are transport facts, not only UI state. `DesktopBackupSelectionTest` and `DesktopBackupExportDialogTest` cover the new path.
+
 - If a request matches a specific project skill, stop expanding this map and read that skill.
 - If three focused searches miss, report uncertainty and widen deliberately.
 - Keep each row short, ownership-focused, and actionable.

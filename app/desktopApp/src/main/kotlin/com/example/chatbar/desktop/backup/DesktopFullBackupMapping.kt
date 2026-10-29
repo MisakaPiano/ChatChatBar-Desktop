@@ -27,6 +27,7 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
         Files.newDirectoryStream(root).use { children -> children.forEach { child ->
             val name = child.fileName.toString()
             check(name in DesktopBackupPolicy.roots || name in DesktopBackupPolicy.localRoots) { "UNCLASSIFIED_ROOT_ENTRY" }
+            if (name == "auxiliary") DesktopBackupAuxiliary.validate(child)
             if (name in DesktopBackupPolicy.roots) {
                 DesktopArchiveFiles.safe(child, true)
                 Files.walk(child).use { paths -> paths.iterator().asSequence().forEach { path ->
@@ -59,9 +60,17 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
 
     /** Call under the real exclusive coordinator: root writers cannot interleave this snapshot. */
     suspend fun export(workspace: Path, wireVersionCode: Int = 84, maximum: Long = DesktopBackupPolicy.MAX_TOTAL,
-        forMerge: Boolean = false): Export {
+        forMerge: Boolean = false, selection: AppBackupSelection? = null): Export {
         require(wireVersionCode in 84..86)
         val proof = inventory(maximum)
+        val context = currentCoroutineContext()
+        val catalog = selection?.let { BackupExportCatalog.read(root.toFile(), proof.keys.associateWith(root::resolve)) { context.ensureActive() } }
+        val plan = selection?.let { requireNotNull(catalog).plan(it) }
+        val selectedRecords = plan?.records?.associateBy { it.relative }
+        val selectedMedia = plan?.additionalFiles?.mapTo(hashSetOf()) { it.second } ?: hashSetOf()
+        val custodyRoots = setOf(DesktopPreservationStore.ROOT, DesktopSaveSlotSourceCustody.ROOT, DesktopHistoricalVoiceCustody.ROOT)
+        if (selection != null && proof.keys.any { it.substringBefore('/') in custodyRoots })
+            check(selection == requireNotNull(catalog).allSelection()) { "DESKTOP_CUSTODY_REQUIRES_FULL_SELECTION" }
         DesktopArchiveFiles.safe(workspace, true)
         val scratch = DesktopBackupScratch.create(workspace, "export-")
         val directory = scratch.directory
@@ -72,6 +81,7 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
         val bundled = linkedMapOf<String, String>()
         var preferences = BackupPreferences()
         var entityType = ""
+        var entityLabel = ""
         fun resource(value: String, fields: List<String>): String {
             if (value.startsWith("chatbar-vibe-file:")) {
                 val hash = value.removePrefix("chatbar-vibe-file:")
@@ -94,14 +104,17 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
             }
             val relative = DesktopBackupPolicy.sourceRelative(value, root) ?: return value
             val inline = entityType == "pending_deletions" || fields.any { it in setOf("imageResources", "audioResources", "pendingDeletedAssets") }
-            check(relative in proof || inline) { "REFERENCED_RESOURCE_MISSING" }
+            if (relative !in proof && !inline) throw DesktopBackupMissingResource(entityLabel, relative.substringAfterLast('/'))
+            if (relative in proof) selectedMedia += relative
             return DesktopBackupPolicy.PREFIX + relative
         }
-        proof.entries.forEachIndexed { index, (relative, hash) ->
+        // Resolve selected entity references first; an unselected broken card cannot block another card.
+        proof.entries.sortedBy { if (it.key.startsWith("entities/")) 0 else 1 }.forEachIndexed { index, (relative, hash) ->
             currentCoroutineContext().ensureActive()
             val source = root.resolve(relative)
             val target = directory.resolve("file-$index")
             if (relative.startsWith("entities/")) {
+                if (selectedRecords != null && relative !in selectedRecords && relative != "entities/desktop_backup_preferences.json") return@forEachIndexed
                 entityType = DesktopBackupPolicy.entityType(relative)
                 check(Files.size(source) <= DesktopBackupPolicy.MAX_JSON)
                 val raw = Files.readAllBytes(source)
@@ -109,14 +122,32 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
                 // PC plaintext value that differs from/misses its protected counterpart.
                 if (forMerge) DesktopBackupPolicy.entity(relative, raw, false, wireVersionCode)
                 val value = DesktopBackupPolicy.entity(relative, raw, true, wireVersionCode)
+                entityLabel = (value["name"] as? JsonPrimitive)?.contentOrNull?.take(160) ?: entityType
                 if (relative == "entities/desktop_backup_preferences.json") {
                     preferences = backupJson.decodeFromJsonElement(BackupPreferences.serializer(), value)
                     return@forEachIndexed
                 }
                 val name = DesktopBackupPolicy.portableEntityName(relative, value)
-                scratch.write(target, DesktopBackupPolicy.mapResources(value, ::resource))
+                val selectedRecord = selectedRecords?.get(relative)
+                val mapped = if (selectedRecord == null) DesktopBackupPolicy.mapResources(value, ::resource) else {
+                    val output = java.io.StringWriter()
+                    BackupJsonStream(value.toString().reader(), output, checkActive = { context.ensureActive() },
+                        replaceValue = { plan!!.replacement(selectedRecord.file, it) }, extraRootFields = plan!!.extraFields(selectedRecord.file)) { path, fields ->
+                        resource(plan.resourcePath(selectedRecord.file, path, fields), fields)
+                    }.copy()
+                    // Desktop background preferred is an additional registered resource field.
+                    if (entityType == "desktop_character_backgrounds") {
+                        val mappedValue = backupJson.parseToJsonElement(output.toString()).jsonObject
+                        val preferred = value["preferred"]?.jsonPrimitive?.contentOrNull
+                        JsonObject(mappedValue + ("preferred" to (preferred?.let { JsonPrimitive(resource(it, listOf("preferred"))) } ?: JsonNull))).toString().toByteArray()
+                    } else output.toString().toByteArray()
+                }
+                scratch.write(target, mapped)
                 add(name, target)
-            } else { check(scratch.copy(source, target, DesktopBackupPolicy.MAX_FILE) == hash); add(relative, target) }
+            } else {
+                if (selection != null && relative !in selectedMedia && relative.substringBefore('/') !in custodyRoots) return@forEachIndexed
+                check(scratch.copy(source, target, DesktopBackupPolicy.MAX_FILE) == hash); add(relative, target)
+            }
         }
         check(inventory(maximum) == proof) { "SOURCE_CHANGED_DURING_EXPORT" }
         return Export(directory, files, proof, preferences, scratch, forMerge)
@@ -256,3 +287,5 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
         }
     }
 }
+
+internal class DesktopBackupMissingResource(val ownerLabel: String, val resourceName: String) : IllegalStateException("SELECTED_RESOURCE_MISSING")
