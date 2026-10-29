@@ -78,6 +78,13 @@ internal class DesktopFullBackupService(
             catch (failure: DesktopBackupCompatibilityException) { throw failure }
             catch (failure: DesktopBackupScratchCleanupException) { throw failure }
             catch (failure: DesktopBackupMissingResource) { throw failure }
+            catch (failure: IllegalStateException) {
+                // These fixed custody rejection codes are consumed by existing diagnostics.
+                // Keep their identity instead of replacing a classified refusal with a generic stage.
+                if (failure.message in setOf("UNCLASSIFIED_ROOT_ENTRY", "UNCLASSIFIED_HIDDEN_BACKUP_ENTRY",
+                    "DESKTOP_CUSTODY_REQUIRES_FULL_SELECTION")) throw failure
+                throw DesktopBackupExportFailure(stage)
+            }
             catch (_: Exception) { throw DesktopBackupExportFailure(stage) }
             finally { credentials?.close(); snapshot?.close() }
         }

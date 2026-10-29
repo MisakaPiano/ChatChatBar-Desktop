@@ -95,7 +95,12 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
                         is DesktopBackupExportFailure -> "备份导出未完成（${failure.stage}）。原数据与凭据保留，请核对文件和资源。"
                         is DesktopBackupMissingResource -> "“${failure.ownerLabel}”缺少资源“${failure.resourceName}”。请补回文件，或在导出清单中取消对应角色卡；原数据未修改。"
                         is DesktopFullBackupWriter.Refusal -> "备份导出未完成（${failure.stage}）。请核对目标文件、可用空间和备份密码。"
-                        else -> "操作未完成。请检查密码、格式、资源、可用空间及文件名；原文件与证据保留。"
+                        else -> when (failure.message) {
+                            "UNCLASSIFIED_ROOT_ENTRY" -> "发现未识别的本机数据目录，备份未导出；请保留原目录以便核对。"
+                            "UNCLASSIFIED_HIDDEN_BACKUP_ENTRY" -> "发现未能归类的隐藏数据，备份未导出；原文件保留。"
+                            "DESKTOP_CUSTODY_REQUIRES_FULL_SELECTION" -> "当前资料含不可分割的历史保全内容，请使用完整选择导出；未生成部分备份。"
+                            else -> "操作未完成。请检查密码、格式、资源、可用空间及文件名；原文件与证据保留。"
+                        }
                     }
                     mutable.update { it.copy(error = reason, message = "") }
                 } finally {
