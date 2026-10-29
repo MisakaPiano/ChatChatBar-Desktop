@@ -442,7 +442,7 @@ internal fun StudioActions(content: @Composable RowScope.() -> Unit) {
     FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) { content() }
 }
 @Composable
-internal fun StudioToggle(label: String, selected: Boolean, action: () -> Unit) = StudioSwitch(label, selected, action)
+internal fun StudioToggle(label: String, selected: Boolean, action: () -> Unit) = StudioSwitch(label, selected, action = action)
 @Composable
 internal fun <T> SearchableChoice(label: String, options: List<T>, selected: T?, text: (T) -> String, choose: (T) -> Unit) {
     if (!studioUsesSearchDialog(options.size)) { CompactChoice(label, options, selected, text, choose); return }

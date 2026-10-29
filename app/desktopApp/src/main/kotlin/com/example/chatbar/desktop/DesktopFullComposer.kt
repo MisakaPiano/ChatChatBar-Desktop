@@ -115,6 +115,7 @@ internal fun DesktopComposerTextField(
     onDraft: (String) -> Unit,
     onSend: () -> Unit,
     modifier: Modifier = Modifier,
+    sendKey: DesktopSendKey = DesktopSendKey.CTRL_ENTER,
 ) {
     val focus = remember(composer) { FocusRequester() }
     val t = LocalDesktopUiStrings.current
@@ -127,9 +128,15 @@ internal fun DesktopComposerTextField(
         modifier = modifier.focusRequester(focus).semantics { contentDescription = t(DesktopUiText.COMPOSER_TEXT) }
             .onPreviewKeyEvent { event ->
                 full == composer.expanded && desktopComposerSendKey(event.key, event.type, event.isCtrlPressed,
-                    composer.input, canLaunch, onSend)
+                    composer.input, canLaunch, mode = sendKey, shift = event.isShiftPressed,
+                    altOrMeta = event.isAltPressed || event.isMetaPressed, hasAttachments = composer.hasAttachments, send = onSend)
             },
         textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp),
+        decorationBox = { field -> Box {
+            if (composer.input.text.isEmpty()) androidx.compose.foundation.text.BasicText(desktopComposerPlaceholder(sendKey),
+                style = TextStyle(color = DesktopBootstrapColors.mutedForeground, fontSize = 13.sp))
+            field()
+        } },
     )
 }
 
@@ -146,6 +153,9 @@ internal fun DesktopFullComposer(
     onPickImage: (() -> Unit)? = null,
     onUndoChoice: () -> Unit = {},
     ingressModifier: Modifier = Modifier,
+    sendKey: DesktopSendKey = DesktopSendKey.CTRL_ENTER,
+    onSendKey: (DesktopSendKey) -> Unit = {},
+    voiceControls: @Composable () -> Unit = {},
 ) {
     val t = LocalDesktopUiStrings.current
     val colors = DesktopBootstrapColors
@@ -164,12 +174,13 @@ internal fun DesktopFullComposer(
             DesktopComposerTextField(composer, full = true, canLaunch, onDraft, onSend,
                 Modifier.weight(1f).fillMaxWidth()
                     .border(1.dp, colors.border, RoundedCornerShape(8.dp))
-                    .background(colors.input, RoundedCornerShape(8.dp)).padding(12.dp))
+                    .background(colors.input, RoundedCornerShape(8.dp)).padding(12.dp), sendKey = sendKey)
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Box(Modifier.weight(1f)) { StatusText(t(DesktopUiText.COMPOSER_HINT)) }
+                voiceControls()
+                Spacer(Modifier.weight(1f))
                 onPickImage?.let { DesktopChatAttachmentAction(canLaunch, it) }
-                BootstrapButton(t(DesktopUiText.SEND), enabled = composer.canClickSend(canLaunch), onClick = onSend)
+                DesktopComposerSendAction(null, composer.canClickSend(canLaunch), false, sendKey, onSendKey, onSend)
             }
         }
     }

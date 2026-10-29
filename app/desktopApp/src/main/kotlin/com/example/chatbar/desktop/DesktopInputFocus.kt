@@ -28,10 +28,13 @@ internal fun DesktopModalSurface(content: @Composable () -> Unit) {
 }
 
 internal fun desktopComposerSendKey(
-    key: Key, type: KeyEventType, ctrl: Boolean, input: TextFieldValue, canLaunch: Boolean, send: () -> Unit,
+    key: Key, type: KeyEventType, ctrl: Boolean, input: TextFieldValue, canLaunch: Boolean,
+    mode: DesktopSendKey = DesktopSendKey.CTRL_ENTER, shift: Boolean = false, altOrMeta: Boolean = false,
+    hasAttachments: Boolean = false, send: () -> Unit,
 ): Boolean {
-    if (type != KeyEventType.KeyDown || key != Key.Enter || !ctrl || input.composition != null ||
-        !canLaunch || input.text.isBlank()) return false
+    if (type != KeyEventType.KeyDown || key !in setOf(Key.Enter, Key.NumPadEnter) ||
+        ctrl != (mode == DesktopSendKey.CTRL_ENTER) || shift || altOrMeta || input.composition != null ||
+        !canLaunch || (input.text.isBlank() && !hasAttachments)) return false
     send()
     return true
 }

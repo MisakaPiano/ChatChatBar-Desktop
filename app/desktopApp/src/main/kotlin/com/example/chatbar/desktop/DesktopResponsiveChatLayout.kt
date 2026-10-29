@@ -27,6 +27,17 @@ internal object DesktopChatNavigationPlacementPolicy {
     }
 }
 
+internal data class DesktopChatWorkspaceLayout(val timeline: DesktopChatNavigationLayout, val peopleWidthDp: Float) {
+    val widthDp get() = timeline.workspaceWidthDp + peopleWidthDp
+    val headerWidthDp get() = timeline.contentWidthDp + peopleWidthDp
+    val names get() = peopleWidthDp > 60f
+}
+internal fun desktopChatWorkspaceLayout(availableWidthDp: Float, hasPeople: Boolean): DesktopChatWorkspaceLayout {
+    val rail = if (!hasPeople || availableWidthDp < 720f) 0f else if (availableWidthDp >= 1160f) 216f else 60f
+    // Reserve people from the actual viewport before capping the reading width, exactly once.
+    return DesktopChatWorkspaceLayout(DesktopChatNavigationPlacementPolicy.resolve((availableWidthDp - rail).coerceAtLeast(0f)), rail)
+}
+
 internal data class DesktopChatNavigationGroups(val earlier: List<DesktopChatJump>, val later: List<DesktopChatJump>)
 internal fun desktopChatNavigationGroups(canEarlier: Boolean, canLater: Boolean, canBottom: Boolean) =
     DesktopChatNavigationGroups(

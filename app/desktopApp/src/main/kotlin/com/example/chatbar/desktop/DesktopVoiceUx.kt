@@ -20,6 +20,7 @@ import kotlinx.coroutines.delay
 internal class DesktopVoiceUiSelection {
     var narrator by mutableStateOf<String?>(null)
     var narratorCollapsed by mutableStateOf(false)
+    var composerExpanded by mutableStateOf(false)
 }
 internal val LocalDesktopVoiceUi = staticCompositionLocalOf { DesktopVoiceUiSelection() }
 
@@ -68,6 +69,21 @@ internal fun DesktopNarratorDock(state: DesktopPrimaryChatState, ui: DesktopVoic
     } else DesktopNarratorDropdown(state, ui.narrator, { ui.narratorCollapsed = true }) { ui.narrator = it }
 }
 
+/** Narrator configuration belongs to the composer; generation and playback remain in their own deck. */
+@Composable
+internal fun DesktopComposerVoiceControl(state: DesktopPrimaryChatState, ui: DesktopVoiceUiSelection, audiobook: Boolean,
+    availableWidthDp: Float = 600f) {
+    if (!audiobook || desktopNarratorChoices(state).isEmpty()) return
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.testTag("composer-voice-control")) {
+        DesktopChatIconAction(if (ui.composerExpanded) "收起朗读音色" else "朗读音色设置", DesktopAppIcons.Voice, targetDp = 36) {
+            ui.composerExpanded = !ui.composerExpanded
+        }
+        if (ui.composerExpanded) Box(Modifier.width((availableWidthDp - 240f).coerceIn(76f, 220f).dp)) {
+            DesktopNarratorDropdown(state, ui.narrator, { ui.composerExpanded = false }) { ui.narrator = it }
+        }
+    }
+}
+
 @Composable
 internal fun DesktopVoiceDeck(runtime: DesktopChatVoiceRuntime?, state: DesktopPrimaryChatState) {
     if (runtime == null || state.selectedSession == null) return
@@ -77,15 +93,14 @@ internal fun DesktopVoiceDeck(runtime: DesktopChatVoiceRuntime?, state: DesktopP
     val sessionBatches = batches.filter { it.sessionId == state.selectedSession.id }
     val batch = sessionBatches.firstOrNull()
     val audiobook = runtime.effectiveAudiobook(state.selectedSession)
-    val showNarrator = audiobook && desktopNarratorChoices(state).isNotEmpty()
     val ui = LocalDesktopVoiceUi.current
     var details by remember(state.selectedSession.id) { mutableStateOf(false) }
-    if (batch == null && !showNarrator && !playerVisible) return
+    if (batch == null && !playerVisible) return
     DesktopVoiceDeckRow(batch?.let { "${desktopVoicePhaseLabel(it.phase)} · ${it.completedCount}/${it.totalCount}" }.orEmpty(),
         if (batch != null) ({ details = true }) else null,
         cancel = batch?.let { b -> { if (b.phase in setOf(VoiceGenerationPhase.FAILED, VoiceGenerationPhase.CANCELLED)) runtime.coordinator.dismiss(b.id) else runtime.coordinator.cancel(b.id) } },
         player = { if (playerVisible) DesktopVoicePlayerRow(playback, { runtime.resumePlayback() }, { runtime.pauseOrClose() }) },
-        narrator = { if (showNarrator) DesktopNarratorDock(state, ui) })
+        narrator = {})
     if (details && batch != null) Popup(alignment = Alignment.BottomCenter, onDismissRequest = { details = false }, properties = PopupProperties(focusable = true)) {
         Column(Modifier.widthIn(max = 480.dp).heightIn(max = 360.dp).background(DesktopBootstrapColors.card)
             .border(1.dp, DesktopBootstrapColors.border).verticalScroll(rememberScrollState()).padding(12.dp)) {

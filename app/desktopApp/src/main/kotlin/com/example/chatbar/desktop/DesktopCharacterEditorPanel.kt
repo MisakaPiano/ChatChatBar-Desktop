@@ -494,8 +494,7 @@ private fun CharacterPersonRow(
         }
         controller.state.value.card?.takeIf { it.editMode == CharacterEditMode.STRUCTURED }?.let { card ->
             card.characters.singleOrNull { it.id == person.id }?.let { entry ->
-                BootstrapButton(t(if (entry.desktopEnabled) DesktopUiText.ON else DesktopUiText.OFF),
-                    secondary = !entry.desktopEnabled) { controller.setCharacterEntryEnabled(person.id, !entry.desktopEnabled) }
+                StudioSwitch("启用", entry.desktopEnabled) { controller.setCharacterEntryEnabled(person.id, !entry.desktopEnabled) }
             }
         }
         DesktopIconAction(t(DesktopUiText.EDIT), DesktopAppIcons.Edit, onClick = onSelect)

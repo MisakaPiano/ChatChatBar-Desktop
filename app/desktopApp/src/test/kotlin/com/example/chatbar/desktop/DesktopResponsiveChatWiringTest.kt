@@ -11,9 +11,10 @@ class DesktopResponsiveChatWiringTest {
 
     @Test fun `workspace uses actual remaining width and a separate rail allowance`() {
         val panel = source("DesktopPrimaryChatPanel.kt")
-        assertTrue(panel.contains("DesktopChatNavigationPlacementPolicy.resolve(maxWidth.value)"))
-        assertTrue(panel.contains("Modifier.width(placement.workspaceWidthDp.dp)"))
-        assertTrue(panel.contains("Modifier.width(placement.contentWidthDp.dp)"))
+        assertTrue(panel.contains("desktopChatWorkspaceLayout(maxWidth.value, state.people.isNotEmpty())"))
+        assertTrue(panel.contains("Modifier.width(workspace.widthDp.dp)"))
+        assertTrue(panel.contains("Modifier.width(workspace.headerWidthDp.dp)"))
+        assertFalse(panel.contains("placement.workspaceWidthDp - railWidth"))
     }
 
     @Test fun `height preference is shell owned and drag handle never belongs to text field`() {
@@ -30,10 +31,10 @@ class DesktopResponsiveChatWiringTest {
         assertFalse(body.contains("if (collapsed) PrimaryComposerAction("))
         assertTrue(body.contains("DesktopChatAttachmentAction(running == null)"))
         assertTrue(body.contains("DesktopAppIcons.ExpandComposer"))
-        assertTrue(body.contains("if (!collapsed) StatusText("))
+        assertFalse(body.contains("if (!collapsed) StatusText("))
         assertFalse(body.contains("DesktopChatImageToolbar("))
         assertFalse(body.contains("chooseSessionBackground"))
-        assertTrue(body.contains("DesktopUiText.COMPOSER_HINT"))
+        assertTrue(source("DesktopFullComposer.kt").contains("desktopComposerPlaceholder(sendKey)"))
         assertTrue(body.contains("Modifier.weight(1f)"))
         assertFalse(body.contains("ActionRow {"))
     }
@@ -44,23 +45,24 @@ class DesktopResponsiveChatWiringTest {
         assertTrue(body.contains("composer.edit(full, it, onDraft)"))
         assertTrue(composer().contains("controller::editComposer"))
         assertTrue(body.contains("desktopComposerSendKey(event.key, event.type, event.isCtrlPressed,"))
-        assertTrue(body.contains("composer.input, canLaunch, onSend)"))
+        assertTrue(body.contains("mode = sendKey, shift = event.isShiftPressed"))
         assertTrue(body.contains("event.isCtrlPressed"))
         assertFalse(body.contains("singleLine = true"))
     }
 
     @Test fun `normal and collapsed share the same guarded Send Stop action`() {
         val body = composer()
-        assertTrue(body.contains("iconOnly = true"))
+        assertTrue(body.contains("val compact = maxWidth < 480.dp || height < 88f"))
         assertTrue(body.contains("if (running != null) controller.stop(running.taskId)"))
         assertTrue(body.contains("else onSend()"))
         assertTrue(source("DesktopPrimaryChatPanel.kt").contains("composer.send(canLaunch, controller::send)"))
-        assertTrue(body.contains("if (iconOnly) DesktopChatIconAction("))
-        assertTrue(body.contains("else BootstrapButton(label"))
-        assertTrue(body.contains("enabled = !send || canSend"))
-        assertTrue(body.contains("DesktopAppIcons.Send else DesktopAppIcons.Stop"))
-        assertEquals(1, Regex("onClick = performAction").findAll(body).count())
-        assertFalse(body.substringAfter("private fun PrimaryComposerAction(").contains("rememberCoroutineScope"),
+        val action = source("DesktopComposerSendAction.kt")
+        assertTrue(action.contains("if (compact || running != null) DesktopChatIconAction("))
+        assertTrue(action.contains("else BootstrapButton(t(DesktopUiText.SEND)"))
+        assertTrue(action.contains("enabled = running != null || canSend"))
+        assertTrue(action.contains("DesktopAppIcons.Send else DesktopAppIcons.Stop"))
+        assertEquals(1, Regex("onSendKey, performAction").findAll(body).count())
+        assertFalse(action.contains("rememberCoroutineScope"),
             "Changing button presentation must not cancel a composer-owned Send")
     }
 

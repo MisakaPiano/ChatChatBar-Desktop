@@ -485,6 +485,7 @@ class DesktopAppContainer internal constructor(
             },
             taskRuntime = taskRuntime,
             imageStore = chatImages,
+            chatUi = DesktopChatUiController(desktopSettingsStore),
             voices = chatVoiceRuntime,
             residency = characterResidency,
             memory = memoryController,

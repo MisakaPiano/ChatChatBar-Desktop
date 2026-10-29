@@ -66,29 +66,45 @@ class DesktopChatPeoplePresentationTest {
                         scene.sendPointerEvent(PointerEventType.Press, point, button = PointerButton.Secondary)
                         scene.sendPointerEvent(PointerEventType.Release, point, button = PointerButton.Secondary)
                         frames(scene)
+                        click(scene, "管理人物"); frames(scene)
                         click(scene, "编辑人物"); frames(scene)
                         assertEquals(card.id to person.id, edit)
+                        // Returning from management can reveal the rail hover preview under the
+                        // unchanged pointer. Dismiss it with a real outside click before targeting
+                        // the first chat avatar underneath that floating surface.
+                        val outside = Offset(800f, 800f)
+                        scene.sendPointerEvent(PointerEventType.Move, outside)
+                        scene.sendPointerEvent(PointerEventType.Press, outside, button = PointerButton.Primary)
+                        scene.sendPointerEvent(PointerEventType.Release, outside, button = PointerButton.Primary)
+                        frames(scene)
+                        assertFalse(nodes(scene).any { it.config.getOrNull(SemanticsProperties.TestTag) == "person-state-preview" })
                         val bubbleAvatar = nodes(scene).last { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("人物状态 · Alice") == true }
                         val bubblePoint = bubbleAvatar.boundsInRoot.center
                         scene.sendPointerEvent(PointerEventType.Press, bubblePoint, button = PointerButton.Secondary)
                         scene.sendPointerEvent(PointerEventType.Release, bubblePoint, button = PointerButton.Secondary)
                         frames(scene)
                         assertFalse(nodes(scene).any { it.config.getOrNull(SemanticsProperties.Text)?.any { text -> text.text == "本段" } == true })
+                        click(scene, "管理人物"); frames(scene)
                         click(scene, "编辑人物"); frames(scene)
                         assertEquals(card.id to person.id, edit)
                     }
+                    click(scene, "活跃 1"); frames(scene)
                     click(scene, "卡内人物"); frames(scene)
                     click(scene, "Alice"); frames(scene)
                     assertTrue(nodes(scene).any { it.config.getOrNull(SemanticsProperties.Text)?.any { text -> text.text.contains("心情：calm") } == true })
                     assertFalse(nodes(scene).any { it.config.getOrNull(SemanticsProperties.Text)?.any { text ->
                         text.text == DesktopUiText.PERSON_STATUS_OPEN.zhCn } == true })
-                    click(scene, "关闭人物")
-                    withTimeout(5_000) { do { frames(scene) } while (controller.state.value.people.single().enabled) }
+                    click(scene, "参与当前会话")
+                    withTimeout(5_000) { do { frames(scene) } while (controller.state.value.people.single().enabled ||
+                        nodes(scene).none { it.config.getOrNull(SemanticsProperties.Text)?.any { text ->
+                            text.text == DesktopUiText.PERSON_DISABLED_HISTORY.zhCn } == true }) }
                     assertTrue(nodes(scene).any { it.config.getOrNull(SemanticsProperties.Text)?.any { text ->
                         text.text == DesktopUiText.PERSON_DISABLED_HISTORY.zhCn } == true })
                     assertEquals(card, container.characterRepository.getById(card.id))
-                    click(scene, "启用人物")
-                    withTimeout(5_000) { do { frames(scene) } while (!controller.state.value.people.single().enabled) }
+                    click(scene, "参与当前会话")
+                    withTimeout(5_000) { do { frames(scene) } while (!controller.state.value.people.single().enabled ||
+                        nodes(scene).any { it.config.getOrNull(SemanticsProperties.Text)?.any { text ->
+                            text.text == DesktopUiText.PERSON_DISABLED_HISTORY.zhCn } == true }) }
                     capture(scene, "sf03-status-$width.png")
                     click(scene, "编辑人物"); frames(scene)
                     assertEquals(card.id to person.id, edit)

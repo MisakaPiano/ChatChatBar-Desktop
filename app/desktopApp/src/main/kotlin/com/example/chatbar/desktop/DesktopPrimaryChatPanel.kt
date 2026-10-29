@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.border
 import androidx.compose.foundation.Image
 import androidx.compose.ui.input.pointer.*
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -90,6 +91,9 @@ internal fun DesktopPrimaryChatPanel(
 ) {
     val t = LocalDesktopUiStrings.current
     val state by controller.state.collectAsState()
+    val preferences = controller.chatUi?.state?.collectAsState()?.value ?: DesktopChatUiPreferences()
+    val preferenceError = controller.chatUi?.error?.collectAsState()?.value
+    val peoplePreview = remember(state.selectedSession?.id) { DesktopPeoplePreviewState() }
     controller.memory?.let { DesktopMemoryPanel(it) }
     controller.saveSlots?.let { DesktopSaveSlotPanel(it) }
     androidx.compose.runtime.DisposableEffect(controller.voices, state.selectedSession?.id) {
@@ -122,7 +126,7 @@ internal fun DesktopPrimaryChatPanel(
     var worldBookQuery by remember { mutableStateOf("") }
     val terminalTasks = tasks.filter { it.status != DesktopTaskStatus.RUNNING }
     val terminalSignature = terminalTasks.joinToString("|") { "${it.taskId}:${it.completedAt}" }
-    LaunchedEffect(controller) { controller.refresh() }
+    LaunchedEffect(controller) { controller.chatUi?.load(); controller.refresh() }
     LaunchedEffect(size, state.selectedSession?.id) {
         compactNavigation.onWideChatDisplayed(size, state.selectedSession?.id)
     }
@@ -153,7 +157,13 @@ internal fun DesktopPrimaryChatPanel(
         previewEnabled = !peopleOpen, toggleEnabled = participationAvailable && !participationBusy,
         setEnabled = { person, enabled -> state.selectedSession?.id?.let { sessionId -> scope.launch {
             controller.setCharacterEnabled(sessionId, person.cardId, person.character.id, enabled)
+        } }; Unit },
+        preview = peoplePreview,
+        pinned = preferences.pinnedPeople.filter { it.sessionId == state.selectedSession?.id && it.cardId == state.selectedCharacter?.id }.map { it.personId }.toSet(),
+        pin = { person, pinned -> state.selectedSession?.id?.let { sessionId -> scope.launch {
+            controller.chatUi?.pin(DesktopPinnedPerson(sessionId, person.cardId, person.character.id), pinned)
         } }; Unit })
+    val chooseSendKey: (DesktopSendKey) -> Unit = { mode -> scope.launch { controller.chatUi?.update { it.copy(sendKey = mode) } }; Unit }
     // Workspace ownership survives either presentation closing; existing controller accepts/rejects Send.
     val send: () -> Unit = {
         scope.launch {
@@ -166,6 +176,7 @@ internal fun DesktopPrimaryChatPanel(
     }
     val colors = DesktopBootstrapColors
     val voiceUi = remember(state.selectedSession?.id) { DesktopVoiceUiSelection() }
+    LaunchedEffect(composer.expanded) { if (composer.expanded) peoplePreview.close() }
 
     fun selectFromBrowser(id: String, openSettings: Boolean = false) {
         scope.launch {
@@ -187,7 +198,14 @@ internal fun DesktopPrimaryChatPanel(
     }
 
     Box(
-        Modifier.fillMaxSize().background(colors.background),
+        Modifier.fillMaxSize().background(colors.background)
+        .onPointerEvent(PointerEventType.Press, PointerEventPass.Initial) {
+            if (!peoplePreview.anchorHovered && !peoplePreview.popupHovered) peoplePreview.close()
+        }.onPreviewKeyEvent {
+            if (it.type == KeyEventType.KeyDown && it.key == Key.Escape && peoplePreview.personId != null) {
+                peoplePreview.close(); true
+            } else false
+        },
     ) {
         Row(Modifier.fillMaxSize()) {
             if (browser.browserVisible(size, compactNavigation.browserVisible(size, state.selectedSession?.id))) {
@@ -250,13 +268,14 @@ internal fun DesktopPrimaryChatPanel(
             }
             if (compactNavigation.chatVisible(size, state.selectedSession?.id)) {
                 BoxWithConstraints(Modifier.weight(1f).fillMaxHeight().padding(16.dp), contentAlignment = Alignment.TopCenter) {
-                val placement = DesktopChatNavigationPlacementPolicy.resolve(maxWidth.value)
+                val workspace = desktopChatWorkspaceLayout(maxWidth.value, state.people.isNotEmpty())
+                val placement = workspace.timeline
                 val workspaceHeightDp = maxHeight.value
                 LaunchedEffect(workspaceHeightDp) { composerLayout.clamp(workspaceHeightDp) }
-                Column(Modifier.width(placement.workspaceWidthDp.dp).fillMaxHeight(),
+                Column(Modifier.width(workspace.widthDp.dp).fillMaxHeight(),
                     verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     val selected = state.selectedSession
-                    Column(Modifier.width(placement.contentWidthDp.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(Modifier.width(workspace.headerWidthDp.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         DesktopChatHeader(
                             title = state.sessions.firstOrNull { it.id == selected?.id }?.title
                                 ?: selected?.let { desktopRenderedSessionTitle(it, state.selectedCharacter, state.globalPlayerName) }
@@ -269,8 +288,10 @@ internal fun DesktopPrimaryChatPanel(
                             }) else null,
                         ) {
                             if (selected != null) {
-                                if (state.people.isNotEmpty()) BootstrapButton(t(DesktopUiText.CARD_PEOPLE), secondary = true) {
-                                    inspectedPersonId = null; peopleOpen = true
+                                if (state.people.isNotEmpty()) CompositionLocalProvider(LocalDesktopChatPeople provides peopleActions) {
+                                    DesktopChatPeopleHeader(state.people, controller, preferences.inlineStatuses,
+                                        onInlineStatuses = { value -> scope.launch { controller.chatUi?.update { it.copy(inlineStatuses = value) } }; Unit },
+                                        onManage = { inspectedPersonId = null; peopleOpen = true })
                                 }
                                 controller.saveSlots?.let { slots ->
                                     BootstrapButton("存档", secondary = true) { scope.launch {
@@ -306,13 +327,12 @@ internal fun DesktopPrimaryChatPanel(
                     } else {
                         CompositionLocalProvider(LocalClipboard provides clipboard, LocalDesktopVoiceUi provides voiceUi,
                             LocalDesktopChatPeople provides peopleActions) { key(state.selectedSession?.id) {
-                            val railWidth = if (placement.contentWidthDp >= 760f && state.people.isNotEmpty()) 96f else 0f
-                            val timelinePlacement = DesktopChatNavigationPlacementPolicy.resolve(placement.workspaceWidthDp - railWidth)
                             Row(Modifier.weight(1f).fillMaxWidth()) {
-                            if (railWidth > 0) DesktopChatPeopleRail(state.people, controller)
+                            if (workspace.peopleWidthDp > 0) DesktopChatPeopleRail(state.people, controller,
+                                workspace.peopleWidthDp, workspace.names, preferences.inlineStatuses)
                             Box(Modifier.weight(1f).fillMaxHeight()) {
                             DesktopChatScreenshotHost(controller, state) { PrimaryTimeline(
-                                state, running, controller, clipboard, timelinePlacement, Modifier.fillMaxSize(),
+                                state, running, controller, clipboard, placement, Modifier.fillMaxSize(),
                                 onEdit = { message -> editingMessage = message; editingText = message.displayContent },
                                 onDelete = { deletingMessage = it },
                                 onEditSegment = { message, segment -> editingSegment = message to segment; segmentText = segment.source!!.rawText },
@@ -328,7 +348,8 @@ internal fun DesktopPrimaryChatPanel(
                             }
                             }
                         } }
-                        Column(Modifier.width(placement.contentWidthDp.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(Modifier.width(workspace.headerWidthDp.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            preferenceError?.let { StatusText(it, colors.warning) }
                             if (clipboard.unavailable) StatusText(t(DesktopUiText.CLIPBOARD_UNAVAILABLE), colors.warning)
                             state.configurationMessage?.let { StatusText(t.status(it), colors.warning) }
                             state.error?.let { StatusText(t.status(it), colors.destructive) }
@@ -341,7 +362,8 @@ internal fun DesktopPrimaryChatPanel(
                             }
                             tasks.firstOrNull { it.sessionId == selected.id && it.kind == DesktopTaskKind.REAL_CHAT }
                                 ?.message?.takeIf { it.contains("自动生图已跳过") || it.contains("自动生图未启动") }?.let { StatusText(it) }
-                            PrimaryComposer(composer, canLaunch, running, controller, composerLayout, workspaceHeightDp, send)
+                            PrimaryComposer(composer, canLaunch, running, controller, composerLayout, workspaceHeightDp,
+                                preferences.sendKey, chooseSendKey, voiceUi, send)
 
                         }
                     }
@@ -350,14 +372,19 @@ internal fun DesktopPrimaryChatPanel(
             }
         }
         if (backgroundOpen) DesktopChatBackgroundPanel(controller) { backgroundOpen = false }
+        DesktopPeoplePreview(peopleActions)
         if (peopleOpen) DesktopChatPeopleDialog(state.people, inspectedPersonId,
             onSelect = { inspectedPersonId = it },
             onEdit = { card, person -> peopleOpen = false; onEditPerson(card, person) },
             onSetEnabled = peopleActions.setEnabled, toggleEnabled = peopleActions.toggleEnabled,
             participationAvailable = participationAvailable,
+            pinned = peopleActions.pinned, onPin = peopleActions.pin,
             onClose = { peopleOpen = false })
         if (composer.expanded) {
             DesktopFullComposer(composer, canLaunch, state.configurationMessage, state.error,
+                sendKey = preferences.sendKey, onSendKey = chooseSendKey,
+                voiceControls = { DesktopComposerVoiceControl(state, voiceUi,
+                    state.selectedSession?.let { controller.voices?.effectiveAudiobook(it) } == true) },
                 onDraft = controller::editComposer, onSend = send,
                 onUndoChoice = { composer.undoChoiceInsertion { before, after ->
                     controller.editComposerIfCurrent(composer.sessionId, before, after)
@@ -649,8 +676,7 @@ private fun PrimaryTimeline(
     val viewport = rememberDesktopChatViewport(state, mapping, controller, running?.contentPreview to running?.reasoningPreview)
     val playbackState = controller.voices?.playback?.state?.collectAsState()?.value
     val batches = controller.voices?.coordinator?.batches?.collectAsState()?.value.orEmpty()
-    val deckVisible = state.selectedSession?.let { controller.voices?.effectiveAudiobook(it) } == true ||
-        batches.any { it.sessionId == state.selectedSession?.id }
+    val deckVisible = batches.any { it.sessionId == state.selectedSession?.id }
     val playerVisible = playbackState?.let { it.playing || it.paused } == true
     val voiceInset = (if (deckVisible || playerVisible) 48 else 8).dp
     Box(modifier.fillMaxWidth()) {
@@ -1053,6 +1079,9 @@ private fun PrimaryComposer(
     controller: DesktopPrimaryChatController,
     layout: DesktopComposerLayoutState,
     workspaceHeightDp: Float,
+    sendKey: DesktopSendKey,
+    onSendKey: (DesktopSendKey) -> Unit,
+    voiceUi: DesktopVoiceUiSelection,
     onSend: () -> Unit,
 ) {
     val t = LocalDesktopUiStrings.current
@@ -1060,7 +1089,6 @@ private fun PrimaryComposer(
         if (running != null) controller.stop(running.taskId) else onSend()
     }
     val height = DesktopComposerHeightPolicy.clamp(layout.heightDp, workspaceHeightDp)
-    val collapsed = DesktopComposerHeightPolicy.collapsed(height)
     DesktopComposerResizeHandle { deltaYDp -> layout.drag(deltaYDp, workspaceHeightDp) }
     val state by controller.state.collectAsState()
     val scope = rememberCoroutineScope()
@@ -1068,36 +1096,35 @@ private fun PrimaryComposer(
         DesktopPendingImageStrip(state.pendingImages, running == null,
             onRemove = { scope.launch { controller.removePendingImage(it) } }, onPick = { scope.launch { controller.pickImage() } }, showPicker = false,
             onReorder = { id, to -> scope.launch { controller.reorderPendingImage(id, to) } })
-    Row(Modifier.fillMaxWidth().height(height.dp)
-        .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
-        .background(DesktopBootstrapColors.input, RoundedCornerShape(8.dp)), verticalAlignment = Alignment.CenterVertically) {
-        DesktopComposerTextField(composer, full = false, canLaunch, controller::editComposer, onSend,
-            Modifier.weight(1f).fillMaxHeight().padding(10.dp))
-        Row(Modifier.align(Alignment.Bottom), verticalAlignment = Alignment.Bottom) {
+    BoxWithConstraints(Modifier.fillMaxWidth().height(height.dp)) {
+    val compact = maxWidth < 480.dp || height < 88f
+    val widthDp = maxWidth.value
+    val actions: @Composable () -> Unit = {
         DesktopChatAttachmentAction(running == null) { scope.launch { controller.pickImage() } }
         DesktopChatIconAction(t(DesktopUiText.EXPAND_COMPOSER), DesktopAppIcons.ExpandComposer,
-            enabled = canLaunch, targetDp = 48) { composer.open(canLaunch) }
-        PrimaryComposerAction(running, composer.canClickSend(canLaunch), iconOnly = true, onClick = performAction)
+            enabled = canLaunch, targetDp = 36) { composer.open(canLaunch) }
+        DesktopComposerSendAction(running, composer.canClickSend(canLaunch), compact, sendKey, onSendKey, performAction)
+    }
+    val audiobook = state.selectedSession?.let { controller.voices?.effectiveAudiobook(it) } == true
+    if (height < 88f) Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.Bottom) {
+        DesktopComposerTextField(composer, false, canLaunch, controller::editComposer, onSend,
+            Modifier.weight(1f).fillMaxHeight().padding(8.dp), sendKey = sendKey)
+        DesktopComposerVoiceControl(state, voiceUi, audiobook, widthDp)
+        actions()
+    } else Column(Modifier.fillMaxSize()) {
+        DesktopComposerTextField(composer, false, canLaunch, controller::editComposer, onSend,
+            Modifier.weight(1f).fillMaxWidth().padding(10.dp), sendKey = sendKey)
+        Row(Modifier.fillMaxWidth().height(40.dp), verticalAlignment = Alignment.CenterVertically) {
+            DesktopComposerVoiceControl(state, voiceUi, audiobook, widthDp)
+            Spacer(Modifier.weight(1f)); actions()
         }
     }
-    if (!collapsed) StatusText(t(DesktopUiText.COMPOSER_HINT))
+    }
     DesktopChoiceUndo(composer) { composer.undoChoiceInsertion { before, after ->
         controller.editComposerIfCurrent(composer.sessionId, before, after)
     } }
     }
     running?.let { StatusText("${t(DesktopUiText.TASK)}: ${t.status(it.message)}") }
-}
-
-@Composable
-private fun PrimaryComposerAction(
-    running: DesktopTaskEntry?, canSend: Boolean, iconOnly: Boolean, onClick: () -> Unit,
-) {
-    val t = LocalDesktopUiStrings.current
-    val send = desktopComposerAction(running != null) == DesktopComposerAction.SEND
-    val label = t(if (send) DesktopUiText.SEND else DesktopUiText.STOP)
-    if (iconOnly) DesktopChatIconAction(label, if (send) DesktopAppIcons.Send else DesktopAppIcons.Stop,
-        enabled = !send || canSend, targetDp = 48, onClick = onClick)
-    else BootstrapButton(label, secondary = !send, enabled = !send || canSend, onClick = onClick)
 }
 
 @Composable

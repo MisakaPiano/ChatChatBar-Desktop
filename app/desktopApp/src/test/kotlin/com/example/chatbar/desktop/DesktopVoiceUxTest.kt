@@ -88,10 +88,10 @@ class DesktopVoiceUxTest {
     private fun voicedState() = DesktopPrimaryChatState(selectedCharacter = CharacterCard.create("Card").copy(
         characters = listOf(CharacterInfo(id = "alice", name = "Alice", fishAudioVoice = FishAudioVoiceBinding("voice", "Voice")))))
 
-    @Test fun `unbound cards have no narrator control and collapsed dock preserves selection`() = runBlocking(edt) {
+    @Test fun `unbound cards have no voice control and composer expansion preserves selection`() = runBlocking(edt) {
         var state by androidx.compose.runtime.mutableStateOf(DesktopPrimaryChatState(selectedCharacter = CharacterCard.create("Empty")))
         val ui = DesktopVoiceUiSelection().apply { narrator = "alice" }
-        val scene = ImageComposeScene(360, 100) { DesktopNarratorDock(state, ui) }
+        val scene = ImageComposeScene(360, 100) { DesktopComposerVoiceControl(state, ui, true, 360f) }
         fun nodes(): List<SemanticsNode> {
             fun walk(n: SemanticsNode): List<SemanticsNode> = listOf(n) + n.children.flatMap(::walk)
             return scene.semanticsOwners.flatMap { walk(it.rootSemanticsNode) }
@@ -102,14 +102,16 @@ class DesktopVoiceUxTest {
             .config[SemanticsActions.OnClick].action!!() }
         try {
             frames(); assertFalse(labels().any { it.contains("音色") })
-            state = voicedState(); frames(); assertTrue(labels().any { it.startsWith("选择角色音色") })
-            click("折叠音色选择"); frames(); assertTrue(ui.narratorCollapsed)
-            assertTrue("展开音色选择" in labels()); assertFalse(labels().any { it.startsWith("选择角色音色") })
+            state = voicedState(); frames(); assertTrue("朗读音色设置" in labels())
+            click("朗读音色设置"); frames(); assertTrue(ui.composerExpanded)
+            assertTrue(labels().any { it.startsWith("选择角色音色") })
+            click("折叠音色选择"); frames(); assertFalse(ui.composerExpanded)
+            assertTrue("朗读音色设置" in labels()); assertFalse(labels().any { it.startsWith("选择角色音色") })
             assertEquals("alice", ui.narrator)
             state = state.copy(selectedCharacter = state.selectedCharacter!!.copy(characters = emptyList()))
-            frames(); assertFalse("展开音色选择" in labels())
-            state = voicedState(); frames(); click("展开音色选择"); frames()
-            assertFalse(ui.narratorCollapsed); assertEquals("alice", ui.narrator)
+            frames(); assertFalse("朗读音色设置" in labels())
+            state = voicedState(); frames(); click("朗读音色设置"); frames()
+            assertTrue(ui.composerExpanded); assertEquals("alice", ui.narrator)
             state = state.copy(selectedCharacter = state.selectedCharacter!!.copy(characters = listOf(
                 CharacterInfo(id = "invalid", name = "Invalid", fishAudioVoice = FishAudioVoiceBinding("  ", "Invalid")))))
             frames(); assertTrue(desktopNarratorChoices(state).isEmpty()); assertFalse(labels().any { it.contains("音色") })

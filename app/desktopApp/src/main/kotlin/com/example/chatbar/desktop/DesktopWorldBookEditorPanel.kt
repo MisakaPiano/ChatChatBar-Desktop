@@ -206,7 +206,7 @@ internal fun DesktopWorldBookEntries(
             FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 BootstrapButton(t(DesktopUiText.EDIT), enabled = editable, secondary = true) { controller.openEntry(index) }
-                BootstrapButton(t(if (entry.enabled) DesktopUiText.ON else DesktopUiText.OFF), enabled = editable, secondary = true) {
+                StudioSwitch("启用", entry.enabled, enabled = editable) {
                     controller.setEntriesEnabled(setOf(entry.id), !entry.enabled)
                 }
                 BootstrapButton(t(DesktopUiText.DELETE), enabled = editable, secondary = true) { onDelete(index) }
@@ -361,11 +361,7 @@ private fun WBField(label: String, value: String, multiline: Boolean = false, on
 
 @Composable
 private fun WBBoolean(label: String, value: Boolean, onToggle: () -> Unit) {
-    val t = LocalDesktopUiStrings.current
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-        StatusText(label)
-        BootstrapButton(t(if (value) DesktopUiText.ON else DesktopUiText.OFF), secondary = !value, onClick = onToggle)
-    }
+    StudioSwitch(label, value, action = onToggle)
 }
 
 @Composable

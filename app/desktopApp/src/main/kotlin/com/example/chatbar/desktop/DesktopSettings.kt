@@ -13,6 +13,7 @@ data class DesktopSettings(
     val automaticBackup: DesktopAutomaticBackupSettings = DesktopAutomaticBackupSettings(),
     val uiLanguage: DesktopUiLanguage = DesktopUiLanguage.ZH_CN,
     val colorStyle: DesktopColorStyle = DesktopColorStyle.NEUTRAL,
+    val chatUi: DesktopChatUiPreferences = DesktopChatUiPreferences(),
 ) {
     init {
         require(formatVersion == CURRENT_DESKTOP_SETTINGS_FORMAT_VERSION) {
