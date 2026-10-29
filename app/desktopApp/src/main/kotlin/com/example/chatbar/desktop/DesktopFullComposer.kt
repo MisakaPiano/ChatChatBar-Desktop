@@ -116,6 +116,7 @@ internal fun DesktopComposerTextField(
     onSend: () -> Unit,
     modifier: Modifier = Modifier,
     sendKey: DesktopSendKey = DesktopSendKey.CTRL_ENTER,
+    verticallyCentered: Boolean = false,
 ) {
     val focus = remember(composer) { FocusRequester() }
     val t = LocalDesktopUiStrings.current
@@ -132,7 +133,7 @@ internal fun DesktopComposerTextField(
                     altOrMeta = event.isAltPressed || event.isMetaPressed, hasAttachments = composer.hasAttachments, send = onSend)
             },
         textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp),
-        decorationBox = { field -> Box {
+        decorationBox = { field -> Box(contentAlignment = if (verticallyCentered) Alignment.CenterStart else Alignment.TopStart) {
             if (composer.input.text.isEmpty()) androidx.compose.foundation.text.BasicText(desktopComposerPlaceholder(sendKey),
                 style = TextStyle(color = DesktopBootstrapColors.mutedForeground, fontSize = 13.sp))
             field()
@@ -179,7 +180,7 @@ internal fun DesktopFullComposer(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 voiceControls()
                 Spacer(Modifier.weight(1f))
-                onPickImage?.let { DesktopChatAttachmentAction(canLaunch, it) }
+                onPickImage?.let { DesktopChatAttachmentAction(canLaunch, onPick = it) }
                 DesktopComposerSendAction(null, composer.canClickSend(canLaunch), false, sendKey, onSendKey, onSend)
             }
         }

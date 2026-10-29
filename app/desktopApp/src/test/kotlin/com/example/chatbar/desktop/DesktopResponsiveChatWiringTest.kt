@@ -29,7 +29,7 @@ class DesktopResponsiveChatWiringTest {
     @Test fun `all composer heights keep attachment fullscreen and send in one action rail`() {
         val body = composer()
         assertFalse(body.contains("if (collapsed) PrimaryComposerAction("))
-        assertTrue(body.contains("DesktopChatAttachmentAction(running == null)"))
+        assertTrue(body.contains("DesktopChatAttachmentAction(running == null, targetDp = 36)"))
         assertTrue(body.contains("DesktopAppIcons.ExpandComposer"))
         assertFalse(body.contains("if (!collapsed) StatusText("))
         assertFalse(body.contains("DesktopChatImageToolbar("))

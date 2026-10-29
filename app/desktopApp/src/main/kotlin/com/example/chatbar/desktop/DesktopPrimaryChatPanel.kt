@@ -689,7 +689,7 @@ private fun PrimaryTimeline(
             Modifier.width(placement.contentWidthDp.dp).fillMaxHeight().alpha(state.backgroundOpacity), crop = true)
         LazyColumn(
             Modifier.width(placement.contentWidthDp.dp).fillMaxHeight().alpha(if (viewport.ready) 1f else 0f)
-                .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp)).padding(8.dp),
+                .testTag("chat-timeline-content").border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp)).padding(8.dp),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = voiceInset),
             state = viewport.list,
             verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -1100,15 +1100,15 @@ private fun PrimaryComposer(
     val compact = maxWidth < 480.dp || height < 88f
     val widthDp = maxWidth.value
     val actions: @Composable () -> Unit = {
-        DesktopChatAttachmentAction(running == null) { scope.launch { controller.pickImage() } }
+        DesktopChatAttachmentAction(running == null, targetDp = 36) { scope.launch { controller.pickImage() } }
         DesktopChatIconAction(t(DesktopUiText.EXPAND_COMPOSER), DesktopAppIcons.ExpandComposer,
             enabled = canLaunch, targetDp = 36) { composer.open(canLaunch) }
         DesktopComposerSendAction(running, composer.canClickSend(canLaunch), compact, sendKey, onSendKey, performAction)
     }
     val audiobook = state.selectedSession?.let { controller.voices?.effectiveAudiobook(it) } == true
-    if (height < 88f) Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.Bottom) {
+    if (height < 88f) Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
         DesktopComposerTextField(composer, false, canLaunch, controller::editComposer, onSend,
-            Modifier.weight(1f).fillMaxHeight().padding(8.dp), sendKey = sendKey)
+            Modifier.weight(1f).fillMaxHeight().padding(8.dp), sendKey = sendKey, verticallyCentered = true)
         DesktopComposerVoiceControl(state, voiceUi, audiobook, widthDp)
         actions()
     } else Column(Modifier.fillMaxSize()) {

@@ -23,9 +23,9 @@ internal fun DesktopComposerSendAction(running: DesktopTaskEntry?, canSend: Bool
             .then(if (!compact) Modifier.background(DesktopBootstrapColors.primary, RoundedCornerShape(8.dp)) else Modifier),
             verticalAlignment = Alignment.CenterVertically) {
             if (compact || running != null) DesktopChatIconAction(t(if (running == null) DesktopUiText.SEND else DesktopUiText.STOP),
-                if (running == null) DesktopAppIcons.Send else DesktopAppIcons.Stop, enabled = running != null || canSend, targetDp = 40, onClick = onClick)
+                if (running == null) DesktopAppIcons.Send else DesktopAppIcons.Stop, enabled = running != null || canSend, targetDp = 36, onClick = onClick)
             else BootstrapButton(t(DesktopUiText.SEND), enabled = canSend, onClick = onClick)
-            DesktopChatIconAction("发送按键设置", DesktopAppIcons.DetailsOpen, targetDp = 28) { open = !open }
+            DesktopChatIconAction("发送按键设置", DesktopAppIcons.DetailsOpen, targetDp = if (compact) 36 else 28) { open = !open }
         }
         if (open) Popup(popupPositionProvider = StudioPopupPosition, onDismissRequest = { open = false }, properties = PopupProperties(focusable = true)) {
             Column(Modifier.width(240.dp).background(DesktopBootstrapColors.card, RoundedCornerShape(8.dp))
