@@ -175,5 +175,5 @@ internal fun DesktopMemoryPanel(controller: DesktopMemoryController) {
 private fun MemoryField(label: String, value: String, change: (String) -> Unit) {
     StatusText(label)
     BasicTextField(value, change, modifier = Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border).padding(8.dp),
-        textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp))
+        cursorBrush = DesktopBootstrapColors.inputCaret, textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp))
 }

@@ -68,6 +68,7 @@ internal fun DesktopStudioHistory(controller: DesktopNovelAiStudioController,
     var savingPreference by remember { mutableStateOf(false) }
     var levels by remember { mutableStateOf(listOf(NovelAiHistoryLevel())) }
     var detail by remember { mutableStateOf<NovelAiHistoryImageItem?>(null) }
+    var highlighted by remember { mutableStateOf<NovelAiHistoryImageItem?>(null) }
     var confirmDelete by remember { mutableStateOf(false) }
     var problem by remember { mutableStateOf("") }
     var selectionState by remember { mutableStateOf(NovelAiHistorySelection()) }
@@ -111,6 +112,7 @@ internal fun DesktopStudioHistory(controller: DesktopNovelAiStudioController,
     }
     val albums = remember(filtered, level.foldEnabled, level.foldType) { foldHistoryImages(filtered, level.foldType.takeIf { level.foldEnabled }) }
     fun preview(item: NovelAiHistoryImageItem) {
+        highlighted = item
         val index = filtered.indexOfFirst { it.key == item.key }
         if (index >= 0) onPreview(filtered.map { it.image.path }, index)
     }
@@ -120,13 +122,22 @@ internal fun DesktopStudioHistory(controller: DesktopNovelAiStudioController,
         controller.setHistorySelection(emptySet())
         confirmDelete = false
     }
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+    val wide = maxWidth >= 820.dp
+    val shown = highlighted?.takeIf { old -> filtered.any { it.key == old.key } } ?: filtered.firstOrNull()
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        ManageHeading("生成历史")
         StudioActions {
             if (depth > 0) BootstrapButton("返回上层", enabled = !savingPreference) { levels = levels.dropLast(1) }
             StatusText("${level.label} · ${filtered.size} 张")
         }
-        StudioField("搜索正面 Prompt", level.searchQuery) { change(level.copy(searchQuery = it)) }
-        StudioField("日期（YYYY / YYYY-MM / YYYY-MM-DD，留空为全部）", dateInput) { dateInput = it }
+        if (wide) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Box(Modifier.weight(1f)) { StudioField("搜索正面 Prompt", level.searchQuery) { change(level.copy(searchQuery = it)) } }
+            Box(Modifier.width(330.dp)) { StudioField("日期（YYYY / YYYY-MM / YYYY-MM-DD）", dateInput) { dateInput = it } }
+        } else {
+            StudioField("搜索正面 Prompt", level.searchQuery) { change(level.copy(searchQuery = it)) }
+            StudioField("日期（YYYY / YYYY-MM / YYYY-MM-DD，留空为全部）", dateInput) { dateInput = it }
+        }
         StudioActions {
             BootstrapButton("应用日期") { try { change(level.copy(dateFilter = desktopHistoryDateFilter(dateInput))); problem = "" } catch (_: Exception) { problem = "日期无效，请使用年、年月或年月日" } }
             BootstrapButton("清除日期") { dateInput = ""; change(level.copy(dateFilter = null)) }
@@ -146,13 +157,15 @@ internal fun DesktopStudioHistory(controller: DesktopNovelAiStudioController,
                 BootstrapButton("取消") { confirmDelete = false }
             }
         }
-        LazyVerticalGrid(columns = GridCells.Adaptive(180.dp), modifier = Modifier.fillMaxWidth().weight(1f).semantics { contentDescription = "历史图片网格" },
+        Row(Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+        LazyVerticalGrid(columns = GridCells.Adaptive(180.dp), modifier = Modifier.weight(1f).fillMaxHeight().semantics { contentDescription = "历史图片网格" },
             horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             items(albums, key = { it.key }) { album ->
                 val item = album.cover
                 val allSelected = album.images.all { it.key in selectionState.keys }
                 var shift by remember { mutableStateOf(false) }
                 fun select(range: Boolean) {
+                    highlighted = item
                     val input = selectionState.copy(rangeAnchorKey = if (range) lastSelectedAlbum else null)
                     selectionState = NovelAiHistorySelectionPolicy.selectAlbum(input, albums, album.key, false)
                     lastSelectedAlbum = album.key.takeIf { !range && album.images.all { it.key in selectionState.keys } }
@@ -181,24 +194,46 @@ internal fun DesktopStudioHistory(controller: DesktopNovelAiStudioController,
                 }
             }
         }
+        if (wide && shown != null) {
+            Column(Modifier.width(330.dp).fillMaxHeight().border(1.dp, DesktopBootstrapColors.border)
+                .semantics { contentDescription = "历史图片详情" }
+                .verticalScroll(rememberScrollState()).padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                DesktopHistoryImageDetails(shown, controller, draft,
+                    onPreview = { preview(shown) }, onApply = { onApply(shown.entry, shown.image, it) },
+                    onUse = { onUse(shown.image.path, it) })
+            }
+        }
+        }
         StatusText("Shift + 点击缩略图：从上次选择到当前相册选择可见范围；筛选或刷新后重置。")
     }
 
+    }
     detail?.let { item -> DesktopImageToolWindow("历史图片与完整配方", { detail = null }) {
         Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             BootstrapButton("返回历史") { detail = null }
+            DesktopHistoryImageDetails(item, controller, draft,
+                onPreview = { preview(item) },
+                onApply = { detail = null; onApply(item.entry, item.image, it) },
+                onUse = { detail = null; onUse(item.image.path, it) })
+        }
+    } }
+}
+
+
+@Composable
+private fun DesktopHistoryImageDetails(item: NovelAiHistoryImageItem, controller: DesktopNovelAiStudioController,
+    draft: NovelAiStudioDraft?, onPreview: () -> Unit, onApply: (NovelAiHistoryApplyMode) -> Unit,
+    onUse: (NovelAiImageUseTarget) -> Unit) {
             DesktopOwnedImage(item.image.path, controller.resources::readBytes, Modifier.fillMaxWidth().height(240.dp)
-                .desktopViewerEntry(onClick = { preview(item) }))
+                .desktopViewerEntry(onClick = onPreview))
             StudioActions { NovelAiHistoryApplyMode.entries.forEach { mode ->
                 val available = desktopHistoryApplyAvailable(item.entry.recipe, mode)
                 BootstrapButton(if (!available) "缺少来源" else when (mode) { NovelAiHistoryApplyMode.FULL -> "完整复现"; NovelAiHistoryApplyMode.NEW_SEED -> "新种子复用"; NovelAiHistoryApplyMode.SEED_ONLY -> "仅复用种子" }, enabled = available) {
-                    detail = null; onApply(item.entry, item.image, mode)
+                    onApply(mode)
                 }
             } }
-            draft?.let { current -> StudioActions { desktopImageUseTargets(current.selectedModel).forEach { target -> BootstrapButton("用作${target.displayName}") { detail = null; onUse(item.image.path, target) } } } }
+            draft?.let { current -> StudioActions { desktopImageUseTargets(current.selectedModel).forEach { target -> BootstrapButton("用作${target.displayName}") { onUse(target) } } } }
             SelectionContainer { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 desktopHistoryRecipeDetails(item.entry, item.image).forEach { (label, value) -> StatusText(label); StatusText(value.ifBlank { "（空）" }) }
             } }
-        }
-    } }
 }

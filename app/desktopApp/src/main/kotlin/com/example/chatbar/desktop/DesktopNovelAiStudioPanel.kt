@@ -177,7 +177,13 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
     val owned = selectedResult?.takeIf { it in resultPaths } ?: if (currentImage == null) resultPaths.firstOrNull() else null
     val shownPath = owned?.let(controller.resources::resolveOwnedReference) ?: currentImage
     val intermediate = state.preview.takeIf { busy }
-    fun preview() { if (owned != null) { viewing = resultPaths; viewingIndex = resultPaths.indexOf(owned) } else importedPreview = shownPath }
+    fun previewPath(path: java.nio.file.Path?) {
+        if (path == null) return
+        val index = desktopStudioPreviewIndex(path, resultPaths, controller.resources::resolveOwnedReference)
+        if (index >= 0) { viewing = resultPaths; viewingIndex = index }
+        else importedPreview = path
+    }
+    fun preview() { if (owned != null) { viewing = resultPaths; viewingIndex = resultPaths.indexOf(owned) } else previewPath(shownPath) }
     DesktopStudioWorkspace(workspace,
         modifier = Modifier.desktopImageIngress(!busy, { imageError = "图片导入未完成；当前图片保留" }) { input -> imageAction {
         val file = input.paths.firstOrNull() ?: input.raster?.let { bytes ->
@@ -274,9 +280,13 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                         StudioToggle("复制时忽略画风", d.copyPositivePromptIgnoreStyle) { edit { it.copy(copyPositivePromptIgnoreStyle = !it.copyPositivePromptIgnoreStyle) } }
                         StudioToggle("本地中文注释", translation) { translation = !translation; scope.launch { controller.setTranslation(translation) } }
                     } else if (surface == "当前图片") {
+                        if (currentImage == null) {
+                            StatusText("选择图片，或从生成历史打开图片后使用图像工具。")
+                            StudioAction("选择图片", onClick = ::pickImage)
+                        }
                         currentImage?.let { path ->
                             DesktopOwnedImage(path.toString(), { java.nio.file.Files.readAllBytes(path) }, Modifier.fillMaxWidth().height(260.dp)
-                                .desktopViewerEntry(onClick = { importedPreview = path }))
+                                .desktopViewerEntry(onClick = { previewPath(path) }))
                             StatusText(path.fileName.toString())
                             StudioActions {
                                 StudioAction("更换图片", onClick = ::pickImage)
@@ -433,7 +443,7 @@ internal fun StudioField(label: String, value: String, onChange: (String) -> Uni
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         StatusText(label)
         BasicTextField(value, onChange, Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border)
-            .background(DesktopBootstrapColors.input).padding(9.dp), textStyle = TextStyle(color = DesktopBootstrapColors.foreground))
+            .background(DesktopBootstrapColors.input).padding(9.dp), cursorBrush = DesktopBootstrapColors.inputCaret, textStyle = TextStyle(color = DesktopBootstrapColors.foreground))
     }
 }
 @OptIn(ExperimentalLayoutApi::class)

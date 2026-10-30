@@ -11,7 +11,8 @@ internal data class DesktopMergeImportState(val busy: Boolean = false, val ready
     val modelDetails: Map<String, DesktopMergeImportService.ModelDetails> = emptyMap(), val conflicts: List<DesktopMergePreview.Conflict> = emptyList(),
     val credentials: List<DesktopMergeCredentials.GlobalConflict> = emptyList(),
     val imagePreferencesChoiceRequired: Boolean = false, val message: String = "", val error: String? = null,
-    val restartRequired: Boolean = false, val destination: Path? = null, val desktopParticipation: Boolean = false)
+    val restartRequired: Boolean = false, val destination: Path? = null, val desktopParticipation: Boolean = false,
+    val failureDetails: String? = null)
 
 /** Holds secret-bearing preparation privately; UI state contains only presentation metadata. */
 internal class DesktopMergeImportController(private val service: DesktopMergeImportService,
@@ -62,7 +63,7 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun action(password: CharArray?, work: suspend () -> String) = synchronized(lock) {
         if (closed || mutable.value.busy || service.restartRequired) { password?.fill('\u0000'); return@synchronized }
-        mutable.update { it.copy(busy = true, error = null) }
+        mutable.update { it.copy(busy = true, error = null, failureDetails = null) }
         operation = scope.launch(start = CoroutineStart.ATOMIC) {
             try {
                 currentCoroutineContext().ensureActive()
@@ -73,8 +74,15 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
                 mutable.update { it.copy(ready = false, message = if (service.restartRequired) "合并提交已进入启动切换阶段，请正常退出。"
                     else "已停止；原电脑目录与手机文件保留。未完成的新目录不会自动清理。") }
             } catch (failure: Throwable) {
-                withContext(NonCancellable) { service.discard() }; preview = null
+                try { withContext(NonCancellable) { service.discard() } }
+                catch (cleanup: Throwable) { failure.addSuppressed(cleanup) }
+                preview = null
                 val message = when {
+                    failure is DesktopFullBackupSource.Refusal && failure.passwordRequired -> "该备份已加密，请输入存档密码（8–1024 个字符）后重新检查。当前数据未改变。"
+                    failure is DesktopFullBackupSource.Refusal -> "备份读取未通过（${failure.stage}）。请核对备份文件和加密密码；当前数据未改变。"
+                    failure is DesktopDraftPersistenceException -> "聊天草稿尚未保存成功，已停止准备合并以免遗漏内容。请保留当前草稿；备份文件未改变。"
+                    failure is DesktopReadingPositionPersistenceException -> "阅读位置尚未保存成功，已停止准备合并；当前数据和备份文件保留。"
+                    failure is DesktopBackupMissingResource -> "电脑中的“${failure.ownerLabel}”缺少资源“${failure.resourceName}”，无法准备完整合并；原卡和备份文件保留。"
                     failure.message == "MERGE_COMPUTER_CHANGED_REINSPECT" || failure.message == "MERGE_COMPUTER_CREDENTIAL_CHANGED" -> "电脑内容在预览后发生变化，请重新检查备份再选择冲突。"
                     failure.message == "MERGE_BOOTSTRAP_SOURCE_REQUIRED" -> "当前为命令行或便携目录模式，请从正常安装启动后执行合并。"
                     failure.message == "RECORDING_MESSAGE_MISSING" -> "录音缺少所属消息，无法安全合并；原始备份与准备结果已保留。"
@@ -84,7 +92,7 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
                     failure is DesktopTaskDrainTimeoutException -> "生成任务尚未确认停止，请正常退出后重试。"
                     else -> "合并未提交或尚未确认。请检查密码、文件格式、资源、可用空间和所选目录；原始数据与失败现场保留。"
                 }
-                mutable.update { it.copy(ready = false, error = message, message = "") }
+                mutable.update { it.copy(ready = false, error = message, message = "", failureDetails = desktopMergeFailureDetails(failure)) }
             } finally {
                 password?.fill('\u0000')
                 mutable.update { it.copy(busy = false, restartRequired = service.restartRequired,
@@ -99,6 +107,27 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
         // Destination ownership belongs to the service, closed only AFTER old repositories drain.
     }
     companion object { private val TYPE = DesktopFileType("ChatBar 整应用备份", listOf("cbbackup"), "cbbackup") }
+}
+
+/** Code locations only; exception messages, record IDs, filesystem paths and values stay private. */
+internal fun desktopMergeFailureDetails(failure: Throwable): String {
+    val visited = java.util.Collections.newSetFromMap(java.util.IdentityHashMap<Throwable, Boolean>())
+    val lines = mutableListOf<String>()
+    fun append(value: Throwable, depth: Int) {
+        if (depth > 3 || !visited.add(value)) return
+        lines += value.javaClass.name.take(180)
+        if (value is DesktopFullBackupSource.Refusal && value.stage.matches(Regex("[A-Z0-9_]{1,120}"))) {
+            lines += "stage=${value.stage}"
+            lines += value.failureLocations
+        }
+        value.stackTrace.asSequence().filter { it.className.startsWith("com.example.chatbar.") }.take(8).forEach {
+            lines += "${it.className}.${it.methodName}:${it.lineNumber}"
+        }
+        value.cause?.let { append(it, depth + 1) }
+        value.suppressed.take(2).forEach { append(it, depth + 1) }
+    }
+    append(failure, 0)
+    return lines.take(36).joinToString("\n")
 }
 
 internal fun DesktopMergeImportService.Progress.message(): String = when (stage) {

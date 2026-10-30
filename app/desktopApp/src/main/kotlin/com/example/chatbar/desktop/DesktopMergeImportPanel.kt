@@ -1,12 +1,11 @@
 package com.example.chatbar.desktop
 
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.chatbar.desktop.backup.*
 
@@ -18,18 +17,15 @@ internal fun DesktopMergeImportPanel(controller: DesktopMergeImportController, o
     var credentials by remember(state.credentials) { mutableStateOf(emptyMap<ImportCredentialKind, DesktopMergeCredentials.Choice>()) }
     var imageFromPhone by remember(state.ready) { mutableStateOf<Boolean?>(null) }
     var confirmed by remember(state.ready) { mutableStateOf(false) }
+    var detailsOpen by remember(state.failureDetails) { mutableStateOf(false) }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        DesktopDataSectionHeading("从手机备份合并数据")
+        DesktopDataSectionHeading("导入与合并")
         StatusText("保留电脑现有内容，将手机数据合并到新的独立目录。冲突由你选择，原目录和备份文件保留。")
         StatusText("按官方 1.4.5–1.4.7 格式检查备份，不支持的内容会在提交前拒绝。历史录音和朋友圈原始内容单独保全，不会重新绑定录音版本或执行朋友圈任务。")
         if (!state.restartRequired) {
-            StatusText("加密备份密码（未加密请留空）")
-            BasicTextField(password, { password = it.take(1024) }, Modifier.fillMaxWidth()
-                .border(1.dp, DesktopBootstrapColors.border).padding(10.dp), enabled = !state.busy,
-                singleLine = true, visualTransformation = PasswordVisualTransformation(),
-                textStyle = TextStyle(color = DesktopBootstrapColors.foreground))
+            BackupPasswordField("加密备份密码（未加密请留空）", password, !state.busy) { password = it }
             ActionRow {
-                BootstrapButton("选择手机备份并检查…", enabled = !state.busy) {
+                BootstrapButton("选择备份并检查…", enabled = !state.busy) {
                     val secret = password.takeIf { it.isNotEmpty() }?.toCharArray(); password = ""; controller.inspect(secret)
                 }
                 if (state.busy) BootstrapButton("停止", secondary = true) { controller.stop() }
@@ -39,17 +35,28 @@ internal fun DesktopMergeImportPanel(controller: DesktopMergeImportController, o
             StatusText("已校验 ${state.files} 个文件 · 来源 ${state.versionName.take(80)}")
             if (state.desktopParticipation) StatusText("该备份包含 Desktop 会话人物开关；旧版手机端不支持此设置。", DesktopBootstrapColors.warning)
             if (state.conflicts.isEmpty()) StatusText("未发现需要选择的数据冲突。电脑和手机各自独有内容将保留。")
-            state.conflicts.forEach { conflict ->
-                StatusText("${mergeCategory(conflict.category)} · ${conflict.label.ifBlank { "未命名" }}")
+            if (state.conflicts.isNotEmpty()) StatusText("已选择 ${choices.size} / ${state.conflicts.size} 项数据冲突")
+            state.conflicts.groupBy { conflict ->
+                if (conflict.category == "app_settings") mergeSetting(conflict.label)?.group ?: "其他应用设置" else mergeCategory(conflict.category)
+            }.forEach { (group, conflicts) ->
+                StudioDisclosure("$group · ${conflicts.count { it.key in choices }} / ${conflicts.size}", initiallyOpen = true) {
+            conflicts.forEach { conflict ->
+                Column(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(6.dp)).padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                StatusText(if (conflict.category == "app_settings") mergeSetting(conflict.label)?.label ?: conflict.label.ifBlank { "未命名设置" }
+                    else conflict.label.ifBlank { "未命名" })
                 state.modelDetails[conflict.key]?.let { details ->
                     details.computer.forEach { StatusText("电脑：$it") }
                     details.phone.forEach { StatusText("手机：$it") }
                 }
                 ActionRow {
                     conflict.choices.forEach { choice ->
-                        BootstrapButton((if (choices[conflict.key] == choice) "✓ " else "") + mergeChoice(choice),
-                            secondary = choices[conflict.key] != choice, enabled = !state.busy) { choices = choices + (conflict.key to choice) }
+                        StudioAction(mergeChoice(choice), selected = choices[conflict.key] == choice,
+                            style = StudioActionStyle.CHIP, enabled = !state.busy) { choices = choices + (conflict.key to choice) }
                     }
+                }
+                }
+            }
                 }
             }
             state.credentials.forEach { conflict ->
@@ -74,7 +81,7 @@ internal fun DesktopMergeImportPanel(controller: DesktopMergeImportController, o
                 }
             }
             StatusText("确认后将停止生成和音频，保留电脑快照，准备完整合并结果并核对凭据。选择保存位置后会创建新的子目录；完成后需要正常退出。")
-            BootstrapButton((if (confirmed) "✓ " else "") + "我确认以上选择，并允许把所选凭据安全保存到新目录", secondary = !confirmed,
+            StudioSwitch("我确认以上选择，并允许把所选凭据安全保存到新目录", confirmed,
                 enabled = !state.busy) { confirmed = !confirmed }
             ActionRow {
                 BootstrapButton("选择位置并合并…", enabled = !state.busy && confirmed && choices.size == state.conflicts.size &&
@@ -86,6 +93,10 @@ internal fun DesktopMergeImportPanel(controller: DesktopMergeImportController, o
         }
         if (state.message.isNotBlank()) StatusText(state.message)
         state.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
+        state.failureDetails?.let { details ->
+            BootstrapButton(if (detailsOpen) "收起错误详情" else "查看错误详情", secondary = true) { detailsOpen = !detailsOpen }
+            if (detailsOpen) SelectionContainer { StatusText(details) }
+        }
         state.destination?.let { StatusText("合并目录：$it") }
         if (state.restartRequired) BootstrapButton("正常退出应用", onClick = onExit)
     }
@@ -113,3 +124,5 @@ private fun mergeCredential(kind: ImportCredentialKind) = when (kind) {
     ImportCredentialKind.COMMUNITY -> "Community "
     else -> "模型 "
 }
+
+private fun mergeSetting(field: String) = BackupSettingOptions.all.firstOrNull { it.id == field || field in it.fields }

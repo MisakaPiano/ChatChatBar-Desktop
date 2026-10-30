@@ -61,6 +61,12 @@ class DesktopChatPeoplePresentationTest {
                     frames(scene)
                     if (size == DesktopShellSize.COMPACT) { click(scene, "People card"); frames(scene) }
                     if (size == DesktopShellSize.WIDE) {
+                        val rail = nodes(scene).single { it.config.getOrNull(SemanticsProperties.TestTag) == "chat-people-column" }.boundsInRoot
+                        val editor = nodes(scene).filter { it.config.contains(SemanticsActions.SetText) }.maxBy { it.boundsInRoot.bottom }.boundsInRoot
+                        val timeline = nodes(scene).single { it.config.getOrNull(SemanticsProperties.TestTag) == "chat-timeline-content" }.boundsInRoot
+                        assertTrue(rail.right < timeline.left)
+                        assertTrue(rail.bottom >= editor.bottom)
+                        assertTrue(editor.left >= timeline.left && editor.left <= timeline.left + 20)
                         val avatar = nodes(scene).first { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("人物状态 · Alice") == true }
                         val point = avatar.boundsInRoot.center
                         scene.sendPointerEvent(PointerEventType.Press, point, button = PointerButton.Secondary)
@@ -88,7 +94,12 @@ class DesktopChatPeoplePresentationTest {
                         click(scene, "编辑人物"); frames(scene)
                         assertEquals(card.id to person.id, edit)
                     }
-                    click(scene, "活跃 1"); frames(scene)
+                    if (size == DesktopShellSize.WIDE) {
+                        val collapse = nodes(scene).single { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("收起角色栏") == true }
+                        assertTrue(collapse.config[SemanticsActions.OnClick].action!!.invoke()); frames(scene)
+                        assertFalse(nodes(scene).any { it.config.getOrNull(SemanticsProperties.TestTag) == "chat-people-column" })
+                    }
+                    click(scene, "活跃 1/1"); frames(scene)
                     click(scene, "卡内人物"); frames(scene)
                     click(scene, "Alice"); frames(scene)
                     assertTrue(nodes(scene).any { it.config.getOrNull(SemanticsProperties.Text)?.any { text -> text.text.contains("心情：calm") } == true })

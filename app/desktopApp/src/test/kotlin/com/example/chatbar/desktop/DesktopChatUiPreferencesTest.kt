@@ -66,6 +66,9 @@ class DesktopChatUiPreferencesTest {
         assertEquals(listOf("old", "active", "other", "avatarOnly", "off"), desktopOrderedPeople(people, setOf("old")).map { it.character.id })
         assertEquals(listOf("other", "active", "old", "avatarOnly", "off"), people.map { it.character.id })
         assertFalse(people.last().active); assertFalse(people[3].active)
+        assertEquals(listOf("active", "other", "old", "avatarOnly"),
+            desktopVisiblePeople(people, emptySet(), false).map { it.character.id })
+        assertEquals(people.size, desktopVisiblePeople(people, emptySet(), true).size)
     }
 
     @Test fun `actual viewport budget reserves both rails once and names need enough width`() {
@@ -81,6 +84,10 @@ class DesktopChatUiPreferencesTest {
         assertEquals(0f, desktopChatWorkspaceLayout(680f, true).peopleWidthDp)
         assertEquals(60f, desktopChatWorkspaceLayout(800f, true).peopleWidthDp)
         assertEquals(0f, desktopChatWorkspaceLayout(1300f, false).peopleWidthDp)
+        assertEquals(0f, desktopChatWorkspaceLayout(1300f, true, 280f, peopleHidden = true).peopleWidthDp)
+        assertEquals(280f, desktopChatWorkspaceLayout(1300f, true, 280f).peopleWidthDp)
+        assertFalse(desktopChatWorkspaceLayout(1000f, true, 62f).names)
+        assertTrue(desktopChatWorkspaceLayout(1300f, true, 280f).names)
     }
 
     @Test fun `status preview follows trigger side and remains inside viewport edges`() {

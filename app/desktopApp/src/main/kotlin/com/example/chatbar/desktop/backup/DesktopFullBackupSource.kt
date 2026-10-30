@@ -20,7 +20,19 @@ internal object DesktopFullBackupSource {
         val encrypted: Boolean, val sourceHash: String, val sourceBytes: Long) {
         override fun toString() = "VerifiedFullBackup(code=${manifest.appVersionCode},files=${inventory.size})"
     }
-    class Refusal(val stage: String) : IllegalArgumentException("FULL_BACKUP_SOURCE_$stage")
+    class Refusal(val stage: String) : IllegalArgumentException("FULL_BACKUP_SOURCE_$stage") {
+        var passwordRequired: Boolean = false
+            private set
+        var failureLocations: List<String> = emptyList()
+            private set
+        internal fun recordFailure(failure: Throwable) = apply {
+            passwordRequired = failure is AppBackupPasswordRequired
+            // Retain code identity, never the original Throwable/message or source values.
+            failureLocations = listOf(failure.javaClass.name.take(180)) + failure.stackTrace.asSequence()
+                .filter { it.className.startsWith("com.example.chatbar.") }.take(8)
+                .map { "${it.className}.${it.methodName}:${it.lineNumber}" }.toList()
+        }
+    }
 
     fun verify(source: Path, password: CharArray?, sink: TentativeSink, active: () -> Unit = {}): Verified {
         var phase = "SOURCE_FILE"
@@ -123,8 +135,10 @@ internal object DesktopFullBackupSource {
             }
         } catch (cancelled: java.util.concurrent.CancellationException) { throw cancelled
         } catch (failure: StrictBackupZipReader.Refusal) {
-            throw Refusal("ZIP_${failure.phase}")
-        } catch (_: Exception) { throw Refusal(phase) } // No source text, credentials or crypto snippets escape.
+            throw Refusal("ZIP_${failure.phase}").recordFailure(failure)
+        } catch (failure: Exception) {
+            throw Refusal(phase).recordFailure(failure)
+        }
     }
 
     private class CountingHashInput(source: InputStream) : FilterInputStream(source) {

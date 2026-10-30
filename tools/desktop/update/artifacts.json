@@ -1,0 +1,94 @@
+{
+  "platform": "windows-x86_64",
+  "python": "3.13.16",
+  "artifacts": [
+    {
+      "kind": "runtime",
+      "name": "CPython",
+      "version": "3.13.16",
+      "fileName": "python-3.13.16-embed-amd64.zip",
+      "sizeBytes": 11439094,
+      "sha256": "97dae5274cc54867065e8d5a3226e48c35017ed332a0fdb0e27d5b5821961297",
+      "sourceUrl": "https://www.python.org/ftp/python/3.13.16/python-3.13.16-embed-amd64.zip",
+      "identitySource": "https://www.python.org/downloads/release/python-31316/",
+      "licenseExpression": "Python-2.0"
+    },
+    {
+      "name": "cffi",
+      "version": "2.1.1",
+      "fileName": "cffi-2.1.1-cp313-cp313-win_amd64.whl",
+      "sizeBytes": 185688,
+      "sha256": "1aa5645c30469b09530c4ebca77ebf8f17618293c58f8549cb1a543a50236e7d",
+      "sourceUrl": "https://files.pythonhosted.org/packages/60/a6/8b149b2c3f2e11aaa1618ef64500b45f50f22c57a977a4dff1aff1f91042/cffi-2.1.1-cp313-cp313-win_amd64.whl",
+      "pypiMetadataUrl": "https://pypi.org/pypi/cffi/2.1.1/json",
+      "licenseExpression": "MIT-0",
+      "kind": "wheel"
+    },
+    {
+      "name": "cryptography",
+      "version": "50.0.2",
+      "fileName": "cryptography-50.0.2-cp39-abi3-win_amd64.whl",
+      "sizeBytes": 3854095,
+      "sha256": "4e81d95e5bafc2d6e34e4bed780e53e4d5b9a2f928573428aa4d35fbec1eb0de",
+      "sourceUrl": "https://files.pythonhosted.org/packages/f6/b6/a1faf3a27ae9405fb34b1713cc73b2d8a26b04d5c561578fa2e6ef3e5bb9/cryptography-50.0.2-cp39-abi3-win_amd64.whl",
+      "pypiMetadataUrl": "https://pypi.org/pypi/cryptography/50.0.2/json",
+      "licenseExpression": "Apache-2.0 OR BSD-3-Clause",
+      "kind": "wheel"
+    },
+    {
+      "name": "pycparser",
+      "version": "3.11",
+      "fileName": "pycparser-3.11-py3-none-any.whl",
+      "sizeBytes": 51178,
+      "sha256": "51d5a8ba2be0bbe440b99d2112604c95bbbc3c2748a64260186c541e1729cd80",
+      "sourceUrl": "https://files.pythonhosted.org/packages/90/11/0e6f11117525ff0eec40ebac3d313376f102df93ca44ad9e893ee85e4f89/pycparser-3.11-py3-none-any.whl",
+      "pypiMetadataUrl": "https://pypi.org/pypi/pycparser/3.11/json",
+      "licenseExpression": "BSD-3-Clause",
+      "kind": "wheel"
+    },
+    {
+      "name": "securesystemslib",
+      "version": "1.6.0",
+      "fileName": "securesystemslib-1.6.0-py3-none-any.whl",
+      "sizeBytes": 874777,
+      "sha256": "1c1aa00f058f4851f038d409c8ca4a727db854a91f07ec3a0fa047bb93e43e0e",
+      "sourceUrl": "https://files.pythonhosted.org/packages/50/1e/56bf4531475c32a8503c040ab7f05c34430a0c6b5744bf6c373246dd3c97/securesystemslib-1.6.0-py3-none-any.whl",
+      "pypiMetadataUrl": "https://pypi.org/pypi/securesystemslib/1.6.0/json",
+      "licenseExpression": "MIT",
+      "kind": "wheel"
+    },
+    {
+      "name": "tuf",
+      "version": "7.0.1",
+      "fileName": "tuf-7.0.1-py3-none-any.whl",
+      "sizeBytes": 56253,
+      "sha256": "d30434bda6e079ab303fb30d1b3006d939a10ca34783b1573d61cd9b802fa45c",
+      "sourceUrl": "https://files.pythonhosted.org/packages/a2/10/171e306e4a19ff980b9029ce5a523881e34bc6a2a52750fb1853f49f0fb9/tuf-7.0.1-py3-none-any.whl",
+      "pypiMetadataUrl": "https://pypi.org/pypi/tuf/7.0.1/json",
+      "licenseExpression": "Apache-2.0 OR MIT",
+      "kind": "wheel"
+    },
+    {
+      "name": "typing_extensions",
+      "version": "4.16.0",
+      "fileName": "typing_extensions-4.16.0-py3-none-any.whl",
+      "sizeBytes": 45571,
+      "sha256": "481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8",
+      "sourceUrl": "https://files.pythonhosted.org/packages/49/d3/b8441a820a491ddfc024b0b0cf0393375b75ea13866d9c66727e54c2fc80/typing_extensions-4.16.0-py3-none-any.whl",
+      "pypiMetadataUrl": "https://pypi.org/pypi/typing_extensions/4.16.0/json",
+      "licenseExpression": "PSF-2.0",
+      "kind": "wheel"
+    },
+    {
+      "name": "urllib3",
+      "version": "2.8.0",
+      "fileName": "urllib3-2.8.0-py3-none-any.whl",
+      "sizeBytes": 135717,
+      "sha256": "0cf3cae568d36aa9576b28dfb35f11328f1cb974ca7647d9475ebb86c75ac6e3",
+      "sourceUrl": "https://files.pythonhosted.org/packages/92/9d/c4e665119135114480843e7ab388fa94d8480650450e6f8e26b70d323a4c/urllib3-2.8.0-py3-none-any.whl",
+      "pypiMetadataUrl": "https://pypi.org/pypi/urllib3/2.8.0/json",
+      "licenseExpression": "MIT",
+      "kind": "wheel"
+    }
+  ]
+}

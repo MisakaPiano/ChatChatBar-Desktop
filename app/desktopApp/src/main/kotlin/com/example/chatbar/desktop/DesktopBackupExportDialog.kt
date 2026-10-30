@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.chatbar.desktop.backup.*
 import kotlinx.coroutines.Dispatchers
@@ -68,7 +69,7 @@ internal fun DesktopBackupExportDialog(state: DesktopFullBackupState, onRefresh:
                 }
                 if (page in setOf(BackupExportPage.SETTINGS, BackupExportPage.CHARACTERS)) BasicTextField(query, { query = it },
                     Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border).padding(10.dp), enabled = !state.busy,
-                    singleLine = true, textStyle = TextStyle(color = DesktopBootstrapColors.foreground),
+                    singleLine = true, cursorBrush = DesktopBootstrapColors.inputCaret, textStyle = TextStyle(color = DesktopBootstrapColors.foreground),
                     decorationBox = { inner -> Box { if (query.isEmpty()) StatusText("搜索名称"); inner() } })
                 LazyColumn(Modifier.weight(1f).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     when (page) {
@@ -168,10 +169,18 @@ internal fun DesktopBackupExportDialog(state: DesktopFullBackupState, onRefresh:
         }
     }
 }
-@Composable private fun BackupPasswordField(label: String, value: String, enabled: Boolean, onChange: (String) -> Unit) {
+@Composable internal fun BackupPasswordField(label: String, value: String, enabled: Boolean, onChange: (String) -> Unit) {
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(value.isEmpty(), enabled) { if (value.isEmpty() || !enabled) visible = false }
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         StatusText(label)
-        BasicTextField(value, { onChange(it.take(1024)) }, Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border).padding(10.dp),
-            enabled = enabled, singleLine = true, visualTransformation = PasswordVisualTransformation(), textStyle = TextStyle(color = DesktopBootstrapColors.foreground))
+        Row(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border), verticalAlignment = Alignment.CenterVertically) {
+            BasicTextField(value, { onChange(it.take(1024)) }, Modifier.weight(1f).padding(10.dp),
+                enabled = enabled, singleLine = true,
+                visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
+                cursorBrush = DesktopBootstrapColors.inputCaret, textStyle = TextStyle(color = DesktopBootstrapColors.foreground))
+            DesktopIconAction(if (visible) "隐藏密码" else "显示密码",
+                if (visible) DesktopAppIcons.HideSecret else DesktopAppIcons.ShowSecret, enabled = enabled) { visible = !visible }
+        }
     }
 }

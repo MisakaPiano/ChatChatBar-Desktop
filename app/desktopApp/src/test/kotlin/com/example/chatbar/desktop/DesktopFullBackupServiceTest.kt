@@ -8,6 +8,81 @@ import kotlinx.coroutines.flow.first
 import kotlin.test.*
 
 class DesktopFullBackupServiceTest {
+    @Test fun `GUI file check accepts current credential bearing selected exports without preparing replacement or reading protected keys`() = runBlocking {
+        for (encrypted in listOf(false, true)) Fixture().use { f ->
+            Files.createDirectories(f.settings.parent)
+            Files.writeString(f.settings, backupJson.encodeToString(AppSettings.serializer(), AppSettings()))
+            var reads = 0
+            val focus = DesktopAudioFocus()
+            val service = DesktopFullBackupService(f.root, f.gate, DesktopAudioMaintenance({ focus }) {}, secretStore = {
+                object : com.example.chatbar.desktop.security.DesktopSecretStore {
+                    override fun load(key: com.example.chatbar.desktop.security.DesktopCredentialKey): String? {
+                        reads++
+                        return if (key == com.example.chatbar.desktop.security.DesktopCredentialKey.NovelAiToken) "SYNTHETIC_VERIFY_TOKEN" else null
+                    }
+                    override fun save(key: com.example.chatbar.desktop.security.DesktopCredentialKey, secret: String) = error("no key writes")
+                    override fun delete(key: com.example.chatbar.desktop.security.DesktopCredentialKey) = error("no key deletes")
+                }
+            })
+            val file = f.base.resolve("selected.cbbackup")
+            service.exportModern(file, if (encrypted) "synthetic-password".toCharArray() else null, true,
+                AppBackupSelection(globalOptions = setOf("novelAiCredentials")))
+            val original = Files.readAllBytes(file)
+            val exportReads = reads
+            val picker = object : DesktopFilePicker {
+                override fun pickOpenFile(type: DesktopFileType) = file
+                override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? = null
+            }
+            val controller = DesktopFullBackupController(service, picker)
+            try {
+                val password = if (encrypted) "synthetic-password".toCharArray() else null
+                controller.verifyFile(password)
+                val state = withTimeout(20_000) { controller.state.first { !it.busy } }
+                assertNull(state.error)
+                assertEquals(2, state.summary!!.formatVersion)
+                assertEquals(86, state.summary!!.appVersionCode)
+                assertEquals(exportReads, reads)
+                assertTrue(password == null || password.all { it == '\u0000' })
+                assertEquals(0L, Files.list(f.root.resolve("backups/.full-app-work")).use { it.count() })
+                assertContentEquals(original, Files.readAllBytes(file))
+                Files.write(file, byteArrayOf(1), StandardOpenOption.APPEND)
+                controller.verifyFile(if (encrypted) "synthetic-password".toCharArray() else null)
+                val refused = withTimeout(20_000) { controller.state.first { !it.busy } }
+                assertNotNull(refused.error)
+                assertNull(refused.summary)
+                assertFalse(refused.error!!.contains("SYNTHETIC_VERIFY_TOKEN"))
+                assertFalse(service.restartRequired)
+            } finally { controller.closeAndDrain() }
+        }
+    }
+
+    @Test fun `export publishes actual saved path and explicit failure result without overwriting a previous backup`() = runBlocking {
+        Fixture().use { f ->
+            Files.createDirectories(f.settings.parent)
+            Files.writeString(f.settings, backupJson.encodeToString(AppSettings.serializer(), AppSettings()))
+            val destination = f.base.resolve("saved.cbbackup")
+            val picker = object : DesktopFilePicker {
+                override fun pickOpenFile(type: DesktopFileType): Path? = null
+                override fun pickSaveFile(type: DesktopFileType, suggestedName: String) = destination
+            }
+            val controller = DesktopFullBackupController(f.service, picker)
+            try {
+                controller.export(null)
+                val success = withTimeout(20_000) { controller.state.first { !it.busy } }.exportResult!!
+                assertTrue(success.success)
+                assertEquals(destination.toAbsolutePath().normalize(), success.path)
+                val original = Files.readAllBytes(destination)
+                controller.dismissExportResult()
+                assertNull(controller.state.value.exportResult)
+                controller.export(null)
+                val failure = withTimeout(20_000) { controller.state.first { !it.busy } }.exportResult!!
+                assertFalse(failure.success)
+                assertNull(failure.path)
+                assertContentEquals(original, Files.readAllBytes(destination))
+            } finally { controller.closeAndDrain() }
+        }
+    }
+
     @Test fun `selected modern service reads protected credentials only for requested export and keeps live settings unchanged`() = runBlocking {
         Fixture().use { f ->
             Files.createDirectories(f.settings.parent)

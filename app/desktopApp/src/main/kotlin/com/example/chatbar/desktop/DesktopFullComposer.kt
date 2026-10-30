@@ -132,7 +132,7 @@ internal fun DesktopComposerTextField(
                     composer.input, canLaunch, mode = sendKey, shift = event.isShiftPressed,
                     altOrMeta = event.isAltPressed || event.isMetaPressed, hasAttachments = composer.hasAttachments, send = onSend)
             },
-        textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp),
+        cursorBrush = DesktopBootstrapColors.inputCaret, textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp),
         decorationBox = { field -> Box(contentAlignment = if (verticallyCentered) Alignment.CenterStart else Alignment.TopStart) {
             if (composer.input.text.isEmpty()) androidx.compose.foundation.text.BasicText(desktopComposerPlaceholder(sendKey),
                 style = TextStyle(color = DesktopBootstrapColors.mutedForeground, fontSize = 13.sp))

@@ -464,6 +464,7 @@ internal fun protectedRootSuccessDetails(result: DesktopDataRootMigrationResult.
 }
 
 internal object DesktopBootstrapColors {
+    val inputCaret: androidx.compose.ui.graphics.Brush @Composable get() = androidx.compose.ui.graphics.SolidColor(foreground)
     val background: Color @Composable get() = LocalDesktopPalette.current.background
     val foreground: Color @Composable get() = LocalDesktopPalette.current.foreground
     val card: Color @Composable get() = LocalDesktopPalette.current.card

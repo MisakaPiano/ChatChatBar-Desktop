@@ -268,14 +268,34 @@ internal fun DesktopPrimaryChatPanel(
             }
             if (compactNavigation.chatVisible(size, state.selectedSession?.id)) {
                 BoxWithConstraints(Modifier.weight(1f).fillMaxHeight().padding(16.dp), contentAlignment = Alignment.TopCenter) {
-                val workspace = desktopChatWorkspaceLayout(maxWidth.value, state.people.isNotEmpty())
+                var railWidth by remember(preferences.peopleWidthDp) { mutableStateOf(preferences.peopleWidthDp) }
+                var railHidden by remember(preferences.peopleHidden) { mutableStateOf(preferences.peopleHidden) }
+                val availableWidth = maxWidth.value
+                val hasRail = state.people.isNotEmpty() && !railHidden && maxWidth.value >= 720f
+                val workspace = desktopChatWorkspaceLayout(maxWidth.value - if (hasRail) 10f else 0f,
+                    state.people.isNotEmpty(), railWidth, railHidden)
                 val placement = workspace.timeline
+                val collapseRail: () -> Unit = {
+                    railHidden = true; peoplePreview.close()
+                    scope.launch { controller.chatUi?.update { it.copy(peopleHidden = true) } }; Unit
+                }
+                val setAllPeople: (Boolean) -> Unit = { all -> scope.launch { controller.chatUi?.update { it.copy(allPeople = all) } }; Unit }
+                val setInline: (Boolean) -> Unit = { inline -> scope.launch { controller.chatUi?.update { it.copy(inlineStatuses = inline) } }; Unit }
                 val workspaceHeightDp = maxHeight.value
                 LaunchedEffect(workspaceHeightDp) { composerLayout.clamp(workspaceHeightDp) }
-                Column(Modifier.width(workspace.widthDp.dp).fillMaxHeight(),
+                Row(Modifier.width((workspace.widthDp + if (workspace.peopleWidthDp > 0) 10f else 0f).dp).fillMaxHeight()) {
+                if (workspace.peopleWidthDp > 0) CompositionLocalProvider(LocalDesktopChatPeople provides peopleActions) {
+                    DesktopChatPeopleRail(state.people, controller, workspace.peopleWidthDp, workspace.names,
+                        preferences.inlineStatuses, preferences.allPeople, setAllPeople, collapseRail, setInline)
+                    DesktopPeopleResizeHandle(workspace.peopleWidthDp,
+                        onDrag = { railWidth = it.coerceIn(62f, minOf(420f, availableWidth - 490f)) },
+                        onEnd = { val savedWidth = railWidth; scope.launch { controller.chatUi?.update { it.copy(peopleWidthDp = savedWidth) } } },
+                        onCollapse = collapseRail)
+                }
+                Column(Modifier.width(placement.workspaceWidthDp.dp).fillMaxHeight(),
                     verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     val selected = state.selectedSession
-                    Column(Modifier.width(workspace.headerWidthDp.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(Modifier.width(placement.contentWidthDp.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         DesktopChatHeader(
                             title = state.sessions.firstOrNull { it.id == selected?.id }?.title
                                 ?: selected?.let { desktopRenderedSessionTitle(it, state.selectedCharacter, state.globalPlayerName) }
@@ -288,10 +308,13 @@ internal fun DesktopPrimaryChatPanel(
                             }) else null,
                         ) {
                             if (selected != null) {
-                                if (state.people.isNotEmpty()) CompositionLocalProvider(LocalDesktopChatPeople provides peopleActions) {
-                                    DesktopChatPeopleHeader(state.people, controller, preferences.inlineStatuses,
-                                        onInlineStatuses = { value -> scope.launch { controller.chatUi?.update { it.copy(inlineStatuses = value) } }; Unit },
-                                        onManage = { inspectedPersonId = null; peopleOpen = true })
+                                if (state.people.isNotEmpty() && workspace.peopleWidthDp == 0f) CompositionLocalProvider(LocalDesktopChatPeople provides peopleActions) {
+                                    DesktopChatPeopleHeader(state.people, controller, preferences.inlineStatuses, setInline,
+                                        onManage = { inspectedPersonId = null; peopleOpen = true }, allPeople = preferences.allPeople,
+                                        onAllPeople = setAllPeople, onRestore = if (availableWidth >= 720f) ({
+                                            railHidden = false
+                                            scope.launch { controller.chatUi?.update { it.copy(peopleHidden = false) } }; Unit
+                                        }) else null)
                                 }
                                 controller.saveSlots?.let { slots ->
                                     BootstrapButton("存档", secondary = true) { scope.launch {
@@ -327,10 +350,7 @@ internal fun DesktopPrimaryChatPanel(
                     } else {
                         CompositionLocalProvider(LocalClipboard provides clipboard, LocalDesktopVoiceUi provides voiceUi,
                             LocalDesktopChatPeople provides peopleActions) { key(state.selectedSession?.id) {
-                            Row(Modifier.weight(1f).fillMaxWidth()) {
-                            if (workspace.peopleWidthDp > 0) DesktopChatPeopleRail(state.people, controller,
-                                workspace.peopleWidthDp, workspace.names, preferences.inlineStatuses)
-                            Box(Modifier.weight(1f).fillMaxHeight()) {
+                            Box(Modifier.weight(1f).fillMaxWidth()) {
                             DesktopChatScreenshotHost(controller, state) { PrimaryTimeline(
                                 state, running, controller, clipboard, placement, Modifier.fillMaxSize(),
                                 onEdit = { message -> editingMessage = message; editingText = message.displayContent },
@@ -346,9 +366,8 @@ internal fun DesktopPrimaryChatPanel(
                                 }; Unit },
                             ) }
                             }
-                            }
                         } }
-                        Column(Modifier.width(workspace.headerWidthDp.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(Modifier.width(placement.contentWidthDp.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             preferenceError?.let { StatusText(it, colors.warning) }
                             if (clipboard.unavailable) StatusText(t(DesktopUiText.CLIPBOARD_UNAVAILABLE), colors.warning)
                             state.configurationMessage?.let { StatusText(t.status(it), colors.warning) }
@@ -367,6 +386,7 @@ internal fun DesktopPrimaryChatPanel(
 
                         }
                     }
+                }
                 }
                 }
             }
@@ -1306,7 +1326,7 @@ private fun PrimaryField(label: String, value: String, onChange: (String) -> Uni
         onValueChange = onChange,
         modifier = Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
             .background(DesktopBootstrapColors.input, RoundedCornerShape(8.dp)).padding(8.dp),
-        textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp),
+        cursorBrush = DesktopBootstrapColors.inputCaret, textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp),
     )
 }
 

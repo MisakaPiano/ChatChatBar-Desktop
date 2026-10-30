@@ -98,6 +98,28 @@ internal class DesktopFullBackupService(
         mutex.withLock { gate.withNormalOperation { ensureWorkspace(); archive.inspect(source, password) } }
     } finally { password?.fill('\u0000') }
 
+    data class FileCheck(val summary: AppBackupSummary, val desktopOnly: Boolean)
+
+    /** Current GUI check authenticates the whole streamed file without preparing legacy replacement. */
+    suspend fun verifyFile(source: Path, password: CharArray?): FileCheck = try {
+        mutex.withLock { gate.withNormalOperation {
+            val context = currentCoroutineContext()
+            var desktopOnly = false
+            val verified = DesktopFullBackupSource.verify(source, password, object : DesktopFullBackupSource.TentativeSink {
+                override fun entity(path: String, original: kotlinx.serialization.json.JsonObject, raw: ByteArray) {
+                    desktopOnly = desktopOnly || DesktopBackupPolicy.isDesktopOnly(path) || DesktopBackupPolicy.hasDesktopParticipation(original)
+                }
+                override fun preferences(original: kotlinx.serialization.json.JsonObject) {}
+                override fun media(path: String, input: java.io.InputStream) {
+                    desktopOnly = desktopOnly || DesktopBackupPolicy.isDesktopOnly(path)
+                }
+            }) { context.ensureActive() }
+            val m = verified.manifest
+            FileCheck(AppBackupSummary(m.formatVersion, m.appVersionCode, m.appVersionName, m.createdAt,
+                m.sourceFilesRoot, m.counts, m.fileCount, m.totalBytes, m.preferencesSha256), desktopOnly)
+        } }
+    } finally { password?.fill('\u0000') }
+
     /** Explicit confirmation schedules replacement for the next owned, pre-repository startup. */
     suspend fun scheduleRestore(prepared: DesktopFullBackupArchive.Prepared) = mutex.withLock {
         val plan = gate.withNormalOperation {

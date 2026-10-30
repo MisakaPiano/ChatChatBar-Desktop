@@ -61,6 +61,10 @@ import kotlinx.coroutines.CoroutineStart
 
 private enum class ManageSection { TRANSFER, CHARACTERS, FORMATS, WORLD_BOOKS, MODELS, SETTINGS }
 private enum class ManageSettingsEditor { CHAT_DEFAULTS, PLAYER }
+private enum class ManageSettingsGroup(val label: String) {
+    CONNECTION("模型与连接"), REPLY("回复与记忆"), APPEARANCE("外观与显示"), PLAYER("玩家设定"),
+    IMAGE("图片生成"), VOICE("语音与朗读"), OTHER("自动备份与其他")
+}
 
 @Composable
 internal fun DesktopNovelAiSettingsPanel(controller: DesktopNovelAiSettingsController,
@@ -116,7 +120,7 @@ internal fun DesktopNovelAiSettingsPanel(controller: DesktopNovelAiSettingsContr
     LabeledField("工作室 Prompt 附加要求", preference) { preference = it }
     BootstrapButton("保存附加要求", secondary = true, enabled = !state.busy) { scope.launch { controller.setPreference(preference) } }
     val translate = state.settings.novelAiPromptTranslationConsent == com.example.chatbar.data.local.entity.NovelAiPromptTranslationConsent.ENABLED
-    BootstrapButton(if (translate) "中文注释：已开启" else "中文注释：已关闭", secondary = true) {
+    StudioSwitch("中文注释", translate, enabled = !state.busy) {
         scope.launch { controller.setTranslation(!translate) }
     }
     StatusText("中文注释与标签补全使用本地词库，不会修改原始 Prompt。")
@@ -148,6 +152,7 @@ internal fun DesktopManagePanel(
     val languageSaved by uiLanguageController.saved.collectAsState()
     var section by remember { mutableStateOf(ManageSection.TRANSFER) }
     var settingsEditor by remember { mutableStateOf<ManageSettingsEditor?>(null) }
+    var settingsGroup by remember { mutableStateOf(ManageSettingsGroup.CONNECTION) }
     var confirmClearCredential by remember { mutableStateOf(false) }
     val state by modelSettingsController.state.collectAsState()
     val characterState by characterEditorController.state.collectAsState()
@@ -197,25 +202,19 @@ internal fun DesktopManagePanel(
         }
     }
     Box(Modifier.fillMaxSize()) {
-    Column(
-        Modifier.fillMaxSize()
-            .background(DesktopBootstrapColors.background)
-            .verticalScroll(rememberScrollState()).padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
-        ManageHeading(t(DesktopUiText.MANAGE))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            ManageSection.entries.forEach { choice ->
-                BootstrapButton(t(when (choice) {
-                    ManageSection.TRANSFER -> DesktopUiText.TRANSFER
-                    ManageSection.CHARACTERS -> DesktopUiText.CHARACTERS
-                    ManageSection.FORMATS -> DesktopUiText.FORMATS
-                    ManageSection.WORLD_BOOKS -> DesktopUiText.WORLD_BOOKS
-                    ManageSection.MODELS -> DesktopUiText.MODELS
-                    ManageSection.SETTINGS -> DesktopUiText.SETTINGS
-                }), secondary = section != choice) {
+    DesktopWorkspacePage(t(DesktopUiText.MANAGE), ManageSection.entries.map { choice ->
+        DesktopWorkspaceDestination(choice.name, t(when (choice) {
+            ManageSection.TRANSFER -> DesktopUiText.TRANSFER
+            ManageSection.CHARACTERS -> DesktopUiText.CHARACTERS
+            ManageSection.FORMATS -> DesktopUiText.FORMATS
+            ManageSection.WORLD_BOOKS -> DesktopUiText.WORLD_BOOKS
+            ManageSection.MODELS -> DesktopUiText.MODELS
+            ManageSection.SETTINGS -> DesktopUiText.SETTINGS
+        }))
+    }, section.name, onSelect = { id ->
+        val choice = ManageSection.valueOf(id)
                     if (managementController.state.value.busy || transferController.state.value.busy ||
-                        modelTemplateController.state.value.busy) return@BootstrapButton
+                        modelTemplateController.state.value.busy) return@DesktopWorkspacePage
                     if (section == ManageSection.WORLD_BOOKS && choice != ManageSection.WORLD_BOOKS) {
                         worldBookEditorController.requestLeave { section = choice }
                     } else if (section == ManageSection.FORMATS && choice != ManageSection.FORMATS) {
@@ -225,9 +224,9 @@ internal fun DesktopManagePanel(
                     } else if ((section == ManageSection.MODELS || section == ManageSection.SETTINGS) && choice != section) {
                         scope.launch { modelSettingsController.requestLeave { section = choice } }
                     } else section = choice
-                }
-            }
-        }
+    }) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)) {
         if (state.busy) StatusText(t(DesktopUiText.WORKING))
         state.status?.let { StatusText(t.status(it)) }
         state.error?.let { StatusText(t.status(it), DesktopBootstrapColors.destructive) }
@@ -240,7 +239,18 @@ internal fun DesktopManagePanel(
                 action -> scope.launch { action() }
             }
             ManageSection.SETTINGS -> {
-                DesktopNovelAiSettingsPanel(novelAiSettingsController, modelSettingsController, state.availableChatModels)
+                ManageHeading(t(DesktopUiText.SETTINGS))
+                ActionRow { ManageSettingsGroup.entries.forEach { group ->
+                    BootstrapButton(group.label, secondary = settingsGroup != group) { settingsGroup = group }
+                } }
+                Box(Modifier.fillMaxWidth()) {
+                    DesktopRetainedPane(settingsGroup == ManageSettingsGroup.IMAGE) {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            DesktopNovelAiSettingsPanel(novelAiSettingsController, modelSettingsController, state.availableChatModels)
+                        }
+                    }
+                    DesktopRetainedPane(settingsGroup == ManageSettingsGroup.APPEARANCE) {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 ManageHeading(t(DesktopUiText.LANGUAGE))
                 ActionRow {
                     SelectChip(t(DesktopUiText.CHINESE), uiLanguage == DesktopUiLanguage.ZH_CN) {
@@ -269,18 +279,34 @@ internal fun DesktopManagePanel(
                 StatusText(t(DesktopUiText.BUBBLE_FONT_IMMEDIATE))
                 if (state.bubbleFontScaleSaving) StatusText(t(DesktopUiText.WORKING))
                 if (state.bubbleFontScaleError) StatusText(t(DesktopUiText.BUBBLE_FONT_SAVE_FAILED), DesktopBootstrapColors.destructive)
-                DesktopFishGlobalSettings(state, modelSettingsController)
-                DesktopAutomaticBackupSettingsPanel(backupSettingsController)
+
+                        }
+                    }
+                    DesktopRetainedPane(settingsGroup == ManageSettingsGroup.VOICE) {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) { DesktopFishGlobalSettings(state, modelSettingsController) }
+                    }
+                    DesktopRetainedPane(settingsGroup == ManageSettingsGroup.OTHER) {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) { DesktopAutomaticBackupSettingsPanel(backupSettingsController) }
+                    }
+                    listOf(ManageSettingsGroup.CONNECTION, ManageSettingsGroup.REPLY, ManageSettingsGroup.PLAYER).forEach { area ->
+                        DesktopRetainedPane(settingsGroup == area) {
+                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 DesktopCoreSettingsPanel(
                     state = state,
+                    area = area,
                     onChatDefaults = { settingsEditor = ManageSettingsEditor.CHAT_DEFAULTS },
                     onPlayer = { settingsEditor = ManageSettingsEditor.PLAYER },
                     onCredential = modelSettingsController::openCredentialEditor,
                     onClearCredential = { confirmClearCredential = true },
                     connectionTestController = connectionTestController,
                 )
+                            }
+                        }
+                    }
+                }
             }
         }
+    }
     }
     if (section == ManageSection.MODELS && state.editor != null) {
         DesktopModelEditorOverlay(state, modelSettingsController,
@@ -873,6 +899,7 @@ internal fun DesktopModelsPanel(
 @Composable
 private fun DesktopCoreSettingsPanel(
     state: DesktopModelSettingsState,
+    area: ManageSettingsGroup,
     onChatDefaults: () -> Unit,
     onPlayer: () -> Unit,
     onCredential: () -> Unit,
@@ -884,6 +911,7 @@ private fun DesktopCoreSettingsPanel(
         StatusText(t(DesktopUiText.SETTINGS_NOT_LOADED))
         return
     }
+    if (area == ManageSettingsGroup.CONNECTION) {
     ManageHeading(t(DesktopUiText.MODEL_CONNECTION))
     state.bundledCatalog?.let { StatusText("${it.provider} · ${it.baseUrl}") }
     StatusText("${t(DesktopUiText.GLOBAL_API_KEY)}: ${t(if (draft.hasSavedFallbackCredential)
@@ -895,12 +923,17 @@ private fun DesktopCoreSettingsPanel(
             variant = DesktopActionVariant.DESTRUCTIVE, onClick = onClearCredential)
     }
     DesktopConnectionTestPanel(connectionTestController, state.credentialDirty)
+    }
+    if (area == ManageSettingsGroup.REPLY) {
     ManageHeading(t(DesktopUiText.CHAT_DEFAULTS))
     StatusText("${t(DesktopUiText.CONTEXT_WINDOW)}: ${draft.defaultContextWindowSize}")
     BootstrapButton(t(DesktopUiText.EDIT), variant = DesktopActionVariant.SECONDARY, onClick = onChatDefaults)
+    }
+    if (area == ManageSettingsGroup.PLAYER) {
     ManageHeading(t(DesktopUiText.PLAYER_SETTING))
     StatusText(draft.playerName.ifBlank { t(DesktopUiText.NOT_CONFIGURED) })
     BootstrapButton(t(DesktopUiText.EDIT), variant = DesktopActionVariant.SECONDARY, onClick = onPlayer)
+    }
     state.status?.let { StatusText(t.status(it)) }
     state.error?.let { StatusText(t.status(it), DesktopBootstrapColors.destructive) }
 }
@@ -928,8 +961,7 @@ private fun CredentialField(
 
 @Composable
 private fun ToggleField(label: String, value: Boolean, onToggle: () -> Unit) {
-    val t = LocalDesktopUiStrings.current
-    SelectChip("$label: ${t(if (value) DesktopUiText.ON else DesktopUiText.OFF)}", value, onToggle)
+    StudioSwitch(label, value, action = onToggle)
 }
 
 @Composable
@@ -975,7 +1007,7 @@ private fun LabeledField(
                 .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
                 .background(DesktopBootstrapColors.input, RoundedCornerShape(8.dp))
                 .padding(10.dp),
-            textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp),
+            cursorBrush = DesktopBootstrapColors.inputCaret, textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp),
             singleLine = !multiline,
             visualTransformation = if (secret) PasswordVisualTransformation() else VisualTransformation.None,
         )

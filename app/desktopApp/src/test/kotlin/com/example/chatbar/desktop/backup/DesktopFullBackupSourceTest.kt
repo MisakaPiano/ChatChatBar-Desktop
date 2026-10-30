@@ -9,6 +9,38 @@ import org.junit.Test
 import kotlin.test.*
 
 class DesktopFullBackupSourceTest {
+    @Test fun encryptedBackupWithoutValidLengthPasswordHasTypedRetryableRequirement() = runBlocking<Unit> {
+        CensusWireFixtures.input(CensusWireFixtures.bytes(version = 2, code = 86, encrypted = true), "password-required") { source ->
+            for (password in listOf(null, "short".toCharArray())) {
+                try {
+                    val failure = assertFailsWith<DesktopFullBackupSource.Refusal> { DesktopFullBackupSource.verify(source, password, Sink()) }
+                    assertTrue(failure.passwordRequired)
+                    assertNull(failure.cause)
+                    assertFalse(failure.toString().contains(CensusWireFixtures.SECRET))
+                } finally { password?.fill('\u0000') }
+            }
+            val password = CensusWireFixtures.PASSWORD.toCharArray()
+            try { assertEquals(4, DesktopFullBackupSource.verify(source, password, Sink()).inventory.size) }
+            finally { password.fill('\u0000') }
+        }
+    }
+
+    @Test fun outerReadFailureRetainsCodeLocationWithoutRetainingTheOriginalExceptionOrPayload() = runBlocking<Unit> {
+        CensusWireFixtures.input("SYNTHETIC_PRIVATE_SOURCE_CONTENT".toByteArray(), "bad-envelope") { source ->
+            val failure = assertFailsWith<DesktopFullBackupSource.Refusal> {
+                DesktopFullBackupSource.verify(source, null, Sink())
+            }
+            assertEquals("AUTHENTICATION_ZIP", failure.stage)
+            assertNull(failure.cause)
+            assertTrue(failure.failureLocations.any { it == "java.lang.IllegalArgumentException" })
+            assertTrue(failure.failureLocations.any { it.contains("AppBackupCodec.decrypting:") })
+            val details = com.example.chatbar.desktop.desktopMergeFailureDetails(failure)
+            assertTrue(details.contains("stage=AUTHENTICATION_ZIP"))
+            assertFalse(details.contains("SYNTHETIC_PRIVATE_SOURCE_CONTENT"))
+            assertFalse(details.contains(source.toString()))
+        }
+    }
+
     @Test fun archiveCannotSupplyLocalRetainedPreferenceInstructions() = runBlocking<Unit> {
         for (retained in listOf("novelai_credentials", "future_preferences")) {
             val bytes = CensusWireFixtures.bytes(version = 2, code = 86, files = emptyMap(),

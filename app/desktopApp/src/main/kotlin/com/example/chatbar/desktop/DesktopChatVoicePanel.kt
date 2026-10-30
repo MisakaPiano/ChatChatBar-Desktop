@@ -103,7 +103,7 @@ internal fun DesktopVoiceRows(runtime: DesktopChatVoiceRuntime?, message: ChatMe
 private fun VoiceTextField(label: String, text: String, change: (String) -> Unit) {
     BasicTextField(text, change, modifier = Modifier.fillMaxWidth().heightIn(max = 160.dp)
         .semantics { contentDescription = label }.border(1.dp, DesktopBootstrapColors.border).padding(8.dp),
-        textStyle = TextStyle(color = DesktopBootstrapColors.foreground))
+        cursorBrush = DesktopBootstrapColors.inputCaret, textStyle = TextStyle(color = DesktopBootstrapColors.foreground))
 }
 
 @Composable

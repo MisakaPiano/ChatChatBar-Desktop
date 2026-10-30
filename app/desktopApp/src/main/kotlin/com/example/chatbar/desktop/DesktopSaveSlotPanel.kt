@@ -38,7 +38,7 @@ internal fun DesktopSaveSlotPanel(controller: DesktopSaveSlotController) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 BasicTextField(name, { name = it.take(120) }, Modifier.weight(1f)
                     .border(1.dp, DesktopBootstrapColors.border).padding(10.dp),
-                    enabled = !state.busy, singleLine = true, textStyle = TextStyle(color = DesktopBootstrapColors.foreground))
+                    enabled = !state.busy, singleLine = true, cursorBrush = DesktopBootstrapColors.inputCaret, textStyle = TextStyle(color = DesktopBootstrapColors.foreground))
                 BootstrapButton("保存新存档", enabled = !state.busy && name.isNotBlank()) { controller.create(name, images, audio) }
             }
             ActionRow {

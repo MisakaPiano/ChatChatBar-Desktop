@@ -4,6 +4,7 @@ package com.example.chatbar.desktop
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextLayoutResult
 import com.example.chatbar.desktop.backup.*
 import kotlinx.coroutines.*
 import java.nio.file.*
@@ -51,6 +52,13 @@ class DesktopBackupExportDialogTest {
                     val inputs = nodes(scene).filter { it.config.contains(SemanticsActions.SetText) }.sortedBy { it.boundsInRoot.top }
                     assertEquals(2, inputs.size)
                     inputs[0].config[SemanticsActions.SetText].action!!.invoke(AnnotatedString("synthetic-password")); frames(scene)
+                    val show = nodes(scene).first { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("显示密码") == true }
+                    assertTrue(show.config[SemanticsActions.OnClick].action!!.invoke()); frames(scene)
+                    val revealed = nodes(scene).filter { it.config.contains(SemanticsActions.SetText) }.minBy { it.boundsInRoot.top }
+                    assertEquals("synthetic-password", revealed.config[SemanticsProperties.EditableText].text)
+                    val rendered = mutableListOf<TextLayoutResult>()
+                    revealed.config[SemanticsActions.GetTextLayoutResult].action!!.invoke(rendered)
+                    assertEquals("synthetic-password", rendered.single().layoutInput.text.text)
                     assertTrue(nodes(scene).first { it.config.contains(SemanticsActions.OnClick) && matches(it, "选择保存位置并导出") }.config.contains(SemanticsProperties.Disabled))
                     inputs[1].config[SemanticsActions.SetText].action!!.invoke(AnnotatedString("synthetic-password")); frames(scene)
                     click(scene, "选择保存位置并导出")
@@ -58,6 +66,7 @@ class DesktopBackupExportDialogTest {
                     assertEquals(BackupSettingOptions.ids, requireNotNull(result).globalOptions)
                     assertContentEquals("synthetic-password".toCharArray(), captured)
                     assertTrue(nodes(scene).filter { it.config.contains(SemanticsActions.SetText) }.all { it.config[SemanticsProperties.EditableText].text.isEmpty() })
+                    assertTrue(nodes(scene).none { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("隐藏密码") == true })
                     System.getProperty("chatbar.test.screenshot.dir")?.let { directory ->
                         Files.createDirectories(Path.of(directory)); scene.render(System.nanoTime()).use { image -> image.encodeToData()?.let { Files.write(Path.of(directory, "backup-protection-$width.png"), it.bytes) } }
                     }

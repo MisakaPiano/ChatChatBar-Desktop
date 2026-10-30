@@ -43,9 +43,13 @@ import com.composables.icons.lucide.ZoomIn
 import com.composables.icons.lucide.ZoomOut
 import com.composables.icons.lucide.Download
 import com.composables.icons.lucide.FolderOpen
+import com.composables.icons.lucide.Eye
+import com.composables.icons.lucide.EyeOff
 
 /** Formal upstream semantics, with distinct Desktop reading-navigation additions. */
 internal object DesktopAppIcons {
+    val ShowSecret: ImageVector get() = Lucide.Eye
+    val HideSecret: ImageVector get() = Lucide.EyeOff
     val ZoomIn: ImageVector get() = Lucide.ZoomIn
     val ZoomOut: ImageVector get() = Lucide.ZoomOut
     val SaveImage: ImageVector get() = Lucide.Download

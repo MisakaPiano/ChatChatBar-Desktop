@@ -4,9 +4,12 @@ import com.example.chatbar.desktop.backup.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
+internal data class DesktopBackupExportResult(val success: Boolean, val message: String, val path: java.nio.file.Path? = null)
+
 internal data class DesktopFullBackupState(val busy: Boolean = false, val message: String = "",
     val error: String? = null, val summary: AppBackupSummary? = null,
-    val desktopOnly: Boolean = false, val restartRequired: Boolean = false, val catalog: BackupExportCatalog? = null)
+    val desktopOnly: Boolean = false, val restartRequired: Boolean = false, val catalog: BackupExportCatalog? = null,
+    val exportResult: DesktopBackupExportResult? = null)
 
 /** The application owns the operation; leaving the panel cannot abandon a scheduled restore. */
 internal class DesktopFullBackupController(private val service: DesktopFullBackupService,
@@ -25,11 +28,15 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
         "已读取导出清单"
     }
 
-    fun export(password: CharArray?, includeCredentials: Boolean = false, selection: AppBackupSelection? = null) = action(password) {
+    fun export(password: CharArray?, includeCredentials: Boolean = false, selection: AppBackupSelection? = null) = action(password, exporting = true) {
         val path = picker.pickSaveFile(TYPE, "ChatBar.cbbackup") ?: return@action "已取消保存，可以重新选择目标"
         service.exportModern(path, password, includeCredentials, selection)
-        if (includeCredentials) "备份已按所选范围导出，包含所选凭据及关联模型密钥。" else "备份已导出至新文件，不含 API 密钥等凭据。"
+        val message = if (includeCredentials) "备份已按所选范围导出，包含所选凭据及关联模型密钥。" else "备份已导出至新文件，不含 API 密钥等凭据。"
+        mutable.update { it.copy(exportResult = DesktopBackupExportResult(true, message, path.toAbsolutePath().normalize())) }
+        message
     }
+
+    fun dismissExportResult() { mutable.update { it.copy(exportResult = null) } }
 
     fun inspect(password: CharArray?) = action(password) {
         val path = picker.pickOpenFile(TYPE) ?: return@action "已取消检查"
@@ -39,6 +46,14 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
         mutable.update { it.copy(summary = result.summary,
             desktopOnly = result.desktopOnly || result.records.keys.any(DesktopBackupPolicy::isDesktopOnly)) }
         "文件校验完成；尚未替换当前数据。请检查摘要后决定是否恢复。"
+    }
+
+    fun verifyFile(password: CharArray?) = action(password) {
+        val path = picker.pickOpenFile(TYPE) ?: return@action "已取消检查"
+        releaseInspection()
+        val result = service.verifyFile(path, password)
+        mutable.update { it.copy(summary = result.summary, desktopOnly = result.desktopOnly) }
+        "文件完整性与格式校验完成；没有导入或替换当前数据。恢复请使用合并预览。"
     }
 
     fun restore() = action(null) {
@@ -64,10 +79,10 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
     fun stop() { synchronized(lock) { operation }?.cancel() }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    private fun action(password: CharArray?, cleanupOnly: Boolean = false, work: suspend () -> String) {
+    private fun action(password: CharArray?, cleanupOnly: Boolean = false, exporting: Boolean = false, work: suspend () -> String) {
         synchronized(lock) {
             if (closed || mutable.value.busy || service.restartRequired && !cleanupOnly) { password?.fill('\u0000'); return }
-            mutable.update { it.copy(busy = true, error = null, message = "正在准备和核验…") }
+            mutable.update { it.copy(busy = true, error = null, message = "正在准备和核验…", exportResult = null) }
             // Even a request cancelled before its dispatcher runs must enter the cleanup boundary.
             operation = scope.launch(start = CoroutineStart.ATOMIC) {
                 try {
@@ -89,6 +104,8 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
                         "临时文件清理尚未确认，已保留异常现场；请勿自行清理恢复记录。"
                     else when (failure) {
                         is DesktopBackupCompatibilityException -> failure.kind.userMessage()
+                        is DesktopFullBackupSource.Refusal -> if (failure.passwordRequired) "该备份已加密，请输入存档密码（8–1024 个字符）后重新检查。当前数据未改变。"
+                            else "备份文件校验未通过（${failure.stage}）。请核对文件和加密密码；当前数据未改变。"
                         is DesktopBackupScratchCleanupException -> "临时文件清理尚未确认，已保留异常现场；请勿自行清理恢复记录。"
                         is DesktopAudioDrainException -> "音频尚未确认安全停止，恢复未提交。"
                         is DesktopDataOperationRejectedException -> "数据操作暂不可用，请检查是否需要正常退出。"
@@ -102,7 +119,8 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
                             else -> "操作未完成。请检查密码、格式、资源、可用空间及文件名；原文件与证据保留。"
                         }
                     }
-                    mutable.update { it.copy(error = reason, message = "") }
+                    mutable.update { it.copy(error = reason, message = "", exportResult =
+                        if (exporting) DesktopBackupExportResult(false, reason) else null) }
                 } finally {
                     password?.fill('\u0000')
                     // Panel departure does not cancel an application-owned restore transaction.

@@ -261,10 +261,45 @@ compose.desktop {
     }
 }
 
+val updaterSources = rootProject.projectDir.parentFile.resolve("tools/desktop/update")
+val updaterInputFiles = fileTree(updaterSources) {
+    include("*.py", "*.cs", "artifacts.json", "update-root.json")
+    exclude("test_*.py")
+}
+val updaterSourceKey = providers.provider {
+    val digest = MessageDigest.getInstance("SHA-256")
+    updaterInputFiles.files.sortedBy { it.name }.forEach { file ->
+        digest.update(file.name.toByteArray(Charsets.UTF_8)); digest.update(file.readBytes())
+    }
+    digest.digest().joinToString("") { "%02x".format(it) }.take(20)
+}
+val updaterRuntimeDirectory = layout.buildDirectory.dir(updaterSourceKey.map { "desktop-updater/$it" })
+val prepareDesktopUpdater by tasks.registering(Exec::class) {
+    group = "distribution"
+    inputs.files(updaterInputFiles)
+    outputs.dir(updaterRuntimeDirectory)
+    doFirst {
+        commandLine("python", updaterSources.resolve("prepare_runtime.py").absolutePath,
+            "--destination", updaterRuntimeDirectory.get().asFile.absolutePath,
+            "--artifact-cache", layout.buildDirectory.dir("updater-artifact-cache").get().asFile.absolutePath, "--download")
+    }
+}
+val attachDesktopUpdater by tasks.registering(Exec::class) {
+    group = "distribution"
+    dependsOn("createDistributable", prepareDesktopUpdater)
+    doFirst {
+        commandLine("python", updaterSources.resolve("attach_runtime.py").absolutePath,
+            "--image", layout.buildDirectory.dir("compose/binaries/main/app/$desktopNativeName").get().asFile.absolutePath,
+            "--runtime", updaterRuntimeDirectory.get().asFile.absolutePath,
+            "--root", updaterSources.resolve("update-root.json").absolutePath,
+            "--version", desktopVersion, "--commit", desktopCommit.get())
+    }
+}
+
 tasks.register<Exec>("packageNsis") {
     group = "distribution"
     description = "Build the current-user NSIS Preview installer from an audited app-image"
-    dependsOn(verifyDesktopInstallerIdentity, "createDistributable")
+    dependsOn(verifyDesktopInstallerIdentity, attachDesktopUpdater)
     doFirst {
         val compiler = providers.gradleProperty("desktopNsisCompiler").orNull
             ?: error("Supply -PdesktopNsisCompiler=<makensis.exe>")

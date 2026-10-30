@@ -13,6 +13,40 @@ import org.junit.Test
 import kotlin.test.*
 
 class DesktopMergeImportServiceTest {
+    @Test fun `merge diagnostic retains code locations but never exception text or filesystem paths`() {
+        val cause = IllegalArgumentException("SYNTHETIC_API_KEY H:/private/backup.cbbackup")
+        cause.stackTrace = arrayOf(StackTraceElement("com.example.chatbar.desktop.DesktopMergeImportService", "inspect", "DesktopMergeImportService.kt", 123),
+            StackTraceElement("external.Library", "secret", "H:/private/backup.cbbackup", 7))
+        val failure = IllegalStateException("SYNTHETIC_CHAT_CONTENT", cause)
+        failure.addSuppressed(IllegalStateException("SYNTHETIC_PASSWORD"))
+        val details = desktopMergeFailureDetails(failure)
+        assertTrue(details.contains("DesktopMergeImportService.inspect:123"))
+        assertTrue(details.contains("java.lang.IllegalArgumentException"))
+        listOf("SYNTHETIC_API_KEY", "SYNTHETIC_CHAT_CONTENT", "SYNTHETIC_PASSWORD", "H:/private", "external.Library").forEach {
+            assertFalse(details.contains(it))
+        }
+    }
+
+    @Test fun `controller retains bounded failure details when composer flush refuses snapshot`() = runBlocking<Unit> {
+        fixture {
+            val failing = DesktopMergeImportService(source, gate, old, { throw DesktopDraftPersistenceException() }, { it() })
+            val picker = object : DesktopFilePicker {
+                override fun pickOpenFile(type: DesktopFileType) = archive
+                override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? = null
+            }
+            val controller = DesktopMergeImportController(failing, picker, DesktopDirectoryPicker { error("NO_COMMIT") })
+            try {
+                controller.inspect(null)
+                val refused = withTimeout(10_000) { controller.state.first { !it.busy && it.error != null } }
+                assertFalse(refused.ready); assertFalse(refused.restartRequired)
+                assertTrue(refused.error!!.contains("草稿"))
+                assertTrue(refused.failureDetails!!.contains("DesktopDraftPersistenceException"))
+                assertFalse(refused.failureDetails!!.contains("FAKE_PHONE_GLOBAL"))
+                assertFalse(failing.restartRequired)
+            } finally { controller.closeAndDrain(); failing.close() }
+        }
+    }
+
     private val unavailable = DesktopApplicationHomeResult.Unavailable(DesktopApplicationHomeUnavailableReason.PROPERTY_ABSENT)
     private val fake = MergeRootSyntheticProtector
     private class Fixture(val base: Path, val root: Path, val source: DesktopDataRootResolution.Resolved,

@@ -1,6 +1,7 @@
 package com.example.chatbar.desktop
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -8,6 +9,7 @@ import kotlinx.coroutines.*
 
 @Composable
 internal fun DesktopUpdatePanel(
+    onExit: () -> Unit = {},
     copySupport: (String) -> Unit = { text ->
         java.awt.Toolkit.getDefaultToolkit().systemClipboard
             .setContents(java.awt.datatransfer.StringSelection(text), null)
@@ -22,6 +24,9 @@ internal fun DesktopUpdatePanel(
     var error by remember { mutableStateOf<String?>(null) }
     var checkFailed by remember { mutableStateOf(false) }
     var supportStatus by remember { mutableStateOf<String?>(null) }
+    val updater = LocalDesktopUpdater.current
+    val download = updater?.state?.collectAsState()?.value
+    var confirmInstall by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         DesktopDataSectionHeading("版本与更新")
         StatusText("Desktop ${identity.version} · ${identity.commit.take(12)}")
@@ -76,6 +81,37 @@ internal fun DesktopUpdatePanel(
                 }
             }
         }
-        StatusText("手动升级前先备份并正常退出。保留选中的数据目录和本机凭据；便携版请保留 UserData。此入口不会自动下载安装或重启。")
+        result?.latest?.takeIf { result?.newer == true }?.let { release ->
+            if (updater?.supportsInstall == true) BootstrapButton("下载更新", enabled = download?.busy != true) { updater.download(release.version) }
+        }
+        if (download?.busy == true) {
+            StatusText(when (download.phase) {
+                "DOWNLOADING" -> "正在下载更新 · ${download.received / (1024 * 1024)} / ${download.total / (1024 * 1024)} MB"
+                "VERIFYING" -> "正在验证更新签名和完整性…"
+                "WAITING_FOR_NORMAL_EXIT" -> "正在正常退出；完成后安装并重新打开…"
+                else -> "正在核对可信更新信息…"
+            })
+            if (download.phase != "WAITING_FOR_NORMAL_EXIT") BootstrapButton("停止下载", secondary = true) { updater?.stop() }
+        }
+        download?.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
+        download?.notice?.let { StatusText(it, DesktopBootstrapColors.warning) }
+        if (updater != null && !updater.supportsInstall) StatusText("当前入口是独立资料版或未安装程序。请使用官方安装包升级安装版；独立资料版请保留 UserData，并使用新版独立资料包。")
+        download?.ready?.let { ready ->
+            StatusText("已下载并校验：${ready.version}")
+            BootstrapButton("确认更新并重启", enabled = !download.busy) { confirmInstall = true }
+        }
+        StatusText("安装版可在此下载、校验并确认更新；安装前正常保存和退出，保留所选数据目录及本机凭据。独立资料版请保留 UserData，并使用对应新版入口。")
+    }
+    if (confirmInstall) DesktopModalSurface {
+        Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.dim), contentAlignment = androidx.compose.ui.Alignment.Center) {
+            Column(Modifier.widthIn(max = 520.dp).background(DesktopBootstrapColors.card).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                DesktopDataSectionHeading("更新并重启")
+                StatusText("确认后会保存并正常关闭当前应用，再安装已校验的新版本。正在执行的生成会按正常退出流程停止。用户资料与本机凭据保留。")
+                ActionRow {
+                    BootstrapButton("取消", secondary = true) { confirmInstall = false }
+                    BootstrapButton("确认更新并重启") { confirmInstall = false; updater?.install(onExit) }
+                }
+            }
+        }
     }
 }

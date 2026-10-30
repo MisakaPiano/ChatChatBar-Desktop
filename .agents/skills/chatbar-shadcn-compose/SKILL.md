@@ -5,6 +5,12 @@ description: Build or migrate ChatBar Android UI using shadcn/ui design principl
 
 # ChatBar shadcn Compose
 
+Desktop text inputs use `DesktopBootstrapColors.inputCaret` with their foreground text color. Compose's default black caret is invisible on the dark input surface; keep composer, search, editors, Studio and credential fields on the same theme token. The separate Swing startup/shutdown diagnostic text areas are read-only.
+
+Desktop management and Data use `DesktopWorkspacePage` for bounded side navigation, switching to a scrolling top row below 700dp. `DesktopRetainedPane` keeps subsection drafts composed while removing hidden content from placement, focus and semantics. Keep original requestLeave, busy, confirmation and controller callbacks. The Studio creation surface retains its own full-width preview/title/divider geometry; history organization must not wrap it in a second sidebar.
+
+`DesktopChatUiPreferences` owns display-only people width/hidden/filter choices. The people column is a sibling of header/timeline/composer, with one collapse control and a resize separator. A collapsed or narrow column exposes the header quick list. 活跃 view retains enabled characters; 启用 view includes all characters, including disabled ones. Green counts still require a valid resident status; pins and participation keep their separate owners.
+
 Implement shadcn's open-code, semantic-token, variant-driven component model in native Compose. Preserve Android behavior and accessibility; do not imitate web markup or depend on Material 3 visuals.
 
 ## Required Reading

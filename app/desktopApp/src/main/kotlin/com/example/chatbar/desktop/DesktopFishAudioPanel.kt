@@ -25,7 +25,7 @@ internal fun DesktopFishField(label: String, value: String, secret: Boolean = fa
         StatusText(label)
         BasicTextField(value, onChange, Modifier.fillMaxWidth().semantics { contentDescription = label }
             .border(1.dp, DesktopBootstrapColors.border).padding(8.dp), singleLine = true,
-            textStyle = TextStyle(color = DesktopBootstrapColors.foreground),
+            cursorBrush = DesktopBootstrapColors.inputCaret, textStyle = TextStyle(color = DesktopBootstrapColors.foreground),
             visualTransformation = if (secret) PasswordVisualTransformation() else VisualTransformation.None)
     }
 }

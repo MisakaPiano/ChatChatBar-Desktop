@@ -141,19 +141,8 @@ internal fun DesktopPrimaryShell(
                             }
                         }
                     }
-                    DesktopPrimaryRoute.DATA -> ShellScrollPanel {
-                        if (locked) StatusText(t(DesktopUiText.DATA_OPERATION), colors.warning)
-                        if (!backupLocked) {
-                            ShellHeading(t(DesktopUiText.DATA_DIRECTORY))
-                            DesktopDataRootPanel(rootSwitchController, onExitApplication)
-                        }
-                        if (rootState is DesktopDataRootSwitchState.Idle) {
-                            if (!fullBackup.busy && !fullBackup.restartRequired && mergeImportController != null)
-                                DesktopMergeImportPanel(mergeImportController, onExitApplication)
-                            if (!mergeLocked) DesktopFullBackupPanel(fullBackupController, onExitApplication)
-                        }
-                        if (!locked) DesktopUpdatePanel()
-                    }
+                    DesktopPrimaryRoute.DATA -> DesktopDataWorkspace(rootSwitchController, fullBackupController,
+                        mergeImportController, backupSettingsController, onExitApplication)
                 }
             }
         }

@@ -85,6 +85,12 @@ internal fun StudioAccountCluster(model: NovelAiImageModel, account: NovelAiAcco
 internal fun desktopStudioFilmstrip(current: List<String>, history: List<NovelAiGenerationHistoryEntry>): List<String> =
     (current.asReversed() + history.sortedByDescending { it.createdAt }.flatMap { it.images.asReversed().map { image -> image.path } }).distinct()
 
+internal fun desktopStudioPreviewIndex(path: java.nio.file.Path, references: List<String>,
+    resolve: (String) -> java.nio.file.Path): Int {
+    val selected = path.toAbsolutePath().normalize()
+    return references.indexOfFirst { resolve(it).toAbsolutePath().normalize() == selected }
+}
+
 /** Only arrival of a new generated path overrides an explicit older selection. */
 internal fun desktopSelectNewResult(selected: String?, previous: List<String>, current: List<String>): String? =
     current.lastOrNull { it !in previous } ?: selected

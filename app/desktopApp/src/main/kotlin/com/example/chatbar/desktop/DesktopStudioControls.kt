@@ -203,7 +203,7 @@ internal fun StudioNumericInput(label: String, value: String, modifier: Modifier
         .semantics { contentDescription = label }.onFocusChanged { focused = it.isFocused; if (!focused) draft = value }
         .border(1.dp, if (focused) DesktopBootstrapColors.primary else DesktopBootstrapColors.border, RoundedCornerShape(4.dp))
         .background(DesktopBootstrapColors.input).padding(6.dp), singleLine = true,
-        textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 13.sp))
+        cursorBrush = DesktopBootstrapColors.inputCaret, textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 13.sp))
 }
 
 internal fun studioAspectOptions(settings: NovelAiGenerationSettings) = NovelAiAspectRatio.entries.filterNot {

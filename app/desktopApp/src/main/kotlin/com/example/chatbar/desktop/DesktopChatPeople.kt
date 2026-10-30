@@ -3,6 +3,8 @@ package com.example.chatbar.desktop
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.ui.input.key.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
@@ -58,6 +60,8 @@ internal fun desktopOrderedPeople(people: List<DesktopChatPerson>, pinned: Set<S
     people.withIndex().sortedWith(compareBy<IndexedValue<DesktopChatPerson>>(
         { if (it.value.character.id in pinned) 0 else if (it.value.active) 1 else 2 }, { it.index })).map { it.value }
 internal val DesktopChatPerson.active get() = enabled && resident && status != null
+internal fun desktopVisiblePeople(people: List<DesktopChatPerson>, pinned: Set<String>, all: Boolean) =
+    desktopOrderedPeople(people, pinned).filter { all || it.enabled }
 
 internal class DesktopPersonPopupPosition(private val anchor: Rect) : PopupPositionProvider {
     override fun calculatePosition(anchorBounds: IntRect, windowSize: IntSize, layoutDirection: LayoutDirection,
@@ -153,15 +157,27 @@ internal class DesktopPersonPopupPosition(private val anchor: Rect) : PopupPosit
 }
 
 @Composable internal fun DesktopChatPeopleRail(people: List<DesktopChatPerson>, controller: DesktopPrimaryChatController,
-    widthDp: Float = 60f, names: Boolean = false, inlineStatuses: Boolean = false) {
+    widthDp: Float = 60f, names: Boolean = false, inlineStatuses: Boolean = false,
+    all: Boolean = true, onAll: (Boolean) -> Unit = {}, onCollapse: (() -> Unit)? = null,
+    onInlineStatuses: (Boolean) -> Unit = {}) {
     val actions = LocalDesktopChatPeople.current ?: return
     val scroll = rememberScrollState()
     var hovered by remember { mutableStateOf(false) }
     var expanded by remember(people.firstOrNull()?.cardId) { mutableStateOf<String?>(null) }
-    Box(Modifier.width(widthDp.dp).fillMaxHeight().testTag("chat-people-rail")
+    Column(Modifier.width(widthDp.dp).fillMaxHeight().testTag("chat-people-column")) {
+        if (onCollapse != null) {
+            if (names) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.weight(1f)) { DesktopPeopleFilter(people, all, false, onAll) }
+                DesktopChatIconAction("收起角色栏", DesktopAppIcons.Collapse, onClick = onCollapse)
+            } else Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                DesktopPeopleFilter(people, all, true, onAll)
+                DesktopChatIconAction("收起角色栏", DesktopAppIcons.Collapse, onClick = onCollapse)
+            }
+        }
+    Box(Modifier.fillMaxWidth().weight(1f).testTag("chat-people-rail")
         .onPointerEvent(PointerEventType.Enter) { hovered = true }.onPointerEvent(PointerEventType.Exit) { hovered = false }) {
         Column(Modifier.fillMaxSize().verticalScroll(scroll).padding(end = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            desktopOrderedPeople(people, actions.pinned).forEachIndexed { index, person -> key(index, person.cardId, person.character.id) {
+            desktopVisiblePeople(people, actions.pinned, all).forEachIndexed { index, person -> key(person.cardId, person.character.id, if (person.identityUnique) null else index) {
                 val inline = names && inlineStatuses
                 Column(Modifier.fillMaxWidth()) {
                     DesktopChatPersonTarget(person, onClick = if (inline) ({ expanded = if (expanded == person.character.id) null else person.character.id }) else null, allowHover = !inline) {
@@ -180,24 +196,69 @@ internal class DesktopPersonPopupPosition(private val anchor: Rect) : PopupPosit
         }
         if (hovered || scroll.isScrollInProgress) VerticalScrollbar(rememberScrollbarAdapter(scroll), Modifier.align(Alignment.CenterEnd).fillMaxHeight().testTag("people-scrollbar"))
     }
+    if (names) StudioSwitch("原地展开状态", inlineStatuses) { onInlineStatuses(!inlineStatuses) }
+    }
+}
+
+@Composable private fun DesktopPeopleFilter(people: List<DesktopChatPerson>, all: Boolean, compact: Boolean,
+    onAll: (Boolean) -> Unit) {
+    val count = if (all) people.count { it.enabled } else people.count { it.active }
+    val label = "${if (all) "启用" else "活跃"} $count/${people.size}"
+    Box(Modifier.semantics { contentDescription = "$label；切换查看${if (all) "启用角色" else "全部角色"}" }) {
+        Box(Modifier.fillMaxWidth().height(40.dp)
+            .background(DesktopBootstrapColors.card, RoundedCornerShape(6.dp))
+            .clickable(role = Role.Button) { onAll(!all) }, contentAlignment = Alignment.Center) {
+            BasicText(if (compact) "${if (all) "○" else "●"} $count" else label, maxLines = 1, softWrap = false,
+                overflow = TextOverflow.Ellipsis, style = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 13.sp))
+        }
+    }
+}
+
+@Composable internal fun DesktopPeopleResizeHandle(widthDp: Float, onDrag: (Float) -> Unit, onEnd: () -> Unit,
+    onCollapse: () -> Unit) {
+    val density = LocalDensity.current.density
+    var current by remember { mutableStateOf(widthDp) }
+    val latestWidth by rememberUpdatedState(widthDp)
+    val drag by rememberUpdatedState(onDrag)
+    val finish by rememberUpdatedState(onEnd)
+    val collapse by rememberUpdatedState(onCollapse)
+    Box(Modifier.width(10.dp).fillMaxHeight().testTag("people-resize")
+        .semantics { contentDescription = "拖动调整角色栏宽度；左右方向键调整，Home收起" }
+        .pointerHoverIcon(PointerIcon(java.awt.Cursor.getPredefinedCursor(java.awt.Cursor.E_RESIZE_CURSOR)))
+        .onKeyEvent {
+            if (it.type != KeyEventType.KeyDown) false else when (it.key) {
+                Key.DirectionLeft -> { if (widthDp <= 62f) onCollapse() else { onDrag(widthDp - 20); onEnd() }; true }
+                Key.DirectionRight -> { onDrag(widthDp + 20); onEnd(); true }
+                Key.MoveHome -> { onCollapse(); true }
+                else -> false
+            }
+        }.focusable().pointerInput(density) {
+            detectDragGestures(onDragStart = { current = latestWidth }, onDragEnd = { finish() }, onDragCancel = { finish() }) { change, delta ->
+                change.consume(); current += delta.x / density
+                if (current < 44f) collapse() else drag(current)
+            }
+        }, contentAlignment = Alignment.Center) {
+        Box(Modifier.width(1.dp).fillMaxHeight().background(DesktopBootstrapColors.border))
+    }
 }
 
 @Composable internal fun DesktopChatPeopleHeader(people: List<DesktopChatPerson>, controller: DesktopPrimaryChatController,
-    inlineStatuses: Boolean, onInlineStatuses: (Boolean) -> Unit, onManage: () -> Unit) {
+    inlineStatuses: Boolean, onInlineStatuses: (Boolean) -> Unit, onManage: () -> Unit,
+    allPeople: Boolean = false, onAllPeople: (Boolean) -> Unit = {}, onRestore: (() -> Unit)? = null) {
     val actions = LocalDesktopChatPeople.current ?: return
     var open by remember { mutableStateOf(false) }
-    var all by remember { mutableStateOf(false) }
+    val all = allPeople
     val viewport = LocalWindowInfo.current.containerSize
     val height = with(LocalDensity.current) { viewport.height.toDp() }.coerceAtMost(560.dp)
     Box {
-        BootstrapButton("活跃 ${people.count { it.active }}", secondary = true) { open = !open }
+        BootstrapButton("${if (all) "启用" else "活跃"} ${people.count { if (all) it.enabled else it.active }}/${people.size}", secondary = true) { open = !open }
         if (open) Popup(popupPositionProvider = StudioPopupPosition, onDismissRequest = { open = false }, properties = PopupProperties(focusable = false)) {
             Column(Modifier.width(280.dp).heightIn(max = height).background(DesktopBootstrapColors.card, RoundedCornerShape(10.dp))
                 .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(10.dp)).padding(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Row { StudioAction("活跃", selected = !all) { all = false }; StudioAction("全部", selected = all) { all = true }
+                Row { StudioAction("活跃", selected = !all) { onAllPeople(false) }; StudioAction("启用", selected = all) { onAllPeople(true) }
                     DesktopChatIconAction("关闭活跃列表", DesktopAppIcons.Close) { open = false } }
                 Column(Modifier.weight(1f, false).verticalScroll(rememberScrollState())) {
-                    val visible = desktopOrderedPeople(people, actions.pinned).filter { all || it.active }
+                    val visible = desktopVisiblePeople(people, actions.pinned, all)
                     if (visible.isEmpty()) StatusText("暂无活跃状态")
                     visible.forEach { person -> key(person.cardId, person.character.id) {
                         DesktopChatPersonTarget(person) { Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -205,6 +266,7 @@ internal class DesktopPersonPopupPosition(private val anchor: Rect) : PopupPosit
                         } }
                     } }
                 }
+                if (onRestore != null) BootstrapButton("展开角色栏", secondary = true) { open = false; onRestore() }
                 StudioSwitch("宽栏原地展开状态", inlineStatuses) { onInlineStatuses(!inlineStatuses) }
                 BootstrapButton("卡内人物", secondary = true) { open = false; actions.preview.close(); onManage() }
             }

@@ -30,10 +30,13 @@ internal object DesktopChatNavigationPlacementPolicy {
 internal data class DesktopChatWorkspaceLayout(val timeline: DesktopChatNavigationLayout, val peopleWidthDp: Float) {
     val widthDp get() = timeline.workspaceWidthDp + peopleWidthDp
     val headerWidthDp get() = timeline.contentWidthDp + peopleWidthDp
-    val names get() = peopleWidthDp > 60f
+    val names get() = peopleWidthDp >= 160f
 }
-internal fun desktopChatWorkspaceLayout(availableWidthDp: Float, hasPeople: Boolean): DesktopChatWorkspaceLayout {
-    val rail = if (!hasPeople || availableWidthDp < 720f) 0f else if (availableWidthDp >= 1160f) 216f else 60f
+internal fun desktopChatWorkspaceLayout(availableWidthDp: Float, hasPeople: Boolean, requestedPeopleWidthDp: Float? = null,
+    peopleHidden: Boolean = false): DesktopChatWorkspaceLayout {
+    val rail = if (peopleHidden) 0f else if (hasPeople && availableWidthDp >= 720f && requestedPeopleWidthDp?.isFinite() == true)
+        requestedPeopleWidthDp.coerceIn(62f, minOf(420f, availableWidthDp - 480f))
+        else if (!hasPeople || availableWidthDp < 720f) 0f else if (availableWidthDp >= 1160f) 216f else 60f
     // Reserve people from the actual viewport before capping the reading width, exactly once.
     return DesktopChatWorkspaceLayout(DesktopChatNavigationPlacementPolicy.resolve((availableWidthDp - rail).coerceAtLeast(0f)), rail)
 }

@@ -20,6 +20,8 @@ Keep prompt design, HTTP generation, persistence, and feature UI as separate own
 
 ## Desktop image foundation (P7-A)
 
+- `DesktopStudioHistory` keeps the existing filtering, album folding, range selection, confirmed deletion and recipe reuse callbacks; wide layouts add a persistent image/recipe detail column, and narrow layouts retain the full detail window. `desktopStudioPreviewIndex` resolves an auxiliary physical image back into the existing owned filmstrip, so that path opens the same occurrence-preserving gallery. External unmatched files remain single-image previews; never add them to owned history merely to enable paging.
+
 - Chat-bound automatic and manual image design resolve `SessionCharacterParticipationPolicy.effectiveCard` before passing card references to the designer. This filters active structured person references; original messages/card defaults and the separate Studio import workflow retain their own owners.
 
 - `DesktopImageToolWindow` shares `DesktopTitleBar` and the native resize/caption owner with the app on Windows; viewer, transient preview, crop and cover export use this shell. Owned screenshot dialogs retain `ComposeDialog` parent ownership while using the same native controls. Closing these windows invokes only their local callback. `DesktopImageViewerToolbar` controls `DesktopImageZoomState` for fit/original/zoom and occurrence-preserving page navigation; resource reads, animation, save/clipboard custody stay with the existing viewers. `WindowsImageViewerChromeTest` covers actual production viewer/owned-dialog captions separately from offscreen toolbar tests.
