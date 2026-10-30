@@ -34,11 +34,22 @@ internal data class DesktopChatWorkspaceLayout(val timeline: DesktopChatNavigati
 }
 internal fun desktopChatWorkspaceLayout(availableWidthDp: Float, hasPeople: Boolean, requestedPeopleWidthDp: Float? = null,
     peopleHidden: Boolean = false): DesktopChatWorkspaceLayout {
-    val rail = if (peopleHidden) 0f else if (hasPeople && availableWidthDp >= 720f && requestedPeopleWidthDp?.isFinite() == true)
-        requestedPeopleWidthDp.coerceIn(62f, minOf(420f, availableWidthDp - 480f))
-        else if (!hasPeople || availableWidthDp < 720f) 0f else if (availableWidthDp >= 1160f) 216f else 60f
-    // Reserve people from the actual viewport before capping the reading width, exactly once.
+    val rail = if (peopleHidden || !hasPeople || availableWidthDp < 560f) 0f
+        else if (requestedPeopleWidthDp?.isFinite() == true)
+            requestedPeopleWidthDp.coerceIn(64f, minOf(420f, availableWidthDp - 480f).coerceAtLeast(64f))
+        else (availableWidthDp - 880f).coerceIn(64f, 360f)
+    // Automatic growth fills the reading column first, then names/status; exterior navigation
+    // appears only after both reach their comfortable widths. Manual width remains a preference.
     return DesktopChatWorkspaceLayout(DesktopChatNavigationPlacementPolicy.resolve((availableWidthDp - rail).coerceAtLeast(0f)), rail)
+}
+
+internal object DesktopAutomaticChatColumns {
+    const val DIVIDER_DP = 24f
+    private const val HYSTERESIS_DP = 64f
+    fun sessionsHidden(windowWidthDp: Float, previouslyHidden: Boolean): Boolean =
+        windowWidthDp < 980f + if (previouslyHidden) HYSTERESIS_DP else 0f
+    fun peopleHidden(workspaceWidthDp: Float, previouslyHidden: Boolean): Boolean =
+        workspaceWidthDp < 600f + if (previouslyHidden) HYSTERESIS_DP else 0f
 }
 
 internal data class DesktopChatNavigationGroups(val earlier: List<DesktopChatJump>, val later: List<DesktopChatJump>)

@@ -134,6 +134,7 @@ internal class DesktopPrimaryChatController(
     val rag: DesktopRagController? = null,
     val saveSlots: DesktopSaveSlotController? = null,
     val chatUi: DesktopChatUiController? = null,
+    val maintenance: DesktopChatMaintenanceController? = null,
 ) {
     private suspend fun <T> withMessageMutation(sessionId: String, messageId: String, block: suspend () -> T): T {
         val result = if (voices == null) taskRuntime.withMessageMutation(sessionId, block)

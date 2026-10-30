@@ -25,7 +25,9 @@ class DesktopChatPeoplePresentationTest {
         return scene.semanticsOwners.flatMap { walk(it.rootSemanticsNode) }
     }
     private fun click(scene: ImageComposeScene, label: String) {
-        val node = assertNotNull(nodes(scene).asReversed().filter { it.config.getOrNull(SemanticsProperties.Text)?.any { text -> text.text == label } == true }
+        val node = assertNotNull(nodes(scene).asReversed().filter {
+            it.config.getOrNull(SemanticsProperties.Text)?.any { text -> text.text == label } == true ||
+                it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains(label) == true }
             .firstNotNullOfOrNull { candidate -> generateSequence(candidate) { it.parent }.firstOrNull { it.config.contains(SemanticsActions.OnClick) } },
             "Missing $label; labels=" + nodes(scene).flatMap { it.config.getOrNull(SemanticsProperties.Text).orEmpty() }.map { it.text }.distinct())
         assertTrue(node.config[SemanticsActions.OnClick].action!!.invoke())
@@ -53,7 +55,7 @@ class DesktopChatPeoplePresentationTest {
             controller.refresh()
             for ((width, size) in listOf(1380 to DesktopShellSize.WIDE, 540 to DesktopShellSize.COMPACT)) {
                 var edit: Pair<String, String>? = null
-                val scene = ImageComposeScene(width, 900) {
+                val scene = ImageComposeScene(width, 900, coroutineContext = edt) {
                     DesktopPrimaryChatPanel(controller, size, remember { DesktopComposerLayoutState() },
                         onEditPerson = { c, p -> edit = c to p })
                 }
@@ -98,8 +100,11 @@ class DesktopChatPeoplePresentationTest {
                         val collapse = nodes(scene).single { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("收起角色栏") == true }
                         assertTrue(collapse.config[SemanticsActions.OnClick].action!!.invoke()); frames(scene)
                         assertFalse(nodes(scene).any { it.config.getOrNull(SemanticsProperties.TestTag) == "chat-people-column" })
+                        click(scene, "展开角色栏"); frames(scene)
+                        assertTrue(nodes(scene).any { it.config.getOrNull(SemanticsProperties.TestTag) == "chat-people-column" })
+                        click(scene, "角色栏设置"); frames(scene)
                     }
-                    click(scene, "活跃 1/1"); frames(scene)
+                    if (size == DesktopShellSize.COMPACT) { click(scene, "活跃 1/1"); frames(scene) }
                     click(scene, "卡内人物"); frames(scene)
                     click(scene, "Alice"); frames(scene)
                     assertTrue(nodes(scene).any { it.config.getOrNull(SemanticsProperties.Text)?.any { text -> text.text.contains("心情：calm") } == true })

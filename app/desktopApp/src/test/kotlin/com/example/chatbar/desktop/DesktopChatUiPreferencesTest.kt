@@ -19,19 +19,21 @@ class DesktopChatUiPreferencesTest {
             val a = DesktopChatUiController(store); a.load()
             assertFalse(Files.exists(store.settingsPath))
             assertEquals(DesktopSendKey.CTRL_ENTER, a.state.value.sendKey)
+            assertFalse(a.state.value.multipleInlineStatuses)
             val pin = DesktopPinnedPerson("session", "card", "person")
             coroutineScope {
                 launch { a.update { it.copy(sendKey = DesktopSendKey.ENTER) } }
                 launch { a.pin(pin, true) }
                 launch { store.updateLatest { it.copy(uiLanguage = DesktopUiLanguage.EN) } }
-                launch { a.update { it.copy(inlineStatuses = true) } }
+                launch { a.update { it.copy(inlineStatuses = true, multipleInlineStatuses = true) } }
             }
             val b = DesktopChatUiController(store); b.load()
             assertEquals(DesktopSendKey.ENTER, b.state.value.sendKey)
             assertEquals(listOf(pin), b.state.value.pinnedPeople)
             assertTrue(b.state.value.inlineStatuses)
+            assertTrue(b.state.value.multipleInlineStatuses)
             assertEquals(DesktopUiLanguage.EN, assertIs<DesktopSettingsLoadResult.Loaded>(store.load()).document.settings.uiLanguage)
-            b.update { it.copy(sendKey = DesktopSendKey.CTRL_ENTER, inlineStatuses = false) }; b.pin(pin, false)
+            b.update { it.copy(sendKey = DesktopSendKey.CTRL_ENTER, inlineStatuses = false, multipleInlineStatuses = false) }; b.pin(pin, false)
             a.load(); assertEquals(DesktopChatUiPreferences(), a.state.value)
             Files.writeString(store.settingsPath, "{broken")
             val before = Files.readAllBytes(store.settingsPath)
@@ -81,8 +83,8 @@ class DesktopChatUiPreferencesTest {
             assertTrue(result.widthDp <= width)
             assertTrue(result.timeline.contentWidthDp > 0)
         }
-        assertEquals(0f, desktopChatWorkspaceLayout(680f, true).peopleWidthDp)
-        assertEquals(60f, desktopChatWorkspaceLayout(800f, true).peopleWidthDp)
+        assertEquals(64f, desktopChatWorkspaceLayout(680f, true).peopleWidthDp)
+        assertEquals(64f, desktopChatWorkspaceLayout(800f, true).peopleWidthDp)
         assertEquals(0f, desktopChatWorkspaceLayout(1300f, false).peopleWidthDp)
         assertEquals(0f, desktopChatWorkspaceLayout(1300f, true, 280f, peopleHidden = true).peopleWidthDp)
         assertEquals(280f, desktopChatWorkspaceLayout(1300f, true, 280f).peopleWidthDp)

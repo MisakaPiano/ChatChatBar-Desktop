@@ -7,6 +7,8 @@ description: Maintain and diagnose ChatBar model resolution, OpenAI-compatible r
 
 Separate model selection, request construction, transport, and output parsing. A successful HTTP call can still fail at stream or protocol parsing.
 
+- Desktop formal chat exposes `DesktopChatDebugPanel` through the existing model-details disclosure. `DesktopTransportDiagnosticsOwner` holds bounded, scrubbed, session-filtered memory-only records; `DesktopRealChatRuntime` records the actual plan on its existing recorder and actual serialized provider body. System view derives from that body, never by rebuilding a preview. Output/reasoning and usage survive eviction of raw SSE fragments; expose truncation. Clearing one session must not resurrect in-flight records. Maintenance remains explicit inside this panel, owned by `DesktopChatMaintenanceController`, separate from log reads.
+
 - Desktop memory/RAG uses shared `MemoryRagTextClient` and `OpenAiStreamingTransport.streamMemoryRag`, through the existing isolated auxiliary envelope. Android adapts AiTaskRun without a second request builder; its constructor factories live in `AndroidMemoryAiGatewayFactory.kt` and `AndroidRetrievalPlannerFactory.kt`, avoiding JVM facade collisions with shared helpers in `MemoryAiGateway.kt`/`RetrievalPlanner.kt`. Desktop text has a 1 MiB response budget; refusal/cancel/budget failures are terminal. `DesktopEmbeddingGateway` bounds and indexes responses, verifies protected configuration, disables redirects, and marks the body one-shot to prevent HTTP 503/408 replay. Both transports close and join at app shutdown.
 
 ## Shared isolated format repair transport

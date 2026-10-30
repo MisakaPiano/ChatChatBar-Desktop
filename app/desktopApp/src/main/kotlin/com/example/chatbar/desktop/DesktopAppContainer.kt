@@ -59,12 +59,13 @@ class DesktopAppContainer internal constructor(
                 chatMemoryIndex.rebuild(session, settingsRepository.getAppSettings().defaultContextWindowSize)
             }
         }
-    }) { character, document, progress ->
+    }, index = ::indexDocument) }
+    private suspend fun indexDocument(character: String, document: String, progress: (Int, Int) -> Unit): DesktopDocumentIndexOutcome {
         val config = requireNotNull(modelRepository.getEmbeddingModel()) { "请先配置向量模型" }
-        DesktopDocumentIndexService(appDataRoot, jsonFileStorage, characterRepository, dataOperationCoordinator,
+        return DesktopDocumentIndexService(appDataRoot, jsonFileStorage, characterRepository, dataOperationCoordinator,
             taskRuntime, embeddingGateway.pinned(config), audioMaintenance,
             verifyConfiguration = { embeddingGateway.verify(config) }).index(character, document, progress)
-    } }
+    }
     internal val ragController by ragOwner
     private val memoryRagTransportOwner = lazy { com.example.chatbar.domain.chat.OpenAiStreamingTransport(
         allowCleartextHttp = { settingsRepository.currentAppSettings.allowCleartextModelApi }) }
@@ -81,6 +82,36 @@ class DesktopAppContainer internal constructor(
     private val chatMemoryIndex by lazy { DesktopChatMemoryIndex(appDataRoot, jsonFileStorage,
         dataOperationCoordinator, audioMaintenance,
         configuration = { requireNotNull(modelRepository.getEmbeddingModel()) }, gateway = embeddingGateway) }
+    private val chatMaintenanceOwner = lazy { DesktopChatMaintenanceController(chatRepository, dataOperationCoordinator,
+        object : DesktopSessionReservation {
+            override suspend fun <T> run(sessionId: String, operation: suspend () -> T): T =
+                taskRuntime.withMessageMutation(sessionId) {
+                    chatVoiceRuntime.withSessionMaintenance(sessionId) {
+                        memoryController.withSessionQuiesced(sessionId, operation)
+                    }
+                }
+        }, rebuildDocuments = { sessionId, progress ->
+            taskRuntime.withMessageMutation(sessionId) {
+                val card = dataOperationCoordinator.withImmediateNormalOperation {
+                    val session = requireNotNull(chatRepository.getSession(sessionId))
+                    requireNotNull(characterRepository.getById(requireNotNull(session.characterCardId)))
+                }
+                check(card.customDocuments.size <= 64)
+                progress(0, card.customDocuments.size)
+                card.customDocuments.forEachIndexed { index, document ->
+                    indexDocument(card.id, document.id) { _, _ -> }
+                    progress(index + 1, card.customDocuments.size)
+                }
+                card.customDocuments.size
+            }
+        }, detectSourceChanges = { sessionId ->
+            if (chatRepository.getSession(sessionId)?.longTermMemoryEnabled == true)
+                memoryService.refreshForCurrentConditions(sessionId)
+        }, refreshChat = { sessionId ->
+            if (primaryChatControllerOwner.isInitialized() && primaryChatController.state.value.selectedSession?.id == sessionId)
+                primaryChatController.refresh()
+        }) }
+    internal val chatMaintenanceController: DesktopChatMaintenanceController by chatMaintenanceOwner
     private val chatRetrieval by lazy { DesktopChatRetrieval(
         configuration = { modelRepository.getEmbeddingModel() }, settings = { settingsRepository.getAppSettings() },
         documents = documentRagReader::candidates, memories = chatMemoryIndex::candidates,
@@ -487,6 +518,7 @@ class DesktopAppContainer internal constructor(
             taskRuntime = taskRuntime,
             imageStore = chatImages,
             chatUi = DesktopChatUiController(desktopSettingsStore),
+            maintenance = chatMaintenanceController,
             voices = chatVoiceRuntime,
             residency = characterResidency,
             memory = memoryController,
@@ -583,6 +615,7 @@ class DesktopAppContainer internal constructor(
         taskRuntime.stopAccepting()
         closeDesktopDataRuntimes(
             taskRuntimeClose = {
+                if (chatMaintenanceOwner.isInitialized()) chatMaintenanceController.closeAndDrain()
                 if (mergeImportOwner.isInitialized()) mergeImportController.closeAndDrain()
                 if (fullBackupOwner.isInitialized()) fullBackupController.closeAndDrain()
                 if (saveSlotOwner.isInitialized()) saveSlotController.closeAndDrain()

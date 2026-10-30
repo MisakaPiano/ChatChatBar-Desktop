@@ -259,11 +259,13 @@ class DesktopRealChatRuntime internal constructor(
         }
 
         try {
+            val diagnostics = diagnosticsFactory(turn.model)
+            (diagnostics as? DesktopChatPlanDiagnostics)?.onPlan(plan)
             transportFactory(turn.settings.allowCleartextModelApi).streamMainChat(
                 messages = plan.assembly.messages,
                 modelConfig = turn.model,
                 promptCacheKey = plan.assembly.promptCacheKey,
-                diagnostics = diagnosticsFactory(turn.model),
+                diagnostics = diagnostics,
             ).collect { event ->
                 when (event) {
                     is ProviderStreamEvent.ContentDelta -> {

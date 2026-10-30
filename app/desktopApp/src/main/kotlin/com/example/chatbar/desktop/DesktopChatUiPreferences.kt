@@ -17,6 +17,7 @@ data class DesktopPinnedPerson(val sessionId: String, val cardId: String, val pe
 data class DesktopChatUiPreferences(
     val sendKey: DesktopSendKey = DesktopSendKey.CTRL_ENTER,
     val inlineStatuses: Boolean = false,
+    val multipleInlineStatuses: Boolean = false,
     val peopleWidthDp: Float? = null,
     val peopleHidden: Boolean = false,
     val allPeople: Boolean = false,

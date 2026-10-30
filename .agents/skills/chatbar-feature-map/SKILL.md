@@ -5,6 +5,8 @@ description: Locate ChatBar feature entry points before broad repository search.
 
 # ChatBar Feature Map
 
+Desktop chat diagnostics: `DesktopChatDebugPanel` opens inside the existing model-details disclosure and reads `DesktopTransportDiagnosticsOwner` actual request/plan/response records. `DesktopChatMaintenanceController` owns explicit order preview/apply/undo through shared `ChatRepository` and the document-RAG rebuild callback in `DesktopAppContainer`; it drains at app shutdown. Document rebuild matches Android's reference-document scope, not a second history/memory pipeline. Order writes reserve the session, retain repository backup/baseline checks, then detect memory source changes without automatic AI repair.
+
 Use this as a first-hop map. Read a specific skill or listed files, then search only if the map misses.
 
 ## Workflow

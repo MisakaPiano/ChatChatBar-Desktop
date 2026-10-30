@@ -90,6 +90,7 @@ class DesktopRealChatRuntimeTest {
                     PlayerSetting(playerName = "Alice", globalPersona = "player-setting"),
                 )
 
+                val diagnosticOwner = DesktopTransportDiagnosticsOwner()
                 var messagesAtRequest: List<ChatMessage>? = null
                 var timedAtRequest: Map<String, *>? = null
                 var requestBody: String? = null
@@ -114,6 +115,7 @@ class DesktopRealChatRuntimeTest {
                         sessionId = sessionId,
                         content = "trigger {{user}}",
                         observer = DesktopRealChatObserver(updates::add),
+                        diagnosticsFactory = { model -> diagnosticOwner.begin("actual-request", sessionId, model) },
                     )
                 }
                 val persisted = container.chatRepository.getMessages(sessionId)
@@ -125,6 +127,12 @@ class DesktopRealChatRuntimeTest {
                     element.jsonObject.getValue("content").jsonPrimitive.content
                 }
                 val recordedRequest = server.takeRequest()
+                val diagnostic = diagnosticOwner.entries.value.single()
+                assertTrue(diagnostic.worldBookEvidence.isNotEmpty())
+                assertEquals(requestBody, diagnostic.serializedRequestBody)
+                assertEquals("Answer {{user}}", diagnostic.outputText)
+                assertEquals("Think {{char}}", diagnostic.reasoningText)
+                assertEquals(1, server.requestCount)
 
                 assertEquals(listOf(MessageRole.ASSISTANT, MessageRole.USER), messagesAtRequest?.map(ChatMessage::role))
                 assertTrue(requireNotNull(timedAtRequest).isNotEmpty())
