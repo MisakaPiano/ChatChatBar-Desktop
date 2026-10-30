@@ -1,0 +1,76 @@
+@file:OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class, androidx.compose.ui.InternalComposeUiApi::class)
+package com.example.chatbar.desktop
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.ui.ImageComposeScene
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.*
+import com.example.chatbar.data.operation.NoOpAppDataOperationGate
+import kotlinx.coroutines.*
+import java.nio.file.*
+import javax.swing.SwingUtilities
+import kotlin.coroutines.CoroutineContext
+import kotlin.test.*
+
+class DesktopBackgroundVoicePresentationTest {
+    private val edt = object : CoroutineDispatcher() {
+        override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
+    }
+    private fun ImageComposeScene.nodes(): List<SemanticsNode> {
+        fun walk(n: SemanticsNode): List<SemanticsNode> = listOf(n) + n.children.flatMap(::walk)
+        return semanticsOwners.flatMap { walk(it.rootSemanticsNode) }
+    }
+    private suspend fun ImageComposeScene.frames() { repeat(5) { render().close(); yield(); delay(15) } }
+    private fun ImageComposeScene.shot(name: String) {
+        val target = System.getenv("CCB_SELECTED_FIX_REVIEW_DIR")?.let { Path.of(it).resolve(name) } ?: return
+        Files.createDirectories(target.parent)
+        render().use { image -> image.encodeToData()!!.use { Files.write(target, it.bytes) } }
+    }
+    private suspend fun ImageComposeScene.clickText(text: String) {
+        fun matches(n: SemanticsNode): Boolean = n.config.getOrNull(SemanticsProperties.Text)?.any { it.text == text } == true || n.children.any(::matches)
+        nodes().first { matches(it) && it.config.contains(SemanticsActions.OnClick) }.config[SemanticsActions.OnClick].action!!()
+        frames()
+    }
+
+    @Test fun `floating player exposes working controls and per-session choice in compact and wide layouts`(): Unit = runBlocking(edt) {
+        DesktopChatVoiceRuntimeTest.Fixture().use { f ->
+            f.seed(); f.enqueue(); f.done(f.runtime.generate(f.message, "alice"))
+            val voice = f.repo.listForSession(f.session.id).single()
+            val preferences = DesktopChatUiController(DesktopSettingsStore(f.root, NoOpAppDataOperationGate))
+            preferences.load()
+            f.runtime.foreground(f.session.id).join(); f.runtime.play(voice, f.message)?.join()
+            withTimeout(5000) { while (!f.runtime.playback.state.value.playing) delay(10) }
+            f.runtime.foreground(null).join()
+            for (width in listOf(320, 900)) {
+                val scene = ImageComposeScene(width, 400, coroutineContext = edt) {
+                    Box(Modifier.fillMaxSize()) { DesktopFloatingVoicePlayer(f.runtime, preferences) }
+                }
+                try {
+                    scene.frames()
+                    fun button(label: String) = scene.nodes().single { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains(label) == true }
+                    val labels = listOf("上一句语音", "暂停并保留位置", "下一句语音", "停止并关闭播放器", "播放设置")
+                    labels.forEach { label ->
+                        val node = button(label)
+                        assertTrue(node.boundsInRoot.left >= 0 && node.boundsInRoot.right <= width, label)
+                        assertTrue(node.boundsInRoot.width >= 28f && node.boundsInRoot.height >= 28f, label)
+                    }
+                    scene.shot("voice-floating-$width.png")
+                    button("播放设置").config[SemanticsActions.OnClick].action!!(); scene.frames()
+                    scene.clickText("本会话连续播放 · 跟随全局（开启） ▾")
+                    scene.clickText("关闭")
+                    withTimeout(5000) { while (preferences.state.value.sessionContinuousVoicePlayback[f.session.id] != false) scene.frames() }
+                    scene.shot("voice-settings-$width.png")
+                    scene.clickText("关闭播放设置")
+                    button("暂停并保留位置").config[SemanticsActions.OnClick].action!!()
+                    withTimeout(5000) { while (!f.runtime.playback.state.value.paused) scene.frames() }
+                    button("继续播放").config[SemanticsActions.OnClick].action!!()
+                    withTimeout(5000) { while (!f.runtime.playback.state.value.playing) scene.frames() }
+                    preferences.update { it.copy(sessionContinuousVoicePlayback = emptyMap()) }
+                } finally { scene.close() }
+            }
+            assertEquals(1, f.server.requestCount)
+            f.runtime.stopForMaintenance()
+            assertFalse(f.output.playing)
+        }
+    }
+}

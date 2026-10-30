@@ -18,6 +18,25 @@ import com.example.chatbar.desktop.security.DesktopAccountService
 import kotlinx.coroutines.test.runTest
 
 class DesktopSecureRepositoryWiringTest {
+    @Test fun `named default selection refreshes cached settings and never revives the original key`() = runTest {
+        val parent = Files.createTempDirectory("desktop-default-account-routing-")
+        val secrets = InMemoryDesktopSecretStore().also { it.save(DesktopCredentialKey.SiliconFlowApiKey, "SYNTHETIC_ORIGINAL") }
+        val container = DesktopAppContainer(resolution(parent, parent.resolve("data")), secretStoreFactory = { secrets })
+        try {
+            container.settingsRepository.initialize()
+            container.apiAccountController.adoptExisting(DesktopAccountService.LLM)
+            val first = container.apiAccounts.selected(DesktopAccountService.LLM)
+            assertEquals("SYNTHETIC_ORIGINAL", container.settingsRepository.currentAppSettings.siliconFlowApiKey)
+            container.apiAccountController.save(DesktopAccountService.LLM, null, "Other", "Provider",
+                "https://api.siliconflow.cn/v1", "SYNTHETIC_OTHER")
+            val other = container.apiAccounts.accounts(DesktopAccountService.LLM).single { it.id != first }.id
+            container.apiAccountController.select(DesktopAccountService.LLM, other, null)
+            assertEquals("SYNTHETIC_OTHER", container.settingsRepository.currentAppSettings.siliconFlowApiKey)
+            container.apiAccountController.select(DesktopAccountService.LLM, null, null)
+            assertTrue(container.settingsRepository.currentAppSettings.siliconFlowApiKey.isNullOrEmpty())
+            assertEquals("SYNTHETIC_ORIGINAL", secrets.load(DesktopCredentialKey.SiliconFlowApiKey))
+        } finally { container.close(); parent.toFile().deleteRecursively() }
+    }
     @Test
     fun `deleting a bound model retains its reusable account and reimport does not inherit the old binding`() = runTest {
         val parent = Files.createTempDirectory("desktop-account-model-delete-")

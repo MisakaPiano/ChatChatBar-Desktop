@@ -85,6 +85,7 @@ internal fun DesktopNovelAiSettingsPanel(controller: DesktopNovelAiSettingsContr
     StatusText("仅在本应用中输入凭据。保存不会发送账户查询或生图请求。")
     state.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
     state.status?.let { StatusText(it) }
+    if (LocalDesktopApiAccounts.current == null) {
     if (replacing) {
         LabeledField("NovelAI Token", draftToken, secret = true) { draftToken = it }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -102,6 +103,7 @@ internal fun DesktopNovelAiSettingsPanel(controller: DesktopNovelAiSettingsContr
     if (confirmClear) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         BootstrapButton("确认移除", enabled = !state.busy) { scope.launch { controller.clearCredential(); confirmClear = false } }
         BootstrapButton("保留", secondary = true) { confirmClear = false }
+    }
     }
     ChoiceField("默认 NovelAI 模型", com.example.chatbar.domain.image.NovelAiImageModel.entries,
         state.settings.novelAiImageModel, { it.displayName }) { scope.launch { controller.selectModel(it) } }
@@ -242,7 +244,9 @@ internal fun DesktopManagePanel(
             }
             ManageSection.SETTINGS -> {
                 ManageHeading(t(DesktopUiText.SETTINGS))
-                ActionRow { ManageSettingsGroup.entries.forEach { group ->
+                @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+                androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)) { ManageSettingsGroup.entries.forEach { group ->
                     DesktopWorkspaceNavigationItem(DesktopWorkspaceDestination(group.name, group.label), settingsGroup == group,
                         true, Modifier.width(144.dp)) { settingsGroup = group }
                 } }
@@ -921,6 +925,7 @@ private fun DesktopCoreSettingsPanel(
     if (area == ManageSettingsGroup.CONNECTION) {
     ManageHeading(t(DesktopUiText.MODEL_CONNECTION))
     DesktopApiAccountEntry()
+    if (LocalDesktopApiAccounts.current == null) {
     state.bundledCatalog?.let { StatusText("${it.provider} · ${it.baseUrl}") }
     StatusText("${t(DesktopUiText.GLOBAL_API_KEY)}: ${t(if (draft.hasSavedFallbackCredential)
         DesktopUiText.STORED_SECURELY else DesktopUiText.NOT_CONFIGURED)}")
@@ -929,6 +934,7 @@ private fun DesktopCoreSettingsPanel(
         BootstrapButton(t(DesktopUiText.REPLACE), variant = DesktopActionVariant.SECONDARY, onClick = onCredential)
         if (draft.hasSavedFallbackCredential) BootstrapButton(t(DesktopUiText.CLEAR),
             variant = DesktopActionVariant.DESTRUCTIVE, onClick = onClearCredential)
+    }
     }
     DesktopConnectionTestPanel(connectionTestController, state.credentialDirty)
     }

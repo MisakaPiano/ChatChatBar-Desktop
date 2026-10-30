@@ -1,3 +1,4 @@
+@file:OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
 package com.example.chatbar.desktop.security
 
 import com.example.chatbar.data.local.entity.ModelConfig
@@ -16,7 +17,9 @@ import java.util.UUID
 }
 @Serializable internal data class DesktopAccountBundle(val version: Int = 1,
     val accounts: List<DesktopApiAccount> = emptyList(), val selected: String? = null,
-    val models: Map<String, String> = emptyMap(), val legacy: Map<String, String> = emptyMap()) {
+    val models: Map<String, String> = emptyMap(), val legacy: Map<String, String> = emptyMap(),
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER) val defaultLlm: String? = null,
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER) val managesLegacyDefault: Boolean = false) {
     override fun toString() = "DesktopAccountBundle(REDACTED)"
 }
 internal data class DesktopAccountSummary(val id: String, val name: String, val provider: String, val endpoint: String)
@@ -28,8 +31,33 @@ internal class DesktopAccountStore(private val underlying: DesktopSecretStore) :
     private val changes = MutableStateFlow(0L)
     private val serviceRevisions = DesktopAccountService.entries.associateWith { 0L }.toMutableMap()
     val revision = changes.asStateFlow()
+    fun hasUnmanagedDefault(service: DesktopAccountService): Boolean = synchronized(lock) {
+        !read(service).managesLegacyDefault && !underlying.load(defaultKey(service)).isNullOrBlank()
+    }
+    /** Explicit account-management entry adopts the existing main key without deleting its old slot. */
+    fun adoptExistingDefault(service: DesktopAccountService) = synchronized(lock) {
+        val before = read(service)
+        if (before.managesLegacyDefault) return@synchronized
+        val key = defaultKey(service)
+        val secret = underlying.load(key)?.takeIf { it.isNotBlank() }
+        val endpoint = if (service == DesktopAccountService.LLM) SILICONFLOW_ENDPOINT else ""
+        val provider = when (service) { DesktopAccountService.LLM -> "硅基流动"; DesktopAccountService.NOVELAI -> "NovelAI"; DesktopAccountService.FISH -> "Fish Audio" }
+        val account = secret?.let { value -> before.accounts.firstOrNull { it.endpoint == endpoint && it.credential == value }
+            ?: DesktopApiAccount(UUID.randomUUID().toString(), "原有账户", provider, endpoint, value) }
+        write(service, before.copy(accounts = before.accounts + listOfNotNull(account).filter { added -> before.accounts.none { it.id == added.id } },
+            defaultLlm = if (service == DesktopAccountService.LLM) before.defaultLlm ?: account?.id else null,
+            selected = if (service == DesktopAccountService.LLM) null else before.selected ?: account?.id, managesLegacyDefault = true))
+    }
+    fun selectDefaultLlm(id: String?) = synchronized(lock) {
+        val before = read(DesktopAccountService.LLM)
+        require(id == null || endpointMatches(before.accounts.single { it.id == id }.endpoint, SILICONFLOW_ENDPOINT)) {
+            "默认连接沿用硅基流动接口；其他接口请在对应模型中选择账户"
+        }
+        write(DesktopAccountService.LLM, before.copy(defaultLlm = id, managesLegacyDefault = true))
+    }
     internal fun serviceIdentity(service: DesktopAccountService): String = synchronized(lock) {
-        "${read(service).selected ?: "legacy"}:${serviceRevisions.getValue(service)}"
+        val bundle = read(service)
+        "${(if (service == DesktopAccountService.LLM) bundle.defaultLlm else bundle.selected) ?: "legacy"}:${serviceRevisions.getValue(service)}"
     }
     private fun signal(service: DesktopAccountService?) {
         if (service != null) serviceRevisions[service] = serviceRevisions.getValue(service) + 1
@@ -37,7 +65,8 @@ internal class DesktopAccountStore(private val underlying: DesktopSecretStore) :
     }
     internal fun captureCall(key: DesktopCredentialKey, service: DesktopAccountService): DesktopCredentialCall = synchronized(lock) {
         val bundle = read(service)
-        val id = if (key is DesktopCredentialKey.ModelApiKey) bundle.models[key.modelId] else bundle.selected
+        val id = if (key is DesktopCredentialKey.ModelApiKey) bundle.models[key.modelId]
+            else if (service == DesktopAccountService.LLM) bundle.defaultLlm else bundle.selected
         DesktopCredentialCall(this, key, "${id ?: "legacy"}:${serviceRevisions.getValue(service)}", load(key))
     }
     private fun encoded(service: DesktopAccountService): String? {
@@ -55,7 +84,7 @@ internal class DesktopAccountStore(private val underlying: DesktopSecretStore) :
         val bundle = read(service)
         if (service == DesktopAccountService.LLM) {
             val bindings = bundle.models.filterKeys { it in modelIds }
-            bundle.copy(accounts = bundle.accounts.filter { includeAll || it.id in bindings.values }, selected = null, models = bindings,
+            bundle.copy(accounts = bundle.accounts.filter { includeAll || it.id in bindings.values || it.id == bundle.defaultLlm }, selected = null, models = bindings,
                 legacy = bindings.keys.mapNotNull { id -> underlying.load(DesktopCredentialKey.ModelApiKey(id))?.let { id to it } }.toMap())
         } else bundle.copy(legacy = underlying.load(if (service == DesktopAccountService.NOVELAI) DesktopCredentialKey.NovelAiToken else DesktopCredentialKey.FishAudioApiKey)
             ?.let { mapOf("default" to it) } ?: emptyMap())
@@ -64,7 +93,7 @@ internal class DesktopAccountStore(private val underlying: DesktopSecretStore) :
         read(service).accounts.map { DesktopAccountSummary(it.id, it.name, it.provider, it.endpoint) }
     }
     fun selected(service: DesktopAccountService, modelId: String? = null): String? = synchronized(lock) {
-        val bundle = read(service); if (service == DesktopAccountService.LLM) bundle.models[modelId] else bundle.selected
+        val bundle = read(service); if (service == DesktopAccountService.LLM) if (modelId == null) bundle.defaultLlm else bundle.models[modelId] else bundle.selected
     }
     fun saveAccount(service: DesktopAccountService, id: String?, name: String, provider: String, endpoint: String,
         credential: String?): String = synchronized(lock) {
@@ -98,7 +127,7 @@ internal class DesktopAccountStore(private val underlying: DesktopSecretStore) :
     }
     fun deleteAccount(service: DesktopAccountService, id: String, verifiedMissingModels: Set<String> = emptySet()) = synchronized(lock) {
         val before = read(service)
-        require(before.selected != id && before.models.none { (model, account) -> account == id && model !in verifiedMissingModels }) {
+        require(before.selected != id && before.defaultLlm != id && before.models.none { (model, account) -> account == id && model !in verifiedMissingModels }) {
             "请先解除账户选择，再删除账户"
         }
         write(service, before.copy(accounts = before.accounts.filterNot { it.id == id },
@@ -121,13 +150,29 @@ internal class DesktopAccountStore(private val underlying: DesktopSecretStore) :
         selected?.let { id -> require(endpointMatches(bundle.accounts.single { it.id == id }.endpoint, model.baseUrl)) }
     }
     override fun load(key: DesktopCredentialKey): String? = synchronized(lock) {
-        if (key is DesktopCredentialKey.AccountProfiles) encoded(key.service) else routed(key)?.credential ?: underlying.load(key)
+        if (key is DesktopCredentialKey.AccountProfiles) encoded(key.service)
+        else {
+            val service = service(key)
+            if (service != null && key == defaultKey(service) && read(service).managesLegacyDefault) routed(key)?.credential
+            else routed(key)?.credential ?: underlying.load(key)
+        }
     }
     internal suspend fun deleteModelSlot(id: String, deleteEntity: suspend () -> Unit) =
         credentialTransaction(underlying, DesktopCredentialKey.ModelApiKey(id), null, deleteEntity)
     override fun save(key: DesktopCredentialKey, secret: String) = synchronized(lock) {
         val service = service(key)
         val selected = routed(key)
+        if (selected == null && service != null && key == defaultKey(service) && read(service).managesLegacyDefault) {
+            val before = read(service)
+            val endpoint = if (service == DesktopAccountService.LLM) SILICONFLOW_ENDPOINT else ""
+            val account = DesktopApiAccount(UUID.randomUUID().toString(), "新账户", when (service) {
+                DesktopAccountService.LLM -> "硅基流动"; DesktopAccountService.NOVELAI -> "NovelAI"; DesktopAccountService.FISH -> "Fish Audio"
+            }, endpoint, secret)
+            write(service, before.copy(accounts = before.accounts + account,
+                defaultLlm = if (service == DesktopAccountService.LLM) account.id else null,
+                selected = if (service == DesktopAccountService.LLM) null else account.id))
+            return@synchronized
+        }
         if (selected == null || service == null) {
             if (key is DesktopCredentialKey.AccountProfiles) decode(secret, key.service)
             underlying.save(key, secret)
@@ -144,12 +189,14 @@ internal class DesktopAccountStore(private val underlying: DesktopSecretStore) :
         is DesktopCredentialKey.ModelApiKey -> DesktopAccountService.LLM
         DesktopCredentialKey.NovelAiToken -> DesktopAccountService.NOVELAI
         DesktopCredentialKey.FishAudioApiKey -> DesktopAccountService.FISH
+        DesktopCredentialKey.SiliconFlowApiKey -> DesktopAccountService.LLM
         else -> null
     }
     private fun routed(key: DesktopCredentialKey): DesktopApiAccount? {
         val service = service(key) ?: return null
         val bundle = read(service)
-        val id = if (key is DesktopCredentialKey.ModelApiKey) bundle.models[key.modelId] else bundle.selected
+        val id = if (key is DesktopCredentialKey.ModelApiKey) bundle.models[key.modelId]
+            else if (service == DesktopAccountService.LLM) bundle.defaultLlm else bundle.selected
         return id?.let { selected -> bundle.accounts.single { it.id == selected } }
     }
     private fun write(service: DesktopAccountService, bundle: DesktopAccountBundle) {
@@ -175,6 +222,12 @@ internal class DesktopAccountStore(private val underlying: DesktopSecretStore) :
         signal(service)
     }
     companion object {
+        const val SILICONFLOW_ENDPOINT = "https://api.siliconflow.cn/v1"
+        private fun defaultKey(service: DesktopAccountService): DesktopCredentialKey = when (service) {
+            DesktopAccountService.LLM -> DesktopCredentialKey.SiliconFlowApiKey
+            DesktopAccountService.NOVELAI -> DesktopCredentialKey.NovelAiToken
+            DesktopAccountService.FISH -> DesktopCredentialKey.FishAudioApiKey
+        }
         private val json = Json { encodeDefaults = true }
         internal fun decode(value: String, service: DesktopAccountService): DesktopAccountBundle {
             require(value.length <= 65536)
@@ -200,6 +253,8 @@ internal class DesktopAccountStore(private val underlying: DesktopSecretStore) :
             }
             val ids = bundle.accounts.map { it.id }.toSet()
             require(bundle.selected == null || bundle.selected in ids)
+            require(bundle.defaultLlm == null || service == DesktopAccountService.LLM && bundle.defaultLlm in ids &&
+                endpointMatches(bundle.accounts.single { it.id == bundle.defaultLlm }.endpoint, SILICONFLOW_ENDPOINT))
             require(bundle.models.all { it.key.isNotBlank() && it.key.length <= 256 && it.value in ids })
             if (service != DesktopAccountService.LLM) require(bundle.models.isEmpty())
         }

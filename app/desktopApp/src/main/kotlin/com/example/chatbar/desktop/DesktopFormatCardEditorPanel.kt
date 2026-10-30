@@ -44,10 +44,10 @@ internal fun DesktopFormatCardManagementPanel(
         settingsController.loadFormatManagement()
     }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        FormatHeading(t(DesktopUiText.FORMAT_MANAGEMENT))
-        FormatField(t(DesktopUiText.SEARCH_FORMATS), state.query) { controller.search(it) }
-        BootstrapButton(t(DesktopUiText.NEW_FORMAT), icon = DesktopAppIcons.Add) { scope.launch { controller.openNew() } }
-        DesktopManagementImportAndDrafts(DesktopTransferKind.FORMAT, state.cards.map { it.id }.toSet(), management)
+        DesktopManagementHeading(t(DesktopUiText.FORMAT_MANAGEMENT))
+        DesktopManagementToolbar(t(DesktopUiText.SEARCH_FORMATS), state.query, controller::search,
+            t(DesktopUiText.NEW_FORMAT), true, { scope.launch { controller.openNew() } }, DesktopTransferKind.FORMAT, management)
+        DesktopManagementImportAndDrafts(DesktopTransferKind.FORMAT, state.cards.map { it.id }.toSet(), management, showImport = false)
         DesktopManagementPresets(DesktopTransferKind.FORMAT,
             state.cards.map { it.sourcePresetKey to it.sourcePresetVersion }, management)
         if (state.visibleCards.isEmpty()) StatusText(t(DesktopUiText.NO_FORMATS))

@@ -89,10 +89,19 @@ class DesktopVoiceSeekAndQueueTest {
             val store = DesktopSettingsStore(root, gate)
             val first = DesktopChatUiController(store); first.load()
             assertTrue(first.state.value.continuousVoicePlayback)
-            first.update { it.copy(continuousVoicePlayback = false, peopleWidthDp = 250f) }
+            first.update { it.copy(continuousVoicePlayback = false, peopleWidthDp = 250f,
+                sessionContinuousVoicePlayback = mapOf("enabled" to true, "disabled" to false)) }
             val reopened = DesktopChatUiController(store); reopened.load()
             assertFalse(reopened.state.value.continuousVoicePlayback)
             assertEquals(250f, reopened.state.value.peopleWidthDp)
+            assertTrue(reopened.state.value.continuousPlaybackFor("enabled"))
+            assertFalse(reopened.state.value.continuousPlaybackFor("disabled"))
+            assertFalse(reopened.state.value.continuousPlaybackFor("follow"))
+            reopened.update { it.copy(continuousVoicePlayback = true) }
+            assertTrue(reopened.state.value.continuousPlaybackFor("follow"))
+            assertFalse(reopened.state.value.continuousPlaybackFor("disabled"))
+            reopened.update { it.copy(sessionContinuousVoicePlayback = it.sessionContinuousVoicePlayback - "disabled") }
+            assertTrue(reopened.state.value.continuousPlaybackFor("disabled"))
         } finally {
             gate.closeAndDrain()
             Files.walk(root).use { it.sorted(Comparator.reverseOrder()).forEach(Files::delete) }

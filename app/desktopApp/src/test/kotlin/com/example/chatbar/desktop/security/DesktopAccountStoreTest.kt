@@ -6,6 +6,31 @@ import kotlinx.serialization.json.Json
 import kotlin.test.*
 
 class DesktopAccountStoreTest {
+    @Test fun `existing main keys become ordinary renameable accounts and deselection never revives the retained raw key`() {
+        for (service in DesktopAccountService.entries) {
+            val key = when (service) {
+                DesktopAccountService.LLM -> DesktopCredentialKey.SiliconFlowApiKey
+                DesktopAccountService.NOVELAI -> DesktopCredentialKey.NovelAiToken
+                DesktopAccountService.FISH -> DesktopCredentialKey.FishAudioApiKey
+            }
+            val raw = InMemoryDesktopSecretStore().also { it.save(key, "SYNTHETIC_ORIGINAL") }
+            val store = DesktopAccountStore(raw)
+            store.adoptExistingDefault(service)
+            val account = store.accounts(service).single()
+            assertEquals(account.id, store.selected(service))
+            store.saveAccount(service, account.id, "Renamed main", account.provider, account.endpoint, null)
+            store.adoptExistingDefault(service)
+            assertEquals("Renamed main", store.accounts(service).single().name)
+            assertEquals("SYNTHETIC_ORIGINAL", store.load(key))
+            assertFails { store.deleteAccount(service, account.id) }
+            if (service == DesktopAccountService.LLM) store.selectDefaultLlm(null) else store.select(service, null)
+            assertNull(store.load(key))
+            assertEquals("SYNTHETIC_ORIGINAL", raw.load(key))
+            store.deleteAccount(service, account.id)
+            store.adoptExistingDefault(service)
+            assertTrue(store.accounts(service).isEmpty())
+        }
+    }
     private val model = ModelConfig("m", "Model", "https://synthetic.invalid/v1", "", "synthetic-model", createdAt = 1)
     @Test fun `missing protected account bundle refuses legacy fallback for every service`() {
         for (service in DesktopAccountService.entries) {

@@ -7,6 +7,10 @@ description: Maintain Desktop cbbackup selection/export, optional credential tra
 
 Desktop named-account transport is documented in `chatbar-desktop-api-accounts`. The three optional `desktop*Accounts` preference fields contain selected credentials and must be captured, overlaid by the modern writer, validated, and stripped by `DesktopImportSecrets` before staging. Do not omit them while adapting `BackupPreferences` to `InspectionPreferences`. Legacy restore rejects these fields; modern merge uses explicit account/default choices and fresh-root custody.
 
+Named LLM bundles also retain the selected `defaultLlm` account when filtering model dependencies. `mergeNamedAccounts` remaps a conflicting incoming account identity and selects both the default and `managesLegacyDefault` flag from the side chosen for that account bundle; importing an unselected collection must not disable the kept PC singleton fallback. Desktop per-session playback overrides are local chat-UI settings; merge retains the PC `desktop-settings.json` bytes just like its other display preferences, not official Android session fields.
+
+When PC defaults are managed named accounts and an Android import has only a singleton credential, `DesktopMergeCredentials` materializes that explicitly chosen incoming default as an additional selected account in the new root. Otherwise the retained PC selection would shadow the user's TAKE_PHONE credential choice. KEEP_COMPUTER retains its selection and source stores remain unchanged.
+
 `DesktopDataWorkspace` separates export, merge import, file-only verification, root selection, automatic backup and updates. Subsection changes retain preparation/choices; in-flight merge and restart states force the merge surface. `DesktopMergeImportPanel` groups conflicts using existing backup setting labels and preserves every per-record choice. Final credential consent remains explicit; category navigation never selects or submits a merge.
 
 ## Entry points and format authority

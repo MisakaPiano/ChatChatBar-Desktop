@@ -16,14 +16,17 @@ import kotlinx.coroutines.flow.*
 
 internal val LocalDesktopApiAccounts = staticCompositionLocalOf<DesktopApiAccountController?> { null }
 internal class DesktopApiAccountController(val store: DesktopAccountStore, val models: ModelRepository,
-    private val gate: AppDataOperationGate, private val modelPolicy: DesktopModelCredentialPersistencePolicy? = null) {
+    private val gate: AppDataOperationGate, private val modelPolicy: DesktopModelCredentialPersistencePolicy? = null,
+    private val reloadSettings: suspend () -> Unit = {}) {
     val opened = MutableStateFlow<DesktopAccountService?>(null)
+    suspend fun adoptExisting(service: DesktopAccountService) = change(service) { store.adoptExistingDefault(service) }
     private suspend fun change(service: DesktopAccountService, block: suspend () -> Unit) = withContext(Dispatchers.IO) {
         gate.withNormalOperation {
             if (service == DesktopAccountService.LLM) {
                 models.getAllModels() // Initialize before acquiring the shared model-credential mutex.
                 if (modelPolicy != null) modelPolicy.withAccountMutation(block) else block()
                 models.refreshModelsFromStorage()
+                reloadSettings()
             } else block()
         }
     }
@@ -39,12 +42,12 @@ internal class DesktopApiAccountController(val store: DesktopAccountStore, val m
         return missing
     }
     suspend fun select(service: DesktopAccountService, id: String?, model: com.example.chatbar.data.local.entity.ModelConfig?) = change(service) {
-        val latest = if (service == DesktopAccountService.LLM) {
-            val read = models.readDurableModel(requireNotNull(model).id)
+        val latest = if (service == DesktopAccountService.LLM && model != null) {
+            val read = models.readDurableModel(model.id)
             require(read is com.example.chatbar.data.local.JsonFileStorage.EntityReadResult.Valid)
             read.value
         } else null
-        store.select(service, id, latest)
+        if (service == DesktopAccountService.LLM && latest == null) store.selectDefaultLlm(id) else store.select(service, id, latest)
     }
     suspend fun save(service: DesktopAccountService, id: String?, name: String, provider: String, endpoint: String, credential: String?) = change(service) {
         if (service == DesktopAccountService.LLM && id != null) missingReferences(id).forEach(store::detachMissingModel)
@@ -66,11 +69,14 @@ internal class DesktopApiAccountController(val store: DesktopAccountStore, val m
     val revision by controller.store.revision.collectAsState()
     val label by produceState("正在读取账户…", service, revision) {
         value = withContext(Dispatchers.IO) { runCatching {
-            if (service == DesktopAccountService.LLM) "LLM 账户：按模型选择"
-            else {
+            run {
                 val id = controller.store.selected(service)
                 controller.store.accounts(service).firstOrNull { it.id == id }?.let { "当前账户：${it.provider} · ${it.name}" }
-                    ?: "当前账户：原有单密钥配置"
+                    ?: when {
+                        controller.store.hasUnmanagedDefault(service) -> "现有账户：可在账户管理中命名"
+                        service == DesktopAccountService.LLM -> "默认连接：未选择账户"
+                        else -> "当前未选择账户"
+                    }
             }
         }.getOrElse { "账户信息不可用，请检查受保护存储" } }
     }
@@ -99,7 +105,14 @@ internal class DesktopApiAccountController(val store: DesktopAccountStore, val m
         catch (cancelled: CancellationException) { throw cancelled }
         catch (_: Exception) { error = "模型清单无法读取，请检查配置后刷新" }
     }
-    val model = models.firstOrNull { it.id == modelId } ?: models.firstOrNull()
+    val model = models.firstOrNull { it.id == modelId }
+    LaunchedEffect(controller, service) {
+        busy = true
+        try { controller.adoptExisting(service) }
+        catch (cancelled: CancellationException) { throw cancelled }
+        catch (_: Exception) { error = "现有账户整理未确认，原凭据保留；请刷新核对。" }
+        finally { busy = false }
+    }
     val accounts = remember(service, revision, reload) { runCatching { controller.store.accounts(service) }
         .getOrElse { error = "账户清单无法读取；原配置保留"; emptyList() } }
     val selected = remember(service, revision, reload, model?.id) { runCatching { controller.store.selected(service, model?.id) }.getOrNull() }
@@ -132,12 +145,13 @@ internal class DesktopApiAccountController(val store: DesktopAccountStore, val m
                     StatusText("密钥保存在 Windows 受保护存储中；保存和切换不会发送请求。切换仅影响后续任务，不自动轮换账户。")
                     StatusText("命名账户可随整应用备份保存；目前仅验证 Desktop 恢复，跨端迁移需核对目标版本支持。")
                     if (service == DesktopAccountService.LLM) {
-                        if (model == null) StatusText("请先在模型页添加模型，再为其选择账户。")
-                        else CompactChoice("配置模型", models, model, { "${it.displayName} · ${it.modelName}" }) { modelId = it.id }
+                        CompactChoice("应用位置", listOf<com.example.chatbar.data.local.entity.ModelConfig?>(null) + models, model,
+                            { it?.let { item -> "${item.displayName} · ${item.modelName}" } ?: "默认连接" }) { modelId = it?.id }
+                        if (model == null) StatusText("默认连接沿用硅基流动接口；其他平台在对应模型中选择账户。")
                         StatusText("服务平台由你填写；协议模板不代表实际供应商。账户服务地址必须与所选模型一致。")
                     }
-                    BootstrapButton(if (selected == null) "已选择：原有单密钥配置" else "使用原有单密钥配置", secondary = true,
-                        enabled = !busy && (service != DesktopAccountService.LLM || model != null)) {
+                    BootstrapButton(if (selected == null) "当前未选择账户" else "取消当前账户选择", secondary = true,
+                        enabled = !busy && selected != null) {
                         perform { controller.select(service, null, model) }
                     }
                     accounts.forEach { account ->
@@ -145,7 +159,8 @@ internal class DesktopApiAccountController(val store: DesktopAccountStore, val m
                             ManageHeading("${if (selected == account.id) "✓ " else ""}${account.name} · ${account.provider}")
                             if (account.endpoint.isNotBlank()) StatusText(account.endpoint)
                             ActionRow {
-                                BootstrapButton("选择", secondary = selected != account.id, enabled = !busy && (service != DesktopAccountService.LLM || model != null)) {
+                                BootstrapButton("选择", secondary = selected != account.id, enabled = !busy &&
+                                    (service != DesktopAccountService.LLM || model != null || account.endpoint.trimEnd('/') == DesktopAccountStore.SILICONFLOW_ENDPOINT)) {
                                     perform { controller.select(service, account.id, model) }
                                 }
                                 BootstrapButton("编辑", secondary = true, enabled = !busy) { leave {
@@ -157,7 +172,7 @@ internal class DesktopApiAccountController(val store: DesktopAccountStore, val m
                     }
                     if (!editing) BootstrapButton("添加账户", enabled = !busy) { clearDraft(); editing = true
                         provider = when (service) { DesktopAccountService.LLM -> ""; DesktopAccountService.NOVELAI -> "NovelAI"; DesktopAccountService.FISH -> "Fish Audio" }
-                        endpoint = model?.baseUrl.orEmpty()
+                        endpoint = model?.baseUrl ?: DesktopAccountStore.SILICONFLOW_ENDPOINT
                     }
                     else {
                         LabeledField("账户名称", name) { name = it }

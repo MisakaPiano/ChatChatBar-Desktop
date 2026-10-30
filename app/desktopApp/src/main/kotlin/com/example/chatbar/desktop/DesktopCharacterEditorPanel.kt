@@ -66,12 +66,11 @@ internal fun DesktopCharacterManagementPanel(controller: DesktopCharacterEditorC
     val scope = rememberCoroutineScope()
     LaunchedEffect(controller) { controller.load() }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        EditorHeading(t(DesktopUiText.CHARACTER_MANAGEMENT))
+        DesktopManagementHeading(t(DesktopUiText.CHARACTER_MANAGEMENT))
         if (state.card == null) state.problem?.let { StatusText(t(it.uiText()), DesktopBootstrapColors.destructive) }
-        EditorField(t(DesktopUiText.SEARCH_CHARACTERS), state.query, onChange = controller::search)
-        BootstrapButton(t(DesktopUiText.NEW_CHARACTER), icon = DesktopAppIcons.Add,
-            enabled = !managementState.busy) { scope.launch { controller.openNew() } }
-        DesktopManagementImportAndDrafts(DesktopTransferKind.CHARACTER, state.characters.map { it.id }.toSet(), management)
+        DesktopManagementToolbar(t(DesktopUiText.SEARCH_CHARACTERS), state.query, controller::search,
+            t(DesktopUiText.NEW_CHARACTER), !managementState.busy, { scope.launch { controller.openNew() } }, DesktopTransferKind.CHARACTER, management)
+        DesktopManagementImportAndDrafts(DesktopTransferKind.CHARACTER, state.characters.map { it.id }.toSet(), management, showImport = false)
         DesktopManagementPresets(DesktopTransferKind.CHARACTER,
             state.characters.map { it.sourcePresetKey to it.sourcePresetVersion }, management)
         if (state.visibleCharacters.isEmpty()) StatusText(t(if (state.query.isBlank()) DesktopUiText.NO_CHARACTERS
@@ -81,14 +80,13 @@ internal fun DesktopCharacterManagementPanel(controller: DesktopCharacterEditorC
                 val presentation by produceState<DesktopCharacterManagementPresentation?>(null, card) {
                     value = withContext(Dispatchers.IO) { desktopCharacterManagementPresentation(card, controller::imageBytes) }
                 }
-                DesktopCharacterSummaryCard(presentation) { if (!managementState.busy) onStartChat(card.id) }
+                DesktopCharacterSummaryCard(presentation, actions = {
+                    DesktopIconAction(t(DesktopUiText.EDIT), DesktopAppIcons.Edit,
+                        enabled = !managementState.busy) { scope.launch { controller.openExisting(card.id) } }
+                    DesktopManagementItemActions(DesktopTransferKind.CHARACTER, card.id, card.name, management)
+                }) { if (!managementState.busy) onStartChat(card.id) }
                 if (management.hasPresetUpdate(DesktopTransferKind.CHARACTER, card.sourcePresetKey, card.sourcePresetVersion))
                     StatusText(t(DesktopUiText.PRESET_UPDATE_AVAILABLE), DesktopBootstrapColors.warning)
-                Row {
-                DesktopIconAction(t(DesktopUiText.EDIT), DesktopAppIcons.Edit,
-                    enabled = !managementState.busy) { scope.launch { controller.openExisting(card.id) } }
-                DesktopManagementItemActions(DesktopTransferKind.CHARACTER, card.id, card.name, management)
-                }
             }
         }
     }

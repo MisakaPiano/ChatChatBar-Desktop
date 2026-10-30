@@ -29,14 +29,15 @@ internal class DesktopChatVoiceRuntime(
     private val textBusy: (String) -> Boolean = { false },
     transportOverride: DesktopFishVoiceTransport? = null,
     textGateway: FishVoiceTextGateway? = null,
-    uiPreferences: kotlinx.coroutines.flow.StateFlow<DesktopChatUiPreferences>? = null,
+    private val uiPreferences: kotlinx.coroutines.flow.StateFlow<DesktopChatUiPreferences>? = null,
 ) {
     private val textTransport = lazy { OpenAiStreamingTransport { settings.currentAppSettings.allowCleartextModelApi } }
     private val job = SupervisorJob()
     private val scope = CoroutineScope(job + Dispatchers.IO)
     private val mutation = Mutex()
     private val transport = transportOverride ?: DesktopFishVoiceTransport(credentials, audio)
-    val playback = DesktopVoicePlayback(audio, output, gate)
+    val playback = DesktopVoicePlayback(audio, output, gate,
+        continuousForSession = uiPreferences?.let { preferences -> { session -> preferences.value.continuousPlaybackFor(session) } })
     val coordinator = DesktopFishGenerationCoordinator(scope, chats, characters, settings, repository, credentials,
         transport, FishAudioTagService(textGateway ?: FishVoiceTextGateway { _, messages, config, _ ->
             textTransport.value.streamFishVoice(messages, config)
@@ -47,7 +48,7 @@ internal class DesktopChatVoiceRuntime(
     private val foregroundLock = Any()
     @Volatile private var foregroundDrain: Job? = null
     init { uiPreferences?.let { preferences -> scope.launch {
-        preferences.collect { playback.setContinuousPlayback(it.continuousVoicePlayback) }
+        preferences.collect { playback.setContinuousPlayback(it.continuousPlaybackFor(playback.state.value.sessionId)) }
     } } }
 
     fun seek(voiceId: String, positionMs: Long) { scope.launch {
@@ -56,7 +57,9 @@ internal class DesktopChatVoiceRuntime(
 
     fun effectiveAudiobook(session: ChatSession): Boolean = VoiceGenerationPolicy.audiobookEnabled(session, settings.currentAppSettings)
     fun dismissNotice(expected: String) { mutableNotice.compareAndSet(expected, null) }
+    suspend fun playbackSourceTitle(sessionId: String?): String = sessionId?.let { chats.getSession(it)?.title } ?: "语音播放"
     fun pauseOrClose() { scope.launch { if (playback.state.value.playing) playback.pause() else coordinator.stopPlayback() } }
+    fun pausePlayback() { scope.launch { guarded { playback.pause() } } }
     fun resumePlayback() {
         val token = playbackIntent()
         scope.launch { playback.resume { !closed && playbackIntent() == token } }
@@ -65,7 +68,8 @@ internal class DesktopChatVoiceRuntime(
     fun foreground(sessionId: String?): Job = synchronized(foregroundLock) {
         coordinator.setForegroundSession(sessionId)
         val previous = foregroundDrain
-        scope.launch { previous?.join(); playback.stop() }.also { foregroundDrain = it }
+        // Leaving the chat invalidates late generation/autoplay intent, not existing local audio.
+        scope.launch { previous?.join() }.also { foregroundDrain = it }
     }
 
     suspend fun generate(expected: ChatMessage, narrator: String?, segment: Int? = null,
@@ -150,7 +154,11 @@ internal class DesktopChatVoiceRuntime(
     private suspend fun releaseIfUnreferenced(path: String) = withContext(NonCancellable) {
         gate.withNormalOperation { if (!repository.isAudioReferenced(path)) audio.deleteIfOwned(path) else false }
     }
-    suspend fun play(voice: GeneratedVoiceMessage, message: ChatMessage, originGeneration: Long = playbackIntent()) = guarded {
+    suspend fun play(voice: GeneratedVoiceMessage, message: ChatMessage, originGeneration: Long = playbackIntent()) =
+        playExisting(voice, message, originGeneration, backgroundControl = false)
+
+    private suspend fun playExisting(voice: GeneratedVoiceMessage, message: ChatMessage,
+        originGeneration: Long, backgroundControl: Boolean) = guarded {
         foregroundDrain?.join()
         gate.withNormalOperation { mutation.withLock {
             val current = chats.getMessage(message.id, message.sessionId) ?: error("消息已不存在")
@@ -161,11 +169,28 @@ internal class DesktopChatVoiceRuntime(
             val timeline = chats.getMessagesReadOnly(current.sessionId)
             val index = timeline.indexOfFirst { it.id == current.id && it == current }
             check(index >= 0) { "消息已变化；请重新选择" }
-            val visible = (if (playback.continuousPlayback.value) timeline.drop(index) else listOf(current))
+            val continuous = uiPreferences?.value?.continuousPlaybackFor(current.sessionId) ?: playback.continuousPlayback.value
+            val visible = (if (continuous) timeline.drop(index) else listOf(current))
                 .filter { it.role == MessageRole.ASSISTANT }
                 .flatMap { repository.placementsForMessage(it).map { placement -> placement.voice } }
             check(visible.any { it.id == voice.id })
-            coordinator.playFrom(voice, visible, originGeneration)
+            coordinator.playFrom(voice, visible, originGeneration, backgroundControl)
+        } }
+    }
+    /** Uses current-version repository placements, never a stale queue or a synthesis request. */
+    fun adjacentPlayback(forward: Boolean): Job {
+        val expected = playback.state.value.currentVoiceId
+        val token = playbackIntent()
+        return scope.launch { guarded {
+            val playing = expected?.let { repository.get(it) } ?: return@guarded
+            check(playback.state.value.currentVoiceId == expected) { "当前录音已变化，请重试" }
+            val timeline = chats.getMessagesReadOnly(playing.sessionId).filter { it.role == MessageRole.ASSISTANT }
+            val voices = timeline.flatMap { message -> repository.placementsForMessage(message).map { message to it.voice } }
+            val index = voices.indexOfFirst { it.second == playing }
+            check(index >= 0) { "录音归属或版本已变化；请重新选择" }
+            val target = voices.getOrNull(index + if (forward) 1 else -1)
+            if (target == null) mutableNotice.value = if (forward) "已经是最后一句录音" else "已经是第一句录音"
+            else playExisting(target.second, target.first, token, backgroundControl = true)
         } }
     }
     fun stop() { coordinator.stopPlayback() }

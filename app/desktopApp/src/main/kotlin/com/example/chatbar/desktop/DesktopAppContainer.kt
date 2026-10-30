@@ -181,7 +181,8 @@ class DesktopAppContainer internal constructor(
         com.example.chatbar.desktop.security.DesktopAccountStore(secretStoreFactory(appDataRoot))
     }
     internal val apiAccounts get() = desktopSecretStore as com.example.chatbar.desktop.security.DesktopAccountStore
-    internal val apiAccountController by lazy { DesktopApiAccountController(apiAccounts, modelRepository, dataOperationCoordinator, modelCredentialPolicy) }
+    internal val apiAccountController by lazy { DesktopApiAccountController(apiAccounts, modelRepository, dataOperationCoordinator, modelCredentialPolicy,
+        reloadSettings = { settingsRepository.initialize(forceReload = true) }) }
     internal val fishAudioCredentials by lazy { DesktopFishAudioCredentials(desktopSecretStore) }
     private val fishAudioLibraryOwner = lazy { DesktopFishAudioLibrary(fishAudioCredentials) }
     internal val fishAudioLibrary by fishAudioLibraryOwner

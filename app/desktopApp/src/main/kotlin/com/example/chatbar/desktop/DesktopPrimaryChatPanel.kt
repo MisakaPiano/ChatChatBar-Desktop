@@ -1231,6 +1231,7 @@ internal fun DesktopSessionSettingsBody(
     }
     }
     if (tab == DesktopSessionSettingsTab.VOICE) {
+        controller.chatUi?.let { DesktopSessionContinuousPlaybackSetting(it, draft.id) }
         DesktopFishSessionSettings(draft, controller::editSessionSettings)
     }
     if (tab == DesktopSessionSettingsTab.IMAGES) {

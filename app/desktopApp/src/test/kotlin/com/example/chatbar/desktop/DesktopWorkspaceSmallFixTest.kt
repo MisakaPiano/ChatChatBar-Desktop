@@ -11,6 +11,15 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.test.*
 
 class DesktopWorkspaceSmallFixTest {
+    @Test fun `taskbar read-only capability inspection preserves native failure evidence without requesting a pin`() = runBlocking(edt) {
+        org.junit.Assume.assumeTrue(System.getProperty("os.name").startsWith("Windows"))
+        val result = DesktopWindowsTaskbarPin.request(pin = false)
+        if (result == DesktopPinResult.FAILED) assertFalse(DesktopWindowsTaskbarPin.diagnostic.isNullOrBlank())
+        System.getenv("CCB_TASKBAR_CAPABILITY_OUT")?.let { target ->
+            Files.writeString(Path.of(target), "pinRequested=false\nresult=$result\ndiagnostic=${DesktopWindowsTaskbarPin.diagnostic}\n")
+        }
+        Unit
+    }
     @Test fun `Windows diagnostic brand loads icon and releases thread hook without showing a dialog`() {
         org.junit.Assume.assumeTrue(System.getProperty("os.name").startsWith("Windows"))
         var failures = 0

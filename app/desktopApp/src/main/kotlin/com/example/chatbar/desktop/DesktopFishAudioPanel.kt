@@ -38,7 +38,7 @@ internal fun DesktopFishGlobalSettings(state: DesktopModelSettingsState, control
     DesktopApiAccountEntry(com.example.chatbar.desktop.security.DesktopAccountService.FISH)
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         StatusText("Fish Audio")
-        controller.fishCredentials?.let { DesktopFishCredentialPanel(it) }
+        if (LocalDesktopApiAccounts.current == null) controller.fishCredentials?.let { DesktopFishCredentialPanel(it) }
         SearchableChoice("Fish TTS 模型", FishAudioTtsModels.supported, draft.fishAudioTtsModelId, { it }) {
             value -> controller.editSettings { it.copy(fishAudioTtsModelId = value) }
         }
@@ -113,7 +113,7 @@ internal fun DesktopFishSessionSettings(draft: ChatSession, edit: ((ChatSession)
     DesktopFishField("语音使用语言（留空使用原文）", draft.voiceLanguage.orEmpty()) { value ->
         edit { it.copy(voiceLanguage = value) }
     }
-    StatusText("仅保存会话偏好；翻译、语音生成与播放尚未接入（PENDING）")
+    StatusText("听书模式和语言影响后续语音生成；不会自动重新生成已有录音。")
 }
 
 @Composable

@@ -38,7 +38,8 @@ class DesktopVoiceUxTest {
             withTimeout(5000){while(!f.runtime.playback.state.value.playing)delay(10)}
             assertEquals(listOf(a.id,b.id),f.runtime.playback.state.value.queueVoiceIds)
             f.output.playing=false;withTimeout(5000){while(f.runtime.playback.state.value.currentVoiceId!=b.id)delay(10)}
-            assertEquals(requests,f.server.requestCount);f.runtime.foreground(null).join();assertFalse(f.output.playing)
+            assertEquals(requests,f.server.requestCount);f.runtime.foreground(null).join();assertTrue(f.output.playing)
+            f.runtime.stopForMaintenance(); assertFalse(f.output.playing)
         }
     }
     @Test fun `pause keeps real position and queue then resume or second stop releases session`()=runBlocking {

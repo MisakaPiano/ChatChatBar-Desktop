@@ -9,6 +9,90 @@ import kotlinx.serialization.json.*
 import kotlin.test.*
 
 class DesktopNamedAccountBackupTest {
+    @Test fun `Android singleton choices remain effective after PC main keys became named accounts`(): Unit = runBlocking {
+        for (takePhone in listOf(false, true)) {
+            val base = Files.createTempDirectory("ccb-android-named-default-")
+            try {
+                val input = Files.write(base.resolve("synthetic.cbbackup"), CensusWireFixtures.bytes(
+                    prefs = """{"novelAiToken":"SYNTHETIC_PHONE_NAI","fishAudioKey":"SYNTHETIC_PHONE_FISH"}""",
+                    files = mapOf("entities/app_settings.json" to """{"siliconFlowApiKey":"SYNTHETIC_PHONE_LLM"}""".toByteArray())))
+                val raw = InMemoryDesktopSecretStore()
+                val expected = mapOf(DesktopCredentialKey.SiliconFlowApiKey to "LLM", DesktopCredentialKey.NovelAiToken to "NAI", DesktopCredentialKey.FishAudioApiKey to "FISH")
+                expected.forEach { (key, label) -> raw.save(key, "SYNTHETIC_PC_$label") }
+                val accounts = DesktopAccountStore(raw)
+                DesktopAccountService.entries.forEach(accounts::adoptExistingDefault)
+                DesktopFullBackupStaging.prepare(input, null, Files.createDirectory(base.resolve("work"))).use { staged ->
+                    DesktopMergeCredentials.capture(staged.entities, staged, accounts).use { credentials ->
+                        val preview = DesktopMergePreview.create(staged.entities, staged.entities, emptyMap(), emptyMap(), credentialConflicts = credentials.dataConflictKeys)
+                        val selected = preview.select(emptyMap())
+                        val plan = DesktopMergeDestinationPlan.create(selected, emptyMap(), emptyMap())
+                        val target = Files.createDirectory(base.resolve("target"))
+                        val protected = Files.createDirectory(base.resolve("protected"))
+                        val owner = DesktopDataRootOwnership.acquire(DesktopDataRootResolution.Resolved(target,
+                            DesktopDataRootProvenance.CLI_OVERRIDE, base.resolve("bootstrap.json"))) as DesktopDataRootOwnershipResult.Acquired
+                        owner.ownership.use {
+                            val authority = DesktopFreshRootAuthority(target, protected, MergeRootSyntheticProtector)
+                            val pending = authority.begin()
+                            credentials.writeNewRoot(target, authority, pending, plan, selected,
+                                credentials.globalConflicts.associate { it.kind to if (takePhone) DesktopMergeCredentials.Choice.TAKE_PHONE else DesktopMergeCredentials.Choice.KEEP_COMPUTER }, true)
+                            val restored = DesktopAccountStore(pending.store)
+                            expected.forEach { (key, label) ->
+                                assertEquals("SYNTHETIC_${if (takePhone) "PHONE" else "PC"}_$label", restored.load(key))
+                                assertEquals("SYNTHETIC_PC_$label", accounts.load(key))
+                            }
+                            DesktopAccountService.entries.forEach { assertEquals(if (takePhone) 2 else 1, restored.accounts(it).size) }
+                        }
+                    }
+                }
+            } finally { Files.walk(base).use { it.sorted(Comparator.reverseOrder()).forEach(Files::delete) } }
+        }
+    }
+    @Test fun `default connection follows the chosen side and same identity conflicts are forked`() {
+        val a = DesktopApiAccount("same", "PC", "Provider", DesktopAccountStore.SILICONFLOW_ENDPOINT, "SYNTHETIC_PC")
+        val b = a.copy(name = "Incoming", credential = "SYNTHETIC_INCOMING")
+        val pc = DesktopAccountBundle(accounts = listOf(a), defaultLlm = a.id, managesLegacyDefault = true)
+        val incoming = DesktopAccountBundle(accounts = listOf(b), defaultLlm = b.id, managesLegacyDefault = true)
+        val keep = mergeNamedAccounts(pc, incoming, DesktopAccountService.LLM, false, emptySet(), { it }, { false }).bundle
+        assertEquals("SYNTHETIC_PC", keep.accounts.single { it.id == keep.defaultLlm }.credential)
+        val take = mergeNamedAccounts(pc, incoming, DesktopAccountService.LLM, true, emptySet(), { it }, { false }).bundle
+        assertNotEquals(a.id, take.defaultLlm)
+        assertEquals("SYNTHETIC_INCOMING", take.accounts.single { it.id == take.defaultLlm }.credential)
+        assertEquals(take, DesktopAccountStore.decode(DesktopAccountStore.encode(take, DesktopAccountService.LLM), DesktopAccountService.LLM))
+        val keepLegacy = mergeNamedAccounts(DesktopAccountBundle(), incoming, DesktopAccountService.LLM,
+            false, emptySet(), { it }, { false }).bundle
+        assertFalse(keepLegacy.managesLegacyDefault, "Keeping the PC default must not disable its legacy slot")
+        val deselected = incoming.copy(defaultLlm = null)
+        assertNull(mergeNamedAccounts(pc, deselected, DesktopAccountService.LLM,
+            true, emptySet(), { it }, { false }).bundle.defaultLlm)
+    }
+
+    @Test fun `default named connection is retained with encrypted selected model export`() = runBlocking {
+        val root = Files.createTempDirectory("ccb-default-account-backup-")
+        try {
+            val model = ModelConfig("m", "Model", DesktopAccountStore.SILICONFLOW_ENDPOINT, "", "model", createdAt = 1)
+            val entity = backupJson.encodeToJsonElement(ModelConfig.serializer(), model).jsonObject
+            val source = Files.writeString(root.resolve("model.json"), entity.toString())
+            val raw = InMemoryDesktopSecretStore().also { it.save(DesktopCredentialKey.SiliconFlowApiKey, "SYNTHETIC_DEFAULT") }
+            val accounts = DesktopAccountStore(raw)
+            accounts.adoptExistingDefault(DesktopAccountService.LLM)
+            val id = assertNotNull(accounts.selected(DesktopAccountService.LLM))
+            accounts.saveAccount(DesktopAccountService.LLM, id, "Renamed default", "Provider", model.baseUrl, null)
+            DesktopBackupExportCredentials.capture(accounts, mapOf("entities/model_configs/m.json" to entity), setOf("models")).use { captured ->
+                val backup = root.resolve("synthetic.cbbackup")
+                DesktopFullBackupWriter.export(mapOf("entities/model_configs/m.json" to source), backup,
+                    "synthetic-password".toCharArray(), credentials = captured)
+                DesktopFullBackupStaging.prepare(backup, "synthetic-password".toCharArray(), Files.createDirectory(root.resolve("work"))).use { staged ->
+                    val bundle = staged.secrets.metadata.single { it.kind == ImportCredentialKind.DESKTOP_LLM_ACCOUNTS }
+                        .withValue { DesktopAccountStore.decode(assertNotNull(it).concatToString(), DesktopAccountService.LLM) }
+                    assertEquals(id, bundle.defaultLlm); assertTrue(bundle.managesLegacyDefault)
+                    assertEquals("Renamed default", bundle.accounts.single().name)
+                    assertFalse(staged.preferences.toString().contains("SYNTHETIC_DEFAULT"))
+                }
+            }
+            val old = DesktopAccountStore.encode(DesktopAccountBundle(), DesktopAccountService.LLM)
+            assertFalse(old.contains("defaultLlm")); assertFalse(old.contains("managesLegacyDefault"))
+        } finally { Files.walk(root).use { it.sorted(Comparator.reverseOrder()).forEach(Files::delete) } }
+    }
     @Test fun `taking a legacy model removes only its old named binding while BOTH preserves the PC model`() {
         val account = DesktopApiAccount("pc", "Main", "Provider", "https://synthetic.invalid", "SYNTHETIC_PC")
         val old = DesktopAccountBundle(accounts = listOf(account), models = mapOf("m" to "pc", "other" to "pc"))

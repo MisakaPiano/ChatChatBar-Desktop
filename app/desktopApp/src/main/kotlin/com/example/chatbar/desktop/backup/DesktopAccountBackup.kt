@@ -24,7 +24,7 @@ internal data class MergedNamedAccounts(val bundle: DesktopAccountBundle, val le
 }
 
 /** Keep both account collections; data choices govern model bindings, the credential choice
- * governs the default NovelAI/Fish selection. Same-ID different accounts get a fresh identity. */
+ * governs the default connection selection. Same-ID different accounts get a fresh identity. */
 internal fun mergeNamedAccounts(computer: DesktopAccountBundle?, incoming: DesktopAccountBundle?,
     service: DesktopAccountService, takeIncoming: Boolean, modelIds: Set<String>,
     remap: (String) -> String, incomingModelTaken: (String) -> Boolean): MergedNamedAccounts {
@@ -54,5 +54,8 @@ internal fun mergeNamedAccounts(computer: DesktopAccountBundle?, incoming: Deskt
     } else if (takeIncoming) phone.legacy["default"]?.let { legacy["default"] = it }
     val selected = if (takeIncoming && incoming != null) phone.selected?.let(renamed::getValue) else old.selected
     return MergedNamedAccounts(DesktopAccountBundle(accounts = accounts, selected = selected,
-        models = if (service == DesktopAccountService.LLM) bindings else emptyMap()), legacy)
+        models = if (service == DesktopAccountService.LLM) bindings else emptyMap(),
+        defaultLlm = if (service != DesktopAccountService.LLM) null else if (takeIncoming && incoming != null)
+            phone.defaultLlm?.let(renamed::getValue) else old.defaultLlm,
+        managesLegacyDefault = if (takeIncoming && incoming != null) phone.managesLegacyDefault else old.managesLegacyDefault), legacy)
 }

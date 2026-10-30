@@ -1,3 +1,4 @@
+@file:OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
 package com.example.chatbar.desktop
 
 import kotlinx.coroutines.CancellationException
@@ -19,11 +20,16 @@ data class DesktopChatUiPreferences(
     val inlineStatuses: Boolean = false,
     val multipleInlineStatuses: Boolean = false,
     val continuousVoicePlayback: Boolean = true,
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
+    val sessionContinuousVoicePlayback: Map<String, Boolean> = emptyMap(),
     val peopleWidthDp: Float? = null,
     val peopleHidden: Boolean = false,
     val allPeople: Boolean = false,
     val pinnedPeople: List<DesktopPinnedPerson> = emptyList(),
 )
+
+internal fun DesktopChatUiPreferences.continuousPlaybackFor(sessionId: String?) =
+    sessionContinuousVoicePlayback[sessionId] ?: continuousVoicePlayback
 
 /** Display preferences only. No entity, prompt, residency or participation writes. */
 internal class DesktopChatUiController(private val store: DesktopSettingsStore) {

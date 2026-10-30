@@ -120,6 +120,7 @@ class DesktopChatVoiceRuntimeTest {
     internal class Fixture(
         gate: com.example.chatbar.data.operation.AppDataOperationGate = com.example.chatbar.data.operation.NoOpAppDataOperationGate,
         outputFactory: (PreviewOutputFake) -> DesktopAudioOutput = { it },
+        uiPreferences: kotlinx.coroutines.flow.StateFlow<DesktopChatUiPreferences>? = null,
     ) : AutoCloseable {
         val root = Files.createTempDirectory("s5-chat-")
         val storage = JsonFileStorage(root, gate); val chats = ChatRepository(storage)
@@ -137,7 +138,8 @@ class DesktopChatVoiceRuntimeTest {
         }
         val transport = DesktopFishVoiceTransport(credentials, audio, OkHttpClient(), server.url("/").toString().trimEnd('/'), { LocalDate.of(2026,10,19) })
         val runtime = DesktopChatVoiceRuntime(chats, characters, settings, models, repo, audio, credentials, outputFactory(output),
-            picker = picker, gate = gate, transportOverride = transport, textGateway = FishVoiceTextGateway { _, _, _, _ -> error("Unapproved auxiliary request") })
+            picker = picker, gate = gate, transportOverride = transport, uiPreferences = uiPreferences,
+            textGateway = FishVoiceTextGateway { _, _, _, _ -> error("Unapproved auxiliary request") })
         lateinit var session: ChatSession; lateinit var message: ChatMessage
         suspend fun seed() {
             characters.save(CharacterCard("card", "synthetic", characters = listOf(CharacterInfo("alice", "Alice",

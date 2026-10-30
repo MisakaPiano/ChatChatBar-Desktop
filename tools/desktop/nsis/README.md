@@ -26,6 +26,8 @@ The generated uninstaller and stable launcher have separate recorded digests. Un
 
 ## Application update and repair
 
+The app can request either managed shell entry with `install-manager.exe --shortcuts <owned-root> desktop|programs --quiet`. The current manifest and external receipt are reverified first; the command does not launch, install or change the current pointer. Existing foreign/modified shortcuts are preserved (exit 3), and missing owned entries are recreated with the stable launcher and app identity. Application-side admission also checks the exact current helper hash before starting it.
+
 `packageNsis` now prepares and audits the Desktop-owned isolated TUF runtime before packaging; see `../update/README.md`. Download verification and normal-exit handoff are independent of manual Releases discovery. Only the public bootstrap enters the package.
 
 The installer exposes an explicit repair checkbox for an existing owned root. It retains original entry resources, stages a fresh `-r<nonce>` program directory and requires an original receipt match for same-version repair. It never invokes a damaged old manager. Activation rechecks the expected current pointer after the new-program ready acknowledgement. Invalid ownership/receipts and data-format changes remain refusals. Complete, independently verified noncurrent stages may be reused without overlay; incomplete, changed or unknown material keeps the original cleanup/refusal policy.

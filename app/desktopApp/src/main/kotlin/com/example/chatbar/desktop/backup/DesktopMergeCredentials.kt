@@ -122,10 +122,30 @@ internal class DesktopMergeCredentials private constructor(
         DesktopAccountService.entries.forEach { service ->
             val key = DesktopCredentialKey.AccountProfiles(service)
             val computer = pc[key]?.value?.concatToString()?.let { DesktopAccountStore.decode(it, service) }
-            val incoming = phone[key]?.value?.concatToString()?.let { DesktopAccountStore.decode(it, service) }
+            var incoming = phone[key]?.value?.concatToString()?.let { DesktopAccountStore.decode(it, service) }
+            val defaultKey = when (service) {
+                DesktopAccountService.LLM -> DesktopCredentialKey.SiliconFlowApiKey
+                DesktopAccountService.NOVELAI -> DesktopCredentialKey.NovelAiToken
+                DesktopAccountService.FISH -> DesktopCredentialKey.FishAudioApiKey
+            }
+            val incomingDefault = phone[defaultKey]
+            // Android has singleton credentials, not Desktop account profiles. An explicit
+            // choice to take that key must not be shadowed by the retained PC named default.
+            val takeLegacyDefault = incoming == null && computer?.managesLegacyDefault == true &&
+                incomingDefault?.value != null && chosen[defaultKey] === incomingDefault
+            if (takeLegacyDefault) {
+                val id = java.util.UUID.randomUUID().toString()
+                val account = DesktopApiAccount(id, "导入账户", when (service) {
+                    DesktopAccountService.LLM -> "硅基流动"; DesktopAccountService.NOVELAI -> "NovelAI"; DesktopAccountService.FISH -> "Fish Audio"
+                }, if (service == DesktopAccountService.LLM) DesktopAccountStore.SILICONFLOW_ENDPOINT else "",
+                    checkNotNull(incomingDefault?.value).concatToString())
+                incoming = DesktopAccountBundle(accounts = listOf(account),
+                    selected = id.takeUnless { service == DesktopAccountService.LLM },
+                    defaultLlm = id.takeIf { service == DesktopAccountService.LLM }, managesLegacyDefault = true)
+            }
             if (computer != null || incoming != null) {
                 val kind = accountKind(service)
-                val takeIncoming = computer == null || globalChoices[kind] == Choice.TAKE_PHONE
+                val takeIncoming = takeLegacyDefault || computer == null || globalChoices[kind] == Choice.TAKE_PHONE
                 // Missing/empty imported credentials do not clear an existing compatible PC
                 // credential. This also preserves account bindings during a byte-preserving
                 // data-directory relocation, whose internal transport intentionally has no keys.

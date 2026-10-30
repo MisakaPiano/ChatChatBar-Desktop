@@ -44,10 +44,10 @@ internal fun DesktopWorldBookManagementPanel(controller: DesktopWorldBookEditorC
     val scope = rememberCoroutineScope()
     LaunchedEffect(controller) { controller.load() }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        WBHeading(t(DesktopUiText.WORLD_MANAGEMENT))
-        WBField(t(DesktopUiText.WORLD_SEARCH), state.query, onChange = controller::search)
-        BootstrapButton(t(DesktopUiText.WORLD_NEW)) { scope.launch { controller.openNew() } }
-        DesktopManagementImportAndDrafts(DesktopTransferKind.WORLD_BOOK, state.books.map { it.id }.toSet(), management)
+        DesktopManagementHeading(t(DesktopUiText.WORLD_MANAGEMENT))
+        DesktopManagementToolbar(t(DesktopUiText.WORLD_SEARCH), state.query, controller::search,
+            t(DesktopUiText.WORLD_NEW), true, { scope.launch { controller.openNew() } }, DesktopTransferKind.WORLD_BOOK, management)
+        DesktopManagementImportAndDrafts(DesktopTransferKind.WORLD_BOOK, state.books.map { it.id }.toSet(), management, showImport = false)
         DesktopManagementPresets(DesktopTransferKind.WORLD_BOOK,
             state.books.map { it.sourcePresetKey to it.sourcePresetVersion }, management)
         if (state.visibleBooks.isEmpty()) StatusText(t(DesktopUiText.WORLD_NONE))

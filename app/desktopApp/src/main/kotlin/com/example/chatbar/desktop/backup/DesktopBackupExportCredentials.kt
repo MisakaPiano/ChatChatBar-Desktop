@@ -61,7 +61,7 @@ internal class DesktopBackupExportCredentials private constructor(private val st
                         val bundle = DesktopAccountStore.decode(raw, service)
                         val included = (store as? DesktopAccountStore)?.exportBundle(service, modelIds, "models" in options) ?: if (service == DesktopAccountService.LLM) {
                             val bindings = bundle.models.filterKeys { it in modelIds }
-                            bundle.copy(accounts = bundle.accounts.filter { it.id in bindings.values }, models = bindings, selected = null)
+                            bundle.copy(accounts = bundle.accounts.filter { it.id in bindings.values || it.id == bundle.defaultLlm }, models = bindings, selected = null)
                         } else bundle
                         if (included.accounts.isNotEmpty()) result.accountExports[service] = DesktopAccountStore.encode(included, service)
                     }

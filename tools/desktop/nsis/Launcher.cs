@@ -290,15 +290,18 @@ internal static class Launcher {
         File.Move(temporary, path);
         Atomic(receipt, Hash(path));
     }
-    static void Shortcuts(bool remove) {
+    static string ShortcutPath(bool desktopEntry) {
         var desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
         var programs = Environment.GetFolderPath(Environment.SpecialFolder.Programs);
 #if SYNTHETIC
         var fixture = Environment.GetEnvironmentVariable("CCB_DESKTOP_TEST_SHELL_ROOT");
         if (!String.IsNullOrEmpty(fixture)) { desktop = Safe(Path.Combine(fixture, "Desktop")); programs = Safe(Path.Combine(fixture, "Programs")); }
 #endif
-        Shortcut(Path.Combine(desktop, Label + ".lnk"), "desktop-shortcut.sha256", remove);
-        Shortcut(Path.Combine(programs, Label + ".lnk"), "programs-shortcut.sha256", remove);
+        return Path.Combine(desktopEntry ? desktop : programs, Label + ".lnk");
+    }
+    static void Shortcuts(bool remove) {
+        Shortcut(ShortcutPath(true), "desktop-shortcut.sha256", remove);
+        Shortcut(ShortcutPath(false), "programs-shortcut.sha256", remove);
         Atomic(Child(Root, "shell-status.txt"), ShellDeferred ? "DEFERRED" : "COMPLETE");
     }
     static bool RetainedRepairOriginal(string id) {
@@ -411,6 +414,17 @@ internal static class Launcher {
                         Prepare(space, mode == "--prepare-repair"); return 0;
                     }
                     Owned();
+                    if (mode == "--shortcuts") {
+                        Require(args.Length >= 3 && (args[2] == "desktop" || args[2] == "programs"), "SHORTCUT_ARGUMENT_REFUSED");
+                        Require(!ExtractionActive(), "INSTALLATION_BUSY");
+                        var current = VersionRoot(Current());
+                        Require(File.ReadAllText(Child(Root, "receipts/" + Current() + ".sha256")) == Hash(Path.Combine(current, "install-manifest.json")), "CURRENT_MANIFEST_CHANGED");
+                        Verify(current, ReadManifest(current));
+                        Require(Hash(Path.Combine(current, "install-manager.exe")) == Hash(System.Reflection.Assembly.GetExecutingAssembly().Location), "SHORTCUT_MANAGER_CHANGED");
+                        bool desktopEntry = args[2] == "desktop";
+                        Shortcut(ShortcutPath(desktopEntry), desktopEntry ? "desktop-shortcut.sha256" : "programs-shortcut.sha256", false);
+                        return ShellDeferred ? 3 : 0;
+                    }
                     if (mode == "--stage-repair" && args.Length >= 4) {
                         var input = Safe(args[3]); Require(Path.GetFileName(input) == "install-manifest.json", "STAGING_MANIFEST_NAME");
                         var manifest = ReadManifest(Path.GetDirectoryName(input));

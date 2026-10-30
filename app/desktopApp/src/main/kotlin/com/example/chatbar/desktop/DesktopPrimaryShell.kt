@@ -20,6 +20,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.remember
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -144,6 +145,15 @@ internal fun DesktopPrimaryShell(
                     }
                     DesktopPrimaryRoute.DATA -> DesktopDataWorkspace(rootSwitchController, fullBackupController,
                         mergeImportController, backupSettingsController, onExitApplication)
+                }
+                primaryChatController.voices?.let { runtime ->
+                    val player by runtime.playback.state.collectAsState()
+                    val chat by primaryChatController.state.collectAsState()
+                    if (route != DesktopPrimaryRoute.CHAT || chat.selectedSession?.id != player.sessionId) {
+                        Box(Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
+                            DesktopFloatingVoicePlayer(runtime, primaryChatController.chatUi)
+                        }
+                    }
                 }
             }
         }

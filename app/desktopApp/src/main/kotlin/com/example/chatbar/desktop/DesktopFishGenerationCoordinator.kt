@@ -437,20 +437,22 @@ internal class DesktopFishGenerationCoordinator(
         voice: GeneratedVoiceMessage,
         orderedVisibleVoices: List<GeneratedVoiceMessage>,
         originGeneration: Long = foregroundGeneration.get(),
+        backgroundControl: Boolean = false,
     ): Job {
         val sequence = VoicePlaybackQueuePolicy.sequenceFrom(voice, orderedVisibleVoices)
         val requestedGeneration = originGeneration
         val admission = playback.admissionToken()
         return scope.launch {
-            if (foregroundSessionId != voice.sessionId || foregroundGeneration.get() != requestedGeneration) return@launch
+            fun eligible() = (backgroundControl || foregroundSessionId == voice.sessionId) && foregroundGeneration.get() == requestedGeneration
+            if (!eligible()) return@launch
             // Recheck inside the autoplay mutex: maintenance/leave may invalidate a click
             // after the initial check while it is waiting to clear the automatic queue.
             val manualGeneration = autoPlayMutex.withLock {
-                if (foregroundSessionId != voice.sessionId || foregroundGeneration.get() != requestedGeneration) null
+                if (!eligible()) null
                 else { pendingAutoPlay.clear(); foregroundGeneration.incrementAndGet() }
             } ?: return@launch
             playback.playSequence(sequence, admission, toggleCurrent = true) {
-                foregroundSessionId == voice.sessionId && foregroundGeneration.get() == manualGeneration
+                (backgroundControl || foregroundSessionId == voice.sessionId) && foregroundGeneration.get() == manualGeneration
             }
         }
     }
@@ -1005,8 +1007,15 @@ internal class DesktopFishGenerationCoordinator(
             val shouldPlay = next.voices?.isNotEmpty() == true &&
                 foregroundSessionId == next.sessionId &&
                 foregroundGeneration.get() == next.foregroundGeneration
-            if (shouldPlay) playback.enqueueSequence(checkNotNull(next.voices)) {
-                foregroundSessionId == next.sessionId && foregroundGeneration.get() == next.foregroundGeneration
+            if (shouldPlay) {
+                val accepted = playback.enqueueSequence(checkNotNull(next.voices)) {
+                    foregroundSessionId == next.sessionId && foregroundGeneration.get() == next.foregroundGeneration
+                }
+                if (!accepted && playback.state.value.sessionId?.let { it != next.sessionId } == true) {
+                    val voice = next.voices!!.first()
+                    mutableFeedback.value = DesktopVoiceFeedback(next.sessionId, voice.messageId, voice.id, next.batchId,
+                        "录音已保存；另一会话正在播放，未加入当前播放队列")
+                }
             }
         }
     }

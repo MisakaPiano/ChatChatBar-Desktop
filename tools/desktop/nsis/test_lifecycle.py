@@ -298,6 +298,34 @@ class Lifecycle(unittest.TestCase):
         self.assertEqual(b'unknown user modification', link.read_bytes())
         self.assertEqual('DEFERRED', (self.root / 'cleanup-status.txt').read_text())
 
+    def test_app_shortcut_commands_restore_each_entry_without_launch_or_pointer_change(self):
+        first, _ = self.version(1)
+        self.run_manager('--activate', first)
+        pointer = (self.root / 'current.txt').read_bytes()
+        for destination, folder in [('desktop', 'Desktop'), ('programs', 'Programs')]:
+            link = Path(self.case.name) / 'shell' / folder / 'ChatChatBar Desktop NSIS Synthetic.lnk'
+            other = Path(self.case.name) / 'shell' / ('Programs' if folder == 'Desktop' else 'Desktop') / link.name
+            other_before = other.read_bytes()
+            link.unlink()
+            self.run_manager('--shortcuts', destination)
+            self.assertTrue(link.is_file())
+            self.assertEqual('MisakaPiano.ChatChatBar.Desktop.Synthetic', self.shell_property(link))
+            self.assertEqual(other_before, other.read_bytes())
+            self.assertEqual(pointer, (self.root / 'current.txt').read_bytes())
+            self.assertEqual(digest(link), (self.root / (destination + '-shortcut.sha256')).read_text())
+            link.write_bytes(b'user changed shortcut')
+            self.run_manager('--shortcuts', destination, expected=3)
+            self.assertEqual(b'user changed shortcut', link.read_bytes())
+
+    def test_app_shortcut_command_refuses_changed_program(self):
+        first, directory = self.version(1)
+        self.run_manager('--activate', first)
+        link = Path(self.case.name) / 'shell/Desktop/ChatChatBar Desktop NSIS Synthetic.lnk'
+        link.unlink()
+        (directory / 'identity.txt').write_text('changed')
+        self.run_manager('--shortcuts', 'desktop', expected=2)
+        self.assertFalse(link.exists())
+
     def shell_property(self, link, create_legacy=False):
         script = '''
 if ($env:CCB_TEST_CREATE_LEGACY -eq '1') {
