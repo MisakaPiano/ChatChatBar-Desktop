@@ -48,7 +48,7 @@ class DesktopCompactComposerGeometryTest {
                 val controller = container.primaryChatController
                 val navigation = DesktopCompactChatNavigation().apply { onSessionEntered(controller.state.value.selectedSession!!.id, controller.state.value) }
                 val layout = DesktopComposerLayoutState().apply { drag(1000f, 900f) }
-                val scene = ImageComposeScene(width, 900) { DesktopPrimaryChatPanel(controller, DesktopShellLayoutPolicy.sizeForWidth(width.toFloat()), layout,
+                val scene = ImageComposeScene(width, 900, coroutineContext = edt) { DesktopPrimaryChatPanel(controller, DesktopShellLayoutPolicy.sizeForWidth(width.toFloat()), layout,
                     compactNavigation = navigation) }
                 try {
                     frames(scene)
@@ -81,7 +81,8 @@ class DesktopCompactComposerGeometryTest {
             }
             controller.refresh()
             assertEquals(25, controller.state.value.totalMessageCount)
-            val scene = ImageComposeScene(1800, 900) { DesktopPrimaryChatPanel(controller, DesktopShellSize.WIDE, remember { DesktopComposerLayoutState() }) }
+            // Queue scroll effects on the EDT, outside the scene's synchronous measure pass.
+            val scene = ImageComposeScene(1800, 900, coroutineContext = edt) { DesktopPrimaryChatPanel(controller, DesktopShellSize.WIDE, remember { DesktopComposerLayoutState() }) }
             fun action(label: String) = nodes(scene).singleOrNull { label in it.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty() }
             try {
                 withTimeout(7000) { do { frames(scene) } while (action(DesktopUiText.FIRST_MESSAGE.zhCn)?.let { !it.config.contains(SemanticsProperties.Disabled) } != true) }
