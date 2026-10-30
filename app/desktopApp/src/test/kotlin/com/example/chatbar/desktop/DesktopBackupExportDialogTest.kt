@@ -33,10 +33,14 @@ class DesktopBackupExportDialogTest {
             for (width in listOf(480, 1100)) {
                 var result: AppBackupSelection? = null
                 var captured: CharArray? = null
-                val scene = ImageComposeScene(width, 760) {
+                val scene = ImageComposeScene(width, 760, coroutineContext = edt) {
                     DesktopBackupExportDialog(DesktopFullBackupState(catalog = catalog), {}, {}, { choice, secret -> result = choice; captured = secret })
                 }
                 try {
+                    // Initial font/layout preparation is synchronous on a cold CI runner.
+                    // Start the readiness deadline after that first render, while still waiting
+                    // for the real asynchronous estimate and checking the enabled export flow.
+                    frames(scene)
                     withTimeout(5000) { do { frames(scene) } while (nodes(scene).none { it.config.contains(SemanticsActions.OnClick) && matches(it, "下一步") && !it.config.contains(SemanticsProperties.Disabled) }) }
                     click(scene, "轻量")
                     val next = nodes(scene).first { it.config.contains(SemanticsActions.OnClick) && matches(it, "下一步") }
