@@ -74,7 +74,8 @@ internal class DesktopFullBackupArchive(private val workspace: Path, private val
                         "manifest.json" -> summary = backupJson.decodeFromString(buffer!!.toString(Charsets.UTF_8))
                         "preferences.json" -> {
                             val value = backupJson.decodeFromString<BackupPreferences>(buffer!!.toString(Charsets.UTF_8))
-                            if (value.novelAiToken != null || value.fishAudioKey != null || value.communitySession != null)
+                            if (value.novelAiToken != null || value.fishAudioKey != null || value.communitySession != null ||
+                                value.desktopLlmAccounts != null || value.desktopNovelAiAccounts != null || value.desktopFishAccounts != null)
                                 throw DesktopBackupCompatibilityException(DesktopBackupCompatibility.CREDENTIAL_APPROVAL_REQUIRED)
                             check(value.brushSize.isFinite() && value.brushSize > 0 && value.brushType.length <= 100)
                             preferences = value; preferenceHash = sha
@@ -161,6 +162,7 @@ internal class DesktopFullBackupArchive(private val workspace: Path, private val
         DesktopArchiveFiles.safe(destination.parent, true)
         check(files.size <= DesktopBackupPolicy.MAX_FILES && files.keys.map { it.lowercase() }.distinct().size == files.size)
         check(preferences.novelAiToken == null && preferences.fishAudioKey == null && preferences.communitySession == null)
+        check(preferences.desktopLlmAccounts == null && preferences.desktopNovelAiAccounts == null && preferences.desktopFishAccounts == null)
         val outputWork = DesktopBackupScratch.create(destination.parent, "backup-output-")
         try {
         val part = outputWork.directory.resolve("output.part")

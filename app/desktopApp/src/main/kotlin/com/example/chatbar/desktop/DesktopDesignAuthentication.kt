@@ -18,7 +18,7 @@ internal suspend fun desktopExactDesignModel(resolver: EffectiveModelResolver, a
 internal fun desktopDesignAuthentication(model: ModelConfig?, app: AppSettings): DesktopDesignAuthentication {
     model ?: return DesktopDesignAuthentication()
     val configured = model.hasConfiguredAuthentication(app)
-    return DesktopDesignAuthentication(model.id, model.displayName,
-        runCatching { java.net.URI(model.baseUrl).host }.getOrNull() ?: "未配置服务地址", configured,
+    return DesktopDesignAuthentication(model.id, model.desktopAccountLabel(),
+        model.credentialAccount?.provider ?: (runCatching { java.net.URI(model.baseUrl).host }.getOrNull() ?: "未配置服务地址"), configured,
         if (configured) "认证配置可用" else "设计模型缺少可用认证，请打开模型设置安全保存凭据")
 }

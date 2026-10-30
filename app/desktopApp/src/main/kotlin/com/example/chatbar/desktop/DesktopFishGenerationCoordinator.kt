@@ -129,8 +129,11 @@ internal class DesktopFishGenerationCoordinator(
         }
         job.start()
     }
-    private fun launchVoiceJob(block: suspend () -> Unit): Job = scope.launch(start = CoroutineStart.LAZY) {
-        operationGate.withNormalOperation { block() }
+    private fun launchVoiceJob(block: suspend () -> Unit): Job {
+        val credential = runCatching { credentials.captureCall() }
+        return scope.launch(start = CoroutineStart.LAZY) {
+            operationGate.withNormalOperation { withContext(credential.getOrThrow()) { block() } }
+        }
     }
     private fun strictFishModel(model: String): String {
         require(model in FishAudioTtsModels.supported) { "所选 Fish 模型已失效；不会自动替换" }
@@ -290,7 +293,7 @@ internal class DesktopFishGenerationCoordinator(
                     taggedText = editedTaggedText,
                     mode = FishAudioTagPolicy.markerMode(fishModelId)
                 ).getOrThrow()
-                checkNotNull(credentials.load()) { "Fish Audio API Key 未配置" }
+                checkNotNull(credentials.forCurrentCall()) { "Fish Audio API Key 未配置" }
                 updateBatch(batchId) {
                     it.copy(
                         phase = VoiceGenerationPhase.SYNTHESIZING,
@@ -711,7 +714,7 @@ internal class DesktopFishGenerationCoordinator(
             finishAutoPlay(batchId, null)
             return
         }
-        checkNotNull(credentials.load()) { "Fish Audio API Key 未配置" }
+        checkNotNull(credentials.forCurrentCall()) { "Fish Audio API Key 未配置" }
         networkWork(context.session.id) {
             val bytesByTarget = ConcurrentHashMap<String, Long>()
             val completedTargets = AtomicInteger(0)

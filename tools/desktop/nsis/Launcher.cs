@@ -34,6 +34,38 @@ internal static class Launcher {
     static readonly JavaScriptSerializer Json = new JavaScriptSerializer { MaxJsonLength = 2097152 };
     static string Root;
     static bool ShellDeferred;
+    static string ShellAppId { get { return Product == "ccb-desktop-nsis-v1" ? "MisakaPiano.ChatChatBar.Desktop" : "MisakaPiano.ChatChatBar.Desktop.Synthetic"; } }
+    [StructLayout(LayoutKind.Sequential, Pack = 4)] struct ShellPropertyKey { public Guid format; public uint id; }
+    [StructLayout(LayoutKind.Explicit, Size = 24)] struct ShellValue {
+        [FieldOffset(0)] public ushort kind;
+        [FieldOffset(8)] public IntPtr text;
+    }
+    [ComImport, Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    interface IShellProperties {
+        [PreserveSig] int GetCount(out uint count);
+        [PreserveSig] int GetAt(uint index, out ShellPropertyKey key);
+        [PreserveSig] int GetValue(ref ShellPropertyKey key, out ShellValue value);
+        [PreserveSig] int SetValue(ref ShellPropertyKey key, ref ShellValue value);
+        [PreserveSig] int Commit();
+    }
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    static extern int SHGetPropertyStoreFromParsingName(string path, IntPtr context, uint flags, ref Guid iid, out IShellProperties properties);
+    [DllImport("ole32.dll")] static extern int PropVariantClear(ref ShellValue value);
+    static bool ShortcutAppIdentity(string path, bool write) {
+        var iid = new Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99"); IShellProperties properties;
+        Require(SHGetPropertyStoreFromParsingName(path, IntPtr.Zero, write ? 2u : 0u, ref iid, out properties) >= 0, "SHORTCUT_PROPERTIES_UNAVAILABLE");
+        var key = new ShellPropertyKey { format = new Guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3"), id = 5 };
+        var value = new ShellValue();
+        try {
+            if (write) {
+                value.kind = 31; value.text = Marshal.StringToCoTaskMemUni(ShellAppId);
+                Require(properties.SetValue(ref key, ref value) >= 0 && properties.Commit() >= 0, "SHORTCUT_APPID_WRITE_FAILED");
+                return true;
+            }
+            Require(properties.GetValue(ref key, out value) >= 0, "SHORTCUT_APPID_READ_FAILED");
+            return value.kind == 31 && Marshal.PtrToStringUni(value.text) == ShellAppId;
+        } finally { PropVariantClear(ref value); Marshal.FinalReleaseComObject(properties); }
+    }
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     static extern SafeFileHandle CreateFile(string path, uint access, uint share, IntPtr security, uint creation, uint flags, IntPtr template);
     [DllImport("kernel32.dll", SetLastError = true)]
@@ -226,6 +258,20 @@ internal static class Launcher {
                 ShellDeferred = true; Event("DEFERRED MODIFIED_OR_FOREIGN_SHORTCUT " + receiptName); return;
             }
             if (remove) { Require(DeleteOwned(path, new FileInfo(path).Length, File.ReadAllText(receipt)), "SHORTCUT_CHANGED"); File.Delete(receipt); }
+            else {
+                string brandedCopy = null;
+                try {
+                    if (!ShortcutAppIdentity(path, false)) {
+                        var observed = Hash(path);
+                        brandedCopy = path + "." + Guid.NewGuid().ToString("N") + ".lnk";
+                        File.Copy(path, brandedCopy, false); ShortcutAppIdentity(brandedCopy, true);
+                        Require(Hash(path) == observed && observed == File.ReadAllText(receipt), "SHORTCUT_CHANGED");
+                        File.Replace(brandedCopy, path, null); brandedCopy = null;
+                        Atomic(receipt, Hash(path)); Event("SHORTCUT_APPID_UPDATED " + receiptName);
+                    }
+                } catch { ShellDeferred = true; Event("DEFERRED SHORTCUT_APPID " + receiptName); }
+                finally { if (brandedCopy != null && File.Exists(brandedCopy)) File.Delete(brandedCopy); }
+            }
             return;
         }
         if (remove) { if (File.Exists(receipt)) File.Delete(receipt); return; }
@@ -239,6 +285,8 @@ internal static class Launcher {
         foreach (var item in new[] { new[] { "TargetPath", target }, new[] { "WorkingDirectory", Root }, new[] { "Description", Label } })
             lt.InvokeMember(item[0], System.Reflection.BindingFlags.SetProperty, null, link, new object[] { item[1] });
         lt.InvokeMember("Save", System.Reflection.BindingFlags.InvokeMethod, null, link, null);
+        try { ShortcutAppIdentity(temporary, true); }
+        catch { ShellDeferred = true; Event("DEFERRED SHORTCUT_APPID " + receiptName); }
         File.Move(temporary, path);
         Atomic(receipt, Hash(path));
     }

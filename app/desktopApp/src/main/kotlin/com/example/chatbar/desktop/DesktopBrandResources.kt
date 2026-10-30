@@ -8,4 +8,13 @@ internal object DesktopBrandResources {
     fun logoBytes(): ByteArray = checkNotNull(javaClass.classLoader.getResourceAsStream(LOGO_RESOURCE)) {
         "Official CCB Desktop brand resource is missing"
     }.use { it.readBytes() }
+
+    fun applyTo(window: java.awt.Window) {
+        try {
+            window.iconImages = listOf(checkNotNull(javax.imageio.ImageIO.read(logoBytes().inputStream())))
+        } catch (_: Exception) {
+            // Startup/recovery must remain available even when a damaged program lacks its logo.
+            System.err.println("CCB WINDOW_BRAND_UNAVAILABLE")
+        }
+    }
 }

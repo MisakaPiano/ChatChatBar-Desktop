@@ -15,6 +15,8 @@ import com.example.chatbar.desktop.security.DesktopModelCredentialPersistencePol
 import com.example.chatbar.desktop.security.DesktopSecretStore
 import com.example.chatbar.desktop.security.DesktopSettingsCredentialPersistencePolicy
 import com.example.chatbar.desktop.security.WindowsSecretStore
+import com.example.chatbar.desktop.security.credentialForCall
+import com.example.chatbar.desktop.security.identity
 import com.example.chatbar.domain.card.AuthoritativeCharacterTransferPromptPolicy
 import com.example.chatbar.domain.card.CharacterCardTransferCore
 import com.example.chatbar.domain.card.CharacterDocumentRagCleanup
@@ -176,8 +178,10 @@ class DesktopAppContainer internal constructor(
     internal val mergeImportController by mergeImportOwner
 
     internal val desktopSecretStore: DesktopSecretStore by lazy {
-        secretStoreFactory(appDataRoot)
+        com.example.chatbar.desktop.security.DesktopAccountStore(secretStoreFactory(appDataRoot))
     }
+    internal val apiAccounts get() = desktopSecretStore as com.example.chatbar.desktop.security.DesktopAccountStore
+    internal val apiAccountController by lazy { DesktopApiAccountController(apiAccounts, modelRepository, dataOperationCoordinator, modelCredentialPolicy) }
     internal val fishAudioCredentials by lazy { DesktopFishAudioCredentials(desktopSecretStore) }
     private val fishAudioLibraryOwner = lazy { DesktopFishAudioLibrary(fishAudioCredentials) }
     internal val fishAudioLibrary by fishAudioLibraryOwner
@@ -193,7 +197,7 @@ class DesktopAppContainer internal constructor(
     internal val voiceAudioStore by lazy { DesktopVoiceAudioStore(appDataRoot) }
     private val chatVoiceOwner = lazy { DesktopChatVoiceRuntime(chatRepository, characterRepository, settingsRepository,
         effectiveModelResolver, voiceRepository, voiceAudioStore, fishAudioCredentials, audioFocusOwner.value.port(formal = true),
-        picker = filePicker, gate = dataOperationCoordinator,
+        picker = filePicker, gate = dataOperationCoordinator, uiPreferences = chatUiController.state,
         textBusy = { sessionId -> taskRuntime.tasks.value.any { it.sessionId == sessionId && it.status == DesktopTaskStatus.RUNNING } }) }
     internal val chatVoiceRuntime by chatVoiceOwner
     private val fishPreviewOwner = lazy {
@@ -233,17 +237,29 @@ class DesktopAppContainer internal constructor(
             DesktopNovelAiGuidance(appDataRoot, characterResourceStore, desktopSecretStore), taskRuntime,
             novelAiInfrastructure, settingsRepository, effectiveModelResolver, characterRepository,
             account = { com.example.chatbar.domain.image.NovelAiAccountService(secureNovelAiClient()).fetchCancellable(
-                requireNotNull(desktopSecretStore.load(com.example.chatbar.desktop.security.DesktopCredentialKey.NovelAiToken))) },
+                requireNotNull(desktopSecretStore.credentialForCall(com.example.chatbar.desktop.security.DesktopCredentialKey.NovelAiToken))) },
             credentialConfigured = { !desktopSecretStore.load(com.example.chatbar.desktop.security.DesktopCredentialKey.NovelAiToken).isNullOrBlank() },
-            postProcessor = DesktopNovelAiPostProcessor(desktopSecretStore))
+            postProcessor = DesktopNovelAiPostProcessor(desktopSecretStore),
+            credentialIdentity = { apiAccounts.identity(com.example.chatbar.desktop.security.DesktopAccountService.NOVELAI) },
+            freezeCredential = { apiAccounts.captureCall(com.example.chatbar.desktop.security.DesktopCredentialKey.NovelAiToken,
+                com.example.chatbar.desktop.security.DesktopAccountService.NOVELAI) })
     }
 
     internal val appearanceController by lazy { DesktopAppearanceController(settingsRepository, desktopSettingsStore) }
+    private val modelCredentialPolicy by lazy {
+        DesktopModelCredentialPersistencePolicy(desktopSecretStore, dataOperationCoordinator) { id ->
+            when (modelRepository.readDurableModel(id)) {
+                is JsonFileStorage.EntityReadResult.Valid -> true
+                JsonFileStorage.EntityReadResult.Missing -> false
+                else -> error("MODEL_CREDENTIAL_ENTITY_UNAVAILABLE")
+            }
+        }
+    }
     internal val modelRepository: ModelRepository by lazy {
         ModelRepository(
             storage = jsonFileStorage,
             modelStorageKeyPolicy = WindowsSafeModelStorageKeyPolicy,
-            credentialPersistencePolicy = DesktopModelCredentialPersistencePolicy(desktopSecretStore, dataOperationCoordinator),
+            credentialPersistencePolicy = modelCredentialPolicy,
             embeddingCredentialPersistencePolicy =
                 DesktopEmbeddingCredentialPersistencePolicy(desktopSecretStore, dataOperationCoordinator),
         )
@@ -346,6 +362,7 @@ class DesktopAppContainer internal constructor(
         audioMaintenance = audioMaintenance,
     )
     private val desktopSettingsStore = DesktopSettingsStore(appDataRoot, dataOperationCoordinator)
+    internal val chatUiController by lazy { DesktopChatUiController(desktopSettingsStore) }
     internal val uiLanguageController = DesktopUiLanguageController(desktopSettingsStore)
     val automaticBackupRuntime = DesktopAutomaticBackupRuntime(
         settingsStore = desktopSettingsStore,
@@ -517,7 +534,7 @@ class DesktopAppContainer internal constructor(
             },
             taskRuntime = taskRuntime,
             imageStore = chatImages,
-            chatUi = DesktopChatUiController(desktopSettingsStore),
+            chatUi = chatUiController,
             maintenance = chatMaintenanceController,
             voices = chatVoiceRuntime,
             residency = characterResidency,

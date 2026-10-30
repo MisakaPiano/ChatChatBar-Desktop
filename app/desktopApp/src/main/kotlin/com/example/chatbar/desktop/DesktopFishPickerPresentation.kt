@@ -1,5 +1,7 @@
 package com.example.chatbar.desktop
 
+import androidx.compose.ui.platform.testTag
+
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -8,6 +10,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,6 +27,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.example.chatbar.domain.voice.*
+import com.example.chatbar.desktop.security.identity
+import com.example.chatbar.desktop.security.DesktopAccountService
 
 private enum class FishTools { ADVANCED, GENERATE }
 
@@ -37,6 +42,16 @@ internal fun DesktopFishPickerContent(controller: DesktopFishPickerController, c
     val query = state.query
     val audio = preview?.state?.collectAsState()?.value ?: DesktopFishPreviewState()
     var target by remember(controller) { mutableStateOf<FishAudioModel?>(null) }
+    val accountController = LocalDesktopApiAccounts.current
+    val accountRevision = accountController?.store?.revision?.collectAsState()?.value
+    val accountIdentity = remember(accountRevision) { accountController?.store?.identity(DesktopAccountService.FISH) }
+    var catalogueRevision by remember(controller) { mutableStateOf(accountIdentity) }
+    LaunchedEffect(accountRevision) {
+        if (catalogueRevision != accountIdentity) {
+            catalogueRevision = accountIdentity; target = null
+            controller.invalidate(controller.state.value.query); preview?.stop()
+        }
+    }
     var panel by remember(controller) { mutableStateOf<FishTools?>(null) }
     var text by remember(controller) { mutableStateOf("") }
     val close by rememberUpdatedState(onClose)
@@ -243,7 +258,7 @@ private fun FishVoiceCard(model: FishAudioModel, selected: Boolean, enabled: Boo
         FishCaption(listOf(model.author?.nickname ?: "未知作者", model.visibility ?: "未知权限",
             model.languages.joinToString("/"), model.tags.joinToString(", ")).filter(String::isNotBlank).joinToString(" · "))
         if (selected) FishCaption("已设为预览目标；尚未绑定")
-        sample?.text?.takeIf(String::isNotBlank)?.let { FishCaption("官方示例文字 · $it") }
+        if (sample != null) DesktopOfficialSampleText(model.id, model.title, sample.previewUrl, sample.text)
         if (sample == null) FishCaption("暂无官方样本")
         else if (!approved) FishCaption("官方样本来源或格式暂不受支持；不会下载或发送凭据")
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -251,6 +266,23 @@ private fun FishVoiceCard(model: FishAudioModel, selected: Boolean, enabled: Boo
                 icon = DesktopAppIcons.Play) { if (sample != null) onSample(sample) }
             FishAction("使用音色", "使用音色 · ${model.title}", enabled = enabled,
                 icon = DesktopAppIcons.Check, style = StudioActionStyle.PRIMARY, onClick = onUse)
+        }
+    }
+}
+
+@Composable internal fun DesktopOfficialSampleText(voiceId: String, title: String, sampleUrl: String, text: String?) {
+    val body = text?.takeIf(String::isNotBlank)
+    var expanded by remember(voiceId, sampleUrl) { mutableStateOf(false) }
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        if (body == null) FishCaption("官方样本未附带文字")
+        else {
+            FishAction(if (expanded) "收起示例文字" else "展开示例全文", "官方示例文字 · $title") { expanded = !expanded }
+            if (expanded) SelectionContainer {
+                Box(Modifier.fillMaxWidth().heightIn(max = 220.dp).testTag("official-sample-fulltext")
+                    .verticalScroll(rememberScrollState()).padding(4.dp)) {
+                    BasicText(body, style = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 13.sp))
+                }
+            } else FishCaption(body)
         }
     }
 }

@@ -89,6 +89,7 @@ internal object DesktopFullBackupSource {
                                             // instructions in an incoming archive. Target retention is derived
                                             // later from authenticated scope and the user's choices.
                                             require(preferences.retainedPreferences.isEmpty())
+                                            validateAccountPreferences(value)
                                             sink.preferences(value)
                                         }
                                         else -> {

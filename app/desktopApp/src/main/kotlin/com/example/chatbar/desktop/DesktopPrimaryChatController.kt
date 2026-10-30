@@ -1052,7 +1052,7 @@ internal class DesktopPrimaryChatController(
                 effective?.id?.let { modelRepository?.getModel(it) }, catalogProvider(effective?.sourcePresetKey),
             )
             val modelChoices = models.availableChatModels(appSettings)
-                .map { DesktopPrimaryChoice(it.id, it.displayName) }
+                .map { DesktopPrimaryChoice(it.id, it.desktopAccountLabel()) }
             val effectiveModels = desktopEffectiveModels(models, appSettings)
             val formatChoices = formats.getAll().map { DesktopPrimaryChoice(it.id, it.name) }
             val worldBookChoices = worldBooks.getAll().map { DesktopPrimaryChoice(it.id, it.name) }

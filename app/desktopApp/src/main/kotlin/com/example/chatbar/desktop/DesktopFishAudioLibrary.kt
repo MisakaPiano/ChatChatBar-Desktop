@@ -2,6 +2,8 @@ package com.example.chatbar.desktop
 
 import com.example.chatbar.desktop.security.DesktopCredentialKey
 import com.example.chatbar.desktop.security.DesktopSecretStore
+import com.example.chatbar.desktop.security.credentialForCall
+import com.example.chatbar.desktop.security.DesktopCredentialCall
 import com.example.chatbar.domain.ProxyAwareClient
 import com.example.chatbar.domain.voice.FishAudioApiException
 import com.example.chatbar.domain.voice.FishAudioModelPage
@@ -30,6 +32,12 @@ internal class DesktopFishAudioCredentials(private val secrets: DesktopSecretSto
     }
 
     fun clear() = secrets.delete(DesktopCredentialKey.FishAudioApiKey)
+    suspend fun forCurrentCall(): String? {
+        return secrets.credentialForCall(DesktopCredentialKey.FishAudioApiKey)
+    }
+    fun captureCall(): DesktopCredentialCall = (secrets as? com.example.chatbar.desktop.security.DesktopAccountStore)
+        ?.captureCall(DesktopCredentialKey.FishAudioApiKey, com.example.chatbar.desktop.security.DesktopAccountService.FISH)
+        ?: DesktopCredentialCall(secrets, DesktopCredentialKey.FishAudioApiKey, "legacy", load())
 }
 
 /** Catalog only: querying or binding a voice must never implicitly generate a paid preview. */

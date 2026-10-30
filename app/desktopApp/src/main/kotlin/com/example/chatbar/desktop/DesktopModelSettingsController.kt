@@ -49,7 +49,9 @@ internal data class DesktopModelItem(
     val preset: Boolean,
     val selectableForChat: Boolean,
     val templateType: ModelTemplate,
+    val accountLabel: String? = null,
 )
+internal val DesktopModelItem.accountDisplayLabel get() = accountLabel?.let { "$displayName · $it" } ?: displayName
 
 internal data class DesktopBundledChatModel(val key: String, val displayName: String, val modelName: String)
 
@@ -725,6 +727,7 @@ private fun ModelConfig.toItem() = DesktopModelItem(
     preset = sourcePresetKey != null,
     selectableForChat = selectableForChat,
     templateType = templateType,
+    accountLabel = credentialAccount?.let { "${it.provider} · ${it.name} · $modelName" },
 )
 
 private fun ModelConfig.toEditor() = DesktopModelEditorDraft(

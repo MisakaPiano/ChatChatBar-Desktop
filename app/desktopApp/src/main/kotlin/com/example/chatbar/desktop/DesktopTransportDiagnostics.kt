@@ -76,7 +76,7 @@ internal class DesktopTransportDiagnosticsOwner(
                     DesktopTransportDiagnosticEntry(
                         taskId = taskId,
                         sessionId = sessionId,
-                        modelDisplayName = scrubber.text(model.displayName, SHORT_LIMIT),
+                        modelDisplayName = scrubber.text(model.desktopAccountLabel(), SHORT_LIMIT),
                         modelName = scrubber.text(model.modelName, SHORT_LIMIT),
                         startedAt = clock(),
                     ),

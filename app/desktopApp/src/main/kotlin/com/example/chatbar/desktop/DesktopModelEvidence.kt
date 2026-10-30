@@ -2,6 +2,11 @@ package com.example.chatbar.desktop
 
 import androidx.compose.runtime.Composable
 import com.example.chatbar.data.local.entity.ModelTemplate
+import com.example.chatbar.data.local.entity.ModelConfig
+
+internal fun ModelConfig.desktopAccountLabel(): String = credentialAccount?.let {
+    listOf(displayName, it.provider, it.name, modelName).joinToString(" · ")
+} ?: displayName
 
 internal fun desktopModelSummary(diagnostic: DesktopModelDiagnostic?, t: DesktopUiStrings): String {
     if (diagnostic == null) return t(DesktopUiText.NOT_CONFIGURED)
@@ -17,7 +22,8 @@ internal fun desktopModelSummary(diagnostic: DesktopModelDiagnostic?, t: Desktop
         DesktopCredentialSource.UNCONFIGURED -> DesktopUiText.NOT_CONFIGURED
     }
     return listOfNotNull(diagnostic.displayName ?: t(DesktopUiText.NOT_CONFIGURED),
-        diagnostic.catalogProvider ?: diagnostic.modelName, t(selection), t(credential)).joinToString(" · ")
+        diagnostic.accountProvider ?: diagnostic.catalogProvider ?: diagnostic.modelName,
+        diagnostic.accountName, t(selection), t(credential)).joinToString(" · ")
 }
 
 /** Diagnostic labels are deliberately derived from IDs and provenance, never key material. */
@@ -35,6 +41,7 @@ internal fun DesktopModelEvidence(diagnostic: DesktopModelDiagnostic?, session: 
             "${t(DesktopUiText.SPECIFIED_UNAVAILABLE)}: ${diagnostic.configuredId} → ${t(DesktopUiText.CURRENT_FALLBACK)}: $name"
     }
     StatusText(selection)
+    diagnostic.accountName?.let { StatusText("${diagnostic.accountProvider.orEmpty()} · $it") }
     diagnostic.modelName?.let { StatusText("$it · ${diagnostic.baseUrl.orEmpty()}") }
     if (diagnostic.effectiveId != null) {
         val template = diagnostic.templateType?.let { t(when (it) {

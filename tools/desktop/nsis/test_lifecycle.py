@@ -298,6 +298,45 @@ class Lifecycle(unittest.TestCase):
         self.assertEqual(b'unknown user modification', link.read_bytes())
         self.assertEqual('DEFERRED', (self.root / 'cleanup-status.txt').read_text())
 
+    def shell_property(self, link, create_legacy=False):
+        script = '''
+if ($env:CCB_TEST_CREATE_LEGACY -eq '1') {
+  $w = New-Object -ComObject WScript.Shell
+  $l = $w.CreateShortcut($env:CCB_TEST_LINK)
+  $l.TargetPath = $env:CCB_TEST_TARGET
+  $l.WorkingDirectory = [System.IO.Path]::GetDirectoryName($env:CCB_TEST_TARGET)
+  $l.Save()
+}
+$s = New-Object -ComObject Shell.Application
+$f = $s.Namespace([System.IO.Path]::GetDirectoryName($env:CCB_TEST_LINK))
+$i = $f.ParseName([System.IO.Path]::GetFileName($env:CCB_TEST_LINK))
+$i.ExtendedProperty('System.AppUserModel.ID')
+'''
+        env = dict(os.environ, CCB_TEST_LINK=str(link), CCB_TEST_TARGET=str(self.root / 'ChatChatBar.exe'),
+                   CCB_TEST_CREATE_LEGACY='1' if create_legacy else '0')
+        result = subprocess.run(['powershell.exe', '-NoLogo', '-NoProfile', '-NonInteractive', '-Command', script],
+                                env=env, capture_output=True, text=True, check=True, timeout=30,
+                                creationflags=subprocess.CREATE_NO_WINDOW)
+        return result.stdout.strip()
+
+    def test_taskbar_identity_is_stable_and_legacy_owned_shortcut_is_upgraded(self):
+        first, _ = self.version(1)
+        self.run_manager('--activate', first)
+        link = Path(self.case.name) / 'shell/Programs/ChatChatBar Desktop NSIS Synthetic.lnk'
+        app_id = 'MisakaPiano.ChatChatBar.Desktop.Synthetic'
+        self.assertEqual(app_id, self.shell_property(link))
+        # Reconstruct the old release's own unbranded link, with its original ownership receipt.
+        link.unlink()
+        self.assertEqual('', self.shell_property(link, create_legacy=True))
+        (self.root / 'programs-shortcut.sha256').write_text(digest(link))
+        second, _ = self.version(2)
+        self.run_manager('--activate', second)
+        self.assertEqual(app_id, self.shell_property(link))
+        self.assertEqual(digest(link), (self.root / 'programs-shortcut.sha256').read_text())
+        key = hashlib.sha256(str(self.root.absolute()).upper().encode('utf-8')).hexdigest().upper()
+        log = self.local / 'ChatChatBarDesktopNSISLifecycleTestInstallState' / (key + '.log')
+        self.assertIn('SHORTCUT_APPID_UPDATED programs-shortcut.sha256', log.read_text())
+
     def test_identical_reinstall_verifies_without_overlay(self):
         first, directory = self.version(1)
         self.run_manager('--activate', first)

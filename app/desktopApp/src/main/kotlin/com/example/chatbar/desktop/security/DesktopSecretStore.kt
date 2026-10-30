@@ -21,6 +21,8 @@ sealed interface DesktopCredentialKey {
 
     /** Imported session custody only; no Community runtime or refresh task consumes this key. */
     data object DormantCommunitySession : DesktopCredentialKey
+    data class AccountProfiles(val service: DesktopAccountService) : DesktopCredentialKey
+    data class AccountProfilesRequired(val service: DesktopAccountService) : DesktopCredentialKey
 }
 
 interface DesktopSecretStore {
@@ -59,4 +61,6 @@ internal fun DesktopCredentialKey.canonicalValue(): String = when (this) {
         "ccb-desktop-credential/v1/singleton-embedding-api-key"
     DesktopCredentialKey.DormantCommunitySession ->
         "ccb-desktop-credential/v1/dormant/community-session"
+    is DesktopCredentialKey.AccountProfiles -> "ccb-desktop-credential/v1/accounts/${service.name.lowercase()}"
+    is DesktopCredentialKey.AccountProfilesRequired -> "ccb-desktop-credential/v1/accounts-required/${service.name.lowercase()}"
 }

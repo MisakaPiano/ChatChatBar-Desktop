@@ -35,7 +35,7 @@ internal class DesktopNovelAiPostProcessor(private val secrets: DesktopSecretSto
                 DesktopImageEditing.png(out)
             }
             currentCoroutineContext().ensureActive()
-            val token = secrets.load(DesktopCredentialKey.NovelAiToken)?.takeIf { it.isNotBlank() }
+            val token = secrets.credentialForCall(DesktopCredentialKey.NovelAiToken)?.takeIf { it.isNotBlank() }
                 ?: throw DesktopNovelAiRequestException("请先在 NovelAI 设置中安全保存凭据")
             val encoded = Base64.getEncoder().encodeToString(encodedBytes)
             val events = if (tab == NovelAiPostProcessTab.UPSCALE) NovelAiUpscaleService(client, safeErrorsOnly = true).upscale(token, encoded)

@@ -80,6 +80,7 @@ internal fun DesktopNovelAiSettingsPanel(controller: DesktopNovelAiSettingsContr
         value = modelSettings.currentEffectiveModels()
     }
     ManageHeading("NovelAI")
+    DesktopApiAccountEntry(com.example.chatbar.desktop.security.DesktopAccountService.NOVELAI)
     StatusText(if (state.credentialPresent) "凭据已保存在 Windows 受保护存储" else "尚未配置 NovelAI 凭据")
     StatusText("仅在本应用中输入凭据。保存不会发送账户查询或生图请求。")
     state.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
@@ -111,7 +112,7 @@ internal fun DesktopNovelAiSettingsPanel(controller: DesktopNovelAiSettingsContr
         listOfNotNull(configuredDesignId?.takeUnless { id -> models.any { it.id == id } })
     ChoiceField("图片 Prompt 设计模型", designChoices, configuredDesignId,
         { id -> if (id == null) effective.globalImageFallbackLabel(t)
-            else models.firstOrNull { it.id == id }?.displayName ?: "${t(DesktopUiText.SPECIFIED_UNAVAILABLE)} · $id" }) {
+            else models.firstOrNull { it.id == id }?.accountDisplayLabel ?: "${t(DesktopUiText.SPECIFIED_UNAVAILABLE)} · $id" }) {
         scope.launch { controller.selectDesignModel(it) }
     }
     StatusText("${t(DesktopUiText.CURRENT_IMAGE_DESIGN_MODEL)} · ${effective.image?.name ?: t(DesktopUiText.NOT_CONFIGURED)}")
@@ -144,6 +145,7 @@ internal fun DesktopManagePanel(
     onStartCharacterChat: (String) -> Unit = {},
     initialModels: Boolean = false, initialModelId: String? = null, onInitialModelsConsumed: () -> Unit = {},
     initialPerson: Pair<String, String>? = null, onInitialPersonConsumed: () -> Unit = {},
+    chatUiController: DesktopChatUiController? = null,
 ) {
     val t = LocalDesktopUiStrings.current
     val uiLanguage by uiLanguageController.language.collectAsState()
@@ -241,7 +243,8 @@ internal fun DesktopManagePanel(
             ManageSection.SETTINGS -> {
                 ManageHeading(t(DesktopUiText.SETTINGS))
                 ActionRow { ManageSettingsGroup.entries.forEach { group ->
-                    BootstrapButton(group.label, secondary = settingsGroup != group) { settingsGroup = group }
+                    DesktopWorkspaceNavigationItem(DesktopWorkspaceDestination(group.name, group.label), settingsGroup == group,
+                        true, Modifier.width(144.dp)) { settingsGroup = group }
                 } }
                 Box(Modifier.fillMaxWidth()) {
                     DesktopRetainedPane(settingsGroup == ManageSettingsGroup.IMAGE) {
@@ -283,7 +286,10 @@ internal fun DesktopManagePanel(
                         }
                     }
                     DesktopRetainedPane(settingsGroup == ManageSettingsGroup.VOICE) {
-                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) { DesktopFishGlobalSettings(state, modelSettingsController) }
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            chatUiController?.let { DesktopContinuousPlaybackSwitch(it) }
+                            DesktopFishGlobalSettings(state, modelSettingsController)
+                        }
                     }
                     DesktopRetainedPane(settingsGroup == ManageSettingsGroup.OTHER) {
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) { DesktopAutomaticBackupSettingsPanel(backupSettingsController) }
@@ -692,6 +698,7 @@ internal fun DesktopModelsPanel(
     if (!editorOnly) {
     controller.ragSettings?.let { DesktopRagSettingsPanel(it) }
     ManageHeading(t(DesktopUiText.CHAT_MODELS))
+    DesktopApiAccountEntry()
     modelTemplateController?.let { transfer ->
         val transferState by transfer.state.collectAsState()
         transferState.status?.let { StatusText(t.status(it)) }
@@ -765,7 +772,7 @@ internal fun DesktopModelsPanel(
             BoxWithConstraints(Modifier.fillMaxWidth()) {
                 val badgeMaxWidth = (maxWidth - 56.dp).coerceAtLeast(0.dp)
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    BasicText(model.displayName, modifier = Modifier.weight(1f), maxLines = 1,
+                    BasicText(model.accountDisplayLabel, modifier = Modifier.weight(1f), maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         style = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 19.sp,
                             fontWeight = FontWeight.SemiBold))
@@ -913,6 +920,7 @@ private fun DesktopCoreSettingsPanel(
     }
     if (area == ManageSettingsGroup.CONNECTION) {
     ManageHeading(t(DesktopUiText.MODEL_CONNECTION))
+    DesktopApiAccountEntry()
     state.bundledCatalog?.let { StatusText("${it.provider} · ${it.baseUrl}") }
     StatusText("${t(DesktopUiText.GLOBAL_API_KEY)}: ${t(if (draft.hasSavedFallbackCredential)
         DesktopUiText.STORED_SECURELY else DesktopUiText.NOT_CONFIGURED)}")
@@ -981,7 +989,7 @@ private fun <T> ChoiceField(
 }
 
 @Composable
-private fun LabeledField(
+internal fun LabeledField(
     label: String,
     value: String,
     secret: Boolean = false,

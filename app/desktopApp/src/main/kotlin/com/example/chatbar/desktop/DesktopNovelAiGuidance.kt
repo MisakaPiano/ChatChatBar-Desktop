@@ -87,7 +87,7 @@ internal class DesktopNovelAiGuidance(
             val strengths = g.effectiveVibeStrengths()
             g.vibes.filter { it.isUsable }.mapIndexed { index, vibe ->
                 val encoded = vibe.encodedVibe?.takeIf { it.isNotBlank() } ?: vibes.resolve(
-                    requireNotNull(secrets.load(DesktopCredentialKey.NovelAiToken)), requireNotNull(vibe.asset),
+                    requireNotNull(secrets.credentialForCall(DesktopCredentialKey.NovelAiToken)), requireNotNull(vibe.asset),
                     draft.selectedModel, vibe.informationExtracted)
                 NovelAiPreparedVibeReference(encoded, vibe.informationExtracted, strengths[index])
             }

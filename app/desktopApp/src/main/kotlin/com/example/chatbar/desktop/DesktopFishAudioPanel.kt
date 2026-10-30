@@ -35,6 +35,7 @@ internal fun DesktopFishGlobalSettings(state: DesktopModelSettingsState, control
     val draft = state.settings ?: return
     val scope = rememberCoroutineScope()
     ManageHeading("语音与朗读")
+    DesktopApiAccountEntry(com.example.chatbar.desktop.security.DesktopAccountService.FISH)
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         StatusText("Fish Audio")
         controller.fishCredentials?.let { DesktopFishCredentialPanel(it) }
@@ -46,7 +47,7 @@ internal fun DesktopFishGlobalSettings(state: DesktopModelSettingsState, control
         val ids = listOf<String?>(null) + state.availableAuxiliaryTextModels.map { it.id } +
             listOfNotNull(draft.voiceTagModelId?.takeIf { id -> state.availableAuxiliaryTextModels.none { it.id == id } })
         SearchableChoice("语音翻译 / 标签模型", ids, draft.voiceTagModelId, { id ->
-            if (id == null) "当前会话对话模型" else state.availableAuxiliaryTextModels.firstOrNull { it.id == id }?.displayName
+            if (id == null) "当前会话对话模型" else state.availableAuxiliaryTextModels.firstOrNull { it.id == id }?.accountDisplayLabel
                 ?: "不可用 · $id"
         }) { value -> controller.editSettings { it.copy(voiceTagModelId = value) } }
         if (draft.voiceTagModelId != null && state.availableAuxiliaryTextModels.none { it.id == draft.voiceTagModelId })
@@ -56,7 +57,7 @@ internal fun DesktopFishGlobalSettings(state: DesktopModelSettingsState, control
         }
         if (state.chatDefaultsDirty)
             StatusText("仍有未保存的全局设置更改", DesktopBootstrapColors.warning)
-        StatusText("此处保存设置；音色库支持免费文本预览，聊天语音生成尚未接入（PENDING）")
+        StatusText("此处保存语音默认设置；在聊天中选择生成整条回复或单个片段，音色库可试听官方样本。")
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             BootstrapButton("保存全局设置", enabled = state.chatDefaultsDirty && !state.busy) {
                 scope.launch { controller.saveAppSettings() }

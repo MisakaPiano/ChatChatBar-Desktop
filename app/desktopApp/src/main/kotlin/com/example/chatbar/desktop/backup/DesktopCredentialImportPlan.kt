@@ -8,7 +8,8 @@ import java.net.URI
  * This module neither decodes archives nor receives credential values or accesses a store.
  * Code84/v1 is the pinned official 1.4.5 contract (1198a13c AppBackupModels/build source).
  */
-internal enum class ImportCredentialKind { NOVEL_AI, FISH, SILICON_FLOW, MODEL, LEGACY_EMBEDDING, SINGLETON_EMBEDDING, COMMUNITY, UNKNOWN }
+internal enum class ImportCredentialKind { NOVEL_AI, FISH, SILICON_FLOW, MODEL, LEGACY_EMBEDDING, SINGLETON_EMBEDDING, COMMUNITY,
+    DESKTOP_LLM_ACCOUNTS, DESKTOP_NOVELAI_ACCOUNTS, DESKTOP_FISH_ACCOUNTS, UNKNOWN }
 internal enum class ImportCredentialLocation { PREFERENCES_NOVEL_AI, PREFERENCES_FISH, APP_SETTINGS, MODEL_CONFIG, LEGACY_EMBEDDING_CONFIG, SINGLETON_EMBEDDING_CONFIG, PREFERENCES_COMMUNITY, UNKNOWN }
 internal enum class ImportSecretPresence { ABSENT, EMPTY, NONEMPTY }
 internal enum class ExistingSecretRelation { ABSENT, SAME, DIFFERENT, UNKNOWN }
@@ -161,6 +162,8 @@ internal class DesktopCredentialImportPlan private constructor(
             ImportCredentialKind.SINGLETON_EMBEDDING -> ImportCredentialLocation.SINGLETON_EMBEDDING_CONFIG
             ImportCredentialKind.COMMUNITY -> ImportCredentialLocation.PREFERENCES_COMMUNITY
             ImportCredentialKind.UNKNOWN -> ImportCredentialLocation.UNKNOWN
+            ImportCredentialKind.DESKTOP_LLM_ACCOUNTS, ImportCredentialKind.DESKTOP_NOVELAI_ACCOUNTS,
+            ImportCredentialKind.DESKTOP_FISH_ACCOUNTS -> ImportCredentialLocation.UNKNOWN
         }
     }
 }

@@ -5,6 +5,8 @@ description: Maintain Desktop cbbackup selection/export, optional credential tra
 
 # Desktop Full-App Backup
 
+Desktop named-account transport is documented in `chatbar-desktop-api-accounts`. The three optional `desktop*Accounts` preference fields contain selected credentials and must be captured, overlaid by the modern writer, validated, and stripped by `DesktopImportSecrets` before staging. Do not omit them while adapting `BackupPreferences` to `InspectionPreferences`. Legacy restore rejects these fields; modern merge uses explicit account/default choices and fresh-root custody.
+
 `DesktopDataWorkspace` separates export, merge import, file-only verification, root selection, automatic backup and updates. Subsection changes retain preparation/choices; in-flight merge and restart states force the merge surface. `DesktopMergeImportPanel` groups conflicts using existing backup setting labels and preserves every per-record choice. Final credential consent remains explicit; category navigation never selects or submits a merge.
 
 ## Entry points and format authority

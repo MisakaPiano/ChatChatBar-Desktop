@@ -72,8 +72,10 @@ internal fun DesktopStudioWorkspace(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                StudioAction("NovelAI Studio", selected = !state.diagnostics) { state.diagnostics = false }
-                StudioAction("高级 / 诊断", selected = state.diagnostics) { state.diagnostics = true }
+                DesktopWorkspaceNavigationItem(DesktopWorkspaceDestination("studio", "NovelAI Studio"), !state.diagnostics,
+                    true, Modifier.width(142.dp)) { state.diagnostics = false }
+                DesktopWorkspaceNavigationItem(DesktopWorkspaceDestination("diagnostics", "高级 / 诊断"), state.diagnostics,
+                    true, Modifier.width(142.dp)) { state.diagnostics = true }
             }
             if (!wide && !expanded && !state.diagnostics) compact { state.compactExpanded = true }
             Box(Modifier.weight(1f).fillMaxWidth().clipToBounds()) {

@@ -29,6 +29,7 @@ internal fun DesktopUpdatePanel(
     var confirmInstall by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         DesktopDataSectionHeading("版本与更新")
+        DesktopTaskbarPinEntry()
         StatusText("Desktop ${identity.version} · ${identity.commit.take(12)}")
         StatusText("已验证上游基线：ChatBar 1.4.1。Desktop 使用独立版本和发行通道。")
         BootstrapButton("复制基本诊断", secondary = true) {

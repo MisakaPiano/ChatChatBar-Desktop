@@ -35,7 +35,8 @@ class DesktopB1CIntegrationTest {
         frames()
     }
     private fun ImageComposeScene.shot(name: String) = render().use { image ->
-        val file = Path.of("build/phase7-b1-c-integration-evidence/$name.png")
+        val file = System.getenv("CCB_SELECTED_FIX_REVIEW_DIR")?.let { Path.of(it).resolve("$name.png") }
+            ?: Path.of("build/phase7-b1-c-integration-evidence/$name.png")
         Files.createDirectories(file.parent); image.encodeToData()!!.use { Files.write(file, it.bytes) }; Unit
     }
     @Composable private fun Shell(f: FinalProductDesignFixture, chrome: DesktopWindowChrome,
@@ -47,6 +48,7 @@ class DesktopB1CIntegrationTest {
             DesktopDataRootResolution.Resolved(c.appDataRoot, DesktopDataRootProvenance.CLI_OVERRIDE, f.root.resolve("bootstrap.json")),
             DesktopDirectoryPicker { null }, { false }, { error("Migration not requested") }) }
         val scope = rememberCoroutineScope()
+        CompositionLocalProvider(LocalDesktopApiAccounts provides c.apiAccountController) {
         DesktopPrimaryShell(chrome, navigation, root, transfer,
             remember { c.createModelTemplateTransferController() }, management,
             remember { c.createPromptInspectorController() }, c.primaryChatController, c.modelSettingsController,
@@ -54,6 +56,7 @@ class DesktopB1CIntegrationTest {
             c.characterEditorController, c.formatCardEditorController, c.worldBookEditorController,
             c.uiLanguageController, c.appearanceController, c.connectionTestController,
             c.novelAiSettingsController, c.novelAiStudioController, c.fullBackupController, {})
+        }
     }
     private suspend fun seeded(): FinalProductDesignFixture {
         val f = FinalProductDesignFixture(); f.initialize(false)
@@ -61,6 +64,23 @@ class DesktopB1CIntegrationTest {
         f.container.chatRepository.createSession(ChatSession("room", "card", "Integration room", createdAt = 1, updatedAt = 1))
         f.container.primaryChatController.refresh()
         return f
+    }
+
+    @Test fun `wide workspace navigation preserves all management data and tool destinations`() = runBlocking(awt) {
+        val f = seeded(); val chrome = DesktopWindowChrome {}; val navigation = DesktopPrimaryNavigationController()
+        val idle = DesktopDataRootSwitchState.Idle(f.container.appDataRoot, DesktopDataRootProvenance.CLI_OVERRIDE, true)
+        val scene = ImageComposeScene(1240, 800) { Shell(f, chrome, navigation) }
+        try {
+            scene.frames()
+            navigation.navigate(DesktopPrimaryRoute.MANAGE, idle); scene.frames()
+            assertTrue(scene.has("导入导出")); assertTrue(scene.has("角色")); assertTrue(scene.has("模型")); assertTrue(scene.has("设置"))
+            scene.shot("workspace-manage")
+            scene.click("设置"); scene.frames(); scene.shot("workspace-settings")
+            navigation.navigate(DesktopPrimaryRoute.DATA, idle); scene.frames()
+            assertTrue(scene.has("备份与导入")); assertTrue(scene.has("版本与更新")); scene.shot("workspace-data")
+            navigation.navigate(DesktopPrimaryRoute.TOOLS, idle); scene.frames()
+            assertTrue(scene.has("高级 / 诊断")); scene.shot("workspace-tools")
+        } finally { scene.close(); f.close() }
     }
 
     @Test fun `compact actual Shell preserves explicit chat and browser across Tools and Manage`() = runBlocking(awt) {

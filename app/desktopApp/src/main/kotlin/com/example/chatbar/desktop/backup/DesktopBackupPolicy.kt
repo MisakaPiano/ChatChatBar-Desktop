@@ -50,7 +50,7 @@ internal object DesktopBackupPolicy {
         "world_book_migration_state" to WorldBookMigrationState.serializer(),
         "pending_deletions" to DeletionState.serializer(),
     )
-    private val preferenceSecrets = setOf("novelAiToken", "fishAudioKey", "communitySession")
+    private val preferenceSecrets = setOf("novelAiToken", "fishAudioKey", "communitySession", "desktopLlmAccounts", "desktopNovelAiAccounts", "desktopFishAccounts")
     fun isDesktopOnly(path: String): Boolean = path.startsWith("${DesktopHistoricalVoiceCustody.ROOT}/") || path.startsWith("${DesktopPreservationStore.ROOT}/") || path.startsWith("${DesktopSaveSlotSourceCustody.ROOT}/") ||
         path.startsWith("entities/") && (entityType(path).startsWith("desktop_") || entityType(path) == "retrieval_model_config")
     fun hasDesktopParticipation(value: JsonObject): Boolean =

@@ -794,7 +794,7 @@ private fun PrimaryTimeline(
             }
         }
         Column(Modifier.align(Alignment.BottomCenter).width(placement.contentWidthDp.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            DesktopVoiceDeck(controller.voices, state)
+            DesktopVoiceDeck(controller.voices, state, controller.chatUi)
         }
         Box(Modifier.align(Alignment.TopCenter).padding(8.dp)) { DesktopChatNotifications(controller, state) }
         if (state.readingPositionError) Box(Modifier.align(Alignment.TopStart).padding(8.dp)) {

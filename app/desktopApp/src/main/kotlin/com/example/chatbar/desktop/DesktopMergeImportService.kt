@@ -32,7 +32,9 @@ internal class DesktopMergeImportService(
         val code get() = phone.source.manifest.appVersionCode
         val versionName get() = phone.source.manifest.appVersionName
         val fileCount get() = phone.source.inventory.size
-        val hasDesktopParticipation get() = phone.entities.values.any(DesktopBackupPolicy::hasDesktopParticipation)
+        val hasDesktopParticipation get() = phone.entities.values.any(DesktopBackupPolicy::hasDesktopParticipation) ||
+            phone.secrets.metadata.any { it.kind in setOf(ImportCredentialKind.DESKTOP_LLM_ACCOUNTS,
+                ImportCredentialKind.DESKTOP_NOVELAI_ACCOUNTS, ImportCredentialKind.DESKTOP_FISH_ACCOUNTS) && it.state == CredentialFieldState.NONEMPTY }
         val credentialConflicts get() = credentials.globalConflicts
         private val incomingPreferences get() = backupJson.decodeFromJsonElement<InspectionPreferences>(phone.preferences)
         val imagePreferencesChoiceRequired get() = (phone.source.manifest.scope?.globalOptions?.contains("imagePreferences") != false) &&

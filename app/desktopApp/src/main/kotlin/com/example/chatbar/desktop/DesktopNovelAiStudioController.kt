@@ -66,6 +66,8 @@ internal class DesktopNovelAiStudioController(
     private val account: suspend () -> NovelAiAccountUsage,
     private val credentialConfigured: suspend () -> Boolean,
     private val postProcessor: DesktopNovelAiPostProcessor? = null,
+    private val credentialIdentity: () -> String = { "legacy" },
+    private val freezeCredential: () -> kotlin.coroutines.CoroutineContext = { kotlin.coroutines.EmptyCoroutineContext },
 ) {
     val repository = NovelAiStudioStateRepository(storage)
     val designRepository = NovelAiDesignConversationRepository(storage)
@@ -73,6 +75,7 @@ internal class DesktopNovelAiStudioController(
     val history = repository.history
     private val mutex = Mutex()
     private val accountMutex = Mutex()
+    private var accountIdentity: String? = null
     private val mutableState = MutableStateFlow(DesktopNovelAiStudioState())
     val state = mutableState.asStateFlow()
     val taskEntries = tasks.tasks
@@ -109,8 +112,9 @@ internal class DesktopNovelAiStudioController(
     suspend fun postProcess(bytes: ByteArray, tab: NovelAiPostProcessTab, source: NovelAiEnhanceSource?,
         options: NovelAiEnhanceOptions, onComplete: (ByteArray) -> Unit, onStatus: (String) -> Unit) = action {
         val processor = requireNotNull(postProcessor)
-        val account = state.value.account
-        val id = tasks.launchNovelAi(tab.label) { report ->
+        val account = state.value.account.takeIf { accountIdentity == credentialIdentity() }
+        val frozen = freezeCredential()
+        val id = tasks.launchNovelAi(tab.label) { report -> withContext(frozen) {
             try {
                 onStatus("正在请求 ${tab.label}")
                 val result = processor.process(bytes, tab, source, options, account) { onStatus(it); report(it) }
@@ -119,7 +123,7 @@ internal class DesktopNovelAiStudioController(
                 refreshAccount()
             } catch (cancelled: CancellationException) { onStatus("已停止；来源和上次结果保留"); throw cancelled }
             catch (_: Exception) { onStatus("图片处理未完成；来源和上次结果保留，请检查配置或服务状态"); throw DesktopNovelAiRequestException("图片处理未完成") }
-        }
+        } }
         mutableState.update { it.copy(taskId = id) }
     }
 
@@ -175,6 +179,9 @@ internal class DesktopNovelAiStudioController(
     catch (_: Exception) { DesktopDesignAuthentication(status = "无法读取设计模型安全配置，请打开模型设置") }
 
     suspend fun refreshAccount() = accountMutex.withLock {
+        val identity = credentialIdentity()
+        val frozen = try { freezeCredential() } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { invalidateAccount("无法读取安全凭据，请检查 NovelAI 安全设置"); return@withLock }
         val configured = try {
             withContext(Dispatchers.IO) { credentialConfigured() }
         } catch (cancelled: CancellationException) { throw cancelled }
@@ -189,13 +196,21 @@ internal class DesktopNovelAiStudioController(
                 else NovelAiAccountUiState(loading = false, error = "未配置 Token")) }
         if (!configured) return@withLock
         try {
-            val latest = withContext(Dispatchers.IO) { account() }
-            mutableState.update { it.copy(accountUi = it.accountUi.reconcile(latest)) }
+            val latest = withContext(Dispatchers.IO + frozen) { account() }
+            if (identity == credentialIdentity()) {
+                accountIdentity = identity
+                mutableState.update { it.copy(accountUi = it.accountUi.reconcile(latest)) }
+            } else invalidateAccount()
         } catch (cancelled: CancellationException) {
             mutableState.update { it.copy(accountUi = it.accountUi.copy(loading = false)) }; throw cancelled
         } catch (_: Exception) {
             mutableState.update { it.copy(accountUi = it.accountUi.copy(loading = false, error = "账户信息获取失败；免费资格未确认")) }
         }
+    }
+
+    fun invalidateAccount(error: String? = null) {
+        accountIdentity = null
+        mutableState.update { it.copy(accountUi = NovelAiAccountUiState(loading = false, error = error), credentialConfigured = false) }
     }
 
     internal suspend fun accountAfterSuccess(cost: NovelAiGenerationCost, count: Int) {
@@ -384,11 +399,14 @@ internal class DesktopNovelAiStudioController(
     }
 
     suspend fun generate() = action {
+        val taskIdentity = credentialIdentity()
+        val frozen = freezeCredential()
+        var taskAccount = state.value.account.takeIf { accountIdentity == taskIdentity }
         val launch = resolveDefaultModel()
         require(launch.basePrompt.isNotBlank()) { "请填写基础 Prompt" }
         launch.activeSettings.validationError(launch.activeCharacters.size)?.let { error(it) }
         launch.imageGuidance.validationError(launch.selectedModel)?.let { error(it) }
-        val id = tasks.launchNovelAi("NovelAI Studio") { report ->
+        val id = tasks.launchNovelAi("NovelAI Studio") { report -> withContext(frozen) {
             try {
                 val encodingMisses = guidance.vibeCacheMisses(launch)
                 val prepared = guidance.prepare(launch)
@@ -398,7 +416,7 @@ internal class DesktopNovelAiStudioController(
                     currentCoroutineContext().ensureActive()
                     val count = minOf(launch.activeSettings.count, total - completed)
                     val batch = launch.copy(imageGuidance = prepared.retainedGuidance).withActiveSettings(launch.activeSettings.copy(count = count))
-                    val estimatedCost = NovelAiImageCostEstimator.estimate(batch.activeSettings, state.value.account,
+                    val estimatedCost = NovelAiImageCostEstimator.estimate(batch.activeSettings, taskAccount,
                         batch.imageGuidance, if (completed == 0) encodingMisses else 0)
                     val result = runtime.generate(batch, guidance = prepared.guidance, requestSize = prepared.requestSize,
                         composeResult = prepared.compose, retryRateLimitsUntilCancelled = launch.continuousModeEnabled,
@@ -409,13 +427,15 @@ internal class DesktopNovelAiStudioController(
                         })
                     completed += result.images.size
                     withContext(NonCancellable) { mutableState.update { it.copy(results = it.results + result.images.map { image -> image.path }, preview = null, status = "已保存 $completed/$total") } }
-                    accountAfterSuccess(estimatedCost, result.images.size)
+                    if (taskIdentity == credentialIdentity()) {
+                        accountAfterSuccess(estimatedCost, result.images.size); taskAccount = state.value.account
+                    } else taskAccount = null
                 }
             } catch (cancelled: CancellationException) {
                 status("已停止；历史中的已提交批次保留"); throw cancelled
             } catch (_: Exception) { status("生成失败，未发布不完整批次"); throw IllegalStateException("Studio generation failed") }
             finally { mutableState.update { it.copy(preview = null) } }
-        }
+        } }
         mutableState.update { it.copy(taskId = id) }
     }
 

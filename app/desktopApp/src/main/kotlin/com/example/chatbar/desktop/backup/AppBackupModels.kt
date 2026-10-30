@@ -36,6 +36,9 @@ internal data class BackupPreferences(
     val novelAiToken: String? = null,
     val fishAudioKey: String? = null,
     val communitySession: String? = null,
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER) val desktopLlmAccounts: String? = null,
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER) val desktopNovelAiAccounts: String? = null,
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER) val desktopFishAccounts: String? = null,
     val brushSize: Float = 36f,
     val brushType: String = "Mosaic"
 )

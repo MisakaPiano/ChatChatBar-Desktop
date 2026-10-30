@@ -16,6 +16,7 @@ import androidx.compose.ui.window.*
 import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.domain.voice.VoiceGenerationPolicy
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 internal class DesktopVoiceUiSelection {
     var narrator by mutableStateOf<String?>(null)
@@ -85,7 +86,8 @@ internal fun DesktopComposerVoiceControl(state: DesktopPrimaryChatState, ui: Des
 }
 
 @Composable
-internal fun DesktopVoiceDeck(runtime: DesktopChatVoiceRuntime?, state: DesktopPrimaryChatState) {
+internal fun DesktopVoiceDeck(runtime: DesktopChatVoiceRuntime?, state: DesktopPrimaryChatState,
+    preferences: DesktopChatUiController? = null) {
     if (runtime == null || state.selectedSession == null) return
     val batches by runtime.coordinator.batches.collectAsState()
     val playback by runtime.playback.state.collectAsState()
@@ -99,7 +101,8 @@ internal fun DesktopVoiceDeck(runtime: DesktopChatVoiceRuntime?, state: DesktopP
     DesktopVoiceDeckRow(batch?.let { "${desktopVoicePhaseLabel(it.phase)} · ${it.completedCount}/${it.totalCount}" }.orEmpty(),
         if (batch != null) ({ details = true }) else null,
         cancel = batch?.let { b -> { if (b.phase in setOf(VoiceGenerationPhase.FAILED, VoiceGenerationPhase.CANCELLED)) runtime.coordinator.dismiss(b.id) else runtime.coordinator.cancel(b.id) } },
-        player = { if (playerVisible) DesktopVoicePlayerRow(playback, { runtime.resumePlayback() }, { runtime.pauseOrClose() }) },
+        player = { if (playerVisible) DesktopVoicePlayerRow(playback, { runtime.resumePlayback() }, { runtime.pauseOrClose() },
+            settings = preferences?.let { { DesktopPlaybackSettings(it) } }) },
         narrator = {})
     if (details && batch != null) Popup(alignment = Alignment.BottomCenter, onDismissRequest = { details = false }, properties = PopupProperties(focusable = true)) {
         Column(Modifier.widthIn(max = 480.dp).heightIn(max = 360.dp).background(DesktopBootstrapColors.card)
@@ -144,7 +147,8 @@ internal fun DesktopFloatingVoicePlayer(runtime: DesktopChatVoiceRuntime?) {
 }
 
 @Composable
-internal fun DesktopVoicePlayerRow(state: DesktopVoicePlaybackState, resume: () -> Unit, stop: () -> Unit) {
+internal fun DesktopVoicePlayerRow(state: DesktopVoicePlaybackState, resume: () -> Unit, stop: () -> Unit,
+    settings: (@Composable () -> Unit)? = null) {
     Row(Modifier.height(38.dp).testTag("voice-floating-player").background(DesktopBootstrapColors.card, RoundedCornerShape(19.dp))
         .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(19.dp)).padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically) {
@@ -155,6 +159,34 @@ internal fun DesktopVoicePlayerRow(state: DesktopVoicePlaybackState, resume: () 
         BasicText(if (state.paused) "已暂停" else "播放中", Modifier.width(48.dp), maxLines = 1,
             style = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 12.sp))
         DesktopChatIconAction(if (state.paused) "停止并关闭播放器" else "暂停并保留位置", if (state.paused) DesktopAppIcons.Stop else DesktopAppIcons.Pause, onClick = stop)
+        settings?.invoke()
+    }
+}
+
+@Composable internal fun DesktopPlaybackSettings(controller: DesktopChatUiController) {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        DesktopChatIconAction("播放设置", DesktopAppIcons.Settings, targetDp = 28) { open = !open }
+        if (open) Popup(alignment = Alignment.TopEnd, onDismissRequest = { open = false }, properties = PopupProperties(focusable = true)) {
+            Column(Modifier.width(260.dp).background(DesktopBootstrapColors.card, RoundedCornerShape(8.dp))
+                .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp)).padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                DesktopContinuousPlaybackSwitch(controller)
+                BootstrapButton("关闭播放设置", secondary = true) { open = false }
+            }
+        }
+    }
+}
+
+@Composable internal fun DesktopContinuousPlaybackSwitch(controller: DesktopChatUiController) {
+    val preferences by controller.state.collectAsState()
+    val error by controller.error.collectAsState()
+    val scope = rememberCoroutineScope()
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        StudioSwitch("连续播放", preferences.continuousVoicePlayback) {
+            scope.launch { controller.update { it.copy(continuousVoicePlayback = !it.continuousVoicePlayback) } }
+        }
+        StatusText("播完当前回复后，继续播放后续助手回复已有的录音。")
+        error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
     }
 }
 

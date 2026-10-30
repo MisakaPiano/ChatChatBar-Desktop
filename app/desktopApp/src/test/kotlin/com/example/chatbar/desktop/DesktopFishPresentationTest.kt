@@ -192,7 +192,9 @@ class DesktopFishPresentationTest {
                     "已选模型不可用；不会自动替换", "保存全局设置", "放弃设置更改")) {
                     assertTrue(scene.nodes().any { it.label(label) }, "Missing voice control: $label")
                 }
-                scene.constraints = Constraints.fixed(360, 700)
+                // The shared compact navigation now consumes less height; use a shorter window
+                // so this still proves real wheel scrolling rather than merely fitting content.
+                scene.constraints = Constraints.fixed(360, 500)
                 frame()
                 fun range() = scene.nodes().single {
                     it.config.getOrNull(SemanticsProperties.VerticalScrollAxisRange) != null
@@ -210,7 +212,7 @@ class DesktopFishPresentationTest {
                         }.boundsInRoot
                         if (top >= viewport.top && bottom <= viewport.bottom) {
                             val bounds = target.boundsInRoot
-                            assertTrue(bounds.height > 0f && bounds.top >= 0f && bounds.bottom <= 700f,
+                            assertTrue(bounds.height > 0f && bounds.top >= 0f && bounds.bottom <= 500f,
                                 "$label not visible: $bounds")
                             assertTrue(bounds.left >= 0f && bounds.right <= 360f,
                                 "$label exceeds narrow viewport: $bounds")

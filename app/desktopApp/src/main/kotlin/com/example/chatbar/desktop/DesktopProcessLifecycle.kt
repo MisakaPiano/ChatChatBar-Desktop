@@ -82,6 +82,7 @@ internal object DesktopShutdownRecoveryWindow {
     internal fun present(retryAllowed: Boolean, onRetry: () -> Unit): JFrame {
         check(EventQueue.isDispatchThread())
         val frame = JFrame("ChatChatBar — 安全关闭 / Safe shutdown")
+        DesktopBrandResources.applyTo(frame)
         val diagnostic = "CCB shutdown: ${if (retryAllowed) "DRAIN_DEFERRED" else "SHUTDOWN_FAILED"}"
         val message = if (retryAllowed) {
             "关闭尚未完成，正在保护数据。请等待后台写入结束后点击“重试安全关闭”。\n" +

@@ -24,6 +24,7 @@ internal interface DesktopAudioOutput {
     suspend fun pause(): Long = error("音频后端不支持暂停")
     suspend fun resume() { error("音频后端不支持续播") }
     suspend fun positionMs(): Long = error("音频后端不支持位置读取")
+    suspend fun seekTo(positionMs: Long): Long = error("音频后端不支持定位")
     suspend fun stopAndDrain()
     suspend fun hasFocus(): Boolean = true
     suspend fun isPlaying(): Boolean
@@ -56,6 +57,7 @@ internal class DesktopWindowsAudioOutput(
     private val dispatcher = Executors.newSingleThreadExecutor { r -> Thread(r, "ccb-audio-output") }.asCoroutineDispatcher()
     private val mutex = Mutex()
     private var alias: String? = null
+    private var pausedSeekPosition: Long? = null
     private var closed = false
 
     override suspend fun play(path: Path) = playBounded(path, 120_000)
@@ -87,6 +89,7 @@ internal class DesktopWindowsAudioOutput(
     }
     override suspend fun pause(): Long = operation {
         val name = checkNotNull(alias) { "没有可暂停的播放会话" }
+        pausedSeekPosition?.let { return@operation it }
         commands.send("pause $name wait")
         check(commands.send("status $name mode wait") == "paused") { "Windows 音频暂停未确认" }
         commands.send("status $name position wait").toLongOrNull()?.also { check(it >= 0) }
@@ -94,10 +97,31 @@ internal class DesktopWindowsAudioOutput(
     }
     override suspend fun resume() = operation {
         val name = checkNotNull(alias) { "没有可续播的播放会话" }
-        check(commands.send("status $name mode wait") == "paused")
-        commands.send("resume $name wait")
+        val seek = pausedSeekPosition
+        if (seek != null) commands.send("play $name from $seek")
+        else {
+            check(commands.send("status $name mode wait") == "paused")
+            commands.send("resume $name wait")
+        }
         check(commands.send("status $name mode wait") in setOf("playing", "stopped"))
+        pausedSeekPosition = null
         Unit
+    }
+    override suspend fun seekTo(positionMs: Long): Long = operation {
+        require(positionMs >= 0)
+        val name = checkNotNull(alias) { "没有可定位的播放会话" }
+        val duration = commands.send("status $name length wait").toLongOrNull()
+        check(duration != null && duration > 0) { "Windows 音频时长不可用" }
+        val target = positionMs.coerceAtMost(duration - 1)
+        val paused = pausedSeekPosition != null || commands.send("status $name mode wait") == "paused"
+        if (paused) commands.send("seek $name to $target wait")
+        else commands.send("play $name from $target")
+        val actual = commands.send("status $name position wait").toLongOrNull()
+        check(actual != null && actual in 0..duration) { "Windows 音频定位未确认" }
+        // MCI seek stops the alias. Keep a paused seek silent; resume the same open file
+        // from the confirmed native position instead of briefly playing it to pause again.
+        pausedSeekPosition = actual.takeIf { paused }
+        actual
     }
     override suspend fun isPlaying(): Boolean = operation {
         alias?.let { commands.send("status $it mode wait") == "playing" } ?: false
@@ -116,7 +140,7 @@ internal class DesktopWindowsAudioOutput(
         // close releases the device even if stop failed; never use "close all".
         var stopFailure: Throwable? = null
         try { commands.send("stop $name wait") } catch (failure: Throwable) { stopFailure = failure }
-        try { commands.send("close $name wait"); alias = null }
+        try { commands.send("close $name wait"); alias = null; pausedSeekPosition = null }
         catch (failure: Throwable) { stopFailure?.let { failure.addSuppressed(it) }; throw failure }
         // A successful close proves release; a failed stop is still visible to the caller.
         stopFailure?.let { throw it }

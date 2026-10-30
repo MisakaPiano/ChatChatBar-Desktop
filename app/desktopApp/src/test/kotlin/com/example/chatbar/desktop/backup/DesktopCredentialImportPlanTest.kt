@@ -17,6 +17,8 @@ internal object G2AMetadata {
         ImportCredentialKind.SINGLETON_EMBEDDING -> ImportCredentialLocation.SINGLETON_EMBEDDING_CONFIG
         ImportCredentialKind.COMMUNITY -> ImportCredentialLocation.PREFERENCES_COMMUNITY
         ImportCredentialKind.UNKNOWN -> ImportCredentialLocation.UNKNOWN
+        ImportCredentialKind.DESKTOP_LLM_ACCOUNTS, ImportCredentialKind.DESKTOP_NOVELAI_ACCOUNTS,
+        ImportCredentialKind.DESKTOP_FISH_ACCOUNTS -> ImportCredentialLocation.UNKNOWN
     }
     fun source(kind: ImportCredentialKind, presence: ImportSecretPresence = ImportSecretPresence.NONEMPTY,
         account: ImportAccountIdentity? = if (kind in scoped) account(kind) else null) =

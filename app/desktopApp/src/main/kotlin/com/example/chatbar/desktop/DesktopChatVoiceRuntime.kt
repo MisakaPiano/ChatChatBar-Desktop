@@ -12,6 +12,7 @@ import java.util.UUID
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -28,6 +29,7 @@ internal class DesktopChatVoiceRuntime(
     private val textBusy: (String) -> Boolean = { false },
     transportOverride: DesktopFishVoiceTransport? = null,
     textGateway: FishVoiceTextGateway? = null,
+    uiPreferences: kotlinx.coroutines.flow.StateFlow<DesktopChatUiPreferences>? = null,
 ) {
     private val textTransport = lazy { OpenAiStreamingTransport { settings.currentAppSettings.allowCleartextModelApi } }
     private val job = SupervisorJob()
@@ -44,6 +46,13 @@ internal class DesktopChatVoiceRuntime(
     private var closed = false
     private val foregroundLock = Any()
     @Volatile private var foregroundDrain: Job? = null
+    init { uiPreferences?.let { preferences -> scope.launch {
+        preferences.collect { playback.setContinuousPlayback(it.continuousVoicePlayback) }
+    } } }
+
+    fun seek(voiceId: String, positionMs: Long) { scope.launch {
+        guarded { playback.seekTo(voiceId, positionMs) }
+    } }
 
     fun effectiveAudiobook(session: ChatSession): Boolean = VoiceGenerationPolicy.audiobookEnabled(session, settings.currentAppSettings)
     fun dismissNotice(expected: String) { mutableNotice.compareAndSet(expected, null) }
@@ -152,7 +161,8 @@ internal class DesktopChatVoiceRuntime(
             val timeline = chats.getMessagesReadOnly(current.sessionId)
             val index = timeline.indexOfFirst { it.id == current.id && it == current }
             check(index >= 0) { "消息已变化；请重新选择" }
-            val visible = timeline.drop(index).filter { it.role == MessageRole.ASSISTANT }
+            val visible = (if (playback.continuousPlayback.value) timeline.drop(index) else listOf(current))
+                .filter { it.role == MessageRole.ASSISTANT }
                 .flatMap { repository.placementsForMessage(it).map { placement -> placement.voice } }
             check(visible.any { it.id == voice.id })
             coordinator.playFrom(voice, visible, originGeneration)

@@ -138,6 +138,14 @@ internal class DesktopBackupReadOnlyInspector(private val afterAuthentication: (
                                     if (!prefs.novelAiToken.isNullOrEmpty()) credentials += CredentialCategory.NOVEL_AI
                                     if (!prefs.fishAudioKey.isNullOrEmpty()) credentials += CredentialCategory.FISH_AUDIO
                                     if (!prefs.communitySession.isNullOrEmpty()) credentials += CredentialCategory.COMMUNITY
+                                    mapOf(prefs.desktopLlmAccounts to com.example.chatbar.desktop.security.DesktopAccountService.LLM,
+                                        prefs.desktopNovelAiAccounts to com.example.chatbar.desktop.security.DesktopAccountService.NOVELAI,
+                                        prefs.desktopFishAccounts to com.example.chatbar.desktop.security.DesktopAccountService.FISH).forEach { (encoded, service) ->
+                                        if (!encoded.isNullOrEmpty()) {
+                                            com.example.chatbar.desktop.security.DesktopAccountStore.decode(encoded, service)
+                                            credentials += CredentialCategory.OTHER_KNOWN_KEY
+                                        }
+                                    }
                                     preferenceHash = sha
                                     census?.json(path, strictJson(bytes).jsonObject, sha, bytes.size.toLong())
                                 }

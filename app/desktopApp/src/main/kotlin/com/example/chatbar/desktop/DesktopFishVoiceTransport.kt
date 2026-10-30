@@ -42,7 +42,7 @@ internal class DesktopFishVoiceTransport(
         check(modelId == FishAudioTtsModels.S2_1_PRO_FREE) { "仅免费模型已获授权；收费或失效模型不会被替换" }
         check(!today().isAfter(LocalDate.of(2026, 11, 30))) { "免费资格需要重新核验；未发送请求" }
         require(referenceId.isNotBlank() && referenceId.length <= 256 && text.isNotBlank())
-        val key = try { credentials.load() ?: error("missing") } catch (_: Exception) { error("Fish 安全凭据不可用") }
+        val key = try { credentials.forCurrentCall() ?: error("missing") } catch (_: Exception) { error("Fish 安全凭据不可用") }
         val original = FishAudioRequestFactory.tts(baseUrl, key, modelId, referenceId, text.trim())
         val body = checkNotNull(original.body)
         val attempt = Attempt()

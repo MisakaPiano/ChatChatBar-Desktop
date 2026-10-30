@@ -57,6 +57,7 @@ internal fun DesktopVoiceRows(runtime: DesktopChatVoiceRuntime?, message: ChatMe
         DesktopRecordingRow(voice.id, voice.characterName, voice.durationMs, playback, contentWidthDp,
             onPlay = { val intent = runtime.playbackIntent(); scope.launch { runtime.play(voice, message, intent) } },
             onMenu = { menuAnchor = bounds },
+            onSeek = { position -> runtime.seek(voice.id, position) },
             modifier = Modifier.onGloballyPositioned { bounds = it.boundsInWindow() }
                 .onPointerEvent(PointerEventType.Press, PointerEventPass.Initial) { event ->
                     if (event.buttons.isSecondaryPressed) { menuAnchor = bounds; event.changes.forEach { it.consume() } }
@@ -126,6 +127,7 @@ internal fun DesktopVoiceGenerationDialog(runtime: DesktopChatVoiceRuntime?, mes
             androidx.compose.foundation.text.BasicText("确认生成语音", style = TextStyle(color = DesktopBootstrapColors.foreground))
             StatusText(if (segment == null) "当前整条回复 · 补齐缺失片段" else "当前片段 · ${segment + 1}")
             StatusText("仅使用明确选择的免费 Fish 模型；翻译和标签可能使用辅助模型并计费。")
+            DesktopCurrentAccountLabel(com.example.chatbar.desktop.security.DesktopAccountService.FISH)
             // Explicit selection: hidden persistent control when audiobook is off, available on demand here.
             if (needsNarrator) DesktopNarratorDropdown(state, narrator) { narrator = it; ui.narrator = it }
             StudioAction("授权并开始生成", enabled = runtime != null && state.selectedCharacter != null &&

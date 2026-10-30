@@ -1,6 +1,9 @@
 package com.example.chatbar.desktop
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -11,6 +14,10 @@ import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.*
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
 
 internal data class DesktopWorkspaceDestination(val id: String, val label: String)
 
@@ -38,15 +45,29 @@ internal fun DesktopWorkspacePage(title: String, destinations: List<DesktopWorks
             if (wide) Column(Modifier.width(164.dp).fillMaxHeight().background(DesktopBootstrapColors.card)
                 .verticalScroll(rememberScrollState()).padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 ManageHeading(title)
-                destinations.forEach { item -> BootstrapButton(item.label, enabled = enabled,
-                    secondary = selected != item.id) { onSelect(item.id) } }
+                destinations.forEach { item -> DesktopWorkspaceNavigationItem(item, selected == item.id,
+                    enabled, Modifier.fillMaxWidth()) { onSelect(item.id) } }
             } else Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(10.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                destinations.forEach { item -> BootstrapButton(item.label, enabled = enabled,
-                    secondary = selected != item.id) { onSelect(item.id) } }
+                destinations.forEach { item -> DesktopWorkspaceNavigationItem(item, selected == item.id,
+                    enabled, Modifier.width(132.dp)) { onSelect(item.id) } }
             }
         }
         if (wide) Row(Modifier.fillMaxSize()) { Navigation(); Box(Modifier.weight(1f).fillMaxHeight()) { content() } }
         else Column(Modifier.fillMaxSize()) { Navigation(); Box(Modifier.weight(1f).fillMaxWidth()) { content() } }
+    }
+}
+
+@Composable
+internal fun DesktopWorkspaceNavigationItem(item: DesktopWorkspaceDestination, selected: Boolean,
+    enabled: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val colors = DesktopBootstrapColors
+    Box(modifier.height(40.dp).background(if (selected) colors.secondary else androidx.compose.ui.graphics.Color.Transparent,
+        RoundedCornerShape(6.dp)).semantics {
+        role = Role.Tab; contentDescription = item.label; this.selected = selected; if (!enabled) disabled()
+    }.clickable(enabled = enabled, role = Role.Tab, onClick = onClick).padding(horizontal = 12.dp),
+        contentAlignment = androidx.compose.ui.Alignment.CenterStart) {
+        BasicText(item.label, maxLines = 1, overflow = TextOverflow.Ellipsis,
+            style = TextStyle(color = if (enabled) colors.foreground else colors.mutedForeground, fontSize = 14.sp))
     }
 }

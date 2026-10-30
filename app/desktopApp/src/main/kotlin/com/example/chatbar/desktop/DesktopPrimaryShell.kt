@@ -123,6 +123,7 @@ internal fun DesktopPrimaryShell(
                         initialModels = openDesignModels, initialModelId = requestedDesignModel,
                         onInitialModelsConsumed = { openDesignModels = false; requestedDesignModel = null },
                         initialPerson = requestedPerson, onInitialPersonConsumed = { requestedPerson = null },
+                        chatUiController = primaryChatController.chatUi,
                         onStartCharacterChat = { id -> scope.launch {
                             val before = primaryChatController.state.value.sessions.map { it.id }.toSet()
                             primaryChatController.createSession(id)

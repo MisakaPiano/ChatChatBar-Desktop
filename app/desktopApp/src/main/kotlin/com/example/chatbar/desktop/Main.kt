@@ -37,6 +37,7 @@ internal fun runDesktopMain(
 }
 
 private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolution.Resolved) {
+        DesktopWindowsTaskbarPin.configureIdentity()
         val dialogOwner = DesktopDialogOwner()
         DesktopPlatformPickers.create(dialogOwner).use { pickers ->
             val appContainer = DesktopAppContainer(resolvedRoot, filePicker = pickers.files, directoryPicker = pickers.directories)
@@ -108,7 +109,9 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                                 LocalDesktopPalette provides palette,
                                 LocalDesktopFishParentWindow provides window,
                                 LocalDesktopUpdater provides updater,
+                                LocalDesktopApiAccounts provides appContainer.apiAccountController,
                             ) {
+                                DesktopApiAccountDialog()
                                 DesktopPrimaryShell(
                                     chrome = chrome,
                                     navigation = navigation,

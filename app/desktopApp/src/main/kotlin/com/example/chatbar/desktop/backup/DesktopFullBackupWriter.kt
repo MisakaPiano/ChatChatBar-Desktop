@@ -30,6 +30,7 @@ internal object DesktopFullBackupWriter {
                 DesktopArchiveFiles.safe(destination.parent, true)
                 require(files.size <= DesktopBackupPolicy.MAX_FILES && files.keys.map(String::lowercase).distinct().size == files.size)
                 require(preferences.novelAiToken == null && preferences.fishAudioKey == null && preferences.communitySession == null)
+                require(preferences.desktopLlmAccounts == null && preferences.desktopNovelAiAccounts == null && preferences.desktopFishAccounts == null)
                 require(preferences.brushSize.isFinite() && preferences.brushSize > 0 && preferences.brushType.length <= 100)
                 val entities = linkedMapOf<String, JsonObject>()
                 val proof = linkedMapOf<String, AppBackupFileRecord>()
@@ -78,6 +79,9 @@ internal object DesktopFullBackupWriter {
                 val prefs = wire.encodeToString(InspectionPreferences.serializer(), InspectionPreferences(
                     novelAiToken = capturedPreferences.novelAiToken, fishAudioKey = capturedPreferences.fishAudioKey,
                     communitySession = capturedPreferences.communitySession,
+                    desktopLlmAccounts = capturedPreferences.desktopLlmAccounts,
+                    desktopNovelAiAccounts = capturedPreferences.desktopNovelAiAccounts,
+                    desktopFishAccounts = capturedPreferences.desktopFishAccounts,
                     brushSize = preferences.brushSize, brushType = preferences.brushType)).toByteArray()
                 val manifest = InspectionManifest(formatVersion = 2, appVersionCode = 86,
                     appVersionName = "CCB Desktop / official 1.4.7 transport compatibility", createdAt = System.currentTimeMillis(),

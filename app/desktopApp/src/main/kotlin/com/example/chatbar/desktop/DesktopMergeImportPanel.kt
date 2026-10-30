@@ -33,7 +33,7 @@ internal fun DesktopMergeImportPanel(controller: DesktopMergeImportController, o
         }
         if (state.ready && !state.restartRequired) {
             StatusText("已校验 ${state.files} 个文件 · 来源 ${state.versionName.take(80)}")
-            if (state.desktopParticipation) StatusText("该备份包含 Desktop 会话人物开关；旧版手机端不支持此设置。", DesktopBootstrapColors.warning)
+            if (state.desktopParticipation) StatusText("该备份包含 Desktop 扩展（人物开关或命名账户）；手机端不保证保留这些设置。", DesktopBootstrapColors.warning)
             if (state.conflicts.isEmpty()) StatusText("未发现需要选择的数据冲突。电脑和手机各自独有内容将保留。")
             if (state.conflicts.isNotEmpty()) StatusText("已选择 ${choices.size} / ${state.conflicts.size} 项数据冲突")
             state.conflicts.groupBy { conflict ->
@@ -60,13 +60,17 @@ internal fun DesktopMergeImportPanel(controller: DesktopMergeImportController, o
                 }
             }
             state.credentials.forEach { conflict ->
+                val namedAccounts = conflict.kind in setOf(ImportCredentialKind.DESKTOP_LLM_ACCOUNTS,
+                    ImportCredentialKind.DESKTOP_NOVELAI_ACCOUNTS, ImportCredentialKind.DESKTOP_FISH_ACCOUNTS)
                 StatusText("${mergeCredential(conflict.kind)}凭据冲突。密钥不显示；仅写入新目录的独立受保护存储。")
                 StatusText("密钥本身不能证明服务端账号，请确认选用的来源。")
+                if (namedAccounts) StatusText("两边账户均保留；这里选择默认账户的来源。模型绑定跟随对应模型的数据选择；同一编号内容不同的账户会另存为“导入”副本。")
                 if (conflict.sessionUncompared) StatusText("Community 会话只保全，不会登录、刷新或发起请求。")
                 ActionRow {
                     DesktopMergeCredentials.Choice.entries.forEach { choice ->
                         BootstrapButton((if (credentials[conflict.kind] == choice) "✓ " else "") +
-                            if (choice == DesktopMergeCredentials.Choice.KEEP_COMPUTER) "保留电脑凭据" else "采用手机凭据",
+                            if (namedAccounts) { if (choice == DesktopMergeCredentials.Choice.KEEP_COMPUTER) "沿用电脑选择" else "采用导入选择" }
+                            else if (choice == DesktopMergeCredentials.Choice.KEEP_COMPUTER) "保留电脑凭据" else "采用手机凭据",
                             secondary = credentials[conflict.kind] != choice, enabled = !state.busy) { credentials = credentials + (conflict.kind to choice) }
                     }
                 }
@@ -122,6 +126,9 @@ private fun mergeCredential(kind: ImportCredentialKind) = when (kind) {
     ImportCredentialKind.FISH -> "Fish Audio "
     ImportCredentialKind.SILICON_FLOW -> "SiliconFlow "
     ImportCredentialKind.COMMUNITY -> "Community "
+    ImportCredentialKind.DESKTOP_LLM_ACCOUNTS -> "Desktop LLM 命名账户与选择 "
+    ImportCredentialKind.DESKTOP_NOVELAI_ACCOUNTS -> "Desktop NovelAI 命名账户与选择 "
+    ImportCredentialKind.DESKTOP_FISH_ACCOUNTS -> "Desktop Fish 命名账户与选择 "
     else -> "模型 "
 }
 

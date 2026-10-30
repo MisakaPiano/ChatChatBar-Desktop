@@ -13,6 +13,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import com.example.chatbar.domain.image.*
+import com.example.chatbar.desktop.security.identity
+import com.example.chatbar.desktop.security.DesktopAccountService
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -25,6 +27,13 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
     onModelSettings: (String?) -> Unit = {}) {
     val draft by controller.draft.collectAsState()
     val state by controller.state.collectAsState()
+    val accounts = LocalDesktopApiAccounts.current
+    val accountRevision = accounts?.store?.revision?.collectAsState()?.value
+    val accountIdentity = remember(accountRevision) { accounts?.store?.identity(DesktopAccountService.NOVELAI) }
+    var usageRevision by remember(controller) { mutableStateOf(accountIdentity) }
+    LaunchedEffect(accountRevision) {
+        if (usageRevision != accountIdentity) { usageRevision = accountIdentity; controller.invalidateAccount() }
+    }
     val history by controller.history.collectAsState(emptyList())
     val conversations by controller.designRepository.conversations.collectAsState()
     val currentDesignId by controller.designRepository.currentConversationId.collectAsState()
@@ -198,6 +207,7 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
             { if (shownPath != null) { currentImage = shownPath; auxiliary = "当前图片" } }) },
         editor = {
             StudioAccountCluster(d.selectedModel, state.accountUi)
+            DesktopApiAccountEntry(com.example.chatbar.desktop.security.DesktopAccountService.NOVELAI)
             StudioActions {
                 StudioAction("刷新", enabled = !state.accountUi.loading, icon = DesktopAppIcons.Refresh, style = StudioActionStyle.TERTIARY) { scope.launch { controller.refreshAccount() } }
                 StudioAction("AI 设计", icon = DesktopAppIcons.Chat) { auxiliary = "AI 设计" }
@@ -431,7 +441,7 @@ internal fun DesktopStudioCompactResult(path: java.nio.file.Path?, intermediate:
 internal fun DesktopDesignModelChoice(selected: String?, models: List<com.example.chatbar.data.local.entity.ModelConfig>,
     effectiveName: String, onSelect: (String?) -> Unit) {
     val t = LocalDesktopUiStrings.current
-    val choices = models.map { DesktopPrimaryChoice(it.id, it.displayName) }
+    val choices = models.map { DesktopPrimaryChoice(it.id, it.desktopAccountLabel()) }
     val options = listOf<String?>(null) + choices.map { it.id } +
         listOfNotNull(selected?.takeUnless { id -> choices.any { it.id == id } })
     SearchableChoice("设计模型", options, selected,
