@@ -11,9 +11,11 @@ class DesktopResponsiveChatWiringTest {
 
     @Test fun `workspace uses actual remaining width and a separate rail allowance`() {
         val panel = source("DesktopPrimaryChatPanel.kt")
-        assertTrue(panel.contains("desktopChatWorkspaceLayout(maxWidth.value, state.people.isNotEmpty())"))
-        assertTrue(panel.contains("Modifier.width(workspace.widthDp.dp)"))
-        assertTrue(panel.contains("Modifier.width(workspace.headerWidthDp.dp)"))
+        assertTrue(panel.contains("desktopChatWorkspaceLayout(maxWidth.value - if (hasRail) 10f else 0f,"))
+        assertTrue(panel.contains("state.people.isNotEmpty(), railWidth, railHidden)"))
+        assertTrue(panel.contains("Modifier.width(placement.workspaceWidthDp.dp)"))
+        assertTrue(panel.contains("Modifier.width(placement.contentWidthDp.dp)"))
+        assertTrue(panel.contains("DesktopChatPeopleRail(state.people, controller, workspace.peopleWidthDp"))
         assertFalse(panel.contains("placement.workspaceWidthDp - railWidth"))
     }
 
