@@ -33,6 +33,10 @@ Studio对话只读答复：没有自动固定或TaskbarManager实现；公开119
 
 ## 测试者反馈登记（承接协调端，只读分层，不替代当前修复）
 
+CI36完整结果为FAIL：Windows2260项中2240通过、19原生前提跳过、1失败；新增播放器／账户检查通过，失败为原有DesktopRegenerationTest停止半条重新生成后alternative为空。报告ZIP已下载核SHA256 4cfda1f6b8af1a517f4f53ea82426ea4d81bd3416d5d183240099865a141009d，失败用时0.053s，排除合成SSE服务10s超时解释。NSIS26／TUF8／原生交接4通过，Android job成功；整体失败不改记通过。1220普通包和独立ZIP原生生命周期、最终包离线TUF下载／二次验包及说明相等均通过；发行429610429仍草稿4资产，真实Git ref尚未创建、public metadata未推，日常1219保持。
+
+源码核对发现generate仅按具体DesktopUserStoppedChatException保存部分回复，普通取消包装会跳过该分支，即使操作的显式Stop标记已经成立。现传入现有control，取消时依据该操作Stop标记保留非空草稿；普通取消仍丢弃，原非取消持久化／单次alternative追加／任务admission均保留。新增观察到delta后显式停止并强制抛普通取消包装的确定性检查，同时验证未显式Stop的同一包装不保存。此运行修正需要新候选1221及完整新检查，1220不公开；不是用户已验收。另一个本地单UI源的临时编译方案因测试夹具classpath未接入而FAIL，不能当产品或正式源码编译失败，未用来替代完整CI。
+
 私有原件和身份记录保存在本地continuity的20261031-invited-tester-feedback目录，不提交报告原文、真实备份、会话信息或凭据。下列编号来自协调端REVIEW，仅源码缺口核对，不是本对话已复现结果。负责人仍为Desktop当前执行者，按已有修复授权定向处理，不新增大phase或第三方产品需求。
 
 - FB20261031-01／HIGH：现代Android大备份读入及往返。测试者报告约512MB压缩／1.05GB展开／11829项，1208、1218失败；未取得其原备份。先用合成规模定位真正首个拒绝，核对逐JSON8MiB／structured64MiB与整条内存／导出／新根边界，保留CRC、散列、路径、schema和取消不变保护；不盲目提高ZIP总限或丢RAG。

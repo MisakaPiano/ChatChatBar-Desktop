@@ -13,6 +13,27 @@ import okhttp3.mockwebserver.*
 import kotlin.test.*
 
 class DesktopRegenerationTest {
+    @Test fun `wrapped cancellation after explicit stop retains partial regeneration but generic cancel does not`() = runBlocking {
+        for (explicitStop in listOf(false, true)) fixture { container, _, session, target ->
+            ControlledDesktopSseServer("""{"choices":[{"delta":{"content":"wrapped-partial"}}]}""").use { stream ->
+                container.modelRepository.saveModel(container.modelRepository.getModel("model")!!.copy(baseUrl = stream.baseUrl))
+                val control = DesktopChatGenerationControl()
+                assertFailsWith<CancellationException> {
+                    container.createRealChatRuntime().regenerate(session, target.id, observer = DesktopRealChatObserver { update ->
+                        if (update.content == "wrapped-partial") {
+                            if (explicitStop) control.requestUserStop()
+                            throw CancellationException("Synthetic cancellation delivery wrapper")
+                        }
+                    }, control = control)
+                }
+                val saved = container.chatRepository.getMessage(target.id, session)!!
+                if (explicitStop) {
+                    assertEquals(listOf("old-answer", "wrapped-partial"), saved.alternatives)
+                    assertEquals(target.id, saved.id); assertEquals(target.orderKey, saved.orderKey)
+                } else assertEquals(target, saved)
+            }
+        }
+    }
     @Test fun `regeneration preserves same row and current user while excluding target from prompt and worldbook`() = runBlocking {
         fixture { container, server, session, target ->
             val book = WorldBook(id = "book", name = "book", entries = listOf(
