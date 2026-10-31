@@ -287,8 +287,10 @@ class DesktopFullComposerTest {
 
     @Test fun `workspace wiring has discoverable all-height entrance and only existing authorities`() {
         val panel = source("DesktopPrimaryChatPanel.kt")
-        val inline = panel.substringAfter("private fun PrimaryComposer(").substringBefore("private fun PrimaryComposerAction(")
-        assertTrue(inline.indexOf("DesktopUiText.EXPAND_COMPOSER") < inline.indexOf("if (!collapsed)"))
+        val inline = panel.substringAfter("private fun PrimaryComposer(").substringBefore("internal fun DesktopSessionSettingsBody(")
+        assertTrue(inline.contains("DesktopUiText.EXPAND_COMPOSER"))
+        assertTrue(inline.contains("val actions: @Composable () -> Unit"))
+        assertTrue(inline.contains("if (height < 88f) Row"))
         assertTrue(inline.contains("DesktopChatAttachmentAction"))
         assertFalse(inline.contains("DesktopChatImageToolbar"))
         assertTrue(inline.contains("enabled = canLaunch"))

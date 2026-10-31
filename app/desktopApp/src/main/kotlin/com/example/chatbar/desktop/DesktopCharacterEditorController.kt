@@ -37,6 +37,7 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -46,7 +47,7 @@ internal enum class CharacterEditorProblem {
     NAME_REQUIRED, GREETING_REQUIRED, CHARACTER_NAME_REQUIRED, DUPLICATE_CHARACTER_NAME,
     DUPLICATE_CARD_NAME, SOURCE_CHANGED, SOURCE_DELETED, COMMUNITY_READ_ONLY, SAVE_FAILED,
     DRAFT_FAILED, RESOURCE_FAILED, NEW_DRAFT_EXISTS, DOCUMENT_READ_FAILED, SAVE_COMMITTED_WARNING,
-    CLEAN_DRAFT_WARNING,
+    CLEAN_DRAFT_WARNING, PERSON_UNAVAILABLE,
 }
 
 internal data class DesktopCharacterEditorState(
@@ -67,6 +68,8 @@ internal data class DesktopCharacterEditorState(
     val leavePrompt: Boolean = false,
     val problem: CharacterEditorProblem? = null,
     val detail: String? = null,
+    val personFocusId: String? = null,
+    val personFocusRevision: Long = 0,
 ) {
     val visibleCharacters: List<CharacterCard> get() = characters.filter {
         it.name.contains(query, ignoreCase = true) ||
@@ -118,9 +121,11 @@ internal class DesktopCharacterEditorController(
     private var pendingObsoleteSource: CharacterCard? = null
 
     suspend fun load() {
-        _state.value = _state.value.copy(
-            characters = characters.getAll(), worldBooks = worlds.getAll(), formatCards = formats.getAll(),
-        )
+        val cards = characters.getAll()
+        val worldBooks = worlds.getAll()
+        val formatCards = formats.getAll()
+        // Catalog reads suspend. Apply them to the latest state so a concurrent open/edit survives.
+        _state.update { it.copy(characters = cards, worldBooks = worldBooks, formatCards = formatCards) }
     }
 
     fun search(query: String) { _state.value = _state.value.copy(query = query) }
@@ -150,6 +155,23 @@ internal class DesktopCharacterEditorController(
                 draftBasis = null, targetId = null, draftSessionId = UUID.randomUUID().toString(),
                 draftPersisted = false, dirty = false, problem = null, detail = null)
         }
+    }
+
+    suspend fun openPerson(cardId: String, personId: String) {
+        if (_state.value.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) return
+        if (_state.value.targetId != cardId || _state.value.card == null) {
+            if (deferLeave { scope.launch { openPerson(cardId, personId) } }) return
+            openExisting(cardId)
+        }
+        val current = _state.value
+        val source = characters.getById(cardId)
+        if (current.targetId != cardId || current.card?.characters?.count { it.id == personId } != 1 ||
+            source?.characters?.count { it.id == personId } != 1) {
+            _state.value = current.copy(problem = CharacterEditorProblem.PERSON_UNAVAILABLE)
+            return
+        }
+        // Focus is ephemeral. Do not reload or replace an existing unsaved draft of the same card.
+        _state.value = current.copy(personFocusId = personId, personFocusRevision = current.personFocusRevision + 1)
     }
 
     suspend fun openExisting(id: String) {
@@ -251,6 +273,11 @@ internal class DesktopCharacterEditorController(
     }
 
     fun addCharacter() = edit { it.copy(characters = it.characters + CharacterInfo.create("")) }
+
+    fun setCharacterEntryEnabled(id: String, enabled: Boolean) = edit { card ->
+        if (card.editMode != CharacterEditMode.STRUCTURED || card.characters.count { it.id == id } != 1) card
+        else card.copy(characters = card.characters.map { if (it.id == id) it.copy(desktopEnabled = enabled) else it })
+    }
 
     fun updateCharacter(id: String, transform: (CharacterInfo) -> CharacterInfo) = edit { card ->
         card.copy(characters = card.characters.map { if (it.id == id) transform(it) else it })

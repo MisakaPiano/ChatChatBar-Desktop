@@ -49,6 +49,7 @@ data class PackagedCharacterCard(
 )
 
 @Serializable
+@OptIn(ExperimentalSerializationApi::class)
 data class PackagedCharacter(
     val name: String,
     val profile: String = "",
@@ -61,7 +62,9 @@ data class PackagedCharacter(
     val relationships: String = "",
     val speakingStyle: String = "",
     val imagePrompt: String = "",
-    val fishAudioVoice: FishAudioVoiceBinding? = null
+    val fishAudioVoice: FishAudioVoiceBinding? = null,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val desktopEnabled: Boolean = true
 )
 
 @Serializable

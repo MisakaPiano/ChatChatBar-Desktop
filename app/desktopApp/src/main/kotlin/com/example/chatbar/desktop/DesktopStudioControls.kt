@@ -84,10 +84,10 @@ internal fun <T> StudioChips(label: String, options: List<T>, selected: T?, text
 }
 
 @Composable
-internal fun StudioSwitch(label: String, selected: Boolean, action: () -> Unit) {
+internal fun StudioSwitch(label: String, selected: Boolean, enabled: Boolean = true, action: () -> Unit) {
     var focused by remember { mutableStateOf(false) }
     Row(Modifier.heightIn(min = 32.dp).border(1.dp, if (focused) DesktopBootstrapColors.primary else Color.Transparent, RoundedCornerShape(6.dp))
-        .onFocusChanged { focused = it.isFocused }.toggleable(value = selected, role = Role.Switch, onValueChange = { action() })
+        .onFocusChanged { focused = it.isFocused }.toggleable(value = selected, enabled = enabled, role = Role.Switch, onValueChange = { action() })
         .padding(4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Box(Modifier.size(28.dp, 16.dp).background(if (selected) DesktopBootstrapColors.primary else DesktopBootstrapColors.muted, RoundedCornerShape(8.dp)).padding(2.dp)) {
             Box(Modifier.align(if (selected) Alignment.CenterEnd else Alignment.CenterStart).size(12.dp)
@@ -203,7 +203,7 @@ internal fun StudioNumericInput(label: String, value: String, modifier: Modifier
         .semantics { contentDescription = label }.onFocusChanged { focused = it.isFocused; if (!focused) draft = value }
         .border(1.dp, if (focused) DesktopBootstrapColors.primary else DesktopBootstrapColors.border, RoundedCornerShape(4.dp))
         .background(DesktopBootstrapColors.input).padding(6.dp), singleLine = true,
-        textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 13.sp))
+        cursorBrush = DesktopBootstrapColors.inputCaret, textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 13.sp))
 }
 
 internal fun studioAspectOptions(settings: NovelAiGenerationSettings) = NovelAiAspectRatio.entries.filterNot {

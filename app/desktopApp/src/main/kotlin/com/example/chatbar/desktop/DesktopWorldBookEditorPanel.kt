@@ -44,10 +44,10 @@ internal fun DesktopWorldBookManagementPanel(controller: DesktopWorldBookEditorC
     val scope = rememberCoroutineScope()
     LaunchedEffect(controller) { controller.load() }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        WBHeading(t(DesktopUiText.WORLD_MANAGEMENT))
-        WBField(t(DesktopUiText.WORLD_SEARCH), state.query, onChange = controller::search)
-        BootstrapButton(t(DesktopUiText.WORLD_NEW)) { scope.launch { controller.openNew() } }
-        DesktopManagementImportAndDrafts(DesktopTransferKind.WORLD_BOOK, state.books.map { it.id }.toSet(), management)
+        DesktopManagementHeading(t(DesktopUiText.WORLD_MANAGEMENT))
+        DesktopManagementToolbar(t(DesktopUiText.WORLD_SEARCH), state.query, controller::search,
+            t(DesktopUiText.WORLD_NEW), true, { scope.launch { controller.openNew() } }, DesktopTransferKind.WORLD_BOOK, management)
+        DesktopManagementImportAndDrafts(DesktopTransferKind.WORLD_BOOK, state.books.map { it.id }.toSet(), management, showImport = false)
         DesktopManagementPresets(DesktopTransferKind.WORLD_BOOK,
             state.books.map { it.sourcePresetKey to it.sourcePresetVersion }, management)
         if (state.visibleBooks.isEmpty()) StatusText(t(DesktopUiText.WORLD_NONE))
@@ -206,7 +206,7 @@ internal fun DesktopWorldBookEntries(
             FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 BootstrapButton(t(DesktopUiText.EDIT), enabled = editable, secondary = true) { controller.openEntry(index) }
-                BootstrapButton(t(if (entry.enabled) DesktopUiText.ON else DesktopUiText.OFF), enabled = editable, secondary = true) {
+                StudioSwitch("启用", entry.enabled, enabled = editable) {
                     controller.setEntriesEnabled(setOf(entry.id), !entry.enabled)
                 }
                 BootstrapButton(t(DesktopUiText.DELETE), enabled = editable, secondary = true) { onDelete(index) }
@@ -355,17 +355,13 @@ private fun WBField(label: String, value: String, multiline: Boolean = false, on
         BasicTextField(value, onChange, Modifier.fillMaxWidth().heightIn(min = if (multiline) 140.dp else 36.dp)
             .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
             .background(DesktopBootstrapColors.input, RoundedCornerShape(8.dp)).padding(9.dp),
-            textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp), singleLine = !multiline)
+            cursorBrush = DesktopBootstrapColors.inputCaret, textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp), singleLine = !multiline)
     }
 }
 
 @Composable
 private fun WBBoolean(label: String, value: Boolean, onToggle: () -> Unit) {
-    val t = LocalDesktopUiStrings.current
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-        StatusText(label)
-        BootstrapButton(t(if (value) DesktopUiText.ON else DesktopUiText.OFF), secondary = !value, onClick = onToggle)
-    }
+    StudioSwitch(label, value, action = onToggle)
 }
 
 @Composable

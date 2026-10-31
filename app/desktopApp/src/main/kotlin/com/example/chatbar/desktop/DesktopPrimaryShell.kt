@@ -20,6 +20,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.remember
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -58,20 +59,36 @@ internal fun DesktopPrimaryShell(
     val backupLocked = fullBackup.busy || fullBackup.restartRequired || mergeLocked
     val locked = rootState !is DesktopDataRootSwitchState.Idle || backupLocked
     val route = if (backupLocked) DesktopPrimaryRoute.DATA else navigation.currentRoute(rootState, selectedRoute)
+    val updateNotices = LocalDesktopUpdateNotices.current
+    val updateNotice = updateNotices?.state?.collectAsState()?.value
+    val modalActivity = LocalDesktopModalActivity.current
+    val tasks by primaryChatController.taskRuntime.tasks.collectAsState()
+    val repairs by primaryChatController.taskRuntime.repairTasks.collectAsState()
+    val management by managementController.state.collectAsState()
+    val transfer by transferController.state.collectAsState()
+    val templates by modelTemplateController.state.collectAsState()
+    val chat by primaryChatController.state.collectAsState()
+    var openUpdateRequest by remember { mutableStateOf(0) }
     val colors = DesktopBootstrapColors
     val t = LocalDesktopUiStrings.current
     val scope = rememberCoroutineScope()
     val chromeLayout = remember(chrome) { DesktopChromeLayoutRecorder(chrome) }
     val composerLayout = remember { DesktopComposerLayoutState() }
     val compactChatNavigation = remember { DesktopCompactChatNavigation() }
+    val floatingVoicePosition = remember { DesktopFloatingVoicePosition() }
     var requestedDesignModel by remember { mutableStateOf<String?>(null) }
     var openDesignModels by remember { mutableStateOf(false) }
+    var requestedPerson by remember { mutableStateOf<Pair<String, String>?>(null) }
 
     fun navigate(destination: DesktopPrimaryRoute) {
         if (backupLocked) return
         if (route == DesktopPrimaryRoute.MANAGE && destination != DesktopPrimaryRoute.MANAGE &&
             (managementController.state.value.busy || transferController.state.value.busy ||
                 modelTemplateController.state.value.busy)) return
+        if (destination == DesktopPrimaryRoute.DATA && updateNotice?.pendingVersion != null) {
+            updateNotices?.dismissStartupNotice()
+            openUpdateRequest++
+        }
         if (route == DesktopPrimaryRoute.CHAT && destination != DesktopPrimaryRoute.CHAT) {
             scope.launch { primaryChatController.requestSessionSettingsLeave {
                 navigation.navigate(destination, rootState)
@@ -93,22 +110,20 @@ internal fun DesktopPrimaryShell(
 
     BoxWithConstraints(Modifier.fillMaxSize().background(colors.background).onGloballyPositioned(chromeLayout::root)) {
         val size = DesktopShellLayoutPolicy.sizeForWidth(maxWidth.value)
-        if (route == DesktopPrimaryRoute.TOOLS) {
-            DesktopNovelAiStudioPanel(novelAiStudioController,
-                chromeRecorder = chromeLayout,
-                navigation = { DesktopTitleBar(DesktopShellSize.COMPACT, route, locked, chrome, chromeLayout,
-                    onNavigate = ::navigate, captionsVisible = false) },
-                captions = { DesktopTitleBar(DesktopShellSize.COMPACT, route, locked, chrome, chromeLayout,
-                    onNavigate = ::navigate, navigationVisible = false) },
-                diagnostics = { DesktopPromptInspectorPanel(promptInspectorController) }) { id ->
-                requestedDesignModel = id; openDesignModels = true; navigate(DesktopPrimaryRoute.MANAGE)
-            }
-        } else Column(Modifier.fillMaxSize()) {
-            DesktopTitleBar(size, route, locked, chrome, chromeLayout, onNavigate = ::navigate)
+        Column(Modifier.fillMaxSize()) {
+            DesktopTitleBar(size, route, locked, chrome, chromeLayout,
+                updatePending = updateNotice?.pendingVersion != null, onNavigate = ::navigate)
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when (route) {
                     DesktopPrimaryRoute.CHAT -> DesktopPrimaryChatPanel(primaryChatController, size, composerLayout,
-                        onOpenStudio = { navigate(DesktopPrimaryRoute.TOOLS) }, compactNavigation = compactChatNavigation)
+                        onOpenStudio = { navigate(DesktopPrimaryRoute.TOOLS) }, compactNavigation = compactChatNavigation,
+                        onEditPerson = { card, person -> scope.launch {
+                            primaryChatController.requestSessionSettingsLeave {
+                                navigation.navigate(DesktopPrimaryRoute.MANAGE, rootState)
+                                openDesignModels = false; requestedDesignModel = null
+                                requestedPerson = card to person
+                            }
+                        }; Unit })
                     DesktopPrimaryRoute.MANAGE -> DesktopManagePanel(
                         transferController = transferController,
                         modelTemplateController = modelTemplateController,
@@ -124,6 +139,8 @@ internal fun DesktopPrimaryShell(
                         novelAiSettingsController = novelAiSettingsController,
                         initialModels = openDesignModels, initialModelId = requestedDesignModel,
                         onInitialModelsConsumed = { openDesignModels = false; requestedDesignModel = null },
+                        initialPerson = requestedPerson, onInitialPersonConsumed = { requestedPerson = null },
+                        chatUiController = primaryChatController.chatUi,
                         onStartCharacterChat = { id -> scope.launch {
                             val before = primaryChatController.state.value.sessions.map { it.id }.toSet()
                             primaryChatController.createSession(id)
@@ -133,23 +150,33 @@ internal fun DesktopPrimaryShell(
                                 navigate(DesktopPrimaryRoute.CHAT)
                         } },
                     )
-                    DesktopPrimaryRoute.TOOLS -> Unit // Full-height workspace is composed above.
-                    DesktopPrimaryRoute.DATA -> ShellScrollPanel {
-                        if (locked) StatusText(t(DesktopUiText.DATA_OPERATION), colors.warning)
-                        if (!backupLocked) {
-                            ShellHeading(t(DesktopUiText.DATA_DIRECTORY))
-                            DesktopDataRootPanel(rootSwitchController, onExitApplication)
+                    DesktopPrimaryRoute.TOOLS -> {
+                        val studioState by novelAiStudioController.state.collectAsState()
+                        DesktopStudioContentFrame(studioState.status) {
+                            DesktopNovelAiStudioPanel(novelAiStudioController,
+                                diagnostics = { DesktopPromptInspectorPanel(promptInspectorController) }) { id ->
+                                requestedDesignModel = id; openDesignModels = true; navigate(DesktopPrimaryRoute.MANAGE)
+                            }
                         }
-                        if (rootState is DesktopDataRootSwitchState.Idle) {
-                            if (!fullBackup.busy && !fullBackup.restartRequired && mergeImportController != null)
-                                DesktopMergeImportPanel(mergeImportController, onExitApplication)
-                            if (!mergeLocked) DesktopFullBackupPanel(fullBackupController, onExitApplication)
-                        }
-                        if (!locked) DesktopUpdatePanel()
+                    }
+                    DesktopPrimaryRoute.DATA -> DesktopDataWorkspace(rootSwitchController, fullBackupController,
+                        mergeImportController, backupSettingsController, onExitApplication, openUpdateRequest,
+                        onUpdateRequestConsumed = { openUpdateRequest = 0 })
+                }
+                primaryChatController.voices?.let { runtime ->
+                    val player by runtime.playback.state.collectAsState()
+                    val chat by primaryChatController.state.collectAsState()
+                    if (route != DesktopPrimaryRoute.CHAT || chat.selectedSession?.id != player.sessionId) {
+                        DesktopFloatingVoicePlayerHost(runtime, primaryChatController.chatUi, floatingVoicePosition)
                     }
                 }
             }
         }
+        if (updateNotices != null && updateNotice != null) DesktopStartupUpdateNotice(updateNotice,
+            blocked = locked || (modalActivity?.count ?: 0) > 0 || management.busy || transfer.busy || templates.busy || chat.sessionSettingsLeavePrompt ||
+                tasks.any { it.status == DesktopTaskStatus.RUNNING } || repairs.values.any { it == DesktopRepairStatus.RUNNING },
+            onView = { updateNotices.dismissStartupNotice(); navigate(DesktopPrimaryRoute.DATA) },
+            onLater = updateNotices::dismissStartupNotice)
     }
 }
 

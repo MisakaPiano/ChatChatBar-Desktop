@@ -21,7 +21,7 @@ internal object DesktopBackupPolicy {
     val roots = BackupDataRegistry.roots + DesktopPreservationStore.ROOT + DesktopSaveSlotSourceCustody.ROOT + DesktopHistoricalVoiceCustody.ROOT
     // These are not portable content. Restore preserves them in the destination.
     val localRoots = setOf("backups", ".ccb-desktop.lock", "desktop-settings.json",
-        "shared-import", "diagnostics", "updates", "prompt_dictionary", "tag_completion")
+        "shared-import", "diagnostics", "updates", "prompt_dictionary", "tag_completion", "auxiliary")
     val schemas: Map<String, KSerializer<*>> = mapOf(
         "app_settings" to AppSettings.serializer(), "player_setting" to PlayerSetting.serializer(),
         "character_cards" to CharacterCard.serializer(), "format_cards" to FormatCard.serializer(),
@@ -50,9 +50,22 @@ internal object DesktopBackupPolicy {
         "world_book_migration_state" to WorldBookMigrationState.serializer(),
         "pending_deletions" to DeletionState.serializer(),
     )
-    private val preferenceSecrets = setOf("novelAiToken", "fishAudioKey", "communitySession")
+    private val preferenceSecrets = setOf("novelAiToken", "fishAudioKey", "communitySession", "desktopLlmAccounts", "desktopNovelAiAccounts", "desktopFishAccounts")
     fun isDesktopOnly(path: String): Boolean = path.startsWith("${DesktopHistoricalVoiceCustody.ROOT}/") || path.startsWith("${DesktopPreservationStore.ROOT}/") || path.startsWith("${DesktopSaveSlotSourceCustody.ROOT}/") ||
         path.startsWith("entities/") && (entityType(path).startsWith("desktop_") || entityType(path) == "retrieval_model_config")
+    fun hasDesktopParticipation(value: JsonObject): Boolean =
+        value["desktopPlayerRole"] is JsonObject ||
+        (value["desktopPlayerAvatar"] as? JsonPrimitive)?.contentOrNull?.isNotBlank() == true ||
+        (value["desktopAvatar"] as? JsonPrimitive)?.contentOrNull?.isNotBlank() == true ||
+        (value["desktopAutoPauseAbsentPeople"] as? JsonPrimitive)?.booleanOrNull == true ||
+        (value["desktopCharacterParticipation"] as? JsonArray)?.any { entry ->
+            (entry as? JsonObject)?.let { scope ->
+                listOf("disabledPersonIds", "automaticallyPausedPersonIds").any {
+                    (scope[it] as? JsonArray)?.isNotEmpty() == true
+                }
+            } == true } == true ||
+            (value["characters"] as? JsonArray)?.any { person ->
+                ((person as? JsonObject)?.get("desktopEnabled") as? JsonPrimitive)?.booleanOrNull == false } == true
     private val secrets = setOf("apiKey", "siliconFlowApiKey") + preferenceSecrets
     private val json = Json { ignoreUnknownKeys = false; encodeDefaults = true }
 
@@ -65,8 +78,9 @@ internal object DesktopBackupPolicy {
     fun entityType(path: String) = path.removePrefix("entities/").substringBefore('/').removeSuffix(".json")
 
     /** No exception text from parsing is exposed by controllers (it may contain user data). */
-    fun entity(relative: String, bytes: ByteArray, exporting: Boolean, wireVersionCode: Int = 84): JsonObject {
-        require(relative.startsWith("entities/") && relative.endsWith(".json") && bytes.size <= MAX_JSON)
+    fun entity(relative: String, bytes: ByteArray, exporting: Boolean, wireVersionCode: Int = 84, modern: Boolean = false): JsonObject {
+        require(relative.startsWith("entities/") && relative.endsWith(".json"))
+        if (modern) DesktopBackupRecords.requireSize(bytes.size.toLong()) else require(bytes.size <= MAX_JSON)
         val type = entityType(relative)
         val serializer = schemas[type] ?: throw DesktopBackupCompatibilityException(
             if (type in setOf("moment_posts", "moment_tasks")) DesktopBackupCompatibility.MOMENTS_UNSUPPORTED

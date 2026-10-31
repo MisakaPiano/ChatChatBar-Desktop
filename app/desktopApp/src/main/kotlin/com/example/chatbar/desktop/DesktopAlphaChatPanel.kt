@@ -147,7 +147,7 @@ internal fun DesktopAlphaChatPanel(
                     value = draft,
                     onValueChange = { draft = it },
                     modifier = Modifier.fillMaxWidth(),
-                    textStyle = TextStyle(color = colors.foreground, fontSize = 14.sp),
+                    cursorBrush = DesktopBootstrapColors.inputCaret, textStyle = TextStyle(color = colors.foreground, fontSize = 14.sp),
                 )
             }
             val canSend = state.selectedSessionId != null && state.modelUsable && selectedTask == null

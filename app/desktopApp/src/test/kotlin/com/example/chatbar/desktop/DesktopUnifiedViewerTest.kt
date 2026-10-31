@@ -188,11 +188,13 @@ class DesktopUnifiedViewerTest {
             scene.frames(); assertEquals(1, opened)
         } finally { scene.close() }
         // Without the opt-in callback the existing Viewer interaction remains in-place.
-        val viewer = ImageComposeScene(400, 300) { DesktopImageZoomSurface("saved", { bytes }, Modifier.fillMaxSize()) }
+        val zoom = DesktopImageZoomState()
+        val viewer = ImageComposeScene(400, 300) { DesktopImageZoomSurface("saved", { bytes }, Modifier.fillMaxSize(), zoomState = zoom) }
         try {
-            viewer.until { viewer.nodes().any { it.label("图片") } }
+            viewer.until { zoom.sourceSize.width == 40 && zoom.fitScale > 1f }
             val fit = viewer.pixels()
             viewer.double(Offset(200f, 150f)); assertNotEquals(fit, viewer.pixels()); assertEquals(1, opened)
+            assertEquals(100, zoom.percent)
             viewer.double(Offset(200f, 150f)); assertEquals(fit, viewer.pixels())
         }
         finally { viewer.close() }
@@ -259,7 +261,7 @@ class DesktopUnifiedViewerTest {
             c.repository.saveHistoryFoldPreference(NovelAiHistoryFoldPreference(0, false, NovelAiHistoryFoldType.FULL))
             val opens = mutableListOf<Pair<List<String>, Int>>()
             val draft = c.draft.value
-            val scene = ImageComposeScene(1000, 800) {
+            val scene = ImageComposeScene(1280, 900, coroutineContext = awt) {
                 DesktopStudioHistory(c, { _, _, _ -> error("No apply") }, { paths, index -> opens.add(paths to index) }, { _, _ -> error("No use") })
             }
             try {
@@ -268,10 +270,16 @@ class DesktopUnifiedViewerTest {
                 field.config[SemanticsActions.SetText].action!!(AnnotatedString("matched"))
                 scene.until { scene.nodes().count { it.label("配方详情") && it.config.getOrNull(SemanticsActions.OnClick) != null } == 4 }
                 val expected = com.example.chatbar.ui.imageprompt.NovelAiHistoryFilterPolicy.filter(c.history.first(), "matched", null).map { it.image.path }
-                scene.until { scene.nodes().count { it.label("图片") } == expected.size }
+                // The wide history now has its own image preview in the detail pane.
+                // Only gallery cells participate in the filtered cross-batch ordering.
+                fun galleryCells() = scene.nodes().filter { node -> node.label("图片") &&
+                    generateSequence(node.parent) { it.parent }.none {
+                        it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("历史图片详情") == true
+                    } }
+                scene.until { galleryCells().size == expected.size }
                 // Lazy grid semantics traversal can retain a different insertion order
                 // after filtering. Click the second visible cell in screen order.
-                val cells = scene.nodes().filter { it.label("图片") }
+                val cells = galleryCells()
                     .sortedWith(compareBy({ it.boundsInRoot.top }, { it.boundsInRoot.left }))
                 scene.double(cells[1].boundsInRoot.center)
                 scene.until { opens.isNotEmpty() }; delay(400); scene.frames()

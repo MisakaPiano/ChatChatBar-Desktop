@@ -39,7 +39,7 @@ internal class DesktopNovelAiGenerationRuntime(
                 ) else initial
                 val plan = promptPlan ?: launchDraft.toPromptPlan()
                 val recipe = launchDraft.toRecipe(settings)
-                val token = secrets.load(DesktopCredentialKey.NovelAiToken)?.takeIf(String::isNotBlank)
+                val token = secrets.credentialForCall(DesktopCredentialKey.NovelAiToken)?.takeIf(String::isNotBlank)
                     ?: throw DesktopNovelAiRequestException("请先在应用内安全保存 NovelAI 凭据")
                 check(!Json.encodeToString(NovelAiGenerationRecipe.serializer(), recipe).contains(token))
                 fun validate(bytes: ByteArray) {

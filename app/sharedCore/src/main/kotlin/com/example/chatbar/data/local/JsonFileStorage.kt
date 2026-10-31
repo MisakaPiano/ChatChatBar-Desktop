@@ -258,6 +258,33 @@ class JsonFileStorage(
      * The caller validates storage identity/relationships; exceptions invalidate the entire proof.
      * One file is retained at a time. Unknown fields and interrupted/foreign directory entries fail.
      */
+    /** Bounded durable single-record proof. Never creates a directory or repairs an index. */
+    suspend fun <T : Any> readEntityBoundedStrict(entityType: String, id: String, serializer: KSerializer<T>,
+        maximumFileBytes: Int = 8 * 1024 * 1024, validatePath: (Path) -> Unit = {}): EntityReadResult<T> =
+        mutexFor(entityType).withLock {
+            require(entityType.matches(Regex("[a-z_]+")))
+            require(id.isNotBlank() && id.length <= 256 && id !in setOf(".", "..") && id.none { it == '/' || it == '\\' || it.code < 32 })
+            require(maximumFileBytes in 1..8 * 1024 * 1024)
+            withContext(Dispatchers.IO) {
+                try {
+                    val checkedPath: (Path) -> Unit = { path ->
+                        try { validatePath(path) }
+                        catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+                        catch (error: Exception) { throw IOException("Path verification failed", error) }
+                    }
+                    val directory = strictInventoryDirectory(entityType, checkedPath) ?: return@withContext EntityReadResult.Missing
+                    val path = directory.resolve("$id.json")
+                    check(path.parent == directory && path.fileName.toString() == "$id.json") { "Unsafe entity identity" }
+                    EntityReadResult.Valid(decodeStrictInventoryRecord(path, serializer,
+                        Json(json) { ignoreUnknownKeys = false }, maximumFileBytes, checkedPath))
+                } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+                catch (_: NoSuchFileException) { EntityReadResult.Missing }
+                catch (error: SerializationException) { EntityReadResult.Corrupt(error) }
+                catch (error: IllegalArgumentException) { EntityReadResult.Corrupt(error) }
+                catch (error: Exception) { EntityReadResult.ReadError(error) }
+            }
+        }
+
     suspend fun <T : Any> visitEntitiesStrict(
         entityType: String,
         serializer: KSerializer<T>,
@@ -269,56 +296,56 @@ class JsonFileStorage(
         require(maximumFileBytes in 1..8 * 1024 * 1024)
         withContext(Dispatchers.IO) {
             val strictJson = Json(json) { ignoreUnknownKeys = false }
-            val directory = appDataRoot.toAbsolutePath().normalize().resolve(ENTITIES_DIR).resolve(entityType)
-            var ancestor = directory.root
-            for (part in directory) {
-                ancestor = ancestor.resolve(part)
-                val attributes = try {
-                    Files.readAttributes(ancestor, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
-                } catch (_: NoSuchFileException) { return@withContext 0L }
-                if (!attributes.isDirectory || attributes.isSymbolicLink || attributes.isOther)
-                    throw IOException("Unsafe inventory directory")
-                validatePath(ancestor)
-            }
+            val directory = strictInventoryDirectory(entityType, validatePath) ?: return@withContext 0L
             var count = 0L
             Files.newDirectoryStream(directory).use { entries ->
                 for (path in entries) {
                     currentCoroutineContext().ensureActive()
-                    val attributes = Files.readAttributes(path, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
-                    if (!attributes.isRegularFile || attributes.isSymbolicLink || attributes.isOther)
-                        throw IOException("Unsafe inventory entry")
-                    validatePath(path)
                     val name = path.fileName.toString()
-                    if (!name.endsWith(".json") || name.length == 5 || attributes.size() > maximumFileBytes)
-                        throw IOException("Unknown or oversized inventory entry")
-                    val bytes = Files.newInputStream(path, LinkOption.NOFOLLOW_LINKS).use {
-                        it.readNBytes(maximumFileBytes + 1)
-                    }
-                    if (bytes.size > maximumFileBytes) throw IOException("Inventory entry exceeded read budget")
-                    val text = Charsets.UTF_8.newDecoder().decode(java.nio.ByteBuffer.wrap(bytes)).toString()
-                    // Bound decoder recursion for hostile/corrupt read-only inventory records.
-                    // Syntax and field authority still belong exclusively to kotlinx.serialization.
-                    var depth = 0
-                    var quoted = false
-                    var escaped = false
-                    for (character in text) {
-                        if (quoted) {
-                            if (escaped) escaped = false
-                            else if (character == '\\') escaped = true
-                            else if (character == '"') quoted = false
-                        } else when (character) {
-                            '"' -> quoted = true
-                            '{', '[' -> if (++depth > 64) throw IOException("Inventory nesting exceeded read budget")
-                            '}', ']' -> depth--
-                        }
-                    }
-                    val value = strictJson.decodeFromString(serializer, text)
+                    val value = decodeStrictInventoryRecord(path, serializer, strictJson, maximumFileBytes, validatePath)
                     visit(name.removeSuffix(".json"), value)
                     count++
                 }
             }
             count
         }
+    }
+
+    private fun strictInventoryDirectory(entityType: String, validatePath: (Path) -> Unit): Path? {
+        val directory = appDataRoot.toAbsolutePath().normalize().resolve(ENTITIES_DIR).resolve(entityType)
+        var ancestor = directory.root
+        for (part in directory) {
+            ancestor = ancestor.resolve(part)
+            val attributes = try { Files.readAttributes(ancestor, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS) }
+                catch (_: NoSuchFileException) { return null }
+            if (!attributes.isDirectory || attributes.isSymbolicLink || attributes.isOther) throw IOException("Unsafe inventory directory")
+            validatePath(ancestor)
+        }
+        return directory
+    }
+
+    private fun <T : Any> decodeStrictInventoryRecord(path: Path, serializer: KSerializer<T>, strictJson: Json,
+        maximumFileBytes: Int, validatePath: (Path) -> Unit): T {
+        val attributes = Files.readAttributes(path, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+        if (!attributes.isRegularFile || attributes.isSymbolicLink || attributes.isOther) throw IOException("Unsafe inventory entry")
+        validatePath(path)
+        val name = path.fileName.toString()
+        if (!name.endsWith(".json") || name.length == 5 || attributes.size() > maximumFileBytes)
+            throw IOException("Unknown or oversized inventory entry")
+        val bytes = Files.newInputStream(path, LinkOption.NOFOLLOW_LINKS).use { it.readNBytes(maximumFileBytes + 1) }
+        if (bytes.size > maximumFileBytes) throw IOException("Inventory entry exceeded read budget")
+        val text = Charsets.UTF_8.newDecoder().decode(java.nio.ByteBuffer.wrap(bytes)).toString()
+        var depth = 0; var quoted = false; var escaped = false
+        for (character in text) {
+            if (quoted) {
+                if (escaped) escaped = false else if (character == '\\') escaped = true else if (character == '"') quoted = false
+            } else when (character) {
+                '"' -> quoted = true
+                '{', '[' -> if (++depth > 64) throw IOException("Inventory nesting exceeded read budget")
+                '}', ']' -> depth--
+            }
+        }
+        return strictJson.decodeFromString(serializer, text)
     }
 
     /**

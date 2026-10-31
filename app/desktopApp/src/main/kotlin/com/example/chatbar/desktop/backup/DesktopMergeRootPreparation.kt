@@ -7,17 +7,17 @@ import kotlinx.serialization.json.*
 
 /** Materializes both selected sides ONLY inside an already fenced, new, non-runnable root. */
 internal object DesktopMergeRootPreparation {
-    class Result internal constructor(val plan: DesktopMergeDestinationPlan, val files: Map<String, String>) {
+    class Result internal constructor(val plan: DesktopMergeDestinationPlan, val files: Map<String, String>) : AutoCloseable {
+        override fun close() { plan.close() }
         override fun toString() = "MergeRootPrepared(files=${files.size})"
     }
 
     suspend fun computerEntities(snapshot: DesktopFullBackupMapping.Export): Map<String, JsonObject> {
-        var structured = 0L
-        return snapshot.files.filterKeys { it.startsWith("entities/") }.mapValues { (path, file) ->
-            currentCoroutineContext().ensureActive()
-            structured += Files.size(file); check(structured <= DesktopFullBackupSource.MAX_STRUCTURED)
-            check(Files.size(file) <= DesktopBackupPolicy.MAX_JSON)
-            DesktopBackupPolicy.entity(path, Files.readAllBytes(file), false, 86)
+        currentCoroutineContext().ensureActive()
+        val files = snapshot.files.filterKeys { it.startsWith("entities/") }
+        return DesktopBackupRecords.view(files.keys) { path ->
+            // This view outlives the inspection coroutine; callers check their own active operation.
+            DesktopBackupRecords.entity(path, files.getValue(path))
         }
     }
 
@@ -26,6 +26,7 @@ internal object DesktopMergeRootPreparation {
         workspace: Path, preferences: BackupPreferences = computer.preferences,
         afterTargetFile: suspend () -> Unit = {}): Result = withContext(Dispatchers.IO) {
         authority.requirePreparing(pending, targetRoot)
+        var preparedPlan: DesktopMergeDestinationPlan? = null
         try {
             check(computer.credentialFreeSource) { "MERGE_COMPUTER_CREDENTIAL_SNAPSHOT_REQUIRED" }
             phone.verifyUnchanged()
@@ -51,14 +52,15 @@ internal object DesktopMergeRootPreparation {
                 catalog[path] = DesktopMergeSaveSlotPackage.catalog(requireNotNull(phone.files["save_slot_packages/$packageName"]), slot, workspace)
             }
             val context = currentCoroutineContext()
-            val plan = DesktopMergeDestinationPlan.create(selection, pcMedia, phoneMedia, catalog) { context.ensureActive() }
+            val plan = DesktopMergeDestinationPlan.create(selection, pcMedia, phoneMedia, catalog, workspace) { context.ensureActive() }.also { preparedPlan = it }
             var expectedBytes = 0L
             for (file in computer.files.values + phone.files.values) expectedBytes += Files.size(file)
             check(Files.getFileStore(targetRoot).usableSpace >= expectedBytes * 3 + (32L shl 20)) { "MERGE_PREPARATION_SPACE" }
             val historicalVoices = DesktopHistoricalVoiceCustody.preserve(phone, plan, targetRoot, authority, pending)
             DesktopBackupScratch.create(workspace, "merge-files-").use { scratch ->
                 val input = linkedMapOf<String, Path>()
-                val entities = plan.entities.toMutableMap()
+                val overrides = linkedMapOf<String, JsonObject>()
+                val entities = DesktopBackupRecords.view(plan.entities.keys) { path -> overrides[path] ?: plan.entities.getValue(path) }
                 for (request in plan.packages) {
                     val source = requireNotNull(phone.files[request.original])
                     DesktopMergeSaveSlotPackage.prepare(source, request.slot, plan.identity, plan.incomingRecords, workspace).use { prepared ->
@@ -66,11 +68,12 @@ internal object DesktopMergeRootPreparation {
                         val target = scratch.directory.resolve("package-${input.size}")
                         check(scratch.copy(prepared.rewritten, target, DesktopSaveSlotArchive.MAX_ARCHIVE) == prepared.rewrittenSha256)
                         input[request.destination] = target
-                        val mappedSlot = entities.entries.single { (path, value) -> DesktopBackupPolicy.entityType(path) == "save_slots" &&
+                        val mappedSlot = entities.keys.filter { DesktopBackupPolicy.entityType(it) == "save_slots" }
+                            .map { path -> java.util.AbstractMap.SimpleImmutableEntry(path, entities.getValue(path)) }.single { (path, value) ->
                             value["id"]?.jsonPrimitive?.content == plan.identity.value("save_slots", requireNotNull(request.slot.text("id"))) }
                         check(prepared.manifest["id"] == mappedSlot.value["id"] && prepared.manifest["sessionId"] == mappedSlot.value["sessionId"]) { "MERGE_PACKAGE_TARGET_OWNER" }
                         val reference = prepared.manifest.getValue("packageRef").jsonObject
-                        entities[mappedSlot.key] = JsonObject(prepared.manifest + ("packageRef" to JsonObject(reference + ("byteLength" to JsonPrimitive(prepared.bytes)))))
+                        overrides[mappedSlot.key] = JsonObject(prepared.manifest + ("packageRef" to JsonObject(reference + ("byteLength" to JsonPrimitive(prepared.bytes)))))
                         DesktopSaveSlotSourceCustody.preserve(targetRoot, request.slot.relative,
                             Files.readAllBytes(phone.files.getValue(request.slot.relative)), prepared.original, phone.source.sourceHash,
                             phone.source.manifest.appVersionCode, phone.source.manifest.formatVersion, phone.source.manifest.scope)
@@ -109,6 +112,7 @@ internal object DesktopMergeRootPreparation {
             Result(plan, DesktopFullBackupMapping(targetRoot).inventory(StrictBackupZipReader.Limits().expanded))
         } catch (failure: Throwable) {
             pending.invalidate()
+            try { preparedPlan?.close() } catch (cleanup: Throwable) { failure.addSuppressed(cleanup) }
             throw failure
         }
     }

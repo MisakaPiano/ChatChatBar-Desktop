@@ -118,7 +118,7 @@ class DesktopFishPresentationTest {
         render().close(); yield()
     }
 
-    @Test fun `management voice module matches appearance heading and remains operable in narrow layout`() = runBlocking(awt) {
+    @Test fun `management voice subsection matches appearance heading and remains operable in narrow layout`() = runBlocking(awt) {
         fishFixture { _, container ->
             container.settingsRepository.saveAppSettings(AppSettings(voiceTagModelId = "stale-ref"))
             val controller = container.modelSettingsController
@@ -127,7 +127,7 @@ class DesktopFishPresentationTest {
             val management = container.createManagementController(transfer)
             val scope = CoroutineScope(SupervisorJob() + awt)
             val backup = DesktopAutomaticBackupSettingsController(container.automaticBackupRuntime, scope)
-            val scene = ImageComposeScene(1200, 900) {
+            val scene = ImageComposeScene(1200, 900, coroutineContext = awt) {
                 DesktopManagePanel(transfer, templates, management, controller, backup,
                     container.characterEditorController, container.formatCardEditorController,
                     container.worldBookEditorController, container.uiLanguageController,
@@ -146,7 +146,7 @@ class DesktopFishPresentationTest {
             suspend fun awaitFrame(check: () -> Boolean) = withTimeout(5_000) {
                 do { frame() } while (!check())
             }
-            fun node(label: String) = scene.nodes().single { it.label(label) }
+            fun node(label: String) = scene.nodes().first { it.label(label) }
             suspend fun pointerClick(label: String) {
                 val point = node(label).boundsInRoot.center
                 scene.sendPointerEvent(PointerEventType.Press, point, button = PointerButton.Primary)
@@ -167,15 +167,24 @@ class DesktopFishPresentationTest {
                     assertTrue(node.config[SemanticsActions.GetTextLayoutResult].action!!.invoke(results))
                     return results.single()
                 }
-                val appearance = scene.nodes().single { it.label("外观与显示") }
-                val voice = scene.nodes().single { it.label("语音与朗读") }
+                // Section labels are also navigation buttons now. Inspect the actual
+                // heading after entering each retained pane, rather than the tab text.
+                fun heading(label: String) = scene.nodes().single { it.label(label) &&
+                    generateSequence(it) { parent -> parent.parent }.none { parent ->
+                        parent.config.contains(SemanticsActions.OnClick)
+                    } }
+                pointerClick("外观与显示")
+                awaitFrame { scene.nodes().any { it.label("聊天背景透明度（全局）") } }
+                val appearance = heading("外观与显示")
                 val appearanceStyle = layout(appearance).layoutInput.style
+                pointerClick("语音与朗读")
+                awaitFrame { scene.nodes().any { it.label("Fish Audio") } }
+                val voice = heading("语音与朗读")
                 val voiceStyle = layout(voice).layoutInput.style
                 assertEquals(19.sp, voiceStyle.fontSize)
                 assertEquals(FontWeight.SemiBold, voiceStyle.fontWeight)
                 assertEquals(appearanceStyle, voiceStyle)
-                assertEquals(appearance.parent!!.id, voice.parent!!.id)
-                assertEquals(1, scene.nodes().count { it.label("语音与朗读") })
+                assertEquals(2, scene.nodes().count { it.label("语音与朗读") })
                 assertEquals(1, scene.nodes().count { it.label("Fish Audio") })
                 assertFalse(scene.nodes().any { it.label("语音与朗读 · Fish Audio") })
                 for (label in listOf("设置 / 替换 Fish 密钥", "清除 Fish 密钥",
@@ -183,24 +192,27 @@ class DesktopFishPresentationTest {
                     "已选模型不可用；不会自动替换", "保存全局设置", "放弃设置更改")) {
                     assertTrue(scene.nodes().any { it.label(label) }, "Missing voice control: $label")
                 }
-                scene.constraints = Constraints.fixed(360, 700)
+                // The shared compact navigation now consumes less height; use a shorter window
+                // so this still proves real wheel scrolling rather than merely fitting content.
+                scene.constraints = Constraints.fixed(360, 500)
                 frame()
                 fun range() = scene.nodes().single {
                     it.config.getOrNull(SemanticsProperties.VerticalScrollAxisRange) != null
                 }.config[SemanticsProperties.VerticalScrollAxisRange]
                 val initialScroll = range().value()
-                val initialVoiceY = node("语音与朗读").positionInRoot.y
                 assertTrue(range().maxValue() > 0f)
-                assertTrue(initialVoiceY >= 700f, "Voice module should start below the narrow viewport")
                 suspend fun reveal(label: String) = withTimeout(5_000) {
                     var wheels = 0
                     while (true) {
                         val target = node(label)
                         val top = target.positionInRoot.y
                         val bottom = top + target.size.height
-                        if (top >= 24f && bottom <= 676f) {
+                        val viewport = scene.nodes().single {
+                            it.config.getOrNull(SemanticsProperties.VerticalScrollAxisRange) != null
+                        }.boundsInRoot
+                        if (top >= viewport.top && bottom <= viewport.bottom) {
                             val bounds = target.boundsInRoot
-                            assertTrue(bounds.height > 0f && bounds.top >= 0f && bounds.bottom <= 700f,
+                            assertTrue(bounds.height > 0f && bounds.top >= 0f && bounds.bottom <= 500f,
                                 "$label not visible: $bounds")
                             assertTrue(bounds.left >= 0f && bounds.right <= 360f,
                                 "$label exceeds narrow viewport: $bounds")
@@ -210,18 +222,16 @@ class DesktopFishPresentationTest {
                             break
                         }
                         val before = range().value()
-                        val direction = if (top < 24f) -2f else 2f
-                        val point = Offset(350f, 350f) // Inside the settings scroll viewport's padding.
+                        val direction = if (top < viewport.top) -2f else 2f
+                        val point = Offset(viewport.right - 10f, viewport.center.y)
                         scene.sendPointerEvent(PointerEventType.Move, point)
                         scene.sendPointerEvent(PointerEventType.Scroll, point, scrollDelta = Offset(0f, direction))
                         wheels++
                         awaitFrame { range().value() != before }
                     }
                 }
-                reveal("语音与朗读")
+                reveal("保存全局设置")
                 assertTrue(range().value() > initialScroll, "Wheel did not change the actual scroll offset")
-                assertTrue(node("语音与朗读").positionInRoot.y < initialVoiceY,
-                    "Voice module did not move into the viewport")
                 reveal("听书模式：关闭")
                 pointerClick("听书模式：关闭")
                 awaitFrame { controller.state.value.chatDefaultsDirty }

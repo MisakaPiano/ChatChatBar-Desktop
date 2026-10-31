@@ -15,6 +15,62 @@ import okio.Buffer
 import kotlin.test.*
 
 class DesktopChatVoiceRuntimeTest {
+    @Test fun `automatic presence pause preserves admitted voice snapshot and only blocks future generation`() = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            f.server.enqueue(MockResponse().setHeader("Content-Type", "audio/mpeg").setBody(Buffer().write(fishPreviewMp3()))
+                .setBodyDelay(700, java.util.concurrent.TimeUnit.MILLISECONDS))
+            val task = f.runtime.generate(f.message, "alice")
+            assertNotNull(withContext(Dispatchers.IO) { f.server.takeRequest(3, java.util.concurrent.TimeUnit.SECONDS) })
+            f.runtime.withAutomaticParticipationUpdate {
+                val current = f.chats.getSession(f.session.id)!!
+                f.chats.saveSessionSettingsDraft(current, current.copy(desktopAutoPauseAbsentPeople = true,
+                    desktopCharacterParticipation = listOf(SessionCharacterParticipation("card", emptySet(), setOf("alice")))))
+            }
+            f.done(task)
+            val original = f.repo.listForSession(f.session.id).single()
+            assertEquals("reference", original.voice.referenceId)
+            assertTrue(Files.exists(Path.of(original.audioPath)))
+            f.runtime.generate(f.message, "alice", replace = original, editedTaggedText = "replace")?.let { f.done(it) }
+            assertEquals(1, f.server.requestCount)
+            assertEquals(original, f.repo.get(original.id)); assertTrue(Files.exists(Path.of(original.audioPath)))
+        }
+    }
+    @Test fun `disabled character cannot create or replace audio while historical recording remains`() = runBlocking {
+        Fixture().use { f ->
+            f.seed(); f.enqueue(); f.done(f.runtime.generate(f.message, "alice"))
+            val original = f.repo.listForSession(f.session.id).single()
+            val card = f.characters.getById("card")!!
+            val disabled = com.example.chatbar.domain.chat.SessionCharacterParticipationPolicy.change(f.session, card, "alice", false)
+            f.chats.saveSessionSettingsDraft(f.session, disabled)
+            f.runtime.generate(f.message, "alice", replace = original, editedTaggedText = "replacement")?.let { f.done(it) }
+            assertEquals(1, f.server.requestCount)
+            assertEquals(original, f.repo.get(original.id))
+            assertTrue(Files.exists(Path.of(original.audioPath)))
+            f.runtime.foreground(f.session.id).join()
+            val play = f.runtime.play(original, f.message)
+            withTimeout(3_000) { while (!f.output.playing) delay(10) }
+            f.runtime.stopForMaintenance(); play?.join()
+            assertEquals(original, f.repo.get(original.id))
+        }
+    }
+
+    @Test fun `participation change rejects active voice generation rather than racing its frozen identity`() = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            f.server.enqueue(MockResponse().setHeader("Content-Type", "audio/mpeg").setBody(Buffer().write(fishPreviewMp3()))
+                .setBodyDelay(500, java.util.concurrent.TimeUnit.MILLISECONDS))
+            val id = f.runtime.generate(f.message, "alice")
+            var enteredWhileBusy = false
+            assertFailsWith<IllegalStateException> { f.runtime.withCharacterParticipationChange(f.session.id) { enteredWhileBusy = true } }
+            assertFalse(enteredWhileBusy)
+            f.done(id)
+            var admitted = false
+            f.runtime.withCharacterParticipationChange(f.session.id) { admitted = true }
+            assertTrue(admitted)
+        }
+    }
+
     @Test fun `UI click intent cannot become a new autoplay intent after a leave and return`() = runBlocking {
         Fixture().use { f ->
             f.seed(); f.enqueue(); f.done(f.runtime.generate(f.message, "alice"))
@@ -64,6 +120,7 @@ class DesktopChatVoiceRuntimeTest {
     internal class Fixture(
         gate: com.example.chatbar.data.operation.AppDataOperationGate = com.example.chatbar.data.operation.NoOpAppDataOperationGate,
         outputFactory: (PreviewOutputFake) -> DesktopAudioOutput = { it },
+        uiPreferences: kotlinx.coroutines.flow.StateFlow<DesktopChatUiPreferences>? = null,
     ) : AutoCloseable {
         val root = Files.createTempDirectory("s5-chat-")
         val storage = JsonFileStorage(root, gate); val chats = ChatRepository(storage)
@@ -81,7 +138,8 @@ class DesktopChatVoiceRuntimeTest {
         }
         val transport = DesktopFishVoiceTransport(credentials, audio, OkHttpClient(), server.url("/").toString().trimEnd('/'), { LocalDate.of(2026,10,19) })
         val runtime = DesktopChatVoiceRuntime(chats, characters, settings, models, repo, audio, credentials, outputFactory(output),
-            picker = picker, gate = gate, transportOverride = transport, textGateway = FishVoiceTextGateway { _, _, _, _ -> error("Unapproved auxiliary request") })
+            picker = picker, gate = gate, transportOverride = transport, uiPreferences = uiPreferences,
+            textGateway = FishVoiceTextGateway { _, _, _, _ -> error("Unapproved auxiliary request") })
         lateinit var session: ChatSession; lateinit var message: ChatMessage
         suspend fun seed() {
             characters.save(CharacterCard("card", "synthetic", characters = listOf(CharacterInfo("alice", "Alice",

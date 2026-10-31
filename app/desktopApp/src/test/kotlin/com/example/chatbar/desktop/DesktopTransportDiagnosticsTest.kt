@@ -137,6 +137,40 @@ class DesktopTransportDiagnosticsTest {
         assertTrue(outbound.endsWith("}]}"))
     }
 
+    @Test fun `clearing one session neither clears others nor resurrects an active cleared log`() {
+        val owner = DesktopTransportDiagnosticsOwner()
+        val cleared = owner.begin("one", "a", model("secret"))
+        owner.begin("two", "b", model("secret"))
+        owner.clear("a")
+        cleared.onResponseChunk("{}", OpenAiSseChunk("late", null))
+        cleared.finish(DesktopTaskStatus.COMPLETED, null, null)
+        assertEquals(listOf("two"), owner.entries.value.map { it.taskId })
+        owner.begin("three", "a", model("secret"))
+        assertEquals(listOf("three"), desktopChatDiagnosticEntries(owner.entries.value, "a").map { it.taskId })
+        assertEquals(listOf("two"), desktopChatDiagnosticEntries(owner.entries.value, "b").map { it.taskId })
+    }
+
+    @Test fun `aggregated output and usage survive chunk eviction while remaining bounded and scrubbed`() {
+        val owner = DesktopTransportDiagnosticsOwner()
+        val recorder = owner.begin("one", "a", model("secret-key"))
+        recorder.onResponseChunk("{}", OpenAiSseChunk("secret-", "reason"))
+        recorder.onResponseChunk("{}", OpenAiSseChunk("key", "ing"))
+        repeat(40) { recorder.onResponseChunk("{}", OpenAiSseChunk("content-$it;", null)) }
+        recorder.onResponseChunk("""{"usage":{"prompt_tokens":123,"completion_tokens":45}}""")
+        val entry = owner.entries.value.single()
+        assertEquals(32, entry.chunks.size)
+        assertTrue(entry.droppedChunkCount > 0)
+        assertTrue(entry.outputText.contains("content-0;"))
+        assertFalse(entry.outputText.contains("secret-key"))
+        assertEquals("reasoning", entry.reasoningText)
+        assertEquals(123, entry.usage?.promptTokens)
+        assertEquals(45, entry.usage?.completionTokens)
+        recorder.onResponseChunk("{}", OpenAiSseChunk("x".repeat(100_000), "y".repeat(100_000)))
+        val capped = owner.entries.value.single()
+        assertTrue(capped.outputTruncated && capped.reasoningTruncated)
+        assertTrue(capped.outputText.length < 66_000 && capped.reasoningText.length < 66_000)
+    }
+
     private fun roles(body: String): List<String> = Json.parseToJsonElement(body)
         .jsonObject.getValue("messages").jsonArray.map { it.jsonObject.getValue("role").jsonPrimitive.content }
 

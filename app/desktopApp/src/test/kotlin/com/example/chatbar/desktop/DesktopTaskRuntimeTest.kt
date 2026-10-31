@@ -17,6 +17,15 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.awaitCancellation
+import com.example.chatbar.domain.chat.StreamEvent
+import com.example.chatbar.domain.chat.MessageFormatRepairPolicy
+import com.example.chatbar.data.repository.ConditionalMessageUpdateResult
+import com.example.chatbar.data.repository.MessageUpdateStage
+import com.example.chatbar.data.local.JsonFileStorage
+import com.example.chatbar.data.local.entity.MessageFormatRepairNoticeKind
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -393,10 +402,123 @@ class DesktopTaskRuntimeTest {
         }
     }
 
+    @Test fun `inline repair retains chat admission and downstream sees only the committed final text`() = runBlocking {
+        withContainer { c -> MockWebServer().use { server ->
+            val session = prepare(c, server.url("/v1").toString().trimEnd('/'))
+            server.enqueue(success("original"))
+            val entered = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>()
+            val completed = mutableListOf<String>()
+            lateinit var runtime: DesktopTaskRuntime
+            lateinit var repair: DesktopMessageFormatRepairController
+            runtime = DesktopTaskRuntime(c.createRealChatRuntime(), onChatCompleted = { result, _ ->
+                completed += result.assistant.displayContent; null
+            }, postProcessReply = { parent, result, control ->
+                val state = repair.automatic(parent, result, control, DesktopRepairSafetyGate { _, _ -> DesktopRepairSafety.VERIFIED_SAFE })
+                val retained = (state.commit as ConditionalMessageUpdateResult.Success).message
+                DesktopChatPostProcessResult(result.copy(assistant = retained))
+            })
+            repair = DesktopMessageFormatRepairController(c.chatRepository, c.settingsRepository, c.characterRepository,
+                c.formatCardRepository, c.effectiveModelResolver, runtime, stream = {
+                    flow { entered.complete(Unit); release.await(); emit(StreamEvent.Delta("formatted")); emit(StreamEvent.Done) }
+                })
+            try {
+                val task = runtime.launchChat(session, "Next")
+                withTimeout(5000) { entered.await() }
+                assertTrue(runtime.hasActiveSessionTask(session))
+                assertNotNull(runtime.runningRepair(session))
+                assertFailsWith<DesktopTaskAdmissionException> { runtime.launchChat(session, "cannot race") }
+                assertTrue(completed.isEmpty())
+                assertEquals("original", c.chatRepository.getMessages(session).last().displayContent)
+                release.complete(Unit)
+                awaitTask(runtime, task) { it.status == DesktopTaskStatus.COMPLETED }
+                assertEquals(listOf("formatted"), completed)
+                val retained = c.chatRepository.getMessages(session).last()
+                assertEquals("original", retained.formatRepairNotice?.originalContent)
+                assertEquals(MessageFormatRepairNoticeKind.APPLIED, retained.formatRepairNotice?.kind)
+                assertFalse(runtime.hasActiveSessionTask(session)); assertEquals(1, server.requestCount)
+            } finally { runtime.closeAndDrain() }
+        } }
+    }
+
+    @Test fun `parent Stop reaches inline repair without discarding its recoverable retained text`() = runBlocking {
+        withContainer { c -> MockWebServer().use { server ->
+            val session = prepare(c, server.url("/v1").toString().trimEnd('/'))
+            val original = "Original long reply"
+            server.enqueue(success(original))
+            val entered = CompletableDeferred<Unit>()
+            lateinit var runtime: DesktopTaskRuntime
+            lateinit var repair: DesktopMessageFormatRepairController
+            runtime = DesktopTaskRuntime(c.createRealChatRuntime(), postProcessReply = { parent, result, control ->
+                val state = repair.automatic(parent, result, control, DesktopRepairSafetyGate { _, _ -> DesktopRepairSafety.VERIFIED_SAFE })
+                DesktopChatPostProcessResult(result.copy(assistant = (state.commit as ConditionalMessageUpdateResult.Success).message))
+            })
+            repair = DesktopMessageFormatRepairController(c.chatRepository, c.settingsRepository, c.characterRepository,
+                c.formatCardRepository, c.effectiveModelResolver, runtime, stream = {
+                    flow { emit(StreamEvent.Delta("Fix")); entered.complete(Unit); awaitCancellation() }
+                })
+            try {
+                val task = runtime.launchChat(session, "Next")
+                withTimeout(5000) { entered.await() }
+                assertTrue(runtime.requestUserStop(task))
+                awaitTask(runtime, task) { it.status == DesktopTaskStatus.USER_STOPPED }
+                val retained = c.chatRepository.getMessages(session).last()
+                assertEquals(MessageFormatRepairPolicy.progressiveOverlay(original, "Fix"), retained.displayContent)
+                assertEquals(original, retained.formatRepairNotice?.originalContent)
+                assertEquals(MessageFormatRepairNoticeKind.STOPPED, retained.formatRepairNotice?.kind)
+                assertTrue(runtime.repairTasks.value.values.contains(DesktopRepairStatus.STOPPED))
+            } finally { runtime.closeAndDrain() }
+        } }
+    }
+
+    @Test fun `uncertain inline commit blocks downstream and future chat until explicit strict reload acknowledgement`() = runBlocking {
+        withContainer { c -> MockWebServer().use { server ->
+            val session = prepare(c, server.url("/v1").toString().trimEnd('/'))
+            server.enqueue(success("original"))
+            var downstream = 0
+            lateinit var runtime: DesktopTaskRuntime
+            lateinit var repair: DesktopMessageFormatRepairController
+            val uncertain = object : DesktopRepairSafetyGate {
+                override suspend fun check(session: com.example.chatbar.data.local.entity.ChatSession,
+                    message: com.example.chatbar.data.local.entity.ChatMessage) = DesktopRepairSafety.VERIFIED_SAFE
+                override suspend fun submit(session: com.example.chatbar.data.local.entity.ChatSession,
+                    message: com.example.chatbar.data.local.entity.ChatMessage,
+                    write: suspend () -> ConditionalMessageUpdateResult): ConditionalMessageUpdateResult =
+                    ConditionalMessageUpdateResult.CommitUncertain(message.copy(content = "attempted"), MessageUpdateStage.WRITE_INDEX,
+                        java.io.IOException("synthetic"), JsonFileStorage.EntityReadResult.Valid(message))
+            }
+            runtime = DesktopTaskRuntime(c.createRealChatRuntime(), completedHistoryLimit = 2,
+                onChatCompleted = { _, _ -> downstream++; null }, postProcessReply = { parent, result, control ->
+                    val state = repair.automatic(parent, result, control, uncertain)
+                    DesktopChatPostProcessResult(result, blockDownstream = state.status == DesktopRepairStatus.COMMIT_UNCERTAIN)
+                })
+            repair = DesktopMessageFormatRepairController(c.chatRepository, c.settingsRepository, c.characterRepository,
+                c.formatCardRepository, c.effectiveModelResolver, runtime, stream = { flowOf(StreamEvent.Delta("formatted"), StreamEvent.Done) })
+            try {
+                val task = runtime.launchChat(session, "Next")
+                val failed = awaitTask(runtime, task) { it.status == DesktopTaskStatus.FAILED }
+                assertFalse(failed.message.startsWith("Completed"))
+                assertEquals(0, downstream); assertTrue(runtime.hasUnconfirmedRepair(session))
+                assertFailsWith<DesktopTaskAdmissionException> { runtime.launchChat(session, "blocked") }
+                repeat(4) {
+                    val other = runtime.launchFormatRepair("other-session", "fixture") { _, _ -> DesktopRepairStatus.UNCHANGED }
+                    withTimeout(5000) { runtime.repairTasks.first { it[other] == DesktopRepairStatus.UNCHANGED } }
+                }
+                assertTrue(runtime.hasUnconfirmedRepair(session), "History trimming cannot acknowledge uncertainty")
+                val displayed = c.chatRepository.getMessages(session).last()
+                assertTrue(repair.confirmCommitReload(displayed))
+                assertFalse(runtime.hasUnconfirmedRepair(session)); assertEquals("original", displayed.displayContent)
+            } finally { runtime.closeAndDrain() }
+        } }
+    }
+
     private suspend fun prepare(container: DesktopAppContainer, baseUrl: String): String {
         val character = CharacterCard.create("Character", greeting = "Greeting")
         container.characterRepository.save(character)
         val sessionId = container.characterSessionService.createSessionForCharacter(character.id)
+        // These cases own the main/repair transport, not background HEAD maintenance. The
+        // third turn must not race an unrelated memory request for the same response queue.
+        container.chatRepository.updateSession(requireNotNull(container.chatRepository.getSession(sessionId))
+            .copy(longTermMemoryEnabled = false))
         val model = ModelConfig(
             id = "model",
             displayName = "Model",

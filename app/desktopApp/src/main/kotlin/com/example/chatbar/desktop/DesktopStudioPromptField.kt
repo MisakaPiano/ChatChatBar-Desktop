@@ -76,7 +76,7 @@ internal fun studioCanAcceptSuggestion(input: TextFieldValue, candidateCount: In
 internal fun StudioPromptTextEditor(input: TextFieldValue, onChange: (TextFieldValue) -> Unit, translated: Boolean,
     annotations: List<NovelAiPromptAnnotation>, modifier: Modifier = Modifier) {
     var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
-    BasicTextField(input, onChange, modifier, textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp,
+    BasicTextField(input, onChange, modifier, cursorBrush = DesktopBootstrapColors.inputCaret, textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp,
         lineHeight = if (translated) 34.sp else 22.sp,
         lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Top, LineHeightStyle.Trim.None)),
         onTextLayout = { layout = it }, decorationBox = { inner ->

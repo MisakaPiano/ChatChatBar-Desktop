@@ -29,6 +29,9 @@ internal data class InspectionSessionChoice(val images: Boolean = true, val voic
 internal data class InspectionPreferences(
     val novelAiToken: String? = null, val fishAudioKey: String? = null,
     val communitySession: String? = null, val brushSize: Float = 36f,
+    @EncodeDefault(EncodeDefault.Mode.NEVER) val desktopLlmAccounts: String? = null,
+    @EncodeDefault(EncodeDefault.Mode.NEVER) val desktopNovelAiAccounts: String? = null,
+    @EncodeDefault(EncodeDefault.Mode.NEVER) val desktopFishAccounts: String? = null,
     val brushType: String = "Mosaic", @EncodeDefault(EncodeDefault.Mode.NEVER) val retainedPreferences: Set<String> = emptySet()
 )
 internal val inspectionGlobalOptions = setOf(

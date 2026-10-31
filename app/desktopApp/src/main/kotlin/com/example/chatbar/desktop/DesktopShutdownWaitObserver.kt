@@ -74,6 +74,7 @@ private fun scheduleShutdownWarning(delayMillis: Long, action: () -> Unit): Auto
 private fun showShutdownWaitingWindow(): AutoCloseable {
     check(EventQueue.isDispatchThread())
     val frame = JFrame("ChatChatBar — 正在安全关闭 / Safe shutdown in progress")
+    DesktopBrandResources.applyTo(frame)
     frame.defaultCloseOperation = WindowConstants.DO_NOTHING_ON_CLOSE
     frame.addWindowListener(object : WindowAdapter() {
         override fun windowClosing(event: WindowEvent) { frame.extendedState = Frame.ICONIFIED }

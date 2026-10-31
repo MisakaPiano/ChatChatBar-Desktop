@@ -43,6 +43,7 @@ internal object PlatformDesktopStartupBlockedPresenter : DesktopStartupBlockedPr
             try {
                 val view = DesktopStartupBlockedView(diagnostic)
                 frame = JFrame("ChatChatBar — 启动已阻断 / Startup blocked")
+                DesktopBrandResources.applyTo(frame)
                 val window = frame
                 window.defaultCloseOperation = WindowConstants.DISPOSE_ON_CLOSE
                 window.addWindowListener(object : WindowAdapter() {

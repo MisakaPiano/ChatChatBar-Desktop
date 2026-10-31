@@ -29,15 +29,15 @@ class DesktopFullBackupWriterTest {
         }
     }
 
-    @Test fun `oversized structured input refuses before decoding or producing a file`() = runBlocking {
+    @Test fun `record exceeding the working memory budget refuses before decoding or producing a file`() = runBlocking {
         fixture { base, _ ->
             val oversized = base.resolve("oversized.json")
-            java.io.RandomAccessFile(oversized.toFile(), "rw").use { it.setLength(DesktopBackupPolicy.MAX_JSON + 1L) }
+            java.io.RandomAccessFile(oversized.toFile(), "rw").use { it.setLength(DesktopBackupRecords.recordBudget + 1L) }
             val error = assertFailsWith<DesktopFullBackupWriter.Refusal> {
                 DesktopFullBackupWriter.export(mapOf("entities/character_cards/large.json" to oversized), base.resolve("oversized.cbbackup"), null)
             }
             assertEquals("INPUT", error.stage)
-            assertEquals(DesktopBackupPolicy.MAX_JSON + 1L, Files.size(oversized))
+            assertEquals(DesktopBackupRecords.recordBudget + 1L, Files.size(oversized))
             assertFalse(Files.exists(base.resolve("oversized.cbbackup")))
         }
     }

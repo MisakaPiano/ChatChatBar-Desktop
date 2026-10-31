@@ -68,12 +68,16 @@ class DesktopPostP8IntegrationTest {
             }finally{scene.close()}
         }
     }
-    @Test fun `effective audiobook controls single line right role choice and hides it when off`():Unit=runBlocking(edt) {
+    @Test fun `effective audiobook controls composer voice choice and timeline has no idle narrator dock`():Unit=runBlocking(edt) {
         DesktopChatVoiceRuntimeTest.Fixture().use{f->
             f.seed();val card=f.characters.getById("card")!!
             for(w in listOf(240,360,1100)) for(enabled in listOf(false,true)) {
                 val state=DesktopPrimaryChatState(selectedSession=f.session.copy(audiobookModeEnabled=enabled),selectedCharacter=card)
-                val scene=ImageComposeScene(w,160){DesktopVoiceDeck(f.runtime,state)}
+                val ui = DesktopVoiceUiSelection().apply { composerExpanded = true }
+                val scene=ImageComposeScene(w,160){ Column {
+                    DesktopVoiceDeck(f.runtime,state)
+                    DesktopComposerVoiceControl(state, ui, f.runtime.effectiveAudiobook(state.selectedSession!!), w.toFloat())
+                } }
                 try {
                     repeat(4){scene.render(System.nanoTime()).close();yield()}
                     val deck=scene.nodes().filter{it.config.getOrNull(SemanticsProperties.ContentDescription)

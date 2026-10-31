@@ -76,15 +76,16 @@ class DesktopWorkspacePresentationTest {
         assertEquals(0f, DesktopChatReadingWidth.forAvailableWidth(0f))
     }
 
-    @Test fun `header timeline and composer share a single reading column rather than independent widths`() {
-        val panel = source("DesktopPrimaryChatPanel.kt")
-        val column = panel.substringAfter("Column(Modifier.width(placement.workspaceWidthDp")
-            .substringBefore("if (browser.settingsSessionId")
-        assertTrue(column.contains("DesktopChatHeader("))
-        assertTrue(column.contains("PrimaryTimeline("))
-        assertTrue(column.contains("PrimaryComposer("))
-        assertEquals(2, Regex("Column\\(Modifier.width\\(placement.contentWidthDp").findAll(column).count())
-        assertTrue(panel.contains("Modifier.width(placement.contentWidthDp.dp).fillMaxHeight()"))
+    @Test fun `workspace reserves people and exterior navigation without narrowing the shared header composer column`() {
+        for (width in listOf(360f, 720f, 1100f, 1400f, 1800f)) for (people in listOf(false, true)) {
+            val layout = desktopChatWorkspaceLayout(width, people)
+            assertTrue(layout.widthDp <= width, "viewport=$width people=$people")
+            assertTrue(layout.timeline.contentWidthDp > 0 && layout.timeline.contentWidthDp <= 880)
+            assertEquals(layout.timeline.contentWidthDp + layout.peopleWidthDp, layout.headerWidthDp)
+            assertEquals(layout.widthDp - layout.timeline.railAllowanceDp, layout.headerWidthDp)
+            if (layout.timeline.external) assertTrue(layout.widthDp - layout.headerWidthDp >= 60)
+            if (!people || width < 720) assertEquals(0f, layout.peopleWidthDp)
+        }
     }
 
     @Test fun `collapse restore is presentation only and retains clicked session and settings state`() {

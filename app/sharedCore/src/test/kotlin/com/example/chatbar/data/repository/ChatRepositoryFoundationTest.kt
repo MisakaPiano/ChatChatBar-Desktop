@@ -22,6 +22,19 @@ import kotlinx.coroutines.test.runTest
 class ChatRepositoryFoundationTest {
     private val roots = mutableListOf<Path>()
 
+    @Test fun `saving automatic pause off clears concurrently added automatic reasons while retaining manual reasons`() = runTest {
+        val repository = repository()
+        val baseline = session("session").copy(desktopAutoPauseAbsentPeople = true)
+        repository.createSession(baseline)
+        repository.saveSessionSettingsDraft(baseline, baseline.copy(desktopCharacterParticipation = listOf(
+            com.example.chatbar.data.local.entity.SessionCharacterParticipation(baseline.characterCardId, setOf("manual"), setOf("auto")))))
+        val saved = repository.saveSessionSettingsDraft(baseline, baseline.copy(desktopAutoPauseAbsentPeople = false))
+        assertFalse(saved.desktopAutoPauseAbsentPeople)
+        assertEquals(setOf("manual"), saved.desktopCharacterParticipation.single().disabledPersonIds)
+        assertTrue(saved.desktopCharacterParticipation.single().automaticallyPausedPersonIds.isEmpty())
+        assertEquals(saved.desktopCharacterParticipation, repository.getSession(saved.id)!!.desktopCharacterParticipation)
+    }
+
     @Test fun `older or same timestamp scroll save cannot replace latest stable viewport`() = runTest {
         val repository = repository()
         repository.createSession(session("session"))

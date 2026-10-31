@@ -34,9 +34,18 @@ internal class DesktopMergeCredentials private constructor(
 
     val dataConflictKeys: Set<String> get() {
         open()
+        val oldAccounts = pc[DesktopCredentialKey.AccountProfiles(DesktopAccountService.LLM)]?.value
+            ?.concatToString()?.let { DesktopAccountStore.decode(it, DesktopAccountService.LLM) }
+        val incomingAccounts = phone[DesktopCredentialKey.AccountProfiles(DesktopAccountService.LLM)]?.value
+            ?.concatToString()?.let { DesktopAccountStore.decode(it, DesktopAccountService.LLM) }
+        fun binding(bundle: DesktopAccountBundle?, id: String): DesktopApiAccount? =
+            bundle?.models?.get(id)?.let { selected -> bundle.accounts.single { it.id == selected } }
         return phoneConsumers.filter { (key, _) ->
             val incoming = phone[key]?.value; val old = pc[key]?.value
-            incoming != null && old != null && !incoming.contentEquals(old)
+            (incoming != null && old != null && !incoming.contentEquals(old)) ||
+                (key is DesktopCredentialKey.ModelApiKey && key in pc &&
+                    (incoming != null || binding(incomingAccounts, key.modelId) != null) &&
+                    binding(oldAccounts, key.modelId) != binding(incomingAccounts, key.modelId))
         }.values.flatMap { it.units }.toSet()
     }
     val globalConflicts: List<GlobalConflict> get() {
@@ -108,13 +117,72 @@ internal class DesktopMergeCredentials private constructor(
             chosen[targetKey] = incoming
         }
         // All mapping/choices are checked before the first protected write.
-        verifyComputerUnchanged()
+        val accountBuffers = mutableListOf<CharArray>()
         try {
+        DesktopAccountService.entries.forEach { service ->
+            val key = DesktopCredentialKey.AccountProfiles(service)
+            val computer = pc[key]?.value?.concatToString()?.let { DesktopAccountStore.decode(it, service) }
+            var incoming = phone[key]?.value?.concatToString()?.let { DesktopAccountStore.decode(it, service) }
+            val defaultKey = when (service) {
+                DesktopAccountService.LLM -> DesktopCredentialKey.SiliconFlowApiKey
+                DesktopAccountService.NOVELAI -> DesktopCredentialKey.NovelAiToken
+                DesktopAccountService.FISH -> DesktopCredentialKey.FishAudioApiKey
+            }
+            val incomingDefault = phone[defaultKey]
+            // Android has singleton credentials, not Desktop account profiles. An explicit
+            // choice to take that key must not be shadowed by the retained PC named default.
+            val takeLegacyDefault = incoming == null && computer?.managesLegacyDefault == true &&
+                incomingDefault?.value != null && chosen[defaultKey] === incomingDefault
+            if (takeLegacyDefault) {
+                val id = java.util.UUID.randomUUID().toString()
+                val account = DesktopApiAccount(id, "导入账户", when (service) {
+                    DesktopAccountService.LLM -> "硅基流动"; DesktopAccountService.NOVELAI -> "NovelAI"; DesktopAccountService.FISH -> "Fish Audio"
+                }, if (service == DesktopAccountService.LLM) DesktopAccountStore.SILICONFLOW_ENDPOINT else "",
+                    checkNotNull(incomingDefault?.value).concatToString())
+                incoming = DesktopAccountBundle(accounts = listOf(account),
+                    selected = id.takeUnless { service == DesktopAccountService.LLM },
+                    defaultLlm = id.takeIf { service == DesktopAccountService.LLM }, managesLegacyDefault = true)
+            }
+            if (computer != null || incoming != null) {
+                val kind = accountKind(service)
+                val takeIncoming = takeLegacyDefault || computer == null || globalChoices[kind] == Choice.TAKE_PHONE
+                // Missing/empty imported credentials do not clear an existing compatible PC
+                // credential. This also preserves account bindings during a byte-preserving
+                // data-directory relocation, whose internal transport intentionally has no keys.
+                fun taken(id: String) = selection.phone.any { it.key in setOf("model_configs:$id", "retrieval_model_config:$id") } &&
+                    (incoming?.models?.containsKey(id) == true || phone[DesktopCredentialKey.ModelApiKey(id)]?.value != null)
+                val modelEndpoints = plan.entities.filterKeys { DesktopBackupPolicy.entityType(it) in setOf("model_configs", "retrieval_model_config") }
+                    .values.associate { it.getValue("id").jsonPrimitive.content to it.getValue("baseUrl").jsonPrimitive.content.trim().trimEnd('/') }
+                val compatibleComputer = if (service != DesktopAccountService.LLM) computer else computer?.copy(
+                    models = computer.models.filter { (id, account) -> modelEndpoints[id] == computer.accounts.single { it.id == account }.endpoint.trimEnd('/') })
+                val result = mergeNamedAccounts(compatibleComputer, incoming, service, takeIncoming,
+                    plan.entities.filterKeys { DesktopBackupPolicy.entityType(it) in setOf("model_configs", "retrieval_model_config") }
+                        .values.mapNotNull { it["id"]?.jsonPrimitive?.content }.toSet(),
+                    { plan.identity.value("model_configs", it) }, ::taken)
+                val encoded = DesktopAccountStore.encode(result.bundle, service).toCharArray().also(accountBuffers::add)
+                chosen[key] = Captured(kind, null, encoded)
+                result.legacy.forEach { (id, value) ->
+                    val legacyKey = when (service) {
+                        DesktopAccountService.LLM -> DesktopCredentialKey.ModelApiKey(id)
+                        DesktopAccountService.NOVELAI -> DesktopCredentialKey.NovelAiToken
+                        DesktopAccountService.FISH -> DesktopCredentialKey.FishAudioApiKey
+                    }
+                    chosen[legacyKey] = Captured(if (service == DesktopAccountService.LLM) ImportCredentialKind.MODEL else
+                        if (service == DesktopAccountService.NOVELAI) ImportCredentialKind.NOVEL_AI else ImportCredentialKind.FISH,
+                        null, value.toCharArray().also(accountBuffers::add))
+                }
+            }
+        }
+        verifyComputerUnchanged()
             for ((key, entry) in chosen) {
                 currentCoroutineContext().ensureActive()
                 authority.requirePreparing(pending, root)
                 val value = requireNotNull(entry.value)
                 try {
+                    if (key is DesktopCredentialKey.AccountProfiles) {
+                        pending.store.save(DesktopCredentialKey.AccountProfilesRequired(key.service), "v1")
+                        check(pending.store.load(DesktopCredentialKey.AccountProfilesRequired(key.service)) == "v1")
+                    }
                     pending.store.save(key, value.concatToString())
                     val loaded = read(pending.store, key)
                     try { check(equal(value, loaded)) { "MERGE_CREDENTIAL_READBACK_FAILED" } }
@@ -130,7 +198,7 @@ internal class DesktopMergeCredentials private constructor(
             // cannot later reuse the capability after an interrupted/failed protected write.
             pending.invalidate()
             throw failure
-        }
+        } finally { accountBuffers.forEach { it.fill('\u0000') } }
     }
 
     override fun close() {
@@ -141,7 +209,9 @@ internal class DesktopMergeCredentials private constructor(
     companion object {
         private val globals = linkedMapOf<DesktopCredentialKey, ImportCredentialKind>(DesktopCredentialKey.NovelAiToken to ImportCredentialKind.NOVEL_AI,
             DesktopCredentialKey.FishAudioApiKey to ImportCredentialKind.FISH, DesktopCredentialKey.SiliconFlowApiKey to ImportCredentialKind.SILICON_FLOW,
-            DesktopCredentialKey.DormantCommunitySession to ImportCredentialKind.COMMUNITY)
+            DesktopCredentialKey.DormantCommunitySession to ImportCredentialKind.COMMUNITY).also { keys ->
+                DesktopAccountService.entries.forEach { keys[DesktopCredentialKey.AccountProfiles(it)] = accountKind(it) }
+            }
         fun capture(computerEntities: Map<String, JsonObject>, incoming: DesktopFullBackupStaging, oldStore: DesktopSecretStore): DesktopMergeCredentials {
             val pc = linkedMapOf<DesktopCredentialKey, Captured>(); val phone = linkedMapOf<DesktopCredentialKey, Captured>()
             try {
@@ -159,7 +229,7 @@ internal class DesktopMergeCredentials private constructor(
 
         private fun consumers(records: Map<String, JsonObject>): Map<DesktopCredentialKey, Consumer> {
             val result = linkedMapOf<DesktopCredentialKey, Consumer>()
-            for ((path, value) in records) {
+            for (path in records.keys) {
                 val type = DesktopBackupPolicy.entityType(path)
                 val kind = when (type) {
                     "model_configs", "retrieval_model_config" -> ImportCredentialKind.MODEL
@@ -167,6 +237,7 @@ internal class DesktopMergeCredentials private constructor(
                     "embedding_model_config" -> ImportCredentialKind.SINGLETON_EMBEDDING
                     else -> continue
                 }
+                val value = records.getValue(path)
                 fun string(field: String) = value.getValue(field).jsonPrimitive.also { require(it.isString) }.content
                 val id = string("id")
                 val account = ImportAccountIdentity(id, string("displayName"), string("baseUrl"), string("modelName"),
@@ -181,7 +252,8 @@ internal class DesktopMergeCredentials private constructor(
             return result
         }
         private fun read(store: DesktopSecretStore, key: DesktopCredentialKey): CharArray? = try {
-            store.load(key)?.let { value -> require(value.length in 1..65536); value.toCharArray() }
+            (if (store is DesktopAccountStore && key !is DesktopCredentialKey.AccountProfiles) store.legacyValue(key) else store.load(key))
+                ?.let { value -> require(value.length in 1..65536); value.toCharArray() }
         } catch (cancelled: CancellationException) { throw cancelled }
         catch (_: Exception) { error("MERGE_CREDENTIAL_READ_UNAVAILABLE") }
         private fun equal(a: CharArray?, b: CharArray?) = if (a == null || b == null) a == null && b == null else a.contentEquals(b)

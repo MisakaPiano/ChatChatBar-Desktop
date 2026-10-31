@@ -45,7 +45,7 @@ class DesktopVoiceClickReliabilityTest {
         val gate = DesktopDataOperationCoordinator()
         val native = Native()
         val focus = DesktopAudioFocus(native)
-        val f = DesktopChatVoiceRuntimeTest.Fixture(gate) { focus.port(formal = true) }
+        val f = DesktopChatVoiceRuntimeTest.Fixture(gate, outputFactory = { focus.port(formal = true) })
         lateinit var voice: GeneratedVoiceMessage
         suspend fun seed() {
             f.seed(); f.enqueue(); f.done(f.runtime.generate(f.message, "alice"))
@@ -146,7 +146,9 @@ class DesktopVoiceClickReliabilityTest {
             val intent = x.f.runtime.playbackIntent()
             x.f.runtime.foreground(null).join()
             x.f.runtime.play(other, x.f.message, intent)?.join()
-            assertFalse(x.native.alias); assertEquals(2, x.native.opens.get())
+            assertTrue(x.native.alias); assertEquals(other.id, x.f.runtime.playback.state.value.currentVoiceId)
+            assertEquals(2, x.native.opens.get())
+            x.f.runtime.stopForMaintenance(); assertFalse(x.native.alias)
             assertEquals(requests, x.f.server.requestCount)
         }
     }

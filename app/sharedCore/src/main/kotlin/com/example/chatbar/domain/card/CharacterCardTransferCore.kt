@@ -384,6 +384,7 @@ class CharacterCardTransferCore internal constructor(
                 speakingStyle = character.speakingStyle,
                 imagePrompt = character.imagePrompt,
                 fishAudioVoice = character.fishAudioVoice,
+                desktopEnabled = character.desktopEnabled,
             )
         }
         return CharacterCardPackage(
@@ -502,6 +503,7 @@ class CharacterCardTransferCore internal constructor(
                         speakingStyle = character.speakingStyle,
                         imagePrompt = character.imagePrompt,
                         fishAudioVoice = character.fishAudioVoice,
+                        desktopEnabled = character.desktopEnabled,
                     )
                 },
             ),

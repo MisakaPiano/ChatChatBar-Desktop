@@ -550,13 +550,35 @@ class DesktopPrimaryChatControllerTest {
                 val controller = container.primaryChatController
                 controller.refresh()
                 server.enqueue(success("continued"))
-                val taskId = assertNotNull(controller.continueReply())
+                val composer = DesktopComposerInput(id, "")
+                composer.requestContinuation(true)
+                assertEquals(0, server.requestCount)
+                var accepted: String? = null
+                composer.confirmContinuation(true) { controller.continueEmptyComposer(id).also { accepted = it } }
+                val taskId = assertNotNull(accepted)
                 awaitTask(container, taskId) { it.status == DesktopTaskStatus.COMPLETED }
                 controller.refreshAfterTerminalTask(id)
                 controller.refreshAfterTerminalTask(id)
                 assertEquals(0, container.chatRepository.getMessages(id).count { it.role == MessageRole.USER })
                 assertEquals(1, controller.state.value.messages.count { it.content == "continued" })
                 assertEquals(controller.state.value.messages.size, controller.state.value.messages.map(ChatMessage::id).toSet().size)
+            }
+        }
+    }
+
+    @Test
+    fun `continuation confirmation cannot follow a changed session and does not clear its draft`() = runBlocking {
+        withContainer { container ->
+            MockWebServer().use { server ->
+                val id = prepare(container, server)
+                val controller = container.primaryChatController
+                controller.refresh()
+                controller.editComposer("keep this draft")
+                assertNull(controller.continueReply("another-session"))
+                assertNull(controller.continueEmptyComposer(id))
+                assertEquals(0, server.requestCount)
+                assertEquals("keep this draft", controller.state.value.composerDraft)
+                assertEquals(0, container.chatRepository.getMessages(id).count { it.role == MessageRole.USER })
             }
         }
     }
@@ -1004,6 +1026,271 @@ class DesktopPrimaryChatControllerTest {
         container.characterRepository.save(character)
         configure(container, server.url("/v1").toString().trimEnd('/'))
         return container.characterSessionService.createSessionForCharacter(character.id)
+    }
+
+    @Test fun `action choices persist only a draft reject stale source and cannot cross session or newer edits`() = runBlocking {
+        withContainer { container ->
+            val card = CharacterCard.create("Choice card", greeting = "---\n行动选项\n1. Wait\n2. Leave\n---")
+            container.characterRepository.save(card)
+            configure(container)
+            val controller = container.primaryChatController
+            controller.refresh(); controller.createSession(card.id)
+            val session = controller.state.value.selectedSession!!.id
+            val messages = container.chatRepository.getMessages(session)
+            val message = messages.single()
+            val choice = desktopActionChoices(message).first()
+            controller.editComposer("existing draft")
+            val composer = DesktopComposerInput(session, "existing draft")
+            val text = assertNotNull(controller.actionChoiceForDraft(message, choice))
+            assertTrue(composer.insertChoice(text) { before, after -> controller.editComposerIfCurrent(session, before, after) })
+            controller.persistComposer()
+            val persisted = controller.state.value.composerDraft
+            controller.createSession(card.id)
+            val second = controller.state.value.selectedSession!!.id
+            assertNull(controller.actionChoiceForDraft(message, choice))
+            assertFalse(controller.editComposerIfCurrent(session, persisted, "wrong session"))
+            assertEquals("", controller.state.value.composerDraft)
+            controller.selectSession(session)
+            assertEquals(persisted, controller.state.value.composerDraft)
+            controller.editComposer("newer draft")
+            assertFalse(composer.undoChoiceInsertion { before, after -> controller.editComposerIfCurrent(session, before, after) })
+            assertEquals("newer draft", controller.state.value.composerDraft)
+            assertNull(controller.actionChoiceForDraft(message.copy(content = "stale"), choice))
+            assertNull(controller.actionChoiceForDraft(message, choice.copy(text = "forged")))
+            assertEquals(messages, container.chatRepository.getMessages(session))
+            assertEquals(1, container.chatRepository.getMessages(second).size)
+            assertTrue(container.taskRuntime.tasks.value.isEmpty())
+        }
+    }
+
+    @Test fun `choice draft survives closing and reopening its data root`() = runBlocking {
+        val parent = Files.createTempDirectory("action-choice-draft-")
+        var session: String? = null
+        try {
+            val first = container(parent)
+            try {
+                val card = CharacterCard.create("Choice reopen", greeting = "---\n行动选项\n1. Wait\n2. Leave\n---")
+                first.characterRepository.save(card)
+                configure(first)
+                val controller = first.primaryChatController
+                controller.refresh(); controller.createSession(card.id)
+                session = controller.state.value.selectedSession!!.id
+                val message = first.chatRepository.getMessages(session!!).single()
+                val choice = desktopActionChoices(message).last()
+                val text = assertNotNull(controller.actionChoiceForDraft(message, choice))
+                assertTrue(controller.editComposerIfCurrent(session, "", text))
+                controller.persistComposer()
+            } finally { first.close() }
+            val reopened = container(parent)
+            try {
+                reopened.primaryChatController.refresh()
+                reopened.primaryChatController.selectSession(session!!)
+                assertEquals("Leave", reopened.primaryChatController.state.value.composerDraft)
+                assertEquals(1, reopened.chatRepository.getMessages(session!!).size)
+                assertTrue(reopened.taskRuntime.tasks.value.isEmpty())
+            } finally { reopened.close() }
+        } finally { parent.toFile().deleteRecursively() }
+    }
+
+    @Test fun `person status projection includes old messages outside viewport and refresh drops deleted sources`() = runBlocking {
+        withContainer { container ->
+            val person = com.example.chatbar.data.local.entity.CharacterInfo.create("Alice")
+            val card = CharacterCard.create("History status", greeting = "Hi").copy(characters = listOf(person))
+            container.characterRepository.save(card); configure(container)
+            val id = container.characterSessionService.createSessionForCharacter(card.id)
+            val source = container.chatRepository.addMessage(ChatMessage.create(id, MessageRole.ASSISTANT,
+                "---\n姓名：Alice\n心情：calm\n---"))
+            repeat(85) { container.chatRepository.addMessage(ChatMessage.create(id, MessageRole.USER, "Later $it")) }
+            val controller = container.primaryChatController
+            controller.refresh()
+            assertFalse(controller.state.value.messages.any { it.id == source.id })
+            assertEquals(source.id, controller.state.value.people.single().status!!.source.id)
+            container.chatRepository.deleteMessage(source.id, id)
+            controller.refresh()
+            assertNull(controller.state.value.people.single().status)
+            assertEquals(card.characters, container.characterRepository.getById(card.id)!!.characters)
+        }
+    }
+
+    @Test fun `participation affects actual request roster and profile without rewriting card or another session`() = runBlocking {
+        withContainer { container ->
+            val enabled = com.example.chatbar.data.local.entity.CharacterInfo.create("EnabledPerson_X").copy(profile = "ENABLED_PROFILE_X")
+            val disabled = com.example.chatbar.data.local.entity.CharacterInfo.create("DisabledPerson_Y").copy(profile = "DISABLED_PROFILE_Y")
+            val card = CharacterCard.create("Participation", greeting = "Hi").copy(characters = listOf(enabled, disabled))
+            container.characterRepository.save(card)
+            MockWebServer().use { server ->
+                server.start()
+                configure(container, server.url("/v1").toString().trimEnd('/'))
+                val controller = container.primaryChatController
+                controller.refresh(); controller.createSession(card.id)
+                val id = controller.state.value.selectedSession!!.id
+                controller.setCharacterEnabled(id, card.id, disabled.id, false)
+                assertFalse(controller.state.value.people.last().enabled)
+                assertEquals(card, container.characterRepository.getById(card.id))
+                server.enqueue(success("Reply").setBodyDelay(500, TimeUnit.MILLISECONDS))
+                controller.editComposer("Continue the scene")
+                val task = assertNotNull(controller.send())
+                controller.setCharacterEnabled(id, card.id, disabled.id, true)
+                assertFalse(controller.state.value.people.last().enabled)
+                awaitTask(container, task) { it.status != DesktopTaskStatus.RUNNING }
+                val request = assertNotNull(server.takeRequest(3, TimeUnit.SECONDS)).body.readUtf8()
+                assertTrue("ENABLED_PROFILE_X" in request)
+                assertFalse("DISABLED_PROFILE_Y" in request)
+                assertFalse("DisabledPerson_Y" in request)
+                assertEquals(1, server.requestCount)
+                controller.createSession(card.id)
+                assertTrue(controller.state.value.people.all { it.enabled })
+                controller.selectSession(id)
+                assertFalse(controller.state.value.people.last().enabled)
+                controller.setCharacterEnabled("wrong-session", card.id, disabled.id, true)
+                assertFalse(controller.state.value.people.last().enabled)
+                controller.setCharacterEnabled(id, card.id, disabled.id, true)
+                assertTrue(controller.state.value.people.all { it.enabled })
+            }
+        }
+    }
+
+    @Test fun `participation survives normal controller shutdown and data root reopen`() = runBlocking {
+        val parent = Files.createTempDirectory("participation-reopen-")
+        val person = com.example.chatbar.data.local.entity.CharacterInfo.create("Participant")
+        val card = CharacterCard.create("Participation reopen", greeting = "Hi").copy(characters = listOf(person))
+        var sessionId: String? = null
+        try {
+            val first = container(parent)
+            try {
+                first.characterRepository.save(card); configure(first)
+                val controller = first.primaryChatController
+                controller.refresh(); controller.createSession(card.id)
+                sessionId = controller.state.value.selectedSession!!.id
+                controller.setCharacterEnabled(sessionId!!, card.id, person.id, false)
+                assertFalse(controller.state.value.people.single().enabled)
+            } finally { first.close() }
+            val reopened = container(parent)
+            try {
+                reopened.primaryChatController.refresh(); reopened.primaryChatController.selectSession(sessionId!!)
+                assertFalse(reopened.primaryChatController.state.value.people.single().enabled)
+                assertEquals(card, reopened.characterRepository.getById(card.id))
+            } finally { reopened.close() }
+        } finally { parent.toFile().deleteRecursively() }
+    }
+
+    @Test fun `card gate survives visible disabled speaker output and all subsequent real requests`() = runBlocking {
+        withContainer { c -> MockWebServer().use { server ->
+            server.start(); configure(c, server.url("/v1").toString().trimEnd('/'))
+            val active = com.example.chatbar.data.local.entity.CharacterInfo.create("Active").copy(profile = "ACTIVE_PROFILE_SENTINEL")
+            val disabled = com.example.chatbar.data.local.entity.CharacterInfo.create("Blocked").copy(profile = "BLOCKED_PROFILE_SENTINEL", desktopEnabled = false)
+            val card = CharacterCard.create("Variant").copy(characters = listOf(active, disabled))
+            c.characterRepository.save(card)
+            val controller = c.primaryChatController
+            controller.refresh(); controller.createSession(card.id)
+            controller.editSessionSettings { it.copy(longTermMemoryEnabled = false) }
+            assertTrue(controller.saveSessionSettings())
+            val id = controller.state.value.selectedSession!!.id
+            controller.setCharacterEnabled(id, card.id, disabled.id, true)
+            assertFalse(controller.state.value.people.last().enabled)
+            suspend fun send(text: String): String {
+                val encoded = kotlinx.serialization.json.JsonPrimitive(text).toString()
+                server.enqueue(MockResponse().addHeader("Content-Type", "text/event-stream")
+                    .setBody("data: {\"choices\":[{\"delta\":{\"content\":$encoded},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"))
+                controller.editComposer("Next")
+                awaitTask(c, assertNotNull(controller.send())) { it.status != DesktopTaskStatus.RUNNING }
+                controller.refresh()
+                return assertNotNull(server.takeRequest(3, TimeUnit.SECONDS)).body.readUtf8()
+            }
+            val first = send("<n=\"Blocked\"/>[Back]()\n---\n姓名：Blocked\n状态：在场\n---")
+            assertTrue("ACTIVE_PROFILE_SENTINEL" in first); assertFalse("BLOCKED_PROFILE_SENTINEL" in first)
+            assertFalse(controller.state.value.people.last().enabled)
+            assertTrue(controller.state.value.people.last().resident)
+            controller.setCharacterEnabled(id, card.id, disabled.id, true)
+            val second = send("<n=\"Active\"/>[Hello]()")
+            assertFalse("BLOCKED_PROFILE_SENTINEL" in second)
+            assertFalse(controller.state.value.people.last().enabled)
+            assertEquals(card, c.characterRepository.getById(card.id)); assertEquals(2, server.requestCount)
+        } }
+    }
+
+    @Test fun `resident completion only changes entry injection when opted in and new appearance restores session pause`() = runBlocking {
+        withContainer { c -> MockWebServer().use { server ->
+            server.start(); configure(c, server.url("/v1").toString().trimEnd('/'))
+            val alice = com.example.chatbar.data.local.entity.CharacterInfo.create("Alice").copy(profile = "ALICE_PROFILE_SENTINEL")
+            val bob = com.example.chatbar.data.local.entity.CharacterInfo.create("Bob").copy(profile = "BOB_PROFILE_SENTINEL")
+            val card = CharacterCard.create("Presence").copy(characters = listOf(alice, bob))
+            c.characterRepository.save(card)
+            val controller = c.primaryChatController
+            controller.refresh(); controller.createSession(card.id)
+            controller.editSessionSettings { it.copy(longTermMemoryEnabled = false) }
+            assertTrue(controller.saveSessionSettings())
+            val id = controller.state.value.selectedSession!!.id
+            suspend fun send(text: String): String {
+                val encoded = kotlinx.serialization.json.JsonPrimitive(text).toString()
+                server.enqueue(MockResponse().addHeader("Content-Type", "text/event-stream")
+                    .setBody("data: {\"choices\":[{\"delta\":{\"content\":$encoded},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"))
+                controller.editComposer("Next")
+                awaitTask(c, assertNotNull(controller.send())) { it.status != DesktopTaskStatus.RUNNING }
+                controller.refresh()
+                return assertNotNull(server.takeRequest(3, TimeUnit.SECONDS)).body.readUtf8()
+            }
+            send("The room is quiet."); send("Time passes.")
+            assertTrue(controller.state.value.people.none { it.resident })
+            assertTrue(controller.state.value.people.all { it.enabled })
+            controller.editSessionSettings { it.copy(desktopAutoPauseAbsentPeople = true) }
+            assertTrue(controller.saveSessionSettings())
+            send("Still quiet.")
+            assertTrue(controller.state.value.people.none { it.enabled })
+            val returningRequest = send("<n=\"Alice\"/>[I am here]()")
+            assertFalse("ALICE_PROFILE_SENTINEL" in returningRequest); assertFalse("BOB_PROFILE_SENTINEL" in returningRequest)
+            assertTrue(controller.state.value.people.first().enabled); assertFalse(controller.state.value.people.last().enabled)
+            assertTrue(c.characterResidency.notices.value[id]?.text?.contains("Alice") == true)
+            controller.setCharacterEnabled(id, card.id, alice.id, false)
+            controller.refresh(); controller.selectSession(id)
+            assertFalse(controller.state.value.people.first().enabled, "Old retained appearance cannot undo a new manual close")
+            send("---\n姓名：Alice\n状态：回来了\n---")
+            assertTrue(controller.state.value.people.first().enabled)
+            controller.editSessionSettings { it.copy(desktopAutoPauseAbsentPeople = false) }
+            assertTrue(controller.saveSessionSettings())
+            assertTrue(controller.state.value.people.all { it.enabled })
+            assertEquals(card, c.characterRepository.getById(card.id)); assertEquals(5, server.requestCount)
+        } }
+    }
+
+    @Test fun `completion for an older retained reply cannot undo a current manual participation close`() = runBlocking {
+        withContainer { c ->
+            val person = com.example.chatbar.data.local.entity.CharacterInfo.create("Alice")
+            val card = CharacterCard.create("Older reply").copy(characters = listOf(person))
+            c.characterRepository.save(card); configure(c)
+            val controller = c.primaryChatController
+            controller.refresh(); controller.createSession(card.id)
+            val session = controller.state.value.selectedSession!!
+            val user = c.chatRepository.addMessage(ChatMessage.create(session.id, MessageRole.USER, "First"))
+            val older = c.chatRepository.addMessage(ChatMessage.create(session.id, MessageRole.ASSISTANT, "<n=\"Alice\"/>[Earlier]()"))
+            c.chatRepository.addMessage(ChatMessage.create(session.id, MessageRole.USER, "Later"))
+            c.chatRepository.addMessage(ChatMessage.create(session.id, MessageRole.ASSISTANT, "The room is empty."))
+            controller.setCharacterEnabled(session.id, card.id, person.id, false)
+            c.characterResidency.completed(DesktopRealChatResult(user, false, older, null)) { false }
+            controller.refresh()
+            assertFalse(controller.state.value.people.single().enabled)
+            assertTrue(c.characterResidency.notices.value.isEmpty())
+        }
+    }
+
+    @Test fun `stopped and stale candidate completions cannot reenable a manually closed person`() = runBlocking {
+        withContainer { c ->
+            val person = com.example.chatbar.data.local.entity.CharacterInfo.create("Alice")
+            val card = CharacterCard.create("Stopped reply").copy(characters = listOf(person))
+            c.characterRepository.save(card); configure(c)
+            val controller = c.primaryChatController
+            controller.refresh(); controller.createSession(card.id)
+            val session = controller.state.value.selectedSession!!
+            val user = c.chatRepository.addMessage(ChatMessage.create(session.id, MessageRole.USER, "Next"))
+            val reply = c.chatRepository.addMessage(ChatMessage.create(session.id, MessageRole.ASSISTANT, "<n=\"Alice\"/>[Here]()"))
+            controller.setCharacterEnabled(session.id, card.id, person.id, false)
+            c.characterResidency.completed(DesktopRealChatResult(user, false, reply, null)) { true }
+            controller.refresh(); assertFalse(controller.state.value.people.single().enabled)
+            c.chatRepository.updateMessage(reply.copy(content = "Another retained candidate."))
+            c.characterResidency.completed(DesktopRealChatResult(user, false, reply, null)) { false }
+            controller.refresh(); assertFalse(controller.state.value.people.single().enabled)
+            assertTrue(c.characterResidency.notices.value.isEmpty())
+        }
     }
 
     private suspend fun configure(container: DesktopAppContainer, baseUrl: String = "http://127.0.0.1:12345/v1") {

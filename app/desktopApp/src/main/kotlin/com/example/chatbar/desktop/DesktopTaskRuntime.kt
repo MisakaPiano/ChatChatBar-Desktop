@@ -47,6 +47,12 @@ class DesktopTaskDrainTimeoutException(message: String) : IllegalStateException(
 
 internal data class DesktopRepairTaskIdentity(val taskId: String, val sessionId: String, val messageId: String)
 
+internal data class DesktopChatPostProcessResult(
+    val reply: DesktopRealChatResult,
+    val notice: String? = null,
+    val blockDownstream: Boolean = false,
+)
+
 /** Application-owned jobs. Chat retains request, transport, and persistence ownership. */
 internal class DesktopTaskRuntime(
     private val realChat: DesktopRealChatRuntime,
@@ -55,6 +61,8 @@ internal class DesktopTaskRuntime(
     private val clock: () -> Long = System::currentTimeMillis,
     private val completedHistoryLimit: Int = 40,
     private val onChatCompleted: suspend (DesktopRealChatResult, () -> Boolean) -> String? = { _, _ -> null },
+    private val postProcessReply: suspend (String, DesktopRealChatResult, DesktopChatGenerationControl) -> DesktopChatPostProcessResult =
+        { _, reply, _ -> DesktopChatPostProcessResult(reply) },
 ) {
     init { require(completedHistoryLimit > 0) }
     private val lock = Any()
@@ -69,6 +77,7 @@ internal class DesktopTaskRuntime(
     private val stopControls = mutableMapOf<String, DesktopChatGenerationControl>()
     private val repairControls = mutableMapOf<String, DesktopRepairControl>()
     private val repairSessions = mutableSetOf<String>()
+    private val uncertainRepairs = mutableMapOf<String, DesktopRepairTaskIdentity>()
     private val messageMutations = mutableSetOf<String>()
     private val mutableRepairIdentities = MutableStateFlow<Map<String, DesktopRepairTaskIdentity>>(emptyMap())
     val repairIdentities: StateFlow<Map<String, DesktopRepairTaskIdentity>> = mutableRepairIdentities.asStateFlow()
@@ -155,10 +164,53 @@ internal class DesktopTaskRuntime(
     }
 
     private fun finishRepair(id: String, status: DesktopRepairStatus) {
+        if (status == DesktopRepairStatus.COMMIT_UNCERTAIN)
+            mutableRepairIdentities.value[id]?.let { uncertainRepairs[id] = it }
         val entries = mutableRepairTasks.value + (id to status)
         val completed = entries.filterValues { it != DesktopRepairStatus.RUNNING }.keys.toList().takeLast(completedHistoryLimit).toSet()
         mutableRepairTasks.value = entries.filter { it.value == DesktopRepairStatus.RUNNING || it.key in completed }
         mutableRepairIdentities.value = mutableRepairIdentities.value.filterKeys { it in mutableRepairTasks.value }
+    }
+
+    fun hasUnconfirmedRepair(sessionId: String): Boolean = synchronized(lock) {
+        uncertainRepairs.values.any { it.sessionId == sessionId }
+    }
+
+    /** Only the repair controller's explicit, strict snapshot confirmation calls this. */
+    fun confirmRepairCommit(taskId: String) = synchronized(lock) { uncertainRepairs.remove(taskId); Unit }
+
+    /** Inline work keeps the parent chat's job and session admission continuously owned. */
+    suspend fun runInlineFormatRepair(parentTaskId: String, result: DesktopRealChatResult,
+        parentControl: DesktopChatGenerationControl,
+        work: suspend (String, DesktopRepairControl) -> DesktopRepairStatus): String {
+        val sessionId = result.assistant.sessionId
+        val id = UUID.randomUUID().toString()
+        val control = DesktopRepairControl()
+        synchronized(lock) {
+            check(activeJobs[parentTaskId] != null && stopControls[parentTaskId] === parentControl &&
+                sessionId in activeSessions && mutableTasks.value.any { it.taskId == parentTaskId &&
+                    it.kind == DesktopTaskKind.REAL_CHAT && it.status == DesktopTaskStatus.RUNNING && it.sessionId == sessionId })
+            check(sessionId !in repairSessions)
+            repairSessions += sessionId
+            repairControls[id] = control
+            mutableRepairIdentities.value += id to DesktopRepairTaskIdentity(id, sessionId, result.assistant.id)
+            mutableRepairTasks.value += id to DesktopRepairStatus.RUNNING
+        }
+        var forwarding: AutoCloseable? = null
+        var status = DesktopRepairStatus.CANCELLED
+        try {
+            forwarding = parentControl.forwardStopTo { control.requestStop() }
+            status = work(id, control)
+            return id
+        }
+        finally {
+            forwarding?.close()
+            synchronized(lock) {
+                repairControls.remove(id)
+                repairSessions.remove(sessionId)
+                finishRepair(id, status)
+            }
+        }
     }
 
     fun hasActiveSessionTask(sessionId: String): Boolean = synchronized(lock) {
@@ -287,6 +339,7 @@ internal class DesktopTaskRuntime(
         val createdAt = clock()
         synchronized(lock) {
             if (!accepting || maintenance) throw DesktopTaskAdmissionException("Task runtime is closing")
+            if (hasUnconfirmedRepair(sessionId)) throw DesktopTaskAdmissionException("格式修复提交状态未确认，请先重新加载并核对消息")
             if (sessionId in activeSessions || sessionId in messageMutations) {
                 throw DesktopTaskAdmissionException("该会话已有正在生成的回复")
             }
@@ -315,20 +368,26 @@ internal class DesktopTaskRuntime(
                         com.example.chatbar.domain.chat.ProviderTransportDiagnostics = { model ->
                         diagnostics.begin(taskId, sessionId, model).also { recorder = it }
                     }
-                    val result = if (messageId == null) {
+                    val generated = if (messageId == null) {
                         realChat.sendText(sessionId, content, observer, control, diagnosticFactory, attachments)
                     } else {
                         realChat.regenerate(sessionId, messageId, observer, control, diagnosticFactory)
                     }
-                    terminalStatus = if (result.failureMessage == null) {
+                    val post = if (generated.failureMessage == null && !control.isStopRequested())
+                        postProcessReply(taskId, generated, control) else DesktopChatPostProcessResult(generated)
+                    val result = post.reply
+                    terminalStatus = if (post.blockDownstream) DesktopTaskStatus.FAILED else if (control.isStopRequested())
+                        DesktopTaskStatus.USER_STOPPED else if (result.failureMessage == null) {
                         DesktopTaskStatus.COMPLETED
                     } else {
                         DesktopTaskStatus.FAILED
                     }
-                    terminalMessage = result.failureMessage ?: result.inputNotice?.let { "Completed · $it" } ?: "Completed"
+                    terminalMessage = if (post.blockDownstream) "格式修复结果待核对；后续自动处理已暂停"
+                        else result.failureMessage ?: result.inputNotice?.let { "Completed · $it" } ?: "Completed"
+                    post.notice?.let { terminalMessage += " · $it" }
                     terminalCompletion = result.completion
                     try {
-                        onChatCompleted(result, control::isStopRequested)?.let { terminalMessage += " · $it" }
+                        if (!post.blockDownstream) onChatCompleted(result, control::isStopRequested)?.let { terminalMessage += " · $it" }
                     } catch (cancelled: CancellationException) { throw cancelled }
                     catch (_: Exception) { terminalMessage += " · 自动生图未启动" }
                 } catch (stopped: DesktopUserStoppedChatException) {

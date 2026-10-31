@@ -49,7 +49,9 @@ internal data class DesktopModelItem(
     val preset: Boolean,
     val selectableForChat: Boolean,
     val templateType: ModelTemplate,
+    val accountLabel: String? = null,
 )
+internal val DesktopModelItem.accountDisplayLabel get() = accountLabel?.let { "$displayName · $it" } ?: displayName
 
 internal data class DesktopBundledChatModel(val key: String, val displayName: String, val modelName: String)
 
@@ -90,6 +92,7 @@ internal data class DesktopSettingsDraft(
     val defaultContextWindowSize: String = "20",
     val defaultFormatCardId: String? = null,
     val formatRepairModelId: String? = null,
+    val automaticFormatCheckEnabled: Boolean = false,
     val assistantSegmentedBubblesEnabled: Boolean = true,
     val excludeAssistantStatusFromHistory: Boolean = true,
     val hasSavedFallbackCredential: Boolean = false,
@@ -113,6 +116,7 @@ internal data class DesktopModelSettingsState(
     val bubbleFontScaleSaving: Boolean = false,
     val bubbleFontScaleError: Boolean = false,
     val playerDirty: Boolean = false,
+    val playerAvatar: String? = null,
     val credentialEditorOpen: Boolean = false,
     val credentialDirty: Boolean = false,
     val availableChatModels: List<DesktopModelItem> = emptyList(),
@@ -139,6 +143,7 @@ internal class DesktopModelSettingsController(
     private val presets: DesktopPresetModelCatalogSource,
     val fishCredentials: DesktopFishCredentialController? = null,
     val ragSettings: DesktopRagController? = null,
+    val playerImages: DesktopPlayerImages? = null,
 ) {
     private val mutableState = MutableStateFlow(DesktopModelSettingsState())
     val state: StateFlow<DesktopModelSettingsState> = mutableState.asStateFlow()
@@ -203,6 +208,7 @@ internal class DesktopModelSettingsController(
                     defaultContextWindowSize = app.defaultContextWindowSize.toString(),
                     defaultFormatCardId = app.defaultFormatCardId,
                     formatRepairModelId = app.formatRepairModelId,
+                    automaticFormatCheckEnabled = app.automaticFormatCheckEnabled,
                     assistantSegmentedBubblesEnabled = app.assistantSegmentedBubblesEnabled,
                     excludeAssistantStatusFromHistory = app.excludeAssistantStatusFromHistory,
                     fishAudioTtsModelId = app.fishAudioTtsModelId,
@@ -219,6 +225,7 @@ internal class DesktopModelSettingsController(
                 chatDefaultsDirty = false,
                 chatBubbleFontScale = desktopSafeBubbleFontScale(app.chatBubbleFontScale),
                 playerDirty = false,
+                playerAvatar = player.desktopAvatar,
             )
         }
         refreshDefaultDiagnostic(app)
@@ -488,6 +495,7 @@ internal class DesktopModelSettingsController(
                 defaultContextWindowSize = baseline.defaultContextWindowSize.toString(),
                 defaultFormatCardId = baseline.defaultFormatCardId,
                 formatRepairModelId = baseline.formatRepairModelId,
+                automaticFormatCheckEnabled = baseline.automaticFormatCheckEnabled,
                 assistantSegmentedBubblesEnabled = baseline.assistantSegmentedBubblesEnabled,
                 excludeAssistantStatusFromHistory = baseline.excludeAssistantStatusFromHistory,
                 fishAudioTtsModelId = baseline.fishAudioTtsModelId,
@@ -571,6 +579,7 @@ internal class DesktopModelSettingsController(
             defaultContextWindowSize = contextSize,
             defaultFormatCardId = draft.defaultFormatCardId,
             formatRepairModelId = draft.formatRepairModelId,
+            automaticFormatCheckEnabled = draft.automaticFormatCheckEnabled,
             assistantSegmentedBubblesEnabled = draft.assistantSegmentedBubblesEnabled,
             excludeAssistantStatusFromHistory = draft.excludeAssistantStatusFromHistory,
             fishAudioTtsModelId = draft.fishAudioTtsModelId,
@@ -591,13 +600,24 @@ internal class DesktopModelSettingsController(
         }
     } }
 
+    suspend fun choosePlayerAvatar() = perform("无法保存玩家头像") {
+        val result = playerImages?.choose() ?: return@perform
+        val avatar = settings.getPlayerSetting().desktopAvatar
+        mutableState.update { it.copy(playerAvatar = avatar, status = result.cleanupNotice ?: "玩家头像已保存") }
+    }
+
+    suspend fun clearPlayerAvatar() = perform("无法清除玩家头像") {
+        val result = playerImages?.replace(null) ?: return@perform
+        val avatar = settings.getPlayerSetting().desktopAvatar
+        mutableState.update { it.copy(playerAvatar = avatar, status = result.cleanupNotice ?: "玩家头像已清除") }
+    }
+
     suspend fun savePlayerSetting() = perform("Unable to save player setting") {
         val draft = mutableState.value.settings ?: return@perform
-        val latest = settings.getPlayerSetting()
-        settings.savePlayerSetting(latest.copy(
+        settings.updatePlayerSetting { latest -> latest.copy(
             playerName = draft.playerName,
             globalPersona = draft.playerPersona,
-        ))
+        ) }
         playerBaseline = draft.playerName to draft.playerPersona
         mutableState.update { it.copy(status = "Player setting saved", playerDirty = false) }
     }
@@ -721,6 +741,7 @@ private fun ModelConfig.toItem() = DesktopModelItem(
     preset = sourcePresetKey != null,
     selectableForChat = selectableForChat,
     templateType = templateType,
+    accountLabel = credentialAccount?.let { "${it.provider} · ${it.name} · $modelName" },
 )
 
 private fun ModelConfig.toEditor() = DesktopModelEditorDraft(
@@ -799,6 +820,7 @@ private fun DesktopSettingsDraft.hasChatDefaultsChanges(baseline: AppSettings): 
         defaultContextWindowSize != baseline.defaultContextWindowSize.toString() ||
         defaultFormatCardId != baseline.defaultFormatCardId ||
         formatRepairModelId != baseline.formatRepairModelId ||
+        automaticFormatCheckEnabled != baseline.automaticFormatCheckEnabled ||
         assistantSegmentedBubblesEnabled != baseline.assistantSegmentedBubblesEnabled ||
         excludeAssistantStatusFromHistory != baseline.excludeAssistantStatusFromHistory ||
         fishAudioTtsModelId != baseline.fishAudioTtsModelId ||
@@ -819,6 +841,8 @@ private fun DesktopSettingsDraft.reconcileAppSettingsSave(
         saved.defaultFormatCardId else defaultFormatCardId,
     formatRepairModelId = if (formatRepairModelId == submitted.formatRepairModelId)
         saved.formatRepairModelId else formatRepairModelId,
+    automaticFormatCheckEnabled = if (automaticFormatCheckEnabled == submitted.automaticFormatCheckEnabled)
+        saved.automaticFormatCheckEnabled else automaticFormatCheckEnabled,
     assistantSegmentedBubblesEnabled = if (assistantSegmentedBubblesEnabled == submitted.assistantSegmentedBubblesEnabled)
         saved.assistantSegmentedBubblesEnabled else assistantSegmentedBubblesEnabled,
     excludeAssistantStatusFromHistory = if (excludeAssistantStatusFromHistory == submitted.excludeAssistantStatusFromHistory)

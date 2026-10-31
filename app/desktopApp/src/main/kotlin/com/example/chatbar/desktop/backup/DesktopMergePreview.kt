@@ -95,8 +95,9 @@ internal class DesktopMergePreview private constructor(
         }
 
         private fun units(records: Map<String, JsonObject>, media: Map<String, String>, scope: InspectionScope?): Map<String, Unit> {
-            val groups = linkedMapOf<String, MutableMap<String, JsonObject>>()
-            fun add(key: String, path: String, value: JsonObject) { check(groups.getOrPut(key) { linkedMapOf() }.put(path, value) == null) }
+            val groups = linkedMapOf<String, MutableSet<String>>()
+            val settings = linkedMapOf<String, JsonObject>()
+            fun add(key: String, path: String) { check(groups.getOrPut(key) { linkedSetOf() }.add(path)) }
             val sessionIds = records.filterKeys { DesktopBackupPolicy.entityType(it) == "chat_sessions" }.values.map {
                 requireNotNull(it["id"]?.jsonPrimitive?.contentOrNull)
             }.toSet()
@@ -106,7 +107,8 @@ internal class DesktopMergePreview private constructor(
                 if (type == "app_settings") {
                     val selected = scope?.let { selectedSettingFields(it.globalOptions) }
                     value.filterKeys { selected == null || it in selected }.forEach { (field, setting) ->
-                        add("setting:$field", path, JsonObject(mapOf(field to setting)))
+                        val key = "setting:$field"
+                        settings[key] = JsonObject(mapOf(field to setting)); add(key, path)
                     }
                     return@forEach
                 }
@@ -118,19 +120,22 @@ internal class DesktopMergePreview private constructor(
                 }?.jsonPrimitive?.contentOrNull
                 if (owner != null) {
                     require(owner in sessionIds) { "MERGE_SESSION_OWNER_MISSING" }
-                    add("session:$owner", path, value)
+                    add("session:$owner", path)
                 } else {
                     val id = value["id"]?.jsonPrimitive?.contentOrNull ?: path
-                    add("$type:$id", path, value)
+                    add("$type:$id", path)
                 }
             }
-            return groups.mapValues { (key, items) ->
+            return groups.mapValues { (key, paths) ->
+                val items = DesktopBackupRecords.view(paths) { path -> settings[key] ?: records.getValue(path) }
                 val primary = items.entries.firstOrNull { DesktopBackupPolicy.entityType(it.key) == "chat_sessions" } ?: items.entries.first()
                 val type = if (key.startsWith("setting:")) "app_settings" else DesktopBackupPolicy.entityType(primary.key)
                 val value = primary.value
                 val label = if (type == "app_settings") key.removePrefix("setting:") else
                     listOf("displayTitleOverride", "displayName", "name", "title").firstNotNullOfOrNull { value[it]?.jsonPrimitive?.contentOrNull }.orEmpty()
-                val canonical = items.toSortedMap().entries.joinToString("\n") { (path, record) ->
+                val signature = java.security.MessageDigest.getInstance("SHA-256")
+                items.keys.sorted().forEachIndexed { index, path ->
+                    val record = items.getValue(path)
                     val mapped = DesktopBackupPolicy.mapResources(record) { reference, _ ->
                         if (reference.startsWith(DesktopBackupPolicy.PREFIX)) media[reference.removePrefix(DesktopBackupPolicy.PREFIX)]?.let { "resource-sha256:$it" } ?: reference else reference
                     }
@@ -140,7 +145,8 @@ internal class DesktopMergePreview private constructor(
                             "\npackage-sha256:" + requireNotNull(media["save_slot_packages/$name"]) { "MERGE_PREVIEW_PACKAGE_PROOF_MISSING" }
                         }.orEmpty()
                     } else ""
-                    "$path:${canonical(backupJson.parseToJsonElement(mapped.toString(Charsets.UTF_8)))}$packageProof"
+                    if (index > 0) signature.update(10.toByte())
+                    signature.update(("$path:" + canonical(backupJson.parseToJsonElement(mapped.toString(Charsets.UTF_8))) + packageProof).toByteArray(Charsets.UTF_8))
                 }
                 val messages = items.filterKeys { DesktopBackupPolicy.entityType(it) == "chat_messages" }.values.mapTo(hashSetOf()) {
                     requireNotNull(it["id"]?.jsonPrimitive?.contentOrNull)
@@ -149,7 +155,7 @@ internal class DesktopMergePreview private constructor(
                     val family = DesktopBackupPolicy.entityType(path)
                     record["id"]?.jsonPrimitive?.contentOrNull?.let { family to it }
                 }.toSet() else emptySet()
-                Unit(key, type, label, items.toMap(), DesktopBackupPolicy.digest(canonical.toByteArray()), messages,
+                Unit(key, type, label, items, signature.digest().joinToString("") { "%02x".format(it) }, messages,
                     type in setOf("chat_sessions", "character_cards", "model_configs", "embedding_configs", "format_cards", "world_books"), ownedIds)
             }
         }

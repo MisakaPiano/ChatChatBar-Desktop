@@ -32,11 +32,12 @@ internal class DesktopFishPreviewTransport(
     private val lock = Any()
     private val calls = mutableMapOf<Call, CompletableDeferred<Unit>>()
     private var closed = false
+    fun captureCall() = credentials.captureCall()
 
     suspend fun generate(reference: String, text: String, model: String, store: DesktopFishPreviewStore): Path = DesktopFishTtsAdmission.slots.withPermit {
         require(model == "s2.1-pro-free") { "本切片仅授权 s2.1-pro-free；不会替换其他模型" }
         require(text.isNotBlank() && text.codePointCount(0, text.length) <= 120 && reference.isNotBlank() && reference.length <= 256)
-        val key = try { credentials.load() ?: error("missing") } catch (_: Exception) { error("Fish 安全凭据不可用") }
+        val key = try { credentials.forCurrentCall() ?: error("missing") } catch (_: Exception) { error("Fish 安全凭据不可用") }
         val original = FishAudioRequestFactory.tts(baseUrl, key, model, reference, text.trim())
         val body = requireNotNull(original.body)
         val request = original.newBuilder().tag(Attempts::class.java, Attempts()).method("POST", object : RequestBody() {

@@ -29,6 +29,7 @@ internal fun DesktopSaveSlotPanel(controller: DesktopSaveSlotController) {
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
             StatusText("会话存档")
             StatusText("保存当前消息、会话设置和记忆。导入先加入列表，恢复时保留恢复前存档。")
+            StatusText("人物开关、玩家角色关联和已选图片范围内的会话头像随存档保留；手机端不保证保留 Desktop 扩展。")
             ActionRow {
                 BootstrapButton("导入存档", secondary = true, enabled = !state.busy) { controller.import() }
                 BootstrapButton("复制整个会话", secondary = true, enabled = !state.busy) { controller.duplicate() }
@@ -37,7 +38,7 @@ internal fun DesktopSaveSlotPanel(controller: DesktopSaveSlotController) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 BasicTextField(name, { name = it.take(120) }, Modifier.weight(1f)
                     .border(1.dp, DesktopBootstrapColors.border).padding(10.dp),
-                    enabled = !state.busy, singleLine = true, textStyle = TextStyle(color = DesktopBootstrapColors.foreground))
+                    enabled = !state.busy, singleLine = true, cursorBrush = DesktopBootstrapColors.inputCaret, textStyle = TextStyle(color = DesktopBootstrapColors.foreground))
                 BootstrapButton("保存新存档", enabled = !state.busy && name.isNotBlank()) { controller.create(name, images, audio) }
             }
             ActionRow {

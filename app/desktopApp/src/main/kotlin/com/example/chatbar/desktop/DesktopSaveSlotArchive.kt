@@ -68,14 +68,14 @@ internal class DesktopSaveSlotArchive(private val workspace: Path) {
     private suspend fun inspect(work: Path, file: Path, hash: String): Prepared {
         // Production restore retains explicit old identities plus the immutable original package.
         // Default structure-only diagnostic admission remains strict.
-        val result = DesktopSaveSlotInspector(retainHistoricalVoices = true).inspect(file)
+        val result = DesktopSaveSlotInspector(retainHistoricalVoices = true, retainHistoricalReferences = true).inspect(file)
         check(result.status == SlotInspectStatus.STRUCTURE_VALID) { "存档未通过校验：${result.code}；原文件已保留" }
         val slot = if (result.format == SlotInspectFormat.ZIP_V8) ZipFile(file.toFile()).use { zip ->
             zip.getInputStream(zip.getEntry("manifest.json")).use { input ->
                 json.decodeFromString(SaveSlot.serializer(), input.readNBytes(MAX_JSON + 1).also { check(it.size <= MAX_JSON) }.toString(Charsets.UTF_8))
             }
         } else {
-            check(Files.size(file) <= MAX_JSON)
+            com.example.chatbar.desktop.backup.DesktopBackupRecords.requireSize(Files.size(file))
             json.decodeFromString(SaveSlot.serializer(), Files.readString(file))
         }
         check(DesktopArchiveFiles.hash(file, MAX_ARCHIVE) == hash)

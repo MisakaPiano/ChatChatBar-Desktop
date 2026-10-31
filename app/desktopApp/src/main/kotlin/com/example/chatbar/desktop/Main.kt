@@ -37,6 +37,7 @@ internal fun runDesktopMain(
 }
 
 private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolution.Resolved) {
+        DesktopWindowsTaskbarPin.configureIdentity()
         val dialogOwner = DesktopDialogOwner()
         DesktopPlatformPickers.create(dialogOwner).use { pickers ->
             val appContainer = DesktopAppContainer(resolvedRoot, filePicker = pickers.files, directoryPicker = pickers.directories)
@@ -63,6 +64,19 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                         val primaryChatController = remember { appContainer.primaryChatController }
                         val modelSettingsController = remember { appContainer.modelSettingsController }
                         val applicationScope = rememberCoroutineScope()
+                        val updater = remember { DesktopUpdateRuntime(applicationScope) }
+                        val modalActivity = remember { DesktopModalActivity() }
+                        val updateNotices = remember {
+                            val identity = DesktopBuildIdentity.load()
+                            val checker = DesktopUpdateChecker()
+                            DesktopUpdateNotices(applicationScope, identity.version,
+                                System.getenv("LOCALAPPDATA")?.let { DesktopUpdateNoticeHints(java.nio.file.Path.of(it).resolve("ChatChatBarDesktopUpdates")) },
+                                startupAllowed = System.getProperty("jpackage.app-path") != null,
+                                startupQuery = if (updater.supportsInstall) ({ updater.checkAvailable() }) else null) { previews ->
+                                checker.check(identity.version, previews)
+                            }
+                        }
+                        DisposableEffect(updateNotices) { onDispose { updateNotices.close() } }
                         val backupSettingsController = remember { DesktopAutomaticBackupSettingsController(appContainer.automaticBackupRuntime, applicationScope) }
                         LaunchedEffect(backupSettingsController) { backupSettingsController.observe() }
                         val uiLanguageController = remember { appContainer.uiLanguageController }
@@ -91,6 +105,8 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                             LaunchedEffect(window) {
                                 while (!window.isShowing) kotlinx.coroutines.delay(50)
                                 DesktopInstalledProgram.ready()
+                                androidx.compose.runtime.withFrameNanos { }
+                                updateNotices.checkOnStartup()
                             }
                             val chrome = rememberDesktopWindowChrome(window, requestClose)
                             DisposableEffect(window, dialogOwner) {
@@ -106,7 +122,12 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                                 LocalDesktopUiStrings provides DesktopUiStrings(uiLanguage),
                                 LocalDesktopPalette provides palette,
                                 LocalDesktopFishParentWindow provides window,
+                                LocalDesktopUpdater provides updater,
+                                LocalDesktopUpdateNotices provides updateNotices,
+                                LocalDesktopModalActivity provides modalActivity,
+                                LocalDesktopApiAccounts provides appContainer.apiAccountController,
                             ) {
+                                DesktopApiAccountDialog()
                                 DesktopPrimaryShell(
                                     chrome = chrome,
                                     navigation = navigation,

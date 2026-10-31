@@ -3,7 +3,7 @@ package com.example.chatbar.desktop.backup
 import java.util.UUID
 import kotlinx.serialization.json.*
 
-/** Frozen selection -> typed identities and collision-free target names. No IO/secret/activation. */
+/** Frozen selection -> typed identities and collision-free target names. Optional owned record scratch, never secret writes or activation. */
 internal class DesktopMergeDestinationPlan private constructor(
     val entities: Map<String, JsonObject>,
     val resources: Map<String, Resource>,
@@ -11,7 +11,9 @@ internal class DesktopMergeDestinationPlan private constructor(
     val identity: DesktopMergeIdentity,
     val incomingRecords: List<DesktopMergeRecord>,
     val pcFingerprint: String,
-) {
+    private val recordScratch: DesktopBackupScratch? = null,
+) : AutoCloseable {
+    override fun close() { recordScratch?.close() }
     enum class Side { COMPUTER, PHONE }
     class Resource internal constructor(val side: Side, val original: String, val sha256: String) {
         override fun toString() = "MergeResource($side)"
@@ -24,13 +26,16 @@ internal class DesktopMergeDestinationPlan private constructor(
 
     companion object {
         fun create(selection: DesktopMergePreview.Selection, computerMedia: Map<String, String>, phoneMedia: Map<String, String>,
-            catalogs: Map<String, DesktopMergeSaveSlotPackage.Catalog> = emptyMap(), checkActive: () -> Unit = {}): DesktopMergeDestinationPlan {
+            catalogs: Map<String, DesktopMergeSaveSlotPackage.Catalog> = emptyMap(),
+            recordWorkspace: java.nio.file.Path? = null, checkActive: () -> Unit = {}): DesktopMergeDestinationPlan {
+            val recordScratch = recordWorkspace?.let { DesktopBackupScratch.create(it, "merge-records-") }
+            try {
             checkActive()
             val identity = DesktopMergeIdentity()
             require(computerMedia.keys.none { it.startsWith("entities/") } && phoneMedia.keys.none {
                 it.startsWith("entities/") || it.startsWith("save_slot_packages/")
             }) { "MERGE_MEDIA_INPUT_CATEGORY" }
-            val phone = selection.phone.flatMap { unit -> unit.records.map { DesktopMergeRecord(it.key, it.value) } }
+            val phone = selection.phone.flatMap { unit -> DesktopMergeRecord.from(unit.records) }
             val packageSlots = phone.filter { it.type == "save_slots" && it.value["packageRef"] != null && it.value["packageRef"] != JsonNull }
             require(catalogs.keys == packageSlots.mapTo(hashSetOf()) { it.relative }) { "MERGE_PACKAGE_CATALOG_REQUIRED" }
             val declarations = linkedSetOf<Pair<String, String>>()
@@ -50,7 +55,8 @@ internal class DesktopMergeDestinationPlan private constructor(
             declarations.filter { it.first != "chat_messages" }.forEach { (type, id) -> identity.bind(type, id, UUID.randomUUID().toString()) }
             val memory = phone + catalogs.values.map { it.manifest }
             val mapper = DesktopMergeGraphRemapper(memory, identity, checkActive)
-            val entities = linkedMapOf<String, JsonObject>(); val resources = linkedMapOf<String, Resource>()
+            val entities: MutableMap<String, JsonObject> = recordScratch?.let(::DesktopBackupRecordStore) ?: linkedMapOf()
+            val resources = linkedMapOf<String, Resource>()
             val names = hashSetOf<String>(); val pcNames = linkedMapOf<String, String>(); val phoneNames = linkedMapOf<String, String>()
             fun addMedia(side: Side, original: String, hash: String): String {
                 DesktopBackupPolicy.path(original); require(hash.matches(Regex("[a-f0-9]{64}"))) { "MERGE_MEDIA_HASH" }
@@ -122,7 +128,11 @@ internal class DesktopMergeDestinationPlan private constructor(
                 require(names.add(dest.lowercase())) { "MERGE_PACKAGE_TARGET_COLLISION" }
                 Package("save_slot_packages/$source", dest, slot, catalogs.getValue(slot.relative).sha256)
             }
-            return DesktopMergeDestinationPlan(entities.toMap(), resources.toMap(), packages, identity, memory, selection.pcFingerprint)
+            return DesktopMergeDestinationPlan(if (recordScratch == null) entities.toMap() else entities, resources.toMap(), packages, identity, memory, selection.pcFingerprint, recordScratch)
+            } catch (failure: Throwable) {
+                try { recordScratch?.close() } catch (cleanup: Throwable) { failure.addSuppressed(cleanup) }
+                throw failure
+            }
         }
 
         private fun destination(record: DesktopMergeRecord, mapped: JsonObject): String {

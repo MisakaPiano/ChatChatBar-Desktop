@@ -15,7 +15,7 @@ object BackupDataRegistry {
         "shared-import", "diagnostics", "updates", "prompt_dictionary", "tag_completion"
     )
     private val resourceFields = setOf(
-        "avatar", "appearanceImage", "chatBackground", "senderAvatar", "imagePath",
+        "avatar", "desktopAvatar", "desktopPlayerAvatar", "appearanceImage", "chatBackground", "senderAvatar", "imagePath",
         "audioPath", "filePath", "filePaths", "draftAssetPaths", "pendingDeletedAssets", "images", "path"
     )
 

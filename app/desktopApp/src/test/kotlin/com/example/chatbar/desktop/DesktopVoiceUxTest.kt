@@ -1,6 +1,7 @@
 @file:OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class, androidx.compose.ui.InternalComposeUiApi::class)
 package com.example.chatbar.desktop
 import androidx.compose.ui.ImageComposeScene
+import androidx.compose.runtime.*
 import androidx.compose.ui.semantics.*
 import androidx.compose.foundation.layout.*
 import com.example.chatbar.data.local.entity.*
@@ -37,7 +38,8 @@ class DesktopVoiceUxTest {
             withTimeout(5000){while(!f.runtime.playback.state.value.playing)delay(10)}
             assertEquals(listOf(a.id,b.id),f.runtime.playback.state.value.queueVoiceIds)
             f.output.playing=false;withTimeout(5000){while(f.runtime.playback.state.value.currentVoiceId!=b.id)delay(10)}
-            assertEquals(requests,f.server.requestCount);f.runtime.foreground(null).join();assertFalse(f.output.playing)
+            assertEquals(requests,f.server.requestCount);f.runtime.foreground(null).join();assertTrue(f.output.playing)
+            f.runtime.stopForMaintenance(); assertFalse(f.output.playing)
         }
     }
     @Test fun `pause keeps real position and queue then resume or second stop releases session`()=runBlocking {
@@ -64,7 +66,7 @@ class DesktopVoiceUxTest {
             var resumes=0;var stops=0
             val scene=ImageComposeScene(w,160){
                 DesktopVoiceDeckRow("SYNTHESIZING 1/5",{},{}, narrator={
-                    DesktopNarratorDropdown(DesktopPrimaryChatState(), null) {}
+                    DesktopNarratorDropdown(voicedState(), null) {}
                 }, player={ DesktopVoicePlayerRow(DesktopVoicePlaybackState("v",listOf("v"),paused=true,positionMs=4321),{resumes++},{stops++}) })
             }
             try {repeat(4){scene.render(System.nanoTime()).close();yield()}
@@ -83,6 +85,38 @@ class DesktopVoiceUxTest {
                 assertEquals(1,resumes);assertEquals(1,stops)
             }finally{scene.close()}
         }
+    }
+    private fun voicedState() = DesktopPrimaryChatState(selectedCharacter = CharacterCard.create("Card").copy(
+        characters = listOf(CharacterInfo(id = "alice", name = "Alice", fishAudioVoice = FishAudioVoiceBinding("voice", "Voice")))))
+
+    @Test fun `unbound cards have no voice control and composer expansion preserves selection`() = runBlocking(edt) {
+        var state by androidx.compose.runtime.mutableStateOf(DesktopPrimaryChatState(selectedCharacter = CharacterCard.create("Empty")))
+        val ui = DesktopVoiceUiSelection().apply { narrator = "alice" }
+        val scene = ImageComposeScene(360, 100) { DesktopComposerVoiceControl(state, ui, true, 360f) }
+        fun nodes(): List<SemanticsNode> {
+            fun walk(n: SemanticsNode): List<SemanticsNode> = listOf(n) + n.children.flatMap(::walk)
+            return scene.semanticsOwners.flatMap { walk(it.rootSemanticsNode) }
+        }
+        suspend fun frames() { repeat(5) { scene.render().close(); yield() } }
+        fun labels() = nodes().flatMap { it.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty() }
+        fun click(label: String) { nodes().single { label in it.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty() }
+            .config[SemanticsActions.OnClick].action!!() }
+        try {
+            frames(); assertFalse(labels().any { it.contains("音色") })
+            state = voicedState(); frames(); assertTrue("朗读音色设置" in labels())
+            click("朗读音色设置"); frames(); assertTrue(ui.composerExpanded)
+            assertTrue(labels().any { it.startsWith("选择角色音色") })
+            click("折叠音色选择"); frames(); assertFalse(ui.composerExpanded)
+            assertTrue("朗读音色设置" in labels()); assertFalse(labels().any { it.startsWith("选择角色音色") })
+            assertEquals("alice", ui.narrator)
+            state = state.copy(selectedCharacter = state.selectedCharacter!!.copy(characters = emptyList()))
+            frames(); assertFalse("朗读音色设置" in labels())
+            state = voicedState(); frames(); click("朗读音色设置"); frames()
+            assertTrue(ui.composerExpanded); assertEquals("alice", ui.narrator)
+            state = state.copy(selectedCharacter = state.selectedCharacter!!.copy(characters = listOf(
+                CharacterInfo(id = "invalid", name = "Invalid", fishAudioVoice = FishAudioVoiceBinding("  ", "Invalid")))))
+            frames(); assertTrue(desktopNarratorChoices(state).isEmpty()); assertFalse(labels().any { it.contains("音色") })
+        } finally { scene.close() }
     }
 }
 class DesktopVoicePauseWindowsTest {

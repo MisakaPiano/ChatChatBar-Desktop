@@ -48,7 +48,7 @@ internal fun DesktopDesignField(label: String, text: String, identity: Any = lab
         BasicTextField(editor.value, { editor.edit(it, onChange) }, Modifier.fillMaxWidth()
             .heightIn(min = 64.dp).border(1.dp, DesktopBootstrapColors.border)
             .background(DesktopBootstrapColors.input).padding(9.dp).semantics { contentDescription = label },
-            textStyle = TextStyle(color = DesktopBootstrapColors.foreground))
+            cursorBrush = DesktopBootstrapColors.inputCaret, textStyle = TextStyle(color = DesktopBootstrapColors.foreground))
     }
 }
 

@@ -59,22 +59,24 @@ internal class DesktopFishPreviewRuntime(
         private var store: DesktopFishPreviewStore? = null
         private var cleaned = false
 
-        fun generate(reference: String, text: String) = submit {
+        fun generate(reference: String, text: String) {
+            val credential = runCatching { transport.captureCall() }
+            submit { withContext(credential.getOrThrow()) {
             val selectedModel = model()
             if (selectedModel != "s2.1-pro-free") {
                 mutable.value = DesktopFishPreviewState(message = "当前模型未获免费预览授权；请明确选择 s2.1-pro-free，不会自动替换")
-                return@submit
+                return@withContext
             }
             check(text.isNotBlank() && text.codePointCount(0, text.length) <= 120) { "请输入 1–120 字的预览文本" }
             mutable.value = DesktopFishPreviewState(busy = true)
             if (outputOwner != null) { output.stopAndDrain(); outputOwner = null }
             val owned = store ?: stores().also { store = it }
-            val key = CacheKey(DesktopFishPreviewKind.GENERATED, reference)
+            val key = CacheKey(DesktopFishPreviewKind.GENERATED, reference, credential.getOrThrow().identity)
             val cached = cache[key]
             val clip = cached ?: transport.generate(reference, text, selectedModel, owned).also { cache[key] = it }
             play(owned, clip, cached != null, DesktopFishPreviewKind.GENERATED,
                 if (cached != null) "复用本次音色库首次生成的音频；新输入未发送" else "免费预览已生成；不写入聊天或角色绑定")
-        }
+        } } }
 
         fun officialSample(reference: String, rawUrl: String) = submit(replace = true) {
             check(reference.isNotBlank() && reference.length <= 256)

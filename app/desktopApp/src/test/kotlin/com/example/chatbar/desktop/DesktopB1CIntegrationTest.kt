@@ -2,6 +2,7 @@
 package com.example.chatbar.desktop
 
 import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.semantics.*
@@ -35,11 +36,12 @@ class DesktopB1CIntegrationTest {
         frames()
     }
     private fun ImageComposeScene.shot(name: String) = render().use { image ->
-        val file = Path.of("build/phase7-b1-c-integration-evidence/$name.png")
+        val file = System.getenv("CCB_SELECTED_FIX_REVIEW_DIR")?.let { Path.of(it).resolve("$name.png") }
+            ?: Path.of("build/phase7-b1-c-integration-evidence/$name.png")
         Files.createDirectories(file.parent); image.encodeToData()!!.use { Files.write(file, it.bytes) }; Unit
     }
     @Composable private fun Shell(f: FinalProductDesignFixture, chrome: DesktopWindowChrome,
-        navigation: DesktopPrimaryNavigationController) {
+        navigation: DesktopPrimaryNavigationController, updateNotices: DesktopUpdateNotices? = null) {
         val c = f.container
         val transfer = remember { c.createTypedTransferController() }
         val management = remember { c.createManagementController(transfer) }
@@ -47,6 +49,8 @@ class DesktopB1CIntegrationTest {
             DesktopDataRootResolution.Resolved(c.appDataRoot, DesktopDataRootProvenance.CLI_OVERRIDE, f.root.resolve("bootstrap.json")),
             DesktopDirectoryPicker { null }, { false }, { error("Migration not requested") }) }
         val scope = rememberCoroutineScope()
+        CompositionLocalProvider(LocalDesktopApiAccounts provides c.apiAccountController,
+            LocalDesktopUpdateNotices provides updateNotices) {
         DesktopPrimaryShell(chrome, navigation, root, transfer,
             remember { c.createModelTemplateTransferController() }, management,
             remember { c.createPromptInspectorController() }, c.primaryChatController, c.modelSettingsController,
@@ -54,6 +58,7 @@ class DesktopB1CIntegrationTest {
             c.characterEditorController, c.formatCardEditorController, c.worldBookEditorController,
             c.uiLanguageController, c.appearanceController, c.connectionTestController,
             c.novelAiSettingsController, c.novelAiStudioController, c.fullBackupController, {})
+        }
     }
     private suspend fun seeded(): FinalProductDesignFixture {
         val f = FinalProductDesignFixture(); f.initialize(false)
@@ -61,6 +66,63 @@ class DesktopB1CIntegrationTest {
         f.container.chatRepository.createSession(ChatSession("room", "card", "Integration room", createdAt = 1, updatedAt = 1))
         f.container.primaryChatController.refresh()
         return f
+    }
+
+    @Test fun `startup notice later retains data badge and its actual Shell entry opens the shared update page`(): Unit = runBlocking(awt) {
+        val f = seeded(); val chrome = DesktopWindowChrome {}; val navigation = DesktopPrimaryNavigationController()
+        val scope = CoroutineScope(SupervisorJob() + awt)
+        var checks = 0
+        val notices = DesktopUpdateNotices(scope, "0.1.0-preview.100", null, true) {
+            checks++
+            DesktopUpdateResult(DesktopRelease("0.1.0-preview.101", null, "合成更新说明",
+                "https://github.com/${DesktopUpdatePolicy.REPOSITORY}/releases/tag/desktop-v0.1.0-preview.101", true), true)
+        }
+        val otherModal = mutableStateOf(true)
+        val modalActivity = DesktopModalActivity()
+        val scene = ImageComposeScene(1240, 800) {
+            CompositionLocalProvider(LocalDesktopModalActivity provides modalActivity) {
+                Box {
+                    Shell(f, chrome, navigation, notices)
+                    if (otherModal.value) DesktopModalSurface { StatusText("合成已有错误") }
+                }
+            }
+        }
+        try {
+            notices.checkOnStartup()!!.join(); scene.frames()
+            assertTrue(scene.has("合成已有错误")); assertFalse(scene.has("发现新版本"))
+            assertTrue(notices.state.value.showStartupNotice, "Another modal defers rather than consumes the notice")
+            otherModal.value = false; scene.frames()
+            assertTrue(scene.has("发现新版本")); assertTrue(scene.has("数据，有新版本"))
+            val close = scene.nodes().single { it.matches("关闭更新提醒") }
+            assertTrue(close.boundsInRoot.width <= 30f && close.boundsInRoot.height <= 30f)
+            scene.shot("startup-update-notice")
+            scene.click("稍后")
+            assertFalse(scene.has("发现新版本")); assertTrue(scene.has("数据，有新版本"))
+            scene.click("数据，有新版本"); scene.frames()
+            assertEquals(DesktopPrimaryRoute.DATA, navigation.selectedRoute.value)
+            assertTrue(scene.has("启动后自动检查一次；下载与安装仍由你确认。"))
+            assertTrue(scene.has("合成更新说明")); assertEquals(1, checks)
+            scene.shot("startup-update-page")
+            scene.click("检查更新"); scene.frames()
+            assertEquals(2, checks); assertFalse(notices.state.value.showStartupNotice)
+        } finally { scene.close(); notices.closeAndDrain(); scope.cancel(); f.close() }
+    }
+
+    @Test fun `wide workspace navigation preserves all management data and tool destinations`() = runBlocking(awt) {
+        val f = seeded(); val chrome = DesktopWindowChrome {}; val navigation = DesktopPrimaryNavigationController()
+        val idle = DesktopDataRootSwitchState.Idle(f.container.appDataRoot, DesktopDataRootProvenance.CLI_OVERRIDE, true)
+        val scene = ImageComposeScene(1240, 800) { Shell(f, chrome, navigation) }
+        try {
+            scene.frames()
+            navigation.navigate(DesktopPrimaryRoute.MANAGE, idle); scene.frames()
+            assertTrue(scene.has("导入导出")); assertTrue(scene.has("角色")); assertTrue(scene.has("模型")); assertTrue(scene.has("设置"))
+            scene.shot("workspace-manage")
+            scene.click("设置"); scene.frames(); scene.shot("workspace-settings")
+            navigation.navigate(DesktopPrimaryRoute.DATA, idle); scene.frames()
+            assertTrue(scene.has("备份与导入")); assertTrue(scene.has("版本与更新")); scene.shot("workspace-data")
+            navigation.navigate(DesktopPrimaryRoute.TOOLS, idle); scene.frames()
+            assertTrue(scene.has("高级 / 诊断")); scene.shot("workspace-tools")
+        } finally { scene.close(); f.close() }
     }
 
     @Test fun `compact actual Shell preserves explicit chat and browser across Tools and Manage`() = runBlocking(awt) {
@@ -96,10 +158,14 @@ class DesktopB1CIntegrationTest {
             scene.frames(); assertTrue(chrome.layout.captions.keys.containsAll(listOf(ChromeHit.MINIMIZE, ChromeHit.MAXIMIZE, ChromeHit.CLOSE)))
             navigation.navigate(DesktopPrimaryRoute.TOOLS, idle); scene.frames()
             val bounds = scene.nodes().first { it.matches("Studio 全高预览面板") }.boundsInRoot
-            assertEquals(0f, bounds.top, 1f); assertEquals(800f, bounds.bottom, 1f)
-            assertTrue(chrome.layout.dragRegions.isNotEmpty())
-            val drag = chrome.layout.dragRegions.single()
-            assertEquals(ChromeHit.CAPTION, DesktopChromeHitTest.hit((drag.left + drag.right) / 2, 22f, 1240f, 800f, 8f, false, chrome.layout))
+            val status = scene.nodes().single { it.config.getOrNull(SemanticsProperties.TestTag) == "studio-global-status" }.boundsInRoot
+            assertEquals(assertNotNull(chrome.layout.title).bottom, bounds.top, 1f)
+            assertEquals(status.top, bounds.bottom, 1f)
+            assertTrue(bounds.height > 600f); assertEquals(800f, status.bottom, 1f)
+            assertTrue(chrome.layout.dragRegions.isEmpty())
+            val title = assertNotNull(chrome.layout.title)
+            val captionGap = (chrome.layout.interactive.maxOf { it.right } + chrome.layout.captions.values.minOf { it.left }) / 2
+            assertEquals(ChromeHit.CAPTION, DesktopChromeHitTest.hit(captionGap, (title.top + title.bottom) / 2, 1240f, 800f, 8f, false, chrome.layout))
             assertTrue(chrome.layout.captions.keys.containsAll(listOf(ChromeHit.MINIMIZE, ChromeHit.MAXIMIZE, ChromeHit.CLOSE)))
             scene.shot("wide-studio-shell")
             navigation.navigate(DesktopPrimaryRoute.CHAT, idle); scene.frames()

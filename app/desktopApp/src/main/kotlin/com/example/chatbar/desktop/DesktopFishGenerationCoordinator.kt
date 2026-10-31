@@ -129,8 +129,11 @@ internal class DesktopFishGenerationCoordinator(
         }
         job.start()
     }
-    private fun launchVoiceJob(block: suspend () -> Unit): Job = scope.launch(start = CoroutineStart.LAZY) {
-        operationGate.withNormalOperation { block() }
+    private fun launchVoiceJob(block: suspend () -> Unit): Job {
+        val credential = runCatching { credentials.captureCall() }
+        return scope.launch(start = CoroutineStart.LAZY) {
+            operationGate.withNormalOperation { withContext(credential.getOrThrow()) { block() } }
+        }
     }
     private fun strictFishModel(model: String): String {
         require(model in FishAudioTtsModels.supported) { "所选 Fish 模型已失效；不会自动替换" }
@@ -290,7 +293,7 @@ internal class DesktopFishGenerationCoordinator(
                     taggedText = editedTaggedText,
                     mode = FishAudioTagPolicy.markerMode(fishModelId)
                 ).getOrThrow()
-                checkNotNull(credentials.load()) { "Fish Audio API Key 未配置" }
+                checkNotNull(credentials.forCurrentCall()) { "Fish Audio API Key 未配置" }
                 updateBatch(batchId) {
                     it.copy(
                         phase = VoiceGenerationPhase.SYNTHESIZING,
@@ -434,20 +437,22 @@ internal class DesktopFishGenerationCoordinator(
         voice: GeneratedVoiceMessage,
         orderedVisibleVoices: List<GeneratedVoiceMessage>,
         originGeneration: Long = foregroundGeneration.get(),
+        backgroundControl: Boolean = false,
     ): Job {
         val sequence = VoicePlaybackQueuePolicy.sequenceFrom(voice, orderedVisibleVoices)
         val requestedGeneration = originGeneration
         val admission = playback.admissionToken()
         return scope.launch {
-            if (foregroundSessionId != voice.sessionId || foregroundGeneration.get() != requestedGeneration) return@launch
+            fun eligible() = (backgroundControl || foregroundSessionId == voice.sessionId) && foregroundGeneration.get() == requestedGeneration
+            if (!eligible()) return@launch
             // Recheck inside the autoplay mutex: maintenance/leave may invalidate a click
             // after the initial check while it is waiting to clear the automatic queue.
             val manualGeneration = autoPlayMutex.withLock {
-                if (foregroundSessionId != voice.sessionId || foregroundGeneration.get() != requestedGeneration) null
+                if (!eligible()) null
                 else { pendingAutoPlay.clear(); foregroundGeneration.incrementAndGet() }
             } ?: return@launch
             playback.playSequence(sequence, admission, toggleCurrent = true) {
-                foregroundSessionId == voice.sessionId && foregroundGeneration.get() == manualGeneration
+                (backgroundControl || foregroundSessionId == voice.sessionId) && foregroundGeneration.get() == manualGeneration
             }
         }
     }
@@ -711,7 +716,7 @@ internal class DesktopFishGenerationCoordinator(
             finishAutoPlay(batchId, null)
             return
         }
-        checkNotNull(credentials.load()) { "Fish Audio API Key 未配置" }
+        checkNotNull(credentials.forCurrentCall()) { "Fish Audio API Key 未配置" }
         networkWork(context.session.id) {
             val bytesByTarget = ConcurrentHashMap<String, Long>()
             val completedTargets = AtomicInteger(0)
@@ -871,7 +876,8 @@ internal class DesktopFishGenerationCoordinator(
         val session = chatRepository.getSession(sessionId) ?: error("会话不存在")
         val message = chatRepository.getMessage(messageId, sessionId) ?: error("消息不存在")
         require(message.role == MessageRole.ASSISTANT) { "只支持助手消息生成语音" }
-        val card = characterRepository.getById(session.characterCardId) ?: error("角色卡不存在")
+        val originalCard = characterRepository.getById(session.characterCardId) ?: error("角色卡不存在")
+        val card = com.example.chatbar.domain.chat.SessionCharacterParticipationPolicy.effectiveCard(session, originalCard)
         val settings = settingsRepository.getAppSettings()
         val previousUser = chatRepository.getMessages(sessionId)
             .filter { it.role == MessageRole.USER && it.orderKey < message.orderKey }
@@ -1001,8 +1007,15 @@ internal class DesktopFishGenerationCoordinator(
             val shouldPlay = next.voices?.isNotEmpty() == true &&
                 foregroundSessionId == next.sessionId &&
                 foregroundGeneration.get() == next.foregroundGeneration
-            if (shouldPlay) playback.enqueueSequence(checkNotNull(next.voices)) {
-                foregroundSessionId == next.sessionId && foregroundGeneration.get() == next.foregroundGeneration
+            if (shouldPlay) {
+                val accepted = playback.enqueueSequence(checkNotNull(next.voices)) {
+                    foregroundSessionId == next.sessionId && foregroundGeneration.get() == next.foregroundGeneration
+                }
+                if (!accepted && playback.state.value.sessionId?.let { it != next.sessionId } == true) {
+                    val voice = next.voices!!.first()
+                    mutableFeedback.value = DesktopVoiceFeedback(next.sessionId, voice.messageId, voice.id, next.batchId,
+                        "录音已保存；另一会话正在播放，未加入当前播放队列")
+                }
             }
         }
     }

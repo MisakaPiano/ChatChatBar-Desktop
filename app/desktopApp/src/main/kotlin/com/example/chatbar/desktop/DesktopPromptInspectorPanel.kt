@@ -270,7 +270,7 @@ private fun InspectorTextField(
                 .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
                 .background(DesktopBootstrapColors.input, RoundedCornerShape(8.dp))
                 .padding(horizontal = 12.dp, vertical = 10.dp),
-            textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp),
+            cursorBrush = DesktopBootstrapColors.inputCaret, textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp),
             singleLine = true,
         )
     }

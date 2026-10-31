@@ -147,6 +147,16 @@ jobs:
         working-directory: ${{ env.CCB_CI_SOURCE }}
         run: python -m unittest discover -s tools/desktop/nsis -p test_lifecycle.py -v
 
+      - name: Test Desktop trusted updater and native exit handoff
+        if: ${{ !cancelled() && env.CCB_CI_SOURCE != '' }}
+        working-directory: ${{ env.CCB_CI_SOURCE }}
+        run: |
+          python tools/desktop/update/prepare_runtime.py --destination "$env:RUNNER_TEMP/ccb-desktop-update-runtime" --artifact-cache "$env:RUNNER_TEMP/ccb-desktop-update-artifacts" --download
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & "$env:RUNNER_TEMP/ccb-desktop-update-runtime/python.exe" -B tools/desktop/update/test_client.py -v
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m unittest discover -s tools/desktop/update -p test_handoff.py -v
+
       - name: Upload Desktop test reports
         if: always() && env.CCB_CI_SOURCE != ''
         uses: actions/upload-artifact@v4

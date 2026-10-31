@@ -305,7 +305,8 @@ class DesktopCurrentImagePresentationTest {
                 val expand = scene.nodes().first { it.matches("全屏编辑") }.boundsInRoot
                 val send = scene.nodes().first { it.matches("发送") }.boundsInRoot
                 assertTrue(expand.left > 1000 && send.left > expand.left)
-                assertTrue(kotlin.math.abs(expand.bottom - send.bottom) < 2)
+                // Full send and icon targets have different heights; their toolbar centers align.
+                assertTrue(kotlin.math.abs(expand.center.y - send.center.y) < 2)
                 assertTrue(send.top > 650)
                 scene.shot("chat-composer")
             } finally { scene.close() }

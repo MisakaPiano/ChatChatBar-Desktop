@@ -29,6 +29,23 @@ import kotlin.test.assertTrue
 import kotlinx.serialization.json.Json
 
 class DesktopModelSettingsControllerTest {
+    @Test fun `automatic format check setting persists and discard restores the saved choice`() = runBlocking {
+        withFixture { fixture ->
+            val controller = fixture.controller
+            controller.loadSettings()
+            assertFalse(controller.state.value.settings!!.automaticFormatCheckEnabled)
+            controller.editSettings { it.copy(automaticFormatCheckEnabled = true) }
+            controller.saveAppSettings()
+            assertNull(controller.state.value.error)
+            assertTrue(fixture.container.settingsRepository.getAppSettings().automaticFormatCheckEnabled)
+            controller.loadSettings()
+            assertTrue(controller.state.value.settings!!.automaticFormatCheckEnabled)
+            controller.editSettings { it.copy(automaticFormatCheckEnabled = false) }
+            controller.discardChatDefaults()
+            assertTrue(controller.state.value.settings!!.automaticFormatCheckEnabled)
+        }
+    }
+
     @Test
     fun `management avatar decodes through existing controller resource authority`() = runBlocking {
         withFixture { fixture ->

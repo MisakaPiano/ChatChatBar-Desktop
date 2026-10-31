@@ -13,7 +13,9 @@ class FishAudioSharedConsumerTest {
         val payload = Json.decodeFromString(FishAudioTtsRequest.serializer(), Buffer().also { request.body!!.writeTo(it) }.readUtf8())
         assertEquals("ref", payload.referenceId)
         assertEquals("spoken", payload.text)
-        val state = VoiceAnchorPolicy.initialState("message", "[spoken]", "version", "session")
+        // A clock-valued default may be elided at encoding and regenerated a millisecond later.
+        // Pin this serializer fixture so the full equality assertion tests the wire contract.
+        val state = VoiceAnchorPolicy.initialState("message", "[spoken]", "version", "session").copy(updatedAt = 1)
         assertEquals(state, Json.decodeFromString(VoiceAnchorState.serializer(), Json.encodeToString(VoiceAnchorState.serializer(), state)))
     }
 }

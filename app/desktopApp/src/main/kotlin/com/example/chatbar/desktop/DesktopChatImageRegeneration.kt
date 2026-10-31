@@ -76,12 +76,14 @@ internal class DesktopChatImageRegeneration(
             requirePreflight(original)
             require(eligible())
             val session = requireNotNull(chats.getSession(original.sessionId))
-            val card = requireNotNull(characters.getById(session.characterCardId))
+            val originalCard = requireNotNull(characters.getById(session.characterCardId))
+            val card = com.example.chatbar.domain.chat.SessionCharacterParticipationPolicy.effectiveCard(session, originalCard)
             val app = settings.getAppSettings()
             val model = requireNotNull(resolver?.resolveImageModel(session.imageModelId, app))
             val target = NovelAiImageModelResolution.resolve(session.novelAiImageModel, card.defaultNovelAiImageModel, app.novelAiImageModel)
             val plan = infrastructure.promptDesigner().design(chats.getInitialMessagePage(original.sessionId, original.id).messages,
-                original.id, card, model, playerName = session.playerName?.takeIf(String::isNotBlank) ?: settings.getPlayerSetting().playerName,
+                original.id, card, model, playerName = com.example.chatbar.domain.chat.PlayerRolePolicy.name(
+                    session, characters.getById(session.characterCardId), settings.getPlayerSetting().playerName),
                 sessionId = session.id, imageContentHint = requirements?.imageContentHint.orEmpty(),
                 finalPromptRequirement = preference, targetImageModel = target,
                 naturalLanguageMode = session.novelAiNaturalLanguageMode && target == NovelAiImageModel.V5_FULL,

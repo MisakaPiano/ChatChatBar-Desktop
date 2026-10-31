@@ -39,13 +39,13 @@ class Lifecycle(unittest.TestCase):
         cls.fake = cls.base / 'ChatChatBarDesktop.exe'
         (cls.base / 'Fake.cs').write_text(FAKE)
         for source, target, refs in [(BASE / 'Launcher.cs', cls.launcher,
-                ['/reference:System.Windows.Forms.dll', '/reference:System.Web.Extensions.dll', '/define:SYNTHETIC']),
+                ['/reference:System.Windows.Forms.dll', '/reference:System.Web.Extensions.dll', '/define:SYNTHETIC', '/define:LIFECYCLE_TEST']),
                 (cls.base / 'Fake.cs', cls.fake, [])]:
             subprocess.run([str(CSC), '/nologo', '/target:winexe', '/platform:x64', '/out:' + str(target), *refs, str(source.absolute())],
                            check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         subprocess.run([str(CSC), '/nologo', '/target:winexe', '/platform:x64', '/out:' + str(cls.stable),
                         '/reference:System.Windows.Forms.dll', '/reference:System.Web.Extensions.dll',
-                        '/define:SYNTHETIC', '/define:STABLE', str((BASE / 'Launcher.cs').absolute())],
+                        '/define:SYNTHETIC', '/define:LIFECYCLE_TEST', '/define:STABLE', str((BASE / 'Launcher.cs').absolute())],
                        check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
     @classmethod
@@ -72,7 +72,7 @@ class Lifecycle(unittest.TestCase):
         environment = dict(os.environ, LOCALAPPDATA=str(self.local), CCB_DESKTOP_TEST_SHELL_ROOT=str(Path(self.case.name) / 'shell'))
         result = subprocess.run([str(self.launcher), mode, str(self.root), *args, '--quiet'], timeout=20, env=environment)
         key = hashlib.sha256(str(self.root.absolute()).upper().encode('utf-8')).hexdigest().upper()
-        log = self.local / 'ChatChatBarDesktopNSISSyntheticInstallState' / (key + '.log')
+        log = self.local / 'ChatChatBarDesktopNSISLifecycleTestInstallState' / (key + '.log')
         self.assertEqual(expected, result.returncode, mode + '\n' + (log.read_text(encoding='utf-8') if log.exists() else 'no lifecycle log'))
 
     def version(self, number, fail=False):
@@ -113,6 +113,75 @@ class Lifecycle(unittest.TestCase):
         self.assertEqual(first, (self.root / 'current.txt').read_text())
         self.assertTrue((old / 'ChatChatBarDesktop.exe').is_file())
 
+    def test_fresh_installer_repairs_corrupt_same_version_without_running_damaged_program(self):
+        import time
+        first, old = self.version(1)
+        self.run_manager('--activate', first)
+        time.sleep(2.1)
+        (old / 'ChatChatBarDesktop.exe').write_bytes(b'damaged executable never launched')
+        (old / 'install-manifest.json').write_text('{broken')
+        witness = Path(self.case.name) / 'valuable-data.txt'
+        witness.write_text('unchanged synthetic data')
+        self.run_manager('--prepare-repair')
+        payload = Path(self.case.name) / 'payload-1'
+        self.run_manager('--stage-repair', first, str(payload / 'install-manifest.json'))
+        repaired = (self.root / 'pending-repair.txt').read_text()
+        self.assertTrue(repaired.startswith(first + '-r'))
+        new = self.root / 'versions' / repaired
+        for p in payload.iterdir():
+            if p.name != 'install-manifest.json': (new / p.name).write_bytes(p.read_bytes())
+        self.assertEqual(first, (self.root / 'current.txt').read_text())
+        self.run_manager('--activate', repaired)
+        self.assertEqual(repaired, (self.root / 'current.txt').read_text())
+        self.assertEqual(b'damaged executable never launched', (old / 'ChatChatBarDesktop.exe').read_bytes())
+        self.assertEqual('{broken', (old / 'install-manifest.json').read_text())
+        self.assertEqual('unchanged synthetic data', witness.read_text())
+        self.assertEqual(1, len(list((self.root / 'repair-retained').iterdir())))
+        original_files = {p.name: p.read_bytes() for p in old.iterdir() if p.is_file()}
+        self.run_manager('--cleanup')
+        self.assertEqual(original_files, {p.name: p.read_bytes() for p in old.iterdir() if p.is_file()})
+        self.run_manager('--launch')
+        time.sleep(2.1)
+        self.run_manager('--uninstall')
+        self.assertFalse((self.root / 'ChatChatBar.exe').exists())
+        self.assertEqual(original_files, {p.name: p.read_bytes() for p in old.iterdir() if p.is_file()})
+        self.assertEqual('unchanged synthetic data', witness.read_text())
+
+    def test_same_version_repair_requires_exact_original_package_receipt(self):
+        first, _ = self.version(1)
+        self.run_manager('--activate', first)
+        payload = Path(self.case.name) / 'payload-1'
+        manifest = payload / 'install-manifest.json'
+        changed = json.loads(manifest.read_text())
+        changed['files'][0]['sha256'] = 'f' * 64
+        manifest.write_text(json.dumps(changed))
+        self.run_manager('--stage-repair', first, str(manifest), expected=2)
+        self.assertEqual(first, (self.root / 'current.txt').read_text())
+        self.assertFalse((self.root / 'pending-repair.txt').exists())
+
+    def test_complete_authenticated_stage_is_reused_without_overlay(self):
+        first, _ = self.version(1)
+        self.run_manager('--activate', first)
+        second, staged = self.version(2)
+        witness = staged / 'identity.txt'
+        stamp = witness.stat().st_mtime_ns
+        original = witness.read_bytes()
+        manifest = Path(self.case.name) / 'payload-2/install-manifest.json'
+        self.run_manager('--stage', second, str(manifest), expected=10)
+        self.assertEqual(stamp, witness.stat().st_mtime_ns)
+        self.assertEqual(original, witness.read_bytes())
+        self.assertEqual(first, (self.root / 'current.txt').read_text())
+        self.run_manager('--activate', second)
+
+    def test_unknown_version_directory_keeps_cleanup_deferred_without_aborting(self):
+        first, _ = self.version(1)
+        self.run_manager('--activate', first)
+        unknown = self.root / 'versions/not-a-program-version'
+        unknown.mkdir(); (unknown / 'user-note.txt').write_text('retain')
+        self.run_manager('--cleanup')
+        self.assertEqual('retain', (unknown / 'user-note.txt').read_text())
+        self.assertEqual('DEFERRED', (self.root / 'cleanup-status.txt').read_text())
+
     def test_modified_payload_refused_before_switch(self):
         first, _ = self.version(1)
         self.run_manager('--activate', first)
@@ -147,6 +216,7 @@ class Lifecycle(unittest.TestCase):
         try:
             self.run_manager('--uninstall', expected=2)
             self.run_manager('--prepare', expected=2)
+            self.run_manager('--prepare-repair', expected=2)
             self.assertTrue((directory / 'identity.txt').is_file())
         finally:
             kernel.CloseHandle(handle)
@@ -228,6 +298,73 @@ class Lifecycle(unittest.TestCase):
         self.assertEqual(b'unknown user modification', link.read_bytes())
         self.assertEqual('DEFERRED', (self.root / 'cleanup-status.txt').read_text())
 
+    def test_app_shortcut_commands_restore_each_entry_without_launch_or_pointer_change(self):
+        first, _ = self.version(1)
+        self.run_manager('--activate', first)
+        pointer = (self.root / 'current.txt').read_bytes()
+        for destination, folder in [('desktop', 'Desktop'), ('programs', 'Programs')]:
+            link = Path(self.case.name) / 'shell' / folder / 'ChatChatBar Desktop NSIS Synthetic.lnk'
+            other = Path(self.case.name) / 'shell' / ('Programs' if folder == 'Desktop' else 'Desktop') / link.name
+            other_before = other.read_bytes()
+            link.unlink()
+            self.run_manager('--shortcuts', destination)
+            self.assertTrue(link.is_file())
+            self.assertEqual('MisakaPiano.ChatChatBar.Desktop.Synthetic', self.shell_property(link))
+            self.assertEqual(other_before, other.read_bytes())
+            self.assertEqual(pointer, (self.root / 'current.txt').read_bytes())
+            self.assertEqual(digest(link), (self.root / (destination + '-shortcut.sha256')).read_text())
+            link.write_bytes(b'user changed shortcut')
+            self.run_manager('--shortcuts', destination, expected=3)
+            self.assertEqual(b'user changed shortcut', link.read_bytes())
+
+    def test_app_shortcut_command_refuses_changed_program(self):
+        first, directory = self.version(1)
+        self.run_manager('--activate', first)
+        link = Path(self.case.name) / 'shell/Desktop/ChatChatBar Desktop NSIS Synthetic.lnk'
+        link.unlink()
+        (directory / 'identity.txt').write_text('changed')
+        self.run_manager('--shortcuts', 'desktop', expected=2)
+        self.assertFalse(link.exists())
+
+    def shell_property(self, link, create_legacy=False):
+        script = '''
+if ($env:CCB_TEST_CREATE_LEGACY -eq '1') {
+  $w = New-Object -ComObject WScript.Shell
+  $l = $w.CreateShortcut($env:CCB_TEST_LINK)
+  $l.TargetPath = $env:CCB_TEST_TARGET
+  $l.WorkingDirectory = [System.IO.Path]::GetDirectoryName($env:CCB_TEST_TARGET)
+  $l.Save()
+}
+$s = New-Object -ComObject Shell.Application
+$f = $s.Namespace([System.IO.Path]::GetDirectoryName($env:CCB_TEST_LINK))
+$i = $f.ParseName([System.IO.Path]::GetFileName($env:CCB_TEST_LINK))
+$i.ExtendedProperty('System.AppUserModel.ID')
+'''
+        env = dict(os.environ, CCB_TEST_LINK=str(link), CCB_TEST_TARGET=str(self.root / 'ChatChatBar.exe'),
+                   CCB_TEST_CREATE_LEGACY='1' if create_legacy else '0')
+        result = subprocess.run(['powershell.exe', '-NoLogo', '-NoProfile', '-NonInteractive', '-Command', script],
+                                env=env, capture_output=True, text=True, check=True, timeout=30,
+                                creationflags=subprocess.CREATE_NO_WINDOW)
+        return result.stdout.strip()
+
+    def test_taskbar_identity_is_stable_and_legacy_owned_shortcut_is_upgraded(self):
+        first, _ = self.version(1)
+        self.run_manager('--activate', first)
+        link = Path(self.case.name) / 'shell/Programs/ChatChatBar Desktop NSIS Synthetic.lnk'
+        app_id = 'MisakaPiano.ChatChatBar.Desktop.Synthetic'
+        self.assertEqual(app_id, self.shell_property(link))
+        # Reconstruct the old release's own unbranded link, with its original ownership receipt.
+        link.unlink()
+        self.assertEqual('', self.shell_property(link, create_legacy=True))
+        (self.root / 'programs-shortcut.sha256').write_text(digest(link))
+        second, _ = self.version(2)
+        self.run_manager('--activate', second)
+        self.assertEqual(app_id, self.shell_property(link))
+        self.assertEqual(digest(link), (self.root / 'programs-shortcut.sha256').read_text())
+        key = hashlib.sha256(str(self.root.absolute()).upper().encode('utf-8')).hexdigest().upper()
+        log = self.local / 'ChatChatBarDesktopNSISLifecycleTestInstallState' / (key + '.log')
+        self.assertIn('SHORTCUT_APPID_UPDATED programs-shortcut.sha256', log.read_text())
+
     def test_identical_reinstall_verifies_without_overlay(self):
         first, directory = self.version(1)
         self.run_manager('--activate', first)
@@ -245,7 +382,7 @@ class Lifecycle(unittest.TestCase):
         kernel.CreateMutexW.restype = ctypes.c_void_p
         kernel.CreateMutexW.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_wchar_p]
         kernel.CloseHandle.argtypes = [ctypes.c_void_p]
-        handle = kernel.CreateMutexW(None, 0, 'Local\\ChatChatBarDesktopNSISSynthetic-Extraction')
+        handle = kernel.CreateMutexW(None, 0, 'Local\\ChatChatBarDesktopNSISLifecycleTest-Extraction')
         self.assertTrue(handle)
         try:
             env = dict(os.environ, LOCALAPPDATA=str(self.local), CCB_DESKTOP_TEST_SHELL_ROOT=str(Path(self.case.name) / 'shell'))
@@ -284,7 +421,7 @@ class Lifecycle(unittest.TestCase):
         first, _ = self.version(1)
         self.run_manager('--activate', first)
         self.assertFalse((self.root / 'lifecycle.log').exists())
-        logs = list((self.local / 'ChatChatBarDesktopNSISSyntheticInstallState').glob('*.log'))
+        logs = list((self.local / 'ChatChatBarDesktopNSISLifecycleTestInstallState').glob('*.log'))
         self.assertEqual(1, len(logs))
         self.assertIn('READY ' + first, logs[0].read_text(encoding='utf-8'))
 

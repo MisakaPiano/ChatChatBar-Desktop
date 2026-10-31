@@ -11,8 +11,8 @@ import java.util.zip.Inflater
  * Stored entries with descriptors, ZIP64, split disks and uncommon flags refuse admission.
  */
 internal object StrictBackupZipReader {
-    class Refusal(val phase: String, val records: Int) : IllegalArgumentException("ZIP_$phase")
-    class ContentRefusal(val category: String) : IllegalArgumentException("CONTENT_REFUSED")
+    class Refusal(val phase: String, val records: Int, val resourceActual: Long? = null, val resourceLimit: Long? = null) : IllegalArgumentException("ZIP_$phase")
+    class ContentRefusal(val category: String, val actual: Long? = null, val limit: Long? = null) : IllegalArgumentException("CONTENT_REFUSED")
     data class Limits(val expanded: Long = 4L shl 30, val entry: Long = 256L shl 20,
         val compressed: Long = 4L shl 30, val entries: Int = 40003,
         val directory: Long = 8L shl 20, val ratio: Long = 1000)
@@ -141,7 +141,7 @@ internal object StrictBackupZipReader {
         active(); return records.size
         } catch (e: java.util.concurrent.CancellationException) { throw e
         } catch (e: Refusal) { throw e
-        } catch (e: ContentRefusal) { throw Refusal("CONTENT_${e.category}", records.size)
+        } catch (e: ContentRefusal) { throw Refusal("CONTENT_${e.category}", records.size, e.actual, e.limit)
         } catch (_: Exception) { throw Refusal(phase, records.size) }
     }
 

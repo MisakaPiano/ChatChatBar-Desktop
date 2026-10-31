@@ -4,6 +4,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.*
@@ -79,8 +80,10 @@ internal fun DesktopChatBackgroundPanel(controller: DesktopPrimaryChatController
 }
 
 @Composable
-internal fun DesktopCharacterSummaryCard(presentation: DesktopCharacterManagementPresentation?, onStart: () -> Unit) {
-    Row(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border).padding(10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+internal fun DesktopCharacterSummaryCard(presentation: DesktopCharacterManagementPresentation?, actions: (@Composable () -> Unit)? = null,
+    onStart: () -> Unit) {
+    Row(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border).padding(10.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         val bitmap = remember(presentation) { presentation?.avatar?.toComposeImageBitmap() }
         if (bitmap != null) Image(bitmap, null, Modifier.size(48.dp)) else StatusText(presentation?.fallbackInitial ?: "…")
         Column(Modifier.weight(1f)) {
@@ -88,5 +91,6 @@ internal fun DesktopCharacterSummaryCard(presentation: DesktopCharacterManagemen
             presentation?.let { StatusText("${it.characterCount} 个角色 · ${it.documentCount} 个文档") }
         }
         BootstrapButton("开始聊天", enabled = presentation != null, onClick = onStart)
+        actions?.invoke()
     }
 }

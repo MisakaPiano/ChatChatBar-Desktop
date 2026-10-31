@@ -98,7 +98,7 @@ internal object DesktopSlotHistoricalVoiceCustody {
     private data class Source(val schema: Int, val voices: Map<String, GeneratedVoiceMessage>,
         val messages: Map<String, ChatMessage>, val audio: Map<String, String>)
     private suspend fun source(path: Path, selected: Set<String>): Source {
-        val inspected = DesktopSaveSlotInspector(true).inspect(path)
+        val inspected = DesktopSaveSlotInspector(retainHistoricalVoices = true, retainHistoricalReferences = true).inspect(path)
         check(inspected.status == SlotInspectStatus.STRUCTURE_VALID)
         val voices = linkedMapOf<String, GeneratedVoiceMessage>(); val messages = linkedMapOf<String, ChatMessage>()
         val audio = linkedMapOf<String, String>()

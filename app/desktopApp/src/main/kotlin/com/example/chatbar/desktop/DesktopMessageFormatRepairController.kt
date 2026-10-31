@@ -5,6 +5,7 @@ import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.data.repository.*
 import com.example.chatbar.domain.chat.*
 import com.example.chatbar.domain.model.EffectiveModelResolver
+import com.example.chatbar.domain.model.hasConfiguredAuthentication
 import com.example.chatbar.domain.prompt.MainChatPromptAuthority
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -16,7 +17,7 @@ internal enum class DesktopRepairStatus {
 
 internal enum class DesktopRepairSafety { VERIFIED_SAFE, UNKNOWN, UNSAFE }
 
-/** A proof boundary, not a settings-toggle shortcut. Production stays closed pending derived coordination. */
+/** Source proof and derived-owner coordination; a settings toggle alone never authorizes a write. */
 internal fun interface DesktopRepairSafetyGate {
     suspend fun check(session: ChatSession, message: ChatMessage): DesktopRepairSafety
 
@@ -105,6 +106,7 @@ internal class DesktopMessageFormatRepairController(
                 val old = entry.value
                 mutableStates.value = mutableStates.value + (entry.key to DesktopRepairState(old.status, old.preview,
                     old.code, old.commit, old.identity, old.source, message))
+                runtime.confirmRepairCommit(entry.key)
                 true
             }
         }
@@ -117,21 +119,45 @@ internal class DesktopMessageFormatRepairController(
                 "提交结果未确认，请重新加载并核对消息"
             }
             runtime.launchFormatRepair(sessionId, messageId) { id, control ->
-                publish(id, DesktopRepairState(DesktopRepairStatus.RUNNING))
-                try {
-                    execute(id, control, sessionId, messageId, restore).also { publish(id, it) }.status
-                } catch (cancelled: CancellationException) {
-                    control.complete(DesktopRepairTerminalKind.CANCELLED)
-                    publish(id, DesktopRepairState(DesktopRepairStatus.CANCELLED, code = "LIFECYCLE_CANCELLED"))
-                    throw cancelled
-                } catch (_: Exception) {
-                    control.complete(DesktopRepairTerminalKind.ERROR, "PREPARATION_FAILED")
-                    // No provider body, full prompt or credential enters diagnostics/notices.
-                    publish(id, DesktopRepairState(DesktopRepairStatus.ERROR, code = "PREPARATION_FAILED"))
-                    DesktopRepairStatus.ERROR
-                }
+                executePublished(id, control, sessionId, messageId, restore, safety)
             }
         }
+
+    /** No second job/admission is created. The parent chat owns Stop and shutdown drain. */
+    suspend fun automatic(parentTaskId: String, result: DesktopRealChatResult,
+        parentControl: DesktopChatGenerationControl, gate: DesktopRepairSafetyGate): DesktopRepairState {
+        val pinned = object : DesktopRepairSafetyGate {
+            override suspend fun check(session: ChatSession, message: ChatMessage): DesktopRepairSafety =
+                if (message == result.assistant) gate.check(session, message) else DesktopRepairSafety.UNKNOWN
+            override suspend fun submit(session: ChatSession, message: ChatMessage,
+                write: suspend () -> ConditionalMessageUpdateResult): ConditionalMessageUpdateResult? =
+                if (message == result.assistant) gate.submit(session, message, write) else null
+        }
+        val id = runtime.runInlineFormatRepair(parentTaskId, result, parentControl) { id, control ->
+            executePublished(id, control, result.assistant.sessionId, result.assistant.id, false, pinned)
+        }
+        return checkNotNull(states.value[id])
+    }
+
+    private suspend fun executePublished(id: String, control: DesktopRepairControl, sessionId: String,
+        messageId: String, restore: Boolean, gate: DesktopRepairSafetyGate): DesktopRepairStatus {
+        publish(id, DesktopRepairState(DesktopRepairStatus.RUNNING))
+        return try {
+            execute(id, control, sessionId, messageId, restore, gate).also { publish(id, it) }.status
+        } catch (cancelled: CancellationException) {
+            control.complete(DesktopRepairTerminalKind.CANCELLED)
+            publish(id, DesktopRepairState(DesktopRepairStatus.CANCELLED, code = "LIFECYCLE_CANCELLED"))
+            throw cancelled
+        } catch (refused: DesktopRepairAdmissionException) {
+            control.complete(DesktopRepairTerminalKind.ERROR, refused.code)
+            publish(id, DesktopRepairState(DesktopRepairStatus.REJECTED, code = refused.code))
+            DesktopRepairStatus.REJECTED
+        } catch (_: Exception) {
+            control.complete(DesktopRepairTerminalKind.ERROR, "PREPARATION_FAILED")
+            publish(id, DesktopRepairState(DesktopRepairStatus.ERROR, code = "PREPARATION_FAILED"))
+            DesktopRepairStatus.ERROR
+        }
+    }
 
     private fun publish(id: String, state: DesktopRepairState) = synchronized(stateLock) {
         val identity = runtime.repairIdentities.value[id]
@@ -144,7 +170,7 @@ internal class DesktopMessageFormatRepairController(
     }
 
     private suspend fun execute(id: String, control: DesktopRepairControl, sessionId: String, messageId: String,
-        restore: Boolean): DesktopRepairState {
+        restore: Boolean, gate: DesktopRepairSafetyGate): DesktopRepairState {
         val snapshot = when (val read = chats.readMessageDurable(messageId, sessionId)) {
             is JsonFileStorage.EntityReadResult.Valid -> read.value
             JsonFileStorage.EntityReadResult.Missing -> return DesktopRepairState(DesktopRepairStatus.MISSING)
@@ -161,22 +187,28 @@ internal class DesktopMessageFormatRepairController(
             is JsonFileStorage.EntityReadResult.ReadError -> return DesktopRepairState(DesktopRepairStatus.STORAGE_FAILURE)
         }
         if (session.id != sessionId) return rejected("INVALID_SESSION")
-        if (safety.check(session, snapshot) != DesktopRepairSafety.VERIFIED_SAFE) return rejected("DERIVED_DATA_UNPROVEN")
+        if (gate.check(session, snapshot) != DesktopRepairSafety.VERIFIED_SAFE) return rejected("DERIVED_DATA_UNPROVEN")
         if (restore) {
             val restored = MessageFormatRepairPolicy.restoreOriginal(snapshot) ?: return rejected("NO_RECOVERY_POINT")
             if (control.complete(DesktopRepairTerminalKind.DONE).kind == DesktopRepairTerminalKind.STOP)
                 return DesktopRepairState(DesktopRepairStatus.CANCELLED, code = "RESTORE_NOT_STARTED")
-            return commit(session, snapshot, restored.content, null, DesktopRepairStatus.RESTORED)
+            return commit(session, snapshot, restored.content, null, DesktopRepairStatus.RESTORED, gate = gate)
         }
         val appSettings = settings.getAppSettings()
-        val character = characters.getById(session.characterCardId)
-        val player = session.playerName?.takeIf(String::isNotBlank) ?: settings.getPlayerSetting().playerName
+        val owningCard = characters.getById(session.characterCardId)
+        val character = owningCard?.let { SessionCharacterParticipationPolicy.effectiveCard(session, it) }
+        val player = com.example.chatbar.domain.chat.PlayerRolePolicy.name(session, owningCard, settings.getPlayerSetting().playerName)
         val formatId = session.formatCardId ?: appSettings.defaultFormatCardId
         val format = formatId?.let { formats.getById(it)?.content }?.let {
             PlaceholderRenderer.render(it, player, character?.effectiveBotName ?: session.title)
         }?.takeIf(String::isNotBlank)
+        // An already identified speaker may return through history/world-book content. Repair
+        // must recognize that name without injecting the disabled person's profile or enabling it.
+        val visibleSpeakers = owningCard?.let { CharacterResidencyPolicy.presentPersonIds(it, snapshot) }.orEmpty()
+        val activeSpeakers = character?.characters?.mapTo(hashSetOf()) { it.id }.orEmpty()
+        val repairNames = owningCard?.characters?.filter { it.id in activeSpeakers || it.id in visibleSpeakers }?.map { it.name }.orEmpty()
         val segmented = if (appSettings.assistantSegmentedBubblesEnabled)
-            MainChatPromptAuthority.roleplaySpeakerFormatSystemPrompt(character?.characters?.map { it.name }.orEmpty()) else null
+            MainChatPromptAuthority.roleplaySpeakerFormatSystemPrompt(repairNames) else null
         if (format == null && segmented.isNullOrBlank()) return rejected("NO_RULES")
         // Reuse the repository's complete candidate/role validation without writing any fields.
         when (val validated = chats.updateMessageFormatRepairNotice(sessionId, messageId, snapshot, snapshot.formatRepairNotice)) {
@@ -184,8 +216,8 @@ internal class DesktopMessageFormatRepairController(
             else -> return classify(validated, DesktopRepairStatus.UNCHANGED)
         }
         val model = models.resolveFormatRepairModel(appSettings.formatRepairModelId, appSettings)
-            ?: return configurationFailure(control, session, snapshot, "INVALID_MODEL")
-        if (model.apiKey.isBlank()) return configurationFailure(control, session, snapshot, "AUTHENTICATION_REQUIRED")
+            ?: return configurationFailure(control, session, snapshot, "INVALID_MODEL", gate)
+        if (!model.hasConfiguredAuthentication(appSettings)) return configurationFailure(control, session, snapshot, "AUTHENTICATION_REQUIRED", gate)
         val original = snapshot.displayContent
         var prefix = ""
         val terminal = supervisorScope {
@@ -242,29 +274,29 @@ internal class DesktopMessageFormatRepairController(
         if (terminal.kind == DesktopRepairTerminalKind.STOP) {
             val mixed = MessageFormatRepairPolicy.progressiveOverlay(original, prefix)
             return commit(session, snapshot, mixed,
-                MessageFormatRepairNotice(MessageFormatRepairNoticeKind.STOPPED, mixed, original), DesktopRepairStatus.STOPPED)
+                MessageFormatRepairNotice(MessageFormatRepairNoticeKind.STOPPED, mixed, original), DesktopRepairStatus.STOPPED, gate = gate)
         }
         if (terminal.kind == DesktopRepairTerminalKind.CANCELLED) throw CancellationException("Repair collection cancelled")
         if (terminal.kind == DesktopRepairTerminalKind.ERROR || prefix.isBlank())
-            return recordFailure(session, snapshot, terminal.code ?: "EMPTY_OUTPUT")
+            return recordFailure(session, snapshot, terminal.code ?: "EMPTY_OUTPUT", gate)
         if (MessageFormatRepairPolicy.isUnchangedResult(prefix) || prefix == original)
-            return commit(session, snapshot, null, MessageFormatRepairPolicy.recoverableNotice(snapshot), DesktopRepairStatus.UNCHANGED)
-        return commit(session, snapshot, prefix, MessageFormatRepairPolicy.completedRepairNotice(original, prefix), DesktopRepairStatus.APPLIED)
+            return commit(session, snapshot, null, MessageFormatRepairPolicy.recoverableNotice(snapshot), DesktopRepairStatus.UNCHANGED, gate = gate)
+        return commit(session, snapshot, prefix, MessageFormatRepairPolicy.completedRepairNotice(original, prefix), DesktopRepairStatus.APPLIED, gate = gate)
     }
 
     private suspend fun configurationFailure(control: DesktopRepairControl, session: ChatSession,
-        snapshot: ChatMessage, code: String): DesktopRepairState {
+        snapshot: ChatMessage, code: String, gate: DesktopRepairSafetyGate): DesktopRepairState {
         if (control.complete(DesktopRepairTerminalKind.ERROR, code).kind == DesktopRepairTerminalKind.STOP)
             return DesktopRepairState(DesktopRepairStatus.CANCELLED, code = "REQUEST_NOT_STARTED")
-        return recordFailure(session, snapshot, code)
+        return recordFailure(session, snapshot, code, gate)
     }
 
-    private suspend fun recordFailure(session: ChatSession, snapshot: ChatMessage, code: String): DesktopRepairState {
+    private suspend fun recordFailure(session: ChatSession, snapshot: ChatMessage, code: String, gate: DesktopRepairSafetyGate): DesktopRepairState {
         val old = MessageFormatRepairPolicy.recoverableNotice(snapshot)?.takeIf {
             it.kind == MessageFormatRepairNoticeKind.APPLIED || it.kind == MessageFormatRepairNoticeKind.STOPPED
         }
         val notice = old ?: MessageFormatRepairNotice(MessageFormatRepairNoticeKind.ERROR, snapshot.displayContent, errorMessage = code)
-        return commit(session, snapshot, null, notice, DesktopRepairStatus.ERROR, code)
+        return commit(session, snapshot, null, notice, DesktopRepairStatus.ERROR, code, gate)
     }
 
     private fun failureCode(error: Throwable?): String = when (error) {
@@ -274,9 +306,10 @@ internal class DesktopMessageFormatRepairController(
     }
 
     private suspend fun commit(session: ChatSession, snapshot: ChatMessage, replacement: String?,
-        notice: MessageFormatRepairNotice?, success: DesktopRepairStatus, code: String? = null): DesktopRepairState {
+        notice: MessageFormatRepairNotice?, success: DesktopRepairStatus, code: String? = null,
+        gate: DesktopRepairSafetyGate): DesktopRepairState {
         currentCoroutineContext().ensureActive()
-        val result = safety.submit(session, snapshot) {
+        val result = gate.submit(session, snapshot) {
             if (replacement == null) chats.updateMessageFormatRepairNotice(session.id, snapshot.id, snapshot, notice)
             else chats.updateMessageForFormatRepair(session.id, snapshot.id, snapshot, replacement, notice)
         } ?: return rejected("DERIVED_DATA_CHANGED")

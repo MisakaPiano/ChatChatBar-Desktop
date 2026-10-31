@@ -13,6 +13,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import com.example.chatbar.domain.image.*
+import com.example.chatbar.desktop.security.identity
+import com.example.chatbar.desktop.security.DesktopAccountService
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -25,6 +27,13 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
     onModelSettings: (String?) -> Unit = {}) {
     val draft by controller.draft.collectAsState()
     val state by controller.state.collectAsState()
+    val accounts = LocalDesktopApiAccounts.current
+    val accountRevision = accounts?.store?.revision?.collectAsState()?.value
+    val accountIdentity = remember(accountRevision) { accounts?.store?.identity(DesktopAccountService.NOVELAI) }
+    var usageRevision by remember(controller) { mutableStateOf(accountIdentity) }
+    LaunchedEffect(accountRevision) {
+        if (usageRevision != accountIdentity) { usageRevision = accountIdentity; controller.invalidateAccount() }
+    }
     val history by controller.history.collectAsState(emptyList())
     val conversations by controller.designRepository.conversations.collectAsState()
     val currentDesignId by controller.designRepository.currentConversationId.collectAsState()
@@ -177,7 +186,13 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
     val owned = selectedResult?.takeIf { it in resultPaths } ?: if (currentImage == null) resultPaths.firstOrNull() else null
     val shownPath = owned?.let(controller.resources::resolveOwnedReference) ?: currentImage
     val intermediate = state.preview.takeIf { busy }
-    fun preview() { if (owned != null) { viewing = resultPaths; viewingIndex = resultPaths.indexOf(owned) } else importedPreview = shownPath }
+    fun previewPath(path: java.nio.file.Path?) {
+        if (path == null) return
+        val index = desktopStudioPreviewIndex(path, resultPaths, controller.resources::resolveOwnedReference)
+        if (index >= 0) { viewing = resultPaths; viewingIndex = index }
+        else importedPreview = path
+    }
+    fun preview() { if (owned != null) { viewing = resultPaths; viewingIndex = resultPaths.indexOf(owned) } else previewPath(shownPath) }
     DesktopStudioWorkspace(workspace,
         modifier = Modifier.desktopImageIngress(!busy, { imageError = "图片导入未完成；当前图片保留" }) { input -> imageAction {
         val file = input.paths.firstOrNull() ?: input.raster?.let { bytes ->
@@ -192,6 +207,7 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
             { if (shownPath != null) { currentImage = shownPath; auxiliary = "当前图片" } }) },
         editor = {
             StudioAccountCluster(d.selectedModel, state.accountUi)
+            DesktopApiAccountEntry(com.example.chatbar.desktop.security.DesktopAccountService.NOVELAI)
             StudioActions {
                 StudioAction("刷新", enabled = !state.accountUi.loading, icon = DesktopAppIcons.Refresh, style = StudioActionStyle.TERTIARY) { scope.launch { controller.refreshAccount() } }
                 StudioAction("AI 设计", icon = DesktopAppIcons.Chat) { auxiliary = "AI 设计" }
@@ -274,9 +290,13 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                         StudioToggle("复制时忽略画风", d.copyPositivePromptIgnoreStyle) { edit { it.copy(copyPositivePromptIgnoreStyle = !it.copyPositivePromptIgnoreStyle) } }
                         StudioToggle("本地中文注释", translation) { translation = !translation; scope.launch { controller.setTranslation(translation) } }
                     } else if (surface == "当前图片") {
+                        if (currentImage == null) {
+                            StatusText("选择图片，或从生成历史打开图片后使用图像工具。")
+                            StudioAction("选择图片", onClick = ::pickImage)
+                        }
                         currentImage?.let { path ->
                             DesktopOwnedImage(path.toString(), { java.nio.file.Files.readAllBytes(path) }, Modifier.fillMaxWidth().height(260.dp)
-                                .desktopViewerEntry(onClick = { importedPreview = path }))
+                                .desktopViewerEntry(onClick = { previewPath(path) }))
                             StatusText(path.fileName.toString())
                             StudioActions {
                                 StudioAction("更换图片", onClick = ::pickImage)
@@ -421,7 +441,7 @@ internal fun DesktopStudioCompactResult(path: java.nio.file.Path?, intermediate:
 internal fun DesktopDesignModelChoice(selected: String?, models: List<com.example.chatbar.data.local.entity.ModelConfig>,
     effectiveName: String, onSelect: (String?) -> Unit) {
     val t = LocalDesktopUiStrings.current
-    val choices = models.map { DesktopPrimaryChoice(it.id, it.displayName) }
+    val choices = models.map { DesktopPrimaryChoice(it.id, it.desktopAccountLabel()) }
     val options = listOf<String?>(null) + choices.map { it.id } +
         listOfNotNull(selected?.takeUnless { id -> choices.any { it.id == id } })
     SearchableChoice("设计模型", options, selected,
@@ -433,7 +453,7 @@ internal fun StudioField(label: String, value: String, onChange: (String) -> Uni
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         StatusText(label)
         BasicTextField(value, onChange, Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border)
-            .background(DesktopBootstrapColors.input).padding(9.dp), textStyle = TextStyle(color = DesktopBootstrapColors.foreground))
+            .background(DesktopBootstrapColors.input).padding(9.dp), cursorBrush = DesktopBootstrapColors.inputCaret, textStyle = TextStyle(color = DesktopBootstrapColors.foreground))
     }
 }
 @OptIn(ExperimentalLayoutApi::class)
@@ -442,7 +462,7 @@ internal fun StudioActions(content: @Composable RowScope.() -> Unit) {
     FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) { content() }
 }
 @Composable
-internal fun StudioToggle(label: String, selected: Boolean, action: () -> Unit) = StudioSwitch(label, selected, action)
+internal fun StudioToggle(label: String, selected: Boolean, action: () -> Unit) = StudioSwitch(label, selected, action = action)
 @Composable
 internal fun <T> SearchableChoice(label: String, options: List<T>, selected: T?, text: (T) -> String, choose: (T) -> Unit) {
     if (!studioUsesSearchDialog(options.size)) { CompactChoice(label, options, selected, text, choose); return }

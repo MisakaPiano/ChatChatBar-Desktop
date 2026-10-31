@@ -46,6 +46,8 @@ internal fun desktopRepairStatusText(state: DesktopRepairState): DesktopUiText =
     DesktopRepairStatus.ERROR, DesktopRepairStatus.REJECTED -> when (state.code) {
         "DERIVED_DATA_UNPROVEN", "DERIVED_DATA_CHANGED" -> DesktopUiText.FORMAT_UNPROVEN
         "NO_RULES" -> DesktopUiText.FORMAT_NO_RULES
+        "AUDIO_BUSY" -> DesktopUiText.FORMAT_AUDIO_BUSY
+        "DATA_MAINTENANCE_BUSY" -> DesktopUiText.FORMAT_DATA_BUSY
         "INVALID_MODEL", "AUTHENTICATION_REQUIRED" -> DesktopUiText.FORMAT_INVALID_MODEL
         "INVALID_TARGET", "INVALID_SESSION", "NO_RECOVERY_POINT" -> DesktopUiText.FORMAT_UNAVAILABLE
         else -> DesktopUiText.FORMAT_FAILED

@@ -13,9 +13,22 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 
+internal class DesktopModalActivity {
+    var count by mutableStateOf(0)
+        private set
+    fun opened() { count++ }
+    fun closed() { check(count > 0); count-- }
+}
+internal val LocalDesktopModalActivity = staticCompositionLocalOf<DesktopModalActivity?> { null }
+
 /** Native Compose focus isolation, retaining in-app bounds and explicit Close/Cancel decisions. */
 @Composable
-internal fun DesktopModalSurface(content: @Composable () -> Unit) {
+internal fun DesktopModalSurface(reportActivity: Boolean = true, content: @Composable () -> Unit) {
+    val activity = LocalDesktopModalActivity.current
+    DisposableEffect(activity, reportActivity) {
+        if (reportActivity) activity?.opened()
+        onDispose { if (reportActivity) activity?.closed() }
+    }
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val width = maxWidth
         val height = maxHeight
@@ -28,10 +41,13 @@ internal fun DesktopModalSurface(content: @Composable () -> Unit) {
 }
 
 internal fun desktopComposerSendKey(
-    key: Key, type: KeyEventType, ctrl: Boolean, input: TextFieldValue, canLaunch: Boolean, send: () -> Unit,
+    key: Key, type: KeyEventType, ctrl: Boolean, input: TextFieldValue, canLaunch: Boolean,
+    mode: DesktopSendKey = DesktopSendKey.CTRL_ENTER, shift: Boolean = false, altOrMeta: Boolean = false,
+    hasAttachments: Boolean = false, send: () -> Unit,
 ): Boolean {
-    if (type != KeyEventType.KeyDown || key != Key.Enter || !ctrl || input.composition != null ||
-        !canLaunch || input.text.isBlank()) return false
+    if (type != KeyEventType.KeyDown || key !in setOf(Key.Enter, Key.NumPadEnter) ||
+        ctrl != (mode == DesktopSendKey.CTRL_ENTER) || shift || altOrMeta || input.composition != null ||
+        !canLaunch || (input.text.isBlank() && !hasAttachments)) return false
     send()
     return true
 }

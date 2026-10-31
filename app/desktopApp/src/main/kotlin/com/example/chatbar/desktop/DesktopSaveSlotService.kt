@@ -234,6 +234,7 @@ internal class DesktopSaveSlotService(
             }
             chats.forEachMessage(sessionId) { message -> message.images.forEach { include(it) } }
             session.chatBackground?.let { include(it) }
+            session.desktopPlayerAvatar?.let { include(it) }
         }
         recorded.forEach { sources[it.audioPath] = mediaSource(it.audioPath) }
         val mediaProof = sources.mapValues { DesktopArchiveFiles.hash(it.value, DesktopSaveSlotArchive.MAX_ARCHIVE) }

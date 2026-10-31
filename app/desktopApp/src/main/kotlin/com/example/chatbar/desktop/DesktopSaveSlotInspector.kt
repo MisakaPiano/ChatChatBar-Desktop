@@ -24,7 +24,7 @@ internal enum class SlotInspectCode { OK, FORMAT, BUDGET, SCHEMA, UNKNOWN_FIELD,
     CRC, COUNTS, IDENTITY, REFERENCE, UNSAFE_FILE, IO }
 internal data class SlotInspectCounts(val messages: Int, val alternatives: Int, val sourceTurns: Int,
     val rag: Int, val voices: Int, val imageReferences: Int, val mediaFiles: Int, val memoryNodes: Int,
-    val historicalVoices: Int = 0)
+    val historicalVoices: Int = 0, val historicalReferences: Int = 0)
 internal data class DesktopSaveSlotInspection(val format: SlotInspectFormat, val status: SlotInspectStatus,
     val code: SlotInspectCode, val schema: Int? = null, val counts: SlotInspectCounts? = null,
     val limitations: Set<String> = emptySet()) {
@@ -34,6 +34,7 @@ internal data class DesktopSaveSlotInspection(val format: SlotInspectFormat, val
 
 /** External file only. No repository/root, extraction, import, migration or provider dependency. */
 internal class DesktopSaveSlotInspector(private val retainHistoricalVoices: Boolean = false,
+    private val retainHistoricalReferences: Boolean = false,
     private val onRecord: suspend () -> Unit = {}) {
     private val json = Json { ignoreUnknownKeys = false }
     suspend fun inspect(path: Path): DesktopSaveSlotInspection = withContext(Dispatchers.IO) {
@@ -51,8 +52,9 @@ internal class DesktopSaveSlotInspector(private val retainHistoricalVoices: Bool
                 if (!probe.startsWith('{')) fail(SlotInspectCode.FORMAT, unsupported = true)
                 format = SlotInspectFormat.LEGACY_JSON
                 // Oversized legacy JSON is recognized but NOT decoded, including Base64 resources.
-                if (size > MAX_JSON_BYTES) fail(SlotInspectCode.BUDGET, unsupported = true)
-                val slot = decode(Files.newInputStream(path, LinkOption.NOFOLLOW_LINKS).use { it.readNBytes(MAX_JSON_BYTES + 1) }, SaveSlot.serializer())
+                val legacyBudget = com.example.chatbar.desktop.backup.DesktopBackupRecords.recordBudget.toInt()
+                if (size > legacyBudget) fail(SlotInspectCode.BUDGET, unsupported = true)
+                val slot = decode(Files.newInputStream(path, LinkOption.NOFOLLOW_LINKS).use { it.readNBytes(legacyBudget + 1) }, SaveSlot.serializer(), legacyBudget)
                 if (slot.schemaVersion !in 1..7) fail(SlotInspectCode.SCHEMA, unsupported = true)
                 if (slot.packageRef != null) fail(SlotInspectCode.SCHEMA)
                 validate(slot, slot.messages, slot.vectorChunks, slot.voiceMessages, null)
@@ -69,7 +71,6 @@ internal class DesktopSaveSlotInspector(private val retainHistoricalVoices: Bool
             val entries = linkedMapOf<String, ZipEntry>()
             val aliases = mutableSetOf<String>()
             var size = 0L
-            var metadataSize = 0L
             for (entry in zip.entries().asSequence()) {
                 if (entries.size >= MAX_ENTRIES || !aliases.add(entry.name.lowercase())) fail(SlotInspectCode.ZIP_LAYOUT)
                 if (entry.name.length > 300 || '\\' in entry.name || ':' in entry.name ||
@@ -77,12 +78,11 @@ internal class DesktopSaveSlotInspector(private val retainHistoricalVoices: Bool
                 val known = entry.name in setOf("manifest.json", "messages.jsonl", "rag.jsonl", "voices.jsonl", "media/", "media/images/", "media/audio/") ||
                     MEDIA_NAME.matches(entry.name)
                 if (!known) fail(SlotInspectCode.UNKNOWN_FIELD, unsupported = true)
-                if (entry.size < 0 || entry.compressedSize < 0 || entry.size > MAX_ENTRY_BYTES ||
+                val entryLimit = entryBudget(entry.name)
+                if (entry.size < 0 || entry.compressedSize < 0 || entry.size > entryLimit ||
                     entry.size / maxOf(1L, entry.compressedSize) > 1000L) fail(SlotInspectCode.BUDGET, unsupported = true)
                 size += entry.size
-                if (!MEDIA_NAME.matches(entry.name)) metadataSize += entry.size
                 if (size > MAX_EXPANDED_BYTES) fail(SlotInspectCode.BUDGET, unsupported = true)
-                if (metadataSize > MAX_METADATA_BYTES) fail(SlotInspectCode.BUDGET, unsupported = true)
                 entries[entry.name] = entry
             }
             if (entries.size != declaredEntries) fail(SlotInspectCode.ZIP_LAYOUT)
@@ -130,6 +130,14 @@ internal class DesktopSaveSlotInspector(private val retainHistoricalVoices: Bool
         private var alternatives = 0
         private var images = 0
         private var historicalVoices = 0
+        private var historicalReferences = 0
+        private fun historicalReference(id: String, present: Boolean) {
+            identity(id)
+            if (!present) {
+                if (!retainHistoricalReferences) fail(SlotInspectCode.REFERENCE)
+                historicalReferences++; notes += "HISTORICAL_MESSAGE_REFERENCE_RETAINED_NOT_REBOUND"
+            }
+        }
         init {
             identity(slot.id); identity(slot.sessionId)
             if (slot.name.isBlank()) fail(SlotInspectCode.SCHEMA)
@@ -161,7 +169,7 @@ internal class DesktopSaveSlotInspector(private val retainHistoricalVoices: Bool
             if (message.generatedImageMetadata.any { it.imagePath !in message.images }) fail(SlotInspectCode.REFERENCE)
             message.generatedFromMessageId?.let { derivedLinks.add(it) }
         }
-        fun checkMessageLinks() { if (derivedLinks.any { it !in messages }) fail(SlotInspectCode.REFERENCE) }
+        fun checkMessageLinks() { derivedLinks.forEach { historicalReference(it, it in messages) } }
         fun rag(chunk: VectorChunk) {
             notes += "RAG_SOURCE_FINGERPRINT_NOT_VERIFIED"
             identity(chunk.id)
@@ -169,14 +177,20 @@ internal class DesktopSaveSlotInspector(private val retainHistoricalVoices: Bool
             if (!ragIds.add(chunk.id)) fail(SlotInspectCode.IDENTITY)
             if (chunk.sourceType != ChunkSourceType.CHAT_MEMORY || chunk.sourceId != slot.sessionId)
                 fail(SlotInspectCode.REFERENCE, unsupported = true)
-            chunk.metadata["sessionId"]?.let { if (it != slot.sessionId) fail(SlotInspectCode.REFERENCE) }
-            chunk.messageId?.let { if (it !in messages) fail(SlotInspectCode.REFERENCE) }
-            chunk.metadata["messageIds"]?.split(',')?.filter(String::isNotBlank)?.forEach { if (it !in messages) fail(SlotInspectCode.REFERENCE) }
+            chunk.metadata["sessionId"]?.let { origin ->
+                identity(origin)
+                if (origin != slot.sessionId) {
+                    if (!retainHistoricalReferences) fail(SlotInspectCode.REFERENCE)
+                    historicalReferences++; notes += "HISTORICAL_RAG_ORIGIN_SESSION_RETAINED"
+                }
+            }
+            chunk.messageId?.let { historicalReference(it, it in messages) }
+            chunk.metadata["messageIds"]?.split(',')?.filter(String::isNotBlank)?.forEach { historicalReference(it, it in messages) }
             chunk.metadata["sourceTurnId"]?.let { turn ->
-                if (turn !in turns) fail(SlotInspectCode.REFERENCE)
+                historicalReference(turn, turn in turns)
                 val linked = listOfNotNull(chunk.messageId) + chunk.metadata["messageIds"].orEmpty().split(',').filter(String::isNotBlank)
                 for (id in linked) {
-                    val actual = messages.getValue(id).second
+                    val actual = messages[id]?.second
                     if (actual == null) notes += "RAG_LEGACY_RELATION_PARTIAL"
                     else if (actual != turn) fail(SlotInspectCode.REFERENCE)
                 }
@@ -199,7 +213,12 @@ internal class DesktopSaveSlotInspector(private val retainHistoricalVoices: Bool
                 if (!voice.audioPath.startsWith(AUDIO)) fail(SlotInspectCode.REFERENCE)
                 val resource = resource("media/audio/", voice.audioPath.removePrefix(AUDIO))
                 if (entries.getValue(resource).size != voice.byteLength || voice.durationMs < 0) fail(SlotInspectCode.COUNTS)
-            } else if (legacyAudioResourceKey(slot, voice) == null) fail(SlotInspectCode.REFERENCE, unsupported = true)
+            } else {
+                val key = legacyAudioResourceKey(slot, voice) ?: fail(SlotInspectCode.REFERENCE, unsupported = true)
+                val length = checkBase64(slot.audioResources.getValue(key).data)
+                if (length > MAX_ENTRY_BYTES) fail(SlotInspectCode.BUDGET, unsupported = true)
+                if (voice.durationMs < 0 || voice.byteLength > 0 && voice.byteLength != length) fail(SlotInspectCode.COUNTS)
+            }
         }
         fun image(reference: String) {
             images++
@@ -216,6 +235,7 @@ internal class DesktopSaveSlotInspector(private val retainHistoricalVoices: Bool
         }
         fun finish(): DesktopSaveSlotInspection {
             slot.chatBackground?.let(::image)
+            slot.desktopPlayerAvatar?.let(::image)
             slot.packageRef?.let { ref ->
                 if (ref.messageCount != messages.size || ref.ragChunkCount != ragIds.size || ref.audioCount != voiceIds.size ||
                     ref.imageCount != images) fail(SlotInspectCode.COUNTS)
@@ -224,7 +244,7 @@ internal class DesktopSaveSlotInspector(private val retainHistoricalVoices: Bool
             val snapshot = slot.memorySnapshot
             if (slot.longTermMemory.isNotBlank()) notes += "LEGACY_MEMORY_MIGRATION_NOT_VERIFIED"
             if (entries == null) {
-                (slot.imageResources.values.map { it.data } + slot.audioResources.values.map { it.data }).forEach(::checkBase64)
+                (slot.imageResources.values.map { it.data } + slot.audioResources.values.map { it.data }).forEach { checkBase64(it) }
                 if (slot.imageResources.isNotEmpty() || slot.audioResources.isNotEmpty()) notes += "LEGACY_MEDIA_INTEGRITY_UNVERIFIED"
             }
             snapshot?.let {
@@ -238,24 +258,36 @@ internal class DesktopSaveSlotInspector(private val retainHistoricalVoices: Bool
             return DesktopSaveSlotInspection(if (entries == null) SlotInspectFormat.LEGACY_JSON else SlotInspectFormat.ZIP_V8,
                 SlotInspectStatus.STRUCTURE_VALID, SlotInspectCode.OK, slot.schemaVersion,
                 SlotInspectCounts(messages.size, alternatives, turns.size, ragIds.size, voiceIds.size, images,
-                    media.size + slot.imageResources.size + slot.audioResources.size, snapshot?.nodes?.size ?: 0, historicalVoices), notes)
+                    media.size + slot.imageResources.size + slot.audioResources.size, snapshot?.nodes?.size ?: 0, historicalVoices, historicalReferences), notes)
         }
     }
 
     private suspend fun <T> lines(zip: ZipFile, entry: ZipEntry, serializer: KSerializer<T>, action: (T) -> Unit) = consume(zip, entry) { input ->
         val line = java.io.ByteArrayOutputStream()
-        while (true) {
-            currentCoroutineContext().ensureActive()
-            val value = input.read()
-            if (value < 0 || value == 10) {
-                if (line.size() > 0) {
-                    val bytes = line.toByteArray()
-                    if (bytes.any { it.toInt() !in listOf(9, 13, 32) }) { onRecord(); action(decode(bytes, serializer)) }
-                    line.reset()
-                }
-                if (value < 0) break
-            } else { if (line.size() >= MAX_JSON_BYTES) fail(SlotInspectCode.BUDGET, unsupported = true); line.write(value) }
+        suspend fun emit() {
+            if (line.size() > 0) {
+                val bytes = line.toByteArray()
+                if (bytes.any { it != 9.toByte() && it != 13.toByte() && it != 32.toByte() }) { onRecord(); action(decode(bytes, serializer)) }
+                line.reset()
+            }
         }
+        fun append(bytes: ByteArray, start: Int, length: Int) {
+            if (length > MAX_JSON_BYTES - line.size()) fail(SlotInspectCode.BUDGET, unsupported = true)
+            line.write(bytes, start, length)
+        }
+        val buffer = ByteArray(32768)
+        try {
+            while (true) {
+                currentCoroutineContext().ensureActive()
+                val count = input.read(buffer); if (count < 0) break
+                var start = 0
+                for (index in 0 until count) if (buffer[index] == 10.toByte()) {
+                    append(buffer, start, index - start); emit(); start = index + 1
+                }
+                append(buffer, start, count - start)
+            }
+            emit()
+        } finally { buffer.fill(0) }
     }
     private suspend fun consume(zip: ZipFile, entry: ZipEntry, action: suspend (InputStream) -> Unit) {
         val crc = CRC32(); var count = 0L
@@ -264,7 +296,7 @@ internal class DesktopSaveSlotInspector(private val retainHistoricalVoices: Bool
                 override fun read(): Int { val value = `in`.read(); if (value >= 0) { crc.update(value); count++; checkCount() }; return value }
                 override fun read(bytes: ByteArray, off: Int, len: Int): Int { val n = `in`.read(bytes, off, len)
                     if (n > 0) { crc.update(bytes, off, n); count += n; checkCount() }; return n }
-                private fun checkCount() { if (count > entry.size || count > MAX_ENTRY_BYTES) fail(SlotInspectCode.BUDGET) }
+                private fun checkCount() { if (count > entry.size || count > entryBudget(entry.name)) fail(SlotInspectCode.BUDGET) }
             }
             action(checked)
             if (count != entry.size || crc.value != entry.crc) fail(SlotInspectCode.CRC)
@@ -275,8 +307,8 @@ internal class DesktopSaveSlotInspector(private val retainHistoricalVoices: Bool
         consume(zip, entry) { input -> bytes = input.readNBytes(max + 1); if (bytes.size > max) fail(SlotInspectCode.BUDGET, true) }
         return bytes
     }
-    private fun <T> decode(bytes: ByteArray, serializer: KSerializer<T>): T {
-        if (bytes.size > MAX_JSON_BYTES) fail(SlotInspectCode.BUDGET, true)
+    private fun <T> decode(bytes: ByteArray, serializer: KSerializer<T>, maximum: Int = MAX_JSON_BYTES): T {
+        if (bytes.size > maximum) fail(SlotInspectCode.BUDGET, true)
         val text = Charsets.UTF_8.newDecoder().decode(java.nio.ByteBuffer.wrap(bytes)).toString().removePrefix("\uFEFF")
         var depth = 0; var quoted = false; var escaped = false
         for (c in text) { if (quoted) { if (escaped) escaped = false else if (c == '\\') escaped = true else if (c == '"') quoted = false }
@@ -309,7 +341,7 @@ internal class DesktopSaveSlotInspector(private val retainHistoricalVoices: Bool
         }
     }
     private fun identity(id: String) { if (id.isBlank() || id.length > 256) fail(SlotInspectCode.IDENTITY) }
-    private fun checkBase64(value: String) {
+    private fun checkBase64(value: String): Long {
         var count = 0; var padding = 0
         for (c in value) {
             if (c.isWhitespace()) continue
@@ -318,6 +350,7 @@ internal class DesktopSaveSlotInspector(private val retainHistoricalVoices: Bool
             else if (padding > 0 || !(c in 'A'..'Z' || c in 'a'..'z' || c in '0'..'9' || c == '+' || c == '/')) fail(SlotInspectCode.SCHEMA)
         }
         if (count == 0 || count % 4 != 0) fail(SlotInspectCode.SCHEMA)
+        return count.toLong() / 4 * 3 - padding
     }
     private class InspectionFailure(val code: SlotInspectCode, val unsupported: Boolean) : Exception()
     private fun fail(code: SlotInspectCode, unsupported: Boolean = false): Nothing = throw InspectionFailure(code, unsupported)
@@ -333,10 +366,10 @@ internal class DesktopSaveSlotInspector(private val retainHistoricalVoices: Bool
         private const val IMAGE = "chatbar-save-slot-image:"
         private const val AUDIO = "chatbar-save-slot-audio:"
         private const val MAX_ARCHIVE_BYTES = 256L * 1024 * 1024
-        // Media is consumed with a fixed buffer; its aggregate is not a JSON-memory budget.
-        // Keep both total work and structured data bounded independently.
+        // JSONL and media are streamed. Bound total work plus each decoded record/manifest,
+        // never treat a complete JSONL stream as one in-memory JSON entity.
         private const val MAX_EXPANDED_BYTES = 256L * 1024 * 1024
-        private const val MAX_METADATA_BYTES = 64L * 1024 * 1024
+        private fun entryBudget(name: String): Long = if (name in setOf("messages.jsonl", "rag.jsonl", "voices.jsonl")) MAX_EXPANDED_BYTES else MAX_ENTRY_BYTES
         private const val MAX_ENTRY_BYTES = 16L * 1024 * 1024
         private const val MAX_MANIFEST_BYTES = 256 * 1024
         private const val MAX_JSON_BYTES = 1024 * 1024

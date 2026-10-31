@@ -20,6 +20,31 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.test.*
 
 class DesktopStudioWorkspaceTest {
+    @Test fun `production content frame bounds divider between title and global status in all wide modes`() = runBlocking(awt) {
+        for (mode in listOf("展开预览", "仅缩略图", "预览专注")) {
+            val state = DesktopStudioWorkspaceState().apply { this.mode = mode }
+            val scene = ImageComposeScene(1240, 800) {
+                Column(Modifier.fillMaxSize()) {
+                    Box(Modifier.fillMaxWidth().height(44.dp)) { StatusText("App title") }
+                    Box(Modifier.weight(1f)) {
+                        DesktopStudioContentFrame("A very long status that stays within its single row") {
+                            DesktopStudioWorkspace(state, compact = {}, editor = { StatusText("Editor") },
+                                footer = { StatusText("Generate") }, preview = {})
+                        }
+                    }
+                }
+            }
+            try {
+                scene.frames()
+                val preview = scene.bounds("Studio 全高预览面板")
+                assertEquals(44f, preview.top, 1f); assertEquals(772f, preview.bottom, 1f)
+                if (mode != "预览专注") {
+                    val divider = scene.bounds("调整预览宽度")
+                    assertEquals(preview.top, divider.top); assertEquals(preview.bottom, divider.bottom)
+                } else assertFalse(scene.nodes().any { it.matches("调整预览宽度") })
+            } finally { scene.close() }
+        }
+    }
     private val awt = object : CoroutineDispatcher() { override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block) }
     private suspend fun ImageComposeScene.frames() { repeat(8) { render().close(); yield() }; delay(60); render().close() }
     private fun ImageComposeScene.nodes(): List<SemanticsNode> {

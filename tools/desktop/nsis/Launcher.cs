@@ -19,7 +19,11 @@ internal static class Launcher {
 #if SYNTHETIC
     const string Product = "ccb-desktop-nsis-synthetic-v1";
     const string Label = "ChatChatBar Desktop NSIS Synthetic";
+#if LIFECYCLE_TEST
+    const string Registration = "ChatChatBarDesktopNSISLifecycleTest";
+#else
     const string Registration = "ChatChatBarDesktopNSISSynthetic";
+#endif
 #else
     const string Product = "ccb-desktop-nsis-v1";
     const string Label = "ChatChatBar Desktop";
@@ -30,6 +34,38 @@ internal static class Launcher {
     static readonly JavaScriptSerializer Json = new JavaScriptSerializer { MaxJsonLength = 2097152 };
     static string Root;
     static bool ShellDeferred;
+    static string ShellAppId { get { return Product == "ccb-desktop-nsis-v1" ? "MisakaPiano.ChatChatBar.Desktop" : "MisakaPiano.ChatChatBar.Desktop.Synthetic"; } }
+    [StructLayout(LayoutKind.Sequential, Pack = 4)] struct ShellPropertyKey { public Guid format; public uint id; }
+    [StructLayout(LayoutKind.Explicit, Size = 24)] struct ShellValue {
+        [FieldOffset(0)] public ushort kind;
+        [FieldOffset(8)] public IntPtr text;
+    }
+    [ComImport, Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    interface IShellProperties {
+        [PreserveSig] int GetCount(out uint count);
+        [PreserveSig] int GetAt(uint index, out ShellPropertyKey key);
+        [PreserveSig] int GetValue(ref ShellPropertyKey key, out ShellValue value);
+        [PreserveSig] int SetValue(ref ShellPropertyKey key, ref ShellValue value);
+        [PreserveSig] int Commit();
+    }
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    static extern int SHGetPropertyStoreFromParsingName(string path, IntPtr context, uint flags, ref Guid iid, out IShellProperties properties);
+    [DllImport("ole32.dll")] static extern int PropVariantClear(ref ShellValue value);
+    static bool ShortcutAppIdentity(string path, bool write) {
+        var iid = new Guid("886D8EEB-8CF2-4446-8D02-CDBA1DBDCF99"); IShellProperties properties;
+        Require(SHGetPropertyStoreFromParsingName(path, IntPtr.Zero, write ? 2u : 0u, ref iid, out properties) >= 0, "SHORTCUT_PROPERTIES_UNAVAILABLE");
+        var key = new ShellPropertyKey { format = new Guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3"), id = 5 };
+        var value = new ShellValue();
+        try {
+            if (write) {
+                value.kind = 31; value.text = Marshal.StringToCoTaskMemUni(ShellAppId);
+                Require(properties.SetValue(ref key, ref value) >= 0 && properties.Commit() >= 0, "SHORTCUT_APPID_WRITE_FAILED");
+                return true;
+            }
+            Require(properties.GetValue(ref key, out value) >= 0, "SHORTCUT_APPID_READ_FAILED");
+            return value.kind == 31 && Marshal.PtrToStringUni(value.text) == ShellAppId;
+        } finally { PropVariantClear(ref value); Marshal.FinalReleaseComObject(properties); }
+    }
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     static extern SafeFileHandle CreateFile(string path, uint access, uint share, IntPtr security, uint creation, uint flags, IntPtr template);
     [DllImport("kernel32.dll", SetLastError = true)]
@@ -79,7 +115,7 @@ internal static class Launcher {
     }
     static void Owned() { Safe(Root); Require(File.ReadAllText(Path.Combine(Root, "install-owner.txt")) == Product, "FOREIGN_INSTALL_ROOT"); }
     static string VersionRoot(string id) {
-        Require(Regex.IsMatch(id ?? "", @"^[0-9]+\.[0-9]+\.[0-9]+-preview\.[1-9][0-9]*-[a-f0-9]{12}$"), "VERSION_ID_REFUSED");
+        Require(Regex.IsMatch(id ?? "", @"^[0-9]+\.[0-9]+\.[0-9]+-preview\.[1-9][0-9]*-[a-f0-9]{12}(?:-r[a-f0-9]{32})?$"), "VERSION_ID_REFUSED");
         return Child(Root, "versions/" + id);
     }
     static Manifest ReadManifest(string directory) {
@@ -95,6 +131,22 @@ internal static class Launcher {
     static void Verify(string directory, Manifest m) {
         foreach (var e in m.files) { var p = Child(directory, e.path); Require(new FileInfo(p).Length == e.bytes && Hash(p) == e.sha256, "PROGRAM_CHANGED"); }
         Require(!File.Exists(Path.Combine(directory, "portable.flag")) && !Directory.Exists(Path.Combine(directory, "UserData")), "INSTALLED_PORTABLE_REFUSED");
+    }
+    static bool ExactProgramFiles(string directory, Manifest manifest) {
+        var expected = new System.Collections.Generic.HashSet<string>(manifest.files.Select(e => e.path.Replace('/', '\\')),
+            StringComparer.OrdinalIgnoreCase);
+        expected.Add("install-manifest.json");
+        var pending = new System.Collections.Generic.Stack<string>(); pending.Push(directory);
+        int observed = 0;
+        while (pending.Count > 0) {
+            var parent = pending.Pop(); Safe(parent);
+            foreach (var entry in Directory.EnumerateFileSystemEntries(parent)) {
+                Safe(entry); Require(++observed <= 10000, "PROGRAM_TREE_LIMIT");
+                if (Directory.Exists(entry)) pending.Push(entry);
+                else if (!expected.Remove(entry.Substring(directory.TrimEnd('\\').Length + 1))) return false;
+            }
+        }
+        return expected.Count == 0;
     }
     static string StateDirectory() {
         var local = Environment.GetEnvironmentVariable("LOCALAPPDATA");
@@ -139,7 +191,8 @@ internal static class Launcher {
         Require(!String.IsNullOrEmpty(local) && Path.IsPathRooted(local), "LOCAL_APP_DATA_UNAVAILABLE");
         var protectedPaths = new System.Collections.Generic.List<string> {
             Path.Combine(local, "ChatChatBarDesktop"), Path.Combine(local, "ChatChatBarDesktopCredentials"),
-            Path.Combine(local, "ChatChatBarDesktop.bootstrap.json"), Path.Combine(local, Registration + "InstallState") };
+            Path.Combine(local, "ChatChatBarDesktop.bootstrap.json"), Path.Combine(local, Registration + "InstallState"),
+            Path.Combine(local, "ChatChatBarDesktopUpdates") };
         var bootstrap = protectedPaths[2];
         if (File.Exists(bootstrap)) {
             Safe(bootstrap); Require(new FileInfo(bootstrap).Length <= 1048576, "BOOTSTRAP_METADATA_LIMIT");
@@ -154,7 +207,7 @@ internal static class Launcher {
         }
         foreach (var path in protectedPaths) Require(!Overlaps(Root, Safe(path)), "PROGRAM_DATA_ROOT_OVERLAP");
     }
-    static void Prepare(long requiredSpace) {
+    static void Prepare(long requiredSpace, bool repair = false) {
         Safe(Root);
         ProtectDataRoots();
         using (var key = Registry.CurrentUser.OpenSubKey("Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\" + Registration)) {
@@ -175,12 +228,26 @@ internal static class Launcher {
         if (File.Exists(resourceReceipt)) {
             var entries = Json.Deserialize<Entry[]>(File.ReadAllText(resourceReceipt));
             Require(entries.Length == 2 && entries.Select(e => e.path).OrderBy(x => x).SequenceEqual(new[] { "ChatChatBar.exe", "Uninstall.exe" }), "RESOURCE_RECEIPT_REFUSED");
-            foreach (var e in entries) Require(Hash(Child(Root, e.path)) == e.sha256, "GENERATED_RESOURCE_CHANGED");
+            if (!repair) foreach (var e in entries) Require(Hash(Child(Root, e.path)) == e.sha256, "GENERATED_RESOURCE_CHANGED");
         }
         var versions = Path.Combine(Root, "versions");
         if (Directory.Exists(versions)) foreach (var directory in Directory.GetDirectories(versions)) {
             var manifest = Child(directory, "install-manifest.json");
             if (File.Exists(manifest)) using (File.Open(manifest, FileMode.Open, FileAccess.Read, FileShare.None)) {}
+        }
+        if (repair) {
+            Require(File.Exists(Child(Root, "current.txt")), "REPAIR_EXISTING_ENTRY_REQUIRED");
+            VersionRoot(Current());
+            var retained = Child(Root, "repair-retained/" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(retained);
+            foreach (var name in new[] { "ChatChatBar.exe", "Uninstall.exe", "generated-resources.json", "current.txt" }) {
+                var source = Child(Root, name);
+                if (File.Exists(source)) {
+                    Require(new FileInfo(source).Length <= 16777216, "REPAIR_RESOURCE_LIMIT");
+                    File.Copy(source, Child(retained, name), false);
+                }
+            }
+            Event("REPAIR_ORIGINAL_ENTRY_RETAINED");
         }
     }
     static void Shortcut(string path, string receiptName, bool remove) {
@@ -191,6 +258,20 @@ internal static class Launcher {
                 ShellDeferred = true; Event("DEFERRED MODIFIED_OR_FOREIGN_SHORTCUT " + receiptName); return;
             }
             if (remove) { Require(DeleteOwned(path, new FileInfo(path).Length, File.ReadAllText(receipt)), "SHORTCUT_CHANGED"); File.Delete(receipt); }
+            else {
+                string brandedCopy = null;
+                try {
+                    if (!ShortcutAppIdentity(path, false)) {
+                        var observed = Hash(path);
+                        brandedCopy = path + "." + Guid.NewGuid().ToString("N") + ".lnk";
+                        File.Copy(path, brandedCopy, false); ShortcutAppIdentity(brandedCopy, true);
+                        Require(Hash(path) == observed && observed == File.ReadAllText(receipt), "SHORTCUT_CHANGED");
+                        File.Replace(brandedCopy, path, null); brandedCopy = null;
+                        Atomic(receipt, Hash(path)); Event("SHORTCUT_APPID_UPDATED " + receiptName);
+                    }
+                } catch { ShellDeferred = true; Event("DEFERRED SHORTCUT_APPID " + receiptName); }
+                finally { if (brandedCopy != null && File.Exists(brandedCopy)) File.Delete(brandedCopy); }
+            }
             return;
         }
         if (remove) { if (File.Exists(receipt)) File.Delete(receipt); return; }
@@ -204,19 +285,32 @@ internal static class Launcher {
         foreach (var item in new[] { new[] { "TargetPath", target }, new[] { "WorkingDirectory", Root }, new[] { "Description", Label } })
             lt.InvokeMember(item[0], System.Reflection.BindingFlags.SetProperty, null, link, new object[] { item[1] });
         lt.InvokeMember("Save", System.Reflection.BindingFlags.InvokeMethod, null, link, null);
+        try { ShortcutAppIdentity(temporary, true); }
+        catch { ShellDeferred = true; Event("DEFERRED SHORTCUT_APPID " + receiptName); }
         File.Move(temporary, path);
         Atomic(receipt, Hash(path));
     }
-    static void Shortcuts(bool remove) {
+    static string ShortcutPath(bool desktopEntry) {
         var desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
         var programs = Environment.GetFolderPath(Environment.SpecialFolder.Programs);
 #if SYNTHETIC
         var fixture = Environment.GetEnvironmentVariable("CCB_DESKTOP_TEST_SHELL_ROOT");
         if (!String.IsNullOrEmpty(fixture)) { desktop = Safe(Path.Combine(fixture, "Desktop")); programs = Safe(Path.Combine(fixture, "Programs")); }
 #endif
-        Shortcut(Path.Combine(desktop, Label + ".lnk"), "desktop-shortcut.sha256", remove);
-        Shortcut(Path.Combine(programs, Label + ".lnk"), "programs-shortcut.sha256", remove);
+        return Path.Combine(desktopEntry ? desktop : programs, Label + ".lnk");
+    }
+    static void Shortcuts(bool remove) {
+        Shortcut(ShortcutPath(true), "desktop-shortcut.sha256", remove);
+        Shortcut(ShortcutPath(false), "programs-shortcut.sha256", remove);
         Atomic(Child(Root, "shell-status.txt"), ShellDeferred ? "DEFERRED" : "COMPLETE");
+    }
+    static bool RetainedRepairOriginal(string id) {
+        VersionRoot(id);
+        var marker = Child(Root, "receipts/" + id + ".repair-retained");
+        if (!File.Exists(marker)) return false;
+        Require(new FileInfo(marker).Length <= 256, "REPAIR_RETENTION_MARKER_REFUSED");
+        VersionRoot(File.ReadAllText(marker));
+        return true;
     }
     static void Cleanup(string keep, string only = null) {
         var shellStatus = Child(Root, "shell-status.txt");
@@ -227,6 +321,9 @@ internal static class Launcher {
             if (only != null && Path.GetFileName(dir) != only) continue;
             try {
                 VersionRoot(Path.GetFileName(dir));
+                if (RetainedRepairOriginal(Path.GetFileName(dir))) {
+                    deferred = true; Event("DEFERRED REPAIR_ORIGINAL_RETAINED " + Path.GetFileName(dir)); continue;
+                }
                 var m = ReadManifest(dir);
                 // Manifest identity is pinned at extraction, outside the retirement target.
                 var receipt = Child(Root, "receipts/" + Path.GetFileName(dir) + ".sha256");
@@ -250,9 +347,10 @@ internal static class Launcher {
         }
         Atomic(Child(Root, "cleanup-status.txt"), deferred ? "DEFERRED" : "COMPLETE");
     }
-    static int Launch(string id, bool activate) {
+    static int Launch(string id, bool activate, string expectedCurrent = null, bool retainRepairOriginal = false) {
         var directory = VersionRoot(id); var m = ReadManifest(directory); Verify(directory, m);
-        Require(id == m.version + "-" + m.commit.Substring(0, 12), "VERSION_MISMATCH");
+        var identity = m.version + "-" + m.commit.Substring(0, 12);
+        Require(id == identity || Regex.IsMatch(id, "^" + Regex.Escape(identity) + "-r[a-f0-9]{32}$"), "VERSION_MISMATCH");
         var nonce = Guid.NewGuid().ToString("N");
         var ack = Child(Root, "receipts/" + nonce + ".ready");
         Directory.CreateDirectory(Path.GetDirectoryName(ack));
@@ -269,7 +367,12 @@ internal static class Launcher {
             using (var java = Process.GetProcessById(pid)) {
                 Require(!java.HasExited && !process.HasExited, "READY_PROCESS_EXITED");
                 Shortcuts(false);
-                if (activate) Atomic(Child(Root, "current.txt"), id);
+                if (activate) {
+                    Require(expectedCurrent == null ? !File.Exists(Child(Root, "current.txt")) : Current() == expectedCurrent,
+                        "ACTIVATION_ENTRY_CHANGED");
+                    if (retainRepairOriginal) Atomic(Child(Root, "receipts/" + expectedCurrent + ".repair-retained"), id);
+                    Atomic(Child(Root, "current.txt"), id);
+                }
                 File.Delete(ack); Event("READY " + id);
                 if (!activate) try { Cleanup(id); } catch { Event("DEFERRED CLEANUP"); }
             }
@@ -305,12 +408,47 @@ internal static class Launcher {
             using (var mutex = new Mutex(false, "Local\\CCBDesktopInstall-" + key)) {
                 Require(mutex.WaitOne(0), "INSTALL_BUSY");
                 try {
-                    if (mode == "--prepare") {
+                    if (mode == "--prepare" || mode == "--prepare-repair") {
                         long space = 805306368;
                         if (args.Length >= 3 && args[2] != "--quiet") Require(Int64.TryParse(args[2], out space), "INSTALL_SPACE_ARGUMENT_REFUSED");
-                        Prepare(space); return 0;
+                        Prepare(space, mode == "--prepare-repair"); return 0;
                     }
                     Owned();
+                    if (mode == "--shortcuts") {
+                        Require(args.Length >= 3 && (args[2] == "desktop" || args[2] == "programs"), "SHORTCUT_ARGUMENT_REFUSED");
+                        Require(!ExtractionActive(), "INSTALLATION_BUSY");
+                        var current = VersionRoot(Current());
+                        Require(File.ReadAllText(Child(Root, "receipts/" + Current() + ".sha256")) == Hash(Path.Combine(current, "install-manifest.json")), "CURRENT_MANIFEST_CHANGED");
+                        Verify(current, ReadManifest(current));
+                        Require(Hash(Path.Combine(current, "install-manager.exe")) == Hash(System.Reflection.Assembly.GetExecutingAssembly().Location), "SHORTCUT_MANAGER_CHANGED");
+                        bool desktopEntry = args[2] == "desktop";
+                        Shortcut(ShortcutPath(desktopEntry), desktopEntry ? "desktop-shortcut.sha256" : "programs-shortcut.sha256", false);
+                        return ShellDeferred ? 3 : 0;
+                    }
+                    if (mode == "--stage-repair" && args.Length >= 4) {
+                        var input = Safe(args[3]); Require(Path.GetFileName(input) == "install-manifest.json", "STAGING_MANIFEST_NAME");
+                        var manifest = ReadManifest(Path.GetDirectoryName(input));
+                        var baseId = manifest.version + "-" + manifest.commit.Substring(0, 12);
+                        Require(args[2] == baseId, "STAGING_IDENTITY_REFUSED");
+                        var current = Current(); VersionRoot(current);
+                        var oldBase = Regex.Replace(current, "-r[a-f0-9]{32}$", "");
+                        var oldDisplay = oldBase.Substring(0, oldBase.Length - 13);
+                        var oldVersion = Version.Parse(oldDisplay.Replace("-preview.", "."));
+                        var newVersion = Version.Parse(manifest.version.Replace("-preview.", "."));
+                        Require(newVersion >= oldVersion, "REPAIR_DOWNGRADE_REFUSED");
+                        if (newVersion == oldVersion) Require(baseId == oldBase &&
+                            File.ReadAllText(Child(Root, "receipts/" + current + ".sha256")) == Hash(input), "REPAIR_PACKAGE_IDENTITY_CHANGED");
+                        var id = baseId + "-r" + Guid.NewGuid().ToString("N");
+                        var directory = VersionRoot(id);
+                        Require(!Directory.Exists(directory), "REPAIR_FRESH_STAGE_REQUIRED");
+                        Directory.CreateDirectory(directory);
+                        File.Copy(input, Child(directory, "install-manifest.json"), false);
+                        Directory.CreateDirectory(Child(Root, "receipts"));
+                        Atomic(Child(Root, "receipts/" + id + ".sha256"), Hash(input));
+                        Atomic(Child(Root, "receipts/" + id + ".repair-current"), current);
+                        Atomic(Child(Root, "pending-repair.txt"), id);
+                        Event("REPAIR_FRESH_STAGE_PREPARED"); return 0;
+                    }
                     if (mode == "--stage" && args.Length >= 4) {
                         var directory = VersionRoot(args[2]);
                         var input = Safe(args[3]); Require(Path.GetFileName(input) == "install-manifest.json", "STAGING_MANIFEST_NAME");
@@ -321,6 +459,14 @@ internal static class Launcher {
                                 Require(Hash(input) == Hash(Child(directory, "install-manifest.json")) &&
                                     File.ReadAllText(Child(Root, "receipts/" + args[2] + ".sha256")) == Hash(input), "CURRENT_MANIFEST_CHANGED");
                                 Verify(directory, manifest); return 10; // confirm without overlaying a live version
+                            }
+                            var receipt = Child(Root, "receipts/" + args[2] + ".sha256");
+                            if (File.Exists(receipt) && File.ReadAllText(receipt) == Hash(input) &&
+                                File.Exists(Child(directory, "install-manifest.json")) && Hash(input) == Hash(Child(directory, "install-manifest.json"))) {
+                                try {
+                                    Verify(directory, manifest);
+                                    if (ExactProgramFiles(directory, manifest)) { Event("VERIFIED_STAGE_REUSED " + args[2]); return 10; }
+                                } catch (IOException) { Event("STAGED_TARGET_REVALIDATION_FAILED " + args[2]); }
                             }
                             Cleanup(null, args[2]);
                         }
@@ -337,28 +483,37 @@ internal static class Launcher {
                     }
                     if (mode == "--activate" && args.Length >= 3) {
                         var directory = VersionRoot(args[2]); var m = ReadManifest(directory); Verify(directory, m);
+                        var expectedCurrent = File.Exists(Path.Combine(Root, "current.txt")) ? Current() : null;
+                        var repairReceipt = Child(Root, "receipts/" + args[2] + ".repair-current");
+                        var repair = File.Exists(repairReceipt);
+                        if (repair) Require(expectedCurrent != null && File.ReadAllText(repairReceipt) == expectedCurrent, "REPAIR_ENTRY_CHANGED");
                         if (File.Exists(Path.Combine(Root, "current.txt"))) {
-                            var current = ReadManifest(VersionRoot(Current()));
-                            var oldVersion = Version.Parse(current.version.Replace("-preview.", "."));
+                            var oldDisplay = repair ? Regex.Replace(expectedCurrent, "-[a-f0-9]{12}(?:-r[a-f0-9]{32})?$", "") :
+                                ReadManifest(VersionRoot(Current())).version;
+                            var oldVersion = Version.Parse(oldDisplay.Replace("-preview.", "."));
                             var newVersion = Version.Parse(m.version.Replace("-preview.", "."));
-                            Require(newVersion > oldVersion || args[2] == Current(), "DOWNGRADE_OR_REINSTALL_REFUSED");
+                            Require(newVersion > oldVersion || args[2] == Current() || repair && newVersion == oldVersion, "DOWNGRADE_OR_REINSTALL_REFUSED");
                         }
                         Directory.CreateDirectory(Child(Root, "receipts"));
                         var receipt = Child(Root, "receipts/" + args[2] + ".sha256");
                         Require(File.ReadAllText(receipt) == Hash(Child(directory, "install-manifest.json")), "STAGED_MANIFEST_CHANGED");
-                        return Launch(args[2], true);
+                        return Launch(args[2], true, expectedCurrent, repair);
                     }
                     if (mode == "--launch") { Require(!ExtractionActive(), "INSTALLATION_BUSY"); return Launch(Current(), false); }
                     if (mode == "--cleanup") { Cleanup(Current()); return 0; }
                     if (mode == "--uninstall") {
                         // Preflight every lease before removing any version or shell integration.
-                        foreach (var dir in Directory.GetDirectories(Child(Root, "versions")))
-                            using (File.Open(Child(dir, "install-manifest.json"), FileMode.Open, FileAccess.Read, FileShare.None)) {}
+                        foreach (var dir in Directory.GetDirectories(Child(Root, "versions"))) {
+                            var manifest = Child(dir, "install-manifest.json");
+                            if (File.Exists(manifest) || !RetainedRepairOriginal(Path.GetFileName(dir)))
+                                using (File.Open(manifest, FileMode.Open, FileAccess.Read, FileShare.None)) {}
+                        }
                         var resources = Json.Deserialize<Entry[]>(File.ReadAllText(Child(Root, "generated-resources.json")));
                         Require(resources.Length == 2 && resources.Select(e => e.path).OrderBy(x => x).SequenceEqual(new[] { "ChatChatBar.exe", "Uninstall.exe" }), "RESOURCE_RECEIPT_REFUSED");
                         foreach (var e in resources) Require(Hash(Child(Root, e.path)) == e.sha256, "GENERATED_RESOURCE_CHANGED");
                         Cleanup(null);
-                        Require(!Directory.GetDirectories(Child(Root, "versions")).Any(), "UNINSTALL_DEFERRED_PROGRAMS_RETAINED");
+                        Require(!Directory.GetDirectories(Child(Root, "versions")).Any(dir => !RetainedRepairOriginal(Path.GetFileName(dir))),
+                            "UNINSTALL_DEFERRED_PROGRAMS_RETAINED");
                         Shortcuts(true);
                         if (ShellDeferred) Atomic(Child(Root, "cleanup-status.txt"), "DEFERRED");
                         foreach (var e in resources) Require(DeleteOwned(Child(Root, e.path), e.bytes, e.sha256), "RESOURCE_CHANGED");

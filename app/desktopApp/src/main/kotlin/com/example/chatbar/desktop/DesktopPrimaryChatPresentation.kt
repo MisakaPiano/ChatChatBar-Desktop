@@ -185,8 +185,7 @@ internal fun desktopRenderSessionText(
     globalPlayerName: String?,
 ): String = PlaceholderRenderer.render(
     text = text,
-    playerName = session.playerName?.takeIf(String::isNotBlank)
-        ?: globalPlayerName?.takeIf(String::isNotBlank),
+    playerName = com.example.chatbar.domain.chat.PlayerRolePolicy.name(session, card, globalPlayerName),
     botName = card?.effectiveBotName ?: session.title,
 )
 
@@ -216,7 +215,7 @@ private fun desktopCopySourceText(
     text: String, session: ChatSession?, card: CharacterCard?, globalPlayerName: String?,
 ): String = PlaceholderRenderer.render(
     text,
-    session?.playerName?.takeIf(String::isNotBlank) ?: globalPlayerName?.takeIf(String::isNotBlank),
+    com.example.chatbar.domain.chat.PlayerRolePolicy.name(session, card, globalPlayerName),
     card?.effectiveBotName ?: session?.title ?: "",
 )
 

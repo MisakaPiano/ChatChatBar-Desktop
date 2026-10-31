@@ -11,6 +11,56 @@ import kotlinx.coroutines.*
 import kotlin.test.*
 
 class DesktopSaveSlotServiceTest {
+    @Test fun `player role and local avatar survive packaged export import and restored media custody`(): Unit = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            val role = SessionPlayerRole(f.session.characterCardId, "explicit-person", followName = false)
+            f.chats.saveSessionSettingsDraft(f.session, f.session.copy(desktopPlayerRole = role, desktopPlayerAvatar = "images/synthetic.png"))
+            val service = f.service()
+            val slot = service.create("s", "Player", SaveSlotImagePolicy.ORIGINAL, false)
+            assertEquals(role, slot.desktopPlayerRole)
+            val output = f.root.resolve("player.cbsave")
+            service.export(slot.id, output)
+            val imported = service.import(output, "s")
+            val current = f.chats.getSession("s")!!
+            f.chats.saveSessionSettingsDraft(current, current.copy(desktopPlayerRole = null, desktopPlayerAvatar = null))
+            service.restore(imported.id, "s")
+            val restored = f.chats.getSession("s")!!
+            assertEquals(role, restored.desktopPlayerRole)
+            assertNotNull(restored.desktopPlayerAvatar)
+            assertContentEquals(Files.readAllBytes(f.root.resolve("images/synthetic.png")),
+                Files.readAllBytes(f.root.resolve(restored.desktopPlayerAvatar!!)))
+            assertNotEquals("images/synthetic.png", restored.desktopPlayerAvatar)
+            val currentSlot = service.create("s", "Without images", SaveSlotImagePolicy.NONE, false)
+            assertNull(currentSlot.desktopPlayerAvatar)
+            assertEquals(role, currentSlot.desktopPlayerRole)
+        }
+    }
+
+    @Test fun `participation survives real package export import restore with original card scope`() = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            val overrides = listOf(SessionCharacterParticipation(f.session.characterCardId, setOf("disabled-person"), setOf("automatic-person")),
+                SessionCharacterParticipation("other-card", setOf("other-person")))
+            f.chats.saveSessionSettingsDraft(f.session, f.session.copy(desktopCharacterParticipation = overrides, desktopAutoPauseAbsentPeople = true))
+            val service = f.service()
+            val slot = service.create("s", "Participation", SaveSlotImagePolicy.ORIGINAL, false)
+            assertEquals(overrides, slot.desktopCharacterParticipation)
+            assertTrue(slot.desktopAutoPauseAbsentPeople)
+            val output = f.root.resolve("participation.cbsave")
+            service.export(slot.id, output)
+            val imported = service.import(output, "s")
+            assertEquals(overrides, imported.desktopCharacterParticipation)
+            assertTrue(imported.desktopAutoPauseAbsentPeople)
+            val current = f.chats.getSession("s")!!
+            f.chats.saveSessionSettingsDraft(current, current.copy(desktopCharacterParticipation = emptyList(), desktopAutoPauseAbsentPeople = false))
+            service.restore(imported.id, "s")
+            assertEquals(overrides, f.chats.getSession("s")!!.desktopCharacterParticipation)
+            assertTrue(f.chats.getSession("s")!!.desktopAutoPauseAbsentPeople)
+            assertEquals(f.session.characterCardId, f.chats.getSession("s")!!.characterCardId)
+        }
+    }
+
     private class Fixture : AutoCloseable {
         val root = Files.createTempDirectory("desktop-slot-service-")
         val owner = assertIs<DesktopDataRootOwnershipResult.Acquired>(DesktopDataRootOwnership.acquire(
