@@ -63,6 +63,7 @@ class DesktopBackgroundVoicePresentationTest {
                     scene.clickText("关闭播放设置")
                     button("暂停并保留位置").config[SemanticsActions.OnClick].action!!()
                     withTimeout(5000) { while (!f.runtime.playback.state.value.paused) scene.frames() }
+                    scene.frames() // Runtime state can publish before Compose has consumed the flow.
                     button("继续播放").config[SemanticsActions.OnClick].action!!()
                     withTimeout(5000) { while (!f.runtime.playback.state.value.playing) scene.frames() }
                     preferences.update { it.copy(sessionContinuousVoicePlayback = emptyMap()) }
