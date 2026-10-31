@@ -106,17 +106,24 @@ internal object DesktopChatScreenshotRenderer {
 
     /** Explicit new destination only; no external file overwrite and no broad cleanup. */
     fun save(png: DesktopScreenshotPng, target: Path) {
+        writeDesktopScreenshotFile(target, "png") { it.write(png.bytes) }
+    }
+}
+
+/** Every screenshot format shares the same new-file-only publication boundary. */
+internal fun writeDesktopScreenshotFile(target: Path, extension: String,
+    beforePublish: () -> Unit = {}, write: (java.io.OutputStream) -> Unit) {
         val absolute=target.toAbsolutePath().normalize()
-        require(absolute.fileName.toString().endsWith(".png",true)) { "请选择 PNG 文件名" }
+        require(absolute.fileName.toString().endsWith(".$extension",true)) { "请选择正确的导出文件格式" }
         require(!Files.exists(absolute,LinkOption.NOFOLLOW_LINKS)) { "文件已存在，请选择新文件名" }
         val parent=absolute.parent.toRealPath();require(parent==absolute.parent) { "保存目录已变化" }
         val part=parent.resolve(".ccb-screenshot-${UUID.randomUUID()}.part")
         try {
-            Files.newOutputStream(part,StandardOpenOption.CREATE_NEW).use { it.write(png.bytes) }
+            Files.newOutputStream(part,StandardOpenOption.CREATE_NEW).use(write)
+            beforePublish()
             check(parent.toRealPath()==parent)
             Files.move(part,absolute)
         } finally { Files.deleteIfExists(part) }
-    }
 }
 
 /** Reprove captured messages/resources after the chooser, before CREATE_NEW export. */

@@ -1,4 +1,8 @@
-## 2026-10-28 最新用户调度：先完成登记小修，暂停新大phase
+## 2026-11-01 最新用户调度：社区排在功能队列最后
+
+用户明确要求“社区功能排在最后再做，我们先做前面的”。保留 P14 作为历史任务编号，但不按编号在 P13 后启动；社区移到其他已计划功能之后，届时再核对官方服务开放情况和实际接入范围。当前仍先完成已登记小修与必要验证，不据此启动新的大 phase，也不新增“社区完成才能交付现有版本”的前提。
+
+## 2026-10-28 用户调度：先完成登记小修，暂停新大phase
 
 用户已明确授权按[208小修总账](208_REGISTERED_SMALL_FIXES_EXECUTION_LEDGER.md)的SF01–SF14顺序实现、完成必要测试后发布更新。暂不推进新的大phase；原路线下一个P12 AI Authoring / Repair继续排在本批之后。旧需求“仅登记／暂不授权”是历史调度，本轮对应项目已有新的直接实施授权。1208公开和限定验收保持，剩余旧任务不删除。
 
@@ -41,11 +45,11 @@
 | Preview | 同一交付批次完成 P11 与 A–G 必要工程及实际验收；依用户已有发布授权交付 |
 | 12 | AI Authoring / Repair |
 | 13 | Moments |
-| 14 | Community |
 | 15 | OS Integration、完整 updater/diagnostics/tray 等 |
 | 16 | Upstream Automation |
 | 17 | 真实 Preview 反馈驱动的 Beta Hardening |
 | 18 | 1.0 完整范围与最终发布目标 |
+| 14（功能队列最后，暂缓） | Community；保留历史编号，其他计划功能之后再评估和实施，不作为当前交付前提 |
 
 Preview 不要求先做完 P12–P17，但不能把未实现能力说成完成。A–G 见 [93](93_PUBLIC_PREVIEW_POLICY.md)和[20](20_RELEASE_CHECKLIST.md)，全应用迁移见 [95](95_PREVIEW_FULL_APP_BACKUP_PORTABILITY_GATE.md)。
 

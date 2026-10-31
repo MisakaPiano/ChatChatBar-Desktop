@@ -211,6 +211,7 @@ dependencies {
     implementation(libs.icons.lucide.cmp)
     implementation(libs.commonmark)
     implementation(libs.jsoup)
+    implementation("org.apache.pdfbox:pdfbox:3.0.8")
     // D-038: selected official v1.4.5 archive codec uses this exact Tink release.
     implementation("com.google.crypto.tink:tink:1.23.0")
     implementation("com.google.code.gson:gson:2.13.2")
