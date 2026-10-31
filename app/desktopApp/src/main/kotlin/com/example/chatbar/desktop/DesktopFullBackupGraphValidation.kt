@@ -90,7 +90,7 @@ internal object DesktopFullBackupGraphValidation {
                 check(reference.fileName.matches(Regex("[A-Za-z0-9_-]{1,128}\\.cbsave")))
                 // Match production SaveSlot Archive's explicit historical custody policy.
                 // Unknown nonblank versions stay historical; all owner/audio/length checks remain.
-                check(DesktopSaveSlotInspector(retainHistoricalVoices = true).inspect(root.resolve("save_slot_packages/${reference.fileName}")).status == SlotInspectStatus.STRUCTURE_VALID)
+                check(DesktopSaveSlotInspector(retainHistoricalVoices = true, retainHistoricalReferences = true).inspect(root.resolve("save_slot_packages/${reference.fileName}")).status == SlotInspectStatus.STRUCTURE_VALID)
             } else check(slot.schemaVersion in 1..7)
         }
     }

@@ -229,7 +229,7 @@ internal class DesktopMergeCredentials private constructor(
 
         private fun consumers(records: Map<String, JsonObject>): Map<DesktopCredentialKey, Consumer> {
             val result = linkedMapOf<DesktopCredentialKey, Consumer>()
-            for ((path, value) in records) {
+            for (path in records.keys) {
                 val type = DesktopBackupPolicy.entityType(path)
                 val kind = when (type) {
                     "model_configs", "retrieval_model_config" -> ImportCredentialKind.MODEL
@@ -237,6 +237,7 @@ internal class DesktopMergeCredentials private constructor(
                     "embedding_model_config" -> ImportCredentialKind.SINGLETON_EMBEDDING
                     else -> continue
                 }
+                val value = records.getValue(path)
                 fun string(field: String) = value.getValue(field).jsonPrimitive.also { require(it.isString) }.content
                 val id = string("id")
                 val account = ImportAccountIdentity(id, string("displayName"), string("baseUrl"), string("modelName"),

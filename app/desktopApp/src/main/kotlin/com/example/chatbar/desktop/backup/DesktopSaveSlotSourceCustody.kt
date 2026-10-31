@@ -29,7 +29,7 @@ internal object DesktopSaveSlotSourceCustody {
         DesktopBackupRecords.requireSize(rawRecord.size.toLong())
         val slot = decodeRecord(rawRecord)
         require(slot.schemaVersion == 8 && slot.packageRef != null) { "SLOT_CUSTODY_SOURCE_SCHEMA" }
-        require(DesktopSaveSlotInspector(true).inspect(originalPackage).status == SlotInspectStatus.STRUCTURE_VALID) { "SLOT_CUSTODY_PACKAGE_INVALID" }
+        require(DesktopSaveSlotInspector(retainHistoricalVoices = true, retainHistoricalReferences = true).inspect(originalPackage).status == SlotInspectStatus.STRUCTURE_VALID) { "SLOT_CUSTODY_PACKAGE_INVALID" }
         val packageHash = DesktopArchiveFiles.hash(originalPackage, DesktopSaveSlotArchive.MAX_ARCHIVE)
         val reference = requireNotNull(slot.packageRef)
         require(reference.byteLength <= 0 || reference.byteLength == Files.size(originalPackage)) { "SLOT_CUSTODY_PACKAGE_LENGTH" }
@@ -87,7 +87,7 @@ internal object DesktopSaveSlotSourceCustody {
         DesktopBackupRecords.requireSize(Files.size(record))
         val slot = decodeRecord(Files.readAllBytes(record))
         check(slot.schemaVersion == 8 && slot.packageRef != null && slot.id == index.slotId && slot.sessionId == index.sessionId)
-        check(DesktopSaveSlotInspector(true).inspect(source).status == SlotInspectStatus.STRUCTURE_VALID) { "SLOT_CUSTODY_PACKAGE_INVALID" }
+        check(DesktopSaveSlotInspector(retainHistoricalVoices = true, retainHistoricalReferences = true).inspect(source).status == SlotInspectStatus.STRUCTURE_VALID) { "SLOT_CUSTODY_PACKAGE_INVALID" }
         val reference = requireNotNull(slot.packageRef)
         check(reference.byteLength <= 0 || reference.byteLength == index.packageBytes) { "SLOT_CUSTODY_PACKAGE_LENGTH" }
         val nested = manifest(source)

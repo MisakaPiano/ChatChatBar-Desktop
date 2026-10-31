@@ -69,6 +69,14 @@ class DesktopLargeBackupTest {
                 })
                 assertEquals(staged.source.inventory, verified.inventory)
             }
+            val slotWork = Files.createDirectory(base.resolve("slot-work"))
+            val slotArchive = com.example.chatbar.desktop.DesktopSaveSlotArchive(slotWork)
+            val prepared = slotArchive.prepare(files.getValue("entities/save_slots/slot.json"))
+            assertEquals(16, prepared.slot.vectorChunks.size)
+            val live = Files.createDirectory(base.resolve("separate-live"))
+            val restored = com.example.chatbar.desktop.DesktopSaveSlotRestorePlan(live) { _, _ -> false }.prepare(slotArchive, prepared,
+                ChatSession("restored", "card", "Synthetic", createdAt = 1, updatedAt = 1))
+            assertEquals(16, restored.files.keys.count { it.startsWith("entities/vector_chunks/") })
             assertTrue(files.values.all { Files.exists(it) })
         } finally { base.toFile().deleteRecursively() }
     }

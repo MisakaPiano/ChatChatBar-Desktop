@@ -48,7 +48,8 @@ internal object DesktopHistoricalVoiceCustody {
         beforePublish: suspend () -> Unit): Evidence {
         authority.requirePreparing(pending, root)
         val owners = linkedMapOf<String, Pair<String, ChatMessage>>()
-        for ((path, value) in input.entities) if (DesktopBackupPolicy.entityType(path) == "chat_messages") {
+        for (path in input.entities.keys.filter { DesktopBackupPolicy.entityType(it) == "chat_messages" }) {
+            val value = input.entities.getValue(path)
             val message = backupJson.decodeFromJsonElement<ChatMessage>(value)
             check(owners.put(message.id, path to message) == null) { "HISTORICAL_VOICE_DUPLICATE_OWNER" }
         }
@@ -75,7 +76,8 @@ internal object DesktopHistoricalVoiceCustody {
         }
         for ((record, owner, original) in candidates) {
             val id = plan.identity.value("generated_voice_messages", original.id)
-            val mapped = plan.entities.entries.single { (path, value) -> DesktopBackupPolicy.entityType(path) == "generated_voice_messages" && value["id"]?.jsonPrimitive?.content == id }.value
+            val mapped = plan.entities.keys.filter { DesktopBackupPolicy.entityType(it) == "generated_voice_messages" }
+                .map { plan.entities.getValue(it) }.single { value -> value["id"]?.jsonPrimitive?.content == id }
             val mappedVoice = backupJson.decodeFromJsonElement<GeneratedVoiceMessage>(mapped)
             val bindings = JsonObject(backupJson.encodeToJsonElement(GeneratedVoiceMessage.serializer(), mappedVoice).jsonObject.filterKeys { it in refs })
             check((mappedVoice.anchorId == null) == (original.anchorId == null)) { "HISTORICAL_VOICE_ANCHOR_REBOUND" }

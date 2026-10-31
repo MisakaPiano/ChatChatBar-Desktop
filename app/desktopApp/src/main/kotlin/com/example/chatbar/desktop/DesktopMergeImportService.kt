@@ -32,7 +32,7 @@ internal class DesktopMergeImportService(
         val code get() = phone.source.manifest.appVersionCode
         val versionName get() = phone.source.manifest.appVersionName
         val fileCount get() = phone.source.inventory.size
-        val hasDesktopParticipation get() = phone.entities.values.any(DesktopBackupPolicy::hasDesktopParticipation) ||
+        val hasDesktopParticipation get() = phone.hasDesktopParticipation ||
             phone.secrets.metadata.any { it.kind in setOf(ImportCredentialKind.DESKTOP_LLM_ACCOUNTS,
                 ImportCredentialKind.DESKTOP_NOVELAI_ACCOUNTS, ImportCredentialKind.DESKTOP_FISH_ACCOUNTS) && it.state == CredentialFieldState.NONEMPTY }
         val credentialConflicts get() = credentials.globalConflicts
@@ -199,9 +199,10 @@ internal class DesktopMergeImportService(
         try { releaseLocked() } finally { retainedDestination?.close(); retainedDestination = null }
     }
     private fun modelDetails(data: DesktopMergePreview, computer: Map<String, JsonObject>, phone: Map<String, JsonObject>): Map<String, ModelDetails> {
-        fun rows(records: Map<String, JsonObject>, keys: Set<String>): List<String> = records.mapNotNull { (path, value) ->
+        fun rows(records: Map<String, JsonObject>, keys: Set<String>): List<String> = records.keys.mapNotNull { path ->
             val type = DesktopBackupPolicy.entityType(path)
             if (type !in setOf("model_configs", "retrieval_model_config", "embedding_configs", "embedding_model_config")) return@mapNotNull null
+            val value = records.getValue(path)
             fun text(field: String) = value[field]?.jsonPrimitive?.contentOrNull.orEmpty()
             if ("$type:${text("id")}" !in keys) return@mapNotNull null
             // Explicit local UI projection. Never include apiKey, raw JSON, credential relation or a digest.

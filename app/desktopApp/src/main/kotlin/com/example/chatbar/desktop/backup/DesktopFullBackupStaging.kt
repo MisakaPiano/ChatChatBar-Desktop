@@ -12,6 +12,7 @@ internal class DesktopFullBackupStaging private constructor(
     val files: Map<String, Path>,
     val entities: Map<String, JsonObject>,
     val preferences: JsonObject,
+    val hasDesktopParticipation: Boolean,
     val secrets: DesktopImportSecrets,
     private val hashes: Map<String, String>,
     private val scratch: DesktopBackupScratch,
@@ -32,10 +33,12 @@ internal class DesktopFullBackupStaging private constructor(
             try {
                 val files = linkedMapOf<String, Path>()
                 var preferences: JsonObject? = null
+                var hasDesktopParticipation = false
                 val context = currentCoroutineContext()
                 val verified = DesktopFullBackupSource.verify(source, password, object : DesktopFullBackupSource.TentativeSink {
                     override fun entity(path: String, original: JsonObject, raw: ByteArray) {
                         val clean = secrets.entity(path, original)
+                        hasDesktopParticipation = hasDesktopParticipation || DesktopBackupPolicy.hasDesktopParticipation(clean)
                         val destination = scratch.directory.resolve("entry-${files.size}")
                         if (DesktopBackupPolicy.entityType(path) in setOf("moment_posts", "moment_tasks", "save_slots", "chat_messages", "generated_voice_messages")) scratch.write(destination, raw)
                         else scratch.write(destination, clean.toString().toByteArray(Charsets.UTF_8))
@@ -57,7 +60,7 @@ internal class DesktopFullBackupStaging private constructor(
                 context.ensureActive()
                 check(files.keys == verified.inventory.keys)
                 val hashes = files.mapValues { (_, path) -> DesktopArchiveFiles.hash(path, DesktopFullBackupSource.MAX_FILE) }
-                DesktopFullBackupStaging(verified, files.toMap(), DesktopBackupRecords.files(files.filterKeys { it.startsWith("entities/") }, hashes), requireNotNull(preferences), secrets, hashes, scratch)
+                DesktopFullBackupStaging(verified, files.toMap(), DesktopBackupRecords.files(files.filterKeys { it.startsWith("entities/") }, hashes), requireNotNull(preferences), hasDesktopParticipation, secrets, hashes, scratch)
             } catch (failure: Throwable) {
                 secrets.close()
                 try { scratch.close() } catch (cleanup: Throwable) { failure.addSuppressed(cleanup) }

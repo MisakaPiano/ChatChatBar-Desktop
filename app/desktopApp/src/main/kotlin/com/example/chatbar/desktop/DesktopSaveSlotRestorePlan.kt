@@ -199,5 +199,5 @@ internal class DesktopSaveSlotRestorePlan(private val liveRoot: Path,
         override suspend fun head(model: ModelConfig, mode: MemoryHeadUpdateMode, throughT: Long, currentHead: String,
             archive: String, sourceTurns: String, validate: (HeadResponse) -> Unit): HeadResponse = error("存档恢复禁止模型请求")
     }
-    companion object { private const val MAX_GRAPH = 64L * 1024 * 1024; private const val MAX_RECORDS = 20000 }
+    companion object { private const val MAX_GRAPH = DesktopSaveSlotArchive.MAX_ARCHIVE; private const val MAX_RECORDS = 20000 }
 }
