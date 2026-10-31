@@ -85,6 +85,10 @@ internal fun DesktopPrimaryShell(
         if (route == DesktopPrimaryRoute.MANAGE && destination != DesktopPrimaryRoute.MANAGE &&
             (managementController.state.value.busy || transferController.state.value.busy ||
                 modelTemplateController.state.value.busy)) return
+        if (destination == DesktopPrimaryRoute.DATA && updateNotice?.pendingVersion != null) {
+            updateNotices?.dismissStartupNotice()
+            openUpdateRequest++
+        }
         if (route == DesktopPrimaryRoute.CHAT && destination != DesktopPrimaryRoute.CHAT) {
             scope.launch { primaryChatController.requestSessionSettingsLeave {
                 navigation.navigate(destination, rootState)
@@ -108,12 +112,7 @@ internal fun DesktopPrimaryShell(
         val size = DesktopShellLayoutPolicy.sizeForWidth(maxWidth.value)
         Column(Modifier.fillMaxSize()) {
             DesktopTitleBar(size, route, locked, chrome, chromeLayout,
-                updatePending = updateNotice?.pendingVersion != null, onNavigate = { destination ->
-                    if (destination == DesktopPrimaryRoute.DATA && updateNotice?.pendingVersion != null) {
-                        updateNotices?.dismissStartupNotice(); openUpdateRequest++
-                    }
-                    navigate(destination)
-                })
+                updatePending = updateNotice?.pendingVersion != null, onNavigate = ::navigate)
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when (route) {
                     DesktopPrimaryRoute.CHAT -> DesktopPrimaryChatPanel(primaryChatController, size, composerLayout,
@@ -176,7 +175,7 @@ internal fun DesktopPrimaryShell(
         if (updateNotices != null && updateNotice != null) DesktopStartupUpdateNotice(updateNotice,
             blocked = locked || (modalActivity?.count ?: 0) > 0 || management.busy || transfer.busy || templates.busy || chat.sessionSettingsLeavePrompt ||
                 tasks.any { it.status == DesktopTaskStatus.RUNNING } || repairs.values.any { it == DesktopRepairStatus.RUNNING },
-            onView = { updateNotices.dismissStartupNotice(); openUpdateRequest++; navigate(DesktopPrimaryRoute.DATA) },
+            onView = { updateNotices.dismissStartupNotice(); navigate(DesktopPrimaryRoute.DATA) },
             onLater = updateNotices::dismissStartupNotice)
     }
 }
