@@ -33,7 +33,7 @@ internal fun DesktopMergeImportPanel(controller: DesktopMergeImportController, o
         }
         if (state.ready && !state.restartRequired) {
             StatusText("已校验 ${state.files} 个文件 · 来源 ${state.versionName.take(80)}")
-            if (state.desktopParticipation) StatusText("该备份包含 Desktop 扩展（人物开关或命名账户）；手机端不保证保留这些设置。", DesktopBootstrapColors.warning)
+            if (state.desktopParticipation) StatusText("该备份包含 Desktop 扩展（人物／玩家设置或命名账户）；手机端不保证保留这些设置。", DesktopBootstrapColors.warning)
             if (state.conflicts.isEmpty()) StatusText("未发现需要选择的数据冲突。电脑和手机各自独有内容将保留。")
             if (state.conflicts.isNotEmpty()) StatusText("已选择 ${choices.size} / ${state.conflicts.size} 项数据冲突")
             state.conflicts.groupBy { conflict ->

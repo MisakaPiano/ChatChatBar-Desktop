@@ -33,12 +33,62 @@ class DesktopChatPeoplePresentationTest {
         assertTrue(node.config[SemanticsActions.OnClick].action!!.invoke())
     }
     private fun capture(scene: ImageComposeScene, name: String) {
-        val directory = System.getProperty("chatbar.test.screenshot.dir") ?: return
+        val directory = System.getProperty("chatbar.test.screenshot.dir") ?: System.getenv("CCB_SELECTED_FIX_REVIEW_DIR") ?: return
         val target = Path.of(directory)
         Files.createDirectories(target)
         scene.render(System.nanoTime()).use { image -> image.encodeToData()?.let { Files.write(target.resolve(name), it.bytes) } }
     }
     private suspend fun frames(scene: ImageComposeScene) { repeat(6) { scene.render(System.nanoTime()).close(); yield(); delay(15) } }
+
+    @Test fun `only an explicitly associated player avatar opens the existing person's latest status`(): Unit = runBlocking(edt) {
+        val parent = Files.createTempDirectory("player-status-presentation-")
+        val container = DesktopAppContainer(DesktopDataRootResolution.Resolved(parent.resolve("data"),
+            DesktopDataRootProvenance.CLI_OVERRIDE, parent.resolve("bootstrap.json")),
+            secretStoreFactory = { InMemoryDesktopSecretStore() })
+        try {
+            val imageHome = Files.createDirectories(parent.resolve("data/images"))
+            for ((name, color) in listOf("self.png" to 0x3377aa, "role.png" to 0xbb7722)) {
+                val bitmap = java.awt.image.BufferedImage(24, 24, java.awt.image.BufferedImage.TYPE_INT_RGB)
+                for (x in 0 until 24) for (y in 0 until 24) bitmap.setRGB(x, y, color)
+                Files.write(imageHome.resolve(name), DesktopImageEditing.png(bitmap))
+            }
+            val person = CharacterInfo.create("Alice").copy(appearanceImage = "images/role.png")
+            val card = CharacterCard.create("Player card", characters = listOf(person),
+                greeting = "<n=\"Alice\"/>[Hello]()\n```text\n👤姓名：Alice\n心情：calm\n```")
+            container.characterRepository.save(card)
+            container.settingsRepository.savePlayerSetting(PlayerSetting(playerName = "Alice", desktopAvatar = "images/self.png"))
+            container.characterSessionService.createSessionForCharacter(card.id)
+            val session = container.chatRepository.getAllSessions().single()
+            container.chatRepository.addMessage(ChatMessage.create(session.id, MessageRole.USER, "Synthetic user message"))
+            val controller = container.primaryChatController
+            controller.refresh()
+            val scene = ImageComposeScene(1380, 900, coroutineContext = edt) {
+                DesktopPrimaryChatPanel(controller, DesktopShellSize.WIDE, remember { DesktopComposerLayoutState() })
+            }
+            try {
+                frames(scene)
+                fun targets() = nodes(scene).filter {
+                    it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("人物状态 · Alice") == true }
+                val before = targets().size
+                assertNull(controller.state.value.selectedSession?.desktopPlayerRole)
+                assertEquals("images/self.png", controller.state.value.globalPlayerAvatar)
+                container.chatRepository.saveSessionSettingsDraft(session,
+                    session.copy(desktopPlayerRole = SessionPlayerRole(card.id, person.id)))
+                controller.refresh(); frames(scene)
+                assertEquals("images/role.png", controller.state.value.globalPlayerAvatar)
+                assertEquals(before + 1, targets().size, "Only explicit association adds the player's status interaction")
+                val userAvatar = targets().last()
+                assertTrue(userAvatar.boundsInRoot.center.x > 900, "The associated avatar belongs to the right-aligned user message")
+                assertTrue(userAvatar.config[SemanticsActions.OnClick].action!!.invoke())
+                frames(scene)
+                assertTrue(nodes(scene).any { it.config.getOrNull(SemanticsProperties.TestTag) == "person-state-preview" })
+                assertTrue(nodes(scene).any { it.config.getOrNull(SemanticsProperties.Text)?.any { text -> text.text.contains("心情：calm") } == true })
+                capture(scene, "player-linked-status.png")
+                assertEquals(card, container.characterRepository.getById(card.id))
+                assertTrue(controller.state.value.selectedSession!!.desktopCharacterParticipation.isEmpty())
+            } finally { scene.close() }
+        } finally { container.close(); parent.toFile().deleteRecursively() }
+    }
 
     @Test fun `wide people rail and narrow people entry open full latest status with exact edit identity`() = runBlocking(edt) {
         val parent = Files.createTempDirectory("people-presentation-")

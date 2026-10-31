@@ -38,6 +38,12 @@ data class SessionCharacterParticipation(val cardId: String, val disabledPersonI
  * 聊天会话
  */
 @Serializable
+data class SessionPlayerRole(val cardId: String, val personId: String,
+    val followName: Boolean = true, val followAvatar: Boolean = true) {
+    init { require(cardId.isNotBlank() && personId.isNotBlank()) }
+}
+
+@Serializable
 @OptIn(ExperimentalSerializationApi::class)
 data class ChatSession(
     val id: String,
@@ -57,6 +63,11 @@ data class ChatSession(
     val supplementarySetting: String? = null, // 补充设定
     val playerName: String? = null,           // 玩家名称覆盖
     val playerSetting: String? = null,        // 个人设定覆盖
+    /** Explicit player role only; equal names never establish this association. */
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val desktopPlayerRole: SessionPlayerRole? = null,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val desktopPlayerAvatar: String? = null,
     val chatBackground: String? = null,
     val imagePromptPreference: String = "",
     val automaticImageGenerationEnabled: Boolean = false,

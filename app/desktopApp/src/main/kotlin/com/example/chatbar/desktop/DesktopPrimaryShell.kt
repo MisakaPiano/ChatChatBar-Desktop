@@ -65,6 +65,7 @@ internal fun DesktopPrimaryShell(
     val chromeLayout = remember(chrome) { DesktopChromeLayoutRecorder(chrome) }
     val composerLayout = remember { DesktopComposerLayoutState() }
     val compactChatNavigation = remember { DesktopCompactChatNavigation() }
+    val floatingVoicePosition = remember { DesktopFloatingVoicePosition() }
     var requestedDesignModel by remember { mutableStateOf<String?>(null) }
     var openDesignModels by remember { mutableStateOf(false) }
     var requestedPerson by remember { mutableStateOf<Pair<String, String>?>(null) }
@@ -150,9 +151,7 @@ internal fun DesktopPrimaryShell(
                     val player by runtime.playback.state.collectAsState()
                     val chat by primaryChatController.state.collectAsState()
                     if (route != DesktopPrimaryRoute.CHAT || chat.selectedSession?.id != player.sessionId) {
-                        Box(Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
-                            DesktopFloatingVoicePlayer(runtime, primaryChatController.chatUi)
-                        }
+                        DesktopFloatingVoicePlayerHost(runtime, primaryChatController.chatUi, floatingVoicePosition)
                     }
                 }
             }

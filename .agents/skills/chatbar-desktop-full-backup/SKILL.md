@@ -5,6 +5,8 @@ description: Maintain Desktop cbbackup selection/export, optional credential tra
 
 # Desktop Full-App Backup
 
+Player identity uses optional `PlayerSetting.desktopAvatar` and `ChatSession`/`SaveSlot.desktopPlayerAvatar`/`desktopPlayerRole`. Both avatar fields are registered media paths. `DesktopMergeIdentity` maps role card/person namespaces explicitly; never infer identity from names. The existing Desktop-extension disclosure also covers these fields. Global player selection carries its avatar; session avatar resources follow their owning selected session. SaveSlot v8 includes, validates and materializes the session avatar using its existing image policy.
+
 Desktop named-account transport is documented in `chatbar-desktop-api-accounts`. The three optional `desktop*Accounts` preference fields contain selected credentials and must be captured, overlaid by the modern writer, validated, and stripped by `DesktopImportSecrets` before staging. Do not omit them while adapting `BackupPreferences` to `InspectionPreferences`. Legacy restore rejects these fields; modern merge uses explicit account/default choices and fresh-root custody.
 
 Named LLM bundles also retain the selected `defaultLlm` account when filtering model dependencies. `mergeNamedAccounts` remaps a conflicting incoming account identity and selects both the default and `managesLegacyDefault` flag from the side chosen for that account bundle; importing an unselected collection must not disable the kept PC singleton fallback. Desktop per-session playback overrides are local chat-UI settings; merge retains the PC `desktop-settings.json` bytes just like its other display preferences, not official Android session fields.

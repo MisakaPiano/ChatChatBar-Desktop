@@ -105,6 +105,18 @@ internal class DesktopChatImages(
         return cleanupRemoved(listOfNotNull(previous))
     }
 
+    /** Explicit per-session player image; absence restores the global default. */
+    suspend fun replacePlayerAvatar(sessionId: String, bytes: ByteArray?): String? {
+        val previous = gate.withNormalOperation { withContext(NonCancellable + Dispatchers.IO) {
+            val session = requireNotNull(chats.getSession(sessionId)) { "会话不存在" }
+            val reference = bytes?.let(::import)
+            // A failed/uncertain save keeps the candidate, as it may already be durably referenced.
+            chats.saveSessionSettingsDraft(session, session.copy(desktopPlayerAvatar = reference))
+            session.desktopPlayerAvatar
+        } }
+        return cleanupRemoved(listOfNotNull(previous))
+    }
+
     /** Editing keeps only references from the opening message; additions are fresh owned copies. */
     suspend fun editMessage(original: ChatMessage, content: String, retained: List<String>, additions: List<DesktopPendingImage>): String? =
         editMutex.withLock {

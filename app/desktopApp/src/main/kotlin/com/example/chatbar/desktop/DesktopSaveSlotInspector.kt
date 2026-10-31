@@ -216,6 +216,7 @@ internal class DesktopSaveSlotInspector(private val retainHistoricalVoices: Bool
         }
         fun finish(): DesktopSaveSlotInspection {
             slot.chatBackground?.let(::image)
+            slot.desktopPlayerAvatar?.let(::image)
             slot.packageRef?.let { ref ->
                 if (ref.messageCount != messages.size || ref.ragChunkCount != ragIds.size || ref.audioCount != voiceIds.size ||
                     ref.imageCount != images) fail(SlotInspectCode.COUNTS)

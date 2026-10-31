@@ -29,7 +29,7 @@ internal fun DesktopSaveSlotPanel(controller: DesktopSaveSlotController) {
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
             StatusText("会话存档")
             StatusText("保存当前消息、会话设置和记忆。导入先加入列表，恢复时保留恢复前存档。")
-            StatusText("会话人物开关随存档保留，请使用 Desktop 恢复；旧版手机端不支持此开关。")
+            StatusText("人物开关、玩家角色关联和已选图片范围内的会话头像随存档保留；手机端不保证保留 Desktop 扩展。")
             ActionRow {
                 BootstrapButton("导入存档", secondary = true, enabled = !state.busy) { controller.import() }
                 BootstrapButton("复制整个会话", secondary = true, enabled = !state.busy) { controller.duplicate() }

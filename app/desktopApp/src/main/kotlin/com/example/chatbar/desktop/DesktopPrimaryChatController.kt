@@ -82,6 +82,8 @@ internal data class DesktopPrimaryChatState(
     val formatChoices: List<DesktopPrimaryChoice> = emptyList(),
     val worldBookChoices: List<DesktopPrimaryChoice> = emptyList(),
     val globalPlayerName: String? = null,
+    val globalPlayerAvatar: String? = null,
+    val defaultPlayerAvatar: String? = null,
     val assistantSegmentedBubblesEnabled: Boolean = true,
     val chatBubbleFontScale: Float = 1.0f,
     val alternativeEligibleIds: Set<String> = emptySet(),
@@ -691,6 +693,28 @@ internal class DesktopPrimaryChatController(
         }
     }
 
+    suspend fun chooseSessionPlayerAvatar(followGlobal: Boolean = false) = guarded {
+        val session = state.value.selectedSession ?: return@guarded
+        val bytes = if (followGlobal) null else {
+            val path = imagePicker.pickOpenFile(DesktopFileType("会话玩家头像", listOf("png", "jpg", "jpeg", "webp", "gif"))) ?: return@guarded
+            withContext(Dispatchers.IO) {
+                val prepared = requireNotNull(imageStore).prepare(path)
+                DesktopImageEditing.png(DesktopImageEditing.decode(prepared.bytes, longestSide = 1024))
+            }
+        }
+        val warning = requireNotNull(imageStore).replacePlayerAvatar(session.id, bytes)
+        val saved = requireNotNull(chats.getSession(session.id))
+        stateLock.withLock {
+            if (state.value.selectedSession?.id == session.id) {
+                settingsBaseline = settingsBaseline?.copy(desktopPlayerAvatar = saved.desktopPlayerAvatar)
+                mutableState.update { current -> current.copy(selectedSession = saved,
+                    sessionSettingsDraft = current.sessionSettingsDraft?.copy(desktopPlayerAvatar = saved.desktopPlayerAvatar),
+                    globalPlayerAvatar = com.example.chatbar.domain.chat.PlayerRolePolicy.avatar(saved, current.selectedCharacter, current.defaultPlayerAvatar),
+                    status = warning ?: if (followGlobal) "会话头像已恢复跟随全局" else "会话头像已保存") }
+            }
+        }
+    }
+
     suspend fun setBackgroundOpacity(value: Float) = guarded {
         val saved = settings.updateAppSettings { it.copy(chatBackgroundImageOpacity = value.coerceIn(0f, 1f)) }
         mutableState.update { it.copy(backgroundOpacity = saved.chatBackgroundImageOpacity) }
@@ -1118,8 +1142,9 @@ internal class DesktopPrimaryChatController(
                             effectiveModels = effectiveModels,
                             formatChoices = formatChoices,
                             worldBookChoices = worldBookChoices,
-                            globalPlayerName = session.playerName?.takeIf(String::isNotBlank)
-                                ?: playerSetting.playerName.takeIf(String::isNotBlank),
+                            globalPlayerName = com.example.chatbar.domain.chat.PlayerRolePolicy.name(session, selectedCharacter, playerSetting.playerName),
+                            globalPlayerAvatar = com.example.chatbar.domain.chat.PlayerRolePolicy.avatar(session, selectedCharacter, playerSetting.desktopAvatar),
+                            defaultPlayerAvatar = playerSetting.desktopAvatar,
                             assistantSegmentedBubblesEnabled = appSettings.assistantSegmentedBubblesEnabled,
                             chatBubbleFontScale = desktopSafeBubbleFontScale(appSettings.chatBubbleFontScale),
                             alternativeEligibleIds = alternativeEligibleIds,

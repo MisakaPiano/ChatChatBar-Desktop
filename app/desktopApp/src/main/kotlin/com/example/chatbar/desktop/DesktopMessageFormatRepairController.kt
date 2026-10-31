@@ -197,7 +197,7 @@ internal class DesktopMessageFormatRepairController(
         val appSettings = settings.getAppSettings()
         val owningCard = characters.getById(session.characterCardId)
         val character = owningCard?.let { SessionCharacterParticipationPolicy.effectiveCard(session, it) }
-        val player = session.playerName?.takeIf(String::isNotBlank) ?: settings.getPlayerSetting().playerName
+        val player = com.example.chatbar.domain.chat.PlayerRolePolicy.name(session, owningCard, settings.getPlayerSetting().playerName)
         val formatId = session.formatCardId ?: appSettings.defaultFormatCardId
         val format = formatId?.let { formats.getById(it)?.content }?.let {
             PlaceholderRenderer.render(it, player, character?.effectiveBotName ?: session.title)

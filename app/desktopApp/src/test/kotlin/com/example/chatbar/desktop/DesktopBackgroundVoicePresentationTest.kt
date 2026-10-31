@@ -4,6 +4,10 @@ package com.example.chatbar.desktop
 import androidx.compose.foundation.layout.*
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.PointerButton
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.semantics.*
 import com.example.chatbar.data.operation.NoOpAppDataOperationGate
 import kotlinx.coroutines.*
@@ -42,8 +46,9 @@ class DesktopBackgroundVoicePresentationTest {
             withTimeout(5000) { while (!f.runtime.playback.state.value.playing) delay(10) }
             f.runtime.foreground(null).join()
             for (width in listOf(320, 900)) {
+                val position = DesktopFloatingVoicePosition()
                 val scene = ImageComposeScene(width, 400, coroutineContext = edt) {
-                    Box(Modifier.fillMaxSize()) { DesktopFloatingVoicePlayer(f.runtime, preferences) }
+                    Box(Modifier.fillMaxSize()) { DesktopFloatingVoicePlayerHost(f.runtime, preferences, position) }
                 }
                 try {
                     scene.frames()
@@ -54,13 +59,32 @@ class DesktopBackgroundVoicePresentationTest {
                         assertTrue(node.boundsInRoot.left >= 0 && node.boundsInRoot.right <= width, label)
                         assertTrue(node.boundsInRoot.width >= 28f && node.boundsInRoot.height >= 28f, label)
                     }
+                    fun window() = scene.nodes().single { it.config.getOrNull(SemanticsProperties.TestTag) == "floating-voice-player-window" }.boundsInRoot
+                    val original = window()
+                    val handle = scene.nodes().single { it.config.getOrNull(SemanticsProperties.TestTag) == "floating-voice-player-drag-handle" }.boundsInRoot.center
+                    scene.sendPointerEvent(PointerEventType.Press, handle, button = PointerButton.Primary)
+                    scene.sendPointerEvent(PointerEventType.Move, handle + Offset(-20f, -20f), button = PointerButton.Primary)
+                    scene.sendPointerEvent(PointerEventType.Move, handle + Offset(-70f, -70f), button = PointerButton.Primary)
+                    scene.sendPointerEvent(PointerEventType.Release, handle + Offset(-70f, -70f), button = PointerButton.Primary)
+                    scene.frames()
+                    assertNotNull(position.preferred)
+                    assertTrue(window().top < original.top - 20f, "Title drag moves the player")
+                    val savedPosition = position.preferred
+                    scene.constraints = Constraints.fixed(width, 150); scene.frames()
+                    assertTrue(window().left >= 0 && window().right <= width && window().top >= 0 && window().bottom <= 150)
+                    assertEquals(savedPosition, position.preferred, "Temporary shrink retains the chosen position")
+                    scene.constraints = Constraints.fixed(width, 400); scene.frames()
                     scene.shot("voice-floating-$width.png")
                     button("播放设置").config[SemanticsActions.OnClick].action!!(); scene.frames()
-                    scene.clickText("本会话连续播放 · 跟随全局（开启） ▾")
+                    scene.clickText("会话连续播放 · 跟随全局（开启） ▾")
                     scene.clickText("关闭")
                     withTimeout(5000) { while (preferences.state.value.sessionContinuousVoicePlayback[f.session.id] != false) scene.frames() }
                     scene.shot("voice-settings-$width.png")
-                    scene.clickText("关闭播放设置")
+                    val close = button("关闭播放设置")
+                    assertTrue(close.boundsInRoot.width <= 30f && close.boundsInRoot.height <= 30f)
+                    close.config[SemanticsActions.OnClick].action!!(); scene.frames()
+                    assertFalse(scene.nodes().any { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("关闭播放设置") == true })
+                    assertTrue(f.runtime.playback.state.value.playing, "Closing settings must keep playback running")
                     button("暂停并保留位置").config[SemanticsActions.OnClick].action!!()
                     withTimeout(5000) { while (!f.runtime.playback.state.value.paused) scene.frames() }
                     scene.frames() // Runtime state can publish before Compose has consumed the flow.

@@ -116,6 +116,7 @@ internal data class DesktopModelSettingsState(
     val bubbleFontScaleSaving: Boolean = false,
     val bubbleFontScaleError: Boolean = false,
     val playerDirty: Boolean = false,
+    val playerAvatar: String? = null,
     val credentialEditorOpen: Boolean = false,
     val credentialDirty: Boolean = false,
     val availableChatModels: List<DesktopModelItem> = emptyList(),
@@ -142,6 +143,7 @@ internal class DesktopModelSettingsController(
     private val presets: DesktopPresetModelCatalogSource,
     val fishCredentials: DesktopFishCredentialController? = null,
     val ragSettings: DesktopRagController? = null,
+    val playerImages: DesktopPlayerImages? = null,
 ) {
     private val mutableState = MutableStateFlow(DesktopModelSettingsState())
     val state: StateFlow<DesktopModelSettingsState> = mutableState.asStateFlow()
@@ -223,6 +225,7 @@ internal class DesktopModelSettingsController(
                 chatDefaultsDirty = false,
                 chatBubbleFontScale = desktopSafeBubbleFontScale(app.chatBubbleFontScale),
                 playerDirty = false,
+                playerAvatar = player.desktopAvatar,
             )
         }
         refreshDefaultDiagnostic(app)
@@ -597,13 +600,24 @@ internal class DesktopModelSettingsController(
         }
     } }
 
+    suspend fun choosePlayerAvatar() = perform("无法保存玩家头像") {
+        val result = playerImages?.choose() ?: return@perform
+        val avatar = settings.getPlayerSetting().desktopAvatar
+        mutableState.update { it.copy(playerAvatar = avatar, status = result.cleanupNotice ?: "玩家头像已保存") }
+    }
+
+    suspend fun clearPlayerAvatar() = perform("无法清除玩家头像") {
+        val result = playerImages?.replace(null) ?: return@perform
+        val avatar = settings.getPlayerSetting().desktopAvatar
+        mutableState.update { it.copy(playerAvatar = avatar, status = result.cleanupNotice ?: "玩家头像已清除") }
+    }
+
     suspend fun savePlayerSetting() = perform("Unable to save player setting") {
         val draft = mutableState.value.settings ?: return@perform
-        val latest = settings.getPlayerSetting()
-        settings.savePlayerSetting(latest.copy(
+        settings.updatePlayerSetting { latest -> latest.copy(
             playerName = draft.playerName,
             globalPersona = draft.playerPersona,
-        ))
+        ) }
         playerBaseline = draft.playerName to draft.playerPersona
         mutableState.update { it.copy(status = "Player setting saved", playerDirty = false) }
     }

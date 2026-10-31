@@ -354,6 +354,8 @@ class DesktopAppContainer internal constructor(
             presets = presetModelCatalogSource,
             fishCredentials = fishCredentialController,
             ragSettings = ragController,
+            playerImages = DesktopPlayerImages(settingsRepository, characterResourceStore, filePicker,
+                dataOperationCoordinator, ownedImageCleanup::deleteUnreferenced),
         )
     }
     private val appDataSnapshotService = AppDataSnapshotService(appDataRoot)

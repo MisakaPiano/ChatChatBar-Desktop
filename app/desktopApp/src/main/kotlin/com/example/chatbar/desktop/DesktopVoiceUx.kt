@@ -1,12 +1,17 @@
 package com.example.chatbar.desktop
 
 import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.TextStyle
@@ -17,6 +22,7 @@ import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.domain.voice.VoiceGenerationPolicy
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 internal class DesktopVoiceUiSelection {
     var narrator by mutableStateOf<String?>(null)
@@ -138,8 +144,40 @@ internal fun DesktopVoiceDeckRow(text: String, detail: (() -> Unit)?, cancel: ((
     }
 }
 
+/** App-lifetime position; hiding the player or changing routes does not reset a user's drag. */
+internal class DesktopFloatingVoicePosition {
+    var preferred by mutableStateOf<Offset?>(null)
+}
+
 @Composable
-internal fun DesktopFloatingVoicePlayer(runtime: DesktopChatVoiceRuntime?, preferences: DesktopChatUiController? = null) {
+internal fun DesktopFloatingVoicePlayerHost(runtime: DesktopChatVoiceRuntime?, preferences: DesktopChatUiController?,
+    position: DesktopFloatingVoicePosition) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        var playerSize by remember { mutableStateOf(IntSize.Zero) }
+        val density = LocalDensity.current
+        val parentSize = with(density) { IntSize(maxWidth.roundToPx(), maxHeight.roundToPx()) }
+        val margin = with(density) { 16.dp.toPx() }
+        val endX = (parentSize.width - playerSize.width).coerceAtLeast(0).toFloat()
+        val endY = (parentSize.height - playerSize.height).coerceAtLeast(0).toFloat()
+        val insetX = margin.coerceAtMost(endX / 2)
+        val insetY = margin.coerceAtMost(endY / 2)
+        val wanted = position.preferred ?: Offset(endX - insetX, endY - insetY)
+        val visible = Offset(wanted.x.coerceIn(insetX, endX - insetX), wanted.y.coerceIn(insetY, endY - insetY))
+        Box(Modifier.offset { IntOffset(visible.x.roundToInt(), visible.y.roundToInt()) }
+            .onSizeChanged { playerSize = it }.testTag("floating-voice-player-window")) {
+            DesktopFloatingVoicePlayer(runtime, preferences) { delta ->
+                val current = position.preferred?.let { Offset(it.x.coerceIn(insetX, endX - insetX),
+                    it.y.coerceIn(insetY, endY - insetY)) } ?: visible
+                position.preferred = Offset((current.x + delta.x).coerceIn(insetX, endX - insetX),
+                    (current.y + delta.y).coerceIn(insetY, endY - insetY))
+            }
+        }
+    }
+}
+
+@Composable
+internal fun DesktopFloatingVoicePlayer(runtime: DesktopChatVoiceRuntime?, preferences: DesktopChatUiController? = null,
+    onDrag: ((Offset) -> Unit)? = null) {
     if (runtime == null) return
     val state by runtime.playback.state.collectAsState()
     if (state.currentVoiceId == null) return
@@ -147,10 +185,15 @@ internal fun DesktopFloatingVoicePlayer(runtime: DesktopChatVoiceRuntime?, prefe
         value = runCatching { runtime.playbackSourceTitle(state.sessionId) }.getOrDefault("语音播放")
     }
     val notice by runtime.notice.collectAsState()
+    val drag by rememberUpdatedState(onDrag)
     Column(Modifier.widthIn(max = 340.dp).background(DesktopBootstrapColors.card, RoundedCornerShape(12.dp))
         .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(12.dp)).padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        BasicText(source, maxLines = 1, overflow = TextOverflow.Ellipsis,
+        BasicText(source, Modifier.fillMaxWidth().heightIn(min = 28.dp)
+            .testTag("floating-voice-player-drag-handle")
+            .then(if (onDrag == null) Modifier else Modifier.semantics { contentDescription = "拖动播放器" }
+                .pointerInput(Unit) { detectDragGestures { change, delta -> change.consume(); drag?.invoke(delta) } }),
+            maxLines = 1, overflow = TextOverflow.Ellipsis,
             style = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 12.sp))
         DesktopRuntimeVoicePlayer(runtime, state, preferences)
         state.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
@@ -195,20 +238,27 @@ internal fun DesktopVoicePlayerRow(state: DesktopVoicePlaybackState, resume: () 
         if (open) Popup(alignment = Alignment.TopEnd, onDismissRequest = { open = false }, properties = PopupProperties(focusable = true)) {
             Column(Modifier.width(260.dp).background(DesktopBootstrapColors.card, RoundedCornerShape(8.dp))
                 .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp)).padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                DesktopContinuousPlaybackSwitch(controller)
-                sessionId?.let { DesktopSessionContinuousPlaybackSetting(controller, it) }
-                BootstrapButton("关闭播放设置", secondary = true) { open = false }
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.weight(1f)) { DesktopContinuousPlaybackSwitch(controller, showDescription = false) }
+                    DesktopChatIconAction("关闭播放设置", DesktopAppIcons.Close, targetDp = 28) { open = false }
+                }
+                StatusText("播完当前回复后，继续播放后续助手回复已有的录音。")
+                sessionId?.let {
+                    DesktopSessionContinuousPlaybackSetting(controller, it, label = "会话连续播放")
+                    StatusText("仅影响当前录音所属的会话；单独开关会覆盖全局默认。")
+                }
             }
         }
     }
 }
 
-@Composable internal fun DesktopSessionContinuousPlaybackSetting(controller: DesktopChatUiController, sessionId: String) {
+@Composable internal fun DesktopSessionContinuousPlaybackSetting(controller: DesktopChatUiController, sessionId: String,
+    label: String = "本会话连续播放") {
     val preferences by controller.state.collectAsState()
     val scope = rememberCoroutineScope()
     val selection = preferences.sessionContinuousVoicePlayback[sessionId]
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        SearchableChoice("本会话连续播放", listOf<Boolean?>(null, true, false), selection, {
+        SearchableChoice(label, listOf<Boolean?>(null, true, false), selection, {
             when (it) { null -> "跟随全局（${if (preferences.continuousVoicePlayback) "开启" else "关闭"}）"; true -> "开启"; false -> "关闭" }
         }) { value -> scope.launch { controller.update {
             it.copy(sessionContinuousVoicePlayback = it.sessionContinuousVoicePlayback - sessionId +
@@ -217,15 +267,15 @@ internal fun DesktopVoicePlayerRow(state: DesktopVoicePlaybackState, resume: () 
     }
 }
 
-@Composable internal fun DesktopContinuousPlaybackSwitch(controller: DesktopChatUiController) {
+@Composable internal fun DesktopContinuousPlaybackSwitch(controller: DesktopChatUiController, showDescription: Boolean = true) {
     val preferences by controller.state.collectAsState()
     val error by controller.error.collectAsState()
     val scope = rememberCoroutineScope()
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        StudioSwitch("连续播放", preferences.continuousVoicePlayback) {
+        StudioSwitch("全局默认连续播放", preferences.continuousVoicePlayback) {
             scope.launch { controller.update { it.copy(continuousVoicePlayback = !it.continuousVoicePlayback) } }
         }
-        StatusText("播完当前回复后，继续播放后续助手回复已有的录音。")
+        if (showDescription) StatusText("播完当前回复后，继续播放后续助手回复已有的录音；会话单独设置优先。")
         error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
     }
 }

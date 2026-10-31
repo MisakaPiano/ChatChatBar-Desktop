@@ -303,6 +303,7 @@ internal fun DesktopManagePanel(
                             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 DesktopCoreSettingsPanel(
                     state = state,
+                    controller = modelSettingsController,
                     area = area,
                     onChatDefaults = { settingsEditor = ManageSettingsEditor.CHAT_DEFAULTS },
                     onPlayer = { settingsEditor = ManageSettingsEditor.PLAYER },
@@ -910,6 +911,7 @@ internal fun DesktopModelsPanel(
 @Composable
 private fun DesktopCoreSettingsPanel(
     state: DesktopModelSettingsState,
+    controller: DesktopModelSettingsController,
     area: ManageSettingsGroup,
     onChatDefaults: () -> Unit,
     onPlayer: () -> Unit,
@@ -945,6 +947,7 @@ private fun DesktopCoreSettingsPanel(
     }
     if (area == ManageSettingsGroup.PLAYER) {
     ManageHeading(t(DesktopUiText.PLAYER_SETTING))
+    DesktopPlayerAvatarSetting(controller, state)
     StatusText(draft.playerName.ifBlank { t(DesktopUiText.NOT_CONFIGURED) })
     BootstrapButton(t(DesktopUiText.EDIT), variant = DesktopActionVariant.SECONDARY, onClick = onPlayer)
     }

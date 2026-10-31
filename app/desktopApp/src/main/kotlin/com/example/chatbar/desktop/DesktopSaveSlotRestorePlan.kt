@@ -44,6 +44,7 @@ internal class DesktopSaveSlotRestorePlan(private val liveRoot: Path,
             ragFiles.add(path)
         }
         var background: String? = null
+        var playerAvatar: String? = null
         var audioSource: (String) -> java.io.InputStream
         val handoff = DesktopVoiceArchiveHandoff(DesktopVoiceAudioStore(directory, extendedPaths = true), voices,
             retainHistoricalVersions = true)
@@ -61,6 +62,7 @@ internal class DesktopSaveSlotRestorePlan(private val liveRoot: Path,
                 reader.streamRag(target.id, ::chunk)
                 reader.streamVoices { rawVoices += it }
                 background = reader.materializeBackground()
+                playerAvatar = reader.materializePlayerAvatar()
                 audioSource = reader::openAudioResource
             } else {
                 val imagePaths = linkedMapOf<String, String>()
@@ -82,6 +84,7 @@ internal class DesktopSaveSlotRestorePlan(private val liveRoot: Path,
                     generatedImageMetadata = it.generatedImageMetadata.map { meta -> meta.copy(imagePath = image(meta.imagePath)) })) }
                 slot.vectorChunks.forEach { chunk(it.copy(id = UUID.randomUUID().toString(), sourceId = target.id)) }
                 background = slot.chatBackground?.let(::image)
+                playerAvatar = slot.desktopPlayerAvatar?.let(::image)
                 val audioResources = linkedMapOf<String, SaveSlotAudioResource>()
                 val legacyVoices = slot.voiceMessages.map { voice ->
                     val key = requireNotNull(DesktopSaveSlotInspector.legacyAudioResourceKey(slot, voice))
@@ -115,7 +118,8 @@ internal class DesktopSaveSlotRestorePlan(private val liveRoot: Path,
                 publishedImages[raw] = reference
                 return reference
             }
-            var session = SaveSlotSessionPolicy.restore(target, slot, background?.let { imageReference(it) })
+            var session = SaveSlotSessionPolicy.restore(target, slot, background?.let { imageReference(it) },
+                playerAvatar?.let { imageReference(it) })
             if (remapIds) session = copy.session(session, target.id,
                 target.displayTitleOverride ?: target.title, target.createdAt)
             chats.createSession(session)

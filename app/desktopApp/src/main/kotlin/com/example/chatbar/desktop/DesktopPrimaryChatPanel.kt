@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -916,11 +917,16 @@ internal fun PrimaryMessageBubble(
             val header: @Composable () -> Unit = {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = if (message.role == MessageRole.USER) Arrangement.End else Arrangement.spacedBy(8.dp)) {
-                    PrimaryAvatar(
-                        state.selectedCharacter?.avatar.takeIf { message.role == MessageRole.ASSISTANT },
-                        presented.speakerLabel,
-                        controller,
-                    )
+                    val playerRole = if (message.role == MessageRole.USER)
+                        com.example.chatbar.domain.chat.PlayerRolePolicy.person(state.selectedSession, state.selectedCharacter) else null
+                    DesktopChatPersonTarget(playerRole?.let { role -> state.people.singleOrNull { it.character.id == role.id } }) {
+                        PrimaryAvatar(
+                            if (message.role == MessageRole.USER) state.globalPlayerAvatar
+                            else state.selectedCharacter?.avatar.takeIf { message.role == MessageRole.ASSISTANT },
+                            presented.speakerLabel,
+                            controller,
+                        )
+                    }
                     StatusText(presented.speakerLabel)
                 }
             }
@@ -1225,6 +1231,36 @@ internal fun DesktopSessionSettingsBody(
     }
     PrimaryField(t(DesktopUiText.PLAYER_NAME_OVERRIDE), draft.playerName.orEmpty()) { value ->
         controller.editSessionSettings { it.copy(playerName = value.takeIf(String::isNotBlank)) }
+    }
+    StatusText(if (draft.desktopPlayerAvatar == null) "玩家头像：跟随全局" else "玩家头像：本会话单独设置")
+    val playerImageScope = rememberCoroutineScope()
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        PrimaryAvatar(draft.desktopPlayerAvatar ?: state.defaultPlayerAvatar, state.globalPlayerName ?: "你", controller, 40.dp)
+        BootstrapButton("选择会话头像", secondary = true) { playerImageScope.launch { controller.chooseSessionPlayerAvatar() } }
+        BootstrapButton("恢复跟随全局", secondary = true, enabled = draft.desktopPlayerAvatar != null) {
+            playerImageScope.launch { controller.chooseSessionPlayerAvatar(followGlobal = true) }
+        }
+    }
+    StatusText("头像立即保存；姓名、设定和角色关联使用本页的保存按钮。")
+    val roleCard = state.selectedCharacter
+    if (roleCard != null) {
+        val role = draft.desktopPlayerRole
+        val people = roleCard.characters.filter { person -> roleCard.characters.count { it.id == person.id } == 1 }
+        SearchableChoice("我扮演的角色", listOf<String?>(null) + people.map { it.id }, role?.takeIf { it.cardId == roleCard.id }?.personId,
+            { id -> people.firstOrNull { it.id == id }?.name ?: if (id == null) "不关联角色" else "原关联已不可用" }) { id ->
+            controller.editSessionSettings { it.copy(desktopPlayerRole = id?.let {
+                com.example.chatbar.data.local.entity.SessionPlayerRole(roleCard.id, it) }) }
+        }
+        if (role != null) {
+            if (com.example.chatbar.domain.chat.PlayerRolePolicy.person(draft, roleCard) == null)
+                StatusText("原关联角色已不可用，请重新选择；不会按同名自动换绑。", DesktopBootstrapColors.warning)
+            StudioSwitch("姓名跟随角色", role.followName) { controller.editSessionSettings {
+                it.copy(desktopPlayerRole = it.desktopPlayerRole?.copy(followName = !role.followName)) } }
+            StudioSwitch("头像跟随角色", role.followAvatar) { controller.editSessionSettings {
+                it.copy(desktopPlayerRole = it.desktopPlayerRole?.copy(followAvatar = !role.followAvatar)) } }
+            StatusText("跟随角色时优先使用角色姓名／头像；关闭跟随后恢复会话覆盖或全局默认。")
+            StatusText("关联后，点击自己的头像可查看该角色的状态。不会额外注入状态或改变人物开关。")
+        } else StatusText("只有手动关联才共享状态；姓名相同不会自动关联。")
     }
     PrimaryField(t(DesktopUiText.PLAYER_SETTING_OVERRIDE), draft.playerSetting.orEmpty()) { value ->
         controller.editSessionSettings { it.copy(playerSetting = value.takeIf(String::isNotBlank)) }

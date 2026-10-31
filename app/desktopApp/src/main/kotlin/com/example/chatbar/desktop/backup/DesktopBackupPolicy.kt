@@ -54,6 +54,9 @@ internal object DesktopBackupPolicy {
     fun isDesktopOnly(path: String): Boolean = path.startsWith("${DesktopHistoricalVoiceCustody.ROOT}/") || path.startsWith("${DesktopPreservationStore.ROOT}/") || path.startsWith("${DesktopSaveSlotSourceCustody.ROOT}/") ||
         path.startsWith("entities/") && (entityType(path).startsWith("desktop_") || entityType(path) == "retrieval_model_config")
     fun hasDesktopParticipation(value: JsonObject): Boolean =
+        value["desktopPlayerRole"] is JsonObject ||
+        (value["desktopPlayerAvatar"] as? JsonPrimitive)?.contentOrNull?.isNotBlank() == true ||
+        (value["desktopAvatar"] as? JsonPrimitive)?.contentOrNull?.isNotBlank() == true ||
         (value["desktopAutoPauseAbsentPeople"] as? JsonPrimitive)?.booleanOrNull == true ||
         (value["desktopCharacterParticipation"] as? JsonArray)?.any { entry ->
             (entry as? JsonObject)?.let { scope ->

@@ -5,6 +5,8 @@ description: Maintain ChatBar conversation SaveSlot creation, listing, loading, 
 
 # ChatBar SaveSlot
 
+Desktop player role association and per-session avatar use optional `desktopPlayerRole`/`desktopPlayerAvatar` on both ChatSession and SaveSlot. Shared `SaveSlotSessionPolicy` carries the role; restore accepts the separately materialized player-avatar reference. `SaveSlotPackageStorage` counts/packages/validates that image and exposes `materializePlayerAvatar`; Desktop Inspector, capture and RestorePlan include it in the existing media proof and transaction. Image policy NONE omits the avatar image, preserving the explicit role. Global player avatar remains a whole-app setting, not a conversation archive field.
+
 Keep archive size independent from peak app memory. Treat SaveSlot as a cross-store restore transaction, not one large serialized object.
 
 ## Entry Points
