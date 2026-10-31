@@ -78,8 +78,8 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
                 catch (cleanup: Throwable) { failure.addSuppressed(cleanup) }
                 preview = null
                 val message = when {
-                    failure is DesktopFullBackupSource.Refusal && failure.passwordRequired -> "该备份已加密，请输入存档密码（8–1024 个字符）后重新检查。当前数据未改变。"
-                    failure is DesktopFullBackupSource.Refusal -> "备份读取未通过（${failure.stage}）。请核对备份文件和加密密码；当前数据未改变。"
+                    failure is DesktopFullBackupSource.Refusal -> failure.userMessage()
+                    failure is DesktopBackupRecords.ResourceLimit -> failure.userMessage()
                     failure is DesktopDraftPersistenceException -> "聊天草稿尚未保存成功，已停止准备合并以免遗漏内容。请保留当前草稿；备份文件未改变。"
                     failure is DesktopReadingPositionPersistenceException -> "阅读位置尚未保存成功，已停止准备合并；当前数据和备份文件保留。"
                     failure is DesktopBackupMissingResource -> "电脑中的“${failure.ownerLabel}”缺少资源“${failure.resourceName}”，无法准备完整合并；原卡和备份文件保留。"

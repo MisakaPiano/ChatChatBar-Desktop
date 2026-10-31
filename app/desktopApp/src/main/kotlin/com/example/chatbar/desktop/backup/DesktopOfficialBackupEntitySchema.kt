@@ -14,6 +14,10 @@ internal object DesktopOfficialBackupEntitySchema {
         backupJson.decodeFromJsonElement(serializer, value)
     }
 
+    fun validateVersion(type: String, value: JsonObject, appVersionCode: Int) {
+        versioned(requireNotNull(DesktopBackupPolicy.schemas[type]).descriptor, value, appVersionCode, 0)
+    }
+
     private fun versioned(descriptor: SerialDescriptor, value: JsonElement, code: Int, depth: Int) {
         require(depth <= 64)
         if (value == JsonNull) return

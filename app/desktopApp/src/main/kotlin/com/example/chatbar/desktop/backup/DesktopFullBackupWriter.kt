@@ -17,7 +17,12 @@ import kotlinx.serialization.json.*
 internal object DesktopFullBackupWriter {
     private val wire = backupJson
     private val excludedOptions = setOf("novelAiCredentials", "fishAudioCredentials", "siliconFlowApiKey", "community")
-    class Refusal(val stage: String) : IllegalStateException("FULL_BACKUP_EXPORT_$stage")
+    class Refusal(val stage: String) : IllegalStateException("FULL_BACKUP_EXPORT_$stage") {
+        var resourceActual: Long? = null
+            internal set
+        var resourceLimit: Long? = null
+            internal set
+    }
 
     suspend fun export(files: Map<String, Path>, destination: Path, password: CharArray?,
         preferences: BackupPreferences = BackupPreferences(), credentials: DesktopBackupExportCredentials? = null,
@@ -36,7 +41,7 @@ internal object DesktopFullBackupWriter {
                 val proof = linkedMapOf<String, AppBackupFileRecord>()
                 val sourceProof = linkedMapOf<String, String>()
                 val transported = linkedMapOf<String, ByteArray>()
-                var structured = 0L; var total = 0L
+                var total = 0L
                 for ((name, path) in files.toSortedMap()) {
                     currentCoroutineContext().ensureActive()
                     DesktopBackupPolicy.path(name)
@@ -45,13 +50,12 @@ internal object DesktopFullBackupWriter {
                     require(size in 0..DesktopFullBackupSource.MAX_FILE)
                     sourceProof[name] = DesktopArchiveFiles.hash(path, DesktopFullBackupSource.MAX_FILE)
                     if (name.startsWith("entities/")) {
-                        require(size <= DesktopBackupPolicy.MAX_JSON)
-                        structured += size; require(structured <= DesktopFullBackupSource.MAX_STRUCTURED)
+                        DesktopBackupRecords.requireSize(size)
                         val bytes = Files.readAllBytes(path)
                         try {
-                            val original = DesktopBackupPolicy.entity(name, bytes, false, wireVersionCode = 86)
+                            val original = DesktopBackupPolicy.entity(name, bytes, false, wireVersionCode = 86, modern = true)
                             val value = credentials?.entity(name, original) ?: original
-                            entities[name] = value
+                            entities[name] = DesktopBackupRecords.scopeRecord(value)
                             if (value != original) transported[name] = value.toString().toByteArray()
                         }
                         finally { bytes.fill(0) }
@@ -139,6 +143,9 @@ internal object DesktopFullBackupWriter {
                     verified.sourceHash
                 }
             } catch (cancelled: CancellationException) { throw cancelled }
-            catch (_: Exception) { throw Refusal(stage) }
+            catch (failure: Exception) { throw Refusal(stage).apply {
+                if (failure is DesktopBackupRecords.ResourceLimit) { resourceActual = failure.actual; resourceLimit = failure.limit }
+                if (failure is DesktopFullBackupSource.Refusal) { resourceActual = failure.resourceActual; resourceLimit = failure.resourceLimit }
+            } }
         } } finally { password?.fill('\u0000') }
 }

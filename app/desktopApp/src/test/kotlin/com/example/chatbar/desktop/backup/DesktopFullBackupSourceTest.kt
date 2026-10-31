@@ -51,7 +51,7 @@ class DesktopFullBackupSourceTest {
                     DesktopFullBackupSource.verify(source, null, sink)
                 }
                 // Strict ZIP deliberately sanitizes callback failures rather than exposing JSON.
-                assertEquals("ZIP_ENTRY_CALLBACK_OR_STREAM", error.stage)
+                assertEquals("ZIP_CONTENT_STRUCTURED_ENTRY", error.stage)
                 assertEquals(0, sink.preferences)
             }
         }

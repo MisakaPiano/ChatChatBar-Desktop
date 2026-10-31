@@ -78,8 +78,9 @@ internal object DesktopBackupPolicy {
     fun entityType(path: String) = path.removePrefix("entities/").substringBefore('/').removeSuffix(".json")
 
     /** No exception text from parsing is exposed by controllers (it may contain user data). */
-    fun entity(relative: String, bytes: ByteArray, exporting: Boolean, wireVersionCode: Int = 84): JsonObject {
-        require(relative.startsWith("entities/") && relative.endsWith(".json") && bytes.size <= MAX_JSON)
+    fun entity(relative: String, bytes: ByteArray, exporting: Boolean, wireVersionCode: Int = 84, modern: Boolean = false): JsonObject {
+        require(relative.startsWith("entities/") && relative.endsWith(".json"))
+        if (modern) DesktopBackupRecords.requireSize(bytes.size.toLong()) else require(bytes.size <= MAX_JSON)
         val type = entityType(relative)
         val serializer = schemas[type] ?: throw DesktopBackupCompatibilityException(
             if (type in setOf("moment_posts", "moment_tasks")) DesktopBackupCompatibility.MOMENTS_UNSUPPORTED

@@ -104,14 +104,14 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
                         "临时文件清理尚未确认，已保留异常现场；请勿自行清理恢复记录。"
                     else when (failure) {
                         is DesktopBackupCompatibilityException -> failure.kind.userMessage()
-                        is DesktopFullBackupSource.Refusal -> if (failure.passwordRequired) "该备份已加密，请输入存档密码（8–1024 个字符）后重新检查。当前数据未改变。"
-                            else "备份文件校验未通过（${failure.stage}）。请核对文件和加密密码；当前数据未改变。"
+                        is DesktopFullBackupSource.Refusal -> failure.userMessage()
+                        is DesktopBackupRecords.ResourceLimit -> failure.userMessage()
                         is DesktopBackupScratchCleanupException -> "临时文件清理尚未确认，已保留异常现场；请勿自行清理恢复记录。"
                         is DesktopAudioDrainException -> "音频尚未确认安全停止，恢复未提交。"
                         is DesktopDataOperationRejectedException -> "数据操作暂不可用，请检查是否需要正常退出。"
                         is DesktopBackupExportFailure -> "备份导出未完成（${failure.stage}）。原数据与凭据保留，请核对文件和资源。"
                         is DesktopBackupMissingResource -> "“${failure.ownerLabel}”缺少资源“${failure.resourceName}”。请补回文件，或在导出清单中取消对应角色卡；原数据未修改。"
-                        is DesktopFullBackupWriter.Refusal -> "备份导出未完成（${failure.stage}）。请核对目标文件、可用空间和备份密码。"
+                        is DesktopFullBackupWriter.Refusal -> failure.userMessage()
                         else -> when (failure.message) {
                             "UNCLASSIFIED_ROOT_ENTRY" -> "发现未识别的本机数据目录，备份未导出；请保留原目录以便核对。"
                             "UNCLASSIFIED_HIDDEN_BACKUP_ENTRY" -> "发现未能归类的隐藏数据，备份未导出；原文件保留。"

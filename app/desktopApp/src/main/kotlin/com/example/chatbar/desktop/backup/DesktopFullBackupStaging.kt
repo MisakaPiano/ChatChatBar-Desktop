@@ -31,7 +31,6 @@ internal class DesktopFullBackupStaging private constructor(
             val secrets = DesktopImportSecrets()
             try {
                 val files = linkedMapOf<String, Path>()
-                val entities = linkedMapOf<String, JsonObject>()
                 var preferences: JsonObject? = null
                 val context = currentCoroutineContext()
                 val verified = DesktopFullBackupSource.verify(source, password, object : DesktopFullBackupSource.TentativeSink {
@@ -41,7 +40,6 @@ internal class DesktopFullBackupStaging private constructor(
                         if (DesktopBackupPolicy.entityType(path) in setOf("moment_posts", "moment_tasks", "save_slots", "chat_messages", "generated_voice_messages")) scratch.write(destination, raw)
                         else scratch.write(destination, clean.toString().toByteArray(Charsets.UTF_8))
                         check(files.put(path, destination) == null)
-                        entities[path] = clean
                     }
                     override fun preferences(original: JsonObject) { preferences = secrets.preferences(original) }
                     override fun media(path: String, input: InputStream) {
@@ -59,7 +57,7 @@ internal class DesktopFullBackupStaging private constructor(
                 context.ensureActive()
                 check(files.keys == verified.inventory.keys)
                 val hashes = files.mapValues { (_, path) -> DesktopArchiveFiles.hash(path, DesktopFullBackupSource.MAX_FILE) }
-                DesktopFullBackupStaging(verified, files.toMap(), entities.toMap(), requireNotNull(preferences), secrets, hashes, scratch)
+                DesktopFullBackupStaging(verified, files.toMap(), DesktopBackupRecords.files(files.filterKeys { it.startsWith("entities/") }, hashes), requireNotNull(preferences), secrets, hashes, scratch)
             } catch (failure: Throwable) {
                 secrets.close()
                 try { scratch.close() } catch (cleanup: Throwable) { failure.addSuppressed(cleanup) }

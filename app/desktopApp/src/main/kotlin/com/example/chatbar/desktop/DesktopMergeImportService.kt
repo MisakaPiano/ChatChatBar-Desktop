@@ -147,6 +147,7 @@ internal class DesktopMergeImportService(
                         verifiedFiles++
                         if (verifiedFiles == 1 || verifiedFiles % 128 == 0) progress(Progress(Stage.PREPARING_ROOT, verifiedFiles))
                     }
+                    result.use {
                     progress(Progress(Stage.PROTECTING_CREDENTIALS))
                     preview.credentials.writeNewRoot(target, authority, pending, result.plan, selection, credentialChoices, confirmed)
                     val files = result.files.toMutableMap()
@@ -180,6 +181,7 @@ internal class DesktopMergeImportService(
                         published = true
                         requireRestart()
                         committedEvidence = CommitEvidence(snapshot, commit)
+                    }
                     }
                 }
             }

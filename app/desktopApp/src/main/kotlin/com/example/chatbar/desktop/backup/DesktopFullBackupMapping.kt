@@ -116,12 +116,12 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
             if (relative.startsWith("entities/")) {
                 if (selectedRecords != null && relative !in selectedRecords && relative != "entities/desktop_backup_preferences.json") return@forEachIndexed
                 entityType = DesktopBackupPolicy.entityType(relative)
-                check(Files.size(source) <= DesktopBackupPolicy.MAX_JSON)
+                if (wireVersionCode >= 85) DesktopBackupRecords.requireSize(Files.size(source)) else check(Files.size(source) <= DesktopBackupPolicy.MAX_JSON)
                 val raw = Files.readAllBytes(source)
                 // Normal exports strip keys. A merge snapshot may not silently discard an unsafe
                 // PC plaintext value that differs from/misses its protected counterpart.
-                if (forMerge) DesktopBackupPolicy.entity(relative, raw, false, wireVersionCode)
-                val value = DesktopBackupPolicy.entity(relative, raw, true, wireVersionCode)
+                if (forMerge) DesktopBackupPolicy.entity(relative, raw, false, wireVersionCode, modern = wireVersionCode >= 85)
+                val value = DesktopBackupPolicy.entity(relative, raw, true, wireVersionCode, modern = wireVersionCode >= 85)
                 entityLabel = (value["name"] as? JsonPrimitive)?.contentOrNull?.take(160) ?: entityType
                 if (relative == "entities/desktop_backup_preferences.json") {
                     preferences = backupJson.decodeFromJsonElement(BackupPreferences.serializer(), value)
@@ -173,8 +173,8 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
         // Read one typed entity at a time; do not retain all chat bodies or vectors.
         inputs.forEach { (relative, file) ->
             val value = if (relative.startsWith("entities/")) {
-                check(Files.size(file) <= DesktopBackupPolicy.MAX_JSON)
-                DesktopBackupPolicy.entity(relative, Files.readAllBytes(file), false, wireVersionCode)
+                if (wireVersionCode >= 85) DesktopBackupRecords.requireSize(Files.size(file)) else check(Files.size(file) <= DesktopBackupPolicy.MAX_JSON)
+                DesktopBackupPolicy.entity(relative, Files.readAllBytes(file), false, wireVersionCode, modern = wireVersionCode >= 85)
             } else null
             destinations[relative] = DesktopBackupPolicy.desktopName(relative, value)
         }
@@ -207,7 +207,7 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
             scratch.directories(target.parent)
             if (relative.startsWith("entities/")) {
                 entityType = DesktopBackupPolicy.entityType(relative)
-                val value = DesktopBackupPolicy.entity(relative, Files.readAllBytes(file), false, wireVersionCode)
+                val value = DesktopBackupPolicy.entity(relative, Files.readAllBytes(file), false, wireVersionCode, modern = wireVersionCode >= 85)
                 scratch.write(target, DesktopBackupPolicy.mapResources(value, ::mappedResource))
             } else scratch.copy(file, target, DesktopBackupPolicy.MAX_FILE)
             files[destination] = target
