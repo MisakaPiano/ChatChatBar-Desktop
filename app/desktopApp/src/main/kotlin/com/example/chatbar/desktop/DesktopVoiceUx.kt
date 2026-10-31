@@ -189,7 +189,7 @@ internal fun DesktopFloatingVoicePlayer(runtime: DesktopChatVoiceRuntime?, prefe
     Column(Modifier.widthIn(max = 340.dp).background(DesktopBootstrapColors.card, RoundedCornerShape(12.dp))
         .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(12.dp)).padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        BasicText(source, Modifier.fillMaxWidth().heightIn(min = 28.dp)
+        BasicText(source, Modifier.heightIn(min = 28.dp)
             .testTag("floating-voice-player-drag-handle")
             .then(if (onDrag == null) Modifier else Modifier.semantics { contentDescription = "拖动播放器" }
                 .pointerInput(Unit) { detectDragGestures { change, delta -> change.consume(); drag?.invoke(delta) } }),

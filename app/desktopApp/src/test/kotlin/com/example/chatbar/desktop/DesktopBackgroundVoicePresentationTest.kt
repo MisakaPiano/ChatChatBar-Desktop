@@ -61,6 +61,8 @@ class DesktopBackgroundVoicePresentationTest {
                     }
                     fun window() = scene.nodes().single { it.config.getOrNull(SemanticsProperties.TestTag) == "floating-voice-player-window" }.boundsInRoot
                     val original = window()
+                    val controls = scene.nodes().single { it.config.getOrNull(SemanticsProperties.TestTag) == "voice-floating-player" }.boundsInRoot
+                    assertTrue(original.width <= controls.width + 18f, "A short title must not stretch the floating window beyond its controls and padding")
                     val handle = scene.nodes().single { it.config.getOrNull(SemanticsProperties.TestTag) == "floating-voice-player-drag-handle" }.boundsInRoot.center
                     scene.sendPointerEvent(PointerEventType.Press, handle, button = PointerButton.Primary)
                     scene.sendPointerEvent(PointerEventType.Move, handle + Offset(-20f, -20f), button = PointerButton.Primary)

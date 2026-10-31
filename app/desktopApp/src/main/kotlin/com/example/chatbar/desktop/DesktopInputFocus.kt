@@ -13,9 +13,22 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 
+internal class DesktopModalActivity {
+    var count by mutableStateOf(0)
+        private set
+    fun opened() { count++ }
+    fun closed() { check(count > 0); count-- }
+}
+internal val LocalDesktopModalActivity = staticCompositionLocalOf<DesktopModalActivity?> { null }
+
 /** Native Compose focus isolation, retaining in-app bounds and explicit Close/Cancel decisions. */
 @Composable
-internal fun DesktopModalSurface(content: @Composable () -> Unit) {
+internal fun DesktopModalSurface(reportActivity: Boolean = true, content: @Composable () -> Unit) {
+    val activity = LocalDesktopModalActivity.current
+    DisposableEffect(activity, reportActivity) {
+        if (reportActivity) activity?.opened()
+        onDispose { if (reportActivity) activity?.closed() }
+    }
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val width = maxWidth
         val height = maxHeight

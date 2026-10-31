@@ -5,6 +5,8 @@ description: Build or migrate ChatBar Android UI using shadcn/ui design principl
 
 # ChatBar shadcn Compose
 
+`DesktopInputFocus.kt` supplies `LocalDesktopModalActivity` at the main application root. Ordinary `DesktopModalSurface` instances register their lifetime; the startup update notice opts out of registering itself and waits while another modal is present, avoiding recursive self-suppression.
+
 Desktop text inputs use `DesktopBootstrapColors.inputCaret` with their foreground text color. Compose's default black caret is invisible on the dark input surface; keep composer, search, editors, Studio and credential fields on the same theme token. The separate Swing startup/shutdown diagnostic text areas are read-only.
 
 Desktop management and Data use `DesktopWorkspacePage` for bounded side navigation, switching to a scrolling top row below 700dp. `DesktopRetainedPane` keeps subsection drafts composed while removing hidden content from placement, focus and semantics. Keep original requestLeave, busy, confirmation and controller callbacks. The Studio creation surface retains its own full-width preview/title/divider geometry; history organization must not wrap it in a second sidebar.

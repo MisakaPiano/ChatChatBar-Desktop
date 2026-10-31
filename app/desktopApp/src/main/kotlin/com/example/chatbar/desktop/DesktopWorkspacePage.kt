@@ -19,7 +19,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 
-internal data class DesktopWorkspaceDestination(val id: String, val label: String)
+internal data class DesktopWorkspaceDestination(val id: String, val label: String, val pending: Boolean = false)
 
 /** Keep transient drafts in composition while inactive pages have no placed/focusable content. */
 @Composable
@@ -64,10 +64,15 @@ internal fun DesktopWorkspaceNavigationItem(item: DesktopWorkspaceDestination, s
     val colors = DesktopBootstrapColors
     Box(modifier.height(40.dp).background(if (selected) colors.secondary else androidx.compose.ui.graphics.Color.Transparent,
         RoundedCornerShape(6.dp)).semantics {
-        role = Role.Tab; contentDescription = item.label; this.selected = selected; if (!enabled) disabled()
+        role = Role.Tab; contentDescription = if (item.pending) "${item.label}，有新版本" else item.label
+        this.selected = selected; if (!enabled) disabled()
     }.clickable(enabled = enabled, role = Role.Tab, onClick = onClick).padding(horizontal = 12.dp),
         contentAlignment = androidx.compose.ui.Alignment.CenterStart) {
-        BasicText(item.label, maxLines = 1, overflow = TextOverflow.Ellipsis,
-            style = TextStyle(color = if (enabled) colors.foreground else colors.mutedForeground, fontSize = 14.sp))
+        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+            BasicText(item.label, Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis,
+                style = TextStyle(color = if (enabled) colors.foreground else colors.mutedForeground, fontSize = 14.sp))
+            if (item.pending) Box(Modifier.padding(start = 6.dp).size(6.dp)
+                .background(colors.primary, androidx.compose.foundation.shape.CircleShape))
+        }
     }
 }

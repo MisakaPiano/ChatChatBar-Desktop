@@ -59,6 +59,16 @@ internal fun DesktopPrimaryShell(
     val backupLocked = fullBackup.busy || fullBackup.restartRequired || mergeLocked
     val locked = rootState !is DesktopDataRootSwitchState.Idle || backupLocked
     val route = if (backupLocked) DesktopPrimaryRoute.DATA else navigation.currentRoute(rootState, selectedRoute)
+    val updateNotices = LocalDesktopUpdateNotices.current
+    val updateNotice = updateNotices?.state?.collectAsState()?.value
+    val modalActivity = LocalDesktopModalActivity.current
+    val tasks by primaryChatController.taskRuntime.tasks.collectAsState()
+    val repairs by primaryChatController.taskRuntime.repairTasks.collectAsState()
+    val management by managementController.state.collectAsState()
+    val transfer by transferController.state.collectAsState()
+    val templates by modelTemplateController.state.collectAsState()
+    val chat by primaryChatController.state.collectAsState()
+    var openUpdateRequest by remember { mutableStateOf(0) }
     val colors = DesktopBootstrapColors
     val t = LocalDesktopUiStrings.current
     val scope = rememberCoroutineScope()
@@ -97,7 +107,13 @@ internal fun DesktopPrimaryShell(
     BoxWithConstraints(Modifier.fillMaxSize().background(colors.background).onGloballyPositioned(chromeLayout::root)) {
         val size = DesktopShellLayoutPolicy.sizeForWidth(maxWidth.value)
         Column(Modifier.fillMaxSize()) {
-            DesktopTitleBar(size, route, locked, chrome, chromeLayout, onNavigate = ::navigate)
+            DesktopTitleBar(size, route, locked, chrome, chromeLayout,
+                updatePending = updateNotice?.pendingVersion != null, onNavigate = { destination ->
+                    if (destination == DesktopPrimaryRoute.DATA && updateNotice?.pendingVersion != null) {
+                        updateNotices?.dismissStartupNotice(); openUpdateRequest++
+                    }
+                    navigate(destination)
+                })
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when (route) {
                     DesktopPrimaryRoute.CHAT -> DesktopPrimaryChatPanel(primaryChatController, size, composerLayout,
@@ -145,7 +161,8 @@ internal fun DesktopPrimaryShell(
                         }
                     }
                     DesktopPrimaryRoute.DATA -> DesktopDataWorkspace(rootSwitchController, fullBackupController,
-                        mergeImportController, backupSettingsController, onExitApplication)
+                        mergeImportController, backupSettingsController, onExitApplication, openUpdateRequest,
+                        onUpdateRequestConsumed = { openUpdateRequest = 0 })
                 }
                 primaryChatController.voices?.let { runtime ->
                     val player by runtime.playback.state.collectAsState()
@@ -156,6 +173,11 @@ internal fun DesktopPrimaryShell(
                 }
             }
         }
+        if (updateNotices != null && updateNotice != null) DesktopStartupUpdateNotice(updateNotice,
+            blocked = locked || (modalActivity?.count ?: 0) > 0 || management.busy || transfer.busy || templates.busy || chat.sessionSettingsLeavePrompt ||
+                tasks.any { it.status == DesktopTaskStatus.RUNNING } || repairs.values.any { it == DesktopRepairStatus.RUNNING },
+            onView = { updateNotices.dismissStartupNotice(); openUpdateRequest++; navigate(DesktopPrimaryRoute.DATA) },
+            onLater = updateNotices::dismissStartupNotice)
     }
 }
 

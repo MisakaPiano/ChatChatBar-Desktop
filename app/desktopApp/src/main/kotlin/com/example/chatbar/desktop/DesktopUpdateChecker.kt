@@ -30,7 +30,7 @@ internal data class DesktopReleaseVersion(val numbers: List<Long>, val preview: 
     }
 }
 
-internal data class DesktopRelease(val version: String, val published: Instant, val notes: String, val url: String, val preview: Boolean)
+internal data class DesktopRelease(val version: String, val published: Instant?, val notes: String, val url: String, val preview: Boolean)
 internal data class DesktopUpdateResult(val latest: DesktopRelease?, val newer: Boolean)
 
 internal object DesktopUpdatePolicy {

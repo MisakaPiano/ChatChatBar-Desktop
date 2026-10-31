@@ -26,6 +26,21 @@ internal class DesktopUpdateRuntime(private val scope: CoroutineScope,
     val supportsInstall: Boolean = runCatching { packageHome(); true }.getOrDefault(false)
     private var work: Job? = null
 
+    /** Startup/manual discovery for installed programs authenticates metadata without downloading. */
+    suspend fun checkAvailable(): DesktopUpdateResult {
+        check(!mutable.value.busy)
+        val result = invoke(expectedVersion = null, observeProgress = false)
+        fun string(key: String) = result.getValue(key).jsonPrimitive.let { require(it.isString); it.content }
+        val status = string("status")
+        require(status in setOf("AVAILABLE", "UP_TO_DATE"))
+        val version = string("displayVersion")
+        DesktopReleaseVersion.parse(version)
+        val url = "https://github.com/${DesktopUpdatePolicy.REPOSITORY}/releases/tag/${DesktopUpdatePolicy.TAG_PREFIX}$version"
+        require(DesktopUpdatePolicy.trustedPage(url, version))
+        return DesktopUpdateResult(DesktopRelease(version, null, string("notes"), url, string("channel") == "preview"),
+            newer = status == "AVAILABLE")
+    }
+
     fun download(version: String) {
         if (mutable.value.busy) return
         mutable.value = DesktopUpdateRuntimeState(busy = true, phase = "CHECKING")
@@ -88,7 +103,8 @@ internal class DesktopUpdateRuntime(private val scope: CoroutineScope,
         require(Files.readString(it.parent.parent.resolve("install-owner.txt")) == "ccb-desktop-nsis-v1")
     }
 
-    private suspend fun invoke(download: Boolean = false, verify: Path? = null, expectedVersion: String): JsonObject = withContext(Dispatchers.IO) {
+    private suspend fun invoke(download: Boolean = false, verify: Path? = null, expectedVersion: String?,
+        observeProgress: Boolean = true): JsonObject = withContext(Dispatchers.IO) {
         val packageHome = packageHome()
         val runtime = packageHome.resolve("app/desktop-updater")
         val cache = requireNotNull(local).resolve("ChatChatBarDesktopUpdates")
@@ -96,7 +112,7 @@ internal class DesktopUpdateRuntime(private val scope: CoroutineScope,
             "--package", packageHome.toString(), "--cache", cache.toString())
         if (download) args += "--download"
         if (verify != null) args += listOf("--verify-file", verify.toString())
-        args += listOf("--expected-version", expectedVersion)
+        if (expectedVersion != null) args += listOf("--expected-version", expectedVersion)
         val process = ProcessBuilder(args).directory(runtime.toFile()).redirectErrorStream(true).start()
         coroutineScope {
             val cancellation = launch(start = CoroutineStart.UNDISPATCHED) {
@@ -113,7 +129,7 @@ internal class DesktopUpdateRuntime(private val scope: CoroutineScope,
                         check(line.length <= 32768 && observed <= 1024 * 1024)
                         val value = runCatching { Json.parseToJsonElement(line).jsonObject }.getOrNull() ?: continue
                         val phase = value["phase"]?.jsonPrimitive?.contentOrNull
-                        if (phase in setOf("CHECKING", "DOWNLOADING", "VERIFYING")) mutable.value = mutable.value.copy(
+                        if (observeProgress && phase in setOf("CHECKING", "DOWNLOADING", "VERIFYING")) mutable.value = mutable.value.copy(
                             phase = phase!!, received = value["received"]?.jsonPrimitive?.longOrNull ?: 0,
                             total = value["total"]?.jsonPrimitive?.longOrNull ?: 0)
                         if (value["status"] != null) result = value

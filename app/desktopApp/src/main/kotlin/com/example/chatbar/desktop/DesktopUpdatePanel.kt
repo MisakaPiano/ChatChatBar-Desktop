@@ -18,11 +18,16 @@ internal fun DesktopUpdatePanel(
     val identity = remember { DesktopBuildIdentity.load() }
     val checker = remember { DesktopUpdateChecker() }
     val scope = rememberCoroutineScope()
-    var previews by remember { mutableStateOf(true) }
-    var busy by remember { mutableStateOf(false) }
-    var result by remember { mutableStateOf<DesktopUpdateResult?>(null) }
-    var error by remember { mutableStateOf<String?>(null) }
-    var checkFailed by remember { mutableStateOf(false) }
+    val notices = LocalDesktopUpdateNotices.current ?: remember {
+        DesktopUpdateNotices(scope, identity.version, null, startupAllowed = false) { checker.check(identity.version, it) }
+    }
+    val noticeState by notices.state.collectAsState()
+    val previews = noticeState.includePreview
+    val busy = noticeState.busy
+    val result = noticeState.result
+    var browserError by remember { mutableStateOf<String?>(null) }
+    val error = browserError ?: noticeState.error
+    val checkFailed = noticeState.error != null
     var supportStatus by remember { mutableStateOf<String?>(null) }
     val updater = LocalDesktopUpdater.current
     val download = updater?.state?.collectAsState()?.value
@@ -50,35 +55,29 @@ internal fun DesktopUpdatePanel(
         }
         supportStatus?.let { StatusText(it) }
         ActionRow {
-            BootstrapButton(if (previews) "包含 Preview" else "仅稳定版本", secondary = true, enabled = !busy) {
-                previews = !previews; result = null; error = null; checkFailed = false
+            BootstrapButton(if (previews) "包含 Preview" else "仅稳定版本", secondary = true,
+                enabled = !busy && download?.busy != true) {
+                browserError = null; notices.setIncludePreview(!previews)
             }
-            BootstrapButton("检查更新", enabled = !busy) {
-                busy = true; error = null; result = null; checkFailed = false
-                scope.launch {
-                    try { result = checker.check(identity.version, previews) }
-                    catch (cancelled: CancellationException) { throw cancelled }
-                    catch (_: Exception) {
-                        checkFailed = true
-                        error = "未能完成检查：网络或发行信息不可用。当前程序可继续使用，没有下载或安装更新。"
-                    }
-                    finally { busy = false }
-                }
+            BootstrapButton("检查更新", enabled = !busy && download?.busy != true) {
+                browserError = null; notices.check()
             }
         }
+        StatusText("启动后自动检查一次；下载与安装仍由你确认。")
+        noticeState.cacheNotice?.let { StatusText(it, DesktopBootstrapColors.warning) }
         if (busy) StatusText("正在检查 Desktop 官方发行信息…")
         error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
         result?.let { checked ->
             val release = checked.latest
             if (release == null) StatusText("当前通道尚无可识别的 Desktop 发行版本。") else {
                 StatusText(if (checked.newer) "发现新版本：${release.version}" else "未发现比当前版本更新的发行版")
-                StatusText("${if (release.preview) "Preview" else "稳定版"} · ${release.published}")
+                StatusText((if (release.preview) "Preview" else "稳定版") + (release.published?.let { " · $it" } ?: ""))
                 StatusText(release.notes.ifBlank { "该发行版尚未提供更新说明。" })
                 BootstrapButton("在浏览器打开官方发行页", secondary = true) {
                     try {
                         check(DesktopUpdatePolicy.trustedPage(release.url, release.version))
                         java.awt.Desktop.getDesktop().browse(java.net.URI(release.url))
-                    } catch (_: Exception) { error = "无法打开默认浏览器。当前程序和数据未改变。" }
+                    } catch (_: Exception) { browserError = "无法打开默认浏览器。当前程序和数据未改变。" }
                 }
             }
         }

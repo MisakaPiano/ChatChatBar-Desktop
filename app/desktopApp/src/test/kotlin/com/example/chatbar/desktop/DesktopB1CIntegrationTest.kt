@@ -2,6 +2,7 @@
 package com.example.chatbar.desktop
 
 import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.semantics.*
@@ -40,7 +41,7 @@ class DesktopB1CIntegrationTest {
         Files.createDirectories(file.parent); image.encodeToData()!!.use { Files.write(file, it.bytes) }; Unit
     }
     @Composable private fun Shell(f: FinalProductDesignFixture, chrome: DesktopWindowChrome,
-        navigation: DesktopPrimaryNavigationController) {
+        navigation: DesktopPrimaryNavigationController, updateNotices: DesktopUpdateNotices? = null) {
         val c = f.container
         val transfer = remember { c.createTypedTransferController() }
         val management = remember { c.createManagementController(transfer) }
@@ -48,7 +49,8 @@ class DesktopB1CIntegrationTest {
             DesktopDataRootResolution.Resolved(c.appDataRoot, DesktopDataRootProvenance.CLI_OVERRIDE, f.root.resolve("bootstrap.json")),
             DesktopDirectoryPicker { null }, { false }, { error("Migration not requested") }) }
         val scope = rememberCoroutineScope()
-        CompositionLocalProvider(LocalDesktopApiAccounts provides c.apiAccountController) {
+        CompositionLocalProvider(LocalDesktopApiAccounts provides c.apiAccountController,
+            LocalDesktopUpdateNotices provides updateNotices) {
         DesktopPrimaryShell(chrome, navigation, root, transfer,
             remember { c.createModelTemplateTransferController() }, management,
             remember { c.createPromptInspectorController() }, c.primaryChatController, c.modelSettingsController,
@@ -64,6 +66,46 @@ class DesktopB1CIntegrationTest {
         f.container.chatRepository.createSession(ChatSession("room", "card", "Integration room", createdAt = 1, updatedAt = 1))
         f.container.primaryChatController.refresh()
         return f
+    }
+
+    @Test fun `startup notice later retains data badge and its actual Shell entry opens the shared update page`(): Unit = runBlocking(awt) {
+        val f = seeded(); val chrome = DesktopWindowChrome {}; val navigation = DesktopPrimaryNavigationController()
+        val scope = CoroutineScope(SupervisorJob() + awt)
+        var checks = 0
+        val notices = DesktopUpdateNotices(scope, "0.1.0-preview.100", null, true) {
+            checks++
+            DesktopUpdateResult(DesktopRelease("0.1.0-preview.101", null, "合成更新说明",
+                "https://github.com/${DesktopUpdatePolicy.REPOSITORY}/releases/tag/desktop-v0.1.0-preview.101", true), true)
+        }
+        val otherModal = mutableStateOf(true)
+        val modalActivity = DesktopModalActivity()
+        val scene = ImageComposeScene(1240, 800) {
+            CompositionLocalProvider(LocalDesktopModalActivity provides modalActivity) {
+                Box {
+                    Shell(f, chrome, navigation, notices)
+                    if (otherModal.value) DesktopModalSurface { StatusText("合成已有错误") }
+                }
+            }
+        }
+        try {
+            notices.checkOnStartup()!!.join(); scene.frames()
+            assertTrue(scene.has("合成已有错误")); assertFalse(scene.has("发现新版本"))
+            assertTrue(notices.state.value.showStartupNotice, "Another modal defers rather than consumes the notice")
+            otherModal.value = false; scene.frames()
+            assertTrue(scene.has("发现新版本")); assertTrue(scene.has("数据，有新版本"))
+            val close = scene.nodes().single { it.matches("关闭更新提醒") }
+            assertTrue(close.boundsInRoot.width <= 30f && close.boundsInRoot.height <= 30f)
+            scene.shot("startup-update-notice")
+            scene.click("稍后")
+            assertFalse(scene.has("发现新版本")); assertTrue(scene.has("数据，有新版本"))
+            scene.click("数据，有新版本"); scene.frames()
+            assertEquals(DesktopPrimaryRoute.DATA, navigation.selectedRoute.value)
+            assertTrue(scene.has("启动后自动检查一次；下载与安装仍由你确认。"))
+            assertTrue(scene.has("合成更新说明")); assertEquals(1, checks)
+            scene.shot("startup-update-page")
+            scene.click("检查更新"); scene.frames()
+            assertEquals(2, checks); assertFalse(notices.state.value.showStartupNotice)
+        } finally { scene.close(); notices.closeAndDrain(); scope.cancel(); f.close() }
     }
 
     @Test fun `wide workspace navigation preserves all management data and tool destinations`() = runBlocking(awt) {
