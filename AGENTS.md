@@ -1,4 +1,8 @@
-# 当前 Desktop 路线 / 2026-10-28
+# 当前 Desktop 总目标 / 2026-11-01
+
+用户已在协调端明确以正式 1.0 为目标：先完成当前选定小修和必要验证／正常交付，再按依赖补齐原 P12–P18 缺口，持续分批验收，覆盖范围后整体验收与 Beta 打磨，最后按实际授权正式发布。详见 [216 正式版范围与执行路线](docs/desktop/216_DESKTOP_1_0_SCOPE_GAPS_AND_EXECUTION_ROUTE.md)。此前“暂停新大 phase”不再作为当前小修之后无限期停留 Preview 的总体调度；T23 同卡多入口等待上游、SF10／自由正文绑定暂缓、社区最后等具体用户决定继续逐项保留。已有 Prompt／真实资料合并选择／单源码执行者／发布验收边界不变，不增加逐 phase Project 前置审批。
+
+# 当前 Desktop 安装路线 / 2026-10-28
 
 持续接手先查 [207 当前起点与未交付任务总账](docs/desktop/207_CONTINUOUS_START_AND_DELIVERY_LEDGER.md)，再核对 live Git/包身份；旧聊天或 Project 上传截点不能冒充最新状态。
 

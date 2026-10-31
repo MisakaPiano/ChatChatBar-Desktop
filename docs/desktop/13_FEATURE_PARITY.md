@@ -1,3 +1,5 @@
+2026-11-01 当前范围入口：正式1.0目标与按live源码核对的逐项缺口见[216](216_DESKTOP_1_0_SCOPE_GAPS_AND_EXECUTION_ROUTE.md)，当前包／验收见207、214、215。下方历史PENDING不用于重做已接线的格式修复、Fish、RAG、记忆、备份和更新器；本次不批量提升EXACT／EQUIVALENT或baseline。全局暂停大phase的旧调度已由1.0目标调整，具体暂缓项保留。
+
 **2026-10-28 SF01 engineering checkpoint:** Blank-composer confirmation is implemented and focused-tested (57 tests plus the controller suite through the confirmed entry). Native/batch candidate acceptance is pending; parity ratings are not promoted. Continue SF02-SF14 in [208](208_REGISTERED_SMALL_FIXES_EXECUTION_LEDGER.md), without starting P12. Older disabled-composer descriptions below are historical.
 
 **用户权限边界已同步（2026-10-25 JST）。** [权限边界](USER_AUTHORITY_AND_PROJECT_REVIEW_BOUNDARY.md)与[开发原则](01_PROJECT_INSTRUCTIONS.md)记录用户指令：Project 仅做后置阶段性审查；未经用户采纳的新限制仅为建议，不撤销、收窄或暂停已有授权。只暂停真实阻断所影响的动作，其他已授权工作连续推进到 Preview。诊断与修复不自动扩张为真实数据/凭据写入、合并或发布权限；具体动作按已有用户授权执行，不重复索取。真实数据、存档和凭据不上 GitHub，包含 Actions Secrets、日志与产物。
