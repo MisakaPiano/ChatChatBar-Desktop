@@ -224,6 +224,8 @@ internal enum class DesktopUiText(val zhCn: String, val en: String) {
     CONFIRM_DELETE("确认删除", "Confirm delete"), NEW_MODEL("新建模型", "New model"), EDIT_MODEL("编辑模型", "Edit model"),
     DISPLAY_NAME("显示名称", "Display name"), BASE_URL("基础 URL", "Base URL"), MODEL_ID("Model ID（手动输入）", "Model ID (manual entry)"),
     MODEL_API_KEY("模型 API Key", "Model API key"), DISCOVER_IDS("获取模型 ID", "Discover model IDs"),
+    MODEL_ENDPOINT_NOTE("填写服务提供的 OpenAI 兼容基础 URL 和准确的 Model ID。是否带 /v1 以服务说明为准；程序不会自动补上。获取列表请求基础 URL 下的 /models（data[].id）；未提供列表接口时可手动填写 ID。", "Use the service's OpenAI-compatible base URL and exact model ID. Include /v1 only when required by the service; it is not added automatically. Discovery uses /models (data[].id) under this URL; enter the ID manually if listing is unsupported."),
+    LOCAL_MODEL_NOTE("连接已启动的本地服务：HTTP 地址需先在管理 → 设置 → 模型与连接中允许明文 HTTP；服务不要求密钥时可留空。保存后使用连接测试验证；本应用不负责下载或启动模型。", "To connect to a running local service, allow cleartext HTTP in Manage → Settings → Models and connections for HTTP URLs. Leave the key blank if the service needs no authentication. Save and run the connection test; this app does not download or start models."),
     DISCOVERING("正在获取…", "Discovering…"), FILTER_IDS("筛选模型 ID", "Filter model IDs"),
     DISCOVERY_NOTE("选择仅修改 Model ID；不代表对话连接可用", "Selection changes only Model ID; listing does not prove chat connectivity"),
     TEMPLATE("模板", "Template"), SELECTABLE_CHAT("可用于对话", "Selectable for chat"), MULTIMODAL("多模态", "Multimodal"),

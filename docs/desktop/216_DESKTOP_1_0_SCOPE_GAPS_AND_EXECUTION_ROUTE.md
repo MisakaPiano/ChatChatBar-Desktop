@@ -30,9 +30,9 @@
 | ID | 当前实际状态 | 批次／下一步／真正外部条件 |
 | --- | --- | --- |
 | FB20261031-01／HIGH 大包导入 | 已修复复现的structured累计／单实体／SessionInventory误拦，214记录真实用户提供大包隔离往返及用户1224 GUI预览通过 | 复用1224，不重做；测试者最初那份逐字节原件未据此冒认同一文件已验，生产GUI最终合并与跨端范围继续逐项待验 |
-| FB20261031-02／HIGH 本地模型与外部代理并用 | 未修复；源码缺口及现用1224实际JAR独立selector复现均成立：127.0.0.1／localhost／[::1]错误走HTTP代理，外部对照仍走代理；3项真实路由差异，未开socket／改全局环境或日常文件 | **B0高优先定向修复**：IPv4/IPv6本地直连与外部代理并行HTTP验证，复用现有模型接入；既有独立回执在I盘20261101-proxy1224-probe/RESULT.json。模拟origin／proxy可独立做，不等真实API。不得永久改JAVA_TOOL_OPTIONS，不强制新增全部代理UI／provider分流／环境变量体系，不把默认selector冒认已验证Windows系统代理 |
-| FB20261031-03 本地接入指引 | 模型URL／ID、models/data探测、空key和显式HTTP许可已实现；具体指引仍待修 | B0紧邻FB02：明确输入服务实际OpenAI兼容Base URL与model ID，按实际endpoint验证；不假定Ollama或11434，不给所有provider强拼/v1，不扩成应用内模型部署 |
-| FB20261031-04 脱敏且可行动的失败类别 | 1215/16已有阶段／异常类型和程序行号诊断；215前的大包根因已实际处理；通用提示和未加密包的密码误导仍有缺口 | B0与FB01/02路径一起定向整理，按首个真实失败阶段区分解密／ZIP回调／schema／资源／网络；保留原拒绝与日志边界，不用包装异常掩盖首因或曝光凭据／正文 |
+| FB20261031-02／HIGH 本地模型与外部代理并用 | 本地错误代理子问题已修源码：r02两项实际RED，r03含IPv4/localhost/IPv6直连＋外部代理并行的33项全PASS；独立新编译库复核通过，尚未交付。只开Windows系统代理的启动opt-in已补源码，原生开启场景仍未验 | 见[217](217_LOCAL_MODEL_PROXY_ROUTING_AND_GUIDE.md)。核新app-image启动cfg；当前Windows代理为关，不为测试改用户设置，不把默认selector模拟通过冒认真实v2ray／NAI通过。保留原手动／JVM／默认优先级与免代理规则，不永久改全局JAVA_TOOL_OPTIONS，不扩大为全部代理UI／provider分流 |
+| FB20261031-03 本地接入指引 | 已在模型编辑页补中英文说明：实际OpenAI兼容Base URL、可选/v1、准确ID、models/data探测与手填、空key及显式HTTP许可；Desktop编译／回归另记217 | 与FB02同批交付；不假定Ollama或11434，不给所有provider强拼/v1，不扩成应用内模型部署 |
+| FB20261031-04 脱敏且可行动的失败类别 | 现有备份Source.Refusal已分encrypted/passwordRequired/phase，未加密该分支不提示密码，复用；generic路径仍待整理。现用1224实际NovelAiAccountService六个合成场景已独立证实丢失HTTP401/503与DNS/超时/证书/解析类别，原结果在I盘20261101-nai-account-error-probe/RESULT.json | B0定向保留产生层稳定kind/HTTPcode并映射UI；备份首因/回调诊断只补实际余缺，不重做已解决分类。保留原拒绝与日志边界，不曝光原Throwable/message/body/host/token；不把一个模糊提示当全部原因 |
 | FB20261031-05 reasoning耗尽导致流式空正文 | 尚未独立复现实际stream→UI链；已有非流式length／empty处理不能代替 | B0独立紧邻批次：合成SSE reasoning-only＋finish_reason=length等复现与UI/持久化验证，决定最小修正；不自动改Token预算或Prompt。若还需某实际provider详情，只挂该复现，不停止其他模型工作 |
 
 ## P12：AI 创作与修复

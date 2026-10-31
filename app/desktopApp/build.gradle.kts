@@ -234,7 +234,8 @@ tasks.register<JavaExec>("runPhase7FinalProductFixture") {
 compose.desktop {
     application {
         mainClass = "com.example.chatbar.desktop.MainKt"
-        jvmArgs("-Dchatbar.desktop.applicationHome=\$ROOTDIR")
+        // Java reads the system-proxy opt-in once at VM startup; keep it app-local.
+        jvmArgs("-Dchatbar.desktop.applicationHome=\$ROOTDIR", "-Djava.net.useSystemProxies=true")
 
         nativeDistributions {
             // The packaged runtime must retain JDBC and native-library support for local tag catalogs.

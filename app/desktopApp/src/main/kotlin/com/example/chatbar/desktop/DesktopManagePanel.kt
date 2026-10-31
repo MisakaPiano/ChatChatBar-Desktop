@@ -827,6 +827,8 @@ internal fun DesktopModelsPanel(
         LabeledField(t(DesktopUiText.MODEL_ID), draft.modelName) { value ->
             controller.editModel { it.copy(modelName = value) }
         }
+        StatusText(t(DesktopUiText.MODEL_ENDPOINT_NOTE))
+        StatusText(t(DesktopUiText.LOCAL_MODEL_NOTE))
         CredentialField(
             label = t(DesktopUiText.MODEL_API_KEY),
             hasSavedValue = draft.hasSavedCredential,

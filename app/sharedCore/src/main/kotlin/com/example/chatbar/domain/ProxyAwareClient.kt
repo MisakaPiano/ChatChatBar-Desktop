@@ -2,10 +2,12 @@ package com.example.chatbar.domain
 
 import java.io.IOException
 import java.net.Inet4Address
+import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.Proxy
 import java.net.ProxySelector
 import java.net.URI
+import java.util.Locale
 import okhttp3.Dns
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -48,6 +50,9 @@ object ProxyAwareClient {
 
     private class ProxySelectorDelegate : ProxySelector() {
         override fun select(uri: URI?): List<Proxy> {
+            if (ProxyBypassPolicy.matches(uri?.host, System.getProperty("http.nonProxyHosts"))) {
+                return listOf(Proxy.NO_PROXY)
+            }
             val host = manualProxyHost
             val port = manualProxyPort
             if (!host.isNullOrBlank() && port != null && port in 1..65535) {
@@ -78,6 +83,36 @@ object ProxyAwareClient {
             sa: java.net.SocketAddress?,
             ioe: IOException?,
         ) = Unit
+    }
+}
+
+private object ProxyBypassPolicy {
+    private val ipv6Literal = Regex("[0-9a-f:.]+")
+
+    fun matches(host: String?, nonProxyHosts: String?): Boolean {
+        val normalized = host?.let(::normalize)?.takeIf(String::isNotEmpty) ?: return false
+        if (normalized == "localhost" || isLoopbackLiteral(normalized)) return true
+        return nonProxyHosts.orEmpty().split('|').any { entry ->
+            val pattern = normalize(entry.trim())
+            pattern.isNotEmpty() && Regex(
+                pattern.split('*').joinToString(".*") { Regex.escape(it) },
+            ).matches(normalized)
+        }
+    }
+
+    private fun normalize(host: String): String =
+        host.lowercase(Locale.ROOT).removeSurrounding("[", "]").trimEnd('.')
+
+    private fun isLoopbackLiteral(host: String): Boolean {
+        val octets = host.split('.')
+        if (octets.size == 4 && octets.all { octet ->
+                octet.isNotEmpty() && octet.all { it in '0'..'9' } && (octet.toIntOrNull() ?: -1) in 0..255
+            }) return octets.first().toInt() == 127
+        // Resolve numeric IPv6 literals only; bypass decisions must never resolve arbitrary DNS names.
+        val literal = host.substringBefore('%')
+        return ':' in literal && ipv6Literal.matches(literal) && runCatching {
+            InetAddress.getByName(literal).isLoopbackAddress
+        }.getOrDefault(false)
     }
 }
 
