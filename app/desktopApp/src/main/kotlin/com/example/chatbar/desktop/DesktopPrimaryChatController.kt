@@ -138,6 +138,7 @@ internal class DesktopPrimaryChatController(
     val chatUi: DesktopChatUiController? = null,
     val maintenance: DesktopChatMaintenanceController? = null,
     private val sessionDeletion: (suspend (String) -> String?)? = null,
+    private val sessionDeletionNotice: () -> String? = { null },
 ) {
     val canDeleteSessions: Boolean get() = sessionDeletion != null
     private val deletingSessions = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
@@ -253,7 +254,7 @@ internal class DesktopPrimaryChatController(
 
     suspend fun refresh() = guarded {
         if (blockDuringSessionSave()) return@guarded
-        stateLock.withLock { refreshSelection() }
+        stateLock.withLock { refreshSelection(); sessionDeletionNotice()?.let { message -> mutableState.update { it.copy(status = message) } } }
     }
 
     /** Caller owns stateLock, including the save's post-commit presentation refresh. */

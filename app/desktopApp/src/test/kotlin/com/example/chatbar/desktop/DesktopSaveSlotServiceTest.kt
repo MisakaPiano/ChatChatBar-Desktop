@@ -145,7 +145,8 @@ class DesktopSaveSlotServiceTest {
                 f.voices.save(voice("owned", "s", audio.path)); f.voices.save(voice("shared", "s", shared.path))
                 f.voices.save(voice("external", "s", external.toString()))
                 f.chats.createSession(f.session.copy(id = "other"))
-                f.voices.save(voice("retained", "other", shared.path))
+                val sharedReference = if (System.getProperty("os.name").startsWith("Windows", true)) shared.path.uppercase(java.util.Locale.ROOT) else shared.path
+                f.voices.save(voice("retained", "other", sharedReference))
                 val cleanup = DesktopOwnedImageCleanup(f.root, DesktopCharacterResourceStore(f.root), f.gate, audioStore::deleteIfOwned)
                 assertNull(f.service(cleanup = cleanup::deleteUnreferenced).deleteSession("s"))
                 assertFalse(Files.exists(Path.of(audio.path))); assertTrue(Files.exists(Path.of(shared.path)))

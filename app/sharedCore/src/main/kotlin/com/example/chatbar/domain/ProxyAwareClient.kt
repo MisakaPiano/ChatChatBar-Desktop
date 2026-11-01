@@ -35,6 +35,10 @@ object ProxyAwareClient {
     ): OkHttpClient.Builder {
         val selector = ProxySelectorDelegate()
         return OkHttpClient.Builder()
+            .eventListenerFactory { call ->
+                call.request().tag(com.example.chatbar.domain.network.HttpConnectionTrace::class.java)
+                    ?: okhttp3.EventListener.NONE
+            }
             .proxySelector(selector)
             .dns(Ipv4FirstDns)
             .addInterceptor { chain ->

@@ -597,6 +597,7 @@ class DesktopAppContainer internal constructor(
             chatUi = chatUiController,
             maintenance = chatMaintenanceController,
             sessionDeletion = saveSlotService::deleteSession,
+            sessionDeletionNotice = { saveSlotService.sessionDeletionCleanupNotice },
             voices = chatVoiceRuntime,
             residency = characterResidency,
             memory = memoryController,

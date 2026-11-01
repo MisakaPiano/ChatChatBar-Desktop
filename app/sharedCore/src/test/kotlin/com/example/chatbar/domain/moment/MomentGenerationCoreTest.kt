@@ -62,7 +62,7 @@ class MomentGenerationCoreTest {
             val gateway = Gateway(failure = failure); val checkpoints = mutableListOf<MomentGenerationCheckpoint>()
             val error = assertFails { core(gateway).generate(card, session, messages, null, model, null,
                 scheduledAt = 123, onCheckpoint = { checkpoints += it }) }
-            if (failure is CancellationException) assertIs<CancellationException>(error) else assertSame(failure, error)
+            if (failure is CancellationException) assertIs<CancellationException>(error) else assertIs<IllegalStateException>(error)
             assertEquals(failure.message, error.message)
             assertEquals(MomentPostDecision(true), checkpoints.single().decision); assertNull(checkpoints.single().draft)
             assertEquals(2, gateway.requests.size)

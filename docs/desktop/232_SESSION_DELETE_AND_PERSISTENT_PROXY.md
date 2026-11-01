@@ -9,3 +9,7 @@
 新增代理持久化／坏配置／HTTPS优先级／selector失败、窄宽Scene、整会话删除／回滚／清理重试／共享及外部录音／晚到草稿与视口等合成回归，待新源云端执行。没有真实删除、实际测试者网络调用、普通候选打包或真人验收。P13生成核心38f3f51b保留未交付，与本次B0一起送新源，不改变公开1226身份与原Prompt。
 
 CI64／863df8ae已完整SUCCESS；Windows288suite2350项=2331PASS+19SKIP，Android582、shared1096全通过。WorldBook／预算10图复用已实际查看的CI63同散列图；是代理验证，不算真实用户验收。CI62、CI63原失败保留。
+
+CI65／ed988d20整轮FAIL：shared179suite1102项中1101通过，唯一MomentCore失败为IllegalStateException同类同信息但引用不同；测试改核类型／信息，保留两次调用、仅decision检查点／不重试断言，不改生产传播。Windows主步骤在编译停于新面板调用文件private SelectChip，未执行Desktop测试；现将原组件共享为internal，不改视觉行为。原失败保留，后续NSIS／更新器结果不能代替Desktop主步骤通过。
+
+后续源码补NovelAI账户固定连接阶段诊断：每次请求独立tag，仅保存阶段／耗时／固定代理类型及协商协议，不存URL、header、正文、密钥或原始异常。请求失败时随原安全分类展示；HTTP代理连接与隧道协商合称一阶段，进入TLS由secureConnectStart确认，复用连接不伪造握手。“读取响应头开始”不代表首字节已收到。新增纯本机合成代理分别阻塞CONNECT和TLS的回归，待新源云端；没有取消TLS验证、强制协议、拉长超时或添加重试。实际1226网络回归仍待对应环境阶段证据。

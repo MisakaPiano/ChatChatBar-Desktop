@@ -34,6 +34,8 @@ internal class DesktopSaveSlotService(
     private val storage = JsonFileStorage(root, gate)
     private val inventory = DesktopSessionInventory(root)
     private val workspace = root.resolve("backups/.save-slot-work")
+    @Volatile var sessionDeletionCleanupNotice: String? = null
+        private set
 
     /** Confirmed whole-session deletion uses the existing recoverable graph publication. */
     suspend fun deleteSession(sessionId: String): String? = withContext(Dispatchers.IO) { mutex.withLock {
@@ -75,7 +77,7 @@ internal class DesktopSaveSlotService(
             } finally { Files.deleteIfExists(receipt) }
             try { cleanupDeletionReceipt(sessionId); null }
             catch (cancelled: CancellationException) { throw cancelled }
-            catch (_: Exception) { "会话已删除，部分媒体清理尚未完成；清理记录已保留，下次启动重试。" }
+            catch (_: Exception) { "会话已删除，部分媒体清理尚未完成；清理记录已保留，下次启动重试。".also { sessionDeletionCleanupNotice = it } }
         }
     } }
 
@@ -90,21 +92,27 @@ internal class DesktopSaveSlotService(
         check(ids.size <= 4096)
         for (id in ids) try { cleanupDeletionReceipt(id) }
         catch (cancelled: CancellationException) { throw cancelled }
-        catch (_: Exception) { /* Retain the durable receipt for retry; no direct file sweep. */ }
+        catch (_: Exception) { sessionDeletionCleanupNotice = "会话删除后的部分媒体清理仍未完成，记录与文件已保留；请检查数据目录后重启重试。" }
     } }
 
     private suspend fun cleanupDeletionReceipt(sessionId: String) {
         require(sessionId.matches(Regex("[A-Za-z0-9_-]{1,128}")))
         val path = root.resolve("backups/.session-deletion-cleanup/$sessionId.json")
-        val value = gate.withNormalOperation {
+        val (value, proof) = gate.withNormalOperation {
             DesktopArchiveFiles.safe(path, false)
             check(Files.size(path) <= 12L * 1024 * 1024)
-            Json.parseToJsonElement(Files.readString(path)).jsonObject.also {
+            val proof = DesktopArchiveFiles.hash(path, 12L * 1024 * 1024)
+            val value = Json.parseToJsonElement(Files.readString(path)).jsonObject.also {
                 check(it["sessionId"]?.jsonPrimitive?.content == sessionId)
             }
+            check(DesktopArchiveFiles.hash(path, 12L * 1024 * 1024) == proof)
+            value to proof
         }
         cleanupDeletedMedia(value.getValue("media").jsonArray.map { it.jsonPrimitive.content })
-        gate.withNormalOperation { Files.delete(path) }
+        gate.withNormalOperation {
+            check(DesktopArchiveFiles.hash(path, 12L * 1024 * 1024) == proof) { "清理记录已变化，未删除记录" }
+            Files.delete(path)
+        }
     }
     private val archive get() = DesktopSaveSlotArchive(workspace)
     private val planner = DesktopSaveSlotRestorePlan(root) { target, ids -> gate.withNormalOperation {

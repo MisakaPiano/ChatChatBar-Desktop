@@ -49,6 +49,7 @@ enum class NovelAiAccountFailureKind { AUTHENTICATION, RATE_LIMIT, SERVER, HTTP,
 class NovelAiAccountException(
     val kind: NovelAiAccountFailureKind,
     val httpStatus: Int? = null,
+    val connectionTrace: com.example.chatbar.domain.network.HttpConnectionTraceSnapshot? = null,
 ) : IOException(when (kind) {
     NovelAiAccountFailureKind.AUTHENTICATION -> "NovelAI 账户认证未通过，请检查所选账户和 Token"
     NovelAiAccountFailureKind.RATE_LIMIT -> "NovelAI 账户请求受限，请稍后重试"
@@ -60,17 +61,17 @@ class NovelAiAccountException(
     NovelAiAccountFailureKind.CONNECTION -> "无法连接 NovelAI 服务，请检查网络与代理"
     NovelAiAccountFailureKind.NETWORK -> "NovelAI 账户请求发生网络错误，请检查网络与代理"
     NovelAiAccountFailureKind.INVALID_RESPONSE -> "NovelAI 账户响应格式无法识别，请稍后重试"
-} + (httpStatus?.let { "（HTTP $it）" } ?: ""))
+} + (httpStatus?.let { "（HTTP $it）" } ?: "") + (connectionTrace?.let { "［${it.summary()}］" } ?: ""))
 
-private fun accountFailure(failure: Exception): NovelAiAccountException = when (failure) {
+private fun accountFailure(failure: Exception, trace: com.example.chatbar.domain.network.HttpConnectionTraceSnapshot?): NovelAiAccountException = when (failure) {
     // Closing a response may attach a raw suppressed failure to the typed exception.
-    is NovelAiAccountException -> NovelAiAccountException(failure.kind, failure.httpStatus)
-    is UnknownHostException -> NovelAiAccountException(NovelAiAccountFailureKind.DNS)
-    is InterruptedIOException -> NovelAiAccountException(NovelAiAccountFailureKind.TIMEOUT)
-    is SSLException -> NovelAiAccountException(NovelAiAccountFailureKind.TLS)
-    is ConnectException -> NovelAiAccountException(NovelAiAccountFailureKind.CONNECTION)
-    is IOException -> NovelAiAccountException(NovelAiAccountFailureKind.NETWORK)
-    else -> NovelAiAccountException(NovelAiAccountFailureKind.INVALID_RESPONSE)
+    is NovelAiAccountException -> NovelAiAccountException(failure.kind, failure.httpStatus, trace)
+    is UnknownHostException -> NovelAiAccountException(NovelAiAccountFailureKind.DNS, connectionTrace = trace)
+    is InterruptedIOException -> NovelAiAccountException(NovelAiAccountFailureKind.TIMEOUT, connectionTrace = trace)
+    is SSLException -> NovelAiAccountException(NovelAiAccountFailureKind.TLS, connectionTrace = trace)
+    is ConnectException -> NovelAiAccountException(NovelAiAccountFailureKind.CONNECTION, connectionTrace = trace)
+    is IOException -> NovelAiAccountException(NovelAiAccountFailureKind.NETWORK, connectionTrace = trace)
+    else -> NovelAiAccountException(NovelAiAccountFailureKind.INVALID_RESPONSE, connectionTrace = trace)
 }
 
 class NovelAiAccountService(
@@ -80,7 +81,8 @@ class NovelAiAccountService(
         .build(),
     private val json: Json = Json { ignoreUnknownKeys = true }
 ) {
-    private fun request(token: String) = Request.Builder()
+    private fun request(token: String, trace: com.example.chatbar.domain.network.HttpConnectionTrace) = Request.Builder()
+            .tag(com.example.chatbar.domain.network.HttpConnectionTrace::class.java, trace)
             .url(SUBSCRIPTION_ENDPOINT)
             .header("Authorization", "Bearer ${token.trim()}")
             .header("Accept", "application/json")
@@ -88,22 +90,26 @@ class NovelAiAccountService(
             .get()
             .build()
 
-    fun fetch(token: String): NovelAiAccountUsage = try {
-        client.newCall(request(token)).execute().use(::parse)
-    } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled
-    } catch (failure: Exception) { throw accountFailure(failure) }
+    fun fetch(token: String): NovelAiAccountUsage {
+        val trace = com.example.chatbar.domain.network.HttpConnectionTrace()
+        return try {
+            client.newCall(request(token, trace)).execute().use(::parse)
+        } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled
+        } catch (failure: Exception) { throw accountFailure(failure, trace.snapshot()) }
+    }
 
     suspend fun fetchCancellable(token: String): NovelAiAccountUsage = kotlinx.coroutines.suspendCancellableCoroutine { continuation ->
-        val call = client.newCall(request(token))
+        val trace = com.example.chatbar.domain.network.HttpConnectionTrace()
+        val call = client.newCall(request(token, trace))
         continuation.invokeOnCancellation { call.cancel() }
         call.enqueue(object : okhttp3.Callback {
             override fun onFailure(call: okhttp3.Call, e: IOException) {
-                if (continuation.isActive) continuation.resumeWith(Result.failure(accountFailure(e)))
+                if (continuation.isActive) continuation.resumeWith(Result.failure(accountFailure(e, trace.snapshot())))
             }
             override fun onResponse(call: okhttp3.Call, response: okhttp3.Response) {
                 val result = try { Result.success(response.use(::parse)) }
                 catch (cancelled: kotlinx.coroutines.CancellationException) { Result.failure(cancelled) }
-                catch (failure: Exception) { Result.failure(accountFailure(failure)) }
+                catch (failure: Exception) { Result.failure(accountFailure(failure, trace.snapshot())) }
                 if (continuation.isActive) continuation.resumeWith(result)
             }
         })

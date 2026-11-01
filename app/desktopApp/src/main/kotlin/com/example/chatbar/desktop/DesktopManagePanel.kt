@@ -616,7 +616,7 @@ private fun DesktopAppearanceSettings(
 }
 
 @Composable
-private fun SelectChip(label: String, selected: Boolean, onClick: () -> Unit) {
+internal fun SelectChip(label: String, selected: Boolean, onClick: () -> Unit) {
     val colors = DesktopBootstrapColors
     Box(Modifier.background(if (selected) colors.accent else colors.card, RoundedCornerShape(8.dp))
         .border(1.dp, if (selected) colors.primary else colors.border, RoundedCornerShape(8.dp))

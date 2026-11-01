@@ -15,15 +15,20 @@ internal class DesktopOwnedImageCleanup(
     private val deleteAudio: (suspend (String) -> Boolean)? = null,
 ) {
     suspend fun deleteUnreferenced(candidates: List<String>) {
-        val owned = candidates.distinct().filter { (it.startsWith("images/") || it.startsWith("documents/") ||
-            deleteAudio != null && isDesktopOwnedAudioCandidate(root, it)) && !it.contains("..") }
+        fun identity(raw: String): String = if (isDesktopOwnedAudioCandidate(root, raw)) {
+            val path = Path.of(raw).normalize().toString()
+            if (System.getProperty("os.name").startsWith("Windows", true)) path.lowercase(java.util.Locale.ROOT) else path
+        } else raw
+        val owned = candidates.filter { (it.startsWith("images/") || it.startsWith("documents/") ||
+            deleteAudio != null && isDesktopOwnedAudioCandidate(root, it)) && !it.contains("..") }.distinctBy(::identity)
         if (owned.isEmpty()) return
+        val identities = owned.associateBy(::identity)
         coordinator.withExclusiveMaintenance {
             withContext(Dispatchers.IO) {
                 val retained = mutableSetOf<String>()
                 fun inspect(value: JsonElement) {
                     when (value) {
-                        is JsonPrimitive -> if (value.isString && value.content in owned) retained += value.content
+                        is JsonPrimitive -> if (value.isString) identities[identity(value.content)]?.let { retained += it }
                         is JsonArray -> value.forEach(::inspect)
                         is JsonObject -> value.values.forEach(::inspect)
                     }
@@ -64,5 +69,5 @@ internal fun isDesktopOwnedAudioCandidate(root: Path, raw: String): Boolean = ru
     val path = Path.of(raw)
     path.isAbsolute && path == path.normalize() &&
         path.parent?.parent == root.toAbsolutePath().normalize().resolve("audio/generated") &&
-        path.fileName.toString().matches(Regex("[A-Za-z0-9_-]+\\.mp3"))
+        path.fileName.toString().matches(Regex("[A-Za-z0-9_-]+\\.mp3", RegexOption.IGNORE_CASE))
 }.getOrDefault(false)
