@@ -176,6 +176,7 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
             StatusText(card.name)
         } else Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            controller.cardImages?.let { images -> BootstrapButton("生成卡片封面候选", enabled = controller.canUseCardAi, secondary = true) { images.openCover() } }
             controller.cardAi?.let { ai -> EditorActions {
                 if (card.editMode == CharacterEditMode.STRUCTURED)
                     BootstrapButton("AI 补全空白", enabled = controller.canUseCardAi) {
@@ -330,6 +331,7 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
     }
     controller.cardAi?.let { DesktopCharacterCardAiOverlay(it) }
     controller.appearanceAi?.let { DesktopCharacterAppearanceOverlay(it) }
+    controller.cardImages?.let { DesktopCharacterImageOverlay(it) }
 }
 
 @Composable
@@ -514,6 +516,7 @@ private fun CharacterPersonRow(
 @Composable
 private fun CharacterAvatarBookFields(entry: CharacterInfo, controller: DesktopCharacterEditorController) {
     val t = LocalDesktopUiStrings.current
+    controller.cardImages?.let { images -> BootstrapButton("生成该人物头像候选", secondary = true) { images.openAvatar(entry.id) } }
     EditorField(t(DesktopUiText.CHARACTER_NAME), entry.name) { v -> controller.updateCharacter(entry.id) { it.copy(name = v) } }
     ImageSlot(t(DesktopUiText.APPEARANCE_IMAGE), entry.appearanceImage,
         { controller.chooseAppearance(entry.id, t(DesktopUiText.CHOOSE_IMAGE)) },
@@ -523,6 +526,7 @@ private fun CharacterAvatarBookFields(entry: CharacterInfo, controller: DesktopC
 @Composable
 private fun CharacterEntryFields(entry: CharacterInfo, controller: DesktopCharacterEditorController) {
     val t = LocalDesktopUiStrings.current
+    controller.cardImages?.let { images -> BootstrapButton("生成该人物头像候选", secondary = true) { images.openAvatar(entry.id) } }
     EditorField(t(DesktopUiText.CHARACTER_NAME), entry.name) { v -> controller.updateCharacter(entry.id) { it.copy(name = v) } }
     EditorField(t(DesktopUiText.PROFILE), entry.profile, true) { v -> controller.updateCharacter(entry.id) { it.copy(profile = v) } }
     EditorField(t(DesktopUiText.APPEARANCE), entry.appearance, true) { v -> controller.updateCharacter(entry.id) { it.copy(appearance = v) } }

@@ -53,6 +53,7 @@ internal class DesktopCharacterCardAiController(
     val state = mutableState.asStateFlow()
     private var pin: Pin? = null
     private var job: Job? = null
+    private val operationEpoch = java.util.concurrent.atomic.AtomicLong()
     private var optionsJob: Job? = null
     private var completedRaw = ""
     private var researchCheckpoint: ResearchDebugSnapshot? = null
@@ -70,6 +71,7 @@ internal class DesktopCharacterCardAiController(
         val target = currentPin() ?: return
         if (operation == CharacterCardAiOperation.FILL && target.card.editMode != CharacterEditMode.STRUCTURED) return
         if (pin != target || state.value.operation != operation) {
+            operationEpoch.incrementAndGet()
             optionsJob?.cancel()
             referenceJob?.cancel()
             imagesToken = null; imagesJob?.cancel(); imageCheckpoint = null; imageRoute = null
@@ -82,6 +84,7 @@ internal class DesktopCharacterCardAiController(
     }
 
     fun close() { if (!state.value.busy) {
+        operationEpoch.incrementAndGet()
         imagesToken = null; imagesJob?.cancel()
         mutableState.update { it.copy(imagesLoading = false) }
         if (state.value.images.isNotEmpty()) {
@@ -118,6 +121,7 @@ internal class DesktopCharacterCardAiController(
         if (state.value.busy || state.value.referenceLoading || state.value.imagesLoading) return
         val before = state.value; val next = change(before)
         if (before != next) {
+            operationEpoch.incrementAndGet()
             completedRaw = ""
             if (!retainResearch) researchCheckpoint = null
             imageCheckpoint = null; imageRoute = null
@@ -227,6 +231,7 @@ internal class DesktopCharacterCardAiController(
             research = if (retry) it.research else null,
             sourceOutput = if (retry) it.sourceOutput else emptyMap(),
             raw = completedRaw, reasoning = if (completedRaw.isEmpty()) "" else it.reasoning) }
+        val epoch = operationEpoch.incrementAndGet()
         job = scope.launch {
             var lastRecorder: DesktopTransportDiagnosticRecorder? = null
             var preparingSources = false
@@ -359,12 +364,30 @@ internal class DesktopCharacterCardAiController(
                 }
                 lastRecorder?.finish(DesktopTaskStatus.FAILED, message, null)
                 mutableState.update { it.copy(error = message, candidate = null, status = "可重试未完成步骤，或重新生成") }
-            } finally { mutableState.update { it.copy(busy = false) } }
+            }
+        }
+        job?.invokeOnCompletion { cause ->
+            mutableState.update {
+                if (operationEpoch.get() != epoch) it
+                else if (cause is CancellationException) it.copy(busy = false, status = "已取消，原编辑内容保留", candidate = null)
+                else if (cause != null) it.copy(busy = false, error = "角色卡任务未完成，请重试", candidate = null)
+                else it.copy(busy = false)
+            }
         }
     }
 
     fun cancel() { job?.cancel() }
     fun regenerateFinal() { if (!state.value.busy) { completedRaw = ""; generate(retry = true) } }
+    fun openCandidateCover() {
+        val target = pin ?: return
+        val candidate = state.value.candidate ?: return
+        if (state.value.busy || target != currentPin()) return
+        editor.cardImages?.openCover(candidate) { result ->
+            val before = mutableState.value
+            if (before.busy || before.candidate != candidate || target != currentPin()) false
+            else mutableState.compareAndSet(before, before.copy(candidate = result))
+        }
+    }
     fun apply(): Boolean {
         if (state.value.busy || state.value.referenceLoading || state.value.imagesLoading) return false
         val target = pin ?: return false

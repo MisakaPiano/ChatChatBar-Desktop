@@ -34,6 +34,10 @@ internal fun desktopCharacterCardAiDiff(before: CharacterCard, after: CharacterC
     field("自由人物设定", before.freeformCharacterText, after.freeformCharacterText)
     field("画风", before.defaultImagePrompt, after.defaultImagePrompt)
     field("负面词", before.defaultImageNegativePrompt, after.defaultImageNegativePrompt)
+    if (before.avatar != after.avatar) add(DesktopCharacterCardDiff("卡片头像",
+        if (before.avatar == null) "（未设置）" else "（原图片）", if (after.avatar == null) "（未设置）" else "（候选图片）"))
+    if (before.chatBackground != after.chatBackground) add(DesktopCharacterCardDiff("聊天背景",
+        if (before.chatBackground == null) "（未设置）" else "（原图片）", if (after.chatBackground == null) "（未设置）" else "（候选图片）"))
     fun values(p: CharacterInfo?) = if (p == null) emptyList() else listOf(p.name, p.profile, p.appearance,
         p.clothing, p.abilities, p.habits, p.background, p.relationships, p.speakingStyle, p.imagePrompt)
     val labels = listOf("姓名", "简介", "外貌", "服装", "能力", "习惯", "背景", "关系", "说话风格", "生图标签")
@@ -141,6 +145,8 @@ internal fun DesktopCharacterCardAiOverlay(controller: DesktopCharacterCardAiCon
                     if (!state.busy && (state.research?.brief != null || state.candidate != null)) BootstrapButton("重新生成最终结果", secondary = true,
                         onClick = controller::regenerateFinal)
                     BootstrapButton("应用到当前草稿", enabled = !state.busy && !state.referenceLoading && !state.imagesLoading && state.candidate != null) { controller.apply() }
+                    if (state.candidate != null) BootstrapButton("为候选生成封面", secondary = true, enabled = !state.busy,
+                        onClick = controller::openCandidateCover)
                     BootstrapButton("刷新模型", secondary = true, enabled = !state.busy, onClick = controller::refreshModels)
                     BootstrapButton("请求日志", secondary = true) { logs = true }
                 }

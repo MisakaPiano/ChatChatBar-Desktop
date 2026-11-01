@@ -20,6 +20,8 @@ Keep prompt design, HTTP generation, persistence, and feature UI as separate own
 
 ## Desktop image foundation (P7-A)
 
+- Character editor image candidates use `DesktopCharacterImageGeneration` over the shared NovelAI frame service. Only a completed Final becomes a candidate; intermediate previews do not qualify for save-only retry. It owns and drains its client, keeps bytes transient, and inherits the frozen selected account from `DesktopCharacterImageController`. Explicit apply writes new editor draft references; Studio history/draft and original card resources are not rewritten by candidate generation. Cover/avatar policy and crop/source identity belong to `chatbar-character-card-ai`.
+
 - `DesktopStudioHistory` keeps the existing filtering, album folding, range selection, confirmed deletion and recipe reuse callbacks; wide layouts add a persistent image/recipe detail column, and narrow layouts retain the full detail window. `desktopStudioPreviewIndex` resolves an auxiliary physical image back into the existing owned filmstrip, so that path opens the same occurrence-preserving gallery. External unmatched files remain single-image previews; never add them to owned history merely to enable paging.
 
 - Chat-bound automatic and manual image design resolve `SessionCharacterParticipationPolicy.effectiveCard` before passing card references to the designer. This filters active structured person references; original messages/card defaults and the separate Studio import workflow retain their own owners.

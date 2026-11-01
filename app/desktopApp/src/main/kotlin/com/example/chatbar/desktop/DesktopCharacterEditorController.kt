@@ -103,6 +103,7 @@ internal class DesktopCharacterEditorController(
 ) {
     internal var cardAi: DesktopCharacterCardAiController? = null
     internal var appearanceAi: DesktopCharacterAppearanceController? = null
+    internal var cardImages: DesktopCharacterImageController? = null
     internal val canUseCardAi: Boolean get() = _state.value.let { s ->
         s.card != null && !s.busy && s.draftSessionId != null &&
             !desktopCharacterEditorPresentation(s).readOnly && s.problem !in setOf(
@@ -115,6 +116,32 @@ internal class DesktopCharacterEditorController(
             result.id != basis.id || result.createdAt != basis.createdAt) return false
         edit { result }
         return _state.value.card == result
+    }
+
+    internal fun stageGeneratedCardImage(session: String, basis: CharacterCard, destination: CharacterCard,
+        personId: String?, image: ByteArray, crop: ByteArray? = null,
+        assign: (CharacterCard) -> Boolean = { applyCardAi(session, basis, it) }): Boolean {
+        if (!canUseCardAi || _state.value.draftSessionId != session || _state.value.card != basis) return false
+        require(destination.id == basis.id && destination.createdAt == basis.createdAt)
+        val staged = mutableListOf<String>()
+        var assignmentEntered = false
+        try {
+            val full = resources.stageImage(session, image).also(staged::add)
+            val next = if (personId == null) {
+                val avatar = crop?.let { resources.stageImage(session, it).also(staged::add) } ?: full
+                destination.copy(avatar = avatar, chatBackground = full)
+            } else {
+                require(destination.characters.count { it.id == personId } == 1)
+                destination.copy(characters = destination.characters.map { if (it.id == personId) it.copy(appearanceImage = full) else it })
+            }
+            assignmentEntered = true
+            if (assign(next)) return true
+            staged.asReversed().forEach(resources::discardNew)
+            return false
+        } catch (error: Throwable) {
+            if (!assignmentEntered) staged.asReversed().forEach { runCatching { resources.discardNew(it) }.onFailure(error::addSuppressed) }
+            throw error
+        }
     }
 
     private val _state = MutableStateFlow(DesktopCharacterEditorState())
@@ -847,6 +874,7 @@ internal class DesktopCharacterEditorController(
     suspend fun closeAndDrain() {
         cardAi?.closeAndDrain()
         appearanceAi?.closeAndDrain()
+        cardImages?.closeAndDrain()
         flushDraft()
         when {
             _state.value.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING -> retryCommittedCleanup()

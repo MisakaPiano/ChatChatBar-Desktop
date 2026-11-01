@@ -38,6 +38,7 @@ internal class DesktopCharacterAppearanceController(
     private var source: Path? = null
     private var image: DesktopCharacterReferenceImage? = null
     private var job: Job? = null
+    private val operationEpoch = java.util.concurrent.atomic.AtomicLong()
     private fun matches(target: Pin): Boolean = editor.canUseCardAi &&
         editor.state.value.draftSessionId == target.session && editor.state.value.card == target.card
 
@@ -60,6 +61,7 @@ internal class DesktopCharacterAppearanceController(
         if (!matches(target)) { mutable.update { it.copy(candidate = null, error = "当前人物或草稿已变化，请重新选择参考图片") }; return }
         mutable.update { it.copy(busy = true, candidate = null, error = null, route = null,
             raw = "", reasoning = "", status = "正在读取上传图片") }
+        val epoch = operationEpoch.incrementAndGet()
         job = scope.launch {
             try {
                 val result = runtime.withCardDesign(target.session) { gate.withNormalOperation {
@@ -100,7 +102,15 @@ internal class DesktopCharacterAppearanceController(
                     else -> "图片识别或结果校验失败，请检查图片、默认对话模型及其关联视觉模型"
                 }
                 mutable.update { it.copy(error = message, candidate = null, status = "图片识别失败，可重试") }
-            } finally { mutable.update { it.copy(busy = false) } }
+            }
+        }
+        job?.invokeOnCompletion { cause ->
+            mutable.update {
+                if (operationEpoch.get() != epoch || pin != target) it
+                else if (cause is CancellationException) it.copy(busy = false, status = "已取消，原人物内容保留", candidate = null)
+                else if (cause != null) it.copy(busy = false, error = "图片识别任务未完成，请重试", candidate = null)
+                else it.copy(busy = false)
+            }
         }
     }
 

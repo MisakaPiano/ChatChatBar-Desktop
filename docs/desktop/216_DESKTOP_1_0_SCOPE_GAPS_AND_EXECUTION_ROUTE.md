@@ -42,10 +42,10 @@
 | ID／功能 | 当前状态 | 已有实现／依赖与下一步 |
 | --- | --- | --- |
 | P12-01 手动／自动消息格式修复、恢复原文 | 已实现且验证，已公开；P12 的这个子项已前置 | DesktopMessageFormatRepairController、DesktopAutomaticFormatRepair、AppContainer 和聊天完成链；保留派生数据同步、取消与原文恢复，不另造 repair |
-| P12-02 角色 AI 补全 | 未做桌面流程 | 复用 `domain/card/CharacterAutoFillService.kt`、现有手工角色草稿／校验；接选模型、流式候选、明确应用／正常保存和失效检查 |
-| P12-03 角色改写／差异预览 | 未做桌面流程 | 复用 `CharacterRewriteService` 的 draft／mergeInto 和 Android 候选／diff 语义；与补全共享任务、研究和应用边界，不自动覆盖卡片 |
-| P12-04 从上传图片补外貌／服装文字 | 未做桌面编辑入口；视觉传输和图像读取已有基础 | 源码精确核对：`CharacterEditViewModel.generateCharacterAppearanceFromImage` 将 JPEG Base64 传给 `CharacterAppearanceImageService.generate`，返回 `appearance/clothing` 草稿。这是看图生成文字，并非仅凭类名推断的生图；接候选后应用和默认／关联视觉模型规则 |
-| P12-05 卡片封面／人物头像 AI 候选 | 未做编辑器完整 AI 流程；NAI 生成／裁剪／资源提交已实现 | 复用角色卡 AI、既有 NAI 设计／执行和 `CharacterAvatarImagePolicy` 官方规则；封面可复用设计检查点、头像按官方确定性 Prompt 计划；取消／换图／重试和保存失败保留原资源 |
+| P12-02 角色 AI 补全 | 共享候选／研究／临时文档及多图桌面流程已有源码与云端专项通过；未打包／真人验收 | 见228；原Prompt、模型、ID／声线／开关与普通保存边界保留。CI57完整通过；CI58新角色AI11＋UI通过但旧voice断言失败，CI59定向修复运行；后续pre-start取消修复另待云端 |
+| P12-03 角色改写／差异预览 | 实际merge差异／显式同草稿应用已接共享策略；未打包／真人验收 | 与补全共享模型、研究与失效保护；原Android facade及请求对照保留，后续候选封面与取消窗口修复不能借旧CI代验 |
+| P12-04 从上传图片补外貌／服装文字 | 96b29340桌面独立候选与共享Core已提交CI59；Android581／实际HTTP对照通过，Windows待 | 沿用默认多模态／精确关联视觉模型和原Prompt／parser；只改非空appearance／clothing草稿，头像／声线保留。未打包、未真人验收；后续pre-start取消回归另待云端 |
+| P12-05 卡片封面／人物头像 AI 候选 | 原固定头像策略已共享；桌面封面／头像／裁剪／候选资源应用接线及回归在后续源码，尚未云端验证 | 当前卡及补全／改写候选封面、512头像与自由模式手填Prompt、完成设计复用、最终字节保留／再应用和关闭排水均需新源验证；未打包／真人验收，不算B2完成 |
 | P12-06 格式卡 AI | 共享权威与桌面纵向源已实现，云端Android/shared请求对照及Desktop七项通过；未打包／真人验收 | 见223；blank-new gate／工具校验、流预览和至多一次修复共享，候选只写草稿，正常保存另行完成；当前导出修复完整CI优先 |
 | P12-07 世界书 AI 创建／补空内容 | 未做桌面流程 | 复用 `domain/worldbook/WorldBookAiService.kt` 的分批、稳定候选、选中应用与恢复检查点；已有手工世界书编辑／条目开关和请求引擎不重做 |
 | P12-08 研究／指定 URL／临时参考文档 | 完整创作研究未做；文档 RAG 和 NAI tag research 已做，范围不同 | 复用 CharacterResearchService、WorldBookResearchService、ManualWebPageRetriever、ResearchCleaner／brief；保留无研究／搜索／URL／组合、临时文档和失败可见性；按选定模式用资料，不能静默丢弃用户指定来源 |

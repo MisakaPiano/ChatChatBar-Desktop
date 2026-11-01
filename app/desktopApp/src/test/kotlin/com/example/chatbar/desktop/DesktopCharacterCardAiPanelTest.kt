@@ -65,6 +65,17 @@ class DesktopCharacterCardAiPanelTest {
                         flowOf(StreamEvent.Delta("""{"appearance":"图片外貌","clothing":"图片服装"}"""), StreamEvent.Done)
                     })
                 editor.appearanceAi = appearance
+                val imageSecrets = InMemoryDesktopSecretStore().also {
+                    it.save(com.example.chatbar.desktop.security.DesktopCredentialKey.NovelAiToken, "synthetic-key")
+                }
+                val imageAi = DesktopCharacterImageController(editor, app.settingsRepository, app.effectiveModelResolver,
+                    app.taskRuntime, app.dataOperationCoordinator,
+                    captureCredential = { com.example.chatbar.desktop.security.DesktopCredentialCall(imageSecrets,
+                        com.example.chatbar.desktop.security.DesktopCredentialKey.NovelAiToken, "synthetic-account", "synthetic-key") },
+                    loadRequirement = { "合成封面额外要求" },
+                    design = { _, _, _, _, _ -> com.example.chatbar.domain.image.NovelAiPromptPlan("synthetic-cover", emptyList(), negativePrompt = "synthetic-negative") },
+                    generateImage = { _, _, _, _, _ -> Files.readAllBytes(imagePath) })
+                editor.cardImages = imageAi
                 val activity = DesktopModalActivity()
                 val scene = ImageComposeScene(width, 900, coroutineContext = edt) {
                     CompositionLocalProvider(LocalDesktopModalActivity provides activity) {
@@ -89,6 +100,15 @@ class DesktopCharacterCardAiPanelTest {
                     assertEquals(card, editor.state.value.card)
                     assertEquals(card, app.characterRepository.getById(card.id))
                     scene.shot("character-card-ai-candidate-$width.png")
+                    scene.click("为候选生成封面")
+                    scene.until { imageAi.state.value.open && !imageAi.state.value.loading }
+                    scene.click("生成新图片")
+                    scene.until { !imageAi.state.value.busy && imageAi.state.value.candidate != null }
+                    assertEquals(card, editor.state.value.card)
+                    scene.shot("character-card-cover-candidate-$width.png")
+                    scene.click("应用图片到草稿")
+                    scene.until { !imageAi.state.value.open }
+                    assertNotNull(ai.state.value.candidate?.avatar); assertEquals(card, editor.state.value.card)
                     scene.click("应用到当前草稿")
                     scene.until { !ai.state.value.open }
                     assertEquals("合成新外观", editor.state.value.card!!.characters.single().appearance)

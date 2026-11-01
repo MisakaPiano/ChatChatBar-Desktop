@@ -277,6 +277,7 @@ class DesktopAppContainer internal constructor(
             settingsRepository.currentAppSettings.allowCleartextModelApi
         }
     }
+    private val characterImageGenerationOwner = lazy { DesktopCharacterImageGeneration(desktopSecretStore) }
     private val formatCardEditorOwner = lazy {
         DesktopFormatCardEditorController(formatCardRepository, editorDraftRepository).also { editor ->
             editor.autoFill = DesktopFormatCardAutoFillController(editor, characterRepository, settingsRepository,
@@ -333,6 +334,19 @@ class DesktopAppContainer internal constructor(
             editor.appearanceAi = DesktopCharacterAppearanceController(editor, settingsRepository, effectiveModelResolver,
                 taskRuntime, dataOperationCoordinator, filePicker, stream = { messages, model, diagnostics ->
                     formatCardAiTransportOwner.value.streamCharacterAppearance(messages, model, diagnostics)
+                })
+            editor.cardImages = DesktopCharacterImageController(editor, settingsRepository, effectiveModelResolver,
+                taskRuntime, dataOperationCoordinator,
+                captureCredential = { apiAccounts.captureCall(com.example.chatbar.desktop.security.DesktopCredentialKey.NovelAiToken,
+                    com.example.chatbar.desktop.security.DesktopAccountService.NOVELAI) },
+                loadRequirement = { com.example.chatbar.data.repository.NovelAiStudioStateRepository(jsonFileStorage).loadDraft().extraRequirement },
+                design = { card, model, hint, requirement, progress ->
+                    novelAiInfrastructure.promptDesigner().designForCharacterCard(card, model,
+                        finalPromptRequirement = requirement, imageContentHint = hint,
+                        playerName = settingsRepository.getPlayerSetting().playerName, onDelta = progress)
+                },
+                generateImage = { plan, size, settings, preview, status ->
+                    characterImageGenerationOwner.value.generate(plan, size, settings, preview, status)
                 })
         }
     }
@@ -686,6 +700,7 @@ class DesktopAppContainer internal constructor(
                 if (primaryChatControllerOwner.isInitialized()) primaryChatController.closeDraftPersistence()
                 if (characterEditorOwner.isInitialized()) characterEditorController.closeAndDrain()
                 if (characterResearchSourcesOwner.isInitialized()) characterResearchSourcesOwner.value.closeAndDrain()
+                if (characterImageGenerationOwner.isInitialized()) characterImageGenerationOwner.value.closeAndDrain()
                 if (formatCardEditorOwner.isInitialized()) formatCardEditorController.closeAndDrain()
                 if (formatCardAiTransportOwner.isInitialized()) formatCardAiTransportOwner.value.closeAndDrain()
                 if (worldBookEditorOwner.isInitialized()) worldBookEditorController.closeAndDrain()
