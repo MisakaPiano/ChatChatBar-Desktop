@@ -30,7 +30,7 @@ internal fun DesktopCharacterImageOverlay(controller: DesktopCharacterImageContr
     LaunchedEffect(state.candidate) { if (state.candidate == null) cropping = false }
     DesktopModalSurface {
         Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.dim).padding(16.dp), contentAlignment = Alignment.Center) {
-            Column(Modifier.widthIn(max = 960.dp).fillMaxHeight().background(DesktopBootstrapColors.card, RoundedCornerShape(12.dp))
+            Column(Modifier.widthIn(max = 960.dp).heightIn(max = 900.dp).background(DesktopBootstrapColors.card, RoundedCornerShape(12.dp))
                 .padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.weight(1f)) { DesktopManagementHeading(

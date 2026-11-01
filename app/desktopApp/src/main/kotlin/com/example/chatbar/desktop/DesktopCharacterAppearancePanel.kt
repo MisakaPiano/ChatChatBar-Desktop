@@ -21,7 +21,7 @@ internal fun DesktopCharacterAppearanceOverlay(controller: DesktopCharacterAppea
     if (!state.open) return
     DesktopModalSurface {
         Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.dim).padding(16.dp), contentAlignment = Alignment.Center) {
-            Column(Modifier.widthIn(max = 800.dp).fillMaxHeight()
+            Column(Modifier.widthIn(max = 800.dp).heightIn(max = 800.dp)
                 .background(DesktopBootstrapColors.card, RoundedCornerShape(12.dp)).padding(16.dp)
                 .verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {

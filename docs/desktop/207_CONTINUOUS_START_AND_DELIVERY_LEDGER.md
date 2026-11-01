@@ -1,3 +1,5 @@
+2026-11-01 看图文字96b29340／CI59完整SUCCESS：Windows2328项2309通过／19跳过，Appearance4、CardAi11、Panel1及VoiceUx5全过；Android581／shared1082与实际HTTP对照通过。CI58原FAIL保留。封面头像及pre-start取消2fd7402a单独推CI60／41280163537，Android job通过，Windows运行，不冒认整批通过；后续117未知模型措辞、候选窗按内容高度及cbea世界书纯候选策略共享待新源云端，不混CI60。原Prompt未改；B2未打包／真人验收，B3仅策略共享，世界书完整桌面流程仍待。用户离席不催真人，1226公开d94／签名10保持，不代装H日常，不恢复本机重负载。见[228](228_CHARACTER_CARD_AI_DESKTOP_BASE_CHAIN.md)／[229](229_WORLD_BOOK_AI_SHARED_CANDIDATE_POLICY.md)。
+
 2026-11-01 研究397／CI57完整SUCCESS；多图与新候选清旧研究显示源ab080c1e单独推CI58／41277789587运行。后续工作树接图片补外貌／服装的原文共享、默认／精确关联视觉模型、独立候选和显式同草稿应用，相关回归待新源云端，不由CI58代验；封面／头像生成继续，B2未完成。用户离席不催真人，1226公开d94／签名10保持，不代装日常H，不恢复本机重负载。见[228](228_CHARACTER_CARD_AI_DESKTOP_BASE_CHAIN.md)。
 
 2026-11-01 B2基础源21073fb0／CI56已完整SUCCESS：Windows2318项2299通过／19跳过，controller5及窄宽Panel1通过，Android579／shared1078及8次实际HTTP对照通过；仅代理验证，不当真人或后续源码通过。新研究接线已在后续源码接百科／URL／临时文档RAG、共享规划／整理、模式偏好与瞬态来源、检查点／只重生最终结果；JSON修复截断安全提示、换模型后半程plan继续入口和实际HTTP取消绑定亦补相应回归，尚待新源云端。原Prompt逐块原文共享，旧Android源调用仍代理；多图／看图／封面／头像等继续，不算完整B2。用户离席，不催真人，已有授权代理验证继续；1226公开d94及签名10保持，不代装H日常，不恢复本机重负载。见[228](228_CHARACTER_CARD_AI_DESKTOP_BASE_CHAIN.md)。
