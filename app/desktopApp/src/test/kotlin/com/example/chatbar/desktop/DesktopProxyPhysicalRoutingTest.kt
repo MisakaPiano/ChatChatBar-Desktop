@@ -43,6 +43,8 @@ class DesktopProxyPhysicalRoutingTest {
                 assertEquals(0, process.exitValue(), Files.readString(log))
                 val result = Json.parseToJsonElement(Files.readString(root.resolve("result.json"))).jsonObject
                 assertTrue(result.getValue("startupLoadedSameRoot").jsonPrimitive.boolean)
+                val selectedPort = result.getValue("selectedProxyPort").jsonPrimitive.int
+                assertEquals(when (mode) { "HTTP", "SOCKS" -> application.port; "SYSTEM" -> system.port; else -> 0 }, selectedPort)
                 if (image != null) {
                     assertTrue(Path.of(URI(result.getValue("proxyClassSource").jsonPrimitive.content)).startsWith(image))
                     assertTrue(Path.of(URI(result.getValue("mainClassSource").jsonPrimitive.content)).startsWith(image))
@@ -115,6 +117,7 @@ object DesktopProxyPhysicalRoutingProbe {
             }
             val resolved = DesktopDataRootResolution.Resolved(root, DesktopDataRootProvenance.CLI_OVERRIDE, root.resolveSibling("synthetic-bootstrap.json"))
             var sameRoot = false
+            var selectedPort = -1
             runDesktopMain(DesktopStartupGate(select = { DesktopStartupRootSelection.Selected(resolved) })) { selected ->
                 check(selected.appDataRoot == root)
                 runBlocking {
@@ -131,9 +134,12 @@ object DesktopProxyPhysicalRoutingProbe {
                             }
                         }.build() else secureNovelAiClient()
                     try {
+                        val requestHost = if (mode == "DIRECT") "direct-route.invalid" else "127.0.0.1"
+                        val selected = client.proxySelector.select(URI(if (mode == "DIRECT" || mode == "LOCAL")
+                            "http://$requestHost:$targetPort/fixture" else "https://image.novelai.net/user/subscription")).single()
+                        selectedPort = (selected.address() as? InetSocketAddress)?.port ?: 0
                         if (mode == "DIRECT" || mode == "LOCAL") {
-                            val host = if (mode == "DIRECT") "direct-route.invalid" else "127.0.0.1"
-                            client.newCall(okhttp3.Request.Builder().url("http://$host:$targetPort/fixture").build()).execute().use { }
+                            client.newCall(okhttp3.Request.Builder().url("http://$requestHost:$targetPort/fixture").build()).execute().use { }
                         }
                         else NovelAiAccountService(client).fetchCancellable("synthetic-only-token")
                     } catch (_: Exception) {
@@ -143,6 +149,7 @@ object DesktopProxyPhysicalRoutingProbe {
             }
             val result = buildJsonObject {
                 put("startupLoadedSameRoot", sameRoot)
+                put("selectedProxyPort", selectedPort)
                 put("proxyClassSource", ProxyAwareClient::class.java.protectionDomain.codeSource.location.toURI().toString())
                 put("mainClassSource", Class.forName("com.example.chatbar.desktop.MainKt").protectionDomain.codeSource.location.toURI().toString())
             }
