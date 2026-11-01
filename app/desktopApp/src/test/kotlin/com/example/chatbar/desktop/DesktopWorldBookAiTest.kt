@@ -29,7 +29,7 @@ class DesktopWorldBookAiTest {
     private val create = """{"entries":[{"name":"山脉","keys":["群峰"]},{"name":"河流","keys":["清溪"]}],"hasMore":false}"""
 
     @Test fun `create uses exact fresh model selected candidates apply draft then normal save`() = runBlocking {
-        fixture { app, editor ->
+        fixture { app, editor, book ->
             val ai = controller(app, editor) { _, _, _, actual, _ ->
                 assertEquals("fresh-model", actual.modelName); flowOf(StreamEvent.Delta(create), StreamEvent.Done)
             }
@@ -48,7 +48,7 @@ class DesktopWorldBookAiTest {
     }
 
     @Test fun `fill resumes completed batches and changing actual model invalidates retained checkpoint`() = runBlocking {
-        fixture { app, editor ->
+        fixture { app, editor, book ->
             val targets = (1..6).map { WorldBookEntry("target$it", "主题$it", listOf("词$it"), enabled = false, cooldown = 3) }
             editor.edit { it.copy(entries = it.entries + targets) }
             val original = editor.state.value.book!!
@@ -85,7 +85,7 @@ class DesktopWorldBookAiTest {
     }
 
     @Test fun `missing selection never falls back and manual changes reject late apply`() = runBlocking {
-        fixture { app, editor ->
+        fixture { app, editor, book ->
             var calls = 0
             val ai = controller(app, editor) { _, _, _, _, _ -> calls++; flowOf(StreamEvent.Delta(create), StreamEvent.Done) }
             ai.open(WorldBookAiOperation.CREATE); ready(ai); ai.setRequest("合成要求"); ai.selectModel("missing")
@@ -98,7 +98,7 @@ class DesktopWorldBookAiTest {
     }
 
     @Test fun `maintenance joins active stream leaving partial output but no applied candidates`() = runBlocking {
-        fixture { app, editor ->
+        fixture { app, editor, book ->
             val entered = CompletableDeferred<Unit>(); val drained = CompletableDeferred<Unit>()
             val ai = controller(app, editor) { _, _, _, _, _ -> flow {
                 try { emit(StreamEvent.Delta("未完成输出")); entered.complete(Unit); awaitCancellation() }
@@ -114,7 +114,7 @@ class DesktopWorldBookAiTest {
     }
 
     @Test fun `fresh attempt removes stale resume affordance before early model failure`() = runBlocking {
-        fixture { app, editor ->
+        fixture { app, editor, book ->
             var calls = 0
             val ai = controller(app, editor) { _, _, _, _, _ -> calls++; flowOf(StreamEvent.Error("fixture")) }
             ai.open(WorldBookAiOperation.CREATE); ready(ai); ai.setRequest("合成要求"); ai.generate(); idle(ai)
@@ -128,7 +128,7 @@ class DesktopWorldBookAiTest {
     }
 
     @Test fun `prestart cancellation resets busy without requests and can retry`() = runBlocking {
-        fixture { app, editor ->
+        fixture { app, editor, book ->
             val dispatcher = QueuedDispatcher(); val scope = CoroutineScope(SupervisorJob() + dispatcher); var calls = 0
             val ai = controller(app, editor, scope) { _, _, _, _, _ -> calls++; flowOf(StreamEvent.Delta(create), StreamEvent.Done) }
             try {
@@ -155,7 +155,7 @@ class DesktopWorldBookAiTest {
             stream, research = { worldBookOfflineResearch }, scope = scope).also { editor.ai = it }
     private suspend fun ready(ai: DesktopWorldBookAiController) = withTimeout(5_000) { ai.state.first { !it.loading } }
     private suspend fun idle(ai: DesktopWorldBookAiController) = withTimeout(5_000) { ai.state.first { !it.busy } }
-    private suspend fun fixture(block: suspend (DesktopAppContainer, DesktopWorldBookEditorController) -> Unit) {
+    private suspend fun fixture(block: suspend (DesktopAppContainer, DesktopWorldBookEditorController, WorldBook) -> Unit) {
         val parent = Files.createTempDirectory("world-book-ai-").toAbsolutePath().normalize()
         val app = DesktopAppContainer(DesktopDataRootResolution.Resolved(parent.resolve("data"), DesktopDataRootProvenance.CLI_OVERRIDE,
             parent.resolve("bootstrap.json")), secretStoreFactory = { InMemoryDesktopSecretStore() }, bundledAssets = { path ->
@@ -166,7 +166,7 @@ class DesktopWorldBookAiTest {
             app.settingsRepository.updateAppSettings { it.copy(defaultModelId = model.id, allowCleartextModelApi = true,
                 worldBookAiResearchSourceMode = CharacterResearchSourceMode.NONE) }
             val editor = app.worldBookEditorController; editor.openExisting(book.id)
-            block(app, editor)
+            block(app, editor, assertNotNull(app.worldBookRepository.getById(book.id)))
         } finally {
             if (app.dataOperationCoordinator.state != DesktopDataOperationCoordinatorState.CLOSED) app.close()
             check(parent.startsWith(Path.of(System.getProperty("java.io.tmpdir")).toAbsolutePath().normalize()))

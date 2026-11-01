@@ -29,9 +29,10 @@ class DesktopWorldBookAiPanelTest {
                     check(path == "presets/manifest.json"); """{"entries":[]}""".toByteArray()
                 })
             try {
-                val book = WorldBook("book", "合成世界书", entries = listOf(WorldBookEntry("original", "旧条目", listOf("旧词"), "原正文")))
+                val seed = WorldBook("book", "合成世界书", entries = listOf(WorldBookEntry("original", "旧条目", listOf("旧词"), "原正文")))
                 val model = ModelConfig("model", "合成模型", "http://127.0.0.1:1/v1", "", "synthetic", createdAt = 1)
-                app.worldBookRepository.save(book); app.modelRepository.saveModel(model)
+                app.worldBookRepository.save(seed); app.modelRepository.saveModel(model)
+                val book = assertNotNull(app.worldBookRepository.getById(seed.id))
                 app.settingsRepository.updateAppSettings { it.copy(defaultModelId = model.id, allowCleartextModelApi = true,
                     worldBookAiResearchSourceMode = CharacterResearchSourceMode.NONE) }
                 val editor = app.worldBookEditorController; editor.openExisting(book.id); editor.ai?.closeAndDrain()

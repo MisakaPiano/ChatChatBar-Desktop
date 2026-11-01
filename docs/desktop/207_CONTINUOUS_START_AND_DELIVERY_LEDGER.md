@@ -1,3 +1,5 @@
+2026-11-01 CI62/c3整run FAILURE：Android582/shared1089通过；Windows真XML287 suite/2347=2322PASS+19SKIP+6FAIL。六处新controller／Panel失败逐一机械比对只有首次保存自动updatedAt与seed0的差别，原仓库行为不改；测试改从保存后完整对象取基准，不忽略字段、不删断言，后续未执行步骤待新源。原artifact13074735604／SHA d2565bd2与XML、BASIS_DIFFERENCE留I盘。独立D04265a80d92本地估算源码未由CI62覆盖，将连同此基准修正送下一run；不把已定位当已通过，不取消原失败。
+
 2026-11-01 c3／CI62／41282635645 Android582／shared1089已实际通过，含世界书Core3／Research2／原facade9与6阶段HTTP1（12个合成请求）；Windows controller6／Panel1仍待。当前本地新增D042共享字段与完整wire content字符估算、角色／格式／世界书独立预算浮层、只读参考模型、日志截断前计数与不可估算提示；追加shared4／diagnostic2／窄宽三编辑器Scene1尚待新源执行，不冒认CI62覆盖。精确模型分词器／上下文容量与持久usage汇总仍待，见[230](230_EDITOR_AND_WIRE_TOKEN_ESTIMATES.md)。日常H与公开1226保持，不恢复本机重负载，不催用户。
 
 2026-11-01 ece／CI61／41281440118两job完整SUCCESS，安装器／更新器后续步骤也通过；Android581／shared1084（含世界书策略2）实际报告已核，Windows新XML／候选窗图片待读回。22ab核心与526桌面世界书接线及当前居中浮层收尾不由CI61覆盖，将随新源送下一run。1226迟到确认仅重申同一已公开测试Preview，发布身份保持d94／签名10，不产生后续公开或代装授权。
