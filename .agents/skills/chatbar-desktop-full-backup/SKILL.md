@@ -5,6 +5,8 @@ description: Maintain Desktop cbbackup selection/export, optional credential tra
 
 # Desktop Full-App Backup
 
+`DesktopFullBackupController.workRows` is body-free task-center metadata for its original export/check/restore-preparation Job, not a second scheduler. Completion publishes after the real Job cleanup; stopTask checks the original UUID so a stale row cannot cancel a later job. Picker cancellation is not successful export. Cleanup uncertainty and interrupted work with restart already scheduled remain UNCONFIRMED; no metadata observation cancels a durable restore. DATA task navigation selects the existing export/check view without opening a picker or submitting work.
+
 External shell files use `DesktopMergeImportController.inspectFile(path,password)` and its specific Job handle, then the existing merge PREVIEW UI. No external queue action selects conflicts, commits or activates a root. `discardExternal()` returns the owned discard Job; cancellation/shutdown joins it before releasing source staging. Password buffers remain volatile; restart-required keeps later external items pending. `inspect(password)`/ordinary UI entry retains its existing picker route.
 
 Numeric provider statistics live under the existing local-only `diagnostics/provider-usage` root and are not part of portable entities or credential transport. Source snapshots retain their ordinary local-root policy; do not imply these statistics move with a selected full backup.

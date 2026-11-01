@@ -156,7 +156,7 @@ class DesktopAppContainer internal constructor(
         resumeScheduler = { check(automaticBackupRuntime.resumeAfterMaintenance() !is DesktopMaintenanceResumeResult.Failed) },
         asset = bundledAssets,
         secretStore = { desktopSecretStore },
-    ), filePicker) }
+    ), filePicker).also { taskCenter.watchBackup(it) } }
     internal val fullBackupController by fullBackupOwner
     private fun createMergeService(workspace: Path = appDataRoot.resolve("backups/.merge-import-work"),
         quiesce: suspend (suspend () -> Unit) -> Unit = { work -> taskRuntime.withMaintenance { withBackupIoMaintenance(work) } },

@@ -79,3 +79,6 @@ internal fun DesktopTaskCenter.watchFish(coordinator: DesktopFishGenerationCoord
         else { coordinator.cancel(id); true }
     })
 }
+
+internal fun DesktopTaskCenter.watchBackup(controller: DesktopFullBackupController) =
+    watch("backup", controller.workRows, stop = controller::stopTask)

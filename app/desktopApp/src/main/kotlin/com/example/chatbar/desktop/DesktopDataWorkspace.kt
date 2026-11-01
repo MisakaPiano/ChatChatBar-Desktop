@@ -16,7 +16,8 @@ private enum class BackupPage { OVERVIEW, EXPORT, IMPORT, CHECK }
 internal fun DesktopDataWorkspace(root: DesktopDataRootSwitchController, full: DesktopFullBackupController,
     merge: DesktopMergeImportController?, automatic: DesktopAutomaticBackupSettingsController,
     onExit: () -> Unit, openUpdateRequest: Int = 0, onUpdateRequestConsumed: () -> Unit = {},
-    openImportRequest: Int = 0, onImportRequestConsumed: () -> Unit = {}) {
+    openImportRequest: Int = 0, onImportRequestConsumed: () -> Unit = {},
+    taskDetail: DesktopWorkDetail? = null, onTaskDetailConsumed: () -> Unit = {}) {
     val updateNotices = LocalDesktopUpdateNotices.current
     val updateNotice = updateNotices?.state?.collectAsState()?.value
     val rootState by root.state.collectAsState()
@@ -27,6 +28,14 @@ internal fun DesktopDataWorkspace(root: DesktopDataRootSwitchController, full: D
     var exportRequest by remember { mutableStateOf(0) }
     val busy = backup.busy || backup.restartRequired || imported?.busy == true || imported?.restartRequired == true
     val moving = rootState !is DesktopDataRootSwitchState.Idle
+    LaunchedEffect(taskDetail) {
+        when (taskDetail) {
+            DesktopWorkDetail.BACKUP_EXPORT -> { selected = DataPage.BACKUP; operation = BackupPage.EXPORT }
+            DesktopWorkDetail.BACKUP_CHECK -> { selected = DataPage.BACKUP; operation = BackupPage.CHECK }
+            else -> Unit
+        }
+        if (taskDetail != null) onTaskDetailConsumed()
+    }
     LaunchedEffect(imported?.busy, imported?.restartRequired) {
         if (imported?.busy == true || imported?.restartRequired == true) operation = BackupPage.IMPORT
     }

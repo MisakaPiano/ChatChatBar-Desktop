@@ -8,6 +8,44 @@ import kotlinx.coroutines.flow.first
 import kotlin.test.*
 
 class DesktopFullBackupServiceTest {
+    @Test fun `task center stops the exact backup job only after its picker boundary drains and stale IDs cannot stop the next job`() = runBlocking {
+        Fixture().use { f ->
+            val firstEntered = CompletableDeferred<Unit>(); val secondEntered = CompletableDeferred<Unit>()
+            val firstRelease = java.util.concurrent.CountDownLatch(1); val secondRelease = java.util.concurrent.CountDownLatch(1)
+            val calls = java.util.concurrent.atomic.AtomicInteger()
+            val picker = object : DesktopFilePicker {
+                override fun pickOpenFile(type: DesktopFileType): Path? = null
+                override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? {
+                    if (calls.incrementAndGet() == 1) { firstEntered.complete(Unit); check(firstRelease.await(10, java.util.concurrent.TimeUnit.SECONDS)) }
+                    else { secondEntered.complete(Unit); check(secondRelease.await(10, java.util.concurrent.TimeUnit.SECONDS)) }
+                    return null
+                }
+            }
+            val controller = DesktopFullBackupController(f.service, picker); val center = DesktopTaskCenter()
+            center.watchBackup(controller)
+            val password = "synthetic-password".toCharArray()
+            try {
+                controller.export(password)
+                withTimeout(5000) { firstEntered.await() }
+                val row = withTimeout(5000) { center.state.first { it.rows.any { row -> row.active } } }.rows.single()
+                assertEquals(DesktopWorkDetail.BACKUP_EXPORT, row.target!!.detail)
+                assertTrue(center.requestStop(row.id))
+                withTimeout(5000) { center.state.first { it.rows.single().stopRequested } }
+                assertTrue(controller.state.value.busy); assertTrue(controller.workRows.value.single().active)
+                firstRelease.countDown()
+                withTimeout(5000) { controller.workRows.first { it.single().phase == DesktopWorkPhase.CANCELLED } }
+                assertTrue(password.all { it == '\u0000' }); assertNull(controller.state.value.exportResult)
+                val oldId = controller.workRows.value.single().id
+                controller.export(null)
+                withTimeout(5000) { secondEntered.await() }
+                assertFalse(controller.stopTask(oldId)); assertTrue(controller.state.value.busy)
+                assertNotEquals(oldId, controller.workRows.value.first().id)
+                secondRelease.countDown()
+                withTimeout(5000) { controller.workRows.first { rows -> rows.size == 2 && rows.none { it.active } } }
+                assertTrue(controller.workRows.value.all { it.phase == DesktopWorkPhase.CANCELLED })
+            } finally { firstRelease.countDown(); secondRelease.countDown(); controller.closeAndDrain(); center.closeAndDrain() }
+        }
+    }
     @Test fun `GUI file check accepts current credential bearing selected exports without preparing replacement or reading protected keys`() = runBlocking {
         for (encrypted in listOf(false, true)) Fixture().use { f ->
             Files.createDirectories(f.settings.parent)

@@ -10,7 +10,7 @@ internal enum class DesktopWorkKind(val label: String) {
     WORLD_BOOK_AI("世界书创作"), CHARACTER_IMAGE("角色图片")
 }
 internal enum class DesktopWorkPhase { RUNNING, WAITING, COMPLETED, FAILED, CANCELLED, UNCONFIRMED }
-internal enum class DesktopWorkDetail { MEMORY, FORMAT_DRAFT }
+internal enum class DesktopWorkDetail { MEMORY, FORMAT_DRAFT, BACKUP_EXPORT, BACKUP_CHECK }
 internal data class DesktopWorkTarget(val route: DesktopPrimaryRoute, val sessionId: String? = null,
     val cardId: String? = null, val subjectId: String? = null, val draftSessionId: String? = null,
     val detail: DesktopWorkDetail? = null)

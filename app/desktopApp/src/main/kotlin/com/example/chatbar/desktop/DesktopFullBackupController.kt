@@ -3,6 +3,12 @@ package com.example.chatbar.desktop
 import com.example.chatbar.desktop.backup.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import java.util.UUID
+
+private enum class DesktopBackupTask(val label: String, val detail: DesktopWorkDetail) {
+    EXPORT("导出备份", DesktopWorkDetail.BACKUP_EXPORT), INSPECT("检查备份", DesktopWorkDetail.BACKUP_CHECK),
+    RESTORE_PREPARATION("准备下次启动恢复", DesktopWorkDetail.BACKUP_CHECK)
+}
 
 internal data class DesktopBackupExportResult(val success: Boolean, val message: String, val path: java.nio.file.Path? = null)
 
@@ -20,6 +26,9 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
     private val lock = Any()
     private var closed = false
     private var operation: Job? = null
+    private var activeTaskId: String? = null
+    private val mutableWork = MutableStateFlow<List<DesktopWorkRow>>(emptyList())
+    val workRows = mutableWork.asStateFlow()
     private var prepared: DesktopFullBackupArchive.Prepared? = null
 
     fun refreshExportCatalog() = action(null) {
@@ -28,8 +37,8 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
         "已读取导出清单"
     }
 
-    fun export(password: CharArray?, includeCredentials: Boolean = false, selection: AppBackupSelection? = null) = action(password, exporting = true) {
-        val path = picker.pickSaveFile(TYPE, "ChatBar.cbbackup") ?: return@action "已取消保存，可以重新选择目标"
+    fun export(password: CharArray?, includeCredentials: Boolean = false, selection: AppBackupSelection? = null) = action(password, exporting = true, task = DesktopBackupTask.EXPORT) { cancelled ->
+        val path = picker.pickSaveFile(TYPE, "ChatBar.cbbackup") ?: return@action cancelled("已取消保存，可以重新选择目标")
         service.exportModern(path, password, includeCredentials, selection)
         val message = if (includeCredentials) "备份已按所选范围导出，包含所选凭据及关联模型密钥。" else "备份已导出至新文件，不含 API 密钥等凭据。"
         mutable.update { it.copy(exportResult = DesktopBackupExportResult(true, message, path.toAbsolutePath().normalize())) }
@@ -38,8 +47,8 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
 
     fun dismissExportResult() { mutable.update { it.copy(exportResult = null) } }
 
-    fun inspect(password: CharArray?) = action(password) {
-        val path = picker.pickOpenFile(TYPE) ?: return@action "已取消检查"
+    fun inspect(password: CharArray?) = action(password, task = DesktopBackupTask.INSPECT) { cancelled ->
+        val path = picker.pickOpenFile(TYPE) ?: return@action cancelled("已取消检查")
         releaseInspection()
         val result = service.inspect(path, password)
         prepared = result
@@ -48,15 +57,15 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
         "文件校验完成；尚未替换当前数据。请检查摘要后决定是否恢复。"
     }
 
-    fun verifyFile(password: CharArray?) = action(password) {
-        val path = picker.pickOpenFile(TYPE) ?: return@action "已取消检查"
+    fun verifyFile(password: CharArray?) = action(password, task = DesktopBackupTask.INSPECT) { cancelled ->
+        val path = picker.pickOpenFile(TYPE) ?: return@action cancelled("已取消检查")
         releaseInspection()
         val result = service.verifyFile(path, password)
         mutable.update { it.copy(summary = result.summary, desktopOnly = result.desktopOnly) }
         "文件完整性与格式校验完成；没有导入或替换当前数据。恢复请使用合并预览。"
     }
 
-    fun restore() = action(null) {
+    fun restore() = action(null, task = DesktopBackupTask.RESTORE_PREPARATION) {
         service.scheduleRestore(requireNotNull(prepared))
         releaseInspection()
         "恢复已准备。请正常退出应用，下次启动将在打开聊天前完成恢复；原数据和恢复记录保留。"
@@ -77,29 +86,45 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
         mutable.update { it.copy(summary = null, desktopOnly = false) }
     }
     fun stop() { synchronized(lock) { operation }?.cancel() }
+    fun stopTask(id: String): Boolean = synchronized(lock) {
+        if (activeTaskId != id || operation?.isCompleted != false) false
+        else { operation?.cancel(); true }
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    private fun action(password: CharArray?, cleanupOnly: Boolean = false, exporting: Boolean = false, work: suspend () -> String) {
+    private fun action(password: CharArray?, cleanupOnly: Boolean = false, exporting: Boolean = false,
+        task: DesktopBackupTask? = null, work: suspend ((String) -> String) -> String) {
         synchronized(lock) {
             if (closed || mutable.value.busy || service.restartRequired && !cleanupOnly) { password?.fill('\u0000'); return }
             mutable.update { it.copy(busy = true, error = null, message = "正在准备和核验…", exportResult = null) }
+            val taskId = task?.let { UUID.randomUUID().toString() }
+            activeTaskId = taskId
+            var outcome = DesktopWorkPhase.COMPLETED
+            if (task != null && taskId != null) mutableWork.update { rows ->
+                (listOf(DesktopWorkRow(taskId, DesktopWorkKind.BACKUP, DesktopWorkPhase.RUNNING, System.currentTimeMillis(),
+                    target = DesktopWorkTarget(DesktopPrimaryRoute.DATA, detail = task.detail),
+                    canStop = true, contextLabel = task.label)) + rows).take(40)
+            }
             // Even a request cancelled before its dispatcher runs must enter the cleanup boundary.
             operation = scope.launch(start = CoroutineStart.ATOMIC) {
                 try {
                     currentCoroutineContext().ensureActive()
-                    val message = work()
+                    val message = work { message -> outcome = DesktopWorkPhase.CANCELLED; message }
                     currentCoroutineContext().ensureActive()
                     mutable.update { it.copy(message = message) }
                 }
                 catch (_: CancellationException) {
+                    outcome = DesktopWorkPhase.CANCELLED
                     try {
                         releaseInspection()
                         mutable.update { it.copy(message = "操作已停止；临时检查文件已释放，原文件和恢复证据保留") }
                     } catch (_: Throwable) {
+                        outcome = DesktopWorkPhase.UNCONFIRMED
                         mutable.update { it.copy(error = "临时文件清理尚未确认，已保留异常现场；请勿自行清理恢复记录。") }
                     }
                 }
                 catch (failure: Throwable) {
+                    outcome = DesktopWorkPhase.FAILED
                     val reason = if (failure.suppressed.any { it is DesktopBackupScratchCleanupException })
                         "临时文件清理尚未确认，已保留异常现场；请勿自行清理恢复记录。"
                     else when (failure) {
@@ -135,11 +160,24 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
                         }
                         if (!release) break
                         try { releaseInspection() } catch (_: Throwable) {
+                            outcome = DesktopWorkPhase.UNCONFIRMED
                             mutable.update { it.copy(error = "临时文件清理尚未确认，已保留异常现场；请勿自行清理恢复记录。") }
                         }
                     }
                 }
-            }.also { job -> job.invokeOnCompletion { password?.fill('\u0000') } }
+            }.also { job -> job.invokeOnCompletion { failure ->
+                password?.fill('\u0000')
+                if (taskId != null) {
+                    val phase = when {
+                        outcome == DesktopWorkPhase.UNCONFIRMED -> outcome
+                        service.restartRequired && (failure != null || outcome != DesktopWorkPhase.COMPLETED) -> DesktopWorkPhase.UNCONFIRMED
+                        failure is CancellationException -> DesktopWorkPhase.CANCELLED
+                        failure != null -> DesktopWorkPhase.FAILED
+                        else -> outcome
+                    }
+                    mutableWork.update { rows -> rows.map { if (it.id == taskId) it.copy(phase = phase, canStop = false) else it } }
+                }
+            } }
         }
     }
     suspend fun closeAndDrain() {

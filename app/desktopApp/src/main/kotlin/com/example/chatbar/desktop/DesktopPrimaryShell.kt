@@ -82,6 +82,7 @@ internal fun DesktopPrimaryShell(
     var externalManageKind by remember { mutableStateOf<DesktopExternalImportKind?>(null) }
     var externalManageTargetId by remember { mutableStateOf<String?>(null) }
     var taskManageTarget by remember { mutableStateOf<DesktopWorkTarget?>(null) }
+    var taskDataDetail by remember { mutableStateOf<DesktopWorkDetail?>(null) }
     val colors = DesktopBootstrapColors
     val t = LocalDesktopUiStrings.current
     val scope = rememberCoroutineScope()
@@ -199,7 +200,8 @@ internal fun DesktopPrimaryShell(
                     DesktopPrimaryRoute.DATA -> DesktopDataWorkspace(rootSwitchController, fullBackupController,
                         mergeImportController, backupSettingsController, onExitApplication, openUpdateRequest,
                         onUpdateRequestConsumed = { openUpdateRequest = 0 }, openImportRequest = openImportRequest,
-                        onImportRequestConsumed = { openImportRequest = 0 })
+                        onImportRequestConsumed = { openImportRequest = 0 }, taskDetail = taskDataDetail,
+                        onTaskDetailConsumed = { taskDataDetail = null })
                 }
                 primaryChatController.voices?.let { runtime ->
                     val player by runtime.playback.state.collectAsState()
@@ -219,6 +221,7 @@ internal fun DesktopPrimaryShell(
                 centerOpen = false
                 navigateAfter(target.route) {
                     if (target.route == DesktopPrimaryRoute.MANAGE) taskManageTarget = target
+                    if (target.route == DesktopPrimaryRoute.DATA) taskDataDetail = target.detail
                     if (target.route == DesktopPrimaryRoute.CHAT && target.sessionId != null)
                         scope.launch { primaryChatController.requestSessionSettingsLeave {
                             primaryChatController.selectSession(target.sessionId)
