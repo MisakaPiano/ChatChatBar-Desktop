@@ -1,0 +1,13 @@
+# 记忆与检索文本的实际请求记录 / 2026-11-02
+
+原216 P15-06／07独立增量，位于已通过CI87的向量统计之后，不混已冻结064的1230候选。
+
+DesktopMemoryRagTextClient复用既有streamMemoryRag diagnostics参数和MemoryRagTextClient.withTaskRun。MemoryAiGateway仍拥有五次输出尝试／三次传输尝试、修复Prompt和JSON验证；RetrievalPlanner仍拥有原超时／回退语义。所有原Prompt、发送参数、thinking、output-limit省略及请求次数均保持。
+
+同一kind/model的逻辑任务首次请求建立记录，SUMMARIZE→REPAIR递增物理attempt而非创建新逻辑ID。压缩计划后显式进入嵌套summary范围时，先结束前一个purpose；summary失败不倒写已完成计划。不同显式purpose或model分别记录。记录只观察，未接管域调度或重试。
+
+实际流的Done／失败／取消单独保留。域层吞掉HTTP错误或超时后正常返回fallback，也不能将最后物理流记为成功；后续真实重试成功才可完成。域JSON验证最终抛错时保留已报告计数并标失败。数值仍走原白名单、本地owner与关闭顺序；原文只在现有有界进程内诊断，不写入数字文件。
+
+AppContainer在请求发生时才取已有diagnostics owner，避免MemoryService／TaskRuntime惰性构图循环。MemoryMaintenancePlatform只在原normal gate内补实际session归属；不构造未知task/card，不改变协调器、存储journal、source identity、HEAD／Archive或页面生命周期。检索沿用9ae提供的真实chat父归属。
+
+四项新合成HTTP回归：真实共享MemoryAiGateway首回非法JSON→修复成功的单逻辑／双attempt；嵌套summary失败保全计划终态；真实RetrievalPlanner的503正常fallback仍标FAILED；取消child流后域调用正常返回仍标CANCELLED／未知。原MemoryRagTransport／Safety／Lifecycle／Retrieval及usage回归继续。当前仍待后续精确源云端，不能由87冒认通过。

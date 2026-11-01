@@ -10,4 +10,4 @@
 
 父归属复用实际运行层：文档准备child记录其已登记task UUID及card/document；历史维护显式携带真实session，不把`chat-memory:*`准入键当card；主聊天child携带本身task/session，检索入口补当前card/session/user。没有父证据的直接调用仍OTHER且ID为空。未额外创建任务中心owner、索引或后台工作线程。关闭顺序继续是embedding transport排水后才关闭数值owner。
 
-五项新合成回归：实际AppContainer网关／文档child的零值、落盘及隐私排除；缺失／畸形可选usage；向量校验失败保留数字与503不重发；真实HTTP取消保留实际聊天父ID；配置变化／准入拒绝无attempt。现有embedding wire／索引事务／维护／关闭和数值UI回归随新精确源云端执行；目前源码待验，不能由CI86覆盖。
+CI87／41332222249精确9ae6117c完整SUCCESS。实际Windows308suite／2415项＝2396PASS＋19SKIP，以上五项合成回归全部PASS；独立production JAR5、NTFS7、Linux共享1135／Android582通过。现有embedding wire／索引事务／维护／关闭和数值UI回归保留。该证据不覆盖后续记忆／检索文本适配，也不改变1230冻结源或完整账单覆盖声明。

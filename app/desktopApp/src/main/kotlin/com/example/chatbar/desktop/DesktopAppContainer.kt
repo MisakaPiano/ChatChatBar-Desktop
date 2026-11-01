@@ -73,7 +73,8 @@ class DesktopAppContainer internal constructor(
     internal val ragController by ragOwner
     private val memoryRagTransportOwner = lazy { com.example.chatbar.domain.chat.OpenAiStreamingTransport(
         allowCleartextHttp = { settingsRepository.currentAppSettings.allowCleartextModelApi }) }
-    private val memoryRagTextClient by lazy { DesktopMemoryRagTextClient(memoryRagTransportOwner.value) }
+    private val memoryRagTextClient by lazy { DesktopMemoryRagTextClient(memoryRagTransportOwner.value,
+        diagnostics = { taskRuntime.diagnostics }) }
     private val memoryRepository by lazy { com.example.chatbar.data.repository.MemoryRepository(jsonFileStorage,
         strictReads = true, dataGate = dataOperationCoordinator, validatePath = DesktopDocumentRagSource(appDataRoot)::safeWindowsPath) }
     private val memoryService by lazy { com.example.chatbar.domain.memory.LongTermMemoryService(chatRepository,

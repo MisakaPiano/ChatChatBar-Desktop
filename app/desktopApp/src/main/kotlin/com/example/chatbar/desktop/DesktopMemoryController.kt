@@ -32,7 +32,13 @@ internal class DesktopMemoryController(
     val state = mutableState.asStateFlow()
     val coordinator = LongTermMemoryAutoMaintenanceCoordinator(object : MemoryMaintenancePlatform {
         override suspend fun <T> run(sessionId: String, requireValidatedInternet: Boolean, block: suspend () -> T): T =
-            gate.withNormalOperation(block)
+            gate.withNormalOperation {
+                val inherited = currentCoroutineContext()[DesktopUsageParent]?.value?.takeIf { it.sessionId == sessionId }
+                withContext(DesktopUsageParent((inherited ?: DesktopUsageContext(DesktopUsageSource.CHAT)).copy(
+                    source = DesktopUsageSource.CHAT, sessionId = sessionId))) {
+                    block()
+                }
+            }
     }, scope, chats, settings, models, service)
     val backfill = coordinator.backfillProgress
     val repair = coordinator.sourceRepairProgress

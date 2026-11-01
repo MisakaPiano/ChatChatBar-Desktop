@@ -18,7 +18,7 @@ internal fun DesktopProviderUsagePanel(owner: DesktopProviderUsageOwner) {
         fromInclusive = days?.let { System.currentTimeMillis() - it * 86_400_000L }, source = source) }
     LaunchedEffect(owner, query) { owner.refresh(query) }
     DesktopManagementHeading("模型请求用量")
-    StatusText("记录已接入的聊天、卡片、世界书、朋友圈文本、图片设计、语音翻译／标签及向量模型请求；实际生图和音频合成统计仍待接入，部分辅助操作归入其他。服务端未报告的用量保持未知，字符估算不计入此处。")
+    StatusText("记录已接入的聊天、卡片、世界书、朋友圈文本、图片设计、语音翻译／标签、记忆／检索规划及向量模型请求；实际生图和音频合成统计仍待接入，部分辅助操作归入其他。服务端未报告的用量保持未知，字符估算不计入此处。")
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         SelectChip("全部时间", days == null) { days = null }
         listOf(1, 7, 30).forEach { value -> SelectChip("最近${value}天", days == value) { days = value } }

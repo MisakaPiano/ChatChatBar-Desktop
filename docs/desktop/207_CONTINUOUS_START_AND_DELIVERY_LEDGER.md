@@ -1,3 +1,7 @@
+2026-11-02 9ae／CI87完整SUCCESS：实际Windows308suite／2415=2396PASS＋19SKIP，embedding新五项全PASS，独立production JAR5／NTFS7／shared1135／Android582通过，见248。后续MemoryRagTextClient接既有diagnostics与withTaskRun：同kind/model修复连续physical attempts，嵌套summary独立于计划；实际失败／取消不因planner正常fallback变绿。Maintenance沿原gate只补真实session，不改Prompt／重试／域状态，四项合成共享head修复、nested目的、实际planner503／吞取消回归待新源，见249。1230冻结064和本地签名14不混此源，公共1229／13保持；10:00前不问人工，无后版公开／H代装，本机无重负载。
+
+下方历史保留。
+
 2026-11-02 后续P15向量请求数值接线在独立源码：复用既有gateway一次解析／one-shot、usage owner及关闭排水，真实文档child／聊天task、session/card/user归属，未知provider/account不猜，五项合成HTTP／取消／拒绝回归待新精确源云端；不由86覆盖，见248，不混1230冻结包。1230旧隔离1225 client已实际离线通过13→14／下载／第二验包，公共网络／真人仍待；新增验包缓存副本删除被策略拒绝，保留且不换执行者重试，247已记。公开仍1229／13，不代装H，10:00前不问人工。
 
 下方历史保留。
