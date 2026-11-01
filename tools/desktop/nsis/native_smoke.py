@@ -133,7 +133,43 @@ def process_image(pid):
         kernel.CloseHandle(handle)
 
 
-def launch_close(case, image, executable, arguments, install_root, label, default_profile=False, expect_failure=False, busy_installer=None, allow_update_helper=False):
+def probe_external_files(case, install_root, label, window):
+    """Delivery only: actual packaged receiver and queue, never import confirmation."""
+    key = hashlib.sha256(str(install_root.absolute()).lower().encode('utf-8')).hexdigest()
+    receiver = case / 'local-appdata/ChatChatBarDesktopActivation' / key
+    journal = receiver / 'pending.json'
+    previous = json.loads(journal.read_text(encoding='utf-8'))['files'] if journal.exists() else []
+    paths = [case / (label + '-角色 & one.json'), case / (label + '-第二份 file.cbsave')]
+    content = b'SYNTHETIC_EXTERNAL_DELIVERY_ONLY_NOT_AN_IMPORT_PACKAGE'
+    for path in paths:
+        require(not path.exists(), 'EXTERNAL_PROBE_INPUT_ALREADY_EXISTS')
+        path.write_bytes(content)
+    original = (install_root / 'current.txt').read_bytes()
+    pid = W.DWORD(); user.GetWindowThreadProcessId(window, C.byref(pid))
+    result = subprocess.run([str(install_root / 'OpenChatBarFile.exe'), *map(str, paths)],
+                            env=environment(case), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=30)
+    require(result.returncode == 0, 'PACKAGED_EXTERNAL_DELIVERY_FAILED')
+    data = json.loads(journal.read_text(encoding='utf-8'))
+    require(data['version'] == 1 and data['files'][:len(previous)] == previous, 'PENDING_QUEUE_NOT_RETAINED')
+    added = data['files'][len(previous):]
+    require([entry['path'] for entry in added] == list(map(str, paths)) and
+            all(entry['attempted'] is False for entry in added), 'EXTERNAL_ARGUMENTS_OR_CONFIRMATION_CHANGED')
+    # A warm normal entry must also return while the same real business window stays alive.
+    focus = subprocess.run([str(install_root / 'ChatChatBar.exe')], env=environment(case),
+                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=30)
+    after = W.DWORD(); user.GetWindowThreadProcessId(window, C.byref(after))
+    require(focus.returncode == 0 and user.IsWindowVisible(window) and after.value == pid.value,
+            'PACKAGED_WARM_FOCUS_NOT_CONFIRMED')
+    require((install_root / 'current.txt').read_bytes() == original, 'EXTERNAL_DELIVERY_CHANGED_CURRENT')
+    require(all(path.read_bytes() == content for path in paths), 'EXTERNAL_SOURCE_CHANGED')
+    require(json.loads(journal.read_text(encoding='utf-8'))['files'] == data['files'], 'WARM_FOCUS_CHANGED_QUEUE')
+    save(case / (label + '-external-delivery.json'), dict(kind='PACKAGED_EXTERNAL_DELIVERY_ONLY',
+         previousPending=len(previous), added=2, orderedUnicodePaths=True, noImportAttempted=True,
+         unchangedSources=True, sameVisibleBusinessPid=pid.value, normalWarmEntryReturned=True,
+         importOrHumanAcceptance=False, providerCalls=False))
+
+
+def launch_close(case, image, executable, arguments, install_root, label, default_profile=False, expect_failure=False, busy_installer=None, allow_update_helper=False, external_files=False):
     job = kernel.CreateJobObjectW(None, None)
     require(job, 'JOB_CREATE_FAILED')
     startup = Startup(); startup.cb = C.sizeof(startup); startup.flags = 0x100
@@ -216,6 +252,8 @@ def launch_close(case, image, executable, arguments, install_root, label, defaul
                  manifestUnchanged=(program / 'install-manifest.json').read_bytes() == original_manifest))
             require(blocked.returncode == 2 and (install_root / 'current.txt').read_text().strip() == current and
                     (program / 'install-manifest.json').read_bytes() == original_manifest, 'RUNNING_PROGRAM_INSTALL_NOT_REFUSED')
+        if external_files:
+            probe_external_files(case, install_root, label, window)
         active = pids()
         try:
             directories = {str(pid): cwd(pid) for pid in active}
@@ -261,6 +299,7 @@ def main():
     parser.add_argument('--expect-install-failure', action='store_true', help='Explicit task-owned fault installer only; old entry/data must remain')
     parser.add_argument('--probe-busy-installer', type=Path, help='While the owned app is running, this installer must reject before changing the current version')
     parser.add_argument('--allow-owned-update-helper-cwd', action='store_true', help='Explicitly classify only the inventoried updater Python; full Job exit still required')
+    parser.add_argument('--probe-external-files', action='store_true', help='Deliver synthetic paths to the actual packaged warm receiver without confirming any import')
     parser.add_argument('--ci-source', type=Path, help='Frozen source namespace only in this repository Windows CI')
     args = parser.parse_args()
     approved = Path(__file__).resolve().parents[3] / 'app/desktopApp/build/preview-continuous-private-20261025'
@@ -285,7 +324,7 @@ def main():
     exe = args.installer if args.installer else args.root / 'ChatChatBar.exe'
     arguments = ['/S', '/D=' + str(args.root)] if args.installer else []
     require(not args.expect_install_failure or (args.installer and not args.fresh_default_profile), 'FAILURE_DRIVER_REQUIRES_INSTALLED_SYNTHETIC_PROFILE')
-    launch_close(case, args.image, exe, arguments, args.root, args.label, args.fresh_default_profile, args.expect_install_failure, args.probe_busy_installer, args.allow_owned_update_helper_cwd)
+    launch_close(case, args.image, exe, arguments, args.root, args.label, args.fresh_default_profile, args.expect_install_failure, args.probe_busy_installer, args.allow_owned_update_helper_cwd, args.probe_external_files)
 
 
 if __name__ == '__main__':
