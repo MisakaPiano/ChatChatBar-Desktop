@@ -1,4 +1,6 @@
-# 1227 冻结候选：未公开
+# 1227 冻结候选与公开测试
+
+最新：用户在协调对话明确允许先公开1227测试Preview。发行430467486已公开并实际读回，再推匹配签名11到79f4378fc23a424dfcf6524a62d186bb4ea53f5f，root不变；未代装H，真人验收仍待。真实旧1225更新器在新I缓存匿名公开下载175142053B、TUF／SHA／source／说明及二次验包均PASS，H pointer与bootstrap不变，未安装。当前P13源码1f及其后续不在本包。以下保留冻结和准备范围。
 
 2026-11-01。应用源码 `003c782fa34de6f2e07882bd9f4c9dd1a6599193`，版本 `0.1.0-preview.1227`；单独打包控制源 `073a20607ef3f245f0ed1d976ee681e4b2028560`。后续仅文档提交不改变冻结身份。
 
@@ -20,13 +22,13 @@
 | 安装EXE | 175142053 | `9c6f60123f7a7c4ac1d56d19edeae2806e50ec562d7141f994a26a3870095c12` |
 | 独立ZIP | 188357862 | `5751a26be2a6fa30fbee19e037bcc4b871936118d5e209ed8f4135c49826bea7` |
 
-发行草稿430467486已上传两文件及各自`.sha256`，实际tag、target commit、说明、四资产大小／散列已读回，仍`draft:true`。[草稿入口](https://github.com/MisakaPiano/ChatChatBar-Desktop/releases/tag/untagged-2cc835cde78dc62ad0f4)不是公开下载入口。
+发行草稿430467486已上传两文件及各自`.sha256`，实际tag、target commit、说明、四资产大小／散列已读回，准备时`draft:true`；现已按本次明确许可公开。[草稿入口](https://github.com/MisakaPiano/ChatChatBar-Desktop/releases/tag/untagged-2cc835cde78dc62ad0f4)不是公开下载入口。
 
 本地回执目录：`I:/CCB-Desktop-Continuity/updates/20261101-candidate1227-preparation/`。包括`FROZEN_REVIEW.json`、`CI_RUN_READBACK.json`、`RELEASE_DRAFT_RESULT.private.json`、`signed-client-validation-r02/result.json`、原始native记录、文件散列和最短手动清单。真实报告和私钥不在Git或上传产物。
 
 ## 仍待与权限
 
-1226先公开测试许可仅适用于1226。1227尚无公开许可，签名revision11仅本地暂存，未推公共metadata。公开仍1226／d94及metadata10／6af10f14；没有代装日常H。
+1226先公开测试许可仅适用于1226。用户后来另行明确允许1227先公开测试，已执行1227／003c与metadata11／79f4378；该许可不沿用后版，亦不是用户验收。没有代装日常H。
 
 真实NAI超时根因和原环境复测待：先保留原VPN节点／启动参数与SYSTEM模式记录基准，再另测手动代理保存、重开及固定阶段耗时；不擅改用户环境或强制HTTP／TLS策略。TCP到代理及无凭据curl401均不能证明完整账户请求成功。
 

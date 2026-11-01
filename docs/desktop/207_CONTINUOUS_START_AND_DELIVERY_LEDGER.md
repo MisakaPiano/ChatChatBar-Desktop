@@ -1,3 +1,5 @@
+2026-11-01 当前公开1227／source003c：用户本次明确许可已执行，发行430467486四资产与说明读回后推签名11／79f4378fc23a424dfcf6524a62d186bb4ea53f5f，root不变。真实现用1225旧更新器在全新I缓存匿名下载175142053B、TUF／SHA／source／说明与二次验包均PASS，H pointer／bootstrap未变、未安装、真人未验。独立后续1f1／CI68已完整SUCCESS：Windows2361=2342PASS+19SKIP，共享1105／Android582；时间线、根绑定持久准入／同根恢复epoch、配图和调试生成新源码仍工作树待验，不混1227。两层身份与原失败保留，见[233](233_PREVIEW1227_FROZEN_CANDIDATE.md)／[231](231_MOMENTS_SHARED_FOUNDATION.md)。
+
 2026-11-01 后续P13 Desktop运行层／传输／耐久task-post关联与图片精确清理已入源码，新增真实合成HTTP、断电关联／取消／production cleaner回归待云端；未接时间线UI，临时每进程恢复不是完整持久调度等价。AppContainer仅懒owner／关闭排水，加载旧enabled／PENDING不自动请求。1227冻结003c及草稿不混后续源，公开仍1226／metadata10，见[231](231_MOMENTS_SHARED_FOUNDATION.md)。
 
 2026-11-01 冻结003c／CI67完整SUCCESS：Windows291suite2357=2338PASS+19SKIP，shared1103／Android582通过；CI65／66原失败保留。1227云端R06／41289702505普通升级、稳定入口重开及独立中文入口通过，最终EXE／ZIP和547共用文件逐字节核对。旧1225更新器离线revision10→11下载／二次验包通过。发行430467486为未公开草稿，签名11仅本地；公开仍1226／d94／metadata10，不代装H。真实NAI超时、原67项导出及本版真人验收待，P13仅共享基础。见[233](233_PREVIEW1227_FROZEN_CANDIDATE.md)／[232](232_SESSION_DELETE_AND_PERSISTENT_PROXY.md)。
