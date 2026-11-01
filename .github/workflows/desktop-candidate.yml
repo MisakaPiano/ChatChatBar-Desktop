@@ -198,6 +198,9 @@ jobs:
           python -B $driver --case $case --image $env:CCB_CANDIDATE_IMAGE --root $program --label candidate-reopen --fresh-default-profile --ci-source $env:CCB_CI_SOURCE --allow-owned-update-helper-cwd --probe-external-files
           if ($LASTEXITCODE -ne 0) { throw 'CANDIDATE_NATIVE_REOPEN_FAILED' }
           if ((Get-FileHash -Algorithm SHA256 -LiteralPath $canary).Hash -cne $before) { throw 'REOPEN_CANARY_CHANGED' }
+          python -B $driver --case $case --image $env:CCB_CANDIDATE_IMAGE --root $program --label candidate-cold-external --fresh-default-profile --ci-source $env:CCB_CI_SOURCE --allow-owned-update-helper-cwd --probe-external-files --cold-external-file
+          if ($LASTEXITCODE -ne 0) { throw 'CANDIDATE_COLD_EXTERNAL_FAILED' }
+          if ((Get-FileHash -Algorithm SHA256 -LiteralPath $canary).Hash -cne $before) { throw 'COLD_EXTERNAL_CANARY_CHANGED' }
           [ordered]@{version=$env:CCB_CANDIDATE_VERSION; source=$env:CCB_CANDIDATE_SOURCE; actualNativeUpgrade=$true; stableReopen=$true; runningInstallerRefused=$true; syntheticCanaryRetained=$true; cwdPolicy='Stable program cwd; only inventoried updater image may use runtime cwd, and full Job exit is required'; fakeCredentialRetentionVerified=$false; customDataRootBusyVerified=$false; humanAcceptance=$false; installerRunOnUserMachine=$false} | ConvertTo-Json | Set-Content (Join-Path $case 'scope-result.json') -Encoding utf8
           "CCB_NATIVE_CASE=$case" | Add-Content $env:GITHUB_ENV -Encoding utf8
 
@@ -238,6 +241,8 @@ jobs:
             ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-nsis-cloud/*-result.json
             ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-nsis-cloud/*-running.json
             ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-nsis-cloud/*-busy-installer.json
+            ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-nsis-cloud/*-external-delivery.json
+            ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-nsis-cloud/*-external-before-launch.json
             ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-nsis-cloud/*-stderr.log
             ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-independent-cloud/result.json
             ${{ env.CCB_BUILD_OUTPUT }}/compiler-download.json
