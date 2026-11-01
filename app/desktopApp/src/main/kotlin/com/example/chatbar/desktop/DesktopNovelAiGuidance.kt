@@ -2,6 +2,8 @@ package com.example.chatbar.desktop
 
 import com.example.chatbar.desktop.security.*
 import com.example.chatbar.domain.image.*
+import com.example.chatbar.data.operation.AppDataOperationGate
+import com.example.chatbar.data.operation.NoOpAppDataOperationGate
 import java.awt.Color
 import java.awt.image.BufferedImage
 import java.nio.file.Path
@@ -21,7 +23,9 @@ internal class DesktopNovelAiGuidance(
     root: Path,
     private val resources: DesktopCharacterResourceStore,
     private val secrets: DesktopSecretStore,
+    private val gate: AppDataOperationGate = NoOpAppDataOperationGate,
 ) {
+    private val payloads = NovelAiInlinePayloadStore(root.toFile())
     private val vibes = NovelAiVibeEncodingCore(root.resolve("auxiliary/novelai/vibe-cache").toFile(),
         secureNovelAiClient(), resources::readBytes, safeErrorsOnly = true)
 
@@ -30,7 +34,7 @@ internal class DesktopNovelAiGuidance(
         else draft.imageGuidance.vibes.count { it.isUsable && it.encodedVibe.isNullOrBlank() &&
             it.asset?.let { asset -> !vibes.isCached(asset.sha256, draft.selectedModel, it.informationExtracted) } == true }
 
-    suspend fun prepare(draft: NovelAiStudioDraft): DesktopPreparedGuidance = withContext(Dispatchers.IO) {
+    suspend fun prepare(draft: NovelAiStudioDraft): DesktopPreparedGuidance = gate.withNormalOperation { withContext(Dispatchers.IO) {
         val g = draft.imageGuidance
         g.validationError(draft.selectedModel)?.let { error(it) }
         val size = draft.activeSettings.imageSize()
@@ -86,7 +90,7 @@ internal class DesktopNovelAiGuidance(
         val preparedVibes = if (mode == NovelAiReferenceMode.VIBE) {
             val strengths = g.effectiveVibeStrengths()
             g.vibes.filter { it.isUsable }.mapIndexed { index, vibe ->
-                val encoded = vibe.encodedVibe?.takeIf { it.isNotBlank() } ?: vibes.resolve(
+                val encoded = vibe.encodedVibe?.takeIf { it.isNotBlank() }?.let(payloads::resolve) ?: vibes.resolve(
                     requireNotNull(secrets.credentialForCall(DesktopCredentialKey.NovelAiToken)), requireNotNull(vibe.asset),
                     draft.selectedModel, vibe.informationExtracted)
                 NovelAiPreparedVibeReference(encoded, vibe.informationExtracted, strengths[index])
@@ -96,9 +100,9 @@ internal class DesktopNovelAiGuidance(
             g.imageToImageStrength, g.imageToImageNoise, g.inpaintStrength, precise,
             g.preciseReference.type, g.preciseReference.strength, g.preciseReference.fidelity, preparedVibes), requestSize,
             if (mode == NovelAiReferenceMode.VIBE) g.copy(vibes = g.vibes.filter { it.isUsable }.mapIndexed { index, vibe ->
-                vibe.copy(encodedVibe = preparedVibes[index].encoding)
+                vibe.copy(encodedVibe = payloads.retain(preparedVibes[index].encoding))
             }) else g, compose)
-    }
+    } }
 
     private fun decode(asset: NovelAiStudioAssetRef) = DesktopImageEditing.decode(resources.readBytes(asset.path))
     private fun encode(image: BufferedImage) = Base64.getEncoder().encodeToString(DesktopImageEditing.png(image))

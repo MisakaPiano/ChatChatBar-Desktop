@@ -236,7 +236,7 @@ class DesktopAppContainer internal constructor(
     internal val novelAiStudioController by lazy {
         DesktopNovelAiStudioController(jsonFileStorage, characterResourceStore, filePicker,
             dataOperationCoordinator, ownedImageCleanup::deleteUnreferenced, novelAiGenerationRuntime,
-            DesktopNovelAiGuidance(appDataRoot, characterResourceStore, desktopSecretStore), taskRuntime,
+            DesktopNovelAiGuidance(appDataRoot, characterResourceStore, desktopSecretStore, dataOperationCoordinator), taskRuntime,
             novelAiInfrastructure, settingsRepository, effectiveModelResolver, characterRepository,
             account = { com.example.chatbar.domain.image.NovelAiAccountService(secureNovelAiClient()).fetchCancellable(
                 requireNotNull(desktopSecretStore.credentialForCall(com.example.chatbar.desktop.security.DesktopCredentialKey.NovelAiToken))) },

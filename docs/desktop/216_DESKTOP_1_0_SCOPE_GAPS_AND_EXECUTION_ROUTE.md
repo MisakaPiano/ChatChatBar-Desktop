@@ -4,6 +4,8 @@
 
 后续独立147适配已着手[240](240_UPSTREAM147_STUDIO_BATCH_MUTATION.md)历史批删事务：复用共享replacement helper与writer锁，真实controller接线及五项新回归待云端。现有SaveSlot域的既有维护／事务证据复用，不按文件路径差异重写；Vibe外置编码的运行时解析另列下一缺口。公开1229保持。
 
+后续[241](241_UPSTREAM147_VIBE_FILE_RUNTIME.md)已接外置Vibe引用的实际resolve／长值retain及AppContainer normal gate，配套合成认证导入→wire回归待云端；不重写既有备份映射，不自动重新计费编码。官方openCompactJson／旧大inline单例峰值内存优化仍待，不能提升为完整147兼容。
+
 ## 本轮用户方向与范围
 
 用户后续明确授权实际升级到最新正式上游1.4.7／`b4fa75d296680f777be095f3121ad0c4db979f17`，不是仅改版本记录。复用已核141→147的30提交／221文件差异、既有选择性实现和实测，按依赖补实际缺口与受影响兼容检查；路径统计不等于功能缺失清单。当前先收尾NAI物理选路及两项聊天显示反馈；证据成立后再更新正式10_UPSTREAM_BASELINE，现有Prompt差异仍按原文／diff／影响单独确认。授权回执与独立影响核对保存在本地20261101对应文件，不自动merge或扩到未发布版本。
