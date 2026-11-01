@@ -270,6 +270,10 @@ val updaterInputFiles = fileTree(updaterSources) {
 }
 val updaterSourceKey = providers.provider {
     val digest = MessageDigest.getInstance("SHA-256")
+    // Gradle invalidates Exec actions when this recipe changes. Give that recipe a
+    // fresh immutable destination too, rather than re-entering an existing runtime.
+    digest.update("desktopApp/build.gradle.kts".toByteArray(Charsets.UTF_8))
+    digest.update(project.buildFile.readBytes())
     updaterInputFiles.files.sortedBy { it.name }.forEach { file ->
         digest.update(file.name.toByteArray(Charsets.UTF_8)); digest.update(file.readBytes())
     }
@@ -278,6 +282,7 @@ val updaterSourceKey = providers.provider {
 val updaterRuntimeDirectory = layout.buildDirectory.dir(updaterSourceKey.map { "desktop-updater/$it" })
 val prepareDesktopUpdater by tasks.registering(Exec::class) {
     group = "distribution"
+    inputs.file(project.buildFile)
     inputs.files(updaterInputFiles)
     outputs.dir(updaterRuntimeDirectory)
     doFirst {
