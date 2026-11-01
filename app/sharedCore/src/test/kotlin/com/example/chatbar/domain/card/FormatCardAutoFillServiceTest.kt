@@ -7,7 +7,7 @@ import com.example.chatbar.data.local.entity.DocumentInfo
 import com.example.chatbar.data.local.entity.FormatCardUserToolConfig
 import com.example.chatbar.data.local.entity.FormatCardUserToolType
 import com.example.chatbar.domain.chat.StreamEvent
-import com.example.chatbar.domain.prompt.PromptTemplates
+import com.example.chatbar.domain.prompt.FormatCardAutoFillPromptAuthority
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -109,7 +109,7 @@ class FormatCardAutoFillServiceTest {
             avatar = "private-avatar",
             worldBookIds = listOf("private-world-book")
         )
-        val payload = PromptTemplates.formatCardAutoFillUserPrompt(card, "保留对白", "我的卡")
+        val payload = FormatCardAutoFillPromptAuthority.formatCardAutoFillUserPrompt(card, "保留对白", "我的卡")
         Json.parseToJsonElement(payload)
         listOf("林一", "林二", "人物甲", "人物乙关系", "保留对白", "我的卡").forEach {
             assertTrue(payload.contains(it))
@@ -121,7 +121,7 @@ class FormatCardAutoFillServiceTest {
     @Test
     fun freeformInputKeepsLongTextExactlyAndExcludesInactiveStructuredCharacters() {
         val longText = "完整设定\n\"引用\"".repeat(12_000)
-        val payload = PromptTemplates.formatCardAutoFillUserPrompt(character().copy(
+        val payload = FormatCardAutoFillPromptAuthority.formatCardAutoFillUserPrompt(character().copy(
             editMode = CharacterEditMode.FREEFORM,
             freeformCharacterText = longText,
             characters = listOf(CharacterInfo("old", "inactive-character"))

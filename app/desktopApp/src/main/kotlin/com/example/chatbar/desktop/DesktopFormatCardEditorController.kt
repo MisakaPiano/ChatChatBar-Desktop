@@ -8,6 +8,8 @@ import com.example.chatbar.data.local.entity.FormatCardUserToolType
 import com.example.chatbar.data.repository.EditorDraftRepository
 import com.example.chatbar.data.repository.FormatCardRepository
 import com.example.chatbar.domain.card.FormatCardUserToolValidator
+import com.example.chatbar.domain.card.FormatCardAutoFillDraft
+import com.example.chatbar.domain.card.FormatCardAutoFillPolicy
 import com.example.chatbar.domain.card.NamePolicy
 import java.util.UUID
 import kotlinx.coroutines.CoroutineScope
@@ -46,7 +48,7 @@ internal data class DesktopFormatCardEditorState(
     val visibleCards: List<FormatCard> get() = cards.filter { it.name.contains(query, ignoreCase = true) }
 }
 
-/** Manual editor only. Entity, draft hash, validation, and single-default writes remain shared authorities. */
+/** Entity, draft hash, validation, and single-default writes remain shared authorities. */
 internal class DesktopFormatCardEditorController(
     private val formats: FormatCardRepository,
     private val drafts: EditorDraftRepository,
@@ -57,6 +59,19 @@ internal class DesktopFormatCardEditorController(
 ) {
     private val mutableState = MutableStateFlow(DesktopFormatCardEditorState())
     val state = mutableState.asStateFlow()
+    internal var autoFill: DesktopFormatCardAutoFillController? = null
+    val canAutoFill: Boolean get() = mutableState.value.let { before -> before.card?.let {
+        before.base == null && FormatCardAutoFillPolicy.canFill(before.targetId, it.content, it.userTools)
+    } == true }
+
+    fun applyAutoFill(session: String, cardId: String, candidate: FormatCardAutoFillDraft): Boolean {
+        val before = mutableState.value
+        val card = before.card ?: return false
+        if (before.draftSessionId != session || card.id != cardId || !canAutoFill) return false
+        val filled = FormatCardAutoFillPolicy.prepareApply(before.targetId, card.name, card.content, card.userTools, candidate)
+        edit { it.copy(name = filled.name, content = filled.content, userTools = filled.userTools) }
+        return true
+    }
     private val draftMutex = Mutex()
     private var draftJob: Job? = null
     private var leaveAction: (() -> Unit)? = null
@@ -370,6 +385,7 @@ internal class DesktopFormatCardEditorController(
         mutableState.value = mutableState.value.copy(card = null, base = null, leavePrompt = false)
     }
     suspend fun closeAndDrain() {
+        autoFill?.closeAndDrain()
         flushDraft()
         when {
             mutableState.value.problem == FormatEditorProblem.SAVE_COMMITTED_WARNING -> retryCleanup()

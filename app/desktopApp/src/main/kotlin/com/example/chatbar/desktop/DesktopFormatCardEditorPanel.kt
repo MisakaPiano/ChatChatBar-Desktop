@@ -112,6 +112,9 @@ internal fun DesktopFormatCardEditorOverlay(controller: DesktopFormatCardEditorC
             }
         }
         FormatField(t(DesktopUiText.FORMAT_NAME), card.name) { value -> controller.edit { it.copy(name = value) } }
+        if (controller.canAutoFill) controller.autoFill?.let { ai ->
+            BootstrapButton("AI 设计格式卡", secondary = true) { ai.open() }
+        }
         FormatField(t(DesktopUiText.FORMAT_CONTENT), card.content, multiline = true) { value ->
             controller.edit { it.copy(content = value) }
         }
@@ -161,6 +164,7 @@ internal fun DesktopFormatCardEditorOverlay(controller: DesktopFormatCardEditorC
             BootstrapButton(t(DesktopUiText.DISCARD_DRAFT), secondary = true) { scope.launch { controller.discard() } }
         }
     } }
+    controller.autoFill?.let { DesktopFormatCardAutoFillOverlay(it) }
 }
 
 @Composable

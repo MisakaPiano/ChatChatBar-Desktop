@@ -94,6 +94,12 @@ class OpenAiStreamingTransport(
         isolatedAuxiliaryTextStream(client, allowCleartextHttp(), messages, modelConfig.withoutOutputTokenLimit(), diagnostics,
             isolatedTaskParameters = false)
 
+    /** FORMAT_CARD GENERATE/REPAIR retains the model's output cap, thinking and custom parameters. */
+    fun streamFormatCardAutoFill(messages: List<ChatApiMessage>, modelConfig: ModelConfig,
+        diagnostics: ProviderTransportDiagnostics = ProviderTransportDiagnostics.NONE): Flow<StreamEvent> =
+        isolatedAuxiliaryTextStream(client, allowCleartextHttp(), messages, modelConfig, diagnostics,
+            isolatedTaskParameters = false, disableThinking = false, emitReasoning = true, protectEnvelope = false)
+
     /** Memory/RAG callers own their retry policy; exactly one transport request per collection. */
     fun streamMemoryRag(messages: List<ChatApiMessage>, modelConfig: ModelConfig,
         disableThinking: Boolean, responseFormatJson: Boolean,

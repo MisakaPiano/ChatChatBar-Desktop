@@ -269,8 +269,17 @@ class DesktopAppContainer internal constructor(
     internal val chatRepository = ChatRepository(jsonFileStorage)
     internal val editorDraftRepository = EditorDraftRepository(jsonFileStorage)
     internal val formatCardRepository = FormatCardRepository(jsonFileStorage)
+    private val formatCardAiTransportOwner = lazy { com.example.chatbar.domain.chat.OpenAiStreamingTransport {
+        settingsRepository.currentAppSettings.allowCleartextModelApi
+    } }
     private val formatCardEditorOwner = lazy {
-        DesktopFormatCardEditorController(formatCardRepository, editorDraftRepository)
+        DesktopFormatCardEditorController(formatCardRepository, editorDraftRepository).also { editor ->
+            editor.autoFill = DesktopFormatCardAutoFillController(editor, characterRepository, settingsRepository,
+                effectiveModelResolver, taskRuntime, dataOperationCoordinator,
+                stream = { _, messages, model, diagnostics ->
+                    formatCardAiTransportOwner.value.streamFormatCardAutoFill(messages, model, diagnostics)
+                })
+        }
     }
     internal val formatCardEditorController by formatCardEditorOwner
     internal val worldBookRepository = WorldBookRepository(jsonFileStorage)
@@ -656,6 +665,7 @@ class DesktopAppContainer internal constructor(
                 if (primaryChatControllerOwner.isInitialized()) primaryChatController.closeDraftPersistence()
                 if (characterEditorOwner.isInitialized()) characterEditorController.closeAndDrain()
                 if (formatCardEditorOwner.isInitialized()) formatCardEditorController.closeAndDrain()
+                if (formatCardAiTransportOwner.isInitialized()) formatCardAiTransportOwner.value.closeAndDrain()
                 if (worldBookEditorOwner.isInitialized()) worldBookEditorController.closeAndDrain()
             },
             runtimeClose = { automaticBackupRuntime.close() },

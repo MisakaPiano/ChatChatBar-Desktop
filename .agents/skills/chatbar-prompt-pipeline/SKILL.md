@@ -38,6 +38,7 @@ Use chatbar-long-term-memory when Archive, HEAD, timeline constraints, source-tu
 
 - Keep Phase 4 main-chat model-facing text in `MainChatPromptAuthority`; keep non-migrated auxiliary task text in `PromptTemplates`. Never create a second Android/Desktop copy of moved main-chat literals.
 - Do not duplicate the Character NAI default-negative text: `CharacterNaiPromptDefaults` is its physical Prompt-domain authority, and Character transfer production policy delegates to it.
+- Format-card creation literals/builders now have one shared `FormatCardAutoFillPromptAuthority`; Android `PromptTemplates` keeps exact facades/header symbols. Extraction preserves the complete original example and character text; its source also enters Android's prompt fingerprint. FORMAT_CARD generation/repair uses the unchanged merged-input eight-message envelope; Desktop transport preserves the original model cap, thinking and custom-parameter precedence, including envelope-key overrides.
 - Treat the `AI 提示词目录` KDoc at the start of PromptTemplates as mandatory navigation metadata. Every PromptTemplates prompt change must review it; add, remove, rename, recategorize, or revise entries in the same change whenever symbols or purposes change. Use exact searchable symbol names and never line numbers.
 - A PromptTemplates prompt change is incomplete until the header directory remains accurate. Keep template constants beside their builders so directory search lands in one local area.
 - Keep section selection, titles, and layer assignment in shared `PromptAssembler`.

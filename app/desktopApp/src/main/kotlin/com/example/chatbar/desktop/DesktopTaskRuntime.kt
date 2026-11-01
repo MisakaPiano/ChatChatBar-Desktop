@@ -73,6 +73,7 @@ internal class DesktopTaskRuntime(
     val tasks: StateFlow<List<DesktopTaskEntry>> = mutableTasks.asStateFlow()
     private val activeJobs = mutableMapOf<String, Job>()
     private val documentPreparations = mutableMapOf<Pair<String, String>, String>()
+    private val cardDesigns = mutableMapOf<String, String>()
     private val activeSessions = mutableSetOf<String>()
     private val stopControls = mutableMapOf<String, DesktopChatGenerationControl>()
     private val repairControls = mutableMapOf<String, DesktopRepairControl>()
@@ -118,6 +119,27 @@ internal class DesktopTaskRuntime(
 
     fun hasDocumentPreparation(characterId: String, documentId: String): Boolean = synchronized(lock) {
         (characterId to documentId) in documentPreparations
+    }
+
+    /** Card creation has no chat/session admission. The caller child still joins maintenance/shutdown. */
+    suspend fun <T> withCardDesign(draftSessionId: String, work: suspend () -> T): T = coroutineScope {
+        val job = synchronized(lock) {
+            if (!accepting || maintenance || draftSessionId in cardDesigns)
+                throw DesktopTaskAdmissionException("格式卡生成暂不可用")
+            val id = UUID.randomUUID().toString()
+            val child = async(start = CoroutineStart.LAZY) { work() }
+            cardDesigns[draftSessionId] = id
+            activeJobs[id] = child
+            child.invokeOnCompletion {
+                synchronized(lock) {
+                    activeJobs.remove(id)
+                    if (cardDesigns[draftSessionId] == id) cardDesigns.remove(draftSessionId)
+                }
+            }
+            child
+        }
+        job.start()
+        job.await()
     }
 
     fun launchFormatRepair(sessionId: String, messageId: String,

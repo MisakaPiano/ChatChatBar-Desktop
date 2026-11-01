@@ -75,11 +75,13 @@ internal fun isolatedAuxiliaryTextStream(
     disableThinking: Boolean = true,
     responseFormatJson: Boolean = false,
     maximumTextChars: Int = Int.MAX_VALUE,
+    emitReasoning: Boolean = false,
+    protectEnvelope: Boolean = true,
 ): Flow<StreamEvent> = callbackFlow {
     require(maximumTextChars > 0)
     val messages = AuxiliaryMessageAssembler.assemble(inputMessages, preservesInputRoles = false)
-    // Envelope fields belong to this task, never to custom model parameters. Keep the saved model untouched.
-    val requestModel = model.copy(customParams = model.customParams.filterKeys {
+    // Existing isolated tasks own their envelope. FORMAT_CARD explicitly preserves official custom-field semantics.
+    val requestModel = if (!protectEnvelope) model else model.copy(customParams = model.customParams.filterKeys {
         it !in setOf("messages", "model", "stream", "stream_options", "prompt_cache_key")
     })
     val body = OpenAiChatRequestSerializer.serialize(messages, requestModel, stream = true,
@@ -148,8 +150,11 @@ internal fun isolatedAuxiliaryTextStream(
             if (!chunk.content.isNullOrBlank() || !chunk.reasoningContent.isNullOrBlank() || chunk.finishReason != null) {
                 lastMeaningful = timing.nanoTime()
             }
-            if (!chunk.reasoningContent.isNullOrBlank()) receivedReasoning = true
-            // Reasoning is observed for timeout/empty classification, never emitted as repair body.
+            if (!chunk.reasoningContent.isNullOrBlank()) {
+                receivedReasoning = true
+                if (emitReasoning) trySend(StreamEvent.ReasoningDelta(chunk.reasoningContent))
+            }
+            // Reasoning stays separate from candidate/repair JSON and never participates in parsing.
             chunk.content?.takeIf(String::isNotEmpty)?.let {
                 if (it.length > maximumTextChars - text.length) {
                     terminate(eventSource, AiTaskResponseBudgetException())
