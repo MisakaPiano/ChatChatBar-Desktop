@@ -5,7 +5,7 @@
   "installerVersion": "0.1.1226",
   "platformCiRunId": 41268127116,
   "platformCiStateAtRequest": "SUCCESS",
-  "attempt": 2,
-  "previousBuildRun": 41269219583,
-  "previousBuildFailure": "PINNED_NSIS_COMPILER_DOWNLOAD_HASH"
+  "attempt": 3,
+  "previousBuildRun": 41269541366,
+  "previousBuildFailure": "IMAGE_CHANGED_AT_PATH_HANDLE_STAMP_COMPARISON"
 }

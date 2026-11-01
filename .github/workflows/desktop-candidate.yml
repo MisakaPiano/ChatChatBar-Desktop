@@ -62,8 +62,13 @@ jobs:
           java-version: '17'
 
       - uses: actions/setup-python@v5
+        id: legacyPython
         with:
           python-version: '3.12'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13.16'
 
       - uses: gradle/actions/setup-gradle@v4
 
@@ -80,6 +85,34 @@ jobs:
           $output = New-Item -ItemType Directory -Path (Join-Path $base 'output') -ErrorAction Stop
           $temp = New-Item -ItemType Directory -Path (Join-Path $base 'temp') -ErrorAction Stop
           @("CCB_BUILD_BASE=$base", "CCB_CI_SOURCE=$source", "CCB_BUILD_OUTPUT=$($output.FullName)", "TEMP=$($temp.FullName)", "TMP=$($temp.FullName)") | Add-Content $env:GITHUB_ENV -Encoding utf8
+
+      - name: Reprove path and opened-file metadata identity before packaging
+        env:
+          CCB_LEGACY_PYTHON: ${{ steps.legacyPython.outputs.python-path }}
+        run: |
+          $probe = @'
+          import json, os, pathlib, subprocess, sys, time
+          base = pathlib.Path(os.environ['CCB_BUILD_BASE'])
+          sample = base / 'synthetic-metadata-preflight.bin'
+          with sample.open('xb') as output:
+              output.write(b'SYNTHETIC')
+          time.sleep(.05)
+          with sample.open('ab') as output:
+              output.write(b'_MODIFIED')
+          code = "import json,os,pathlib,sys; p=pathlib.Path(sys.argv[1]); keys=['st_dev','st_ino','st_size','st_mtime_ns','st_ctime_ns']; s=lambda v:{k:getattr(v,k) for k in keys}; before=s(p.stat(follow_symlinks=False)); f=p.open('rb'); opened=s(os.fstat(f.fileno())); f.read(); after=s(os.fstat(f.fileno())); f.close(); print(json.dumps(dict(python=sys.version.split()[0],before=before,opened=opened,after=after,pathAfter=s(p.stat(follow_symlinks=False)))))"
+          results = []
+          for executable in [os.environ['CCB_LEGACY_PYTHON'], sys.executable]:
+              run = subprocess.run([executable, '-B', '-c', code, str(sample)], check=True, capture_output=True, text=True)
+              results.append(json.loads(run.stdout))
+          report = dict(kind='SYNTHETIC_PATH_HANDLE_METADATA_IDENTITY', results=results)
+          (pathlib.Path(os.environ['CCB_BUILD_OUTPUT']) / 'metadata-preflight.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
+          print(json.dumps(report))
+          active = results[-1]
+          if not active['before'] == active['opened'] == active['after'] == active['pathAfter']:
+              raise RuntimeError('PACKAGING_INTERPRETER_METADATA_INCONSISTENT')
+          '@
+          $probe | python -B -
+          if ($LASTEXITCODE -ne 0) { throw 'FILE_IDENTITY_PREFLIGHT_FAILED' }
 
       - name: Fetch pinned official NSIS compiler
         run: |
@@ -195,3 +228,4 @@ jobs:
             ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-nsis-cloud/*-stderr.log
             ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-independent-cloud/result.json
             ${{ env.CCB_BUILD_OUTPUT }}/compiler-download.json
+            ${{ env.CCB_BUILD_OUTPUT }}/metadata-preflight.json
