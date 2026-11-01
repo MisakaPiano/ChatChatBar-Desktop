@@ -32,6 +32,7 @@ internal fun DesktopDataWorkspace(root: DesktopDataRootSwitchController, full: D
         when (taskDetail) {
             DesktopWorkDetail.BACKUP_EXPORT -> { selected = DataPage.BACKUP; operation = BackupPage.EXPORT }
             DesktopWorkDetail.BACKUP_CHECK -> { selected = DataPage.BACKUP; operation = BackupPage.CHECK }
+            DesktopWorkDetail.MERGE_IMPORT -> { selected = DataPage.BACKUP; operation = BackupPage.IMPORT }
             else -> Unit
         }
         if (taskDetail != null) onTaskDetailConsumed()

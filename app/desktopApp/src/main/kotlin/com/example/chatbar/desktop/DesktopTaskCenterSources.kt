@@ -82,3 +82,6 @@ internal fun DesktopTaskCenter.watchFish(coordinator: DesktopFishGenerationCoord
 
 internal fun DesktopTaskCenter.watchBackup(controller: DesktopFullBackupController) =
     watch("backup", controller.workRows, stop = controller::stopTask)
+
+internal fun DesktopTaskCenter.watchMerge(controller: DesktopMergeImportController) =
+    watch("merge", controller.workRows, stop = controller::stopTask)

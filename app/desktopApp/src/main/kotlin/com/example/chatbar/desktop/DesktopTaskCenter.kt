@@ -9,11 +9,12 @@ internal val LocalDesktopTaskCenter = staticCompositionLocalOf<DesktopTaskCenter
 internal enum class DesktopWorkKind(val label: String) {
     CHAT("对话生成"), IMAGE("图片生成"), FORMAT_REPAIR("消息格式修复"), DOCUMENT("文档索引"),
     CARD_DESIGN("格式卡生成"), CREATIVE("创作任务"), HISTORY_INDEX("历史索引"), VOICE("语音生成"), MEMORY("记忆维护"), MOMENT("朋友圈任务"),
-    BACKUP("备份"), MERGE("数据合并"), SAVE_SLOT("会话存档"), CHARACTER_AI("角色卡创作"),
+    BACKUP("备份导出"), BACKUP_CHECK("备份检查"), RESTORE_PREPARATION("恢复准备"),
+    MERGE("合并结果准备"), MERGE_CHECK("备份合并检查"), SAVE_SLOT("会话存档"), CHARACTER_AI("角色卡创作"),
     WORLD_BOOK_AI("世界书创作"), CHARACTER_IMAGE("角色图片")
 }
 internal enum class DesktopWorkPhase { RUNNING, WAITING, COMPLETED, FAILED, CANCELLED, UNCONFIRMED }
-internal enum class DesktopWorkDetail { MEMORY, FORMAT_DRAFT, BACKUP_EXPORT, BACKUP_CHECK }
+internal enum class DesktopWorkDetail { MEMORY, FORMAT_DRAFT, BACKUP_EXPORT, BACKUP_CHECK, MERGE_IMPORT }
 internal data class DesktopWorkTarget(val route: DesktopPrimaryRoute, val sessionId: String? = null,
     val cardId: String? = null, val subjectId: String? = null, val draftSessionId: String? = null,
     val detail: DesktopWorkDetail? = null)

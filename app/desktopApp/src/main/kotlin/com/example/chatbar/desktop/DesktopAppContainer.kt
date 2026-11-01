@@ -177,7 +177,8 @@ class DesktopAppContainer internal constructor(
             if (dataOperationCoordinator.isRestartRequired) taskRuntime.stopAccepting()
         } }
     }
-    private val mergeImportOwner = lazy { DesktopMergeImportController(mergeServiceOwner.value, filePicker, directoryPicker) }
+    private val mergeImportOwner = lazy { DesktopMergeImportController(mergeServiceOwner.value, filePicker, directoryPicker)
+        .also { taskCenter.watchMerge(it) } }
     internal val mergeImportController by mergeImportOwner
 
     internal val desktopSecretStore: DesktopSecretStore by lazy {

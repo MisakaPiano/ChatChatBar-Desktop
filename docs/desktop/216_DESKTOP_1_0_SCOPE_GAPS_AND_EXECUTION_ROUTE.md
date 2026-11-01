@@ -80,7 +80,7 @@
 | P15-01 安装、完整应用内更新、显式修复 | 已实现且验证／部分真人专项待验 | 复用 SF18、212、214；不用重开 MSI 或退役 VM，不把正常更新链仍称未开发 |
 | P15-02 Explorer reveal、图片粘贴／拖入、剪贴板、文件选择 | 已实现且有工程／部分实际证据 | DesktopImageIngress、原生 picker、owned image／保存／复制；窗口内图片 ingress 不等于全应用所有包的外部入口 |
 | P15-03 全局外部导入 FIFO、Open With、文件关联／系统入口 | 完整链第一轮源码已接，尚待精确源云端编译／运行 | 见250；实际Main冷暖入口、持久待处理队列、typed/model/save/merge/Studio委托、独立回执与HKCU非默认Open With。新测试尚未执行，不以分类器或静态阅读代表完成 |
-| P15-04 任务中心／托盘／系统通知 | TaskRuntime／Memory及精确文档／消息导航已有受限回归；后续Fish、托盘／固定提醒与宽窄Scene源码送CI95，余下owner／原生提醒仍待 | 见251；复用同Job／真实终态，Memory按行session停止。其他owner及宽窄／原生能力继续；94唯一轮组fixture失败与95待验分开，不把基础入口算整项完成 |
+| P15-04 任务中心／托盘／系统通知 | TaskRuntime／Memory／Fish、精确导航、假托盘与宽窄Scene已CI95成功；FullBackup／实际Shell入口CI96两作业成功，报告另核；后续Merge原Job元数据待新源验证，余下owner／原生提醒仍待 | 见251；复用同Job／真实终态，不将检查完成当导入。1232冷批次与包字节实证不冒充原生托盘／系统送达或真人；不把基础入口算整项完成 |
 | P15-05 自有错误／关闭／启动诊断 | 基础已实现；完整 crash/support 报告与恢复引导待补 | 复用 DesktopProcessLifecycle、StartupBlockedPresenter、ShutdownWaitObserver、诊断复制及 Logo；只读核对损坏状态，错误确认不清除原件，不把“有错误窗口”算完整恢复中心 |
 | P15-06 实际 AI 请求／响应日志 | 聊天请求日志已实现；跨创作／图片／语音统一覆盖待补 | DesktopTransportDiagnostics、ChatDebugPanel 和任务上下文；按调用来源补真实日志归属，不用预览替代实际 wire，不重复聊天调试界面 |
 | P15-07 usage／cache／retry 持久汇总（D-042） | 数值owner、持久化与多域接线已有精确证据；CI87向量五项、CI88记忆／检索文本四项与CI89手动controller归属及完整回归通过 | 见234／245／248／249；聊天／三类卡AI／Moment文本／NAI辅助／Fish辅助／embedding分范围保留，不冒认实际生图／TTS二进制或完整账单覆盖。null与0、cache不重复、失败待存与关闭／重启保全保持；完整覆盖及校准继续 |

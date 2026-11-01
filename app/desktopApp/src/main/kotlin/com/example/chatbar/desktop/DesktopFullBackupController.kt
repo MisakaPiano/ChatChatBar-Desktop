@@ -5,9 +5,10 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import java.util.UUID
 
-private enum class DesktopBackupTask(val label: String, val detail: DesktopWorkDetail) {
-    EXPORT("导出备份", DesktopWorkDetail.BACKUP_EXPORT), INSPECT("检查备份", DesktopWorkDetail.BACKUP_CHECK),
-    RESTORE_PREPARATION("准备下次启动恢复", DesktopWorkDetail.BACKUP_CHECK)
+private enum class DesktopBackupTask(val label: String, val detail: DesktopWorkDetail, val kind: DesktopWorkKind) {
+    EXPORT("导出备份", DesktopWorkDetail.BACKUP_EXPORT, DesktopWorkKind.BACKUP),
+    INSPECT("检查备份", DesktopWorkDetail.BACKUP_CHECK, DesktopWorkKind.BACKUP_CHECK),
+    RESTORE_PREPARATION("准备下次启动恢复", DesktopWorkDetail.BACKUP_CHECK, DesktopWorkKind.RESTORE_PREPARATION)
 }
 
 internal data class DesktopBackupExportResult(val success: Boolean, val message: String, val path: java.nio.file.Path? = null)
@@ -108,7 +109,7 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
             activeTaskId = taskId
             var outcome = DesktopWorkPhase.COMPLETED
             if (task != null && taskId != null) mutableWork.update { rows ->
-                (listOf(DesktopWorkRow(taskId, DesktopWorkKind.BACKUP, DesktopWorkPhase.RUNNING, System.currentTimeMillis(),
+                (listOf(DesktopWorkRow(taskId, task.kind, DesktopWorkPhase.RUNNING, System.currentTimeMillis(),
                     target = DesktopWorkTarget(DesktopPrimaryRoute.DATA, detail = task.detail),
                     canStop = true, contextLabel = task.label)) + rows).take(40)
             }

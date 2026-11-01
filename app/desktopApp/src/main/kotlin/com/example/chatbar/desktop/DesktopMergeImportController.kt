@@ -6,6 +6,10 @@ import java.util.UUID
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
+private enum class DesktopMergeTask(val kind: DesktopWorkKind, val label: String) {
+    INSPECT(DesktopWorkKind.MERGE_CHECK, "检查合并备份"), COMMIT(DesktopWorkKind.MERGE, "准备合并结果")
+}
+
 internal data class DesktopMergeImportState(val busy: Boolean = false, val ready: Boolean = false,
     val code: Int = 0, val files: Int = 0, val versionName: String = "",
     val modelDetails: Map<String, DesktopMergeImportService.ModelDetails> = emptyMap(), val conflicts: List<DesktopMergePreview.Conflict> = emptyList(),
@@ -25,11 +29,14 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
     private val lock = Any()
     private var closed = false
     private var operation: Job? = null
+    private var activeTaskId: String? = null
+    private val mutableWork = MutableStateFlow<List<DesktopWorkRow>>(emptyList())
+    val workRows = mutableWork.asStateFlow()
     private var preview: DesktopMergeImportService.Preview? = null
 
     fun inspect(password: CharArray?) { inspectFile(null, password) }
-    fun inspectFile(source: Path?, password: CharArray?) = actionJob(password) {
-        val path = source ?: picker.pickOpenFile(TYPE) ?: return@actionJob "已取消选择"
+    fun inspectFile(source: Path?, password: CharArray?) = actionJob(password, DesktopMergeTask.INSPECT) { outcome ->
+        val path = source ?: picker.pickOpenFile(TYPE) ?: return@actionJob run { outcome(DesktopWorkPhase.CANCELLED); "已取消选择" }
         preview = null; mutable.update { DesktopMergeImportState(busy = true) }
         val result = service.inspectWithProgress(path, password, ::showProgress)
         preview = result
@@ -40,10 +47,10 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
         "已校验备份。请选择冲突处理方式；电脑当前数据尚未改变。"
     }
     fun commit(choices: Map<String, DesktopMergePreview.Choice>, credentials: Map<ImportCredentialKind, DesktopMergeCredentials.Choice>,
-        imagePreferencesFromPhone: Boolean?, confirmed: Boolean) = action(null) {
+        imagePreferencesFromPhone: Boolean?, confirmed: Boolean) = action(null, DesktopMergeTask.COMMIT) { outcome ->
         check(confirmed)
         val selected = requireNotNull(preview)
-        val parent = directories.pickDirectory() ?: return@action "已取消选择合并目录，可以重新选择"
+        val parent = directories.pickDirectory() ?: return@action run { outcome(DesktopWorkPhase.CANCELLED); "已取消选择合并目录，可以重新选择" }
         val target = parent.resolve("ChatChatBar-merged-${UUID.randomUUID()}")
         mutable.update { it.copy(destination = target) }
         val refused = when (val home = applicationHomeResolver()) {
@@ -55,12 +62,19 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
             is DesktopApplicationHomeResult.Unavailable -> null
         }
         if (refused != null) {
+            outcome(DesktopWorkPhase.FAILED)
             mutable.update { it.copy(error = refused) }
             return@action "原检查结果与冲突选择已保留，可以重新选择合并位置。"
         }
         when (service.commitWithProgress(selected, target, choices, credentials, confirmed, imagePreferencesFromPhone, ::showProgress)) {
-            DesktopMergeImportService.Publication.COMMITTED -> "合并已完成准备。请正常退出，再次启动将打开包含两边内容的新目录。原电脑目录与手机文件保留。"
-            DesktopMergeImportService.Publication.INDETERMINATE -> "启动位置的写入结果尚未确认。已暂停写入并保留两边目录，请正常退出后检查启动结果。"
+            DesktopMergeImportService.Publication.COMMITTED -> {
+                outcome(DesktopWorkPhase.COMPLETED)
+                "合并已完成准备。请正常退出，再次启动将打开包含两边内容的新目录。原电脑目录与手机文件保留。"
+            }
+            DesktopMergeImportService.Publication.INDETERMINATE -> {
+                outcome(DesktopWorkPhase.UNCONFIRMED)
+                "启动位置的写入结果尚未确认。已暂停写入并保留两边目录，请正常退出后检查启动结果。"
+            }
         }
     }
     fun discard() { discardExternal() }
@@ -69,30 +83,57 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
         mutable.update { DesktopMergeImportState(busy = true) }
         "已取消合并，当前电脑数据未改变"
     }
-    fun stop() { synchronized(lock) { operation }?.cancel() }
+    private fun markStopRequested(id: String?) {
+        if (id != null) mutableWork.update { rows -> rows.map {
+            if (it.id == id && it.active) it.copy(stopRequested = true, canStop = false) else it
+        } }
+    }
+    fun stop() { synchronized(lock) {
+        if (operation?.isCompleted == false) { operation?.cancel(); markStopRequested(activeTaskId) }
+    } }
+    fun stopTask(id: String): Boolean = synchronized(lock) {
+        if (activeTaskId != id || operation?.isCompleted != false) false
+        else { operation?.cancel(); markStopRequested(id); true }
+    }
 
     private fun showProgress(progress: DesktopMergeImportService.Progress) = synchronized(lock) {
-        if (!closed && mutable.value.busy) mutable.update { it.copy(message = progress.message()) }
+        if (!closed && mutable.value.busy) {
+            mutable.update { it.copy(message = progress.message()) }
+            activeTaskId?.let { id -> mutableWork.update { rows -> rows.map {
+                if (it.id == id && it.active) it.copy(contextLabel = progress.message().take(160)) else it
+            } } }
+        }
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    private fun actionJob(password: CharArray?, work: suspend () -> String): Job? = synchronized(lock) {
+    private fun actionJob(password: CharArray?, task: DesktopMergeTask? = null,
+        work: suspend ((DesktopWorkPhase) -> Unit) -> String): Job? = synchronized(lock) {
         if (closed || mutable.value.busy || service.restartRequired) { password?.fill('\u0000'); return@synchronized null }
         mutable.update { it.copy(busy = true, error = null, failureDetails = null) }
+        val taskId = task?.let { UUID.randomUUID().toString() }
+        activeTaskId = taskId
+        var outcome: DesktopWorkPhase? = null
+        if (task != null && taskId != null) mutableWork.update { rows ->
+            (listOf(DesktopWorkRow(taskId, task.kind, DesktopWorkPhase.RUNNING, System.currentTimeMillis(),
+                target = DesktopWorkTarget(DesktopPrimaryRoute.DATA, detail = DesktopWorkDetail.MERGE_IMPORT),
+                canStop = true, contextLabel = task.label)) + rows).take(40)
+        }
         val job = scope.launch(start = CoroutineStart.ATOMIC) {
             try {
                 currentCoroutineContext().ensureActive()
-                val message = work()
+                val message = work { outcome = it }
                 mutable.update { it.copy(message = message) }
             } catch (_: CancellationException) {
+                outcome = DesktopWorkPhase.CANCELLED
                 withContext(NonCancellable) { service.discard() }; preview = null
                 mutable.update { it.copy(ready = false, message = if (service.restartRequired) "合并提交已进入启动切换阶段，请正常退出。"
                     else "已停止；原电脑目录与手机文件保留。未完成的新目录不会自动清理。") }
             } catch (failure: Throwable) {
+                outcome = DesktopWorkPhase.FAILED
                 val retainPreview = failure.message == "MERGE_DESTINATION_APPLICATION_HOME_UNSAFE" && !service.restartRequired
                 if (!retainPreview) {
                     try { withContext(NonCancellable) { service.discard() } }
-                    catch (cleanup: Throwable) { failure.addSuppressed(cleanup) }
+                    catch (cleanup: Throwable) { outcome = DesktopWorkPhase.UNCONFIRMED; failure.addSuppressed(cleanup) }
                     preview = null
                 }
                 val message = when {
@@ -119,10 +160,27 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
             }
         }
         operation = job
-        job.invokeOnCompletion { password?.fill('\u0000') }
+        job.invokeOnCompletion { failure ->
+            password?.fill('\u0000')
+            if (taskId != null) {
+                val phase = when {
+                    outcome == DesktopWorkPhase.UNCONFIRMED -> DesktopWorkPhase.UNCONFIRMED
+                    task == DesktopMergeTask.COMMIT && outcome == DesktopWorkPhase.COMPLETED && service.restartRequired -> DesktopWorkPhase.COMPLETED
+                    service.restartRequired && (failure != null || outcome == DesktopWorkPhase.CANCELLED || outcome == DesktopWorkPhase.FAILED) -> DesktopWorkPhase.UNCONFIRMED
+                    outcome == DesktopWorkPhase.CANCELLED && failure != null && failure !is CancellationException -> DesktopWorkPhase.UNCONFIRMED
+                    failure is CancellationException -> DesktopWorkPhase.CANCELLED
+                    failure != null -> DesktopWorkPhase.FAILED
+                    else -> outcome ?: DesktopWorkPhase.COMPLETED
+                }
+                mutableWork.update { rows -> rows.map { if (it.id == taskId) it.copy(phase = phase, canStop = false,
+                    stopRequested = false, contextLabel = task?.label) else it } }
+            }
+        }
         job
     }
-    private fun action(password: CharArray?, work: suspend () -> String) { actionJob(password, work) }
+    private fun action(password: CharArray?, task: DesktopMergeTask? = null, work: suspend ((DesktopWorkPhase) -> Unit) -> String) {
+        actionJob(password, task, work)
+    }
     suspend fun closeAndDrain() {
         synchronized(lock) { closed = true }
         scope.coroutineContext[Job]!!.cancelAndJoin()

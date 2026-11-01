@@ -1,5 +1,7 @@
 # 任务中心与托盘 / 2026-11-02
 
+最新源码补Merge原operation Job投影：检查与结果准备分开命名，固定阶段进度不带路径、冲突、凭据或正文。按行停止检查精确UUID并等原Job清理，旧行不影响下一次；原preview／destination guard／显式冲突与凭据确认保持。目录拒绝为FAILED且preview保留；picker取消为CANCELLED；Publication.INDETERMINATE或restart封存后中断为UNCONFIRMED，不声称撤回或启动已完成。DATA只定位原导入面，不选冲突或提交。新增真实picker阻塞／停止／旧ID、目录拒绝、实际container提交与不确定publication断言待下一源云端。FullBackup也区分导出／检查／恢复准备种类，避免“检查完成”被误解为已导入。CI96／a9两作业已SUCCESS，实际小报告核对另记；本段Merge和189提示／设置锁不由96或1232代验。
+
 当前实证：ed4105／CI95完整成功，主2452＝2433PASS＋19SKIP，受影响14项含修正分页、TaskCenter5、Tray假backend3、Fish实际批次、UTF8 decoder2及窄宽Scene全部通过。实际420／1100图已view，无重叠／遮挡。此结果不涵后补FullBackup／typed modal；a9b9112a／CI96正在验证它们。1232冻结883的普通原生／真实冷4批次和547文件字节核对已过，仍非原生托盘动作／通知送达或真人。189用户提示／设置锁只在后续本地源码。
 
 原216 P15-04的独立后续源码。14dd／CI94实际编译并运行：主2445项2425PASS＋19SKIP＋1FAIL，独立production JAR代理5通过；TaskCenter五项、文档定位及消息精确定位／草稿保留已过，仅消息分页测试假设失败。原fixture连续180条assistant被原仓库正确视为一轮，不会按消息数切断；后补超过MAX_WINDOW_TURNS的真实User/Assistant轮组和稳定时间戳，保留产品turn边界、不延时或改生产分页。后续托盘、UTF8冷交接、Fish及Scene不在14dd，待新源，不混私有1231（冻结5d01）。外部导入fb6／CI93完整成功保持。
