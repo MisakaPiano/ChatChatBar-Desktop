@@ -134,6 +134,8 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
     val personFocusExtent = with(androidx.compose.ui.platform.LocalDensity.current) { 600.dp.toPx() }
     var handledPersonFocus by remember(card.id) { mutableStateOf<Long?>(null) }
     var selectedDocument by remember(card.id) { mutableStateOf<String?>(null) }
+    val documentFocus = remember(card.id) { BringIntoViewRequester() }
+    var handledDocumentFocus by remember(card.id) { mutableStateOf<Long?>(null) }
     var confirmClearDocuments by remember { mutableStateOf(false) }
     var importOpen by remember(card.id) { mutableStateOf(false) }
     var convertConfirm by remember(card.id) { mutableStateOf(false) }
@@ -145,6 +147,9 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
         if (!readOnly) state.personFocusId?.takeIf { id -> card.characters.count { it.id == id } == 1 }?.let {
             selectedEntry = it
         }
+    }
+    LaunchedEffect(card.id, state.documentFocusRevision) {
+        state.documentFocusId?.takeIf { id -> card.customDocuments.count { it.id == id } == 1 }?.let { selectedDocument = it }
     }
     DesktopModalSurface { Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.overlay).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -289,6 +294,18 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
                         selectedDocument = if (selectedDocument == doc.id) null else doc.id
                     }
                     if (selectedDocument == doc.id) {
+                        val focusRequest = state.documentFocusId == doc.id && handledDocumentFocus != state.documentFocusRevision
+                        val positioned = remember(doc.id, state.documentFocusRevision) { CompletableDeferred<Unit>() }
+                        LaunchedEffect(doc.id, state.documentFocusRevision, focusRequest) {
+                            if (focusRequest) {
+                                positioned.await()
+                                documentFocus.bringIntoView(androidx.compose.ui.geometry.Rect(0f, 0f, 1f, personFocusExtent))
+                                handledDocumentFocus = state.documentFocusRevision
+                            }
+                        }
+                        Box(Modifier.fillMaxWidth().bringIntoViewRequester(documentFocus).onGloballyPositioned {
+                            if (it.isAttached && it.size.height > 0) positioned.complete(Unit)
+                        }) { EditorHeading(doc.fileName) }
                         var name by remember(doc.id, doc.filePath) { mutableStateOf(doc.fileName) }
                         val loaded = remember(doc.id, doc.filePath) { controller.documentText(doc.id) }
                         var body by remember(doc.id, doc.filePath) { mutableStateOf(loaded?.getOrNull().orEmpty()) }

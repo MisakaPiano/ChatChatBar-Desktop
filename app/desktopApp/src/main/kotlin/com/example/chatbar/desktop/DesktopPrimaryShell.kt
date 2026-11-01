@@ -80,6 +80,7 @@ internal fun DesktopPrimaryShell(
     var openImportRequest by remember { mutableStateOf(0) }
     var externalManageKind by remember { mutableStateOf<DesktopExternalImportKind?>(null) }
     var externalManageTargetId by remember { mutableStateOf<String?>(null) }
+    var taskManageTarget by remember { mutableStateOf<DesktopWorkTarget?>(null) }
     val colors = DesktopBootstrapColors
     val t = LocalDesktopUiStrings.current
     val scope = rememberCoroutineScope()
@@ -169,6 +170,8 @@ internal fun DesktopPrimaryShell(
                         initialPerson = requestedPerson, onInitialPersonConsumed = { requestedPerson = null },
                         initialImportKind = externalManageKind, initialImportTargetId = externalManageTargetId,
                         onInitialImportConsumed = { externalManageKind = null; externalManageTargetId = null },
+                        initialTaskTarget = taskManageTarget, onInitialTaskConsumed = { taskManageTarget = null },
+                        onTaskTargetUnavailable = { taskCenter?.targetUnavailable() },
                         chatUiController = primaryChatController.chatUi,
                         networkProxyController = networkProxyController,
                         momentsController = momentsController,
@@ -210,11 +213,14 @@ internal fun DesktopPrimaryShell(
             onClose = { centerOpen = false }, onHideToTray = onHideToTray, onView = { target ->
                 centerOpen = false
                 navigateAfter(target.route) {
+                    if (target.route == DesktopPrimaryRoute.MANAGE) taskManageTarget = target
                     if (target.route == DesktopPrimaryRoute.CHAT && target.sessionId != null)
                         scope.launch { primaryChatController.requestSessionSettingsLeave {
                             primaryChatController.selectSession(target.sessionId)
                             if (primaryChatController.state.value.selectedSession?.id != target.sessionId) taskCenter.targetUnavailable()
                             else if (target.detail == DesktopWorkDetail.MEMORY) primaryChatController.memory?.open(target.sessionId)
+                            else if (target.subjectId != null && !primaryChatController.revealMessage(target.sessionId, target.subjectId))
+                                taskCenter.targetUnavailable()
                         } }
                 }
             })

@@ -70,6 +70,8 @@ internal data class DesktopCharacterEditorState(
     val detail: String? = null,
     val personFocusId: String? = null,
     val personFocusRevision: Long = 0,
+    val documentFocusId: String? = null,
+    val documentFocusRevision: Long = 0,
 ) {
     val visibleCharacters: List<CharacterCard> get() = characters.filter {
         it.name.contains(query, ignoreCase = true) ||
@@ -239,6 +241,21 @@ internal class DesktopCharacterEditorController(
             draftBasis = null, draftSessionId = UUID.randomUUID().toString(), draftPersisted = false,
             dirty = false, problem = if (source.isCommunityDownload) CharacterEditorProblem.COMMUNITY_READ_ONLY else null,
             detail = null)
+    }
+
+    suspend fun openDocument(cardId: String, documentId: String, unavailable: () -> Unit) {
+        if (_state.value.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) return
+        if (_state.value.targetId != cardId || _state.value.card == null) {
+            if (deferLeave { scope.launch { openDocument(cardId, documentId, unavailable) } }) return
+            openExisting(cardId)
+        }
+        val current = _state.value
+        val source = characters.getById(cardId)
+        if (current.targetId != cardId || current.card?.customDocuments?.count { it.id == documentId } != 1 ||
+            source?.customDocuments?.count { it.id == documentId } != 1) {
+            unavailable(); return
+        }
+        _state.value = current.copy(documentFocusId = documentId, documentFocusRevision = current.documentFocusRevision + 1)
     }
 
     private suspend fun restoreCommittedDraft(draft: EditorDraft,

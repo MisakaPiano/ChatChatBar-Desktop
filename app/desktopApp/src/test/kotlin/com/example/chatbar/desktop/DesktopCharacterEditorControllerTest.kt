@@ -34,6 +34,29 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class DesktopCharacterEditorControllerTest {
+    @Test fun `task document focus preserves the current unsaved editor and refuses a missing exact document`() = runBlocking {
+        fixture { _, container, controller ->
+            val card = CharacterCard.create("Same title", greeting = "Hi")
+            container.characterRepository.save(card); controller.openExisting(card.id)
+            controller.addTextDocument("Same name", "First text")
+            controller.addTextDocument("Same name", "Second text")
+            assertTrue(controller.save())
+            val documents = controller.state.value.card!!.customDocuments
+            controller.edit { it.copy(name = "Unsaved name") }
+            val draft = controller.state.value.draftSessionId
+            var missing = 0
+            controller.openDocument(card.id, documents[1].id) { missing++ }
+            assertEquals(documents[1].id, controller.state.value.documentFocusId)
+            assertEquals("Unsaved name", controller.state.value.card!!.name)
+            assertEquals(draft, controller.state.value.draftSessionId); assertTrue(controller.state.value.dirty)
+            assertEquals(card.name, container.characterRepository.getById(card.id)!!.name)
+            controller.openDocument(card.id, "missing") { missing++ }
+            assertEquals(1, missing); assertEquals(documents[1].id, controller.state.value.documentFocusId)
+            controller.openDocument(card.id, documents[0].id) { missing++ }
+            assertEquals(documents[0].id, controller.state.value.documentFocusId)
+            assertEquals(draft, controller.state.value.draftSessionId)
+        }
+    }
     @Test fun `quick card variant toggle preserves fields and requires ordinary save`() = runBlocking {
         fixture { _, container, controller ->
             val person = CharacterInfo.create("Variant person").copy(profile = "kept profile", imagePrompt = "kept prompt")

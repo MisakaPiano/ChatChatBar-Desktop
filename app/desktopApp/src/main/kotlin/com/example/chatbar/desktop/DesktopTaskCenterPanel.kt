@@ -53,6 +53,7 @@ internal fun DesktopTaskCenterPanel(center: DesktopTaskCenter, onClose: () -> Un
                                 BasicText(if (row.stopRequested) "正在停止，等待保存结束" else row.phase.label(), style = TextStyle(color = palette.mutedForeground))
                             }
                             row.contextLabel?.let { StatusText(it) }
+                            StatusText("任务 ${row.id.substringAfterLast('/').take(12)}")
                             if (row.completed != null && row.total != null) StatusText("${row.completed} / ${row.total}")
                             if (row.kind == DesktopWorkKind.CARD_DESIGN && row.phase == DesktopWorkPhase.COMPLETED)
                                 StatusText("候选已准备，请回到编辑器核对和应用。")

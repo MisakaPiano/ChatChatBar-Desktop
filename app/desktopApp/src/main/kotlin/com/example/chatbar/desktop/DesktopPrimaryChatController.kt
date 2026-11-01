@@ -388,6 +388,23 @@ internal class DesktopPrimaryChatController(
     suspend fun loadFirstMessageWindow(sessionId: String): String? = replaceReadingWindow(sessionId, first = true)
     suspend fun loadLatestMessageWindow(sessionId: String): String? = replaceReadingWindow(sessionId, first = false)
 
+    /** Navigate within the bounded reading window without replacing the composer or loading all history. */
+    suspend fun revealMessage(sessionId: String, messageId: String): Boolean {
+        var found = false
+        guarded {
+            stateLock.withLock {
+                if (state.value.selectedSession?.id != sessionId) return@withLock
+                val message = chats.getMessage(messageId, sessionId) ?: return@withLock
+                if (message.sessionId != sessionId) return@withLock
+                val page = chats.getInitialMessagePage(sessionId, messageId)
+                if (page.messages.none { it.id == messageId }) return@withLock
+                synchronized(readingLock) { applyMessageWindow(page, messageId, preserveViewport = false) }
+                found = true
+            }
+        }
+        return found
+    }
+
     private suspend fun replaceReadingWindow(sessionId: String, first: Boolean): String? {
         var target: String? = null
         guarded {

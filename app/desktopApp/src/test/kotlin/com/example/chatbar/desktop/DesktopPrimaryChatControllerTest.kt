@@ -37,6 +37,29 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class DesktopPrimaryChatControllerTest {
+    @Test fun `task message navigation uses the exact bounded history page and preserves composer`() = runBlocking {
+        withContainer { container ->
+            val card = CharacterCard.create("Same title", greeting = "Greeting")
+            container.characterRepository.save(card); configure(container)
+            val controller = container.primaryChatController
+            controller.refresh(); controller.createSession(card.id)
+            val session = controller.state.value.selectedSession!!.id
+            val messages = (0 until 180).map { ChatMessage.create(session, MessageRole.ASSISTANT, "Synthetic $it") }
+            messages.forEach { container.chatRepository.addMessage(it) }
+            controller.selectSession(session); controller.editComposer("Retain unsent draft")
+            val target = messages[8].id
+            assertTrue(controller.revealMessage(session, target))
+            assertEquals(target, controller.state.value.viewportRestorePosition?.anchorMessageId)
+            assertTrue(controller.state.value.messages.any { it.id == target })
+            assertTrue(controller.state.value.messages.size < messages.size)
+            assertEquals("Retain unsent draft", controller.state.value.composerDraft)
+            val before = controller.state.value.messages
+            assertFalse(controller.revealMessage("other-session", target))
+            assertFalse(controller.revealMessage(session, "missing-message"))
+            assertEquals(before, controller.state.value.messages)
+            assertEquals("Retain unsent draft", controller.state.value.composerDraft)
+        }
+    }
     @Test fun `composer image opt-in saves only its field and character summary uses management presentation`() = runBlocking {
         withContainer { container ->
             val card = CharacterCard.create("Full character title", greeting = "Greeting")

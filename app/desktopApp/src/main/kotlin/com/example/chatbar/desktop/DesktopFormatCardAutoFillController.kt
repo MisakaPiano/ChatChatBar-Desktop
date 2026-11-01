@@ -62,6 +62,12 @@ internal class DesktopFormatCardAutoFillController(
 
     fun close() { if (!state.value.busy) mutableState.update { it.copy(open = false) } }
 
+    fun revealTaskDraft(sessionId: String): Boolean {
+        if (pin?.session != sessionId || currentPin() != pin) return false
+        mutableState.update { it.copy(open = true) }
+        return true
+    }
+
     fun refreshOptions() {
         if (state.value.busy || state.value.loadingOptions) return
         val originalPin = pin
@@ -113,7 +119,7 @@ internal class DesktopFormatCardAutoFillController(
         job = scope.launch {
             var lastRecorder: DesktopTransportDiagnosticRecorder? = null
             try {
-                val candidate = runtime.withCardDesign(target.session) {
+                val candidate = runtime.withCardDesign(target.session, formatCardCandidate = true) {
                     gate.withNormalOperation {
                         val character = characters.getById(characterId) ?: error("SOURCE_DELETED")
                         val freshSettings = settings.getAppSettings()

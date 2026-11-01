@@ -9,6 +9,25 @@ import kotlinx.coroutines.flow.*
 import kotlin.test.*
 
 class DesktopTaskCenterTest {
+    @Test fun `shared creative owner is not mislabeled as a format candidate and history index targets its real session`() = runBlocking {
+        fixture { app -> supervisorScope {
+            val entered = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>()
+            val creative = async { app.taskRuntime.withCardDesign("character-draft") { entered.complete(Unit); release.await() } }
+            val historyEntered = CompletableDeferred<Unit>(); val historyRelease = CompletableDeferred<Unit>()
+            val history = async { app.taskRuntime.withDocumentPreparation("chat-memory:session", "history",
+                usageContext = DesktopUsageContext(DesktopUsageSource.CHAT, sessionId = "session")) {
+                historyEntered.complete(Unit); historyRelease.await()
+            } }
+            try {
+                entered.await(); historyEntered.await()
+                val rows = withTimeout(5000) { app.taskCenter.state.first { it.rows.count { row -> row.active } == 2 } }.rows
+                assertNull(rows.single { it.kind == DesktopWorkKind.CREATIVE }.target)
+                val target = rows.single { it.kind == DesktopWorkKind.HISTORY_INDEX }.target!!
+                assertEquals(DesktopPrimaryRoute.CHAT, target.route); assertEquals("session", target.sessionId)
+                assertNull(target.cardId); assertNull(target.subjectId)
+            } finally { release.complete(Unit); historyRelease.complete(Unit); creative.await(); history.await() }
+        } }
+    }
     @Test fun `memory row stops its own session while another session is open and running`(): Unit = runBlocking {
         fixture { app -> supervisorScope {
             app.settingsRepository.saveAppSettings(AppSettings())
@@ -68,7 +87,7 @@ class DesktopTaskCenterTest {
         fixture { app -> supervisorScope {
             val entered = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>()
             var calls = 0
-            val work = async { app.taskRuntime.withCardDesign("draft") { calls++; entered.complete(Unit); release.await(); "synthetic candidate not applied" } }
+            val work = async { app.taskRuntime.withCardDesign("draft", formatCardCandidate = true) { calls++; entered.complete(Unit); release.await(); "synthetic candidate not applied" } }
             try {
                 withTimeout(5000) { entered.await(); app.taskCenter.state.first { it.rows.any { row -> row.kind == DesktopWorkKind.CARD_DESIGN && row.active } } }
                 app.taskCenter.closeAndDrain()

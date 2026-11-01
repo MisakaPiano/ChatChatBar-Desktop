@@ -13,14 +13,23 @@ private fun DesktopTaskStatus.workPhase() = when (this) {
 internal fun DesktopTaskCenter.watchRuntime(runtime: DesktopTaskRuntime) {
     val flow = combine(runtime.tasks, runtime.ownedWork, runtime.repairTasks, runtime.repairIdentities) { tasks, owned, repairs, identities ->
         tasks.map { task -> DesktopWorkRow(task.taskId, if (task.kind == DesktopTaskKind.REAL_CHAT) DesktopWorkKind.CHAT else DesktopWorkKind.IMAGE,
-            task.status.workPhase(), task.createdAt, target = task.sessionId?.let { DesktopWorkTarget(DesktopPrimaryRoute.CHAT, sessionId = it) }
+            task.status.workPhase(), task.createdAt, target = task.sessionId?.let { DesktopWorkTarget(DesktopPrimaryRoute.CHAT, sessionId = it, subjectId = task.targetMessageId) }
                 ?: DesktopWorkTarget(DesktopPrimaryRoute.TOOLS), canStop = task.status == DesktopTaskStatus.RUNNING,
             canRetry = task.canRetry && task.status != DesktopTaskStatus.RUNNING) } +
         owned.map { entry -> DesktopWorkRow(entry.taskId,
-            if (entry.kind == DesktopOwnedWorkKind.DOCUMENT) DesktopWorkKind.DOCUMENT else DesktopWorkKind.CARD_DESIGN,
+            when (entry.kind) {
+                DesktopOwnedWorkKind.DOCUMENT -> if (entry.sessionId != null) DesktopWorkKind.HISTORY_INDEX else DesktopWorkKind.DOCUMENT
+                DesktopOwnedWorkKind.CARD_DESIGN -> DesktopWorkKind.CARD_DESIGN
+                DesktopOwnedWorkKind.CREATIVE -> DesktopWorkKind.CREATIVE
+            },
             entry.status.workPhase(), entry.createdAt,
-            target = DesktopWorkTarget(DesktopPrimaryRoute.MANAGE, cardId = entry.characterId,
-                subjectId = entry.documentId, draftSessionId = entry.draftSessionId), canStop = entry.status == DesktopTaskStatus.RUNNING) } +
+            target = when (entry.kind) {
+                DesktopOwnedWorkKind.DOCUMENT -> entry.sessionId?.let { DesktopWorkTarget(DesktopPrimaryRoute.CHAT, sessionId = it) }
+                    ?: DesktopWorkTarget(DesktopPrimaryRoute.MANAGE, cardId = entry.characterId, subjectId = entry.documentId)
+                DesktopOwnedWorkKind.CARD_DESIGN -> DesktopWorkTarget(DesktopPrimaryRoute.MANAGE,
+                    draftSessionId = entry.draftSessionId, detail = DesktopWorkDetail.FORMAT_DRAFT)
+                DesktopOwnedWorkKind.CREATIVE -> null // Shared owner also serves character/world-book/image/Moments work.
+            }, canStop = entry.status == DesktopTaskStatus.RUNNING) } +
         repairs.map { (id, status) ->
             val identity = identities[id]
             val phase = when (status) {

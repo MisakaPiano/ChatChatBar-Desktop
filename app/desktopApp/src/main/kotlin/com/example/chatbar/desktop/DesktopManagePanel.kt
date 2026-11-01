@@ -153,6 +153,8 @@ internal fun DesktopManagePanel(
     providerUsage: DesktopProviderUsageOwner? = null,
     initialImportKind: DesktopExternalImportKind? = null, initialImportTargetId: String? = null,
     onInitialImportConsumed: () -> Unit = {},
+    initialTaskTarget: DesktopWorkTarget? = null, onInitialTaskConsumed: () -> Unit = {},
+    onTaskTargetUnavailable: () -> Unit = {},
 ) {
     val t = LocalDesktopUiStrings.current
     val uiLanguage by uiLanguageController.language.collectAsState()
@@ -171,6 +173,36 @@ internal fun DesktopManagePanel(
     val transferState by transferController.state.collectAsState()
     transferState.coverExport?.let { DesktopCoverExportDialog(it, transferController) }
     val modelTransferState by modelTemplateController.state.collectAsState()
+    val managementBusy = managementController.state.collectAsState().value.busy
+    fun selectSection(choice: ManageSection, after: () -> Unit = {}) {
+        if (managementController.state.value.busy || transferController.state.value.busy || modelTemplateController.state.value.busy) return
+        val accept = { section = choice; after() }
+        when {
+            section == ManageSection.WORLD_BOOKS && choice != section -> worldBookEditorController.requestLeave(accept)
+            section == ManageSection.FORMATS && choice != section -> formatCardEditorController.requestLeave(accept)
+            section == ManageSection.CHARACTERS && choice != section -> characterEditorController.requestLeave(accept)
+            (section == ManageSection.MODELS || section == ManageSection.SETTINGS) && choice != section ->
+                scope.launch { modelSettingsController.requestLeave(accept) }
+            else -> accept()
+        }
+    }
+    LaunchedEffect(initialTaskTarget, managementBusy, transferState.busy, modelTransferState.busy) {
+        if (managementBusy || transferState.busy || modelTransferState.busy) return@LaunchedEffect
+        initialTaskTarget?.let { target ->
+            if (target.detail == DesktopWorkDetail.FORMAT_DRAFT) {
+                selectSection(ManageSection.FORMATS) {
+                    val draft = target.draftSessionId
+                    if (draft == null || formatCardEditorController.state.value.draftSessionId != draft ||
+                        formatCardEditorController.autoFill?.revealTaskDraft(draft) != true) onTaskTargetUnavailable()
+                }
+            } else if (target.cardId != null && target.subjectId != null) {
+                selectSection(ManageSection.CHARACTERS) { scope.launch {
+                    characterEditorController.openDocument(target.cardId, target.subjectId, onTaskTargetUnavailable)
+                } }
+            } else onTaskTargetUnavailable()
+            onInitialTaskConsumed()
+        }
+    }
     LaunchedEffect(initialImportKind, initialImportTargetId) {
         initialImportKind?.let { kind ->
             section = when (kind) {
@@ -249,17 +281,7 @@ internal fun DesktopManagePanel(
         }))
     }, section.name, onSelect = { id ->
         val choice = ManageSection.valueOf(id)
-                    if (managementController.state.value.busy || transferController.state.value.busy ||
-                        modelTemplateController.state.value.busy) return@DesktopWorkspacePage
-                    if (section == ManageSection.WORLD_BOOKS && choice != ManageSection.WORLD_BOOKS) {
-                        worldBookEditorController.requestLeave { section = choice }
-                    } else if (section == ManageSection.FORMATS && choice != ManageSection.FORMATS) {
-                        formatCardEditorController.requestLeave { section = choice }
-                    } else if (section == ManageSection.CHARACTERS && choice != ManageSection.CHARACTERS) {
-                        characterEditorController.requestLeave { section = choice }
-                    } else if ((section == ManageSection.MODELS || section == ManageSection.SETTINGS) && choice != section) {
-                        scope.launch { modelSettingsController.requestLeave { section = choice } }
-                    } else section = choice
+        selectSection(choice)
     }) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)) {

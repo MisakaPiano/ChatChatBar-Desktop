@@ -50,10 +50,10 @@ class DesktopTaskAdmissionException(message: String) : IllegalStateException(mes
 class DesktopTaskDrainTimeoutException(message: String) : IllegalStateException(message)
 
 internal data class DesktopRepairTaskIdentity(val taskId: String, val sessionId: String, val messageId: String)
-internal enum class DesktopOwnedWorkKind { DOCUMENT, CARD_DESIGN }
+internal enum class DesktopOwnedWorkKind { DOCUMENT, CARD_DESIGN, CREATIVE }
 internal data class DesktopOwnedWorkEntry(val taskId: String, val kind: DesktopOwnedWorkKind, val createdAt: Long,
     val status: DesktopTaskStatus = DesktopTaskStatus.RUNNING, val characterId: String? = null,
-    val documentId: String? = null, val draftSessionId: String? = null)
+    val documentId: String? = null, val draftSessionId: String? = null, val sessionId: String? = null)
 
 internal data class DesktopChatPostProcessResult(
     val reply: DesktopRealChatResult,
@@ -120,7 +120,7 @@ internal class DesktopTaskRuntime(
             documentPreparations[key] = id
             activeJobs[id] = child
             mutableOwnedWork.value = listOf(DesktopOwnedWorkEntry(id, DesktopOwnedWorkKind.DOCUMENT, clock(),
-                characterId = characterId, documentId = documentId)) + mutableOwnedWork.value
+                characterId = characterId, documentId = documentId, sessionId = usageContext.sessionId)) + mutableOwnedWork.value
             child.invokeOnCompletion { cause ->
                 synchronized(lock) {
                     activeJobs.remove(id)
@@ -139,7 +139,7 @@ internal class DesktopTaskRuntime(
     }
 
     /** Card creation has no chat/session admission. The caller child still joins maintenance/shutdown. */
-    suspend fun <T> withCardDesign(draftSessionId: String, work: suspend () -> T): T = coroutineScope {
+    suspend fun <T> withCardDesign(draftSessionId: String, formatCardCandidate: Boolean = false, work: suspend () -> T): T = coroutineScope {
         val job = synchronized(lock) {
             if (!accepting || maintenance || draftSessionId in cardDesigns)
                 throw DesktopTaskAdmissionException("格式卡生成暂不可用")
@@ -147,7 +147,8 @@ internal class DesktopTaskRuntime(
             val child = async(start = CoroutineStart.LAZY) { work() }
             cardDesigns[draftSessionId] = id
             activeJobs[id] = child
-            mutableOwnedWork.value = listOf(DesktopOwnedWorkEntry(id, DesktopOwnedWorkKind.CARD_DESIGN, clock(),
+            mutableOwnedWork.value = listOf(DesktopOwnedWorkEntry(id,
+                if (formatCardCandidate) DesktopOwnedWorkKind.CARD_DESIGN else DesktopOwnedWorkKind.CREATIVE, clock(),
                 draftSessionId = draftSessionId)) + mutableOwnedWork.value
             child.invokeOnCompletion { cause ->
                 synchronized(lock) {
