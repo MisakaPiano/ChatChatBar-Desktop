@@ -64,6 +64,9 @@ android {
         ).asText.get().replace("\r\n", "\n") + "\n" + providers.fileContents(
             project(":sharedCore").layout.projectDirectory.file(
                 "src/main/kotlin/com/example/chatbar/domain/prompt/CharacterCardAiPromptAuthority.kt")
+        ).asText.get().replace("\r\n", "\n") + "\n" + providers.fileContents(
+            project(":sharedCore").layout.projectDirectory.file(
+                "src/main/kotlin/com/example/chatbar/domain/prompt/WorldBookAiPromptAuthority.kt")
         ).asText.get().replace("\r\n", "\n")
         val promptFingerprint = MessageDigest.getInstance("SHA-256")
             .digest(promptSource.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }

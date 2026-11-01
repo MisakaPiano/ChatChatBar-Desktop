@@ -25,6 +25,8 @@ Separate model selection, request construction, transport, and output parsing. A
 
 ## Desktop linked image understanding
 
+- World-book AI uses `WorldBookAiGateway` and `OpenAiStreamingTransport.streamWorldBookAi`: original isolated parameters, default 120-second socket/inactivity budget, no forced JSON response or character thinking budgets. Only RESEARCH/BRIEF override thinking=false and effort=low. Android maps the exact operation/stage in `AndroidWorldBookAiGateway`; six-stage MockWebServer body/auth/envelope comparison is `WorldBookAiRequestParityTest`.
+
 - Shared `domain/chat/ImageUnderstandingService.kt` owns direct-image vs linked-vision resolution, description indexing and unavailable/terminal behavior. Android injects `StreamingChatService::describeImageStreaming`; Desktop injects `DesktopAuxiliaryImageUnderstanding`, consuming shared GENERAL envelope/image Prompt and `ImageDescriptionRequestPolicy.forImageDescriptionRequest`.
 - Character image-to-appearance text is a separate request: `CharacterAppearanceImageCore` resolves the current default chat model or its exact linked multimodal model. `streamCharacterAppearance` retains isolated parameters, thinking disabled, JSON output and 120-second socket/inactivity budgets; actual Android/Desktop request parity is covered with MockWebServer. It does not run general image description first.
 - Desktop appends the shared user-image description before durable user-message persistence; unavailable vision remains an explicit task notice and retains the owned attachment, while refusal/cancellation terminates the request. No separate Desktop Prompt literal is introduced.

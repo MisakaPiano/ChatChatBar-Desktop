@@ -118,6 +118,19 @@ class OpenAiStreamingTransport(
             maxThinkingTokens = policy.maxThinkingTokens, reasoningEffortOverride = policy.reasoningEffort)
     }
 
+    /** World-book tasks retain the original isolated parameters and default 120-second silence budget. */
+    fun streamWorldBookAi(operation: com.example.chatbar.domain.worldbook.WorldBookAiOperation,
+        messages: List<ChatApiMessage>, modelConfig: ModelConfig,
+        diagnostics: ProviderTransportDiagnostics = ProviderTransportDiagnostics.NONE): Flow<StreamEvent> {
+        val research = operation == com.example.chatbar.domain.worldbook.WorldBookAiOperation.RESEARCH ||
+            operation == com.example.chatbar.domain.worldbook.WorldBookAiOperation.BRIEF
+        return isolatedAuxiliaryTextStream(client, allowCleartextHttp(), messages, modelConfig, diagnostics,
+            timing = AuxiliaryStreamTiming(readTimeoutMillis = 120_000, inactivityMillis = 120_000),
+            isolatedTaskParameters = true, disableThinking = false, emitReasoning = true, protectEnvelope = false,
+            enableThinkingOverride = if (research) false else null,
+            reasoningEffortOverride = if (research) "low" else null)
+    }
+
     /** Image-to-character text keeps the official isolated JSON request and 120-second silence budget. */
     fun streamCharacterAppearance(messages: List<ChatApiMessage>, modelConfig: ModelConfig,
         diagnostics: ProviderTransportDiagnostics = ProviderTransportDiagnostics.NONE): Flow<StreamEvent> =

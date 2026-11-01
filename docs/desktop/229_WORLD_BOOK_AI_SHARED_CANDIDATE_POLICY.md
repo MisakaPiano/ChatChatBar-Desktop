@@ -4,4 +4,6 @@
 
 共享策略按原规则保留每批5条、创建最多50条、创建仅写名称与关键词而正文空白、补空仅作用于选中且仍为空的已知目标；现有条目ID、正文及其他行为字段保留。I盘实际块对比已确认除缩进／跨模块可见性以外，原companion实现逐字保持。新增两个内联夹具检查约束→选择→应用链和预览后手动补文的保护；尚待新源云端执行，不能由CI60代验。
 
-后续仍需共享并接入世界书专有的分批研究、请求参数与桌面候选流程。它的研究query上限、session跨批缓存和包含所选模型的恢复签名均与角色流程不同，不能直接套角色规划器或换模型继续语义。未打包、未发布、未真人验收，B3未完成。
+后续共享核心（本地源码，待云端）：`WorldBookAiCore` 与 `WorldBookResearchEngine` 执行原批次、研究、JSON及修复流程；Android保留task-run、API和operation/stage映射。原9个Prompt literal及7个builder移入唯一shared `WorldBookAiPromptAuthority`，原Android符号继续代理，source fingerprint新增该源。独立机械比较确认原文保持。Desktop transport seam保留isolated参数、120秒默认socket/inactivity，研究才使用thinking=false/effort=low；不套角色512/256、600秒配置。新增候选跨批失败续作、目标ID与修复、终止异常、研究session复用及6阶段真实合成HTTP请求对照，尚未执行。
+
+Desktop编辑器／候选界面仍待接线。研究query上限、session跨批缓存和包含所选模型的恢复签名与角色流程不同，不能套换模型继续语义。未打包、未发布、未真人验收，B3未完成。
