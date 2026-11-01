@@ -188,7 +188,8 @@ def launch_close(case, image, executable, arguments, install_root, label, defaul
     startup = Startup(); startup.cb = C.sizeof(startup); startup.flags = 0x100
     process = Process()
     previous = (install_root / 'current.txt').read_text().strip() if expect_failure else None
-    previous_log = install_log(case, install_root).read_text(encoding='utf-8') if expect_failure else ''
+    log_path = install_log(case, install_root)
+    previous_log = log_path.read_text(encoding='utf-8') if log_path.exists() else ''
     env = C.create_unicode_buffer('\0'.join(k + '=' + v for k, v in sorted(environment(case).items())) + '\0\0')
     with (case / (label + '-stdout.log')).open('wb') as out, (case / (label + '-stderr.log')).open('wb') as err, open(os.devnull, 'rb') as stdin:
         for stream in (out, err, stdin):
@@ -249,7 +250,23 @@ def launch_close(case, image, executable, arguments, install_root, label, defaul
                     break
             require(owned, 'ALL_PROCESSES_EXITED_BEFORE_READY')
             time.sleep(.1)
-        require(window is not None, 'MAIN_WINDOW_AND_ENTRY_NOT_CONFIRMED')
+        if window is None:
+            code = W.DWORD()
+            code_read = bool(kernel.GetExitCodeProcess(process.handle, C.byref(code)))
+            after_log = install_log(case, install_root)
+            log_text = after_log.read_text(encoding='utf-8') if after_log.exists() else ''
+            pending_error = None
+            try:
+                pending = external_pending(case, install_root)[1] if external_files else None
+            except Exception as failure:
+                pending = None; pending_error = type(failure).__name__
+            save(case / (label + '-startup-failure-result.json'), dict(
+                passed=False, failure='MAIN_WINDOW_AND_ENTRY_NOT_CONFIRMED', initialPid=process.pid,
+                exitCodeRead=code_read, exitCode=code.value if code_read else None, remaining=pids(),
+                afterQueue=pending, queueReadErrorType=pending_error,
+                thisCallManagerLog=log_text[len(previous_log):] if log_text.startswith(previous_log) else None,
+                managerLogPrefixRetained=log_text.startswith(previous_log)))
+            raise RuntimeError('MAIN_WINDOW_AND_ENTRY_NOT_CONFIRMED')
         current = (install_root / 'current.txt').read_text().strip()
         program = install_root / 'versions' / current
         if default_profile:
@@ -314,6 +331,7 @@ def main():
     parser.add_argument('--allow-owned-update-helper-cwd', action='store_true', help='Explicitly classify only the inventoried updater Python; full Job exit still required')
     parser.add_argument('--probe-external-files', action='store_true', help='Deliver synthetic paths to the actual packaged warm receiver without confirming any import')
     parser.add_argument('--cold-external-file', action='store_true', help='Open a synthetic Unicode path through the installed bridge after the previous process has exited')
+    parser.add_argument('--cold-external-ascii', action='store_true', help='Diagnostic control for cold delivery using only an ASCII filename; requires --cold-external-file')
     parser.add_argument('--ci-source', type=Path, help='Frozen source namespace only in this repository Windows CI')
     args = parser.parse_args()
     approved = Path(__file__).resolve().parents[3] / 'app/desktopApp/build/preview-continuous-private-20261025'
@@ -338,9 +356,10 @@ def main():
     exe = args.installer if args.installer else args.root / 'ChatChatBar.exe'
     arguments = ['/S', '/D=' + str(args.root)] if args.installer else []
     cold_paths = []
+    require(not args.cold_external_ascii or args.cold_external_file, 'ASCII_CONTROL_REQUIRES_COLD')
     if args.cold_external_file:
         require(args.installer is None and args.probe_external_files, 'COLD_EXTERNAL_REQUIRES_EXISTING_INSTALL_AND_QUEUE_PROBE')
-        path = case / (args.label + '-冷启动角色 & source.json')
+        path = case / (args.label + ('-cold source.json' if args.cold_external_ascii else '-冷启动角色 & source.json'))
         require(not path.exists(), 'COLD_EXTERNAL_INPUT_ALREADY_EXISTS')
         path.write_bytes(b'SYNTHETIC_COLD_EXTERNAL_DELIVERY')
         cold_paths = [path]; exe = args.root / 'OpenChatBarFile.exe'; arguments = [str(path)]

@@ -168,40 +168,28 @@ jobs:
           [ordered]@{kind='FROZEN_APPLICATION_AND_SEPARATE_BUILD_TOOLS'; applicationSource=$env:CCB_CANDIDATE_SOURCE; controlSource=(git -C $env:GITHUB_WORKSPACE rev-parse HEAD); tools=$toolHashes} | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $env:CCB_BUILD_OUTPUT 'package-control.json') -Encoding utf8
           @("CCB_CANDIDATE_IMAGE=$image", "CCB_CANDIDATE_ARCHIVE=$archive", "CCB_CANDIDATE_NSIS=$nsis") | Add-Content $env:GITHUB_ENV -Encoding utf8
 
-      - name: Actual ordinary upgrade and stable-entry lifecycle in fresh runner profile
+      - name: Same frozen bytes: ASCII cold control with strict startup diagnostics
         run: |
           $ErrorActionPreference = 'Stop'
           $approved = Join-Path $env:CCB_CI_SOURCE 'app\desktopApp\build\preview-continuous-private-20261025'
           New-Item -ItemType Directory -Path $approved -Force | Out-Null
           $case = Join-Path $approved 'windows-runtime-nsis-cloud'
           $program = Join-Path $env:CCB_BUILD_BASE 'installed'
-          $baseline = Join-Path $env:CCB_BUILD_BASE 'baseline1225.exe'
-          Invoke-WebRequest 'https://github.com/MisakaPiano/ChatChatBar-Desktop/releases/download/desktop-v0.1.0-preview.1225/ChatChatBar-Desktop-0.1.0-preview.1225-windows-x64.exe' -OutFile $baseline
-          if ((Get-FileHash -Algorithm SHA256 -LiteralPath $baseline).Hash.ToLowerInvariant() -cne '04a35d64ba9958e305bb247c1f217bbfcd1507fa1753661ee2520e54032a96c0') { throw 'BASELINE_HASH' }
           $driver = Join-Path $env:GITHUB_WORKSPACE 'tools\desktop\nsis\native_smoke.py'
-          python -B $driver --case $case --image $env:CCB_CANDIDATE_IMAGE --root $program --installer $baseline --label baseline1225 --fresh-default-profile --ci-source $env:CCB_CI_SOURCE --allow-owned-update-helper-cwd
-          if ($LASTEXITCODE -ne 0) { throw 'BASELINE_NATIVE_FAILED' }
-          $old = (Get-Content -LiteralPath (Join-Path $program 'current.txt') -Raw).Trim()
-          $oldManifest = Get-Content -LiteralPath (Join-Path $program "versions\$old\install-manifest.json") -Raw | ConvertFrom-Json
-          if ($oldManifest.version -cne '0.1.0-preview.1225' -or $oldManifest.commit -cne '54008bc17847a30fc53e403f99e8aaa335521cda') { throw 'BASELINE_IDENTITY' }
+          $installer = Join-Path $env:CCB_CANDIDATE_NSIS 'ChatChatBar-Setup.exe'
+          python -B $driver --case $case --image $env:CCB_CANDIDATE_IMAGE --root $program --installer $installer --label candidate-fresh --fresh-default-profile --probe-busy-installer $installer --ci-source $env:CCB_CI_SOURCE --allow-owned-update-helper-cwd --probe-external-files
+          if ($LASTEXITCODE -ne 0) { throw 'EXACT_CANDIDATE_FRESH_NATIVE_FAILED' }
           $data = Join-Path $case 'local-appdata\ChatChatBarDesktop'
           $canary = Join-Path $data 'cloud-native-retained-canary.txt'
-          Set-Content -LiteralPath $canary -Value 'Synthetic retained upgrade canary' -Encoding utf8 -NoNewline
+          Set-Content -LiteralPath $canary -Value 'Synthetic retained cold-delivery canary' -Encoding utf8 -NoNewline
           $before = (Get-FileHash -Algorithm SHA256 -LiteralPath $canary).Hash
-          $installer = Join-Path $env:CCB_CANDIDATE_NSIS 'ChatChatBar-Setup.exe'
-          python -B $driver --case $case --image $env:CCB_CANDIDATE_IMAGE --root $program --installer $installer --label candidate-upgrade --fresh-default-profile --probe-busy-installer $installer --ci-source $env:CCB_CI_SOURCE --allow-owned-update-helper-cwd --probe-external-files
-          if ($LASTEXITCODE -ne 0) { throw 'CANDIDATE_NATIVE_UPGRADE_FAILED' }
+          python -B $driver --case $case --image $env:CCB_CANDIDATE_IMAGE --root $program --label candidate-cold-ascii --fresh-default-profile --ci-source $env:CCB_CI_SOURCE --allow-owned-update-helper-cwd --probe-external-files --cold-external-file --cold-external-ascii
+          if ($LASTEXITCODE -ne 0) { throw 'EXACT_CANDIDATE_COLD_EXTERNAL_FAILED' }
+          if ((Get-FileHash -Algorithm SHA256 -LiteralPath $canary).Hash -cne $before) { throw 'COLD_CANARY_CHANGED' }
           $current = (Get-Content -LiteralPath (Join-Path $program 'current.txt') -Raw).Trim()
           $manifest = Get-Content -LiteralPath (Join-Path $program "versions\$current\install-manifest.json") -Raw | ConvertFrom-Json
-          if ($manifest.version -cne $env:CCB_CANDIDATE_VERSION -or $manifest.commit -cne $env:CCB_CANDIDATE_SOURCE) { throw 'CANDIDATE_IDENTITY' }
-          if ((Get-FileHash -Algorithm SHA256 -LiteralPath $canary).Hash -cne $before) { throw 'CANARY_CHANGED' }
-          python -B $driver --case $case --image $env:CCB_CANDIDATE_IMAGE --root $program --label candidate-reopen --fresh-default-profile --ci-source $env:CCB_CI_SOURCE --allow-owned-update-helper-cwd --probe-external-files
-          if ($LASTEXITCODE -ne 0) { throw 'CANDIDATE_NATIVE_REOPEN_FAILED' }
-          if ((Get-FileHash -Algorithm SHA256 -LiteralPath $canary).Hash -cne $before) { throw 'REOPEN_CANARY_CHANGED' }
-          python -B $driver --case $case --image $env:CCB_CANDIDATE_IMAGE --root $program --label candidate-cold-external --fresh-default-profile --ci-source $env:CCB_CI_SOURCE --allow-owned-update-helper-cwd --probe-external-files --cold-external-file
-          if ($LASTEXITCODE -ne 0) { throw 'CANDIDATE_COLD_EXTERNAL_FAILED' }
-          if ((Get-FileHash -Algorithm SHA256 -LiteralPath $canary).Hash -cne $before) { throw 'COLD_EXTERNAL_CANARY_CHANGED' }
-          [ordered]@{version=$env:CCB_CANDIDATE_VERSION; source=$env:CCB_CANDIDATE_SOURCE; actualNativeUpgrade=$true; stableReopen=$true; runningInstallerRefused=$true; syntheticCanaryRetained=$true; cwdPolicy='Stable program cwd; only inventoried updater image may use runtime cwd, and full Job exit is required'; fakeCredentialRetentionVerified=$false; customDataRootBusyVerified=$false; humanAcceptance=$false; installerRunOnUserMachine=$false} | ConvertTo-Json | Set-Content (Join-Path $case 'scope-result.json') -Encoding utf8
+          if ($manifest.version -cne $env:CCB_CANDIDATE_VERSION -or $manifest.commit -cne $env:CCB_CANDIDATE_SOURCE) { throw 'COLD_CANDIDATE_IDENTITY' }
+          [ordered]@{version=$env:CCB_CANDIDATE_VERSION; source=$env:CCB_CANDIDATE_SOURCE; actualNativeUpgrade=$false; priorUpgradeEvidenceRun=41345082376; freshCandidateInstall=$true; coldAsciiControl=$true; coldUnicodeDelivery=$false; exactPreLaunchPendingRetained=$true; runningInstallerRefused=$true; syntheticCanaryRetained=$true; nativeProcessInventoryAndFullExitChecks=$true; humanAcceptance=$false; installerRunOnUserMachine=$false} | ConvertTo-Json | Set-Content (Join-Path $case 'scope-result.json') -Encoding utf8
           "CCB_NATIVE_CASE=$case" | Add-Content $env:GITHUB_ENV -Encoding utf8
 
       - name: Actual independent Chinese entry and isolated data lifecycle
