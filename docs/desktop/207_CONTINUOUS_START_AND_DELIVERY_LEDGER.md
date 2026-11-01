@@ -1,3 +1,5 @@
+2026-11-01 精确d94应用源CI53／41268127116已完整SUCCESS：Windows2312项2293通过／19跳过，原逐像素对照和六项分页／直接Word UI全通过；末块PNG文字已实际核对，Android/shared及后续NSIS/updater步骤亦通过。CI52原失败保留。1226云端包首run41269219583因NSIS下载散列不符停止、未生成包；两个固定工具SHA保持，HTTP读取与诊断调整后独立请求重试，应用源仍d94。控制源5ac75973，现用1225未替换，新候选未交付／公开，不恢复本机重负载。见[224](224_SCREENSHOT_PAGED_RENDER_ACCEPTANCE_FIX.md)。
+
 2026-11-01 后续精确源d94e2df0已修正分块布局默认垂直居中造成的坐标偏移，原逐像素断言保持，CI53／41268127116云端运行中。CI52／e7f终态FAIL：Android578／shared1070通过，Windows2312项中2292通过、19跳过、1个拼接像素对照失败，原报告和空白末块保留；直接Word UI、其余分页五项及格式卡AI七项通过。新云端候选打包工作流／独立入口检查尚在准备、未实际执行，签名私钥保持本机，未新发包／安装／公开。见[224](224_SCREENSHOT_PAGED_RENDER_ACCEPTANCE_FIX.md)。
 
 2026-11-01 用户已自行更新1225并确认Studio／模型配置和草稿退出重开两项通过；PNG／PDF／Word在67项选择预览均PREVIEW_RENDER，导出未通过，单条随后补正未测。已登记[224](224_SCREENSHOT_PAGED_RENDER_ACCEPTANCE_FIX.md)，有界分块／单PNG扫描行输出／连续PDF页候选在后续源码，尚未验证或发包，不改1225资产。360退出后当前548程序文件长度／SHA全匹配，无缺失，不据此断言历史隔离原因。此前本机构建引发整机卡顿已停且用户确认缓解，所有后续重编译／渲染转云端，不自动恢复本机测试。P12纵向源73e0bd63已推、shared37 PASS保留，CI50 Linux新测试缺MockWebServer依赖已定位待后续源核，Windows当时仍运行；详见[223](223_FORMAT_CARD_AI_SOURCE_CHECKPOINT.md)。两部分均不冒认已交付或用户整批验收。
