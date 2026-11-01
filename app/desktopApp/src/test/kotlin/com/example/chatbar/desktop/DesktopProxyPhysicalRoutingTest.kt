@@ -123,9 +123,18 @@ object DesktopProxyPhysicalRoutingProbe {
                     check(controller.state.value.error == null)
                     check(controller.state.value.saved.port == applicationPort)
                     sameRoot = true
-                    val client = if (mode == "DIRECT" || mode == "LOCAL") ProxyAwareClient.modelApiBuilder { true }.build() else secureNovelAiClient()
+                    val client = if (mode == "DIRECT" || mode == "LOCAL") ProxyAwareClient.modelApiBuilder { true }
+                        .apply {
+                            if (mode == "DIRECT") dns { host ->
+                                check(host == "direct-route.invalid")
+                                listOf(InetAddress.getByName("127.0.0.1"))
+                            }
+                        }.build() else secureNovelAiClient()
                     try {
-                        if (mode == "DIRECT" || mode == "LOCAL") client.newCall(okhttp3.Request.Builder().url("http://127.0.0.1:$targetPort/fixture").build()).execute().use { }
+                        if (mode == "DIRECT" || mode == "LOCAL") {
+                            val host = if (mode == "DIRECT") "direct-route.invalid" else "127.0.0.1"
+                            client.newCall(okhttp3.Request.Builder().url("http://$host:$targetPort/fixture").build()).execute().use { }
+                        }
                         else NovelAiAccountService(client).fetchCancellable("synthetic-only-token")
                     } catch (_: Exception) {
                         // Proxy endpoints deliberately refuse. Parent checks physical bytes, never error wording.
