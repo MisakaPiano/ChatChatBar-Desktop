@@ -10,7 +10,9 @@ class DesktopSessionDeletionControllerTest {
     @Test fun `confirmed deletion refuses active writers then drains draft and rejects stale viewport callbacks`() = runBlocking {
         val parent = Files.createTempDirectory("session-delete-controller-")
         val resolution = DesktopDataRootResolution.Resolved(parent.resolve("data"), DesktopDataRootProvenance.CLI_OVERRIDE, parent.resolve("bootstrap.json"))
-        val owner = assertIs<DesktopDataRootOwnershipResult.Acquired>(DesktopDataRootOwnership.acquire(resolution)).ownership
+        Files.createDirectory(resolution.appDataRoot)
+        val ownership = DesktopDataRootOwnership.acquire(resolution)
+        val owner = assertIs<DesktopDataRootOwnershipResult.Acquired>(ownership, ownership.toString()).ownership
         val app = DesktopAppContainer(resolution, secretStoreFactory = { InMemoryDesktopSecretStore() }, bundledAssets = { """{"entries":[]}""".toByteArray() })
         try {
             app.characterRepository.save(CharacterCard("card", "合成卡", createdAt = 1, updatedAt = 1))

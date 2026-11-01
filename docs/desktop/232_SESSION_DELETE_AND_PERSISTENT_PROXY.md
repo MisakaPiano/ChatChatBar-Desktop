@@ -13,3 +13,5 @@ CI64／863df8ae已完整SUCCESS；Windows288suite2350项=2331PASS+19SKIP，Andro
 CI65／ed988d20整轮FAIL：shared179suite1102项中1101通过，唯一MomentCore失败为IllegalStateException同类同信息但引用不同；测试改核类型／信息，保留两次调用、仅decision检查点／不重试断言，不改生产传播。Windows主步骤在编译停于新面板调用文件private SelectChip，未执行Desktop测试；现将原组件共享为internal，不改视觉行为。原失败保留，后续NSIS／更新器结果不能代替Desktop主步骤通过。
 
 后续源码补NovelAI账户固定连接阶段诊断：每次请求独立tag，仅保存阶段／耗时／固定代理类型及协商协议，不存URL、header、正文、密钥或原始异常。请求失败时随原安全分类展示；HTTP代理连接与隧道协商合称一阶段，进入TLS由secureConnectStart确认，复用连接不伪造握手。“读取响应头开始”不代表首字节已收到。新增纯本机合成代理分别阻塞CONNECT和TLS的回归，待新源云端；没有取消TLS验证、强制协议、拉长超时或添加重试。实际1226网络回归仍待对应环境阶段证据。
+
+CI66／d84336b2：Android582／shared180suite1103全通过，包含MomentCore4和真实loopback CONNECT／TLS两场景1测试。Windows291suite2357项=2336PASS+19SKIP+2FAIL：一处其他会话完整比较用了添加消息之前的seed（真差异为原消息添加更新预览、时间与两种轮计数）；一处controller夹具CLI_OVERRIDE未创建目录，运行锁按原保护拒绝，后续删除步骤未执行。仅改夹具：在删除前读取真实完整baseline，显式创建测试目录后申请原锁并显示拒绝详情。不删字段断言、不放宽资料根保护，不改生产源码；controller后续步骤待新源验证。原失败、XML及字段差异保留。
