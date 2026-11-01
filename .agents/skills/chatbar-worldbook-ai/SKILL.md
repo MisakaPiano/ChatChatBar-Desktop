@@ -12,6 +12,7 @@ Read these entry points before broad search.
 - UI, source selection, candidate preview, resume controls: `app/app/src/main/java/com/example/chatbar/ui/worldbook/WorldBookEditScreen.kt`.
 - State, generation orchestration, checkpoint compatibility, apply/save split: `app/app/src/main/java/com/example/chatbar/ui/worldbook/WorldBookEditViewModel.kt`.
 - Batched creation/fill, JSON parsing and repair, candidate merge: `app/app/src/main/java/com/example/chatbar/domain/worldbook/WorldBookAiService.kt`.
+- Candidate/checkpoint/response models and pure constraints/apply helpers are shared under `app/sharedCore/.../domain/worldbook/WorldBookAiModels.kt` and `WorldBookAiPolicy.kt`. Android keeps its batch/model/JSON/repair/task orchestration and same companion facade, delegating only the original pure policy. `WorldBookResearchModels.kt` shares the transient session/result types; research orchestration remains in the Android service. This extraction alone does not implement Desktop world-book AI.
 - Encyclopedia/manual-page/reference-document preparation: `app/app/src/main/java/com/example/chatbar/domain/search/WorldBookResearchService.kt` and `CharacterReferenceDocumentRetriever.kt`.
 - Model-facing text: `app/app/src/main/java/com/example/chatbar/domain/prompt/PromptTemplates.kt`; use `chatbar-prompt-pipeline` for prompt assembly changes.
 - Wiring/settings: `app/app/src/main/java/com/example/chatbar/ChatBarApp.kt` and `data/local/entity/AppSettings.kt`.

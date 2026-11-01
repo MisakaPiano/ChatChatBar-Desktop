@@ -41,19 +41,6 @@ private data class WorldBookResearchPlanDraft(
     val queries: List<String> = emptyList()
 )
 
-data class WorldBookResearchSession(
-    val preparedDocument: PreparedReferenceDocumentIndex? = null,
-    val manualSources: List<ResearchSource> = emptyList(),
-    val encyclopediaSourcesByQuery: Map<String, List<ResearchSource>> = emptyMap(),
-    val summarizedBriefs: Map<String, ResearchBrief> = emptyMap()
-)
-
-data class WorldBookResearchResult(
-    val brief: ResearchBrief? = null,
-    val debug: ResearchDebugSnapshot = ResearchDebugSnapshot(),
-    val session: WorldBookResearchSession = WorldBookResearchSession()
-)
-
 @OptIn(ExperimentalSerializationApi::class)
 class WorldBookResearchService(
     private val settingsProvider: suspend () -> AppSettings,
