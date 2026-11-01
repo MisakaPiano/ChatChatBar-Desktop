@@ -1,0 +1,11 @@
+# 邀请测试反馈：程序与资料目录重叠的更新预检
+
+2026-11-01。用户转述邀请测试者把运行资料目录放在程序文件夹内，安装显示通用“安装未完成”提示。截图只有通用信息；尚无对方准确程序／资料两路径及安装日志，不能仅凭截图确认失败阶段或宣称其数据已核对无损。
+
+已查公开1227／003c：NSIS manager的`ProtectDataRoots`对整个安装根做双向overlap，Prepare阶段会拒绝PROGRAM_DATA_ROOT_OVERLAP并显示该通用弹窗。应用的迁移目标预检只排除当前版本ApplicationHome及其内部，没有覆盖安装根下与versions同级的UserData。这是可定位的预检覆盖差异，安装器保护本身保留。
+
+后续源码增加`DesktopProgramDataBoundary`：从应用的已知Home及NSIS固定owner标识识别受管根，规范化现有祖先后比较相等／双向上下层，避免字符串前缀把program-data误当program内部。目标仍须通过既有空目录、根锁与身份检查；目标冲突在创建或迁移前拒绝。当前数据页提示受管根重叠；确认更新前在IO核对真实数据根，冲突时保留下载、保持应用运行并给出独立目录迁移指引。原安装器、数据权威、凭据fence和最终安装准入均未移除。
+
+恢复复用生产`DesktopDataRootMigrationService`，fresh authority或媒体根会转既有`DesktopBoundRootMigration`，通过真实source/wire proof和发布器重绑凭据，保留旧根与旧凭据。底层naive materializer对bound根的fence不是生产迁移缺失，不能为此重复开发或绕过。目录混入程序文件、未知保管内容或身份不明时仍可能拒绝；不承诺任意混合目录均可自动迁移，也不静默移动、删除或手改bootstrap。具体邀请用户恢复仍需其路径／日志，未操作其PC。
+
+新增合成验证覆盖受管根同级UserData、根相等／上层、拒绝前无目标创建、原资料保留并可准备外部目标、同名前缀区分、独立Program/UserData及矛盾owner拒绝。当前为后续工作树，未云端验证或打包；P15用量及P13修正已另源63404／CI71，不冒认其覆盖本页新改动。

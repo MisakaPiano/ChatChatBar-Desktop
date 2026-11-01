@@ -64,7 +64,7 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                         val primaryChatController = remember { appContainer.primaryChatController }
                         val modelSettingsController = remember { appContainer.modelSettingsController }
                         val applicationScope = rememberCoroutineScope()
-                        val updater = remember { DesktopUpdateRuntime(applicationScope) }
+                        val updater = remember { DesktopUpdateRuntime(applicationScope, dataRoot = resolvedRoot.appDataRoot) }
                         val modalActivity = remember { DesktopModalActivity() }
                         val updateNotices = remember {
                             val identity = DesktopBuildIdentity.load()

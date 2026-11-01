@@ -16,11 +16,13 @@ internal data class DesktopUpdateRuntimeState(val busy: Boolean = false, val pha
     val notice: String? = null)
 internal val LocalDesktopUpdater = staticCompositionLocalOf<DesktopUpdateRuntime?> { null }
 private class DesktopUpdateRefusal(val code: String) : IllegalStateException(code)
+private class DesktopUpdateDataOverlap : IllegalStateException()
 
 /** App-lifetime owner; the isolated TUF helper has no business repositories or credential access. */
 internal class DesktopUpdateRuntime(private val scope: CoroutineScope,
     private val home: Path? = (DesktopApplicationHome.resolve() as? DesktopApplicationHomeResult.Available)?.path,
-    private val local: Path? = System.getenv("LOCALAPPDATA")?.let(Path::of)) {
+    private val local: Path? = System.getenv("LOCALAPPDATA")?.let(Path::of),
+    private val dataRoot: Path? = null) {
     private val mutable = MutableStateFlow(DesktopUpdateRuntimeState())
     val state = mutable.asStateFlow()
     val supportsInstall: Boolean = runCatching { packageHome(); true }.getOrDefault(false)
@@ -70,6 +72,10 @@ internal class DesktopUpdateRuntime(private val scope: CoroutineScope,
         mutable.value = mutable.value.copy(busy = true, phase = "VERIFYING", error = null)
         work = scope.launch {
             try {
+                withContext(Dispatchers.IO) {
+                    if (dataRoot != null && DesktopProgramDataBoundary.conflicts(packageHome(), dataRoot))
+                        throw DesktopUpdateDataOverlap()
+                }
                 // Re-authenticate current signed metadata and bytes immediately before handoff.
                 val checked = verified(invoke(verify = ready.installer, expectedVersion = ready.version))
                 check(checked == ready) { "UPDATE_SELECTION_CHANGED" }
@@ -79,6 +85,10 @@ internal class DesktopUpdateRuntime(private val scope: CoroutineScope,
             } catch (cancelled: CancellationException) {
                 mutable.value = mutable.value.copy(busy = false, phase = "DOWNLOADED_VERIFIED", error = "已取消安装校验；尚未关闭或安装。")
                 throw cancelled
+            }
+            catch (_: DesktopUpdateDataOverlap) {
+                mutable.value = mutable.value.copy(busy = false, phase = "DOWNLOADED_VERIFIED",
+                    error = "资料目录与程序安装目录重叠，已停止安装并保留更新文件。请先在“数据→数据目录”检查并迁移到程序目录之外，正常退出重开后再更新。保留旧目录；迁移未通过时不要删除文件或手动修改启动路径。")
             }
             catch (_: Exception) {
                 mutable.value = mutable.value.copy(busy = false, phase = "DOWNLOADED_VERIFIED",

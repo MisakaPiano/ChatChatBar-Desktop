@@ -305,13 +305,12 @@ class DesktopMigrationDestinationPreparer internal constructor(
             )
 
             is DesktopApplicationHomeResult.Available -> {
-                val home = applicationHome.path.toAbsolutePath().normalize()
-                if (destinationRoot.windowsEquals(home) || destinationRoot.isLexicallyInside(home)) {
-                    PathIssue.Unsafe(
-                        "Migration destination cannot be ApplicationHome or its descendant",
-                    )
-                } else {
-                    null
+                try {
+                    if (DesktopProgramDataBoundary.conflicts(applicationHome.path, destinationRoot)) PathIssue.Unsafe(
+                        "资料目录不能与程序安装目录相同、位于其内部或包含程序目录；请选择程序目录之外的独立资料目录。")
+                    else null
+                } catch (failure: Exception) {
+                    PathIssue.Unsafe("程序安装目录身份未通过检查，尚未创建或迁移资料。", failure)
                 }
             }
         }

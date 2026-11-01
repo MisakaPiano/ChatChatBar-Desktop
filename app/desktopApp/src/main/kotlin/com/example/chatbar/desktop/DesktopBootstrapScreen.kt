@@ -140,6 +140,22 @@ internal fun DesktopDataRootPanel(
     val colors = DesktopBootstrapColors
     RootValue(t(DesktopUiText.CURRENT_DATA_DIRECTORY), state.currentRoot.toString())
     RootValue(t(DesktopUiText.AUTHORITY), state.provenance.name)
+    val programBoundaryNotice by androidx.compose.runtime.produceState<String?>(null, state.currentRoot) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            when (val home = DesktopApplicationHome.resolve()) {
+                is DesktopApplicationHomeResult.Available -> try {
+                    if (state.provenance != DesktopDataRootProvenance.PORTABLE &&
+                        DesktopProgramDataBoundary.protectedRoots(home.path).size > 1 &&
+                        DesktopProgramDataBoundary.conflicts(home.path, state.currentRoot))
+                        "当前资料目录与程序安装目录重叠，安装器会拒绝更新。请迁移到程序目录之外的独立资料目录；迁移成功并正常重开前保留原目录，不要手动删除或移动资料。"
+                    else null
+                } catch (_: Exception) { "程序与资料目录的边界尚未核对成功；请保留原目录，在继续更新前检查程序安装状态。" }
+                is DesktopApplicationHomeResult.Failure -> "程序目录身份未确认；请保留原目录并检查程序安装状态。"
+                is DesktopApplicationHomeResult.Unavailable -> null
+            }
+        }
+    }
+    programBoundaryNotice?.let { StatusText(it, colors.warning) }
 
     when (val current = state) {
         is DesktopDataRootSwitchState.Idle -> {
@@ -399,7 +415,9 @@ internal fun retryableDestinationLabel(result: DesktopDataRootMigrationResult.Fa
     }
 
 private fun retryableFailureSummary(result: DesktopDataRootMigrationResult.Failure): String =
-    buildString {
+    if (result.preparation?.kind == DesktopMigrationDestinationFailureKind.APPLICATION_HOME_UNSAFE)
+        "所选资料目录与程序安装目录重叠，或程序目录身份未通过检查。尚未迁移或切换；请选择程序目录之外的独立资料目录，保留原目录。"
+    else buildString {
         append("The switch did not commit (")
         append(result.kind.name)
         append("). The current source remains authoritative and usable.")
