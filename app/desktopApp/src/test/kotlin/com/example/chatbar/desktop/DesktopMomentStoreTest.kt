@@ -2,6 +2,7 @@ package com.example.chatbar.desktop
 
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.*
+import com.example.chatbar.domain.image.*
 import java.nio.file.Files
 import kotlinx.coroutines.runBlocking
 import kotlin.test.*
@@ -9,6 +10,51 @@ import kotlin.test.*
 class DesktopMomentStoreTest {
     private val card = CharacterCard("card", "Fixture", createdAt = 0, updatedAt = 0)
     private val session = ChatSession("session", "card", "Fixture", createdAt = 0, updatedAt = 0)
+
+    @Test fun `explicit recovery of missing placeholder preserves reserved identity and refuses stale task or saved final`() = runBlocking {
+        val root = Files.createTempDirectory("moment-missing-placeholder-"); val gate = DesktopDataOperationCoordinator()
+        try {
+            val storage = JsonFileStorage(root, gate); val store = DesktopMomentStore(storage, gate)
+            store.saveTask(MomentTask.create(card.id, session.id, 1).copy(status = MomentTaskStatus.RUNNING, postId = "reserved"))
+            val task = store.tasks().single()
+            assertFailsWith<IllegalStateException> { store.begin(task, card, session) }
+            assertFailsWith<IllegalStateException> { store.begin(task.copy(updatedAt = task.updatedAt + 1), card, session, recoverMissingPost = true) }
+            val attempt = store.begin(task, card, session, recoverMissingPost = true)
+            assertEquals("reserved", attempt.placeholder.id)
+            store.complete(attempt, attempt.placeholder.copy(isPlaceholder = false, text = "recovered"))
+            assertFailsWith<IllegalStateException> { store.begin(task, card, session, recoverMissingPost = true) }
+            assertEquals("recovered", store.posts().single().text)
+            assertEquals(MomentTaskStatus.COMPLETED, store.tasks().single().status)
+        } finally { gate.closeAndDrain(); root.toFile().deleteRecursively() }
+    }
+
+    @Test fun `image completion preserves concurrent like and refuses edited or deleted sources without resurrection`() = runBlocking {
+        val root = Files.createTempDirectory("moment-image-publish-"); val gate = DesktopDataOperationCoordinator()
+        try {
+            val storage = JsonFileStorage(root, gate); val media = DesktopCharacterResourceStore(root)
+            val cleanup = DesktopMomentImageCleanup(root, storage, gate, DesktopOwnedImageCleanup(root, media, gate))
+            val store = DesktopMomentStore(storage, gate, cleanup)
+            val attempt = store.begin(MomentTask.create(card.id, session.id, 1), card, session)
+            store.complete(attempt, attempt.placeholder.copy(isPlaceholder = false, text = "original"))
+            val original = store.posts().single()
+            val receipt = cleanup.prepareCandidate("images/new.png")
+            Files.createDirectory(root.resolve("images")); Files.write(root.resolve("images/new.png"), byteArrayOf(1))
+            val plan = NovelAiPromptPlan("synthetic tags", emptyList(), NovelAiImageSizePreset.SQUARE)
+            val image = DesktopMomentImageResult("images/new.png", plan.toGeneratedImageMetadata("images/new.png", NovelAiImageSizePreset.SQUARE.imageSize), plan.baseCaption, "brief")
+            store.toggleLike(original.id)
+            assertNull(store.replaceImage(original, image))
+            cleanup.finish(receipt)
+            val saved = store.posts().single()
+            assertTrue(saved.userLiked); assertEquals(original.text, saved.text); assertEquals(original.generatedAt, saved.generatedAt)
+            assertTrue(Files.exists(root.resolve("images/new.png")))
+            store.edit(saved.id, "edited while generating")
+            assertFailsWith<IllegalStateException> { store.replaceImage(saved, image) }
+            assertEquals("edited while generating", store.posts().single().text)
+            store.delete(saved.id)
+            assertFailsWith<IllegalStateException> { store.replaceImage(saved, image) }
+            assertTrue(store.posts().isEmpty()); assertFalse(Files.exists(root.resolve("images/new.png")))
+        } finally { gate.closeAndDrain(); root.toFile().deleteRecursively() }
+    }
 
     @Test fun `durable link and checkpoints precede completion and retry retains identity`() = runBlocking {
         val root = Files.createTempDirectory("moment-store-"); val gate = DesktopDataOperationCoordinator()

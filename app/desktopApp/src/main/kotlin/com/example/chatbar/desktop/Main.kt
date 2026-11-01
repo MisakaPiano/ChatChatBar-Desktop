@@ -148,6 +148,7 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                                     novelAiSettingsController = appContainer.novelAiSettingsController,
                                     novelAiStudioController = appContainer.novelAiStudioController,
                                     networkProxyController = appContainer.networkProxyController,
+                                    momentsController = appContainer.momentsController,
                                     fullBackupController = appContainer.fullBackupController,
                                     mergeImportController = appContainer.mergeImportController,
                                     onExitApplication = {

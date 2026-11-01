@@ -21,7 +21,7 @@ internal class DesktopMomentImageCleanup(
     private val home = root.resolve("backups/.moment-image-cleanup")
 
     suspend fun prepare(post: MomentPost): String? = withContext(Dispatchers.IO) {
-        require(Regex("[A-Za-z0-9_-]{1,256}").matches(post.id))
+        requireMomentStorageId(post.id)
         val candidates = setOfNotNull(post.imagePath, post.senderAvatar).filter { it.startsWith("images/") }
         if (candidates.isEmpty()) return@withContext null
         writeReceipt(post.id, candidates)
@@ -64,7 +64,7 @@ internal class DesktopMomentImageCleanup(
             check(value.keys == setOf("version", "postId", "candidates") && value["version"] == JsonPrimitive(1))
             val postId = value.getValue("postId").takeUnless { it == JsonNull }?.jsonPrimitive?.content
             if (postId != null) {
-                require(Regex("[A-Za-z0-9_-]{1,256}").matches(postId))
+                requireMomentStorageId(postId)
                 val read = storage.readEntityStrict("moment_posts", postId, MomentPost.serializer())
                 when (read) {
                     JsonFileStorage.EntityReadResult.Missing -> Unit

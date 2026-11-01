@@ -5,7 +5,7 @@ import androidx.compose.runtime.compositionLocalOf
 /** User-facing Desktop text lives here; persisted data and protocol identifiers are not translated. */
 internal enum class DesktopUiText(val zhCn: String, val en: String) {
     WINDOW_MINIMIZE("最小化", "Minimize"), WINDOW_MAXIMIZE("最大化", "Maximize"), WINDOW_RESTORE("还原", "Restore"),
-    CHAT("对话", "Chat"), MANAGE("管理", "Manage"), TOOLS("工具", "Tools"), DATA("数据", "Data"),
+    CHAT("对话", "Chat"), MOMENTS("朋友圈", "Moments"), MANAGE("管理", "Manage"), TOOLS("工具", "Tools"), DATA("数据", "Data"),
     SETTINGS("设置", "Settings"), MODELS("模型", "Models"), TRANSFER("导入导出", "Transfer"),
     AUTOMATIC_BACKUP("自动备份", "Automatic backup"),
     BACKUP_ENABLED("已启用", "Enabled"), BACKUP_DISABLED("已关闭", "Disabled"),

@@ -1,5 +1,11 @@
 # P13 朋友圈共享基础
 
+2026-11-01 当前：1f1ef083／CI68完整SUCCESS，Windows2361项=2342PASS+19SKIP，shared1105／Android582全过。新增HTTP模式对照、task-post耐久关联、取消后图片回执及production cleaner通过；这不覆盖下列后续工作树。
+
+后续源码接入时间线与设置、未读圆点、显式生成／checkpoint重试／点赞／编辑／删除、图片预览与补图／重生／设卡图、完整调试交换。根绑定本机授权存于资料外，正常重开只恢复已批准PENDING快照；同目录整包恢复先转动本地epoch，导入记录不继承授权。原session存在时保持绑定，仅缺失时选同卡最近活跃session；RUNNING不自动重试，缺占位的中断任务经明确费用提示后才可沿原预留编号重试。卡图片提交在IO执行，旧图回执先落盘，退出exclusive后按全引用检查清理。上述新增Controller／Admission／Store／窄宽Scene回归尚待新源云端，不算已验证或已交付。
+
+公开1227仍冻结003c／签名11，当前P13未进入其安装包；日常H未代装，本机不恢复重负载。以下为此前历史检查点。
+
 后续Desktop运行层源码已接但尚待云端：`DesktopMomentsController`／`DesktopMomentGeneration`复用Core、编译长记忆、原模型默认参数和流式／非流式模式；懒加载挂AppContainer关闭排水。`DesktopMomentStore`在请求前持久化task→postId与占位，阶段检查点先保存；中断RUNNING不重置PENDING，显式对账只关联已存在的最终动态，不发AI请求。编辑／点赞／删除与生成提交串行，晚到结果不能恢复已删除动态。`DesktopMomentImageCleanup`在删除／图片落盘前写精确回执，退出normal准入后复用全实体引用保护的exclusive清理；失败回执保留。新增共享真实合成HTTP与桌面持久／取消／production cleaner用例待云端。当前没有桌面时间线入口；本地调度暂为每进程明确恢复，尚不当作完整持久启动恢复等价，后续继续根绑定且隔离导入世代的本机准入。
 
 2026-11-01，在WorldBook／D042新源CI63运行期间独立准备。原 `MomentEntities`、`MomentRepository`、`MomentPolicy` 从Android目录移到sharedCore，FQN、序列化、文件内容与Git blob逐字相同；原Android调用与测试继续使用同一权威。这三处Android原路径缺失是计划内源码移动，不是360隔离，应从新路径读取，不能把旧文件恢复成重复类。

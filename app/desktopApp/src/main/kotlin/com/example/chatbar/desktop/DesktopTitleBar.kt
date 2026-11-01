@@ -66,12 +66,14 @@ internal fun DesktopTitleBar(
     captionsVisible: Boolean = true,
     windowTitle: String? = null,
     updatePending: Boolean = false,
+    momentsEnabled: Boolean = false,
+    momentsUnread: Boolean = false,
     onNavigate: (DesktopPrimaryRoute) -> Unit,
 ) {
     val colors = LocalDesktopPalette.current
     val t = LocalDesktopUiStrings.current
     val state by chrome.state.collectAsState()
-    val presentation = desktopTitleBarPresentation(shellSize, route, locked)
+    val presentation = desktopTitleBarPresentation(shellSize, route, locked, momentsEnabled)
     DisposableEffect(recorder, navigationVisible, captionsVisible, windowTitle != null) {
         onDispose {
             if (navigationVisible || windowTitle != null) recorder.clearNavigation()
@@ -93,12 +95,14 @@ internal fun DesktopTitleBar(
             presentation.routes.forEach { item ->
                 val label = t(when (item.route) {
                     DesktopPrimaryRoute.CHAT -> DesktopUiText.CHAT
+                    DesktopPrimaryRoute.MOMENTS -> DesktopUiText.MOMENTS
                     DesktopPrimaryRoute.MANAGE -> DesktopUiText.MANAGE
                     DesktopPrimaryRoute.TOOLS -> DesktopUiText.TOOLS
                     DesktopPrimaryRoute.DATA -> DesktopUiText.DATA
                 })
                 val icon = when (item.route) {
                     DesktopPrimaryRoute.CHAT -> DesktopAppIcons.Chat
+                    DesktopPrimaryRoute.MOMENTS -> DesktopAppIcons.Star
                     DesktopPrimaryRoute.MANAGE -> DesktopAppIcons.Settings
                     DesktopPrimaryRoute.TOOLS -> DesktopAppIcons.Tools
                     DesktopPrimaryRoute.DATA -> DesktopAppIcons.Data
@@ -109,15 +113,21 @@ internal fun DesktopTitleBar(
                     Row(Modifier.width(presentation.routeWidthDp.dp).height(36.dp)
                         .onGloballyPositioned { recorder.route(item.route, it) }
                         .background(if (item.selected) colors.secondary else Color.Transparent, RoundedCornerShape(6.dp))
-                        .semantics { contentDescription = if (item.route == DesktopPrimaryRoute.DATA && updatePending) "$label，有新版本" else label }
+                        .semantics { contentDescription = when {
+                            item.route == DesktopPrimaryRoute.DATA && updatePending -> "$label，有新版本"
+                            item.route == DesktopPrimaryRoute.MOMENTS && momentsUnread -> "$label，有新动态"
+                            else -> label
+                        } }
                         .selectable(item.selected, enabled = item.enabled, role = Role.Tab) { onNavigate(item.route) },
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
                         val foreground = (if (item.selected) colors.primary else colors.mutedForeground)
                             .copy(alpha = if (item.enabled) 1f else 0.5f)
                         Box {
                             Image(rememberVectorPainter(icon), null, Modifier.size(17.dp), colorFilter = ColorFilter.tint(foreground))
-                            if (item.route == DesktopPrimaryRoute.DATA && updatePending)
-                                Box(Modifier.size(6.dp).align(Alignment.TopEnd).background(colors.primary, androidx.compose.foundation.shape.CircleShape))
+                            if (item.route == DesktopPrimaryRoute.DATA && updatePending || item.route == DesktopPrimaryRoute.MOMENTS && momentsUnread)
+                                Box(Modifier.size(6.dp).align(Alignment.TopEnd).background(
+                                    if (item.route == DesktopPrimaryRoute.MOMENTS) colors.destructive else colors.primary,
+                                    androidx.compose.foundation.shape.CircleShape))
                         }
                         if (presentation.showRouteLabels) {
                             Spacer(Modifier.width(6.dp))

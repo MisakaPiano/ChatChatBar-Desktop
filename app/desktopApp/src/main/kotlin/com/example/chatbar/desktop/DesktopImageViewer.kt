@@ -136,7 +136,8 @@ private fun desktopDisplayBitmap(original: java.awt.image.BufferedImage, minimum
 
 @Composable
 internal fun DesktopImageViewer(references: List<String>, initialIndex: Int,
-    resources: DesktopCharacterResourceStore, picker: DesktopFilePicker, onClose: () -> Unit) {
+    resources: DesktopCharacterResourceStore, picker: DesktopFilePicker,
+    extraActions: @Composable RowScope.(String) -> Unit = {}, onClose: () -> Unit) {
     val selection = remember { DesktopViewerSelection(references, initialIndex) }
     val reference = selection.reference ?: return
     val index = selection.index
@@ -181,6 +182,7 @@ internal fun DesktopImageViewer(references: List<String>, initialIndex: Int,
                     ProcessBuilder("explorer.exe", "/select,", path.toString()).start()
                 } }
                 DesktopChatIconAction("图像工具", DesktopAppIcons.Tools) { act { tools = resources.readBytes(reference) } }
+                extraActions(reference)
             }
         }
     }

@@ -190,6 +190,7 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
             } }
             EditorField(t(DesktopUiText.CHARACTER_NAME), card.name) { value -> controller.edit { it.copy(name = value) } }
             EditorField(t(DesktopUiText.BOT_NAME), card.botName) { value -> controller.edit { it.copy(botName = value) } }
+            StudioSwitch("该角色卡启用朋友圈", card.momentsEnabled) { controller.edit { it.copy(momentsEnabled = !it.momentsEnabled) } }
             EditorField(t(DesktopUiText.GREETING), card.greeting, multiline = true) { value -> controller.edit { it.copy(greeting = value) } }
             EditorSection(t(DesktopUiText.ALTERNATE_GREETINGS)) {
                 card.alternateGreetings.forEachIndexed { index, greeting ->

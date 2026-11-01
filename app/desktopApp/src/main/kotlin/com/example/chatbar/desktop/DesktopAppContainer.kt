@@ -620,6 +620,8 @@ class DesktopAppContainer internal constructor(
     private val momentImageCleanup by lazy { DesktopMomentImageCleanup(appDataRoot, jsonFileStorage,
         dataOperationCoordinator, ownedImageCleanup) }
     private val momentStore by lazy { DesktopMomentStore(jsonFileStorage, dataOperationCoordinator, momentImageCleanup) }
+    private val momentAdmission by lazy { DesktopMomentAdmissionStore(appDataRoot,
+        com.example.chatbar.desktop.security.WindowsSecretRootResolver.resolve(appDataRoot).resolve("moment-runtime")) }
     private val momentGenerationOwner = lazy { DesktopMomentGeneration(
         DesktopMomentTextGateway(momentTransportOwner.value, momentDiagnostics), effectiveModelResolver,
         settingsRepository, desktopSecretStore, { novelAiInfrastructure }, characterResourceStore, momentImageCleanup,
@@ -628,7 +630,13 @@ class DesktopAppContainer internal constructor(
         characterRepository, chatRepository, dataOperationCoordinator, taskRuntime,
         DesktopMomentGenerator { card, session, messages, latest, settings, task, checkpoint, save, progress, cleanup ->
             momentGenerationOwner.value.generate(card, session, messages, latest, settings, task, checkpoint, save, progress, cleanup)
-        }, momentImageCleanup::finish) }
+        }, momentImageCleanup::finish, momentAdmission, characterResourceStore, filePicker,
+        momentDiagnostics, momentImageCleanup::resume,
+        DesktopMomentImageGenerator { post, card, session, settings, draft, cleanup, progress ->
+            momentGenerationOwner.value.generate(post, card, session, settings, draft, cleanup, progress)
+        }, DesktopMomentDebugGenerator { card, session, messages, latest, settings, task, cleanup ->
+            momentGenerationOwner.value.generate(card, session, messages, latest, settings, task, cleanup)
+        }, momentImageCleanup::prepareCandidate) }
     internal val momentsController by momentsOwner
 
     internal fun createPromptInspectorController(): DesktopPromptInspectorController =

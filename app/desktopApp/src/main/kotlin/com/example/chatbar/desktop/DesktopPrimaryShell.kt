@@ -51,7 +51,9 @@ internal fun DesktopPrimaryShell(
     onExitApplication: () -> Unit,
     mergeImportController: DesktopMergeImportController? = null,
     networkProxyController: DesktopNetworkProxyController? = null,
+    momentsController: DesktopMomentsController? = null,
 ) {
+    val moments = momentsController?.state?.collectAsState()?.value
     val rootState by rootSwitchController.state.collectAsState()
     val selectedRoute by navigation.selectedRoute.collectAsState()
     val fullBackup by fullBackupController.state.collectAsState()
@@ -59,7 +61,8 @@ internal fun DesktopPrimaryShell(
     val mergeLocked = mergeState?.let { it.busy || it.restartRequired } == true
     val backupLocked = fullBackup.busy || fullBackup.restartRequired || mergeLocked
     val locked = rootState !is DesktopDataRootSwitchState.Idle || backupLocked
-    val route = if (backupLocked) DesktopPrimaryRoute.DATA else navigation.currentRoute(rootState, selectedRoute)
+    val requestedRoute = if (backupLocked) DesktopPrimaryRoute.DATA else navigation.currentRoute(rootState, selectedRoute)
+    val route = if (requestedRoute == DesktopPrimaryRoute.MOMENTS && moments?.enabled != true) DesktopPrimaryRoute.CHAT else requestedRoute
     val updateNotices = LocalDesktopUpdateNotices.current
     val updateNotice = updateNotices?.state?.collectAsState()?.value
     val modalActivity = LocalDesktopModalActivity.current
@@ -113,9 +116,11 @@ internal fun DesktopPrimaryShell(
         val size = DesktopShellLayoutPolicy.sizeForWidth(maxWidth.value)
         Column(Modifier.fillMaxSize()) {
             DesktopTitleBar(size, route, locked, chrome, chromeLayout,
-                updatePending = updateNotice?.pendingVersion != null, onNavigate = ::navigate)
+                updatePending = updateNotice?.pendingVersion != null, onNavigate = ::navigate,
+                momentsEnabled = moments?.enabled == true, momentsUnread = moments?.unread == true)
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when (route) {
+                    DesktopPrimaryRoute.MOMENTS -> momentsController?.let { DesktopMomentsPanel(it) }
                     DesktopPrimaryRoute.CHAT -> DesktopPrimaryChatPanel(primaryChatController, size, composerLayout,
                         onOpenStudio = { navigate(DesktopPrimaryRoute.TOOLS) }, compactNavigation = compactChatNavigation,
                         onEditPerson = { card, person -> scope.launch {
@@ -143,6 +148,7 @@ internal fun DesktopPrimaryShell(
                         initialPerson = requestedPerson, onInitialPersonConsumed = { requestedPerson = null },
                         chatUiController = primaryChatController.chatUi,
                         networkProxyController = networkProxyController,
+                        momentsController = momentsController,
                         onStartCharacterChat = { id -> scope.launch {
                             val before = primaryChatController.state.value.sessions.map { it.id }.toSet()
                             primaryChatController.createSession(id)

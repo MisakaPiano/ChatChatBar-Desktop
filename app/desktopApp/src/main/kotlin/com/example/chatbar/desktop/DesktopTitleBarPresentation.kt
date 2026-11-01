@@ -8,14 +8,16 @@ internal data class DesktopTitleBarPresentation(
     val captionWidthDp: Int,
     val routes: List<DesktopTitleRoute>,
 ) {
-    val minimumContentWidthDp get() = (if (showBrandName) 160 else 40) + 4 * routeWidthDp + 3 * captionWidthDp
+    val minimumContentWidthDp get() = (if (showBrandName) 160 else 40) + routes.size * routeWidthDp + 3 * captionWidthDp
 }
 
-internal fun desktopTitleBarPresentation(size: DesktopShellSize, selected: DesktopPrimaryRoute, locked: Boolean) =
+internal fun desktopTitleBarPresentation(size: DesktopShellSize, selected: DesktopPrimaryRoute, locked: Boolean,
+    momentsEnabled: Boolean = false) =
     DesktopTitleBarPresentation(
         showBrandName = size == DesktopShellSize.WIDE,
         showRouteLabels = size != DesktopShellSize.COMPACT,
         routeWidthDp = if (size == DesktopShellSize.COMPACT) 36 else 88,
         captionWidthDp = if (size == DesktopShellSize.COMPACT) 42 else 46,
-        routes = DesktopPrimaryRoute.entries.map { DesktopTitleRoute(it, it == selected, !locked) },
+        routes = DesktopPrimaryRoute.entries.filter { it != DesktopPrimaryRoute.MOMENTS || momentsEnabled }
+            .map { DesktopTitleRoute(it, it == selected, !locked) },
     )

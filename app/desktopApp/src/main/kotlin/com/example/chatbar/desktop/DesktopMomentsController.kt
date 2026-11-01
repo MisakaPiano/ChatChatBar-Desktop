@@ -3,8 +3,11 @@ package com.example.chatbar.desktop
 import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.data.repository.*
 import com.example.chatbar.domain.moment.*
+import com.example.chatbar.domain.image.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.util.UUID
 
 internal fun interface DesktopMomentGenerator {
@@ -20,11 +23,13 @@ internal data class DesktopMomentsState(
     val tasks: List<MomentTask> = emptyList(), val cards: List<CharacterCard> = emptyList(),
     val busy: Boolean = false, val progress: String = "", val notice: String = "", val error: String? = null,
     val viewedThrough: Long = 0L,
+    val streamedText: String = "",
+    val debug: MomentDebugGenerationResult? = null,
 ) {
     val unread: Boolean get() = posts.any { !it.isPlaceholder && it.generatedAt > viewedThrough }
 }
 
-/** Local consent is deliberately per process. Loaded/imported enabled/PENDING/RUNNING never start AI. */
+/** Local consent is root-bound; imported enabled/PENDING/RUNNING alone never start AI. */
 internal class DesktopMomentsController(
     private val store: DesktopMomentStore,
     private val settings: SettingsRepository,
@@ -34,6 +39,14 @@ internal class DesktopMomentsController(
     private val tasksRuntime: DesktopTaskRuntime,
     private val generator: DesktopMomentGenerator,
     private val finishImageCleanup: suspend (String) -> Unit = {},
+    private val admissionStore: DesktopMomentAdmissionStore? = null,
+    val resources: DesktopCharacterResourceStore? = null,
+    val picker: DesktopFilePicker = UnconfiguredDesktopFilePicker,
+    val diagnostics: DesktopTransportDiagnosticsOwner? = null,
+    private val recoverImages: suspend () -> Boolean = { true },
+    private val imageGenerator: DesktopMomentImageGenerator? = null,
+    private val debugGenerator: DesktopMomentDebugGenerator? = null,
+    private val prepareImageCleanup: (String) -> String? = { null },
     private val clock: () -> Long = System::currentTimeMillis,
     private val tickMillis: Long = 60_000,
 ) {
@@ -41,6 +54,7 @@ internal class DesktopMomentsController(
     private val mutableState = MutableStateFlow(DesktopMomentsState())
     val state = mutableState.asStateFlow()
     private val lock = Any()
+    private val admissionMutex = Mutex()
     private var accepting = true
     private var worker: Job? = null
     private var scheduler: Job? = null
@@ -49,9 +63,18 @@ internal class DesktopMomentsController(
         store::posts, store::tasks, { task ->
             store.saveTask(task)
             synchronized(lock) { admitted[task.id] = task }
+            persistAdmission(true)
         })
 
-    init { scope.launch { refresh() } }
+    init { scope.launch {
+        refresh()
+        try {
+            if (!recoverImages()) mutableState.update { it.copy(error = "朋友圈图片清理尚未完成；原文件和回执保留") }
+            restoreLocalScheduling()
+        }
+        catch (cancelled: CancellationException) { throw cancelled }
+        catch (_: Exception) { mutableState.update { it.copy(error = "本机朋友圈调度授权未通过；请核对后手动恢复，未自动生成") } }
+    } }
 
     suspend fun refresh() {
         try {
@@ -87,28 +110,43 @@ internal class DesktopMomentsController(
     }
 
     /** A click authorizes the exact existing pending snapshots and only future records created by this owner. */
-    suspend fun resumeScheduling() {
-        pause()
+    suspend fun resumeScheduling() = admissionMutex.withLock {
+        stopLocalScheduling(persistPause = true)
         gate.withNormalOperation {
             check(settings.getAppSettings().momentsEnabled) { "请先开启朋友圈" }
             val pending = store.tasks().filter { it.status == MomentTaskStatus.PENDING }
-            synchronized(lock) {
-                check(accepting)
-                admitted.clear(); pending.forEach { admitted[it.id] = it }
-                mutableState.update { it.copy(scheduling = true, error = null,
-                    notice = "本机调度已恢复；关闭应用后停止，重开后需再次恢复。中断记录不会自动重试。") }
-                scheduler = scope.launch(start = CoroutineStart.LAZY) {
-                    try {
-                        while (currentCoroutineContext().isActive) {
-                            tick()
-                            delay(tickMillis)
-                        }
-                    } catch (cancelled: CancellationException) { throw cancelled }
-                    catch (_: Exception) { mutableState.update { it.copy(error = "朋友圈调度已暂停；请核对数据与设置后手动恢复") } }
-                    finally { mutableState.update { it.copy(scheduling = false) } }
-                }.also { it.start() }
-            }
+            synchronized(lock) { admitted.clear(); pending.forEach { admitted[it.id] = it } }
+            persistAdmission(true)
+            startScheduler("本机调度已恢复；正常重开保留授权，关闭应用时不生成。中断记录不会自动重试。")
         }
+    }
+
+    private suspend fun restoreLocalScheduling() = admissionMutex.withLock {
+        val localStore = admissionStore ?: return@withLock
+        val local = localStore.load()
+        if (!local.active || state.value.error != null || !settings.getAppSettings().momentsEnabled) return@withLock
+        val pending = store.tasks().filter { task -> task.status == MomentTaskStatus.PENDING &&
+            local.tasks[task.id] == localStore.taskHash(task) }
+        synchronized(lock) { admitted.clear(); pending.forEach { admitted[it.id] = it } }
+        startScheduler("已恢复此资料目录的本机调度；导入或发生变化的未批准计划保持暂停。")
+    }
+
+    private suspend fun persistAdmission(active: Boolean) {
+        val local = admissionStore ?: return
+        val approved = synchronized(lock) { admitted.values.associate { it.id to local.taskHash(it) } }
+        local.save(DesktopMomentAdmission(active, approved))
+    }
+
+    private fun startScheduler(notice: String) = synchronized(lock) {
+        check(accepting && scheduler?.isActive != true)
+        mutableState.update { it.copy(scheduling = true, error = null, notice = notice) }
+        scheduler = scope.launch(start = CoroutineStart.LAZY) {
+            try {
+                while (currentCoroutineContext().isActive) { tick(); delay(tickMillis) }
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { mutableState.update { it.copy(error = "朋友圈调度已暂停；请核对数据与设置后手动恢复") } }
+            finally { mutableState.update { it.copy(scheduling = false) } }
+        }.also { it.start() }
     }
     private suspend fun tick() {
         val prefs = settings.getAppSettings()
@@ -119,23 +157,39 @@ internal class DesktopMomentsController(
             synchronized(lock) { admitted[task.id] == task } }
         for (task in due) {
             currentCoroutineContext().ensureActive()
-            val job = launchWork(task) ?: return
+            // Preserve the original binding while it exists; only a missing source uses the original fallback.
+            val ready = if (chats.getSession(task.sessionId) == null) {
+                val fallback = chats.getAllSessions().filter {
+                    it.characterCardId == task.characterCardId && MomentPolicy.isRecentlyActive(it.lastMessageTime, clock())
+                }.maxByOrNull { it.lastMessageTime ?: it.createdAt }
+                if (fallback == null) {
+                    store.skipUnstarted(task, "原会话已删除且48小时内无活跃会话")
+                    continue
+                }
+                store.rebindPending(task, fallback.id).also {
+                    synchronized(lock) { admitted[it.id] = it }
+                    persistAdmission(true)
+                }
+            } else task
+            val job = launchWork(ready) ?: return
             job.join()
         }
     }
-    suspend fun pause() {
+    suspend fun pause() = admissionMutex.withLock { stopLocalScheduling(persistPause = true) }
+    private suspend fun stopLocalScheduling(persistPause: Boolean) {
         val jobs = synchronized(lock) { listOfNotNull(scheduler, worker).distinct().also {
             scheduler = null; admitted.clear()
         } }
         jobs.forEach { it.cancel() }; jobs.forEach { it.join() }
         mutableState.update { it.copy(scheduling = false) }
+        if (persistPause) persistAdmission(false)
     }
     fun stop() { synchronized(lock) { worker?.cancel() } }
 
-    suspend fun generate(cardId: String) {
+    suspend fun generate(cardId: String, debug: Boolean = false) {
         val session = chats.getAllSessions().filter { it.characterCardId == cardId }
             .maxByOrNull { it.lastMessageTime ?: it.createdAt } ?: error("请先为该角色卡创建有交流内容的会话")
-        launchWork(MomentTask.create(cardId, session.id, clock()))
+        launchWork(MomentTask.create(cardId, session.id, clock()), debug = debug)
     }
     suspend fun retry(post: MomentPost) {
         check(post.isPlaceholder)
@@ -143,18 +197,73 @@ internal class DesktopMomentsController(
             ?: MomentTask.create(post.characterCardId, post.sessionId, post.scheduledAt)
         launchWork(task, post)
     }
-    private fun launchWork(task: MomentTask, retry: MomentPost? = null): Job? = synchronized(lock) {
+    suspend fun retryInterruptedTask(task: MomentTask) {
+        launchWork(task, recoverMissingPost = true)
+    }
+    private fun launchWork(task: MomentTask, retry: MomentPost? = null, debug: Boolean = false,
+        recoverMissingPost: Boolean = false): Job? =
+        launchOwnedWork(task.sessionId) { register -> execute(task, retry, register, debug, recoverMissingPost) }
+
+    suspend fun generateImage(post: MomentPost, draft: NovelAiImageRegenerationDraft? = null) {
+        val service = requireNotNull(imageGenerator) { "朋友圈图片服务不可用" }
+        launchOwnedWork(post.sessionId) { register ->
+            val original = store.imageSource(post)
+            val prefs = settings.getAppSettings(); check(prefs.momentsEnabled)
+            val image = service.generate(original, characters.getById(original.characterCardId),
+                chats.getSession(original.sessionId), prefs, draft, register,
+                ::reportProgress)
+            currentCoroutineContext().ensureActive()
+            store.replaceImage(original, image)?.let(register)
+            mutableState.update { it.copy(notice = "动态图片已保存，正文与点赞保留") }
+        }
+    }
+
+    suspend fun imageDraft(post: MomentPost): NovelAiImageRegenerationDraft = withContext(Dispatchers.IO) {
+        val original = store.imageSource(post)
+        val reference = requireNotNull(original.imagePath?.takeIf(String::isNotBlank))
+        val media = requireNotNull(resources)
+        val bytes = media.readScreenshotImageBytes(reference)
+        val metadata = original.generatedImageMetadata?.takeIf { it.imagePath == reference }
+            ?: if (reference.startsWith("images/")) DesktopImageMetadata.read(media.resolveOwnedReference(reference).toString()) else null
+        if (metadata != null) return@withContext metadata.toRegenerationDraft()
+        check(original.imagePrompt.isNotBlank()) { "原图没有可复用的Prompt" }
+        val pixels = DesktopImageEditing.decode(bytes)
+        val preset = when { pixels.width == pixels.height -> NovelAiImageSizePreset.SQUARE
+            pixels.width > pixels.height -> NovelAiImageSizePreset.HORIZONTAL
+            else -> NovelAiImageSizePreset.PORTRAIT }
+        NovelAiPromptPlan(original.imagePrompt, emptyList(), preset).toRegenerationDraft().copy(width = pixels.width, height = pixels.height)
+    }
+
+    suspend fun useImageForCard(post: MomentPost, avatar: Boolean) = withContext(Dispatchers.IO) {
+        val media = requireNotNull(resources)
+        val receipt = gate.withExclusiveMaintenance {
+            val source = store.imageSource(post)
+            val reference = requireNotNull(source.imagePath?.takeIf(String::isNotBlank))
+            media.readScreenshotImageBytes(reference)
+            val latest = (characters.readDurable(source.characterCardId) as? com.example.chatbar.data.local.JsonFileStorage.EntityReadResult.Valid)?.value
+                ?: error("原角色卡不存在或无法读取")
+            val previous = if (avatar) latest.avatar else latest.chatBackground
+            val cleanup = previous?.takeIf { it.startsWith("images/") && it != reference }?.let(prepareImageCleanup)
+            characters.update(if (avatar) latest.copy(avatar = reference) else latest.copy(chatBackground = reference))
+            cleanup
+        }
+        if (receipt != null) finishImageCleanup(receipt)
+        mutableState.update { it.copy(notice = if (avatar) "已设为角色卡头像" else "已设为角色卡背景") }
+        refresh()
+    }
+
+    private fun launchOwnedWork(sessionId: String, work: suspend ((String) -> Unit) -> Unit): Job? = synchronized(lock) {
         check(accepting)
         if (worker?.isCompleted == false) {
             mutableState.update { it.copy(notice = "已有朋友圈任务，请等待或停止") }; return@synchronized null
         }
         scope.launch(start = CoroutineStart.LAZY) {
             val imageReceipts = mutableListOf<String>()
-            mutableState.update { it.copy(busy = true, error = null, progress = "正在准备朋友圈") }
+            mutableState.update { it.copy(busy = true, error = null, progress = "正在准备朋友圈", streamedText = "") }
             try {
-                tasksRuntime.withMessageMutation(task.sessionId) {
-                    tasksRuntime.withCardDesign("moments:${task.sessionId}") {
-                        gate.withNormalOperation { execute(task, retry) { imageReceipts += it } }
+                tasksRuntime.withMessageMutation(sessionId) {
+                    tasksRuntime.withCardDesign("moments:$sessionId") {
+                        gate.withNormalOperation { work { imageReceipts += it } }
                     }
                 }
             } catch (cancelled: CancellationException) { throw cancelled }
@@ -170,29 +279,35 @@ internal class DesktopMomentsController(
         }.also { worker = it; it.start() }
     }
 
-    private suspend fun execute(source: MomentTask, retry: MomentPost?, registerImageCleanup: (String) -> Unit) {
+    private suspend fun execute(source: MomentTask, retry: MomentPost?, registerImageCleanup: (String) -> Unit,
+        debug: Boolean, recoverMissingPost: Boolean) {
         val prefs = settings.getAppSettings(); check(prefs.momentsEnabled)
         val card = characters.getById(source.characterCardId)
         if (card == null || !card.momentsEnabled) {
-            if (retry == null && store.tasks().any { it.id == source.id }) store.skipUnstarted(source, "角色卡已删除或未启用朋友圈")
+            if (source.status == MomentTaskStatus.PENDING && store.tasks().any { it.id == source.id })
+                store.skipUnstarted(source, "角色卡已删除或未启用朋友圈")
             else error("角色卡已删除或未启用朋友圈")
             return
         }
         val session = chats.getSession(source.sessionId)?.takeIf { it.characterCardId == card.id }
             ?: error("原会话已删除；本次计划保留，请核对后处理")
-        val attempt = store.begin(source, card, session, retry)
+        val attempt = store.begin(source, card, session, retry, recoverMissingPost)
         try {
-            val result = generator.generate(card, session, chats.getMessages(session.id),
-                store.posts().filter { it.characterCardId == card.id && !it.isPlaceholder }.maxByOrNull { it.generatedAt },
+            val messages = chats.getMessages(session.id)
+            val latest = store.posts().filter { it.characterCardId == card.id && !it.isPlaceholder }.maxByOrNull { it.generatedAt }
+            val result = if (debug) {
+                val generated = requireNotNull(debugGenerator).generate(card, session, messages, latest, prefs, attempt.task, registerImageCleanup)
+                mutableState.update { it.copy(debug = generated) }
+                generated.post?.let { MomentGenerationResult.Posted(it) } ?: error("调试生成未完成，请查看本次调试交换记录")
+            } else generator.generate(card, session, messages, latest,
                 prefs, attempt.task, retry?.generationCheckpoint.orEmpty(),
-                { store.checkpoint(attempt, it) }, { progress ->
-                    mutableState.update { it.copy(progress = progress.message) }
-                }, registerImageCleanup)
+                { store.checkpoint(attempt, it) }, ::reportProgress, registerImageCleanup)
             currentCoroutineContext().ensureActive()
             check(settings.getAppSettings().momentsEnabled && characters.getById(card.id)?.momentsEnabled == true)
             when (result) {
                 is MomentGenerationResult.Posted -> store.complete(attempt, result.post)
-                is MomentGenerationResult.Skipped -> store.skipped(attempt, result.reason)
+                is MomentGenerationResult.Skipped -> if (retry == null) store.skipped(attempt, result.reason)
+                    else store.failed(attempt, "本次未发布：${result.reason}")
             }
             mutableState.update { it.copy(notice = when (result) {
                 is MomentGenerationResult.Posted -> "朋友圈已保存"
@@ -207,6 +322,18 @@ internal class DesktopMomentsController(
         }
     }
     suspend fun like(id: String) { store.toggleLike(id); refresh() }
+    private fun reportProgress(progress: MomentGenerationProgress) {
+        val label = when (progress.phase) {
+            MomentGenerationProgressPhase.JUDGING -> "正在判断发布时机"
+            MomentGenerationProgressPhase.WRITING -> "正在生成动态文案"
+            MomentGenerationProgressPhase.DESIGNING_IMAGE -> "正在设计动态配图"
+            MomentGenerationProgressPhase.GENERATING_IMAGE -> "正在生成配图 ${(progress.progress * 100).toInt()}%"
+            MomentGenerationProgressPhase.SAVING -> "正在保存动态"
+            MomentGenerationProgressPhase.DONE -> "生成完成"
+        }
+        mutableState.update { it.copy(progress = label,
+            streamedText = progress.streamedText.ifBlank { progress.message }.takeLast(128_000)) }
+    }
     suspend fun edit(id: String, text: String) { store.edit(id, text); refresh() }
     suspend fun delete(id: String) { store.delete(id); refresh() }
     suspend fun reconcileSaved() {
@@ -223,6 +350,7 @@ internal class DesktopMomentsController(
     }
     suspend fun closeAndDrain() {
         synchronized(lock) { accepting = false }
-        pause(); scope.coroutineContext[Job]!!.cancelAndJoin()
+        admissionMutex.withLock { stopLocalScheduling(persistPause = false) }
+        scope.coroutineContext[Job]!!.cancelAndJoin()
     }
 }

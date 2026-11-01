@@ -76,6 +76,8 @@ internal class DesktopFullBackupCommitJournal(private val root: Path, private va
     private suspend fun apply(work: Path, rows: List<Row>) = withContext(NonCancellable) {
         verifyEvidence(work, rows)
         rows.forEach { check(hashOrNull(live(it.path)) == it.old) { "恢复前数据发生变化，原数据和存档保留" } }
+        // A same-path restore preserves the directory's fileKey but replaces its task/settings generation.
+        DesktopMomentAdmissionStore.invalidateForRestore(root)
         writeNew(work.resolve("started"), byteArrayOf(1))
         try {
             rows.forEachIndexed { index, row ->

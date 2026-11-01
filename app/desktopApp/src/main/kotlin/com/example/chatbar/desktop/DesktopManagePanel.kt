@@ -63,7 +63,7 @@ private enum class ManageSection { TRANSFER, CHARACTERS, FORMATS, WORLD_BOOKS, M
 private enum class ManageSettingsEditor { CHAT_DEFAULTS, PLAYER }
 private enum class ManageSettingsGroup(val label: String) {
     CONNECTION("模型与连接"), REPLY("回复与记忆"), APPEARANCE("外观与显示"), PLAYER("玩家设定"),
-    IMAGE("图片生成"), VOICE("语音与朗读"), OTHER("自动备份与其他")
+    IMAGE("图片生成"), VOICE("语音与朗读"), OTHER("朋友圈／备份与其他")
 }
 
 @Composable
@@ -149,6 +149,7 @@ internal fun DesktopManagePanel(
     initialPerson: Pair<String, String>? = null, onInitialPersonConsumed: () -> Unit = {},
     chatUiController: DesktopChatUiController? = null,
     networkProxyController: DesktopNetworkProxyController? = null,
+    momentsController: DesktopMomentsController? = null,
 ) {
     val t = LocalDesktopUiStrings.current
     val uiLanguage by uiLanguageController.language.collectAsState()
@@ -297,7 +298,10 @@ internal fun DesktopManagePanel(
                         }
                     }
                     DesktopRetainedPane(settingsGroup == ManageSettingsGroup.OTHER) {
-                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) { DesktopAutomaticBackupSettingsPanel(backupSettingsController) }
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            momentsController?.let { DesktopMomentsSettings(it) }
+                            DesktopAutomaticBackupSettingsPanel(backupSettingsController)
+                        }
                     }
                     listOf(ManageSettingsGroup.CONNECTION, ManageSettingsGroup.REPLY, ManageSettingsGroup.PLAYER).forEach { area ->
                         DesktopRetainedPane(settingsGroup == area) {

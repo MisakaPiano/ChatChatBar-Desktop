@@ -5,6 +5,8 @@ description: Maintain Desktop cbbackup selection/export, optional credential tra
 
 # Desktop Full-App Backup
 
+Before same-root legacy restore writes, `DesktopFullBackupCommitJournal` rotates the local Moments admission epoch under `backups/`. The external root-bound scheduling grant then requires explicit renewal; restored enabled settings/tasks do not resume AI merely because the directory identity stayed the same. This epoch is local custody, not an exported entity or credential.
+
 Player identity uses optional `PlayerSetting.desktopAvatar` and `ChatSession`/`SaveSlot.desktopPlayerAvatar`/`desktopPlayerRole`. Both avatar fields are registered media paths. `DesktopMergeIdentity` maps role card/person namespaces explicitly; never infer identity from names. The existing Desktop-extension disclosure also covers these fields. Global player selection carries its avatar; session avatar resources follow their owning selected session. SaveSlot v8 includes, validates and materializes the session avatar using its existing image policy.
 
 Desktop named-account transport is documented in `chatbar-desktop-api-accounts`. The three optional `desktop*Accounts` preference fields contain selected credentials and must be captured, overlaid by the modern writer, validated, and stripped by `DesktopImportSecrets` before staging. Do not omit them while adapting `BackupPreferences` to `InspectionPreferences`. Legacy restore rejects these fields; modern merge uses explicit account/default choices and fresh-root custody.
