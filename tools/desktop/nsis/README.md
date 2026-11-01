@@ -1,5 +1,7 @@
 # Desktop NSIS Preview packaging
 
+Setup requests `--diagnostic-exit` from its embedded manager and displays that invocation's fixed whitelist reason, attempted phase and the current environment's registration log directory. Legacy callers keep exit2. The failure UI separates program/data overlap, running operations, disk space and startup readiness; it never reads a retained log tail as the current failure. `installer_diagnostics.py` owns the NSIS mapping/template. Native synthetic lifecycle cases exercise both exit protocols; the generated ordinary NSIS must still compile and pass its separate candidate/native checks.
+
 `build_installer.py` audits an ordinary Compose/jpackage app-image and builds a current-user NSIS EXE. `Launcher.cs` is the stable entry point and install lifecycle helper. This is Desktop code; it does not embed Studio update services, identities, endpoints or trust roots. The design references Studio's frozen `a1202e24` implementation and `e74f7a2` handoff; its test results are not Desktop results.
 
 From `app/`, with JDK17 and a Unicode NSIS compiler:

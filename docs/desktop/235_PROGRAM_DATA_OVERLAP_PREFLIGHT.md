@@ -15,3 +15,7 @@
 迁移保留源，因此不要求input变空或手动删除；不把移动pending-repair或repair-retained当恢复步骤。单独DEFERRED不证明误删，现有Cleanup仍按pin／manifest／receipt／hash检查，未知或修改内容保留。上述为对报告建议的校正，不是用户已执行或实际恢复通过。
 
 新增合成验证覆盖受管根同级UserData、根相等／上层、拒绝前无目标创建、原资料保留并可准备外部目标、同名前缀区分、独立Program/UserData及矛盾owner拒绝。当前为后续工作树，未云端验证或打包；P15用量及P13修正已另源63404／CI71，不冒认其覆盖本页新改动。
+
+74f受管根预检已随3db／CI72实际通过Boundary3及完整Windows2363PASS+19SKIP／0FAIL，bound根既有8项继续通过；仍非邀请用户现场恢复或真人验收。后续d379合并入口保留预览／准确提示，以及本次手动安装器诊断不在72内。
+
+手动安装器后续改为明确的本次调用退出码协议：setup显式请求--diagnostic-exit，manager对白名单拒绝返回独立状态，旧调用仍为2；NSIS直接从ExecWait结果显示中文原因／固定代码／尝试步骤，给出当前环境日志目录，不扫描旧日志最后一行。目录重叠、安装／文件占用、空间不足、readiness分别说明，不把未知异常当确定原因。新原生合成测试检查overlap白名单／legacy2、占用31、readiness27及旧FAILED日志不影响下一次成功；生成NSIS的实际编译与普通候选UI另待，不因Python模板或native tiny测试通过就冒认打包／人验。

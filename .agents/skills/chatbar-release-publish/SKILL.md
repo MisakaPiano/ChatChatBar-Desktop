@@ -9,6 +9,8 @@ For Android APK releases, treat “更新” as authorization to publish every c
 
 ## Desktop entrypoints
 
+Setup's `--diagnostic-exit` is an opt-in manager protocol: legacy callers still receive exit2, while setup maps current-invocation fixed exit codes through `installer_diagnostics.py`. No retained log tail supplies the failure reason. Generated NSIS reports the fixed code, attempted phase and current environment's registration log directory, with distinct overlap, busy, space and readiness guidance. `desktop-candidate.yml` hashes this helper and Launcher alongside the packaging tools; native lifecycle tests exercise opt-in and legacy statuses separately. Ordinary NSIS compilation/native UI remain separate candidate checks.
+
 2026-10-28: Desktop packaging is the Desktop-owned NSIS chain; read docs/desktop/207_CONTINUOUS_START_AND_DELIVERY_LEDGER.md, 204 and 205 for live scope/results. MSI details below are dormant references, not Preview dependencies. NSIS uses ordinary per-version programs with a stable delegate, selected/default data/credential-root exclusion, external LocalAppData install-state logs and independent native validation; Studio results are not Desktop PASS. The user's final H program directory is reserved for the matured ordinary candidate, never probes/faults/fixtures/cache/logs. Final public release follows actual user acceptance; an error-dialog acknowledgement is not final acceptance.
 
 

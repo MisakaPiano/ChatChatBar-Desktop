@@ -163,7 +163,7 @@ jobs:
           $archive = Join-Path $env:CCB_BUILD_OUTPUT ("ChatChatBar-Desktop-$env:CCB_CANDIDATE_VERSION-independent-windows-x64.zip")
           python -B "$env:GITHUB_WORKSPACE/tools/desktop/nsis/build_independent_zip.py" --image $image --destination $archive --version $env:CCB_CANDIDATE_VERSION --commit $env:CCB_CANDIDATE_SOURCE --installer-version $env:CCB_CANDIDATE_INSTALLER
           if ($LASTEXITCODE -ne 0) { throw 'INDEPENDENT_PACKAGE_FAILED' }
-          $toolFiles = @('tools/desktop/nsis/build_installer.py', 'tools/desktop/nsis/build_independent_zip.py', 'tools/desktop/windows/audit_app_image.py')
+          $toolFiles = @('tools/desktop/nsis/build_installer.py', 'tools/desktop/nsis/installer_diagnostics.py', 'tools/desktop/nsis/Launcher.cs', 'tools/desktop/nsis/build_independent_zip.py', 'tools/desktop/windows/audit_app_image.py')
           $toolHashes = @($toolFiles | ForEach-Object { [ordered]@{path=$_; sha256=(Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $env:GITHUB_WORKSPACE $_)).Hash.ToLowerInvariant()} })
           [ordered]@{kind='FROZEN_APPLICATION_AND_SEPARATE_BUILD_TOOLS'; applicationSource=$env:CCB_CANDIDATE_SOURCE; controlSource=(git -C $env:GITHUB_WORKSPACE rev-parse HEAD); tools=$toolHashes} | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $env:CCB_BUILD_OUTPUT 'package-control.json') -Encoding utf8
           @("CCB_CANDIDATE_IMAGE=$image", "CCB_CANDIDATE_ARCHIVE=$archive", "CCB_CANDIDATE_NSIS=$nsis") | Add-Content $env:GITHUB_ENV -Encoding utf8

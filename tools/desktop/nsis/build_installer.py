@@ -10,6 +10,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'windows'))
 from audit_app_image import audit, regular
+from installer_diagnostics import decorate_manager_calls, diagnostic_function
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -69,7 +70,9 @@ def build(image, output, version, commit, installer_version, profile, compiler):
     manifest_path.write_text(json.dumps(manifest, indent=2), encoding='utf-8')
     # Explicit file list: no wildcard can pull private or newly appeared files into the installer.
     longest = max(len(e['path'].encode('utf-16-le')) // 2 for e in report['files']) + len(version_id) + 11
-    script = ['Unicode true', '!include "x64.nsh"', '!include "nsDialogs.nsh"', 'Var Repair', 'Var RepairCheck', 'Var TargetId', 'RequestExecutionLevel user', 'SetCompressor /SOLID lzma',
+    script = ['Unicode true', '!include "x64.nsh"', '!include "nsDialogs.nsh"', 'Var Repair', 'Var RepairCheck', 'Var TargetId',
+              'Var DiagnosticExit', 'Var DiagnosticPhase', 'Var DiagnosticCode', 'Var DiagnosticText', 'Var DiagnosticLog',
+              'RequestExecutionLevel user', 'SetCompressor /SOLID lzma',
               f'VIProductVersion "{installer_version}.0"', f'VIAddVersionKey "ProductName" "{label}"',
               f'VIAddVersionKey "FileDescription" "{label} Installer"',
               f'VIAddVersionKey "ProductVersion" "{version}"', f'VIAddVersionKey "FileVersion" "{installer_version}.0"',
@@ -78,11 +81,16 @@ def build(image, output, version, commit, installer_version, profile, compiler):
               f'InstallDirRegKey HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{key}" "InstallLocation"',
               'Page directory', 'Page custom RepairPage RepairPageLeave', 'Page instfiles',
               'UninstPage uninstConfirm', 'UninstPage instfiles']
+    script += diagnostic_function(folder) + diagnostic_function(folder, uninstall=True)
     for function in ('.onInit', 'un.onInit'):
+        diagnostic = ('un.' if function.startswith('un.') else '') + 'ShowInstallerFailure'
         script += [f'Function {function}', 'SetRegView 64', 'StrCpy $Repair 0', f'StrCpy $TargetId "{version_id}"',
+                   'StrCpy $DiagnosticExit 0', 'StrCpy $DiagnosticPhase "安装文件或设置"',
                    '${IfNot} ${IsNativeAMD64}', 'SetErrorLevel 2', 'Quit', '${EndIf}',
                    f'System::Call \'kernel32::CreateMutexW(p 0, i 0, w "Local\\{folder}-Extraction") p.r9 ?e\'',
-                   'Pop $0', 'IntCmp $0 183 0 +3 +3', 'SetErrorLevel 2', 'Quit', 'FunctionEnd']
+                   'Pop $0', 'IntCmp $0 183 init_busy init_mutex_ok init_mutex_ok', 'init_busy:',
+                   'StrCpy $DiagnosticExit 22', 'StrCpy $DiagnosticPhase "启动安装"', f'Call {diagnostic}',
+                   'init_mutex_ok:', 'FunctionEnd']
     script += ['Function RepairPage', 'IfFileExists "$INSTDIR\\install-owner.txt" +2 0', 'Abort',
                'nsDialogs::Create 1018', 'Pop $0', '${If} $0 == error', 'Abort', '${EndIf}',
                '${NSD_CreateLabel} 0 0 100% 28u "升级会保留资料。若程序损坏，可以从这份安装包修复程序。"', 'Pop $0',
@@ -150,18 +158,17 @@ def build(image, output, version, commit, installer_version, profile, compiler):
                'ExecWait \'"$PLUGINSDIR\\manager.exe" --cleanup "$INSTDIR" --quiet\' $0',
                'FileOpen $0 "$INSTDIR\\cleanup-status.txt" r', 'FileRead $0 $1', 'FileClose $0',
                'StrCmp $1 "DEFERRED" 0 +2', 'DetailPrint "新版已确认；部分旧程序因占用、改动或未知文件保留。管理记录位于当前用户 LocalAppData 的 ChatChatBarDesktopNSISInstallState。"',
-               'SetErrorLevel 0', 'Goto done', 'failed:', 'SetErrorLevel 2',
-               'IfSilent +2', 'MessageBox MB_OK|MB_ICONSTOP "安装未完成。请检查程序与资料目录是否分离、剩余空间和程序占用；若有启动错误窗口，请先确认关闭。旧入口和用户资料保留。"',
-               'Quit', 'done:', 'SectionEnd', 'Section "Uninstall"',
+               'SetErrorLevel 0', 'Goto done', 'failed:', 'Call ShowInstallerFailure',
+               'done:', 'SectionEnd', 'Section "Uninstall"',
                'InitPluginsDir', 'SetOutPath "$PLUGINSDIR"', 'File /oname=manager.exe ' + quote(manager),
                'ExecWait \'"$PLUGINSDIR\\manager.exe" --uninstall "$INSTDIR" --quiet\' $0',
                'IntCmp $0 0 +2', 'Goto un_failed',
                f'ReadRegStr $0 HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{key}" "InstallLocation"',
                'StrCmp $0 "$INSTDIR" 0 un_failed',
                f'DeleteRegKey HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{key}"',
-               'SetErrorLevel 0', 'Goto un_done', 'un_failed:', 'SetErrorLevel 2',
-               'IfSilent +2', 'MessageBox MB_OK|MB_ICONEXCLAMATION "部分程序仍在使用或已改动，已保留。请关闭后重试。用户资料不会删除。"',
+               'SetErrorLevel 0', 'Goto un_done', 'un_failed:', 'Call un.ShowInstallerFailure',
                'un_done:', 'SectionEnd']
+    script = decorate_manager_calls(script)
     source = output / 'installer.nsi'
     source.write_text('\n'.join(script) + '\n', encoding='utf-8-sig')
     subprocess.run([str(compiler.absolute()), str(source)], check=True)

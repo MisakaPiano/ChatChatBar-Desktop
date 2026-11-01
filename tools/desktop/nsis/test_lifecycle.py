@@ -6,6 +6,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+from installer_diagnostics import DIAGNOSTICS, decorate_manager_calls, diagnostic_function
 
 BASE = Path(__file__).parent
 CSC = Path(os.environ.get('WINDIR', 'C:/Windows')) / 'Microsoft.NET/Framework64/v4.0.30319/csc.exe'
@@ -22,6 +23,28 @@ class Fake {
   Thread.Sleep(2000);
  }
 }'''
+
+
+class DiagnosticProtocol(unittest.TestCase):
+    def test_setup_binds_each_return_code_to_its_own_dispatch_without_reading_retained_logs(self):
+        lines = [r'''ExecWait '"$PLUGINSDIR\manager.exe" --prepare "$INSTDIR" 805306368 --quiet' $0''',
+                 'IntCmp $0 0 +2', 'Goto failed',
+                 r'''ExecWait '"$PLUGINSDIR\manager.exe" --activate "$INSTDIR" "$TargetId" --quiet' $0''']
+        generated = decorate_manager_calls(lines)
+        calls = [i for i, line in enumerate(generated) if line.startswith('ExecWait ')]
+        self.assertEqual(2, len(calls))
+        for index in calls:
+            self.assertIn('--diagnostic-exit', generated[index])
+            self.assertEqual('StrCpy $DiagnosticExit $0', generated[index + 1])
+            self.assertEqual('StrCpy $0 -1', generated[index - 2])
+        self.assertIn('IntCmp $0 0 +2', generated)
+        self.assertIn('StrCpy $DiagnosticPhase "--activate"', generated)
+        dialog = '\n'.join(diagnostic_function('ChatChatBarDesktopNSIS'))
+        self.assertNotIn('FileRead', dialog)
+        self.assertIn('ReadEnvStr $DiagnosticLog "LOCALAPPDATA"', dialog)
+        for code, (identity, _) in DIAGNOSTICS.items():
+            self.assertIn(f'StrCmp $DiagnosticExit {code} diagnostic_{code}', dialog)
+            self.assertIn(f'StrCpy $DiagnosticCode "{identity}"', dialog)
 
 
 def digest(path):
@@ -75,6 +98,20 @@ class Lifecycle(unittest.TestCase):
         log = self.local / 'ChatChatBarDesktopNSISLifecycleTestInstallState' / (key + '.log')
         self.assertEqual(expected, result.returncode, mode + '\n' + (log.read_text(encoding='utf-8') if log.exists() else 'no lifecycle log'))
 
+    def test_diagnostic_overlap_is_current_invocation_and_legacy_status_is_unchanged(self):
+        data = self.root / 'input' / 'synthetic-data'
+        data.mkdir(parents=True)
+        witness = data / 'retain.txt'; witness.write_text('synthetic data stays')
+        bootstrap = self.local / 'ChatChatBarDesktop.bootstrap.json'
+        bootstrap.write_text(json.dumps(dict(customRoot=str(data))))
+        self.run_manager('--prepare', '805306368', '--diagnostic-exit', expected=20)
+        self.run_manager('--prepare', '805306368', expected=2)
+        external = self.local / 'separate-data'; external.mkdir()
+        bootstrap.write_text(json.dumps(dict(customRoot=str(external))))
+        # A retained FAILED overlap line must not label the next, successful invocation as failed.
+        self.run_manager('--prepare', '805306368', '--diagnostic-exit')
+        self.assertEqual('synthetic data stays', witness.read_text())
+
     def version(self, number, fail=False):
         version = '0.1.0-preview.' + str(number)
         commit = ('a' if number == 1 else 'b') * 40
@@ -110,6 +147,7 @@ class Lifecycle(unittest.TestCase):
         self.run_manager('--activate', first)
         second, _ = self.version(2, fail=True)
         self.run_manager('--activate', second, expected=2)
+        self.run_manager('--activate', second, '--diagnostic-exit', expected=27)
         self.assertEqual(first, (self.root / 'current.txt').read_text())
         self.assertTrue((old / 'ChatChatBarDesktop.exe').is_file())
 
@@ -216,6 +254,7 @@ class Lifecycle(unittest.TestCase):
         try:
             self.run_manager('--uninstall', expected=2)
             self.run_manager('--prepare', expected=2)
+            self.run_manager('--prepare', '805306368', '--diagnostic-exit', expected=31)
             self.run_manager('--prepare-repair', expected=2)
             self.assertTrue((directory / 'identity.txt').is_file())
         finally:

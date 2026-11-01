@@ -397,6 +397,24 @@ internal static class Launcher {
             }
         }
     }
+    // Opt-in setup protocol: legacy callers retain exit 2; each code describes THIS invocation.
+    static int DiagnosticFailureExit(string code) {
+        switch (code) {
+            case "PROGRAM_DATA_ROOT_OVERLAP": return 20;
+            case "DATA_INSTALL_STATE_OVERLAP": return 21;
+            case "INSTALLATION_BUSY": return 22;
+            case "INSTALL_BUSY": return 23;
+            case "PARENT_BUSY": return 24;
+            case "FILE_BUSY": return 25;
+            case "INSTALL_SPACE_REQUIRED": return 26;
+            case "NEW_VERSION_NOT_READY_OLD_ENTRY_RETAINED": return 27;
+            case "READY_IDENTITY_REFUSED": return 28;
+            case "READY_PROCESS_REFUSED": return 29;
+            case "READY_PROCESS_EXITED": return 30;
+            case "PROGRAM_FILES_IN_USE": return 31;
+            default: return 2;
+        }
+    }
     [STAThread] static int Main(string[] args) {
         try {
             var mode = args.Length == 0 ? "--launch" : args[0];
@@ -527,9 +545,10 @@ internal static class Launcher {
 #endif
         } catch (Exception e) {
             var code = e is IOException ? e.Message : "INSTALL_OR_LAUNCH_FAILED";
+            if (e is IOException && ((e.HResult & 0xffff) == 32 || (e.HResult & 0xffff) == 33)) code = "PROGRAM_FILES_IN_USE";
             if (Root != null && code != "DATA_INSTALL_STATE_OVERLAP") { try { Event("FAILED " + code); } catch {} }
             if (!args.Contains("--quiet")) MessageBox.Show(code + "\r\n请正常关闭 ChatChatBar 后重试。旧入口及用户资料已保留。", Label, MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            return 2;
+            return args.Contains("--diagnostic-exit") ? DiagnosticFailureExit(code) : 2;
         }
     }
 }
