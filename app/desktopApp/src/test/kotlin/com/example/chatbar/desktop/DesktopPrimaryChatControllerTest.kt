@@ -44,7 +44,11 @@ class DesktopPrimaryChatControllerTest {
             val controller = container.primaryChatController
             controller.refresh(); controller.createSession(card.id)
             val session = controller.state.value.selectedSession!!.id
-            val messages = (0 until 180).map { ChatMessage.create(session, MessageRole.ASSISTANT, "Synthetic $it") }
+            val time = System.currentTimeMillis() + 1
+            val messages = (0 until (com.example.chatbar.data.repository.ChatRepository.MAX_WINDOW_TURNS + 8) * 2).map {
+                ChatMessage.create(session, if (it % 2 == 0) MessageRole.USER else MessageRole.ASSISTANT, "Synthetic $it")
+                    .copy(createdAt = time + it, updatedAt = time + it)
+            }
             messages.forEach { container.chatRepository.addMessage(it) }
             controller.selectSession(session); controller.editComposer("Retain unsent draft")
             val target = messages[8].id
