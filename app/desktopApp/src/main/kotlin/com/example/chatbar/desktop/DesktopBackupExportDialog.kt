@@ -41,7 +41,7 @@ internal fun DesktopBackupExportDialog(state: DesktopFullBackupState, onRefresh:
         }
     }
     fun choose(value: AppBackupSelection) { selected = value }
-    DesktopModalSurface { Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.dim).padding(16.dp), contentAlignment = Alignment.Center) {
+    DesktopModalSurface(kind = DesktopModalKind.BACKUP) { Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.dim).padding(16.dp), contentAlignment = Alignment.Center) {
         Column(Modifier.widthIn(max = 900.dp).fillMaxWidth().fillMaxHeight(.94f)
             .background(DesktopBootstrapColors.card, RoundedCornerShape(12.dp)).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -49,6 +49,8 @@ internal fun DesktopBackupExportDialog(state: DesktopFullBackupState, onRefresh:
                     BackupExportPage.OVERVIEW -> "选择导出内容"; BackupExportPage.SETTINGS -> "全局设置项"
                     BackupExportPage.CHARACTERS -> "角色卡与会话"; BackupExportPage.PROTECTION -> "导出保护与保存"
                 }) }
+                LocalDesktopTaskCenter.current?.let { center -> DesktopIconAction("查看任务中心", DesktopAppIcons.History,
+                    onClick = center::requestOpen) }
                 BootstrapButton("刷新清单", secondary = true, enabled = !state.busy, onClick = onRefresh)
                 BootstrapButton("关闭", secondary = true, enabled = !state.busy, onClick = onClose)
             }

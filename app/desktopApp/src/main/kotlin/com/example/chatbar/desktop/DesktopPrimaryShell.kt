@@ -66,6 +66,8 @@ internal fun DesktopPrimaryShell(
     val mergeLocked = mergeState?.let { it.busy || it.restartRequired } == true
     val backupLocked = fullBackup.busy || fullBackup.restartRequired || mergeLocked
     val locked = rootState !is DesktopDataRootSwitchState.Idle || backupLocked
+    val centerLocked = rootState !is DesktopDataRootSwitchState.Idle || fullBackup.restartRequired || mergeState?.restartRequired == true
+    val dataBusy = fullBackup.busy || mergeState?.busy == true
     val requestedRoute = if (backupLocked) DesktopPrimaryRoute.DATA else navigation.currentRoute(rootState, selectedRoute)
     val route = if (requestedRoute == DesktopPrimaryRoute.MOMENTS && moments?.enabled != true) DesktopPrimaryRoute.CHAT else requestedRoute
     val updateNotices = LocalDesktopUpdateNotices.current
@@ -98,9 +100,10 @@ internal fun DesktopPrimaryShell(
     val centerRequest = taskCenter?.openRequests?.collectAsState()?.value ?: 0L
     var centerOpen by remember { mutableStateOf(false) }
     var consumedCenterRequest by remember { mutableStateOf(0L) }
-    LaunchedEffect(centerRequest, locked, modalActivity?.count) {
+    LaunchedEffect(centerRequest, centerLocked, dataBusy, modalActivity?.count) {
         if (centerRequest > consumedCenterRequest && centerOpen) consumedCenterRequest = centerRequest
-        else if (centerRequest > consumedCenterRequest && !locked && (modalActivity?.count ?: 0) == 0) {
+        else if (centerRequest > consumedCenterRequest && !centerLocked &&
+            (modalActivity?.otherCount ?: 0) == 0 && ((modalActivity?.backupCount ?: 0) == 0 || dataBusy)) {
             centerOpen = true; consumedCenterRequest = centerRequest
         }
     }
@@ -212,10 +215,10 @@ internal fun DesktopPrimaryShell(
                 }
             }
         }
-        if (centerOpen && !locked && taskCenter != null) DesktopTaskCenterPanel(taskCenter,
+        if (centerOpen && !centerLocked && (modalActivity?.otherCount ?: 0) == 0 && taskCenter != null) DesktopTaskCenterPanel(taskCenter,
             onClose = { centerOpen = false }, onHideToTray = onHideToTray, tray = taskTray, onView = { target ->
-                if (route == DesktopPrimaryRoute.MANAGE && target.route != DesktopPrimaryRoute.MANAGE &&
-                    (managementController.state.value.busy || transferController.state.value.busy || modelTemplateController.state.value.busy)) {
+                if (backupLocked || (route == DesktopPrimaryRoute.MANAGE && target.route != DesktopPrimaryRoute.MANAGE &&
+                    (managementController.state.value.busy || transferController.state.value.busy || modelTemplateController.state.value.busy))) {
                     taskCenter.navigationBusy()
                 } else {
                 centerOpen = false

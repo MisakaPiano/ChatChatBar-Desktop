@@ -8,6 +8,35 @@ import kotlinx.coroutines.flow.first
 import kotlin.test.*
 
 class DesktopFullBackupServiceTest {
+    @Test fun `late cancellation cannot label a durably scheduled restore as undone or remove its pending journal`() = runBlocking {
+        Fixture().use { f ->
+            f.service.release(f.seed())
+            val original = Files.readAllBytes(f.settings)
+            val entered = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>()
+            val service = DesktopFullBackupService(f.root, f.gate, DesktopAudioMaintenance({ f.focus }) {},
+                resumeScheduler = { entered.complete(Unit); release.await() })
+            val picker = object : DesktopFilePicker {
+                override fun pickOpenFile(type: DesktopFileType) = f.base.resolve("saved.cbbackup")
+                override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? = null
+            }
+            val controller = DesktopFullBackupController(service, picker)
+            try {
+                controller.inspect("test-password".toCharArray())
+                withTimeout(20000) { controller.state.first { !it.busy && it.summary != null } }
+                controller.restore()
+                withTimeout(20000) { entered.await() }
+                assertTrue(service.restartRequired); assertTrue(DesktopFullBackupCommitJournal(f.root).hasPending())
+                val id = controller.workRows.value.first().id
+                assertTrue(controller.stopTask(id)); assertTrue(controller.workRows.value.first().active)
+                release.complete(Unit)
+                withTimeout(20000) { controller.workRows.first { rows -> rows.first().id == id && !rows.first().active } }
+                assertEquals(DesktopWorkPhase.UNCONFIRMED, controller.workRows.value.first().phase)
+                assertTrue(controller.state.value.restartRequired)
+                assertTrue(DesktopFullBackupCommitJournal(f.root).hasPending())
+                assertContentEquals(original, Files.readAllBytes(f.settings))
+            } finally { release.complete(Unit); controller.closeAndDrain() }
+        }
+    }
     @Test fun `task center stops the exact backup job only after its picker boundary drains and stale IDs cannot stop the next job`() = runBlocking {
         Fixture().use { f ->
             val firstEntered = CompletableDeferred<Unit>(); val secondEntered = CompletableDeferred<Unit>()

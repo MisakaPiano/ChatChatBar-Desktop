@@ -167,6 +167,7 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                                 LocalDesktopFishParentWindow provides window,
                                 LocalDesktopUpdater provides updater,
                                 LocalDesktopUpdateNotices provides updateNotices,
+                                LocalDesktopTaskCenter provides appContainer.taskCenter,
                                 LocalDesktopModalActivity provides modalActivity,
                                 LocalDesktopApiAccounts provides appContainer.apiAccountController,
                             ) {

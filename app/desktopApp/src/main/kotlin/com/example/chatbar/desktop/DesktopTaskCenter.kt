@@ -2,6 +2,9 @@ package com.example.chatbar.desktop
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import androidx.compose.runtime.staticCompositionLocalOf
+
+internal val LocalDesktopTaskCenter = staticCompositionLocalOf<DesktopTaskCenter?> { null }
 
 internal enum class DesktopWorkKind(val label: String) {
     CHAT("对话生成"), IMAGE("图片生成"), FORMAT_REPAIR("消息格式修复"), DOCUMENT("文档索引"),
@@ -123,7 +126,7 @@ internal class DesktopTaskCenter(dispatcher: CoroutineDispatcher = Dispatchers.D
         return true
     }
     fun clearError() { mutable.update { it.copy(error = null) } }
-    fun navigationBusy() { mutable.update { it.copy(error = "当前管理操作尚未结束，请稍后从任务中心前往。") } }
+    fun navigationBusy() { mutable.update { it.copy(error = "当前操作尚未结束，请稍后从任务中心前往。") } }
     fun targetUnavailable() {
         mutable.update { it.copy(error = "任务对应的内容已变化或暂时不可用，请在原页面核对。") }
         requestOpen()

@@ -29,7 +29,7 @@ internal fun DesktopTaskCenterPanel(center: DesktopTaskCenter, onClose: () -> Un
     val trayState = tray?.state?.collectAsState()?.value
     var recent by remember { mutableStateOf(false) }
     val palette = LocalDesktopPalette.current
-    DesktopModalSurface {
+    DesktopModalSurface(kind = DesktopModalKind.TASK_CENTER) {
         Box(Modifier.fillMaxSize().background(palette.dim).padding(16.dp), contentAlignment = Alignment.Center) {
             Column(Modifier.widthIn(max = 680.dp).fillMaxWidth().heightIn(max = 680.dp)
                 .background(palette.card, RoundedCornerShape(12.dp)).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {

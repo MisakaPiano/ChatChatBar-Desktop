@@ -14,7 +14,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.flow
 
 /** Test-source-only manual fixture. No real transports or credentials; shared Designer/runner/repositories. */
-internal class FinalProductDesignFixture {
+internal class FinalProductDesignFixture(filePicker: DesktopFilePicker = UnconfiguredDesktopFilePicker) {
     @Volatile var failure: DesktopDesignFailure? = null
     val requests = java.util.concurrent.CopyOnWriteArrayList<List<ChatApiMessage>>()
     val transport = object : NovelAiTextTransport {
@@ -34,7 +34,7 @@ internal class FinalProductDesignFixture {
     val root = Files.createTempDirectory("ccb-final-product-local-")
     val container = DesktopAppContainer(DesktopDataRootResolution.Resolved(root.resolve("data"),
         DesktopDataRootProvenance.CLI_OVERRIDE, root.resolve("bootstrap.json")),
-        secretStoreFactory = { InMemoryDesktopSecretStore() }, novelAiDesigner = designer)
+        secretStoreFactory = { InMemoryDesktopSecretStore() }, novelAiDesigner = designer, filePicker = filePicker)
     suspend fun initialize(initializeComposer: Boolean = true) {
         container.modelRepository.saveModel(ModelConfig("local-design", "Local fake design — no network", "https://fixture.invalid", "fake-only-key", "fixture", createdAt = 1))
         container.novelAiStudioController.load()

@@ -9,6 +9,7 @@ import androidx.compose.ui.semantics.*
 import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.local.entity.ChatSession
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.first
 import java.nio.file.Files
 import java.nio.file.Path
 import javax.swing.SwingUtilities
@@ -41,7 +42,7 @@ class DesktopB1CIntegrationTest {
         Files.createDirectories(file.parent); image.encodeToData()!!.use { Files.write(file, it.bytes) }; Unit
     }
     @Composable private fun Shell(f: FinalProductDesignFixture, chrome: DesktopWindowChrome,
-        navigation: DesktopPrimaryNavigationController, updateNotices: DesktopUpdateNotices? = null) {
+        navigation: DesktopPrimaryNavigationController, updateNotices: DesktopUpdateNotices? = null, enableTasks: Boolean = false) {
         val c = f.container
         val transfer = remember { c.createTypedTransferController() }
         val management = remember { c.createManagementController(transfer) }
@@ -50,15 +51,57 @@ class DesktopB1CIntegrationTest {
             DesktopDirectoryPicker { null }, { false }, { error("Migration not requested") }) }
         val scope = rememberCoroutineScope()
         CompositionLocalProvider(LocalDesktopApiAccounts provides c.apiAccountController,
-            LocalDesktopUpdateNotices provides updateNotices) {
+            LocalDesktopUpdateNotices provides updateNotices,
+            LocalDesktopTaskCenter provides if (enableTasks) c.taskCenter else null) {
         DesktopPrimaryShell(chrome, navigation, root, transfer,
             remember { c.createModelTemplateTransferController() }, management,
             remember { c.createPromptInspectorController() }, c.primaryChatController, c.modelSettingsController,
             remember { DesktopAutomaticBackupSettingsController(c.automaticBackupRuntime, scope) },
             c.characterEditorController, c.formatCardEditorController, c.worldBookEditorController,
             c.uiLanguageController, c.appearanceController, c.connectionTestController,
-            c.novelAiSettingsController, c.novelAiStudioController, c.fullBackupController, {})
+            c.novelAiSettingsController, c.novelAiStudioController, c.fullBackupController, {},
+            taskCenter = if (enableTasks) c.taskCenter else null)
         }
+    }
+    @Test fun `actual Shell opens tasks over its busy backup surface but keeps data navigation and original stop boundary guarded`() = runBlocking(awt) {
+        val entered = CompletableDeferred<Unit>(); val release = java.util.concurrent.CountDownLatch(1)
+        val picker = object : DesktopFilePicker {
+            override fun pickOpenFile(type: DesktopFileType): Path? = null
+            override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? {
+                entered.complete(Unit); check(release.await(20, java.util.concurrent.TimeUnit.SECONDS)); return null
+            }
+        }
+        val f = FinalProductDesignFixture(picker); f.initialize(false)
+        val c = f.container; val chrome = DesktopWindowChrome {}; val navigation = DesktopPrimaryNavigationController()
+        val activity = DesktopModalActivity()
+        val scene = ImageComposeScene(1100, 800) {
+            CompositionLocalProvider(LocalDesktopModalActivity provides activity, LocalDesktopTaskCenter provides c.taskCenter) {
+                Box {
+                    Shell(f, chrome, navigation, enableTasks = true)
+                    val backup by c.fullBackupController.state.collectAsState()
+                    DesktopBackupExportDialog(backup, {}, {}, { _, _ -> error("No export submission from this fixture surface") }, c.fullBackupController::stop)
+                }
+            }
+        }
+        try {
+            scene.frames(); c.fullBackupController.export(null)
+            withTimeout(5000) { entered.await() }; scene.frames()
+            assertEquals(1, activity.backupCount)
+            scene.click("查看任务中心"); scene.frames()
+            assertTrue(scene.has("任务中心 · 进行中 1"))
+            val before = navigation.selectedRoute.value
+            scene.click("前往页面")
+            assertEquals(before, navigation.selectedRoute.value)
+            assertTrue(scene.has("当前操作尚未结束，请稍后从任务中心前往。"))
+            assertTrue(scene.has("任务中心 · 进行中 1"))
+            scene.click("停止")
+            withTimeout(5000) { c.taskCenter.state.first { it.rows.any { row -> row.stopRequested } } }
+            assertTrue(c.fullBackupController.state.value.busy)
+            release.countDown()
+            withTimeout(5000) { c.fullBackupController.workRows.first { it.single().phase == DesktopWorkPhase.CANCELLED } }
+            scene.frames(); scene.click("关闭任务中心")
+            assertTrue(scene.has("选择导出内容")); assertEquals(1, activity.backupCount)
+        } finally { release.countDown(); scene.close(); f.close() }
     }
     private suspend fun seeded(): FinalProductDesignFixture {
         val f = FinalProductDesignFixture(); f.initialize(false)

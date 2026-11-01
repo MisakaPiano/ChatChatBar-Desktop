@@ -24,4 +24,6 @@ withCardDesign也被角色／世界书／图片／朋友圈使用，默认只标
 
 后续工作树另补FullBackup原operation Job的UUID投影，只观察导出／检查／下次恢复准备；原action准入、密码清零、inspection释放、异常提示和事务保持。terminal在原Job completion后发布；picker取消有明确元数据，不按完成导出；清理未知／已有restart准备时受中断为待核对，不声称撤回耐久恢复。按行停止核精确UUID，旧行不能取消新工作。catalog／离开清理不发任务提醒。DATA定位选择原导出／检查面，不打开picker或自动导出。新增真实controller阻塞picker时停止仍等待原边界、密码清零及旧ID不影响下一工作回归未执行；不在私有1232冻结883／CI95源内。
 
+补齐实际入口可达性：ModalActivity仅区分BACKUP／TASK_CENTER和其余GENERAL，默认语义保持。长数据工作进行时可从导出弹窗小任务按钮打开观察／原停止；期间前往仍明确busy并保持任务窗，不解除导航或事务门禁。空闲导出选择／其余一般弹窗仍延后任务请求，根迁移和restart-required继续阻止。新增真实Shell＋实际BackupExportDialog／真实controller阻塞picker的Scene核入口、原停止等待与导航守卫；不是仅孤立Panel。另在真实journal已经scheduled、resumeScheduler仍NonCancellable收尾时停止，核待核对metadata、pending保留和原件字节不变。两项仍待下一精确源云端，不由95／1232覆盖。
+
 新增未执行回归：真实两文档工作仅停止选中项且等原NonCancellable收尾；观察者关闭不取消格式卡候选child且不保存卡；真实Memory面板在B时只停行A，B工作与两边正文／草稿保持；真实终态通知与停止请求的区别。后续精确源云端验证，不在本机运行JVM。
