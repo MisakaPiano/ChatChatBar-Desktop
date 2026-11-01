@@ -24,6 +24,7 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
     captions: (@Composable () -> Unit)? = null,
     diagnostics: (@Composable () -> Unit)? = null,
     chromeRecorder: DesktopChromeLayoutRecorder? = null,
+    onDataSettings: (() -> Unit)? = null,
     onModelSettings: (String?) -> Unit = {}) {
     val draft by controller.draft.collectAsState()
     val state by controller.state.collectAsState()
@@ -54,8 +55,9 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
     val tasks by controller.taskEntries.collectAsState()
     val busy = tasks.any { it.kind == DesktopTaskKind.NOVELAI && it.status == DesktopTaskStatus.RUNNING }
     val scope = rememberCoroutineScope()
-    if (openedAccountService == null && !accountProblemDismissed && (accountRead == DesktopStudioAccountRead.Unavailable ||
-            state.accountUi.error == STUDIO_ACCOUNT_READ_FAILURE)) {
+    val accountProblemShowing = openedAccountService == null && !accountProblemDismissed &&
+        (accountRead == DesktopStudioAccountRead.Unavailable || state.accountUi.error == STUDIO_ACCOUNT_READ_FAILURE)
+    if (accountProblemShowing) {
         DesktopStudioCredentialProblem(accounts != null,
             onRetry = { accountReadRetry++ },
             onSettings = { accountProblemDismissed = true; accounts?.opened?.compareAndSet(null, DesktopAccountService.NOVELAI) },
@@ -98,7 +100,22 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
         return
     }
     val cards by produceState(emptyList<com.example.chatbar.data.local.entity.CharacterCard>(), controller) { value = controller.availableCards() }
-    val models by produceState(emptyList<com.example.chatbar.data.local.entity.ModelConfig>(), controller) { value = controller.availableModels() }
+    var modelReadRetry by remember(controller) { mutableIntStateOf(0) }
+    var modelProblemDismissed by remember(controller, accountRevision, modelReadRetry) { mutableStateOf(false) }
+    val modelCatalog by produceState<DesktopStudioModelCatalog>(DesktopStudioModelCatalog.Loading,
+        controller, accountRevision, modelReadRetry) {
+        value = DesktopStudioModelCatalog.Loading
+        value = controller.availableModels()
+    }
+    val models = (modelCatalog as? DesktopStudioModelCatalog.Available)?.models.orEmpty()
+    val modelReadFailure = (modelCatalog as? DesktopStudioModelCatalog.Unavailable)?.failure
+    if (modelReadFailure != null && !modelProblemDismissed && !accountProblemShowing && openedAccountService == null) {
+        DesktopStudioModelProblem(modelReadFailure,
+            onRetry = { modelReadRetry++ },
+            onModelSettings = { modelProblemDismissed = true; onModelSettings(null) },
+            onDataSettings = onDataSettings?.let { { modelProblemDismissed = true; it() } },
+            onDismiss = { modelProblemDismissed = true })
+    }
     val usage by produceState<NovelAiPromptTokenUsage?>(null, d.toPromptPlan(), d.selectedModel) {
         value = controller.infrastructure.countTokens(d.toPromptPlan(), d.selectedModel)
     }
@@ -227,6 +244,10 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
             { if (shownPath != null) { currentImage = shownPath; auxiliary = "当前图片" } }) },
         editor = {
             StudioAccountCluster(d.selectedModel, state.accountUi)
+            if (modelReadFailure != null) {
+                StatusText(modelReadFailure.text)
+                StudioAction("查看模型读取问题", style = StudioActionStyle.TERTIARY) { modelProblemDismissed = false }
+            }
             key(accountReadRetry) { DesktopApiAccountEntry(com.example.chatbar.desktop.security.DesktopAccountService.NOVELAI) }
             StudioActions {
                 StudioAction("刷新", enabled = !state.accountUi.loading, icon = DesktopAppIcons.Refresh, style = StudioActionStyle.TERTIARY) { accountReadRetry++ }

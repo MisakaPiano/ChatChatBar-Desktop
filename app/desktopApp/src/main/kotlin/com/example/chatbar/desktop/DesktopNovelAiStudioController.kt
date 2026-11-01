@@ -257,7 +257,7 @@ internal class DesktopNovelAiStudioController(
     }
 
     suspend fun availableCards() = characters.getAll()
-    suspend fun availableModels() = resolver.availableChatModels().map { it.copy(apiKey = "") }
+    suspend fun availableModels() = readDesktopStudioModels { resolver.availableChatModels() }
     suspend fun vibeCacheMisses(draft: NovelAiStudioDraft) = withContext(Dispatchers.IO) { guidance.vibeCacheMisses(draft) }
 
     suspend fun designRequirement() = repository.loadDraft().extraRequirement

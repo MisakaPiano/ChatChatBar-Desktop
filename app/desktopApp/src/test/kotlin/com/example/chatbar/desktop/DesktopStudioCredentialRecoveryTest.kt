@@ -5,8 +5,11 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextLayoutResult
 import com.example.chatbar.desktop.security.*
 import com.example.chatbar.domain.image.NovelAiAccountUsage
+import com.example.chatbar.data.local.entity.ModelConfig
+import com.example.chatbar.data.repository.WindowsSafeModelStorageKeyPolicy
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicInteger
@@ -28,6 +31,89 @@ class DesktopStudioCredentialRecoveryTest {
         val failure = assertFailsWith<DesktopStudioCredentialReadException> { studioCredentialRead { error(PRIVATE_ERROR) } }
         assertNull(failure.cause)
         assertFalse(failure.toString().contains(PRIVATE_ERROR))
+    }
+
+    @Test fun `model catalog failure projection preserves cancellation and contains no private error`() = runBlocking {
+        assertFailsWith<CancellationException> { readDesktopStudioModels { throw CancellationException("synthetic-stop") } }
+        val unknown = readDesktopStudioModels { error(PRIVATE_ERROR) }
+        assertEquals(DesktopStudioModelCatalog.Unavailable(DesktopStudioModelReadFailure.UNAVAILABLE), unknown)
+        val protected = readDesktopStudioModels {
+            throw DesktopSecretStoreException(DesktopSecretStoreFailureKind.PROTECTION_FAILURE, PRIVATE_ERROR)
+        }
+        assertEquals(DesktopStudioModelCatalog.Unavailable(DesktopStudioModelReadFailure.PROTECTED_STORAGE), protected)
+        assertFalse(unknown.toString().contains(PRIVATE_ERROR))
+        assertFalse(protected.toString().contains(PRIVATE_ERROR))
+    }
+
+    @Test fun `original plaintext model refusal stays in Studio recovery without changing its source`() = runBlocking(edt) {
+        withFixture { f ->
+            val model = ModelConfig("sf12-refused-model", "Synthetic refused model", "https://fixture.invalid/v1",
+                "SYNTHETIC_UNSAFE_JSON_KEY", "synthetic", createdAt = 1)
+            val key = WindowsSafeModelStorageKeyPolicy.storageKey(model.id)
+            f.container.jsonFileStorage.saveEntity("model_configs", key, model, ModelConfig.serializer())
+            val before = f.raw.snapshot()
+            assertFailsWith<UnsafeDesktopPlaintextCredentialException> { f.container.modelRepository.initialize() }
+            assertEquals(DesktopStudioModelCatalog.Unavailable(DesktopStudioModelReadFailure.UNSAFE_CREDENTIALS), f.controller.availableModels())
+            assertEquals(model, f.container.jsonFileStorage.loadEntity("model_configs", key, ModelConfig.serializer()))
+            assertEquals(before, f.raw.snapshot())
+            assertEquals(DesktopDataOperationCoordinatorState.OPEN, f.container.dataOperationCoordinator.state)
+            val originalFile = f.container.appDataRoot.resolve("entities/model_configs/$key.json")
+            val originalBytes = Files.readAllBytes(originalFile)
+            for (width in listOf(360, 1100)) {
+                val release = CompletableDeferred<Unit>()
+                val started = CompletableDeferred<Unit>()
+                val task = f.container.taskRuntime.launchNovelAi("synthetic-model-recovery-work") { started.complete(Unit); release.await() }
+                withTimeout(5_000) { started.await() }
+                val activity = DesktopModalActivity()
+                var modelSettingsRequests = 0
+                var dataRequests = 0
+                val scene = f.scene(width, activity, { modelSettingsRequests++ }, { dataRequests++ })
+                try {
+                    scene.until { has("关闭模型提示") }
+                    assertEquals(1, activity.count)
+                    assertFalse(scene.has("NovelAI 账户读取失败"))
+                    assertTrue(scene.texts().none { "SYNTHETIC_UNSAFE_JSON_KEY" in it || "sf12-refused-model" in it })
+                    scene.shot("studio-model-problem-$width.png")
+                    for (label in listOf("重试模型读取", "模型设置", "备份与恢复")) {
+                        val text = scene.nodes().first { it.config.getOrNull(SemanticsProperties.Text)?.any { t -> t.text == label } == true &&
+                            it.config.contains(SemanticsActions.GetTextLayoutResult) }
+                        val layouts = mutableListOf<TextLayoutResult>()
+                        assertTrue(text.config[SemanticsActions.GetTextLayoutResult].action!!.invoke(layouts))
+                        assertTrue(layouts.isNotEmpty() && layouts.all { it.lineCount == 1 }, "$label must remain a single text line at width $width")
+                        assertTrue(text.boundsInRoot.left >= 16f && text.boundsInRoot.right <= width - 16f)
+                    }
+                    scene.click("关闭模型提示")
+                    scene.until { !has("关闭模型提示") && activity.count == 0 }
+                    assertEquals(DesktopTaskStatus.RUNNING, f.container.taskRuntime.tasks.value.single { it.taskId == task }.status)
+                    assertEquals(DesktopDataOperationCoordinatorState.OPEN, f.container.dataOperationCoordinator.state)
+                    assertTrue(scene.nodes().any { it.config.contains(SemanticsActions.SetText) })
+                    scene.click("查看模型读取问题")
+                    scene.click("重试模型读取")
+                    scene.until { has("关闭模型提示") }
+                    scene.click("模型设置")
+                    assertEquals(1, modelSettingsRequests)
+                    scene.until { !has("关闭模型提示") }
+                    scene.click("查看模型读取问题")
+                    scene.click("备份与恢复")
+                    assertEquals(1, dataRequests)
+                    assertContentEquals(originalBytes, Files.readAllBytes(originalFile))
+                    assertEquals(before, f.raw.snapshot())
+                    assertFailsWith<UnsafeDesktopPlaintextCredentialException> { f.container.modelRepository.initialize() }
+                } finally { release.complete(Unit); scene.close() }
+            }
+            val recoveryScene = f.scene(1100, DesktopModalActivity())
+            try {
+                recoveryScene.until { has("关闭模型提示") }
+                // Explicit synthetic external repair for retry only; the product UI never rewrites this file.
+                f.container.jsonFileStorage.saveEntity("model_configs", key, model.copy(apiKey = ""), ModelConfig.serializer())
+                recoveryScene.click("重试模型读取")
+                recoveryScene.until { !has("关闭模型提示") && !has("查看模型读取问题") }
+                recoveryScene.shot("studio-model-recovered-1100.png")
+            } finally { recoveryScene.close() }
+            val recovered = assertIs<DesktopStudioModelCatalog.Available>(f.controller.availableModels())
+            assertTrue(recovered.models.any { it.id == model.id && it.apiKey.isBlank() })
+            assertEquals(before, f.raw.snapshot())
+        }
     }
 
     @Test fun `credential dialog close settings and retry retain workspace work and all protected slots`() = runBlocking(edt) {
@@ -147,9 +233,10 @@ class DesktopStudioCredentialRecoveryTest {
             { !container.desktopSecretStore.load(DesktopCredentialKey.NovelAiToken).isNullOrBlank() },
             credentialIdentity = { container.apiAccounts.identity(DesktopAccountService.NOVELAI) },
             freezeCredential = { container.apiAccounts.captureCall(DesktopCredentialKey.NovelAiToken, DesktopAccountService.NOVELAI) })
-        fun scene(width: Int, activity: DesktopModalActivity) = ImageComposeScene(width, 900, coroutineContext = edtDispatcher) {
+        fun scene(width: Int, activity: DesktopModalActivity, onModelSettings: () -> Unit = {},
+            onDataSettings: () -> Unit = {}) = ImageComposeScene(width, 900, coroutineContext = edtDispatcher) {
             CompositionLocalProvider(LocalDesktopApiAccounts provides container.apiAccountController, LocalDesktopModalActivity provides activity) {
-                DesktopNovelAiStudioPanel(controller)
+                DesktopNovelAiStudioPanel(controller, onDataSettings = onDataSettings, onModelSettings = { onModelSettings() })
                 DesktopApiAccountDialog()
             }
         }

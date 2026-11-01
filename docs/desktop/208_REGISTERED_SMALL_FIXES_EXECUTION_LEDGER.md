@@ -112,9 +112,9 @@ SF18资料已按用户授权直接向Studio A取得并核对：公开119组装d9
 | SF09 | 音频Seek与连续播放开关 | 拖动跳转真实位置，暂停/续播/队列/切会话/资源句柄安全；补独立连续播放开关，默认开启并持久记忆；原生Windows有实际证据 | CANDIDATE_1219 / 完整CI通过；物理音频及本版实际验收待 |
 | SF10 | 整条语音强制重生成 | 原始明确请求依据未找到；不能把文字回复重新生成扩大到全部已有录音。用户2026-10-30明确本轮先不做，保留生成／补齐和单段重新生成；重启此设计需先确认范围 | DEFERRED_BY_USER_THIS_BATCH |
 | SF11 | 官方样本文本完整展开 | 展开官方样本附带的sample.text；缺少文字明确说明。本项不包括ASR、逐字稿准确性或同步字幕 | CANDIDATE_1219 / UI及完整CI通过；本版实际验收待 |
-| SF12 | Studio凭据异常恢复 | composition／刷新identity逃逸已复现并修正；固定恢复提示／重试／账户入口，不借旧Key，不覆盖现有账户草稿。r03五类29项通过；离屏不代表原生进程／根锁验收，详见219 | SOURCE_VERIFIED_NATIVE_AND_DELIVERY_PENDING |
+| SF12 | Studio凭据异常恢复 | 账户identity子项见219；原R2模型JSON拒绝另已RED复现并补显式模型失败／关闭重试／模型与数据导航。220记录r02五类30通过、r03测试定位失败保留和r04 Recovery5通过／窄宽视觉；原安全拒绝、JSON／Key／草稿／任务保留；原生进程／OS根锁及交付未验 | SOURCE_VERIFIED_NATIVE_AND_DELIVERY_PENDING |
 | SF13 | WIN-BRAND-001 | 应用自己拥有的诊断/错误窗口使用既有官方Logo；真实Windows核对关闭/锁/重试；不修改Windows或安全软件自己的提示 | CANDIDATE_1219 / Swing接线、原生图标及线程钩子检查通过；视觉验收待 |
-| SF14 | WIN-AUTO-001 | 独立、可定位的本机窗口捕获验证，记录确切窗口/坐标/像素与失败；不把旧Robot未知结果改成通过，不重复无效诊断链 | QUEUED |
+| SF14 | WIN-AUTO-001 | 220记录独立假资料原生窗口唯一身份；两次Computer Use实际捕获超时后停止，正常关闭测试窗；没有坐标／像素结果，不回填旧Robot原因，候选交付时附明确人工截图入口与落点 | OPEN_CAPTURE_TIMEOUT_MANUAL_PIXEL_CHECK_PENDING |
 | SF15 | Studio中央分隔条范围 | 参考Studio Suite当前创作页，分隔与拖拽限于内容区域，不贯穿窗口顶栏；保留窄屏、预览模式和原生标题命中 | RELEASED_1214 / ENGINEERING_VERIFIED；新增整版真实验收待用户实测；原生前提跳过项仍未测 |
 | SF16 | 音色控件准入与输入区工具栏 | 无可用声线继续隐藏；用户改为输入工具栏声音图标，点击横向展开选择，覆盖旧音色球方案；播放与生成控制独立 | RELEASED_1214 / ENGINEERING_VERIFIED；新增整版真实验收待用户实测 |
 | SF17 | 图片浏览窗口统一工具栏与主题窗框 | 覆盖可打开图片的查看器入口，紧凑浏览器式工具栏、顶栏同应用配色；最小化/最大化/还原真实可用，保留缩放/翻页/保存及关闭资源释放 | RELEASED_1214 / ENGINEERING_VERIFIED；新增整版真实验收待用户实测；原生前提跳过项仍未测 |

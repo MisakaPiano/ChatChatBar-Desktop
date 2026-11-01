@@ -154,6 +154,7 @@ internal fun DesktopPrimaryShell(
                         val studioState by novelAiStudioController.state.collectAsState()
                         DesktopStudioContentFrame(studioState.status) {
                             DesktopNovelAiStudioPanel(novelAiStudioController,
+                                onDataSettings = { navigate(DesktopPrimaryRoute.DATA) },
                                 diagnostics = { DesktopPromptInspectorPanel(promptInspectorController) }) { id ->
                                 requestedDesignModel = id; openDesignModels = true; navigate(DesktopPrimaryRoute.MANAGE)
                             }
