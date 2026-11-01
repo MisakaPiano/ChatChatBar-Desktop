@@ -100,6 +100,14 @@ class OpenAiStreamingTransport(
         isolatedAuxiliaryTextStream(client, allowCleartextHttp(), messages, modelConfig, diagnostics,
             isolatedTaskParameters = false, disableThinking = false, emitReasoning = true, protectEnvelope = false)
 
+    /** Character fill/rewrite uses the same generation/repair budgets as the Android gateway. */
+    fun streamCharacterCardCandidate(stage: com.example.chatbar.domain.card.CharacterCardAiStage,
+        messages: List<ChatApiMessage>, modelConfig: ModelConfig,
+        diagnostics: ProviderTransportDiagnostics = ProviderTransportDiagnostics.NONE): Flow<StreamEvent> =
+        isolatedAuxiliaryTextStream(client, allowCleartextHttp(), messages, modelConfig, diagnostics,
+            isolatedTaskParameters = false, disableThinking = false, emitReasoning = true, protectEnvelope = false,
+            thinkingBudget = if (stage == com.example.chatbar.domain.card.CharacterCardAiStage.GENERATE) 512 else 256)
+
     /** Memory/RAG callers own their retry policy; exactly one transport request per collection. */
     fun streamMemoryRag(messages: List<ChatApiMessage>, modelConfig: ModelConfig,
         disableThinking: Boolean, responseFormatJson: Boolean,

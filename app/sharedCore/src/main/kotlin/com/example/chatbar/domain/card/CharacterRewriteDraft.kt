@@ -27,4 +27,3 @@ data class CharacterRewriteCharacterDraft(
     val speakingStyle: String? = null,
     val imagePrompt: String? = null
 )
-

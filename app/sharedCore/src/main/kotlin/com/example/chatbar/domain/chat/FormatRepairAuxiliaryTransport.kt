@@ -77,17 +77,18 @@ internal fun isolatedAuxiliaryTextStream(
     maximumTextChars: Int = Int.MAX_VALUE,
     emitReasoning: Boolean = false,
     protectEnvelope: Boolean = true,
+    thinkingBudget: Int? = null,
 ): Flow<StreamEvent> = callbackFlow {
     require(maximumTextChars > 0)
     val messages = AuxiliaryMessageAssembler.assemble(inputMessages, preservesInputRoles = false)
-    // Existing isolated tasks own their envelope. FORMAT_CARD explicitly preserves official custom-field semantics.
+    // Existing isolated tasks own their envelope. Card creation/editing opts into official custom-field semantics.
     val requestModel = if (!protectEnvelope) model else model.copy(customParams = model.customParams.filterKeys {
         it !in setOf("messages", "model", "stream", "stream_options", "prompt_cache_key")
     })
     val body = OpenAiChatRequestSerializer.serialize(messages, requestModel, stream = true,
         allowCleartextHttp = allowCleartextHttp, disableThinking = disableThinking,
         responseFormatJson = responseFormatJson, isolatedTaskParameters = isolatedTaskParameters,
-        includeStreamUsage = model.supportsOpenAiPromptCacheInstrumentation())
+        includeStreamUsage = model.supportsOpenAiPromptCacheInstrumentation(), thinkingBudget = thinkingBudget)
     val url = "${model.baseUrl.trimEnd('/')}/chat/completions"
     diagnostics.onRequest(ProviderRequestEvidence(url, body))
     val jsonBody = body.toRequestBody("application/json; charset=utf-8".toMediaType())

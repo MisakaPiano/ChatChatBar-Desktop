@@ -101,6 +101,21 @@ internal class DesktopCharacterEditorController(
     private val dataGate: com.example.chatbar.data.operation.AppDataOperationGate = com.example.chatbar.data.operation.NoOpAppDataOperationGate,
     val documentIndex: DesktopRagController? = null,
 ) {
+    internal var cardAi: DesktopCharacterCardAiController? = null
+    internal val canUseCardAi: Boolean get() = _state.value.let { s ->
+        s.card != null && !s.busy && s.draftSessionId != null &&
+            !desktopCharacterEditorPresentation(s).readOnly && s.problem !in setOf(
+                CharacterEditorProblem.SOURCE_CHANGED, CharacterEditorProblem.SOURCE_DELETED)
+    }
+
+    internal fun applyCardAi(session: String, basis: CharacterCard, result: CharacterCard): Boolean {
+        val current = _state.value
+        if (!canUseCardAi || current.draftSessionId != session || current.card != basis ||
+            result.id != basis.id || result.createdAt != basis.createdAt) return false
+        edit { result }
+        return _state.value.card == result
+    }
+
     private val _state = MutableStateFlow(DesktopCharacterEditorState())
     val state = _state.asStateFlow()
     private val draftMutex = Mutex()
@@ -829,6 +844,7 @@ internal class DesktopCharacterEditorController(
     }
 
     suspend fun closeAndDrain() {
+        cardAi?.closeAndDrain()
         flushDraft()
         when {
             _state.value.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING -> retryCommittedCleanup()

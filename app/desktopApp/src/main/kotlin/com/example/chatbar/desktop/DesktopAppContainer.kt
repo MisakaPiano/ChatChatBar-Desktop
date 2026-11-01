@@ -313,7 +313,12 @@ class DesktopAppContainer internal constructor(
                     previous.customDocuments.mapTo(this) { it.filePath }
                 })
             },
-        )
+        ).also { editor ->
+            editor.cardAi = DesktopCharacterCardAiController(editor, settingsRepository, effectiveModelResolver,
+                taskRuntime, dataOperationCoordinator, stream = { _, stage, messages, model, diagnostics ->
+                    formatCardAiTransportOwner.value.streamCharacterCardCandidate(stage, messages, model, diagnostics)
+                })
+        }
     }
     internal val characterEditorController by characterEditorOwner
     internal val transferJson = Json {

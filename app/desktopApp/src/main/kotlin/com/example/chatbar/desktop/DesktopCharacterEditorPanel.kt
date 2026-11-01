@@ -176,6 +176,15 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
             StatusText(card.name)
         } else Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            controller.cardAi?.let { ai -> EditorActions {
+                if (card.editMode == CharacterEditMode.STRUCTURED)
+                    BootstrapButton("AI 补全空白", enabled = controller.canUseCardAi) {
+                        ai.open(com.example.chatbar.domain.card.CharacterCardAiOperation.FILL)
+                    }
+                BootstrapButton("AI 定向改写", enabled = controller.canUseCardAi) {
+                    ai.open(com.example.chatbar.domain.card.CharacterCardAiOperation.REWRITE)
+                }
+            } }
             EditorField(t(DesktopUiText.CHARACTER_NAME), card.name) { value -> controller.edit { it.copy(name = value) } }
             EditorField(t(DesktopUiText.BOT_NAME), card.botName) { value -> controller.edit { it.copy(botName = value) } }
             EditorField(t(DesktopUiText.GREETING), card.greeting, multiline = true) { value -> controller.edit { it.copy(greeting = value) } }
@@ -319,6 +328,7 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
         controller.convertStructuredToFreeform()
         convertConfirm = false
     }
+    controller.cardAi?.let { DesktopCharacterCardAiOverlay(it) }
 }
 
 @Composable

@@ -108,7 +108,7 @@ private fun DesignRequestField(value: String, modifier: Modifier = Modifier, ena
 }
 
 @Composable
-private fun DesignTextDisclosure(label: String, text: String, initiallyExpanded: Boolean = false) {
+internal fun DesignTextDisclosure(label: String, text: String, initiallyExpanded: Boolean = false) {
     if (text.isEmpty()) return
     var expanded by remember(label) { mutableStateOf(initiallyExpanded) }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
