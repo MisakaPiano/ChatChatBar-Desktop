@@ -168,7 +168,7 @@ jobs:
           [ordered]@{kind='FROZEN_APPLICATION_AND_SEPARATE_BUILD_TOOLS'; applicationSource=$env:CCB_CANDIDATE_SOURCE; controlSource=(git -C $env:GITHUB_WORKSPACE rev-parse HEAD); tools=$toolHashes} | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $env:CCB_BUILD_OUTPUT 'package-control.json') -Encoding utf8
           @("CCB_CANDIDATE_IMAGE=$image", "CCB_CANDIDATE_ARCHIVE=$archive", "CCB_CANDIDATE_NSIS=$nsis") | Add-Content $env:GITHUB_ENV -Encoding utf8
 
-      - name: Same frozen bytes: ASCII cold control with strict startup diagnostics
+      - name: Same frozen bytes - ASCII cold control with strict startup diagnostics
         run: |
           $ErrorActionPreference = 'Stop'
           $approved = Join-Path $env:CCB_CI_SOURCE 'app\desktopApp\build\preview-continuous-private-20261025'
