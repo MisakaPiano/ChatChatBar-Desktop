@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.first
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.*
 import okio.Buffer
@@ -21,6 +22,31 @@ import com.example.chatbar.domain.chat.ChatApiMessage
 import kotlin.test.*
 
 class DesktopFishGenerationTest {
+    @Test fun `task center observes real batches and cancels only the selected waiting voice batch`() = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            val second = ChatSession.create("card", "synthetic").copy(audiobookModeEnabled = true)
+            f.chats.createSession(second)
+            val message = ChatMessage.create(second.id, MessageRole.ASSISTANT, f.message.content)
+            f.chats.addMessage(message)
+            val persistedSecond = assertNotNull(f.chats.getMessage(message.id, second.id))
+            val center = DesktopTaskCenter(); center.watchFish(f.coordinator)
+            try {
+                repeat(2) { f.server.enqueue(MockResponse().setResponseCode(429).setHeader("Retry-After", "60")) }
+                val firstId = f.coordinator.generateWhole(f.session.id, f.message.id)
+                val secondId = f.coordinator.generateWhole(second.id, message.id)
+                withTimeout(8000) { f.coordinator.batches.first { it.count { batch -> batch.retryNotice != null } == 2 } }
+                val rows = withTimeout(5000) { center.state.first { it.rows.size == 2 && it.rows.all { row -> row.phase == DesktopWorkPhase.WAITING } } }.rows
+                val selected = rows.single { it.target?.sessionId == f.session.id }
+                assertEquals("voice/$firstId", selected.id); assertEquals(f.message.id, selected.target!!.subjectId)
+                assertTrue(center.requestStop(selected.id))
+                withTimeout(5000) { f.coordinator.batches.first { it.any { batch -> batch.id == firstId && batch.phase == VoiceGenerationPhase.CANCELLED } } }
+                assertNotEquals(VoiceGenerationPhase.CANCELLED, f.coordinator.batches.value.single { it.id == secondId }.phase)
+                assertEquals(2, f.server.requestCount); assertTrue(f.voices.listForSession(f.session.id).isEmpty())
+                assertEquals(persistedSecond, f.chats.getMessage(message.id, second.id))
+            } finally { center.closeAndDrain() }
+        }
+    }
     private class Fixture : AutoCloseable {
         val root = Files.createTempDirectory("s4-generation-")
         val storage = JsonFileStorage(root)

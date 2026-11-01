@@ -212,6 +212,10 @@ internal fun DesktopPrimaryShell(
         }
         if (centerOpen && !locked && taskCenter != null) DesktopTaskCenterPanel(taskCenter,
             onClose = { centerOpen = false }, onHideToTray = onHideToTray, tray = taskTray, onView = { target ->
+                if (route == DesktopPrimaryRoute.MANAGE && target.route != DesktopPrimaryRoute.MANAGE &&
+                    (managementController.state.value.busy || transferController.state.value.busy || modelTemplateController.state.value.busy)) {
+                    taskCenter.navigationBusy()
+                } else {
                 centerOpen = false
                 navigateAfter(target.route) {
                     if (target.route == DesktopPrimaryRoute.MANAGE) taskManageTarget = target
@@ -223,6 +227,7 @@ internal fun DesktopPrimaryShell(
                             else if (target.subjectId != null && !primaryChatController.revealMessage(target.sessionId, target.subjectId))
                                 taskCenter.targetUnavailable()
                         } }
+                }
                 }
             })
         externalImportController?.let { external -> DesktopExternalImportHost(external, chat.sessions,

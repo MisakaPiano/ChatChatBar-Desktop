@@ -9,6 +9,8 @@ description: Maintain ChatBar Fish Audio voice generation across API credentials
 
 Keep voice generation independent from chat text, prompt context, and long-term memory. Read the smallest matching path first.
 
+- Desktop task center observes the same `DesktopFishGenerationCoordinator.batches` only when ChatVoiceRuntime is constructed. Rows carry actual batch/session/message IDs, phase and counts, never tag/model-stream text or errors. Stop dispatches to the original batch `cancel(id)` and confirmation stays in its voice UI. Removed batches do not imply success or a completed-notification/drain proof.
+
 Use `chatbar-model-request-runtime` for shared auxiliary-model resolution or SSE transport, `chatbar-background-work-runtime` for foreground leases, `chatbar-character-card-ai` for auto-fill/rewrite merge behavior, `chatbar-shadcn-compose` for UI changes, and `chatbar-emulator-test` for device playback verification.
 
 ## First Read

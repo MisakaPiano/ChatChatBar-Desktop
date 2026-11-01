@@ -60,3 +60,22 @@ internal fun DesktopTaskCenter.watchMemory(controller: DesktopMemoryController) 
         else { controller.coordinator.stopAndJoin(session); true }
     })
 }
+
+/** Batch disappearance is not a synthesized success event; the voice owner retains its own outcomes. */
+internal fun DesktopTaskCenter.watchFish(coordinator: DesktopFishGenerationCoordinator) {
+    fun VoiceGenerationPhase.active() = this != VoiceGenerationPhase.FAILED && this != VoiceGenerationPhase.CANCELLED
+    watch("voice", coordinator.batches.map { batches -> batches.map { batch ->
+        DesktopWorkRow(batch.id, DesktopWorkKind.VOICE, when (batch.phase) {
+            VoiceGenerationPhase.FAILED -> DesktopWorkPhase.FAILED
+            VoiceGenerationPhase.CANCELLED -> DesktopWorkPhase.CANCELLED
+            VoiceGenerationPhase.QUEUED, VoiceGenerationPhase.AWAITING_TEXT_CONFIRMATION -> DesktopWorkPhase.WAITING
+            else -> if (batch.retryNotice != null) DesktopWorkPhase.WAITING else DesktopWorkPhase.RUNNING
+        }, batch.createdAt, target = batch.sessionId.takeIf { it.isNotBlank() }?.let { DesktopWorkTarget(DesktopPrimaryRoute.CHAT,
+            sessionId = it, subjectId = batch.messageId.takeIf { id -> id.isNotBlank() }) },
+            completed = batch.completedCount.takeIf { batch.totalCount > 0 }, total = batch.totalCount.takeIf { it > 0 },
+            canStop = batch.phase.active())
+    } }, stop = { id ->
+        if (coordinator.batches.value.none { it.id == id && it.phase.active() }) false
+        else { coordinator.cancel(id); true }
+    })
+}
