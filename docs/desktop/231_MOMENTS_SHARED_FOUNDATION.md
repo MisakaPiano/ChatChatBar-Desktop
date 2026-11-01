@@ -7,3 +7,7 @@
 新增三个内联共享回归覆盖多卡日限／重复准备、停用与不活跃卡历史保留、保存失败后的已提交前缀及重试；待未来新源云端，不能由CI63覆盖。本提交不接Desktop时间线、生成、调度、启动、凭据或真实资料根，不算P13完成。默认关闭及原Prompt没有修改。
 
 后续Desktop接线要由用户明确开启／恢复本地运行。保留升级或导入的历史和PENDING任务，不因首次加载或旧全局enabled就自动执行。应用关闭不生成，不新增系统开机／后台任务；原判定、最近3条完整消息、长记忆、失败占位与checkpoint、重试、发文与图片元数据继续复用。
+
+后续原文／类型提取（本地待云端）：五个 `MOMENT_*` literal、五个公开builder及其原私有summary helper移入唯一 `MomentPromptAuthority`，完整源块保持不变，Android保留原符号／目录并新增fingerprint源；两个NovelAI输入facade原体保留，不转移NAI Prompt ownership。`MomentGenerationModels` 提取原decision／draft／result／checkpoint／debug／progress类型，原生成服务的调用流程仍留Android。
+
+固定141与所选官方147差异已另核：Entities／Policy相同，五个Moment literal也相同；147 Repo支持改作者、Generation移除judge／shouldPost准入并使用卡片默认生图设置，Scheduler有维护访问包装。本轮机械提取当前141源，没有自动改调用流程或批量提升baseline；后续采用对应增量时按精确源与受影响回归记录，不能把“原文相同”当作整个147功能兼容。

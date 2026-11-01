@@ -60,6 +60,9 @@ Also read `chatbar-novelai-prompt` before changing NovelAI prompt construction, 
 
 ## Prompt Rules
 
+- Original `MOMENT_*` literals and builders have one shared `MomentPromptAuthority`; Android `PromptTemplates` retains facades/header symbols and fingerprints this source. NovelAI image-input facades continue to delegate to `NovelAiPromptAuthority`. Generation/checkpoint/progress DTOs are shared `MomentGenerationModels`; the generation service remains Android-owned until gateway/storage/lifetime adaptation.
+- Rules below describe the current validated141 call flow. Fixed official147 retains the same five `MOMENT_*` literals but removes the timing-judge/shouldPost gates, adds sender editing and applies card image settings. These are tracked source deltas, not an automatic global baseline upgrade or proof that current141 runtime already behaves as147.
+
 - completeMomentText receives MOMENT_JUDGE/JUDGE or MOMENT_GENERATION explicitly; debug calls use the same contexts. Judge and generation requests share the enclosing AiTaskRun. Typed stream errors stop parsing; failed generation remains a visible failure/placeholder through existing orchestration.
 
 - Moment judge/copy resolves `session.modelId > global default chat`; image research/design resolves `session.imageModelId > global default image`. Scheduler, debug, retry and on-demand image entry points use this order and retain selected model parameters/thinking. Only the NovelAI rendering model has a character-card default. Existing resolver behavior for stale IDs remains in effect.
