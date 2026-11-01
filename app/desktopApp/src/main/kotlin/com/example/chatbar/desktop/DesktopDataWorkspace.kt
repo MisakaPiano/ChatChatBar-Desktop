@@ -9,7 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-private enum class DataPage(val label: String) { BACKUP("备份与导入"), LOCATION("数据目录"), AUTO("自动备份"), UPDATE("版本与更新") }
+private enum class DataPage(val label: String) { BACKUP("备份与导入"), LOCATION("数据目录"), AUTO("自动备份"), UPDATE("版本与更新"), RECOVERY("恢复与支持") }
 private enum class BackupPage { OVERVIEW, EXPORT, IMPORT, CHECK }
 
 @Composable
@@ -23,11 +23,27 @@ internal fun DesktopDataWorkspace(root: DesktopDataRootSwitchController, full: D
     val rootState by root.state.collectAsState()
     val backup by full.state.collectAsState()
     val imported = merge?.state?.collectAsState()?.value
+    val t = LocalDesktopUiStrings.current
+    val recovery = desktopRecoveryStatuses(rootState, backup, imported)
     var selected by remember { mutableStateOf(DataPage.BACKUP) }
     var operation by remember { mutableStateOf(if (imported?.ready == true) BackupPage.IMPORT else BackupPage.OVERVIEW) }
     var exportRequest by remember { mutableStateOf(0) }
     val busy = backup.busy || backup.restartRequired || imported?.busy == true || imported?.restartRequired == true
     val moving = rootState !is DesktopDataRootSwitchState.Idle
+    fun openRecoveryDestination(destination: DesktopRecoveryDestination) {
+        val current = full.state.value
+        val incoming = merge?.state?.value
+        if (root.state.value !is DesktopDataRootSwitchState.Idle || current.busy || current.restartRequired ||
+            incoming?.busy == true || incoming?.restartRequired == true) return
+        when (destination) {
+            DesktopRecoveryDestination.LOCATION -> selected = DataPage.LOCATION
+            DesktopRecoveryDestination.AUTO -> selected = DataPage.AUTO
+            DesktopRecoveryDestination.UPDATE -> selected = DataPage.UPDATE
+            DesktopRecoveryDestination.EXPORT -> { selected = DataPage.BACKUP; operation = BackupPage.EXPORT }
+            DesktopRecoveryDestination.CHECK -> { selected = DataPage.BACKUP; operation = BackupPage.CHECK }
+            DesktopRecoveryDestination.IMPORT -> if (merge != null) { selected = DataPage.BACKUP; operation = BackupPage.IMPORT }
+        }
+    }
     LaunchedEffect(taskDetail) {
         when (taskDetail) {
             DesktopWorkDetail.BACKUP_EXPORT -> { selected = DataPage.BACKUP; operation = BackupPage.EXPORT }
@@ -52,12 +68,17 @@ internal fun DesktopDataWorkspace(root: DesktopDataRootSwitchController, full: D
         if (page == DataPage.UPDATE) updateNotices?.dismissStartupNotice()
     }
     DesktopWorkspacePage("数据", DataPage.entries.map {
-        DesktopWorkspaceDestination(it.name, it.label, it == DataPage.UPDATE && updateNotice?.pendingVersion != null)
+        DesktopWorkspaceDestination(it.name, if (it == DataPage.RECOVERY) t(DesktopUiText.RECOVERY_SUPPORT) else it.label,
+            it == DataPage.UPDATE && updateNotice?.pendingVersion != null)
     }, page.name,
         enabled = !busy && !moving, onSelect = { selected = DataPage.valueOf(it) }) {
         Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.background)) {
             DesktopRetainedPane(page == DataPage.BACKUP) {
                 Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    if (busy || backup.error != null || imported?.error != null) {
+                        val area = if (operation == BackupPage.IMPORT) DesktopRecoveryArea.MERGE else DesktopRecoveryArea.BACKUP
+                        StatusText(t(desktopRecoveryText(recovery.first { it.area == area })))
+                    }
                     if (operation == BackupPage.OVERVIEW) {
                         DesktopDataSectionHeading("备份与导入")
                         StatusText("选择需要的操作，在检查结果和冲突选择确认后再导入。")
@@ -78,9 +99,16 @@ internal fun DesktopDataWorkspace(root: DesktopDataRootSwitchController, full: D
                     }
                 }
             }
-            DesktopRetainedPane(page == DataPage.LOCATION) { DataWorkspaceScroll { DesktopDataSectionHeading("数据目录"); DesktopDataRootPanel(root, onExit) } }
+            DesktopRetainedPane(page == DataPage.LOCATION) { DataWorkspaceScroll {
+                DesktopDataSectionHeading("数据目录")
+                if (moving) StatusText(t(desktopRecoveryText(recovery.first { it.area == DesktopRecoveryArea.DIRECTORY })))
+                DesktopDataRootPanel(root, onExit)
+            } }
             DesktopRetainedPane(page == DataPage.AUTO) { DataWorkspaceScroll { DesktopAutomaticBackupSettingsPanel(automatic) } }
             DesktopRetainedPane(page == DataPage.UPDATE) { DataWorkspaceScroll { DesktopUpdatePanel(onExit = onExit) } }
+            DesktopRetainedPane(page == DataPage.RECOVERY) { DataWorkspaceScroll {
+                DesktopRecoveryPanel(recovery, !busy && !moving, ::openRecoveryDestination)
+            } }
         }
     }
 }

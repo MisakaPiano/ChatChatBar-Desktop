@@ -251,9 +251,27 @@ class DesktopStartupGateTest {
             view.copyDiagnostic { copied = it }; view.close { closes++ }
             assertEquals("CCB STARTUP_BLOCKED PORTABLE_PROBE_CLEANUP_FAILED", copied)
             assertEquals(1, closes)
-            assertTrue(view.message.contains("数据没有被自动清空或恢复"))
+            assertEquals(DesktopStartupRecoveryGuide.PORTABLE, view.diagnostic.guide)
+            assertTrue(view.guidance.isNotBlank())
             assertTrue(view.closeLabel.contains("Close")); assertTrue(view.copyLabel.contains("Copy"))
         }
+    }
+
+    @Test fun `recovery refusal guidance does not rerun recovery construct business or copy its private failure`() = fixture { f ->
+        var recoveries = 0; var closes = 0; var copied: String? = null
+        val marker = f.root.resolve("synthetic-recovery-marker")
+        val gate = DesktopStartupGate(select = { f.select() }, inspect = { result(DesktopIndexPreflightCode.NO_DOMAIN) },
+            recoverIndex = { recoveries++; Files.writeString(marker, "existing recovery reached before refusal"); throw IOException("synthetic-private-detail") },
+            presenter = { diagnostic ->
+                assertEquals(DesktopStartupRecoveryGuide.STARTUP_CHECK, diagnostic.guide)
+                val view = DesktopStartupBlockedView(diagnostic)
+                assertFalse((view.message + view.guidance).contains("synthetic-private-detail"))
+                view.copyDiagnostic { copied = it }; view.close { closes++ }
+            })
+        blocked(f, gate)
+        assertEquals(1, recoveries); assertEquals(1, closes)
+        assertEquals("CCB STARTUP_BLOCKED G0_READ_ERROR", copied)
+        assertTrue(Files.exists(marker))
     }
 
     @Test fun `unexpected selection and G0 exceptions are refused without exposing raw exception`() = fixture { f ->

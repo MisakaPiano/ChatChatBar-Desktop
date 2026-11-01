@@ -88,6 +88,8 @@ class DesktopB1CIntegrationTest {
             scene.frames(); c.fullBackupController.export(null)
             withTimeout(5000) { entered.await() }; scene.frames()
             assertEquals(1, activity.backupCount)
+            assertTrue(scene.nodes().first { it.matches(DesktopUiText.RECOVERY_SUPPORT.zhCn) && it.config.contains(SemanticsActions.OnClick) }
+                .config.contains(SemanticsProperties.Disabled))
             assertTrue(scene.nodes().first { it.matches(DesktopUiText.CONTEXT_HELP.zhCn) && it.config.contains(SemanticsActions.OnClick) }
                 .config.contains(SemanticsProperties.Disabled))
             scene.click("查看任务中心"); scene.frames()

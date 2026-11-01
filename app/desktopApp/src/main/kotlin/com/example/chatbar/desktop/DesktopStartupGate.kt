@@ -7,15 +7,17 @@ import kotlinx.coroutines.runBlocking
 internal data class DesktopStartupDiagnostic private constructor(
     val code: String,
     val retainedProbe: Boolean = false,
+    val guide: DesktopStartupRecoveryGuide,
 ) {
     companion object {
-        fun preflight(code: DesktopIndexPreflightCode) = DesktopStartupDiagnostic("G0_${code.name}")
-        fun selection(kind: DesktopDataRootResolutionFailureKind) = DesktopStartupDiagnostic("ROOT_${kind.name}")
+        fun preflight(code: DesktopIndexPreflightCode) = DesktopStartupDiagnostic("G0_${code.name}", guide =
+            if (code == DesktopIndexPreflightCode.DOMAIN_PRESENT_UNSUPPORTED) DesktopStartupRecoveryGuide.INDEX_DOMAIN else DesktopStartupRecoveryGuide.STARTUP_CHECK)
+        fun selection(kind: DesktopDataRootResolutionFailureKind) = DesktopStartupDiagnostic("ROOT_${kind.name}", guide = DesktopStartupRecoveryGuide.ROOT_SELECTION)
         fun activation(kind: DesktopPortableActivationFailureKind, retained: Boolean) =
-            DesktopStartupDiagnostic("PORTABLE_${kind.name}", retained)
-        fun ownership(kind: DesktopDataRootOwnershipFailureKind) = DesktopStartupDiagnostic("OWNERSHIP_${kind.name}")
-        fun cancelled() = DesktopStartupDiagnostic("STARTUP_CANCELLED")
-        fun externalActivation() = DesktopStartupDiagnostic("EXTERNAL_ACTIVATION_REFUSED")
+            DesktopStartupDiagnostic("PORTABLE_${kind.name}", retained, DesktopStartupRecoveryGuide.PORTABLE)
+        fun ownership(kind: DesktopDataRootOwnershipFailureKind) = DesktopStartupDiagnostic("OWNERSHIP_${kind.name}", guide = DesktopStartupRecoveryGuide.OWNERSHIP)
+        fun cancelled() = DesktopStartupDiagnostic("STARTUP_CANCELLED", guide = DesktopStartupRecoveryGuide.CANCELLED)
+        fun externalActivation() = DesktopStartupDiagnostic("EXTERNAL_ACTIVATION_REFUSED", guide = DesktopStartupRecoveryGuide.EXTERNAL)
     }
 }
 

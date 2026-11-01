@@ -1,3 +1,7 @@
+2026-11-02 后续本地P15-05/P17-02源码补恢复与支持：只投影root/backup/merge typed状态、六个原面导航重读忙/迁移/restart锁；不开picker/不提交。启动前固定分类说明不构造业务、不改G0/ownership/recovery流程；原流程可能先触及恢复再拒绝，修正旧“完全未恢复”的不准确提示，复制仍只有固定code。新增真实Workspace/旧点击门禁、窄宽Scene及recover写marker后拒绝回归待新源云端，不由bdd/101代验。101/bdd主step已FAIL但具体报告未到，原因未知；Linux1135/582独立通过，完整101未结束，保留100缺import原失败。现用H受管pointer只读确认为1228/bd684bc4b8a1，不是运行进程证明；公开仍1229/13。无新包/签名/公开/H代装，本机不编译渲染，10点前不问人工；成熟候选不被后续Recovery等待牵制。
+
+下方历史保留。
+
 2026-11-02 CI100/72c64e05 实际FAIL：生产compileKotlin缺 currentCoroutineContext 明确import，main/proxy均未执行且无主报告。独立NTFS7/shared1135/Android582与完成日志native33/updater8/exit4通过，实际两ZIP已复用核SHA/CRC/XML。dbe181d4只补协程import，不换原Job或发布证据；99的Shell基线修正、7a7索引晚取消、9825Moments回页、9c提示入口仍待下一精确源执行。后续本地P17只读当前页帮助含实际Shell/宽窄hit与草稿保护回归，尚未执行，不当成完整首次使用/Recovery Center。公开1229/13、私有1230冻结064/local14与1232冻结883/R17原证保持，无新包/签名/公开/H代装，本机不编译渲染，10:00前不问人工。
 
 下方历史保留。
