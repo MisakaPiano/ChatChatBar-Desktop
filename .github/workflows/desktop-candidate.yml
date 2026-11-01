@@ -2,12 +2,12 @@ name: Build frozen Desktop candidate
 
 on:
   push:
-    branches: [feature/phase8-fish-audio]
+    branches: [feature/phase8-fish-audio, 'codex/desktop-candidate-*']
     paths: [.github/desktop-candidate-request.json]
   workflow_dispatch:
     inputs:
       sourceSha:
-        description: Exact already-reviewed application commit (40 lowercase hex)
+        description: Exact reviewed application commit; platform CI verified separately (40 lowercase hex)
         required: true
         type: string
       desktopVersion:
