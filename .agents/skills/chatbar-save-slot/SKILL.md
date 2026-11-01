@@ -32,6 +32,8 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
 
 ## Desktop session transactions
 
+- External-file FIFO calls `DesktopSaveSlotController.openFileContext` and `importFile` with specific joined Job handles. It requires an explicit target session, imports to the library through the existing service without restoration, and publishes only an exact item/attempt receipt after success. Ordinary controller Unit APIs remain unchanged; cancellation drains the delegated job before staged source release.
+
 - Whole-session deletion is `DesktopSaveSlotService.deleteSession`, surfaced by the primary browser's confirmed right-click action. It uses the same voice/task/memory reservation, strict `DesktopSessionInventory`, complete SaveSlot catalog and recoverable session journal. It removes the owned graph/slots and only uniquely referenced packages; other sessions/cards remain. Disk inventory/publication runs on IO. A journal-published private receipt under `backups/.session-deletion-cleanup` survives failed post-commit media cleanup and is retried at startup; it is not a transport entity. `DesktopOwnedImageCleanup` checks all remaining durable entity references before deleting exact image or absolute owned-audio candidates, and audio uses its ownership receipt. No directory sweep. Controller drains draft/viewport writers before deletion and rejects late callbacks for missing sessions.
 
 - `DesktopSaveSlotService` creates/imports/exports/restores v8 and supported legacy slots, duplicates sessions and rebinds cards/extra worldbooks. Restore and rebind publish a before-change safety slot in the same transaction. Rebinding retains the existing format override, messages and versions, and explicitly resets worldbook timers.

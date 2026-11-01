@@ -5,6 +5,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
 internal data class DesktopSaveSlotState(val open: Boolean = false, val sessionId: String? = null,
+    val externalImportReceipt: DesktopExternalImportReceipt? = null,
     val slots: List<SaveSlotSummary> = emptyList(), val busy: Boolean = false, val message: String = "", val error: String? = null,
     val bindings: DesktopSessionBindingChoices? = null)
 
@@ -16,12 +17,13 @@ internal class DesktopSaveSlotController(private val service: DesktopSaveSlotSer
     private var operation: Job? = null
     private val lock = Any()
     private var closed = false
-    fun open(sessionId: String) {
+    fun open(sessionId: String) { openFileContext(sessionId) }
+    internal fun openFileContext(sessionId: String): Job? {
         synchronized(lock) {
-            if (closed || mutable.value.busy) return
+            if (closed || mutable.value.busy) return null
             mutable.value = DesktopSaveSlotState(open = true, sessionId = sessionId)
         }
-        action { "" }
+        return actionJob { "" }
     }
     fun closePanel() { mutable.update { it.copy(open = false) } }
     fun create(name: String, imagePolicy: SaveSlotImagePolicy, includeAudio: Boolean) = action { id ->
@@ -31,6 +33,11 @@ internal class DesktopSaveSlotController(private val service: DesktopSaveSlotSer
     fun import() = action { id ->
         val path = picker.pickOpenFile(FILE_TYPE) ?: return@action "已取消导入"
         service.import(path, id)
+        "存档已导入列表；当前聊天未改变"
+    }
+    fun importFile(path: java.nio.file.Path, attempt: DesktopExternalImportAttempt? = null) = actionJob { id ->
+        val slot = service.import(path, id)
+        mutable.update { it.copy(externalImportReceipt = attempt?.receipt(slot.id) ?: it.externalImportReceipt) }
         "存档已导入列表；当前聊天未改变"
     }
     fun export(slot: SaveSlotSummary) = action {
@@ -66,13 +73,14 @@ internal class DesktopSaveSlotController(private val service: DesktopSaveSlotSer
     }
     fun closeBindings() { mutable.update { it.copy(bindings = null) } }
     fun stop() { synchronized(lock) { operation }?.cancel() }
-    private fun action(work: suspend (String) -> String) {
-        synchronized(lock) {
-            val id = mutable.value.sessionId ?: return
-            if (closed || mutable.value.busy) return
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun actionJob(work: suspend (String) -> String): Job? = synchronized(lock) {
+            val id = mutable.value.sessionId ?: return@synchronized null
+            if (closed || mutable.value.busy) return@synchronized null
             mutable.update { it.copy(busy = true, error = null, message = "正在准备…") }
-            operation = scope.launch {
+            val job = scope.launch(start = CoroutineStart.ATOMIC) {
                 try {
+                    currentCoroutineContext().ensureActive()
                     val message = work(id)
                     val slots = service.list(id)
                     mutable.update { it.copy(slots = slots, message = message) }
@@ -90,8 +98,10 @@ internal class DesktopSaveSlotController(private val service: DesktopSaveSlotSer
                     mutable.update { it.copy(error = message, message = "") }
                 } finally { mutable.update { it.copy(busy = false) } }
             }
-        }
+            operation = job
+            job
     }
+    private fun action(work: suspend (String) -> String) { actionJob(work) }
     suspend fun closeAndDrain() {
         synchronized(lock) { closed = true }
         scope.coroutineContext[Job]!!.cancelAndJoin()

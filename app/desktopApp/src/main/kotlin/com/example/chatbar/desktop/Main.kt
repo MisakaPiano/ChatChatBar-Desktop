@@ -17,31 +17,42 @@ import androidx.compose.ui.window.rememberWindowState
 import androidx.compose.ui.window.application
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.collect
 
 /** An incomplete writer drain leaves storage live, so retain its root lock until process exit. */
 private val unsafeShutdownOwnerships = ConcurrentHashMap.newKeySet<DesktopDataRootOwnership>()
 
-fun main() {
+fun main(args: Array<String>) {
     DesktopInstalledProgram.acquire()
-    try { runDesktopProcessLifecycle({ runDesktopMain() }) }
+    try { runDesktopProcessLifecycle({
+        val home = java.nio.file.Path.of(System.getProperty(DesktopApplicationHome.PROPERTY_NAME) ?: System.getProperty("user.dir"))
+        val local = java.nio.file.Path.of(System.getenv("LOCALAPPDATA") ?: System.getProperty("user.home"))
+        runDesktopExternalActivation(args, home, local) { activation ->
+            runDesktopMain(business = { root -> runDesktopBusinessApplication(root, activation) })
+        }
+    }) }
     finally { DesktopInstalledProgram.release() }
 }
 
 /** Tests invoke this exact production ingress, replacing only platform inputs/business UI. */
 internal fun runDesktopMain(
     startup: DesktopStartupGate = DesktopStartupGate(),
-    business: (DesktopDataRootResolution.Resolved) -> Unit = ::runDesktopBusinessApplication,
+    business: (DesktopDataRootResolution.Resolved) -> Unit = { runDesktopBusinessApplication(it) },
 ) {
     configureDesktopNetworkTransport()
     startup.run(business)
     DesktopShutdownTrace.record(DesktopShutdownStage.MAIN_RETURNED)
 }
 
-private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolution.Resolved) {
+private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolution.Resolved,
+    activation: DesktopExternalActivation? = null) {
         DesktopWindowsTaskbarPin.configureIdentity()
         val dialogOwner = DesktopDialogOwner()
         DesktopPlatformPickers.create(dialogOwner).use { pickers ->
             val appContainer = DesktopAppContainer(resolvedRoot, filePicker = pickers.files, directoryPicker = pickers.directories)
+            val externalOwner = java.util.concurrent.atomic.AtomicReference<DesktopExternalImportController?>()
             runDesktopApplicationLifecycle(
                 initialize = { appContainer.networkProxyController.loadAtStartup(); appContainer.initializePersistentState() },
                 applicationBody = {
@@ -65,6 +76,16 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                         val primaryChatController = remember { appContainer.primaryChatController }
                         val modelSettingsController = remember { appContainer.modelSettingsController }
                         val applicationScope = rememberCoroutineScope()
+                        val externalImports = remember(activation) { activation?.let {
+                            DesktopExternalImportController(it.queue, appContainer.dataOperationCoordinator, transferController,
+                                modelTemplateController, appContainer.mergeImportController, appContainer.saveSlotController,
+                                appContainer.novelAiStudioController, imageBusy = {
+                                    appContainer.taskRuntime.tasks.value.any { task -> task.kind == DesktopTaskKind.NOVELAI && task.status == DesktopTaskStatus.RUNNING }
+                                }, unavailable = {
+                                    rootSwitchController.state.value !is DesktopDataRootSwitchState.Idle ||
+                                        appContainer.fullBackupController.state.value.let { backup -> backup.busy || backup.restartRequired }
+                                })
+                        }.also(externalOwner::set) }
                         val updater = remember { DesktopUpdateRuntime(applicationScope, dataRoot = resolvedRoot.appDataRoot) }
                         val modalActivity = remember { DesktopModalActivity() }
                         val updateNotices = remember {
@@ -91,6 +112,7 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                         val requestClose: () -> Unit = {
                             DesktopShutdownTrace.record(DesktopShutdownStage.CLOSE_REQUESTED)
                             if (rootSwitchController.requestWindowClose()) {
+                                activation?.queue?.stopAccepting()
                                 appContainer.taskRuntime.stopAccepting()
                                 exitApplication()
                             }
@@ -110,6 +132,14 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                                 updateNotices.checkOnStartup()
                             }
                             val chrome = rememberDesktopWindowChrome(window, requestClose)
+                            LaunchedEffect(window, activation) {
+                                activation?.queue?.state?.map { it.activation }?.distinctUntilChanged()?.collect { revision ->
+                                    if (revision > 1) {
+                                        windowState.isMinimized = false
+                                        window.toFront(); window.requestFocus()
+                                    }
+                                }
+                            }
                             DisposableEffect(window, dialogOwner) {
                                 dialogOwner.attach(window)
                                 onDispose { dialogOwner.detach(window) }
@@ -153,7 +183,9 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                                     providerUsage = appContainer.providerUsage,
                                     fullBackupController = appContainer.fullBackupController,
                                     mergeImportController = appContainer.mergeImportController,
+                                    externalImportController = externalImports,
                                     onExitApplication = {
+                                        activation?.queue?.stopAccepting()
                                         appContainer.taskRuntime.stopAccepting()
                                         exitApplication()
                                     },
@@ -164,7 +196,7 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                     DesktopShutdownTrace.record(DesktopShutdownStage.COMPOSE_RETURNED)
                 },
                 close = {
-                    closeDesktopWithRecovery(close = { appContainer.close() })
+                    closeDesktopWithRecovery(close = { externalOwner.get()?.closeAndDrain(); appContainer.close() })
                     DesktopShutdownTrace.record(DesktopShutdownStage.CONTAINER_CLOSED)
                 },
             )

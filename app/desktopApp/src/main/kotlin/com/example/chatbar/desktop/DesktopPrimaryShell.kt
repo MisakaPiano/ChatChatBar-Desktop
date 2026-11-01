@@ -53,6 +53,7 @@ internal fun DesktopPrimaryShell(
     networkProxyController: DesktopNetworkProxyController? = null,
     momentsController: DesktopMomentsController? = null,
     providerUsage: DesktopProviderUsageOwner? = null,
+    externalImportController: DesktopExternalImportController? = null,
 ) {
     val moments = momentsController?.state?.collectAsState()?.value
     val rootState by rootSwitchController.state.collectAsState()
@@ -74,6 +75,9 @@ internal fun DesktopPrimaryShell(
     val templates by modelTemplateController.state.collectAsState()
     val chat by primaryChatController.state.collectAsState()
     var openUpdateRequest by remember { mutableStateOf(0) }
+    var openImportRequest by remember { mutableStateOf(0) }
+    var externalManageKind by remember { mutableStateOf<DesktopExternalImportKind?>(null) }
+    var externalManageTargetId by remember { mutableStateOf<String?>(null) }
     val colors = DesktopBootstrapColors
     val t = LocalDesktopUiStrings.current
     val scope = rememberCoroutineScope()
@@ -119,6 +123,7 @@ internal fun DesktopPrimaryShell(
             DesktopTitleBar(size, route, locked, chrome, chromeLayout,
                 updatePending = updateNotice?.pendingVersion != null, onNavigate = ::navigate,
                 momentsEnabled = moments?.enabled == true, momentsUnread = moments?.unread == true)
+            externalImportController?.let { DesktopExternalImportNotice(it) }
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when (route) {
                     DesktopPrimaryRoute.MOMENTS -> momentsController?.let { DesktopMomentsPanel(it) }
@@ -147,6 +152,8 @@ internal fun DesktopPrimaryShell(
                         initialModels = openDesignModels, initialModelId = requestedDesignModel,
                         onInitialModelsConsumed = { openDesignModels = false; requestedDesignModel = null },
                         initialPerson = requestedPerson, onInitialPersonConsumed = { requestedPerson = null },
+                        initialImportKind = externalManageKind, initialImportTargetId = externalManageTargetId,
+                        onInitialImportConsumed = { externalManageKind = null; externalManageTargetId = null },
                         chatUiController = primaryChatController.chatUi,
                         networkProxyController = networkProxyController,
                         momentsController = momentsController,
@@ -172,7 +179,8 @@ internal fun DesktopPrimaryShell(
                     }
                     DesktopPrimaryRoute.DATA -> DesktopDataWorkspace(rootSwitchController, fullBackupController,
                         mergeImportController, backupSettingsController, onExitApplication, openUpdateRequest,
-                        onUpdateRequestConsumed = { openUpdateRequest = 0 })
+                        onUpdateRequestConsumed = { openUpdateRequest = 0 }, openImportRequest = openImportRequest,
+                        onImportRequestConsumed = { openImportRequest = 0 })
                 }
                 primaryChatController.voices?.let { runtime ->
                     val player by runtime.playback.state.collectAsState()
@@ -183,6 +191,17 @@ internal fun DesktopPrimaryShell(
                 }
             }
         }
+        externalImportController?.let { external -> DesktopExternalImportHost(external, chat.sessions,
+            onView = { kind -> when (kind) {
+                DesktopExternalImportKind.CHARACTER, DesktopExternalImportKind.FORMAT, DesktopExternalImportKind.WORLD_BOOK,
+                DesktopExternalImportKind.MODEL_TEMPLATE -> {
+                    externalManageKind = kind; externalManageTargetId = external.state.value.targetId
+                    navigate(DesktopPrimaryRoute.MANAGE)
+                }
+                DesktopExternalImportKind.IMAGE -> navigate(DesktopPrimaryRoute.TOOLS)
+                DesktopExternalImportKind.BACKUP -> { openImportRequest++; navigate(DesktopPrimaryRoute.DATA) }
+                else -> navigate(DesktopPrimaryRoute.CHAT)
+            } }, onMerge = { openImportRequest++; navigate(DesktopPrimaryRoute.DATA) }) }
         if (updateNotices != null && updateNotice != null) DesktopStartupUpdateNotice(updateNotice,
             blocked = locked || (modalActivity?.count ?: 0) > 0 || management.busy || transfer.busy || templates.busy || chat.sessionSettingsLeavePrompt ||
                 tasks.any { it.status == DesktopTaskStatus.RUNNING } || repairs.values.any { it == DesktopRepairStatus.RUNNING },

@@ -40,6 +40,12 @@ All Kotlin paths are relative to `app/app/src/main/java/com/example/chatbar/`.
 - Queue transitions: FIFO arrival, stale/duplicate completion, cancel/failure continuation, URI precedence, and staged-file cleanup after safe handoff.
 - Persistence: three conflict actions, model API key clearing, character post-import processing, management focus, and Studio busy handoff.
 
+## Desktop external-file ingress
+
+- `DesktopExternalActivation` runs before business/root construction in actual `Main(args)`. Per-installation metadata owns one lock and authenticated loopback receiver; warm calls forward/focus instead of creating another data writer. `pending.json` retains bounded paths/IDs/attempted markers through normal restart, never passwords or conflict choices. A lost ACK is indeterminate and must not replay; corrupt queue records remain intact while ordinary startup stays available.
+- `DesktopExternalImportInspector/Controller/Host` own the separate Desktop FIFO. Detection uses immutable staged bytes, shared strict card classifiers, existing backup streaming inspection and SaveSlot structure validation. Each item requires explicit confirmation; failures/conflicts/unknown results keep the head. Only scoped `DesktopExternalImportReceipt` from the exact item/attempt proves typed/model/slot completion; unrelated manual imports and restored attempted heads are not proof. Recheck may use only its captured original unresolved operation.
+- Backup files enter the existing merge password/conflict/destination workflow, never automatic commit. SaveSlots require an explicit target session and import into its library, never restore. Images reuse Studio guidance/preview owners and wait for active generation. Delegated job handles are joined before staged-file release; root/restart guards remain authoritative. See `docs/desktop/250_EXTERNAL_FILE_ACTIVATION_AND_FIFO.md` for source versus executed evidence.
+
 ## Desktop window-local image ingress
 
-- DesktopImageIngress routes image file/raster clipboard and window drops directly to Studio current-image workflow or chat pending attachments; text-only paste remains editor-owned. Ordered multi-file selection is DesktopFilePicker/ DesktopPrimaryChatController-owned. These local adapters do not use the Android FIFO or implement Windows Open With/file associations (P15).
+- DesktopImageIngress routes image file/raster clipboard and window drops directly to Studio current-image workflow or chat pending attachments; text-only paste remains editor-owned. Ordered multi-file selection is DesktopFilePicker/ DesktopPrimaryChatController-owned. These window-local adapters remain distinct from the global external-file FIFO and Android URI queue.

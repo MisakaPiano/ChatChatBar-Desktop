@@ -106,6 +106,7 @@ internal data class DesktopCoverExportDraft(val card: CharacterCard, val package
     val backgroundBytes: ByteArray?)
 
 internal data class DesktopTypedTransferState(
+    val externalImportReceipt: DesktopExternalImportReceipt? = null,
     val coverExport: DesktopCoverExportDraft? = null,
     val characters: List<DesktopTransferItem> = emptyList(),
     val formats: List<DesktopTransferItem> = emptyList(),
@@ -176,7 +177,7 @@ internal class DesktopTypedTransferController(
     }
 
     suspend fun importCharacter(path: Path) = runOperation(null, writing = true) {
-        val request = decodeCharacter(path)
+        val request = withContext(kotlinx.coroutines.Dispatchers.IO) { decodeCharacter(path) }
         importCharacter(request)
     }
 
@@ -235,7 +236,7 @@ internal class DesktopTypedTransferController(
     }
 
     suspend fun importFormat(path: Path) = runOperation(null, writing = true) {
-        val packageData = formatTransfers.decode(Files.readString(path, Charsets.UTF_8))
+        val packageData = withContext(kotlinx.coroutines.Dispatchers.IO) { formatTransfers.decode(Files.readString(path, Charsets.UTF_8)) }
         val conflict = formatRepository.getAll().firstOrNull { NamePolicy.isSame(it.name, packageData.name) }
         if (conflict == null) {
             executeTyped(DesktopTransferKind.FORMAT, DesktopTransferConflictAction.IMPORT_AS_NEW,
@@ -250,7 +251,7 @@ internal class DesktopTypedTransferController(
 
     suspend fun importWorldBook(path: Path) = runOperation(null, writing = true) {
         val fallback = path.fileName.toString().substringBeforeLast('.').ifBlank { "导入世界书" }
-        val packageData = worldBookTransfers.decode(Files.readString(path, Charsets.UTF_8), fallback)
+        val packageData = withContext(kotlinx.coroutines.Dispatchers.IO) { worldBookTransfers.decode(Files.readString(path, Charsets.UTF_8), fallback) }
         val conflict = worldBookRepository.getAll().firstOrNull { NamePolicy.isSame(it.name, packageData.book.name) }
         if (conflict == null) {
             executeTyped(DesktopTransferKind.WORLD_BOOK, DesktopTransferConflictAction.IMPORT_AS_NEW,
@@ -340,6 +341,7 @@ internal class DesktopTypedTransferController(
                 }
                 DesktopTransferKind.CHARACTER -> error("Character has its own transfer contract")
             }
+            recordExternalImport(requireNotNull(preparedFormat?.id ?: preparedWorld?.id))
             // Durable write returned. Consume the choice before any list read that can fail.
             mutableState.value = mutableState.value.copy(pendingConflict = null)
             afterTypedCommit(kind, action)
@@ -374,7 +376,7 @@ internal class DesktopTypedTransferController(
                         // Even an uncertain durable result cannot leave a replayable decision.
                         mutableState.value = mutableState.value.copy(pendingConflict = null,
                             unresolvedTransfer = evidence.takeIf { outcome == TypedCommitOutcome.INDETERMINATE })
-                        reconcileTyped(kind, action, outcome == TypedCommitOutcome.INDETERMINATE)
+                        reconcileTyped(kind, action, outcome == TypedCommitOutcome.INDETERMINATE, evidence?.targetId)
                     }
                     if (error is CancellationException) throw error
                     return
@@ -420,7 +422,7 @@ internal class DesktopTypedTransferController(
                 withContext(NonCancellable) {
                     if (evidence.kind == DesktopTransferKind.CHARACTER) {
                         reconcileCharacter(evidence.characterOperation(), evidence.targetId)
-                    } else reconcileTyped(evidence.kind, evidence.action, indeterminate = false)
+                    } else reconcileTyped(evidence.kind, evidence.action, indeterminate = false, targetId = evidence.targetId)
                 }
             }
             TypedCommitOutcome.PRECOMMIT -> {
@@ -453,6 +455,7 @@ internal class DesktopTypedTransferController(
                     presetVersion = request.presetVersion, observation = observation)
             } else characterTransfers.overwrite(existingId, request.packageData,
                 request.presetKey, request.presetVersion, observation)
+            recordExternalImport(result.id)
             mutableState.value = mutableState.value.copy(pendingConflict = null)
             finishCommittedCharacter(operation, result.id, message)
         } catch (error: Throwable) {
@@ -486,6 +489,7 @@ internal class DesktopTypedTransferController(
     }
 
     private suspend fun reconcileCharacter(operation: CharacterTransferPostCommitOperation, id: String) {
+        recordExternalImport(id)
         mutableState.value = mutableState.value.copy(pendingConflict = null, status = null, error = null)
         val reconciled = runCatching { refreshCommittedCharacters(); refreshLists() }.isSuccess
         mutableState.value = mutableState.value.copy(pendingConflict = null, status = null, error = null,
@@ -493,13 +497,20 @@ internal class DesktopTypedTransferController(
     }
 
     private suspend fun reconcileTyped(kind: DesktopTransferKind, action: DesktopTransferConflictAction,
-        indeterminate: Boolean) {
+        indeterminate: Boolean, targetId: String? = null) {
+        if (!indeterminate && targetId != null) recordExternalImport(targetId)
         val reconciled = runCatching {
             refreshRepository(kind)
             refreshLists()
         }.isSuccess
         mutableState.value = mutableState.value.copy(pendingConflict = null, status = null, error = null,
             typedNotice = DesktopTypedTransferNotice(kind, action, indeterminate, reconciled))
+    }
+
+    private suspend fun recordExternalImport(targetId: String) {
+        currentExternalImportReceipt(targetId)?.let { receipt ->
+            mutableState.value = mutableState.value.copy(externalImportReceipt = receipt)
+        }
     }
 
     private suspend fun refreshRepository(kind: DesktopTransferKind) = when (kind) {

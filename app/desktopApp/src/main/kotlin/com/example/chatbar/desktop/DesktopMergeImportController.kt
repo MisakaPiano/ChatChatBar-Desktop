@@ -27,8 +27,9 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
     private var operation: Job? = null
     private var preview: DesktopMergeImportService.Preview? = null
 
-    fun inspect(password: CharArray?) = action(password) {
-        val path = picker.pickOpenFile(TYPE) ?: return@action "已取消选择"
+    fun inspect(password: CharArray?) { inspectFile(null, password) }
+    fun inspectFile(source: Path?, password: CharArray?) = actionJob(password) {
+        val path = source ?: picker.pickOpenFile(TYPE) ?: return@actionJob "已取消选择"
         preview = null; mutable.update { DesktopMergeImportState(busy = true) }
         val result = service.inspectWithProgress(path, password, ::showProgress)
         preview = result
@@ -62,7 +63,8 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
             DesktopMergeImportService.Publication.INDETERMINATE -> "启动位置的写入结果尚未确认。已暂停写入并保留两边目录，请正常退出后检查启动结果。"
         }
     }
-    fun discard() = action(null) {
+    fun discard() { discardExternal() }
+    fun discardExternal() = actionJob(null) {
         service.discard(); preview = null
         mutable.update { DesktopMergeImportState(busy = true) }
         "已取消合并，当前电脑数据未改变"
@@ -74,10 +76,10 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    private fun action(password: CharArray?, work: suspend () -> String) = synchronized(lock) {
-        if (closed || mutable.value.busy || service.restartRequired) { password?.fill('\u0000'); return@synchronized }
+    private fun actionJob(password: CharArray?, work: suspend () -> String): Job? = synchronized(lock) {
+        if (closed || mutable.value.busy || service.restartRequired) { password?.fill('\u0000'); return@synchronized null }
         mutable.update { it.copy(busy = true, error = null, failureDetails = null) }
-        operation = scope.launch(start = CoroutineStart.ATOMIC) {
+        val job = scope.launch(start = CoroutineStart.ATOMIC) {
             try {
                 currentCoroutineContext().ensureActive()
                 val message = work()
@@ -115,8 +117,12 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
                 mutable.update { it.copy(busy = false, restartRequired = service.restartRequired,
                     ready = preview != null && !service.restartRequired) }
             }
-        }.also { job -> job.invokeOnCompletion { password?.fill('\u0000') } }
+        }
+        operation = job
+        job.invokeOnCompletion { password?.fill('\u0000') }
+        job
     }
+    private fun action(password: CharArray?, work: suspend () -> String) { actionJob(password, work) }
     suspend fun closeAndDrain() {
         synchronized(lock) { closed = true }
         scope.coroutineContext[Job]!!.cancelAndJoin()

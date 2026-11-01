@@ -22,6 +22,7 @@ internal data class DesktopUnresolvedModelTemplateImport(val expected: ModelConf
 }
 
 internal data class DesktopModelTemplateTransferState(
+    val externalImportReceipt: DesktopExternalImportReceipt? = null,
     val busy: Boolean = false,
     val unresolved: DesktopUnresolvedModelTemplateImport? = null,
     val pendingTargetId: String? = null,
@@ -117,8 +118,10 @@ internal class DesktopModelTemplateTransferController(
         finish(model, refreshed)
     }
 
-    private fun finish(model: ModelConfig, refreshed: Boolean?) {
+    private suspend fun finish(model: ModelConfig, refreshed: Boolean?) {
+        val receipt = currentExternalImportReceipt(model.id)
         mutableState.value = mutableState.value.copy(unresolved = null, pendingTargetId = model.id,
+            externalImportReceipt = receipt ?: mutableState.value.externalImportReceipt,
             deliveryError = null,
             status = DesktopUiText.MODEL_TEMPLATE_IMPORTED.zhCn + if (refreshed == false) " 模型列表刷新失败。" else "",
             error = null)

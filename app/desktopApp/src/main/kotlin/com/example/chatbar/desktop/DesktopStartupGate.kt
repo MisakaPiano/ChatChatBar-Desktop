@@ -15,6 +15,7 @@ internal data class DesktopStartupDiagnostic private constructor(
             DesktopStartupDiagnostic("PORTABLE_${kind.name}", retained)
         fun ownership(kind: DesktopDataRootOwnershipFailureKind) = DesktopStartupDiagnostic("OWNERSHIP_${kind.name}")
         fun cancelled() = DesktopStartupDiagnostic("STARTUP_CANCELLED")
+        fun externalActivation() = DesktopStartupDiagnostic("EXTERNAL_ACTIVATION_REFUSED")
     }
 }
 

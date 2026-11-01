@@ -12,4 +12,4 @@ AppContainer在请求发生时才取已有diagnostics owner，避免MemoryServic
 
 四项新合成HTTP回归：真实共享MemoryAiGateway首回非法JSON→修复成功的单逻辑／双attempt；嵌套summary失败保全计划终态；真实RetrievalPlanner的503正常fallback仍标FAILED；取消child流后域调用正常返回仍标CANCELLED／未知。a391／CI88（41334180384）完整SUCCESS：实际Windows309suite／2419项＝2400PASS＋19SKIP，新四项全部通过；独立production JAR代理5、Windows NTFS共享7、Linux共享1135和Android582通过。原MemoryRagTransport／Safety／Lifecycle／Retrieval及usage回归保持；此结果不外推到后补手动分支。
 
-后续源码还补手动节点重生成：它通过action→launchSessionAction，原先不经过platform.run。两条既有normal gate内部复用同一withSessionUsage；保留准入、取消和排水，不增加任务。新增实际controller→shared regenerateNodeCandidate→合成AI观察的会话归属回归，仍只回传候选、原节点不改。此手动分支位于a391／CI88之后，不能以88代表已验证。
+后续9040fb64源码补手动节点重生成：它通过action→launchSessionAction，原先不经过platform.run。两条既有normal gate内部复用同一withSessionUsage；保留准入、取消和排水，不增加任务。新增实际controller→shared regenerateNodeCandidate→合成AI观察的会话归属回归，仍只回传候选、原节点不改。CI89／41336063388完整SUCCESS，实际Windows309suite／2420＝2401PASS＋19SKIP，新手动controller用例0.411秒通过；独立production JAR代理5及NTFS共享7通过。Linux共享／Android源码树未变，复用CI88实际报告。原报告与owner回读见I盘`updates/20261102-owner-ci89-existing-reports-readback.json`；该结果不覆盖后续外部文件工作树。

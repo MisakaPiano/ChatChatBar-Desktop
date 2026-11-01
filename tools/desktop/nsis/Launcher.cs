@@ -14,6 +14,8 @@ using Microsoft.Win32.SafeHandles;
 using Microsoft.Win32;
 using System.Security.AccessControl;
 using System.Security.Principal;
+using System.Net.Sockets;
+using System.Net;
 
 internal static class Launcher {
 #if SYNTHETIC
@@ -114,6 +116,11 @@ internal static class Launcher {
         if (File.Exists(p)) File.Replace(tmp, p, null); else File.Move(tmp, p);
     }
     static void Owned() { Safe(Root); Require(File.ReadAllText(Path.Combine(Root, "install-owner.txt")) == Product, "FOREIGN_INSTALL_ROOT"); }
+    static bool ResourceEntries(Entry[] entries) {
+        var names = entries.Select(e => e.path).OrderBy(x => x).ToArray();
+        return names.SequenceEqual(new[] { "ChatChatBar.exe", "Uninstall.exe" }) ||
+            names.SequenceEqual(new[] { "ChatChatBar.exe", "OpenChatBarFile.exe", "Uninstall.exe" });
+    }
     static string VersionRoot(string id) {
         Require(Regex.IsMatch(id ?? "", @"^[0-9]+\.[0-9]+\.[0-9]+-preview\.[1-9][0-9]*-[a-f0-9]{12}(?:-r[a-f0-9]{32})?$"), "VERSION_ID_REFUSED");
         return Child(Root, "versions/" + id);
@@ -225,10 +232,12 @@ internal static class Launcher {
         var stable = Path.Combine(Root, "ChatChatBar.exe");
         var resourceReceipt = Path.Combine(Root, "generated-resources.json");
         if (File.Exists(stable)) Require(File.Exists(resourceReceipt), "STABLE_LAUNCHER_UNOWNED");
+        if (File.Exists(Child(Root, "OpenChatBarFile.exe"))) Require(File.Exists(resourceReceipt), "OPEN_ENTRY_UNOWNED");
         if (File.Exists(resourceReceipt)) {
             var entries = Json.Deserialize<Entry[]>(File.ReadAllText(resourceReceipt));
-            Require(entries.Length == 2 && entries.Select(e => e.path).OrderBy(x => x).SequenceEqual(new[] { "ChatChatBar.exe", "Uninstall.exe" }), "RESOURCE_RECEIPT_REFUSED");
+            Require(ResourceEntries(entries), "RESOURCE_RECEIPT_REFUSED");
             if (!repair) foreach (var e in entries) Require(Hash(Child(Root, e.path)) == e.sha256, "GENERATED_RESOURCE_CHANGED");
+            Require(!File.Exists(Child(Root, "OpenChatBarFile.exe")) || entries.Any(e => e.path == "OpenChatBarFile.exe"), "OPEN_ENTRY_UNOWNED");
         }
         var versions = Path.Combine(Root, "versions");
         if (Directory.Exists(versions)) foreach (var directory in Directory.GetDirectories(versions)) {
@@ -240,7 +249,7 @@ internal static class Launcher {
             VersionRoot(Current());
             var retained = Child(Root, "repair-retained/" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(retained);
-            foreach (var name in new[] { "ChatChatBar.exe", "Uninstall.exe", "generated-resources.json", "current.txt" }) {
+            foreach (var name in new[] { "ChatChatBar.exe", "OpenChatBarFile.exe", "Uninstall.exe", "generated-resources.json", "current.txt" }) {
                 var source = Child(Root, name);
                 if (File.Exists(source)) {
                     Require(new FileInfo(source).Length <= 16777216, "REPAIR_RESOURCE_LIMIT");
@@ -348,18 +357,33 @@ internal static class Launcher {
         Atomic(Child(Root, "cleanup-status.txt"), deferred ? "DEFERRED" : "COMPLETE");
     }
     static int Launch(string id, bool activate, string expectedCurrent = null, bool retainRepairOriginal = false) {
-        var directory = VersionRoot(id); var m = ReadManifest(directory); Verify(directory, m);
+        var directory = VersionRoot(id); var m = ReadManifest(directory);
         var identity = m.version + "-" + m.commit.Substring(0, 12);
         Require(id == identity || Regex.IsMatch(id, "^" + Regex.Escape(identity) + "-r[a-f0-9]{32}$"), "VERSION_MISMATCH");
+        if (!activate) {
+            Require(File.ReadAllText(Child(Root, "receipts/" + id + ".sha256")) == Hash(Child(directory, "install-manifest.json")), "CURRENT_MANIFEST_CHANGED");
+            if (TryForward(new string[0])) return 0;
+        }
+        Verify(directory, m);
         var nonce = Guid.NewGuid().ToString("N");
         var ack = Child(Root, "receipts/" + nonce + ".ready");
+        var forwarded = Child(Root, "receipts/" + nonce + ".forwarded");
         Directory.CreateDirectory(Path.GetDirectoryName(ack));
         var psi = new ProcessStartInfo(Child(directory, "ChatChatBarDesktop.exe")) { UseShellExecute = false, WorkingDirectory = Root };
+        foreach (var name in new[] { "CCB_DESKTOP_ACTIVATION_PATH", "CCB_DESKTOP_ACTIVATION_NONCE", "CCB_DESKTOP_FORWARD_PATH", "CCB_DESKTOP_FORWARD_NONCE" }) psi.EnvironmentVariables.Remove(name);
         psi.EnvironmentVariables["CCB_DESKTOP_READY_PATH"] = ack;
         psi.EnvironmentVariables["CCB_DESKTOP_READY_NONCE"] = nonce;
+        if (!activate) {
+            psi.EnvironmentVariables["CCB_DESKTOP_FORWARD_PATH"] = forwarded;
+            psi.EnvironmentVariables["CCB_DESKTOP_FORWARD_NONCE"] = nonce;
+        }
         using (var process = Process.Start(psi)) {
             var timer = Stopwatch.StartNew();
-            while (!File.Exists(ack) && !process.HasExited && timer.ElapsedMilliseconds < 90000) Thread.Sleep(100);
+            while (!File.Exists(ack) && (activate || !File.Exists(forwarded)) && !process.HasExited && timer.ElapsedMilliseconds < 90000) Thread.Sleep(100);
+            if (!activate && File.Exists(forwarded)) {
+                Require(File.ReadAllText(forwarded) == nonce + "\nFORWARDED\n", "FORWARD_RECEIPT_REFUSED");
+                File.Delete(forwarded); Event("FORWARDED " + id); return 0;
+            }
             Require(File.Exists(ack), "NEW_VERSION_NOT_READY_OLD_ENTRY_RETAINED");
             var values = File.ReadAllLines(ack);
             Require(values.Length == 4 && values[0] == nonce && values[1] == m.version && values[2] == m.commit, "READY_IDENTITY_REFUSED");
@@ -373,6 +397,7 @@ internal static class Launcher {
                     if (retainRepairOriginal) Atomic(Child(Root, "receipts/" + expectedCurrent + ".repair-retained"), id);
                     Atomic(Child(Root, "current.txt"), id);
                 }
+                OpenWith(false);
                 File.Delete(ack); Event("READY " + id);
                 if (!activate) try { Cleanup(id); } catch { Event("DEFERRED CLEANUP"); }
             }
@@ -381,7 +406,86 @@ internal static class Launcher {
         return 0;
     }
     // Keep the public entry point small and protocol-stable; each version carries its manager.
-    static int Delegate() {
+    static string QuoteArgument(string value) {
+        Require(value != null && value.IndexOf('\0') < 0 && value.Length <= 32768, "OPEN_ARGUMENT_REFUSED");
+        var b = new StringBuilder("\""); int slashes = 0;
+        foreach (var c in value) {
+            if (c == '\\') { slashes++; continue; }
+            if (c == '"') b.Append('\\', slashes * 2 + 1); else b.Append('\\', slashes);
+            b.Append(c); slashes = 0;
+        }
+        b.Append('\\', slashes * 2); return b.Append('"').ToString();
+    }
+    static void WireInt(Stream stream, int value) {
+        var bytes = BitConverter.GetBytes(IPAddress.HostToNetworkOrder(value)); stream.Write(bytes, 0, 4);
+    }
+    static void WireText(Stream stream, string value) {
+        var bytes = Encoding.UTF8.GetBytes(value); WireInt(stream, bytes.Length); stream.Write(bytes, 0, bytes.Length);
+    }
+    // Warm activation executes no new app image. Cold execution below still verifies every file.
+    static bool TryForward(string[] files) {
+        var local = Environment.GetEnvironmentVariable("LOCALAPPDATA");
+        if (String.IsNullOrEmpty(local)) return false;
+        var key = BitConverter.ToString(SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(Root.ToLowerInvariant()))).Replace("-", "").ToLowerInvariant();
+        var endpoint = Safe(Path.Combine(local, "ChatChatBarDesktopActivation", key, "endpoint"));
+        if (!File.Exists(endpoint)) return false;
+        Require(new FileInfo(endpoint).Length <= 160, "OPEN_ENDPOINT_REFUSED");
+        var lines = File.ReadAllLines(endpoint); int port;
+        Require(lines.Length == 2 && Int32.TryParse(lines[0], out port) && port > 0 && port <= 65535 &&
+            Regex.IsMatch(lines[1], "^[a-f0-9]{64}$"), "OPEN_ENDPOINT_REFUSED");
+        port = Int32.Parse(lines[0]);
+        using (var client = new TcpClient()) {
+            try {
+                var connecting = client.BeginConnect(IPAddress.Loopback, port, null, null);
+                using (connecting.AsyncWaitHandle) {
+                    if (!connecting.AsyncWaitHandle.WaitOne(500)) return false;
+                    client.EndConnect(connecting);
+                }
+            } catch (SocketException) { return false; } // No frame dispatched: the app ingress may resolve a cold race.
+            client.SendTimeout = 3000; client.ReceiveTimeout = 3000;
+            try {
+                using (var stream = client.GetStream()) {
+                    WireInt(stream, 0x43434231); WireText(stream, lines[1]); WireText(stream, Guid.NewGuid().ToString());
+                    WireInt(stream, files.Length); foreach (var file in files) WireText(stream, file); stream.Flush();
+                    var response = new byte[4]; int count = 0;
+                    while (count < 4) { var read = stream.Read(response, count, 4 - count); Require(read > 0, "OPEN_DELIVERY_UNCONFIRMED_DO_NOT_REPLAY"); count += read; }
+                    Require(IPAddress.NetworkToHostOrder(BitConverter.ToInt32(response, 0)) == 0, "OPEN_QUEUE_REFUSED");
+                }
+            } catch (IOException error) {
+                if (error.Message == "OPEN_QUEUE_REFUSED") throw;
+                throw new IOException("OPEN_DELIVERY_UNCONFIRMED_DO_NOT_REPLAY");
+            }
+            return true;
+        }
+    }
+    static void OpenWith(bool remove) {
+        var bridge = Child(Root, "OpenChatBarFile.exe");
+        if (!File.Exists(bridge)) return; // Existing two-resource installations remain valid.
+        var suffix = BitConverter.ToString(SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(Root.ToUpperInvariant()))).Replace("-", "").Substring(0, 12);
+        var id = Registration + ".File." + suffix;
+        var relative = "Software\\Classes\\" + id;
+        var expected = QuoteArgument(bridge) + " \"%1\"";
+        var extensions = new[] { ".cbbackup", ".cbsave", ".json", ".png", ".jpg", ".jpeg", ".webp", ".gif" };
+        try {
+            using (var key = Registry.CurrentUser.OpenSubKey(relative + "\\shell\\open\\command")) {
+                var command = key == null ? null : key.GetValue("") as string;
+                if (command != null && command != expected) { ShellDeferred = true; Event("DEFERRED OPEN_WITH_CHANGED"); return; }
+                if (remove && command == null) return;
+            }
+            if (remove) {
+                foreach (var extension in extensions) using (var key = Registry.CurrentUser.OpenSubKey("Software\\Classes\\" + extension + "\\OpenWithProgids", true)) {
+                    if (key != null) key.DeleteValue(id, false);
+                }
+                Registry.CurrentUser.DeleteSubKeyTree(relative, false);
+            } else {
+                using (var key = Registry.CurrentUser.CreateSubKey(relative)) { key.SetValue("", Label); key.SetValue("FriendlyAppName", Label); }
+                using (var key = Registry.CurrentUser.CreateSubKey(relative + "\\DefaultIcon")) key.SetValue("", QuoteArgument(bridge) + ",0");
+                using (var key = Registry.CurrentUser.CreateSubKey(relative + "\\shell\\open\\command")) key.SetValue("", expected);
+                foreach (var extension in extensions) using (var key = Registry.CurrentUser.CreateSubKey("Software\\Classes\\" + extension + "\\OpenWithProgids")) key.SetValue(id, "");
+            }
+        } catch (Exception) { ShellDeferred = true; Event("DEFERRED OPEN_WITH"); }
+    }
+    static int Delegate(string[] files = null) {
         Require(!ExtractionActive(), "INSTALLATION_BUSY");
         Owned(); var directory = VersionRoot(Current());
         using (var lease = new FileStream(Child(directory, "install-manifest.json"), FileMode.Open, FileAccess.Read, FileShare.Read)) {
@@ -391,7 +495,9 @@ internal static class Launcher {
             var manager = Child(directory, entry.path);
             using (var program = new FileStream(manager, FileMode.Open, FileAccess.Read, FileShare.Read)) {
                 Require(program.Length == entry.bytes && Hash(manager) == entry.sha256, "CURRENT_MANAGER_CHANGED");
-                using (var p = Process.Start(new ProcessStartInfo(manager, "--launch \"" + Root + "\"") { UseShellExecute = false, WorkingDirectory = Root })) {
+                var arguments = files == null ? "--launch " + QuoteArgument(Root) :
+                    "--open " + QuoteArgument(Root) + " " + String.Join(" ", files.Select(QuoteArgument));
+                using (var p = Process.Start(new ProcessStartInfo(manager, arguments) { UseShellExecute = false, WorkingDirectory = Root })) {
                     p.WaitForExit(); return p.ExitCode;
                 }
             }
@@ -417,6 +523,11 @@ internal static class Launcher {
     }
     [STAThread] static int Main(string[] args) {
         try {
+#if OPEN_WITH
+            Root = Safe(AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\'));
+            Require(args.Length > 0 && args.Length <= 64, "OPEN_ARGUMENT_REFUSED");
+            return Delegate(args.Select(p => Safe(p)).ToArray());
+#else
             var mode = args.Length == 0 ? "--launch" : args[0];
             Root = Safe(args.Length >= 2 ? args[1] : AppDomain.CurrentDomain.BaseDirectory.TrimEnd('\\'));
 #if STABLE
@@ -424,7 +535,7 @@ internal static class Launcher {
 #else
             var key = BitConverter.ToString(SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(Root.ToUpperInvariant()))).Replace("-", "");
             using (var mutex = new Mutex(false, "Local\\CCBDesktopInstall-" + key)) {
-                Require(mutex.WaitOne(0), "INSTALL_BUSY");
+                Require(mutex.WaitOne(mode == "--open" ? 15000 : 0), "INSTALL_BUSY");
                 try {
                     if (mode == "--prepare" || mode == "--prepare-repair") {
                         long space = 805306368;
@@ -432,6 +543,28 @@ internal static class Launcher {
                         Prepare(space, mode == "--prepare-repair"); return 0;
                     }
                     Owned();
+                    if (mode == "--open") {
+                        Require(args.Length >= 3 && args.Length <= 67 && !ExtractionActive(), "OPEN_ARGUMENT_REFUSED");
+                        var directory = VersionRoot(Current());
+                        Require(File.ReadAllText(Child(Root, "receipts/" + Current() + ".sha256")) == Hash(Child(directory, "install-manifest.json")), "CURRENT_MANIFEST_CHANGED");
+                        var files = args.Skip(2).Where(p => p != "--quiet").Select(p => Safe(p)).ToArray();
+                        Require(files.Length > 0 && files.Length <= 64, "OPEN_ARGUMENT_REFUSED");
+                        if (TryForward(files)) return 0;
+                        Verify(directory, ReadManifest(directory));
+                        var nonce = Guid.NewGuid().ToString("N"); var receipt = Child(Root, "receipts/" + nonce + ".activation");
+                        var psi = new ProcessStartInfo(Child(directory, "ChatChatBarDesktop.exe"), "--open-files " + String.Join(" ", files.Select(QuoteArgument))) { UseShellExecute = false, WorkingDirectory = Root };
+                        foreach (var name in new[] { "CCB_DESKTOP_READY_PATH", "CCB_DESKTOP_READY_NONCE", "CCB_DESKTOP_FORWARD_PATH", "CCB_DESKTOP_FORWARD_NONCE" }) psi.EnvironmentVariables.Remove(name);
+                        psi.EnvironmentVariables["CCB_DESKTOP_ACTIVATION_PATH"] = receipt;
+                        psi.EnvironmentVariables["CCB_DESKTOP_ACTIVATION_NONCE"] = nonce;
+                        using (var process = Process.Start(psi)) {
+                            var timer = Stopwatch.StartNew();
+                            while (!File.Exists(receipt) && !process.HasExited && timer.ElapsedMilliseconds < 15000) Thread.Sleep(50);
+                            Require(File.Exists(receipt), "OPEN_DELIVERY_UNCONFIRMED_DO_NOT_REPLAY");
+                            Require(File.ReadAllText(receipt) == nonce + "\nQUEUED\n", "OPEN_RECEIPT_REFUSED");
+                            File.Delete(receipt);
+                        }
+                        return 0;
+                    }
                     if (mode == "--shortcuts") {
                         Require(args.Length >= 3 && (args[2] == "desktop" || args[2] == "programs"), "SHORTCUT_ARGUMENT_REFUSED");
                         Require(!ExtractionActive(), "INSTALLATION_BUSY");
@@ -495,8 +628,10 @@ internal static class Launcher {
                         Atomic(Child(Root, "receipts/" + args[2] + ".sha256"), Hash(input)); return 0;
                     }
                     if (mode == "--register") {
-                        var resources = new[] { "ChatChatBar.exe", "Uninstall.exe" }.Select(p => new Entry {
+                        var names = new[] { "ChatChatBar.exe", "Uninstall.exe" }.Concat(File.Exists(Child(Root, "OpenChatBarFile.exe")) ? new[] { "OpenChatBarFile.exe" } : new string[0]);
+                        var resources = names.Select(p => new Entry {
                             path = p, bytes = new FileInfo(Child(Root, p)).Length, sha256 = Hash(Child(Root, p)) }).ToArray();
+                        Require(ResourceEntries(resources), "RESOURCE_RECEIPT_REFUSED");
                         Atomic(Child(Root, "generated-resources.json"), Json.Serialize(resources)); return 0;
                     }
                     if (mode == "--activate" && args.Length >= 3) {
@@ -527,12 +662,12 @@ internal static class Launcher {
                                 using (File.Open(manifest, FileMode.Open, FileAccess.Read, FileShare.None)) {}
                         }
                         var resources = Json.Deserialize<Entry[]>(File.ReadAllText(Child(Root, "generated-resources.json")));
-                        Require(resources.Length == 2 && resources.Select(e => e.path).OrderBy(x => x).SequenceEqual(new[] { "ChatChatBar.exe", "Uninstall.exe" }), "RESOURCE_RECEIPT_REFUSED");
+                        Require(ResourceEntries(resources), "RESOURCE_RECEIPT_REFUSED");
                         foreach (var e in resources) Require(Hash(Child(Root, e.path)) == e.sha256, "GENERATED_RESOURCE_CHANGED");
                         Cleanup(null);
                         Require(!Directory.GetDirectories(Child(Root, "versions")).Any(dir => !RetainedRepairOriginal(Path.GetFileName(dir))),
                             "UNINSTALL_DEFERRED_PROGRAMS_RETAINED");
-                        Shortcuts(true);
+                        Shortcuts(true); OpenWith(true);
                         if (ShellDeferred) Atomic(Child(Root, "cleanup-status.txt"), "DEFERRED");
                         foreach (var e in resources) Require(DeleteOwned(Child(Root, e.path), e.bytes, e.sha256), "RESOURCE_CHANGED");
                         File.Delete(Child(Root, "current.txt"));
@@ -543,11 +678,15 @@ internal static class Launcher {
                 } finally { mutex.ReleaseMutex(); }
             }
 #endif
+#endif
         } catch (Exception e) {
             var code = e is IOException ? e.Message : "INSTALL_OR_LAUNCH_FAILED";
             if (e is IOException && ((e.HResult & 0xffff) == 32 || (e.HResult & 0xffff) == 33)) code = "PROGRAM_FILES_IN_USE";
             if (Root != null && code != "DATA_INSTALL_STATE_OVERLAP") { try { Event("FAILED " + code); } catch {} }
-            if (!args.Contains("--quiet")) MessageBox.Show(code + "\r\n请正常关闭 ChatChatBar 后重试。旧入口及用户资料已保留。", Label, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            var notice = code == "OPEN_DELIVERY_UNCONFIRMED_DO_NOT_REPLAY" ?
+                "文件投递结果尚未确认，请先查看已打开程序的导入队列。不要重复打开同一批文件。原文件和用户资料已保留。" :
+                "请正常关闭 ChatChatBar 后重试。旧入口及用户资料已保留。";
+            if (!args.Contains("--quiet")) MessageBox.Show(code + "\r\n" + notice, Label, MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return args.Contains("--diagnostic-exit") ? DiagnosticFailureExit(code) : 2;
         }
     }

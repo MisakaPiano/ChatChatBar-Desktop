@@ -65,6 +65,8 @@ Workflow increments Android `versionCode`, commits version metadata, tags `v<ver
 
 ## Desktop Preview discovery (D-041)
 
+- Native external-file activation uses the new owned root companion `OpenChatBarFile.exe`, leaving old stable `ChatChatBar.exe --launch root` delegation compatible. Generated-resource receipts accept exactly the old two or new three entries; unowned/changed helpers are never adopted. The current manager registers per-root HKCU OpenWithProgids only, never defaults/UserChoice, and removes only its owned commands. Warm authenticated loopback delivery executes no new image; cold launch retains complete image verification. Queue ACK/FORWARDED and native ready/version activation receipts are separate protocols. Frozen public1229 stable source is a test-only compatibility fixture, never packaged payload.
+
 - `DesktopProgramDataBoundary` is the read-only boundary for migration destinations and confirmed update handoff. It protects the current ApplicationHome and, for the owned NSIS `versions/<id>` layout, the entire managed installation root with symmetric path overlap. `Main` passes the actual selected data root into `DesktopUpdateRuntime`; overlap stops before installer handoff/exit and keeps the downloaded package. Recovery uses existing data-directory migration, including the bound-root publisher where applicable. Installer guards stay authoritative; independent Program/UserData siblings and intentional portable authority keep their existing behavior.
 
 - `app/desktopApp/.../DesktopUpdateChecker.kt` owns the bounded, unauthenticated manual Releases API check. Only `MisakaPiano/ChatChatBar-Desktop` `desktop-v<semver>` tags and their exact HTTPS release pages are eligible; inherited Android tags do not identify a Desktop version.

@@ -5,6 +5,8 @@ description: Maintain ChatBar image-generation and image-processing runtime acro
 
 # ChatBar Image Generation Runtime
 
+Desktop global external-file FIFO is `DesktopExternalImportInspector/Controller/Host`, separate from window-local paste/drop. It validates metadata before raster decode, offers only `desktopImageUseTargets`, rejects animated guidance before dispatch, and waits for the actual Studio generation owner. Read-only previews retain original animation. Existing `importGuidance` owns durable draft copying; external queue lifetime joins operations before source cleanup. It never starts a paid generation automatically.
+
 Keep prompt design, HTTP generation, persistence, and feature UI as separate owners. Use chatbar-novelai-prompt whenever tag-design text or NovelAiPromptDesigner behavior changes.
 
 ## Shared JVM authority (Desktop Phase 7)

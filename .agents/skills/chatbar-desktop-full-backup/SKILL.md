@@ -5,6 +5,8 @@ description: Maintain Desktop cbbackup selection/export, optional credential tra
 
 # Desktop Full-App Backup
 
+External shell files use `DesktopMergeImportController.inspectFile(path,password)` and its specific Job handle, then the existing merge PREVIEW UI. No external queue action selects conflicts, commits or activates a root. `discardExternal()` returns the owned discard Job; cancellation/shutdown joins it before releasing source staging. Password buffers remain volatile; restart-required keeps later external items pending. `inspect(password)`/ordinary UI entry retains its existing picker route.
+
 Numeric provider statistics live under the existing local-only `diagnostics/provider-usage` root and are not part of portable entities or credential transport. Source snapshots retain their ordinary local-root policy; do not imply these statistics move with a selected full backup.
 
 Before same-root legacy restore writes, `DesktopFullBackupCommitJournal` rotates the local Moments admission epoch under `backups/`. The external root-bound scheduling grant then requires explicit renewal; restored enabled settings/tasks do not resume AI merely because the directory identity stayed the same. This epoch is local custody, not an exported entity or credential.

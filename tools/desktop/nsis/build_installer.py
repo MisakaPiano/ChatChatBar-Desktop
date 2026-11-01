@@ -53,6 +53,7 @@ def build(image, output, version, commit, installer_version, profile, compiler):
     version_id = version + '-' + commit[:12]
     required_space = max(805306368, sum(e['bytes'] for e in report['files']) + 67108864)
     launcher = output / 'ChatChatBar.exe'
+    open_bridge = output / 'OpenChatBarFile.exe'
     manager = output / 'install-manager.exe'
     csc = Path(os.environ.get('WINDIR', 'C:/Windows')) / 'Microsoft.NET/Framework64/v4.0.30319/csc.exe'
     args = [str(csc), '/nologo', '/target:winexe', '/platform:x64', '/optimize+',
@@ -64,6 +65,8 @@ def build(image, output, version, commit, installer_version, profile, compiler):
     subprocess.run(args + [str(Path(__file__).with_name('Launcher.cs'))], check=True)
     stable_args = [a for a in args if not a.startswith('/out:')] + ['/out:' + str(launcher), '/define:STABLE']
     subprocess.run(stable_args + [str(Path(__file__).with_name('Launcher.cs'))], check=True)
+    bridge_args = [a for a in args if not a.startswith('/out:')] + ['/out:' + str(open_bridge), '/define:STABLE;OPEN_WITH']
+    subprocess.run(bridge_args + [str(Path(__file__).with_name('Launcher.cs'))], check=True)
     manifest = dict(product=product, version=version, commit=commit, files=[*report['files'],
                     dict(path=manager.name, bytes=manager.stat().st_size, sha256=sha(manager))])
     manifest_path = output / 'install-manifest.json'
@@ -108,6 +111,7 @@ def build(image, output, version, commit, installer_version, profile, compiler):
               f'ExecWait \'"$PLUGINSDIR\\manager.exe" --prepare-repair "$INSTDIR" {required_space} --quiet\' $0',
               'SetOverwrite on', 'prepared:', 'IntCmp $0 0 +2', 'Goto failed',
               'ClearErrors', 'SetOutPath "$INSTDIR"', 'IfErrors failed', 'File ' + quote(launcher), 'IfErrors failed',
+              'File ' + quote(open_bridge), 'IfErrors failed',
               'WriteUninstaller "$INSTDIR\\Uninstall.exe"', 'IfErrors failed',
               'ExecWait \'"$PLUGINSDIR\\manager.exe" --register "$INSTDIR" --quiet\' $0',
               'IntCmp $0 0 +2', 'Goto failed',

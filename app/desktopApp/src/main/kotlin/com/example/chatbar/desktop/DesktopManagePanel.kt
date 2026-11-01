@@ -151,6 +151,8 @@ internal fun DesktopManagePanel(
     networkProxyController: DesktopNetworkProxyController? = null,
     momentsController: DesktopMomentsController? = null,
     providerUsage: DesktopProviderUsageOwner? = null,
+    initialImportKind: DesktopExternalImportKind? = null, initialImportTargetId: String? = null,
+    onInitialImportConsumed: () -> Unit = {},
 ) {
     val t = LocalDesktopUiStrings.current
     val uiLanguage by uiLanguageController.language.collectAsState()
@@ -169,6 +171,33 @@ internal fun DesktopManagePanel(
     val transferState by transferController.state.collectAsState()
     transferState.coverExport?.let { DesktopCoverExportDialog(it, transferController) }
     val modelTransferState by modelTemplateController.state.collectAsState()
+    LaunchedEffect(initialImportKind, initialImportTargetId) {
+        initialImportKind?.let { kind ->
+            section = when (kind) {
+                DesktopExternalImportKind.CHARACTER -> ManageSection.CHARACTERS
+                DesktopExternalImportKind.FORMAT -> ManageSection.FORMATS
+                DesktopExternalImportKind.WORLD_BOOK -> ManageSection.WORLD_BOOKS
+                DesktopExternalImportKind.MODEL_TEMPLATE -> ManageSection.MODELS
+                else -> ManageSection.TRANSFER
+            }
+            if (initialImportTargetId != null) when (kind) {
+                DesktopExternalImportKind.CHARACTER -> {
+                    characterEditorController.load()
+                    characterEditorController.state.value.characters.find { it.id == initialImportTargetId }?.let { characterEditorController.search(it.name) }
+                }
+                DesktopExternalImportKind.FORMAT -> {
+                    formatCardEditorController.load()
+                    formatCardEditorController.state.value.cards.find { it.id == initialImportTargetId }?.let { formatCardEditorController.search(it.name) }
+                }
+                DesktopExternalImportKind.WORLD_BOOK -> {
+                    worldBookEditorController.load()
+                    worldBookEditorController.state.value.books.find { it.id == initialImportTargetId }?.let { worldBookEditorController.search(it.name) }
+                }
+                else -> Unit
+            }
+            onInitialImportConsumed()
+        }
+    }
     LaunchedEffect(initialModels, initialModelId) {
         if (initialModels) {
             section = ManageSection.MODELS

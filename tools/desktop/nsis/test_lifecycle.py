@@ -6,6 +6,9 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+import socket
+import struct
+from concurrent.futures import ThreadPoolExecutor
 from installer_diagnostics import DIAGNOSTICS, decorate_manager_calls, diagnostic_function
 
 BASE = Path(__file__).parent
@@ -13,7 +16,21 @@ CSC = Path(os.environ.get('WINDIR', 'C:/Windows')) / 'Microsoft.NET/Framework64/
 FAKE = r'''
 using System; using System.IO; using System.Threading; using System.Diagnostics;
 class Fake {
- static void Main() {
+ static void Main(string[] args) {
+  var capture=Environment.GetEnvironmentVariable("CCB_TEST_OPEN_CAPTURE");
+  if (capture!=null && args.Length>0) {
+   var lines=new System.Collections.Generic.List<string>();
+   foreach(var arg in args) lines.Add(Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(arg)));
+   File.WriteAllLines(capture,lines.ToArray());
+   var receipt=Environment.GetEnvironmentVariable("CCB_DESKTOP_ACTIVATION_PATH");
+   File.WriteAllText(receipt+".pending",Environment.GetEnvironmentVariable("CCB_DESKTOP_ACTIVATION_NONCE")+"\nQUEUED\n");
+   File.Move(receipt+".pending",receipt); return;
+  }
+  var forwarded=Environment.GetEnvironmentVariable("CCB_DESKTOP_FORWARD_PATH");
+  if (forwarded!=null && Environment.GetEnvironmentVariable("CCB_TEST_FORWARD")=="1") {
+   File.WriteAllText(forwarded+".pending",Environment.GetEnvironmentVariable("CCB_DESKTOP_FORWARD_NONCE")+"\nFORWARDED\n");
+   File.Move(forwarded+".pending",forwarded); return;
+  }
   var p=Environment.GetEnvironmentVariable("CCB_DESKTOP_READY_PATH");
   var root=AppDomain.CurrentDomain.BaseDirectory;
   var v=File.ReadAllLines(Path.Combine(root,"identity.txt"));
@@ -59,6 +76,8 @@ class Lifecycle(unittest.TestCase):
         cls.base = Path(cls.temp.name)
         cls.launcher = cls.base / 'manager.exe'
         cls.stable = cls.base / 'stable.exe'
+        cls.open_bridge = cls.base / 'OpenChatBarFile.exe'
+        cls.legacy_stable = cls.base / 'legacy-stable.exe'
         cls.fake = cls.base / 'ChatChatBarDesktop.exe'
         (cls.base / 'Fake.cs').write_text(FAKE)
         for source, target, refs in [(BASE / 'Launcher.cs', cls.launcher,
@@ -69,6 +88,18 @@ class Lifecycle(unittest.TestCase):
         subprocess.run([str(CSC), '/nologo', '/target:winexe', '/platform:x64', '/out:' + str(cls.stable),
                         '/reference:System.Windows.Forms.dll', '/reference:System.Web.Extensions.dll',
                         '/define:SYNTHETIC', '/define:LIFECYCLE_TEST', '/define:STABLE', str((BASE / 'Launcher.cs').absolute())],
+                       check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        subprocess.run([str(CSC), '/nologo', '/target:winexe', '/platform:x64', '/out:' + str(cls.open_bridge),
+                        '/reference:System.Windows.Forms.dll', '/reference:System.Web.Extensions.dll',
+                        '/define:SYNTHETIC', '/define:LIFECYCLE_TEST', '/define:STABLE;OPEN_WITH', str((BASE / 'Launcher.cs').absolute())],
+                       check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        legacy = BASE / 'fixtures' / 'Launcher-1229.cs'
+        origin = json.loads(legacy.with_suffix('.origin.json').read_text())
+        if digest(legacy) != origin['sha256']:
+            raise AssertionError('Frozen public stable source identity changed')
+        subprocess.run([str(CSC), '/nologo', '/target:winexe', '/platform:x64', '/out:' + str(cls.legacy_stable),
+                        '/reference:System.Windows.Forms.dll', '/reference:System.Web.Extensions.dll',
+                        '/define:SYNTHETIC', '/define:LIFECYCLE_TEST', '/define:STABLE', str(legacy.absolute())],
                        check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
     @classmethod
@@ -315,6 +346,141 @@ class Lifecycle(unittest.TestCase):
         env = dict(os.environ, LOCALAPPDATA=str(self.local), CCB_DESKTOP_TEST_SHELL_ROOT=str(Path(self.case.name) / 'shell'))
         result = subprocess.run([str(self.root / 'ChatChatBar.exe')], env=env, timeout=20)
         self.assertEqual(0, result.returncode)
+
+    def test_normal_warm_entry_accepts_only_separate_forward_receipt_without_changing_current(self):
+        first, _ = self.version(1)
+        self.run_manager('--activate', first)
+        before = (self.root / 'current.txt').read_bytes()
+        env = dict(os.environ, LOCALAPPDATA=str(self.local), CCB_TEST_FORWARD='1',
+                   CCB_DESKTOP_TEST_SHELL_ROOT=str(Path(self.case.name) / 'shell'))
+        result = subprocess.run([str(self.root / 'ChatChatBar.exe')], env=env, timeout=20)
+        self.assertEqual(0, result.returncode)
+        self.assertEqual(before, (self.root / 'current.txt').read_bytes())
+        self.assertEqual([], list((self.root / 'receipts').glob('*.forwarded')))
+
+    def test_native_warm_delivery_uses_authenticated_socket_without_executing_image_and_never_replays_lost_ack(self):
+        import time
+        first, version = self.version(1)
+        self.run_manager('--activate', first)
+        time.sleep(2.1)
+        # A warm delivery executes no image; the same damage must still refuse cold launch.
+        (version / 'identity.txt').write_text('damaged synthetic image')
+        before = (self.root / 'current.txt').read_bytes()
+        key = hashlib.sha256(str(self.root.absolute()).lower().encode('utf-8')).hexdigest()
+        endpoint = self.local / 'ChatChatBarDesktopActivation' / key / 'endpoint'
+        endpoint.parent.mkdir(parents=True)
+        token = 'ab' * 32
+        paths = [Path(self.case.name) / '角色 & file.json', Path(self.case.name) / 'second file.cbsave']
+        for path in paths:
+            path.write_bytes(b'synthetic input retained')
+        def receive(server, acknowledge):
+            with server.accept()[0] as client:
+                client.settimeout(5)
+                def exact(size):
+                    result = b''
+                    while len(result) < size:
+                        chunk = client.recv(size - len(result))
+                        if not chunk:
+                            raise AssertionError('Incomplete native activation frame')
+                        result += chunk
+                    return result
+                def integer():
+                    return struct.unpack('!i', exact(4))[0]
+                def text():
+                    length = integer()
+                    self.assertLessEqual(length, 131072)
+                    self.assertGreaterEqual(length, 0)
+                    return exact(length).decode('utf-8')
+                self.assertEqual(0x43434231, integer())
+                self.assertEqual(token, text())
+                self.assertRegex(text(), r'^[a-f0-9-]{36}$')
+                received = [text() for _ in range(integer())]
+                if acknowledge:
+                    client.sendall(struct.pack('!i', 0))
+            server.settimeout(.3)
+            with self.assertRaises(socket.timeout):
+                server.accept()
+            return received
+        for mode, arguments, acknowledge in [('--launch', [], True), ('--open', paths, True), ('--open', paths, False)]:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server, ThreadPoolExecutor(max_workers=1) as pool:
+                server.bind(('127.0.0.1', 0))
+                server.listen()
+                server.settimeout(10)
+                endpoint.write_text(str(server.getsockname()[1]) + '\n' + token + '\n')
+                pending = pool.submit(receive, server, acknowledge)
+                self.run_manager(mode, *map(str, arguments), expected=0 if acknowledge else 2)
+                self.assertEqual(list(map(str, arguments)), pending.result(timeout=10))
+        endpoint.unlink()
+        self.run_manager('--launch', expected=2)
+        self.assertEqual(before, (self.root / 'current.txt').read_bytes())
+        for path in paths:
+            self.assertEqual(b'synthetic input retained', path.read_bytes())
+
+    def test_unchanged_public1229_stable_entry_launches_new_manager_with_three_resources_cold_and_warm(self):
+        import time
+        (self.root / 'ChatChatBar.exe').write_bytes(self.legacy_stable.read_bytes())
+        (self.root / 'OpenChatBarFile.exe').write_bytes(self.open_bridge.read_bytes())
+        self.run_manager('--register')
+        first, _ = self.version(1)
+        self.run_manager('--activate', first)
+        env = dict(os.environ, LOCALAPPDATA=str(self.local), CCB_DESKTOP_TEST_SHELL_ROOT=str(Path(self.case.name) / 'shell'))
+        for forwarded in (False, True):
+            chosen = dict(env, **({'CCB_TEST_FORWARD': '1'} if forwarded else {}))
+            result = subprocess.run([str(self.root / 'ChatChatBar.exe')], env=chosen, timeout=20)
+            self.assertEqual(0, result.returncode)
+        time.sleep(2.1)
+        self.run_manager('--prepare')
+        self.assertEqual(self.legacy_stable.read_bytes(), (self.root / 'ChatChatBar.exe').read_bytes())
+
+    def test_open_bridge_forwards_unicode_and_spaces_and_uninstall_owns_three_resources_without_defaults(self):
+        import base64
+        import time
+        import winreg
+        def default_json():
+            try:
+                with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Software\Classes\.json') as key:
+                    return winreg.QueryValueEx(key, '')
+            except FileNotFoundError:
+                return None
+        original_default = default_json()
+        first, _ = self.version(1)
+        (self.root / 'OpenChatBarFile.exe').write_bytes(self.open_bridge.read_bytes())
+        self.run_manager('--register')
+        resources = json.loads((self.root / 'generated-resources.json').read_text())
+        self.assertEqual({'ChatChatBar.exe', 'OpenChatBarFile.exe', 'Uninstall.exe'}, {e['path'] for e in resources})
+        self.run_manager('--activate', first)
+        paths = [Path(self.case.name) / '角色 & one.json', Path(self.case.name) / '第二份 file.cbsave']
+        for path in paths:
+            path.write_bytes(b'synthetic unchanged input')
+        capture = Path(self.case.name) / 'captured-arguments.txt'
+        env = dict(os.environ, LOCALAPPDATA=str(self.local), CCB_TEST_OPEN_CAPTURE=str(capture),
+                   CCB_DESKTOP_TEST_SHELL_ROOT=str(Path(self.case.name) / 'shell'))
+        result = subprocess.run([str(self.root / 'OpenChatBarFile.exe'), *map(str, paths)], env=env, timeout=20)
+        self.assertEqual(0, result.returncode)
+        self.assertEqual(['--open-files', *map(str, paths)],
+                         [base64.b64decode(value).decode('utf-8') for value in capture.read_text(encoding='utf-8-sig').splitlines()])
+        self.assertEqual(original_default, default_json())
+        suffix = hashlib.sha256(str(self.root.absolute()).upper().encode('utf-8')).hexdigest().upper()[:12]
+        key_path = r'Software\Classes\ChatChatBarDesktopNSISLifecycleTest.File.' + suffix
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path + r'\shell\open\command') as key:
+            self.assertEqual('"' + str(self.root / 'OpenChatBarFile.exe') + '" "%1"', winreg.QueryValueEx(key, '')[0])
+        time.sleep(2.1)
+        self.run_manager('--uninstall')
+        with self.assertRaises(FileNotFoundError):
+            winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path)
+        self.assertEqual(original_default, default_json())
+        for path in paths:
+            self.assertEqual(b'synthetic unchanged input', path.read_bytes())
+
+    def test_partial_owned_root_cannot_adopt_an_unowned_open_bridge(self):
+        for name in ('ChatChatBar.exe', 'Uninstall.exe', 'generated-resources.json'):
+            (self.root / name).unlink()
+        foreign = self.root / 'OpenChatBarFile.exe'
+        foreign.write_bytes(b'synthetic foreign program retained')
+        before = digest(foreign)
+        self.run_manager('--prepare', expected=2)
+        self.assertEqual(before, digest(foreign))
+        self.assertFalse((self.root / 'generated-resources.json').exists())
 
     def test_required_disk_space_refuses_without_creating_root(self):
         import shutil

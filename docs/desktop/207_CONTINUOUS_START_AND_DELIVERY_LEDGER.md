@@ -1,4 +1,4 @@
-2026-11-02 a391／CI88完整SUCCESS并读实际报告：Windows309suite／2419＝2400PASS＋19SKIP，MemoryRag新四项、production JAR5／NTFS7／shared1135／Android582通过。后续手动action原不经platform.run，补两入口共用会话归属，真实controller回归等待open与已登记jobs空闲后再操作；后补源仍待独立云端，不能由88代验。1230冻结064／本地签名14保持，公开1229／13不变；迟到1226许可已执行，不重发或扩权。不代装H、本机无重负载、10:00前不问人工。见249。
+2026-11-02 9040／CI89完整SUCCESS实际报告已读：Windows309suite／2420＝2401PASS＋19SKIP，手动controller归属0.411秒、production JAR5与NTFS7通过；Linux同树复用88。当前原P15外部文件完整链源码已接Main冷暖接收、持久FIFO、原typed/model/save/merge/Studio owners、item/attempt完成证明和非默认Open With，待第一轮精确新源云端验证；不以静态检查冒认通过，见250。1230冻结064／本地签名14保持，公开1229／13不变；迟到1226许可已执行，不重发或扩权。不代装H、本机无重负载、10:00前不问人工。见249。
 
 下方历史保留。
 

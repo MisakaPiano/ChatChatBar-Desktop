@@ -40,4 +40,31 @@ internal object DesktopInstalledProgram {
     }
 
     fun release() { lease?.let { Kernel32.INSTANCE.CloseHandle(it) }; lease = null }
+
+    /** This acknowledges queue delivery only, never import completion or a new-version activation. */
+    fun activationQueued(environment: Map<String, String> = System.getenv()) {
+        val raw = environment["CCB_DESKTOP_ACTIVATION_PATH"] ?: return
+        val nonce = requireNotNull(environment["CCB_DESKTOP_ACTIVATION_NONCE"])
+        check(nonce.matches(Regex("[a-f0-9]{32}")))
+        val home = Path.of(System.getProperty(DesktopApplicationHome.PROPERTY_NAME)).toAbsolutePath().normalize()
+        val target = Path.of(raw).toAbsolutePath().normalize()
+        check(lease != null && home.parent.fileName.toString() == "versions" &&
+            target == home.parent.parent.resolve("receipts/$nonce.activation"))
+        val temporary = target.resolveSibling("$nonce.activation.pending")
+        Files.writeString(temporary, "$nonce\nQUEUED\n", StandardOpenOption.CREATE_NEW)
+        Files.move(temporary, target, StandardCopyOption.ATOMIC_MOVE)
+    }
+
+    fun forwarded(environment: Map<String, String> = System.getenv()) {
+        val raw = environment["CCB_DESKTOP_FORWARD_PATH"] ?: return
+        val nonce = requireNotNull(environment["CCB_DESKTOP_FORWARD_NONCE"])
+        check(nonce.matches(Regex("[a-f0-9]{32}")))
+        val home = Path.of(System.getProperty(DesktopApplicationHome.PROPERTY_NAME)).toAbsolutePath().normalize()
+        val target = Path.of(raw).toAbsolutePath().normalize()
+        check(lease != null && home.parent.fileName.toString() == "versions" &&
+            target == home.parent.parent.resolve("receipts/$nonce.forwarded"))
+        val temporary = target.resolveSibling("$nonce.forwarded.pending")
+        Files.writeString(temporary, "$nonce\nFORWARDED\n", StandardOpenOption.CREATE_NEW)
+        Files.move(temporary, target, StandardCopyOption.ATOMIC_MOVE)
+    }
 }

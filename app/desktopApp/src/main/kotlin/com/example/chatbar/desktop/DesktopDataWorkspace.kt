@@ -15,7 +15,8 @@ private enum class BackupPage { OVERVIEW, EXPORT, IMPORT, CHECK }
 @Composable
 internal fun DesktopDataWorkspace(root: DesktopDataRootSwitchController, full: DesktopFullBackupController,
     merge: DesktopMergeImportController?, automatic: DesktopAutomaticBackupSettingsController,
-    onExit: () -> Unit, openUpdateRequest: Int = 0, onUpdateRequestConsumed: () -> Unit = {}) {
+    onExit: () -> Unit, openUpdateRequest: Int = 0, onUpdateRequestConsumed: () -> Unit = {},
+    openImportRequest: Int = 0, onImportRequestConsumed: () -> Unit = {}) {
     val updateNotices = LocalDesktopUpdateNotices.current
     val updateNotice = updateNotices?.state?.collectAsState()?.value
     val rootState by root.state.collectAsState()
@@ -32,6 +33,9 @@ internal fun DesktopDataWorkspace(root: DesktopDataRootSwitchController, full: D
     val page = if (moving) DataPage.LOCATION else if (busy) DataPage.BACKUP else selected
     LaunchedEffect(openUpdateRequest) {
         if (openUpdateRequest > 0) { selected = DataPage.UPDATE; onUpdateRequestConsumed() }
+    }
+    LaunchedEffect(openImportRequest) {
+        if (openImportRequest > 0) { selected = DataPage.BACKUP; operation = BackupPage.IMPORT; onImportRequestConsumed() }
     }
     LaunchedEffect(page, updateNotice?.showStartupNotice) {
         if (page == DataPage.UPDATE) updateNotices?.dismissStartupNotice()
