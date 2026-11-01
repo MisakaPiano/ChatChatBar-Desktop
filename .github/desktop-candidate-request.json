@@ -5,7 +5,7 @@
   "installerVersion": "0.1.1226",
   "platformCiRunId": 41268127116,
   "platformCiStateAtRequest": "SUCCESS",
-  "attempt": 3,
-  "previousBuildRun": 41269541366,
-  "previousBuildFailure": "IMAGE_CHANGED_AT_PATH_HANDLE_STAMP_COMPARISON"
+  "attempt": 4,
+  "previousBuildRun": 41270287446,
+  "previousBuildFailure": "RAW_CTIME_DOMAIN_MISMATCH_IN_BOTH_PYTHON_VERSIONS"
 }

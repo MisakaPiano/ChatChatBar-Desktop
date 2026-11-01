@@ -2,10 +2,12 @@
 import contextlib
 import io
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 import warnings
@@ -152,6 +154,56 @@ class AppImageAuditTest(unittest.TestCase):
                 calls += 1
                 if calls == 3:
                     path.write_bytes(path.read_bytes() + b'_EXTERNAL_FIXTURE_CHANGE')
+            return actual(path, directory)
+        with patch.object(tool, 'regular', observe):
+            self.refused('IMAGE_CHANGED')
+
+    def test_windows_birthtime_preserves_cross_api_identity_without_ignoring_size_or_mtime(self):
+        path = SimpleNamespace(st_dev=1, st_ino=2, st_size=3, st_mtime_ns=4,
+                               st_ctime_ns=5, st_birthtime_ns=5)
+        handle = SimpleNamespace(**vars(path))
+        handle.st_ctime_ns = 9
+        with patch.object(tool.os, 'name', 'nt'):
+            self.assertEqual(tool.identity_stamp(path), tool.identity_stamp(handle))
+            self.assertNotEqual(tool.stamp(path), tool.stamp(handle))
+            handle.st_size += 1
+            self.assertNotEqual(tool.identity_stamp(path), tool.identity_stamp(handle))
+            handle.st_size -= 1
+            handle.st_mtime_ns += 1
+            self.assertNotEqual(tool.identity_stamp(path), tool.identity_stamp(handle))
+
+    def test_handle_change_time_alone_during_read_still_refuses(self):
+        actual = tool.os.fstat
+        calls = 0
+        def handle_stat(fd):
+            nonlocal calls
+            value = actual(fd)
+            calls += 1
+            if calls == 2:
+                fields = {key: getattr(value, key) for key in
+                          ['st_dev', 'st_ino', 'st_size', 'st_mtime_ns', 'st_ctime_ns']}
+                if hasattr(value, 'st_birthtime_ns'):
+                    fields['st_birthtime_ns'] = value.st_birthtime_ns
+                fields['st_ctime_ns'] += 1
+                return SimpleNamespace(**fields)
+            return value
+        with patch.object(tool.os, 'fstat', handle_stat):
+            self.refused('IMAGE_CHANGED')
+
+    def test_actual_same_byte_replacement_with_restored_mtime_still_refuses(self):
+        actual = tool.regular
+        target = self.image / 'ChatChatBarDesktopSynthetic.exe'
+        calls = 0
+        def observe(path, directory=False):
+            nonlocal calls
+            if path == target:
+                calls += 1
+                if calls == 3:
+                    previous = target.stat()
+                    replacement = self.base / 'same-byte-replacement'
+                    replacement.write_bytes(target.read_bytes())
+                    os.utime(replacement, ns=(previous.st_atime_ns, previous.st_mtime_ns))
+                    replacement.replace(target)
             return actual(path, directory)
         with patch.object(tool, 'regular', observe):
             self.refused('IMAGE_CHANGED')

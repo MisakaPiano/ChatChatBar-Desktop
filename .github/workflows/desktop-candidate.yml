@@ -86,32 +86,21 @@ jobs:
           $temp = New-Item -ItemType Directory -Path (Join-Path $base 'temp') -ErrorAction Stop
           @("CCB_BUILD_BASE=$base", "CCB_CI_SOURCE=$source", "CCB_BUILD_OUTPUT=$($output.FullName)", "TEMP=$($temp.FullName)", "TMP=$($temp.FullName)") | Add-Content $env:GITHUB_ENV -Encoding utf8
 
+      - name: Test image audit guards with tiny synthetic files on both interpreters
+        env:
+          CCB_LEGACY_PYTHON: ${{ steps.legacyPython.outputs.python-path }}
+        run: |
+          $tests = "$env:GITHUB_WORKSPACE/tools/desktop/windows/test_audit_app_image.py"
+          & $env:CCB_LEGACY_PYTHON -B $tests 2>&1 | Tee-Object (Join-Path $env:CCB_BUILD_OUTPUT 'audit-tests-312.log')
+          if ($LASTEXITCODE -ne 0) { throw 'AUDIT_GUARDS_312_FAILED' }
+          python -B $tests 2>&1 | Tee-Object (Join-Path $env:CCB_BUILD_OUTPUT 'audit-tests-313.log')
+          if ($LASTEXITCODE -ne 0) { throw 'AUDIT_GUARDS_313_FAILED' }
+
       - name: Reprove path and opened-file metadata identity before packaging
         env:
           CCB_LEGACY_PYTHON: ${{ steps.legacyPython.outputs.python-path }}
         run: |
-          $probe = @'
-          import json, os, pathlib, subprocess, sys, time
-          base = pathlib.Path(os.environ['CCB_BUILD_BASE'])
-          sample = base / 'synthetic-metadata-preflight.bin'
-          with sample.open('xb') as output:
-              output.write(b'SYNTHETIC')
-          time.sleep(.05)
-          with sample.open('ab') as output:
-              output.write(b'_MODIFIED')
-          code = "import json,os,pathlib,sys; p=pathlib.Path(sys.argv[1]); keys=['st_dev','st_ino','st_size','st_mtime_ns','st_ctime_ns']; s=lambda v:{k:getattr(v,k) for k in keys}; before=s(p.stat(follow_symlinks=False)); f=p.open('rb'); opened=s(os.fstat(f.fileno())); f.read(); after=s(os.fstat(f.fileno())); f.close(); print(json.dumps(dict(python=sys.version.split()[0],before=before,opened=opened,after=after,pathAfter=s(p.stat(follow_symlinks=False)))))"
-          results = []
-          for executable in [os.environ['CCB_LEGACY_PYTHON'], sys.executable]:
-              run = subprocess.run([executable, '-B', '-c', code, str(sample)], check=True, capture_output=True, text=True)
-              results.append(json.loads(run.stdout))
-          report = dict(kind='SYNTHETIC_PATH_HANDLE_METADATA_IDENTITY', results=results)
-          (pathlib.Path(os.environ['CCB_BUILD_OUTPUT']) / 'metadata-preflight.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
-          print(json.dumps(report))
-          active = results[-1]
-          if not active['before'] == active['opened'] == active['after'] == active['pathAfter']:
-              raise RuntimeError('PACKAGING_INTERPRETER_METADATA_INCONSISTENT')
-          '@
-          $probe | python -B -
+          python -B "$env:GITHUB_WORKSPACE/tools/desktop/nsis/metadata_preflight.py"
           if ($LASTEXITCODE -ne 0) { throw 'FILE_IDENTITY_PREFLIGHT_FAILED' }
 
       - name: Fetch pinned official NSIS compiler
@@ -148,12 +137,18 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $nsis = Join-Path $env:CCB_BUILD_OUTPUT 'nsis'
-          .\gradlew.bat :desktopApp:packageNsis "-PdesktopVersion=$env:CCB_CANDIDATE_VERSION" "-PdesktopInstallerVersion=$env:CCB_CANDIDATE_INSTALLER" "-PdesktopNsisCompiler=$env:CCB_NSIS_COMPILER" "-PdesktopNsisOutput=$nsis" --no-daemon --no-configuration-cache --console=plain
-          if ($LASTEXITCODE -ne 0) { throw 'ORDINARY_PACKAGE_FAILED' }
+          .\gradlew.bat :desktopApp:verifyDesktopInstallerIdentity :desktopApp:attachDesktopUpdater "-PdesktopVersion=$env:CCB_CANDIDATE_VERSION" "-PdesktopInstallerVersion=$env:CCB_CANDIDATE_INSTALLER" --no-daemon --no-configuration-cache --console=plain
+          if ($LASTEXITCODE -ne 0) { throw 'FROZEN_IMAGE_BUILD_FAILED' }
           $image = Join-Path $env:CCB_CI_SOURCE 'app\desktopApp\build\compose\binaries\main\app\ChatChatBarDesktop'
+          # Application source stays frozen. Auditing/packaging tools have their own control commit.
+          python -B "$env:GITHUB_WORKSPACE/tools/desktop/nsis/build_installer.py" --image $image --output $nsis --version $env:CCB_CANDIDATE_VERSION --commit $env:CCB_CANDIDATE_SOURCE --installer-version $env:CCB_CANDIDATE_INSTALLER --profile desktop --makensis $env:CCB_NSIS_COMPILER
+          if ($LASTEXITCODE -ne 0) { throw 'ORDINARY_PACKAGE_FAILED' }
           $archive = Join-Path $env:CCB_BUILD_OUTPUT ("ChatChatBar-Desktop-$env:CCB_CANDIDATE_VERSION-independent-windows-x64.zip")
-          python -B "$env:CCB_CI_SOURCE/tools/desktop/nsis/build_independent_zip.py" --image $image --destination $archive --version $env:CCB_CANDIDATE_VERSION --commit $env:CCB_CANDIDATE_SOURCE --installer-version $env:CCB_CANDIDATE_INSTALLER
+          python -B "$env:GITHUB_WORKSPACE/tools/desktop/nsis/build_independent_zip.py" --image $image --destination $archive --version $env:CCB_CANDIDATE_VERSION --commit $env:CCB_CANDIDATE_SOURCE --installer-version $env:CCB_CANDIDATE_INSTALLER
           if ($LASTEXITCODE -ne 0) { throw 'INDEPENDENT_PACKAGE_FAILED' }
+          $toolFiles = @('tools/desktop/nsis/build_installer.py', 'tools/desktop/nsis/build_independent_zip.py', 'tools/desktop/windows/audit_app_image.py')
+          $toolHashes = @($toolFiles | ForEach-Object { [ordered]@{path=$_; sha256=(Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $env:GITHUB_WORKSPACE $_)).Hash.ToLowerInvariant()} })
+          [ordered]@{kind='FROZEN_APPLICATION_AND_SEPARATE_BUILD_TOOLS'; applicationSource=$env:CCB_CANDIDATE_SOURCE; controlSource=(git -C $env:GITHUB_WORKSPACE rev-parse HEAD); tools=$toolHashes} | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $env:CCB_BUILD_OUTPUT 'package-control.json') -Encoding utf8
           @("CCB_CANDIDATE_IMAGE=$image", "CCB_CANDIDATE_ARCHIVE=$archive", "CCB_CANDIDATE_NSIS=$nsis") | Add-Content $env:GITHUB_ENV -Encoding utf8
 
       - name: Actual ordinary upgrade and stable-entry lifecycle in fresh runner profile
@@ -207,6 +202,7 @@ jobs:
             ${{ env.CCB_BUILD_OUTPUT }}/nsis/package.json
             ${{ env.CCB_BUILD_OUTPUT }}/nsis/install-manifest.json
             ${{ env.CCB_BUILD_OUTPUT }}/nsis/app-image-audit.json
+            ${{ env.CCB_BUILD_OUTPUT }}/package-control.json
 
       - uses: actions/upload-artifact@v4
         if: always() && env.CCB_BUILD_OUTPUT != ''
@@ -229,3 +225,4 @@ jobs:
             ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-independent-cloud/result.json
             ${{ env.CCB_BUILD_OUTPUT }}/compiler-download.json
             ${{ env.CCB_BUILD_OUTPUT }}/metadata-preflight.json
+            ${{ env.CCB_BUILD_OUTPUT }}/audit-tests-*.log

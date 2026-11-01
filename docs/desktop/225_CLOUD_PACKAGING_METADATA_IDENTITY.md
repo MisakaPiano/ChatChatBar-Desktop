@@ -1,0 +1,11 @@
+# 云端打包与文件元数据身份
+
+2026-11-01。应用冻结源d94e2df0完整CI53通过，后续控制工具改动不混入该应用源码。现用H仍1225，未新安装／公开。
+
+首云端run41269219583：NSIS下载固定SHA不符，停止于工具获取，未编译应用。R02／41269541366保留原ZIP和compiler双SHA，改用Python HTTP读取；下载2363925B、PK签名及原SHA通过，应用编译／updater附着完成，但`audit_app_image.py:91`的path-stat／fstat原始ctime比较报IMAGE_CHANGED，未生成安装包。两次完整log保留于I盘updates。
+
+R03／41270287446仅用新增的短小人工文件探针验证，尚未编译：CPython3.12.10和3.13.16均观察到dev／ino／size／mtime完全相同，path-before等于path-after、fd-before等于fd-after，只有cross-API ctime不同。例：path ctime1793504671136802700，handle ctime1793504671192131200。两者代表creation与change时间的不同含义，不能据此把稳定文件当作已变化；原失败保留。
+
+后续工具修复把跨API身份按Windows birthtime归一（旧Windows Python仍用其原creation-ctime），同时保留路径和handle各自原始stamp的前后比较；handle仅ctime变化依然拒绝。dev／ino／size／mtime、SHA、CRC、前后路径／成员集合复核均保持。新增回归覆盖语义差异、handle ctime独变、同字节／恢复mtime的实际文件替换仍拒绝；原真实修改拒绝案例保留。测试仅云端执行。
+
+应用镜像仍从d94运行`verifyDesktopInstallerIdentity`和`attachDesktopUpdater`，然后用明确的控制检查点工具进行审计、NSIS与独立ZIP打包，不静默改写冻结树。`package-control.json`记录应用source、control source及三个工具的SHA。新的tiny audit与元数据探针先在两种Python上通过才进入打包；后续普通原生升级／重开、独立入口及各自范围必须独立实测，不以探针替代。
