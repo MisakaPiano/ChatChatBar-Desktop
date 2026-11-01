@@ -8,6 +8,7 @@ import com.example.chatbar.domain.rag.ChunkingEngine
 import com.example.chatbar.domain.rag.EmbeddingService
 import com.example.chatbar.domain.rag.VectorSearchEngine
 import com.example.chatbar.domain.search.*
+import com.example.chatbar.domain.worldbook.WorldBookAiGateway
 
 internal typealias DesktopCharacterResearchPreparation = suspend (
     String, CharacterCard, ModelConfig, CharacterResearchOptions, List<CharacterReferenceDocument>,
@@ -44,4 +45,7 @@ internal class DesktopCharacterResearchSources(
         }
         failure?.let { throw it }
     }
+
+    fun worldBook(gateway: WorldBookAiGateway): WorldBookResearchPort =
+        WorldBookResearchEngine(settings::getAppSettings, gateway, backend, documents, manual)
 }

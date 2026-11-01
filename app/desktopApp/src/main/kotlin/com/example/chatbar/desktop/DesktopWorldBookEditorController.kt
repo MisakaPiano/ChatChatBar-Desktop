@@ -83,6 +83,22 @@ internal class DesktopWorldBookEditorController(
     private var leaveAction: (() -> Unit)? = null
     private var committedBook: WorldBook? = null
     private var committedDraftTargets: List<String?> = emptyList()
+    internal var ai: DesktopWorldBookAiController? = null
+    internal val canUseAi: Boolean get() = state.value.let { current ->
+        current.book != null && current.modal == null && current.scanDepthInput.toIntOrNull()?.let { it >= 0 } == true &&
+            (current.tokenBudgetInput.isBlank() || current.tokenBudgetInput.toIntOrNull()?.let { it >= 0 } == true) &&
+            current.problem !in setOf(WorldBookEditorProblem.SAVE_COMMITTED_WARNING, WorldBookEditorProblem.CLEAN_DRAFT_WARNING,
+                WorldBookEditorProblem.SOURCE_CHANGED, WorldBookEditorProblem.SOURCE_DELETED)
+    }
+
+    internal fun applyAi(session: String, basis: WorldBook, entries: List<WorldBookEntry>): Boolean {
+        val current = state.value
+        if (!canUseAi || current.draftSessionId != session || current.book != basis) return false
+        val changed = current.copy(book = basis.copy(entries = entries), draftPersisted = false, problem = null, detail = null)
+        if (!mutableState.compareAndSet(current, changed.copy(dirty = isDirty(changed)))) return false
+        scheduleDraft()
+        return true
+    }
 
     suspend fun load() {
         mutableState.value = mutableState.value.copy(books = worlds.getAll())
@@ -597,6 +613,7 @@ internal class DesktopWorldBookEditorController(
         mutableState.value = mutableState.value.copy(book = null, base = null, modal = null, leavePrompt = false)
     }
     suspend fun closeAndDrain() {
+        ai?.closeAndDrain()
         flushDraft()
         when {
             mutableState.value.problem == WorldBookEditorProblem.SAVE_COMMITTED_WARNING -> retryCleanup()

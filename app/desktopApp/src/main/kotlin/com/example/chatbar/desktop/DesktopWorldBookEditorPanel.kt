@@ -1,3 +1,4 @@
+@file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 package com.example.chatbar.desktop
 
 import androidx.compose.foundation.background
@@ -115,6 +116,16 @@ internal fun DesktopWorldBookEditorOverlay(controller: DesktopWorldBookEditorCon
             WBBoolean(t(DesktopUiText.WORLD_WHOLE), book.matchWholeWords) {
                 controller.edit { it.copy(matchWholeWords = !it.matchWholeWords) }
             }
+            controller.ai?.let { ai ->
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    BootstrapButton("AI 创建条目", secondary = true, enabled = controller.canUseAi) {
+                        ai.open(com.example.chatbar.domain.worldbook.WorldBookAiOperation.CREATE)
+                    }
+                    BootstrapButton("AI 填充空白正文", secondary = true, enabled = controller.canUseAi && book.entries.any { it.content.isBlank() }) {
+                        ai.open(com.example.chatbar.domain.worldbook.WorldBookAiOperation.FILL)
+                    }
+                }
+            }
             DesktopWorldBookEntries(controller, state, onImport = { importOpen = true },
                 onDelete = { deleteIndex = it })
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -123,6 +134,7 @@ internal fun DesktopWorldBookEditorOverlay(controller: DesktopWorldBookEditorCon
                 BootstrapButton(t(DesktopUiText.DISCARD_DRAFT), secondary = true) { scope.launch { controller.discard() } }
             }
         }
+        controller.ai?.let { DesktopWorldBookAiPanel(it) }
         if (state.modal != null) WBEntryEditor(controller, state.modal!!)
         if (importOpen) WBCharacterImport(controller, state) { importOpen = false }
         if (helpOpen) WBHelp { helpOpen = false }

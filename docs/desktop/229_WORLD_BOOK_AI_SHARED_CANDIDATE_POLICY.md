@@ -6,4 +6,6 @@
 
 后续共享核心（本地源码，待云端）：`WorldBookAiCore` 与 `WorldBookResearchEngine` 执行原批次、研究、JSON及修复流程；Android保留task-run、API和operation/stage映射。原9个Prompt literal及7个builder移入唯一shared `WorldBookAiPromptAuthority`，原Android符号继续代理，source fingerprint新增该源。独立机械比较确认原文保持。Desktop transport seam保留isolated参数、120秒默认socket/inactivity，研究才使用thinking=false/effort=low；不套角色512/256、600秒配置。新增候选跨批失败续作、目标ID与修复、终止异常、研究session复用及6阶段真实合成HTTP请求对照，尚未执行。
 
-Desktop编辑器／候选界面仍待接线。研究query上限、session跨批缓存和包含所选模型的恢复签名与角色流程不同，不能套换模型继续语义。未打包、未发布、未真人验收，B3未完成。
+Desktop源码接线（待云端）：世界书编辑器新增“AI 创建条目”和“AI 填充空白正文”，临时文档、四种资料模式、精确模型、待填目标选择、分批输出／研究与思考预览、请求日志、候选勾选、明确应用草稿。完整book／session／target保护拒绝手动修改后的旧候选；按原字段默认值新增，补空只写仍空且选中目标正文。模型同ID配置变化也使断点失效，已完成批次保留；fresh或失效时同步清除恢复入口。TaskRuntime／数据维护取消及pre-start取消复位独立覆盖；关闭先排水世界书控制器，再关共享来源和transport。没有新增自动保存或改写原件。
+
+新增Desktop controller6回归及420／1100 Scene候选选择→应用草稿→补空→正常保存流程，尚未执行；原文9literal／7builder机械证据可复用，但不等于HTTP或运行通过。研究query上限、session跨批缓存和包含所选模型的恢复签名与角色流程不同，不能套换模型继续语义。未打包、未发布、未真人验收，B3未完成。

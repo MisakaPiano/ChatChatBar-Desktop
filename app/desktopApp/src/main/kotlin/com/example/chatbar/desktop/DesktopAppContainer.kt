@@ -358,7 +358,13 @@ class DesktopAppContainer internal constructor(
     }
     private val worldBookEditorOwner = lazy {
         DesktopWorldBookEditorController(worldBookRepository, editorDraftRepository,
-            characterRepository, transferJson)
+            characterRepository, transferJson).also { editor ->
+            editor.ai = DesktopWorldBookAiController(editor, settingsRepository, effectiveModelResolver,
+                taskRuntime, dataOperationCoordinator,
+                stream = { operation, _, messages, model, diagnostics ->
+                    formatCardAiTransportOwner.value.streamWorldBookAi(operation, messages, model, diagnostics)
+                }, research = { gateway -> characterResearchSourcesOwner.value.worldBook(gateway) }, filePicker = filePicker)
+        }
     }
     internal val worldBookEditorController by worldBookEditorOwner
     internal val presetModelCatalogSource by lazy {
@@ -699,11 +705,11 @@ class DesktopAppContainer internal constructor(
             draftRuntimeClose = {
                 if (primaryChatControllerOwner.isInitialized()) primaryChatController.closeDraftPersistence()
                 if (characterEditorOwner.isInitialized()) characterEditorController.closeAndDrain()
+                if (worldBookEditorOwner.isInitialized()) worldBookEditorController.closeAndDrain()
                 if (characterResearchSourcesOwner.isInitialized()) characterResearchSourcesOwner.value.closeAndDrain()
                 if (characterImageGenerationOwner.isInitialized()) characterImageGenerationOwner.value.closeAndDrain()
                 if (formatCardEditorOwner.isInitialized()) formatCardEditorController.closeAndDrain()
                 if (formatCardAiTransportOwner.isInitialized()) formatCardAiTransportOwner.value.closeAndDrain()
-                if (worldBookEditorOwner.isInitialized()) worldBookEditorController.closeAndDrain()
             },
             runtimeClose = { automaticBackupRuntime.close() },
             coordinatorClose = { dataOperationCoordinator.closeAndDrain() },
