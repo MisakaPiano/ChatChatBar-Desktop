@@ -77,6 +77,8 @@ kernel.QueryInformationJobObject.argtypes = [W.HANDLE, C.c_int, C.c_void_p, W.DW
 kernel.ResumeThread.argtypes = [W.HANDLE]
 kernel.CloseHandle.argtypes = [W.HANDLE]
 kernel.GetExitCodeProcess.argtypes = [W.HANDLE, C.POINTER(W.DWORD)]
+kernel.WaitForSingleObject.argtypes = [W.HANDLE, W.DWORD]
+kernel.WaitForSingleObject.restype = W.DWORD
 kernel.OpenProcess.restype = W.HANDLE
 kernel.OpenProcess.argtypes = [W.DWORD, W.BOOL, W.DWORD]
 kernel.ReadProcessMemory.argtypes = [W.HANDLE, C.c_void_p, C.c_void_p, C.c_size_t, C.POINTER(C.c_size_t)]
@@ -112,12 +114,20 @@ def cwd(pid):
 
 
 def process_image(pid):
-    handle = kernel.OpenProcess(0x1000, False, pid)
+    handle = kernel.OpenProcess(0x101000, False, pid)  # QUERY_LIMITED_INFORMATION | SYNCHRONIZE
     require(handle, 'PROCESS_IMAGE_OPEN_FAILED')
     try:
         text = C.create_unicode_buffer(32768)
         size = W.DWORD(len(text))
-        require(kernel.QueryFullProcessImageNameW(handle, 0, text, C.byref(size)), 'PROCESS_IMAGE_QUERY_FAILED')
+        if not kernel.QueryFullProcessImageNameW(handle, 0, text, C.byref(size)):
+            error = C.get_last_error()
+            code = W.DWORD()
+            exit_read = bool(kernel.GetExitCodeProcess(handle, C.byref(code)))
+            wait = kernel.WaitForSingleObject(handle, 0)
+            # Observe the same process object; neither an exited nor an unidentified process
+            # is silently accepted. Retain the original refusal with exact native diagnostics.
+            raise RuntimeError(f'PROCESS_IMAGE_QUERY_FAILED pid={pid} win32={error} '
+                               f'wait={wait} exitRead={exit_read} exitCode={code.value if exit_read else None}')
         return text.value
     finally:
         kernel.CloseHandle(handle)
@@ -207,8 +217,13 @@ def launch_close(case, image, executable, arguments, install_root, label, defaul
             require(blocked.returncode == 2 and (install_root / 'current.txt').read_text().strip() == current and
                     (program / 'install-manifest.json').read_bytes() == original_manifest, 'RUNNING_PROGRAM_INSTALL_NOT_REFUSED')
         active = pids()
-        directories = {str(pid): cwd(pid) for pid in active}
-        images = {str(pid): process_image(pid) for pid in active}
+        try:
+            directories = {str(pid): cwd(pid) for pid in active}
+            images = {str(pid): process_image(pid) for pid in active}
+        except RuntimeError as error:
+            save(case / (label + '-process-query-result.json'), dict(
+                initialJobPids=active, currentJobPids=pids(), failure=str(error), passed=False))
+            raise
         update_helpers = {pid: directory for pid, directory in directories.items()
                           if Path(directory).resolve().is_relative_to(program.resolve()) and allow_update_helper and
                           owned_update_helper_cwd(program, images[pid], directory)}
