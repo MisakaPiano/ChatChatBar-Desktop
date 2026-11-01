@@ -1,5 +1,7 @@
 # 任务中心与托盘 / 2026-11-02
 
+Moments后续再补安全回原页的MOMENTS_HOME，与精确post定位分开：真实worker行携原session上下文，前往只走原MOMENTS页和离开／modal门禁，不生成或retry；全局关闭时明确目标不可用，不静默落回聊天。真实原worker断言目标，新增完整Shell先拒绝关闭态、启用后打开原页且零生成的合成Scene待新源，不宣称已做具体post滚动定位。
+
 后续RAG发布边界源码已补，尚未云端执行：原DesktopIndexCommitJournal在forced intent后的写入边界只记Job-context证据，原rollback实际成功才清该child标记；父Rag batch按child合并，后一次回滚不抹去先前提交。原TaskRuntime document/history child保持同UUID/Job，possible publication后失败/取消投影UNCONFIRMED；发布前取消、确认回滚分别保留原取消/失败。RagController晚取消不再承诺原索引未变。DocumentIndex原有durable/cache重启核对改NonCancellable完成，修复被取消跳过本应执行的检查；不改事务、索引正文/分轮/配置/自动重试。新增真实doc/history journal写入阻塞后stop，实际新索引保留/源不改/任务待核对；doc需restart、历史照原门禁。既有precommit cancel与整图rollback补元数据断言和父批次证据，待下一精确源，不由99覆盖。
 
 CI98/5d1603ae实际Windows FAIL：production compileKotlin的AppContainer:429遇递归类型推断，Desktop与production proxy测试未执行，Linux成功。不是存档／自动备份／Moments runtime PASS。补snapshot/runtime/taskCenterOwner明确声明类型以截断编译器推断环，原lazy与运行对象保持；后续2cfa创作pin仍待同批新源。97主2457/2438PASS+19SKIP与Merge四例已核实，不覆盖98增量；RAG晚取消元数据另待。

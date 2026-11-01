@@ -140,6 +140,7 @@ class DesktopMomentsControllerTest {
             withTimeout(10_000) { entered.await() }
             val row = withTimeout(5000) { container.taskCenter.state.first { it.rows.any { row -> row.kind == DesktopWorkKind.MOMENT && row.active } } }
                 .rows.single { it.kind == DesktopWorkKind.MOMENT && it.active }
+            assertEquals(DesktopWorkTarget(DesktopPrimaryRoute.MOMENTS, sessionId = session.id, detail = DesktopWorkDetail.MOMENTS_HOME), row.target)
             assertTrue(container.taskRuntime.ownedWork.value.none { it.draftSessionId == "moments:${session.id}" })
             assertTrue(container.taskCenter.requestStop(row.id))
             withTimeout(5000) { first.workRows.first { it.single().stopRequested } }

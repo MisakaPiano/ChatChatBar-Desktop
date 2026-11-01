@@ -16,7 +16,7 @@ internal enum class DesktopWorkKind(val label: String) {
 }
 internal enum class DesktopWorkPhase { RUNNING, WAITING, COMPLETED, FAILED, CANCELLED, UNCONFIRMED }
 internal enum class DesktopWorkDetail { MEMORY, FORMAT_DRAFT, CHARACTER_DRAFT, APPEARANCE_DRAFT, CHARACTER_IMAGE_DRAFT,
-    WORLD_BOOK_DRAFT, BACKUP_EXPORT, BACKUP_CHECK, MERGE_IMPORT, SAVE_SLOT, AUTOMATIC_BACKUP }
+    WORLD_BOOK_DRAFT, BACKUP_EXPORT, BACKUP_CHECK, MERGE_IMPORT, SAVE_SLOT, AUTOMATIC_BACKUP, MOMENTS_HOME }
 internal data class DesktopWorkTarget(val route: DesktopPrimaryRoute, val sessionId: String? = null,
     val cardId: String? = null, val subjectId: String? = null, val draftSessionId: String? = null,
     val detail: DesktopWorkDetail? = null)

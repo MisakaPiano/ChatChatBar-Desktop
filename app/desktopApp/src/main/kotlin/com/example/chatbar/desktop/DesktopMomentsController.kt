@@ -289,7 +289,8 @@ internal class DesktopMomentsController(
         var outcome = DesktopWorkPhase.COMPLETED
         val evidence = DesktopMomentWorkEvidence()
         mutableWork.update { rows -> (listOf(DesktopWorkRow(workId, DesktopWorkKind.MOMENT, DesktopWorkPhase.RUNNING,
-            clock(), canStop = true, contextLabel = "朋友圈生成与收尾")) + rows).take(41) }
+            clock(), target = DesktopWorkTarget(DesktopPrimaryRoute.MOMENTS, sessionId = sessionId, detail = DesktopWorkDetail.MOMENTS_HOME),
+            canStop = true, contextLabel = "朋友圈生成与收尾")) + rows).take(41) }
         val job = scope.launch(evidence, start = CoroutineStart.LAZY) {
             val imageReceipts = mutableListOf<String>()
             mutableState.update { it.copy(busy = true, error = null, progress = "正在准备朋友圈", streamedText = "") }

@@ -42,7 +42,8 @@ class DesktopB1CIntegrationTest {
         Files.createDirectories(file.parent); image.encodeToData()!!.use { Files.write(file, it.bytes) }; Unit
     }
     @Composable private fun Shell(f: FinalProductDesignFixture, chrome: DesktopWindowChrome,
-        navigation: DesktopPrimaryNavigationController, updateNotices: DesktopUpdateNotices? = null, enableTasks: Boolean = false) {
+        navigation: DesktopPrimaryNavigationController, updateNotices: DesktopUpdateNotices? = null, enableTasks: Boolean = false,
+        moments: DesktopMomentsController? = null) {
         val c = f.container
         val transfer = remember { c.createTypedTransferController() }
         val management = remember { c.createManagementController(transfer) }
@@ -60,7 +61,7 @@ class DesktopB1CIntegrationTest {
             c.characterEditorController, c.formatCardEditorController, c.worldBookEditorController,
             c.uiLanguageController, c.appearanceController, c.connectionTestController,
             c.novelAiSettingsController, c.novelAiStudioController, c.fullBackupController, {},
-            taskCenter = if (enableTasks) c.taskCenter else null)
+            taskCenter = if (enableTasks) c.taskCenter else null, momentsController = moments)
         }
     }
     @Test fun `actual Shell opens tasks over its busy backup surface but keeps data navigation and original stop boundary guarded`() = runBlocking(awt) {
@@ -142,6 +143,29 @@ class DesktopB1CIntegrationTest {
             assertEquals(original, c.characterRepository.getById("card")); assertTrue(f.requests.isEmpty())
             assertTrue(work.isActive)
         } finally { release.complete(Unit); work.cancelAndJoin(); scene.close(); f.close() }
+    }
+
+    @Test fun `actual Shell refuses disabled Moments task target and opens its enabled page without generation`(): Unit = runBlocking(awt) {
+        val f = seeded(); val c = f.container
+        val calls = java.util.concurrent.atomic.AtomicInteger()
+        val moments = DesktopMomentsController(DesktopMomentStore(c.jsonFileStorage, c.dataOperationCoordinator),
+            c.settingsRepository, c.characterRepository, c.chatRepository, c.dataOperationCoordinator, c.taskRuntime,
+            DesktopMomentGenerator { _, _, _, _, _, _, _, _, _, _ -> calls.incrementAndGet(); error("NO_GENERATION_FROM_TASK_NAVIGATION") })
+        val navigation = DesktopPrimaryNavigationController(); val chrome = DesktopWindowChrome {}
+        c.taskCenter.watch("moment-home-fixture", kotlinx.coroutines.flow.flowOf(listOf(DesktopWorkRow("original", DesktopWorkKind.MOMENT,
+            DesktopWorkPhase.RUNNING, 1, target = DesktopWorkTarget(DesktopPrimaryRoute.MOMENTS, sessionId = "room", detail = DesktopWorkDetail.MOMENTS_HOME)))))
+        val scene = ImageComposeScene(1100, 800) { Shell(f, chrome, navigation, enableTasks = true, moments = moments) }
+        try {
+            withTimeout(5000) { c.taskCenter.state.first { it.rows.any { row -> row.kind == DesktopWorkKind.MOMENT } } }
+            scene.frames(); c.taskCenter.requestOpen(); scene.frames(); scene.click("前往页面")
+            assertEquals(DesktopPrimaryRoute.CHAT, navigation.selectedRoute.value)
+            assertNotNull(c.taskCenter.state.value.error)
+            c.settingsRepository.updateAppSettings { it.copy(momentsEnabled = true) }; moments.refresh()
+            c.taskCenter.clearError(); scene.frames(); scene.click("前往页面"); scene.frames()
+            assertEquals(DesktopPrimaryRoute.MOMENTS, navigation.selectedRoute.value)
+            assertNull(c.taskCenter.state.value.error); assertEquals(0, calls.get()); assertTrue(f.requests.isEmpty())
+            assertFalse(moments.state.value.scheduling)
+        } finally { scene.close(); moments.closeAndDrain(); f.close() }
     }
 
     @Test fun `startup notice later retains data badge and its actual Shell entry opens the shared update page`(): Unit = runBlocking(awt) {
