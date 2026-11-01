@@ -1,3 +1,5 @@
+2026-11-01 1229公开与签名13交付完成、真人待；后续正式147适配只推进独立Studio批删事务缺口。新增共享存储同writer锁的strict-read／纯transform／既有streaming replacement及一次cache发布，实际controller接入后才引用保护清理；Missing／Corrupt／ReadError、gate和原媒体保全不变。新增shared2／真实controller与generation并发3项待下一源云端，不宣称已GREEN或断电原子性，不混冻结1229，不重做SaveSlot。Vibe file marker运行时resolve缺口另排后续。见240。
+
 2026-11-01 用户本次明确许可1229测试Preview与匹配签名信息后，发行430625623／tag-source4fefe7ca及四资产、说明已读回，签名13推68bd067cbc9691790deb4b563e013c51d73c280a，root保持。现用1228旧更新器在全新I缓存实际匿名下载175678756B／a7c974…b889、签名／source／说明和二次验包PASS，H pointer保持1228、未执行安装器，真人待。发布预检两次Python3.10证书失败保留；原证书校验未关闭，随包运行时最终成功，不冒认根因。邀请用户协议新报告与已实证二次选路一致；若仍保留反向实验，恢复原HTTP系统入口并按实际HTTP／SOCKS入口选其一，不新建中转或改JVM。仍目录重叠者先旧版应用迁出、保留原件重开，再更新；已迁出跳过。许可仅1229，不扩大到1230／新功能，详见239。
 
 2026-11-01 1229固定4fefe7ca／CI78完整SUCCESS：实际Windows302suite2394项＝2375PASS＋19SKIP，无FAIL／ERROR；正常与production JAR物理路由各五项通过，旧1228两项显示RED与修后LiveChat2 GREEN分开保留。共享1105／Android582通过，R08／615a普通NSIS构建、升级重开及独立547文件通过，最终EXE／ZIP与本地签名13、旧1225 client从12到13及二次验包通过。未公开草稿430625623四资产读回，公开仍1228／metadata12，不代装H；临时旧源对照请求取证后移除，不重复跑。用户最新明确邀请测试者问题优先，既有重叠根沿应用迁移移出安装根、原资料保留，现场恢复仍待；NAI及聊天显示集中一次短复测，不重复索要已收设置截图。1.4.7与新功能排在反馈收尾后，见235／237／238／239。

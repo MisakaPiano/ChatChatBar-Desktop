@@ -1,0 +1,9 @@
+# 正式1.4.7适配：Studio历史批量修改
+
+2026-11-01 JST。公开1229／4fefe7ca与签名13保持；本页为其后的独立源码，不混冻结包，不提升正式baseline或假称测试者发生过资料丢失。复用上游正式1.4.7／b4fa的先计算整批修改、一次元数据事务和一次缓存发布语义，并保留Desktop原有媒体引用保护及operation gate。
+
+实际旧Desktop controller逐entry严格读取／保存／删除，后条读取或写入失败可能发生在前条已提交之后。媒体清理原本在全循环之后，是保留原件的重要行为，继续保留。上游事务helper已存在于共享JsonFileStorage的流式替换底层，不另写第二套文件事务或移植Android全局维护门。
+
+新增mutateEntitiesAtomically在普通gate之后取得同一实体writer mutex，按ID严格读取所有受影响项，单次运行纯转换，复用已有暂存／备份／失败回滚，最后一次发布cache。转换不能越出已声明ID集合。原readEntityStrict抽出相同私有读取函数，Missing／Corrupt／ReadError保持；不把未知读当空历史。controller实际接入并在ID身份核对后调用共享DeletionPolicy，成功后才清理实际被选的媒体引用，保留未知和仍被其他历史引用的图片。
+
+新增必要回归待云端：共享存储第二条暂存序列化失败保全所有原文件／cache、严格读取状态；真实controller后条损坏不部分提交前条、成功跨entry并保留共享引用；实际GenerationStore与批处理共享writer锁，新生成记录不被覆盖。当前未运行，不把源码检查当GREEN。捕获异常的回滚不是断电恢复证明；UI和任务的取消／关闭排水与既有规则保持，不扩成通用崩溃原子性承诺。Prompt未改。

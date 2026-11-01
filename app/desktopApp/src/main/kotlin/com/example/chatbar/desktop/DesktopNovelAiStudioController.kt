@@ -301,16 +301,18 @@ internal class DesktopNovelAiStudioController(
         val selections = state.value.selected.toList()
         require(selections.isNotEmpty())
         val candidates = mutableListOf<String>()
-        // Never stage/delete source files first. Each entity update is durable before cleanup.
+        // Read all affected entries and replace once, before any reference-aware media cleanup.
         coordinator.withNormalOperation { withContext(NonCancellable) {
-            selections.groupBy { it.entryId }.forEach { (id, selected) ->
-                val read = storage.readEntityStrict(DesktopNovelAiGenerationStore.KEY, id,
-                    NovelAiGenerationHistoryEntry.serializer())
-                val entry = (read as? EntityReadResult.Valid)?.value ?: error("无法核实历史记录，未删除图片")
-                val remaining = NovelAiHistoryDeletionPolicy.apply(listOf(entry), selected).getValue(id)
-                if (remaining == null) repository.deleteHistory(id) else repository.saveHistory(remaining)
-                candidates += selected.map { it.imagePath }
+            storage.mutateEntitiesAtomically(DesktopNovelAiGenerationStore.KEY,
+                selections.map { it.entryId }.toSet(), NovelAiGenerationHistoryEntry.serializer()) { reads ->
+                val originals = reads.map { (id, read) ->
+                    val entry = (read as? EntityReadResult.Valid)?.value ?: error("无法核实历史记录，未删除图片")
+                    check(entry.id == id) { "历史记录身份不一致，未删除图片" }
+                    entry
+                }
+                NovelAiHistoryDeletionPolicy.apply(originals, selections)
             }
+            candidates += selections.map { it.imagePath }
         } }
         mutableState.update { it.copy(selected = emptySet(), results = it.results - candidates.toSet()) }
         cleanup(candidates)

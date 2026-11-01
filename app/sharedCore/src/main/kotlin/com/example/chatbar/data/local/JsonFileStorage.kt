@@ -201,23 +201,62 @@ class JsonFileStorage(
         serializer: KSerializer<T>,
     ): EntityReadResult<T> = mutexFor(entityType).withLock {
         withContext(Dispatchers.IO) {
-            val file = appDataRoot.resolve(ENTITIES_DIR).resolve(entityType).resolve("$id.json")
-            val content = try {
-                Files.newInputStream(file).bufferedReader(Charsets.UTF_8).use { it.readText() }
-            } catch (_: NoSuchFileException) {
-                return@withContext EntityReadResult.Missing
-            } catch (error: IOException) {
-                return@withContext EntityReadResult.ReadError(error)
-            } catch (error: SecurityException) {
-                return@withContext EntityReadResult.ReadError(error)
+            readEntityStrictLocked(entityType, id, serializer)
+        }
+    }
+
+    private fun <T : Any> readEntityStrictLocked(
+        entityType: String,
+        id: String,
+        serializer: KSerializer<T>,
+    ): EntityReadResult<T> {
+        val file = appDataRoot.resolve(ENTITIES_DIR).resolve(entityType).resolve("$id.json")
+        val content = try {
+            Files.newInputStream(file).bufferedReader(Charsets.UTF_8).use { it.readText() }
+        } catch (_: NoSuchFileException) {
+            return EntityReadResult.Missing
+        } catch (error: IOException) {
+            return EntityReadResult.ReadError(error)
+        } catch (error: SecurityException) {
+            return EntityReadResult.ReadError(error)
+        }
+        return try {
+            EntityReadResult.Valid(json.decodeFromString(serializer, content))
+        } catch (error: SerializationException) {
+            EntityReadResult.Corrupt(error)
+        } catch (error: IllegalArgumentException) {
+            EntityReadResult.Corrupt(error)
+        }
+    }
+
+    /** Strict read/transform/replace shares the ordinary writer lock and publishes cache once.
+     * Reuses the streaming replacement rollback; it is not a process-crash transaction journal. */
+    suspend fun <T : Any> mutateEntitiesAtomically(
+        entityType: String,
+        ids: Set<String>,
+        serializer: KSerializer<T>,
+        transform: (Map<String, EntityReadResult<T>>) -> Map<String, T?>,
+    ): Map<String, T?> = mutexFor(entityType).withLock {
+        require(ids.isNotEmpty())
+        withContext(Dispatchers.IO + kotlinx.coroutines.NonCancellable) {
+            val directory = appDataRoot.resolve(ENTITIES_DIR).resolve(entityType).toFile().canonicalFile
+            ids.forEach { id ->
+                require(id.isNotBlank() && File(directory, "$id.json").canonicalFile.parentFile == directory)
             }
-            try {
-                EntityReadResult.Valid(json.decodeFromString(serializer, content))
-            } catch (error: SerializationException) {
-                EntityReadResult.Corrupt(error)
-            } catch (error: IllegalArgumentException) {
-                EntityReadResult.Corrupt(error)
-            }
+            val originals = ids.associateWith { readEntityStrictLocked(entityType, it, serializer) }
+            val changes = transform(originals).toMap()
+            require(changes.keys.all { it in ids })
+            if (changes.isEmpty()) return@withContext changes
+            replaceMatchingFilesStreamingLocked(
+                entityType, serializer,
+                currentMatches = { it.nameWithoutExtension in changes },
+                producer = { emit -> changes.forEach { (id, value) -> if (value != null) emit(id, value) } },
+            )
+            val flow = getCacheFlow<T>(entityType)
+            val next = flow.value.toMutableMap()
+            changes.forEach { (id, value) -> if (value == null) next.remove(id) else next[id] = value }
+            flow.value = next
+            changes
         }
     }
 
