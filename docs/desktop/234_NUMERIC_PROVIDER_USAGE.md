@@ -14,4 +14,4 @@
 
 ## 待云端验证
 
-内联合成测试覆盖重复／partial／zero／unknown／重试／Long溢出、实际HTTP SSE重试和非流式usage、真实父归属与清日志、原文／密钥不进入数值记录、重开与旧快照拒绝、本地拒写后最新快照重试，以及RESTART_REQUIRED下统计尾项排水且普通写入仍拒绝。未在本机运行Gradle或JVM渲染。新增UI和后续source需要其自身云端结果，不借CI68／70通过。
+内联合成测试覆盖重复／partial／zero／unknown／重试／Long溢出、实际HTTP SSE重试和非流式usage、真实父归属与清日志、原文／密钥不进入数值记录、重开与旧快照拒绝、本地拒写后最新快照重试、RESTART_REQUIRED下统计尾项排水且普通写入仍拒绝，以及420／1100宽度实际统计／来源筛选Scene。未在本机运行Gradle或JVM渲染。新增UI和后续source需要其自身云端结果，不借CI68／70通过。
