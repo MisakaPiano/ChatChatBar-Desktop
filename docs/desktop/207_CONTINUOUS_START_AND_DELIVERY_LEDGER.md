@@ -1,3 +1,7 @@
+2026-11-02 8b2／CI80完整SUCCESS：Windows2399项＝2380PASS＋19SKIP，独立production JAR物理代理五项通过，shared1109／Android582通过；Studio真实批删3及Vibe认证导入到wire2均实际通过，原CI79夹具3FAIL保留。用户转述测试者“更新后连接性问题全部解决了”，关闭该连接待复测，不再重复索要端口／设置截图；目录恢复完整性、USER／stream显示、原67导出和全1.0仍分开。后续旧Studio inline JSON流式读取已接有界拉取投影，派生IO明确失败、原件／已知历史cache保持及取消回归待新源云端，见242；不由80覆盖。公开1229／metadata13保持，无后版发布许可，不代装H，本机无重负载。
+
+下方历史保留。
+
 2026-11-01 独立147 Vibe运行链已在后续源码：共享payload store复用官方目录／标记／4096阈值，实际Guidance在normal gate内resolve后进wire、retain长值进recipe；原件与坏hash保留，缺失／非法不重新encode或读凭据。新增shared2及合成认证v2/code86导入→既有mapping→实际Guidance→HTTP捕获2项待新源云端，非export回环或单例大inline流式读取已完成。与CI79夹具根创建修正同送下一精确源；79原三FAIL及新shared2 PASS保留，公开1229／metadata13不变。见241。
 
 2026-11-01 CI79／d0d38407原FAIL：共享1107／Android582通过，Windows2397项2375PASS＋19SKIP＋3FAIL；独立production JAR物理代理五项通过。三项新Studio测试均在asset准备前因夹具dataRoot未创建被正确拒绝，未到达批删／generation断言；后续只补自有fixture根创建，生产保护保持，相关功能仍待新源，不把此轮当实际批删RED。独立Vibe resolve／retain和合成认证导入→实际wire新回归仍后续源，单例旧inline流式读取未做，不由79覆盖。公开1229／13和真人待保持。

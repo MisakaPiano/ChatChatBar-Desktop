@@ -2,6 +2,7 @@ package com.example.chatbar.data.local
 
 import com.example.chatbar.data.operation.AppDataOperationGate
 import com.example.chatbar.data.operation.NoOpAppDataOperationGate
+import com.example.chatbar.domain.image.NovelAiInlinePayloadStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -51,6 +52,32 @@ class JsonFileStorage(
 
     companion object {
         private const val ENTITIES_DIR = "entities"
+        private val COMPACT_STUDIO_TYPES = setOf("novelai_generation_history", "novelai_studio_draft",
+            "novelai_studio_history_undo", "novelai_studio_guidance_checkpoint")
+    }
+
+    private val studioPayloads by lazy { NovelAiInlinePayloadStore(appDataRoot.toFile()) }
+
+    private fun openJsonInput(entityType: String, file: File, checkActive: () -> Unit = {}): InputStream {
+        val source = Files.newInputStream(file.toPath())
+        return if (entityType in COMPACT_STUDIO_TYPES) studioPayloads.compactJson(source, checkActive) else source.buffered()
+    }
+
+    private fun rethrowReadFailure(entityType: String, error: Throwable) {
+        if (error is java.util.concurrent.CancellationException) throw error
+        if (entityType in COMPACT_STUDIO_TYPES) {
+            val failure = generateSequence(error as Throwable?) { it.cause }.take(16)
+                .firstOrNull { it is IOException || it is SecurityException }
+            if (failure != null) throw IOException("生图工作室记录读取失败，请检查资源目录后重试", failure)
+        }
+    }
+
+    /** Keep the existing corrupt-file skip policy, but never disguise derived IO as absence. */
+    private inline fun <T> readOrNull(entityType: String, read: () -> T): T? = try {
+        read()
+    } catch (error: Exception) {
+        rethrowReadFailure(entityType, error)
+        null
     }
 
     val json = Json {
@@ -205,11 +232,13 @@ class JsonFileStorage(
         }
     }
 
-    private fun <T : Any> readEntityStrictLocked(
+    private suspend fun <T : Any> readEntityStrictLocked(
         entityType: String,
         id: String,
         serializer: KSerializer<T>,
     ): EntityReadResult<T> {
+        if (entityType in COMPACT_STUDIO_TYPES) return readCompactJsonFile(
+            appDataRoot.resolve(ENTITIES_DIR).resolve(entityType).resolve("$id.json").toFile(), serializer)
         val file = appDataRoot.resolve(ENTITIES_DIR).resolve(entityType).resolve("$id.json")
         val content = try {
             Files.newInputStream(file).bufferedReader(Charsets.UTF_8).use { it.readText() }
@@ -226,6 +255,31 @@ class JsonFileStorage(
             EntityReadResult.Corrupt(error)
         } catch (error: IllegalArgumentException) {
             EntityReadResult.Corrupt(error)
+        }
+    }
+
+    @OptIn(ExperimentalSerializationApi::class)
+    private suspend fun <T : Any> readCompactJsonFile(file: File, serializer: KSerializer<T>): EntityReadResult<T> {
+        // Only the original source open is allowed to produce Missing. Later NoSuchFile failures
+        // can refer to derived payloads and must not permit default singleton replacement.
+        val source = try { Files.newInputStream(file.toPath()) }
+        catch (_: NoSuchFileException) { return EntityReadResult.Missing }
+        catch (error: IOException) { return EntityReadResult.ReadError(error) }
+        catch (error: SecurityException) { return EntityReadResult.ReadError(error) }
+        val context = currentCoroutineContext()
+        return try {
+            source.use { raw -> studioPayloads.compactJson(raw) { context.ensureActive() }.use { input ->
+                EntityReadResult.Valid(json.decodeFromStream(serializer, input))
+            } }
+        } catch (cancelled: java.util.concurrent.CancellationException) { throw cancelled }
+        catch (error: Exception) {
+            val io = generateSequence(error as Throwable?) { it.cause }.take(16)
+                .firstOrNull { it is IOException || it is SecurityException }
+            when {
+                io is Exception -> EntityReadResult.ReadError(io)
+                error is SerializationException || error is IllegalArgumentException -> EntityReadResult.Corrupt(error)
+                else -> throw error
+            }
         }
     }
 
@@ -273,6 +327,8 @@ class JsonFileStorage(
                     .sortedBy { it.fileName.toString() }
                     .map { path ->
                         val storageId = path.fileName.toString().removeSuffix(".json")
+                        if (entityType in COMPACT_STUDIO_TYPES) return@map EntityFileRead(storageId,
+                            readCompactJsonFile(path.toFile(), serializer))
                         val content = try {
                             Files.newInputStream(path).bufferedReader(Charsets.UTF_8).use { it.readText() }
                         } catch (error: IOException) {
@@ -397,13 +453,16 @@ class JsonFileStorage(
         serializer: KSerializer<T>
     ): T? = mutexFor(entityType).withLock {
         withContext(Dispatchers.IO) {
+            val readContext = currentCoroutineContext()
             val file = entityFile(entityType, id)
             if (!file.exists()) return@withContext null
             try {
-                file.inputStream().buffered().use { input ->
+                openJsonInput(entityType, file) { readContext.ensureActive() }.use { input ->
                     json.decodeFromStream(serializer, input)
                 }
+            } catch (cancelled: java.util.concurrent.CancellationException) { throw cancelled
             } catch (e: Exception) {
+                rethrowReadFailure(entityType, e)
                 null
             }
         }
@@ -418,19 +477,22 @@ class JsonFileStorage(
         serializer: KSerializer<T>
     ): List<T> = mutexFor(entityType).withLock {
         withContext(Dispatchers.IO) {
+            val readContext = currentCoroutineContext()
             val dir = entityDir(entityType)
             val entities = mutableMapOf<String, T>()
             dir.listFiles { f -> f.extension == "json" }?.forEach { file ->
                 try {
-                    val entity = file.inputStream().buffered().use { input ->
+                    val entity = openJsonInput(entityType, file) { readContext.ensureActive() }.use { input ->
                         json.decodeFromStream(serializer, input)
                     }
                     entities[file.nameWithoutExtension] = entity
-                } catch (_: Exception) { /* skip corrupt files */ }
+                } catch (cancelled: java.util.concurrent.CancellationException) { throw cancelled
+                } catch (error: Exception) { rethrowReadFailure(entityType, error) /* skip corrupt files */ }
             }
 
             // 初始化缓存
             val flow = getCacheFlow<T>(entityType)
+            readContext.ensureActive()
             flow.value = entities
 
             entities.values.toList()
@@ -449,11 +511,11 @@ class JsonFileStorage(
                 .listFiles { file -> file.extension == "json" }
                 .orEmpty()
                 .mapNotNull { file ->
-                    runCatching {
-                        file.inputStream().buffered().use { input ->
+                    readOrNull(entityType) {
+                        openJsonInput(entityType, file).use { input ->
                             transform(json.decodeFromStream(serializer, input))
                         }
-                    }.getOrNull()
+                    }
                 }
         }
     }
@@ -505,10 +567,11 @@ class JsonFileStorage(
                 .orEmpty()
                 .forEach { file ->
                     val entity = try {
-                        file.inputStream().buffered().use { input ->
+                        openJsonInput(entityType, file).use { input ->
                             json.decodeFromStream(serializer, input)
                         }
-                    } catch (_: Exception) {
+                    } catch (error: Exception) {
+                        rethrowReadFailure(entityType, error)
                         return@forEach
                     }
                     if (predicate(entity)) matches.add(entity)
@@ -529,12 +592,12 @@ class JsonFileStorage(
                 .listFiles { file -> file.extension == "json" }
                 .orEmpty()
                 .forEach { file ->
-                    val entity = runCatching {
-                        file.inputStream().buffered().use { input ->
+                    val entity = readOrNull(entityType) {
+                        openJsonInput(entityType, file).use { input ->
                             @OptIn(ExperimentalSerializationApi::class)
                             json.decodeFromStream(serializer, input)
                         }
-                    }.getOrNull() ?: return@forEach
+                    } ?: return@forEach
                     if (predicate(entity)) action(entity)
                 }
         }
@@ -555,11 +618,11 @@ class JsonFileStorage(
                 }
                 .orEmpty()
                 .mapNotNull { file ->
-                    runCatching {
-                        file.inputStream().buffered().use { input ->
+                    readOrNull(entityType) {
+                        openJsonInput(entityType, file).use { input ->
                             transform(json.decodeFromStream(serializer, input))
                         }
-                    }.getOrNull()
+                    }
                 }
         }
     }
@@ -575,11 +638,11 @@ class JsonFileStorage(
             ids.mapNotNull { id ->
                 val file = entityFile(entityType, id)
                 if (!file.isFile) return@mapNotNull null
-                runCatching {
-                    file.inputStream().buffered().use { input ->
+                readOrNull(entityType) {
+                    openJsonInput(entityType, file).use { input ->
                         json.decodeFromStream(serializer, input)
                     }
-                }.getOrNull()
+                }
             }
         }
     }
@@ -661,12 +724,12 @@ class JsonFileStorage(
             entityType = entityType,
             serializer = serializer,
             currentMatches = { file ->
-                runCatching {
-                    file.inputStream().buffered().use { input ->
+                readOrNull(entityType) {
+                    openJsonInput(entityType, file).use { input ->
                         @OptIn(ExperimentalSerializationApi::class)
                         predicate(json.decodeFromStream(serializer, input))
                     }
-                }.getOrDefault(false)
+                } ?: false
             },
             producer = producer
         )
@@ -752,12 +815,12 @@ class JsonFileStorage(
                 .listFiles { file -> file.extension == "json" }
                 .orEmpty()
                 .count { file ->
-                    val matches = runCatching {
-                        file.inputStream().buffered().use { input ->
+                    val matches = readOrNull(entityType) {
+                        openJsonInput(entityType, file).use { input ->
                             @OptIn(ExperimentalSerializationApi::class)
                             predicate(json.decodeFromStream(serializer, input))
                         }
-                    }.getOrDefault(false)
+                    } ?: false
                     matches && file.delete()
                 }
         }
@@ -814,12 +877,12 @@ class JsonFileStorage(
                 .listFiles { file -> file.extension == "json" }
                 .orEmpty()
                 .mapNotNull { file ->
-                    val matches = runCatching {
-                        file.inputStream().buffered().use { input ->
+                    val matches = readOrNull(entityType) {
+                        openJsonInput(entityType, file).use { input ->
                             @OptIn(ExperimentalSerializationApi::class)
                             predicate(json.decodeFromStream(serializer, input))
                         }
-                    }.getOrDefault(false)
+                    } ?: false
                     file.nameWithoutExtension.takeIf { matches && file.delete() }
                 }
 
@@ -881,7 +944,7 @@ class JsonFileStorage(
         }
     }
 
-    private fun <T : Any> readSingletonOrThrow(entityType: String, serializer: KSerializer<T>): T? {
+    private suspend fun <T : Any> readSingletonOrThrow(entityType: String, serializer: KSerializer<T>): T? {
         val result = readSingleton(singletonFile(entityType), serializer)
         val failure = when (result) {
             is SingletonReadResult.Corrupt -> SingletonReadException(entityType, true, result.cause)
@@ -901,7 +964,14 @@ class JsonFileStorage(
         return (result as? SingletonReadResult.Valid)?.value
     }
 
-    private fun <T : Any> readSingleton(file: File, serializer: KSerializer<T>): SingletonReadResult<T> {
+    private suspend fun <T : Any> readSingleton(file: File, serializer: KSerializer<T>): SingletonReadResult<T> {
+        if (file.nameWithoutExtension in COMPACT_STUDIO_TYPES) return when (val result = readCompactJsonFile(file, serializer)) {
+            EntityReadResult.Missing -> SingletonReadResult.Missing
+            is EntityReadResult.Valid -> SingletonReadResult.Valid(result.value)
+            is EntityReadResult.Corrupt -> SingletonReadResult.Corrupt(result.cause)
+            is EntityReadResult.ReadError -> SingletonReadResult.ReadError(
+                result.cause as? IOException ?: IOException("无法访问本地文件", result.cause))
+        }
         val content = try {
             Files.newInputStream(file.toPath()).bufferedReader(Charsets.UTF_8).use { it.readText() }
         } catch (_: NoSuchFileException) {

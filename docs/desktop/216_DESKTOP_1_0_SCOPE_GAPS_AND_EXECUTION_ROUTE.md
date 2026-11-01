@@ -1,5 +1,7 @@
 # 216 Desktop 正式 1.0：范围、缺口与执行路线
 
+2026-11-02增量：用户转述邀请测试者更新后连接性全部恢复，连接问题记现场报告PASS，不再重复诊断。CI80／8b2完整SUCCESS（Windows2380PASS＋19SKIP、shared1109／Android582），历史批删与外置Vibe实际导入到wire回归已过；下方待验是当时截点。后续旧大inline流式读取与派生IO历史cache保全见242，待其精确源云端；再接已核官方147 Fish重试／响应封装和Moments增量，不重做已有SaveSlot。公开1229／metadata13保持，后版未授权。
+
 更新：2026-11-01 JST。用户本版明确许可后公开1229／4fefe7ca及签名metadata13／68bd067，root保持；发行430625623四资产和说明读回，现用1228匿名实际下载及二次验包PASS，无代装、真人待。CI78完整SUCCESS：Windows2375PASS＋19SKIP，正常／production JAR各五种物理代理GREEN，Scene两项GREEN及旧1228独立两项RED成立；共享1105／Android582通过。R08普通升级／稳定重开和独立入口、最终字节通过。邀请反馈集中一次最短NAI／必要目录恢复复测；仍重叠者先旧版应用迁出安装根、保留原件重开再更新，已迁出跳过。1.4.7实际适配和新功能在这些收尾后继续；无1230许可、不代装日常H、不恢复本机重负载。
 
 后续独立147适配已着手[240](240_UPSTREAM147_STUDIO_BATCH_MUTATION.md)历史批删事务：复用共享replacement helper与writer锁，真实controller接线及五项新回归待云端。现有SaveSlot域的既有维护／事务证据复用，不按文件路径差异重写；Vibe外置编码的运行时解析另列下一缺口。公开1229保持。

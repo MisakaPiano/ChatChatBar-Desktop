@@ -26,6 +26,7 @@ class JsonFileStorageOperationGateTest {
             }
 
             assertOne { storage.saveEntity("items", "one", entity, serializer) }
+            assertOne { storage.mutateEntitiesAtomically("items", setOf("one"), serializer) { mapOf("one" to entity) } }
             assertOne { storage.loadEntity("items", "one", serializer) }
             assertOne { storage.loadAll("items", serializer) }
             assertOne { storage.loadAllMapped("items", serializer) { it } }

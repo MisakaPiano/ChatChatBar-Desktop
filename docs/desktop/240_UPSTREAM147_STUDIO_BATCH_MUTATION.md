@@ -1,5 +1,7 @@
 # 正式1.4.7适配：Studio历史批量修改
 
+2026-11-02补验：8b2ffdfa／CI80完整SUCCESS，Windows主2399项＝2380PASS＋19SKIP，独立production JAR代理5项通过；shared1109／Android582通过。三项真实Studio controller／generation并发回归及共享BatchMutation2均实际通过。下方CI79原夹具失败保留，不由成功覆盖或抹去。后续旧inline流式读取另见242，不由本轮GREEN覆盖。
+
 CI79／d0d38407完整FAIL保留：共享1107（新增BatchMutation2）和Android582通过；Windows303suite2397项＝2375PASS＋19SKIP＋3FAIL，独立production JAR代理五项通过。三项新Studio夹具在同一asset准备步骤因dataRoot尚未创建而触发现有普通根保护，未到达controller／generation断言，不能当批删缺陷RED或功能失败证据。后续仅在fixture创建自有data子目录，不改生产资源保护；实际三项步骤待新源重测，尚不冒认GREEN。
 
 2026-11-01 JST。公开1229／4fefe7ca与签名13保持；本页为其后的独立源码，不混冻结包，不提升正式baseline或假称测试者发生过资料丢失。复用上游正式1.4.7／b4fa的先计算整批修改、一次元数据事务和一次缓存发布语义，并保留Desktop原有媒体引用保护及operation gate。
