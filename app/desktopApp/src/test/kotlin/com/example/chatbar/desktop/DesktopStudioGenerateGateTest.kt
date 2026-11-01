@@ -70,6 +70,28 @@ class DesktopStudioGenerateGateTest {
         }
     }
 
+    @Test fun `typed account failure keeps safe category while free eligibility stays unconfirmed`(): Unit = runBlocking {
+        val shown = mutableSetOf<String>()
+        for (failure in listOf(NovelAiAccountException(NovelAiAccountFailureKind.AUTHENTICATION, 401),
+            NovelAiAccountException(NovelAiAccountFailureKind.DNS), NovelAiAccountException(NovelAiAccountFailureKind.TIMEOUT))) {
+            fixture { f ->
+                f.secrets.save(DesktopCredentialKey.NovelAiToken, "fake-only")
+                val controller = f.controller { throw failure }
+                controller.load()
+                val state = controller.state.value
+                val error = requireNotNull(state.accountUi.error)
+                shown += error
+                assertTrue(error.contains(requireNotNull(failure.message)))
+                assertNull(state.account)
+                assertFalse(state.accountUi.loading)
+                assertTrue(state.credentialConfigured)
+                assertTrue(desktopCanGenerate(state, valid, false))
+                assertConservative(state)
+            }
+        }
+        assertEquals(3, shown.size)
+    }
+
     @Test fun `refresh rechecks credential save and removal without account calls when missing`(): Unit = runBlocking {
         fixture { f ->
             var calls = 0

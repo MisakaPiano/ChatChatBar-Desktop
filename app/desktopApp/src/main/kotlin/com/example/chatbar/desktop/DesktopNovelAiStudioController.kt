@@ -203,8 +203,10 @@ internal class DesktopNovelAiStudioController(
             } else invalidateAccount()
         } catch (cancelled: CancellationException) {
             mutableState.update { it.copy(accountUi = it.accountUi.copy(loading = false)) }; throw cancelled
-        } catch (_: Exception) {
-            mutableState.update { it.copy(accountUi = it.accountUi.copy(loading = false, error = "账户信息获取失败；免费资格未确认")) }
+        } catch (failure: Exception) {
+            val reason = if (failure is com.example.chatbar.domain.image.NovelAiAccountException)
+                requireNotNull(failure.message) + "；免费资格未确认" else "账户信息获取失败；免费资格未确认"
+            mutableState.update { it.copy(accountUi = it.accountUi.copy(loading = false, error = reason)) }
         }
     }
 

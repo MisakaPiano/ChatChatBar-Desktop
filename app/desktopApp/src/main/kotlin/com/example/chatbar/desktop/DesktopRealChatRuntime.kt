@@ -18,6 +18,7 @@ import com.example.chatbar.domain.chat.OpenAiStreamingTransport
 import com.example.chatbar.domain.chat.ProviderCompletionMetadata
 import com.example.chatbar.domain.chat.ProviderStreamEvent
 import com.example.chatbar.domain.chat.ProviderTransportDiagnostics
+import com.example.chatbar.domain.chat.ModelResponseTruncatedException
 import com.example.chatbar.domain.model.EffectiveModelResolver
 import com.example.chatbar.domain.model.hasConfiguredAuthentication
 import java.util.concurrent.CancellationException
@@ -285,8 +286,11 @@ class DesktopRealChatRuntime internal constructor(
                     )
                     is ProviderStreamEvent.Completed -> {
                         check(completion == null) { "模型流返回了重复完成事件" }
-                        ChatHistoryPromptPolicy.requirePersistableAssistantBody(accumulatedContent)
                         completion = event.metadata
+                        if (accumulatedContent.isBlank() && event.metadata.finishReason == "length") {
+                            throw ModelResponseTruncatedException()
+                        }
+                        ChatHistoryPromptPolicy.requirePersistableAssistantBody(accumulatedContent)
                         val generated =
                             assistantBase.copy(
                                 content = accumulatedContent,

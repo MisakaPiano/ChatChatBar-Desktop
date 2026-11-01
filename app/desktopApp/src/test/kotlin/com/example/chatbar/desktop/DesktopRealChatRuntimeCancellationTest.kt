@@ -15,6 +15,8 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.concurrent.thread
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
@@ -90,7 +92,10 @@ class DesktopRealChatRuntimeCancellationTest {
                         observer = DesktopRealChatObserver { partialSeen.complete(Unit) },
                     )
                 }
-                withTimeout(3_000) { partialSeen.await() }
+                try { withTimeout(3_000) { partialSeen.await() } }
+                catch (failure: kotlinx.coroutines.TimeoutCancellationException) {
+                    throw AssertionError("No partial delta; fixture=${server.phase}, operationCompleted=${operation.isCompleted}", failure)
+                }
 
                 operation.cancel()
                 assertFailsWith<CancellationException> { operation.await() }
@@ -195,15 +200,34 @@ class DesktopRealChatRuntimeCancellationTest {
                 val sessionId = prepare(container, server.baseUrl)
                 val partialSeen = CompletableDeferred<Unit>()
                 val control = DesktopChatGenerationControl()
+                val phase = AtomicReference("creating-runtime")
                 val operation = kotlinx.coroutines.CoroutineScope(kotlin.coroutines.coroutineContext).async {
-                    container.createRealChatRuntime().sendText(
+                    val runtime = container.createRealChatRuntime()
+                    phase.set("assembling-request")
+                    val result = runtime.sendText(
                         sessionId = sessionId,
                         content = "explicit-stop",
-                        observer = DesktopRealChatObserver { partialSeen.complete(Unit) },
+                        observer = DesktopRealChatObserver { phase.set("delta-collected"); partialSeen.complete(Unit) },
                         control = control,
+                        diagnosticsFactory = { object : com.example.chatbar.domain.chat.ProviderTransportDiagnostics {
+                            override fun onRequest(request: com.example.chatbar.domain.chat.ProviderRequestEvidence) {
+                                phase.set("request-ready")
+                            }
+                            override fun onResponseChunk(data: String, parsed: com.example.chatbar.domain.chat.OpenAiSseChunk?) {
+                                phase.set("response-parsed")
+                            }
+                        } },
                     )
+                    phase.set("returned:error=${result.failureMessage != null}")
+                    result
                 }
-                withTimeout(3_000) { partialSeen.await() }
+                try { withTimeout(3_000) { partialSeen.await() } }
+                catch (failure: kotlinx.coroutines.TimeoutCancellationException) {
+                    val stacks = Thread.getAllStackTraces().entries.asSequence()
+                        .filter { (thread, _) -> thread.name.contains("Test worker") || thread.name.contains("OkHttp") }
+                        .take(3).map { (_, stack) -> stack.take(12).joinToString("\n") }.joinToString("\n---\n")
+                    throw AssertionError("No partial delta; phase=${phase.get()}, fixture=${server.phase}, operationCompleted=${operation.isCompleted}\n$stacks", failure)
+                }
 
                 assertTrue(control.requestUserStop())
                 assertFailsWith<DesktopUserStoppedChatException> { operation.await() }
@@ -241,7 +265,7 @@ class DesktopRealChatRuntimeCancellationTest {
         return sessionId
     }
 
-    private suspend fun withRuntime(block: suspend (DesktopAppContainer) -> Unit) {
+    private suspend fun withRuntime(block: suspend CoroutineScope.(DesktopAppContainer) -> Unit) {
         val parent = Files.createTempDirectory("desktop-real-chat-cancel-")
         val container = DesktopAppContainer(
             resolvedRoot = DesktopDataRootResolution.Resolved(
@@ -252,7 +276,7 @@ class DesktopRealChatRuntimeCancellationTest {
             secretStoreFactory = { InMemoryDesktopSecretStore() },
         )
         try {
-            block(container)
+            coroutineScope { block(container) }
         } finally {
             container.close()
             parent.toFile().deleteRecursively()
@@ -311,13 +335,29 @@ internal class ControlledDesktopSseServer(payload: String?) : AutoCloseable {
     private val activeSocket = AtomicReference<Socket?>()
     private val ready = CountDownLatch(1)
     private val release = CountDownLatch(1)
+    private val workerPhase = AtomicReference("waiting-request")
+    val phase: String get() = workerPhase.get()
     val baseUrl = "http://127.0.0.1:${server.localPort}/v1"
     private val worker = thread(name = "desktop-controlled-sse", isDaemon = true) {
         runCatching {
             server.accept().use { socket ->
                 activeSocket.set(socket)
-                val reader = socket.getInputStream().bufferedReader(Charsets.UTF_8)
-                while (!reader.readLine().isNullOrEmpty()) Unit
+                val input = socket.getInputStream().buffered()
+                val headers = buildString {
+                    while (!endsWith("\r\n\r\n")) {
+                        check(length < 65_536)
+                        val next = input.read(); check(next >= 0); append(next.toChar())
+                    }
+                }
+                val length = requireNotNull(headers.lineSequence().firstOrNull {
+                    it.startsWith("Content-Length:", ignoreCase = true)
+                }?.substringAfter(':')?.trim()?.toIntOrNull())
+                require(length in 0..1_048_576)
+                workerPhase.set("reading-body:$length")
+                // Complete the POST before holding its SSE response; unread body bytes can
+                // otherwise block the client's send or reset the connection on Windows.
+                check(input.readNBytes(length).size == length)
+                workerPhase.set("body-drained")
                 socket.getOutputStream().apply {
                     write(
                         buildString {
@@ -329,10 +369,11 @@ internal class ControlledDesktopSseServer(payload: String?) : AutoCloseable {
                     payload?.let { write("data: $it\n\n".toByteArray(Charsets.UTF_8)) }
                     flush()
                 }
+                workerPhase.set("event-flushed")
                 ready.countDown()
                 release.await(10, TimeUnit.SECONDS)
             }
-        }
+        }.onFailure { workerPhase.set("fixture-failed:${it.javaClass.simpleName}") }
         ready.countDown()
     }
 

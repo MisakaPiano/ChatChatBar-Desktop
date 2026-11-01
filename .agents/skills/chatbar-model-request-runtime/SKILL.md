@@ -91,6 +91,7 @@ Use chatbar-message-format-repair for repair state behavior, chatbar-image-gener
 
 ## Streaming Diagnosis
 
+- Desktop main chat records `Completed` metadata before assistant-body validation. Blank body with `finishReason=length` returns the existing typed truncation message and failed task with finish evidence; a nonblank partial remains persistable and shared automatic-image policy rejects its `length`. Blank stop/Done and explicit-Stop/generic-cancellation policies remain separate. `DesktopTaskRuntimeTest` covers both length paths; the direct cancellation fixture owns child coroutines through teardown and drains the POST before holding SSE open.
 - Auxiliary `streamText` observes coroutine-scoped `domain/chat/AiStreamProgress.kt`; nested research/repair inherit the operation observer. UI uses `ui/components/AiStreamProgressPanel.kt` for bounded, separately rendered reasoning/content, model identity, inactivity age and per-request history. Observers never enter model messages or candidate/checkpoint data. Final/error/cancel flush pending previews.
 - `streamText` has a meaningful-output inactivity watchdog in addition to socket read timeout, using the same per-request duration. Only nonblank reasoning/content or finish reason refreshes it; SSE heartbeats and usage-only events cannot keep a stalled request alive forever. Preserve whitespace-only content deltas in the actual output.
 

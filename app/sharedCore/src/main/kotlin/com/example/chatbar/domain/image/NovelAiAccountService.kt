@@ -2,6 +2,10 @@ package com.example.chatbar.domain.image
 
 import com.example.chatbar.domain.ProxyAwareClient
 import java.io.IOException
+import java.io.InterruptedIOException
+import java.net.ConnectException
+import java.net.UnknownHostException
+import javax.net.ssl.SSLException
 import java.util.concurrent.TimeUnit
 import kotlin.math.ceil
 import kotlin.math.max
@@ -39,6 +43,36 @@ data class NovelAiAccountUsage(
     }
 }
 
+enum class NovelAiAccountFailureKind { AUTHENTICATION, RATE_LIMIT, SERVER, HTTP, DNS, TIMEOUT, TLS, CONNECTION, NETWORK, INVALID_RESPONSE }
+
+/** Contains only a fixed category and HTTP status, never a provider body, host, token or raw cause. */
+class NovelAiAccountException(
+    val kind: NovelAiAccountFailureKind,
+    val httpStatus: Int? = null,
+) : IOException(when (kind) {
+    NovelAiAccountFailureKind.AUTHENTICATION -> "NovelAI 账户认证未通过，请检查所选账户和 Token"
+    NovelAiAccountFailureKind.RATE_LIMIT -> "NovelAI 账户请求受限，请稍后重试"
+    NovelAiAccountFailureKind.SERVER -> "NovelAI 账户服务暂时不可用，请稍后重试"
+    NovelAiAccountFailureKind.HTTP -> "NovelAI 账户请求被服务拒绝"
+    NovelAiAccountFailureKind.DNS -> "无法解析 NovelAI 服务地址，请检查网络与代理"
+    NovelAiAccountFailureKind.TIMEOUT -> "NovelAI 账户请求超时，请检查网络或稍后重试"
+    NovelAiAccountFailureKind.TLS -> "NovelAI 安全连接未通过，请检查证书、系统时间与代理设置"
+    NovelAiAccountFailureKind.CONNECTION -> "无法连接 NovelAI 服务，请检查网络与代理"
+    NovelAiAccountFailureKind.NETWORK -> "NovelAI 账户请求发生网络错误，请检查网络与代理"
+    NovelAiAccountFailureKind.INVALID_RESPONSE -> "NovelAI 账户响应格式无法识别，请稍后重试"
+} + (httpStatus?.let { "（HTTP $it）" } ?: ""))
+
+private fun accountFailure(failure: Exception): NovelAiAccountException = when (failure) {
+    // Closing a response may attach a raw suppressed failure to the typed exception.
+    is NovelAiAccountException -> NovelAiAccountException(failure.kind, failure.httpStatus)
+    is UnknownHostException -> NovelAiAccountException(NovelAiAccountFailureKind.DNS)
+    is InterruptedIOException -> NovelAiAccountException(NovelAiAccountFailureKind.TIMEOUT)
+    is SSLException -> NovelAiAccountException(NovelAiAccountFailureKind.TLS)
+    is ConnectException -> NovelAiAccountException(NovelAiAccountFailureKind.CONNECTION)
+    is IOException -> NovelAiAccountException(NovelAiAccountFailureKind.NETWORK)
+    else -> NovelAiAccountException(NovelAiAccountFailureKind.INVALID_RESPONSE)
+}
+
 class NovelAiAccountService(
     private val client: OkHttpClient = ProxyAwareClient.builder()
         .connectTimeout(20, TimeUnit.SECONDS)
@@ -54,32 +88,39 @@ class NovelAiAccountService(
             .get()
             .build()
 
-    fun fetch(token: String): NovelAiAccountUsage = client.newCall(request(token)).execute().use(::parse)
+    fun fetch(token: String): NovelAiAccountUsage = try {
+        client.newCall(request(token)).execute().use(::parse)
+    } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled
+    } catch (failure: Exception) { throw accountFailure(failure) }
 
     suspend fun fetchCancellable(token: String): NovelAiAccountUsage = kotlinx.coroutines.suspendCancellableCoroutine { continuation ->
         val call = client.newCall(request(token))
         continuation.invokeOnCancellation { call.cancel() }
         call.enqueue(object : okhttp3.Callback {
             override fun onFailure(call: okhttp3.Call, e: IOException) {
-                continuation.resumeWith(Result.failure(IOException("NovelAI 账户信息请求失败")))
+                if (continuation.isActive) continuation.resumeWith(Result.failure(accountFailure(e)))
             }
             override fun onResponse(call: okhttp3.Call, response: okhttp3.Response) {
-                val result = runCatching { response.use(::parse) }.fold(
-                    onSuccess = { Result.success(it) },
-                    onFailure = { Result.failure(IOException("NovelAI 账户信息请求或解析失败")) },
-                )
-                continuation.resumeWith(result)
+                val result = try { Result.success(response.use(::parse)) }
+                catch (cancelled: kotlinx.coroutines.CancellationException) { Result.failure(cancelled) }
+                catch (failure: Exception) { Result.failure(accountFailure(failure)) }
+                if (continuation.isActive) continuation.resumeWith(result)
             }
         })
     }
 
     private fun parse(response: okhttp3.Response): NovelAiAccountUsage {
-        val body = response.body?.string().orEmpty()
         if (!response.isSuccessful) {
-            throw IOException("NovelAI 账户信息获取失败（HTTP ${response.code}）")
+            throw NovelAiAccountException(when (response.code) {
+                401, 403 -> NovelAiAccountFailureKind.AUTHENTICATION
+                429 -> NovelAiAccountFailureKind.RATE_LIMIT
+                in 500..599 -> NovelAiAccountFailureKind.SERVER
+                else -> NovelAiAccountFailureKind.HTTP
+            }, response.code)
         }
+        val body = response.body?.string().orEmpty()
         val root = runCatching { json.parseToJsonElement(body).jsonObject }
-            .getOrElse { throw IOException("NovelAI 账户信息格式无效", it) }
+            .getOrElse { throw NovelAiAccountException(NovelAiAccountFailureKind.INVALID_RESPONSE) }
         val usage = root["usage"] as? JsonObject
         val tier = root["tier"]?.jsonPrimitive?.intOrNull ?: 0
         val expiresAt = root["expiresAt"]?.jsonPrimitive?.longOrNull ?: 0L

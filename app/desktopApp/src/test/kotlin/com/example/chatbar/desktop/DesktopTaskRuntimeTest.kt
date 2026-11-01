@@ -348,6 +348,56 @@ class DesktopTaskRuntimeTest {
     }
 
     @Test
+    fun `reasoning only length exhaustion fails visibly and retains provider finish reason without retry`() = runBlocking {
+        withContainer { container ->
+            MockWebServer().use { server ->
+                val sessionId = prepare(container, server.url("/v1").toString().trimEnd('/'))
+                server.enqueue(MockResponse().setHeader("Content-Type", "text/event-stream").setBody(
+                    "data: {\"choices\":[{\"delta\":{\"reasoning_content\":\"synthetic reasoning\"}}]}\n\n" +
+                        "data: {\"choices\":[{\"delta\":{},\"finish_reason\":\"length\"}]}\n\n" +
+                        "data: [DONE]\n\n",
+                ))
+                val taskId = container.taskRuntime.launchChat(sessionId, "reasoning-budget-exhausted")
+                val failed = awaitTask(container.taskRuntime, taskId) { it.status == DesktopTaskStatus.FAILED }
+                val diagnostic = container.taskRuntime.diagnostics.entries.value.single()
+                val persisted = container.chatRepository.getMessages(sessionId)
+
+                assertEquals("length", diagnostic.finishReason)
+                assertTrue(failed.message.contains("finish_reason=length"))
+                assertEquals(DesktopTaskStatus.FAILED, diagnostic.status)
+                assertEquals(1, server.requestCount)
+                assertTrue(diagnostic.retryEvents.isEmpty())
+                assertEquals(1, persisted.count { it.role == MessageRole.USER })
+                assertEquals(1, persisted.count { it.content.startsWith("错误:") })
+                assertFalse(persisted.any { it.role == MessageRole.ASSISTANT && it.content.isBlank() })
+                assertFalse(diagnostic.toString().contains("fake-task-key"))
+            }
+        }
+    }
+
+    @Test
+    fun `nonblank length completion retains partial reply and remains ineligible for automatic images`() = runBlocking {
+        withContainer { container ->
+            MockWebServer().use { server ->
+                val sessionId = prepare(container, server.url("/v1").toString().trimEnd('/'))
+                server.enqueue(MockResponse().setHeader("Content-Type", "text/event-stream").setBody(
+                    "data: {\"choices\":[{\"delta\":{\"content\":\"retained partial\"},\"finish_reason\":\"length\"}]}\n\n" +
+                        "data: [DONE]\n\n",
+                ))
+                val taskId = container.taskRuntime.launchChat(sessionId, "partial-at-output-limit")
+                awaitTask(container.taskRuntime, taskId) { it.status == DesktopTaskStatus.COMPLETED }
+                val diagnostic = container.taskRuntime.diagnostics.entries.value.single()
+                val persisted = container.chatRepository.getMessages(sessionId).last()
+                assertEquals("retained partial", persisted.content)
+                assertEquals("length", diagnostic.finishReason)
+                assertEquals(1, server.requestCount)
+                assertNotNull(com.example.chatbar.domain.chat.AutomaticChatImagePolicy.skipReason(
+                    com.example.chatbar.domain.chat.ChatReplyCompletion(finishReason = diagnostic.finishReason), persisted.content))
+            }
+        }
+    }
+
+    @Test
     fun `transport diagnostics retain actual final request and real retry evidence`() = runBlocking {
         withContainer { container ->
             MockWebServer().use { server ->
