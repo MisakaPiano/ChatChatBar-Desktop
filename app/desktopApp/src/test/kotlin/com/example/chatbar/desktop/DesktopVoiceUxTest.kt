@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import com.example.chatbar.data.local.entity.*
 import java.nio.file.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.first
 import javax.swing.SwingUtilities
 import kotlin.coroutines.CoroutineContext
 import kotlin.test.*
@@ -28,7 +29,17 @@ class DesktopVoiceUxTest {
         } finally {out.closeAndDrain()}
     }
     @Test fun `manual queue crosses user turn using only current assistant audio and no network`()=runBlocking {
-        DesktopChatVoiceRuntimeTest.Fixture().use { f->
+        val secondOpening = CompletableDeferred<Unit>()
+        val allowSecondOpen = CompletableDeferred<Unit>()
+        DesktopChatVoiceRuntimeTest.Fixture(outputFactory = { output ->
+            object : DesktopAudioOutput by output {
+                var opens = 0
+                override suspend fun playFormal(path: Path, token: Long) {
+                    if (++opens == 2) { secondOpening.complete(Unit); allowSecondOpen.await() }
+                    output.playFormal(path, token)
+                }
+            }
+        }).use { f->
             f.seed();f.enqueue();f.done(f.runtime.generate(f.message,"alice"))
             f.chats.addMessage(ChatMessage("user",f.session.id,MessageRole.USER,"skip",createdAt=2,updatedAt=2))
             val next=f.chats.addMessage(ChatMessage("next",f.session.id,MessageRole.ASSISTANT,"<n=\"Alice\"/>[next]()",createdAt=3,updatedAt=3))
@@ -37,7 +48,16 @@ class DesktopVoiceUxTest {
             val requests=f.server.requestCount;f.runtime.foreground(f.session.id).join();f.runtime.play(a,f.message)?.join()
             withTimeout(5000){while(!f.runtime.playback.state.value.playing)delay(10)}
             assertEquals(listOf(a.id,b.id),f.runtime.playback.state.value.queueVoiceIds)
-            f.output.playing=false;withTimeout(5000){while(f.runtime.playback.state.value.currentVoiceId!=b.id)delay(10)}
+            f.output.playing=false
+            withTimeout(5000) {
+                secondOpening.await()
+                // The next ID identifies the opening recording before native playback has started.
+                assertEquals(b.id, f.runtime.playback.state.value.currentVoiceId)
+                assertFalse(f.runtime.playback.state.value.playing); assertFalse(f.output.playing)
+                f.runtime.foreground(null).join()
+                allowSecondOpen.complete(Unit)
+                f.runtime.playback.state.first { it.currentVoiceId == b.id && it.playing }
+            }
             assertEquals(requests,f.server.requestCount);f.runtime.foreground(null).join();assertTrue(f.output.playing)
             f.runtime.stopForMaintenance(); assertFalse(f.output.playing)
         }

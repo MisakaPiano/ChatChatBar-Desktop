@@ -41,6 +41,7 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
 - Focused tests: `DesktopFishPreviewTest`, `DesktopFishPreviewWindowsTest`, `DesktopFishPresentationTest`, library/settings tests. Native status/silent fixtures do not substitute for user hearing a packaged clip. Formal voice repositories, chat autoplay, SaveSlot audio and ordinary sample downloads remain outside this preview slice.
 
 - Physical-output cases in `DesktopFishPreviewWindowsTest` and `DesktopVoicePauseWindowsTest` use `DesktopNativeAudioAssumption`: Windows `waveOutGetNumDevs()>0` is required. Actual device absence is reported as JUnit skipped/NOT_TESTED; a present device still runs the original MCI assertions and errors remain failures.
+- `DesktopVoiceUxTest` gates the second fake native open before checking cross-reply/background playback. `currentVoiceId` can identify an opening clip while `playing=false`; wait for that clip's playing acknowledgement before asserting output is active. The regression also leaves the chat during the blocked open, retains its original five-second bound, and checks no extra network calls.
 
 - `DesktopVoiceAudioStore` has an optional creation callback used only for isolated full-backup mapped audio. It registers newly created scratch directories/partial/MP3/receipt identities; ordinary audio uses the empty callback and retains the existing ownership/close rules. Full-backup mapping first rejects negative source duration or inconsistent/nonpositive declared audio length, then passes the original expected length to persist.
 
