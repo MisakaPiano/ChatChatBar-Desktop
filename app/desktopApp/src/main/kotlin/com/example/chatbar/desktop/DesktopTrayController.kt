@@ -35,7 +35,7 @@ internal class DesktopTrayController(private val center: DesktopTaskCenter, priv
     private var showWindow: () -> Unit = {}
 
     init {
-        scope.launch { center.notices.collect { notice ->
+        scope.launch(start = CoroutineStart.UNDISPATCHED) { center.notices.collect { notice ->
             val current = state.value
             if (!exiting && current.available && current.notificationsEnabled) {
                 try { backend.notify(notice.kind, notice.phase) }
