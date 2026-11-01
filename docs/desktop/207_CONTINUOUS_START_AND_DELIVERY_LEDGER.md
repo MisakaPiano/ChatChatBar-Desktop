@@ -1,3 +1,7 @@
+2026-11-02 a391／CI88完整SUCCESS并读实际报告：Windows309suite／2419＝2400PASS＋19SKIP，MemoryRag新四项、production JAR5／NTFS7／shared1135／Android582通过。后续手动action原不经platform.run，补两入口共用会话归属，真实controller回归等待open与已登记jobs空闲后再操作；后补源仍待独立云端，不能由88代验。1230冻结064／本地签名14保持，公开1229／13不变；迟到1226许可已执行，不重发或扩权。不代装H、本机无重负载、10:00前不问人工。见249。
+
+下方历史保留。
+
 2026-11-02 9ae／CI87完整SUCCESS：实际Windows308suite／2415=2396PASS＋19SKIP，embedding新五项全PASS，独立production JAR5／NTFS7／shared1135／Android582通过，见248。后续MemoryRagTextClient接既有diagnostics与withTaskRun：同kind/model修复连续physical attempts，嵌套summary独立于计划；实际失败／取消不因planner正常fallback变绿。Maintenance沿原gate只补真实session，不改Prompt／重试／域状态，四项合成共享head修复、nested目的、实际planner503／吞取消回归待新源，见249。1230冻结064和本地签名14不混此源，公共1229／13保持；10:00前不问人工，无后版公开／H代装，本机无重负载。
 
 下方历史保留。

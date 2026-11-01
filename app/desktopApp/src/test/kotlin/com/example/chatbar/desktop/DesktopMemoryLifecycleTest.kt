@@ -5,11 +5,49 @@ import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.data.repository.*
 import com.example.chatbar.domain.chat.ContextWindowManager
 import com.example.chatbar.domain.memory.*
+import com.example.chatbar.domain.model.EffectiveModelResolver
+import com.example.chatbar.domain.model.PresetModelCatalogSource
 import java.nio.file.Files
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlin.test.*
 
 class DesktopMemoryLifecycleTest {
+    @Test fun `manual node regeneration carries the real selected session through its original controller gate`() = runBlocking {
+        val f = Fixture()
+        var controller: DesktopMemoryController? = null
+        try {
+            f.setup()
+            f.service.updateArchiveAfterReply(f.session.id, f.model, 1, maxEpisodeBatches = 1)
+            val node = f.service.activeNodes(f.session.id).first { "turn-0" in it.sourceTurnIds }
+            val models = ModelRepository(f.storage)
+            models.saveModel(f.model)
+            f.settings.updateAppSettings { it.copy(defaultModelId = f.model.id) }
+            val activeController = DesktopMemoryController(f.storage, f.chats, f.settings,
+                EffectiveModelResolver(models, f.settings, object : PresetModelCatalogSource {
+                    override val catalog = PresetModelCatalog(); override val modelCatalogVersion: Int? = null
+                }), f.service, f.repository, f.gate)
+            controller = activeController
+            activeController.open(f.session.id)
+            withTimeout(5_000) {
+                combine(activeController.state, activeController.coordinator.runningSessions) { state, running ->
+                    !state.operationBusy && f.session.id !in running
+                }.first { it }
+            }
+            assertNull(activeController.state.value.error)
+            val observed = CompletableDeferred<DesktopUsageContext?>()
+            f.episodeContext = { text -> if (text.contains("第1轮")) observed.complete(currentCoroutineContext()[DesktopUsageParent]?.value) }
+            val candidate = CompletableDeferred<String>()
+            activeController.regenerateNode(node.id) { candidate.complete(it) }
+            val parent = assertNotNull(withTimeout(5_000) { observed.await() })
+            assertEquals(DesktopUsageSource.CHAT, parent.source); assertEquals(f.session.id, parent.sessionId)
+            assertNull(parent.taskId); assertNull(parent.cardId)
+            assertTrue(withTimeout(5_000) { candidate.await() }.isNotBlank())
+            assertEquals(node.body, f.repository.getNode(node.id)!!.body)
+        } finally { controller?.closeAndDrain(); f.close() }
+    }
+
     @Test fun `format repair source CAS invalidates old memory before injection without an extra AI request`(): Unit = runBlocking {
         val f = Fixture()
         try {
@@ -71,10 +109,11 @@ class DesktopMemoryLifecycleTest {
         var calls = 0
         var compressionCalls = 0
         var beforeEpisode: suspend () -> Unit = {}
+        var episodeContext: suspend (String) -> Unit = {}
         val ai = object : MemoryAiClient {
             override suspend fun episode(model: ModelConfig, renderedTurns: String, summaryPromptMaxChars: Int,
                 onStreamingSummary: ((String) -> Unit)?, validate: (EpisodeResponse) -> Unit): EpisodeResponse {
-                calls++; beforeEpisode()
+                calls++; beforeEpisode(); episodeContext(renderedTurns)
                 return EpisodeResponse("旅人在广场与同伴会合，约定次日出发。").also(validate)
             }
             override suspend fun compression(model: ModelConfig, kind: MemoryCompressionKind,
