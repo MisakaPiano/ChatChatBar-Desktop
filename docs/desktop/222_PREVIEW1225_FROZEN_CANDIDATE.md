@@ -1,6 +1,10 @@
 # 1225 冻结候选与用户交付起点
 
-2026-11-01 JST。包源固定 `54008bc17847a30fc53e403f99e8aaa335521cda`，版本 `0.1.0-preview.1225`／installer `0.1.1225`。**公开／日常仍1224，未代装，用户尚未授权1225提前公开测试，也未验收1225。** 后续源码不得混入本冻结候选。
+2026-11-01 JST。包源固定 `54008bc17847a30fc53e403f99e8aaa335521cda`，版本 `0.1.0-preview.1225`／installer `0.1.1225`。**用户已明确允许本次先公开测试、自行应用内更新验收；1225及匹配签名metadata9现已公开，未代装，真人验收仍待。** 后续P12源码不在本冻结候选。
+
+发行[430303168](https://github.com/MisakaPiano/ChatChatBar-Desktop/releases/tag/desktop-v0.1.0-preview.1225)已读回draft=false，真tag与target为54008、四资产大小／digest／说明保持。metadata revision9正常发布到`codex/update-metadata`／`3d9f9b14d445a40d85fb75d0e82676d858f275a7`，公共信任根保持。首次发布在前置读取时网络失败、未进入公开动作，原log保留；r02成功，未推测首轮网络失败成因。
+
+现用1224包内原更新器以全新I盘缓存，从公开通道**实际匿名下载173732979B、验证TUF／SHA／source／说明，再独立二次验包PASS**；匿名Releases发现可见1225。没有执行安装器，检查前后日常current／bootstrap保持1224。已交用户“包含Preview→检查更新→下载→确认更新并重启”，核对原资料／草稿与Word/PDF、Studio/模型入口，再正常退出重开。`PUBLICATION1225_RESULT.private.json`及`public1224-to1225-validation-r01/result.json`保留本机证据；本次许可不扩大到后续候选或1.0。
 
 ## 范围与实际结果
 
@@ -22,12 +26,12 @@ I盘目录 `I:/CCB-Desktop-SmallFixes-20261028/` 的 `candidate1225-freeze-r02.j
 
 首个freeze检查器误把PDFBox core与IO两个依赖当作应只有一个，断言失败另存；按两个实际必需模块分别核对后通过，没有改包／代码来掩盖。冻结image确有Word/PDF类、两PDF依赖和一条应用级系统代理opt-in。
 
-## 草稿与尚需用户决定的步骤
+## 公开前草稿与用户顺序决定（历史）
 
-GitHub发行草稿ID **430303168**，实际tag_name `desktop-v0.1.0-preview.1225`、真Git tag绑定54008，draft=true／prerelease=true，4资产长度与server digest核对、说明与本地签名notes一致。草稿html_url是GitHub正常的untagged草稿URL，不据其外观误称实际tag不匹配。当前没有公开Release或提交metadata分支。
+公开前GitHub发行草稿ID **430303168**，实际tag_name `desktop-v0.1.0-preview.1225`、真Git tag绑定54008，draft=true／prerelease=true，4资产长度与server digest核对、说明与本地签名notes一致。草稿html_url是GitHub正常的untagged草稿URL，不据其外观误称实际tag不匹配。当时没有公开Release或提交metadata分支；现行发布结果见本文顶部。
 
-依据AGENTS“公开pre-release需真实用户验收结果”，已直接问用户：允许先公开1225测试Preview＋匹配签名信息供其自行应用内更新，还是保留草稿手动安装候选验收。未有答复不能发布，不把1224的许可或沉默沿用为1225验收；不代装日常根。
+依据AGENTS“公开pre-release需真实用户验收结果”，曾直接问用户：允许先公开1225测试Preview＋匹配签名信息供其自行应用内更新，还是保留草稿手动安装候选验收。用户本次真实回复“允许先公开1225测试Preview，我自行应用内更新”，因此执行顶部本次测试发布；不把1224许可或沉默当作1225验收，不代装日常根。
 
 最短验收清单：`I:/CCB-Desktop-SmallFixes-20261028/manual1225-checklist.md`；说明：`release-notes1225.md`。重点是原资料／草稿重开、含图Word/PDF和路径复制、Studio／模型入口与备份到预览，不要求付费API或故意改坏真实配置。SF14单独留完整窗口人工截图及明确落点，普通人工截图也不代表自动捕获恢复；SF12 native故障／OS锁专项仍按其未测范围保留。
 
-当前候选冻结且已交用户决定。等待只挂安装／验收／公开等实际依赖动作；独立P12格式卡AI等接续应另Git检查点，复用原官方语义，不改54008候选。社区最后、T23等待上游、SF10／自由正文绑定等具体暂缓保留。
+候选保持冻结，已公开并交用户自行更新验收。等待只挂实际安装／验收；独立P12格式卡AI另Git检查点，复用原官方语义，不改54008候选。社区最后、T23等待上游、SF10／自由正文绑定等具体暂缓保留。
