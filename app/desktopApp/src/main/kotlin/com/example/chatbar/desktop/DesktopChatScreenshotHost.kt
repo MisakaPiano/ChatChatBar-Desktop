@@ -83,7 +83,9 @@ internal fun DesktopScreenshotWorkspace(controller: DesktopPrimaryChatController
     val all = remember(snapshot) { snapshot.messages.flatMap { m -> desktopScreenshotBlockIds(m, state.assistantSegmentedBubblesEnabled) }.toSet() }
     var tree by remember(snapshot) { mutableStateOf(DesktopScreenshotTreeState(snapshot.initialSelected, setOf(snapshot.clickedMessageId))) }
     var statusExpanded by remember(snapshot) { mutableStateOf<Map<String, Boolean>>(emptyMap()) }
-    var png by remember(snapshot) { mutableStateOf<DesktopScreenshotPng?>(null) }
+    var pages by remember(snapshot) { mutableStateOf<List<DesktopScreenshotPng>?>(null) }
+    var pageIndex by remember(snapshot) { mutableStateOf(0) }
+    val png = pages?.getOrNull(pageIndex)
     val viewport = remember(png) { png?.let { DesktopScreenshotViewport(it.width, it.height) } }
     var capturedMessages by remember(snapshot) { mutableStateOf<List<ChatMessage>>(emptyList()) }
     var capturedDocument by remember(snapshot) { mutableStateOf<List<DesktopScreenshotDocumentBlock>>(emptyList()) }
@@ -99,7 +101,7 @@ internal fun DesktopScreenshotWorkspace(controller: DesktopPrimaryChatController
     val platformClipboard = LocalClipboard.current
     val clipboard = remember(platformClipboard) { DesktopSafeClipboard(platformClipboard) }
     val read: (String) -> ByteArray = { controller.characterResources.readScreenshotImageBytes(it) }
-    fun selection(next: DesktopScreenshotTreeState) { tree = next; png = null; previewOpen = false; feedback = null; savedPath = null }
+    fun selection(next: DesktopScreenshotTreeState) { tree = next; pages = null; pageIndex = 0; previewOpen = false; feedback = null; savedPath = null }
     fun preview() {
         scope.launch {
             busy = true; feedback = null; failed = false; savedPath = null
@@ -115,25 +117,26 @@ internal fun DesktopScreenshotWorkspace(controller: DesktopPrimaryChatController
                 stage = "PREVIEW_RENDER"
                 val request = DesktopScreenshotRequest(state.selectedSession?.title ?: "聊天", state,
                     chosen, tree.selected, snapshot.voices, statusExpanded, background)
-                val result = DesktopChatScreenshotRenderer.render(request, snapshot.colors, read)
+                val result = DesktopChatScreenshotRenderer.renderPages(request, snapshot.colors, read,
+                    onPage = { current, total -> feedback = if (total > 1) "正在生成预览分块 $current/$total…" else null })
                 val document = desktopScreenshotDocument(request)
                 stage = "PREVIEW_VERIFY"
                 controller.verifyScreenshotMessages(chosen)
-                withContext(Dispatchers.IO) { DesktopChatScreenshotRenderer.verifyResources(result, read) }
-                capturedMessages = chosen; capturedDocument = document; png = result; previewOpen = true
+                withContext(Dispatchers.IO) { DesktopChatScreenshotRenderer.verifyResources(result.first(), read) }
+                capturedMessages = chosen; capturedDocument = document; pages = result; pageIndex = 0; previewOpen = true; feedback = null
             } catch (e: CancellationException) { throw e }
-            catch (_: Exception) { failed = true; feedback = "预览失败或内容已变化（$stage）；请减少选择、检查资源后重试，原数据未修改" }
+            catch (error: Exception) { failed = true; feedback = "预览未完成（$stage）；${desktopScreenshotFailureDetails(error)}" }
             finally { busy = false }
         }
     }
     fun save() {
-        val result = checkNotNull(png)
+        val result = checkNotNull(pages)
         val format = exportFormat
         val document = capturedDocument
         scope.launch {
             busy = true; failed = false; feedback = null; savedPath = null
             try {
-                val target = saveDesktopScreenshotDocumentVerified(format, result, document,
+                val target = saveDesktopScreenshotPagesVerified(format, result, document,
                     { controller.verifyScreenshotMessages(capturedMessages) }, read) {
                     withContext(Dispatchers.IO) { picker.pickSaveFile(DesktopFileType("${format.label} 文件", listOf(format.extension)), format.fileName(state.selectedSession?.title ?: "聊天")) }
                 }
@@ -176,7 +179,7 @@ internal fun DesktopScreenshotWorkspace(controller: DesktopPrimaryChatController
             StudioAction(if (busy) "正在处理…" else "预览 PNG", enabled = !busy && tree.selected.isNotEmpty(), onClick = ::preview)
         }
         DesktopScreenshotSelectionTree(snapshot, tree, statusExpanded, !busy, Modifier.weight(1f).fillMaxWidth(),
-            { selection(it) }, { tree = it }, { statusExpanded = it; png = null; previewOpen = false; feedback = null; savedPath = null })
+            { selection(it) }, { tree = it }, { statusExpanded = it; pages = null; pageIndex = 0; previewOpen = false; feedback = null; savedPath = null })
         feedback?.let { text ->
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 BasicText(text, Modifier.weight(1f).heightIn(max = 60.dp).verticalScroll(rememberScrollState()), style = TextStyle(color = if (failed) DesktopBootstrapColors.destructive else DesktopBootstrapColors.foreground))
@@ -200,6 +203,12 @@ internal fun DesktopScreenshotWorkspace(controller: DesktopPrimaryChatController
                 StatusText("PNG 截图预览")
                 Spacer(Modifier.weight(1f))
                 if (!busy) CompactChoice("格式", DesktopScreenshotExportFormat.entries, exportFormat, { it.label }) { exportFormat = it }
+            }
+            if (checkNotNull(pages).size > 1) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically) {
+                StudioAction("上一页", enabled = !busy && pageIndex > 0) { pageIndex-- }
+                StatusText("预览 ${pageIndex + 1}/${checkNotNull(pages).size} · 导出包含全部选择")
+                StudioAction("下一页", enabled = !busy && pageIndex < checkNotNull(pages).lastIndex) { pageIndex++ }
             }
             DesktopScreenshotPreview(checkNotNull(png), checkNotNull(viewport), Modifier.weight(1f).fillMaxWidth())
             feedback?.let { text -> Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {

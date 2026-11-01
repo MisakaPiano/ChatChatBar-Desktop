@@ -32,21 +32,55 @@ internal data class DesktopScreenshotRequest(
 internal data class DesktopScreenshotPng(val bytes: ByteArray, val width: Int, val height: Int,
     val resourceHashes: Map<String, String> = emptyMap())
 
+internal class DesktopScreenshotLimitException(val category: String, val actual: Long, val limit: Long) :
+    IllegalArgumentException("$category: $actual / $limit")
+
+internal fun desktopScreenshotFailureDetails(error: Exception): String = when (error) {
+    is DesktopScreenshotLimitException -> when (error.category) {
+        "TEXT" -> "所选原文共 ${error.actual} 字符，当前上限 ${error.limit}；请分次选择。"
+        "RESOURCE_COUNT" -> "本次需读取 ${error.actual} 张不同图片，当前上限 ${error.limit}。"
+        "RESOURCE_BYTES" -> "图片文件合计 ${error.actual} 字节，当前资源预算 ${error.limit} 字节。"
+        "RESOURCE_PIXELS" -> "图片解码合计 ${error.actual} 像素，当前资源预算 ${error.limit} 像素。"
+        "CAPTURE_BYTES" -> "分块预览合计 ${error.actual} 字节，当前预览预算 ${error.limit} 字节。"
+        "PAGE_COUNT" -> "本次需要 ${error.actual} 个预览分块，当前上限 ${error.limit}。"
+        "HEIGHT", "PIXELS" -> "单个渲染分块超过尺寸预算（${error.category} ${error.actual}/${error.limit}）。"
+        else -> "截图尺寸无效（${error.category} ${error.actual}/${error.limit}）。"
+    }
+    else -> "渲染未完成；异常类型：${error.javaClass.simpleName}。原数据未修改。"
+}
+
 /** Static CCB rendering, never OS/Robot capture. Every resource is supplied by an owned resource reader. */
 internal object DesktopChatScreenshotRenderer {
     const val MAX_HEIGHT = 32_000
     const val MAX_PIXELS = 8_000_000L
+    private const val MAX_PAGES = 128
+    private const val MAX_CAPTURE_BYTES = 64L * 1024 * 1024
     private val edt = object: CoroutineDispatcher() {
         override fun isDispatchNeeded(context: CoroutineContext) = !SwingUtilities.isEventDispatchThread()
         override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
     }
     fun validatePlan(width: Int, height: Int) {
-        require(width in 320..1600 && height in 1..MAX_HEIGHT && width.toLong()*height <= MAX_PIXELS) { "截图尺寸超过安全限制，请减少选择内容" }
+        if (width !in 320..1600) throw DesktopScreenshotLimitException("WIDTH", width.toLong(), 1600)
+        if (height !in 1..MAX_HEIGHT) throw DesktopScreenshotLimitException("HEIGHT", height.toLong(), MAX_HEIGHT.toLong())
+        if (width.toLong()*height > MAX_PIXELS) throw DesktopScreenshotLimitException("PIXELS", width.toLong()*height, MAX_PIXELS)
     }
     suspend fun render(request: DesktopScreenshotRequest, colors: DesktopSemanticColors,
-        read: (String)->ByteArray, width: Int = 640): DesktopScreenshotPng {
+        read: (String)->ByteArray, width: Int = 640): DesktopScreenshotPng =
+        renderFrames(request, colors, read, width, paged = false, pageRows = null) { _, _ -> }.single()
+
+    /** Full selected layout, bounded raster surfaces. No text is dropped at a page boundary. */
+    suspend fun renderPages(request: DesktopScreenshotRequest, colors: DesktopSemanticColors,
+        read: (String)->ByteArray, width: Int = 640, pageRows: Int? = null,
+        onPage: (Int, Int) -> Unit = { _, _ -> }): List<DesktopScreenshotPng> =
+        renderFrames(request, colors, read, width, paged = true, pageRows, onPage)
+
+    private suspend fun renderFrames(request: DesktopScreenshotRequest, colors: DesktopSemanticColors,
+        read: (String)->ByteArray, width: Int, paged: Boolean, pageRows: Int?,
+        onPage: (Int, Int) -> Unit): List<DesktopScreenshotPng> {
         require(width in 320..1600)
-        require(request.messages.isNotEmpty() && request.messages.sumOf { it.displayContent.length.toLong() } <= 200_000)
+        require(request.messages.isNotEmpty())
+        val characters = request.messages.sumOf { it.displayContent.length.toLong() }
+        if (characters > 200_000) throw DesktopScreenshotLimitException("TEXT", characters, 200_000)
         require(request.selected.isNotEmpty()) { "请选择截图内容" }
         val valid=request.messages.flatMap { desktopScreenshotBlockIds(it,request.state.assistantSegmentedBubblesEnabled) }.toSet()
         require(request.selected.all { it in valid }) { "截图选择已失效" }
@@ -61,36 +95,64 @@ internal object DesktopChatScreenshotRenderer {
                     m.images.forEachIndexed { i,ref->if(roleplayImageBlockId(m.id,i) in request.selected) add(ref) }
                     val presented=desktopPresentMessage(m,request.state.selectedCharacter,request.state.globalPlayerName,
                         request.state.assistantSegmentedBubblesEnabled,session=request.state.selectedSession)
-                    if(m.role==MessageRole.ASSISTANT) presented.segments.forEach { seg->desktopPresentedAvatarReference(seg.speaker,request.state.selectedCharacter)?.let(::add) }
+                    if(m.role==MessageRole.ASSISTANT) presented.segments.forEach { seg ->
+                        val id = if (presented.segmented) seg.blockId else roleplayLegacyTextBlockId(m.id)
+                        if (id in request.selected) desktopPresentedAvatarReference(seg.speaker,request.state.selectedCharacter)?.let(::add)
+                    }
                 }
             }
-            require(references.size<=40) { "截图图片数量超过限制" }
+            if (references.size > 40) throw DesktopScreenshotLimitException("RESOURCE_COUNT", references.size.toLong(), 40)
             withContext(Dispatchers.IO) { references.forEach { ref->
-                val bytes=read(ref);encodedBytes+=bytes.size;require(encodedBytes<=32L*1024*1024) { "截图资源总大小超过限制" }
+                currentCoroutineContext().ensureActive()
+                val bytes=read(ref);encodedBytes+=bytes.size
+                if (encodedBytes > 32L*1024*1024) throw DesktopScreenshotLimitException("RESOURCE_BYTES", encodedBytes, 32L*1024*1024)
                 resourceHashes[ref]=resourceHash(bytes)
                 val image=SkiaImage.makeFromEncoded(bytes)
                 if (image.width.toLong()*image.height>MAX_PIXELS || resourcePixels+image.width.toLong()*image.height>MAX_PIXELS) {
-                    image.close();error("截图图片像素超过安全限制")
+                    val pixels = resourcePixels + image.width.toLong()*image.height
+                    image.close();throw DesktopScreenshotLimitException("RESOURCE_PIXELS", pixels, MAX_PIXELS)
                 }
                 resourcePixels+=image.width.toLong()*image.height;images[ref]=image
             } }
             return withContext(edt) {
                 var height=0
+                var top = 0
+                val bitmaps = images.mapValues { it.value.toComposeImageBitmap() }
                 val body:@Composable ()->Unit = {
                     CompositionLocalProvider(LocalDesktopPalette provides colors) {
-                        DesktopScreenshotContent(request,images.mapValues { it.value.toComposeImageBitmap() },Modifier
-                            .width(width.dp).wrapContentHeight(unbounded=true).onSizeChanged { height=it.height })
+                        DesktopScreenshotContent(request,bitmaps,Modifier
+                            .width(width.dp).wrapContentHeight(unbounded=true).offset { IntOffset(0, -top) }
+                            .onSizeChanged { height=it.height })
                     }
                 }
                 // Measurement uses a one-pixel surface; no unbounded raster allocation.
                 renderComposeScene(width,1,content=body).close()
-                validatePlan(width,height)
+                if (!paged) validatePlan(width,height)
+                check(height > 0) { "截图布局未完成" }
                 val measured=height
-                renderComposeScene(width,measured,content=body).use { image->
-                    check(height==measured) { "截图布局发生变化，请重新预览" }
-                    val data=checkNotNull(image.encodeToData(EncodedImageFormat.PNG))
-                    data.use { DesktopScreenshotPng(it.bytes,width,measured,resourceHashes.toMap()) }
+                val maximumRows = minOf(MAX_HEIGHT, (MAX_PIXELS / width).toInt())
+                val rows = if (!paged) measured else pageRows?.also { require(it in 1..maximumRows) } ?: maximumRows
+                val count = (measured.toLong() + rows - 1) / rows
+                if (count > MAX_PAGES) throw DesktopScreenshotLimitException("PAGE_COUNT", count, MAX_PAGES.toLong())
+                val frames = mutableListOf<DesktopScreenshotPng>()
+                var captureBytes = 0L
+                val hashes = resourceHashes.toMap()
+                while (top < measured) {
+                    currentCoroutineContext().ensureActive()
+                    val chunkRows = minOf(rows, measured - top)
+                    validatePlan(width, chunkRows)
+                    onPage(frames.size + 1, count.toInt())
+                    renderComposeScene(width,chunkRows,content=body).use { image ->
+                        check(height==measured) { "截图布局发生变化，请重新预览" }
+                        val bytes = checkNotNull(image.encodeToData(EncodedImageFormat.PNG)).use { it.bytes }
+                        captureBytes += bytes.size
+                        if (captureBytes > MAX_CAPTURE_BYTES) throw DesktopScreenshotLimitException("CAPTURE_BYTES", captureBytes, MAX_CAPTURE_BYTES)
+                        frames += DesktopScreenshotPng(bytes, width, chunkRows, hashes)
+                    }
+                    top += chunkRows
+                    yield()
                 }
+                frames.toList()
             }
         } finally { images.values.forEach { it.close() } }
     }
@@ -99,7 +161,10 @@ internal object DesktopChatScreenshotRenderer {
         .digest(bytes).joinToString("") { "%02x".format(it) }
 
     fun verifyResources(png: DesktopScreenshotPng, read: (String) -> ByteArray) {
-        png.resourceHashes.forEach { (reference, hash) ->
+        verifyResourceHashes(png.resourceHashes, read)
+    }
+    fun verifyResourceHashes(hashes: Map<String, String>, read: (String) -> ByteArray) {
+        hashes.forEach { (reference, hash) ->
             check(resourceHash(read(reference)) == hash) { "截图资源已变化，请重新预览" }
         }
     }

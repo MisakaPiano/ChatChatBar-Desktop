@@ -73,19 +73,31 @@ internal fun desktopScreenshotDocument(request: DesktopScreenshotRequest): List<
 /** Revalidate after the native chooser for all formats, preserving the original PNG save contract. */
 internal suspend fun saveDesktopScreenshotDocumentVerified(format: DesktopScreenshotExportFormat,
     png: DesktopScreenshotPng, document: List<DesktopScreenshotDocumentBlock>,
+    verifyMessages: suspend () -> Unit, read: (String) -> ByteArray, choose: suspend () -> Path?): Path? =
+    saveDesktopScreenshotPagesVerified(format, listOf(png), document, verifyMessages, read, choose)
+
+internal suspend fun saveDesktopScreenshotPagesVerified(format: DesktopScreenshotExportFormat,
+    pages: List<DesktopScreenshotPng>, document: List<DesktopScreenshotDocumentBlock>,
     verifyMessages: suspend () -> Unit, read: (String) -> ByteArray, choose: suspend () -> Path?): Path? {
+    require(pages.isNotEmpty())
+    val hashes = buildMap {
+        pages.forEach { page -> page.resourceHashes.forEach { (reference, hash) ->
+            val old = put(reference, hash)
+            check(old == null || old == hash) { "截图资源身份不一致" }
+        } }
+    }
     verifyMessages()
-    withContext(Dispatchers.IO) { DesktopChatScreenshotRenderer.verifyResources(png, read) }
+    withContext(Dispatchers.IO) { DesktopChatScreenshotRenderer.verifyResourceHashes(hashes, read) }
     val target = choose() ?: return null
     verifyMessages()
     withContext(Dispatchers.IO) {
         val context = currentCoroutineContext()
-        DesktopChatScreenshotRenderer.verifyResources(png, read)
+        DesktopChatScreenshotRenderer.verifyResourceHashes(hashes, read)
         writeDesktopScreenshotFile(target, format.extension, { context.ensureActive() }) { output ->
             when (format) {
-                DesktopScreenshotExportFormat.PNG -> output.write(png.bytes)
-                DesktopScreenshotExportFormat.PDF -> DesktopScreenshotDocuments.pdf(png, output) { context.ensureActive() }
-                DesktopScreenshotExportFormat.WORD -> DesktopScreenshotDocuments.word(document, png.resourceHashes,
+                DesktopScreenshotExportFormat.PNG -> writeDesktopScreenshotPngPages(pages, output) { context.ensureActive() }
+                DesktopScreenshotExportFormat.PDF -> DesktopScreenshotDocuments.pdf(pages, output) { context.ensureActive() }
+                DesktopScreenshotExportFormat.WORD -> DesktopScreenshotDocuments.word(document, hashes,
                     read, output) { context.ensureActive() }
             }
         }
@@ -96,33 +108,50 @@ internal suspend fun saveDesktopScreenshotDocumentVerified(format: DesktopScreen
 internal object DesktopScreenshotDocuments {
     /** One lossless raster shared by A4 pages; clipping preserves every source pixel without stretching. */
     fun pdf(png: DesktopScreenshotPng, output: OutputStream, checkCancelled: () -> Unit = {}) {
-        DesktopChatScreenshotRenderer.validatePlan(png.width, png.height)
-        ImageIO.createImageInputStream(png.bytes.inputStream()).use { input ->
-            val reader = ImageIO.getImageReaders(input).asSequence().firstOrNull() ?: error("截图图片无法读取")
-            try {
-                reader.input = input
-                require(reader.getWidth(0) == png.width && reader.getHeight(0) == png.height) { "截图尺寸已变化" }
-            } finally { reader.dispose() }
+        pdf(listOf(png), output, checkCancelled)
+    }
+
+    /** Bounded source rasters fill continuous A4 pages, including across render-frame boundaries. */
+    fun pdf(pages: List<DesktopScreenshotPng>, output: OutputStream, checkCancelled: () -> Unit = {}) {
+        require(pages.isNotEmpty() && pages.map { it.width }.distinct().size == 1)
+        pages.forEach { png ->
+            DesktopChatScreenshotRenderer.validatePlan(png.width, png.height)
+            ImageIO.createImageInputStream(png.bytes.inputStream()).use { input ->
+                val reader = ImageIO.getImageReaders(input).asSequence().firstOrNull() ?: error("截图图片无法读取")
+                try {
+                    reader.input = input
+                    require(reader.getWidth(0) == png.width && reader.getHeight(0) == png.height) { "截图尺寸已变化" }
+                } finally { reader.dispose() }
+            }
         }
         PDDocument().use { pdf ->
-            val image = PDImageXObject.createFromByteArray(pdf, png.bytes, "chat-screenshot")
             val pageSize = PDRectangle.A4
             val margin = 24f
-            val scale = (pageSize.width - margin * 2) / png.width
+            val width = pages.first().width
+            val scale = (pageSize.width - margin * 2) / width
             val rowsPerPage = ((pageSize.height - margin * 2) / scale).toInt().coerceAtLeast(1)
-            var top = 0
-            while (top < png.height) {
+            var page: PDPage? = null
+            var occupied = rowsPerPage
+            pages.forEachIndexed { index, png ->
                 checkCancelled()
-                val rows = min(rowsPerPage, png.height - top)
-                val page = PDPage(pageSize)
-                pdf.addPage(page)
-                PDPageContentStream(pdf, page).use { content ->
-                    content.addRect(margin, pageSize.height - margin - rows * scale, png.width * scale, rows * scale)
-                    content.clip()
-                    content.drawImage(image, margin, pageSize.height - margin - (png.height - top) * scale,
-                        png.width * scale, png.height * scale)
+                val image = PDImageXObject.createFromByteArray(pdf, png.bytes, "chat-screenshot-$index")
+                var top = 0
+                while (top < png.height) {
+                    checkCancelled()
+                    if (occupied == rowsPerPage) {
+                        page = PDPage(pageSize).also(pdf::addPage)
+                        occupied = 0
+                    }
+                    val rows = min(rowsPerPage - occupied, png.height - top)
+                    PDPageContentStream(pdf, checkNotNull(page), PDPageContentStream.AppendMode.APPEND, true, true).use { content ->
+                        content.addRect(margin, pageSize.height - margin - (occupied + rows) * scale, width * scale, rows * scale)
+                        content.clip()
+                        content.drawImage(image, margin, pageSize.height - margin - (occupied + png.height - top) * scale,
+                            width * scale, png.height * scale)
+                    }
+                    top += rows
+                    occupied += rows
                 }
-                top += rows
             }
             checkCancelled()
             pdf.save(output)

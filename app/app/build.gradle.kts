@@ -150,6 +150,7 @@ dependencies {
 
   // Local tests: jUnit, coroutines, Android runner
   testImplementation(libs.junit)
+  testImplementation(libs.okhttp.mockwebserver)
   testImplementation(libs.kotlinx.coroutines.test)
 
   // Instrumented tests: jUnit rules and runners

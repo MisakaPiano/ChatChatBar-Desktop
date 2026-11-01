@@ -157,7 +157,7 @@ class DesktopFormatCardAutoFillTest {
             val editor = app.formatCardEditorController; editor.openNew()
             block(root, app, editor)
         } finally {
-            app.close()
+            if (app.dataOperationCoordinator.state != DesktopDataOperationCoordinatorState.CLOSED) app.close()
             check(parent.startsWith(Path.of(System.getProperty("java.io.tmpdir")).toAbsolutePath().normalize()))
             parent.toFile().deleteRecursively()
         }
