@@ -7,6 +7,9 @@ internal fun DesktopBackupRecords.ResourceLimit.userMessage(): String = recordMe
 internal fun DesktopFullBackupSource.Refusal.userMessage(): String = when {
     passwordRequired -> "该备份已加密，请输入存档密码（8–1024 个字符）后重新检查。当前数据未改变。"
     resourceActual != null && resourceLimit != null -> recordMemoryMessage(requireNotNull(resourceActual), requireNotNull(resourceLimit))
+    stage == "ZIP_CONTENT_SINK_ACCESS_DENIED" -> "本机拒绝读写备份准备资料，请检查工作目录权限或文件占用后重试；原备份与当前数据未改变。"
+    stage == "ZIP_CONTENT_SINK_SECURITY" -> "本机安全规则阻止了备份资料准备，请检查工作目录的访问权限；原备份与当前数据未改变。"
+    stage == "ZIP_CONTENT_SINK_IO" -> "本机准备备份资料时发生读写错误，请检查工作目录、文件占用和可用空间后重试；原备份与当前数据未改变。"
     encrypted == true && stage == "AUTHENTICATION_ZIP" -> "加密备份读取未通过，请核对存档密码和文件完整性；当前数据未改变。"
     stage.contains("ENTITY_SCHEMA") -> "备份包含当前版本无法识别的数据结构（" + stage + "），请展开错误详情；当前数据未改变。"
     else -> "备份读取未通过（" + stage + "），请核对文件结构与完整性并查看错误详情；当前数据未改变。"

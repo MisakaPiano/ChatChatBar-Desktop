@@ -34,9 +34,8 @@ internal object DesktopFullBackupSource {
         internal fun recordFailure(failure: Throwable) = apply {
             passwordRequired = failure is AppBackupPasswordRequired
             // Retain code identity, never the original Throwable/message or source values.
-            failureLocations = listOf(failure.javaClass.name.take(180)) + failure.stackTrace.asSequence()
-                .filter { it.className.startsWith("com.example.chatbar.") }.take(8)
-                .map { "${it.className}.${it.methodName}:${it.lineNumber}" }.toList()
+            failureLocations = (failure as? StrictBackupZipReader.Refusal)?.failureLocations
+                ?.takeIf { it.isNotEmpty() }?.take(9) ?: codeLocations(failure)
         }
     }
 
@@ -98,7 +97,7 @@ internal object DesktopFullBackupSource {
                                             // later from authenticated scope and the user's choices.
                                             require(preferences.retainedPreferences.isEmpty())
                                             validateAccountPreferences(value)
-                                            sink.preferences(value)
+                                            sinkOperation { sink.preferences(value) }
                                         }
                                         else -> {
                                             require(path.endsWith(".json"))
@@ -113,12 +112,12 @@ internal object DesktopFullBackupSource {
                                                 }
                                             }
                                             entities[path] = DesktopBackupRecords.scopeRecord(value)
-                                            sink.entity(path, value, bytes)
+                                            sinkOperation { sink.entity(path, value, bytes) }
                                         }
                                     }
                                 }
                             } finally { bytes.fill(0) }
-                        } else sink.media(path, hashing)
+                        } else sinkOperation({ hashing.readFailed }) { sink.media(path, hashing) }
                         // Consumers may read less, but every authenticated source byte participates
                         // in CRC/inventory verification before anything can become Verified.
                         drain(hashing, active)
@@ -129,6 +128,8 @@ internal object DesktopFullBackupSource {
                         } catch (cancelled: java.util.concurrent.CancellationException) { throw cancelled
                         } catch (failure: DesktopBackupRecords.ResourceLimit) {
                             throw StrictBackupZipReader.ContentRefusal("RECORD_MEMORY_BUDGET", failure.actual, failure.limit)
+                        } catch (failure: StrictBackupZipReader.ContentRefusal) {
+                            throw failure
                         } catch (_: Exception) { throw StrictBackupZipReader.ContentRefusal(phase) }
                     }
                 }
@@ -159,12 +160,39 @@ internal object DesktopFullBackupSource {
         }
     }
 
+    private fun codeLocations(failure: Throwable): List<String> =
+        listOf(failure.javaClass.name.take(180)) + failure.stackTrace.asSequence()
+            .filter { it.className.startsWith("com.example.chatbar.") }.take(8)
+            .map { "${it.className}.${it.methodName}:${it.lineNumber}" }.toList()
+
+    private fun sinkOperation(readFailed: () -> Boolean = { false }, operation: () -> Unit) {
+        try { operation() }
+        catch (cancelled: java.util.concurrent.CancellationException) { throw cancelled }
+        catch (failure: Exception) {
+            val category = when (failure) {
+                is AccessDeniedException -> "SINK_ACCESS_DENIED"
+                is SecurityException -> "SINK_SECURITY"
+                is IOException -> "SINK_IO"
+                else -> null
+            }
+            // A consumer reads from the authenticated ZIP stream too. Its read failures are
+            // source failures, even if closing a destination adds another IOException.
+            if (category != null && !readFailed())
+                throw StrictBackupZipReader.ContentRefusal(category, failureLocations = codeLocations(failure))
+            throw failure
+        }
+    }
+
     private class CountingHashInput(source: InputStream) : FilterInputStream(source) {
         private val digest = MessageDigest.getInstance("SHA-256")
         var size = 0L; private set
+        var readFailed = false; private set
         override fun read(): Int = ByteArray(1).let { if (read(it, 0, 1) < 0) -1 else it[0].toInt() and 255 }
-        override fun read(bytes: ByteArray, offset: Int, length: Int): Int = `in`.read(bytes, offset, length).also {
-            if (it > 0) { size += it; digest.update(bytes, offset, it) }
+        override fun read(bytes: ByteArray, offset: Int, length: Int): Int {
+            val count = try { `in`.read(bytes, offset, length) }
+                catch (failure: Exception) { readFailed = true; throw failure }
+            if (count > 0) { size += count; digest.update(bytes, offset, count) }
+            return count
         }
         override fun close() {}
         fun hash() = hex(digest.digest())

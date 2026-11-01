@@ -32,7 +32,7 @@
 | FB20261031-01／HIGH 大包导入 | 已修复复现的structured累计／单实体／SessionInventory误拦，214记录真实用户提供大包隔离往返及用户1224 GUI预览通过 | 复用1224，不重做；测试者最初那份逐字节原件未据此冒认同一文件已验，生产GUI最终合并与跨端范围继续逐项待验 |
 | FB20261031-02／HIGH 本地模型与外部代理并用 | 本地错误代理子问题已修源码：r02两项实际RED，r03含IPv4/localhost/IPv6直连＋外部代理并行的33项全PASS；独立新编译库复核通过，尚未交付。只开Windows系统代理的启动opt-in已补源码，原生开启场景仍未验 | 见[217](217_LOCAL_MODEL_PROXY_ROUTING_AND_GUIDE.md)。核新app-image启动cfg；当前Windows代理为关，不为测试改用户设置，不把默认selector模拟通过冒认真实v2ray／NAI通过。保留原手动／JVM／默认优先级与免代理规则，不永久改全局JAVA_TOOL_OPTIONS，不扩大为全部代理UI／provider分流 |
 | FB20261031-03 本地接入指引 | 已在模型编辑页补中英文说明：实际OpenAI兼容Base URL、可选/v1、准确ID、models/data探测与手填、空key及显式HTTP许可；Desktop编译／回归另记217 | 与FB02同批交付；不假定Ollama或11434，不给所有provider强拼/v1，不扩成应用内模型部署 |
-| FB20261031-04 脱敏且可行动的失败类别 | 现有备份Source.Refusal已分encrypted/passwordRequired/phase，未加密该分支不提示密码，复用；generic路径仍待整理。现用1224实际NovelAiAccountService六场景分类丢失已复现；共享固定kind/HTTP码与Desktop映射已补，r07账户5＋Desktop40结果全PASS（共享缓存来源保留），尚未交付，见218 | B0定向保留产生层稳定kind/HTTPcode并映射UI；备份首因/回调诊断只补实际余缺，不重做已解决分类。保留原拒绝与日志边界，不曝光原Throwable/message/body/host/token；不把一个模糊提示当全部原因 |
+| FB20261031-04 脱敏且可行动的失败类别 | NAI固定kind／HTTP码已补，r07结果与缓存来源见218；备份本地sink拒写误归schema／结构另有实际RED，现补固定SINK类别及首因程序位置，r02五类32新执行PASS、独立同包新旧对照通过，见221。已有密码／鉴权／预算分类复用，尚未交付 | 不将输入读取失败当本机写入，不保留原Throwable/message/path/body/token；不猜测具体磁盘故障或安全软件。普通冻结候选／完整CI／隔离／真人验收分别记，不把当前具体余缺修复泛化为所有错误路径已完成 |
 | FB20261031-05 reasoning耗尽导致流式空正文 | 已在真实合成SSE→主聊天→任务/持久消息链复现并修源码：空正文length保留结束原因并明确失败，非空length仍保存/禁止自动图；r07定向通过，见218；未交付 | 当前源码通过后走必要完整CI/普通候选/隔离生命周期与用户本版验收；不自动改Token预算或Prompt，保留Stop与取消语义；实际provider验收与合成结果分开 |
 
 ## P12：AI 创作与修复
