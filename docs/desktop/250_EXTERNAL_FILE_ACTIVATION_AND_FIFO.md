@@ -28,3 +28,7 @@ DesktopExternalActivationTest包含真实子JVM调用生产Main ingress helper�
 原生test_lifecycle.py追加旧公开1229稳定入口源字节固定编译、新三资源冷暖委托、Unicode传参、OpenWith/default保全、外来helper拒绝以及实际C# socket送达／丢ACK无重放／冷image损坏拒绝。小型fake不等于完整安装包或真人验收，后者仍需分层记录。冻结源码fixture仅测试，不进入产物。云端第一轮失败按真实栈修，不把静态检查写成PASS。
 
 首轮ee382445／CI90（41342985050）原FAIL保留：Windows生产编译在新预业务提示框调用`User32.MessageBox`失败（现有JNA未声明此方法），Desktop主用例及production JAR代理验证均未运行。原生33、更新器8、退出交接4实际通过，Windows共享7及Linux作业成功。后续仅改用项目已有StartupMessageBoxApi.MessageBoxW接口，再送新精确源；不以这些已过旁路代替Desktop新用例。
+
+5d01e858／CI91（41343876105）生产编译已通过，新增测试编译失败：ModelTemplatePackage漏isMultimodal／templateType／customParams；fixture init调用suspend bootstrap load/save。主Desktop与依赖测试编译的production proxy均未运行，原33／8／4仍实际通过。后续仅补合成必填字段并把bootstrap初始化放回fixture的suspend阶段，不改生产准入或断言。
+
+私有1231／R11（41344218856）冻结应用5d01，独立控制f347c2a构建普通包，非发布授权；1230冻结包保持。R11的实际warm probe不等于跨重开保留证明。后补控制在CreateProcess之前保存完整pending files，窗口ready后追加文件之前比较；lostACK追加本次调用日志精确错误，防止损坏image的cold拒绝冒充无重放证明。这两处后补断言待后续精确云端，不取消或重写R11结果。

@@ -80,7 +80,8 @@ class DesktopExternalImportControllerTest {
             val file = when (kind) {
                 DesktopExternalImportKind.FORMAT -> f.format("a.json", "A", "A")
                 DesktopExternalImportKind.MODEL_TEMPLATE -> Files.writeString(f.root.resolve("model.json"), f.app.transferJson.encodeToString(
-                    ModelTemplatePackage.serializer(), ModelTemplatePackage(displayName = "Synthetic", baseUrl = "https://synthetic.invalid/v1", modelName = "synthetic")))
+                    ModelTemplatePackage.serializer(), ModelTemplatePackage(displayName = "Synthetic", baseUrl = "https://synthetic.invalid/v1", modelName = "synthetic",
+                        isMultimodal = false, templateType = ModelTemplate.OPENAI, customParams = emptyMap())))
                 DesktopExternalImportKind.IMAGE -> f.image()
                 DesktopExternalImportKind.BACKUP -> Files.write(f.root.resolve("synthetic.cbbackup"), CensusWireFixtures.bytes())
                 else -> SyntheticSaveSlotCorpus.archive(f.root.resolve("synthetic.cbsave"))
@@ -183,7 +184,7 @@ class DesktopExternalImportControllerTest {
     }
     private suspend fun fixture(work: suspend (Fixture) -> Unit) {
         val f = Fixture()
-        try { f.app.settingsRepository.saveAppSettings(AppSettings()); work(f) }
+        try { f.initialize(); f.app.settingsRepository.saveAppSettings(AppSettings()); work(f) }
         finally { f.external?.closeAndDrain(); f.app.close(); f.root.toFile().deleteRecursively() }
     }
     private class Fixture {
@@ -197,7 +198,7 @@ class DesktopExternalImportControllerTest {
                 override fun pickOpenFile(type: DesktopFileType): Path? = error("External paths must not invoke the picker")
                 override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? = error("No external export requested")
             }, directoryPicker = DesktopDirectoryPicker { error("No destination before explicit merge commit") })
-        init {
+        suspend fun initialize() {
             val store = DesktopBootstrapSettingsStore(root.resolve("bootstrap.json"))
             store.save((store.load() as DesktopBootstrapLoadResult.Missing).document, DesktopDataRootSelection.custom(app.appDataRoot))
         }

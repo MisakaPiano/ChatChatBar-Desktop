@@ -128,6 +128,7 @@ class Lifecycle(unittest.TestCase):
         key = hashlib.sha256(str(self.root.absolute()).upper().encode('utf-8')).hexdigest().upper()
         log = self.local / 'ChatChatBarDesktopNSISLifecycleTestInstallState' / (key + '.log')
         self.assertEqual(expected, result.returncode, mode + '\n' + (log.read_text(encoding='utf-8') if log.exists() else 'no lifecycle log'))
+        return log.read_text(encoding='utf-8') if log.exists() else ''
 
     def test_diagnostic_overlap_is_current_invocation_and_legacy_status_is_unchanged(self):
         data = self.root / 'input' / 'synthetic-data'
@@ -408,7 +409,13 @@ class Lifecycle(unittest.TestCase):
                 server.settimeout(10)
                 endpoint.write_text(str(server.getsockname()[1]) + '\n' + token + '\n')
                 pending = pool.submit(receive, server, acknowledge)
-                self.run_manager(mode, *map(str, arguments), expected=0 if acknowledge else 2)
+                log_key = hashlib.sha256(str(self.root.absolute()).upper().encode('utf-8')).hexdigest().upper()
+                log = self.local / 'ChatChatBarDesktopNSISLifecycleTestInstallState' / (log_key + '.log')
+                previous_log = log.read_text(encoding='utf-8') if log.exists() else ''
+                current_log = self.run_manager(mode, *map(str, arguments), expected=0 if acknowledge else 2)
+                if not acknowledge:
+                    self.assertTrue(current_log.startswith(previous_log))
+                    self.assertIn('FAILED OPEN_DELIVERY_UNCONFIRMED_DO_NOT_REPLAY', current_log[len(previous_log):])
                 self.assertEqual(list(map(str, arguments)), pending.result(timeout=10))
         endpoint.unlink()
         self.run_manager('--launch', expected=2)
