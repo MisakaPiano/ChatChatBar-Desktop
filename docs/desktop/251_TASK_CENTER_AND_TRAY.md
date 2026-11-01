@@ -1,5 +1,7 @@
 # 任务中心与托盘 / 2026-11-02
 
+后续本地自动备份也已补实际executeOnce的只读元数据，非schedulerRunning／delay loop：检查中才活跃；SkippedNotDue撤掉该检查行，不加成功历史或提醒，也不吃掉原40项历史；真实Created才转快照完成，清理warnings为固定提示待核对，不拷路径／异常。没有安全“只停当前copy”的独立接口，因此不放停止／重试，不用停future loop冒充。DATA前往仅选原自动备份页；原调度、stop/join、维护顺序和配置保持。新增连续40skip仍保留真实完成、失败／清理待核对与原阻塞执行不被观察打断的断言未执行，不由97覆盖。SaveSlot本地提交29a729fc也尚未推。
+
 CI96／a9实际三份报告已独立复用核SHA、CRC、XML：317suite／2455＝2436PASS＋19SKIP，production proxy5、NTFS7、shared1135／Android582；完成job日志native33／updater8／exit4均OK。真实Shell忙备份入口、原Job停止旧ID和晚取消journal三项均过。671aabeb已送CI97／41355702193，涵Merge与189提示／设置锁，尚未完成，不拿96覆盖。
 
 后续本地SaveSlot原Job元数据已接创建／导入到列表／导出／恢复／删除／复制／重绑，读取目录／绑定选择不伪造成功任务。沿原CoroutineContext仅记已有journal／文件move开始的发布边界，不改事务；其后失败／取消为UNCONFIRMED，不冒称撤回。按UUID停止，完成等原Job；无自动重放。查看回原会话存档面，同session忙时只打开原窗，不创建或恢复。新增真实journal写入中停止后保留实际存档／会话／草稿、旧ID不影响新导出、成功创建与导入不恢复两项仍未执行；不在CI97或冻结1232内。

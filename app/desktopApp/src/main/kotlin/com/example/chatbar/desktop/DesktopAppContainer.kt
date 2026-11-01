@@ -545,7 +545,7 @@ class DesktopAppContainer internal constructor(
                 else -> null
             }
         }
-    }) }
+    }).also { it.watchAutomaticBackups(automaticBackupRuntime) } }
     internal val taskCenter by taskCenterOwner
     private val trayOwner = lazy { DesktopTrayController(taskCenter, desktopSettingsStore) }
     internal val taskTray by trayOwner

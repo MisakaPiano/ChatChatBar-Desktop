@@ -34,6 +34,37 @@ import kotlinx.coroutines.test.runTest
 @OptIn(ExperimentalCoroutinesApi::class)
 class DesktopAutomaticBackupSchedulerTest {
     @Test
+    fun `task projection shows real checks only and never turns idle skipped ticks into backup history`() = runTest {
+        var calls = 0
+        val scheduler = scheduler { _, _ ->
+            when (++calls) {
+                1 -> createdResult()
+                42 -> throw IllegalStateException("SYNTHETIC_PRIVATE_PATH_AND_CONTENT")
+                43 -> createdResult("SYNTHETIC_PRIVATE_CLEANUP_DETAIL")
+                else -> AutomaticBackupExecutionResult.SkippedNotDue
+            }
+        }
+        try {
+            assertTrue(scheduler.workRows.value.isEmpty())
+            scheduler.start(schedule(checkInterval = Duration.ofSeconds(1))); runCurrent()
+            val saved = scheduler.workRows.value.single()
+            assertEquals(DesktopWorkKind.AUTOMATIC_BACKUP, saved.kind)
+            assertEquals(DesktopWorkPhase.COMPLETED, saved.phase)
+            repeat(40) { advanceTimeBy(1000); runCurrent() }
+            assertTrue(scheduler.isRunning)
+            assertEquals(listOf(saved), scheduler.workRows.value) // Loop alive/SkippedNotDue adds no success row.
+            advanceTimeBy(1000); runCurrent()
+            assertEquals(DesktopWorkPhase.FAILED, scheduler.workRows.value.first().phase)
+            advanceTimeBy(1000); runCurrent()
+            val partial = scheduler.workRows.value.first()
+            assertEquals(DesktopWorkKind.AUTOMATIC_BACKUP, partial.kind)
+            assertEquals(DesktopWorkPhase.UNCONFIRMED, partial.phase)
+            assertTrue(scheduler.workRows.value.none { it.active || it.canStop || it.canRetry })
+            assertFalse(scheduler.workRows.value.toString().contains("SYNTHETIC_PRIVATE"))
+        } finally { scheduler.close() }
+    }
+
+    @Test
     fun `schedule validates inputs without defining product defaults`() {
         assertFailsWith<IllegalArgumentException> {
             schedule(minimumBackupInterval = Duration.ofSeconds(-1))
@@ -271,10 +302,15 @@ class DesktopAutomaticBackupSchedulerTest {
         try {
             assertTrue(scheduler.start(schedule()))
             assertTrue(started.await(5, TimeUnit.SECONDS))
+            val active = scheduler.workRows.value.single()
+            assertTrue(active.active); assertEquals(DesktopWorkKind.AUTOMATIC_BACKUP_CHECK, active.kind)
+            assertEquals(DesktopWorkDetail.AUTOMATIC_BACKUP, active.target!!.detail)
+            assertFalse(active.canStop); assertFalse(active.canRetry)
             runBlocking {
                 val stopping = async(Dispatchers.Default) { scheduler.stop() }
                 assertFalse(scheduler.start(schedule()))
                 assertFalse(stopping.isCompleted)
+                assertTrue(scheduler.workRows.value.single().active)
                 release.countDown()
                 assertTrue(stopping.await())
                 scheduler.close()
@@ -286,6 +322,7 @@ class DesktopAutomaticBackupSchedulerTest {
                 events,
             )
             assertFalse(scheduler.isRunning)
+            assertTrue(scheduler.workRows.value.isEmpty())
         } finally {
             release.countDown()
             runBlocking { scheduler.close() }

@@ -88,3 +88,6 @@ internal fun DesktopTaskCenter.watchMerge(controller: DesktopMergeImportControll
 
 internal fun DesktopTaskCenter.watchSaveSlots(controller: DesktopSaveSlotController) =
     watch("save-slot", controller.workRows, stop = controller::stopTask)
+
+internal fun DesktopTaskCenter.watchAutomaticBackups(runtime: DesktopAutomaticBackupRuntime) =
+    watch("automatic-backup", runtime.workRows)

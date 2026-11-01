@@ -2,6 +2,7 @@ package com.example.chatbar.desktop
 
 import com.example.chatbar.data.snapshot.AutomaticBackupExecutionResult
 import java.time.Duration
+import java.util.UUID
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -12,6 +13,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlin.time.toKotlinDuration
 
 data class DesktopAutomaticBackupSchedule(
@@ -72,6 +76,8 @@ class DesktopAutomaticBackupScheduler internal constructor(
     private val scope = CoroutineScope(supervisorJob + dispatcher)
     private var activeRun: ActiveRun? = null
     private var closed = false
+    private val mutableWork = MutableStateFlow<List<DesktopWorkRow>>(emptyList())
+    internal val workRows = mutableWork.asStateFlow()
 
     val isRunning: Boolean
         get() = synchronized(stateLock) { activeRun != null }
@@ -138,23 +144,44 @@ class DesktopAutomaticBackupScheduler internal constructor(
         }
     }
 
-    private suspend fun executeOnce(schedule: DesktopAutomaticBackupSchedule): DesktopAutomaticBackupEvent =
+    private suspend fun executeOnce(schedule: DesktopAutomaticBackupSchedule): DesktopAutomaticBackupEvent {
+        val id = UUID.randomUUID().toString()
+        mutableWork.update { rows -> (listOf(DesktopWorkRow(id, DesktopWorkKind.AUTOMATIC_BACKUP_CHECK,
+            DesktopWorkPhase.RUNNING, System.currentTimeMillis(),
+            target = DesktopWorkTarget(DesktopPrimaryRoute.DATA, detail = DesktopWorkDetail.AUTOMATIC_BACKUP),
+            contextLabel = "自动备份检查")) + rows).take(41) }
+        var event: DesktopAutomaticBackupEvent? = null
         try {
-            when (
-                val result = executeAutomaticBackup(
-                    schedule.minimumBackupInterval,
-                    schedule.maximumSnapshotCount,
-                )
-            ) {
-                AutomaticBackupExecutionResult.SkippedNotDue ->
-                    DesktopAutomaticBackupEvent.SkippedNotDue
+            return try {
+                when (
+                    val result = executeAutomaticBackup(
+                        schedule.minimumBackupInterval,
+                        schedule.maximumSnapshotCount,
+                    )
+                ) {
+                    AutomaticBackupExecutionResult.SkippedNotDue ->
+                        DesktopAutomaticBackupEvent.SkippedNotDue
 
-                is AutomaticBackupExecutionResult.Created ->
-                    DesktopAutomaticBackupEvent.Created(result)
-            }
-        } catch (error: Exception) {
-            DesktopAutomaticBackupEvent.Failed(error)
+                    is AutomaticBackupExecutionResult.Created ->
+                        DesktopAutomaticBackupEvent.Created(result)
+                }
+            } catch (error: Exception) {
+                DesktopAutomaticBackupEvent.Failed(error)
+            }.also { event = it }
+        } finally {
+            mutableWork.update { rows -> when (val result = event) {
+                DesktopAutomaticBackupEvent.SkippedNotDue -> rows.filterNot { it.id == id }
+                else -> rows.map { row -> if (row.id != id) row else when (result) {
+                    is DesktopAutomaticBackupEvent.Created -> row.copy(kind = DesktopWorkKind.AUTOMATIC_BACKUP,
+                        phase = if (result.result.pruneResult.cleanupWarnings.isEmpty()) DesktopWorkPhase.COMPLETED else DesktopWorkPhase.UNCONFIRMED,
+                        contextLabel = if (result.result.pruneResult.cleanupWarnings.isEmpty()) "自动快照" else "自动快照已创建，清理待核对")
+                    is DesktopAutomaticBackupEvent.Failed -> row.copy(phase = if (result.error is kotlinx.coroutines.CancellationException)
+                        DesktopWorkPhase.UNCONFIRMED else DesktopWorkPhase.FAILED)
+                    else -> row.copy(phase = DesktopWorkPhase.UNCONFIRMED)
+                } }.take(40)
+            } }
         }
+    }
 
     private class ActiveRun {
         val stopSignal = CompletableDeferred<Unit>()

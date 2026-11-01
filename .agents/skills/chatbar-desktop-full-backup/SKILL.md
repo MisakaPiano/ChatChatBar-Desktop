@@ -15,6 +15,8 @@ External shell files use `DesktopMergeImportController.inspectFile(path,password
 
 Merge task-center metadata observes that same inspection/preparation Job. UUID stop waits for original cleanup and cannot stop a newer operation. Inspection, backup checking, export, restore preparation and merge-result preparation have distinct fixed kinds; inspection completion never means import was submitted. Unknown publication remains UNCONFIRMED while original restart/root ownership persists. Navigation only selects the original import view.
 
+Automatic backups are a separate scheduler owner. Its workRows bracket the actual executeOnce call, not the delay loop or schedulerRunning flag. SkippedNotDue adds no completed backup, Created reports the actual snapshot result, and pruning warnings remain fixed-label UNCONFIRMED. Observation exposes no stop/retry action and retains original runtime stop/join, maintenance and settings behavior. The task target only opens automatic-backup settings.
+
 Numeric provider statistics live under the existing local-only `diagnostics/provider-usage` root and are not part of portable entities or credential transport. Source snapshots retain their ordinary local-root policy; do not imply these statistics move with a selected full backup.
 
 Before same-root legacy restore writes, `DesktopFullBackupCommitJournal` rotates the local Moments admission epoch under `backups/`. The external root-bound scheduling grant then requires explicit renewal; restored enabled settings/tasks do not resume AI merely because the directory identity stayed the same. This epoch is local custody, not an exported entity or credential.
