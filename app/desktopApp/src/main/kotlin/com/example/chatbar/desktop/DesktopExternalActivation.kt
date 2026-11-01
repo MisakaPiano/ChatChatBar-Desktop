@@ -40,7 +40,7 @@ internal fun runDesktopExternalActivation(args: Array<String>, home: Path, local
     }, business: (DesktopExternalActivation) -> Unit) {
     var owner: DesktopExternalActivation? = null
     try {
-        val paths = DesktopExternalActivation.paths(args)
+        val paths = DesktopExternalLaunchRequest.paths(args, home)
         owner = DesktopExternalActivation.open(DesktopExternalActivation.directory(home, local), paths)
         DesktopInstalledProgram.activationQueued()
         if (owner == null) DesktopInstalledProgram.forwarded()

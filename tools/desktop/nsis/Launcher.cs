@@ -549,10 +549,23 @@ internal static class Launcher {
                         Require(File.ReadAllText(Child(Root, "receipts/" + Current() + ".sha256")) == Hash(Child(directory, "install-manifest.json")), "CURRENT_MANIFEST_CHANGED");
                         var files = args.Skip(2).Where(p => p != "--quiet").Select(p => Safe(p)).ToArray();
                         Require(files.Length > 0 && files.Length <= 64, "OPEN_ARGUMENT_REFUSED");
+                        Require(files.All(p => p.Length <= 32768) && files.Sum(p => Encoding.UTF8.GetByteCount(p)) <= 1048576 - 8 - files.Length * 4, "OPEN_ARGUMENT_REFUSED");
                         if (TryForward(files)) return 0;
                         Verify(directory, ReadManifest(directory));
                         var nonce = Guid.NewGuid().ToString("N"); var receipt = Child(Root, "receipts/" + nonce + ".activation");
-                        var psi = new ProcessStartInfo(Child(directory, "ChatChatBarDesktop.exe"), "--open-files " + String.Join(" ", files.Select(QuoteArgument))) { UseShellExecute = false, WorkingDirectory = Root };
+                        var request = Child(Root, "receipts/" + nonce + ".open-request");
+                        var pendingRequest = request + ".pending";
+                        using (var output = new FileStream(pendingRequest, FileMode.CreateNew, FileAccess.Write, FileShare.None)) {
+                            WireInt(output, 0x43434232); WireInt(output, files.Length);
+                            foreach (var file in files) {
+                                var bytes = new UTF8Encoding(false, true).GetBytes(file);
+                                WireInt(output, bytes.Length); output.Write(bytes, 0, bytes.Length);
+                            }
+                            output.Flush(true);
+                        }
+                        File.Move(pendingRequest, request);
+                        var requestHash = Hash(request);
+                        var psi = new ProcessStartInfo(Child(directory, "ChatChatBarDesktop.exe"), "--open-request " + nonce + " " + requestHash) { UseShellExecute = false, WorkingDirectory = Root };
                         foreach (var name in new[] { "CCB_DESKTOP_READY_PATH", "CCB_DESKTOP_READY_NONCE", "CCB_DESKTOP_FORWARD_PATH", "CCB_DESKTOP_FORWARD_NONCE" }) psi.EnvironmentVariables.Remove(name);
                         psi.EnvironmentVariables["CCB_DESKTOP_ACTIVATION_PATH"] = receipt;
                         psi.EnvironmentVariables["CCB_DESKTOP_ACTIVATION_NONCE"] = nonce;
@@ -563,6 +576,11 @@ internal static class Launcher {
                             Require(File.ReadAllText(receipt) == nonce + "\nQUEUED\n", "OPEN_RECEIPT_REFUSED");
                             File.Delete(receipt);
                         }
+                        // QUEUED is already proven. Retain a changed/unremovable request and expose cleanup separately.
+                        try {
+                            if (Hash(Safe(request)) == requestHash) File.Delete(request);
+                            else Event("DEFERRED OPEN_REQUEST_CLEANUP");
+                        } catch { Event("DEFERRED OPEN_REQUEST_CLEANUP"); }
                         return 0;
                     }
                     if (mode == "--shortcuts") {

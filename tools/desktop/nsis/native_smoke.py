@@ -332,6 +332,7 @@ def main():
     parser.add_argument('--probe-external-files', action='store_true', help='Deliver synthetic paths to the actual packaged warm receiver without confirming any import')
     parser.add_argument('--cold-external-file', action='store_true', help='Open a synthetic Unicode path through the installed bridge after the previous process has exited')
     parser.add_argument('--cold-external-ascii', action='store_true', help='Diagnostic control for cold delivery using only an ASCII filename; requires --cold-external-file')
+    parser.add_argument('--cold-external-matrix', action='store_true', help='One actual cold batch with ASCII ampersand and Unicode names with and without ampersands')
     parser.add_argument('--ci-source', type=Path, help='Frozen source namespace only in this repository Windows CI')
     args = parser.parse_args()
     approved = Path(__file__).resolve().parents[3] / 'app/desktopApp/build/preview-continuous-private-20261025'
@@ -357,12 +358,16 @@ def main():
     arguments = ['/S', '/D=' + str(args.root)] if args.installer else []
     cold_paths = []
     require(not args.cold_external_ascii or args.cold_external_file, 'ASCII_CONTROL_REQUIRES_COLD')
+    require(not args.cold_external_matrix or (args.cold_external_file and not args.cold_external_ascii), 'MATRIX_REQUIRES_COLD_WITHOUT_ASCII_CONTROL')
     if args.cold_external_file:
         require(args.installer is None and args.probe_external_files, 'COLD_EXTERNAL_REQUIRES_EXISTING_INSTALL_AND_QUEUE_PROBE')
-        path = case / (args.label + ('-cold source.json' if args.cold_external_ascii else '-冷启动角色 & source.json'))
-        require(not path.exists(), 'COLD_EXTERNAL_INPUT_ALREADY_EXISTS')
-        path.write_bytes(b'SYNTHETIC_COLD_EXTERNAL_DELIVERY')
-        cold_paths = [path]; exe = args.root / 'OpenChatBarFile.exe'; arguments = [str(path)]
+        suffixes = ['-ASCII & source.json', '-中文 source.json', '-中文 & source.json', '-日本語 😀 source.json'] if args.cold_external_matrix else [
+            '-cold source.json' if args.cold_external_ascii else '-冷启动角色 & source.json']
+        cold_paths = [case / (args.label + suffix) for suffix in suffixes]
+        for path in cold_paths:
+            require(not path.exists(), 'COLD_EXTERNAL_INPUT_ALREADY_EXISTS')
+            path.write_bytes(b'SYNTHETIC_COLD_EXTERNAL_DELIVERY')
+        exe = args.root / 'OpenChatBarFile.exe'; arguments = list(map(str, cold_paths))
     require(not args.expect_install_failure or (args.installer and not args.fresh_default_profile), 'FAILURE_DRIVER_REQUIRES_INSTALLED_SYNTHETIC_PROFILE')
     launch_close(case, args.image, exe, arguments, args.root, args.label, args.fresh_default_profile, args.expect_install_failure, args.probe_busy_installer, args.allow_owned_update_helper_cwd, args.probe_external_files, cold_paths)
 

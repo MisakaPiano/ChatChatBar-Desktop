@@ -19,10 +19,33 @@ class Fake {
  static void Main(string[] args) {
   var capture=Environment.GetEnvironmentVariable("CCB_TEST_OPEN_CAPTURE");
   if (capture!=null && args.Length>0) {
+   var rawLines=new System.Collections.Generic.List<string>();
+   foreach(var arg in args) rawLines.Add(Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(arg)));
+   File.WriteAllLines(capture+".argv",rawLines.ToArray());
+   var receipt=Environment.GetEnvironmentVariable("CCB_DESKTOP_ACTIVATION_PATH");
+   if(args[0]=="--open-request") {
+    if(args.Length!=3 || args[1]!=Environment.GetEnvironmentVariable("CCB_DESKTOP_ACTIVATION_NONCE")) throw new Exception("REQUEST_BINDING");
+    var bytes=File.ReadAllBytes(Path.ChangeExtension(receipt,"open-request"));
+    using(var sha=System.Security.Cryptography.SHA256.Create()) {
+     if(BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-","").ToLowerInvariant()!=args[2]) throw new Exception("REQUEST_HASH");
+    }
+    using(var input=new BinaryReader(new MemoryStream(bytes))) {
+     if(System.Net.IPAddress.NetworkToHostOrder(input.ReadInt32())!=0x43434232) throw new Exception("REQUEST_VERSION");
+     var count=System.Net.IPAddress.NetworkToHostOrder(input.ReadInt32());
+     if(count<1 || count>64) throw new Exception("REQUEST_COUNT");
+     var decoded=new System.Collections.Generic.List<string>();decoded.Add("--open-files");
+     for(var i=0;i<count;i++) {
+      var size=System.Net.IPAddress.NetworkToHostOrder(input.ReadInt32());
+      if(size<1 || size>131072) throw new Exception("REQUEST_LENGTH");
+      decoded.Add(new System.Text.UTF8Encoding(false,true).GetString(input.ReadBytes(size)));
+     }
+     if(input.BaseStream.Position!=input.BaseStream.Length) throw new Exception("REQUEST_TRAILER");
+     args=decoded.ToArray();
+    }
+   }
    var lines=new System.Collections.Generic.List<string>();
    foreach(var arg in args) lines.Add(Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(arg)));
    File.WriteAllLines(capture,lines.ToArray());
-   var receipt=Environment.GetEnvironmentVariable("CCB_DESKTOP_ACTIVATION_PATH");
    File.WriteAllText(receipt+".pending",Environment.GetEnvironmentVariable("CCB_DESKTOP_ACTIVATION_NONCE")+"\nQUEUED\n");
    File.Move(receipt+".pending",receipt); return;
   }
@@ -466,6 +489,10 @@ class Lifecycle(unittest.TestCase):
         self.assertEqual(0, result.returncode)
         self.assertEqual(['--open-files', *map(str, paths)],
                          [base64.b64decode(value).decode('utf-8') for value in capture.read_text(encoding='utf-8-sig').splitlines()])
+        raw_args = [base64.b64decode(value).decode('utf-8') for value in Path(str(capture) + '.argv').read_text(encoding='utf-8-sig').splitlines()]
+        self.assertEqual('--open-request', raw_args[0])
+        self.assertEqual(3, len(raw_args)); self.assertTrue(all(value.isascii() for value in raw_args))
+        self.assertEqual([], list((self.root / 'receipts').glob('*.open-request')))
         self.assertEqual(original_default, default_json())
         suffix = hashlib.sha256(str(self.root.absolute()).upper().encode('utf-8')).hexdigest().upper()[:12]
         key_path = r'Software\Classes\ChatChatBarDesktopNSISLifecycleTest.File.' + suffix

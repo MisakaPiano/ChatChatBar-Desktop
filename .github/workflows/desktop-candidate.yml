@@ -198,7 +198,7 @@ jobs:
           python -B $driver --case $case --image $env:CCB_CANDIDATE_IMAGE --root $program --label candidate-reopen --fresh-default-profile --ci-source $env:CCB_CI_SOURCE --allow-owned-update-helper-cwd --probe-external-files
           if ($LASTEXITCODE -ne 0) { throw 'CANDIDATE_NATIVE_REOPEN_FAILED' }
           if ((Get-FileHash -Algorithm SHA256 -LiteralPath $canary).Hash -cne $before) { throw 'REOPEN_CANARY_CHANGED' }
-          python -B $driver --case $case --image $env:CCB_CANDIDATE_IMAGE --root $program --label candidate-cold-external --fresh-default-profile --ci-source $env:CCB_CI_SOURCE --allow-owned-update-helper-cwd --probe-external-files --cold-external-file
+          python -B $driver --case $case --image $env:CCB_CANDIDATE_IMAGE --root $program --label candidate-cold-external --fresh-default-profile --ci-source $env:CCB_CI_SOURCE --allow-owned-update-helper-cwd --probe-external-files --cold-external-file --cold-external-matrix
           if ($LASTEXITCODE -ne 0) { throw 'CANDIDATE_COLD_EXTERNAL_FAILED' }
           if ((Get-FileHash -Algorithm SHA256 -LiteralPath $canary).Hash -cne $before) { throw 'COLD_EXTERNAL_CANARY_CHANGED' }
           [ordered]@{version=$env:CCB_CANDIDATE_VERSION; source=$env:CCB_CANDIDATE_SOURCE; actualNativeUpgrade=$true; stableReopen=$true; runningInstallerRefused=$true; syntheticCanaryRetained=$true; cwdPolicy='Stable program cwd; only inventoried updater image may use runtime cwd, and full Job exit is required'; fakeCredentialRetentionVerified=$false; customDataRootBusyVerified=$false; humanAcceptance=$false; installerRunOnUserMachine=$false} | ConvertTo-Json | Set-Content (Join-Path $case 'scope-result.json') -Encoding utf8
