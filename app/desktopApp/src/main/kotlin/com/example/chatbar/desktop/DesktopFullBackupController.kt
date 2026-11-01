@@ -124,7 +124,9 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
                     outcome = DesktopWorkPhase.CANCELLED
                     try {
                         releaseInspection()
-                        mutable.update { it.copy(message = "操作已停止；临时检查文件已释放，原文件和恢复证据保留") }
+                        mutable.update { it.copy(message = if (service.restartRequired)
+                            "当前工作已停止，但仍有已准备或待核对的恢复记录；停止不会撤销它。请核对恢复提示，正常退出后由启动恢复检查处理。"
+                            else "操作已停止；临时检查文件已释放，原文件和恢复证据保留") }
                     } catch (_: Throwable) {
                         outcome = DesktopWorkPhase.UNCONFIRMED
                         mutable.update { it.copy(error = "临时文件清理尚未确认，已保留异常现场；请勿自行清理恢复记录。") }

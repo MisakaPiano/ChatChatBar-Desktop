@@ -24,7 +24,8 @@ internal fun DesktopWorkPhase.label() = when (this) {
 @Composable
 @OptIn(ExperimentalLayoutApi::class)
 internal fun DesktopTaskCenterPanel(center: DesktopTaskCenter, onClose: () -> Unit,
-    onView: (DesktopWorkTarget) -> Unit, onHideToTray: (() -> Unit)? = null, tray: DesktopTrayController? = null) {
+    onView: (DesktopWorkTarget) -> Unit, onHideToTray: (() -> Unit)? = null, tray: DesktopTrayController? = null,
+    settingsEnabled: Boolean = true) {
     val state by center.state.collectAsState()
     val trayState = tray?.state?.collectAsState()?.value
     var recent by remember { mutableStateOf(false) }
@@ -68,7 +69,7 @@ internal fun DesktopTaskCenterPanel(center: DesktopTaskCenter, onClose: () -> Un
                 }
                 if (tray != null && trayState != null) {
                     StudioSwitch("系统任务提醒", trayState.notificationsEnabled,
-                        enabled = trayState.notificationsConfigurable) { tray.setNotifications(!trayState.notificationsEnabled) }
+                        enabled = trayState.notificationsConfigurable && settingsEnabled) { tray.setNotifications(!trayState.notificationsEnabled) }
                     trayState.error?.let { StatusText(it, palette.destructive) }
                     if (trayState.initialized && !trayState.available) StatusText("当前系统托盘不可用，窗口保持显示。")
                 }

@@ -9,6 +9,8 @@ description: Maintain Desktop cbbackup selection/export, optional credential tra
 
 The export dialog reports the BACKUP modal category and has a compact task entry. Only active data work can open observation/stop above that surface; idle selections, unrelated dialogs and root/restart locks retain their guards. Late-cancel verification holds resumeScheduler after journal.schedule, cancels the original controller Job and proves pending journal/current bytes remain while metadata is UNCONFIRMED.
 
+Cancellation with restart already required has a separate user message: stopping work does not withdraw the prepared/pending restore record. Do not describe this path as ordinary pre-commit cancellation or delete its journal.
+
 External shell files use `DesktopMergeImportController.inspectFile(path,password)` and its specific Job handle, then the existing merge PREVIEW UI. No external queue action selects conflicts, commits or activates a root. `discardExternal()` returns the owned discard Job; cancellation/shutdown joins it before releasing source staging. Password buffers remain volatile; restart-required keeps later external items pending. `inspect(password)`/ordinary UI entry retains its existing picker route.
 
 Numeric provider statistics live under the existing local-only `diagnostics/provider-usage` root and are not part of portable entities or credential transport. Source snapshots retain their ordinary local-root policy; do not imply these statistics move with a selected full backup.

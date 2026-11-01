@@ -216,7 +216,8 @@ internal fun DesktopPrimaryShell(
             }
         }
         if (centerOpen && !centerLocked && (modalActivity?.otherCount ?: 0) == 0 && taskCenter != null) DesktopTaskCenterPanel(taskCenter,
-            onClose = { centerOpen = false }, onHideToTray = onHideToTray, tray = taskTray, onView = { target ->
+            onClose = { centerOpen = false }, onHideToTray = onHideToTray, tray = taskTray,
+            settingsEnabled = !backupLocked, onView = { target ->
                 if (backupLocked || (route == DesktopPrimaryRoute.MANAGE && target.route != DesktopPrimaryRoute.MANAGE &&
                     (managementController.state.value.busy || transferController.state.value.busy || modelTemplateController.state.value.busy))) {
                     taskCenter.navigationBusy()
