@@ -11,6 +11,30 @@ class DesktopMomentStoreTest {
     private val card = CharacterCard("card", "Fixture", createdAt = 0, updatedAt = 0)
     private val session = ChatSession("session", "card", "Fixture", createdAt = 0, updatedAt = 0)
 
+    @Test fun `explicit sender edit keeps post image and task identity including card author with null person id`() = runBlocking {
+        val root = Files.createTempDirectory("moment-author-edit-"); val gate = DesktopDataOperationCoordinator()
+        try {
+            val store = DesktopMomentStore(JsonFileStorage(root, gate), gate)
+            val attempt = store.begin(MomentTask.create(card.id, session.id, 1), card, session)
+            store.complete(attempt, attempt.placeholder.copy(isPlaceholder = false, text = "original",
+                imagePath = "images/retained.png", imagePrompt = "retained prompt", userLiked = true))
+            val original = store.posts().single(); val tasks = store.tasks()
+            val sender = com.example.chatbar.domain.moment.MomentSender("person", "Selected", "images/avatar.png")
+            store.edit(original.id, " edited ", sender)
+            val changed = store.posts().single()
+            assertEquals(original.copy(text = "edited", senderCharacterId = sender.characterId,
+                senderName = sender.name, senderAvatar = sender.avatar, updatedAt = changed.updatedAt), changed)
+            assertEquals(tasks, store.tasks())
+            store.edit(changed.id, changed.text, com.example.chatbar.domain.moment.MomentSender(null, "Card", null))
+            val cardAuthored = store.posts().single()
+            assertNull(cardAuthored.senderCharacterId); assertNull(cardAuthored.senderAvatar)
+            assertEquals("Card", cardAuthored.senderName)
+            assertFails { store.edit(cardAuthored.id, "", sender) }
+            assertFails { store.edit(cardAuthored.id, "valid", sender.copy(name = " ")) }
+            assertEquals(cardAuthored, store.posts().single())
+        } finally { gate.closeAndDrain(); root.toFile().deleteRecursively() }
+    }
+
     @Test fun `explicit recovery of missing placeholder preserves reserved identity and refuses stale task or saved final`() = runBlocking {
         val root = Files.createTempDirectory("moment-missing-placeholder-"); val gate = DesktopDataOperationCoordinator()
         try {

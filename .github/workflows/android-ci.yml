@@ -146,6 +146,20 @@ jobs:
           CCB_SCREENSHOT_REVIEW_DIR: ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/tests/screenshot-export-images
         run: .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace
 
+      - name: Test Studio streaming storage on NTFS
+        if: ${{ !cancelled() && env.CCB_CI_SOURCE != '' }}
+        working-directory: ${{ env.CCB_CI_SOURCE }}/app
+        run: .\gradlew.bat :sharedCore:test --tests com.example.chatbar.data.local.JsonFileStorageStudioStreamingTest --tests com.example.chatbar.domain.image.NovelAiCompactJsonInputTest --no-daemon --stacktrace --console=plain
+
+      - name: Upload separate Windows Studio streaming reports
+        if: always() && env.CCB_CI_SOURCE != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-studio-streaming-reports
+          path: |
+            ${{ env.CCB_CI_SOURCE }}/app/sharedCore/build/reports/tests/test/
+            ${{ env.CCB_CI_SOURCE }}/app/sharedCore/build/test-results/test/
+
       - name: Test NSIS manager lifecycle with synthetic programs
         if: ${{ !cancelled() && env.CCB_CI_SOURCE != '' }}
         working-directory: ${{ env.CCB_CI_SOURCE }}

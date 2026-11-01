@@ -339,7 +339,9 @@ internal class DesktopMomentsController(
         mutableState.update { it.copy(progress = label,
             streamedText = progress.streamedText.ifBlank { progress.message }.takeLast(128_000)) }
     }
-    suspend fun edit(id: String, text: String) { store.edit(id, text); refresh() }
+    suspend fun edit(id: String, text: String, sender: com.example.chatbar.domain.moment.MomentSender? = null) {
+        store.edit(id, text, sender); refresh()
+    }
     suspend fun delete(id: String) { store.delete(id); refresh() }
     suspend fun reconcileSaved() {
         val count = store.reconcileSaved()

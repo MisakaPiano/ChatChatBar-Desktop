@@ -76,12 +76,18 @@ class DesktopMomentsPanelTest {
                     withTimeout(10_000) { while (container.settingsRepository.getAppSettings().lastSeenMomentsAt < 10) { frames() } }
                     shot("moments-timeline-$width.png")
                     click("编辑动态文字"); frames()
+                    val previousSender = store.posts().single().senderName
+                    click("发布人物 · 原发布者 · $previousSender ▾"); frames()
+                    click("角色卡 · 合成角色卡"); frames()
                     val field = all().first { it.config.contains(SemanticsActions.SetText) }
                     assertTrue(field.config[SemanticsActions.SetText].action!!.invoke(AnnotatedString("合成修改 $width")))
                     frames(); shot("moments-edit-$width.png"); click("保存")
                     withTimeout(10_000) { while (store.posts().single().text != "合成修改 $width") { frames() } }
                     frames()
                     assertTrue(store.posts().single().isPrivate); assertTrue(store.posts().single().userLiked)
+                    assertEquals("合成角色卡", store.posts().single().senderName)
+                    assertNull(store.posts().single().senderCharacterId)
+                    assertEquals(post.imagePath, store.posts().single().imagePath)
                     click("删除动态"); frames(); click("关闭"); frames()
                     assertEquals(listOf(post.id), store.posts().map { it.id })
                 } finally { scene.close() }

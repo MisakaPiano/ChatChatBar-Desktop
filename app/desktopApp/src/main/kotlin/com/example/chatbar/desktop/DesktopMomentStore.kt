@@ -132,10 +132,15 @@ internal class DesktopMomentStore(
             storage.deleteEntity<MomentTask>("moment_tasks", it.id)
         }
     }
-    suspend fun edit(id: String, text: String) = mutate {
+    suspend fun edit(id: String, text: String, sender: com.example.chatbar.domain.moment.MomentSender? = null) = mutate {
         val latest = post(id) ?: error("动态已删除")
         check(!latest.isPlaceholder); require(text.isNotBlank())
-        if (latest.text != text.trim()) save(latest.copy(text = text.trim(), updatedAt = clock()))
+        require(sender == null || sender.name.isNotBlank())
+        val updated = latest.copy(text = text.trim(),
+            senderCharacterId = if (sender == null) latest.senderCharacterId else sender.characterId,
+            senderName = sender?.name ?: latest.senderName,
+            senderAvatar = if (sender == null) latest.senderAvatar else sender.avatar)
+        if (updated != latest) save(updated.copy(updatedAt = clock()))
     }
 
     private fun sameImageSource(a: MomentPost, b: MomentPost) = !a.isPlaceholder && !b.isPlaceholder &&

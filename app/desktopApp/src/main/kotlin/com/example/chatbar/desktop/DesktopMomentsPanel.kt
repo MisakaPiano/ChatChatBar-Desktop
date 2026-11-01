@@ -27,6 +27,9 @@ import com.example.chatbar.data.local.entity.MomentPost
 import com.example.chatbar.data.local.entity.MomentTask
 import com.example.chatbar.data.local.entity.MomentTaskStatus
 import com.example.chatbar.domain.image.*
+import com.example.chatbar.domain.moment.MomentSender
+import com.example.chatbar.domain.moment.MomentSenderOption
+import com.example.chatbar.domain.moment.MomentPostEditing
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -194,9 +197,21 @@ internal fun DesktopMomentsPanel(controller: DesktopMomentsController) {
                 act { controller.retryInterruptedTask(task); recoveringTask = null }
             }
         } }
-        editing?.let { post -> MomentModal("编辑动态文字", { editing = null }) {
+        editing?.let { post -> MomentModal("编辑动态", { editing = null }) {
+            val originalSender = MomentSender(post.senderCharacterId, post.senderName, post.senderAvatar)
+            val original = MomentSenderOption("original", originalSender)
+            var sender by remember(post.id) { mutableStateOf(original) }
+            val people = MomentPostEditing.senderOptions(state.cards.firstOrNull { it.id == post.characterCardId })
+            val options = listOf(original) + people
+            CompactChoice("发布人物", options, sender, { option -> when (option.key) {
+                "original" -> "原发布者 · ${option.sender.name}"
+                "card" -> "角色卡 · ${option.sender.name}"
+                else -> "人物 ${people.indexOf(option)} · ${option.sender.name}"
+            } }) { sender = it }
             LabeledField("正文", editText, multiline = true) { editText = it }
-            BootstrapButton("保存", enabled = editText.isNotBlank()) { act { controller.edit(post.id, editText); editing = null } }
+            BootstrapButton("保存", enabled = editText.isNotBlank() && sender.sender.name.isNotBlank()) {
+                act { controller.edit(post.id, editText, sender.sender); editing = null }
+            }
         } }
         deleting?.let { post -> MomentModal("删除这条动态？", { deleting = null }) {
             StatusText("删除动态记录，仍被其他内容引用的图片会保留；历史任务不会因此自动重试。")

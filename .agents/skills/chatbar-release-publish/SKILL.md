@@ -30,6 +30,8 @@ Cloud native revalidation may reuse exact pinned Actions artifacts with `restore
 
 `.github/workflows/android-ci.yml` has separate Linux Android/shared-core tasks and Windows Desktop tasks. Keep Gradle task paths qualified: unqualified `test` on Linux also runs the Windows-specific Desktop suite. Windows checkout enables Git long paths and runs a detached source worktree plus canonical temp on an ephemeral NTFS system-drive root; its prerequisite artifact records original/canonical paths, filesystems and actual audio-device count. Headless tests use `-PdesktopTestHeadless=true`; global `JAVA_TOOL_OPTIONS` prints ahead of the authority child JVM's READY protocol and causes a harness failure. Windows CI includes synthetic DPAPI cases; actual window/input and audio-device acceptance retain their own prerequisite/result scope. Its NSIS helper step uses synthetic programs, not an ordinary app installation; after workspace preparation it also runs following Desktop test failure, while the overall job remains failed. Report failures and skipped prerequisites separately.
 
+The Windows job separately runs only `JsonFileStorageStudioStreamingTest` and `NovelAiCompactJsonInputTest` from sharedCore for NTFS derived-directory/collision/cancellation semantics. Its `windows-studio-streaming-reports` artifact is distinct from Desktop tests and the complete Linux shared report; do not attribute Linux-only shared cases to Windows.
+
 Desktop Test tasks supply `ccb.readonly.classpath` through the tracked `DesktopChildClasspathArguments` provider; historical SaveSlot, merge-root reopen and dormant prepublication child JVM tests require the full test runtime classpath. This is test-only wiring and is not packaged.
 
 ### Dormant MSI reference

@@ -1,5 +1,7 @@
 # 正式1.4.7适配：旧Studio内联编码流式读取
 
+192f／CI81完整SUCCESS：Linux共享1116（包含本页新增stream3／storage4）和Android582全PASS，Windows主304suite2399项＝2380PASS＋19SKIP、独立production JAR代理5PASS。Windows这轮仅执行desktopApp测试，没有执行本页7项shared测试；不能写成NTFS新用例通过。后续正常新源云端将单独增加这两个共享suite的Windows定向执行和独立报告，不重跑81。下文待验为当时源码截点。
+
 2026-11-02 JST。后续独立于8b2／CI80及公开1229；本页新增源码尚待精确源云端验证。正式上游baseline保持1.4.1，Prompt未改，不新建付费请求。
 
 旧Studio JSON可在encodedVibe中内联很大的编码。即使请求运行时已能resolve文件引用，普通JSON解码仍先分配完整内联字符串。本次采用拉取式InputStream投影：约2048字符输出窗口、32字符键识别窗口、4096字符编码缓冲；超出后把解码出的编码流式写到既有payload根的自有暂存文件，校验后发布内容寻址文件。输出给实体解码器的是短文件引用，不创建完整JSON副本，不启动后台工作线程，不改写原始JSON。

@@ -10,6 +10,7 @@ import com.example.chatbar.data.local.entity.MomentPost
 import com.example.chatbar.domain.chat.ChatApiMessage
 import com.example.chatbar.domain.chat.StreamEvent
 import com.example.chatbar.domain.image.NovelAiGenerationSettings
+import com.example.chatbar.domain.image.NovelAiCharacterImageSettings
 import com.example.chatbar.domain.image.NovelAiImageEvent
 import com.example.chatbar.domain.image.NovelAiImageModel
 import com.example.chatbar.domain.image.NovelAiImageService
@@ -144,25 +145,12 @@ class MomentGenerationCore(
         }
 
         var checkpoint = resumeFrom ?: MomentGenerationCheckpoint()
-        val decision = checkpoint.decision ?: run {
-            onProgress(MomentGenerationProgress(MomentGenerationProgressPhase.JUDGING, "正在判断是否适合发布"))
-            judgeMoment(promptSession, latestPost, contextMessages.lastOrNull(), model, streamText, onProgress).also {
-                checkpoint = checkpoint.copy(decision = it)
-                onCheckpoint(checkpoint)
-            }
-        }
-        if (!decision.shouldPost) {
-            return@coroutineScope MomentGenerationResult.Skipped(decision.reason.ifBlank { "AI 判断当前没有足够推进" })
-        }
         val draft = checkpoint.draft ?: run {
             onProgress(MomentGenerationProgress(MomentGenerationProgressPhase.WRITING, "正在生成朋友圈文案"))
             designMoment(card, promptSession, contextMessages, latestPost, model, textOnlyPost, streamText, onProgress).also {
                 checkpoint = checkpoint.copy(draft = it)
                 onCheckpoint(checkpoint)
             }
-        }
-        if (!draft.shouldPost) {
-            return@coroutineScope MomentGenerationResult.Skipped(draft.reason.ifBlank { "AI 判断当前没有足够推进" })
         }
         val maxTextLength = if (textOnlyPost) TEXT_ONLY_MOMENT_MAX_LENGTH else IMAGE_MOMENT_MAX_LENGTH
         val text = draft.text.compactMomentText(maxTextLength)
@@ -204,7 +192,7 @@ class MomentGenerationCore(
             }
         }
         val imageSize = NovelAiImageSizePolicy.resolve(imageAspectRatio, NovelAiImageSizePreset.SQUARE)
-        val bytes = generateImageWithRetry(token, prompt, imageSize, novelAiImageModel, onProgress)
+        val bytes = generateImageWithRetry(token, prompt, imageSize, novelAiImageModel, card.defaultImageGenerationSettings, onProgress)
         onProgress(MomentGenerationProgress(MomentGenerationProgressPhase.SAVING, "正在保存图片", progress = 1f))
         val imagePath = saveImage("moments_${card.id}", bytes)
         val post = createPost(card, session, normalizedDraft, prompt, imagePath, imageSize, scheduledAt)
@@ -217,6 +205,7 @@ class MomentGenerationCore(
         prompt: NovelAiPromptPlan,
         imageSize: NovelAiImageSize,
         novelAiImageModel: NovelAiImageModel,
+        characterSettings: NovelAiCharacterImageSettings?,
         onProgress: (MomentGenerationProgress) -> Unit
     ): ByteArray {
         var lastError = "NovelAI 未返回最终图片"
@@ -235,7 +224,9 @@ class MomentGenerationCore(
                 token = token,
                 prompt = prompt,
                 imageSize = imageSize,
-                settings = NovelAiGenerationSettings.legacy(seed, model = novelAiImageModel)
+                settings = NovelAiGenerationSettings.legacy(seed, model = novelAiImageModel).let {
+                    characterSettings?.applyTo(it) ?: it
+                }
             ).collect { event ->
                 when (event) {
                     is NovelAiImageEvent.Final -> finalImage = event.image
@@ -283,15 +274,6 @@ class MomentGenerationCore(
             require(contextMessages.isNotEmpty()) { "没有可用于朋友圈生成的交流内容" }
             val promptSession = session.copy(longTermMemory = compiledMemoryProvider(session))
 
-            val decision = judgeMomentDebug(promptSession, latestPost, contextMessages.lastOrNull(), model, exchanges)
-            if (!decision.shouldPost) {
-                exchanges += MomentDebugExchange(
-                    title = "调试判定处理",
-                    input = "调试立即生成会记录判定结果，但不阻断后续生成。",
-                    output = decision.reason.ifBlank { "AI 判断当前没有足够推进" }
-                )
-            }
-
             val draft = designMomentDebug(card, promptSession, contextMessages, latestPost, model, exchanges)
             val text = draft.text.compactMomentText(IMAGE_MOMENT_MAX_LENGTH)
             require(text.isNotBlank()) { "AI 未生成朋友圈文案" }
@@ -336,7 +318,9 @@ class MomentGenerationCore(
             NovelAiImageSizePolicy.validationError(imageAspectRatio)?.let { error(it) }
             val imageSize = NovelAiImageSizePolicy.resolve(imageAspectRatio, NovelAiImageSizePreset.SQUARE)
             val seed = imageService().newSeed()
-            val generationSettings = NovelAiGenerationSettings.legacy(seed, model = novelAiImageModel)
+            val generationSettings = NovelAiGenerationSettings.legacy(seed, model = novelAiImageModel).let {
+                card.defaultImageGenerationSettings?.applyTo(it) ?: it
+            }
             val imageInput = imageService().buildRequestBody(prompt, imageSize, generationSettings)
             var finalImage: ByteArray? = null
             var errorMessage: String? = null
@@ -373,6 +357,7 @@ class MomentGenerationCore(
             val post = createPost(card, session, normalizedDraft, prompt, savedImagePath, imageSize, scheduledAt)
             MomentDebugGenerationResult(post = post, exchanges = exchanges)
         }.getOrElse { error ->
+            error.rethrowIfAiTaskTerminalFailure()
             MomentDebugGenerationResult(
                 errorMessage = error.message ?: error.javaClass.simpleName,
                 exchanges = exchanges

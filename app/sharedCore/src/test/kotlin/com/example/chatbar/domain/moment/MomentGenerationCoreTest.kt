@@ -39,7 +39,7 @@ class MomentGenerationCoreTest {
         val gateway = Gateway(); val core = core(gateway)
         val result = assertIs<MomentGenerationResult.Posted>(core.generate(card, session, messages, null, model, null,
             scheduledAt = 123, autoGenerateImages = false))
-        assertEquals(listOf(MomentTextOperation.JUDGE, MomentTextOperation.GENERATE), gateway.requests.map { it.first })
+        assertEquals(listOf(MomentTextOperation.GENERATE), gateway.requests.map { it.first })
         val request = gateway.requests.last().second.joinToString { it.content.toString() }
         assertFalse(request.contains("body-fixture-1")); messages.takeLast(3).forEach { assertTrue(request.contains(it.content)) }
         assertTrue(request.contains("compiled-memory-fixture"))
@@ -57,21 +57,28 @@ class MomentGenerationCoreTest {
         assertEquals("续作", result.post.text); assertTrue(gateway.requests.isEmpty())
     }
 
-    @Test fun `writing failure or cancellation retains only completed decision and propagates`() = runBlocking {
+    @Test fun `writing failure or cancellation creates no false checkpoint and propagates`() = runBlocking {
         for (failure in listOf(IllegalStateException("synthetic refusal"), CancellationException("synthetic cancellation"))) {
             val gateway = Gateway(failure = failure); val checkpoints = mutableListOf<MomentGenerationCheckpoint>()
             val error = assertFails { core(gateway).generate(card, session, messages, null, model, null,
                 scheduledAt = 123, onCheckpoint = { checkpoints += it }) }
             if (failure is CancellationException) assertIs<CancellationException>(error) else assertIs<IllegalStateException>(error)
             assertEquals(failure.message, error.message)
-            assertEquals(MomentPostDecision(true), checkpoints.single().decision); assertNull(checkpoints.single().draft)
-            assertEquals(2, gateway.requests.size)
+            assertTrue(checkpoints.isEmpty())
+            assertEquals(listOf(MomentTextOperation.GENERATE), gateway.requests.map { it.first })
         }
     }
 
-    @Test fun `validated 141 decision gate skips writing when judge declines`() = runBlocking {
+    @Test fun `147 ignores old negative decision and draft flag without repeating a completed request`() = runBlocking {
         val gateway = Gateway(decision = false)
-        assertIs<MomentGenerationResult.Skipped>(core(gateway).generate(card, session, messages, null, model, null, scheduledAt = 123))
-        assertEquals(listOf(MomentTextOperation.JUDGE), gateway.requests.map { it.first })
+        val checkpoint = MomentGenerationCheckpoint(MomentPostDecision(false, "old"),
+            MomentDraft(shouldPost = false, senderName = "合成作者", text = "旧草稿仍可续作"))
+        val result = assertIs<MomentGenerationResult.Posted>(core(gateway).generate(card, session, messages, null, model, null,
+            scheduledAt = 123, resumeFrom = checkpoint))
+        assertEquals("旧草稿仍可续作", result.post.text)
+        assertTrue(gateway.requests.isEmpty())
+        val fresh = Gateway(generate = """{"shouldPost":false,"text":"有效正文"}""")
+        assertIs<MomentGenerationResult.Posted>(core(fresh).generate(card, session, messages, null, model, null, scheduledAt = 123))
+        assertEquals(listOf(MomentTextOperation.GENERATE), fresh.requests.map { it.first })
     }
 }
