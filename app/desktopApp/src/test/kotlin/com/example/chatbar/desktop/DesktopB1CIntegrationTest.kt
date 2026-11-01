@@ -88,6 +88,8 @@ class DesktopB1CIntegrationTest {
             scene.frames(); c.fullBackupController.export(null)
             withTimeout(5000) { entered.await() }; scene.frames()
             assertEquals(1, activity.backupCount)
+            assertTrue(scene.nodes().first { it.matches(DesktopUiText.CONTEXT_HELP.zhCn) && it.config.contains(SemanticsActions.OnClick) }
+                .config.contains(SemanticsProperties.Disabled))
             scene.click("查看任务中心"); scene.frames()
             assertTrue(scene.has("任务中心 · 进行中 1"))
             val before = navigation.selectedRoute.value
@@ -111,6 +113,53 @@ class DesktopB1CIntegrationTest {
         f.container.chatRepository.createSession(ChatSession("room", "card", "Integration room", createdAt = 1, updatedAt = 1))
         f.container.primaryChatController.refresh()
         return f
+    }
+
+    @Test fun `actual Shell context help closes and reopens without navigating saving drafts or starting work`(): Unit = runBlocking(awt) {
+        val f = seeded(); val c = f.container
+        val chrome = DesktopWindowChrome {}; val navigation = DesktopPrimaryNavigationController()
+        val idle = DesktopDataRootSwitchState.Idle(c.appDataRoot, DesktopDataRootProvenance.CLI_OVERRIDE, true)
+        c.primaryChatController.selectSession("room"); c.primaryChatController.editComposer("Unsaved help-test draft")
+        c.characterEditorController.openExisting("card")
+        c.characterEditorController.edit { it.copy(basicSetting = "Unsaved editor help-test draft") }
+        val dirty = c.characterEditorController.state.value.card
+        val pin = c.characterEditorController.state.value.draftSessionId
+        val cardPath = c.appDataRoot.resolve("entities/character_cards/card.json")
+        val bytes = Files.readAllBytes(cardPath)
+        val activity = DesktopModalActivity()
+        val scene = ImageComposeScene(1100, 800) {
+            CompositionLocalProvider(LocalDesktopModalActivity provides activity) { Shell(f, chrome, navigation, enableTasks = true) }
+        }
+        try {
+            for (route in listOf(DesktopPrimaryRoute.CHAT, DesktopPrimaryRoute.MANAGE, DesktopPrimaryRoute.TOOLS, DesktopPrimaryRoute.DATA)) {
+                navigation.navigate(route, idle); scene.frames()
+                val requests = f.requests.toList()
+                val work = c.taskCenter.state.value.rows
+                repeat(2) {
+                    scene.click(DesktopUiText.CONTEXT_HELP.zhCn)
+                    assertTrue(scene.has(DesktopUiText.CLOSE_CONTEXT_HELP.zhCn))
+                    assertTrue(scene.has("${DesktopUiText.CONTEXT_HELP.zhCn} · ${desktopContextHelp(route).first.zhCn}"))
+                    assertEquals(route, navigation.selectedRoute.value)
+                    assertEquals(1, activity.otherCount)
+                    scene.click(DesktopUiText.CLOSE_CONTEXT_HELP.zhCn)
+                    assertFalse(scene.has(DesktopUiText.CLOSE_CONTEXT_HELP.zhCn))
+                    assertEquals(0, activity.count)
+                }
+                assertEquals(requests, f.requests.toList())
+                assertEquals(work, c.taskCenter.state.value.rows)
+                assertEquals("Unsaved help-test draft", c.primaryChatController.state.value.composerDraft)
+                assertEquals(dirty, c.characterEditorController.state.value.card)
+                assertEquals(pin, c.characterEditorController.state.value.draftSessionId)
+                assertContentEquals(bytes, Files.readAllBytes(cardPath))
+            }
+            // An already-open general modal retains priority, even for a stale semantics action.
+            activity.opened(); scene.frames()
+            val help = scene.nodes().first { it.matches(DesktopUiText.CONTEXT_HELP.zhCn) && it.config.contains(SemanticsActions.OnClick) }
+            assertTrue(help.config.contains(SemanticsProperties.Disabled))
+            help.config[SemanticsActions.OnClick].action?.invoke(); scene.frames()
+            assertFalse(scene.has(DesktopUiText.CLOSE_CONTEXT_HELP.zhCn)); assertEquals(1, activity.count)
+            activity.closed(); scene.frames()
+        } finally { scene.close(); f.close() }
     }
 
     @Test fun `actual Shell task navigation reveals only its matching character candidate without generation or losing draft`(): Unit = runBlocking(awt) {

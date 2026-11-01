@@ -1,3 +1,7 @@
+2026-11-02 CI100/72c64e05 实际FAIL：生产compileKotlin缺 currentCoroutineContext 明确import，main/proxy均未执行且无主报告。独立NTFS7/shared1135/Android582与完成日志native33/updater8/exit4通过，实际两ZIP已复用核SHA/CRC/XML。dbe181d4只补协程import，不换原Job或发布证据；99的Shell基线修正、7a7索引晚取消、9825Moments回页、9c提示入口仍待下一精确源执行。后续本地P17只读当前页帮助含实际Shell/宽窄hit与草稿保护回归，尚未执行，不当成完整首次使用/Recovery Center。公开1229/13、私有1230冻结064/local14与1232冻结883/R17原证保持，无新包/签名/公开/H代装，本机不编译渲染，10:00前不问人工。
+
+下方历史保留。
+
 2026-11-02 8056039e送CI99/41358013409：明确类型截断98递归推断，并含2cfa创作kind/原pin定位；Windows仍Test Desktop，LinuxSUCCESS，尚未有本轮Desktop结果。98原FAIL及主/proxy未执行保留，97主2457/2438PASS+19SKIP与Merge四真实例仍有效。
 
 后补本地7a7b6e5f：Index原journal发布/确认rollback的Job-context证据，晚取消为待核对；document原durable重启核对保证NonCancellable执行；真实doc/history journal边界及precommit/rollback断言待下一源。9825e478：Moments安全回原页/全局关闭态拒绝，明确不同于精确post定位。原Prompt/正文分轮/事务恢复/重试不改。两项尚未推，避免取消99。公开1229/13、私有1230冻结064/local14及1232冻结883/R17/547字节实证保持，无后版公开/新签名/H代装，本机不编译渲染，10:00前不问人工。

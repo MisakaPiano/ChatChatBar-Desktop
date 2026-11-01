@@ -81,6 +81,8 @@ internal fun DesktopPrimaryShell(
     val chat by primaryChatController.state.collectAsState()
     var openUpdateRequest by remember { mutableStateOf(0) }
     var openImportRequest by remember { mutableStateOf(0) }
+    var helpRoute by remember { mutableStateOf<DesktopPrimaryRoute?>(null) }
+    LaunchedEffect(locked) { if (locked) helpRoute = null }
     var externalManageKind by remember { mutableStateOf<DesktopExternalImportKind?>(null) }
     var externalManageTargetId by remember { mutableStateOf<String?>(null) }
     var taskManageTarget by remember { mutableStateOf<DesktopWorkTarget?>(null) }
@@ -143,7 +145,9 @@ internal fun DesktopPrimaryShell(
             DesktopTitleBar(size, route, locked, chrome, chromeLayout,
                 updatePending = updateNotice?.pendingVersion != null, onNavigate = ::navigate,
                 momentsEnabled = moments?.enabled == true, momentsUnread = moments?.unread == true,
-                activeTaskCount = centerState?.rows?.count { it.active } ?: 0, onOpenTasks = taskCenter?.let { it::requestOpen })
+                activeTaskCount = centerState?.rows?.count { it.active } ?: 0, onOpenTasks = taskCenter?.let { it::requestOpen },
+                helpEnabled = (modalActivity?.count ?: 0) == 0,
+                onOpenHelp = { if (!locked && (modalActivity?.count ?: 0) == 0) helpRoute = route })
             externalImportController?.let { DesktopExternalImportNotice(it) }
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when (route) {
@@ -215,7 +219,8 @@ internal fun DesktopPrimaryShell(
                 }
             }
         }
-        if (centerOpen && !centerLocked && (modalActivity?.otherCount ?: 0) == 0 && taskCenter != null) DesktopTaskCenterPanel(taskCenter,
+        helpRoute?.let { DesktopContextHelpPanel(it) { helpRoute = null } }
+        if (centerOpen && helpRoute == null && !centerLocked && (modalActivity?.otherCount ?: 0) == 0 && taskCenter != null) DesktopTaskCenterPanel(taskCenter,
             onClose = { centerOpen = false }, onHideToTray = onHideToTray, tray = taskTray,
             settingsEnabled = !backupLocked, onView = { target ->
                 if (target.route == DesktopPrimaryRoute.MOMENTS && momentsController?.state?.value?.enabled != true) {

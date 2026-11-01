@@ -1,5 +1,7 @@
 # 任务中心与托盘 / 2026-11-02
 
+2026-11-02 CI100/72c64e05 实际FAIL：生产compileKotlin缺 currentCoroutineContext 明确import，main/proxy均未执行且无主报告。独立NTFS7/shared1135/Android582与完成日志native33/updater8/exit4通过，实际两ZIP已复用核SHA/CRC/XML。dbe181d4只补协程import，不换原Job或发布证据；99的Shell基线修正、7a7索引晚取消、9825Moments回页、9c提示入口仍待下一精确源执行。后续本地P17只读当前页帮助含实际Shell/宽窄hit与草稿保护回归，尚未执行，不当成完整首次使用/Recovery Center。公开1229/13、私有1230冻结064/local14与1232冻结883/R17原证保持，无新包/签名/公开/H代装，本机不编译渲染，10:00前不问人工。
+
 CI99/805实际已完成：生产编译修复通过；主2463=2443PASS+19SKIP+1FAIL，唯一新增Shell导航例在142把displayCard自动补默认negative的编辑器对象错当repository原件。此前route/pin/dirty/candidate断言已过；修正为导航前真实repository实体和磁盘bytes双基线，不改Prompt或生产normalize。SaveSlot两新、auto新、Moments清理新、四类creative mapping及原controller新增断言实际PASS；proxy5、NTFS7、shared1135/Android582、native33/updater8/exit4通过。原99失败保留，不能说完整99通过。后补7a7索引边界/9825回页/9c临时提示与本次基线修正待下一源。
 
 补任务中心临时提示的实际关闭入口：原clearError此前只有定义，用户无法清旧导航/操作提示。现在提示旁小×只清中心临时文字，原FAILED/UNCONFIRMED行、工作、恢复证据不变。窄宽Panel断言真实点击后保留全部任务；Moments关闭态→启用后的Shell用例改走真实UI清提示，不再测试内直接clearError。未执行，不由99覆盖。
