@@ -388,7 +388,8 @@ internal class DesktopTaskRuntime(
                     }
                     val diagnosticFactory: (com.example.chatbar.data.local.entity.ModelConfig) ->
                         com.example.chatbar.domain.chat.ProviderTransportDiagnostics = { model ->
-                        diagnostics.begin(taskId, sessionId, model).also { recorder = it }
+                        diagnostics.begin(taskId, sessionId, model,
+                            DesktopUsageContext(DesktopUsageSource.CHAT, taskId = taskId, sessionId = sessionId)).also { recorder = it }
                     }
                     val generated = if (messageId == null) {
                         realChat.sendText(sessionId, content, observer, control, diagnosticFactory, attachments)

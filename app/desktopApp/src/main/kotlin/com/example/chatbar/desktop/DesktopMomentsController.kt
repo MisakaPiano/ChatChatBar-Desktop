@@ -202,7 +202,12 @@ internal class DesktopMomentsController(
     }
     private fun launchWork(task: MomentTask, retry: MomentPost? = null, debug: Boolean = false,
         recoverMissingPost: Boolean = false): Job? =
-        launchOwnedWork(task.sessionId) { register -> execute(task, retry, register, debug, recoverMissingPost) }
+        launchOwnedWork(task.sessionId) { register ->
+            withContext(DesktopUsageParent(DesktopUsageContext(DesktopUsageSource.MOMENTS,
+                taskId = task.id, sessionId = task.sessionId, cardId = task.characterCardId))) {
+                execute(task, retry, register, debug, recoverMissingPost)
+            }
+        }
 
     suspend fun generateImage(post: MomentPost, draft: NovelAiImageRegenerationDraft? = null) {
         val service = requireNotNull(imageGenerator) { "朋友圈图片服务不可用" }

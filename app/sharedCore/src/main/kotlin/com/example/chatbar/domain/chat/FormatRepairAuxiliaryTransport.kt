@@ -194,6 +194,7 @@ internal fun isolatedAuxiliaryTextStream(
             else terminate(eventSource, AuxiliaryProtocolException(AuxiliaryProtocolFailure.EARLY_EOF))
         }
     }
+    diagnostics.onAttemptStarted(1)
     val source = EventSources.createFactory(client.forIsolatedRepair(timing)).newEventSource(request, listener)
     watchdog = launch {
         while (isActive) {

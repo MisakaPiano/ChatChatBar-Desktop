@@ -150,6 +150,7 @@ internal fun DesktopManagePanel(
     chatUiController: DesktopChatUiController? = null,
     networkProxyController: DesktopNetworkProxyController? = null,
     momentsController: DesktopMomentsController? = null,
+    providerUsage: DesktopProviderUsageOwner? = null,
 ) {
     val t = LocalDesktopUiStrings.current
     val uiLanguage by uiLanguageController.language.collectAsState()
@@ -300,6 +301,7 @@ internal fun DesktopManagePanel(
                     DesktopRetainedPane(settingsGroup == ManageSettingsGroup.OTHER) {
                         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             momentsController?.let { DesktopMomentsSettings(it) }
+                            providerUsage?.let { DesktopProviderUsagePanel(it) }
                             DesktopAutomaticBackupSettingsPanel(backupSettingsController)
                         }
                     }

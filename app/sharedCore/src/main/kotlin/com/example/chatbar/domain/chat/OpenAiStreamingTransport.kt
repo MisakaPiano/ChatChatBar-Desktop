@@ -49,6 +49,8 @@ data class ProviderRequestEvidence(
 
 interface ProviderTransportDiagnostics {
     fun onRequest(request: ProviderRequestEvidence) = Unit
+    /** Physical network attempt, separate from one serialized logical request and retry notices. */
+    fun onAttemptStarted(attemptNumber: Int) = Unit
     fun onResponseChunk(data: String, parsed: OpenAiSseChunk? = null) = Unit
     fun onRetry(retryNumber: Int, message: String) = Unit
     fun onCancelled() = Unit
@@ -314,6 +316,7 @@ class OpenAiStreamingTransport(
                     }
                 }
 
+                diagnostics.onAttemptStarted(retryCount + 1)
                 val eventSource = EventSources.createFactory(client).newEventSource(request, listener)
                 continuation.invokeOnCancellation {
                     if (!terminalSent.get()) diagnostics.onCancelled()

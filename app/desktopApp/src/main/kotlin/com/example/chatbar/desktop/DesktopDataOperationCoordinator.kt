@@ -122,6 +122,21 @@ internal class DesktopDataOperationCoordinator : AppDataOperationGate {
         }
     }
 
+    /** Shutdown-only local diagnostics publication after all producers drain. Keeps normal root
+     * admission closed after a committed switch/restore; never use for entities or new requests. */
+    suspend fun <T> withLocalDiagnosticsShutdownDrain(operation: suspend () -> T): T {
+        val inherited = currentCoroutineContext()[DesktopDataOperationContext]
+        val waiter = synchronized(stateLock) {
+            if (currentState == DesktopDataOperationCoordinatorState.RESTART_REQUIRED) {
+                check(inherited?.containsNormalOrExclusive(identity) != true && !exclusiveActive && activeNormalCount == 0)
+                ExclusiveWaiter().also { it.granted = true; exclusiveActive = true }
+            } else null
+        }
+        if (waiter == null) return withNormalOperation(operation)
+        try { return withContext(inherited.orEmpty().withExclusive(identity)) { operation() } }
+        finally { releaseExclusive(waiter, restartRequired = true) }
+    }
+
     suspend fun closeAndDrain() {
         val inherited = currentCoroutineContext()[DesktopDataOperationContext]
         if (inherited?.containsNormalOrExclusive(identity) == true) {

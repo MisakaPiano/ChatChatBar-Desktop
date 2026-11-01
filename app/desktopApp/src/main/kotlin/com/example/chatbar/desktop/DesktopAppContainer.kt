@@ -517,8 +517,11 @@ class DesktopAppContainer internal constructor(
         }
     }
 
+    private val providerUsageOwner = lazy { DesktopProviderUsageOwner(DesktopProviderUsageStore(appDataRoot, dataOperationCoordinator)) }
+    internal val providerUsage by providerUsageOwner
     internal val taskRuntime: DesktopTaskRuntime by lazy {
-        DesktopTaskRuntime(createRealChatRuntime(), onChatCompleted = { result, stopped ->
+        DesktopTaskRuntime(createRealChatRuntime(), diagnostics = DesktopTransportDiagnosticsOwner(usageSink = { providerUsage.submit(it) }),
+            onChatCompleted = { result, stopped ->
             val residencyNotice = try { characterResidency.completed(result, stopped) }
                 catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
                 catch (_: Exception) {
@@ -613,7 +616,7 @@ class DesktopAppContainer internal constructor(
     }
     internal val primaryChatController: DesktopPrimaryChatController by primaryChatControllerOwner
 
-    private val momentDiagnostics = DesktopTransportDiagnosticsOwner()
+    private val momentDiagnostics = DesktopTransportDiagnosticsOwner(usageSink = { providerUsage.submit(it) })
     private val momentTransportOwner = lazy { com.example.chatbar.domain.chat.OpenAiStreamingTransport {
         settingsRepository.currentAppSettings.allowCleartextModelApi
     } }
@@ -749,6 +752,7 @@ class DesktopAppContainer internal constructor(
                 if (formatCardEditorOwner.isInitialized()) formatCardEditorController.closeAndDrain()
                 if (editorBudgetOwner.isInitialized()) editorBudgetOwner.value.closeAndDrain()
                 if (formatCardAiTransportOwner.isInitialized()) formatCardAiTransportOwner.value.closeAndDrain()
+                if (providerUsageOwner.isInitialized()) providerUsage.closeAndDrain()
             },
             runtimeClose = { automaticBackupRuntime.close() },
             coordinatorClose = { dataOperationCoordinator.closeAndDrain() },

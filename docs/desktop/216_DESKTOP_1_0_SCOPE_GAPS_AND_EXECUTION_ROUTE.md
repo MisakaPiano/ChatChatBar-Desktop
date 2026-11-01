@@ -71,7 +71,7 @@
 | P15-04 任务中心／托盘／系统通知 | 任务生命周期与局部进度已实现；统一中心、托盘、通知未做 | DesktopTaskRuntime 当前 REAL_CHAT／NOVELAI，语音等有各自 owner；扩展适配取消／关闭排水和活动状态，不能仅加图标后放弃持有任务 |
 | P15-05 自有错误／关闭／启动诊断 | 基础已实现；完整 crash/support 报告与恢复引导待补 | 复用 DesktopProcessLifecycle、StartupBlockedPresenter、ShutdownWaitObserver、诊断复制及 Logo；只读核对损坏状态，错误确认不清除原件，不把“有错误窗口”算完整恢复中心 |
 | P15-06 实际 AI 请求／响应日志 | 聊天请求日志已实现；跨创作／图片／语音统一覆盖待补 | DesktopTransportDiagnostics、ChatDebugPanel 和任务上下文；按调用来源补真实日志归属，不用预览替代实际 wire，不重复聊天调试界面 |
-| P15-07 usage／cache／retry 持久汇总（D-042） | 有单请求诊断／部分 metadata；独立持久汇总未做 | 复用实际 provider usage 和账户归属，按模型／供应商／会话／请求／时间聚合；默认汇总不存 Prompt、正文或凭据；校准在 P17 持续进行 |
+| P15-07 usage／cache／retry 持久汇总（D-042） | 后续源码接数值白名单、独立attempt／父归属、原子本地存储及设置统计页，尚待新源云端；未交付 | 见234；当前聊天／三类卡AI／Moment文本，不冒认完整NAI／Fish／检索覆盖。null与0分开、累计报告覆盖、缓存不重复相加、失败尾项保留与重启收尾；完整覆盖及校准继续 |
 | P16-01 上游新正式版本通知 | 已有每日正式Release/Tag监控；11/1结果与官方Tags已核。原监控执行者后续peek回执报告现有任务ACTIVE／每日且11/1完成；根对话只有渲染卡片，无独立结构化状态；nextRun／通知送达仍未知 | 复用 `6ac89e9b-a1a8-83e8-a73c-6baad3dbaad4` 的用户范围，不另建重复自动化、不扩大到所有 master 提交；来源为I盘20261101-p16-existing-monitor-check.json的schedulerFollowup，不改调度或baseline，不据worker回执宣称未来送达通过 |
 | P16-02 baseline／变化分类／高风险与兼容报告 | 手工 baseline／兼容地图／sync playbook 已有；专用仓库自动化未做 | 当前仅 android-ci.yml／release.yml，无专用 watcher 工作流；补差异证据、分类和受影响测试／报告，保留正式 1.4.1 与所选 1.4.5–1.4.7 transport 的不同含义；不自动 merge、升级 baseline 或宣布兼容 |
 

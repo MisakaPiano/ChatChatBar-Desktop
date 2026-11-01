@@ -36,6 +36,7 @@ internal suspend fun completeMomentRequest(client: OkHttpClient, allowCleartext:
     val raw = suspendCancellableCoroutine<String> { continuation ->
         val call = client.forIsolatedRepair(AuxiliaryStreamTiming(readTimeoutMillis = 120_000)).newCall(request)
         continuation.invokeOnCancellation { call.cancel(); diagnostics.onCancelled() }
+        diagnostics.onAttemptStarted(1)
         call.enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
                 if (continuation.isActive) continuation.resumeWithException(e)

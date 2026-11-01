@@ -251,7 +251,8 @@ internal class DesktopCharacterCardAiController(
                             if (imageRoute != route) imageCheckpoint = null
                             imageCheckpoint ?: ImageUnderstandingService(models) { encoded, vision, delta ->
                                 val describe = requireNotNull(describeImage) { "IMAGE_UNDERSTANDING_UNAVAILABLE" }
-                                val recorder = runtime.diagnostics.begin("$run:IMAGE:${UUID.randomUUID()}", "character-card:${target.session}", vision)
+                                val recorder = runtime.diagnostics.begin("$run:IMAGE:${UUID.randomUUID()}", "character-card:${target.session}", vision,
+                                    DesktopUsageContext(DesktopUsageSource.CHARACTER_CARD, taskId = run, cardId = target.card.id))
                                 lastRecorder = recorder
                                 try {
                                     describe(encoded, vision, delta, recorder).also { recorder.finish(DesktopTaskStatus.COMPLETED, null, null) }
@@ -267,7 +268,8 @@ internal class DesktopCharacterCardAiController(
                         preparingImages = false
                         val researchGateway = CharacterResearchAiGateway { stage, messages, resolved, onDelta, onReasoning ->
                             val sourceStream = requireNotNull(streamResearch) { "RESEARCH_TRANSPORT_UNAVAILABLE" }
-                            val recorder = runtime.diagnostics.begin("$run:RESEARCH:${stage.name}", "character-card:${target.session}", resolved)
+                            val recorder = runtime.diagnostics.begin("$run:RESEARCH:${stage.name}", "character-card:${target.session}", resolved,
+                                DesktopUsageContext(DesktopUsageSource.CHARACTER_CARD, taskId = run, cardId = target.card.id))
                             lastRecorder = recorder
                             val raw = StringBuilder(); var done = false
                             try {
@@ -308,7 +310,8 @@ internal class DesktopCharacterCardAiController(
                             json.parseToJsonElement(json.encodeToString(ResearchBrief.serializer(), it))
                         }
                         val generator = CharacterCardCandidateGenerator { operation, stage, messages, resolved -> flow {
-                            val recorder = runtime.diagnostics.begin("$run:${stage.name}", "character-card:${target.session}", resolved)
+                            val recorder = runtime.diagnostics.begin("$run:${stage.name}", "character-card:${target.session}", resolved,
+                                DesktopUsageContext(DesktopUsageSource.CHARACTER_CARD, taskId = run, cardId = target.card.id))
                             lastRecorder = recorder
                             var terminal = false
                             try {

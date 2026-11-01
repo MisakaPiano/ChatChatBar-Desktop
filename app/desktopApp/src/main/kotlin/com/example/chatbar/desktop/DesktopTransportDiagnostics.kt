@@ -63,6 +63,7 @@ data class DesktopTransportDiagnosticEntry(
 internal class DesktopTransportDiagnosticsOwner(
     private val maxEntries: Int = 40,
     private val clock: () -> Long = System::currentTimeMillis,
+    private val usageSink: ((DesktopUsageRecord) -> Unit)? = null,
 ) {
     init { require(maxEntries > 0) }
 
@@ -74,7 +75,8 @@ internal class DesktopTransportDiagnosticsOwner(
         mutableEntries.value = mutableEntries.value.filterNot { it.sessionId == sessionId }
     }
 
-    fun begin(taskId: String, sessionId: String, model: ModelConfig): DesktopTransportDiagnosticRecorder {
+    fun begin(taskId: String, sessionId: String, model: ModelConfig,
+        usageContext: DesktopUsageContext = DesktopUsageContext(DesktopUsageSource.OTHER)): DesktopTransportDiagnosticRecorder {
         val scrubber = DesktopDiagnosticScrubber(model.apiKey)
         synchronized(lock) {
             mutableEntries.value = (
@@ -90,7 +92,11 @@ internal class DesktopTransportDiagnosticsOwner(
             ).take(maxEntries)
         }
         return DesktopTransportDiagnosticRecorder(this, taskId, scrubber, clock,
-            PromptEstimateTarget(scrubber.text(model.desktopAccountLabel(), SHORT_LIMIT)), model.baseUrl)
+            PromptEstimateTarget(scrubber.text(model.desktopAccountLabel(), SHORT_LIMIT)), model.baseUrl,
+            usageSink?.let { sink -> DesktopUsageAttemptRecorder(usageContext,
+                scrubber.text(model.id, SHORT_LIMIT), scrubber.text(model.modelName, SHORT_LIMIT),
+                model.credentialAccount?.provider?.let { scrubber.text(it, SHORT_LIMIT) },
+                model.credentialAccount?.id?.let { scrubber.text(it, SHORT_LIMIT) }, sink, clock) })
     }
 
     internal fun update(taskId: String, change: (DesktopTransportDiagnosticEntry) -> DesktopTransportDiagnosticEntry) {
@@ -118,6 +124,7 @@ internal class DesktopTransportDiagnosticRecorder(
     private val clock: () -> Long,
     private val estimateTarget: PromptEstimateTarget,
     private val modelBaseUrl: String,
+    private val usageRecorder: DesktopUsageAttemptRecorder? = null,
 ) : ProviderTransportDiagnostics, DesktopChatPlanDiagnostics {
     @Volatile private var requestTrace: List<MainChatLogicalMessageTrace> = emptyList()
     fun safeText(value: String): String = scrubber.text(value, DesktopTransportDiagnosticsOwner.SHORT_LIMIT)
@@ -156,6 +163,8 @@ internal class DesktopTransportDiagnosticRecorder(
     }
 
     override fun onResponseChunk(data: String, parsed: OpenAiSseChunk?) {
+        val reportedUsage = OpenAiSseParser.parseUsage(data)
+        reportedUsage?.let { usageRecorder?.usage(it) }
         val chunk = DesktopTransportChunkEvidence(
             timestamp = clock(),
             rawPreview = scrubber.json(data, DesktopTransportDiagnosticsOwner.CHUNK_LIMIT),
@@ -177,7 +186,7 @@ internal class DesktopTransportDiagnosticRecorder(
                 reasoningText = scrubber.text(reasoning, DesktopTransportDiagnosticsOwner.OUTPUT_LIMIT),
                 outputTruncated = entry.outputTruncated || output.length > DesktopTransportDiagnosticsOwner.OUTPUT_LIMIT,
                 reasoningTruncated = entry.reasoningTruncated || reasoning.length > DesktopTransportDiagnosticsOwner.OUTPUT_LIMIT,
-                usage = OpenAiSseParser.parseUsage(data) ?: entry.usage,
+                usage = reportedUsage ?: entry.usage,
             )
         }
     }
@@ -190,11 +199,19 @@ internal class DesktopTransportDiagnosticRecorder(
         }
     }
 
+    override fun onAttemptStarted(attemptNumber: Int) { usageRecorder?.attempt(attemptNumber) }
+
     override fun onCancelled() {
         owner.update(taskId) { it.copy(cancellationObserved = true) }
     }
 
     fun finish(status: DesktopTaskStatus, error: String?, completion: ProviderCompletionMetadata?) {
+        usageRecorder?.finish(when (status) {
+            DesktopTaskStatus.COMPLETED -> DesktopUsageOutcome.COMPLETED
+            DesktopTaskStatus.FAILED -> DesktopUsageOutcome.FAILED
+            DesktopTaskStatus.USER_STOPPED, DesktopTaskStatus.CANCELLED -> DesktopUsageOutcome.CANCELLED
+            DesktopTaskStatus.RUNNING -> DesktopUsageOutcome.RUNNING
+        })
         requestTrace = emptyList()
         owner.update(taskId) { entry ->
             entry.copy(

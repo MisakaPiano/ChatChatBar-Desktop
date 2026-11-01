@@ -52,6 +52,7 @@ internal fun DesktopPrimaryShell(
     mergeImportController: DesktopMergeImportController? = null,
     networkProxyController: DesktopNetworkProxyController? = null,
     momentsController: DesktopMomentsController? = null,
+    providerUsage: DesktopProviderUsageOwner? = null,
 ) {
     val moments = momentsController?.state?.collectAsState()?.value
     val rootState by rootSwitchController.state.collectAsState()
@@ -149,6 +150,7 @@ internal fun DesktopPrimaryShell(
                         chatUiController = primaryChatController.chatUi,
                         networkProxyController = networkProxyController,
                         momentsController = momentsController,
+                        providerUsage = providerUsage,
                         onStartCharacterChat = { id -> scope.launch {
                             val before = primaryChatController.state.value.sessions.map { it.id }.toSet()
                             primaryChatController.createSession(id)

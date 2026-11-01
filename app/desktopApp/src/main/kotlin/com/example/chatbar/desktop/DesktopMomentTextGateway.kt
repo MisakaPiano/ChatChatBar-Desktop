@@ -4,6 +4,7 @@ import com.example.chatbar.data.local.entity.ModelConfig
 import com.example.chatbar.domain.chat.*
 import com.example.chatbar.domain.moment.*
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.collect
@@ -14,8 +15,9 @@ internal class DesktopMomentTextGateway(
     private val transport: OpenAiStreamingTransport,
     private val diagnostics: DesktopTransportDiagnosticsOwner,
 ) : MomentTextGateway {
-    private fun recorder(operation: MomentTextOperation, model: ModelConfig) = diagnostics.begin(
-        UUID.randomUUID().toString(), "moments:${operation.name}", model)
+    private suspend fun recorder(operation: MomentTextOperation, model: ModelConfig) = diagnostics.begin(
+        UUID.randomUUID().toString(), "moments:${operation.name}", model,
+        currentCoroutineContext()[DesktopUsageParent]?.value ?: DesktopUsageContext(DesktopUsageSource.MOMENTS))
 
     override suspend fun completeText(messages: List<ChatApiMessage>, modelConfig: ModelConfig,
         operation: MomentTextOperation): String {

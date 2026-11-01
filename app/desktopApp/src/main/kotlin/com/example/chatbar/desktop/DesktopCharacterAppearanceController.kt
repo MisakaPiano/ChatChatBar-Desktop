@@ -69,7 +69,8 @@ internal class DesktopCharacterAppearanceController(
                         readCharacterReferenceImage(requireNotNull(source))
                     }.also { image = it; mutable.update { before -> before.copy(preview = it.preview) } }
                     val core = CharacterAppearanceImageCore(models, CharacterAppearanceImageGateway { messages, model ->
-                        val recorder = runtime.diagnostics.begin("appearance:${UUID.randomUUID()}", "character-card:${target.session}", model)
+                        val recorder = runtime.diagnostics.begin("appearance:${UUID.randomUUID()}", "character-card:${target.session}", model,
+                            DesktopUsageContext(DesktopUsageSource.CHARACTER_CARD))
                         val raw = StringBuilder(); val reasoning = StringBuilder(); var done = false
                         try {
                             stream(messages, model, recorder).collect { event -> when (event) {
