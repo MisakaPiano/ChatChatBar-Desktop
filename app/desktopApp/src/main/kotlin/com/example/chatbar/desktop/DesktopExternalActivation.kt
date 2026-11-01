@@ -31,7 +31,8 @@ internal fun runDesktopExternalActivation(args: Array<String>, home: Path, local
         if (System.getenv("CCB_DESKTOP_ACTIVATION_PATH") == null && System.getenv("CCB_DESKTOP_READY_PATH") == null) {
             val message = "文件投递未完成或尚未确认（${failure.name}）。请先查看已打开程序的导入队列，不要重复打开同一批文件。原文件和用户资料未修改。"
             if (System.getProperty("os.name").startsWith("Windows")) DesktopNativeDialogBrand.show(messageBox = {
-                com.sun.jna.platform.win32.User32.INSTANCE.MessageBox(null, message, "ChatChatBar — 打开文件", 0x30)
+                com.sun.jna.Native.load("user32", StartupMessageBoxApi::class.java)
+                    .MessageBoxW(null, com.sun.jna.WString(message), com.sun.jna.WString("ChatChatBar — 打开文件"), 0x10030)
             }) else System.err.println(message)
         }
     }, business: (DesktopExternalActivation) -> Unit) {

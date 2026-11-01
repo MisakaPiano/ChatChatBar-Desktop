@@ -26,3 +26,5 @@ Inspector按复制后的内容识别。小型卡片复用共享严格解码；�
 DesktopExternalActivationTest包含真实子JVM调用生产Main ingress helper、唯一资料writer、暖启动原始路径、正常重开、损坏记录、发布失败、TCP送达后丢ACK不重放。Inspector覆盖原件／副本、超限图片元数据与取消清理。Controller使用真实AppContainer与既有typed/model/save/merge/Studio owners，覆盖FIFO冲突、手动B不能确认取消A、同原证据核对、恢复项不重放、真实合成加密包密码及预览、显式SaveSlot接收、实际Studio忙、restart和attempt发布失败。Host在420／1100宽实际Scene验证隐藏／导入／下一项，并输出合成审图。
 
 原生test_lifecycle.py追加旧公开1229稳定入口源字节固定编译、新三资源冷暖委托、Unicode传参、OpenWith/default保全、外来helper拒绝以及实际C# socket送达／丢ACK无重放／冷image损坏拒绝。小型fake不等于完整安装包或真人验收，后者仍需分层记录。冻结源码fixture仅测试，不进入产物。云端第一轮失败按真实栈修，不把静态检查写成PASS。
+
+首轮ee382445／CI90（41342985050）原FAIL保留：Windows生产编译在新预业务提示框调用`User32.MessageBox`失败（现有JNA未声明此方法），Desktop主用例及production JAR代理验证均未运行。原生33、更新器8、退出交接4实际通过，Windows共享7及Linux作业成功。后续仅改用项目已有StartupMessageBoxApi.MessageBoxW接口，再送新精确源；不以这些已过旁路代替Desktop新用例。

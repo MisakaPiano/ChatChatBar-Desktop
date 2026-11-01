@@ -1,4 +1,4 @@
-2026-11-02 9040／CI89完整SUCCESS实际报告已读：Windows309suite／2420＝2401PASS＋19SKIP，手动controller归属0.411秒、production JAR5与NTFS7通过；Linux同树复用88。当前原P15外部文件完整链源码已接Main冷暖接收、持久FIFO、原typed/model/save/merge/Studio owners、item/attempt完成证明和非默认Open With，待第一轮精确新源云端验证；不以静态检查冒认通过，见250。1230冻结064／本地签名14保持，公开1229／13不变；迟到1226许可已执行，不重发或扩权。不代装H、本机无重负载、10:00前不问人工。见249。
+2026-11-02 ee382445／CI90原FAIL保留：新提示框User32.MessageBox不存在导致生产编译失败，Desktop新用例／production JAR未运行；原生33、更新器8、exit4与NTFS7通过，Linux作业成功。最小修正复用已有StartupMessageBoxApi.MessageBoxW后送下一精确源，见250。上轮9040／CI89完整通过的实际报告已读。外部完整链仍待运行验证，不能由旁路通过代验。1230冻结064／本地签名14保持，公开1229／13不变；不代装H、本机无重负载、10:00前不问人工。
 
 下方历史保留。
 
