@@ -54,7 +54,8 @@ internal class DesktopMomentStore(
         if (recoverMissingPost) {
             check(retryPost == null && existing == task &&
                 task.status in setOf(MomentTaskStatus.RUNNING, MomentTaskStatus.FAILED))
-            check(task.postId != null && post(task.postId) == null) { "任务关联动态已变化，请重新读取" }
+            val reserved = task.postId
+            check(reserved != null && post(reserved) == null) { "任务关联动态已变化，请重新读取" }
         } else if (retryPost == null) {
             check(existing == null || existing == task && existing.status == MomentTaskStatus.PENDING)
         } else {

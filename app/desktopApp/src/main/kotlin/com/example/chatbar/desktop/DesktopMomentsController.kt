@@ -231,7 +231,7 @@ internal class DesktopMomentsController(
         val preset = when { pixels.width == pixels.height -> NovelAiImageSizePreset.SQUARE
             pixels.width > pixels.height -> NovelAiImageSizePreset.HORIZONTAL
             else -> NovelAiImageSizePreset.PORTRAIT }
-        NovelAiPromptPlan(original.imagePrompt, emptyList(), preset).toRegenerationDraft().copy(width = pixels.width, height = pixels.height)
+        NovelAiPromptPlan(original.imagePrompt, emptyList(), sizePreset = preset).toRegenerationDraft().copy(width = pixels.width, height = pixels.height)
     }
 
     suspend fun useImageForCard(post: MomentPost, avatar: Boolean) = withContext(Dispatchers.IO) {

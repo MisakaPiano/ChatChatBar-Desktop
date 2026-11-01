@@ -39,7 +39,7 @@ class DesktopMomentStoreTest {
             val original = store.posts().single()
             val receipt = cleanup.prepareCandidate("images/new.png")
             Files.createDirectory(root.resolve("images")); Files.write(root.resolve("images/new.png"), byteArrayOf(1))
-            val plan = NovelAiPromptPlan("synthetic tags", emptyList(), NovelAiImageSizePreset.SQUARE)
+            val plan = NovelAiPromptPlan("synthetic tags", emptyList(), sizePreset = NovelAiImageSizePreset.SQUARE)
             val image = DesktopMomentImageResult("images/new.png", plan.toGeneratedImageMetadata("images/new.png", NovelAiImageSizePreset.SQUARE.imageSize), plan.baseCaption, "brief")
             store.toggleLike(original.id)
             assertNull(store.replaceImage(original, image))

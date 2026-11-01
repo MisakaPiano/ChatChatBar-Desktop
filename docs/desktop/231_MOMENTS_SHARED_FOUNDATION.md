@@ -1,5 +1,7 @@
 # P13 朋友圈共享基础
 
+CI69／cb60a801：Linux job SUCCESS，Windows job FAILURE，生产编译停在共享task.postId的跨模块smart cast及NovelAiPromptPlan尺寸位置参数两处；桌面测试／Scene未执行，不能算0失败通过。后续改用稳定局部值和命名sizePreset，同时修正新增Store测试的同类参数，等待新源云端。P15用量工作树不由本轮代验。
+
 2026-11-01 当前：1f1ef083／CI68完整SUCCESS，Windows2361项=2342PASS+19SKIP，shared1105／Android582全过。新增HTTP模式对照、task-post耐久关联、取消后图片回执及production cleaner通过；这不覆盖下列后续工作树。
 
 后续源码接入时间线与设置、未读圆点、显式生成／checkpoint重试／点赞／编辑／删除、图片预览与补图／重生／设卡图、完整调试交换。根绑定本机授权存于资料外，正常重开只恢复已批准PENDING快照；同目录整包恢复先转动本地epoch，导入记录不继承授权。原session存在时保持绑定，仅缺失时选同卡最近活跃session；RUNNING不自动重试，缺占位的中断任务经明确费用提示后才可沿原预留编号重试。卡图片提交在IO执行，旧图回执先落盘，退出exclusive后按全引用检查清理。上述新增Controller／Admission／Store／窄宽Scene回归尚待新源云端，不算已验证或已交付。
