@@ -1,3 +1,5 @@
+2026-11-01 ece／CI61／41281440118两job完整SUCCESS，安装器／更新器后续步骤也通过；Android581／shared1084（含世界书策略2）实际报告已核，Windows新XML／候选窗图片待读回。22ab核心与526桌面世界书接线及当前居中浮层收尾不由CI61覆盖，将随新源送下一run。1226迟到确认仅重申同一已公开测试Preview，发布身份保持d94／签名10，不产生后续公开或代装授权。
+
 2026-11-01 B2封面头像2fd／CI60两job完整SUCCESS；Windows真XML285 suite/2340项=2321PASS+19SKIP，Image7／合成HTTP生图2／pre-start3和Appearance4／Panel1全过，仅代理验证。后续ece／CI61／41281440118运行，Android581／shared1084已通过（含世界书纯策略2），Windows待；不以它覆盖22ab。22ab共享WorldBookAiCore／ResearchEngine／原9literal与7builder及6阶段HTTP对照，后续本提交接Desktop世界书模型／来源／临时文档、目标和候选选择、批次续作、完整编辑basis保护、草稿应用／正常保存、关闭排水与窄宽Scene回归，尚待新源执行。未打包／发布／真人验收，B2／B3未交付。公开1226冻结d94／签名10，不代装H，不恢复本机重负载；用户未明确回来，不催真人测试。见[229](229_WORLD_BOOK_AI_SHARED_CANDIDATE_POLICY.md)。
 
 2026-11-01 看图文字96b29340／CI59完整SUCCESS：Windows2328项2309通过／19跳过，Appearance4、CardAi11、Panel1及VoiceUx5全过；Android581／shared1082与实际HTTP对照通过。CI58原FAIL保留。封面头像及pre-start取消2fd7402a单独推CI60／41280163537，Android job通过，Windows运行，不冒认整批通过；后续117未知模型措辞、候选窗按内容高度及cbea世界书纯候选策略共享待新源云端，不混CI60。原Prompt未改；B2未打包／真人验收，B3仅策略共享，世界书完整桌面流程仍待。用户离席不催真人，1226公开d94／签名10保持，不代装H日常，不恢复本机重负载。见[228](228_CHARACTER_CARD_AI_DESKTOP_BASE_CHAIN.md)／[229](229_WORLD_BOOK_AI_SHARED_CANDIDATE_POLICY.md)。
