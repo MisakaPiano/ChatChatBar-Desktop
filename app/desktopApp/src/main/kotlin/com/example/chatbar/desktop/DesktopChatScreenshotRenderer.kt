@@ -121,7 +121,10 @@ internal object DesktopChatScreenshotRenderer {
                 val body:@Composable ()->Unit = {
                     CompositionLocalProvider(LocalDesktopPalette provides colors) {
                         DesktopScreenshotContent(request,bitmaps,Modifier
-                            .width(width.dp).wrapContentHeight(unbounded=true).offset { IntOffset(0, -top) }
+                            // Every viewport shares the full layout's top origin, even when its
+                            // height is smaller than the content. The default vertical centering
+                            // otherwise shifts each slice before the explicit page translation.
+                            .width(width.dp).wrapContentHeight(align=Alignment.Top, unbounded=true).offset { IntOffset(0, -top) }
                             .onSizeChanged { height=it.height })
                     }
                 }
