@@ -124,8 +124,8 @@ class DesktopExternalImportControllerTest {
     @Test fun `archive file uses the explicit receiving session without restoring its messages or draft`() = runBlocking { fixture { f ->
         val session = ChatSession.create("synthetic-card", "Target").copy(longTermMemoryEnabled = false)
         f.app.chatRepository.createSession(session)
-        val retained = SyntheticSaveSlotCorpus.message("retained", "Retained chat").copy(sessionId = session.id)
-        f.app.chatRepository.addMessage(retained)
+        f.app.chatRepository.addMessage(ChatMessage.create(session.id, MessageRole.ASSISTANT, "Retained chat"))
+        val retained = f.app.chatRepository.getMessagesReadOnly(session.id).single()
         f.app.chatRepository.updateSessionDraft(session.id, "Retained unsent draft")
         val source = SyntheticSaveSlotCorpus.archive(f.root.resolve("source.dat"))
         val bytes = Files.readAllBytes(source)
@@ -180,19 +180,22 @@ class DesktopExternalImportControllerTest {
     } }
 
     private suspend fun DesktopExternalImportController.await(phase: DesktopExternalImportPhase, timeout: Long = 5000) {
-        withTimeout(timeout) { state.first { !it.busy && it.phase == phase } }
+        val result = withTimeout(timeout) { state.first { !it.busy && (it.phase == phase || it.phase in setOf(DesktopExternalImportPhase.ERROR, DesktopExternalImportPhase.UNCERTAIN)) } }
+        assertEquals(phase, result.phase, "External phase=${result.phase}: ${result.message}; merge=${merge.state.value.error}; mergeLocations=${merge.state.value.failureDetails}; save=${saves.state.value.error}")
     }
     private suspend fun fixture(work: suspend (Fixture) -> Unit) {
         val f = Fixture()
         try { f.initialize(); f.app.settingsRepository.saveAppSettings(AppSettings()); work(f) }
-        finally { f.external?.closeAndDrain(); f.app.close(); f.root.toFile().deleteRecursively() }
+        finally { f.external?.closeAndDrain(); f.app.close(); f.ownership?.close(); f.root.toFile().deleteRecursively() }
     }
     private class Fixture {
         val root: Path = Files.createTempDirectory("external-import-controller-")
         val queue = DesktopExternalFileQueue(root.resolve("pending.json"))
         private val secrets = InMemoryDesktopSecretStore()
-        val app = DesktopAppContainer(DesktopDataRootResolution.Resolved(Files.createDirectory(root.resolve("data")),
-            DesktopDataRootProvenance.BOOTSTRAP_CUSTOM, root.resolve("bootstrap.json")), secretStoreFactory = { secrets },
+        val source = DesktopDataRootResolution.Resolved(Files.createDirectory(root.resolve("data")),
+            DesktopDataRootProvenance.BOOTSTRAP_CUSTOM, root.resolve("bootstrap.json"))
+        var ownership: DesktopDataRootOwnership? = null
+        val app = DesktopAppContainer(source, secretStoreFactory = { secrets },
             bundledAssets = { """{"entries":[]}""".toByteArray() },
             filePicker = object : DesktopFilePicker {
                 override fun pickOpenFile(type: DesktopFileType): Path? = error("External paths must not invoke the picker")
@@ -201,6 +204,7 @@ class DesktopExternalImportControllerTest {
         suspend fun initialize() {
             val store = DesktopBootstrapSettingsStore(root.resolve("bootstrap.json"))
             store.save((store.load() as DesktopBootstrapLoadResult.Missing).document, DesktopDataRootSelection.custom(app.appDataRoot))
+            ownership = assertIs<DesktopDataRootOwnershipResult.Acquired>(DesktopDataRootOwnership.acquire(source)).ownership
         }
         var external: DesktopExternalImportController? = null
         fun open(typed: DesktopTypedTransferController = app.createTypedTransferController()): DesktopExternalImportController =

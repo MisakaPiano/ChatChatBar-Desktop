@@ -139,10 +139,15 @@ def external_pending(case, install_root):
     return journal, json.loads(journal.read_text(encoding='utf-8'))['files'] if journal.exists() else []
 
 
-def probe_external_files(case, install_root, label, window, previous):
+def probe_external_files(case, install_root, label, window, previous, cold_paths=()):
     """Delivery only: actual packaged receiver and queue, never import confirmation."""
     journal, recovered = external_pending(case, install_root)
-    require(recovered == previous, 'EXTERNAL_PENDING_CHANGED_DURING_REOPEN')
+    require(recovered[:len(previous)] == previous, 'EXTERNAL_PENDING_CHANGED_DURING_REOPEN')
+    cold = recovered[len(previous):]
+    require([entry['path'] for entry in cold] == list(map(str, cold_paths)) and
+            all(entry['attempted'] is False for entry in cold), 'PACKAGED_COLD_UNICODE_DELIVERY_NOT_CONFIRMED')
+    require(all(path.read_bytes() == b'SYNTHETIC_COLD_EXTERNAL_DELIVERY' for path in cold_paths), 'COLD_EXTERNAL_SOURCE_CHANGED')
+    previous_for_warm = recovered
     paths = [case / (label + '-角色 & one.json'), case / (label + '-第二份 file.cbsave')]
     content = b'SYNTHETIC_EXTERNAL_DELIVERY_ONLY_NOT_AN_IMPORT_PACKAGE'
     for path in paths:
@@ -154,8 +159,8 @@ def probe_external_files(case, install_root, label, window, previous):
                             env=environment(case), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=30)
     require(result.returncode == 0, 'PACKAGED_EXTERNAL_DELIVERY_FAILED')
     data = json.loads(journal.read_text(encoding='utf-8'))
-    require(data['version'] == 1 and data['files'][:len(previous)] == previous, 'PENDING_QUEUE_NOT_RETAINED')
-    added = data['files'][len(previous):]
+    require(data['version'] == 1 and data['files'][:len(previous_for_warm)] == previous_for_warm, 'PENDING_QUEUE_NOT_RETAINED')
+    added = data['files'][len(previous_for_warm):]
     require([entry['path'] for entry in added] == list(map(str, paths)) and
             all(entry['attempted'] is False for entry in added), 'EXTERNAL_ARGUMENTS_OR_CONFIRMATION_CHANGED')
     # A warm normal entry must also return while the same real business window stays alive.
@@ -169,11 +174,12 @@ def probe_external_files(case, install_root, label, window, previous):
     require(json.loads(journal.read_text(encoding='utf-8'))['files'] == data['files'], 'WARM_FOCUS_CHANGED_QUEUE')
     save(case / (label + '-external-delivery.json'), dict(kind='PACKAGED_EXTERNAL_DELIVERY_ONLY',
          previousPending=len(previous), preLaunchFilesVerified=previous, added=2, orderedUnicodePaths=True, noImportAttempted=True,
+         coldDeliveredPaths=list(map(str, cold_paths)), coldOriginalUnchanged=True, preWarmFilesVerified=previous_for_warm,
          unchangedSources=True, sameVisibleBusinessPid=pid.value, normalWarmEntryReturned=True,
          importOrHumanAcceptance=False, providerCalls=False))
 
 
-def launch_close(case, image, executable, arguments, install_root, label, default_profile=False, expect_failure=False, busy_installer=None, allow_update_helper=False, external_files=False):
+def launch_close(case, image, executable, arguments, install_root, label, default_profile=False, expect_failure=False, busy_installer=None, allow_update_helper=False, external_files=False, cold_paths=()):
     previous_pending = external_pending(case, install_root)[1] if external_files else None
     if external_files:
         save(case / (label + '-external-before-launch.json'), dict(files=previous_pending))
@@ -260,7 +266,7 @@ def launch_close(case, image, executable, arguments, install_root, label, defaul
             require(blocked.returncode == 2 and (install_root / 'current.txt').read_text().strip() == current and
                     (program / 'install-manifest.json').read_bytes() == original_manifest, 'RUNNING_PROGRAM_INSTALL_NOT_REFUSED')
         if external_files:
-            probe_external_files(case, install_root, label, window, previous_pending)
+            probe_external_files(case, install_root, label, window, previous_pending, cold_paths)
         active = pids()
         try:
             directories = {str(pid): cwd(pid) for pid in active}
@@ -307,6 +313,7 @@ def main():
     parser.add_argument('--probe-busy-installer', type=Path, help='While the owned app is running, this installer must reject before changing the current version')
     parser.add_argument('--allow-owned-update-helper-cwd', action='store_true', help='Explicitly classify only the inventoried updater Python; full Job exit still required')
     parser.add_argument('--probe-external-files', action='store_true', help='Deliver synthetic paths to the actual packaged warm receiver without confirming any import')
+    parser.add_argument('--cold-external-file', action='store_true', help='Open a synthetic Unicode path through the installed bridge after the previous process has exited')
     parser.add_argument('--ci-source', type=Path, help='Frozen source namespace only in this repository Windows CI')
     args = parser.parse_args()
     approved = Path(__file__).resolve().parents[3] / 'app/desktopApp/build/preview-continuous-private-20261025'
@@ -330,8 +337,15 @@ def main():
     require(json.loads((case / 'TASK_OWNER.json').read_text())['kind'] == OWNER, 'CASE_OWNER_REFUSED')
     exe = args.installer if args.installer else args.root / 'ChatChatBar.exe'
     arguments = ['/S', '/D=' + str(args.root)] if args.installer else []
+    cold_paths = []
+    if args.cold_external_file:
+        require(args.installer is None and args.probe_external_files, 'COLD_EXTERNAL_REQUIRES_EXISTING_INSTALL_AND_QUEUE_PROBE')
+        path = case / (args.label + '-冷启动角色 & source.json')
+        require(not path.exists(), 'COLD_EXTERNAL_INPUT_ALREADY_EXISTS')
+        path.write_bytes(b'SYNTHETIC_COLD_EXTERNAL_DELIVERY')
+        cold_paths = [path]; exe = args.root / 'OpenChatBarFile.exe'; arguments = [str(path)]
     require(not args.expect_install_failure or (args.installer and not args.fresh_default_profile), 'FAILURE_DRIVER_REQUIRES_INSTALLED_SYNTHETIC_PROFILE')
-    launch_close(case, args.image, exe, arguments, args.root, args.label, args.fresh_default_profile, args.expect_install_failure, args.probe_busy_installer, args.allow_owned_update_helper_cwd, args.probe_external_files)
+    launch_close(case, args.image, exe, arguments, args.root, args.label, args.fresh_default_profile, args.expect_install_failure, args.probe_busy_installer, args.allow_owned_update_helper_cwd, args.probe_external_files, cold_paths)
 
 
 if __name__ == '__main__':

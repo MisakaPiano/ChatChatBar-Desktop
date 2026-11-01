@@ -149,9 +149,12 @@ class DesktopExternalActivationTest {
                     com.sun.jna.Native::class.java, com.sun.jna.platform.win32.Kernel32::class.java)
                     .map { Path.of(it.protectionDomain.codeSource.location.toURI()).toString() }.distinct().joinToString(File.pathSeparator)
                 val java = Path.of(System.getProperty("java.home"), "bin", if (System.getProperty("os.name").startsWith("Windows")) "java.exe" else "java")
-                val arguments = listOf(java.toString(), "-Xmx96m", "-XX:+UseSerialGC", "-XX:ActiveProcessorCount=1", "-Dfile.encoding=UTF-8",
-                    "-cp", cp, DesktopExternalActivationProcessChild::class.java.name, home.toString(), local.toString(), data.toString()) +
+                // Fixture control transport is ASCII because the raw JDK17 launcher can transcode argv.
+                // Production ingress still receives/queues the exact Unicode strings; packaged OS argv is verified separately.
+                val input = listOf(home.toString(), local.toString(), data.toString()) +
                     if (paths.isEmpty()) emptyList() else (if (raw) emptyList() else listOf("--open-files")) + paths.map(Path::toString)
+                val arguments = listOf(java.toString(), "-Xmx96m", "-XX:+UseSerialGC", "-XX:ActiveProcessorCount=1", "-Dfile.encoding=UTF-8",
+                    "-cp", cp, DesktopExternalActivationProcessChild::class.java.name) + input.map { Base64.getEncoder().encodeToString(it.toByteArray(Charsets.UTF_8)) }
                 return Child(ProcessBuilder(arguments).redirectErrorStream(true).start())
             }
         }
@@ -159,7 +162,8 @@ class DesktopExternalActivationTest {
 }
 
 object DesktopExternalActivationProcessChild {
-    @JvmStatic fun main(args: Array<String>) {
+    @JvmStatic fun main(encoded: Array<String>) {
+        val args = encoded.map { Base64.getDecoder().decode(it).toString(Charsets.UTF_8) }
         var entered = false
         runDesktopExternalActivation(args.drop(3).toTypedArray(), Path.of(args[0]), Path.of(args[1]), report = { error(it.name) }) { owner ->
             entered = true
