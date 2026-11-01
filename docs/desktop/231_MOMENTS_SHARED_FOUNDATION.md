@@ -1,5 +1,7 @@
 # P13 朋友圈共享基础
 
+后续Desktop运行层源码已接但尚待云端：`DesktopMomentsController`／`DesktopMomentGeneration`复用Core、编译长记忆、原模型默认参数和流式／非流式模式；懒加载挂AppContainer关闭排水。`DesktopMomentStore`在请求前持久化task→postId与占位，阶段检查点先保存；中断RUNNING不重置PENDING，显式对账只关联已存在的最终动态，不发AI请求。编辑／点赞／删除与生成提交串行，晚到结果不能恢复已删除动态。`DesktopMomentImageCleanup`在删除／图片落盘前写精确回执，退出normal准入后复用全实体引用保护的exclusive清理；失败回执保留。新增共享真实合成HTTP与桌面持久／取消／production cleaner用例待云端。当前没有桌面时间线入口；本地调度暂为每进程明确恢复，尚不当作完整持久启动恢复等价，后续继续根绑定且隔离导入世代的本机准入。
+
 2026-11-01，在WorldBook／D042新源CI63运行期间独立准备。原 `MomentEntities`、`MomentRepository`、`MomentPolicy` 从Android目录移到sharedCore，FQN、序列化、文件内容与Git blob逐字相同；原Android调用与测试继续使用同一权威。这三处Android原路径缺失是计划内源码移动，不是360隔离，应从新路径读取，不能把旧文件恢复成重复类。
 
 原 `MomentScheduler.ensureSchedules` 及其活跃会话选择提到共享 `MomentSchedulePreparation`。只把repository调用改为同签名的suspend端口；逆向替换机械比对原完整body相等。保持原48小时、2–13小时默认、4／18日限、UTC计数去重、7天范围、原每卡guard、顺序保存与失败传播。Android仍拥有原mutex、全局开关判断、旧alarm取消、到期任务执行与日志；没有把这些Android平台调用带入shared。

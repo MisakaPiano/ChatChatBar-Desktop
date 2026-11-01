@@ -147,6 +147,17 @@ class OpenAiStreamingTransport(
             diagnostics, isolatedTaskParameters = true, disableThinking = disableThinking,
             responseFormatJson = responseFormatJson, maximumTextChars = 1024 * 1024)
 
+    /** Original Moments defaults: selected model cap/thinking/custom fields and GENERAL task envelope. */
+    fun streamMoment(messages: List<ChatApiMessage>, modelConfig: ModelConfig,
+        diagnostics: ProviderTransportDiagnostics = ProviderTransportDiagnostics.NONE): Flow<StreamEvent> =
+        isolatedAuxiliaryTextStream(client, allowCleartextHttp(), messages, modelConfig, diagnostics,
+            timing = AuxiliaryStreamTiming(readTimeoutMillis = 120_000, inactivityMillis = 120_000),
+            isolatedTaskParameters = false, disableThinking = false, emitReasoning = true, protectEnvelope = false)
+
+    suspend fun completeMoment(messages: List<ChatApiMessage>, modelConfig: ModelConfig,
+        diagnostics: ProviderTransportDiagnostics = ProviderTransportDiagnostics.NONE): String =
+        completeMomentRequest(client, allowCleartextHttp(), messages, modelConfig, diagnostics)
+
     fun streamMainChat(
         messages: List<ChatApiMessage>,
         modelConfig: ModelConfig,

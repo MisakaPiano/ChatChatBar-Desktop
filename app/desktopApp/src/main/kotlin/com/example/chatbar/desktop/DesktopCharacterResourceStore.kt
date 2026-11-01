@@ -105,13 +105,17 @@ internal class DesktopCharacterResourceStore(
         image: PackagedImage,
         timestamp: Long,
         resourceId: String,
-    ): String {
+    ): String = materializeImageTracked(image, timestamp, resourceId) {}
+
+    internal fun materializeImageTracked(image: PackagedImage, timestamp: Long, resourceId: String,
+        beforeWrite: (String) -> Unit): String {
         val extension = CharacterResourceNaming.imageExtension(image.fileName)
         val fileName = "card_${timestamp}_$resourceId.$extension"
         val bytes = when (val content = decodeCharacterPackagedImage(image.data)) {
             is CharacterPackagedImageContent.Bytes -> content.value
             is CharacterPackagedImageContent.Asset -> requireAssetReader()(content.logicalPath)
         }
+        beforeWrite("$IMAGES_DIRECTORY/$fileName")
         return createOwnedFile(IMAGES_DIRECTORY, fileName, bytes)
     }
 

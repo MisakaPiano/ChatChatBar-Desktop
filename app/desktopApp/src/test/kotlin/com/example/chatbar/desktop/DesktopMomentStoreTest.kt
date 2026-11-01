@@ -1,0 +1,76 @@
+package com.example.chatbar.desktop
+
+import com.example.chatbar.data.local.JsonFileStorage
+import com.example.chatbar.data.local.entity.*
+import java.nio.file.Files
+import kotlinx.coroutines.runBlocking
+import kotlin.test.*
+
+class DesktopMomentStoreTest {
+    private val card = CharacterCard("card", "Fixture", createdAt = 0, updatedAt = 0)
+    private val session = ChatSession("session", "card", "Fixture", createdAt = 0, updatedAt = 0)
+
+    @Test fun `durable link and checkpoints precede completion and retry retains identity`() = runBlocking {
+        val root = Files.createTempDirectory("moment-store-"); val gate = DesktopDataOperationCoordinator()
+        try {
+            val storage = JsonFileStorage(root, gate); val store = DesktopMomentStore(storage, gate)
+            val task = MomentTask.create(card.id, session.id, 1)
+            val first = store.begin(task, card, session)
+            assertEquals(first.placeholder.id, store.tasks().single().postId)
+            store.checkpoint(first, "synthetic-checkpoint")
+            store.failed(first, "synthetic interruption")
+            val reopened = DesktopMomentStore(storage, gate)
+            val post = reopened.posts().single(); val failed = reopened.tasks().single()
+            assertEquals("synthetic-checkpoint", post.generationCheckpoint)
+            assertEquals(MomentTaskStatus.FAILED, failed.status)
+            val retry = reopened.begin(failed, card, session, post)
+            reopened.complete(retry, post.copy(id = "discard-generated-id", text = "generated", isPlaceholder = false))
+            assertEquals(post.id, reopened.posts().single().id)
+            reopened.edit(post.id, "edited"); reopened.toggleLike(post.id)
+            assertEquals("edited", reopened.posts().single().text)
+            assertTrue(reopened.posts().single().userLiked)
+            assertEquals(MomentTaskStatus.COMPLETED, reopened.tasks().single().status)
+        } finally { gate.closeAndDrain(); root.toFile().deleteRecursively() }
+    }
+
+    @Test fun `production cleaner runs after normal admission and retains referenced media`() = runBlocking {
+        val root = Files.createTempDirectory("moment-cleaner-"); val gate = DesktopDataOperationCoordinator()
+        try {
+            val storage = JsonFileStorage(root, gate); val resources = DesktopCharacterResourceStore(root)
+            val cleaner = DesktopOwnedImageCleanup(root, resources, gate)
+            val receipts = DesktopMomentImageCleanup(root, storage, gate, cleaner)
+            val store = DesktopMomentStore(storage, gate, receipts)
+            Files.createDirectory(root.resolve("images"))
+            Files.write(root.resolve("images/own.png"), byteArrayOf(1))
+            Files.write(root.resolve("images/shared.png"), byteArrayOf(2))
+            val attempt = store.begin(MomentTask.create(card.id, session.id, 1), card, session)
+            val final = attempt.placeholder.copy(isPlaceholder = false, imagePath = "images/own.png", senderAvatar = "images/shared.png", text = "one")
+            store.complete(attempt, final)
+            val other = final.copy(id = "other", imagePath = "images/shared.png")
+            storage.saveEntity("moment_posts", other.id, other, MomentPost.serializer())
+            store.delete(final.id)
+            assertFalse(Files.exists(root.resolve("images/own.png")))
+            assertTrue(Files.exists(root.resolve("images/shared.png")))
+            assertEquals(listOf("other"), store.posts().map { it.id })
+            assertEquals(DesktopDataOperationCoordinatorState.OPEN, gate.state)
+            assertFailsWith<IllegalStateException> { store.complete(attempt, final) }
+            assertEquals(listOf("other"), store.posts().map { it.id })
+            assertTrue(receipts.resume())
+        } finally { gate.closeAndDrain(); root.toFile().deleteRecursively() }
+    }
+
+    @Test fun `explicit reconciliation links saved final and never resets interrupted work to pending`() = runBlocking {
+        val root = Files.createTempDirectory("moment-reconcile-"); val gate = DesktopDataOperationCoordinator()
+        try {
+            val storage = JsonFileStorage(root, gate); val store = DesktopMomentStore(storage, gate)
+            val attempt = store.begin(MomentTask.create(card.id, session.id, 1), card, session)
+            storage.saveEntity("moment_posts", attempt.placeholder.id,
+                attempt.placeholder.copy(isPlaceholder = false, text = "saved before interruption"), MomentPost.serializer())
+            val interrupted = MomentTask.create(card.id, session.id, 2).copy(status = MomentTaskStatus.RUNNING, postId = "not-saved")
+            store.saveTask(interrupted)
+            assertEquals(1, store.reconcileSaved())
+            assertEquals(MomentTaskStatus.COMPLETED, store.tasks().first { it.id == attempt.task.id }.status)
+            assertEquals(interrupted, store.tasks().first { it.id == interrupted.id })
+        } finally { gate.closeAndDrain(); root.toFile().deleteRecursively() }
+    }
+}

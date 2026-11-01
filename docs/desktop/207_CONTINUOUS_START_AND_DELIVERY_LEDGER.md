@@ -1,3 +1,5 @@
+2026-11-01 后续P13 Desktop运行层／传输／耐久task-post关联与图片精确清理已入源码，新增真实合成HTTP、断电关联／取消／production cleaner回归待云端；未接时间线UI，临时每进程恢复不是完整持久调度等价。AppContainer仅懒owner／关闭排水，加载旧enabled／PENDING不自动请求。1227冻结003c及草稿不混后续源，公开仍1226／metadata10，见[231](231_MOMENTS_SHARED_FOUNDATION.md)。
+
 2026-11-01 冻结003c／CI67完整SUCCESS：Windows291suite2357=2338PASS+19SKIP，shared1103／Android582通过；CI65／66原失败保留。1227云端R06／41289702505普通升级、稳定入口重开及独立中文入口通过，最终EXE／ZIP和547共用文件逐字节核对。旧1225更新器离线revision10→11下载／二次验包通过。发行430467486为未公开草稿，签名11仅本地；公开仍1226／d94／metadata10，不代装H。真实NAI超时、原67项导出及本版真人验收待，P13仅共享基础。见[233](233_PREVIEW1227_FROZEN_CANDIDATE.md)／[232](232_SESSION_DELETE_AND_PERSISTENT_PROXY.md)。
 
 2026-11-01 CI64／863df8ae完整SUCCESS：Windows288suite2350=2331PASS+19SKIP，Android582／shared1096全过，取消修正和Moment准备3已验证；CI62／63原FAIL保留。后续38f3f51b提取朋友圈生成核心及4回归待新源。优先处理新增B0会话删除／升级后NAI代理反馈，源码新增确认式事务删除和资料目录持久代理／IO路由查看，合成回归待云端；未真实删除、代装H或公开新版。见[232](232_SESSION_DELETE_AND_PERSISTENT_PROXY.md)。

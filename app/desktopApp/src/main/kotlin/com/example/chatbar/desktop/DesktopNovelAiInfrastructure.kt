@@ -35,7 +35,8 @@ internal class DesktopNovelAiInfrastructure(
             NovelAiTagResearchService(LlmNovelAiTagSearchPlanner(text), tags, NovelAiCodexSearchEngine(loaded.catalog)),
             NovelAiPromptPostProcessor(loaded.catalog.rewriteRules), { understanding })
     }
-    suspend fun promptDesigner(): NovelAiPromptDesigner = withContext(Dispatchers.IO) { designerOverride ?: designer }
+    internal fun promptDesignerOnIo(): NovelAiPromptDesigner = designerOverride ?: designer
+    suspend fun promptDesigner(): NovelAiPromptDesigner = withContext(Dispatchers.IO) { promptDesignerOnIo() }
     suspend fun countTokens(plan: NovelAiPromptPlan, model: NovelAiImageModel): NovelAiPromptTokenUsage =
         withContext(Dispatchers.IO) { tokenCounter.count(plan, model) }
     suspend fun closeAndDrain() { scope.coroutineContext[Job]?.cancelAndJoin() }

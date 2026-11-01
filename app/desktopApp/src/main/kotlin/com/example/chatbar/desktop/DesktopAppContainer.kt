@@ -613,6 +613,24 @@ class DesktopAppContainer internal constructor(
     }
     internal val primaryChatController: DesktopPrimaryChatController by primaryChatControllerOwner
 
+    private val momentDiagnostics = DesktopTransportDiagnosticsOwner()
+    private val momentTransportOwner = lazy { com.example.chatbar.domain.chat.OpenAiStreamingTransport {
+        settingsRepository.currentAppSettings.allowCleartextModelApi
+    } }
+    private val momentImageCleanup by lazy { DesktopMomentImageCleanup(appDataRoot, jsonFileStorage,
+        dataOperationCoordinator, ownedImageCleanup) }
+    private val momentStore by lazy { DesktopMomentStore(jsonFileStorage, dataOperationCoordinator, momentImageCleanup) }
+    private val momentGenerationOwner = lazy { DesktopMomentGeneration(
+        DesktopMomentTextGateway(momentTransportOwner.value, momentDiagnostics), effectiveModelResolver,
+        settingsRepository, desktopSecretStore, { novelAiInfrastructure }, characterResourceStore, momentImageCleanup,
+        { session -> if (session.longTermMemoryEnabled) memoryService.promptView(session.id).fullText else "" }) }
+    private val momentsOwner = lazy { DesktopMomentsController(momentStore, settingsRepository,
+        characterRepository, chatRepository, dataOperationCoordinator, taskRuntime,
+        DesktopMomentGenerator { card, session, messages, latest, settings, task, checkpoint, save, progress, cleanup ->
+            momentGenerationOwner.value.generate(card, session, messages, latest, settings, task, checkpoint, save, progress, cleanup)
+        }, momentImageCleanup::finish) }
+    internal val momentsController by momentsOwner
+
     internal fun createPromptInspectorController(): DesktopPromptInspectorController =
         DesktopPromptInspectorController(
             chatRepository = chatRepository,
@@ -694,6 +712,9 @@ class DesktopAppContainer internal constructor(
         taskRuntime.stopAccepting()
         closeDesktopDataRuntimes(
             taskRuntimeClose = {
+                if (momentsOwner.isInitialized()) momentsController.closeAndDrain()
+                if (momentGenerationOwner.isInitialized()) momentGenerationOwner.value.closeAndDrain()
+                if (momentTransportOwner.isInitialized()) momentTransportOwner.value.closeAndDrain()
                 if (chatMaintenanceOwner.isInitialized()) chatMaintenanceController.closeAndDrain()
                 if (mergeImportOwner.isInitialized()) mergeImportController.closeAndDrain()
                 if (fullBackupOwner.isInitialized()) fullBackupController.closeAndDrain()
