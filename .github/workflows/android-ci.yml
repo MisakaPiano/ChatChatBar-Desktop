@@ -143,6 +143,7 @@ jobs:
         env:
           CCB_FORMAT_AI_REVIEW_DIR: ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/tests/format-card-ai-images
           CCB_SCREENSHOT_PAGING_REVIEW_DIR: ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/tests/screenshot-paging-images
+          CCB_SCREENSHOT_REVIEW_DIR: ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/tests/screenshot-export-images
         run: .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace
 
       - name: Test NSIS manager lifecycle with synthetic programs

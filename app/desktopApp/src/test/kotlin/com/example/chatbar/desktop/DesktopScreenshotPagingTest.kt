@@ -139,4 +139,37 @@ class DesktopScreenshotPagingTest {
         assertTrue("41" in text && "40" in text)
         assertFalse(desktopScreenshotFailureDetails(IllegalStateException("PRIVATE_SYNTHETIC_BODY" )).contains("PRIVATE_SYNTHETIC_BODY"))
     }
+
+    @Test fun `editable Word saves selected long text and embedded picture without any PNG preview`() = runBlocking {
+        val root = Files.createTempDirectory("word-without-preview-").toAbsolutePath().normalize()
+        val picture = raster(100).bytes
+        val paragraphs = (1..67).map { DesktopScreenshotDocumentBlock.Text("合成段落$it\n" + "完整文字".repeat(400)) }
+        val blocks = paragraphs + DesktopScreenshotDocumentBlock.Picture("synthetic-picture")
+        var proofs = 0; var reads = 0
+        try {
+            val target = root.resolve("editable.docx")
+            assertEquals(target, saveDesktopWordDocumentVerified(blocks, { proofs++ }, {
+                assertEquals("synthetic-picture", it); reads++; picture
+            }) { target })
+            assertEquals(2, proofs); assertTrue(reads >= 2)
+            val entries = mutableMapOf<String, ByteArray>()
+            ZipInputStream(Files.newInputStream(target)).use { zip ->
+                while (true) { val entry = zip.nextEntry ?: break; entries[entry.name] = zip.readBytes(); zip.closeEntry() }
+            }
+            val xml = entries.getValue("word/document.xml").decodeToString()
+            (1..67).forEach { assertTrue("合成段落$it" in xml) }
+            assertTrue(entries.keys.any { it.startsWith("word/media/") })
+            val stale = root.resolve("stale.docx")
+            var current = picture
+            assertFailsWith<IllegalStateException> {
+                saveDesktopWordDocumentVerified(blocks, {}, { current }) {
+                    current = picture.copyOf().also { it[it.lastIndex] = (it.last() + 1).toByte() }; stale
+                }
+            }
+            assertFalse(Files.exists(stale))
+        } finally {
+            check(root.startsWith(Path.of(System.getProperty("java.io.tmpdir")).toAbsolutePath().normalize()))
+            root.toFile().deleteRecursively()
+        }
+    }
 }

@@ -103,6 +103,8 @@ internal fun DesktopScreenshotWorkspace(controller: DesktopPrimaryChatController
     val read: (String) -> ByteArray = { controller.characterResources.readScreenshotImageBytes(it) }
     fun selection(next: DesktopScreenshotTreeState) { tree = next; pages = null; pageIndex = 0; previewOpen = false; feedback = null; savedPath = null }
     fun preview() {
+        if (busy) return
+        busy = true
         scope.launch {
             busy = true; feedback = null; failed = false; savedPath = null
             var stage = "PREVIEW_SELECTION"
@@ -119,6 +121,7 @@ internal fun DesktopScreenshotWorkspace(controller: DesktopPrimaryChatController
                     chosen, tree.selected, snapshot.voices, statusExpanded, background)
                 val result = DesktopChatScreenshotRenderer.renderPages(request, snapshot.colors, read,
                     onPage = { current, total -> feedback = if (total > 1) "正在生成预览分块 $current/$total…" else null })
+                stage = "PREVIEW_DOCUMENT"
                 val document = desktopScreenshotDocument(request)
                 stage = "PREVIEW_VERIFY"
                 controller.verifyScreenshotMessages(chosen)
@@ -130,20 +133,35 @@ internal fun DesktopScreenshotWorkspace(controller: DesktopPrimaryChatController
         }
     }
     fun save() {
-        val result = checkNotNull(pages)
+        if (busy) return
+        busy = true
+        val result = pages
         val format = exportFormat
         val document = capturedDocument
         scope.launch {
             busy = true; failed = false; feedback = null; savedPath = null
+            var stage = "EXPORT_VERIFY_WRITE"
             try {
-                val target = saveDesktopScreenshotPagesVerified(format, result, document,
-                    { controller.verifyScreenshotMessages(capturedMessages) }, read) {
+                val choose: suspend () -> Path? = {
                     withContext(Dispatchers.IO) { picker.pickSaveFile(DesktopFileType("${format.label} 文件", listOf(format.extension)), format.fileName(state.selectedSession?.title ?: "聊天")) }
                 }
+                val target = if (format == DesktopScreenshotExportFormat.WORD) {
+                    stage = "EXPORT_WORD_SELECTION"
+                    val chosen = orderedChatScreenshotMessages(snapshot.messages, tree.selected, state.assistantSegmentedBubblesEnabled)
+                    require(chosen.isNotEmpty())
+                    controller.verifyScreenshotMessages(chosen)
+                    stage = "EXPORT_WORD_DOCUMENT"
+                    val request = DesktopScreenshotRequest(state.selectedSession?.title ?: "聊天", state,
+                        chosen, tree.selected, snapshot.voices, statusExpanded)
+                    val blocks = withContext(Dispatchers.Default) { desktopScreenshotDocument(request) }
+                    stage = "EXPORT_WORD_VERIFY_WRITE"
+                    saveDesktopWordDocumentVerified(blocks, { controller.verifyScreenshotMessages(chosen) }, read, choose)
+                } else saveDesktopScreenshotPagesVerified(format, checkNotNull(result), document,
+                    { controller.verifyScreenshotMessages(capturedMessages) }, read, choose)
                 savedPath = target
                 feedback = if (target == null) "已取消保存，预览已保留，可再次导出" else "${format.label} 已保存：$target"
             } catch (e: CancellationException) { throw e }
-            catch (_: Exception) { failed = true; feedback = "无法保存 ${format.label}（EXPORT_VERIFY_WRITE）；请使用新文件名并检查目录、消息版本及资源，预览已保留，可重试" }
+            catch (error: Exception) { failed = true; feedback = "无法保存 ${format.label}（$stage）；${desktopScreenshotFailureDetails(error)}" }
             finally { busy = false }
         }
     }
@@ -189,7 +207,8 @@ internal fun DesktopScreenshotWorkspace(controller: DesktopPrimaryChatController
         }
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             StudioAction("返回聊天", onClick = onClose)
-            StudioAction("导出 ${exportFormat.label}", enabled = !busy && png != null, onClick = ::save)
+            StudioAction("导出 ${exportFormat.label}", enabled = !busy && tree.selected.isNotEmpty() &&
+                (exportFormat == DesktopScreenshotExportFormat.WORD || png != null), onClick = ::save)
             StudioAction("关闭", onClick = onClose)
         }
     }

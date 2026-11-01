@@ -105,6 +105,34 @@ internal suspend fun saveDesktopScreenshotPagesVerified(format: DesktopScreensho
     return target.toAbsolutePath().normalize()
 }
 
+/** Editable Word needs selected text/picture evidence, never a background/avatar raster preview. */
+internal suspend fun saveDesktopWordDocumentVerified(document: List<DesktopScreenshotDocumentBlock>,
+    verifyMessages: suspend () -> Unit, read: (String) -> ByteArray, choose: suspend () -> Path?): Path? {
+    verifyMessages()
+    val references = document.filterIsInstance<DesktopScreenshotDocumentBlock.Picture>().map { it.reference }.distinct()
+    if (references.size > 40) throw DesktopScreenshotLimitException("RESOURCE_COUNT", references.size.toLong(), 40)
+    val hashes = withContext(Dispatchers.IO) {
+        var bytesRead = 0L
+        references.associateWith { reference ->
+            currentCoroutineContext().ensureActive()
+            val bytes = read(reference)
+            bytesRead += bytes.size
+            if (bytesRead > 32L*1024*1024) throw DesktopScreenshotLimitException("RESOURCE_BYTES", bytesRead, 32L*1024*1024)
+            java.security.MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
+        }
+    }
+    val target = choose() ?: return null
+    verifyMessages()
+    withContext(Dispatchers.IO) {
+        val context = currentCoroutineContext()
+        DesktopChatScreenshotRenderer.verifyResourceHashes(hashes, read)
+        writeDesktopScreenshotFile(target, "docx", { context.ensureActive() }) { output ->
+            DesktopScreenshotDocuments.word(document, hashes, read, output) { context.ensureActive() }
+        }
+    }
+    return target.toAbsolutePath().normalize()
+}
+
 internal object DesktopScreenshotDocuments {
     /** One lossless raster shared by A4 pages; clipping preserves every source pixel without stretching. */
     fun pdf(png: DesktopScreenshotPng, output: OutputStream, checkCancelled: () -> Unit = {}) {
