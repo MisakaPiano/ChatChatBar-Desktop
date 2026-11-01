@@ -21,3 +21,5 @@
 保留本机`format-ai-compile-r01/r02.log`、`format-ai-red-r01/`、`format-ai-r02/`及中断日志。后续重负载检查转云端，验收期间不在此电脑重跑；源码检查点推送后核实际CI结果，再修实际失败。没有生成P12新包、执行日常安装器或新增公开发行。P12其他角色／世界书AI子项尚未据此完成；社区最后及T23/SF10/自由正文绑定等具体暂缓保持。
 
 73e0bd63已正常提交／推送并触发CI50／41265225594。Linux实际失败在新Android对照测试缺`mockwebserver`测试依赖，尚未执行该测试，不是模型请求行为断言失败；原job log本机保留。后续仅补既有版本目录的`testImplementation(libs.okhttp.mockwebserver)`，不改运行依赖／协议或删除对照。Windows当时仍在运行，不预判通过。另补重复关闭fixture保护与仅写现有CI测试报告目录的合成Scene图环境，结果需以后续精确源核对。
+
+后续实测：CI50 Windows终态SUCCESS，2305项中2286通过、19跳过；CI52精确e7f已补测试依赖，Android578＋shared1070全通过，包括真实合成HTTP的Android／shared格式卡生成及修复四请求对照。Windows格式卡controller六项及Scene一项通过，420／1100合成候选PNG已在报告内。整轮CI52仍因独立截图拼接测试失败而FAIL，不把局部结果扩大为完整交付。P12-06已有共享权威和桌面纵向源、相应云端验证，尚未打包／真人验收；P12其他子项仍按原路线。d94的截图坐标后续修复CI53继续云端执行，不恢复本机r02。
