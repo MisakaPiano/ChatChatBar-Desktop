@@ -27,6 +27,7 @@ class NovelAiConnectionTraceTest {
                     val trace = assertNotNull(failure.connectionTrace)
                     assertEquals(if (openTunnel) HttpConnectionPhase.TLS else HttpConnectionPhase.PROXY_CONNECTING, trace.phase)
                     assertEquals("HTTP", trace.routeType); assertNull(trace.protocol)
+                    assertEquals(proxy.port, trace.selectedProxyPort)
                     assertTrue(trace.elapsedMillis >= trace.phaseMillis); assertTrue(trace.phaseMillis > 0)
                     assertTrue(trace.completedPhases.size <= 32)
                     assertNull(failure.cause); assertTrue(failure.suppressed.isEmpty())

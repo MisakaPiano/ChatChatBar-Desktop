@@ -11,8 +11,12 @@ import java.util.Locale
 import okhttp3.Dns
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import javax.net.SocketFactory
 
 object ProxyAwareClient {
+    /** Optional platform transport hook; Android retains its default socket factory. */
+    @Volatile
+    var platformSocketFactory: SocketFactory? = null
     /** Desktop loads this once before starting network owners. Android keeps the default. */
     @Volatile
     var applicationProxy: ApplicationProxySettings = ApplicationProxySettings()
@@ -35,6 +39,7 @@ object ProxyAwareClient {
     ): OkHttpClient.Builder {
         val selector = ProxySelectorDelegate()
         return OkHttpClient.Builder()
+            .apply { platformSocketFactory?.let { socketFactory(it) } }
             .eventListenerFactory { call ->
                 call.request().tag(com.example.chatbar.domain.network.HttpConnectionTrace::class.java)
                     ?: okhttp3.EventListener.NONE

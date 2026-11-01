@@ -32,6 +32,7 @@ internal fun runDesktopMain(
     startup: DesktopStartupGate = DesktopStartupGate(),
     business: (DesktopDataRootResolution.Resolved) -> Unit = ::runDesktopBusinessApplication,
 ) {
+    configureDesktopNetworkTransport()
     startup.run(business)
     DesktopShutdownTrace.record(DesktopShutdownStage.MAIN_RETURNED)
 }
