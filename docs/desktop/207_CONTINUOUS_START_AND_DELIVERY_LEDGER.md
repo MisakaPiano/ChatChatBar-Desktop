@@ -1,3 +1,7 @@
+2026-11-02 CI82／7611原Linux FAIL保留：shared1131全PASS，Android582中两条旧141拒绝完整Markdown包裹的断言FAIL，其余580通过；已对照固定147相同测试，只更新两条成功预期并保留未知字段拒绝，不放宽生产解析。Windows仍待。独立Moments增量已本地086bfb3d提交，含原作者／同名稳定ID的清晰选择、实际设置wire和原窄宽Scene；Windows新增shared7定向执行／独立报告同送下一源，不取消82剩余验证。公开1229／13不变，10:00前不催人工，其他原范围工作继续。
+
+下方历史保留。
+
 2026-11-02 192f／CI81完整SUCCESS：Linux共享1116（新增stream3／storage4）和Android582通过；Windows主2380PASS＋19SKIP及独立production JAR代理5PASS，但未运行新增shared用例，后续精确新源追加Windows定向7项与独立报告。7611语音完整JSON／有界拒绝重试已送CI82／41323100237，尚待；每attempt one-shot、未知受理不重放、固定凭据、终态清除等待提示，见243。当前Moments取消judge／应用卡片设置／明确作者编辑为独立工作树，见244，未由81／82覆盖。用户10:00前不人工验收，独立工作继续；公开1229／metadata13和连接范围用户转述PASS保持，不代装H、不本机重负载。
 
 下方历史保留。
