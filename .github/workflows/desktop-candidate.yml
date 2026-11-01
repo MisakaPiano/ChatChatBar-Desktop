@@ -86,7 +86,22 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $zip = Join-Path $env:CCB_BUILD_BASE 'nsis-3.13.zip'
           # Publisher checksum: https://sourceforge.net/projects/nsis/files/NSIS%203/3.13/nsis-3.13.zip/download
-          Invoke-WebRequest 'https://downloads.sourceforge.net/project/nsis/NSIS%203/3.13/nsis-3.13.zip' -OutFile $zip
+          $download = @'
+          import hashlib, json, os, pathlib, shutil, urllib.request
+          base = pathlib.Path(os.environ['CCB_BUILD_BASE'])
+          target = base / 'nsis-3.13.zip'
+          source = 'https://downloads.sourceforge.net/project/nsis/NSIS%203/3.13/nsis-3.13.zip'
+          with urllib.request.urlopen(source, timeout=60) as response, target.open('xb') as output:
+              content_type = response.headers.get('Content-Type')
+              shutil.copyfileobj(response, output)
+          data = target.read_bytes()
+          report = dict(kind='PINNED_PUBLIC_COMPILER_DOWNLOAD', bytes=len(data), sha256=hashlib.sha256(data).hexdigest(),
+                        signature=data[:16].hex(), contentType=content_type, expectedSha256='ba63dffc4410ee89193e1cb5a41989991bd77c61068da17e3156d136b7b0b3d8')
+          (pathlib.Path(os.environ['CCB_BUILD_OUTPUT']) / 'compiler-download.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
+          print(json.dumps(report))
+          '@
+          $download | python -B -
+          if ($LASTEXITCODE -ne 0) { throw 'NSIS_DOWNLOAD_FAILED' }
           if ((Get-FileHash -Algorithm SHA256 -LiteralPath $zip).Hash.ToLowerInvariant() -cne 'ba63dffc4410ee89193e1cb5a41989991bd77c61068da17e3156d136b7b0b3d8') { throw 'NSIS_ARCHIVE_HASH' }
           $tools = Join-Path $env:CCB_BUILD_BASE 'tools'
           Expand-Archive -LiteralPath $zip -DestinationPath $tools
@@ -179,3 +194,4 @@ jobs:
             ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-nsis-cloud/*-busy-installer.json
             ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-nsis-cloud/*-stderr.log
             ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-independent-cloud/result.json
+            ${{ env.CCB_BUILD_OUTPUT }}/compiler-download.json

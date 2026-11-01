@@ -4,5 +4,8 @@
   "desktopVersion": "0.1.0-preview.1226",
   "installerVersion": "0.1.1226",
   "platformCiRunId": 41268127116,
-  "platformCiStateAtRequest": "IN_PROGRESS_SEPARATE_DELIVERY_PREREQUISITE"
+  "platformCiStateAtRequest": "SUCCESS",
+  "attempt": 2,
+  "previousBuildRun": 41269219583,
+  "previousBuildFailure": "PINNED_NSIS_COMPILER_DOWNLOAD_HASH"
 }
