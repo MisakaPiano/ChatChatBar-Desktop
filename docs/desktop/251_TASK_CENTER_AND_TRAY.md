@@ -1,5 +1,11 @@
 # 任务中心与托盘 / 2026-11-02
 
+CI96／a9实际三份报告已独立复用核SHA、CRC、XML：317suite／2455＝2436PASS＋19SKIP，production proxy5、NTFS7、shared1135／Android582；完成job日志native33／updater8／exit4均OK。真实Shell忙备份入口、原Job停止旧ID和晚取消journal三项均过。671aabeb已送CI97／41355702193，涵Merge与189提示／设置锁，尚未完成，不拿96覆盖。
+
+后续本地SaveSlot原Job元数据已接创建／导入到列表／导出／恢复／删除／复制／重绑，读取目录／绑定选择不伪造成功任务。沿原CoroutineContext仅记已有journal／文件move开始的发布边界，不改事务；其后失败／取消为UNCONFIRMED，不冒称撤回。按UUID停止，完成等原Job；无自动重放。查看回原会话存档面，同session忙时只打开原窗，不创建或恢复。新增真实journal写入中停止后保留实际存档／会话／草稿、旧ID不影响新导出、成功创建与导入不恢复两项仍未执行；不在CI97或冻结1232内。
+
+剩余自动备份执行owner单列：AutomaticBackupRuntime／Scheduler与手动FullBackupController独立；loop含等待，不能用schedulerRunning当实际备份。后续只观察executeOnce的实际检查／快照，不把idle／SkippedNotDue冒称新备份；无安全单次停止入口则只读，保留原配置／维护／关闭语义。
+
 最新源码补Merge原operation Job投影：检查与结果准备分开命名，固定阶段进度不带路径、冲突、凭据或正文。按行停止检查精确UUID并等原Job清理，旧行不影响下一次；原preview／destination guard／显式冲突与凭据确认保持。目录拒绝为FAILED且preview保留；picker取消为CANCELLED；Publication.INDETERMINATE或restart封存后中断为UNCONFIRMED，不声称撤回或启动已完成。DATA只定位原导入面，不选冲突或提交。新增真实picker阻塞／停止／旧ID、目录拒绝、实际container提交与不确定publication断言待下一源云端。FullBackup也区分导出／检查／恢复准备种类，避免“检查完成”被误解为已导入。CI96／a9两作业已SUCCESS，实际小报告核对另记；本段Merge和189提示／设置锁不由96或1232代验。
 
 当前实证：ed4105／CI95完整成功，主2452＝2433PASS＋19SKIP，受影响14项含修正分页、TaskCenter5、Tray假backend3、Fish实际批次、UTF8 decoder2及窄宽Scene全部通过。实际420／1100图已view，无重叠／遮挡。此结果不涵后补FullBackup／typed modal；a9b9112a／CI96正在验证它们。1232冻结883的普通原生／真实冷4批次和547文件字节核对已过，仍非原生托盘动作／通知送达或真人。189用户提示／设置锁只在后续本地源码。

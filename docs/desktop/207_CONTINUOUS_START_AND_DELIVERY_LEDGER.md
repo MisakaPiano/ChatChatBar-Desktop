@@ -1,3 +1,9 @@
+2026-11-02 CI96 a9b9112a完整SUCCESS已核实际三报告SHA/CRC/XML：主2455=2436PASS+19SKIP、proxy5、NTFS7、shared1135/Android582；完成日志native33/updater8/exit4均OK，三项新FullBackup/Shell边界通过。671aabeb推CI97/41355702193，Merge检查与结果准备原Job、旧ID停止隔离与INDETERMINATE仍待新源结果；不由96/1232代验。
+
+后续SaveSlot原Job观察、精确UUID停止、原存档面导航与实际publication边界已补源码和两项真实服务回归，尚未推/执行。后续失败/取消到发布边界为待核对，不声称撤回；原事务与外部队列Job保持。自动备份loop独立owner仍待真实单次检查/快照接线，不能以manual FullBackup算覆盖。公开1229/13、私有1230冻结064/local14与1232冻结883/R17/547字节实证均保持；无后版公开/签名/H代装，本机不编译渲染，10:00前不问人工。
+
+下方历史保留。
+
 2026-11-02 ed4105／CI95完整SUCCESS：主2452＝2433PASS＋19SKIP，受影响14case、独立proxy5、NTFS7、shared1135／Android582、native33／updater8／exit4全通过，420／1100实图已核无重叠。1232冻结883／R17真实升级、重开、busy拒绝、canary、完整Job退出、独立547通过；冷四类文件名实际按序入队并保留原pending与原件，不自动导入。最终EXE176144403B／73d3e095…803a、ZIP189363854B／016c98e8…3f95与547共用／548清单已逐字节核对，原生托盘通知送达／真人仍待，无公开或代装。
 
 a9b9112a已送CI96／41353514130：后补FullBackup原Job投影、实际取消接受信号、完成后终态、晚取消保留恢复journal及真实Shell／备份弹窗任务入口；保留根迁移／restart和导航门禁，不由95或1232覆盖。189202d3本地追加明确恢复待核对用户提示、数据忙时提醒设置禁用，未推以免取消96。其余创作／Merge／SaveSlot／RAG／Moments owner与原生能力仍按216推进，任务中心不是完整P15通过。公开1229／13、私有1230冻结064／local14保持，本机不编译/渲染、日常H不代装、10:00前不问人工；B共享C新清理用实际回执分列，旧H/I不重计。

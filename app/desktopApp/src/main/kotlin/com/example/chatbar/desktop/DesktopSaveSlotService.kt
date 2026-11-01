@@ -382,6 +382,7 @@ internal class DesktopSaveSlotService(
                 try {
                     currentCoroutineContext().ensureActive()
                     withContext(NonCancellable) {
+                        currentCoroutineContext()[DesktopSaveSlotWorkEvidence]?.publicationAttempted = true
                         journal.commit(changes, expected)
                         try { refreshSessionId?.let { chats.reloadAfterSessionCommit(it); voices.reload() } }
                         catch (error: Throwable) { requireRestart(); throw error }

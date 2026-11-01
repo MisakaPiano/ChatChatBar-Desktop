@@ -147,7 +147,8 @@ class DesktopAppContainer internal constructor(
                 else -> characterResourceStore.resolveOwnedReference(reference).also { DesktopArchiveFiles.safe(it, false) }
             }
         }, cleanupDeletedMedia = ownedImageCleanup::deleteUnreferenced) }
-    private val saveSlotOwner = lazy { DesktopSaveSlotController(saveSlotService, filePicker) { id -> primaryChatController.selectSession(id) } }
+    private val saveSlotOwner = lazy { DesktopSaveSlotController(saveSlotService, filePicker) { id -> primaryChatController.selectSession(id) }
+        .also { taskCenter.watchSaveSlots(it) } }
     internal val saveSlotController by saveSlotOwner
     private val fullBackupOwner = lazy { DesktopFullBackupController(DesktopFullBackupService(
         appDataRoot, dataOperationCoordinator, audioMaintenance,

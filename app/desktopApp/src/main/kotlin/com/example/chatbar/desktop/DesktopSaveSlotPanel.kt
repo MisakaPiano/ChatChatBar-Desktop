@@ -8,6 +8,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import com.example.chatbar.data.local.entity.*
@@ -27,7 +28,12 @@ internal fun DesktopSaveSlotPanel(controller: DesktopSaveSlotController) {
     DesktopScreenshotWindow(onClose = controller::closePanel, title = "会话存档", content = {
         Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            StatusText("会话存档")
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(Modifier.weight(1f)) { StatusText("会话存档") }
+                LocalDesktopTaskCenter.current?.let { center -> DesktopIconAction("查看任务中心", DesktopAppIcons.History,
+                    onClick = center::requestOpen) }
+            }
             StatusText("保存当前消息、会话设置和记忆。导入先加入列表，恢复时保留恢复前存档。")
             StatusText("人物开关、玩家角色关联和已选图片范围内的会话头像随存档保留；手机端不保证保留 Desktop 扩展。")
             ActionRow {

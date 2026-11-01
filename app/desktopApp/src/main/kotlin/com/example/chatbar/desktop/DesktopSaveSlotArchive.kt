@@ -13,6 +13,7 @@ import javax.imageio.IIOImage
 import javax.imageio.ImageIO
 import javax.imageio.ImageWriteParam
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 
@@ -61,6 +62,7 @@ internal class DesktopSaveSlotArchive(private val workspace: Path) {
         check(copied == prepared.sha256)
         verify(prepared)
         // No REPLACE_EXISTING; even a late-created destination remains untouched.
+        currentCoroutineContext()[DesktopSaveSlotWorkEvidence]?.publicationAttempted = true
         Files.move(part, destination)
         check(DesktopArchiveFiles.hash(destination, MAX_ARCHIVE) == prepared.sha256)
     }

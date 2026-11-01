@@ -8,9 +8,85 @@ import java.awt.image.BufferedImage
 import java.nio.file.*
 import javax.imageio.ImageIO
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.first
 import kotlin.test.*
 
 class DesktopSaveSlotServiceTest {
+    @Test fun `task center waits for original save slot publication and never calls late stop a rollback`(): Unit = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            val messages = f.chats.getMessagesReadOnly("s")
+            val entered = CompletableDeferred<Unit>(); val release = java.util.concurrent.CountDownLatch(1)
+            val held = java.util.concurrent.atomic.AtomicBoolean()
+            val service = f.service(DesktopSessionCommitJournal(f.root) {
+                if (held.compareAndSet(false, true)) {
+                    entered.complete(Unit); check(release.await(10, java.util.concurrent.TimeUnit.SECONDS))
+                }
+            })
+            val pickerEntered = CompletableDeferred<Unit>(); val pickerRelease = java.util.concurrent.CountDownLatch(1)
+            val picker = object : DesktopFilePicker {
+                override fun pickOpenFile(type: DesktopFileType): Path? = error("NO_IMPORT")
+                override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? {
+                    pickerEntered.complete(Unit); check(pickerRelease.await(10, java.util.concurrent.TimeUnit.SECONDS)); return null
+                }
+            }
+            val controller = DesktopSaveSlotController(service, picker) { error("NO_RESTORE_OR_COPY") }
+            val center = DesktopTaskCenter(); center.watchSaveSlots(controller)
+            try {
+                assertNotNull(controller.openFileContext("s")).join()
+                assertTrue(controller.workRows.value.isEmpty()) // Catalog reads do not create completed operations.
+                controller.create("Synthetic retained slot", SaveSlotImagePolicy.NONE, false)
+                withTimeout(5000) { entered.await() }
+                val row = withTimeout(5000) { center.state.first { it.rows.any { row -> row.active } } }.rows.single()
+                assertEquals(DesktopWorkDetail.SAVE_SLOT, row.target!!.detail); assertEquals("s", row.target!!.sessionId)
+                assertTrue(center.requestStop(row.id))
+                withTimeout(5000) { controller.workRows.first { it.single().stopRequested } }
+                assertTrue(controller.state.value.busy); assertTrue(controller.workRows.value.single().active)
+                controller.closePanel(); assertTrue(controller.revealTaskPanel("s"))
+                assertFalse(controller.revealTaskPanel("other")); assertEquals("s", controller.state.value.sessionId)
+                release.countDown()
+                val finished = withTimeout(5000) { controller.workRows.first { !it.single().active } }.single()
+                assertEquals(DesktopWorkPhase.UNCONFIRMED, finished.phase)
+                assertFalse(finished.canStop); assertFalse(finished.canRetry)
+                val saved = service.list("s").single()
+                assertEquals(messages, f.chats.getMessagesReadOnly("s")); assertEquals("unsent draft", f.chats.getSessionDraft("s"))
+                controller.export(saved)
+                withTimeout(5000) { pickerEntered.await() }
+                assertFalse(controller.stopTask(finished.id)); assertTrue(controller.state.value.busy)
+                pickerRelease.countDown()
+                val cancelled = withTimeout(5000) { controller.workRows.first { it.size == 2 && it.none { row -> row.active } } }.first()
+                assertEquals(DesktopWorkPhase.CANCELLED, cancelled.phase)
+                assertEquals(saved.id, service.list("s").single().id)
+                assertEquals(messages, f.chats.getMessagesReadOnly("s")); assertEquals("unsent draft", f.chats.getSessionDraft("s"))
+            } finally { release.countDown(); pickerRelease.countDown(); controller.closeAndDrain(); center.closeAndDrain() }
+        }
+    }
+
+    @Test fun `save slot task completes only after real creation and import adds library without restoring chat`(): Unit = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            val service = f.service()
+            val picker = object : DesktopFilePicker {
+                override fun pickOpenFile(type: DesktopFileType): Path? = null
+                override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? = null
+            }
+            val controller = DesktopSaveSlotController(service, picker) { error("IMPORT_MUST_NOT_RESTORE") }
+            try {
+                assertNotNull(controller.openFileContext("s")).join()
+                controller.create("Synthetic slot", SaveSlotImagePolicy.NONE, false)
+                val created = withTimeout(5000) { controller.workRows.first { it.single().phase == DesktopWorkPhase.COMPLETED } }.single()
+                val slot = controller.state.value.slots.single()
+                val file = f.root.resolve("task-import.cbsave"); service.export(slot.id, file)
+                val messages = f.chats.getMessagesReadOnly("s"); val draft = f.chats.getSessionDraft("s")
+                assertNotNull(controller.importFile(file)).join()
+                assertEquals(2, controller.state.value.slots.size)
+                assertTrue(controller.workRows.value.all { it.phase == DesktopWorkPhase.COMPLETED && !it.canRetry })
+                assertNotEquals(created.id, controller.workRows.value.first().id)
+                assertEquals(messages, f.chats.getMessagesReadOnly("s")); assertEquals(draft, f.chats.getSessionDraft("s"))
+            } finally { controller.closeAndDrain() }
+        }
+    }
+
     @Test fun `player role and local avatar survive packaged export import and restored media custody`(): Unit = runBlocking {
         Fixture().use { f ->
             f.seed()

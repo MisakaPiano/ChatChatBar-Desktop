@@ -230,6 +230,9 @@ internal fun DesktopPrimaryShell(
                         scope.launch { primaryChatController.requestSessionSettingsLeave {
                             primaryChatController.selectSession(target.sessionId)
                             if (primaryChatController.state.value.selectedSession?.id != target.sessionId) taskCenter.targetUnavailable()
+                            else if (target.detail == DesktopWorkDetail.SAVE_SLOT) {
+                                if (primaryChatController.saveSlots?.revealTaskPanel(target.sessionId) != true) taskCenter.targetUnavailable()
+                            }
                             else if (target.detail == DesktopWorkDetail.MEMORY) primaryChatController.memory?.open(target.sessionId)
                             else if (target.subjectId != null && !primaryChatController.revealMessage(target.sessionId, target.subjectId))
                                 taskCenter.targetUnavailable()
