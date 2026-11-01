@@ -23,6 +23,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   candidate:
@@ -50,6 +51,10 @@ jobs:
             $env:CCB_CANDIDATE_SOURCE = $request.sourceSha
             $env:CCB_CANDIDATE_VERSION = $request.desktopVersion
             $env:CCB_CANDIDATE_INSTALLER = $request.installerVersion
+            if ($null -ne $request.reuseBuildRun) {
+              if ([string]$request.reuseBuildRun -notmatch '^[1-9][0-9]*$') { throw 'REUSE_RUN_REFUSED' }
+              "CCB_REUSE_BUILD_RUN=$($request.reuseBuildRun)" | Add-Content $env:GITHUB_ENV -Encoding utf8
+            }
           }
           if ($env:CCB_CANDIDATE_SOURCE -cnotmatch '^[0-9a-f]{40}$') { throw 'EXACT_SOURCE_REQUIRED' }
           if ($env:CCB_CANDIDATE_VERSION -notmatch '^0\.1\.0-preview\.([1-9][0-9]*)$') { throw 'PREVIEW_VERSION_REQUIRED' }
@@ -86,6 +91,14 @@ jobs:
           $temp = New-Item -ItemType Directory -Path (Join-Path $base 'temp') -ErrorAction Stop
           @("CCB_BUILD_BASE=$base", "CCB_CI_SOURCE=$source", "CCB_BUILD_OUTPUT=$($output.FullName)", "TEMP=$($temp.FullName)", "TMP=$($temp.FullName)") | Add-Content $env:GITHUB_ENV -Encoding utf8
 
+      - name: Restore exact prior artifacts for native revalidation without rebuilding
+        if: env.CCB_REUSE_BUILD_RUN != ''
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python -B "$env:GITHUB_WORKSPACE/tools/desktop/nsis/restore_cloud_candidate.py"
+          if ($LASTEXITCODE -ne 0) { throw 'RESTORE_CANDIDATE_FAILED' }
+
       - name: Test image audit guards with tiny synthetic files on both interpreters
         env:
           CCB_LEGACY_PYTHON: ${{ steps.legacyPython.outputs.python-path }}
@@ -95,6 +108,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'AUDIT_GUARDS_312_FAILED' }
           python -B $tests 2>&1 | Tee-Object (Join-Path $env:CCB_BUILD_OUTPUT 'audit-tests-313.log')
           if ($LASTEXITCODE -ne 0) { throw 'AUDIT_GUARDS_313_FAILED' }
+          python -B "$env:GITHUB_WORKSPACE/tools/desktop/nsis/test_native_cwd_policy.py" 2>&1 | Tee-Object (Join-Path $env:CCB_BUILD_OUTPUT 'native-cwd-policy-tests.log')
+          if ($LASTEXITCODE -ne 0) { throw 'NATIVE_CWD_POLICY_FAILED' }
 
       - name: Reprove path and opened-file metadata identity before packaging
         env:
@@ -104,6 +119,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'FILE_IDENTITY_PREFLIGHT_FAILED' }
 
       - name: Fetch pinned official NSIS compiler
+        if: env.CCB_REUSE_BUILD_RUN == ''
         run: |
           $ErrorActionPreference = 'Stop'
           $zip = Join-Path $env:CCB_BUILD_BASE 'nsis-3.13.zip'
@@ -133,6 +149,7 @@ jobs:
           "CCB_NSIS_COMPILER=$compiler" | Add-Content $env:GITHUB_ENV -Encoding utf8
 
       - name: Build ordinary installer and independent ZIP from frozen source
+        if: env.CCB_REUSE_BUILD_RUN == ''
         working-directory: ${{ env.CCB_CI_SOURCE }}/app
         run: |
           $ErrorActionPreference = 'Stop'
@@ -161,8 +178,8 @@ jobs:
           $baseline = Join-Path $env:CCB_BUILD_BASE 'baseline1225.exe'
           Invoke-WebRequest 'https://github.com/MisakaPiano/ChatChatBar-Desktop/releases/download/desktop-v0.1.0-preview.1225/ChatChatBar-Desktop-0.1.0-preview.1225-windows-x64.exe' -OutFile $baseline
           if ((Get-FileHash -Algorithm SHA256 -LiteralPath $baseline).Hash.ToLowerInvariant() -cne '04a35d64ba9958e305bb247c1f217bbfcd1507fa1753661ee2520e54032a96c0') { throw 'BASELINE_HASH' }
-          $driver = Join-Path $env:CCB_CI_SOURCE 'tools\desktop\nsis\native_smoke.py'
-          python -B $driver --case $case --image $env:CCB_CANDIDATE_IMAGE --root $program --installer $baseline --label baseline1225 --fresh-default-profile
+          $driver = Join-Path $env:GITHUB_WORKSPACE 'tools\desktop\nsis\native_smoke.py'
+          python -B $driver --case $case --image $env:CCB_CANDIDATE_IMAGE --root $program --installer $baseline --label baseline1225 --fresh-default-profile --ci-source $env:CCB_CI_SOURCE --allow-owned-update-helper-cwd
           if ($LASTEXITCODE -ne 0) { throw 'BASELINE_NATIVE_FAILED' }
           $old = (Get-Content -LiteralPath (Join-Path $program 'current.txt') -Raw).Trim()
           $oldManifest = Get-Content -LiteralPath (Join-Path $program "versions\$old\install-manifest.json") -Raw | ConvertFrom-Json
@@ -172,16 +189,16 @@ jobs:
           Set-Content -LiteralPath $canary -Value 'Synthetic retained upgrade canary' -Encoding utf8 -NoNewline
           $before = (Get-FileHash -Algorithm SHA256 -LiteralPath $canary).Hash
           $installer = Join-Path $env:CCB_CANDIDATE_NSIS 'ChatChatBar-Setup.exe'
-          python -B $driver --case $case --image $env:CCB_CANDIDATE_IMAGE --root $program --installer $installer --label candidate-upgrade --fresh-default-profile --probe-busy-installer $installer
+          python -B $driver --case $case --image $env:CCB_CANDIDATE_IMAGE --root $program --installer $installer --label candidate-upgrade --fresh-default-profile --probe-busy-installer $installer --ci-source $env:CCB_CI_SOURCE --allow-owned-update-helper-cwd
           if ($LASTEXITCODE -ne 0) { throw 'CANDIDATE_NATIVE_UPGRADE_FAILED' }
           $current = (Get-Content -LiteralPath (Join-Path $program 'current.txt') -Raw).Trim()
           $manifest = Get-Content -LiteralPath (Join-Path $program "versions\$current\install-manifest.json") -Raw | ConvertFrom-Json
           if ($manifest.version -cne $env:CCB_CANDIDATE_VERSION -or $manifest.commit -cne $env:CCB_CANDIDATE_SOURCE) { throw 'CANDIDATE_IDENTITY' }
           if ((Get-FileHash -Algorithm SHA256 -LiteralPath $canary).Hash -cne $before) { throw 'CANARY_CHANGED' }
-          python -B $driver --case $case --image $env:CCB_CANDIDATE_IMAGE --root $program --label candidate-reopen --fresh-default-profile
+          python -B $driver --case $case --image $env:CCB_CANDIDATE_IMAGE --root $program --label candidate-reopen --fresh-default-profile --ci-source $env:CCB_CI_SOURCE --allow-owned-update-helper-cwd
           if ($LASTEXITCODE -ne 0) { throw 'CANDIDATE_NATIVE_REOPEN_FAILED' }
           if ((Get-FileHash -Algorithm SHA256 -LiteralPath $canary).Hash -cne $before) { throw 'REOPEN_CANARY_CHANGED' }
-          [ordered]@{version=$env:CCB_CANDIDATE_VERSION; source=$env:CCB_CANDIDATE_SOURCE; actualNativeUpgrade=$true; stableReopen=$true; runningInstallerRefused=$true; syntheticCanaryRetained=$true; fakeCredentialRetentionVerified=$false; customDataRootBusyVerified=$false; humanAcceptance=$false; installerRunOnUserMachine=$false} | ConvertTo-Json | Set-Content (Join-Path $case 'scope-result.json') -Encoding utf8
+          [ordered]@{version=$env:CCB_CANDIDATE_VERSION; source=$env:CCB_CANDIDATE_SOURCE; actualNativeUpgrade=$true; stableReopen=$true; runningInstallerRefused=$true; syntheticCanaryRetained=$true; cwdPolicy='Stable program cwd; only inventoried updater image may use runtime cwd, and full Job exit is required'; fakeCredentialRetentionVerified=$false; customDataRootBusyVerified=$false; humanAcceptance=$false; installerRunOnUserMachine=$false} | ConvertTo-Json | Set-Content (Join-Path $case 'scope-result.json') -Encoding utf8
           "CCB_NATIVE_CASE=$case" | Add-Content $env:GITHUB_ENV -Encoding utf8
 
       - name: Actual independent Chinese entry and isolated data lifecycle
@@ -193,7 +210,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'INDEPENDENT_NATIVE_FAILED' }
 
       - uses: actions/upload-artifact@v4
-        if: always() && env.CCB_BUILD_OUTPUT != ''
+        if: always() && env.CCB_BUILD_OUTPUT != '' && env.CCB_REUSE_BUILD_RUN == ''
         with:
           name: desktop-candidate-installer
           compression-level: 0
@@ -205,7 +222,7 @@ jobs:
             ${{ env.CCB_BUILD_OUTPUT }}/package-control.json
 
       - uses: actions/upload-artifact@v4
-        if: always() && env.CCB_BUILD_OUTPUT != ''
+        if: always() && env.CCB_BUILD_OUTPUT != '' && env.CCB_REUSE_BUILD_RUN == ''
         with:
           name: desktop-candidate-independent
           compression-level: 0
@@ -226,3 +243,5 @@ jobs:
             ${{ env.CCB_BUILD_OUTPUT }}/compiler-download.json
             ${{ env.CCB_BUILD_OUTPUT }}/metadata-preflight.json
             ${{ env.CCB_BUILD_OUTPUT }}/audit-tests-*.log
+            ${{ env.CCB_BUILD_OUTPUT }}/native-cwd-policy-tests.log
+            ${{ env.CCB_BUILD_OUTPUT }}/restored-candidate.json

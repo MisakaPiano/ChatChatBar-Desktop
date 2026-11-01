@@ -9,3 +9,5 @@ R03／41270287446仅用新增的短小人工文件探针验证，尚未编译：
 后续工具修复把跨API身份按Windows birthtime归一（旧Windows Python仍用其原creation-ctime），同时保留路径和handle各自原始stamp的前后比较；handle仅ctime变化依然拒绝。dev／ino／size／mtime、SHA、CRC、前后路径／成员集合复核均保持。新增回归覆盖语义差异、handle ctime独变、同字节／恢复mtime的实际文件替换仍拒绝；原真实修改拒绝案例保留。测试仅云端执行。
 
 应用镜像仍从d94运行`verifyDesktopInstallerIdentity`和`attachDesktopUpdater`，然后用明确的控制检查点工具进行审计、NSIS与独立ZIP打包，不静默改写冻结树。`package-control.json`记录应用source、control source及三个工具的SHA。新的tiny audit与元数据探针先在两种Python上通过才进入打包；后续普通原生升级／重开、独立入口及各自范围必须独立实测，不以探针替代。
+
+R04／41270742645的双解释器审计与探针均通过，EXE／独立ZIP已生成并上传；原生步骤在旧1225基线的VERSION_CWD_STILL_OWNED处失败，尚未测到候选升级或独立入口。running报告中主程序相关cwd在稳定installed根，另有一个PID的cwd为旧版本的`app/desktop-updater`；当时未记录该PID镜像，不能只凭目录认定它的身份。原断言早于启动更新功能，而当前`DesktopUpdateRuntime`明确把临时Python工作目录设为该只读runtime。下一轮补实际PID镜像与manifest文件散列，只把精确匹配的临时updater作为单独类别记录，默认严格模式保持；所有稳定程序cwd仍核对，正常关闭和整个Job结束仍是后续升级前提。复用R04的原EXE／ZIP字节，应用d94保持，不用B2后续源码重编译替代。
