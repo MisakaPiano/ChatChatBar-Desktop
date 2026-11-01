@@ -11,3 +11,5 @@ Desktop源码接线（待云端）：世界书编辑器新增“AI 创建条目�
 新增Desktop controller6回归及420／1100 Scene候选选择→应用草稿→补空→正常保存流程，尚未执行；原文9literal／7builder机械证据可复用，但不等于HTTP或运行通过。研究query上限、session跨批缓存和包含所选模型的恢复签名与角色流程不同，不能套换模型继续语义。未打包、未发布、未真人验收，B3未完成。
 
 CI62精确c3完整结果：Android582／shared1089通过，含原facade9、Core3／Research2／Policy2与6阶段实际HTTP1（12合成请求）。Windows287 suite/2347项=2322PASS+19SKIP+6FAIL，只有新WorldBook controller五项与Panel一项停在完整对象比较；pre-start一项通过。逐个实际XML比对确认六处预期／实际的唯一差别为 `WorldBookRepository.save` 原本就会写入的 `updatedAt`（seed=0，保存后为实际时间），不是本轮生成写入。后续测试改为读取首次保存后的完整对象作基准，保留所有字段严格比较，不改仓库时间语义、不删断言；各失败点之后的步骤仍须重跑，不能用此静态定位声称通过。原失败artifact／XML保留于I盘。
+
+CI63精确ac的Linux job因shared Core取消用例FAIL：实际是同类型同信息的 `CancellationException`，但 `assertSame` 引用不同；该用例在CI62通过不代表身份断言是稳定业务契约。改验取消类型／信息，保留同一用例的调用一次、不进入修复、候选为空及批号不前进检查；拒绝异常原透传检查保留。生产Core和取消实现不改。新增预算shared4实际通过；Android tests此轮因shared先失败而未运行，不能冒认582已由ac重验。Windows仍独立等待实际结果。原FAIL ZIP／XML保留。

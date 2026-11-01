@@ -79,7 +79,11 @@ class WorldBookAiCoreTest {
                 calls++; delta("""{"entries":[]}"""); throw failure
             }, offline)
             val actual = runCatching { core.createEntriesStreaming("合成要求", book, onCheckpoint = { checkpoint = it }) }.exceptionOrNull()
-            assertSame(failure, actual); assertEquals(1, calls)
+            if (failure is CancellationException) {
+                val cancellation = assertIs<CancellationException>(actual)
+                assertEquals(failure.message, cancellation.message)
+            } else assertSame(failure, actual)
+            assertEquals(1, calls)
             assertTrue(checkpoint.candidates.isEmpty()); assertEquals(1, checkpoint.batchNumber)
         }
     }
