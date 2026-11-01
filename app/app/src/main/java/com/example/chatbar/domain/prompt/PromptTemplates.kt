@@ -393,13 +393,9 @@ object PromptTemplates {
 
     // region 角色卡、图片理解与角色头像
 
-    const val CHARACTER_AVATAR_NAI_COMPOSITION_TAGS = "portrait, upper body"
-
+    const val CHARACTER_AVATAR_NAI_COMPOSITION_TAGS = CharacterCardAiPromptAuthority.CHARACTER_AVATAR_NAI_COMPOSITION_TAGS
     fun novelAiCharacterAvatarPositivePrompt(vararg sources: String): String =
-        (sources.asList() + CHARACTER_AVATAR_NAI_COMPOSITION_TAGS)
-            .map { it.trim().trim(',').trim() }
-            .filter(String::isNotEmpty)
-            .joinToString(", ")
+        CharacterCardAiPromptAuthority.novelAiCharacterAvatarPositivePrompt(*sources)
 
     const val IMAGE_DESCRIPTION_PROMPT = AuxiliaryPromptAuthority.IMAGE_DESCRIPTION_PROMPT
 

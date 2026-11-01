@@ -342,4 +342,12 @@ user需求：
                 characterName.trim().ifBlank { "未命名人物" }
             )
 
+    const val CHARACTER_AVATAR_NAI_COMPOSITION_TAGS = "portrait, upper body"
+
+    fun novelAiCharacterAvatarPositivePrompt(vararg sources: String): String =
+        (sources.asList() + CHARACTER_AVATAR_NAI_COMPOSITION_TAGS)
+            .map { it.trim().trim(',').trim() }
+            .filter(String::isNotEmpty)
+            .joinToString(", ")
+
 }
