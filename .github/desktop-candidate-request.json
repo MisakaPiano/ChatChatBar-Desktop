@@ -1,0 +1,23 @@
+{
+  "kind": "CCB_DESKTOP_FROZEN_CLOUD_BUILD_REQUEST",
+  "sourceSha": "5d01e858437692ad17978c198c8b10eeda82c7b7",
+  "desktopVersion": "0.1.0-preview.1231",
+  "installerVersion": "0.1.1231",
+  "reuseBuildRun": 41344218856,
+  "reuseRequestCommit": "f347c2a64148bd3ebaeaa56fb69dd1c9bc2eb0ab",
+  "reuseArtifacts": [
+    {
+      "id": 13098189200,
+      "name": "desktop-candidate-independent",
+      "bytes": 189185368,
+      "sha256": "67c3ccae254807ff5efbd1cbab6339a924fd3399faaadd6bcaedf0f2538173a9"
+    },
+    {
+      "id": 13098189194,
+      "name": "desktop-candidate-installer",
+      "bytes": 176179041,
+      "sha256": "6cd37a9ae2b15e1d132ca470a8d91a0be5a23b62da06f9e7132c916bd22a17e0"
+    }
+  ],
+  "diagnosticScope": "FRESH_EXACT_CANDIDATE_COLD_UNICODE_ONLY_R12_UPGRADE_REUSED"
+}
