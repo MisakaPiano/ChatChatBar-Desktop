@@ -35,6 +35,8 @@ Also read `chatbar-novelai-prompt` before changing NovelAI prompt construction, 
 
 ## Scheduler Rules
 
+- `MomentGenerationCore` shares the validated 141 generation flow through `MomentTextGateway` and lazy image/designer suppliers, image-save and compiled-memory ports. Android `MomentGenerationService` retains `withAiTaskRun` around each public generation call; `AndroidMomentTextGateway` maps JUDGE/GENERATE to the original task contexts and transport defaults. The shared core does not own platform admission, credentials, scheduling or persistence. Text-only/checkpoint paths must not open image clients. The selected 147 removal of judge gates is a separate documented delta, not part of this extraction.
+
 - `MomentEntities`, `MomentRepository` and `MomentPolicy` have one shared JVM-neutral authority; Android imports/FQNs remain unchanged. `MomentSchedulePreparation` shares only the original future-record planning and active-session selection. Android `MomentScheduler` retains its mutex, global enable guard, alarm cancellation, due-task generation and logging, delegating future planning via repository ports. Desktop still needs explicit admission/runtime/UI wiring; merely moving these sources never runs imported tasks.
 
 - Candidate frequency: per enabled card defaults to every 2-13 hours and is user-adjustable in settings.

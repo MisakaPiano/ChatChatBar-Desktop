@@ -11,3 +11,7 @@
 后续原文／类型提取（本地待云端）：五个 `MOMENT_*` literal、五个公开builder及其原私有summary helper移入唯一 `MomentPromptAuthority`，完整源块保持不变，Android保留原符号／目录并新增fingerprint源；两个NovelAI输入facade原体保留，不转移NAI Prompt ownership。`MomentGenerationModels` 提取原decision／draft／result／checkpoint／debug／progress类型，原生成服务的调用流程仍留Android。
 
 固定141与所选官方147差异已另核：Entities／Policy相同，五个Moment literal也相同；147 Repo支持改作者、Generation移除judge／shouldPost准入并使用卡片默认生图设置，Scheduler有维护访问包装。本轮机械提取当前141源，没有自动改调用流程或批量提升baseline；后续采用对应增量时按精确源与受影响回归记录，不能把“原文相同”当作整个147功能兼容。
+
+后续提取 `MomentGenerationCore`／`MomentTextGateway`：保留141判断、文案、图片设计、两次外层图片尝试和检查点流程，图片所有者使用惰性端口；Android facade继续在公开调用外包原withAiTaskRun并映射原任务类型。四个共享定向回归检查最近3条完整消息／编译长记忆／无开场白、纯文字不打开图片端口、完成阶段续作、失败取消只保留已完成检查点及141拒绝准入；尚待新源云端验证，不由CI64代验。Desktop运行与UI仍未接线。新反馈会话删除／升级后代理连接优先处理，本任务保留未交付。
+
+CI64的863df8ae源Android582／shared1096实际通过，包含未来记录准备3项和WorldBook取消修正；Windows结果另行读回。上述生成Core不在863源内。
