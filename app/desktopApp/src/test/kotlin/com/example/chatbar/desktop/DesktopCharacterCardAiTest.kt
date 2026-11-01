@@ -4,6 +4,8 @@ import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.desktop.security.InMemoryDesktopSecretStore
 import com.example.chatbar.domain.card.*
 import com.example.chatbar.domain.chat.*
+import com.example.chatbar.domain.search.*
+import kotlinx.serialization.json.*
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlinx.coroutines.*
@@ -52,17 +54,20 @@ class DesktopCharacterCardAiTest {
         }
     }
 
-    @Test fun `completed malformed generation retries only repair and cancellation never produces a candidate`() = runBlocking {
+    @Test fun `completed malformed generation reports repair truncation and retries only repair without changing draft`() = runBlocking {
         fixture { _, app, editor ->
             val stages = mutableListOf<CharacterCardAiStage>(); var firstRepair = true
             val ai = controller(app, editor) { _, stage, _, _, _ ->
                 stages += stage
                 if (stage == CharacterCardAiStage.GENERATE) flowOf(StreamEvent.Delta("not-json"), StreamEvent.Done)
-                else if (firstRepair) { firstRepair = false; flowOf(StreamEvent.Error("synthetic failure")) }
+                else if (firstRepair) { firstRepair = false; flowOf(StreamEvent.Error("synthetic failure", cause = ModelResponseTruncatedException())) }
                 else flowOf(StreamEvent.Delta(fill), StreamEvent.Done)
             }
             ai.open(CharacterCardAiOperation.FILL); ready(ai); ai.setRequest("补全外观")
             ai.generate(); idle(ai); assertNull(ai.state.value.candidate)
+            assertTrue(ai.state.value.error.orEmpty().contains("JSON 格式修复"))
+            assertTrue(ai.state.value.error.orEmpty().contains("输出上限"))
+            assertEquals(card, editor.state.value.card)
             ai.generate(retry = true); idle(ai)
             assertEquals(listOf(CharacterCardAiStage.GENERATE, CharacterCardAiStage.REPAIR, CharacterCardAiStage.REPAIR), stages)
             assertNotNull(ai.state.value.candidate)
@@ -101,10 +106,93 @@ class DesktopCharacterCardAiTest {
         }
     }
 
+    @Test fun `selected manual source failure blocks generation and does not fall back to card only`() = runBlocking {
+        fixture { _, app, editor ->
+            var calls = 0; var preparations = 0
+            val ai = controller(app, editor, prepareResearch = { _, _, _, options, _, _, _, _, _, _ ->
+                preparations++; assertEquals(CharacterResearchSourceMode.MANUAL_URLS, options.mode)
+                assertEquals(listOf("https://example.test/source"), options.urls)
+                error("synthetic unavailable source")
+            }) { _, _, _, _, _ -> calls++; flowOf(StreamEvent.Delta(fill), StreamEvent.Done) }
+            ai.open(CharacterCardAiOperation.FILL); ready(ai)
+            ai.selectSourceMode(CharacterResearchSourceMode.MANUAL_URLS); ai.setManualUrls("https://example.test/source")
+            ai.setRequest("合成要求"); ai.generate(); idle(ai)
+            assertEquals(1, preparations); assertEquals(0, calls); assertNull(ai.state.value.candidate)
+            assertTrue(ai.state.value.error.orEmpty().contains("外部资料准备失败"))
+            assertEquals(card, editor.state.value.card); assertEquals(card, app.characterRepository.getById(card.id))
+        }
+    }
+
+    @Test fun `temporary reference reaches prepared research and final request without adding durable documents and final retry reuses brief`() = runBlocking {
+        fixture { root, app, editor ->
+            val path = root.parent.resolve("synthetic-reference.txt")
+            val text = "合成临时参考正文"; Files.writeString(path, text)
+            var sourceReads = 0; var generationCalls = 0
+            val prepared = ResearchBrief(facts = listOf("合成整理事实"))
+            val picker = object : DesktopFilePicker {
+                override fun pickOpenFile(type: DesktopFileType) = path
+                override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? = error("No export")
+            }
+            val ai = controller(app, editor, prepareResearch = { _, _, selected, options, docs, resume, checkpoint, _, _, _ ->
+                assertEquals(model.modelName, selected.modelName); assertEquals(CharacterResearchSourceMode.NONE, options.mode)
+                assertEquals(listOf(CharacterReferenceDocument(path.fileName.toString(), text)), docs)
+                if (resume?.brief == null) sourceReads++ else assertEquals(prepared, resume.brief)
+                checkpoint(ResearchDebugSnapshot(plan = CharacterResearchPlan(), brief = prepared)); prepared
+            }, filePicker = picker) { _, stage, messages, _, _ ->
+                assertEquals(CharacterCardAiStage.GENERATE, stage); generationCalls++
+                val payload = Json.parseToJsonElement(messages.last().content.jsonPrimitive.content).jsonObject
+                assertEquals("合成整理事实", payload["externalResearch"]!!.jsonObject["facts"]!!.jsonArray.single().jsonPrimitive.content)
+                flowOf(StreamEvent.Delta(fill), StreamEvent.Done)
+            }
+            ai.open(CharacterCardAiOperation.FILL); ready(ai); ai.selectSourceMode(CharacterResearchSourceMode.NONE)
+            ai.setRequest("补全外观"); ai.chooseReference()
+            withTimeout(5_000) { ai.state.first { !it.referenceLoading } }
+            assertEquals(text, ai.state.value.reference?.content)
+            ai.generate(); idle(ai); assertNotNull(ai.state.value.candidate)
+            ai.regenerateFinal(); idle(ai); assertNotNull(ai.state.value.candidate)
+            assertEquals(1, sourceReads); assertEquals(2, generationCalls)
+            assertTrue(editor.state.value.card!!.customDocuments.isEmpty())
+            assertTrue(app.characterRepository.getById(card.id)!!.customDocuments.isEmpty())
+            assertEquals(text, Files.readString(path))
+            ai.clearReference(); assertNull(ai.state.value.candidate); assertNull(ai.state.value.research)
+        }
+    }
+
+    @Test fun `model change retains partial research plan and allows resuming required source preparation`() = runBlocking {
+        fixture { _, app, editor ->
+            val replacement = model.copy(id = "replacement-model", modelName = "replacement")
+            app.modelRepository.saveModel(replacement)
+            val plan = CharacterResearchPlan(true, listOf(CharacterResearchQuery("https://example.test/source")))
+            var attempts = 0; var planned = 0
+            val ai = controller(app, editor, prepareResearch = { _, _, selected, _, _, resume, checkpoint, _, _, _ ->
+                attempts++
+                if (resume?.plan == null) {
+                    planned++; checkpoint(ResearchDebugSnapshot(plan = plan)); error("synthetic source failure")
+                }
+                assertEquals(plan, resume.plan); assertEquals("replacement", selected.modelName)
+                val brief = ResearchBrief(facts = listOf("合成整理事实"))
+                checkpoint(ResearchDebugSnapshot(plan = plan, brief = brief)); brief
+            }) { _, _, _, selected, _ ->
+                assertEquals("replacement", selected.modelName); flowOf(StreamEvent.Delta(fill), StreamEvent.Done)
+            }
+            ai.open(CharacterCardAiOperation.FILL); ready(ai); ai.setRequest("补全外观")
+            ai.selectSourceMode(CharacterResearchSourceMode.MANUAL_URLS); ai.setManualUrls("https://example.test/source")
+            ai.generate(); idle(ai); assertNull(ai.state.value.candidate); assertEquals(plan, ai.state.value.research?.plan)
+            ai.selectModel(replacement.id); assertNull(ai.state.value.error); assertEquals(plan, ai.state.value.research?.plan)
+            ai.generate(retry = true); idle(ai)
+            assertEquals(2, attempts); assertEquals(1, planned); assertNotNull(ai.state.value.candidate)
+            assertEquals(card, editor.state.value.card)
+        }
+    }
+
     private fun controller(app: DesktopAppContainer, editor: DesktopCharacterEditorController,
+        prepareResearch: DesktopCharacterResearchPreparation? = null,
+        filePicker: DesktopFilePicker = UnconfiguredDesktopFilePicker,
         stream: (CharacterCardAiOperation, CharacterCardAiStage, List<ChatApiMessage>, ModelConfig, ProviderTransportDiagnostics) -> Flow<StreamEvent>) =
         DesktopCharacterCardAiController(editor, app.settingsRepository, app.effectiveModelResolver,
-            app.taskRuntime, app.dataOperationCoordinator, stream).also { editor.cardAi = it }
+            app.taskRuntime, app.dataOperationCoordinator, stream,
+            streamResearch = { _, _, _, _ -> error("No unplanned research model call") },
+            prepareResearch = prepareResearch, filePicker = filePicker).also { editor.cardAi = it }
     private suspend fun ready(ai: DesktopCharacterCardAiController) = withTimeout(5_000) { ai.state.first { !it.loading } }
     private suspend fun idle(ai: DesktopCharacterCardAiController) = withTimeout(5_000) { ai.state.first { !it.busy } }
     private suspend fun fixture(block: suspend (Path, DesktopAppContainer, DesktopCharacterEditorController) -> Unit) {

@@ -6,6 +6,9 @@ import java.net.InetAddress
 import java.net.Inet4Address
 import java.net.UnknownHostException
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import com.example.chatbar.domain.prompt.rethrowIfAiTaskTerminalFailure
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -59,6 +62,11 @@ class HttpManualWebPageRetriever(
         isLenient = true
     }
 ) : ManualWebPageRetriever {
+    suspend fun closeAndDrain() = withContext(kotlinx.coroutines.NonCancellable + Dispatchers.IO) {
+        client.dispatcher.cancelAll(); client.connectionPool.evictAll(); client.dispatcher.executorService.shutdown()
+        check(client.dispatcher.executorService.awaitTermination(30, TimeUnit.SECONDS)) { "指定网页连接尚未排水" }
+    }
+
     override suspend fun retrieve(
         urls: List<String>,
         onStatus: (String) -> Unit
@@ -75,10 +83,11 @@ class HttpManualWebPageRetriever(
             val outcomes = validation.urls.map { url ->
                 async {
                     semaphore.withPermit {
-                        runCatching { fetchPage(url) }
+                        runCatching { fetchPage(url, currentCoroutineContext()[Job]) }
                             .fold(
                                 onSuccess = { FetchOutcome.Success(it) },
                                 onFailure = {
+                                    it.rethrowIfAiTaskTerminalFailure()
                                     FetchOutcome.Failure(
                                         ManualWebPageFailure(
                                             url = url,
@@ -115,17 +124,17 @@ class HttpManualWebPageRetriever(
         }
     }
 
-    private fun fetchPage(url: String): SearchHit {
+    private fun fetchPage(url: String, owner: Job?): SearchHit {
         val deadlineNanos = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(pageTimeoutMillis)
         val originalUrl = url.toHttpUrlOrNull() ?: error("网址格式无效")
         if (originalUrl.host.endsWith(".fandom.com", ignoreCase = true)) {
-            runCatching { fetchFandomPage(originalUrl, deadlineNanos) }.getOrNull()?.let { return it }
+            runCatching { fetchFandomPage(originalUrl, deadlineNanos, owner) }.getOrElse { error -> error.rethrowIfAiTaskTerminalFailure(); null }?.let { return it }
         }
-        val response = fetchBody(originalUrl, ACCEPT_DOCUMENT, deadlineNanos)
+        val response = fetchBody(originalUrl, ACCEPT_DOCUMENT, deadlineNanos, owner)
         return response.toSearchHit()
     }
 
-    private fun fetchFandomPage(originalUrl: HttpUrl, deadlineNanos: Long): SearchHit {
+    private fun fetchFandomPage(originalUrl: HttpUrl, deadlineNanos: Long, owner: Job?): SearchHit {
         val segments = originalUrl.pathSegments
         val wikiIndex = segments.indexOfFirst { it.equals("wiki", ignoreCase = true) }
         require(wikiIndex >= 0 && wikiIndex < segments.lastIndex) { "不是可识别的 Fandom 词条地址" }
@@ -144,7 +153,7 @@ class HttpManualWebPageRetriever(
             .addQueryParameter("format", "json")
             .addQueryParameter("formatversion", "2")
             .build()
-        val response = fetchBody(apiUrl, ACCEPT_JSON, deadlineNanos)
+        val response = fetchBody(apiUrl, ACCEPT_JSON, deadlineNanos, owner)
         val root = json.parseToJsonElement(response.decodeText()).jsonObject
         val parse = root["parse"]?.jsonObject ?: error("Fandom API 没有返回词条正文")
         val htmlElement = parse["text"] ?: error("Fandom API 正文为空")
@@ -226,7 +235,7 @@ class HttpManualWebPageRetriever(
         }
     }
 
-    private fun fetchBody(initialUrl: HttpUrl, accept: String, deadlineNanos: Long): FetchedBody {
+    private fun fetchBody(initialUrl: HttpUrl, accept: String, deadlineNanos: Long, owner: Job?): FetchedBody {
         var currentUrl = initialUrl
         repeat(MAX_REDIRECTS + 1) { redirectIndex ->
             validatePublicTarget(currentUrl)
@@ -241,12 +250,12 @@ class HttpManualWebPageRetriever(
             require(remainingNanos > 0L) { "指定网页读取超时" }
             val call = client.newCall(request)
             call.timeout().timeout(remainingNanos, TimeUnit.NANOSECONDS)
-            call.execute().use { response ->
+            val fetched = call.withResearchOwner(owner) { response ->
                 if (response.code in REDIRECT_CODES) {
                     require(redirectIndex < MAX_REDIRECTS) { "网页重定向次数过多" }
                     val location = response.header("Location") ?: error("网页重定向缺少目标地址")
                     currentUrl = currentUrl.resolve(location) ?: error("网页重定向地址无效")
-                    return@repeat
+                    return@withResearchOwner null
                 }
                 require(response.isSuccessful) { "网页请求失败：HTTP ${response.code}" }
                 val body = response.body ?: error("网页响应为空")
@@ -265,13 +274,14 @@ class HttpManualWebPageRetriever(
                 val bytes = buffer.readByteArray()
                 require(bytes.size <= MAX_RESPONSE_BYTES) { "网页正文超过 2 MiB 限制" }
                 val mediaType = body.contentType()
-                return FetchedBody(
+                FetchedBody(
                     finalUrl = currentUrl,
                     contentType = mediaType?.toString().orEmpty(),
                     charsetName = mediaType?.charset()?.name(),
                     bytes = bytes
                 )
             }
+            if (fetched != null) return fetched
         }
         error("网页重定向次数过多")
     }
@@ -351,18 +361,18 @@ private fun validatePublicAddresses(host: String, addresses: List<InetAddress>) 
     require(addresses.none(::isForbiddenNetworkAddress)) { "不允许访问本机、私网或保留地址" }
 }
 
-internal data class ExtractedWebPage(
+data class ExtractedWebPage(
     val title: String,
     val text: String
 )
 
-internal enum class WebPageSite {
+enum class WebPageSite {
     FANDOM,
     PIXIV_DICTIONARY,
     GENERIC
 }
 
-internal object WebPageContentExtractor {
+object WebPageContentExtractor {
     fun extractHtml(
         html: String,
         baseUrl: String,
@@ -445,7 +455,7 @@ internal object WebPageContentExtractor {
     private const val MIN_CONTENT_CHARS = 40
 }
 
-internal fun isForbiddenNetworkAddress(address: InetAddress): Boolean {
+fun isForbiddenNetworkAddress(address: InetAddress): Boolean {
     if (
         address.isAnyLocalAddress ||
         address.isLoopbackAddress ||

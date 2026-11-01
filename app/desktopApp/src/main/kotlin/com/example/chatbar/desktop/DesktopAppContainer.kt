@@ -272,6 +272,11 @@ class DesktopAppContainer internal constructor(
     private val formatCardAiTransportOwner = lazy { com.example.chatbar.domain.chat.OpenAiStreamingTransport {
         settingsRepository.currentAppSettings.allowCleartextModelApi
     } }
+    private val characterResearchSourcesOwner = lazy {
+        DesktopCharacterResearchSources(settingsRepository, effectiveModelResolver) {
+            settingsRepository.currentAppSettings.allowCleartextModelApi
+        }
+    }
     private val formatCardEditorOwner = lazy {
         DesktopFormatCardEditorController(formatCardRepository, editorDraftRepository).also { editor ->
             editor.autoFill = DesktopFormatCardAutoFillController(editor, characterRepository, settingsRepository,
@@ -317,7 +322,12 @@ class DesktopAppContainer internal constructor(
             editor.cardAi = DesktopCharacterCardAiController(editor, settingsRepository, effectiveModelResolver,
                 taskRuntime, dataOperationCoordinator, stream = { _, stage, messages, model, diagnostics ->
                     formatCardAiTransportOwner.value.streamCharacterCardCandidate(stage, messages, model, diagnostics)
-                })
+                }, streamResearch = { stage, messages, model, diagnostics ->
+                    formatCardAiTransportOwner.value.streamCharacterResearch(stage, messages, model, diagnostics)
+                }, prepareResearch = { request, card, model, options, documents, resume, checkpoint, visible, status, gateway ->
+                    characterResearchSourcesOwner.value.prepare(request, card, model, options, documents,
+                        resume, checkpoint, visible, status, gateway)
+                }, filePicker = filePicker)
         }
     }
     internal val characterEditorController by characterEditorOwner
@@ -669,6 +679,7 @@ class DesktopAppContainer internal constructor(
             draftRuntimeClose = {
                 if (primaryChatControllerOwner.isInitialized()) primaryChatController.closeDraftPersistence()
                 if (characterEditorOwner.isInitialized()) characterEditorController.closeAndDrain()
+                if (characterResearchSourcesOwner.isInitialized()) characterResearchSourcesOwner.value.closeAndDrain()
                 if (formatCardEditorOwner.isInitialized()) formatCardEditorController.closeAndDrain()
                 if (formatCardAiTransportOwner.isInitialized()) formatCardAiTransportOwner.value.closeAndDrain()
                 if (worldBookEditorOwner.isInitialized()) worldBookEditorController.closeAndDrain()

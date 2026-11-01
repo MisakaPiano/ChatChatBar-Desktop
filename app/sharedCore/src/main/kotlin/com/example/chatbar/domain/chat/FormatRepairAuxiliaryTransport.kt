@@ -78,6 +78,9 @@ internal fun isolatedAuxiliaryTextStream(
     emitReasoning: Boolean = false,
     protectEnvelope: Boolean = true,
     thinkingBudget: Int? = null,
+    enableThinkingOverride: Boolean? = null,
+    maxThinkingTokens: Int? = null,
+    reasoningEffortOverride: String? = null,
 ): Flow<StreamEvent> = callbackFlow {
     require(maximumTextChars > 0)
     val messages = AuxiliaryMessageAssembler.assemble(inputMessages, preservesInputRoles = false)
@@ -88,7 +91,9 @@ internal fun isolatedAuxiliaryTextStream(
     val body = OpenAiChatRequestSerializer.serialize(messages, requestModel, stream = true,
         allowCleartextHttp = allowCleartextHttp, disableThinking = disableThinking,
         responseFormatJson = responseFormatJson, isolatedTaskParameters = isolatedTaskParameters,
-        includeStreamUsage = model.supportsOpenAiPromptCacheInstrumentation(), thinkingBudget = thinkingBudget)
+        includeStreamUsage = model.supportsOpenAiPromptCacheInstrumentation(), thinkingBudget = thinkingBudget,
+        enableThinkingOverride = enableThinkingOverride, maxThinkingTokens = maxThinkingTokens,
+        reasoningEffortOverride = reasoningEffortOverride)
     val url = "${model.baseUrl.trimEnd('/')}/chat/completions"
     diagnostics.onRequest(ProviderRequestEvidence(url, body))
     val jsonBody = body.toRequestBody("application/json; charset=utf-8".toMediaType())

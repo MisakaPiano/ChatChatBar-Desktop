@@ -155,7 +155,7 @@ class RagCharacterReferenceDocumentRetriever(
     }
 }
 
-internal fun buildCharacterReferenceDocumentQuery(
+fun buildCharacterReferenceDocumentQuery(
     userInput: String,
     currentCard: CharacterCard
 ): String {

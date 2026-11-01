@@ -6,6 +6,10 @@ import java.net.URLDecoder
 import java.net.URLEncoder
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import com.example.chatbar.domain.prompt.rethrowIfAiTaskTerminalFailure
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -18,6 +22,11 @@ import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.Request
 
 class MediaWikiSearchBackend : SearchBackend {
+    suspend fun closeAndDrain() = withContext(kotlinx.coroutines.NonCancellable + Dispatchers.IO) {
+        client.dispatcher.cancelAll(); client.connectionPool.evictAll(); client.dispatcher.executorService.shutdown()
+        check(client.dispatcher.executorService.awaitTermination(30, TimeUnit.SECONDS)) { "百科来源连接尚未排水" }
+    }
+
     private val json = Json {
         ignoreUnknownKeys = true
         isLenient = true
@@ -89,6 +98,7 @@ class MediaWikiSearchBackend : SearchBackend {
     private val allSites = moegirlSites + wikipediaSites
 
     override suspend fun search(query: SearchBackendQuery): List<SearchHit> = withContext(Dispatchers.IO) {
+        val owner = currentCoroutineContext()[Job]
         val errors = mutableListOf<String>()
         val siteGroups = listOf(
             sitesForQuery(query.query, moegirlSites),
@@ -98,8 +108,9 @@ class MediaWikiSearchBackend : SearchBackend {
         for (sites in siteGroups) {
             val hits = sites.flatMapIndexed { siteIndex, site ->
                 runCatching {
-                    searchSite(site, siteIndex, query)
+                    searchSite(site, siteIndex, query, owner)
                 }.getOrElse { error ->
+                    error.rethrowIfAiTaskTerminalFailure()
                     errors += "${site.id}:${error.message ?: error::class.java.simpleName}"
                     emptyList()
                 }
@@ -120,6 +131,7 @@ class MediaWikiSearchBackend : SearchBackend {
     }
 
     override suspend fun extract(urls: List<String>, maxPages: Int): List<SearchExtract> = withContext(Dispatchers.IO) {
+        val owner = currentCoroutineContext()[Job]
         val refs = urls.mapNotNull(::parseMediaWikiUrl)
             .distinctBy { "${it.site.id}:${normalizeTitle(it.title)}" }
             .take(maxPages.coerceAtLeast(0))
@@ -129,8 +141,9 @@ class MediaWikiSearchBackend : SearchBackend {
         val groups = refs.groupBy { it.site }
         val extracts = groups.flatMap { (site, pages) ->
             runCatching {
-                extractSite(site, pages)
+                extractSite(site, pages, owner)
             }.getOrElse { error ->
+                    error.rethrowIfAiTaskTerminalFailure()
                 errors += "${site.id}:${error.message ?: error::class.java.simpleName}"
                 emptyList()
             }
@@ -144,10 +157,12 @@ class MediaWikiSearchBackend : SearchBackend {
     private fun searchSite(
         site: MediaWikiSite,
         siteIndex: Int,
-        query: SearchBackendQuery
+        query: SearchBackendQuery,
+        owner: Job?
     ): List<SearchHit> {
         val root = getJson(
-            apiUrl(
+            owner = owner,
+            url = apiUrl(
                 site,
                 mapOf(
                     "action" to "query",
@@ -187,9 +202,10 @@ class MediaWikiSearchBackend : SearchBackend {
         }
     }
 
-    private fun extractSite(site: MediaWikiSite, pages: List<MediaWikiPageRef>): List<SearchExtract> {
+    private fun extractSite(site: MediaWikiSite, pages: List<MediaWikiPageRef>, owner: Job?): List<SearchExtract> {
         val root = getJson(
-            apiUrl(
+            owner = owner,
+            url = apiUrl(
                 site,
                 mapOf(
                     "action" to "query",
@@ -215,8 +231,8 @@ class MediaWikiSearchBackend : SearchBackend {
         return pages.mapNotNull { ref ->
             val apiRaw = apiExtractFor(ref, apiExtracts)
             val htmlRaw = if (shouldFetchArticleHtml(site, apiRaw)) {
-                runCatching { fetchArticleText(ref.url.ifBlank { articleUrl(site, ref.title) }) }
-                    .getOrDefault("")
+                runCatching { fetchArticleText(ref.url.ifBlank { articleUrl(site, ref.title) }, owner) }
+                    .getOrElse { error -> error.rethrowIfAiTaskTerminalFailure(); "" }
             } else {
                 ""
             }
@@ -233,23 +249,24 @@ class MediaWikiSearchBackend : SearchBackend {
         }
     }
 
-    private fun getJson(url: String): JsonObject {
-        return json.parseToJsonElement(getString(url, "application/json")).jsonObject
+    private fun getJson(url: String, owner: Job?): JsonObject {
+        return json.parseToJsonElement(getString(url, "application/json", owner)).jsonObject
     }
 
-    private fun getString(url: String, accept: String): String {
+    private fun getString(url: String, accept: String, owner: Job?): String {
+        owner?.ensureActive()
         val request = Request.Builder()
             .url(url)
             .header("Accept", accept)
             .header("User-Agent", USER_AGENT)
             .get()
             .build()
-        client.newCall(request).execute().use { response ->
+        return client.newCall(request).withResearchOwner(owner) { response ->
             val responseBody = response.body?.string().orEmpty()
             if (!response.isSuccessful) {
                 error("HTTP ${response.code}: ${responseBody.take(400)}")
             }
-            return responseBody
+            responseBody
         }
     }
 
@@ -265,8 +282,8 @@ class MediaWikiSearchBackend : SearchBackend {
     private fun shouldFetchArticleHtml(site: MediaWikiSite, apiRaw: String): Boolean =
         site.id.startsWith("moegirl") || apiRaw.length < MIN_DEEP_EXTRACT_CHARS
 
-    private fun fetchArticleText(url: String): String =
-        htmlToArticleText(getString(url, "text/html"))
+    private fun fetchArticleText(url: String, owner: Job?): String =
+        htmlToArticleText(getString(url, "text/html", owner))
 
     private fun htmlToArticleText(html: String): String {
         var body = articleBodyHtml(html)

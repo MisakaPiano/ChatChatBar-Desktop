@@ -3,7 +3,7 @@ package com.example.chatbar.domain.chat
 import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.domain.card.*
 import com.example.chatbar.domain.prompt.*
-import com.example.chatbar.domain.search.ResearchBrief
+import com.example.chatbar.domain.search.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.toList
 import kotlinx.serialization.json.*
@@ -13,6 +13,41 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class CharacterCardAiRequestParityTest {
+    @Test fun desktopAndAndroidResearchPlanAndBriefRetainSameParametersAndEnvelope() = runBlocking {
+        MockWebServer().use { server ->
+            val desktop = OpenAiStreamingTransport { true }; val android = StreamingChatService { true }
+            try {
+                val model = ModelConfig("synthetic-model", "合成模型", server.url("/v1").toString(), "fixture-key", "original-model",
+                    maxOutputTokens = 717, enableThinking = true, createdAt = 1,
+                    customParams = mapOf("temperature" to ParamValue.NumberValue(0.65), "seed" to ParamValue.NumberValue(23.0)))
+                for (stage in CharacterResearchAiStage.entries) {
+                    val policy = CharacterResearchAiRequestPolicy.forStage(stage)
+                    val messages = if (stage == CharacterResearchAiStage.PLAN) listOf(
+                        ChatApiMessage.text("system", PromptTemplates.characterResearchPlannerSystemPrompt(30)),
+                        ChatApiMessage.text("user", PromptTemplates.characterResearchPlannerUserPrompt("合成检索要求")))
+                    else listOf(ChatApiMessage.text("system", PromptTemplates.characterResearchBriefSystemPrompt()),
+                        ChatApiMessage.text("user", PromptTemplates.characterResearchBriefUserPrompt("合成整理要求", "合成来源正文")))
+                    repeat(2) { server.enqueue(MockResponse().setHeader("Content-Type", "text/event-stream").setBody(
+                        "data: {\"choices\":[{\"delta\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n")) }
+                    val official = withTimeout(10_000) { android.streamText(messages, model,
+                        enableThinking = policy.enableThinking, maxThinkingTokens = policy.maxThinkingTokens,
+                        thinkingBudget = policy.thinkingBudget, reasoningEffort = policy.reasoningEffort,
+                        readTimeoutSeconds = policy.readTimeoutSeconds,
+                        taskContext = AiTaskContext(if (stage == CharacterResearchAiStage.PLAN) AiTaskKind.CHARACTER_RESEARCH else AiTaskKind.CHARACTER_BRIEF,
+                            if (stage == CharacterResearchAiStage.PLAN) AiTaskStage.PLAN else AiTaskStage.SUMMARIZE)).toList() }
+                    val port = withTimeout(10_000) { desktop.streamCharacterResearch(stage, messages, model).toList() }
+                    assertTrue(official.last() is StreamEvent.Done); assertTrue(port.last() is StreamEvent.Done)
+                    val a = server.takeRequest(1, TimeUnit.SECONDS)!!; val b = server.takeRequest(1, TimeUnit.SECONDS)!!
+                    assertEquals(a.path, b.path); assertEquals(a.getHeader("Authorization"), b.getHeader("Authorization"))
+                    val actual = Json.parseToJsonElement(b.body.readUtf8())
+                    assertEquals(Json.parseToJsonElement(a.body.readUtf8()), actual)
+                    assertEquals(717, actual.jsonObject["max_tokens"]!!.jsonPrimitive.int)
+                }
+                assertEquals(4, server.requestCount)
+            } finally { desktop.closeAndDrain() }
+        }
+    }
+
     @Test fun desktopAndAndroidSendSameFillRewriteGenerateRepairRequests() = runBlocking {
         MockWebServer().use { server ->
             val desktop = OpenAiStreamingTransport { true }

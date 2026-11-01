@@ -19,6 +19,7 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.msgpack.core)
     implementation(libs.okhttp.sse)
+    implementation(libs.jsoup)
 
     testImplementation(kotlin("test"))
     testImplementation(libs.kotlinx.coroutines.test)

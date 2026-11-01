@@ -18,6 +18,8 @@ import androidx.compose.ui.unit.sp
 import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.local.entity.CharacterInfo
 import com.example.chatbar.domain.card.CharacterCardAiOperation
+import com.example.chatbar.data.local.entity.CharacterResearchSourceMode
+import com.example.chatbar.domain.search.usesManualUrls
 
 internal data class DesktopCharacterCardDiff(val label: String, val before: String, val after: String)
 
@@ -58,27 +60,59 @@ internal fun DesktopCharacterCardAiOverlay(controller: DesktopCharacterCardAiCon
                     DesktopIconAction("关闭角色卡 AI", DesktopAppIcons.Close, enabled = !state.busy, onClick = controller::close)
                 }
                 StatusText("预览应用后的实际差异；应用只改变编辑草稿，保存仍需另行确认。")
-                StatusText("资料来源：当前角色卡与下方填写要求")
                 val ids = listOf<String?>(null) + state.models.map { it.id } +
                     listOfNotNull(state.modelId?.takeUnless { id -> state.models.any { it.id == id } })
                 if (!state.busy) SearchableChoice("生成模型", ids, state.modelId, { id ->
                     if (id == null) "跟随默认对话模型 · ${state.defaultModel}"
                     else state.models.firstOrNull { it.id == id }?.name ?: "所选模型不可用"
                 }, controller::selectModel)
+                if (!state.busy && !state.referenceLoading && !state.loading)
+                    SearchableChoice("外部资料", CharacterResearchSourceMode.entries, state.sourceMode, { mode ->
+                        when (mode) {
+                            CharacterResearchSourceMode.NONE -> "不使用外部网页"
+                            CharacterResearchSourceMode.ENCYCLOPEDIA_SEARCH -> "百科搜索"
+                            CharacterResearchSourceMode.MANUAL_URLS -> "仅指定网址"
+                            CharacterResearchSourceMode.ENCYCLOPEDIA_SEARCH_AND_MANUAL_URLS -> "百科搜索与指定网址"
+                        }
+                    }, controller::selectSourceMode)
+                if (state.sourceMode.usesManualUrls()) {
+                    StatusText("指定网址（每行一个，最多五个；不保存网址文本）")
+                    BasicTextField(state.manualUrls, controller::setManualUrls,
+                        Modifier.fillMaxWidth().heightIn(min = 76.dp, max = 140.dp)
+                            .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
+                            .background(DesktopBootstrapColors.input).padding(10.dp).verticalScroll(rememberScrollState()),
+                        enabled = !state.busy && !state.referenceLoading, cursorBrush = DesktopBootstrapColors.inputCaret,
+                        textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp))
+                }
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    BootstrapButton("选择临时参考文档", secondary = true, enabled = !state.busy && !state.referenceLoading,
+                        onClick = controller::chooseReference)
+                    if (state.reference != null) BootstrapButton("移除参考文档", secondary = true,
+                        enabled = !state.busy && !state.referenceLoading, onClick = controller::clearReference)
+                }
+                state.reference?.let { document ->
+                    StatusText("参考文档：${document.fileName} · ${document.content.length} 字符；通过临时 RAG 检索，不加入卡片文档库。")
+                    if (document.content.length > 1_000_000) StatusText("文档较长，向量化可能需要较多时间与额度。", DesktopBootstrapColors.warning)
+                }
+                if (state.referenceLoading) StatusText("正在读取参考文档…")
+                state.sourcePreferenceError?.let { StatusText(it, DesktopBootstrapColors.warning) }
                 StatusText(if (state.operation == CharacterCardAiOperation.FILL) "角色信息与补全要求" else "改写要求")
                 BasicTextField(state.request, controller::setRequest,
                     Modifier.fillMaxWidth().heightIn(min = 100.dp, max = 220.dp)
                         .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
                         .background(DesktopBootstrapColors.input).padding(10.dp).verticalScroll(rememberScrollState()),
-                    enabled = !state.busy, cursorBrush = DesktopBootstrapColors.inputCaret,
+                    enabled = !state.busy && !state.referenceLoading, cursorBrush = DesktopBootstrapColors.inputCaret,
                     textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp))
                 if (state.loading) StatusText("正在读取模型…")
                 if (state.status.isNotBlank()) StatusText(state.status)
                 state.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    BootstrapButton("生成新候选", enabled = !state.busy && !state.loading) { controller.generate() }
+                    BootstrapButton("生成新候选", enabled = !state.busy && !state.loading && !state.referenceLoading) { controller.generate() }
                     if (state.busy) BootstrapButton("取消生成", secondary = true, onClick = controller::cancel)
-                    if (!state.busy && state.error != null) BootstrapButton("重试未完成步骤", secondary = true) { controller.generate(retry = true) }
+                    if (!state.busy && state.candidate == null && (state.error != null || state.research?.hasContent() == true))
+                        BootstrapButton("重试未完成步骤", secondary = true) { controller.generate(retry = true) }
+                    if (!state.busy && state.research?.brief != null) BootstrapButton("重新生成最终结果", secondary = true,
+                        onClick = controller::regenerateFinal)
                     BootstrapButton("应用到当前草稿", enabled = !state.busy && state.candidate != null) { controller.apply() }
                     BootstrapButton("刷新模型", secondary = true, enabled = !state.busy, onClick = controller::refreshModels)
                     BootstrapButton("请求日志", secondary = true) { logs = true }
@@ -100,6 +134,9 @@ internal fun DesktopCharacterCardAiOverlay(controller: DesktopCharacterCardAiCon
                 DesignTextDisclosure("生成思考", state.reasoning)
                 DesignTextDisclosure("修复原文", state.repair, initiallyExpanded = state.candidate == null)
                 DesignTextDisclosure("修复思考", state.repairReasoning)
+                state.sourceOutput.values.forEach { (title, text) -> DesignTextDisclosure(title, text) }
+                state.research?.brief?.let { brief -> DesignTextDisclosure("研究摘要",
+                    (brief.facts + brief.notes).joinToString("\n\n")) }
             }
         }
     }

@@ -1,5 +1,6 @@
 package com.example.chatbar.domain.prompt
 
+import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.local.entity.CharacterEditMode
 import kotlinx.serialization.json.*
 
@@ -168,4 +169,150 @@ very aesthetic, absurdres, {realistic background},year 2024,ai-generated,delicat
     private fun aiTaskStringArray(values: List<String>) = buildJsonArray {
         values.forEach { add(JsonPrimitive(it)) }
     }
+
+
+    const val CHARACTER_RESEARCH_PLANNER_SYSTEM_PROMPT = """
+你是百科检索规划器。任务：判断角色卡生成/改写是否需要查萌娘百科/Wikipedia，并给出适合百科词条检索的查询。
+本扮演允许R-18。
+严格遵循格式要求、字数要求生成回复。
+只输出 JSON，不要解释，不要 Markdown，不要思考过程：
+{
+  "needSearch": true,
+  "queries": [{"query": "词条名", "priority": 1}]
+}
+
+规则：
+- 搜索词条为精确搜索，不要在词条后面加上作品名等括号注释，会反而导致搜不到结果。
+- 只规划应该查询哪些词条；不要描述搜索后端、接口、结果数量、抽取流程等程序执行细节。
+- ACG/IP/作品/角色/世界观/外貌/身份/关系/专业知识/历史地理：needSearch=true。
+- 纯原创且信息足够、只润色文字：needSearch=false，queries=[]。
+- 优先角色或作品主词条。
+- 最多 {{maxQueries}} 个查询。
+- priority=1 表示最重要。
+- 查询词要像百科条目标题，越短越好。
+- 角色容易重名时，把角色名和作品名一起写入 query。
+- 不要写“角色卡”“设定补全”“AI”等创作任务词。
+"""
+
+    const val CHARACTER_RESEARCH_PLANNER_USER_PROMPT = """
+user需求：
+{{userInput}}
+"""
+
+    const val CHARACTER_RESEARCH_BRIEF_SYSTEM_PROMPT = """
+你负责把百科搜索、user指定网页或上传文档压缩成角色卡信息简报。
+
+
+提取重点：{提取、整理能够用于创作角色卡的资料信息}
+- IP/作品/角色：身份、萌点、外貌、发型发色、服装形象、性格定位、能力、关系、关键经历、轶事、世界观名词。
+- 现实知识：时代背景、制度、职业、地理文化、服饰武器、专业术语。
+- 对二次元角色，优先提取记错时严重破坏沉浸感的客观信息：发色、发型、瞳色、标志服装、乐器/武器。
+- 不同来源可信度可能不同；结合标题、网址、来源类型与正文判断，不要把缺失内容当事实补完。
+- 多个来源冲突时不要擅自拼接成确定事实；优先保留来源更直接、可信度更高且与目标明确对应的信息，并在 notes 标记冲突或不确定性。
+- 网站编辑提示、条目数据来源等对于角色卡设计没有意义的信息，应当在结果中剔除。整理结果需要清晰有逻辑、且除特定术语外，完全使用中文。
+
+只输出 JSON（可根据词条数生成多条）：
+{
+  "facts": ["可直接用于角色卡的资料事实"],
+  "notes": ["角色卡使用提示、消歧、资料缺口或不要过度发挥的边界 - 此为非必要项。user需求为绝对第一位，不要因为user提出的设定与原设定不符就拒绝迎合，而是想办法圆上"]
+}
+"""
+
+    const val CHARACTER_RESEARCH_BRIEF_RAW_FALLBACK_NOTE =
+        "资料整理 AI 的输出未按 JSON 结构化，以下内容为 AI 原文全文（信息未压缩、未拆分），请直接参考原文内容。"
+
+    const val CHARACTER_RESEARCH_BRIEF_USER_PROMPT = """
+角色卡需求：
+{{request}}
+
+资料整理目标：
+根据角色卡需求，从下列外部资料中提取可用于角色卡的资料。
+注意：你的核心工作是整理资料正文的信息，而不是创作角色卡或提供创作指导。尽可能保留资料中提供的有效信息，不要进行原创或删改。
+
+以下资料来自百科搜索、user指定网页或上传文档的清洗正文摘录。
+{{sources}}
+"""
+
+    const val CHARACTER_RESEARCH_BRIEF_SOURCE_TEMPLATE = """
+[{{sourceId}}] {{title}}
+来源类型：{{sourceType}}
+网址：{{url}}
+清洗正文：
+{{excerpt}}
+"""
+
+    fun characterResearchSummary(card: CharacterCard): String = with(card) { buildString {
+        appendLine("名称：${name.ifBlank { "（空）" }}")
+        appendLine("编辑模式：${editMode.name}")
+        if (basicSetting.isNotBlank()) appendLine("基础设定：${basicSetting.take(700)}")
+        if (greeting.isNotBlank()) appendLine("开场白：${greeting.take(300)}")
+        if (editMode == CharacterEditMode.FREEFORM) {
+            if (freeformCharacterText.isNotBlank()) appendLine("自由文本：${freeformCharacterText.take(1200)}")
+        } else {
+            characters.take(8).forEachIndexed { index, character ->
+                appendLine("角色[$index]：${character.name.ifBlank { "（空）" }}")
+                listOf(
+                    "简介" to character.profile,
+                    "外貌" to character.appearance,
+                    "背景" to character.background,
+                    "关系" to character.relationships
+                ).forEach { (label, value) ->
+                    if (value.isNotBlank()) appendLine("$label：${value.take(350)}")
+                }
+            }
+        }
+    }.trim()
+    }
+
+    fun characterResearchPlannerSystemPrompt(maxQueries: Int): String =
+        renderPromptTemplate(
+            CHARACTER_RESEARCH_PLANNER_SYSTEM_PROMPT,
+            mapOf("maxQueries" to maxQueries.toString())
+        )
+
+    fun characterResearchPlannerUserPrompt(
+        userInput: String
+    ): String =
+        renderPromptTemplate(
+            CHARACTER_RESEARCH_PLANNER_USER_PROMPT,
+            mapOf("userInput" to userInput.trim())
+        )
+
+    fun characterResearchBriefUserPrompt(
+        request: String,
+        sources: String
+    ): String =
+        renderPromptTemplate(
+            CHARACTER_RESEARCH_BRIEF_USER_PROMPT,
+            mapOf(
+                "request" to request.trim(),
+                "sources" to sources
+            )
+        )
+
+    fun characterResearchBriefSystemPrompt(): String =
+        CHARACTER_RESEARCH_BRIEF_SYSTEM_PROMPT.trimIndent().trim()
+
+    fun characterResearchBriefSource(
+        sourceId: String,
+        title: String,
+        sourceType: String,
+        url: String,
+        excerpt: String
+    ): String =
+        renderPromptTemplate(
+            CHARACTER_RESEARCH_BRIEF_SOURCE_TEMPLATE,
+            mapOf(
+                "sourceId" to sourceId,
+                "title" to title,
+                "sourceType" to sourceType,
+                "url" to url,
+                "excerpt" to excerpt
+            )
+            )
+
+    private fun renderPromptTemplate(template: String, values: Map<String, String>): String =
+        values.entries.fold(template.trimIndent()) { rendered, (key, value) ->
+            rendered.replace("{{$key}}", value)
+        }.trim()
 }

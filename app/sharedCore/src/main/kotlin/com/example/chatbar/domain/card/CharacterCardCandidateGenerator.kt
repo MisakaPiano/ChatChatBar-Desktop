@@ -13,6 +13,9 @@ import kotlinx.serialization.json.*
 enum class CharacterCardAiOperation { FILL, REWRITE }
 enum class CharacterCardAiStage { GENERATE, REPAIR }
 
+class CharacterCardJsonRepairTruncatedException(cause: ModelResponseTruncatedException) :
+    IllegalStateException("角色卡 JSON 格式修复达到模型输出上限；请调高模型输出上限后重试", cause)
+
 fun interface CharacterCardAiGateway {
     fun stream(operation: CharacterCardAiOperation, stage: CharacterCardAiStage,
         messages: List<ChatApiMessage>, model: ModelConfig): Flow<StreamEvent>
@@ -30,12 +33,9 @@ class CharacterCardCandidateGenerator(private val gateway: CharacterCardAiGatewa
             onCheckpoint, onRaw, onReasoning)
         val draft = CharacterAutoFillPolicy.parseDraft(raw, json) ?: run {
             onStatus("生成已完成，正在修复 JSON 格式")
-            val repaired = try { request(CharacterCardAiOperation.FILL, CharacterCardAiStage.REPAIR, listOf(
+            val repaired = request(CharacterCardAiOperation.FILL, CharacterCardAiStage.REPAIR, listOf(
                 ChatApiMessage.text("system", CharacterCardAiPromptAuthority.CHARACTER_AUTO_FILL_REPAIR_PROMPT),
-                ChatApiMessage.text("user", raw)), model, onRepair, onReasoning) }
-            catch (error: ModelResponseTruncatedException) {
-                throw IllegalStateException("角色卡 JSON 格式修复达到模型输出上限；请调高模型输出上限后重试", error)
-            }
+                ChatApiMessage.text("user", raw)), model, onRepair, onReasoning)
             CharacterAutoFillPolicy.parseDraft(repaired, json)?.also { onStatus("JSON 格式修复完成") }
                 ?: error("AI 自动填充结果不是可解析 JSON")
         }
@@ -93,6 +93,9 @@ class CharacterCardCandidateGenerator(private val gateway: CharacterCardAiGatewa
                     is StreamEvent.Usage -> Unit
                 }
             }
+        } catch (error: ModelResponseTruncatedException) {
+            if (stage == CharacterCardAiStage.REPAIR) throw CharacterCardJsonRepairTruncatedException(error)
+            throw error
         } finally { publish(raw.toString()) }
         check(completed) { "生成连接提前结束，未收到完成信号" }
         check(raw.isNotBlank()) { "AI 返回空内容" }
