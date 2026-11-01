@@ -1,12 +1,12 @@
 # 外部文件打开与顺序导入 / 2026-11-02
 
-原216 P15外部入口的独立源码切片。上一个已执行检查为9040fb64／CI89成功；本文新增源码、测试和原生入口尚待下一精确源云端编译运行，不能写为功能验收通过。公开仍1229／签名13，私有1230冻结064／本地14，不混入新源码，不操作日常H安装。
+原216 P15外部入口。fb6ac196／CI93（41347932900）完整成功：实际Windows主2438项2419PASS＋19SKIP、独立production JAR代理5、NTFS7、native33／更新器8／exit4通过；共享1135和Android582通过。外部controller九项及冷暖fixture等通过，不等于所有实际OS冷启动已通过。公开仍1229／签名13，私有1230冻结064／本地14及1231冻结5d01保持，不操作日常H安装。
 
 ## 实际入口
 
 Main(args)在业务构造前接DesktopExternalActivation。每个安装身份在当前用户辅助目录持有一个receiver锁，以认证loopback传递文件和聚焦请求；只有owner构造业务与资料根。队列只记录有界路径、ID和attempted，不记录正文、密码或冲突选择。确认丢失不自动重送；损坏辅助记录保留原件、暂停外部投递，普通窗口仍可进入。正常重开保留待处理项，attempted项恢复为待核对而非重新导入；这不是断电或所有文件系统原子性证明。
 
-新增OpenChatBarFile.exe为受管根的第三个入口资源，旧稳定入口协议保持。管理器→Main传参保留Unicode、空格与顺序，运行中直接投给receiver、不重新运行整个image。冷启动仍校验所有image字节。HKCU仅登记按安装根区分的“打开方式”，不抢默认或改UserChoice；卸载只移除精确归属注册。资源回执接受旧两项或新三项，外来helper拒绝，不静默收编。原生ready、forwarded和queue确认分别证明就绪、已有owner与排队，不互相冒充。
+新增OpenChatBarFile.exe为受管根的第三个入口资源，旧稳定入口协议保持。运行中以UTF8认证投给receiver、不重新运行整个image；Unicode、空格与顺序已由实际warm验证。实际冷启动OS argv仍待定位，不由编码fixture代证。冷启动仍校验所有image字节。HKCU仅登记按安装根区分的“打开方式”，不抢默认或改UserChoice；卸载只移除精确归属注册。资源回执接受旧两项或新三项，外来helper拒绝，不静默收编。原生ready、forwarded和queue确认分别证明就绪、已有owner与排队，不互相冒充。
 
 ## 复用已有导入能力
 

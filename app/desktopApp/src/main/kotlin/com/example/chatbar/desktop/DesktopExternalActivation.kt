@@ -28,6 +28,8 @@ internal class DesktopExternalActivationException(val failure: DesktopExternalAc
 /** Pre-business refusal is not an unsafe writer shutdown. Tests replace presentation, not ingress. */
 internal fun runDesktopExternalActivation(args: Array<String>, home: Path, local: Path,
     report: (DesktopExternalActivationFailure) -> Unit = { failure ->
+        // Keep a body-free refusal category even when an installer suppresses dialogs.
+        System.err.println("EXTERNAL_ACTIVATION_REFUSED: ${failure.name}")
         if (System.getenv("CCB_DESKTOP_ACTIVATION_PATH") == null && System.getenv("CCB_DESKTOP_READY_PATH") == null) {
             val message = "文件投递未完成或尚未确认（${failure.name}）。请先查看已打开程序的导入队列，不要重复打开同一批文件。原文件和用户资料未修改。"
             if (System.getProperty("os.name").startsWith("Windows")) DesktopNativeDialogBrand.show(messageBox = {
