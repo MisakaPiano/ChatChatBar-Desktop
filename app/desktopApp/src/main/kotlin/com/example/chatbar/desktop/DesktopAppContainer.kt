@@ -785,6 +785,9 @@ internal suspend fun closeDesktopDataRuntimes(
         throw timeout
     } catch (timeout: DesktopReadingPositionDrainTimeoutException) {
         throw timeout
+    } catch (pending: DesktopUsageDrainException) {
+        // Keep the gate and root ownership alive for the exact retained numeric tail to retry.
+        throw pending
     } catch (error: Throwable) {
         // Ordinary draft failure is reported only after the worker has joined.
         primaryFailure = error

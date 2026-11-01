@@ -15,6 +15,66 @@ import java.util.UUID
 import kotlin.test.*
 
 class DesktopProviderUsageCaptureTest {
+    @Test fun `failed close remains retryable while concurrent and repeated successful closes do not reopen a closed data gate`() = runBlocking {
+        val root = Files.createTempDirectory("usage-close-idempotence-"); val gate = DesktopDataOperationCoordinator()
+        val home = root.resolve("diagnostics/provider-usage")
+        Files.createDirectory(home.parent); Files.write(home, byteArrayOf(2))
+        val store = DesktopProviderUsageStore(root, gate); val owner = DesktopProviderUsageOwner(store)
+        try {
+            val record = DesktopUsageRecord(UUID.randomUUID().toString(), UUID.randomUUID().toString(), 1, 1,
+                DesktopUsageSource.CHAT, modelId = "model", modelName = "fixture", startedAt = 1, updatedAt = 1,
+                counters = DesktopUsageCounters(prompt = 7))
+            owner.submit(record)
+            withTimeout(10_000) { owner.state.first { it.error != null } }
+            assertEquals(1, assertFailsWith<DesktopUsageDrainException> { owner.closeAndDrain() }.pendingRecords)
+            assertEquals(1, owner.state.value.pending)
+            assertContentEquals(byteArrayOf(2), Files.readAllBytes(home))
+            Files.delete(home)
+            coroutineScope { listOf(async { owner.closeAndDrain() }, async { owner.closeAndDrain() }).awaitAll() }
+            assertEquals(listOf(record), store.records())
+            gate.closeAndDrain()
+            owner.closeAndDrain()
+            assertEquals(DesktopDataOperationCoordinatorState.CLOSED, gate.state)
+            assertEquals(0, owner.state.value.pending)
+        } finally { gate.closeAndDrain(); root.toFile().deleteRecursively() }
+    }
+
+    @Test fun `production shutdown preserves root lock and data gate until failed numeric tail can retry successfully`() = runBlocking {
+        val parent = Files.createTempDirectory("usage-shutdown-recovery-")
+        val root = Files.createDirectory(parent.resolve("data")); val gate = DesktopDataOperationCoordinator()
+        val resolution = DesktopDataRootResolution.Resolved(root, DesktopDataRootProvenance.CLI_OVERRIDE, parent.resolve("bootstrap.json"))
+        val ownership = assertIs<DesktopDataRootOwnershipResult.Acquired>(DesktopDataRootOwnership.acquire(resolution)).ownership
+        val home = root.resolve("diagnostics/provider-usage")
+        Files.createDirectory(home.parent); Files.write(home, byteArrayOf(3))
+        val store = DesktopProviderUsageStore(root, gate); val owner = DesktopProviderUsageOwner(store)
+        try {
+            val record = DesktopUsageRecord(UUID.randomUUID().toString(), UUID.randomUUID().toString(), 1, 1,
+                DesktopUsageSource.CHAT, modelId = "model", modelName = "fixture", startedAt = 1, updatedAt = 1,
+                outcome = DesktopUsageOutcome.CANCELLED, counters = DesktopUsageCounters(completion = 6))
+            owner.submit(record)
+            withTimeout(10_000) { owner.state.first { it.error != null } }
+            var retries = 0; var backupsClosed = 0; var migrationClosed = 0
+            closeDesktopWithRecovery(close = {
+                closeDesktopDataRuntimes(draftRuntimeClose = { owner.closeAndDrain() },
+                    runtimeClose = { backupsClosed++ }, coordinatorClose = { gate.closeAndDrain() },
+                    migrationServiceClose = { migrationClosed++ })
+            }, awaitRetry = {
+                retries++
+                assertEquals(DesktopDataOperationCoordinatorState.OPEN, gate.state)
+                assertEquals(0, backupsClosed); assertEquals(0, migrationClosed)
+                assertEquals(1, owner.state.value.pending)
+                assertIs<DesktopDataRootOwnershipResult.AlreadyInUse>(DesktopDataRootOwnership.acquire(resolution))
+                assertContentEquals(byteArrayOf(3), Files.readAllBytes(home))
+                Files.delete(home)
+            }, observeWait = { AutoCloseable {} })
+            assertEquals(1, retries); assertEquals(1, backupsClosed); assertEquals(1, migrationClosed)
+            assertEquals(DesktopDataOperationCoordinatorState.CLOSED, gate.state)
+            assertEquals(record, Json.decodeFromString(DesktopUsageRecord.serializer(),
+                Files.readString(home.resolve("${record.id}.json"))))
+            owner.closeAndDrain()
+        } finally { gate.closeAndDrain(); ownership.close(); parent.toFile().deleteRecursively() }
+    }
+
     @Test fun `committed restart drains local statistics without reopening normal data admission`() = runBlocking {
         val root = Files.createTempDirectory("usage-restart-tail-"); val gate = DesktopDataOperationCoordinator()
         val store = DesktopProviderUsageStore(root, gate); val owner = DesktopProviderUsageOwner(store)

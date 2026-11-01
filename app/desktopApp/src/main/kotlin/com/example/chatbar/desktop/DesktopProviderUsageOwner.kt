@@ -5,6 +5,8 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.util.UUID
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
@@ -12,6 +14,9 @@ import kotlin.coroutines.CoroutineContext
 internal class DesktopUsageParent(val value: DesktopUsageContext) : AbstractCoroutineContextElement(Key) {
     companion object Key : CoroutineContext.Key<DesktopUsageParent>
 }
+
+internal class DesktopUsageDrainException(val pendingRecords: Int) :
+    IllegalStateException("Local usage records are still pending: $pendingRecords")
 
 internal class DesktopUsageAttemptRecorder(
     private val context: DesktopUsageContext,
@@ -65,6 +70,8 @@ internal class DesktopProviderUsageOwner(private val store: DesktopProviderUsage
     private val lock = Any()
     private val pending = linkedMapOf<String, DesktopUsageRecord>()
     private var accepting = true
+    private val closeMutex = Mutex()
+    private var closed = false
     private var readSequence = 0L
     private val mutableState = MutableStateFlow(DesktopProviderUsageState())
     val state = mutableState.asStateFlow()
@@ -113,11 +120,14 @@ internal class DesktopProviderUsageOwner(private val store: DesktopProviderUsage
                 readError = "用量历史未完整读取；原统计文件保留") }
         } finally { synchronized(lock) { if (sequence == readSequence) mutableState.value = mutableState.value.copy(loading = false) } }
     }
-    suspend fun closeAndDrain() {
+    suspend fun closeAndDrain() = closeMutex.withLock {
+        if (closed) return@withLock
         synchronized(lock) { accepting = false }
         signal.close(); writer.join()
-        store.finishLocalDiagnostics { flush() }
+        if (synchronized(lock) { pending.isNotEmpty() }) store.finishLocalDiagnostics { flush() }
+        val remaining = synchronized(lock) { pending.size }
+        if (remaining != 0) throw DesktopUsageDrainException(remaining)
         scope.coroutineContext[Job]!!.cancelAndJoin()
-        check(synchronized(lock) { pending.isEmpty() }) { "用量统计仍有未保存记录" }
+        closed = true
     }
 }

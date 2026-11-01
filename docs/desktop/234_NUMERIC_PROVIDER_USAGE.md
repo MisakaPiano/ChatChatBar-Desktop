@@ -1,5 +1,9 @@
 # P15 数值用量统计与实际尝试归属
 
+CI71／63404实际Windows298suite2377项=2357PASS+19SKIP+1FAIL。Capture3／Usage4／Scene1通过，420／1100统计图已读回核对；原P13两项亦通过。唯一既有Regeneration双close用例暴露统计owner重复申请CLOSED gate；后续补串行幂等close、保存失败保留／重试、成功后不重进gate和并发／失败重试合成用例，尚待新源。原失败不回填为绿，边界预检74不由71覆盖。
+
+进一步沿生产关闭链补齐：未保存数值尾项抛专用DesktopUsageDrainException，先保留backup／coordinator／迁移root生命周期，原恢复窗显示存储检查与安全关闭重试；普通实体事务失败仍不自动重试。新测试走实际closeDesktopWithRecovery＋closeDesktopDataRuntimes，在拒写时验证根锁仍持有、gate未关闭，修复合成拒写后仅保存原数值记录并完成一次关闭；不重发AI，也不把CLOSED普通数据门重新打开。
+
 2026-11-01。当前后续源码工作树，尚未云端编译、打包或真人验收；不在公开1227内。P13 cb60的CI69停在两处生产类型错误，3c4已修正送CI70；本页新增P15不由CI70覆盖。
 
 ## 已接源码
