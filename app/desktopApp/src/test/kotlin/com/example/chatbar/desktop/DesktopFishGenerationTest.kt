@@ -86,15 +86,18 @@ class DesktopFishGenerationTest {
         }
     }
 
-    @Test fun `partial HTTP failure keeps successes suppresses autoplay and never resends 503`() = runBlocking {
+    @Test fun `temporary rejection exhausts bounded retries keeps successes and suppresses autoplay`() = runBlocking {
         Fixture().use { f ->
             f.seed("<n=\"Alice\"/>[one]()\n[two]()")
-            f.server.enqueue(f.audio()); f.server.enqueue(MockResponse().setResponseCode(503).setHeader("Retry-After", "0"))
+            f.server.enqueue(f.audio())
+            repeat(3) { f.server.enqueue(MockResponse().setResponseCode(503).setHeader("Retry-After", "0")) }
             f.coordinator.setForegroundSession(f.session.id)
             val id = f.coordinator.generateWhole(f.session.id, f.message.id); f.done(id)
             assertEquals(VoiceGenerationPhase.FAILED, f.coordinator.batches.value.single().phase)
             assertEquals(1, f.voices.listForSession(f.session.id).size)
-            assertEquals(2, f.server.requestCount); assertEquals(0, f.output.plays)
+            assertEquals(4, f.server.requestCount); assertEquals(0, f.output.plays)
+            assertEquals(2, f.coordinator.batches.value.single().rejectedRetryCount)
+            assertNull(f.coordinator.batches.value.single().retryNotice)
         }
     }
 
@@ -121,6 +124,22 @@ class DesktopFishGenerationTest {
             assertTrue(f.voices.listForSession(f.session.id).isEmpty())
             Files.walk(f.root).use { files -> assertEquals(0, files.filter { it.toString().endsWith(".mp3") || it.toString().endsWith(".part") }.count()) }
             assertEquals(1, f.server.requestCount)
+        }
+    }
+
+    @Test fun `cancelled retrying batch clears pending notice without replay or audio publication`() = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            f.server.enqueue(MockResponse().setResponseCode(429).setHeader("Retry-After", "60"))
+            f.coordinator.generateWhole(f.session.id, f.message.id)
+            withTimeout(5000) { while (f.coordinator.batches.value.none { it.retryNotice != null }) delay(10) }
+            f.coordinator.cancelAndJoinForMessage(f.session.id, f.message.id)
+            val batch = f.coordinator.batches.value.single()
+            assertEquals(VoiceGenerationPhase.CANCELLED, batch.phase)
+            assertNull(batch.retryNotice)
+            assertEquals(1, batch.rejectedRetryCount)
+            assertEquals(1, f.server.requestCount)
+            assertTrue(f.voices.listForSession(f.session.id).isEmpty())
         }
     }
 

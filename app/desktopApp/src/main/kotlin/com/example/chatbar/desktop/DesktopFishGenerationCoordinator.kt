@@ -70,6 +70,8 @@ data class VoiceGenerationBatchState(
     val completedCount: Int = 0,
     val receivedBytes: Long = 0L,
     val modelStreamText: String = "",
+    val retryNotice: String? = null,
+    val rejectedRetryCount: Int = 0,
     val translationRequested: Boolean = false,
     val taggingSkipped: Boolean = false,
     val textConfirmations: List<VoiceTextConfirmationState> = emptyList(),
@@ -308,7 +310,11 @@ internal class DesktopFishGenerationCoordinator(
                             referenceId = currentBinding.referenceId,
                             text = editedTaggedText.trim(),
                             sessionId = existing.sessionId,
-                            voiceId = artifactId
+                            voiceId = artifactId,
+                            onRetry = { attempt, wait -> updateBatch(batchId) {
+                                it.copy(retryNotice = "语音请求暂时被拒绝，${wait / 1000} 秒后重试（${attempt + 1}/3）",
+                                    rejectedRetryCount = it.rejectedRetryCount + 1)
+                            } }
                         ) { progress ->
                             updateBatch(batchId) {
                                 it.copy(receivedBytes = progress.bytesReceived)
@@ -733,6 +739,10 @@ internal class DesktopFishGenerationCoordinator(
                                 synthesisText = synthesisTextById[target.targetId]
                                     ?: target.segment.spokenText,
                                 taggedText = taggedText,
+                                onRetry = { attempt, wait -> updateBatch(batchId) {
+                                    it.copy(retryNotice = "语音请求暂时被拒绝，${wait / 1000} 秒后重试（${attempt + 1}/3）",
+                                        rejectedRetryCount = it.rejectedRetryCount + 1)
+                                } },
                                 onBytes = { bytes ->
                                     bytesByTarget[target.targetId] = bytes
                                     updateBatch(batchId) {
@@ -776,6 +786,7 @@ internal class DesktopFishGenerationCoordinator(
         target: VoiceGenerationTarget,
         synthesisText: String,
         taggedText: String,
+        onRetry: (Int, Long) -> Unit,
         onBytes: (Long) -> Unit
     ): TargetGenerationResult = try {
         val binding = checkNotNull(target.character.fishAudioVoice)
@@ -786,7 +797,8 @@ internal class DesktopFishGenerationCoordinator(
                 referenceId = binding.referenceId,
                 text = taggedText,
                 sessionId = target.message.sessionId,
-                voiceId = artifactId
+                voiceId = artifactId,
+                onRetry = onRetry
             ) { progress -> onBytes(progress.bytesReceived) }
         }
         try {
@@ -1043,7 +1055,12 @@ internal class DesktopFishGenerationCoordinator(
         transform: (VoiceGenerationBatchState) -> VoiceGenerationBatchState
     ) {
         _batches.update { current ->
-            current.map { if (it.id == batchId) transform(it) else it }
+            current.map { if (it.id == batchId) {
+                val next = transform(it)
+                if (next.phase in setOf(VoiceGenerationPhase.FAILED, VoiceGenerationPhase.CANCELLED)) {
+                    next.copy(retryNotice = null)
+                } else next
+            } else it }
         }
     }
 

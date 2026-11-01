@@ -103,7 +103,8 @@ sealed interface FishAudioDownloadProgress {
 class FishAudioApiException(
     val statusCode: Int?,
     message: String,
-    cause: Throwable? = null
+    cause: Throwable? = null,
+    val retryAfterMillis: Long? = null
 ) : IllegalStateException(message, cause)
 
 object FishAudioTtsModels {

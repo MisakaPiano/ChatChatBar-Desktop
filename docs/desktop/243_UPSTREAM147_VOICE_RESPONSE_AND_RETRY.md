@@ -1,0 +1,9 @@
+# 正式1.4.7适配：语音响应封装与有限重试
+
+2026-11-02 JST。依据正式上游b4fa／ed5d的VoiceResponsePolicy及执行测试，不修改原语音Prompt，不新增真实调用。此增量独立于192f／CI81的旧Studio流式读取和公开1229；尚待其精确源云端，不能由此前语音或CI80通过代验。
+
+共享VoiceJsonEnvelope只去除完整的Markdown JSON包裹，再由既有严格字段／ID／标签校验解析；不抢救残缺JSON、不从多对象或前后解说提取一个对象。TagService保留现有Gateway、任务身份、thinking-off、输出上限移除和Prompt所有权，接官方两许可及独立预算：可重试的ModelRequestException累计最多三次失败，空／截断／完全无可用结果最多两次；取消、拒绝、响应预算和永久错误不重试。每次尝试重新积累输出，失败文字不成为最终成功结果；更改口述内容仍等待原有用户确认。
+
+Desktop正式TTS只在实际收到HTTP408／425／429／5xx拒绝时有限重试，最多三次。采用官方指数退避、抖动及Retry-After秒／HTTP日期解析。逻辑请求固定凭据和payload，每次尝试创建独立one-shot body和one-exchange计数，前一次response关闭／callback排水后才继续；五许可、音频写入和旧录音保全不变。接受情况不明的连接断开、HTTP成功后的body／MP3失败、401等永久拒绝及取消不重放。批次细节显示固定重试提示，不暴露供应商body。试听预览是独立adapter，本增量未改变其不自动重试策略；免费模型和截止日期保护保持。
+
+复用上游VoiceRetryPolicyTest三项／VoiceRetryExecutionTest九项，新增实际TagGateway封装／传输与输出重试／永久错误三项，以及正式TTS真实合成HTTP四项：429后成功、冻结凭据／payload、永久拒绝及已接受坏body不重放、退避期间取消、POST后断连不重放。既有整批部分成功测试改为验证503精确耗尽三次、保留成功音频和抑制自动播放，不删除原保全断言。所有样本为合成，未请求真实Fish／LLM、未证明物理音频验收或完整147兼容。

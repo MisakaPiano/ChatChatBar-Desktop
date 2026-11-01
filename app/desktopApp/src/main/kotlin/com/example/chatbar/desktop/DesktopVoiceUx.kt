@@ -318,6 +318,7 @@ internal fun DesktopVoiceBatchDetails(batch: VoiceGenerationBatchState, index: I
     resolve: (Boolean) -> Unit, cancel: () -> Unit) {
     Column(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border).padding(6.dp)) {
         StatusText("任务 $index · ${desktopVoicePhaseLabel(batch.phase)} · ${batch.completedCount}/${batch.totalCount}")
+        batch.retryNotice?.let { StatusText(it) }
         batch.errors.values.distinct().forEach { StatusText(it, DesktopBootstrapColors.destructive) }
         batch.textConfirmations.forEach {
             StatusText("${it.characterName} · 原文：${it.originalText}")
