@@ -269,6 +269,7 @@ class DesktopAppContainer internal constructor(
     internal val chatRepository = ChatRepository(jsonFileStorage)
     internal val editorDraftRepository = EditorDraftRepository(jsonFileStorage)
     internal val formatCardRepository = FormatCardRepository(jsonFileStorage)
+    private val editorBudgetOwner = lazy { DesktopEditorBudgetController(settingsRepository, effectiveModelResolver, dataOperationCoordinator) }
     private val formatCardAiTransportOwner = lazy { com.example.chatbar.domain.chat.OpenAiStreamingTransport {
         settingsRepository.currentAppSettings.allowCleartextModelApi
     } }
@@ -280,6 +281,7 @@ class DesktopAppContainer internal constructor(
     private val characterImageGenerationOwner = lazy { DesktopCharacterImageGeneration(desktopSecretStore) }
     private val formatCardEditorOwner = lazy {
         DesktopFormatCardEditorController(formatCardRepository, editorDraftRepository).also { editor ->
+            editor.promptBudget = editorBudgetOwner.value
             editor.autoFill = DesktopFormatCardAutoFillController(editor, characterRepository, settingsRepository,
                 effectiveModelResolver, taskRuntime, dataOperationCoordinator,
                 stream = { _, messages, model, diagnostics ->
@@ -320,6 +322,7 @@ class DesktopAppContainer internal constructor(
                 })
             },
         ).also { editor ->
+            editor.promptBudget = editorBudgetOwner.value
             editor.cardAi = DesktopCharacterCardAiController(editor, settingsRepository, effectiveModelResolver,
                 taskRuntime, dataOperationCoordinator, stream = { _, stage, messages, model, diagnostics ->
                     formatCardAiTransportOwner.value.streamCharacterCardCandidate(stage, messages, model, diagnostics)
@@ -359,6 +362,7 @@ class DesktopAppContainer internal constructor(
     private val worldBookEditorOwner = lazy {
         DesktopWorldBookEditorController(worldBookRepository, editorDraftRepository,
             characterRepository, transferJson).also { editor ->
+            editor.promptBudget = editorBudgetOwner.value
             editor.ai = DesktopWorldBookAiController(editor, settingsRepository, effectiveModelResolver,
                 taskRuntime, dataOperationCoordinator,
                 stream = { operation, _, messages, model, diagnostics ->
@@ -709,6 +713,7 @@ class DesktopAppContainer internal constructor(
                 if (characterResearchSourcesOwner.isInitialized()) characterResearchSourcesOwner.value.closeAndDrain()
                 if (characterImageGenerationOwner.isInitialized()) characterImageGenerationOwner.value.closeAndDrain()
                 if (formatCardEditorOwner.isInitialized()) formatCardEditorController.closeAndDrain()
+                if (editorBudgetOwner.isInitialized()) editorBudgetOwner.value.closeAndDrain()
                 if (formatCardAiTransportOwner.isInitialized()) formatCardAiTransportOwner.value.closeAndDrain()
             },
             runtimeClose = { automaticBackupRuntime.close() },

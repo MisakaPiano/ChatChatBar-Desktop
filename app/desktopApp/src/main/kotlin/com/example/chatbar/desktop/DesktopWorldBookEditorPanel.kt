@@ -118,6 +118,7 @@ internal fun DesktopWorldBookEditorOverlay(controller: DesktopWorldBookEditorCon
             }
             controller.ai?.let { ai ->
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    controller.promptBudget?.let { DesktopEditorPromptBudget(it, book) }
                     BootstrapButton("AI 创建条目", secondary = true, enabled = controller.canUseAi) {
                         ai.open(com.example.chatbar.domain.worldbook.WorldBookAiOperation.CREATE)
                     }

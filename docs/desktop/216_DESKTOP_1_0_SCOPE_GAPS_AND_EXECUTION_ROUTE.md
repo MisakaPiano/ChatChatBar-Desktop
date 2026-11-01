@@ -48,8 +48,8 @@
 | P12-05 卡片封面／人物头像 AI 候选 | 2fd／CI60完整SUCCESS，Windows2340项2321通过／19跳过；新封面头像7、合成HTTP生图2、pre-start3均通过 | 当前卡及AI候选封面、512头像／自由手填、账户冻结、设计复用、裁剪／草稿资源和失败再应用有代理验证；后续ece模型标签／紧凑窗CI61两job通过，像素待读回。未打包／真人验收，不算B2交付 |
 | P12-06 格式卡 AI | 已随冻结d94／1226公开测试；已有共享请求对照及Desktop七项通过，用户尚未验本功能 | 见223／227；blank-new gate／工具校验、流预览和至多一次修复共享，候选只写草稿，正常保存另行完成。日常最后只读1225，不能把公开或下载验包当用户已安装／功能验收 |
 | P12-07 世界书 AI 创建／补空内容 | 22ab共享核心／研究／原Prompt与请求；后续Desktop控制器、候选UI及定向测试源码已接，待新源云端验证 | 原每批5／总50、稳定ID、模型相关断点、来源session复用、目标／候选勾选、显式草稿应用与正常保存保留；未打包／真人验收，不算B3完成 |
-| P12-08 研究／指定 URL／临时参考文档 | 完整创作研究未做；文档 RAG 和 NAI tag research 已做，范围不同 | 复用 CharacterResearchService、WorldBookResearchService、ManualWebPageRetriever、ResearchCleaner／brief；保留无研究／搜索／URL／组合、临时文档和失败可见性；按选定模式用资料，不能静默丢弃用户指定来源 |
-| P12-09 编辑器分区 Token 预算（D-042） | 未做；NAI Token 计数不等于该功能 | 按模型／tokenizer和实际请求分区做估算，明确估算与 provider usage 差异；先共享规划和模型身份，不改原 Prompt 来迁就估算 |
+| P12-08 研究／指定 URL／临时参考文档 | 角色共享研究与Desktop已有397／CI57及后续验证；世界书c3／CI62 Android/shared通过，Windows待 | 两类原研究／session语义分别共享，不用NAI tag research替代；四种模式、临时文档、失败显示／终止边界及真实合成HTTP分开核对，未打包／真人 |
+| P12-09 编辑器分区 Token 预算（D-042） | 字段／实际wire content字符估算与3编辑器独立浮层、模型身份源码已接，尚待云端 | 明确非模型分词器／非provider实测，未知上下文容量不猜测；额外字段／覆盖／合并不错误归因，未从截断日志估算。精确tokenizer／容量、P15持久统计仍待，见230 |
 
 复用核对补充：协调只读回执 `I:/CCB-Desktop-Continuity/updates/20261101-p12-p16-reuse-evidence.json` 的类名警告已由本对话沿实际调用与 `imageBase64` 入参、草稿输出进一步核清。以本表 P12-04 的实际调用证据为准；不据回执中的名称解释判定功能方向。所有新接线保留既有 Prompt 原文；若必须改文案，单独给出确切 diff 和行为影响供用户决定，只挂该文案动作。
 

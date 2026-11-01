@@ -102,6 +102,7 @@ internal class DesktopCharacterEditorController(
     val documentIndex: DesktopRagController? = null,
 ) {
     internal var cardAi: DesktopCharacterCardAiController? = null
+    internal var promptBudget: DesktopEditorBudgetController? = null
     internal var appearanceAi: DesktopCharacterAppearanceController? = null
     internal var cardImages: DesktopCharacterImageController? = null
     internal val canUseCardAi: Boolean get() = _state.value.let { s ->

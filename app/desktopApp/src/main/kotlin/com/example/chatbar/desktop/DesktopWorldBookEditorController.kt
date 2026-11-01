@@ -84,6 +84,7 @@ internal class DesktopWorldBookEditorController(
     private var committedBook: WorldBook? = null
     private var committedDraftTargets: List<String?> = emptyList()
     internal var ai: DesktopWorldBookAiController? = null
+    internal var promptBudget: DesktopEditorBudgetController? = null
     internal val canUseAi: Boolean get() = state.value.let { current ->
         current.book != null && current.modal == null && current.scanDepthInput.toIntOrNull()?.let { it >= 0 } == true &&
             (current.tokenBudgetInput.isBlank() || current.tokenBudgetInput.toIntOrNull()?.let { it >= 0 } == true) &&

@@ -16,6 +16,30 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class DesktopTransportDiagnosticsTest {
+    @Test fun `budget uses complete wire before scrub and truncation without retaining input in numeric report`() {
+        val owner = DesktopTransportDiagnosticsOwner()
+        val source = "fake-api-secret" + "合成正文".repeat(20_000)
+        val wire = OpenAiChatRequestSerializer.serialize(listOf(ChatApiMessage.text("user", source)), model("fake-api-secret"), true)
+        owner.begin("budget", "session", model("fake-api-secret")).onRequest(ProviderRequestEvidence("https://example.test/v1/chat/completions", wire))
+        val entry = owner.entries.value.single()
+        assertTrue(entry.requestTruncated)
+        assertEquals(com.example.chatbar.domain.budget.WeightedCharacterTokenEstimator.estimate(source).tokens,
+            entry.requestTextBudget!!.estimatedTextTokens)
+        assertFalse(entry.requestTextBudgetUnavailable)
+        assertFalse(entry.requestTextBudget.toString().contains("fake-api-secret"))
+        assertFalse(entry.requestTextBudget.toString().contains("合成正文"))
+        assertEquals(null, entry.usage)
+    }
+
+    @Test fun `invalid wire budget remains unavailable rather than invented zero and provider usage stays separate`() {
+        val owner = DesktopTransportDiagnosticsOwner()
+        val recorder = owner.begin("invalid-budget", "session", model("fake-secret"))
+        recorder.onRequest(ProviderRequestEvidence("https://example.test/v1/chat/completions", "{unfinished"))
+        val entry = owner.entries.value.single()
+        assertTrue(entry.requestTextBudgetUnavailable); assertEquals(null, entry.requestTextBudget)
+        assertEquals(null, entry.usage)
+    }
+
     @Test
     fun `retained request is final cleartext serialization and https roles remain untouched`() {
         val owner = DesktopTransportDiagnosticsOwner()

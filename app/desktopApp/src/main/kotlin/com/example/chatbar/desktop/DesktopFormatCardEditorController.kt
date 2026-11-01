@@ -60,6 +60,7 @@ internal class DesktopFormatCardEditorController(
     private val mutableState = MutableStateFlow(DesktopFormatCardEditorState())
     val state = mutableState.asStateFlow()
     internal var autoFill: DesktopFormatCardAutoFillController? = null
+    internal var promptBudget: DesktopEditorBudgetController? = null
     val canAutoFill: Boolean get() = mutableState.value.let { before -> before.card?.let {
         before.base == null && FormatCardAutoFillPolicy.canFill(before.targetId, it.content, it.userTools)
     } == true }

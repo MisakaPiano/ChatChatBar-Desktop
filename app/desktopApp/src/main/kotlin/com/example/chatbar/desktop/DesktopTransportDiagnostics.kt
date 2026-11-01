@@ -8,6 +8,10 @@ import com.example.chatbar.domain.chat.ProviderTransportDiagnostics
 import com.example.chatbar.domain.chat.OpenAiSseParser
 import com.example.chatbar.domain.chat.PromptCacheUsage
 import com.example.chatbar.domain.chat.MainChatLogicalMessageSource
+import com.example.chatbar.domain.chat.MainChatLogicalMessageTrace
+import com.example.chatbar.domain.budget.PromptBudgetEstimate
+import com.example.chatbar.domain.budget.PromptEstimateTarget
+import com.example.chatbar.domain.budget.WirePromptBudgetEstimator
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -51,6 +55,8 @@ data class DesktopTransportDiagnosticEntry(
     val archiveIncluded: Boolean = false,
     val headIncluded: Boolean = false,
     val planningNotice: String? = null,
+    val requestTextBudget: PromptBudgetEstimate? = null,
+    val requestTextBudgetUnavailable: Boolean = false,
 )
 
 /** Bounded, process-local final-provider-request evidence. Never participates in request construction. */
@@ -83,7 +89,8 @@ internal class DesktopTransportDiagnosticsOwner(
                 ) + mutableEntries.value
             ).take(maxEntries)
         }
-        return DesktopTransportDiagnosticRecorder(this, taskId, scrubber, clock)
+        return DesktopTransportDiagnosticRecorder(this, taskId, scrubber, clock,
+            PromptEstimateTarget(scrubber.text(model.desktopAccountLabel(), SHORT_LIMIT)), model.baseUrl)
     }
 
     internal fun update(taskId: String, change: (DesktopTransportDiagnosticEntry) -> DesktopTransportDiagnosticEntry) {
@@ -109,11 +116,15 @@ internal class DesktopTransportDiagnosticRecorder(
     private val taskId: String,
     private val scrubber: DesktopDiagnosticScrubber,
     private val clock: () -> Long,
+    private val estimateTarget: PromptEstimateTarget,
+    private val modelBaseUrl: String,
 ) : ProviderTransportDiagnostics, DesktopChatPlanDiagnostics {
+    @Volatile private var requestTrace: List<MainChatLogicalMessageTrace> = emptyList()
     fun safeText(value: String): String = scrubber.text(value, DesktopTransportDiagnosticsOwner.SHORT_LIMIT)
 
     override fun onPlan(plan: DesktopChatRequestPlan) {
         val trace = plan.assembly.messageTrace
+        requestTrace = trace
         owner.update(taskId) { entry -> entry.copy(
             worldBookEvidence = plan.worldBookDebugLog.take(80).map(::safeText),
             ragText = scrubber.text(trace.filter { it.source == MainChatLogicalMessageSource.MEMORY_RAG }
@@ -126,12 +137,20 @@ internal class DesktopTransportDiagnosticRecorder(
     }
 
     override fun onRequest(request: ProviderRequestEvidence) {
+        // Count complete in-memory wire before display scrubbing/truncation; retain only numeric sections.
+        val budget = try { WirePromptBudgetEstimator.estimate(request.body, estimateTarget, requestTrace,
+            allowCleartextHttp = true, baseUrl = modelBaseUrl).let { report ->
+                report.copy(sections = report.sections.map { it.copy(label = safeText(it.label), note = safeText(it.note)) })
+            } } catch (_: Exception) { null }
+        requestTrace = emptyList()
         owner.update(taskId) { entry ->
             entry.copy(
                 requestAt = clock(),
                 requestUrl = scrubber.url(request.url),
                 serializedRequestBody = scrubber.json(request.body, DesktopTransportDiagnosticsOwner.REQUEST_LIMIT),
                 requestTruncated = request.body.length > DesktopTransportDiagnosticsOwner.REQUEST_LIMIT,
+                requestTextBudget = budget,
+                requestTextBudgetUnavailable = budget == null,
             )
         }
     }
@@ -176,6 +195,7 @@ internal class DesktopTransportDiagnosticRecorder(
     }
 
     fun finish(status: DesktopTaskStatus, error: String?, completion: ProviderCompletionMetadata?) {
+        requestTrace = emptyList()
         owner.update(taskId) { entry ->
             entry.copy(
                 status = status,

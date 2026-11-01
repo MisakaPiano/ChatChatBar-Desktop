@@ -101,6 +101,17 @@ internal fun DesktopChatDebugPanel(owner: DesktopTransportDiagnosticsOwner, sess
                         entry.completedAt?.let { StatusText("耗时：${(it - entry.startedAt).coerceAtLeast(0)} ms") }
                         StatusText("服务端 Token：输入 ${entry.usage?.promptTokens ?: "未报告"} / 输出 ${entry.usage?.completionTokens ?: "未报告"}")
                         entry.usage?.cachedTokens?.let { StatusText("命中缓存 Token：$it") }
+                        entry.requestTextBudget?.let { budget ->
+                            StatusText("实际请求 content 文本估算 ≈ ${budget.estimatedTextTokens} Token · 字符法，非模型 tokenizer／实测用量")
+                            StatusText("不含消息封装、图片／音频及其他非文本部分，也不含 tools／response_format 等请求结构。")
+                            if (budget.excludedNonTextParts > 0) StatusText("未估算的非文本部分：${budget.excludedNonTextParts}")
+                            if (budget.additionalMessageFieldsExcluded) StatusText("部分消息带额外结构字段，未计入文本估算。")
+                            if (!budget.attributedToLogicalSections) StatusText("逻辑分区未能与最终消息完整匹配；仅显示实际消息文本估算。")
+                            DebugSection("实际请求文本分区估算", budget.sections.joinToString("\n") {
+                                "${it.label} · ${it.id} · ≈ ${it.estimate.tokens} Token"
+                            }, { text -> scope.launch { clipboard.copyText(text) } })
+                        }
+                        if (entry.requestTextBudgetUnavailable) StatusText("该请求无法完整估算文本占用；服务端用量仍独立显示。", DesktopBootstrapColors.warning)
                         StatusText("本轮记忆组装：Archive ${if (entry.archiveIncluded) "包含" else "未包含"} · HEAD ${if (entry.headIncluded) "包含" else "未包含"}")
                         entry.planningNotice?.let { StatusText(it, DesktopBootstrapColors.warning) }
                         entry.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }

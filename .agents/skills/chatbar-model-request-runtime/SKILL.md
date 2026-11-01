@@ -5,6 +5,8 @@ description: Maintain and diagnose ChatBar model resolution, OpenAI-compatible r
 
 # ChatBar Model Request Runtime
 
+- Desktop request text estimates are diagnostic only: `DesktopTransportDiagnosticRecorder.onRequest` passes the complete pre-scrub/pre-truncation serialized body to shared `WirePromptBudgetEstimator`. Logical sections apply only when actual adapted role/content messages match and contain no extra message fields; overridden/merged messages stay unattributed. Text counts exclude images, audio, message overhead and tools/response-format structure. Invalid wire yields unavailable, not zero. Provider usage is independent. The estimator never changes request parameters, retry policy or prompts, and its numeric report contains no message body.
+
 Separate model selection, request construction, transport, and output parsing. A successful HTTP call can still fail at stream or protocol parsing.
 
 - FORMAT_CARD creation uses shared `FormatCardAutoFillGenerator`/`FormatCardAutoFillGateway`; character fill/rewrite uses `CharacterCardCandidateGenerator` and `streamCharacterCardCandidate`, including generation/repair thinking budgets512/256. These card facades preserve Android's model cap, thinking and custom-field precedence, unlike Fish/Memory no-cap facades. The lower transport's default envelope filter remains on for existing isolated tasks; card creation/editing explicitly opts out and emits reasoning separately. Actual Android/Desktop HTTP parity is covered by `FormatCardAutoFillRequestParityTest`, `CharacterCardAiRequestParityTest` and shared `FormatCardAutoFillTransportTest`.

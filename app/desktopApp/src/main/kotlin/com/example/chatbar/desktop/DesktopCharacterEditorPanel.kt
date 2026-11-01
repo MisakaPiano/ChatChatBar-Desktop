@@ -171,6 +171,7 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
             }
         }
         if (readOnly) {
+            controller.promptBudget?.let { DesktopEditorPromptBudget(it, card) }
             StatusText(t(if (communityReadOnly) DesktopUiText.COMMUNITY_READ_ONLY
                 else DesktopUiText.CHARACTER_SAVE_COMMITTED_WARNING))
             StatusText(card.name)
@@ -178,6 +179,7 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
             verticalArrangement = Arrangement.spacedBy(14.dp)) {
             controller.cardImages?.let { images -> BootstrapButton("生成卡片封面候选", enabled = controller.canUseCardAi, secondary = true) { images.openCover() } }
             controller.cardAi?.let { ai -> EditorActions {
+                controller.promptBudget?.let { DesktopEditorPromptBudget(it, card) }
                 if (card.editMode == CharacterEditMode.STRUCTURED)
                     BootstrapButton("AI 补全空白", enabled = controller.canUseCardAi) {
                         ai.open(com.example.chatbar.domain.card.CharacterCardAiOperation.FILL)

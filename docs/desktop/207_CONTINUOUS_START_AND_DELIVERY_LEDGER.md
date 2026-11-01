@@ -1,3 +1,5 @@
+2026-11-01 c3／CI62／41282635645 Android582／shared1089已实际通过，含世界书Core3／Research2／原facade9与6阶段HTTP1（12个合成请求）；Windows controller6／Panel1仍待。当前本地新增D042共享字段与完整wire content字符估算、角色／格式／世界书独立预算浮层、只读参考模型、日志截断前计数与不可估算提示；追加shared4／diagnostic2／窄宽三编辑器Scene1尚待新源执行，不冒认CI62覆盖。精确模型分词器／上下文容量与持久usage汇总仍待，见[230](230_EDITOR_AND_WIRE_TOKEN_ESTIMATES.md)。日常H与公开1226保持，不恢复本机重负载，不催用户。
+
 2026-11-01 ece／CI61／41281440118两job完整SUCCESS，安装器／更新器后续步骤也通过；Android581／shared1084（含世界书策略2）实际报告已核，Windows新XML／候选窗图片待读回。22ab核心与526桌面世界书接线及当前居中浮层收尾不由CI61覆盖，将随新源送下一run。1226迟到确认仅重申同一已公开测试Preview，发布身份保持d94／签名10，不产生后续公开或代装授权。
 
 2026-11-01 B2封面头像2fd／CI60两job完整SUCCESS；Windows真XML285 suite/2340项=2321PASS+19SKIP，Image7／合成HTTP生图2／pre-start3和Appearance4／Panel1全过，仅代理验证。后续ece／CI61／41281440118运行，Android581／shared1084已通过（含世界书纯策略2），Windows待；不以它覆盖22ab。22ab共享WorldBookAiCore／ResearchEngine／原9literal与7builder及6阶段HTTP对照，后续本提交接Desktop世界书模型／来源／临时文档、目标和候选选择、批次续作、完整编辑basis保护、草稿应用／正常保存、关闭排水与窄宽Scene回归，尚待新源执行。未打包／发布／真人验收，B2／B3未交付。公开1226冻结d94／签名10，不代装H，不恢复本机重负载；用户未明确回来，不催真人测试。见[229](229_WORLD_BOOK_AI_SHARED_CANDIDATE_POLICY.md)。
