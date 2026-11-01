@@ -9,6 +9,14 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.util.UUID
+import kotlin.coroutines.AbstractCoroutineContextElement
+import kotlin.coroutines.CoroutineContext
+
+private class DesktopMomentWorkEvidence : AbstractCoroutineContextElement(Key) {
+    companion object Key : CoroutineContext.Key<DesktopMomentWorkEvidence>
+    var phase: DesktopWorkPhase? = null
+    var skipped = false
+}
 
 internal fun interface DesktopMomentGenerator {
     suspend fun generate(card: CharacterCard, session: ChatSession, messages: List<ChatMessage>, latest: MomentPost?,
@@ -57,6 +65,9 @@ internal class DesktopMomentsController(
     private val admissionMutex = Mutex()
     private var accepting = true
     private var worker: Job? = null
+    private var activeWorkId: String? = null
+    private val mutableWork = MutableStateFlow<List<DesktopWorkRow>>(emptyList())
+    val workRows = mutableWork.asStateFlow()
     private var scheduler: Job? = null
     private val admitted = mutableMapOf<String, MomentTask>()
     private val preparation = MomentSchedulePreparation(characters::getAll, chats::getAllSessions,
@@ -184,7 +195,18 @@ internal class DesktopMomentsController(
         mutableState.update { it.copy(scheduling = false) }
         if (persistPause) persistAdmission(false)
     }
-    fun stop() { synchronized(lock) { worker?.cancel() } }
+    private fun markStopRequested(id: String?) {
+        if (id != null) mutableWork.update { rows -> rows.map {
+            if (it.id == id && it.active) it.copy(stopRequested = true, canStop = false) else it
+        } }
+    }
+    fun stop() { synchronized(lock) {
+        if (worker?.isCompleted == false) { worker?.cancel(); markStopRequested(activeWorkId) }
+    } }
+    fun stopTask(id: String): Boolean = synchronized(lock) {
+        if (activeWorkId != id || worker?.isCompleted != false) false
+        else { worker?.cancel(); markStopRequested(id); true }
+    }
 
     suspend fun generate(cardId: String, debug: Boolean = false) {
         val session = chats.getAllSessions().filter { it.characterCardId == cardId }
@@ -262,26 +284,49 @@ internal class DesktopMomentsController(
         if (worker?.isCompleted == false) {
             mutableState.update { it.copy(notice = "已有朋友圈任务，请等待或停止") }; return@synchronized null
         }
-        scope.launch(start = CoroutineStart.LAZY) {
+        val workId = UUID.randomUUID().toString()
+        activeWorkId = workId
+        var outcome = DesktopWorkPhase.COMPLETED
+        val evidence = DesktopMomentWorkEvidence()
+        mutableWork.update { rows -> (listOf(DesktopWorkRow(workId, DesktopWorkKind.MOMENT, DesktopWorkPhase.RUNNING,
+            clock(), canStop = true, contextLabel = "朋友圈生成与收尾")) + rows).take(41) }
+        val job = scope.launch(evidence, start = CoroutineStart.LAZY) {
             val imageReceipts = mutableListOf<String>()
             mutableState.update { it.copy(busy = true, error = null, progress = "正在准备朋友圈", streamedText = "") }
             try {
                 tasksRuntime.withMessageMutation(sessionId) {
-                    tasksRuntime.withCardDesign("moments:$sessionId") {
+                    tasksRuntime.withCardDesign("moments:$sessionId", publishWorkRow = false) {
                         gate.withNormalOperation { work { imageReceipts += it } }
                     }
                 }
-            } catch (cancelled: CancellationException) { throw cancelled }
-            catch (_: Exception) { mutableState.update { it.copy(error = "朋友圈操作未完成；原记录和已完成检查点保留") } }
+            } catch (cancelled: CancellationException) { outcome = DesktopWorkPhase.CANCELLED; throw cancelled }
+            catch (_: Exception) { outcome = DesktopWorkPhase.FAILED; mutableState.update { it.copy(error = "朋友圈操作未完成；原记录和已完成检查点保留") } }
             finally {
                 mutableState.update { it.copy(busy = false, progress = "") }
                 withContext(NonCancellable) {
                     for (receipt in imageReceipts) try { finishImageCleanup(receipt) }
-                    catch (_: Exception) { mutableState.update { it.copy(error = "动态记录已保留；图片清理未完成，重开或重试清理时核对") } }
+                    catch (_: Exception) { outcome = DesktopWorkPhase.UNCONFIRMED; mutableState.update { it.copy(error = "动态记录已保留；图片清理未完成，重开或重试清理时核对") } }
                     refresh()
                 }
             }
-        }.also { worker = it; it.start() }
+        }
+        worker = job
+        job.invokeOnCompletion { failure ->
+            val actual = if (outcome == DesktopWorkPhase.UNCONFIRMED || evidence.phase == DesktopWorkPhase.UNCONFIRMED)
+                DesktopWorkPhase.UNCONFIRMED else evidence.phase ?: outcome
+            val phase = when {
+                actual == DesktopWorkPhase.UNCONFIRMED -> DesktopWorkPhase.UNCONFIRMED
+                failure != null && failure !is CancellationException -> DesktopWorkPhase.UNCONFIRMED
+                failure is CancellationException && actual == DesktopWorkPhase.COMPLETED -> DesktopWorkPhase.CANCELLED
+                else -> actual
+            }
+            mutableWork.update { rows ->
+                if (evidence.skipped && phase == DesktopWorkPhase.COMPLETED && failure == null) rows.filterNot { it.id == workId }
+                else rows.map { if (it.id == workId) it.copy(phase = phase, canStop = false, stopRequested = false) else it }.take(40)
+            }
+        }
+        job.start()
+        job
     }
 
     private suspend fun execute(source: MomentTask, retry: MomentPost?, registerImageCleanup: (String) -> Unit,
@@ -292,6 +337,7 @@ internal class DesktopMomentsController(
             if (source.status == MomentTaskStatus.PENDING && store.tasks().any { it.id == source.id })
                 store.skipUnstarted(source, "角色卡已删除或未启用朋友圈")
             else error("角色卡已删除或未启用朋友圈")
+            currentCoroutineContext()[DesktopMomentWorkEvidence]?.skipped = true
             return
         }
         val session = chats.getSession(source.sessionId)?.takeIf { it.characterCardId == card.id }
@@ -311,8 +357,13 @@ internal class DesktopMomentsController(
             check(settings.getAppSettings().momentsEnabled && characters.getById(card.id)?.momentsEnabled == true)
             when (result) {
                 is MomentGenerationResult.Posted -> store.complete(attempt, result.post)
-                is MomentGenerationResult.Skipped -> if (retry == null) store.skipped(attempt, result.reason)
-                    else store.failed(attempt, "本次未发布：${result.reason}")
+                is MomentGenerationResult.Skipped -> if (retry == null) {
+                    store.skipped(attempt, result.reason)
+                    currentCoroutineContext()[DesktopMomentWorkEvidence]?.skipped = true
+                } else {
+                    store.failed(attempt, "本次未发布：${result.reason}")
+                    currentCoroutineContext()[DesktopMomentWorkEvidence]?.phase = DesktopWorkPhase.FAILED
+                }
             }
             mutableState.update { it.copy(notice = when (result) {
                 is MomentGenerationResult.Posted -> "朋友圈已保存"
@@ -321,7 +372,10 @@ internal class DesktopMomentsController(
         } catch (failure: Throwable) {
             withContext(NonCancellable) {
                 try { store.failed(attempt, if (failure is CancellationException) "已停止；可从已完成阶段手动重试" else "生成未完成；可从已完成阶段手动重试") }
-                catch (_: Exception) { mutableState.update { it.copy(error = "动态已变化或写入未确认；保留现场，不自动重试") } }
+                catch (_: Exception) {
+                    currentCoroutineContext()[DesktopMomentWorkEvidence]?.phase = DesktopWorkPhase.UNCONFIRMED
+                    mutableState.update { it.copy(error = "动态已变化或写入未确认；保留现场，不自动重试") }
+                }
             }
             throw failure
         }

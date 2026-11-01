@@ -91,3 +91,6 @@ internal fun DesktopTaskCenter.watchSaveSlots(controller: DesktopSaveSlotControl
 
 internal fun DesktopTaskCenter.watchAutomaticBackups(runtime: DesktopAutomaticBackupRuntime) =
     watch("automatic-backup", runtime.workRows)
+
+internal fun DesktopTaskCenter.watchMoments(controller: DesktopMomentsController) =
+    watch("moments", controller.workRows, stop = controller::stopTask)

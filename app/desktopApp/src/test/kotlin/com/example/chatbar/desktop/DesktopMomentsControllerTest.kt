@@ -11,6 +11,36 @@ import kotlinx.coroutines.flow.first
 import kotlin.test.*
 
 class DesktopMomentsControllerTest {
+    @Test fun `moment cleanup uncertainty survives skipped generation without false completion or replay`() = runBlocking {
+        val parent = Files.createTempDirectory("moment-task-cleanup-")
+        val root = Files.createDirectory(parent.resolve("data"))
+        val container = DesktopAppContainer(DesktopDataRootResolution.Resolved(root,
+            DesktopDataRootProvenance.CLI_OVERRIDE, parent.resolve("bootstrap.json")), secretStoreFactory = { InMemoryDesktopSecretStore() })
+        var controller: DesktopMomentsController? = null
+        try {
+            val card = CharacterCard("card", "Synthetic", createdAt = 1, updatedAt = 1)
+            val session = ChatSession("session", card.id, "Synthetic", createdAt = 1, updatedAt = 1)
+            container.jsonFileStorage.saveEntity("character_cards", card.id, card, CharacterCard.serializer())
+            container.jsonFileStorage.saveEntity("chat_sessions", session.id, session, ChatSession.serializer())
+            container.settingsRepository.updateAppSettings { it.copy(momentsEnabled = true) }
+            val calls = AtomicInteger()
+            val owner = DesktopMomentsController(DesktopMomentStore(container.jsonFileStorage, container.dataOperationCoordinator),
+                container.settingsRepository, container.characterRepository, container.chatRepository,
+                container.dataOperationCoordinator, container.taskRuntime,
+                DesktopMomentGenerator { _, _, _, _, _, _, _, _, _, register ->
+                    calls.incrementAndGet(); register("SYNTHETIC_PRIVATE_RECEIPT"); MomentGenerationResult.Skipped("SYNTHETIC_PRIVATE_REASON")
+                }, { error("SYNTHETIC_PRIVATE_ERROR_AND_PATH") })
+            controller = owner
+            withTimeout(5000) { owner.state.first { it.enabled } }
+            owner.generate(card.id)
+            val row = withTimeout(5000) { owner.workRows.first { it.isNotEmpty() && it.none { row -> row.active } } }.single()
+            assertEquals(DesktopWorkKind.MOMENT, row.kind); assertEquals(DesktopWorkPhase.UNCONFIRMED, row.phase)
+            assertFalse(row.canStop); assertFalse(row.canRetry); assertFalse(row.toString().contains("SYNTHETIC_PRIVATE"))
+            assertEquals(1, calls.get()); assertFalse(owner.state.value.scheduling)
+            assertTrue(container.taskRuntime.ownedWork.value.none { it.draftSessionId == "moments:${session.id}" })
+        } finally { controller?.closeAndDrain(); container.close(); parent.toFile().deleteRecursively() }
+    }
+
     @Test fun `local approved plans survive reopen while new imported plans and same-root restore remain unapproved`() = runBlocking {
         val parent = Files.createTempDirectory("moments-local-resume-")
         val root = Files.createDirectory(parent.resolve("data"))
@@ -41,6 +71,8 @@ class DesktopMomentsControllerTest {
                 admissionStore = admission, clock = { now }, tickMillis = 60_000)
             val first = create(); controller = first
             withTimeout(15_000) { first.state.first { it.tasks.any { t -> t.id == approved.id && t.status == MomentTaskStatus.SKIPPED } } }
+            withTimeout(5000) { first.workRows.first { rows -> rows.none { it.active } } }
+            assertTrue(first.workRows.value.isEmpty()) // Skipped publication never becomes a success toast/history.
             assertEquals(1, calls.get())
             assertEquals(unapproved, store.tasks().single { it.id == unapproved.id })
             first.closeAndDrain(); controller = null
@@ -70,6 +102,7 @@ class DesktopMomentsControllerTest {
             DesktopDataRootProvenance.CLI_OVERRIDE, parent.resolve("bootstrap.json")),
             secretStoreFactory = { InMemoryDesktopSecretStore() })
         var controller: DesktopMomentsController? = null
+        val cleanupRelease = CompletableDeferred<Unit>()
         try {
             val storage = container.jsonFileStorage
             val card = CharacterCard("card", "Synthetic", createdAt = 1, updatedAt = 1)
@@ -93,15 +126,32 @@ class DesktopMomentsControllerTest {
                 image.complete(candidate)
                 checkpoint("synthetic-completed-stage"); entered.complete(Unit); awaitCancellation()
             }
+            val cleanupEntered = CompletableDeferred<Unit>()
             fun create() = DesktopMomentsController(store, container.settingsRepository, container.characterRepository,
-                container.chatRepository, container.dataOperationCoordinator, container.taskRuntime, generator, cleanup::finish)
+                container.chatRepository, container.dataOperationCoordinator, container.taskRuntime, generator, { receipt ->
+                    cleanupEntered.complete(Unit); cleanupRelease.await(); cleanup.finish(receipt)
+                })
             val first = create(); controller = first
+            container.taskCenter.watchMoments(first)
             withTimeout(10_000) { first.state.first { it.enabled && it.tasks.size == 1 } }
             assertEquals(0, calls.get()); assertFalse(first.state.value.scheduling)
             assertEquals(imported, store.tasks().single())
             first.generate(card.id)
             withTimeout(10_000) { entered.await() }
-            first.closeAndDrain(); controller = null
+            val row = withTimeout(5000) { container.taskCenter.state.first { it.rows.any { row -> row.kind == DesktopWorkKind.MOMENT && row.active } } }
+                .rows.single { it.kind == DesktopWorkKind.MOMENT && it.active }
+            assertTrue(container.taskRuntime.ownedWork.value.none { it.draftSessionId == "moments:${session.id}" })
+            assertTrue(container.taskCenter.requestStop(row.id))
+            withTimeout(5000) { first.workRows.first { it.single().stopRequested } }
+            withTimeout(5000) { cleanupEntered.await() }
+            assertTrue(first.workRows.value.single().active)
+            val closeEntered = CompletableDeferred<Unit>()
+            val closing = async { closeEntered.complete(Unit); first.closeAndDrain() }
+            withTimeout(5000) { closeEntered.await() }
+            assertFalse(closing.isCompleted)
+            cleanupRelease.complete(Unit); closing.await(); controller = null
+            assertEquals(DesktopWorkPhase.CANCELLED, first.workRows.value.single().phase)
+            assertFalse(first.stopTask(first.workRows.value.single().id))
             assertFalse(Files.exists(root.resolve(image.await())))
             val interrupted = store.tasks().single { it.id != imported.id }
             assertEquals(MomentTaskStatus.FAILED, interrupted.status)
@@ -111,6 +161,7 @@ class DesktopMomentsControllerTest {
             withTimeout(10_000) { second.state.first { it.tasks.size == 2 } }
             assertEquals(1, calls.get()); assertFalse(second.state.value.scheduling)
         } finally {
+            cleanupRelease.complete(Unit)
             controller?.closeAndDrain(); container.close(); parent.toFile().deleteRecursively()
         }
     }

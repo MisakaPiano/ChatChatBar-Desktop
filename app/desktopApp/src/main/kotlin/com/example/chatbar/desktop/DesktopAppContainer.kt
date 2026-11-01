@@ -670,7 +670,7 @@ class DesktopAppContainer internal constructor(
             momentGenerationOwner.value.generate(post, card, session, settings, draft, cleanup, progress)
         }, DesktopMomentDebugGenerator { card, session, messages, latest, settings, task, cleanup ->
             momentGenerationOwner.value.generate(card, session, messages, latest, settings, task, cleanup)
-        }, momentImageCleanup::prepareCandidate) }
+        }, momentImageCleanup::prepareCandidate).also { taskCenter.watchMoments(it) } }
     internal val momentsController by momentsOwner
 
     internal fun createPromptInspectorController(): DesktopPromptInspectorController =
