@@ -9,8 +9,8 @@ description: Maintain ChatBar's 朋友圈/Moments module. Use when changing the 
 
 Use this skill before editing 朋友圈 code or docs:
 
-- `app/app/src/main/java/com/example/chatbar/data/local/entity/MomentEntities.kt`
-- `app/app/src/main/java/com/example/chatbar/data/repository/MomentRepository.kt`
+- Shared `app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/MomentEntities.kt`
+- Shared `app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/MomentRepository.kt`
 - `app/app/src/main/java/com/example/chatbar/domain/moment/`
 - `app/app/src/main/java/com/example/chatbar/ui/moments/`
 - 朋友圈 settings, root Tab wiring, unread badges, debug UI, or background alarm code
@@ -34,6 +34,8 @@ Also read `chatbar-novelai-prompt` before changing NovelAI prompt construction, 
 - Private moments show lock/`仅你可见`; base like count fixed 0.
 
 ## Scheduler Rules
+
+- `MomentEntities`, `MomentRepository` and `MomentPolicy` have one shared JVM-neutral authority; Android imports/FQNs remain unchanged. `MomentSchedulePreparation` shares only the original future-record planning and active-session selection. Android `MomentScheduler` retains its mutex, global enable guard, alarm cancellation, due-task generation and logging, delegating future planning via repository ports. Desktop still needs explicit admission/runtime/UI wiring; merely moving these sources never runs imported tasks.
 
 - Candidate frequency: per enabled card defaults to every 2-13 hours and is user-adjustable in settings.
 - When frequency settings change, delete only future pending schedule tasks and regenerate them with the new range; do not delete due/running/completed/failed history.

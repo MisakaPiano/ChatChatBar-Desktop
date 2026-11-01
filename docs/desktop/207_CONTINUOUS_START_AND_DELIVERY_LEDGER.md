@@ -1,3 +1,5 @@
+2026-11-01 ac／CI63的Linux job因shared WorldBook取消引用身份断言FAIL；实际同类型同信息而非同一对象。后续74b05771只改为取消语义断言，保留不修复／不提交／只调用一次及拒绝原透传，生产代码不改；预算shared4通过，Android本轮未执行，Windows仍待。独立P13当前将MomentEntities／Repository／Policy字节不变移入shared，并提取原未来记录准备，Android仍负责开关／mutex／alarm取消／到期执行；3定向回归待新源，不是CI63覆盖。这些Android源码缺失为计划移动，非360。未接Desktop启动／生成／UI，不自动执行导入任务，不算P13完成。见[231](231_MOMENTS_SHARED_FOUNDATION.md)。
+
 2026-11-01 CI62/c3整run FAILURE：Android582/shared1089通过；Windows真XML287 suite/2347=2322PASS+19SKIP+6FAIL。六处新controller／Panel失败逐一机械比对只有首次保存自动updatedAt与seed0的差别，原仓库行为不改；测试改从保存后完整对象取基准，不忽略字段、不删断言，后续未执行步骤待新源。原artifact13074735604／SHA d2565bd2与XML、BASIS_DIFFERENCE留I盘。独立D04265a80d92本地估算源码未由CI62覆盖，将连同此基准修正送下一run；不把已定位当已通过，不取消原失败。
 
 2026-11-01 c3／CI62／41282635645 Android582／shared1089已实际通过，含世界书Core3／Research2／原facade9与6阶段HTTP1（12个合成请求）；Windows controller6／Panel1仍待。当前本地新增D042共享字段与完整wire content字符估算、角色／格式／世界书独立预算浮层、只读参考模型、日志截断前计数与不可估算提示；追加shared4／diagnostic2／窄宽三编辑器Scene1尚待新源执行，不冒认CI62覆盖。精确模型分词器／上下文容量与持久usage汇总仍待，见[230](230_EDITOR_AND_WIRE_TOKEN_ESTIMATES.md)。日常H与公开1226保持，不恢复本机重负载，不催用户。

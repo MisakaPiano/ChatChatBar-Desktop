@@ -57,8 +57,8 @@
 
 | ID／功能 | 当前状态 | 依赖／下一步 |
 | --- | --- | --- |
-| P13-01 时间线、文字、私密／点赞、编辑／删除／重试、未读 | 未做桌面用户功能 | DesktopPrimaryRoute 当前只有 CHAT／MANAGE／TOOLS／DATA；备份保存 moment_posts／moment_tasks 不等于有时间线或生成能力。复用 Android MomentRepository／policy 及现有身份／媒体／备份保全 |
-| P13-02 生成与本地调度 | 未做桌面运行时 | 复用 domain/moment 原规则、模型／长记忆／近期消息输入和取消边界；先核 Android 传递依赖，适配 Desktop 生命周期，保持“应用关闭不生成”，不新增系统自启动来绕开 |
+| P13-01 时间线、文字、私密／点赞、编辑／删除／重试、未读 | 原实体／repository／policy字节不变移入shared，尚待新源云端；未做桌面用户功能 | DesktopPrimaryRoute 当前只有 CHAT／MANAGE／TOOLS／DATA；备份保存 moment_posts／moment_tasks 不等于有时间线或生成能力。复用 Android MomentRepository／policy 及现有身份／媒体／备份保全 |
+| P13-02 生成与本地调度 | 原未来记录准备提到共享suspend端口，保留Android平台入口；未做Desktop运行时 | 复用 domain/moment 原规则、模型／长记忆／近期消息输入和取消边界；先核 Android 传递依赖，适配 Desktop 生命周期，保持“应用关闭不生成”，不新增系统自启动来绕开 |
 | P13-03 图片与开关 | 未做朋友圈入口；NAI runtime 已有 | 复用既有 NAI 与 owned media；没有可用图像配置时按官方文字模式明确执行，不将任意 provider 失败隐瞒成图片成功。导入历史和任务继续保全，不因导入就偷偷执行任务 |
 
 ## P15／P16：已前置部分与剩余集成
