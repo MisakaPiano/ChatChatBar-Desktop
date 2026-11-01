@@ -91,6 +91,15 @@ jobs:
           $temp = New-Item -ItemType Directory -Path (Join-Path $base 'temp') -ErrorAction Stop
           @("CCB_BUILD_BASE=$base", "CCB_CI_SOURCE=$source", "CCB_BUILD_OUTPUT=$($output.FullName)", "TEMP=$($temp.FullName)", "TMP=$($temp.FullName)") | Add-Content $env:GITHUB_ENV -Encoding utf8
 
+      - name: Verify focused session deletion and network controls before packaging
+        if: env.CCB_REUSE_BUILD_RUN == ''
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Set-Location (Join-Path $env:CCB_CI_SOURCE 'app')
+          $env:CCB_FORMAT_AI_REVIEW_DIR = Join-Path $env:CCB_CI_SOURCE 'app/desktopApp/build/candidate-focused-review'
+          .\gradlew.bat --no-daemon -PdesktopTestHeadless=true :desktopApp:test --tests com.example.chatbar.desktop.DesktopSessionDeletionControllerTest --tests com.example.chatbar.desktop.DesktopSaveSlotServiceTest --tests com.example.chatbar.desktop.DesktopNetworkProxyTest --tests com.example.chatbar.desktop.DesktopNetworkProxyPanelTest
+          if ($LASTEXITCODE -ne 0) { throw 'FOCUSED_CANDIDATE_TESTS_FAILED' }
+
       - name: Restore exact prior artifacts for native revalidation without rebuilding
         if: env.CCB_REUSE_BUILD_RUN != ''
         env:
@@ -208,6 +217,16 @@ jobs:
           $case = Join-Path $approved 'windows-runtime-independent-cloud'
           python -B "$env:GITHUB_WORKSPACE/tools/desktop/nsis/independent_smoke.py" --source $env:CCB_CI_SOURCE --archive $env:CCB_CANDIDATE_ARCHIVE --receipt ([IO.Path]::ChangeExtension($env:CCB_CANDIDATE_ARCHIVE, '.json')) --audit "$env:CCB_CANDIDATE_NSIS/app-image-audit.json" --case $case --version $env:CCB_CANDIDATE_VERSION --commit $env:CCB_CANDIDATE_SOURCE --outside-bootstrap "$env:CCB_NATIVE_CASE/local-appdata/ChatChatBarDesktop.bootstrap.json"
           if ($LASTEXITCODE -ne 0) { throw 'INDEPENDENT_NATIVE_FAILED' }
+
+      - name: Upload focused candidate test evidence
+        uses: actions/upload-artifact@v4
+        if: always() && env.CCB_CI_SOURCE != '' && env.CCB_REUSE_BUILD_RUN == ''
+        with:
+          name: desktop-candidate-focused-reports
+          path: |
+            ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/test-results/test/*.xml
+            ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/tests/test/**
+            ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/candidate-focused-review/*.png
 
       - uses: actions/upload-artifact@v4
         if: always() && env.CCB_BUILD_OUTPUT != '' && env.CCB_REUSE_BUILD_RUN == ''
