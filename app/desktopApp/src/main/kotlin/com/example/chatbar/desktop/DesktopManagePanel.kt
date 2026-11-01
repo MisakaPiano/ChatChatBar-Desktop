@@ -195,6 +195,25 @@ internal fun DesktopManagePanel(
                     if (draft == null || formatCardEditorController.state.value.draftSessionId != draft ||
                         formatCardEditorController.autoFill?.revealTaskDraft(draft) != true) onTaskTargetUnavailable()
                 }
+            } else if (target.detail in setOf(DesktopWorkDetail.CHARACTER_DRAFT, DesktopWorkDetail.APPEARANCE_DRAFT,
+                    DesktopWorkDetail.CHARACTER_IMAGE_DRAFT)) {
+                selectSection(ManageSection.CHARACTERS) {
+                    val draft = target.draftSessionId
+                    val revealed = if (draft == null || characterEditorController.state.value.draftSessionId != draft) false
+                    else when (target.detail) {
+                        DesktopWorkDetail.CHARACTER_DRAFT -> characterEditorController.cardAi?.revealTaskDraft(draft) == true
+                        DesktopWorkDetail.APPEARANCE_DRAFT -> characterEditorController.appearanceAi?.revealTaskDraft(draft) == true
+                        DesktopWorkDetail.CHARACTER_IMAGE_DRAFT -> characterEditorController.cardImages?.revealTaskDraft(draft) == true
+                        else -> false
+                    }
+                    if (!revealed) onTaskTargetUnavailable()
+                }
+            } else if (target.detail == DesktopWorkDetail.WORLD_BOOK_DRAFT) {
+                selectSection(ManageSection.WORLD_BOOKS) {
+                    val draft = target.draftSessionId
+                    if (draft == null || worldBookEditorController.state.value.draftSessionId != draft ||
+                        worldBookEditorController.ai?.revealTaskDraft(draft) != true) onTaskTargetUnavailable()
+                }
             } else if (target.cardId != null && target.subjectId != null) {
                 selectSection(ManageSection.CHARACTERS) { scope.launch {
                     characterEditorController.openDocument(target.cardId, target.subjectId, onTaskTargetUnavailable)

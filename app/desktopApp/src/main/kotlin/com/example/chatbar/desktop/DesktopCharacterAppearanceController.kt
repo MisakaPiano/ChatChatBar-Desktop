@@ -42,6 +42,13 @@ internal class DesktopCharacterAppearanceController(
     private fun matches(target: Pin): Boolean = editor.canUseCardAi &&
         editor.state.value.draftSessionId == target.session && editor.state.value.card == target.card
 
+    fun revealTaskDraft(sessionId: String): Boolean {
+        val target = pin ?: return false
+        if (target.session != sessionId || !matches(target)) return false
+        mutable.update { it.copy(open = true) }
+        return true
+    }
+
     fun open(personId: String) {
         if (state.value.busy || !editor.canUseCardAi) return
         val current = editor.state.value
@@ -65,7 +72,7 @@ internal class DesktopCharacterAppearanceController(
         val usageTask = UUID.randomUUID().toString()
         job = scope.launch {
             try {
-                val result = runtime.withCardDesign(target.session) { gate.withNormalOperation {
+                val result = runtime.withCardDesign(target.session, creativeKind = DesktopOwnedWorkKind.CHARACTER_APPEARANCE) { gate.withNormalOperation {
                     val prepared = image ?: withContext(Dispatchers.IO) {
                         readCharacterReferenceImage(requireNotNull(source))
                     }.also { image = it; mutable.update { before -> before.copy(preview = it.preview) } }

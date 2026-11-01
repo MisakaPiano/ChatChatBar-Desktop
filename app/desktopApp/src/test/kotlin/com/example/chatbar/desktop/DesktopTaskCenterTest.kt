@@ -9,6 +9,30 @@ import kotlinx.coroutines.flow.*
 import kotlin.test.*
 
 class DesktopTaskCenterTest {
+    @Test fun `explicit creative purposes retain their original child job and exact pinned editor target`() = runBlocking {
+        fixture { app -> supervisorScope {
+            val cases = listOf(
+                Triple(DesktopOwnedWorkKind.CHARACTER_AI, DesktopWorkKind.CHARACTER_AI, DesktopWorkDetail.CHARACTER_DRAFT),
+                Triple(DesktopOwnedWorkKind.CHARACTER_APPEARANCE, DesktopWorkKind.CHARACTER_APPEARANCE, DesktopWorkDetail.APPEARANCE_DRAFT),
+                Triple(DesktopOwnedWorkKind.CHARACTER_IMAGE, DesktopWorkKind.CHARACTER_IMAGE, DesktopWorkDetail.CHARACTER_IMAGE_DRAFT),
+                Triple(DesktopOwnedWorkKind.WORLD_BOOK_AI, DesktopWorkKind.WORLD_BOOK_AI, DesktopWorkDetail.WORLD_BOOK_DRAFT))
+            for ((source, kind, detail) in cases) {
+                val entered = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>()
+                val draft = "synthetic-$source"
+                val work = async { app.taskRuntime.withCardDesign(draft, creativeKind = source) { entered.complete(Unit); release.await() } }
+                try {
+                    withTimeout(5000) { entered.await() }
+                    val row = withTimeout(5000) { app.taskCenter.state.first { it.rows.any { row -> row.kind == kind && row.active } } }
+                        .rows.single { it.kind == kind && it.active }
+                    assertEquals(DesktopWorkTarget(DesktopPrimaryRoute.MANAGE, draftSessionId = draft, detail = detail), row.target)
+                    assertEquals(1, app.taskRuntime.ownedWork.value.count { "runtime/${it.taskId}" == row.id })
+                    release.complete(Unit); work.await()
+                    withTimeout(5000) { app.taskCenter.state.first { it.rows.any { item -> item.id == row.id && item.kind == kind && item.phase == DesktopWorkPhase.COMPLETED } } }
+                } finally { release.complete(Unit); work.cancelAndJoin() }
+            }
+        } }
+    }
+
     @Test fun `shared creative owner is not mislabeled as a format candidate and history index targets its real session`() = runBlocking {
         fixture { app -> supervisorScope {
             val entered = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>()

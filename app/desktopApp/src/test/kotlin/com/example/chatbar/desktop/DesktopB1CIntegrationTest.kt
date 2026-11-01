@@ -112,6 +112,38 @@ class DesktopB1CIntegrationTest {
         return f
     }
 
+    @Test fun `actual Shell task navigation reveals only its matching character candidate without generation or losing draft`(): Unit = runBlocking(awt) {
+        val f = seeded(); val c = f.container
+        val chrome = DesktopWindowChrome {}; val navigation = DesktopPrimaryNavigationController()
+        val release = CompletableDeferred<Unit>(); val entered = CompletableDeferred<Unit>()
+        c.characterEditorController.openExisting("card")
+        val editor = c.characterEditorController
+        val draft = assertNotNull(editor.state.value.draftSessionId)
+        val original = assertNotNull(editor.state.value.card)
+        editor.edit { it.copy(basicSetting = "Synthetic unsaved editor text") }
+        val dirty = assertNotNull(editor.state.value.card)
+        val ai = assertNotNull(editor.cardAi)
+        ai.open(com.example.chatbar.domain.card.CharacterCardAiOperation.FILL)
+        val work = async { c.taskRuntime.withCardDesign(draft, creativeKind = DesktopOwnedWorkKind.CHARACTER_AI) {
+            entered.complete(Unit); release.await()
+        } }
+        val activity = DesktopModalActivity()
+        val scene = ImageComposeScene(1100, 800) {
+            CompositionLocalProvider(LocalDesktopModalActivity provides activity) { Shell(f, chrome, navigation, enableTasks = true) }
+        }
+        try {
+            withTimeout(5000) { entered.await(); c.taskCenter.state.first { it.rows.any { row -> row.kind == DesktopWorkKind.CHARACTER_AI && row.active } } }
+            scene.frames(); c.taskCenter.requestOpen(); scene.frames()
+            scene.click("前往页面"); scene.frames()
+            assertEquals(DesktopPrimaryRoute.MANAGE, navigation.selectedRoute.value)
+            assertNull(c.taskCenter.state.value.error)
+            assertTrue(ai.state.value.open); assertNull(ai.state.value.candidate)
+            assertEquals(draft, editor.state.value.draftSessionId); assertEquals(dirty, editor.state.value.card)
+            assertEquals(original, c.characterRepository.getById("card")); assertTrue(f.requests.isEmpty())
+            assertTrue(work.isActive)
+        } finally { release.complete(Unit); work.cancelAndJoin(); scene.close(); f.close() }
+    }
+
     @Test fun `startup notice later retains data badge and its actual Shell entry opens the shared update page`(): Unit = runBlocking(awt) {
         val f = seeded(); val chrome = DesktopWindowChrome {}; val navigation = DesktopPrimaryNavigationController()
         val scope = CoroutineScope(SupervisorJob() + awt)

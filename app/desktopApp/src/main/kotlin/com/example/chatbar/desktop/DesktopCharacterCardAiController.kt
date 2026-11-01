@@ -66,6 +66,12 @@ internal class DesktopCharacterCardAiController(
     val diagnosticOwner get() = runtime.diagnostics
     val diagnosticSessionId get() = pin?.let { "character-card:${it.session}" }
 
+    fun revealTaskDraft(sessionId: String): Boolean {
+        if (pin?.session != sessionId || currentPin() != pin) return false
+        mutableState.update { it.copy(open = true) }
+        return true
+    }
+
     fun open(operation: CharacterCardAiOperation) {
         if (state.value.busy) return
         val target = currentPin() ?: return
@@ -237,7 +243,7 @@ internal class DesktopCharacterCardAiController(
             var preparingSources = false
             var preparingImages = false
             try {
-                val merged = runtime.withCardDesign(target.session) {
+                val merged = runtime.withCardDesign(target.session, creativeKind = DesktopOwnedWorkKind.CHARACTER_AI) {
                     gate.withNormalOperation {
                         val fresh = settings.getAppSettings()
                         val model = if (before.modelId == null) models.defaultChatModel(fresh)

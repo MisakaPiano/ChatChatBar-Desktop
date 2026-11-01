@@ -21,6 +21,10 @@ internal fun DesktopTaskCenter.watchRuntime(runtime: DesktopTaskRuntime) {
                 DesktopOwnedWorkKind.DOCUMENT -> if (entry.sessionId != null) DesktopWorkKind.HISTORY_INDEX else DesktopWorkKind.DOCUMENT
                 DesktopOwnedWorkKind.CARD_DESIGN -> DesktopWorkKind.CARD_DESIGN
                 DesktopOwnedWorkKind.CREATIVE -> DesktopWorkKind.CREATIVE
+                DesktopOwnedWorkKind.CHARACTER_AI -> DesktopWorkKind.CHARACTER_AI
+                DesktopOwnedWorkKind.CHARACTER_APPEARANCE -> DesktopWorkKind.CHARACTER_APPEARANCE
+                DesktopOwnedWorkKind.CHARACTER_IMAGE -> DesktopWorkKind.CHARACTER_IMAGE
+                DesktopOwnedWorkKind.WORLD_BOOK_AI -> DesktopWorkKind.WORLD_BOOK_AI
             },
             entry.status.workPhase(), entry.createdAt,
             target = when (entry.kind) {
@@ -28,7 +32,15 @@ internal fun DesktopTaskCenter.watchRuntime(runtime: DesktopTaskRuntime) {
                     ?: DesktopWorkTarget(DesktopPrimaryRoute.MANAGE, cardId = entry.characterId, subjectId = entry.documentId)
                 DesktopOwnedWorkKind.CARD_DESIGN -> DesktopWorkTarget(DesktopPrimaryRoute.MANAGE,
                     draftSessionId = entry.draftSessionId, detail = DesktopWorkDetail.FORMAT_DRAFT)
-                DesktopOwnedWorkKind.CREATIVE -> null // Shared owner also serves character/world-book/image/Moments work.
+                DesktopOwnedWorkKind.CHARACTER_AI -> DesktopWorkTarget(DesktopPrimaryRoute.MANAGE,
+                    draftSessionId = entry.draftSessionId, detail = DesktopWorkDetail.CHARACTER_DRAFT)
+                DesktopOwnedWorkKind.CHARACTER_APPEARANCE -> DesktopWorkTarget(DesktopPrimaryRoute.MANAGE,
+                    draftSessionId = entry.draftSessionId, detail = DesktopWorkDetail.APPEARANCE_DRAFT)
+                DesktopOwnedWorkKind.CHARACTER_IMAGE -> DesktopWorkTarget(DesktopPrimaryRoute.MANAGE,
+                    draftSessionId = entry.draftSessionId, detail = DesktopWorkDetail.CHARACTER_IMAGE_DRAFT)
+                DesktopOwnedWorkKind.WORLD_BOOK_AI -> DesktopWorkTarget(DesktopPrimaryRoute.MANAGE,
+                    draftSessionId = entry.draftSessionId, detail = DesktopWorkDetail.WORLD_BOOK_DRAFT)
+                DesktopOwnedWorkKind.CREATIVE -> null // Unclassified callers never receive an invented editor target.
             }, canStop = entry.status == DesktopTaskStatus.RUNNING) } +
         repairs.map { (id, status) ->
             val identity = identities[id]

@@ -62,6 +62,11 @@ internal class DesktopWorldBookAiController(
     private fun currentPin(): Pin? = editor.state.value.let { s ->
         if (!editor.canUseAi) null else s.draftSessionId?.let { session -> s.book?.let { Pin(session, s.targetId, it) } }
     }
+    fun revealTaskDraft(sessionId: String): Boolean {
+        if (pin?.session != sessionId || currentPin() != pin) return false
+        mutableState.update { it.copy(open = true) }
+        return true
+    }
     private fun clearCheckpoint() { createCheckpoint = null; fillCheckpoint = null; resumeModel = null }
 
     fun open(operation: WorldBookAiOperation) {
@@ -176,7 +181,7 @@ internal class DesktopWorldBookAiController(
         }
         job = scope.launch {
             try {
-                runtime.withCardDesign(target.session) {
+                runtime.withCardDesign(target.session, creativeKind = DesktopOwnedWorkKind.WORLD_BOOK_AI) {
                     gate.withNormalOperation {
                         val fresh = settings.getAppSettings()
                         val model = requireNotNull(if (before.modelId == null) models.defaultChatModel(fresh)

@@ -12,10 +12,11 @@ internal enum class DesktopWorkKind(val label: String) {
     BACKUP("备份导出"), BACKUP_CHECK("备份检查"), RESTORE_PREPARATION("恢复准备"),
     AUTOMATIC_BACKUP_CHECK("自动备份检查"), AUTOMATIC_BACKUP("自动快照"),
     MERGE("合并结果准备"), MERGE_CHECK("备份合并检查"), SAVE_SLOT("会话存档"), CHARACTER_AI("角色卡创作"),
-    WORLD_BOOK_AI("世界书创作"), CHARACTER_IMAGE("角色图片")
+    WORLD_BOOK_AI("世界书创作"), CHARACTER_IMAGE("角色图片"), CHARACTER_APPEARANCE("外貌识别")
 }
 internal enum class DesktopWorkPhase { RUNNING, WAITING, COMPLETED, FAILED, CANCELLED, UNCONFIRMED }
-internal enum class DesktopWorkDetail { MEMORY, FORMAT_DRAFT, BACKUP_EXPORT, BACKUP_CHECK, MERGE_IMPORT, SAVE_SLOT, AUTOMATIC_BACKUP }
+internal enum class DesktopWorkDetail { MEMORY, FORMAT_DRAFT, CHARACTER_DRAFT, APPEARANCE_DRAFT, CHARACTER_IMAGE_DRAFT,
+    WORLD_BOOK_DRAFT, BACKUP_EXPORT, BACKUP_CHECK, MERGE_IMPORT, SAVE_SLOT, AUTOMATIC_BACKUP }
 internal data class DesktopWorkTarget(val route: DesktopPrimaryRoute, val sessionId: String? = null,
     val cardId: String? = null, val subjectId: String? = null, val draftSessionId: String? = null,
     val detail: DesktopWorkDetail? = null)

@@ -5,6 +5,8 @@ description: Maintain ChatBar world-book AI creation, blank-content filling, can
 
 # ChatBar World Book AI
 
+Desktop world-book generation tags its original TaskRuntime child WORLD_BOOK_AI. Task navigation carries the existing draft session and uses revealTaskDraft only while the original full book/target pin still matches; it does not load another book, refresh models, regenerate, apply or save. Normal Manage leave guards remain active, and a changed/closed pin is unavailable rather than recreated.
+
 Read these entry points before broad search.
 
 ## First Read

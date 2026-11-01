@@ -1,5 +1,7 @@
 # 任务中心与托盘 / 2026-11-02
 
+后续本地创作类型／原草稿定位已补：角色卡、外貌识别、封面／头像、世界书沿withCardDesign同child明确kind；默认未分类仍generic且无伪造目标。前往经原Manage离开门禁，仅调用仍匹配原draft/pin的reveal，不刷新模型、重建窗口内容、生成、套用或保存。已变化／主动关闭pin拒绝，不覆盖未保存编辑。四个真实controller原流程追加type／pin／应用后失效断言；中心按原child映射四类目标、新真实Shell跨CHAT→MANAGE保留未保存草稿且不生成的Scene未执行，不由98/冻结1232覆盖。
+
 后续本地Moments补原worker整段投影，等待原NonCancellable图片清理和refresh再终态。按UUID停止该worker，不暂停未来调度。原withCardDesign child仍登记activeJobs和准入／排空，只关重复generic元数据；SKIPPED不冒充已发布成功，retry未发布为FAILED，清理／记录不确定为UNCONFIRMED。正文／reason／checkpoint／receipt不进任务行；未完成固定post定位不造目标。真实检查点停止且清理阻塞时保持活跃、关闭等待，正常清理完成保留FAILED检查点；清理拒绝即使SKIPPED也待核对的新断言待新源云端。CI97/671两作业刚SUCCESS，小报告待核；以上及29a/f137不由97代验。
 
 后续本地自动备份也已补实际executeOnce的只读元数据，非schedulerRunning／delay loop：检查中才活跃；SkippedNotDue撤掉该检查行，不加成功历史或提醒，也不吃掉原40项历史；真实Created才转快照完成，清理warnings为固定提示待核对，不拷路径／异常。没有安全“只停当前copy”的独立接口，因此不放停止／重试，不用停future loop冒充。DATA前往仅选原自动备份页；原调度、stop/join、维护顺序和配置保持。新增连续40skip仍保留真实完成、失败／清理待核对与原阻塞执行不被观察打断的断言未执行，不由97覆盖。SaveSlot本地提交29a729fc也尚未推。

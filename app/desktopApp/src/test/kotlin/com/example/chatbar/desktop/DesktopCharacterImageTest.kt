@@ -32,7 +32,11 @@ class DesktopCharacterImageTest {
                 })
             ai.openAvatar(person.id); assertEquals(0, generated)
             ai.generate(); idle(ai); assertNotNull(ai.state.value.candidate); assertEquals(card, editor.state.value.card)
+            val draft = assertNotNull(editor.state.value.draftSessionId)
+            assertTrue(ai.revealTaskDraft(draft)); assertFalse(ai.revealTaskDraft("other-draft"))
+            assertEquals(DesktopOwnedWorkKind.CHARACTER_IMAGE, app.taskRuntime.ownedWork.value.single().kind)
             ai.apply(); idle(ai); assertFalse(ai.state.value.open)
+            assertFalse(ai.revealTaskDraft(draft))
             val applied = editor.state.value.card!!
             assertEquals(person.copy(appearanceImage = applied.characters.single().appearanceImage), applied.characters.single())
             assertTrue(applied.characters.single().appearanceImage!!.startsWith("draft_assets/"))

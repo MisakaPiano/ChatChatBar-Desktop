@@ -540,8 +540,16 @@ class DesktopAppContainer internal constructor(
                     val document = target.subjectId?.let { id -> card.customDocuments.firstOrNull { it.id == id } }
                     if (document != null) "${card.name} · ${document.fileName}" else card.name
                 }
-                target.draftSessionId != null && formatCardEditorOwner.isInitialized() -> formatCardEditorController.state.value
-                    .takeIf { it.draftSessionId == target.draftSessionId }?.card?.name?.takeIf { it.isNotBlank() }?.let { "$it · 创作草稿" }
+                target.draftSessionId != null -> when (target.detail) {
+                    DesktopWorkDetail.FORMAT_DRAFT -> if (formatCardEditorOwner.isInitialized()) formatCardEditorController.state.value
+                        .takeIf { it.draftSessionId == target.draftSessionId }?.card?.name else null
+                    DesktopWorkDetail.CHARACTER_DRAFT, DesktopWorkDetail.APPEARANCE_DRAFT, DesktopWorkDetail.CHARACTER_IMAGE_DRAFT ->
+                        if (characterEditorOwner.isInitialized()) characterEditorController.state.value
+                            .takeIf { it.draftSessionId == target.draftSessionId }?.card?.name else null
+                    DesktopWorkDetail.WORLD_BOOK_DRAFT -> if (worldBookEditorOwner.isInitialized()) worldBookEditorController.state.value
+                        .takeIf { it.draftSessionId == target.draftSessionId }?.book?.name else null
+                    else -> null
+                }?.takeIf { it.isNotBlank() }?.let { "$it · 创作草稿" }
                 else -> null
             }
         }

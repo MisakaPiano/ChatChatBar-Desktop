@@ -50,7 +50,7 @@ class DesktopTaskAdmissionException(message: String) : IllegalStateException(mes
 class DesktopTaskDrainTimeoutException(message: String) : IllegalStateException(message)
 
 internal data class DesktopRepairTaskIdentity(val taskId: String, val sessionId: String, val messageId: String)
-internal enum class DesktopOwnedWorkKind { DOCUMENT, CARD_DESIGN, CREATIVE }
+internal enum class DesktopOwnedWorkKind { DOCUMENT, CARD_DESIGN, CREATIVE, CHARACTER_AI, CHARACTER_APPEARANCE, CHARACTER_IMAGE, WORLD_BOOK_AI }
 internal data class DesktopOwnedWorkEntry(val taskId: String, val kind: DesktopOwnedWorkKind, val createdAt: Long,
     val status: DesktopTaskStatus = DesktopTaskStatus.RUNNING, val characterId: String? = null,
     val documentId: String? = null, val draftSessionId: String? = null, val sessionId: String? = null)
@@ -140,7 +140,10 @@ internal class DesktopTaskRuntime(
 
     /** Card creation has no chat/session admission. The caller child still joins maintenance/shutdown. */
     suspend fun <T> withCardDesign(draftSessionId: String, formatCardCandidate: Boolean = false,
-        publishWorkRow: Boolean = true, work: suspend () -> T): T = coroutineScope {
+        publishWorkRow: Boolean = true, creativeKind: DesktopOwnedWorkKind = DesktopOwnedWorkKind.CREATIVE,
+        work: suspend () -> T): T = coroutineScope {
+        require(creativeKind !in setOf(DesktopOwnedWorkKind.DOCUMENT, DesktopOwnedWorkKind.CARD_DESIGN))
+        require(!formatCardCandidate || creativeKind == DesktopOwnedWorkKind.CREATIVE)
         val job = synchronized(lock) {
             if (!accepting || maintenance || draftSessionId in cardDesigns)
                 throw DesktopTaskAdmissionException("格式卡生成暂不可用")
@@ -149,7 +152,7 @@ internal class DesktopTaskRuntime(
             cardDesigns[draftSessionId] = id
             activeJobs[id] = child
             if (publishWorkRow) mutableOwnedWork.value = listOf(DesktopOwnedWorkEntry(id,
-                if (formatCardCandidate) DesktopOwnedWorkKind.CARD_DESIGN else DesktopOwnedWorkKind.CREATIVE, clock(),
+                if (formatCardCandidate) DesktopOwnedWorkKind.CARD_DESIGN else creativeKind, clock(),
                 draftSessionId = draftSessionId)) + mutableOwnedWork.value
             child.invokeOnCompletion { cause ->
                 synchronized(lock) {

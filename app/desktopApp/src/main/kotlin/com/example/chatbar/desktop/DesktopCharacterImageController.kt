@@ -49,6 +49,13 @@ internal class DesktopCharacterImageController(
     private fun matches(target: Pin) = editor.canUseCardAi && editor.state.value.draftSessionId == target.session &&
         editor.state.value.card == target.basis
 
+    fun revealTaskDraft(sessionId: String): Boolean {
+        val target = pin ?: return false
+        if (target.session != sessionId || !matches(target)) return false
+        mutable.update { it.copy(open = true) }
+        return true
+    }
+
     fun openCover(destination: CharacterCard? = null, assign: ((CharacterCard) -> Boolean)? = null) =
         open(personId = null, destination = destination, assign = assign)
     fun openAvatar(personId: String) = open(personId, null, null)
@@ -111,7 +118,7 @@ internal class DesktopCharacterImageController(
         job = scope.launch {
             var failureHint = "无法读取生图设置，请检查设置与数据目录"
             try {
-                runtime.withCardDesign(target.session) { gate.withNormalOperation {
+                runtime.withCardDesign(target.session, creativeKind = DesktopOwnedWorkKind.CHARACTER_IMAGE) { gate.withNormalOperation {
                     val fresh = settings.getAppSettings()
                     val avatar = target.personId != null
                     val key = Signature(target.destination, before.hint, before.requirement, before.manualPrompt,
@@ -186,7 +193,7 @@ internal class DesktopCharacterImageController(
         job = scope.launch {
             var committed = false
             try {
-                val applied = runtime.withCardDesign(target.session) { gate.withNormalOperation {
+                val applied = runtime.withCardDesign(target.session, creativeKind = DesktopOwnedWorkKind.CHARACTER_IMAGE) { gate.withNormalOperation {
                     withContext(NonCancellable + Dispatchers.IO) {
                         editor.stageGeneratedCardImage(target.session, target.basis, target.destination, target.personId, bytes, crop, target.assign)
                             .also { committed = it }
