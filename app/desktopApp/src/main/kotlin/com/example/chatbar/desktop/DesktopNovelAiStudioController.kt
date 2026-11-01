@@ -112,8 +112,8 @@ internal class DesktopNovelAiStudioController(
     suspend fun postProcess(bytes: ByteArray, tab: NovelAiPostProcessTab, source: NovelAiEnhanceSource?,
         options: NovelAiEnhanceOptions, onComplete: (ByteArray) -> Unit, onStatus: (String) -> Unit) = action {
         val processor = requireNotNull(postProcessor)
-        val account = state.value.account.takeIf { accountIdentity == credentialIdentity() }
-        val frozen = freezeCredential()
+        val (identity, frozen) = studioCredentialRead { credentialIdentity() to freezeCredential() }
+        val account = state.value.account.takeIf { accountIdentity == identity }
         val id = tasks.launchNovelAi(tab.label) { report -> withContext(frozen) {
             try {
                 onStatus("正在请求 ${tab.label}")
@@ -179,15 +179,13 @@ internal class DesktopNovelAiStudioController(
     catch (_: Exception) { DesktopDesignAuthentication(status = "无法读取设计模型安全配置，请打开模型设置") }
 
     suspend fun refreshAccount() = accountMutex.withLock {
-        val identity = credentialIdentity()
-        val frozen = try { freezeCredential() } catch (cancelled: CancellationException) { throw cancelled }
-            catch (_: Exception) { invalidateAccount("无法读取安全凭据，请检查 NovelAI 安全设置"); return@withLock }
+        val (identity, frozen) = try { studioCredentialRead { credentialIdentity() to freezeCredential() } }
+            catch (_: DesktopStudioCredentialReadException) { invalidateAccount(STUDIO_ACCOUNT_READ_FAILURE); return@withLock }
         val configured = try {
             withContext(Dispatchers.IO) { credentialConfigured() }
         } catch (cancelled: CancellationException) { throw cancelled }
         catch (_: Exception) {
-            mutableState.update { it.copy(credentialConfigured = false,
-                accountUi = NovelAiAccountUiState(loading = false, error = "无法读取安全凭据，请检查 NovelAI 安全设置")) }
+            invalidateAccount(STUDIO_ACCOUNT_READ_FAILURE)
             return@withLock
         }
         mutableState.update { it.copy(credentialConfigured = configured,
@@ -197,13 +195,17 @@ internal class DesktopNovelAiStudioController(
         if (!configured) return@withLock
         try {
             val latest = withContext(Dispatchers.IO + frozen) { account() }
-            if (identity == credentialIdentity()) {
+            if (identity == studioCredentialRead(credentialIdentity)) {
                 accountIdentity = identity
                 mutableState.update { it.copy(accountUi = it.accountUi.reconcile(latest)) }
             } else invalidateAccount()
         } catch (cancelled: CancellationException) {
             mutableState.update { it.copy(accountUi = it.accountUi.copy(loading = false)) }; throw cancelled
         } catch (failure: Exception) {
+            if (failure is DesktopStudioCredentialReadException) {
+                invalidateAccount(STUDIO_ACCOUNT_READ_FAILURE)
+                return@withLock
+            }
             val reason = if (failure is com.example.chatbar.domain.image.NovelAiAccountException)
                 requireNotNull(failure.message) + "；免费资格未确认" else "账户信息获取失败；免费资格未确认"
             mutableState.update { it.copy(accountUi = it.accountUi.copy(loading = false, error = reason)) }
@@ -401,8 +403,7 @@ internal class DesktopNovelAiStudioController(
     }
 
     suspend fun generate() = action {
-        val taskIdentity = credentialIdentity()
-        val frozen = freezeCredential()
+        val (taskIdentity, frozen) = studioCredentialRead { credentialIdentity() to freezeCredential() }
         var taskAccount = state.value.account.takeIf { accountIdentity == taskIdentity }
         val launch = resolveDefaultModel()
         require(launch.basePrompt.isNotBlank()) { "请填写基础 Prompt" }
@@ -429,13 +430,19 @@ internal class DesktopNovelAiStudioController(
                         })
                     completed += result.images.size
                     withContext(NonCancellable) { mutableState.update { it.copy(results = it.results + result.images.map { image -> image.path }, preview = null, status = "已保存 $completed/$total") } }
-                    if (taskIdentity == credentialIdentity()) {
+                    if (taskIdentity == studioCredentialRead(credentialIdentity)) {
                         accountAfterSuccess(estimatedCost, result.images.size); taskAccount = state.value.account
                     } else taskAccount = null
                 }
             } catch (cancelled: CancellationException) {
                 status("已停止；历史中的已提交批次保留"); throw cancelled
-            } catch (_: Exception) { status("生成失败，未发布不完整批次"); throw IllegalStateException("Studio generation failed") }
+            } catch (failure: Exception) {
+                if (failure is DesktopStudioCredentialReadException) {
+                    invalidateAccount(STUDIO_ACCOUNT_READ_FAILURE)
+                    status("账户读取失败；历史中已提交的批次保留")
+                } else status("生成失败，未发布不完整批次")
+                throw IllegalStateException("Studio generation failed")
+            }
             finally { mutableState.update { it.copy(preview = null) } }
         } }
         mutableState.update { it.copy(taskId = id) }
@@ -574,6 +581,11 @@ internal class DesktopNovelAiStudioController(
             true
         }
         catch (cancelled: CancellationException) { throw cancelled }
-        catch (failure: Exception) { status(if (designAction) desktopDesignFailure(failure).text else "操作失败，请检查输入或存储；现有图片保留"); false }
+        catch (failure: Exception) {
+            if (failure is DesktopStudioCredentialReadException) {
+                invalidateAccount(STUDIO_ACCOUNT_READ_FAILURE); status(STUDIO_ACCOUNT_READ_FAILURE)
+            } else status(if (designAction) desktopDesignFailure(failure).text else "操作失败，请检查输入或存储；现有图片保留")
+            false
+        }
     }
 }

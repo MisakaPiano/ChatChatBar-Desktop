@@ -29,10 +29,23 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
     val state by controller.state.collectAsState()
     val accounts = LocalDesktopApiAccounts.current
     val accountRevision = accounts?.store?.revision?.collectAsState()?.value
-    val accountIdentity = remember(accountRevision) { accounts?.store?.identity(DesktopAccountService.NOVELAI) }
+    val openedAccountService = accounts?.opened?.collectAsState()?.value
+    var accountReadRetry by remember(controller) { mutableIntStateOf(0) }
+    val accountRead = remember(accounts, accountRevision, accountReadRetry) {
+        readDesktopStudioAccountIdentity { accounts?.store?.identity(DesktopAccountService.NOVELAI) }
+    }
+    val accountIdentity = (accountRead as? DesktopStudioAccountRead.Available)?.identity
     var usageRevision by remember(controller) { mutableStateOf(accountIdentity) }
-    LaunchedEffect(accountRevision) {
-        if (usageRevision != accountIdentity) { usageRevision = accountIdentity; controller.invalidateAccount() }
+    var processedReadRetry by remember(controller) { mutableIntStateOf(0) }
+    var accountProblemDismissed by remember(controller, accountRevision, accountReadRetry) { mutableStateOf(false) }
+    LaunchedEffect(controller, accounts, accountRevision, accountReadRetry) {
+        val retryRequested = processedReadRetry != accountReadRetry
+        processedReadRetry = accountReadRetry
+        if (accountRead == DesktopStudioAccountRead.Unavailable) controller.invalidateAccount(STUDIO_ACCOUNT_READ_FAILURE)
+        else {
+            if (usageRevision != accountIdentity) { usageRevision = accountIdentity; controller.invalidateAccount() }
+            if (retryRequested) controller.refreshAccount()
+        }
     }
     val history by controller.history.collectAsState(emptyList())
     val conversations by controller.designRepository.conversations.collectAsState()
@@ -41,6 +54,13 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
     val tasks by controller.taskEntries.collectAsState()
     val busy = tasks.any { it.kind == DesktopTaskKind.NOVELAI && it.status == DesktopTaskStatus.RUNNING }
     val scope = rememberCoroutineScope()
+    if (openedAccountService == null && !accountProblemDismissed && (accountRead == DesktopStudioAccountRead.Unavailable ||
+            state.accountUi.error == STUDIO_ACCOUNT_READ_FAILURE)) {
+        DesktopStudioCredentialProblem(accounts != null,
+            onRetry = { accountReadRetry++ },
+            onSettings = { accountProblemDismissed = true; accounts?.opened?.compareAndSet(null, DesktopAccountService.NOVELAI) },
+            onDismiss = { accountProblemDismissed = true })
+    }
     var imageTools by remember { mutableStateOf<ByteArray?>(null) }
     var metadataFile by remember { mutableStateOf<java.nio.file.Path?>(null) }
     var metadataSelection by remember { mutableStateOf(NovelAiStudioMetadataSelection()) }
@@ -207,9 +227,9 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
             { if (shownPath != null) { currentImage = shownPath; auxiliary = "当前图片" } }) },
         editor = {
             StudioAccountCluster(d.selectedModel, state.accountUi)
-            DesktopApiAccountEntry(com.example.chatbar.desktop.security.DesktopAccountService.NOVELAI)
+            key(accountReadRetry) { DesktopApiAccountEntry(com.example.chatbar.desktop.security.DesktopAccountService.NOVELAI) }
             StudioActions {
-                StudioAction("刷新", enabled = !state.accountUi.loading, icon = DesktopAppIcons.Refresh, style = StudioActionStyle.TERTIARY) { scope.launch { controller.refreshAccount() } }
+                StudioAction("刷新", enabled = !state.accountUi.loading, icon = DesktopAppIcons.Refresh, style = StudioActionStyle.TERTIARY) { accountReadRetry++ }
                 StudioAction("AI 设计", icon = DesktopAppIcons.Chat) { auxiliary = "AI 设计" }
                 StudioAction("图像引导", icon = DesktopAppIcons.Star) { auxiliary = "图像引导" }
                 StudioAction("导入图片", icon = DesktopAppIcons.ImageAdd, onClick = ::pickImage)

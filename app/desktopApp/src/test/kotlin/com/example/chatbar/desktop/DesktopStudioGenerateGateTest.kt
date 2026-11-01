@@ -5,6 +5,7 @@ import com.example.chatbar.domain.image.*
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.first
 import okhttp3.OkHttpClient
 import kotlin.test.*
 
@@ -12,6 +13,43 @@ class DesktopStudioGenerateGateTest {
     private val valid = NovelAiStudioDraft(basePrompt = "inline landscape")
     private val opus = NovelAiAccountUsage(100, 3, true, 50.0, false)
     private val configured = DesktopNovelAiStudioState(ready = true, credentialConfigured = true)
+
+    @Test fun `credential identity or capture failure stays recoverable without closing data or clearing key`(): Unit = runBlocking {
+        for (identityFailure in listOf(true, false)) {
+            fixture { f ->
+                f.secrets.save(DesktopCredentialKey.NovelAiToken, "fake-only")
+                var broken = false
+                var calls = 0
+                fun reject(): Nothing = throw DesktopSecretStoreException(DesktopSecretStoreFailureKind.PROTECTION_FAILURE,
+                    "SYNTHETIC_PRIVATE_CREDENTIAL_FAILURE")
+                val controller = f.controller(
+                    identity = { if (broken && identityFailure) reject(); "named-account:1" },
+                    freeze = { if (broken && !identityFailure) reject(); kotlin.coroutines.EmptyCoroutineContext },
+                ) { calls++; opus }
+                controller.load()
+                assertEquals(1, calls)
+                broken = true
+                controller.refreshAccount()
+                assertTrue(controller.state.value.ready)
+                assertFalse(controller.state.value.credentialConfigured)
+                assertNull(controller.state.value.account)
+                assertTrue(controller.state.value.accountUi.error.orEmpty().contains("安全凭据"))
+                assertFalse(controller.state.value.toString().contains("SYNTHETIC_PRIVATE_CREDENTIAL_FAILURE"))
+                assertEquals(1, calls)
+                assertEquals("fake-only", f.secrets.load(DesktopCredentialKey.NovelAiToken))
+                assertEquals(DesktopDataOperationCoordinatorState.OPEN, f.container.dataOperationCoordinator.state)
+                val task = f.container.taskRuntime.launchNovelAi("synthetic-after-account-problem") { it("done") }
+                withTimeout(5_000) { f.container.taskRuntime.tasks.first { entries -> entries.any {
+                    it.taskId == task && it.status == DesktopTaskStatus.COMPLETED
+                } } }
+                broken = false
+                controller.refreshAccount()
+                assertEquals(opus, controller.state.value.account)
+                assertEquals(2, calls)
+                assertEquals("fake-only", f.secrets.load(DesktopCredentialKey.NovelAiToken))
+            }
+        }
+    }
 
     @Test fun `configured known account retains shared free allowance and paid costs`(): Unit = runBlocking {
         fixture { f ->
@@ -244,12 +282,14 @@ class DesktopStudioGenerateGateTest {
         val container = DesktopAppContainer(DesktopDataRootResolution.Resolved(root.resolve("data"),
             DesktopDataRootProvenance.CLI_OVERRIDE, root.resolve("bootstrap.json")), secretStoreFactory = { secrets })
         fun controller(presence: suspend () -> Boolean = { !secrets.load(DesktopCredentialKey.NovelAiToken).isNullOrBlank() },
+            identity: () -> String = { "legacy" },
+            freeze: () -> kotlin.coroutines.CoroutineContext = { kotlin.coroutines.EmptyCoroutineContext },
             account: suspend () -> NovelAiAccountUsage) = DesktopNovelAiStudioController(
             container.jsonFileStorage, container.characterResourceStore, UnconfiguredDesktopFilePicker,
             container.dataOperationCoordinator, {}, container.novelAiGenerationRuntime,
             DesktopNovelAiGuidance(container.appDataRoot, container.characterResourceStore, secrets), container.taskRuntime,
             container.novelAiInfrastructure, container.settingsRepository, container.effectiveModelResolver,
-            container.characterRepository, account, presence)
+            container.characterRepository, account, presence, credentialIdentity = identity, freezeCredential = freeze)
     }
 
     private suspend fun fixture(block: suspend (Fixture) -> Unit) {

@@ -36,6 +36,6 @@
 
 ## 后续和交付边界
 
-c32ad911的SF07/08＋217已正常推送，GitHub CI `41254361132`已SUCCESS；该CI不是本文件新增源码的验证。新增源码完整CI、普通候选、隔离生命周期与用户本版验收继续分别记录，未用开发app-image代换现用1224。
+c32ad911的SF07/08＋217已正常推送，GitHub CI `41254361132`已SUCCESS；后续本文件改动提交为370681a9，完整CI45／`41256615360`也已SUCCESS，源SHA及两个job结果已只读核实。普通候选、隔离生命周期与用户本版验收继续分别记录，未用开发app-image代换现用1224；该CI不覆盖219另加的SF12新源码。
 
 FB04备份已有encrypted/passwordRequired/phase分类复用，只补具体残余通用路径；SF12继续处理Studio composition／refresh的账户identity安全边界，不改真正StartupGate启动拒绝，不静默fallback旧Key或清文件。SF14精确本机捕获仍未据离屏图登记通过。完成当前B0后依216补原P12实际缺口，社区最后。
