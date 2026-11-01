@@ -62,6 +62,8 @@ Use chatbar-message-format-repair for repair state behavior, chatbar-image-gener
 
 ## Resolution Rules
 
+- Desktop `DesktopNetworkProxyController` persists `ApplicationProxySettings` in the selected data root's `desktop-settings.json`, outside versioned Program. Production startup installs it before network owners; Save requires a normal restart, leaving current requests/pools unchanged. SYSTEM retains existing manual/JVM/default-selector routing, with HTTPS-specific JVM settings before the legacy HTTP path; HTTP/SOCKS/DIRECT are explicit app overrides after loopback bypass. Invalid persisted settings pause networking visibly; selector failures never silently become direct. Optional route inspection runs on IO, suppresses repeated clicks and reports separate account/image/local routes; PAC/WPAD resolution may itself access configuration services, so this is not an offline connection test. No credentials or system/VPN settings are edited.
+
 - Distinguish unset selection from explicitly stale selection.
 - Apply fallback only where feature policy defines unset as follow-default.
 - Keep selected custom, preset, embedding, and auxiliary model sources distinct. No dedicated retrieval model exists: ChatViewModel passes the current chat model to RetrievalPlanner; character/world-book research uses the operation's selected generation model.

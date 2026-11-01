@@ -5,6 +5,8 @@ description: Maintain ChatBar Fish Audio voice generation across API credentials
 
 # ChatBar Fish Audio Voice
 
+- Desktop confirmed whole-session deletion is composed through the SaveSlot transaction owner and existing voice session maintenance. Generated audio paths remain absolute; `isDesktopOwnedAudioCandidate` admits only canonical files directly under `audio/generated/<session>`, then `DesktopOwnedImageCleanup` proves no remaining entity reference and `DesktopVoiceAudioStore.deleteIfOwned` verifies its receipt. False/refused cleanup retains the persistent private cleanup receipt; external audio and references from another session or legacy slot remain untouched.
+
 Keep voice generation independent from chat text, prompt context, and long-term memory. Read the smallest matching path first.
 
 Use `chatbar-model-request-runtime` for shared auxiliary-model resolution or SSE transport, `chatbar-background-work-runtime` for foreground leases, `chatbar-character-card-ai` for auto-fill/rewrite merge behavior, `chatbar-shadcn-compose` for UI changes, and `chatbar-emulator-test` for device playback verification.

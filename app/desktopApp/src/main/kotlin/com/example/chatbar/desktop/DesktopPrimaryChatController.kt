@@ -137,7 +137,36 @@ internal class DesktopPrimaryChatController(
     val saveSlots: DesktopSaveSlotController? = null,
     val chatUi: DesktopChatUiController? = null,
     val maintenance: DesktopChatMaintenanceController? = null,
+    private val sessionDeletion: (suspend (String) -> String?)? = null,
 ) {
+    val canDeleteSessions: Boolean get() = sessionDeletion != null
+    private val deletingSessions = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+
+    suspend fun deleteSession(expected: DesktopPrimarySessionItem): Boolean {
+        val deletion = sessionDeletion ?: return false
+        var deleted = false
+        guarded {
+            draftLock.withLock { stateLock.withLock {
+                check(!state.value.sessionSettingsSaving && !state.value.sessionSettingsDirty) { "请先保存或放弃会话设置草稿，再确认删除。" }
+                check(state.value.sessions.any { it == expected }) { "会话列表已变化，请重新确认删除。" }
+                synchronized(composerLock) { synchronized(readingLock) { deletingSessions += expected.id } }
+                try {
+                    draftPersistence.flush(expected.id)
+                    readingPositions.flush(expected.id)
+                    val warning = deletion(expected.id)
+                    check(chats.getSession(expected.id) == null) { "未能确认会话删除结果，请刷新列表。" }
+                    pendingBySession.remove(expected.id)
+                    refreshSelection()
+                    mutableState.update { it.copy(status = warning ?: "会话及其消息、存档和记忆已删除。", error = null) }
+                    deleted = true
+                } finally {
+                    // Missing sessions remain blocked against stale viewport/composer callbacks.
+                    if (chats.getSession(expected.id) != null) deletingSessions -= expected.id
+                }
+            } }
+        }
+        return deleted
+    }
     private suspend fun <T> withMessageMutation(sessionId: String, messageId: String, block: suspend () -> T): T {
         val result = if (voices == null) taskRuntime.withMessageMutation(sessionId, block)
         else voices.mutateMessage(sessionId, messageId) { taskRuntime.withMessageMutation(sessionId, block) }
@@ -173,6 +202,7 @@ internal class DesktopPrimaryChatController(
     }
 
     fun submitReadingPosition(snapshot: ChatScrollPosition): ChatScrollPosition? = synchronized(readingLock) {
+        if (snapshot.sessionId in deletingSessions) return@synchronized null
         updateMessageWindowAnchor(snapshot.sessionId, snapshot.anchorMessageId)
         readingPositions.submit(snapshot)?.also { accepted ->
             mutableState.update { if (it.selectedSession?.id == accepted.sessionId)
@@ -560,6 +590,7 @@ internal class DesktopPrimaryChatController(
     fun editComposer(text: String) {
         synchronized(composerLock) {
             val id = state.value.selectedSession?.id ?: return
+            if (id in deletingSessions) return
             pendingComposerClear = null
             try {
                 draftPersistence.submit(id, text)

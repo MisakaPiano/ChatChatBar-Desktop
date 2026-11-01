@@ -13,6 +13,12 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 
 object ProxyAwareClient {
+    /** Desktop loads this once before starting network owners. Android keeps the default. */
+    @Volatile
+    var applicationProxy: ApplicationProxySettings = ApplicationProxySettings()
+    @Volatile
+    var applicationRoutingAvailable: Boolean = true
+
     @Volatile
     var manualProxyHost: String? = null
 
@@ -32,6 +38,7 @@ object ProxyAwareClient {
             .proxySelector(selector)
             .dns(Ipv4FirstDns)
             .addInterceptor { chain ->
+                if (!applicationRoutingAvailable) throw IOException("应用代理设置未能读取，请检查网络设置后重启")
                 val request = chain.request()
                 if (!CleartextHttpPolicy.isAllowed(request.url.isHttps, allowCleartextHttp())) {
                     throw IOException("明文 HTTP 模型 API 已禁用，请在管理 > 设置中开启后重试")
@@ -53,14 +60,25 @@ object ProxyAwareClient {
             if (ProxyBypassPolicy.matches(uri?.host, System.getProperty("http.nonProxyHosts"))) {
                 return listOf(Proxy.NO_PROXY)
             }
+            val application = applicationProxy
+            when (application.mode) {
+                ApplicationProxyMode.DIRECT -> return listOf(Proxy.NO_PROXY)
+                ApplicationProxyMode.HTTP, ApplicationProxyMode.SOCKS -> return listOf(Proxy(
+                    if (application.mode == ApplicationProxyMode.HTTP) Proxy.Type.HTTP else Proxy.Type.SOCKS,
+                    InetSocketAddress.createUnresolved(application.host, application.port),
+                ))
+                ApplicationProxyMode.SYSTEM -> Unit
+            }
             val host = manualProxyHost
             val port = manualProxyPort
             if (!host.isNullOrBlank() && port != null && port in 1..65535) {
                 return listOf(Proxy(Proxy.Type.HTTP, InetSocketAddress(host, port)))
             }
 
-            val httpHost = System.getProperty("http.proxyHost")
-            val httpPort = System.getProperty("http.proxyPort")?.toIntOrNull()
+            val secureHost = System.getProperty("https.proxyHost")?.takeIf { uri?.scheme.equals("https", true) && it.isNotBlank() }
+            val httpHost = secureHost ?: System.getProperty("http.proxyHost")
+            val httpPort = if (secureHost != null) System.getProperty("https.proxyPort")?.toIntOrNull() ?: 443
+                else System.getProperty("http.proxyPort")?.toIntOrNull()
             if (!httpHost.isNullOrBlank() && httpPort != null && httpPort in 1..65535) {
                 return listOf(Proxy(Proxy.Type.HTTP, InetSocketAddress(httpHost, httpPort)))
             }
@@ -71,11 +89,8 @@ object ProxyAwareClient {
                 return listOf(Proxy(Proxy.Type.SOCKS, InetSocketAddress(socksHost, socksPort)))
             }
 
-            return try {
-                ProxySelector.getDefault()?.select(uri) ?: listOf(Proxy.NO_PROXY)
-            } catch (_: Exception) {
-                listOf(Proxy.NO_PROXY)
-            }
+            // A failed selector must remain a request failure, not an invisible direct route.
+            return ProxySelector.getDefault()?.select(uri) ?: listOf(Proxy.NO_PROXY)
         }
 
         override fun connectFailed(

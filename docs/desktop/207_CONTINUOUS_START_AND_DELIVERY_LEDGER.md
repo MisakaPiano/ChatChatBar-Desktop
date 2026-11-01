@@ -1,3 +1,5 @@
+2026-11-01 CI64／863df8ae完整SUCCESS：Windows288suite2350=2331PASS+19SKIP，Android582／shared1096全过，取消修正和Moment准备3已验证；CI62／63原FAIL保留。后续38f3f51b提取朋友圈生成核心及4回归待新源。优先处理新增B0会话删除／升级后NAI代理反馈，源码新增确认式事务删除和资料目录持久代理／IO路由查看，合成回归待云端；未真实删除、代装H或公开新版。见[232](232_SESSION_DELETE_AND_PERSISTENT_PROXY.md)。
+
 2026-11-01 ac／CI63的Linux job因shared WorldBook取消引用身份断言FAIL；实际同类型同信息而非同一对象。后续74b05771只改为取消语义断言，保留不修复／不提交／只调用一次及拒绝原透传，生产代码不改；预算shared4通过，Android本轮未执行，Windows仍待。独立P13当前将MomentEntities／Repository／Policy字节不变移入shared，并提取原未来记录准备，Android仍负责开关／mutex／alarm取消／到期执行；3定向回归待新源，不是CI63覆盖。这些Android源码缺失为计划移动，非360。未接Desktop启动／生成／UI，不自动执行导入任务，不算P13完成。见[231](231_MOMENTS_SHARED_FOUNDATION.md)。
 
 2026-11-01 CI62/c3整run FAILURE：Android582/shared1089通过；Windows真XML287 suite/2347=2322PASS+19SKIP+6FAIL。六处新controller／Panel失败逐一机械比对只有首次保存自动updatedAt与seed0的差别，原仓库行为不改；测试改从保存后完整对象取基准，不忽略字段、不删断言，后续未执行步骤待新源。原artifact13074735604／SHA d2565bd2与XML、BASIS_DIFFERENCE留I盘。独立D04265a80d92本地估算源码未由CI62覆盖，将连同此基准修正送下一run；不把已定位当已通过，不取消原失败。

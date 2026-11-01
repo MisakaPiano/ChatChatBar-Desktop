@@ -264,6 +264,7 @@ internal fun DesktopPrimaryChatPanel(
                                 onPin = { scope.launch { controller.togglePin(item.id) } },
                                 onRename = { browser = browser.copy(renameSessionId = item.id); renameText = item.displayTitleOverride.orEmpty() },
                                 onSettings = { selectFromBrowser(item.id, openSettings = true) },
+                                onDelete = { browser = browser.copy(deleteSession = item) },
                             )
                         }
                         if (recent.isNotEmpty()) item { PrimaryHeading(t(DesktopUiText.RECENT_SESSIONS)) }
@@ -276,6 +277,7 @@ internal fun DesktopPrimaryChatPanel(
                                 onPin = { scope.launch { controller.togglePin(item.id) } },
                                 onRename = { browser = browser.copy(renameSessionId = item.id); renameText = item.displayTitleOverride.orEmpty() },
                                 onSettings = { selectFromBrowser(item.id, openSettings = true) },
+                                onDelete = { browser = browser.copy(deleteSession = item) },
                             )
                         }
                     }
@@ -516,6 +518,27 @@ internal fun DesktopPrimaryChatPanel(
                 onMemory = controller.memory?.let { memory -> ({ chatDebugOpen = false; memory.open(session.id) }) },
                 maintenance = controller.maintenance)
         }
+        browser.deleteSession?.let { item ->
+            DesktopModalSurface { Box(Modifier.fillMaxSize().background(colors.dim).padding(24.dp), contentAlignment = Alignment.Center) {
+                Column(Modifier.widthIn(max = 560.dp).background(colors.overlay, RoundedCornerShape(12.dp)).padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    PrimaryHeading(t(DesktopUiText.DELETE_SESSION))
+                    StatusText(item.title)
+                    StatusText("删除此会话的消息、草稿、存档、记忆和录音；保留角色卡、世界书以及其他会话仍在使用的媒体。此操作不能从界面撤销。")
+                    state.error?.let { StatusText(it, colors.destructive) }
+                    var busy by remember(item.id) { mutableStateOf(false) }
+                    ActionRow {
+                        BootstrapButton(if (busy) "正在删除…" else t(DesktopUiText.CONFIRM_DELETE), enabled = !busy,
+                            variant = DesktopActionVariant.DESTRUCTIVE) { scope.launch {
+                            busy = true
+                            try { if (controller.deleteSession(item)) browser = browser.copy(deleteSession = null) }
+                            finally { busy = false }
+                        } }
+                        BootstrapButton(t(DesktopUiText.CANCEL), enabled = !busy, secondary = true) { browser = browser.copy(deleteSession = null) }
+                    }
+                }
+            } }
+        }
         if (browser.renameSessionId != null) {
             DesktopModalSurface { Column(Modifier.fillMaxSize().background(colors.overlay).padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -671,16 +694,20 @@ private fun PrimarySessionRow(
     onPin: () -> Unit,
     onRename: () -> Unit,
     onSettings: () -> Unit,
+    onDelete: () -> Unit,
 ) {
     val t = LocalDesktopUiStrings.current
     val row = desktopSessionRowPresentation(item, selected, preview)
     val colors = DesktopBootstrapColors
     ContextMenuArea(items = {
-        listOf(
+        buildList {
+        addAll(listOf(
             ContextMenuItem(t(if (item.pinned) DesktopUiText.UNPIN else DesktopUiText.PIN), onPin),
             ContextMenuItem(t(DesktopUiText.RENAME), onRename),
             ContextMenuItem(t(DesktopUiText.SESSION_SETTINGS), onSettings),
-        )
+        ))
+        if (controller.canDeleteSessions) add(ContextMenuItem(t(DesktopUiText.DELETE_SESSION), onDelete))
+        }
     }) {
         Row(Modifier.fillMaxWidth().background(if (row.selected) colors.secondary else Color.Transparent, RoundedCornerShape(8.dp))
             .selectable(row.selected, role = Role.Tab, onClick = onSelect).padding(start = 8.dp, top = 6.dp, bottom = 6.dp),

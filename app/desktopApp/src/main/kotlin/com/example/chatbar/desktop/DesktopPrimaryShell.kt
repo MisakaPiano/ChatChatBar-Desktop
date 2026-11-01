@@ -50,6 +50,7 @@ internal fun DesktopPrimaryShell(
     fullBackupController: DesktopFullBackupController,
     onExitApplication: () -> Unit,
     mergeImportController: DesktopMergeImportController? = null,
+    networkProxyController: DesktopNetworkProxyController? = null,
 ) {
     val rootState by rootSwitchController.state.collectAsState()
     val selectedRoute by navigation.selectedRoute.collectAsState()
@@ -141,6 +142,7 @@ internal fun DesktopPrimaryShell(
                         onInitialModelsConsumed = { openDesignModels = false; requestedDesignModel = null },
                         initialPerson = requestedPerson, onInitialPersonConsumed = { requestedPerson = null },
                         chatUiController = primaryChatController.chatUi,
+                        networkProxyController = networkProxyController,
                         onStartCharacterChat = { id -> scope.launch {
                             val before = primaryChatController.state.value.sessions.map { it.id }.toSet()
                             primaryChatController.createSession(id)

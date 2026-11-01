@@ -12,9 +12,11 @@ internal class DesktopOwnedImageCleanup(
     private val root: Path,
     private val resources: DesktopCharacterResourceStore,
     private val coordinator: DesktopDataOperationCoordinator,
+    private val deleteAudio: (suspend (String) -> Boolean)? = null,
 ) {
     suspend fun deleteUnreferenced(candidates: List<String>) {
-        val owned = candidates.distinct().filter { (it.startsWith("images/") || it.startsWith("documents/")) && !it.contains("..") }
+        val owned = candidates.distinct().filter { (it.startsWith("images/") || it.startsWith("documents/") ||
+            deleteAudio != null && isDesktopOwnedAudioCandidate(root, it)) && !it.contains("..") }
         if (owned.isEmpty()) return
         coordinator.withExclusiveMaintenance {
             withContext(Dispatchers.IO) {
@@ -49,8 +51,18 @@ internal class DesktopOwnedImageCleanup(
                         }
                     }
                 }
-                owned.filterNot(retained::contains).forEach(resources::deleteOwned)
+                owned.filterNot(retained::contains).forEach { path ->
+                    if (isDesktopOwnedAudioCandidate(root, path)) check(deleteAudio?.invoke(path) == true) { "录音清理未完成，原文件与清理记录已保留" }
+                    else resources.deleteOwned(path)
+                }
             }
         }
     }
 }
+
+internal fun isDesktopOwnedAudioCandidate(root: Path, raw: String): Boolean = runCatching {
+    val path = Path.of(raw)
+    path.isAbsolute && path == path.normalize() &&
+        path.parent?.parent == root.toAbsolutePath().normalize().resolve("audio/generated") &&
+        path.fileName.toString().matches(Regex("[A-Za-z0-9_-]+\\.mp3"))
+}.getOrDefault(false)

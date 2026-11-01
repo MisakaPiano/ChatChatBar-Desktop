@@ -14,6 +14,7 @@ data class DesktopSettings(
     val uiLanguage: DesktopUiLanguage = DesktopUiLanguage.ZH_CN,
     val colorStyle: DesktopColorStyle = DesktopColorStyle.NEUTRAL,
     val chatUi: DesktopChatUiPreferences = DesktopChatUiPreferences(),
+    val networkProxy: com.example.chatbar.domain.ApplicationProxySettings = com.example.chatbar.domain.ApplicationProxySettings(),
 ) {
     init {
         require(formatVersion == CURRENT_DESKTOP_SETTINGS_FORMAT_VERSION) {

@@ -76,11 +76,12 @@ class DesktopSaveSlotServiceTest {
         val session = ChatSession.create("synthetic-card", "Synthetic").copy(id = "s", longTermMemoryEnabled = false,
             playerName = "Test player", imagePromptPreference = "retain preference")
         val message = SyntheticSaveSlotCorpus.message().copy(images = listOf("images/synthetic.png"))
-        fun service(journal: DesktopSessionCommitJournal = DesktopSessionCommitJournal(root)) = DesktopSaveSlotService(root, gate,
+        fun service(journal: DesktopSessionCommitJournal = DesktopSessionCommitJournal(root),
+            cleanup: suspend (List<String>) -> Unit = {}) = DesktopSaveSlotService(root, gate,
             audio, object : DesktopSessionReservation { override suspend fun <T> run(sessionId: String, operation: suspend () -> T): T = operation() },
             chats, voices, { snapshot }, { reference ->
                 if (Path.of(reference).isAbsolute) DesktopVoiceAudioStore(root).verify(reference) else root.resolve(reference)
-            }, journal)
+            }, journal, cleanup)
         suspend fun seed() {
             chats.createSession(session); chats.addMessage(message); chats.updateSessionDraft("s", "unsent draft")
             val image = BufferedImage(12, 8, BufferedImage.TYPE_INT_RGB)
@@ -88,6 +89,69 @@ class DesktopSaveSlotServiceTest {
             try { ImageIO.write(image, "png", root.resolve("images/synthetic.png").toFile()) } finally { image.flush() }
         }
         override fun close() { runBlocking { focus.closeAndDrain(); gate.closeAndDrain() }; owner.close(); root.toFile().deleteRecursively() }
+    }
+
+    @Test fun `whole session deletion removes its graph and slots while retaining other sessions and shared media`(): Unit = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            val other = f.session.copy(id = "other", title = "Other")
+            f.chats.createSession(other)
+            f.chats.addMessage(f.message.copy(id = "other-message", sessionId = "other"))
+            val resources = DesktopCharacterResourceStore(f.root)
+            val cleanup = DesktopOwnedImageCleanup(f.root, resources, f.gate)
+            val service = f.service(cleanup = cleanup::deleteUnreferenced)
+            val slot = service.create("s", "Delete with owner", SaveSlotImagePolicy.ORIGINAL, false)
+            val otherSlot = service.create("other", "Retained", SaveSlotImagePolicy.ORIGINAL, false)
+            val notice = service.deleteSession("s")
+            assertNull(notice); assertNull(f.chats.getSession("s")); assertTrue(f.chats.getMessagesReadOnly("s").isEmpty())
+            assertEquals("", f.chats.getSessionDraft("s")); assertTrue(service.list("s").isEmpty())
+            assertFalse(Files.exists(f.root.resolve("save_slot_packages/${slot.packageRef!!.fileName}")))
+            assertEquals(other, f.chats.getSession("other")); assertEquals(1, f.chats.getMessagesReadOnly("other").size)
+            assertTrue(Files.exists(f.root.resolve("save_slot_packages/${otherSlot.packageRef!!.fileName}")))
+            assertTrue(Files.exists(f.root.resolve("images/synthetic.png")))
+            assertFalse(Files.exists(f.root.resolve("backups/.session-deletion-cleanup/s.json")))
+        }
+    }
+
+    @Test fun `whole deletion rollback preserves graph and committed cleanup failure survives a new owner`(): Unit = runBlocking {
+        Fixture().use { f ->
+            f.seed(); val slot = f.service().create("s", "Keep on failure", SaveSlotImagePolicy.NONE, false)
+            val fail = f.service(DesktopSessionCommitJournal(f.root) { if (it == 1) error("synthetic IO failure") })
+            assertFails { fail.deleteSession("s") }
+            assertNotNull(f.chats.getSession("s")); assertEquals(1, f.chats.getMessagesReadOnly("s").size)
+            assertTrue(Files.exists(f.root.resolve("entities/save_slots/${slot.id}.json")))
+            assertFalse(Files.exists(f.root.resolve("backups/.session-deletion-cleanup/s.json")))
+            assertNotNull(f.service(cleanup = { error("synthetic cleanup failure") }).deleteSession("s"))
+            assertNull(f.chats.getSession("s")); assertTrue(Files.exists(f.root.resolve("backups/.session-deletion-cleanup/s.json")))
+            var candidates: List<String>? = null
+            f.service(cleanup = { candidates = it }).resumeSessionDeletionCleanup()
+            assertTrue("images/synthetic.png" in candidates!!)
+            assertFalse(Files.exists(f.root.resolve("backups/.session-deletion-cleanup/s.json")))
+        }
+    }
+
+    @Test fun `whole deletion collects absolute owned audio and retains external files and shared references`(): Unit = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            val audioStore = DesktopVoiceAudioStore(f.root)
+            val audio = audioStore.persist("s", "owned", fishPreviewMp3().inputStream())
+            val shared = audioStore.persist("s", "shared", fishPreviewMp3().inputStream())
+            val external = f.root.parent.resolve("external-${java.util.UUID.randomUUID()}.mp3")
+            Files.writeString(external, "outside ownership")
+            try {
+                fun voice(id: String, session: String, path: String) = GeneratedVoiceMessage.create(session, f.message.id, "version", "anchor",
+                    0, "DIALOGUE", "Alice", "hello", "hello", "hello", "alice", "Alice",
+                    FishAudioVoiceBinding(referenceId = "fixture", title = "fixture"), "s2.1-pro-free", path, 1300, 20850).copy(id = id)
+                f.voices.save(voice("owned", "s", audio.path)); f.voices.save(voice("shared", "s", shared.path))
+                f.voices.save(voice("external", "s", external.toString()))
+                f.chats.createSession(f.session.copy(id = "other"))
+                f.voices.save(voice("retained", "other", shared.path))
+                val cleanup = DesktopOwnedImageCleanup(f.root, DesktopCharacterResourceStore(f.root), f.gate, audioStore::deleteIfOwned)
+                assertNull(f.service(cleanup = cleanup::deleteUnreferenced).deleteSession("s"))
+                assertFalse(Files.exists(Path.of(audio.path))); assertTrue(Files.exists(Path.of(shared.path)))
+                assertTrue(Files.exists(external)); assertNotNull(f.voices.get("retained"))
+            } finally { Files.deleteIfExists(external) }
+        }
     }
 
     @Test fun `restore is an atomic graph replacement with safety slot and original resources retained`(): Unit = runBlocking {

@@ -143,7 +143,7 @@ class DesktopAppContainer internal constructor(
                 java.nio.file.Path.of(reference).isAbsolute -> voiceAudioStore.verify(reference)
                 else -> characterResourceStore.resolveOwnedReference(reference).also { DesktopArchiveFiles.safe(it, false) }
             }
-        }) }
+        }, cleanupDeletedMedia = ownedImageCleanup::deleteUnreferenced) }
     private val saveSlotOwner = lazy { DesktopSaveSlotController(saveSlotService, filePicker) { id -> primaryChatController.selectSession(id) } }
     internal val saveSlotController by saveSlotOwner
     private val fullBackupOwner = lazy { DesktopFullBackupController(DesktopFullBackupService(
@@ -296,7 +296,8 @@ class DesktopAppContainer internal constructor(
         appDataRoot,
         assetReader = bundledAssetReader,
     )
-    private val ownedImageCleanup = DesktopOwnedImageCleanup(appDataRoot, characterResourceStore, dataOperationCoordinator)
+    private val ownedImageCleanup = DesktopOwnedImageCleanup(appDataRoot, characterResourceStore, dataOperationCoordinator,
+        deleteAudio = { voiceAudioStore.deleteIfOwned(it) })
     internal val chatImages = DesktopChatImages(characterResourceStore, chatRepository, dataOperationCoordinator,
         ownedImageCleanup::deleteUnreferenced)
     private val characterEditorOwner = lazy {
@@ -389,6 +390,7 @@ class DesktopAppContainer internal constructor(
     suspend fun initializePersistentState() {
         automaticBackupRuntime.initialize()
         presetBootstrap.initialize()
+        saveSlotService.resumeSessionDeletionCleanup()
     }
     internal val effectiveModelResolver by lazy {
         EffectiveModelResolver(
@@ -419,6 +421,7 @@ class DesktopAppContainer internal constructor(
         audioMaintenance = audioMaintenance,
     )
     private val desktopSettingsStore = DesktopSettingsStore(appDataRoot, dataOperationCoordinator)
+    internal val networkProxyController = DesktopNetworkProxyController(desktopSettingsStore)
     internal val chatUiController by lazy { DesktopChatUiController(desktopSettingsStore) }
     internal val uiLanguageController = DesktopUiLanguageController(desktopSettingsStore)
     val automaticBackupRuntime = DesktopAutomaticBackupRuntime(
@@ -593,6 +596,7 @@ class DesktopAppContainer internal constructor(
             imageStore = chatImages,
             chatUi = chatUiController,
             maintenance = chatMaintenanceController,
+            sessionDeletion = saveSlotService::deleteSession,
             voices = chatVoiceRuntime,
             residency = characterResidency,
             memory = memoryController,

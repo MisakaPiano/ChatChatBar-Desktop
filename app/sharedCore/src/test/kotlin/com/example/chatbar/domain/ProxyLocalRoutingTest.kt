@@ -17,6 +17,46 @@ import okhttp3.mockwebserver.RecordedRequest
 import kotlin.test.*
 
 class ProxyLocalRoutingTest {
+    @Test fun `application override survives JVM proxy priority and always bypasses local models`() = withSettings {
+        val previous = ProxyAwareClient.applicationProxy
+        val client = ProxyAwareClient.builder().build()
+        try {
+            configureProxy(true, 19090)
+            for (mode in listOf(ApplicationProxyMode.HTTP, ApplicationProxyMode.SOCKS, ApplicationProxyMode.DIRECT)) {
+                ProxyAwareClient.applicationProxy = ApplicationProxySettings(mode, "127.0.0.1", 19095)
+                val actual = client.proxySelector.select(URI("https://external.invalid/")).single()
+                assertEquals(when (mode) {
+                    ApplicationProxyMode.HTTP -> Proxy.Type.HTTP
+                    ApplicationProxyMode.SOCKS -> Proxy.Type.SOCKS
+                    else -> Proxy.Type.DIRECT
+                }, actual.type())
+                if (mode != ApplicationProxyMode.DIRECT) assertEquals(19095, (actual.address() as InetSocketAddress).port)
+                assertEquals(Proxy.NO_PROXY, client.proxySelector.select(URI("http://127.0.0.1:8200/v1/models")).single())
+            }
+        } finally { ProxyAwareClient.applicationProxy = previous; close(client) }
+    }
+
+    @Test fun `HTTPS JVM settings take precedence only for HTTPS and failing system selector stays visible`() = withSettings {
+        val originalHost = System.getProperty("https.proxyHost"); val originalPort = System.getProperty("https.proxyPort")
+        val selector = ProxySelector.getDefault(); val client = ProxyAwareClient.builder().build()
+        try {
+            configureProxy(false, 19092)
+            System.setProperty("https.proxyHost", "127.0.0.1"); System.setProperty("https.proxyPort", "19096")
+            assertEquals(19096, (client.proxySelector.select(URI("https://external.invalid/")).single().address() as InetSocketAddress).port)
+            assertEquals(19092, (client.proxySelector.select(URI("http://external.invalid/")).single().address() as InetSocketAddress).port)
+            System.clearProperty("http.proxyHost"); System.clearProperty("https.proxyHost")
+            ProxySelector.setDefault(object : ProxySelector() {
+                override fun select(uri: URI?): List<Proxy> = error("synthetic selector failure")
+                override fun connectFailed(uri: URI?, sa: java.net.SocketAddress?, ioe: java.io.IOException?) = Unit
+            })
+            assertFailsWith<IllegalStateException> { client.proxySelector.select(URI("https://external.invalid/")) }
+        } finally {
+            ProxySelector.setDefault(selector)
+            if (originalHost == null) System.clearProperty("https.proxyHost") else System.setProperty("https.proxyHost", originalHost)
+            if (originalPort == null) System.clearProperty("https.proxyPort") else System.setProperty("https.proxyPort", originalPort)
+            close(client)
+        }
+    }
     @Test fun `custom bypass patterns match whole hosts for HTTP and HTTPS without resolving names`() = withSettings {
         configureProxy(true, 19090)
         System.setProperty("http.nonProxyHosts", " *.internal.invalid | EXACT.INVALID |[::1]")

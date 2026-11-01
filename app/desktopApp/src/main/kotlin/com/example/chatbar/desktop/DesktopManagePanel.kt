@@ -148,6 +148,7 @@ internal fun DesktopManagePanel(
     initialModels: Boolean = false, initialModelId: String? = null, onInitialModelsConsumed: () -> Unit = {},
     initialPerson: Pair<String, String>? = null, onInitialPersonConsumed: () -> Unit = {},
     chatUiController: DesktopChatUiController? = null,
+    networkProxyController: DesktopNetworkProxyController? = null,
 ) {
     val t = LocalDesktopUiStrings.current
     val uiLanguage by uiLanguageController.language.collectAsState()
@@ -311,6 +312,7 @@ internal fun DesktopManagePanel(
                     onClearCredential = { confirmClearCredential = true },
                     connectionTestController = connectionTestController,
                 )
+                if (area == ManageSettingsGroup.CONNECTION) networkProxyController?.let { DesktopNetworkProxyPanel(it) }
                             }
                         }
                     }

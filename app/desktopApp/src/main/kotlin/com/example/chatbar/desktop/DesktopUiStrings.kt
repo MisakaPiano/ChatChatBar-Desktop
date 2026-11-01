@@ -74,6 +74,7 @@ internal enum class DesktopUiText(val zhCn: String, val en: String) {
     CONTINUE_EDITING("继续编辑", "Continue editing"), SAVE_CHANGES("保存修改", "Save changes"),
     REFRESH("刷新", "Refresh"), WORKING("正在处理…", "Working…"), CLOSE("关闭", "Close"),
     CANCEL("取消", "Cancel"), SAVE("保存", "Save"), EDIT("编辑", "Edit"), DELETE("删除", "Delete"),
+    DELETE_SESSION("删除会话…", "Delete conversation…"),
     COPY_MESSAGE("复制整条", "Copy whole message"), MESSAGE("消息", "Message"), EDIT_MESSAGE("编辑整条消息", "Edit whole message"),
     MORE_MESSAGE_ACTIONS("更多消息操作", "More message actions"),
     MANAGE_MORE_ACTIONS("更多管理操作", "More management actions"),

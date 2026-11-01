@@ -42,7 +42,7 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
         DesktopPlatformPickers.create(dialogOwner).use { pickers ->
             val appContainer = DesktopAppContainer(resolvedRoot, filePicker = pickers.files, directoryPicker = pickers.directories)
             runDesktopApplicationLifecycle(
-                initialize = { appContainer.initializePersistentState() },
+                initialize = { appContainer.networkProxyController.loadAtStartup(); appContainer.initializePersistentState() },
                 applicationBody = {
                     application(exitProcessOnExit = false) {
                         val rootSwitchController = remember {
@@ -147,6 +147,7 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                                     connectionTestController = appContainer.connectionTestController,
                                     novelAiSettingsController = appContainer.novelAiSettingsController,
                                     novelAiStudioController = appContainer.novelAiStudioController,
+                                    networkProxyController = appContainer.networkProxyController,
                                     fullBackupController = appContainer.fullBackupController,
                                     mergeImportController = appContainer.mergeImportController,
                                     onExitApplication = {

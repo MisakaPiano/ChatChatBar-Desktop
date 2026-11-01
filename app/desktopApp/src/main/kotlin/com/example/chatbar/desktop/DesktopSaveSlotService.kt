@@ -10,6 +10,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.json.*
 
 internal interface DesktopSessionReservation {
     suspend fun <T> run(sessionId: String, operation: suspend () -> T): T
@@ -27,11 +28,84 @@ internal class DesktopSaveSlotService(
     private val memorySnapshot: suspend (String) -> MemorySnapshot?,
     private val mediaSource: suspend (String) -> Path,
     private val journal: DesktopSessionCommitJournal = DesktopSessionCommitJournal(root),
+    private val cleanupDeletedMedia: suspend (List<String>) -> Unit = {},
 ) {
     private val mutex = Mutex()
     private val storage = JsonFileStorage(root, gate)
     private val inventory = DesktopSessionInventory(root)
     private val workspace = root.resolve("backups/.save-slot-work")
+
+    /** Confirmed whole-session deletion uses the existing recoverable graph publication. */
+    suspend fun deleteSession(sessionId: String): String? = withContext(Dispatchers.IO) { mutex.withLock {
+        reservation.run(sessionId) {
+            val proof = gate.withNormalOperation { inventory.read(sessionId) }
+            check("entities/chat_sessions/$sessionId.json" in proof) { "会话已不存在，请刷新列表" }
+            val catalog = gate.withNormalOperation { libraryOwnership() }
+            val slots = catalog.filterValues { it.summary.sessionId == sessionId }
+            val removed = proof.toMutableMap()
+            slots.forEach { (id, slot) -> removed["entities/save_slots/$id.json"] = slot.hash }
+            slots.values.mapNotNull { it.packageName }.distinct().forEach { name ->
+                if (catalog.values.none { it.summary.sessionId != sessionId && it.packageName == name }) {
+                    val relative = "save_slot_packages/$name"
+                    removed[relative] = gate.withNormalOperation { DesktopArchiveFiles.hash(root.resolve(relative), DesktopSaveSlotArchive.MAX_ARCHIVE) }
+                }
+            }
+            val media = linkedSetOf<String>()
+            fun collect(value: JsonElement) {
+                when (value) {
+                    is JsonPrimitive -> if (value.isString && (value.content.startsWith("images/") ||
+                        isDesktopOwnedAudioCandidate(root, value.content))) media += value.content
+                    is JsonObject -> value.values.forEach(::collect)
+                    is JsonArray -> value.forEach(::collect)
+                }
+            }
+            gate.withNormalOperation { removed.filterKeys { it.startsWith("entities/") }.forEach { (path, hash) ->
+                val source = root.resolve(path)
+                check(DesktopArchiveFiles.hash(source, com.example.chatbar.desktop.backup.DesktopBackupRecords.recordBudget) == hash)
+                collect(Json.parseToJsonElement(Files.readString(source)))
+            } }
+            ensureWorkspace()
+            val receipt = workspace.resolve("delete-${UUID.randomUUID()}.json")
+            Files.writeString(receipt, buildJsonObject {
+                put("sessionId", sessionId); put("media", buildJsonArray { media.forEach { add(JsonPrimitive(it)) } })
+            }.toString(), StandardOpenOption.CREATE_NEW)
+            try {
+                publish(sessionId, proof, null, removed, mapOf("backups/.session-deletion-cleanup/$sessionId.json" to receipt),
+                    refreshSessionId = sessionId) { check(libraryOwnership() == catalog) { "存档列表已变化，请重新确认删除" } }
+            } finally { Files.deleteIfExists(receipt) }
+            try { cleanupDeletionReceipt(sessionId); null }
+            catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { "会话已删除，部分媒体清理尚未完成；清理记录已保留，下次启动重试。" }
+        }
+    } }
+
+    /** Only already committed deletion receipts are resumed; no new deletion is inferred. */
+    suspend fun resumeSessionDeletionCleanup() = withContext(Dispatchers.IO) { mutex.withLock {
+        val directory = root.resolve("backups/.session-deletion-cleanup")
+        if (!Files.exists(directory, LinkOption.NOFOLLOW_LINKS)) return@withLock
+        DesktopArchiveFiles.safe(directory, true)
+        val ids = Files.newDirectoryStream(directory, "*.json").use { paths ->
+            paths.map { path -> DesktopArchiveFiles.safe(path, false); path.fileName.toString().removeSuffix(".json") }
+        }
+        check(ids.size <= 4096)
+        for (id in ids) try { cleanupDeletionReceipt(id) }
+        catch (cancelled: CancellationException) { throw cancelled }
+        catch (_: Exception) { /* Retain the durable receipt for retry; no direct file sweep. */ }
+    } }
+
+    private suspend fun cleanupDeletionReceipt(sessionId: String) {
+        require(sessionId.matches(Regex("[A-Za-z0-9_-]{1,128}")))
+        val path = root.resolve("backups/.session-deletion-cleanup/$sessionId.json")
+        val value = gate.withNormalOperation {
+            DesktopArchiveFiles.safe(path, false)
+            check(Files.size(path) <= 12L * 1024 * 1024)
+            Json.parseToJsonElement(Files.readString(path)).jsonObject.also {
+                check(it["sessionId"]?.jsonPrimitive?.content == sessionId)
+            }
+        }
+        cleanupDeletedMedia(value.getValue("media").jsonArray.map { it.jsonPrimitive.content })
+        gate.withNormalOperation { Files.delete(path) }
+    }
     private val archive get() = DesktopSaveSlotArchive(workspace)
     private val planner = DesktopSaveSlotRestorePlan(root) { target, ids -> gate.withNormalOperation {
         var foreign = false; var count = 0
