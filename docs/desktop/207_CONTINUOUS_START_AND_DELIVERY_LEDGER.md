@@ -1,3 +1,7 @@
+2026-11-02 CI82原整批FAIL保留：Windows2404项2384PASS＋19SKIP＋1FAIL，独立production JAR代理5PASS；新Fish HTTP4／generation10已过。唯一失败为旧替换终态反馈fixture只排一条503，合法新重试等待未排response超时；改401永久拒绝，保留原反馈／音频／次数断言，不延时掩盖。shared1131全PASS，Android580PASS＋2旧包裹拒绝断言FAIL已按固定147修正。下一精确源将同时核Moments、这些必要修正和c857语音辅助用量／稳定逻辑请求跨重试接线，并补Windows shared7定向报告；源码已分提交但此前均未由82覆盖。公开1229／13保持，无后版许可，10:00前继续独立工作。
+
+下方历史保留。
+
 2026-11-02 CI82／7611原Linux FAIL保留：shared1131全PASS，Android582中两条旧141拒绝完整Markdown包裹的断言FAIL，其余580通过；已对照固定147相同测试，只更新两条成功预期并保留未知字段拒绝，不放宽生产解析。Windows仍待。独立Moments增量已本地086bfb3d提交，含原作者／同名稳定ID的清晰选择、实际设置wire和原窄宽Scene；Windows新增shared7定向执行／独立报告同送下一源，不取消82剩余验证。公开1229／13不变，10:00前不催人工，其他原范围工作继续。
 
 下方历史保留。

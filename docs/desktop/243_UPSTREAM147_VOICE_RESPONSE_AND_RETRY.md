@@ -1,5 +1,7 @@
 # 正式1.4.7适配：语音响应封装与有限重试
 
+CI82原Windows也完整FAIL：305suite2404项＝2384PASS＋19SKIP＋1FAIL，独立production JAR代理5PASS。新FishRejectedRetry4／FishGeneration10均通过；唯一失败是旧PostP8替换反馈fixture只排一条503，特征重试随后等待未排的响应，5秒超时。该用例原意是终态替换失败清旧反馈，后续改为401永久拒绝，原请求次数、音频保全和反馈清除断言全部保留；503精确耗尽和退避取消由新定向用例实际覆盖，不延长超时掩盖。原82 XML／栈保留，后续新源重验，不抹为通过。
+
 7611／CI82的原Linux结果保留：shared1131全部通过（Policy3／Execution9／实际Gateway3），Android582项中两条旧141断言仍要求拒绝完整Markdown包裹而失败，其他580通过。对照固定官方147相同测试的变更，后续只改这两条为完整包裹解析成功，未知字段拒绝断言保持；不修改生产解析来迎合旧预期。Windows尚待，不因共享通过宣称整批GREEN。终态会清除等待重试提示，独立计数保留已发生次数；取消退避的真实coordinator回归亦待精确新源。
 
 2026-11-02 JST。依据正式上游b4fa／ed5d的VoiceResponsePolicy及执行测试，不修改原语音Prompt，不新增真实调用。此增量独立于192f／CI81的旧Studio流式读取和公开1229；尚待其精确源云端，不能由此前语音或CI80通过代验。

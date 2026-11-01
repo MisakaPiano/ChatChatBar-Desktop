@@ -116,7 +116,8 @@ class DesktopPostP8IntegrationTest {
             assertEquals(current.id,event.voiceId);assertEquals(current.sessionId,event.sessionId)
             assertTrue(event.text.contains("替换成功"));assertNotEquals(old.audioPath,current.audioPath)
             val requests=f.server.requestCount
-            f.server.enqueue(okhttp3.mockwebserver.MockResponse().setResponseCode(503))
+            // This case checks terminal replacement feedback, not temporary-rejection retry.
+            f.server.enqueue(okhttp3.mockwebserver.MockResponse().setResponseCode(401))
             f.done(f.runtime.generate(f.message,"alice",replace=current,editedTaggedText="hello"))
             assertNull(f.runtime.coordinator.feedback.value)
             assertEquals(requests+1,f.server.requestCount);assertEquals(current,f.repo.get(current.id))
