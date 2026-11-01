@@ -199,6 +199,7 @@ class DesktopAppContainer internal constructor(
     private val chatVoiceOwner = lazy { DesktopChatVoiceRuntime(chatRepository, characterRepository, settingsRepository,
         effectiveModelResolver, voiceRepository, voiceAudioStore, fishAudioCredentials, audioFocusOwner.value.port(formal = true),
         picker = filePicker, gate = dataOperationCoordinator, uiPreferences = chatUiController.state,
+        diagnostics = taskRuntime.diagnostics,
         textBusy = { sessionId -> taskRuntime.tasks.value.any { it.sessionId == sessionId && it.status == DesktopTaskStatus.RUNNING } }) }
     internal val chatVoiceRuntime by chatVoiceOwner
     private val fishPreviewOwner = lazy {

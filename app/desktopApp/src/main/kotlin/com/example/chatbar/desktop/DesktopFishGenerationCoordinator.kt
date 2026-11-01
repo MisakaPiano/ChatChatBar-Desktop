@@ -142,7 +142,9 @@ internal class DesktopFishGenerationCoordinator(
         require(model == FishAudioTtsModels.S2_1_PRO_FREE) { "收费 Fish 模型尚未获得本轮授权" }
         return model
     }
-    private suspend fun <T> networkWork(sessionId: String, block: suspend () -> T): T = block()
+    private suspend fun <T> networkWork(batchId: String, sessionId: String, cardId: String, messageId: String,
+        block: suspend () -> T): T = withContext(DesktopUsageParent(DesktopUsageContext(
+            DesktopUsageSource.CHAT, taskId = batchId, sessionId = sessionId, cardId = cardId, subjectId = messageId))) { block() }
     suspend fun closeAndDrain() = withContext(NonCancellable) {
         val pending = synchronized(admission) { accepting = false; jobs.values.toList().onEach { it.cancel() } }
         pending.joinAll(); pendingTextConfirmations.clear(); clearAutoPlay(); playback.stop()
@@ -303,7 +305,7 @@ internal class DesktopFishGenerationCoordinator(
                     )
                 }
                 val artifactId = UUID.randomUUID().toString()
-                val audio = networkWork(existing.sessionId) {
+                val audio = networkWork(batchId, existing.sessionId, context.card.id, existing.messageId) {
                     ttsSlots.withPermit {
                         fishAudioService.synthesize(
                                     modelId = fishModelId,
@@ -575,7 +577,7 @@ internal class DesktopFishGenerationCoordinator(
                     modelStreamText = ""
                 )
             }
-            val translationResult = networkWork(context.session.id) {
+            val translationResult = networkWork(batchId, context.session.id, context.card.id, context.message.id) {
                 tagService.translate(
                     modelConfig = tagModel,
                     targetLanguage = targetLanguage,
@@ -635,7 +637,7 @@ internal class DesktopFishGenerationCoordinator(
                 errors = errorsById
             )
         }
-        val tagResult = networkWork(context.session.id) {
+        val tagResult = networkWork(batchId, context.session.id, context.card.id, context.message.id) {
             tagService.generate(
                 modelConfig = tagModel,
                 fishModelId = fishModelId,
@@ -723,7 +725,7 @@ internal class DesktopFishGenerationCoordinator(
             return
         }
         checkNotNull(credentials.forCurrentCall()) { "Fish Audio API Key 未配置" }
-        networkWork(context.session.id) {
+        networkWork(batchId, context.session.id, context.card.id, context.message.id) {
             val bytesByTarget = ConcurrentHashMap<String, Long>()
             val completedTargets = AtomicInteger(0)
             val results = supervisorScope {

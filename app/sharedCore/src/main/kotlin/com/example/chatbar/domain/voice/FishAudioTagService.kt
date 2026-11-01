@@ -21,6 +21,8 @@ enum class FishVoiceTextTask { TRANSLATE, TAG }
 fun interface FishVoiceTextGateway {
     fun streamText(task: FishVoiceTextTask, messages: List<ChatApiMessage>,
         modelConfig: ModelConfig, disableThinking: Boolean): Flow<StreamEvent>
+
+    suspend fun <T> withLogicalRequest(task: FishVoiceTextTask, model: ModelConfig, block: suspend () -> T): T = block()
 }
 
 data class VoiceTagInput(
@@ -133,17 +135,19 @@ class FishAudioTagService(
         onDelta: (String) -> Unit,
         parse: (String) -> T,
     ): T = auxiliarySlots.withPermit {
-        retryVoiceAuxiliary(onRetry = { _, waitMillis ->
-            onDelta("\n【语音辅助请求暂时失败；${waitMillis / 1000} 秒后重试】\n")
-        }) {
-            val raw = StringBuilder()
-            chatService.streamText(task, messages, modelConfig.withoutOutputTokenLimit(), disableThinking = true)
-                .collect { event -> when (event) {
-                    is StreamEvent.Delta -> { raw.append(event.text); onDelta(event.text) }
-                    is StreamEvent.Error -> throw event.asException()
-                    else -> Unit
-                } }
-            parse(raw.toString())
+        chatService.withLogicalRequest(task, modelConfig) {
+            retryVoiceAuxiliary(onRetry = { _, waitMillis ->
+                onDelta("\n【语音辅助请求暂时失败；${waitMillis / 1000} 秒后重试】\n")
+            }) {
+                val raw = StringBuilder()
+                chatService.streamText(task, messages, modelConfig.withoutOutputTokenLimit(), disableThinking = true)
+                    .collect { event -> when (event) {
+                        is StreamEvent.Delta -> { raw.append(event.text); onDelta(event.text) }
+                        is StreamEvent.Error -> throw event.asException()
+                        else -> Unit
+                    } }
+                parse(raw.toString())
+            }
         }
     }
 

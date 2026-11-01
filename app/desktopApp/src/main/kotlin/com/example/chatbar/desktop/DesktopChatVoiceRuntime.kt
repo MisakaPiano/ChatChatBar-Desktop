@@ -30,6 +30,7 @@ internal class DesktopChatVoiceRuntime(
     transportOverride: DesktopFishVoiceTransport? = null,
     textGateway: FishVoiceTextGateway? = null,
     private val uiPreferences: kotlinx.coroutines.flow.StateFlow<DesktopChatUiPreferences>? = null,
+    private val diagnostics: DesktopTransportDiagnosticsOwner? = null,
 ) {
     private val textTransport = lazy { OpenAiStreamingTransport { settings.currentAppSettings.allowCleartextModelApi } }
     private val job = SupervisorJob()
@@ -39,8 +40,8 @@ internal class DesktopChatVoiceRuntime(
     val playback = DesktopVoicePlayback(audio, output, gate,
         continuousForSession = uiPreferences?.let { preferences -> { session -> preferences.value.continuousPlaybackFor(session) } })
     val coordinator = DesktopFishGenerationCoordinator(scope, chats, characters, settings, repository, credentials,
-        transport, FishAudioTagService(textGateway ?: FishVoiceTextGateway { _, messages, config, _ ->
-            textTransport.value.streamFishVoice(messages, config)
+        transport, FishAudioTagService(textGateway ?: DesktopFishAuxiliaryGateway(diagnostics) { messages, config, log ->
+            textTransport.value.streamFishVoice(messages, config, log)
         }), models, audio, playback, gate)
     private val mutableNotice = MutableStateFlow<String?>(null)
     val notice = mutableNotice.asStateFlow()
