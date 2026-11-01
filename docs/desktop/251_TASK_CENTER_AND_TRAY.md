@@ -1,5 +1,7 @@
 # 任务中心与托盘 / 2026-11-02
 
+当前实证：ed4105／CI95完整成功，主2452＝2433PASS＋19SKIP，受影响14项含修正分页、TaskCenter5、Tray假backend3、Fish实际批次、UTF8 decoder2及窄宽Scene全部通过。实际420／1100图已view，无重叠／遮挡。此结果不涵后补FullBackup／typed modal；a9b9112a／CI96正在验证它们。1232冻结883的普通原生／真实冷4批次和547文件字节核对已过，仍非原生托盘动作／通知送达或真人。189用户提示／设置锁只在后续本地源码。
+
 原216 P15-04的独立后续源码。14dd／CI94实际编译并运行：主2445项2425PASS＋19SKIP＋1FAIL，独立production JAR代理5通过；TaskCenter五项、文档定位及消息精确定位／草稿保留已过，仅消息分页测试假设失败。原fixture连续180条assistant被原仓库正确视为一轮，不会按消息数切断；后补超过MAX_WINDOW_TURNS的真实User/Assistant轮组和稳定时间戳，保留产品turn边界、不延时或改生产分页。后续托盘、UTF8冷交接、Fish及Scene不在14dd，待新源，不混私有1231（冻结5d01）。外部导入fb6／CI93完整成功保持。
 
 DesktopTaskCenter观察现有owner，条目保存固定任务种类、状态、实际目标ID、可用操作和可选真实计数。停止请求只显示等待收尾，原owner终态才停止活跃显示。仅观察到真实活跃→终态才发进程内固定kind/status事件；这还不是Windows通知送达。正文、Prompt、候选及provider异常不被拷成任务条目。

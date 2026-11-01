@@ -6,7 +6,7 @@
 
 Main(args)在业务构造前接DesktopExternalActivation。每个安装身份在当前用户辅助目录持有一个receiver锁，以认证loopback传递文件和聚焦请求；只有owner构造业务与资料根。队列只记录有界路径、ID和attempted，不记录正文、密码或冲突选择。确认丢失不自动重送；损坏辅助记录保留原件、暂停外部投递，普通窗口仍可进入。正常重开保留待处理项，attempted项恢复为待核对而非重新导入；这不是断电或所有文件系统原子性证明。
 
-新增OpenChatBarFile.exe为受管根的第三个入口资源，旧稳定入口协议保持。运行中以UTF8认证投给receiver、不重新运行整个image；Unicode、空格与顺序已由实际warm验证。实际冷启动OS argv仍待定位，不由编码fixture代证。冷启动仍校验所有image字节。HKCU仅登记按安装根区分的“打开方式”，不抢默认或改UserChoice；卸载只移除精确归属注册。资源回执接受旧两项或新三项，外来helper拒绝，不静默收编。原生ready、forwarded和queue确认分别证明就绪、已有owner与排队，不互相冒充。
+新增OpenChatBarFile.exe为受管根的第三个入口资源，旧稳定入口协议保持。运行中以UTF8认证投给receiver、不重新运行整个image；Unicode、空格与顺序已由实际warm验证。原raw OS argv的输入敏感差异未唯一归因；后续绑定UTF8冷交接已由R17四类真实批次通过，不用编码fixture代证。冷启动仍校验所有image字节。HKCU仅登记按安装根区分的“打开方式”，不抢默认或改UserChoice；卸载只移除精确归属注册。资源回执接受旧两项或新三项，外来helper拒绝，不静默收编。原生ready、forwarded和queue确认分别证明就绪、已有owner与排队，不互相冒充。
 
 ## 复用已有导入能力
 
@@ -44,3 +44,5 @@ R13（41347432943／5b64d555）同包追加真实冷中文路径，但原FAIL发
 R14（41348025609）复用同字节，跳过无关旧基线而独立新鲜安装→正常退出→真实冷中文及&路径；实际FAIL为180秒未确认主窗，stderr只有正常SAFE_EXIT_HANDOFF，不能据此确认唯一转码原因。R15原控制75eb／41348813180为YAML名称冒号导致无job，后3c只修workflow未触发；ab89574／实际candidate第16次41349226429同原字节ASCII冷对照严格通过。因ASCII对照也移除了&，只证明输入敏感差异，不宣称中文为唯一因素；其Unicode路径验证是warm。原失败均保留。
 
 后续生产修正不放宽检查：manager冷投递在owned receipts以CreateNew／Flush／move写版本化UTF8路径批次，jpackage只传ASCII nonce和SHA；Main前置DesktopExternalLaunchRequest核精确activation绑定、hash、有界字节、严格UTF8和framing，再回原绝对路径／count／length及队列准入。原raw入口仍可用。只有实际QUEUED回执后清理精确未变request；未知投递保留请求不自动重送；清理异常单独DEFERRED记录，不冒称导入完成。新增两项读取／拒绝回归与原生fake独立解码、ASCII argv／精确request清理检查尚待新源云端，不混冻结1231。后续真实冷批次同时含ASCII&、中文有／无&与日本语emoji；仍核窗口／进程／工作目录／全Job正常退出。
+
+1232冻结883／R17（41351760445）实际普通升级／重开和真冷混合批次通过：先保留4个pending精确ID/path/attempted/order，再入ASCII&、中文有无&、日本语emoji四项，preWarm共8，随后warm再2；同一可见PID、原件不变、没有自动导入或provider请求。后补备份任务UI不在该包；托盘实际提醒送达／真人未验证。最终EXE176144403B／73d3e095ae57d158f9d62ff7163ea758fd5a680ea813b773f8d97e091110803a、独立ZIP189363854B／016c98e8e3eba24d0f34ce43984623d158f701e71694295d7d179834c9f63f95，547共用文件及548清单实核一致。公开仍1229／13。
