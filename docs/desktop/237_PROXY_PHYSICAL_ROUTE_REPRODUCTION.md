@@ -1,5 +1,7 @@
 # NAI代理：选中路由与实际套接字分层复现
 
+CI78／4fefe7ca实际修后GREEN：正常五种物理路由与独立production JAR五种路由均通过。HTTP只application CONNECT、SYSTEM只system CONNECT、DIRECT／LOCAL只目标GET、显式SOCKS只application SOCKS；无第二个系统SOCKS连接。当前主302suite2394项＝2375PASS＋19SKIP，无FAIL／ERROR；两组物理测试不相加作主测试数。CI77四项原RED保留。R08普通1229包最终字节、548清单／547共用Program文件、升级与稳定重开通过；仍是测试JDK17加载production JAR，不冒认随包JRE或真实v2ray现场通过。真实账户复测集中一次，复用现有端口截图及报告，不重复索要设置证据。见239。
+
 2026-11-01。最新本地原报告SHA256 `cadf248e3ff298e366964e336c4ccfb3d41c95e3b18e84b3ac4e5cc2dfa1e542`，原文／截图／真实资料根不上传。报告及当前运行路由截图显示应用已选择手动HTTP端口，但该端口没有连接，TCP只到系统代理端口；账户请求约20秒停在代理连接／协商阶段，未进入TLS。curl快速返回401只证明其传输路径可达，不证明应用同路由。
 
 当前源码已经有应用HTTP／SOCKS优先、DIRECT→NO_PROXY、Main启动时loadAtStartup和networkProxy持久化。账户入口每次刷新新建secureNovelAiClient，不先假定旧账户连接池复用，不重做已有DIRECT分支或盲加重试。用户本次说的失败属于NAI，不能继续归因于已处理的资料目录重叠。

@@ -1,5 +1,7 @@
 # 生成中的用户消息刷新与完整正文展示
 
+CI78／4fefe7ca实际通过DesktopLiveChatDisplay两项与TaskRuntime二十项（含新增瞬态清理），原取消七项继续通过；主302suite2394项＝2375PASS＋19SKIP，无FAIL／ERROR。独立对照把相同两项Scene测试和SSE夹具复制到公开1228／bd684，生产源不改，实际产生两项指定显示断言失败、无ERROR，确认旧USER未刷新及流式摘要缺陷。该旧源RED单独保存，不混主测试数；临时请求已移除，原工作流条件保留，不在之后每轮重复旧基线。真实用户生成中显示仍待1229实测。
+
 2026-11-01。用户在正式1228报告新USER到助手回复完成后才出现；重新生成旧回复可见既有USER，但生成中的角色气泡出现`[truncated]`，随后明确确认最终正文完整。原图／正文只在本地。此处不是已证实最终数据截断或模型输出上限错误。
 
 实际源码：Runtime已先落盘USER，却未向Panel提供该次落盘信号；Panel仅在terminal时重新读取消息。另一方面TaskRuntime把update.content／reasoning交给safeText的512字符诊断摘要，Panel又把该摘要当正式气泡及viewport流式变化源；正式持久化仍用完整accumulatedContent。

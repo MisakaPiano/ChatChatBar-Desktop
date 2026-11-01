@@ -1,3 +1,5 @@
+2026-11-01 1229固定4fefe7ca／CI78完整SUCCESS：实际Windows302suite2394项＝2375PASS＋19SKIP，无FAIL／ERROR；正常与production JAR物理路由各五项通过，旧1228两项显示RED与修后LiveChat2 GREEN分开保留。共享1105／Android582通过，R08／615a普通NSIS构建、升级重开及独立547文件通过，最终EXE／ZIP与本地签名13、旧1225 client从12到13及二次验包通过。未公开草稿430625623四资产读回，公开仍1228／metadata12，不代装H；临时旧源对照请求取证后移除，不重复跑。用户最新明确邀请测试者问题优先，既有重叠根沿应用迁移移出安装根、原资料保留，现场恢复仍待；NAI及聊天显示集中一次短复测，不重复索要已收设置截图。1.4.7与新功能排在反馈收尾后，见235／237／238／239。
+
 2026-11-01 当前公开1228／bd684／metadata12已按本版许可交付，旧客户端匿名下载和二次验包通过；用户已自行升级，不重发旧1226。后续69a／CI77实际物理代理RED：正常301suite2391项2368PASS＋19SKIP＋4FAIL，独立production JAR五项1PASS＋4FAIL，不合并计数；HTTP／DIRECT被JDK原始socket二次套用系统SOCKS，显式SOCKS正确。后续修复在启动network owners之前接Desktop专用原始SocketFactory，保留OkHttp已选HTTP／SOCKS／DIRECT及TLS／重试。另修USER落盘后单次UI刷新与完整瞬态流式正文，诊断摘要仍有界；实际Panel／HTTP／清理及固定1228旧源反证测试送下一轮云端，当前待验。正式1.4.7目标已授权，先收尾这些反馈，不以修改baseline记录代替适配。后版仅私有准备、未公开许可；本机无重负载、不代装H。见237／238。
 
 2026-11-01 1228固定bd684／CI74完整SUCCESS：实际Windows2364PASS+19SKIP、0FAIL；R07普通NSIS编译、1225升级稳定重开及独立入口通过。最终字节、547成员、旧1225 client本地签名11→12和二次验包通过，草稿430564389四资产读回，未公开／未代装H，公开仍1227／11。后续4139辅助用量CI75完整SUCCESS，实际报告另读；新NAI截图确认应用路由已指手动端口却实际TCP到系统端口，e91物理首字节fresh JVM／production JAR复现待云端，不因1228通过冒认已修，见236／237。
