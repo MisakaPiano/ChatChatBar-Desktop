@@ -1,6 +1,6 @@
 # P15 数值用量统计与实际尝试归属
 
-1228已固定bd684源码，与独立控制8e726的R07普通构建、CI74并行，尚待结果。后续工作树为NAI设计／研究各阶段及链接视觉接入现有diagnostics与数值sink：在实际collect处继承DesktopUsageParent，没有确切归属则OTHER／空ID，显式视觉诊断调用不重复捕获。只观测既有请求，不更改Prompt、wire或重试；辅助HTTP在生产者／编辑器关闭后、统计owner之前排水。新增实际合成HTTP检查阶段／视觉、零值、编辑归属、截断失败、取消、请求数及原文不落盘，尚待后续源云端。此增量不在1228中，完整二进制生图／语音／embedding及手动图像操作精确归属仍待。
+1228固定bd684／CI74与R07已通过并按用户许可公开；数值统计仍为限定覆盖。后续4139／CI75实际Windows2366PASS+19SKIP，AuxiliaryUsage2通过：NAI设计／研究各阶段及链接视觉在实际collect处继承DesktopUsageParent，无确切归属则OTHER／空ID，显式视觉调用不重复捕获；辅助HTTP在生产者／编辑器关闭后、统计owner之前排水。此增量不在1228中。当前后续工作树继续给launchNovelAi传实际task UUID／可选ChatSession与消息归属，独立Studio仍OTHER且不冒用设计会话为ChatSession；新增实际TaskRuntime→HTTP→持久记录用例，尚待新源云端。完整二进制生图／语音／embedding、主聊天另一条视觉路径及编辑器／手动图像精确归属仍待；Prompt、wire和重试均保持。
 
 CI71／63404实际Windows298suite2377项=2357PASS+19SKIP+1FAIL。Capture3／Usage4／Scene1通过，420／1100统计图已读回核对；原P13两项亦通过。唯一既有Regeneration双close用例暴露统计owner重复申请CLOSED gate；后续补串行幂等close、保存失败保留／重试、成功后不重进gate和并发／失败重试合成用例，尚待新源。原失败不回填为绿，边界预检74不由71覆盖。
 

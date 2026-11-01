@@ -283,7 +283,9 @@ internal class DesktopTaskRuntime(
             throw DesktopTaskAdmissionException("已有图像任务运行，请等待或停止")
         val id = UUID.randomUUID().toString()
         if (retryable) imageRetryCheckpoints[id] = ImageRetryCheckpoint(label, sessionId, targetMessageId, work)
-        val job = scope.launch(start = CoroutineStart.LAZY) {
+        val usageParent = DesktopUsageContext(if (sessionId == null) DesktopUsageSource.OTHER else DesktopUsageSource.CHAT,
+            taskId = id, sessionId = sessionId, subjectId = targetMessageId)
+        val job = scope.launch(DesktopUsageParent(usageParent), start = CoroutineStart.LAZY) {
             update(id) { it.copy(startedAt = clock()) }
             try {
                 work(DesktopImageTaskReporter(
