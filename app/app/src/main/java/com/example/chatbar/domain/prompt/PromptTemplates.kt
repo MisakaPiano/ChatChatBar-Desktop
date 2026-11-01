@@ -418,32 +418,10 @@ object PromptTemplates {
 
     const val CHARACTER_AUTO_FILL_SOURCE_IMAGE_INSTRUCTIONS = CharacterCardAiPromptAuthority.CHARACTER_AUTO_FILL_SOURCE_IMAGE_INSTRUCTIONS
 
-    const val CHARACTER_APPEARANCE_IMAGE_SYSTEM_PROMPT = """
-分析user上传图片中最主要人物的可见特征，生成可直接写入角色卡的中文设定。
-
-提取规则：
-1. appearance 只写人物本体的稳定外貌：性别表现、年龄段、体型、肤色、脸部、眼睛、头发、耳朵、角、翅膀、尾巴、伤痕、纹身等。
-2. clothing 只写当前可见穿戴：上衣、下装、裙装、外套、内衣、鞋袜、帽子、手套、盔甲、首饰、配饰及其颜色、材质、款式。
-3. 不写动作、姿势、表情、背景、镜头、画风、光影、剧情、身份、性格或图片中看不见的推测。
-4. 图片没有清楚展示的字段写空字符串，不要用“未知”“看不清”“未展示”等占位语。
-5. 若图片出现多人，只分析画面中心、面积最大或视觉焦点最明确的主要人物。
-6. 描述尽可能详细、紧凑，避免重复；不要输出 NovelAI/Danbooru 标签。
-
-只输出一个合法 JSON 对象，不要 Markdown、解释、注释或 JSON 外文字：
-{"appearance":"","clothing":""}
-"""
-
-    const val CHARACTER_APPEARANCE_IMAGE_USER_PROMPT_TEMPLATE = """
-请根据上传图片提取人物“{{characterName}}”的外貌特征与服装，并严格按 system 指定的 JSON 结构输出。
-"""
-
+    const val CHARACTER_APPEARANCE_IMAGE_SYSTEM_PROMPT = CharacterCardAiPromptAuthority.CHARACTER_APPEARANCE_IMAGE_SYSTEM_PROMPT
+    const val CHARACTER_APPEARANCE_IMAGE_USER_PROMPT_TEMPLATE = CharacterCardAiPromptAuthority.CHARACTER_APPEARANCE_IMAGE_USER_PROMPT_TEMPLATE
     fun characterAppearanceImageUserPrompt(characterName: String): String =
-        CHARACTER_APPEARANCE_IMAGE_USER_PROMPT_TEMPLATE
-            .trim()
-            .replace(
-                "{{characterName}}",
-                characterName.trim().ifBlank { "未命名人物" }
-            )
+        CharacterCardAiPromptAuthority.characterAppearanceImageUserPrompt(characterName)
 
     const val CHARACTER_AUTO_FILL_SYSTEM_PROMPT = CharacterCardAiPromptAuthority.CHARACTER_AUTO_FILL_SYSTEM_PROMPT
 

@@ -13,6 +13,30 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class CharacterCardAiRequestParityTest {
+    @Test fun desktopAndAndroidAppearanceKeepIsolatedJsonAndImageRequest() = runBlocking {
+        MockWebServer().use { server ->
+            val desktop = OpenAiStreamingTransport { true }; val android = StreamingChatService { true }
+            try {
+                val model = ModelConfig("synthetic-vision", "合成视觉模型", server.url("/v1").toString(), "fixture-key", "vision",
+                    isMultimodal = true, maxOutputTokens = 717, enableThinking = true, createdAt = 1,
+                    customParams = mapOf("temperature" to ParamValue.NumberValue(0.65)))
+                val messages = listOf(ChatApiMessage.text("system", PromptTemplates.CHARACTER_APPEARANCE_IMAGE_SYSTEM_PROMPT),
+                    ChatApiMessage.withImage("user", PromptTemplates.characterAppearanceImageUserPrompt("合成人物"), "synthetic-image"))
+                repeat(2) { server.enqueue(MockResponse().setHeader("Content-Type", "text/event-stream").setBody(
+                    "data: {\"choices\":[{\"delta\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n")) }
+                val official = withTimeout(10_000) { android.completeTextStreaming(messages, model,
+                    disableThinking = true, isolatedTaskParameters = true, responseFormatJson = true,
+                    taskContext = AiTaskContext(AiTaskKind.CHARACTER_APPEARANCE, AiTaskStage.GENERATE)) }
+                val port = withTimeout(10_000) { desktop.streamCharacterAppearance(messages, model).toList() }
+                assertEquals("ok", official); assertTrue(port.last() is StreamEvent.Done)
+                val a = server.takeRequest(1, TimeUnit.SECONDS)!!; val b = server.takeRequest(1, TimeUnit.SECONDS)!!
+                assertEquals(a.path, b.path); assertEquals(a.getHeader("Authorization"), b.getHeader("Authorization"))
+                assertEquals(Json.parseToJsonElement(a.body.readUtf8()), Json.parseToJsonElement(b.body.readUtf8()))
+                assertEquals(2, server.requestCount)
+            } finally { desktop.closeAndDrain() }
+        }
+    }
+
     @Test fun desktopAndAndroidResearchPlanAndBriefRetainSameParametersAndEnvelope() = runBlocking {
         MockWebServer().use { server ->
             val desktop = OpenAiStreamingTransport { true }; val android = StreamingChatService { true }

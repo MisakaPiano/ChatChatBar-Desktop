@@ -102,6 +102,7 @@ internal class DesktopCharacterEditorController(
     val documentIndex: DesktopRagController? = null,
 ) {
     internal var cardAi: DesktopCharacterCardAiController? = null
+    internal var appearanceAi: DesktopCharacterAppearanceController? = null
     internal val canUseCardAi: Boolean get() = _state.value.let { s ->
         s.card != null && !s.busy && s.draftSessionId != null &&
             !desktopCharacterEditorPresentation(s).readOnly && s.problem !in setOf(
@@ -845,6 +846,7 @@ internal class DesktopCharacterEditorController(
 
     suspend fun closeAndDrain() {
         cardAi?.closeAndDrain()
+        appearanceAi?.closeAndDrain()
         flushDraft()
         when {
             _state.value.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING -> retryCommittedCleanup()

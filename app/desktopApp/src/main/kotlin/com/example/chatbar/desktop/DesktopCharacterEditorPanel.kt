@@ -329,6 +329,7 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
         convertConfirm = false
     }
     controller.cardAi?.let { DesktopCharacterCardAiOverlay(it) }
+    controller.appearanceAi?.let { DesktopCharacterAppearanceOverlay(it) }
 }
 
 @Composable
@@ -526,6 +527,7 @@ private fun CharacterEntryFields(entry: CharacterInfo, controller: DesktopCharac
     EditorField(t(DesktopUiText.PROFILE), entry.profile, true) { v -> controller.updateCharacter(entry.id) { it.copy(profile = v) } }
     EditorField(t(DesktopUiText.APPEARANCE), entry.appearance, true) { v -> controller.updateCharacter(entry.id) { it.copy(appearance = v) } }
     EditorField(t(DesktopUiText.CLOTHING), entry.clothing, true) { v -> controller.updateCharacter(entry.id) { it.copy(clothing = v) } }
+    controller.appearanceAi?.let { ai -> BootstrapButton("从图片补外貌／服装", secondary = true) { ai.open(entry.id) } }
     EditorField(t(DesktopUiText.ABILITIES), entry.abilities, true) { v -> controller.updateCharacter(entry.id) { it.copy(abilities = v) } }
     EditorField(t(DesktopUiText.HABITS), entry.habits, true) { v -> controller.updateCharacter(entry.id) { it.copy(habits = v) } }
     EditorField(t(DesktopUiText.BACKGROUND_FIELD), entry.background, true) { v -> controller.updateCharacter(entry.id) { it.copy(background = v) } }

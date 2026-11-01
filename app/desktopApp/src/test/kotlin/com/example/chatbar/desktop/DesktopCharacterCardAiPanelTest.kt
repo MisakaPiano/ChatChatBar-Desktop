@@ -59,6 +59,12 @@ class DesktopCharacterCardAiPanelTest {
                         }
                     }, filePicker = picker)
                 editor.cardAi = ai
+                val appearance = DesktopCharacterAppearanceController(editor, app.settingsRepository, app.effectiveModelResolver,
+                    app.taskRuntime, app.dataOperationCoordinator, picker, stream = { _, selected, _ ->
+                        assertEquals(model.id, selected.id)
+                        flowOf(StreamEvent.Delta("""{"appearance":"图片外貌","clothing":"图片服装"}"""), StreamEvent.Done)
+                    })
+                editor.appearanceAi = appearance
                 val activity = DesktopModalActivity()
                 val scene = ImageComposeScene(width, 900, coroutineContext = edt) {
                     CompositionLocalProvider(LocalDesktopModalActivity provides activity) {
@@ -87,6 +93,17 @@ class DesktopCharacterCardAiPanelTest {
                     scene.until { !ai.state.value.open }
                     assertEquals("合成新外观", editor.state.value.card!!.characters.single().appearance)
                     assertTrue(editor.state.value.dirty); assertEquals(card, app.characterRepository.getById(card.id))
+                    val beforeAppearance = editor.state.value.card
+                    appearance.open("person")
+                    scene.until { !appearance.state.value.busy && appearance.state.value.candidate != null }
+                    assertEquals(beforeAppearance, editor.state.value.card)
+                    assertTrue(scene.has("上传的人物参考图"))
+                    scene.shot("character-card-appearance-candidate-$width.png")
+                    scene.click("应用外貌与服装到草稿")
+                    scene.until { !appearance.state.value.open }
+                    assertEquals("图片外貌", editor.state.value.card!!.characters.single().appearance)
+                    assertEquals("图片服装", editor.state.value.card!!.characters.single().clothing)
+                    assertEquals(card, app.characterRepository.getById(card.id))
                 } finally { scene.close() }
             } finally {
                 app.close()

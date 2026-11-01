@@ -330,6 +330,10 @@ class DesktopAppContainer internal constructor(
                 }, filePicker = filePicker, describeImage = { encoded, model, delta, diagnostics ->
                     DesktopAuxiliaryImageUnderstanding(formatCardAiTransportOwner.value).describe(encoded, model, delta, diagnostics)
                 })
+            editor.appearanceAi = DesktopCharacterAppearanceController(editor, settingsRepository, effectiveModelResolver,
+                taskRuntime, dataOperationCoordinator, filePicker, stream = { messages, model, diagnostics ->
+                    formatCardAiTransportOwner.value.streamCharacterAppearance(messages, model, diagnostics)
+                })
         }
     }
     internal val characterEditorController by characterEditorOwner

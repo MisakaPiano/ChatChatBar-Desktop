@@ -118,6 +118,14 @@ class OpenAiStreamingTransport(
             maxThinkingTokens = policy.maxThinkingTokens, reasoningEffortOverride = policy.reasoningEffort)
     }
 
+    /** Image-to-character text keeps the official isolated JSON request and 120-second silence budget. */
+    fun streamCharacterAppearance(messages: List<ChatApiMessage>, modelConfig: ModelConfig,
+        diagnostics: ProviderTransportDiagnostics = ProviderTransportDiagnostics.NONE): Flow<StreamEvent> =
+        isolatedAuxiliaryTextStream(client, allowCleartextHttp(), messages, modelConfig, diagnostics,
+            timing = AuxiliaryStreamTiming(readTimeoutMillis = 120_000, inactivityMillis = 120_000),
+            isolatedTaskParameters = true, disableThinking = true, responseFormatJson = true,
+            emitReasoning = true, protectEnvelope = false)
+
     /** Memory/RAG callers own their retry policy; exactly one transport request per collection. */
     fun streamMemoryRag(messages: List<ChatApiMessage>, modelConfig: ModelConfig,
         disableThinking: Boolean, responseFormatJson: Boolean,
