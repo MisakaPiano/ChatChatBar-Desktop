@@ -46,6 +46,7 @@ data class DesktopRealChatStreamUpdate(
 
 fun interface DesktopRealChatObserver {
     fun onUpdate(update: DesktopRealChatStreamUpdate)
+    fun onUserMessagePersisted(messageId: String) { }
 }
 
 data class DesktopRealChatResult(
@@ -179,6 +180,7 @@ class DesktopRealChatRuntime internal constructor(
                     content = content,
                 ),
             )
+            observer.onUserMessagePersisted(persistedUser.id)
             requestPlanner.planPersistedUser(
                 sessionId = sessionId,
                 currentUser = persistedUser,

@@ -23,6 +23,9 @@ import kotlinx.coroutines.flow.asStateFlow
 enum class DesktopTaskKind { REAL_CHAT, NOVELAI }
 enum class DesktopChatOperation { SEND, REGENERATE }
 
+/** Full active UI text only; excluded from bounded task history and diagnostic records. */
+internal data class DesktopActiveChatStream(val content: String, val reasoningContent: String)
+
 enum class DesktopTaskStatus { RUNNING, COMPLETED, FAILED, USER_STOPPED, CANCELLED }
 
 data class DesktopTaskEntry(
@@ -39,6 +42,7 @@ data class DesktopTaskEntry(
     val operation: DesktopChatOperation = DesktopChatOperation.SEND,
     val targetMessageId: String? = null,
     val canRetry: Boolean = false,
+    val persistedUserMessageId: String? = null,
 )
 
 class DesktopTaskAdmissionException(message: String) : IllegalStateException(message)
@@ -71,6 +75,8 @@ internal class DesktopTaskRuntime(
     val imageProgress = DesktopImageTaskProgress(scope)
     private val mutableTasks = MutableStateFlow<List<DesktopTaskEntry>>(emptyList())
     val tasks: StateFlow<List<DesktopTaskEntry>> = mutableTasks.asStateFlow()
+    private val mutableActiveChatStreams = MutableStateFlow<Map<String, DesktopActiveChatStream>>(emptyMap())
+    internal val activeChatStreams = mutableActiveChatStreams.asStateFlow()
     private val activeJobs = mutableMapOf<String, Job>()
     private val documentPreparations = mutableMapOf<Pair<String, String>, String>()
     private val cardDesigns = mutableMapOf<String, String>()
@@ -374,18 +380,30 @@ internal class DesktopTaskRuntime(
                 var terminalMessage = "Cancelled"
                 var terminalCompletion: com.example.chatbar.domain.chat.ProviderCompletionMetadata? = null
                 try {
-                    val observer = DesktopRealChatObserver { update ->
-                        val safeContent = recorder?.safeText(update.content)
-                            ?: DesktopDiagnosticScrubber("").text(update.content, PREVIEW_LIMIT)
-                        val safeReasoning = recorder?.safeText(update.reasoningContent)
-                            ?: DesktopDiagnosticScrubber("").text(update.reasoningContent, PREVIEW_LIMIT)
-                        update(taskId) { current ->
-                            current.copy(
-                                contentPreview = safeContent.takeLast(PREVIEW_LIMIT),
-                                reasoningPreview = safeReasoning.takeLast(PREVIEW_LIMIT),
-                                targetMessageId = update.targetMessageId ?: current.targetMessageId,
-                                message = update.status ?: current.message,
-                            )
+                    val observer = object : DesktopRealChatObserver {
+                        override fun onUserMessagePersisted(messageId: String) {
+                            update(taskId) { it.copy(persistedUserMessageId = messageId) }
+                        }
+
+                        override fun onUpdate(update: DesktopRealChatStreamUpdate) {
+                            synchronized(lock) {
+                                if (mutableTasks.value.any { it.taskId == taskId && it.status == DesktopTaskStatus.RUNNING }) {
+                                    mutableActiveChatStreams.value = mutableActiveChatStreams.value +
+                                        (taskId to DesktopActiveChatStream(update.content, update.reasoningContent))
+                                }
+                            }
+                            val safeContent = recorder?.safeText(update.content)
+                                ?: DesktopDiagnosticScrubber("").text(update.content, PREVIEW_LIMIT)
+                            val safeReasoning = recorder?.safeText(update.reasoningContent)
+                                ?: DesktopDiagnosticScrubber("").text(update.reasoningContent, PREVIEW_LIMIT)
+                            update(taskId) { current ->
+                                current.copy(
+                                    contentPreview = safeContent.takeLast(PREVIEW_LIMIT),
+                                    reasoningPreview = safeReasoning.takeLast(PREVIEW_LIMIT),
+                                    targetMessageId = update.targetMessageId ?: current.targetMessageId,
+                                    message = update.status ?: current.message,
+                                )
+                            }
                         }
                     }
                     val diagnosticFactory: (com.example.chatbar.data.local.entity.ModelConfig) ->
@@ -437,6 +455,7 @@ internal class DesktopTaskRuntime(
                         activeSessions.remove(sessionId)
                         stopControls.remove(taskId)
                         finish(taskId, terminalStatus, safeMessage)
+                        mutableActiveChatStreams.value = mutableActiveChatStreams.value - taskId
                     }
                 }
             }
@@ -463,6 +482,7 @@ internal class DesktopTaskRuntime(
                         stopControls.remove(taskId)
                         finish(taskId, DesktopTaskStatus.CANCELLED, "Cancelled")
                     }
+                    mutableActiveChatStreams.value = mutableActiveChatStreams.value - taskId
                 }
             }
             launched.start()

@@ -1,0 +1,5 @@
+{
+  "kind": "CCB_LIVE_CHAT_DISPLAY_BASELINE_COUNTERFACTUAL",
+  "baselineSource": "bd684bc4b8a1cea0517eacfef62d31e19f09a9a9",
+  "scope": "Synthetic actual Panel USER visibility and long streaming display; remove request after actual baseline and fixed-source receipts."
+}

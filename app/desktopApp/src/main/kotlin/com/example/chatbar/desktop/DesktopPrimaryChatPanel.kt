@@ -138,6 +138,15 @@ internal fun DesktopPrimaryChatPanel(
     LaunchedEffect(terminalSignature) {
         terminalTasks.forEach { task -> task.sessionId?.let { controller.refreshAfterTerminalTask(it) } }
     }
+    val persistedUserSignature = tasks.filter { it.kind == DesktopTaskKind.REAL_CHAT &&
+        it.status == DesktopTaskStatus.RUNNING && it.persistedUserMessageId != null }
+        .joinToString("|") { "${it.taskId}:${it.persistedUserMessageId}" }
+    LaunchedEffect(state.selectedSession?.id, persistedUserSignature) {
+        tasks.filter { it.kind == DesktopTaskKind.REAL_CHAT && it.status == DesktopTaskStatus.RUNNING &&
+            it.sessionId == state.selectedSession?.id }.forEach { task ->
+            task.persistedUserMessageId?.let { controller.refreshAfterPersistedUser(requireNotNull(task.sessionId), it) }
+        }
+    }
     val repairTerminalSignature = repairStates.entries.filter { it.value.status != DesktopRepairStatus.RUNNING }
         .joinToString("|") { "${it.key}:${it.value.status}" }
     LaunchedEffect(repairTerminalSignature) {
@@ -748,13 +757,15 @@ private fun PrimaryTimeline(
     val t = LocalDesktopUiStrings.current
     val scope = rememberCoroutineScope()
     val visibleMessages = desktopVisibleMessages(state.messages, running)
+    val activeStreams by controller.taskRuntime.activeChatStreams.collectAsState()
+    val activeStream = running?.let { activeStreams[it.taskId] }
     val repairs by controller.taskRuntime.repairTasks.collectAsState()
     val identities by controller.taskRuntime.repairIdentities.collectAsState()
     val repairStates = controller.formatRepair?.states?.collectAsState()?.value.orEmpty()
     val mapping = remember(state.messages, visibleMessages, state.hasOlderMessages, state.hasNewerMessages, running?.taskId) {
         desktopChatTimelineMapping(state, running)
     }
-    val viewport = rememberDesktopChatViewport(state, mapping, controller, running?.contentPreview to running?.reasoningPreview)
+    val viewport = rememberDesktopChatViewport(state, mapping, controller, activeStream?.content to activeStream?.reasoningContent)
     val playbackState = controller.voices?.playback?.state?.collectAsState()?.value
     val batches = controller.voices?.coordinator?.batches?.collectAsState()?.value.orEmpty()
     val deckVisible = batches.any { it.sessionId == state.selectedSession?.id }
@@ -812,11 +823,8 @@ private fun PrimaryTimeline(
                 BootstrapButton(t(DesktopUiText.LOAD_NEWER), secondary = true) { scope.launch { viewport.loadAdjacent(controller, older = false) } }
             }
             if (running != null) item(key = "stream:${running.taskId}") {
-                val streamingMessage = remember(running.taskId, running.contentPreview, running.reasoningPreview) {
-                    desktopStreamingMessage(
-                        running.sessionId.orEmpty(), running.taskId,
-                        running.contentPreview, running.reasoningPreview,
-                    )
+                val streamingMessage = remember(running.taskId, activeStream) {
+                    desktopStreamingMessage(running, activeStream)
                 }
                 PrimaryMessageBubble(streamingMessage, state, controller, clipboard)
             }

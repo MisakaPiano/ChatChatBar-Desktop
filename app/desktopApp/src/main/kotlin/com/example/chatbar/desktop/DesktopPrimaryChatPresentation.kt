@@ -160,6 +160,9 @@ internal fun desktopPresentedAvatarReference(
 ): String? = speaker?.avatarReference
     ?: card?.avatar?.takeIf { speaker == null || speaker.displayName == card.effectiveBotName }
 
+internal fun desktopStreamingMessage(task: DesktopTaskEntry, stream: DesktopActiveChatStream?): ChatMessage =
+    desktopStreamingMessage(task.sessionId.orEmpty(), task.taskId, stream?.content.orEmpty(), stream?.reasoningContent.orEmpty())
+
 internal fun desktopStreamingMessage(
     sessionId: String,
     taskId: String,

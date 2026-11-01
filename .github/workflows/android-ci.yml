@@ -175,3 +175,62 @@ jobs:
             ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/tests/
             ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/test-results/
             ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/problems/
+
+      - name: Reproduce live-chat display failures on the unchanged public 1228 source
+        if: ${{ !cancelled() && hashFiles('.github/desktop-chat-display-baseline-request.json') != '' && env.CCB_CI_SOURCE != '' }}
+        working-directory: ${{ env.CCB_CI_SOURCE }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $request = Get-Content .github/desktop-chat-display-baseline-request.json -Raw | ConvertFrom-Json
+          if ($request.kind -cne 'CCB_LIVE_CHAT_DISPLAY_BASELINE_COUNTERFACTUAL' -or $request.baselineSource -cne 'bd684bc4b8a1cea0517eacfef62d31e19f09a9a9') { throw 'BASELINE_REQUEST_REFUSED' }
+          $baseline = Join-Path (Split-Path $env:CCB_CI_SOURCE -Parent) 'chat-display-baseline'
+          if (Test-Path -LiteralPath $baseline) { throw 'NEW_BASELINE_DIRECTORY_REQUIRED' }
+          git fetch --no-tags --depth=1 origin $request.baselineSource
+          if ($LASTEXITCODE -ne 0) { throw 'BASELINE_FETCH_FAILED' }
+          git worktree add --detach $baseline $request.baselineSource
+          if ($LASTEXITCODE -ne 0) { throw 'BASELINE_WORKTREE_FAILED' }
+          $testFiles = @('DesktopLiveChatDisplayTest.kt', 'DesktopRealChatRuntimeCancellationTest.kt')
+          $testFolder = 'app/desktopApp/src/test/kotlin/com/example/chatbar/desktop'
+          $hashes = @($testFiles | ForEach-Object {
+            $source = Join-Path (Join-Path $env:CCB_CI_SOURCE $testFolder) $_
+            $target = Join-Path (Join-Path $baseline $testFolder) $_
+            Copy-Item -LiteralPath $source -Destination $target -ErrorAction Stop
+            $digest = (Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash
+            if ((Get-FileHash -LiteralPath $target -Algorithm SHA256).Hash -cne $digest) { throw 'BASELINE_TEST_COPY_MISMATCH' }
+            @{path=$_;sha256=$digest.ToLowerInvariant()}
+          })
+          $env:CCB_DISPLAY_BASELINE_ROOT = $baseline
+          "CCB_DISPLAY_BASELINE_ROOT=$baseline" | Add-Content $env:GITHUB_ENV -Encoding utf8
+          $hashes | ConvertTo-Json -Depth 3 | Set-Content (Join-Path $baseline 'OVERLAY_TEST_HASHES.json') -Encoding utf8
+          Push-Location (Join-Path $baseline 'app')
+          try {
+            .\gradlew.bat :desktopApp:test --tests com.example.chatbar.desktop.DesktopLiveChatDisplayTest -PdesktopTestHeadless=true --no-daemon --console=plain
+            $env:CCB_DISPLAY_BASELINE_EXIT = [string]$LASTEXITCODE
+          } finally { Pop-Location }
+          $verify = @'
+          import json, os, pathlib, xml.etree.ElementTree as ET
+          root=pathlib.Path(os.environ['CCB_DISPLAY_BASELINE_ROOT'])
+          files=list(root.glob('app/desktopApp/build/test-results/test/TEST-*DesktopLiveChatDisplayTest.xml'))
+          assert len(files)==1, 'BASELINE_XML_REQUIRED'
+          suite=ET.parse(files[0]).getroot()
+          expected={'LIVE_USER_NOT_VISIBLE_BEFORE_REPLY_COMPLETES','LIVE_STREAM_BODY_TRUNCATED'}
+          failures=[case.find('failure') for case in suite.findall('testcase')]
+          observed={token for failure in failures if failure is not None for token in expected if token in (failure.attrib.get('message','')+(failure.text or ''))}
+          result=dict(kind='UNCHANGED_PUBLIC1228_LIVE_DISPLAY_COUNTERFACTUAL',baselineSource='bd684bc4b8a1cea0517eacfef62d31e19f09a9a9',tests=int(suite.attrib['tests']),failures=int(suite.attrib['failures']),errors=int(suite.attrib['errors']),exit=int(os.environ['CCB_DISPLAY_BASELINE_EXIT']),observed=sorted(observed),productionChanged=False,humanAcceptance=False)
+          result['passed']=result['tests']==2 and result['failures']==2 and result['errors']==0 and result['exit']!=0 and observed==expected
+          (root/'BASELINE_REVIEW.json').write_text(json.dumps(result,indent=2),encoding='utf-8')
+          assert result['passed'], 'EXPECTED_DISPLAY_FAILURES_NOT_PROVED'
+          print(json.dumps(result))
+          '@
+          $verify | python -B -
+          exit $LASTEXITCODE
+
+      - name: Upload separate live-chat display baseline evidence
+        if: always() && env.CCB_DISPLAY_BASELINE_ROOT != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-chat-display-baseline-reports
+          path: |
+            ${{ env.CCB_DISPLAY_BASELINE_ROOT }}/BASELINE_REVIEW.json
+            ${{ env.CCB_DISPLAY_BASELINE_ROOT }}/OVERLAY_TEST_HASHES.json
+            ${{ env.CCB_DISPLAY_BASELINE_ROOT }}/app/desktopApp/build/test-results/test/TEST-*DesktopLiveChatDisplayTest.xml

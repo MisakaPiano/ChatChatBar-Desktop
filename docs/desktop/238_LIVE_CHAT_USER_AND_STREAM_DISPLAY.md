@@ -1,0 +1,13 @@
+# 生成中的用户消息刷新与完整正文展示
+
+2026-11-01。用户在正式1228报告新USER到助手回复完成后才出现；重新生成旧回复可见既有USER，但生成中的角色气泡出现`[truncated]`，随后明确确认最终正文完整。原图／正文只在本地。此处不是已证实最终数据截断或模型输出上限错误。
+
+实际源码：Runtime已先落盘USER，却未向Panel提供该次落盘信号；Panel仅在terminal时重新读取消息。另一方面TaskRuntime把update.content／reasoning交给safeText的512字符诊断摘要，Panel又把该摘要当正式气泡及viewport流式变化源；正式持久化仍用完整accumulatedContent。
+
+后续修正保持存储／Prompt顺序：落盘后、规划前发稳定USER消息ID；任务元信息只带ID，Panel按该ID单次读取已保存实体并刷新，未用contentPreview或乐观文本替代原文。只更新当前会话消息窗口，保留composer、设置草稿、分页和阅读锚点，不按每个token重新读全会话。
+
+正式流式正文与推理改读独立activeChatStreams完整瞬态值；有界脱敏任务摘要／诊断规则保持。active map随任务结束清理，不进入持久日志或任务历史；viewport仍沿既有跟随策略，变化键改用完整流。重生成目标和原候选的持久事务语义保留。
+
+DesktopLiveChatDisplayTest新增实际Panel effects、控制器、HTTP与仓库检查：回复未完成时完整USER应出现在真实气泡语义中，完成不重复，停止／错误／切换会话保留USER和未保存设置；长正文与推理超过512／2048、多chunk和重生成停止保留对应候选。提前EOF仍依原规则保存错误助手消息，不把失败当完整输出。独立TaskRuntime用例检查完整瞬态值在运行中存在、完成／停止／错误后清理，不进入有界任务摘要。当前为新源待验，不冒称已通过。
+
+为独立核对旧缺陷，临时CI请求仅把该测试与受控SSE fixture复制到固定公开1228／bd684源码，旧生产代码不改；只接受两个明确显示断言失败，另存windows-chat-display-baseline-reports，不能混入当前源码XML总数。取得实际RED／当前修复回执后移除请求，复用证据，不在后续每轮重跑旧基线。

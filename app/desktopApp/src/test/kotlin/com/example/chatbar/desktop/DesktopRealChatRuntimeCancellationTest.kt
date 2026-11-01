@@ -330,7 +330,7 @@ private class TruncatedDesktopSseServer(payload: String) : AutoCloseable {
     }
 }
 
-internal class ControlledDesktopSseServer(payload: String?) : AutoCloseable {
+internal class ControlledDesktopSseServer(payload: String?, holdSeconds: Long = 10) : AutoCloseable {
     private val server = ServerSocket(0, 1, InetAddress.getByName("127.0.0.1"))
     private val activeSocket = AtomicReference<Socket?>()
     private val ready = CountDownLatch(1)
@@ -371,7 +371,7 @@ internal class ControlledDesktopSseServer(payload: String?) : AutoCloseable {
                 }
                 workerPhase.set("event-flushed")
                 ready.countDown()
-                release.await(10, TimeUnit.SECONDS)
+                release.await(holdSeconds, TimeUnit.SECONDS)
             }
         }.onFailure { workerPhase.set("fixture-failed:${it.javaClass.simpleName}") }
         ready.countDown()
@@ -379,6 +379,14 @@ internal class ControlledDesktopSseServer(payload: String?) : AutoCloseable {
 
     suspend fun awaitReady(): Boolean = withContext(Dispatchers.IO) {
         ready.await(3, TimeUnit.SECONDS)
+    }
+
+    fun sendEvent(payload: String) {
+        val socket = checkNotNull(activeSocket.get())
+        synchronized(socket) {
+            socket.getOutputStream().write("data: $payload\n\n".toByteArray(Charsets.UTF_8))
+            socket.getOutputStream().flush()
+        }
     }
 
     override fun close() {

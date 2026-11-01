@@ -44,6 +44,39 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class DesktopTaskRuntimeTest {
+    @Test fun `full live text survives bounded summaries and is released on completion stop and error`() = runBlocking {
+        for (outcome in listOf("COMPLETE", "STOP", "ERROR")) withContainer { container ->
+            val content = "complete transient text ".repeat(240)
+            val reasoning = "complete transient reasoning ".repeat(210)
+            val payload = """{"choices":[{"delta":{"content":"$content","reasoning_content":"$reasoning"}}]}"""
+            ControlledDesktopSseServer(payload, holdSeconds = 60).use { server ->
+                val session = prepare(container, server.baseUrl)
+                val runtime = container.taskRuntime
+                val id = runtime.launchChat(session, "synthetic user")
+                withTimeout(8_000) { runtime.activeChatStreams.first { it[id]?.content == content } }
+                assertEquals(reasoning, runtime.activeChatStreams.value[id]?.reasoningContent)
+                assertTrue(task(runtime, id).contentPreview.length < content.length)
+                when (outcome) {
+                    "STOP" -> assertTrue(runtime.requestUserStop(id))
+                    "ERROR" -> server.close()
+                    else -> {
+                        server.sendEvent("""{"choices":[{"delta":{},"finish_reason":"stop"}]}""")
+                        server.sendEvent("[DONE]")
+                    }
+                }
+                val terminal = awaitTask(runtime, id) { it.status != DesktopTaskStatus.RUNNING }
+                assertEquals(when (outcome) {
+                    "STOP" -> DesktopTaskStatus.USER_STOPPED
+                    "ERROR" -> DesktopTaskStatus.FAILED
+                    else -> DesktopTaskStatus.COMPLETED
+                }, terminal.status)
+                withTimeout(5_000) { runtime.activeChatStreams.first { id !in it } }
+                assertTrue(runtime.activeChatStreams.value.isEmpty())
+                assertTrue(terminal.contentPreview.length < content.length)
+            }
+        }
+    }
+
     @Test fun `maintenance drains final writes and blocks new work then resumes after failure`() = runBlocking<Unit> {
         withContainer { container ->
             val runtime = container.taskRuntime

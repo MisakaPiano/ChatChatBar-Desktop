@@ -402,6 +402,24 @@ internal class DesktopPrimaryChatController(
         return target
     }
 
+    suspend fun refreshAfterPersistedUser(sessionId: String, messageId: String) = guarded {
+        stateLock.withLock {
+            if (state.value.selectedSession?.id != sessionId || state.value.messages.any { it.id == messageId }) return@withLock
+            val message = chats.getMessage(messageId, sessionId) ?: error("新消息暂时无法读取")
+            check(message.role == MessageRole.USER && message.sessionId == sessionId)
+            val count = chats.getInitialMessagePage(sessionId).totalMessageCount
+            // Only append to a live tail. A historical reading window retains its page and anchor.
+            // Read the durable entity, never a task/log preview, and leave composer/settings untouched.
+            mutableState.update { current ->
+                if (current.selectedSession?.id != sessionId || current.messages.any { it.id == messageId }) current
+                else current.copy(
+                    messages = if (current.hasNewerMessages) current.messages else current.messages + message,
+                    totalMessageCount = count,
+                )
+            }
+        }
+    }
+
     suspend fun refreshAfterTerminalTask(sessionId: String) = guarded {
         stateLock.withLock {
             val current = state.value
