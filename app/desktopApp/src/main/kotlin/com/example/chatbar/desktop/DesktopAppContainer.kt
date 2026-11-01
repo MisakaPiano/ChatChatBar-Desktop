@@ -423,7 +423,7 @@ class DesktopAppContainer internal constructor(
         )
     }
     private val appDataSnapshotService = AppDataSnapshotService(appDataRoot)
-    internal val coordinatedSnapshotService = DesktopCoordinatedSnapshotService(
+    internal val coordinatedSnapshotService: DesktopCoordinatedSnapshotService = DesktopCoordinatedSnapshotService(
         delegate = appDataSnapshotService,
         coordinator = dataOperationCoordinator,
         audioMaintenance = audioMaintenance,
@@ -432,7 +432,7 @@ class DesktopAppContainer internal constructor(
     internal val networkProxyController = DesktopNetworkProxyController(desktopSettingsStore)
     internal val chatUiController by lazy { DesktopChatUiController(desktopSettingsStore) }
     internal val uiLanguageController = DesktopUiLanguageController(desktopSettingsStore)
-    val automaticBackupRuntime = DesktopAutomaticBackupRuntime(
+    val automaticBackupRuntime: DesktopAutomaticBackupRuntime = DesktopAutomaticBackupRuntime(
         settingsStore = desktopSettingsStore,
         snapshotService = coordinatedSnapshotService,
         coordinator = dataOperationCoordinator,
@@ -532,7 +532,7 @@ class DesktopAppContainer internal constructor(
 
     private val providerUsageOwner = lazy { DesktopProviderUsageOwner(DesktopProviderUsageStore(appDataRoot, dataOperationCoordinator)) }
     internal val providerUsage by providerUsageOwner
-    private val taskCenterOwner = lazy { DesktopTaskCenter(describe = { target ->
+    private val taskCenterOwner: Lazy<DesktopTaskCenter> = lazy { DesktopTaskCenter(describe = { target ->
         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             when {
                 target.sessionId != null -> chatRepository.getSession(target.sessionId)?.title

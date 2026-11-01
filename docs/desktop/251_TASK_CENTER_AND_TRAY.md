@@ -1,5 +1,7 @@
 # 任务中心与托盘 / 2026-11-02
 
+CI98/5d1603ae实际Windows FAIL：production compileKotlin的AppContainer:429遇递归类型推断，Desktop与production proxy测试未执行，Linux成功。不是存档／自动备份／Moments runtime PASS。补snapshot/runtime/taskCenterOwner明确声明类型以截断编译器推断环，原lazy与运行对象保持；后续2cfa创作pin仍待同批新源。97主2457/2438PASS+19SKIP与Merge四例已核实，不覆盖98增量；RAG晚取消元数据另待。
+
 后续本地创作类型／原草稿定位已补：角色卡、外貌识别、封面／头像、世界书沿withCardDesign同child明确kind；默认未分类仍generic且无伪造目标。前往经原Manage离开门禁，仅调用仍匹配原draft/pin的reveal，不刷新模型、重建窗口内容、生成、套用或保存。已变化／主动关闭pin拒绝，不覆盖未保存编辑。四个真实controller原流程追加type／pin／应用后失效断言；中心按原child映射四类目标、新真实Shell跨CHAT→MANAGE保留未保存草稿且不生成的Scene未执行，不由98/冻结1232覆盖。
 
 后续本地Moments补原worker整段投影，等待原NonCancellable图片清理和refresh再终态。按UUID停止该worker，不暂停未来调度。原withCardDesign child仍登记activeJobs和准入／排空，只关重复generic元数据；SKIPPED不冒充已发布成功，retry未发布为FAILED，清理／记录不确定为UNCONFIRMED。正文／reason／checkpoint／receipt不进任务行；未完成固定post定位不造目标。真实检查点停止且清理阻塞时保持活跃、关闭等待，正常清理完成保留FAILED检查点；清理拒绝即使SKIPPED也待核对的新断言待新源云端。CI97/671两作业刚SUCCESS，小报告待核；以上及29a/f137不由97代验。
