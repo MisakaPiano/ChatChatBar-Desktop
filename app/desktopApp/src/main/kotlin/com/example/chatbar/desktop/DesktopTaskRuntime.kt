@@ -102,13 +102,15 @@ internal class DesktopTaskRuntime(
 
     /** Structured caller child, also registered in the application's existing shutdown drain.
      * No session admission, task UI/history, retries, source text or embeddings are retained. */
-    suspend fun <T> withDocumentPreparation(characterId: String, documentId: String, work: suspend () -> T): T = coroutineScope {
+    suspend fun <T> withDocumentPreparation(characterId: String, documentId: String,
+        usageContext: DesktopUsageContext = DesktopUsageContext(DesktopUsageSource.CHARACTER_CARD,
+            cardId = characterId, subjectId = documentId), work: suspend () -> T): T = coroutineScope {
         val key = characterId to documentId
         val job = synchronized(lock) {
             if (!accepting || maintenance || key in documentPreparations)
                 throw DesktopTaskAdmissionException("Document preparation unavailable")
             val id = UUID.randomUUID().toString()
-            val child = async(start = CoroutineStart.LAZY) { work() }
+            val child = async(DesktopUsageParent(usageContext.copy(taskId = id)), start = CoroutineStart.LAZY) { work() }
             documentPreparations[key] = id
             activeJobs[id] = child
             child.invokeOnCompletion {
@@ -373,7 +375,8 @@ internal class DesktopTaskRuntime(
             if (sessionId in activeSessions || sessionId in messageMutations) {
                 throw DesktopTaskAdmissionException("该会话已有正在生成的回复")
             }
-            val launched = scope.launch(start = CoroutineStart.LAZY) {
+            val launched = scope.launch(DesktopUsageParent(DesktopUsageContext(DesktopUsageSource.CHAT,
+                taskId = taskId, sessionId = sessionId)), start = CoroutineStart.LAZY) {
                 update(taskId) { it.copy(startedAt = clock()) }
                 var recorder: DesktopTransportDiagnosticRecorder? = null
                 var terminalStatus = DesktopTaskStatus.CANCELLED

@@ -53,10 +53,12 @@ class DesktopAppContainer internal constructor(
         DesktopDocumentRagIndexPreparation(appDataRoot, jsonFileStorage, dataOperationCoordinator, taskRuntime, gateway)
     private val embeddingGatewayOwner = lazy { DesktopEmbeddingGateway(
         config = { requireNotNull(modelRepository.getEmbeddingModel()) { "请先配置向量模型" } },
-        allowCleartext = { settingsRepository.currentAppSettings.allowCleartextModelApi }) }
+        allowCleartext = { settingsRepository.currentAppSettings.allowCleartextModelApi },
+        usageSink = { providerUsage.submit(it) }) }
     internal val embeddingGateway by embeddingGatewayOwner
     private val ragOwner = lazy { DesktopRagController(modelRepository, settingsRepository, historyIndex = { session ->
-        taskRuntime.withDocumentPreparation("chat-memory:$session", "history") {
+        taskRuntime.withDocumentPreparation("chat-memory:$session", "history",
+            usageContext = DesktopUsageContext(DesktopUsageSource.CHAT, sessionId = session)) {
             taskRuntime.withMessageMutation(session) {
                 chatMemoryIndex.rebuild(session, settingsRepository.getAppSettings().defaultContextWindowSize)
             }
@@ -481,7 +483,12 @@ class DesktopAppContainer internal constructor(
         mainChatRequestAssembler = mainChatRequestAssembler,
         imageEncoder = chatImages::jpegBase64,
         retrieveKnowledge = { card, session, user, context, inputs, readOnly ->
-            chatRetrieval.retrieve(card, session, user, context, inputs, readOnly) },
+            val parent = kotlinx.coroutines.currentCoroutineContext()[DesktopUsageParent]?.value
+                ?: DesktopUsageContext(DesktopUsageSource.CHAT)
+            kotlinx.coroutines.withContext(DesktopUsageParent(parent.copy(source = DesktopUsageSource.CHAT,
+                sessionId = session.id, cardId = card.id, subjectId = user.id))) {
+                chatRetrieval.retrieve(card, session, user, context, inputs, readOnly)
+            } },
         memoryView = { session, readOnly -> memoryController.promptView(session, readOnly) },
     )
     private val promptInspector = DesktopPromptInspector(chatRequestPlanner)
