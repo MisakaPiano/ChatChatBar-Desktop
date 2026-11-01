@@ -1,0 +1,8 @@
+{
+  "kind": "CCB_DESKTOP_FROZEN_CLOUD_BUILD_REQUEST",
+  "sourceSha": "d94e2df0803095d17ebf453529facee438fc42ad",
+  "desktopVersion": "0.1.0-preview.1226",
+  "installerVersion": "0.1.1226",
+  "platformCiRunId": 41268127116,
+  "platformCiStateAtRequest": "IN_PROGRESS_SEPARATE_DELIVERY_PREREQUISITE"
+}
