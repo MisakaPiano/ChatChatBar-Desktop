@@ -5,15 +5,18 @@ import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.data.repository.*
 import com.example.chatbar.desktop.security.InMemoryDesktopSecretStore
 import com.example.chatbar.domain.model.EffectiveModelResolver
+import com.example.chatbar.domain.model.PresetModelCatalogSource
 import com.example.chatbar.domain.chat.OpenAiStreamingTransport
 import com.example.chatbar.domain.voice.*
 import java.nio.file.Files
+import java.time.LocalDate
 import java.util.Collections
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.*
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okhttp3.OkHttpClient
 import kotlin.test.*
 
 class DesktopVoiceAuxiliaryUsageTest {
@@ -28,8 +31,15 @@ class DesktopVoiceAuxiliaryUsageTest {
         val rows = Collections.synchronizedList(mutableListOf<DesktopUsageRecord>())
         val logs = DesktopTransportDiagnosticsOwner(usageSink = { rows += it })
         val credentials = DesktopFishAudioCredentials(InMemoryDesktopSecretStore()).also { it.save("synthetic-Fish-key") }
+        val fish = MockWebServer().also { it.start() }
+        fish.dispatcher = object : okhttp3.mockwebserver.Dispatcher() {
+            override fun dispatch(request: okhttp3.mockwebserver.RecordedRequest) = MockResponse().setResponseCode(401)
+        }
+        val audio = DesktopVoiceAudioStore(root)
         val runtime = DesktopChatVoiceRuntime(chats, characters, settings, resolver,
-            VoiceMessageRepository(storage, strictReads = true), DesktopVoiceAudioStore(root), credentials, PreviewOutputFake(), diagnostics = logs)
+            VoiceMessageRepository(storage, strictReads = true), audio, credentials, PreviewOutputFake(), diagnostics = logs,
+            transportOverride = DesktopFishVoiceTransport(credentials, audio, OkHttpClient(), fish.url("/").toString().trimEnd('/'),
+                today = { LocalDate.of(2026, 11, 1) }))
         try {
             MockWebServer().use { server ->
                 settings.updateAppSettings { it.copy(allowCleartextModelApi = true) }
@@ -67,6 +77,7 @@ class DesktopVoiceAuxiliaryUsageTest {
                     setOf(VoiceGenerationPhase.AWAITING_TEXT_CONFIRMATION, VoiceGenerationPhase.FAILED) } } }
                 assertEquals(VoiceGenerationPhase.AWAITING_TEXT_CONFIRMATION, runtime.coordinator.batches.value.single().phase)
                 assertEquals(2, server.requestCount)
+                assertEquals(0, fish.requestCount)
                 val latest = rows.toList().groupBy { it.id }.values.map { it.maxBy { row -> row.revision } }
                 assertEquals(2, latest.size)
                 assertEquals(setOf("voice:TRANSLATE", "voice:TAG"), logs.entries.value.map { it.sessionId }.toSet())
@@ -82,7 +93,7 @@ class DesktopVoiceAuxiliaryUsageTest {
                 assertEquals(3L, summarizeDesktopUsage(latest).completion.value)
                 assertTrue(runtime.repository.listForSession(session.id).isEmpty())
             }
-        } finally { runtime.closeAndDrain(); root.toFile().deleteRecursively() }
+        } finally { runtime.closeAndDrain(); fish.shutdown(); root.toFile().deleteRecursively() }
     }
 
     @Test fun `feature retry keeps one logical translation and independent physical attempts with real parent`() = runBlocking {

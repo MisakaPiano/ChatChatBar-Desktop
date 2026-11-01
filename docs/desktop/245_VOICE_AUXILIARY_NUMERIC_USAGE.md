@@ -1,5 +1,7 @@
 # P15用量接线：语音辅助模型请求
 
+be27／CI84原结果：Linuxshared1135／Android582通过，Windows生产代码编译通过，新VoiceAuxiliaryUsageTest漏PresetModelCatalogSource import使测试编译失败，本页两个实际Desktop gateway／计数测试未运行；后续仅补import重验，原失败保留，不把已有shared或NTFS7通过代替本页运行证据。
+
 2026-11-02 JST。独立于7611／CI82、Moments及公开1229。此增量待精确源云端，不额外请求模型，不修改Prompt、重试／计费许可或二进制音频管线。
 
 原默认FishGateway丢弃TRANSLATE／TAG身份，直接调用streamFishVoice而不传diagnostics；实际coordinator的networkWork也没有数值归属上下文。本次复用DesktopUsageParent、现有诊断数字sink和已有存储／关闭排水，传入真实voice batch、ChatSession、卡片与消息ID。voice:TRANSLATE和voice:TAG只作内存诊断分组，不能冒充会话ID。

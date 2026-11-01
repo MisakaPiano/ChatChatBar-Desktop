@@ -1,5 +1,7 @@
 # 正式1.4.7适配：旧Studio内联编码流式读取
 
+be27／CI84独立Windows shared报告实际7项全PASS（StudioStreaming4／CompactJson3），补齐NTFS派生目录／碰撞／取消语义；Linuxshared1135／Android582也全PASS。该run仍为FAIL：无关新语音用量测试漏import使Desktop测试编译失败，主Desktop／production JAR代理未运行。不得把本页定向GREEN外推整批或其他用例。
+
 192f／CI81完整SUCCESS：Linux共享1116（包含本页新增stream3／storage4）和Android582全PASS，Windows主304suite2399项＝2380PASS＋19SKIP、独立production JAR代理5PASS。Windows这轮仅执行desktopApp测试，没有执行本页7项shared测试；不能写成NTFS新用例通过。后续正常新源云端将单独增加这两个共享suite的Windows定向执行和独立报告，不重跑81。下文待验为当时源码截点。
 
 2026-11-02 JST。后续独立于8b2／CI80及公开1229；本页新增源码尚待精确源云端验证。正式上游baseline保持1.4.1，Prompt未改，不新建付费请求。
