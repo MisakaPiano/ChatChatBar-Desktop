@@ -94,12 +94,12 @@ internal class DesktopCharacterAppearanceController(
                 mutable.update { it.copy(candidate = null, status = "已取消，原人物内容保留") }; throw cancelled
             } catch (error: Exception) {
                 val message = when (error) {
-                    is ModelResponseTruncatedException -> "图片识别输出已截断，请检查模型输出上限"
+                    is ModelResponseTruncatedException -> "图片识别输出被截断；请重试，或检查视觉模型服务端的输出限制"
                     is AiTaskRefusalException -> "模型拒绝或过滤了本次图片识别"
                     is ModelRequestException -> "图片识别请求失败${error.httpStatus?.let { "（HTTP $it）" }.orEmpty()}"
                     else -> "图片识别或结果校验失败，请检查图片、默认对话模型及其关联视觉模型"
                 }
-                mutable.update { it.copy(error = message, candidate = null) }
+                mutable.update { it.copy(error = message, candidate = null, status = "图片识别失败，可重试") }
             } finally { mutable.update { it.copy(busy = false) } }
         }
     }

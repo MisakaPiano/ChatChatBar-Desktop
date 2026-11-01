@@ -67,6 +67,8 @@ class DesktopCharacterAppearanceTest {
             ai.open(person.id); idle(ai)
             assertEquals(output, ai.state.value.raw); assertNull(ai.state.value.candidate)
             assertTrue(ai.state.value.error.orEmpty().contains("截断"))
+            assertFalse(ai.state.value.error.orEmpty().contains("请检查模型输出上限"))
+            assertTrue(ai.state.value.status.contains("失败"))
             assertFalse(ai.apply()); assertEquals(card, editor.state.value.card)
         }
     }
