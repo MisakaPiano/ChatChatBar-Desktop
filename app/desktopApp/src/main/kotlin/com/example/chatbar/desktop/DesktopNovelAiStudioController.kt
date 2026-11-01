@@ -225,8 +225,12 @@ internal class DesktopNovelAiStudioController(
         refreshAccount()
     }
 
-    suspend fun edit(change: (NovelAiStudioDraft) -> NovelAiStudioDraft) = action {
-        repository.updateDraft(transform = change)
+    suspend fun edit(change: (NovelAiStudioDraft) -> NovelAiStudioDraft) = action(inspectAssets = false) {
+        val before = repository.loadDraft()
+        val after = repository.updateDraft(transform = change)
+        // Ordinary parameters keep every media reference. Only a removed draft reference can
+        // become unowned; the cleaner still checks undo/checkpoint/history before unlinking it.
+        cleanupAfterCommit((before.imageGuidance.ownedAssetPaths() - after.imageGuidance.ownedAssetPaths()).toList())
     }
 
     suspend fun replace(change: (NovelAiStudioDraft) -> NovelAiStudioDraft) = action {
@@ -571,15 +575,22 @@ internal class DesktopNovelAiStudioController(
 
     fun stop() { tasks.tasks.value.firstOrNull { it.kind == DesktopTaskKind.NOVELAI && it.status == DesktopTaskStatus.RUNNING }?.taskId?.let(tasks::requestUserStop) }
     private fun status(text: String) = mutableState.update { it.copy(status = text) }
-    private suspend fun action(designAction: Boolean = false, block: suspend () -> Unit) = mutex.withLock {
+    private suspend fun cleanupAfterCommit(candidates: List<String>) {
+        if (candidates.isEmpty()) return
+        try { cleanup(candidates) }
+        catch (cancelled: CancellationException) { throw cancelled }
+        catch (_: Exception) { status("操作已保存；无法核实清理引用，旧图片保留") }
+    }
+
+    private suspend fun action(designAction: Boolean = false, inspectAssets: Boolean = true, block: suspend () -> Unit) = mutex.withLock {
         try {
-            val candidates = if (state.value.ready) buildSet {
+            val candidates = if (inspectAssets && state.value.ready) buildSet {
                 draft.value?.imageGuidance?.ownedAssetPaths()?.let(::addAll)
                 repository.loadUndoDraft()?.imageGuidance?.ownedAssetPaths()?.let(::addAll)
                 repository.loadGuidanceCheckpoint()?.ownedAssetPaths()?.let(::addAll)
             }.toList() else emptyList()
             withContext(Dispatchers.IO) { block() }
-            try { cleanup(candidates) } catch (cancelled: CancellationException) { throw cancelled } catch (_: Exception) { status("操作已保存；无法核实清理引用，旧图片保留") }
+            cleanupAfterCommit(candidates)
             true
         }
         catch (cancelled: CancellationException) { throw cancelled }

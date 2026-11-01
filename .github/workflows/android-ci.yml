@@ -190,6 +190,61 @@ jobs:
             ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/test-results/
             ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/problems/
 
+      - name: Reproduce Studio edit backlog on the unchanged prior source
+        if: ${{ !cancelled() && hashFiles('.github/desktop-studio-edit-baseline-request.json') != '' && env.CCB_CI_SOURCE != '' }}
+        working-directory: ${{ env.CCB_CI_SOURCE }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $request = Get-Content .github/desktop-studio-edit-baseline-request.json -Raw | ConvertFrom-Json
+          if ($request.baselineSource -cne 'e5bf7509449ac50ce94726b6f5e19c02b659b3b6') { throw 'STUDIO_BASELINE_REFUSED' }
+          $baseline = Join-Path (Split-Path $env:CCB_CI_SOURCE -Parent) 'studio-edit-baseline'
+          if (Test-Path -LiteralPath $baseline) { throw 'NEW_BASELINE_DIRECTORY_REQUIRED' }
+          git fetch --no-tags --depth=1 origin $request.baselineSource
+          if ($LASTEXITCODE -ne 0) { throw 'BASELINE_FETCH_FAILED' }
+          git worktree add --detach $baseline $request.baselineSource
+          if ($LASTEXITCODE -ne 0) { throw 'BASELINE_WORKTREE_FAILED' }
+          $relative = 'app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/DesktopStudioEditResponsivenessTest.kt'
+          $source = Join-Path $env:CCB_CI_SOURCE $relative
+          $target = Join-Path $baseline $relative
+          Copy-Item -LiteralPath $source -Destination $target -ErrorAction Stop
+          $hash = (Get-FileHash -LiteralPath $source -Algorithm SHA256).Hash
+          if ((Get-FileHash -LiteralPath $target -Algorithm SHA256).Hash -cne $hash) { throw 'BASELINE_TEST_COPY_MISMATCH' }
+          @{path=$relative;sha256=$hash.ToLowerInvariant()} | ConvertTo-Json | Set-Content (Join-Path $baseline 'OVERLAY_TEST_HASHES.json') -Encoding utf8
+          "CCB_STUDIO_BASELINE_ROOT=$baseline" | Add-Content $env:GITHUB_ENV -Encoding utf8
+          $env:CCB_STUDIO_BASELINE_ROOT = $baseline
+          Push-Location (Join-Path $baseline 'app')
+          try {
+            .\gradlew.bat :desktopApp:test --tests com.example.chatbar.desktop.DesktopStudioEditResponsivenessTest -PdesktopTestHeadless=true --no-daemon --console=plain
+            $env:CCB_STUDIO_BASELINE_EXIT = [string]$LASTEXITCODE
+          } finally { Pop-Location }
+          $verify = @'
+          import json, os, pathlib, xml.etree.ElementTree as ET
+          root=pathlib.Path(os.environ['CCB_STUDIO_BASELINE_ROOT'])
+          files=list(root.glob('app/desktopApp/build/test-results/test/TEST-*DesktopStudioEditResponsivenessTest.xml'))
+          assert len(files)==1, 'BASELINE_XML_REQUIRED'
+          suite=ET.parse(files[0]).getroot()
+          failed=[case for case in suite.findall('testcase') if case.find('failure') is not None]
+          expected='Pure parameter edits were queued behind image cleanup'
+          observed=len(failed)==1 and expected in (failed[0].find('failure').attrib.get('message','')+(failed[0].find('failure').text or ''))
+          result=dict(kind='UNCHANGED_STUDIO_EDIT_BACKLOG_COUNTERFACTUAL',baselineSource='e5bf7509449ac50ce94726b6f5e19c02b659b3b6',tests=int(suite.attrib['tests']),failures=int(suite.attrib['failures']),errors=int(suite.attrib['errors']),exit=int(os.environ['CCB_STUDIO_BASELINE_EXIT']),observed=observed,productionChanged=False,humanAcceptance=False)
+          result['passed']=result['tests']==3 and result['failures']==1 and result['errors']==0 and result['exit']!=0 and observed
+          (root/'BASELINE_REVIEW.json').write_text(json.dumps(result,indent=2),encoding='utf-8')
+          assert result['passed'], 'EXPECTED_STUDIO_BACKLOG_NOT_PROVED'
+          print(json.dumps(result))
+          '@
+          $verify | python -B -
+          exit $LASTEXITCODE
+
+      - name: Upload separate Studio edit baseline evidence
+        if: always() && env.CCB_STUDIO_BASELINE_ROOT != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-studio-edit-baseline-reports
+          path: |
+            ${{ env.CCB_STUDIO_BASELINE_ROOT }}/BASELINE_REVIEW.json
+            ${{ env.CCB_STUDIO_BASELINE_ROOT }}/OVERLAY_TEST_HASHES.json
+            ${{ env.CCB_STUDIO_BASELINE_ROOT }}/app/desktopApp/build/test-results/test/TEST-*DesktopStudioEditResponsivenessTest.xml
+
       - name: Reproduce live-chat display failures on the unchanged public 1228 source
         if: ${{ !cancelled() && hashFiles('.github/desktop-chat-display-baseline-request.json') != '' && env.CCB_CI_SOURCE != '' }}
         working-directory: ${{ env.CCB_CI_SOURCE }}
