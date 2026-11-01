@@ -55,6 +55,7 @@ internal fun DesktopPrimaryShell(
     providerUsage: DesktopProviderUsageOwner? = null,
     externalImportController: DesktopExternalImportController? = null,
     taskCenter: DesktopTaskCenter? = null,
+    taskTray: DesktopTrayController? = null,
     onHideToTray: (() -> Unit)? = null,
 ) {
     val moments = momentsController?.state?.collectAsState()?.value
@@ -210,7 +211,7 @@ internal fun DesktopPrimaryShell(
             }
         }
         if (centerOpen && !locked && taskCenter != null) DesktopTaskCenterPanel(taskCenter,
-            onClose = { centerOpen = false }, onHideToTray = onHideToTray, onView = { target ->
+            onClose = { centerOpen = false }, onHideToTray = onHideToTray, tray = taskTray, onView = { target ->
                 centerOpen = false
                 navigateAfter(target.route) {
                     if (target.route == DesktopPrimaryRoute.MANAGE) taskManageTarget = target

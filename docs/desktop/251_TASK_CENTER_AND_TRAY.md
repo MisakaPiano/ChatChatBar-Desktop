@@ -14,6 +14,8 @@ Memory只观察runningSessions。它包含读/手动操作，不能解释成单�
 
 withCardDesign也被角色／世界书／图片／朋友圈使用，默认只标为创作任务且不伪造格式卡导航；格式卡调用点明确标识。文档owner保存实际usage session，聊天历史索引不误认作角色文档。其他owner的精确类型／导航仍待各owner接线。
 
-当前仍待：其他语音／创作／RAG／备份／存档／朋友圈owner接线、托盘能力与显隐／正常退出、系统提醒偏好和实际通知；宽窄Scene与原生能力检查。不改变已有编辑草稿或默认关闭动作。
+后续工作树已加DesktopTrayController及AWT backend：实际attach成功才允许主动隐藏；Window只改visible，不销毁composition或业务。托盘提供打开／任务中心／隐藏／退出；退出仍回原requestClose与排空，X行为保持。提醒只用固定kind/status，本地设置taskNotifications默认开、可取消并走原updateLatest；坏设置不覆盖。系统拒绝提醒可见，提交displayMessage不冒称已送达。AppContainer在既有业务排空后detach，再关任务观察者。三项新假backend回归覆盖不支持时不隐藏、显隐不退任务／明确退出、偏好保留其他字段与初始历史不通知，尚未编译／运行，不由14dd／CI94覆盖。
+
+当前仍待：其他语音／创作／RAG／备份／存档／朋友圈owner接线；托盘源码的云端编译／运行、宽窄Scene与实际原生能力／通知送达。上述不改变已有编辑草稿或默认关闭动作。
 
 新增未执行回归：真实两文档工作仅停止选中项且等原NonCancellable收尾；观察者关闭不取消格式卡候选child且不保存卡；真实Memory面板在B时只停行A，B工作与两边正文／草稿保持；真实终态通知与停止请求的区别。后续精确源云端验证，不在本机运行JVM。

@@ -212,6 +212,8 @@ class DesktopSettingsStore internal constructor(
                 ?: DesktopChatUiPreferences()
         } catch (_: Exception) { return DesktopSettingsLoadResult.Invalid("Desktop chat UI preferences are invalid") }
         val settings = DesktopSettings(
+            taskNotifications = if (TASK_NOTIFICATIONS !in root) true else root.primitive(TASK_NOTIFICATIONS)?.booleanOrNull
+                ?: return DesktopSettingsLoadResult.Invalid("Desktop task notifications preference is invalid"),
             networkProxy = try {
                 root[NETWORK_PROXY]?.let { chatUiJson.decodeFromJsonElement<com.example.chatbar.domain.ApplicationProxySettings>(it) }
                     ?: com.example.chatbar.domain.ApplicationProxySettings()
@@ -271,6 +273,7 @@ class DesktopSettingsStore internal constructor(
             put(AUTOMATIC_BACKUP, automatic)
             put(UI_LANGUAGE, JsonPrimitive(settings.uiLanguage.name))
             put(COLOR_STYLE, JsonPrimitive(settings.colorStyle.name))
+            put(TASK_NOTIFICATIONS, JsonPrimitive(settings.taskNotifications))
             val previousProxy = source[NETWORK_PROXY] as? JsonObject
             put(NETWORK_PROXY, JsonObject(previousProxy.orEmpty() +
                 (chatUiJson.encodeToJsonElement(settings.networkProxy) as JsonObject)))
@@ -325,6 +328,7 @@ class DesktopSettingsStore internal constructor(
         private const val COLOR_STYLE = "colorStyle"
         private const val CHAT_UI = "chatUi"
         private const val NETWORK_PROXY = "networkProxy"
+        private const val TASK_NOTIFICATIONS = "taskNotifications"
         private const val ENABLED = "enabled"
         private const val MINIMUM_BACKUP_INTERVAL = "minimumBackupInterval"
         private const val MAXIMUM_SNAPSHOT_COUNT = "maximumSnapshotCount"

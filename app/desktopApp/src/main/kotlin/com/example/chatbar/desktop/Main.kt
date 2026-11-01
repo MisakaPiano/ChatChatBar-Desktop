@@ -17,6 +17,7 @@ import androidx.compose.ui.window.rememberWindowState
 import androidx.compose.ui.window.application
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.collect
@@ -109,9 +110,12 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                         val appearance by appearanceController.state.collectAsState()
                         val navigation = remember { DesktopPrimaryNavigationController() }
                         val windowState = rememberWindowState(width = 1240.dp, height = 800.dp)
+                        val tray = remember { appContainer.taskTray }
+                        val trayState by tray.state.collectAsState()
                         val requestClose: () -> Unit = {
                             DesktopShutdownTrace.record(DesktopShutdownStage.CLOSE_REQUESTED)
                             if (rootSwitchController.requestWindowClose()) {
+                                tray.prepareExit()
                                 activation?.queue?.stopAccepting()
                                 appContainer.taskRuntime.stopAccepting()
                                 exitApplication()
@@ -120,11 +124,18 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                         }
                         Window(
                             onCloseRequest = requestClose,
+                            visible = trayState.windowVisible,
                             state = windowState,
                             undecorated = DesktopWindowChrome.isWindows,
                             title = "ChatChatBar",
                             icon = painterResource(DesktopBrandResources.LOGO_RESOURCE),
                         ) {
+                            LaunchedEffect(window, tray) {
+                                tray.initialize(onShow = { applicationScope.launch {
+                                    windowState.isMinimized = false
+                                    window.toFront(); window.requestFocus()
+                                } }, onExit = { applicationScope.launch { requestClose() } })
+                            }
                             LaunchedEffect(window) {
                                 while (!window.isShowing) kotlinx.coroutines.delay(50)
                                 DesktopInstalledProgram.ready()
@@ -135,6 +146,7 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                             LaunchedEffect(window, activation) {
                                 activation?.queue?.state?.map { it.activation }?.distinctUntilChanged()?.collect { revision ->
                                     if (revision > 1) {
+                                        tray.show()
                                         windowState.isMinimized = false
                                         window.toFront(); window.requestFocus()
                                     }
@@ -185,7 +197,10 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                                     mergeImportController = appContainer.mergeImportController,
                                     externalImportController = externalImports,
                                     taskCenter = appContainer.taskCenter,
+                                    taskTray = tray,
+                                    onHideToTray = tray::hide,
                                     onExitApplication = {
+                                        tray.prepareExit()
                                         activation?.queue?.stopAccepting()
                                         appContainer.taskRuntime.stopAccepting()
                                         exitApplication()

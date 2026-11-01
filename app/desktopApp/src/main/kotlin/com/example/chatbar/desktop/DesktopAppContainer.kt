@@ -544,6 +544,8 @@ class DesktopAppContainer internal constructor(
         }
     }) }
     internal val taskCenter by taskCenterOwner
+    private val trayOwner = lazy { DesktopTrayController(taskCenter, desktopSettingsStore) }
+    internal val taskTray by trayOwner
     internal val taskRuntime: DesktopTaskRuntime by lazy {
         DesktopTaskRuntime(createRealChatRuntime(), diagnostics = DesktopTransportDiagnosticsOwner(usageSink = { providerUsage.submit(it) }),
             onChatCompleted = { result, stopped ->
@@ -779,6 +781,7 @@ class DesktopAppContainer internal constructor(
                 if (formatCardAiTransportOwner.isInitialized()) formatCardAiTransportOwner.value.closeAndDrain()
                 if (novelAiInfrastructureOwner.isInitialized()) novelAiInfrastructure.closeAndDrain()
                 if (providerUsageOwner.isInitialized()) providerUsage.closeAndDrain()
+                if (trayOwner.isInitialized()) taskTray.closeAndDrain()
                 if (taskCenterOwner.isInitialized()) taskCenter.closeAndDrain()
             },
             runtimeClose = { automaticBackupRuntime.close() },
