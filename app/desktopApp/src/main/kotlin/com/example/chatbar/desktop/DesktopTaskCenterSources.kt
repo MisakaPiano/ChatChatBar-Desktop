@@ -26,7 +26,7 @@ internal fun DesktopTaskCenter.watchRuntime(runtime: DesktopTaskRuntime) {
                 DesktopOwnedWorkKind.CHARACTER_IMAGE -> DesktopWorkKind.CHARACTER_IMAGE
                 DesktopOwnedWorkKind.WORLD_BOOK_AI -> DesktopWorkKind.WORLD_BOOK_AI
             },
-            entry.status.workPhase(), entry.createdAt,
+            if (entry.publicationUnconfirmed) DesktopWorkPhase.UNCONFIRMED else entry.status.workPhase(), entry.createdAt,
             target = when (entry.kind) {
                 DesktopOwnedWorkKind.DOCUMENT -> entry.sessionId?.let { DesktopWorkTarget(DesktopPrimaryRoute.CHAT, sessionId = it) }
                     ?: DesktopWorkTarget(DesktopPrimaryRoute.MANAGE, cardId = entry.characterId, subjectId = entry.documentId)

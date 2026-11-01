@@ -7,6 +7,7 @@ import java.nio.file.attribute.BasicFileAttributes
 import java.security.MessageDigest
 import java.util.UUID
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.*
 
@@ -50,6 +51,7 @@ internal class DesktopIndexCommitJournal(private val root: Path,
         writeNew(work.resolve("intent.part"), intent)
         Files.move(work.resolve("intent.part"), work.resolve("intent.json"), StandardCopyOption.ATOMIC_MOVE)
         // From this point an incomplete transaction always has complete immutable undo evidence.
+        currentCoroutineContext()[DesktopIndexPublicationEvidence]?.publicationStarted()
         try {
             rows.forEachIndexed { index, row ->
                 check(readOptional(live(row.path))?.let(::hash) == row.old) { "Index source changed before publication" }
@@ -59,7 +61,10 @@ internal class DesktopIndexCommitJournal(private val root: Path,
             rows.forEach { row -> check(readOptional(live(row.path))?.let(::hash) == row.next) }
             writeNew(work.resolve("committed"), hash(intent).toByteArray(Charsets.US_ASCII))
         } catch (failure: Throwable) {
-            try { withContext(NonCancellable) { rollback(work, rows) } } catch (rollback: Throwable) { failure.addSuppressed(rollback) }
+            try { withContext(NonCancellable) {
+                rollback(work, rows)
+                currentCoroutineContext()[DesktopIndexPublicationEvidence]?.rollbackConfirmed()
+            } } catch (rollback: Throwable) { failure.addSuppressed(rollback) }
             throw failure
         }
         finish(work)

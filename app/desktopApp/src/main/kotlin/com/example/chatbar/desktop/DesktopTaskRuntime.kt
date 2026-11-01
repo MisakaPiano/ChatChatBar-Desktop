@@ -53,7 +53,8 @@ internal data class DesktopRepairTaskIdentity(val taskId: String, val sessionId:
 internal enum class DesktopOwnedWorkKind { DOCUMENT, CARD_DESIGN, CREATIVE, CHARACTER_AI, CHARACTER_APPEARANCE, CHARACTER_IMAGE, WORLD_BOOK_AI }
 internal data class DesktopOwnedWorkEntry(val taskId: String, val kind: DesktopOwnedWorkKind, val createdAt: Long,
     val status: DesktopTaskStatus = DesktopTaskStatus.RUNNING, val characterId: String? = null,
-    val documentId: String? = null, val draftSessionId: String? = null, val sessionId: String? = null)
+    val documentId: String? = null, val draftSessionId: String? = null, val sessionId: String? = null,
+    val publicationUnconfirmed: Boolean = false)
 
 internal data class DesktopChatPostProcessResult(
     val reply: DesktopRealChatResult,
@@ -112,11 +113,12 @@ internal class DesktopTaskRuntime(
         usageContext: DesktopUsageContext = DesktopUsageContext(DesktopUsageSource.CHARACTER_CARD,
             cardId = characterId, subjectId = documentId), work: suspend () -> T): T = coroutineScope {
         val key = characterId to documentId
+        val publication = DesktopIndexPublicationEvidence(currentCoroutineContext()[DesktopIndexPublicationEvidence])
         val job = synchronized(lock) {
             if (!accepting || maintenance || key in documentPreparations)
                 throw DesktopTaskAdmissionException("Document preparation unavailable")
             val id = UUID.randomUUID().toString()
-            val child = async(DesktopUsageParent(usageContext.copy(taskId = id)), start = CoroutineStart.LAZY) { work() }
+            val child = async(DesktopUsageParent(usageContext.copy(taskId = id)) + publication, start = CoroutineStart.LAZY) { work() }
             documentPreparations[key] = id
             activeJobs[id] = child
             mutableOwnedWork.value = listOf(DesktopOwnedWorkEntry(id, DesktopOwnedWorkKind.DOCUMENT, clock(),
@@ -125,7 +127,7 @@ internal class DesktopTaskRuntime(
                 synchronized(lock) {
                     activeJobs.remove(id)
                     if (documentPreparations[key] == id) documentPreparations.remove(key)
-                    finishOwnedWork(id, cause)
+                    finishOwnedWork(id, cause, publication.mayHaveChanged)
                 }
             }
             child
@@ -167,10 +169,11 @@ internal class DesktopTaskRuntime(
         job.await()
     }
 
-    private fun finishOwnedWork(id: String, cause: Throwable?) {
+    private fun finishOwnedWork(id: String, cause: Throwable?, publicationMayHaveChanged: Boolean = false) {
         val status = when (cause) { null -> DesktopTaskStatus.COMPLETED; is CancellationException -> DesktopTaskStatus.CANCELLED; else -> DesktopTaskStatus.FAILED }
         var completed = 0
-        mutableOwnedWork.value = mutableOwnedWork.value.map { if (it.taskId == id) it.copy(status = status) else it }
+        mutableOwnedWork.value = mutableOwnedWork.value.map { if (it.taskId == id)
+            it.copy(status = status, publicationUnconfirmed = cause != null && publicationMayHaveChanged) else it }
             .filter { it.status == DesktopTaskStatus.RUNNING || ++completed <= completedHistoryLimit }
     }
 
