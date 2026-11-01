@@ -1,5 +1,7 @@
 # 正式1.4.7适配：Studio历史批量修改
 
+CI79／d0d38407完整FAIL保留：共享1107（新增BatchMutation2）和Android582通过；Windows303suite2397项＝2375PASS＋19SKIP＋3FAIL，独立production JAR代理五项通过。三项新Studio夹具在同一asset准备步骤因dataRoot尚未创建而触发现有普通根保护，未到达controller／generation断言，不能当批删缺陷RED或功能失败证据。后续仅在fixture创建自有data子目录，不改生产资源保护；实际三项步骤待新源重测，尚不冒认GREEN。
+
 2026-11-01 JST。公开1229／4fefe7ca与签名13保持；本页为其后的独立源码，不混冻结包，不提升正式baseline或假称测试者发生过资料丢失。复用上游正式1.4.7／b4fa的先计算整批修改、一次元数据事务和一次缓存发布语义，并保留Desktop原有媒体引用保护及operation gate。
 
 实际旧Desktop controller逐entry严格读取／保存／删除，后条读取或写入失败可能发生在前条已提交之后。媒体清理原本在全循环之后，是保留原件的重要行为，继续保留。上游事务helper已存在于共享JsonFileStorage的流式替换底层，不另写第二套文件事务或移植Android全局维护门。

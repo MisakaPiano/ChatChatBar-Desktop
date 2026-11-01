@@ -19,7 +19,8 @@ class DesktopStudioBatchDeleteTest {
     private fun png() = DesktopImageEditing.png(BufferedImage(2, 2, BufferedImage.TYPE_INT_ARGB))
     private suspend fun fixture(block: suspend CoroutineScope.(DesktopAppContainer) -> Unit) = coroutineScope {
         val root = Files.createTempDirectory("studio-batch-delete-")
-        val app = DesktopAppContainer(DesktopDataRootResolution.Resolved(root.resolve("data"),
+        val data = Files.createDirectory(root.resolve("data"))
+        val app = DesktopAppContainer(DesktopDataRootResolution.Resolved(data,
             DesktopDataRootProvenance.CLI_OVERRIDE, root.resolve("bootstrap.json")),
             secretStoreFactory = { InMemoryDesktopSecretStore() }, bundledAssets = { """{"entries":[]}""".toByteArray() })
         try { block(app) } finally { app.close(); root.toFile().deleteRecursively() }

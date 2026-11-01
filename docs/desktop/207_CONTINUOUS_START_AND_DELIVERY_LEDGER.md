@@ -1,3 +1,5 @@
+2026-11-01 CI79／d0d38407原FAIL：共享1107／Android582通过，Windows2397项2375PASS＋19SKIP＋3FAIL；独立production JAR物理代理五项通过。三项新Studio测试均在asset准备前因夹具dataRoot未创建被正确拒绝，未到达批删／generation断言；后续只补自有fixture根创建，生产保护保持，相关功能仍待新源，不把此轮当实际批删RED。独立Vibe resolve／retain和合成认证导入→实际wire新回归仍后续源，单例旧inline流式读取未做，不由79覆盖。公开1229／13和真人待保持。
+
 2026-11-01 1229公开与签名13交付完成、真人待；后续正式147适配只推进独立Studio批删事务缺口。新增共享存储同writer锁的strict-read／纯transform／既有streaming replacement及一次cache发布，实际controller接入后才引用保护清理；Missing／Corrupt／ReadError、gate和原媒体保全不变。新增shared2／真实controller与generation并发3项待下一源云端，不宣称已GREEN或断电原子性，不混冻结1229，不重做SaveSlot。Vibe file marker运行时resolve缺口另排后续。见240。
 
 2026-11-01 用户本次明确许可1229测试Preview与匹配签名信息后，发行430625623／tag-source4fefe7ca及四资产、说明已读回，签名13推68bd067cbc9691790deb4b563e013c51d73c280a，root保持。现用1228旧更新器在全新I缓存实际匿名下载175678756B／a7c974…b889、签名／source／说明和二次验包PASS，H pointer保持1228、未执行安装器，真人待。发布预检两次Python3.10证书失败保留；原证书校验未关闭，随包运行时最终成功，不冒认根因。邀请用户协议新报告与已实证二次选路一致；若仍保留反向实验，恢复原HTTP系统入口并按实际HTTP／SOCKS入口选其一，不新建中转或改JVM。仍目录重叠者先旧版应用迁出、保留原件重开，再更新；已迁出跳过。许可仅1229，不扩大到1230／新功能，详见239。
