@@ -32,11 +32,17 @@ class DesktopCharacterCardAiPanelTest {
                 val card = CharacterCard("synthetic-ui", "合成探索卡", greeting = "原开场",
                     characters = listOf(CharacterInfo("person", "合成人物", profile = "既有简介")),
                     defaultImageNegativePrompt = "synthetic-negative", createdAt = 1, updatedAt = 1)
-                val model = ModelConfig("model", "合成模型", "http://127.0.0.1:1/v1", "", "synthetic", createdAt = 1)
+                val model = ModelConfig("model", "合成模型", "http://127.0.0.1:1/v1", "", "synthetic", isMultimodal = true, createdAt = 1)
                 val replacement = model.copy(id = "replacement", modelName = "replacement")
                 app.characterRepository.save(card); app.modelRepository.saveModel(model); app.modelRepository.saveModel(replacement)
                 app.settingsRepository.updateAppSettings { it.copy(allowCleartextModelApi = true, defaultModelId = model.id) }
                 val editor = app.characterEditorController; editor.openExisting(card.id)
+                val imagePath = parent.resolve("synthetic-reference.png")
+                Files.write(imagePath, DesktopImageEditing.png(java.awt.image.BufferedImage(12, 8, java.awt.image.BufferedImage.TYPE_INT_RGB)))
+                val picker = object : DesktopFilePicker {
+                    override fun pickOpenFile(type: DesktopFileType) = imagePath
+                    override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? = error("No save")
+                }
                 val ai = DesktopCharacterCardAiController(editor, app.settingsRepository, app.effectiveModelResolver,
                     app.taskRuntime, app.dataOperationCoordinator, stream = { _, _, _, selected, _ ->
                         assertEquals("replacement", selected.modelName)
@@ -51,7 +57,7 @@ class DesktopCharacterCardAiPanelTest {
                         ResearchBrief(facts = listOf("合成整理事实")).also {
                             checkpoint(ResearchDebugSnapshot(plan = plan, brief = it))
                         }
-                    })
+                    }, filePicker = picker)
                 editor.cardAi = ai
                 val activity = DesktopModalActivity()
                 val scene = ImageComposeScene(width, 900, coroutineContext = edt) {
@@ -63,6 +69,10 @@ class DesktopCharacterCardAiPanelTest {
                     ai.open(CharacterCardAiOperation.FILL)
                     scene.until { ai.state.value.open && !ai.state.value.loading }
                     assertTrue(scene.has("关闭角色卡 AI"))
+                    scene.click("添加参考图片")
+                    scene.until { !ai.state.value.imagesLoading && ai.state.value.images.size == 1 }
+                    assertTrue(scene.has("参考图 1"))
+                    scene.shot("character-card-ai-reference-$width.png")
                     ai.setRequest("补全外观"); ai.selectSourceMode(CharacterResearchSourceMode.MANUAL_URLS)
                     ai.setManualUrls("https://example.test/source"); ai.generate()
                     scene.until { !ai.state.value.busy && ai.state.value.error != null }

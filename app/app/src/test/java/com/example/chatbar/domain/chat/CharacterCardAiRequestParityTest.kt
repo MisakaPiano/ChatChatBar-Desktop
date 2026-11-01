@@ -78,7 +78,10 @@ class CharacterCardAiRequestParityTest {
                         else CharacterRewriteService.buildPromptPayload("要求", card, brief)
                     } else if (operation == CharacterCardAiOperation.FILL) "合成不完整JSON"
                     else buildJsonObject { put("outputSchema", CharacterCardAiPayload.rewriteSchema(card)); put("text", "合成不完整JSON") }.toString()
-                    val messages = listOf(ChatApiMessage.text("system", system), ChatApiMessage.text("user", payload))
+                    val messages = listOf(ChatApiMessage.text("system", system),
+                        if (operation == CharacterCardAiOperation.FILL && generation)
+                            ChatApiMessage.withImages("user", payload, listOf("synthetic-image-one", "synthetic-image-two"))
+                        else ChatApiMessage.text("user", payload))
                     repeat(2) { server.enqueue(MockResponse().setHeader("Content-Type", "text/event-stream").setBody(
                         "data: {\"choices\":[{\"delta\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n")) }
                     val official = withTimeout(10_000) { android.streamText(messages, model, thinkingBudget = if (generation) 512 else 256,

@@ -2,6 +2,7 @@
 package com.example.chatbar.desktop
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -12,6 +13,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toComposeImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -62,11 +65,11 @@ internal fun DesktopCharacterCardAiOverlay(controller: DesktopCharacterCardAiCon
                 StatusText("预览应用后的实际差异；应用只改变编辑草稿，保存仍需另行确认。")
                 val ids = listOf<String?>(null) + state.models.map { it.id } +
                     listOfNotNull(state.modelId?.takeUnless { id -> state.models.any { it.id == id } })
-                if (!state.busy) SearchableChoice("生成模型", ids, state.modelId, { id ->
+                if (!state.busy && !state.referenceLoading && !state.imagesLoading) SearchableChoice("生成模型", ids, state.modelId, { id ->
                     if (id == null) "跟随默认对话模型 · ${state.defaultModel}"
                     else state.models.firstOrNull { it.id == id }?.name ?: "所选模型不可用"
                 }, controller::selectModel)
-                if (!state.busy && !state.referenceLoading && !state.loading)
+                if (!state.busy && !state.referenceLoading && !state.imagesLoading && !state.loading)
                     SearchableChoice("外部资料", CharacterResearchSourceMode.entries, state.sourceMode, { mode ->
                         when (mode) {
                             CharacterResearchSourceMode.NONE -> "不使用外部网页"
@@ -81,39 +84,63 @@ internal fun DesktopCharacterCardAiOverlay(controller: DesktopCharacterCardAiCon
                         Modifier.fillMaxWidth().heightIn(min = 76.dp, max = 140.dp)
                             .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
                             .background(DesktopBootstrapColors.input).padding(10.dp).verticalScroll(rememberScrollState()),
-                        enabled = !state.busy && !state.referenceLoading, cursorBrush = DesktopBootstrapColors.inputCaret,
+                        enabled = !state.busy && !state.referenceLoading && !state.imagesLoading, cursorBrush = DesktopBootstrapColors.inputCaret,
                         textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp))
                 }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    BootstrapButton("选择临时参考文档", secondary = true, enabled = !state.busy && !state.referenceLoading,
+                    BootstrapButton("选择临时参考文档", secondary = true, enabled = !state.busy && !state.referenceLoading && !state.imagesLoading,
                         onClick = controller::chooseReference)
                     if (state.reference != null) BootstrapButton("移除参考文档", secondary = true,
-                        enabled = !state.busy && !state.referenceLoading, onClick = controller::clearReference)
+                        enabled = !state.busy && !state.referenceLoading && !state.imagesLoading, onClick = controller::clearReference)
                 }
                 state.reference?.let { document ->
                     StatusText("参考文档：${document.fileName} · ${document.content.length} 字符；通过临时 RAG 检索，不加入卡片文档库。")
                     if (document.content.length > 1_000_000) StatusText("文档较长，向量化可能需要较多时间与额度。", DesktopBootstrapColors.warning)
                 }
                 if (state.referenceLoading) StatusText("正在读取参考文档…")
+                if (state.operation == CharacterCardAiOperation.FILL) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        BootstrapButton("添加参考图片", secondary = true,
+                            enabled = !state.busy && !state.referenceLoading && !state.imagesLoading, onClick = controller::chooseImages)
+                        if (state.images.isNotEmpty()) BootstrapButton("清空参考图片", secondary = true,
+                            enabled = !state.busy && !state.imagesLoading, onClick = controller::clearImages)
+                    }
+                    if (state.imagesLoading) StatusText("正在读取参考图片…")
+                    state.images.forEachIndexed { index, image ->
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            val bitmap = remember(image.id) { DesktopImageEditing.decode(image.preview).toComposeImageBitmap() }
+                            Image(bitmap, "参考图 ${index + 1}", Modifier.size(64.dp), contentScale = ContentScale.Fit)
+                            Column(Modifier.weight(1f)) {
+                                StatusText("${index + 1}. ${image.name}")
+                                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    BootstrapButton("上移", secondary = true, enabled = !state.busy && !state.imagesLoading && index > 0) { controller.moveImage(image.id, -1) }
+                                    BootstrapButton("下移", secondary = true, enabled = !state.busy && !state.imagesLoading && index < state.images.lastIndex) { controller.moveImage(image.id, 1) }
+                                    BootstrapButton("移除", secondary = true, enabled = !state.busy && !state.imagesLoading) { controller.removeImage(image.id) }
+                                }
+                            }
+                        }
+                    }
+                }
                 state.sourcePreferenceError?.let { StatusText(it, DesktopBootstrapColors.warning) }
                 StatusText(if (state.operation == CharacterCardAiOperation.FILL) "角色信息与补全要求" else "改写要求")
                 BasicTextField(state.request, controller::setRequest,
                     Modifier.fillMaxWidth().heightIn(min = 100.dp, max = 220.dp)
                         .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
                         .background(DesktopBootstrapColors.input).padding(10.dp).verticalScroll(rememberScrollState()),
-                    enabled = !state.busy && !state.referenceLoading, cursorBrush = DesktopBootstrapColors.inputCaret,
+                    enabled = !state.busy && !state.referenceLoading && !state.imagesLoading, cursorBrush = DesktopBootstrapColors.inputCaret,
                     textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp))
                 if (state.loading) StatusText("正在读取模型…")
                 if (state.status.isNotBlank()) StatusText(state.status)
                 state.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    BootstrapButton("生成新候选", enabled = !state.busy && !state.loading && !state.referenceLoading) { controller.generate() }
+                    BootstrapButton("生成新候选", enabled = !state.busy && !state.loading && !state.referenceLoading && !state.imagesLoading) { controller.generate() }
                     if (state.busy) BootstrapButton("取消生成", secondary = true, onClick = controller::cancel)
                     if (!state.busy && state.candidate == null && (state.error != null || state.research?.hasContent() == true))
                         BootstrapButton("重试未完成步骤", secondary = true) { controller.generate(retry = true) }
-                    if (!state.busy && state.research?.brief != null) BootstrapButton("重新生成最终结果", secondary = true,
+                    if (!state.busy && (state.research?.brief != null || state.candidate != null)) BootstrapButton("重新生成最终结果", secondary = true,
                         onClick = controller::regenerateFinal)
-                    BootstrapButton("应用到当前草稿", enabled = !state.busy && state.candidate != null) { controller.apply() }
+                    BootstrapButton("应用到当前草稿", enabled = !state.busy && !state.referenceLoading && !state.imagesLoading && state.candidate != null) { controller.apply() }
                     BootstrapButton("刷新模型", secondary = true, enabled = !state.busy, onClick = controller::refreshModels)
                     BootstrapButton("请求日志", secondary = true) { logs = true }
                 }

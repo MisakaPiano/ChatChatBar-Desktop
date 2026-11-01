@@ -185,14 +185,126 @@ class DesktopCharacterCardAiTest {
         }
     }
 
+    @Test fun `fresh research clears prior visible brief before failure while retry preserves current checkpoint`() = runBlocking {
+        fixture { _, app, editor ->
+            val brief = ResearchBrief(facts = listOf("上一轮合成事实"))
+            var attempts = 0
+            val ai = controller(app, editor, prepareResearch = { _, _, _, _, _, resume, checkpoint, output, _, _ ->
+                attempts++
+                assertNull(resume)
+                if (attempts == 1) {
+                    output("brief", "合成资料", "上一轮来源")
+                    checkpoint(ResearchDebugSnapshot(plan = CharacterResearchPlan(), brief = brief))
+                    brief
+                } else error("synthetic failure before first checkpoint")
+            }) { _, _, _, _, _ -> flowOf(StreamEvent.Delta(fill), StreamEvent.Done) }
+            ai.open(CharacterCardAiOperation.FILL); ready(ai); ai.setRequest("合成要求")
+            ai.selectSourceMode(CharacterResearchSourceMode.MANUAL_URLS); ai.setManualUrls("https://example.test/source")
+            ai.generate(); idle(ai)
+            assertEquals(brief, ai.state.value.research?.brief)
+            assertTrue(ai.state.value.sourceOutput.isNotEmpty())
+            ai.generate(); idle(ai)
+            assertNull(ai.state.value.research); assertTrue(ai.state.value.sourceOutput.isEmpty())
+            assertNull(ai.state.value.candidate); assertNotNull(ai.state.value.error)
+            ai.generate(retry = true); idle(ai)
+            assertEquals(3, attempts)
+            assertNull(ai.state.value.research); assertTrue(ai.state.value.sourceOutput.isEmpty())
+            assertEquals(card, editor.state.value.card)
+        }
+    }
+
+    @Test fun `reference image batches keep order roll back failed batch and reach only fill multimodal request`() = runBlocking {
+        fixture { root, app, editor ->
+            val paths = listOf(root.parent.resolve("red.png"), root.parent.resolve("blue.png"))
+            paths.forEachIndexed { index, path ->
+                val image = java.awt.image.BufferedImage(12, 8, java.awt.image.BufferedImage.TYPE_INT_RGB)
+                val color = if (index == 0) java.awt.Color.RED.rgb else java.awt.Color.BLUE.rgb
+                repeat(image.width) { x -> repeat(image.height) { y -> image.setRGB(x, y, color) } }
+                Files.write(path, DesktopImageEditing.png(image))
+            }
+            val sourceHashes = paths.map { Files.readAllBytes(it).toList() }
+            var selection = paths
+            val picker = object : DesktopFilePicker {
+                override fun pickOpenFile(type: DesktopFileType): Path? = error("Multi selection expected")
+                override fun pickOpenFiles(type: DesktopFileType) = selection
+                override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? = error("No save")
+            }
+            app.modelRepository.saveModel(model.copy(isMultimodal = true))
+            var calls = 0
+            lateinit var expected: List<String>
+            val ai = controller(app, editor, filePicker = picker) { _, _, messages, _, _ ->
+                calls++
+                val content = messages.last().content.jsonArray
+                assertEquals(expected.map { "data:image/jpeg;base64,$it" }, content.drop(1).map {
+                    it.jsonObject["image_url"]!!.jsonObject["url"]!!.jsonPrimitive.content
+                })
+                assertTrue(Json.parseToJsonElement(content.first().jsonObject["text"]!!.jsonPrimitive.content)
+                    .jsonObject.containsKey("sourceImageInstructions"))
+                flowOf(StreamEvent.Delta(fill), StreamEvent.Done)
+            }
+            ai.open(CharacterCardAiOperation.FILL); ready(ai); ai.chooseImages(); imagesReady(ai)
+            assertEquals(listOf("red.png", "blue.png"), ai.state.value.images.map { it.name })
+            val originals = ai.state.value.images
+            ai.moveImage(originals[1].id, -1)
+            val invalid = root.parent.resolve("invalid.png"); Files.writeString(invalid, "invalid synthetic image")
+            selection = listOf(paths[0], invalid); ai.chooseImages(); imagesReady(ai)
+            assertEquals(originals.reversed(), ai.state.value.images)
+            assertNotNull(ai.state.value.error)
+            expected = ai.state.value.images.map { it.base64 }
+            ai.generate(); idle(ai); assertEquals(1, calls); assertNotNull(ai.state.value.candidate)
+            assertEquals(card, editor.state.value.card)
+            assertEquals(sourceHashes, paths.map { Files.readAllBytes(it).toList() })
+            ai.close(); assertTrue(ai.state.value.images.isEmpty()); assertFalse(ai.state.value.open)
+        }
+    }
+
+    @Test fun `linked vision describes images sequentially and successful preparation survives final retry`() = runBlocking {
+        fixture { root, app, editor ->
+            val path = root.parent.resolve("reference.png")
+            Files.write(path, DesktopImageEditing.png(java.awt.image.BufferedImage(10, 10, java.awt.image.BufferedImage.TYPE_INT_RGB)))
+            val vision = model.copy(id = "vision", modelName = "exact-vision", isMultimodal = true, apiKey = "synthetic-key")
+            app.modelRepository.saveModel(vision)
+            app.modelRepository.saveModel(model.copy(visionModelId = vision.id))
+            val picker = object : DesktopFilePicker {
+                override fun pickOpenFile(type: DesktopFileType) = path
+                override fun pickOpenFiles(type: DesktopFileType) = listOf(path, path)
+                override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? = error("No save")
+            }
+            var descriptions = 0; var requests = 0
+            val ai = controller(app, editor, filePicker = picker, describeImage = { _, selected, delta, _ ->
+                assertEquals("exact-vision", selected.modelName); descriptions++
+                "合成图片说明 $descriptions".also(delta)
+            }) { _, _, messages, _, _ ->
+                requests++
+                val text = messages.last().content.jsonPrimitive.content
+                if (requests <= 2) {
+                    assertTrue(text.contains("合成图片说明 1")); assertTrue(text.contains("合成图片说明 2"))
+                } else {
+                    assertTrue(text.contains("合成图片说明 3")); assertFalse(text.contains("合成图片说明 1"))
+                }
+                flowOf(StreamEvent.Delta(fill), StreamEvent.Done)
+            }
+            ai.open(CharacterCardAiOperation.FILL); ready(ai); ai.chooseImages(); imagesReady(ai)
+            ai.generate(); idle(ai); assertNotNull(ai.state.value.candidate)
+            ai.regenerateFinal(); idle(ai)
+            assertEquals(2, descriptions); assertEquals(2, requests)
+            ai.removeImage(ai.state.value.images.first().id); assertNull(ai.state.value.candidate)
+            ai.generate(); idle(ai); assertEquals(3, descriptions)
+            assertEquals(card, editor.state.value.card)
+        }
+    }
+
+    private suspend fun imagesReady(ai: DesktopCharacterCardAiController) = withTimeout(5_000) { ai.state.first { !it.imagesLoading } }
+
     private fun controller(app: DesktopAppContainer, editor: DesktopCharacterEditorController,
         prepareResearch: DesktopCharacterResearchPreparation? = null,
         filePicker: DesktopFilePicker = UnconfiguredDesktopFilePicker,
+        describeImage: (suspend (String, ModelConfig, (String) -> Unit, ProviderTransportDiagnostics) -> String)? = null,
         stream: (CharacterCardAiOperation, CharacterCardAiStage, List<ChatApiMessage>, ModelConfig, ProviderTransportDiagnostics) -> Flow<StreamEvent>) =
         DesktopCharacterCardAiController(editor, app.settingsRepository, app.effectiveModelResolver,
             app.taskRuntime, app.dataOperationCoordinator, stream,
             streamResearch = { _, _, _, _ -> error("No unplanned research model call") },
-            prepareResearch = prepareResearch, filePicker = filePicker).also { editor.cardAi = it }
+            prepareResearch = prepareResearch, filePicker = filePicker, describeImage = describeImage).also { editor.cardAi = it }
     private suspend fun ready(ai: DesktopCharacterCardAiController) = withTimeout(5_000) { ai.state.first { !it.loading } }
     private suspend fun idle(ai: DesktopCharacterCardAiController) = withTimeout(5_000) { ai.state.first { !it.busy } }
     private suspend fun fixture(block: suspend (Path, DesktopAppContainer, DesktopCharacterEditorController) -> Unit) {

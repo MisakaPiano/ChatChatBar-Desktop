@@ -327,7 +327,9 @@ class DesktopAppContainer internal constructor(
                 }, prepareResearch = { request, card, model, options, documents, resume, checkpoint, visible, status, gateway ->
                     characterResearchSourcesOwner.value.prepare(request, card, model, options, documents,
                         resume, checkpoint, visible, status, gateway)
-                }, filePicker = filePicker)
+                }, filePicker = filePicker, describeImage = { encoded, model, delta, diagnostics ->
+                    DesktopAuxiliaryImageUnderstanding(formatCardAiTransportOwner.value).describe(encoded, model, delta, diagnostics)
+                })
         }
     }
     internal val characterEditorController by characterEditorOwner

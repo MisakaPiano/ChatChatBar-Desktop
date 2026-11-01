@@ -30,6 +30,7 @@ internal data class DesktopCharacterCardAiState(
     val sourcePreferenceError: String? = null,
     val research: ResearchDebugSnapshot? = null,
     val sourceOutput: Map<String, Pair<String, String>> = emptyMap(),
+    val images: List<DesktopCharacterReferenceImage> = emptyList(), val imagesLoading: Boolean = false,
 )
 
 /** Owns one transient editor operation; durable writes remain with the ordinary editor save. */
@@ -41,6 +42,7 @@ internal class DesktopCharacterCardAiController(
     private val streamResearch: ((CharacterResearchAiStage, List<ChatApiMessage>, ModelConfig, ProviderTransportDiagnostics) -> Flow<StreamEvent>)? = null,
     private val prepareResearch: DesktopCharacterResearchPreparation? = null,
     private val filePicker: DesktopFilePicker = UnconfiguredDesktopFilePicker,
+    private val describeImage: (suspend (String, ModelConfig, (String) -> Unit, ProviderTransportDiagnostics) -> String)? = null,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
 ) {
     private data class Pin(val session: String, val target: String?, val card: CharacterCard)
@@ -56,6 +58,10 @@ internal class DesktopCharacterCardAiController(
     private var researchCheckpoint: ResearchDebugSnapshot? = null
     private var referenceJob: Job? = null
     private var preferenceJob: Job? = null
+    private var imagesJob: Job? = null
+    private var imagesToken: String? = null
+    private var imageCheckpoint: ImageUnderstandingResult? = null
+    private var imageRoute: Triple<String, Boolean, String?>? = null
     val diagnosticOwner get() = runtime.diagnostics
     val diagnosticSessionId get() = pin?.let { "character-card:${it.session}" }
 
@@ -66,6 +72,7 @@ internal class DesktopCharacterCardAiController(
         if (pin != target || state.value.operation != operation) {
             optionsJob?.cancel()
             referenceJob?.cancel()
+            imagesToken = null; imagesJob?.cancel(); imageCheckpoint = null; imageRoute = null
             completedRaw = ""; researchCheckpoint = null
             mutableState.value = DesktopCharacterCardAiState(operation = operation)
         }
@@ -74,7 +81,16 @@ internal class DesktopCharacterCardAiController(
         refreshModels()
     }
 
-    fun close() { if (!state.value.busy) mutableState.update { it.copy(open = false) } }
+    fun close() { if (!state.value.busy) {
+        imagesToken = null; imagesJob?.cancel()
+        mutableState.update { it.copy(imagesLoading = false) }
+        if (state.value.images.isNotEmpty()) {
+            completedRaw = ""; researchCheckpoint = null; imageCheckpoint = null; imageRoute = null
+            mutableState.update { it.copy(images = emptyList(), candidate = null, research = null,
+                sourceOutput = emptyMap(), raw = "", repair = "", reasoning = "", repairReasoning = "") }
+        }
+        mutableState.update { it.copy(open = false, imagesLoading = false) }
+    } }
     fun refreshModels() {
         if (state.value.busy || state.value.loading) return
         val target = pin
@@ -99,11 +115,12 @@ internal class DesktopCharacterCardAiController(
     }
 
     private fun change(retainResearch: Boolean = false, change: (DesktopCharacterCardAiState) -> DesktopCharacterCardAiState) {
-        if (state.value.busy || state.value.referenceLoading) return
+        if (state.value.busy || state.value.referenceLoading || state.value.imagesLoading) return
         val before = state.value; val next = change(before)
         if (before != next) {
             completedRaw = ""
             if (!retainResearch) researchCheckpoint = null
+            imageCheckpoint = null; imageRoute = null
             mutableState.value = next.copy(candidate = null, before = null, status = "", error = null,
                 raw = "", repair = "", reasoning = "", repairReasoning = "",
                 research = if (retainResearch) before.research else null,
@@ -114,8 +131,36 @@ internal class DesktopCharacterCardAiController(
     fun selectModel(value: String?) = change(retainResearch = true) { it.copy(modelId = value) }
     fun setManualUrls(value: String) = change { it.copy(manualUrls = value) }
     fun clearReference() = change { it.copy(reference = null) }
+    fun clearImages() = change { it.copy(images = emptyList()) }
+    fun removeImage(id: String) = change { it.copy(images = it.images.filterNot { image -> image.id == id }) }
+    fun moveImage(id: String, offset: Int) = change { current ->
+        val images = current.images.toMutableList(); val from = images.indexOfFirst { it.id == id }
+        if (from >= 0 && from + offset in images.indices) images.add(from + offset, images.removeAt(from))
+        current.copy(images = images)
+    }
+
+    fun chooseImages() {
+        if (state.value.busy || state.value.referenceLoading || state.value.imagesLoading || state.value.operation != CharacterCardAiOperation.FILL) return
+        val target = pin ?: return
+        val paths = filePicker.pickOpenFiles(DesktopFileType("参考图片", listOf("png", "jpg", "jpeg", "webp", "gif")))
+        if (paths.isEmpty()) return
+        val token = UUID.randomUUID().toString(); imagesToken = token
+        mutableState.update { it.copy(imagesLoading = true, error = null) }
+        imagesJob = scope.launch {
+            try {
+                val batch = withContext(Dispatchers.IO) { paths.map { path -> ensureActive(); readCharacterReferenceImage(path) } }
+                if (imagesToken == token && target == currentPin() && state.value.open && state.value.operation == CharacterCardAiOperation.FILL) {
+                    completedRaw = ""; researchCheckpoint = null; imageCheckpoint = null; imageRoute = null
+                    mutableState.update { it.copy(images = it.images + batch, candidate = null, before = null,
+                        research = null, sourceOutput = emptyMap(), raw = "", repair = "", reasoning = "", repairReasoning = "") }
+                }
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { if (imagesToken == token && target == pin) mutableState.update { it.copy(error = "读取参考图片失败；本批未添加，请检查文件与图片大小") } }
+            finally { if (imagesToken == token && target == pin) mutableState.update { it.copy(imagesLoading = false) } }
+        }
+    }
     fun selectSourceMode(value: CharacterResearchSourceMode) {
-        if (state.value.busy || state.value.referenceLoading) return
+        if (state.value.busy || state.value.referenceLoading || state.value.imagesLoading) return
         change { it.copy(sourceMode = value, sourceDefaultsApplied = true, sourcePreferenceError = null) }
         val operation = state.value.operation; val target = pin
         preferenceJob?.cancel()
@@ -132,7 +177,7 @@ internal class DesktopCharacterCardAiController(
     }
 
     fun chooseReference() {
-        if (state.value.busy || state.value.referenceLoading) return
+        if (state.value.busy || state.value.referenceLoading || state.value.imagesLoading) return
         val target = pin ?: return
         val operation = state.value.operation
         val path = filePicker.pickOpenFile(DesktopFileType("参考文档", listOf("txt", "md", "json"))) ?: return
@@ -149,7 +194,7 @@ internal class DesktopCharacterCardAiController(
                     CharacterReferenceDocument(path.fileName.toString(), text)
                 }
                 if (target == currentPin() && state.value.operation == operation) {
-                    completedRaw = ""; researchCheckpoint = null
+                    completedRaw = ""; researchCheckpoint = null; imageCheckpoint = null; imageRoute = null
                     mutableState.update { it.copy(reference = document, candidate = null, before = null,
                         research = null, sourceOutput = emptyMap(), raw = "", repair = "", reasoning = "", repairReasoning = "") }
                 }
@@ -160,12 +205,12 @@ internal class DesktopCharacterCardAiController(
     }
 
     fun generate(retry: Boolean = false) {
-        if (state.value.busy || state.value.referenceLoading || job?.isActive == true) return
+        if (state.value.busy || state.value.referenceLoading || state.value.imagesLoading || job?.isActive == true) return
         val before = state.value; val target = pin
         if (target == null || target != currentPin()) {
             mutableState.update { it.copy(candidate = null, error = "当前编辑内容已变化，请关闭后重新打开 AI 编辑") }; return
         }
-        if (before.request.isBlank() && before.reference == null &&
+        if (before.request.isBlank() && before.reference == null && before.images.isEmpty() &&
             !(before.sourceMode.usesManualUrls() && before.manualUrls.isNotBlank())) {
             mutableState.update { it.copy(error = "请填写角色信息或改写要求") }; return
         }
@@ -176,13 +221,16 @@ internal class DesktopCharacterCardAiController(
         if ((before.sourceMode != CharacterResearchSourceMode.NONE || before.reference != null) && (prepareResearch == null || streamResearch == null)) {
             mutableState.update { it.copy(error = "所选外部资料准备服务不可用，未发出生成请求") }; return
         }
-        if (!retry) { completedRaw = ""; researchCheckpoint = null }
+        if (!retry) { completedRaw = ""; researchCheckpoint = null; imageCheckpoint = null; imageRoute = null }
         mutableState.update { it.copy(busy = true, error = null, candidate = null, before = target.card,
             status = "正在准备生成", repair = "", repairReasoning = "",
+            research = if (retry) it.research else null,
+            sourceOutput = if (retry) it.sourceOutput else emptyMap(),
             raw = completedRaw, reasoning = if (completedRaw.isEmpty()) "" else it.reasoning) }
         job = scope.launch {
             var lastRecorder: DesktopTransportDiagnosticRecorder? = null
             var preparingSources = false
+            var preparingImages = false
             try {
                 val merged = runtime.withCardDesign(target.session) {
                     gate.withNormalOperation {
@@ -192,6 +240,26 @@ internal class DesktopCharacterCardAiController(
                         requireNotNull(model) { "MODEL_UNAVAILABLE" }
                         require(model.hasConfiguredAuthentication(fresh)) { "MODEL_AUTHENTICATION" }
                         val run = UUID.randomUUID().toString()
+                        val route = Triple(model.id, model.isMultimodal, model.visionModelId)
+                        preparingImages = before.images.isNotEmpty()
+                        val imageContext = if (before.images.isEmpty()) ImageUnderstandingResult() else {
+                            if (imageRoute != route) imageCheckpoint = null
+                            imageCheckpoint ?: ImageUnderstandingService(models) { encoded, vision, delta ->
+                                val describe = requireNotNull(describeImage) { "IMAGE_UNDERSTANDING_UNAVAILABLE" }
+                                val recorder = runtime.diagnostics.begin("$run:IMAGE:${UUID.randomUUID()}", "character-card:${target.session}", vision)
+                                lastRecorder = recorder
+                                try {
+                                    describe(encoded, vision, delta, recorder).also { recorder.finish(DesktopTaskStatus.COMPLETED, null, null) }
+                                } catch (cancelled: CancellationException) {
+                                    recorder.onCancelled(); recorder.finish(DesktopTaskStatus.CANCELLED, null, null); throw cancelled
+                                } catch (error: Exception) { recorder.finish(DesktopTaskStatus.FAILED, "参考图片识别未完成", null); throw error }
+                            }.prepare(before.images.map { it.base64 }, model, requireUnderstanding = true, announceDirect = true,
+                                onStatus = { value -> mutableState.update { it.copy(status = value) } },
+                                onDescriptionText = { index, text -> mutableState.update { it.copy(sourceOutput = it.sourceOutput +
+                                    ("image-$index" to ("参考图片 ${index + 1} 识别" to text))) } })
+                                .also { imageCheckpoint = it; imageRoute = route }
+                        }
+                        preparingImages = false
                         val researchGateway = CharacterResearchAiGateway { stage, messages, resolved, onDelta, onReasoning ->
                             val sourceStream = requireNotNull(streamResearch) { "RESEARCH_TRANSPORT_UNAVAILABLE" }
                             val recorder = runtime.diagnostics.begin("$run:RESEARCH:${stage.name}", "character-card:${target.session}", resolved)
@@ -215,8 +283,9 @@ internal class DesktopCharacterCardAiController(
                         }
                         val researchOptions = CharacterResearchOptions(before.sourceMode,
                             if (before.sourceMode.usesManualUrls()) urlCheck.urls else emptyList())
-                        preparingSources = prepareResearch != null
-                        val brief = if (prepareResearch == null) null else try {
+                        val needsResearch = before.request.isNotBlank() || before.reference != null || researchOptions.hasManualUrlSource()
+                        preparingSources = prepareResearch != null && needsResearch
+                        val brief = if (prepareResearch == null || !needsResearch) null else try {
                             prepareResearch.invoke(before.request, target.card, model, researchOptions,
                                 listOfNotNull(before.reference), researchCheckpoint,
                                 { snapshot -> researchCheckpoint = snapshot; mutableState.update { it.copy(research = snapshot) } },
@@ -261,7 +330,9 @@ internal class DesktopCharacterCardAiController(
                         } }
                         when (before.operation) {
                             CharacterCardAiOperation.FILL -> CharacterCardAiPayload.mergeFill(target.card,
-                                generator.fill(target.card, CharacterCardAiPayload.fill(before.request, target.card, briefJson), model,
+                                generator.fill(target.card, CharacterCardAiPayload.fill(before.request, target.card, briefJson,
+                                    CharacterAutoFillImageContext(imageContext.hasSourceImages, imageContext.descriptions)), model,
+                                    directImages = imageContext.directImageBase64s,
                                     completedRaw = completedRaw, onCheckpoint = checkpoint, onRaw = raw,
                                     onRepair = repair, onReasoning = reasoning,
                                     onStatus = { v -> mutableState.update { it.copy(status = v) } }))
@@ -282,7 +353,8 @@ internal class DesktopCharacterCardAiController(
                     is ModelResponseTruncatedException -> "模型输出已截断，请检查输出上限"
                     is com.example.chatbar.domain.prompt.AiTaskRefusalException -> "模型拒绝或过滤了本次输出"
                     is ModelRequestException -> "请求失败${error.httpStatus?.let { "（HTTP $it）" }.orEmpty()}"
-                    else -> if (preparingSources) "外部资料准备失败，请检查所选网页、参考文档和研究日志；未生成候选"
+                    else -> if (preparingImages) "参考图片识别失败，请检查当前模型与关联视觉模型；未生成候选"
+                        else if (preparingSources) "外部资料准备失败，请检查所选网页、参考文档和研究日志；未生成候选"
                         else "生成或候选校验失败，请检查模型配置和请求日志"
                 }
                 lastRecorder?.finish(DesktopTaskStatus.FAILED, message, null)
@@ -294,7 +366,7 @@ internal class DesktopCharacterCardAiController(
     fun cancel() { job?.cancel() }
     fun regenerateFinal() { if (!state.value.busy) { completedRaw = ""; generate(retry = true) } }
     fun apply(): Boolean {
-        if (state.value.busy) return false
+        if (state.value.busy || state.value.referenceLoading || state.value.imagesLoading) return false
         val target = pin ?: return false
         val result = state.value.candidate ?: return false
         val applied = editor.applyCardAi(target.session, target.card, result)
@@ -304,7 +376,9 @@ internal class DesktopCharacterCardAiController(
     }
 
     suspend fun closeAndDrain() {
-        job?.cancelAndJoin(); optionsJob?.cancelAndJoin(); referenceJob?.cancelAndJoin(); preferenceJob?.cancelAndJoin()
+        job?.cancelAndJoin(); optionsJob?.cancelAndJoin(); referenceJob?.cancelAndJoin(); preferenceJob?.cancelAndJoin(); imagesJob?.cancelAndJoin()
+        imagesToken = null; imageCheckpoint = null; imageRoute = null
+        mutableState.update { it.copy(images = emptyList()) }
         scope.coroutineContext[Job]?.cancelAndJoin()
     }
 }
