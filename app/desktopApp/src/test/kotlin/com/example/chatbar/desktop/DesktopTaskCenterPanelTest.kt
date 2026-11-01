@@ -49,6 +49,11 @@ class DesktopTaskCenterPanelTest {
                 withTimeout(5000) { center.state.first { it.rows.first().stopRequested } }
                 assertEquals("aaaaaaaa-0000", withTimeout(5000) { stopped.await() }); assertFalse(center.state.value.rows[1].stopRequested)
                 frames(scene)
+                val retained = center.state.value.rows
+                center.navigationBusy(); frames(scene)
+                val dismiss = nodes(scene).single { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("关闭任务提示") == true && it.config.contains(SemanticsActions.OnClick) }
+                dismiss.config[SemanticsActions.OnClick].action!!.invoke(); frames(scene)
+                assertNull(center.state.value.error); assertEquals(retained, center.state.value.rows)
                 System.getenv("CCB_TASK_CENTER_REVIEW_DIR")?.let { directory ->
                     val output = Path.of(directory); Files.createDirectories(output)
                     scene.render().use { image -> Files.write(output.resolve("task-center-$width.png"), image.encodeToData()!!.bytes) }

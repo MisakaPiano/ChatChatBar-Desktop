@@ -161,7 +161,7 @@ class DesktopB1CIntegrationTest {
             assertEquals(DesktopPrimaryRoute.CHAT, navigation.selectedRoute.value)
             assertNotNull(c.taskCenter.state.value.error)
             c.settingsRepository.updateAppSettings { it.copy(momentsEnabled = true) }; moments.refresh()
-            c.taskCenter.clearError(); scene.frames(); scene.click("前往页面"); scene.frames()
+            scene.frames(); scene.click("关闭任务提示"); scene.click("前往页面"); scene.frames()
             assertEquals(DesktopPrimaryRoute.MOMENTS, navigation.selectedRoute.value)
             assertNull(c.taskCenter.state.value.error); assertEquals(0, calls.get()); assertTrue(f.requests.isEmpty())
             assertFalse(moments.state.value.scheduling)

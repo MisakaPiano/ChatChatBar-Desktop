@@ -42,7 +42,13 @@ internal fun DesktopTaskCenterPanel(center: DesktopTaskCenter, onClose: () -> Un
                     BootstrapButton("进行中", secondary = recent) { recent = false }
                     BootstrapButton("最近任务", secondary = !recent) { recent = true }
                 }
-                state.error?.let { StatusText(it, palette.destructive) }
+                state.error?.let { error ->
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Box(Modifier.weight(1f)) { StatusText(error, palette.destructive) }
+                        DesktopIconAction("关闭任务提示", DesktopAppIcons.Close, onClick = center::clearError)
+                    }
+                }
                 val shown = state.rows.filter { recent || it.active }
                 Column(Modifier.weight(1f, fill = false).fillMaxWidth().verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(8.dp)) {
