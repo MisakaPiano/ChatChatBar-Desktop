@@ -19,6 +19,8 @@ When PC defaults are managed named accounts and an Android import has only a sin
 
 `DesktopDataWorkspace` separates export, merge import, file-only verification, root selection, automatic backup and updates. Subsection changes retain preparation/choices; in-flight merge and restart states force the merge surface. `DesktopMergeImportPanel` groups conflicts using existing backup setting labels and preserves every per-record choice. Final credential consent remains explicit; category navigation never selects or submits a merge.
 
+Merge target selection checks `DesktopProgramDataBoundary` before calling the publisher, with an explicit reminder to choose outside the managed program root. A known `MERGE_DESTINATION_APPLICATION_HOME_UNSAFE` precondition keeps the inspected preview and conflicts so another target can be selected; it is not a password/schema error. Service destination preparation still rechecks the boundary before creation and remains authoritative.
+
 ## Entry points and format authority
 
 - User-facing export is `DesktopBackupExportDialog` → controller catalog/selection → `DesktopFullBackupService.exportModern`. `backup/BackupExportSelection.kt` adapts official147's 51 setting options, card/session dependency policy, all/light/clear presets and per-session media choices; selection is applied in `DesktopFullBackupMapping.export` BEFORE resolving resources, so a broken unselected card cannot block another card. Writer emits the exact selected scope and media choices. Optional encryption uses a volatile repeated password (8–1024 chars); a nonempty password alone does not select encryption. Keep the legacy inspect password separate.

@@ -126,7 +126,8 @@ internal class DesktopFormatCardAutoFillController(
                         FormatCardAutoFillGenerator { stage, messages, resolved ->
                             flow {
                                 val recorder = runtime.diagnostics.begin("$runId:${stage.name}", "format-card:${target.session}", resolved,
-                                    DesktopUsageContext(DesktopUsageSource.FORMAT_CARD, taskId = runId))
+                                    DesktopUsageContext(DesktopUsageSource.FORMAT_CARD, taskId = runId,
+                                        editorSessionId = target.session, subjectId = target.card.id))
                                 lastRecorder = recorder
                                 var terminal = false
                                 try {

@@ -27,6 +27,9 @@ internal data class DesktopUsageContext(
     val taskId: String? = null,
     val sessionId: String? = null,
     val cardId: String? = null,
+    val editorSessionId: String? = null,
+    val personId: String? = null,
+    val subjectId: String? = null,
 )
 
 @Serializable
@@ -70,6 +73,9 @@ internal data class DesktopUsageRecord(
     val outcome: DesktopUsageOutcome = DesktopUsageOutcome.RUNNING,
     val counters: DesktopUsageCounters = DesktopUsageCounters(),
     val schemaVersion: Int = 1,
+    val editorSessionId: String? = null,
+    val personId: String? = null,
+    val subjectId: String? = null,
 )
 
 internal data class DesktopUsageCounterTotal(val value: Long?, val reportedAttempts: Int, val unreportedAttempts: Int)
@@ -122,12 +128,12 @@ internal class DesktopProviderUsageStore(private val root: Path, private val gat
         require(UUID.fromString(record.requestId).toString() == record.requestId)
         require(record.schemaVersion == 1 && record.attempt >= 1 && record.revision >= 1 && record.updatedAt >= record.startedAt)
         listOfNotNull(record.taskId, record.sessionId, record.cardId, record.modelId, record.modelName,
-            record.provider, record.accountId).forEach { require(it.length <= 512) }
+            record.provider, record.accountId, record.editorSessionId, record.personId, record.subjectId).forEach { require(it.length <= 512) }
         with(record.counters) { listOfNotNull(prompt, completion, cacheHit, cacheWrite, cacheMiss).forEach { require(it >= 0) } }
     }
     private fun read(file: Path): DesktopUsageRecord {
         DesktopArchiveFiles.safe(file, false)
-        check(Files.size(file) <= 16_384)
+        check(Files.size(file) <= 32_768)
         return json.decodeFromString(DesktopUsageRecord.serializer(), Files.readString(file)).also {
             validate(it); check(file.fileName.toString() == "${it.id}.json")
         }
@@ -146,6 +152,7 @@ internal class DesktopProviderUsageStore(private val root: Path, private val gat
             check(previous.requestId == record.requestId && previous.attempt == record.attempt &&
                 previous.startedAt == record.startedAt && previous.source == record.source &&
                 previous.taskId == record.taskId && previous.sessionId == record.sessionId && previous.cardId == record.cardId &&
+                previous.editorSessionId == record.editorSessionId && previous.personId == record.personId && previous.subjectId == record.subjectId &&
                 previous.modelId == record.modelId && previous.modelName == record.modelName &&
                 previous.provider == record.provider && previous.accountId == record.accountId)
             if (previous.revision >= record.revision) {
@@ -154,7 +161,7 @@ internal class DesktopProviderUsageStore(private val root: Path, private val gat
             }
         }
         val encoded = json.encodeToString(DesktopUsageRecord.serializer(), record).toByteArray()
-        check(encoded.size <= 16_384)
+        check(encoded.size <= 32_768)
         val temporary = home.resolve(".${record.id}-${UUID.randomUUID()}.tmp")
         try {
             FileChannel.open(temporary, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE).use { channel ->

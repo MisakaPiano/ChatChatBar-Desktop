@@ -37,7 +37,8 @@ internal class DesktopUsageAttemptRecorder(
             outcome = DesktopUsageOutcome.RETRIED)) }
         val now = clock()
         current = DesktopUsageRecord(UUID.randomUUID().toString(), requestId, number, 1, context.source,
-            context.taskId, context.sessionId, context.cardId, modelId, modelName, provider, accountId, now, now)
+            context.taskId, context.sessionId, context.cardId, modelId, modelName, provider, accountId, now, now,
+            editorSessionId = context.editorSessionId, personId = context.personId, subjectId = context.subjectId)
         publish(requireNotNull(current))
     }
     fun usage(value: PromptCacheUsage) = synchronized(lock) {

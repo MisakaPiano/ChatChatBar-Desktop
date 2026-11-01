@@ -193,7 +193,8 @@ internal class DesktopWorldBookAiController(
                         val run = UUID.randomUUID().toString()
                         val gateway = WorldBookAiGateway { operation, stage, messages, actual, delta, thought ->
                             val recorder = runtime.diagnostics.begin("$run:${operation.name}:${stage.name}:${UUID.randomUUID()}", "world-book:${target.session}", actual,
-                                DesktopUsageContext(DesktopUsageSource.WORLD_BOOK, taskId = run))
+                                DesktopUsageContext(DesktopUsageSource.WORLD_BOOK, taskId = run,
+                                    editorSessionId = target.session, subjectId = target.book.id))
                             val raw = StringBuilder(); var done = false
                             try {
                                 stream(operation, stage, messages, actual, recorder).collect { event -> when (event) {

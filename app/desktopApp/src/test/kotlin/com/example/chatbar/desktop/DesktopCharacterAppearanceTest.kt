@@ -20,18 +20,27 @@ class DesktopCharacterAppearanceTest {
     private val output = """{"appearance":"","clothing":"新服装"}"""
 
     @Test fun `direct and exact linked model produce explicit text candidate preserving all other person fields`() = runBlocking {
-        for (linked in listOf(false, true)) fixture { _, app, editor, picker ->
+        for (linked in listOf(false, true)) fixture { source, app, editor, picker ->
             if (linked) {
                 app.modelRepository.saveModel(model.copy(id = "exact-vision", modelName = "exact-vision"))
                 app.modelRepository.saveModel(model.copy(isMultimodal = false, visionModelId = "exact-vision"))
             }
             var calls = 0
-            val ai = controller(app, editor, picker) { messages, selected, _ ->
+            val draftSession = assertNotNull(editor.state.value.draftSessionId)
+            val ai = controller(app, editor, picker) { messages, selected, diagnostics ->
                 calls++; assertEquals(if (linked) "exact-vision" else "original", selected.modelName)
+                diagnostics.onAttemptStarted(1)
+                diagnostics.onResponseChunk("""{"usage":{"prompt_tokens":3,"completion_tokens":1}}""")
                 assertTrue(messages.last().content.jsonArray.any { it.jsonObject["type"]?.jsonPrimitive?.content == "image_url" })
                 flowOf(StreamEvent.Delta(output), StreamEvent.Done)
             }
             ai.open(person.id); idle(ai)
+            withTimeout(5_000) { app.providerUsage.state.first { it.pending == 0 } }
+            val usage = DesktopProviderUsageStore(source.parent.resolve("data"), app.dataOperationCoordinator).records().single()
+            assertEquals(DesktopUsageSource.CHARACTER_CARD, usage.source)
+            assertEquals(card.id, usage.cardId); assertEquals(person.id, usage.personId)
+            assertEquals(draftSession, usage.editorSessionId); assertNull(usage.sessionId)
+            assertNotNull(usage.taskId); assertEquals(3L, usage.counters.prompt)
             assertEquals(linked, ai.state.value.route?.usesLinkedVisionModel)
             assertNotNull(ai.state.value.candidate); assertEquals(card, editor.state.value.card)
             assertEquals(card, app.characterRepository.getById(card.id))

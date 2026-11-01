@@ -62,6 +62,7 @@ internal class DesktopCharacterAppearanceController(
         mutable.update { it.copy(busy = true, candidate = null, error = null, route = null,
             raw = "", reasoning = "", status = "正在读取上传图片") }
         val epoch = operationEpoch.incrementAndGet()
+        val usageTask = UUID.randomUUID().toString()
         job = scope.launch {
             try {
                 val result = runtime.withCardDesign(target.session) { gate.withNormalOperation {
@@ -70,7 +71,8 @@ internal class DesktopCharacterAppearanceController(
                     }.also { image = it; mutable.update { before -> before.copy(preview = it.preview) } }
                     val core = CharacterAppearanceImageCore(models, CharacterAppearanceImageGateway { messages, model ->
                         val recorder = runtime.diagnostics.begin("appearance:${UUID.randomUUID()}", "character-card:${target.session}", model,
-                            DesktopUsageContext(DesktopUsageSource.CHARACTER_CARD))
+                            DesktopUsageContext(DesktopUsageSource.CHARACTER_CARD, taskId = usageTask,
+                                cardId = target.card.id, editorSessionId = target.session, personId = target.person))
                         val raw = StringBuilder(); val reasoning = StringBuilder(); var done = false
                         try {
                             stream(messages, model, recorder).collect { event -> when (event) {

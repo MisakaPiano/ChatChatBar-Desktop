@@ -12,7 +12,9 @@ CI71／63404实际Windows298suite2377项=2357PASS+19SKIP+1FAIL。Capture3／Usag
 
 共享`ProviderTransportDiagnostics.onAttemptStarted`在真正dispatch前分别标记主聊天每次重试、isolated stream及Moment complete一次尝试；不改请求body、Prompt、模型参数或重试规则。原进程内原文诊断保持独立，清空界面日志不删除正在进行的数值捕获。Moments通过`DesktopUsageParent`传真实MomentTask／session／card，`moments:JUDGE/GENERATE`只用于界面分组。
 
-当前接入聊天、角色卡／格式卡／世界书AI及朋友圈文本／调试；没有声称已覆盖所有NAI渲染、语音、向量与其他辅助请求。未知供应商／会话／父卡保持未知，不从URL、账户名或界面分组猜归属。管理的其他设置提供时间／来源筛选、总计和按模型／供应商／账户分组；尚非完整任务中心、托盘或收费账单。
+当前接入聊天、角色卡／格式卡／世界书AI及朋友圈文案／判断／对应调试；Moment图片Prompt设计走独立NAI辅助图谱，仍待接入，不能称所有Moment文本。没有声称已覆盖所有NAI渲染、语音、向量与其他辅助请求。未知供应商／会话／父卡保持未知，不从URL、账户名或界面分组猜归属。管理的其他设置提供时间／来源筛选、总计和按模型／供应商／账户分组；尚非完整任务中心、托盘或收费账单。
+
+后续补图片看外貌的实际Controller父卡／人物／生成任务归属；`Pin.session`经源码核对是编辑草稿session，不是ChatSession，单独存editorSessionId，真实sessionId保持null。其他卡AI同样保留编辑会话与源实体ID，避免已知父项被丢掉或冒认为真实对话；复用实际Controller入口测试，尚待新源。
 
 本地文件位于现有local-only `diagnostics/provider-usage`，强制写入临时文件后原子替换，旧revision不能覆盖新快照，归属不能同ID变更；没有自动删除历史，也不随portable整应用备份迁移。`DesktopProviderUsageOwner`在IO合并待写快照，失败保留本次运行中的最新记录并显示独立保存错误；读失败不伪装为空统计。所有实际生产者排水后再收尾统计。已提交资料切换／恢复的RESTART_REQUIRED使用限定本地diagnostics的独占shutdown drain，普通数据准入保持关闭，完成后仍需重启。
 

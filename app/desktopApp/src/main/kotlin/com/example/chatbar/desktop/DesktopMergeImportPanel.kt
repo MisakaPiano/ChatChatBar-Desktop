@@ -85,6 +85,7 @@ internal fun DesktopMergeImportPanel(controller: DesktopMergeImportController, o
                 }
             }
             StatusText("确认后将停止生成和音频，保留电脑快照，准备完整合并结果并核对凭据。选择保存位置后会创建新的子目录；完成后需要正常退出。")
+            StatusText("请选择程序安装目录之外的位置，不要放在安装目录的input、UserData或versions内；原电脑目录和备份文件会保留。")
             StudioSwitch("我确认以上选择，并允许把所选凭据安全保存到新目录", confirmed,
                 enabled = !state.busy) { confirmed = !confirmed }
             ActionRow {

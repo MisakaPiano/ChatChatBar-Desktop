@@ -13,6 +13,39 @@ import org.junit.Test
 import kotlin.test.*
 
 class DesktopMergeImportServiceTest {
+    @Test fun `merge target inside managed installation refuses without losing inspected conflicts or creating a directory`() = runBlocking<Unit> {
+        fixture {
+            val program = Files.createDirectory(base.resolve("program"))
+            val versions = Files.createDirectory(program.resolve("versions"))
+            val home = Files.createDirectory(versions.resolve("fixture-version"))
+            Files.writeString(program.resolve("install-owner.txt"), "ccb-desktop-nsis-v1")
+            val picker = object : DesktopFilePicker {
+                override fun pickOpenFile(type: DesktopFileType) = archive
+                override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? = null
+            }
+            val controller = DesktopMergeImportController(service, picker, DesktopDirectoryPicker { program },
+                applicationHomeResolver = { DesktopApplicationHomeResult.Available(home,
+                    DesktopApplicationHomeProvenance.INJECTED_DEVELOPMENT_TEST) })
+            try {
+                controller.inspect(null)
+                val preview = withTimeout(10_000) { controller.state.first { it.ready && !it.busy } }
+                val choices = preview.conflicts.associate { it.key to it.choices.first() }
+                val credentials = preview.credentials.associate { it.kind to DesktopMergeCredentials.Choice.KEEP_COMPUTER }
+                repeat(2) {
+                    controller.commit(choices, credentials, true, confirmed = true)
+                    val refused = withTimeout(10_000) { controller.state.first { !it.busy && it.error != null } }
+                    assertTrue(refused.ready); assertFalse(refused.restartRequired)
+                    assertTrue(refused.error!!.contains("程序安装目录")); assertFalse(refused.error!!.contains("密码"))
+                    assertEquals(preview.conflicts, refused.conflicts); assertEquals(preview.credentials, refused.credentials)
+                    assertFalse(Files.exists(assertNotNull(refused.destination)))
+                    assertFalse(service.restartRequired)
+                }
+                original.forEach { (relative, bytes) -> assertContentEquals(bytes, Files.readAllBytes(root.resolve(relative))) }
+                assertEquals(root, (DesktopBootstrapSettingsStore(source.bootstrapPath).load() as DesktopBootstrapLoadResult.Loaded).document.selection.customRoot)
+            } finally { controller.closeAndDrain() }
+        }
+    }
+
     @Test fun `merge diagnostic retains code locations but never exception text or filesystem paths`() {
         val cause = IllegalArgumentException("SYNTHETIC_API_KEY H:/private/backup.cbbackup")
         cause.stackTrace = arrayOf(StackTraceElement("com.example.chatbar.desktop.DesktopMergeImportService", "inspect", "DesktopMergeImportService.kt", 123),

@@ -17,7 +17,8 @@ internal data class DesktopMergeImportState(val busy: Boolean = false, val ready
 /** Holds secret-bearing preparation privately; UI state contains only presentation metadata. */
 internal class DesktopMergeImportController(private val service: DesktopMergeImportService,
     private val picker: DesktopFilePicker, private val directories: DesktopDirectoryPicker,
-    dispatcher: CoroutineDispatcher = Dispatchers.IO) {
+    dispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val applicationHomeResolver: () -> DesktopApplicationHomeResult = DesktopApplicationHome::resolve) {
     private val scope = CoroutineScope(SupervisorJob() + dispatcher)
     private val mutable = MutableStateFlow(DesktopMergeImportState())
     val state = mutable.asStateFlow()
@@ -44,6 +45,18 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
         val parent = directories.pickDirectory() ?: return@action "已取消选择合并目录，可以重新选择"
         val target = parent.resolve("ChatChatBar-merged-${UUID.randomUUID()}")
         mutable.update { it.copy(destination = target) }
+        val refused = when (val home = applicationHomeResolver()) {
+            is DesktopApplicationHomeResult.Available -> try {
+                if (DesktopProgramDataBoundary.conflicts(home.path, target)) MERGE_PROGRAM_DATA_NOTICE else null
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { "程序目录身份未通过核对，尚未创建合并目录；原检查结果与选择保留，请检查安装状态后重试。" }
+            is DesktopApplicationHomeResult.Failure -> "程序目录身份未确认，尚未创建合并目录；原检查结果与选择保留。"
+            is DesktopApplicationHomeResult.Unavailable -> null
+        }
+        if (refused != null) {
+            mutable.update { it.copy(error = refused) }
+            return@action "原检查结果与冲突选择已保留，可以重新选择合并位置。"
+        }
         when (service.commitWithProgress(selected, target, choices, credentials, confirmed, imagePreferencesFromPhone, ::showProgress)) {
             DesktopMergeImportService.Publication.COMMITTED -> "合并已完成准备。请正常退出，再次启动将打开包含两边内容的新目录。原电脑目录与手机文件保留。"
             DesktopMergeImportService.Publication.INDETERMINATE -> "启动位置的写入结果尚未确认。已暂停写入并保留两边目录，请正常退出后检查启动结果。"
@@ -74,10 +87,14 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
                 mutable.update { it.copy(ready = false, message = if (service.restartRequired) "合并提交已进入启动切换阶段，请正常退出。"
                     else "已停止；原电脑目录与手机文件保留。未完成的新目录不会自动清理。") }
             } catch (failure: Throwable) {
-                try { withContext(NonCancellable) { service.discard() } }
-                catch (cleanup: Throwable) { failure.addSuppressed(cleanup) }
-                preview = null
+                val retainPreview = failure.message == "MERGE_DESTINATION_APPLICATION_HOME_UNSAFE" && !service.restartRequired
+                if (!retainPreview) {
+                    try { withContext(NonCancellable) { service.discard() } }
+                    catch (cleanup: Throwable) { failure.addSuppressed(cleanup) }
+                    preview = null
+                }
                 val message = when {
+                    failure.message == "MERGE_DESTINATION_APPLICATION_HOME_UNSAFE" -> MERGE_PROGRAM_DATA_NOTICE
                     failure is DesktopFullBackupSource.Refusal -> failure.userMessage()
                     failure is DesktopBackupRecords.ResourceLimit -> failure.userMessage()
                     failure is DesktopDraftPersistenceException -> "聊天草稿尚未保存成功，已停止准备合并以免遗漏内容。请保留当前草稿；备份文件未改变。"
@@ -92,7 +109,7 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
                     failure is DesktopTaskDrainTimeoutException -> "生成任务尚未确认停止，请正常退出后重试。"
                     else -> "合并未提交或尚未确认。请检查密码、文件格式、资源、可用空间和所选目录；原始数据与失败现场保留。"
                 }
-                mutable.update { it.copy(ready = false, error = message, message = "", failureDetails = desktopMergeFailureDetails(failure)) }
+                mutable.update { it.copy(ready = retainPreview && preview != null, error = message, message = "", failureDetails = desktopMergeFailureDetails(failure)) }
             } finally {
                 password?.fill('\u0000')
                 mutable.update { it.copy(busy = false, restartRequired = service.restartRequired,
@@ -106,7 +123,10 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
         service.discard(); preview = null
         // Destination ownership belongs to the service, closed only AFTER old repositories drain.
     }
-    companion object { private val TYPE = DesktopFileType("ChatBar 整应用备份", listOf("cbbackup"), "cbbackup") }
+    companion object {
+        private val TYPE = DesktopFileType("ChatBar 整应用备份", listOf("cbbackup"), "cbbackup")
+        private const val MERGE_PROGRAM_DATA_NOTICE = "所选位置与程序安装目录重叠，或程序目录身份未通过检查。尚未创建或提交合并目录；请选择安装目录之外的位置，原目录、备份和冲突选择保留。"
+    }
 }
 
 /** Code locations only; exception messages, record IDs, filesystem paths and values stay private. */
