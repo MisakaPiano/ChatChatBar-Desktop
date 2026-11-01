@@ -44,6 +44,13 @@ class DesktopProxyPhysicalRoutingTest {
                 val result = Json.parseToJsonElement(Files.readString(root.resolve("result.json"))).jsonObject
                 assertTrue(result.getValue("startupLoadedSameRoot").jsonPrimitive.boolean)
                 val selectedPort = result.getValue("selectedProxyPort").jsonPrimitive.int
+                println("CCB_PROXY_PHYSICAL_RECORD " + buildJsonObject {
+                    put("mode", mode); put("selectedPort", selectedPort)
+                    put("systemPort", system.port); put("applicationPort", application.port); put("targetPort", target.port)
+                    putJsonArray("systemKinds") { system.kinds().forEach { add(it) } }
+                    putJsonArray("applicationKinds") { application.kinds().forEach { add(it) } }
+                    putJsonArray("targetKinds") { target.kinds().forEach { add(it) } }
+                })
                 assertEquals(when (mode) { "HTTP", "SOCKS" -> application.port; "SYSTEM" -> system.port; else -> 0 }, selectedPort)
                 if (image != null) {
                     assertTrue(Path.of(URI(result.getValue("proxyClassSource").jsonPrimitive.content)).startsWith(image))
@@ -128,10 +135,12 @@ object DesktopProxyPhysicalRoutingProbe {
                     sameRoot = true
                     val client = if (mode == "DIRECT" || mode == "LOCAL") ProxyAwareClient.modelApiBuilder { true }
                         .apply {
-                            if (mode == "DIRECT") dns { host ->
-                                check(host == "direct-route.invalid")
-                                listOf(InetAddress.getByName("127.0.0.1"))
-                            }
+                            if (mode == "DIRECT") dns(object : okhttp3.Dns {
+                                override fun lookup(hostname: String): List<InetAddress> {
+                                    check(hostname == "direct-route.invalid")
+                                    return listOf(InetAddress.getByName("127.0.0.1"))
+                                }
+                            })
                         }.build() else secureNovelAiClient()
                     try {
                         val requestHost = if (mode == "DIRECT") "direct-route.invalid" else "127.0.0.1"
