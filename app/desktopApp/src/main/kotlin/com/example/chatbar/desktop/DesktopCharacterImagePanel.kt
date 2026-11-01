@@ -40,7 +40,7 @@ internal fun DesktopCharacterImageOverlay(controller: DesktopCharacterImageContr
                 StatusText("生成会调用已配置的 NovelAI 账户；先核对候选，应用只改变草稿，保存仍需另行确认。")
                 if (state.kind == DesktopCharacterImageKind.COVER) {
                     StatusText((if (state.reusedDesign) "已完成的封面设计来自：" else "封面设计模型：") +
-                        state.designModelLabel.ifBlank { if (state.loading) "正在读取…" else "未配置可用模型" })
+                        state.designModelLabel.ifBlank { if (state.loading) "正在读取…" else "尚未确认，生成时重新读取" })
                     CharacterImageTextField("图片内容要求（可选）", state.hint, !state.busy && !state.loading, controller::setHint)
                     CharacterImageTextField("额外要求（初次读取 Studio 已保存内容）", state.requirement, !state.busy && !state.loading, controller::setRequirement)
                 } else {
