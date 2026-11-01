@@ -2,6 +2,8 @@ package com.example.chatbar.desktop
 
 import com.example.chatbar.domain.chat.PromptCacheUsage
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -170,6 +172,7 @@ internal class DesktopProviderUsageStore(private val root: Path, private val gat
         Files.newDirectoryStream(home).use { files ->
             val results = mutableListOf<DesktopUsageRecord>()
             files.forEach { file ->
+                currentCoroutineContext().ensureActive()
                 DesktopArchiveFiles.safe(file, false)
                 if (file.fileName.toString().endsWith(".tmp")) return@forEach // preserved interrupted local publication
                 check(results.size < 1_000_000 && file.fileName.toString().endsWith(".json"))
