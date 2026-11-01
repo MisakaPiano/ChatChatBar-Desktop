@@ -60,6 +60,7 @@ class DesktopFullBackupServiceTest {
                 assertEquals(DesktopWorkDetail.BACKUP_EXPORT, row.target!!.detail)
                 assertTrue(center.requestStop(row.id))
                 withTimeout(5000) { center.state.first { it.rows.single().stopRequested } }
+                withTimeout(5000) { controller.workRows.first { it.single().stopRequested } }
                 assertTrue(controller.state.value.busy); assertTrue(controller.workRows.value.single().active)
                 firstRelease.countDown()
                 withTimeout(5000) { controller.workRows.first { it.single().phase == DesktopWorkPhase.CANCELLED } }

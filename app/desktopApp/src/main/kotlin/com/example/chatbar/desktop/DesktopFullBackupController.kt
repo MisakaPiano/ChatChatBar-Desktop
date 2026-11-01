@@ -85,10 +85,17 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
         prepared = null
         mutable.update { it.copy(summary = null, desktopOnly = false) }
     }
-    fun stop() { synchronized(lock) { operation }?.cancel() }
+    private fun markStopRequested(id: String?) {
+        if (id != null) mutableWork.update { rows -> rows.map {
+            if (it.id == id && it.active) it.copy(stopRequested = true, canStop = false) else it
+        } }
+    }
+    fun stop() { synchronized(lock) {
+        if (operation?.isCompleted == false) { operation?.cancel(); markStopRequested(activeTaskId) }
+    } }
     fun stopTask(id: String): Boolean = synchronized(lock) {
         if (activeTaskId != id || operation?.isCompleted != false) false
-        else { operation?.cancel(); true }
+        else { operation?.cancel(); markStopRequested(id); true }
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -175,7 +182,7 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
                         failure != null -> DesktopWorkPhase.FAILED
                         else -> outcome
                     }
-                    mutableWork.update { rows -> rows.map { if (it.id == taskId) it.copy(phase = phase, canStop = false) else it } }
+                    mutableWork.update { rows -> rows.map { if (it.id == taskId) it.copy(phase = phase, canStop = false, stopRequested = false) else it } }
                 }
             } }
         }

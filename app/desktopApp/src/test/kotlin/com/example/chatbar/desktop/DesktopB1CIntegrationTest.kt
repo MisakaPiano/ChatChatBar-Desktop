@@ -96,6 +96,7 @@ class DesktopB1CIntegrationTest {
             assertTrue(scene.has("任务中心 · 进行中 1"))
             scene.click("停止")
             withTimeout(5000) { c.taskCenter.state.first { it.rows.any { row -> row.stopRequested } } }
+            withTimeout(5000) { c.fullBackupController.workRows.first { it.single().stopRequested } }
             assertTrue(c.fullBackupController.state.value.busy)
             release.countDown()
             withTimeout(5000) { c.fullBackupController.workRows.first { it.single().phase == DesktopWorkPhase.CANCELLED } }

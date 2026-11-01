@@ -93,7 +93,7 @@ internal class DesktopTaskCenter(dispatcher: CoroutineDispatcher = Dispatchers.D
         val all = bindings.flatMap { (owner, binding) -> binding.rows.map { row ->
             val id = key(owner, row.id)
             if (!row.active) requestedStops.remove(id)
-            row.copy(id = id, stopRequested = id in requestedStops,
+            row.copy(id = id, stopRequested = row.stopRequested || id in requestedStops,
                 contextLabel = row.contextLabel ?: row.target?.let { labels[it] ?: fallbackLabel(it) })
         } }
         val activeIds = all.filter { it.active }.map { it.id }.toSet()

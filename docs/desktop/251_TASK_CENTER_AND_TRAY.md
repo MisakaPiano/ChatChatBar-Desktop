@@ -26,4 +26,6 @@ withCardDesign也被角色／世界书／图片／朋友圈使用，默认只标
 
 补齐实际入口可达性：ModalActivity仅区分BACKUP／TASK_CENTER和其余GENERAL，默认语义保持。长数据工作进行时可从导出弹窗小任务按钮打开观察／原停止；期间前往仍明确busy并保持任务窗，不解除导航或事务门禁。空闲导出选择／其余一般弹窗仍延后任务请求，根迁移和restart-required继续阻止。新增真实Shell＋实际BackupExportDialog／真实controller阻塞picker的Scene核入口、原停止等待与导航守卫；不是仅孤立Panel。另在真实journal已经scheduled、resumeScheduler仍NonCancellable收尾时停止，核待核对metadata、pending保留和原件字节不变。两项仍待下一精确源云端，不由95／1232覆盖。
 
+备份原cancel接受后另发owner stopRequested，聚合中心保留该实际信号，真实completion清除。controller／完整Shell检查均等待原owner已接受停止再释放阻塞picker，避免只等中心命令意图便误以为已发给真实Job；预算不延长。
+
 新增未执行回归：真实两文档工作仅停止选中项且等原NonCancellable收尾；观察者关闭不取消格式卡候选child且不保存卡；真实Memory面板在B时只停行A，B工作与两边正文／草稿保持；真实终态通知与停止请求的区别。后续精确源云端验证，不在本机运行JVM。
