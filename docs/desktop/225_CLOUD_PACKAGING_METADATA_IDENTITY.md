@@ -1,5 +1,7 @@
 # 云端打包与文件元数据身份
 
+最新结果：R05／41272231079 SUCCESS，控制3862768，复用R04原artifact／最终EXE和ZIP字节、没有重编译应用。实际baseline PID4888的镜像为旧1225 updater/python.exe，manifest长度／散列与精确cwd匹配，临时角色独立记录；baseline allVersionCwdsClear=false如实保留。基线、候选升级、稳定入口重开三次正常关闭且Job剩余为空，候选两次allVersionCwdsClear=true；busy installer exit2且pointer／manifest不变。独立中文入口547文件、自有根锁、正常退出与外部bootstrap保持通过；只核Program路径进程，不声称外部后代和人工像素通过。三份假凭据／自定义根忙碌专项未在本轮复测。完整冻结身份及草稿状态见[227](227_PREVIEW1226_FROZEN_CANDIDATE.md)。下方失败过程保留。
+
 2026-11-01。应用冻结源d94e2df0完整CI53通过，后续控制工具改动不混入该应用源码。现用H仍1225，未新安装／公开。
 
 首云端run41269219583：NSIS下载固定SHA不符，停止于工具获取，未编译应用。R02／41269541366保留原ZIP和compiler双SHA，改用Python HTTP读取；下载2363925B、PK签名及原SHA通过，应用编译／updater附着完成，但`audit_app_image.py:91`的path-stat／fstat原始ctime比较报IMAGE_CHANGED，未生成安装包。两次完整log保留于I盘updates。
