@@ -319,7 +319,13 @@ class DesktopB1CIntegrationTest {
             assertTrue(bounds.height > 600f); assertEquals(800f, status.bottom, 1f)
             assertTrue(chrome.layout.dragRegions.isEmpty())
             val title = assertNotNull(chrome.layout.title)
-            val captionGap = (chrome.layout.interactive.maxOf { it.right } + chrome.layout.captions.values.minOf { it.left }) / 2
+            // Fixed help/tasks can abut captions. Find real measured blank space between controls,
+            // rather than treating their shared boundary as a draggable point.
+            val occupied = (chrome.layout.interactive + chrome.layout.captions.values + listOfNotNull(chrome.layout.icon))
+                .filter { it.right > it.left }.sortedBy { it.left }
+            val gap = assertNotNull(occupied.zipWithNext().filter { (left, right) -> right.left - left.right > 16f }
+                .maxByOrNull { (left, right) -> right.left - left.right })
+            val captionGap = (gap.first.right + gap.second.left) / 2
             assertEquals(ChromeHit.CAPTION, DesktopChromeHitTest.hit(captionGap, (title.top + title.bottom) / 2, 1240f, 800f, 8f, false, chrome.layout))
             assertTrue(chrome.layout.captions.keys.containsAll(listOf(ChromeHit.MINIMIZE, ChromeHit.MAXIMIZE, ChromeHit.CLOSE)))
             scene.shot("wide-studio-shell")

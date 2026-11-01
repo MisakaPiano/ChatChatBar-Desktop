@@ -82,9 +82,12 @@ class DesktopContextHelpTest {
                 help.config[SemanticsActions.OnClick].action!!.invoke(); assertEquals(1, opened)
                 route = DesktopPrimaryRoute.DATA; frames(scene)
                 fun dataTab() = nodes(scene).first { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains(DesktopUiText.DATA.zhCn) == true }
-                withTimeout(5000) {
+                val revealed = withTimeoutOrNull(5000) {
                     while (dataTab().boundsInRoot.width <= 30 || dataTab().boundsInRoot.left < 40 || dataTab().boundsInRoot.right > h.left + 1) frames(scene)
-                }
+                    true
+                } == true
+                if (!revealed) capture(scene, "context-help-title-$width-selected-failure")
+                assertTrue(revealed, "width=$width data=${dataTab().boundsInRoot} help=$h native=${chrome.layout}")
                 val data = dataTab()
                 assertTrue(data.boundsInRoot.left >= 40 && data.boundsInRoot.right <= h.left + 1)
                 assertTrue(data.boundsInRoot.width > 30)
@@ -97,7 +100,8 @@ class DesktopContextHelpTest {
         }
     }
 
-    private suspend fun frames(scene: ImageComposeScene) { repeat(4) { scene.render().close(); yield(); delay(20) } }
+    // ImageComposeScene.render() defaults to frame time zero; reveal animations need advancing time.
+    private suspend fun frames(scene: ImageComposeScene) { repeat(4) { scene.render(System.nanoTime()).close(); yield(); delay(20) } }
     private fun button(scene: ImageComposeScene, label: String) = nodes(scene).first {
         it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains(label) == true && it.config.contains(SemanticsActions.OnClick)
     }
@@ -108,7 +112,7 @@ class DesktopContextHelpTest {
     private fun capture(scene: ImageComposeScene, name: String) {
         System.getenv("CCB_CONTEXT_HELP_REVIEW_DIR")?.let { directory ->
             val path = Path.of(directory).resolve("$name.png"); Files.createDirectories(path.parent)
-            scene.render().use { image -> image.encodeToData()!!.use { Files.write(path, it.bytes) } }
+            scene.render(System.nanoTime()).use { image -> image.encodeToData()!!.use { Files.write(path, it.bytes) } }
         }
     }
 }

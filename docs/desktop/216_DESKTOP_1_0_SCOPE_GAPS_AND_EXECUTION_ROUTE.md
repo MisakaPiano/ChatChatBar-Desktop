@@ -80,7 +80,7 @@
 | P15-01 安装、完整应用内更新、显式修复 | 已实现且验证／部分真人专项待验 | 复用 SF18、212、214；不用重开 MSI 或退役 VM，不把正常更新链仍称未开发 |
 | P15-02 Explorer reveal、图片粘贴／拖入、剪贴板、文件选择 | 已实现且有工程／部分实际证据 | DesktopImageIngress、原生 picker、owned image／保存／复制；窗口内图片 ingress 不等于全应用所有包的外部入口 |
 | P15-03 全局外部导入 FIFO、Open With、文件关联／系统入口 | 外部链CI93及后续CI95–97通过，1232冻结883/R17普通原生与真实四类文件名冷批次通过，私有包字节已核；真人待验 | 见250；Main冷暖入口、持久FIFO、原owner委托与非默认Open With保留。1231旧中文&冷失败不抹去；1232精确冷批次通过不代表所有环境或已对用户交付 |
-| P15-04 任务中心／托盘／系统通知 | TaskRuntime／Memory／Fish与假托盘／宽窄Scene已95通过；FullBackup／真实Shell和Merge原Job已96/97通过；SaveSlot／实际自动备份／Moments与四类创作controller有99 scoped PASS。99完整单一Shell基线失败、100缺import编译失败仍保留；后补RAG晚取消、Shell／提示入口送101，原生送达仍待 | 见251；复用原Job／真实发布边界，不把检查、候选或SKIPPED当导入／保存／发布。1232冷批次不冒充原生托盘送达；观察与精确目标分开，不把基础入口算整项完成 |
+| P15-04 任务中心／托盘／系统通知 | TaskRuntime／Memory／Fish与假托盘／宽窄Scene已95通过；FullBackup／真实Shell和Merge原Job已96/97通过；SaveSlot／实际自动备份／Moments与四类创作controller有99 scoped PASS。99完整单一Shell基线失败、100缺import编译失败仍保留；后补RAG晚取消、创作pin/Moments/提示原Shell有101实际PASS；101整轮因2几何例FAIL，修后待新源；原生送达仍待 | 见251；复用原Job／真实发布边界，不把检查、候选或SKIPPED当导入／保存／发布。1232冷批次不冒充原生托盘送达；观察与精确目标分开，不把基础入口算整项完成 |
 | P15-05 自有错误／关闭／启动诊断 | 基础已实现；完整 crash/support 报告与恢复引导待补 | 复用 DesktopProcessLifecycle、StartupBlockedPresenter、ShutdownWaitObserver、诊断复制及 Logo；只读核对损坏状态，错误确认不清除原件，不把“有错误窗口”算完整恢复中心 |
 | P15-06 实际 AI 请求／响应日志 | 聊天及角色／格式／世界书创作已有原DebugOverlay，Moments也有对应日志；实际NAI图片与Fish synthesize物理调用仍待，与文本辅助分列 | DesktopTransportDiagnostics、ChatDebugPanel 和任务上下文；按调用来源补真实日志归属，不用预览替代实际 wire，不重复聊天调试界面 |
 | P15-07 usage／cache／retry 持久汇总（D-042） | 数值owner、持久化与多域接线已有精确证据；CI87向量五项、CI88记忆／检索文本四项与CI89手动controller归属及完整回归通过 | 见234／245／248／249；聊天／三类卡AI／Moment文本／NAI辅助／Fish辅助／embedding分范围保留，不冒认实际生图／TTS二进制或完整账单覆盖。null与0、cache不重复、失败待存与关闭／重启保全保持；完整覆盖及校准继续 |
@@ -99,7 +99,7 @@
 
 | ID／范围 | 已有证据／状态 | 尚需完成 |
 | --- | --- | --- |
-| P17-01 教程／首次使用引导 | Android Tutorial 已有；Desktop 已补五个实际页面的紧凑当前页帮助源码，完整首次使用引导仍未做；新源待云端验证 | 顶栏问号只读说明，不跳转或创建业务；核对宽窄窗口、关闭重开、modal 优先与草稿／原文件不变，再做首次使用、恢复与升级说明 |
+| P17-01 教程／首次使用引导 | Android Tutorial 已有；Desktop五路由说明/close和实际Shell草稿保护已有101 scoped PASS；标题可见性测试需修帧时钟后验证，101整轮仍FAIL；完整首次使用未做 | 顶栏问号只读说明，不跳转或创建业务；核对宽窄窗口、关闭重开、modal 优先与草稿／原文件不变，再做首次使用、恢复与升级说明 |
 | P17-02 Backup／Recovery Center | 原自动备份、导出／检查／合并／恢复journal已做；后续源码新增基于typed当前状态的恢复与支持页、六个原面导航及启动前固定分类引导，新回归待云端 | 入口不扫描全库或认定损坏，不代选文件／冲突／提交；保留原根锁／准入／journal。启动拒绝可发生在原恢复流程之后，不能声称整次启动从未恢复；完整物理场景与正式交付仍待 |
 | P17-03 数据、取消、长任务、损坏与断电 | 1224 大包隔离完整往返／独立重开通过，已有错误／取消／部分中断证据 | 复用214及具体恢复证据，只补实际受影响、仍未知的断电／跨账户／旧快照／物理跨端场景；真实生产最终GUI合并由用户选择，缺少该反馈只挂对应结论 |
 | P17-04 Win10／11、DPI、IME、长历史／大卡／世界书／图片／SaveSlot、网络／代理／VPN | 既有 scoped Windows／输入／窗口／媒体证据，不是所有环境全验 | 建立场景与实际平台结果表；已复现核心错误修复，未覆盖环境与非阻断已知问题如实披露，不建立“所有已知问题归零”的新门槛 |

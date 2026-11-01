@@ -1,3 +1,7 @@
+2026-11-02 CI101/bdd实际完整FAIL：318suite/2469=2448PASS+19SKIP+2几何FAIL。7个新增scope（文档/历史晚取消、真实Shell创作pin、Moments关闭态/回页、任务提示关闭、Shell帮助草稿保护、双语说明/close）实际PASS，proxy5/NTFS7/shared1135/Android582/native33/updater8/exit4独立通过；实际三ZIP已复用核SHA/CRC/XML，330中文/1100英文帮助图已视核。旧captionGap取到贴邻MINIMIZE边界，改找实际非交叠空白仍断言CAPTION；精确Compose1.10.3主源证实render默认时间0，补测试单调帧时钟，保留原5秒/Data完整可见条件并加失败几何图。production滚动机制未改，标题四图及两例修后仍待新源。fa24恢复支持为另一本地原范围检查点，尚未云验。公开1229/13、私有1230冻结064/local14和1232冻结883/R17保持，无新包/签名/公开/H代装，本机不编译渲染，10点前不问人工。
+
+下方历史保留。
+
 2026-11-02 后续本地P15-05/P17-02源码补恢复与支持：只投影root/backup/merge typed状态、六个原面导航重读忙/迁移/restart锁；不开picker/不提交。启动前固定分类说明不构造业务、不改G0/ownership/recovery流程；原流程可能先触及恢复再拒绝，修正旧“完全未恢复”的不准确提示，复制仍只有固定code。新增真实Workspace/旧点击门禁、窄宽Scene及recover写marker后拒绝回归待新源云端，不由bdd/101代验。101/bdd主step已FAIL但具体报告未到，原因未知；Linux1135/582独立通过，完整101未结束，保留100缺import原失败。现用H受管pointer只读确认为1228/bd684bc4b8a1，不是运行进程证明；公开仍1229/13。无新包/签名/公开/H代装，本机不编译渲染，10点前不问人工；成熟候选不被后续Recovery等待牵制。
 
 下方历史保留。
