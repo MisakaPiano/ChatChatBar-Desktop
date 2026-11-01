@@ -39,10 +39,10 @@ class DesktopWorkspacePresentationTest {
         assertFalse(detail.contains("entry.profile"))
     }
 
-    @Test fun `medium and wide title bar exposes every route with exactly one selected`() {
+    @Test fun `medium and wide title bar with moments enabled exposes every route with exactly one selected`() {
         for (size in listOf(DesktopShellSize.MEDIUM, DesktopShellSize.WIDE)) {
             for (selected in DesktopPrimaryRoute.entries) {
-                val presentation = desktopTitleBarPresentation(size, selected, locked = false)
+                val presentation = desktopTitleBarPresentation(size, selected, locked = false, momentsEnabled = true)
                 assertEquals(DesktopPrimaryRoute.entries.toList(), presentation.routes.map { it.route })
                 assertEquals(listOf(selected), presentation.routes.filter { it.selected }.map { it.route })
                 assertTrue(presentation.showRouteLabels)

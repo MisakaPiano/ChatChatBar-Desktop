@@ -1,5 +1,7 @@
 # P13 朋友圈共享基础
 
+CI70／3c4实际Windows报告295 suites2369项=2348PASS+19SKIP+2FAIL；Admission3、Store5和Scene1通过，四张Moment PNG另待人工视觉核对。两处失败逐字段定位：恢复夹具默认Json省略动态时间默认值，解码每次重算createdAt／updatedAt；导航测试未显式启用朋友圈却期待全部5路由。后续只修夹具encodeDefaults=true及显式on测试，保留完整对象断言与默认off四路由；原FAIL不改绿。新增P15不由此报告覆盖。
+
 CI69／cb60a801：Linux job SUCCESS，Windows job FAILURE，生产编译停在共享task.postId的跨模块smart cast及NovelAiPromptPlan尺寸位置参数两处；桌面测试／Scene未执行，不能算0失败通过。后续改用稳定局部值和命名sizePreset，同时修正新增Store测试的同类参数，等待新源云端。P15用量工作树不由本轮代验。
 
 2026-11-01 当前：1f1ef083／CI68完整SUCCESS，Windows2361项=2342PASS+19SKIP，shared1105／Android582全过。新增HTTP模式对照、task-post耐久关联、取消后图片回执及production cleaner通过；这不覆盖下列后续工作树。

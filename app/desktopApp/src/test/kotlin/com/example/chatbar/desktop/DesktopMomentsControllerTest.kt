@@ -51,7 +51,7 @@ class DesktopMomentsControllerTest {
             second.closeAndDrain(); controller = null
             val imported = MomentTask.create(card.id, session.id, now)
             val source = parent.resolve("restored-task.json")
-            Files.writeString(source, kotlinx.serialization.json.Json.encodeToString(MomentTask.serializer(), imported))
+            Files.writeString(source, kotlinx.serialization.json.Json { encodeDefaults = true }.encodeToString(MomentTask.serializer(), imported))
             val relative = "entities/moment_tasks/${imported.id}.json"
             val restore = DesktopFullBackupCommitJournal(root)
             restore.schedule(mapOf(relative to source), mapOf(relative to null)); restore.recover()
