@@ -1,5 +1,7 @@
 # 任务中心与托盘 / 2026-11-02
 
+CI99/805实际已完成：生产编译修复通过；主2463=2443PASS+19SKIP+1FAIL，唯一新增Shell导航例在142把displayCard自动补默认negative的编辑器对象错当repository原件。此前route/pin/dirty/candidate断言已过；修正为导航前真实repository实体和磁盘bytes双基线，不改Prompt或生产normalize。SaveSlot两新、auto新、Moments清理新、四类creative mapping及原controller新增断言实际PASS；proxy5、NTFS7、shared1135/Android582、native33/updater8/exit4通过。原99失败保留，不能说完整99通过。后补7a7索引边界/9825回页/9c临时提示与本次基线修正待下一源。
+
 补任务中心临时提示的实际关闭入口：原clearError此前只有定义，用户无法清旧导航/操作提示。现在提示旁小×只清中心临时文字，原FAILED/UNCONFIRMED行、工作、恢复证据不变。窄宽Panel断言真实点击后保留全部任务；Moments关闭态→启用后的Shell用例改走真实UI清提示，不再测试内直接clearError。未执行，不由99覆盖。
 
 Moments后续再补安全回原页的MOMENTS_HOME，与精确post定位分开：真实worker行携原session上下文，前往只走原MOMENTS页和离开／modal门禁，不生成或retry；全局关闭时明确目标不可用，不静默落回聊天。真实原worker断言目标，新增完整Shell先拒绝关闭态、启用后打开原页且零生成的合成Scene待新源，不宣称已做具体post滚动定位。

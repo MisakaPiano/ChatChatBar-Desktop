@@ -117,10 +117,13 @@ class DesktopB1CIntegrationTest {
         val f = seeded(); val c = f.container
         val chrome = DesktopWindowChrome {}; val navigation = DesktopPrimaryNavigationController()
         val release = CompletableDeferred<Unit>(); val entered = CompletableDeferred<Unit>()
+        val persisted = assertNotNull(c.characterRepository.getById("card"))
+        val persistedPath = c.appDataRoot.resolve("entities/character_cards/card.json")
+        val persistedBytes = Files.readAllBytes(persistedPath)
         c.characterEditorController.openExisting("card")
         val editor = c.characterEditorController
         val draft = assertNotNull(editor.state.value.draftSessionId)
-        val original = assertNotNull(editor.state.value.card)
+        assertNotNull(editor.state.value.card)
         editor.edit { it.copy(basicSetting = "Synthetic unsaved editor text") }
         val dirty = assertNotNull(editor.state.value.card)
         val ai = assertNotNull(editor.cardAi)
@@ -140,7 +143,8 @@ class DesktopB1CIntegrationTest {
             assertNull(c.taskCenter.state.value.error)
             assertTrue(ai.state.value.open); assertNull(ai.state.value.candidate)
             assertEquals(draft, editor.state.value.draftSessionId); assertEquals(dirty, editor.state.value.card)
-            assertEquals(original, c.characterRepository.getById("card")); assertTrue(f.requests.isEmpty())
+            assertEquals(persisted, c.characterRepository.getById("card")); assertContentEquals(persistedBytes, Files.readAllBytes(persistedPath))
+            assertTrue(f.requests.isEmpty())
             assertTrue(work.isActive)
         } finally { release.complete(Unit); work.cancelAndJoin(); scene.close(); f.close() }
     }
