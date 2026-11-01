@@ -54,6 +54,8 @@ internal fun DesktopPrimaryShell(
     momentsController: DesktopMomentsController? = null,
     providerUsage: DesktopProviderUsageOwner? = null,
     externalImportController: DesktopExternalImportController? = null,
+    taskCenter: DesktopTaskCenter? = null,
+    onHideToTray: (() -> Unit)? = null,
 ) {
     val moments = momentsController?.state?.collectAsState()?.value
     val rootState by rootSwitchController.state.collectAsState()
@@ -89,7 +91,18 @@ internal fun DesktopPrimaryShell(
     var openDesignModels by remember { mutableStateOf(false) }
     var requestedPerson by remember { mutableStateOf<Pair<String, String>?>(null) }
 
-    fun navigate(destination: DesktopPrimaryRoute) {
+    val centerState = taskCenter?.state?.collectAsState()?.value
+    val centerRequest = taskCenter?.openRequests?.collectAsState()?.value ?: 0L
+    var centerOpen by remember { mutableStateOf(false) }
+    var consumedCenterRequest by remember { mutableStateOf(0L) }
+    LaunchedEffect(centerRequest, locked, modalActivity?.count) {
+        if (centerRequest > consumedCenterRequest && centerOpen) consumedCenterRequest = centerRequest
+        else if (centerRequest > consumedCenterRequest && !locked && (modalActivity?.count ?: 0) == 0) {
+            centerOpen = true; consumedCenterRequest = centerRequest
+        }
+    }
+
+    fun navigateAfter(destination: DesktopPrimaryRoute, after: () -> Unit) {
         if (backupLocked) return
         if (route == DesktopPrimaryRoute.MANAGE && destination != DesktopPrimaryRoute.MANAGE &&
             (managementController.state.value.busy || transferController.state.value.busy ||
@@ -100,7 +113,7 @@ internal fun DesktopPrimaryShell(
         }
         if (route == DesktopPrimaryRoute.CHAT && destination != DesktopPrimaryRoute.CHAT) {
             scope.launch { primaryChatController.requestSessionSettingsLeave {
-                navigation.navigate(destination, rootState)
+                if (navigation.navigate(destination, rootState)) after()
             } }
         } else if (route == DesktopPrimaryRoute.MANAGE && destination != DesktopPrimaryRoute.MANAGE) {
             worldBookEditorController.requestLeave {
@@ -108,21 +121,23 @@ internal fun DesktopPrimaryShell(
                     characterEditorController.requestLeave {
                         scope.launch { modelSettingsController.requestLeave {
                             if (!modelTemplateController.state.value.busy)
-                                navigation.navigateFromManageWhenIdle(destination, rootState,
-                                    managementController.state.value.busy, transferController.state.value.busy)
+                                if (navigation.navigateFromManageWhenIdle(destination, rootState,
+                                    managementController.state.value.busy, transferController.state.value.busy)) after()
                         } }
                     }
                 }
             }
-        } else navigation.navigate(destination, rootState)
+        } else if (navigation.navigate(destination, rootState)) after()
     }
+    fun navigate(destination: DesktopPrimaryRoute) = navigateAfter(destination) {}
 
     BoxWithConstraints(Modifier.fillMaxSize().background(colors.background).onGloballyPositioned(chromeLayout::root)) {
         val size = DesktopShellLayoutPolicy.sizeForWidth(maxWidth.value)
         Column(Modifier.fillMaxSize()) {
             DesktopTitleBar(size, route, locked, chrome, chromeLayout,
                 updatePending = updateNotice?.pendingVersion != null, onNavigate = ::navigate,
-                momentsEnabled = moments?.enabled == true, momentsUnread = moments?.unread == true)
+                momentsEnabled = moments?.enabled == true, momentsUnread = moments?.unread == true,
+                activeTaskCount = centerState?.rows?.count { it.active } ?: 0, onOpenTasks = taskCenter?.let { it::requestOpen })
             externalImportController?.let { DesktopExternalImportNotice(it) }
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when (route) {
@@ -191,6 +206,18 @@ internal fun DesktopPrimaryShell(
                 }
             }
         }
+        if (centerOpen && !locked && taskCenter != null) DesktopTaskCenterPanel(taskCenter,
+            onClose = { centerOpen = false }, onHideToTray = onHideToTray, onView = { target ->
+                centerOpen = false
+                navigateAfter(target.route) {
+                    if (target.route == DesktopPrimaryRoute.CHAT && target.sessionId != null)
+                        scope.launch { primaryChatController.requestSessionSettingsLeave {
+                            primaryChatController.selectSession(target.sessionId)
+                            if (primaryChatController.state.value.selectedSession?.id != target.sessionId) taskCenter.targetUnavailable()
+                            else if (target.detail == DesktopWorkDetail.MEMORY) primaryChatController.memory?.open(target.sessionId)
+                        } }
+                }
+            })
         externalImportController?.let { external -> DesktopExternalImportHost(external, chat.sessions,
             onView = { kind -> when (kind) {
                 DesktopExternalImportKind.CHARACTER, DesktopExternalImportKind.FORMAT, DesktopExternalImportKind.WORLD_BOOK,

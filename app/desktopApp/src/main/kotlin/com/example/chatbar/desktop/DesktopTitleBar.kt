@@ -40,17 +40,20 @@ internal class DesktopChromeLayoutRecorder(private val chrome: DesktopWindowChro
     private var previewTitle: ChromeRect? = null
     private val routes = mutableMapOf<DesktopPrimaryRoute, ChromeRect>()
     private val captions = mutableMapOf<ChromeHit, ChromeRect>()
+    private var taskCenter: ChromeRect? = null
     fun root(value: LayoutCoordinates) { width = value.size.width.toFloat(); height = value.size.height.toFloat(); publish() }
     fun title(value: LayoutCoordinates) { title = value.rect(); publish() }
     fun icon(value: LayoutCoordinates) { icon = value.rect(); publish() }
     fun route(route: DesktopPrimaryRoute, value: LayoutCoordinates) { routes[route] = value.rect(); publish() }
     fun caption(hit: ChromeHit, value: LayoutCoordinates) { captions[hit] = value.rect(); publish() }
     fun previewTitle(value: LayoutCoordinates) { previewTitle = value.rect(); publish() }
+    fun taskCenter(value: LayoutCoordinates) { taskCenter = value.rect(); publish() }
+    fun clearTaskCenter() { taskCenter = null; publish() }
     fun clearPreviewTitle() { previewTitle = null; publish() }
-    fun clearNavigation() { title = null; icon = null; routes.clear(); publish() }
+    fun clearNavigation() { title = null; icon = null; routes.clear(); taskCenter = null; publish() }
     fun clearCaptions() { captions.clear(); publish() }
     private fun LayoutCoordinates.rect() = boundsInWindow().let { ChromeRect(it.left, it.top, it.right, it.bottom) }
-    private fun publish() { chrome.updateLayout(DesktopChromeLayout(width, height, title, routes.values.toList(), captions.toMap(), icon,
+    private fun publish() { chrome.updateLayout(DesktopChromeLayout(width, height, title, routes.values.toList() + listOfNotNull(taskCenter), captions.toMap(), icon,
         listOfNotNull(previewTitle))) }
 }
 
@@ -68,12 +71,15 @@ internal fun DesktopTitleBar(
     updatePending: Boolean = false,
     momentsEnabled: Boolean = false,
     momentsUnread: Boolean = false,
+    activeTaskCount: Int = 0,
+    onOpenTasks: (() -> Unit)? = null,
     onNavigate: (DesktopPrimaryRoute) -> Unit,
 ) {
     val colors = LocalDesktopPalette.current
     val t = LocalDesktopUiStrings.current
     val state by chrome.state.collectAsState()
     val presentation = desktopTitleBarPresentation(shellSize, route, locked, momentsEnabled)
+    DisposableEffect(recorder, onOpenTasks != null) { onDispose { recorder.clearTaskCenter() } }
     DisposableEffect(recorder, navigationVisible, captionsVisible, windowTitle != null) {
         onDispose {
             if (navigationVisible || windowTitle != null) recorder.clearNavigation()
@@ -145,6 +151,12 @@ internal fun DesktopTitleBar(
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                 style = TextStyle(color = colors.foreground, fontSize = 13.sp))
         } else Spacer(Modifier.weight(1f))
+        if (navigationVisible && onOpenTasks != null) Box(Modifier.width(40.dp).height(36.dp)
+            .onGloballyPositioned(recorder::taskCenter), contentAlignment = Alignment.Center) {
+            DesktopIconAction("任务中心，进行中 $activeTaskCount 项", DesktopAppIcons.History, onClick = onOpenTasks)
+            if (activeTaskCount > 0) Box(Modifier.size(6.dp).align(Alignment.TopEnd).background(colors.primary,
+                androidx.compose.foundation.shape.CircleShape))
+        }
         if (navigationVisible && state.failure != null) BasicText("!", Modifier.padding(4.dp).semantics { contentDescription = state.failure!! },
             style = TextStyle(color = colors.destructive))
         if (captionsVisible && DesktopWindowChrome.isWindows) listOf(ChromeHit.MINIMIZE, ChromeHit.MAXIMIZE, ChromeHit.CLOSE).forEach { hit ->

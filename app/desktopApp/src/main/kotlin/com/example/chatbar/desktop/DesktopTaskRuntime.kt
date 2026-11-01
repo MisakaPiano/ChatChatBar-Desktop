@@ -50,6 +50,10 @@ class DesktopTaskAdmissionException(message: String) : IllegalStateException(mes
 class DesktopTaskDrainTimeoutException(message: String) : IllegalStateException(message)
 
 internal data class DesktopRepairTaskIdentity(val taskId: String, val sessionId: String, val messageId: String)
+internal enum class DesktopOwnedWorkKind { DOCUMENT, CARD_DESIGN }
+internal data class DesktopOwnedWorkEntry(val taskId: String, val kind: DesktopOwnedWorkKind, val createdAt: Long,
+    val status: DesktopTaskStatus = DesktopTaskStatus.RUNNING, val characterId: String? = null,
+    val documentId: String? = null, val draftSessionId: String? = null)
 
 internal data class DesktopChatPostProcessResult(
     val reply: DesktopRealChatResult,
@@ -75,6 +79,8 @@ internal class DesktopTaskRuntime(
     val imageProgress = DesktopImageTaskProgress(scope)
     private val mutableTasks = MutableStateFlow<List<DesktopTaskEntry>>(emptyList())
     val tasks: StateFlow<List<DesktopTaskEntry>> = mutableTasks.asStateFlow()
+    private val mutableOwnedWork = MutableStateFlow<List<DesktopOwnedWorkEntry>>(emptyList())
+    internal val ownedWork = mutableOwnedWork.asStateFlow()
     private val mutableActiveChatStreams = MutableStateFlow<Map<String, DesktopActiveChatStream>>(emptyMap())
     internal val activeChatStreams = mutableActiveChatStreams.asStateFlow()
     private val activeJobs = mutableMapOf<String, Job>()
@@ -101,7 +107,7 @@ internal class DesktopTaskRuntime(
     private var maintenance = false
 
     /** Structured caller child, also registered in the application's existing shutdown drain.
-     * No session admission, task UI/history, retries, source text or embeddings are retained. */
+     * No session admission or retries. Only body-free identity/status metadata is exposed. */
     suspend fun <T> withDocumentPreparation(characterId: String, documentId: String,
         usageContext: DesktopUsageContext = DesktopUsageContext(DesktopUsageSource.CHARACTER_CARD,
             cardId = characterId, subjectId = documentId), work: suspend () -> T): T = coroutineScope {
@@ -113,10 +119,13 @@ internal class DesktopTaskRuntime(
             val child = async(DesktopUsageParent(usageContext.copy(taskId = id)), start = CoroutineStart.LAZY) { work() }
             documentPreparations[key] = id
             activeJobs[id] = child
-            child.invokeOnCompletion {
+            mutableOwnedWork.value = listOf(DesktopOwnedWorkEntry(id, DesktopOwnedWorkKind.DOCUMENT, clock(),
+                characterId = characterId, documentId = documentId)) + mutableOwnedWork.value
+            child.invokeOnCompletion { cause ->
                 synchronized(lock) {
                     activeJobs.remove(id)
                     if (documentPreparations[key] == id) documentPreparations.remove(key)
+                    finishOwnedWork(id, cause)
                 }
             }
             child
@@ -138,16 +147,26 @@ internal class DesktopTaskRuntime(
             val child = async(start = CoroutineStart.LAZY) { work() }
             cardDesigns[draftSessionId] = id
             activeJobs[id] = child
-            child.invokeOnCompletion {
+            mutableOwnedWork.value = listOf(DesktopOwnedWorkEntry(id, DesktopOwnedWorkKind.CARD_DESIGN, clock(),
+                draftSessionId = draftSessionId)) + mutableOwnedWork.value
+            child.invokeOnCompletion { cause ->
                 synchronized(lock) {
                     activeJobs.remove(id)
                     if (cardDesigns[draftSessionId] == id) cardDesigns.remove(draftSessionId)
+                    finishOwnedWork(id, cause)
                 }
             }
             child
         }
         job.start()
         job.await()
+    }
+
+    private fun finishOwnedWork(id: String, cause: Throwable?) {
+        val status = when (cause) { null -> DesktopTaskStatus.COMPLETED; is CancellationException -> DesktopTaskStatus.CANCELLED; else -> DesktopTaskStatus.FAILED }
+        var completed = 0
+        mutableOwnedWork.value = mutableOwnedWork.value.map { if (it.taskId == id) it.copy(status = status) else it }
+            .filter { it.status == DesktopTaskStatus.RUNNING || ++completed <= completedHistoryLimit }
     }
 
     fun launchFormatRepair(sessionId: String, messageId: String,

@@ -82,7 +82,7 @@ class DesktopAppContainer internal constructor(
         contextWindowManager, dataGate = dataOperationCoordinator,
         ensureSourceTurns = DesktopMemorySources(appDataRoot, jsonFileStorage, chatRepository)::ensure) }
     private val memoryOwner = lazy { DesktopMemoryController(jsonFileStorage, chatRepository, settingsRepository,
-        effectiveModelResolver, memoryService, memoryRepository, dataOperationCoordinator) }
+        effectiveModelResolver, memoryService, memoryRepository, dataOperationCoordinator).also { taskCenter.watchMemory(it) } }
     internal val memoryController by memoryOwner
     private val chatMemoryIndex by lazy { DesktopChatMemoryIndex(appDataRoot, jsonFileStorage,
         dataOperationCoordinator, audioMaintenance,
@@ -529,6 +529,21 @@ class DesktopAppContainer internal constructor(
 
     private val providerUsageOwner = lazy { DesktopProviderUsageOwner(DesktopProviderUsageStore(appDataRoot, dataOperationCoordinator)) }
     internal val providerUsage by providerUsageOwner
+    private val taskCenterOwner = lazy { DesktopTaskCenter(describe = { target ->
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            when {
+                target.sessionId != null -> chatRepository.getSession(target.sessionId)?.title
+                target.cardId != null -> characterRepository.getById(target.cardId)?.let { card ->
+                    val document = target.subjectId?.let { id -> card.customDocuments.firstOrNull { it.id == id } }
+                    if (document != null) "${card.name} · ${document.fileName}" else card.name
+                }
+                target.draftSessionId != null && formatCardEditorOwner.isInitialized() -> formatCardEditorController.state.value
+                    .takeIf { it.draftSessionId == target.draftSessionId }?.card?.name?.takeIf { it.isNotBlank() }?.let { "$it · 创作草稿" }
+                else -> null
+            }
+        }
+    }) }
+    internal val taskCenter by taskCenterOwner
     internal val taskRuntime: DesktopTaskRuntime by lazy {
         DesktopTaskRuntime(createRealChatRuntime(), diagnostics = DesktopTransportDiagnosticsOwner(usageSink = { providerUsage.submit(it) }),
             onChatCompleted = { result, stopped ->
@@ -550,6 +565,7 @@ class DesktopAppContainer internal constructor(
             }
             listOfNotNull(residencyNotice, imageNotice, indexNotice).joinToString("；").takeIf(String::isNotBlank)
         }, postProcessReply = { id, result, control -> automaticFormatRepair.completed(id, result, control) })
+            .also { taskCenter.watchRuntime(it) }
     }
 
     private val formatRepairSafety by lazy {
@@ -763,6 +779,7 @@ class DesktopAppContainer internal constructor(
                 if (formatCardAiTransportOwner.isInitialized()) formatCardAiTransportOwner.value.closeAndDrain()
                 if (novelAiInfrastructureOwner.isInitialized()) novelAiInfrastructure.closeAndDrain()
                 if (providerUsageOwner.isInitialized()) providerUsage.closeAndDrain()
+                if (taskCenterOwner.isInitialized()) taskCenter.closeAndDrain()
             },
             runtimeClose = { automaticBackupRuntime.close() },
             coordinatorClose = { dataOperationCoordinator.closeAndDrain() },

@@ -184,6 +184,7 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                                     fullBackupController = appContainer.fullBackupController,
                                     mergeImportController = appContainer.mergeImportController,
                                     externalImportController = externalImports,
+                                    taskCenter = appContainer.taskCenter,
                                     onExitApplication = {
                                         activation?.queue?.stopAccepting()
                                         appContainer.taskRuntime.stopAccepting()
