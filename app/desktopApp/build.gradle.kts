@@ -179,6 +179,16 @@ tasks.withType<org.gradle.api.tasks.testing.Test>().configureEach {
     }
 }
 
+// Separate reports preserve the original full-suite result while checking packaged production jars.
+tasks.register<org.gradle.api.tasks.testing.Test>("proxyPackagedRoutingTest") {
+    group = "verification"
+    dependsOn("testClasses", "createDistributable")
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    filter { includeTestsMatching("com.example.chatbar.desktop.DesktopProxyPhysicalRoutingTest") }
+    environment("CCB_PROXY_PRODUCTION_IMAGE", layout.buildDirectory.dir("compose/binaries/main/app/$desktopNativeName").get().asFile.absolutePath)
+}
+
 // Deliberately not part of check/test/run; this opt-in runner never accepts a credential.
 tasks.register<JavaExec>("runNovelAiPhase7Smoke") {
     group = "verification"

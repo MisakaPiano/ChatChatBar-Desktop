@@ -5,6 +5,8 @@ description: Maintain and diagnose ChatBar model resolution, OpenAI-compatible r
 
 # ChatBar Model Request Runtime
 
+- Desktop proxy physical routing uses `DesktopProxyPhysicalRoutingTest`: fresh JVMs load a persisted synthetic root through the production startup ingress, then record actual CONNECT/SOCKS bytes from `secureNovelAiClient`/account requests. `proxyPackagedRoutingTest` builds the production app-image and places its JARs before the test probe, checking actual class origins; its XML is separate from the normal suite. A chosen proxy-selector route alone is not physical-socket evidence. The probe replaces business UI and does not establish native GUI acceptance.
+
 - Desktop numeric usage capture is separate from bounded raw diagnostics; see `chatbar-desktop-provider-usage`. `ProviderTransportDiagnostics.onAttemptStarted` marks physical attempts without altering wire bodies or retry policy. Main-chat retries and isolated stream/nonstream calls emit this hook immediately before dispatch. Keep parent task/session/card identity separate from display namespaces.
 
 - Desktop request text estimates are diagnostic only: `DesktopTransportDiagnosticRecorder.onRequest` passes the complete pre-scrub/pre-truncation serialized body to shared `WirePromptBudgetEstimator`. Logical sections apply only when actual adapted role/content messages match and contain no extra message fields; overridden/merged messages stay unattributed. Text counts exclude images, audio, message overhead and tools/response-format structure. Invalid wire yields unavailable, not zero. Provider usage is independent. The estimator never changes request parameters, retry policy or prompts, and its numeric report contains no message body.

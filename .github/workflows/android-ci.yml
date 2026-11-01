@@ -161,6 +161,11 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -m unittest discover -s tools/desktop/update -p test_handoff.py -v
 
+      - name: Verify actual proxy sockets with packaged production classes
+        if: ${{ !cancelled() && env.CCB_CI_SOURCE != '' }}
+        working-directory: ${{ env.CCB_CI_SOURCE }}/app
+        run: .\gradlew.bat :desktopApp:proxyPackagedRoutingTest -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain
+
       - name: Upload Desktop test reports
         if: always() && env.CCB_CI_SOURCE != ''
         uses: actions/upload-artifact@v4
