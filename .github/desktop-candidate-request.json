@@ -5,7 +5,23 @@
   "installerVersion": "0.1.1226",
   "platformCiRunId": 41268127116,
   "platformCiStateAtRequest": "SUCCESS",
-  "attempt": 4,
-  "previousBuildRun": 41270287446,
-  "previousBuildFailure": "RAW_CTIME_DOMAIN_MISMATCH_IN_BOTH_PYTHON_VERSIONS"
+  "attempt": 5,
+  "previousBuildRun": 41270742645,
+  "previousBuildFailure": "BASELINE_STOPPED_AT_CWD_ROLE_CHECK_BEFORE_CANDIDATE",
+  "reuseBuildRun": 41270742645,
+  "reuseRequestCommit": "40d5897325647c8f7fc501008858a351e0c4981e",
+  "reuseArtifacts": [
+    {
+      "id": 13069670673,
+      "name": "desktop-candidate-installer",
+      "bytes": 174086607,
+      "sha256": "97c9ee322140b0980607536a553c06becd448e84799b9c3ebfc5c5221b71d953"
+    },
+    {
+      "id": 13069660735,
+      "name": "desktop-candidate-independent",
+      "bytes": 187080745,
+      "sha256": "c5da27975779aa2a6053a8fb09f264fc008a66bd603750bbc9a82f25e43911ff"
+    }
+  ]
 }

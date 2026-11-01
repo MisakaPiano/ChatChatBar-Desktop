@@ -14,6 +14,7 @@ import shutil
 import subprocess
 import time
 import hashlib
+from native_cwd_policy import owned_update_helper_cwd
 
 JAVA = Path(os.environ.get('JAVA_HOME', 'C:/Program Files/Eclipse Adoptium/jdk-17.0.20.101-hotspot')) / 'bin/java.exe'
 OWNER = 'CCB_DESKTOP_SYNTHETIC_WINDOWS_RUNTIME'
@@ -79,6 +80,7 @@ kernel.GetExitCodeProcess.argtypes = [W.HANDLE, C.POINTER(W.DWORD)]
 kernel.OpenProcess.restype = W.HANDLE
 kernel.OpenProcess.argtypes = [W.DWORD, W.BOOL, W.DWORD]
 kernel.ReadProcessMemory.argtypes = [W.HANDLE, C.c_void_p, C.c_void_p, C.c_size_t, C.POINTER(C.c_size_t)]
+kernel.QueryFullProcessImageNameW.argtypes = [W.HANDLE, W.DWORD, W.LPWSTR, C.POINTER(W.DWORD)]
 callback = C.WINFUNCTYPE(W.BOOL, W.HWND, W.LPARAM)
 user.EnumWindows.argtypes = [callback, W.LPARAM]
 user.GetWindowThreadProcessId.argtypes = [W.HWND, C.POINTER(W.DWORD)]
@@ -109,7 +111,19 @@ def cwd(pid):
         kernel.CloseHandle(h)
 
 
-def launch_close(case, image, executable, arguments, install_root, label, default_profile=False, expect_failure=False, busy_installer=None):
+def process_image(pid):
+    handle = kernel.OpenProcess(0x1000, False, pid)
+    require(handle, 'PROCESS_IMAGE_OPEN_FAILED')
+    try:
+        text = C.create_unicode_buffer(32768)
+        size = W.DWORD(len(text))
+        require(kernel.QueryFullProcessImageNameW(handle, 0, text, C.byref(size)), 'PROCESS_IMAGE_QUERY_FAILED')
+        return text.value
+    finally:
+        kernel.CloseHandle(handle)
+
+
+def launch_close(case, image, executable, arguments, install_root, label, default_profile=False, expect_failure=False, busy_installer=None, allow_update_helper=False):
     job = kernel.CreateJobObjectW(None, None)
     require(job, 'JOB_CREATE_FAILED')
     startup = Startup(); startup.cb = C.sizeof(startup); startup.flags = 0x100
@@ -194,9 +208,16 @@ def launch_close(case, image, executable, arguments, install_root, label, defaul
                     (program / 'install-manifest.json').read_bytes() == original_manifest, 'RUNNING_PROGRAM_INSTALL_NOT_REFUSED')
         active = pids()
         directories = {str(pid): cwd(pid) for pid in active}
+        images = {str(pid): process_image(pid) for pid in active}
+        update_helpers = {pid: directory for pid, directory in directories.items()
+                          if Path(directory).resolve().is_relative_to(program.resolve()) and allow_update_helper and
+                          owned_update_helper_cwd(program, images[pid], directory)}
         save(case / (label + '-running.json'), dict(pids=active, nativeCurrentDirectories=directories,
-             current=current, installRoot=str(install_root), jobAssignedBeforeResume=True))
-        require(all(not Path(d).resolve().is_relative_to(program.resolve()) for d in directories.values()), 'VERSION_CWD_STILL_OWNED')
+             processImages=images, current=current, installRoot=str(install_root), jobAssignedBeforeResume=True,
+             verifiedTemporaryUpdaterCwds=update_helpers, allVersionCwdsClear=not any(
+                 Path(d).resolve().is_relative_to(program.resolve()) for d in directories.values())))
+        require(all(pid in update_helpers or not Path(d).resolve().is_relative_to(program.resolve())
+                    for pid, d in directories.items()), 'VERSION_CWD_STILL_OWNED')
         require(user.PostMessageW(window, 0x10, 0, 0), 'NORMAL_CLOSE_FAILED')
         deadline = time.monotonic() + 45
         while pids() and time.monotonic() < deadline:
@@ -204,7 +225,8 @@ def launch_close(case, image, executable, arguments, install_root, label, defaul
         remaining = pids()
         code = W.DWORD(); kernel.GetExitCodeProcess(process.handle, C.byref(code))
         save(case / (label + '-result.json'), dict(exitCode=code.value, remaining=remaining, current=current,
-             normalWindowClose=True, rootBusyVerified=not default_profile, freshDefaultProfile=default_profile, providerCalls=False))
+             normalWindowClose=True, rootBusyVerified=not default_profile, freshDefaultProfile=default_profile,
+             verifiedTemporaryUpdaterCwds=update_helpers, providerCalls=False))
         require(not remaining and code.value == 0, 'NATIVE_NORMAL_SHUTDOWN_FAILED')
     kernel.CloseHandle(process.handle); kernel.CloseHandle(job)
     if not default_profile:
@@ -223,8 +245,16 @@ def main():
     parser.add_argument('--fresh-default-profile', action='store_true', help='New empty profile, no companion/data/credential claim')
     parser.add_argument('--expect-install-failure', action='store_true', help='Explicit task-owned fault installer only; old entry/data must remain')
     parser.add_argument('--probe-busy-installer', type=Path, help='While the owned app is running, this installer must reject before changing the current version')
+    parser.add_argument('--allow-owned-update-helper-cwd', action='store_true', help='Explicitly classify only the inventoried updater Python; full Job exit still required')
+    parser.add_argument('--ci-source', type=Path, help='Frozen source namespace only in this repository Windows CI')
     args = parser.parse_args()
     approved = Path(__file__).resolve().parents[3] / 'app/desktopApp/build/preview-continuous-private-20261025'
+    if args.ci_source:
+        require(os.environ.get('GITHUB_ACTIONS') == 'true' and os.environ.get('GITHUB_REPOSITORY') == 'MisakaPiano/ChatChatBar-Desktop', 'CI_SOURCE_REQUIRED')
+        source = args.ci_source.resolve(strict=True)
+        require(source == Path(os.environ['CCB_CI_SOURCE']).resolve(strict=True), 'CI_SOURCE_SCOPE')
+        require(subprocess.check_output(['git', '-C', str(source), 'rev-parse', 'HEAD'], text=True).strip() == os.environ['CCB_CANDIDATE_SOURCE'], 'CI_SOURCE_IDENTITY')
+        approved = source / 'app/desktopApp/build/preview-continuous-private-20261025'
     case = args.case.absolute()
     require(case.is_relative_to(approved) and case.name.startswith('windows-runtime-nsis-'), 'SYNTHETIC_CASE_SCOPE')
     if not case.exists():
@@ -240,7 +270,7 @@ def main():
     exe = args.installer if args.installer else args.root / 'ChatChatBar.exe'
     arguments = ['/S', '/D=' + str(args.root)] if args.installer else []
     require(not args.expect_install_failure or (args.installer and not args.fresh_default_profile), 'FAILURE_DRIVER_REQUIRES_INSTALLED_SYNTHETIC_PROFILE')
-    launch_close(case, args.image, exe, arguments, args.root, args.label, args.fresh_default_profile, args.expect_install_failure, args.probe_busy_installer)
+    launch_close(case, args.image, exe, arguments, args.root, args.label, args.fresh_default_profile, args.expect_install_failure, args.probe_busy_installer, args.allow_owned_update_helper_cwd)
 
 
 if __name__ == '__main__':
