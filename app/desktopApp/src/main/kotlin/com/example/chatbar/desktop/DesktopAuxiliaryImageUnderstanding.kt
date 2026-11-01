@@ -7,9 +7,14 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.collect
 
 /** Desktop transport adapter; prompts, envelope, resolver and failure policy are shared. */
-internal class DesktopAuxiliaryImageUnderstanding(private val transport: OpenAiStreamingTransport) {
+internal class DesktopAuxiliaryImageUnderstanding(
+    private val transport: OpenAiStreamingTransport,
+    private val diagnostics: DesktopTransportDiagnosticsOwner? = null,
+) {
     suspend fun describe(encoded: String, model: ModelConfig, onDelta: (String) -> Unit): String =
-        describe(encoded, model, onDelta, ProviderTransportDiagnostics.NONE)
+        withDesktopAuxiliaryUsage(diagnostics, model, "image-understanding") { log ->
+            describe(encoded, model, onDelta, log)
+        }
 
     suspend fun describe(encoded: String, model: ModelConfig, onDelta: (String) -> Unit,
         diagnostics: ProviderTransportDiagnostics): String {

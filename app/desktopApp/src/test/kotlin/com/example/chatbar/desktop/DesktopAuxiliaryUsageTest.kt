@@ -1,0 +1,96 @@
+package com.example.chatbar.desktop
+
+import com.example.chatbar.data.local.entity.ModelConfig
+import com.example.chatbar.domain.chat.*
+import com.example.chatbar.domain.image.NovelAiTextStage
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.toList
+import kotlinx.serialization.json.Json
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.SocketPolicy
+import java.nio.file.Files
+import java.util.Collections
+import java.util.concurrent.TimeUnit
+import kotlin.test.*
+
+class DesktopAuxiliaryUsageTest {
+    private fun response(finish: String = "stop") = MockResponse().setHeader("Content-Type", "text/event-stream")
+        .setBody("data: {\"choices\":[{\"delta\":{\"content\":\"private auxiliary result\"},\"finish_reason\":\"$finish\"}],\"usage\":{\"prompt_tokens\":0,\"completion_tokens\":2}}\n\ndata: [DONE]\n\n")
+
+    @Test fun `existing design stages and linked vision persist actual attempts with inherited parent and no duplicate explicit capture`() = runBlocking {
+        val root = Files.createTempDirectory("usage-auxiliary-")
+        val gate = DesktopDataOperationCoordinator()
+        val store = DesktopProviderUsageStore(root, gate)
+        val usage = DesktopProviderUsageOwner(store)
+        val logs = DesktopTransportDiagnosticsOwner(usageSink = usage::submit)
+        val transport = OpenAiStreamingTransport { true }
+        try {
+            MockWebServer().use { server ->
+                val model = ModelConfig("model", "Fixture", server.url("/v1").toString(), "private auxiliary key", "fixture", createdAt = 0)
+                val design = DesktopNovelAiTextTransport(transport, logs)
+                val vision = DesktopAuxiliaryImageUnderstanding(transport, logs)
+                val parent = DesktopUsageContext(DesktopUsageSource.MOMENTS, "actual-task", "actual-session", "actual-card")
+                withContext(DesktopUsageParent(parent)) {
+                    for (stage in NovelAiTextStage.entries) {
+                        server.enqueue(response())
+                        design.streamText(stage, listOf(ChatApiMessage.text("user", "private auxiliary input")), model).toList()
+                    }
+                    server.enqueue(response())
+                    assertEquals("private auxiliary result", vision.describe("data:image/png;base64,AAAA", model) {})
+                }
+                val explicit = logs.begin("explicit-vision", "editor-display", model,
+                    DesktopUsageContext(DesktopUsageSource.CHARACTER_CARD, taskId = "editor-task", editorSessionId = "draft", personId = "person"))
+                server.enqueue(response())
+                vision.describe("data:image/png;base64,AAAA", model, {}, explicit)
+                explicit.finish(DesktopTaskStatus.COMPLETED, null, null)
+                server.enqueue(response("length"))
+                assertFailsWith<DesktopDesignException> {
+                    design.streamText(NovelAiTextStage.GENERATE, listOf(ChatApiMessage.text("user", "private auxiliary input")), model).toList()
+                }
+                transport.closeAndDrain()
+                usage.closeAndDrain()
+                val records = store.records()
+                assertEquals(NovelAiTextStage.entries.size + 3, server.requestCount)
+                assertEquals(server.requestCount, records.size)
+                assertEquals(records.size, records.map { it.requestId }.distinct().size)
+                assertTrue(records.all { it.attempt == 1 && it.counters.prompt == 0L && it.counters.completion == 2L })
+                val inherited = records.filter { it.source == DesktopUsageSource.MOMENTS }
+                assertEquals(NovelAiTextStage.entries.size + 1, inherited.size)
+                assertTrue(inherited.all { it.taskId == parent.taskId && it.sessionId == parent.sessionId && it.cardId == parent.cardId && it.outcome == DesktopUsageOutcome.COMPLETED })
+                val editor = records.single { it.source == DesktopUsageSource.CHARACTER_CARD }
+                assertEquals("draft", editor.editorSessionId); assertEquals("person", editor.personId); assertNull(editor.sessionId)
+                val failed = records.single { it.source == DesktopUsageSource.OTHER }
+                assertEquals(DesktopUsageOutcome.FAILED, failed.outcome); assertNull(failed.taskId); assertNull(failed.sessionId)
+                records.forEach { row ->
+                    val json = Json.encodeToString(DesktopUsageRecord.serializer(), row)
+                    assertFalse(json.contains("private auxiliary")); assertFalse(json.contains("data:image")); assertFalse(json.contains("image-design:"))
+                }
+            }
+        } finally {
+            transport.closeAndDrain(); usage.closeAndDrain(); gate.closeAndDrain(); root.toFile().deleteRecursively()
+        }
+    }
+
+    @Test fun `cancelling actual auxiliary transport preserves one uncertain cancelled attempt without another request`() = runBlocking {
+        MockWebServer().use { server ->
+            val rows = Collections.synchronizedList(mutableListOf<DesktopUsageRecord>())
+            val logs = DesktopTransportDiagnosticsOwner(usageSink = { rows.add(it) })
+            val transport = OpenAiStreamingTransport { true }
+            try {
+                val model = ModelConfig("model", "Fixture", server.url("/v1").toString(), "private auxiliary key", "fixture", createdAt = 0)
+                server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.NO_RESPONSE))
+                val work = launch {
+                    DesktopNovelAiTextTransport(transport, logs).streamText(NovelAiTextStage.PLAN,
+                        listOf(ChatApiMessage.text("user", "fixture")), model).toList()
+                }
+                assertNotNull(withContext(Dispatchers.IO) { server.takeRequest(5, TimeUnit.SECONDS) })
+                work.cancelAndJoin()
+                val latest = rows.toList().groupBy { it.id }.values.map { group -> group.maxBy { it.revision } }
+                assertEquals(1, server.requestCount); assertEquals(1, latest.size)
+                assertEquals(DesktopUsageOutcome.CANCELLED, latest.single().outcome)
+                assertEquals(DesktopUsageCounters(), latest.single().counters)
+            } finally { transport.closeAndDrain() }
+        }
+    }
+}

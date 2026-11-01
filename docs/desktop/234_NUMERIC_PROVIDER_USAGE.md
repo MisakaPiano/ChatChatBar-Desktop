@@ -1,5 +1,7 @@
 # P15 数值用量统计与实际尝试归属
 
+1228已固定bd684源码，与独立控制8e726的R07普通构建、CI74并行，尚待结果。后续工作树为NAI设计／研究各阶段及链接视觉接入现有diagnostics与数值sink：在实际collect处继承DesktopUsageParent，没有确切归属则OTHER／空ID，显式视觉诊断调用不重复捕获。只观测既有请求，不更改Prompt、wire或重试；辅助HTTP在生产者／编辑器关闭后、统计owner之前排水。新增实际合成HTTP检查阶段／视觉、零值、编辑归属、截断失败、取消、请求数及原文不落盘，尚待后续源云端。此增量不在1228中，完整二进制生图／语音／embedding及手动图像操作精确归属仍待。
+
 CI71／63404实际Windows298suite2377项=2357PASS+19SKIP+1FAIL。Capture3／Usage4／Scene1通过，420／1100统计图已读回核对；原P13两项亦通过。唯一既有Regeneration双close用例暴露统计owner重复申请CLOSED gate；后续补串行幂等close、保存失败保留／重试、成功后不重进gate和并发／失败重试合成用例，尚待新源。原失败不回填为绿，边界预检74不由71覆盖。
 
 进一步沿生产关闭链补齐：未保存数值尾项抛专用DesktopUsageDrainException，先保留backup／coordinator／迁移root生命周期，原恢复窗显示存储检查与安全关闭重试；普通实体事务失败仍不自动重试。新测试走实际closeDesktopWithRecovery＋closeDesktopDataRuntimes，在拒写时验证根锁仍持有、gate未关闭，修复合成拒写后仅保存原数值记录并完成一次关闭；不重发AI，也不把CLOSED普通数据门重新打开。

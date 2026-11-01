@@ -224,7 +224,8 @@ class DesktopAppContainer internal constructor(
 
     private val novelAiInfrastructureOwner = lazy {
         DesktopNovelAiInfrastructure(appDataRoot, { bundledAssetReader(it).inputStream() }, effectiveModelResolver,
-            allowCleartextHttp = { settingsRepository.currentAppSettings.allowCleartextModelApi }, designerOverride = novelAiDesigner)
+            allowCleartextHttp = { settingsRepository.currentAppSettings.allowCleartextModelApi }, designerOverride = novelAiDesigner,
+            diagnostics = taskRuntime.diagnostics)
     }
     internal val novelAiInfrastructure by novelAiInfrastructureOwner
     internal val novelAiGenerationRuntime by lazy {
@@ -736,7 +737,6 @@ class DesktopAppContainer internal constructor(
                 if (fishAudioLibraryOwner.isInitialized()) fishAudioLibrary.closeAndDrain()
                 if (fishCredentialOwner.isInitialized()) fishCredentialController.closeAndDrain()
                 if (connectionTestOwner.isInitialized()) connectionTestController.closeAndDrain()
-                if (novelAiInfrastructureOwner.isInitialized()) novelAiInfrastructure.closeAndDrain()
                 if (ragOwner.isInitialized()) ragController.closeAndDrain()
                 taskRuntime.closeAndDrain()
                 if (memoryOwner.isInitialized()) memoryController.closeAndDrain()
@@ -752,6 +752,7 @@ class DesktopAppContainer internal constructor(
                 if (formatCardEditorOwner.isInitialized()) formatCardEditorController.closeAndDrain()
                 if (editorBudgetOwner.isInitialized()) editorBudgetOwner.value.closeAndDrain()
                 if (formatCardAiTransportOwner.isInitialized()) formatCardAiTransportOwner.value.closeAndDrain()
+                if (novelAiInfrastructureOwner.isInitialized()) novelAiInfrastructure.closeAndDrain()
                 if (providerUsageOwner.isInitialized()) providerUsage.closeAndDrain()
             },
             runtimeClose = { automaticBackupRuntime.close() },
