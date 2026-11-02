@@ -43,6 +43,7 @@ class DesktopTutorialGuideTest {
                 staleNext.config[SemanticsActions.OnClick].action?.invoke(); frames(scene)
                 assertBody(scene, t, last)
                 if (width < 720) { click(scene, t(DesktopUiText.GUIDE_TOPICS)); frames(scene) }
+                if (width < 720) assertFalse(nodes(scene).any { matchesDescription(it, t(DesktopUiText.GUIDE_BODY)) })
                 await(scene) { fullyVisibleTopic(scene, t, last) }
                 capture(scene, "guide-${language.name}-${width}x$height-last-topics")
                 if (width < 720) {
@@ -62,6 +63,9 @@ class DesktopTutorialGuideTest {
                 assertFalse(nodes(scene).any { matchesDescription(it, t(DesktopUiText.GUIDE_CLOSE)) })
                 assertNotNull(described(scene, t(DesktopUiText.CLOSE_CONTEXT_HELP)))
                 clickDescription(scene, t(DesktopUiText.CLOSE_CONTEXT_HELP)); assertEquals(1, closed)
+            } catch (failure: Throwable) {
+                capture(scene, "guide-${language.name}-${width}x$height-failure")
+                throw failure
             } finally { scene.close() }
         }
     }
