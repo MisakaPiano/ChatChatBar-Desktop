@@ -71,8 +71,10 @@ jobs:
       - name: Compare synthetic Kotlin text estimates with fixed tokenizer references
         working-directory: ${{ github.workspace }}
         run: |
-          python -m pip install --disable-pip-version-check --only-binary=:all: tiktoken==0.12.0 --report "$RUNNER_TEMP/prompt-calibration-pip.json"
-          python -B tools/desktop/diagnostics/calibrate_prompt_budget.py --input app/sharedCore/build/reports/prompt-budget-calibration/input.json --output app/sharedCore/build/reports/prompt-budget-calibration/comparison.json --pip-report "$RUNNER_TEMP/prompt-calibration-pip.json"
+          python -m venv "$RUNNER_TEMP/ccb-budget-reference"
+          referencePython="$RUNNER_TEMP/ccb-budget-reference/bin/python"
+          "$referencePython" -m pip install --disable-pip-version-check --only-binary=:all: tiktoken==0.12.0 --report "$RUNNER_TEMP/prompt-calibration-pip.json"
+          "$referencePython" -B tools/desktop/diagnostics/calibrate_prompt_budget.py --input app/sharedCore/build/reports/prompt-budget-calibration/input.json --output app/sharedCore/build/reports/prompt-budget-calibration/comparison.json --pip-report "$RUNNER_TEMP/prompt-calibration-pip.json"
 
       - name: Upload test reports
         if: always()
