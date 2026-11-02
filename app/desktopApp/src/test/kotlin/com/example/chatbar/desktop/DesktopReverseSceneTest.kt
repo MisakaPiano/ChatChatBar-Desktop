@@ -188,6 +188,32 @@ class DesktopReverseSceneTest {
         }
     }
 
+    @Test fun `stop during original action preflight prevents a new reverse request from launching`() = runBlocking {
+        val f = FinalProductDesignFixture()
+        try {
+            val c = setup(f); assertTrue(c.reverseImage(image())); f.idle()
+            val before = c.repository.loadDraft(); val requests = f.requests.size
+            val field = c.repository.javaClass.getDeclaredField("undoMutex").also { it.isAccessible = true }
+            val original = field.get(c.repository) as kotlinx.coroutines.sync.Mutex
+            val entered = CompletableDeferred<Unit>(); val resume = CompletableDeferred<Unit>()
+            val tracking = object : kotlinx.coroutines.sync.Mutex by original {
+                override suspend fun lock(owner: Any?) {
+                    entered.complete(Unit); resume.await(); original.lock(owner)
+                }
+            }
+            field.set(c.repository, tracking)
+            val restarting = async(Dispatchers.Default) { c.reverseImage(image()) }
+            try {
+                withTimeout(5_000) { entered.await() }
+                c.stopReverse()
+            } finally { resume.complete(Unit) }
+            assertFalse(withTimeout(5_000) { restarting.await() })
+            field.set(c.repository, original)
+            assertEquals(requests, f.requests.size); assertFalse(c.state.value.reverseBusy)
+            assertNull(c.state.value.reverseCandidate); assertEquals(before, c.repository.loadDraft())
+        } finally { f.close() }
+    }
+
     private val edt = object : CoroutineDispatcher() {
         override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
     }
