@@ -162,6 +162,7 @@ data class ImagePromptToolUiState(
     val hasHistoryUndo: Boolean = false,
     val fullPromptPreview: NovelAiFullPromptContent? = null,
     val fullPromptReading: Boolean = false,
+    val fullPromptCopying: Boolean = false,
     val characterCards: List<CharacterCard> = emptyList(),
     val selectedCharacterCardId: String? = null,
     val models: List<ModelConfig> = emptyList(),
@@ -1469,19 +1470,34 @@ class ImagePromptToolViewModel : ViewModel() {
         (repository.draft.value ?: _uiState.value.draft).copyPositivePrompt()
 
     private var fullPromptCandidate: NovelAiFullPromptPreview? = null
-    private var fullPromptReadJob: Job? = null
+    private var fullPromptTextJob: Job? = null
     private var fullPromptGeneration = 0L
 
-    fun fullPromptForClipboard(): String? = try {
+    fun copyFullPrompt(onCopied: (String) -> Unit) {
         val state = _uiState.value
-        require(state.draftLoaded && !state.isBusy && !state.applyingHistory)
-        val draft = repository.draft.value ?: state.draft
-        val cardDefault = state.characterCards.firstOrNull { it.id == draft.importedCharacterCardId }?.defaultNovelAiImageModel
-        val selected = NovelAiImageModelResolution.resolve(draft.selectedModel.takeUnless { draft.followDefaultNovelAiImageModel },
-            cardDefault, settingsRepository.currentAppSettings.novelAiImageModel)
-        NovelAiStudioFullPromptClipboard.encode(draft.copy(selectedModel = selected))
-    } catch (_: Exception) {
-        _uiState.update { it.copy(error = "暂时无法复制完整 Prompt，请先载入工作室并结束当前任务。") }; null
+        if (!state.draftLoaded || state.isBusy || state.applyingHistory) return
+        discardFullPrompt()
+        val generation = fullPromptGeneration
+        val baseline = repository.draft.value ?: state.draft
+        fun effectiveModel(): NovelAiImageModel = NovelAiImageModelResolution.resolve(
+            baseline.selectedModel.takeUnless { baseline.followDefaultNovelAiImageModel },
+            _uiState.value.characterCards.firstOrNull { it.id == baseline.importedCharacterCardId }?.defaultNovelAiImageModel,
+            settingsRepository.currentAppSettings.novelAiImageModel)
+        val selected = effectiveModel()
+        _uiState.update { it.copy(fullPromptCopying = true, error = null) }
+        fullPromptTextJob = viewModelScope.launch {
+            try {
+                val text = withContext(Dispatchers.Default) { NovelAiStudioFullPromptClipboard.encode(baseline.copy(selectedModel = selected)) }
+                if (generation != fullPromptGeneration) return@launch
+                require((repository.draft.value ?: _uiState.value.draft) == baseline && effectiveModel() == selected)
+                onCopied(text) // Main callback; close/cancel/replacement invalidates the old generation first.
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) {
+                if (generation == fullPromptGeneration) _uiState.update { it.copy(error = "完整文本复制未完成，请检查当前工作室内容后重试。") }
+            } finally {
+                if (generation == fullPromptGeneration) _uiState.update { it.copy(fullPromptCopying = false) }
+            }
+        }
     }
 
     fun inspectFullPrompt(text: String) {
@@ -1491,7 +1507,7 @@ class ImagePromptToolViewModel : ViewModel() {
         val generation = fullPromptGeneration
         val baseline = repository.draft.value ?: state.draft
         _uiState.update { it.copy(fullPromptReading = true, error = null) }
-        fullPromptReadJob = viewModelScope.launch {
+        fullPromptTextJob = viewModelScope.launch {
             try {
                 val candidate = withContext(Dispatchers.Default) { NovelAiFullPromptPreview.inspect(text, baseline) }
                 if (generation != fullPromptGeneration) return@launch
@@ -1510,7 +1526,7 @@ class ImagePromptToolViewModel : ViewModel() {
     fun applyFullPrompt() {
         val state = _uiState.value
         val candidate = fullPromptCandidate ?: return
-        if (!state.draftLoaded || state.isBusy || state.applyingHistory || state.fullPromptReading) return
+        if (!state.draftLoaded || state.isBusy || state.applyingHistory || state.fullPromptReading || state.fullPromptCopying) return
         try {
             updateDraft(resetPromptEditors = true) { candidate.apply(it) }
             discardFullPrompt()
@@ -1522,8 +1538,8 @@ class ImagePromptToolViewModel : ViewModel() {
 
     fun discardFullPrompt() {
         fullPromptGeneration++
-        fullPromptReadJob?.cancel(); fullPromptReadJob = null; fullPromptCandidate = null
-        _uiState.update { it.copy(fullPromptPreview = null, fullPromptReading = false) }
+        fullPromptTextJob?.cancel(); fullPromptTextJob = null; fullPromptCandidate = null
+        _uiState.update { it.copy(fullPromptPreview = null, fullPromptReading = false, fullPromptCopying = false) }
     }
 
     fun clearPrompts() {

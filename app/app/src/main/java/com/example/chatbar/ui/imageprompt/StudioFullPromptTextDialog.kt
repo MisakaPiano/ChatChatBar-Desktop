@@ -11,13 +11,13 @@ import com.example.chatbar.ui.kit.*
 @Composable
 internal fun StudioFullPromptTextDialog(state: ImagePromptToolUiState, onCopy: () -> Unit, onRead: () -> Unit,
     onApply: () -> Unit, onCancel: () -> Unit, onClose: () -> Unit) {
-    val enabled = state.draftLoaded && !state.isBusy && !state.applyingHistory && !state.fullPromptReading
+    val enabled = state.draftLoaded && !state.isBusy && !state.applyingHistory && !state.fullPromptReading && !state.fullPromptCopying
     CbDialog(onDismissRequest = onClose, title = "完整 Prompt 文本互换",
         confirm = { CbButton("关闭", onClose, variant = ButtonVariant.Outline) }) {
         Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(ChatBarSpacing.md)) {
             CbText("包含画风、全部正负词、角色顺序／位置／开关、位置应用开关、模型和自然语言模式。其他生成参数和参考资源保留，不会自动生图。")
             CbText("使用 CCB-FULL-PROMPT/1 格式。两端都需要带此入口的对应版本；旧正向复制和当前官方旧版不等于已支持完整格式。")
-            CbButton("复制完整文本", onCopy, enabled = enabled, variant = ButtonVariant.Outline)
+            CbButton(if (state.fullPromptCopying) "正在复制…" else "复制完整文本", onCopy, enabled = enabled, variant = ButtonVariant.Outline)
             CbButton(if (state.fullPromptReading) "正在读取…" else "读取剪贴板并预览", onRead, enabled = enabled,
                 variant = ButtonVariant.Outline)
             val preview = state.fullPromptPreview

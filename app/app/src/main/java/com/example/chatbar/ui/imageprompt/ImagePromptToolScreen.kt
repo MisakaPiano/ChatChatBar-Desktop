@@ -769,7 +769,7 @@ fun ImagePromptToolScreen(
     if (showFullPromptExchange) {
         DisposableEffect(viewModel) { onDispose { viewModel.discardFullPrompt() } }
         StudioFullPromptTextDialog(state,
-            onCopy = { viewModel.fullPromptForClipboard()?.let { text -> clipboard.setText(buildAnnotatedString { append(text) }) } },
+            onCopy = { viewModel.copyFullPrompt { text -> clipboard.setText(buildAnnotatedString { append(text) }) } },
             onRead = { viewModel.inspectFullPrompt(clipboard.getText()?.text.orEmpty()) },
             onApply = viewModel::applyFullPrompt, onCancel = viewModel::discardFullPrompt,
             onClose = { viewModel.discardFullPrompt(); showFullPromptExchange = false })
