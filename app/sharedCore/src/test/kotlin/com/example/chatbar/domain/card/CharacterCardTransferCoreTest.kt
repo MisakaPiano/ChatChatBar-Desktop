@@ -23,6 +23,45 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class CharacterCardTransferCoreTest {
+    @Test fun `fresh community authority refuses a changed read-only source before allocating resources`() = runTest {
+        val f = fixture()
+        val local = f.core.importNew(completePackage())
+        val sourceA = CharacterCardCommunitySource("A", "2026-01-01", "a".repeat(64), "A")
+        val current = local.copy(communityItemId = "B", communityItemUpdatedAt = "2026-01-02", communityItemSha256 = "b".repeat(64))
+        f.characters.cards[local.id] = current
+        val resources = f.resources.entries.toMap()
+        for (source in listOf(null, sourceA)) {
+            assertFailsWith<IllegalArgumentException> {
+                f.core.overwrite(local.id, completePackage(), communitySource = source,
+                    communityAuthority = CharacterCommunityOverwriteAuthority(if (source == null) null else "A"))
+            }
+            assertEquals(current, f.characters.cards[local.id]); assertEquals(resources, f.resources.entries)
+        }
+    }
+
+    @Test fun `community provenance is in the original atomic commit and duplicates remain local originals`() = runTest {
+        val f = fixture()
+        val source = CharacterCardCommunitySource("remote", "2026-01-01", "a".repeat(64), "Community title")
+        val observation = CharacterTransferObservation()
+        f.characters.failObservedAfterWriteBeforeCallback = true
+        assertFailsWith<CharacterTransferPostCommitException> {
+            f.core.importNew(completePackage(), observation = observation, communitySource = source)
+        }
+        val expected = requireNotNull(observation.expected)
+        assertTrue(expected.isCommunityDownload)
+        assertEquals(expected, f.characters.cards[expected.id])
+        assertEquals(source.sha256, expected.communityItemSha256)
+        f.characters.failObservedAfterWriteBeforeCallback = false
+        val copied = f.core.duplicate(expected.id)
+        assertFalse(copied.isCommunityDownload)
+        assertNull(copied.communityItemId); assertNull(copied.communityItemSha256)
+        val next = source.copy(updatedAt = "2026-01-02", sha256 = "b".repeat(64))
+        val updated = f.core.overwrite(expected.id, completePackage(), communitySource = next)
+        assertEquals(expected.id, updated.id); assertEquals(expected.createdAt, updated.createdAt)
+        assertEquals(next.updatedAt, updated.communityItemUpdatedAt)
+        assertEquals(next.sha256, f.characters.cards[expected.id]!!.communityItemSha256)
+    }
+
     @Test fun `official147 image settings survive actual package export duplicate and overwrite without schema change`() = runTest {
         for (model in listOf(com.example.chatbar.domain.image.NovelAiImageModel.V4_5_FULL,
             com.example.chatbar.domain.image.NovelAiImageModel.V5_FULL)) {

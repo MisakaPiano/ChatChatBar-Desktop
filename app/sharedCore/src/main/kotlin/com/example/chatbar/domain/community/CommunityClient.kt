@@ -36,12 +36,13 @@ open class CommunityClient(
     private val sessions: CommunitySessionStore,
     private val json: Json,
     private val client: OkHttpClient,
+    loadSessionAtStartup: Boolean = true,
     private val warn: (String, Throwable) -> Unit = { _, _ -> },
 ) {
     private val baseUrl = config.baseUrl.trim().trimEnd('/')
     private val anonKey = config.anonKey.trim()
     private val redirectUri = config.redirectUri.trim()
-    private val _session = MutableStateFlow(sessions.load())
+    private val _session = MutableStateFlow(if (loadSessionAtStartup) sessions.load() else null)
     private val _enabled = MutableStateFlow(false)
 
     val configured: Boolean = baseUrl.isNotBlank() && anonKey.isNotBlank()
@@ -142,6 +143,9 @@ open class CommunityClient(
         _session.value = null
     }
 
+    /** Desktop may defer protected custody reads until the user opens Community. No refresh/network call. */
+    fun restoreSavedSession() { _session.value = sessions.load() }
+
     suspend fun listItems(): List<CommunityItem> = withContext(Dispatchers.IO) {
         checkAvailable()
         queryItems(authorUserId = null, accessToken = null, offset = 0, limit = DEFAULT_LIST_LIMIT).items
@@ -189,6 +193,16 @@ open class CommunityClient(
         checkAvailable()
         val session = requireSession()
         queryItems(authorUserId = session.userId, accessToken = session.accessToken, offset = 0, limit = DEFAULT_LIST_LIMIT).items
+    }
+
+    suspend fun readItem(id: String): CommunityItem? = withContext(Dispatchers.IO) {
+        checkAvailable()
+        require(id.isNotBlank())
+        val request = Request.Builder()
+            .url("$baseUrl/rest/v1/community_items?id=eq.${urlEncode(id)}&select=$COMMUNITY_ITEM_SELECT")
+            .header("apikey", anonKey).header("Authorization", "Bearer $anonKey").get().build()
+        json.decodeFromString(ListSerializer(CommunityItemDto.serializer()), executeForBody(request, "读取社区条目"))
+            .singleOrNull()?.toDomain()
     }
 
     suspend fun listMyItemsPage(offset: Int, limit: Int): CommunityItemPage = withContext(Dispatchers.IO) {
@@ -368,6 +382,13 @@ open class CommunityClient(
         return "$baseUrl/storage/v1/object/public/$PREVIEW_BUCKET/${encodePath(path)}"
     }
 
+    suspend fun readPreview(item: CommunityItem): ByteArray? {
+        checkAvailable()
+        val url = previewUrl(item) ?: return null
+        return executeForBytes(Request.Builder().url(url).header("apikey", anonKey).get().build(),
+            "读取社区缩略图", 3 * 1024 * 1024)
+    }
+
     fun clearWarmCache() {
         warmedItemsPage = null
     }
@@ -377,8 +398,11 @@ open class CommunityClient(
         if (!current.isExpired) return current
         val refreshed = runCatching { refreshSession(current) }.getOrElse {
             if (it is CancellationException) throw it
-            signOut()
-            error("登录已过期，请重新登录")
+            if (it is CommunityHttpException && it.refreshCredentialRejected) {
+                signOut()
+                error("登录已过期，请重新登录")
+            }
+            throw IllegalStateException("登录暂时无法刷新；原登录已保留，请重试", it)
         }
         saveSession(refreshed)
         return refreshed
@@ -453,7 +477,10 @@ open class CommunityClient(
         executeForBody(request, "更新下载次数")
     }
 
-    private suspend fun executeForBody(request: Request, action: String): String = suspendCancellableCoroutine { continuation ->
+    private suspend fun executeForBody(request: Request, action: String): String =
+        executeForBytes(request, action, CommunityPackagePolicy.MAX_PACKAGE_BYTES.toInt()).toString(Charsets.UTF_8)
+
+    private suspend fun executeForBytes(request: Request, action: String, maximumBytes: Int): ByteArray = suspendCancellableCoroutine { continuation ->
         val call = client.newCall(request)
         continuation.invokeOnCancellation { call.cancel() }
         call.enqueue(object : okhttp3.Callback {
@@ -464,15 +491,19 @@ open class CommunityClient(
                 try {
                     val result = response.use { response ->
                         val responseBody = response.body
-                        require(responseBody == null || responseBody.contentLength() <= CommunityPackagePolicy.MAX_PACKAGE_BYTES) { "社区响应超过 20 MB" }
-                        val bytes = responseBody?.byteStream()?.readNBytes(CommunityPackagePolicy.MAX_PACKAGE_BYTES.toInt() + 1) ?: ByteArray(0)
-                        require(bytes.size <= CommunityPackagePolicy.MAX_PACKAGE_BYTES) { "社区响应超过 20 MB" }
-                        val body = bytes.toString(Charsets.UTF_8)
+                        require(responseBody == null || responseBody.contentLength() <= maximumBytes) { "社区响应超过允许大小" }
+                        val bytes = responseBody?.byteStream()?.readNBytes(maximumBytes + 1) ?: ByteArray(0)
+                        require(bytes.size <= maximumBytes) { "社区响应超过允许大小" }
                         if (!response.isSuccessful) {
-                            val detail = body.take(MAX_ERROR_BODY)
-                            error("${action}失败：HTTP ${response.code}${if (detail.isBlank()) "" else " - $detail"}")
+                            val detail = bytes.toString(Charsets.UTF_8).take(MAX_ERROR_BODY)
+                            val error = runCatching { json.parseToJsonElement(detail).jsonObject }.getOrNull()
+                            val code = (error?.get("error_code") ?: error?.get("code") ?: error?.get("error"))
+                                ?.let { runCatching { it.jsonPrimitive.contentOrNull }.getOrNull() }
+                                ?.takeIf { it.matches(Regex("[A-Za-z0-9_]{1,80}")) }
+                            throw CommunityHttpException(action, response.code, code,
+                                missingRuntimeConfig = code == "PGRST205" && detail.contains("community_runtime_config"))
                         }
-                        body
+                        bytes
                     }
                     continuation.resume(result)
                 } catch (error: Throwable) {
@@ -482,11 +513,8 @@ open class CommunityClient(
         })
     }
 
-    private fun Throwable.isMissingRuntimeConfig(): Boolean {
-        val text = message.orEmpty()
-        return text.contains("PGRST205") &&
-            text.contains("community_runtime_config")
-    }
+    private fun Throwable.isMissingRuntimeConfig(): Boolean =
+        this is CommunityHttpException && missingRuntimeConfig
 
     private fun saveSession(session: CommunitySession) {
         sessions.save(session)
@@ -624,3 +652,13 @@ interface CommunityLocalPackages {
     suspend fun export(type: CommunityItemType, localId: String): CommunityLocalPackage
 }
 data class CommunityLocalPackage(val sourceName: String, val packageText: String, val preview: CommunityPreviewDraft? = null)
+
+/** Status/code projection only. Never retain an arbitrary auth/server response body in errors. */
+class CommunityHttpException internal constructor(action: String, val status: Int, private val errorCode: String?,
+    internal val missingRuntimeConfig: Boolean = false,
+) : IllegalStateException("${action}失败：HTTP $status") {
+    val refreshCredentialRejected: Boolean get() = status in setOf(400, 401, 403) && errorCode in setOf(
+        "refresh_token_not_found", "refresh_token_already_used", "refresh_token_expired", "invalid_refresh_token",
+        "session_not_found", "invalid_grant",
+    )
+}

@@ -19,7 +19,7 @@ sealed interface DesktopCredentialKey {
 
     data object SingletonEmbeddingApiKey : DesktopCredentialKey
 
-    /** Imported session custody only; no Community runtime or refresh task consumes this key. */
+    /** Stable imported/Desktop Community custody key; restoration/refresh belongs to explicit Community actions. */
     data object DormantCommunitySession : DesktopCredentialKey
     data class AccountProfiles(val service: DesktopAccountService) : DesktopCredentialKey
     data class AccountProfilesRequired(val service: DesktopAccountService) : DesktopCredentialKey

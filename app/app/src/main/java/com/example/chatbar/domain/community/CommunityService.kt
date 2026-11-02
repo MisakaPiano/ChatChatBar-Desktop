@@ -36,7 +36,7 @@ class CommunityService(
 ) : CommunityClient(
     CommunityConfiguration(BuildConfig.SUPABASE_URL, BuildConfig.SUPABASE_ANON_KEY, BuildConfig.SUPABASE_REDIRECT_URI),
     AndroidCommunityPackages(characterRepository, formatCardRepository, worldBookRepository, characterTransfers, formatTransfers, worldBookTransfers),
-    AndroidCommunitySessionStore(app, json), json, client, { message, error -> Log.w("CommunityService", message, error) }
+    AndroidCommunitySessionStore(app, json), json, client, warn = { message, error -> Log.w("CommunityService", message, error) }
 ) {
     suspend fun handleAuthCallback(uri: Uri): CommunitySession = handleAuthCallback(uri.toString())
 }

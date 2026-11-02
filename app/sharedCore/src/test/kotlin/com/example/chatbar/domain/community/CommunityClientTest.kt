@@ -135,6 +135,17 @@ class CommunityClientTest {
         }
     }
 
+    @Test fun `preview bytes remain binary and never use package or download-count endpoints`() = runBlocking {
+        fixture { server, owner, _, _ ->
+            server.enabled(); owner.refreshEnabledStatus(true); server.request()
+            val bytes = byteArrayOf(0, -1, 1, -128, 42)
+            server.enqueue(MockResponse().setBody(okio.Buffer().write(bytes)))
+            assertContentEquals(bytes, owner.readPreview(item().copy(previewPath = "owner/previews/avatar.jpg").toDomain()))
+            assertTrue(server.request().path!!.startsWith("/storage/v1/object/public/community-previews/"))
+            assertEquals(2, server.requestCount)
+        }
+    }
+
     @Test fun `cancelling an in-flight session refresh cancels its call and retains the original session`() = runBlocking {
         fixture { server, owner, store, _ ->
             server.enabled(); owner.refreshEnabledStatus(true); server.request()
@@ -147,6 +158,45 @@ class CommunityClientTest {
             withTimeout(5_000) { work.cancelAndJoin() }
             assertEquals(before, store.saved); assertEquals(before, owner.session.value)
             assertEquals(1, store.writes); assertEquals(3, server.requestCount)
+        }
+    }
+
+    @Test fun `transient refresh failure preserves credentials fails the action and retries without using expired access`() = runBlocking {
+        fixture { server, owner, store, _ ->
+            server.enabled(); owner.refreshEnabledStatus(true); server.request()
+            server.enqueue(MockResponse().setBody("""{"id":"owner"}"""))
+            val before = owner.handleAuthCallback("chatbar://auth/callback#access_token=synthetic-old&refresh_token=syntheticRefreshToken123&expires_in=1")
+            server.request()
+            server.enqueue(MockResponse().setResponseCode(503).setBody("""{"error":"syntheticRefreshToken123","message":"synthetic-private-response-body"}"""))
+            val failure = assertFailsWith<IllegalStateException> { owner.listMyItemsPage(0, 20) }
+            assertFalse(failure.toString().contains("synthetic-private-response-body"))
+            assertFalse(failure.cause.toString().contains("synthetic-private-response-body"))
+            assertFalse(failure.toString().contains("syntheticRefreshToken123"))
+            assertFalse(failure.cause.toString().contains("syntheticRefreshToken123"))
+            assertEquals(before, store.saved); assertEquals(before, owner.session.value); assertEquals(1, store.writes)
+            assertEquals("/auth/v1/token?grant_type=refresh_token", server.request().path)
+            assertEquals(3, server.requestCount)
+            server.enqueue(MockResponse().setBody("""{"access_token":"synthetic-new","expires_in":3600,"user":{"id":"owner"}}"""))
+            server.enqueue(MockResponse().setBody("[]")); owner.listMyItemsPage(0, 20)
+            assertEquals("/auth/v1/token?grant_type=refresh_token", server.request().path)
+            assertEquals("Bearer synthetic-new", server.request().getHeader("Authorization"))
+            assertEquals(2, store.writes); assertEquals("syntheticRefreshToken123", store.saved!!.refreshToken)
+        }
+    }
+
+    @Test fun `only explicit refresh credential rejection clears the unusable saved session`() = runBlocking {
+        fixture { server, owner, store, _ ->
+            server.enabled(); owner.refreshEnabledStatus(true); server.request()
+            server.enqueue(MockResponse().setBody("""{"id":"owner"}"""))
+            val before = owner.handleAuthCallback("chatbar://auth/callback#access_token=synthetic-old&refresh_token=synthetic-refresh&expires_in=1")
+            server.request()
+            server.enqueue(MockResponse().setResponseCode(401).setBody("""{"code":"unknown_gateway_failure"}"""))
+            assertFailsWith<IllegalStateException> { owner.listMyItemsPage(0, 20) }
+            assertEquals(before, store.saved); assertEquals(1, store.writes); server.request()
+            server.enqueue(MockResponse().setResponseCode(400).setBody("""{"error_code":"refresh_token_not_found","message":"synthetic-private"}"""))
+            assertFailsWith<IllegalStateException> { owner.listMyItemsPage(0, 20) }
+            assertNull(store.saved); assertNull(owner.session.value); assertEquals(2, store.writes)
+            server.request(); assertEquals(4, server.requestCount)
         }
     }
 }

@@ -27,8 +27,59 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.test.assertFailsWith
+import kotlin.test.assertContentEquals
 
 class DesktopTypedTransferControllerTest {
+    @Test fun `community imports share original conflicts and only an explicit same-source update can replace a read-only card`() = runTest {
+        withFixture { f ->
+            val data = packageData("Community card")
+            val item = com.example.chatbar.domain.community.CommunityItemDto(id = "remote", type = "character",
+                title = "Community card", sha256 = "a".repeat(64), updatedAt = "2026-01-01").toDomain()
+            fun payload(data: CharacterCardPackage) = com.example.chatbar.domain.community.CommunityImportPayload.Character(data)
+            f.controller.importCommunity(item, payload(data))
+            val imported = f.container.characterRepository.getAll().single()
+            assertTrue(imported.isCommunityDownload); assertEquals(item.id, imported.communityItemId)
+            f.controller.importCharacter(CharacterCardImportRequest(data))
+            assertFalse((f.controller.state.value.pendingConflict as DesktopPendingTransferConflict.Character).overwriteAllowed)
+            f.controller.resolveConflict(DesktopTransferConflictAction.OVERWRITE)
+            assertEquals(imported, f.container.characterRepository.getById(imported.id))
+            f.controller.resolveConflict(DesktopTransferConflictAction.CANCEL)
+            f.controller.importCommunity(item.copy(id = "other"), payload(data))
+            assertFalse((f.controller.state.value.pendingConflict as DesktopPendingTransferConflict.Character).overwriteAllowed)
+            f.controller.resolveConflict(DesktopTransferConflictAction.CANCEL)
+            val changed = data.copy(card = data.card.copy(greeting = "updated"))
+            val next = item.copy(sha256 = "b".repeat(64), updatedAt = "2026-01-02")
+            f.controller.importCommunity(next, payload(changed), updateCharacterId = imported.id)
+            assertTrue((f.controller.state.value.pendingConflict as DesktopPendingTransferConflict.Character).overwriteAllowed)
+            assertEquals(imported, f.container.characterRepository.getById(imported.id))
+            f.controller.resolveConflict(DesktopTransferConflictAction.OVERWRITE)
+            val updated = f.container.characterRepository.getById(imported.id)!!
+            assertEquals("updated", updated.greeting); assertEquals(next.sha256, updated.communityItemSha256)
+            assertEquals(imported.createdAt, updated.createdAt); assertEquals(1, f.container.characterRepository.getAll().size)
+            f.controller.importCommunity(next, payload(changed), updateCharacterId = imported.id)
+            f.container.characterRepository.save(updated.copy(communityItemId = "changed-source"))
+            val current = f.container.characterRepository.getById(imported.id)!!
+            val before = Files.walk(f.root).use { paths -> paths.filter { Files.isRegularFile(it) }.toList().associateWith { Files.readAllBytes(it) } }
+            f.controller.resolveConflict(DesktopTransferConflictAction.OVERWRITE)
+            assertNotNull(f.controller.state.value.error)
+            assertEquals(current, f.container.characterRepository.getById(imported.id))
+            before.forEach { (path, bytes) -> assertContentEquals(bytes, Files.readAllBytes(path)) }
+            f.controller.resolveConflict(DesktopTransferConflictAction.CANCEL)
+            f.container.characterRepository.save(updated)
+            f.controller.importCommunity(next, payload(changed), updateCharacterId = imported.id)
+            f.controller.resolveConflict(DesktopTransferConflictAction.IMPORT_AS_NEW)
+            assertEquals(2, f.container.characterRepository.getAll().size)
+            val ordinary = f.container.characterTransfers.importNew(packageData("Ordinary"))
+            f.controller.importCharacter(CharacterCardImportRequest(packageData("Ordinary", greeting = "replacement")))
+            assertTrue((f.controller.state.value.pendingConflict as DesktopPendingTransferConflict.Character).overwriteAllowed)
+            f.container.characterRepository.save(ordinary.copy(communityItemId = "new-read-only-source"))
+            val guarded = f.container.characterRepository.getById(ordinary.id)!!
+            f.controller.resolveConflict(DesktopTransferConflictAction.OVERWRITE)
+            assertNotNull(f.controller.state.value.error); assertEquals(guarded, f.container.characterRepository.getById(ordinary.id))
+            f.controller.resolveConflict(DesktopTransferConflictAction.CANCEL)
+        }
+    }
+
     @Test
     fun `Format and WorldBook durable postcommit faults consume import decisions without replay`() = runTest {
         withFixture { fixture ->

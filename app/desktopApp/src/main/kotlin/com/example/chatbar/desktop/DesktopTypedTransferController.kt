@@ -192,11 +192,13 @@ internal class DesktopTypedTransferController(
                     existingId = existing.id,
                     existingName = existing.name,
                     incomingName = request.packageData.card.name,
-                    request = request,
-                    overwriteAllowed = !existing.isCommunityDownload,
+                    request = request.copy(communityAuthority = com.example.chatbar.domain.card.CharacterCommunityOverwriteAuthority(existing.communityItemId)),
+                    overwriteAllowed = !existing.isCommunityDownload ||
+                        request.communitySource?.itemId == existing.communityItemId,
                 ),
                 status = null,
-                error = if (existing.isCommunityDownload) "社区下载角色卡不能被本地导入覆盖；可选择作为新角色导入。" else null,
+                error = if (existing.isCommunityDownload && request.communitySource?.itemId != existing.communityItemId)
+                    "社区下载角色卡不能被本地导入覆盖；可选择作为新角色导入。" else null,
             )
         }
     }
@@ -237,6 +239,10 @@ internal class DesktopTypedTransferController(
 
     suspend fun importFormat(path: Path) = runOperation(null, writing = true) {
         val packageData = withContext(kotlinx.coroutines.Dispatchers.IO) { formatTransfers.decode(Files.readString(path, Charsets.UTF_8)) }
+        importFormatPackage(packageData)
+    }
+
+    private suspend fun importFormatPackage(packageData: FormatCardPackage) {
         val conflict = formatRepository.getAll().firstOrNull { NamePolicy.isSame(it.name, packageData.name) }
         if (conflict == null) {
             executeTyped(DesktopTransferKind.FORMAT, DesktopTransferConflictAction.IMPORT_AS_NEW,
@@ -252,6 +258,10 @@ internal class DesktopTypedTransferController(
     suspend fun importWorldBook(path: Path) = runOperation(null, writing = true) {
         val fallback = path.fileName.toString().substringBeforeLast('.').ifBlank { "导入世界书" }
         val packageData = withContext(kotlinx.coroutines.Dispatchers.IO) { worldBookTransfers.decode(Files.readString(path, Charsets.UTF_8), fallback) }
+        importWorldPackage(packageData)
+    }
+
+    private suspend fun importWorldPackage(packageData: WorldBookPackage) {
         val conflict = worldBookRepository.getAll().firstOrNull { NamePolicy.isSame(it.name, packageData.book.name) }
         if (conflict == null) {
             executeTyped(DesktopTransferKind.WORLD_BOOK, DesktopTransferConflictAction.IMPORT_AS_NEW,
@@ -266,6 +276,37 @@ internal class DesktopTypedTransferController(
                 ),
                 status = null,
             )
+        }
+    }
+
+    /** Network packages use the same conflict/evidence/commit owner; no temporary user file is created. */
+    internal suspend fun importCommunity(item: com.example.chatbar.domain.community.CommunityItem,
+        payload: com.example.chatbar.domain.community.CommunityImportPayload, updateCharacterId: String? = null
+    ) = runOperation(null, writing = true) {
+        check(mutableState.value.pendingConflict == null) { "请先处理当前导入冲突" }
+        when (payload) {
+            is com.example.chatbar.domain.community.CommunityImportPayload.Character -> {
+                require(item.type == com.example.chatbar.domain.community.CommunityItemType.CHARACTER)
+                val source = com.example.chatbar.domain.card.CharacterCardCommunitySource(item.id, item.updatedAt, item.sha256, item.title)
+                val request = CharacterCardImportRequest(payload.data, communitySource = source)
+                if (updateCharacterId == null) importCharacter(request)
+                else {
+                    val existing = requireNotNull(characterRepository.getById(updateCharacterId))
+                    require(existing.communityItemId == source.itemId) { "更新来源与本地社区角色不匹配" }
+                    mutableState.value = mutableState.value.copy(pendingConflict = DesktopPendingTransferConflict.Character(
+                        existing.id, existing.name, payload.data.card.name,
+                        request.copy(communityAuthority = com.example.chatbar.domain.card.CharacterCommunityOverwriteAuthority(existing.communityItemId)),
+                        overwriteAllowed = true), status = null)
+                }
+            }
+            is com.example.chatbar.domain.community.CommunityImportPayload.Format -> {
+                require(item.type == com.example.chatbar.domain.community.CommunityItemType.FORMAT && updateCharacterId == null)
+                importFormatPackage(payload.data)
+            }
+            is com.example.chatbar.domain.community.CommunityImportPayload.WorldBook -> {
+                require(item.type == com.example.chatbar.domain.community.CommunityItemType.WORLD_BOOK && updateCharacterId == null)
+                importWorldPackage(payload.data)
+            }
         }
     }
 
@@ -452,9 +493,10 @@ internal class DesktopTypedTransferController(
         try {
             val result = if (existingId == null) {
                 characterTransfers.importNew(request.packageData, presetKey = request.presetKey,
-                    presetVersion = request.presetVersion, observation = observation)
+                    presetVersion = request.presetVersion, observation = observation, communitySource = request.communitySource)
             } else characterTransfers.overwrite(existingId, request.packageData,
-                request.presetKey, request.presetVersion, observation)
+                request.presetKey, request.presetVersion, observation, communitySource = request.communitySource,
+                communityAuthority = request.communityAuthority)
             recordExternalImport(result.id)
             mutableState.value = mutableState.value.copy(pendingConflict = null)
             finishCommittedCharacter(operation, result.id, message)

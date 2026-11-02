@@ -84,7 +84,9 @@ data class PackagedImage(
 data class CharacterCardImportRequest(
     val packageData: CharacterCardPackage,
     val presetKey: String? = null,
-    val presetVersion: Int? = null
+    val presetVersion: Int? = null,
+    val communitySource: CharacterCardCommunitySource? = null,
+    val communityAuthority: CharacterCommunityOverwriteAuthority? = null,
 )
 
 fun CharacterCardPackage.validateForImport() {
