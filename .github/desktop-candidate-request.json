@@ -57,5 +57,20 @@
         "base64": "eyJzaWduYXR1cmVzIjpbeyJrZXlpZCI6ImRlNDUxMmUzZTExMTNiYjFmMzkyNjU1N2Q3MmRjZjYwODg3N2E3Y2ZmNTQ2ZGMwZDYwZDdhNmEwZTM1OTkxY2UiLCJzaWciOiI1NGMyOTI3OGE2NjJkYzQyMDYzMGVjZDYxNWQ4Y2I1ZTAyZTAxMzAyNjViOTg2NzJmZDg1ZGRiMjM3N2Q3MGMwNTI3MGVhODMyYzM4OTU5N2Q1MzQzOTE3MGFmNjBmNGE3OTJmODExNmQ1OTRmZjllYmQ0NDNkZjY3MzNlNzUwMSJ9XSwic2lnbmVkIjp7Il90eXBlIjoidGltZXN0YW1wIiwiZXhwaXJlcyI6IjIwMjYtMTItMDJUMTg6NDE6NDRaIiwibWV0YSI6eyJzbmFwc2hvdC5qc29uIjp7Imhhc2hlcyI6eyJzaGEyNTYiOiI2MDViNmEwZTQzZDlkMTViYjgxMjVmNzc0NTJmYjFlYWM3YjI2MGUyMWUyOTAyYzUwYzZkYzMzZGU5OTMxMDVhIn0sImxlbmd0aCI6NDcwLCJ2ZXJzaW9uIjoxN319LCJzcGVjX3ZlcnNpb24iOiIxLjAuMzEiLCJ2ZXJzaW9uIjoxN319"
       }
     }
-  }
+  },
+  "reuseRequestCommit": "42fea10c7cf4d8f42f5ac859d20e23a32a1936e2",
+  "reuseArtifacts": [
+    {
+      "id": 13168238636,
+      "name": "desktop-candidate-installer",
+      "bytes": 177460993,
+      "sha256": "14274b58351fee919279ebb5b759e5bd1c14284cb398ce86efbf805b1aa4ae3b"
+    },
+    {
+      "id": 13167704228,
+      "name": "desktop-candidate-independent",
+      "bytes": 190478165,
+      "sha256": "bce29c8005afcb604ef03f5540531d9bafe6fa19b94186b25f63b2cac1524e00"
+    }
+  ]
 }
