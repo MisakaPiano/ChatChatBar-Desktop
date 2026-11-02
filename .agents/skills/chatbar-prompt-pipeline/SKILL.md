@@ -25,7 +25,8 @@ Use chatbar-long-term-memory when Archive, HEAD, timeline constraints, source-tu
 
 ## Narrow compatibility exception
 
-- Phase 7 adopts official upstream `ace632cce58a3b5a57711e31990165d6a14e1c0f` exactly for `GENERAL_CONTRACT_CONFIRMATION_ASSISTANT_PROMPT`, `CCB_CONTRACT_CONFIRMATION_ASSISTANT_PROMPT`, and `CCB_CONTEXT_APPROVAL_ASSISTANT_PROMPT`. These three differ from formal 1.4.1; current physical owners and Android main-chat facades remain authoritative. No other newer Prompt drift is included.
+- Phase 7 adopts official upstream `ace632cce58a3b5a57711e31990165d6a14e1c0f` exactly for `GENERAL_CONTRACT_CONFIRMATION_ASSISTANT_PROMPT`, `CCB_CONTRACT_CONFIRMATION_ASSISTANT_PROMPT`, and `CCB_CONTEXT_APPROVAL_ASSISTANT_PROMPT`. These three differ from formal 1.4.1; current physical owners and Android main-chat facades remain authoritative.
+- The user separately approved fixed 1.4.7 `b4fa75d296680f777be095f3121ad0c4db979f17` wording for `CCB_POST_USER_IDENTITY_REMINDER_USER_PROMPT` (255). It remains the final logical user message after the assistant acknowledgement and outside the stable cache prefix. Character-avatar positive/negative composition is a separate pending decision, not covered by this approval.
 
 ## Ownership Model
 

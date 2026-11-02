@@ -1,7 +1,11 @@
 package com.example.chatbar.domain.chat
 
 import com.example.chatbar.data.local.entity.FormatPromptPosition
+import com.example.chatbar.data.local.entity.ModelConfig
 import com.example.chatbar.domain.prompt.MainChatPromptAuthority
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -160,6 +164,38 @@ class MainChatRequestAssemblerTest {
         assertEquals(MainChatPromptAuthority.CCB_CONTINUATION_SYSTEM_PROMPT.trimIndent().trim(), contents.last())
         assertFalse(contents.contains(MainChatPromptAuthority.CCB_POST_USER_ACK_ASSISTANT_PROMPT.trimIndent().trim()))
         assertFalse(contents.contains(MainChatPromptAuthority.CCB_POST_USER_IDENTITY_REMINDER_USER_PROMPT.trimIndent().trim()))
+    }
+
+    @Test
+    fun finalIdentityReminderSurvivesSerializedHttpsAndOptedInHttpForEveryRequirementPosition() {
+        val reminder = MainChatPromptAuthority.CCB_POST_USER_IDENTITY_REMINDER_USER_PROMPT.trimIndent().trim()
+        FormatPromptPosition.entries.forEach { position ->
+            val request = assembler.assemble(input(position = position, strong = "strong"))
+            listOf("https://example.invalid/v1", "http://localhost/v1").forEach { baseUrl ->
+                val wire = Json.parseToJsonElement(
+                    OpenAiChatRequestSerializer.serialize(
+                        messages = request.messages,
+                        modelConfig = ModelConfig(
+                            id = "fixture-model", displayName = "Fixture", baseUrl = baseUrl,
+                            apiKey = "", modelName = "fixture", createdAt = 0,
+                        ),
+                        stream = true,
+                        allowCleartextHttp = true,
+                    ),
+                ).jsonObject.getValue("messages").jsonArray.map { it.jsonObject }
+                val bodies = wire.map { it.getValue("content").jsonPrimitive.content }
+                assertEquals("user", wire.last().getValue("role").jsonPrimitive.content)
+                assertEquals(reminder, bodies.last())
+                assertEquals(1, bodies.count { it == reminder })
+                assertEquals("assistant", wire[wire.lastIndex - 1].getValue("role").jsonPrimitive.content)
+                assertEquals(MainChatPromptAuthority.CCB_POST_USER_ACK_ASSISTANT_PROMPT.trimIndent().trim(), bodies[bodies.lastIndex - 1])
+                assertEquals(1, bodies.count { it == "current" })
+                val strongIndex = bodies.indexOf("strong")
+                assertTrue(strongIndex > bodies.indexOf("current"))
+                assertTrue(strongIndex < bodies.lastIndex - 1)
+                assertEquals(if (baseUrl.startsWith("http:")) "assistant" else "system", wire[strongIndex].getValue("role").jsonPrimitive.content)
+            }
+        }
     }
 
     private fun input(
