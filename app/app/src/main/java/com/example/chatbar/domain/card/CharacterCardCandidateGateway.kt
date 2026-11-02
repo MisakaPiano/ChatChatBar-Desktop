@@ -12,6 +12,5 @@ internal fun characterCardCandidateGenerator(chat: StreamingChatService) = Chara
             if (operation == CharacterCardAiOperation.FILL) AiTaskKind.CHARACTER_FILL else AiTaskKind.CHARACTER_REWRITE,
             if (stage == CharacterCardAiStage.GENERATE) AiTaskStage.GENERATE else AiTaskStage.REPAIR),
         messages = messages, modelConfig = model,
-        thinkingBudget = if (stage == CharacterCardAiStage.GENERATE) 512 else 256,
         readTimeoutSeconds = CHARACTER_CARD_AI_READ_TIMEOUT_SECONDS)
 }

@@ -3,7 +3,6 @@ package com.example.chatbar.domain.voice
 import com.example.chatbar.data.local.entity.ModelConfig
 import com.example.chatbar.domain.chat.ChatApiMessage
 import com.example.chatbar.domain.chat.StreamEvent
-import com.example.chatbar.domain.chat.withoutOutputTokenLimit
 import com.example.chatbar.domain.prompt.rethrowIfAiTaskTerminalFailure
 import com.example.chatbar.domain.prompt.FishAudioPromptAuthority
 import kotlinx.coroutines.coroutineScope
@@ -140,7 +139,7 @@ class FishAudioTagService(
                 onDelta("\n【语音辅助请求暂时失败；${waitMillis / 1000} 秒后重试】\n")
             }) {
                 val raw = StringBuilder()
-                chatService.streamText(task, messages, modelConfig.withoutOutputTokenLimit(), disableThinking = true)
+                chatService.streamText(task, messages, modelConfig, disableThinking = false)
                     .collect { event -> when (event) {
                         is StreamEvent.Delta -> { raw.append(event.text); onDelta(event.text) }
                         is StreamEvent.Error -> throw event.asException()

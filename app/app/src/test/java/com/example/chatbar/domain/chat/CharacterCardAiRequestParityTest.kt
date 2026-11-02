@@ -13,7 +13,7 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class CharacterCardAiRequestParityTest {
-    @Test fun desktopAndAndroidAppearanceKeepIsolatedJsonAndImageRequest() = runBlocking {
+    @Test fun desktopAndAndroidAppearanceKeepSelectedModelJsonAndImageRequest() = runBlocking {
         MockWebServer().use { server ->
             val desktop = OpenAiStreamingTransport { true }; val android = StreamingChatService { true }
             try {
@@ -25,7 +25,7 @@ class CharacterCardAiRequestParityTest {
                 repeat(2) { server.enqueue(MockResponse().setHeader("Content-Type", "text/event-stream").setBody(
                     "data: {\"choices\":[{\"delta\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n")) }
                 val official = withTimeout(10_000) { android.completeTextStreaming(messages, model,
-                    disableThinking = true, isolatedTaskParameters = true, responseFormatJson = true,
+                    responseFormatJson = true,
                     taskContext = AiTaskContext(AiTaskKind.CHARACTER_APPEARANCE, AiTaskStage.GENERATE)) }
                 val port = withTimeout(10_000) { desktop.streamCharacterAppearance(messages, model).toList() }
                 assertEquals("ok", official); assertTrue(port.last() is StreamEvent.Done)
@@ -108,7 +108,7 @@ class CharacterCardAiRequestParityTest {
                         else ChatApiMessage.text("user", payload))
                     repeat(2) { server.enqueue(MockResponse().setHeader("Content-Type", "text/event-stream").setBody(
                         "data: {\"choices\":[{\"delta\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n")) }
-                    val official = withTimeout(10_000) { android.streamText(messages, model, thinkingBudget = if (generation) 512 else 256,
+                    val official = withTimeout(10_000) { android.streamText(messages, model,
                         readTimeoutSeconds = 600, taskContext = AiTaskContext(kind, if (generation) AiTaskStage.GENERATE else AiTaskStage.REPAIR)).toList() }
                     val port = withTimeout(10_000) { desktop.streamCharacterCardCandidate(stage, messages, model).toList() }
                     assertTrue(official.last() is StreamEvent.Done); assertTrue(port.last() is StreamEvent.Done)

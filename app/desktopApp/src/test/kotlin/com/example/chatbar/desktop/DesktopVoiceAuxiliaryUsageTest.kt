@@ -43,7 +43,9 @@ class DesktopVoiceAuxiliaryUsageTest {
         try {
             MockWebServer().use { server ->
                 settings.updateAppSettings { it.copy(allowCleartextModelApi = true) }
-                val model = ModelConfig("model", "Synthetic", server.url("/v1").toString(), "synthetic-LLM-key", "fixture-model", createdAt = 1)
+                val model = ModelConfig("model", "Synthetic", server.url("/v1").toString(), "synthetic-LLM-key", "fixture-model", createdAt = 1,
+                    maxOutputTokens = 911, enableThinking = true,
+                    customParams = mapOf("thinking_budget" to ParamValue.NumberValue(2048.0), "temperature" to ParamValue.NumberValue(0.43)))
                 models.saveModel(model)
                 characters.save(CharacterCard("card", "Synthetic", characters = listOf(CharacterInfo("person", "Alice",
                     fishAudioVoice = FishAudioVoiceBinding("reference", "Synthetic"))), createdAt = 1, updatedAt = 1))
@@ -54,6 +56,10 @@ class DesktopVoiceAuxiliaryUsageTest {
                 server.dispatcher = object : okhttp3.mockwebserver.Dispatcher() {
                     override fun dispatch(request: okhttp3.mockwebserver.RecordedRequest): MockResponse {
                         val body = Json.parseToJsonElement(request.body.readUtf8()).jsonObject
+                        assertEquals(911, body.getValue("max_tokens").jsonPrimitive.int)
+                        assertTrue(body.getValue("enable_thinking").jsonPrimitive.boolean)
+                        assertEquals(2048, body.getValue("thinking_budget").jsonPrimitive.int)
+                        assertEquals(0.43, body.getValue("temperature").jsonPrimitive.double)
                         val allText = body.getValue("messages").jsonArray.mapNotNull { it.jsonObject["content"]?.jsonPrimitive?.content }
                         val segments = allText.asSequence().flatMap { it.lineSequence() }.mapNotNull {
                             runCatching { Json.parseToJsonElement(it) as? JsonArray }.getOrNull()

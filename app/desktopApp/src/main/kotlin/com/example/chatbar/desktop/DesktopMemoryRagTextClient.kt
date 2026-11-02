@@ -66,7 +66,6 @@ internal class DesktopMemoryRagTextClient(
     override suspend fun completeTextStreaming(taskContext: MemoryRagTask, messages: List<ChatApiMessage>,
         modelConfig: ModelConfig, disableThinking: Boolean, isolatedTaskParameters: Boolean,
         responseFormatJson: Boolean, onDelta: (String) -> Unit): String {
-        check(isolatedTaskParameters)
         val run = currentCoroutineContext()[Run]?.takeIf { it.owner === this }
             ?: return withTaskRun { completeTextStreaming(taskContext, messages, modelConfig, disableThinking,
                 isolatedTaskParameters, responseFormatJson, onDelta) }
@@ -76,7 +75,8 @@ internal class DesktopMemoryRagTextClient(
         val log = run.diagnostics(taskContext, modelConfig)
         run.transportStatus(DesktopTaskStatus.RUNNING)
         return try {
-            transport.streamMemoryRag(messages, modelConfig, disableThinking, responseFormatJson, log).collect { event ->
+            transport.streamMemoryRag(messages, modelConfig, disableThinking, responseFormatJson, log,
+                isolatedTaskParameters = isolatedTaskParameters).collect { event ->
                 when (event) {
                     is StreamEvent.Delta -> { text.append(event.text); onDelta(event.text) }
                     is StreamEvent.Error -> throw event.cause ?: ModelRequestException("记忆或检索请求未完成")

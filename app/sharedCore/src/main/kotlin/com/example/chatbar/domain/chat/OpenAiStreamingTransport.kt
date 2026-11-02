@@ -90,11 +90,11 @@ class OpenAiStreamingTransport(
         client, allowCleartextHttp(), formatCard, segmentedBubbleFormat, message, modelConfig, diagnostics,
     )
 
-    /** Explicit Fish translation/tagging only; no retries, thinking or output-token cap. */
+    /** Fish translation/tagging retains the selected model; the feature owns retries. */
     fun streamFishVoice(messages: List<ChatApiMessage>, modelConfig: ModelConfig,
         diagnostics: ProviderTransportDiagnostics = ProviderTransportDiagnostics.NONE): Flow<StreamEvent> =
-        isolatedAuxiliaryTextStream(client, allowCleartextHttp(), messages, modelConfig.withoutOutputTokenLimit(), diagnostics,
-            isolatedTaskParameters = false)
+        isolatedAuxiliaryTextStream(client, allowCleartextHttp(), messages, modelConfig, diagnostics,
+            isolatedTaskParameters = false, disableThinking = false, protectEnvelope = false)
 
     /** FORMAT_CARD GENERATE/REPAIR retains the model's output cap, thinking and custom parameters. */
     fun streamFormatCardAutoFill(messages: List<ChatApiMessage>, modelConfig: ModelConfig,
@@ -102,13 +102,12 @@ class OpenAiStreamingTransport(
         isolatedAuxiliaryTextStream(client, allowCleartextHttp(), messages, modelConfig, diagnostics,
             isolatedTaskParameters = false, disableThinking = false, emitReasoning = true, protectEnvelope = false)
 
-    /** Character fill/rewrite uses the same generation/repair budgets as the Android gateway. */
+    /** Character fill/rewrite inherits the selected model for generation and repair. */
     fun streamCharacterCardCandidate(stage: com.example.chatbar.domain.card.CharacterCardAiStage,
         messages: List<ChatApiMessage>, modelConfig: ModelConfig,
         diagnostics: ProviderTransportDiagnostics = ProviderTransportDiagnostics.NONE): Flow<StreamEvent> =
         isolatedAuxiliaryTextStream(client, allowCleartextHttp(), messages, modelConfig, diagnostics,
-            isolatedTaskParameters = false, disableThinking = false, emitReasoning = true, protectEnvelope = false,
-            thinkingBudget = if (stage == com.example.chatbar.domain.card.CharacterCardAiStage.GENERATE) 512 else 256)
+            isolatedTaskParameters = false, disableThinking = false, emitReasoning = true, protectEnvelope = false)
 
     fun streamCharacterResearch(stage: com.example.chatbar.domain.search.CharacterResearchAiStage,
         messages: List<ChatApiMessage>, modelConfig: ModelConfig,
@@ -129,20 +128,23 @@ class OpenAiStreamingTransport(
             isolatedTaskParameters = false, disableThinking = false, emitReasoning = true, protectEnvelope = false)
     }
 
-    /** Image-to-character text keeps the official isolated JSON request and 120-second silence budget. */
+    /** Image-to-character text keeps JSON output and 120-second silence while inheriting model parameters. */
     fun streamCharacterAppearance(messages: List<ChatApiMessage>, modelConfig: ModelConfig,
         diagnostics: ProviderTransportDiagnostics = ProviderTransportDiagnostics.NONE): Flow<StreamEvent> =
         isolatedAuxiliaryTextStream(client, allowCleartextHttp(), messages, modelConfig, diagnostics,
             timing = AuxiliaryStreamTiming(readTimeoutMillis = 120_000, inactivityMillis = 120_000),
-            isolatedTaskParameters = true, disableThinking = true, responseFormatJson = true,
+            isolatedTaskParameters = false, disableThinking = false, responseFormatJson = true,
             emitReasoning = true, protectEnvelope = false)
 
     /** Memory/RAG callers own their retry policy; exactly one transport request per collection. */
     fun streamMemoryRag(messages: List<ChatApiMessage>, modelConfig: ModelConfig,
         disableThinking: Boolean, responseFormatJson: Boolean,
-        diagnostics: ProviderTransportDiagnostics = ProviderTransportDiagnostics.NONE): Flow<StreamEvent> =
-        isolatedAuxiliaryTextStream(client, allowCleartextHttp(), messages, modelConfig.withoutOutputTokenLimit(),
-            diagnostics, isolatedTaskParameters = true, disableThinking = disableThinking,
+        diagnostics: ProviderTransportDiagnostics = ProviderTransportDiagnostics.NONE,
+        isolatedTaskParameters: Boolean = false): Flow<StreamEvent> =
+        isolatedAuxiliaryTextStream(client, allowCleartextHttp(), messages,
+            if (isolatedTaskParameters) modelConfig.withoutOutputTokenLimit() else modelConfig,
+            diagnostics, isolatedTaskParameters = isolatedTaskParameters, disableThinking = disableThinking,
+            protectEnvelope = isolatedTaskParameters,
             responseFormatJson = responseFormatJson, maximumTextChars = 1024 * 1024)
 
     /** Original Moments defaults: selected model cap/thinking/custom fields and GENERAL task envelope. */

@@ -36,11 +36,19 @@ class DesktopMemoryRagUsageTest {
                 server.enqueue(response("""{"throughT":1,"location":"synthetic"}""", 3, 0))
                 val parent = DesktopUsageContext(DesktopUsageSource.CHAT, "actual-memory-job", "actual-session", "actual-card")
                 val client = DesktopMemoryRagTextClient(transport, diagnostics = { logs })
+                val selected = model(server).copy(maxOutputTokens = 811, enableThinking = true,
+                    customParams = mapOf("thinking_budget" to com.example.chatbar.data.local.entity.ParamValue.NumberValue(2048.0)))
                 val result = withContext(DesktopUsageParent(parent)) {
-                    MemoryAiGateway(client).head(model(server), MemoryHeadUpdateMode.INITIALIZE, 1,
+                    MemoryAiGateway(client).head(selected, MemoryHeadUpdateMode.INITIALIZE, 1,
                         "", "", "PRIVATE_MEMORY_SOURCE") { require(it.throughT == 1L) }
                 }
                 assertEquals(1L, result.throughT)
+                repeat(2) {
+                    val body = Json.parseToJsonElement(assertNotNull(server.takeRequest(1, TimeUnit.SECONDS)).body.readUtf8()).jsonObject
+                    assertEquals(811, body.getValue("max_tokens").jsonPrimitive.int)
+                    assertTrue(body.getValue("enable_thinking").jsonPrimitive.boolean)
+                    assertEquals(2048, body.getValue("thinking_budget").jsonPrimitive.int)
+                }
                 val records = latest(rows); assertEquals(2, records.size)
                 assertEquals(1, records.map { it.requestId }.distinct().size)
                 assertEquals(setOf(1, 2), records.map { it.attempt }.toSet())

@@ -37,7 +37,7 @@ class DesktopMemoryRagTransportTest {
                 "data: {\"choices\":[{\"delta\":{\"content\":\"{\\\"throughT\\\":1}\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"))
             val client = DesktopMemoryRagTextClient(transport)
             val result = client.completeText(task, listOf(ChatApiMessage.text("user", "synthetic input")), model(server), false,
-                responseFormatJson = true)
+                isolatedTaskParameters = true, responseFormatJson = true)
             assertEquals("{\"throughT\":1}", result)
             val request = server.takeRequest()
             val body = Json.parseToJsonElement(request.body.readUtf8()).jsonObject

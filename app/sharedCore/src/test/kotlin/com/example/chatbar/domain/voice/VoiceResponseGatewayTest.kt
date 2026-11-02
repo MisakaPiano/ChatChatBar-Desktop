@@ -30,7 +30,7 @@ class VoiceResponseGatewayTest {
         var calls = 0
         val notices = mutableListOf<String>()
         val service = FishAudioTagService(FishVoiceTextGateway { _, _, configured, thinking ->
-            assertNull(configured.maxOutputTokens); assertTrue(thinking)
+            assertEquals(model, configured); assertFalse(thinking)
             when (++calls) {
                 1 -> flowOf(StreamEvent.Error("synthetic busy", cause = ModelRequestException("synthetic", 503)))
                 2 -> flowOf(StreamEvent.Delta("{incomplete"), StreamEvent.Done)

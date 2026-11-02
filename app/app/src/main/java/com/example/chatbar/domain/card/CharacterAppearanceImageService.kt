@@ -25,8 +25,7 @@ class CharacterAppearanceImageService(
         CharacterAppearanceImageGateway { messages, model ->
             chatService.completeTextStreaming(
                 taskContext = AiTaskContext(AiTaskKind.CHARACTER_APPEARANCE, AiTaskStage.GENERATE),
-                messages = messages, modelConfig = model, disableThinking = true,
-                isolatedTaskParameters = true, responseFormatJson = true)
+                messages = messages, modelConfig = model, responseFormatJson = true)
         }, settingsProvider, json)
 
     suspend fun generate(imageBase64: String, characterName: String,
