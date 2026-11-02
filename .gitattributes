@@ -10,3 +10,8 @@ docs/desktop/evidence/preview-directory-guard-20261026/raw/** -text
 docs/desktop/evidence/windows-msi-operation-contract-20261027/raw/** -text whitespace=cr-at-eol
 tools/desktop/nsis/fixtures/Launcher-1229.cs -text
 tools/desktop/nsis/fixtures/Launcher-1233.cs -text
+
+# Versioned synthetic cross-application text fixtures are byte-paired, including the final LF.
+app/sharedCore/src/test/resources/interop/ccb-full-prompt-v1.txt text eol=lf
+app/desktopApp/src/test/resources/interop/ccb-full-prompt-v1.txt text eol=lf
+app/app/src/test/resources/interop/ccb-full-prompt-v1.txt text eol=lf

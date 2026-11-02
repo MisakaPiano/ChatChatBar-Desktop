@@ -29,6 +29,17 @@ data class NovelAiFullPromptContent(
     }
 }
 
+/** Read-only candidate bound to its exact destination snapshot; never an implicit paste or generation. */
+class NovelAiFullPromptPreview private constructor(val content: NovelAiFullPromptContent, private val baseline: NovelAiStudioDraft) {
+    fun apply(current: NovelAiStudioDraft): NovelAiStudioDraft {
+        require(current == baseline) { "工作室内容已变化，请重新读取并核对完整文本" }
+        return content.applyTo(current)
+    }
+    companion object {
+        fun inspect(text: String, current: NovelAiStudioDraft) = NovelAiFullPromptPreview(NovelAiStudioFullPromptClipboard.decode(text), current)
+    }
+}
+
 /** Separate from the original positive-only clipboard contract and from resource-bearing preset files. */
 object NovelAiStudioFullPromptClipboard {
     const val PREAMBLE = "CCB-FULL-PROMPT/1\n"

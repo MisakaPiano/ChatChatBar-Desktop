@@ -53,6 +53,9 @@ import com.example.chatbar.domain.image.NovelAiTagCompletion
 import com.example.chatbar.domain.image.copyPositivePrompt
 import com.example.chatbar.domain.image.clearPrompts
 import com.example.chatbar.domain.image.NovelAiStudioPromptClipboard
+import com.example.chatbar.domain.image.NovelAiStudioFullPromptClipboard
+import com.example.chatbar.domain.image.NovelAiFullPromptContent
+import com.example.chatbar.domain.image.NovelAiFullPromptPreview
 import com.example.chatbar.domain.image.applyImportedMetadata
 import com.example.chatbar.domain.image.novelAiHistoryImages
 import com.example.chatbar.domain.image.ownedAssetPaths
@@ -157,6 +160,8 @@ data class ImagePromptToolUiState(
     val canUndoDraft: Boolean = false,
     val canRedoDraft: Boolean = false,
     val hasHistoryUndo: Boolean = false,
+    val fullPromptPreview: NovelAiFullPromptContent? = null,
+    val fullPromptReading: Boolean = false,
     val characterCards: List<CharacterCard> = emptyList(),
     val selectedCharacterCardId: String? = null,
     val models: List<ModelConfig> = emptyList(),
@@ -1462,6 +1467,64 @@ class ImagePromptToolViewModel : ViewModel() {
 
     fun positivePromptForClipboard(): String =
         (repository.draft.value ?: _uiState.value.draft).copyPositivePrompt()
+
+    private var fullPromptCandidate: NovelAiFullPromptPreview? = null
+    private var fullPromptReadJob: Job? = null
+    private var fullPromptGeneration = 0L
+
+    fun fullPromptForClipboard(): String? = try {
+        val state = _uiState.value
+        require(state.draftLoaded && !state.isBusy && !state.applyingHistory)
+        val draft = repository.draft.value ?: state.draft
+        val cardDefault = state.characterCards.firstOrNull { it.id == draft.importedCharacterCardId }?.defaultNovelAiImageModel
+        val selected = NovelAiImageModelResolution.resolve(draft.selectedModel.takeUnless { draft.followDefaultNovelAiImageModel },
+            cardDefault, settingsRepository.currentAppSettings.novelAiImageModel)
+        NovelAiStudioFullPromptClipboard.encode(draft.copy(selectedModel = selected))
+    } catch (_: Exception) {
+        _uiState.update { it.copy(error = "暂时无法复制完整 Prompt，请先载入工作室并结束当前任务。") }; null
+    }
+
+    fun inspectFullPrompt(text: String) {
+        val state = _uiState.value
+        if (!state.draftLoaded || state.isBusy || state.applyingHistory) return
+        discardFullPrompt()
+        val generation = fullPromptGeneration
+        val baseline = repository.draft.value ?: state.draft
+        _uiState.update { it.copy(fullPromptReading = true, error = null) }
+        fullPromptReadJob = viewModelScope.launch {
+            try {
+                val candidate = withContext(Dispatchers.Default) { NovelAiFullPromptPreview.inspect(text, baseline) }
+                if (generation != fullPromptGeneration) return@launch
+                candidate.apply(repository.draft.value ?: _uiState.value.draft)
+                fullPromptCandidate = candidate
+                _uiState.update { it.copy(fullPromptPreview = candidate.content) }
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) {
+                if (generation == fullPromptGeneration) _uiState.update { it.copy(error = "完整文本版本、分段或当前工作室内容不匹配，请重新复制并预览。") }
+            } finally {
+                if (generation == fullPromptGeneration) _uiState.update { it.copy(fullPromptReading = false) }
+            }
+        }
+    }
+
+    fun applyFullPrompt() {
+        val state = _uiState.value
+        val candidate = fullPromptCandidate ?: return
+        if (!state.draftLoaded || state.isBusy || state.applyingHistory || state.fullPromptReading) return
+        try {
+            updateDraft(resetPromptEditors = true) { candidate.apply(it) }
+            discardFullPrompt()
+        } catch (_: IllegalArgumentException) {
+            discardFullPrompt()
+            _uiState.update { it.copy(error = "工作室内容已变化，请重新读取完整文本后再确认。") }
+        }
+    }
+
+    fun discardFullPrompt() {
+        fullPromptGeneration++
+        fullPromptReadJob?.cancel(); fullPromptReadJob = null; fullPromptCandidate = null
+        _uiState.update { it.copy(fullPromptPreview = null, fullPromptReading = false) }
+    }
 
     fun clearPrompts() {
         updateDraft(resetPromptEditors = true) { draft ->

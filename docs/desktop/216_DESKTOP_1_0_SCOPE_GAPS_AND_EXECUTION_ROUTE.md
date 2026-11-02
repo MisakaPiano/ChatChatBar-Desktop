@@ -1,3 +1,5 @@
+2026-11-02 双端完整Prompt后补源码见269：本Fork Android增加更多选项内完整文本复制/后台解析预览/确认/原撤销接线，原正向入口保持；共享严格目的基线和484字节LF合成配对原件已备，新增shared2/Desktop真实controller1/Android真实repository2待其源云验。Suite由既有执行者排队接线，尚未实现，不称两端已兼容；官方Android/系统剪贴板/设备GUI与新APK均未验/未发布。6c快捷方式换行修正同为后续本地源，不混120。
+
 2026-11-02 D042显式容量源码另片已备，见268：可选用户配置模型上下文Token容量，原模型存储/模板保留，缺省不写新键；三编辑器默认/选定模型及实际解析模型wire诊断接线，静态/实际文本比例明确非精确tokenizer/全部占用/余额。新增共享2+真实编辑保存1例并扩展原Scene/完整wire例待新源云验，未代验P17精度。用户已明确完整Prompt互换同时需要Suite和Android，Desktop5例PASS不等于两端兼容；Suite由既有执行者接线，Fork Android配对读写/预览确认/撤销仍待，不改官方只读上游/不发APK。P18本地c52未推，119继续收原报告，无新公开/日常H操作。
 
 2026-11-02 P18升级身份源码首片已备，见267：真实display、单调build和旧root可识别storage分离；保留原根EXE、READY/source、两序轴与同包修复收据。启动bridge认证stable再Preview，只有首次stable timestamp404或已认证旧stable可继续Preview，损坏通道不静默降级。新增native4/TUF5及原用例待精确新源云验；协调端3纯版本例仅字符串规则证据，不代验签名/原生/普通JAR。当前119/9f4 Linux实际shared1145/Android582/Python3通过，Windows仍运行，待其原报告后再推本片以免取消取证。公开1233/15、真人待及日常H不操作保持。

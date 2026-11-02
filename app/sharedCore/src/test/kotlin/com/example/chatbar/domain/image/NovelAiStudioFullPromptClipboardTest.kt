@@ -4,6 +4,27 @@ import kotlin.test.*
 import kotlinx.serialization.json.*
 
 class NovelAiStudioFullPromptClipboardTest {
+    @Test fun `versioned synthetic interop fixture retains exact canonical text after a destination round trip`() {
+        val text = javaClass.getResourceAsStream("/interop/ccb-full-prompt-v1.txt")!!.use { it.readBytes().toString(Charsets.UTF_8) }
+        val decoded = NovelAiStudioFullPromptClipboard.decode(text)
+        assertEquals(NovelAiImageModel.V5_FULL, decoded.selectedModel)
+        assertEquals(listOf(true, false), decoded.characters.map { it.enabled })
+        assertTrue(decoded.useCharacterPositions)
+        assertEquals("watercolor\n【配置】", decoded.stylePrompt)
+        assertEquals(text, NovelAiStudioFullPromptClipboard.encode(decoded.applyTo(NovelAiStudioDraft())))
+    }
+    @Test fun `preview is read only and refuses any changed destination before explicit apply`() {
+        val original = NovelAiStudioDraft(basePrompt = "original", imageDescription = "retained design",
+            continuousModeEnabled = true, continuousTargetCount = 7)
+        val preview = NovelAiFullPromptPreview.inspect(NovelAiStudioFullPromptClipboard.encode(source()), original)
+        assertEquals("original", original.basePrompt)
+        assertFailsWith<IllegalArgumentException> { preview.apply(original.copy(basePrompt = "new edit")) }
+        assertFailsWith<IllegalArgumentException> { preview.apply(original.copy(continuousTargetCount = 8)) }
+        val applied = preview.apply(original)
+        assertEquals(source().basePrompt, applied.basePrompt)
+        assertEquals(original.imageDescription, applied.imageDescription)
+        assertEquals(original.continuousTargetCount, applied.continuousTargetCount)
+    }
     private fun source() = NovelAiStudioDraft(stylePrompt = "style\n【配置】\n\\literal\n",
         basePrompt = "base\n【角色 1 负向】\n\n", extraPrompt = "", negativePrompt = "",
         naturalLanguageMode = true, copyPositivePromptIgnoreStyle = true,

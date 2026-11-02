@@ -17,6 +17,23 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.test.*
 
 class DesktopStudioFullPromptExchangeTest {
+    @Test fun `paired Android fixture enters the original Desktop controller and exports exact text after confirm`() = runBlocking {
+        val f = Fixture()
+        try {
+            f.controller.load()
+            f.controller.edit { it.copy(basePrompt = "paired target", followDefaultNovelAiImageModel = false) }
+            val text = javaClass.getResourceAsStream("/interop/ccb-full-prompt-v1.txt")!!.use { it.readBytes().toString(Charsets.UTF_8) }
+            val before = Files.readAllBytes(f.file)
+            assertTrue(f.controller.inspectFullPrompt(text))
+            assertContentEquals(before, Files.readAllBytes(f.file))
+            assertTrue(f.controller.applyFullPrompt())
+            assertEquals(text, f.controller.copyFullPrompt())
+            assertEquals(NovelAiImageModel.V5_FULL, f.controller.state.value.draft.selectedModel)
+            assertEquals(listOf(true, false), f.controller.state.value.draft.characters.map { it.enabled })
+            f.controller.undo()
+            assertEquals("paired target", f.controller.state.value.draft.basePrompt)
+        } finally { f.close() }
+    }
     private val edt = object : CoroutineDispatcher() {
         override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
     }

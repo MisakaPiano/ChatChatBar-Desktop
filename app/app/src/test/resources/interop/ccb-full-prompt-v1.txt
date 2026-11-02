@@ -1,0 +1,28 @@
+CCB-FULL-PROMPT/1
+【配置】
+{"selectedModel":"V5_FULL","naturalLanguageMode":true,"useCharacterPositions":true,"roles":[{"enabled":true,"center":{"x":0.25,"y":0.75}},{"enabled":false,"center":null}]}
+
+【画风】
+watercolor
+\【配置】
+
+【基础正向】
+quiet library, daylight
+
+【补充正向】
+
+
+【全局负向】
+lowres
+
+【角色 1 正向】
+adult traveler
+
+【角色 1 负向】
+bad hands
+
+【角色 2 正向】
+disabled companion
+
+【角色 2 负向】
+last negative
