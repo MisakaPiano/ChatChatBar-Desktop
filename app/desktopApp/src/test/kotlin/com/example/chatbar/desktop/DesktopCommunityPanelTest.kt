@@ -2,6 +2,7 @@
 package com.example.chatbar.desktop
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.ImageComposeScene
@@ -33,8 +34,10 @@ class DesktopCommunityPanelTest {
                 DesktopDataRootProvenance.CLI_OVERRIDE, parent.resolve("bootstrap.json")), secretStoreFactory = { secrets },
                 bundledAssets = { """{"entries":[]}""".toByteArray() })
             try {
-                val local = app.characterTransfers.importNew(CharacterCardPackage(card = PackagedCharacterCard(name = "Synthetic local", greeting = "Local greeting")))
-                val data = CharacterCardPackage(card = PackagedCharacterCard(name = local.name, greeting = "Remote greeting"))
+                val source = PackagedCharacterCard(name = "Synthetic local", greeting = "Local greeting", creator = "Synthetic creator",
+                    characterVersion = "Synthetic version", defaultImagePrompt = "synthetic positive image words", defaultImageNegativePrompt = "synthetic negative image words")
+                val local = app.characterTransfers.importNew(CharacterCardPackage(card = source))
+                val data = CharacterCardPackage(card = source.copy(greeting = "Remote greeting"))
                 val raw = app.transferJson.encodeToString(CharacterCardPackage.serializer(), data)
                 val item = CommunityItemDto(id = "remote", type = "character", title = local.name, authorUserId = "owner",
                     authorName = "Synthetic owner", sourceLocalName = local.name, description = "Synthetic detail",
@@ -47,13 +50,13 @@ class DesktopCommunityPanelTest {
                         override fun dispatch(request: RecordedRequest): MockResponse {
                             if (request.method !in listOf("GET", "HEAD") && request.path != "/rest/v1/rpc/increment_community_download_count") mutations.incrementAndGet()
                             return when {
-                            request.path!!.startsWith("/rest/v1/community_runtime_config?") -> MockResponse().setBody("""[{"enabled":true}]""")
-                            request.path!!.startsWith("/rest/v1/community_items?") -> MockResponse().setBody(app.transferJson.encodeToString(listOf(item)))
-                            request.path!!.startsWith("/storage/v1/object/public/community-packages/") -> MockResponse().setBody(raw)
-                            request.path == "/rest/v1/rpc/increment_community_download_count" -> { downloads.incrementAndGet(); MockResponse().setBody("null") }
-                            request.path == "/functions/v1/submit-community-item" -> MockResponse().setBody("{}")
-                            else -> MockResponse().setResponseCode(404)
-                        }
+                                request.path!!.startsWith("/rest/v1/community_runtime_config?") -> MockResponse().setBody("""[{"enabled":true}]""")
+                                request.path!!.startsWith("/rest/v1/community_items?") -> MockResponse().setBody(app.transferJson.encodeToString(listOf(item)))
+                                request.path!!.startsWith("/storage/v1/object/public/community-packages/") -> MockResponse().setBody(raw)
+                                request.path == "/rest/v1/rpc/increment_community_download_count" -> { downloads.incrementAndGet(); MockResponse().setBody("null") }
+                                request.path == "/functions/v1/submit-community-item" -> MockResponse().setBody("{}")
+                                else -> MockResponse().setResponseCode(404)
+                            }
                         }
                     }
                     val typed = app.createTypedTransferController(UnconfiguredDesktopFilePicker)
@@ -63,9 +66,11 @@ class DesktopCommunityPanelTest {
                     owner.refresh(); withTimeout(5_000) { while (owner.state.value.busy) delay(10) }
                     val management = app.createManagementController(typed)
                     val strings = DesktopUiStrings(language)
+                    val palette = desktopSemanticColors(com.example.chatbar.data.local.entity.ThemeMode.SYSTEM,
+                        com.example.chatbar.domain.appearance.DefaultThemeColorHsv, systemDark = width == 420)
                     val scene = ImageComposeScene(width, 820, coroutineContext = edt) {
-                        CompositionLocalProvider(LocalDesktopUiStrings provides strings) {
-                            Box(Modifier.fillMaxSize()) { DesktopCommunityPanel(owner, management) }
+                        CompositionLocalProvider(LocalDesktopUiStrings provides strings, LocalDesktopPalette provides palette) {
+                            Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.background)) { DesktopCommunityPanel(owner, management) }
                         }
                     }
                     try {
@@ -73,6 +78,7 @@ class DesktopCommunityPanelTest {
                         scene.click(local.name)
                         scene.until { owner.state.value.detailPayload != null && !owner.state.value.busy }
                         assertEquals(0, downloads.get()); assertEquals(0, mutations.get())
+                        scene.assertCardReviewFields(source)
                         scene.visible(strings(DesktopUiText.CLOSE), width)
                         scene.visible(strings(DesktopUiText.COMMUNITY_IMPORT), width)
                         scene.shot("community-detail-$width.png")
@@ -92,6 +98,7 @@ class DesktopCommunityPanelTest {
                         scene.until { owner.state.value.prepared != null && !owner.state.value.busy }
                         assertEquals(local.name, owner.state.value.prepared!!.title)
                         assertIs<CommunityImportPayload.Character>(owner.state.value.preparedPayload)
+                        scene.assertCardReviewFields(source)
                         scene.visible(strings(DesktopUiText.COMMUNITY_PUBLISH), width)
                         scene.visible(strings(DesktopUiText.CLOSE), width)
                         scene.shot("community-publish-preview-$width.png")
@@ -122,6 +129,10 @@ class DesktopCommunityPanelTest {
     private fun SemanticsNode.matches(label: String): Boolean = config.getOrNull(SemanticsProperties.Text)?.any { it.text == label } == true ||
         config.getOrNull(SemanticsProperties.ContentDescription)?.contains(label) == true || children.any { it.matches(label) }
     private fun ImageComposeScene.action(label: String) = nodes().last { it.matches(label) && it.config.contains(SemanticsActions.OnClick) }
+    private fun ImageComposeScene.assertCardReviewFields(card: PackagedCharacterCard) {
+        val visibleText = nodes().flatMap { it.config.getOrNull(SemanticsProperties.Text).orEmpty() }.joinToString("\n") { it.text }
+        for (value in listOf(card.creator, card.characterVersion, card.defaultImagePrompt, card.defaultImageNegativePrompt)) assertTrue(visibleText.contains(value))
+    }
     private suspend fun ImageComposeScene.click(label: String) {
         val node = action(label); assertFalse(node.config.contains(SemanticsProperties.Disabled))
         assertTrue(node.config[SemanticsActions.OnClick].action!!.invoke())

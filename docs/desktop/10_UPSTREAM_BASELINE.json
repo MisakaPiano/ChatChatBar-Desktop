@@ -107,7 +107,7 @@
     "targetCommit": "b4fa75d296680f777be095f3121ad0c4db979f17",
     "authority": "User authorized latest official CCB adaptation; Desktop first, separate Studio consumes official interfaces",
     "status": "selective_adaptation_in_progress_not_whole_baseline_promotion",
-    "sourceAtRecord": "2cdb8adb742dacf485ac470cbbde732d2f3f487e plus two explicit test key types; next exact CI pending",
+    "sourceAtRecord": "515442f6094a5ef10b02b3f028bfdf8c573380db plus explicit Unit, snapshot detail fields/compact layout and one capture path; next exact CI pending",
     "lastCompleteSourceValidation": {
       "commit": "ec0861432a56138d5ccb1685a2e63cc22bc6d703",
       "run": 41438935426,
@@ -194,18 +194,25 @@
     "historicalObservationMeaning": "upstreamObservation below is the dated2026-10-05 record, not the current target or a continuing instruction to park1.4.7",
     "validatedBaselineMeaning": "upstream.commit remains the last fully declared baseline; ongoing147 adoption is not deferred indefinitely by that evidence state",
     "lastAttempt": {
-      "commit": "2cdb8adb742dacf485ac470cbbde732d2f3f487e",
-      "run": 41456731200,
-      "status": "TERMINAL_DESKTOP_TEST_COMPILE_FAILURE",
-      "desktopProductionCompile": "PASS",
-      "mainProxy": "NOT_EXECUTED",
+      "commit": "515442f6094a5ef10b02b3f028bfdf8c573380db",
+      "run": 41458802100,
+      "status": "TERMINAL_SINGLE_JUNIT_CLASS_INITIALIZATION_ERROR",
+      "mainPass": 2551,
+      "mainSkip": 19,
+      "mainFail": 1,
+      "mainTests": 2571,
+      "desktopCommunityNewMethodsPass": 10,
+      "desktopPortsTwoMethods": "NOT_EXECUTED_CLASS_INVALID_RETURN_TYPE",
       "sharedPass": 1183,
       "androidPass": 586,
       "ntfsPass": 7,
+      "proxyPass": 5,
       "nativePass": 37,
       "updaterTufPass": 14,
       "exitPass": 4,
-      "correction": "Two tests explicitly use common DesktopCredentialKey; full key-set equality unchanged"
+      "originalPanelImagesReviewed": 6,
+      "shellMethod": "PASS_IMAGE_NOT_ARCHIVED",
+      "correction": "explicit Unit; snapshot field/layout and capture followups require next exact source"
     }
   }
 }

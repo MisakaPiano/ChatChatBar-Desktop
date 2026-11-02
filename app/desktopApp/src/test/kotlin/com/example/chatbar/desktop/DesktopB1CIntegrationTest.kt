@@ -36,8 +36,8 @@ class DesktopB1CIntegrationTest {
         sendPointerEvent(PointerEventType.Release, p, button = PointerButton.Primary)
         frames()
     }
-    private fun ImageComposeScene.shot(name: String) = render().use { image ->
-        val file = System.getenv("CCB_SELECTED_FIX_REVIEW_DIR")?.let { Path.of(it).resolve("$name.png") }
+    private fun ImageComposeScene.shot(name: String, directory: String? = System.getenv("CCB_SELECTED_FIX_REVIEW_DIR")) = render().use { image ->
+        val file = directory?.let { Path.of(it).resolve("$name.png") }
             ?: Path.of("build/phase7-b1-c-integration-evidence/$name.png")
         Files.createDirectories(file.parent); image.encodeToData()!!.use { Files.write(file, it.bytes) }; Unit
     }
@@ -101,7 +101,7 @@ class DesktopB1CIntegrationTest {
                 scene.click(DesktopUiText.COMMUNITY.zhCn)
                 withTimeout(5_000) { while (navigation.selectedRoute.value != DesktopPrimaryRoute.COMMUNITY || owner!!.state.value.busy) scene.frames() }
                 scene.frames(); assertTrue(scene.has(DesktopUiText.COMMUNITY_LOGIN.zhCn))
-                scene.shot("community-root-enabled-1100")
+                scene.shot("community-root-enabled-1100", System.getenv("CCB_FORMAT_AI_REVIEW_DIR"))
                 enabled.set(false); owner!!.refresh()
                 withTimeout(5_000) { while (navigation.selectedRoute.value != DesktopPrimaryRoute.CHAT || owner!!.state.value.busy) scene.frames() }
                 scene.frames(); assertFalse(scene.has(DesktopUiText.COMMUNITY.zhCn))

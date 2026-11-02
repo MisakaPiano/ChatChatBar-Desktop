@@ -31,7 +31,7 @@ class DesktopCommunityPortsTest {
         store.clear(); assertTrue(secrets.values.isEmpty())
     }
 
-    @Test fun `local upload sources reuse typed export exclude community cards and make a bounded jpeg avatar copy`() = runBlocking {
+    @Test fun `local upload sources reuse typed export exclude community cards and make a bounded jpeg avatar copy`(): Unit = runBlocking {
         val parent = Files.createTempDirectory("desktop-community-ports-")
         val root = Files.createDirectory(parent.resolve("root"))
         val secrets = Secrets()

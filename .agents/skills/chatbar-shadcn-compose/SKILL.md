@@ -5,7 +5,7 @@ description: Build or migrate ChatBar Android UI using shadcn/ui design principl
 
 # ChatBar shadcn Compose
 
-Desktop community uses `DesktopCommunityPanel` inside the primary Shell, gated by service status. Its private dialog fixes title/close/actions around a bounded scroll body, projects operation errors inside the active dialog, and preserves the original management transfer-conflict overlay. Snapshot preview chunks retain Unicode pairs and text; publishing and owner deletion retain explicit confirmation. The bilingual actual-Panel Scene test records detail/snapshot/delete views at420/1100 without native/browser/provider operations.
+Desktop community uses `DesktopCommunityPanel` inside the primary Shell, gated by service status. Its private dialog wraps short content and caps long scroll bodies, fixes title/close/actions, projects errors inside the active dialog, and preserves the original management transfer-conflict overlay. Snapshot preview chunks retain Unicode pairs and the original card creator/version/default image text; publishing and owner deletion retain explicit confirmation. The actual-Panel Scene records420 Chinese dark/1100 English light views with an opaque page background. Its six detail/snapshot/delete images and the one real-Shell route image use `CCB_FORMAT_AI_REVIEW_DIR`; other Shell captures retain their original directory. None invokes native/browser/provider operations.
 
 `DesktopInputFocus.kt` supplies `LocalDesktopModalActivity` at the main application root. Ordinary `DesktopModalSurface` instances register their lifetime; the startup update notice opts out of registering itself and waits while another modal is present, avoiding recursive self-suppression.
 

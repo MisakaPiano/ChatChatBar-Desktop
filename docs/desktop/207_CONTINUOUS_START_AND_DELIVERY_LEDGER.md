@@ -1,4 +1,4 @@
-2026-11-02当前：132/2cdb生产Desktop编译通过，shared1183/Android586/NTFS7/native37/TUF14/exit4实际PASS；131生产nullable与Android三处smartcast错误已闭合。Windows仅AuthTest/PortsTest两处凭据key集合类型推断使compileTestKotlin失败，main/proxy与新Scene未执行。后继只显式共同DesktopCredentialKey类型，完整keys集合相等断言保持，待新精确源。129/ec086仍最后完整绿，社区UI/PKCE/AUTH唤起/真实Shell不因共享通过冒认交付；公开1233/签名15真人待、日常H UNKNOWN且不操作。
+2026-11-02当前：133/515主348suite/2571=2551PASS+19SKIP+1FAIL，唯一PortsTest方法非Unit使JUnit整类初始化拒绝，两方法未执行；其余新增社区10个Desktop方法实际PASS，六张Panel图已核，Shell方法通过但该图未归档。shared1183/Android586/proxy5/NTFS7/native37/TUF14/exit4通过。后继显式Unit保留全部断言、将单一Shell图接原归档目录，并补详情原有字段/短弹窗收高及夹具深浅背景；这些后补待新精确源，不归133。129仍最后完整绿，真实服务/OAuth/注册表/真人另待；公开1233/签名15、日常H UNKNOWN且不操作。
 
 下方历史保留。
 

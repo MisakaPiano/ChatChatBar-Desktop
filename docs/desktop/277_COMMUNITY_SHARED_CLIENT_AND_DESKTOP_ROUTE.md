@@ -1,5 +1,7 @@
 # 277 — 社区原客户端共享与桌面接线
 
+当前133/515实际主348suite/2571=2551PASS+19SKIP+1FAIL，唯一失败是DesktopCommunityPortsTest的一个runBlocking方法返回非Unit造成JUnit整类初始化拒绝，两方法均未执行。其余10个新增Desktop方法实际PASS（typed1/controller3/Auth1/protocol-IPC2/Panel2/Shell1），共享1183/Android586/proxy5/NTFS7/native37/TUF14/exit4通过。六张Panel原PNG已核，Shell方法PASS但其PNG未在归档目录，不能记七图通过。后继显式Unit保留原断言、只将该Shell截图接到原归档目录；另补原详情已有的作者/版本/默认正负生图文字与世界书描述/触发词/位置/顺序，短弹窗收高、长内容保留上限滚动，Panel夹具用实际深浅配色和背景。后补均需新精确源，不归133。最后完整绿仍129，真实官方服务/OAuth/Windows注册表与真人另待。
+
 本片属于216最后功能域P14，不新建社区后端。2026-11-02只读重读官方`community_runtime_config`实际返回`enabled:false`、`Community disabled by emergency switch`；该时点事实不是永久关闭结论，客户端仍须动态读取并遵守开关。
 
 第一片将原CommunityModels/PackagePolicy原字节移入sharedCore，原CommunityService的HTTP、Discord身份/刷新、metadata分页、只读详情、计数下载、Storage/Edge发布/覆盖/删除与状态缓存进入CommunityClient。Android facade保留原prefs、repository/transfer导出和160px/80KB JPEG预览；不改DTO、表、bucket、Edge载荷或Prompt。共享平台缝仅为本地条目导出与session保管。

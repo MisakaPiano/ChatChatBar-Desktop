@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.unit.dp
 import com.example.chatbar.domain.community.*
+import com.example.chatbar.data.local.entity.WorldBookPosition
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.collect
 
@@ -125,7 +126,7 @@ private fun CommunityDialog(title: String, closeEnabled: Boolean, close: () -> U
                     DesktopIconAction(t(DesktopUiText.CLOSE), DesktopAppIcons.Close, enabled = closeEnabled, onClick = close)
                 }
                 notice()
-                Box(Modifier.weight(1f).fillMaxWidth()) { content() }
+                Box(Modifier.weight(1f, fill = false).fillMaxWidth()) { content() }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) { actions() }
             }
         }
@@ -186,7 +187,7 @@ private fun CommunityUploadDialog(controller: DesktopCommunityController, state:
     }) {
         if (state.prepared != null) CommunityPayloadPreview(state.preparedPayload,
             "${state.prepared.title}\n${state.prepared.description}\n${state.prepared.tags.joinToString(", ")}\n${state.prepared.sizeBytes} B\n\n${t(DesktopUiText.COMMUNITY_SNAPSHOT_NOTE)}")
-        else Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        else Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             StatusText(t(DesktopUiText.COMMUNITY_SNAPSHOT_NOTE))
             if (state.candidates.isEmpty()) StatusText(t(DesktopUiText.NO_ITEMS))
             else CompactChoice(t(DesktopUiText.COMMUNITY_SELECT), state.candidates, state.candidates.firstOrNull { it.id == selected },
@@ -200,12 +201,14 @@ private fun CommunityUploadDialog(controller: DesktopCommunityController, state:
 
 @Composable
 private fun CommunityPayloadPreview(payload: CommunityImportPayload?, introduction: String) {
-    val chunks = remember(payload, introduction) {
+    val t = LocalDesktopUiStrings.current
+    val chunks = remember(payload, introduction, t) {
         buildString {
             appendLine(introduction)
             when (payload) {
                 is CommunityImportPayload.Character -> with(payload.data) {
-                    appendLine(card.name); appendLine(card.basicSetting); appendLine(card.freeformCharacterText)
+                    appendLine(card.name); appendLine(card.creator); appendLine(card.characterVersion)
+                    appendLine(card.basicSetting); appendLine(card.freeformCharacterText)
                     appendLine(card.greeting); card.alternateGreetings.forEach { appendLine(it) }
                     card.characters.forEach { person ->
                         appendLine(person.name)
@@ -213,16 +216,29 @@ private fun CommunityPayloadPreview(payload: CommunityImportPayload?, introducti
                             person.background, person.relationships, person.speakingStyle, person.imagePrompt).forEach { appendLine(it) }
                     }
                     listOf(card.systemPrompt, card.postHistoryInstructions, card.mesExample, card.creatorNotes).forEach { appendLine(it) }
+                    appendLine(card.defaultImagePrompt); appendLine(card.defaultImageNegativePrompt)
                     documents.forEach { appendLine(it.fileName); appendLine(it.content) }
                     worldBooks.forEach { book -> appendLine(book.name); book.entries.forEach { appendLine(it.name); appendLine(it.content) } }
                 }
                 is CommunityImportPayload.Format -> { appendLine(payload.data.name); appendLine(payload.data.content) }
-                is CommunityImportPayload.WorldBook -> with(payload.data.book) { appendLine(name); entries.forEach { appendLine(it.name); appendLine(it.content) } }
+                is CommunityImportPayload.WorldBook -> with(payload.data.book) {
+                    appendLine(name); appendLine(description)
+                    appendLine("${t(DesktopUiText.WORLD_SCAN_DEPTH)}: $scanDepth · ${t(DesktopUiText.WORLD_ENTRIES)}: ${entries.size}")
+                    entries.forEach {
+                        appendLine(it.name); appendLine(it.keys.joinToString(", ")); appendLine(it.content)
+                        val position = t(when (it.position) {
+                            WorldBookPosition.BEFORE_CHAR -> DesktopUiText.WORLD_BEFORE
+                            WorldBookPosition.AFTER_CHAR -> DesktopUiText.WORLD_AFTER
+                            WorldBookPosition.OUTLET -> DesktopUiText.WORLD_OUTLET
+                        })
+                        appendLine("${t(DesktopUiText.WORLD_POSITION)}: $position · ${t(DesktopUiText.WORLD_INSERTION_ORDER)}: ${it.insertionOrder}")
+                    }
+                }
                 null -> Unit
             }
         }.communityPreviewChunks()
     }
-    SelectionContainer { LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    SelectionContainer { LazyColumn(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         items(chunks) { StatusText(it, DesktopBootstrapColors.foreground) }
     } }
 }
