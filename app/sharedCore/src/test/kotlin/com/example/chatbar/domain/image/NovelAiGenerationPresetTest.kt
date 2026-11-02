@@ -16,7 +16,7 @@ class NovelAiGenerationPresetTest {
             customWidth = 832, customHeight = 1216, varietyPlus = true, useCharacterPositions = true),
         v5Settings = NovelAiGenerationSettings(model = NovelAiImageModel.V5_FULL, steps = 16),
         imageGuidance = NovelAiImageGuidanceDraft(action = NovelAiGenerationAction.INPAINT, baseImage = asset,
-            maskImage = asset.copy(containsPaint = true), focusedInpaintRegion = NovelAiFocusedInpaintRegion(0.1f, 0.1f, 0.8f, 0.8f),
+            maskImage = asset.copy(containsPaint = true), focusedInpaintRegion = NovelAiFocusedInpaintRegion(0.1f, 0.1f, 0.6f, 0.6f),
             referenceMode = NovelAiReferenceMode.PRECISE, preciseReference = NovelAiPreciseReferenceDraft(asset, strength = 0.7f),
             vibes = listOf(NovelAiVibeReferenceDraft(id = "private-vibe-id", asset = asset, encodedVibe = "private-local-encoding"))))
     private fun capture(source: NovelAiStudioDraft) = NovelAiGenerationPreset.capture(source,

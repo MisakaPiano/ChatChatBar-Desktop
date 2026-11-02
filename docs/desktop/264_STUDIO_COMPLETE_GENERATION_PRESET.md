@@ -1,6 +1,6 @@
 # 264 — Desktop 完整生成预设
 
-2026-11-02：源码实现，尚待其精确冻结源码的云端测试和实际界面图；不由 CI114、诊断115或公开1233代验。不改变现用安装、账户或已批准的 Prompt。
+2026-11-02实际116/b55：Windows337suite/2538=2515PASS+19SKIP+4FAIL，Linux共享1142=1139PASS+3FAIL；七失败全部来自两份正向fixture的1024²图×0.8²焦区超过原589824面积上限，原guard正确拒绝。仅将合成焦区改为0.6²，保留校验和全部资源/取消/JPEG断言，待新精确源。其他新custody3/controller4/Scene1与原store新增stream1实际PASS，420/1100实际内容图确认区已核；合计16新增例9PASS+7FAIL，不能称完整预设已通过。proxy5/native33/updater8/exit4通过，Android unit未执行，不以旧582替代。本机和日常安装未动。
 
 ## 范围和入口
 

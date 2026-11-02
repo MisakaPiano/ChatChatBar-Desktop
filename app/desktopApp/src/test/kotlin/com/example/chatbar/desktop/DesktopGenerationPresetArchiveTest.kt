@@ -38,7 +38,7 @@ class DesktopGenerationPresetArchiveTest {
                 v45Settings = NovelAiGenerationSettings(seedMode = NovelAiSeedMode.FIXED, seed = 123, customWidth = 832, customHeight = 1216),
                 v5Settings = NovelAiGenerationSettings(model = NovelAiImageModel.V5_FULL, steps = 15),
                 imageGuidance = NovelAiImageGuidanceDraft(action = NovelAiGenerationAction.INPAINT, baseImage = asset, maskImage = asset,
-                    focusedInpaintRegion = NovelAiFocusedInpaintRegion(0.1f, 0.1f, 0.8f, 0.8f), referenceMode = NovelAiReferenceMode.PRECISE,
+                    focusedInpaintRegion = NovelAiFocusedInpaintRegion(0.1f, 0.1f, 0.6f, 0.6f), referenceMode = NovelAiReferenceMode.PRECISE,
                     preciseReference = NovelAiPreciseReferenceDraft(asset),
                     vibes = listOf(NovelAiVibeReferenceDraft(asset = asset, encodedVibe = NovelAiInlinePayloadStore(source.toFile()).retain(encoded)))))
         }
