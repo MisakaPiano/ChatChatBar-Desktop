@@ -78,6 +78,7 @@ internal class DesktopFullBackupService(
             catch (failure: DesktopBackupCompatibilityException) { throw failure }
             catch (failure: DesktopBackupScratchCleanupException) { throw failure }
             catch (failure: DesktopBackupMissingResource) { throw failure }
+            catch (failure: DesktopPendingSpeakerRenameExport) { throw failure }
             catch (failure: IllegalStateException) {
                 // These fixed custody rejection codes are consumed by existing diagnostics.
                 // Keep their identity instead of replacing a classified refusal with a generic stage.

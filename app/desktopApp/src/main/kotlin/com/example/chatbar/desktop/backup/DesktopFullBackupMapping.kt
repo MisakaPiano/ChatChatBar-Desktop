@@ -122,6 +122,7 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
                 // PC plaintext value that differs from/misses its protected counterpart.
                 if (forMerge) DesktopBackupPolicy.entity(relative, raw, false, wireVersionCode, modern = wireVersionCode >= 85)
                 val value = DesktopBackupPolicy.entity(relative, raw, true, wireVersionCode, modern = wireVersionCode >= 85)
+                if (!forMerge && entityType == "character_cards") requirePortableSpeakerReplaySafe(value)
                 entityLabel = (value["name"] as? JsonPrimitive)?.contentOrNull?.take(160) ?: entityType
                 if (relative == "entities/desktop_backup_preferences.json") {
                     preferences = backupJson.decodeFromJsonElement(BackupPreferences.serializer(), value)

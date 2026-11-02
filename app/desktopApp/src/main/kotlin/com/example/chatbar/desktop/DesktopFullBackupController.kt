@@ -146,6 +146,7 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
                         is DesktopDataOperationRejectedException -> "数据操作暂不可用，请检查是否需要正常退出。"
                         is DesktopBackupExportFailure -> "备份导出未完成（${failure.stage}）。原数据与凭据保留，请核对文件和资源。"
                         is DesktopBackupMissingResource -> "“${failure.ownerLabel}”缺少资源“${failure.resourceName}”。请补回文件，或在导出清单中取消对应角色卡；原数据未修改。"
+                        is DesktopPendingSpeakerRenameExport -> failure.userMessage()
                         is DesktopFullBackupWriter.Refusal -> failure.userMessage()
                         else -> when (failure.message) {
                             "UNCLASSIFIED_ROOT_ENTRY" -> "发现未识别的本机数据目录，备份未导出；请保留原目录以便核对。"
