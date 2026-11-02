@@ -111,9 +111,16 @@ def build(image, output, version, commit, installer_version, profile, compiler, 
               f'ExecWait \'"$PLUGINSDIR\\manager.exe" --prepare "$INSTDIR" {required_space} --quiet\' $0', 'Goto prepared',
               'prepare_repair:',
               f'ExecWait \'"$PLUGINSDIR\\manager.exe" --prepare-repair "$INSTDIR" {required_space} --quiet\' $0',
-              'SetOverwrite on', 'prepared:', 'IntCmp $0 0 +2', 'Goto failed',
-              'ClearErrors', 'SetOutPath "$INSTDIR"', 'IfErrors failed', 'File ' + quote(launcher), 'IfErrors failed',
-              'File ' + quote(open_bridge), 'IfErrors failed',
+              'prepared:', 'IntCmp $0 0 +2', 'Goto failed',
+              # SetOverwrite is a compiler flag; runtime Goto cannot bypass it for ordinary upgrades.
+              # Prepare verified existing receipts; explicit repair retained originals before this point.
+              'SetOverwrite on', 'ClearErrors', 'SetOutPath "$INSTDIR"', 'IfErrors failed',
+              'StrCmp $Repair 1 write_launcher',
+              'IfFileExists "$INSTDIR\\ChatChatBar.exe" launcher_ready 0',
+              'write_launcher:', 'File ' + quote(launcher), 'IfErrors failed', 'launcher_ready:',
+              'StrCmp $Repair 1 write_open_bridge',
+              'IfFileExists "$INSTDIR\\OpenChatBarFile.exe" open_bridge_ready 0',
+              'write_open_bridge:', 'File ' + quote(open_bridge), 'IfErrors failed', 'open_bridge_ready:',
               # WriteUninstaller uses CREATE_ALWAYS regardless of SetOverwrite off. Prepare has
               # already verified an existing ordinary root receipt; only explicit repair may replace it.
               'StrCmp $Repair 1 write_uninstaller',

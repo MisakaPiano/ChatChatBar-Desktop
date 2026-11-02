@@ -1,5 +1,7 @@
 # 267 — Preview 到正式版的普通升级身份
 
+R6/41430360253 controlcb22原件证实：旧包与bridge窗口正常/Job空，887已使Uninstall.exe保持547493…80c0；两个启动入口实际变化（01e2…e72a→d14f…f880、5308…b909→10b3…ee08），原guard继续FAIL。固定NSIS3.13 [TOK_SETOVERWRITE](https://github.com/NSIS-Dev/nsis/blob/v313/Source/script.cpp)只在编译期设置build_overwrite，运行时Goto无法跳过。后继为两个File各加原Prepare之后的runtime修复/存在分支：普通已校验存在则跳过，新安装缺少则写入，主动Repair保留原件后替换；保留887卸载器修正、全部三hash与时限，待R7实际普通链，不放宽成允许重写。
+
 R5/41428055776实测FAIL：同旧public1233及bridge1234都实际安装/真实窗口/正常exit0/Job空，三普通包构建审计通过；随后原root三hash总断言OLD_ROOT_THREE_RESOURCES_CHANGED拒绝，尚未stable/rollback/next。原包未留单项before/after，不能把运行结果强说成仅卸载器变化。887的显式保留修正需后继链验证；后继在原retained断言前写三项before/after小JSON，原失败/guard/期限保留，不增新验收门槛。
 
 后继源码修正（不在正在执行的R5/af17中）：原NSIS WriteUninstaller在SetOverwrite off下仍以CREATE_ALWAYS写文件，参见[固定3.13引擎](https://raw.githubusercontent.com/NSIS-Dev/nsis/v313/Source/exehead/exec.c)；不能用该设置声称原卸载入口字节保持。现在在原Prepare已校验root receipt之后，普通升级显式跳过已有Uninstall.exe，新安装仍生成；主动Repair仍先保留原资源后重建。不改普通root三hash断言、不跳原Prepare校验或缩减修复。该控制工具新源仍待普通安装包链实测，不能由tiny manager测试或源码推理代验。

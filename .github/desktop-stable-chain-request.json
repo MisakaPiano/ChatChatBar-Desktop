@@ -1,7 +1,7 @@
 {
   "kind": "CCB_CLOUD_ONLY_ORDINARY_STABLE_CHAIN",
   "sourceSha": "fdb038133b9544c7cebc1c982efb6468efae1dcf",
-  "attempt": 6,
+  "attempt": 7,
   "baselineOnly": false,
   "purpose": "Private ordinary package and native READY lifecycle proof; no publication or user-machine installation"
 }
