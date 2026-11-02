@@ -6,12 +6,15 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+import sys
 import socket
 import struct
 from concurrent.futures import ThreadPoolExecutor
 from installer_diagnostics import DIAGNOSTICS, decorate_manager_calls, diagnostic_function
 
 BASE = Path(__file__).parent
+sys.path.insert(0, str(BASE.parent / 'update'))
+from version_identity import ReleaseIdentity
 CSC = Path(os.environ.get('WINDIR', 'C:/Windows')) / 'Microsoft.NET/Framework64/v4.0.30319/csc.exe'
 FAKE = r'''
 using System; using System.IO; using System.Threading; using System.Diagnostics;
@@ -101,6 +104,8 @@ class Lifecycle(unittest.TestCase):
         cls.stable = cls.base / 'stable.exe'
         cls.open_bridge = cls.base / 'OpenChatBarFile.exe'
         cls.legacy_stable = cls.base / 'legacy-stable.exe'
+        cls.legacy_manager = cls.base / 'legacy-manager.exe'
+        cls.public1233_open_bridge = cls.base / 'public1233-open.exe'
         cls.fake = cls.base / 'ChatChatBarDesktop.exe'
         (cls.base / 'Fake.cs').write_text(FAKE)
         for source, target, refs in [(BASE / 'Launcher.cs', cls.launcher,
@@ -124,6 +129,17 @@ class Lifecycle(unittest.TestCase):
                         '/reference:System.Windows.Forms.dll', '/reference:System.Web.Extensions.dll',
                         '/define:SYNTHETIC', '/define:LIFECYCLE_TEST', '/define:STABLE', str(legacy.absolute())],
                        check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        subprocess.run([str(CSC), '/nologo', '/target:winexe', '/platform:x64', '/out:' + str(cls.legacy_manager),
+                        '/reference:System.Windows.Forms.dll', '/reference:System.Web.Extensions.dll',
+                        '/define:SYNTHETIC', '/define:LIFECYCLE_TEST', str(legacy.absolute())],
+                       check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        public1233 = BASE / 'fixtures' / 'Launcher-1233.cs'
+        if digest(public1233) != json.loads(public1233.with_suffix('.origin.json').read_text())['sha256']:
+            raise AssertionError('Frozen public1233 source identity changed')
+        subprocess.run([str(CSC), '/nologo', '/target:winexe', '/platform:x64', '/out:' + str(cls.public1233_open_bridge),
+                        '/reference:System.Windows.Forms.dll', '/reference:System.Web.Extensions.dll',
+                        '/define:SYNTHETIC', '/define:LIFECYCLE_TEST', '/define:STABLE;OPEN_WITH', str(public1233.absolute())],
+                       check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
     @classmethod
     def tearDownClass(cls):
@@ -145,9 +161,9 @@ class Lifecycle(unittest.TestCase):
         time.sleep(2.1)
         self.case.cleanup()
 
-    def run_manager(self, mode, *args, expected=0):
+    def run_manager(self, mode, *args, expected=0, manager=None):
         environment = dict(os.environ, LOCALAPPDATA=str(self.local), CCB_DESKTOP_TEST_SHELL_ROOT=str(Path(self.case.name) / 'shell'))
-        result = subprocess.run([str(self.launcher), mode, str(self.root), *args, '--quiet'], timeout=20, env=environment)
+        result = subprocess.run([str(manager or self.launcher), mode, str(self.root), *args, '--quiet'], timeout=20, env=environment)
         key = hashlib.sha256(str(self.root.absolute()).upper().encode('utf-8')).hexdigest().upper()
         log = self.local / 'ChatChatBarDesktopNSISLifecycleTestInstallState' / (key + '.log')
         self.assertEqual(expected, result.returncode, mode + '\n' + (log.read_text(encoding='utf-8') if log.exists() else 'no lifecycle log'))
@@ -167,23 +183,136 @@ class Lifecycle(unittest.TestCase):
         self.run_manager('--prepare', '805306368', '--diagnostic-exit')
         self.assertEqual('synthetic data stays', witness.read_text())
 
-    def version(self, number, fail=False):
-        version = '0.1.0-preview.' + str(number)
+    def version(self, number, fail=False, display=None, manager=None):
+        version = display or '0.1.0-preview.' + str(number)
+        release = ReleaseIdentity.create(version, number)
         commit = ('a' if number == 1 else 'b') * 40
-        identity = version + '-' + commit[:12]
+        identity = release.storage_version + '-' + commit[:12]
         directory = self.root / 'versions' / identity
         payload = Path(self.case.name) / ('payload-' + str(number))
         payload.mkdir()
         (payload / 'ChatChatBarDesktop.exe').write_bytes(self.fake.read_bytes())
-        (payload / 'install-manager.exe').write_bytes(self.launcher.read_bytes())
+        (payload / 'install-manager.exe').write_bytes((manager or self.launcher).read_bytes())
         (payload / 'identity.txt').write_text(('fail' if fail else version) + '\n' + commit)
         entries = [dict(path=p.name, bytes=p.stat().st_size, sha256=digest(p)) for p in payload.iterdir()]
         manifest = payload / 'install-manifest.json'
-        manifest.write_text(json.dumps(dict(product='ccb-desktop-nsis-synthetic-v1', version=version, commit=commit, files=entries)))
-        self.run_manager('--stage', identity, str(manifest))
+        value = dict(product='ccb-desktop-nsis-synthetic-v1', version=version, commit=commit, files=entries)
+        if display is not None:
+            value.update(buildNumber=release.build, channel=release.channel, storageVersion=release.storage_version)
+        manifest.write_text(json.dumps(value))
+        self.run_manager('--stage', identity, str(manifest), manager=manager)
         for entry in entries:
             (directory / entry['path']).write_bytes((payload / entry['path']).read_bytes())
         return identity, directory
+
+    def test_frozen_preview_root_and_manager_bridge_to_real_stable_then_failed_and_successful_next_stable(self):
+        import time
+        import base64
+        (self.root / 'ChatChatBar.exe').write_bytes(self.legacy_stable.read_bytes())
+        (self.root / 'OpenChatBarFile.exe').write_bytes(self.public1233_open_bridge.read_bytes())
+        self.run_manager('--register')
+        roots = {name: (self.root / name).read_bytes() for name in ('ChatChatBar.exe', 'OpenChatBarFile.exe', 'Uninstall.exe')}
+        data = Path(self.case.name) / 'user-data'; data.mkdir()
+        witness = data / 'draft-and-credentials-canary'; witness.write_bytes(b'SYNTHETIC retained source')
+        bootstrap = self.local / 'ChatChatBarDesktop.bootstrap.json'; bootstrap.write_text(json.dumps(dict(customRoot=str(data))))
+        original_bootstrap = bootstrap.read_bytes()
+        old, _ = self.version(1229, manager=self.legacy_manager)
+        self.run_manager('--activate', old, manager=self.legacy_manager)
+        self.assertFalse((self.root / 'receipts' / (old + '.identity.json')).exists())
+        time.sleep(2.1)
+        bridge, _ = self.version(1234, display='0.1.0-preview.1234')
+        self.run_manager('--activate', bridge); time.sleep(2.1)
+        stable, stable_home = self.version(1235, display='1.0.0')
+        self.run_manager('--activate', stable); time.sleep(2.1)
+        self.assertEqual('1.0.0', json.loads((stable_home / 'install-manifest.json').read_text())['version'])
+        env = dict(os.environ, LOCALAPPDATA=str(self.local), CCB_DESKTOP_TEST_SHELL_ROOT=str(Path(self.case.name) / 'shell'))
+        self.assertEqual(0, subprocess.run([str(self.root / 'ChatChatBar.exe')], env=env, timeout=20).returncode)
+        time.sleep(2.1)
+        paths = [Path(self.case.name) / '合成 & stable.json', Path(self.case.name) / 'synthetic save.cbsave']
+        for path in paths: path.write_bytes(b'SYNTHETIC retained input')
+        capture = Path(self.case.name) / 'stable-cold-delivery'
+        delivered = subprocess.run([str(self.root / 'OpenChatBarFile.exe'), *map(str, paths)],
+                                   env=dict(env, CCB_TEST_OPEN_CAPTURE=str(capture)), timeout=20)
+        self.assertEqual(0, delivered.returncode)
+        self.assertEqual(['--open-files', *map(str, paths)],
+                         [base64.b64decode(value).decode('utf-8') for value in capture.read_text(encoding='utf-8-sig').splitlines()])
+        self.assertEqual([], list((self.root / 'receipts').glob('*.open-request')))
+        self.assertTrue(all(path.read_bytes() == b'SYNTHETIC retained input' for path in paths))
+        time.sleep(2.1)
+        failed, _ = self.version(1236, fail=True, display='1.0.1')
+        self.run_manager('--activate', failed, expected=2)
+        self.assertEqual(stable, (self.root / 'current.txt').read_text())
+        later, _ = self.version(1237, display='1.0.1')
+        self.run_manager('--activate', later); time.sleep(2.1)
+        self.assertEqual(0, subprocess.run([str(self.root / 'ChatChatBar.exe')], env=env, timeout=20).returncode)
+        self.assertEqual(later, (self.root / 'current.txt').read_text())
+        self.assertEqual(roots, {name: (self.root / name).read_bytes() for name in roots})
+        self.assertEqual(original_bootstrap, bootstrap.read_bytes())
+        self.assertEqual(b'SYNTHETIC retained source', witness.read_bytes())
+
+    def test_stable_same_package_repair_uses_sealed_display_identity_and_keeps_damaged_original(self):
+        import time
+        first, old = self.version(1235, display='1.0.0')
+        self.run_manager('--activate', first); time.sleep(2.1)
+        (old / 'install-manifest.json').write_text('{damaged stable manifest')
+        payload = Path(self.case.name) / 'payload-1235'
+        self.run_manager('--prepare-repair')
+        self.run_manager('--stage-repair', first, str(payload / 'install-manifest.json'))
+        repaired = (self.root / 'pending-repair.txt').read_text(); new = self.root / 'versions' / repaired
+        for path in payload.iterdir():
+            if path.name != 'install-manifest.json': (new / path.name).write_bytes(path.read_bytes())
+        self.run_manager('--activate', repaired); time.sleep(2.1)
+        self.assertEqual(repaired, (self.root / 'current.txt').read_text())
+        self.assertEqual('{damaged stable manifest', (old / 'install-manifest.json').read_text())
+        descriptor = self.root / 'receipts' / (repaired + '.identity.json')
+        original_seal = (self.root / 'receipts' / (repaired + '.identity.sha256')).read_bytes()
+        descriptor.write_text(descriptor.read_text().replace('1.0.0', '0.9.9'))
+        self.run_manager('--prepare-repair')
+        self.run_manager('--stage-repair', first, str(payload / 'install-manifest.json'), expected=2)
+        self.assertEqual(repaired, (self.root / 'current.txt').read_text())
+        self.assertEqual(original_seal, (self.root / 'receipts' / (repaired + '.identity.sha256')).read_bytes())
+
+    def test_stable_manifest_storage_build_channel_and_semantic_downgrade_are_refused_without_pointer_changes(self):
+        import time
+        first, _ = self.version(1235, display='1.0.0')
+        self.run_manager('--activate', first); time.sleep(2.1)
+        candidate, _ = self.version(1236, display='1.0.1')
+        source = Path(self.case.name) / 'payload-1236' / 'install-manifest.json'
+        valid = json.loads(source.read_text()); original = (self.root / 'current.txt').read_bytes()
+        for change in (dict(buildNumber=True), dict(storageVersion='1.0.1-preview.9999'), dict(channel='preview'), dict(version='1.0.1\n')):
+            source.write_text(json.dumps(dict(valid, **change)))
+            self.run_manager('--stage', candidate, str(source), expected=2)
+            self.assertEqual(original, (self.root / 'current.txt').read_bytes())
+        source.write_text(json.dumps(valid))
+        downgrade, _ = self.version(1237, display='0.9.9')
+        self.run_manager('--activate', downgrade, expected=2)
+        self.assertEqual(original, (self.root / 'current.txt').read_bytes())
+
+    def test_same_trusted_stage_finishes_its_interrupted_identity_seal_but_refuses_foreign_half_records(self):
+        import time
+        first, _ = self.version(1)
+        self.run_manager('--activate', first); time.sleep(2.1)
+        candidate, home = self.version(1235, display='1.0.0')
+        source = Path(self.case.name) / 'payload-1235' / 'install-manifest.json'
+        record = self.root / 'receipts' / (candidate + '.identity.json')
+        seal = self.root / 'receipts' / (candidate + '.identity.sha256')
+        original_record, original_seal = record.read_bytes(), seal.read_bytes()
+        current = (self.root / 'current.txt').read_bytes()
+        canary = Path(self.case.name) / 'retained-data'; canary.write_bytes(b'unchanged synthetic data')
+        seal.unlink()
+        self.run_manager('--stage', candidate, str(source), expected=10)
+        self.assertEqual(original_record, record.read_bytes()); self.assertEqual(original_seal, seal.read_bytes())
+        record.unlink()
+        self.run_manager('--stage', candidate, str(source), expected=2)
+        self.assertFalse(record.exists()); self.assertEqual(original_seal, seal.read_bytes())
+        record.write_bytes(original_record); seal.unlink()
+        record.write_text(record.read_text().replace('1.0.0', '0.9.9'))
+        altered = record.read_bytes()
+        self.run_manager('--stage', candidate, str(source), expected=2)
+        self.assertEqual(altered, record.read_bytes()); self.assertFalse(seal.exists())
+        self.assertEqual(current, (self.root / 'current.txt').read_bytes())
+        self.assertEqual(b'unchanged synthetic data', canary.read_bytes())
+        self.assertTrue((home / 'ChatChatBarDesktop.exe').is_file())
 
     def test_first_start_and_upgrade_retire_only_owned_files(self):
         first, old = self.version(1)

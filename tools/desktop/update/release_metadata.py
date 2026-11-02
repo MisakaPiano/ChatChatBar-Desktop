@@ -13,6 +13,7 @@ from pathlib import Path
 import re
 from securesystemslib.signer import CryptoSigner
 from tuf.api.metadata import Metadata, Root, Targets, TargetFile, Snapshot, Timestamp, MetaFile
+from version_identity import ReleaseIdentity
 
 ROLES = ('root', 'timestamp', 'snapshot', 'targets')
 REPOSITORY = Path(__file__).resolve().parents[3]
@@ -64,7 +65,8 @@ Set-Acl -LiteralPath $env:CCB_SIGNING_CUSTODY -AclObject $acl
     return hashlib.sha256(root_path.read_bytes()).hexdigest()
 
 
-def publish(keys, root_path, installer, version, commit, notes, output, revision, manifest):
+def publish(keys, root_path, installer, version, commit, notes, output, revision, manifest, display_version=None):
+    identity = ReleaseIdentity.create(display_version or f'0.1.0-preview.{version}', version)
     keys = external_keys(keys)
     if output.exists() or not re.fullmatch('[0-9a-f]{40}', commit) or version < 1 or revision < 1:
         raise ValueError('NEW_SIGNED_OUTPUT_REQUIRED')
@@ -72,15 +74,30 @@ def publish(keys, root_path, installer, version, commit, notes, output, revision
     signers = {role: CryptoSigner.from_priv_key_uri('file2:' + str(keys / (role + '.pem')),
                root.signed.keys[root.signed.roles[role].keyids[0]]) for role in ROLES}
     now = datetime.now(timezone.utc)
-    display = f'0.1.0-preview.{version}'
+    display = identity.display
     inventory = json.loads(manifest.read_text(encoding='utf-8'))
     if inventory['product'] != 'ccb-desktop-nsis-v1' or inventory['version'] != display or inventory['commit'] != commit:
         raise ValueError('SIGNED_INSTALLER_MANIFEST_IDENTITY_REFUSED')
+    fields = {'buildNumber', 'channel', 'storageVersion'}
+    aliases = {key for key in inventory if key.lower() in {name.lower() for name in fields}}
+    if aliases and aliases != fields:
+        raise ValueError('SIGNED_INSTALLER_STORAGE_IDENTITY_REFUSED')
+    if fields.intersection(inventory) and not fields.issubset(inventory):
+        raise ValueError('SIGNED_INSTALLER_STORAGE_IDENTITY_REFUSED')
+    if display != identity.storage_version and not fields.issubset(inventory):
+        raise ValueError('SIGNED_INSTALLER_STORAGE_IDENTITY_REFUSED')
+    if fields.issubset(inventory) and (type(inventory['buildNumber']) is not int or
+            type(inventory['channel']) is not str or type(inventory['storageVersion']) is not str):
+        raise ValueError('SIGNED_INSTALLER_STORAGE_IDENTITY_REFUSED')
+    manifest_identity = ReleaseIdentity.create(display, inventory.get('buildNumber', version), inventory.get('channel', identity.channel))
+    if (manifest_identity != identity or inventory.get('storageVersion', display) != identity.storage_version):
+        raise ValueError('SIGNED_INSTALLER_STORAGE_IDENTITY_REFUSED')
     installed_bytes = sum(e['bytes'] for e in inventory['files'])
     if not 0 < installed_bytes <= 4 * 1024**3: raise ValueError('SIGNED_INSTALLER_SIZE_REFUSED')
     target = TargetFile.from_file('desktop-installer.exe', str(installer), ['sha256'])
     target.unrecognized_fields['custom'] = dict(product='ccb-desktop-nsis-v1', platform='windows-x86_64',
-        channel='preview', version=version, displayVersion=display, sourceSha=commit, minimum_reader=1,
+        channel=identity.channel, version=version, displayVersion=display, storageVersion=identity.storage_version,
+        sourceSha=commit, minimum_reader=1,
         maximum_reader=1, data_version=1, installedBytes=installed_bytes, notes=notes.read_text(encoding='utf-8'),
         github=dict(tag='desktop-v' + display, asset=f'ChatChatBar-Desktop-{display}-windows-x64.exe'))
     targets = Metadata(Targets(version=revision, expires=now + timedelta(days=180), targets={target.path: target}))
@@ -111,9 +128,10 @@ if __name__ == '__main__':
     parser.add_argument('--output', type=Path)
     parser.add_argument('--revision', type=int)
     parser.add_argument('--manifest', type=Path)
+    parser.add_argument('--display-version')
     args = parser.parse_args()
     if args.initialize:
         print('PUBLIC_ROOT_SHA256=' + initialize(args.keys, args.root))
     else:
-        publish(args.keys, args.root, args.installer, args.version, args.commit, args.notes, args.output, args.revision, args.manifest)
+        publish(args.keys, args.root, args.installer, args.version, args.commit, args.notes, args.output, args.revision, args.manifest, args.display_version)
         print('SIGNED_METADATA_READY')

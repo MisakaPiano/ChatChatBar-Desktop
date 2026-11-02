@@ -25,6 +25,9 @@ val desktopModelCatalogResources = layout.buildDirectory.dir("generated/desktop-
 // Desktop release identity is independent of the Android version. This does not publish a release.
 val desktopVersion = providers.gradleProperty("desktopVersion").getOrElse("0.1.0-preview.1")
 require(desktopVersion.matches(Regex("[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?")))
+val desktopBuildNumber = providers.gradleProperty("desktopBuildNumber").orNull?.also {
+    require(it.matches(Regex("[1-9][0-9]*")) && it.toIntOrNull() != null) { "DESKTOP_BUILD_NUMBER_INVALID" }
+}
 // Windows compares only three numeric fields; never silently strip Preview identity for installers.
 val explicitInstallerVersion = providers.gradleProperty("desktopInstallerVersion")
 val desktopInstallerVersion = explicitInstallerVersion.getOrElse(desktopVersion.substringBefore('-'))
@@ -305,17 +308,19 @@ val attachDesktopUpdater by tasks.registering(Exec::class) {
     group = "distribution"
     dependsOn("createDistributable", prepareDesktopUpdater)
     doFirst {
-        commandLine("python", updaterSources.resolve("attach_runtime.py").absolutePath,
+        val command = mutableListOf("python", updaterSources.resolve("attach_runtime.py").absolutePath,
             "--image", layout.buildDirectory.dir("compose/binaries/main/app/$desktopNativeName").get().asFile.absolutePath,
             "--runtime", updaterRuntimeDirectory.get().asFile.absolutePath,
             "--root", updaterSources.resolve("update-root.json").absolutePath,
             "--version", desktopVersion, "--commit", desktopCommit.get())
+        desktopBuildNumber?.let { command += listOf("--build-number", it) }
+        commandLine(command)
     }
 }
 
 tasks.register<Exec>("packageNsis") {
     group = "distribution"
-    description = "Build the current-user NSIS Preview installer from an audited app-image"
+    description = "Build the current-user NSIS installer from an audited app-image"
     dependsOn(verifyDesktopInstallerIdentity, attachDesktopUpdater)
     doFirst {
         val compiler = providers.gradleProperty("desktopNsisCompiler").orNull
@@ -323,10 +328,12 @@ tasks.register<Exec>("packageNsis") {
         val output = providers.gradleProperty("desktopNsisOutput").orNull
             ?: error("Supply a new -PdesktopNsisOutput=<directory>")
         check(desktopPackagingProfile == "desktop") { "NSIS uses the ordinary app-image; installer test identity is independent" }
-        commandLine("python", rootProject.projectDir.parentFile.resolve("tools/desktop/nsis/build_installer.py").absolutePath,
+        val command = mutableListOf("python", rootProject.projectDir.parentFile.resolve("tools/desktop/nsis/build_installer.py").absolutePath,
             "--image", layout.buildDirectory.dir("compose/binaries/main/app/$desktopNativeName").get().asFile.absolutePath,
             "--output", output, "--version", desktopVersion, "--commit", desktopCommit.get(),
             "--installer-version", desktopInstallerVersion,
             "--profile", providers.gradleProperty("desktopNsisProfile").getOrElse("desktop"), "--makensis", compiler)
+        desktopBuildNumber?.let { command += listOf("--build-number", it) }
+        commandLine(command)
     }
 }

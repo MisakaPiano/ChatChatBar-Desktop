@@ -18,7 +18,9 @@ import uuid
 from tuf.ngclient import Updater
 from tuf.ngclient.config import UpdaterConfig
 from tuf.ngclient.fetcher import FetcherInterface
+from tuf.api.exceptions import DownloadHTTPError
 from github_transport import GitHubFetcher, endpoints
+from version_identity import ReleaseIdentity, release_channel, compare_display
 
 PRODUCT = 'ccb-desktop-nsis-v1'
 REPOSITORY = 'MisakaPiano/ChatChatBar-Desktop'
@@ -62,9 +64,15 @@ class Installed:
         if type(data.get('format')) is not int or data['format'] != 1 or data.get('product') != PRODUCT or data.get('platform') != 'windows-x86_64':
             raise UpdateRejected('INSTALLED_UPDATE_IDENTITY_REFUSED')
         version = data.get('version')
-        if type(version) is not int or version < 1 or data.get('displayVersion') != f'0.1.0-preview.{version}':
+        try:
+            if type(version) is not int:
+                raise ValueError('INSTALLED_BUILD_NUMBER_REQUIRED')
+            identity = ReleaseIdentity.create(data.get('displayVersion'), version, data.get('channel'))
+            if data.get('storageVersion', data.get('displayVersion')) != identity.storage_version:
+                raise ValueError('INSTALLED_STORAGE_IDENTITY_REFUSED')
+        except ValueError:
             raise UpdateRejected('INSTALLED_UPDATE_VERSION_REFUSED')
-        if not re.fullmatch('[0-9a-f]{40}', data.get('sourceSha', '')) or data.get('channel') != 'preview' or type(data.get('reader')) is not int or data['reader'] != 1:
+        if not re.fullmatch('[0-9a-f]{40}', data.get('sourceSha', '')) or data.get('channel') != identity.channel or type(data.get('reader')) is not int or data['reader'] != 1:
             raise UpdateRejected('INSTALLED_UPDATE_CONTRACT_REFUSED')
         root_file = folder / 'update-root.json'
         safe(root_file)
@@ -100,18 +108,27 @@ def exclusive(cache):
             stream.seek(0); msvcrt.locking(stream.fileno(), msvcrt.LK_UNLCK, 1)
 
 
-def inspect(updater, installed):
+def inspect(updater, installed, channel=None, observe_obsolete=False):
     updater.refresh()
     target = updater.get_targetinfo('desktop-installer.exe')
     if target is None:
         raise UpdateRejected('SIGNED_TARGET_MISSING')
     custom = target.unrecognized_fields.get('custom', {})
     if (custom.get('product') != PRODUCT or custom.get('platform') != 'windows-x86_64'
-            or custom.get('channel') != installed.channel or type(custom.get('version')) is not int
-            or custom['version'] < installed.version):
+            or custom.get('channel') != (channel or installed.channel) or type(custom.get('version')) is not int
+            or not observe_obsolete and custom['version'] < installed.version):
         raise UpdateRejected('SIGNED_TARGET_IDENTITY_REFUSED')
-    if (custom.get('displayVersion') != f"0.1.0-preview.{custom['version']}"
-            or not re.fullmatch('[0-9a-f]{40}', custom.get('sourceSha', ''))):
+    try:
+        current = ReleaseIdentity.create(installed.display_version, installed.version, installed.channel)
+        identity = ReleaseIdentity.create(custom.get('displayVersion'), custom['version'], custom.get('channel'))
+        obsolete = observe_obsolete and identity.build <= current.build and compare_display(identity.display, current.display) <= 0
+        if not obsolete:
+            current.permits_target(identity)
+        if custom.get('storageVersion', custom.get('displayVersion')) != identity.storage_version:
+            raise ValueError('SIGNED_STORAGE_IDENTITY_REFUSED')
+    except ValueError:
+        raise UpdateRejected('SIGNED_TARGET_VERSION_REFUSED')
+    if not re.fullmatch('[0-9a-f]{40}', custom.get('sourceSha', '')):
         raise UpdateRejected('SIGNED_TARGET_VERSION_REFUSED')
     minimum, maximum = custom.get('minimum_reader'), custom.get('maximum_reader')
     if type(minimum) is not int or type(maximum) is not int or not minimum <= installed.reader <= maximum:
@@ -136,8 +153,10 @@ def inspect(updater, installed):
 class ProgressFetcher(FetcherInterface):
     def __init__(self, delegate, report):
         self.delegate, self.report, self.total = delegate, report, None
+        self.last_url = None
 
     def _fetch(self, url):
+        self.last_url = url
         received = 0
         last = time.monotonic()
         for chunk in self.delegate.fetch(url):
@@ -152,17 +171,38 @@ class ProgressFetcher(FetcherInterface):
 def execute(installed, cache, download=False, verify_file=None, fetcher=None, report=lambda _: None, expected_version=None):
     cache = safe(cache)
     report({'phase': 'CHECKING'})
+    try:
+        channel = release_channel(expected_version) if expected_version is not None else installed.channel
+    except ValueError:
+        raise UpdateRejected('UPDATE_SELECTION_CHANGED')
     with exclusive(cache):
-        metadata, downloads = cache / 'metadata', cache / 'downloads'
-        metadata.mkdir(exist_ok=True); downloads.mkdir(exist_ok=True)
-        safe(metadata); safe(downloads)
-        delegate = fetcher or GitHubFetcher(REPOSITORY, installed.channel, metadata_branch=METADATA_BRANCH)
-        observed = ProgressFetcher(delegate, report)
-        metadata_url, target_url = endpoints(REPOSITORY, installed.channel, METADATA_BRANCH)
-        updater = Updater(str(metadata), metadata_url, str(downloads), target_url,
-                          bootstrap=installed.bootstrap, fetcher=observed,
-                          config=UpdaterConfig(app_user_agent='ChatChatBarDesktop'))
-        target, custom = inspect(updater, installed)
+        downloads = cache / 'downloads'
+        downloads.mkdir(exist_ok=True); safe(downloads)
+        startup_bridge = expected_version is None and installed.channel == 'preview'
+        for channel in (['stable', 'preview'] if startup_bridge else [channel]):
+            # Retain the original Preview rollback state; each signed channel has its own counter history.
+            metadata = cache / ('metadata' if channel == 'preview' else 'metadata-stable')
+            metadata.mkdir(exist_ok=True); safe(metadata)
+            had_timestamp = safe(metadata / 'timestamp.json').exists()
+            delegate = fetcher or GitHubFetcher(REPOSITORY, channel, metadata_branch=METADATA_BRANCH)
+            observed = ProgressFetcher(delegate, report)
+            metadata_url, target_url = endpoints(REPOSITORY, channel, METADATA_BRANCH)
+            updater = Updater(str(metadata), metadata_url, str(downloads), target_url,
+                              bootstrap=installed.bootstrap, fetcher=observed,
+                              config=UpdaterConfig(app_user_agent='ChatChatBarDesktop'))
+            try:
+                target, custom = inspect(updater, installed, channel, observe_obsolete=startup_bridge and channel == 'stable')
+            except DownloadHTTPError as error:
+                if (startup_bridge and channel == 'stable' and not had_timestamp and error.status_code == 404
+                        and observed.last_url == metadata_url + 'timestamp.json'):
+                    report({'phase': 'STABLE_NOT_PUBLISHED'})
+                    continue
+                raise
+            if (startup_bridge and channel == 'stable' and custom['version'] <= installed.version
+                    and compare_display(custom['displayVersion'], installed.display_version) <= 0):
+                report({'phase': 'STABLE_NOT_NEWER'})
+                continue
+            break
         if expected_version is not None and custom['displayVersion'] != expected_version:
             raise UpdateRejected('UPDATE_SELECTION_CHANGED')
         delegate.authorize(target)

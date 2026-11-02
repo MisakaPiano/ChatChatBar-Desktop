@@ -32,7 +32,11 @@ internal static class Launcher {
     const string Registration = "ChatChatBarDesktopNSIS";
 #endif
     internal sealed class Entry { public string path; public string sha256; public long bytes; }
-    internal sealed class Manifest { public string product; public string version; public string commit; public Entry[] files; }
+    internal sealed class Manifest { public string product; public string version; public string commit; public Entry[] files;
+        public object buildNumber; public string channel; public string storageVersion; }
+    internal sealed class ReleaseId { public string display; public long build; public string channel; public string storage; }
+    internal sealed class VersionReceipt { public int format; public string product; public string displayVersion; public object buildNumber;
+        public string channel; public string storageVersion; public string commit; public string manifestSha256; }
     static readonly JavaScriptSerializer Json = new JavaScriptSerializer { MaxJsonLength = 2097152 };
     static string Root;
     static bool ShellDeferred;
@@ -125,12 +129,126 @@ internal static class Launcher {
         Require(Regex.IsMatch(id ?? "", @"^[0-9]+\.[0-9]+\.[0-9]+-preview\.[1-9][0-9]*-[a-f0-9]{12}(?:-r[a-f0-9]{32})?$"), "VERSION_ID_REFUSED");
         return Child(Root, "versions/" + id);
     }
+    static Match ReleaseVersion(string display) {
+        Require(display != null && display.Length <= 80, "RELEASE_SEMVER_REFUSED");
+        var value = Regex.Match(display, @"^(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})\.(0|[1-9][0-9]{0,8})(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$");
+        Require(value.Success && value.Length == display.Length, "RELEASE_SEMVER_REFUSED");
+        for (var i = 1; i <= 3; i++) { int number; Require(Int32.TryParse(value.Groups[i].Value, out number), "RELEASE_SEMVER_REFUSED"); }
+        foreach (var part in value.Groups[4].Value.Split('.')) {
+            long number;
+            Require(part.Length <= 20 && !Regex.IsMatch(part, "^0[0-9]+$") &&
+                (!Regex.IsMatch(part, "^[0-9]+$") || Int64.TryParse(part, out number)), "RELEASE_SEMVER_REFUSED");
+        }
+        return value;
+    }
+    static ReleaseId Identity(Manifest manifest) {
+        var version = ReleaseVersion(manifest.version);
+        var legacy = Regex.Match(manifest.version, @"^0\.1\.0-preview\.([1-9][0-9]*)$");
+        var fields = manifest.buildNumber != null || manifest.channel != null || manifest.storageVersion != null;
+        long build;
+        if (!fields) {
+            Require(legacy.Success && Int64.TryParse(legacy.Groups[1].Value, out build), "RELEASE_BUILD_REQUIRED");
+            build = Int64.Parse(legacy.Groups[1].Value);
+        } else {
+            Require((manifest.buildNumber is int || manifest.buildNumber is long) && manifest.channel != null && manifest.storageVersion != null,
+                "RELEASE_BUILD_REQUIRED");
+            build = Convert.ToInt64(manifest.buildNumber);
+        }
+        Require(build > 0 && build <= Int32.MaxValue, "RELEASE_BUILD_REFUSED");
+        Require(!legacy.Success || Int64.Parse(legacy.Groups[1].Value) == build, "LEGACY_BRIDGE_BUILD_MISMATCH");
+        var channel = version.Groups[4].Success ? "preview" : "stable";
+        var storage = version.Groups[1].Value + "." + version.Groups[2].Value + "." + version.Groups[3].Value + "-preview." + build;
+        Require(!fields || manifest.channel == channel && manifest.storageVersion == storage, "RELEASE_STORAGE_REFUSED");
+        return new ReleaseId { display = manifest.version, build = build, channel = channel, storage = storage };
+    }
+    static int CompareRelease(string left, string right) {
+        var a = ReleaseVersion(left); var b = ReleaseVersion(right);
+        for (var i = 1; i <= 3; i++) { var order = Int32.Parse(a.Groups[i].Value).CompareTo(Int32.Parse(b.Groups[i].Value)); if (order != 0) return order; }
+        if (!a.Groups[4].Success || !b.Groups[4].Success) return (!a.Groups[4].Success).CompareTo(!b.Groups[4].Success);
+        var first = a.Groups[4].Value.Split('.'); var second = b.Groups[4].Value.Split('.');
+        for (var i = 0; i < Math.Min(first.Length, second.Length); i++) {
+            if (first[i] == second[i]) continue;
+            var an = Regex.IsMatch(first[i], "^[0-9]+$"); var bn = Regex.IsMatch(second[i], "^[0-9]+$");
+            if (an != bn) return an ? -1 : 1;
+            if (an && first[i].Length != second[i].Length) return first[i].Length.CompareTo(second[i].Length);
+            return StringComparer.Ordinal.Compare(first[i], second[i]);
+        }
+        return first.Length.CompareTo(second.Length);
+    }
+    static void ForwardVersion(ReleaseId old, ReleaseId next, bool sameAllowed, string code) {
+        var order = CompareRelease(next.display, old.display);
+        Require(next.build > old.build && order > 0 || sameAllowed && next.build == old.build && next.display == old.display, code);
+    }
+    static ReleaseId ReadVersionReceipt(string id) {
+        VersionRoot(id);
+        var path = Child(Root, "receipts/" + id + ".identity.json");
+        Require(new FileInfo(path).Length <= 16384, "VERSION_RECEIPT_REFUSED");
+        var seal = File.ReadAllText(Child(Root, "receipts/" + id + ".identity.sha256"));
+        Require(Regex.IsMatch(seal, "^[a-f0-9]{64}$") && Hash(path) == seal, "VERSION_RECEIPT_CHANGED");
+        var record = Json.Deserialize<VersionReceipt>(File.ReadAllText(path));
+        Require(record.format == 1 && (record.buildNumber is int || record.buildNumber is long) && record.channel != null &&
+            record.storageVersion != null && record.product == Product && Regex.IsMatch(record.commit ?? "", "^[a-f0-9]{40}$") &&
+            Regex.IsMatch(record.manifestSha256 ?? "", "^[a-f0-9]{64}$") &&
+            record.manifestSha256 == File.ReadAllText(Child(Root, "receipts/" + id + ".sha256")), "VERSION_RECEIPT_REFUSED");
+        var value = Identity(new Manifest { version = record.displayVersion, buildNumber = record.buildNumber,
+            channel = record.channel, storageVersion = record.storageVersion });
+        Require(Regex.Replace(id, "-r[a-f0-9]{32}$", "") == value.storage + "-" + record.commit.Substring(0, 12), "VERSION_RECEIPT_REFUSED");
+        return value;
+    }
+    static ReleaseId InstalledIdentity(string id, bool repairing) {
+        var directory = VersionRoot(id);
+        var descriptor = Child(Root, "receipts/" + id + ".identity.json");
+        if (repairing && File.Exists(descriptor)) return ReadVersionReceipt(id);
+        try {
+            var manifest = ReadManifest(directory);
+            Require(Hash(Child(directory, "install-manifest.json")) == File.ReadAllText(Child(Root, "receipts/" + id + ".sha256")), "CURRENT_MANIFEST_CHANGED");
+            return Identity(manifest);
+        } catch (Exception) {
+            Require(repairing, "CURRENT_MANIFEST_CHANGED");
+            var old = Regex.Replace(id, "-[a-f0-9]{12}(?:-r[a-f0-9]{32})?$", "");
+            Require(Regex.IsMatch(old, @"^0\.1\.0-preview\.[1-9][0-9]*$"), "REPAIR_IDENTITY_UNKNOWN");
+            return Identity(new Manifest { version = old });
+        }
+    }
+    static void WriteVersionReceipt(string id, Manifest manifest) {
+        var value = Identity(manifest);
+        var path = Child(Root, "receipts/" + id + ".identity.json");
+        var seal = Child(Root, "receipts/" + id + ".identity.sha256");
+        var expected = Json.Serialize(new VersionReceipt { format = 1, product = Product, displayVersion = value.display, buildNumber = value.build,
+            channel = value.channel, storageVersion = value.storage, commit = manifest.commit,
+            manifestSha256 = File.ReadAllText(Child(Root, "receipts/" + id + ".sha256")) });
+        if (File.Exists(path)) {
+            Require(new FileInfo(path).Length <= 16384 && File.ReadAllText(path) == expected, "VERSION_RECEIPT_CHANGED");
+            // Only the same trusted stage input and externally pinned manifest may finish its interrupted seal.
+            if (!File.Exists(seal)) Atomic(seal, Hash(path));
+            ReadVersionReceipt(id);
+            return;
+        }
+        Require(!File.Exists(seal), "VERSION_RECEIPT_CHANGED");
+        Atomic(path, expected); Atomic(seal, Hash(path));
+    }
+    static void RetireVersionReceipt(string id) {
+        var path = Child(Root, "receipts/" + id + ".identity.json");
+        var seal = Child(Root, "receipts/" + id + ".identity.sha256");
+        if (!File.Exists(path) && !File.Exists(seal)) return;
+        ReadVersionReceipt(id);
+        var proof = File.ReadAllText(seal); var sealProof = Hash(seal); var sealBytes = new FileInfo(seal).Length;
+        Require(DeleteOwned(path, new FileInfo(path).Length, proof) && DeleteOwned(seal, sealBytes, sealProof), "VERSION_RECEIPT_CHANGED");
+    }
     static Manifest ReadManifest(string directory) {
         var file = Child(directory, "install-manifest.json");
         Require(new FileInfo(file).Length <= 2097152, "MANIFEST_LIMIT");
-        var m = Json.Deserialize<Manifest>(File.ReadAllText(file));
+        var text = File.ReadAllText(file);
+        var raw = Json.Deserialize<System.Collections.Generic.Dictionary<string, object>>(text);
+        var names = new[] { "buildNumber", "channel", "storageVersion" };
+        var fields = raw.Keys.Where(k => names.Any(n => String.Equals(n, k, StringComparison.OrdinalIgnoreCase))).ToArray();
+        if (fields.Length != 0) Require(fields.Length == 3 && names.All(raw.ContainsKey) &&
+            (raw["buildNumber"] is int || raw["buildNumber"] is long) && raw["channel"] is string && raw["storageVersion"] is string,
+            "MANIFEST_RELEASE_FIELDS_REFUSED");
+        var m = Json.Deserialize<Manifest>(text);
         Require(m.product == Product && m.files != null && m.files.Length > 0 && m.files.Length <= 5000 &&
             Regex.IsMatch(m.commit ?? "", "^[a-f0-9]{40}$"), "MANIFEST_REFUSED");
+        Identity(m);
         Require(m.files.Select(x => x.path.ToLowerInvariant()).Distinct().Count() == m.files.Length, "DUPLICATE_FILE");
         foreach (var e in m.files) { Child(directory, e.path); Require(Regex.IsMatch(e.sha256 ?? "", "^[a-f0-9]{64}$") && e.bytes >= 0, "ENTRY_REFUSED"); }
         return m;
@@ -349,6 +467,7 @@ internal static class Launcher {
                 foreach (var d in dirs) { var p = d; while (p.Length > dir.Length) { Safe(p); if (Directory.Exists(p) && !Directory.EnumerateFileSystemEntries(p).Any()) Directory.Delete(p); p = Path.GetDirectoryName(p); } }
                 if (Directory.EnumerateFileSystemEntries(dir).All(x => Path.GetFileName(x) == "install-manifest.json")) {
                     var manifest = Path.Combine(dir, "install-manifest.json");
+                    RetireVersionReceipt(Path.GetFileName(dir));
                     Require(DeleteOwned(manifest, new FileInfo(manifest).Length, File.ReadAllText(receipt)), "MANIFEST_CHANGED");
                     Directory.Delete(dir); File.Delete(receipt); Event("RETIRED " + Path.GetFileName(dir));
                 } else { deferred = true; Event("DEFERRED UNKNOWN_OR_MODIFIED " + Path.GetFileName(dir)); }
@@ -358,7 +477,7 @@ internal static class Launcher {
     }
     static int Launch(string id, bool activate, string expectedCurrent = null, bool retainRepairOriginal = false) {
         var directory = VersionRoot(id); var m = ReadManifest(directory);
-        var identity = m.version + "-" + m.commit.Substring(0, 12);
+        var identity = Identity(m).storage + "-" + m.commit.Substring(0, 12);
         Require(id == identity || Regex.IsMatch(id, "^" + Regex.Escape(identity) + "-r[a-f0-9]{32}$"), "VERSION_MISMATCH");
         if (!activate) {
             Require(File.ReadAllText(Child(Root, "receipts/" + id + ".sha256")) == Hash(Child(directory, "install-manifest.json")), "CURRENT_MANIFEST_CHANGED");
@@ -597,15 +716,13 @@ internal static class Launcher {
                     if (mode == "--stage-repair" && args.Length >= 4) {
                         var input = Safe(args[3]); Require(Path.GetFileName(input) == "install-manifest.json", "STAGING_MANIFEST_NAME");
                         var manifest = ReadManifest(Path.GetDirectoryName(input));
-                        var baseId = manifest.version + "-" + manifest.commit.Substring(0, 12);
+                        var baseId = Identity(manifest).storage + "-" + manifest.commit.Substring(0, 12);
                         Require(args[2] == baseId, "STAGING_IDENTITY_REFUSED");
                         var current = Current(); VersionRoot(current);
                         var oldBase = Regex.Replace(current, "-r[a-f0-9]{32}$", "");
-                        var oldDisplay = oldBase.Substring(0, oldBase.Length - 13);
-                        var oldVersion = Version.Parse(oldDisplay.Replace("-preview.", "."));
-                        var newVersion = Version.Parse(manifest.version.Replace("-preview.", "."));
-                        Require(newVersion >= oldVersion, "REPAIR_DOWNGRADE_REFUSED");
-                        if (newVersion == oldVersion) Require(baseId == oldBase &&
+                        var oldVersion = InstalledIdentity(current, true); var newVersion = Identity(manifest);
+                        ForwardVersion(oldVersion, newVersion, true, "REPAIR_DOWNGRADE_REFUSED");
+                        if (newVersion.build == oldVersion.build) Require(baseId == oldBase &&
                             File.ReadAllText(Child(Root, "receipts/" + current + ".sha256")) == Hash(input), "REPAIR_PACKAGE_IDENTITY_CHANGED");
                         var id = baseId + "-r" + Guid.NewGuid().ToString("N");
                         var directory = VersionRoot(id);
@@ -614,6 +731,7 @@ internal static class Launcher {
                         File.Copy(input, Child(directory, "install-manifest.json"), false);
                         Directory.CreateDirectory(Child(Root, "receipts"));
                         Atomic(Child(Root, "receipts/" + id + ".sha256"), Hash(input));
+                        WriteVersionReceipt(id, manifest);
                         Atomic(Child(Root, "receipts/" + id + ".repair-current"), current);
                         Atomic(Child(Root, "pending-repair.txt"), id);
                         Event("REPAIR_FRESH_STAGE_PREPARED"); return 0;
@@ -622,16 +740,18 @@ internal static class Launcher {
                         var directory = VersionRoot(args[2]);
                         var input = Safe(args[3]); Require(Path.GetFileName(input) == "install-manifest.json", "STAGING_MANIFEST_NAME");
                         var manifest = ReadManifest(Path.GetDirectoryName(input));
-                        Require(args[2] == manifest.version + "-" + manifest.commit.Substring(0, 12), "STAGING_IDENTITY_REFUSED");
+                        Require(args[2] == Identity(manifest).storage + "-" + manifest.commit.Substring(0, 12), "STAGING_IDENTITY_REFUSED");
                         if (Directory.Exists(directory)) {
                             if (File.Exists(Path.Combine(Root, "current.txt")) && Current() == args[2]) {
                                 Require(Hash(input) == Hash(Child(directory, "install-manifest.json")) &&
                                     File.ReadAllText(Child(Root, "receipts/" + args[2] + ".sha256")) == Hash(input), "CURRENT_MANIFEST_CHANGED");
+                                WriteVersionReceipt(args[2], manifest);
                                 Verify(directory, manifest); return 10; // confirm without overlaying a live version
                             }
                             var receipt = Child(Root, "receipts/" + args[2] + ".sha256");
                             if (File.Exists(receipt) && File.ReadAllText(receipt) == Hash(input) &&
                                 File.Exists(Child(directory, "install-manifest.json")) && Hash(input) == Hash(Child(directory, "install-manifest.json"))) {
+                                WriteVersionReceipt(args[2], manifest);
                                 try {
                                     Verify(directory, manifest);
                                     if (ExactProgramFiles(directory, manifest)) { Event("VERIFIED_STAGE_REUSED " + args[2]); return 10; }
@@ -643,7 +763,8 @@ internal static class Launcher {
                         Directory.CreateDirectory(directory);
                         File.Copy(input, Child(directory, "install-manifest.json"), false);
                         Directory.CreateDirectory(Child(Root, "receipts"));
-                        Atomic(Child(Root, "receipts/" + args[2] + ".sha256"), Hash(input)); return 0;
+                        Atomic(Child(Root, "receipts/" + args[2] + ".sha256"), Hash(input));
+                        WriteVersionReceipt(args[2], manifest); return 0;
                     }
                     if (mode == "--register") {
                         var names = new[] { "ChatChatBar.exe", "Uninstall.exe" }.Concat(File.Exists(Child(Root, "OpenChatBarFile.exe")) ? new[] { "OpenChatBarFile.exe" } : new string[0]);
@@ -659,11 +780,8 @@ internal static class Launcher {
                         var repair = File.Exists(repairReceipt);
                         if (repair) Require(expectedCurrent != null && File.ReadAllText(repairReceipt) == expectedCurrent, "REPAIR_ENTRY_CHANGED");
                         if (File.Exists(Path.Combine(Root, "current.txt"))) {
-                            var oldDisplay = repair ? Regex.Replace(expectedCurrent, "-[a-f0-9]{12}(?:-r[a-f0-9]{32})?$", "") :
-                                ReadManifest(VersionRoot(Current())).version;
-                            var oldVersion = Version.Parse(oldDisplay.Replace("-preview.", "."));
-                            var newVersion = Version.Parse(m.version.Replace("-preview.", "."));
-                            Require(newVersion > oldVersion || args[2] == Current() || repair && newVersion == oldVersion, "DOWNGRADE_OR_REINSTALL_REFUSED");
+                            ForwardVersion(InstalledIdentity(expectedCurrent, repair), Identity(m),
+                                args[2] == Current() || repair, "DOWNGRADE_OR_REINSTALL_REFUSED");
                         }
                         Directory.CreateDirectory(Child(Root, "receipts"));
                         var receipt = Child(Root, "receipts/" + args[2] + ".sha256");

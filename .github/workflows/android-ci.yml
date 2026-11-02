@@ -27,6 +27,10 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: python3 -B -m unittest discover -s tools/desktop/upstream -p 'test_*.py'
 
+      - name: Test independent release display build and storage identities
+        working-directory: ${{ github.workspace }}
+        run: python3 -B -m unittest discover -s tools/desktop/update -p 'test_version_identity.py'
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:

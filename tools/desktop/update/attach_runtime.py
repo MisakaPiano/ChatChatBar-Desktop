@@ -7,6 +7,7 @@ import shutil
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'windows'))
 from audit_app_image import regular
+from version_identity import ReleaseIdentity
 
 
 def files(runtime):
@@ -25,7 +26,8 @@ def files(runtime):
     return known
 
 
-def attach(image, runtime, root, version, commit):
+def attach(image, runtime, root, version, commit, build_number=None):
+    identity = ReleaseIdentity.create(version, build_number)
     image, runtime = image.absolute(), runtime.absolute()
     regular(image, directory=True)
     known = files(runtime)
@@ -52,13 +54,15 @@ def attach(image, runtime, root, version, commit):
     shutil.copyfile(runtime / 'RUNTIME_MANIFEST.json', target / 'RUNTIME_MANIFEST.json')
     shutil.copyfile(root, target / 'update-root.json')
     (target / 'update-config.json').write_text(json.dumps(dict(format=1, product='ccb-desktop-nsis-v1',
-        platform='windows-x86_64', channel='preview', version=int(version.removeprefix('0.1.0-preview.')),
-        displayVersion=version, sourceSha=commit, reader=1, rootSha256=hashlib.sha256(root.read_bytes()).hexdigest()), indent=2), encoding='utf-8')
+        platform='windows-x86_64', channel=identity.channel, version=identity.build,
+        displayVersion=version, storageVersion=identity.storage_version, sourceSha=commit, reader=1,
+        rootSha256=hashlib.sha256(root.read_bytes()).hexdigest()), indent=2), encoding='utf-8')
 
 
 if __name__ == '__main__':
     p = argparse.ArgumentParser()
     for name in ('image', 'runtime', 'root'): p.add_argument('--' + name, required=True, type=Path)
     p.add_argument('--version', required=True); p.add_argument('--commit', required=True)
-    a = p.parse_args(); attach(a.image, a.runtime, a.root, a.version, a.commit)
+    p.add_argument('--build-number', type=int)
+    a = p.parse_args(); attach(a.image, a.runtime, a.root, a.version, a.commit, a.build_number)
     print('DESKTOP_UPDATER_ATTACHED')

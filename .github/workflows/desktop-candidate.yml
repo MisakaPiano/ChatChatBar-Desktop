@@ -20,6 +20,10 @@ on:
         required: true
         default: 0.1.1226
         type: string
+      buildNumber:
+        description: Monotonic build identity; required for stable or non-legacy prerelease labels
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -33,6 +37,7 @@ jobs:
       CCB_CANDIDATE_SOURCE: ${{ inputs.sourceSha }}
       CCB_CANDIDATE_VERSION: ${{ inputs.desktopVersion }}
       CCB_CANDIDATE_INSTALLER: ${{ inputs.installerVersion }}
+      CCB_CANDIDATE_BUILD: ${{ inputs.buildNumber }}
     steps:
       - name: Enable long-path Git checkout on this runner
         run: git config --global core.longpaths true
@@ -51,15 +56,24 @@ jobs:
             $env:CCB_CANDIDATE_SOURCE = $request.sourceSha
             $env:CCB_CANDIDATE_VERSION = $request.desktopVersion
             $env:CCB_CANDIDATE_INSTALLER = $request.installerVersion
+            $env:CCB_CANDIDATE_BUILD = $request.buildNumber
             if ($null -ne $request.reuseBuildRun) {
               if ([string]$request.reuseBuildRun -notmatch '^[1-9][0-9]*$') { throw 'REUSE_RUN_REFUSED' }
               "CCB_REUSE_BUILD_RUN=$($request.reuseBuildRun)" | Add-Content $env:GITHUB_ENV -Encoding utf8
             }
           }
           if ($env:CCB_CANDIDATE_SOURCE -cnotmatch '^[0-9a-f]{40}$') { throw 'EXACT_SOURCE_REQUIRED' }
-          if ($env:CCB_CANDIDATE_VERSION -notmatch '^0\.1\.0-preview\.([1-9][0-9]*)$') { throw 'PREVIEW_VERSION_REQUIRED' }
-          if ($env:CCB_CANDIDATE_INSTALLER -ne "0.1.$($Matches[1])") { throw 'INSTALLER_VERSION_MISMATCH' }
-          @("CCB_CANDIDATE_SOURCE=$env:CCB_CANDIDATE_SOURCE", "CCB_CANDIDATE_VERSION=$env:CCB_CANDIDATE_VERSION", "CCB_CANDIDATE_INSTALLER=$env:CCB_CANDIDATE_INSTALLER") | Add-Content $env:GITHUB_ENV -Encoding utf8
+          $identityArgs = @('tools/desktop/update/version_identity.py', '--display', $env:CCB_CANDIDATE_VERSION)
+          if ($env:CCB_CANDIDATE_BUILD) { $identityArgs += @('--build-number', $env:CCB_CANDIDATE_BUILD) }
+          $identity = (& python -B @identityArgs) | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0 -or !$identity) { throw 'CANDIDATE_RELEASE_IDENTITY_REFUSED' }
+          $env:CCB_CANDIDATE_BUILD = [string]$identity.build
+          $legacy = [regex]::Match($env:CCB_CANDIDATE_VERSION, '^0\.1\.0-preview\.([1-9][0-9]*)$')
+          if ($legacy.Success -and $env:CCB_CANDIDATE_INSTALLER -ne "0.1.$($legacy.Groups[1].Value)") { throw 'INSTALLER_VERSION_MISMATCH' }
+          if ($env:CCB_CANDIDATE_INSTALLER -notmatch '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$') { throw 'INSTALLER_VERSION_REQUIRED' }
+          $numbers = $env:CCB_CANDIDATE_INSTALLER.Split('.') | ForEach-Object { [long]$_ }
+          if ($numbers[0] -gt 255 -or $numbers[1] -gt 255 -or $numbers[2] -gt 65535) { throw 'INSTALLER_VERSION_RANGE' }
+          @("CCB_CANDIDATE_SOURCE=$env:CCB_CANDIDATE_SOURCE", "CCB_CANDIDATE_VERSION=$env:CCB_CANDIDATE_VERSION", "CCB_CANDIDATE_INSTALLER=$env:CCB_CANDIDATE_INSTALLER", "CCB_CANDIDATE_BUILD=$env:CCB_CANDIDATE_BUILD") | Add-Content $env:GITHUB_ENV -Encoding utf8
 
       - uses: actions/setup-java@v4
         with:
@@ -154,16 +168,16 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $nsis = Join-Path $env:CCB_BUILD_OUTPUT 'nsis'
-          .\gradlew.bat :desktopApp:verifyDesktopInstallerIdentity :desktopApp:attachDesktopUpdater "-PdesktopVersion=$env:CCB_CANDIDATE_VERSION" "-PdesktopInstallerVersion=$env:CCB_CANDIDATE_INSTALLER" --no-daemon --no-configuration-cache --console=plain
+          .\gradlew.bat :desktopApp:verifyDesktopInstallerIdentity :desktopApp:attachDesktopUpdater "-PdesktopVersion=$env:CCB_CANDIDATE_VERSION" "-PdesktopInstallerVersion=$env:CCB_CANDIDATE_INSTALLER" "-PdesktopBuildNumber=$env:CCB_CANDIDATE_BUILD" --no-daemon --no-configuration-cache --console=plain
           if ($LASTEXITCODE -ne 0) { throw 'FROZEN_IMAGE_BUILD_FAILED' }
           $image = Join-Path $env:CCB_CI_SOURCE 'app\desktopApp\build\compose\binaries\main\app\ChatChatBarDesktop'
           # Application source stays frozen. Auditing/packaging tools have their own control commit.
-          python -B "$env:GITHUB_WORKSPACE/tools/desktop/nsis/build_installer.py" --image $image --output $nsis --version $env:CCB_CANDIDATE_VERSION --commit $env:CCB_CANDIDATE_SOURCE --installer-version $env:CCB_CANDIDATE_INSTALLER --profile desktop --makensis $env:CCB_NSIS_COMPILER
+          python -B "$env:GITHUB_WORKSPACE/tools/desktop/nsis/build_installer.py" --image $image --output $nsis --version $env:CCB_CANDIDATE_VERSION --commit $env:CCB_CANDIDATE_SOURCE --installer-version $env:CCB_CANDIDATE_INSTALLER --build-number $env:CCB_CANDIDATE_BUILD --profile desktop --makensis $env:CCB_NSIS_COMPILER
           if ($LASTEXITCODE -ne 0) { throw 'ORDINARY_PACKAGE_FAILED' }
           $archive = Join-Path $env:CCB_BUILD_OUTPUT ("ChatChatBar-Desktop-$env:CCB_CANDIDATE_VERSION-independent-windows-x64.zip")
           python -B "$env:GITHUB_WORKSPACE/tools/desktop/nsis/build_independent_zip.py" --image $image --destination $archive --version $env:CCB_CANDIDATE_VERSION --commit $env:CCB_CANDIDATE_SOURCE --installer-version $env:CCB_CANDIDATE_INSTALLER
           if ($LASTEXITCODE -ne 0) { throw 'INDEPENDENT_PACKAGE_FAILED' }
-          $toolFiles = @('tools/desktop/nsis/build_installer.py', 'tools/desktop/nsis/installer_diagnostics.py', 'tools/desktop/nsis/Launcher.cs', 'tools/desktop/nsis/build_independent_zip.py', 'tools/desktop/windows/audit_app_image.py')
+          $toolFiles = @('tools/desktop/nsis/build_installer.py', 'tools/desktop/nsis/installer_diagnostics.py', 'tools/desktop/nsis/Launcher.cs', 'tools/desktop/nsis/build_independent_zip.py', 'tools/desktop/windows/audit_app_image.py', 'tools/desktop/update/version_identity.py')
           $toolHashes = @($toolFiles | ForEach-Object { [ordered]@{path=$_; sha256=(Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $env:GITHUB_WORKSPACE $_)).Hash.ToLowerInvariant()} })
           [ordered]@{kind='FROZEN_APPLICATION_AND_SEPARATE_BUILD_TOOLS'; applicationSource=$env:CCB_CANDIDATE_SOURCE; controlSource=(git -C $env:GITHUB_WORKSPACE rev-parse HEAD); tools=$toolHashes} | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $env:CCB_BUILD_OUTPUT 'package-control.json') -Encoding utf8
           @("CCB_CANDIDATE_IMAGE=$image", "CCB_CANDIDATE_ARCHIVE=$archive", "CCB_CANDIDATE_NSIS=$nsis") | Add-Content $env:GITHUB_ENV -Encoding utf8

@@ -11,6 +11,8 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'windows'))
 from audit_app_image import audit, regular
 from installer_diagnostics import decorate_manager_calls, diagnostic_function
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'update'))
+from version_identity import ReleaseIdentity
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -30,9 +32,8 @@ def quote(value):
     return '"' + value + '"'
 
 
-def build(image, output, version, commit, installer_version, profile, compiler):
-    if not re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+-preview\.[1-9][0-9]*', version):
-        raise ValueError('PREVIEW_VERSION_REQUIRED')
+def build(image, output, version, commit, installer_version, profile, compiler, build_number=None):
+    identity = ReleaseIdentity.create(version, build_number)
     if not re.fullmatch(r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)', installer_version) or any(int(p) > 65535 for p in installer_version.split('.')):
         raise ValueError('WINDOWS_INSTALLER_VERSION_REQUIRED')
     image = image.absolute()
@@ -50,7 +51,7 @@ def build(image, output, version, commit, installer_version, profile, compiler):
     product = 'ccb-desktop-nsis-' + ('synthetic-v1' if profile == 'synthetic' else 'v1')
     folder = 'ChatChatBarDesktopNSIS' + ('Synthetic' if profile == 'synthetic' else '')
     key = folder
-    version_id = version + '-' + commit[:12]
+    version_id = identity.storage_version + '-' + commit[:12]
     required_space = max(805306368, sum(e['bytes'] for e in report['files']) + 67108864)
     launcher = output / 'ChatChatBar.exe'
     open_bridge = output / 'OpenChatBarFile.exe'
@@ -67,7 +68,8 @@ def build(image, output, version, commit, installer_version, profile, compiler):
     subprocess.run(stable_args + [str(Path(__file__).with_name('Launcher.cs'))], check=True)
     bridge_args = [a for a in args if not a.startswith('/out:')] + ['/out:' + str(open_bridge), '/define:STABLE;OPEN_WITH']
     subprocess.run(bridge_args + [str(Path(__file__).with_name('Launcher.cs'))], check=True)
-    manifest = dict(product=product, version=version, commit=commit, files=[*report['files'],
+    manifest = dict(product=product, version=version, commit=commit, buildNumber=identity.build,
+                    channel=identity.channel, storageVersion=identity.storage_version, files=[*report['files'],
                     dict(path=manager.name, bytes=manager.stat().st_size, sha256=sha(manager))])
     manifest_path = output / 'install-manifest.json'
     manifest_path.write_text(json.dumps(manifest, indent=2), encoding='utf-8')
@@ -195,6 +197,7 @@ if __name__ == '__main__':
     p.add_argument('--installer-version', required=True)
     p.add_argument('--profile', choices=['desktop', 'synthetic'], default='desktop')
     p.add_argument('--makensis', type=Path, required=True)
+    p.add_argument('--build-number', type=int)
     options = vars(p.parse_args())
     options['compiler'] = options.pop('makensis')
     build(**options)

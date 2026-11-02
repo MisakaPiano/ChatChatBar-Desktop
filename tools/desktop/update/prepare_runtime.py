@@ -53,7 +53,7 @@ def prepare(destination, artifact_cache, download=False):
                     with target.open('xb') as stream:
                         stream.write(archive.read(entry))
     (destination / 'python313._pth').write_text('python313.zip\n.\nlib\n', encoding='utf-8')
-    for name in ('desktop_update.py', 'github_transport.py'):
+    for name in ('desktop_update.py', 'github_transport.py', 'version_identity.py'):
         shutil.copyfile(HERE / name, destination / 'lib' / name)
     compiler = Path(os.environ.get('WINDIR', 'C:/Windows')) / 'Microsoft.NET/Framework64/v4.0.30319/csc.exe'
     subprocess.run([str(compiler), '/nologo', '/target:winexe', '/platform:x64', '/reference:System.Windows.Forms.dll',
