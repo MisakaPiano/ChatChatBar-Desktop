@@ -16,3 +16,6 @@ tools/desktop/update/fixtures/desktop_update_1233.py -text
 app/sharedCore/src/test/resources/interop/ccb-full-prompt-v1.txt text eol=lf
 app/desktopApp/src/test/resources/interop/ccb-full-prompt-v1.txt text eol=lf
 app/app/src/test/resources/interop/ccb-full-prompt-v1.txt text eol=lf
+
+# Namespace-only pinned147 legacy reader/replay sources bind their recorded byte hashes.
+app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/legacy/** text eol=lf

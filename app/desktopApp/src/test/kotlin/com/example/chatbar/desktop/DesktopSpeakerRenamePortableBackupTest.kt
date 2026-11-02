@@ -150,16 +150,29 @@ class DesktopSpeakerRenamePortableBackupTest {
         }
     }
 
-    @Test fun `prepared nonoverlapping names remain idempotent for both portable readers`() = runBlocking {
+    @Test fun `nonoverlapping task cannot let an old reader overwrite a later manual source edit`() = runBlocking {
         for (modern in listOf(false, true)) Fixture().use { f ->
             f.seed(nextA = "D")
+            f.chats.updateMessage(f.chats.getMessage("first", "s")!!.copy(content = "<n=\"A\"/>later manual edit"))
             val before = f.sourceBytes()
-            val output = f.base.resolve("idempotent.cbbackup")
-            if (modern) f.service.exportModern(output, null) else f.service.export(output, null)
-            val old = legacyReplay(f.base, entries(output))
-            assertEquals("<n=\"D\"/>first", old.getMessage("first", "s")!!.content)
-            assertEquals("<n=\"C\"/>second", old.getMessage("second", "s")!!.content)
+            val output = f.base.resolve("changed-source-refused.cbbackup")
+            assertFailsWith<DesktopPendingSpeakerRenameExport> {
+                if (modern) f.service.exportModern(output, null) else f.service.export(output, null)
+            }
+            assertFalse(Files.exists(output)); assertEquals(before, f.sourceBytes())
+            val work = Files.createDirectory(f.base.resolve("changed-source-internal"))
+            DesktopFullBackupMapping(f.root).export(work, if (modern) 86 else 84, forMerge = true).use { snapshot ->
+                val internal = f.base.resolve("changed-source-counterexample.cbbackup")
+                if (modern) DesktopFullBackupWriter.export(snapshot.files, internal, null, snapshot.preferences)
+                else DesktopFullBackupArchive(work).export(snapshot.files, internal, f.root.toString(), null, snapshot.preferences)
+                val old = legacyReplay(f.base, entries(internal))
+                assertEquals("<n=\"D\"/>later manual edit", old.getMessage("first", "s")!!.content)
+            }
             assertEquals(before, f.sourceBytes())
+            val task = f.cards.getById("card")!!.pendingSpeakerRenameTasks.single()
+            assertFailsWith<IllegalStateException> { SpeakerTagHistoryService(f.cards, f.chats).execute("card", task.id) }
+            assertEquals("<n=\"A\"/>later manual edit", f.chats.getMessage("first", "s")!!.content)
+            assertNotNull(f.cards.getById("card")!!.pendingSpeakerRenameTasks.single().rewritePlan)
         }
     }
 
