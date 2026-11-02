@@ -1,4 +1,6 @@
-# Desktop NSIS Preview packaging
+# Desktop NSIS packaging
+
+Release display version and monotonic build identity are separate from the directory name accepted by old stable root entries. Legacy `0.1.0-preview.N` derives build N; stable/beta/rc labels require explicit `-PdesktopBuildNumber=<positive integer>`. For example, real `1.0.0` with build1235 uses internal storage `1.0.0-preview.1235-<commit12>` while JAR/manifest/READY/display remain `1.0.0`. Manifests bind `buildNumber/channel/storageVersion`; same-package repair also verifies the sealed external version identity and original manifest receipt. See `docs/desktop/267_STABLE_RELEASE_UPGRADE_IDENTITY.md` for the bridge and exact proof boundaries.
 
 Setup requests `--diagnostic-exit` from its embedded manager and displays that invocation's fixed whitelist reason, attempted phase and the current environment's registration log directory. Legacy callers keep exit2. The failure UI separates program/data overlap, running operations, disk space and startup readiness; it never reads a retained log tail as the current failure. `installer_diagnostics.py` owns the NSIS mapping/template. Native synthetic lifecycle cases exercise both exit protocols; the generated ordinary NSIS must still compile and pass its separate candidate/native checks.
 
