@@ -1,4 +1,4 @@
-2026-11-02后补：125/ef3双job API SUCCESS，shared1162/Android586原XML通过，Windows原件待；原147参数与portable保护未提升为整baseline兼容。R4同public1233短云profile实际生命周期PASS，原长case失败保留；R5完整普通稳定链另行执行，不以baseline代验。D042实际动态数字源码01c+0d见273，原worldbook/上下文/检索/替换流程只投影数字，完整wire不匹配不带计划；阶段不可相加、候选缓存非命中、模型精度校准仍待。该新源尚待后继云验，不混125/公开1233；无真人代装或新公开。
+2026-11-02后继准备：125/ef3完整原件主2534PASS+19SKIP、shared1162/Android586/proxy5/NTFS7/native37/TUF14/exit4通过；126/a485双job API SUCCESS、Linux1164/586通过，Windows原件待。R5旧1233与bridge实际通过后root三hash拒绝，R6仅修普通卸载入口保留/原guard前逐项取证仍运行。最新147具体缺口87c预制world/default-format声明依赖、0fd角色schema9默认生图设置双映射与校验已补（274/275），以及CI-only固定分词器抽样（273），均待新精确源云验，不混126或公开1233。旧消息版本policy8+repo1、MemoryRepository维护gate15+journal3按125原件限定复用；最新版适配继续推进，当前baseline证据状态不是永久停在141。无日常H代装/新公开。
 
 2026-11-02 用户最新方向：Desktop优先适配官方CCB本体（固定147，validated141尚不批量提升），独立Studio应适配CCB已有权威接口/格式。停止追加仅为Studio新协议的手机Fork读取器分发/安装与版本定位询问；保留已做未发布扩展/测试并明确非官方兼容证据，不破坏性回滚。269及266/技能/完整文本窗口边界说明同步；147历史/参数/portable数据保全、P18普通链、D042继续。123最后完整绿，124共享测试编译缺import的4f最小修正待后继源；R2普通链已通过同固定编译器身份并构建，未宣称普通链PASS。
 
