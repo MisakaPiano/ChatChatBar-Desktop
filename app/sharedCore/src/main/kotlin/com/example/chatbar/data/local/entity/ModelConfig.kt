@@ -46,6 +46,7 @@ sealed class ParamValue {
  * LLM模型配置
  */
 @Serializable
+@OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
 data class ModelConfig(
     val id: String,
     val displayName: String,
@@ -67,8 +68,13 @@ data class ModelConfig(
     val sourcePresetKey: String? = null,
     val sourcePresetVersion: Int? = null,
     val createdAt: Long,
+    /** Explicit user-declared context capacity for Desktop estimates; never an API parameter. */
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
+    val desktopContextWindowTokens: Long? = null,
     @kotlinx.serialization.Transient val credentialAccount: ModelCredentialAccount? = null,
 ) {
+    init { require(desktopContextWindowTokens == null || desktopContextWindowTokens > 0) }
+
     companion object {
         @OptIn(ExperimentalUuidApi::class)
         fun create(

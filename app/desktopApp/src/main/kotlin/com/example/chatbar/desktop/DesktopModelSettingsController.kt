@@ -75,6 +75,7 @@ internal data class DesktopModelEditorDraft(
     val reasoningEffort: String = "",
     val enableThinking: Boolean? = null,
     val maxOutputTokens: String = "",
+    val contextWindowTokens: String = "",
     val outputTokenParameter: OutputTokenParameter = OutputTokenParameter.MAX_TOKENS,
     val formatPromptPosition: FormatPromptPosition = FormatPromptPosition.BOTH,
     val supportsJsonMode: Boolean = false,
@@ -756,6 +757,7 @@ private fun ModelConfig.toEditor() = DesktopModelEditorDraft(
     reasoningEffort = reasoningEffort.orEmpty(),
     enableThinking = enableThinking,
     maxOutputTokens = maxOutputTokens?.toString().orEmpty(),
+    contextWindowTokens = desktopContextWindowTokens?.toString().orEmpty(),
     outputTokenParameter = outputTokenParameter,
     formatPromptPosition = formatPromptPosition,
     supportsJsonMode = supportsJsonMode,
@@ -775,6 +777,10 @@ private fun DesktopModelEditorDraft.toModelConfig(original: ModelConfig?): Model
     val outputLimit = maxOutputTokens.trim().takeIf(String::isNotEmpty)?.let {
         it.toIntOrNull()?.takeIf { value -> value > 0 }
             ?: throw DesktopEditorValidationException("Max output tokens must be positive")
+    }
+    val contextCapacity = contextWindowTokens.trim().takeIf(String::isNotEmpty)?.let {
+        it.toLongOrNull()?.takeIf { value -> value > 0 }
+            ?: throw DesktopEditorValidationException("Context capacity must be a positive integer")
     }
     val params = linkedMapOf<String, ParamValue>()
     customParams.forEach { param ->
@@ -806,6 +812,7 @@ private fun DesktopModelEditorDraft.toModelConfig(original: ModelConfig?): Model
         reasoningEffort = reasoningEffort.trim().takeIf(String::isNotEmpty),
         enableThinking = enableThinking,
         maxOutputTokens = outputLimit,
+        desktopContextWindowTokens = contextCapacity,
         outputTokenParameter = outputTokenParameter,
         formatPromptPosition = formatPromptPosition,
         supportsJsonMode = supportsJsonMode,

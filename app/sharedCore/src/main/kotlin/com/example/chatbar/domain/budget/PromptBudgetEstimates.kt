@@ -13,6 +13,9 @@ data class PromptEstimateTarget(val modelLabel: String, val contextWindowTokens:
     init { require(contextWindowTokens == null || contextWindowTokens > 0) }
 }
 
+/** Only the explicit model field is authority; output caps and message-window counts are unrelated. */
+fun ModelConfig.promptEstimateTarget(label: String = displayName) = PromptEstimateTarget(label, desktopContextWindowTokens)
+
 data class EstimatedTextTokens(val tokens: Long, val utf16Units: Int)
 data class PromptBudgetSection(val id: String, val label: String, val estimate: EstimatedTextTokens, val note: String = "")
 data class PromptBudgetEstimate(
@@ -26,6 +29,9 @@ data class PromptBudgetEstimate(
 ) {
     val estimatedTextTokens: Long get() = sections.sumOf { it.estimate.tokens }
     val estimatedUtf16Units: Long get() = sections.sumOf { it.estimate.utf16Units.toLong() }
+    val estimatedTextContextPercent: Double? get() = target.contextWindowTokens?.let {
+        estimatedTextTokens.toDouble() / it.toDouble() * 100.0
+    }
 }
 
 /** Explicit heuristic, NOT a model tokenizer: Han UTF-16 units weigh .8, other units .4. */

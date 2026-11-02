@@ -128,6 +128,9 @@ internal fun DesktopChatDebugPanel(owner: DesktopTransportDiagnosticsOwner, sess
                             entry.usage?.cachedTokens?.let { StatusText("命中缓存 Token：$it") }
                             entry.requestTextBudget?.let { budget ->
                                 StatusText("实际请求 content 文本估算 ≈ ${budget.estimatedTextTokens} Token · 字符法，非模型 tokenizer／实测用量")
+                                StatusText(budget.target.contextWindowTokens?.let { capacity ->
+                                    "模型上下文容量：$capacity Token（用户配置，未向供应商核实）；文本参考占比 ≈ ${java.lang.String.format(java.util.Locale.ROOT, "%.1f", budget.estimatedTextContextPercent)}%"
+                                } ?: "模型上下文容量未知；不从输出上限推算。")
                                 StatusText("不含消息封装、图片／音频及其他非文本部分，也不含 tools／response_format 等请求结构。")
                                 if (budget.excludedNonTextParts > 0) StatusText("未估算的非文本部分：${budget.excludedNonTextParts}")
                                 if (budget.additionalMessageFieldsExcluded) StatusText("部分消息带额外结构字段，未计入文本估算。")

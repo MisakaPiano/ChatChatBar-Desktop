@@ -11,6 +11,7 @@ import com.example.chatbar.domain.chat.MainChatLogicalMessageSource
 import com.example.chatbar.domain.chat.MainChatLogicalMessageTrace
 import com.example.chatbar.domain.budget.PromptBudgetEstimate
 import com.example.chatbar.domain.budget.PromptEstimateTarget
+import com.example.chatbar.domain.budget.promptEstimateTarget
 import com.example.chatbar.domain.budget.WirePromptBudgetEstimator
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -120,7 +121,7 @@ internal class DesktopTransportDiagnosticsOwner(
             ).take(maxEntries)
         }
         return DesktopTransportDiagnosticRecorder(this, taskId, scrubber, clock,
-            PromptEstimateTarget(scrubber.text(model.desktopAccountLabel(), SHORT_LIMIT)), model.baseUrl,
+            model.promptEstimateTarget(scrubber.text(model.desktopAccountLabel(), SHORT_LIMIT)), model.baseUrl,
             usageSink?.let { sink -> DesktopUsageAttemptRecorder(usageContext,
                 scrubber.text(model.id, SHORT_LIMIT), scrubber.text(model.modelName, SHORT_LIMIT),
                 model.credentialAccount?.provider?.let { scrubber.text(it, SHORT_LIMIT) },

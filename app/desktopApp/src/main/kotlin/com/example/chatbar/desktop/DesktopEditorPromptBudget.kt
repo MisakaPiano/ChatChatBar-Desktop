@@ -23,8 +23,10 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
 internal data class DesktopEditorBudgetState(val loading: Boolean = false, val selectedId: String? = null,
-    val options: List<DesktopCardDesignOption> = emptyList(), val defaultModel: String = "尚未读取", val error: String? = null) {
-    val target get() = PromptEstimateTarget(if (selectedId == null) defaultModel else options.firstOrNull { it.id == selectedId }?.name ?: "所选模型不可用")
+    val options: List<DesktopCardDesignOption> = emptyList(), val defaultModel: String = "尚未读取", val error: String? = null,
+    val modelCapacities: Map<String, Long> = emptyMap(), val defaultCapacity: Long? = null) {
+    val target get() = PromptEstimateTarget(if (selectedId == null) defaultModel else options.firstOrNull { it.id == selectedId }?.name ?: "所选模型不可用",
+        if (selectedId == null) defaultCapacity else modelCapacities[selectedId])
 }
 
 private fun ModelConfig.editorBudgetLabel() = if (credentialAccount == null) "$displayName · $modelName" else desktopAccountLabel()
@@ -45,10 +47,14 @@ internal class DesktopEditorBudgetController(private val settings: SettingsRepos
             try {
                 val result = gate.withNormalOperation {
                     val fresh = settings.getAppSettings()
-                    models.availableChatModels(fresh).map { DesktopCardDesignOption(it.id, it.editorBudgetLabel()) } to
-                        (models.defaultChatModel(fresh)?.editorBudgetLabel() ?: "未配置对话模型")
+                    val available = models.availableChatModels(fresh)
+                    val default = models.defaultChatModel(fresh)
+                    Triple(available.map { DesktopCardDesignOption(it.id, it.editorBudgetLabel()) },
+                        default?.promptEstimateTarget(default.editorBudgetLabel()) ?: PromptEstimateTarget("未配置对话模型"),
+                        available.mapNotNull { model -> model.desktopContextWindowTokens?.let { model.id to it } }.toMap())
                 }
-                mutableState.update { if (epoch.get() == token) it.copy(options = result.first, defaultModel = result.second) else it }
+                mutableState.update { if (epoch.get() == token) it.copy(options = result.first, defaultModel = result.second.modelLabel,
+                    defaultCapacity = result.second.contextWindowTokens, modelCapacities = result.third) else it }
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (_: Exception) { mutableState.update { if (epoch.get() == token) it.copy(error = "读取估算参考模型失败，请刷新后重试") else it } }
         }
@@ -84,7 +90,8 @@ internal class DesktopEditorBudgetController(private val settings: SettingsRepos
                 }
                 StatusText("参考模型：${model.target.modelLabel}")
                 StatusText("未加载该模型专用分词器；按字符估算（汉字约 0.8，其他约 0.4），特殊字符误差可能更大。")
-                StatusText("模型上下文上限未提供；输出上限不等于上下文容量。")
+                StatusText(model.target.contextWindowTokens?.let { "模型上下文容量：$it Token（用户配置，未向供应商核实）" }
+                    ?: "模型上下文上限未提供；输出上限不等于上下文容量。")
                 StatusText("这里只统计已列编辑字段；未计算变量展开、条目激活、RAG／记忆、历史和请求封装，不是本轮输入总量。")
                 if (entity is FormatCard) StatusText("随机数工具的本次展开值尚未生成，不计入静态合计。")
                 if (!model.loading) SearchableChoice("估算参考模型", listOf<String?>(null) + model.options.map { it.id } +
@@ -94,6 +101,9 @@ internal class DesktopEditorBudgetController(private val settings: SettingsRepos
                 model.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
                 report?.let { estimate ->
                     StatusText("已列字段静态合计 ≈ ${estimate.estimatedTextTokens} Token")
+                    estimate.estimatedTextContextPercent?.let { percent ->
+                        StatusText("静态字段参考占容量 ≈ ${java.lang.String.format(java.util.Locale.ROOT, "%.1f", percent)}%；不是本轮请求占用或可用余额。")
+                    }
                     LazyColumn(Modifier.fillMaxWidth().heightIn(max = 320.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         items(estimate.sections, key = { it.id }) { section ->
                             Column { StatusText("${section.label} · ≈ ${section.estimate.tokens} Token")

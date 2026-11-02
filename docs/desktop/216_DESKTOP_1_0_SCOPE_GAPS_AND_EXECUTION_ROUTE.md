@@ -1,3 +1,5 @@
+2026-11-02 D042显式容量源码另片已备，见268：可选用户配置模型上下文Token容量，原模型存储/模板保留，缺省不写新键；三编辑器默认/选定模型及实际解析模型wire诊断接线，静态/实际文本比例明确非精确tokenizer/全部占用/余额。新增共享2+真实编辑保存1例并扩展原Scene/完整wire例待新源云验，未代验P17精度。用户已明确完整Prompt互换同时需要Suite和Android，Desktop5例PASS不等于两端兼容；Suite由既有执行者接线，Fork Android配对读写/预览确认/撤销仍待，不改官方只读上游/不发APK。P18本地c52未推，119继续收原报告，无新公开/日常H操作。
+
 2026-11-02 P18升级身份源码首片已备，见267：真实display、单调build和旧root可识别storage分离；保留原根EXE、READY/source、两序轴与同包修复收据。启动bridge认证stable再Preview，只有首次stable timestamp404或已认证旧stable可继续Preview，损坏通道不静默降级。新增native4/TUF5及原用例待精确新源云验；协调端3纯版本例仅字符串规则证据，不代验签名/原生/普通JAR。当前119/9f4 Linux实际shared1145/Android582/Python3通过，Windows仍运行，待其原报告后再推本片以免取消取证。公开1233/15、真人待及日常H不操作保持。
 
 2026-11-02 精确118/7026：主2543=2522PASS+19SKIP+2FAIL；完整文本3共享+2实际Desktop全PASS，shared1145/Android582/Python3及proxy5/NTFS7/native33/updater8/exit4通过。Nav请求已消费1次且UPDATE已选中，tab完全裁掉而横栏未滚；改布局后按同一roundToPx几何/原ScrollState显现，原5秒/可见性/resize保留。第二原历史网格初始left断言首因未知，只补原等待后的数量/bounds/失败图，不归flaky。WorldBook8dp标题间距和完整名字语义/保存断言另补。P18完整稳定升级仍工作树接线未验，独立源界限保持；无新公开/日常H/本机重负载。

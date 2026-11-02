@@ -7,6 +7,25 @@ import kotlin.test.*
 
 class PromptBudgetEstimatesTest {
     private val target = PromptEstimateTarget("合成模型")
+    @Test fun `explicit capacity survives model persistence but never changes final wire or invents capacity from output caps`() {
+        val model = ModelConfig("model", "Synthetic", "https://example.test/v1", "", "synthetic", maxOutputTokens = 900,
+            createdAt = 1)
+        val messages = listOf(ChatApiMessage.text("user", "a".repeat(1000)))
+        val originalWire = OpenAiChatRequestSerializer.serialize(messages, model, true)
+        val configured = model.copy(desktopContextWindowTokens = 1000)
+        val codec = Json { encodeDefaults = true }
+        val stored = codec.encodeToString(ModelConfig.serializer(), configured)
+        assertEquals(configured, codec.decodeFromString(ModelConfig.serializer(), stored))
+        assertFalse(codec.encodeToString(ModelConfig.serializer(), model).contains("desktopContextWindowTokens"))
+        assertNull(model.promptEstimateTarget().contextWindowTokens)
+        assertEquals(originalWire, OpenAiChatRequestSerializer.serialize(messages, configured, true))
+        val report = WirePromptBudgetEstimator.estimate(originalWire, configured.promptEstimateTarget())
+        assertEquals(1000L, report.target.contextWindowTokens)
+        assertEquals(40.0, report.estimatedTextContextPercent)
+        assertEquals(WeightedCharacterTokenEstimator.METHOD_ID, report.methodId)
+        assertFailsWith<IllegalArgumentException> { model.copy(desktopContextWindowTokens = 0) }
+        assertFailsWith<IllegalArgumentException> { model.copy(desktopContextWindowTokens = -1) }
+    }
     @Test fun `editor distinguishes modes and disabled fields without changing card or pretending activation`() {
         val person = CharacterInfo("person", "合成人物", profile = "原条目设定", desktopEnabled = false)
         val card = CharacterCard("card", "合成卡", characters = listOf(person), freeformCharacterText = "自由正文",

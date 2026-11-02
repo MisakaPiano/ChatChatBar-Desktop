@@ -4,6 +4,8 @@ import androidx.compose.runtime.compositionLocalOf
 
 /** User-facing Desktop text lives here; persisted data and protocol identifiers are not translated. */
 internal enum class DesktopUiText(val zhCn: String, val en: String) {
+    MODEL_CONTEXT_CAPACITY("上下文容量（Token，可留空）", "Context capacity (tokens; optional)"),
+    MODEL_CONTEXT_CAPACITY_HELP("按该模型及接入端的说明填写，仅供占用估算；留空为未知。输出上限和保留消息组数是独立设置。", "Enter the capacity documented for this exact model and endpoint. Used only as an estimate reference; blank means unknown. Output limit and message count are separate."),
     WINDOW_MINIMIZE("最小化", "Minimize"), WINDOW_MAXIMIZE("最大化", "Maximize"), WINDOW_RESTORE("还原", "Restore"),
     CHAT("对话", "Chat"), MOMENTS("朋友圈", "Moments"), MANAGE("管理", "Manage"), TOOLS("工具", "Tools"), DATA("数据", "Data"),
     CONTEXT_HELP("当前页帮助", "Help for this page"), CLOSE_CONTEXT_HELP("关闭当前页帮助", "Close page help"),
@@ -631,6 +633,7 @@ internal class DesktopUiStrings(private val language: DesktopUiLanguage) {
         "Base URL is required" -> "请输入基础 URL"
         "Model ID is required" -> "请输入 Model ID"
         "Max output tokens must be positive" -> "最大输出 Tokens 必须为正数"
+        "Context capacity must be a positive integer" -> "上下文容量必须为正整数"
         "Custom parameter name is required" -> "请输入自定义参数名称"
         "Custom parameter names must be unique" -> "自定义参数名称不能重复"
         "Custom number must be finite" -> "自定义数值必须为有限数"

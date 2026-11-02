@@ -24,8 +24,9 @@ class DesktopEditorPromptBudgetTest {
                 check(path == "presets/manifest.json"); """{"entries":[]}""".toByteArray()
             })
         try {
-            val first = ModelConfig("first", "合成模型一", "https://example.test/v1", "fixture-key", "synthetic-one", createdAt = 1)
-            val second = first.copy(id = "second", displayName = "合成模型二", modelName = "synthetic-two")
+            val first = ModelConfig("first", "合成模型一", "https://example.test/v1", "fixture-key", "synthetic-one", createdAt = 1,
+                desktopContextWindowTokens = 12000)
+            val second = first.copy(id = "second", displayName = "合成模型二", modelName = "synthetic-two", desktopContextWindowTokens = null)
             app.modelRepository.saveModel(first); app.modelRepository.saveModel(second)
             app.settingsRepository.updateAppSettings { it.copy(defaultModelId = first.id) }
             val settings = app.settingsRepository.getAppSettings()
@@ -42,10 +43,14 @@ class DesktopEditorPromptBudgetTest {
                 try {
                     scene.until { has("字段 Token 估算") }; scene.click("字段 Token 估算")
                     scene.until { !controller.state.value.loading && textContains("静态合计 ≈") && textContains("合成模型一") }
+                    assertEquals(12000L, controller.state.value.target.contextWindowTokens)
+                    assertTrue(scene.textContains("用户配置"))
                     assertTrue(scene.textContains("不是本轮输入总量"))
                     scene.shot("editor-budget-$name-$width.png")
                     controller.select(second.id)
                     scene.until { textContains("合成模型二") && !controller.state.value.loading }
+                    assertNull(controller.state.value.target.contextWindowTokens)
+                    assertTrue(scene.textContains("模型上下文上限未提供"))
                     scene.click("关闭 Token 估算"); scene.until { !has("关闭 Token 估算") }
                     assertEquals(settings, app.settingsRepository.getAppSettings())
                     assertEquals("synthetic-one", app.modelRepository.getModel(first.id)!!.modelName)

@@ -953,6 +953,10 @@ internal fun DesktopModelsPanel(
         LabeledField(t(DesktopUiText.MAX_OUTPUT_TOKENS), draft.maxOutputTokens) { value ->
             controller.editModel { it.copy(maxOutputTokens = value.filter(Char::isDigit)) }
         }
+        LabeledField(t(DesktopUiText.MODEL_CONTEXT_CAPACITY), draft.contextWindowTokens) { value ->
+            controller.editModel { it.copy(contextWindowTokens = value) }
+        }
+        StatusText(t(DesktopUiText.MODEL_CONTEXT_CAPACITY_HELP))
         ChoiceField(t(DesktopUiText.OUTPUT_TOKEN_PARAMETER), OutputTokenParameter.entries, draft.outputTokenParameter) { value ->
             controller.editModel { it.copy(outputTokenParameter = value) }
         }

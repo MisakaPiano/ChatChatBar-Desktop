@@ -29,6 +29,32 @@ import kotlin.test.assertTrue
 import kotlinx.serialization.json.Json
 
 class DesktopModelSettingsControllerTest {
+    @Test fun `model capacity persists independently and invalid edits retain the saved value`() = runBlocking {
+        withFixture { fixture ->
+            val controller = inlinePresetController(fixture)
+            controller.loadModels(); controller.startCreate()
+            controller.editModel { it.copy(displayName = "Synthetic capacity", baseUrl = "https://example.test/v1",
+                modelName = "synthetic", contextWindowTokens = "128000", maxOutputTokens = "2048") }
+            controller.saveModel()
+            assertNull(controller.state.value.error)
+            val id = controller.state.value.models.single().id
+            val original = fixture.container.modelRepository.getModel(id)!!
+            assertEquals(128000L, original.desktopContextWindowTokens)
+            assertEquals(2048, original.maxOutputTokens)
+            controller.startEdit(id)
+            assertEquals("128000", controller.state.value.editor!!.contextWindowTokens)
+            for (invalid in listOf("0", "-1", "1.5", "9223372036854775808", "unknown")) {
+                controller.editModel { it.copy(contextWindowTokens = invalid) }
+                controller.saveModel()
+                assertNotNull(controller.state.value.error)
+                assertEquals(original, fixture.container.modelRepository.getModel(id))
+            }
+            controller.editModel { it.copy(contextWindowTokens = "") }; controller.saveModel()
+            assertNull(controller.state.value.error)
+            assertNull(fixture.container.modelRepository.getModel(id)!!.desktopContextWindowTokens)
+            assertEquals(2048, fixture.container.modelRepository.getModel(id)!!.maxOutputTokens)
+        }
+    }
     @Test fun `automatic format check setting persists and discard restores the saved choice`() = runBlocking {
         withFixture { fixture ->
             val controller = fixture.controller
