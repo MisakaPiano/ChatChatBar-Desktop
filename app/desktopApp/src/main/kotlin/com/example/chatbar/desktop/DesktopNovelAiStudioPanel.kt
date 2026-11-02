@@ -370,6 +370,7 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                                 } }
                             }
                             if (imageError.isNotEmpty()) StatusText(imageError)
+                            if (busy && !state.reverseBusy) StudioAction("停止当前任务") { controller.stop() }
                             DesktopReversePromptPane(state, busy,
                                 onSceneChange = controller::updateReverseSceneDescription,
                                 onConfirm = { scope.launch { controller.confirmReverseSceneDescription() } },
