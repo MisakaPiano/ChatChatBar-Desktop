@@ -129,6 +129,14 @@ internal class DesktopChatVoiceRuntime(
         block()
     }
 
+    /** One global voice mutation lease for the complete affected roster; never cancel/replay a synthesis. */
+    suspend fun <T> withSpeakerHistoryMutation(sessionIds: Set<String>, block: suspend () -> T): T = mutation.withLock {
+        check(!closed)
+        check(coordinator.batches.value.none { it.sessionId in sessionIds && it.phase !in
+            setOf(VoiceGenerationPhase.FAILED, VoiceGenerationPhase.CANCELLED) }) { "语音任务进行中，历史人物改名保留待重试" }
+        block()
+    }
+
     /** Called only after the owning chat message was explicitly deleted. */
     suspend fun removeDeletedMessage(sessionId: String, messageId: String) = gate.withNormalOperation {
         check(chats.readMessageDurable(messageId, sessionId) is com.example.chatbar.data.local.JsonFileStorage.EntityReadResult.Missing) { "消息删除状态未知；录音已保留" }

@@ -160,6 +160,11 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
         }
         if (state.dirty) StatusText(if (state.draftPersisted) t(DesktopUiText.RECOVERED_DRAFT)
             else t(DesktopUiText.DRAFT_SAVING), DesktopBootstrapColors.warning)
+        if (card.pendingSpeakerRenameTasks.isNotEmpty()) {
+            StatusText(t(DesktopUiText.CHARACTER_SPEAKER_RENAME_PENDING)
+                .replace("{count}", card.pendingSpeakerRenameTasks.size.toString()), DesktopBootstrapColors.warning)
+            card.pendingSpeakerRenameTasks.firstNotNullOfOrNull { it.lastError }?.let { StatusText(it, DesktopBootstrapColors.warning) }
+        }
         importResult?.let { (created, updated) -> StatusText(t(DesktopUiText.CHARACTER_IMPORT_RESULT)
             .replace("{created}", created.toString()).replace("{updated}", updated.toString())) }
         state.problem?.let { problem ->

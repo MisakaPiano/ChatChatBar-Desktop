@@ -26,6 +26,8 @@ import com.example.chatbar.domain.draft.CharacterEditorDraftUiState
 import com.example.chatbar.domain.draft.CharacterEditorDraftUiStateCodec
 import com.example.chatbar.domain.draft.CharacterEditorPostCommitState
 import com.example.chatbar.domain.draft.EditorPostCommitFingerprint
+import com.example.chatbar.domain.chat.SpeakerTagHistoryService
+import com.example.chatbar.data.local.entity.SpeakerTagRename
 import com.example.chatbar.domain.prompt.CharacterNaiPromptDefaults
 import java.nio.file.Path
 import java.util.UUID
@@ -102,6 +104,7 @@ internal class DesktopCharacterEditorController(
     val fishPreview: (() -> DesktopFishPreviewRuntime)? = null,
     private val dataGate: com.example.chatbar.data.operation.AppDataOperationGate = com.example.chatbar.data.operation.NoOpAppDataOperationGate,
     val documentIndex: DesktopRagController? = null,
+    private val speakerHistory: SpeakerTagHistoryService = SpeakerTagHistoryService(characters, chats),
 ) {
     internal var cardAi: DesktopCharacterCardAiController? = null
     internal var promptBudget: DesktopEditorBudgetController? = null
@@ -629,8 +632,16 @@ internal class DesktopCharacterEditorController(
                     worlds.save(CharacterWorldBookBindings.independentEmbedded(card)!!)
                 }
             }
-            val (durable, newResources) = resources.materialize(retained)
+            val (materialized, newResources) = resources.materialize(retained)
             created = newResources
+            val oldPeople = source?.characters.orEmpty().associateBy(CharacterInfo::id)
+            val speakerRenames = materialized.characters.mapNotNull { person ->
+                val previous = oldPeople[person.id] ?: return@mapNotNull null
+                if (previous.name.trim().isEmpty() || person.name.trim().isEmpty() || previous.name.trim() == person.name.trim()) null
+                else SpeakerTagRename(person.id, previous.name.trim(), person.name.trim())
+            }
+            val speakerTask = speakerHistory.createTask(materialized.id, materialized.updatedAt, speakerRenames)
+            val durable = materialized.copy(pendingSpeakerRenameTasks = materialized.pendingSpeakerRenameTasks + listOfNotNull(speakerTask))
             val rename = source?.takeIf { it.name != durable.name }
             val markedDraft = try {
                 val activeDraft = persistedDraft ?: error("Character draft missing before durable save")
@@ -740,8 +751,20 @@ internal class DesktopCharacterEditorController(
             runCatching { rewriteTitles(rename.characterId,
                 rename.oldName, rename.newName) }.exceptionOrNull().also { if (it == null) pendingRename = null }
         }
-        // Keep the recovery marker physically durable until both cache and required rename agree.
-        val semanticReady = cacheReady && pendingRename == null
+        var speakerCard = committed
+        val speakerError = if (cacheReady) runCatching {
+            val sourceCard = requireNotNull(durable)
+            for (task in sourceCard.pendingSpeakerRenameTasks.sortedBy { it.createdAt }) speakerHistory.execute(sourceCard.id, task.id)
+        }.exceptionOrNull() else null
+        if (cacheReady) {
+            val latest = runCatching { characters.getById(committed.id) }.getOrNull()
+            if (latest != null && EditorPostCommitFingerprint.character(json, latest) == EditorPostCommitFingerprint.character(json, committed)) {
+                speakerCard = latest
+                committedCard = latest
+            }
+        }
+        // The existing semantic fingerprint excludes derived/task metadata; retain the marker until all required work agrees.
+        val semanticReady = cacheReady && pendingRename == null && speakerError == null && speakerCard.pendingSpeakerRenameTasks.isEmpty()
         val cleanup = linkedMapOf<PendingDraft, CharacterDraftCleanup>()
         if (semanticReady) for (pending in pendingDrafts.distinct()) {
             val result = cleanupDraftAndAssets(pending.targetId, pending.sessionId)
@@ -763,6 +786,7 @@ internal class DesktopCharacterEditorController(
         } ?: true
         val assetError = cleanup.values.firstNotNullOfOrNull(CharacterDraftCleanup::assetFailure)
         _state.value = before.copy(
+            card = speakerCard, base = speakerCard,
             draftBasis = if (activeRemoved) null else before.draftBasis,
             draftPersisted = !activeRemoved,
             recoveryTargetId = if (recoveryRemoved) null else before.recoveryTargetId,
@@ -773,7 +797,7 @@ internal class DesktopCharacterEditorController(
                 orphanError != null || assetError != null -> CharacterEditorProblem.RESOURCE_FAILED
                 else -> null
             },
-            detail = (durableResult.exceptionOrNull() ?: refreshed.exceptionOrNull() ?: renameError
+            detail = (durableResult.exceptionOrNull() ?: refreshed.exceptionOrNull() ?: renameError ?: speakerError
                 ?: cleanup.values.flatMap { it.draft.errors }.firstOrNull()
                 ?: orphanError ?: assetError)?.message
                 ?: if (!cacheReady) "Committed Character could not be verified" else null,

@@ -279,6 +279,22 @@ class DesktopAppContainer internal constructor(
     }
     internal val characterRepository = CharacterRepository(jsonFileStorage)
     internal val chatRepository = ChatRepository(jsonFileStorage)
+    internal val speakerTagHistoryService by lazy {
+        com.example.chatbar.domain.chat.SpeakerTagHistoryService(characterRepository, chatRepository,
+            rewrite = { task, persistPlan ->
+                dataOperationCoordinator.withNormalOperation {
+                    val ids = chatRepository.getAllSessions().filter { it.characterCardId == task.characterCardId }.map { it.id }.sorted()
+                    suspend fun reserve(index: Int): Int = if (index == ids.size)
+                        chatVoiceRuntime.withSpeakerHistoryMutation(ids.toSet()) {
+                            chatRepository.rewriteSpeakerTagsForTask(task, persistPlan)
+                        }
+                    else taskRuntime.withMessageMutation(ids[index]) {
+                        memoryController.withSessionQuiesced(ids[index]) { reserve(index + 1) }
+                    }
+                    audioMaintenance.withMaintenance(false, { dataOperationCoordinator.isRestartRequired }) { reserve(0) }
+                }
+            }, sourcesChanged = { sessions -> sessions.forEach { memoryController.sourceChanged(it) } })
+    }
     internal val editorDraftRepository = EditorDraftRepository(jsonFileStorage)
     internal val formatCardRepository = FormatCardRepository(jsonFileStorage)
     private val editorBudgetOwner = lazy { DesktopEditorBudgetController(settingsRepository, effectiveModelResolver, dataOperationCoordinator) }
@@ -325,6 +341,7 @@ class DesktopAppContainer internal constructor(
             fishPreview = { fishPreviewRuntime },
             dataGate = dataOperationCoordinator,
             documentIndex = ragController,
+            speakerHistory = speakerTagHistoryService,
             json = jsonFileStorage.json,
             filePicker = filePicker,
             discardObsoleteResources = { previous, _ ->
@@ -403,6 +420,7 @@ class DesktopAppContainer internal constructor(
         automaticBackupRuntime.initialize()
         presetBootstrap.initialize()
         saveSlotService.resumeSessionDeletionCleanup()
+        dataOperationCoordinator.withNormalOperation { speakerTagHistoryService.resumePending() }
     }
     internal val effectiveModelResolver by lazy {
         EffectiveModelResolver(

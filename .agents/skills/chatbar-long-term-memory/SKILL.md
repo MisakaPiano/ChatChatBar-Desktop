@@ -14,6 +14,8 @@ Preserve timeline coverage and user data across every layer. Treat memory change
 3. Read references/state-machines.md when touching Episode generation, backfill, source repair, compression, revisions, concurrency, or recovery.
 4. Read target implementation and tests before editing.
 
+Desktop speaker-history rename uses the existing sourceChanged callback after task-bound message writes and holds original memory session quiescence during mutation. It never rewrites summaries/independent SaveSlots or calls an AI to repair names; pending source repair remains with the original memory owner. See `chatbar-speaker-history` for task replay identities and editor recovery.
+
 ## Entry Points
 
 - Persisted models: authoritative `LongTermMemory.kt`, `AppSettings.kt`, `ChatMessage.kt`, and `ChatSession.kt` live in `app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/`; `SaveSlot.kt` now shares the same entity directory (byte-preserving move); its SaveSlot restore runtime has a separate owner. Desktop opts into the shared memory runtime through DesktopMemoryController and DesktopMemorySources.

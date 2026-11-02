@@ -1,3 +1,7 @@
+2026-11-02 当前检查点：120/0e原报告已核，主2544=2525PASS+19SKIP、proxy5/NTFS7/shared1147/Android582/native37/TUF13/exit4均PASS，是最后完整绿色。121/1c终结FAIL，唯一Desktop配对测试错误读取不存在state.draft导致主/proxy未执行；Linux shared1149/Android584、NTFS7/native37/TUF14/exit4实际PASS，含冻结public1233旧updater桥接下载二验（合成payload，不是普通JAR链）。d953最小改真实draft Flow，保留全部断言，122/41415350008仍云验，结果待原件。人物稳定ID改名接线与部分失败可恢复计划见270，9共享+3真实Desktop测试源码待后续精确源，不混122。Suite既有执行者已交full-prompt-6133672e6a0c，协调端只读核21源码SHA、同484B配对原件、实际5codec+5真实controller定向PASS；原生GUI/系统剪贴板/外部安装版与APK发布仍待。公开1233/15及真人待、日常H版本UNKNOWN/不代装保持；P18普通JAR稳定升级链、D042精度和其余216范围继续，不以源码或小测试代验完成。
+
+下方历史保留。
+
 2026-11-02 双端完整Prompt后补源码见269：本Fork Android增加更多选项内完整文本复制/后台解析预览/确认/原撤销接线，原正向入口保持；共享严格目的基线和484字节LF合成配对原件已备，新增shared2/Desktop真实controller1/Android真实repository2待其源云验。Suite由既有执行者排队接线，尚未实现，不称两端已兼容；官方Android/系统剪贴板/设备GUI与新APK均未验/未发布。6c快捷方式换行修正同为后续本地源，不混120。
 
 2026-11-02 D042显式容量源码另片已备，见268：可选用户配置模型上下文Token容量，原模型存储/模板保留，缺省不写新键；三编辑器默认/选定模型及实际解析模型wire诊断接线，静态/实际文本比例明确非精确tokenizer/全部占用/余额。新增共享2+真实编辑保存1例并扩展原Scene/完整wire例待新源云验，未代验P17精度。用户已明确完整Prompt互换同时需要Suite和Android，Desktop5例PASS不等于两端兼容；Suite由既有执行者接线，Fork Android配对读写/预览确认/撤销仍待，不改官方只读上游/不发APK。P18本地c52未推，119继续收原报告，无新公开/日常H操作。

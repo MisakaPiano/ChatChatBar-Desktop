@@ -437,6 +437,7 @@ internal enum class DesktopUiText(val zhCn: String, val en: String) {
     CHARACTER_IMPORT_SECTIONS("选择要覆盖的分段", "Select sections to import"),
     CHARACTER_IMPORT_ACTION("导入到当前草稿", "Import into current draft"),
     CHARACTER_IMPORT_RESULT("已新建 {created} 人，更新 {updated} 人", "Created {created}, updated {updated}"),
+    CHARACTER_SPEAKER_RENAME_PENDING("历史人物改名尚未完成（{count} 项）；历史与恢复任务已保留。", "History speaker renames remain pending ({count}); history and recovery tasks are retained."),
     CHARACTER_IMPORT_EMPTY("没有可导入的结构化角色卡", "No structured Character cards to import"),
     CHARACTER_CONVERT_FREEFORM("将结构化人物转换为自由文本", "Convert structured characters to freeform"),
     CHARACTER_CONVERT_WARNING("现有自由文本人物设定将被转换结果覆盖；结构化人物仍会保留。", "Existing freeform character text will be replaced. Structured characters will remain."),

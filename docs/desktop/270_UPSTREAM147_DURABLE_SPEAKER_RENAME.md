@@ -1,0 +1,13 @@
+# 270 — 1.4.7 人物改名与历史标签的可恢复接线
+
+原授权147适配剩余语义：Shared已有任务实体、marker替换算法和repo正文/alternatives写入，但Desktop只在整张卡改名时同步会话标题。人物同稳定ID改名而卡名不变未接线。本片复用中立SpeakerTagHistoryService移入sharedCore，Android包名/入口保持；Desktop普通保存按稳定person ID产生任务，与卡及原post-commit marker一并提交，原标题同步独立保留。
+
+不能直接重放官方旧task的名字列表：A→B、B→C中已写A的消息变B，再跑会变C；交换名字同样会翻转。新protocol1在写第一条前，把每个受影响消息的完整持久字段before/after SHA、session/message ID及固定updatedAt保存到同一待办任务。沿原ChatRepository消息写锁和原替换policy执行：等于before才改，等于after只复核同一已接受消息/索引尾，不重新替换名字，其他情况整次拒绝写入，保留任务。正文与备选文本均受同一完整消息身份约束，非marker文字及其他字段保留。没有把完整消息复制到任务。
+
+元数据更新复用JsonFileStorage既有单实体writer锁和流式替换，不新建全局事务门；仅修改pending task，保留新写入的卡设定/RAG字段。选中会话前缀的严格JSON读取不修索引、不跳过损坏JSON，不增加8MiB等固定大小限制。未知字段、身份/来源不匹配保留失败，不用宽松解码删掉字段再重写。
+
+原无执行身份的旧pending任务，仅当新名集合不碰任何旧名、因此重复替换本身幂等时可准备新计划；链式/交换旧任务及未知协议无法证明部分完成状态，保持任务和历史并提示局部核对。不会猜测重放或清空。备份合并/跨端重映射若改变完整消息指纹，任务也保持未确认，不按名字猜映射后的完成状态，不宣称官方旧APK识别新扩展。
+
+Desktop执行复用normal operation、原audio maintenance、会话message-mutation准入、一个voice mutation lease和记忆quiescence；忙时卡的新名字已保存、历史任务及原恢复marker待重试。成功或失败都会保留真实消息和记录；不重新生成音频、记忆或图片，也不改独立SaveSlot/原录音。正常重开通过原persistent-state入口恢复；语义fingerprint本来已排除pending/RAG metadata，所以任务尾不误判用户新编辑。
+
+必要新增合成回归：Shared9例（部分持久失败/重开、swap、task清除失败、并发正文变化不覆盖、未知旧进度、新卡/RAG元数据保全、选中损坏JSON不跳过且无关会话不解码、未知卡/消息字段保全、持久写入后取消仍通知来源失效，若一例覆盖多项不重复计数）；Desktop真实controller3例（同卡人物链式改名、首消息已落盘后失败并关闭/普通初始化/恢复原marker、现有session lease拒绝后重试）。原Android任务例保留。此片尚未编译/执行，不属于121/122或120的通过，不提升validated141基线；普通JAR稳定升级和跨应用配对仍另行推进。全程不改真实根、不发新版本或APK。

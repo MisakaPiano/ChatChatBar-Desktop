@@ -236,7 +236,9 @@ class JsonFileStorage(
         entityType: String,
         id: String,
         serializer: KSerializer<T>,
+        rejectUnknownFields: Boolean = false,
     ): EntityReadResult<T> {
+        require(!rejectUnknownFields || entityType !in COMPACT_STUDIO_TYPES)
         if (entityType in COMPACT_STUDIO_TYPES) return readCompactJsonFile(
             appDataRoot.resolve(ENTITIES_DIR).resolve(entityType).resolve("$id.json").toFile(), serializer)
         val file = appDataRoot.resolve(ENTITIES_DIR).resolve(entityType).resolve("$id.json")
@@ -250,7 +252,8 @@ class JsonFileStorage(
             return EntityReadResult.ReadError(error)
         }
         return try {
-            EntityReadResult.Valid(json.decodeFromString(serializer, content))
+            EntityReadResult.Valid((if (rejectUnknownFields) Json(json) { ignoreUnknownKeys = false } else json)
+                .decodeFromString(serializer, content))
         } catch (error: SerializationException) {
             EntityReadResult.Corrupt(error)
         } catch (error: IllegalArgumentException) {
@@ -290,14 +293,22 @@ class JsonFileStorage(
         ids: Set<String>,
         serializer: KSerializer<T>,
         transform: (Map<String, EntityReadResult<T>>) -> Map<String, T?>,
-    ): Map<String, T?> = mutexFor(entityType).withLock {
+    ): Map<String, T?> = mutateEntitiesAtomicallyImpl(entityType, ids, serializer, false, transform)
+
+    /** Metadata maintenance may opt into refusing unknown source fields before a complete typed rewrite. */
+    suspend fun <T : Any> mutateEntitiesAtomicallyStrictFields(entityType: String, ids: Set<String>, serializer: KSerializer<T>,
+        transform: (Map<String, EntityReadResult<T>>) -> Map<String, T?>): Map<String, T?> =
+        mutateEntitiesAtomicallyImpl(entityType, ids, serializer, true, transform)
+
+    private suspend fun <T : Any> mutateEntitiesAtomicallyImpl(entityType: String, ids: Set<String>, serializer: KSerializer<T>,
+        rejectUnknownFields: Boolean, transform: (Map<String, EntityReadResult<T>>) -> Map<String, T?>): Map<String, T?> = mutexFor(entityType).withLock {
         require(ids.isNotEmpty())
         withContext(Dispatchers.IO + kotlinx.coroutines.NonCancellable) {
             val directory = appDataRoot.resolve(ENTITIES_DIR).resolve(entityType).toFile().canonicalFile
             ids.forEach { id ->
                 require(id.isNotBlank() && File(directory, "$id.json").canonicalFile.parentFile == directory)
             }
-            val originals = ids.associateWith { readEntityStrictLocked(entityType, it, serializer) }
+            val originals = ids.associateWith { readEntityStrictLocked(entityType, it, serializer, rejectUnknownFields) }
             val changes = transform(originals).toMap()
             require(changes.keys.all { it in ids })
             if (changes.isEmpty()) return@withContext changes
@@ -626,6 +637,29 @@ class JsonFileStorage(
                 }
         }
     }
+
+    /** Selected-prefix mutation proof: no index repair, skipped corrupt records, new directory or file-size cap. */
+    @OptIn(ExperimentalSerializationApi::class)
+    suspend fun <T : Any> readEntitiesByPrefixStrict(entityType: String, prefix: String, serializer: KSerializer<T>,
+        validate: (String, T) -> Unit = { _, _ -> }): List<T> =
+        mutexFor(entityType).withLock {
+            require(entityType.matches(Regex("[a-z_]+")) && prefix.isNotBlank() && prefix.none { it == '/' || it == '\\' || it.code < 32 })
+            withContext(Dispatchers.IO) {
+                val directory = strictInventoryDirectory(entityType, {}) ?: return@withContext emptyList()
+                val strict = Json(json) { ignoreUnknownKeys = false }
+                Files.newDirectoryStream(directory).use { entries ->
+                    entries.filter { it.fileName.toString().endsWith(".json") && it.fileName.toString().startsWith(prefix) }
+                        .sortedBy { it.fileName.toString() }.map { path ->
+                            currentCoroutineContext().ensureActive()
+                            val attributes = Files.readAttributes(path, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+                            require(attributes.isRegularFile && !attributes.isSymbolicLink && !attributes.isOther)
+                            Files.newInputStream(path).buffered().use { strict.decodeFromStream(serializer, it) }.also {
+                                validate(path.fileName.toString().removeSuffix(".json"), it)
+                            }
+                        }
+                }
+            }
+        }
 
     /** 按明确存储 ID 读取一批实体；结果顺序与 ids 一致。 */
     @OptIn(ExperimentalSerializationApi::class)

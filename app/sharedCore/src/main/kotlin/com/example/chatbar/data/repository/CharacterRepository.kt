@@ -52,6 +52,21 @@ class CharacterRepository(private val storage: JsonFileStorage) {
         refreshCache()
     }
 
+    /** Pending speaker-task metadata shares the ordinary entity writer lock and retains newer card/RAG fields. */
+    suspend fun mutatePendingSpeakerTask(cardId: String, taskId: String,
+        transform: (com.example.chatbar.data.local.entity.SpeakerTagRenameTask) -> com.example.chatbar.data.local.entity.SpeakerTagRenameTask?) {
+        storage.mutateEntitiesAtomicallyStrictFields(ENTITY_TYPE, setOf(cardId), CharacterCard.serializer()) { records ->
+            val card = (records[cardId] as? JsonFileStorage.EntityReadResult.Valid<CharacterCard>)?.value ?: error("人物改名任务来源无法核对")
+            val task = card.pendingSpeakerRenameTasks.single { it.id == taskId }
+            val next = transform(task)
+            require(next == null || next.id == task.id && next.characterCardId == task.characterCardId)
+            mapOf(cardId to card.copy(pendingSpeakerRenameTasks = card.pendingSpeakerRenameTasks.mapNotNull {
+                if (it.id == taskId) next else it
+            }))
+        }
+        refreshCache()
+    }
+
     /** Opt-in durable commit observation for Desktop preset document repair. */
     suspend fun saveObserved(card: CharacterCard, onCommitted: () -> Unit) {
         storage.saveEntityObserved(ENTITY_TYPE, card.id, card, CharacterCard.serializer(), onCommitted)
