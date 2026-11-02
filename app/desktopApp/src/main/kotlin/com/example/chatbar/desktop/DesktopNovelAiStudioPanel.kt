@@ -71,6 +71,7 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
     var guidanceEditor by remember { mutableStateOf<Triple<ByteArray, ByteArray?, NovelAiFocusedInpaintRegion?>?>(null) }
     var auxiliary by remember { mutableStateOf<String?>(null) }
     var showingPreset by remember { mutableStateOf(false) }
+    var showingFullPrompt by remember { mutableStateOf(false) }
     DesktopDesignToolLifecycle(controller, auxiliary in setOf("AI 设计", "设计设置", "设计历史"))
     var currentImage by remember { mutableStateOf<java.nio.file.Path?>(null) }
     val clipboardFiles = remember { mutableListOf<java.nio.file.Path>() }
@@ -146,6 +147,7 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                             controller.replace { NovelAiStudioPromptClipboard.apply(text, it) }
                         } }
                         if (controller.generationPresetAvailable) StudioAction("生成预设…", enabled = !busy) { showingPreset = true }
+                        StudioAction("完整 Prompt…", enabled = !busy) { showingFullPrompt = true }
                         StudioAction("清空", style = StudioActionStyle.TERTIARY) { scope.launch { controller.clearPrompts() } }
                         StudioToggle("中文注释", translation) { translation = !translation; scope.launch { controller.setTranslation(translation) } }
                     }
@@ -313,6 +315,7 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
             }
         })
     if (showingPreset) DesktopStudioPresetExchange(controller, busy) { showingPreset = false }
+    if (showingFullPrompt) DesktopStudioFullPromptExchange(controller, busy) { showingFullPrompt = false }
     auxiliary?.let { surface ->
         DesktopImageToolWindow(surface, { auxiliary = null },
             width = when (surface) { "设置", "设计设置" -> 560.dp; "图像引导" -> 680.dp; else -> 980.dp },

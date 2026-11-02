@@ -1,6 +1,6 @@
 ---
 name: chatbar-desktop-studio-preset
-description: Maintain Desktop complete generation preset files, resource transport, preview/apply/undo and exact staging/payload custody.
+description: Maintain Desktop complete generation preset files, separate full Prompt text interchange, preview/apply/undo and exact resource custody.
 ---
 
 # Desktop Studio generation presets
@@ -11,3 +11,7 @@ description: Maintain Desktop complete generation preset files, resource transpo
 - `DesktopStudioPresetExchange` supplies the normal tool-window shell; its `DesktopStudioPresetExchangeContent` is the same fixed-header/footer, scroll-body content used by Scene tests. Studio's original Prompt toolbar entry remains separate from AI design and positive-text actions.
 - `DesktopPresetCustody` writes metadata-only staging and write-before-publication claims. Finish only exact IDs from the current action. Existing or racing content-addressed files are not newly owned; unknown publication retains its claim. `DesktopOwnedImageCleanup` recognizes payload markers in existing JSON and refuses deletion on unknown backup/large/corrupt authorities. Cleanup uncertainty keeps files/receipts; startup exposes pending state without automatic broad recovery.
 - Tests: shared `NovelAiGenerationPresetTest`, `NovelAiInlinePayloadStoreTest`; Desktop `DesktopGenerationPresetArchiveTest`, `DesktopPresetCustodyTest`, `DesktopStudioPresetControllerTest`, `DesktopStudioPresetExchangeTest`. Scene PNGs use existing `CCB_MEDIA_USAGE_REVIEW_DIR`. See `docs/desktop/264_STUDIO_COMPLETE_GENERATION_PRESET.md` for exact transport and supported-platform scope.
+
+## Separate full Prompt text
+
+`NovelAiStudioFullPromptClipboard` and `DesktopStudioFullPromptExchange` own the distinct `CCB-FULL-PROMPT/1` readable, escaped text format and preview/confirm/original-undo flow. It carries all Prompt fields and ordered role controls/model/natural mode, including the selected model's `useCharacterPositions` control; other generation settings, continuous mode, references and AI design state stay with the target. Original positive clipboard must refuse the new preamble rather than ingest negative/control labels. Configuration is canonical metadata, not model-facing text. Tests `NovelAiStudioFullPromptClipboardTest` compare actual generation payloads and opposite coordinate switches for both models; `DesktopStudioFullPromptExchangeTest` uses the production controller and reusable content. See266; no Android/Suite parser or generic direct-positive-input compatibility claim.

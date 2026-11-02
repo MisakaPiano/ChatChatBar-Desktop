@@ -34,6 +34,7 @@ internal data class DesktopNovelAiStudioState(
     val selected: Set<NovelAiHistoryImageSelection> = emptySet(),
     val presetPreview: DesktopGenerationPresetPreview? = null,
     val presetOutcome: DesktopPresetApplyOutcome = DesktopPresetApplyOutcome.NONE,
+    val fullPromptPreview: NovelAiFullPromptContent? = null,
 ) {
     val account: NovelAiAccountUsage? get() = accountUi.takeIf { it.error == null }?.effectiveUsage
 }
@@ -88,6 +89,7 @@ internal class DesktopNovelAiStudioController(
     val generationPresetAvailable get() = presetArchive != null
     private var presetSelection: PresetSelection? = null
     private var presetClosed = false
+    private var fullPromptSelection: Pair<NovelAiFullPromptContent, NovelAiStudioDraft>? = null
     private var accountIdentity: String? = null
     private val mutableState = MutableStateFlow(DesktopNovelAiStudioState())
     val state = mutableState.asStateFlow()
@@ -260,6 +262,51 @@ internal class DesktopNovelAiStudioController(
         status("生成预设已导出：$path")
     }
 
+    suspend fun copyFullPrompt(): String? {
+        var text: String? = null
+        action(inspectAssets = false) {
+            check(!presetClosed); requirePresetIdle()
+            coordinator.withNormalOperation { text = NovelAiStudioFullPromptClipboard.encode(resolveDefaultModel()) }
+        }
+        return text
+    }
+
+    suspend fun inspectFullPrompt(text: String) = action(inspectAssets = false) {
+        check(!presetClosed); requirePresetIdle()
+        fullPromptSelection = null
+        mutableState.update { it.copy(fullPromptPreview = null) }
+        coordinator.withNormalOperation {
+            val content = NovelAiStudioFullPromptClipboard.decode(text)
+            fullPromptSelection = content to resolveDefaultModel()
+            mutableState.update { it.copy(fullPromptPreview = content) }
+            status("完整 Prompt 已解析；确认后才替换提示词和角色控制（含位置应用开关），其他生成参数和参考资源保留。")
+        }
+    }
+
+    suspend fun applyFullPrompt() = action(inspectAssets = false) {
+        check(!presetClosed); requirePresetIdle()
+        val (content, expected) = requireNotNull(fullPromptSelection) { "请先预览完整 Prompt" }
+        coordinator.withNormalOperation {
+            currentCoroutineContext().ensureActive()
+            withContext(NonCancellable) {
+                check(repository.loadDraft() == expected) { "当前生成草稿已变化，请重新读取完整 Prompt" }
+                repository.saveUndoDraft(expected)
+                repository.updateDraft(resetPromptEditors = true) {
+                    check(it == expected) { "当前生成草稿已变化，请重新读取完整 Prompt" }
+                    content.applyTo(it)
+                }
+                fullPromptSelection = null
+                mutableState.update { it.copy(fullPromptPreview = null) }
+                status("完整 Prompt 已应用，可撤销；其他生成参数和参考资源保留，未自动开始生成。")
+            }
+        }
+    }
+
+    suspend fun discardFullPrompt() = mutex.withLock {
+        fullPromptSelection = null
+        mutableState.update { it.copy(fullPromptPreview = null) }
+    }
+
     suspend fun inspectGenerationPreset(path: Path) = action(inspectAssets = false) {
         check(!presetClosed); requirePresetIdle()
         coordinator.withNormalOperation {
@@ -326,6 +373,8 @@ internal class DesktopNovelAiStudioController(
 
     suspend fun closePresetExchange() = mutex.withLock {
         presetClosed = true
+        fullPromptSelection = null
+        mutableState.update { it.copy(fullPromptPreview = null) }
         withContext(NonCancellable + Dispatchers.IO) {
             val applied = presetSelection?.applied == true
             try { presetSelection?.prepared?.close() }
