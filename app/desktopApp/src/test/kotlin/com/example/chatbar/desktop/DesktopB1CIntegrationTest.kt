@@ -137,12 +137,26 @@ class DesktopB1CIntegrationTest {
                 navigation.navigate(route, idle); scene.frames()
                 val requests = f.requests.toList()
                 val work = c.taskCenter.state.value.rows
-                repeat(2) {
+                repeat(2) { repeatIndex ->
                     scene.click(DesktopUiText.CONTEXT_HELP.zhCn)
                     assertTrue(scene.has(DesktopUiText.CLOSE_CONTEXT_HELP.zhCn))
                     assertTrue(scene.has("${DesktopUiText.CONTEXT_HELP.zhCn} · ${desktopContextHelp(route).first.zhCn}"))
                     assertEquals(route, navigation.selectedRoute.value)
                     assertEquals(1, activity.otherCount)
+                    if (route == DesktopPrimaryRoute.CHAT && repeatIndex == 0) {
+                        scene.click(DesktopUiText.GUIDE.zhCn)
+                        assertTrue(scene.has(DesktopUiText.GUIDE_CLOSE.zhCn))
+                        assertEquals(1, activity.otherCount)
+                        scene.click(DesktopUiText.GUIDE_NEXT.zhCn)
+                        scene.click(DesktopUiText.GUIDE_BACK.zhCn)
+                        assertFalse(scene.has(DesktopUiText.GUIDE_CLOSE.zhCn))
+                        assertEquals(1, activity.otherCount)
+                        scene.click(DesktopUiText.GUIDE.zhCn)
+                        scene.click(DesktopUiText.GUIDE_CLOSE.zhCn)
+                        assertEquals(0, activity.count)
+                        scene.click(DesktopUiText.CONTEXT_HELP.zhCn)
+                        assertEquals(1, activity.otherCount)
+                    }
                     scene.click(DesktopUiText.CLOSE_CONTEXT_HELP.zhCn)
                     assertFalse(scene.has(DesktopUiText.CLOSE_CONTEXT_HELP.zhCn))
                     assertEquals(0, activity.count)

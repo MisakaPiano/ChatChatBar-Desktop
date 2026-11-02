@@ -1,6 +1,6 @@
 # P16 固定版本差异清单
 
-2026-11-02：新增离线工具源码，合成单元测试尚待对应新源码云端执行。它补 P16-02 的可复现清单首片；正式 Release 触发、自动生成报告与兼容结论编排仍未完成。
+2026-11-02：离线工具40ff/CI105的3个合成Python单元测试实际Ran3/OK，Linux1135/582与完整Windows主2492及独立检查均通过；实际日志和报告已核。它补 P16-02 的可复现清单首片；正式 Release 触发、自动生成报告与兼容结论编排仍未完成。
 
 ## 输入与结果的含义
 
@@ -20,4 +20,4 @@ Memory/RAG、WorldBook、Prompt、聊天上下文、Provider、SaveSlot/持久�
 
 ## 验证范围
 
-`test_pinned_drift.py` 使用完全内联的合成 Git 仓库与 NUL 记录：制表符／换行／Unicode 改名、共享 main/test 迁移、Android 同路径不同 blob、归档副本不充当实现、缺少候选不充当功能缺失、显式SHA、现有输出拒绝、HEAD和原文件不变，以及原领域高风险标记。既有 Linux 平台 CI 增加小型 Python step，尚待执行；不在本机运行测试、JVM或构建。
+`test_pinned_drift.py` 使用完全内联的合成 Git 仓库与 NUL 记录：制表符／换行／Unicode 改名、共享 main/test 迁移、Android 同路径不同 blob、归档副本不充当实现、缺少候选不充当功能缺失、显式SHA、现有输出拒绝、HEAD和原文件不变，以及原领域高风险标记。既有Linux平台CI的小型Python step已105实际通过；本机只生成固定Git对象清单，未运行测试、JVM或构建。

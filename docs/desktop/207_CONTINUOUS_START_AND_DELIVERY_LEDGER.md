@@ -1,3 +1,7 @@
+2026-11-02 用户本版明确授权后，冻结064的1230已公开：Release430962166四资产/实际tag/source/六条说明读回；metadata14-release-r02以8c2c24b发布，root1不变。旧隔离1225更新器原客户端匿名实际13→14发现、175758480字节完整下载和二次验证PASS，未执行安装/访问日常H；用户自行更新，真人Studio参数/重开仍待，不夹带后续源。104/8bac正式TTS11项/完整2488=2469PASS+19SKIP通过；105/40ff分页4项及pinned Python3实际通过、完整主2492=2473PASS+19SKIP，proxy5/NTFS7/shared1135/Android582/native33/updater8/exit4全通过；三ZIP复用核服务器digest/CRC/XML，已看420尝试详情与1100分页图。后补手动指南14主题29节双语源码和1个Scene+原Shell扩展测试待新源（254）：同modal、真实选中条目可见性/窄目录重开/短高度/旧Next边界/草稿原字节保护，非首次自动引导。公开1230/14与后续40ff/指南分列，本机不编译渲染、不代装H。
+
+下方历史保留。
+
 2026-11-02 后补P16-02离线pinned_drift首片源码，见253：读取三份显式完整SHA和指定Desktop的validated baseline，不fetch/不改源码或Prompt/不promote/不改已有Release监控。NUL rawdiff保留rename与路径，main/test共享候选和归档reference分开；141→已知147固定221项实跑，14当前候选exact/3归档/67无候选不等于功能缺失，66高风险路径候选非行为判定。R05带工具hash实跑结果I盘保留，3个合成Python测试待下个精确源Linux小step，不在本机运行测试。59a7统计本地未推、104/8bac仍执行，不取消当前CI。1230未公开草稿430962166已齐，最终signed14-release-r02仅本地，协调端10点后集中问本版公开许可，A不重复询问；公开1229/13和日常H不变。
 
 下方历史保留。

@@ -82,10 +82,10 @@
 | P15-03 全局外部导入 FIFO、Open With、文件关联／系统入口 | 外部链CI93及后续CI95–97通过，1232冻结883/R17普通原生与真实四类文件名冷批次通过，私有包字节已核；真人待验 | 见250；Main冷暖入口、持久FIFO、原owner委托与非默认Open With保留。1231旧中文&冷失败不抹去；1232精确冷批次通过不代表所有环境或已对用户交付 |
 | P15-04 任务中心／托盘／系统通知 | TaskRuntime／Memory／Fish与假托盘／宽窄Scene已95通过；FullBackup／真实Shell和Merge原Job已96/97通过；SaveSlot／实际自动备份／Moments与四类创作controller有99 scoped PASS。99完整单一Shell基线失败、100缺import编译失败仍保留；后补RAG晚取消、创作pin/Moments/提示原Shell有101实际PASS；103/dd29主2477=2458PASS+19SKIP及独立项完整通过，原101/102失败记录保留；原生送达仍待 | 见251；复用原Job／真实发布边界，不把检查、候选或SKIPPED当导入／保存／发布。1232冷批次不冒充原生托盘送达；观察与精确目标分开，不把基础入口算整项完成 |
 | P15-05 自有错误／关闭／启动诊断 | 基础及typed恢复支持/原六面导航/启动分类引导已103 scoped PASS；完整物理crash/support场景仍待 | 复用 DesktopProcessLifecycle、StartupBlockedPresenter、ShutdownWaitObserver、诊断复制及 Logo；只读核对损坏状态，错误确认不清除原件，不把“有错误窗口”算完整恢复中心 |
-| P15-06 实际 AI 请求／响应日志 | 聊天及角色／格式／世界书创作已有原DebugOverlay，Moments也有对应日志；正式Fish synthesize物理调用已补源码待精确云验；实际NAI图片和独立试听仍待，与文本辅助分列（252） | DesktopTransportDiagnostics、ChatDebugPanel 和任务上下文；按调用来源补真实日志归属，不用预览替代实际 wire，不重复聊天调试界面 |
-| P15-07 usage／cache／retry 持久汇总（D-042） | 数值owner、持久化与多域接线已有精确证据；CI87向量五项、CI88记忆／检索文本四项与CI89手动controller归属及完整回归通过 | 见234／245／248／249；聊天／三类卡AI／Moment文本／NAI辅助／Fish辅助／embedding分范围保留，正式Fish TTS独立本地字符／有效音频时长字节和schema2源码待验（252），不冒认实际生图／独立试听或完整账单覆盖。null与0、cache不重复、失败待存与关闭／重启保全保持；完整覆盖及校准继续 |
+| P15-06 实际 AI 请求／响应日志 | 聊天及角色／格式／世界书创作已有原DebugOverlay，Moments也有对应日志；正式Fish synthesize实际接线和11项回归已104精确源通过；实际NAI图片和独立试听仍待，与文本辅助分列（252） | DesktopTransportDiagnostics、ChatDebugPanel 和任务上下文；按调用来源补真实日志归属，不用预览替代实际 wire，不重复聊天调试界面 |
+| P15-07 usage／cache／retry 持久汇总（D-042） | 数值owner、持久化与多域接线已有精确证据；CI87向量五项、CI88记忆／检索文本四项与CI89手动controller归属及完整回归通过 | 见234／245／248／249；聊天／三类卡AI／Moment文本／NAI辅助／Fish辅助／embedding分范围保留，正式Fish独立本地单位/schema2已104通过，105的全记录分页/会话/请求/账户/日周月4项及宽窄图已通过（252），不冒认实际生图／独立试听或完整账单覆盖。null与0、cache不重复、失败待存与关闭／重启保全保持；完整覆盖及校准继续 |
 | P16-01 上游新正式版本通知 | 已有每日正式Release/Tag监控；11/1结果与官方Tags已核。原监控执行者后续peek回执报告现有任务ACTIVE／每日且11/1完成；根对话只有渲染卡片，无独立结构化状态；nextRun／通知送达仍未知 | 复用 `6ac89e9b-a1a8-83e8-a73c-6baad3dbaad4` 的用户范围，不另建重复自动化、不扩大到所有 master 提交；来源为I盘20261101-p16-existing-monitor-check.json的schedulerFollowup，不改调度或baseline，不据worker回执宣称未来送达通过 |
-| P16-02 baseline／变化分类／高风险与兼容报告 | 手工 baseline／兼容地图／sync playbook 已有；后补固定SHA离线清单工具与原领域路径复核标记，实际221项本地只读生成，合成测试待云端；触发／自动报告编排仍未做 | 见253；共享main/test路径与旧归档副本分列，不把路径缺失当功能缺失；复用原正式Release监控，不另建watcher；保留正式1.4.1和所选147不同含义，不自动merge/升baseline或宣称兼容 |
+| P16-02 baseline／变化分类／高风险与兼容报告 | 手工 baseline／兼容地图／sync playbook 已有；后补固定SHA离线清单工具与原领域路径复核标记，实际221项本地只读生成，105 Linux实际3个合成测试通过；触发／自动报告编排仍未做 | 见253；共享main/test路径与旧归档副本分列，不把路径缺失当功能缺失；复用原正式Release监控，不另建watcher；保留正式1.4.1和所选147不同含义，不自动merge/升baseline或宣称兼容 |
 
 ## P14：功能开发队列最后
 
@@ -99,7 +99,7 @@
 
 | ID／范围 | 已有证据／状态 | 尚需完成 |
 | --- | --- | --- |
-| P17-01 教程／首次使用引导 | Android Tutorial 已有；Desktop五路由说明/close和实际Shell草稿保护已有101 scoped PASS；标题四宽可见性与两几何例已102/103实际PASS，103整轮SUCCESS，旧失败保留；完整首次使用未做 | 顶栏问号只读说明，不跳转或创建业务；核对宽窄窗口、关闭重开、modal 优先与草稿／原文件不变，再做首次使用、恢复与升级说明 |
+| P17-01 教程／首次使用引导 | Android Tutorial 已有；Desktop五路由说明/close和实际Shell草稿保护已有101 scoped PASS；标题四宽可见性与两几何例已102/103实际PASS，103整轮SUCCESS，旧失败保留；新14主题29节双语手动指南源码待云验，首次自动引导/进度尚未做 | 顶栏问号只读说明，不跳转或创建业务；核对宽窄窗口、关闭重开、modal 优先与草稿／原文件不变，再做首次使用、恢复与升级说明 |
 | P17-02 Backup／Recovery Center | 原自动备份、导出／检查／合并／恢复journal已做；后续源码新增基于typed当前状态的恢复与支持页、六个原面导航及启动前固定分类引导，相关typed/六导航/旧点击锁/recover-marker及宽窄图已有103实际PASS，正式交付/物理场景仍待 | 入口不扫描全库或认定损坏，不代选文件／冲突／提交；保留原根锁／准入／journal。启动拒绝可发生在原恢复流程之后，不能声称整次启动从未恢复；完整物理场景与正式交付仍待 |
 | P17-03 数据、取消、长任务、损坏与断电 | 1224 大包隔离完整往返／独立重开通过，已有错误／取消／部分中断证据 | 复用214及具体恢复证据，只补实际受影响、仍未知的断电／跨账户／旧快照／物理跨端场景；真实生产最终GUI合并由用户选择，缺少该反馈只挂对应结论 |
 | P17-04 Win10／11、DPI、IME、长历史／大卡／世界书／图片／SaveSlot、网络／代理／VPN | 既有 scoped Windows／输入／窗口／媒体证据，不是所有环境全验 | 建立场景与实际平台结果表；已复现核心错误修复，未覆盖环境与非阻断已知问题如实披露，不建立“所有已知问题归零”的新门槛 |

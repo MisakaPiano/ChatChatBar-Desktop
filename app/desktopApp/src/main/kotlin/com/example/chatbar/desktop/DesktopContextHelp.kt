@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -28,10 +28,12 @@ internal fun desktopContextHelp(route: DesktopPrimaryRoute): Pair<DesktopUiText,
 internal fun DesktopContextHelpPanel(route: DesktopPrimaryRoute, onClose: () -> Unit) {
     val t = LocalDesktopUiStrings.current
     val colors = LocalDesktopPalette.current
+    var guide by remember(route) { mutableStateOf(false) }
     val (title, steps) = desktopContextHelp(route)
     DesktopModalSurface {
         Box(Modifier.fillMaxSize().background(colors.dim).padding(16.dp), contentAlignment = Alignment.Center) {
-            Column(Modifier.widthIn(max = 620.dp).fillMaxWidth().heightIn(max = 560.dp)
+            if (guide) DesktopTutorialGuide(onBack = { guide = false }, onClose = onClose)
+            else Column(Modifier.widthIn(max = 620.dp).fillMaxWidth().heightIn(max = 560.dp)
                 .background(colors.card, RoundedCornerShape(12.dp)).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.weight(1f)) { DesktopDataSectionHeading("${t(DesktopUiText.CONTEXT_HELP)} · ${t(title)}") }
@@ -41,6 +43,7 @@ internal fun DesktopContextHelpPanel(route: DesktopPrimaryRoute, onClose: () -> 
                     verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     steps.forEachIndexed { index, step -> StatusText("${index + 1}. ${t(step)}") }
                 }
+                BootstrapButton(t(DesktopUiText.GUIDE), secondary = true) { guide = true }
             }
         }
     }
