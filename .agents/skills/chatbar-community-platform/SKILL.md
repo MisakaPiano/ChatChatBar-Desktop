@@ -16,10 +16,10 @@ Use this skill for Community feature work. Preserve the MVP contract: public bro
 - Bottom tab order when backend says enabled: `聊天 / 社区 / 管理` in `ui/components/BottomNavBar.kt`; Community defaults hidden at app start and appears only after backend status reports `community_runtime_config.enabled = true`.
 - UI: `app/app/src/main/java/com/example/chatbar/ui/community/CommunityScreen.kt`.
 - State/import/upload logic: `ui/community/CommunityViewModel.kt`.
-- Network/auth/storage service: `domain/community/CommunityService.kt`.
+- Shared HTTP/auth/storage owner: `sharedCore/.../domain/community/CommunityClient.kt`; DTOs and package policy live beside it. Android `domain/community/CommunityService.kt` is a facade with the original SharedPreferences session, repository/export and Bitmap preview adapters. `CommunityLocalPackages` and `CommunitySessionStore` are the platform seams; no Desktop UI or OAuth return is implied by this extraction.
 - Global emergency switch: `community_runtime_config` table plus `set_community_enabled` RPC in Supabase; `toggle-community.bat` uses service-role REST when configured, otherwise Supabase CLI linked-project auth, and Android reads status through `CommunityService.enabled`.
 - If `community_runtime_config` is missing (`PGRST205`), Android treats Community as enabled legacy mode and logs a warning; emergency switch remains inactive until the SQL is deployed.
-- Models and local package validation: `domain/community/CommunityModels.kt`.
+- Shared `CommunityClientTest` uses a loopback fake service for disabled/legacy status, pagination/detail/download separation, callback/refresh custody, storage/Edge contracts, owner/name guards, bounded responses and cancelling refresh without signing out. Android retains its original package-policy tests. HTTP calls are cancellable, responses are capped at the existing 20 MB package bound, and optional count failures are visible through the warning seam.
 - App wiring: `ChatBarApp.communityService`.
 - OAuth deep link: `MainActivity.handleCommunityAuthCallback`, manifest scheme `chatbar://auth/callback`.
 - Supabase SQL: `supabase/community_schema.sql`.

@@ -1,5 +1,9 @@
 # 267 — Preview 到正式版的普通升级身份
 
+R7/41432724223已实际PASS：control140896417cda22898a6e3084cc22045283fb5130、application fdb038133b9544c7cebc1c982efb6468efae1dcf。固定公开1233普通安装→bridge1234→1.0.0/build1235→故意READY身份失败保旧并重开→1.0.1/build1236及cold reopen共九步，所有窗口正常关闭、Job remaining空；8次root三资源原hash和fresh profile canary保持，三组实际路径投递回执。原报告13135288168/215180B/SHA590c08e1b2ae7eeac5917c437db77ce7d4fa52d470ab787eb1cf7949686c4b30。只限隔离fresh默认profile，不覆盖customroot busy/假凭据/真实应用内下载交接/日常H/真人/整P18。R3/R5/R6失败原件保留；无关卡字段改动复用此成立链，不重复构建三包。后续新成熟候选按受影响生命周期验证。
+
+## 以下为此前实现与逐次验证记录
+
 R6/41430360253 controlcb22原件证实：旧包与bridge窗口正常/Job空，887已使Uninstall.exe保持547493…80c0；两个启动入口实际变化（01e2…e72a→d14f…f880、5308…b909→10b3…ee08），原guard继续FAIL。固定NSIS3.13 [TOK_SETOVERWRITE](https://github.com/NSIS-Dev/nsis/blob/v313/Source/script.cpp)只在编译期设置build_overwrite，运行时Goto无法跳过。后继为两个File各加原Prepare之后的runtime修复/存在分支：普通已校验存在则跳过，新安装缺少则写入，主动Repair保留原件后替换；保留887卸载器修正、全部三hash与时限，待R7实际普通链，不放宽成允许重写。
 
 R5/41428055776实测FAIL：同旧public1233及bridge1234都实际安装/真实窗口/正常exit0/Job空，三普通包构建审计通过；随后原root三hash总断言OLD_ROOT_THREE_RESOURCES_CHANGED拒绝，尚未stable/rollback/next。原包未留单项before/after，不能把运行结果强说成仅卸载器变化。887的显式保留修正需后继链验证；后继在原retained断言前写三项before/after小JSON，原失败/guard/期限保留，不增新验收门槛。

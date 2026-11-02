@@ -100,5 +100,98 @@
     "os": "Windows-first",
     "runtime": "Kotlin/JVM + Compose Desktop",
     "browserRuntime": false
+  },
+  "currentAdaptation": {
+    "recordedAt": "2026-11-02",
+    "targetReleaseVersion": "1.4.7",
+    "targetCommit": "b4fa75d296680f777be095f3121ad0c4db979f17",
+    "authority": "User authorized latest official CCB adaptation; Desktop first, separate Studio consumes official interfaces",
+    "status": "selective_adaptation_in_progress_not_whole_baseline_promotion",
+    "sourceAtRecord": "ec0861432a56138d5ccb1685a2e63cc22bc6d703",
+    "lastCompleteSourceValidation": {
+      "commit": "bcacc269cea691bf548ab5e804ac88e8a55e93b8",
+      "run": 41435685411,
+      "mainPass": 2537,
+      "mainSkip": 19,
+      "mainFail": 0,
+      "sharedPass": 1169,
+      "androidPass": 586,
+      "proxyPass": 5,
+      "ntfsPass": 7,
+      "nativePass": 37,
+      "updaterTufPass": 14,
+      "exitPass": 4
+    },
+    "adoptedRanges": [
+      {
+        "scope": "Speaker tag rename recovery and pending-source portable export boundary",
+        "evidence": "271/272; shared9 Desktop3 actual123, portable5 actual125",
+        "status": "targeted_behavior_verified"
+      },
+      {
+        "scope": "World-book auxiliary parameters and message-format-repair thinking inheritance",
+        "source": "fdb038133b9544c7cebc1c982efb6468efae1dcf",
+        "evidence": "271; shared HTTP4 Android2 actual125",
+        "status": "targeted_behavior_verified"
+      },
+      {
+        "scope": "Character Package nullable model/image defaults and two-way Core mappings",
+        "source": "0fd79d0a168827760972017cf8cf99449d3bcb03",
+        "evidence": "275; Core2 and typed JSON/PNG2 actual127/128",
+        "status": "targeted_behavior_verified"
+      },
+      {
+        "scope": "Declared preset world/default-format dependencies through startup, typed recovery and Suite",
+        "source": "bcacc269cea691bf548ab5e804ac88e8a55e93b8",
+        "evidence": "274; original shared resolver2 and Bootstrap14/Integration3/Recovery6/Suite40 actual128",
+        "status": "targeted_behavior_verified"
+      },
+      {
+        "scope": "Message-version edit policy and voice repository persistence",
+        "evidence": "Targeted reuse125 policy8/repository1",
+        "status": "targeted_equivalence_reused"
+      },
+      {
+        "scope": "SaveSlotPackageStorage and SessionCopyService maintenance access",
+        "evidence": "Targeted reuse123 SaveSlot23/DataCoordinator15",
+        "status": "targeted_equivalence_reused"
+      },
+      {
+        "scope": "MemoryRepository state-last commit and journal recovery maintenance",
+        "evidence": "Targeted reuse125 gate15/journal3",
+        "status": "targeted_equivalence_reused"
+      },
+      {
+        "scope": "Moments policy and Desktop scheduler/media adapter",
+        "evidence": "231/259/262; actual public1233 and affected post-publication source tests",
+        "status": "implemented_platform_equivalent_user_acceptance_separate"
+      }
+    ],
+    "pendingRanges": [
+      {
+        "scope": "Character normal editor model/parameter save-reset and cover/avatar effective consumption",
+        "source": "ec0861432a56138d5ccb1685a2e63cc22bc6d703",
+        "run": 41438935426,
+        "evidence": "276; exact129 running",
+        "status": "implemented_exact_source_validation_pending"
+      },
+      {
+        "scope": "Community Desktop browse/detail/import/Discord return/owner snapshot management/card update and runtime switch",
+        "evidence": "216/277; last functional domain, source work in progress; actual official switch disabled at readback",
+        "status": "desktop_client_in_progress_actual_service_and_oauth_separate"
+      },
+      {
+        "scope": "Whole selected147 compatibility declaration and affected final candidate/user cross-scenario acceptance",
+        "evidence": "216/207; retain genuine limitations and authorized exceptions",
+        "status": "pending_selected_range_closure"
+      }
+    ],
+    "notOfficialCompatibilityProof": [
+      "Preserved unpublished Desktop/Fork full-Prompt text extension (266/269)",
+      "Path inventory equality or unmodified Android mirror alone",
+      "Synthetic service success as official service/OAuth enablement"
+    ],
+    "historicalObservationMeaning": "upstreamObservation below is the dated2026-10-05 record, not the current target or a continuing instruction to park1.4.7",
+    "validatedBaselineMeaning": "upstream.commit remains the last fully declared baseline; ongoing147 adoption is not deferred indefinitely by that evidence state"
   }
 }

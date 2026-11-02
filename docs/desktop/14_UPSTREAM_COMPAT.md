@@ -1,3 +1,29 @@
+# 当前兼容范围 / 2026-11-02
+
+当前主动适配目标为官方 **1.4.7 / `b4fa75d296680f777be095f3121ad0c4db979f17`**。已声明完整验证baseline仍为1.4.1；这是证据边界，不是将最新版适配永久搁置。机器记录见[10](10_UPSTREAM_BASELINE.json)，当前总范围见[216](216_DESKTOP_1_0_SCOPE_GAPS_AND_EXECUTION_ROUTE.md)。
+
+最后完整云端原件为[128](https://github.com/MisakaPiano/ChatChatBar-Desktop/actions/runs/41435685411) / `bcacc269cea691bf548ab5e804ac88e8a55e93b8`：主2537PASS+19SKIP、shared1169、Android586及proxy5/NTFS7/native37/TUF14/exit4通过。127的18项失败仍保留；128只修确切套件计数、合成fixture更新时间与147原子依赖改变的旧预期，没有降低取消/重试/不复制/用户删除保护或原期限。
+
+| 官方147范围 | 当前Desktop状态与实际证据 |
+| --- | --- |
+| 人物发言标签改名、历史恢复 | 共享9+实际Desktop3在123通过；旧“聊天段落版本未采用”仅是下方历史图片批次的排除说明，不能概括现状。编辑正文采用当前版本policy，125原policy8/repository1限定复用。 |
+| 待完成改名任务与portable数据 | [272](272_SPEAKER_RENAME_PORTABLE_BACKUP_BOUNDARY.md)的5例125通过。选中卡有pending改名时明确拒绝旧reader不能安全重放的portable输出；内部forMerge/raw快照保留。 |
+| 世界书辅助模型、格式修复参数继承 | [271](271_UPSTREAM147_AUXILIARY_MODEL_PARAMETERS.md)，fdb实际HTTP4/Android2在125通过；不是只核helper未核调用。 |
+| 角色Package默认生图参数 | [275](275_OFFICIAL147_CHARACTER_PACKAGE_IMAGE_SETTINGS.md)，Core2及实际typed JSON/PNG两原例扩展在127/128通过；schema9不变。 |
+| 预制角色声明的世界书/默认格式 | [274](274_OFFICIAL147_PRESET_DEPENDENCIES.md)，先解析完整依赖再沿原transfer提交。128原共享2及Bootstrap14/Integration3/Recovery6/Suite40通过，含取消重试、已提交ID、严格字节与用户删除不补回。 |
+| 角色编辑器与封面/头像消费这些参数 | [276](276_OFFICIAL147_CHARACTER_IMAGE_DEFAULTS.md)，ec086已实现实际global Flow、可空草稿、模型能力和请求参数；129精确云验中，不能由Package回读或128代验。 |
+| SaveSlot/SessionCopy及Memory维护变动 | 原Desktop维护owner对应访问等位，SaveSlot23/DataCoordinator15（123）、gate15/journal3（125）限定复用；不扩称整个ChatRepository或全baseline。 |
+| Moments | 已有共享policy和Desktop时间线/调度/媒体adapter，公开1233与后补受影响路径分别记录。下方早期“尚未采用/P13以后”不是当前事实；真实Provider/用户验收仍与工程检查分开。 |
+| 社区 | [277](277_COMMUNITY_SHARED_CLIENT_AND_DESKTOP_ROUTE.md)，最后功能域客户端接线中。2026-11-02重读官方总开关仍false；只挂真实服务/Discord返回联调，不把历史关闭当永久不能实现。 |
+
+原用户明确采纳的身份提醒/头像正负词按其原具体授权执行，不借同步改其他Prompt。未发布完整Prompt文本互换保留为Desktop/Fork扩展，不能冒称官方147读取器兼容；独立Studio适配CCB，不继续为新协议追加手机读取器分发任务。
+
+上述逐项通过不代表整体1.4.7、整P18或正式1.0验收完成。公开仍1233/签名15；本段不产生新发布或日常H安装动作。
+
+## 以下为历史阶段记录
+
+下方原有CURRENT/EXACT/PENDING/BLOCKED仅描述各自日期和限定批次。历史内容原样保留，当前冲突以本页首段和10/207/216的当前范围为准；不把早期test-only合同复活为新的执行审批。
+
 **用户权限边界已同步（2026-10-25 JST）。** [权限边界](USER_AUTHORITY_AND_PROJECT_REVIEW_BOUNDARY.md)与[开发原则](01_PROJECT_INSTRUCTIONS.md)记录用户指令：Project 仅做后置阶段性审查；未经用户采纳的新限制仅为建议，不撤销、收窄或暂停已有授权。只暂停真实阻断所影响的动作，其他已授权工作连续推进到 Preview。诊断与修复不自动扩张为真实数据/凭据写入、合并或发布权限；具体动作按已有用户授权执行，不重复索取。真实数据、存档和凭据不上 GitHub，包含 Actions Secrets、日志与产物。
 
 **CURRENT 2026-10-24 / LR3 OFFICIAL SAVE SLOT REFERENCE SEMANTICS (LIMITED):** [187](187_P11_LR3_BOUNDED_PROJECT_ACCEPTANCE.md) independently compared official145 `SaveSlotPackageStorage.Reader.validate` (voice ID/audio resource/count checks, no full voice→message-version closure), official `MessageAlternativeVersionPolicy.append` (retains last `maxVersions`) and `VoiceMessageRepository.listForSession` (session-wide voices), plus official `inferLegacyVersionId` and existing shared methods; the selected official147/code86 source bodies are recorded in [LR3 matrix](evidence/p11-lr3-20261024/P11_LR3_PROJECT_REVIEW_PACKET/SOURCE_VERSION_MATRIX.md). Test-only source-derived synthetic shows historic unknown explicit version can remain structurally official-Reader-readable while Desktop's stricter graph blocks restore. Private real first failing nested set has36 unknown nonblank versions of235, but historic pruning, actual producing APK identity, whole-app integrity and automatic safe rebind are **NOT PROVED**. No upstream bug assertion, direct Prompt edit, code86 full compatibility promotion or schema/baseline change. `D-038 BLOCKED`, G1B/C-A target decision remains [188 DRAFT](188_P11_PRODUCTION_DIRECTION_USER_DECISION_CANDIDATE.md).
