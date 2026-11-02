@@ -29,12 +29,14 @@
 | 人物发言标签改名、历史恢复 | 共享9+实际Desktop3在123通过；旧“聊天段落版本未采用”仅是下方历史图片批次的排除说明，不能概括现状。编辑正文采用当前版本policy，125原policy8/repository1限定复用。 |
 | 待完成改名任务与portable数据 | [272](272_SPEAKER_RENAME_PORTABLE_BACKUP_BOUNDARY.md)的5例125通过。选中卡有pending改名时明确拒绝旧reader不能安全重放的portable输出；内部forMerge/raw快照保留。 |
 | 世界书辅助模型、格式修复参数继承 | [271](271_UPSTREAM147_AUXILIARY_MODEL_PARAMETERS.md)，fdb实际HTTP4/Android2在125通过；不是只核helper未核调用。 |
+| Memory/RAG/角色研究与编辑/图片JSON/Fish辅助参数 | [278](278_OFFICIAL147_SELECTED_AUXILIARY_MODEL_PARAMETERS.md)，136/35c完整原件验证所选cap/thinking/custom与RAG120秒，新增共享HTTP4/virtual deadline1、实际DesktopMemory2和原usage方法保留；Prompt不改。 |
+| 图片反推的场景确认 | [279](279_OFFICIAL147_REVERSE_IMAGE_SCENE_CONFIRMATION.md)，137实际Desktop7/共享3和四图通过，但原静态归属检查1FAIL保留；关联视觉、原前置Stop/确认点击快照与提交时再编辑拒绝等后继9f/138待精确原件。 |
 | 角色Package默认生图参数 | [275](275_OFFICIAL147_CHARACTER_PACKAGE_IMAGE_SETTINGS.md)，Core2及实际typed JSON/PNG两原例扩展在127/128通过；schema9不变。 |
 | 预制角色声明的世界书/默认格式 | [274](274_OFFICIAL147_PRESET_DEPENDENCIES.md)，先解析完整依赖再沿原transfer提交。128原共享2及Bootstrap14/Integration3/Recovery6/Suite40通过，含取消重试、已提交ID、严格字节与用户删除不补回。 |
 | 角色编辑器与封面/头像消费这些参数 | [276](276_OFFICIAL147_CHARACTER_IMAGE_DEFAULTS.md)，ec086已实现实际global Flow、可空草稿、模型能力和请求参数；129精确原件实际Desktop4/shared1通过，含420/1100正常编辑与消费两张实图；不是只由Package回读代验。 |
 | SaveSlot/SessionCopy及Memory维护变动 | 原Desktop维护owner对应访问等位，SaveSlot23/DataCoordinator15（123）、gate15/journal3（125）限定复用；不扩称整个ChatRepository或全baseline。 |
 | Moments | 已有共享policy和Desktop时间线/调度/媒体adapter，公开1233与后补受影响路径分别记录。下方早期“尚未采用/P13以后”不是当前事实；真实Provider/用户验收仍与工程检查分开。 |
-| 社区 | [277](277_COMMUNITY_SHARED_CLIENT_AND_DESKTOP_ROUTE.md)，最后功能域已有root UI、metadata/预览预取、原typed冲突、快照确认与PKCE/临时versioned EXE返回接线，当前测试待新精确源；130编译失败未执行它们。2026-11-02重读官方总开关仍false；真实服务/Discord联调另待，不把历史关闭当永久不能实现。 |
+| 社区 | [277](277_COMMUNITY_SHARED_CLIENT_AND_DESKTOP_ROUTE.md)，134/c2d的12项实际Desktop新方法及7张生产Pane/Shell图已核，包含root UI、metadata/预览、原typed冲突、快照确认和PKCE/临时versioned EXE返回；130–133原失败保留。R20复用精确1234包的实际Main AUTH/父进程退出与真实注册表自有写撤限定PASS，不证明浏览器调度、全部后代退出或真实OAuth。2026-11-02所读总开关false，真实服务/Discord联调仍待，不当永久不能实现。 |
 
 原用户明确采纳的身份提醒/头像正负词按其原具体授权执行，不借同步改其他Prompt。未发布完整Prompt文本互换保留为Desktop/Fork扩展，不能冒称官方147读取器兼容；独立Studio适配CCB，不继续为新协议追加手机读取器分发任务。
 

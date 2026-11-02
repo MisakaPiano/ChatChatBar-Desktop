@@ -107,7 +107,7 @@
     "targetCommit": "b4fa75d296680f777be095f3121ad0c4db979f17",
     "authority": "User authorized latest official CCB adaptation; Desktop first, separate Studio consumes official interfaces",
     "status": "selective_adaptation_in_progress_not_whole_baseline_promotion",
-    "sourceAtRecord": "4731cf5a",
+    "sourceAtRecord": "9f5150db3acbd9e39333c41523101fada4910cb9",
     "lastCompleteSourceValidation": {
       "commit": "35c5216ba7b3f6356ef2af0f8ac9bfc439b96715",
       "run": 41485455158,
@@ -330,10 +330,12 @@
       }
     ],
     "pendingReverseScene": {
-      "source": "1e6de51c6ab0ae3d779e05b58e82953400dabed8",
-      "run": 41489702035,
-      "status": "implemented_cloud137_pending",
-      "followup": "4731cf5a adds linked vision regression and preflight stop invalidation, not part of137",
+      "source": "9f5150db3acbd9e39333c41523101fada4910cb9",
+      "run": 41493893207,
+      "status": "implemented_cloud138_pending",
+      "newDesktopMethods": 8,
+      "newSharedMethods": 4,
+      "previous137": "Actual direct shared3/Desktop7 and4Scene images PASS, but one original source ownership checkFAIL; original137 preserved",
       "evidence": "279"
     }
   }
