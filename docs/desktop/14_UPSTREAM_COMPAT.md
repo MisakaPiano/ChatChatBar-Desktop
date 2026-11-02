@@ -1,4 +1,4 @@
-138/9f原件完整PASS；原DesignParity为6PASS+1SKIP，原生辅助窗口关闭不作已验。279反推范围已工程验证，1235私有普通候选R24正在构建。136模型参数范围保持；正式baseline141未提升，1234原包/签名16冻结、无新公开或日常H操作。
+138/9f原件完整PASS；1235/R24普通候选、四资产私有草稿431856096、签名17/R26冻结旧client完整下载二验已完成。原DesignParity6PASS+1SKIP，19项明确未执行见280；validated141不自动提升。公开仍1233/15，公开许可与真人验收待，日常H未操作。
 
 下方历史保留。
 
@@ -26,7 +26,7 @@
 
 当前主动适配目标为官方 **1.4.7 / `b4fa75d296680f777be095f3121ad0c4db979f17`**。已声明完整验证baseline仍为1.4.1；这是证据边界，不是将最新版适配永久搁置。机器记录见[10](10_UPSTREAM_BASELINE.json)，当前总范围见[216](216_DESKTOP_1_0_SCOPE_GAPS_AND_EXECUTION_ROUTE.md)。
 
-最后完整云端原件为[129](https://github.com/MisakaPiano/ChatChatBar-Desktop/actions/runs/41438935426) / `ec0861432a56138d5ccb1685a2e63cc22bc6d703`：主2541PASS+19SKIP、shared1170、Android586及proxy5/NTFS7/native37/TUF14/exit4通过，角色编辑/实际生图消费4+1及两张Scene图已核。130/18c缺import编译失败仍保留；后续131/a429共享1183（CommunityClient11与Core新增2）以及NTFS7/native37/TUF14/exit4实际通过，但Desktop回滚nullable record及Android共享conflictId三处smartcast编译失败，主/proxy/Android测试未执行。后继补确切非空分支与局部val，不放宽归属/冲突规则；社区UI/PKCE及后补AUTH唤起仍须自己的精确源云验。127原18FAIL及128修正记录保留，未降低保护或期限。
+最后完整应用源云端原件为[138](https://github.com/MisakaPiano/ChatChatBar-Desktop/actions/runs/41493893207) / `9f5150db3acbd9e39333c41523101fada4910cb9`：主2563PASS+19SKIP、shared1192、Android586及proxy5/NTFS7/native37/TUF14/exit4通过。反推Desktop8/shared4及旧Reaudit11实际通过，137静态归属FAIL原件保留；社区134/R20的限定范围与130–133原失败历史均保留。1235普通包及更新器结果见207/216，跨场景与19SKIP见[280](280_BETA_CROSS_SCENARIO_EVIDENCE_MATRIX.md)，不批量宣布整147兼容。
 
 | 官方147范围 | 当前Desktop状态与实际证据 |
 | --- | --- |

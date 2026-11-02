@@ -206,11 +206,15 @@
     "historicalObservationMeaning": "upstreamObservation below is the dated2026-10-05 record, not the current target or a continuing instruction to park1.4.7",
     "validatedBaselineMeaning": "upstream.commit remains the last fully declared baseline; ongoing147 adoption is not deferred indefinitely by that evidence state",
     "lastAttempt": {
-      "commit": "c2d3640e3caaa39ffb932823909a883b583e4879",
-      "run": 41464861703,
+      "commit": "9f5150db3acbd9e39333c41523101fada4910cb9",
+      "run": 41493893207,
       "status": "COMPLETE_ORIGINALS_PASS",
-      "desktopCommunityNewMethodsPass": 12,
-      "originalImagesReviewed": 7
+      "mainPass": 2563,
+      "mainSkip": 19,
+      "sharedPass": 1192,
+      "androidPass": 586,
+      "newDesktopReverseMethodsPass": 8,
+      "newSharedReverseMethodsPass": 4
     },
     "privateCandidate1234": {
       "source": "c2d3640e3caaa39ffb932823909a883b583e4879",
@@ -328,7 +332,29 @@
         "originalPanelImagesReviewed": 6,
         "shellMethod": "PASS_IMAGE_NOT_ARCHIVED",
         "correction": "explicit Unit; snapshot field/layout and capture followups require next exact source"
+      },
+      {
+        "commit": "c2d3640e3caaa39ffb932823909a883b583e4879",
+        "run": 41464861703,
+        "status": "COMPLETE_ORIGINALS_PASS",
+        "desktopCommunityNewMethodsPass": 12,
+        "originalImagesReviewed": 7,
+        "historical": true
       }
-    ]
+    ],
+    "privateCandidate1235": {
+      "source": "9f5150db3acbd9e39333c41523101fada4910cb9",
+      "version": "0.1.0-preview.1235",
+      "ordinaryBuildRun": 41498266081,
+      "signedClientRun": 41504456372,
+      "releaseId": 431856096,
+      "state": "PRIVATE_DRAFT_FINAL_BYTES_SIGNED17_OLD_CLIENT_PASS",
+      "metadataRevision": 17,
+      "publicMetadataRevision": 15,
+      "public": false,
+      "humanAcceptance": false,
+      "dailyHOperation": false
+    },
+    "crossScenarioMatrix": "docs/desktop/280_BETA_CROSS_SCENARIO_EVIDENCE_MATRIX.md"
   }
 }
