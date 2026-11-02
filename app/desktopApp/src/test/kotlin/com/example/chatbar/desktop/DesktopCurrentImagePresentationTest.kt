@@ -50,6 +50,21 @@ class DesktopCurrentImagePresentationTest {
                 hash = 31 * hash + raster.getRGB(x, y)
         return hash
     }
+    private suspend fun ImageComposeScene.awaitPreviewIdentity(expected: String) {
+        fun displayed(): String? {
+            val preview = nodes().firstOrNull { it.matches("Studio 内联图片预览") } ?: return null
+            fun values(node: SemanticsNode): List<String> = listOfNotNull(node.config.getOrNull(DesktopDecodedImageIdentity)) + node.children.flatMap(::values)
+            return values(preview).singleOrNull()
+        }
+        val ready = withTimeoutOrNull(5000) { while (displayed() != expected) frames(); true } == true
+        assertTrue(ready, "Expected decoded image $expected, observed ${displayed()}")
+    }
+    private fun ImageComposeScene.reviewPreview(name: String) {
+        System.getenv("CCB_STUDIO_IMAGE_REVIEW_DIR")?.let { directory ->
+            val path = Path.of(directory).resolve("$name.png"); Files.createDirectories(path.parent)
+            render().use { image -> image.encodeToData()!!.use { Files.write(path, it.bytes) } }
+        }
+    }
     @Test fun `role disable collapse expand and edit remain independent from generation`() = runBlocking(awt) {
         val f = FinalProductDesignFixture()
         var draft by mutableStateOf(NovelAiStudioDraft(basePrompt = "landscape", characters = listOf(NovelAiCharacterPromptDraft(id = "role", prompt = "adult traveler", negativePrompt = "blur"))))
@@ -257,10 +272,14 @@ class DesktopCurrentImagePresentationTest {
             val draft = c.draft.value
             val scene = ImageComposeScene(1280, 900) { DesktopNovelAiStudioPanel(c) }
             try {
-                repeat(12) { scene.frames(); delay(20) }
+                withTimeout(5000) { while (!c.state.value.ready || c.state.value.results.size < 2) scene.frames() }
+                val originalIdentity = desktopDecodedImageIdentity(c.resources.resolveOwnedReference(c.state.value.results.last()).toString())
+                val secondIdentity = desktopDecodedImageIdentity(c.resources.resolveOwnedReference(c.state.value.results.asReversed()[1]).toString())
+                scene.awaitPreviewIdentity(originalIdentity)
                 val area = scene.nodes().first { it.matches("Studio 内联图片预览") }.boundsInRoot
                 val center = area.center
                 val fit = scene.previewHash()
+                scene.reviewPreview("studio-inline-original-fit")
                 scene.sendPointerEvent(PointerEventType.Scroll, center, scrollDelta = Offset(0f, -8f))
                 scene.frames()
                 val zoomed = scene.previewHash()
@@ -277,9 +296,12 @@ class DesktopCurrentImagePresentationTest {
                 scene.sendPointerEvent(PointerEventType.Scroll, center, scrollDelta = Offset(0f, -8f))
                 scene.frames()
                 scene.click("选择结果缩略图 2")
-                repeat(8) { scene.frames(); delay(20) }
+                scene.awaitPreviewIdentity(secondIdentity)
+                scene.reviewPreview("studio-inline-second-selected")
                 scene.click("选择结果缩略图 1")
-                repeat(8) { scene.frames(); delay(20) }
+                scene.awaitPreviewIdentity(originalIdentity); scene.frames()
+                scene.reviewPreview("studio-inline-returned-fit")
+                assertEquals(area, scene.nodes().first { it.matches("Studio 内联图片预览") }.boundsInRoot)
                 assertEquals(fit, scene.previewHash())
                 assertEquals(draft, c.draft.value)
                 assertTrue(c.taskEntries.value.isEmpty())

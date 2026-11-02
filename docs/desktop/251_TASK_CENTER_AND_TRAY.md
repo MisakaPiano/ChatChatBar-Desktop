@@ -1,5 +1,7 @@
 # 任务中心与托盘 / 2026-11-02
 
+2026-11-02 CI102/c358实际320suite/2477=2456PASS+19SKIP+2FAIL；原101两几何例实际通过，4宽title已生成/协调视核；Recovery静态typed/陈旧点击/窄宽/启动恢复marker等通过，六入口导航仍FAIL。原fixture未initialize自动备份，AUTO的effective/draft为空，补禁用计划初始化和准确destination失败信息；透明Recovery截图补生产背景。Studio回图1像素FAIL前zoom/pan/reset已过；保留精确hash/viewport比较，新增实际decoded bitmap的opaque identity等待和前后实图，不用固定帧数冒认加载完成；原bitmap保留/动画不删，仅阻止已取消decoder晚发布。修正单列冻结，不被后续Fish媒体统计WIP牵制。proxy5/NTFS7/shared1135/Android582/native33/updater8/exit4独立PASS，实际3ZIP已复用核SHA/CRC/XML。公开1229/13不变，无H写入/新公开/新签名，本机不编译渲染，10点前不问真人。
+
 2026-11-02 CI101/bdd实际完整FAIL：318suite/2469=2448PASS+19SKIP+2几何FAIL。7个新增scope（文档/历史晚取消、真实Shell创作pin、Moments关闭态/回页、任务提示关闭、Shell帮助草稿保护、双语说明/close）实际PASS，proxy5/NTFS7/shared1135/Android582/native33/updater8/exit4独立通过；实际三ZIP已复用核SHA/CRC/XML，330中文/1100英文帮助图已视核。旧captionGap取到贴邻MINIMIZE边界，改找实际非交叠空白仍断言CAPTION；精确Compose1.10.3主源证实render默认时间0，补测试单调帧时钟，保留原5秒/Data完整可见条件并加失败几何图。production滚动机制未改，标题四图及两例修后仍待新源。fa24恢复支持为另一本地原范围检查点，尚未云验。公开1229/13、私有1230冻结064/local14和1232冻结883/R17保持，无新包/签名/公开/H代装，本机不编译渲染，10点前不问人工。
 
 2026-11-02 CI100/72c64e05 实际FAIL：生产compileKotlin缺 currentCoroutineContext 明确import，main/proxy均未执行且无主报告。独立NTFS7/shared1135/Android582与完成日志native33/updater8/exit4通过，实际两ZIP已复用核SHA/CRC/XML。dbe181d4只补协程import，不换原Job或发布证据；99的Shell基线修正、7a7索引晚取消、9825Moments回页、9c提示入口仍待下一精确源执行。后续本地P17只读当前页帮助含实际Shell/宽窄hit与草稿保护回归，尚未执行，不当成完整首次使用/Recovery Center。公开1229/13、私有1230冻结064/local14与1232冻结883/R17原证保持，无新包/签名/公开/H代装，本机不编译渲染，10:00前不问人工。

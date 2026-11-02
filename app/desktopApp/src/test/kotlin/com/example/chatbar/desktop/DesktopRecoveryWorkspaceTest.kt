@@ -3,6 +3,7 @@ package com.example.chatbar.desktop
 
 import androidx.compose.runtime.*
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -33,7 +34,7 @@ class DesktopRecoveryWorkspaceTest {
                 DesktopRecoveryStatus(DesktopRecoveryArea.BACKUP, DesktopRecoveryPhase.CHECKED),
                 DesktopRecoveryStatus(DesktopRecoveryArea.MERGE, DesktopRecoveryPhase.PREVIEW))
             val scene = ImageComposeScene(width, 760) {
-                Column(Modifier.fillMaxSize().verticalScroll(scroll).padding(16.dp)) {
+                Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).verticalScroll(scroll).padding(16.dp)) {
                     DesktopRecoveryPanel(statuses, true) { selected += it }
                 }
             }
@@ -60,6 +61,9 @@ class DesktopRecoveryWorkspaceTest {
         }
         val f = FinalProductDesignFixture(picker); f.initialize(false)
         val c = f.container
+        val automaticState = c.automaticBackupRuntime.initialize()
+        assertEquals(false, automaticState.effectiveSettings?.automaticBackup?.enabled)
+        assertFalse(automaticState.schedulerRunning)
         c.characterRepository.save(CharacterCard.create("Synthetic recovery character").copy(id = "card"))
         c.chatRepository.createSession(ChatSession("room", "card", "Recovery room", createdAt = 1, updatedAt = 1))
         c.primaryChatController.refresh(); c.primaryChatController.selectSession("room")
@@ -87,7 +91,10 @@ class DesktopRecoveryWorkspaceTest {
             for ((entry, expected) in routes) {
                 click(scene, DesktopUiText.RECOVERY_SUPPORT.zhCn); frames(scene)
                 click(scene, entry.zhCn); frames(scene)
-                withTimeout(5000) { while (!has(scene, expected)) frames(scene) }
+                val reached = withTimeoutOrNull(5000) { while (!has(scene, expected)) frames(scene); true } == true
+                if (!reached) capture(scene, "recovery-navigation-${entry.name}-failure")
+                assertTrue(reached, "destination=${entry.name}, expected=$expected, visible=" + nodes(scene)
+                    .flatMap { it.config.getOrNull(SemanticsProperties.Text).orEmpty() }.joinToString { it.text }.take(4000))
                 assertEquals(0, picks); assertEquals(0, directories); assertEquals(0, exits)
                 assertEquals(initialMerge, c.mergeImportController.state.value)
                 assertTrue(c.mergeImportController.workRows.value.isEmpty())

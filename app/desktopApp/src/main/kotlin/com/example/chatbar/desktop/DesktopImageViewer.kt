@@ -15,6 +15,7 @@ import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.SemanticsPropertyKey
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
@@ -45,25 +46,35 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+/** Opaque identity of the bitmap actually displayed, not the next requested source or its path. */
+internal val DesktopDecodedImageIdentity = SemanticsPropertyKey<String>("DesktopDecodedImageIdentity")
+internal fun desktopDecodedImageIdentity(reference: String): String = java.util.HexFormat.of().formatHex(
+    java.security.MessageDigest.getInstance("SHA-256").digest(reference.toByteArray(Charsets.UTF_8)))
+
 @Composable
 internal fun DesktopOwnedImage(reference: String, read: (String) -> ByteArray,
     modifier: Modifier = Modifier, crop: Boolean = false, onDimensions: ((IntSize) -> Unit)? = null,
     minimumDisplayWidthPx: Int? = null,
     displayTargetForSource: ((IntSize) -> IntSize)? = null) {
     var error by remember(reference) { mutableStateOf<String?>(null) }
+    val identity = remember(reference) { desktopDecodedImageIdentity(reference) }
     val displayed by produceState<DesktopDisplayedImage?>(null, reference, minimumDisplayWidthPx, displayTargetForSource) {
+        suspend fun publish(image: DesktopDisplayedImage) {
+            currentCoroutineContext().ensureActive()
+            value = image.copy(identity = identity)
+        }
         try {
             withContext(Dispatchers.IO) {
                 val bytes = read(reference)
                 require(bytes.size <= com.example.chatbar.domain.image.ApngDisguiseCodec.MAX_OUTPUT_BYTES)
                 if (playDesktopApng(bytes) { frame, duration ->
-                    value = DesktopDisplayedImage(desktopDisplayBitmap(frame, minimumDisplayWidthPx),
-                        IntSize(frame.width, frame.height)); delay(duration)
+                    publish(DesktopDisplayedImage(desktopDisplayBitmap(frame, minimumDisplayWidthPx),
+                        IntSize(frame.width, frame.height))); delay(duration)
                 }) return@withContext
                 org.jetbrains.skia.Data.makeFromBytes(bytes).use { data ->
                     org.jetbrains.skia.Codec.makeFromData(data).use { codec ->
                         require(codec.width.toLong() * codec.height <= DesktopImageEditing.MAX_PIXELS)
-                        if (codec.frameCount <= 1) value = desktopDisplayBitmap(bytes, minimumDisplayWidthPx, displayTargetForSource)
+                        if (codec.frameCount <= 1) publish(desktopDisplayBitmap(bytes, minimumDisplayWidthPx, displayTargetForSource))
                         else org.jetbrains.skia.Bitmap().use { frame ->
                             check(frame.allocPixels(codec.imageInfo))
                             var loops = 0
@@ -71,8 +82,8 @@ internal fun DesktopOwnedImage(reference: String, read: (String) -> ByteArray,
                                 for (index in 0 until codec.frameCount) {
                                     currentCoroutineContext().ensureActive()
                                     codec.readPixels(frame, index)
-                                    value = DesktopDisplayedImage(org.jetbrains.skia.Image.makeFromBitmap(frame).toComposeImageBitmap(),
-                                        IntSize(codec.width, codec.height))
+                                    publish(DesktopDisplayedImage(org.jetbrains.skia.Image.makeFromBitmap(frame).toComposeImageBitmap(),
+                                        IntSize(codec.width, codec.height)))
                                     delay(codec.getFrameInfo(index).duration.coerceAtLeast(10).toLong())
                                 }
                                 loops++
@@ -89,13 +100,13 @@ internal fun DesktopOwnedImage(reference: String, read: (String) -> ByteArray,
     LaunchedEffect(reference, displayed?.sourceDimensions) {
         displayed?.let { dimensionsChanged?.invoke(it.sourceDimensions) }
     }
-    Box(modifier, contentAlignment = Alignment.Center) {
+    Box(modifier.semantics { displayed?.identity?.let { this[DesktopDecodedImageIdentity] = it } }, contentAlignment = Alignment.Center) {
         displayed?.let { Image(it.bitmap, "图片", Modifier.fillMaxSize(), contentScale = if (crop) ContentScale.Crop else ContentScale.Fit) }
             ?: StatusText(error ?: "正在读取图片…")
     }
 }
 
-private data class DesktopDisplayedImage(val bitmap: ImageBitmap, val sourceDimensions: IntSize)
+private data class DesktopDisplayedImage(val bitmap: ImageBitmap, val sourceDimensions: IntSize, val identity: String? = null)
 
 private fun desktopDisplayBitmap(bytes: ByteArray, minimumDisplayWidthPx: Int?,
     displayTargetForSource: ((IntSize) -> IntSize)?): DesktopDisplayedImage {
