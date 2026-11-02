@@ -4,7 +4,6 @@ import com.example.chatbar.domain.image.NovelAiImageUseTarget
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 
 internal enum class DesktopExternalImportPhase { CHECKING, READY, CONFLICT, PREVIEW, COMPLETE, UNCERTAIN, ERROR, RESTART }
 internal data class DesktopExternalImportState(val item: DesktopExternalFile? = null, val kind: DesktopExternalImportKind = DesktopExternalImportKind.UNKNOWN,
@@ -38,17 +37,28 @@ internal class DesktopExternalImportController(
     private var attempt: DesktopExternalImportAttempt? = null
     private var typedEvidence: DesktopUnresolvedTransfer? = null
     private var modelEvidence: DesktopUnresolvedModelTemplateImport? = null
-    private var operation: Job? = null
+    private class ActionRun(val itemId: String?) {
+        @Volatile var job: Job? = null
+        @Volatile var stopRequested = false
+        @Volatile var finished = false
+    }
+    @Volatile private var operation: ActionRun? = null
     private var delegated: Job? = null
     private var closed = false
     init {
         scope.launch {
             queue.state.collect { snapshot ->
                 val next = snapshot.files.firstOrNull()
-                if (next?.id != state.value.item?.id) mutex.withLock {
-                    mutable.value = DesktopExternalImportState(item = next, busy = next != null)
-                    prepared = null; attempt = null; typedEvidence = null; modelEvidence = null
-                    if (next != null) inspectHead(next)
+                if (next?.id != state.value.item?.id) {
+                    mutex.lock()
+                    try {
+                        mutable.value = DesktopExternalImportState(item = next, busy = next != null)
+                        prepared = null; attempt = null; typedEvidence = null; modelEvidence = null
+                        if (next != null) inspectHead(next)
+                    } finally {
+                        mutex.unlock()
+                        publishIdle(next?.id)
+                    }
                 }
             }
         }
@@ -66,7 +76,10 @@ internal class DesktopExternalImportController(
                 else "请确认文件类型和导入位置。当前资料尚未改变。") }
         } catch (cancelled: CancellationException) { throw cancelled }
         catch (_: Exception) { mutable.update { it.copy(phase = DesktopExternalImportPhase.ERROR, message = "文件读取或格式检查未完成；原文件未修改。可以重试或跳过此文件。") } }
-        finally { mutable.update { it.copy(busy = false) } }
+    }
+    private fun publishIdle(itemId: String?) {
+        // Releasing the admission lock can resume inspection of a different queue head.
+        mutable.update { if (it.item?.id == itemId) it.copy(busy = false) else it }
     }
     fun show(value: Boolean) { mutable.update { it.copy(shown = value) } }
     fun previewImage(itemId: String): ByteArray {
@@ -218,21 +231,29 @@ internal class DesktopExternalImportController(
         check(queue.acknowledge(item.id))
     }
     fun stop() {
+        val current = operation ?: return
+        current.stopRequested = true
         when (state.value.kind) {
             DesktopExternalImportKind.BACKUP, DesktopExternalImportKind.SAVE_SLOT -> delegated?.cancel()
-            else -> operation?.cancel()
+            else -> current.job?.cancel()
         }
     }
     private suspend fun awaitDelegated(candidate: Job?) {
         val job = requireNotNull(candidate) { "导入器当前繁忙或已关闭；本次文件仍在队列。" }
         delegated = job
+        if (operation?.stopRequested == true) job.cancel()
         try { job.join() } finally { if (!job.isActive && delegated === job) delegated = null }
     }
     private fun action(password: CharArray? = null, work: suspend () -> Unit) {
         if (closed || state.value.busy || !mutex.tryLock()) { password?.fill('\u0000'); return }
+        val run = ActionRun(state.value.item?.id)
+        operation = run
         mutable.update { it.copy(busy = true, message = "正在处理当前文件，请等待；不会开始下一项。") }
-        operation = scope.launch(start = CoroutineStart.UNDISPATCHED) {
-            try { work() }
+        val job = scope.launch(start = CoroutineStart.UNDISPATCHED) {
+            try {
+                if (run.stopRequested) throw CancellationException("External action stopped before dispatch")
+                work()
+            }
             catch (cancelled: CancellationException) {
                 val committed = attempt?.matches(typed.state.value.externalImportReceipt) == true ||
                     attempt?.matches(models.state.value.externalImportReceipt) == true || attempt?.matches(saves.state.value.externalImportReceipt) == true
@@ -245,8 +266,17 @@ internal class DesktopExternalImportController(
                     message = if (retained == DesktopExternalImportPhase.COMPLETE) "导入已确认写入；队列或暂存清理尚未完成，请再次结束此项，不要重复导入。"
                     else error.message ?: "操作未完成；当前文件仍保留在队列。")
             } }
-            finally { password?.fill('\u0000'); mutable.update { it.copy(busy = false) }; mutex.unlock() }
+            finally {
+                password?.fill('\u0000')
+                run.finished = true
+                if (operation === run) operation = null
+                mutex.unlock()
+                publishIdle(run.itemId)
+            }
         }
+        // UNDISPATCHED work can finish and admit another action before launch returns.
+        run.job = job
+        if (run.stopRequested && !run.finished) job.cancel()
     }
     suspend fun closeAndDrain() {
         closed = true; queue.stopAccepting()

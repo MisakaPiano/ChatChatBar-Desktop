@@ -17,6 +17,47 @@ import kotlinx.coroutines.flow.first
 import kotlin.test.*
 
 class DesktopExternalImportControllerTest {
+    @Test fun `idle observer can immediately admit import and advance the exact head without an unpublished lock window`() = runBlocking {
+      for (productionDispatcher in listOf(false, true)) fixture { f ->
+        val first = f.format("first.json", "First", "Retained first")
+        val second = f.format("second.json", "Second", "Not imported")
+        val bytes = Files.readAllBytes(first)
+        val external = f.open(productionDispatcher = productionDispatcher)
+        val handoff = async(Dispatchers.Unconfined, start = CoroutineStart.UNDISPATCHED) {
+            external.state.first { it.item?.path == first && it.phase == DesktopExternalImportPhase.READY && !it.busy }
+            external.import()
+            external.state.first { it.item?.path == first && it.phase == DesktopExternalImportPhase.COMPLETE && !it.busy }
+            external.next()
+            external.state.first { it.item?.path == second && it.phase == DesktopExternalImportPhase.READY && !it.busy }
+        }
+        f.submit(first, second)
+        withTimeout(5000) { handoff.await() }
+        assertEquals(second, f.queue.state.value.files.single().path)
+        assertEquals(listOf("First"), f.app.formatCardRepository.getAll().map { it.name })
+        assertContentEquals(bytes, Files.readAllBytes(first))
+        assertEquals(DesktopExternalImportPhase.READY, external.state.value.phase)
+      }
+    }
+    @Test fun `synchronous inspection tail cannot replace a reentrant import job before its exact stop`() = runBlocking { fixture { f ->
+        val entered = CompletableDeferred<Unit>()
+        val typed = f.app.createTypedTransferController(afterTypedPrepared = { _, _ -> entered.complete(Unit); awaitCancellation() })
+        val original = f.format("stopped.json", "Stopped", "Not committed")
+        f.submit(original)
+        val external = f.open(typed); external.await(DesktopExternalImportPhase.READY)
+        val observer = launch(Dispatchers.Unconfined, start = CoroutineStart.UNDISPATCHED) {
+            external.state.first { it.busy }
+            external.state.first { !it.busy }
+            external.import()
+        }
+        external.retryInspection() // Prepared inspection is synchronous; the original launch can return last.
+        withTimeout(5000) { entered.await() }
+        external.stop()
+        external.await(DesktopExternalImportPhase.UNCERTAIN)
+        observer.join()
+        assertTrue(f.app.formatCardRepository.getAll().isEmpty())
+        assertEquals(original, f.queue.state.value.files.single().path)
+        assertNull(typed.state.value.externalImportReceipt)
+    } }
     @Test fun `actual typed conflicts hold the FIFO and cancellation advances only the selected head`() = runBlocking { fixture { f ->
         f.app.formatTransfers.importNew(FormatCardPackage(name = "Conflict", content = "Retained"))
         val a = f.format("a.png", "Conflict", "Incoming")
@@ -117,7 +158,11 @@ class DesktopExternalImportControllerTest {
         assertContentEquals(bytes, Files.readAllBytes(file))
         assertEquals(file, f.queue.state.value.files.first().path)
         external.skip()
-        withTimeout(5000) { external.state.first { it.item?.path == next && !it.busy } }
+        try { withTimeout(5000) { external.state.first { it.item?.path == next && !it.busy } } }
+        catch (timeout: TimeoutCancellationException) {
+            throw AssertionError("Skip handoff phase=${external.state.value.phase}, busy=${external.state.value.busy}, " +
+                "nextHead=${f.queue.state.value.files.firstOrNull()?.path == next}, mergeReady=${f.app.mergeImportController.state.value.ready}", timeout)
+        }
         assertFalse(f.app.mergeImportController.state.value.ready)
     } }
 
@@ -207,11 +252,14 @@ class DesktopExternalImportControllerTest {
             ownership = assertIs<DesktopDataRootOwnershipResult.Acquired>(DesktopDataRootOwnership.acquire(source)).ownership
         }
         var external: DesktopExternalImportController? = null
-        fun open(typed: DesktopTypedTransferController = app.createTypedTransferController()): DesktopExternalImportController =
-            DesktopExternalImportController(queue, app.dataOperationCoordinator, typed, app.createModelTemplateTransferController(),
+        fun open(typed: DesktopTypedTransferController = app.createTypedTransferController(), productionDispatcher: Boolean = false): DesktopExternalImportController =
+            (if (productionDispatcher) DesktopExternalImportController(queue, app.dataOperationCoordinator, typed, app.createModelTemplateTransferController(),
+                app.mergeImportController, app.saveSlotController, app.novelAiStudioController,
+                imageBusy = { app.taskRuntime.tasks.value.any { it.kind == DesktopTaskKind.NOVELAI && it.status == DesktopTaskStatus.RUNNING } })
+            else DesktopExternalImportController(queue, app.dataOperationCoordinator, typed, app.createModelTemplateTransferController(),
                 app.mergeImportController, app.saveSlotController, app.novelAiStudioController,
                 imageBusy = { app.taskRuntime.tasks.value.any { it.kind == DesktopTaskKind.NOVELAI && it.status == DesktopTaskStatus.RUNNING } },
-                dispatcher = Dispatchers.Unconfined).also { external = it }
+                dispatcher = Dispatchers.Unconfined)).also { external = it }
         fun submit(vararg files: Path) { check(queue.submit(UUID.randomUUID().toString(), files.toList())) }
         fun format(name: String, title: String, content: String): Path = Files.writeString(root.resolve(name), app.transferJson.encodeToString(
             FormatCardPackage.serializer(), FormatCardPackage(name = title, content = content)))
