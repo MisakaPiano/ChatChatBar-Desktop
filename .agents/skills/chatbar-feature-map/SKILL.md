@@ -7,6 +7,8 @@ Desktop complete Studio generation presets (`.ccbpreset`, preview/confirm/undo a
 
 # ChatBar Feature Map
 
+Desktop bundled presets and declared world/default-format dependencies: read `chatbar-desktop-bundled-presets`. This is the manifest/startup/typed recovery/complete suite owner, separate from Studio generation preset exchange.
+
 Desktop task center/tray integration: read `chatbar-desktop-task-center`. `DesktopTaskCenter/Sources/Panel` observe real owners; `DesktopTaskRuntime.ownedWork` exposes its existing document/card-design children. AppContainer attaches lazy owners and retains business shutdown order. Exact row cancellation and guarded target navigation are distinct from merely opening a page.
 
 Desktop pinned upstream change inventories: read `chatbar-desktop-upstream-drift`. The offline tool binds explicit commits and candidate paths/blobs; Android-path presence or absence never establishes Desktop feature parity. Existing formal-release monitoring stays separate.
