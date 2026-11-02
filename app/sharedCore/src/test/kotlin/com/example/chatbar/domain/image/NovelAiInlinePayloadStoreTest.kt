@@ -5,6 +5,34 @@ import kotlin.test.*
 import kotlinx.coroutines.*
 
 class NovelAiInlinePayloadStoreTest {
+    @Test fun `portable stream exchange preserves payload bytes and failures cancel without replacing stored content`() {
+        val root = Files.createTempDirectory("vibe-payload-stream-")
+        val other = Files.createTempDirectory("vibe-payload-import-")
+        try {
+            val store = NovelAiInlinePayloadStore(root.toFile())
+            val bytes = "AQID".repeat(32768).toByteArray()
+            val ref = store.retainStream(bytes.inputStream())
+            val output = java.io.ByteArrayOutputStream(); store.copyResolved(ref, output)
+            assertContentEquals(bytes, output.toByteArray())
+            val imported = NovelAiInlinePayloadStore(other.toFile())
+            assertEquals(ref, imported.retainStream(output.toByteArray().inputStream()))
+            assertEquals(ref, imported.retainStream(output.toByteArray().inputStream()))
+            val file = root.resolve("novelai-vibe-payloads").resolve(ref.substringAfter(':'))
+            val original = Files.readAllBytes(file)
+            assertEquals("AQID", imported.retainStream("AQID".byteInputStream()))
+            assertFails { imported.retainStream((bytes + byteArrayOf(0xc0.toByte(), 0xaf.toByte())).inputStream()) }
+            var checks = 0
+            assertFailsWith<CancellationException> { imported.retainStream(bytes.inputStream()) {
+                if (++checks == 3) throw CancellationException("synthetic cancellation")
+            } }
+            assertFailsWith<java.io.IOException> { store.copyResolved(ref, object : java.io.OutputStream() {
+                override fun write(value: Int) { throw java.io.IOException("synthetic write refusal") }
+            }) }
+            assertContentEquals(original, Files.readAllBytes(file))
+            assertEquals(1L, Files.list(other.resolve("novelai-vibe-payloads")).use { it.count() })
+            assertEquals(String(bytes, Charsets.UTF_8), imported.resolve(ref))
+        } finally { root.toFile().deleteRecursively(); other.toFile().deleteRecursively() }
+    }
     @Test fun `legacy inline stays inline while large payload is retained once and resolves exactly`() = runBlocking {
         val root = Files.createTempDirectory("vibe-payload-")
         try {

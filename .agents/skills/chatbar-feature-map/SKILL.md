@@ -3,6 +3,8 @@ name: chatbar-feature-map
 description: Locate ChatBar feature entry points before broad repository search. Use at the start of ChatBar tasks when the requested area is unclear, when reducing redundant search work, or when mapping a user-visible feature to likely screens, ViewModels, domain services, repositories, tests, and existing project skills.
 ---
 
+Desktop complete Studio generation presets (`.ccbpreset`, preview/confirm/undo and resource custody) have their own `chatbar-desktop-studio-preset` skill; existing positive-Prompt clipboard and incomplete history recipes remain separate owners.
+
 # ChatBar Feature Map
 
 Desktop task center/tray integration: read `chatbar-desktop-task-center`. `DesktopTaskCenter/Sources/Panel` observe real owners; `DesktopTaskRuntime.ownedWork` exposes its existing document/card-design children. AppContainer attaches lazy owners and retains business shutdown order. Exact row cancellation and guarded target navigation are distinct from merely opening a page.

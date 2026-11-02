@@ -241,7 +241,7 @@ class DesktopAppContainer internal constructor(
             diagnostics = taskRuntime.diagnostics)
     }
 
-    internal val novelAiStudioController by lazy {
+    private val novelAiStudioOwner = lazy {
         DesktopNovelAiStudioController(jsonFileStorage, characterResourceStore, filePicker,
             dataOperationCoordinator, ownedImageCleanup::deleteUnreferenced, novelAiGenerationRuntime,
             DesktopNovelAiGuidance(appDataRoot, characterResourceStore, desktopSecretStore, dataOperationCoordinator,
@@ -253,8 +253,10 @@ class DesktopAppContainer internal constructor(
             postProcessor = DesktopNovelAiPostProcessor(desktopSecretStore, diagnostics = taskRuntime.diagnostics),
             credentialIdentity = { apiAccounts.identity(com.example.chatbar.desktop.security.DesktopAccountService.NOVELAI) },
             freezeCredential = { apiAccounts.captureCall(com.example.chatbar.desktop.security.DesktopCredentialKey.NovelAiToken,
-                com.example.chatbar.desktop.security.DesktopAccountService.NOVELAI) })
+                com.example.chatbar.desktop.security.DesktopAccountService.NOVELAI) },
+            presetArchive = DesktopGenerationPresetArchive(appDataRoot, characterResourceStore, dataOperationCoordinator))
     }
+    internal val novelAiStudioController by novelAiStudioOwner
 
     internal val appearanceController by lazy { DesktopAppearanceController(settingsRepository, desktopSettingsStore) }
     private val modelCredentialPolicy by lazy {
@@ -787,6 +789,7 @@ class DesktopAppContainer internal constructor(
                 if (memoryRagTransportOwner.isInitialized()) memoryRagTransportOwner.value.closeAndDrain()
             },
             draftRuntimeClose = {
+                if (novelAiStudioOwner.isInitialized()) novelAiStudioController.closePresetExchange()
                 if (primaryChatControllerOwner.isInitialized()) primaryChatController.closeDraftPersistence()
                 if (characterEditorOwner.isInitialized()) characterEditorController.closeAndDrain()
                 if (worldBookEditorOwner.isInitialized()) worldBookEditorController.closeAndDrain()

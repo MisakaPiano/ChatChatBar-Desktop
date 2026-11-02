@@ -32,9 +32,14 @@ internal data class DesktopNovelAiStudioState(
     val catalogUpdate: com.example.chatbar.domain.update.DanbooruCatalogUpdateInfo? = null,
     val results: List<String> = emptyList(),
     val selected: Set<NovelAiHistoryImageSelection> = emptySet(),
+    val presetPreview: DesktopGenerationPresetPreview? = null,
+    val presetOutcome: DesktopPresetApplyOutcome = DesktopPresetApplyOutcome.NONE,
 ) {
     val account: NovelAiAccountUsage? get() = accountUi.takeIf { it.error == null }?.effectiveUsage
 }
+
+internal data class DesktopGenerationPresetPreview(val fileName: String, val preset: NovelAiGenerationPreset)
+internal enum class DesktopPresetApplyOutcome { NONE, APPLIED, APPLIED_CLEANUP_PENDING }
 
 internal data class DesktopReversePromptProgress(val stage: String = "", val content: String = "", val reasoning: String = "") {
     fun content(value: String) = copy(content = value,
@@ -69,6 +74,7 @@ internal class DesktopNovelAiStudioController(
     private val postProcessor: DesktopNovelAiPostProcessor? = null,
     private val credentialIdentity: () -> String = { "legacy" },
     private val freezeCredential: () -> kotlin.coroutines.CoroutineContext = { kotlin.coroutines.EmptyCoroutineContext },
+    private val presetArchive: DesktopGenerationPresetArchive? = null,
 ) {
     val repository = NovelAiStudioStateRepository(storage)
     val imageDiagnostics get() = tasks.diagnostics
@@ -77,6 +83,11 @@ internal class DesktopNovelAiStudioController(
     val history = repository.history
     private val mutex = Mutex()
     private val accountMutex = Mutex()
+    private data class PresetSelection(val prepared: DesktopPreparedGenerationPreset, val expected: NovelAiStudioDraft,
+        var applied: Boolean = false)
+    val generationPresetAvailable get() = presetArchive != null
+    private var presetSelection: PresetSelection? = null
+    private var presetClosed = false
     private var accountIdentity: String? = null
     private val mutableState = MutableStateFlow(DesktopNovelAiStudioState())
     val state = mutableState.asStateFlow()
@@ -137,6 +148,8 @@ internal class DesktopNovelAiStudioController(
         val latest = history.first().firstOrNull()?.images.orEmpty().map { it.path }
         mutableState.update { it.copy(ready = true, results = latest) }
         refreshAccount()
+        if (presetSelection == null && presetArchive?.hasPendingCustody() == true)
+            status("有预设临时资源清理待核对；原草稿与归属记录保留，不会自动重新应用。")
     }
 
     private suspend fun resolveDefaultModel(): NovelAiStudioDraft {
@@ -239,6 +252,96 @@ internal class DesktopNovelAiStudioController(
         val before = repository.loadDraft()
         repository.saveUndoDraft(before)
         repository.updateDraft(resetPromptEditors = true, transform = change)
+    }
+
+    suspend fun exportGenerationPreset(path: Path) = action(inspectAssets = false) {
+        check(!presetClosed); requirePresetIdle()
+        coordinator.withNormalOperation { requireNotNull(presetArchive).export(resolveDefaultModel(), path) }
+        status("生成预设已导出：$path")
+    }
+
+    suspend fun inspectGenerationPreset(path: Path) = action(inspectAssets = false) {
+        check(!presetClosed); requirePresetIdle()
+        coordinator.withNormalOperation {
+            var previousCleanupPending = false
+            try { presetSelection?.prepared?.close() } catch (_: Exception) { previousCleanupPending = true }
+            presetSelection = null
+            mutableState.update { it.copy(presetPreview = null, presetOutcome = DesktopPresetApplyOutcome.NONE) }
+            val expected = resolveDefaultModel()
+            val prepared = requireNotNull(presetArchive).inspect(path)
+            // Transfer ownership before returning across a cancellable dispatcher boundary.
+            presetSelection = PresetSelection(prepared, expected)
+            mutableState.update { it.copy(presetPreview = DesktopGenerationPresetPreview(path.fileName.toString(), prepared.preset)) }
+            status(if (previousCleanupPending) "预设已校验；上次临时清理仍待核对，归属记录保留。" else "预设已校验，确认后才替换生成草稿。")
+        }
+    }
+
+    suspend fun applyGenerationPreset() = action(inspectAssets = false) {
+        check(!presetClosed); requirePresetIdle()
+        val selection = requireNotNull(presetSelection) { "请先选择生成预设" }
+        check(!selection.applied) { "预设已应用；只需重试临时清理，不应重复导入" }
+        val created = mutableListOf<String>()
+        val payloadClaims = mutableSetOf<String>()
+        var committed = false
+        var cleanupPending = false
+        try {
+            coordinator.withNormalOperation {
+                check(repository.loadDraft() == selection.expected) { "当前生成草稿已变化，请重新选择预设" }
+                val materialized = requireNotNull(presetArchive).materialize(selection.prepared, created::add, payloadClaims::add)
+                currentCoroutineContext().ensureActive()
+                withContext(NonCancellable) {
+                    check(repository.loadDraft() == selection.expected) { "当前生成草稿已变化，请重新选择预设" }
+                    repository.saveUndoDraft(selection.expected)
+                    repository.updateDraft(resetPromptEditors = true) {
+                        check(it == selection.expected) { "当前生成草稿已变化，请重新选择预设" }
+                        selection.prepared.preset.applyTo(it, materialized)
+                    }
+                    committed = true; selection.applied = true
+                    mutableState.update { it.copy(presetPreview = null, presetOutcome = DesktopPresetApplyOutcome.APPLIED) }
+                    try { selection.prepared.markApplied() } catch (_: Exception) { cleanupPending = true }
+                }
+            }
+        } finally { withContext(NonCancellable) {
+            if (committed) try { selection.prepared.close(); presetSelection = null } catch (_: Exception) { cleanupPending = true }
+            if (created.isNotEmpty()) try { cleanup(created) } catch (_: Exception) { cleanupPending = true }
+            try {
+                if (presetArchive?.finishPayloads(payloadClaims, cleanup, committed) == false) cleanupPending = true
+            } catch (_: Exception) { cleanupPending = true }
+            if (committed) {
+                if (cleanupPending) mutableState.update { it.copy(presetOutcome = DesktopPresetApplyOutcome.APPLIED_CLEANUP_PENDING) }
+                status(if (cleanupPending) "生成预设已应用，可撤销；临时资源清理待核对，归属记录保留，请勿重复导入。"
+                    else "生成预设已应用，可撤销；未自动开始生成")
+            } else if (cleanupPending) status("应用结果与预设资源清理待核对；原文件和归属记录保留。")
+        } }
+    }
+
+    suspend fun discardGenerationPreset() = mutex.withLock {
+        withContext(NonCancellable + Dispatchers.IO) {
+            val applied = presetSelection?.applied == true
+            presetSelection?.prepared?.close(); presetSelection = null
+            mutableState.update { it.copy(presetPreview = null,
+                presetOutcome = if (applied) DesktopPresetApplyOutcome.APPLIED else it.presetOutcome) }
+        }
+    }
+
+    suspend fun closePresetExchange() = mutex.withLock {
+        presetClosed = true
+        withContext(NonCancellable + Dispatchers.IO) {
+            val applied = presetSelection?.applied == true
+            try { presetSelection?.prepared?.close() }
+            catch (_: Exception) {
+                if (applied) mutableState.update { it.copy(presetOutcome = DesktopPresetApplyOutcome.APPLIED_CLEANUP_PENDING) }
+                status(if (applied) "预设已应用；临时清理待核对，归属记录保留。" else "预设临时清理待核对；原草稿与归属记录保留。")
+            }
+            presetSelection = null
+            mutableState.update { it.copy(presetPreview = null) }
+        }
+    }
+
+    private fun requirePresetIdle() {
+        check(tasks.tasks.value.none { it.kind == DesktopTaskKind.NOVELAI && it.status == DesktopTaskStatus.RUNNING }) {
+            "请先等待或停止当前生图任务"
+        }
     }
 
     suspend fun undo() = action {

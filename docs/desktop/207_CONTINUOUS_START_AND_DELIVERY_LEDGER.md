@@ -1,3 +1,5 @@
+2026-11-02 P17完整生成预设源码已实现，见264：独立version1契约/资源包包含两模型、连续生成和暂停参考，明确预览确认后沿原撤销，流式逐项校验、精确新编码归属及已应用后清理待核对。共享3+archive4+custody3+真实controller4+实际内容Scene1共15例及流式store例尚待新冻结源云验；不由114/115或公开1233代验。115/a9b仅诊断，Windows主步骤已SUCCESS但原XML与整轮仍待；原114维护10秒首因未明，不宣称已修。1233/15公开和真人待、无日常H操作/本机重负载保持。
+
 2026-11-02实际114/533：主333suite/2526=2506PASS+19SKIP+1FAIL，proxy5/shared1138/Android582/Python3独立PASS。新Moment3+Processing3+Panel1七项全部PASS，原guard矩阵已PASS。唯一原ChatMaintenance容器重建参考文档case在原10秒busy等待超时；该controller/test未随新媒体改动，首因未明，不归为纯慢或改等待。先追加精确脱敏timeout快照（原维护状态、请求次数、gate/journal、两文档状态、原任务状态和限定代码栈），保留原10秒与全部两请求/两文档INDEXED/历史chunk/无journal/rootOPEN断言；P17完整preset仍独立WIP，不由114代验。
 
 2026-11-02精确113结果：331suite/2519=2499PASS+19SKIP+1FAIL，唯一HTTP guard矩阵异常类型预期错误（实际原明文拦截IOException，末端未到）；仅修该预期，其他wronghost/port/path精确IllegalStateException及reached/TLS/redirect/retry保护保持。原导入加密preview/即时idle/同步tail-stop、实际V45新编码/复用、Upscale、临时chat和统计标签均PASS；proxy5独立PASS。9746剩余媒体连同此修正待新精确源云验，不以113代验。

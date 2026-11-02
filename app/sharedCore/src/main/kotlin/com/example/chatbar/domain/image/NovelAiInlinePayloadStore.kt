@@ -2,6 +2,9 @@ package com.example.chatbar.domain.image
 
 import java.io.File
 import java.io.InputStream
+import java.io.OutputStream
+import java.io.InputStreamReader
+import java.io.OutputStreamWriter
 import java.io.IOException
 import java.io.Writer
 import java.nio.file.FileAlreadyExistsException
@@ -43,8 +46,64 @@ class NovelAiInlinePayloadStore(filesDir: File) {
         val temporary = newTemporary()
         try {
             Files.write(temporary, bytes, CREATE_NEW)
-            return publish(temporary) {}
+            return publish(temporary, {})
         } finally { Files.deleteIfExists(temporary) }
+    }
+
+    /** Portable exchange streams the existing payload; callers own archive size and digest checks. */
+    fun copyResolved(value: String, output: OutputStream, checkActive: () -> Unit = {}) {
+        if (!value.startsWith(PREFIX)) {
+            require(value.isNotBlank()) { "氛围编码文件内容无效" }
+            val writer = OutputStreamWriter(output, Charsets.UTF_8)
+            var offset = 0
+            while (offset < value.length) {
+                checkActive(); val count = minOf(32768, value.length - offset)
+                writer.write(value, offset, count); offset += count
+            }
+            writer.flush(); return
+        }
+        val hash = value.removePrefix(PREFIX)
+        require(hash.matches(Regex("[a-f0-9]{64}"))) { "氛围编码引用无效" }
+        checkRoot()
+        val file = root.resolve(hash)
+        require(fileDigest(file, checkActive).first == hash) { "氛围编码文件校验失败" }
+        val digest = MessageDigest.getInstance("SHA-256")
+        java.security.DigestInputStream(Files.newInputStream(file), digest).use { input ->
+            val writer = OutputStreamWriter(output, Charsets.UTF_8)
+            copyEncodingText(input, writer, checkActive)
+            writer.flush()
+        }
+        require(digest.digest().joinToString("") { "%02x".format(it) } == hash) { "氛围编码文件校验失败" }
+    }
+
+    /** Reuses the same streaming spool, content-addressed publication and collision checks as JSON ingress. */
+    fun retainStream(input: InputStream, beforePublishNew: (String) -> Unit = {},
+        onPublished: (String, Boolean) -> Unit = { _, _ -> }, checkActive: () -> Unit = {}): String =
+        retainDecodedJsonString(checkActive, beforePublishNew, onPublished) { output -> copyEncodingText(input, output, checkActive) }
+
+    fun validateStream(input: InputStream, checkActive: () -> Unit = {}) =
+        copyEncodingText(input, object : Writer() {
+            override fun write(chars: CharArray, offset: Int, length: Int) = Unit
+            override fun flush() = Unit
+            override fun close() = Unit
+        }, checkActive)
+
+    private fun copyEncodingText(input: InputStream, output: Writer, checkActive: () -> Unit) {
+        val reader = InputStreamReader(input, Charsets.UTF_8.newDecoder()
+            .onMalformedInput(java.nio.charset.CodingErrorAction.REPORT)
+            .onUnmappableCharacter(java.nio.charset.CodingErrorAction.REPORT))
+        val prefix = StringBuilder(PREFIX.length)
+        val chars = CharArray(32768)
+        var content = false
+        while (true) {
+            checkActive(); val count = reader.read(chars); if (count < 0) break
+            for (index in 0 until count) {
+                if (prefix.length < PREFIX.length) prefix.append(chars[index])
+                if (!chars[index].isWhitespace()) content = true
+            }
+            output.write(chars, 0, count)
+        }
+        require(content && !prefix.startsWith(PREFIX)) { "氛围编码文件内容无效" }
     }
 
     fun openCompactJson(file: File, checkActive: () -> Unit = {}): InputStream =
@@ -77,17 +136,22 @@ class NovelAiInlinePayloadStore(filesDir: File) {
         return digest.digest().joinToString("") { "%02x".format(it) } to size
     }
 
-    private fun publish(temporary: java.nio.file.Path, checkActive: () -> Unit): String {
+    private fun publish(temporary: java.nio.file.Path, checkActive: () -> Unit,
+        beforePublishNew: (String) -> Unit = {}, onPublished: (String, Boolean) -> Unit = { _, _ -> }): String {
         checkRoot()
         val proof = fileDigest(temporary, checkActive); val target = root.resolve(proof.first)
+        var created = false
         if (!Files.exists(target, NOFOLLOW_LINKS)) {
-            try { Files.move(temporary, target) } catch (_: FileAlreadyExistsException) { }
+            beforePublishNew(PREFIX + proof.first)
+            try { Files.move(temporary, target); created = true } catch (_: FileAlreadyExistsException) { }
         }
         require(fileDigest(target, checkActive) == proof) { "氛围编码文件校验失败" }
+        onPublished(PREFIX + proof.first, created)
         return PREFIX + proof.first
     }
 
-    internal fun retainDecodedJsonString(checkActive: () -> Unit, produce: (Writer) -> Unit): String {
+    internal fun retainDecodedJsonString(checkActive: () -> Unit, beforePublishNew: (String) -> Unit = {},
+        onPublished: (String, Boolean) -> Unit = { _, _ -> }, produce: (Writer) -> Unit): String {
         val buffered = StringBuilder(INLINE_LIMIT)
         var temporary: java.nio.file.Path? = null
         var output: Writer? = null
@@ -111,12 +175,12 @@ class NovelAiInlinePayloadStore(filesDir: File) {
         try {
             produce(sink); sink.close()
             val path = temporary
-            if (path != null) return publish(path, checkActive)
+            if (path != null) return publish(path, checkActive, beforePublishNew, onPublished)
             val value = buffered.toString(); val bytes = value.toByteArray(Charsets.UTF_8)
             if (bytes.size < INLINE_LIMIT) return value
             val file = newTemporary(); temporary = file
             Files.write(file, bytes, CREATE_NEW)
-            return publish(file, checkActive)
+            return publish(file, checkActive, beforePublishNew, onPublished)
         } catch (cancelled: java.util.concurrent.CancellationException) { failure = cancelled; throw cancelled }
         catch (syntax: NovelAiCompactJsonSyntaxException) { failure = syntax; throw syntax }
         catch (error: Exception) { throw IOException("氛围编码派生文件读写失败", error).also { failure = it } }
