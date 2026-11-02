@@ -47,6 +47,7 @@ class DesktopReverseSceneTest {
                 f.container.modelRepository.saveModel(model.copy(baseUrl = server.url("/v1").toString(), maxOutputTokens = 317, enableThinking = true))
                 c.edit { it.copy(selectedModel = NovelAiImageModel.V4_5_FULL, followDefaultNovelAiImageModel = true,
                     stylePrompt = "STYLE_KEEP", negativePrompt = "NEGATIVE_KEEP", extraRequirement = "REQUIREMENT_KEEP",
+                    characters = listOf(NovelAiCharacterPromptDraft(prompt = "OLD_EDITABLE_ROLE", negativePrompt = "ROLE_NEGATIVE_KEEP")),
                     importedCharacterPromptSources = listOf(NovelAiCharacterPromptSource("Synthetic actor", "ACTOR_REFERENCE"))) }
                 val before = c.repository.loadDraft()
                 server.enqueue(response("""{"sceneDescription":"ORIGINAL_VISION_SCENE","queries":[]}"""))
@@ -70,6 +71,8 @@ class DesktopReverseSceneTest {
                     assertFalse(body["messages"].toString().contains("image_url"))
                     assertTrue(body["messages"].toString().contains("EDITED_CONFIRMED_SCENE"))
                     assertTrue(body["messages"].toString().contains("ACTOR_REFERENCE"))
+                    assertTrue(body["messages"].toString().contains("REQUIREMENT_KEEP"))
+                    assertFalse(body["messages"].toString().contains("OLD_EDITABLE_ROLE"))
                     assertEquals(317, body.getValue("max_tokens").jsonPrimitive.int)
                     assertTrue(body.getValue("enable_thinking").jsonPrimitive.boolean)
                 }
@@ -80,6 +83,8 @@ class DesktopReverseSceneTest {
                 assertEquals(NovelAiImageModel.V5_FULL, applied.selectedModel); assertFalse(applied.followDefaultNovelAiImageModel)
                 assertEquals(before.stylePrompt, applied.stylePrompt); assertEquals(before.negativePrompt, applied.negativePrompt)
                 assertEquals(before.v45Settings, applied.v45Settings); assertEquals(before.v5Settings, applied.v5Settings)
+                assertEquals(before.characters.single().id, applied.characters.single().id)
+                assertEquals(before.characters.single().negativePrompt, applied.characters.single().negativePrompt)
                 assertTrue(c.undo()); val undone = c.repository.loadDraft()
                 assertEquals(before.basePrompt, undone.basePrompt); assertEquals(before.selectedModel, undone.selectedModel)
                 assertEquals(before.followDefaultNovelAiImageModel, undone.followDefaultNovelAiImageModel)
