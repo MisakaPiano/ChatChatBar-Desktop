@@ -1,5 +1,7 @@
 # 267 — Preview 到正式版的普通升级身份
 
+后继源码修正（不在正在执行的R5/af17中）：原NSIS WriteUninstaller在SetOverwrite off下仍以CREATE_ALWAYS写文件，参见[固定3.13引擎](https://raw.githubusercontent.com/NSIS-Dev/nsis/v313/Source/exehead/exec.c)；不能用该设置声称原卸载入口字节保持。现在在原Prepare已校验root receipt之后，普通升级显式跳过已有Uninstall.exe，新安装仍生成；主动Repair仍先保留原资源后重建。不改普通root三hash断言、不跳原Prepare校验或缩减修复。该控制工具新源仍待普通安装包链实测，不能由tiny manager测试或源码推理代验。
+
 R4/41427308244 baseline-only实际PASS：同public1233 EXE ee0914…86e8/source2ba，短profile的管理日志路径236，NSIS→真实JAR可见窗口→正常关闭exit0/Job空，current和根三资源hash已取。对照支持原长sandbox限制，但没有CLR具体异常，不声称生产长AppData已修；R3长case261/exit2原FAIL继续保留。R4没有新JAR/升级/customroot/凭据/真人验收；后继R5按同fdb应用源继续完整普通链，不用此baseline PASS替代整个链。
 
 2026-11-02普通链实测：R2/41422525898同固定编译器PASS，三个普通包实际构建并审计，但第一步固定public1233安装器退出，桥接/稳定升级尚未开始。R3/41425612817只重现旧包预检、不重建，捕获exit2、完整Job退出、安装root/current/manifest/manager日志均不存在；这是安装器早退，不能改称JAR/READY或rollback失败。固定2ba Framework管理器在profile后附加InstallState目录及64hex日志名，原云sandbox推导完整路径261 UTF-16单位；尚待同EXE短路径对照，不能只凭该长度宣布根因。后继仅缩短新建云base随机叶，New-Item碰撞拒绝/独立profile/原安装保护保持，baseline-paths.json先记录实际路径长度/hash；长路径失败原件保留，不声称已修生产任意长AppData支持。

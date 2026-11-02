@@ -114,7 +114,12 @@ def build(image, output, version, commit, installer_version, profile, compiler, 
               'SetOverwrite on', 'prepared:', 'IntCmp $0 0 +2', 'Goto failed',
               'ClearErrors', 'SetOutPath "$INSTDIR"', 'IfErrors failed', 'File ' + quote(launcher), 'IfErrors failed',
               'File ' + quote(open_bridge), 'IfErrors failed',
-              'WriteUninstaller "$INSTDIR\\Uninstall.exe"', 'IfErrors failed',
+              # WriteUninstaller uses CREATE_ALWAYS regardless of SetOverwrite off. Prepare has
+              # already verified an existing ordinary root receipt; only explicit repair may replace it.
+              'StrCmp $Repair 1 write_uninstaller',
+              'IfFileExists "$INSTDIR\\Uninstall.exe" uninstaller_ready 0',
+              'write_uninstaller:', 'ClearErrors',
+              'WriteUninstaller "$INSTDIR\\Uninstall.exe"', 'IfErrors failed', 'uninstaller_ready:',
               'ExecWait \'"$PLUGINSDIR\\manager.exe" --register "$INSTDIR" --quiet\' $0',
               'IntCmp $0 0 +2', 'Goto failed',
               'ClearErrors', 'SetOutPath "$PLUGINSDIR"', 'IfErrors failed', 'File ' + quote(manifest_path), 'IfErrors failed',
