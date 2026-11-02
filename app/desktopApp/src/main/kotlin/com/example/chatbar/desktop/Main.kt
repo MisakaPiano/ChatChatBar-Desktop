@@ -181,6 +181,15 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                                     }
                                 }
                             }
+                            LaunchedEffect(window, activation, "community-return") {
+                                activation?.communityActivation?.collect { revision ->
+                                    if (revision > 0) {
+                                        tray.show()
+                                        windowState.isMinimized = false
+                                        window.toFront(); window.requestFocus()
+                                    }
+                                }
+                            }
                             DisposableEffect(window, dialogOwner) {
                                 dialogOwner.attach(window)
                                 onDispose { dialogOwner.detach(window) }

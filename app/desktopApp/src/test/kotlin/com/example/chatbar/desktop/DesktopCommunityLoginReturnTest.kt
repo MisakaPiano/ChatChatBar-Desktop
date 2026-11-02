@@ -44,15 +44,18 @@ class DesktopCommunityLoginReturnTest {
                 val callback = "chatbar://auth/callback?code=synthetic-authorization-code"
                 val journal = Files.readAllBytes(requireNotNull(activation.queue.recordPath))
                 assertFails { DesktopExternalActivation.forwardCommunityCallback(root, callback) }
+                assertEquals(0L, activation.communityActivation.value)
                 val accepted = mutableListOf<String>()
                 activation.communityAuthReceiver = { synchronized(accepted) { accepted += it }; true }
                 DesktopExternalActivation.forwardCommunityCallback(root, callback)
                 assertEquals(listOf(callback), synchronized(accepted) { accepted.toList() })
+                assertEquals(1L, activation.communityActivation.value)
                 assertEquals(listOf(source), activation.queue.state.value.files.map { it.path })
                 assertContentEquals(journal, Files.readAllBytes(requireNotNull(activation.queue.recordPath)))
                 assertFalse(Files.readString(root.resolve("endpoint")).contains("synthetic"))
                 assertFails { DesktopExternalActivation.forwardCommunityCallback(root, "https://example.invalid/auth#access_token=synthetic") }
                 assertEquals(1, accepted.size)
+                assertEquals(1L, activation.communityActivation.value)
             } finally { activation.close() }
         } finally { root.toFile().deleteRecursively() }
     }

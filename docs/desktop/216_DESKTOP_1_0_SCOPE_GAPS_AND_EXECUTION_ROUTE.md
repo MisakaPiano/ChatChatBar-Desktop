@@ -1,3 +1,7 @@
+2026-11-02后继：131/a429已终结FAIL；共享1183全PASS（CommunityClient11与Core新增2），NTFS7/native37/TUF14/exit4通过。Windows临时协议回滚nullable record编译失败，main/proxy未执行；Android共享conflictId三处smartcast编译失败，Android测试/APK未执行。后继已补确切非空分支/局部val，并补AUTH内存唤起及真实Shell服务开关回聊天保护，待其精确源云验。129/ec086仍最后完整绿；公开1233/签名15、真人待、日常H UNKNOWN且不操作。
+
+下方历史保留。
+
 2026-11-02当前：129/41438935426精确ec086完整原件PASS，主2541PASS+19SKIP/shared1170/Android586、proxy5/NTFS7/native37/TUF14/exit4，角色编辑模型与参数、封面头像实际消费4+1及两张实图已核。130/18c因共享jsonObject缺import在编译失败，main/proxy/NTFS/shared/Android未执行、无对应XML；独立native37/TUF14/exit4通过，不假记社区测试通过。缺import已补，社区root UI/metadata与预览预取/原typed冲突/快照确认、固定回调PKCE与当前versioned EXE临时handler、内存AUTH IPC和取消/过期/操作归属/实际Panel测试见277，待新精确源云验。官方服务关闭只挂真实Discord/服务联调；R7九步普通JAR链原限定PASS复用。当前主动147适配、validated141不自动提升；公开1233/签名15、真人待、日常H UNKNOWN且不操作。
 
 下方历史保留。
@@ -149,7 +153,7 @@
 
 ## P14：功能开发队列最后
 
-社区浏览／搜索、详情／预览缓存、下载／导入、Discord OAuth、上传、本人覆盖／删除、远端卡更新和服务开关：**桌面未做，按用户专项决定排最后**。既有 Android CommunityScreen／Service、包校验和传输服务可复用；不能把 skill 或 Android 代码存在算桌面入口可用。
+社区浏览／搜索、详情／预览缓存、下载／导入、Discord OAuth、上传、本人覆盖／删除、远端卡更新和服务开关已进入原定最后功能域。当前a429生产接线与验证边界见[277](277_COMMUNITY_SHARED_CLIENT_AND_DESKTOP_ROUTE.md)：共享原HTTP/DTO、Desktop平台端口、root UI、固定回调PKCE和当前versioned EXE临时返回入口；原typed冲突、只读来源、快照预览和显式发布/删除确认保持。精确131正在验证，不能将源码存在称为全部通过或对用户交付。
 
 2026-11-01 本次公开配置对应的社区状态实际返回 `enabled:false`；这仅阻断当前真实社区联调，不妨碍其他工作，也不证明服务器永久关闭。最后实施前重新检查服务开放和桌面 OAuth／返回路径范围；可以先用隔离服务验证客户端，但不能以假服务通过冒称官方已开通。不开建另一套独立社区产品来替代官方。
 

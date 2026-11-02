@@ -15,3 +15,5 @@ Desktop浏览器返回使用Supabase原固定`chatbar://auth/callback`和PKCE授
 并发操作由唯一job完成回调释放busy；取消未调度操作能释放，旧完成不能清除重入的新操作。远端写请求结果不确定时需刷新“我的上传”核对，不自动重发。主动刷新不复用暖metadata；预览缓存绑定条目版本，避免远端覆盖后仍显示旧图。原Core2、Desktop ports2/controller1/typed1及新共享PKCE1、Desktop归属1/metadata1/登录1/协议及IPC2/Scene与Unicode2均须以其精确源云验。Scene使用420中文、1100英文实际Panel，确认详情无计数、导入沿原冲突、取消保持原卡、预览与删除未确认零远端写，并留PNG；不作官方服务、浏览器或Windows注册表实际验证声明。
 
 验证状态：129/ec086完整原件PASS（主2541PASS+19SKIP/shared1170/Android586、proxy5/NTFS7/native37/TUF14/exit4），仅验证此前角色生图片。130/18c因共享`jsonObject`缺import在编译失败，main/proxy/NTFS/shared/Android未执行，无对应XML；独立native37/TUF14/exit4实际PASS。该import已补，当前UI/PKCE片待后继精确源，不由129或130代验。实际官方服务关闭只挂其真实Discord/上传联调；R7普通链原限定PASS复用，不为此片重建三包。公开1233/签名15、真人待，日常H UNKNOWN且不操作。
+
+131/a429实际结果：共享200suite/1183全PASS，CommunityClient11（含PKCE）及Core新增provenance/authority两方法实际PASS；独立NTFS7、native37/TUF14/exit4通过。Windows在临时协议回滚的nullable record分支编译失败，main/proxy未执行；Android在共享公共conflictId三处smartcast编译失败，Android测试和APK未执行。后继只补回滚明确非空和局部conflictId快照，保留原归属/冲突语义。另补accepted AUTH的独立内存唤起信号与Main显示窗口，以及真实Shell服务开→社区路由→服务关回聊天、原草稿/卡字节/任务/AI请求保持的测试；这些均需新精确源，不归131通过范围。

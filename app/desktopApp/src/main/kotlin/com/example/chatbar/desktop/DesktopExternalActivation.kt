@@ -150,6 +150,8 @@ internal class DesktopExternalActivation private constructor(
     /** Separate in-memory purpose: never reaches the file queue, journal or cold-start receipt. */
     @Volatile var communityAuthReceiver: ((String) -> Boolean)? = null
     val communityEndpointDirectory: Path get() = directory
+    private val mutableCommunityActivation = MutableStateFlow(0L)
+    val communityActivation = mutableCommunityActivation.asStateFlow()
     private val closed = AtomicBoolean(false)
     @Volatile private var client: Socket? = null
     private val endpoint = directory.resolve("endpoint")
@@ -170,7 +172,9 @@ internal class DesktopExternalActivation private constructor(
                     if (protocol == AUTH_PROTOCOL) {
                         val callback = input.readText(16_384)
                         check(validCommunityCallback(callback))
-                        output.writeInt(if (communityAuthReceiver?.invoke(callback) == true) 0 else 1)
+                        val accepted = communityAuthReceiver?.invoke(callback) == true
+                        if (accepted) mutableCommunityActivation.update { it + 1 }
+                        output.writeInt(if (accepted) 0 else 1)
                         output.flush()
                         return@use
                     }

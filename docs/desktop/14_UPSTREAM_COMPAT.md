@@ -2,7 +2,7 @@
 
 当前主动适配目标为官方 **1.4.7 / `b4fa75d296680f777be095f3121ad0c4db979f17`**。已声明完整验证baseline仍为1.4.1；这是证据边界，不是将最新版适配永久搁置。机器记录见[10](10_UPSTREAM_BASELINE.json)，当前总范围见[216](216_DESKTOP_1_0_SCOPE_GAPS_AND_EXECUTION_ROUTE.md)。
 
-最后完整云端原件为[129](https://github.com/MisakaPiano/ChatChatBar-Desktop/actions/runs/41438935426) / `ec0861432a56138d5ccb1685a2e63cc22bc6d703`：主2541PASS+19SKIP、shared1170、Android586及proxy5/NTFS7/native37/TUF14/exit4通过，角色编辑/实际生图消费4+1及两张Scene图已核。后续130/18c因共享jsonObject缺import编译失败，主/proxy/NTFS/shared/Android未执行；仅独立native37/TUF14/exit4通过。该import已补，当前社区UI/PKCE片仍待自己的精确源云验。127原18FAIL及128修正记录保留，未降低保护或期限。
+最后完整云端原件为[129](https://github.com/MisakaPiano/ChatChatBar-Desktop/actions/runs/41438935426) / `ec0861432a56138d5ccb1685a2e63cc22bc6d703`：主2541PASS+19SKIP、shared1170、Android586及proxy5/NTFS7/native37/TUF14/exit4通过，角色编辑/实际生图消费4+1及两张Scene图已核。130/18c缺import编译失败仍保留；后续131/a429共享1183（CommunityClient11与Core新增2）以及NTFS7/native37/TUF14/exit4实际通过，但Desktop回滚nullable record及Android共享conflictId三处smartcast编译失败，主/proxy/Android测试未执行。后继补确切非空分支与局部val，不放宽归属/冲突规则；社区UI/PKCE及后补AUTH唤起仍须自己的精确源云验。127原18FAIL及128修正记录保留，未降低保护或期限。
 
 | 官方147范围 | 当前Desktop状态与实际证据 |
 | --- | --- |

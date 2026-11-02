@@ -464,14 +464,15 @@ class CommunityViewModel : ViewModel() {
 
     fun importPending(asOverwrite: Boolean) {
         val pending = _state.value.pendingImport ?: return
+        val conflictId = pending.conflictId
         viewModelScope.launch {
             _state.update { it.copy(busy = true, message = null) }
             runCatching {
                 when (val payload = pending.payload) {
                     is CommunityImportPayload.Character -> {
                         val request = CharacterCardImportRequest(payload.data)
-                        val card = if (asOverwrite && pending.conflictId != null) {
-                            characterTransfers.overwrite(pending.conflictId, request.packageData)
+                        val card = if (asOverwrite && conflictId != null) {
+                            characterTransfers.overwrite(conflictId, request.packageData)
                         } else {
                             characterTransfers.importNew(request.packageData)
                         }.withCommunitySource(pending.item)
@@ -481,8 +482,8 @@ class CommunityViewModel : ViewModel() {
                     }
 
                     is CommunityImportPayload.Format -> {
-                        val card = if (asOverwrite && pending.conflictId != null) {
-                            formatTransfers.overwrite(pending.conflictId, payload.data)
+                        val card = if (asOverwrite && conflictId != null) {
+                            formatTransfers.overwrite(conflictId, payload.data)
                         } else {
                             formatTransfers.importNew(payload.data)
                         }
@@ -490,8 +491,8 @@ class CommunityViewModel : ViewModel() {
                     }
 
                     is CommunityImportPayload.WorldBook -> {
-                        val book = if (asOverwrite && pending.conflictId != null) {
-                            worldBookTransfers.overwrite(pending.conflictId, payload.data)
+                        val book = if (asOverwrite && conflictId != null) {
+                            worldBookTransfers.overwrite(conflictId, payload.data)
                         } else {
                             worldBookTransfers.importNew(payload.data)
                         }

@@ -91,7 +91,7 @@ private object WindowsCommunityProtocolRegistry : DesktopCommunityProtocolRegist
         } catch (error: Exception) {
             if (before == null) runCatching {
                 val current = read()
-                if (current?.ownerRoot == record.ownerRoot && (current.command == null || current.command == record.command)) removeIfEqual(current)
+                if (current != null && current.ownerRoot == record.ownerRoot && (current.command == null || current.command == record.command)) removeIfEqual(current)
             }
             throw error
         }

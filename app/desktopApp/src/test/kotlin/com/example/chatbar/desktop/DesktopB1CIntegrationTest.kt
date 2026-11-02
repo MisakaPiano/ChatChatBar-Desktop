@@ -43,9 +43,11 @@ class DesktopB1CIntegrationTest {
     }
     @Composable private fun Shell(f: FinalProductDesignFixture, chrome: DesktopWindowChrome,
         navigation: DesktopPrimaryNavigationController, updateNotices: DesktopUpdateNotices? = null, enableTasks: Boolean = false,
-        moments: DesktopMomentsController? = null, guideReminder: DesktopGuideReminderController? = null) {
+        moments: DesktopMomentsController? = null, guideReminder: DesktopGuideReminderController? = null,
+        communityFactory: ((DesktopTypedTransferController) -> DesktopCommunityController)? = null) {
         val c = f.container
         val transfer = remember { c.createTypedTransferController() }
+        val community = remember(transfer) { communityFactory?.invoke(transfer) }
         val management = remember { c.createManagementController(transfer) }
         val root = remember { DesktopDataRootSwitchController(
             DesktopDataRootResolution.Resolved(c.appDataRoot, DesktopDataRootProvenance.CLI_OVERRIDE, f.root.resolve("bootstrap.json")),
@@ -61,7 +63,53 @@ class DesktopB1CIntegrationTest {
             c.characterEditorController, c.formatCardEditorController, c.worldBookEditorController,
             c.uiLanguageController, c.appearanceController, c.connectionTestController,
             c.novelAiSettingsController, c.novelAiStudioController, c.fullBackupController, {},
-            taskCenter = if (enableTasks) c.taskCenter else null, momentsController = moments, guideReminder = guideReminder)
+            taskCenter = if (enableTasks) c.taskCenter else null, momentsController = moments, guideReminder = guideReminder,
+            communityController = community)
+        }
+    }
+    @Test fun `actual Shell community switch reveals root route and returns to chat without changing drafts or local cards`() = runBlocking(awt) {
+        val f = seeded(); val c = f.container
+        c.primaryChatController.selectSession("room"); c.primaryChatController.editComposer("Original community navigation draft")
+        val path = c.appDataRoot.resolve("entities/character_cards/card.json")
+        val before = Files.readAllBytes(path)
+        val requests = f.requests.toList(); val work = c.taskCenter.state.value.rows
+        val enabled = java.util.concurrent.atomic.AtomicBoolean(false)
+        val unexpected = java.util.concurrent.atomic.AtomicInteger()
+        okhttp3.mockwebserver.MockWebServer().use { server ->
+            server.dispatcher = object : okhttp3.mockwebserver.Dispatcher() {
+                override fun dispatch(request: okhttp3.mockwebserver.RecordedRequest): okhttp3.mockwebserver.MockResponse = when {
+                    request.path!!.startsWith("/rest/v1/community_runtime_config?") -> okhttp3.mockwebserver.MockResponse().setBody("[{\"enabled\":${enabled.get()}}]")
+                    request.path!!.startsWith("/rest/v1/community_items?") -> okhttp3.mockwebserver.MockResponse().setBody("[]")
+                    else -> { unexpected.incrementAndGet(); okhttp3.mockwebserver.MockResponse().setResponseCode(404) }
+                }
+            }
+            var owner: DesktopCommunityController? = null
+            val navigation = DesktopPrimaryNavigationController(); val chrome = DesktopWindowChrome {}
+            val scene = ImageComposeScene(1100, 800, coroutineContext = awt) {
+                Shell(f, chrome, navigation, communityFactory = { typed ->
+                    c.createCommunityController(typed,
+                        com.example.chatbar.domain.community.CommunityConfiguration(server.url("/").toString(), "synthetic-public"),
+                        httpFactory = { okhttp3.OkHttpClient.Builder().callTimeout(5, java.util.concurrent.TimeUnit.SECONDS).build() },
+                        browse = { error("No real browser from Shell fixture") }).also { owner = it }
+                })
+            }
+            try {
+                withTimeout(5_000) { while (owner?.state?.value?.checking != false) scene.frames() }
+                assertFalse(scene.has(DesktopUiText.COMMUNITY.zhCn))
+                enabled.set(true); requireNotNull(owner).refresh()
+                withTimeout(5_000) { while (!scene.has(DesktopUiText.COMMUNITY.zhCn) || owner!!.state.value.busy) scene.frames() }
+                scene.click(DesktopUiText.COMMUNITY.zhCn)
+                withTimeout(5_000) { while (navigation.selectedRoute.value != DesktopPrimaryRoute.COMMUNITY || owner!!.state.value.busy) scene.frames() }
+                scene.frames(); assertTrue(scene.has(DesktopUiText.COMMUNITY_LOGIN.zhCn))
+                scene.shot("community-root-enabled-1100")
+                enabled.set(false); owner!!.refresh()
+                withTimeout(5_000) { while (navigation.selectedRoute.value != DesktopPrimaryRoute.CHAT || owner!!.state.value.busy) scene.frames() }
+                scene.frames(); assertFalse(scene.has(DesktopUiText.COMMUNITY.zhCn))
+                assertEquals("Original community navigation draft", c.primaryChatController.state.value.composerDraft)
+                assertContentEquals(before, Files.readAllBytes(path))
+                assertEquals(requests, f.requests.toList()); assertEquals(work, c.taskCenter.state.value.rows)
+                assertEquals(0, unexpected.get())
+            } finally { scene.close(); f.close() }
         }
     }
     @Test fun `actual Shell opens tasks over its busy backup surface but keeps data navigation and original stop boundary guarded`() = runBlocking(awt) {
