@@ -9,7 +9,7 @@ import okhttp3.OkHttpClient
 
 /** Platform raster/SecretStore adapter around official Enhance/Upscale request and cost authorities. */
 internal class DesktopNovelAiPostProcessor(private val secrets: DesktopSecretStore,
-    private val client: OkHttpClient = secureNovelAiClient()) {
+    private val client: OkHttpClient = secureNovelAiClient(DesktopNovelAiHttpPurpose.POST_PROCESS)) {
     suspend fun process(bytes: ByteArray, tab: NovelAiPostProcessTab, source: NovelAiEnhanceSource?,
         options: NovelAiEnhanceOptions, account: NovelAiAccountUsage?, progress: (String) -> Unit): ByteArray = withContext(Dispatchers.IO) {
         try {

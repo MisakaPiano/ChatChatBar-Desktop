@@ -97,6 +97,8 @@ class DesktopMediaUsagePanelTest {
                     withTimeout(5000) { do { frames(scene) } while (usage.state.value.totals?.attempts != 1) }
                     val text = allText(scene)
                     assertTrue(text.contains("有效返回图片数：2")); assertTrue(text.contains("有效图片字节：512"))
+                    assertTrue(text.contains("模型 ID：image · NovelAI 生图"))
+                    assertFalse(text.contains("模型 ID：image · Fish TTS"))
                     assertFalse(text.contains("输入Token：")); assertFalse(text.contains("有效音频时长（毫秒）"))
                     assertEquals(DesktopUsageMediaKind.NAI_IMAGE_GENERATION, usage.state.value.totals!!.media.single().kind)
                     capture(scene, "image-media-statistics-$width")

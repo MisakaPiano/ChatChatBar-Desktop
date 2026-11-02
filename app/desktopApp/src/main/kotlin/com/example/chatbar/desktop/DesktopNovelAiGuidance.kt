@@ -24,10 +24,11 @@ internal class DesktopNovelAiGuidance(
     private val resources: DesktopCharacterResourceStore,
     private val secrets: DesktopSecretStore,
     private val gate: AppDataOperationGate = NoOpAppDataOperationGate,
+    vibeClient: okhttp3.OkHttpClient = secureNovelAiClient(DesktopNovelAiHttpPurpose.VIBE_ENCODING),
 ) {
     private val payloads = NovelAiInlinePayloadStore(root.toFile())
     private val vibes = NovelAiVibeEncodingCore(root.resolve("auxiliary/novelai/vibe-cache").toFile(),
-        secureNovelAiClient(), resources::readBytes, safeErrorsOnly = true)
+        vibeClient, resources::readBytes, safeErrorsOnly = true)
 
     fun vibeCacheMisses(draft: NovelAiStudioDraft): Int =
         if (draft.imageGuidance.effectiveReferenceMode(draft.selectedModel) != NovelAiReferenceMode.VIBE) 0

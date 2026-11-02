@@ -523,6 +523,7 @@ class DesktopAppContainer internal constructor(
     private val automaticChatImages by lazy {
         DesktopAutomaticChatImages(chatRepository, characterRepository, settingsRepository, effectiveModelResolver,
             novelAiInfrastructure::promptDesigner, characterResourceStore, dataOperationCoordinator, desktopSecretStore,
+            diagnostics = { taskRuntime.diagnostics },
             launch = { sessionId, messageId, work -> taskRuntime.launchNovelAi("自动聊天图片", sessionId, messageId, retryable = true, work = work) })
     }
 

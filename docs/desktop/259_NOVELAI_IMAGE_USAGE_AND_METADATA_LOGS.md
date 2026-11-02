@@ -2,6 +2,8 @@
 
 后续P15-06／07增量，尚待精确源云端验证；不在冻结2ba39c的1233候选包内。正式Fish和生成试听复用104／108已成立范围，不因此重做。
 
+后补调用链核对：临时聊天runtime未传原owner的缺口和Vibe/Upscale默认工厂路由缺口见260；本体接线与真实调用方覆盖分别验证，111结果不替代后续源。
+
 ## 本片入口与真实边界
 
 - 原 `DesktopNovelAiGenerationRuntime` 的Studio／聊天生图与 `DesktopCharacterImageGeneration` 的封面／头像候选，在原共享 `NovelAiImageService` 请求上附加只读observer。每次原newCall进入应用拦截器时记一次；原429重试产生后续尝试，流帧不是新请求。不改原凭据、序列化、超时、重试、解码、图片合成或原子保存。

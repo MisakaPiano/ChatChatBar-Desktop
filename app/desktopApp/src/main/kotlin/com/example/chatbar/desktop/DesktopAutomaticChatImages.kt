@@ -22,6 +22,7 @@ internal class DesktopAutomaticChatImages(
     private val resources: DesktopCharacterResourceStore,
     private val gate: DesktopDataOperationCoordinator,
     private val secrets: DesktopSecretStore,
+    private val diagnostics: () -> DesktopTransportDiagnosticsOwner? = { null },
     private val launch: (String, String, suspend ((String) -> Unit) -> Unit) -> String,
 ) {
     suspend fun completed(result: DesktopRealChatResult, stopped: () -> Boolean): String? {
@@ -60,7 +61,7 @@ internal class DesktopAutomaticChatImages(
                         .let { card.defaultImageGenerationSettings?.applyTo(it) ?: it })
                 val runtime = DesktopNovelAiGenerationRuntime(secrets, persist = { bytes, recipe ->
                     persistDesktopChatImages(chats, resources, gate, original, plan, size, bytes, recipe) { eligible(original, stopped) }
-                })
+                }, diagnostics = diagnostics())
                 report.generationStatus("正在生成图片")
                 runtime.generate(draft, maxRateLimitRetries = 10, onIntermediate = { _, step, _ -> report.generationStatus("自动生图 · Step $step") })
                 report("自动图片已保存")

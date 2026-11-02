@@ -84,7 +84,12 @@ internal fun DesktopProviderUsagePanel(owner: DesktopProviderUsageOwner) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 StatusText(group.title)
                 if (dimension == DesktopUsageDimension.MODEL_ACCOUNT) {
-                    StatusText("模型 ID：${group.sample.modelId} · " + if (group.sample.media == null) "Token 请求" else "Fish TTS")
+                    val kind = when (group.sample.media?.kind) {
+                        null -> "Token 请求"
+                        DesktopUsageMediaKind.FISH_TTS -> "Fish TTS"
+                        DesktopUsageMediaKind.NAI_IMAGE_GENERATION -> "NovelAI 生图"
+                    }
+                    StatusText("模型 ID：${group.sample.modelId} · $kind")
                     StatusText((group.sample.provider ?: "供应商未标注") + " · " +
                         (group.sample.accountId?.let { "账户 ID：$it" } ?: "账户未标注"))
                 }

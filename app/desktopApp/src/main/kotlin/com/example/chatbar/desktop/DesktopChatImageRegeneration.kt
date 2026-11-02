@@ -99,7 +99,7 @@ internal class DesktopChatImageRegeneration(
             report.generationStatus("正在生成图片")
             DesktopNovelAiGenerationRuntime(secrets, persist = { bytes, recipe ->
                 persistDesktopChatImages(chats, resources, coordinator, original, plan, size, bytes, recipe, ::eligible)
-            }, client = imageClient ?: secureNovelAiClient()).generate(draft, promptPlan = plan, maxRateLimitRetries = 10, onIntermediate = { _, step, _ -> report.generationStatus("聊天图片 · Step $step") })
+            }, client = imageClient ?: secureNovelAiClient(), diagnostics = tasks.diagnostics).generate(draft, promptPlan = plan, maxRateLimitRetries = 10, onIntermediate = { _, step, _ -> report.generationStatus("聊天图片 · Step $step") })
         }
     }
     suspend fun translationEnabled() = settings.getAppSettings().novelAiPromptTranslationConsent == NovelAiPromptTranslationConsent.ENABLED
@@ -127,7 +127,7 @@ internal class DesktopChatImageRegeneration(
             report.generationStatus("正在生成图片")
             DesktopNovelAiGenerationRuntime(secrets, persist = { bytes, recipe ->
                 persistDesktopChatImages(chats, resources, coordinator, original, plan, launch.imageSize(), bytes, recipe, ::eligible)
-            }, client = imageClient ?: secureNovelAiClient()).generate(studio, promptPlan = plan, maxRateLimitRetries = 10,
+            }, client = imageClient ?: secureNovelAiClient(), diagnostics = tasks.diagnostics).generate(studio, promptPlan = plan, maxRateLimitRetries = 10,
                 onIntermediate = { _, step, _ -> report.generationStatus("重新生成 · Step $step") })
         }
     }
