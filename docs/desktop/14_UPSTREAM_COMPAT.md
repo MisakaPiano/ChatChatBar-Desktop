@@ -1,3 +1,7 @@
+2026-11-03后继：136/35c5216完整原件通过，278辅助模型参数范围实际验证；Memory/RAG cap/thinking/custom继承、120秒RAG期限、角色研究/编辑/图片JSON和Fish翻译/标签的原usage/retry保护均保留。279反推场景两阶段1e6de51c已送137仍待；4731cf5a关联视觉/Stop后补不在137。134社区及R7/R19/R20/R23各原限定证据复用，不批量提升validated141或整147。1234/c2d/sign16冻结，公开1233/15、真人待和日常H UNKNOWN保持。
+
+下方历史保留。
+
 2026-11-03后继源码：固定官方147的辅助任务参数继承补齐见278。Memory planner/summary/repair/episode/head、RAG、角色研究/补全/改写/图片JSON与Fish翻译/标签保持所选模型cap/thinking/custom字段；RAG生产总期限120秒，原Prompt/JSON/重试/取消/usage/保存边界保留。新增真实loopback final-wire与虚拟时钟回归待本片精确云端执行，不在冻结1234/c2d内。私有1234草稿431654495/签名16保持，公开请求由协调端统一等待；公开仍1233/15、日常H UNKNOWN且不操作。135/38da原件完整绿复用，不重做R7/R19/R20/R23。
 
 下方历史保留。

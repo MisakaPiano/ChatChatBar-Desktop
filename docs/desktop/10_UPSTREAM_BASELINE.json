@@ -107,14 +107,14 @@
     "targetCommit": "b4fa75d296680f777be095f3121ad0c4db979f17",
     "authority": "User authorized latest official CCB adaptation; Desktop first, separate Studio consumes official interfaces",
     "status": "selective_adaptation_in_progress_not_whole_baseline_promotion",
-    "sourceAtRecord": "c2d3640e3caaa39ffb932823909a883b583e4879",
+    "sourceAtRecord": "4731cf5a",
     "lastCompleteSourceValidation": {
-      "commit": "c2d3640e3caaa39ffb932823909a883b583e4879",
-      "run": 41464861703,
-      "mainPass": 2553,
+      "commit": "35c5216ba7b3f6356ef2af0f8ac9bfc439b96715",
+      "run": 41485455158,
+      "mainPass": 2555,
       "mainSkip": 19,
       "mainFail": 0,
-      "sharedPass": 1183,
+      "sharedPass": 1188,
       "androidPass": 586,
       "proxyPass": 5,
       "ntfsPass": 7,
@@ -171,6 +171,12 @@
         "source": "ec0861432a56138d5ccb1685a2e63cc22bc6d703",
         "run": 41438935426,
         "evidence": "276; exact129 actual Desktop4/shared1 PASS with two original Scene images",
+        "status": "targeted_behavior_verified"
+      },
+      {
+        "scope": "Selected-model parameters in Memory/RAG/character research and editing/image appearance/Fish translation and tags",
+        "source": "35c5216ba7b3f6356ef2af0f8ac9bfc439b96715",
+        "evidence": "278; actual136 full originals, shared HTTP4+virtual deadline1 and Desktop HTTP2; original usage assertions retained",
         "status": "targeted_behavior_verified"
       }
     ],
@@ -322,6 +328,13 @@
         "shellMethod": "PASS_IMAGE_NOT_ARCHIVED",
         "correction": "explicit Unit; snapshot field/layout and capture followups require next exact source"
       }
-    ]
+    ],
+    "pendingReverseScene": {
+      "source": "1e6de51c6ab0ae3d779e05b58e82953400dabed8",
+      "run": 41489702035,
+      "status": "implemented_cloud137_pending",
+      "followup": "4731cf5a adds linked vision regression and preflight stop invalidation, not part of137",
+      "evidence": "279"
+    }
   }
 }
