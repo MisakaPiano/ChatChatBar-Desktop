@@ -209,6 +209,47 @@ def launch_close(case, image, executable, arguments, install_root, label, defaul
             require(count <= 512, 'JOB_LIMIT')
             return list((C.c_size_t * count).from_buffer(data, 8))
 
+        def startup_failure(reason):
+            code = W.DWORD()
+            code_read = bool(kernel.GetExitCodeProcess(process.handle, C.byref(code)))
+            def metadata(path):
+                try:
+                    value = path.stat(follow_symlinks=False)
+                    return dict(path=str(path), exists=True, mode=value.st_mode, bytes=value.st_size,
+                                attributes=getattr(value, 'st_file_attributes', None))
+                except FileNotFoundError: return dict(path=str(path), exists=False)
+                except Exception as error: return dict(path=str(path), errorType=type(error).__name__)
+            pointer = install_root / 'current.txt'
+            current, current_error = None, None
+            try:
+                if pointer.is_file(): current = pointer.read_bytes()[:8192].decode('utf-8').strip()
+            except Exception as error: current_error = type(error).__name__
+            manifests = []
+            versions = install_root / 'versions'
+            try:
+                if versions.is_dir():
+                    manifests = [metadata(entry / 'install-manifest.json') for entry in sorted(versions.iterdir())[:16]
+                                 if not entry.is_symlink() and entry.resolve().is_relative_to(install_root.resolve())]
+            except Exception as error: manifests = [dict(errorType=type(error).__name__)]
+            log_path = install_log(case, install_root)
+            log_error = None
+            try: text = log_path.read_text(encoding='utf-8') if log_path.exists() else ''
+            except Exception as error: text = ''; log_error = type(error).__name__
+            pending, pending_error = None, None
+            try: pending = external_pending(case, install_root)[1] if external_files else None
+            except Exception as error: pending_error = type(error).__name__
+            save(case / (label + '-startup-failure-result.json'), dict(
+                passed=False, failure=reason, initialPid=process.pid, exitCodeRead=code_read,
+                exitCode=code.value if code_read else None, remaining=pids(), current=current,
+                currentReadErrorType=current_error, currentMetadata=metadata(pointer), manifests=manifests,
+                sandbox=[metadata(path) for path in [case, install_root, case / 'local-appdata',
+                    case / 'roaming', case / 'temp', case / 'home',
+                    case / 'local-appdata/ChatChatBarDesktop', case / 'local-appdata/ChatChatBarDesktop.bootstrap.json']],
+                managerLogMetadata=metadata(log_path), managerLogReadErrorType=log_error,
+                managerLogPrefixRetained=text.startswith(previous_log),
+                thisCallManagerLog=text[len(previous_log):][-131072:] if text.startswith(previous_log) else None,
+                afterQueue=pending, queueReadErrorType=pending_error))
+
         if expect_failure:
             deadline = time.monotonic() + 150
             normal_close_after_refusal = False
@@ -275,24 +316,12 @@ def launch_close(case, image, executable, arguments, install_root, label, defaul
                     require(not arguments or code.value == 0, 'INSTALLER_NONZERO')
                     window = found[0]
                     break
+            if not owned:
+                startup_failure('ALL_PROCESSES_EXITED_BEFORE_READY')
             require(owned, 'ALL_PROCESSES_EXITED_BEFORE_READY')
             time.sleep(.1)
         if window is None:
-            code = W.DWORD()
-            code_read = bool(kernel.GetExitCodeProcess(process.handle, C.byref(code)))
-            after_log = install_log(case, install_root)
-            log_text = after_log.read_text(encoding='utf-8') if after_log.exists() else ''
-            pending_error = None
-            try:
-                pending = external_pending(case, install_root)[1] if external_files else None
-            except Exception as failure:
-                pending = None; pending_error = type(failure).__name__
-            save(case / (label + '-startup-failure-result.json'), dict(
-                passed=False, failure='MAIN_WINDOW_AND_ENTRY_NOT_CONFIRMED', initialPid=process.pid,
-                exitCodeRead=code_read, exitCode=code.value if code_read else None, remaining=pids(),
-                afterQueue=pending, queueReadErrorType=pending_error,
-                thisCallManagerLog=log_text[len(previous_log):] if log_text.startswith(previous_log) else None,
-                managerLogPrefixRetained=log_text.startswith(previous_log)))
+            startup_failure('MAIN_WINDOW_AND_ENTRY_NOT_CONFIRMED')
             raise RuntimeError('MAIN_WINDOW_AND_ENTRY_NOT_CONFIRMED')
         current = (install_root / 'current.txt').read_text().strip()
         program = install_root / 'versions' / current

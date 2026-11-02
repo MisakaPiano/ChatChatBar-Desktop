@@ -72,7 +72,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
-    parser.add_argument('--compiler', type=Path, required=True)
+    parser.add_argument('--compiler', type=Path)
+    parser.add_argument('--baseline-only', action='store_true', help='Only pinned public1233 fresh-profile lifecycle; no new JAR build or upgrade')
     args = parser.parse_args()
     require(os.environ.get('GITHUB_ACTIONS') == 'true' and
             os.environ.get('GITHUB_REPOSITORY') == 'MisakaPiano/ChatChatBar-Desktop' and os.name == 'nt', 'CLOUD_WINDOWS_ONLY')
@@ -89,25 +90,12 @@ def main():
     driver = control / 'tools/desktop/nsis/native_smoke.py'
     builder = control / 'tools/desktop/nsis/build_installer.py'
     image = source / 'app/desktopApp/build/compose/binaries/main/app/ChatChatBarDesktop'
-    packages = {}
-    for version, number, installer in [('0.1.0-preview.1234', 1234, '0.1.1234'), ('1.0.0', 1235, '1.0.0'), ('1.0.1', 1236, '1.0.1')]:
-        tag = str(number)
-        run([source / 'app/gradlew.bat', ':desktopApp:verifyDesktopInstallerIdentity', ':desktopApp:attachDesktopUpdater',
-             '-PdesktopVersion=' + version, '-PdesktopInstallerVersion=' + installer, '-PdesktopBuildNumber=' + tag,
-             '--no-daemon', '--no-configuration-cache', '--max-workers=2', '--console=plain'], reports / (tag + '-build.log'), source / 'app')
-        package = output / ('nsis-' + tag)
-        run([sys.executable, '-B', builder, '--image', image, '--output', package, '--version', version,
-             '--commit', expected, '--installer-version', installer, '--build-number', tag, '--profile', 'desktop',
-             '--makensis', args.compiler], reports / (tag + '-package.log'))
-        packages[number] = package
-        for name in ['package.json', 'install-manifest.json', 'app-image-audit.json']:
-            shutil.copyfile(package / name, reports / (tag + '-' + name))
     baseline = output / 'public1233.exe'
     with urllib.request.urlopen(PUBLIC_URL, timeout=60) as response, baseline.open('xb') as destination:
         shutil.copyfileobj(response, destination)
     require(sha(baseline) == PUBLIC_SHA, 'PINNED_PUBLIC1233_HASH')
     approved = source / 'app/desktopApp/build/preview-continuous-private-20261025'
-    approved.mkdir(exist_ok=True)
+    approved.mkdir(parents=True, exist_ok=True)
     case = approved / 'windows-runtime-nsis-stable-chain'
     program = output / 'installed'
     common = [sys.executable, '-B', driver, '--case', case, '--image', image, '--root', program,
@@ -134,6 +122,13 @@ def main():
     drive('public1233', baseline)
     identity('0.1.0-preview.1233', 1233, PUBLIC_SOURCE)
     root_hashes = {name: sha(program / name) for name in ['ChatChatBar.exe', 'OpenChatBarFile.exe', 'Uninstall.exe']}
+    if args.baseline_only:
+        save(reports / 'BASELINE_RESULT.json', dict(kind='PINNED_PUBLIC1233_FRESH_PROFILE_ONLY',
+             pinnedInstallerSha256=PUBLIC_SHA, nativeApplicationSource=PUBLIC_SOURCE,
+             namespaceSource=expected, rootThreeResourceHashes=root_hashes, steps=steps, passed=True,
+             newJarBuild=False, upgradeStarted=False, userMachineInstall=False))
+        return
+    require(args.compiler and args.compiler.is_file(), 'PINNED_COMPILER_REQUIRED')
     canary = case / 'local-appdata/ChatChatBarDesktop/stable-chain-canary.txt'
     canary.write_bytes(b'SYNTHETIC_ORDINARY_STABLE_CHAIN_CANARY')
     canary_hash = sha(canary)
@@ -141,6 +136,20 @@ def main():
     def retained():
         require({name: sha(program / name) for name in root_hashes} == root_hashes, 'OLD_ROOT_THREE_RESOURCES_CHANGED')
         require(sha(canary) == canary_hash, 'FRESH_PROFILE_CANARY_CHANGED')
+
+    packages = {}
+    for version, number, installer in [('0.1.0-preview.1234', 1234, '0.1.1234'), ('1.0.0', 1235, '1.0.0'), ('1.0.1', 1236, '1.0.1')]:
+        tag = str(number)
+        run([source / 'app/gradlew.bat', ':desktopApp:verifyDesktopInstallerIdentity', ':desktopApp:attachDesktopUpdater',
+             '-PdesktopVersion=' + version, '-PdesktopInstallerVersion=' + installer, '-PdesktopBuildNumber=' + tag,
+             '--no-daemon', '--no-configuration-cache', '--max-workers=2', '--console=plain'], reports / (tag + '-build.log'), source / 'app')
+        package = output / ('nsis-' + tag)
+        run([sys.executable, '-B', builder, '--image', image, '--output', package, '--version', version,
+             '--commit', expected, '--installer-version', installer, '--build-number', tag, '--profile', 'desktop',
+             '--makensis', args.compiler], reports / (tag + '-package.log'))
+        packages[number] = package
+        for name in ['package.json', 'install-manifest.json', 'app-image-audit.json']:
+            shutil.copyfile(package / name, reports / (tag + '-' + name))
 
     for label, version, number in [('bridge1234', '0.1.0-preview.1234', 1234), ('stable', '1.0.0', 1235)]:
         drive(label, packages[number] / 'ChatChatBar-Setup.exe')

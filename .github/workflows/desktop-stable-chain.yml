@@ -10,6 +10,11 @@ on:
         description: Exact application source; no publication or user-profile installation
         required: true
         type: string
+      baselineOnly:
+        description: Only reproduce pinned public1233 startup; skip compiler/new builds/upgrades
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -37,13 +42,16 @@ jobs:
       - name: Prepare exact source and fresh owned NTFS paths
         env:
           SOURCE_INPUT: ${{ inputs.sourceSha }}
+          BASELINE_INPUT: ${{ inputs.baselineOnly }}
         run: |
           $ErrorActionPreference = 'Stop'
           $sha = $env:SOURCE_INPUT
+          $baselineOnly = $env:BASELINE_INPUT -ceq 'true'
           if ('${{ github.event_name }}' -eq 'push') {
             $request = Get-Content .github/desktop-stable-chain-request.json -Raw | ConvertFrom-Json
             if ($request.kind -cne 'CCB_CLOUD_ONLY_ORDINARY_STABLE_CHAIN') { throw 'REQUEST_KIND' }
             $sha = $request.sourceSha
+            $baselineOnly = $request.baselineOnly -eq $true
           }
           if ($sha -cnotmatch '^[0-9a-f]{40}$') { throw 'EXACT_SOURCE_REQUIRED' }
           $base = Join-Path ($env:SystemDrive + '\') ('ccbstable-' + [Guid]::NewGuid().ToString('N'))
@@ -54,8 +62,9 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'SOURCE_WORKTREE_FAILED' }
           $output = New-Item -ItemType Directory -Path (Join-Path $base 'output') -ErrorAction Stop
           $temp = New-Item -ItemType Directory -Path (Join-Path $base 'temp') -ErrorAction Stop
-          @("CCB_BUILD_BASE=$base", "CCB_CI_SOURCE=$source", "CCB_CANDIDATE_SOURCE=$sha", "CCB_BUILD_OUTPUT=$($output.FullName)", "TEMP=$($temp.FullName)", "TMP=$($temp.FullName)") | Add-Content $env:GITHUB_ENV -Encoding utf8
+          @("CCB_BUILD_BASE=$base", "CCB_CI_SOURCE=$source", "CCB_CANDIDATE_SOURCE=$sha", "CCB_BUILD_OUTPUT=$($output.FullName)", "CCB_STABLE_BASELINE_ONLY=$($baselineOnly.ToString().ToLowerInvariant())", "TEMP=$($temp.FullName)", "TMP=$($temp.FullName)") | Add-Content $env:GITHUB_ENV -Encoding utf8
       - name: Fetch pinned ordinary NSIS compiler
+        if: env.CCB_STABLE_BASELINE_ONLY != 'true'
         run: |
           $ErrorActionPreference = 'Stop'
           $zip = Join-Path $env:CCB_BUILD_BASE 'nsis-3.13.zip'
@@ -84,7 +93,10 @@ jobs:
           "CCB_NSIS_COMPILER=$compiler" | Add-Content $env:GITHUB_ENV -Encoding utf8
       - name: Build ordinary bridge stable and next images then verify native lifecycle
         run: |
-          python -B tools/desktop/nsis/ordinary_stable_chain.py --source $env:CCB_CI_SOURCE --output $env:CCB_BUILD_OUTPUT --compiler $env:CCB_NSIS_COMPILER
+          $arguments = @('-B', 'tools/desktop/nsis/ordinary_stable_chain.py', '--source', $env:CCB_CI_SOURCE, '--output', $env:CCB_BUILD_OUTPUT)
+          if ($env:CCB_STABLE_BASELINE_ONLY -ceq 'true') { $arguments += '--baseline-only' }
+          else { $arguments += @('--compiler', $env:CCB_NSIS_COMPILER) }
+          & python @arguments
           if ($LASTEXITCODE -ne 0) { throw 'ORDINARY_STABLE_CHAIN_FAILED' }
       - uses: actions/upload-artifact@v4
         if: always() && env.CCB_BUILD_OUTPUT != ''
