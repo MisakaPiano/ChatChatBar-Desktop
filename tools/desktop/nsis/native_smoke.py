@@ -179,7 +179,7 @@ def probe_external_files(case, install_root, label, window, previous, cold_paths
          importOrHumanAcceptance=False, providerCalls=False))
 
 
-def launch_close(case, image, executable, arguments, install_root, label, default_profile=False, expect_failure=False, busy_installer=None, allow_update_helper=False, external_files=False, cold_paths=()):
+def launch_close(case, image, executable, arguments, install_root, label, default_profile=False, expect_failure=False, busy_installer=None, allow_update_helper=False, external_files=False, cold_paths=(), readiness_failure='NEW_VERSION_NOT_READY_OLD_ENTRY_RETAINED'):
     previous_pending = external_pending(case, install_root)[1] if external_files else None
     if external_files:
         save(case / (label + '-external-before-launch.json'), dict(files=previous_pending))
@@ -217,11 +217,14 @@ def launch_close(case, image, executable, arguments, install_root, label, defaul
             current = (install_root / 'current.txt').read_text().strip()
             log = install_log(case, install_root).read_text(encoding='utf-8')
             result = dict(exitCode=code.value, remaining=pids(), oldEntryPreserved=current == previous,
-                          newAppNotReadyObserved='FAILED NEW_VERSION_NOT_READY_OLD_ENTRY_RETAINED' in log[len(previous_log):])
+                          newAppNotReadyObserved=('FAILED ' + readiness_failure) in log[len(previous_log):],
+                          expectedReadinessFailure=readiness_failure, freshDefaultProfile=default_profile,
+                          fakeCredentialRetentionVerified=False if default_profile else None)
             save(case / (label + '-result.json'), result)
             require(not result['remaining'] and code.value not in (0, 259) and result['oldEntryPreserved'] and result['newAppNotReadyObserved'], 'NATIVE_FAILURE_RETENTION_NOT_PROVEN')
             kernel.CloseHandle(process.handle); kernel.CloseHandle(job)
-            fixture(case, install_root / 'versions' / current, 'verify', label)
+            if not default_profile:
+                fixture(case, install_root / 'versions' / current, 'verify', label)
             print('NSIS_NATIVE_NEW_VERSION_FAILURE_RETAINED_PASS ' + label)
             return
 
@@ -327,6 +330,8 @@ def main():
     parser.add_argument('--label', required=True)
     parser.add_argument('--fresh-default-profile', action='store_true', help='New empty profile, no companion/data/credential claim')
     parser.add_argument('--expect-install-failure', action='store_true', help='Explicit task-owned fault installer only; old entry/data must remain')
+    parser.add_argument('--ci-fresh-readiness-failure', choices=['NEW_VERSION_NOT_READY_OLD_ENTRY_RETAINED', 'READY_IDENTITY_REFUSED'],
+                        help='Cloud-only fresh-profile fault probe; no companion, credential or custom-data retention claim')
     parser.add_argument('--probe-busy-installer', type=Path, help='While the owned app is running, this installer must reject before changing the current version')
     parser.add_argument('--allow-owned-update-helper-cwd', action='store_true', help='Explicitly classify only the inventoried updater Python; full Job exit still required')
     parser.add_argument('--probe-external-files', action='store_true', help='Deliver synthetic paths to the actual packaged warm receiver without confirming any import')
@@ -368,8 +373,14 @@ def main():
             require(not path.exists(), 'COLD_EXTERNAL_INPUT_ALREADY_EXISTS')
             path.write_bytes(b'SYNTHETIC_COLD_EXTERNAL_DELIVERY')
         exe = args.root / 'OpenChatBarFile.exe'; arguments = list(map(str, cold_paths))
-    require(not args.expect_install_failure or (args.installer and not args.fresh_default_profile), 'FAILURE_DRIVER_REQUIRES_INSTALLED_SYNTHETIC_PROFILE')
-    launch_close(case, args.image, exe, arguments, args.root, args.label, args.fresh_default_profile, args.expect_install_failure, args.probe_busy_installer, args.allow_owned_update_helper_cwd, args.probe_external_files, cold_paths)
+    if args.ci_fresh_readiness_failure:
+        require(args.ci_source and args.fresh_default_profile and args.expect_install_failure and args.installer and
+                (args.root / 'current.txt').is_file(), 'CI_FRESH_FAILURE_REQUIRES_EXISTING_OWNED_INSTALL')
+    require(not args.expect_install_failure or (args.installer and
+            (not args.fresh_default_profile or args.ci_fresh_readiness_failure)), 'FAILURE_DRIVER_REQUIRES_INSTALLED_SYNTHETIC_PROFILE')
+    launch_close(case, args.image, exe, arguments, args.root, args.label, args.fresh_default_profile, args.expect_install_failure,
+                 args.probe_busy_installer, args.allow_owned_update_helper_cwd, args.probe_external_files, cold_paths,
+                 args.ci_fresh_readiness_failure or 'NEW_VERSION_NOT_READY_OLD_ENTRY_RETAINED')
 
 
 if __name__ == '__main__':

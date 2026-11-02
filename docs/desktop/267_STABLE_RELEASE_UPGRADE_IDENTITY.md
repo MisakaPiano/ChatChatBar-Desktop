@@ -1,5 +1,7 @@
 # 267 — Preview 到正式版的普通升级身份
 
+实际证据更新：120完整绿色含native37/TUF13；122/d953完整绿色含native37/TUF14，第14例冻结public1233旧updater实际下载/二验合成bridge后新reader读取stable。它们仍不等于普通JAR链。新增 `desktop-stable-chain.yml` 与 `ordinary_stable_chain.py` 准备独立云端普通包链：同冻结应用源分别生成1234 bridge、1.0.0/build1235、1.0.1/build1236，从hash固定的真实public1233起，在同空白profile中实际安装/重开/冷投递，逐步核根三资源/资料canary/display/build/storage及完整Job退出。独立未审计且不上传的故障NSIS只把descriptor声明为1.0.2/build1237，继续嵌入原1.0.1普通JAR，核READY身份拒绝/旧pointer与后续重开；原普通包和生产源码不加故障开关。故障driver的cloud显式模式不声称假凭据/custom-root保全。此工具准备尚未运行，本地仅语法检查，不据此宣称升级通过或授权正式发布。
+
 2026-11-02：原P18升级基建正在实现，尚未在精确新源运行，不属于117/118、公开1233或真人验收结论。保留真实稳定SemVer、单调build、Windows installer版本、TUF revision、reader与trust-root版本的独立含义。
 
 后补第14个可信更新器例直接载入公开1233冻结客户端源码，核源SHA、沿原Preview cache实际下载/二验合成bridge，再由新客户端在同一cache读取stable；原transport Git blob保持。该新增例不在120中，需后继精确源云验，不把新客户端模拟旧安装信息当作旧客户端已执行，也不把合成payload验包当作安装或真实JAR过渡。
