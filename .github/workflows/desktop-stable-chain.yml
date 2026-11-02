@@ -54,7 +54,10 @@ jobs:
             $baselineOnly = $request.baselineOnly -eq $true
           }
           if ($sha -cnotmatch '^[0-9a-f]{40}$') { throw 'EXACT_SOURCE_REQUIRED' }
-          $base = Join-Path ($env:SystemDrive + '\') ('ccbstable-' + [Guid]::NewGuid().ToString('N'))
+          # Old Framework manager appends its state namespace and 64-char root hash to this profile.
+          # A long CI source/profile namespace can exceed MAX_PATH before any installation/log exists.
+          # New-Item remains collision-refusing; this does not change an installer or its path guards.
+          $base = Join-Path ($env:SystemDrive + '\') ('ccbs-' + [Guid]::NewGuid().ToString('N').Substring(0, 12))
           if ([IO.DriveInfo]::new([IO.Path]::GetPathRoot($base)).DriveFormat -ne 'NTFS') { throw 'NTFS_REQUIRED' }
           New-Item -ItemType Directory -Path $base -ErrorAction Stop | Out-Null
           $source = Join-Path $base 'source'
@@ -110,3 +113,4 @@ jobs:
             ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-nsis-stable-chain/*-running.json
             ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-nsis-stable-chain/*-external-delivery.json
             ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-nsis-stable-chain/*-stderr.log
+            ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-nsis-stable-chain/*-stdout.log

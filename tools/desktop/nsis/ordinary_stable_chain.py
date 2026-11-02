@@ -98,6 +98,18 @@ def main():
     approved.mkdir(parents=True, exist_ok=True)
     case = approved / 'windows-runtime-nsis-stable-chain'
     program = output / 'installed'
+    # Record the actual Framework state-log path before starting the frozen installer.
+    # This is numeric/path evidence in the cloud-owned profile, not a new installer admission rule.
+    local_appdata = case / 'local-appdata'
+    state_log = local_appdata / 'ChatChatBarDesktopNSISInstallState' / (
+        hashlib.sha256(str(program.absolute()).upper().encode('utf-8')).hexdigest().upper() + '.log')
+    save(reports / 'baseline-paths.json', dict(kind='CLOUD_OWNED_BASELINE_PATHS',
+         programRoot=str(program), localAppData=str(local_appdata), managerLog=str(state_log),
+         programRootUtf16Units=len(str(program).encode('utf-16-le')) // 2,
+         localAppDataUtf16Units=len(str(local_appdata).encode('utf-16-le')) // 2,
+         managerLogUtf16Units=len(str(state_log).encode('utf-16-le')) // 2,
+         installerSha256=sha(baseline), nativeApplicationSource=PUBLIC_SOURCE,
+         installerOrPathGuardsChanged=False, baselineOnly=args.baseline_only))
     common = [sys.executable, '-B', driver, '--case', case, '--image', image, '--root', program,
               '--fresh-default-profile', '--ci-source', source, '--allow-owned-update-helper-cwd']
     steps = []

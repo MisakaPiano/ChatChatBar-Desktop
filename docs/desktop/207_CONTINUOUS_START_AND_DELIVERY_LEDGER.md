@@ -1,3 +1,5 @@
+2026-11-02补证：125/41425471677精确ef3含4f import修正、b0全pending portable保全及官方优先说明，Linux job SUCCESS/Windows仍验，原件待唯一协调端。124主2534PASS+19SKIP、proxy5/native37/TUF14/exit4通过，shared/Android/NTFS因缺import未执行；123仍最后完整绿。普通R2三包实际构建审计后旧public1233安装器先退，升级未开始；R3 baseline-only捕获installer exit2/no root/current/manifests/log，非JAR/READY失败。原sandbox管理日志推导261单位，后继只缩短云随机base、保留原保护/失败并先记路径长度，尚待对照实证。公开1233/15、真人待、日常H UNKNOWN/不代装不变；D042仅阅读设计未编辑。
+
 2026-11-02 用户最新方向：Desktop优先适配官方CCB本体（固定147，validated141尚不批量提升），独立Studio应适配CCB已有权威接口/格式。停止追加仅为Studio新协议的手机Fork读取器分发/安装与版本定位询问；保留已做未发布扩展/测试并明确非官方兼容证据，不破坏性回滚。269及266/技能/完整文本窗口边界说明同步；147历史/参数/portable数据保全、P18普通链、D042继续。123最后完整绿，124共享测试编译缺import的4f最小修正待后继源；R2普通链已通过同固定编译器身份并构建，未宣称普通链PASS。
 
 下方历史保留。

@@ -1,5 +1,7 @@
 # 267 — Preview 到正式版的普通升级身份
 
+2026-11-02普通链实测：R2/41422525898同固定编译器PASS，三个普通包实际构建并审计，但第一步固定public1233安装器退出，桥接/稳定升级尚未开始。R3/41425612817只重现旧包预检、不重建，捕获exit2、完整Job退出、安装root/current/manifest/manager日志均不存在；这是安装器早退，不能改称JAR/READY或rollback失败。固定2ba Framework管理器在profile后附加InstallState目录及64hex日志名，原云sandbox推导完整路径261 UTF-16单位；尚待同EXE短路径对照，不能只凭该长度宣布根因。后继仅缩短新建云base随机叶，New-Item碰撞拒绝/独立profile/原安装保护保持，baseline-paths.json先记录实际路径长度/hash；长路径失败原件保留，不声称已修生产任意长AppData支持。
+
 实际证据更新：120完整绿色含native37/TUF13；122/d953完整绿色含native37/TUF14，第14例冻结public1233旧updater实际下载/二验合成bridge后新reader读取stable。它们仍不等于普通JAR链。新增 `desktop-stable-chain.yml` 与 `ordinary_stable_chain.py` 准备独立云端普通包链：同冻结应用源分别生成1234 bridge、1.0.0/build1235、1.0.1/build1236，从hash固定的真实public1233起，在同空白profile中实际安装/重开/冷投递，逐步核根三资源/资料canary/display/build/storage及完整Job退出。独立未审计且不上传的故障NSIS只把descriptor声明为1.0.2/build1237，继续嵌入原1.0.1普通JAR，核READY身份拒绝/旧pointer与后续重开；原普通包和生产源码不加故障开关。故障driver的cloud显式模式不声称假凭据/custom-root保全。此工具准备尚未运行，本地仅语法检查，不据此宣称升级通过或授权正式发布。
 
 2026-11-02：原P18升级基建正在实现，尚未在精确新源运行，不属于117/118、公开1233或真人验收结论。保留真实稳定SemVer、单调build、Windows installer版本、TUF revision、reader与trust-root版本的独立含义。
