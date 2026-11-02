@@ -31,6 +31,14 @@ class DesktopGuideReminderPanelTest {
                 blocked = false; frames(scene)
                 for (problem in listOf<DesktopGuideReminderProblem?>(null, DesktopGuideReminderProblem.READ, DesktopGuideReminderProblem.SAVE)) {
                     state = state.copy(problem = problem); frames(scene)
+                    if (problem != null) {
+                        val label = t(if (problem == DesktopGuideReminderProblem.READ)
+                            DesktopUiText.GUIDE_REMINDER_READ_ERROR else DesktopUiText.GUIDE_REMINDER_SAVE_ERROR)
+                        val cue = nodes(scene).first { it.config.getOrNull(SemanticsProperties.Text)?.any { text -> text.text == label } == true }.boundsInRoot
+                        val viewport = nodes(scene).first { it.config.getOrNull(SemanticsProperties.TestTag) == "guide-reminder-body" }.boundsInRoot
+                        assertTrue(cue.top >= viewport.top && cue.top + 20 <= viewport.bottom,
+                            "$language/$width/$problem initial failure cue is not readable: $cue in $viewport")
+                    }
                     for (label in listOf(DesktopUiText.GUIDE_REMINDER_OPEN, DesktopUiText.GUIDE_REMINDER_LATER, DesktopUiText.GUIDE_REMINDER_NEVER)) {
                         val node = button(scene, t(label)); val b = node.boundsInRoot
                         assertTrue(b.width > 0 && b.height >= 47 && b.left >= 0 && b.right <= width && b.top >= 0 && b.bottom <= height, "$language/$width/$problem/$label $b")

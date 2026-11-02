@@ -1,0 +1,90 @@
+name: Inventory pinned Desktop upstream changes
+
+on:
+  push:
+    branches: ['codex/upstream-report-*']
+    paths: [.github/desktop-upstream-report-request.json]
+  workflow_dispatch:
+    inputs:
+      baselineSha:
+        description: Exact baseline commit (40 lowercase hex)
+        required: true
+        type: string
+      targetSha:
+        description: Exact observed upstream target commit (40 lowercase hex)
+        required: true
+        type: string
+      desktopSha:
+        description: Exact Desktop comparison commit (40 lowercase hex)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Resolve explicit identities and create read-only inventory
+        env:
+          INPUT_BASELINE: ${{ inputs.baselineSha }}
+          INPUT_TARGET: ${{ inputs.targetSha }}
+          INPUT_DESKTOP: ${{ inputs.desktopSha }}
+        run: |
+          python3 -B - <<'PY'
+          import hashlib, json, os, pathlib, re, subprocess, sys
+          if os.environ['GITHUB_REPOSITORY'] != 'MisakaPiano/ChatChatBar-Desktop':
+              raise SystemExit('REPORT_REPOSITORY_REFUSED')
+          env = dict(os.environ, GIT_TERMINAL_PROMPT='0')
+          def git(*args):
+              return subprocess.check_output(['git', '--no-replace-objects', '-c', 'maintenance.auto=false',
+                  '-c', 'gc.auto=0', *args], stderr=subprocess.PIPE, env=env, timeout=180)
+          before = git('rev-parse', 'HEAD').decode().strip()
+          tracked = git('status', '--porcelain=v1', '-z', '--untracked-files=no')
+          if os.environ['GITHUB_EVENT_NAME'] == 'push':
+              request = json.loads(pathlib.Path('.github/desktop-upstream-report-request.json').read_text(encoding='utf-8'))
+              if request.get('kind') != 'CCB_DESKTOP_PINNED_UPSTREAM_REPORT_REQUEST':
+                  raise SystemExit('REPORT_REQUEST_KIND_REFUSED')
+              values = [request.get(k) for k in ('baselineSha', 'targetSha', 'desktopSha')]
+          else:
+              values = [os.environ[k] for k in ('INPUT_BASELINE', 'INPUT_TARGET', 'INPUT_DESKTOP')]
+          if not all(isinstance(v, str) and re.fullmatch('[0-9a-f]{40}', v) for v in values):
+              raise SystemExit('EXPLICIT_FULL_COMMITS_REQUIRED')
+          baseline, target, desktop = values
+          if os.environ['GITHUB_EVENT_NAME'] == 'push' and git('rev-parse', 'HEAD^').decode().strip() != desktop:
+              raise SystemExit('REPORT_CONTROL_PARENT_REFUSED')
+          if os.environ['GITHUB_EVENT_NAME'] == 'push' and git('diff', '--name-only', '-z', desktop, before) != b'.github/desktop-upstream-report-request.json\0':
+              raise SystemExit('REPORT_CONTROL_SCOPE_REFUSED')
+          if git('rev-parse', '--verify', desktop + '^{commit}').decode().strip() != desktop:
+              raise SystemExit('DESKTOP_IDENTITY_REFUSED')
+          upstream = 'https://github.com/SaltyFishOTL/ChatChatBar.git'
+          git('-c', 'credential.helper=', 'fetch', '--no-tags', '--no-write-fetch-head', '--depth=1', upstream, baseline, target)
+          output = pathlib.Path(os.environ['RUNNER_TEMP']) / 'ccb-pinned-upstream-report'
+          output.mkdir()
+          report_path = output / 'pinned-drift.json'
+          subprocess.run([sys.executable, '-B', 'tools/desktop/upstream/pinned_drift.py', '--repository', '.',
+              '--baseline', baseline, '--target', target, '--desktop', desktop, '--output', str(report_path)],
+              check=True, env=env, timeout=180)
+          if git('rev-parse', 'HEAD').decode().strip() != before or git('status', '--porcelain=v1', '-z', '--untracked-files=no') != tracked:
+              raise SystemExit('TRACKED_WORKSPACE_CHANGED')
+          data = report_path.read_bytes()
+          receipt = dict(kind='PINNED_REPORT_WORKFLOW_NOT_COMPATIBILITY_VERDICT', workflowCommit=before,
+              desktopCommit=desktop, baselineCommit=baseline, targetCommit=target, upstreamRepository=upstream,
+              reportBytes=len(data), reportSha256=hashlib.sha256(data).hexdigest(),
+              headAndTrackedWorkspaceUnchanged=True, upstreamCodeExecuted=False, baselinePromoted=False,
+              monitorChanged=False, sourceMerged=False, releasePublished=False)
+          (output / 'provenance.json').write_text(json.dumps(receipt, indent=2) + '\n', encoding='utf-8')
+          print(json.dumps(receipt))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-pinned-upstream-report
+          path: ${{ runner.temp }}/ccb-pinned-upstream-report/*.json
+          if-no-files-found: error
+          retention-days: 14

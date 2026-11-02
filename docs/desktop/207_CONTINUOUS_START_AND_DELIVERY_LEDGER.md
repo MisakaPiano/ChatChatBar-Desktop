@@ -1,3 +1,7 @@
+2026-11-02最新：CI109/57272实际完整SUCCESS，主329suite/2505=2486PASS+19SKIP，proxy5/NTFS7/shared1138/Android582/Python3/native33/updater8/exit4全通过；新增2共享头像、1实际Desktop wire及4提醒controller/Panel/真实Shell、原Guide阅读保留均PASS，唯一三ZIP与22张新实图已核。A/B两项Prompt均已明确获准并实现，不再等待B确认；baseline仍141。后补仅指南失败原因首屏优先与原Scene首行可见性、统计介绍文案，以及P16显式云端报告入口，尚待其精确云端；不由109代验。成熟普通1233私有候选准备中，公开仍1230/14，旧client匿名下载二验保持、真人Studio参数/重开待；无日常H代装或本机重负载。
+
+下方历史保留。
+
 2026-11-02最新：107/671f主2493=2473PASS+19SKIP+1FAIL，唯一Guide最矮330x420目录手动滚到分组标题后首主题不全可见；实际图和XML首因已核，106编译错误已消失。B1C9含真实Shell指南/草稿/工作保护与ContextHelp2、proxy5/NTFS7/shared1136/Android582/Python3/native33/updater8/exit4独立通过。现窄屏目录展开时暂代正文，选择或翻页后回正文，保留原完整bounds和5秒，不放宽断言；宽屏不改。已批准单条CCB提醒的HTTPS/HTTP六组合序列化实际PASS（255），B仍等待。ed8f独立试听四行为+一实际UI源码已本地提交，未推未验；该片和指南修正待下一精确源。公开1230/14、旧client匿名下载二验及真人待保持，无H代装/本机重负载。
 
 下方历史保留。

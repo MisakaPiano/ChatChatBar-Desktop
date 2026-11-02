@@ -21,3 +21,9 @@ Memory/RAG、WorldBook、Prompt、聊天上下文、Provider、SaveSlot/持久�
 ## 验证范围
 
 `test_pinned_drift.py` 使用完全内联的合成 Git 仓库与 NUL 记录：制表符／换行／Unicode 改名、共享 main/test 迁移、Android 同路径不同 blob、归档副本不充当实现、缺少候选不充当功能缺失、显式SHA、现有输出拒绝、HEAD和原文件不变，以及原领域高风险标记。既有Linux平台CI的小型Python step已105实际通过；本机只生成固定Git对象清单，未运行测试、JVM或构建。
+
+## 显式云端报告入口（后补，实际执行待核）
+
+`desktop-upstream-report.yml` 为现有离线工具增加云端编排。`codex/upstream-report-*` 控制分支仅新增带固定kind及baselineSha／targetSha／desktopSha的请求文件，Desktop必须是其直接父提交，diff仅允许该请求文件；也提供同输入的手动dispatch。三份SHA须完整小写40位，官方地址固定为SaltyFishOTL/ChatChatBar，仅抓取两个指定commit，不执行上游代码或复用登录凭据。
+
+临时runner调用现有CLI，输出新的清单及绑定实际workflow／Desktop／上游身份、字节数和SHA256的provenance。前后核对HEAD和tracked工作树不变，上传的仅两个公共Git身份／路径清单JSON。首次固定141→147云端结果仍待实际run，不用现有离线R05或单元测试冒认已运行。该入口尚未接入原正式Release监控，后续仍需将实际新正式版本观察与报告请求接线；不新增监控、自动合并、改Prompt或升级正式baseline，也不直接给兼容结论。

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -80,11 +81,11 @@ internal fun DesktopGuideReminder(state: DesktopGuideReminderState, blocked: Boo
                     DesktopIconAction(t(DesktopUiText.GUIDE_REMINDER_LATER), DesktopAppIcons.Close,
                         enabled = !state.busy, onClick = onLater)
                 }
-                Column(Modifier.weight(1f, fill = false).fillMaxWidth().verticalScroll(rememberScrollState()),
+                Column(Modifier.weight(1f, fill = false).fillMaxWidth().testTag("guide-reminder-body").verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    StatusText(t(DesktopUiText.GUIDE_REMINDER_BODY))
                     state.problem?.let { StatusText(t(if (it == DesktopGuideReminderProblem.READ)
                         DesktopUiText.GUIDE_REMINDER_READ_ERROR else DesktopUiText.GUIDE_REMINDER_SAVE_ERROR), DesktopBootstrapColors.warning) }
+                    StatusText(t(DesktopUiText.GUIDE_REMINDER_BODY))
                 }
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     BootstrapButton(t(DesktopUiText.GUIDE_REMINDER_OPEN), enabled = !state.busy, onClick = onView)

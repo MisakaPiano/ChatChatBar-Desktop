@@ -15,7 +15,9 @@
 
 窄屏提醒正文可滚动、按钮可换行，header和动作保留。指南开关目录时，同主题阅读ScrollState在分支外保留；切换主题仍从顶部开始。不会将已公开1230或108/7621的结果算本源码通过。
 
-## 必要验证：源码待云端
+## 必要验证
+
+CI109／57272实际完整SUCCESS，主2505=2486PASS+19SKIP，4个controller、提醒Panel、真实Shell与指南同页阅读扩展均PASS；实际双语宽窄图已核。后补短窗可用性修正：失败原因排在通用介绍前面，沿原Scene增加首行初始可见性检查；这个增量尚待下一精确源，不将109改写为失败。
 
 - `DesktopGuideReminderTest`四例：缺失／旧字段只读与本次暂缓，显式保存与后续重开、最新字段／未知字段及更高版本保留，坏字段／原子替换失败及重试，取消／已关闭gate保全。
 - `DesktopGuideReminderPanelTest`一例：中英文330×420／1100×650，blocked未消费，READ／SAVE状态及按钮全可达、disabled、版本已记后消失；实际图走原 `CCB_CONTEXT_HELP_REVIEW_DIR`。

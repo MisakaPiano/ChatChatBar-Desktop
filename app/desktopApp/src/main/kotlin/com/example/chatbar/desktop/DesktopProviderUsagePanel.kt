@@ -29,7 +29,7 @@ internal fun DesktopProviderUsagePanel(owner: DesktopProviderUsageOwner) {
     var page by remember(query, dimension) { mutableStateOf(0) }
     LaunchedEffect(owner, query, dimension, page) { owner.refresh(query, dimension, page) }
     DesktopManagementHeading("模型请求用量")
-    StatusText("记录已接入的文本／向量请求和正式 Fish TTS 网络尝试。TTS 发送字符、有效音频时长和字节为独立本地测量，不混入 Token，也不代表供应商计费。实际生图、独立试听等其他媒体调用仍待接入；未报告的服务端用量保持未知。")
+    StatusText("记录已接入的文本／向量请求、正式 Fish TTS 和音色库生成试听的网络尝试。发送字符、有效音频时长和字节为独立本地测量，不混入 Token，也不代表供应商计费。实际生图等其他媒体调用仍待接入；未报告的服务端用量保持未知。")
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         SelectChip("全部类型", !textOnly && mediaKind == null) { textOnly = false; mediaKind = null }
         SelectChip("Token 请求", textOnly) { textOnly = true; mediaKind = null }
