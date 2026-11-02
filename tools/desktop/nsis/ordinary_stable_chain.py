@@ -35,8 +35,10 @@ def save(path, value):
 
 
 def run(command, log, cwd=None):
+    print('CLOUD_CHAIN_CHILD_START ' + log.name, flush=True)
     with log.open('xb') as output:
         result = subprocess.run(list(map(str, command)), stdout=output, stderr=subprocess.STDOUT, cwd=cwd)
+    print('CLOUD_CHAIN_CHILD_EXIT ' + log.name + ' ' + str(result.returncode), flush=True)
     require(result.returncode == 0, 'CLOUD_CHAIN_CHILD_FAILED:' + log.name)
 
 
