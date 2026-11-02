@@ -53,6 +53,7 @@ data class NovelAiGenerationSettings(
     val maxAllowedBaseSeed: Long get() = MAX_SEED - (count.coerceIn(1, 4) - 1L)
 
     fun normalized(): NovelAiGenerationSettings = copy(
+        sampler = sampler.takeIf { it in model.samplers } ?: NovelAiSampler.EULER_ANCESTRAL,
         aspectRatio = if (sizeTier == NovelAiSizeTier.WALLPAPER && aspectRatio == NovelAiAspectRatio.SQUARE) {
             NovelAiAspectRatio.PORTRAIT
         } else {

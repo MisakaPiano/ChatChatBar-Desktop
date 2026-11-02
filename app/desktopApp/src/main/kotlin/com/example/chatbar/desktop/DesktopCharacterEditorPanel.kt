@@ -127,6 +127,7 @@ internal fun DesktopCharacterLeavePrompt(controller: DesktopCharacterEditorContr
 @Composable
 internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorController, state: DesktopCharacterEditorState) {
     val card = state.card ?: return
+    val globalImageModel by controller.imageModelSettings.collectAsState(initial = null)
     val t = LocalDesktopUiStrings.current
     val scope = rememberCoroutineScope()
     var selectedEntry by remember(card.id) { mutableStateOf<String?>(null) }
@@ -244,6 +245,9 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
                 EditorField(t(DesktopUiText.POST_HISTORY_FIELD), card.postHistoryInstructions, true) { value -> controller.edit { it.copy(postHistoryInstructions = value) } }
                 EditorField(t(DesktopUiText.MESSAGE_EXAMPLE), card.mesExample, true) { value -> controller.edit { it.copy(mesExample = value) } }
                 EditorField(t(DesktopUiText.CREATOR_NOTES), card.creatorNotes, true) { value -> controller.edit { it.copy(creatorNotes = value) } }
+            }
+            EditorSection(t(DesktopUiText.CHARACTER_IMAGE_DEFAULTS)) {
+                DesktopCharacterImageDefaults(card, globalImageModel, controller::edit)
             }
             EditorSection(t(DesktopUiText.CHARACTER_WORLD_BOOKS)) {
                 val known = state.worldBooks.map { it.id }.toSet()

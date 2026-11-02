@@ -35,7 +35,7 @@ internal class DesktopCharacterImageController(
     private data class Pin(val session: String, val basis: CharacterCard, val destination: CharacterCard, val personId: String?,
         val assign: (CharacterCard) -> Boolean)
     private data class Signature(val card: CharacterCard, val hint: String, val requirement: String,
-        val manualPrompt: String, val model: NovelAiImageModel, val ratio: String)
+        val manualPrompt: String, val model: NovelAiImageModel, val parameters: NovelAiCharacterImageSettings?, val ratio: String)
     private val mutable = MutableStateFlow(DesktopCharacterImageState())
     val state = mutable.asStateFlow()
     val imageDiagnostics get() = runtime.diagnostics
@@ -125,8 +125,12 @@ internal class DesktopCharacterImageController(
                         editorSessionId = target.session, personId = target.personId)) { gate.withNormalOperation {
                     val fresh = settings.getAppSettings()
                     val avatar = target.personId != null
+                    val effectiveImageModel = target.destination.defaultNovelAiImageModel ?: fresh.novelAiImageModel
+                    val imageParameters = target.destination.defaultImageGenerationSettings
+                    failureHint = "角色专属生图参数无效，请在角色编辑器中核对参数"
+                    imageParameters?.applyTo(NovelAiGenerationSettings(model = effectiveImageModel))?.validationError(0)?.let { error(it) }
                     val key = Signature(target.destination, before.hint, before.requirement, before.manualPrompt,
-                        fresh.novelAiImageModel, if (avatar) "" else fresh.novelAiImageAspectRatio)
+                        effectiveImageModel, imageParameters, if (avatar) "" else fresh.novelAiImageAspectRatio)
                     if (!retry || key != signature) { plan = null; finalImage = null; plannedWith = ""; signature = key }
                     failureHint = "读取 NovelAI 账户凭据失败，请检查 API 账户；原凭据未修改"
                     val credential = captureCredential()
@@ -159,12 +163,13 @@ internal class DesktopCharacterImageController(
                         }).also { plan = it }
                         val size = if (avatar) CharacterAvatarImagePolicy.imageSize
                             else NovelAiImageSizePolicy.resolve(fresh.novelAiImageAspectRatio, imagePlan.sizePreset)
-                        mutable.update { it.copy(imageSize = size, targetModel = fresh.novelAiImageModel,
+                        mutable.update { it.copy(imageSize = size, targetModel = effectiveImageModel,
                             designModelLabel = if (avatar) "" else plannedWith, reusedDesign = !avatar && reuseDesign,
                             promptText = imagePlan.baseCaption, status = if (finalImage == null) "正在调用 NovelAI 生成候选" else "沿用已完成图片候选") }
                         failureHint = "NovelAI 图片生成未完成，请检查生图账户与网络；可重试未完成步骤"
                         val bytes = finalImage ?: generateImage(imagePlan, size,
-                            NovelAiGenerationSettings.legacy(kotlin.random.Random.nextInt(0, Int.MAX_VALUE), model = fresh.novelAiImageModel),
+                            NovelAiGenerationSettings.legacy(kotlin.random.Random.nextInt(0, Int.MAX_VALUE), model = effectiveImageModel)
+                                .let { imageParameters?.applyTo(it) ?: it },
                             { image, progress -> mutable.update { it.copy(preview = image, progress = progress) } },
                             { status -> mutable.update { it.copy(status = status) } }).also { finalImage = it }
                         if (matches(target)) mutable.update { it.copy(candidate = bytes, preview = bytes, progress = 1f,

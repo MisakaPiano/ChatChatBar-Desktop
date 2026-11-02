@@ -13,6 +13,45 @@ import kotlinx.coroutines.flow.*
 import kotlin.test.*
 
 class DesktopCharacterImageTest {
+    @Test fun `cover and avatar use frozen effective card settings and global changes only invalidate inherited models`() = runBlocking {
+        for (avatar in listOf(false, true)) for (override in listOf(false, true)) fixture { _, app, editor, secrets ->
+            val parameters = NovelAiCharacterImageSettings(sampler = NovelAiSampler.EULER, steps = 21,
+                guidance = 5f, cfgRescale = 0.2f, varietyPlus = true)
+            app.settingsRepository.updateAppSettings { it.copy(novelAiImageModel = NovelAiImageModel.V4_5_FULL) }
+            assertEquals(NovelAiImageModel.V4_5_FULL, editor.imageModelSettings.first())
+            if (override) editor.edit { it.copy(defaultNovelAiImageModel = NovelAiImageModel.V5_FULL,
+                defaultImageGenerationSettings = parameters) }
+            var designs = 0; var generations = 0
+            val captured = mutableListOf<NovelAiGenerationSettings>()
+            val ai = controller(app, editor, secrets, designer = { _, _, _, _, _ -> designs++; plan },
+                generator = { _, size, actual, _, _ ->
+                    captured += actual; generations++
+                    if (avatar) { assertEquals(512, size.width); assertEquals(512, size.height) }
+                    assertEquals(NovelAiSeedMode.FIXED, actual.seedMode)
+                    assertTrue(actual.seed in 0..Int.MAX_VALUE.toLong())
+                    if (generations == 1) error("synthetic network failure") else bytes
+                })
+            if (avatar) ai.openAvatar(person.id) else { ai.openCover(); ready(ai) }
+            ai.generate(); idle(ai); assertNull(ai.state.value.candidate)
+            app.settingsRepository.updateAppSettings { it.copy(novelAiImageModel = NovelAiImageModel.V5_FULL) }
+            assertEquals(NovelAiImageModel.V5_FULL, editor.imageModelSettings.first())
+            ai.generate(retry = true); idle(ai); assertNotNull(ai.state.value.candidate)
+            assertEquals(2, generations)
+            assertEquals(if (avatar) 0 else if (override) 1 else 2, designs)
+            assertEquals(if (override) NovelAiImageModel.V5_FULL else NovelAiImageModel.V4_5_FULL, captured.first().model)
+            assertEquals(NovelAiImageModel.V5_FULL, captured.last().model)
+            captured.forEach { actual ->
+                assertEquals(if (override) parameters.steps else 28, actual.steps)
+                assertEquals(if (override) parameters.guidance else 8f, actual.guidance)
+                assertEquals(if (override) parameters.cfgRescale else 0f, actual.cfgRescale)
+                assertEquals(if (override) parameters.sampler else NovelAiSampler.EULER_ANCESTRAL, actual.sampler)
+                assertEquals(override, actual.varietyPlus)
+            }
+            assertEquals(NovelAiImageModel.V5_FULL, ai.state.value.targetModel)
+            assertEquals(card, app.characterRepository.getById(card.id))
+        }
+    }
+
     private val person = CharacterInfo("person", "合成人物", imagePrompt = "synthetic-person",
         fishAudioVoice = FishAudioVoiceBinding("voice", "合成声线"), desktopEnabled = false)
     private val card = CharacterCard("card", "合成卡", greeting = "合成开场", characters = listOf(person),

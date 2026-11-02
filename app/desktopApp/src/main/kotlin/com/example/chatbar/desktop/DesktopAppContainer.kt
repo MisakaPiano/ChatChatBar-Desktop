@@ -1,5 +1,6 @@
 package com.example.chatbar.desktop
 
+import kotlinx.coroutines.flow.map
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.repository.CharacterRepository
 import com.example.chatbar.data.repository.ChatRepository
@@ -342,6 +343,7 @@ class DesktopAppContainer internal constructor(
             dataGate = dataOperationCoordinator,
             documentIndex = ragController,
             speakerHistory = speakerTagHistoryService,
+            imageModelSettings = settingsRepository.appSettings.map { it.novelAiImageModel },
             json = jsonFileStorage.json,
             filePicker = filePicker,
             discardObsoleteResources = { previous, _ ->

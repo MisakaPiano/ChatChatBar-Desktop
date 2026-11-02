@@ -105,6 +105,7 @@ internal class DesktopCharacterEditorController(
     private val dataGate: com.example.chatbar.data.operation.AppDataOperationGate = com.example.chatbar.data.operation.NoOpAppDataOperationGate,
     val documentIndex: DesktopRagController? = null,
     private val speakerHistory: SpeakerTagHistoryService = SpeakerTagHistoryService(characters, chats),
+    val imageModelSettings: kotlinx.coroutines.flow.Flow<com.example.chatbar.domain.image.NovelAiImageModel?> = kotlinx.coroutines.flow.flowOf(null),
 ) {
     internal var cardAi: DesktopCharacterCardAiController? = null
     internal var promptBudget: DesktopEditorBudgetController? = null
@@ -612,6 +613,8 @@ internal class DesktopCharacterEditorController(
                 editMode = card.editMode, basicSetting = card.basicSetting,
                 freeformCharacterText = card.freeformCharacterText,
                 defaultImagePrompt = card.defaultImagePrompt,
+                defaultNovelAiImageModel = card.defaultNovelAiImageModel,
+                defaultImageGenerationSettings = card.defaultImageGenerationSettings,
                 defaultImageNegativePrompt = CharacterNaiPromptDefaults.effectiveCharacterNaiNegativePrompt(card.defaultImageNegativePrompt),
                 systemPrompt = card.systemPrompt, postHistoryInstructions = card.postHistoryInstructions,
                 mesExample = card.mesExample, creatorNotes = card.creatorNotes,
@@ -823,6 +826,13 @@ internal class DesktopCharacterEditorController(
             else -> null
         }
         if (issue != null) { _state.value = _state.value.copy(problem = issue); return false }
+        val imageIssue = card.defaultImageGenerationSettings?.applyTo(
+            com.example.chatbar.domain.image.NovelAiGenerationSettings(model = card.defaultNovelAiImageModel
+                ?: com.example.chatbar.domain.image.NovelAiImageModel.V4_5_FULL))?.validationError(0)
+        if (imageIssue != null) {
+            _state.value = _state.value.copy(problem = CharacterEditorProblem.SAVE_FAILED, detail = imageIssue)
+            return false
+        }
         return true
     }
 

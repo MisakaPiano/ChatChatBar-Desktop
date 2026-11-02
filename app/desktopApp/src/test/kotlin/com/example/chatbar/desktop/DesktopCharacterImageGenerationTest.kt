@@ -15,6 +15,31 @@ import org.msgpack.core.MessagePack
 import kotlin.test.*
 
 class DesktopCharacterImageGenerationTest {
+    @Test fun `actual gateway serializes nondefault card parameters for both models and retains avatar size`() = runBlocking {
+        MockWebServer().use { server ->
+            val owner = DesktopCharacterImageGeneration(secrets(), client(server))
+            try {
+                for (model in NovelAiImageModel.entries) {
+                    val parameters = NovelAiCharacterImageSettings(sampler = NovelAiSampler.EULER, steps = 19,
+                        guidance = 4.5f, cfgRescale = 0.35f, varietyPlus = true)
+                    server.enqueue(MockResponse().setBody(Buffer().write(frame("final", image))))
+                    owner.generate(plan, CharacterAvatarImagePolicy.imageSize, parameters.applyTo(NovelAiGenerationSettings.legacy(123, model = model)))
+                    val body = Json.parseToJsonElement(assertNotNull(server.takeRequest(5, TimeUnit.SECONDS)).body.readUtf8()).jsonObject
+                    assertEquals(model.apiId, body.getValue("model").jsonPrimitive.content)
+                    val wire = body.getValue("parameters").jsonObject
+                    assertEquals(19, wire.getValue("steps").jsonPrimitive.int)
+                    assertEquals(4.5f, wire.getValue("scale").jsonPrimitive.float)
+                    assertEquals(0.35f, wire.getValue("cfg_rescale").jsonPrimitive.float)
+                    assertEquals(NovelAiSampler.EULER.apiId, wire.getValue("sampler").jsonPrimitive.content)
+                    assertEquals(512, wire.getValue("width").jsonPrimitive.int)
+                    assertEquals(512, wire.getValue("height").jsonPrimitive.int)
+                    assertEquals(model.supportsVarietyPlus, wire.containsKey("skip_cfg_above_sigma"))
+                }
+                assertEquals(2, server.requestCount)
+            } finally { owner.closeAndDrain() }
+        }
+    }
+
     private val plan = NovelAiPromptPlan("synthetic", emptyList(), negativePrompt = "synthetic-negative")
     private val settings = NovelAiGenerationSettings.legacy(123)
     private val image get() = DesktopImageEditing.png(java.awt.image.BufferedImage(16, 16, java.awt.image.BufferedImage.TYPE_INT_RGB))

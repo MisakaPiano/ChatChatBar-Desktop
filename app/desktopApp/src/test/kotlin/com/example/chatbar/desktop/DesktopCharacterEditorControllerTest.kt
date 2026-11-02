@@ -34,6 +34,41 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class DesktopCharacterEditorControllerTest {
+    @Test fun `image overrides remain a draft until saved survive reopen and null reset can be discarded or saved`() = runBlocking {
+        fixture { root, app, editor ->
+            val source = CharacterCard.create("Image defaults", greeting = "Hello")
+            app.characterRepository.save(source); editor.openExisting(source.id)
+            val parameters = com.example.chatbar.domain.image.NovelAiCharacterImageSettings(steps = 20,
+                guidance = 5f, cfgRescale = 0.3f, varietyPlus = true)
+            editor.edit { it.copy(defaultNovelAiImageModel = com.example.chatbar.domain.image.NovelAiImageModel.V5_FULL,
+                defaultImageGenerationSettings = parameters) }
+            editor.flushDraft(); assertTrue(editor.state.value.dirty)
+            assertNull(app.characterRepository.getById(source.id)!!.defaultImageGenerationSettings)
+            assertTrue(editor.save())
+            val saved = app.characterRepository.getById(source.id)!!
+            assertEquals(parameters, saved.defaultImageGenerationSettings)
+            assertEquals(com.example.chatbar.domain.image.NovelAiImageModel.V5_FULL, saved.defaultNovelAiImageModel)
+            val reopened = containerFor(root)
+            try {
+                val restored = reopened.characterEditorController
+                restored.openExisting(source.id)
+                assertEquals(parameters, restored.state.value.card!!.defaultImageGenerationSettings)
+                restored.edit { it.copy(defaultNovelAiImageModel = null, defaultImageGenerationSettings = null) }
+                restored.flushDraft(); restored.discard()
+                assertEquals(parameters, reopened.characterRepository.getById(source.id)!!.defaultImageGenerationSettings)
+                restored.openExisting(source.id)
+                restored.edit { it.copy(defaultNovelAiImageModel = null, defaultImageGenerationSettings = null) }
+                assertTrue(restored.save())
+                assertNull(reopened.characterRepository.getById(source.id)!!.defaultImageGenerationSettings)
+                assertNull(reopened.characterRepository.getById(source.id)!!.defaultNovelAiImageModel)
+                restored.openExisting(source.id)
+                restored.edit { it.copy(defaultImageGenerationSettings = parameters.copy(steps = 0)) }
+                assertFalse(restored.save())
+                assertNull(reopened.characterRepository.getById(source.id)!!.defaultImageGenerationSettings)
+            } finally { reopened.close() }
+        }
+    }
+
     @Test fun `task document focus preserves the current unsaved editor and refuses a missing exact document`() = runBlocking {
         fixture { _, container, controller ->
             val card = CharacterCard.create("Same title", greeting = "Hi")
