@@ -59,7 +59,24 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           $zip = Join-Path $env:CCB_BUILD_BASE 'nsis-3.13.zip'
-          Invoke-WebRequest 'https://downloads.sourceforge.net/project/nsis/NSIS%203/3.13/nsis-3.13.zip' -OutFile $zip
+          # Same pinned URL/TLS and urllib implementation as the successful ordinary candidate pipeline.
+          $download = @'
+          import hashlib, json, os, pathlib, shutil, urllib.request
+          target = pathlib.Path(os.environ['CCB_BUILD_BASE']) / 'nsis-3.13.zip'
+          source = 'https://downloads.sourceforge.net/project/nsis/NSIS%203/3.13/nsis-3.13.zip'
+          with urllib.request.urlopen(source, timeout=60) as response, target.open('xb') as output:
+              content_type = response.headers.get('Content-Type')
+              final_url = response.geturl()
+              shutil.copyfileobj(response, output)
+          data = target.read_bytes()
+          report = dict(kind='PINNED_PUBLIC_COMPILER_DOWNLOAD', bytes=len(data), sha256=hashlib.sha256(data).hexdigest(),
+                        signature=data[:16].hex(), contentType=content_type, finalUrl=final_url,
+                        expectedSha256='ba63dffc4410ee89193e1cb5a41989991bd77c61068da17e3156d136b7b0b3d8')
+          (pathlib.Path(os.environ['CCB_BUILD_OUTPUT']) / 'compiler-download.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
+          print(json.dumps(report))
+          '@
+          $download | python -B -
+          if ($LASTEXITCODE -ne 0) { throw 'COMPILER_DOWNLOAD_FAILED' }
           if ((Get-FileHash -Algorithm SHA256 -LiteralPath $zip).Hash.ToLowerInvariant() -cne 'ba63dffc4410ee89193e1cb5a41989991bd77c61068da17e3156d136b7b0b3d8') { throw 'COMPILER_ARCHIVE_HASH' }
           Expand-Archive -LiteralPath $zip -DestinationPath (Join-Path $env:CCB_BUILD_BASE 'tools')
           $compiler = Join-Path $env:CCB_BUILD_BASE 'tools\nsis-3.13\makensis.exe'
@@ -74,6 +91,7 @@ jobs:
         with:
           name: ordinary-stable-chain-reports
           path: |
+            ${{ env.CCB_BUILD_OUTPUT }}/compiler-download.json
             ${{ env.CCB_BUILD_OUTPUT }}/stable-chain-reports/*.json
             ${{ env.CCB_BUILD_OUTPUT }}/stable-chain-reports/*.log
             ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-nsis-stable-chain/*-result.json
