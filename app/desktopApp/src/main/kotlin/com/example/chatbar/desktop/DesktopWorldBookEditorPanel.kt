@@ -79,57 +79,61 @@ internal fun DesktopWorldBookEditorOverlay(controller: DesktopWorldBookEditorCon
     var importOpen by remember(book.id) { mutableStateOf(false) }
     var deleteIndex by remember(book.id) { mutableStateOf<Int?>(null) }
     DesktopModalSurface { Box(Modifier.fillMaxSize().background(colors.overlay)) {
-        Column(Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState()),
+        Column(Modifier.fillMaxSize().padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
+                verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 WBHeading(t(if (state.targetId == null) DesktopUiText.WORLD_NEW else DesktopUiText.WORLD_EDIT))
                 BootstrapButton(t(DesktopUiText.WORLD_HELP), secondary = true) { helpOpen = true }
                 BootstrapButton(t(DesktopUiText.CLOSE), secondary = true) { controller.requestLeave(controller::closeClean) }
             }
-            if (state.dirty) StatusText(t(if (state.draftPersisted) DesktopUiText.RECOVERED_DRAFT
-                else DesktopUiText.DRAFT_SAVING), colors.warning)
-            state.problem?.let { problem ->
-                StatusText(t(problem.uiText()), colors.destructive)
-                if (problem == WorldBookEditorProblem.SOURCE_CHANGED) {
-                    BootstrapButton(t(DesktopUiText.OVERWRITE)) { scope.launch { controller.save(forceOverwrite = true) } }
-                }
-                if (problem == WorldBookEditorProblem.SOURCE_CHANGED || problem == WorldBookEditorProblem.SOURCE_DELETED) {
-                    BootstrapButton(t(DesktopUiText.WORLD_SAVE_AS_NEW)) { scope.launch { controller.saveAsNew() } }
-                }
-                if (problem == WorldBookEditorProblem.SAVE_COMMITTED_WARNING ||
-                    problem == WorldBookEditorProblem.CLEAN_DRAFT_WARNING) {
-                    BootstrapButton(t(DesktopUiText.WORLD_RETRY_CLEANUP)) { scope.launch { controller.retryCleanup() } }
-                }
-            }
-            WBField(t(DesktopUiText.WORLD_NAME), book.name) { value -> controller.edit { it.copy(name = value) } }
-            WBField(t(DesktopUiText.WORLD_DESCRIPTION), book.description, multiline = true) { value ->
-                controller.edit { it.copy(description = value) }
-            }
-            WBField(t(DesktopUiText.WORLD_SCAN_DEPTH), state.scanDepthInput, onChange = controller::editScanDepth)
-            WBField(t(DesktopUiText.WORLD_TOKEN_BUDGET), state.tokenBudgetInput, onChange = controller::editTokenBudget)
-            WBBoolean(t(DesktopUiText.WORLD_RECURSIVE), book.recursiveScanning) {
-                controller.edit { it.copy(recursiveScanning = !it.recursiveScanning) }
-            }
-            WBBoolean(t(DesktopUiText.WORLD_CASE), book.caseSensitive) {
-                controller.edit { it.copy(caseSensitive = !it.caseSensitive) }
-            }
-            WBBoolean(t(DesktopUiText.WORLD_WHOLE), book.matchWholeWords) {
-                controller.edit { it.copy(matchWholeWords = !it.matchWholeWords) }
-            }
-            controller.ai?.let { ai ->
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    controller.promptBudget?.let { DesktopEditorPromptBudget(it, book) }
-                    BootstrapButton("AI 创建条目", secondary = true, enabled = controller.canUseAi) {
-                        ai.open(com.example.chatbar.domain.worldbook.WorldBookAiOperation.CREATE)
+            Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (state.dirty) StatusText(t(if (state.draftPersisted) DesktopUiText.RECOVERED_DRAFT
+                    else DesktopUiText.DRAFT_SAVING), colors.warning)
+                state.problem?.let { problem ->
+                    StatusText(t(problem.uiText()), colors.destructive)
+                    if (problem == WorldBookEditorProblem.SOURCE_CHANGED) {
+                        BootstrapButton(t(DesktopUiText.OVERWRITE)) { scope.launch { controller.save(forceOverwrite = true) } }
                     }
-                    BootstrapButton("AI 填充空白正文", secondary = true, enabled = controller.canUseAi && book.entries.any { it.content.isBlank() }) {
-                        ai.open(com.example.chatbar.domain.worldbook.WorldBookAiOperation.FILL)
+                    if (problem == WorldBookEditorProblem.SOURCE_CHANGED || problem == WorldBookEditorProblem.SOURCE_DELETED) {
+                        BootstrapButton(t(DesktopUiText.WORLD_SAVE_AS_NEW)) { scope.launch { controller.saveAsNew() } }
+                    }
+                    if (problem == WorldBookEditorProblem.SAVE_COMMITTED_WARNING ||
+                        problem == WorldBookEditorProblem.CLEAN_DRAFT_WARNING) {
+                        BootstrapButton(t(DesktopUiText.WORLD_RETRY_CLEANUP)) { scope.launch { controller.retryCleanup() } }
                     }
                 }
+                WBField(t(DesktopUiText.WORLD_NAME), book.name) { value -> controller.edit { it.copy(name = value) } }
+                WBField(t(DesktopUiText.WORLD_DESCRIPTION), book.description, multiline = true) { value ->
+                    controller.edit { it.copy(description = value) }
+                }
+                WBField(t(DesktopUiText.WORLD_SCAN_DEPTH), state.scanDepthInput, onChange = controller::editScanDepth)
+                WBField(t(DesktopUiText.WORLD_TOKEN_BUDGET), state.tokenBudgetInput, onChange = controller::editTokenBudget)
+                WBBoolean(t(DesktopUiText.WORLD_RECURSIVE), book.recursiveScanning) {
+                    controller.edit { it.copy(recursiveScanning = !it.recursiveScanning) }
+                }
+                WBBoolean(t(DesktopUiText.WORLD_CASE), book.caseSensitive) {
+                    controller.edit { it.copy(caseSensitive = !it.caseSensitive) }
+                }
+                WBBoolean(t(DesktopUiText.WORLD_WHOLE), book.matchWholeWords) {
+                    controller.edit { it.copy(matchWholeWords = !it.matchWholeWords) }
+                }
+                controller.ai?.let { ai ->
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        controller.promptBudget?.let { DesktopEditorPromptBudget(it, book) }
+                        BootstrapButton("AI 创建条目", secondary = true, enabled = controller.canUseAi) {
+                            ai.open(com.example.chatbar.domain.worldbook.WorldBookAiOperation.CREATE)
+                        }
+                        BootstrapButton("AI 填充空白正文", secondary = true, enabled = controller.canUseAi && book.entries.any { it.content.isBlank() }) {
+                            ai.open(com.example.chatbar.domain.worldbook.WorldBookAiOperation.FILL)
+                        }
+                    }
+                }
+                DesktopWorldBookEntries(controller, state, onImport = { importOpen = true },
+                    onDelete = { deleteIndex = it })
             }
-            DesktopWorldBookEntries(controller, state, onImport = { importOpen = true },
-                onDelete = { deleteIndex = it })
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 BootstrapButton(t(DesktopUiText.SAVE)) { scope.launch { if (controller.save()) controller.closeClean() } }
                 BootstrapButton(t(DesktopUiText.CANCEL), secondary = true) { controller.requestLeave(controller::closeClean) }
                 BootstrapButton(t(DesktopUiText.DISCARD_DRAFT), secondary = true) { scope.launch { controller.discard() } }
@@ -232,7 +236,12 @@ internal fun DesktopWorldBookEntries(
 private fun WBEntryEditor(controller: DesktopWorldBookEditorController, modal: WorldBookEntryModalState) {
     val t = LocalDesktopUiStrings.current
     val state by controller.state.collectAsState()
-    WBDialog(t(if (modal.editingIndex == null) DesktopUiText.WORLD_ADD_ENTRY else DesktopUiText.WORLD_EDIT_ENTRY)) {
+    WBDialog(t(if (modal.editingIndex == null) DesktopUiText.WORLD_ADD_ENTRY else DesktopUiText.WORLD_EDIT_ENTRY), actions = {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            BootstrapButton(t(DesktopUiText.WORLD_SAVE_ENTRY)) { controller.saveEntry() }
+            BootstrapButton(t(DesktopUiText.WORLD_DISMISS_ENTRY), secondary = true) { controller.dismissEntry() }
+        }
+    }) {
         state.problem?.takeIf { it == WorldBookEditorProblem.ENTRY_REQUIRED ||
             it == WorldBookEditorProblem.ENTRY_CHANGED || it == WorldBookEditorProblem.ENTRY_MODAL_OPEN }
             ?.let { StatusText(t(it.uiText()), DesktopBootstrapColors.destructive) }
@@ -283,10 +292,6 @@ private fun WBEntryEditor(controller: DesktopWorldBookEditorController, modal: W
         WBBoolean(t(DesktopUiText.WORLD_EXCLUDE_RECURSION), modal.excludeRecursion) { controller.updateEntryModal { it.copy(excludeRecursion = !it.excludeRecursion) } }
         WBBoolean(t(DesktopUiText.WORLD_PREVENT_RECURSION), modal.preventRecursion) { controller.updateEntryModal { it.copy(preventRecursion = !it.preventRecursion) } }
         WBBoolean(t(DesktopUiText.WORLD_DELAY_RECURSION), modal.delayUntilRecursion) { controller.updateEntryModal { it.copy(delayUntilRecursion = !it.delayUntilRecursion) } }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            BootstrapButton(t(DesktopUiText.WORLD_SAVE_ENTRY)) { controller.saveEntry() }
-            BootstrapButton(t(DesktopUiText.WORLD_DISMISS_ENTRY), secondary = true) { controller.dismissEntry() }
-        }
     }
 }
 
@@ -338,7 +343,7 @@ internal fun DesktopWorldBookLeavePrompt(controller: DesktopWorldBookEditorContr
     val t = LocalDesktopUiStrings.current
     val scope = rememberCoroutineScope()
     WBDialog(t(DesktopUiText.UNSAVED_CHANGES)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             BootstrapButton(t(DesktopUiText.SAVE_AND_LEAVE)) { scope.launch { controller.saveAndLeave() } }
             BootstrapButton(t(DesktopUiText.WORLD_KEEP_DRAFT_AND_LEAVE)) { scope.launch { controller.keepDraftAndLeave() } }
             BootstrapButton(t(DesktopUiText.DISCARD_CHANGES)) { scope.launch { controller.discard() } }
@@ -348,13 +353,15 @@ internal fun DesktopWorldBookLeavePrompt(controller: DesktopWorldBookEditorContr
 }
 
 @Composable
-private fun WBDialog(title: String, content: @Composable () -> Unit) {
+private fun WBDialog(title: String, actions: @Composable () -> Unit = {}, content: @Composable () -> Unit) {
     DesktopModalSurface { Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.dim).padding(24.dp), contentAlignment = Alignment.Center) {
         Column(Modifier.fillMaxWidth().heightIn(max = 760.dp)
             .background(DesktopBootstrapColors.card, RoundedCornerShape(12.dp))
-            .padding(18.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            .padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             WBHeading(title)
-            content()
+            Column(Modifier.weight(1f, fill = false).fillMaxWidth().verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)) { content() }
+            actions()
         }
     } }
 }

@@ -1,3 +1,5 @@
+2026-11-02 后续P17-08局部布局源码与3项实际容器/Scene例已备，见265：Format/WorldBook与条目固定头尾、窄工具/离开操作换行、原Workspace选中导航随视口显现，含330短窗中英及同Scene跨700dp resize。未在116/b55中，待下一精确源；不改Prompt/原保存/草稿/冲突/清理，也不宣称全局IA已验。115实际完整SUCCESS（原RAG case0.245秒通过，114首因仍未知），完整预设116仍执行，无新公开或日常H操作。
+
 2026-11-02 P17完整生成预设源码已实现，见264：独立version1契约/资源包包含两模型、连续生成和暂停参考，明确预览确认后沿原撤销，流式逐项校验、精确新编码归属及已应用后清理待核对。共享3+archive4+custody3+真实controller4+实际内容Scene1共15例及流式store例尚待新冻结源云验；不由114/115或公开1233代验。115/a9b仅诊断，Windows主步骤已SUCCESS但原XML与整轮仍待；原114维护10秒首因未明，不宣称已修。1233/15公开和真人待、无日常H操作/本机重负载保持。
 
 2026-11-02实际114/533：主333suite/2526=2506PASS+19SKIP+1FAIL，proxy5/shared1138/Android582/Python3独立PASS。新Moment3+Processing3+Panel1七项全部PASS，原guard矩阵已PASS。唯一原ChatMaintenance容器重建参考文档case在原10秒busy等待超时；该controller/test未随新媒体改动，首因未明，不归为纯慢或改等待。先追加精确脱敏timeout快照（原维护状态、请求次数、gate/journal、两文档状态、原任务状态和限定代码栈），保留原10秒与全部两请求/两文档INDEXED/历史chunk/无journal/rootOPEN断言；P17完整preset仍独立WIP，不由114代验。

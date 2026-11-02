@@ -8,9 +8,13 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
@@ -41,16 +45,24 @@ internal fun DesktopWorkspacePage(title: String, destinations: List<DesktopWorks
     selected: String, enabled: Boolean = true, onSelect: (String) -> Unit, content: @Composable () -> Unit) {
     BoxWithConstraints(Modifier.fillMaxSize().background(DesktopBootstrapColors.background)) {
         val wide = maxWidth >= 700.dp
+        var navigationViewport by remember { mutableStateOf(IntSize.Zero) }
         @Composable fun Navigation() {
+            @Composable fun Item(item: DesktopWorkspaceDestination, modifier: Modifier) {
+                val reveal = remember(item.id) { BringIntoViewRequester() }
+                LaunchedEffect(selected, wide, navigationViewport) {
+                    if (selected == item.id && navigationViewport.width > 0 && navigationViewport.height > 0)
+                        reveal.bringIntoView()
+                }
+                DesktopWorkspaceNavigationItem(item, selected == item.id, enabled,
+                    modifier.bringIntoViewRequester(reveal)) { onSelect(item.id) }
+            }
             if (wide) Column(Modifier.width(164.dp).fillMaxHeight().background(DesktopBootstrapColors.card)
-                .verticalScroll(rememberScrollState()).padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                .onSizeChanged { navigationViewport = it }.verticalScroll(rememberScrollState()).padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 ManageHeading(title)
-                destinations.forEach { item -> DesktopWorkspaceNavigationItem(item, selected == item.id,
-                    enabled, Modifier.fillMaxWidth()) { onSelect(item.id) } }
-            } else Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(10.dp),
+                destinations.forEach { item -> key(item.id) { Item(item, Modifier.fillMaxWidth()) } }
+            } else Row(Modifier.fillMaxWidth().onSizeChanged { navigationViewport = it }.horizontalScroll(rememberScrollState()).padding(10.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                destinations.forEach { item -> DesktopWorkspaceNavigationItem(item, selected == item.id,
-                    enabled, Modifier.width(132.dp)) { onSelect(item.id) } }
+                destinations.forEach { item -> key(item.id) { Item(item, Modifier.width(132.dp)) } }
             }
         }
         if (wide) Row(Modifier.fillMaxSize()) { Navigation(); Box(Modifier.weight(1f).fillMaxHeight()) { content() } }
