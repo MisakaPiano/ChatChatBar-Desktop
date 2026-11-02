@@ -16,6 +16,7 @@ internal fun desktopContextHelp(route: DesktopPrimaryRoute): Pair<DesktopUiText,
         DesktopUiText.HELP_CHAT_PEOPLE, DesktopUiText.HELP_CHAT_AUDIO, DesktopUiText.HELP_CHAT_MORE)
     DesktopPrimaryRoute.MOMENTS -> DesktopUiText.MOMENTS to listOf(DesktopUiText.HELP_MOMENTS_EDIT,
         DesktopUiText.HELP_MOMENTS_RETRY, DesktopUiText.HELP_MOMENTS_SCHEDULE, DesktopUiText.HELP_MOMENTS_ENABLE)
+    DesktopPrimaryRoute.COMMUNITY -> DesktopUiText.COMMUNITY to listOf(DesktopUiText.HELP_COMMUNITY)
     DesktopPrimaryRoute.MANAGE -> DesktopUiText.MANAGE to listOf(DesktopUiText.HELP_MANAGE_LIST, DesktopUiText.HELP_MANAGE_SWITCH,
         DesktopUiText.HELP_MANAGE_AI, DesktopUiText.HELP_MANAGE_ACCOUNTS, DesktopUiText.HELP_MANAGE_WORLD)
     DesktopPrimaryRoute.TOOLS -> DesktopUiText.TOOLS to listOf(DesktopUiText.HELP_TOOLS_LAYOUT,

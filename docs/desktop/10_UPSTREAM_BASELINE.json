@@ -107,14 +107,14 @@
     "targetCommit": "b4fa75d296680f777be095f3121ad0c4db979f17",
     "authority": "User authorized latest official CCB adaptation; Desktop first, separate Studio consumes official interfaces",
     "status": "selective_adaptation_in_progress_not_whole_baseline_promotion",
-    "sourceAtRecord": "ec0861432a56138d5ccb1685a2e63cc22bc6d703",
+    "sourceAtRecord": "18c63b227e7505c7d47f06e3562f845c3ce52156 plus current community UI/PKCE worktree; next exact CI pending",
     "lastCompleteSourceValidation": {
-      "commit": "bcacc269cea691bf548ab5e804ac88e8a55e93b8",
-      "run": 41435685411,
-      "mainPass": 2537,
+      "commit": "ec0861432a56138d5ccb1685a2e63cc22bc6d703",
+      "run": 41438935426,
+      "mainPass": 2541,
       "mainSkip": 19,
       "mainFail": 0,
-      "sharedPass": 1169,
+      "sharedPass": 1170,
       "androidPass": 586,
       "proxyPass": 5,
       "ntfsPass": 7,
@@ -165,20 +165,20 @@
         "scope": "Moments policy and Desktop scheduler/media adapter",
         "evidence": "231/259/262; actual public1233 and affected post-publication source tests",
         "status": "implemented_platform_equivalent_user_acceptance_separate"
-      }
-    ],
-    "pendingRanges": [
+      },
       {
         "scope": "Character normal editor model/parameter save-reset and cover/avatar effective consumption",
         "source": "ec0861432a56138d5ccb1685a2e63cc22bc6d703",
         "run": 41438935426,
-        "evidence": "276; exact129 running",
-        "status": "implemented_exact_source_validation_pending"
-      },
+        "evidence": "276; exact129 actual Desktop4/shared1 PASS with two original Scene images",
+        "status": "targeted_behavior_verified"
+      }
+    ],
+    "pendingRanges": [
       {
         "scope": "Community Desktop browse/detail/import/Discord return/owner snapshot management/card update and runtime switch",
-        "evidence": "216/277; last functional domain, source work in progress; actual official switch disabled at readback",
-        "status": "desktop_client_in_progress_actual_service_and_oauth_separate"
+        "evidence": "277; production root UI/PKCE/native-return source and synthetic tests pending next exact CI; official runtime closed at readback",
+        "status": "client_implemented_validation_pending_live_service_and_oauth_separate"
       },
       {
         "scope": "Whole selected147 compatibility declaration and affected final candidate/user cross-scenario acceptance",
@@ -192,6 +192,16 @@
       "Synthetic service success as official service/OAuth enablement"
     ],
     "historicalObservationMeaning": "upstreamObservation below is the dated2026-10-05 record, not the current target or a continuing instruction to park1.4.7",
-    "validatedBaselineMeaning": "upstream.commit remains the last fully declared baseline; ongoing147 adoption is not deferred indefinitely by that evidence state"
+    "validatedBaselineMeaning": "upstream.commit remains the last fully declared baseline; ongoing147 adoption is not deferred indefinitely by that evidence state",
+    "lastAttempt": {
+      "commit": "18c63b227e7505c7d47f06e3562f845c3ce52156",
+      "run": 41443617620,
+      "status": "shared_compile_missing_jsonObject_import",
+      "mainProxyNtfsSharedAndroid": "NOT_EXECUTED",
+      "nativePass": 37,
+      "updaterTufPass": 14,
+      "exitPass": 4,
+      "correction": "import present in current worktree; UI/PKCE not included in this failed source"
+    }
   }
 }

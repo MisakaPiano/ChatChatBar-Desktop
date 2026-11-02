@@ -9,6 +9,7 @@ import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,6 +25,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.jsonObject
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -62,6 +64,41 @@ open class CommunityClient(
             "?provider=discord" +
             "&redirect_to=${urlEncode(redirectUri)}" +
             "&scopes=${urlEncode("identify")}"
+    }
+
+    /** Supabase PKCE uses the existing fixed redirect; no new allowlist/query nonce is required. */
+    fun discordPkceLoginUrl(verifier: String): String {
+        require(verifier.matches(Regex("[A-Za-z0-9._~-]{43,128}")))
+        val challenge = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(
+            java.security.MessageDigest.getInstance("SHA-256").digest(verifier.toByteArray(Charsets.US_ASCII)))
+        return discordLoginUrl() + "&code_challenge=$challenge&code_challenge_method=s256"
+    }
+
+    fun isPkceCallback(callback: String): Boolean = runCatching { pkceCallbackCode(callback) }.isSuccess
+
+    private fun pkceCallbackCode(callback: String): String {
+        require(callback.length in 1..16_384)
+        val uri = java.net.URI(callback)
+        require(uri.rawFragment.isNullOrEmpty()) { "本次登录只接受授权码返回" }
+        callbackParams(callback) // Original configured origin/path validation.
+        val codes = uri.rawQuery.orEmpty().split('&').mapNotNull { pair ->
+            val parts = pair.split('=', limit = 2)
+            if (parts.size == 2 && parts[0].urlDecode() == "code") parts[1].urlDecode() else null
+        }
+        require(codes.size == 1 && codes.single().isNotBlank() && codes.single().length <= 4096) { "社区返回授权码缺失或重复" }
+        return codes.single()
+    }
+
+    suspend fun exchangePkceCallback(callback: String, verifier: String): CommunitySession = withContext(Dispatchers.IO) {
+        val code = pkceCallbackCode(callback)
+        require(verifier.matches(Regex("[A-Za-z0-9._~-]{43,128}")))
+        checkAvailable()
+        val body = json.encodeToString(PkceTokenRequest.serializer(), PkceTokenRequest(code, verifier))
+        val request = Request.Builder().url("$baseUrl/auth/v1/token?grant_type=pkce")
+            .header("apikey", anonKey).header("Content-Type", JSON_MEDIA_TYPE.toString())
+            .post(body.toRequestBody(JSON_MEDIA_TYPE)).build()
+        val token = json.decodeFromString(TokenResponse.serializer(), executeForBody(request, "验证社区登录"))
+        verifyAndSaveSession(token.accessToken, token.refreshToken, token.tokenType, token.expiresIn)
     }
 
     suspend fun monitorEnabledStatus() {
@@ -121,7 +158,14 @@ open class CommunityClient(
         val refreshToken = params["refresh_token"]?.takeIf(String::isNotBlank)
         val tokenType = params["token_type"]?.takeIf(String::isNotBlank) ?: "bearer"
         val expiresInSeconds = params["expires_in"]?.toLongOrNull() ?: 0L
+        verifyAndSaveSession(accessToken, refreshToken, tokenType, expiresInSeconds)
+    }
+
+    private suspend fun verifyAndSaveSession(accessToken: String, refreshToken: String?, tokenType: String,
+        expiresInSeconds: Long): CommunitySession {
+        require(accessToken.isNotBlank())
         val user = fetchUser(accessToken)
+        require(user.id.isNotBlank())
         val session = CommunitySession(
             accessToken = accessToken,
             refreshToken = refreshToken,
@@ -134,8 +178,9 @@ open class CommunityClient(
             userId = user.id,
             displayName = user.displayName()
         )
+        kotlinx.coroutines.currentCoroutineContext().ensureActive()
         saveSession(session)
-        session
+        return session
     }
 
     fun signOut() {
@@ -626,6 +671,12 @@ private data class SupabaseUser(
 private data class RefreshTokenRequest(
     @SerialName("refresh_token")
     val refreshToken: String
+)
+
+@Serializable
+private data class PkceTokenRequest(
+    @SerialName("auth_code") val authCode: String,
+    @SerialName("code_verifier") val codeVerifier: String,
 )
 
 @Serializable

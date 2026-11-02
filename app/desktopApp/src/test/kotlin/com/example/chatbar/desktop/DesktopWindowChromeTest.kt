@@ -13,7 +13,7 @@ class DesktopWindowChromeTest {
 
     @Test fun `every responsive mode retains enabled feature routes and exactly one selected`() {
         for (size in DesktopShellSize.entries) for (route in DesktopPrimaryRoute.entries) {
-            val p = desktopTitleBarPresentation(size, route, false, momentsEnabled = true)
+            val p = desktopTitleBarPresentation(size, route, false, momentsEnabled = true, communityEnabled = true)
             assertEquals(DesktopPrimaryRoute.entries.toList(), p.routes.map { it.route })
             assertEquals(listOf(route), p.routes.filter { it.selected }.map { it.route })
             assertTrue(p.routes.all { it.enabled })

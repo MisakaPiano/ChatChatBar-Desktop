@@ -147,6 +147,9 @@ internal class DesktopExternalActivation private constructor(
     private val server: ServerSocket,
     private val token: String,
 ) : Closeable {
+    /** Separate in-memory purpose: never reaches the file queue, journal or cold-start receipt. */
+    @Volatile var communityAuthReceiver: ((String) -> Boolean)? = null
+    val communityEndpointDirectory: Path get() = directory
     private val closed = AtomicBoolean(false)
     @Volatile private var client: Socket? = null
     private val endpoint = directory.resolve("endpoint")
@@ -161,8 +164,16 @@ internal class DesktopExternalActivation private constructor(
                     client = socket; socket.soTimeout = 2000
                     val input = DataInputStream(socket.getInputStream())
                     val output = DataOutputStream(socket.getOutputStream())
-                    check(input.readInt() == PROTOCOL)
+                    val protocol = input.readInt()
+                    check(protocol == PROTOCOL || protocol == AUTH_PROTOCOL)
                     check(MessageDigest.isEqual(input.readText(128).toByteArray(), token.toByteArray()))
+                    if (protocol == AUTH_PROTOCOL) {
+                        val callback = input.readText(16_384)
+                        check(validCommunityCallback(callback))
+                        output.writeInt(if (communityAuthReceiver?.invoke(callback) == true) 0 else 1)
+                        output.flush()
+                        return@use
+                    }
                     val request = input.readText(64)
                     val count = input.readInt(); check(count in 0..64)
                     var total = 0
@@ -186,6 +197,7 @@ internal class DesktopExternalActivation private constructor(
     override fun close() {
         if (!closed.compareAndSet(false, true)) return
         try {
+            communityAuthReceiver = null
             queue.stopAccepting(); server.close(); client?.close(); thread.join(2500)
             if (Files.exists(endpoint, LinkOption.NOFOLLOW_LINKS) && Files.readString(endpoint).split('\n').getOrNull(1) == token) Files.delete(endpoint)
         } finally { try { lease.release() } finally { channel.close() } }
@@ -193,6 +205,32 @@ internal class DesktopExternalActivation private constructor(
 
     companion object {
         private const val PROTOCOL = 0x43434231
+        private const val AUTH_PROTOCOL = 0x43434131
+        internal fun validateCommunityDirectory(home: Path, directory: Path) {
+            require(directory.isAbsolute && directory == directory.normalize())
+            require(directory.parent?.fileName?.toString() == "ChatChatBarDesktopActivation")
+            require(directory.fileName == DesktopExternalActivation.directory(home, home).fileName)
+        }
+        internal fun validCommunityCallback(value: String): Boolean = try {
+            val uri = java.net.URI(value)
+            value.length in 1..16_384 && value.none { it.code < 32 } && uri.scheme == "chatbar" &&
+                uri.host == "auth" && uri.path == "/callback" && uri.port == -1 && uri.userInfo == null
+        } catch (_: Exception) { false }
+
+        /** Warm-only OAuth handoff. No second data writer and no secret-bearing replay file. */
+        fun forwardCommunityCallback(directory: Path, callback: String) {
+            require(validCommunityCallback(callback)) { "COMMUNITY_AUTH_INPUT_REFUSED" }
+            val endpoint = directory.resolve("endpoint")
+            DesktopArchiveFiles.safe(endpoint, false); check(Files.size(endpoint) <= 160)
+            val lines = Files.readString(endpoint).split('\n')
+            val port = lines[0].toInt(); check(port in 1..65535 && lines[1].matches(Regex("[a-f0-9]{64}")))
+            Socket(java.net.Proxy.NO_PROXY).use { socket ->
+                socket.connect(java.net.InetSocketAddress("127.0.0.1", port), 500); socket.soTimeout = 3000
+                val output = DataOutputStream(socket.getOutputStream())
+                output.writeInt(AUTH_PROTOCOL); output.writeText(lines[1]); output.writeText(callback); output.flush()
+                check(DataInputStream(socket.getInputStream()).readInt() == 0) { "COMMUNITY_AUTH_NOT_ACCEPTED" }
+            }
+        }
         fun paths(args: Array<String>): List<Path> {
             if (args.isEmpty()) return emptyList()
             val files = if (args.first() == "--open-files") args.drop(1) else args.toList()

@@ -1,3 +1,7 @@
+2026-11-02当前：129/41438935426精确ec086完整原件PASS，主2541PASS+19SKIP/shared1170/Android586、proxy5/NTFS7/native37/TUF14/exit4，角色编辑模型与参数、封面头像实际消费4+1及两张实图已核。130/18c因共享jsonObject缺import在编译失败，main/proxy/NTFS/shared/Android未执行、无对应XML；独立native37/TUF14/exit4通过，不假记社区测试通过。缺import已补，社区root UI/metadata与预览预取/原typed冲突/快照确认、固定回调PKCE与当前versioned EXE临时handler、内存AUTH IPC和取消/过期/操作归属/实际Panel测试见277，待新精确源云验。官方服务关闭只挂真实Discord/服务联调；R7九步普通JAR链原限定PASS复用。当前主动147适配、validated141不自动提升；公开1233/签名15、真人待、日常H UNKNOWN且不操作。
+
+下方历史保留。
+
 2026-11-02当前：128/41435685411精确bcacc完整原件主2537PASS+19SKIP/shared1169/Android586/proxy5/NTFS7/native37/TUF14/exit4全部通过，127的18FAIL保留且精确修复已验。R7普通真实JAR九步升级链actualPASS（267，fresh默认profile限定），复用不为无关卡字段重复三包链。角色编辑模型/参数、封面头像实际消费ec086已送129/41438935426待验（276），不混128。现有10/14已分列当前主动147适配、逐项已采用/待验与历史记录，validated141不自动提升也不作为永久停留。P14最后功能域继续：官方状态重读仍false，共享原HTTP/DTO与平台缝源码另片在本地、桌面接线继续，真实服务/OAuth另待，不因联调等候停其他工作。公开1233/15、真人待、日常H UNKNOWN/不代装保持。
 
 下方历史保留。

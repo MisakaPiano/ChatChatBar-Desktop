@@ -199,4 +199,30 @@ class CommunityClientTest {
             server.request(); assertEquals(4, server.requestCount)
         }
     }
+
+    @Test fun `PKCE keeps the original fixed redirect uses the RFC challenge and verifies identity before custody`() = runBlocking {
+        fixture { server, owner, store, _ ->
+            server.enabled(); owner.refreshEnabledStatus(true); server.request()
+            val verifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+            val url = owner.discordPkceLoginUrl(verifier)
+            assertTrue(url.contains("code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"))
+            assertTrue(url.contains("code_challenge_method=s256"))
+            assertTrue(url.contains("redirect_to=chatbar%3A%2F%2Fauth%2Fcallback&"))
+            assertFalse(url.contains("ccb_desktop_state"))
+            assertTrue(owner.isPkceCallback("chatbar://auth/callback?code=synthetic-code"))
+            assertFalse(owner.isPkceCallback("chatbar://auth/callback?code=one&code=two"))
+            assertFalse(owner.isPkceCallback("chatbar://auth/callback#access_token=synthetic"))
+            assertFalse(owner.isPkceCallback("chatbar://other/callback?code=synthetic"))
+            server.enqueue(MockResponse().setBody("""{"access_token":"synthetic-pkce-access","refresh_token":"synthetic-pkce-refresh","expires_in":3600,"user":{"id":"ignored-token-user"}}"""))
+            server.enqueue(MockResponse().setBody("""{"id":"verified-owner","user_metadata":{"name":"Verified"}}"""))
+            val result = owner.exchangePkceCallback("chatbar://auth/callback?code=synthetic-code", verifier)
+            val exchange = server.request()
+            assertEquals("/auth/v1/token?grant_type=pkce", exchange.path)
+            val body = Json.parseToJsonElement(exchange.body.readUtf8()).jsonObject
+            assertEquals("synthetic-code", body.getValue("auth_code").jsonPrimitive.content)
+            assertEquals(verifier, body.getValue("code_verifier").jsonPrimitive.content)
+            assertEquals("Bearer synthetic-pkce-access", server.request().getHeader("Authorization"))
+            assertEquals("verified-owner", result.userId); assertEquals(result, store.saved); assertEquals(1, store.writes)
+        }
+    }
 }

@@ -112,12 +112,13 @@ internal fun StudioDisclosure(label: String, summary: String = "", initiallyOpen
 /** Popup stays anchored to the trigger; focus/keyboard input belongs to the menu while open. */
 @Composable
 internal fun <T> CompactChoice(label: String, options: List<T>, selected: T?, text: (T) -> String, choose: (T) -> Unit) {
+    val t = LocalDesktopUiStrings.current
     var open by remember { mutableStateOf(false) }
     var index by remember { mutableStateOf(0) }
     val focus = remember { FocusRequester() }
     val list = rememberLazyListState()
     Box {
-        StudioAction("$label · ${options.indexOf(selected).takeIf { it >= 0 }?.let { text(options[it]) } ?: "选择"} ▾") {
+        StudioAction("$label · ${options.indexOf(selected).takeIf { it >= 0 }?.let { text(options[it]) } ?: t(DesktopUiText.SELECT_OPTION)} ▾") {
             index = options.indexOf(selected).coerceAtLeast(0); open = true
         }
         if (open) Popup(popupPositionProvider = StudioPopupPosition,

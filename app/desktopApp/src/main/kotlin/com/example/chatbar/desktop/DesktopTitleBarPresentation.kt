@@ -12,12 +12,13 @@ internal data class DesktopTitleBarPresentation(
 }
 
 internal fun desktopTitleBarPresentation(size: DesktopShellSize, selected: DesktopPrimaryRoute, locked: Boolean,
-    momentsEnabled: Boolean = false) =
+    momentsEnabled: Boolean = false, communityEnabled: Boolean = false) =
     DesktopTitleBarPresentation(
         showBrandName = size == DesktopShellSize.WIDE,
         showRouteLabels = size != DesktopShellSize.COMPACT,
         routeWidthDp = if (size == DesktopShellSize.COMPACT) 36 else 88,
         captionWidthDp = if (size == DesktopShellSize.COMPACT) 42 else 46,
-        routes = DesktopPrimaryRoute.entries.filter { it != DesktopPrimaryRoute.MOMENTS || momentsEnabled }
+        routes = DesktopPrimaryRoute.entries.filter { (it != DesktopPrimaryRoute.MOMENTS || momentsEnabled) &&
+            (it != DesktopPrimaryRoute.COMMUNITY || communityEnabled) }
             .map { DesktopTitleRoute(it, it == selected, !locked) },
     )

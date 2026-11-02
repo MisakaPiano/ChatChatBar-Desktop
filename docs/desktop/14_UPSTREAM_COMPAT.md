@@ -2,7 +2,7 @@
 
 当前主动适配目标为官方 **1.4.7 / `b4fa75d296680f777be095f3121ad0c4db979f17`**。已声明完整验证baseline仍为1.4.1；这是证据边界，不是将最新版适配永久搁置。机器记录见[10](10_UPSTREAM_BASELINE.json)，当前总范围见[216](216_DESKTOP_1_0_SCOPE_GAPS_AND_EXECUTION_ROUTE.md)。
 
-最后完整云端原件为[128](https://github.com/MisakaPiano/ChatChatBar-Desktop/actions/runs/41435685411) / `bcacc269cea691bf548ab5e804ac88e8a55e93b8`：主2537PASS+19SKIP、shared1169、Android586及proxy5/NTFS7/native37/TUF14/exit4通过。127的18项失败仍保留；128只修确切套件计数、合成fixture更新时间与147原子依赖改变的旧预期，没有降低取消/重试/不复制/用户删除保护或原期限。
+最后完整云端原件为[129](https://github.com/MisakaPiano/ChatChatBar-Desktop/actions/runs/41438935426) / `ec0861432a56138d5ccb1685a2e63cc22bc6d703`：主2541PASS+19SKIP、shared1170、Android586及proxy5/NTFS7/native37/TUF14/exit4通过，角色编辑/实际生图消费4+1及两张Scene图已核。后续130/18c因共享jsonObject缺import编译失败，主/proxy/NTFS/shared/Android未执行；仅独立native37/TUF14/exit4通过。该import已补，当前社区UI/PKCE片仍待自己的精确源云验。127原18FAIL及128修正记录保留，未降低保护或期限。
 
 | 官方147范围 | 当前Desktop状态与实际证据 |
 | --- | --- |
@@ -11,10 +11,10 @@
 | 世界书辅助模型、格式修复参数继承 | [271](271_UPSTREAM147_AUXILIARY_MODEL_PARAMETERS.md)，fdb实际HTTP4/Android2在125通过；不是只核helper未核调用。 |
 | 角色Package默认生图参数 | [275](275_OFFICIAL147_CHARACTER_PACKAGE_IMAGE_SETTINGS.md)，Core2及实际typed JSON/PNG两原例扩展在127/128通过；schema9不变。 |
 | 预制角色声明的世界书/默认格式 | [274](274_OFFICIAL147_PRESET_DEPENDENCIES.md)，先解析完整依赖再沿原transfer提交。128原共享2及Bootstrap14/Integration3/Recovery6/Suite40通过，含取消重试、已提交ID、严格字节与用户删除不补回。 |
-| 角色编辑器与封面/头像消费这些参数 | [276](276_OFFICIAL147_CHARACTER_IMAGE_DEFAULTS.md)，ec086已实现实际global Flow、可空草稿、模型能力和请求参数；129精确云验中，不能由Package回读或128代验。 |
+| 角色编辑器与封面/头像消费这些参数 | [276](276_OFFICIAL147_CHARACTER_IMAGE_DEFAULTS.md)，ec086已实现实际global Flow、可空草稿、模型能力和请求参数；129精确原件实际Desktop4/shared1通过，含420/1100正常编辑与消费两张实图；不是只由Package回读代验。 |
 | SaveSlot/SessionCopy及Memory维护变动 | 原Desktop维护owner对应访问等位，SaveSlot23/DataCoordinator15（123）、gate15/journal3（125）限定复用；不扩称整个ChatRepository或全baseline。 |
 | Moments | 已有共享policy和Desktop时间线/调度/媒体adapter，公开1233与后补受影响路径分别记录。下方早期“尚未采用/P13以后”不是当前事实；真实Provider/用户验收仍与工程检查分开。 |
-| 社区 | [277](277_COMMUNITY_SHARED_CLIENT_AND_DESKTOP_ROUTE.md)，最后功能域客户端接线中。2026-11-02重读官方总开关仍false；只挂真实服务/Discord返回联调，不把历史关闭当永久不能实现。 |
+| 社区 | [277](277_COMMUNITY_SHARED_CLIENT_AND_DESKTOP_ROUTE.md)，最后功能域已有root UI、metadata/预览预取、原typed冲突、快照确认与PKCE/临时versioned EXE返回接线，当前测试待新精确源；130编译失败未执行它们。2026-11-02重读官方总开关仍false；真实服务/Discord联调另待，不把历史关闭当永久不能实现。 |
 
 原用户明确采纳的身份提醒/头像正负词按其原具体授权执行，不借同步改其他Prompt。未发布完整Prompt文本互换保留为Desktop/Fork扩展，不能冒称官方147读取器兼容；独立Studio适配CCB，不继续为新协议追加手机读取器分发任务。
 

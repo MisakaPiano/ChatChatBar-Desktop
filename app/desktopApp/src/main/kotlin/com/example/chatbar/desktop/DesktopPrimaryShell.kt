@@ -58,10 +58,13 @@ internal fun DesktopPrimaryShell(
     taskTray: DesktopTrayController? = null,
     onHideToTray: (() -> Unit)? = null,
     guideReminder: DesktopGuideReminderController? = null,
+    communityController: DesktopCommunityController? = null,
 ) {
     val guideNotice = guideReminder?.state?.collectAsState()?.value
     LaunchedEffect(guideReminder) { guideReminder?.load() }
     val moments = momentsController?.state?.collectAsState()?.value
+    val community = communityController?.state?.collectAsState()?.value
+    LaunchedEffect(communityController) { communityController?.start() }
     val rootState by rootSwitchController.state.collectAsState()
     val selectedRoute by navigation.selectedRoute.collectAsState()
     val fullBackup by fullBackupController.state.collectAsState()
@@ -72,7 +75,12 @@ internal fun DesktopPrimaryShell(
     val centerLocked = rootState !is DesktopDataRootSwitchState.Idle || fullBackup.restartRequired || mergeState?.restartRequired == true
     val dataBusy = fullBackup.busy || mergeState?.busy == true
     val requestedRoute = if (backupLocked) DesktopPrimaryRoute.DATA else navigation.currentRoute(rootState, selectedRoute)
-    val route = if (requestedRoute == DesktopPrimaryRoute.MOMENTS && moments?.enabled != true) DesktopPrimaryRoute.CHAT else requestedRoute
+    val route = if ((requestedRoute == DesktopPrimaryRoute.MOMENTS && moments?.enabled != true) ||
+        (requestedRoute == DesktopPrimaryRoute.COMMUNITY && community?.enabled != true)) DesktopPrimaryRoute.CHAT else requestedRoute
+    LaunchedEffect(requestedRoute, community?.enabled) {
+        if (requestedRoute == DesktopPrimaryRoute.COMMUNITY && community?.enabled != true && !locked)
+            navigation.navigate(DesktopPrimaryRoute.CHAT, rootState)
+    }
     val updateNotices = LocalDesktopUpdateNotices.current
     val updateNotice = updateNotices?.state?.collectAsState()?.value
     val modalActivity = LocalDesktopModalActivity.current
@@ -149,6 +157,7 @@ internal fun DesktopPrimaryShell(
             DesktopTitleBar(size, route, locked, chrome, chromeLayout,
                 updatePending = updateNotice?.pendingVersion != null, onNavigate = ::navigate,
                 momentsEnabled = moments?.enabled == true, momentsUnread = moments?.unread == true,
+                communityEnabled = community?.enabled == true,
                 activeTaskCount = centerState?.rows?.count { it.active } ?: 0, onOpenTasks = taskCenter?.let { it::requestOpen },
                 helpEnabled = (modalActivity?.count ?: 0) == 0,
                 onOpenHelp = { if (!locked && (modalActivity?.count ?: 0) == 0) { helpStartsInGuide = false; helpRoute = route } })
@@ -156,6 +165,7 @@ internal fun DesktopPrimaryShell(
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when (route) {
                     DesktopPrimaryRoute.MOMENTS -> momentsController?.let { DesktopMomentsPanel(it) }
+                    DesktopPrimaryRoute.COMMUNITY -> communityController?.let { DesktopCommunityPanel(it, managementController) }
                     DesktopPrimaryRoute.CHAT -> DesktopPrimaryChatPanel(primaryChatController, size, composerLayout,
                         onOpenStudio = { navigate(DesktopPrimaryRoute.TOOLS) }, compactNavigation = compactChatNavigation,
                         onEditPerson = { card, person -> scope.launch {

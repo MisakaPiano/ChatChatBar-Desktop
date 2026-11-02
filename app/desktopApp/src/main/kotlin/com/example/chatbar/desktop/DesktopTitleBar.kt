@@ -80,6 +80,7 @@ internal fun DesktopTitleBar(
     updatePending: Boolean = false,
     momentsEnabled: Boolean = false,
     momentsUnread: Boolean = false,
+    communityEnabled: Boolean = false,
     activeTaskCount: Int = 0,
     onOpenTasks: (() -> Unit)? = null,
     onOpenHelp: (() -> Unit)? = null,
@@ -89,7 +90,7 @@ internal fun DesktopTitleBar(
     val colors = LocalDesktopPalette.current
     val t = LocalDesktopUiStrings.current
     val state by chrome.state.collectAsState()
-    val presentation = desktopTitleBarPresentation(shellSize, route, locked, momentsEnabled)
+    val presentation = desktopTitleBarPresentation(shellSize, route, locked, momentsEnabled, communityEnabled)
     var routeViewportWidth by remember { mutableStateOf(0) }
     DisposableEffect(recorder, onOpenTasks != null) { onDispose { recorder.clearTaskCenter() } }
     DisposableEffect(recorder, onOpenHelp != null) { onDispose { recorder.clearHelp() } }
@@ -121,6 +122,7 @@ internal fun DesktopTitleBar(
                     val label = t(when (item.route) {
                         DesktopPrimaryRoute.CHAT -> DesktopUiText.CHAT
                         DesktopPrimaryRoute.MOMENTS -> DesktopUiText.MOMENTS
+                        DesktopPrimaryRoute.COMMUNITY -> DesktopUiText.COMMUNITY
                         DesktopPrimaryRoute.MANAGE -> DesktopUiText.MANAGE
                         DesktopPrimaryRoute.TOOLS -> DesktopUiText.TOOLS
                         DesktopPrimaryRoute.DATA -> DesktopUiText.DATA
@@ -128,6 +130,7 @@ internal fun DesktopTitleBar(
                     val icon = when (item.route) {
                         DesktopPrimaryRoute.CHAT -> DesktopAppIcons.Chat
                         DesktopPrimaryRoute.MOMENTS -> DesktopAppIcons.Star
+                        DesktopPrimaryRoute.COMMUNITY -> DesktopAppIcons.Chat
                         DesktopPrimaryRoute.MANAGE -> DesktopAppIcons.Settings
                         DesktopPrimaryRoute.TOOLS -> DesktopAppIcons.Tools
                         DesktopPrimaryRoute.DATA -> DesktopAppIcons.Data

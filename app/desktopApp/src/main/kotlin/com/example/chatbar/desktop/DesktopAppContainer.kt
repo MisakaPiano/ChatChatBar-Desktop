@@ -486,6 +486,30 @@ class DesktopAppContainer internal constructor(
     internal val characterTransfers: CharacterCardTransferCore = createCharacterTransferCore(characterDocumentRagCleanup)
     internal val formatTransfers = FormatCardTransferService(formatCardRepository, transferJson)
     internal val worldBookTransfers = WorldBookTransferService(worldBookRepository, transferJson)
+    private val communityLock = Any()
+    private var communityOwner: Pair<DesktopTypedTransferController, DesktopCommunityController>? = null
+    internal fun createCommunityController(typed: DesktopTypedTransferController,
+        configuration: com.example.chatbar.domain.community.CommunityConfiguration = com.example.chatbar.domain.community.CommunityConfiguration(
+            "https://rrlxofrrgfnhjfyrqvry.supabase.co", "sb_publishable_J56aQ_JJLnank-dv1olMdg_d87xNQjD"),
+        httpFactory: () -> okhttp3.OkHttpClient = { com.example.chatbar.domain.ProxyAwareClient.builder()
+            .followRedirects(false).followSslRedirects(false).connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(45, java.util.concurrent.TimeUnit.SECONDS).writeTimeout(45, java.util.concurrent.TimeUnit.SECONDS).build() },
+        browse: (java.net.URI) -> Unit = { java.awt.Desktop.getDesktop().browse(it) },
+        loginReturn: DesktopCommunityLoginReturn = UnavailableCommunityLoginReturn,
+    ): DesktopCommunityController = synchronized(communityLock) {
+        communityOwner?.let { check(it.first === typed); return@synchronized it.second }
+        val http = httpFactory()
+        val packages = DesktopCommunityLocalPackages(characterRepository, formatCardRepository, worldBookRepository,
+            characterTransfers, formatTransfers, worldBookTransfers, characterResourceStore, dataOperationCoordinator)
+        lateinit var owner: DesktopCommunityController
+        val client = com.example.chatbar.domain.community.CommunityClient(configuration, packages,
+            DesktopCommunitySessionStore(desktopSecretStore, transferJson), transferJson, http, loadSessionAtStartup = false,
+            warn = { _, _ -> owner.reportWarning() })
+        owner = DesktopCommunityController(client, http, typed, characterRepository, characterTransfers,
+            formatTransfers, worldBookTransfers, dataOperationCoordinator, browse, loginReturn = loginReturn)
+        communityOwner = typed to owner
+        owner
+    }
     internal val presetSuiteRestore by lazy {
         DesktopPresetSuiteRestoreService(presetSource, characterRepository, worldBookRepository,
             characterTransfers, worldBookTransfers, dataOperationCoordinator)
@@ -789,6 +813,7 @@ class DesktopAppContainer internal constructor(
         taskRuntime.stopAccepting()
         closeDesktopDataRuntimes(
             taskRuntimeClose = {
+                synchronized(communityLock) { communityOwner?.second }?.closeAndDrain()
                 if (momentsOwner.isInitialized()) momentsController.closeAndDrain()
                 if (momentGenerationOwner.isInitialized()) momentGenerationOwner.value.closeAndDrain()
                 if (momentTransportOwner.isInitialized()) momentTransportOwner.value.closeAndDrain()

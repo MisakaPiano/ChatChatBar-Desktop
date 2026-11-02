@@ -27,7 +27,28 @@ private val unsafeShutdownOwnerships = ConcurrentHashMap.newKeySet<DesktopDataRo
 
 fun main(args: Array<String>) {
     DesktopInstalledProgram.acquire()
-    try { runDesktopProcessLifecycle({
+    try {
+        if (args.firstOrNull() == "--community-auth") {
+            try {
+                require(args.size == 3)
+                val home = requireNotNull((DesktopApplicationHome.resolve() as? DesktopApplicationHomeResult.Available)?.path)
+                val endpoint = java.nio.file.Path.of(args[1])
+                DesktopExternalActivation.validateCommunityDirectory(home, endpoint)
+                DesktopExternalActivation.forwardCommunityCallback(endpoint, args[2])
+                DesktopInstalledProgram.forwarded()
+            } catch (_: Exception) {
+                System.err.println("COMMUNITY_AUTH_RETURN_UNCONFIRMED")
+                if (System.getProperty("os.name").startsWith("Windows") && !java.awt.GraphicsEnvironment.isHeadless()) {
+                    DesktopNativeDialogBrand.show(messageBox = {
+                        com.sun.jna.Native.load("user32", StartupMessageBoxApi::class.java).MessageBoxW(null,
+                            com.sun.jna.WString("社区登录返回尚未确认。请回到原 CCB 窗口查看登录状态，或重新发起登录。"),
+                            com.sun.jna.WString("ChatChatBar — 社区登录"), 0x10030)
+                    })
+                }
+            }
+            return
+        }
+        runDesktopProcessLifecycle({
         val home = java.nio.file.Path.of(System.getProperty(DesktopApplicationHome.PROPERTY_NAME) ?: System.getProperty("user.dir"))
         val local = java.nio.file.Path.of(System.getenv("LOCALAPPDATA") ?: System.getProperty("user.home"))
         runDesktopExternalActivation(args, home, local) { activation ->
@@ -71,6 +92,14 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                         val transferController = remember { appContainer.createTypedTransferController() }
                         val modelTemplateController = remember { appContainer.createModelTemplateTransferController() }
                         val managementController = remember { appContainer.createManagementController(transferController) }
+                        val communityController = remember {
+                            val home = (DesktopApplicationHome.resolve() as? DesktopApplicationHomeResult.Available)?.path
+                            val returning = home?.let { DesktopCommunityProtocolReturn(it, activation != null,
+                                activationDirectory = activation?.communityEndpointDirectory) } ?: UnavailableCommunityLoginReturn
+                            appContainer.createCommunityController(transferController, loginReturn = returning).also {
+                                activation?.communityAuthReceiver = it::receiveLoginReturn
+                            }
+                        }
                         val promptInspectorController = remember {
                             appContainer.createPromptInspectorController()
                         }
@@ -194,6 +223,7 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                                     novelAiStudioController = appContainer.novelAiStudioController,
                                     networkProxyController = appContainer.networkProxyController,
                                     momentsController = appContainer.momentsController,
+                                    communityController = communityController,
                                     providerUsage = appContainer.providerUsage,
                                     fullBackupController = appContainer.fullBackupController,
                                     mergeImportController = appContainer.mergeImportController,

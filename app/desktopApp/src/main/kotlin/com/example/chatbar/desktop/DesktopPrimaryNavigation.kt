@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /** UI-only route state. Root migration always takes visual and interaction priority. */
-internal enum class DesktopPrimaryRoute { CHAT, MOMENTS, MANAGE, TOOLS, DATA }
+internal enum class DesktopPrimaryRoute { CHAT, MOMENTS, COMMUNITY, MANAGE, TOOLS, DATA }
 
 internal class DesktopPrimaryNavigationController {
     private val selected = MutableStateFlow(DesktopPrimaryRoute.CHAT)

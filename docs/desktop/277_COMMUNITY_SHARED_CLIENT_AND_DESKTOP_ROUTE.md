@@ -8,6 +8,10 @@
 
 十个共享loopback用例覆盖关闭/仅缺表legacy、metadata与详情/下载分离、回调/刷新、Storage/Edge原载荷、owner/同名拒绝、超长响应、取消保全、二进制预览以及暂时刷新失败后原session重试/明确拒绝才清除。HTTP错误仅投影固定action/status，服务body和任意error字符串不进可展示异常；合成字母数字token反例也保留。原Android PackagePolicy测试继续使用共享owner。
 
-DesktopCommunityPorts已有真实export/受保护key、160px/80KB JPEG复制；Controller已有状态/metadata分页/预览/导入/登录/本人快照和远端更新owner，但尚未接生产root UI。原typed conflict/evidence/commit路径新增明确来源参数，provenance在首次原子提交而非后补save；pending普通file或远端更新在真正Core overwrite前重核最新来源，A→B/普通→readonly拒绝且无资源写入，合法更新保ID、duplicate清来源。新增Core2、Desktop ports2/实际controller1/typed1（后者含源变化反例）源码待自己的云验，不归128或129，不涉及真实社区内容、登录、服务端、日常H或公开。
+DesktopCommunityPorts使用原export/受保护key、160px/80KB JPEG复制；Controller与生产root UI已有状态/metadata分页/缩略图/详情/导入/本人快照和远端更新接线。匿名启动只暖metadata和预览图，不读受保护session、不下载package；接近列表末尾预取下一页，显式加载消费缓存。总开关默认隐藏，服务开放才显示同级社区入口，关闭后回聊天。上传显示实际导出快照并单独确认，取消预览/删除不发远端写请求。原typed conflict/evidence/commit路径新增明确来源参数，provenance在首次原子提交而非后补save；pending普通file或远端更新在真正Core overwrite前重核最新来源，A→B/普通→readonly拒绝且无资源写入，合法更新保ID、duplicate清来源。
 
-下一片继续原顶层开关/导航、UI、实际Desktop OAuth返回等位和受影响Scene验证。实际服务关闭只挂对应联调，其他离线客户端继续；R7普通链既有通过不因这些卡字段重建三包。
+Desktop浏览器返回使用Supabase原固定`chatbar://auth/callback`和PKCE授权码交换；每次登录独立verifier，仍沿原user endpoint验证后才保存受保护session。原Android隐式回调保持。待登录时临时注册当前versioned jpackage EXE为原scheme处理者，不替换普通升级保留的旧root EXE，也不覆盖其他应用的handler；结束/取消/10分钟空闲过期/正常退出仅移除仍属本次的注册。显式activation目录参数兼容独立ZIP的局部LOCALAPPDATA。现有认证loopback IPC增加独立AUTH用途，返回链接只在内存进入当前登录，绝不进入文件队列、journal或冷启动回执；无活跃登录、重复、过期及错误源返回均拒绝。系统或服务失败保持可见，不以手贴回调冒充完整返回。
+
+并发操作由唯一job完成回调释放busy；取消未调度操作能释放，旧完成不能清除重入的新操作。远端写请求结果不确定时需刷新“我的上传”核对，不自动重发。主动刷新不复用暖metadata；预览缓存绑定条目版本，避免远端覆盖后仍显示旧图。原Core2、Desktop ports2/controller1/typed1及新共享PKCE1、Desktop归属1/metadata1/登录1/协议及IPC2/Scene与Unicode2均须以其精确源云验。Scene使用420中文、1100英文实际Panel，确认详情无计数、导入沿原冲突、取消保持原卡、预览与删除未确认零远端写，并留PNG；不作官方服务、浏览器或Windows注册表实际验证声明。
+
+验证状态：129/ec086完整原件PASS（主2541PASS+19SKIP/shared1170/Android586、proxy5/NTFS7/native37/TUF14/exit4），仅验证此前角色生图片。130/18c因共享`jsonObject`缺import在编译失败，main/proxy/NTFS/shared/Android未执行，无对应XML；独立native37/TUF14/exit4实际PASS。该import已补，当前UI/PKCE片待后继精确源，不由129或130代验。实际官方服务关闭只挂其真实Discord/上传联调；R7普通链原限定PASS复用，不为此片重建三包。公开1233/签名15、真人待，日常H UNKNOWN且不操作。
