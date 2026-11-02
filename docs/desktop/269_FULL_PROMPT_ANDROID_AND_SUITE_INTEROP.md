@@ -1,5 +1,7 @@
 # 269 — 完整 Prompt 的 Android 与 Suite 配对互换
 
+后续实际122/d953完整SUCCESS：主2545=2526PASS+19SKIP，Desktop原控制器读取同Android配对原件→确认→导出逐字一致新例0.016秒PASS、该类3例全PASS；共享1149/Android584保持实际通过。协调端唯一原件在 `I:/CCB-Desktop-Continuity/updates/20261102-coordinator-ci122-review/REVIEW.json`。这补齐下方121的编译缺口，不代验设备/系统剪贴板或当前官方APK。Suite定向10例、配对原件及其原生待验界限不变。
+
 当前实际验证分层：121/1c的共享5例和Android repository两新例已PASS（Linux总shared1149/Android584）；Desktop新配对例因测试错误state.draft未编译运行，d953仅改真实draft Flow，122运行中，不能提前称该例通过。Suite既有执行者交full-prompt-6133672e6a0c，协调端只读核21冻结源码SHA、同484B原件、checks-r2实际OK(10 tests)，范围为5固定codec+5 Suite真实controller的预览不写/确认/复制/撤销重做重开及两模型位置开关实际请求等价。系统剪贴板、普通Main、原生窗口、外部安装版双端仍未验；当前官方147仅有原正向入口，本Fork同applicationId的源码不是现装官方APK兼容证明，实际Android配套交付对象由协调端询问用户，不擅自覆盖或卸载手机应用。下方实现说明及历史待验状态按其源时间读取。
 
 用户已明确“两者都需要”：Desktop↔CCB Studio Suite及Desktop↔Android CCB。原Desktop三共享加两controller/Scene用例通过，仅证明Desktop内部协议，不代表其他已装应用已支持。本片按原P17-07补当前Fork的Android接线；官方上游只读，不改其发布或宣称当前官方APK已有新入口。Suite由原执行者负责，本源码执行者不写Suite仓库。

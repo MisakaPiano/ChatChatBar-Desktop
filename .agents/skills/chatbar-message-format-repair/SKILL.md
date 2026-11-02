@@ -44,7 +44,7 @@ Use chatbar-model-request-runtime for provider/request failures and chatbar-long
 - Let an unset format-repair model follow the default chat model.
 - Treat an explicitly selected missing model ID as invalid configuration; do not silently replace it.
 - Offer all configured auxiliary text models, including models hidden from the normal chat selector.
-- Force repair requests to disable thinking and ignore reasoning deltas.
+- Upstream1.4.7 repair follows the selected model's thinking/effort settings. Desktop opts out of the shared helper's thinking-off default at `isolatedFormatRepairStream` only, retaining its isolated custom-field/envelope protection; reasoning remains separate from repair candidate text. Android `MessageFormatRepairService` likewise omits the old explicit thinking disable. Other auxiliary callers keep their own policies.
 - Send only applicable format rules and the full assistant message. Do not inherit ordinary chat context.
 - Treat an exact trimmed `[[CHATBAR_FORMAT_OK]]` response as unchanged and keep any possible streamed marker prefix out of the message preview.
 - Skip automatic repair when no format rule exists. Make manual unavailability visible.

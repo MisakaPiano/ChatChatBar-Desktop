@@ -64,7 +64,7 @@ internal fun isolatedFormatRepairStream(
  ): Flow<StreamEvent> = isolatedAuxiliaryTextStream(client, allowCleartextHttp, listOf(
     ChatApiMessage.text("system", FormatRepairPromptAuthority.MESSAGE_FORMAT_REPAIR_SYSTEM_PROMPT.trim()),
     ChatApiMessage.text("user", FormatRepairPromptAuthority.messageFormatRepairUserPrompt(formatCard, segmentedBubbleFormat, message)),
-), model, diagnostics, timing)
+), model, diagnostics, timing, disableThinking = false)
 
 /** Shared isolated auxiliary transport. Callers own the task's frozen prompt assembly. */
 internal fun isolatedAuxiliaryTextStream(

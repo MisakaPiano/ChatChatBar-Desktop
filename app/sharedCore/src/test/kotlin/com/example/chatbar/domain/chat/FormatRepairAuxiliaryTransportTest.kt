@@ -95,7 +95,7 @@ class FormatRepairAuxiliaryTransportTest {
         MockWebServer().use { server ->
             for (key in listOf("", "fixture-key")) {
                 server.enqueue(response(payload(), "[DONE]"))
-                val original = model(server).copy(apiKey=key, enableThinking=true, maxOutputTokens=77,
+                val original = model(server).copy(apiKey=key, enableThinking=true, reasoningEffort="high", maxOutputTokens=77,
                     customParams=mapOf("temperature" to ParamValue.NumberValue(0.9), "stop" to ParamValue.StringValue("STOP"),
                         "max_completion_tokens" to ParamValue.NumberValue(88.0), "reasoning_effort" to ParamValue.StringValue("high"),
                         "thinking_budget" to ParamValue.NumberValue(99.0),
@@ -109,15 +109,16 @@ class FormatRepairAuxiliaryTransportTest {
                 assertEquals(golden(), body.getValue("messages"))
                 assertEquals("fixture-model", body.getValue("model").jsonPrimitive.content)
                 assertTrue(body.getValue("stream").jsonPrimitive.boolean)
-                assertEquals(false, body.getValue("enable_thinking").jsonPrimitive.boolean)
-                for (removed in listOf("temperature", "stop", "max_tokens", "max_completion_tokens", "reasoning_effort", "thinking_budget")) assertFalse(removed in body, removed)
+                assertTrue(body.getValue("enable_thinking").jsonPrimitive.boolean)
+                assertEquals("high", body.getValue("reasoning_effort").jsonPrimitive.content)
+                for (removed in listOf("temperature", "stop", "max_tokens", "max_completion_tokens", "thinking_budget")) assertFalse(removed in body, removed)
                 assertEquals(77, original.maxOutputTokens); assertEquals(true, original.enableThinking)
             }
             assertEquals(2, server.requestCount)
         }
     }
 
-    @Test fun `real HTTPS keeps authentication golden and effort thinking off`() = runBlocking<Unit> {
+    @Test fun `real HTTPS keeps authentication golden and selected reasoning effort`() = runBlocking<Unit> {
         val (context, trustManager) = temporaryTlsContext()
         MockWebServer().use { server ->
             server.useHttps(context.socketFactory, false)
@@ -128,7 +129,7 @@ class FormatRepairAuxiliaryTransportTest {
             assertNotNull(request.handshake)
             assertEquals("Bearer tls-fixture", request.getHeader("Authorization"))
             val body=Json.parseToJsonElement(request.body.readUtf8()).jsonObject
-            assertEquals(golden(),body.getValue("messages"));assertEquals("none",body.getValue("reasoning_effort").jsonPrimitive.content)
+            assertEquals(golden(),body.getValue("messages"));assertEquals("high",body.getValue("reasoning_effort").jsonPrimitive.content)
             assertFalse("enable_thinking" in body)
             assertEquals(1, server.requestCount)
         }

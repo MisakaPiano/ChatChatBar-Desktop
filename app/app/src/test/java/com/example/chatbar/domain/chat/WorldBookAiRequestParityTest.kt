@@ -47,8 +47,11 @@ class WorldBookAiRequestParityTest {
                     val actual = Json.parseToJsonElement(port.body.readUtf8())
                     assertEquals(expected, actual)
                     assertEquals(8, actual.jsonObject.getValue("messages").jsonArray.size)
-                    assertFalse(actual.jsonObject.containsKey("max_tokens"))
-                    assertFalse(actual.jsonObject.containsKey("seed"))
+                    assertEquals(739, actual.jsonObject.getValue("max_tokens").jsonPrimitive.int)
+                    assertEquals(17, actual.jsonObject.getValue("seed").jsonPrimitive.int)
+                    assertEquals(0.7, actual.jsonObject.getValue("temperature").jsonPrimitive.double, 0.0)
+                    assertTrue(actual.jsonObject.getValue("enable_thinking").jsonPrimitive.boolean)
+                    assertEquals("high", actual.jsonObject.getValue("reasoning_effort").jsonPrimitive.content)
                 }
                 assertEquals(12, server.requestCount)
             } finally { desktop.closeAndDrain() }

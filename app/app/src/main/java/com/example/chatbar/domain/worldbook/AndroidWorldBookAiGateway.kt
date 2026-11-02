@@ -22,9 +22,7 @@ internal class AndroidWorldBookAiGateway(private val chat: StreamingChatService)
             WorldBookAiStage.PLAN -> AiTaskStage.PLAN
             WorldBookAiStage.SUMMARIZE -> AiTaskStage.SUMMARIZE
         })
-        val research = operation == WorldBookAiOperation.RESEARCH || operation == WorldBookAiOperation.BRIEF
         return chat.completeTextStreaming(taskContext = context, messages = messages, modelConfig = modelConfig,
-            enableThinking = if (research) false else null, reasoningEffort = if (research) "low" else null,
-            isolatedTaskParameters = true, onDelta = onDelta, onReasoningDelta = onReasoningDelta)
+            onDelta = onDelta, onReasoningDelta = onReasoningDelta)
     }
 }
