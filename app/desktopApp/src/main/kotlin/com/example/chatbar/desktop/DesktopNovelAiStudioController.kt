@@ -706,7 +706,9 @@ internal class DesktopNovelAiStudioController(
     }
 
     fun updateReverseSceneDescription(text: String) = synchronized(reverseLock) {
-        if (state.value.reverseBusy || reverseSelection == null) return@synchronized
+        if (state.value.reverseBusy) return@synchronized
+        val selection = reverseSelection ?: return@synchronized
+        reverseSelection = selection.copy(revision = ++reverseRevision)
         mutableState.update { it.copy(reverseSceneDescription = text, reverseCandidate = null, reverseTargetModel = null) }
     }
 
@@ -807,7 +809,8 @@ internal class DesktopNovelAiStudioController(
 
     fun stopReverse() {
         val id = synchronized(reverseLock) {
-            reverseSelection = reverseSelection?.copy(revision = ++reverseRevision)
+            val revision = ++reverseRevision
+            reverseSelection = reverseSelection?.copy(revision = revision)
             mutableState.update { it.copy(reverseBusy = false,
                 reverseProgress = it.reverseProgress.copy(stage = "已停止，可重试")) }
             reverseTaskId.also { reverseTaskId = null }

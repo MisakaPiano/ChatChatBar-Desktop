@@ -154,35 +154,38 @@ class DesktopReverseSceneTest {
         } finally { f.close() }
     }
 
-    @Test fun `source replacement while undo save is suspended refuses old candidate at actual draft commit`() = runBlocking {
-        val f = FinalProductDesignFixture()
-        try {
-            val c = setup(f); assertTrue(c.reverseImage(image())); f.idle()
-            assertTrue(c.confirmReverseSceneDescription()); f.idle()
-            val before = c.repository.loadDraft()
-            // First lock is action's original loadUndoDraft asset inspection; second is
-            // apply's saveUndoDraft, after selection/candidate capture. Pause only the second.
-            val field = c.repository.javaClass.getDeclaredField("undoMutex").also { it.isAccessible = true }
-            val original = field.get(c.repository) as kotlinx.coroutines.sync.Mutex
-            val locks = java.util.concurrent.atomic.AtomicInteger()
-            val enteredSave = CompletableDeferred<Unit>(); val resumeSave = CompletableDeferred<Unit>()
-            val tracking = object : kotlinx.coroutines.sync.Mutex by original {
-                override suspend fun lock(owner: Any?) {
-                    if (locks.incrementAndGet() == 2) { enteredSave.complete(Unit); resumeSave.await() }
-                    original.lock(owner)
-                }
-            }
-            field.set(c.repository, tracking)
-            val applying = async(Dispatchers.Default) { c.applyReverseCandidate() }
+    @Test fun `source or scene replacement while undo save is suspended refuses old candidate at actual draft commit`() = runBlocking {
+        for (editScene in listOf(false, true)) {
+            val f = FinalProductDesignFixture()
             try {
-                withTimeout(5_000) { enteredSave.await() }
-                assertEquals(2, locks.get()); assertNotNull(c.state.value.reverseCandidate)
-                c.clearReverseCandidate()
-            } finally { resumeSave.complete(Unit) }
-            assertFalse(withTimeout(5_000) { applying.await() })
-            field.set(c.repository, original)
-            assertEquals(before, c.repository.loadDraft()); assertNull(c.state.value.reverseCandidate)
-        } finally { f.close() }
+                val c = setup(f); assertTrue(c.reverseImage(image())); f.idle()
+                assertTrue(c.confirmReverseSceneDescription()); f.idle()
+                val before = c.repository.loadDraft()
+                // First lock is action's original loadUndoDraft asset inspection; second is
+                // apply's saveUndoDraft, after selection/candidate capture. Pause only the second.
+                val field = c.repository.javaClass.getDeclaredField("undoMutex").also { it.isAccessible = true }
+                val original = field.get(c.repository) as kotlinx.coroutines.sync.Mutex
+                val locks = java.util.concurrent.atomic.AtomicInteger()
+                val enteredSave = CompletableDeferred<Unit>(); val resumeSave = CompletableDeferred<Unit>()
+                val tracking = object : kotlinx.coroutines.sync.Mutex by original {
+                    override suspend fun lock(owner: Any?) {
+                        if (locks.incrementAndGet() == 2) { enteredSave.complete(Unit); resumeSave.await() }
+                        original.lock(owner)
+                    }
+                }
+                field.set(c.repository, tracking)
+                val applying = async(Dispatchers.Default) { c.applyReverseCandidate() }
+                try {
+                    withTimeout(5_000) { enteredSave.await() }
+                    assertEquals(2, locks.get()); assertNotNull(c.state.value.reverseCandidate)
+                    if (editScene) c.updateReverseSceneDescription("NEWER_CORRECTION") else c.clearReverseCandidate()
+                } finally { resumeSave.complete(Unit) }
+                assertFalse(withTimeout(5_000) { applying.await() })
+                field.set(c.repository, original)
+                assertEquals(before, c.repository.loadDraft()); assertNull(c.state.value.reverseCandidate)
+                if (editScene) assertEquals("NEWER_CORRECTION", c.state.value.reverseSceneDescription)
+            } finally { f.close() }
+        }
     }
 
     private val edt = object : CoroutineDispatcher() {
