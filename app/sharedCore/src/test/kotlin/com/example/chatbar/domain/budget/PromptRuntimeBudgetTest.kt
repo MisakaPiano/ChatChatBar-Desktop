@@ -6,6 +6,7 @@ import com.example.chatbar.data.local.entity.FormatPromptPosition
 import com.example.chatbar.data.local.entity.ModelConfig
 import com.example.chatbar.domain.chat.*
 import com.example.chatbar.domain.rag.RetrievedKnowledgeCard
+import kotlinx.serialization.json.*
 import kotlin.test.*
 
 class PromptRuntimeBudgetTest {
@@ -66,5 +67,23 @@ class PromptRuntimeBudgetTest {
         assertFalse(replaced.attributedToLogicalSections)
         assertNull(replaced.runtimeSelection); assertNull(replaced.stablePrefixEstimatedTextTokens)
         assertNull(estimate(messages, selection.copy(stablePrefixCacheable = false)).stablePrefixEstimatedTextTokens)
+
+        val body = Json.parseToJsonElement(OpenAiChatRequestSerializer.serialize(messages, model, true)).jsonObject
+        val namedBody = JsonObject(body + ("messages" to JsonArray(body.getValue("messages").jsonArray.map {
+            JsonObject(it.jsonObject + ("name" to JsonPrimitive("synthetic speaker")))
+        }))).toString()
+        val named = WirePromptBudgetEstimator.estimate(namedBody, model.promptEstimateTarget(), trace, runtimeSelection = selection)
+        assertTrue(named.additionalMessageFieldsExcluded)
+        assertNull(named.runtimeSelection); assertNull(named.stablePrefixEstimatedTextTokens)
+
+        val httpModel = model.copy(baseUrl = "http://127.0.0.1:8123/v1")
+        val httpMessages = listOf(messages[0], ChatApiMessage.text("system", "retrieved memory"), messages[1])
+        val httpTrace = listOf(trace[0], MainChatLogicalMessageTrace(httpMessages[1], MainChatLogicalMessageSource.MEMORY_RAG, false), trace[1])
+        val httpBody = OpenAiChatRequestSerializer.serialize(httpMessages, httpModel, true, allowCleartextHttp = true)
+        val adapted = WirePromptBudgetEstimator.estimate(httpBody, model.promptEstimateTarget(), httpTrace,
+            allowCleartextHttp = true, baseUrl = httpModel.baseUrl, runtimeSelection = selection)
+        assertEquals(selection, adapted.runtimeSelection)
+        assertNull(WirePromptBudgetEstimator.estimate(httpBody, model.promptEstimateTarget(), httpTrace,
+            runtimeSelection = selection).runtimeSelection)
     }
 }
