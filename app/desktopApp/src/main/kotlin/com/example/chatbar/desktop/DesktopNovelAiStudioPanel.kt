@@ -245,7 +245,7 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
     } },
         navigation = navigation, captions = captions, diagnostics = diagnostics, chromeRecorder = chromeRecorder,
         compact = { expand -> DesktopStudioCompactResult(shownPath, intermediate, false, expand, ::preview,
-            { if (shownPath != null) { currentImage = shownPath; auxiliary = "当前图片" } }) },
+            { if (shownPath != null) { currentImage = shownPath; auxiliary = "当前图片"; controller.clearReverseCandidate() } }) },
         editor = {
             StudioAccountCluster(d.selectedModel, state.accountUi)
             if (modelReadFailure != null) {
@@ -291,7 +291,7 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
             else Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 StudioActions {
                     DesktopStudioPreviewActions(shownPath != null, intermediate != null, true,
-                        ::preview, { inlineResetRevision++ }, { currentImage = shownPath; auxiliary = "当前图片" })
+                        ::preview, { inlineResetRevision++ }, { currentImage = shownPath; auxiliary = "当前图片"; controller.clearReverseCandidate() })
                 }
                 Box(Modifier.weight(1f).fillMaxWidth()) {
                     if (intermediate != null) DesktopOwnedImage("intermediate-${intermediate.contentHashCode()}", { intermediate }, Modifier.fillMaxSize())
@@ -369,29 +369,15 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                                     currentImage = target; selectedResult = null; controller.clearReverseCandidate()
                                 } }
                             }
-                            StatusText(state.reverseProgress.stage)
-                            if (state.reverseProgress.content.isNotBlank()) {
-                                StatusText("反推过程 / 流式结果")
-                                androidx.compose.foundation.text.selection.SelectionContainer { DesktopMarkdownText(state.reverseProgress.content) }
-                            }
-                            if (state.reverseProgress.reasoning.isNotBlank()) {
-                                var reasoningOpen by remember { mutableStateOf(false) }
-                                StudioAction(if (reasoningOpen) "收起反推思考" else "查看反推思考") { reasoningOpen = !reasoningOpen }
-                                if (reasoningOpen) androidx.compose.foundation.text.selection.SelectionContainer { DesktopMarkdownText(state.reverseProgress.reasoning) }
-                            }
                             if (imageError.isNotEmpty()) StatusText(imageError)
-                            if (busy) StudioAction("停止当前任务") { controller.stop() }
-                            if (!busy && reverseSource != null && state.reverseCandidate == null && state.reverseProgress.stage.isNotBlank())
-                                StudioAction("重试反推") { scope.launch { controller.reverseImage(requireNotNull(reverseSource)) } }
-                    state.reverseCandidate?.let { candidate ->
-                        StatusText("反推候选：${candidate.baseCaption}")
-                        candidate.characterCaptions.forEach { StatusText(it.prompt) }
-                        StudioActions {
-                            StudioAction("应用反推", enabled = !busy) { scope.launch { controller.applyReverseCandidate(); auxiliary = null } }
-                            StudioAction("重试反推", enabled = !busy && reverseSource != null) { scope.launch { reverseSource?.let { controller.reverseImage(it) } } }
-                            StudioAction("返回 / 保留当前 Prompt") { controller.clearReverseCandidate() }
-                        }
-                    }
+                            DesktopReversePromptPane(state, busy,
+                                onSceneChange = controller::updateReverseSceneDescription,
+                                onConfirm = { scope.launch { controller.confirmReverseSceneDescription() } },
+                                onStop = controller::stopReverse,
+                                onRetry = { scope.launch { reverseSource?.let { controller.reverseImage(it) } } },
+                                retryAvailable = reverseSource != null,
+                                onApply = { scope.launch { if (controller.applyReverseCandidate()) auxiliary = null } },
+                                onDismiss = controller::clearReverseCandidate)
                         }
                     } else section(surface)
                 }

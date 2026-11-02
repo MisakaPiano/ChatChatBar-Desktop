@@ -18,4 +18,4 @@
 
 新增`DesktopMemorySelectedModelParametersTest`：真实共享memory planner→summary→JSON repair、streaming Episode和RAG经Desktop最终HTTP；原head retry/usage与正式voice runtime统计例扩展同一final-wire断言，既有请求计数、取消、重试和数据断言保留。原显式isolated无上限例改为明确传true，继续覆盖该独立出口。
 
-新增`RetrievalPlannerDeadlineTest`使用虚拟时钟验证生产120秒边界，非真实服务或等待两分钟；Android原参数policy/parity测试改为官方147目标语义，不放松无关断言。以上当前待本片精确云端执行；只读源码不算运行PASS。本机不编译、不启动应用或付费调用；原R7/R19/R20/R23无关证据复用。
+新增`RetrievalPlannerDeadlineTest`使用虚拟时钟验证生产120秒边界，非真实服务或等待两分钟；Android原参数policy/parity测试改为官方147目标语义，不放松无关断言。精确35c5216/CI136（41485455158）双job与原件已闭合：主349suite/2574=2555PASS+19SKIP、proxy5、NTFS7、shared1188、Android586、native37/TUF14/exit4通过；新增共享HTTP4+虚拟deadline1、DesktopMemorySelected2及原HEAD/Fish usage方法实际执行。协调端原件位于`I:/CCB-Desktop-Continuity/updates/20261103-coordinator-ci136-review/REVIEW.json`，不重复下载。后继279图片反推不由此代验。本机不编译、不启动应用或付费调用；原R7/R19/R20/R23无关证据复用。

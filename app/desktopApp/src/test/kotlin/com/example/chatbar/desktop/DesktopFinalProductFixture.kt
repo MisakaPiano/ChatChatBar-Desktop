@@ -14,12 +14,15 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.flow
 
 /** Test-source-only manual fixture. No real transports or credentials; shared Designer/runner/repositories. */
-internal class FinalProductDesignFixture(filePicker: DesktopFilePicker = UnconfiguredDesktopFilePicker) {
+internal class FinalProductDesignFixture(filePicker: DesktopFilePicker = UnconfiguredDesktopFilePicker,
+    overrideDesigner: NovelAiPromptDesigner? = null) {
     @Volatile var failure: DesktopDesignFailure? = null
     val requests = java.util.concurrent.CopyOnWriteArrayList<List<ChatApiMessage>>()
+    @Volatile var beforeReply: (suspend (NovelAiTextStage) -> Unit)? = null
     val transport = object : NovelAiTextTransport {
         override fun streamText(stage: NovelAiTextStage, messages: List<ChatApiMessage>, modelConfig: ModelConfig) = flow {
             requests.add(messages)
+            beforeReply?.invoke(stage)
             failure?.let { throw DesktopDesignException(it) }
             val reply = if (stage == NovelAiTextStage.PLAN)
                 """{"sceneDescription":"窗边阅读的成年旅人，柔和阳光。","queries":[]}"""
@@ -34,7 +37,7 @@ internal class FinalProductDesignFixture(filePicker: DesktopFilePicker = Unconfi
     val root = Files.createTempDirectory("ccb-final-product-local-")
     val container = DesktopAppContainer(DesktopDataRootResolution.Resolved(root.resolve("data"),
         DesktopDataRootProvenance.CLI_OVERRIDE, root.resolve("bootstrap.json")),
-        secretStoreFactory = { InMemoryDesktopSecretStore() }, novelAiDesigner = designer, filePicker = filePicker)
+        secretStoreFactory = { InMemoryDesktopSecretStore() }, novelAiDesigner = overrideDesigner ?: designer, filePicker = filePicker)
     suspend fun initialize(initializeComposer: Boolean = true) {
         container.modelRepository.saveModel(ModelConfig("local-design", "Local fake design — no network", "https://fixture.invalid", "fake-only-key", "fixture", createdAt = 1))
         container.novelAiStudioController.load()

@@ -27,6 +27,9 @@ internal data class DesktopNovelAiStudioState(
     val generationTaskId: String? = null,
     val preview: ByteArray? = null,
     val reverseCandidate: NovelAiPromptPlan? = null,
+    val reverseSceneDescription: String? = null,
+    val reverseTargetModel: NovelAiImageModel? = null,
+    val reverseBusy: Boolean = false,
     val reverseProgress: DesktopReversePromptProgress = DesktopReversePromptProgress(),
     val designProgress: DesktopReversePromptProgress = DesktopReversePromptProgress(),
     val catalogUpdate: com.example.chatbar.domain.update.DanbooruCatalogUpdateInfo? = null,
@@ -91,6 +94,11 @@ internal class DesktopNovelAiStudioController(
     private var presetClosed = false
     private var fullPromptSelection: Pair<NovelAiFullPromptContent, NovelAiStudioDraft>? = null
     private var accountIdentity: String? = null
+    private data class ReverseSelection(val revision: Long, val draft: NovelAiStudioDraft)
+    private val reverseLock = Any()
+    private var reverseRevision = 0L
+    private var reverseSelection: ReverseSelection? = null
+    private var reverseTaskId: String? = null
     private val mutableState = MutableStateFlow(DesktopNovelAiStudioState())
     val state = mutableState.asStateFlow()
     val taskEntries = tasks.tasks
@@ -686,40 +694,128 @@ internal class DesktopNovelAiStudioController(
     suspend fun switchDesign(id: String) = action { designRepository.switchCurrent(id); openCurrentDesign() }
     suspend fun deleteDesign(id: String) = action { designRepository.deleteHistoryConversation(id) }
 
-    suspend fun reverseImage(bytes: ByteArray) = action {
-        DesktopImageEditing.requireStatic(bytes)
-        DesktopImageEditing.decode(bytes)
-        val launch = resolveDefaultModel()
-        val app = settings.getAppSettings()
-        val model = designModel(launch.aiDesignModelId, app)
-        val id = tasks.launchNovelAi("图片反推 Prompt") { report ->
-            mutableState.update { it.copy(reverseCandidate = null, reverseProgress = DesktopReversePromptProgress(stage = "正在准备图片反推")) }
-            try {
-                val plan = infrastructure.promptDesigner().designForPromptTool(
-                    imageDescription = "", characterPrompt = "", finalPromptRequirement = launch.extraRequirement,
-                    imageBase64s = listOf(Base64.getEncoder().encodeToString(bytes)), model = model,
-                    playerName = settings.getPlayerSetting().playerName, targetImageModel = launch.selectedModel,
-                    referenceImageInstruction = com.example.chatbar.domain.prompt.NovelAiPromptAuthority.novelAiImageReversePromptUser(launch.selectedModel.displayName),
-                    excludeStyle = false, onContentDelta = { text ->
-                        mutableState.update { it.copy(reverseProgress = it.reverseProgress.content(text)) }; report("正在反推图片")
-                    }, onReasoningDelta = { text -> mutableState.update { it.copy(reverseProgress = it.reverseProgress.copy(reasoning = text)) } })
-                mutableState.update { it.copy(reverseCandidate = plan, reverseProgress = it.reverseProgress.copy(stage = "候选已就绪")) }
-                status("图片反推候选已就绪，请预览后应用")
-            } catch (_: CancellationException) {
-                mutableState.update { it.copy(reverseProgress = it.reverseProgress.copy(stage = "已停止，可重试")) }
-                status("图片反推已停止"); throw CancellationException()
-            } catch (_: Exception) {
-                mutableState.update { it.copy(reverseProgress = it.reverseProgress.copy(stage = "反推失败，可重试")) }
-                status("图片反推失败或草稿已变化，当前 Prompt 保留"); throw IllegalStateException("Reverse failed")
-            }
+    suspend fun reverseImage(bytes: ByteArray): Boolean {
+        val expectedRevision = synchronized(reverseLock) { reverseRevision }
+        return action {
+            DesktopImageEditing.requireStatic(bytes)
+            DesktopImageEditing.decode(bytes)
+            val launch = resolveDefaultModel()
+            val encoded = Base64.getEncoder().encodeToString(bytes)
+            startReverse(launch, null, encoded, expectedRevision)
         }
-        mutableState.update { it.copy(taskId = id) }
     }
 
-    suspend fun applyReverseCandidate() = replace { current ->
-        current.applyReversePromptPlan(requireNotNull(state.value.reverseCandidate))
+    fun updateReverseSceneDescription(text: String) = synchronized(reverseLock) {
+        if (state.value.reverseBusy || reverseSelection == null) return@synchronized
+        mutableState.update { it.copy(reverseSceneDescription = text, reverseCandidate = null, reverseTargetModel = null) }
     }
-    fun clearReverseCandidate() { mutableState.update { it.copy(reverseCandidate = null, reverseProgress = DesktopReversePromptProgress()) } }
+
+    suspend fun confirmReverseSceneDescription() = action {
+        val selection = synchronized(reverseLock) { requireNotNull(reverseSelection) }
+        val scene = requireNotNull(state.value.reverseSceneDescription).also { require(it.isNotBlank()) { "请填写场景描述" } }
+        check(repository.loadDraft() == selection.draft) { "Studio 草稿已变化，请重新反推" }
+        startReverse(selection.draft, scene, null, selection.revision)
+    }
+
+    private suspend fun startReverse(launch: NovelAiStudioDraft, scene: String?, encoded: String?, expectedRevision: Long) {
+        val selection = synchronized(reverseLock) {
+            check(reverseRevision == expectedRevision) { "反推图片已更换或关闭" }
+            check(!state.value.reverseBusy) { "图片反推任务仍在运行" }
+            ReverseSelection(++reverseRevision, launch).also {
+                reverseSelection = it
+                mutableState.update { state -> state.copy(reverseCandidate = null, reverseTargetModel = null, reverseSceneDescription = scene,
+                    reverseBusy = true, reverseProgress = DesktopReversePromptProgress(stage =
+                        if (scene == null) "正在识别图片场景" else "正在根据确认场景设计 Prompt")) }
+            }
+        }
+        fun publish(change: (DesktopNovelAiStudioState) -> DesktopNovelAiStudioState) = synchronized(reverseLock) {
+            if (reverseSelection == selection) mutableState.update(change)
+        }
+        try {
+            val app = settings.getAppSettings()
+            val model = designModel(launch.aiDesignModelId, app)
+            val player = settings.getPlayerSetting().playerName
+            check(synchronized(reverseLock) { reverseSelection == selection }) { "反推图片已更换或关闭" }
+            val id = tasks.launchNovelAi(if (scene == null) "识别图片场景" else "图片反推 Prompt") { report ->
+                try {
+                    check(synchronized(reverseLock) { reverseSelection == selection }) { "反推图片已更换或关闭" }
+                    currentCoroutineContext().ensureActive()
+                    val designer = infrastructure.promptDesigner()
+                    val references = launch.importedCharacterPromptSources.map { it.name to it.prompt }
+                    val progress: (String) -> Unit = { text ->
+                        publish { it.copy(reverseProgress = it.reverseProgress.content(text)) }; report("正在反推图片")
+                    }
+                    val target = if (launch.aiDesignNaturalLanguageMode) NovelAiImageModel.V5_FULL else launch.selectedModel
+                    if (scene == null) {
+                        val description = designer.describeReferenceImage(requireNotNull(encoded), model, target,
+                            references, player, progress)
+                        currentCoroutineContext().ensureActive()
+                        check(description.isNotBlank()) { "图片场景描述为空" }
+                        check(repository.loadDraft() == launch) { "Studio 草稿已变化" }
+                        publish { it.copy(reverseSceneDescription = description, reverseBusy = false,
+                            reverseProgress = DesktopReversePromptProgress(stage = "请核对或编辑场景描述，再确认设计")) }
+                    } else {
+                        val result = designer.designForPromptToolDetailed(
+                            imageDescription = "", characterPrompt = "", characterImagePrompts = references,
+                            finalPromptRequirement = launch.extraRequirement, referenceImageProvided = true,
+                            model = model, playerName = player, targetImageModel = target,
+                            naturalLanguageMode = launch.aiDesignNaturalLanguageMode, confirmedSceneDescription = scene,
+                            referenceImageInstruction = com.example.chatbar.domain.prompt.NovelAiPromptAuthority.novelAiImageReversePromptUser(target.displayName),
+                            excludeStyle = false, onContentDelta = progress,
+                            onReasoningDelta = { text -> publish { it.copy(reverseProgress = it.reverseProgress.copy(reasoning = text)) } })
+                        currentCoroutineContext().ensureActive()
+                        check(repository.loadDraft() == launch) { "Studio 草稿已变化" }
+                        publish { it.copy(reverseCandidate = result.plan, reverseTargetModel = target, reverseBusy = false,
+                            reverseProgress = it.reverseProgress.copy(stage = "候选已就绪，请预览后应用")) }
+                    }
+                } catch (cancelled: CancellationException) {
+                    publish { it.copy(reverseBusy = false, reverseProgress = it.reverseProgress.copy(stage = "已停止，可重试")) }
+                    throw cancelled
+                } catch (_: Exception) {
+                    publish { it.copy(reverseBusy = false, reverseCandidate = null,
+                        reverseProgress = it.reverseProgress.copy(stage = "反推失败或草稿已变化，当前 Prompt 保留")) }
+                    throw IllegalStateException("Reverse failed")
+                }
+            }
+            synchronized(reverseLock) {
+                if (reverseSelection == selection) reverseTaskId = id else tasks.requestUserStop(id)
+            }
+            mutableState.update { it.copy(taskId = id) }
+        } catch (failure: Exception) {
+            publish { it.copy(reverseBusy = false) }
+            throw failure
+        }
+    }
+
+    suspend fun applyReverseCandidate() = action {
+        val selection = synchronized(reverseLock) { requireNotNull(reverseSelection) }
+        check(!state.value.reverseBusy)
+        val candidate = requireNotNull(state.value.reverseCandidate)
+        val target = requireNotNull(state.value.reverseTargetModel)
+        val before = repository.loadDraft()
+        check(before == selection.draft) { "Studio 草稿已变化，请重新反推" }
+        repository.saveUndoDraft(before)
+        repository.updateDraft(resetPromptEditors = true) { current ->
+            synchronized(reverseLock) {
+                check(reverseSelection == selection) { "反推图片已更换或关闭" }
+                check(current == selection.draft) { "Studio 草稿已变化，请重新反推" }
+                current.applyReversePromptPlan(candidate, target)
+            }
+        }
+        clearReverseCandidate()
+    }
+
+    fun stopReverse() { synchronized(reverseLock) { reverseTaskId }?.let(tasks::requestUserStop) }
+
+    fun clearReverseCandidate() {
+        val id = synchronized(reverseLock) {
+            reverseSelection = null; reverseRevision++
+            mutableState.update { it.copy(reverseCandidate = null, reverseTargetModel = null, reverseSceneDescription = null,
+                reverseBusy = false, reverseProgress = DesktopReversePromptProgress()) }
+            reverseTaskId.also { reverseTaskId = null }
+        }
+        id?.let(tasks::requestUserStop)
+    }
 
     suspend fun translationEnabled() = settings.getAppSettings().novelAiPromptTranslationConsent ==
         com.example.chatbar.data.local.entity.NovelAiPromptTranslationConsent.ENABLED
