@@ -92,6 +92,13 @@ class DesktopCompactEditorLayoutTest {
                 }
                 try {
                     frames(scene); visible(action(scene, strings(DesktopUiText.SAVE)), width, height)
+                    val help = action(scene, strings(DesktopUiText.WORLD_HELP))
+                    val close = action(scene, strings(DesktopUiText.CLOSE))
+                    val title = nodes(scene).first { it.config.getOrNull(SemanticsProperties.Text)?.any { value -> value.text == strings(DesktopUiText.WORLD_EDIT) } == true }
+                    assertTrue(help.boundsInRoot.left - title.boundsInRoot.right >= 7.5f)
+                    assertTrue(close.boundsInRoot.left - help.boundsInRoot.right >= 7.5f)
+                    visible(help, width, height); visible(close, width, height)
+                    assertTrue(nodes(scene).any { it.config.getOrNull(SemanticsProperties.EditableText)?.text == "Synthetic book $width" })
                     controller.openEntry(0); controller.updateEntryModal { it.copy(content = content) }; frames(scene)
                     visible(action(scene, strings(DesktopUiText.WORLD_DISMISS_ENTRY)), width, height)
                     shot(scene, "world-entry-$language-$width-$height")
@@ -104,6 +111,7 @@ class DesktopCompactEditorLayoutTest {
                     shot(scene, "world-editor-$language-$width-$height")
                     click(scene, strings(DesktopUiText.SAVE), width, height); until(scene) { controller.state.value.book == null }
                     val saved = assertNotNull(f.app.worldBookRepository.getById(source.id))
+                    assertEquals("Synthetic book $width", saved.name)
                     assertEquals(content, saved.entries.first().content)
                     assertEquals(previous.entries.drop(1), saved.entries.drop(1))
                 } finally { scene.close() }

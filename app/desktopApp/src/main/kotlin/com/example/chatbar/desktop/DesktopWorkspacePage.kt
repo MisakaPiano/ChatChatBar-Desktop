@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
@@ -46,11 +47,32 @@ internal fun DesktopWorkspacePage(title: String, destinations: List<DesktopWorks
     BoxWithConstraints(Modifier.fillMaxSize().background(DesktopBootstrapColors.background)) {
         val wide = maxWidth >= 700.dp
         var navigationViewport by remember { mutableStateOf(IntSize.Zero) }
+        val horizontalNavigation = rememberScrollState()
+        val density = LocalDensity.current
+        val tabWidth = 132.dp
+        val tabGap = 6.dp
+        val tabPadding = 10.dp
+        val destinationIds = destinations.map { it.id }
+        LaunchedEffect(selected, wide, navigationViewport, density, destinationIds) {
+            if (!wide && navigationViewport.width > 0) {
+                // The selected item can be fully clipped. Wait for placement, then use the row's fixed geometry.
+                withFrameNanos { }
+                val index = destinations.indexOfFirst { it.id == selected }
+                if (index >= 0) {
+                    val left = with(density) { tabPadding.roundToPx() + index * (tabWidth.roundToPx() + tabGap.roundToPx()) }
+                    val right = left + with(density) { tabWidth.roundToPx() }
+                    val offset = horizontalNavigation.value
+                    if (left < offset) horizontalNavigation.scrollTo(left)
+                    else if (right > offset + navigationViewport.width)
+                        horizontalNavigation.scrollTo(right - navigationViewport.width)
+                }
+            }
+        }
         @Composable fun Navigation() {
             @Composable fun Item(item: DesktopWorkspaceDestination, modifier: Modifier) {
                 val reveal = remember(item.id) { BringIntoViewRequester() }
                 LaunchedEffect(selected, wide, navigationViewport) {
-                    if (selected == item.id && navigationViewport.width > 0 && navigationViewport.height > 0)
+                    if (wide && selected == item.id && navigationViewport.width > 0 && navigationViewport.height > 0)
                         reveal.bringIntoView()
                 }
                 DesktopWorkspaceNavigationItem(item, selected == item.id, enabled,
@@ -60,9 +82,9 @@ internal fun DesktopWorkspacePage(title: String, destinations: List<DesktopWorks
                 .onSizeChanged { navigationViewport = it }.verticalScroll(rememberScrollState()).padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 ManageHeading(title)
                 destinations.forEach { item -> key(item.id) { Item(item, Modifier.fillMaxWidth()) } }
-            } else Row(Modifier.fillMaxWidth().onSizeChanged { navigationViewport = it }.horizontalScroll(rememberScrollState()).padding(10.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                destinations.forEach { item -> key(item.id) { Item(item, Modifier.width(132.dp)) } }
+            } else Row(Modifier.fillMaxWidth().onSizeChanged { navigationViewport = it }.horizontalScroll(horizontalNavigation).padding(tabPadding),
+                horizontalArrangement = Arrangement.spacedBy(tabGap)) {
+                destinations.forEach { item -> key(item.id) { Item(item, Modifier.width(tabWidth)) } }
             }
         }
         if (wide) Row(Modifier.fillMaxSize()) { Navigation(); Box(Modifier.weight(1f).fillMaxHeight()) { content() } }

@@ -1,3 +1,5 @@
+2026-11-02 精确118/7026：主2543=2522PASS+19SKIP+2FAIL；完整文本3共享+2实际Desktop全PASS，shared1145/Android582/Python3及proxy5/NTFS7/native33/updater8/exit4通过。Nav请求已消费1次且UPDATE已选中，tab完全裁掉而横栏未滚；改布局后按同一roundToPx几何/原ScrollState显现，原5秒/可见性/resize保留。第二原历史网格初始left断言首因未知，只补原等待后的数量/bounds/失败图，不归flaky。WorldBook8dp标题间距和完整名字语义/保存断言另补。P18完整稳定升级仍工作树接线未验，独立源界限保持；无新公开/日常H/本机重负载。
+
 2026-11-02 精确117/29fc：主2541=2521PASS+19SKIP+1FAIL，唯一Data初始330短窗外部UPDATE后原5秒selected完整可见性超时，尚未执行resize，先补原失败点计数/标签bounds和Scene图，原时限断言保持，不猜根因。Format/WorldBook两例实际PASS；archive四原失败及preset/controller/custody/Scene均通过；shared1142/Android582/Python3通过。后续完整文本7a533待另源。P18真实稳定SemVer/单调build/旧根可识别storage及分通道签名缓存开始接线，仅工作树未验，不混当前公开或真实安装。
 
 2026-11-02 独立P17-07完整Prompt文本源码与5新例已备，见266：单独前缀/规范配置/转义正负词及角色控制，包含所选模型位置应用开关；其他参数/引用保留，原正向入口不变。原实际request序列化核两模型源/目标坐标开关相反的双方向，另真实容器及420/1100预览确认/撤销，仍待后续精确源云验，不混当前117。117/29fc只含预设合法fixture修正与a5紧凑布局，仍执行；公开1233/15和真人待保持，无本机重负载/日常H操作或新公开。

@@ -366,7 +366,9 @@ class DesktopCurrentImagePresentationTest {
             try {
                 repeat(10) { scene.frames(); delay(20) }
                 val images = scene.nodes().filter { it.matches("图片") }
-                assertTrue(images.map { it.boundsInRoot.left }.distinct().size >= 3)
+                val ready = images.map { it.boundsInRoot.left }.distinct().size >= 3
+                if (!ready) scene.shot("history-grid-initial-layout-failure")
+                assertTrue(ready, "initial history grid: ready=${c.state.value.ready}, images=${images.size}, bounds=${images.map { it.boundsInRoot }}")
                 scene.click("选择")
                 assertTrue(scene.nodes().any { it.matches("范围起点") })
                 scene.click("取消选择")

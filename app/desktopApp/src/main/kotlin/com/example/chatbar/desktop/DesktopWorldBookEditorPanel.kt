@@ -81,11 +81,12 @@ internal fun DesktopWorldBookEditorOverlay(controller: DesktopWorldBookEditorCon
     DesktopModalSurface { Box(Modifier.fillMaxSize().background(colors.overlay)) {
         Column(Modifier.fillMaxSize().padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
-                verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                WBHeading(t(if (state.targetId == null) DesktopUiText.WORLD_NEW else DesktopUiText.WORLD_EDIT))
-                BootstrapButton(t(DesktopUiText.WORLD_HELP), secondary = true) { helpOpen = true }
-                BootstrapButton(t(DesktopUiText.CLOSE), secondary = true) { controller.requestLeave(controller::closeClean) }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.weight(1f)) { WBHeading(t(if (state.targetId == null) DesktopUiText.WORLD_NEW else DesktopUiText.WORLD_EDIT)) }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    BootstrapButton(t(DesktopUiText.WORLD_HELP), secondary = true) { helpOpen = true }
+                    BootstrapButton(t(DesktopUiText.CLOSE), secondary = true) { controller.requestLeave(controller::closeClean) }
+                }
             }
             Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp)) {
