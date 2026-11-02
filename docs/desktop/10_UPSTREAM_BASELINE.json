@@ -109,12 +109,12 @@
     "status": "selective_adaptation_in_progress_not_whole_baseline_promotion",
     "sourceAtRecord": "9f5150db3acbd9e39333c41523101fada4910cb9",
     "lastCompleteSourceValidation": {
-      "commit": "35c5216ba7b3f6356ef2af0f8ac9bfc439b96715",
-      "run": 41485455158,
-      "mainPass": 2555,
+      "commit": "9f5150db3acbd9e39333c41523101fada4910cb9",
+      "run": 41493893207,
+      "mainPass": 2563,
       "mainSkip": 19,
       "mainFail": 0,
-      "sharedPass": 1188,
+      "sharedPass": 1192,
       "androidPass": 586,
       "proxyPass": 5,
       "ntfsPass": 7,
@@ -178,6 +178,12 @@
         "source": "35c5216ba7b3f6356ef2af0f8ac9bfc439b96715",
         "evidence": "278; actual136 full originals, shared HTTP4+virtual deadline1 and Desktop HTTP2; original usage assertions retained",
         "status": "targeted_behavior_verified"
+      },
+      {
+        "scope": "Official147 reverse image editable scene confirmation and explicit target-bound candidate apply",
+        "source": "9f5150db3acbd9e39333c41523101fada4910cb9",
+        "evidence": "279; exact138 Desktop8/shared4 and originalReaudit11 actualPASS,137 fourPane views reused by identicalblob; DesignParity6PASS+1SKIP",
+        "status": "targeted_behavior_verified_not_native_or_human"
       }
     ],
     "pendingRanges": [
@@ -190,11 +196,6 @@
         "scope": "Whole selected147 compatibility declaration and affected final candidate/user cross-scenario acceptance",
         "evidence": "216/207; retain genuine limitations and authorized exceptions",
         "status": "pending_selected_range_closure"
-      },
-      {
-        "scope": "Official147 selected-model controls for memory/RAG/research/card/appearance/Fish auxiliary tasks",
-        "evidence": "278; shared and actual Desktop final-wire, existing Android parity and virtual120s deadline tests prepared; exact cloud execution pending",
-        "status": "post1234_source_in_progress_not_in_frozen_candidate"
       }
     ],
     "notOfficialCompatibilityProof": [
@@ -328,15 +329,6 @@
         "shellMethod": "PASS_IMAGE_NOT_ARCHIVED",
         "correction": "explicit Unit; snapshot field/layout and capture followups require next exact source"
       }
-    ],
-    "pendingReverseScene": {
-      "source": "9f5150db3acbd9e39333c41523101fada4910cb9",
-      "run": 41493893207,
-      "status": "implemented_cloud138_pending",
-      "newDesktopMethods": 8,
-      "newSharedMethods": 4,
-      "previous137": "Actual direct shared3/Desktop7 and4Scene images PASS, but one original source ownership checkFAIL; original137 preserved",
-      "evidence": "279"
-    }
+    ]
   }
 }

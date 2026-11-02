@@ -1,3 +1,7 @@
+138/9f原件完整PASS；原DesignParity为6PASS+1SKIP，原生辅助窗口关闭不作已验。279反推范围已工程验证，1235私有普通候选R24正在构建。136模型参数范围保持；正式baseline141未提升，1234原包/签名16冻结、无新公开或日常H操作。
+
+下方历史保留。
+
 2026-11-03后继：136/35c5216完整原件通过，278辅助模型参数范围实际验证；Memory/RAG cap/thinking/custom继承、120秒RAG期限、角色研究/编辑/图片JSON和Fish翻译/标签的原usage/retry保护均保留。279反推场景两阶段1e6de51c已送137仍待；4731cf5a关联视觉/Stop后补不在137。134社区及R7/R19/R20/R23各原限定证据复用，不批量提升validated141或整147。1234/c2d/sign16冻结，公开1233/15、真人待和日常H UNKNOWN保持。
 
 下方历史保留。
@@ -30,7 +34,7 @@
 | 待完成改名任务与portable数据 | [272](272_SPEAKER_RENAME_PORTABLE_BACKUP_BOUNDARY.md)的5例125通过。选中卡有pending改名时明确拒绝旧reader不能安全重放的portable输出；内部forMerge/raw快照保留。 |
 | 世界书辅助模型、格式修复参数继承 | [271](271_UPSTREAM147_AUXILIARY_MODEL_PARAMETERS.md)，fdb实际HTTP4/Android2在125通过；不是只核helper未核调用。 |
 | Memory/RAG/角色研究与编辑/图片JSON/Fish辅助参数 | [278](278_OFFICIAL147_SELECTED_AUXILIARY_MODEL_PARAMETERS.md)，136/35c完整原件验证所选cap/thinking/custom与RAG120秒，新增共享HTTP4/virtual deadline1、实际DesktopMemory2和原usage方法保留；Prompt不改。 |
-| 图片反推的场景确认 | [279](279_OFFICIAL147_REVERSE_IMAGE_SCENE_CONFIRMATION.md)，137实际Desktop7/共享3和四图通过，但原静态归属检查1FAIL保留；关联视觉、原前置Stop/确认点击快照与提交时再编辑拒绝等后继9f/138待精确原件。 |
+| 图片反推的场景确认 | [279](279_OFFICIAL147_REVERSE_IMAGE_SCENE_CONFIRMATION.md)，138/9f精确Desktop8/共享4及原Reaudit11实际通过，包含关联视觉、原前置Stop/确认点击快照与提交时再编辑拒绝；137唯一静态归属失败原件保留，四图的已看观察按相同Pane blob复用。不是原生/真人或全147通过。 |
 | 角色Package默认生图参数 | [275](275_OFFICIAL147_CHARACTER_PACKAGE_IMAGE_SETTINGS.md)，Core2及实际typed JSON/PNG两原例扩展在127/128通过；schema9不变。 |
 | 预制角色声明的世界书/默认格式 | [274](274_OFFICIAL147_PRESET_DEPENDENCIES.md)，先解析完整依赖再沿原transfer提交。128原共享2及Bootstrap14/Integration3/Recovery6/Suite40通过，含取消重试、已提交ID、严格字节与用户删除不补回。 |
 | 角色编辑器与封面/头像消费这些参数 | [276](276_OFFICIAL147_CHARACTER_IMAGE_DEFAULTS.md)，ec086已实现实际global Flow、可空草稿、模型能力和请求参数；129精确原件实际Desktop4/shared1通过，含420/1100正常编辑与消费两张实图；不是只由Package回读代验。 |
