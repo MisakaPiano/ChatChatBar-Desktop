@@ -131,7 +131,14 @@ class DesktopCompactEditorLayoutTest {
                 }
                 try {
                     frames(scene); val before = consumed; updateRequest = 1
-                    until(scene) { consumed == before + 1 && selectedVisible(scene, "版本与更新", width, height) }
+                    try { until(scene) { consumed == before + 1 && selectedVisible(scene, "版本与更新", width, height) } }
+                    catch (timeout: TimeoutCancellationException) {
+                        shot(scene, "data-update-selected-$width-$height-failure")
+                        val tabs = nodes(scene).filter { it.config.getOrNull(SemanticsProperties.Role) == Role.Tab }.map {
+                            "${it.config.getOrNull(SemanticsProperties.ContentDescription)}:selected=${it.config.getOrNull(SemanticsProperties.Selected)}:bounds=${it.boundsInRoot}"
+                        }
+                        throw AssertionError("Data selected tab timeout: consumed=$consumed expected=${before + 1} viewport=$width/$height tabs=$tabs", timeout)
+                    }
                     shot(scene, "data-update-selected-$width-$height")
                     if (width == 330) {
                         for ((resizedWidth, resizedHeight) in listOf(1100 to 760, 330 to 420, 700 to 520, 699 to 520)) {

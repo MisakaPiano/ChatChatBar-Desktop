@@ -1,3 +1,5 @@
+2026-11-02 精确117/29fc：主2541=2521PASS+19SKIP+1FAIL，唯一Data初始330短窗外部UPDATE后原5秒selected完整可见性超时，尚未执行resize，先补原失败点计数/标签bounds和Scene图，原时限断言保持，不猜根因。Format/WorldBook两例实际PASS；archive四原失败及preset/controller/custody/Scene均通过；shared1142/Android582/Python3通过。后续完整文本7a533待另源。P18真实稳定SemVer/单调build/旧根可识别storage及分通道签名缓存开始接线，仅工作树未验，不混当前公开或真实安装。
+
 2026-11-02 独立P17-07完整Prompt文本源码与5新例已备，见266：单独前缀/规范配置/转义正负词及角色控制，包含所选模型位置应用开关；其他参数/引用保留，原正向入口不变。原实际request序列化核两模型源/目标坐标开关相反的双方向，另真实容器及420/1100预览确认/撤销，仍待后续精确源云验，不混当前117。117/29fc只含预设合法fixture修正与a5紧凑布局，仍执行；公开1233/15和真人待保持，无本机重负载/日常H操作或新公开。
 
 2026-11-02 精确116/b55双jobFAIL：Windows2538=2515PASS+19SKIP+4FAIL（archive四例），shared1142=1139PASS+3FAIL（preset三例），均为两份合成正向fixture焦区0.8²×1024²超过原589824面积guard；仅改fixture0.6²，原限制/断言保持。其他新custody3/controller4/Scene1+stream1共9例PASS，两张实际预设内容图已核；Android unit本轮未执行，不冒582。原a5紧凑布局3例与此最小fixture修正待下一精确源；完整文本仍独立WIP，不混入。公开1233/15、真人待和无本机重负载/日常H边界保持。
