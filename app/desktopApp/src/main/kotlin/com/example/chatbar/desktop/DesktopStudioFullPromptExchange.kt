@@ -47,17 +47,19 @@ internal fun DesktopStudioFullPromptExchange(controller: DesktopNovelAiStudioCon
 internal fun ColumnScope.DesktopStudioFullPromptContent(preview: NovelAiFullPromptContent?, busy: Boolean,
     notice: String, status: String, onCopy: () -> Unit, onRead: () -> Unit, onApply: () -> Unit,
     onCancel: () -> Unit, onClose: () -> Unit) {
+    val scroll = rememberScrollState()
+    LaunchedEffect(notice, status) { scroll.scrollTo(0) }
     ManageHeading("完整 Prompt 文本")
-    StatusText("包含画风、全部正负词、角色位置／开关、位置应用开关、模型和自然语言模式。其他生成参数、连续生成及参考资源保留当前值；完整资源交换请使用生成预设文件。")
-    StatusText("使用独立版本标识，保留原正向复制入口；Android／Studio Suite 尚未验证能直接粘贴此格式。")
     StudioActions {
         StudioAction("复制完整文本", enabled = !busy, onClick = onCopy)
         StudioAction("读取剪贴板并预览", enabled = !busy, onClick = onRead)
         StudioAction("关闭", onClick = onClose)
     }
-    if (notice.isNotBlank()) StatusText(notice)
-    if (status.isNotBlank()) StatusText(status)
-    Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(scroll), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (notice.isNotBlank()) StatusText(notice)
+        if (status.isNotBlank()) StatusText(status)
+        StatusText("包含画风、全部正负词、角色位置／开关、位置应用开关、模型和自然语言模式。其他生成参数、连续生成及参考资源保留当前值；完整资源交换请使用生成预设文件。")
+        StatusText("使用独立版本标识，保留原正向复制入口；Android／Studio Suite 尚未验证能直接粘贴此格式。")
         if (preview == null) StatusText("读取后先预览，确认才替换；可使用原撤销操作恢复，不会自动开始生成。")
         else {
             StatusText("${preview.selectedModel.displayName} · ${if (preview.naturalLanguageMode) "自然语言" else "标签"}模式 · 启用角色 ${preview.characters.count { it.enabled }}/${preview.characters.size}")

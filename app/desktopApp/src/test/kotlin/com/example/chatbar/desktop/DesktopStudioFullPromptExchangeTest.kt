@@ -64,13 +64,14 @@ class DesktopStudioFullPromptExchangeTest {
         try {
             val source = f.source()
             for (width in listOf(420, 1100)) {
+                val height = if (width == 420) 420 else 900
                 f.controller.edit { it.copy(basePrompt = "target", negativePrompt = "target negative", continuousModeEnabled = true,
                     continuousTargetCount = 100, v45Settings = it.v45Settings.copy(steps = 17), imageDescription = "retained AI input") }
                 val original = Files.readAllBytes(f.file)
                 assertTrue(f.controller.inspectFullPrompt(source))
                 var busy by mutableStateOf(false)
                 var closed = false
-                val scene = ImageComposeScene(width, 900, coroutineContext = edt) {
+                val scene = ImageComposeScene(width, height, coroutineContext = edt) {
                     val state by f.controller.state.collectAsState()
                     val scope = rememberCoroutineScope()
                     Column(Modifier.fillMaxSize().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -85,7 +86,7 @@ class DesktopStudioFullPromptExchangeTest {
                 fun action(text: String) = scene.semanticsOwners.flatMap { walk(it.rootSemanticsNode) }.first { matches(it, text) && it.config.contains(SemanticsActions.OnClick) }
                 fun click(text: String) {
                     val node = action(text); val b = node.boundsInRoot
-                    assertTrue(b.left >= 0 && b.top >= 0 && b.right <= width && b.bottom <= 900 && b.height >= 32)
+                    assertTrue(b.left >= 0 && b.top >= 0 && b.right <= width && b.bottom <= height && b.height >= 32)
                     assertTrue(node.config[SemanticsActions.OnClick].action!!.invoke())
                 }
                 suspend fun frames() { repeat(4) { scene.render().close(); delay(25) } }
