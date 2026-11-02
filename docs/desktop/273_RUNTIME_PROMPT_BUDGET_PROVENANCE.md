@@ -11,3 +11,5 @@
 - 不把可缓存候选当供应商命中/账单，也不把字符法当模型tokenizer。provider实报、未知多模态/tools/envelope与用户配置容量分别展示，不推算可用余额。模型/tokenizer/provider/cache/multimodal校准仍待后续证据，本片不新造“所有模型必须精确”的范围。
 
 测试源码：新增共享两例覆盖两条原渲染分支、出口/缺失出口/称呼/检索分层、观察开关前后实际完整请求与cache身份相同，以及wire覆盖时计划/cache拒绝归属；扩展原WorldBook两例区分disabled/direct/outlet和无绑定；扩展真实Desktop只读plan→diagnostics→完整wire，保留原根零写/无索引重建断言并核数字不含正文/名字、再次请求不复用陈旧计划。所有执行仍在云端。
+
+后继校准源码（独立于正在检查的a485/126）：由Kotlin真实估算器生成七份手工合成空白/英文/汉字/混合/Unicode/结构/重复文本数字，云端用固定tiktoken0.12.0的cl100k_base与o200k_base分别比较并验证编解码往返，记录14行差值与安装依赖archive哈希；输入来自测试报告，不从profile/聊天抓取。参考来自[固定版官方定义](https://raw.githubusercontent.com/openai/tiktoken/0.12.0/tiktoken_ext/openai_public.py)，原loader继续校验rank下载的预期SHA。库仅安装在CI，不打进应用；输出不是调整估算器、精度阈值或所有模型兼容声明，provider请求封装/缓存计费/多模态仍单列未验证。该后继尚未执行，不混126。
