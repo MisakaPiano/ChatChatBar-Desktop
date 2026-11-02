@@ -116,8 +116,10 @@ internal fun DesktopChatDebugPanel(owner: DesktopTransportDiagnosticsOwner, sess
                             if (entry.cancellationObserved) StatusText("已观察到取消请求；不据此推断供应商是否受理。")
                         } else if (entry.image != null) {
                             val image = entry.image
-                            StatusText("实际 NovelAI 生图请求 · 网络尝试 ${image.attempt} · HTTP ${image.httpStatus ?: "未收到"}")
-                            StatusText("请求图片数：${image.requestedImages} · 有效返回：${image.outputImages ?: "未取得"} · 字节：${image.outputImageBytes ?: "未取得"}")
+                            StatusText("实际 ${image.operation}请求 · 网络尝试 ${image.attempt} · HTTP ${image.httpStatus ?: "未收到"}")
+                            if (image.requestedEncodings != null)
+                                StatusText("请求编码次数：${image.requestedEncodings} · 有效编码字节：${image.outputEncodingBytes ?: "未取得"}")
+                            else StatusText("请求图片数：${image.requestedImages} · 有效返回：${image.outputImages ?: "未取得"} · 字节：${image.outputImageBytes ?: "未取得"}")
                             StatusText("图片数与字节为本地测量，不等同 Anlas 账单或 Token；不记录提示词、请求头、参考图或图片正文。")
                             StatusText("网络输出完成不代表已经保存或应用；请查看原任务结果。")
                             if (entry.cancellationObserved) StatusText("已观察到取消请求；不据此推断供应商是否受理。")

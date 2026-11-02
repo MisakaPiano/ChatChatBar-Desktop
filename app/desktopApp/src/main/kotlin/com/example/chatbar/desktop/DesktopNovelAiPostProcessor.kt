@@ -9,9 +9,11 @@ import okhttp3.OkHttpClient
 
 /** Platform raster/SecretStore adapter around official Enhance/Upscale request and cost authorities. */
 internal class DesktopNovelAiPostProcessor(private val secrets: DesktopSecretStore,
-    private val client: OkHttpClient = secureNovelAiClient(DesktopNovelAiHttpPurpose.POST_PROCESS)) {
+    private val client: OkHttpClient = secureNovelAiClient(DesktopNovelAiHttpPurpose.POST_PROCESS),
+    private val diagnostics: DesktopTransportDiagnosticsOwner? = null) {
     suspend fun process(bytes: ByteArray, tab: NovelAiPostProcessTab, source: NovelAiEnhanceSource?,
         options: NovelAiEnhanceOptions, account: NovelAiAccountUsage?, progress: (String) -> Unit): ByteArray = withContext(Dispatchers.IO) {
+        var media: DesktopImageDiagnosticRecorder? = null
         try {
             DesktopImageEditing.requireStatic(bytes)
             val raster = DesktopImageEditing.decode(bytes)
@@ -38,10 +40,14 @@ internal class DesktopNovelAiPostProcessor(private val secrets: DesktopSecretSto
             val token = secrets.credentialForCall(DesktopCredentialKey.NovelAiToken)?.takeIf { it.isNotBlank() }
                 ?: throw DesktopNovelAiRequestException("请先在 NovelAI 设置中安全保存凭据")
             val encoded = Base64.getEncoder().encodeToString(encodedBytes)
-            val events = if (tab == NovelAiPostProcessTab.UPSCALE) NovelAiUpscaleService(client, safeErrorsOnly = true).upscale(token, encoded)
+            media = beginDesktopImageDiagnostics(diagnostics, secrets, token,
+                if (tab == NovelAiPostProcessTab.ENHANCE) requireNotNull(source).settings.model.apiId else "upscale-model-unreported", 1,
+                if (tab == NovelAiPostProcessTab.UPSCALE) DesktopUsageMediaKind.NAI_UPSCALE else DesktopUsageMediaKind.NAI_ENHANCE)
+            val observed = media?.client(client) ?: client
+            val events = if (tab == NovelAiPostProcessTab.UPSCALE) NovelAiUpscaleService(observed, safeErrorsOnly = true).upscale(token, encoded)
             else {
                 val recipe = requireNotNull(source)
-                NovelAiImageService(client, safeErrorsOnly = true).generate(token, recipe.prompt, requireNotNull(size),
+                NovelAiImageService(observed, safeErrorsOnly = true).generate(token, recipe.prompt, requireNotNull(size),
                     recipe.settings.copy(seed = kotlin.random.Random.nextLong(0, 4_294_967_296L), seedMode = NovelAiSeedMode.FIXED),
                     NovelAiPreparedImageGuidance(action = NovelAiGenerationAction.IMAGE_TO_IMAGE, imageBase64 = encoded,
                         imageToImageStrength = options.strength, imageToImageNoise = options.noise), maxRateLimitRetries = 0,
@@ -62,10 +68,12 @@ internal class DesktopNovelAiPostProcessor(private val secrets: DesktopSecretSto
             val expected = if (tab == NovelAiPostProcessTab.UPSCALE) NovelAiImageSize(width * 2, height * 2, "Upscale")
                 else size.takeUnless { options.scale == NovelAiEnhanceScale.MAX }
             if (expected != null) require(decoded.width == expected.width && decoded.height == expected.height)
+            media?.validatedImage(output.size)
+            media?.finish(DesktopUsageOutcome.COMPLETED)
             currentCoroutineContext().ensureActive()
             output
-        } catch (cancelled: CancellationException) { throw CancellationException("图片处理已取消") }
-        catch (safe: DesktopNovelAiRequestException) { throw safe }
-        catch (_: Exception) { throw DesktopNovelAiRequestException("图片处理失败，请检查来源、参数和安全配置；原图保留") }
+        } catch (cancelled: CancellationException) { media?.finish(DesktopUsageOutcome.CANCELLED); throw CancellationException("图片处理已取消") }
+        catch (safe: DesktopNovelAiRequestException) { media?.finish(DesktopUsageOutcome.FAILED); throw safe }
+        catch (_: Exception) { media?.finish(DesktopUsageOutcome.FAILED); throw DesktopNovelAiRequestException("图片处理失败，请检查来源、参数和安全配置；原图保留") }
     }
 }

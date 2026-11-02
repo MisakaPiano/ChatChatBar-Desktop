@@ -80,8 +80,18 @@ internal class DesktopUsageAttemptRecorder(
         require(count >= 0 && bytes >= 0)
         val previous = current ?: return@synchronized
         val media = requireNotNull(previous.media)
-        require(media.kind == DesktopUsageMediaKind.NAI_IMAGE_GENERATION)
+        require(media.kind in listOf(DesktopUsageMediaKind.NAI_IMAGE_GENERATION, DesktopUsageMediaKind.NAI_ENHANCE, DesktopUsageMediaKind.NAI_UPSCALE))
         val measured = media.copy(outputImages = count, outputImageBytes = bytes)
+        if (measured != media) current = previous.copy(revision = previous.revision + 1,
+            updatedAt = maxOf(clock(), previous.startedAt), media = measured).also(publish)
+    }
+    fun localEncoding(bytes: Long) = synchronized(lock) {
+        if (closed) return@synchronized
+        require(bytes > 0)
+        val previous = current ?: return@synchronized
+        val media = requireNotNull(previous.media)
+        require(media.kind == DesktopUsageMediaKind.NAI_VIBE_ENCODING)
+        val measured = media.copy(outputEncodingBytes = bytes)
         if (measured != media) current = previous.copy(revision = previous.revision + 1,
             updatedAt = maxOf(clock(), previous.startedAt), media = measured).also(publish)
     }

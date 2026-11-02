@@ -256,11 +256,13 @@ internal fun DesktopMomentsPanel(controller: DesktopMomentsController) {
             }
         }
         if (owner != null && debugOperation != null) MomentModal("朋友圈请求日志", { debugOperation = null }) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 SelectChip("发布判断", debugOperation == "JUDGE") { debugOperation = "JUDGE" }
                 SelectChip("动态文案", debugOperation == "GENERATE") { debugOperation = "GENERATE" }
+                SelectChip("动态配图", debugOperation == "IMAGE") { debugOperation = "IMAGE" }
             }
-            DesktopChatDebugPanel(owner, "moments:$debugOperation", { debugOperation = null }, modifier = Modifier.heightIn(min = 300.dp, max = 520.dp))
+            DesktopChatDebugPanel(owner, "moments:$debugOperation", { debugOperation = null },
+                modifier = Modifier.heightIn(min = 300.dp, max = 520.dp), imageGeneration = debugOperation == "IMAGE")
         }
     }
 }

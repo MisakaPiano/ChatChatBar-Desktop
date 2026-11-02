@@ -121,3 +121,8 @@ Also read `chatbar-novelai-prompt` before changing NovelAI prompt construction, 
 - Run `.\gradlew.bat test` for policy, prompt assembly, repository, scheduler, or parsing changes.
 - Run `powershell -ExecutionPolicy Bypass -File .\ci.ps1 -SkipAssemble` for UI, navigation, background alarm, Android API, or shared behavior changes.
 - Add/update JVM tests around `PromptTemplates`, `MomentPolicy`, scheduler limits, repository likes/delete, and debug input assembly when touched.
+
+## Desktop physical image observations
+
+- DesktopMomentGeneration injects the optional original MomentGenerationCore.imageGeneration flow adapter for scheduled and debug generation; manual post-image generation reuses that same flow. Android keeps the default original service. Final raster validation/counting is metadata-only; original Core retries, checkpoints, save and error results remain authoritative. Completed network output is recorded before later local materialization.
+- Each generation entry captures the selected NovelAI account/key together through DesktopAccountStore (or preserves an existing frozen call). Manual generateImage carries the original launchOwnedWork UUID/post/session/card; scheduled generation retains its task entity. The `moments:IMAGE` group exposes only bounded image metadata through the existing request-log modal’s 动态配图 tab, without turning its display group into a ChatSession ID. DesktopMomentImageUsageTest covers original core/checkpoint, real manual worker/account switch and failure/cancellation.

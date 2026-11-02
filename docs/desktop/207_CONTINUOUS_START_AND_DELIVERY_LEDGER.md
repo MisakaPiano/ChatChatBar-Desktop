@@ -1,3 +1,5 @@
+2026-11-02原P15后补源码：朋友圈scheduled/debug与manual原图片流、手动post/work上下文及原子账户冻结，Enhance/Upscale分类型、Vibe cachemiss编码单位和缓存写边界、原日志/统计UI已补，见262。三Moment+三处理/custody+一Panel以及原Moments实际UI扩展待其精确源云验；不由正在运行113/ac522或公开1233代验。未发真实付费调用，无本机编译/渲染或日常H操作。
+
 2026-11-02后补：112/bace已终结FAIL，唯一首因为测试普通afterTypedPrepared回调调用挂起函数awaitCancellation；主/proxy未执行、未生成主XML/PNG。shared1138/Android582/Python3/NTFS7/native33/updater8/exit4独立通过复用。现仅将同一同步tail/stop回归改为有界工作线程屏障，stop仍取消真实原Job，保留5秒、UNCERTAIN、无Entity/receipt及新增原件字节保全断言；不改生产回调类型或伪造取消。新精确源待云端。1233/15公开与真人待边界保持。
 
 2026-11-02最新公开检查点：用户明确允许后，冻结2ba39c的1233/Release431053626及匹配signed15-release-r02已公开，metadata ref583bce9109031ebeac7019bba46149c5f78d9f76，root1保持。四资产/说明/actual tag-source和角色链读回；原1225客户端匿名实际14→15发现、176394340B完整下载和二验PASS，无安装/日常H访问、真人仍待。最终说明已披露新V4.5 Vibe首次编码及Upscale路由限制，V5不支持另列；旧r01签名/结果保留，不冒称后补修复入1233。已清理3个本次新派生重复文件542614122B，交付原件/签名/必要证据保留，旧拒绝目标未动。111/b6主2513=2493PASS+19SKIP+1FAIL，原加密包预览后skip等next超时；新增图片8项及相关20选中例、六张新实图通过但统计类型误标已后补。211c按原mutex/ActionRun修交接，bace固定用途路由/临时聊天owner和图片标签修正已送112/41388236121待验，原deadline/保护保持，不取消或掩盖111。其余原1.0工作继续，无本机重负载或H代装。

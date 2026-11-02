@@ -45,9 +45,13 @@ class DesktopMomentsPanelTest {
             container.jsonFileStorage.saveEntity("moment_posts", post.id, post, MomentPost.serializer())
             container.settingsRepository.updateAppSettings { it.copy(momentsEnabled = true) }
             val store = DesktopMomentStore(container.jsonFileStorage, container.dataOperationCoordinator)
+            val diagnostics = DesktopTransportDiagnosticsOwner()
+            diagnostics.addMedia(DesktopTransportDiagnosticEntry("image-task", "moments:IMAGE", "NovelAI", "synthetic", 1,
+                status = DesktopTaskStatus.COMPLETED, image = DesktopImageRequestEvidence(1, "POST", 1, 200, 1, 512)))
             val view = DesktopMomentsController(store, container.settingsRepository, container.characterRepository,
                 container.chatRepository, container.dataOperationCoordinator, container.taskRuntime,
-                DesktopMomentGenerator { _, _, _, _, _, _, _, _, _, _ -> error("Scene must not generate") }, resources = resources)
+                DesktopMomentGenerator { _, _, _, _, _, _, _, _, _, _ -> error("Scene must not generate") },
+                resources = resources, diagnostics = diagnostics)
             controller = view
             withTimeout(10_000) { view.state.first { it.posts.size == 1 } }
             for (width in listOf(420, 1100)) {
@@ -75,6 +79,9 @@ class DesktopMomentsPanelTest {
                     assertFalse(view.state.value.scheduling)
                     withTimeout(10_000) { while (container.settingsRepository.getAppSettings().lastSeenMomentsAt < 10) { frames() } }
                     shot("moments-timeline-$width.png")
+                    click("请求日志"); frames(); click("动态配图"); frames()
+                    assertTrue(all().any { node -> node.config.getOrNull(SemanticsProperties.Text)?.any { it.text.contains("有效返回：1") } == true })
+                    shot("moments-image-log-$width.png"); click("关闭调试日志"); frames()
                     click("编辑动态文字"); frames()
                     val previousSender = store.posts().single().senderName
                     click("发布人物 · 原发布者 · $previousSender ▾"); frames()

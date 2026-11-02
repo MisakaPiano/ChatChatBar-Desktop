@@ -26,6 +26,7 @@ import com.example.chatbar.domain.prompt.MomentPromptAuthority as PromptTemplate
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.Json
 
 class MomentGenerationCore(
@@ -35,7 +36,9 @@ class MomentGenerationCore(
     private val saveImage: suspend (String, ByteArray) -> String,
     private val loadToken: () -> String?,
     private val json: Json = Json { ignoreUnknownKeys = true; isLenient = true },
-    private val compiledMemoryProvider: suspend (ChatSession) -> String = { it.longTermMemory }
+    private val compiledMemoryProvider: suspend (ChatSession) -> String = { it.longTermMemory },
+    private val imageGeneration: (String, NovelAiPromptPlan, NovelAiImageSize, NovelAiGenerationSettings) -> Flow<NovelAiImageEvent> =
+        { token, prompt, size, settings -> imageService().generate(token, prompt, size, settings) },
 ) {
     suspend fun generate(
         card: CharacterCard,
@@ -220,11 +223,9 @@ class MomentGenerationCore(
                 )
             )
             val seed = imageService().newSeed()
-            imageService().generate(
-                token = token,
-                prompt = prompt,
-                imageSize = imageSize,
-                settings = NovelAiGenerationSettings.legacy(seed, model = novelAiImageModel).let {
+            imageGeneration(
+                token, prompt, imageSize,
+                NovelAiGenerationSettings.legacy(seed, model = novelAiImageModel).let {
                     characterSettings?.applyTo(it) ?: it
                 }
             ).collect { event ->
@@ -325,7 +326,7 @@ class MomentGenerationCore(
             var finalImage: ByteArray? = null
             var errorMessage: String? = null
             val imageOutput = StringBuilder()
-            imageService().generate(token, prompt, imageSize, generationSettings).collect { event ->
+            imageGeneration(token, prompt, imageSize, generationSettings).collect { event ->
                 when (event) {
                     is NovelAiImageEvent.Final -> {
                         finalImage = event.image

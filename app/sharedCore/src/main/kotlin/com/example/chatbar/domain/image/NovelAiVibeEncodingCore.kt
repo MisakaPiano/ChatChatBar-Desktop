@@ -25,6 +25,7 @@ open class NovelAiVibeEncodingCore(
     private val readAsset: (String) -> ByteArray = { File(it).readBytes() },
     private val safeErrorsOnly: Boolean = false,
     private val endpoint: String = ENCODE_ENDPOINT,
+    private val onEncodingValidated: (Int) -> Unit = {},
 ) {
     fun isCached(assetSha256: String, model: NovelAiImageModel, informationExtracted: Float): Boolean =
         cacheFile(assetSha256, model, informationExtracted).isFile
@@ -75,6 +76,7 @@ open class NovelAiVibeEncodingCore(
                             }
                             require(bytes.isNotEmpty()) { "氛围编码响应为空" }
                             check(!safeErrorsOnly || !bytes.toString(Charsets.ISO_8859_1).contains(token)) { "氛围编码响应无效" }
+                            onEncodingValidated(bytes.size)
                             Base64.getEncoder().encodeToString(bytes)
                         }
                     }.onSuccess { value ->

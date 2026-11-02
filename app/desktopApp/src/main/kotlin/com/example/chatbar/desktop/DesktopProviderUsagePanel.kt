@@ -29,12 +29,13 @@ internal fun DesktopProviderUsagePanel(owner: DesktopProviderUsageOwner) {
     var page by remember(query, dimension) { mutableStateOf(0) }
     LaunchedEffect(owner, query, dimension, page) { owner.refresh(query, dimension, page) }
     DesktopManagementHeading("模型请求用量")
-    StatusText("记录已接入的文本／向量、正式语音与生成试听、Studio／聊天生图和角色候选生图请求。字符、音频时长和图片／音频字节为本地测量，不混入 Token，也不代表账单。图片处理、Vibe 编码和朋友圈生图仍待接入；未报告的服务端用量保持未知。")
+    StatusText("记录已接入的文本／向量、语音、Studio／聊天／角色／朋友圈生图，以及图片增强、放大和 Vibe 编码请求。字符、时长、图片与编码字节为本地测量，不混入 Token，也不代表账单。缓存复用不新增网络请求；未报告的服务端用量保持未知。")
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         SelectChip("全部类型", !textOnly && mediaKind == null) { textOnly = false; mediaKind = null }
         SelectChip("Token 请求", textOnly) { textOnly = true; mediaKind = null }
-        SelectChip("Fish TTS", mediaKind == DesktopUsageMediaKind.FISH_TTS) { textOnly = false; mediaKind = DesktopUsageMediaKind.FISH_TTS }
-        SelectChip("NovelAI 生图", mediaKind == DesktopUsageMediaKind.NAI_IMAGE_GENERATION) { textOnly = false; mediaKind = DesktopUsageMediaKind.NAI_IMAGE_GENERATION }
+        DesktopUsageMediaKind.entries.forEach { kind ->
+            SelectChip(kind.label, mediaKind == kind) { textOnly = false; mediaKind = kind }
+        }
     }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         SelectChip("全部时间", days == null) { days = null }
@@ -84,11 +85,7 @@ internal fun DesktopProviderUsagePanel(owner: DesktopProviderUsageOwner) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 StatusText(group.title)
                 if (dimension == DesktopUsageDimension.MODEL_ACCOUNT) {
-                    val kind = when (group.sample.media?.kind) {
-                        null -> "Token 请求"
-                        DesktopUsageMediaKind.FISH_TTS -> "Fish TTS"
-                        DesktopUsageMediaKind.NAI_IMAGE_GENERATION -> "NovelAI 生图"
-                    }
+                    val kind = group.sample.media?.kind?.label ?: "Token 请求"
                     StatusText("模型 ID：${group.sample.modelId} · $kind")
                     StatusText((group.sample.provider ?: "供应商未标注") + " · " +
                         (group.sample.accountId?.let { "账户 ID：$it" } ?: "账户未标注"))
@@ -151,11 +148,16 @@ private fun UsageCounters(totals: DesktopUsageTotals) {
                 StatusText(local("发送字符（Unicode 码点，含重试）", media.inputTextCodePoints))
                 StatusText(local("有效音频时长（毫秒）", media.outputAudioDurationMs) + " · " + local("有效音频字节", media.outputAudioBytes))
             }
-            DesktopUsageMediaKind.NAI_IMAGE_GENERATION -> {
-                StatusText("NovelAI 生图 · ${media.attempts} 次网络尝试；以下为本地测量")
+            DesktopUsageMediaKind.NAI_IMAGE_GENERATION, DesktopUsageMediaKind.NAI_ENHANCE, DesktopUsageMediaKind.NAI_UPSCALE -> {
+                StatusText("${media.kind.label} · ${media.attempts} 次网络尝试；以下为本地测量")
                 StatusText(local("请求图片数（含重试）", media.requestedImages))
                 StatusText(local("有效返回图片数", media.outputImages) + " · " + local("有效图片字节", media.outputImageBytes))
                 StatusText("有效返回不代表已经保存或应用；保存结果请查看原任务。")
+            }
+            DesktopUsageMediaKind.NAI_VIBE_ENCODING -> {
+                StatusText("${media.kind.label} · ${media.attempts} 次网络尝试；以下为本地测量")
+                StatusText(local("请求编码次数", media.requestedEncodings) + " · " + local("有效编码字节", media.outputEncodingBytes))
+                StatusText("编码返回不代表本地缓存已写入；已有编码复用不新增请求。")
             }
         }
         StatusText("供应商计费量：未取得（UNREPORTED）；本地测量不能等同账单。")

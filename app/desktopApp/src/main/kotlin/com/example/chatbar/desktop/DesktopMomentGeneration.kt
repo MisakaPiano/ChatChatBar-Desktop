@@ -10,13 +10,14 @@ import com.example.chatbar.domain.model.EffectiveModelResolver
 import com.example.chatbar.domain.model.hasConfiguredAuthentication
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flow
 import java.util.Base64
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 /** Original shared core, with lazily opened image owners and compiled memory from the existing authority. */
 internal class DesktopMomentGeneration(
-    private val text: DesktopMomentTextGateway,
+    private val text: MomentTextGateway,
     private val models: EffectiveModelResolver,
     private val settingsRepository: SettingsRepository,
     private val secrets: DesktopSecretStore,
@@ -24,9 +25,43 @@ internal class DesktopMomentGeneration(
     private val resources: DesktopCharacterResourceStore,
     private val imageCleanup: DesktopMomentImageCleanup,
     private val compiledMemory: suspend (ChatSession) -> String,
-) : DesktopMomentGenerator, DesktopMomentImageGenerator, DesktopMomentDebugGenerator {
-    private val imageClientOwner = lazy {
+    private val diagnostics: DesktopTransportDiagnosticsOwner? = null,
+    private val imageClient: () -> okhttp3.OkHttpClient = {
         secureNovelAiClient().newBuilder().callTimeout(0, TimeUnit.MILLISECONDS).build()
+    },
+) : DesktopMomentGenerator, DesktopMomentImageGenerator, DesktopMomentDebugGenerator {
+    private val imageClientOwner = lazy(imageClient)
+
+    private suspend fun imageCredential(): DesktopCredentialCall {
+        val key = DesktopCredentialKey.NovelAiToken
+        currentCoroutineContext()[DesktopCredentialCall]?.takeIf { it.owner === secrets && it.credentialKey == key }?.let { return it }
+        return (secrets as? DesktopAccountStore)?.captureCall(key, DesktopAccountService.NOVELAI)
+            ?: DesktopCredentialCall(secrets, key, "unmanaged", secrets.load(key))
+    }
+
+    // Only the original physical image flow determines its result, independently of text or local save.
+    private fun imageEvents(token: String, prompt: NovelAiPromptPlan, imageSize: NovelAiImageSize,
+        settings: NovelAiGenerationSettings) = flow {
+        val media = beginDesktopImageDiagnostics(diagnostics, secrets, token, settings.model.apiId, settings.count,
+            diagnosticGroup = "moments:IMAGE")
+        var finals = 0
+        var invalid = false
+        try {
+            NovelAiImageService(media?.client(imageClientOwner.value) ?: imageClientOwner.value, safeErrorsOnly = true)
+                .generate(token, prompt, imageSize, settings).collect { event ->
+                    when (event) {
+                        is NovelAiImageEvent.Final -> {
+                            val valid = try { DesktopImageEditing.decode(event.image); true } catch (_: Exception) { false }
+                            if (valid) { finals++; media?.validatedImage(event.image.size) } else invalid = true
+                        }
+                        is NovelAiImageEvent.Error -> invalid = true
+                        is NovelAiImageEvent.Intermediate -> Unit
+                    }
+                    emit(event)
+                }
+            media?.finish(if (!invalid && finals == settings.count) DesktopUsageOutcome.COMPLETED else DesktopUsageOutcome.FAILED)
+        } catch (cancelled: CancellationException) { media?.finish(DesktopUsageOutcome.CANCELLED); throw cancelled }
+        catch (failure: Exception) { media?.finish(DesktopUsageOutcome.FAILED); throw failure }
     }
     private fun core(token: String?, registerImageCleanup: (String) -> Unit) = MomentGenerationCore(text,
         { infrastructure().promptDesignerOnIo() },
@@ -39,10 +74,10 @@ internal class DesktopMomentGeneration(
                     registerImageCleanup(imageCleanup.prepareCandidate(reference))
                 }
             }
-        }, { token }, compiledMemoryProvider = compiledMemory)
+        }, { token }, compiledMemoryProvider = compiledMemory, imageGeneration = ::imageEvents)
     override suspend fun generate(card: CharacterCard, session: ChatSession, messages: List<ChatMessage>, latest: MomentPost?,
         settings: AppSettings, task: MomentTask, checkpoint: String, saveCheckpoint: suspend (String) -> Unit,
-        progress: (MomentGenerationProgress) -> Unit, registerImageCleanup: (String) -> Unit): MomentGenerationResult = withContext(Dispatchers.IO) {
+        progress: (MomentGenerationProgress) -> Unit, registerImageCleanup: (String) -> Unit): MomentGenerationResult = withContext(Dispatchers.IO + imageCredential()) {
         val model = models.resolveChatModel(session.modelId, settings)
         check(model != null && model.hasConfiguredAuthentication(settings)) { "未配置可用朋友圈对话模型/API Key" }
         val imageModel = models.resolveImageModel(session.imageModelId, settings)
@@ -63,7 +98,7 @@ internal class DesktopMomentGeneration(
     }
 
     override suspend fun generate(card: CharacterCard, session: ChatSession, messages: List<ChatMessage>, latest: MomentPost?,
-        settings: AppSettings, task: MomentTask, registerImageCleanup: (String) -> Unit): MomentDebugGenerationResult = withContext(Dispatchers.IO) {
+        settings: AppSettings, task: MomentTask, registerImageCleanup: (String) -> Unit): MomentDebugGenerationResult = withContext(Dispatchers.IO + imageCredential()) {
         val model = models.resolveChatModel(session.modelId, settings)
         check(model != null && model.hasConfiguredAuthentication(settings))
         val imageModel = models.resolveImageModel(session.imageModelId, settings)
@@ -79,7 +114,7 @@ internal class DesktopMomentGeneration(
 
     override suspend fun generate(post: MomentPost, card: CharacterCard?, session: ChatSession?, settings: AppSettings,
         draft: NovelAiImageRegenerationDraft?, registerImageCleanup: (String) -> Unit,
-        progress: (MomentGenerationProgress) -> Unit): DesktopMomentImageResult = withContext(Dispatchers.IO) {
+        progress: (MomentGenerationProgress) -> Unit): DesktopMomentImageResult = withContext(Dispatchers.IO + imageCredential()) {
         check(!post.isPlaceholder)
         val token = secrets.credentialForCall(DesktopCredentialKey.NovelAiToken)?.takeIf(String::isNotBlank)
             ?: error("未配置NovelAI账户")
@@ -105,7 +140,7 @@ internal class DesktopMomentGeneration(
         val service = NovelAiImageService(imageClientOwner.value, safeErrorsOnly = true)
         val bytes = GlobalImageGenerationConcurrencyGate.instance.run {
             var final: ByteArray? = null
-            service.generate(token, plan, size, NovelAiGenerationSettings.legacy(service.newSeed(), model = targetModel)).collect { event ->
+            imageEvents(token, plan, size, NovelAiGenerationSettings.legacy(service.newSeed(), model = targetModel)).collect { event ->
                 when (event) {
                     is NovelAiImageEvent.Final -> { check(final == null); final = event.image }
                     is NovelAiImageEvent.Error -> error("动态图片请求未完成")

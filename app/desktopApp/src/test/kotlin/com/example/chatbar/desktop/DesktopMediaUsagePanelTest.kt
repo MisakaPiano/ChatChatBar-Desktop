@@ -26,6 +26,48 @@ class DesktopMediaUsagePanelTest {
     private val edt = object : CoroutineDispatcher() {
         override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
     }
+    @Test fun `processing filters and vibe metadata retain distinct local units in narrow and wide original panels`() = runBlocking(edt) {
+        val root = Files.createTempDirectory("processing-panel-"); val gate = DesktopDataOperationCoordinator()
+        val store = DesktopProviderUsageStore(root, gate); val owner = DesktopProviderUsageOwner(store)
+        try {
+            for (kind in listOf(DesktopUsageMediaKind.NAI_ENHANCE, DesktopUsageMediaKind.NAI_UPSCALE, DesktopUsageMediaKind.NAI_VIBE_ENCODING)) {
+                store.save(DesktopUsageRecord(UUID.randomUUID().toString(), UUID.randomUUID().toString(), 1, 1,
+                    DesktopUsageSource.OTHER, modelId = "synthetic", modelName = "Synthetic", startedAt = 1, updatedAt = 1,
+                    schemaVersion = 2, media = if (kind == DesktopUsageMediaKind.NAI_VIBE_ENCODING)
+                        DesktopUsageMedia(kind, requestedEncodings = 1, outputEncodingBytes = 321)
+                    else DesktopUsageMedia(kind, requestedImages = 1, outputImages = 1, outputImageBytes = 512)))
+            }
+            for (width in listOf(420, 1100)) {
+                val logs = DesktopTransportDiagnosticsOwner()
+                logs.addMedia(DesktopTransportDiagnosticEntry("vibe-task", "group", "NovelAI", "synthetic", 1,
+                    status = DesktopTaskStatus.COMPLETED, image = DesktopImageRequestEvidence(1, "POST", null, 200,
+                        operation = "NovelAI Vibe 编码", requestedEncodings = 1, outputEncodingBytes = 321)))
+                val debug = ImageComposeScene(width, 850) { DesktopChatDebugPanel(logs, "group", {}, modifier = Modifier.fillMaxSize()) }
+                try {
+                    frames(debug); val text = allText(debug)
+                    assertTrue(text.contains("NovelAI Vibe 编码请求")); assertTrue(text.contains("有效编码字节：321"))
+                    assertFalse(text.contains("请求图片数：")); assertFalse(text.contains("最终请求 JSON"))
+                    capture(debug, "processing-vibe-debug-$width")
+                } finally { debug.close() }
+                val scene = ImageComposeScene(width, 1000) {
+                    Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).verticalScroll(rememberScrollState()).padding(16.dp)) {
+                        DesktopProviderUsagePanel(owner)
+                    }
+                }
+                try {
+                    withTimeout(5000) { do { frames(scene) } while (owner.state.value.totals?.attempts != 3) }
+                    fun labeled(node: SemanticsNode): Boolean = node.config.getOrNull(SemanticsProperties.Text)?.any { it.text == "NovelAI Vibe 编码" } == true || node.children.any(::labeled)
+                    nodes(scene).first { labeled(it) && it.config.contains(SemanticsActions.OnClick) }
+                        .config[SemanticsActions.OnClick].action!!.invoke()
+                    withTimeout(5000) { do { frames(scene) } while (owner.state.value.totals?.attempts != 1) }
+                    assertEquals(DesktopUsageMediaKind.NAI_VIBE_ENCODING, owner.state.value.totals!!.media.single().kind)
+                    val text = allText(scene)
+                    assertTrue(text.contains("有效编码字节：321")); assertFalse(text.contains("有效返回图片数："))
+                    assertFalse(text.contains("输入Token：")); capture(scene, "processing-vibe-statistics-$width")
+                } finally { scene.close() }
+            }
+        } finally { owner.closeAndDrain(); gate.closeAndDrain(); check(root.toFile().deleteRecursively()) }
+    }
     @Test fun `image log entry opens and closes original overlay and clears only its actual group without numeric writes`() = runBlocking(edt) {
         val root = Files.createTempDirectory("image-log-entry-"); val gate = DesktopDataOperationCoordinator()
         val store = DesktopProviderUsageStore(root, gate)

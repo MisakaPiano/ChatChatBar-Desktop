@@ -91,13 +91,16 @@ internal class DesktopTransportDiagnosticsOwner(
     }
 
     fun beginNovelAiImages(sessionId: String, modelId: String, credential: String, accountId: String?,
-        context: DesktopUsageContext, count: Long): DesktopImageDiagnosticRecorder {
+        context: DesktopUsageContext, count: Long,
+        kind: DesktopUsageMediaKind = DesktopUsageMediaKind.NAI_IMAGE_GENERATION): DesktopImageDiagnosticRecorder {
+        require(kind != DesktopUsageMediaKind.FISH_TTS)
         val scrubber = DesktopDiagnosticScrubber(credential)
         val model = scrubber.text(modelId, SHORT_LIMIT)
         return DesktopImageDiagnosticRecorder(this, sessionId, model, scrubber, clock,
             usageSink?.let { sink -> DesktopUsageAttemptRecorder(context, model, model, "NovelAI",
                 accountId?.let { scrubber.text(it, SHORT_LIMIT) }, sink, clock,
-                DesktopUsageMedia(DesktopUsageMediaKind.NAI_IMAGE_GENERATION, requestedImages = count)) }, count)
+                if (kind == DesktopUsageMediaKind.NAI_VIBE_ENCODING) DesktopUsageMedia(kind, requestedEncodings = count)
+                else DesktopUsageMedia(kind, requestedImages = count)) }, count, kind)
     }
 
     fun begin(taskId: String, sessionId: String, model: ModelConfig,

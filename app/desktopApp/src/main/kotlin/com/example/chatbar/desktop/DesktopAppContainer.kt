@@ -244,12 +244,13 @@ class DesktopAppContainer internal constructor(
     internal val novelAiStudioController by lazy {
         DesktopNovelAiStudioController(jsonFileStorage, characterResourceStore, filePicker,
             dataOperationCoordinator, ownedImageCleanup::deleteUnreferenced, novelAiGenerationRuntime,
-            DesktopNovelAiGuidance(appDataRoot, characterResourceStore, desktopSecretStore, dataOperationCoordinator), taskRuntime,
+            DesktopNovelAiGuidance(appDataRoot, characterResourceStore, desktopSecretStore, dataOperationCoordinator,
+                diagnostics = taskRuntime.diagnostics), taskRuntime,
             novelAiInfrastructure, settingsRepository, effectiveModelResolver, characterRepository,
             account = { com.example.chatbar.domain.image.NovelAiAccountService(secureNovelAiClient()).fetchCancellable(
                 requireNotNull(desktopSecretStore.credentialForCall(com.example.chatbar.desktop.security.DesktopCredentialKey.NovelAiToken))) },
             credentialConfigured = { !desktopSecretStore.load(com.example.chatbar.desktop.security.DesktopCredentialKey.NovelAiToken).isNullOrBlank() },
-            postProcessor = DesktopNovelAiPostProcessor(desktopSecretStore),
+            postProcessor = DesktopNovelAiPostProcessor(desktopSecretStore, diagnostics = taskRuntime.diagnostics),
             credentialIdentity = { apiAccounts.identity(com.example.chatbar.desktop.security.DesktopAccountService.NOVELAI) },
             freezeCredential = { apiAccounts.captureCall(com.example.chatbar.desktop.security.DesktopCredentialKey.NovelAiToken,
                 com.example.chatbar.desktop.security.DesktopAccountService.NOVELAI) })
@@ -670,7 +671,8 @@ class DesktopAppContainer internal constructor(
     private val momentGenerationOwner = lazy { DesktopMomentGeneration(
         DesktopMomentTextGateway(momentTransportOwner.value, momentDiagnostics), effectiveModelResolver,
         settingsRepository, desktopSecretStore, { novelAiInfrastructure }, characterResourceStore, momentImageCleanup,
-        { session -> if (session.longTermMemoryEnabled) memoryService.promptView(session.id).fullText else "" }) }
+        { session -> if (session.longTermMemoryEnabled) memoryService.promptView(session.id).fullText else "" },
+        diagnostics = momentDiagnostics) }
     private val momentsOwner = lazy { DesktopMomentsController(momentStore, settingsRepository,
         characterRepository, chatRepository, dataOperationCoordinator, taskRuntime,
         DesktopMomentGenerator { card, session, messages, latest, settings, task, checkpoint, save, progress, cleanup ->

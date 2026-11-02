@@ -10,6 +10,7 @@ import java.nio.file.Path
 import java.util.Base64
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.CancellationException
 
 internal data class DesktopPreparedGuidance(
     val guidance: NovelAiPreparedImageGuidance,
@@ -24,11 +25,27 @@ internal class DesktopNovelAiGuidance(
     private val resources: DesktopCharacterResourceStore,
     private val secrets: DesktopSecretStore,
     private val gate: AppDataOperationGate = NoOpAppDataOperationGate,
-    vibeClient: okhttp3.OkHttpClient = secureNovelAiClient(DesktopNovelAiHttpPurpose.VIBE_ENCODING),
+    private val vibeClient: okhttp3.OkHttpClient = secureNovelAiClient(DesktopNovelAiHttpPurpose.VIBE_ENCODING),
+    private val diagnostics: DesktopTransportDiagnosticsOwner? = null,
 ) {
+    private val vibeCache = root.resolve("auxiliary/novelai/vibe-cache").toFile()
     private val payloads = NovelAiInlinePayloadStore(root.toFile())
-    private val vibes = NovelAiVibeEncodingCore(root.resolve("auxiliary/novelai/vibe-cache").toFile(),
+    private val vibes = NovelAiVibeEncodingCore(vibeCache,
         vibeClient, resources::readBytes, safeErrorsOnly = true)
+
+    private suspend fun encodeVibe(asset: NovelAiStudioAssetRef, model: NovelAiImageModel, information: Float): String {
+        val token = requireNotNull(secrets.credentialForCall(DesktopCredentialKey.NovelAiToken))
+        val media = beginDesktopImageDiagnostics(diagnostics, secrets, token, model.apiId, 1, DesktopUsageMediaKind.NAI_VIBE_ENCODING)
+        return try {
+            NovelAiVibeEncodingCore(vibeCache, media?.client(vibeClient) ?: vibeClient, resources::readBytes,
+                safeErrorsOnly = true, onEncodingValidated = { bytes ->
+                    media?.validatedEncoding(bytes)
+                    // Validated response is complete before the original cache publication, which may fail locally.
+                    media?.finish(DesktopUsageOutcome.COMPLETED)
+                }).resolve(token, asset, model, information)
+        } catch (cancelled: CancellationException) { media?.finish(DesktopUsageOutcome.CANCELLED); throw cancelled }
+        catch (failure: Exception) { media?.finish(DesktopUsageOutcome.FAILED); throw failure }
+    }
 
     fun vibeCacheMisses(draft: NovelAiStudioDraft): Int =
         if (draft.imageGuidance.effectiveReferenceMode(draft.selectedModel) != NovelAiReferenceMode.VIBE) 0
@@ -91,8 +108,8 @@ internal class DesktopNovelAiGuidance(
         val preparedVibes = if (mode == NovelAiReferenceMode.VIBE) {
             val strengths = g.effectiveVibeStrengths()
             g.vibes.filter { it.isUsable }.mapIndexed { index, vibe ->
-                val encoded = vibe.encodedVibe?.takeIf { it.isNotBlank() }?.let(payloads::resolve) ?: vibes.resolve(
-                    requireNotNull(secrets.credentialForCall(DesktopCredentialKey.NovelAiToken)), requireNotNull(vibe.asset),
+                val encoded = vibe.encodedVibe?.takeIf { it.isNotBlank() }?.let(payloads::resolve) ?: encodeVibe(
+                    requireNotNull(vibe.asset),
                     draft.selectedModel, vibe.informationExtracted)
                 NovelAiPreparedVibeReference(encoded, vibe.informationExtracted, strengths[index])
             }

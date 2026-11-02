@@ -233,7 +233,8 @@ internal class DesktopMomentsController(
 
     suspend fun generateImage(post: MomentPost, draft: NovelAiImageRegenerationDraft? = null) {
         val service = requireNotNull(imageGenerator) { "朋友圈图片服务不可用" }
-        launchOwnedWork(post.sessionId) { register ->
+        launchOwnedWork(post.sessionId, DesktopUsageContext(DesktopUsageSource.MOMENTS,
+            sessionId = post.sessionId, cardId = post.characterCardId, subjectId = post.id)) { register ->
             val original = store.imageSource(post)
             val prefs = settings.getAppSettings(); check(prefs.momentsEnabled)
             val image = service.generate(original, characters.getById(original.characterCardId),
@@ -279,7 +280,8 @@ internal class DesktopMomentsController(
         refresh()
     }
 
-    private fun launchOwnedWork(sessionId: String, work: suspend ((String) -> Unit) -> Unit): Job? = synchronized(lock) {
+    private fun launchOwnedWork(sessionId: String, usageContext: DesktopUsageContext? = null,
+        work: suspend ((String) -> Unit) -> Unit): Job? = synchronized(lock) {
         check(accepting)
         if (worker?.isCompleted == false) {
             mutableState.update { it.copy(notice = "已有朋友圈任务，请等待或停止") }; return@synchronized null
@@ -297,7 +299,12 @@ internal class DesktopMomentsController(
             try {
                 tasksRuntime.withMessageMutation(sessionId) {
                     tasksRuntime.withCardDesign("moments:$sessionId", publishWorkRow = false) {
-                        gate.withNormalOperation { work { imageReceipts += it } }
+                        gate.withNormalOperation {
+                            if (usageContext == null) work { imageReceipts += it }
+                            else withContext(DesktopUsageParent(usageContext.copy(taskId = workId))) {
+                                work { imageReceipts += it }
+                            }
+                        }
                     }
                 }
             } catch (cancelled: CancellationException) { outcome = DesktopWorkPhase.CANCELLED; throw cancelled }
