@@ -2,6 +2,7 @@ package com.example.chatbar.domain.chat
 
 import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.domain.worldbook.WorldBookAiOperation
+import com.example.chatbar.domain.prompt.AuxiliaryMessageAssembler
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.toList
 import kotlinx.serialization.json.*
