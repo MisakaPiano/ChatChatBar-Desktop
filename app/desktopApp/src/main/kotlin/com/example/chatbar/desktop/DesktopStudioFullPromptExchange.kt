@@ -59,7 +59,7 @@ internal fun ColumnScope.DesktopStudioFullPromptContent(preview: NovelAiFullProm
         if (notice.isNotBlank()) StatusText(notice)
         if (status.isNotBlank()) StatusText(status)
         StatusText("包含画风、全部正负词、角色位置／开关、位置应用开关、模型和自然语言模式。其他生成参数、连续生成及参考资源保留当前值；完整资源交换请使用生成预设文件。")
-        StatusText("请在另一端使用带“完整 Prompt 文本”入口的对应版本；旧正向粘贴入口不支持此格式。原正向复制入口保留。")
+        StatusText("这是 Desktop 扩展格式，官方安卓版 1.4.7 不支持；只有明确实现此扩展的工具才能读取。原正向复制／粘贴继续使用 CCB 本体格式。")
         if (preview == null) StatusText("读取后先预览，确认才替换；可使用原撤销操作恢复，不会自动开始生成。")
         else {
             StatusText("${preview.selectedModel.displayName} · ${if (preview.naturalLanguageMode) "自然语言" else "标签"}模式 · 启用角色 ${preview.characters.count { it.enabled }}/${preview.characters.size}")
