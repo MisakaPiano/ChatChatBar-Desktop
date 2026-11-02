@@ -121,8 +121,9 @@ public final class CommunityAuthHelperProbe {
                 require(exited, "HELPER_EXIT_NOT_CONFIRMED");
                 report.put("helperExitCode", child.exitValue());
                 require(child.exitValue() == 0 && accepted.get() == 1, "HELPER_AUTH_DELIVERY_NOT_CONFIRMED");
-                require(child.descendants().findAny().isEmpty(), "HELPER_DESCENDANT_EXIT_UNCONFIRMED");
-                report.put("helperDescendantsRemaining", 0);
+                // After a parent exits, descendants may have been reparented. A late empty
+                // ProcessHandle stream cannot prove their exit; the ordinary Job test is separate.
+                report.put("helperDescendantExit", "NOT_PROVEN_PARENT_WAIT_ONLY");
                 require(((Number) call(call(activation, "getCommunityActivation"), "getValue")).longValue() == 1L,
                     "MEMORY_WINDOW_SIGNAL_NOT_OBSERVED");
                 require(!Files.exists(journal), "AUTH_ENTERED_FILE_JOURNAL");

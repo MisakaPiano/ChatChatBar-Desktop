@@ -9,6 +9,8 @@ For Android APK releases, treat “更新” as authorization to publish every c
 
 ## Desktop entrypoints
 
+`validate_signed_candidate.py` is cloud-only exact-final-byte validation with the frozen public1233 updater. A `signedUpdateOnly:true` reused-artifact request carries only public signed role bytes, checks unchanged bootstrap/cache revision/discovery/full download/second verification and never launches installers. Its local metadata fetcher is separate from anonymous public discovery. AUTH parent wait is not all-descendant-exit proof.
+
 Exact-artifact native-only revalidation accepts `communityAuthOnly:true` only with a `reuseBuildRun` request. `community_auth_probe.py` / `CommunityAuthHelperProbe.java` stay outside the installer, use the actual packaged Main and Windows registry adapter, and report real owned/foreign handler cleanup separately from browser/provider acceptance. The ordinary upgrade/independent matrix is reused, not rerun; a pre-existing scheme handler is SKIPPED.
 
 Stable packaging uses the actual display label plus explicit monotonic `desktopBuildNumber`; only the old exact0.1.0-preview.N contract derives its build. `release_metadata.py --display-version` binds the final manifest's build/channel/storage identity and signs the matching channel without rotating the bootstrap. Old-root-safe storage aliases do not change JAR/READY/Release identities. See267; native unit tests and an ordinary Preview package do not establish the complete Preview→stable→next stable chain or authorize a stable release.
