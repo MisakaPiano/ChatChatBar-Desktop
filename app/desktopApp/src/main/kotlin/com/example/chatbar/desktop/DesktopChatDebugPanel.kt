@@ -143,7 +143,7 @@ internal fun DesktopChatDebugPanel(owner: DesktopTransportDiagnosticsOwner, sess
                                         StatusText("世界书 ${activity.resolvedBooks} 本：启用 ${activity.enabledEntries} / 激活 ${activity.activatedEntries} 条；非空直接条目 ${activity.nonblankPromptEntries} 条，收集出口 ${activity.collectedOutlets} 个（不代表全部引用）。")
                                     }
                                     budget.stablePrefixEstimatedTextTokens?.let { tokens ->
-                                        StatusText("可缓存前缀文本估算 ≈ $tokens Token；这是请求候选，不是供应商缓存命中或计费量。")
+                                        StatusText("稳定前缀候选文本估算 ≈ $tokens Token；这是请求候选，不是供应商缓存命中或计费量。")
                                     }
                                     DebugSection("出口与占位符替换估算（各阶段不可相加）", selection.renders.joinToString("\n") {
                                         "${it.source} · 原层 ≈ ${it.raw.tokens} → 出口后 ≈ ${it.afterOutlets.tokens} → 称呼替换后 ≈ ${it.afterPlaceholders.tokens} Token；出口引用 ${it.resolvedOutletOccurrences} / 未解析 ${it.unresolvedOutletOccurrences}"
