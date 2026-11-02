@@ -80,7 +80,7 @@ internal class DesktopUsageAttemptRecorder(
 internal data class DesktopProviderUsageState(
     val pending: Int = 0, val saveError: String? = null, val readError: String? = null, val loading: Boolean = false,
     val totals: DesktopUsageTotals? = null, val recent: List<DesktopUsageRecord> = emptyList(),
-    val groups: List<DesktopUsageGroup> = emptyList(),
+    val breakdown: DesktopUsageBreakdownPage = DesktopUsageBreakdownPage(),
 ) {
     val error: String? get() = listOfNotNull(saveError, readError).takeIf { it.isNotEmpty() }?.joinToString("；")
 }
@@ -125,20 +125,18 @@ internal class DesktopProviderUsageOwner(private val store: DesktopProviderUsage
         }
     }
     fun retrySave() { signal.trySend(Unit) }
-    suspend fun refresh(query: DesktopUsageQuery = DesktopUsageQuery()) = withContext(Dispatchers.IO) {
+    suspend fun refresh(query: DesktopUsageQuery = DesktopUsageQuery(),
+        dimension: DesktopUsageDimension = DesktopUsageDimension.MODEL_ACCOUNT, page: Int = 0) = withContext(Dispatchers.IO) {
         val sequence = synchronized(lock) { mutableState.value = mutableState.value.copy(loading = true); ++readSequence }
         try {
             val records = store.records().filter(query::accepts)
             val totals = summarizeDesktopUsage(records)
-            val groups = records.groupBy { listOf(it.modelId, it.modelName, it.provider, it.accountId, it.media?.kind?.name) }.values.map { group ->
-                val first = group.first()
-                DesktopUsageGroup(first.modelId, first.modelName, first.provider, first.accountId, summarizeDesktopUsage(group), first.media?.kind)
-            }.sortedByDescending { it.totals.attempts }
+            val breakdown = desktopUsageBreakdownPage(records, dimension, page)
             synchronized(lock) { if (sequence == readSequence) mutableState.value = mutableState.value.copy(
-                totals = totals, recent = records.take(100), groups = groups, readError = null) }
+                totals = totals, recent = records.take(100), breakdown = breakdown, readError = null) }
         } catch (cancelled: CancellationException) { throw cancelled }
         catch (_: Exception) {
-            synchronized(lock) { if (sequence == readSequence) mutableState.value = mutableState.value.copy(totals = null, recent = emptyList(), groups = emptyList(),
+            synchronized(lock) { if (sequence == readSequence) mutableState.value = mutableState.value.copy(totals = null, recent = emptyList(), breakdown = DesktopUsageBreakdownPage(dimension),
                 readError = "用量历史未完整读取；原统计文件保留") }
         } finally { synchronized(lock) { if (sequence == readSequence) mutableState.value = mutableState.value.copy(loading = false) } }
     }

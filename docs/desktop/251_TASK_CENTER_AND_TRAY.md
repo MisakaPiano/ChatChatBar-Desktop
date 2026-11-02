@@ -1,3 +1,5 @@
+2026-11-02 CI103/dd29实际完整SUCCESS，主2477/2458PASS+19SKIP，独立proxy5/NTFS7/shared1135/Android582/native33/updater8/exit4均通过；102两例修后实际PASS，原102FAIL仍保留。实际三报告由协调端唯一下载并复用核SHA/CRC/XML，新Recovery宽窄与Studio三图已核。后续8bac正式媒体与统计分页不由本源代验；原生Tray/通知送达、真人仍分列。
+
 # 任务中心与托盘 / 2026-11-02
 
 2026-11-02 CI102/c358实际320suite/2477=2456PASS+19SKIP+2FAIL；原101两几何例实际通过，4宽title已生成/协调视核；Recovery静态typed/陈旧点击/窄宽/启动恢复marker等通过，六入口导航仍FAIL。原fixture未initialize自动备份，AUTO的effective/draft为空，补禁用计划初始化和准确destination失败信息；透明Recovery截图补生产背景。Studio回图1像素FAIL前zoom/pan/reset已过；保留精确hash/viewport比较，新增实际decoded bitmap的opaque identity等待和前后实图，不用固定帧数冒认加载完成；原bitmap保留/动画不删，仅阻止已取消decoder晚发布。修正单列冻结，不被后续Fish媒体统计WIP牵制。proxy5/NTFS7/shared1135/Android582/native33/updater8/exit4独立PASS，实际3ZIP已复用核SHA/CRC/XML。公开1229/13不变，无H写入/新公开/新签名，本机不编译渲染，10点前不问真人。

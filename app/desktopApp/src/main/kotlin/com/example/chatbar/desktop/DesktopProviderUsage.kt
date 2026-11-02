@@ -111,16 +111,15 @@ internal data class DesktopUsageQuery(
     val source: DesktopUsageSource? = null, val modelId: String? = null,
     val provider: String? = null, val accountId: String? = null, val sessionId: String? = null,
     val mediaKind: DesktopUsageMediaKind? = null, val textOnly: Boolean = false,
+    val requestId: String? = null,
 ) {
     fun accepts(record: DesktopUsageRecord) = (fromInclusive == null || record.startedAt >= fromInclusive) &&
         (untilExclusive == null || record.startedAt < untilExclusive) && (source == null || record.source == source) &&
         (modelId == null || record.modelId == modelId) && (provider == null || record.provider == provider) &&
         (accountId == null || record.accountId == accountId) && (sessionId == null || record.sessionId == sessionId) &&
-        (mediaKind == null || record.media?.kind == mediaKind) && (!textOnly || record.media == null)
+        (mediaKind == null || record.media?.kind == mediaKind) && (!textOnly || record.media == null) &&
+        (requestId == null || record.requestId == requestId)
 }
-
-internal data class DesktopUsageGroup(val modelId: String, val modelName: String, val provider: String?,
-    val accountId: String?, val totals: DesktopUsageTotals, val mediaKind: DesktopUsageMediaKind? = null)
 
 internal fun summarizeDesktopUsage(records: List<DesktopUsageRecord>): DesktopUsageTotals {
     // A newer cumulative report replaces an attempt; repeated events and retries are not extra requests.

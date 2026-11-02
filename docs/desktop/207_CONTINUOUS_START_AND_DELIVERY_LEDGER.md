@@ -1,3 +1,7 @@
+2026-11-02 CI103/dd29完整SUCCESS：实际320suite/2477=2458PASS+19SKIP，原102的Studio实际解码切回和Recovery六入口两例均PASS；proxy5/NTFS7/shared1135/Android582/native33/updater8/exit4独立PASS。实际三ZIP复用核SHA/CRC/XML，已视核420恢复页和Studio回图。8bac正式Fish媒体已单列推CI104/41368894278，尚待，不由103代验。后补统计细分和分页源码另列：全记录IO汇总，UI每页10组，model/account/provider/session/request/attempt/本机日周月，原文件只读，3行为+1实际宽窄Scene待其源。1230冻结064成熟包已建未公开草稿430962166并回读4资产/hash/source/tag/六条说明；最终说明重签到本地signed-metadata14-release-r02，旧1225实际13→14发现与完整安装包hash通过，无新下载/代装；原下载二验据不混。公开仍1229/13、H现用pointer只读1228不变，本机不编译渲染，10点前不问真人。
+
+下方历史保留。
+
 2026-11-02 dd29d3e9已单列推送CI103/41366979628，102双失败修后仍待精确源。后续正式Fish媒体源码独立在工作树，见252：原dispatch/HTTP/body drain记录真实尝试、冻结account和batch/session/card/message；本地码点/有效音频时长字节独立于Token，账单UNREPORTED。旧Token schema1原字节不改，媒体本地schema2、单位过滤和元数据日志；6个loopback transport、3个custody、2个宽窄Scene测试尚未执行。原重试/免费资格/Prompt不改，无真实供应商请求；NAI/独立试听和统计完整detail/pagination仍待，不冒认完整P15。公开1229/13与日常H不变，10点前不问真人。
 
 下方历史保留。
