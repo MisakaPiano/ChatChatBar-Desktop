@@ -1,3 +1,7 @@
+2026-11-02 后补P16-02离线pinned_drift首片源码，见253：读取三份显式完整SHA和指定Desktop的validated baseline，不fetch/不改源码或Prompt/不promote/不改已有Release监控。NUL rawdiff保留rename与路径，main/test共享候选和归档reference分开；141→已知147固定221项实跑，14当前候选exact/3归档/67无候选不等于功能缺失，66高风险路径候选非行为判定。R05带工具hash实跑结果I盘保留，3个合成Python测试待下个精确源Linux小step，不在本机运行测试。59a7统计本地未推、104/8bac仍执行，不取消当前CI。1230未公开草稿430962166已齐，最终signed14-release-r02仅本地，协调端10点后集中问本版公开许可，A不重复询问；公开1229/13和日常H不变。
+
+下方历史保留。
+
 2026-11-02 CI103/dd29完整SUCCESS：实际320suite/2477=2458PASS+19SKIP，原102的Studio实际解码切回和Recovery六入口两例均PASS；proxy5/NTFS7/shared1135/Android582/native33/updater8/exit4独立PASS。实际三ZIP复用核SHA/CRC/XML，已视核420恢复页和Studio回图。8bac正式Fish媒体已单列推CI104/41368894278，尚待，不由103代验。后补统计细分和分页源码另列：全记录IO汇总，UI每页10组，model/account/provider/session/request/attempt/本机日周月，原文件只读，3行为+1实际宽窄Scene待其源。1230冻结064成熟包已建未公开草稿430962166并回读4资产/hash/source/tag/六条说明；最终说明重签到本地signed-metadata14-release-r02，旧1225实际13→14发现与完整安装包hash通过，无新下载/代装；原下载二验据不混。公开仍1229/13、H现用pointer只读1228不变，本机不编译渲染，10点前不问真人。
 
 下方历史保留。

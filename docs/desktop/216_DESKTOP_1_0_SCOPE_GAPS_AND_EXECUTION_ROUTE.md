@@ -85,7 +85,7 @@
 | P15-06 实际 AI 请求／响应日志 | 聊天及角色／格式／世界书创作已有原DebugOverlay，Moments也有对应日志；正式Fish synthesize物理调用已补源码待精确云验；实际NAI图片和独立试听仍待，与文本辅助分列（252） | DesktopTransportDiagnostics、ChatDebugPanel 和任务上下文；按调用来源补真实日志归属，不用预览替代实际 wire，不重复聊天调试界面 |
 | P15-07 usage／cache／retry 持久汇总（D-042） | 数值owner、持久化与多域接线已有精确证据；CI87向量五项、CI88记忆／检索文本四项与CI89手动controller归属及完整回归通过 | 见234／245／248／249；聊天／三类卡AI／Moment文本／NAI辅助／Fish辅助／embedding分范围保留，正式Fish TTS独立本地字符／有效音频时长字节和schema2源码待验（252），不冒认实际生图／独立试听或完整账单覆盖。null与0、cache不重复、失败待存与关闭／重启保全保持；完整覆盖及校准继续 |
 | P16-01 上游新正式版本通知 | 已有每日正式Release/Tag监控；11/1结果与官方Tags已核。原监控执行者后续peek回执报告现有任务ACTIVE／每日且11/1完成；根对话只有渲染卡片，无独立结构化状态；nextRun／通知送达仍未知 | 复用 `6ac89e9b-a1a8-83e8-a73c-6baad3dbaad4` 的用户范围，不另建重复自动化、不扩大到所有 master 提交；来源为I盘20261101-p16-existing-monitor-check.json的schedulerFollowup，不改调度或baseline，不据worker回执宣称未来送达通过 |
-| P16-02 baseline／变化分类／高风险与兼容报告 | 手工 baseline／兼容地图／sync playbook 已有；专用仓库自动化未做 | 当前仅 android-ci.yml／release.yml，无专用 watcher 工作流；补差异证据、分类和受影响测试／报告，保留正式 1.4.1 与所选 1.4.5–1.4.7 transport 的不同含义；不自动 merge、升级 baseline 或宣布兼容 |
+| P16-02 baseline／变化分类／高风险与兼容报告 | 手工 baseline／兼容地图／sync playbook 已有；后补固定SHA离线清单工具与原领域路径复核标记，实际221项本地只读生成，合成测试待云端；触发／自动报告编排仍未做 | 见253；共享main/test路径与旧归档副本分列，不把路径缺失当功能缺失；复用原正式Release监控，不另建watcher；保留正式1.4.1和所选147不同含义，不自动merge/升baseline或宣称兼容 |
 
 ## P14：功能开发队列最后
 

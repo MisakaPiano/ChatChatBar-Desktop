@@ -1,0 +1,12 @@
+---
+name: chatbar-desktop-upstream-drift
+description: Maintain Desktop pinned offline upstream change inventories and shared-path evidence without confusing paths with feature parity.
+---
+
+# Desktop pinned upstream inventory
+
+- `tools/desktop/upstream/pinned_drift.py` reads three explicit full commit IDs, raw NUL-separated Git diffs and the Desktop tree. The validated baseline comes from `docs/desktop/10_UPSTREAM_BASELINE.json` at the specified Desktop commit, not the historical `upstreamObservation` field. A different explicit baseline is labeled rather than silently promoted.
+- Same repository path, Android-to-sharedCore main/test package paths and exact target blob elsewhere are separate candidate roles. The unchanged Android mirror is not Desktop runtime proof; no candidate does not mean missing functionality. Path flags are review hints, not behavioral or Prompt literal classification. Each changed entry keeps original/new paths, modes and blob IDs; metadata hashes bind the inventory inputs.
+- Exact copies under `docs/desktop/evidence/` are retained only as `archivedBlobReferences`, excluded from current candidate counts. They are frozen evidence, not active implementations; actual147 includes three such credential/Moments source copies.
+- The CLI creates a fresh output file and does not fetch, merge, edit source/Prompt/baseline or alter monitoring. Its pinned target is never described as a fresh latest-release observation. Reuse the existing official formal-release monitor `6ac89e9b-a1a8-83e8-a73c-6baad3dbaad4`; this tool is not a duplicate notifier or automatic synchronization service.
+- `test_pinned_drift.py` uses inline synthetic Git repositories and NUL records for rename/Unicode/tab/newline parsing, moved shared owners, unchanged Android candidates, unrepresented paths, immutable source/HEAD and existing-output refusal. The Linux platform CI has its own small Python step; no application/runtime compatibility verdict follows from that step.

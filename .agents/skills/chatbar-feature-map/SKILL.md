@@ -7,6 +7,8 @@ description: Locate ChatBar feature entry points before broad repository search.
 
 Desktop task center/tray integration: read `chatbar-desktop-task-center`. `DesktopTaskCenter/Sources/Panel` observe real owners; `DesktopTaskRuntime.ownedWork` exposes its existing document/card-design children. AppContainer attaches lazy owners and retains business shutdown order. Exact row cancellation and guarded target navigation are distinct from merely opening a page.
 
+Desktop pinned upstream change inventories: read `chatbar-desktop-upstream-drift`. The offline tool binds explicit commits and candidate paths/blobs; Android-path presence or absence never establishes Desktop feature parity. Existing formal-release monitoring stays separate.
+
 Desktop field/request Token estimates (D-042): shared `domain/budget/PromptBudgetEstimates.kt` separates stored editor fields from final serialized content text. `DesktopEditorPromptBudget` / `DesktopEditorBudgetController` provide read-only reference-model selection for character/format/world-book editors. The named weighted-character method is an explicit heuristic, not NAI or model BPE; unavailable context limits stay unknown. `DesktopTransportDiagnosticRecorder.onRequest` estimates complete wire before display scrubbing/truncation and retains numeric sections only. Missing provider usage remains separate; persistent aggregation and tokenizer calibration are later work.
 
 Desktop named LLM／NovelAI／Fish accounts: read `chatbar-desktop-api-accounts` first. `DesktopApiAccounts` owns the dialog, `DesktopAccountStore` routes protected credentials, and typed backup preferences retain selected accounts. Model display attribution is transient and separate from official serialization and saved model names.
