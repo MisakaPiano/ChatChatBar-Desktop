@@ -47,6 +47,7 @@ Use chatbar-long-term-memory when Archive, HEAD, timeline constraints, source-tu
 - A PromptTemplates prompt change is incomplete until the header directory remains accurate. Keep template constants beside their builders so directory search lands in one local area.
 - Keep section selection, titles, and layer assignment in shared `PromptAssembler`.
 - Keep final logical `ChatApiMessage` roles/order and stable-prefix cache-key derivation in shared `MainChatRequestAssembler`. Android `ChatViewModel` only prepares platform/runtime inputs and delegates. `StreamingChatService` adapts later system roles and merges a trailing requirement into the current user only for opted-in `http://` requests; Debug Request JSON records this adapted transport body.
+- `PromptAssembler.assembleCachePromptLayers` has an optional numeric render observer for the seven independently injected layers. It observes the original outlet-then-placeholder result without changing it; legacy dynamic/tail aggregates are not counted again. `WorldBookRequestPlan.activity` reports actual evaluation counts, not that every collected outlet is injected. Desktop exposes these only when the final adapted wire matches the plan; see273.
 - Keep conversation grouping in ContextWindowManager and shared turn policies.
 - Verify transport request fields with chatbar-model-request-runtime.
 

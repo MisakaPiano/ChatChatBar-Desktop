@@ -16,6 +16,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class DesktopPromptInspectorTest {
@@ -109,6 +110,25 @@ class DesktopPromptInspectorTest {
             )
             assertEquals(before, fileSnapshot(root))
             assertFalse(Files.exists(persistedIndex))
+            val selection = assertNotNull(directPlan.runtimeBudgetSelection)
+            assertEquals(directPlan.worldBook.activity, selection.worldBook)
+            assertEquals(1, selection.worldBook!!.activatedEntries)
+            assertTrue(selection.loadedCandidateMessages >= selection.directContextMessages)
+            assertEquals(7, selection.renders.size)
+            val model = com.example.chatbar.data.local.entity.ModelConfig("numeric", "Synthetic",
+                "https://example.test/v1", "", "synthetic", createdAt = 1)
+            val diagnostics = DesktopTransportDiagnosticsOwner()
+            val recorder = diagnostics.begin("numeric", sessionId, model)
+            recorder.onPlan(directPlan)
+            val wire = com.example.chatbar.domain.chat.OpenAiChatRequestSerializer.serialize(directPlan.assembly.messages, model, true)
+            recorder.onRequest(com.example.chatbar.domain.chat.ProviderRequestEvidence("https://example.test/v1/chat/completions", wire))
+            val budget = assertNotNull(diagnostics.entries.value.single().requestTextBudget)
+            assertEquals(selection, budget.runtimeSelection)
+            assertFalse(budget.toString().contains("SessionPlayer"))
+            assertFalse(budget.toString().contains("evidence-for-"))
+            recorder.onRequest(com.example.chatbar.domain.chat.ProviderRequestEvidence("https://example.test/v1/chat/completions", wire))
+            assertNull(diagnostics.entries.value.single().requestTextBudget!!.runtimeSelection)
+            assertEquals(before, fileSnapshot(root))
             assertEquals(emptyMap(), requireNotNull(container.chatRepository.getSession(sessionId)).timedWorldInfo)
             assertTrue(result.proposedTimedWorldInfo.isNotEmpty())
             assertEquals(directPlan.assembly.messages, result.logicalMessages.map(MainChatLogicalMessageTrace::message))

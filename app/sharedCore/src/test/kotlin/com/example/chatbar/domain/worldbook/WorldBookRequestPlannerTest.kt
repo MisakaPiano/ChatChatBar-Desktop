@@ -249,6 +249,7 @@ class WorldBookRequestPlannerTest {
                 entry("normal", "", "normal").copy(constant = true),
                 entry("outlet", "", "outlet-value", WorldBookPosition.OUTLET)
                     .copy(constant = true, outletName = "memo"),
+                entry("disabled", "", "not activated").copy(constant = true, enabled = false),
             ),
         )
         fixture.save(book)
@@ -257,6 +258,7 @@ class WorldBookRequestPlannerTest {
 
         assertEquals("normal", plan.prompt)
         assertEquals(mapOf("memo" to "outlet-value"), plan.outlets)
+        assertEquals(WorldBookRequestActivity(1, 2, 2, 1, 1), plan.activity)
     }
 
     @Test
@@ -284,6 +286,7 @@ class WorldBookRequestPlannerTest {
         assertNull(plan.prompt)
         assertTrue(plan.outlets.isEmpty())
         assertTrue(plan.timedWorldInfo.isEmpty())
+        assertEquals(WorldBookRequestActivity(0, 0, 0, 0, 0), plan.activity)
         assertEquals(listOf("世界书：当前角色和会话未绑定世界书。"), logs)
     }
 

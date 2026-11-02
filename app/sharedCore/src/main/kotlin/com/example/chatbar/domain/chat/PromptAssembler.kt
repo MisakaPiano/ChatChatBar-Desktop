@@ -7,6 +7,9 @@ import com.example.chatbar.data.local.entity.DEFAULT_REPLY_LENGTH_CHARS
 import com.example.chatbar.data.local.entity.FormatCard
 import com.example.chatbar.domain.prompt.MainChatPromptAuthority
 import com.example.chatbar.domain.rag.RetrievedKnowledgeCard
+import com.example.chatbar.domain.budget.PromptRenderMeasurement
+import com.example.chatbar.domain.budget.PromptRenderSource
+import com.example.chatbar.domain.budget.WeightedCharacterTokenEstimator
 
 data class PromptCachePromptLayers(
     val coreSystemPrompt: String,
@@ -106,7 +109,8 @@ class PromptAssembler {
         memoryArchive: String? = null,
         memoryHeadAndTimeline: String? = null,
         worldBookPrompt: String? = null,
-        worldBookOutlets: Map<String, String> = emptyMap()
+        worldBookOutlets: Map<String, String> = emptyMap(),
+        renderObserver: ((PromptRenderMeasurement) -> Unit)? = null,
     ): PromptCachePromptLayers {
         val sections = collectSections(
             characterCard = characterCard,
@@ -139,24 +143,15 @@ class PromptAssembler {
             renderRag(settingCards)
         ).filter(String::isNotBlank).joinToString("\n\n")
         val memoryRagRaw = renderRag(memoryCards, settingCards.size)
-        fun rendered(raw: String) = renderLayer(raw, playerName, characterCard.effectiveBotName, worldBookOutlets)
+        fun rendered(raw: String, source: PromptRenderSource) = renderLayer(
+            raw, playerName, characterCard.effectiveBotName, worldBookOutlets, source, renderObserver)
         val dynamicRaw = renderSections(sections.filter { it.layer == PromptLayer.DYNAMIC })
         val tailRaw = renderSections(sections.filter { it.layer == PromptLayer.TAIL })
 
         if (OUTLET_TOKEN_REGEX.containsMatchIn(coreRaw) || OUTLET_TOKEN_REGEX.containsMatchIn(stableRaw)) {
             return PromptCachePromptLayers(
-                coreSystemPrompt = renderLayer(
-                    coreRaw,
-                    playerName,
-                    characterCard.effectiveBotName,
-                    worldBookOutlets
-                ),
-                stableContextSystemPrompt = renderLayer(
-                    stableRaw,
-                    playerName,
-                    characterCard.effectiveBotName,
-                    worldBookOutlets
-                ),
+                coreSystemPrompt = rendered(coreRaw, PromptRenderSource.CORE),
+                stableContextSystemPrompt = rendered(stableRaw, PromptRenderSource.CHARACTER),
                 dynamicSystemPrompt = renderLayer(
                     dynamicRaw,
                     playerName,
@@ -170,27 +165,17 @@ class PromptAssembler {
                     worldBookOutlets
                 ),
                 stablePrefixCacheable = false,
-                settingReferenceSystemPrompt = rendered(settingReferenceRaw),
-                playerSystemPrompt = rendered(playerRaw),
-                memoryRagSystemPrompt = rendered(memoryRagRaw),
-                supplementarySystemPrompt = rendered(supplementaryRaw),
-                replyConstraintsSystemPrompt = rendered(replyRaw)
+                settingReferenceSystemPrompt = rendered(settingReferenceRaw, PromptRenderSource.SETTING_REFERENCE),
+                playerSystemPrompt = rendered(playerRaw, PromptRenderSource.PLAYER),
+                memoryRagSystemPrompt = rendered(memoryRagRaw, PromptRenderSource.MEMORY_RAG),
+                supplementarySystemPrompt = rendered(supplementaryRaw, PromptRenderSource.SUPPLEMENTARY),
+                replyConstraintsSystemPrompt = rendered(replyRaw, PromptRenderSource.REPLY_CONSTRAINTS)
             )
         }
 
         return PromptCachePromptLayers(
-            coreSystemPrompt = renderLayer(
-                coreRaw,
-                playerName,
-                characterCard.effectiveBotName,
-                worldBookOutlets
-            ),
-            stableContextSystemPrompt = renderLayer(
-                stableRaw,
-                playerName,
-                characterCard.effectiveBotName,
-                worldBookOutlets
-            ),
+            coreSystemPrompt = rendered(coreRaw, PromptRenderSource.CORE),
+            stableContextSystemPrompt = rendered(stableRaw, PromptRenderSource.CHARACTER),
             dynamicSystemPrompt = renderLayer(
                 dynamicRaw,
                 playerName,
@@ -204,11 +189,11 @@ class PromptAssembler {
                 worldBookOutlets
             ),
             stablePrefixCacheable = !OUTLET_TOKEN_REGEX.containsMatchIn(playerRaw + supplementaryRaw),
-            settingReferenceSystemPrompt = rendered(settingReferenceRaw),
-            playerSystemPrompt = rendered(playerRaw),
-            memoryRagSystemPrompt = rendered(memoryRagRaw),
-            supplementarySystemPrompt = rendered(supplementaryRaw),
-            replyConstraintsSystemPrompt = rendered(replyRaw)
+            settingReferenceSystemPrompt = rendered(settingReferenceRaw, PromptRenderSource.SETTING_REFERENCE),
+            playerSystemPrompt = rendered(playerRaw, PromptRenderSource.PLAYER),
+            memoryRagSystemPrompt = rendered(memoryRagRaw, PromptRenderSource.MEMORY_RAG),
+            supplementarySystemPrompt = rendered(supplementaryRaw, PromptRenderSource.SUPPLEMENTARY),
+            replyConstraintsSystemPrompt = rendered(replyRaw, PromptRenderSource.REPLY_CONSTRAINTS)
         )
     }
 
@@ -332,14 +317,27 @@ class PromptAssembler {
         raw: String,
         playerName: String?,
         botName: String,
-        worldBookOutlets: Map<String, String>
+        worldBookOutlets: Map<String, String>,
+        source: PromptRenderSource? = null,
+        observer: ((PromptRenderMeasurement) -> Unit)? = null,
     ): String {
         val withOutlets = if (worldBookOutlets.isEmpty()) raw else {
             OUTLET_TOKEN_REGEX.replace(raw) { match ->
                 worldBookOutlets[match.groupValues[1]] ?: match.value
             }
         }
-        return PlaceholderRenderer.render(withOutlets, playerName, botName)
+        val rendered = PlaceholderRenderer.render(withOutlets, playerName, botName)
+        if (observer != null && source != null) {
+            var resolved = 0
+            var unresolved = 0
+            OUTLET_TOKEN_REGEX.findAll(raw).forEach { match ->
+                if (worldBookOutlets.containsKey(match.groupValues[1])) resolved++ else unresolved++
+            }
+            observer(PromptRenderMeasurement(source, WeightedCharacterTokenEstimator.estimate(raw),
+                WeightedCharacterTokenEstimator.estimate(withOutlets), WeightedCharacterTokenEstimator.estimate(rendered),
+                resolved, unresolved))
+        }
+        return rendered
     }
 
     private fun buildCharacterSection(card: CharacterCard): String {

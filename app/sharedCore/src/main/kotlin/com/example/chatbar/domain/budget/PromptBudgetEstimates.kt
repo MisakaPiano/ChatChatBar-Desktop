@@ -4,6 +4,7 @@ import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.domain.chat.ChatApiMessage
 import com.example.chatbar.domain.chat.CleartextHttpChatTemplatePolicy
 import com.example.chatbar.domain.chat.MainChatLogicalMessageTrace
+import com.example.chatbar.domain.worldbook.WorldBookRequestActivity
 import kotlinx.serialization.json.*
 
 enum class PromptEstimateScope { STORED_EDITOR_FIELDS, FINAL_REQUEST_TEXT }
@@ -18,6 +19,33 @@ fun ModelConfig.promptEstimateTarget(label: String = displayName) = PromptEstima
 
 data class EstimatedTextTokens(val tokens: Long, val utf16Units: Int)
 data class PromptBudgetSection(val id: String, val label: String, val estimate: EstimatedTextTokens, val note: String = "")
+
+enum class PromptRenderSource { CORE, CHARACTER, SETTING_REFERENCE, PLAYER, MEMORY_RAG, SUPPLEMENTARY, REPLY_CONSTRAINTS }
+
+/** Numeric provenance of one original render; stages overlap and must never be added together. */
+data class PromptRenderMeasurement(
+    val source: PromptRenderSource,
+    val raw: EstimatedTextTokens,
+    val afterOutlets: EstimatedTextTokens,
+    val afterPlaceholders: EstimatedTextTokens,
+    val resolvedOutletOccurrences: Int,
+    val unresolvedOutletOccurrences: Int,
+)
+
+/** Counts come from this plan's bounded pool, not the session's complete stored history. */
+data class PromptRuntimeBudgetSelection(
+    val loadedCandidateMessages: Int,
+    val directContextMessages: Int,
+    val earlierInputMessages: Int,
+    val previousInputMessages: Int,
+    val earlierSentMessages: Int,
+    val previousSentMessages: Int,
+    val selectedRagCards: Int,
+    val selectedMemoryRagCards: Int,
+    val worldBook: WorldBookRequestActivity?,
+    val renders: List<PromptRenderMeasurement>,
+    val stablePrefixCacheable: Boolean,
+)
 data class PromptBudgetEstimate(
     val scope: PromptEstimateScope,
     val target: PromptEstimateTarget,
@@ -26,6 +54,8 @@ data class PromptBudgetEstimate(
     val excludedNonTextParts: Int = 0,
     val attributedToLogicalSections: Boolean = false,
     val additionalMessageFieldsExcluded: Boolean = false,
+    val runtimeSelection: PromptRuntimeBudgetSelection? = null,
+    val stablePrefixEstimatedTextTokens: Long? = null,
 ) {
     val estimatedTextTokens: Long get() = sections.sumOf { it.estimate.tokens }
     val estimatedUtf16Units: Long get() = sections.sumOf { it.estimate.utf16Units.toLong() }
@@ -117,7 +147,7 @@ object WirePromptBudgetEstimator {
 
     fun estimate(serializedRequest: String, target: PromptEstimateTarget,
         trace: List<MainChatLogicalMessageTrace> = emptyList(), allowCleartextHttp: Boolean = false,
-        baseUrl: String = ""): PromptBudgetEstimate {
+        baseUrl: String = "", runtimeSelection: PromptRuntimeBudgetSelection? = null): PromptBudgetEstimate {
         val body = Json.parseToJsonElement(serializedRequest).jsonObject
         val messages = body["messages"] as? JsonArray ?: error("请求没有可检查的 messages 数组")
         val additionalFields = messages.any { it.jsonObject.keys.any { key -> key != "role" && key != "content" } }
@@ -134,6 +164,9 @@ object WirePromptBudgetEstimator {
                 WeightedCharacterTokenEstimator.estimate(parts.text), if (attributable) trace[index].source.name else "实际消息；逻辑分区未匹配")
         }
         return PromptBudgetEstimate(PromptEstimateScope.FINAL_REQUEST_TEXT, target, sections = sections,
-            excludedNonTextParts = excluded, attributedToLogicalSections = attributable, additionalMessageFieldsExcluded = additionalFields)
+            excludedNonTextParts = excluded, attributedToLogicalSections = attributable, additionalMessageFieldsExcluded = additionalFields,
+            runtimeSelection = runtimeSelection.takeIf { attributable },
+            stablePrefixEstimatedTextTokens = if (attributable && runtimeSelection?.stablePrefixCacheable == true)
+                sections.filterIndexed { index, _ -> trace[index].inStableCachePrefix }.sumOf { it.estimate.tokens } else null)
     }
 }

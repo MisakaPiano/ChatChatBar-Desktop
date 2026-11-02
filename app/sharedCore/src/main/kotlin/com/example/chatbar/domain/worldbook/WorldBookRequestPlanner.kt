@@ -14,6 +14,16 @@ data class WorldBookRequestPlan(
     val prompt: String?,
     val outlets: Map<String, String>,
     val timedWorldInfo: Map<String, TimedEffectState>,
+    val activity: WorldBookRequestActivity? = null,
+)
+
+/** Evaluation counts only; collected outlets need not be referenced by a prompt. */
+data class WorldBookRequestActivity(
+    val resolvedBooks: Int,
+    val enabledEntries: Int,
+    val activatedEntries: Int,
+    val nonblankPromptEntries: Int,
+    val collectedOutlets: Int,
 )
 
 /**
@@ -41,7 +51,7 @@ class WorldBookRequestPlanner(
         val worldBooks = resolveWorldBooks(card, session)
         if (worldBooks.isEmpty()) {
             debugLog("世界书：当前角色和会话未绑定世界书。")
-            return WorldBookRequestPlan(null, emptyMap(), emptyMap())
+            return WorldBookRequestPlan(null, emptyMap(), emptyMap(), WorldBookRequestActivity(0, 0, 0, 0, 0))
         }
 
         val scanDepth = worldBooks.maxOf { book ->
@@ -121,7 +131,13 @@ class WorldBookRequestPlanner(
             }
         }.toMap()
 
-        return WorldBookRequestPlan(prompt, outlets, newTimed)
+        return WorldBookRequestPlan(prompt, outlets, newTimed, WorldBookRequestActivity(
+            resolvedBooks = worldBooks.size,
+            enabledEntries = worldBooks.sumOf { book -> book.entries.count { it.enabled } },
+            activatedEntries = activated.size,
+            nonblankPromptEntries = promptEntries.count { it.entry.content.isNotBlank() },
+            collectedOutlets = outlets.size,
+        ))
     }
 
     private suspend fun resolveWorldBooks(card: CharacterCard, session: ChatSession): List<WorldBook> {

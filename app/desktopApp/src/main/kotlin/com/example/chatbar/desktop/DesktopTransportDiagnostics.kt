@@ -13,6 +13,7 @@ import com.example.chatbar.domain.budget.PromptBudgetEstimate
 import com.example.chatbar.domain.budget.PromptEstimateTarget
 import com.example.chatbar.domain.budget.promptEstimateTarget
 import com.example.chatbar.domain.budget.WirePromptBudgetEstimator
+import com.example.chatbar.domain.budget.PromptRuntimeBudgetSelection
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -156,11 +157,13 @@ internal class DesktopTransportDiagnosticRecorder(
     private val usageRecorder: DesktopUsageAttemptRecorder? = null,
 ) : ProviderTransportDiagnostics, DesktopChatPlanDiagnostics {
     @Volatile private var requestTrace: List<MainChatLogicalMessageTrace> = emptyList()
+    @Volatile private var requestSelection: PromptRuntimeBudgetSelection? = null
     fun safeText(value: String): String = scrubber.text(value, DesktopTransportDiagnosticsOwner.SHORT_LIMIT)
 
     override fun onPlan(plan: DesktopChatRequestPlan) {
         val trace = plan.assembly.messageTrace
         requestTrace = trace
+        requestSelection = plan.runtimeBudgetSelection
         owner.update(taskId) { entry -> entry.copy(
             worldBookEvidence = plan.worldBookDebugLog.take(80).map(::safeText),
             ragText = scrubber.text(trace.filter { it.source == MainChatLogicalMessageSource.MEMORY_RAG }
@@ -175,10 +178,11 @@ internal class DesktopTransportDiagnosticRecorder(
     override fun onRequest(request: ProviderRequestEvidence) {
         // Count complete in-memory wire before display scrubbing/truncation; retain only numeric sections.
         val budget = try { WirePromptBudgetEstimator.estimate(request.body, estimateTarget, requestTrace,
-            allowCleartextHttp = true, baseUrl = modelBaseUrl).let { report ->
+            allowCleartextHttp = true, baseUrl = modelBaseUrl, runtimeSelection = requestSelection).let { report ->
                 report.copy(sections = report.sections.map { it.copy(label = safeText(it.label), note = safeText(it.note)) })
             } } catch (_: Exception) { null }
         requestTrace = emptyList()
+        requestSelection = null
         owner.update(taskId) { entry ->
             entry.copy(
                 requestAt = clock(),
@@ -242,6 +246,7 @@ internal class DesktopTransportDiagnosticRecorder(
             DesktopTaskStatus.RUNNING -> DesktopUsageOutcome.RUNNING
         })
         requestTrace = emptyList()
+        requestSelection = null
         owner.update(taskId) { entry ->
             entry.copy(
                 status = status,

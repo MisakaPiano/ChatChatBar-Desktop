@@ -135,6 +135,21 @@ internal fun DesktopChatDebugPanel(owner: DesktopTransportDiagnosticsOwner, sess
                                 if (budget.excludedNonTextParts > 0) StatusText("未估算的非文本部分：${budget.excludedNonTextParts}")
                                 if (budget.additionalMessageFieldsExcluded) StatusText("部分消息带额外结构字段，未计入文本估算。")
                                 if (!budget.attributedToLogicalSections) StatusText("逻辑分区未能与最终消息完整匹配；仅显示实际消息文本估算。")
+                                budget.runtimeSelection?.let { selection ->
+                                    StatusText("本轮载入候选 ${selection.loadedCandidateMessages} 条 → 直接上下文 ${selection.directContextMessages} 条；仅为已载入范围，不是全会话历史。")
+                                    StatusText("较早历史：分组 ${selection.earlierInputMessages} / 发出 ${selection.earlierSentMessages} 条；上一轮：分组 ${selection.previousInputMessages} / 发出 ${selection.previousSentMessages} 条。")
+                                    StatusText("检索选中 ${selection.selectedRagCards} 张，其中历史碎片 ${selection.selectedMemoryRagCards} 张；最终文本占用见下方分区，卡片数量不等于 Token。")
+                                    selection.worldBook?.let { activity ->
+                                        StatusText("世界书 ${activity.resolvedBooks} 本：启用 ${activity.enabledEntries} / 激活 ${activity.activatedEntries} 条；非空直接条目 ${activity.nonblankPromptEntries} 条，收集出口 ${activity.collectedOutlets} 个（不代表全部引用）。")
+                                    }
+                                    budget.stablePrefixEstimatedTextTokens?.let { tokens ->
+                                        StatusText("可缓存前缀文本估算 ≈ $tokens Token；这是请求候选，不是供应商缓存命中或计费量。")
+                                    }
+                                    DebugSection("出口与占位符替换估算（各阶段不可相加）", selection.renders.joinToString("\n") {
+                                        "${it.source} · 原层 ≈ ${it.raw.tokens} → 出口后 ≈ ${it.afterOutlets.tokens} → 称呼替换后 ≈ ${it.afterPlaceholders.tokens} Token；出口引用 ${it.resolvedOutletOccurrences} / 未解析 ${it.unresolvedOutletOccurrences}"
+                                    }, { text -> scope.launch { clipboard.copyText(text) } })
+                                    StatusText("替换记录仅覆盖这些独立注入层，不含历史或世界书的前序处理；总占用仍以最终请求文本为准。")
+                                }
                                 DebugSection("实际请求文本分区估算", budget.sections.joinToString("\n") {
                                     "${it.label} · ${it.id} · ≈ ${it.estimate.tokens} Token"
                                 }, { text -> scope.launch { clipboard.copyText(text) } })
