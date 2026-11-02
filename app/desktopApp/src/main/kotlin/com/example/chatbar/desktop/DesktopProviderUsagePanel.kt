@@ -14,11 +14,18 @@ internal fun DesktopProviderUsagePanel(owner: DesktopProviderUsageOwner) {
     val scope = rememberCoroutineScope()
     var source by remember { mutableStateOf<DesktopUsageSource?>(null) }
     var days by remember { mutableStateOf<Int?>(null) }
-    val query = remember(source, days) { DesktopUsageQuery(
-        fromInclusive = days?.let { System.currentTimeMillis() - it * 86_400_000L }, source = source) }
+    var textOnly by remember { mutableStateOf(false) }
+    var mediaKind by remember { mutableStateOf<DesktopUsageMediaKind?>(null) }
+    val query = remember(source, days, textOnly, mediaKind) { DesktopUsageQuery(
+        fromInclusive = days?.let { System.currentTimeMillis() - it * 86_400_000L }, source = source, textOnly = textOnly, mediaKind = mediaKind) }
     LaunchedEffect(owner, query) { owner.refresh(query) }
     DesktopManagementHeading("模型请求用量")
-    StatusText("记录已接入的聊天、卡片、世界书、朋友圈文本、图片设计、语音翻译／标签、记忆／检索规划及向量模型请求；实际生图和音频合成统计仍待接入，部分辅助操作归入其他。服务端未报告的用量保持未知，字符估算不计入此处。")
+    StatusText("记录已接入的文本／向量请求和正式 Fish TTS 网络尝试。TTS 发送字符、有效音频时长和字节为独立本地测量，不混入 Token，也不代表供应商计费。实际生图、独立试听等其他媒体调用仍待接入；未报告的服务端用量保持未知。")
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        SelectChip("全部类型", !textOnly && mediaKind == null) { textOnly = false; mediaKind = null }
+        SelectChip("Token 请求", textOnly) { textOnly = true; mediaKind = null }
+        SelectChip("Fish TTS", mediaKind == DesktopUsageMediaKind.FISH_TTS) { textOnly = false; mediaKind = DesktopUsageMediaKind.FISH_TTS }
+    }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         SelectChip("全部时间", days == null) { days = null }
         listOf(1, 7, 30).forEach { value -> SelectChip("最近${value}天", days == value) { days = value } }
@@ -64,6 +71,16 @@ private fun UsageCounters(totals: DesktopUsageTotals) {
     fun text(label: String, counter: DesktopUsageCounterTotal): String = "$label：" +
         (counter.value?.toString() ?: "未报告") +
         if (counter.unreportedAttempts > 0) "（${counter.unreportedAttempts}次未报告）" else ""
-    StatusText(text("输入Token", totals.prompt) + " · " + text("输出Token", totals.completion))
-    StatusText(text("缓存命中", totals.cacheHit) + " · " + text("缓存写入", totals.cacheWrite) + " · " + text("缓存未命中", totals.cacheMiss))
+    if (totals.prompt.reportedAttempts + totals.prompt.unreportedAttempts > 0) {
+        StatusText(text("输入Token", totals.prompt) + " · " + text("输出Token", totals.completion))
+        StatusText(text("缓存命中", totals.cacheHit) + " · " + text("缓存写入", totals.cacheWrite) + " · " + text("缓存未命中", totals.cacheMiss))
+    }
+    totals.media.forEach { media ->
+        fun local(label: String, value: DesktopUsageCounterTotal) = "$label：${value.value ?: "未取得"}" +
+            if (value.unreportedAttempts > 0) "（${value.unreportedAttempts}次未取得）" else ""
+        StatusText("Fish TTS · ${media.attempts} 次网络尝试；以下为本地测量")
+        StatusText(local("发送字符（Unicode 码点，含重试）", media.inputTextCodePoints))
+        StatusText(local("有效音频时长（毫秒）", media.outputAudioDurationMs) + " · " + local("有效音频字节", media.outputAudioBytes))
+        StatusText("供应商计费量：未取得（UNREPORTED）；本地测量不能等同账单。")
+    }
 }

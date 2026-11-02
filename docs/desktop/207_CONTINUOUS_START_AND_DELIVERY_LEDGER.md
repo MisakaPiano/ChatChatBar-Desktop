@@ -1,3 +1,7 @@
+2026-11-02 dd29d3e9已单列推送CI103/41366979628，102双失败修后仍待精确源。后续正式Fish媒体源码独立在工作树，见252：原dispatch/HTTP/body drain记录真实尝试、冻结account和batch/session/card/message；本地码点/有效音频时长字节独立于Token，账单UNREPORTED。旧Token schema1原字节不改，媒体本地schema2、单位过滤和元数据日志；6个loopback transport、3个custody、2个宽窄Scene测试尚未执行。原重试/免费资格/Prompt不改，无真实供应商请求；NAI/独立试听和统计完整detail/pagination仍待，不冒认完整P15。公开1229/13与日常H不变，10点前不问真人。
+
+下方历史保留。
+
 2026-11-02 CI102/c358实际320suite/2477=2456PASS+19SKIP+2FAIL；原101两几何例实际通过，4宽title已生成/协调视核；Recovery静态typed/陈旧点击/窄宽/启动恢复marker等通过，六入口导航仍FAIL。原fixture未initialize自动备份，AUTO的effective/draft为空，补禁用计划初始化和准确destination失败信息；透明Recovery截图补生产背景。Studio回图1像素FAIL前zoom/pan/reset已过；保留精确hash/viewport比较，新增实际decoded bitmap的opaque identity等待和前后实图，不用固定帧数冒认加载完成；原bitmap保留/动画不删，仅阻止已取消decoder晚发布。修正单列冻结，不被后续Fish媒体统计WIP牵制。proxy5/NTFS7/shared1135/Android582/native33/updater8/exit4独立PASS，实际3ZIP已复用核SHA/CRC/XML。公开1229/13不变，无H写入/新公开/新签名，本机不编译渲染，10点前不问真人。
 
 下方历史保留。

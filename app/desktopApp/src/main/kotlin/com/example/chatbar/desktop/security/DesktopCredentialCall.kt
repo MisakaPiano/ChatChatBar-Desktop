@@ -4,7 +4,7 @@ import kotlin.coroutines.*
 import kotlinx.coroutines.currentCoroutineContext
 
 internal class DesktopCredentialCall(val owner: DesktopSecretStore, val credentialKey: DesktopCredentialKey,
-    val identity: String, private val value: String?) : AbstractCoroutineContextElement(Key) {
+    val identity: String, private val value: String?, val accountId: String? = null) : AbstractCoroutineContextElement(Key) {
     companion object Key : CoroutineContext.Key<DesktopCredentialCall>
     fun read() = value
     override fun toString() = "DesktopCredentialCall(REDACTED)"

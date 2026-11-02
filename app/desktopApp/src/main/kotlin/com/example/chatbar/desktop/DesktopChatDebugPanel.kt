@@ -97,37 +97,47 @@ internal fun DesktopChatDebugPanel(owner: DesktopTransportDiagnosticsOwner, sess
                     Column(modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         StatusText("模型：${entry.modelDisplayName} · ${entry.modelName}")
                         SelectionContainer { StatusText("请求地址：${entry.requestUrl ?: "尚未发送"}") }
-                        StatusText("状态：${entry.status} · 结束原因：${entry.finishReason ?: "尚未报告"}")
+                        StatusText(if (entry.media == null) "状态：${entry.status} · 结束原因：${entry.finishReason ?: "尚未报告"}" else "状态：${entry.status}")
                         entry.completedAt?.let { StatusText("耗时：${(it - entry.startedAt).coerceAtLeast(0)} ms") }
-                        StatusText("服务端 Token：输入 ${entry.usage?.promptTokens ?: "未报告"} / 输出 ${entry.usage?.completionTokens ?: "未报告"}")
-                        entry.usage?.cachedTokens?.let { StatusText("命中缓存 Token：$it") }
-                        entry.requestTextBudget?.let { budget ->
-                            StatusText("实际请求 content 文本估算 ≈ ${budget.estimatedTextTokens} Token · 字符法，非模型 tokenizer／实测用量")
-                            StatusText("不含消息封装、图片／音频及其他非文本部分，也不含 tools／response_format 等请求结构。")
-                            if (budget.excludedNonTextParts > 0) StatusText("未估算的非文本部分：${budget.excludedNonTextParts}")
-                            if (budget.additionalMessageFieldsExcluded) StatusText("部分消息带额外结构字段，未计入文本估算。")
-                            if (!budget.attributedToLogicalSections) StatusText("逻辑分区未能与最终消息完整匹配；仅显示实际消息文本估算。")
-                            DebugSection("实际请求文本分区估算", budget.sections.joinToString("\n") {
-                                "${it.label} · ${it.id} · ≈ ${it.estimate.tokens} Token"
-                            }, { text -> scope.launch { clipboard.copyText(text) } })
-                        }
-                        if (entry.requestTextBudgetUnavailable) StatusText("该请求无法完整估算文本占用；服务端用量仍独立显示。", DesktopBootstrapColors.warning)
-                        StatusText("本轮记忆组装：Archive ${if (entry.archiveIncluded) "包含" else "未包含"} · HEAD ${if (entry.headIncluded) "包含" else "未包含"}")
-                        entry.planningNotice?.let { StatusText(it, DesktopBootstrapColors.warning) }
                         entry.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
-                        if (entry.cancellationObserved) StatusText("已观察到取消请求。")
-                        if (entry.requestTruncated || entry.outputTruncated || entry.reasoningTruncated)
-                            StatusText("部分日志已达到记录上限；实际请求和生成内容不受影响。", DesktopBootstrapColors.warning)
                         fun copy(body: String) { scope.launch { clipboard.copyText(body) } }
-                        DebugSection("最终请求 JSON", entry.serializedRequestBody ?: "尚未记录请求正文", ::copy)
-                        DebugSection("System 消息", desktopDiagnosticSystemMessages(entry)
-                            ?: "请求尚未记录或日志已截断，请查看最终请求 JSON。", ::copy)
-                        DebugSection("RAG 召回内容", entry.ragText.ifBlank { "本轮未记录 RAG 注入。" }, ::copy)
-                        DebugSection("世界书触发记录", entry.worldBookEvidence.joinToString("\n").ifBlank { "无世界书触发记录。" }, ::copy)
-                        DebugSection("AI 原始文本", entry.outputText.ifBlank { "暂无文本。" }, ::copy)
-                        DebugSection("模型返回的推理文本", entry.reasoningText.ifBlank { "未返回推理文本。" }, ::copy)
-                        DebugSection("原始 SSE 片段（已省略 ${entry.droppedChunkCount} 个较早片段）",
-                            entry.chunks.joinToString("\n\n") { it.rawPreview }.ifBlank { "暂无流数据。" }, ::copy)
+                        if (entry.media != null) {
+                            val media = entry.media
+                            StatusText("实际 Fish TTS 请求 · 网络尝试 ${media.attempt} · HTTP ${media.httpStatus ?: "未收到"}")
+                            StatusText("发送字符（Unicode 码点，本地）：${media.sentTextCodePoints}")
+                            StatusText("有效音频时长（本地毫秒）：${media.audioDurationMs ?: "未取得"} · 字节：${media.audioBytes ?: "未取得"}")
+                            StatusText("本次记录未取得供应商计费量（UNREPORTED）。本地测量不等同账单，也不混入 LLM Token。")
+                            StatusText("此记录只捕获实际请求方法、去除凭据的地址、HTTP 状态和本地测量；合成正文、请求头和音频字节不进入日志。")
+                            if (entry.cancellationObserved) StatusText("已观察到取消请求；不据此推断供应商是否受理。")
+                        } else {
+                            StatusText("服务端 Token：输入 ${entry.usage?.promptTokens ?: "未报告"} / 输出 ${entry.usage?.completionTokens ?: "未报告"}")
+                            entry.usage?.cachedTokens?.let { StatusText("命中缓存 Token：$it") }
+                            entry.requestTextBudget?.let { budget ->
+                                StatusText("实际请求 content 文本估算 ≈ ${budget.estimatedTextTokens} Token · 字符法，非模型 tokenizer／实测用量")
+                                StatusText("不含消息封装、图片／音频及其他非文本部分，也不含 tools／response_format 等请求结构。")
+                                if (budget.excludedNonTextParts > 0) StatusText("未估算的非文本部分：${budget.excludedNonTextParts}")
+                                if (budget.additionalMessageFieldsExcluded) StatusText("部分消息带额外结构字段，未计入文本估算。")
+                                if (!budget.attributedToLogicalSections) StatusText("逻辑分区未能与最终消息完整匹配；仅显示实际消息文本估算。")
+                                DebugSection("实际请求文本分区估算", budget.sections.joinToString("\n") {
+                                    "${it.label} · ${it.id} · ≈ ${it.estimate.tokens} Token"
+                                }, { text -> scope.launch { clipboard.copyText(text) } })
+                            }
+                            if (entry.requestTextBudgetUnavailable) StatusText("该请求无法完整估算文本占用；服务端用量仍独立显示。", DesktopBootstrapColors.warning)
+                            StatusText("本轮记忆组装：Archive ${if (entry.archiveIncluded) "包含" else "未包含"} · HEAD ${if (entry.headIncluded) "包含" else "未包含"}")
+                            entry.planningNotice?.let { StatusText(it, DesktopBootstrapColors.warning) }
+                            if (entry.cancellationObserved) StatusText("已观察到取消请求。")
+                            if (entry.requestTruncated || entry.outputTruncated || entry.reasoningTruncated)
+                                StatusText("部分日志已达到记录上限；实际请求和生成内容不受影响。", DesktopBootstrapColors.warning)
+                            DebugSection("最终请求 JSON", entry.serializedRequestBody ?: "尚未记录请求正文", ::copy)
+                            DebugSection("System 消息", desktopDiagnosticSystemMessages(entry)
+                                ?: "请求尚未记录或日志已截断，请查看最终请求 JSON。", ::copy)
+                            DebugSection("RAG 召回内容", entry.ragText.ifBlank { "本轮未记录 RAG 注入。" }, ::copy)
+                            DebugSection("世界书触发记录", entry.worldBookEvidence.joinToString("\n").ifBlank { "无世界书触发记录。" }, ::copy)
+                            DebugSection("AI 原始文本", entry.outputText.ifBlank { "暂无文本。" }, ::copy)
+                            DebugSection("模型返回的推理文本", entry.reasoningText.ifBlank { "未返回推理文本。" }, ::copy)
+                            DebugSection("原始 SSE 片段（已省略 ${entry.droppedChunkCount} 个较早片段）",
+                                entry.chunks.joinToString("\n\n") { it.rawPreview }.ifBlank { "暂无流数据。" }, ::copy)
+                        }
                         DebugSection("重试记录", entry.retryEvents.joinToString("\n").ifBlank { "无重试。" }, ::copy)
                     }
                 } }

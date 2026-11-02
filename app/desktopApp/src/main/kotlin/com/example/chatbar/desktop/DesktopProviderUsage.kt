@@ -1,3 +1,4 @@
+@file:OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
 package com.example.chatbar.desktop
 
 import com.example.chatbar.domain.chat.PromptCacheUsage
@@ -34,6 +35,19 @@ internal data class DesktopUsageContext(
 
 @Serializable
 internal enum class DesktopUsageOutcome { RUNNING, COMPLETED, FAILED, CANCELLED, RETRIED }
+
+@Serializable
+internal enum class DesktopUsageMediaKind { FISH_TTS }
+
+/** Local measurements of an actual media attempt, never provider billing or LLM token usage. */
+@Serializable
+internal data class DesktopUsageMedia(
+    val kind: DesktopUsageMediaKind,
+    val inputTextCodePoints: Long? = null,
+    val outputAudioDurationMs: Long? = null,
+    val outputAudioBytes: Long? = null,
+    val httpStatus: Int? = null,
+)
 
 /** Only provider-reported counters. Cached input is a subset/annotation, never added to prompt total. */
 @Serializable
@@ -76,6 +90,8 @@ internal data class DesktopUsageRecord(
     val editorSessionId: String? = null,
     val personId: String? = null,
     val subjectId: String? = null,
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
+    val media: DesktopUsageMedia? = null,
 )
 
 internal data class DesktopUsageCounterTotal(val value: Long?, val reportedAttempts: Int, val unreportedAttempts: Int)
@@ -83,21 +99,28 @@ internal data class DesktopUsageTotals(
     val requests: Int, val attempts: Int,
     val prompt: DesktopUsageCounterTotal, val completion: DesktopUsageCounterTotal,
     val cacheHit: DesktopUsageCounterTotal, val cacheWrite: DesktopUsageCounterTotal, val cacheMiss: DesktopUsageCounterTotal,
+    val media: List<DesktopUsageMediaTotals> = emptyList(),
 )
+
+internal data class DesktopUsageMediaTotals(val kind: DesktopUsageMediaKind, val attempts: Int,
+    val inputTextCodePoints: DesktopUsageCounterTotal, val outputAudioDurationMs: DesktopUsageCounterTotal,
+    val outputAudioBytes: DesktopUsageCounterTotal)
 
 internal data class DesktopUsageQuery(
     val fromInclusive: Long? = null, val untilExclusive: Long? = null,
     val source: DesktopUsageSource? = null, val modelId: String? = null,
     val provider: String? = null, val accountId: String? = null, val sessionId: String? = null,
+    val mediaKind: DesktopUsageMediaKind? = null, val textOnly: Boolean = false,
 ) {
     fun accepts(record: DesktopUsageRecord) = (fromInclusive == null || record.startedAt >= fromInclusive) &&
         (untilExclusive == null || record.startedAt < untilExclusive) && (source == null || record.source == source) &&
         (modelId == null || record.modelId == modelId) && (provider == null || record.provider == provider) &&
-        (accountId == null || record.accountId == accountId) && (sessionId == null || record.sessionId == sessionId)
+        (accountId == null || record.accountId == accountId) && (sessionId == null || record.sessionId == sessionId) &&
+        (mediaKind == null || record.media?.kind == mediaKind) && (!textOnly || record.media == null)
 }
 
 internal data class DesktopUsageGroup(val modelId: String, val modelName: String, val provider: String?,
-    val accountId: String?, val totals: DesktopUsageTotals)
+    val accountId: String?, val totals: DesktopUsageTotals, val mediaKind: DesktopUsageMediaKind? = null)
 
 internal fun summarizeDesktopUsage(records: List<DesktopUsageRecord>): DesktopUsageTotals {
     // A newer cumulative report replaces an attempt; repeated events and retries are not extra requests.
@@ -106,13 +129,20 @@ internal fun summarizeDesktopUsage(records: List<DesktopUsageRecord>): DesktopUs
         check(versions.filter { it.revision == newest.revision }.all { it == newest })
         newest
     }
-    fun total(select: (DesktopUsageCounters) -> Long?): DesktopUsageCounterTotal {
-        val values = latest.mapNotNull { select(it.counters)?.also { value -> require(value >= 0) } }
+    fun measured(rows: List<DesktopUsageRecord>, select: (DesktopUsageRecord) -> Long?): DesktopUsageCounterTotal {
+        val values = rows.mapNotNull { select(it)?.also { value -> require(value >= 0) } }
         return DesktopUsageCounterTotal(if (values.isEmpty()) null else values.fold(0L, Math::addExact),
-            values.size, latest.size - values.size)
+            values.size, rows.size - values.size)
+    }
+    val text = latest.filter { it.media == null }
+    fun total(select: (DesktopUsageCounters) -> Long?) = measured(text) { select(it.counters) }
+    val media = latest.filter { it.media != null }.groupBy { requireNotNull(it.media).kind }.map { (kind, rows) ->
+        require(rows.all { it.counters == DesktopUsageCounters() })
+        DesktopUsageMediaTotals(kind, rows.size, measured(rows) { it.media?.inputTextCodePoints },
+            measured(rows) { it.media?.outputAudioDurationMs }, measured(rows) { it.media?.outputAudioBytes })
     }
     return DesktopUsageTotals(latest.map { it.requestId }.distinct().size, latest.size,
-        total { it.prompt }, total { it.completion }, total { it.cacheHit }, total { it.cacheWrite }, total { it.cacheMiss })
+        total { it.prompt }, total { it.completion }, total { it.cacheHit }, total { it.cacheWrite }, total { it.cacheMiss }, media)
 }
 
 /** Local statistics custody, outside portable entities. IO and all publications use the existing root gate. */
@@ -126,10 +156,15 @@ internal class DesktopProviderUsageStore(private val root: Path, private val gat
     private fun validate(record: DesktopUsageRecord) {
         require(UUID.fromString(record.id).toString() == record.id)
         require(UUID.fromString(record.requestId).toString() == record.requestId)
-        require(record.schemaVersion == 1 && record.attempt >= 1 && record.revision >= 1 && record.updatedAt >= record.startedAt)
+        require(record.schemaVersion == (if (record.media == null) 1 else 2) && record.attempt >= 1 && record.revision >= 1 && record.updatedAt >= record.startedAt)
         listOfNotNull(record.taskId, record.sessionId, record.cardId, record.modelId, record.modelName,
             record.provider, record.accountId, record.editorSessionId, record.personId, record.subjectId).forEach { require(it.length <= 512) }
         with(record.counters) { listOfNotNull(prompt, completion, cacheHit, cacheWrite, cacheMiss).forEach { require(it >= 0) } }
+        record.media?.let { media ->
+            require(record.counters == DesktopUsageCounters())
+            require(media.httpStatus == null || media.httpStatus in 100..599)
+            listOfNotNull(media.inputTextCodePoints, media.outputAudioDurationMs, media.outputAudioBytes).forEach { require(it >= 0) }
+        }
     }
     private fun read(file: Path): DesktopUsageRecord {
         DesktopArchiveFiles.safe(file, false)
@@ -154,7 +189,8 @@ internal class DesktopProviderUsageStore(private val root: Path, private val gat
                 previous.taskId == record.taskId && previous.sessionId == record.sessionId && previous.cardId == record.cardId &&
                 previous.editorSessionId == record.editorSessionId && previous.personId == record.personId && previous.subjectId == record.subjectId &&
                 previous.modelId == record.modelId && previous.modelName == record.modelName &&
-                previous.provider == record.provider && previous.accountId == record.accountId)
+                previous.provider == record.provider && previous.accountId == record.accountId && previous.schemaVersion == record.schemaVersion &&
+                previous.media?.kind == record.media?.kind && previous.media?.inputTextCodePoints == record.media?.inputTextCodePoints)
             if (previous.revision >= record.revision) {
                 check(previous.revision != record.revision || previous == record)
                 return@withLock

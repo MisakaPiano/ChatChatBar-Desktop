@@ -57,6 +57,7 @@ data class DesktopTransportDiagnosticEntry(
     val planningNotice: String? = null,
     val requestTextBudget: PromptBudgetEstimate? = null,
     val requestTextBudgetUnavailable: Boolean = false,
+    val media: DesktopMediaRequestEvidence? = null,
 )
 
 /** Bounded, process-local final-provider-request evidence. Never participates in request construction. */
@@ -73,6 +74,19 @@ internal class DesktopTransportDiagnosticsOwner(
 
     fun clear(sessionId: String) = synchronized(lock) {
         mutableEntries.value = mutableEntries.value.filterNot { it.sessionId == sessionId }
+    }
+
+    fun beginFishMedia(sessionId: String, modelId: String, credential: String, accountId: String?,
+        context: DesktopUsageContext, sentCodePoints: Long): DesktopMediaDiagnosticRecorder {
+        val scrubber = DesktopDiagnosticScrubber(credential)
+        return DesktopMediaDiagnosticRecorder(this, sessionId, scrubber.text(modelId, SHORT_LIMIT), scrubber, clock,
+            usageSink?.let { sink -> DesktopUsageAttemptRecorder(context, scrubber.text(modelId, SHORT_LIMIT),
+                scrubber.text(modelId, SHORT_LIMIT), "Fish Audio", accountId?.let { scrubber.text(it, SHORT_LIMIT) }, sink,
+                clock, DesktopUsageMedia(DesktopUsageMediaKind.FISH_TTS, inputTextCodePoints = sentCodePoints)) }, sentCodePoints)
+    }
+
+    internal fun addMedia(entry: DesktopTransportDiagnosticEntry) = synchronized(lock) {
+        mutableEntries.value = (listOf(entry) + mutableEntries.value).take(maxEntries)
     }
 
     fun begin(taskId: String, sessionId: String, model: ModelConfig,

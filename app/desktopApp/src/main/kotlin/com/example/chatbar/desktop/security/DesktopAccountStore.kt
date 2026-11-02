@@ -67,7 +67,7 @@ internal class DesktopAccountStore(private val underlying: DesktopSecretStore) :
         val bundle = read(service)
         val id = if (key is DesktopCredentialKey.ModelApiKey) bundle.models[key.modelId]
             else if (service == DesktopAccountService.LLM) bundle.defaultLlm else bundle.selected
-        DesktopCredentialCall(this, key, "${id ?: "legacy"}:${serviceRevisions.getValue(service)}", load(key))
+        DesktopCredentialCall(this, key, "${id ?: "legacy"}:${serviceRevisions.getValue(service)}", load(key), accountId = id)
     }
     private fun encoded(service: DesktopAccountService): String? {
         val value = underlying.load(DesktopCredentialKey.AccountProfiles(service))

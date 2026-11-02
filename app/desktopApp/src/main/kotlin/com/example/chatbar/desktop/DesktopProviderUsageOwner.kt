@@ -24,6 +24,7 @@ internal class DesktopUsageAttemptRecorder(
     private val provider: String?, private val accountId: String?,
     private val publish: (DesktopUsageRecord) -> Unit,
     private val clock: () -> Long = System::currentTimeMillis,
+    private val initialMedia: DesktopUsageMedia? = null,
 ) {
     private val lock = Any()
     private val requestId = UUID.randomUUID().toString()
@@ -38,12 +39,14 @@ internal class DesktopUsageAttemptRecorder(
         val now = clock()
         current = DesktopUsageRecord(UUID.randomUUID().toString(), requestId, number, 1, context.source,
             context.taskId, context.sessionId, context.cardId, modelId, modelName, provider, accountId, now, now,
-            editorSessionId = context.editorSessionId, personId = context.personId, subjectId = context.subjectId)
+            editorSessionId = context.editorSessionId, personId = context.personId, subjectId = context.subjectId,
+            media = initialMedia, schemaVersion = if (initialMedia == null) 1 else 2)
         publish(requireNotNull(current))
     }
     fun usage(value: PromptCacheUsage) = synchronized(lock) {
         if (closed) return@synchronized
         val previous = current ?: return@synchronized
+        check(previous.media == null) { "Media measurements are separate from token usage" }
         val counts = previous.counters.merge(value)
         if (counts != previous.counters) current = previous.copy(revision = previous.revision + 1,
             updatedAt = maxOf(clock(), previous.startedAt), counters = counts).also(publish)
@@ -53,6 +56,24 @@ internal class DesktopUsageAttemptRecorder(
         closed = true
         current?.let { publish(it.copy(revision = it.revision + 1,
             updatedAt = maxOf(clock(), it.startedAt), outcome = outcome)) }
+    }
+    fun localAudio(durationMs: Long, bytes: Long) = synchronized(lock) {
+        if (closed) return@synchronized
+        require(durationMs >= 0 && bytes >= 0)
+        val previous = current ?: return@synchronized
+        val media = requireNotNull(previous.media)
+        require(media.kind == DesktopUsageMediaKind.FISH_TTS)
+        val measured = media.copy(outputAudioDurationMs = durationMs, outputAudioBytes = bytes)
+        if (measured != media) current = previous.copy(revision = previous.revision + 1,
+            updatedAt = maxOf(clock(), previous.startedAt), media = measured).also(publish)
+    }
+    fun mediaResponse(code: Int) = synchronized(lock) {
+        if (closed) return@synchronized
+        require(code in 100..599)
+        val previous = current ?: return@synchronized
+        val media = requireNotNull(previous.media)
+        if (media.httpStatus != code) current = previous.copy(revision = previous.revision + 1,
+            updatedAt = maxOf(clock(), previous.startedAt), media = media.copy(httpStatus = code)).also(publish)
     }
 }
 
@@ -109,9 +130,9 @@ internal class DesktopProviderUsageOwner(private val store: DesktopProviderUsage
         try {
             val records = store.records().filter(query::accepts)
             val totals = summarizeDesktopUsage(records)
-            val groups = records.groupBy { listOf(it.modelId, it.modelName, it.provider, it.accountId) }.values.map { group ->
+            val groups = records.groupBy { listOf(it.modelId, it.modelName, it.provider, it.accountId, it.media?.kind?.name) }.values.map { group ->
                 val first = group.first()
-                DesktopUsageGroup(first.modelId, first.modelName, first.provider, first.accountId, summarizeDesktopUsage(group))
+                DesktopUsageGroup(first.modelId, first.modelName, first.provider, first.accountId, summarizeDesktopUsage(group), first.media?.kind)
             }.sortedByDescending { it.totals.attempts }
             synchronized(lock) { if (sequence == readSequence) mutableState.value = mutableState.value.copy(
                 totals = totals, recent = records.take(100), groups = groups, readError = null) }

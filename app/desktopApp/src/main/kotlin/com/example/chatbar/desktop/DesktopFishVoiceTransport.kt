@@ -21,6 +21,7 @@ internal class DesktopFishVoiceTransport(
     client: OkHttpClient = ProxyAwareClient.builder().build(),
     private val baseUrl: String = "https://api.fish.audio",
     private val today: () -> LocalDate = { LocalDate.now(ZoneOffset.UTC) },
+    private val diagnostics: DesktopTransportDiagnosticsOwner? = null,
 ) {
     private class Attempt(val exchanges: AtomicInteger = AtomicInteger())
     private val client = client.newBuilder().dispatcher(Dispatcher()).connectionPool(ConnectionPool())
@@ -43,15 +44,25 @@ internal class DesktopFishVoiceTransport(
         check(modelId == FishAudioTtsModels.S2_1_PRO_FREE) { "仅免费模型已获授权；收费或失效模型不会被替换" }
         check(!today().isAfter(LocalDate.of(2026, 11, 30))) { "免费资格需要重新核验；未发送请求" }
         require(referenceId.isNotBlank() && referenceId.length <= 256 && text.isNotBlank())
-        val key = try { credentials.forCurrentCall() ?: error("missing") } catch (_: Exception) { error("Fish 安全凭据不可用") }
-        val original = FishAudioRequestFactory.tts(baseUrl, key, modelId, referenceId, text.trim())
-        retryRejectedVoiceTts(onRetry = { _, attempt, wait -> onRetry(attempt, wait) }) {
-            synthesizeAttempt(original, sessionId, voiceId, onProgress)
-        }
+        val credential = try { credentials.currentCall() } catch (_: Exception) { error("Fish 安全凭据不可用") }
+        val key = credential.read()?.takeIf(String::isNotBlank) ?: error("Fish 安全凭据不可用")
+        val sent = text.trim()
+        val original = FishAudioRequestFactory.tts(baseUrl, key, modelId, referenceId, sent)
+        val context = currentCoroutineContext()[DesktopUsageParent]?.value ?: DesktopUsageContext(DesktopUsageSource.OTHER, sessionId = sessionId)
+        val media = diagnostics?.beginFishMedia(sessionId, modelId, key, credential.accountId, context, sent.codePointCount(0, sent.length).toLong())
+        try {
+            val audio = retryRejectedVoiceTts(onRetry = { _, attempt, wait -> onRetry(attempt, wait) }) {
+                synthesizeAttempt(original, sessionId, voiceId, onProgress, media)
+            }
+            media?.audio(audio); media?.finish(DesktopTaskStatus.COMPLETED)
+            audio
+        } catch (cancelled: CancellationException) { media?.finish(DesktopTaskStatus.CANCELLED); throw cancelled }
+        catch (failure: Throwable) { media?.finish(DesktopTaskStatus.FAILED); throw failure }
     }
 
     private suspend fun synthesizeAttempt(original: Request, sessionId: String,
         voiceId: String, onProgress: (FishAudioDownloadProgress.Downloading) -> Unit,
+        media: DesktopMediaDiagnosticRecorder?,
     ): FishAudioStoredAudio {
         val body = checkNotNull(original.body)
         val attempt = Attempt()
@@ -68,12 +79,13 @@ internal class DesktopFishVoiceTransport(
                 continuation.invokeOnCancellation { call.cancel() }
                 fun finish() { synchronized(lock) { calls.remove(call) }; done.complete(Unit) }
                 fun failure(): Throwable = IllegalStateException("Fish 语音网络失败；未自动重放")
-                try { call.enqueue(object : Callback {
+                try { media?.attemptStarted(request); call.enqueue(object : Callback {
                     override fun onFailure(call: Call, e: IOException) {
                         try { if (continuation.isActive) continuation.resumeWith(Result.failure(failure())) } finally { finish() }
                     }
                     override fun onResponse(call: Call, response: Response) {
                         try { response.use { result ->
+                            media?.response(result.code)
                             if (!continuation.isActive) return
                             val audio = runCatching {
                                 if (!result.isSuccessful) throw FishAudioApiException(

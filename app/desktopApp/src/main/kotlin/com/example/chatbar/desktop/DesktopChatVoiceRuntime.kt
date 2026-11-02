@@ -36,7 +36,7 @@ internal class DesktopChatVoiceRuntime(
     private val job = SupervisorJob()
     private val scope = CoroutineScope(job + Dispatchers.IO)
     private val mutation = Mutex()
-    private val transport = transportOverride ?: DesktopFishVoiceTransport(credentials, audio)
+    private val transport = transportOverride ?: DesktopFishVoiceTransport(credentials, audio, diagnostics = diagnostics)
     val playback = DesktopVoicePlayback(audio, output, gate,
         continuousForSession = uiPreferences?.let { preferences -> { session -> preferences.value.continuousPlaybackFor(session) } })
     val coordinator = DesktopFishGenerationCoordinator(scope, chats, characters, settings, repository, credentials,

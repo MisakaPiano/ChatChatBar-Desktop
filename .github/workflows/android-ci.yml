@@ -149,6 +149,7 @@ jobs:
           CCB_CONTEXT_HELP_REVIEW_DIR: ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/tests/context-help-images
           CCB_RECOVERY_REVIEW_DIR: ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/tests/recovery-images
           CCB_STUDIO_IMAGE_REVIEW_DIR: ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/tests/studio-image-readiness
+          CCB_MEDIA_USAGE_REVIEW_DIR: ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/reports/tests/media-usage-images
         run: .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace
 
       - name: Test Studio streaming storage on NTFS
