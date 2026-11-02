@@ -9,6 +9,7 @@ import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.*
 import com.example.chatbar.domain.voice.FishAudioStoredAudio
 import java.nio.file.Files
 import java.nio.file.Path
@@ -24,6 +25,84 @@ import kotlin.test.*
 class DesktopMediaUsagePanelTest {
     private val edt = object : CoroutineDispatcher() {
         override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
+    }
+    @Test fun `image log entry opens and closes original overlay and clears only its actual group without numeric writes`() = runBlocking(edt) {
+        val root = Files.createTempDirectory("image-log-entry-"); val gate = DesktopDataOperationCoordinator()
+        val store = DesktopProviderUsageStore(root, gate)
+        val record = DesktopUsageRecord(UUID.randomUUID().toString(), UUID.randomUUID().toString(), 1, 1,
+            DesktopUsageSource.OTHER, modelId = "image", modelName = "Synthetic image", startedAt = 1, updatedAt = 1,
+            schemaVersion = 2, media = DesktopUsageMedia(DesktopUsageMediaKind.NAI_IMAGE_GENERATION,
+                requestedImages = 1, outputImages = 1, outputImageBytes = 64))
+        try {
+            store.save(record)
+            val file = root.resolve("diagnostics/provider-usage/${record.id}.json"); val original = Files.readAllBytes(file)
+            for (width in listOf(330, 1100)) {
+                val logs = DesktopTransportDiagnosticsOwner()
+                for (group in listOf("actual-image-task", "another-task")) logs.addMedia(DesktopTransportDiagnosticEntry(
+                    group, group, "NovelAI", "synthetic", 1, image = DesktopImageRequestEvidence(1, "POST", 1)))
+                var group by mutableStateOf<String?>("actual-image-task")
+                val scene = ImageComposeScene(width, 650) {
+                    Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background)) { DesktopImageLogEntry(logs, group) }
+                }
+                fun click(label: String) {
+                    fun labeled(node: SemanticsNode): Boolean = node.config.getOrNull(SemanticsProperties.Text)?.any { it.text == label } == true ||
+                        node.config.getOrNull(SemanticsProperties.ContentDescription)?.contains(label) == true || node.children.any(::labeled)
+                    val node = nodes(scene).first { labeled(it) && it.config.contains(SemanticsActions.OnClick) }
+                    assertTrue(node.boundsInRoot.left >= 0 && node.boundsInRoot.right <= width && node.boundsInRoot.top >= 0 && node.boundsInRoot.bottom <= 650,
+                        "$width/$label ${node.boundsInRoot}")
+                    node.config[SemanticsActions.OnClick].action!!.invoke()
+                }
+                try {
+                    frames(scene); click("生图日志"); frames(scene)
+                    assertTrue(allText(scene).contains("生图请求日志")); assertTrue(allText(scene).contains("实际 NovelAI 生图请求"))
+                    assertEquals(2, logs.entries.value.size)
+                    capture(scene, "image-log-entry-$width")
+                    click("关闭调试日志"); frames(scene); assertFalse(allText(scene).contains("生图请求日志"))
+                    click("生图日志"); frames(scene); click("清空本组生图日志"); frames(scene); click("确认清空日志"); frames(scene)
+                    assertEquals(listOf("another-task"), logs.entries.value.map { it.sessionId })
+                    assertTrue(allText(scene).contains("本组暂无生图请求记录"))
+                    click("关闭调试日志"); frames(scene)
+                    group = null; frames(scene)
+                    assertContentEquals(original, Files.readAllBytes(file)); assertEquals(listOf(record), store.records())
+                } finally { scene.close() }
+            }
+        } finally { gate.closeAndDrain(); check(root.toFile().deleteRecursively()) }
+    }
+    @Test fun `image metadata and statistics keep image counts separate from tokens audio and billing`() = runBlocking(edt) {
+        val root = Files.createTempDirectory("image-media-panel-"); val gate = DesktopDataOperationCoordinator()
+        val store = DesktopProviderUsageStore(root, gate); val usage = DesktopProviderUsageOwner(store)
+        val logs = DesktopTransportDiagnosticsOwner()
+        logs.addMedia(DesktopTransportDiagnosticEntry("image-task", "session", "NovelAI", "synthetic-model", 1,
+            status = DesktopTaskStatus.COMPLETED, image = DesktopImageRequestEvidence(1, "POST", 2, 200, 2, 512)))
+        try {
+            store.save(DesktopUsageRecord(UUID.randomUUID().toString(), UUID.randomUUID().toString(), 1, 1,
+                DesktopUsageSource.CHAT, modelId = "image", modelName = "Synthetic image", startedAt = 1, updatedAt = 1,
+                schemaVersion = 2, media = DesktopUsageMedia(DesktopUsageMediaKind.NAI_IMAGE_GENERATION,
+                    requestedImages = 2, outputImages = 2, outputImageBytes = 512, httpStatus = 200)))
+            for (width in listOf(420, 1100)) {
+                val debug = ImageComposeScene(width, 850) { DesktopChatDebugPanel(logs, "session", {}, modifier = Modifier.fillMaxSize()) }
+                try {
+                    frames(debug)
+                    val text = allText(debug)
+                    assertTrue(text.contains("NovelAI 生图")); assertTrue(text.contains("512")); assertTrue(text.contains("HTTP 200"))
+                    assertFalse(text.contains("最终请求 JSON")); assertFalse(text.contains("有效音频时长")); assertFalse(text.contains("服务端 Token"))
+                    capture(debug, "image-media-debug-$width")
+                } finally { debug.close() }
+                val scene = ImageComposeScene(width, 1000) {
+                    Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).verticalScroll(rememberScrollState()).padding(16.dp)) {
+                        DesktopProviderUsagePanel(usage)
+                    }
+                }
+                try {
+                    withTimeout(5000) { do { frames(scene) } while (usage.state.value.totals?.attempts != 1) }
+                    val text = allText(scene)
+                    assertTrue(text.contains("有效返回图片数：2")); assertTrue(text.contains("有效图片字节：512"))
+                    assertFalse(text.contains("输入Token：")); assertFalse(text.contains("有效音频时长（毫秒）"))
+                    assertEquals(DesktopUsageMediaKind.NAI_IMAGE_GENERATION, usage.state.value.totals!!.media.single().kind)
+                    capture(scene, "image-media-statistics-$width")
+                } finally { scene.close() }
+            }
+        } finally { usage.closeAndDrain(); gate.closeAndDrain(); check(root.toFile().deleteRecursively()) }
     }
     @Test fun `media debug displays actual metadata without LLM sections synthesis text or audio path`() = runBlocking(edt) {
         for (width in listOf(420, 1100)) {

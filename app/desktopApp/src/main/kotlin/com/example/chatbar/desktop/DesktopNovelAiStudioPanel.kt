@@ -255,6 +255,7 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                 StudioAction("图像引导", icon = DesktopAppIcons.Star) { auxiliary = "图像引导" }
                 StudioAction("导入图片", icon = DesktopAppIcons.ImageAdd, onClick = ::pickImage)
                 StudioAction("历史", icon = DesktopAppIcons.History) { auxiliary = "历史" }
+                DesktopImageLogEntry(controller.imageDiagnostics, state.generationTaskId)
                 StudioAction("设置", icon = DesktopAppIcons.Settings) { auxiliary = "设置" }
             }
             if (state.status.isNotBlank()) StatusText(state.status.takeLast(300))

@@ -1,3 +1,7 @@
+2026-11-02最新：CI110/2ba39c主2505=2486PASS+19SKIP及proxy5/NTFS7/shared1138/Android582/Python3/native33/updater8/exit4全通过，8张提醒失败状态和4张统计新实图已核。1233同源R18/41381711872普通升级/重开/忙拒绝/canary和独立547、混合路径冷投递限定PASS，实际最终EXE176394340B/ee091402…86e8、ZIP189611465B/966842bd…1ab及547+manager548/JAR/五控制工具字节已核，CRLF checkout与Git LF明确分列；假凭据/自定义根忙本次scope未验证，不扩称，真人与后版公开仍待。P16真实报告R1和原monitor追加prompt/peek已成立，未来自然触发/送达与语义兼容未证。后续NAI Studio/聊天/角色候选实际媒体与原日志入口源码独立按259待云端，不混冻结1233；不重放/不改Prompt/原保存边界。公开1230/14、无H代装或本机重负载保持。
+
+下方历史保留。
+
 2026-11-02最新：CI109/57272实际完整SUCCESS，主329suite/2505=2486PASS+19SKIP，proxy5/NTFS7/shared1138/Android582/Python3/native33/updater8/exit4全通过；新增2共享头像、1实际Desktop wire及4提醒controller/Panel/真实Shell、原Guide阅读保留均PASS，唯一三ZIP与22张新实图已核。A/B两项Prompt均已明确获准并实现，不再等待B确认；baseline仍141。后补仅指南失败原因首屏优先与原Scene首行可见性、统计介绍文案，以及P16显式云端报告入口，尚待其精确云端；不由109代验。成熟普通1233私有候选准备中，公开仍1230/14，旧client匿名下载二验保持、真人Studio参数/重开待；无日常H代装或本机重负载。
 
 下方历史保留。

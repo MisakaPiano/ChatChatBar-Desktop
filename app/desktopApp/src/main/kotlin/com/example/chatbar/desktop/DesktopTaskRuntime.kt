@@ -144,6 +144,7 @@ internal class DesktopTaskRuntime(
     /** Card creation has no chat/session admission. The caller child still joins maintenance/shutdown. */
     suspend fun <T> withCardDesign(draftSessionId: String, formatCardCandidate: Boolean = false,
         publishWorkRow: Boolean = true, creativeKind: DesktopOwnedWorkKind = DesktopOwnedWorkKind.CREATIVE,
+        usageContext: DesktopUsageContext? = null,
         work: suspend () -> T): T = coroutineScope {
         require(creativeKind !in setOf(DesktopOwnedWorkKind.DOCUMENT, DesktopOwnedWorkKind.CARD_DESIGN))
         require(!formatCardCandidate || creativeKind == DesktopOwnedWorkKind.CREATIVE)
@@ -151,7 +152,8 @@ internal class DesktopTaskRuntime(
             if (!accepting || maintenance || draftSessionId in cardDesigns)
                 throw DesktopTaskAdmissionException("格式卡生成暂不可用")
             val id = UUID.randomUUID().toString()
-            val child = async(start = CoroutineStart.LAZY) { work() }
+            val child = async(usageContext?.let { DesktopUsageParent(it.copy(taskId = id)) }
+                ?: kotlin.coroutines.EmptyCoroutineContext, start = CoroutineStart.LAZY) { work() }
             cardDesigns[draftSessionId] = id
             activeJobs[id] = child
             if (publishWorkRow) mutableOwnedWork.value = listOf(DesktopOwnedWorkEntry(id,

@@ -24,6 +24,7 @@ internal data class DesktopNovelAiStudioState(
     val accountUi: NovelAiAccountUiState = NovelAiAccountUiState(loading = false),
     val status: String = "",
     val taskId: String? = null,
+    val generationTaskId: String? = null,
     val preview: ByteArray? = null,
     val reverseCandidate: NovelAiPromptPlan? = null,
     val reverseProgress: DesktopReversePromptProgress = DesktopReversePromptProgress(),
@@ -70,6 +71,7 @@ internal class DesktopNovelAiStudioController(
     private val freezeCredential: () -> kotlin.coroutines.CoroutineContext = { kotlin.coroutines.EmptyCoroutineContext },
 ) {
     val repository = NovelAiStudioStateRepository(storage)
+    val imageDiagnostics get() = tasks.diagnostics
     val designRepository = NovelAiDesignConversationRepository(storage)
     val draft = repository.draft
     val history = repository.history
@@ -451,7 +453,7 @@ internal class DesktopNovelAiStudioController(
             }
             finally { mutableState.update { it.copy(preview = null) } }
         } }
-        mutableState.update { it.copy(taskId = id) }
+        mutableState.update { it.copy(taskId = id, generationTaskId = id) }
     }
 
     suspend fun design(input: String, newConversation: Boolean = designComposer.value.composingNew, attach: Boolean = false) = action(designAction = true) {

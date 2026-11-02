@@ -29,11 +29,12 @@ internal fun DesktopProviderUsagePanel(owner: DesktopProviderUsageOwner) {
     var page by remember(query, dimension) { mutableStateOf(0) }
     LaunchedEffect(owner, query, dimension, page) { owner.refresh(query, dimension, page) }
     DesktopManagementHeading("模型请求用量")
-    StatusText("记录已接入的文本／向量请求、正式 Fish TTS 和音色库生成试听的网络尝试。发送字符、有效音频时长和字节为独立本地测量，不混入 Token，也不代表供应商计费。实际生图等其他媒体调用仍待接入；未报告的服务端用量保持未知。")
+    StatusText("记录已接入的文本／向量、正式语音与生成试听、Studio／聊天生图和角色候选生图请求。字符、音频时长和图片／音频字节为本地测量，不混入 Token，也不代表账单。图片处理、Vibe 编码和朋友圈生图仍待接入；未报告的服务端用量保持未知。")
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         SelectChip("全部类型", !textOnly && mediaKind == null) { textOnly = false; mediaKind = null }
         SelectChip("Token 请求", textOnly) { textOnly = true; mediaKind = null }
         SelectChip("Fish TTS", mediaKind == DesktopUsageMediaKind.FISH_TTS) { textOnly = false; mediaKind = DesktopUsageMediaKind.FISH_TTS }
+        SelectChip("NovelAI 生图", mediaKind == DesktopUsageMediaKind.NAI_IMAGE_GENERATION) { textOnly = false; mediaKind = DesktopUsageMediaKind.NAI_IMAGE_GENERATION }
     }
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         SelectChip("全部时间", days == null) { days = null }
@@ -139,9 +140,19 @@ private fun UsageCounters(totals: DesktopUsageTotals) {
     totals.media.forEach { media ->
         fun local(label: String, value: DesktopUsageCounterTotal) = "$label：${value.value ?: "未取得"}" +
             if (value.unreportedAttempts > 0) "（${value.unreportedAttempts}次未取得）" else ""
-        StatusText("Fish TTS · ${media.attempts} 次网络尝试；以下为本地测量")
-        StatusText(local("发送字符（Unicode 码点，含重试）", media.inputTextCodePoints))
-        StatusText(local("有效音频时长（毫秒）", media.outputAudioDurationMs) + " · " + local("有效音频字节", media.outputAudioBytes))
+        when (media.kind) {
+            DesktopUsageMediaKind.FISH_TTS -> {
+                StatusText("Fish TTS · ${media.attempts} 次网络尝试；以下为本地测量")
+                StatusText(local("发送字符（Unicode 码点，含重试）", media.inputTextCodePoints))
+                StatusText(local("有效音频时长（毫秒）", media.outputAudioDurationMs) + " · " + local("有效音频字节", media.outputAudioBytes))
+            }
+            DesktopUsageMediaKind.NAI_IMAGE_GENERATION -> {
+                StatusText("NovelAI 生图 · ${media.attempts} 次网络尝试；以下为本地测量")
+                StatusText(local("请求图片数（含重试）", media.requestedImages))
+                StatusText(local("有效返回图片数", media.outputImages) + " · " + local("有效图片字节", media.outputImageBytes))
+                StatusText("有效返回不代表已经保存或应用；保存结果请查看原任务。")
+            }
+        }
         StatusText("供应商计费量：未取得（UNREPORTED）；本地测量不能等同账单。")
     }
 }

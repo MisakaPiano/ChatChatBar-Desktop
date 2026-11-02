@@ -27,6 +27,11 @@ class DesktopCharacterImageTest {
             var generated = 0
             val ai = controller(app, editor, secrets, designer = { _, _, _, _, _ -> error("No avatar design") },
                 generator = { actual, size, _, _, _ ->
+                    val parent = assertNotNull(currentCoroutineContext()[DesktopUsageParent]?.value)
+                    assertEquals(DesktopUsageSource.CHARACTER_CARD, parent.source)
+                    assertEquals(card.id, parent.cardId); assertEquals(person.id, parent.personId)
+                    assertEquals(editor.state.value.draftSessionId, parent.editorSessionId); assertNull(parent.sessionId)
+                    assertEquals(app.taskRuntime.ownedWork.value.single().taskId, parent.taskId)
                     generated++; assertEquals(512, size.width); assertEquals(512, size.height)
                     assertEquals("synthetic-style, synthetic-person, ${CharacterCardAiPromptAuthority.CHARACTER_AVATAR_NAI_POSITIVE_PROMPT}", actual.baseCaption)
                     assertEquals("synthetic-negative, ${CharacterCardAiPromptAuthority.CHARACTER_AVATAR_NAI_NEGATIVE_PROMPT}", actual.negativePrompt)

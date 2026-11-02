@@ -237,7 +237,8 @@ class DesktopAppContainer internal constructor(
     internal val novelAiInfrastructure by novelAiInfrastructureOwner
     internal val novelAiGenerationRuntime by lazy {
         DesktopNovelAiGenerationRuntime(desktopSecretStore,
-            DesktopNovelAiGenerationStore(jsonFileStorage, characterResourceStore, dataOperationCoordinator)::persist)
+            DesktopNovelAiGenerationStore(jsonFileStorage, characterResourceStore, dataOperationCoordinator)::persist,
+            diagnostics = taskRuntime.diagnostics)
     }
 
     internal val novelAiStudioController by lazy {
@@ -286,7 +287,7 @@ class DesktopAppContainer internal constructor(
             settingsRepository.currentAppSettings.allowCleartextModelApi
         }
     }
-    private val characterImageGenerationOwner = lazy { DesktopCharacterImageGeneration(desktopSecretStore) }
+    private val characterImageGenerationOwner = lazy { DesktopCharacterImageGeneration(desktopSecretStore, diagnostics = taskRuntime.diagnostics) }
     private val formatCardEditorOwner = lazy {
         DesktopFormatCardEditorController(formatCardRepository, editorDraftRepository).also { editor ->
             editor.promptBudget = editorBudgetOwner.value

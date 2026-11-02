@@ -38,6 +38,8 @@ internal class DesktopCharacterImageController(
         val manualPrompt: String, val model: NovelAiImageModel, val ratio: String)
     private val mutable = MutableStateFlow(DesktopCharacterImageState())
     val state = mutable.asStateFlow()
+    val imageDiagnostics get() = runtime.diagnostics
+    val imageDiagnosticGroup get() = pin?.session
     private var pin: Pin? = null
     private var job: Job? = null
     private val operationEpoch = java.util.concurrent.atomic.AtomicLong()
@@ -118,7 +120,9 @@ internal class DesktopCharacterImageController(
         job = scope.launch {
             var failureHint = "无法读取生图设置，请检查设置与数据目录"
             try {
-                runtime.withCardDesign(target.session, creativeKind = DesktopOwnedWorkKind.CHARACTER_IMAGE) { gate.withNormalOperation {
+                runtime.withCardDesign(target.session, creativeKind = DesktopOwnedWorkKind.CHARACTER_IMAGE,
+                    usageContext = DesktopUsageContext(DesktopUsageSource.CHARACTER_CARD, cardId = target.destination.id,
+                        editorSessionId = target.session, personId = target.personId)) { gate.withNormalOperation {
                     val fresh = settings.getAppSettings()
                     val avatar = target.personId != null
                     val key = Signature(target.destination, before.hint, before.requirement, before.manualPrompt,

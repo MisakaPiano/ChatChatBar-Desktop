@@ -58,6 +58,7 @@ data class DesktopTransportDiagnosticEntry(
     val requestTextBudget: PromptBudgetEstimate? = null,
     val requestTextBudgetUnavailable: Boolean = false,
     val media: DesktopMediaRequestEvidence? = null,
+    val image: DesktopImageRequestEvidence? = null,
 )
 
 /** Bounded, process-local final-provider-request evidence. Never participates in request construction. */
@@ -87,6 +88,16 @@ internal class DesktopTransportDiagnosticsOwner(
 
     internal fun addMedia(entry: DesktopTransportDiagnosticEntry) = synchronized(lock) {
         mutableEntries.value = (listOf(entry) + mutableEntries.value).take(maxEntries)
+    }
+
+    fun beginNovelAiImages(sessionId: String, modelId: String, credential: String, accountId: String?,
+        context: DesktopUsageContext, count: Long): DesktopImageDiagnosticRecorder {
+        val scrubber = DesktopDiagnosticScrubber(credential)
+        val model = scrubber.text(modelId, SHORT_LIMIT)
+        return DesktopImageDiagnosticRecorder(this, sessionId, model, scrubber, clock,
+            usageSink?.let { sink -> DesktopUsageAttemptRecorder(context, model, model, "NovelAI",
+                accountId?.let { scrubber.text(it, SHORT_LIMIT) }, sink, clock,
+                DesktopUsageMedia(DesktopUsageMediaKind.NAI_IMAGE_GENERATION, requestedImages = count)) }, count)
     }
 
     fun begin(taskId: String, sessionId: String, model: ModelConfig,

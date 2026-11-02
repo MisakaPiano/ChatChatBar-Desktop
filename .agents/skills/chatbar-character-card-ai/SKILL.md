@@ -7,6 +7,8 @@ description: Maintain ChatBar character-card AI workflows. Use when changing AI 
 
 Desktop fill/rewrite, image-to-appearance and cover/avatar work pass explicit CHARACTER_AI/CHARACTER_APPEARANCE/CHARACTER_IMAGE purposes to the original TaskRuntime child. Task completion is operation/candidate work, not durable card save. Each revealTaskDraft only opens the still-matching original pin without refreshing models, selecting another source, regenerating or applying; changed/closed pins refuse. Manage task navigation uses normal section guards and never reloads the editor to satisfy a stale target.
 
+Character image generation supplies its actual card/draft/person as optional usageContext to withCardDesign; that owner injects its existing child UUID before the original work. DesktopCharacterImageGeneration reuses the frozen credential and original image service for metadata-only image statistics. The candidate overlay's compact image-log entry shares the original DebugOverlay and editor group; opening/clearing does not generate or apply candidates. Cached finalImage reuse never creates a new network row. See259.
+
 Keep AI role-card work narrow. Read these files before broad search.
 
 Use chatbar-model-request-runtime for provider parameters, model fallback, authentication, or streaming transport. Use chatbar-image-generation-runtime for shared NovelAI HTTP generation, retry, metadata, regeneration, and file lifecycle. Use chatbar-fish-audio-voice for character voice binding, transfer, availability, and generation behavior. Keep card candidate/apply policy in this skill.

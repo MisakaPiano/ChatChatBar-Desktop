@@ -19,6 +19,8 @@
 
 CI109／57272实际完整SUCCESS，主2505=2486PASS+19SKIP，4个controller、提醒Panel、真实Shell与指南同页阅读扩展均PASS；实际双语宽窄图已核。后补短窗可用性修正：失败原因排在通用介绍前面，沿原Scene增加首行初始可见性检查；这个增量尚待下一精确源，不将109改写为失败。
 
+后续CI110／2ba39c完整SUCCESS，同主2505及独立检查通过；8张中英文330／1100 READ／SAVE实图已核，原英文最矮窗现在首屏可读失败原因。未放宽原动作完整bounds、5秒或滚动断言。该源码进入1233普通私有候选，不由后续NAI媒体源码覆盖。
+
 - `DesktopGuideReminderTest`四例：缺失／旧字段只读与本次暂缓，显式保存与后续重开、最新字段／未知字段及更高版本保留，坏字段／原子替换失败及重试，取消／已关闭gate保全。
 - `DesktopGuideReminderPanelTest`一例：中英文330×420／1100×650，blocked未消费，READ／SAVE状态及按钮全可达、disabled、版本已记后消失；实际图走原 `CCB_CONTEXT_HELP_REVIEW_DIR`。
 - 原B1C增加真实Shell一例：已有modal→启动更新→指南顺序，直接开原指南、关闭再从问号开短帮助，原会话草稿／角色字节／任务／请求／路由保留；经真实SettingsRepository保存的tutorialVersion=42及entities/app_settings.json原字节保持，不把旁路哨兵文件当实体导入证据。

@@ -14,6 +14,37 @@ class DesktopMediaUsageCustodyTest {
         counters = DesktopUsageCounters(), schemaVersion = 2,
         media = DesktopUsageMedia(DesktopUsageMediaKind.FISH_TTS, input, duration, bytes, 200))
 
+    @Test fun `image local units coexist with original token and audio bytes and reject mixed or changed identities`() = runBlocking {
+        val root = Files.createTempDirectory("image-media-custody-"); val gate = DesktopDataOperationCoordinator()
+        try {
+            val store = DesktopProviderUsageStore(root, gate)
+            val originals = listOf(text(), media())
+            originals.forEach { store.save(it) }
+            val before = originals.associate { row -> row.id to Files.readAllBytes(root.resolve("diagnostics/provider-usage/${row.id}.json")) }
+            val image = text().copy(schemaVersion = 2, counters = DesktopUsageCounters(),
+                media = DesktopUsageMedia(DesktopUsageMediaKind.NAI_IMAGE_GENERATION, httpStatus = 200,
+                    requestedImages = 2, outputImages = 2, outputImageBytes = 512))
+            store.save(image)
+            val file = root.resolve("diagnostics/provider-usage/${image.id}.json"); val bytes = Files.readAllBytes(file)
+            for (bad in listOf(image.media!!.copy(inputTextCodePoints = 1), image.media!!.copy(outputAudioBytes = 1),
+                image.media!!.copy(outputImageBytes = -1), image.media!!.copy(requestedImages = 3),
+                image.media!!.copy(kind = DesktopUsageMediaKind.FISH_TTS))) {
+                assertFails { store.save(image.copy(revision = 2, media = bad)) }
+                assertContentEquals(bytes, Files.readAllBytes(file))
+            }
+            val records = DesktopProviderUsageStore(root, gate).records()
+            assertEquals((originals + image).toSet(), records.toSet())
+            originals.forEach { row -> assertContentEquals(before.getValue(row.id), Files.readAllBytes(root.resolve("diagnostics/provider-usage/${row.id}.json"))) }
+            val summary = summarizeDesktopUsage(records)
+            assertEquals(1, summary.prompt.reportedAttempts); assertEquals(0, summary.prompt.unreportedAttempts)
+            assertEquals(7L, summary.prompt.value)
+            val images = summary.media.single { it.kind == DesktopUsageMediaKind.NAI_IMAGE_GENERATION }
+            assertEquals(2L, images.outputImages.value); assertEquals(512L, images.outputImageBytes.value)
+            assertNull(images.outputAudioBytes.value)
+            assertEquals(64L, summary.media.single { it.kind == DesktopUsageMediaKind.FISH_TTS }.outputAudioBytes.value)
+        } finally { gate.closeAndDrain(); check(root.toFile().deleteRecursively()) }
+    }
+
     @Test fun `original schema1 bytes coexist with media2 on reopen without mixing units or rewriting old rows`() = runBlocking {
         val root = Files.createTempDirectory("media-custody-"); val gate = DesktopDataOperationCoordinator()
         try {

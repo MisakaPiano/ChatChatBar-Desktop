@@ -37,7 +37,7 @@ internal data class DesktopUsageContext(
 internal enum class DesktopUsageOutcome { RUNNING, COMPLETED, FAILED, CANCELLED, RETRIED }
 
 @Serializable
-internal enum class DesktopUsageMediaKind { FISH_TTS }
+internal enum class DesktopUsageMediaKind { FISH_TTS, NAI_IMAGE_GENERATION }
 
 /** Local measurements of an actual media attempt, never provider billing or LLM token usage. */
 @Serializable
@@ -47,6 +47,12 @@ internal data class DesktopUsageMedia(
     val outputAudioDurationMs: Long? = null,
     val outputAudioBytes: Long? = null,
     val httpStatus: Int? = null,
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
+    val requestedImages: Long? = null,
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
+    val outputImages: Long? = null,
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
+    val outputImageBytes: Long? = null,
 )
 
 /** Only provider-reported counters. Cached input is a subset/annotation, never added to prompt total. */
@@ -104,7 +110,9 @@ internal data class DesktopUsageTotals(
 
 internal data class DesktopUsageMediaTotals(val kind: DesktopUsageMediaKind, val attempts: Int,
     val inputTextCodePoints: DesktopUsageCounterTotal, val outputAudioDurationMs: DesktopUsageCounterTotal,
-    val outputAudioBytes: DesktopUsageCounterTotal)
+    val outputAudioBytes: DesktopUsageCounterTotal,
+    val requestedImages: DesktopUsageCounterTotal, val outputImages: DesktopUsageCounterTotal,
+    val outputImageBytes: DesktopUsageCounterTotal)
 
 internal data class DesktopUsageQuery(
     val fromInclusive: Long? = null, val untilExclusive: Long? = null,
@@ -138,7 +146,9 @@ internal fun summarizeDesktopUsage(records: List<DesktopUsageRecord>): DesktopUs
     val media = latest.filter { it.media != null }.groupBy { requireNotNull(it.media).kind }.map { (kind, rows) ->
         require(rows.all { it.counters == DesktopUsageCounters() })
         DesktopUsageMediaTotals(kind, rows.size, measured(rows) { it.media?.inputTextCodePoints },
-            measured(rows) { it.media?.outputAudioDurationMs }, measured(rows) { it.media?.outputAudioBytes })
+            measured(rows) { it.media?.outputAudioDurationMs }, measured(rows) { it.media?.outputAudioBytes },
+            measured(rows) { it.media?.requestedImages }, measured(rows) { it.media?.outputImages },
+            measured(rows) { it.media?.outputImageBytes })
     }
     return DesktopUsageTotals(latest.map { it.requestId }.distinct().size, latest.size,
         total { it.prompt }, total { it.completion }, total { it.cacheHit }, total { it.cacheWrite }, total { it.cacheMiss }, media)
@@ -162,7 +172,15 @@ internal class DesktopProviderUsageStore(private val root: Path, private val gat
         record.media?.let { media ->
             require(record.counters == DesktopUsageCounters())
             require(media.httpStatus == null || media.httpStatus in 100..599)
-            listOfNotNull(media.inputTextCodePoints, media.outputAudioDurationMs, media.outputAudioBytes).forEach { require(it >= 0) }
+            listOfNotNull(media.inputTextCodePoints, media.outputAudioDurationMs, media.outputAudioBytes,
+                media.requestedImages, media.outputImages, media.outputImageBytes).forEach { require(it >= 0) }
+            when (media.kind) {
+                DesktopUsageMediaKind.FISH_TTS -> require(media.requestedImages == null && media.outputImages == null && media.outputImageBytes == null)
+                DesktopUsageMediaKind.NAI_IMAGE_GENERATION -> {
+                    require(media.inputTextCodePoints == null && media.outputAudioDurationMs == null && media.outputAudioBytes == null)
+                    require(media.requestedImages != null && media.requestedImages > 0)
+                }
+            }
         }
     }
     private fun read(file: Path): DesktopUsageRecord {
@@ -189,7 +207,8 @@ internal class DesktopProviderUsageStore(private val root: Path, private val gat
                 previous.editorSessionId == record.editorSessionId && previous.personId == record.personId && previous.subjectId == record.subjectId &&
                 previous.modelId == record.modelId && previous.modelName == record.modelName &&
                 previous.provider == record.provider && previous.accountId == record.accountId && previous.schemaVersion == record.schemaVersion &&
-                previous.media?.kind == record.media?.kind && previous.media?.inputTextCodePoints == record.media?.inputTextCodePoints)
+                previous.media?.kind == record.media?.kind && previous.media?.inputTextCodePoints == record.media?.inputTextCodePoints &&
+                previous.media?.requestedImages == record.media?.requestedImages)
             if (previous.revision >= record.revision) {
                 check(previous.revision != record.revision || previous == record)
                 return@withLock

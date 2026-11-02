@@ -9,6 +9,8 @@ Desktop global external-file FIFO is `DesktopExternalImportInspector/Controller/
 
 Keep prompt design, HTTP generation, persistence, and feature UI as separate owners. Use chatbar-novelai-prompt whenever tag-design text or NovelAiPromptDesigner behavior changes.
 
+Desktop generation and character-candidate adapters optionally attach DesktopImageDiagnostics to the original shared Call. It observes actual retry attempts and validated final output without reading bodies or modifying transport policy. Numeric network completion is separate from the existing local commit result; cancelled/failed partial output and unknown billing remain explicit. Studio's generationTaskId is distinct from other taskId operations and supplies the existing DebugOverlay's image metadata group; character candidates use their actual editor group. Original advanced PromptInspector remains separate. See259/provider-usage skill; this does not cover post-processing, Vibe or Moments binary calls.
+
 ## Shared JVM authority (Desktop Phase 7)
 
 - `app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/` now owns NovelAI HTTP/frame decoding, account cost policy, batch/size policies, Studio models/clipboard/import/history folding, image guidance models and focused-inpaint planning, regeneration/PNG metadata, V5 text expansion, crop math, metadata stripping and concurrency gates. Android imports these same package symbols; platform raster I/O and UI orchestration remain adapters. `NovelAiPixelResampler`, `NovelAiFocusedMaskPolicy`, `NovelAiInpaintPixelPolicy` and `ApngDisguiseCodec` own the shared pixel/chunk algorithms; Android maps Bitmap through thin wrappers and `ApngRaster`.

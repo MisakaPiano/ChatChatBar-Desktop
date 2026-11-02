@@ -63,6 +63,7 @@ internal fun DesktopCharacterImageOverlay(controller: DesktopCharacterImageContr
                 if (state.crop != null) StatusText("已选择独立头像裁剪；完整图片仍用作聊天背景。")
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     BootstrapButton("生成新图片", enabled = !state.busy && !state.loading) { controller.generate() }
+                    DesktopImageLogEntry(controller.imageDiagnostics, controller.imageDiagnosticGroup)
                     if (state.busy) BootstrapButton("取消生图", secondary = true, onClick = controller::cancel)
                     if (!state.busy && state.error != null) BootstrapButton("重试未完成步骤", secondary = true) { controller.generate(retry = true) }
                     if (state.kind == DesktopCharacterImageKind.COVER && state.candidate != null) {

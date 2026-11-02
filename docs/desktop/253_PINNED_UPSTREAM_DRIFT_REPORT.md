@@ -1,5 +1,7 @@
 # P16 固定版本差异清单
 
+最新增量：2ba39c显式云端入口R1／41381711267实际SUCCESS，原artifact21567B／4c4c4b9f…dec09d、CRC与两JSON及四输入hash独立核对；221项分类保持，不变成语义兼容。原正式监控执行对话已于12:23报告只追加prompt并二次peek一致：automation 6ac89edd86008191b3f58b37ddf29361及每天／condition_watch／时区／ACTIVE／关联保持，出现未处理且重要的新正式Release时按真实三SHA复用或提出报告请求，无新任务或同版本补跑。协调端已读真实completed回执；底层模型／通知字段未暴露且未提交，下次运行时间未暴露、delivery unknown，未来自然新版本端到端仍未验证。原执行者对话ID为6ac89e9b-a1a8-83e8-a73c-6baad3dbaad4，不能与automation ID混用。正式baseline仍141，报告不自动合并／发布。
+
 2026-11-02：离线工具40ff/CI105的3个合成Python单元测试实际Ran3/OK，Linux1135/582与完整Windows主2492及独立检查均通过；实际日志和报告已核。它补 P16-02 的可复现清单首片；正式 Release 触发、自动生成报告与兼容结论编排仍未完成。
 
 ## 输入与结果的含义

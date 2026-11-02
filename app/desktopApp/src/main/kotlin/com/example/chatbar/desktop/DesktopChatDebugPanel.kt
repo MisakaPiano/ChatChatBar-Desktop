@@ -39,11 +39,11 @@ internal fun desktopDiagnosticSystemMessages(entry: DesktopTransportDiagnosticEn
 @Composable
 internal fun DesktopChatDebugOverlay(owner: DesktopTransportDiagnosticsOwner, sessionId: String,
     onClose: () -> Unit, onMemory: (() -> Unit)? = null, maintenance: DesktopChatMaintenanceController? = null,
-    voicePreview: Boolean = false) {
+    voicePreview: Boolean = false, imageGeneration: Boolean = false) {
     DesktopModalSurface {
         Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.dim).padding(16.dp), contentAlignment = Alignment.Center) {
             DesktopChatDebugPanel(owner, sessionId, onClose, onMemory, Modifier.widthIn(max = 1100.dp)
-                .heightIn(max = 820.dp).fillMaxSize(), maintenance, voicePreview)
+                .heightIn(max = 820.dp).fillMaxSize(), maintenance, voicePreview, imageGeneration)
         }
     }
 }
@@ -51,7 +51,7 @@ internal fun DesktopChatDebugOverlay(owner: DesktopTransportDiagnosticsOwner, se
 @Composable
 internal fun DesktopChatDebugPanel(owner: DesktopTransportDiagnosticsOwner, sessionId: String,
     onClose: () -> Unit, onMemory: (() -> Unit)? = null, modifier: Modifier = Modifier,
-    maintenance: DesktopChatMaintenanceController? = null, voicePreview: Boolean = false) {
+    maintenance: DesktopChatMaintenanceController? = null, voicePreview: Boolean = false, imageGeneration: Boolean = false) {
     val entries by owner.entries.collectAsState()
     val logs = desktopChatDiagnosticEntries(entries, sessionId)
     var selectedId by remember(sessionId) { mutableStateOf<String?>(null) }
@@ -64,25 +64,28 @@ internal fun DesktopChatDebugPanel(owner: DesktopTransportDiagnosticsOwner, sess
         if (it.type == KeyEventType.KeyDown && it.key == Key.Escape) { onClose(); true } else false
     }, verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.weight(1f)) { ManageHeading(if (voicePreview) "试听请求日志" else "聊天调试日志") }
+            Box(Modifier.weight(1f)) { ManageHeading(if (imageGeneration) "生图请求日志" else if (voicePreview) "试听请求日志" else "聊天调试日志") }
             DesktopChatIconAction("关闭调试日志", DesktopAppIcons.Close, onClick = onClose)
         }
-        StatusText(if (voicePreview) "仅显示本次音色库的生成请求元数据；不含文本、密钥或音频内容，超出上限会截断。"
+        StatusText(if (imageGeneration) "仅显示本组生图网络尝试的元数据；不含提示词、密钥或图片内容，超出上限会截断。"
+            else if (voicePreview) "仅显示本次音色库的生成请求元数据；不含文本、密钥或音频内容，超出上限会截断。"
             else "仅显示本会话、本次运行记录；请求和响应已脱敏，超出记录上限会截断。")
         ActionRow {
-            BootstrapButton(if (voicePreview) "清空本次试听日志" else "清空本会话日志", enabled = logs.isNotEmpty(), secondary = true) { clearConfirmation = true }
+            BootstrapButton(if (imageGeneration) "清空本组生图日志" else if (voicePreview) "清空本次试听日志" else "清空本会话日志", enabled = logs.isNotEmpty(), secondary = true) { clearConfirmation = true }
             onMemory?.let { BootstrapButton("长期记忆", secondary = true, onClick = it) }
         }
         maintenance?.let { DesktopChatMaintenancePanel(it, sessionId) }
         if (clearConfirmation) {
-            StatusText(if (voicePreview) "清空本次试听日志？播放、音色绑定和数值统计保持。" else "清空调试记录？聊天消息和正在进行的生成保持。")
+            StatusText(if (imageGeneration) "清空本组生图日志？正在生成的任务、已保存图片和数值统计保持。"
+                else if (voicePreview) "清空本次试听日志？播放、音色绑定和数值统计保持。" else "清空调试记录？聊天消息和正在进行的生成保持。")
             ActionRow {
                 BootstrapButton("确认清空日志") { owner.clear(sessionId); selectedId = null; clearConfirmation = false }
                 BootstrapButton("取消清空", secondary = true) { clearConfirmation = false }
             }
         }
         if (clipboard.unavailable) StatusText("剪贴板暂不可用，请重试复制。", DesktopBootstrapColors.warning)
-        if (logs.isEmpty()) StatusText(if (voicePreview) "本次音色库暂无生成请求。官方样本和缓存播放不调用TTS。" else "本会话暂无调试日志。新的对话请求会在这里出现。")
+        if (logs.isEmpty()) StatusText(if (imageGeneration) "本组暂无生图请求记录。打开日志不会发送请求；沿用已完成候选也不重复生成。"
+            else if (voicePreview) "本次音色库暂无生成请求。官方样本和缓存播放不调用TTS。" else "本会话暂无调试日志。新的对话请求会在这里出现。")
         else BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
             val wide = maxWidth >= 720.dp
             @Composable fun Requests(modifier: Modifier) {
@@ -99,7 +102,7 @@ internal fun DesktopChatDebugPanel(owner: DesktopTransportDiagnosticsOwner, sess
                     Column(modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         StatusText("模型：${entry.modelDisplayName} · ${entry.modelName}")
                         SelectionContainer { StatusText("请求地址：${entry.requestUrl ?: "尚未发送"}") }
-                        StatusText(if (entry.media == null) "状态：${entry.status} · 结束原因：${entry.finishReason ?: "尚未报告"}" else "状态：${entry.status}")
+                        StatusText(if (entry.media == null && entry.image == null) "状态：${entry.status} · 结束原因：${entry.finishReason ?: "尚未报告"}" else "状态：${entry.status}")
                         entry.completedAt?.let { StatusText("耗时：${(it - entry.startedAt).coerceAtLeast(0)} ms") }
                         entry.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
                         fun copy(body: String) { scope.launch { clipboard.copyText(body) } }
@@ -110,6 +113,13 @@ internal fun DesktopChatDebugPanel(owner: DesktopTransportDiagnosticsOwner, sess
                             StatusText("有效音频时长（本地毫秒）：${media.audioDurationMs ?: "未取得"} · 字节：${media.audioBytes ?: "未取得"}")
                             StatusText("本次记录未取得供应商计费量（UNREPORTED）。本地测量不等同账单，也不混入 LLM Token。")
                             StatusText("此记录只捕获实际请求方法、去除凭据的地址、HTTP 状态和本地测量；合成正文、请求头和音频字节不进入日志。")
+                            if (entry.cancellationObserved) StatusText("已观察到取消请求；不据此推断供应商是否受理。")
+                        } else if (entry.image != null) {
+                            val image = entry.image
+                            StatusText("实际 NovelAI 生图请求 · 网络尝试 ${image.attempt} · HTTP ${image.httpStatus ?: "未收到"}")
+                            StatusText("请求图片数：${image.requestedImages} · 有效返回：${image.outputImages ?: "未取得"} · 字节：${image.outputImageBytes ?: "未取得"}")
+                            StatusText("图片数与字节为本地测量，不等同 Anlas 账单或 Token；不记录提示词、请求头、参考图或图片正文。")
+                            StatusText("网络输出完成不代表已经保存或应用；请查看原任务结果。")
                             if (entry.cancellationObserved) StatusText("已观察到取消请求；不据此推断供应商是否受理。")
                         } else {
                             StatusText("服务端 Token：输入 ${entry.usage?.promptTokens ?: "未报告"} / 输出 ${entry.usage?.completionTokens ?: "未报告"}")
