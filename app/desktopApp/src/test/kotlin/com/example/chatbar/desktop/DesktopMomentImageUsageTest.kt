@@ -52,7 +52,7 @@ class DesktopMomentImageUsageTest {
             app.jsonFileStorage.saveEntity("character_cards", card.id, card, CharacterCard.serializer())
             app.jsonFileStorage.saveEntity("chat_sessions", session.id, session, ChatSession.serializer())
             app.jsonFileStorage.saveEntity("moment_posts", post.id, post, MomentPost.serializer())
-            val model = ModelConfig("model", "Synthetic", "https://synthetic.invalid/v1", "synthetic-text-key", "synthetic", createdAt = 1)
+            val model = ModelConfig("model", "Synthetic", "https://synthetic.invalid/v1", "", "synthetic", createdAt = 1)
             secrets.save(DesktopCredentialKey.ModelApiKey(model.id), "synthetic-text-key")
             app.jsonFileStorage.saveEntity("model_configs", model.id, model, ModelConfig.serializer())
             app.settingsRepository.updateAppSettings { it.copy(momentsEnabled = true, momentsImagesEnabled = true) }
