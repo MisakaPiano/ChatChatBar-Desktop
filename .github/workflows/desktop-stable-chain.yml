@@ -2,7 +2,7 @@ name: Validate ordinary Desktop stable upgrade chain
 
 on:
   push:
-    branches: [feature/phase8-fish-audio]
+    branches: [feature/phase8-fish-audio, 'codex/desktop-stable-chain-*']
     paths: [.github/desktop-stable-chain-request.json]
   workflow_dispatch:
     inputs:
