@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import re
 
 def require(value, code):
     if not value: raise RuntimeError(code)
@@ -89,5 +90,11 @@ def main():
 if __name__=='__main__':
     try:main()
     except Exception as error:
-        print(json.dumps(dict(kind='SIGNED_CANDIDATE_VALIDATION_FAILED',errorType=type(error).__name__)))
+        fixed = str(error) if type(error) is RuntimeError and re.fullmatch('[A-Z0-9_]+',str(error)) else None
+        result=dict(kind='SIGNED_CANDIDATE_VALIDATION_FAILED',errorType=type(error).__name__,code=fixed)
+        if os.environ.get('GITHUB_ACTIONS')=='true' and os.environ.get('GITHUB_REPOSITORY')=='MisakaPiano/ChatChatBar-Desktop':
+            folder=Path(os.environ['CCB_BUILD_OUTPUT']).resolve(strict=True)
+            if folder.name=='output' and folder.parent.name.startswith('ccbpack-'):
+                (folder/'signed-client-result.json').write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8')
+        print(json.dumps(result))
         raise SystemExit(2)
