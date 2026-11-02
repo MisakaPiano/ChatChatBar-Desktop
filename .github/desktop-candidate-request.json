@@ -27,7 +27,7 @@
     "candidateRevision": 16,
     "installerBytes": 177226066,
     "installerSha256": "ab484c9f1ea02a92f9d6da0cf7438bca6c385eb331a66897ac47923ccdbc3aca",
-    "notesSha256": "d67c0a74c927e202c7cebbbddd4549ac620cb6bdb0c0db6a46c32e1bc10b2419",
+    "notesSha256": "2de8388aeb0367bf47117fa658e38022040767a11d0a1ccef4e382a7b1d5591e",
     "prior": {
       "root.json": {
         "sha256": "2bb6b45884b7eda8c54d541280874042ac6fe0e2c70c6000bb5885a224b2f8ad",
@@ -73,5 +73,5 @@
       }
     }
   },
-  "validationAttempt": 2
+  "validationAttempt": 3
 }
