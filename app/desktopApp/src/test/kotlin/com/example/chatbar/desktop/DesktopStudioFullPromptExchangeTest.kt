@@ -28,10 +28,10 @@ class DesktopStudioFullPromptExchangeTest {
             assertContentEquals(before, Files.readAllBytes(f.file))
             assertTrue(f.controller.applyFullPrompt())
             assertEquals(text, f.controller.copyFullPrompt())
-            assertEquals(NovelAiImageModel.V5_FULL, f.controller.state.value.draft.selectedModel)
-            assertEquals(listOf(true, false), f.controller.state.value.draft.characters.map { it.enabled })
+            assertEquals(NovelAiImageModel.V5_FULL, f.controller.draft.value!!.selectedModel)
+            assertEquals(listOf(true, false), f.controller.draft.value!!.characters.map { it.enabled })
             f.controller.undo()
-            assertEquals("paired target", f.controller.state.value.draft.basePrompt)
+            assertEquals("paired target", f.controller.draft.value!!.basePrompt)
         } finally { f.close() }
     }
     private val edt = object : CoroutineDispatcher() {
