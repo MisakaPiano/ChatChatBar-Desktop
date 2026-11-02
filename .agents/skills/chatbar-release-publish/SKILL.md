@@ -9,7 +9,7 @@ For Android APK releases, treat “更新” as authorization to publish every c
 
 ## Desktop entrypoints
 
-`validate_signed_candidate.py` is cloud-only exact-final-byte validation with the frozen public1233 updater. A `signedUpdateOnly:true` reused-artifact request carries only public signed role bytes, checks unchanged bootstrap/cache revision/discovery/full download/second verification and never launches installers. Its local metadata fetcher is separate from anonymous public discovery. AUTH parent wait is not all-descendant-exit proof.
+`validate_signed_candidate.py` is cloud-only exact-final-byte validation with the frozen public1233 updater. A `signedUpdateOnly:true` reused-artifact request carries only public signed role bytes, checks unchanged bootstrap/cache revision/discovery/full download/second verification and never launches installers. The frozen1233 prior remains revision15; the requested candidate revision must be an actual integer greater than prior and match the authenticated cache, rather than a hardcoded16. Its local metadata fetcher is separate from anonymous public discovery. AUTH parent wait is not all-descendant-exit proof.
 
 Exact-artifact native-only revalidation accepts `communityAuthOnly:true` only with a `reuseBuildRun` request. `community_auth_probe.py` / `CommunityAuthHelperProbe.java` stay outside the installer, use the actual packaged Main and Windows registry adapter, and report real owned/foreign handler cleanup separately from browser/provider acceptance. The ordinary upgrade/independent matrix is reused, not rerun; a pre-existing scheme handler is SKIPPED.
 
