@@ -1,3 +1,9 @@
+2026-11-02后补：112/bace已终结FAIL，唯一首因为测试普通afterTypedPrepared回调调用挂起函数awaitCancellation；主/proxy未执行、未生成主XML/PNG。shared1138/Android582/Python3/NTFS7/native33/updater8/exit4独立通过复用。现仅将同一同步tail/stop回归改为有界工作线程屏障，stop仍取消真实原Job，保留5秒、UNCERTAIN、无Entity/receipt及新增原件字节保全断言；不改生产回调类型或伪造取消。新精确源待云端。1233/15公开与真人待边界保持。
+
+2026-11-02最新公开检查点：用户明确允许后，冻结2ba39c的1233/Release431053626及匹配signed15-release-r02已公开，metadata ref583bce9109031ebeac7019bba46149c5f78d9f76，root1保持。四资产/说明/actual tag-source和角色链读回；原1225客户端匿名实际14→15发现、176394340B完整下载和二验PASS，无安装/日常H访问、真人仍待。最终说明已披露新V4.5 Vibe首次编码及Upscale路由限制，V5不支持另列；旧r01签名/结果保留，不冒称后补修复入1233。已清理3个本次新派生重复文件542614122B，交付原件/签名/必要证据保留，旧拒绝目标未动。111/b6主2513=2493PASS+19SKIP+1FAIL，原加密包预览后skip等next超时；新增图片8项及相关20选中例、六张新实图通过但统计类型误标已后补。211c按原mutex/ActionRun修交接，bace固定用途路由/临时聊天owner和图片标签修正已送112/41388236121待验，原deadline/保护保持，不取消或掩盖111。其余原1.0工作继续，无本机重负载或H代装。
+
+下方历史保留。
+
 2026-11-02最新：CI110/2ba39c主2505=2486PASS+19SKIP及proxy5/NTFS7/shared1138/Android582/Python3/native33/updater8/exit4全通过，8张提醒失败状态和4张统计新实图已核。1233同源R18/41381711872普通升级/重开/忙拒绝/canary和独立547、混合路径冷投递限定PASS，实际最终EXE176394340B/ee091402…86e8、ZIP189611465B/966842bd…1ab及547+manager548/JAR/五控制工具字节已核，CRLF checkout与Git LF明确分列；假凭据/自定义根忙本次scope未验证，不扩称，真人与后版公开仍待。P16真实报告R1和原monitor追加prompt/peek已成立，未来自然触发/送达与语义兼容未证。后续NAI Studio/聊天/角色候选实际媒体与原日志入口源码独立按259待云端，不混冻结1233；不重放/不改Prompt/原保存边界。公开1230/14、无H代装或本机重负载保持。
 
 下方历史保留。

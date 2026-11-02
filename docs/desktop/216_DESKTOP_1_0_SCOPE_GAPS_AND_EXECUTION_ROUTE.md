@@ -1,3 +1,7 @@
+2026-11-02后补：112/bace已终结FAIL，唯一首因为测试普通afterTypedPrepared回调调用挂起函数awaitCancellation；主/proxy未执行、未生成主XML/PNG。shared1138/Android582/Python3/NTFS7/native33/updater8/exit4独立通过复用。现仅将同一同步tail/stop回归改为有界工作线程屏障，stop仍取消真实原Job，保留5秒、UNCERTAIN、无Entity/receipt及新增原件字节保全断言；不改生产回调类型或伪造取消。新精确源待云端。1233/15公开与真人待边界保持。
+
+2026-11-02最新：1233冻结2ba/CI110和R18必要验证、最终字节已核，用户明确许可后实际公开Release431053626/metadata15-583bce9，原1225匿名网络发现/下载/二验PASS，真人待、无H代装。新Vibe首次编码/Upscale限制已进入说明/签名r02；后补固定用途路由、临时聊天统计owner、图片类别标签及原导入idle交接送112/bace待验，不混1233。111/b6整轮仍保留1FAIL；新增NAI媒体8项/相关20例和六张实图限定PASS。详见259–261，尚未包括其他媒体owner/完整P15，原P17/P14最后/P18继续。
+
 2026-11-02最新：CI109/57272完整SUCCESS，Windows2505=2486PASS+19SKIP、共享1138/Android582及独立proxy5/NTFS7/Python3/native33/updater8/exit4均通过。首次指南提醒/阅读保留、A幕后提醒和已批准B头像最终wire已有精确源证据；108试听归属/日志及指南原失败修复仍有效。后补失败原因首屏可见性与P16显式云端报告待新源验证，成熟1233普通私有候选随后隔离验证。公开1230/14及真人待边界保持；原NAI媒体统计、P16正式监控报告接线、P17 preset/全文/IA、社区最后和P18仍未整体完成，不提升正式baseline。
 
 # 216 Desktop 正式 1.0：范围、缺口与执行路线

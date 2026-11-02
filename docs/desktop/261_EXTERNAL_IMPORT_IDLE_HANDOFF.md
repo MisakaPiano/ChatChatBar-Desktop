@@ -17,3 +17,7 @@ CI111／b6bc309b主2513=2493PASS+19SKIP+1FAIL；唯一原用例在成功解密�
 - 新同步retryInspection尾声用受控precommit导入等待，随后stop必须取消那个原动作，进入UNCERTAIN且无Entity／receipt发布，不能被已完成旧Job替代。
 
 这项后补不在冻结1233／2ba39c里；1233的110和普通R18证据不被改成111通过或真人验收。无本机编译／测试、真实资料写入或新发布授权。
+
+## 112测试编译首因与后补
+
+112/bace的普通afterTypedPrepared回调误用awaitCancellation，compileTestKotlin拒绝；主/proxy均未执行且未生成主XML/PNG。改用CountDownLatch有界屏障等待真实工作线程，retryInspection尾声返回后显式stop原Job，再释放屏障；finally总会释放。不改生产callback类型、原5秒或UNCERTAIN/无Entity/receipt断言，并核对原文件原字节。修后仍待新精确源云端，112保留FAIL。

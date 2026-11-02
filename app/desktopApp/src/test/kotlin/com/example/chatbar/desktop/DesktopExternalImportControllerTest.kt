@@ -40,8 +40,13 @@ class DesktopExternalImportControllerTest {
     }
     @Test fun `synchronous inspection tail cannot replace a reentrant import job before its exact stop`() = runBlocking { fixture { f ->
         val entered = CompletableDeferred<Unit>()
-        val typed = f.app.createTypedTransferController(afterTypedPrepared = { _, _ -> entered.complete(Unit); awaitCancellation() })
+        val release = java.util.concurrent.CountDownLatch(1)
+        val typed = f.app.createTypedTransferController(afterTypedPrepared = { _, _ ->
+            entered.complete(Unit)
+            check(release.await(5, java.util.concurrent.TimeUnit.SECONDS)) { "Precommit barrier was not released" }
+        })
         val original = f.format("stopped.json", "Stopped", "Not committed")
+        val originalBytes = Files.readAllBytes(original)
         f.submit(original)
         val external = f.open(typed); external.await(DesktopExternalImportPhase.READY)
         val observer = launch(Dispatchers.Unconfined, start = CoroutineStart.UNDISPATCHED) {
@@ -49,14 +54,18 @@ class DesktopExternalImportControllerTest {
             external.state.first { !it.busy }
             external.import()
         }
-        external.retryInspection() // Prepared inspection is synchronous; the original launch can return last.
-        withTimeout(5000) { entered.await() }
-        external.stop()
-        external.await(DesktopExternalImportPhase.UNCERTAIN)
-        observer.join()
-        assertTrue(f.app.formatCardRepository.getAll().isEmpty())
-        assertEquals(original, f.queue.state.value.files.single().path)
-        assertNull(typed.state.value.externalImportReceipt)
+        try {
+            external.retryInspection() // Prepared inspection is synchronous; its launch tail has returned before stop.
+            withTimeout(5000) { entered.await() }
+            external.stop()
+            release.countDown()
+            external.await(DesktopExternalImportPhase.UNCERTAIN)
+            observer.join()
+            assertTrue(f.app.formatCardRepository.getAll().isEmpty())
+            assertEquals(original, f.queue.state.value.files.single().path)
+            assertNull(typed.state.value.externalImportReceipt)
+            assertContentEquals(originalBytes, Files.readAllBytes(original))
+        } finally { release.countDown() }
     } }
     @Test fun `actual typed conflicts hold the FIFO and cancellation advances only the selected head`() = runBlocking { fixture { f ->
         f.app.formatTransfers.importNew(FormatCardPackage(name = "Conflict", content = "Retained"))
