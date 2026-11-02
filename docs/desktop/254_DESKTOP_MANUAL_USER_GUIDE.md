@@ -1,5 +1,7 @@
 # P17 手动使用指南
 
+106/091d实际Windows生产编译失败：嵌套ColumnScope下不能隐式读取外BoxWithConstraints的maxHeight。主测试／production proxy均未执行，无指南运行图。修复只在外作用域捕获guideHeight，再用原40..200dp限制；不放宽实际可见性／5秒条件。Linux1135／Android582、pinned Python3、NTFS7、原生33／updater8／exit4独立通过，不能代指南通过。此修复与255批准提醒在下一精确源重验；原失败保留。
+
 2026-11-02：在既有当前页短帮助中补“使用指南”入口，源码待精确云验。短帮助仍保留3–5项当前操作；完整阅读器复用同一个GENERAL帮助弹层。没有增加工作区导航、owner读取、模型调用、设置写入或官方tutorialVersion迁移。
 
 ## 已实现的手动阅读范围

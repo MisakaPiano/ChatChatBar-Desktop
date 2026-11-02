@@ -38,6 +38,7 @@ internal fun DesktopTutorialGuide(onBack: () -> Unit, onClose: () -> Unit) {
             DesktopIconAction(t(DesktopUiText.GUIDE_CLOSE), DesktopAppIcons.Close, onClick = onClose)
         }
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
+            val guideHeight = maxHeight
             @Composable fun Topics(modifier: Modifier) {
                 var viewport by remember { mutableStateOf(IntSize.Zero) }
                 Column(modifier.onSizeChanged { viewport = it }.semantics { contentDescription = t(DesktopUiText.GUIDE_TOPIC_LIST) }
@@ -74,7 +75,7 @@ internal fun DesktopTutorialGuide(onBack: () -> Unit, onClose: () -> Unit) {
                 Reader(Modifier.weight(1f).fillMaxHeight())
             } else Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 BootstrapButton(t(DesktopUiText.GUIDE_TOPICS), secondary = true) { showTopics = !showTopics }
-                if (showTopics) Topics(Modifier.fillMaxWidth().heightIn(max = (maxHeight - 128.dp).coerceIn(40.dp, 200.dp)))
+                if (showTopics) Topics(Modifier.fillMaxWidth().heightIn(max = (guideHeight - 128.dp).coerceIn(40.dp, 200.dp)))
                 Reader(Modifier.weight(1f).fillMaxWidth())
             }
         }
