@@ -62,6 +62,14 @@ jobs:
               "CCB_REUSE_BUILD_RUN=$($request.reuseBuildRun)" | Add-Content $env:GITHUB_ENV -Encoding utf8
             }
           }
+          if ('${{ github.event_name }}' -eq 'push' -and $request.communityAuthOnly -eq $true) {
+            if ($request.communityAuthOnly -isnot [bool] -or $null -eq $request.reuseBuildRun) { throw 'AUTH_ONLY_REQUIRES_EXACT_REUSE' }
+            'CCB_COMMUNITY_AUTH_ONLY=true' | Add-Content $env:GITHUB_ENV -Encoding utf8
+          }
+          if ('${{ github.event_name }}' -eq 'push' -and $request.signedUpdateOnly -eq $true) {
+            if ($request.signedUpdateOnly -isnot [bool] -or $null -eq $request.reuseBuildRun -or $request.communityAuthOnly -eq $true) { throw 'SIGNED_ONLY_REQUIRES_EXACT_REUSE' }
+            'CCB_SIGNED_UPDATE_ONLY=true' | Add-Content $env:GITHUB_ENV -Encoding utf8
+          }
           if ($env:CCB_CANDIDATE_SOURCE -cnotmatch '^[0-9a-f]{40}$') { throw 'EXACT_SOURCE_REQUIRED' }
           $identityArgs = @('tools/desktop/update/version_identity.py', '--display', $env:CCB_CANDIDATE_VERSION)
           if ($env:CCB_CANDIDATE_BUILD) { $identityArgs += @('--build-number', $env:CCB_CANDIDATE_BUILD) }
@@ -182,7 +190,30 @@ jobs:
           [ordered]@{kind='FROZEN_APPLICATION_AND_SEPARATE_BUILD_TOOLS'; applicationSource=$env:CCB_CANDIDATE_SOURCE; controlSource=(git -C $env:GITHUB_WORKSPACE rev-parse HEAD); tools=$toolHashes} | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $env:CCB_BUILD_OUTPUT 'package-control.json') -Encoding utf8
           @("CCB_CANDIDATE_IMAGE=$image", "CCB_CANDIDATE_ARCHIVE=$archive", "CCB_CANDIDATE_NSIS=$nsis") | Add-Content $env:GITHUB_ENV -Encoding utf8
 
+      - name: Frozen public1233 client verifies final signed candidate without installation
+        if: env.CCB_SIGNED_UPDATE_ONLY == 'true'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $python = Join-Path $env:CCB_CANDIDATE_IMAGE 'app\desktop-updater\python.exe'
+          & $python -B "$env:GITHUB_WORKSPACE/tools/desktop/update/validate_signed_candidate.py"
+          if ($LASTEXITCODE -ne 0) { throw 'FINAL_SIGNED_OLD_CLIENT_VALIDATION_FAILED' }
+
+      - name: Actual packaged community AUTH return and temporary registry ownership
+        if: env.CCB_COMMUNITY_AUTH_ONLY == 'true'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $approved = Join-Path $env:CCB_CI_SOURCE 'app\desktopApp\build\preview-continuous-private-20261025'
+          New-Item -ItemType Directory -Path $approved -Force | Out-Null
+          $case = Join-Path $approved 'windows-runtime-nsis-cloud'
+          $program = Join-Path $env:CCB_BUILD_BASE 'installed-auth'
+          $installer = Join-Path $env:CCB_CANDIDATE_NSIS 'ChatChatBar-Setup.exe'
+          python -B "$env:GITHUB_WORKSPACE/tools/desktop/nsis/native_smoke.py" --case $case --image $env:CCB_CANDIDATE_IMAGE --root $program --installer $installer --label auth-fresh --fresh-default-profile --ci-source $env:CCB_CI_SOURCE --allow-owned-update-helper-cwd
+          if ($LASTEXITCODE -ne 0) { throw 'AUTH_CANDIDATE_FRESH_LIFECYCLE_FAILED' }
+          python -B "$env:GITHUB_WORKSPACE/tools/desktop/nsis/community_auth_probe.py" --case $case --root $program
+          if ($LASTEXITCODE -ne 0) { throw 'COMMUNITY_AUTH_NATIVE_PROBE_FAILED' }
+
       - name: Actual ordinary upgrade and stable-entry lifecycle in fresh runner profile
+        if: env.CCB_COMMUNITY_AUTH_ONLY != 'true' && env.CCB_SIGNED_UPDATE_ONLY != 'true'
         run: |
           $ErrorActionPreference = 'Stop'
           $approved = Join-Path $env:CCB_CI_SOURCE 'app\desktopApp\build\preview-continuous-private-20261025'
@@ -219,6 +250,7 @@ jobs:
           "CCB_NATIVE_CASE=$case" | Add-Content $env:GITHUB_ENV -Encoding utf8
 
       - name: Actual independent Chinese entry and isolated data lifecycle
+        if: env.CCB_COMMUNITY_AUTH_ONLY != 'true' && env.CCB_SIGNED_UPDATE_ONLY != 'true'
         run: |
           $ErrorActionPreference = 'Stop'
           $approved = Join-Path $env:CCB_CI_SOURCE 'app\desktopApp\build\preview-continuous-private-20261025'
@@ -264,3 +296,4 @@ jobs:
             ${{ env.CCB_BUILD_OUTPUT }}/audit-tests-*.log
             ${{ env.CCB_BUILD_OUTPUT }}/native-cwd-policy-tests.log
             ${{ env.CCB_BUILD_OUTPUT }}/restored-candidate.json
+            ${{ env.CCB_BUILD_OUTPUT }}/signed-client-result.json

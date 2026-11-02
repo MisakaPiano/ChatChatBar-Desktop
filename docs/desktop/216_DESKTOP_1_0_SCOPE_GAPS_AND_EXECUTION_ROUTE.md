@@ -1,3 +1,15 @@
+2026-11-03私有交付检查点：私有1234/c2d交付准备完成：134完整原件绿；R19普通升级/重开/独立入口、R20真实AUTH/注册表限定PASS及最终549/548文件与二进制哈希已核。R23/41474923667使用冻结公开1233 updater实际15→16发现、177226066B完整下载和二验通过、说明一致、root1不变；采用云内metadata fetcher，不冒称匿名公网发现。R21/R22错误原件保留，首因为验证请求raw CRLF notes hash与签名LF字符串hash不同，仅修期望hash，五候选/五prior签名及原包未变。Release431654495是未公开1234草稿，四资产尺寸/SHA与说明/tag=c2d已读回，local signed16未发布；58提交/10条说明和四步最短检查已备。公开仍1233/15，1234无公开许可、真人未验，日常H UNKNOWN_UNOPERATED。
+
+下方历史保留。
+
+2026-11-03后补：134/c2d完整绿与私有1234 R19原件通过保持。R20/41471050373复用同一R19原包，最终jpackage Main AUTH实际parent exit0/accepted1/内存信号、真实HKCR/HKCU自有写撤与foreign保留、无journal、假资料和四root资源不变均成立，非SKIP；原回执的helperDescendantsRemaining=0不作证据，后代退出NOT_PROVEN。最终EXE177226066B/ab484c9f…3aca、独立ZIP190448868B/f5863e6c…6b0a及548文件/manifest549/JAR/六控制工具字节已独立核对，58提交已对应10条说明。继续匹配签名16、云端原旧client验包和私有发行草稿；1234公开未获准，公开1233/15与真人待、日常H UNKNOWN保持。
+
+下方历史保留。
+
+2026-11-03当前：134/c2d完整原件通过：主348suite/2572=2553PASS+19SKIP、shared1183/Android586/proxy5/NTFS7/native37/TUF14/exit4，社区12个Desktop新方法与7张实际图已核；133失败原件保留。私有1234 R19/285冻结同源，普通1225→1234升级、重开、冷投递、忙拒绝和独立中文入口实际通过（fresh默认profile限定）。R20/40c复用R19精确原包，只补最终Main AUTH与真实注册表归属，不重编或重做R7三包链；当前待原件，parent wait不能证明后代全退，SKIP不等于PASS。公开仍1233/签名15、真人待，日常H UNKNOWN且不操作，1226历史许可不扩作1234公开许可。
+
+下方历史保留。
+
 2026-11-02当前：133/515主348suite/2571=2551PASS+19SKIP+1FAIL，唯一PortsTest方法非Unit使JUnit整类初始化拒绝，两方法未执行；其余新增社区10个Desktop方法实际PASS，六张Panel图已核，Shell方法通过但该图未归档。shared1183/Android586/proxy5/NTFS7/native37/TUF14/exit4通过。后继显式Unit保留全部断言、将单一Shell图接原归档目录，并补详情原有字段/短弹窗收高及夹具深浅背景；这些后补待新精确源，不归133。129仍最后完整绿，真实服务/OAuth/注册表/真人另待；公开1233/签名15、日常H UNKNOWN且不操作。
 
 下方历史保留。
@@ -146,8 +158,8 @@
 | P15-03 全局外部导入 FIFO、Open With、文件关联／系统入口 | 外部链CI93及后续CI95–97通过，1232冻结883/R17普通原生与真实四类文件名冷批次通过，私有包字节已核；真人待验 | 见250；Main冷暖入口、持久FIFO、原owner委托与非默认Open With保留。1231旧中文&冷失败不抹去；1232精确冷批次通过不代表所有环境或已对用户交付 |
 | P15-04 任务中心／托盘／系统通知 | TaskRuntime／Memory／Fish与假托盘／宽窄Scene已95通过；FullBackup／真实Shell和Merge原Job已96/97通过；SaveSlot／实际自动备份／Moments与四类创作controller有99 scoped PASS。99完整单一Shell基线失败、100缺import编译失败仍保留；后补RAG晚取消、创作pin/Moments/提示原Shell有101实际PASS；103/dd29主2477=2458PASS+19SKIP及独立项完整通过，原101/102失败记录保留；原生送达仍待 | 见251；复用原Job／真实发布边界，不把检查、候选或SKIPPED当导入／保存／发布。1232冷批次不冒充原生托盘送达；观察与精确目标分开，不把基础入口算整项完成 |
 | P15-05 自有错误／关闭／启动诊断 | 基础及typed恢复支持/原六面导航/启动分类引导已103 scoped PASS；完整物理crash/support场景仍待 | 复用 DesktopProcessLifecycle、StartupBlockedPresenter、ShutdownWaitObserver、诊断复制及 Logo；只读核对损坏状态，错误确认不清除原件，不把“有错误窗口”算完整恢复中心 |
-| P15-06 实际 AI 请求／响应日志 | 聊天及角色／格式／世界书创作已有原DebugOverlay，Moments也有对应日志；正式Fish已104精确源通过，独立试听归属/缓存/样本四行为及实际UI已108通过；后续NAI Studio/聊天和角色候选元数据与可达日志入口按259实现待精确源，不在冻结1233内 | 复用DesktopTransportDiagnostics、ChatDebugPanel及原任务上下文；PromptInspector仍单列，不冒充实际生图日志。Moments图片、Enhance/Upscale、Vibe encode仍待 |
-| P15-07 usage／cache／retry 持久汇总（D-042） | 数值owner、持久化与多域接线已有精确证据；CI87向量五项、CI88记忆／检索文本四项与CI89手动controller归属及完整回归通过 | 见234／245／248／249；聊天／三类卡AI／Moment文本／NAI辅助／Fish辅助／embedding分范围保留，正式Fish独立本地单位/schema2已104通过，105的全记录分页/会话/请求/账户/日周月4项及宽窄图已通过（252），108独立试听生成亦已验证；259的NAI生图本片仍待其精确源，其余媒体与完整账单未覆盖。null与0、cache不重复、失败待存与关闭／重启保全保持；完整覆盖及校准继续 |
+| P15-06 实际 AI 请求／响应日志 | 原聊天／三类卡／Moments文本入口保留；259/262后补的NAI Studio、聊天和角色图片、Moments图片、Enhance／Upscale、Vibe encode及正式Fish／试听接线已在134/c2d原件26个受影响方法全部PASS，已含私有1234；不再标为待实现 | 复用DesktopTransportDiagnostics、ChatDebugPanel与原任务上下文。实际媒体日志和PromptInspector分列；真实Provider调用、浏览器／原生行为与真人验收单独待核，不由合成请求提升 |
+| P15-07 usage／cache／retry 持久汇总（D-042） | 原向量、记忆／检索、手动归属、分页与持久化证据复用；259/262媒体后补26方法在134全PASS，NAI/Moment图片及处理编码、Fish与试听数值单位/账户冻结/缓存/重试/取消/重开均已接线；273抽样分词器比较已执行但不是精度PASS | 见234／245／248／249／252／259／262／268／273。保持null与0、缓存不重复、失败待存和关闭／重启保全；容量和动态文本占用为明确标注的估算，不宣称全部模型tokenizer、真实供应商计费或完整账单精度 |
 | P16-01 上游新正式版本通知 | 已有每日正式Release/Tag监控；11/1结果与官方Tags已核。原监控执行者后续peek回执报告现有任务ACTIVE／每日且11/1完成；根对话只有渲染卡片，无独立结构化状态；nextRun／通知送达仍未知 | 复用 `6ac89e9b-a1a8-83e8-a73c-6baad3dbaad4` 的用户范围，不另建重复自动化、不扩大到所有 master 提交；来源为I盘20261101-p16-existing-monitor-check.json的schedulerFollowup，不改调度或baseline，不据worker回执宣称未来送达通过 |
 | P16-02 baseline／变化分类／高风险与兼容报告 | 固定SHA离线工具3项已105通过；显式云端报告R1/41381711267真实成功，原ZIP/两JSON及四输入hash已核。原正式监控执行者已报告prompt追加与peek一致，旧说明/ID/计划保留，协调读取真实completed回执；未来新正式版自然触发/送达及语义兼容仍待 | 见253；221路径、14exact/3归档/67无候选/66风险候选不作功能率；复用原monitor不另建watcher，正式baseline仍141，不自动merge/promote/发布 |
 
@@ -163,14 +175,14 @@
 
 | ID／范围 | 已有证据／状态 | 尚需完成 |
 | --- | --- | --- |
-| P17-01 教程／首次使用引导 | Android Tutorial 已有；Desktop五路由说明/close和实际Shell草稿保护已有101 scoped PASS；标题四宽可见性与两几何例已102/103实际PASS，103整轮SUCCESS，旧失败保留；新14主题29节双语手动指南的107短目录失败已修送108；本地后补首次发现／暂缓／显式不再提醒及同页阅读位置保留，六例和Guide扩展待其精确源（257），不改Android进度 | 顶栏问号只读说明，不跳转或创建业务；核对宽窄窗口、关闭重开、modal 优先与草稿／原文件不变，再做首次使用、恢复与升级说明 |
+| P17-01 教程／首次使用引导 | 五路由帮助、14主题29节双语手动指南、首次发现／暂缓／显式不再提醒和阅读位置保留均已实现；Guide/Reminder六个原方法在134实际全PASS，旧107失败记录保留；不改Android进度 | 顶栏只读说明、宽窄目录／关闭重开／modal优先及原草稿保护有工程证据；实际首次使用、原生平台交互和真人验收仍分别核对，不再等待已通过的后补源码 |
 | P17-02 Backup／Recovery Center | 原自动备份、导出／检查／合并／恢复journal已做；后续源码新增基于typed当前状态的恢复与支持页、六个原面导航及启动前固定分类引导，相关typed/六导航/旧点击锁/recover-marker及宽窄图已有103实际PASS，正式交付/物理场景仍待 | 入口不扫描全库或认定损坏，不代选文件／冲突／提交；保留原根锁／准入／journal。启动拒绝可发生在原恢复流程之后，不能声称整次启动从未恢复；完整物理场景与正式交付仍待 |
 | P17-03 数据、取消、长任务、损坏与断电 | 1224 大包隔离完整往返／独立重开通过，已有错误／取消／部分中断证据 | 复用214及具体恢复证据，只补实际受影响、仍未知的断电／跨账户／旧快照／物理跨端场景；真实生产最终GUI合并由用户选择，缺少该反馈只挂对应结论 |
 | P17-04 Win10／11、DPI、IME、长历史／大卡／世界书／图片／SaveSlot、网络／代理／VPN | 既有 scoped Windows／输入／窗口／媒体证据，不是所有环境全验 | 建立场景与实际平台结果表；已复现核心错误修复，未覆盖环境与非阻断已知问题如实披露，不建立“所有已知问题归零”的新门槛 |
 | P17-05 真实使用与 Beta 打磨 | 用户已验1224更新、原资料、真实包预览；部分旧包暂定通过 | 每个可用增量直接交用户最短验收，持续吸收反馈；范围补齐后再做全应用长程验收，不把所有测试积到末尾 |
-| P17-06 完整Studio generation preset文件导入／导出 | 原55已指定P17，尚未完成；现有Recipe／历史复用、图片metadata／guidance、卡Prompt导入不能替代完整预设文件 | 基于既有NovelAiGenerationRecipe、原草稿校验及资源custody确定版本化完整边界，显式导入／导出与往返；不带凭据、本机目录，不另造请求Prompt |
-| P17-07 完整格式化Studio Prompt跨应用文本复制／粘贴 | 原55为待规范proposed；已有官方正向分段style／base／extra／角色正向互换，不能冒称包含负词、全部参数和参考图 | 保留正向入口；单列人类可读分段、完整字段、转义／识别与跨应用round-trip方案，区别于文件预设。沿用户范围确认必要产品选择，不把旧Project review文字加为前置Gate |
-| P17-08 全应用Settings／Editor IA及长页tab／sidebar统一 | 原55保留范围；已有工作区统一导航、Data五子页／retained pane、Character固定header与滚动body及相关105测试，非全部IA完成 | 复用现有controllers／保存协议；针对Format／WorldBook整页卷走header/footer、330短窗动作可达、五Data页选中可见性补实际测量与受影响布局。指南PASS不替代页面IA，不无差别重写现有页面 |
+| P17-06 完整Studio generation preset文件导入／导出 | 264版本化完整预设已实现，包含参考资源包、custody、原生产controller的导出／预览／确认应用／撤销；134共享3+archive4+custody3+controller4+实际Scene1共15方法全PASS，已含私有1234 | 不带凭据或本机目录，原草稿校验与资源归属保留；真实文件选择器／系统交互、Provider和真人往返验收另待，现有Recipe不再被拿来冒充完整预设 |
+| P17-07 完整格式化Studio Prompt跨应用文本复制／粘贴 | 266/269的Desktop／本Fork完整文本扩展已实现，原正向入口保留；134共享5+实际Desktop3全部PASS。官方147仅正向文本读取，完整扩展不是官方兼容或保留保证 | 完整字段、转义和所选模型位置应用开关按既有配对证据；Studio适配CCB，停止追加手机Fork读取器安装前提。系统剪贴板／外部安装版／真人跨应用使用另待；不把文本交换说成包含参考图文件预设 |
+| P17-08 全应用Settings／Editor IA及长页tab／sidebar统一 | 原工作区导航、Data五子页和Character固定操作区保留；265补齐Format／WorldBook及条目固定头尾、330短窗操作与外部选中Data导航，134三个实际容器／Scene方法全PASS，已含私有1234；并非全应用IA已验收 | 复用原controller、保存／草稿／离开确认协议；剩余全应用原生Windows／DPI／IME和真人交叉场景按实际反馈核，不重复已通过三个布局修正，也不把指南PASS替代IA |
 | P18-01 正式范围与 parity／兼容 | 此表首次按 live 实现重排，尚未完成 1.0 | 每行保留实现／测试／真人／平台限制和排除理由，选定 baseline 的最终兼容声明真实；有缺口继续执行，不能拿局部PASS宣称整phase完成 |
 | P18-02 发布资产／升级／说明／作者授权依据 | NSIS／可信发布管线已有，D-016直接授权记录为既有依据 | 在成熟冻结源码上核完整发行检查、安装生命周期、说明／资产／签名版本及实际验收；保留和核对已有作者授权证据，不伪造新许可、不因元数据缺失重开无依据停工 |
 | P18-03 正式 1.0 | 未发布 | 原计划范围与明确例外对齐、整体验收及Beta打磨后，按实际已有发布授权交付；本轮目标登记不是宣称现在完成或公开1.0 |

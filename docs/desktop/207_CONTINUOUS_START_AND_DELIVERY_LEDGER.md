@@ -1,3 +1,15 @@
+2026-11-03私有交付检查点：私有1234/c2d交付准备完成：134完整原件绿；R19普通升级/重开/独立入口、R20真实AUTH/注册表限定PASS及最终549/548文件与二进制哈希已核。R23/41474923667使用冻结公开1233 updater实际15→16发现、177226066B完整下载和二验通过、说明一致、root1不变；采用云内metadata fetcher，不冒称匿名公网发现。R21/R22错误原件保留，首因为验证请求raw CRLF notes hash与签名LF字符串hash不同，仅修期望hash，五候选/五prior签名及原包未变。Release431654495是未公开1234草稿，四资产尺寸/SHA与说明/tag=c2d已读回，local signed16未发布；58提交/10条说明和四步最短检查已备。公开仍1233/15，1234无公开许可、真人未验，日常H UNKNOWN_UNOPERATED。
+
+下方历史保留。
+
+2026-11-03后补：134/c2d完整绿与私有1234 R19原件通过保持。R20/41471050373复用同一R19原包，最终jpackage Main AUTH实际parent exit0/accepted1/内存信号、真实HKCR/HKCU自有写撤与foreign保留、无journal、假资料和四root资源不变均成立，非SKIP；原回执的helperDescendantsRemaining=0不作证据，后代退出NOT_PROVEN。最终EXE177226066B/ab484c9f…3aca、独立ZIP190448868B/f5863e6c…6b0a及548文件/manifest549/JAR/六控制工具字节已独立核对，58提交已对应10条说明。继续匹配签名16、云端原旧client验包和私有发行草稿；1234公开未获准，公开1233/15与真人待、日常H UNKNOWN保持。
+
+下方历史保留。
+
+2026-11-03当前：134/c2d完整原件通过：主348suite/2572=2553PASS+19SKIP、shared1183/Android586/proxy5/NTFS7/native37/TUF14/exit4，社区12个Desktop新方法与7张实际图已核；133失败原件保留。私有1234 R19/285冻结同源，普通1225→1234升级、重开、冷投递、忙拒绝和独立中文入口实际通过（fresh默认profile限定）。R20/40c复用R19精确原包，只补最终Main AUTH与真实注册表归属，不重编或重做R7三包链；当前待原件，parent wait不能证明后代全退，SKIP不等于PASS。公开仍1233/签名15、真人待，日常H UNKNOWN且不操作，1226历史许可不扩作1234公开许可。
+
+下方历史保留。
+
 2026-11-02当前：133/515主348suite/2571=2551PASS+19SKIP+1FAIL，唯一PortsTest方法非Unit使JUnit整类初始化拒绝，两方法未执行；其余新增社区10个Desktop方法实际PASS，六张Panel图已核，Shell方法通过但该图未归档。shared1183/Android586/proxy5/NTFS7/native37/TUF14/exit4通过。后继显式Unit保留全部断言、将单一Shell图接原归档目录，并补详情原有字段/短弹窗收高及夹具深浅背景；这些后补待新精确源，不归133。129仍最后完整绿，真实服务/OAuth/注册表/真人另待；公开1233/签名15、日常H UNKNOWN且不操作。
 
 下方历史保留。

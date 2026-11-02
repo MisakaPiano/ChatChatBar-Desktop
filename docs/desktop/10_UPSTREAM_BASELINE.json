@@ -102,19 +102,19 @@
     "browserRuntime": false
   },
   "currentAdaptation": {
-    "recordedAt": "2026-11-02",
+    "recordedAt": "2026-11-03",
     "targetReleaseVersion": "1.4.7",
     "targetCommit": "b4fa75d296680f777be095f3121ad0c4db979f17",
     "authority": "User authorized latest official CCB adaptation; Desktop first, separate Studio consumes official interfaces",
     "status": "selective_adaptation_in_progress_not_whole_baseline_promotion",
-    "sourceAtRecord": "515442f6094a5ef10b02b3f028bfdf8c573380db plus explicit Unit, snapshot detail fields/compact layout and one capture path; next exact CI pending",
+    "sourceAtRecord": "c2d3640e3caaa39ffb932823909a883b583e4879",
     "lastCompleteSourceValidation": {
-      "commit": "ec0861432a56138d5ccb1685a2e63cc22bc6d703",
-      "run": 41438935426,
-      "mainPass": 2541,
+      "commit": "c2d3640e3caaa39ffb932823909a883b583e4879",
+      "run": 41464861703,
+      "mainPass": 2553,
       "mainSkip": 19,
       "mainFail": 0,
-      "sharedPass": 1170,
+      "sharedPass": 1183,
       "androidPass": 586,
       "proxyPass": 5,
       "ntfsPass": 7,
@@ -177,8 +177,8 @@
     "pendingRanges": [
       {
         "scope": "Community Desktop browse/detail/import/Discord return/owner snapshot management/card update and runtime switch",
-        "evidence": "277; production root UI/PKCE/native-return source and synthetic tests pending next exact CI; official runtime closed at readback",
-        "status": "client_implemented_validation_pending_live_service_and_oauth_separate"
+        "evidence": "277; exact134 shared11/Core2/Desktop12+7 actual images PASS; R19 ordinary candidate PASS; R20 real Main/registry scoped PASS with descendant NOT_PROVEN; real official OAuth/browser/focus separate",
+        "status": "synthetic_behavior_and_final_native_adapter_verified_live_external_separate"
       },
       {
         "scope": "Whole selected147 compatibility declaration and affected final candidate/user cross-scenario acceptance",
@@ -194,25 +194,129 @@
     "historicalObservationMeaning": "upstreamObservation below is the dated2026-10-05 record, not the current target or a continuing instruction to park1.4.7",
     "validatedBaselineMeaning": "upstream.commit remains the last fully declared baseline; ongoing147 adoption is not deferred indefinitely by that evidence state",
     "lastAttempt": {
-      "commit": "515442f6094a5ef10b02b3f028bfdf8c573380db",
-      "run": 41458802100,
-      "status": "TERMINAL_SINGLE_JUNIT_CLASS_INITIALIZATION_ERROR",
-      "mainPass": 2551,
-      "mainSkip": 19,
-      "mainFail": 1,
-      "mainTests": 2571,
-      "desktopCommunityNewMethodsPass": 10,
-      "desktopPortsTwoMethods": "NOT_EXECUTED_CLASS_INVALID_RETURN_TYPE",
-      "sharedPass": 1183,
-      "androidPass": 586,
-      "ntfsPass": 7,
-      "proxyPass": 5,
-      "nativePass": 37,
-      "updaterTufPass": 14,
-      "exitPass": 4,
-      "originalPanelImagesReviewed": 6,
-      "shellMethod": "PASS_IMAGE_NOT_ARCHIVED",
-      "correction": "explicit Unit; snapshot field/layout and capture followups require next exact source"
-    }
+      "commit": "c2d3640e3caaa39ffb932823909a883b583e4879",
+      "run": 41464861703,
+      "status": "COMPLETE_ORIGINALS_PASS",
+      "desktopCommunityNewMethodsPass": 12,
+      "originalImagesReviewed": 7
+    },
+    "privateCandidate1234": {
+      "source": "c2d3640e3caaa39ffb932823909a883b583e4879",
+      "control": "285ba5d27b6d46c51b83ece13ab11409adb7df0c",
+      "version": "0.1.0-preview.1234",
+      "run": 41466774102,
+      "number": 19,
+      "state": "PRIVATE_DRAFT_FINAL_BYTES_SIGNED16_CLOUD_OLD_CLIENT_PASS",
+      "public": false,
+      "native": "baseline1225 -> upgrade1234 -> stable reopen -> cold external actual exit0, no remaining Job processes, canary preserved",
+      "independent": "actual Chinese entry PASS,548 audited program files,data/lock/program exit and outside bootstrap preserved",
+      "scope": "fresh default synthetic profile; fake credentials/custom-root busy/provider/user H not verified",
+      "packageRecordedInstallerSha256": "ab484c9f1ea02a92f9d6da0cf7438bca6c385eb331a66897ac47923ccdbc3aca",
+      "finalBinaryIndependentRehash": "ACTUAL_OWNER_OUTER_CRC_INNER_548_MANIFEST549_JAR_SIX_CONTROL_TOOLS_PASS",
+      "humanAcceptance": false,
+      "publication": false,
+      "dailyInstallation": false,
+      "authNative": {
+        "run": 41471050373,
+        "number": 20,
+        "control": "40c3aef68cbb7e761ec18141ca81fea178c4095a",
+        "state": "ACTUAL_SCOPED_PASS_WITH_DESCENDANT_CLAIM_EXCLUDED",
+        "rebuild": false,
+        "proofLimit": "helper parent exit alone does not prove descendants exit; ignore late descendants() zero in R20; companion source corrected for future use",
+        "preexistingHandler": "SKIP is not registry PASS",
+        "realOAuthBrowserOrFocus": false,
+        "notSkipped": true,
+        "actualPackagedMain": true,
+        "helperParentExitCode": 0,
+        "acceptedCallbacks": 1,
+        "realOwnedRegistryWriteRemoval": true,
+        "foreignPreserved": true,
+        "memoryOnlyNoJournal": true,
+        "syntheticDataAndRootUnchanged": true,
+        "helperDescendantExit": "NOT_PROVEN",
+        "report": "I:/CCB-Desktop-Continuity/updates/20261103-coordinator-candidate1234-r20-auth-review/REVIEW.json"
+      },
+      "installerBytes": 177226066,
+      "installerSha256": "ab484c9f1ea02a92f9d6da0cf7438bca6c385eb331a66897ac47923ccdbc3aca",
+      "independentBytes": 190448868,
+      "independentSha256": "f5863e6c9266204025b7d5a76b9c7647a039e69126391692a2619bdad4a56b0a",
+      "releaseCoverageCommits": 58,
+      "notesBullets": 10,
+      "localMetadataRevision": 16,
+      "metadataSigned": true,
+      "metadataPublic": false,
+      "draftCreated": true,
+      "signedClientValidation": {
+        "run": 41474923667,
+        "number": 23,
+        "control": "768009ecb635b25d2fa1ec636dd7c88f383b6ca5",
+        "state": "ACTUAL_FROZEN_PUBLIC1233_15_TO16_FULL_DOWNLOAD_SECOND_VERIFY_PASS",
+        "localMetadataFetcher": true,
+        "publicNetworkUpdateDiscovery": false,
+        "installerExecuted": false,
+        "report": "I:\\CCB-Desktop-Continuity\\updates\\20261103-coordinator-candidate1234-r23-signed-review\\REVIEW.json"
+      },
+      "releaseId": 431654495,
+      "draftUrl": "https://github.com/MisakaPiano/ChatChatBar-Desktop/releases/tag/untagged-885a33cc7ac2139a89d9",
+      "draft": true,
+      "assets": [
+        {
+          "name": "ChatChatBar-Desktop-0.1.0-preview.1234-independent-windows-x64.zip",
+          "bytes": 190448868,
+          "sha256": "sha256:f5863e6c9266204025b7d5a76b9c7647a039e69126391692a2619bdad4a56b0a"
+        },
+        {
+          "name": "ChatChatBar-Desktop-0.1.0-preview.1234-independent-windows-x64.zip.sha256",
+          "bytes": 134,
+          "sha256": "sha256:7b15d8f7967d19de13757bc0e07bf83807b712a7c4542d4eeab69d70d2ecb9a2"
+        },
+        {
+          "name": "ChatChatBar-Desktop-0.1.0-preview.1234-windows-x64.exe",
+          "bytes": 177226066,
+          "sha256": "sha256:ab484c9f1ea02a92f9d6da0cf7438bca6c385eb331a66897ac47923ccdbc3aca"
+        },
+        {
+          "name": "ChatChatBar-Desktop-0.1.0-preview.1234-windows-x64.exe.sha256",
+          "bytes": 122,
+          "sha256": "sha256:d1b6c56ec82a27f21e52ad36447b70c2453159f590094ad08c8d506053aa8c24"
+        }
+      ],
+      "previousSignedValidationAttempts": [
+        {
+          "run": 41473460118,
+          "number": 21,
+          "state": "RuntimeError_category_omitted"
+        },
+        {
+          "run": 41474255889,
+          "number": 22,
+          "state": "FINAL_NOTES_REQUIRED_expected_raw_CRLF_vs_signed_LF",
+          "correction": "Expected canonical LF hash only; signed roles and installer unchanged"
+        }
+      ]
+    },
+    "previousAttempts": [
+      {
+        "commit": "515442f6094a5ef10b02b3f028bfdf8c573380db",
+        "run": 41458802100,
+        "status": "TERMINAL_SINGLE_JUNIT_CLASS_INITIALIZATION_ERROR",
+        "mainPass": 2551,
+        "mainSkip": 19,
+        "mainFail": 1,
+        "mainTests": 2571,
+        "desktopCommunityNewMethodsPass": 10,
+        "desktopPortsTwoMethods": "NOT_EXECUTED_CLASS_INVALID_RETURN_TYPE",
+        "sharedPass": 1183,
+        "androidPass": 586,
+        "ntfsPass": 7,
+        "proxyPass": 5,
+        "nativePass": 37,
+        "updaterTufPass": 14,
+        "exitPass": 4,
+        "originalPanelImagesReviewed": 6,
+        "shellMethod": "PASS_IMAGE_NOT_ARCHIVED",
+        "correction": "explicit Unit; snapshot field/layout and capture followups require next exact source"
+      }
+    ]
   }
 }
