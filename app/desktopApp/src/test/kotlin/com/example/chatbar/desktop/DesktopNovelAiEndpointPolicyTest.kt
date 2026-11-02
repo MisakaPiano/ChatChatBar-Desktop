@@ -36,7 +36,10 @@ class DesktopNovelAiEndpointPolicyTest {
                 for (url in listOf("http://image.novelai.net${allowed.first()}", "https://image.novelai.net:444${allowed.first()}",
                     "https://foreign.invalid${allowed.first()}")) {
                     val previous = reached
-                    assertFailsWith<IllegalStateException> { client.newCall(Request.Builder().url(url).build()).execute().close() }
+                    val request = Request.Builder().url(url).build()
+                    if (request.url.scheme == "http")
+                        assertFailsWith<java.io.IOException> { client.newCall(request).execute().close() }
+                    else assertFailsWith<IllegalStateException> { client.newCall(request).execute().close() }
                     assertEquals(previous, reached)
                 }
             } finally { client.connectionPool.evictAll(); client.dispatcher.executorService.shutdown() }

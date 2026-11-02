@@ -15,3 +15,7 @@
 原`DesktopAssistantImageActionTest`补实际临时聊天runtime→loopback→真实任务／持久图片／会话日志与数值owner，保留原消息和归属。原Enhance参数／取消、Vibe inline／外置编码／坏hash／缓存和Studio回归继续；这不是实际服务器出图、付费行为或所有媒体计量完成证明。111原失败按其实际报告分列，不让本修正掩盖该首因。
 
 111六张新增图片日志／统计实图已核，图片统计行误用“非Token均是Fish TTS”的旧二分标签；后补按media.kind显示对应类型，并在原420／1100 Scene检查图片标签及无Fish误标。原图片／音频／Token单位与未知计费边界保留。
+
+## 113实际验证与异常类型后补
+
+113/ac522主331suite/2519=2499PASS+19SKIP+1FAIL，唯一guard矩阵把HTTP分支也预期IllegalStateException，但更早ProxyAwareClient明文检查实际抛IOException且未到末端stub。按原实际顺序仅HTTP精确预期IOException，wrong host/port/path继续IllegalStateException；reached不增加、TLS/redirect/retry原断言保持，生产代码不改。原V4.5首次编码+cache/retained复用、Upscale、临时chat实际HTTP统计与图片标签均实际PASS，导入旧加密preview和新两交接/stop例也PASS；proxy5独立通过。新媒体9746不由113代验，修正待下一精确源。
