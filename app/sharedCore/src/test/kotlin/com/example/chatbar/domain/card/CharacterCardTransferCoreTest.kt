@@ -23,6 +23,47 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class CharacterCardTransferCoreTest {
+    @Test fun `official147 image settings survive actual package export duplicate and overwrite without schema change`() = runTest {
+        for (model in listOf(com.example.chatbar.domain.image.NovelAiImageModel.V4_5_FULL,
+            com.example.chatbar.domain.image.NovelAiImageModel.V5_FULL)) {
+            val f = fixture()
+            val settings = com.example.chatbar.domain.image.NovelAiCharacterImageSettings(
+                sampler = com.example.chatbar.domain.image.NovelAiSampler.EULER, steps = 24,
+                guidance = 5.5f, cfgRescale = 0.25f, varietyPlus = true)
+            val base = completePackage()
+            val packaged = base.copy(card = base.card.copy(defaultNovelAiImageModel = model,
+                defaultImageGenerationSettings = settings))
+            val imported = f.core.importNew(packaged)
+            assertEquals(settings, imported.defaultImageGenerationSettings)
+            val exported = f.core.decode(f.core.exportJson(imported.id))
+            assertEquals(9, exported.schemaVersion)
+            assertEquals(settings, exported.card.defaultImageGenerationSettings)
+            assertEquals(model, exported.card.defaultNovelAiImageModel)
+            val duplicate = f.core.duplicate(imported.id)
+            assertNotEquals(imported.id, duplicate.id)
+            assertEquals(settings, duplicate.defaultImageGenerationSettings)
+            val replacement = settings.copy(steps = 31, guidance = 6f)
+            val overwritten = f.core.overwrite(imported.id, exported.copy(card = exported.card.copy(defaultImageGenerationSettings = replacement)))
+            assertEquals(imported.id, overwritten.id)
+            assertEquals(replacement, overwritten.defaultImageGenerationSettings)
+            val cleared = f.core.overwrite(imported.id, exported.copy(card = exported.card.copy(defaultImageGenerationSettings = null)))
+            assertNull(cleared.defaultImageGenerationSettings)
+        }
+    }
+
+    @Test fun `legacy absent image settings remain null and invalid147 settings refuse before materializing resources`() = runTest {
+        val f = fixture()
+        val old = f.core.decode("""{"schemaVersion":9,"card":{"name":"legacy"}}""")
+        assertNull(old.card.defaultImageGenerationSettings)
+        val base = completePackage()
+        assertFailsWith<IllegalStateException> {
+            f.core.importNew(base.copy(card = base.card.copy(defaultImageGenerationSettings =
+                com.example.chatbar.domain.image.NovelAiCharacterImageSettings(steps = 0))))
+        }
+        assertTrue(f.characters.cards.isEmpty())
+        assertTrue(f.resources.entries.isEmpty())
+    }
+
     @Test fun `Desktop variant gate survives export and reimport without removing character data`() = runTest {
         val f = fixture()
         val base = completePackage()

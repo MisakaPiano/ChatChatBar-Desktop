@@ -214,7 +214,10 @@ class DesktopTypedTransferControllerTest {
     @Test
     fun `Character decoder imports CCB JSON CCB PNG ST JSON and ST PNG`() = runTest {
         withFixture { fixture ->
+            val settings = com.example.chatbar.domain.image.NovelAiCharacterImageSettings(steps = 23, guidance = 6f,
+                cfgRescale = 0.3f, varietyPlus = true)
             val ccb = packageData("CCB JSON").copy(
+                card = packageData("CCB JSON").card.copy(defaultImageGenerationSettings = settings),
                 defaultFormatCard = FormatCardPackage(name = "Embedded format", content = "format"),
                 worldBooks = listOf(WorldBook(id = "embedded", name = "Embedded lore")),
             )
@@ -222,10 +225,12 @@ class DesktopTypedTransferControllerTest {
             val ccbImported = requireNotNull(fixture.container.characterRepository.getAll().firstOrNull { it.name == "CCB JSON" })
             assertNotNull(ccbImported.defaultFormatCardId)
             assertEquals(1, ccbImported.worldBookIds.size)
+            assertEquals(settings, ccbImported.defaultImageGenerationSettings)
 
-            val ccbPng = CharacterCardPngPackageCodec.attach(minimalPng(), packageData("CCB PNG"), fixture.container.transferJson)
+            val ccbPng = CharacterCardPngPackageCodec.attach(minimalPng(), ccb.copy(card = ccb.card.copy(name = "CCB PNG")), fixture.container.transferJson)
             fixture.controller.importCharacter(fixture.write("ccb.png", ccbPng))
             assertTrue(fixture.container.characterRepository.getAll().any { it.name == "CCB PNG" })
+            assertEquals(settings, fixture.container.characterRepository.getAll().single { it.name == "CCB PNG" }.defaultImageGenerationSettings)
 
             fixture.controller.importCharacter(fixture.writeJson("st.json", stV2("ST JSON")))
             assertTrue(fixture.container.characterRepository.getAll().any { it.name == "ST JSON" })
@@ -274,17 +279,22 @@ class DesktopTypedTransferControllerTest {
     @Test
     fun `Character export JSON and rendered CCB PNG round trip through authoritative decoder`() = runTest {
         withFixture { fixture ->
-            val imported = fixture.container.characterTransfers.importNew(packageData("Export"))
+            val settings = com.example.chatbar.domain.image.NovelAiCharacterImageSettings(steps = 22, guidance = 4f,
+                cfgRescale = 0.4f, varietyPlus = true)
+            val packaged = packageData("Export")
+            val imported = fixture.container.characterTransfers.importNew(packaged.copy(card = packaged.card.copy(defaultImageGenerationSettings = settings)))
             val jsonTarget = fixture.root.resolve("out.json")
             fixture.picker.saves.add(jsonTarget)
             fixture.controller.exportCharacterJson(imported.id)
             assertEquals("Export", fixture.container.characterTransfers.decode(Files.readString(jsonTarget)).card.name)
+            assertEquals(settings, fixture.container.characterTransfers.decode(Files.readString(jsonTarget)).card.defaultImageGenerationSettings)
 
             val pngTarget = fixture.root.resolve("out.png")
             fixture.picker.saves.add(pngTarget)
             fixture.controller.exportCharacterPng(imported.id)
             val decoded = fixture.container.characterTransfers.decodePng(Files.readAllBytes(pngTarget))
             assertEquals("Export", requireNotNull(decoded).card.name)
+            assertEquals(settings, decoded.card.defaultImageGenerationSettings)
             assertNotNull(PngTextChunks.extractTextChunk(Files.readAllBytes(pngTarget), PngTextChunks.CHATBAR_CHARACTER_KEYWORD))
         }
     }
