@@ -238,8 +238,8 @@ class DesktopPresetSuiteRestoreServiceTest {
         val service = f.service(afterCharacter = { if (once) { once = false; error("after durable Character") } })
         assertFailsWith<IllegalStateException> { service.restore(character) }
         val original = f.app.characterRepository.getAll().single()
-        assertEquals(emptyList(), original.worldBookIds)
-        assertEquals(DesktopPresetSuiteRestoreResult(false, 0, 1), service.restore(character))
+        assertEquals(listOf(f.app.worldBookRepository.getAll().single().id), original.worldBookIds)
+        assertEquals(DesktopPresetSuiteRestoreResult(false, 0, 0), service.restore(character))
         assertEquals(listOf(original.id), f.app.characterRepository.getAll().map { it.id })
     }
 
@@ -344,7 +344,8 @@ class DesktopPresetSuiteRestoreServiceTest {
         val service = f.service(afterCharacter = { if (once) { once = false; throw cancelled } })
         assertSame(cancelled, assertFailsWith<CancellationException> { service.restore(character) })
         val first = f.app.characterRepository.getAll().single()
-        assertEquals(DesktopPresetSuiteRestoreResult(false, 0, 1), service.restore(character))
+        assertEquals(listOf(f.app.worldBookRepository.getAll().single().id), first.worldBookIds)
+        assertEquals(DesktopPresetSuiteRestoreResult(false, 0, 0), service.restore(character))
         assertEquals(first.id, f.app.characterRepository.getAll().single().id)
     }
 
@@ -358,14 +359,13 @@ class DesktopPresetSuiteRestoreServiceTest {
         assertTrue(service.restore(character).alreadyComplete)
     }
 
-    @Test fun `ordinary management restore still does not add manifest relationship`() = fixture { f ->
+    @Test fun `ordinary management restore includes declared package links without writing suite ledger`() = fixture { f ->
         val book = f.book()
         val transfer = f.app.createTypedTransferController()
         val management = f.app.createManagementController(transfer)
         management.recoverPreset(DesktopTransferKind.CHARACTER, character)
         val card = f.app.characterRepository.getAll().single()
-        assertFalse(book.id in card.worldBookIds)
-        assertEquals(emptyList(), card.worldBookIds)
+        assertEquals(listOf(book.id), card.worldBookIds)
         assertFalse(Files.exists(f.ledgerPath()))
     }
 
@@ -657,8 +657,8 @@ class DesktopPresetSuiteRestoreServiceTest {
         assertTrue(committedCallback)
         val durable = f.app.characterRepository.getAll().single()
         assertEquals(character.presetKey, durable.sourcePresetKey)
-        assertEquals(emptyList(), durable.worldBookIds)
-        assertEquals(DesktopPresetSuiteRestoreResult(false, 0, 1), f.service().restore(character))
+        assertEquals(listOf(book.id), durable.worldBookIds)
+        assertEquals(DesktopPresetSuiteRestoreResult(false, 0, 0), f.service().restore(character))
         assertEquals(listOf(durable.id), f.app.characterRepository.getAll().map { it.id })
         assertEquals(listOf(book.id), f.app.characterRepository.getById(durable.id)?.worldBookIds)
     }

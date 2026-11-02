@@ -142,7 +142,7 @@ class DesktopPresetBootstrapTest {
     }
 
     @Test
-    fun `post-commit character binding failure retries linkage by durable source key without duplicate`() = runBlocking {
+    fun `post-commit reconciliation failure retains atomic package links and retries ledger by durable source key`() = runBlocking {
         val parent = Files.createTempDirectory("desktop-preset-committed-")
         val world = PresetEntry("world-a", PresetType.WORLD_BOOK, 1, "presets/world_books/a.json", "World")
         val character = PresetEntry("character-a", PresetType.CHARACTER, 1,
@@ -158,7 +158,7 @@ class DesktopPresetBootstrapTest {
                     first.characterResourceStore, beforeCharacterWorldBookBinding = { error("injected after commit") })
                 interrupted.initialize()
                 committedId = first.characterRepository.getAll().single().id
-                assertTrue(first.characterRepository.getAll().single().worldBookIds.isEmpty())
+                assertEquals(listOf(first.worldBookRepository.getAll().single().id), first.characterRepository.getAll().single().worldBookIds)
                 assertFalse(character.presetKey in first.jsonFileStorage.loadSingleton("preset_import_state",
                     PresetImportState.serializer())!!.seenVersions)
                 assertTrue(interrupted.failures.any { it.contains(character.presetKey) })
@@ -176,7 +176,7 @@ class DesktopPresetBootstrapTest {
     }
 
     @Test
-    fun `missing bundled world book leaves committed character unseen until binding can complete`() = runBlocking {
+    fun `missing bundled world book refuses character before commit and retries when dependency returns`() = runBlocking {
         val parent = Files.createTempDirectory("desktop-preset-world-retry-")
         val world = PresetEntry("world-a", PresetType.WORLD_BOOK, 1, "presets/world_books/a.json", "World")
         val character = PresetEntry("character-a", PresetType.CHARACTER, 1,
@@ -185,11 +185,10 @@ class DesktopPresetBootstrapTest {
         files.remove(world.file)
         try {
             val first = container(parent) { files.getValue(it) }
-            val id: String
             try {
                 first.initializePersistentState()
-                id = first.characterRepository.getAll().single().id
-                assertTrue(first.characterRepository.getAll().single().worldBookIds.isEmpty())
+                assertTrue(first.characterRepository.getAll().isEmpty())
+                assertTrue(first.worldBookRepository.getAll().isEmpty())
                 val ledger = first.jsonFileStorage.loadSingleton("preset_import_state", PresetImportState.serializer())
                 assertTrue(ledger == null || character.presetKey !in ledger.seenVersions)
             } finally { first.close() }
@@ -197,7 +196,7 @@ class DesktopPresetBootstrapTest {
             val second = container(parent) { files.getValue(it) }
             try {
                 second.initializePersistentState()
-                assertEquals(listOf(id), second.characterRepository.getAll().map { it.id })
+                assertEquals(1, second.characterRepository.getAll().size)
                 assertEquals(listOf(second.worldBookRepository.getAll().single().id),
                     second.characterRepository.getAll().single().worldBookIds)
             } finally { second.close() }
@@ -205,29 +204,42 @@ class DesktopPresetBootstrapTest {
     }
 
     @Test
-    fun `partial manifest binding uses existing subset and missing unimportable key is not permanent failure`() = runBlocking {
+    fun `missing declared manifest entry refuses partial character and recovers without overriding later user deletion`() = runBlocking {
         val parent = Files.createTempDirectory("desktop-preset-partial-binding-")
         val world = PresetEntry("world-a", PresetType.WORLD_BOOK, 1, "presets/world_books/a.json", "World")
         val character = PresetEntry("character-a", PresetType.CHARACTER, 1,
             "presets/characters/a.json", "Character", worldBookPresetKeys = listOf(world.presetKey, "unlisted"))
         try {
             val app = container(parent, fakeAssets(listOf(world, character)))
-            val id: String
             try {
                 app.initializePersistentState()
-                id = app.characterRepository.getAll().single().id
-                assertEquals(listOf(app.worldBookRepository.getAll().single().id),
-                    app.characterRepository.getAll().single().worldBookIds)
-                assertEquals(1, app.jsonFileStorage.loadSingleton("preset_import_state",
-                    PresetImportState.serializer())!!.seenVersions[character.presetKey])
-                app.worldBookRepository.delete(app.worldBookRepository.getAll().single().id)
+                assertTrue(app.characterRepository.getAll().isEmpty())
+                assertEquals(1, app.worldBookRepository.getAll().size)
+                assertFalse(character.presetKey in app.jsonFileStorage.loadSingleton("preset_import_state",
+                    PresetImportState.serializer())!!.seenVersions)
             } finally { app.close() }
-            val restarted = container(parent, fakeAssets(listOf(world, character)))
+            val added = PresetEntry("unlisted", PresetType.WORLD_BOOK, 1, "presets/world_books/added.json", "Added")
+            val repairedAssets = fakeAssets(listOf(world, character, added))
+            val restarted = container(parent, repairedAssets)
+            val id: String
+            val removedWorld: String
             try {
                 restarted.initializePersistentState()
-                assertTrue(restarted.worldBookRepository.getAll().isEmpty())
-                assertEquals(listOf(id), restarted.characterRepository.getAll().map { it.id })
+                val imported = restarted.characterRepository.getAll().single()
+                id = imported.id
+                assertEquals(restarted.worldBookRepository.getAll().map { it.id }.toSet(), imported.worldBookIds.toSet())
+                assertEquals(2, imported.worldBookIds.size)
+                assertEquals(1, restarted.jsonFileStorage.loadSingleton("preset_import_state",
+                    PresetImportState.serializer())!!.seenVersions[character.presetKey])
+                removedWorld = restarted.worldBookRepository.getAll().single { it.sourcePresetKey == world.presetKey }.id
+                restarted.worldBookRepository.delete(removedWorld)
             } finally { restarted.close() }
+            val afterUserDelete = container(parent, repairedAssets)
+            try {
+                afterUserDelete.initializePersistentState()
+                assertFalse(afterUserDelete.worldBookRepository.getAll().any { it.id == removedWorld || it.sourcePresetKey == world.presetKey })
+                assertEquals(listOf(id), afterUserDelete.characterRepository.getAll().map { it.id })
+            } finally { afterUserDelete.close() }
         } finally { parent.toFile().deleteRecursively() }
     }
 

@@ -37,6 +37,9 @@ class DesktopPresetDependencyIntegrationTest {
                 sourcePresetKey = world.presetKey, sourcePresetVersion = 1)
             val existingFormat = FormatCard("local-format", format.displayName, "local custom content", createdAt = 1)
             app.worldBookRepository.save(existingWorld); app.formatCardRepository.save(existingFormat)
+            val savedWorld = app.worldBookRepository.getAll().single()
+            val worldPath = parent.resolve("data/entities/world_books/${savedWorld.id}.json")
+            val worldBytes = Files.readAllBytes(worldPath)
             val packaged = app.presetSource.characterPackage(character)
             assertEquals("world", packaged.worldBooks.single().sourcePresetKey)
             assertEquals("format", packaged.defaultFormatCard!!.sourcePresetKey)
@@ -44,7 +47,8 @@ class DesktopPresetDependencyIntegrationTest {
             val card = app.characterRepository.getAll().single()
             val importedFormat = app.formatCardRepository.getAll().single { it.id == card.defaultFormatCardId }
             assertEquals(listOf(existingWorld.id), card.worldBookIds)
-            assertEquals(existingWorld, app.worldBookRepository.getAll().single())
+            assertEquals(savedWorld, app.worldBookRepository.getAll().single())
+            assertContentEquals(worldBytes, Files.readAllBytes(worldPath))
             assertEquals("format", importedFormat.sourcePresetKey)
             assertEquals(3, importedFormat.sourcePresetVersion)
             assertEquals(existingFormat, app.formatCardRepository.getAll().single { it.id == existingFormat.id })
@@ -54,7 +58,8 @@ class DesktopPresetDependencyIntegrationTest {
             assertEquals(card.id, app.characterRepository.getAll().single().id)
             assertEquals(importedFormat.id, app.characterRepository.getAll().single().defaultFormatCardId)
             assertEquals(2, app.formatCardRepository.getAll().size)
-            assertEquals(existingWorld, app.worldBookRepository.getAll().single())
+            assertEquals(savedWorld, app.worldBookRepository.getAll().single())
+            assertContentEquals(worldBytes, Files.readAllBytes(worldPath))
         } finally { app.close(); parent.toFile().deleteRecursively() }
     }
 

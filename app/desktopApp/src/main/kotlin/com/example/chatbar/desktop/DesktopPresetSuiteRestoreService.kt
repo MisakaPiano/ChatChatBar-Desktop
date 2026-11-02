@@ -119,7 +119,9 @@ internal class DesktopPresetSuiteRestoreService(
                         check(latest.sourcePresetKey == entry.presetKey) {
                             "Preset Character provenance changed: ${entry.presetKey}"
                         }
-                        var bindingsAdded = 0
+                        // The shared package importer may already bind all declared books atomically.
+                        // Report this restore's initial-to-final declared binding delta, not just the tail write.
+                        val bindingsAdded = (targetIds - initialCard?.worldBookIds.orEmpty().toSet()).size
                         if (targetIds.any { it !in latest.worldBookIds }) {
                             beforeBindingWrite(latest)
                             // A callback may suspend while an external process changes the files.
@@ -135,7 +137,6 @@ internal class DesktopPresetSuiteRestoreService(
                                 "Preset Character provenance changed: ${entry.presetKey}"
                             }
                             val additions = targetIds - current.worldBookIds.toSet()
-                            bindingsAdded = additions.size
                             if (additions.isNotEmpty()) {
                                 val updated = current.copy(worldBookIds = (current.worldBookIds + books.map { it.id }).distinct())
                                 try {

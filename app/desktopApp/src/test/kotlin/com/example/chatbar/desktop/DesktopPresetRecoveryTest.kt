@@ -148,7 +148,7 @@ class DesktopPresetRecoveryTest {
     }
 
     @Test
-    fun `manual Character recovery ignores manifest binding but retains embedded WorldBook transfer`() = runBlocking {
+    fun `manual Character recovery includes declared and embedded WorldBooks and still requires conflict choice`() = runBlocking {
         val parent = Files.createTempDirectory("desktop-preset-manual-world-")
         val world = PresetEntry("world-a", PresetType.WORLD_BOOK, 1, "presets/world_books/a.json", "World")
         val character = PresetEntry("character-a", PresetType.CHARACTER, 1,
@@ -169,9 +169,10 @@ class DesktopPresetRecoveryTest {
             val transfer = app.createTypedTransferController()
             transfer.recoverPreset(character)
             val card = app.characterRepository.getAll().single()
-            assertEquals(1, card.worldBookIds.size)
-            assertFalse(manifestWorld.id in card.worldBookIds)
-            assertEquals("Embedded", app.worldBookRepository.getById(card.worldBookIds.single())?.name)
+            assertEquals(2, card.worldBookIds.size)
+            assertTrue(manifestWorld.id in card.worldBookIds)
+            val embeddedId = card.worldBookIds.single { it != manifestWorld.id }
+            assertEquals("Embedded", app.worldBookRepository.getById(embeddedId)?.name)
             app.worldBookRepository.delete(manifestWorld.id)
             transfer.recoverPreset(character)
             assertNotNull(transfer.state.value.pendingConflict)
