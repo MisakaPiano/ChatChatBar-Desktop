@@ -16,8 +16,10 @@ data class DesktopSettings(
     val chatUi: DesktopChatUiPreferences = DesktopChatUiPreferences(),
     val networkProxy: com.example.chatbar.domain.ApplicationProxySettings = com.example.chatbar.domain.ApplicationProxySettings(),
     val taskNotifications: Boolean = true,
+    val guideAcknowledgedVersion: Int = 0,
 ) {
     init {
+        require(guideAcknowledgedVersion >= 0)
         require(formatVersion == CURRENT_DESKTOP_SETTINGS_FORMAT_VERSION) {
             "Unsupported Desktop settings format version: $formatVersion"
         }

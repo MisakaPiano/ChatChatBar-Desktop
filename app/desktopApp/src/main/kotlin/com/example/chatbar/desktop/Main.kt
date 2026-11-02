@@ -187,6 +187,7 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                                     formatCardEditorController = appContainer.formatCardEditorController,
                                     worldBookEditorController = appContainer.worldBookEditorController,
                                     uiLanguageController = uiLanguageController,
+                                    guideReminder = appContainer.guideReminderController,
                                     appearanceController = appearanceController,
                                     connectionTestController = appContainer.connectionTestController,
                                     novelAiSettingsController = appContainer.novelAiSettingsController,

@@ -33,6 +33,24 @@ class DesktopTutorialGuideTest {
                 assertTrue(button(scene, t(DesktopUiText.GUIDE_PREVIOUS)).config.contains(SemanticsProperties.Disabled))
                 assertBody(scene, t, desktopTutorialTopics.first())
                 capture(scene, "guide-${language.name}-${width}x$height-first")
+                if (width == 330 && height == 420) {
+                    repeat(5) { click(scene, t(DesktopUiText.GUIDE_NEXT)); frames(scene) }
+                    fun range() = walk(described(scene, t(DesktopUiText.GUIDE_BODY)))
+                        .first { it.config.contains(SemanticsProperties.VerticalScrollAxisRange) }
+                        .config[SemanticsProperties.VerticalScrollAxisRange]
+                    val bodyScroll = walk(described(scene, t(DesktopUiText.GUIDE_BODY)))
+                        .first { it.config.contains(SemanticsActions.ScrollBy) }
+                    assertTrue(bodyScroll.config[SemanticsActions.ScrollBy].action!!.invoke(0f, 100_000f))
+                    await(scene) { range().value() > 0 && kotlin.math.abs(range().value() - range().maxValue()) < 0.5f }
+                    val position = range().value()
+                    click(scene, t(DesktopUiText.GUIDE_TOPICS)); frames(scene)
+                    click(scene, t(DesktopUiText.GUIDE_TOPICS)); frames(scene)
+                    assertEquals(position, range().value(), 1f)
+                    click(scene, t(DesktopUiText.GUIDE_PREVIOUS)); frames(scene)
+                    assertEquals(0f, range().value())
+                    repeat(4) { click(scene, t(DesktopUiText.GUIDE_PREVIOUS)); frames(scene) }
+                    assertBody(scene, t, desktopTutorialTopics.first())
+                }
                 val staleNext = button(scene, t(DesktopUiText.GUIDE_NEXT))
                 repeat(desktopTutorialTopics.size - 1) {
                     click(scene, t(DesktopUiText.GUIDE_NEXT)); frames(scene)

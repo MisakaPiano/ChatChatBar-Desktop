@@ -25,10 +25,10 @@ internal fun desktopContextHelp(route: DesktopPrimaryRoute): Pair<DesktopUiText,
 }
 
 @Composable
-internal fun DesktopContextHelpPanel(route: DesktopPrimaryRoute, onClose: () -> Unit) {
+internal fun DesktopContextHelpPanel(route: DesktopPrimaryRoute, startInGuide: Boolean = false, onClose: () -> Unit) {
     val t = LocalDesktopUiStrings.current
     val colors = LocalDesktopPalette.current
-    var guide by remember(route) { mutableStateOf(false) }
+    var guide by remember(route, startInGuide) { mutableStateOf(startInGuide) }
     val (title, steps) = desktopContextHelp(route)
     DesktopModalSurface {
         Box(Modifier.fillMaxSize().background(colors.dim).padding(16.dp), contentAlignment = Alignment.Center) {

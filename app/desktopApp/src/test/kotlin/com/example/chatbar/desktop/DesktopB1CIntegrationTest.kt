@@ -43,7 +43,7 @@ class DesktopB1CIntegrationTest {
     }
     @Composable private fun Shell(f: FinalProductDesignFixture, chrome: DesktopWindowChrome,
         navigation: DesktopPrimaryNavigationController, updateNotices: DesktopUpdateNotices? = null, enableTasks: Boolean = false,
-        moments: DesktopMomentsController? = null) {
+        moments: DesktopMomentsController? = null, guideReminder: DesktopGuideReminderController? = null) {
         val c = f.container
         val transfer = remember { c.createTypedTransferController() }
         val management = remember { c.createManagementController(transfer) }
@@ -61,7 +61,7 @@ class DesktopB1CIntegrationTest {
             c.characterEditorController, c.formatCardEditorController, c.worldBookEditorController,
             c.uiLanguageController, c.appearanceController, c.connectionTestController,
             c.novelAiSettingsController, c.novelAiStudioController, c.fullBackupController, {},
-            taskCenter = if (enableTasks) c.taskCenter else null, momentsController = moments)
+            taskCenter = if (enableTasks) c.taskCenter else null, momentsController = moments, guideReminder = guideReminder)
         }
     }
     @Test fun `actual Shell opens tasks over its busy backup surface but keeps data navigation and original stop boundary guarded`() = runBlocking(awt) {
@@ -176,6 +176,52 @@ class DesktopB1CIntegrationTest {
             assertFalse(scene.has(DesktopUiText.CLOSE_CONTEXT_HELP.zhCn)); assertEquals(1, activity.count)
             activity.closed(); scene.frames()
         } finally { scene.close(); f.close() }
+    }
+
+    @Test fun `actual Shell first guide defers behind other modal and update then opens existing guide preserving original work`() = runBlocking(awt) {
+        val f = seeded(); val c = f.container
+        c.settingsRepository.updateAppSettings { it.copy(tutorialVersion = 42) }
+        val appSettingsPath = c.appDataRoot.resolve("entities/app_settings.json")
+        val appSettingsBytes = Files.readAllBytes(appSettingsPath)
+        c.primaryChatController.selectSession("room"); c.primaryChatController.editComposer("Original reminder draft")
+        val before = Files.readAllBytes(c.appDataRoot.resolve("entities/character_cards/card.json"))
+        val scope = CoroutineScope(SupervisorJob() + awt)
+        val notices = DesktopUpdateNotices(scope, "0.1.0-preview.100", null, true) {
+            DesktopUpdateResult(DesktopRelease("0.1.0-preview.101", null, "fixture update",
+                "https://github.com/${DesktopUpdatePolicy.REPOSITORY}/releases/tag/desktop-v0.1.0-preview.101", true), true)
+        }
+        val activity = DesktopModalActivity().also { it.opened() }
+        val nav = DesktopPrimaryNavigationController()
+        val chrome = DesktopWindowChrome {}
+        val scene = ImageComposeScene(1100, 800) {
+            CompositionLocalProvider(LocalDesktopModalActivity provides activity) {
+                Shell(f, chrome, nav, notices, guideReminder = c.guideReminderController)
+            }
+        }
+        try {
+            notices.checkOnStartup()!!.join()
+            withTimeout(5000) { while (!c.guideReminderController.state.value.ready) scene.frames() }
+            scene.frames(); assertFalse(scene.has(DesktopUiText.GUIDE_REMINDER.zhCn)); assertFalse(scene.has("发现新版本"))
+            activity.closed(); scene.frames()
+            assertTrue(scene.has("发现新版本")); assertFalse(scene.has(DesktopUiText.GUIDE_REMINDER.zhCn))
+            notices.dismissStartupNotice(); scene.frames()
+            assertTrue(scene.has(DesktopUiText.GUIDE_REMINDER.zhCn))
+            val work = c.taskCenter.state.value.rows; val requests = f.requests.toList()
+            scene.click(DesktopUiText.GUIDE_REMINDER_OPEN.zhCn)
+            assertTrue(scene.has(DesktopUiText.GUIDE_CLOSE.zhCn)); assertEquals(1, activity.otherCount)
+            assertFalse(scene.has(DesktopUiText.CLOSE_CONTEXT_HELP.zhCn))
+            scene.click(DesktopUiText.GUIDE_CLOSE.zhCn); scene.frames()
+            assertEquals(0, activity.count); assertFalse(scene.has(DesktopUiText.GUIDE_REMINDER.zhCn))
+            assertEquals("Original reminder draft", c.primaryChatController.state.value.composerDraft)
+            assertContentEquals(before, Files.readAllBytes(c.appDataRoot.resolve("entities/character_cards/card.json")))
+            assertContentEquals(appSettingsBytes, Files.readAllBytes(appSettingsPath))
+            assertEquals(42, c.settingsRepository.currentAppSettings.tutorialVersion)
+            assertEquals(work, c.taskCenter.state.value.rows); assertEquals(requests, f.requests.toList())
+            assertEquals(DesktopPrimaryRoute.CHAT, nav.selectedRoute.value)
+            scene.click(DesktopUiText.CONTEXT_HELP.zhCn)
+            assertTrue(scene.has(DesktopUiText.CLOSE_CONTEXT_HELP.zhCn))
+            scene.click(DesktopUiText.CLOSE_CONTEXT_HELP.zhCn)
+        } finally { scene.close(); notices.closeAndDrain(); scope.cancel(); f.close() }
     }
 
     @Test fun `actual Shell task navigation reveals only its matching character candidate without generation or losing draft`(): Unit = runBlocking(awt) {

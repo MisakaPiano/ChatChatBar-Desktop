@@ -212,6 +212,9 @@ class DesktopSettingsStore internal constructor(
                 ?: DesktopChatUiPreferences()
         } catch (_: Exception) { return DesktopSettingsLoadResult.Invalid("Desktop chat UI preferences are invalid") }
         val settings = DesktopSettings(
+            guideAcknowledgedVersion = if (GUIDE_ACKNOWLEDGED_VERSION !in root) 0 else
+                root.primitive(GUIDE_ACKNOWLEDGED_VERSION)?.intOrNull?.takeIf { it >= 0 }
+                    ?: return DesktopSettingsLoadResult.Invalid("Desktop guide preference is invalid"),
             taskNotifications = if (TASK_NOTIFICATIONS !in root) true else root.primitive(TASK_NOTIFICATIONS)?.booleanOrNull
                 ?: return DesktopSettingsLoadResult.Invalid("Desktop task notifications preference is invalid"),
             networkProxy = try {
@@ -274,6 +277,7 @@ class DesktopSettingsStore internal constructor(
             put(UI_LANGUAGE, JsonPrimitive(settings.uiLanguage.name))
             put(COLOR_STYLE, JsonPrimitive(settings.colorStyle.name))
             put(TASK_NOTIFICATIONS, JsonPrimitive(settings.taskNotifications))
+            put(GUIDE_ACKNOWLEDGED_VERSION, JsonPrimitive(settings.guideAcknowledgedVersion))
             val previousProxy = source[NETWORK_PROXY] as? JsonObject
             put(NETWORK_PROXY, JsonObject(previousProxy.orEmpty() +
                 (chatUiJson.encodeToJsonElement(settings.networkProxy) as JsonObject)))
@@ -329,6 +333,7 @@ class DesktopSettingsStore internal constructor(
         private const val CHAT_UI = "chatUi"
         private const val NETWORK_PROXY = "networkProxy"
         private const val TASK_NOTIFICATIONS = "taskNotifications"
+        private const val GUIDE_ACKNOWLEDGED_VERSION = "guideAcknowledgedVersion"
         private const val ENABLED = "enabled"
         private const val MINIMUM_BACKUP_INTERVAL = "minimumBackupInterval"
         private const val MAXIMUM_SNAPSHOT_COUNT = "maximumSnapshotCount"

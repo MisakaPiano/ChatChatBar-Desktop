@@ -57,7 +57,10 @@ internal fun DesktopPrimaryShell(
     taskCenter: DesktopTaskCenter? = null,
     taskTray: DesktopTrayController? = null,
     onHideToTray: (() -> Unit)? = null,
+    guideReminder: DesktopGuideReminderController? = null,
 ) {
+    val guideNotice = guideReminder?.state?.collectAsState()?.value
+    LaunchedEffect(guideReminder) { guideReminder?.load() }
     val moments = momentsController?.state?.collectAsState()?.value
     val rootState by rootSwitchController.state.collectAsState()
     val selectedRoute by navigation.selectedRoute.collectAsState()
@@ -82,6 +85,7 @@ internal fun DesktopPrimaryShell(
     var openUpdateRequest by remember { mutableStateOf(0) }
     var openImportRequest by remember { mutableStateOf(0) }
     var helpRoute by remember { mutableStateOf<DesktopPrimaryRoute?>(null) }
+    var helpStartsInGuide by remember { mutableStateOf(false) }
     LaunchedEffect(locked) { if (locked) helpRoute = null }
     var externalManageKind by remember { mutableStateOf<DesktopExternalImportKind?>(null) }
     var externalManageTargetId by remember { mutableStateOf<String?>(null) }
@@ -147,7 +151,7 @@ internal fun DesktopPrimaryShell(
                 momentsEnabled = moments?.enabled == true, momentsUnread = moments?.unread == true,
                 activeTaskCount = centerState?.rows?.count { it.active } ?: 0, onOpenTasks = taskCenter?.let { it::requestOpen },
                 helpEnabled = (modalActivity?.count ?: 0) == 0,
-                onOpenHelp = { if (!locked && (modalActivity?.count ?: 0) == 0) helpRoute = route })
+                onOpenHelp = { if (!locked && (modalActivity?.count ?: 0) == 0) { helpStartsInGuide = false; helpRoute = route } })
             externalImportController?.let { DesktopExternalImportNotice(it) }
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when (route) {
@@ -219,7 +223,7 @@ internal fun DesktopPrimaryShell(
                 }
             }
         }
-        helpRoute?.let { DesktopContextHelpPanel(it) { helpRoute = null } }
+        helpRoute?.let { DesktopContextHelpPanel(it, startInGuide = helpStartsInGuide) { helpRoute = null } }
         if (centerOpen && helpRoute == null && !centerLocked && (modalActivity?.otherCount ?: 0) == 0 && taskCenter != null) DesktopTaskCenterPanel(taskCenter,
             onClose = { centerOpen = false }, onHideToTray = onHideToTray, tray = taskTray,
             settingsEnabled = !backupLocked, onView = { target ->
@@ -258,11 +262,31 @@ internal fun DesktopPrimaryShell(
                 DesktopExternalImportKind.BACKUP -> { openImportRequest++; navigate(DesktopPrimaryRoute.DATA) }
                 else -> navigate(DesktopPrimaryRoute.CHAT)
             } }, onMerge = { openImportRequest++; navigate(DesktopPrimaryRoute.DATA) }) }
+        val startupBlocked = locked || helpRoute != null || (modalActivity?.count ?: 0) > 0 || management.busy || transfer.busy || templates.busy || chat.sessionSettingsLeavePrompt ||
+            tasks.any { it.status == DesktopTaskStatus.RUNNING } || repairs.values.any { it == DesktopRepairStatus.RUNNING }
         if (updateNotices != null && updateNotice != null) DesktopStartupUpdateNotice(updateNotice,
-            blocked = locked || (modalActivity?.count ?: 0) > 0 || management.busy || transfer.busy || templates.busy || chat.sessionSettingsLeavePrompt ||
-                tasks.any { it.status == DesktopTaskStatus.RUNNING } || repairs.values.any { it == DesktopRepairStatus.RUNNING },
+            blocked = startupBlocked,
             onView = { updateNotices.dismissStartupNotice(); navigate(DesktopPrimaryRoute.DATA) },
             onLater = updateNotices::dismissStartupNotice)
+        if (guideReminder != null && guideNotice != null) DesktopGuideReminder(guideNotice,
+            blocked = startupBlocked || centerState?.rows?.any { it.active } == true ||
+                externalImportController?.state?.value?.let { it.item != null && it.shown } == true ||
+                updateNotice?.let { desktopShowStartupUpdateNotice(it, startupBlocked) } == true,
+            onView = {
+                if (!guideReminder.state.value.busy && guideReminder.state.value.pending &&
+                    rootSwitchController.state.value is DesktopDataRootSwitchState.Idle &&
+                    !fullBackupController.state.value.busy && !fullBackupController.state.value.restartRequired &&
+                    mergeImportController?.state?.value?.let { it.busy || it.restartRequired } != true &&
+                    primaryChatController.taskRuntime.tasks.value.none { it.status == DesktopTaskStatus.RUNNING } &&
+                    primaryChatController.taskRuntime.repairTasks.value.values.none { it == DesktopRepairStatus.RUNNING } &&
+                    taskCenter?.state?.value?.rows?.any { it.active } != true &&
+                    !managementController.state.value.busy && !transferController.state.value.busy && !modelTemplateController.state.value.busy &&
+                    !primaryChatController.state.value.sessionSettingsLeavePrompt && (modalActivity?.count ?: 0) == 0) {
+                    guideReminder.deferForRun(); helpStartsInGuide = true; helpRoute = route
+                }
+            }, onLater = guideReminder::deferForRun,
+            onNever = { scope.launch { guideReminder.suppressFutureReminder() } },
+            onRetry = { scope.launch { guideReminder.load() } })
     }
 }
 

@@ -31,6 +31,7 @@ internal fun DesktopTutorialGuide(onBack: () -> Unit, onClose: () -> Unit) {
     var selected by remember { mutableStateOf(0) }
     var showTopics by remember { mutableStateOf(false) }
     val topic = desktopTutorialTopics[selected]
+    val readerScroll = key(topic.id) { rememberScrollState() }
     Column(Modifier.widthIn(max = 920.dp).fillMaxWidth().heightIn(max = 680.dp).fillMaxHeight()
         .background(colors.card, RoundedCornerShape(12.dp)).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -57,7 +58,7 @@ internal fun DesktopTutorialGuide(onBack: () -> Unit, onClose: () -> Unit) {
             @Composable fun Reader(modifier: Modifier) {
                 key(topic.id) {
                     SelectionContainer(modifier.semantics { contentDescription = t(DesktopUiText.GUIDE_BODY) }) {
-                        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Column(Modifier.fillMaxSize().verticalScroll(readerScroll), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             DesktopDataSectionHeading(t(topic.title))
                             topic.sections.forEach { section ->
                                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {

@@ -432,6 +432,7 @@ class DesktopAppContainer internal constructor(
     internal val networkProxyController = DesktopNetworkProxyController(desktopSettingsStore)
     internal val chatUiController by lazy { DesktopChatUiController(desktopSettingsStore) }
     internal val uiLanguageController = DesktopUiLanguageController(desktopSettingsStore)
+    internal val guideReminderController = DesktopGuideReminderController(desktopSettingsStore)
     val automaticBackupRuntime: DesktopAutomaticBackupRuntime = DesktopAutomaticBackupRuntime(
         settingsStore = desktopSettingsStore,
         snapshotService = coordinatedSnapshotService,
