@@ -146,7 +146,11 @@ def main():
     canary_hash = sha(canary)
 
     def retained():
-        require({name: sha(program / name) for name in root_hashes} == root_hashes, 'OLD_ROOT_THREE_RESOURCES_CHANGED')
+        after = {name: sha(program / name) for name in root_hashes}
+        save(reports / ('retained-' + steps[-1]['label'] + '.json'), dict(
+            kind='ORDINARY_ROOT_RESOURCE_RETENTION', label=steps[-1]['label'],
+            before=root_hashes, after=after, equal=after == root_hashes))
+        require(after == root_hashes, 'OLD_ROOT_THREE_RESOURCES_CHANGED')
         require(sha(canary) == canary_hash, 'FRESH_PROFILE_CANARY_CHANGED')
 
     packages = {}

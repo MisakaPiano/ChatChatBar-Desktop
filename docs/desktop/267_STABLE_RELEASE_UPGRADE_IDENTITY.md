@@ -1,5 +1,7 @@
 # 267 — Preview 到正式版的普通升级身份
 
+R5/41428055776实测FAIL：同旧public1233及bridge1234都实际安装/真实窗口/正常exit0/Job空，三普通包构建审计通过；随后原root三hash总断言OLD_ROOT_THREE_RESOURCES_CHANGED拒绝，尚未stable/rollback/next。原包未留单项before/after，不能把运行结果强说成仅卸载器变化。887的显式保留修正需后继链验证；后继在原retained断言前写三项before/after小JSON，原失败/guard/期限保留，不增新验收门槛。
+
 后继源码修正（不在正在执行的R5/af17中）：原NSIS WriteUninstaller在SetOverwrite off下仍以CREATE_ALWAYS写文件，参见[固定3.13引擎](https://raw.githubusercontent.com/NSIS-Dev/nsis/v313/Source/exehead/exec.c)；不能用该设置声称原卸载入口字节保持。现在在原Prepare已校验root receipt之后，普通升级显式跳过已有Uninstall.exe，新安装仍生成；主动Repair仍先保留原资源后重建。不改普通root三hash断言、不跳原Prepare校验或缩减修复。该控制工具新源仍待普通安装包链实测，不能由tiny manager测试或源码推理代验。
 
 R4/41427308244 baseline-only实际PASS：同public1233 EXE ee0914…86e8/source2ba，短profile的管理日志路径236，NSIS→真实JAR可见窗口→正常关闭exit0/Job空，current和根三资源hash已取。对照支持原长sandbox限制，但没有CLR具体异常，不声称生产长AppData已修；R3长case261/exit2原FAIL继续保留。R4没有新JAR/升级/customroot/凭据/真人验收；后继R5按同fdb应用源继续完整普通链，不用此baseline PASS替代整个链。
