@@ -1,4 +1,4 @@
-2026-11-02后继：131/a429已终结FAIL；共享1183全PASS（CommunityClient11与Core新增2），NTFS7/native37/TUF14/exit4通过。Windows临时协议回滚nullable record编译失败，main/proxy未执行；Android共享conflictId三处smartcast编译失败，Android测试/APK未执行。后继已补确切非空分支/局部val，并补AUTH内存唤起及真实Shell服务开关回聊天保护，待其精确源云验。129/ec086仍最后完整绿；公开1233/签名15、真人待、日常H UNKNOWN且不操作。
+2026-11-02当前：132/2cdb生产Desktop编译通过，shared1183/Android586/NTFS7/native37/TUF14/exit4实际PASS；131生产nullable与Android三处smartcast错误已闭合。Windows仅AuthTest/PortsTest两处凭据key集合类型推断使compileTestKotlin失败，main/proxy与新Scene未执行。后继只显式共同DesktopCredentialKey类型，完整keys集合相等断言保持，待新精确源。129/ec086仍最后完整绿，社区UI/PKCE/AUTH唤起/真实Shell不因共享通过冒认交付；公开1233/签名15真人待、日常H UNKNOWN且不操作。
 
 下方历史保留。
 

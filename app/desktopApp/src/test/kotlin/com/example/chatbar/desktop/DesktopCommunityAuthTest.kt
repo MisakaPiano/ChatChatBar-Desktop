@@ -96,7 +96,7 @@ class DesktopCommunityAuthTest {
                     assertEquals("Synthetic Owner", owner.state.value.displayName)
                     assertFalse(owner.state.value.loginOpen); assertEquals(1, users.get()); assertEquals(3, returning.releases)
                     assertEquals("owner", sessions.load()!!.userId)
-                    assertEquals(setOf(DesktopCredentialKey.DormantCommunitySession), values.keys)
+                    assertEquals(setOf<DesktopCredentialKey>(DesktopCredentialKey.DormantCommunitySession), values.keys)
                     assertTrue(activation.queue.state.value.files.isEmpty())
                     assertFalse(Files.exists(requireNotNull(activation.queue.recordPath)))
                     assertFails { DesktopExternalActivation.forwardCommunityCallback(parent.resolve("activation"), callback(current)) }

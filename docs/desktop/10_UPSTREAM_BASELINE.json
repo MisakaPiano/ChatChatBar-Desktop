@@ -107,7 +107,7 @@
     "targetCommit": "b4fa75d296680f777be095f3121ad0c4db979f17",
     "authority": "User authorized latest official CCB adaptation; Desktop first, separate Studio consumes official interfaces",
     "status": "selective_adaptation_in_progress_not_whole_baseline_promotion",
-    "sourceAtRecord": "a429bb3ec853d40432acf97aae9398ee1b923287 plus exact compile fixes and AUTH wake worktree; next CI pending",
+    "sourceAtRecord": "2cdb8adb742dacf485ac470cbbde732d2f3f487e plus two explicit test key types; next exact CI pending",
     "lastCompleteSourceValidation": {
       "commit": "ec0861432a56138d5ccb1685a2e63cc22bc6d703",
       "run": 41438935426,
@@ -194,17 +194,18 @@
     "historicalObservationMeaning": "upstreamObservation below is the dated2026-10-05 record, not the current target or a continuing instruction to park1.4.7",
     "validatedBaselineMeaning": "upstream.commit remains the last fully declared baseline; ongoing147 adoption is not deferred indefinitely by that evidence state",
     "lastAttempt": {
-      "commit": "a429bb3ec853d40432acf97aae9398ee1b923287",
-      "run": 41454549142,
-      "status": "TERMINAL_DESKTOP_AND_ANDROID_COMPILE_FAILURE",
+      "commit": "2cdb8adb742dacf485ac470cbbde732d2f3f487e",
+      "run": 41456731200,
+      "status": "TERMINAL_DESKTOP_TEST_COMPILE_FAILURE",
+      "desktopProductionCompile": "PASS",
       "mainProxy": "NOT_EXECUTED",
-      "androidTestsAndApk": "NOT_EXECUTED",
       "sharedPass": 1183,
+      "androidPass": 586,
       "ntfsPass": 7,
       "nativePass": 37,
       "updaterTufPass": 14,
       "exitPass": 4,
-      "correction": "explicit nullable rollback branch and local conflictId preserve existing behavior; next exact source pending"
+      "correction": "Two tests explicitly use common DesktopCredentialKey; full key-set equality unchanged"
     }
   }
 }

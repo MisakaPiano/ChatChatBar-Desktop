@@ -17,3 +17,5 @@ Desktop浏览器返回使用Supabase原固定`chatbar://auth/callback`和PKCE授
 验证状态：129/ec086完整原件PASS（主2541PASS+19SKIP/shared1170/Android586、proxy5/NTFS7/native37/TUF14/exit4），仅验证此前角色生图片。130/18c因共享`jsonObject`缺import在编译失败，main/proxy/NTFS/shared/Android未执行，无对应XML；独立native37/TUF14/exit4实际PASS。该import已补，当前UI/PKCE片待后继精确源，不由129或130代验。实际官方服务关闭只挂其真实Discord/上传联调；R7普通链原限定PASS复用，不为此片重建三包。公开1233/签名15、真人待，日常H UNKNOWN且不操作。
 
 131/a429实际结果：共享200suite/1183全PASS，CommunityClient11（含PKCE）及Core新增provenance/authority两方法实际PASS；独立NTFS7、native37/TUF14/exit4通过。Windows在临时协议回滚的nullable record分支编译失败，main/proxy未执行；Android在共享公共conflictId三处smartcast编译失败，Android测试和APK未执行。后继只补回滚明确非空和局部conflictId快照，保留原归属/冲突语义。另补accepted AUTH的独立内存唤起信号与Main显示窗口，以及真实Shell服务开→社区路由→服务关回聊天、原草稿/卡字节/任务/AI请求保持的测试；这些均需新精确源，不归131通过范围。
+
+132/2cdb的生产Desktop编译及Android回归已闭合上述编译错误：shared1183、Android586、NTFS7/native37/TUF14/exit4实际PASS。Windows仅在测试编译的AuthTest/PortsTest两处凭据key集合assertEquals无法推断共同类型而失败，main/proxy及新Scene仍未执行。后继只显式`setOf<DesktopCredentialKey>`，完整keys集合相等断言保持，不以测试编译问题改业务或减断言；仍待其后继精确源执行。

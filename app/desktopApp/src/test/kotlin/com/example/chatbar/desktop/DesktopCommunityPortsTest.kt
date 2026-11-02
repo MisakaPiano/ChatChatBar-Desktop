@@ -22,7 +22,7 @@ class DesktopCommunityPortsTest {
         val secrets = Secrets(); val store = DesktopCommunitySessionStore(secrets, Json)
         val session = CommunitySession("synthetic-access", "synthetic-refresh", userId = "synthetic-owner", displayName = "Synthetic")
         assertNull(store.load()); store.save(session); assertEquals(session, store.load())
-        assertEquals(setOf(DesktopCredentialKey.DormantCommunitySession), secrets.values.keys)
+        assertEquals(setOf<DesktopCredentialKey>(DesktopCredentialKey.DormantCommunitySession), secrets.values.keys)
         assertFailsWith<IllegalArgumentException> { store.save(session.copy(accessToken = "")) }
         assertEquals(session, store.load())
         secrets.values[DesktopCredentialKey.DormantCommunitySession] = "malformed-synthetic"
