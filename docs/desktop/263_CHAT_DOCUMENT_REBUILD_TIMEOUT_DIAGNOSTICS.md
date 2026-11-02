@@ -1,0 +1,5 @@
+# 263 原容器文档重建超时的精确诊断
+
+2026-11-02实际114/533：主333suite/2526=2506PASS+19SKIP+1FAIL，proxy5/shared1138/Android582/Python3独立PASS。新Moment3+Processing3+Panel1七项全部PASS，原guard矩阵已PASS。唯一原ChatMaintenance容器重建参考文档case在原10秒busy等待超时；该controller/test未随新媒体改动，首因未明，不归为纯慢或改等待。先追加精确脱敏timeout快照（原维护状态、请求次数、gate/journal、两文档状态、原任务状态和限定代码栈），保留原10秒与全部两请求/两文档INDEXED/历史chunk/无journal/rootOPEN断言；P17完整preset仍独立WIP，不由114代验。
+
+调用链为原chatMaintenanceController.rebuildRag→TaskRuntime.withMessageMutation→indexDocument→DocumentIndexService.withDocumentPreparation，source/commit沿原exclusive barrier，HTTP期间无normal/exclusive数据lease。embedding物理Call仍单次、HTTP完成后本地usage异步writer独立正常准入；目前源码没有证实哪个环节超时。不能因此删barrier/检查/计量或直接延长超时。快照只在实际失败后增加必要诊断，不把额外快照读取时间当原通过时限。无Prompt或生产行为修改，修复需依据后续精确结果。

@@ -157,7 +157,21 @@ class DesktopChatMaintenanceControllerTest {
             val maintenance = f.app.chatMaintenanceController
             assertEquals(0, server.requestCount)
             maintenance.rebuildRag(f.session.id)
-            withTimeout(10_000) { while (maintenance.state.value.busy) delay(10) }
+            try { withTimeout(10_000) { while (maintenance.state.value.busy) delay(10) } }
+            catch (timeout: TimeoutCancellationException) {
+                val documentsNow = withTimeoutOrNull(1000) {
+                    f.app.characterRepository.getById(card.id)?.customDocuments?.map { "${it.id}:${it.ragStatus}:${it.ragChunkCount}" }
+                }
+                val work = f.app.taskRuntime.ownedWork.value.map { "${it.kind}:${it.status}:${it.publicationUnconfirmed}" }
+                val frames = Thread.getAllStackTraces().values.filter { stack -> stack.any {
+                    it.className.startsWith("com.example.chatbar.desktop.DesktopDocumentIndex") ||
+                        it.className.startsWith("com.example.chatbar.desktop.DesktopDataOperation") ||
+                        it.className.startsWith("com.example.chatbar.desktop.DesktopEmbeddingGateway")
+                } }.take(6).map { stack -> stack.take(12).joinToString(" > ") { "${it.className}.${it.methodName}:${it.lineNumber}" } }
+                throw AssertionError("Original 10s rebuild deadline exceeded; maintenance=${maintenance.state.value}; " +
+                    "requests=${server.requestCount}; gate=${f.app.dataOperationCoordinator.state}; " +
+                    "journal=${DesktopIndexCommitJournal(f.app.appDataRoot).hasPending()}; documents=$documentsNow; work=$work; stacks=$frames", timeout)
+            }
             assertNull(maintenance.state.value.error)
             assertEquals(2, server.requestCount)
             assertTrue(f.app.characterRepository.getById(card.id)!!.customDocuments.all { it.ragStatus == "INDEXED" })
