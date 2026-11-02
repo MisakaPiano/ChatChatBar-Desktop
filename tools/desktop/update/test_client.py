@@ -1,6 +1,7 @@
 """No network: actual python-tuf consumes independent synthetic signed metadata."""
 from datetime import datetime, timedelta, timezone
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 import sys
@@ -77,6 +78,33 @@ class Repository(FetcherInterface):
 
 
 class ClientTest(unittest.TestCase):
+    def test_frozen_public1233_updater_downloads_and_reverifies_bridge_before_new_client_reads_stable(self):
+        frozen = Path(__file__).parent / 'fixtures' / 'desktop_update_1233.py'
+        origin = json.loads(frozen.with_suffix('.origin.json').read_text())
+        self.assertEqual(origin['sha256'], hashlib.sha256(frozen.read_bytes()).hexdigest())
+        spec = importlib.util.spec_from_file_location('ccb_frozen_public1233_update_client', frozen)
+        legacy = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = legacy
+        spec.loader.exec_module(legacy)
+        repo = Repository(version=1234, installed=1233)
+        repo.custom['storageVersion'] = '0.1.0-preview.1234'; repo.build(metadata_version=7)
+        old = legacy.Installed(1233, '0.1.0-preview.1233', 'a' * 40, 'preview', 1, repo.bootstrap)
+        with tempfile.TemporaryDirectory(prefix='ccb-frozen-client-bridge-synthetic-') as tmp:
+            cache = Path(tmp) / 'updates'
+            bridge = legacy.execute(old, cache, download=True, fetcher=repo, expected_version='0.1.0-preview.1234')
+            self.assertEqual('DOWNLOADED_VERIFIED', bridge['status'])
+            checked = legacy.execute(old, cache, verify_file=Path(bridge['installer']), fetcher=repo, expected_version='0.1.0-preview.1234')
+            self.assertEqual(bridge['sha256'], checked['sha256'])
+            preview_state = (cache / 'metadata' / 'timestamp.json').read_bytes()
+            installed_bridge = client.Installed(1234, '0.1.0-preview.1234', 'b' * 40, 'preview', 1, repo.bootstrap)
+            repo.channel = 'stable'; repo.payload = b'SYNTHETIC STABLE AFTER ACTUAL OLD CLIENT BRIDGE NEVER RUN'
+            repo.custom.update(channel='stable', version=1235, displayVersion='1.0.0', storageVersion='1.0.0-preview.1235',
+                               sourceSha='c' * 40, github=dict(tag='desktop-v1.0.0', asset='ChatChatBar-Desktop-1.0.0-windows-x64.exe'))
+            repo.build(metadata_version=1)
+            stable = client.execute(installed_bridge, cache, download=True, fetcher=repo)
+            self.assertEqual('DOWNLOADED_VERIFIED', stable['status']); self.assertEqual('1.0.0', stable['displayVersion'])
+            self.assertEqual(preview_state, (cache / 'metadata' / 'timestamp.json').read_bytes())
+
     def test_stable_producer_and_installed_config_bind_true_display_build_storage_and_original_bootstrap(self):
         with tempfile.TemporaryDirectory(prefix='ccb-stable-signing-synthetic-') as tmp:
             base = Path(tmp); keys = base / 'keys'; root = base / 'root.json'

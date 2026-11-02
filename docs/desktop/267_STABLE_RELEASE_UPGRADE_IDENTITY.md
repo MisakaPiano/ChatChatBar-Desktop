@@ -2,6 +2,8 @@
 
 2026-11-02：原P18升级基建正在实现，尚未在精确新源运行，不属于117/118、公开1233或真人验收结论。保留真实稳定SemVer、单调build、Windows installer版本、TUF revision、reader与trust-root版本的独立含义。
 
+后补第14个可信更新器例直接载入公开1233冻结客户端源码，核源SHA、沿原Preview cache实际下载/二验合成bridge，再由新客户端在同一cache读取stable；原transport Git blob保持。该新增例不在120中，需后继精确源云验，不把新客户端模拟旧安装信息当作旧客户端已执行，也不把合成payload验包当作安装或真实JAR过渡。
+
 ## 旧入口兼容
 
 原固定根入口先验证current目录的 `x.y.z-preview.N-commit12` 形状，随后才委托当前目录manager；普通安装保留已有根EXE。新manifest因此显式携带实际 `version`、`buildNumber`、`channel`、`storageVersion`，内部目录仍为 `<SemVer core>-preview.<build>-<commit12>`。例如显示1.0.0/build1235/stable，对应内部1.0.0-preview.1235目录；界面、JAR build identity、READY、Release/tag/asset和签名display均为真实1.0.0，不把Preview标签伪装成正式版。
