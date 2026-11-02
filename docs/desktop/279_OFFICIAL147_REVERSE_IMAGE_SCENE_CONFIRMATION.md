@@ -10,8 +10,10 @@ Desktop运行态绑定精确草稿与反推修订：换图/移除/返回清理�
 
 ## 本片验证（待精确云端执行）
 
-- 共享`NovelAiReverseSceneTest`三项：识图只规划场景、确认文本不附图/不要求视觉模型；空输入前置拒绝；optional/explicit target保全。
+- 共享`NovelAiReverseSceneTest`四项（关联视觉分支为137之后后补，待其源云验）：识图只规划场景、确认文本不附图/不要求视觉模型；空输入前置拒绝；optional/explicit target保全；真实关联视觉resolver/description不再二次scene planner，确认后不再调用视觉。
 - `DesktopReverseSceneTest`七项：真实loopbackHTTP三请求及两次明确确认、V4.5默认草稿到V5候选与应用/撤销；空场景/草稿改变；迟到候选拒绝；换图精确停止；失败/取消可重试；undo保存期间换图的真实提交拒绝；实际Pane420/1100输入/确认/应用与四张云端图。暂停只定位到第二次真实undoMutex lock（第一次为action资产读取），用事件确认已捕获候选，不用sleep猜测。
 - 原`DesktopDesignParityTest`的真实共享Designer例升级为两阶段，原extraRequirement归属、全局设置/草稿不变断言保留。
 
 本机仅编辑/静态检查；无编译、测试、渲染、真实Provider调用或日常安装。脚本/测试源码不是PASS；云端原件与实际图片另核。
+
+137/1e6de51c正在云验。后补关联视觉回归与Stop在任务预处理期间使修订失效的保护，仅后继源码，不归137；测试/渲染仍不在本机执行。

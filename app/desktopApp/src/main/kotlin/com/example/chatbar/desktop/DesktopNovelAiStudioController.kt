@@ -805,7 +805,15 @@ internal class DesktopNovelAiStudioController(
         clearReverseCandidate()
     }
 
-    fun stopReverse() { synchronized(reverseLock) { reverseTaskId }?.let(tasks::requestUserStop) }
+    fun stopReverse() {
+        val id = synchronized(reverseLock) {
+            reverseSelection = reverseSelection?.copy(revision = ++reverseRevision)
+            mutableState.update { it.copy(reverseBusy = false,
+                reverseProgress = it.reverseProgress.copy(stage = "已停止，可重试")) }
+            reverseTaskId.also { reverseTaskId = null }
+        }
+        id?.let(tasks::requestUserStop)
+    }
 
     fun clearReverseCandidate() {
         val id = synchronized(reverseLock) {
