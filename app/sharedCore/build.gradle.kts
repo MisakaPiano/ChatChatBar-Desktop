@@ -13,6 +13,12 @@ kotlin {
     }
 }
 
+val promptCalibrationInput = layout.buildDirectory.file("reports/prompt-budget-calibration/input.json")
+tasks.named<org.gradle.api.tasks.testing.Test>("test") {
+    outputs.file(promptCalibrationInput)
+    systemProperty("ccb.prompt.calibration.output", promptCalibrationInput.get().asFile.absolutePath)
+}
+
 dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.serialization.json)

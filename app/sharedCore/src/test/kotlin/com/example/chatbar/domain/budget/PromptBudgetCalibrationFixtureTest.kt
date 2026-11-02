@@ -32,7 +32,7 @@ class PromptBudgetCalibrationFixtureTest {
                 }
             })
         }
-        val output = Path.of("build/reports/prompt-budget-calibration/input.json")
+        val output = Path.of(System.getProperty("ccb.prompt.calibration.output", "build/reports/prompt-budget-calibration/input.json"))
         Files.createDirectories(output.parent)
         Files.writeString(output, input.toString())
     }
