@@ -18,6 +18,9 @@ def main():
     request=json.loads((control/'.github/desktop-candidate-request.json').read_text(encoding='utf-8'))
     require(request.get('signedUpdateOnly') is True and request.get('reuseBuildRun'), 'EXACT_SIGNED_REUSE_REQUEST_REQUIRED')
     metadata=request['signedValidation']; require(metadata['kind']=='PUBLIC_SIGNED_METADATA_INPUTS_NOT_PRIVATE_KEYS', 'SIGNED_INPUT_KIND_REQUIRED')
+    candidate_revision=metadata['candidateRevision']
+    require(type(candidate_revision) is int and type(metadata['priorRevision']) is int and
+            candidate_revision > metadata['priorRevision'], 'INCREASING_CANDIDATE_REVISION_REQUIRED')
     base=Path(os.environ['CCB_BUILD_BASE']).resolve(strict=True)
     require(base.parent==Path(base.anchor) and base.name.startswith('ccbpack-'), 'OWNED_CLOUD_BASE_REQUIRED')
     output=Path(os.environ['CCB_BUILD_OUTPUT']).resolve(strict=True);require(output.parent==base,'OWNED_OUTPUT_REQUIRED')
@@ -76,7 +79,7 @@ def main():
     checked=client.execute(installed,cache,verify_file=Path(downloaded['installer']),fetcher=fetcher,expected_version=request['desktopVersion'])
     require(downloaded['status']==checked['status']=='DOWNLOADED_VERIFIED' and checked['sha256']==expected,'FULL_DOWNLOAD_AND_SECOND_VERIFY_REQUIRED')
     after=json.loads((cache/'metadata/timestamp.json').read_text())['signed']['version']
-    require(after==metadata['candidateRevision']==16,'INCREASING_CACHE_REVISION_REQUIRED')
+    require(after==candidate_revision and after>before,'INCREASING_CACHE_REVISION_REQUIRED')
     result=dict(kind='ACTUAL_FROZEN_PUBLIC1233_CLIENT_FINAL_SIGNED_CANDIDATE',passed=True,applicationSource=request['sourceSha'],
         controlSource=subprocess.check_output(['git','rev-parse','HEAD'],cwd=control,encoding='utf-8').strip(),
         frozenClientSource=origin['source'],frozenClientSha256=origin['sha256'],publicTransportUnchanged=True,
