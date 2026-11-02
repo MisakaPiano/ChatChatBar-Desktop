@@ -211,7 +211,30 @@ def launch_close(case, image, executable, arguments, install_root, label, defaul
 
         if expect_failure:
             deadline = time.monotonic() + 150
+            normal_close_after_refusal = False
             while pids() and time.monotonic() < deadline:
+                # A real JAR can show its window before the manager rejects its mismatched READY.
+                # Close only that owned business window, normally, after the exact new refusal.
+                if default_profile and readiness_failure == 'READY_IDENTITY_REFUSED' and not normal_close_after_refusal:
+                    current_log = install_log(case, install_root)
+                    text = current_log.read_text(encoding='utf-8') if current_log.exists() else ''
+                    if text.startswith(previous_log) and 'FAILED READY_IDENTITY_REFUSED' in text[len(previous_log):]:
+                        require((install_root / 'current.txt').read_text().strip() == previous, 'FAILED_READY_CHANGED_CURRENT')
+                        owned = set(pids())
+                        found = []
+
+                        @callback
+                        def close_candidate(hwnd, unused):
+                            pid = W.DWORD(); user.GetWindowThreadProcessId(hwnd, C.byref(pid))
+                            if pid.value in owned and user.IsWindowVisible(hwnd):
+                                title = C.create_unicode_buffer(256); user.GetWindowTextW(hwnd, title, 256)
+                                if title.value == 'ChatChatBar': found.append(hwnd)
+                            return True
+
+                        user.EnumWindows(close_candidate, 0)
+                        for window in found:
+                            require(user.PostMessageW(window, 0x10, 0, 0), 'FAILED_CANDIDATE_NORMAL_CLOSE_FAILED')
+                        normal_close_after_refusal = bool(found)
                 time.sleep(.1)
             code = W.DWORD(); kernel.GetExitCodeProcess(process.handle, C.byref(code))
             current = (install_root / 'current.txt').read_text().strip()
@@ -219,6 +242,7 @@ def launch_close(case, image, executable, arguments, install_root, label, defaul
             result = dict(exitCode=code.value, remaining=pids(), oldEntryPreserved=current == previous,
                           newAppNotReadyObserved=('FAILED ' + readiness_failure) in log[len(previous_log):],
                           expectedReadinessFailure=readiness_failure, freshDefaultProfile=default_profile,
+                          normalWindowCloseAfterIdentityRefusal=normal_close_after_refusal,
                           fakeCredentialRetentionVerified=False if default_profile else None)
             save(case / (label + '-result.json'), result)
             require(not result['remaining'] and code.value not in (0, 259) and result['oldEntryPreserved'] and result['newAppNotReadyObserved'], 'NATIVE_FAILURE_RETENTION_NOT_PROVEN')
