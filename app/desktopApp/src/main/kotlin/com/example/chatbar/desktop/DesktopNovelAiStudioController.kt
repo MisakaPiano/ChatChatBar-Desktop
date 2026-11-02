@@ -712,11 +712,14 @@ internal class DesktopNovelAiStudioController(
         mutableState.update { it.copy(reverseSceneDescription = text, reverseCandidate = null, reverseTargetModel = null) }
     }
 
-    suspend fun confirmReverseSceneDescription() = action {
-        val selection = synchronized(reverseLock) { requireNotNull(reverseSelection) }
-        val scene = requireNotNull(state.value.reverseSceneDescription).also { require(it.isNotBlank()) { "请填写场景描述" } }
-        check(repository.loadDraft() == selection.draft) { "Studio 草稿已变化，请重新反推" }
-        startReverse(selection.draft, scene, null, selection.revision)
+    suspend fun confirmReverseSceneDescription(): Boolean {
+        val (capturedSelection, capturedScene) = synchronized(reverseLock) { reverseSelection to state.value.reverseSceneDescription }
+        return action {
+            val selection = requireNotNull(capturedSelection)
+            val scene = requireNotNull(capturedScene).also { require(it.isNotBlank()) { "请填写场景描述" } }
+            check(repository.loadDraft() == selection.draft) { "Studio 草稿已变化，请重新反推" }
+            startReverse(selection.draft, scene, null, selection.revision)
+        }
     }
 
     private suspend fun startReverse(launch: NovelAiStudioDraft, scene: String?, encoded: String?, expectedRevision: Long) {
@@ -789,22 +792,25 @@ internal class DesktopNovelAiStudioController(
         }
     }
 
-    suspend fun applyReverseCandidate() = action {
-        val selection = synchronized(reverseLock) { requireNotNull(reverseSelection) }
-        check(!state.value.reverseBusy)
-        val candidate = requireNotNull(state.value.reverseCandidate)
-        val target = requireNotNull(state.value.reverseTargetModel)
-        val before = repository.loadDraft()
-        check(before == selection.draft) { "Studio 草稿已变化，请重新反推" }
-        repository.saveUndoDraft(before)
-        repository.updateDraft(resetPromptEditors = true) { current ->
-            synchronized(reverseLock) {
-                check(reverseSelection == selection) { "反推图片已更换或关闭" }
-                check(current == selection.draft) { "Studio 草稿已变化，请重新反推" }
-                current.applyReversePromptPlan(candidate, target)
+    suspend fun applyReverseCandidate(): Boolean {
+        val captured = synchronized(reverseLock) { Triple(reverseSelection, state.value.reverseCandidate, state.value.reverseTargetModel) }
+        return action {
+            val selection = requireNotNull(captured.first)
+            check(!state.value.reverseBusy)
+            val candidate = requireNotNull(captured.second)
+            val target = requireNotNull(captured.third)
+            val before = repository.loadDraft()
+            check(before == selection.draft) { "Studio 草稿已变化，请重新反推" }
+            repository.saveUndoDraft(before)
+            repository.updateDraft(resetPromptEditors = true) { current ->
+                synchronized(reverseLock) {
+                    check(reverseSelection == selection) { "反推图片已更换或关闭" }
+                    check(current == selection.draft) { "Studio 草稿已变化，请重新反推" }
+                    current.applyReversePromptPlan(candidate, target)
+                }
             }
+            clearReverseCandidate()
         }
-        clearReverseCandidate()
     }
 
     fun stopReverse() {

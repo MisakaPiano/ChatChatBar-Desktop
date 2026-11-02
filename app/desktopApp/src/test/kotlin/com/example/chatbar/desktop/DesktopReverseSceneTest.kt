@@ -188,30 +188,35 @@ class DesktopReverseSceneTest {
         }
     }
 
-    @Test fun `stop during original action preflight prevents a new reverse request from launching`() = runBlocking {
-        val f = FinalProductDesignFixture()
-        try {
-            val c = setup(f); assertTrue(c.reverseImage(image())); f.idle()
-            val before = c.repository.loadDraft(); val requests = f.requests.size
-            val field = c.repository.javaClass.getDeclaredField("undoMutex").also { it.isAccessible = true }
-            val original = field.get(c.repository) as kotlinx.coroutines.sync.Mutex
-            val entered = CompletableDeferred<Unit>(); val resume = CompletableDeferred<Unit>()
-            val tracking = object : kotlinx.coroutines.sync.Mutex by original {
-                override suspend fun lock(owner: Any?) {
-                    entered.complete(Unit); resume.await(); original.lock(owner)
-                }
-            }
-            field.set(c.repository, tracking)
-            val restarting = async(Dispatchers.Default) { c.reverseImage(image()) }
+    @Test fun `stop or newer scene during original preflight prevents recognition and old confirmation from launching`() = runBlocking {
+        for (scenario in listOf("recognize-stop", "confirm-stop", "confirm-edit")) {
+            val f = FinalProductDesignFixture()
             try {
-                withTimeout(5_000) { entered.await() }
-                c.stopReverse()
-            } finally { resume.complete(Unit) }
-            assertFalse(withTimeout(5_000) { restarting.await() })
-            field.set(c.repository, original)
-            assertEquals(requests, f.requests.size); assertFalse(c.state.value.reverseBusy)
-            assertNull(c.state.value.reverseCandidate); assertEquals(before, c.repository.loadDraft())
-        } finally { f.close() }
+                val c = setup(f); assertTrue(c.reverseImage(image())); f.idle()
+                val before = c.repository.loadDraft(); val requests = f.requests.size
+                val field = c.repository.javaClass.getDeclaredField("undoMutex").also { it.isAccessible = true }
+                val original = field.get(c.repository) as kotlinx.coroutines.sync.Mutex
+                val entered = CompletableDeferred<Unit>(); val resume = CompletableDeferred<Unit>()
+                val tracking = object : kotlinx.coroutines.sync.Mutex by original {
+                    override suspend fun lock(owner: Any?) {
+                        entered.complete(Unit); resume.await(); original.lock(owner)
+                    }
+                }
+                field.set(c.repository, tracking)
+                val restarting = async(Dispatchers.Default) {
+                    if (scenario == "recognize-stop") c.reverseImage(image()) else c.confirmReverseSceneDescription()
+                }
+                try {
+                    withTimeout(5_000) { entered.await() }
+                    if (scenario == "confirm-edit") c.updateReverseSceneDescription("NOT_YET_CONFIRMED") else c.stopReverse()
+                } finally { resume.complete(Unit) }
+                assertFalse(withTimeout(5_000) { restarting.await() }, scenario)
+                field.set(c.repository, original)
+                assertEquals(requests, f.requests.size); assertFalse(c.state.value.reverseBusy)
+                assertNull(c.state.value.reverseCandidate); assertEquals(before, c.repository.loadDraft())
+                if (scenario == "confirm-edit") assertEquals("NOT_YET_CONFIRMED", c.state.value.reverseSceneDescription)
+            } finally { f.close() }
+        }
     }
 
     private val edt = object : CoroutineDispatcher() {
