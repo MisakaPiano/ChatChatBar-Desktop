@@ -2,9 +2,12 @@ package com.example.chatbar.desktop
 
 import com.example.chatbar.desktop.security.*
 import com.example.chatbar.domain.image.*
+import com.example.chatbar.domain.prompt.CharacterCardAiPromptAuthority
+import com.example.chatbar.domain.prompt.CharacterNaiPromptDefaults
 import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.*
+import kotlinx.serialization.json.*
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.*
 import okio.Buffer
@@ -50,6 +53,46 @@ class DesktopCharacterImageGenerationTest {
                 assertNotNull(withContext(Dispatchers.IO) { server.takeRequest(5, TimeUnit.SECONDS) })
                 withTimeout(5_000) { job.cancelAndJoin() }
                 assertFalse(completed); assertEquals(1, server.requestCount)
+            } finally { owner.closeAndDrain() }
+        }
+    }
+
+    @Test fun `actual avatar request keeps original positive negative order default and manual inputs while non avatar is unchanged`() = runBlocking {
+        MockWebServer().use { server ->
+            val owner = DesktopCharacterImageGeneration(secrets(), client(server))
+            var calls = 0
+            try {
+                for (model in listOf(NovelAiImageModel.V4_5_FULL, NovelAiImageModel.V5_FULL)) {
+                    for ((style, character, negative) in listOf(Triple("style", "person", "custom-negative"),
+                        Triple("style", "person", ""), Triple("", "manual-avatar", "manual-negative"))) {
+                        val planned = CharacterAvatarImagePolicy.promptPlan(style, character, negative)
+                        server.enqueue(MockResponse().setBody(Buffer().write(frame("final", image))))
+                        owner.generate(planned, CharacterAvatarImagePolicy.imageSize, settings.copy(model = model))
+                        val request = assertNotNull(server.takeRequest(5, TimeUnit.SECONDS))
+                        val wire = Json.parseToJsonElement(request.body.readUtf8()).jsonObject
+                        val parameters = wire.getValue("parameters").jsonObject
+                        val positive = (listOf(style, character).filter(String::isNotEmpty) +
+                            CharacterCardAiPromptAuthority.CHARACTER_AVATAR_NAI_POSITIVE_PROMPT).joinToString(", ")
+                        val combinedNegative = CharacterNaiPromptDefaults.effectiveCharacterNaiNegativePrompt(negative) + ", " +
+                            CharacterCardAiPromptAuthority.CHARACTER_AVATAR_NAI_NEGATIVE_PROMPT
+                        assertEquals(positive, wire.getValue("input").jsonPrimitive.content)
+                        assertEquals(positive, parameters.getValue("v4_prompt").jsonObject.getValue("caption").jsonObject.getValue("base_caption").jsonPrimitive.content)
+                        assertEquals(combinedNegative, parameters.getValue("negative_prompt").jsonPrimitive.content)
+                        assertEquals(combinedNegative, parameters.getValue("v4_negative_prompt").jsonObject.getValue("caption").jsonObject.getValue("base_caption").jsonPrimitive.content)
+                        assertEquals(512, parameters.getValue("width").jsonPrimitive.int)
+                        assertEquals(512, parameters.getValue("height").jsonPrimitive.int)
+                        assertEquals(++calls, server.requestCount)
+                    }
+                }
+                val cover = NovelAiPromptPlan("cover-input", emptyList(), negativePrompt = "cover-negative")
+                server.enqueue(MockResponse().setBody(Buffer().write(frame("final", image))))
+                owner.generate(cover, NovelAiImageSize(768, 1024, "Fixture cover"), settings)
+                val wire = Json.parseToJsonElement(assertNotNull(server.takeRequest(5, TimeUnit.SECONDS)).body.readUtf8()).jsonObject
+                assertEquals("cover-input", wire.getValue("input").jsonPrimitive.content)
+                assertEquals("cover-negative", wire.getValue("parameters").jsonObject.getValue("negative_prompt").jsonPrimitive.content)
+                assertEquals(768, wire.getValue("parameters").jsonObject.getValue("width").jsonPrimitive.int)
+                assertEquals(1024, wire.getValue("parameters").jsonObject.getValue("height").jsonPrimitive.int)
+                assertEquals(calls + 1, server.requestCount)
             } finally { owner.closeAndDrain() }
         }
     }

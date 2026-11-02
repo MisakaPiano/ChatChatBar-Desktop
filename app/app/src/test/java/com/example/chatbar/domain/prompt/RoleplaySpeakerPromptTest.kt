@@ -58,21 +58,23 @@ class RoleplaySpeakerPromptTest {
     }
 
     @Test
-    fun avatarCompositionTags_remainApprovedValue() {
+    fun avatarCompositionAliasAndNegativeFacadeDelegateToSharedAuthority() {
         assertEquals(
-            "portrait, upper body",
+            CharacterCardAiPromptAuthority.CHARACTER_AVATAR_NAI_POSITIVE_PROMPT,
             PromptTemplates.CHARACTER_AVATAR_NAI_COMPOSITION_TAGS
         )
+        assertEquals(CharacterCardAiPromptAuthority.novelAiCharacterAvatarNegativePrompt("custom negative"),
+            PromptTemplates.novelAiCharacterAvatarNegativePrompt("custom negative"))
     }
 
     @Test
     fun avatarPositivePrompt_usesOnlyProvidedSourcesAndApprovedComposition() {
         assertEquals(
-            "style tags, character tags, portrait, upper body",
+            "style tags, character tags, ${PromptTemplates.CHARACTER_AVATAR_NAI_POSITIVE_PROMPT}",
             PromptTemplates.novelAiCharacterAvatarPositivePrompt(" style tags ", "character tags")
         )
         assertEquals(
-            "manual full prompt, portrait, upper body",
+            "manual full prompt, ${PromptTemplates.CHARACTER_AVATAR_NAI_POSITIVE_PROMPT}",
             PromptTemplates.novelAiCharacterAvatarPositivePrompt("manual full prompt,")
         )
     }

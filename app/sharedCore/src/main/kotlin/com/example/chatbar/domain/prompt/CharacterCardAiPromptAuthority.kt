@@ -342,12 +342,22 @@ user需求：
                 characterName.trim().ifBlank { "未命名人物" }
             )
 
-    const val CHARACTER_AVATAR_NAI_COMPOSITION_TAGS = "portrait, upper body"
+    const val CHARACTER_AVATAR_NAI_POSITIVE_PROMPT = "3::portrait, upper body::, face, -1::nsfw::, simple background"
+    const val CHARACTER_AVATAR_NAI_NEGATIVE_PROMPT = "multiple views, split screen, collage, reference sheet, character sheet, inset, extreme close-up, eye focus, cropped head, out of frame"
+    const val CHARACTER_AVATAR_NAI_COMPOSITION_TAGS = CHARACTER_AVATAR_NAI_POSITIVE_PROMPT
 
     fun novelAiCharacterAvatarPositivePrompt(vararg sources: String): String =
-        (sources.asList() + CHARACTER_AVATAR_NAI_COMPOSITION_TAGS)
+        (sources.asList() + CHARACTER_AVATAR_NAI_POSITIVE_PROMPT)
             .map { it.trim().trim(',').trim() }
             .filter(String::isNotEmpty)
             .joinToString(", ")
+
+    fun novelAiCharacterAvatarNegativePrompt(
+        cardNegativePrompt: String,
+        avatarNegativePrompt: String = CHARACTER_AVATAR_NAI_NEGATIVE_PROMPT,
+    ): String = listOf(CharacterNaiPromptDefaults.effectiveCharacterNaiNegativePrompt(cardNegativePrompt), avatarNegativePrompt)
+        .map { it.trim().trim(',').trim() }
+        .filter(String::isNotEmpty)
+        .joinToString(", ")
 
 }

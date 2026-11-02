@@ -3,6 +3,7 @@ package com.example.chatbar.domain.image
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import com.example.chatbar.domain.prompt.CharacterCardAiPromptAuthority
 
 class CharacterAvatarImagePolicyTest {
     @Test
@@ -14,12 +15,12 @@ class CharacterAvatarImagePolicyTest {
         )
 
         assertEquals(
-            "very aesthetic, anime screencap, 1girl, silver hair, blue-gray eyes, portrait, upper body",
+            "very aesthetic, anime screencap, 1girl, silver hair, blue-gray eyes, ${CharacterCardAiPromptAuthority.CHARACTER_AVATAR_NAI_POSITIVE_PROMPT}",
             plan.baseCaption
         )
         assertTrue(plan.characterCaptions.isEmpty())
         assertEquals(NovelAiImageSizePreset.SQUARE, plan.sizePreset)
-        assertEquals("lowres", plan.negativePrompt)
+        assertEquals("lowres, ${CharacterCardAiPromptAuthority.CHARACTER_AVATAR_NAI_NEGATIVE_PROMPT}", plan.negativePrompt)
     }
 
     @Test

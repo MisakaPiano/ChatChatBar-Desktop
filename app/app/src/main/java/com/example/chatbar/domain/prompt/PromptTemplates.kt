@@ -58,8 +58,9 @@ import kotlinx.serialization.json.put
  *   `replyTailSystemPrompt`、`replyLanguageConstraint`
  *
  * ### 2. 角色卡、图片理解与角色头像
- * - 头像 NovelAI 固定组成：`CHARACTER_AVATAR_NAI_COMPOSITION_TAGS`、
- *   `novelAiCharacterAvatarPositivePrompt`
+ * - 头像 NovelAI 正负词组成：`CHARACTER_AVATAR_NAI_POSITIVE_PROMPT`、`CHARACTER_AVATAR_NAI_NEGATIVE_PROMPT`、
+ *   `novelAiCharacterAvatarPositivePrompt`、`novelAiCharacterAvatarNegativePrompt`
+ *   （`CHARACTER_AVATAR_NAI_COMPOSITION_TAGS` 保留为正词兼容别名。）
  * - 通用图片理解：`IMAGE_DESCRIPTION_PROMPT`、`indexedImageDescription`
  *   （GENERAL 辅助模板及图片理解模板委托 shared `AuxiliaryPromptAuthority`；封装委托 `AuxiliaryMessageAssembler`。）
  * - 角色卡 NovelAI 默认值/规则：`DEFAULT_CHARACTER_NAI_STYLE_PROMPT`、
@@ -373,8 +374,13 @@ object PromptTemplates {
     // region 角色卡、图片理解与角色头像
 
     const val CHARACTER_AVATAR_NAI_COMPOSITION_TAGS = CharacterCardAiPromptAuthority.CHARACTER_AVATAR_NAI_COMPOSITION_TAGS
+    const val CHARACTER_AVATAR_NAI_POSITIVE_PROMPT = CharacterCardAiPromptAuthority.CHARACTER_AVATAR_NAI_POSITIVE_PROMPT
+    const val CHARACTER_AVATAR_NAI_NEGATIVE_PROMPT = CharacterCardAiPromptAuthority.CHARACTER_AVATAR_NAI_NEGATIVE_PROMPT
     fun novelAiCharacterAvatarPositivePrompt(vararg sources: String): String =
         CharacterCardAiPromptAuthority.novelAiCharacterAvatarPositivePrompt(*sources)
+    fun novelAiCharacterAvatarNegativePrompt(cardNegativePrompt: String,
+        avatarNegativePrompt: String = CHARACTER_AVATAR_NAI_NEGATIVE_PROMPT): String =
+        CharacterCardAiPromptAuthority.novelAiCharacterAvatarNegativePrompt(cardNegativePrompt, avatarNegativePrompt)
 
     const val IMAGE_DESCRIPTION_PROMPT = AuxiliaryPromptAuthority.IMAGE_DESCRIPTION_PROMPT
 

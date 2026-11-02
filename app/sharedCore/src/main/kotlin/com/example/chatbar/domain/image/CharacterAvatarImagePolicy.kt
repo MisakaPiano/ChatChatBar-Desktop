@@ -1,7 +1,6 @@
 package com.example.chatbar.domain.image
 
 import com.example.chatbar.domain.prompt.CharacterCardAiPromptAuthority
-import com.example.chatbar.domain.prompt.CharacterNaiPromptDefaults
 
 object CharacterAvatarImagePolicy {
     val imageSize = NovelAiImageSize(
@@ -21,6 +20,6 @@ object CharacterAvatarImagePolicy {
         ),
         characterCaptions = emptyList(),
         sizePreset = NovelAiImageSizePreset.SQUARE,
-        negativePrompt = CharacterNaiPromptDefaults.effectiveCharacterNaiNegativePrompt(negativePrompt)
+        negativePrompt = CharacterCardAiPromptAuthority.novelAiCharacterAvatarNegativePrompt(negativePrompt)
     )
 }

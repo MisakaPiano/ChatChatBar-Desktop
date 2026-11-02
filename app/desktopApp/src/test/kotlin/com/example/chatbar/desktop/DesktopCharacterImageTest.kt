@@ -5,6 +5,7 @@ import com.example.chatbar.desktop.security.*
 import com.example.chatbar.domain.card.CharacterCardAiOperation
 import com.example.chatbar.domain.chat.*
 import com.example.chatbar.domain.image.*
+import com.example.chatbar.domain.prompt.CharacterCardAiPromptAuthority
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlinx.coroutines.*
@@ -27,7 +28,8 @@ class DesktopCharacterImageTest {
             val ai = controller(app, editor, secrets, designer = { _, _, _, _, _ -> error("No avatar design") },
                 generator = { actual, size, _, _, _ ->
                     generated++; assertEquals(512, size.width); assertEquals(512, size.height)
-                    assertEquals("synthetic-style, synthetic-person, portrait, upper body", actual.baseCaption)
+                    assertEquals("synthetic-style, synthetic-person, ${CharacterCardAiPromptAuthority.CHARACTER_AVATAR_NAI_POSITIVE_PROMPT}", actual.baseCaption)
+                    assertEquals("synthetic-negative, ${CharacterCardAiPromptAuthority.CHARACTER_AVATAR_NAI_NEGATIVE_PROMPT}", actual.negativePrompt)
                     bytes
                 })
             ai.openAvatar(person.id); assertEquals(0, generated)
@@ -55,7 +57,8 @@ class DesktopCharacterImageTest {
             var designs = 0; var generations = 0
             val ai = controller(app, editor, secrets, designer = { actual, _, hint, requirement, _ ->
                 designs++; assertEquals(card, actual); assertEquals("合成内容要求", hint); assertEquals("合成保存要求", requirement); plan
-            }, generator = { _, _, _, preview, _ ->
+            }, generator = { actual, _, _, preview, _ ->
+                assertEquals(plan, actual)
                 generations++
                 preview(bytes, 0.5f)
                 if (generations == 1) error("synthetic generation failure") else bytes
@@ -138,7 +141,7 @@ class DesktopCharacterImageTest {
             editor.edit { it.copy(editMode = CharacterEditMode.FREEFORM, freeformCharacterText = "合成自由正文") }
             var requests = 0
             val ai = controller(app, editor, secrets, generator = { actual, _, _, _, _ ->
-                requests++; assertEquals("manual-avatar, portrait, upper body", actual.baseCaption); bytes
+                requests++; assertEquals("manual-avatar, ${CharacterCardAiPromptAuthority.CHARACTER_AVATAR_NAI_POSITIVE_PROMPT}", actual.baseCaption); bytes
             })
             ai.openAvatar(person.id); ai.generate(); idle(ai)
             assertEquals(0, requests); assertNull(ai.state.value.candidate)
