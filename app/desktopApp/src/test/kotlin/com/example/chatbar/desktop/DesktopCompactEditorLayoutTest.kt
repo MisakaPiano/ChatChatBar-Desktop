@@ -147,6 +147,12 @@ class DesktopCompactEditorLayoutTest {
                         }
                         throw AssertionError("Data selected tab timeout: consumed=$consumed expected=${before + 1} viewport=$width/$height tabs=$tabs", timeout)
                     }
+                    for (label in listOf("创建桌面快捷方式", "添加到开始菜单", "固定到任务栏…")) {
+                        val button = action(scene, label)
+                        visible(button, width, height)
+                        assertTrue(button.boundsInRoot.width >= 110 && button.boundsInRoot.height <= 60,
+                            "$label button must remain readable: ${button.boundsInRoot}")
+                    }
                     shot(scene, "data-update-selected-$width-$height")
                     if (width == 330) {
                         for ((resizedWidth, resizedHeight) in listOf(1100 to 760, 330 to 420, 700 to 520, 699 to 520)) {

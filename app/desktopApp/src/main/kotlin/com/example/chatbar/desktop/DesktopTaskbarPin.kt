@@ -27,6 +27,7 @@ internal fun desktopTaskbarShortcut(home: Path, roaming: Path): Path {
     return link
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable internal fun DesktopTaskbarPinEntry() {
     var opened by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
@@ -35,7 +36,8 @@ internal fun desktopTaskbarShortcut(home: Path, roaming: Path): Path {
     var shortcutStatus by remember { mutableStateOf<String?>(null) }
     var shortcutBusy by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    ActionRow {
+    FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)) {
         DesktopShortcutDestination.entries.forEach { destination ->
             BootstrapButton(if (destination == DesktopShortcutDestination.DESKTOP) "创建桌面快捷方式" else "添加到开始菜单",
                 secondary = true, enabled = !shortcutBusy) {
@@ -63,7 +65,8 @@ internal fun desktopTaskbarShortcut(home: Path, roaming: Path): Path {
                     BootstrapButton(if (details) "收起系统详情" else "查看系统详情", secondary = true) { details = !details }
                     if (details) StatusText(value)
                 }
-                ActionRow {
+                FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     BootstrapButton(if (busy) "等待 Windows 确认…" else "请求固定到任务栏", enabled = !busy) {
                         busy = true
                         scope.launch {
