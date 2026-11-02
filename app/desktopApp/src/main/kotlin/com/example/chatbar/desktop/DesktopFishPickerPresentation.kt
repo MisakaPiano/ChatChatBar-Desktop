@@ -53,6 +53,7 @@ internal fun DesktopFishPickerContent(controller: DesktopFishPickerController, c
         }
     }
     var panel by remember(controller) { mutableStateOf<FishTools?>(null) }
+    var logs by remember(controller) { mutableStateOf(false) }
     var text by remember(controller) { mutableStateOf("") }
     val close by rememberUpdatedState(onClose)
     val fallbackEscape = remember { DesktopFishPickerEscape { close() } }
@@ -64,8 +65,8 @@ internal fun DesktopFishPickerContent(controller: DesktopFishPickerController, c
     val requestedPage = pageInput.toIntOrNull()?.takeIf { it > 0 && (pageCount == null || it.toLong() <= pageCount) }
     fun jump() { if (configured && !state.loading && requestedPage != null) controller.search(query.copy(pageNumber = requestedPage)) }
     LaunchedEffect(query.pageNumber) { list.scrollToItem(0) }
-    DisposableEffect(escape, panel) {
-        val dismiss: (() -> Unit)? = if (panel == null) null else ({ panel = null })
+    DisposableEffect(escape, panel, logs) {
+        val dismiss: (() -> Unit)? = if (logs) ({ logs = false }) else if (panel == null) null else ({ panel = null })
         escape.dismissPanel = dismiss
         onDispose { if (escape.dismissPanel === dismiss) escape.dismissPanel = null }
     }
@@ -207,6 +208,7 @@ internal fun DesktopFishPickerContent(controller: DesktopFishPickerController, c
                         }
                     }
                 }
+                if (preview?.diagnosticOwner != null) StudioAction("试听日志", style = StudioActionStyle.GHOST) { logs = true }
                 FishAction("关闭", "取消 / 关闭音色库", icon = DesktopAppIcons.Close,
                     style = StudioActionStyle.GHOST, onClick = onClose)
             }
@@ -236,6 +238,9 @@ internal fun DesktopFishPickerContent(controller: DesktopFishPickerController, c
                     .semantics { contentDescription = "Fish 折叠设置内容" }) { toolBody() }
             }
         }
+        if (logs) preview?.let { session -> session.diagnosticOwner?.let { owner ->
+            DesktopChatDebugOverlay(owner, session.diagnosticSessionId, onClose = { logs = false }, voicePreview = true)
+        } }
     }
 }
 

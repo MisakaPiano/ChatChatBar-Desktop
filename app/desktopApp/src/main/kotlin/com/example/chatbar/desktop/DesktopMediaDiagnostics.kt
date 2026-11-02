@@ -54,10 +54,12 @@ internal class DesktopMediaDiagnosticRecorder(
         }
     }
 
-    fun audio(value: FishAudioStoredAudio) = synchronized(lock) {
+    fun audio(value: FishAudioStoredAudio) = audio(value.durationMs, value.byteLength)
+
+    fun audio(durationMs: Long, byteLength: Long) = synchronized(lock) {
         if (closed) return@synchronized
-        recordUsage { it.localAudio(value.durationMs, value.byteLength) }
-        owner.update(id) { entry -> entry.copy(media = entry.media?.copy(audioDurationMs = value.durationMs, audioBytes = value.byteLength)) }
+        recordUsage { it.localAudio(durationMs, byteLength) }
+        owner.update(id) { entry -> entry.copy(media = entry.media?.copy(audioDurationMs = durationMs, audioBytes = byteLength)) }
     }
 
     fun finish(status: DesktopTaskStatus) = synchronized(lock) {

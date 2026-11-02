@@ -20,7 +20,7 @@ import java.nio.file.StandardOpenOption
 import java.util.UUID
 
 @Serializable
-internal enum class DesktopUsageSource { CHAT, CHARACTER_CARD, FORMAT_CARD, WORLD_BOOK, MOMENTS, OTHER }
+internal enum class DesktopUsageSource { CHAT, CHARACTER_CARD, FORMAT_CARD, WORLD_BOOK, MOMENTS, VOICE_PREVIEW, OTHER }
 
 /** Actual parent identity is separate from request-log UI grouping and from physical requests. */
 internal data class DesktopUsageContext(

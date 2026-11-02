@@ -48,6 +48,7 @@ internal fun DesktopProviderUsagePanel(owner: DesktopProviderUsageOwner) {
                 DesktopUsageSource.FORMAT_CARD -> "格式卡"
                 DesktopUsageSource.WORLD_BOOK -> "世界书"
                 DesktopUsageSource.MOMENTS -> "朋友圈"
+                DesktopUsageSource.VOICE_PREVIEW -> "音色试听"
                 DesktopUsageSource.OTHER -> "其他"
             }
             SelectChip(label, source == value) { source = value }

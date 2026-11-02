@@ -178,3 +178,5 @@ With a connected physical device, use `chatbar-emulator-test` and the data-prese
 - Do not delete historical voice files because current character/card configuration changed.
 
 - Desktop whole-app merge also preserves top-level explicit historical versions through DesktopHistoricalVoiceCustody: raw voice/owner/audio originals remain outside live cleanup; whole-root admission checks a matching identity/content witness and the live audio hash. This is separate from nested SaveSlot original-package custody. It grants no current-version playback or version inference; Android default behavior is unchanged.
+
+- Desktop generated picker previews now feed actual one-shot dispatch/HTTP/drained MP3 measurements into the shared media diagnostics and numeric custody. The picker Session freezes optional real card/editor/person attribution across its private scope; anonymous official samples and cache replay remain non-TTS work. No sample URL enters the synthesis transport, and no new retry is added. See DesktopFishPreviewUsageTest.

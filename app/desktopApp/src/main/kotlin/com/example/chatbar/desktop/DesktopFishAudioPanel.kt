@@ -139,7 +139,10 @@ internal fun DesktopFishBindingField(entry: CharacterInfo, editor: DesktopCharac
     }
     if (open) {
         val picker = remember(draftId, entry.id) { DesktopFishPickerController(scope, editor.fishLibrary!!()::listModels) }
-        val preview = remember(picker) { runCatching { editor.fishPreview?.invoke()?.openSession() }.getOrNull() }
+        val preview = remember(picker) { runCatching { editor.fishPreview?.invoke()?.openSession(
+            DesktopUsageContext(DesktopUsageSource.CHARACTER_CARD, cardId = editor.state.value.card?.id,
+                editorSessionId = draftId, personId = entry.id),
+        ) }.getOrNull() }
         fun closePicker() { picker.close(); preview?.requestClose(); open = false }
         DisposableEffect(picker) { onDispose { picker.close(); preview?.requestClose() } }
         DesktopFishPickerWindow(onClose = ::closePicker) {

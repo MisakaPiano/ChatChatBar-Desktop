@@ -209,7 +209,7 @@ class DesktopAppContainer internal constructor(
             .also { taskCenter.watchFish(it.coordinator) } }
     internal val chatVoiceRuntime by chatVoiceOwner
     private val fishPreviewOwner = lazy {
-        DesktopFishPreviewRuntime(DesktopFishPreviewTransport(fishAudioCredentials), output = audioFocusOwner.value.port(),
+        DesktopFishPreviewRuntime(DesktopFishPreviewTransport(fishAudioCredentials, diagnostics = taskRuntime.diagnostics), output = audioFocusOwner.value.port(),
             model = { settingsRepository.currentAppSettings.fishAudioTtsModelId })
     }
     internal val fishPreviewRuntime by fishPreviewOwner

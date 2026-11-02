@@ -38,6 +38,10 @@ class DesktopFishPickerLayoutTest {
     private class Driver(val scene: ImageComposeScene) {
         private var clock = 0L
         suspend fun frame() { clock += 16_666_667; scene.render(clock).close(); yield(); delay(10) }
+        fun capture(path: java.nio.file.Path) {
+            clock += 16_666_667
+            scene.render(clock).use { image -> image.encodeToData()!!.use { java.nio.file.Files.write(path, it.bytes) } }
+        }
         suspend fun until(check: () -> Boolean) = withTimeout(5_000) { do { frame() } while (!check()) }
         fun nodes(): List<SemanticsNode> {
             fun walk(node: SemanticsNode): List<SemanticsNode> = listOf(node) + node.children.flatMap(::walk)
@@ -61,6 +65,54 @@ class DesktopFishPickerLayoutTest {
     private companion object {
         fun SemanticsNode.label(value: String) = config.getOrNull(SemanticsProperties.ContentDescription)?.contains(value) == true ||
             config.getOrNull(SemanticsProperties.Text)?.any { it.text == value } == true
+    }
+
+    @Test fun `picker metadata logs open close and clear only their own lease without catalog preview or binding work`() = runBlocking(awt) {
+        for (width in listOf(360, 1100)) {
+            val scope = CoroutineScope(SupervisorJob() + awt)
+            val server = MockWebServer().also { it.start() }
+            val rows = java.util.concurrent.CopyOnWriteArrayList<DesktopUsageRecord>()
+            val diagnostics = DesktopTransportDiagnosticsOwner(usageSink = { rows += it })
+            val transport = DesktopFishPreviewTransport(
+                DesktopFishAudioCredentials(com.example.chatbar.desktop.security.InMemoryDesktopSecretStore()),
+                OkHttpClient(), server.url("/").toString().trimEnd('/'), diagnostics)
+            val runtime = DesktopFishPreviewRuntime(transport, PreviewOutputFake())
+            val preview = runtime.openSession(); val other = runtime.openSession()
+            fun seed(id: String) {
+                val recorder = diagnostics.beginFishMedia(id, "s2.1-pro-free", "synthetic-private-key", null,
+                    DesktopUsageContext(DesktopUsageSource.VOICE_PREVIEW), 2)
+                recorder.attemptStarted(okhttp3.Request.Builder().url("https://example.invalid/v1/tts").build())
+                recorder.response(200); recorder.audio(1000, 4170); recorder.finish(DesktopTaskStatus.COMPLETED)
+            }
+            seed(preview.diagnosticSessionId); seed(other.diagnosticSessionId)
+            val beforeRows = rows.toList()
+            var searches = 0; var uses = 0; var closed = 0
+            val picker = DesktopFishPickerController(scope) { searches++; FishAudioModelPage(items = emptyList(), total = 0) }
+            val beforeQuery = picker.state.value.query
+            val scene = ImageComposeScene(width, 760) { DesktopFishPickerContent(picker, true, { closed++ }, preview) { uses++ } }
+            val ui = Driver(scene)
+            try {
+                ui.until { ui.has("试听日志") }
+                val entry = ui.node("试听日志").boundsInRoot
+                assertTrue(entry.width > 0 && entry.left >= 0 && entry.right <= width)
+                ui.tap("试听日志"); ui.until { ui.has("试听请求日志") }
+                System.getenv("CCB_MEDIA_USAGE_REVIEW_DIR")?.let { directory ->
+                    val file = java.nio.file.Path.of(directory).resolve("fish-picker-debug-$width.png")
+                    java.nio.file.Files.createDirectories(file.parent)
+                    ui.capture(file)
+                }
+                ui.tap("关闭调试日志"); ui.until { !ui.has("试听请求日志") }
+                ui.tap("试听日志"); ui.until { ui.has("清空本次试听日志") }
+                ui.tap("清空本次试听日志"); ui.tap("确认清空日志")
+                ui.until { diagnostics.entries.value.size == 1 }
+                assertEquals(other.diagnosticSessionId, diagnostics.entries.value.single().sessionId)
+                assertEquals(beforeRows, rows.toList()); assertEquals(beforeQuery, picker.state.value.query)
+                assertEquals(0, server.requestCount); assertEquals(0, searches); assertEquals(0, uses); assertEquals(0, closed)
+            } finally {
+                scene.close(); picker.close(); scope.cancel(); scope.coroutineContext[Job]!!.join()
+                runtime.closeAndDrain(); server.shutdown()
+            }
+        }
     }
 
     @Test fun `shared StudioAction defaults and explicit accessible names retain real button keyboard behavior`() = runBlocking(awt) {
