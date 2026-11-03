@@ -580,8 +580,17 @@ class DesktopFishPickerNativeUxTest {
         }
     }
 
-    @Test fun `native Stop is top layer visible and operable during download generation and long Windows playback`() = runBlocking(awt) {
-        for (width in listOf(1100, 720)) for (generate in listOf(false, true)) for (playing in listOf(false, true)) {
+    @Test fun `native Stop is top layer visible and operable during download and generation`() = runBlocking(awt) {
+        verifyNativeStop(playing = false)
+    }
+
+    @Test fun `native Stop is top layer visible and operable during long Windows playback`() = runBlocking(awt) {
+        requireWindowsAudioOutputForNativeTest()
+        verifyNativeStop(playing = true)
+    }
+
+    private suspend fun verifyNativeStop(playing: Boolean) {
+        for (width in listOf(1100, 720)) for (generate in listOf(false, true)) {
             val server = MockWebServer().also { mock ->
                 mock.enqueue(if (playing) MockResponse().setHeader("Content-Type", "audio/mpeg").setBody(Buffer().write(fishPreviewMp3(2000)))
                     else MockResponse().setSocketPolicy(SocketPolicy.NO_RESPONSE))

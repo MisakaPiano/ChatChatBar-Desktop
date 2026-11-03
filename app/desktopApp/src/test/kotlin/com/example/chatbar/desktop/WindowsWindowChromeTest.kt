@@ -78,10 +78,18 @@ class WindowsWindowChromeTest {
             }, null)
             assertTrue(childHits.isNotEmpty())
             assertTrue(childHits.all { it == -1 }, "rendering children return HTTRANSPARENT for native caption input")
-            user.SendMessage(h, 0xA0, WPARAM(9), LPARAM(packed))
-            assertEquals(ChromeHit.MAXIMIZE, chrome.state.value.hovered)
-            user.SendMessage(h, 0x2A2, WPARAM(0), LPARAM(0))
-            assertNull(chrome.state.value.hovered)
+            EventQueue.invokeAndWait {
+                // TrackMouseEvent observes the actual cursor; a forged move at a different
+                // position can immediately emit WM_NCMOUSELEAVE and invalidate this assertion.
+                assertEquals(h, user.GetForegroundWindow(), "Native hover input requires the owned foreground fixture")
+                assertTrue(user.SetCursorPos(point.first, point.second))
+                val actual = POINT(); assertTrue(user.GetCursorPos(actual))
+                assertEquals(point, actual.x to actual.y, "Native hover cursor admission")
+                user.SendMessage(h, 0xA0, WPARAM(9), LPARAM(packed))
+                assertEquals(ChromeHit.MAXIMIZE, chrome.state.value.hovered)
+                user.SendMessage(h, 0x2A2, WPARAM(0), LPARAM(0))
+                assertNull(chrome.state.value.hovered)
+            }
             assertNotNull(Native.load("user32", MenuApi::class.java).GetSystemMenu(h, false), "Alt+Space has a native system menu")
             assertEquals(ChromeHit.TOP_LEFT, native.hitScreenPoint(rect.left + 1, rect.top + 1))
             assertEquals(ChromeHit.CAPTION, native.hitScreenPoint(rect.left + 500, rect.top + 20))

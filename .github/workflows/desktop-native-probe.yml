@@ -34,29 +34,30 @@ jobs:
           $testTemp = New-Item -ItemType Directory -Path (Join-Path $probeRoot 'temp') -ErrorAction Stop
           $evidence = New-Item -ItemType Directory -Path (Join-Path $env:RUNNER_TEMP 'ccb-native-probe') -ErrorAction Stop
           @("TEMP=$($testTemp.FullName)", "TMP=$($testTemp.FullName)") | Add-Content $env:GITHUB_ENV -Encoding utf8
-          [ordered]@{ source=(git rev-parse HEAD); run=$env:GITHUB_RUN_ID; graphicalTestMode=$true; userInteractive=[Environment]::UserInteractive; processSession=(Get-Process -Id $PID).SessionId; scope='Only remaining14 original synthetic graphical cases on cloud runner; no installer, real provider, user profile or physical audio acceptance' } | ConvertTo-Json | Set-Content (Join-Path $evidence 'source.json') -Encoding utf8
-      - name: Execute only remaining original graphical cases, preserving their native and foreground guards
+          [ordered]@{ source=(git rev-parse HEAD); run=$env:GITHUB_RUN_ID; graphicalTestMode=$true; userInteractive=[Environment]::UserInteractive; processSession=(Get-Process -Id $PID).SessionId; scope='Only four failed graphical scopes plus separately guarded physical playback; no installer, real provider or user profile' } | ConvertTo-Json | Set-Content (Join-Path $evidence 'source.json') -Encoding utf8
+      - name: Prepare supported temporary cloud display and record actual audio inventory
+        shell: pwsh
+        run: ./tools/windows/Set-CloudNativeProbeDisplay.ps1
+      - name: Execute only affected native scopes with unchanged input and geometry assertions
         shell: pwsh
         working-directory: app
         env:
           CCB_FORMAT_AI_REVIEW_DIR: ${{ runner.temp }}/ccb-native-probe/images
         run: |
           .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=false --no-daemon --stacktrace --console=plain `
-            --tests 'com.example.chatbar.desktop.DesktopCurrentImagePresentationTest.tool window exposes resize maximize and close without duplicating content title' `
             --tests 'com.example.chatbar.desktop.DesktopFishPickerNativeUxTest.native persistent scrollbar drags current page and explicit page jump preserves request semantics' `
-            --tests 'com.example.chatbar.desktop.DesktopFishPickerNativeUxTest.native Stop is top layer visible and operable during download generation and long Windows playback' `
-            --tests 'com.example.chatbar.desktop.DesktopFishPickerNativeUxTest.native Escape closes exactly one panel then picker with and without field focus at both widths' `
-            --tests 'com.example.chatbar.desktop.DesktopFishPickerNativeUxTest.native resize retains target text and generated cache while sample identity stays distinct' `
-            --tests 'com.example.chatbar.desktop.DesktopFishPickerWindowTest.identity scoped overlapping leases restore once in either order and remove callbacks' `
-            --tests 'com.example.chatbar.desktop.DesktopFishPickerWindowTest.public main WindowScope supplies exact owner through maximize restore reopen and parent close' `
-            --tests 'com.example.chatbar.desktop.DesktopFishPickerWindowTest.missing explicit main owner fails closed without composing picker content' `
-            --tests 'com.example.chatbar.desktop.WindowsBackgroundViewerTest.background library double click viewer accepts native input and returns to unchanged library' `
-            --tests 'com.example.chatbar.desktop.WindowsBackgroundViewerTest.real chat click opens repeated path in clicked message and navigates all occurrences' `
-            --tests 'com.example.chatbar.desktop.WindowsImageViewerChromeTest.production viewer and owned screenshot have themed captions and real minimize maximize restore' `
-            --tests 'com.example.chatbar.desktop.WindowsImageWindowMinimumTest.owned image dialog keeps its original minimum through native chrome and unhooks cleanly' `
+            --tests 'com.example.chatbar.desktop.DesktopFishPickerNativeUxTest.native Stop is top layer visible and operable during download and generation' `
+            --tests 'com.example.chatbar.desktop.DesktopFishPickerNativeUxTest.native Stop is top layer visible and operable during long Windows playback' `
             --tests 'com.example.chatbar.desktop.WindowsStudioEdgeDragTest.maximized Studio outer edges remain stationary and restore remains resizable' `
             --tests 'com.example.chatbar.desktop.WindowsWindowChromeTest.real Compose HWND preserves native contracts and unhooks on dispose'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Restore original temporary runner display
+        if: always()
+        shell: pwsh
+        run: |
+          if (Test-Path -LiteralPath (Join-Path $env:RUNNER_TEMP 'ccb-native-probe/display-original.json')) {
+            ./tools/windows/Set-CloudNativeProbeDisplay.ps1 -Restore
+          }
       - name: Retain actual original XML and runner scope
         if: always()
         uses: actions/upload-artifact@v4
@@ -65,5 +66,6 @@ jobs:
           path: |
             app/desktopApp/build/test-results/test/
             app/desktopApp/build/reports/tests/test/
+            app/desktopApp/build/phase7-slice-c-scheme-a-r1-evidence/native/
             ${{ runner.temp }}/ccb-native-probe/
           if-no-files-found: error
