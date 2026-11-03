@@ -4,7 +4,7 @@
 
 编辑顺序对齐固定官方147 `b4fa75d296680f777be095f3121ad0c4db979f17` 的 `CharacterEditScreen.kt:486` 起完整表单：卡名/头像/Bot、开场、背景、朋友圈、基本设定、默认画风/图库及应用撤销、生图高级设置、默认负面、人物模式与工作区、高级设定、文档、格式卡、世界书。桌面备用开场保留在相邻折叠区；字段原文、草稿、保存、取消、锁定与恢复所有者不变。参数默认折叠，展示空覆盖的默认值不产生编辑；编辑参数才建立覆盖，“恢复默认生图参数”仅移除覆盖，不清所选模型。
 
-桌面 Studio 高级参数补 V4.5-only Variety+；卡编辑原来已有该开关，后端原来已有固定 sigma58/null 序列化，不称它们全部缺失。PNG 参数导入补 nullable 状态、Enhance 设置/历史显示：固定58开启，null/缺省关闭，其他 sigma 不猜成固定开关；V5 不采纳/重放此 V4.5 参数。完整预设、历史与原撤销沿既有设置对象保留。
+桌面 Studio 高级参数补 V4.5-only Variety+；卡编辑原来已有该开关，后端原来已有固定 sigma58/null 序列化，不称它们全部缺失。最终规则为 nominal58 或归一化 customSigma 乘实际画布scale。PNG 正有限effectiveSigma除源scale后保留；显式null关闭、缺省为未知，不擅改休眠选择；V5不采纳/重放该V4.5参数。Enhance重新计算一次，完整预设、草稿、历史与原撤销沿既有设置对象保留。
 
 采样器按当前 NovelAI 前端构建 `b94bdee-41520193098-1` 定向补 V4.5 的 DPM++ 2M SDE。两 Full 菜单均六项：`k_euler_ancestral,k_euler,k_dpmpp_2s_ancestral,k_dpmpp_2m_sde,k_dpmpp_2m,k_dpmpp_sde`。不删除旧枚举/历史值，不开放 DDIM；Medium 有效 EA-only 保持。
 
@@ -14,6 +14,8 @@
 
 上一源984完整152已终结SUCCESS，属于上一轮导出/V5工作；不能替代本片的定向结果。M04朋友圈多版本图片及完整资源备份恢复见287，已接生产所有者并通过其精确定向检查；不混作本片测试或交付。公开1235/签名17与日常安装不变；无本片真人验收/Provider真实生成或新版本交付结论。
 
-后补官网实际尺寸规则：上游独立源 a678d71c4d720202c0c99af73d8df11e822e2aff 的公开网页/原始包证据可复用，但不代验 Desktop。当前实现新增统一 scale=sqrt(floor(width/8)*floor(height/8)/(104*152))，请求 nominal58 或归一化 customSigma 乘目标 scale；PNG effectiveSigma 除源 scale，历史/预设/JSON保留，Enhance 排除原 sigma 覆盖以免重复计算。此前固定58/仅识别58的本片第一稿描述已由此替代；原失败运行保留。定向结果未终结前仍不称通过。
+后补官网实际尺寸规则：上游独立源 a678d71c4d720202c0c99af73d8df11e822e2aff 的公开网页/原始包证据可复用，但不代验 Desktop。当前实现新增统一 scale=sqrt(floor(width/8)*floor(height/8)/(104*152))，请求 nominal58 或归一化 customSigma 乘目标 scale；PNG effectiveSigma 除源 scale，历史/预设/JSON保留，Enhance 排除原 sigma 覆盖以免重复计算。此前固定58/仅识别58的本片第一稿描述已由此替代；原失败运行保留。最初待验状态已由下方最终检查点闭合，原失败运行仍保留。
 
 2026-11-03 定向检查点：editor10 / 41633913451，源 b0ce019d8d366d7c7989d3f4b9c4b7c8bde66665，shared12、Desktop73 全PASS且无SKIP。实际长卡两模式/四布局、草稿生命周期与非空负面原文保全均执行。原截图有一张FREEFORM停在顶部，不能作为高级参数区目视证据；后继仅统一截图与滚动的单调时钟，随必要完整检查补核。新尺寸规则两方法已在M04 probe4 shared21中实际通过，完整后继仍核最终源。当前非空负面原文保留；空白默认及最终请求的有效值处理各沿原所有者，不以请求归一化改写编辑原文。
+
+最终检查点：53e40 / 完整154（41642591244）主2598PASS+19SKIP/0FAIL，原人物跳转3与Studio键盘14均通过；定向11另有shared14/Desktop90共104PASS。53e40相对冻结应用a647仅2测试+1workflow，人物跳转要求4组稳定可见且保持原7秒/正bounds；Random Seed按实际Focused标签继续真实Tab/Space，原seed/显隐断言保留。FREEFORM420实际图已目视到style/advanced/null override区。私有1236 R27普通候选与R28签名18旧client完整下载/二验复用原包，不把受控metadata fetcher称作匿名公网发现；公开/Provider/真人另列。
