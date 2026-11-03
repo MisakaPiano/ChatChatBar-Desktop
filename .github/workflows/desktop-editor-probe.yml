@@ -60,7 +60,9 @@ jobs:
             --tests com.example.chatbar.desktop.DesktopCharacterEditorControllerTest `
             --tests com.example.chatbar.desktop.DesktopCharacterCardAiPanelTest `
             --tests com.example.chatbar.desktop.DesktopStyleGalleryTest `
-            --tests com.example.chatbar.desktop.DesktopStudioVarietyPlusTest
+            --tests com.example.chatbar.desktop.DesktopStudioVarietyPlusTest `
+            --tests com.example.chatbar.desktop.DesktopStudioPresentationTest `
+            --tests com.example.chatbar.desktop.DesktopChatPeoplePresentationTest
           if ($LASTEXITCODE -ne 0 -or $sharedExit -ne 0) { exit 1 }
       - name: Preserve actual reports and synthetic review images
         if: always()

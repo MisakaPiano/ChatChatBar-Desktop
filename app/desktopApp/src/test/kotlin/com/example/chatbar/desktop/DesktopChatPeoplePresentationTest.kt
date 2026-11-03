@@ -33,7 +33,7 @@ class DesktopChatPeoplePresentationTest {
         assertTrue(node.config[SemanticsActions.OnClick].action!!.invoke())
     }
     private fun capture(scene: ImageComposeScene, name: String) {
-        val directory = System.getProperty("chatbar.test.screenshot.dir") ?: System.getenv("CCB_SELECTED_FIX_REVIEW_DIR") ?: return
+        val directory = System.getProperty("chatbar.test.screenshot.dir") ?: System.getenv("CCB_SELECTED_FIX_REVIEW_DIR") ?: System.getenv("CCB_FORMAT_AI_REVIEW_DIR") ?: return
         val target = Path.of(directory)
         Files.createDirectories(target)
         scene.render(System.nanoTime()).use { image -> image.encodeToData()?.let { Files.write(target.resolve(name), it.bytes) } }
@@ -198,7 +198,7 @@ class DesktopChatPeoplePresentationTest {
             val management = container.createManagementController(transfer)
             val backup = DesktopAutomaticBackupSettingsController(container.automaticBackupRuntime, scope)
             var requested by mutableStateOf<Pair<String, String>?>(card.id to person.id)
-            val scene = ImageComposeScene(1000, 900) {
+            val scene = ImageComposeScene(1000, 900, coroutineContext = edt) {
                 DesktopManagePanel(transfer, templates, management, container.modelSettingsController, backup,
                     container.characterEditorController, container.formatCardEditorController,
                     container.worldBookEditorController, container.uiLanguageController,
@@ -207,6 +207,8 @@ class DesktopChatPeoplePresentationTest {
             }
             try {
                 withTimeout(7_000) {
+                    var stableFrames = 0
+                    var diagnosticFrames = 0
                     do {
                         frames(scene)
                         val current = nodes(scene)
@@ -215,7 +217,9 @@ class DesktopChatPeoplePresentationTest {
                         val ready = requested == null && targetHeading != null && targetHeading.height > 0 &&
                             targetHeading.top >= 64 && targetHeading.bottom <= 900 && targetField != null &&
                             targetField.height > 0 && targetField.top >= 64 && targetField.bottom <= 836
-                    } while (!ready)
+                        stableFrames = if (ready) stableFrames + 1 else 0
+                        if (diagnosticFrames++ < 32) println("PERSON_FOCUS_SAMPLE heading=$targetHeading field=$targetField ready=$ready stable=$stableFrames")
+                    } while (stableFrames < 4)
                 }
                 frames(scene)
                 assertEquals(person.id, container.characterEditorController.state.value.personFocusId)
