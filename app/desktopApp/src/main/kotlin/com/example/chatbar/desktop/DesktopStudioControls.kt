@@ -55,6 +55,7 @@ internal fun StudioAction(label: String, enabled: Boolean = true, selected: Bool
     icon: ImageVector? = studioActionIcon(label), style: StudioActionStyle = studioActionStyle(label),
     accessibilityLabel: String = label, onClick: () -> Unit) {
     var focused by remember { mutableStateOf(false) }
+    val focus = remember { FocusRequester() }
     val shape = RoundedCornerShape(6.dp)
     val strong = selected || style == StudioActionStyle.PRIMARY
     val tertiary = style == StudioActionStyle.TERTIARY || style == StudioActionStyle.GHOST
@@ -63,7 +64,8 @@ internal fun StudioAction(label: String, enabled: Boolean = true, selected: Bool
         .background(if (strong) DesktopBootstrapColors.primary else if (tertiary) Color.Transparent else DesktopBootstrapColors.muted, shape)
         .border(1.dp, if (focused) DesktopBootstrapColors.primary else if (!tertiary) DesktopBootstrapColors.border else Color.Transparent, shape)
         .semantics { contentDescription = accessibilityLabel; if (style == StudioActionStyle.CHIP) this.selected = selected }
-        .onFocusChanged { focused = it.isFocused }.clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+        .focusRequester(focus).onFocusChanged { focused = it.isFocused }
+        .clickable(enabled = enabled, role = Role.Button) { focus.requestFocus(); onClick() }
         .padding(horizontal = 8.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(5.dp)) {
         icon?.let { Image(it, null, Modifier.size(16.dp), colorFilter = ColorFilter.tint(color)) }
