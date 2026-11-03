@@ -105,8 +105,10 @@ internal class DesktopStudioHistoryRepository(storage: JsonFileStorage,
         val merge = !resetPromptEditors && !breakTyping && key != null && key == lastTypingKey && now - lastTypingAt in 0..750_000_000L &&
             history.cursor == history.entries.lastIndex && history.cursor > 0
         var entries = if (merge) history.entries.dropLast(1) + after else history.entries.take(history.cursor + 1) + after
-        while (entries.size > 2 && (entries.size > MAX_ENTRIES || encodedSize(entries) > MAX_BYTES)) entries = entries.drop(1)
-        require(encodedSize(entries) <= MAX_BYTES) { "Studio history exceeds bounded metadata size" }
+        // Keep at least the current edit reversible even for an already valid unusually large
+        // text draft; the history budget must not become a new input-size restriction.
+        val budget = maxOf(MAX_BYTES, encodedSize(listOf(current, after)))
+        while (entries.size > 2 && (entries.size > MAX_ENTRIES || encodedSize(entries) > budget)) entries = entries.drop(1)
         val next = DesktopStudioHistoryTimeline(entries, entries.lastIndex)
         val result = transition(history, next) { super.updateDraft(resetPromptEditors) { compactTarget } }
         retiredResources += history.entries.flatMap { it.imageGuidance.ownedAssetPaths() }.toSet() -

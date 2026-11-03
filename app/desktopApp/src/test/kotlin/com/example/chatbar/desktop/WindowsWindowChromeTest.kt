@@ -82,7 +82,7 @@ class WindowsWindowChromeTest {
                 // TrackMouseEvent observes the actual cursor; a forged move at a different
                 // position can immediately emit WM_NCMOUSELEAVE and invalidate this assertion.
                 assertEquals(h, user.GetForegroundWindow(), "Native hover input requires the owned foreground fixture")
-                assertTrue(user.SetCursorPos(point.first, point.second))
+                assertTrue(user.SetCursorPos(point.first.toLong(), point.second.toLong()))
                 val actual = POINT(); assertTrue(user.GetCursorPos(actual))
                 assertEquals(point, actual.x to actual.y, "Native hover cursor admission")
                 user.SendMessage(h, 0xA0, WPARAM(9), LPARAM(packed))
