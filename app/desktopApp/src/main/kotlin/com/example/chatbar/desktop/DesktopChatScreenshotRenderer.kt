@@ -9,6 +9,7 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.drawscope.clipRect
@@ -284,7 +285,7 @@ private fun DesktopScreenshotContent(r:DesktopScreenshotRequest, images:Map<Stri
                 }
                 Column(Modifier.then(if(p.enclosingCard) Modifier
                     .background((if(m.role==MessageRole.USER)c.primary else c.card).copy(alpha=.6f),
-                        RoundedCornerShape(if(m.role==MessageRole.USER)10.dp else 3.dp,10.dp,10.dp,if(m.role==MessageRole.USER)3.dp else 10.dp))
+                        desktopScreenshotBubbleShape(m.role))
                     .padding(horizontal=12.dp,vertical=10.dp) else Modifier.fillMaxWidth()), verticalArrangement=Arrangement.spacedBy(7.dp)) {
                 m.images.forEachIndexed { index,ref -> if(roleplayImageBlockId(m.id,index) in r.selected) {
                     val bitmap=images[ref] ?: error("截图图片未加载")
@@ -309,4 +310,16 @@ private fun DesktopScreenshotContent(r:DesktopScreenshotRequest, images:Map<Stri
             }
         }
     }
+}
+
+/** Keep local corner geometry in the path rasterizer. Skia's round-rect fast path can
+ * choose different edge coverage after the same bubble is translated into a page surface. */
+private fun desktopScreenshotBubbleShape(role: MessageRole): Shape = object : Shape {
+    private val rounded = RoundedCornerShape(if (role == MessageRole.USER) 10.dp else 3.dp,
+        10.dp, 10.dp, if (role == MessageRole.USER) 3.dp else 10.dp)
+    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline =
+        when (val outline = rounded.createOutline(size, layoutDirection, density)) {
+            is Outline.Rounded -> Outline.Generic(androidx.compose.ui.graphics.Path().apply { addRoundRect(outline.roundRect) })
+            else -> outline
+        }
 }
