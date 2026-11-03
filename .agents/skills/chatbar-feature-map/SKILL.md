@@ -25,6 +25,8 @@ Desktop provider usage and formal Fish media metadata: read `chatbar-desktop-pro
 
 Desktop chat diagnostics: `DesktopChatDebugPanel` opens inside the existing model-details disclosure and reads `DesktopTransportDiagnosticsOwner` actual request/plan/response records. `DesktopChatMaintenanceController` owns explicit order preview/apply/undo through shared `ChatRepository` and the document-RAG rebuild callback in `DesktopAppContainer`; it drains at app shutdown. Document rebuild matches Android's reference-document scope, not a second history/memory pipeline. Order writes reserve the session, retain repository backup/baseline checks, then detect memory source changes without automatic AI repair.
 
+Export content selection: `DesktopScreenshotContentOptions` controls status/actions independently, default both on. Only parsed STATUS blocks with explicit action headings use the action choice; narration keywords remain ordinary text. Included sections always expand in raster/document projections, ignoring the retained legacy `statusExpanded` constructor field. Workspace changes invalidate captured previews without changing messages or chat collapse preferences. `DesktopScreenshotContentOptionsTest` exercises four choices with both segmented/legacy display and emits synthetic PNG/PDF/DOCX review artifacts.
+
 Use this as a first-hop map. Read a specific skill or listed files, then search only if the map misses.
 
 ## Workflow

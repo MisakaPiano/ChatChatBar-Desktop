@@ -51,17 +51,18 @@ class DesktopScreenshotDocumentsTest {
         assertEquals(listOf("images/selected.png"), blocks.filterIsInstance<DesktopScreenshotDocumentBlock.Picture>().map { it.reference })
     }
 
-    @Test fun `collapsed selected status does not disclose hidden body in Word`() {
+    @Test fun `included selected status is fully expanded independently from chat or legacy export collapse`() {
         val message = ChatMessage("assistant", "session", MessageRole.ASSISTANT,
             "旁白。\n```status\n姓名：林音\nHIDDEN_STATE\n```", createdAt = 1, updatedAt = 1)
         val ids = desktopScreenshotBlockIds(message)
         val request = DesktopScreenshotRequest("折叠状态", DesktopPrimaryChatState(), listOf(message), ids.toSet(),
             statusExpanded = ids.associateWith { false })
-        val collapsed = desktopScreenshotDocument(request).filterIsInstance<DesktopScreenshotDocumentBlock.Text>().joinToString { it.text }
-        assertFalse("HIDDEN_STATE" in collapsed)
-        val expanded = desktopScreenshotDocument(request.copy(statusExpanded = ids.associateWith { true }))
+        val included = desktopScreenshotDocument(request).filterIsInstance<DesktopScreenshotDocumentBlock.Text>().joinToString { it.text }
+        assertTrue("HIDDEN_STATE" in included)
+        val excluded = desktopScreenshotDocument(request.copy(statusExpanded = ids.associateWith { true },
+            contentOptions = DesktopScreenshotContentOptions(includeStatus = false)))
             .filterIsInstance<DesktopScreenshotDocumentBlock.Text>().joinToString { it.text }
-        assertTrue("HIDDEN_STATE" in expanded)
+        assertFalse("HIDDEN_STATE" in excluded); assertFalse("状态栏" in excluded)
     }
 
     @Test fun `Word contains escaped editable Chinese emoji paragraphs and occurrence preserving embedded pictures`() {

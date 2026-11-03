@@ -27,7 +27,9 @@ import kotlin.coroutines.CoroutineContext
 internal data class DesktopScreenshotRequest(
     val title: String, val state: DesktopPrimaryChatState, val messages: List<ChatMessage>,
     val selected: Set<String>, val voices: Map<String,List<VoiceMessagePlacement>> = emptyMap(),
+    // Retained constructor compatibility only; export-local contentOptions own full expansion.
     val statusExpanded: Map<String,Boolean> = emptyMap(), val background: String? = null,
+    val contentOptions: DesktopScreenshotContentOptions = DesktopScreenshotContentOptions(),
 )
 internal data class DesktopScreenshotPng(val bytes: ByteArray, val width: Int, val height: Int,
     val resourceHashes: Map<String, String> = emptyMap())
@@ -239,15 +241,15 @@ private fun DesktopScreenshotContent(r:DesktopScreenshotRequest, images:Map<Stri
                 } }
                 p.segments.forEachIndexed { index,seg ->
                     val id=if(p.segmented)checkNotNull(seg.blockId) else roleplayLegacyTextBlockId(m.id)
-                    if(id in r.selected) DesktopRoleplaySegmentSurface(seg.kind,p.segmented,index in p.speakerHeaderIndexes,seg.speaker?.displayName,"export-$id",avatar={
+                    if(id in r.selected && desktopScreenshotIncludes(seg, r.contentOptions)) DesktopRoleplaySegmentSurface(seg.kind,p.segmented,index in p.speakerHeaderIndexes,seg.speaker?.displayName,"export-$id",avatar={
                         val ref=desktopPresentedAvatarReference(seg.speaker,r.state.selectedCharacter)
                         val bitmap=images[ref]
                         if(bitmap!=null)Image(bitmap,null,Modifier.size(40.dp))
                         else Box(Modifier.size(40.dp).background(c.muted,CircleShape),contentAlignment=Alignment.Center){BasicText((seg.speaker?.displayName?:p.speakerLabel).take(1),style=TextStyle(color=c.foreground))}
                     }) { color,style ->
                         if(seg.kind==RoleplaySegmentKind.STATUS) {
-                            BasicText("状态 / 选项",style=TextStyle(color=c.mutedForeground,fontSize=12.sp))
-                            if(r.statusExpanded[id]?:seg.statusDefaultExpanded)BasicText(seg.text,style=style.copy(color=color))
+                            BasicText(desktopScreenshotStatusLabel(seg),style=TextStyle(color=c.mutedForeground,fontSize=12.sp))
+                            BasicText(seg.text,style=style.copy(color=color))
                         } else DesktopMarkdownText(seg.markdownSource,color,typography=DesktopChatTypography(r.state.chatBubbleFontScale),textStyle=style)
                     }
                 }

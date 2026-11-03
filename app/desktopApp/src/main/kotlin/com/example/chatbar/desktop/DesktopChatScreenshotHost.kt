@@ -1,3 +1,4 @@
+@file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 package com.example.chatbar.desktop
 
 import androidx.compose.foundation.*
@@ -82,7 +83,7 @@ internal fun DesktopScreenshotWorkspace(controller: DesktopPrimaryChatController
     val state = snapshot.state
     val all = remember(snapshot) { snapshot.messages.flatMap { m -> desktopScreenshotBlockIds(m, state.assistantSegmentedBubblesEnabled) }.toSet() }
     var tree by remember(snapshot) { mutableStateOf(DesktopScreenshotTreeState(snapshot.initialSelected, setOf(snapshot.clickedMessageId))) }
-    var statusExpanded by remember(snapshot) { mutableStateOf<Map<String, Boolean>>(emptyMap()) }
+    var contentOptions by remember(snapshot) { mutableStateOf(DesktopScreenshotContentOptions()) }
     var pages by remember(snapshot) { mutableStateOf<List<DesktopScreenshotPng>?>(null) }
     var pageIndex by remember(snapshot) { mutableStateOf(0) }
     val png = pages?.getOrNull(pageIndex)
@@ -118,7 +119,7 @@ internal fun DesktopScreenshotWorkspace(controller: DesktopPrimaryChatController
                 val background = desktopEffectiveBackground(state.selectedSession?.chatBackground, preferred, state.selectedCharacter?.chatBackground).first
                 stage = "PREVIEW_RENDER"
                 val request = DesktopScreenshotRequest(state.selectedSession?.title ?: "聊天", state,
-                    chosen, tree.selected, snapshot.voices, statusExpanded, background)
+                    chosen, tree.selected, snapshot.voices, background = background, contentOptions = contentOptions)
                 val result = DesktopChatScreenshotRenderer.renderPages(request, snapshot.colors, read,
                     onPage = { current, total -> feedback = if (total > 1) "正在生成预览分块 $current/$total…" else null })
                 stage = "PREVIEW_DOCUMENT"
@@ -152,7 +153,7 @@ internal fun DesktopScreenshotWorkspace(controller: DesktopPrimaryChatController
                     controller.verifyScreenshotMessages(chosen)
                     stage = "EXPORT_WORD_DOCUMENT"
                     val request = DesktopScreenshotRequest(state.selectedSession?.title ?: "聊天", state,
-                        chosen, tree.selected, snapshot.voices, statusExpanded)
+                        chosen, tree.selected, snapshot.voices, contentOptions = contentOptions)
                     val blocks = withContext(Dispatchers.Default) { desktopScreenshotDocument(request) }
                     stage = "EXPORT_WORD_VERIFY_WRITE"
                     saveDesktopWordDocumentVerified(blocks, { controller.verifyScreenshotMessages(chosen) }, read, choose)
@@ -196,8 +197,17 @@ internal fun DesktopScreenshotWorkspace(controller: DesktopPrimaryChatController
             if (!busy) CompactChoice("格式", DesktopScreenshotExportFormat.entries, exportFormat, { it.label }) { exportFormat = it }
             StudioAction(if (busy) "正在处理…" else "预览 PNG", enabled = !busy && tree.selected.isNotEmpty(), onClick = ::preview)
         }
-        DesktopScreenshotSelectionTree(snapshot, tree, statusExpanded, !busy, Modifier.weight(1f).fillMaxWidth(),
-            { selection(it) }, { tree = it }, { statusExpanded = it; pages = null; pageIndex = 0; previewOpen = false; feedback = null; savedPath = null })
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            StudioSwitch("包含状态栏", contentOptions.includeStatus, enabled = !busy) {
+                contentOptions = contentOptions.copy(includeStatus = !contentOptions.includeStatus); selection(tree)
+            }
+            StudioSwitch("包含行动选项", contentOptions.includeActions, enabled = !busy) {
+                contentOptions = contentOptions.copy(includeActions = !contentOptions.includeActions); selection(tree)
+            }
+        }
+        StatusText("所选状态栏和行动选项完整展开导出；与聊天中的折叠状态无关。")
+        DesktopScreenshotSelectionTree(snapshot, tree, !busy, Modifier.weight(1f).fillMaxWidth(),
+            { selection(it) }, { tree = it })
         feedback?.let { text ->
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 BasicText(text, Modifier.weight(1f).heightIn(max = 60.dp).verticalScroll(rememberScrollState()), style = TextStyle(color = if (failed) DesktopBootstrapColors.destructive else DesktopBootstrapColors.foreground))
@@ -247,9 +257,8 @@ internal fun DesktopScreenshotWorkspace(controller: DesktopPrimaryChatController
 
 @Composable
 private fun DesktopScreenshotSelectionTree(snapshot: DesktopScreenshotWorkspaceSnapshot, tree: DesktopScreenshotTreeState,
-    statusExpanded: Map<String, Boolean>, enabled: Boolean, modifier: Modifier,
-    onSelection: (DesktopScreenshotTreeState) -> Unit, onExpansion: (DesktopScreenshotTreeState) -> Unit,
-    onStatus: (Map<String, Boolean>) -> Unit) {
+    enabled: Boolean, modifier: Modifier,
+    onSelection: (DesktopScreenshotTreeState) -> Unit, onExpansion: (DesktopScreenshotTreeState) -> Unit) {
     val groups = remember(snapshot) { desktopScreenshotGroups(snapshot.messages) }
     val replyNumbers = remember(snapshot) { snapshot.messages.filter { it.role == MessageRole.ASSISTANT }.mapIndexed { i, m -> m.id to i + 1 }.toMap() }
     val all = remember(snapshot) { snapshot.messages.flatMap { desktopScreenshotBlockIds(it, snapshot.state.assistantSegmentedBubblesEnabled) }.toSet() }
@@ -291,9 +300,6 @@ private fun DesktopScreenshotSelectionTree(snapshot: DesktopScreenshotWorkspaceS
                             }
                             StudioAction("${if (id in tree.selected) "☑" else "☐"} $label", enabled = enabled) {
                                 onSelection(tree.copy(selected = toggleChatScreenshotSelection(tree.selected, id, all)))
-                            }
-                            if ("::text::" in id && segment?.kind == RoleplaySegmentKind.STATUS) StudioAction("截图中的状态：${if (statusExpanded[id] ?: segment.statusDefaultExpanded) "展开" else "收起"}", enabled = enabled) {
-                                onStatus(statusExpanded + (id to !(statusExpanded[id] ?: segment.statusDefaultExpanded)))
                             }
                         }
                     }

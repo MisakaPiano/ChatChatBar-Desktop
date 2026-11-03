@@ -25,13 +25,13 @@ internal fun desktopActionChoices(message: ChatMessage): List<DesktopActionChoic
             lines.first() == "---" && lines.last() == "---" -> ""
             lines.first().startsWith("```") && lines.last() == "```" -> {
                 val header = lines.first().removePrefix("```").trim()
-                if (header.isNotEmpty() && !isActionHeading(header)) return@flatMap emptyList()
+                if (header.isNotEmpty() && !desktopIsActionHeading(header)) return@flatMap emptyList()
                 header
             }
             else -> return@flatMap emptyList()
         }
         var body = lines.drop(1).dropLast(1).map(String::trim).filter(String::isNotEmpty)
-        if (body.firstOrNull()?.let(::isActionHeading) == true) body = body.drop(1)
+        if (body.firstOrNull()?.let(::desktopIsActionHeading) == true) body = body.drop(1)
         else if (fenceHeading.isEmpty()) return@flatMap emptyList()
         if (body.size !in 2..20) return@flatMap emptyList()
         val choices = body.mapIndexed { index, line ->
@@ -48,7 +48,7 @@ internal fun desktopActionChoices(message: ChatMessage): List<DesktopActionChoic
 
 private val actionNumber = Regex("([1-9][0-9]?)[.、)）][ \\t]*(.+)")
 private val markdownLink = Regex("!?\\[[^]]*]\\s*\\(|https?://", RegexOption.IGNORE_CASE)
-private fun isActionHeading(text: String): Boolean = text.trim().trim('#', '*', ' ', '[', ']', '【', '】', ':', '：')
+internal fun desktopIsActionHeading(text: String): Boolean = text.trim().trim('#', '*', ' ', '[', ']', '【', '】', ':', '：')
     .lowercase() in setOf("行动选项", "可选行动", "行动选择", "action choices", "action options")
 
 @Composable

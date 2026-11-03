@@ -56,10 +56,10 @@ internal fun desktopScreenshotDocument(request: DesktopScreenshotRequest): List<
         }
         presented.segments.forEach { segment ->
             val id = if (presented.segmented) checkNotNull(segment.blockId) else roleplayLegacyTextBlockId(message.id)
-            if (id in request.selected) {
+            if (id in request.selected && desktopScreenshotIncludes(segment, request.contentOptions)) {
                 if (segment.kind == RoleplaySegmentKind.STATUS) {
-                    text("状态 / 选项", true)
-                    if (request.statusExpanded[id] ?: segment.statusDefaultExpanded) text(segment.text)
+                    text(desktopScreenshotStatusLabel(segment), true)
+                    text(segment.text)
                 } else {
                     segment.speaker?.displayName?.let { text(it, true) }
                     text(textRenderer.render(parser.parse(desktopSanitizeRoleplayMarkdown(segment.text))).trimEnd())
