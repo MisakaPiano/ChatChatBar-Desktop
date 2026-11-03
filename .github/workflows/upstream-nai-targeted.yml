@@ -30,7 +30,7 @@ jobs:
         working-directory: app
         run: |
           chmod +x gradlew
-          ./gradlew :app:testDebugUnitTest :app:compileDebugAndroidTestKotlin --tests '*NovelAi*Test' --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx5g -Dfile.encoding=UTF-8'
+          ./gradlew :app:testDebugUnitTest --tests '*NovelAi*Test' :app:compileDebugAndroidTestKotlin --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx5g -Dfile.encoding=UTF-8'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
