@@ -198,8 +198,9 @@ class DesktopStudioDraftHistoryTest {
             assertNull(reopened.loadDraft().imageGuidance.baseImage)
             assertTrue(reopened.replay(false))
             val guidance = reopened.loadDraft().imageGuidance
-            assertTrue(Files.isRegularFile(target.resolve(guidance.baseImage!!.path)))
-            assertContentEquals(Files.readAllBytes(image), Files.readAllBytes(target.resolve(guidance.baseImage.path)))
+            val restoredImage = assertNotNull(guidance.baseImage)
+            assertTrue(Files.isRegularFile(target.resolve(restoredImage.path)))
+            assertContentEquals(Files.readAllBytes(image), Files.readAllBytes(target.resolve(restoredImage.path)))
             assertEquals(encoding, NovelAiInlinePayloadStore(target.toFile()).resolve(guidance.vibes.single().encodedVibe!!))
             assertTrue(reopened.replay(true)); assertNull(reopened.loadDraft().imageGuidance.baseImage)
         } finally { check(base.toFile().deleteRecursively()) }
