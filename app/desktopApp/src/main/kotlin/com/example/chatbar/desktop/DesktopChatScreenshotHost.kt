@@ -206,6 +206,10 @@ internal fun DesktopScreenshotWorkspace(controller: DesktopPrimaryChatController
             }
         }
         StatusText("所选状态栏和行动选项完整展开导出；与聊天中的折叠状态无关。")
+        if (exportFormat == DesktopScreenshotExportFormat.PDF)
+            StatusText("PDF 保留截图外观，当前为图片式页面，无法选择或搜索原文；不嵌入音频。")
+        if (exportFormat == DesktopScreenshotExportFormat.WORD)
+            StatusText("Word 包含可编辑文字和嵌入图片，阅读器会重新排版，与 PNG 预览外观不同；不嵌入音频。")
         DesktopScreenshotSelectionTree(snapshot, tree, !busy, Modifier.weight(1f).fillMaxWidth(),
             { selection(it) }, { tree = it })
         feedback?.let { text ->
