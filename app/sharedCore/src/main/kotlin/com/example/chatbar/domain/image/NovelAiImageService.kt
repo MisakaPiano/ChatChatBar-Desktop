@@ -160,7 +160,7 @@ class NovelAiImageService(
                                     val count = stream.read(buffer)
                                     if (count < 0) break
                                     decoder.feed(buffer.copyOf(count)).forEach { frame ->
-                                        decodeFrame(frame, settings.steps)?.let { event ->
+                                        decodeFrame(frame, settings.effectiveSteps)?.let { event ->
                                             when (event) {
                                                 is NovelAiImageEvent.Intermediate -> trySend(event)
                                                 is NovelAiImageEvent.Final -> {
@@ -253,9 +253,12 @@ class NovelAiImageService(
                 imageGuidance.preciseReferenceBase64 == null && imageGuidance.vibes.isEmpty()
         ) { "V5 Full 暂不支持精确参考或氛围参考" }
         settings.validationError(prompt.characterCaptions.size)?.let { error(it) }
-        val effectivePrompt = if (enhance != null) prompt else
+        val expandedPrompt = if (enhance != null) prompt else
             NovelAiV5TextPromptPolicy.apply(NovelAiPromptDelimiterPolicy.normalizeForRequest(prompt), settings.model)
-        val negative = if (enhance != null) prompt.negativePrompt else effectivePrompt.effectiveNegativePrompt.trim()
+        val effectivePrompt = NovelAiV5GenerationPolicy.transparentPrompt(expandedPrompt,
+            settings.effectiveTransparentBackground && enhance == null)
+        val negative = if (settings.isMedium) com.example.chatbar.domain.prompt.NovelAiPromptAuthority.novelAiV5MediumNegativePrompt(effectivePrompt.baseCaption)
+            else if (enhance != null) prompt.negativePrompt else effectivePrompt.effectiveNegativePrompt.trim()
         val useCoordinates = settings.useCharacterPositions && effectivePrompt.characterCaptions.isNotEmpty()
         fun requestCenter(caption: NovelAiCharacterCaption) = if (useCoordinates) {
             NovelAiCharacterPositionPolicy.normalize(caption.center, settings.model)
@@ -282,7 +285,7 @@ class NovelAiImageService(
                 put("char_captions", buildJsonArray {
                     effectivePrompt.characterCaptions.forEach { caption ->
                         add(buildJsonObject {
-                            put("char_caption", caption.negativePrompt)
+                            put("char_caption", if (settings.isMedium) "" else caption.negativePrompt)
                             put("centers", centerArray(requestCenter(caption)))
                         })
                     }
@@ -292,28 +295,30 @@ class NovelAiImageService(
             put("use_coords", useCoordinates)
             put("use_order", true)
         }
-        val requestModel = if (imageGuidance.action == NovelAiGenerationAction.INPAINT) {
-            "${settings.model.apiId}-inpainting"
-        } else {
-            settings.model.apiId
-        }
+        val requestModel = settings.requestModel(imageGuidance.action)
         return buildJsonObject {
             put("input", effectivePrompt.baseCaption)
             put("model", requestModel)
             put("action", imageGuidance.action.apiId)
             put("parameters", buildJsonObject {
-                put("params_version", 3)
+                put("params_version", if (settings.isMedium || settings.effectiveTransparentBackground) 4 else 3)
                 put("width", imageSize.width)
                 put("height", imageSize.height)
                 put("scale", settings.guidance)
-                put("sampler", settings.sampler.apiId)
-                put("steps", settings.steps)
+                put("sampler", settings.effectiveSampler.apiId)
+                put("steps", settings.effectiveSteps)
                 put("seed", settings.seed)
                 put("extra_noise_seed", settings.seed)
                 put("n_samples", settings.count)
-                put("ucPreset", 3)
+                if (!settings.isMedium && !settings.effectiveTransparentBackground) put("ucPreset", 3)
                 put("qualityToggle", false)
                 put("negative_prompt", negative)
+                if (settings.isMedium || settings.effectiveTransparentBackground) {
+                    put("uc", negative)
+                    put("tag_hint_uc_preset", if (settings.isMedium) 2 else 0)
+                    put("tag_hint_qt", 0)
+                    put("tag_hint_transparent_background", settings.effectiveTransparentBackground)
+                }
                 put("noise_schedule", "karras")
                 put("legacy", false)
                 put("legacy_uc", false)
@@ -323,7 +328,7 @@ class NovelAiImageService(
                 put("sm", false)
                 put("sm_dyn", false)
                 put("dynamic_thresholding", false)
-                put("cfg_rescale", settings.cfgRescale)
+                put("cfg_rescale", settings.effectiveCfgRescale)
                 // Selected official 1.4.7 wire behavior: V5 must not receive this V4.5 option.
                 if (settings.model == NovelAiImageModel.V4_5_FULL) {
                     if (settings.varietyPlus) put("skip_cfg_above_sigma", 58) else put("skip_cfg_above_sigma", JsonNull)
@@ -337,7 +342,8 @@ class NovelAiImageService(
                     require(imageGuidance.action == NovelAiGenerationAction.IMAGE_TO_IMAGE && settings.count == 1)
                     require(!enhance.upscaledEnhance || settings.model == NovelAiImageModel.V5_FULL)
                     enhance.sourceParameters.forEach { (key, value) ->
-                        if (key != "skip_cfg_above_sigma" || settings.model == NovelAiImageModel.V4_5_FULL) put(key, value)
+                        if ((key != "skip_cfg_above_sigma" || settings.model == NovelAiImageModel.V4_5_FULL) &&
+                            (!settings.isMedium || key != "v4_negative_prompt")) put(key, value)
                     }
                     put("upscaled_enhance", enhance.upscaledEnhance)
                     put("color_correct", false)

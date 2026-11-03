@@ -21,6 +21,9 @@ enum class NovelAiSampler(val apiId: String, val displayName: String) {
 enum class NovelAiSeedMode { RANDOM, FIXED }
 
 @Serializable
+enum class NovelAiEffort { HIGH, MEDIUM }
+
+@Serializable
 enum class NovelAiSizeTier(val displayName: String) {
     SMALL("Small"), NORMAL("Normal"), LARGE("Large"), WALLPAPER("Wallpaper")
 }
@@ -47,8 +50,21 @@ data class NovelAiGenerationSettings(
     val varietyPlus: Boolean = false,
     val customWidth: Int? = null,
     val customHeight: Int? = null,
-    val useCharacterPositions: Boolean = false
+    val useCharacterPositions: Boolean = false,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val effort: NovelAiEffort = NovelAiEffort.HIGH,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val transparentBackground: Boolean = false
 ) {
+    // Request capabilities suspend incompatible preferences without destroying their saved values.
+    val isMedium: Boolean get() = model == NovelAiImageModel.V5_FULL && effort == NovelAiEffort.MEDIUM
+    val effectiveSteps: Int get() = if (isMedium) 14 else steps
+    val effectiveSampler: NovelAiSampler get() = if (isMedium) NovelAiSampler.EULER_ANCESTRAL else sampler
+    val effectiveCfgRescale: Float get() = if (isMedium) 0f else cfgRescale
+    val effectiveTransparentBackground: Boolean get() = model == NovelAiImageModel.V5_FULL && transparentBackground
+    fun requestModel(action: NovelAiGenerationAction = NovelAiGenerationAction.TEXT_TO_IMAGE): String =
+        model.apiId + (if (isMedium) "-medium" else "") +
+            (if (action == NovelAiGenerationAction.INPAINT) "-inpainting" else "")
     val usesCustomSize: Boolean get() = customWidth != null || customHeight != null
     val maxAllowedBaseSeed: Long get() = MAX_SEED - (count.coerceIn(1, 4) - 1L)
 

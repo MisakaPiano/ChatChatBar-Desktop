@@ -164,7 +164,8 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                         StudioPromptField("补充", d.extraPrompt, controller.infrastructure, translation) { text -> edit { it.copy(extraPrompt = text) } }
                     }
                     StudioDisclosure("基础负面 Prompt") {
-                        StudioPromptField("基础负面 Prompt", d.negativePrompt, controller.infrastructure, translation) { text -> edit { it.copy(negativePrompt = text) } }
+                        if (d.activeSettings.isMedium) StatusText("Medium 使用固定负面词；已保存的自定义负面词将在 High 下恢复。")
+                        else StudioPromptField("基础负面 Prompt", d.negativePrompt, controller.infrastructure, translation) { text -> edit { it.copy(negativePrompt = text) } }
                     }
                     DesktopStudioCharacters(d, controller.infrastructure, translation, ::edit)
                 }

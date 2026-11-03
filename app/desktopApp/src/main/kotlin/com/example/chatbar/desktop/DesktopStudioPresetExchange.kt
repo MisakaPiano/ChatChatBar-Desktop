@@ -80,8 +80,8 @@ internal fun ColumnScope.DesktopStudioPresetExchangeContent(preview: DesktopGene
                 else "普通批次；不会沿用当前草稿原有的连续生成模式。")
             for (settings in listOf(preset.v45Settings, preset.v5Settings)) {
                 val size = settings.imageSize()
-                StatusText("${settings.model.displayName} · ${size.width}×${size.height} · 数量 ${settings.count} · Steps ${settings.steps} · Guidance ${settings.guidance} · ${settings.sampler.displayName}")
-                StatusText("Seed ${if (settings.seedMode == NovelAiSeedMode.RANDOM) "随机" else settings.seed.toString()} · CFG Rescale ${settings.cfgRescale} · Variety+ ${settings.varietyPlus}")
+                StatusText("${settings.model.displayName}${if (settings.isMedium) " Medium" else ""} · ${size.width}×${size.height} · 数量 ${settings.count} · Steps ${settings.effectiveSteps} · Guidance ${settings.guidance} · ${settings.effectiveSampler.displayName}${if (settings.effectiveTransparentBackground) " · 透明背景" else ""}")
+                StatusText("Seed ${if (settings.seedMode == NovelAiSeedMode.RANDOM) "随机" else settings.seed.toString()} · CFG Rescale ${settings.effectiveCfgRescale} · Variety+ ${settings.varietyPlus}")
             }
             val guidance = preset.imageGuidance
             StatusText("${guidance.action.displayName} · 参考模式 ${guidance.referenceMode} · 图片资源 ${guidance.presetAssets().map { it.path }.distinct().size} · 编码 ${guidance.vibes.count { it.encodedVibe != null }}（已校验）")

@@ -73,7 +73,7 @@ object NovelAiPngMetadataReader {
         val modelText = (explicitModel ?: root["source"]?.jsonPrimitive?.contentOrNull ?: source).orEmpty().trim().lowercase()
         val model = when {
             "curated" in modelText || "inpainting" in modelText -> null
-            modelText in ENHANCE_V5_SOURCES -> NovelAiImageModel.V5_FULL
+            modelText in ENHANCE_V5_SOURCES || modelText in V5_MEDIUM_SOURCES -> NovelAiImageModel.V5_FULL
             modelText in ENHANCE_V45_SOURCES -> NovelAiImageModel.V4_5_FULL
             else -> null
         } ?: error("无法准确识别受支持的 Full 模型，请使用 Upscale")
@@ -90,7 +90,9 @@ object NovelAiPngMetadataReader {
             guidance = imported.guidance ?: 6f,
             cfgRescale = imported.cfgRescale ?: 0f,
             sampler = imported.sampler ?: NovelAiSampler.EULER_ANCESTRAL,
-            useCharacterPositions = imported.useCharacterPositions ?: false
+            useCharacterPositions = imported.useCharacterPositions ?: false,
+            effort = imported.effort ?: NovelAiEffort.HIGH,
+            transparentBackground = imported.transparentBackground ?: false
         )
         settings.validationError(metadata.characters.size)?.let { error(it) }
         return NovelAiEnhanceSource(
@@ -116,6 +118,9 @@ object NovelAiPngMetadataReader {
     private val ENHANCE_V5_SOURCES = setOf(
         "nai-diffusion-5-full", "novelai diffusion v5 full",
         "novelai diffusion v5 657484a5", "novelai diffusion v5 0adf9ab7"
+    )
+    private val V5_MEDIUM_SOURCES = setOf(
+        "nai-diffusion-5-full-medium", "novelai diffusion v5 93f4bd30", "novelai diffusion v5 70ab5786"
     )
     private val ENHANCE_V45_SOURCES = setOf(
         "nai-diffusion-4-5-full", "novelai diffusion v4.5 full", "diffusionmodelmetaname.naiv4next 4bde2a90",
@@ -277,6 +282,13 @@ object NovelAiPngMetadataReader {
             characters = characters,
             hasCharacterPrompts = hasCharacters,
             settings = NovelAiImportedGenerationSettings(
+                effort = when {
+                    V5_MEDIUM_SOURCES.any { it in modelText.lowercase() } -> NovelAiEffort.MEDIUM
+                    modelText.toNovelAiModelOrNull() == NovelAiImageModel.V5_FULL -> NovelAiEffort.HIGH
+                    else -> null
+                },
+                transparentBackground = this["tag_hint_transparent_background"]?.jsonPrimitive?.booleanOrNull
+                    ?: false.takeIf { modelText.toNovelAiModelOrNull() == NovelAiImageModel.V5_FULL },
                 useCharacterPositions = this["v4_prompt"]?.jsonObjectOrNull()
                     ?.get("use_coords")?.jsonPrimitive?.booleanOrNull
                     ?: this["use_coords"]?.jsonPrimitive?.booleanOrNull ?: false,

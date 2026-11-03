@@ -506,6 +506,10 @@ object PromptTemplates {
 
     // region NovelAI 图片提示词生成
 
+    const val NOVELAI_V5_MEDIUM_NEGATIVE_PROMPT = NovelAiPromptAuthority.NOVELAI_V5_MEDIUM_NEGATIVE_PROMPT
+    const val NOVELAI_TRANSPARENT_BACKGROUND_TAG = NovelAiPromptAuthority.NOVELAI_TRANSPARENT_BACKGROUND_TAG
+    fun novelAiV5MediumNegativePrompt(positive: String): String = NovelAiPromptAuthority.novelAiV5MediumNegativePrompt(positive)
+
     const val NOVELAI_TAG_SEARCH_PLANNER_SYSTEM = NovelAiPromptAuthority.NOVELAI_TAG_SEARCH_PLANNER_SYSTEM
 
     const val NOVELAI_TAG_REVISION_QUERY_PLANNER_SYSTEM = NovelAiPromptAuthority.NOVELAI_TAG_REVISION_QUERY_PLANNER_SYSTEM

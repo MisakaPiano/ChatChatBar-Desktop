@@ -43,6 +43,7 @@ internal fun DesktopStudioCharacters(draft: NovelAiStudioDraft, infrastructure: 
         var focusRevision by remember { mutableStateOf<Long?>(null) }
         var expandedEditorOpen by remember { mutableStateOf(false) }
         var negative by remember { mutableStateOf(character.negativeExpanded) }
+        val showNegative = negative && !draft.activeSettings.isMedium
         val expanded = pinned || focused || requestingFocus || expandedEditorOpen
         fun openEditor() { requestingFocus = true; focusRevision = (focusRevision ?: 0) + 1 }
         fun change(transform: (NovelAiCharacterPromptDraft) -> NovelAiCharacterPromptDraft) = edit { it.copy(characters = it.characters.map { c -> if (c.id == character.id) transform(c) else c }) }
@@ -66,16 +67,16 @@ internal fun DesktopStudioCharacters(draft: NovelAiStudioDraft, infrastructure: 
             Column(Modifier.alpha(if (character.enabled) 1f else .6f)
                 .focusGroup()) {
                 if (expanded) {
-                    StudioChips("", listOf(false, true), negative, { if (it) "负面 Prompt" else "正向 Prompt" }) { value ->
+                    StudioChips("", if (draft.activeSettings.isMedium) listOf(false) else listOf(false, true), showNegative, { if (it) "负面 Prompt" else "正向 Prompt" }) { value ->
                         negative = value; openEditor()
                     }
-                    key(negative) {
-                        StudioPromptField(if (negative) "角色负面" else "角色正向",
-                            if (negative) character.negativePrompt else character.prompt,
+                    key(showNegative) {
+                        StudioPromptField(if (showNegative) "角色负面" else "角色正向",
+                            if (showNegative) character.negativePrompt else character.prompt,
                             infrastructure, translation, focusRevision,
                             onEditorFocusChanged = { active -> focused = active; if (active) requestingFocus = false },
                             onExpandedEditorChanged = { open -> expandedEditorOpen = open; if (!open) openEditor() }) { text ->
-                            change { if (negative) it.copy(negativePrompt = text) else it.copy(prompt = text) }
+                            change { if (showNegative) it.copy(negativePrompt = text) else it.copy(prompt = text) }
                         }
                     }
                     StatusText(character.center?.let { "位置 ${(it.x * 100).roundToInt()}%, ${(it.y * 100).roundToInt()}%" } ?: "位置 · 自动")

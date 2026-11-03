@@ -26,6 +26,13 @@ data class NovelAiCodexEvidence(
 
 /** Official baseline NovelAI Prompt authority. Android retains delegating entry points. */
 object NovelAiPromptAuthority {
+    // Official V5 Medium request-only UC preset; never replaces saved custom negative text.
+    const val NOVELAI_V5_MEDIUM_NEGATIVE_PROMPT = "lowres, artistic error, film grain, scan artifacts, worst quality, bad quality, jpeg artifacts, very displeasing, chromatic aberration, dithering, halftone, screentone, multiple views, logo, too many watermarks, negative space, blank page"
+    const val NOVELAI_TRANSPARENT_BACKGROUND_TAG = "transparent background"
+
+    fun novelAiV5MediumNegativePrompt(positive: String): String =
+        (if (positive.contains("nsfw", ignoreCase = true)) "" else "nsfw, ") + NOVELAI_V5_MEDIUM_NEGATIVE_PROMPT
+
     fun novelAiRevisionWithCharacterReference(modificationRequest: String, characterPrompt: String): String = buildString {
                 append(modificationRequest.trim())
                 if (characterPrompt.isNotBlank()) {

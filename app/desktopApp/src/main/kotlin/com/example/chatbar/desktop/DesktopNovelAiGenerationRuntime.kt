@@ -50,7 +50,7 @@ internal class DesktopNovelAiGenerationRuntime(
                     DesktopImageEditing.decode(bytes)
                 }
                 val images = mutableListOf<ByteArray>()
-                media = beginDesktopImageDiagnostics(diagnostics, secrets, token, settings.model.apiId, settings.count)
+                media = beginDesktopImageDiagnostics(diagnostics, secrets, token, settings.requestModel(guidance.action), settings.count)
                 NovelAiImageService(media?.client(client) ?: client, safeErrorsOnly = true).generate(
                     token, plan, requestSize ?: settings.imageSize(), settings, guidance,
                     retryRateLimitsUntilCancelled = retryRateLimitsUntilCancelled, maxRateLimitRetries = maxRateLimitRetries,

@@ -41,7 +41,7 @@ internal class DesktopNovelAiPostProcessor(private val secrets: DesktopSecretSto
                 ?: throw DesktopNovelAiRequestException("请先在 NovelAI 设置中安全保存凭据")
             val encoded = Base64.getEncoder().encodeToString(encodedBytes)
             media = beginDesktopImageDiagnostics(diagnostics, secrets, token,
-                if (tab == NovelAiPostProcessTab.ENHANCE) requireNotNull(source).settings.model.apiId else "upscale-model-unreported", 1,
+                if (tab == NovelAiPostProcessTab.ENHANCE) requireNotNull(source).settings.requestModel() else "upscale-model-unreported", 1,
                 if (tab == NovelAiPostProcessTab.UPSCALE) DesktopUsageMediaKind.NAI_UPSCALE else DesktopUsageMediaKind.NAI_ENHANCE)
             val observed = media?.client(client) ?: client
             val events = if (tab == NovelAiPostProcessTab.UPSCALE) NovelAiUpscaleService(observed, safeErrorsOnly = true).upscale(token, encoded)

@@ -213,7 +213,7 @@ internal fun studioAspectOptions(settings: NovelAiGenerationSettings) = NovelAiA
     settings.sizeTier == NovelAiSizeTier.WALLPAPER && it == NovelAiAspectRatio.SQUARE
 }
 internal fun studioAdvancedSummary(s: NovelAiGenerationSettings): String =
-    "${s.steps} Steps · CFG ${studioNumericText(s.guidance, 1)} / ${studioNumericText(s.cfgRescale, 2)} · ${s.sampler.displayName} · ${if (s.seedMode == NovelAiSeedMode.RANDOM) "Random Seed" else "Seed ${s.seed}"}"
+    "${s.effectiveSteps} Steps · CFG ${studioNumericText(s.guidance, 1)} / ${studioNumericText(s.effectiveCfgRescale, 2)} · ${s.effectiveSampler.displayName} · ${if (s.seedMode == NovelAiSeedMode.RANDOM) "Random Seed" else "Seed ${s.seed}"}"
 
 @Composable
 internal fun StudioGenerationSettings(draft: NovelAiStudioDraft, edit: ((NovelAiStudioDraft) -> NovelAiStudioDraft) -> Unit) {
@@ -225,6 +225,11 @@ internal fun StudioGenerationSettings(draft: NovelAiStudioDraft, edit: ((NovelAi
     CompactChoice("模型", listOf<NovelAiImageModel?>(null) + NovelAiImageModel.entries,
         if (draft.followDefaultNovelAiImageModel) null else draft.selectedModel, { it?.displayName ?: "跟随角色卡 / 全局" }) { model ->
         edit { if (model == null) it.copy(followDefaultNovelAiImageModel = true) else it.copy(selectedModel = model, followDefaultNovelAiImageModel = false) }
+    }
+    if (s.model == NovelAiImageModel.V5_FULL) {
+        StudioChips("Effort", NovelAiEffort.entries, s.effort, { if (it == NovelAiEffort.HIGH) "High" else "Medium" }) { value -> change { it.copy(effort = value) } }
+        StudioSwitch("透明背景", s.transparentBackground) { change { it.copy(transparentBackground = !it.transparentBackground) } }
+        if (s.isMedium) StatusText("Medium 使用 14 Steps、Euler Ancestral 与固定负面词；High 参数和自定义负面词会保留。")
     }
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val size: @Composable () -> Unit = {
@@ -242,7 +247,7 @@ internal fun StudioGenerationSettings(draft: NovelAiStudioDraft, edit: ((NovelAi
     }
     StudioChips("", studioAspectOptions(s), s.normalized().aspectRatio.takeUnless { s.usesCustomSize }, { it.displayName }) { value -> change { it.copy(aspectRatio = value, customWidth = null, customHeight = null) } }
     StudioAction("重置生成参数", icon = DesktopAppIcons.Reset) {
-        change { NovelAiGenerationDefaults.forModel(it.model) }
+        change { NovelAiGenerationDefaults.forModel(it.model).copy(effort = it.effort, transparentBackground = it.transparentBackground) }
     }
     StudioDisclosure("高级设置", studioAdvancedSummary(s)) {
         StudioAdvancedSettings(s, ::change)
@@ -261,10 +266,12 @@ internal fun StudioGenerationSettings(draft: NovelAiStudioDraft, edit: ((NovelAi
 
 @Composable
 internal fun StudioAdvancedSettings(s: NovelAiGenerationSettings, change: ((NovelAiGenerationSettings) -> NovelAiGenerationSettings) -> Unit) {
-    StudioSlider("Steps", s.steps.toFloat(), 1f, 50f, 1f, 0) { value -> change { it.copy(steps = value.toInt()) } }
+    if (!s.isMedium) StudioSlider("Steps", s.steps.toFloat(), 1f, 50f, 1f, 0) { value -> change { it.copy(steps = value.toInt()) } }
     StudioSlider("CFG Scale", s.guidance, 1f, 10f, .1f, 1) { value -> change { it.copy(guidance = value) } }
-    StudioSlider("CFG Rescale", s.cfgRescale, 0f, 1f, .05f, 2) { value -> change { it.copy(cfgRescale = value) } }
-    CompactChoice("Sampler", s.model.samplers, s.sampler, { it.displayName }) { value -> change { it.copy(sampler = value) } }
+    if (!s.isMedium) {
+        StudioSlider("CFG Rescale", s.cfgRescale, 0f, 1f, .05f, 2) { value -> change { it.copy(cfgRescale = value) } }
+        CompactChoice("Sampler", s.model.samplers, s.sampler, { it.displayName }) { value -> change { it.copy(sampler = value) } }
+    } else StatusText("14 Steps · Euler Ancestral · CFG Rescale 0")
     StudioSwitch("Random Seed", s.seedMode == NovelAiSeedMode.RANDOM) { change { it.copy(seedMode = if (it.seedMode == NovelAiSeedMode.RANDOM) NovelAiSeedMode.FIXED else NovelAiSeedMode.RANDOM) } }
     if (s.seedMode == NovelAiSeedMode.FIXED) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         StatusText("Seed")

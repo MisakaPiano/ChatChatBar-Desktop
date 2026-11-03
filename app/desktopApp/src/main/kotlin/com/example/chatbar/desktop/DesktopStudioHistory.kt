@@ -35,11 +35,13 @@ internal fun desktopHistoryRecipeDetails(entry: NovelAiGenerationHistoryEntry, i
     val r = entry.recipe; val s = r.settings; val g = r.imageGuidance
     return buildList {
         add("生成时间" to java.util.Date(entry.createdAt).toString())
-        add("模型" to s.model.displayName); add("实际 Seed" to image.seed.toString())
+        add("模型" to (s.model.displayName + if (s.isMedium) " Medium" else "")); add("实际 Seed" to image.seed.toString())
+        if (s.effectiveTransparentBackground) add("透明背景" to "开启")
         add("尺寸" to s.imageSize().let { "${it.width} × ${it.height}" })
-        add("数量 / Steps" to "${s.count} / ${s.steps}")
-        add("CFG / Rescale" to "${s.guidance} / ${s.cfgRescale}")
-        add("Sampler / Seed 模式" to "${s.sampler.displayName} / ${s.seedMode}")
+        add("数量 / Steps" to "${s.count} / ${s.effectiveSteps}")
+        add("CFG / Rescale" to "${s.guidance} / ${s.effectiveCfgRescale}")
+        add("Sampler / Seed 模式" to "${s.effectiveSampler.displayName} / ${s.seedMode}")
+        if (s.isMedium) add("负面词使用方式" to "Medium 固定负面词；以下自定义负面词仅保存，未用于本次请求")
         add("画风" to r.stylePrompt); add("基础 Prompt" to r.basePrompt); add("补充 Prompt" to r.extraPrompt)
         add("负面 Prompt" to r.negativePrompt)
         r.characters.forEachIndexed { index, c -> add("角色 ${index + 1}" to c.prompt); add("角色 ${index + 1} 负面" to c.negativePrompt) }
