@@ -355,6 +355,21 @@
       "humanAcceptance": false,
       "dailyHOperation": false
     },
-    "crossScenarioMatrix": "docs/desktop/280_BETA_CROSS_SCENARIO_EVIDENCE_MATRIX.md"
+    "crossScenarioMatrix": "docs/desktop/280_BETA_CROSS_SCENARIO_EVIDENCE_MATRIX.md",
+    "publicCandidate1235": {
+      "source": "9f5150db3acbd9e39333c41523101fada4910cb9",
+      "version": "0.1.0-preview.1235",
+      "ordinaryBuildRun": 41498266081,
+      "signedClientRun": 41504456372,
+      "releaseId": 431856096,
+      "state": "PUBLIC_TEST_PREVIEW_EXACT_USER_AUTHORITY_MATCHING_SIGNED17",
+      "metadataRevision": 17,
+      "publicMetadataRevision": 15,
+      "public": true,
+      "humanAcceptance": false,
+      "dailyHOperation": false,
+      "metadataPublic": true,
+      "metadataCommit": "d1caf6e1bcb336cb5591b1b45be8150b90ef14a0"
+    }
   }
 }
