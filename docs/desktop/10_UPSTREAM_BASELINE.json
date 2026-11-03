@@ -106,21 +106,24 @@
     "targetReleaseVersion": "1.4.7",
     "targetCommit": "b4fa75d296680f777be095f3121ad0c4db979f17",
     "authority": "User authorized latest official CCB adaptation; Desktop first, separate Studio consumes official interfaces",
-    "status": "selective_adaptation_in_progress_not_whole_baseline_promotion",
-    "sourceAtRecord": "9f5150db3acbd9e39333c41523101fada4910cb9",
+    "status": "selected147_scoped_engineering_verified_specific_native_user_and_live_service_pending_not_whole_baseline_promotion",
+    "sourceAtRecord": "a647cde57d8cd89dc03e05a5b7acf0be9194c5b6",
     "lastCompleteSourceValidation": {
-      "commit": "9f5150db3acbd9e39333c41523101fada4910cb9",
-      "run": 41493893207,
-      "mainPass": 2563,
+      "commit": "53e40cea7ff314812d13bf366f766227999aa9c5",
+      "applicationCommit": "a647cde57d8cd89dc03e05a5b7acf0be9194c5b6",
+      "run": 41642591244,
+      "mainPass": 2598,
       "mainSkip": 19,
       "mainFail": 0,
-      "sharedPass": 1192,
+      "sharedPass": 1221,
       "androidPass": 586,
       "proxyPass": 5,
       "ntfsPass": 7,
       "nativePass": 37,
       "updaterTufPass": 14,
-      "exitPass": 4
+      "exitPass": 4,
+      "sharedAndroidProof": "Unchanged153 original actual XML/HTML reused;154 Linux terminal success",
+      "applicationDifference": "Test source differs from frozen application only in two Desktop tests and focused workflow"
     },
     "adoptedRanges": [
       {
@@ -190,12 +193,34 @@
       {
         "scope": "Community Desktop browse/detail/import/Discord return/owner snapshot management/card update and runtime switch",
         "evidence": "277; exact134 shared11/Core2/Desktop12+7 actual images PASS; R19 ordinary candidate PASS; R20 real Main/registry scoped PASS with descendant NOT_PROVEN; real official OAuth/browser/focus separate",
-        "status": "synthetic_behavior_and_final_native_adapter_verified_live_external_separate"
+        "status": "implemented_scoped_engineering_verified_live_service_oauth_browser_focus_external_pending",
+        "remainingImplementationIdentified": [],
+        "externalConditions": [
+          "Official runtime enabled:false at2026-11-03 21:47JST read-only receipt; not permanent closure proof",
+          "Real Discord/browser return/foreground and remote operations require service available and explicit user-controlled login"
+        ],
+        "currentServiceReceipt": "I:/CCB-Desktop-Continuity/updates/20261103-coordinator-community-availability.json"
       },
       {
         "scope": "Whole selected147 compatibility declaration and affected final candidate/user cross-scenario acceptance",
-        "evidence": "216/207; retain genuine limitations and authorized exceptions",
-        "status": "pending_selected_range_closure"
+        "evidence": "216/280/286/287; exact full154/R27/R28 and public1236/sign18; retain19 original skips and selective baseline boundary",
+        "status": "selected_scoped_engineering_closure_recorded_specific_native_and_user_cross_scenarios_pending",
+        "remainingImplementationIdentified": [],
+        "independentVerification": [
+          {
+            "scope": "Original HWND-owner and Studio auxiliary OS-close cases",
+            "run": 41649134054,
+            "source": "6c434baecc0c809af4237a9a6b288e68ba8ab686",
+            "state": "RUNNING_NOT_PROVEN",
+            "headless": false
+          }
+        ],
+        "remainingExternalOrHuman": [
+          "User1236 self-update and N01–N07 concrete groups; prior1235 passes remain",
+          "Physical audio devices and unexecuted GUI/input/DPI/IME/multiscreen/Windows combinations",
+          "Real Provider and actual long-chat files/document-reader appearance",
+          "Real final data merge/physical interruption/cross-account/old snapshot scenarios, only as user chooses"
+        ]
       }
     ],
     "notOfficialCompatibilityProof": [
@@ -206,15 +231,22 @@
     "historicalObservationMeaning": "upstreamObservation below is the dated2026-10-05 record, not the current target or a continuing instruction to park1.4.7",
     "validatedBaselineMeaning": "upstream.commit remains the last fully declared baseline; ongoing147 adoption is not deferred indefinitely by that evidence state",
     "lastAttempt": {
-      "commit": "9f5150db3acbd9e39333c41523101fada4910cb9",
-      "run": 41493893207,
-      "status": "COMPLETE_ORIGINALS_PASS",
-      "mainPass": 2563,
+      "commit": "53e40cea7ff314812d13bf366f766227999aa9c5",
+      "applicationCommit": "a647cde57d8cd89dc03e05a5b7acf0be9194c5b6",
+      "run": 41642591244,
+      "mainPass": 2598,
       "mainSkip": 19,
-      "sharedPass": 1192,
+      "mainFail": 0,
+      "sharedPass": 1221,
       "androidPass": 586,
-      "newDesktopReverseMethodsPass": 8,
-      "newSharedReverseMethodsPass": 4
+      "proxyPass": 5,
+      "ntfsPass": 7,
+      "nativePass": 37,
+      "updaterTufPass": 14,
+      "exitPass": 4,
+      "sharedAndroidProof": "Unchanged153 original actual XML/HTML reused;154 Linux terminal success",
+      "applicationDifference": "Test source differs from frozen application only in two Desktop tests and focused workflow",
+      "status": "COMPLETE_ORIGINALS_PASS"
     },
     "privateCandidate1234": {
       "source": "c2d3640e3caaa39ffb932823909a883b583e4879",
@@ -370,6 +402,33 @@
       "dailyHOperation": false,
       "metadataPublic": true,
       "metadataCommit": "d1caf6e1bcb336cb5591b1b45be8150b90ef14a0"
-    }
+    },
+    "workspaceAtResidualReview": "6c434baecc0c809af4237a9a6b288e68ba8ab686",
+    "historicalSourceValidation": [
+      {
+        "commit": "9f5150db3acbd9e39333c41523101fada4910cb9",
+        "run": 41493893207,
+        "mainPass": 2563,
+        "mainSkip": 19,
+        "mainFail": 0,
+        "sharedPass": 1192,
+        "androidPass": 586,
+        "proxyPass": 5,
+        "ntfsPass": 7,
+        "nativePass": 37,
+        "updaterTufPass": 14,
+        "exitPass": 4
+      }
+    ],
+    "currentPublicDelivery": {
+      "version": "0.1.0-preview.1236",
+      "source": "a647cde57d8cd89dc03e05a5b7acf0be9194c5b6",
+      "release": 432747686,
+      "metadataRevision": 18,
+      "metadataCommit": "14dadbfeed1299cc8d80712b3fd0ac8cb59eed55",
+      "humanAcceptance": "PENDING_USER_SELF_UPDATE_SPECIFIC_GROUPS",
+      "proof": "286/287; R27 ordinary/final bytes, R28 frozen old-client, anonymous full installer and exact roles"
+    },
+    "residualReview": "I:/CCB-Desktop-Continuity/updates/20261103-selected147-residual-closure/OWNER_REVIEW.json"
   }
 }
