@@ -24,6 +24,15 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
+      - name: Select a fresh canonical NTFS temporary directory
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $home = Join-Path ($env:SystemDrive + '\') ('p' + [Guid]::NewGuid().ToString('N').Substring(0, 7))
+          if ([IO.DriveInfo]::new([IO.Path]::GetPathRoot($home)).DriveFormat -ne 'NTFS') { throw 'DESKTOP_TEST_NTFS_REQUIRED' }
+          New-Item -ItemType Directory -Path $home -ErrorAction Stop | Out-Null
+          $testTemp = New-Item -ItemType Directory -Path (Join-Path $home 'temp') -ErrorAction Stop
+          @("TEMP=$($testTemp.FullName)", "TMP=$($testTemp.FullName)") | Add-Content $env:GITHUB_ENV -Encoding utf8
       - name: Record exact source and run bounded synthetic regressions
         shell: pwsh
         working-directory: app
