@@ -6,9 +6,21 @@ import com.example.chatbar.desktop.*
 import java.awt.image.BufferedImage
 import java.nio.file.Files
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.*
 import kotlin.test.*
 
 class DesktopMomentVersionBackupTest {
+    @Test fun `different posts by the same sender coexist instead of replacing all same author posts`() {
+        fun record(id: String): JsonObject = DesktopMomentBackupExtension.liveRecord(backupJson.encodeToJsonElement(MomentPost.serializer(),
+            MomentPost(id, "card", "session", senderName = "Same sender", text = "Text $id", scheduledAt = 1, generatedAt = 1)).jsonObject)
+        val pc = mapOf("entities/moment_posts/a.json" to record("a"))
+        val phone = mapOf("entities/moment_posts/b.json" to record("b"))
+        val preview = DesktopMergePreview.create(pc, phone, emptyMap(), emptyMap())
+        assertTrue(preview.conflicts.isEmpty())
+        val selection = preview.select(emptyMap())
+        assertEquals(1, selection.computer.size); assertEquals(1, selection.phone.size)
+    }
+
     @Test fun `selected backup authenticates all Moment versions and restored store can switch old images while image omission removes every reference`() = runBlocking {
         val base = Files.createTempDirectory("moment-backup-")
         val root = Files.createDirectory(base.resolve("source"))

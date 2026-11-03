@@ -63,7 +63,8 @@ internal class DesktopMergePreview private constructor(
             phone.values.forEach { candidate ->
                 val exact = pc[candidate.key]
                 if (exact != null && exact.signature == candidate.signature && candidate.key !in credentialConflicts) { identical += candidate.key; return@forEach }
-                val sameName = if (candidate.label.isEmpty()) emptyList() else pc.values.filter {
+                // A Moment sender is not a unique post name. Different posts by the same person coexist.
+                val sameName = if (candidate.label.isEmpty() || candidate.category == "moment_posts") emptyList() else pc.values.filter {
                     it.category == candidate.category && it.label == candidate.label && it.key != candidate.key
                 }
                 val ownedCollisions = if (candidate.category == "chat_sessions") pc.values.filter {
