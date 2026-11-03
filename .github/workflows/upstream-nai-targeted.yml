@@ -10,7 +10,7 @@ on:
         type: string
 jobs:
   targeted:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     steps:
@@ -22,6 +22,8 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
       - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
       - uses: gradle/actions/setup-gradle@v4
       - name: Compile Android and run affected production-path tests
