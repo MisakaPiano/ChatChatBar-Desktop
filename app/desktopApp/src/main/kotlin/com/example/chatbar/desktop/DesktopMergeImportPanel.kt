@@ -119,6 +119,8 @@ private fun mergeCategory(category: String) = when (category) {
     "embedding_configs", "embedding_model_config" -> "向量模型"
     "format_cards" -> "格式卡"
     "world_books" -> "世界书"
+    "moment_posts" -> "朋友圈动态"
+    "moment_tasks" -> "朋友圈计划"
     "app_settings" -> "应用设置"
     else -> "资料"
 }
