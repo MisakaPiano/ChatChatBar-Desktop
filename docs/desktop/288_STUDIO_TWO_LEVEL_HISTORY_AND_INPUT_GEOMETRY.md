@@ -22,3 +22,6 @@ history4/41663000551精确a65b02原件88=87PASS+1FAIL/0SKIP：原重开/备份�
 native6/41663011157原件实际4PASS+1SKIP：scrollbar、Stop下载/生成、Studio edge、chrome通过；long Windows playback因wave设备0未测。实际云屏1024×768临时切到枚举支持的1920×1080，test/apply/restore均0，public188/private0，未写registry且已恢复1024×768。原19SKIP的映射是2+10+3=15原方法完整闭合，原混合Stop仅部分闭合，另3专门音频仍待；不能把拆分的4PASS误算为16原方法全过。
 
 新增独立 Windows 云端工作流 `desktop-studio-history-probe.yml`，使用合成资料测试混合多步、分支、重开、写前恢复、资源、真实字段键盘与平台输入请求。复用相关原有 Studio/备份测试。实际系统中文输入法候选显示仍须用户在后继候选验收；离屏请求/截图通过不能替代该结果。原 native2 的 10 PASS/4 FAIL 保留，另行处理，不被本修复改写。
+
+
+history5/41667076334在新备份测试可空值跨模块smart cast处编译拒绝，0方法；后继使用assertNotNull返回的稳定局部值，原件保留。history6/41668712390原件92=90PASS+2FAIL/0SKIP：第二栏请求身份与焦点正确，rootTop429.6211相对实际栏顶430.0超出0.3789px；后继把原文字形带约束到真实行边界，保持原根位置断言与5秒期限。另一失败为selected映射校验Vibe引用后未登记selectedMedia，导致payload文件遗漏；补登记且端到端覆盖当前draft与history-only两种来源的selected export/read/map/reopen/原编码resolve。后继只定向重测两个FAIL及两个直接受影响glyph场景，90已绿与native6原件复用，绿后补必要整体验证。真实IME人验和后继公开许可仍未取得。

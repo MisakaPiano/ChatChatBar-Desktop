@@ -86,6 +86,7 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
             if (value.startsWith("chatbar-vibe-file:")) {
                 val hash = value.removePrefix("chatbar-vibe-file:")
                 check(hash.matches(Regex("[a-f0-9]{64}")) && "novelai-vibe-payloads/$hash" in proof)
+                selectedMedia += "novelai-vibe-payloads/$hash"
                 return value
             }
             if (value.startsWith("asset:")) {

@@ -166,43 +166,53 @@ class DesktopStudioDraftHistoryTest {
     @Test fun `selected actual backup restores coherent history cursor and history only media through mapping`() = runBlocking {
         val base = Files.createTempDirectory("studio-history-backup-")
         try {
-            val root = Files.createDirectory(base.resolve("source")); val workspace = Files.createDirectory(base.resolve("work"))
-            val target = Files.createDirectory(base.resolve("target"))
-            val storage = JsonFileStorage(root); val r = DesktopStudioHistoryRepository(storage)
-            r.loadDraft(); r.initializeHistory()
-            Files.createDirectory(root.resolve("images"))
-            val image = root.resolve("images/reference.png")
-            javax.imageio.ImageIO.write(java.awt.image.BufferedImage(2, 2, java.awt.image.BufferedImage.TYPE_INT_ARGB), "png", image.toFile())
-            val encoding = "synthetic-vibe-payload".repeat(400)
-            r.updateDraft { it.copy(basePrompt = "original synthetic prompt", imageGuidance = it.imageGuidance.copy(
-                baseImage = NovelAiStudioAssetRef(path = "images/reference.png", width = 2, height = 2),
-                vibes = listOf(NovelAiVibeReferenceDraft(encodedVibe = encoding)))) }
-            r.updateDraft { it.copy(imageGuidance = NovelAiImageGuidanceDraft()) }
-            val selection = AppBackupSelection(studioSettings = true)
-            val archive = base.resolve("selected.cbbackup")
-            DesktopFullBackupMapping(root).export(workspace, 86, selection = selection).use { exported ->
-                assertTrue("entities/${DesktopStudioHistoryRepository.ENTITY}.json" in exported.files)
-                assertTrue(exported.files.keys.any { it.startsWith("images/") })
-                assertTrue(exported.files.keys.any { it.startsWith("novelai-vibe-payloads/") })
-                DesktopFullBackupWriter.export(exported.files, archive, null, selection = selection)
-            }
-            DesktopFullBackupStaging.prepare(archive, null, workspace).use { staged ->
-                DesktopFullBackupMapping(target).restoreMerged(staged.files, workspace, BackupPreferences()).use { restored ->
-                    for ((relative, file) in restored.files) {
-                        val destination = target.resolve(relative).normalize(); check(destination.startsWith(target))
-                        Files.createDirectories(destination.parent); Files.copy(file, destination)
+            for (historyOnly in listOf(false, true)) {
+                val case = Files.createDirectory(base.resolve(if (historyOnly) "history-only" else "current-draft"))
+                val root = Files.createDirectory(case.resolve("source")); val workspace = Files.createDirectory(case.resolve("work"))
+                val target = Files.createDirectory(case.resolve("target"))
+                val storage = JsonFileStorage(root); val r = DesktopStudioHistoryRepository(storage)
+                r.loadDraft(); r.initializeHistory()
+                Files.createDirectory(root.resolve("images"))
+                val image = root.resolve("images/reference.png")
+                javax.imageio.ImageIO.write(java.awt.image.BufferedImage(2, 2, java.awt.image.BufferedImage.TYPE_INT_ARGB), "png", image.toFile())
+                val encoding = "synthetic-vibe-payload".repeat(400)
+                r.updateDraft { it.copy(basePrompt = "original synthetic prompt", imageGuidance = it.imageGuidance.copy(
+                    baseImage = NovelAiStudioAssetRef(path = "images/reference.png", width = 2, height = 2),
+                    vibes = listOf(NovelAiVibeReferenceDraft(encodedVibe = encoding)))) }
+                if (historyOnly) r.updateDraft { it.copy(imageGuidance = NovelAiImageGuidanceDraft()) }
+                val selection = AppBackupSelection(studioSettings = true)
+                val archive = case.resolve("selected.cbbackup")
+                DesktopFullBackupMapping(root).export(workspace, 86, selection = selection).use { exported ->
+                    assertTrue("entities/${DesktopStudioHistoryRepository.ENTITY}.json" in exported.files)
+                    assertTrue(exported.files.keys.any { it.startsWith("images/") })
+                    assertTrue(exported.files.keys.any { it.startsWith("novelai-vibe-payloads/") })
+                    DesktopFullBackupWriter.export(exported.files, archive, null, selection = selection)
+                }
+                DesktopFullBackupStaging.prepare(archive, null, workspace).use { staged ->
+                    DesktopFullBackupMapping(target).restoreMerged(staged.files, workspace, BackupPreferences()).use { restored ->
+                        for ((relative, file) in restored.files) {
+                            val destination = target.resolve(relative).normalize(); check(destination.startsWith(target))
+                            Files.createDirectories(destination.parent); Files.copy(file, destination)
+                        }
                     }
                 }
+                val reopened = DesktopStudioHistoryRepository(JsonFileStorage(target)); reopened.initializeHistory()
+                if (historyOnly) {
+                    assertNull(reopened.loadDraft().imageGuidance.baseImage)
+                    assertTrue(reopened.replay(false))
+                }
+                val guidance = reopened.loadDraft().imageGuidance
+                val restoredImage = assertNotNull(guidance.baseImage)
+                assertTrue(Files.isRegularFile(target.resolve(restoredImage.path)))
+                assertContentEquals(Files.readAllBytes(image), Files.readAllBytes(target.resolve(restoredImage.path)))
+                assertEquals(encoding, NovelAiInlinePayloadStore(target.toFile()).resolve(guidance.vibes.single().encodedVibe!!))
+                if (historyOnly) {
+                    assertTrue(reopened.replay(true)); assertNull(reopened.loadDraft().imageGuidance.baseImage)
+                } else {
+                    assertTrue(reopened.replay(false)); assertTrue(reopened.replay(true))
+                    assertEquals(encoding, NovelAiInlinePayloadStore(target.toFile()).resolve(reopened.loadDraft().imageGuidance.vibes.single().encodedVibe!!))
+                }
             }
-            val reopened = DesktopStudioHistoryRepository(JsonFileStorage(target)); reopened.initializeHistory()
-            assertNull(reopened.loadDraft().imageGuidance.baseImage)
-            assertTrue(reopened.replay(false))
-            val guidance = reopened.loadDraft().imageGuidance
-            val restoredImage = assertNotNull(guidance.baseImage)
-            assertTrue(Files.isRegularFile(target.resolve(restoredImage.path)))
-            assertContentEquals(Files.readAllBytes(image), Files.readAllBytes(target.resolve(restoredImage.path)))
-            assertEquals(encoding, NovelAiInlinePayloadStore(target.toFile()).resolve(guidance.vibes.single().encodedVibe!!))
-            assertTrue(reopened.replay(true)); assertNull(reopened.loadDraft().imageGuidance.baseImage)
         } finally { check(base.toFile().deleteRecursively()) }
     }
 }

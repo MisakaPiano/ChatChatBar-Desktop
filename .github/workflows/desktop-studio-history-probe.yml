@@ -39,21 +39,10 @@ jobs:
           @{ source = (git rev-parse HEAD); run = $env:GITHUB_RUN_ID; scope = 'synthetic Studio only; no native IME acceptance, provider, installation or real data' } |
             ConvertTo-Json | Set-Content "$env:CCB_STUDIO_HISTORY_REVIEW_DIR/source.json" -Encoding utf8
           .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain `
-            --tests com.example.chatbar.desktop.DesktopStudioDraftHistoryTest `
-            --tests com.example.chatbar.desktop.DesktopStudioTextHistoryTest `
-            --tests com.example.chatbar.desktop.DesktopStudioInputHistorySceneTest `
-            --tests com.example.chatbar.desktop.DesktopStudioManualUndoTest `
-            --tests com.example.chatbar.desktop.DesktopStudioEditResponsivenessTest `
-            --tests com.example.chatbar.desktop.DesktopStudioPresetControllerTest `
-            --tests com.example.chatbar.desktop.DesktopStudioPresetExchangeTest `
-            --tests com.example.chatbar.desktop.DesktopStudioFullPromptExchangeTest `
-            --tests com.example.chatbar.desktop.DesktopStudioVarietyPlusTest `
-            --tests com.example.chatbar.desktop.DesktopStudioPresentationTest `
-            --tests com.example.chatbar.desktop.DesktopPhase7StudioTest `
-            --tests com.example.chatbar.desktop.DesktopStudioFooterTest `
-            --tests com.example.chatbar.desktop.DesktopFullBackupServiceTest `
-            --tests com.example.chatbar.desktop.backup.DesktopMergePreviewTest `
-            --tests com.example.chatbar.desktop.backup.DesktopBackupSelectionTest
+            --tests 'com.example.chatbar.desktop.DesktopStudioDraftHistoryTest.selected actual backup restores coherent history cursor and history only media through mapping' `
+            --tests 'com.example.chatbar.desktop.DesktopStudioInputHistorySceneTest.actual platform request uses live moved editor coordinates and preserves composing source text' `
+            --tests 'com.example.chatbar.desktop.DesktopStudioInputHistorySceneTest.rendered selection highlights source glyph band and leaves annotation row unselected' `
+            --tests 'com.example.chatbar.desktop.DesktopStudioPresentationTest.inline and fullscreen text editor share annotations and leave request body unchanged'
           exit $LASTEXITCODE
       - name: Preserve actual results
         if: always()

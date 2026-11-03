@@ -85,9 +85,14 @@ internal fun studioCanAcceptSuggestion(input: TextFieldValue, candidateCount: In
 internal fun studioPromptCaretRect(layout: TextLayoutResult, offset: Int, glyph: TextLayoutResult): Rect {
     val position = offset.coerceIn(0, layout.layoutInput.text.length)
     val cursor = layout.getCursorRect(position)
-    val baseline = layout.getLineBaseline(layout.getLineForOffset(position))
-    val top = baseline - glyph.getLineBaseline(0)
-    return Rect(cursor.left, top, cursor.right, top + glyph.size.height)
+    val line = layout.getLineForOffset(position)
+    val baseline = layout.getLineBaseline(line)
+    val glyphTop = baseline - glyph.getLineBaseline(0)
+    // Font baselines can differ by a fraction of a pixel. The actual field clips that
+    // ascent at its source-line boundary; the IME anchor and custom paint must do so too.
+    val top = glyphTop.coerceIn(layout.getLineTop(line), layout.getLineBottom(line))
+    val bottom = (glyphTop + glyph.size.height).coerceIn(top, layout.getLineBottom(line))
+    return Rect(cursor.left, top, cursor.right, bottom)
 }
 
 /** Raw source remains the editable/IME text; translations are only glyph overlays. */
@@ -143,8 +148,8 @@ internal fun StudioPromptTextEditor(input: TextFieldValue, onChange: (TextFieldV
                     if (current != null) Canvas(Modifier.matchParentSize()) {
                         val path = current.getPathForRange(input.selection.min, input.selection.max)
                         for (line in 0 until current.lineCount) {
-                            val top = current.getLineBaseline(line) - glyph.getLineBaseline(0)
-                            clipRect(top = top, bottom = top + glyph.size.height) {
+                            val band = studioPromptCaretRect(current, current.getLineStart(line), glyph)
+                            clipRect(top = band.top, bottom = band.bottom) {
                                 drawPath(path, selectionColors.backgroundColor)
                             }
                         }
