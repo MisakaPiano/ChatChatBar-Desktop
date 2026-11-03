@@ -49,6 +49,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           .\gradlew.bat :sharedCore:test --no-daemon --stacktrace --console=plain `
             --tests com.example.chatbar.domain.image.NovelAiVarietyPlusImportTest `
+            --tests com.example.chatbar.domain.image.NovelAiVarietyResolutionTest `
             --tests com.example.chatbar.domain.image.NovelAiImageModelCapabilityTest `
             --tests com.example.chatbar.domain.image.NovelAiPngMetadataReaderTest `
             --tests com.example.chatbar.domain.image.NovelAiV5GenerationPolicyTest

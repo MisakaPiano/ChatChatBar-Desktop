@@ -5,6 +5,8 @@ description: Build or migrate ChatBar Android UI using shadcn/ui design principl
 
 # ChatBar shadcn Compose
 
+`DesktopCharacterEditorController` preserves nonblank negative-prompt source bytes through display, draft and unrelated saves. Blank values keep the existing displayed/materialized default; final generation still uses the separate effective-value helper. Do not normalize source editing by calling the request helper in `displayCard` or save projection.
+
 Desktop card editing follows the pinned official147 section sequence: card identity, greeting, background, Moments, common setting, NAI style/gallery, collapsible image advanced settings, negative prompt, person workspace, advanced fields, documents and bindings. Desktop alternate greetings remain in their adjacent disclosure. Displaying nullable image parameters does not materialize an override; Restore removes only the parameter override, preserving selected model. Original draft/save/cancel and read-only owners remain. `DesktopCharacterEditorOrderTest` covers actual section semantics, compact reachability and draft lifecycle; `DesktopStyleGalleryTest` opens the image disclosure after jumping.
 
 `StudioPromptTextEditor` keeps raw text as the BasicTextField/IME source and translations as glyph overlays. In translated mode its blinking caret is drawn from source-font metrics at the current source baseline, rather than the enlarged annotation line height; nontranslated caret, selection and IME text remain native. `studioPromptCaretRect` is checked with actual shaped multiline/wrapped text.

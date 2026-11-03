@@ -1,3 +1,7 @@
+2026-11-03 当前续接入口：实时源码、运行与原件状态以 `I:/CCB-Desktop-Continuity/CURRENT_START.md`、`TASK_LEDGER.json`、`EVIDENCE_INDEX.json` 为准，旧下方截点不冒充最新。当前选定修复包括 [286 卡编辑顺序/官网采样器与尺寸化Variety+](286_CARD_EDITOR_ORDER_AND_V45_OPTIONS.md)、[287 动态图片版本及资源/备份保全](287_MOMENT_IMAGE_VERSIONS_AND_BACKUP_CUSTODY.md)。两片已接生产所有者，正在精确云端验证与修复，尚不是新安装版/交付或真人通过；原失败不改PASS。之前984完整152原件与原生/Provider/Word实际打开等不同证据范围分别保留。先收尾所选小修、必要验证与普通私有候选，再按216正式1.0依赖推进；不把所有工作写成只等验收。公开1235/签名17、日常H与真实资料保持，T23/自由正文绑定/社区等明确决定不变。
+
+下方历史保留。
+
 2026-11-03公开检查点：用户明确授权“可以公开，并且给我展示测试项，带我一项一项验收”。1235测试Preview431856096（desktop-v0.1.0-preview.1235→9f5150db）及匹配签名17已公开，metadata commit d1caf6e1bcb336cb5591b1b45be8150b90ef14a0；四资产/notes逻辑SHA70cea…与既有最终EXE177247185B/44b5fc72…fc12、独立ZIP190477369B/c82a8ddb…c2da一致，root1不变，未重建/换包。原1234/c2d/sign16仍私有冻结。R26为云内旧client完整验包；匿名公开HTTP核对另记，不冒用为新运行的匿名旧client。用户由协调端逐项引导自更新验收，真人待；日常H UNKNOWN_UNOPERATED，不代装/不确认合并。
 
 下方历史保留。

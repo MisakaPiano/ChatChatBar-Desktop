@@ -54,6 +54,12 @@ class DesktopMomentVersionBackupTest {
                 val selection = AppBackupSelection(characterIds = setOf(card.id), sessions = mapOf(session.id to BackupSessionChoice()),
                     moments = true, momentsImages = includeImages)
                 DesktopFullBackupMapping(root).export(work, 86, StrictBackupZipReader.Limits().expanded, selection = selection).use { snapshot ->
+                    if (includeImages) {
+                        val mismatched = base.resolve("wrong-scope.cbbackup")
+                        assertFails { DesktopFullBackupWriter.export(snapshot.files, mismatched, null,
+                            selection = selection.copy(momentsImages = false)) }
+                        assertFalse(Files.exists(mismatched))
+                    }
                     val file = base.resolve("synthetic-$includeImages.cbbackup")
                     DesktopFullBackupWriter.export(snapshot.files, file, null, selection = selection)
                     DesktopFullBackupStaging.prepare(file, null, Files.createDirectory(base.resolve("inspect-$includeImages"))).use { staged ->

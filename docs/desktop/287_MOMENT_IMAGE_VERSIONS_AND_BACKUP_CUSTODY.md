@@ -1,6 +1,6 @@
 # 朋友圈图片版本与资源保全
 
-2026-11-03，当前选定 M04 源码片；必要云端检查尚待精确原报告，未交付或真人验收。
+2026-11-03，当前选定 M04 源码片；精确定向原报告已核，后继完整检查与普通私有候选仍待；未交付或真人验收。
 
 `MomentPost.desktopImageVersions` 是可省略的 Desktop 扩展，每个版本保留稳定 ID、图片引用、Prompt、metadata、brief 和时间。旧动态不因查看而写入；第一次重新生成时把原图纳入保留集。有当前图时仅追加新候选，保持当前 imagePath/Prompt/metadata/brief；由用户明确选择才切换。原来无图时可选首张。修改在原 `DesktopMomentStore` 原子写入及协调器内完成，来源比对包含完整版本集，过期生成不能覆盖人工选择/删除/正文变化。
 
@@ -13,3 +13,5 @@
 必要验证源码：`DesktopMomentImageVersionsTest`（四候选、重开、当前图保持、显式选择、过期完成清理、共享引用及整动态删除）；`DesktopMomentVersionBackupTest`（现代导出/认证、三候选与当前第三图的参数/字节回读、新根 store 切旧图并重读、关闭图片范围全部省略、原件不变、incoming 任务排除）；`DesktopMomentImageVersionsPanelTest`（420/1100实际内容中的版本选择与确认删除）。同时运行受影响的原 Moments/backup/merge/scope/preservation 必要回归。没有用纯列表或原件封存成功冒称 live 图片版本恢复成功。
 
 公开1235/签名17、日常 H 安装及真实用户根保持；不自动合并真实数据，不调用真实 Provider，不在本机启动 JVM/GUI。完成检查后再准备匹配的普通私有候选与必要生命周期验证。
+
+2026-11-03 定向检查点：probe4 / 41634352398，源54955cefca77612abb547fcb98cb8406b1fc6989，shared21、Desktop129全部PASS，无SKIP。原件408082B，SHA256 9ae36770beec05826984fc57ecbbf38efc804e77907976ed0267b800b9cda6e4；原XML包含16个S1、8个保全、版本备份两方法、真实store/Panel与Moment147请求。前轮c93失败保留：S0仍不解释朋友圈原文，S1单独严格验证；新scope约束仅对显式Desktop标记，未放宽旧手机原件保全。后继补错误图片范围Writer拒绝断言和动态分类标题，仍待最终同源完整验证。

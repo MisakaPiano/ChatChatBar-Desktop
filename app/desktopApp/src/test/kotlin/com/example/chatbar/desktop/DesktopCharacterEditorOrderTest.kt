@@ -66,7 +66,7 @@ class DesktopCharacterEditorOrderTest {
                     System.getenv("CCB_FORMAT_AI_REVIEW_DIR")?.let { directory ->
                         val file = Path.of(directory).resolve("card-order-${mode.name}-$width.png")
                         Files.createDirectories(file.parent)
-                        scene.render().use { image -> image.encodeToData()!!.use { Files.write(file, it.bytes) } }
+                        scene.render(System.nanoTime()).use { image -> image.encodeToData()!!.use { Files.write(file, it.bytes) } }
                     }
                     assertEquals(durable, app.characterRepository.getById(original.id))
                     assertEquals(durable, editor.state.value.card)
