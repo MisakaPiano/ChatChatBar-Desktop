@@ -34,14 +34,14 @@ internal data class DesktopStudioHistoryAvailability(val undo: Boolean = false, 
 internal class DesktopStudioHistoryRepository(storage: JsonFileStorage,
     private val clock: () -> Long = System::nanoTime,
 ) : NovelAiStudioStateRepository(storage) {
-    private val historyMutex = Mutex()
+    private val editHistoryMutex = Mutex()
     private val available = MutableStateFlow(DesktopStudioHistoryAvailability())
     val historyAvailability = available.asStateFlow()
     private var timeline: DesktopStudioHistoryTimeline? = null
     private var lastTypingKey: String? = null
     private var lastTypingAt = 0L
     private val retiredResources = linkedSetOf<String>()
-    suspend fun takeRetiredResources(): List<String> = historyMutex.withLock {
+    suspend fun takeRetiredResources(): List<String> = editHistoryMutex.withLock {
         retiredResources.toList().also { retiredResources.clear() }
     }
     @Volatile private var breakTyping = false
@@ -84,14 +84,14 @@ internal class DesktopStudioHistoryRepository(storage: JsonFileStorage,
         return value
     }
 
-    suspend fun initializeHistory() = historyMutex.withLock {
+    suspend fun initializeHistory() = editHistoryMutex.withLock {
         // The initial default draft must travel with its timeline in a selected backup.
-        super.updateDraft { it }
+        super.updateDraft(resetPromptEditors = false) { it }
         loaded(snapshot(loadDraft())); Unit
     }
 
     override suspend fun updateDraft(resetPromptEditors: Boolean,
-        transform: (NovelAiStudioDraft) -> NovelAiStudioDraft): NovelAiStudioDraft = historyMutex.withLock {
+        transform: (NovelAiStudioDraft) -> NovelAiStudioDraft): NovelAiStudioDraft = editHistoryMutex.withLock {
         val before = loadDraft()
         val target = transform(before)
         val current = snapshot(before)
@@ -133,7 +133,7 @@ internal class DesktopStudioHistoryRepository(storage: JsonFileStorage,
         }
     }
 
-    suspend fun replay(redo: Boolean): Boolean = historyMutex.withLock {
+    suspend fun replay(redo: Boolean): Boolean = editHistoryMutex.withLock {
         val before = loaded(snapshot(loadDraft()))
         val cursor = before.cursor + if (redo) 1 else -1
         if (cursor !in before.entries.indices) return@withLock false

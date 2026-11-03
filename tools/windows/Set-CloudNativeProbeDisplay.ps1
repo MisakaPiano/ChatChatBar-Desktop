@@ -27,26 +27,52 @@ public static class CcbCloudDisplay {
         public uint bitsPerPel, width, height, displayFlags, frequency;
         public uint icmMethod, icmIntent, mediaType, ditherType, reserved1, reserved2, panningWidth, panningHeight;
     }
-    [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern bool EnumDisplaySettingsW(string device, int index, ref Mode mode);
-    [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int ChangeDisplaySettingsExW(string device, ref Mode mode, IntPtr hwnd, uint flags, IntPtr parameters);
+    [DllImport("user32.dll", CharSet=CharSet.Unicode, ExactSpelling=true)] private static extern bool EnumDisplaySettingsW(string device, int index, IntPtr mode);
+    [DllImport("user32.dll", CharSet=CharSet.Unicode, ExactSpelling=true)] private static extern int ChangeDisplaySettingsExW(string device, IntPtr mode, IntPtr hwnd, uint flags, IntPtr parameters);
     [DllImport("user32.dll")] public static extern int GetSystemMetrics(int index);
     [DllImport("winmm.dll")] public static extern uint waveOutGetNumDevs();
-    public static Mode Read(int index) {
-        var mode = new Mode(); mode.size = (ushort)Marshal.SizeOf<Mode>();
-        if (!EnumDisplaySettingsW(null, index, ref mode)) throw new InvalidOperationException("DISPLAY_MODE_UNAVAILABLE");
-        if (mode.size != 220 || mode.driverExtra != 0) throw new InvalidOperationException("DISPLAY_MODE_LAYOUT_UNSUPPORTED");
-        return mode;
+    public sealed class Record {
+        public Mode Public;
+        public byte[] Bytes;
+        public uint width { get { return Public.width; } }
+        public uint height { get { return Public.height; } }
+        public uint bitsPerPel { get { return Public.bitsPerPel; } }
     }
-    public static byte[] Bytes(Mode mode) {
-        var pointer = Marshal.AllocHGlobal(220);
-        try { Marshal.StructureToPtr(mode, pointer, false); var bytes = new byte[220]; Marshal.Copy(pointer, bytes, 0, 220); return bytes; }
-        finally { Marshal.FreeHGlobal(pointer); }
+    public static Record Read(int index) {
+        int publicSize = Marshal.SizeOf<Mode>();
+        if (publicSize != 220) throw new InvalidOperationException("DISPLAY_PUBLIC_STRUCT_SIZE_" + publicSize);
+        // A display driver may return private bytes after DEVMODEW. Preserve them instead of
+        // refusing a valid mode or passing a nonzero dmDriverExtra with a too-small buffer.
+        int capacity = publicSize + ushort.MaxValue;
+        IntPtr pointer = Marshal.AllocHGlobal(capacity);
+        try {
+            Marshal.Copy(new byte[capacity], 0, pointer, capacity);
+            Marshal.WriteInt16(pointer, 68, (short)publicSize);
+            Marshal.WriteInt16(pointer, 70, unchecked((short)ushort.MaxValue));
+            if (!EnumDisplaySettingsW(null, index, pointer)) throw new InvalidOperationException("DISPLAY_MODE_UNAVAILABLE_" + index);
+            Mode mode = Marshal.PtrToStructure<Mode>(pointer);
+            if (mode.size != publicSize) throw new InvalidOperationException("DISPLAY_RETURNED_SIZE_" + mode.size + "_EXPECTED_" + publicSize);
+            byte[] bytes = new byte[publicSize + mode.driverExtra];
+            Marshal.Copy(pointer, bytes, 0, bytes.Length);
+            return new Record { Public=mode, Bytes=bytes };
+        } finally { Marshal.FreeHGlobal(pointer); }
     }
-    public static Mode FromBytes(byte[] bytes) {
-        if (bytes.Length != 220) throw new InvalidOperationException("DISPLAY_MODE_SIZE");
-        var pointer = Marshal.AllocHGlobal(220);
-        try { Marshal.Copy(bytes, 0, pointer, 220); return Marshal.PtrToStructure<Mode>(pointer); }
-        finally { Marshal.FreeHGlobal(pointer); }
+    public static Record FromBytes(byte[] bytes) {
+        if (bytes.Length < 220 || bytes.Length > 220 + ushort.MaxValue) throw new InvalidOperationException("DISPLAY_MODE_SIZE");
+        var pointer = Marshal.AllocHGlobal(bytes.Length);
+        try {
+            Marshal.Copy(bytes, 0, pointer, bytes.Length);
+            Mode mode = Marshal.PtrToStructure<Mode>(pointer);
+            if (mode.size != 220 || bytes.Length != 220 + mode.driverExtra) throw new InvalidOperationException("DISPLAY_MODE_PRIVATE_SIZE");
+            return new Record { Public=mode, Bytes=bytes };
+        } finally { Marshal.FreeHGlobal(pointer); }
+    }
+    public static int Change(Record mode, uint flags) {
+        var pointer = Marshal.AllocHGlobal(mode.Bytes.Length);
+        try {
+            Marshal.Copy(mode.Bytes, 0, pointer, mode.Bytes.Length);
+            return ChangeDisplaySettingsExW(null, pointer, IntPtr.Zero, flags, IntPtr.Zero);
+        } finally { Marshal.FreeHGlobal(pointer); }
     }
 }
 '@
@@ -56,7 +82,7 @@ if ($Restore) {
     $saved = Get-Content -LiteralPath $originalPath -Raw | ConvertFrom-Json
     if ($saved.run -ne $env:GITHUB_RUN_ID) { throw 'PROBE_DISPLAY_RECORD_RUN_MISMATCH' }
     $mode = [CcbCloudDisplay]::FromBytes([Convert]::FromBase64String($saved.modeBytes))
-    $result = [CcbCloudDisplay]::ChangeDisplaySettingsExW($null, [ref]$mode, [IntPtr]::Zero, 0, [IntPtr]::Zero)
+    $result = [CcbCloudDisplay]::Change($mode, 0)
     @{ run=$env:GITHUB_RUN_ID; result=$result; width=[CcbCloudDisplay]::GetSystemMetrics(0); height=[CcbCloudDisplay]::GetSystemMetrics(1) } |
         ConvertTo-Json | Set-Content -LiteralPath (Join-Path $evidence 'display-restored.json') -Encoding utf8
     if ($result -ne 0) { throw 'PROBE_DISPLAY_RESTORE_FAILED' }
@@ -64,7 +90,7 @@ if ($Restore) {
 }
 $before = [CcbCloudDisplay]::Read(-1)
 if (Test-Path -LiteralPath $originalPath) { throw 'PROBE_DISPLAY_ALREADY_PREPARED' }
-@{ run=$env:GITHUB_RUN_ID; width=$before.width; height=$before.height; modeBytes=[Convert]::ToBase64String([CcbCloudDisplay]::Bytes($before)) } |
+@{ run=$env:GITHUB_RUN_ID; width=$before.width; height=$before.height; modeBytes=[Convert]::ToBase64String($before.Bytes) } |
     ConvertTo-Json | Set-Content -LiteralPath $originalPath -Encoding utf8
 $modes = [Collections.Generic.List[object]]::new()
 for ($index=0; $index -lt 4096; $index++) {
@@ -74,9 +100,8 @@ for ($index=0; $index -lt 4096; $index++) {
 $selected = $modes | Sort-Object @{Expression={ if ($_.width -eq 1920 -and $_.height -eq 1080) { 0 } else { 1 } }}, @{Expression={$_.width * $_.height}} | Select-Object -First 1
 $testResult = $null; $applyResult = $null
 if ($selected) {
-    [CcbCloudDisplay+Mode]$selectedMode = $selected
-    $testResult = [CcbCloudDisplay]::ChangeDisplaySettingsExW($null, [ref]$selectedMode, [IntPtr]::Zero, 2, [IntPtr]::Zero)
-    if ($testResult -eq 0) { $applyResult = [CcbCloudDisplay]::ChangeDisplaySettingsExW($null, [ref]$selectedMode, [IntPtr]::Zero, 0, [IntPtr]::Zero) }
+    $testResult = [CcbCloudDisplay]::Change($selected, 2)
+    if ($testResult -eq 0) { $applyResult = [CcbCloudDisplay]::Change($selected, 0) }
 }
 $deadline = [DateTime]::UtcNow.AddSeconds(5)
 do {
@@ -84,7 +109,7 @@ do {
     if ($width -ge 1600 -and $height -ge 1000) { break }
     Start-Sleep -Milliseconds 100
 } while ([DateTime]::UtcNow -lt $deadline)
-[ordered]@{ run=$env:GITHUB_RUN_ID; beforeWidth=$before.width; beforeHeight=$before.height; width=$width; height=$height;
+[ordered]@{ run=$env:GITHUB_RUN_ID; beforeWidth=$before.width; beforeHeight=$before.height; publicModeSize=$before.Public.size; privateModeBytes=$before.Public.driverExtra; width=$width; height=$height;
     supportedModes=$modes.Count; testResult=$testResult; applyResult=$applyResult; waveOutputDevices=[CcbCloudDisplay]::waveOutGetNumDevs();
     userInteractive=[Environment]::UserInteractive; processSession=(Get-Process -Id $PID).SessionId; registryUpdated=$false } |
     ConvertTo-Json | Set-Content -LiteralPath (Join-Path $evidence 'display-and-audio.json') -Encoding utf8
