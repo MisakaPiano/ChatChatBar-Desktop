@@ -2,7 +2,7 @@
 
 用户在 1236 实测报告：撤销/重做只有一步；Ctrl+Z/Y 无效。最新说明要求栏内历史彼此独立，底部箭头则针对整个 Studio 草稿。另有真实截图确认翻译模式选区覆盖两行、输入法候选框不随当前角色输入栏移动。
 
-## 当前改动（尚待精确源码云端验证）
+## 当前改动（精确云端验证通过，真实系统IME待验）
 
 - Desktop 专属多步持久时间线，最多保留 100 个操作；按实际文字变化范围合并连续输入，明确载入/清空与跨栏操作不合并。新编辑截断重做分支，空操作不消耗历史。写前意图保留旧/新游标，重开按真实草稿选择已提交一侧；损坏或无法匹配时显式拒绝，不抹掉原件。
 - 输入栏独立 Ctrl+Z/Y，人物字段以稳定 ID 隔离，参数按模型隔离；切换焦点和人物排序不串栏。展开编辑拥有临时历史，确认再发布，取消保留原栏。全局恢复后重定位受影响栏的历史，避免旧局部 redo 覆盖已恢复内容。没有页面级全局键盘拦截。
@@ -31,3 +31,14 @@ history7/41672408257精确1076原件4=3PASS+1FAIL/0SKIP：实时第二栏请求�
 
 
 完整155原件保留：main369suite2641=2618PASS+3FAIL+20SKIP，proxy5/shared1233/Android HTML586通过。两反推并发例仍反射新子类getDeclaredField(undoMutex)，但原loadUndoDraft/saveUndoDraft锁实际保留在共享父类；改为反射原父类，不改第二次lock暂停、5秒限时、Stop/过期候选拒绝断言。另一项旧字体高度/基线断言揭示helper契约混淆：保留完整source-font rect及原严格断言，另visible source band负责0.3789px行边界裁剪，平台与实际绘制继续用相同行带。后继仅三FAIL+直接glyph两例+当前Studio原生OS关闭复核；native1确已有同名关闭PASS，20而非19来自Stop拆分，不把它误记新增方法。生产helper分工发生真实源码改动，4493/R29/sign19作为已验证但被后继取代的原包保持，不冒用为新源候选。
+
+## 最终304 / 私有1237收尾
+
+- history8/41674383551原17PASS/0SKIP：actual selected export/read/map/reopen同时覆盖当前draft与history-only图像/Vibe；投影一致性检查保持，不清时间线掩盖问题。
+- native7/41681529979原6PASS/0SKIP：两原反推并发、原严格font高度/基线、实时第二栏source/request、实际源字选区像素、Studio原生OS关闭。实际云屏1024×768→受支持1920×1080→恢复1024×768，public188/private0，test/apply/restore均0，不写registry。关闭是native1已有原方法，不冒称新闭合。
+- 完整156/41681820343实际checkout c841147f0ccd33ee423af8123b0b2a5c2345da41与应用304bd42a250b062ddaafc4c7dcc55710e94c4e8b完整tree相同（5c495f712085a082b312dadfc5c6b76ebc00e1ea）。Windows原369suite2641=2621PASS/0FAIL/0ERROR/20SKIP；proxy5、NTFS7、native37/TUF14/exit4；Linux成功，shared1233及Android HTML586复用155未变输入的原件。155三FAIL原件保留，后继未降低断言或重写旧结果。
+- R31普通候选和R32旧client验包均已实际通过。Release433024800四资产草稿/tag→304保持未公开；EXE178544270B/SHA7878dc17270056db5b44db1783d939ac91efa96d2328a4f6b585bd231f109e4a，独立ZIP191748951B/SHA8a4f9dc73201660e5418c9780ef7f89ffe217b0b04f578dfecc4baed9245735c；manifest549/Program548逐文件核对。R31仅fresh默认合成profile，不证明真实凭据、自选根或所有外部后代。R32受控fetcher发现15→19、完整下载二验，不执行安装器、不冒称用户公网更新。
+- notes原CRLF文件1167B/SHA d37979324a780610e9b64f38b360138d0194e5c90d620dc177999fe1fe45995b；规范LF正文1157B/SHA 803c8b65bd032a317206ff4834f87cba2153e904701aaf4ee8e55870f747e9e3。签名19与远端正文绑定后者，原文件摘要单列；无正文修改或重签。root1及公开1236/sign18不变。
+- 新1237派生清理实际10文件/1128090667逻辑字节，旧4493/R29二进制与重复外壳删除但原报告/manifest/签名/失败与当前304最终包保留。先前1236外壳删除被自动审核以“blocked by policy”拒绝，0B删除且未重试；T11六I ZIP、作者2857B和未知handoff未触碰。
+
+本版公开许可与真实验收仍待协调端唯一入口；1236原N01a/N01b真实缺陷不改为PASS。原15方法完整闭合，混合Stop物理播放及3专门音频仍未测，云端请求/像素结果不等于真实系统中文IME。原件、OWNER与协调端独立回执在Continuity对应156/native7/R31/R32目录。

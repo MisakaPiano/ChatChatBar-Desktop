@@ -106,24 +106,28 @@
     "targetReleaseVersion": "1.4.7",
     "targetCommit": "b4fa75d296680f777be095f3121ad0c4db979f17",
     "authority": "User authorized latest official CCB adaptation; Desktop first, separate Studio consumes official interfaces",
-    "status": "selected147_prior_scoped_engineering_verified_unpublished_studio_and_author_adaptation_targeted_validation_running_not_baseline_promotion",
-    "sourceAtRecord": "5d4e2f01c19f16217e01ff45c57f2f6f215187fd",
+    "status": "selected147_scoped_engineering_verified_private1237_ready_not_whole_baseline_promotion",
+    "sourceAtRecord": "304bd42a250b062ddaafc4c7dcc55710e94c4e8b",
     "lastCompleteSourceValidation": {
-      "commit": "53e40cea7ff314812d13bf366f766227999aa9c5",
-      "applicationCommit": "a647cde57d8cd89dc03e05a5b7acf0be9194c5b6",
-      "run": 41642591244,
-      "mainPass": 2598,
-      "mainSkip": 19,
+      "commit": "304bd42a250b062ddaafc4c7dcc55710e94c4e8b",
+      "applicationCommit": "304bd42a250b062ddaafc4c7dcc55710e94c4e8b",
+      "actualCheckout": "c841147f0ccd33ee423af8123b0b2a5c2345da41",
+      "wholeTreeSha": "5c495f712085a082b312dadfc5c6b76ebc00e1ea",
+      "wholeTreeIdentical": true,
+      "run": 41681820343,
+      "mainTests": 2641,
+      "mainPass": 2621,
+      "mainSkip": 20,
       "mainFail": 0,
-      "sharedPass": 1221,
-      "androidPass": 586,
+      "sharedPass": 1233,
+      "androidHtmlPass": 586,
       "proxyPass": 5,
       "ntfsPass": 7,
       "nativePass": 37,
       "updaterTufPass": 14,
       "exitPass": 4,
-      "sharedAndroidProof": "Unchanged153 original actual XML/HTML reused;154 Linux terminal success",
-      "applicationDifference": "Test source differs from frozen application only in two Desktop tests and focused workflow"
+      "sharedAndroidProof": "Unchanged shared/Android/CI inputs reuse155 original XML/HTML;156 Linux terminalSUCCESS",
+      "status": "COMPLETE_NECESSARY_ORIGINALS_PASS_HUMAN_SEPARATE"
     },
     "adoptedRanges": [
       {
@@ -203,12 +207,9 @@
       },
       {
         "scope": "Whole selected147 compatibility declaration and affected final candidate/user cross-scenario acceptance",
-        "evidence": "216/280/286/287; exact full154/R27/R28 and public1236/sign18; retain19 original skips and selective baseline boundary",
-        "status": "native15_original_methods_closed_user_studio_repairs_and_shared_author_delta_active",
-        "remainingImplementationIdentified": [
-          "1236 user Studio repairs: history7 three geometry/glyph methods PASS; selected backup current/timeline projection successor history8 pending; physical IME human acceptance still required",
-          "Author892b shared pricing/transparent import/counting adapted in Desktop5d4e2f01; ui12 shared34PASS1FAIL fixture incorrectly expected explicit false instead of existing omitted High hint; test-only b95 ui13 pending Desktop suites; Android sampler auto-selection path does not apply to Desktop fixed UI"
-        ],
+        "evidence": "216/280/288/289; full156 exact304, native7 sixPASS, R31 final ordinary bytes, R32 signed19 oldclient; private1237 draft433024800",
+        "status": "identified_selected_implementation_closed_private_candidate_ready_human_and_external_pending",
+        "remainingImplementationIdentified": [],
         "independentVerification": [
           {
             "scope": "Original HWND-owner and Studio auxiliary OS-close cases plus unchanged COM prerequisite",
@@ -236,13 +237,21 @@
             "waveOutputDevices": 0,
             "display": "1024x768 to enumerated1920x1080; test/apply0; restored1024x768/result0; no registry write",
             "evidence": "I:/CCB-Desktop-Continuity/updates/20261103-studio-history-repair/native6-OWNER_REVIEW.json"
+          },
+          {
+            "scope": "Exact304 six affected font/request/selection/concurrency/OS-close methods",
+            "run": 41681529979,
+            "source": "304bd42a250b062ddaafc4c7dcc55710e94c4e8b",
+            "state": "ACTUAL6PASS_0FAIL_0SKIP_NOT_REAL_SYSTEM_IME",
+            "evidence": "I:/CCB-Desktop-Continuity/updates/20261103-studio-history-repair/native7-OWNER_REVIEW.json"
           }
         ],
         "remainingExternalOrHuman": [
-          "User1236 upgrade/data/reopen PASS only; N01a partial single actions but multistep/shortcut FAIL, N01b IME/selection FAIL, successor retest pending; prior1235 groups preserved",
-          "Original3 physical audio methods plus original mixed Stop real-playback part remain NOT_TESTED (wave0); actual user system Chinese IME/DPI/multiscreen combinations separate",
-          "Real Provider and actual long-chat files/document-reader appearance",
-          "Real final data merge/physical interruption/cross-account/old snapshot scenarios, only as user chooses"
+          "User1236 upgrade/data/reopen PASS only; original N01 multistep/IME failures retained until1237 actual retest",
+          "Original three physical audio methods and mixed Stop playback part untested on wave0; real system Chinese IME/DPI/multiscreen separate",
+          "Real Provider and actual long-chat/document-reader appearance",
+          "Real final production merge/interruption/cross-account/old snapshot scenarios only as user chooses",
+          "1237 explicit public test authorization and actual user self-update acceptance pending"
         ],
         "original154HeadlessSkips": {
           "count": 19,
@@ -264,22 +273,25 @@
     "historicalObservationMeaning": "upstreamObservation below is the dated2026-10-05 record, not the current target or a continuing instruction to park1.4.7",
     "validatedBaselineMeaning": "upstream.commit remains the last fully declared baseline; ongoing147 adoption is not deferred indefinitely by that evidence state",
     "lastAttempt": {
-      "commit": "53e40cea7ff314812d13bf366f766227999aa9c5",
-      "applicationCommit": "a647cde57d8cd89dc03e05a5b7acf0be9194c5b6",
-      "run": 41642591244,
-      "mainPass": 2598,
-      "mainSkip": 19,
+      "commit": "304bd42a250b062ddaafc4c7dcc55710e94c4e8b",
+      "applicationCommit": "304bd42a250b062ddaafc4c7dcc55710e94c4e8b",
+      "actualCheckout": "c841147f0ccd33ee423af8123b0b2a5c2345da41",
+      "wholeTreeSha": "5c495f712085a082b312dadfc5c6b76ebc00e1ea",
+      "wholeTreeIdentical": true,
+      "run": 41681820343,
+      "mainTests": 2641,
+      "mainPass": 2621,
+      "mainSkip": 20,
       "mainFail": 0,
-      "sharedPass": 1221,
-      "androidPass": 586,
+      "sharedPass": 1233,
+      "androidHtmlPass": 586,
       "proxyPass": 5,
       "ntfsPass": 7,
       "nativePass": 37,
       "updaterTufPass": 14,
       "exitPass": 4,
-      "sharedAndroidProof": "Unchanged153 original actual XML/HTML reused;154 Linux terminal success",
-      "applicationDifference": "Test source differs from frozen application only in two Desktop tests and focused workflow",
-      "status": "COMPLETE_ORIGINALS_PASS"
+      "sharedAndroidProof": "Unchanged shared/Android/CI inputs reuse155 original XML/HTML;156 Linux terminalSUCCESS",
+      "status": "COMPLETE_NECESSARY_ORIGINALS_PASS_HUMAN_SEPARATE"
     },
     "privateCandidate1234": {
       "source": "c2d3640e3caaa39ffb932823909a883b583e4879",
@@ -405,6 +417,15 @@
         "desktopCommunityNewMethodsPass": 12,
         "originalImagesReviewed": 7,
         "historical": true
+      },
+      {
+        "commit": "4493ed186da10267c053fa3efb5dddd58b7eaa12",
+        "run": 41676176376,
+        "status": "ORIGINAL2618PASS_3FAIL_20SKIP_RETAINED_FIXED_EXACT304",
+        "mainTests": 2641,
+        "mainPass": 2618,
+        "mainFail": 3,
+        "mainSkip": 20
       }
     ],
     "privateCandidate1235": {
@@ -451,6 +472,23 @@
         "nativePass": 37,
         "updaterTufPass": 14,
         "exitPass": 4
+      },
+      {
+        "commit": "53e40cea7ff314812d13bf366f766227999aa9c5",
+        "applicationCommit": "a647cde57d8cd89dc03e05a5b7acf0be9194c5b6",
+        "run": 41642591244,
+        "mainPass": 2598,
+        "mainSkip": 19,
+        "mainFail": 0,
+        "sharedPass": 1221,
+        "androidPass": 586,
+        "proxyPass": 5,
+        "ntfsPass": 7,
+        "nativePass": 37,
+        "updaterTufPass": 14,
+        "exitPass": 4,
+        "sharedAndroidProof": "Unchanged153 original actual XML/HTML reused;154 Linux terminal success",
+        "applicationDifference": "Test source differs from frozen application only in two Desktop tests and focused workflow"
       }
     ],
     "currentPublicDelivery": {
@@ -459,9 +497,30 @@
       "release": 432747686,
       "metadataRevision": 18,
       "metadataCommit": "14dadbfeed1299cc8d80712b3fd0ac8cb59eed55",
-      "humanAcceptance": "PENDING_USER_SELF_UPDATE_SPECIFIC_GROUPS",
+      "humanAcceptance": "USER1236_UPGRADE_DATA_REOPEN_PASS_ONLY_N01_DEFECTS_RETAINED_SUCCESSOR1237_PENDING",
       "proof": "286/287; R27 ordinary/final bytes, R28 frozen old-client, anonymous full installer and exact roles"
     },
-    "residualReview": "I:/CCB-Desktop-Continuity/updates/20261103-selected147-residual-closure/OWNER_REVIEW.json"
+    "residualReview": "I:/CCB-Desktop-Continuity/updates/20261103-selected147-residual-closure/OWNER_REVIEW.json",
+    "privateCandidate1237": {
+      "version": "0.1.0-preview.1237",
+      "source": "304bd42a250b062ddaafc4c7dcc55710e94c4e8b",
+      "release": 433024800,
+      "tag": "desktop-v0.1.0-preview.1237",
+      "draft": true,
+      "public": false,
+      "ordinaryRun": 41681835763,
+      "signedClientRun": 41685095129,
+      "metadataRevision": 19,
+      "metadataPublic": false,
+      "installerBytes": 178544270,
+      "installerSha256": "7878dc17270056db5b44db1783d939ac91efa96d2328a4f6b585bd231f109e4a",
+      "independentBytes": 191748951,
+      "independentSha256": "8a4f9dc73201660e5418c9780ef7f89ffe217b0b04f578dfecc4baed9245735c",
+      "notesRawFileSha256": "d37979324a780610e9b64f38b360138d0194e5c90d620dc177999fe1fe45995b",
+      "notesNormalizedSignedSha256": "803c8b65bd032a317206ff4834f87cba2153e904701aaf4ee8e55870f747e9e3",
+      "userAcceptance": false,
+      "dailyInstallation": false,
+      "evidence": "I:\\CCB-Desktop-Continuity\\updates\\20261104-candidate1237-r02-preparation\\FROZEN_REVIEW.json"
+    }
   }
 }
