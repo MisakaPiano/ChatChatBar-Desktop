@@ -1558,6 +1558,7 @@ internal fun NovelAiStylePresetGallery(
     onApply: (NovelAiStylePreset) -> Unit
 ) {
     var showAllStyles by remember { mutableStateOf(false) }
+    val fatalError = catalog.fatalError
     when {
         catalog.isLoading -> CbText(
             "正在加载内置画风…",
@@ -1565,8 +1566,8 @@ internal fun NovelAiStylePresetGallery(
             style = ChatBarTheme.typography.caption
         )
 
-        catalog.fatalError != null -> CbText(
-            catalog.fatalError,
+        fatalError != null -> CbText(
+            fatalError,
             color = ChatBarTheme.colors.destructive,
             style = ChatBarTheme.typography.caption
         )
