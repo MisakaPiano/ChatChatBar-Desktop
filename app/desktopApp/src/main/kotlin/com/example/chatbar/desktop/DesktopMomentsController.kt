@@ -25,6 +25,8 @@ internal fun interface DesktopMomentGenerator {
         registerImageCleanup: (String) -> Unit): MomentGenerationResult
 }
 
+internal data class DesktopMomentLink(val id: String?, val error: String? = null)
+
 internal data class DesktopMomentsState(
     val enabled: Boolean = false, val autoImages: Boolean = true, val scheduling: Boolean = false,
     val minHours: Int = 2, val maxHours: Int = 13, val posts: List<MomentPost> = emptyList(),
@@ -86,6 +88,23 @@ internal class DesktopMomentsController(
         catch (cancelled: CancellationException) { throw cancelled }
         catch (_: Exception) { mutableState.update { it.copy(error = "本机朋友圈调度授权未通过；请核对后手动恢复，未自动生成") } }
     } }
+
+    /** Navigation uses the retained post identity, never a same-name or recent-session fallback. */
+    suspend fun linkedTarget(postId: String, cardSettings: Boolean): DesktopMomentLink = gate.withNormalOperation {
+        val post = store.posts().singleOrNull { it.id == postId }
+            ?: return@withNormalOperation DesktopMomentLink(null, "该动态已删除或不可用")
+        if (cardSettings) {
+            if (characters.getById(post.characterCardId) == null) DesktopMomentLink(null, "所属角色卡已删除或不可用")
+            else DesktopMomentLink(post.characterCardId)
+        } else {
+            val session = chats.getSession(post.sessionId)
+            if (session == null || session.characterCardId != post.characterCardId)
+                DesktopMomentLink(null, "该动态绑定的会话已删除、重新关联或不可用")
+            else DesktopMomentLink(post.sessionId)
+        }
+    }
+
+    fun navigationUnavailable() { mutableState.update { it.copy(notice = "绑定对象已删除、不可用或当前无法切换；未新建会话") } }
 
     suspend fun refresh() {
         try {

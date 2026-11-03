@@ -147,6 +147,7 @@ internal fun DesktopManagePanel(
     onStartCharacterChat: (String) -> Unit = {},
     initialModels: Boolean = false, initialModelId: String? = null, onInitialModelsConsumed: () -> Unit = {},
     initialPerson: Pair<String, String>? = null, onInitialPersonConsumed: () -> Unit = {},
+    initialMomentCard: Pair<String, Boolean>? = null, onInitialMomentCardConsumed: () -> Unit = {},
     chatUiController: DesktopChatUiController? = null,
     networkProxyController: DesktopNetworkProxyController? = null,
     momentsController: DesktopMomentsController? = null,
@@ -255,6 +256,14 @@ internal fun DesktopManagePanel(
             modelSettingsController.loadModels()
             initialModelId?.let { modelSettingsController.startEdit(it) }
             onInitialModelsConsumed()
+        }
+    }
+    LaunchedEffect(initialMomentCard) {
+        initialMomentCard?.let { (cardId, focusSwitch) ->
+            selectSection(ManageSection.CHARACTERS) { scope.launch {
+                if (focusSwitch) characterEditorController.openMoments(cardId) else characterEditorController.openExisting(cardId)
+            } }
+            onInitialMomentCardConsumed()
         }
     }
     LaunchedEffect(initialPerson) {

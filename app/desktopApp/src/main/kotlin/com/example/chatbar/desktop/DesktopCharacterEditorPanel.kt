@@ -131,6 +131,8 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
     val t = LocalDesktopUiStrings.current
     val scope = rememberCoroutineScope()
     var selectedEntry by remember(card.id) { mutableStateOf<String?>(null) }
+    val momentsFocus = remember(card.id) { BringIntoViewRequester() }
+    var handledMomentsFocus by remember(card.id) { mutableStateOf<Long?>(null) }
     val personFocus = remember(card.id) { BringIntoViewRequester() }
     val personFocusExtent = with(androidx.compose.ui.platform.LocalDensity.current) { 600.dp.toPx() }
     var handledPersonFocus by remember(card.id) { mutableStateOf<Long?>(null) }
@@ -201,7 +203,13 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
             } }
             EditorField(t(DesktopUiText.CHARACTER_NAME), card.name) { value -> controller.edit { it.copy(name = value) } }
             EditorField(t(DesktopUiText.BOT_NAME), card.botName) { value -> controller.edit { it.copy(botName = value) } }
-            StudioSwitch("该角色卡启用朋友圈", card.momentsEnabled) { controller.edit { it.copy(momentsEnabled = !it.momentsEnabled) } }
+            Box(Modifier.fillMaxWidth().bringIntoViewRequester(momentsFocus).onGloballyPositioned {
+                if (state.momentsFocusRevision > 0 && handledMomentsFocus != state.momentsFocusRevision) {
+                    val revision = state.momentsFocusRevision
+                    handledMomentsFocus = revision
+                    scope.launch { momentsFocus.bringIntoView() }
+                }
+            }) { StudioSwitch("该角色卡启用朋友圈", card.momentsEnabled) { controller.edit { it.copy(momentsEnabled = !it.momentsEnabled) } } }
             EditorField(t(DesktopUiText.GREETING), card.greeting, multiline = true) { value -> controller.edit { it.copy(greeting = value) } }
             EditorSection(t(DesktopUiText.ALTERNATE_GREETINGS)) {
                 card.alternateGreetings.forEachIndexed { index, greeting ->

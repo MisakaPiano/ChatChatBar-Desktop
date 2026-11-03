@@ -108,6 +108,7 @@ internal fun DesktopPrimaryShell(
     val floatingVoicePosition = remember { DesktopFloatingVoicePosition() }
     var requestedDesignModel by remember { mutableStateOf<String?>(null) }
     var openDesignModels by remember { mutableStateOf(false) }
+    var requestedMomentCard by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
     var requestedPerson by remember { mutableStateOf<Pair<String, String>?>(null) }
 
     val centerState = taskCenter?.state?.collectAsState()?.value
@@ -164,7 +165,22 @@ internal fun DesktopPrimaryShell(
             externalImportController?.let { DesktopExternalImportNotice(it) }
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when (route) {
-                    DesktopPrimaryRoute.MOMENTS -> momentsController?.let { DesktopMomentsPanel(it) }
+                    DesktopPrimaryRoute.MOMENTS -> momentsController?.let { controller ->
+                        DesktopMomentsPanel(controller,
+                            onOpenSession = { id -> scope.launch {
+                                primaryChatController.requestSessionSettingsLeave {
+                                    scope.launch {
+                                        primaryChatController.selectSession(id)
+                                        if (primaryChatController.state.value.selectedSession?.id == id) navigate(DesktopPrimaryRoute.CHAT)
+                                        else controller.navigationUnavailable()
+                                    }
+                                }
+                            } },
+                            onOpenCard = { id, focus -> navigateAfter(DesktopPrimaryRoute.MANAGE) {
+                                openDesignModels = false; requestedDesignModel = null
+                                requestedMomentCard = id to focus
+                            } })
+                    }
                     DesktopPrimaryRoute.COMMUNITY -> communityController?.let { DesktopCommunityPanel(it, managementController) }
                     DesktopPrimaryRoute.CHAT -> DesktopPrimaryChatPanel(primaryChatController, size, composerLayout,
                         onOpenStudio = { navigate(DesktopPrimaryRoute.TOOLS) }, compactNavigation = compactChatNavigation,
@@ -191,6 +207,7 @@ internal fun DesktopPrimaryShell(
                         initialModels = openDesignModels, initialModelId = requestedDesignModel,
                         onInitialModelsConsumed = { openDesignModels = false; requestedDesignModel = null },
                         initialPerson = requestedPerson, onInitialPersonConsumed = { requestedPerson = null },
+                        initialMomentCard = requestedMomentCard, onInitialMomentCardConsumed = { requestedMomentCard = null },
                         initialImportKind = externalManageKind, initialImportTargetId = externalManageTargetId,
                         onInitialImportConsumed = { externalManageKind = null; externalManageTargetId = null },
                         initialTaskTarget = taskManageTarget, onInitialTaskConsumed = { taskManageTarget = null },

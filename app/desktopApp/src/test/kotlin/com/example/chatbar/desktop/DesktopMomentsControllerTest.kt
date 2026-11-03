@@ -11,6 +11,47 @@ import kotlinx.coroutines.flow.first
 import kotlin.test.*
 
 class DesktopMomentsControllerTest {
+    @Test fun `moment navigation resolves retained IDs only and refuses deleted or relinked objects without generation`() = runBlocking {
+        val parent = Files.createTempDirectory("moment-navigation-")
+        val root = Files.createDirectory(parent.resolve("data"))
+        val container = DesktopAppContainer(DesktopDataRootResolution.Resolved(root,
+            DesktopDataRootProvenance.CLI_OVERRIDE, parent.resolve("bootstrap.json")), secretStoreFactory = { InMemoryDesktopSecretStore() })
+        var controller: DesktopMomentsController? = null
+        try {
+            val card = CharacterCard("card", "Same name", createdAt = 1, updatedAt = 1)
+            val duplicate = card.copy(id = "duplicate-card")
+            container.characterRepository.save(card); container.characterRepository.save(duplicate)
+            val session = ChatSession("bound-session", card.id, "Same name", createdAt = 1, updatedAt = 1)
+            val newer = session.copy(id = "newer-session", updatedAt = 9999)
+            val storage = container.jsonFileStorage
+            for (item in listOf(session, newer)) storage.saveEntity("chat_sessions", item.id, item, ChatSession.serializer())
+            val post = MomentPost("post", card.id, session.id, senderName = "Same name", text = "Synthetic",
+                scheduledAt = 1, generatedAt = 10)
+            storage.saveEntity("moment_posts", post.id, post, MomentPost.serializer())
+            val store = DesktopMomentStore(storage, container.dataOperationCoordinator)
+            val calls = AtomicInteger()
+            val owner = DesktopMomentsController(store, container.settingsRepository, container.characterRepository,
+                container.chatRepository, container.dataOperationCoordinator, container.taskRuntime,
+                DesktopMomentGenerator { _, _, _, _, _, _, _, _, _, _ -> calls.incrementAndGet(); error("Must not generate") })
+            controller = owner
+            withTimeout(5000) { owner.state.first { it.posts.size == 1 } }
+            assertEquals(card.id, owner.linkedTarget(post.id, true).id)
+            assertEquals(session.id, owner.linkedTarget(post.id, false).id)
+            container.chatRepository.updateSession(session.copy(characterCardId = duplicate.id))
+            assertNull(owner.linkedTarget(post.id, false).id)
+            container.chatRepository.deleteSession(session.id)
+            assertNull(owner.linkedTarget(post.id, false).id)
+            assertEquals(card.id, owner.linkedTarget(post.id, true).id)
+            container.characterRepository.delete(card.id)
+            assertNull(owner.linkedTarget(post.id, true).id)
+            assertNotNull(container.characterRepository.getById(duplicate.id))
+            assertEquals(listOf(newer.id), container.chatRepository.getAllSessions().map { it.id })
+            store.delete(post.id)
+            assertNull(owner.linkedTarget(post.id, true).id)
+            assertEquals(0, calls.get())
+        } finally { controller?.closeAndDrain(); container.close(); parent.toFile().deleteRecursively() }
+    }
+
     @Test fun `moment cleanup uncertainty survives skipped generation without false completion or replay`() = runBlocking {
         val parent = Files.createTempDirectory("moment-task-cleanup-")
         val root = Files.createDirectory(parent.resolve("data"))

@@ -34,6 +34,29 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class DesktopCharacterEditorControllerTest {
+    @Test fun `moment card switch focus preserves an open dirty draft and refuses a missing exact card`() = runBlocking {
+        fixture { _, container, controller ->
+            val card = CharacterCard.create("Same title", greeting = "Hi")
+            val duplicate = CharacterCard.create("Same title", greeting = "Other")
+            container.characterRepository.save(card); container.characterRepository.save(duplicate)
+            controller.openMoments(card.id)
+            assertEquals(card.id, controller.state.value.targetId)
+            assertEquals(1L, controller.state.value.momentsFocusRevision)
+            controller.edit { it.copy(botName = "Unsaved identity") }
+            val draft = controller.state.value.draftSessionId
+            controller.openMoments(card.id)
+            assertEquals(draft, controller.state.value.draftSessionId)
+            assertEquals("Unsaved identity", controller.state.value.card!!.botName)
+            assertEquals(2L, controller.state.value.momentsFocusRevision)
+            assertTrue(controller.state.value.dirty)
+            assertEquals(card, container.characterRepository.getById(card.id))
+            controller.openMoments("missing-card")
+            assertEquals(CharacterEditorProblem.SOURCE_DELETED, controller.state.value.problem)
+            assertEquals(card.id, controller.state.value.targetId)
+            assertEquals(draft, controller.state.value.draftSessionId)
+        }
+    }
+
     @Test fun `image overrides remain a draft until saved survive reopen and null reset can be discarded or saved`() = runBlocking {
         fixture { root, app, editor ->
             val source = CharacterCard.create("Image defaults", greeting = "Hello")

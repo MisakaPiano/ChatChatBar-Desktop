@@ -72,6 +72,7 @@ internal data class DesktopCharacterEditorState(
     val detail: String? = null,
     val personFocusId: String? = null,
     val personFocusRevision: Long = 0,
+    val momentsFocusRevision: Long = 0,
     val documentFocusId: String? = null,
     val documentFocusRevision: Long = 0,
 ) {
@@ -222,6 +223,20 @@ internal class DesktopCharacterEditorController(
         }
         // Focus is ephemeral. Do not reload or replace an existing unsaved draft of the same card.
         _state.value = current.copy(personFocusId = personId, personFocusRevision = current.personFocusRevision + 1)
+    }
+
+    suspend fun openMoments(cardId: String) {
+        if (characters.getById(cardId) == null) {
+            _state.value = _state.value.copy(problem = CharacterEditorProblem.SOURCE_DELETED)
+            return
+        }
+        if (_state.value.targetId != cardId || _state.value.card == null) {
+            if (deferLeave { scope.launch { openMoments(cardId) } }) return
+            openExisting(cardId)
+        }
+        val current = _state.value
+        if (current.targetId == cardId && current.card != null)
+            _state.value = current.copy(momentsFocusRevision = current.momentsFocusRevision + 1)
     }
 
     suspend fun openExisting(id: String) {

@@ -40,6 +40,7 @@ class DesktopMomentsPanelTest {
             ImageIO.write(pixels, "png", root.resolve("images/fixture.png").toFile())
             val card = CharacterCard("card", "合成角色卡", createdAt = 1, updatedAt = 1)
             container.jsonFileStorage.saveEntity("character_cards", card.id, card, CharacterCard.serializer())
+            container.chatRepository.createSession(ChatSession("session", card.id, "合成会话", createdAt = 1, updatedAt = 1))
             val post = MomentPost("post", card.id, "session", senderName = "合成人物", senderAvatar = "images/fixture.png",
                 text = "合成动态文字", imagePath = "images/fixture.png", isPrivate = true, userLiked = true, scheduledAt = 1, generatedAt = 10)
             container.jsonFileStorage.saveEntity("moment_posts", post.id, post, MomentPost.serializer())
@@ -55,8 +56,11 @@ class DesktopMomentsPanelTest {
             controller = view
             withTimeout(10_000) { view.state.first { it.posts.size == 1 } }
             for (width in listOf(420, 1100)) {
+                val opened = mutableListOf<String>()
                 val scene = ImageComposeScene(width, 900, coroutineContext = edt) {
-                    Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.background)) { DesktopMomentsPanel(view) }
+                    Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.background)) {
+                        DesktopMomentsPanel(view, onOpenSession = { opened += it })
+                    }
                 }
                 try {
                     suspend fun frames() { repeat(5) { scene.render().close(); delay(30) } }
@@ -79,7 +83,18 @@ class DesktopMomentsPanelTest {
                     assertFalse(view.state.value.scheduling)
                     withTimeout(10_000) { while (container.settingsRepository.getAppSettings().lastSeenMomentsAt < 10) { frames() } }
                     shot("moments-timeline-$width.png")
-                    click("请求日志"); frames(); click("动态配图"); frames()
+                    click(store.posts().single().senderName)
+                    withTimeout(5000) { while (opened.isEmpty()) frames() }
+                    assertEquals(listOf("session"), opened)
+                    click("朋友圈相册"); frames()
+                    assertTrue(all().any { matches(it, "相册分组 ${card.id}") })
+                    shot("moments-album-groups-$width.png")
+                    click("相册分组 ${card.id}"); frames()
+                    assertTrue(all().any { matches(it, "返回朋友圈动态 ${post.id}") })
+                    shot("moments-album-posts-$width.png")
+                    click("返回朋友圈动态 ${post.id}"); frames()
+                    assertTrue(all().any { matches(it, "编辑动态文字") })
+                    click("更多操作"); frames(); click("请求日志"); frames(); click("动态配图"); frames()
                     assertTrue(all().any { node -> node.config.getOrNull(SemanticsProperties.Text)?.any { it.text.contains("有效返回：1") } == true })
                     shot("moments-image-log-$width.png"); click("关闭调试日志"); frames()
                     click("编辑动态文字"); frames()

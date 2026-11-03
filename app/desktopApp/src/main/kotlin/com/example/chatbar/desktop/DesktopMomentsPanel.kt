@@ -1,14 +1,16 @@
 @file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 package com.example.chatbar.desktop
 
+import androidx.compose.foundation.ContextMenuArea
+import androidx.compose.foundation.ContextMenuItem
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -67,13 +69,18 @@ internal fun DesktopMomentsSettings(controller: DesktopMomentsController) {
 }
 
 @Composable
-internal fun DesktopMomentsPanel(controller: DesktopMomentsController) {
+internal fun DesktopMomentsPanel(controller: DesktopMomentsController,
+    onOpenSession: (String) -> Unit = {}, onOpenCard: (String, Boolean) -> Unit = { _, _ -> }) {
     val state by controller.state.collectAsState(); val scope = rememberCoroutineScope()
     val colors = DesktopBootstrapColors; val clipboard = LocalClipboardManager.current
     var error by remember { mutableStateOf<String?>(null) }
+    var showingAlbum by remember { mutableStateOf(false) }
+    var focusPostId by remember { mutableStateOf<String?>(null) }
+    val timelineScroll = rememberLazyListState()
     var choosingCard by remember { mutableStateOf(false) }
     var debugGeneration by remember { mutableStateOf(false) }
     var showingDebug by remember { mutableStateOf(false) }
+    var showingTools by remember { mutableStateOf(false) }
     var confirmingResume by remember { mutableStateOf(false) }
     var plans by remember { mutableStateOf(false) }
     var recoveringTask by remember { mutableStateOf<MomentTask?>(null) }
@@ -90,23 +97,46 @@ internal fun DesktopMomentsPanel(controller: DesktopMomentsController) {
         try { error = null; action() } catch (cancelled: CancellationException) { throw cancelled }
         catch (_: Exception) { error = "朋友圈操作未完成，请核对当前记录后重试；原数据保留" }
     } }
+    fun openLinked(postId: String, cardSettings: Boolean, focusSwitch: Boolean = false) = act {
+        val link = controller.linkedTarget(postId, cardSettings)
+        if (link.id == null) error = link.error
+        else if (cardSettings) onOpenCard(link.id, focusSwitch) else onOpenSession(link.id)
+    }
+    if (showingAlbum) {
+        DesktopMomentAlbum(state.posts, state.cards.associate { it.id to it.name }, controller.resources,
+            onClose = { showingAlbum = false }, onPost = { id -> focusPostId = id; showingAlbum = false })
+        return
+    }
+    LaunchedEffect(focusPostId, state.posts) {
+        focusPostId?.let { id ->
+            val index = com.example.chatbar.domain.moment.MomentAlbumPolicy.timelineIndex(state.posts, id)
+            if (index >= 0) timelineScroll.scrollToItem(index) else error = "该动态已删除或不可用"
+            focusPostId = null
+        }
+    }
     LaunchedEffect(state.posts.maxOfOrNull { it.generatedAt }) { controller.markViewed() }
     Box(Modifier.fillMaxSize().background(colors.background)) {
         Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            DesktopManagementHeading("朋友圈")
+            StudioActions {
+                DesktopManagementHeading("朋友圈")
+                StudioAction("朋友圈相册", icon = DesktopAppIcons.ImageAdd) { showingAlbum = true }
+            }
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 BootstrapButton("生成动态", enabled = state.enabled && !state.busy) { debugGeneration = false; choosingCard = true }
+                BootstrapButton(if (showingTools) "收起操作" else "更多操作", variant = DesktopActionVariant.GHOST) { showingTools = !showingTools }
+                if (state.busy) BootstrapButton("停止生成", secondary = true, onClick = controller::stop)
+            }
+            if (showingTools) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 BootstrapButton(if (state.scheduling) "暂停本机调度" else "恢复本机调度", secondary = true) {
                     if (state.scheduling) act { controller.pause() } else confirmingResume = true
                 }
                 BootstrapButton("计划与记录", secondary = true) { plans = true }
                 BootstrapButton("刷新", secondary = true) { act { controller.refresh() } }
-                if (controller.diagnostics != null) BootstrapButton("请求日志", secondary = true) { debugOperation = "JUDGE" }
+                if (controller.diagnostics != null) BootstrapButton("请求日志", secondary = true) { debugOperation = "GENERATE" }
                 BootstrapButton("调试生成", enabled = state.enabled && !state.busy, variant = DesktopActionVariant.GHOST) {
                     debugGeneration = true; choosingCard = true
                 }
                 if (state.debug != null) BootstrapButton("本次调试交换", variant = DesktopActionVariant.GHOST) { showingDebug = true }
-                if (state.busy) BootstrapButton("停止生成", secondary = true, onClick = controller::stop)
             }
             if (state.progress.isNotBlank()) StatusText(state.progress)
             if (state.streamedText.isNotBlank()) Column(Modifier.heightIn(max = 180.dp).verticalScroll(rememberScrollState())) {
@@ -115,18 +145,30 @@ internal fun DesktopMomentsPanel(controller: DesktopMomentsController) {
             if (state.notice.isNotBlank()) StatusText(state.notice)
             (error ?: state.error)?.let { StatusText(it, colors.destructive) }
             if (state.posts.isEmpty()) StatusText("暂无动态。开启后不会因导入旧计划而自动生成。")
-            LazyColumn(Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            LazyColumn(Modifier.fillMaxWidth().weight(1f), state = timelineScroll) {
                 items(state.posts, key = { it.id }) { post ->
-                    Row(Modifier.fillMaxWidth().background(colors.card, RoundedCornerShape(10.dp)).padding(14.dp),
+                    Column(Modifier.fillMaxWidth()) {
+                    Row(Modifier.fillMaxWidth().padding(vertical = 18.dp, horizontal = 4.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         val avatar = post.senderAvatar; val resources = controller.resources
-                        if (!avatar.isNullOrBlank() && resources != null) DesktopOwnedImage(avatar, resources::readBytes,
-                            Modifier.size(42.dp).clip(CircleShape).clickable { viewing = listOf(avatar); viewIndex = 0 }, crop = true)
-                        else Box(Modifier.size(42.dp).background(colors.secondary, CircleShape), contentAlignment = Alignment.Center) {
-                            StatusText(post.senderName.take(1))
+                        @Composable fun LinkedAuthor(content: @Composable () -> Unit) {
+                            ContextMenuArea(items = { buildList {
+                                add(ContextMenuItem("打开所属角色卡设置") { openLinked(post.id, true) })
+                                add(ContextMenuItem("查看该角色卡朋友圈开关") { openLinked(post.id, true, true) })
+                                if (!avatar.isNullOrBlank()) add(ContextMenuItem("查看头像") { viewing = listOf(avatar); viewIndex = 0 })
+                            } }) { content() }
+                        }
+                        LinkedAuthor {
+                            if (!avatar.isNullOrBlank() && resources != null) DesktopOwnedImage(avatar, resources::readBytes,
+                                Modifier.size(44.dp).clip(RoundedCornerShape(6.dp)).clickable { openLinked(post.id, false) }, crop = true)
+                            else Box(Modifier.size(44.dp).background(colors.secondary, RoundedCornerShape(6.dp))
+                                .clickable { openLinked(post.id, false) }, contentAlignment = Alignment.Center) {
+                                StatusText(post.senderName.take(1))
+                            }
                         }
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            BasicText(post.senderName, style = TextStyle(color = colors.foreground, fontSize = 15.sp, fontWeight = FontWeight.SemiBold))
+                            LinkedAuthor { BasicText(post.senderName, modifier = Modifier.clickable { openLinked(post.id, false) },
+                                style = TextStyle(color = colors.primary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)) }
                             if (post.isPlaceholder) {
                                 StatusText(post.failureReason ?: "生成尚未完成", colors.destructive)
                                 BootstrapButton("从已完成阶段重试", enabled = !state.busy, secondary = true) { act { controller.retry(post) } }
@@ -155,11 +197,13 @@ internal fun DesktopMomentsPanel(controller: DesktopMomentsController) {
                             }
                         }
                     }
+                    Box(Modifier.fillMaxWidth().height(1.dp).background(colors.border))
+                    }
                 }
             }
         }
         if (choosingCard) MomentModal(if (debugGeneration) "选择调试生成的角色卡" else "选择发动态的角色卡", { choosingCard = false }) {
-            StatusText(if (debugGeneration) "调试立即生成会记录完整交换，绕过发布判断的拒绝结果；配置NovelAI后会尝试配图，即使自动配图开关关闭。可能产生模型和配图费用。"
+            StatusText(if (debugGeneration) "调试立即生成会记录完整交换；配置NovelAI后会尝试配图，即使自动配图开关关闭。可能产生模型和配图费用。"
                 else "将按此角色卡最近会话及现有模型设置生成，可能产生模型或配图费用。")
             state.cards.filter { it.momentsEnabled }.forEach { card ->
                 BootstrapButton(card.name, enabled = !state.busy, secondary = true) {
