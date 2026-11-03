@@ -18,11 +18,11 @@ object NovelAiV5GenerationPolicy {
             else index++
         }
         val first = source.substring(0, boundary)
-        val text = textMarker.find(first)?.range?.first ?: first.length
-        val beforeText = first.substring(0, text)
+        val marker = textMarker.find(first)
+        val beforeText = first.substring(0, marker?.range?.first ?: first.length).trimEnd { it.isWhitespace() || it == ',' }
         val tag = NovelAiPromptAuthority.NOVELAI_TRANSPARENT_BACKGROUND_TAG
         val prefix = if (beforeText.isEmpty()) tag else "$beforeText, $tag"
-        val textSeparator = if (text == 0 && first.isNotEmpty()) ", " else ""
-        return prompt.copy(baseCaption = prefix + textSeparator + first.substring(text) + source.substring(boundary))
+        val text = marker?.let { ", " + first.substring(it.range.last - 4) }.orEmpty()
+        return prompt.copy(baseCaption = prefix + text + source.substring(boundary))
     }
 }
