@@ -52,7 +52,7 @@ jobs:
             --tests com.example.chatbar.domain.image.NovelAiImageModelCapabilityTest `
             --tests com.example.chatbar.domain.image.NovelAiPngMetadataReaderTest `
             --tests com.example.chatbar.domain.image.NovelAiV5GenerationPolicyTest
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $sharedExit = $LASTEXITCODE
           .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain `
             --tests com.example.chatbar.desktop.DesktopCharacterEditorOrderTest `
             --tests com.example.chatbar.desktop.DesktopCharacterImageDefaultsTest `
@@ -60,7 +60,7 @@ jobs:
             --tests com.example.chatbar.desktop.DesktopCharacterCardAiPanelTest `
             --tests com.example.chatbar.desktop.DesktopStyleGalleryTest `
             --tests com.example.chatbar.desktop.DesktopStudioVarietyPlusTest
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if ($LASTEXITCODE -ne 0 -or $sharedExit -ne 0) { exit 1 }
       - name: Preserve actual reports and synthetic review images
         if: always()
         uses: actions/upload-artifact@v4

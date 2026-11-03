@@ -5,7 +5,7 @@ import org.junit.Test
 import kotlin.test.*
 
 class NovelAiVarietyPlusImportTest {
-    private fun comment(model: String, sigma: String) = """{"model":"$model","prompt":"Original scene  ","uc":"Original negative  ","width":1024,"height":1024,"steps":28,"sampler":"k_euler_ancestral","skip_cfg_above_sigma":$sigma}"""
+    private fun comment(model: String, sigma: String) = """{"model":"$model","prompt":"Original scene  ","uc":"Original negative  ","width":1024,"height":1024,"steps":28,"sampler":"k_euler_ancestral","seed":7,"skip_cfg_above_sigma":$sigma}"""
     private fun body(settings: NovelAiGenerationSettings, enhance: NovelAiEnhanceRequestOptions? = null) =
         Json.parseToJsonElement(NovelAiImageService().buildRequestBody(NovelAiPromptPlan("Original scene", emptyList()),
             settings.imageSize(), settings, enhance = enhance)).jsonObject.getValue("parameters").jsonObject
