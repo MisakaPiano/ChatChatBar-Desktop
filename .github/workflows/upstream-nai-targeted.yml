@@ -1,0 +1,36 @@
+name: Upstream NAI targeted checks
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Exact upstream contribution commit
+        required: true
+        type: string
+jobs:
+  targeted:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_sha }}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Compile Android and run affected production-path tests
+        working-directory: app
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:testDebugUnitTest :app:compileDebugAndroidTestKotlin --tests '*NovelAi*Test' --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx5g -Dfile.encoding=UTF-8'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: upstream-nai-results
+          path: |
+            app/app/build/test-results/testDebugUnitTest/
+            app/app/build/reports/tests/testDebugUnitTest/
