@@ -423,12 +423,12 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
         currentImage = copy; selectedResult = null; auxiliary = "当前图片"; controller.clearReverseCandidate()
     } }) }
     guidanceEditor?.let { DesktopImageToolsDialog(it.first, controller.picker, { guidanceEditor = null }, controller::applyGuidanceEdit, it.second, it.third) }
-    metadataFile?.let { path -> androidx.compose.ui.window.DialogWindow(onCloseRequest = { metadataFile = null }, title = "选择导入的元数据", icon = desktopImageWindowIcon(),
+    metadataFile?.let { path -> androidx.compose.ui.window.DialogWindow(onCloseRequest = { metadataFile = null; metadataPreview = null }, title = "选择导入的元数据", icon = desktopImageWindowIcon(),
         state = androidx.compose.ui.window.rememberDialogState(size = rememberDesktopImageWindowSize(560.dp, 620.dp))) {
         DesktopImageDialogBody(Modifier.background(DesktopBootstrapColors.background).padding(16.dp), footer = {
             StudioActions {
-                StudioAction("导入") { scope.launch { controller.importMetadata(path, metadataSelection); metadataFile = null } }
-                StudioAction("取消") { metadataFile = null }
+                StudioAction("导入") { scope.launch { controller.importMetadata(path, metadataSelection); metadataFile = null; metadataPreview = null } }
+                StudioAction("取消") { metadataFile = null; metadataPreview = null }
             }
         }) {
             StatusText(path.fileName.toString())
