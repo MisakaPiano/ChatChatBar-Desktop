@@ -25,8 +25,6 @@ import org.apache.pdfbox.pdmodel.PDPage
 import org.apache.pdfbox.pdmodel.PDPageContentStream
 import org.apache.pdfbox.pdmodel.common.PDRectangle
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject
-import org.commonmark.parser.Parser
-import org.commonmark.renderer.text.TextContentRenderer
 import org.jetbrains.skia.EncodedImageFormat
 import org.jetbrains.skia.Image
 import kotlin.math.min
@@ -41,7 +39,8 @@ internal fun desktopScreenshotPdfRows(width: Int): Int =
     ((PDRectangle.A4.height - 48f) / ((PDRectangle.A4.width - 48f) / width)).toInt().coerceAtLeast(1)
 
 internal sealed interface DesktopScreenshotDocumentBlock {
-    data class Text(val text: String, val heading: Boolean = false, val right: Boolean = false) : DesktopScreenshotDocumentBlock
+    data class Text(val text: String, val heading: Boolean = false, val right: Boolean = false,
+        val runs: List<DesktopWordTextRun> = emptyList()) : DesktopScreenshotDocumentBlock
     data class Picture(val reference: String, val right: Boolean = false) : DesktopScreenshotDocumentBlock
     data class Header(val name: String, val avatar: String, val right: Boolean = false) : DesktopScreenshotDocumentBlock
     data class Appearance(val background: String?, val opacity: Float, val backgroundArgb: Int,
@@ -69,8 +68,6 @@ internal fun desktopScreenshotDocument(request: DesktopScreenshotRequest, colors
     if (colors != null) blocks += DesktopScreenshotDocumentBlock.Appearance(
         request.background?.takeIf { request.contentOptions.includeBackground }, request.state.backgroundOpacity,
         colors.background.toArgb(), colors.foreground.toArgb())
-    val parser = Parser.builder().build()
-    val textRenderer = TextContentRenderer.builder().build()
     fun text(value: String, heading: Boolean = false, right: Boolean = false) {
         if (value.isNotBlank()) blocks += DesktopScreenshotDocumentBlock.Text(value, heading, right)
     }
@@ -98,7 +95,7 @@ internal fun desktopScreenshotDocument(request: DesktopScreenshotRequest, colors
                 } else {
                     if (index in speakerHeaders) header(segment.speaker?.displayName ?: presented.speakerLabel,
                         desktopPresentedAvatarReference(segment.speaker, request.state.selectedCharacter))
-                    text(textRenderer.render(parser.parse(desktopSanitizeRoleplayMarkdown(segment.text))).trimEnd(), right = right)
+                    blocks += desktopWordMarkdown(desktopSanitizeRoleplayMarkdown(segment.markdownSource), right)
                 }
             }
         }
@@ -378,15 +375,24 @@ internal object DesktopScreenshotDocuments {
     private fun XMLStreamWriter.paragraph(block: DesktopScreenshotDocumentBlock.Text, color: String? = null) {
         start("w", "p", W)
         alignment(block.right)
+        require(block.runs.isEmpty() || block.runs.joinToString("") { it.text } == block.text) { "文档格式化文字快照不一致" }
+        val runs = block.runs.ifEmpty { listOf(DesktopWordTextRun(block.text)) }
+        runs.forEach { run -> textRun(run, block.heading, color) }
+        writeEndElement()
+    }
+
+    private fun XMLStreamWriter.textRun(run: DesktopWordTextRun, heading: Boolean, color: String?) {
         start("w", "r", W)
         start("w", "rPr", W)
-        empty("w", "rFonts", W); attr("w", "eastAsia", W, "Microsoft YaHei"); attr("w", "ascii", W, "Calibri")
-        if (block.heading) empty("w", "b", W)
+        empty("w", "rFonts", W); attr("w", "eastAsia", W, "Microsoft YaHei"); attr("w", "ascii", W, if (run.code) "Consolas" else "Calibri")
+        if (heading || run.bold) empty("w", "b", W)
+        if (run.italic) empty("w", "i", W)
         if (color != null) { empty("w", "color", W); attr("w", "val", W, color) }
-        empty("w", "sz", W); attr("w", "val", W, if (block.heading) "26" else "22")
+        empty("w", "sz", W); attr("w", "val", W, run.fontSizeSp?.let { (it * 1.5f).toInt().coerceAtLeast(2).toString() }
+            ?: if (heading) "26" else "22")
         writeEndElement()
         // XML 1.0 cannot represent isolated controls/surrogates. Keep all valid Chinese/emoji text.
-        desktopWordXmlText(block.text).replace("\r\n", "\n").replace('\r', '\n').split('\n').forEachIndexed { index, line ->
+        desktopWordXmlText(run.text).replace("\r\n", "\n").replace('\r', '\n').split('\n').forEachIndexed { index, line ->
             if (index > 0) empty("w", "br", W)
             line.split('\t').forEachIndexed { tab, value ->
                 if (tab > 0) empty("w", "tab", W)
@@ -394,12 +400,14 @@ internal object DesktopScreenshotDocuments {
                 writeCharacters(value); writeEndElement()
             }
         }
-        writeEndElement(); writeEndElement()
+        writeEndElement()
     }
 
     private fun XMLStreamWriter.alignment(right: Boolean) {
         if (right) {
-            start("w", "pPr", W); empty("w", "jc", W); attr("w", "val", W, "right"); writeEndElement()
+            start("w", "pPr", W)
+            empty("w", "jc", W); attr("w", "val", W, "right")
+            writeEndElement()
         }
     }
 
