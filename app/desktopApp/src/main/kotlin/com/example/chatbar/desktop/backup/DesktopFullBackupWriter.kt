@@ -56,7 +56,8 @@ internal object DesktopFullBackupWriter {
                             val original = DesktopBackupPolicy.entity(name, bytes, false, wireVersionCode = 86, modern = true)
                             val value = credentials?.entity(name, original) ?: original
                             entities[name] = DesktopBackupRecords.scopeRecord(value)
-                            if (value != original) transported[name] = value.toString().toByteArray()
+                            if (value != original || DesktopBackupPolicy.entityType(name) == "moment_posts")
+                                transported[name] = value.toString().toByteArray()
                         }
                         finally { bytes.fill(0) }
                     }
@@ -76,7 +77,8 @@ internal object DesktopFullBackupWriter {
                     studioSettings = counts.keys.any { it.startsWith("novelai_studio_") || it.startsWith("novelai_design_") },
                     studioHistory = selection?.studioHistory ?: ((counts["novelai_generation_history"] ?: 0) > 0),
                     studioHistoryImages = selection?.studioHistoryImages ?: true,
-                    moments = false, momentsImages = true, sessionChoices = choices.orEmpty(),
+                    moments = selection?.moments ?: (counts.keys.any { it in setOf("moment_posts", "moment_tasks") }),
+                    momentsImages = selection?.momentsImages ?: true, sessionChoices = choices.orEmpty(),
                     sessionDefaultChoice = if (choices == null) InspectionSessionChoice() else null)
                 DesktopBackupReadOnlyInspector().scopeReport(scope, counts, entities)
                 val capturedPreferences = credentials?.preferences(preferences) ?: preferences

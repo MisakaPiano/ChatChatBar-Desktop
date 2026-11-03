@@ -29,6 +29,7 @@ internal object DesktopBackupPolicy {
         "embedding_configs" to EmbeddingConfig.serializer(), "embedding_model_config" to EmbeddingConfig.serializer(),
         "retrieval_model_config" to ModelConfig.serializer(),
         "chat_sessions" to ChatSession.serializer(), "chat_messages" to ChatMessage.serializer(),
+        "moment_posts" to MomentPost.serializer(), "moment_tasks" to MomentTask.serializer(),
         "chat_message_indexes" to ChatMessageIndex.serializer(), "chat_message_order_backups" to ChatMessageOrderBackup.serializer(),
         "chat_drafts" to ChatDraft.serializer(), "chat_scroll_positions" to ChatScrollPosition.serializer(),
         "vector_chunks" to VectorChunk.serializer(), "save_slots" to SaveSlot.serializer(),
@@ -54,6 +55,7 @@ internal object DesktopBackupPolicy {
     fun isDesktopOnly(path: String): Boolean = path.startsWith("${DesktopHistoricalVoiceCustody.ROOT}/") || path.startsWith("${DesktopPreservationStore.ROOT}/") || path.startsWith("${DesktopSaveSlotSourceCustody.ROOT}/") ||
         path.startsWith("entities/") && (entityType(path).startsWith("desktop_") || entityType(path) == "retrieval_model_config")
     fun hasDesktopParticipation(value: JsonObject): Boolean =
+        DesktopMomentBackupExtension.FIELD in value ||
         value["desktopPlayerRole"] is JsonObject ||
         (value["desktopPlayerAvatar"] as? JsonPrimitive)?.contentOrNull?.isNotBlank() == true ||
         (value["desktopAvatar"] as? JsonPrimitive)?.contentOrNull?.isNotBlank() == true ||
@@ -82,6 +84,8 @@ internal object DesktopBackupPolicy {
         require(relative.startsWith("entities/") && relative.endsWith(".json"))
         if (modern) DesktopBackupRecords.requireSize(bytes.size.toLong()) else require(bytes.size <= MAX_JSON)
         val type = entityType(relative)
+        if (!modern && type in setOf("moment_posts", "moment_tasks"))
+            throw DesktopBackupCompatibilityException(DesktopBackupCompatibility.MOMENTS_UNSUPPORTED)
         val serializer = schemas[type] ?: throw DesktopBackupCompatibilityException(
             if (type in setOf("moment_posts", "moment_tasks")) DesktopBackupCompatibility.MOMENTS_UNSUPPORTED
             else DesktopBackupCompatibility.ENTITY_UNSUPPORTED)
@@ -113,6 +117,7 @@ internal object DesktopBackupPolicy {
         } catch (_: SerializationException) {
             throw DesktopBackupCompatibilityException(DesktopBackupCompatibility.ENTITY_SCHEMA_UNSUPPORTED)
         }
+        if (type == "moment_posts") return DesktopMomentBackupExtension.liveRecord(clean)
         return clean
     }
 

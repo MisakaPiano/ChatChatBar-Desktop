@@ -1,10 +1,13 @@
 package com.example.chatbar.data.local.entity
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 @Serializable
+@OptIn(ExperimentalSerializationApi::class)
 data class MomentPost(
     val id: String,
     val characterCardId: String,
@@ -27,7 +30,10 @@ data class MomentPost(
     val scheduledAt: Long,
     val generatedAt: Long,
     val createdAt: Long = generatedAt,
-    val updatedAt: Long = generatedAt
+    val updatedAt: Long = generatedAt,
+    /** Desktop extension: retained image candidates. The ordinary image fields remain the selected version. */
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val desktopImageVersions: List<MomentImageVersion> = emptyList()
 ) {
     val displayLikeCount: Int
         get() = (if (isPrivate) 0 else baseLikeCount) + if (userLiked) 1 else 0
@@ -102,6 +108,16 @@ data class MomentPost(
         )
     }
 }
+
+@Serializable
+data class MomentImageVersion(
+    val id: String,
+    val imagePath: String,
+    val imagePrompt: String = "",
+    val generatedImageMetadata: GeneratedImageMetadata? = null,
+    val imageBrief: String = "",
+    val createdAt: Long
+)
 
 @Serializable
 data class MomentTask(

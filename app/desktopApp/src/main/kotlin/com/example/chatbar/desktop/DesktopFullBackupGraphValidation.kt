@@ -26,6 +26,20 @@ internal object DesktopFullBackupGraphValidation {
             } }
         }
         val storage = JsonFileStorage(root)
+        storage.visitEntitiesStrict("moment_posts", MomentPost.serializer()) { key, post ->
+            check(key == post.id)
+            requireMomentStorageId(post.id)
+            DesktopMomentImageVersions.retained(post).forEach { version ->
+                val reference = version.imagePath
+                if (reference.startsWith("images/")) {
+                    val file = root.resolve(reference).normalize()
+                    check(file.startsWith(root.resolve("images")) && Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS)) {
+                        "MOMENT_IMAGE_VERSION_RESOURCE_MISSING"
+                    }
+                    DesktopArchiveFiles.safe(file, false)
+                }
+            }
+        }
         val sessions = hashSetOf<String>()
         val messages = hashMapOf<String, Pair<String, Set<String>>>()
         storage.visitEntitiesStrict("chat_sessions", ChatSession.serializer()) { key, session ->

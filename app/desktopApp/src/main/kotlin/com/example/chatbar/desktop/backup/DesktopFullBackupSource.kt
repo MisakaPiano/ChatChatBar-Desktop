@@ -103,7 +103,10 @@ internal object DesktopFullBackupSource {
                                             require(path.endsWith(".json"))
                                             phase = "ENTITY_SCHEMA"
                                             when (val type = DesktopBackupPolicy.entityType(path)) {
-                                                "moment_posts" -> backupJson.decodeFromJsonElement<MomentPostSnapshot>(value)
+                                                "moment_posts" -> {
+                                                    if (DesktopMomentBackupExtension.FIELD in value) incompatible84 = true
+                                                    DesktopMomentBackupExtension.snapshot(value)
+                                                }
                                                 "moment_tasks" -> backupJson.decodeFromJsonElement<MomentTaskSnapshot>(value)
                                                 else -> {
                                                     DesktopOfficialBackupEntitySchema.validate(type, value, 86)

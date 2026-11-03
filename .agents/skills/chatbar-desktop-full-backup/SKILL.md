@@ -5,6 +5,9 @@ description: Maintain Desktop cbbackup selection/export, optional credential tra
 
 # Desktop Full-App Backup
 
+Modern Desktop Moment posts carry explicit `desktopImageVersions` (including an empty marker for live post restoration). `DesktopMomentBackupExtension` validates that extension separately from the unchanged pinned official snapshot; unmarked official posts and incoming tasks remain dormant custody. Local PC posts/tasks stay in merge selection, while imported tasks gain no admission. Every version resource participates in mapping, scope omission/estimates, preservation edges and live-root validation. Writer scope follows the selected Moments flags. Legacy v1 Moments refusal remains. `DesktopMomentVersionBackupTest` exercises authentication, selected-current preservation, image omission, actual restored-store selection and incoming task exclusion; this is not official Android roundtrip support.
+
+
 `DesktopFullBackupController.workRows` is body-free task-center metadata for its original export/check/restore-preparation Job, not a second scheduler. Completion publishes after the real Job cleanup; stopTask checks the original UUID so a stale row cannot cancel a later job. Picker cancellation is not successful export. Cleanup uncertainty and interrupted work with restart already scheduled remain UNCONFIRMED; no metadata observation cancels a durable restore. DATA task navigation selects the existing export/check view without opening a picker or submitting work.
 
 The export dialog reports the BACKUP modal category and has a compact task entry. Only active data work can open observation/stop above that surface; idle selections, unrelated dialogs and root/restart locks retain their guards. Late-cancel verification holds resumeScheduler after journal.schedule, cancels the original controller Job and proves pending journal/current bytes remain while metadata is UNCONFIRMED.

@@ -206,6 +206,11 @@ internal class DesktopBackupReadOnlyInspector(private val afterAuthentication: (
         require(s.characters == counts.count("character_cards") && s.sessions == counts.count("chat_sessions"))
         require(listOf(s.sessionsWithImages, s.sessionsWithVoice, s.sessionsWithArchives).all { it in 0..s.sessions })
         require(s.moments || counts.count("moment_posts") + counts.count("moment_tasks") == 0)
+        if (!s.momentsImages) entities.filterKeys { DesktopBackupPolicy.entityType(it) == "moment_posts" }.values.forEach { post ->
+            require(post["imagePath"] == null || post["imagePath"] == JsonNull)
+            require(post["generatedImageMetadata"] == null || post["generatedImageMetadata"] == JsonNull)
+            require((post[DesktopMomentBackupExtension.FIELD] as? JsonArray).orEmpty().isEmpty())
+        }
         require(s.studioHistory || counts.count("novelai_generation_history") == 0)
         require(s.studioSettings || counts.keys.none { it.startsWith("novelai_studio_") || it.startsWith("novelai_design_") })
         val sessions = entities.filterKeys { DesktopBackupPolicy.entityType(it) == "chat_sessions" }.values

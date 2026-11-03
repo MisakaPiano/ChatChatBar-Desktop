@@ -255,14 +255,28 @@ internal class DesktopMomentsController(
         launchOwnedWork(post.sessionId, DesktopUsageContext(DesktopUsageSource.MOMENTS,
             sessionId = post.sessionId, cardId = post.characterCardId, subjectId = post.id)) { register ->
             val original = store.imageSource(post)
+            check(DesktopMomentImageVersions.retained(original).size < DesktopMomentImageVersions.MAX_CANDIDATES) {
+                "图片版本数量已达上限，请先移除不再需要的版本"
+            }
             val prefs = settings.getAppSettings(); check(prefs.momentsEnabled)
             val image = service.generate(original, characters.getById(original.characterCardId),
                 chats.getSession(original.sessionId), prefs, draft, register,
                 ::reportProgress)
             currentCoroutineContext().ensureActive()
             store.replaceImage(original, image)?.let(register)
-            mutableState.update { it.copy(notice = "动态图片已保存，正文与点赞保留") }
+            mutableState.update { it.copy(notice = if (original.imagePath.isNullOrBlank()) "动态图片已保存，正文与点赞保留"
+                else "新图片版本已保存，当前图片保留；可在图片版本中选择使用") }
         }
+    }
+
+    suspend fun selectImageVersion(post: MomentPost, versionId: String) {
+        store.selectImage(post, versionId)
+        refresh()
+    }
+
+    suspend fun removeImageVersion(post: MomentPost, versionId: String) {
+        val receipt = store.removeImage(post, versionId)
+        try { receipt?.let(finishImageCleanup) } finally { refresh() }
     }
 
     suspend fun imageDraft(post: MomentPost): NovelAiImageRegenerationDraft = withContext(Dispatchers.IO) {

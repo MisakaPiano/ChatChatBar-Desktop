@@ -22,7 +22,9 @@ internal class DesktopMomentStore(
         val value = (it.result as? JsonFileStorage.EntityReadResult.Valid<MomentPost>)?.value
             ?: error("朋友圈记录不可读取；保留原文件")
         check(value.id == it.storageId); requireMomentStorageId(value.id)
-        requireMomentStorageId(value.characterCardId); requireMomentStorageId(value.sessionId); value
+        requireMomentStorageId(value.characterCardId); requireMomentStorageId(value.sessionId)
+        DesktopMomentImageVersions.retained(value)
+        value
     }.sortedByDescending { it.generatedAt }
 
     suspend fun tasks(): List<MomentTask> = storage.scanEntitiesStrict("moment_tasks", MomentTask.serializer()).map {
@@ -146,7 +148,8 @@ internal class DesktopMomentStore(
     private fun sameImageSource(a: MomentPost, b: MomentPost) = !a.isPlaceholder && !b.isPlaceholder &&
         a.id == b.id && a.characterCardId == b.characterCardId && a.sessionId == b.sessionId &&
         a.senderCharacterId == b.senderCharacterId && a.text == b.text && a.imagePath == b.imagePath &&
-        a.imagePrompt == b.imagePrompt && a.generatedImageMetadata == b.generatedImageMetadata && a.imageBrief == b.imageBrief
+        a.imagePrompt == b.imagePrompt && a.generatedImageMetadata == b.generatedImageMetadata && a.imageBrief == b.imageBrief &&
+        a.desktopImageVersions == b.desktopImageVersions
 
     suspend fun imageSource(expected: MomentPost): MomentPost = mutate {
         val latest = post(expected.id) ?: error("动态已删除")
@@ -157,9 +160,23 @@ internal class DesktopMomentStore(
         val latest = post(expected.id) ?: error("动态已删除，本次图片不再写入")
         check(sameImageSource(latest, expected)) { "动态或图片已变化，本次图片不再写入" }
         check(image.metadata.imagePath == image.path)
-        val receipt = latest.imagePath?.takeIf { it.startsWith("images/") }?.let { deletionCleanup?.prepareCandidate(it) }
-        save(latest.copy(imagePath = image.path, imagePrompt = image.imagePrompt, generatedImageMetadata = image.metadata,
-            imageBrief = image.imageBrief, updatedAt = clock()))
+        // Publish every retained reference in the same atomic post write before the worker's candidate cleanup runs.
+        save(DesktopMomentImageVersions.append(latest, image, clock()))
+        null
+    }
+
+    suspend fun selectImage(expected: MomentPost, versionId: String) = mutate {
+        val latest = post(expected.id) ?: error("动态已删除")
+        check(sameImageSource(latest, expected)) { "动态或图片已变化，请重新打开" }
+        save(DesktopMomentImageVersions.select(latest, versionId).copy(updatedAt = clock()))
+    }
+
+    suspend fun removeImage(expected: MomentPost, versionId: String): String? = mutate {
+        val latest = post(expected.id) ?: error("动态已删除")
+        check(sameImageSource(latest, expected)) { "动态或图片已变化，请重新打开" }
+        val (updated, removed) = DesktopMomentImageVersions.remove(latest, versionId)
+        val receipt = removed.takeIf { it.startsWith("images/") }?.let { deletionCleanup?.prepareCandidate(it) }
+        save(updated.copy(updatedAt = clock()))
         receipt
     }
     suspend fun delete(id: String) {

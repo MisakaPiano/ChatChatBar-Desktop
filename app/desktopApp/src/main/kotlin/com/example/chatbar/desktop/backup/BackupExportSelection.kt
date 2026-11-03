@@ -248,6 +248,7 @@ class BackupExportCatalog internal constructor(
                     fields.size == 1 && fields.single() in setOf("images", "generatedImageMetadata") -> "[]"
                 record.type == "moment_posts" && !selection.momentsImages &&
                     fields.size == 1 && fields.single() in setOf("imagePath", "generatedImageMetadata") -> "null"
+                record.type == "moment_posts" && !selection.momentsImages && fields == listOf("desktopImageVersions") -> "[]"
                 record.type.startsWith("novelai_studio_") && fields.lastOrNull() == "importedCharacterCardId" &&
                     record.strings(fields.joinToString(".")).any { it !in selection.characterIds } -> "null"
                 record.type.startsWith("novelai_studio_") && fields.lastOrNull() == "followDefaultNovelAiImageModel" &&
@@ -302,7 +303,11 @@ class BackupExportCatalog internal constructor(
                         "\"chatbar-save-slot-omitted-image:metadata\"".takeIf { path == listOf("images", "path") }
                     } else file.length()
                     val withoutMomentImages = if (type == "moment_posts") sizeWithout { path ->
-                        "null".takeIf { path.size == 1 && path.single() in setOf("imagePath", "generatedImageMetadata") }
+                        when {
+                            path == listOf("desktopImageVersions") -> "[]"
+                            path.size == 1 && path.single() in setOf("imagePath", "generatedImageMetadata") -> "null"
+                            else -> null
+                        }
                     } else file.length()
                     BackupExportRecord(file, relative, type, values, resources, withoutChatImages, withoutStudioImages, withoutMomentImages)
                 } catch (error: Exception) {

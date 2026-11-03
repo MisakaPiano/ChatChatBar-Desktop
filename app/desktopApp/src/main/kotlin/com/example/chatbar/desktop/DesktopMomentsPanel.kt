@@ -85,6 +85,8 @@ internal fun DesktopMomentsPanel(controller: DesktopMomentsController,
     var plans by remember { mutableStateOf(false) }
     var recoveringTask by remember { mutableStateOf<MomentTask?>(null) }
     var editing by remember { mutableStateOf<MomentPost?>(null) }
+    var versionPostId by remember { mutableStateOf<String?>(null) }
+    var removingVersion by remember { mutableStateOf<Pair<MomentPost, String>?>(null) }
     var editText by remember { mutableStateOf("") }
     var deleting by remember { mutableStateOf<MomentPost?>(null) }
     var viewing by remember { mutableStateOf<List<String>>(emptyList()) }
@@ -192,6 +194,8 @@ internal fun DesktopMomentsPanel(controller: DesktopMomentsController,
                                         variant = DesktopActionVariant.GHOST) { act { controller.like(post.id) } }
                                     DesktopIconAction("编辑动态文字", DesktopAppIcons.Edit) { editing = post; editText = post.text }
                                     DesktopIconAction("复制动态文字", DesktopAppIcons.Copy) { clipboard.setText(AnnotatedString(post.text)) }
+                                    if (!post.imagePath.isNullOrBlank()) BootstrapButton("图片版本 ${DesktopMomentImageVersions.retained(post).size}",
+                                        secondary = true) { versionPostId = post.id }
                                 }
                                 DesktopIconAction("删除动态", DesktopAppIcons.Close) { deleting = post }
                             }
@@ -202,6 +206,34 @@ internal fun DesktopMomentsPanel(controller: DesktopMomentsController,
                 }
             }
         }
+        versionPostId?.let { id ->
+            val post = state.posts.singleOrNull { it.id == id }
+            if (post != null) MomentModal("动态图片版本", { versionPostId = null }) {
+                val versions = DesktopMomentImageVersions.retained(post)
+                StatusText("重新生成保留旧图；选择版本仅更换这条动态当前显示的图片。")
+                versions.forEachIndexed { index, version ->
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        StatusText("${index + 1} · " + DateTimeFormatter.ofPattern("MM-dd HH:mm").withZone(ZoneId.systemDefault())
+                            .format(Instant.ofEpochMilli(version.createdAt)) + if (post.imagePath == version.imagePath) " · 当前" else "")
+                        BootstrapButton("预览版本 ${index + 1}", secondary = true) {
+                            viewing = versions.map { it.imagePath }; viewIndex = index
+                        }
+                        BootstrapButton("使用版本 ${index + 1}", secondary = post.imagePath != version.imagePath, enabled = !state.busy) {
+                            act { controller.selectImageVersion(post, version.id) }
+                        }
+                        if (versions.size > 1) BootstrapButton("移除版本 ${index + 1}", secondary = true, enabled = !state.busy) {
+                            removingVersion = post to version.id
+                        }
+                    }
+                }
+            }
+        }
+        removingVersion?.let { (post, versionId) -> MomentModal("移除图片版本", { removingVersion = null }) {
+            StatusText("只从这条动态移除此版本。若它是当前图片，将改用最近保留的版本；其他动态或角色卡仍引用的文件会保留。")
+            BootstrapButton("确认移除版本", variant = DesktopActionVariant.DESTRUCTIVE) {
+                act { controller.removeImageVersion(post, versionId); removingVersion = null }
+            }
+        } }
         if (choosingCard) MomentModal(if (debugGeneration) "选择调试生成的角色卡" else "选择发动态的角色卡", { choosingCard = false }) {
             StatusText(if (debugGeneration) "调试立即生成会记录完整交换；配置NovelAI后会尝试配图，即使自动配图开关关闭。可能产生模型和配图费用。"
                 else "将按此角色卡最近会话及现有模型设置生成，可能产生模型或配图费用。")
@@ -319,7 +351,7 @@ private fun MomentImageEditModal(original: NovelAiImageRegenerationDraft, enable
     var height by remember(original) { mutableStateOf(original.height.toString()) }
     val w = width.toIntOrNull(); val h = height.toIntOrNull()
     MomentModal("编辑动态配图 Prompt", close) {
-        StatusText("保留原图尺寸；每次请求使用新Seed。成功后只替换图片，正文、点赞与发布时间不变。")
+        StatusText("保留原图尺寸；每次请求使用新Seed。成功后保存为新版本，由你选择是否使用；正文、点赞与发布时间不变。")
         LabeledField("画风", draft.stylePrompt, multiline = true) { draft = draft.copy(stylePrompt = it) }
         LabeledField("基础 Prompt", draft.baseCaption, multiline = true) { draft = draft.copy(baseCaption = it) }
         LabeledField("负面 Prompt", draft.negativePrompt, multiline = true) { draft = draft.copy(negativePrompt = it) }
