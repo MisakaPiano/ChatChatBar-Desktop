@@ -1,3 +1,7 @@
+2026-11-04 当前：公开1236/sign18与冻结a647不变，用户自更/资料/重开已明确通过；N01a多步/快捷键与N01b系统IME/双行选区真实缺陷仍按原FAIL留待后继。当前未公开源码b7e313，history4精确a65原88=87PASS+1FAIL（第二字段request几何）；后继history5/41667076334运行中，新增numeric blur/局部历史与排队边界、实际selected备份history-only图片/Vibe回读。native6原4PASS+1SKIP和真实屏幕恢复已核：原19方法中15完整闭合，混合Stop播放partial与3专门音频未测，不把拆分4PASS当16原方法。原作者新共享Medium费用/透明PNG归属/计数顺序问题已登记，待其精确delta下游同步；Desktop Medium sampler固定说明分支不套Android CbSelect缺陷。完整154只对应旧a647应用，不冒用于b7e313；后继必要完整CI/普通候选待，没有新公开许可，也不跑本机或真实根。见288与canonical。
+
+下方历史保留。
+
 2026-11-03 当前续接入口：实时源码、运行与原件状态以 `I:/CCB-Desktop-Continuity/CURRENT_START.md`、`TASK_LEDGER.json`、`EVIDENCE_INDEX.json` 为准。当前选定修复见[286](286_CARD_EDITOR_ORDER_AND_V45_OPTIONS.md)与[287](287_MOMENT_IMAGE_VERSIONS_AND_BACKUP_CUSTODY.md)：应用冻结a647，测试后继53e40仅改测试/限定workflow，生产零差异；完整154原Windows主2617=2598PASS+19SKIP/0FAIL，proxy5、NTFS7、native37/TUF14/exit4通过；共享1221/Android586复用同体153原件并有154 Linux成功状态。153原两FAIL保留，由104项定向与完整154精确闭合。普通私有1236 R27升级/重开/独立入口及549/548最终字节、R28旧client签名18完整下载二验已核，用户明确授权后1236/签名18已公开（Release432747686，metadata14dadbfeed1299cc8d80712b3fd0ac8cb59eed55），四资产与说明已读回；匿名公开完整178445507B下载与10条role精确对照已通过，真人待。公开1236/签名18、用户自报1235与未知实际安装路径分别保留，日常H不代操作。先完成本批正常交付，再按216正式1.0依赖推进；T23/自由正文绑定/社区等明确决定不变。
 
 下方历史保留。

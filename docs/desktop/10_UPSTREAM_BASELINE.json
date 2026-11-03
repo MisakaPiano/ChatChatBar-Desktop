@@ -102,12 +102,12 @@
     "browserRuntime": false
   },
   "currentAdaptation": {
-    "recordedAt": "2026-11-03",
+    "recordedAt": "2026-11-04",
     "targetReleaseVersion": "1.4.7",
     "targetCommit": "b4fa75d296680f777be095f3121ad0c4db979f17",
     "authority": "User authorized latest official CCB adaptation; Desktop first, separate Studio consumes official interfaces",
-    "status": "selected147_scoped_engineering_verified_specific_native_user_and_live_service_pending_not_whole_baseline_promotion",
-    "sourceAtRecord": "a647cde57d8cd89dc03e05a5b7acf0be9194c5b6",
+    "status": "selected147_prior_scoped_engineering_verified_unpublished_studio_repairs_and_exact_author_delta_pending_not_baseline_promotion",
+    "sourceAtRecord": "b7e313b3ff0f9dcff30d1c353ebbbc0c1edd7067",
     "lastCompleteSourceValidation": {
       "commit": "53e40cea7ff314812d13bf366f766227999aa9c5",
       "applicationCommit": "a647cde57d8cd89dc03e05a5b7acf0be9194c5b6",
@@ -196,7 +196,7 @@
         "status": "implemented_scoped_engineering_verified_live_service_oauth_browser_focus_external_pending",
         "remainingImplementationIdentified": [],
         "externalConditions": [
-          "Official runtime enabled:false at2026-11-03 21:47JST read-only receipt; not permanent closure proof",
+          "Official runtime enabled:false at2026-11-03 23:14JST read-only receipt; prior21:47 observation retained; not permanent closure proof",
           "Real Discord/browser return/foreground and remote operations require service available and explicit user-controlled login"
         ],
         "currentServiceReceipt": "I:/CCB-Desktop-Continuity/updates/20261103-coordinator-community-availability.json"
@@ -204,8 +204,11 @@
       {
         "scope": "Whole selected147 compatibility declaration and affected final candidate/user cross-scenario acceptance",
         "evidence": "216/280/286/287; exact full154/R27/R28 and public1236/sign18; retain19 original skips and selective baseline boundary",
-        "status": "selected_scoped_engineering_closure_recorded_specific_native_and_user_cross_scenarios_pending",
-        "remainingImplementationIdentified": [],
+        "status": "native15_original_methods_closed_user_studio_repairs_and_shared_author_delta_active",
+        "remainingImplementationIdentified": [
+          "1236 user-reported two-level multi-step undo and local shortcuts plus actual IME anchor/source selection repair; unpublished b7e313 history5 exact verification pending",
+          "Author-reviewed shared Medium pricing, transparent PNG suffix ownership and token-normalization order; await exact author-owned shared delta before downstream adoption; Desktop Medium sampler UI has no Android CbSelect auto-selection path"
+        ],
         "independentVerification": [
           {
             "scope": "Original HWND-owner and Studio auxiliary OS-close cases plus unchanged COM prerequisite",
@@ -220,14 +223,24 @@
             "scope": "Remaining14 original graphical cases only, foreground/native guards unchanged",
             "run": 41650815581,
             "source": "98aa8c233ed557a49fe6a3b6f05177389215a17e",
-            "state": "RUNNING_NOT_PROVEN",
+            "state": "ORIGINAL14_10PASS_4FAIL_0SKIP_RETAINED",
             "headless": false,
-            "excluded": "Prior two closed graphical methods and three physical audio methods"
+            "excluded": "Prior two closed graphical methods and three physical audio methods",
+            "evidence": "I:/CCB-Desktop-Continuity/updates/20261103-owner-native-probe2-review/REVIEW.json"
+          },
+          {
+            "scope": "Only native2 four affected scopes; mixed Stop physical playback split and guarded",
+            "run": 41663011157,
+            "source": "a65b02af5a14dd55e32083ea6af35847b38a5503",
+            "state": "ACTUAL4PASS1SKIP_3_ORIGINAL_METHODS_FULLY_CLOSED_MIXED_STOP_PARTIAL",
+            "waveOutputDevices": 0,
+            "display": "1024x768 to enumerated1920x1080; test/apply0; restored1024x768/result0; no registry write",
+            "evidence": "I:/CCB-Desktop-Continuity/updates/20261103-studio-history-repair/native6-OWNER_REVIEW.json"
           }
         ],
         "remainingExternalOrHuman": [
-          "User1236 self-update and N01–N07 concrete groups; prior1235 passes remain",
-          "Physical audio devices and unexecuted GUI/input/DPI/IME/multiscreen/Windows combinations",
+          "User1236 upgrade/data/reopen PASS only; N01a partial single actions but multistep/shortcut FAIL, N01b IME/selection FAIL, successor retest pending; prior1235 groups preserved",
+          "Original3 physical audio methods plus original mixed Stop real-playback part remain NOT_TESTED (wave0); actual user system Chinese IME/DPI/multiscreen combinations separate",
           "Real Provider and actual long-chat files/document-reader appearance",
           "Real final data merge/physical interruption/cross-account/old snapshot scenarios, only as user chooses"
         ],
@@ -235,7 +248,11 @@
           "count": 19,
           "subsequentNewlyExecuted": 2,
           "stillUnexecutedAtProbe2Start": 17,
-          "physicalAudio": 3
+          "physicalAudio": 3,
+          "subsequentNewlyExecutedAndFullyClosed": 15,
+          "remainingIncompleteOriginalMethods": 4,
+          "mixedStop": "GUI download/generation PASS; original physical playback part NOT_TESTED",
+          "counting": "native1 two + native2 ten + native6 three; do not count split Stop GUI as original complete method"
         }
       }
     ],
