@@ -137,7 +137,9 @@ abstract class WriteDesktopBuildIdentity : DefaultTask() {
             promptHash.update(0.toByte())
         }
         val promptSha = promptHash.digest().joinToString("") { "%02x".format(it) }
-        directory.resolve("desktop-build.properties").writeText("version=${appVersion.get()}\ncommit=${sourceCommit.get()}\ninstallerVersion=${installerVersion.get()}\ninstallerVersionAssigned=${installerVersionAssigned.get()}\npackagingProfile=${packagingProfile.get()}\npromptSourceSha256=$promptSha\n")
+        directory.resolve("desktop-build.properties").writeText("version=${appVersion.get()}\ncommit=${sourceCommit.get()}\ninstallerVersion=${installerVersion.get()}\ninstallerVersionAssigned=${installerVersionAssigned.get()}\npackagingProfile=${packagingProfile.get()}\n")
+        // Installer identity has an exact separate contract; template evidence must not extend it.
+        directory.resolve("desktop-prompt-source.properties").writeText("promptSourceSha256=$promptSha\n")
     }
 }
 val writeDesktopBuildIdentity by tasks.registering(WriteDesktopBuildIdentity::class) {

@@ -13,7 +13,7 @@ data class DesktopPromptStageIdentity(val kind: String, val stage: String, val t
 internal object DesktopPromptDiagnosticIdentity {
     val sourceSha256: String? by lazy {
         val properties = Properties()
-        DesktopPromptDiagnosticIdentity::class.java.getResourceAsStream("/desktop-build.properties")
+        DesktopPromptDiagnosticIdentity::class.java.getResourceAsStream("/desktop-prompt-source.properties")
             ?.use { properties.load(it) }
         properties.getProperty("promptSourceSha256")?.takeIf { it.matches(Regex("[0-9a-f]{64}")) }
     }
