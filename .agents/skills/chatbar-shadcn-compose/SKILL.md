@@ -5,7 +5,7 @@ description: Build or migrate ChatBar Android UI using shadcn/ui design principl
 
 # ChatBar shadcn Compose
 
-`desktop-native-probe.yml` is a separate Windows cloud entry for the existing synthetic HWND-owner and Studio auxiliary OS-close cases with `desktopTestHeadless=false`. The ordinary platform job remains headless; retain original graphical guards and inspect actual XML/runner scope before claiming those cases ran. It neither installs an app nor proves physical audio or all user desktop environments.
+`desktop-native-probe.yml` is a separate Windows cloud entry for explicitly selected existing synthetic graphical cases with `desktopTestHeadless=false`. The ordinary platform job remains headless; retain original graphical guards and inspect actual XML/runner scope before claiming those cases ran. It neither installs an app nor proves physical audio or all user desktop environments.
 
 `DesktopCharacterEditorController` preserves nonblank negative-prompt source bytes through display, draft and unrelated saves. Blank values keep the existing displayed/materialized default; final generation still uses the separate effective-value helper. Do not normalize source editing by calling the request helper in `displayCard` or save projection.
 
