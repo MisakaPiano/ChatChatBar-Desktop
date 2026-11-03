@@ -21,6 +21,8 @@ object NovelAiV5GenerationPolicy {
         val marker = textMarker.find(first)
         val beforeText = first.substring(0, marker?.range?.first ?: first.length).trimEnd { it.isWhitespace() || it == ',' }
         val tag = NovelAiPromptAuthority.NOVELAI_TRANSPARENT_BACKGROUND_TAG
+        // Imported PNG captions can already include the derived hint. Retain their original text.
+        if (beforeText.split(',').any { it.trim().equals(tag, ignoreCase = true) }) return prompt
         val prefix = if (beforeText.isEmpty()) tag else "$beforeText, $tag"
         val text = marker?.let { ", " + first.substring(it.range.last - 4) }.orEmpty()
         return prompt.copy(baseCaption = prefix + text + source.substring(boundary))

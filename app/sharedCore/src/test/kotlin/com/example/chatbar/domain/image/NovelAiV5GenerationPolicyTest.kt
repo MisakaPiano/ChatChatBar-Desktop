@@ -63,6 +63,8 @@ class NovelAiV5GenerationPolicyTest {
         assertEquals("custom base", p.getValue("uc").jsonPrimitive.content)
         assertTrue(body(high.copy(transparentBackground = true), plan.copy(baseCaption = "text: synthetic"))
             .getValue("input").jsonPrimitive.content.startsWith("transparent background, text:"))
+        val baked = plan.copy(baseCaption = "synthetic scene, transparent background, text: synthetic")
+        assertEquals(baked.baseCaption, body(high.copy(transparentBackground = true), baked).getValue("input").jsonPrimitive.content)
     }
 
     @Test fun `draft recipe and complete preset preserve dormant High choices and new options`() {
