@@ -51,6 +51,7 @@ class DesktopV5GenerationOptionsTest {
                     steps = 37, cfgRescale = .4f, sampler = NovelAiSampler.DPM_PLUS_PLUS_2M,
                     effort = NovelAiEffort.MEDIUM, transparentBackground = true))
             val repo = NovelAiStudioStateRepository(storage)
+            repo.loadDraft()
             repo.updateDraft { draft }
             val runtime = DesktopNovelAiGenerationRuntime(secrets, DesktopNovelAiGenerationStore(storage, resources, gate)::persist, client)
             val entry = runtime.generate(draft, maxRateLimitRetries = 0)
