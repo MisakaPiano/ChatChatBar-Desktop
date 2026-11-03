@@ -71,12 +71,14 @@ internal fun DesktopStudioCharacters(draft: NovelAiStudioDraft, infrastructure: 
                         negative = value; openEditor()
                     }
                     key(showNegative) {
+                        CompositionLocalProvider(LocalDesktopStudioFieldScope provides "person:${character.id}") {
                         StudioPromptField(if (showNegative) "角色负面" else "角色正向",
                             if (showNegative) character.negativePrompt else character.prompt,
                             infrastructure, translation, focusRevision,
                             onEditorFocusChanged = { active -> focused = active; if (active) requestingFocus = false },
                             onExpandedEditorChanged = { open -> expandedEditorOpen = open; if (!open) openEditor() }) { text ->
                             change { if (showNegative) it.copy(negativePrompt = text) else it.copy(prompt = text) }
+                        }
                         }
                     }
                     StatusText(character.center?.let { "位置 ${(it.x * 100).roundToInt()}%, ${(it.y * 100).roundToInt()}%" } ?: "位置 · 自动")

@@ -1,3 +1,7 @@
+2026-11-03 最新用户反馈：已自更1236、资料与正常退出重开通过，仅该范围成立。N01a单次按钮partialPASS，但多步撤销/重做及栏内CtrlZ/Y失败；最新语义是各栏独立局部历史+全局箭头整草稿多步。N01b真实截图候选锚点偏移、选区覆盖翻译行，FAIL保留。当前Desktop专属持久时间线/写前恢复、字段历史与实际平台请求几何修复已落源码，精确云验待，不冒称修复通过。原native2/41650815581为14=10PASS+4FAIL/0SKIP，原件在Continuity；优先修真人反馈后继续其独立失败。公开1236/sign18、full154/test53/applicationa647冻结；用户睡眠期间推进已授权工程与候选准备，无后继公开许可，无本机编译/测试/真实根操作。详见288与canonical最新事件。
+
+下方历史保留。
+
 2026-11-03 当前续接入口：实时源码、运行与原件状态以 `I:/CCB-Desktop-Continuity/CURRENT_START.md`、`TASK_LEDGER.json`、`EVIDENCE_INDEX.json` 为准。当前选定修复见[286](286_CARD_EDITOR_ORDER_AND_V45_OPTIONS.md)与[287](287_MOMENT_IMAGE_VERSIONS_AND_BACKUP_CUSTODY.md)：应用冻结a647，测试后继53e40仅改测试/限定workflow，生产零差异；完整154原Windows主2617=2598PASS+19SKIP/0FAIL，proxy5、NTFS7、native37/TUF14/exit4通过；共享1221/Android586复用同体153原件并有154 Linux成功状态。153原两FAIL保留，由104项定向与完整154精确闭合。普通私有1236 R27升级/重开/独立入口及549/548最终字节、R28旧client签名18完整下载二验已核，用户明确授权后1236/签名18已公开（Release432747686，metadata14dadbfeed1299cc8d80712b3fd0ac8cb59eed55），四资产与说明已读回；匿名公开完整178445507B下载与10条role精确对照已通过，真人待。公开1236/签名18、用户自报1235与未知实际安装路径分别保留，日常H不代操作。先完成本批正常交付，再按216正式1.0依赖推进；T23/自由正文绑定/社区等明确决定不变。
 
 下方历史保留。

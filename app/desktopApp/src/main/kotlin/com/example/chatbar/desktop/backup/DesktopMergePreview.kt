@@ -56,8 +56,9 @@ internal class DesktopMergePreview private constructor(
         fun create(pcEntities: Map<String, JsonObject>, phoneEntities: Map<String, JsonObject>,
             pcMedia: Map<String, String>, phoneMedia: Map<String, String>, scope: InspectionScope? = null,
             credentialConflicts: Set<String> = emptySet()): DesktopMergePreview {
-            val pc = units(pcEntities, pcMedia, null, localMoments = true)
-            val phone = units(phoneEntities, phoneMedia, scope)
+            val groupedStudio = (pcEntities.keys + phoneEntities.keys).any { DesktopBackupPolicy.entityType(it) == "desktop_studio_edit_history" }
+            val pc = units(pcEntities, pcMedia, null, localMoments = true, groupedStudio = groupedStudio)
+            val phone = units(phoneEntities, phoneMedia, scope, groupedStudio = groupedStudio)
             val identical = hashSetOf<String>()
             val conflicts = mutableListOf<Conflict>()
             phone.values.forEach { candidate ->
@@ -95,7 +96,8 @@ internal class DesktopMergePreview private constructor(
             listOf(it["id"], it["baseUrl"], it["templateType"] ?: JsonPrimitive("OPENAI"), it["modelName"])
         }
 
-        private fun units(records: Map<String, JsonObject>, media: Map<String, String>, scope: InspectionScope?, localMoments: Boolean = false): Map<String, Unit> {
+        private fun units(records: Map<String, JsonObject>, media: Map<String, String>, scope: InspectionScope?, localMoments: Boolean = false,
+            groupedStudio: Boolean = false): Map<String, Unit> {
             val groups = linkedMapOf<String, MutableSet<String>>()
             val settings = linkedMapOf<String, JsonObject>()
             fun add(key: String, path: String) { check(groups.getOrPut(key) { linkedSetOf() }.add(path)) }
@@ -104,6 +106,11 @@ internal class DesktopMergePreview private constructor(
             }.toSet()
             records.forEach { (path, value) ->
                 val type = DesktopBackupPolicy.entityType(path)
+                if (groupedStudio && type in setOf("novelai_studio_draft", "novelai_studio_history_undo",
+                    "novelai_studio_guidance_checkpoint", "desktop_studio_edit_history")) {
+                    add("novelai_studio_draft:entities/novelai_studio_draft.json", path)
+                    return@forEach
+                }
                 // Official incoming Moments retain original-byte dormant custody. Explicit Desktop image
                 // records can be selected as live posts; imported tasks never inherit scheduler admission.
                 if (type == "moment_tasks" && !localMoments || type == "moment_posts" && !localMoments &&
@@ -132,10 +139,11 @@ internal class DesktopMergePreview private constructor(
             }
             return groups.mapValues { (key, paths) ->
                 val items = DesktopBackupRecords.view(paths) { path -> settings[key] ?: records.getValue(path) }
-                val primary = items.entries.firstOrNull { DesktopBackupPolicy.entityType(it.key) == "chat_sessions" } ?: items.entries.first()
+                val primary = items.entries.firstOrNull { DesktopBackupPolicy.entityType(it.key) == "chat_sessions" ||
+                    groupedStudio && key.startsWith("novelai_studio_draft:") && DesktopBackupPolicy.entityType(it.key) == "novelai_studio_draft" } ?: items.entries.first()
                 val type = if (key.startsWith("setting:")) "app_settings" else DesktopBackupPolicy.entityType(primary.key)
                 val value = primary.value
-                val label = if (type == "app_settings") key.removePrefix("setting:") else
+                val label = if (groupedStudio && key.startsWith("novelai_studio_draft:")) "Studio 草稿与编辑历史" else if (type == "app_settings") key.removePrefix("setting:") else
                     listOf("displayTitleOverride", "displayName", "name", "title", "senderName").firstNotNullOfOrNull { value[it]?.jsonPrimitive?.contentOrNull }.orEmpty()
                 val signature = java.security.MessageDigest.getInstance("SHA-256")
                 items.keys.sorted().forEachIndexed { index, path ->

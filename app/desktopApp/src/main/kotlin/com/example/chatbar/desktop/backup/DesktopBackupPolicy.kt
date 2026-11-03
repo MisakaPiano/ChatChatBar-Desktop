@@ -40,6 +40,7 @@ internal object DesktopBackupPolicy {
         "generated_voice_messages" to GeneratedVoiceMessage.serializer(), "voice_anchor_states" to VoiceAnchorState.serializer(),
         "novelai_studio_draft" to NovelAiStudioDraft.serializer(), "novelai_studio_history_undo" to NovelAiStudioUndoDraft.serializer(),
         "novelai_studio_guidance_checkpoint" to NovelAiGuidanceEditorCheckpoint.serializer(),
+        "desktop_studio_edit_history" to com.example.chatbar.desktop.DesktopStudioHistoryJournal.serializer(),
         "novelai_generation_history" to NovelAiGenerationHistoryEntry.serializer(),
         "novelai_history_fold_preferences" to NovelAiHistoryFoldPreference.serializer(),
         "novelai_design_conversations" to NovelAiDesignConversation.serializer(),

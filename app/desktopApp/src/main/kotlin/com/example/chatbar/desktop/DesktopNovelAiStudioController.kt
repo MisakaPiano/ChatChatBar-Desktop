@@ -82,7 +82,8 @@ internal class DesktopNovelAiStudioController(
     private val freezeCredential: () -> kotlin.coroutines.CoroutineContext = { kotlin.coroutines.EmptyCoroutineContext },
     private val presetArchive: DesktopGenerationPresetArchive? = null,
 ) {
-    val repository = NovelAiStudioStateRepository(storage)
+    val repository = DesktopStudioHistoryRepository(storage)
+    val textHistories = DesktopStudioTextHistories(repository::breakTypingGroup)
     val imageDiagnostics get() = tasks.diagnostics
     val designRepository = NovelAiDesignConversationRepository(storage)
     val draft = repository.draft
@@ -158,6 +159,7 @@ internal class DesktopNovelAiStudioController(
         repository.loadDraft()
         repository.loadUndoDraft()
         resolveDefaultModel()
+        repository.initializeHistory()
         val latest = history.first().firstOrNull()?.images.orEmpty().map { it.path }
         mutableState.update { it.copy(ready = true, results = latest) }
         refreshAccount()
@@ -408,9 +410,13 @@ internal class DesktopNovelAiStudioController(
     }
 
     suspend fun undo() = action {
-        val previous = repository.loadUndoDraft() ?: throw DesktopStudioUndoUnavailable()
-        repository.updateDraft(resetPromptEditors = true) { previous }
-        repository.clearUndoDraft()
+        if (!repository.replay(redo = false)) throw DesktopStudioUndoUnavailable()
+        textHistories.authorityChanged()
+    }
+
+    suspend fun redo() = action {
+        if (!repository.replay(redo = true)) throw DesktopStudioUndoUnavailable()
+        textHistories.authorityChanged()
     }
 
     suspend fun importCard(id: String) {
@@ -863,7 +869,7 @@ internal class DesktopNovelAiStudioController(
                 repository.loadGuidanceCheckpoint()?.ownedAssetPaths()?.let(::addAll)
             }.toList() else emptyList()
             withContext(Dispatchers.IO) { block() }
-            cleanupAfterCommit(candidates)
+            cleanupAfterCommit(candidates + repository.takeRetiredResources())
             true
         }
         catch (cancelled: CancellationException) { throw cancelled }

@@ -112,7 +112,7 @@ open class NovelAiStudioStateRepository(
         }
     }
 
-    suspend fun updateDraft(
+    open suspend fun updateDraft(
         resetPromptEditors: Boolean = false,
         transform: (NovelAiStudioDraft) -> NovelAiStudioDraft
     ): NovelAiStudioDraft {

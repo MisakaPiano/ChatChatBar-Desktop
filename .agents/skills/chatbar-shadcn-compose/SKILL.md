@@ -5,6 +5,8 @@ description: Build or migrate ChatBar Android UI using shadcn/ui design principl
 
 # ChatBar shadcn Compose
 
+Studio Prompt editing uses a per-field `InterceptPlatformTextInput` wrapper to resolve the current source-glyph caret rectangle from live decoration coordinates at platform query time, avoiding the legacy adapter's cached field-to-root position after ancestor movement. Preserve the delegated text/IME edit request. Translated mode paints selection only inside source-glyph bands while keeping translation glyphs outside the editable text and native selection background transparent. `DesktopStudioInputHistorySceneTest` covers synthetic request routing and coordinates; it is not actual Windows Chinese IME acceptance.
+
 `desktop-native-probe.yml` is a separate Windows cloud entry for explicitly selected existing synthetic graphical cases with `desktopTestHeadless=false`. The ordinary platform job remains headless; retain original graphical guards and inspect actual XML/runner scope before claiming those cases ran. It neither installs an app nor proves physical audio or all user desktop environments.
 
 `DesktopCharacterEditorController` preserves nonblank negative-prompt source bytes through display, draft and unrelated saves. Blank values keep the existing displayed/materialized default; final generation still uses the separate effective-value helper. Do not normalize source editing by calling the request helper in `displayCard` or save projection.

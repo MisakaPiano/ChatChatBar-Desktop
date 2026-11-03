@@ -42,10 +42,13 @@ internal class DesktopDesignInput(text: String) {
 @Composable
 internal fun DesktopDesignField(label: String, text: String, identity: Any = label, onChange: (String) -> Unit) {
     val editor = remember(identity) { DesktopDesignInput(text) }
+    val studioEditor = if (LocalDesktopStudioTextHistories.current != null) rememberStudioTextHistory("design:$identity", text) else null
     LaunchedEffect(text) { editor.echo(text) }
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         StatusText(label)
-        BasicTextField(editor.value, { editor.edit(it, onChange) }, Modifier.fillMaxWidth()
+        BasicTextField(studioEditor?.value ?: editor.value, { next ->
+            if (studioEditor != null) studioEditor.edit(next, onChange) else editor.edit(next, onChange)
+        }, Modifier.fillMaxWidth().then(if (studioEditor != null) Modifier.studioTextHistoryKeys(studioEditor, onChange) else Modifier)
             .heightIn(min = 64.dp).border(1.dp, DesktopBootstrapColors.border)
             .background(DesktopBootstrapColors.input).padding(9.dp).semantics { contentDescription = label },
             cursorBrush = DesktopBootstrapColors.inputCaret, textStyle = TextStyle(color = DesktopBootstrapColors.foreground))

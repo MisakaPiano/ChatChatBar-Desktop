@@ -226,7 +226,7 @@ class BackupExportCatalog internal constructor(
                 "edit_drafts" -> "editorDrafts" in selection.globalOptions || record.string("targetId") in selection.characterIds
                 "moment_posts", "moment_tasks" -> selection.moments
                 "novelai_generation_history", "novelai_history_fold_preferences" -> selection.studioHistory
-                "novelai_studio_draft", "novelai_studio_history_undo", "novelai_studio_guidance_checkpoint",
+                "novelai_studio_draft", "novelai_studio_history_undo", "novelai_studio_guidance_checkpoint", "desktop_studio_edit_history",
                 "novelai_design_conversations", "novelai_design_current" -> selection.studioSettings
                 "preset_import_state", "model_configuration_migration", "character_speaker_migration_state", "world_book_migration_state" -> true
                 "desktop_character_backgrounds" -> record.id in selection.characterIds

@@ -16,7 +16,7 @@ class DesktopStudioManualUndoTest {
         try {
             val c = app.novelAiStudioController
             c.load()
-            assertFalse(c.repository.undoAvailable.value)
+            assertFalse(c.repository.historyAvailability.value.undo)
             val empty = c.draft.value
             assertFalse(c.undo())
             assertEquals(empty, c.draft.value)
@@ -29,16 +29,16 @@ class DesktopStudioManualUndoTest {
             )) {
                 val before = assertNotNull(c.draft.value)
                 assertTrue(c.edit(change))
-                assertTrue(c.repository.undoAvailable.value)
+                assertTrue(c.repository.historyAvailability.value.undo)
                 val edited = assertNotNull(c.draft.value)
                 assertTrue(c.edit { it }) // A no-op must not replace the existing undo checkpoint.
                 assertTrue(c.undo())
-                assertFalse(c.repository.undoAvailable.value)
+                assertTrue(c.repository.historyAvailability.value.redo)
                 val undone = assertNotNull(c.draft.value)
                 assertEquals(before.basePrompt, undone.basePrompt)
                 assertEquals(before.activeSettings, undone.activeSettings)
                 assertEquals(before.characters, undone.characters)
-                assertTrue(c.replace { edited }) // Original redo uses this same normal replacement path.
+                assertTrue(c.redo())
                 assertEquals(edited.basePrompt, c.draft.value!!.basePrompt)
                 assertEquals(edited.activeSettings, c.draft.value!!.activeSettings)
                 assertEquals(edited.characters, c.draft.value!!.characters)

@@ -58,6 +58,9 @@ class JsonFileStorage(
 
     private val studioPayloads by lazy { NovelAiInlinePayloadStore(appDataRoot.toFile()) }
 
+    /** Desktop history keeps the same content-addressed references as the current Studio draft. */
+    fun retainStudioPayload(value: String): String = studioPayloads.retain(value)
+
     private fun openJsonInput(entityType: String, file: File, checkActive: () -> Unit = {}): InputStream {
         val source = Files.newInputStream(file.toPath())
         return if (entityType in COMPACT_STUDIO_TYPES) studioPayloads.compactJson(source, checkActive) else source.buffered()

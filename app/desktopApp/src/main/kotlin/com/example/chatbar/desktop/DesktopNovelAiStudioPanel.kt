@@ -26,9 +26,19 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
     chromeRecorder: DesktopChromeLayoutRecorder? = null,
     onDataSettings: (() -> Unit)? = null,
     onModelSettings: (String?) -> Unit = {}) {
+    CompositionLocalProvider(LocalDesktopStudioTextHistories provides controller.textHistories) {
+        DesktopNovelAiStudioContent(controller, navigation, captions, diagnostics, chromeRecorder, onDataSettings, onModelSettings)
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioController,
+    navigation: (@Composable () -> Unit)?, captions: (@Composable () -> Unit)?, diagnostics: (@Composable () -> Unit)?,
+    chromeRecorder: DesktopChromeLayoutRecorder?, onDataSettings: (() -> Unit)?, onModelSettings: (String?) -> Unit) {
     val draft by controller.draft.collectAsState()
     val state by controller.state.collectAsState()
-    val undoAvailable by controller.repository.undoAvailable.collectAsState()
+    val editHistory by controller.repository.historyAvailability.collectAsState()
     val accounts = LocalDesktopApiAccounts.current
     val accountRevision = accounts?.store?.revision?.collectAsState()?.value
     val openedAccountService = accounts?.opened?.collectAsState()?.value
@@ -83,7 +93,6 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
     val workspace = remember { DesktopStudioWorkspaceState() }
     var inlineResetRevision by remember { mutableIntStateOf(0) }
     var importedPreview by remember { mutableStateOf<java.nio.file.Path?>(null) }
-    var redoDraft by remember { mutableStateOf<Pair<NovelAiStudioDraft, NovelAiStudioDraft>?>(null) }
     var viewing by remember { mutableStateOf<List<String>>(emptyList()) }
     var pendingReuse by remember { mutableStateOf<Triple<NovelAiGenerationHistoryEntry, NovelAiGenerationHistoryImage, NovelAiHistoryApplyMode>?>(null) }
     var imageError by remember { mutableStateOf("") }
@@ -170,7 +179,9 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                     DesktopStudioCharacters(d, controller.infrastructure, translation, ::edit)
                 }
                 "参数" -> {
-                    StudioGenerationSettings(d, ::edit)
+                    CompositionLocalProvider(LocalDesktopStudioFieldScope provides "generation:${d.selectedModel}") {
+                        StudioGenerationSettings(d, ::edit)
+                    }
                 }
                 "设计设置" -> {
                         StudioToggle("V5 自然语言模式", d.aiDesignNaturalLanguageMode) { edit { it.copy(aiDesignNaturalLanguageMode = !it.aiDesignNaturalLanguageMode) } }
@@ -276,19 +287,12 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
         footer = {
             DesktopStudioFooter(
                 usage = usage,
-                undoEnabled = !busy && undoAvailable,
-                redoEnabled = !busy && redoDraft?.first == d,
+                undoEnabled = !busy && editHistory.undo,
+                redoEnabled = !busy && editHistory.redo,
                 generateLabel = desktopGenerateLabel(busy, state.credentialConfigured, cost, state.status),
                 generateEnabled = busy || desktopCanGenerate(state, d, busy),
-                onUndo = { scope.launch {
-                    val before = controller.draft.value
-                    controller.undo()
-                    val after = controller.draft.value
-                    redoDraft = if (before != null && after != null && before != after) after to before else null
-                } },
-                onRedo = { scope.launch {
-                    redoDraft?.takeIf { it.first == controller.draft.value }?.let { saved -> controller.replace { saved.second } }; redoDraft = null
-                } },
+                onUndo = { scope.launch { controller.undo() } },
+                onRedo = { scope.launch { controller.redo() } },
                 onGenerate = { if (busy) controller.stop() else scope.launch { controller.generate() } })
         },
         preview = { rail ->
@@ -491,9 +495,11 @@ internal fun DesktopDesignModelChoice(selected: String?, models: List<com.exampl
 
 @Composable
 internal fun StudioField(label: String, value: String, onChange: (String) -> Unit) {
+    val editor = rememberStudioTextHistory(label, value)
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         StatusText(label)
-        BasicTextField(value, onChange, Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border)
+        BasicTextField(editor.value, { editor.edit(it, onChange) }, Modifier.fillMaxWidth()
+            .studioTextHistoryKeys(editor, onChange).border(1.dp, DesktopBootstrapColors.border)
             .background(DesktopBootstrapColors.input).padding(9.dp), cursorBrush = DesktopBootstrapColors.inputCaret, textStyle = TextStyle(color = DesktopBootstrapColors.foreground))
     }
 }

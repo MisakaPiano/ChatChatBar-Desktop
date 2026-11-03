@@ -1,0 +1,59 @@
+name: Desktop Studio history and input regression
+on:
+  push:
+    branches: ['codex/desktop-studio-history-*']
+permissions:
+  contents: read
+concurrency:
+  group: desktop-studio-history-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  focused:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Synthetic Studio histories and existing affected owners
+        shell: pwsh
+        working-directory: app
+        env:
+          CCB_STUDIO_HISTORY_REVIEW_DIR: ${{ runner.temp }}/studio-history-review
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Path $env:CCB_STUDIO_HISTORY_REVIEW_DIR -Force | Out-Null
+          @{ source = (git rev-parse HEAD); run = $env:GITHUB_RUN_ID; scope = 'synthetic Studio only; no native IME acceptance, provider, installation or real data' } |
+            ConvertTo-Json | Set-Content "$env:CCB_STUDIO_HISTORY_REVIEW_DIR/source.json" -Encoding utf8
+          .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain `
+            --tests com.example.chatbar.desktop.DesktopStudioDraftHistoryTest `
+            --tests com.example.chatbar.desktop.DesktopStudioTextHistoryTest `
+            --tests com.example.chatbar.desktop.DesktopStudioInputHistorySceneTest `
+            --tests com.example.chatbar.desktop.DesktopStudioManualUndoTest `
+            --tests com.example.chatbar.desktop.DesktopStudioEditResponsivenessTest `
+            --tests com.example.chatbar.desktop.DesktopStudioPresetControllerTest `
+            --tests com.example.chatbar.desktop.DesktopStudioPresetExchangeTest `
+            --tests com.example.chatbar.desktop.DesktopStudioFullPromptExchangeTest `
+            --tests com.example.chatbar.desktop.DesktopStudioVarietyPlusTest `
+            --tests com.example.chatbar.desktop.DesktopStudioPresentationTest `
+            --tests com.example.chatbar.desktop.DesktopPhase7StudioTest `
+            --tests com.example.chatbar.desktop.DesktopStudioFooterTest `
+            --tests com.example.chatbar.desktop.DesktopFullBackupServiceTest `
+            --tests com.example.chatbar.desktop.backup.DesktopMergePreviewTest `
+            --tests com.example.chatbar.desktop.backup.DesktopBackupSelectionTest
+          exit $LASTEXITCODE
+      - name: Preserve actual results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-studio-history-reports
+          path: |
+            app/desktopApp/build/test-results/test/
+            app/desktopApp/build/reports/tests/test/
+            app/desktopApp/build/phase7-ux-evidence/
+            ${{ runner.temp }}/studio-history-review/
+          if-no-files-found: error
