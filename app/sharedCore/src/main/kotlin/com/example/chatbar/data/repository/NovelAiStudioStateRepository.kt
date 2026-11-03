@@ -38,6 +38,8 @@ open class NovelAiStudioStateRepository(
     private val draftMutex = Mutex()
     private val draftStateLock = Any()
     private val undoMutex = Mutex()
+    private val _undoAvailable = MutableStateFlow(false)
+    val undoAvailable: StateFlow<Boolean> = _undoAvailable.asStateFlow()
     protected val historyMutex = Mutex()
 
     suspend fun initialize() {
@@ -146,14 +148,16 @@ open class NovelAiStudioStateRepository(
 
     suspend fun saveUndoDraft(draft: NovelAiStudioDraft) = undoMutex.withLock {
         storage.saveSingleton(UNDO_ENTITY, NovelAiStudioUndoDraft(draft), NovelAiStudioUndoDraft.serializer())
+        _undoAvailable.value = true
     }
 
     suspend fun loadUndoDraft(): NovelAiStudioDraft? = undoMutex.withLock {
-        storage.loadSingleton(UNDO_ENTITY, NovelAiStudioUndoDraft.serializer())?.draft
+        storage.loadSingleton(UNDO_ENTITY, NovelAiStudioUndoDraft.serializer())?.draft.also { _undoAvailable.value = it != null }
     }
 
     suspend fun clearUndoDraft() = undoMutex.withLock {
         storage.saveSingleton(UNDO_ENTITY, NovelAiStudioUndoDraft(), NovelAiStudioUndoDraft.serializer())
+        _undoAvailable.value = false
     }
 
     suspend fun saveGuidanceCheckpoint(guidance: com.example.chatbar.domain.image.NovelAiImageGuidanceDraft) {

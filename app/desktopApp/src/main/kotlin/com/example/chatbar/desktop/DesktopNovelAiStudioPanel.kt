@@ -28,6 +28,7 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
     onModelSettings: (String?) -> Unit = {}) {
     val draft by controller.draft.collectAsState()
     val state by controller.state.collectAsState()
+    val undoAvailable by controller.repository.undoAvailable.collectAsState()
     val accounts = LocalDesktopApiAccounts.current
     val accountRevision = accounts?.store?.revision?.collectAsState()?.value
     val openedAccountService = accounts?.opened?.collectAsState()?.value
@@ -274,7 +275,7 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
         footer = {
             DesktopStudioFooter(
                 usage = usage,
-                undoEnabled = !busy,
+                undoEnabled = !busy && undoAvailable,
                 redoEnabled = !busy && redoDraft?.first == d,
                 generateLabel = desktopGenerateLabel(busy, state.credentialConfigured, cost, state.status),
                 generateEnabled = busy || desktopCanGenerate(state, d, busy),

@@ -16,6 +16,11 @@ class DesktopStudioManualUndoTest {
         try {
             val c = app.novelAiStudioController
             c.load()
+            assertFalse(c.repository.undoAvailable.value)
+            val empty = c.draft.value
+            assertFalse(c.undo())
+            assertEquals(empty, c.draft.value)
+            assertEquals("当前没有可撤销的修改", c.state.value.status)
             assertTrue(c.edit { it.copy(basePrompt = "synthetic initial", characters = listOf(NovelAiCharacterPromptDraft(prompt = "synthetic person"))) })
             for (change in listOf<(NovelAiStudioDraft) -> NovelAiStudioDraft>(
                 { it.copy(basePrompt = "synthetic edit") },
@@ -24,9 +29,11 @@ class DesktopStudioManualUndoTest {
             )) {
                 val before = assertNotNull(c.draft.value)
                 assertTrue(c.edit(change))
+                assertTrue(c.repository.undoAvailable.value)
                 val edited = assertNotNull(c.draft.value)
                 assertTrue(c.edit { it }) // A no-op must not replace the existing undo checkpoint.
                 assertTrue(c.undo())
+                assertFalse(c.repository.undoAvailable.value)
                 val undone = assertNotNull(c.draft.value)
                 assertEquals(before.basePrompt, undone.basePrompt)
                 assertEquals(before.activeSettings, undone.activeSettings)

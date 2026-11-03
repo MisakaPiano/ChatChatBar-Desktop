@@ -17,6 +17,8 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
+private class DesktopStudioUndoUnavailable : IllegalStateException()
+
 internal data class DesktopNovelAiStudioState(
     val ready: Boolean = false,
     val credentialConfigured: Boolean = false,
@@ -154,6 +156,7 @@ internal class DesktopNovelAiStudioController(
         repository.initialize()
         designRepository.initialize()
         repository.loadDraft()
+        repository.loadUndoDraft()
         resolveDefaultModel()
         val latest = history.first().firstOrNull()?.images.orEmpty().map { it.path }
         mutableState.update { it.copy(ready = true, results = latest) }
@@ -405,7 +408,7 @@ internal class DesktopNovelAiStudioController(
     }
 
     suspend fun undo() = action {
-        val previous = repository.loadUndoDraft() ?: error("没有可撤销操作")
+        val previous = repository.loadUndoDraft() ?: throw DesktopStudioUndoUnavailable()
         repository.updateDraft(resetPromptEditors = true) { previous }
         repository.clearUndoDraft()
     }
@@ -865,7 +868,8 @@ internal class DesktopNovelAiStudioController(
         }
         catch (cancelled: CancellationException) { throw cancelled }
         catch (failure: Exception) {
-            if (failure is DesktopStudioCredentialReadException) {
+            if (failure is DesktopStudioUndoUnavailable) status("当前没有可撤销的修改")
+            else if (failure is DesktopStudioCredentialReadException) {
                 invalidateAccount(STUDIO_ACCOUNT_READ_FAILURE); status(STUDIO_ACCOUNT_READ_FAILURE)
             } else status(if (designAction) desktopDesignFailure(failure).text else "操作失败，请检查输入或存储；现有图片保留")
             false
