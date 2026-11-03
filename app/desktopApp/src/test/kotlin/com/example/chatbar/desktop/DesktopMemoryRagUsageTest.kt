@@ -64,6 +64,10 @@ class DesktopMemoryRagUsageTest {
                 assertEquals(5L, summarizeDesktopUsage(records).prompt.value)
                 assertEquals(1L, summarizeDesktopUsage(records).completion.value)
                 assertEquals(1, logs.entries.value.size)
+                val stages = logs.entries.value.single().promptStages
+                assertEquals(listOf("SUMMARIZE", "REPAIR"), stages.map { it.stage })
+                assertTrue(stages.all { it.kind == "MEMORY_HEAD" && it.templateVersion != null })
+                assertEquals(2, stages.map { it.templateVersion }.distinct().size)
                 assertEquals(2, server.requestCount)
             } finally { transport.closeAndDrain() }
         }

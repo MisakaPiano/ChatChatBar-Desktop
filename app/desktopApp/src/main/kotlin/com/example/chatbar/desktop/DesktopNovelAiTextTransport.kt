@@ -19,7 +19,8 @@ internal class DesktopNovelAiTextTransport private constructor(
     constructor(transport: OpenAiStreamingTransport, diagnostics: DesktopTransportDiagnosticsOwner? = null) :
         this({ messages, model, log -> transport.streamMainChat(messages, model, diagnostics = log) }, diagnostics)
     override fun streamText(stage: NovelAiTextStage, messages: List<ChatApiMessage>, modelConfig: ModelConfig) = flow {
-        withDesktopAuxiliaryUsage(diagnostics, modelConfig, "image-design:${stage.name}") { log ->
+        withDesktopAuxiliaryUsage(diagnostics, modelConfig, "image-design:${stage.name}",
+            DesktopPromptDiagnosticContext(if (stage == NovelAiTextStage.PLAN) "IMAGE_RESEARCH" else "IMAGE_DESIGN", stage.name)) { log ->
             val input = AuxiliaryMessageAssembler.assemble(messages, stage == NovelAiTextStage.GENERATE)
             val text = StringBuilder()
             var reasoning = false

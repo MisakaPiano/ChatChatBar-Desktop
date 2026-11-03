@@ -11,10 +11,11 @@ internal suspend fun <T> withDesktopAuxiliaryUsage(
     owner: DesktopTransportDiagnosticsOwner?,
     model: ModelConfig,
     displayGroup: String,
+    promptContext: DesktopPromptDiagnosticContext? = null,
     block: suspend (ProviderTransportDiagnostics) -> T,
 ): T {
     val recorder = owner?.begin(UUID.randomUUID().toString(), displayGroup, model,
-        currentCoroutineContext()[DesktopUsageParent]?.value ?: DesktopUsageContext(DesktopUsageSource.OTHER))
+        currentCoroutineContext()[DesktopUsageParent]?.value ?: DesktopUsageContext(DesktopUsageSource.OTHER), promptContext)
     return try {
         block(recorder ?: ProviderTransportDiagnostics.NONE).also {
             recorder?.finish(DesktopTaskStatus.COMPLETED, null, null)

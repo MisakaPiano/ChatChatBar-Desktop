@@ -37,6 +37,7 @@ internal class DesktopMemoryRagTextClient(
                     "memory-rag:${task.kind.name}", selected, parent)
             }
             val log = recorder ?: return ProviderTransportDiagnostics.NONE
+            log.recordPromptStage(DesktopPromptDiagnosticContext(task.kind.name, task.stage.name))
             return object : ProviderTransportDiagnostics by log {
                 override fun onAttemptStarted(attemptNumber: Int) { log.onAttemptStarted(++physicalAttempt) }
             }

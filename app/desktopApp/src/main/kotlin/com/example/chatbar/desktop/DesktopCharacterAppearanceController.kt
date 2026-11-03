@@ -79,7 +79,8 @@ internal class DesktopCharacterAppearanceController(
                     val core = CharacterAppearanceImageCore(models, CharacterAppearanceImageGateway { messages, model ->
                         val recorder = runtime.diagnostics.begin("appearance:${UUID.randomUUID()}", "character-card:${target.session}", model,
                             DesktopUsageContext(DesktopUsageSource.CHARACTER_CARD, taskId = usageTask,
-                                cardId = target.card.id, editorSessionId = target.session, personId = target.person))
+                                cardId = target.card.id, editorSessionId = target.session, personId = target.person),
+                            DesktopPromptDiagnosticContext("CHARACTER_APPEARANCE", "GENERATE"))
                         val raw = StringBuilder(); val reasoning = StringBuilder(); var done = false
                         try {
                             stream(messages, model, recorder).collect { event -> when (event) {

@@ -9,6 +9,9 @@ import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.Classpath
@@ -118,12 +121,23 @@ abstract class WriteDesktopBuildIdentity : DefaultTask() {
     @get:Input abstract val installerVersion: Property<String>
     @get:Input abstract val installerVersionAssigned: Property<Boolean>
     @get:Input abstract val packagingProfile: Property<String>
+    @get:InputFiles @get:PathSensitive(PathSensitivity.NONE)
+    abstract val promptSources: ConfigurableFileCollection
     @get:OutputDirectory abstract val identityDirectory: DirectoryProperty
 
     @TaskAction
     fun writeIdentity() {
         val directory = identityDirectory.get().asFile.apply { mkdirs() }
-        directory.resolve("desktop-build.properties").writeText("version=${appVersion.get()}\ncommit=${sourceCommit.get()}\ninstallerVersion=${installerVersion.get()}\ninstallerVersionAssigned=${installerVersionAssigned.get()}\npackagingProfile=${packagingProfile.get()}\n")
+        val sources = promptSources.files.sortedBy { it.name }
+        check(sources.isNotEmpty() && sources.map { it.name }.distinct().size == sources.size)
+        val promptHash = MessageDigest.getInstance("SHA-256")
+        sources.forEach { file ->
+            promptHash.update(file.name.toByteArray(Charsets.UTF_8)); promptHash.update(0.toByte())
+            promptHash.update(file.readText(Charsets.UTF_8).replace("\r\n", "\n").toByteArray(Charsets.UTF_8))
+            promptHash.update(0.toByte())
+        }
+        val promptSha = promptHash.digest().joinToString("") { "%02x".format(it) }
+        directory.resolve("desktop-build.properties").writeText("version=${appVersion.get()}\ncommit=${sourceCommit.get()}\ninstallerVersion=${installerVersion.get()}\ninstallerVersionAssigned=${installerVersionAssigned.get()}\npackagingProfile=${packagingProfile.get()}\npromptSourceSha256=$promptSha\n")
     }
 }
 val writeDesktopBuildIdentity by tasks.registering(WriteDesktopBuildIdentity::class) {
@@ -132,6 +146,9 @@ val writeDesktopBuildIdentity by tasks.registering(WriteDesktopBuildIdentity::cl
     installerVersion.set(desktopInstallerVersion)
     installerVersionAssigned.set(explicitInstallerVersion.isPresent)
     packagingProfile.set(desktopPackagingProfile)
+    promptSources.from(project(":sharedCore").fileTree("src/main/kotlin/com/example/chatbar/domain/prompt") {
+        include("*.kt")
+    }, rootProject.file("app/src/main/java/com/example/chatbar/domain/prompt/PromptTemplates.kt"))
     identityDirectory.set(desktopBuildResources)
 }
 val syncDesktopModelCatalogResources by tasks.registering(Copy::class) {

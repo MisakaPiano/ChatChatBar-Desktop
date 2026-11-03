@@ -12,7 +12,7 @@ internal class DesktopAuxiliaryImageUnderstanding(
     private val diagnostics: DesktopTransportDiagnosticsOwner? = null,
 ) {
     suspend fun describe(encoded: String, model: ModelConfig, onDelta: (String) -> Unit): String =
-        withDesktopAuxiliaryUsage(diagnostics, model, "image-understanding") { log ->
+        withDesktopAuxiliaryUsage(diagnostics, model, "image-understanding", DesktopPromptDiagnosticContext("IMAGE_DESCRIPTION", "GENERATE")) { log ->
             describe(encoded, model, onDelta, log)
         }
 

@@ -100,6 +100,11 @@ class DesktopAuxiliaryUsageTest {
                 usage.closeAndDrain()
                 val records = store.records()
                 assertEquals(NovelAiTextStage.entries.size + 3, server.requestCount)
+                val designEntries = logs.entries.value.filter { it.sessionId.startsWith("image-design:") }
+                assertEquals(NovelAiTextStage.entries.map { it.name }.toSet(), designEntries.map { it.promptStages.single().stage }.toSet())
+                assertTrue(designEntries.all { it.promptStages.single().kind in setOf("IMAGE_RESEARCH", "IMAGE_DESIGN") && it.templateVersion != null })
+                assertEquals("IMAGE_DESCRIPTION", logs.entries.value.single { it.sessionId == "image-understanding" }.promptStages.single().kind)
+                assertNull(logs.entries.value.single { it.taskId == "explicit-vision" }.templateVersion) // Unmarked caller remains explicitly unknown.
                 assertEquals(server.requestCount, records.size)
                 assertEquals(records.size, records.map { it.requestId }.distinct().size)
                 assertTrue(records.all { it.attempt == 1 && it.counters.prompt == 0L && it.counters.completion == 2L })

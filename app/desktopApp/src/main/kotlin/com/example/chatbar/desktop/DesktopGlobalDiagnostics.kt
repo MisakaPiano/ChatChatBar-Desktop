@@ -18,17 +18,25 @@ import java.util.Locale
 internal fun desktopDiagnosticScenario(entry: DesktopTransportDiagnosticEntry): String = when {
     entry.image != null -> "生图网络请求"
     entry.media != null -> "语音网络请求"
-    else -> when (entry.scenario) {
-        "CHAT" -> "聊天"; "CHARACTER_CARD" -> "角色卡"; "FORMAT_CARD" -> "格式卡"
-        "WORLD_BOOK" -> "世界书"; "MOMENTS" -> "朋友圈"; "VOICE_PREVIEW" -> "试听"
-        else -> "其他／未记录"
+    else -> when {
+        entry.promptStages.lastOrNull()?.kind?.startsWith("MEMORY_") == true -> "记忆"
+        entry.promptStages.lastOrNull()?.kind == "RETRIEVAL_PLAN" -> "检索"
+        entry.promptStages.lastOrNull()?.kind?.startsWith("VOICE_") == true -> "语音处理"
+        entry.promptStages.lastOrNull()?.kind == "IMAGE_DESCRIPTION" -> "图像识别"
+        entry.promptStages.lastOrNull()?.kind?.startsWith("IMAGE_") == true -> "生图设计"
+        else -> when (entry.scenario) {
+            "CHAT" -> "聊天"; "CHARACTER_CARD" -> "角色卡"; "FORMAT_CARD" -> "格式卡"
+            "WORLD_BOOK" -> "世界书"; "MOMENTS" -> "朋友圈"; "VOICE_PREVIEW" -> "试听"
+            else -> "其他／未记录"
+        }
     }
 }
 
 internal fun desktopFilteredDiagnostics(entries: List<DesktopTransportDiagnosticEntry>, scenario: String,
     version: String, result: String) = entries.filter {
         (scenario == "全部场景" || desktopDiagnosticScenario(it) == scenario) &&
-            (version == "全部版本" || (it.templateVersion ?: "未记录版本") == version) &&
+            (version == "全部版本" || (it.templateVersion ?: "未记录版本") == version ||
+                it.promptStages.any { stage -> stage.templateVersion == version }) &&
             (result == "全部结果" || it.status.name == result)
     }.sortedByDescending { it.startedAt }
 
@@ -65,7 +73,9 @@ internal fun desktopFilteredDiagnostics(entries: List<DesktopTransportDiagnostic
     Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         StudioActions {
             CompactChoice("场景", listOf("全部场景") + entries.map(::desktopDiagnosticScenario).distinct(), scenario, { it }) { scenario = it }
-            CompactChoice("版本", listOf("全部版本") + entries.map { it.templateVersion ?: "未记录版本" }.distinct(), version, { it }) { version = it }
+            CompactChoice("版本", listOf("全部版本") + entries.flatMap { entry ->
+                (listOf(entry.templateVersion ?: "未记录版本") + entry.promptStages.map { it.templateVersion ?: "未记录版本" }).distinct()
+            }.distinct(), version, { it }) { version = it }
             CompactChoice("结果", listOf("全部结果") + entries.map { it.status.name }.distinct(), result, { it }) { result = it }
         }
         StatusText("筛选结果：${logs.size} 次请求 · 已记录任务 ${logs.mapNotNull { it.logicalTaskId }.distinct().size} 个 · 任务归属未记录 ${logs.count { it.logicalTaskId == null }} 次")
@@ -88,6 +98,7 @@ internal fun desktopFilteredDiagnostics(entries: List<DesktopTransportDiagnostic
                 StudioDisclosure("${desktopDiagnosticScenario(entry)} · ${entry.status}", "${entry.modelDisplayName} · $time") {
                     SelectionContainer { Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                         StatusText("模型：${entry.modelName} · 模板版本：${entry.templateVersion ?: "未记录"}")
+                        entry.promptStages.forEach { stage -> StatusText("阶段：${stage.kind} / ${stage.stage} · 模板源码版本：${stage.templateVersion ?: "未记录"}") }
                         val usage = entry.usage
                         StatusText("服务端 Token：输入 ${usage?.promptTokens ?: "未知"} / 输出 ${usage?.completionTokens ?: "未知"}")
                         StatusText("缓存：命中 ${usage?.cachedTokens ?: "未知"} / 写入 ${usage?.cacheWriteTokens ?: "未知"} / 未命中 ${usage?.cacheMissTokens ?: "未知"}")

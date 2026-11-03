@@ -24,7 +24,7 @@ internal class DesktopFishAuxiliaryGateway(
     }
 
     override suspend fun <T> withLogicalRequest(task: FishVoiceTextTask, model: ModelConfig, block: suspend () -> T): T =
-        withDesktopAuxiliaryUsage(diagnostics, model, "voice:${task.name}") { log ->
+        withDesktopAuxiliaryUsage(diagnostics, model, "voice:${task.name}", DesktopPromptDiagnosticContext("VOICE_${task.name}", task.name)) { log ->
             var physicalAttempt = 0
             val attempts = object : ProviderTransportDiagnostics by log {
                 override fun onAttemptStarted(attemptNumber: Int) { log.onAttemptStarted(++physicalAttempt) }

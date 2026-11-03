@@ -87,6 +87,8 @@ class DesktopVoiceAuxiliaryUsageTest {
                 val latest = rows.toList().groupBy { it.id }.values.map { it.maxBy { row -> row.revision } }
                 assertEquals(2, latest.size)
                 assertEquals(setOf("voice:TRANSLATE", "voice:TAG"), logs.entries.value.map { it.sessionId }.toSet())
+                assertEquals(setOf("TRANSLATE", "TAG"), logs.entries.value.map { it.promptStages.single().stage }.toSet())
+                assertTrue(logs.entries.value.all { it.templateVersion != null && it.promptStages.single().kind.startsWith("VOICE_") })
                 latest.forEach { record ->
                     assertEquals(batch, record.taskId); assertEquals(session.id, record.sessionId)
                     assertEquals("card", record.cardId); assertEquals(message.id, record.subjectId)

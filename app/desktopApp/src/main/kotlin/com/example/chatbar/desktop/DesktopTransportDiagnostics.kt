@@ -64,6 +64,7 @@ data class DesktopTransportDiagnosticEntry(
     val scenario: String? = null,
     val logicalTaskId: String? = null,
     val templateVersion: String? = null,
+    val promptStages: List<DesktopPromptStageIdentity> = emptyList(),
 )
 
 /** Bounded, process-local final-provider-request evidence. Never participates in request construction. */
@@ -114,8 +115,10 @@ internal class DesktopTransportDiagnosticsOwner(
     }
 
     fun begin(taskId: String, sessionId: String, model: ModelConfig,
-        usageContext: DesktopUsageContext = DesktopUsageContext(DesktopUsageSource.OTHER)): DesktopTransportDiagnosticRecorder {
+        usageContext: DesktopUsageContext = DesktopUsageContext(DesktopUsageSource.OTHER),
+        promptContext: DesktopPromptDiagnosticContext? = null): DesktopTransportDiagnosticRecorder {
         val scrubber = DesktopDiagnosticScrubber(model.apiKey)
+        val promptIdentity = promptContext?.let { DesktopPromptDiagnosticIdentity.identify(it) }
         synchronized(lock) {
             mutableEntries.value = (
                 listOf(
@@ -127,6 +130,8 @@ internal class DesktopTransportDiagnosticsOwner(
                         startedAt = clock(),
                         scenario = usageContext.source.name,
                         logicalTaskId = usageContext.taskId?.let { scrubber.text(it, SHORT_LIMIT) },
+                        templateVersion = promptIdentity?.templateVersion,
+                        promptStages = listOfNotNull(promptIdentity),
                     ),
                 ) + mutableEntries.value
             ).take(maxEntries)
@@ -169,6 +174,12 @@ internal class DesktopTransportDiagnosticRecorder(
     @Volatile private var requestTrace: List<MainChatLogicalMessageTrace> = emptyList()
     @Volatile private var requestSelection: PromptRuntimeBudgetSelection? = null
     fun safeText(value: String): String = scrubber.text(value, DesktopTransportDiagnosticsOwner.SHORT_LIMIT)
+
+    fun recordPromptStage(context: DesktopPromptDiagnosticContext) {
+        val stage = DesktopPromptDiagnosticIdentity.identify(context)
+        owner.update(taskId) { entry -> entry.copy(templateVersion = stage.templateVersion,
+            promptStages = (entry.promptStages + stage).distinct().takeLast(8)) }
+    }
 
     override fun onPlan(plan: DesktopChatRequestPlan) {
         val trace = plan.assembly.messageTrace
