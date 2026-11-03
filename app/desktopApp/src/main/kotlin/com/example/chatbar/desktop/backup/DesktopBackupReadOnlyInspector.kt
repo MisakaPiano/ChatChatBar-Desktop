@@ -119,7 +119,8 @@ internal class DesktopBackupReadOnlyInspector(private val afterAuthentication: (
                                 stage = "ENTITY_SCHEMA"
                                 val value = strictJson(bytes).jsonObject
                                 scanCredentials(value, DesktopBackupPolicy.entityType(path), credentials)
-                                if (DesktopBackupPolicy.schemas[DesktopBackupPolicy.entityType(path)] == null) uninterpreted++
+                                if (DesktopBackupPolicy.schemas[DesktopBackupPolicy.entityType(path)] == null ||
+                                    DesktopBackupPolicy.entityType(path) in setOf("moment_posts", "moment_tasks")) uninterpreted++
                                 entities[path] = value
                                 census?.json(path, value, sha, bytes.size.toLong())
                             }
@@ -179,7 +180,8 @@ internal class DesktopBackupReadOnlyInspector(private val afterAuthentication: (
             stage = "ENTITY_SCHEMA"
             for ((path, value) in entities) {
                 context.ensureActive()
-                if (DesktopBackupPolicy.entityType(path) in DesktopBackupPolicy.schemas) {
+                if (DesktopBackupPolicy.entityType(path) in DesktopBackupPolicy.schemas &&
+                    DesktopBackupPolicy.entityType(path) !in setOf("moment_posts", "moment_tasks")) {
                     DesktopOfficialBackupEntitySchema.validate(DesktopBackupPolicy.entityType(path), value, m.appVersionCode)
                     DesktopBackupPolicy.entity(path, value.toString().toByteArray(), exporting = true, wireVersionCode = m.appVersionCode)
                 }
@@ -206,7 +208,8 @@ internal class DesktopBackupReadOnlyInspector(private val afterAuthentication: (
         require(s.characters == counts.count("character_cards") && s.sessions == counts.count("chat_sessions"))
         require(listOf(s.sessionsWithImages, s.sessionsWithVoice, s.sessionsWithArchives).all { it in 0..s.sessions })
         require(s.moments || counts.count("moment_posts") + counts.count("moment_tasks") == 0)
-        if (!s.momentsImages) entities.filterKeys { DesktopBackupPolicy.entityType(it) == "moment_posts" }.values.forEach { post ->
+        if (!s.momentsImages) entities.filterKeys { DesktopBackupPolicy.entityType(it) == "moment_posts" }.values
+            .filter { DesktopMomentBackupExtension.FIELD in it }.forEach { post ->
             require(post["imagePath"] == null || post["imagePath"] == JsonNull)
             require(post["generatedImageMetadata"] == null || post["generatedImageMetadata"] == JsonNull)
             require((post[DesktopMomentBackupExtension.FIELD] as? JsonArray).orEmpty().isEmpty())

@@ -57,8 +57,9 @@ internal object DesktopBackupRecords {
         if ("senderName" in value && "scheduledAt" in value) {
             value["imagePath"]?.let { put("imagePath", it) }
             if (value["generatedImageMetadata"] is JsonObject) put("generatedImageMetadata", JsonObject(emptyMap()))
-            if ((value[DesktopMomentBackupExtension.FIELD] as? JsonArray)?.isNotEmpty() == true)
-                put(DesktopMomentBackupExtension.FIELD, JsonArray(listOf(JsonNull)))
+            if (DesktopMomentBackupExtension.FIELD in value)
+                put(DesktopMomentBackupExtension.FIELD, if ((value[DesktopMomentBackupExtension.FIELD] as? JsonArray)?.isNotEmpty() == true)
+                    JsonArray(listOf(JsonNull)) else JsonArray(emptyList()))
         }
     })
 }

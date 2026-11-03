@@ -56,7 +56,10 @@ class Moment147RuntimeTest {
             assertEquals(settings.steps, parameters.getValue("steps").jsonPrimitive.int)
             assertEquals(settings.guidance, parameters.getValue("scale").jsonPrimitive.float)
             assertEquals(settings.cfgRescale, parameters.getValue("cfg_rescale").jsonPrimitive.float)
-            assertEquals(58, parameters.getValue("skip_cfg_above_sigma").jsonPrimitive.int)
+            assertEquals(1024, parameters.getValue("width").jsonPrimitive.int)
+            assertEquals(1024, parameters.getValue("height").jsonPrimitive.int)
+            assertEquals(58.0 * kotlin.math.sqrt(128.0 * 128 / (104 * 152)),
+                parameters.getValue("skip_cfg_above_sigma").jsonPrimitive.double, 1e-9)
         } finally { client.connectionPool.evictAll(); client.dispatcher.executorService.shutdown() }
     }
 
