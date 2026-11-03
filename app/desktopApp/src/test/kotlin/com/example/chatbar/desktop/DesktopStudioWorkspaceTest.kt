@@ -45,6 +45,29 @@ class DesktopStudioWorkspaceTest {
             } finally { scene.close() }
         }
     }
+    @Test fun `diagnostics always has a visible local return without changing preview preference`() = runBlocking(awt) {
+        for ((width, mode, drawer) in listOf(Triple(360, "展开预览", true), Triple(1240, "预览专注", false))) {
+            val state = DesktopStudioWorkspaceState().apply {
+                this.mode = mode; compactExpanded = drawer; diagnostics = true
+            }
+            val scene = ImageComposeScene(width, 700) {
+                DesktopStudioWorkspace(state, diagnostics = { StatusText("Inspector fixture") },
+                    compact = {}, editor = { StatusText("Editor fixture") },
+                    footer = { StatusText("Footer fixture") }, preview = {})
+            }
+            try {
+                scene.frames()
+                val back = scene.bounds("返回 Studio")
+                assertTrue(back.left >= 0 && back.right <= width && back.top >= 0 && back.bottom < 700)
+                assertTrue(scene.nodes().any { it.matches("Inspector fixture") })
+                scene.click("返回 Studio")
+                assertFalse(state.diagnostics)
+                assertEquals(mode, state.mode)
+                assertEquals(drawer, state.compactExpanded)
+            } finally { scene.close() }
+        }
+    }
+
     private val awt = object : CoroutineDispatcher() { override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block) }
     private suspend fun ImageComposeScene.frames() { repeat(8) { render().close(); yield() }; delay(60); render().close() }
     private fun ImageComposeScene.nodes(): List<SemanticsNode> {

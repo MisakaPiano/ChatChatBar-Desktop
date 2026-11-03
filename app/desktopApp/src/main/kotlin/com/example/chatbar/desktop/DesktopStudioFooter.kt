@@ -25,7 +25,7 @@ internal fun DesktopStudioFooter(
         }
     }
     @Composable fun undoRedo() {
-        DesktopIconAction("撤销上次载入/重置", DesktopAppIcons.Undo, enabled = undoEnabled, onClick = onUndo)
+        DesktopIconAction("撤销上次编辑/载入", DesktopAppIcons.Undo, enabled = undoEnabled, onClick = onUndo)
         DesktopIconAction("重做", DesktopAppIcons.Redo, enabled = redoEnabled, onClick = onRedo)
     }
     BoxWithConstraints(Modifier.fillMaxWidth()) {

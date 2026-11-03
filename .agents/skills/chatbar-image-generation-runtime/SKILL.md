@@ -5,6 +5,8 @@ description: Maintain ChatBar image-generation and image-processing runtime acro
 
 # ChatBar Image Generation Runtime
 
+Desktop Studio manual `edit` uses the same durable single-step undo checkpoint as load/reset; no-op edits preserve it. The existing redo replacement path and reference-aware cleanup remain separate from multi-level history. `DesktopStudioWorkspace` owns a fixed local diagnostics return and unhandled Escape; diagnostics temporarily suppresses the narrow preview drawer / preview-focus obstruction without changing stored preview preferences. Neither operation leaves the Studio draft owner.
+
 Desktop imported-image reverse design uses the shared official147 scene-first flow; `DesktopReversePromptPane` owns editable description/confirm/final-candidate controls inside the existing image surface. `DesktopNovelAiStudioController` binds that runtime-only state and the final target to the captured Studio draft; source changes clear/cancel its exact task. It applies only after a second explicit action and selection/draft recheck, retaining normal undo. See `chatbar-novelai-prompt` and279; source/test presence alone is not cloud or provider acceptance.
 
 Character default sampler/steps/guidance/cfgRescale/varietyPlus use shared `NovelAiCharacterImageSettings`. The official147 nullable schema9 `PackagedCharacterCard.defaultImageGenerationSettings` is validated through the original applyTo/validationError path and copied in both `CharacterCardTransferCore` materialization/export directions. JSON/CCB-PNG transfer, duplicate and overwrite all use this Core; Entity/cbbackup preservation alone is not Package proof. Old absent fields stay null; see275 and the actual Core/typed transfer tests.

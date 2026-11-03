@@ -252,7 +252,10 @@ internal class DesktopNovelAiStudioController(
 
     suspend fun edit(change: (NovelAiStudioDraft) -> NovelAiStudioDraft) = action(inspectAssets = false) {
         val before = repository.loadDraft()
+        if (change(before) == before) return@action
+        repository.saveUndoDraft(before)
         val after = repository.updateDraft(transform = change)
+        // The durable undo snapshot retains removed media through the existing reference cleaner.
         // Ordinary parameters keep every media reference. Only a removed draft reference can
         // become unowned; the cleaner still checks undo/checkpoint/history before unlinking it.
         cleanupAfterCommit((before.imageGuidance.ownedAssetPaths() - after.imageGuidance.ownedAssetPaths()).toList())

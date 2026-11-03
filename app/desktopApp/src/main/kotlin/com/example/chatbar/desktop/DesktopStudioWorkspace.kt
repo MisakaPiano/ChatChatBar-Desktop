@@ -4,6 +4,9 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -53,11 +56,21 @@ internal fun DesktopStudioWorkspace(
     preview: @Composable (rail: Boolean) -> Unit,
 ) {
     val editorScroll = rememberScrollState()
-    BoxWithConstraints(modifier.fillMaxSize().background(DesktopBootstrapColors.background).clipToBounds()) {
+    val diagnosticsFocus = remember { FocusRequester() }
+    LaunchedEffect(state.diagnostics) {
+        if (state.diagnostics) diagnosticsFocus.requestFocus()
+    }
+    BoxWithConstraints(modifier.fillMaxSize().background(DesktopBootstrapColors.background).clipToBounds()
+        .focusRequester(diagnosticsFocus).onKeyEvent { event ->
+            if (state.diagnostics && event.type == KeyEventType.KeyDown && event.key == Key.Escape) {
+                state.diagnostics = false
+                true
+            } else false
+        }.focusable()) {
         val width = maxWidth.value
         val wide = width >= 900f
-        val focus = wide && state.mode == "预览专注"
-        val expanded = wide || state.compactExpanded
+        val focus = wide && state.mode == "预览专注" && !state.diagnostics
+        val expanded = (wide || state.compactExpanded) && (wide || !state.diagnostics)
         val previewWidth = if (wide) state.previewWidth(width) else minOf(width, 640f)
         val editorWidth = if (wide && !focus) width - previewWidth - 12f else width
         val captionWidth = if (captions != null) 126f else 0f
@@ -83,7 +96,13 @@ internal fun DesktopStudioWorkspace(
                     .then(if (state.diagnostics) Modifier.alpha(0f).clearAndSetSemantics {} else Modifier)
                     .verticalScroll(editorScroll).padding(12.dp)
                     .semantics { contentDescription = "Studio Prompt 编辑区" }) { editor() }
-                if (state.diagnostics) diagnostics?.invoke()
+                if (state.diagnostics) Column(Modifier.fillMaxSize()) {
+                    Row(Modifier.fillMaxWidth().background(DesktopBootstrapColors.card).padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        StudioAction("返回 Studio") { state.diagnostics = false }
+                    }
+                    Box(Modifier.weight(1f).fillMaxWidth()) { diagnostics?.invoke() }
+                }
             }
             Box(Modifier.fillMaxWidth().background(DesktopBootstrapColors.card)
                 .semantics { contentDescription = "Studio 固定生成栏" }.padding(8.dp), contentAlignment = Alignment.CenterEnd) { footer() }

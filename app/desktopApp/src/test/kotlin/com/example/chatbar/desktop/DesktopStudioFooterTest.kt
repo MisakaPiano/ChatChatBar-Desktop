@@ -52,7 +52,7 @@ class DesktopStudioFooterTest {
                 fun verify(label: String) {
                     val footer = scene.node("Studio 固定生成栏").boundsInRoot
                     val tokens = scene.node("Studio Tokens").boundsInRoot
-                    val undoBounds = scene.node("撤销上次载入/重置").boundsInRoot
+                    val undoBounds = scene.node("撤销上次编辑/载入").boundsInRoot
                     val redoBounds = scene.node("重做").boundsInRoot
                     val button = scene.node(label).boundsInRoot
                     evidence += "$w x $h $label footer=$footer tokens=$tokens undo=$undoBounds redo=$redoBounds generate=$button"
@@ -73,10 +73,10 @@ class DesktopStudioFooterTest {
                 val footerBefore = scene.node("Studio 固定生成栏").boundsInRoot
                 scene.sendPointerEvent(PointerEventType.Scroll, scene.node("Studio Prompt 编辑区").boundsInRoot.center, scrollDelta = Offset(0f, 30f))
                 scene.frames(); assertEquals(footerBefore, scene.node("Studio 固定生成栏").boundsInRoot)
-                scene.click("撤销上次载入/重置"); scene.click("重做")
+                scene.click("撤销上次编辑/载入"); scene.click("重做")
                 assertEquals(1, undo); assertEquals(1, redo)
                 scene.click("生成免费"); assertEquals(1, generate); verify("停止当前任务")
-                scene.click("撤销上次载入/重置"); scene.click("重做")
+                scene.click("撤销上次编辑/载入"); scene.click("重做")
                 assertEquals(1, undo); assertEquals(1, redo)
                 scene.click("停止当前任务"); assertEquals(1, stop)
                 scene.render().use { image -> image.encodeToData()!!.use { Files.write(output.resolve("footer-$w.png"), it.bytes) } }
