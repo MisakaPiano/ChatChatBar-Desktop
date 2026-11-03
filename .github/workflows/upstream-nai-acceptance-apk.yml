@@ -31,8 +31,7 @@ jobs:
       - name: Build isolated debug APK without repeating functional tests
         working-directory: source/app
         run: |
-          chmod +x gradlew
-          ./gradlew -I "$RUNNER_TEMP/pr1-identity.gradle" :app:assembleDebug -PCHATBAR_VERSION_NAME=1.4.7-nai-pr1-e4d7997 -PCHATBAR_SUPABASE_REDIRECT_URI=chatbar-naipr1-e4d7997://auth/callback --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx5g -Dfile.encoding=UTF-8'
+          bash ./gradlew -I "$RUNNER_TEMP/pr1-identity.gradle" :app:assembleDebug -PCHATBAR_VERSION_NAME=1.4.7-nai-pr1-e4d7997 -PCHATBAR_SUPABASE_REDIRECT_URI=chatbar-naipr1-e4d7997://auth/callback --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx5g -Dfile.encoding=UTF-8'
       - name: Verify APK identity, signature and installability metadata
         run: |
           apk=source/app/app/build/outputs/apk/debug/app-debug.apk
@@ -41,6 +40,7 @@ jobs:
           "$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" manifest print "$apk" > delivery/final-manifest.xml
           python control/.github/scripts/pr1_acceptance_verify.py source "$apk" delivery
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: CCB-NAI-PR1-e4d7997-isolated-debug
           path: delivery/
