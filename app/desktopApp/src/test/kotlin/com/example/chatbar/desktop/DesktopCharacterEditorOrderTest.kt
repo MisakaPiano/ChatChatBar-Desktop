@@ -38,6 +38,9 @@ class DesktopCharacterEditorOrderTest {
                     systemPrompt = "System exact  ", postHistoryInstructions = "Post exact  ", mesExample = "Example exact  ",
                     creatorNotes = "Notes exact  ", createdAt = 1, updatedAt = 1)
                 app.characterRepository.save(original)
+                val durable = assertNotNull(app.characterRepository.getById(original.id))
+                // The existing repository normalizes the negative prompt before the editor opens.
+                assertEquals(original.copy(defaultImageNegativePrompt = original.defaultImageNegativePrompt.trim()), durable)
                 val editor = app.characterEditorController; editor.openExisting(original.id)
                 val activity = DesktopModalActivity()
                 val scene = ImageComposeScene(width, height, coroutineContext = edt) {
@@ -66,8 +69,8 @@ class DesktopCharacterEditorOrderTest {
                         Files.createDirectories(file.parent)
                         scene.render().use { image -> image.encodeToData()!!.use { Files.write(file, it.bytes) } }
                     }
-                    assertEquals(original, app.characterRepository.getById(original.id))
-                    assertEquals(original, editor.state.value.card)
+                    assertEquals(durable, app.characterRepository.getById(original.id))
+                    assertEquals(durable, editor.state.value.card)
                 } finally { scene.close() }
             } finally { app.close(); check(parent.toFile().deleteRecursively()) }
         }
