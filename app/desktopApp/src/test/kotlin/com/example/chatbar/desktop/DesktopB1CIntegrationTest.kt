@@ -383,8 +383,15 @@ class DesktopB1CIntegrationTest {
             scene.click("设置"); scene.frames(); scene.shot("workspace-settings")
             navigation.navigate(DesktopPrimaryRoute.DATA, idle); scene.frames()
             assertTrue(scene.has("备份与导入")); assertTrue(scene.has("版本与更新")); scene.shot("workspace-data")
+            scene.click("支持与诊断"); scene.frames()
+            assertTrue(scene.has("AI 请求日志")); assertTrue(scene.has("高级：逻辑 Prompt 检查器"))
+            scene.click("高级：逻辑 Prompt 检查器"); scene.frames()
+            assertTrue(scene.has("返回 AI 请求日志"))
+            scene.click("返回 AI 请求日志"); scene.frames()
+            assertTrue(scene.has("AI 请求日志")); scene.shot("workspace-diagnostics")
             navigation.navigate(DesktopPrimaryRoute.TOOLS, idle); scene.frames()
-            assertTrue(scene.has("高级 / 诊断")); scene.shot("workspace-tools")
+            assertFalse(scene.has("高级 / 诊断")); assertFalse(scene.has("NovelAI Studio"))
+            assertTrue(scene.has("历史")); scene.shot("workspace-tools")
         } finally { scene.close(); f.close() }
     }
 

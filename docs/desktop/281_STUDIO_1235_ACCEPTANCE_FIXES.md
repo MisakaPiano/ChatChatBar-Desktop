@@ -37,3 +37,5 @@ V5能力以NovelAI公开原始资料及实际API字段为依据；文档确认�
 朋友圈按头像、强调作者、正文/图片同列、底部时间/动作和分隔线组织；原编辑、作者选择、私密、点赞、复制、确认删除、图片查看/重生成/设卡图及任务重试保留。维护/调度/日志折到更多操作，生成中停止仍常显。
 
 独立朋友圈相册复用固定官方147的JVM-neutral `MomentAlbumPolicy/State/Filter`：按卡文件夹、搜索、日/月/年日期、数量与私密标记；同名卡按ID分组，已删卡历史仍可见。点击相册项携带postId回到当下完整时间线定位，不用过滤后的索引。新增真实控制器导航/编辑草稿及窄宽实际Panel相册往返检查，官方六项policy内联fixture回归；尚待其精确源码云端结果，不冒记通过。M04保留多版本图片及全资源/传输链仍待实现。
+
+142精确aa4原XML主2587=2567PASS+19SKIP+1FAIL。ManualUndo1、TranslatedCaret1、GlobalDiagnostics1、Workspace6均通过；唯一旧B1C导航用例仍要求Tools存在已明确移走的“高级/诊断”，后继改为实际从Data支持诊断进入HTTP日志/逻辑检查器并返回，同时核Tools历史仍在、旧诊断/空按钮不存在。失败原件保留，不删除导航覆盖或冒认为整轮通过。Linux job、Windows NTFS/native/updater/exit/proxy步骤均success，后继M01-M03不在该轮。
