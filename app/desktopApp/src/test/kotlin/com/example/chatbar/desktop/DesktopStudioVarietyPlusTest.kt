@@ -44,7 +44,7 @@ class DesktopStudioVarietyPlusTest {
             try {
                 scene.frames(); assertTrue(scene.has("Variety+（V+）")); assertFalse(current().activeSettings.varietyPlus)
                 scene.click("Variety+（V+）"); scene.until { current().activeSettings.varietyPlus }
-                assertEquals(58, parameters().getValue("skip_cfg_above_sigma").jsonPrimitive.int)
+                assertEquals(58.0, parameters().getValue("skip_cfg_above_sigma").jsonPrimitive.double, 1e-9)
                 val enabled = current()
                 assertEquals("Original scene  ", enabled.basePrompt); assertEquals("Original negative  ", enabled.negativePrompt)
                 assertEquals(enabled, NovelAiStudioStateRepository(JsonFileStorage(root)).loadDraft())
@@ -64,7 +64,7 @@ class DesktopStudioVarietyPlusTest {
                 assertTrue(current().v45Settings.varietyPlus)
                 controller.edit { it.applyHistoryRecipe(recipe, 7, NovelAiHistoryApplyMode.FULL) }
                 scene.frames(); assertTrue(scene.has("Variety+（V+）")); assertTrue(current().activeSettings.varietyPlus)
-                assertEquals(58, parameters().getValue("skip_cfg_above_sigma").jsonPrimitive.int)
+                assertEquals(58.0, parameters().getValue("skip_cfg_above_sigma").jsonPrimitive.double, 1e-9)
                 controller.edit { it.withActiveSettings(it.activeSettings.copy(varietyPlus = false)) }
                 assertTrue(controller.inspectGenerationPreset(preset)); assertTrue(controller.applyGenerationPreset())
                 assertTrue(current().activeSettings.varietyPlus)

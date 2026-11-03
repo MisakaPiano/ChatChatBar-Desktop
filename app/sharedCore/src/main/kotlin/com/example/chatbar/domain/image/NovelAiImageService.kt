@@ -331,7 +331,13 @@ class NovelAiImageService(
                 put("cfg_rescale", settings.effectiveCfgRescale)
                 // Selected official 1.4.7 wire behavior: V5 must not receive this V4.5 option.
                 if (settings.model == NovelAiImageModel.V4_5_FULL) {
-                    if (settings.varietyPlus) put("skip_cfg_above_sigma", 58) else put("skip_cfg_above_sigma", JsonNull)
+                    if (settings.varietyPlus) {
+                        val sigma = settings.varietyPlusSigma ?: NovelAiVarietyPlusPolicy.DEFAULT_SIGMA
+                        require(sigma.isFinite() && sigma > 0) { "Variety+ Sigma 无效" }
+                        val effectiveSigma = sigma * NovelAiVarietyPlusPolicy.resolutionScale(imageSize.width, imageSize.height)
+                        require(effectiveSigma.isFinite()) { "Variety+ Sigma 无效" }
+                        put("skip_cfg_above_sigma", effectiveSigma)
+                    } else put("skip_cfg_above_sigma", JsonNull)
                 }
                 put("deliberate_euler_ancestral_bug", false)
                 put("prefer_brownian", true)
@@ -342,7 +348,7 @@ class NovelAiImageService(
                     require(imageGuidance.action == NovelAiGenerationAction.IMAGE_TO_IMAGE && settings.count == 1)
                     require(!enhance.upscaledEnhance || settings.model == NovelAiImageModel.V5_FULL)
                     enhance.sourceParameters.forEach { (key, value) ->
-                        if ((key != "skip_cfg_above_sigma" || settings.model == NovelAiImageModel.V4_5_FULL) &&
+                        if (key != "skip_cfg_above_sigma" &&
                             (!settings.isMedium || key != "v4_negative_prompt")) put(key, value)
                     }
                     put("upscaled_enhance", enhance.upscaledEnhance)

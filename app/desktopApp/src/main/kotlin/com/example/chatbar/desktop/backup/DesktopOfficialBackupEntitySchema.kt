@@ -31,7 +31,7 @@ internal object DesktopOfficialBackupEntitySchema {
                     if (descriptor.serialName == "com.example.chatbar.data.local.entity.CharacterCard")
                         require("defaultImageGenerationSettings" !in obj) { "OFFICIAL145_CARD_FIELD_UNSUPPORTED" }
                     if (descriptor.serialName == "com.example.chatbar.domain.image.NovelAiGenerationSettings")
-                        require("varietyPlus" !in obj) { "OFFICIAL145_SETTINGS_FIELD_UNSUPPORTED" }
+                        require("varietyPlus" !in obj && "varietyPlusSigma" !in obj) { "OFFICIAL145_SETTINGS_FIELD_UNSUPPORTED" }
                 }
                 obj.forEach { (key, child) ->
                     val index = descriptor.getElementIndex(key)

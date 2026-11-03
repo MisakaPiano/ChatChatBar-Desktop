@@ -18,22 +18,26 @@ class NovelAiVarietyPlusImportTest {
             val initial = NovelAiStudioDraft(v45Settings = NovelAiGenerationSettings(model = NovelAiImageModel.V4_5_FULL, varietyPlus = !expected))
             val applied = initial.applyImportedMetadata(metadata, NovelAiStudioMetadataSelection())
             assertEquals(expected, applied.activeSettings.varietyPlus)
-            assertEquals(if (expected) JsonPrimitive(58) else JsonNull, body(applied.activeSettings)["skip_cfg_above_sigma"])
+            if (expected) assertEquals(58.0, body(applied.activeSettings).getValue("skip_cfg_above_sigma").jsonPrimitive.double, 1e-9)
+            else assertEquals(JsonNull, body(applied.activeSettings)["skip_cfg_above_sigma"])
             val skipped = initial.applyImportedMetadata(metadata, NovelAiStudioMetadataSelection(generationSettings = false, seed = false))
             assertEquals(initial.v45Settings, skipped.v45Settings)
             assertEquals("Original scene  ", applied.basePrompt)
         }
     }
 
-    @Test fun `unknown sigma is not called fixed VPlus and V5 never applies or replays V45 sigma`() {
+    @Test fun `custom PNG sigma is normalized and retained while V5 never applies or replays V45 sigma`() {
         val unknown = assertNotNull(NovelAiPngMetadataReader.parseStudioComment(comment("nai-diffusion-4-5-full", "42"), "synthetic.png"))
-        assertNull(unknown.settings.varietyPlus)
+        assertEquals(true, unknown.settings.varietyPlus)
+        assertEquals(42.0 / NovelAiVarietyPlusPolicy.resolutionScale(1024, 1024), unknown.settings.varietyPlusSigma)
         val v5 = assertNotNull(NovelAiPngMetadataReader.parseStudioComment(comment("nai-diffusion-5-full", "58"), "synthetic.png"))
         assertNull(v5.settings.varietyPlus)
         val source = NovelAiPngMetadataReader.parseEnhanceComment(comment("nai-diffusion-5-full", "58"), "synthetic.png", null)
         assertFalse(body(source.settings, NovelAiEnhanceRequestOptions(false, source.parameters)).containsKey("skip_cfg_above_sigma"))
         val v45 = NovelAiPngMetadataReader.parseEnhanceComment(comment("nai-diffusion-4-5-full", "58"), "synthetic.png", null)
         assertTrue(v45.settings.varietyPlus)
-        assertEquals(JsonPrimitive(58), body(v45.settings)["skip_cfg_above_sigma"])
+        assertEquals(58.0 / NovelAiVarietyPlusPolicy.resolutionScale(1024, 1024) *
+            NovelAiVarietyPlusPolicy.resolutionScale(v45.settings.imageSize().width, v45.settings.imageSize().height),
+            body(v45.settings).getValue("skip_cfg_above_sigma").jsonPrimitive.double, 1e-9)
     }
 }

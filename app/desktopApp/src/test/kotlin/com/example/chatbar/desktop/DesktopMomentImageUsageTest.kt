@@ -39,7 +39,7 @@ class DesktopMomentImageUsageTest {
             assertEquals(4.2f, wire.getValue("scale").jsonPrimitive.float)
             assertEquals(.25f, wire.getValue("cfg_rescale").jsonPrimitive.float)
             assertEquals("k_euler", wire.getValue("sampler").jsonPrimitive.content)
-            assertEquals(58, wire.getValue("skip_cfg_above_sigma").jsonPrimitive.int)
+            assertEquals(58.0 * kotlin.math.sqrt(8.0 * 8 / (104 * 152)), wire.getValue("skip_cfg_above_sigma").jsonPrimitive.double, 1e-9)
             assertEquals(64, wire.getValue("width").jsonPrimitive.int); assertEquals(64, wire.getValue("height").jsonPrimitive.int)
             assertEquals(f.draft.baseCaption, body.getValue("input").jsonPrimitive.content)
             assertTrue(Files.isRegularFile(f.root.resolve(result.path)))

@@ -15,7 +15,7 @@ description: Maintain Desktop complete generation preset files, separate full Pr
 
 ## Separate full Prompt text
 
-Variety+ stays in generation settings (draft, history recipe and full preset), not the separate full-Prompt clipboard. PNG metadata imports include its nullable flag only for V4.5 fixed sigma58/null, leaving unsupported model choices dormant. The actual Studio toggle/controller/preset/undo/final-wire chain is covered by `DesktopStudioVarietyPlusTest`.
+Variety+ and its normalized custom `varietyPlusSigma` stay in generation settings (draft, history recipe and full preset), not the separate full-Prompt clipboard. PNG metadata imports normalize V4.5 effective sigma by its source canvas; final requests scale once for the target canvas, leaving unsupported model choices dormant. The actual Studio toggle/controller/preset/undo/final-wire chain is covered by `DesktopStudioVarietyPlusTest` and `NovelAiVarietyResolutionTest`.
 
 Authority direction: Desktop aligns with official CCB; the separate Studio Suite consumes CCB-authoritative formats. `CCB-FULL-PROMPT/1` and the retained ForkAndroid reader are unpublished extensions, not official147 support or a reason to distribute a new phone reader. Preserve original positive-text interchange and label the extension explicitly; no destructive removal of existing source/tests.
 

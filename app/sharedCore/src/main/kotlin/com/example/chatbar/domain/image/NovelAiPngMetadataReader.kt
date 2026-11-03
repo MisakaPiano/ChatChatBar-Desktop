@@ -12,6 +12,7 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.floatOrNull
+import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -94,7 +95,8 @@ object NovelAiPngMetadataReader {
             useCharacterPositions = imported.useCharacterPositions ?: false,
             effort = imported.effort ?: NovelAiEffort.HIGH,
             transparentBackground = imported.transparentBackground ?: false,
-            varietyPlus = imported.varietyPlus ?: false
+            varietyPlus = imported.varietyPlus ?: false,
+            varietyPlusSigma = imported.varietyPlusSigma
         )
         settings.validationError(metadata.characters.size)?.let { error(it) }
         return NovelAiEnhanceSource(
@@ -288,12 +290,17 @@ object NovelAiPngMetadataReader {
             characters = characters,
             hasCharacterPrompts = hasCharacters,
             settings = NovelAiImportedGenerationSettings(
-                varietyPlus = if (modelText.toNovelAiModelOrNull() == NovelAiImageModel.V4_5_FULL) {
+                varietyPlus = if (effortSource.toNovelAiModelOrNull() == NovelAiImageModel.V4_5_FULL) {
                     when (val sigma = this["skip_cfg_above_sigma"]) {
-                        null, JsonNull -> false
-                        else -> sigma.jsonPrimitive.floatOrNull?.let { if (it == 58f) true else null }
+                        null -> null
+                        JsonNull -> false
+                        else -> sigma.jsonPrimitive.doubleOrNull?.takeIf { it.isFinite() }?.let { it > 0 }
                     }
                 } else null,
+                varietyPlusSigma = this["skip_cfg_above_sigma"]?.jsonPrimitive?.doubleOrNull
+                    ?.takeIf { it.isFinite() && it > 0 && width >= 8 && height >= 8 &&
+                        effortSource.toNovelAiModelOrNull() == NovelAiImageModel.V4_5_FULL }
+                    ?.div(NovelAiVarietyPlusPolicy.resolutionScale(width, height)),
                 effort = when {
                     effortSource.removeSuffix("-inpainting") in V5_MEDIUM_SOURCES -> NovelAiEffort.MEDIUM
                     effortSource.toNovelAiModelOrNull() == NovelAiImageModel.V5_FULL -> NovelAiEffort.HIGH
@@ -304,7 +311,7 @@ object NovelAiPngMetadataReader {
                 useCharacterPositions = this["v4_prompt"]?.jsonObjectOrNull()
                     ?.get("use_coords")?.jsonPrimitive?.booleanOrNull
                     ?: this["use_coords"]?.jsonPrimitive?.booleanOrNull ?: false,
-                model = modelText.toNovelAiModelOrNull(),
+                model = effortSource.toNovelAiModelOrNull(),
                 sizeTier = matchedSize?.first,
                 aspectRatio = matchedSize?.second,
                 customWidth = width.takeIf { useCustomSize },

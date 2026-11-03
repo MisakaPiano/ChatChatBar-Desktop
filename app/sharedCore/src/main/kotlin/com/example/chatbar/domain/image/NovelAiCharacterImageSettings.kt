@@ -16,6 +16,7 @@ data class NovelAiCharacterImageSettings(
         steps = steps,
         guidance = guidance,
         cfgRescale = cfgRescale,
-        varietyPlus = varietyPlus
+        varietyPlus = varietyPlus,
+        varietyPlusSigma = null
     ).normalized()
 }

@@ -61,7 +61,7 @@ class DesktopOfficialEntityRoundTripTest {
         fun request(model: NovelAiImageModel, variety: Boolean) = backupJson.parseToJsonElement(NovelAiImageService().buildRequestBody(
             NovelAiPromptPlan("Synthetic fixture", emptyList()), NovelAiImageSize(832, 1216, "Synthetic"),
             NovelAiGenerationSettings(model = model, varietyPlus = variety))).jsonObject.getValue("parameters").jsonObject
-        assertEquals(58, request(NovelAiImageModel.V4_5_FULL, true).getValue("skip_cfg_above_sigma").jsonPrimitive.int)
+        assertEquals(58.0, request(NovelAiImageModel.V4_5_FULL, true).getValue("skip_cfg_above_sigma").jsonPrimitive.double, 1e-9)
         assertEquals(JsonNull, request(NovelAiImageModel.V4_5_FULL, false)["skip_cfg_above_sigma"])
         assertFalse("skip_cfg_above_sigma" in request(NovelAiImageModel.V5_FULL, true))
         assertFalse("skip_cfg_above_sigma" in request(NovelAiImageModel.V5_FULL, false))

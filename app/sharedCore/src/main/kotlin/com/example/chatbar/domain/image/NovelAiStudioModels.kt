@@ -48,6 +48,9 @@ data class NovelAiGenerationSettings(
     val cfgRescale: Float = 0f,
     @EncodeDefault(EncodeDefault.Mode.NEVER)
     val varietyPlus: Boolean = false,
+    /** Resolution-independent sigma from imported metadata; null uses the normal toggle default. */
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val varietyPlusSigma: Double? = null,
     val customWidth: Int? = null,
     val customHeight: Int? = null,
     val useCharacterPositions: Boolean = false,
@@ -110,6 +113,7 @@ data class NovelAiGenerationSettings(
         sizeValidationError() != null -> sizeValidationError()
         count !in 1..4 -> "生成数量必须在 1–4 之间"
         steps !in 1..50 -> "Steps 必须在 1–50 之间"
+        varietyPlusSigma != null && (!varietyPlusSigma.isFinite() || varietyPlusSigma <= 0) -> "Variety+ Sigma 无效"
         guidance !in 1f..10f -> "Guidance 必须在 1.0–10.0 之间"
         cfgRescale !in 0f..1f -> "CFG Rescale 必须在 0.0–1.0 之间"
         seedMode == NovelAiSeedMode.FIXED && seed !in MIN_SEED..maxAllowedBaseSeed -> "当前数量下 Seed 必须在 $MIN_SEED–$maxAllowedBaseSeed 之间"

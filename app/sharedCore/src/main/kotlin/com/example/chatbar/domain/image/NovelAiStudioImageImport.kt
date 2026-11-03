@@ -20,13 +20,14 @@ data class NovelAiImportedGenerationSettings(
     val useCharacterPositions: Boolean? = null,
     val effort: NovelAiEffort? = null,
     val transparentBackground: Boolean? = null,
-    val varietyPlus: Boolean? = null
+    val varietyPlus: Boolean? = null,
+    val varietyPlusSigma: Double? = null
 ) {
     val hasAny: Boolean
         get() = model != null || sizeTier != null || aspectRatio != null || count != null ||
             steps != null || guidance != null || cfgRescale != null || sampler != null ||
             customWidth != null || customHeight != null || useCharacterPositions != null ||
-            effort != null || transparentBackground != null || varietyPlus != null
+            effort != null || transparentBackground != null || varietyPlus != null || varietyPlusSigma != null
 }
 
 data class NovelAiImportedImageGuidance(
@@ -134,7 +135,8 @@ fun NovelAiStudioDraft.applyImportedMetadata(
                 useCharacterPositions = imported.useCharacterPositions ?: current.useCharacterPositions,
                 effort = imported.effort ?: current.effort,
                 transparentBackground = imported.transparentBackground ?: current.transparentBackground,
-                varietyPlus = imported.varietyPlus ?: current.varietyPlus
+                varietyPlus = imported.varietyPlus ?: current.varietyPlus,
+                varietyPlusSigma = if (imported.varietyPlus != null) imported.varietyPlusSigma else current.varietyPlusSigma
             )
         )
     }
