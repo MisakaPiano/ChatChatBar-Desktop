@@ -67,6 +67,8 @@ jobs:
         with:
           name: desktop-ui-probe-reports
           path: |
+            app/sharedCore/build/test-results/test/
+            app/sharedCore/build/reports/tests/test/
             app/desktopApp/build/test-results/test/
             app/desktopApp/build/reports/tests/test/
             ${{ runner.temp }}/ccb-ui-probe/
