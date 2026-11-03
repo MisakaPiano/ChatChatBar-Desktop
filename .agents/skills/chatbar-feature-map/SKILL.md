@@ -7,6 +7,8 @@ Desktop complete Studio generation presets (`.ccbpreset`, preview/confirm/undo a
 
 # ChatBar Feature Map
 
+Chat export layout/resources: `DesktopChatScreenshotRenderer` reuses the real roleplay surface and whole-message bubble policy; effective player/card/person avatars join the original captured resource hashes. `desktopScreenshotSpeakerHeaders` calls the shared visible-index grouping policy so selecting a later sentence retains its header. A virtual `desktopScreenshotPdfRows` page grid repeats the crop with configured opacity, using absolute content offsets independently from bounded render frames. Word's separate editable `Header` embeds the actual avatar beside its name, with user alignment and existing resource rechecks. Word page-background/Markdown parity remains a separate follow-up.
+
 Desktop built-in style gallery: `DesktopStylePresetGallery` → `DesktopCharacterEditorController.loadStyleCatalog/applyStylePreset/undoStylePreset`; shared `NovelAiStyleCatalog` is the official parser/filter/fill authority. The card editor's fixed “画风与生图参数” shortcut reaches the grouped original default Prompt and per-card sampling fields. See `chatbar-image-generation-runtime`; generation presets remain a separate feature.
 
 Desktop global AI logs live in Data → support/diagnostics via `DesktopGlobalDiagnostics` and the existing `DesktopTransportDiagnosticsOwner`; the advanced logical Prompt inspector is a separate view there. Studio does not expose the old diagnostics/empty engine tabs. Global projections filter retained scrubbed entries; completed-only deletion uses captured request IDs and preserves running/new rows. Missing template version/task attribution stays unknown, never inferred from request text.

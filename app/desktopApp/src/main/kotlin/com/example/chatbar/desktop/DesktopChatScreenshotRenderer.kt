@@ -4,11 +4,14 @@ package com.example.chatbar.desktop
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.layout.*
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.*
@@ -33,6 +36,13 @@ internal data class DesktopScreenshotRequest(
 )
 internal data class DesktopScreenshotPng(val bytes: ByteArray, val width: Int, val height: Int,
     val resourceHashes: Map<String, String> = emptyMap())
+
+internal fun desktopScreenshotHeaderAvatarReference(message: ChatMessage, state: DesktopPrimaryChatState): String? =
+    when (message.role) {
+        MessageRole.USER -> state.globalPlayerAvatar
+        MessageRole.ASSISTANT -> state.selectedCharacter?.avatar
+        else -> null
+    }
 
 internal class DesktopScreenshotLimitException(val category: String, val actual: Long, val limit: Long) :
     IllegalArgumentException("$category: $actual / $limit")
@@ -94,12 +104,16 @@ internal object DesktopChatScreenshotRenderer {
             val references=buildSet {
                 request.background?.let(::add)
                 request.messages.forEach { m ->
+                    if (request.selected.none { roleplayBlockMessageId(it) == m.id }) return@forEach
                     m.images.forEachIndexed { i,ref->if(roleplayImageBlockId(m.id,i) in request.selected) add(ref) }
                     val presented=desktopPresentMessage(m,request.state.selectedCharacter,request.state.globalPlayerName,
                         request.state.assistantSegmentedBubblesEnabled,session=request.state.selectedSession)
-                    if(m.role==MessageRole.ASSISTANT) presented.segments.forEach { seg ->
+                    val speakerHeaders = desktopScreenshotSpeakerHeaders(presented, request.selected, request.contentOptions)
+                    if (presented.showWholeMessageHeader) desktopScreenshotHeaderAvatarReference(m, request.state)?.let(::add)
+                    if(m.role==MessageRole.ASSISTANT) presented.segments.forEachIndexed { index, seg ->
                         val id = if (presented.segmented) seg.blockId else roleplayLegacyTextBlockId(m.id)
-                        if (id in request.selected) desktopPresentedAvatarReference(seg.speaker,request.state.selectedCharacter)?.let(::add)
+                        if (id in request.selected && index in speakerHeaders && desktopScreenshotIncludes(seg, request.contentOptions))
+                            desktopPresentedAvatarReference(seg.speaker,request.state.selectedCharacter)?.let(::add)
                     }
                 }
             }
@@ -119,15 +133,34 @@ internal object DesktopChatScreenshotRenderer {
             return withContext(edt) {
                 var height=0
                 var top = 0
+                var viewportRows = 1
                 val bitmaps = images.mapValues { it.value.toComposeImageBitmap() }
                 val body:@Composable ()->Unit = {
                     CompositionLocalProvider(LocalDesktopPalette provides colors) {
+                        Box(Modifier.width(width.dp).height(viewportRows.dp).background(colors.background).drawBehind {
+                            bitmaps[request.background]?.let { bitmap ->
+                                val pageRows = desktopScreenshotPdfRows(width)
+                                val scale = maxOf(width.toFloat() / bitmap.width, pageRows.toFloat() / bitmap.height)
+                                val cropWidth = (width / scale).toInt().coerceIn(1, bitmap.width)
+                                val cropHeight = (pageRows / scale).toInt().coerceIn(1, bitmap.height)
+                                clipRect {
+                                    var y = -(top % pageRows)
+                                    while (y < size.height) {
+                                        drawImage(bitmap, srcOffset = IntOffset((bitmap.width - cropWidth) / 2, (bitmap.height - cropHeight) / 2),
+                                            srcSize = IntSize(cropWidth, cropHeight), dstOffset = IntOffset(0, y),
+                                            dstSize = IntSize(width, pageRows), alpha = request.state.backgroundOpacity.coerceIn(0f, 1f))
+                                        y += pageRows
+                                    }
+                                }
+                            }
+                        }) {
                         DesktopScreenshotContent(request,bitmaps,Modifier
                             // Every viewport shares the full layout's top origin, even when its
                             // height is smaller than the content. The default vertical centering
                             // otherwise shifts each slice before the explicit page translation.
                             .width(width.dp).wrapContentHeight(align=Alignment.Top, unbounded=true).offset { IntOffset(0, -top) }
                             .onSizeChanged { height=it.height })
+                        }
                     }
                 }
                 // Measurement uses a one-pixel surface; no unbounded raster allocation.
@@ -145,6 +178,7 @@ internal object DesktopChatScreenshotRenderer {
                 while (top < measured) {
                     currentCoroutineContext().ensureActive()
                     val chunkRows = minOf(rows, measured - top)
+                    viewportRows = chunkRows
                     validatePlan(width, chunkRows)
                     onPage(frames.size + 1, count.toInt())
                     renderComposeScene(width,chunkRows,content=body).use { image ->
@@ -213,46 +247,47 @@ internal suspend fun saveDesktopScreenshotVerified(png: DesktopScreenshotPng,
 @Composable
 private fun DesktopScreenshotContent(r:DesktopScreenshotRequest, images:Map<String,ImageBitmap>,modifier:Modifier) {
     val c=LocalDesktopPalette.current
-    Column(modifier.background(c.background).drawBehind {
-        images[r.background]?.let { bitmap ->
-            val w=size.width.toInt().coerceAtLeast(1)
-            val h=(bitmap.height.toDouble()*w/bitmap.width).toInt().coerceAtLeast(1)
-            var y=0
-            while(y<size.height) { drawImage(bitmap,dstOffset=IntOffset(0,y),dstSize=IntSize(w,h));y+=h }
-            drawRect(c.background.copy(alpha=.84f))
-        }
-    }) {
+    Column(modifier) {
         BasicText(r.title,Modifier.fillMaxWidth().background(c.card).padding(12.dp),style=TextStyle(color=c.foreground,fontSize=18.sp))
         r.messages.forEach { m ->
             val p=desktopPresentMessage(m,r.state.selectedCharacter,r.state.globalPlayerName,r.state.assistantSegmentedBubblesEnabled,session=r.state.selectedSession)
+            val speakerHeaders=desktopScreenshotSpeakerHeaders(p,r.selected,r.contentOptions)
             val selectedForMessage=r.selected.filter { roleplayBlockMessageId(it)==m.id }
-            if(selectedForMessage.isNotEmpty()) Column(Modifier.fillMaxWidth().padding(10.dp),verticalArrangement=Arrangement.spacedBy(7.dp),
+            if(selectedForMessage.isNotEmpty()) Box(Modifier.fillMaxWidth().padding(10.dp),
+                contentAlignment=if(m.role==MessageRole.USER)Alignment.TopEnd else Alignment.TopStart) {
+                Column(Modifier.fillMaxWidth(if(p.enclosingCard) .86f else 1f),verticalArrangement=Arrangement.spacedBy(7.dp),
                 horizontalAlignment=if(m.role==MessageRole.USER)Alignment.End else Alignment.Start) {
                 if(p.showWholeMessageHeader) Row(Modifier.fillMaxWidth(),horizontalArrangement=if(m.role==MessageRole.USER)Arrangement.End else Arrangement.Start,
                     verticalAlignment=Alignment.CenterVertically) {
-                    val avatar=if(m.role==MessageRole.ASSISTANT) images[r.state.selectedCharacter?.avatar] else null
-                    if(avatar!=null)Image(avatar,null,Modifier.size(36.dp))
-                    else Box(Modifier.size(36.dp).background(c.muted,CircleShape),contentAlignment=Alignment.Center) { BasicText(p.speakerLabel.take(1),style=TextStyle(color=c.foreground)) }
+                    val avatar=images[desktopScreenshotHeaderAvatarReference(m, r.state)]
+                    if(avatar!=null)Image(avatar,null,Modifier.size(30.dp).clip(CircleShape), contentScale=ContentScale.Crop)
+                    else Box(Modifier.size(30.dp).background(c.muted,CircleShape),contentAlignment=Alignment.Center) { BasicText(p.speakerLabel.take(1),style=TextStyle(color=c.foreground)) }
                     BasicText(p.speakerLabel,Modifier.padding(start=6.dp),style=TextStyle(color=c.mutedForeground,fontSize=12.sp))
                 }
+                Column(Modifier.then(if(p.enclosingCard) Modifier
+                    .background((if(m.role==MessageRole.USER)c.primary else c.card).copy(alpha=.6f),
+                        RoundedCornerShape(if(m.role==MessageRole.USER)10.dp else 3.dp,10.dp,10.dp,if(m.role==MessageRole.USER)3.dp else 10.dp))
+                    .padding(horizontal=12.dp,vertical=10.dp) else Modifier.fillMaxWidth()), verticalArrangement=Arrangement.spacedBy(7.dp)) {
                 m.images.forEachIndexed { index,ref -> if(roleplayImageBlockId(m.id,index) in r.selected) {
                     val bitmap=images[ref] ?: error("截图图片未加载")
                     Image(bitmap,null,Modifier.fillMaxWidth().heightIn(max=400.dp))
                 } }
                 p.segments.forEachIndexed { index,seg ->
                     val id=if(p.segmented)checkNotNull(seg.blockId) else roleplayLegacyTextBlockId(m.id)
-                    if(id in r.selected && desktopScreenshotIncludes(seg, r.contentOptions)) DesktopRoleplaySegmentSurface(seg.kind,p.segmented,index in p.speakerHeaderIndexes,seg.speaker?.displayName,"export-$id",avatar={
+                    if(id in r.selected && desktopScreenshotIncludes(seg, r.contentOptions)) DesktopRoleplaySegmentSurface(seg.kind,p.segmented,index in speakerHeaders,seg.speaker?.displayName,"export-$id",avatar={
                         val ref=desktopPresentedAvatarReference(seg.speaker,r.state.selectedCharacter)
                         val bitmap=images[ref]
-                        if(bitmap!=null)Image(bitmap,null,Modifier.size(40.dp))
+                        if(bitmap!=null)Image(bitmap,null,Modifier.size(40.dp).clip(CircleShape), contentScale=ContentScale.Crop)
                         else Box(Modifier.size(40.dp).background(c.muted,CircleShape),contentAlignment=Alignment.Center){BasicText((seg.speaker?.displayName?:p.speakerLabel).take(1),style=TextStyle(color=c.foreground))}
                     }) { color,style ->
                         if(seg.kind==RoleplaySegmentKind.STATUS) {
                             BasicText(desktopScreenshotStatusLabel(seg),style=TextStyle(color=c.mutedForeground,fontSize=12.sp))
                             BasicText(seg.text,style=style.copy(color=color))
-                        } else DesktopMarkdownText(seg.markdownSource,color,typography=DesktopChatTypography(r.state.chatBubbleFontScale),textStyle=style)
+                        } else DesktopMarkdownText(seg.markdownSource,if(!p.segmented && m.role==MessageRole.USER) Color.White else color,typography=DesktopChatTypography(r.state.chatBubbleFontScale),textStyle=style)
                     }
                 }
+                }
+            }
             }
         }
     }

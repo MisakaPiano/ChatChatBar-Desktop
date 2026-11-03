@@ -31,9 +31,28 @@ internal enum class DesktopScreenshotExportFormat(val label: String, val extensi
     fun fileName(title: String) = buildChatScreenshotFileName(title).removeSuffix(".png") + ".$extension"
 }
 
+/** Shared physical page grid; background painting stays independent of bounded render-frame sizes. */
+internal fun desktopScreenshotPdfRows(width: Int): Int =
+    ((PDRectangle.A4.height - 48f) / ((PDRectangle.A4.width - 48f) / width)).toInt().coerceAtLeast(1)
+
 internal sealed interface DesktopScreenshotDocumentBlock {
-    data class Text(val text: String, val heading: Boolean = false) : DesktopScreenshotDocumentBlock
-    data class Picture(val reference: String) : DesktopScreenshotDocumentBlock
+    data class Text(val text: String, val heading: Boolean = false, val right: Boolean = false) : DesktopScreenshotDocumentBlock
+    data class Picture(val reference: String, val right: Boolean = false) : DesktopScreenshotDocumentBlock
+    data class Header(val name: String, val avatar: String, val right: Boolean = false) : DesktopScreenshotDocumentBlock
+}
+
+internal fun desktopScreenshotDocumentReferences(blocks: List<DesktopScreenshotDocumentBlock>): List<String> =
+    blocks.mapNotNull { when (it) {
+        is DesktopScreenshotDocumentBlock.Picture -> it.reference
+        is DesktopScreenshotDocumentBlock.Header -> it.avatar
+        is DesktopScreenshotDocumentBlock.Text -> null
+    } }.distinct()
+
+private fun desktopWordXmlText(text: String): String = buildString {
+    text.codePoints().forEach { cp ->
+        if (cp == 9 || cp == 10 || cp == 13 || cp in 0x20..0xD7FF || cp in 0xE000..0xFFFD || cp in 0x10000..0x10FFFF)
+            appendCodePoint(cp)
+    }
 }
 
 /** Immutable selection projection: no repository reads, audio, reasoning, or unselected source text. */
@@ -41,28 +60,34 @@ internal fun desktopScreenshotDocument(request: DesktopScreenshotRequest): List<
     val blocks = mutableListOf<DesktopScreenshotDocumentBlock>()
     val parser = Parser.builder().build()
     val textRenderer = TextContentRenderer.builder().build()
-    fun text(value: String, heading: Boolean = false) {
-        if (value.isNotBlank()) blocks += DesktopScreenshotDocumentBlock.Text(value, heading)
+    fun text(value: String, heading: Boolean = false, right: Boolean = false) {
+        if (value.isNotBlank()) blocks += DesktopScreenshotDocumentBlock.Text(value, heading, right)
+    }
+    fun header(value: String, avatar: String?, right: Boolean = false) {
+        if (avatar == null) text(value, true, right) else blocks += DesktopScreenshotDocumentBlock.Header(value, avatar, right)
     }
     text(request.title, true)
     request.messages.forEach { message ->
         if (request.selected.none { roleplayBlockMessageId(it) == message.id }) return@forEach
         val presented = desktopPresentMessage(message, request.state.selectedCharacter, request.state.globalPlayerName,
             request.state.assistantSegmentedBubblesEnabled, session = request.state.selectedSession)
-        if (presented.showWholeMessageHeader) text(presented.speakerLabel, true)
+        val right = message.role == com.example.chatbar.data.local.entity.MessageRole.USER
+        val speakerHeaders = desktopScreenshotSpeakerHeaders(presented, request.selected, request.contentOptions)
+        if (presented.showWholeMessageHeader) header(presented.speakerLabel, desktopScreenshotHeaderAvatarReference(message, request.state), right)
         message.images.forEachIndexed { index, reference ->
             if (roleplayImageBlockId(message.id, index) in request.selected)
-                blocks += DesktopScreenshotDocumentBlock.Picture(reference)
+                blocks += DesktopScreenshotDocumentBlock.Picture(reference, right)
         }
-        presented.segments.forEach { segment ->
+        presented.segments.forEachIndexed { index, segment ->
             val id = if (presented.segmented) checkNotNull(segment.blockId) else roleplayLegacyTextBlockId(message.id)
             if (id in request.selected && desktopScreenshotIncludes(segment, request.contentOptions)) {
                 if (segment.kind == RoleplaySegmentKind.STATUS) {
-                    text(desktopScreenshotStatusLabel(segment), true)
-                    text(segment.text)
+                    text(desktopScreenshotStatusLabel(segment), true, right)
+                    text(segment.text, right = right)
                 } else {
-                    segment.speaker?.displayName?.let { text(it, true) }
-                    text(textRenderer.render(parser.parse(desktopSanitizeRoleplayMarkdown(segment.text))).trimEnd())
+                    if (index in speakerHeaders) header(segment.speaker?.displayName ?: presented.speakerLabel,
+                        desktopPresentedAvatarReference(segment.speaker, request.state.selectedCharacter))
+                    text(textRenderer.render(parser.parse(desktopSanitizeRoleplayMarkdown(segment.text))).trimEnd(), right = right)
                 }
             }
         }
@@ -109,7 +134,7 @@ internal suspend fun saveDesktopScreenshotPagesVerified(format: DesktopScreensho
 internal suspend fun saveDesktopWordDocumentVerified(document: List<DesktopScreenshotDocumentBlock>,
     verifyMessages: suspend () -> Unit, read: (String) -> ByteArray, choose: suspend () -> Path?): Path? {
     verifyMessages()
-    val references = document.filterIsInstance<DesktopScreenshotDocumentBlock.Picture>().map { it.reference }.distinct()
+    val references = desktopScreenshotDocumentReferences(document)
     if (references.size > 40) throw DesktopScreenshotLimitException("RESOURCE_COUNT", references.size.toLong(), 40)
     val hashes = withContext(Dispatchers.IO) {
         var bytesRead = 0L
@@ -157,7 +182,7 @@ internal object DesktopScreenshotDocuments {
             val margin = 24f
             val width = pages.first().width
             val scale = (pageSize.width - margin * 2) / width
-            val rowsPerPage = ((pageSize.height - margin * 2) / scale).toInt().coerceAtLeast(1)
+            val rowsPerPage = desktopScreenshotPdfRows(width)
             var page: PDPage? = null
             var occupied = rowsPerPage
             pages.forEachIndexed { index, png ->
@@ -191,8 +216,12 @@ internal object DesktopScreenshotDocuments {
     /** Minimal OOXML document: real text and embedded PNGs; no macros, external assets, or HTML parts. */
     fun word(blocks: List<DesktopScreenshotDocumentBlock>, capturedHashes: Map<String, String>,
         read: (String) -> ByteArray, output: OutputStream, checkCancelled: () -> Unit = {}) {
-        require(blocks.filterIsInstance<DesktopScreenshotDocumentBlock.Text>().sumOf { it.text.length.toLong() } <= 240_000)
-        val references = blocks.filterIsInstance<DesktopScreenshotDocumentBlock.Picture>().map { it.reference }.distinct()
+        require(blocks.sumOf { when (it) {
+            is DesktopScreenshotDocumentBlock.Text -> it.text.length.toLong()
+            is DesktopScreenshotDocumentBlock.Header -> it.name.length.toLong()
+            is DesktopScreenshotDocumentBlock.Picture -> 0L
+        } } <= 240_000)
+        val references = desktopScreenshotDocumentReferences(blocks)
         require(references.size <= 40 && references.all { it in capturedHashes }) { "图片不属于当前预览" }
         var encodedBytes = 0L
         var pixels = 0L
@@ -250,7 +279,14 @@ internal object DesktopScreenshotDocuments {
                     checkCancelled()
                     when (block) {
                         is DesktopScreenshotDocumentBlock.Text -> x.paragraph(block)
-                        is DesktopScreenshotDocumentBlock.Picture -> x.picture(checkNotNull(pictures[block.reference]), ++occurrence)
+                        is DesktopScreenshotDocumentBlock.Picture -> x.picture(checkNotNull(pictures[block.reference]), ++occurrence, right = block.right)
+                        is DesktopScreenshotDocumentBlock.Header -> {
+                            x.start("w", "p", W); x.alignment(block.right)
+                            x.picture(checkNotNull(pictures[block.avatar]), ++occurrence, avatar = true, inline = true)
+                            x.start("w", "r", W); x.start("w", "t", W)
+                            x.attr("xml", "space", "http://www.w3.org/XML/1998/namespace", "preserve")
+                            x.writeCharacters("  ${desktopWordXmlText(block.name)}"); x.writeEndElement(); x.writeEndElement(); x.writeEndElement()
+                        }
                     }
                 }
                 x.start("w", "sectPr", W)
@@ -275,6 +311,7 @@ internal object DesktopScreenshotDocuments {
 
     private fun XMLStreamWriter.paragraph(block: DesktopScreenshotDocumentBlock.Text) {
         start("w", "p", W)
+        alignment(block.right)
         start("w", "r", W)
         start("w", "rPr", W)
         empty("w", "rFonts", W); attr("w", "eastAsia", W, "Microsoft YaHei"); attr("w", "ascii", W, "Calibri")
@@ -282,11 +319,7 @@ internal object DesktopScreenshotDocuments {
         empty("w", "sz", W); attr("w", "val", W, if (block.heading) "26" else "22")
         writeEndElement()
         // XML 1.0 cannot represent isolated controls/surrogates. Keep all valid Chinese/emoji text.
-        val clean = StringBuilder()
-        block.text.codePoints().forEach { cp ->
-            if (cp == 9 || cp == 10 || cp == 13 || cp in 0x20..0xD7FF || cp in 0xE000..0xFFFD || cp in 0x10000..0x10FFFF) clean.appendCodePoint(cp)
-        }
-        clean.toString().replace("\r\n", "\n").replace('\r', '\n').split('\n').forEachIndexed { index, line ->
+        desktopWordXmlText(block.text).replace("\r\n", "\n").replace('\r', '\n').split('\n').forEachIndexed { index, line ->
             if (index > 0) empty("w", "br", W)
             line.split('\t').forEachIndexed { tab, value ->
                 if (tab > 0) empty("w", "tab", W)
@@ -297,11 +330,21 @@ internal object DesktopScreenshotDocuments {
         writeEndElement(); writeEndElement()
     }
 
-    private fun XMLStreamWriter.picture(picture: Picture, occurrence: Int) {
-        val scale = min(1.0, min(6_640_000.0 / (picture.width * 9525.0), 8_686_800.0 / (picture.height * 9525.0)))
+    private fun XMLStreamWriter.alignment(right: Boolean) {
+        if (right) {
+            start("w", "pPr", W); empty("w", "jc", W); attr("w", "val", W, "right"); writeEndElement()
+        }
+    }
+
+    private fun XMLStreamWriter.picture(picture: Picture, occurrence: Int, avatar: Boolean = false,
+        right: Boolean = false, inline: Boolean = false) {
+        val maxWidth = if (avatar) 381_000.0 else 6_640_000.0
+        val maxHeight = if (avatar) 381_000.0 else 8_686_800.0
+        val scale = min(1.0, min(maxWidth / (picture.width * 9525.0), maxHeight / (picture.height * 9525.0)))
         val cx = (picture.width * 9525.0 * scale).toLong().coerceAtLeast(1).toString()
         val cy = (picture.height * 9525.0 * scale).toLong().coerceAtLeast(1).toString()
-        start("w", "p", W); start("w", "r", W); start("w", "drawing", W); start("wp", "inline", WP)
+        if (!inline) { start("w", "p", W); alignment(right) }
+        start("w", "r", W); start("w", "drawing", W); start("wp", "inline", WP)
         empty("wp", "extent", WP); writeAttribute("cx", cx); writeAttribute("cy", cy)
         empty("wp", "docPr", WP); writeAttribute("id", occurrence.toString()); writeAttribute("name", "图片 $occurrence")
         start("a", "graphic", A); start("a", "graphicData", A); writeAttribute("uri", PIC)
@@ -314,7 +357,8 @@ internal object DesktopScreenshotDocuments {
         empty("a", "off", A); writeAttribute("x", "0"); writeAttribute("y", "0")
         empty("a", "ext", A); writeAttribute("cx", cx); writeAttribute("cy", cy); writeEndElement()
         start("a", "prstGeom", A); writeAttribute("prst", "rect"); empty("a", "avLst", A); writeEndElement()
-        writeEndElement(); writeEndElement(); writeEndElement(); writeEndElement(); writeEndElement(); writeEndElement(); writeEndElement(); writeEndElement()
+        writeEndElement(); writeEndElement(); writeEndElement(); writeEndElement(); writeEndElement(); writeEndElement(); writeEndElement()
+        if (!inline) writeEndElement()
     }
 
     private const val W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
