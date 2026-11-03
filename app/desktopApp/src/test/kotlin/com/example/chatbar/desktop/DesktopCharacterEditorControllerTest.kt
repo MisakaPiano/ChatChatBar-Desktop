@@ -34,6 +34,21 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class DesktopCharacterEditorControllerTest {
+    @Test fun `nonblank negative source text survives display unrelated dirty save and reopen while request effective value stays separate`() = runBlocking {
+        fixture { _, app, editor ->
+            val raw = "  Synthetic negative  \n"
+            val source = CharacterCard.create("Raw negative", greeting = "Hello").copy(defaultImageNegativePrompt = raw)
+            app.characterRepository.save(source); editor.openExisting(source.id)
+            assertEquals(raw, editor.state.value.card!!.defaultImageNegativePrompt)
+            assertFalse(editor.state.value.dirty)
+            assertEquals(source, app.characterRepository.getById(source.id))
+            editor.edit { it.copy(botName = "Another bot") }; editor.flushDraft(); assertTrue(editor.save())
+            assertEquals(raw, app.characterRepository.getById(source.id)!!.defaultImageNegativePrompt)
+            editor.openExisting(source.id); assertEquals(raw, editor.state.value.card!!.defaultImageNegativePrompt)
+            assertEquals("Synthetic negative", CharacterNaiPromptDefaults.effectiveCharacterNaiNegativePrompt(raw))
+        }
+    }
+
     @Test fun `style loader uses packaged asset authority and reports missing previews and unreadable catalog explicitly`() = runBlocking {
         val parent = Files.createTempDirectory("style-loader-")
         var missingCatalog = false

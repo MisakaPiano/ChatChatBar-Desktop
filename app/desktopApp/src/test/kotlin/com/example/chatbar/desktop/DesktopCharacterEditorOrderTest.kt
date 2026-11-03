@@ -39,8 +39,7 @@ class DesktopCharacterEditorOrderTest {
                     creatorNotes = "Notes exact  ", createdAt = 1, updatedAt = 1)
                 app.characterRepository.save(original)
                 val durable = assertNotNull(app.characterRepository.getById(original.id))
-                // The existing repository normalizes the negative prompt before the editor opens.
-                assertEquals(original.copy(defaultImageNegativePrompt = original.defaultImageNegativePrompt.trim()), durable)
+                assertEquals(original, durable)
                 val editor = app.characterEditorController; editor.openExisting(original.id)
                 val activity = DesktopModalActivity()
                 val scene = ImageComposeScene(width, height, coroutineContext = edt) {
@@ -85,7 +84,7 @@ class DesktopCharacterEditorOrderTest {
                     characters = listOf(CharacterInfo("p", "Person", profile = "Original profile")),
                     freeformCharacterText = "Original freeform", systemPrompt = "Original system", postHistoryInstructions = "Original post",
                     mesExample = "Original example", creatorNotes = "Original note", alternateGreetings = listOf("Alt"),
-                    defaultImagePrompt = "Original style", defaultImageNegativePrompt = "Original negative", createdAt = 1, updatedAt = 1)
+                    defaultImagePrompt = "Original style", defaultImageNegativePrompt = "Original negative  ", createdAt = 1, updatedAt = 1)
                 app.characterRepository.save(original)
                 suspend fun openScene(block: suspend (ImageComposeScene, DesktopCharacterEditorController) -> Unit) {
                     val editor = app.characterEditorController; editor.openExisting(original.id)

@@ -570,9 +570,11 @@ internal class DesktopCharacterEditorController(
 
     private fun displayCard(card: CharacterCard): CharacterCard = card.copy(
         worldBookIds = CharacterWorldBookBindings.effectiveIds(card),
-        defaultImageNegativePrompt = CharacterNaiPromptDefaults.effectiveCharacterNaiNegativePrompt(
-            card.defaultImageNegativePrompt),
+        defaultImageNegativePrompt = editableNegativePrompt(card.defaultImageNegativePrompt),
     )
+
+    private fun editableNegativePrompt(value: String): String =
+        value.takeUnless(String::isBlank) ?: CharacterNaiPromptDefaults.defaultCharacterNaiNegativePrompt()
 
     private fun documentType(name: String, fallback: String = "txt"): String =
         name.substringAfterLast('.', fallback)
@@ -670,7 +672,7 @@ internal class DesktopCharacterEditorController(
                 defaultImagePrompt = card.defaultImagePrompt,
                 defaultNovelAiImageModel = card.defaultNovelAiImageModel,
                 defaultImageGenerationSettings = card.defaultImageGenerationSettings,
-                defaultImageNegativePrompt = CharacterNaiPromptDefaults.effectiveCharacterNaiNegativePrompt(card.defaultImageNegativePrompt),
+                defaultImageNegativePrompt = editableNegativePrompt(card.defaultImageNegativePrompt),
                 systemPrompt = card.systemPrompt, postHistoryInstructions = card.postHistoryInstructions,
                 mesExample = card.mesExample, creatorNotes = card.creatorNotes,
                 characters = card.characters.filterNot(CharacterPlaceholderPolicy::isEmpty)
