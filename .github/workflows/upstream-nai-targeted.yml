@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.source_sha || '54c84c479a1b8a9eddef6b726681dedc7094efac' }}
+          ref: ${{ inputs.source_sha || '310d475cb6cb0466678fe986cb3850f91005dc77' }}
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
