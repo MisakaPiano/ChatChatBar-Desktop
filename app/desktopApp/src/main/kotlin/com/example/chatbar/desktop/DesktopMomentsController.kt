@@ -276,7 +276,7 @@ internal class DesktopMomentsController(
 
     suspend fun removeImageVersion(post: MomentPost, versionId: String) {
         val receipt = store.removeImage(post, versionId)
-        try { receipt?.let(finishImageCleanup) } finally { refresh() }
+        try { if (receipt != null) finishImageCleanup(receipt) } finally { refresh() }
     }
 
     suspend fun imageDraft(post: MomentPost): NovelAiImageRegenerationDraft = withContext(Dispatchers.IO) {

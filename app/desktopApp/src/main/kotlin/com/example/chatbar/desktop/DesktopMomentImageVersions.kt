@@ -14,7 +14,7 @@ internal object DesktopMomentImageVersions {
         versions.forEach { version ->
             require(version.id.isNotBlank() && version.id.length <= 128)
             require(version.imagePath.isNotBlank() && version.imagePath.length <= 1024)
-            require(version.generatedImageMetadata == null || version.generatedImageMetadata.imagePath == version.imagePath)
+            version.generatedImageMetadata?.let { require(it.imagePath == version.imagePath) }
         }
         val selected = post.imagePath?.takeIf(String::isNotBlank) ?: return versions
         val match = versions.firstOrNull { it.imagePath == selected }
