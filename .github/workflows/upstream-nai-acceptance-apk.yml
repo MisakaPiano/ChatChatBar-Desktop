@@ -1,0 +1,47 @@
+name: Isolated NAI PR1 acceptance APK
+on:
+  push:
+    branches: [ci/upstream-nai-acceptance-apk]
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout isolated build control
+        uses: actions/checkout@v4
+        with:
+          path: control
+      - name: Checkout exact already-tested PR source
+        uses: actions/checkout@v4
+        with:
+          ref: e4d7997c05f77e31b8650935830acc583c112f89
+          path: source
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Apply identity-only temporary build overlay
+        run: python control/.github/scripts/pr1_acceptance_identity.py source "$RUNNER_TEMP/pr1-identity.gradle" delivery
+      - name: Build isolated debug APK without repeating functional tests
+        working-directory: source/app
+        run: |
+          chmod +x gradlew
+          ./gradlew -I "$RUNNER_TEMP/pr1-identity.gradle" :app:assembleDebug -PCHATBAR_VERSION_NAME=1.4.7-nai-pr1-e4d7997 -PCHATBAR_SUPABASE_REDIRECT_URI=chatbar-naipr1-e4d7997://auth/callback --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx5g -Dfile.encoding=UTF-8'
+      - name: Verify APK identity, signature and installability metadata
+        run: |
+          apk=source/app/app/build/outputs/apk/debug/app-debug.apk
+          "$ANDROID_HOME/build-tools/36.0.0/aapt2" dump badging "$apk" > delivery/badging.txt
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs "$apk" > delivery/signature.txt
+          "$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" manifest print "$apk" > delivery/final-manifest.xml
+          python control/.github/scripts/pr1_acceptance_verify.py source "$apk" delivery
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CCB-NAI-PR1-e4d7997-isolated-debug
+          path: delivery/
+          retention-days: 14
