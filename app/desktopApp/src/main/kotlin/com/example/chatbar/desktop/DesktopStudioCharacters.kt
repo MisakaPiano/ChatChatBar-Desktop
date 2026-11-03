@@ -12,6 +12,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.input.pointer.pointerInput
@@ -77,7 +78,8 @@ internal fun DesktopStudioCharacters(draft: NovelAiStudioDraft, infrastructure: 
                     }
                     StatusText(character.center?.let { "位置 ${(it.x * 100).roundToInt()}%, ${(it.y * 100).roundToInt()}%" } ?: "位置 · 自动")
                 } else BasicText(character.prompt.ifBlank { "尚未填写正向 Prompt" },
-                    modifier = Modifier.fillMaxWidth().semantics { contentDescription = "展开角色 ${index + 1} Prompt" }.clickable { openEditor() },
+                    modifier = Modifier.fillMaxWidth().semantics { contentDescription = "展开角色 ${index + 1} Prompt" }
+                        .focusProperties { canFocus = false }.clickable { openEditor() },
                     style = TextStyle(color = DesktopBootstrapColors.foreground), maxLines = 3, overflow = TextOverflow.Ellipsis)
             }
         }
