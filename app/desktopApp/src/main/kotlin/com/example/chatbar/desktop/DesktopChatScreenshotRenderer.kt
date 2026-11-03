@@ -10,6 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.drawscope.clipRect
@@ -319,7 +320,23 @@ private fun desktopScreenshotBubbleShape(role: MessageRole): Shape = object : Sh
         10.dp, 10.dp, if (role == MessageRole.USER) 3.dp else 10.dp)
     override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline =
         when (val outline = rounded.createOutline(size, layoutDirection, density)) {
-            is Outline.Rounded -> Outline.Generic(androidx.compose.ui.graphics.Path().apply { addRoundRect(outline.roundRect) })
+            is Outline.Rounded -> Outline.Generic(androidx.compose.ui.graphics.Path().apply {
+                // addRoundRect retains native rrect identity and can re-enter the same shortcut.
+                // Build the equivalent four elliptical arcs explicitly in local coordinates.
+                val r = outline.roundRect
+                val tl = r.topLeftCornerRadius; val tr = r.topRightCornerRadius
+                val br = r.bottomRightCornerRadius; val bl = r.bottomLeftCornerRadius
+                moveTo(r.left + tl.x, r.top)
+                lineTo(r.right - tr.x, r.top)
+                arcTo(Rect(r.right - 2 * tr.x, r.top, r.right, r.top + 2 * tr.y), -90f, 90f, false)
+                lineTo(r.right, r.bottom - br.y)
+                arcTo(Rect(r.right - 2 * br.x, r.bottom - 2 * br.y, r.right, r.bottom), 0f, 90f, false)
+                lineTo(r.left + bl.x, r.bottom)
+                arcTo(Rect(r.left, r.bottom - 2 * bl.y, r.left + 2 * bl.x, r.bottom), 90f, 90f, false)
+                lineTo(r.left, r.top + tl.y)
+                arcTo(Rect(r.left, r.top, r.left + 2 * tl.x, r.top + 2 * tl.y), 180f, 90f, false)
+                close()
+            })
             else -> outline
         }
 }

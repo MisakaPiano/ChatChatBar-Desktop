@@ -5,7 +5,7 @@ description: Maintain ChatBar image-generation and image-processing runtime acro
 
 # ChatBar Image Generation Runtime
 
-Screenshot paging keeps an exact full-versus-stitched pixel comparison. Bounded overscan/crop alone did not eliminate a round-corner coverage difference; enclosing bubbles now preserve the same rounded local geometry through a generic path rather than the round-rect fast path. This mechanism still needs exact cloud verification; do not remove bubbles or loosen the comparison to conceal a renderer failure.
+Screenshot paging keeps an exact full-versus-stitched pixel comparison. Overscan/crop and GenericPath.addRoundRect retained the same failing corner pixel. Enclosing bubbles now build their rounded local geometry with four explicit elliptical arcs to avoid retained native rrect identity. This still needs exact cloud verification; do not remove bubbles or loosen the comparison. `.github/workflows/desktop-ui-probe.yml` runs synthetic affected tests only on `codex/desktop-ui-probe-*` branches, independently of complete platform CI.
 
 Unpinned role expansion receives actual input focus from `StudioPromptField`, rather than inferring it from a nonfocusable group. A native expanded editor separately holds the role open; close/confirm restores the inline focus request. The card image-settings shortcut uses its original ScrollState with measured absolute target/viewport positions; clipped zero-size semantics do not establish visibility. Require positive viewport bounds and review the actual cloud PNG before claiming the long-card jump works.
 
