@@ -208,11 +208,21 @@
         "remainingImplementationIdentified": [],
         "independentVerification": [
           {
-            "scope": "Original HWND-owner and Studio auxiliary OS-close cases",
+            "scope": "Original HWND-owner and Studio auxiliary OS-close cases plus unchanged COM prerequisite",
             "run": 41649134054,
             "source": "6c434baecc0c809af4237a9a6b288e68ba8ab686",
+            "state": "ORIGINAL3PASS0SKIP_TWO_PREVIOUSLY_SKIPPED_METHODS_CLOSED",
+            "headless": false,
+            "newlyClosedOriginalSkipMethods": 2,
+            "evidence": "I:/CCB-Desktop-Continuity/updates/20261103-owner-native-probe1-review/REVIEW.json"
+          },
+          {
+            "scope": "Remaining14 original graphical cases only, foreground/native guards unchanged",
+            "run": 41650815581,
+            "source": "98aa8c233ed557a49fe6a3b6f05177389215a17e",
             "state": "RUNNING_NOT_PROVEN",
-            "headless": false
+            "headless": false,
+            "excluded": "Prior two closed graphical methods and three physical audio methods"
           }
         ],
         "remainingExternalOrHuman": [
@@ -220,7 +230,13 @@
           "Physical audio devices and unexecuted GUI/input/DPI/IME/multiscreen/Windows combinations",
           "Real Provider and actual long-chat files/document-reader appearance",
           "Real final data merge/physical interruption/cross-account/old snapshot scenarios, only as user chooses"
-        ]
+        ],
+        "original154HeadlessSkips": {
+          "count": 19,
+          "subsequentNewlyExecuted": 2,
+          "stillUnexecutedAtProbe2Start": 17,
+          "physicalAudio": 3
+        }
       }
     ],
     "notOfficialCompatibilityProof": [

@@ -199,7 +199,7 @@
 
 ## P17／P18：持续验证、整体验收与正式发布
 
-2026-11-03 1236之后定向收尾：216当前行与10.currentAdaptation的两个pending范围未识别到新的未接线生产功能；这不是全147或正式1.0兼容声明。已有工程/原包证据复用，剩余分为官方服务/登录、具体原生/物理环境和用户N01–N07。当前正在独立云端补原有HWND归属与Studio辅助窗OS关闭两项（41649134054），保持原guard/断言、不是让用户等待或强行升baseline。结果未出前不关闭原SKIP；其他14图形/3音频范围亦不代认。详细分类见连续总账`updates/20261103-selected147-residual-closure/OWNER_REVIEW.json`。
+2026-11-03 1236之后定向收尾：216当前行与10.currentAdaptation的两个pending范围未识别到新的未接线生产功能；这不是全147或正式1.0兼容声明。已有工程/原包证据复用，剩余分为官方服务/登录、具体原生/物理环境和用户N01–N07。独立云native1（41649134054/source6c434）实际3PASS/0SKIP：除原已验COM外，新闭合HWND归属与Studio辅助窗OS关闭两个原SKIP；云真实桌面UserInteractive/session2。原154的19SKIP保留，后继native2（41650815581/source98aa8）只验其余14图形方法，保持原guard/foreground/断言；结果待。物理音频3与用户平台/Provider不代认，不强行升baseline。详细分类见连续总账`updates/20261103-selected147-residual-closure/OWNER_REVIEW.json`。
 
 按用户授权收到Studio“按当前页帮助”设计：固定紧凑入口、3–5个当前操作、可关闭再开；高级筛选折叠不清状态。参考为其未发布工作区`docs/ux/GALLERY_FEEDBACK_20261101.md`及对应来源回执，不是Studio公开119验收。五路由只读短帮助及完整指南已进入当前应用，138实际Guide/Reminder六方法PASS；仍不把参考工作区或离屏检查当真实首次使用/原生平台验收。
 
