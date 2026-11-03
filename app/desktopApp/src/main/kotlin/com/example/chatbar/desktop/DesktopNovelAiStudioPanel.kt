@@ -244,21 +244,25 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
         if (file != null) { currentImage = file; selectedResult = null; auxiliary = "当前图片"; controller.clearReverseCandidate() }
     } },
         navigation = navigation, captions = captions, diagnostics = diagnostics, chromeRecorder = chromeRecorder,
+        previewActions = { StudioAction("历史", icon = DesktopAppIcons.History) { auxiliary = "历史" } },
         compact = { expand -> DesktopStudioCompactResult(shownPath, intermediate, false, expand, ::preview,
             { if (shownPath != null) { currentImage = shownPath; auxiliary = "当前图片"; controller.clearReverseCandidate() } }) },
         editor = {
-            StudioAccountCluster(d.selectedModel, state.accountUi)
+            StudioAccountCluster(d.selectedModel, state.accountUi) {
+                StudioActions {
+                    key(accountReadRetry) { DesktopStudioAccountControl() }
+                    StudioAction("刷新", enabled = !state.accountUi.loading, icon = DesktopAppIcons.Refresh,
+                        style = StudioActionStyle.TERTIARY) { accountReadRetry++ }
+                }
+            }
             if (modelReadFailure != null) {
                 StatusText(modelReadFailure.text)
                 StudioAction("查看模型读取问题", style = StudioActionStyle.TERTIARY) { modelProblemDismissed = false }
             }
-            key(accountReadRetry) { DesktopApiAccountEntry(com.example.chatbar.desktop.security.DesktopAccountService.NOVELAI) }
             StudioActions {
-                StudioAction("刷新", enabled = !state.accountUi.loading, icon = DesktopAppIcons.Refresh, style = StudioActionStyle.TERTIARY) { accountReadRetry++ }
                 StudioAction("AI 设计", icon = DesktopAppIcons.Chat) { auxiliary = "AI 设计" }
                 StudioAction("图像引导", icon = DesktopAppIcons.Star) { auxiliary = "图像引导" }
                 StudioAction("导入图片", icon = DesktopAppIcons.ImageAdd, onClick = ::pickImage)
-                StudioAction("历史", icon = DesktopAppIcons.History) { auxiliary = "历史" }
                 DesktopImageLogEntry(controller.imageDiagnostics, state.generationTaskId)
                 StudioAction("设置", icon = DesktopAppIcons.Settings) { auxiliary = "设置" }
             }

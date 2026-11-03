@@ -55,8 +55,11 @@ internal fun StudioTokenBar(label: String, count: Int, limit: Int, modifier: Mod
 }
 
 @Composable
-internal fun StudioAccountCluster(model: NovelAiImageModel, account: NovelAiAccountUiState) {
-    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+internal fun StudioAccountCluster(model: NovelAiImageModel, account: NovelAiAccountUiState,
+    controls: (@Composable () -> Unit)? = null) {
+    Column(Modifier.fillMaxWidth().background(DesktopBootstrapColors.card).padding(8.dp),
+        verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        controls?.invoke()
         StudioActions {
             StatusText(model.displayName)
             StatusText(account.displayAnlas?.let { "Anlas $it" } ?: "Anlas —")

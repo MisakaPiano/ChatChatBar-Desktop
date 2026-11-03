@@ -64,6 +64,15 @@ internal class DesktopApiAccountController(val store: DesktopAccountStore, val m
     BootstrapButton("API 账户…", secondary = true, icon = DesktopAppIcons.Settings) { controller.opened.value = service }
 }
 
+/** Same protected account owner, presented inside Studio's compact status group. */
+@Composable internal fun DesktopStudioAccountControl() {
+    val controller = LocalDesktopApiAccounts.current ?: return
+    DesktopCurrentAccountLabel(DesktopAccountService.NOVELAI)
+    DesktopIconAction("切换 NovelAI 账户", DesktopAppIcons.Settings) {
+        controller.opened.value = DesktopAccountService.NOVELAI
+    }
+}
+
 @Composable internal fun DesktopCurrentAccountLabel(service: DesktopAccountService) {
     val controller = LocalDesktopApiAccounts.current ?: return
     val revision by controller.store.revision.collectAsState()

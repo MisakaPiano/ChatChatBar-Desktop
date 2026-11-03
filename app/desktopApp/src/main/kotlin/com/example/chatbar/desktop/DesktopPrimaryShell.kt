@@ -212,8 +212,7 @@ internal fun DesktopPrimaryShell(
                         val studioState by novelAiStudioController.state.collectAsState()
                         DesktopStudioContentFrame(studioState.status) {
                             DesktopNovelAiStudioPanel(novelAiStudioController,
-                                onDataSettings = { navigate(DesktopPrimaryRoute.DATA) },
-                                diagnostics = { DesktopPromptInspectorPanel(promptInspectorController) }) { id ->
+                                onDataSettings = { navigate(DesktopPrimaryRoute.DATA) }) { id ->
                                 requestedDesignModel = id; openDesignModels = true; navigate(DesktopPrimaryRoute.MANAGE)
                             }
                         }
@@ -222,7 +221,8 @@ internal fun DesktopPrimaryShell(
                         mergeImportController, backupSettingsController, onExitApplication, openUpdateRequest,
                         onUpdateRequestConsumed = { openUpdateRequest = 0 }, openImportRequest = openImportRequest,
                         onImportRequestConsumed = { openImportRequest = 0 }, taskDetail = taskDataDetail,
-                        onTaskDetailConsumed = { taskDataDetail = null })
+                        onTaskDetailConsumed = { taskDataDetail = null },
+                        diagnostics = { DesktopGlobalDiagnostics(primaryChatController.taskRuntime.diagnostics, promptInspectorController) })
                 }
                 primaryChatController.voices?.let { runtime ->
                     val player by runtime.playback.state.collectAsState()

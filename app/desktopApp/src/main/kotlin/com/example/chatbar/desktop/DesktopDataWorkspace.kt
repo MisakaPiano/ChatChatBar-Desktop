@@ -9,7 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-private enum class DataPage(val label: String) { BACKUP("备份与导入"), LOCATION("数据目录"), AUTO("自动备份"), UPDATE("版本与更新"), RECOVERY("恢复与支持") }
+private enum class DataPage(val label: String) { BACKUP("备份与导入"), LOCATION("数据目录"), AUTO("自动备份"), UPDATE("版本与更新"), RECOVERY("恢复与支持"), DIAGNOSTICS("支持与诊断") }
 private enum class BackupPage { OVERVIEW, EXPORT, IMPORT, CHECK }
 
 @Composable
@@ -17,7 +17,8 @@ internal fun DesktopDataWorkspace(root: DesktopDataRootSwitchController, full: D
     merge: DesktopMergeImportController?, automatic: DesktopAutomaticBackupSettingsController,
     onExit: () -> Unit, openUpdateRequest: Int = 0, onUpdateRequestConsumed: () -> Unit = {},
     openImportRequest: Int = 0, onImportRequestConsumed: () -> Unit = {},
-    taskDetail: DesktopWorkDetail? = null, onTaskDetailConsumed: () -> Unit = {}) {
+    taskDetail: DesktopWorkDetail? = null, onTaskDetailConsumed: () -> Unit = {},
+    diagnostics: (@Composable () -> Unit)? = null) {
     val updateNotices = LocalDesktopUpdateNotices.current
     val updateNotice = updateNotices?.state?.collectAsState()?.value
     val rootState by root.state.collectAsState()
@@ -67,7 +68,7 @@ internal fun DesktopDataWorkspace(root: DesktopDataRootSwitchController, full: D
     LaunchedEffect(page, updateNotice?.showStartupNotice) {
         if (page == DataPage.UPDATE) updateNotices?.dismissStartupNotice()
     }
-    DesktopWorkspacePage("数据", DataPage.entries.map {
+    DesktopWorkspacePage("数据", DataPage.entries.filter { it != DataPage.DIAGNOSTICS || diagnostics != null }.map {
         DesktopWorkspaceDestination(it.name, if (it == DataPage.RECOVERY) t(DesktopUiText.RECOVERY_SUPPORT) else it.label,
             it == DataPage.UPDATE && updateNotice?.pendingVersion != null)
     }, page.name,
@@ -106,6 +107,7 @@ internal fun DesktopDataWorkspace(root: DesktopDataRootSwitchController, full: D
             } }
             DesktopRetainedPane(page == DataPage.AUTO) { DataWorkspaceScroll { DesktopAutomaticBackupSettingsPanel(automatic) } }
             DesktopRetainedPane(page == DataPage.UPDATE) { DataWorkspaceScroll { DesktopUpdatePanel(onExit = onExit) } }
+            DesktopRetainedPane(page == DataPage.DIAGNOSTICS) { diagnostics?.invoke() }
             DesktopRetainedPane(page == DataPage.RECOVERY) { DataWorkspaceScroll {
                 DesktopRecoveryPanel(recovery, !busy && !moving, ::openRecoveryDestination)
             } }

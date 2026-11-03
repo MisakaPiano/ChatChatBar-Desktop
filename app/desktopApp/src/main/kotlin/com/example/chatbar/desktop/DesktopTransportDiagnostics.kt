@@ -61,6 +61,9 @@ data class DesktopTransportDiagnosticEntry(
     val requestTextBudgetUnavailable: Boolean = false,
     val media: DesktopMediaRequestEvidence? = null,
     val image: DesktopImageRequestEvidence? = null,
+    val scenario: String? = null,
+    val logicalTaskId: String? = null,
+    val templateVersion: String? = null,
 )
 
 /** Bounded, process-local final-provider-request evidence. Never participates in request construction. */
@@ -77,6 +80,11 @@ internal class DesktopTransportDiagnosticsOwner(
 
     fun clear(sessionId: String) = synchronized(lock) {
         mutableEntries.value = mutableEntries.value.filterNot { it.sessionId == sessionId }
+    }
+
+    /** Clear only the completed rows explicitly shown to the user; never a running request. */
+    fun clearCompleted(ids: Set<String>) = synchronized(lock) {
+        mutableEntries.value = mutableEntries.value.filterNot { it.taskId in ids && it.status != DesktopTaskStatus.RUNNING }
     }
 
     fun beginFishMedia(sessionId: String, modelId: String, credential: String, accountId: String?,
@@ -117,6 +125,8 @@ internal class DesktopTransportDiagnosticsOwner(
                         modelDisplayName = scrubber.text(model.desktopAccountLabel(), SHORT_LIMIT),
                         modelName = scrubber.text(model.modelName, SHORT_LIMIT),
                         startedAt = clock(),
+                        scenario = usageContext.source.name,
+                        logicalTaskId = usageContext.taskId?.let { scrubber.text(it, SHORT_LIMIT) },
                     ),
                 ) + mutableEntries.value
             ).take(maxEntries)

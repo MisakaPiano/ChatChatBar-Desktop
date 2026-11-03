@@ -58,12 +58,31 @@ class DesktopStudioWorkspaceTest {
             try {
                 scene.frames()
                 val back = scene.bounds("返回 Studio")
+                assertTrue(back.width > 0 && back.height > 0)
                 assertTrue(back.left >= 0 && back.right <= width && back.top >= 0 && back.bottom < 700)
                 assertTrue(scene.nodes().any { it.matches("Inspector fixture") })
                 scene.click("返回 Studio")
                 assertFalse(state.diagnostics)
                 assertEquals(mode, state.mode)
                 assertEquals(drawer, state.compactExpanded)
+            } finally { scene.close() }
+        }
+    }
+
+    @Test fun `preview history action remains reachable in narrow collapsed and wide layouts without an empty Studio tab`() = runBlocking(awt) {
+        for (width in listOf(360, 1240)) {
+            var opened = 0
+            val scene = ImageComposeScene(width, 700) {
+                DesktopStudioWorkspace(previewActions = { StudioAction("历史") { opened++ } },
+                    compact = {}, editor = { StatusText("Editor fixture") }, footer = {}, preview = {})
+            }
+            try {
+                scene.frames()
+                assertFalse(scene.nodes().any { it.matches("NovelAI Studio") || it.matches("高级 / 诊断") })
+                val bounds = scene.bounds("历史")
+                assertTrue(bounds.width > 0 && bounds.left >= 0 && bounds.right <= width)
+                scene.click("历史")
+                assertEquals(1, opened)
             } finally { scene.close() }
         }
     }

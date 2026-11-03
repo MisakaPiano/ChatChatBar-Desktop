@@ -21,3 +21,11 @@ V5能力以NovelAI公开原始资料及实际API字段为依据；文档确认�
 ## 当前官网能力来源（实现继续中）
 
 [Effort官方文档](https://docs.novelai.net/en/image/effort/)与[透明背景文档](https://docs.novelai.net/en/image/tags/)已读。匿名读取官方image页及其当时公开JS，版本b94bdee，原URL/字节/SHA只留本机公共参考清单，不抓登录页面/账户。公开代码明确Medium的生成ID为`nai-diffusion-5-full-medium`、inpaint为`nai-diffusion-5-full-medium-inpainting`；透明选项元数据为`tag_hint_transparent_background`，官网还会派生有效正向词。字段存在不等于本应用已接线或真实Provider已验；原Prompt authority不改，后续必须核实际serializer、历史/预设和alpha保留。
+
+## 补交D01/H01-H03与141首轮失败后继（源码待云验）
+
+9图均已本地逐张查看，M01-M04/D01/H01-H03接收回执只在I盘。Studio生产路由移除旧诊断页签和空Studio按钮，逻辑检查器迁到数据支持诊断高级区；实际HTTP日志投影沿原脱敏owner，增加场景/已记录版本/结果过滤、归属数量、折叠卡与快照已结束清空，未知模板版本不猜。尚须继续补实际版本/阶段来源覆盖，不能用UI选项冒认全部记录已有这两个字段。
+
+账户、刷新与现有额度/进度纳入同一状态块，复用原受保护账户弹窗；历史入口移至预览侧，并为窄屏收起保留同一回调入口。所有原工具与模型选择保留。
+
+141精确458：Windows日志2584=2564PASS+19SKIP+1FAIL，唯一新增返回用例assertFalse失败；ManualUndo1原XML通过，原普通测试断言不降低。首因是诊断暂时解除focus遮挡，却仍按mode=预览专注分配整窗previewWidth，返回区被挤至零宽。后继让诊断暂用正常预览宽度，保存原mode偏好，并加正宽/高原断言。保留原失败，不改成环境波动；新增历史入口/过滤/精确清空检查待新源云验。

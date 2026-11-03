@@ -7,6 +7,8 @@ Desktop complete Studio generation presets (`.ccbpreset`, preview/confirm/undo a
 
 # ChatBar Feature Map
 
+Desktop global AI logs live in Data → support/diagnostics via `DesktopGlobalDiagnostics` and the existing `DesktopTransportDiagnosticsOwner`; the advanced logical Prompt inspector is a separate view there. Studio does not expose the old diagnostics/empty engine tabs. Global projections filter retained scrubbed entries; completed-only deletion uses captured request IDs and preserves running/new rows. Missing template version/task attribution stays unknown, never inferred from request text.
+
 Desktop bundled presets and declared world/default-format dependencies: read `chatbar-desktop-bundled-presets`. This is the manifest/startup/typed recovery/complete suite owner, separate from Studio generation preset exchange.
 
 Desktop task center/tray integration: read `chatbar-desktop-task-center`. `DesktopTaskCenter/Sources/Panel` observe real owners; `DesktopTaskRuntime.ownedWork` exposes its existing document/card-design children. AppContainer attaches lazy owners and retains business shutdown order. Exact row cancellation and guarded target navigation are distinct from merely opening a page.

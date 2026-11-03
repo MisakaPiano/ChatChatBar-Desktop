@@ -27,7 +27,7 @@ internal class DesktopStudioWorkspaceState {
     var compactExpanded by mutableStateOf(false)
     var diagnostics by mutableStateOf(false)
 
-    fun previewWidth(width: Float): Float = when (mode) {
+    fun previewWidth(width: Float, mode: String = this.mode): Float = when (mode) {
         "预览专注" -> width
         "仅缩略图" -> 116f
         else -> (width * fraction).coerceIn(300f, (width - 332f).coerceAtLeast(300f))
@@ -50,6 +50,7 @@ internal fun DesktopStudioWorkspace(
     captions: (@Composable () -> Unit)? = null,
     diagnostics: (@Composable () -> Unit)? = null,
     chromeRecorder: DesktopChromeLayoutRecorder? = null,
+    previewActions: (@Composable () -> Unit)? = null,
     compact: @Composable (onExpand: () -> Unit) -> Unit,
     editor: @Composable () -> Unit,
     footer: @Composable () -> Unit,
@@ -71,7 +72,8 @@ internal fun DesktopStudioWorkspace(
         val wide = width >= 900f
         val focus = wide && state.mode == "预览专注" && !state.diagnostics
         val expanded = (wide || state.compactExpanded) && (wide || !state.diagnostics)
-        val previewWidth = if (wide) state.previewWidth(width) else minOf(width, 640f)
+        val previewWidth = if (wide) state.previewWidth(width,
+            if (state.diagnostics && state.mode == "预览专注") "展开预览" else state.mode) else minOf(width, 640f)
         val editorWidth = if (wide && !focus) width - previewWidth - 12f else width
         val captionWidth = if (captions != null) 126f else 0f
         val navWidth = if (focus || (!wide && expanded)) minOf(240f, width - captionWidth)
@@ -90,7 +92,10 @@ internal fun DesktopStudioWorkspace(
                 DesktopWorkspaceNavigationItem(DesktopWorkspaceDestination("diagnostics", "高级 / 诊断"), state.diagnostics,
                     true, Modifier.width(142.dp)) { state.diagnostics = true }
             }
-            if (!wide && !expanded && !state.diagnostics) compact { state.compactExpanded = true }
+            if (!wide && !expanded && !state.diagnostics) Column {
+                previewActions?.invoke()
+                compact { state.compactExpanded = true }
+            }
             Box(Modifier.weight(1f).fillMaxWidth().clipToBounds()) {
                 Column(Modifier.fillMaxSize()
                     .then(if (state.diagnostics) Modifier.alpha(0f).clearAndSetSemantics {} else Modifier)
@@ -130,6 +135,7 @@ internal fun DesktopStudioWorkspace(
                 .semantics { contentDescription = "Studio 全高预览面板" }
                 .padding(top = if (captions != null || navigation != null) 44.dp else 0.dp)
                 .padding(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                previewActions?.invoke()
                 if (!wide) StudioAction("收起预览") { state.compactExpanded = false }
                 else if (state.mode == "仅缩略图") StudioAction("展开预览") { state.mode = "展开预览" }
                 else StudioActions {
