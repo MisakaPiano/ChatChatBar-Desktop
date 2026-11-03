@@ -11,6 +11,11 @@ import java.util.zip.ZipOutputStream
 import javax.imageio.ImageIO
 import javax.xml.stream.XMLOutputFactory
 import javax.xml.stream.XMLStreamWriter
+import androidx.compose.ui.graphics.toArgb
+import java.awt.AlphaComposite
+import java.awt.RenderingHints
+import java.awt.image.BufferedImage
+import java.io.ByteArrayOutputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -39,12 +44,15 @@ internal sealed interface DesktopScreenshotDocumentBlock {
     data class Text(val text: String, val heading: Boolean = false, val right: Boolean = false) : DesktopScreenshotDocumentBlock
     data class Picture(val reference: String, val right: Boolean = false) : DesktopScreenshotDocumentBlock
     data class Header(val name: String, val avatar: String, val right: Boolean = false) : DesktopScreenshotDocumentBlock
+    data class Appearance(val background: String?, val opacity: Float, val backgroundArgb: Int,
+        val foregroundArgb: Int) : DesktopScreenshotDocumentBlock
 }
 
 internal fun desktopScreenshotDocumentReferences(blocks: List<DesktopScreenshotDocumentBlock>): List<String> =
     blocks.mapNotNull { when (it) {
         is DesktopScreenshotDocumentBlock.Picture -> it.reference
         is DesktopScreenshotDocumentBlock.Header -> it.avatar
+        is DesktopScreenshotDocumentBlock.Appearance -> it.background
         is DesktopScreenshotDocumentBlock.Text -> null
     } }.distinct()
 
@@ -56,8 +64,11 @@ private fun desktopWordXmlText(text: String): String = buildString {
 }
 
 /** Immutable selection projection: no repository reads, audio, reasoning, or unselected source text. */
-internal fun desktopScreenshotDocument(request: DesktopScreenshotRequest): List<DesktopScreenshotDocumentBlock> {
+internal fun desktopScreenshotDocument(request: DesktopScreenshotRequest, colors: DesktopSemanticColors? = null): List<DesktopScreenshotDocumentBlock> {
     val blocks = mutableListOf<DesktopScreenshotDocumentBlock>()
+    if (colors != null) blocks += DesktopScreenshotDocumentBlock.Appearance(
+        request.background?.takeIf { request.contentOptions.includeBackground }, request.state.backgroundOpacity,
+        colors.background.toArgb(), colors.foreground.toArgb())
     val parser = Parser.builder().build()
     val textRenderer = TextContentRenderer.builder().build()
     fun text(value: String, heading: Boolean = false, right: Boolean = false) {
@@ -213,6 +224,31 @@ internal object DesktopScreenshotDocuments {
 
     private data class Picture(val id: Int, val bytes: ByteArray, val width: Int, val height: Int)
 
+    /** One bounded opaque page image; source opacity is composed over the captured app theme. */
+    private fun pageBackground(appearance: DesktopScreenshotDocumentBlock.Appearance, source: Picture?, id: Int): Picture {
+        require(appearance.opacity.isFinite() && appearance.opacity in 0f..1f)
+        val page = BufferedImage(640, 905, BufferedImage.TYPE_INT_RGB)
+        val graphics = page.createGraphics()
+        try {
+            graphics.color = java.awt.Color(appearance.backgroundArgb, true)
+            graphics.fillRect(0, 0, page.width, page.height)
+            if (source != null) {
+                val image = checkNotNull(ImageIO.read(source.bytes.inputStream()))
+                try {
+                    val scale = maxOf(page.width.toDouble() / image.width, page.height.toDouble() / image.height)
+                    val width = kotlin.math.ceil(image.width * scale).toInt(); val height = kotlin.math.ceil(image.height * scale).toInt()
+                    graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC)
+                    graphics.composite = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, appearance.opacity)
+                    graphics.drawImage(image, (page.width - width) / 2, (page.height - height) / 2, width, height, null)
+                } finally { image.flush() }
+            }
+        } finally { graphics.dispose() }
+        return try {
+            val bytes = ByteArrayOutputStream().also { check(ImageIO.write(page, "png", it)) }.toByteArray()
+            Picture(id, bytes, page.width, page.height)
+        } finally { page.flush() }
+    }
+
     /** Minimal OOXML document: real text and embedded PNGs; no macros, external assets, or HTML parts. */
     fun word(blocks: List<DesktopScreenshotDocumentBlock>, capturedHashes: Map<String, String>,
         read: (String) -> ByteArray, output: OutputStream, checkCancelled: () -> Unit = {}) {
@@ -220,6 +256,7 @@ internal object DesktopScreenshotDocuments {
             is DesktopScreenshotDocumentBlock.Text -> it.text.length.toLong()
             is DesktopScreenshotDocumentBlock.Header -> it.name.length.toLong()
             is DesktopScreenshotDocumentBlock.Picture -> 0L
+            is DesktopScreenshotDocumentBlock.Appearance -> 0L
         } } <= 240_000)
         val references = desktopScreenshotDocumentReferences(blocks)
         require(references.size <= 40 && references.all { it in capturedHashes }) { "图片不属于当前预览" }
@@ -240,6 +277,11 @@ internal object DesktopScreenshotDocuments {
             }
             reference to picture
         }.toMap()
+        val appearances = blocks.filterIsInstance<DesktopScreenshotDocumentBlock.Appearance>()
+        require(appearances.size <= 1) { "文档页面外观快照重复" }
+        val appearance = appearances.singleOrNull()
+        val pagePicture = appearance?.let { pageBackground(it, it.background?.let(pictures::getValue), pictures.size + 1) }
+        val foreground = appearance?.foregroundArgb?.let { "%06x".format(it and 0xffffff) }
         ZipOutputStream(output).use { zip ->
             fun xml(name: String, body: (XMLStreamWriter) -> Unit) {
                 checkCancelled()
@@ -258,6 +300,10 @@ internal object DesktopScreenshotDocuments {
                 }
                 x.writeEmptyElement("Override"); x.writeAttribute("PartName", "/word/document.xml")
                 x.writeAttribute("ContentType", "application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml")
+                if (pagePicture != null) {
+                    x.writeEmptyElement("Override"); x.writeAttribute("PartName", "/word/header.xml")
+                    x.writeAttribute("ContentType", "application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml")
+                }
                 x.writeEndElement()
             }
             xml("_rels/.rels") { x ->
@@ -268,6 +314,7 @@ internal object DesktopScreenshotDocuments {
             xml("word/_rels/document.xml.rels") { x ->
                 x.writeStartElement("Relationships"); x.writeDefaultNamespace(RELATIONSHIPS)
                 pictures.values.forEach { x.relationship("image${it.id}", "$R/image", "media/image${it.id}.png") }
+                if (pagePicture != null) x.relationship("pageBackground", "$R/header", "header.xml")
                 x.writeEndElement()
             }
             xml("word/document.xml") { x ->
@@ -278,22 +325,41 @@ internal object DesktopScreenshotDocuments {
                 blocks.forEach { block ->
                     checkCancelled()
                     when (block) {
-                        is DesktopScreenshotDocumentBlock.Text -> x.paragraph(block)
+                        is DesktopScreenshotDocumentBlock.Text -> x.paragraph(block, foreground)
                         is DesktopScreenshotDocumentBlock.Picture -> x.picture(checkNotNull(pictures[block.reference]), ++occurrence, right = block.right)
                         is DesktopScreenshotDocumentBlock.Header -> {
                             x.start("w", "p", W); x.alignment(block.right)
                             x.picture(checkNotNull(pictures[block.avatar]), ++occurrence, avatar = true, inline = true)
-                            x.start("w", "r", W); x.start("w", "t", W)
+                            x.start("w", "r", W)
+                            if (foreground != null) { x.start("w", "rPr", W); x.empty("w", "color", W); x.attr("w", "val", W, foreground); x.writeEndElement() }
+                            x.start("w", "t", W)
                             x.attr("xml", "space", "http://www.w3.org/XML/1998/namespace", "preserve")
                             x.writeCharacters("  ${desktopWordXmlText(block.name)}"); x.writeEndElement(); x.writeEndElement(); x.writeEndElement()
                         }
+                        is DesktopScreenshotDocumentBlock.Appearance -> Unit
                     }
                 }
                 x.start("w", "sectPr", W)
+                if (pagePicture != null) {
+                    x.empty("w", "headerReference", W); x.attr("w", "type", W, "default"); x.attr("r", "id", R, "pageBackground")
+                }
                 x.empty("w", "pgSz", W); x.attr("w", "w", W, "11906"); x.attr("w", "h", W, "16838")
                 x.empty("w", "pgMar", W)
                 for (side in listOf("top", "right", "bottom", "left")) x.attr("w", side, W, "720")
                 x.writeEndElement(); x.writeEndElement(); x.writeEndElement()
+            }
+            if (pagePicture != null) {
+                xml("word/_rels/header.xml.rels") { x ->
+                    x.writeStartElement("Relationships"); x.writeDefaultNamespace(RELATIONSHIPS)
+                    x.relationship("image${pagePicture.id}", "$R/image", "media/image${pagePicture.id}.png"); x.writeEndElement()
+                }
+                xml("word/header.xml") { x ->
+                    x.writeStartElement("w", "hdr", W)
+                    mapOf("w" to W, "r" to R, "wp" to WP, "a" to A, "pic" to PIC).forEach { (prefix, ns) -> x.writeNamespace(prefix, ns) }
+                    x.picture(pagePicture, 1_000_001, background = true); x.writeEndElement()
+                }
+                checkCancelled(); zip.putNextEntry(ZipEntry("word/media/image${pagePicture.id}.png"))
+                zip.write(pagePicture.bytes); zip.closeEntry()
             }
             pictures.values.forEach { picture ->
                 checkCancelled(); zip.putNextEntry(ZipEntry("word/media/image${picture.id}.png"))
@@ -309,13 +375,14 @@ internal object DesktopScreenshotDocuments {
     private fun XMLStreamWriter.empty(prefix: String, name: String, ns: String) = writeEmptyElement(prefix, name, ns)
     private fun XMLStreamWriter.attr(prefix: String, name: String, ns: String, value: String) = writeAttribute(prefix, ns, name, value)
 
-    private fun XMLStreamWriter.paragraph(block: DesktopScreenshotDocumentBlock.Text) {
+    private fun XMLStreamWriter.paragraph(block: DesktopScreenshotDocumentBlock.Text, color: String? = null) {
         start("w", "p", W)
         alignment(block.right)
         start("w", "r", W)
         start("w", "rPr", W)
         empty("w", "rFonts", W); attr("w", "eastAsia", W, "Microsoft YaHei"); attr("w", "ascii", W, "Calibri")
         if (block.heading) empty("w", "b", W)
+        if (color != null) { empty("w", "color", W); attr("w", "val", W, color) }
         empty("w", "sz", W); attr("w", "val", W, if (block.heading) "26" else "22")
         writeEndElement()
         // XML 1.0 cannot represent isolated controls/surrogates. Keep all valid Chinese/emoji text.
@@ -337,15 +404,25 @@ internal object DesktopScreenshotDocuments {
     }
 
     private fun XMLStreamWriter.picture(picture: Picture, occurrence: Int, avatar: Boolean = false,
-        right: Boolean = false, inline: Boolean = false) {
+        right: Boolean = false, inline: Boolean = false, background: Boolean = false) {
         val maxWidth = if (avatar) 381_000.0 else 6_640_000.0
         val maxHeight = if (avatar) 381_000.0 else 8_686_800.0
         val scale = min(1.0, min(maxWidth / (picture.width * 9525.0), maxHeight / (picture.height * 9525.0)))
-        val cx = (picture.width * 9525.0 * scale).toLong().coerceAtLeast(1).toString()
-        val cy = (picture.height * 9525.0 * scale).toLong().coerceAtLeast(1).toString()
+        val cx = if (background) "7560310" else (picture.width * 9525.0 * scale).toLong().coerceAtLeast(1).toString()
+        val cy = if (background) "10692130" else (picture.height * 9525.0 * scale).toLong().coerceAtLeast(1).toString()
         if (!inline) { start("w", "p", W); alignment(right) }
-        start("w", "r", W); start("w", "drawing", W); start("wp", "inline", WP)
+        start("w", "r", W); start("w", "drawing", W); start("wp", if (background) "anchor" else "inline", WP)
+        if (background) {
+            for ((name, value) in mapOf("distT" to "0", "distB" to "0", "distL" to "0", "distR" to "0", "simplePos" to "0",
+                "relativeHeight" to "0", "behindDoc" to "1", "locked" to "0", "layoutInCell" to "1", "allowOverlap" to "1")) writeAttribute(name, value)
+            empty("wp", "simplePos", WP); writeAttribute("x", "0"); writeAttribute("y", "0")
+            for (position in listOf("positionH", "positionV")) {
+                start("wp", position, WP); writeAttribute("relativeFrom", "page")
+                start("wp", "posOffset", WP); writeCharacters("0"); writeEndElement(); writeEndElement()
+            }
+        }
         empty("wp", "extent", WP); writeAttribute("cx", cx); writeAttribute("cy", cy)
+        if (background) empty("wp", "wrapNone", WP)
         empty("wp", "docPr", WP); writeAttribute("id", occurrence.toString()); writeAttribute("name", "图片 $occurrence")
         start("a", "graphic", A); start("a", "graphicData", A); writeAttribute("uri", PIC)
         start("pic", "pic", PIC); start("pic", "nvPicPr", PIC)

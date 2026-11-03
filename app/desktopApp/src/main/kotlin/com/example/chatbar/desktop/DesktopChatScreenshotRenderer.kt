@@ -102,7 +102,7 @@ internal object DesktopChatScreenshotRenderer {
         var encodedBytes=0L
         try {
             val references=buildSet {
-                request.background?.let(::add)
+                request.background?.takeIf { request.contentOptions.includeBackground }?.let(::add)
                 request.messages.forEach { m ->
                     if (request.selected.none { roleplayBlockMessageId(it) == m.id }) return@forEach
                     m.images.forEachIndexed { i,ref->if(roleplayImageBlockId(m.id,i) in request.selected) add(ref) }
@@ -138,7 +138,7 @@ internal object DesktopChatScreenshotRenderer {
                 val body:@Composable ()->Unit = {
                     CompositionLocalProvider(LocalDesktopPalette provides colors) {
                         Box(Modifier.width(width.dp).height(viewportRows.dp).background(colors.background).drawBehind {
-                            bitmaps[request.background]?.let { bitmap ->
+                            bitmaps[request.background]?.takeIf { request.contentOptions.includeBackground }?.let { bitmap ->
                                 val pageRows = desktopScreenshotPdfRows(width)
                                 val scale = maxOf(width.toFloat() / bitmap.width, pageRows.toFloat() / bitmap.height)
                                 val cropWidth = (width / scale).toInt().coerceIn(1, bitmap.width)

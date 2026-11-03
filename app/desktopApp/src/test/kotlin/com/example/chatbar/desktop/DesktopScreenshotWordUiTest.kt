@@ -18,7 +18,7 @@ class DesktopScreenshotWordUiTest {
         override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
     }
 
-    @Test fun `Word remains directly exportable after PNG preview rejects an unavailable background`() = runBlocking(edt) {
+    @Test fun `Word remains directly exportable after explicitly omitting an unavailable background`() = runBlocking(edt) {
         val root = Files.createTempDirectory("direct-word-ui-").toAbsolutePath().normalize()
         val destination = root.resolve("direct.docx")
         val picker = object : DesktopFilePicker {
@@ -63,6 +63,8 @@ class DesktopScreenshotWordUiTest {
                 click("预览 PNG")
                 until { nodes().any { "PREVIEW_RENDER" in text(it) } }
                 assertFalse(Files.exists(destination))
+                click("包含背景图") // Explicit omission, never a silent resource fallback.
+                scene.render().close()
                 click("格式 ·")
                 until { nodes().any { node -> node.config.contains(SemanticsActions.OnClick) && text(node).trim().removePrefix("✓ ") == "Word" } }
                 nodes().single { it.config.contains(SemanticsActions.OnClick) && text(it).trim().removePrefix("✓ ") == "Word" }.config[SemanticsActions.OnClick].action!!()

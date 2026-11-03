@@ -123,7 +123,7 @@ internal fun DesktopScreenshotWorkspace(controller: DesktopPrimaryChatController
                 val result = DesktopChatScreenshotRenderer.renderPages(request, snapshot.colors, read,
                     onPage = { current, total -> feedback = if (total > 1) "正在生成预览分块 $current/$total…" else null })
                 stage = "PREVIEW_DOCUMENT"
-                val document = desktopScreenshotDocument(request)
+                val document = desktopScreenshotDocument(request, snapshot.colors)
                 stage = "PREVIEW_VERIFY"
                 controller.verifyScreenshotMessages(chosen)
                 withContext(Dispatchers.IO) { DesktopChatScreenshotRenderer.verifyResources(result.first(), read) }
@@ -152,9 +152,11 @@ internal fun DesktopScreenshotWorkspace(controller: DesktopPrimaryChatController
                     require(chosen.isNotEmpty())
                     controller.verifyScreenshotMessages(chosen)
                     stage = "EXPORT_WORD_DOCUMENT"
+                    val preferred = state.selectedCharacter?.id?.let { controller.backgroundLibrary?.preferred(it) }
+                    val background = desktopEffectiveBackground(state.selectedSession?.chatBackground, preferred, state.selectedCharacter?.chatBackground).first
                     val request = DesktopScreenshotRequest(state.selectedSession?.title ?: "聊天", state,
-                        chosen, tree.selected, snapshot.voices, contentOptions = contentOptions)
-                    val blocks = withContext(Dispatchers.Default) { desktopScreenshotDocument(request) }
+                        chosen, tree.selected, snapshot.voices, background = background, contentOptions = contentOptions)
+                    val blocks = withContext(Dispatchers.Default) { desktopScreenshotDocument(request, snapshot.colors) }
                     stage = "EXPORT_WORD_VERIFY_WRITE"
                     saveDesktopWordDocumentVerified(blocks, { controller.verifyScreenshotMessages(chosen) }, read, choose)
                 } else saveDesktopScreenshotPagesVerified(format, checkNotNull(result), document,
@@ -203,6 +205,9 @@ internal fun DesktopScreenshotWorkspace(controller: DesktopPrimaryChatController
             }
             StudioSwitch("包含行动选项", contentOptions.includeActions, enabled = !busy) {
                 contentOptions = contentOptions.copy(includeActions = !contentOptions.includeActions); selection(tree)
+            }
+            StudioSwitch("包含背景图", contentOptions.includeBackground, enabled = !busy) {
+                contentOptions = contentOptions.copy(includeBackground = !contentOptions.includeBackground); selection(tree)
             }
         }
         StatusText("所选状态栏和行动选项完整展开导出；与聊天中的折叠状态无关。")

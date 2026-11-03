@@ -4,6 +4,7 @@ import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.domain.appearance.DefaultThemeColorHsv
 import com.example.chatbar.domain.chat.roleplayImageBlockId
 import com.example.chatbar.domain.chat.roleplayLegacyTextBlockId
+import androidx.compose.ui.graphics.toArgb
 import java.awt.Color
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
@@ -26,6 +27,55 @@ class DesktopScreenshotLayoutResourcesTest {
         System.getenv("CCB_SCREENSHOT_REVIEW_DIR")?.let { directory ->
             val path = Path.of(directory).resolve(name); Files.createDirectories(path.parent); Files.write(path, bytes)
         }
+    }
+    @Test fun `editable Word repeats an embedded page background behind theme-colored text and allows explicit omission`() = runBlocking {
+        val message = ChatMessage("word", "s", MessageRole.USER, "Editable synthetic body 中文", createdAt = 1, updatedAt = 1)
+        val colors = desktopSemanticColors(ThemeMode.DARK, DefaultThemeColorHsv, false)
+        val reference = "images/background.png"
+        val source = solid(Color.RED)
+        val hash = MessageDigest.getInstance("SHA-256").digest(source).joinToString("") { "%02x".format(it) }
+        for ((include, opacity) in listOf(true to 0f, true to .5f, true to 1f, false to .5f)) {
+            val request = DesktopScreenshotRequest("Synthetic editable", DesktopPrimaryChatState(backgroundOpacity = opacity),
+                listOf(message), setOf(roleplayLegacyTextBlockId(message.id)), background = reference,
+                contentOptions = DesktopScreenshotContentOptions(includeBackground = include))
+            val document = desktopScreenshotDocument(request, colors)
+            assertEquals(if (include) listOf(reference) else emptyList(), desktopScreenshotDocumentReferences(document))
+            var reads = 0
+            val bytes = ByteArrayOutputStream().also { DesktopScreenshotDocuments.word(document,
+                if (include) mapOf(reference to hash) else emptyMap(), { ref -> assertEquals(reference, ref); reads++; source }, it) }.toByteArray()
+            assertEquals(if (include) 1 else 0, reads)
+            val parts = mutableMapOf<String, ByteArray>()
+            ZipInputStream(bytes.inputStream()).use { zip -> while (true) {
+                val entry = zip.nextEntry ?: break; assertNull(parts.put(entry.name, zip.readBytes())); zip.closeEntry()
+            } }
+            val factory = DocumentBuilderFactory.newInstance().apply {
+                isNamespaceAware = true; setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
+            }
+            parts.filterKeys { it.endsWith(".xml") || it.endsWith(".rels") }.values.forEach {
+                assertFalse("TargetMode=\"External\"" in it.decodeToString()); factory.newDocumentBuilder().parse(it.inputStream())
+            }
+            val header = factory.newDocumentBuilder().parse(parts.getValue("word/header.xml").inputStream())
+            val wp = "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+            val anchor = header.getElementsByTagNameNS(wp, "anchor").item(0) as org.w3c.dom.Element
+            assertEquals("1", anchor.getAttribute("behindDoc")); assertEquals(1, header.getElementsByTagNameNS(wp, "wrapNone").length)
+            val doc = factory.newDocumentBuilder().parse(parts.getValue("word/document.xml").inputStream())
+            val w = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            val headerRef = doc.getElementsByTagNameNS(w,"headerReference").item(0) as org.w3c.dom.Element
+            assertEquals("default", headerRef.getAttributeNS(w,"type"))
+            assertTrue(doc.documentElement.textContent.contains(message.content))
+            val color = doc.getElementsByTagNameNS(w,"color").item(0) as org.w3c.dom.Element
+            assertEquals("%06x".format(colors.foreground.toArgb() and 0xffffff), color.getAttributeNS(w,"val"))
+            val image = ImageIO.read(parts.getValue("word/media/image${if (include) 2 else 1}.png").inputStream())
+            try {
+                assertEquals(640, image.width); assertEquals(905, image.height)
+                val pixel = image.getRGB(320, 450)
+                if (!include || opacity == 0f) assertEquals(colors.background.toArgb(), pixel)
+                else if (opacity == 1f) assertEquals(Color.RED.rgb, pixel)
+                else { assertNotEquals(colors.background.toArgb(), pixel); assertNotEquals(Color.RED.rgb, pixel) }
+            } finally { image.flush() }
+            review("editable-background-$include-$opacity.docx", bytes)
+        }
+        assertEquals("Editable synthetic body 中文", message.content)
     }
     @Test fun `exporting a later sentence in a speaker group restores the exact selected person's header`() = runBlocking {
         val person = CharacterInfo("person", "Alice", appearanceImage = "images/person.png")

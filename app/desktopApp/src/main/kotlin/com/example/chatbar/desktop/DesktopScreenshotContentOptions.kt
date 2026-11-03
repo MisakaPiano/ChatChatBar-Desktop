@@ -7,6 +7,7 @@ import com.example.chatbar.domain.chat.roleplaySpeakerHeaderIndexes
 internal data class DesktopScreenshotContentOptions(
     val includeStatus: Boolean = true,
     val includeActions: Boolean = true,
+    val includeBackground: Boolean = true,
 )
 
 /** Only classify the existing parsed STATUS blocks and explicit headings, never narration keywords. */
