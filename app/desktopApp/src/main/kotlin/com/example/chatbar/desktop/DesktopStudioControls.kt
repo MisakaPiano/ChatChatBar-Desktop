@@ -202,7 +202,7 @@ internal fun StudioNumericInput(label: String, value: String, modifier: Modifier
     val editor = rememberStudioTextHistory(label, value) { a, b -> a == b || a.toDoubleOrNull()?.let { it == b.toDoubleOrNull() } == true }
     var focused by remember { mutableStateOf(false) }
     BasicTextField(editor.value, { editor.edit(it, change) }, modifier.studioTextHistoryKeys(editor, change)
-        .semantics { contentDescription = label }.onFocusChanged { focused = it.isFocused }
+        .semantics { contentDescription = label }.onFocusChanged { focused = it.isFocused; if (!focused) editor.settle(value) }
         .border(1.dp, if (focused) DesktopBootstrapColors.primary else DesktopBootstrapColors.border, RoundedCornerShape(4.dp))
         .background(DesktopBootstrapColors.input).padding(6.dp), singleLine = true,
         cursorBrush = DesktopBootstrapColors.inputCaret, textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 13.sp))

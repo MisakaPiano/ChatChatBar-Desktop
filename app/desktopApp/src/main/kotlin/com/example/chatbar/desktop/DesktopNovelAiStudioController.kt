@@ -83,7 +83,7 @@ internal class DesktopNovelAiStudioController(
     private val presetArchive: DesktopGenerationPresetArchive? = null,
 ) {
     val repository = DesktopStudioHistoryRepository(storage)
-    val textHistories = DesktopStudioTextHistories(repository::breakTypingGroup)
+    val textHistories = DesktopStudioTextHistories()
     val imageDiagnostics get() = tasks.diagnostics
     val designRepository = NovelAiDesignConversationRepository(storage)
     val draft = repository.draft
@@ -255,11 +255,13 @@ internal class DesktopNovelAiStudioController(
         refreshAccount()
     }
 
-    suspend fun edit(change: (NovelAiStudioDraft) -> NovelAiStudioDraft) = action(inspectAssets = false) {
+    suspend fun edit(change: (NovelAiStudioDraft) -> NovelAiStudioDraft) = editFromField(DesktopStudioTextBoundary(), change)
+
+    suspend fun editFromField(boundary: DesktopStudioTextBoundary, change: (NovelAiStudioDraft) -> NovelAiStudioDraft) = action(inspectAssets = false) {
         val before = repository.loadDraft()
         if (change(before) == before) return@action
         repository.saveUndoDraft(before)
-        val after = repository.updateDraft(transform = change)
+        val after = repository.updateFromField(boundary, transform = change)
         // The durable undo snapshot retains removed media through the existing reference cleaner.
         // Ordinary parameters keep every media reference. Only a removed draft reference can
         // become unowned; the cleaner still checks undo/checkpoint/history before unlinking it.

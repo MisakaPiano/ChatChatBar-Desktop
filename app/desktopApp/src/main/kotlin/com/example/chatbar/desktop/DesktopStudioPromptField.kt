@@ -280,7 +280,7 @@ internal fun StudioPromptField(label: String, value: String, suggestionService: 
         }, verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) { Editor() }
             StudioActions {
-                StudioAction("确认") { if (value == openingValue) inlineHistory.edit(input, onChange); fullscreen = false; expandedHistory = null; onExpandedEditorChanged?.invoke(false) }
+                StudioAction("确认") { if (value == openingValue) inlineHistory.applyExpanded(input, onChange); fullscreen = false; expandedHistory = null; onExpandedEditorChanged?.invoke(false) }
                 StudioAction("取消", onClick = ::cancel)
             }
         }

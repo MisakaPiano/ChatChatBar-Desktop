@@ -99,7 +99,10 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
     var authRevision by remember { mutableStateOf(0) }
     val authentication by produceState(DesktopDesignAuthentication(), draft?.aiDesignModelId, auxiliary, authRevision) { value = controller.designAuthentication() }
     LaunchedEffect(controller) { controller.load(); translation = controller.translationEnabled() }
-    fun edit(change: (NovelAiStudioDraft) -> NovelAiStudioDraft) { scope.launch { controller.edit(change) } }
+    fun edit(change: (NovelAiStudioDraft) -> NovelAiStudioDraft) {
+        val boundary = controller.textHistories.takeBoundary()
+        scope.launch { controller.editFromField(boundary, change) }
+    }
     fun imageAction(work: suspend () -> Unit) { scope.launch {
         try { imageError = ""; work() }
         catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
@@ -188,7 +191,7 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
                         DesktopDesignModelChoice(d.aiDesignModelId, models, authentication.model) { id ->
                             edit { it.copy(aiDesignModelId = id) }
                         }
-                        DesktopDesignField("额外要求", d.extraRequirement) { value -> scope.launch { controller.setDesignRequirement(value) } }
+                        DesktopDesignField("额外要求", d.extraRequirement) { value -> edit { it.copy(extraRequirement = value) } }
                         StudioAction("完成设置") { auxiliary = "AI 设计" }
                     }
                 "设计历史" -> {

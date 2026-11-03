@@ -71,4 +71,30 @@ class DesktopStudioTextHistoryTest {
         a.replay(false, published::add); assertEquals("source ", a.value.text)
         a.replay(true, published::add); assertEquals("source 你", a.value.text)
     }
+
+    @Test fun `numeric blur restores admitted value keeps earlier undo and accepts a delayed valid write`() {
+        val a = DesktopStudioTextHistory("28")
+        a.type("29"); a.echo("29")
+        a.type("99"); a.settle("29")
+        assertEquals("29", a.value.text)
+        a.replay(false) {}; assertEquals("28", a.value.text)
+        a.type(""); a.settle("28"); assertEquals("28", a.value.text)
+        val delayed = DesktopStudioTextHistory("28")
+        delayed.type("30"); delayed.settle("28")
+        delayed.echo("30"); assertEquals("30", delayed.value.text)
+        delayed.replay(false) {}; assertEquals("28", delayed.value.text)
+    }
+
+    @Test fun `captured action boundaries stay with their edit and cancelled expanded history cannot mark the global owner`() {
+        val fields = DesktopStudioTextHistories()
+        val a = fields.field("A", "source")
+        a.endTyping(); val earlier = fields.takeBoundary()
+        assertTrue(earlier.separate); assertFalse(earlier.discrete)
+        val expanded = a.fork(); expanded.type("temporary paste"); expanded.replay(false) {}
+        assertEquals(DesktopStudioTextBoundary(), fields.takeBoundary())
+        a.applyExpanded(TextFieldValue("confirmed value")) {}
+        val confirmed = fields.takeBoundary()
+        assertTrue(confirmed.discrete); assertTrue(confirmed.separate)
+        assertFalse(earlier.discrete); assertEquals(DesktopStudioTextBoundary(), fields.takeBoundary())
+    }
 }

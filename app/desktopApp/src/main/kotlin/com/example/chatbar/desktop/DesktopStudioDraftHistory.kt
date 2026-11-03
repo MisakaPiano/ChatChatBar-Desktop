@@ -6,12 +6,19 @@ import com.example.chatbar.domain.image.NovelAiStudioDraft
 import com.example.chatbar.domain.image.NovelAiInlinePayloadStore
 import com.example.chatbar.domain.image.ownedAssetPaths
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
+import kotlin.coroutines.AbstractCoroutineContextElement
+import kotlin.coroutines.CoroutineContext
+
+private class DesktopStudioEditingContext(val boundary: DesktopStudioTextBoundary) : AbstractCoroutineContextElement(Key) {
+    companion object Key : CoroutineContext.Key<DesktopStudioEditingContext>
+}
 
 @Serializable
 internal data class DesktopStudioHistoryTimeline(
@@ -44,8 +51,8 @@ internal class DesktopStudioHistoryRepository(storage: JsonFileStorage,
     suspend fun takeRetiredResources(): List<String> = editHistoryMutex.withLock {
         retiredResources.toList().also { retiredResources.clear() }
     }
-    @Volatile private var breakTyping = false
-    fun breakTypingGroup() { breakTyping = true }
+    suspend fun updateFromField(boundary: DesktopStudioTextBoundary, transform: (NovelAiStudioDraft) -> NovelAiStudioDraft) =
+        withContext(DesktopStudioEditingContext(boundary)) { updateDraft(transform = transform) }
 
     private fun snapshot(draft: NovelAiStudioDraft) = draft.copy(contentRevision = 0, promptContentRevision = 0,
         updatedAt = 0, imageGuidance = draft.imageGuidance.copy(vibes = draft.imageGuidance.vibes.map { vibe ->
@@ -102,8 +109,9 @@ internal class DesktopStudioHistoryRepository(storage: JsonFileStorage,
         val compactTarget = target.copy(imageGuidance = after.imageGuidance)
         if (after == current) return@withLock super.updateDraft(resetPromptEditors) { compactTarget }
         val now = clock()
+        val boundary = currentCoroutineContext()[DesktopStudioEditingContext]?.boundary ?: DesktopStudioTextBoundary()
         val key = desktopStudioTypingKey(current, after)
-        val merge = !resetPromptEditors && !breakTyping && key != null && key == lastTypingKey && now - lastTypingAt in 0..750_000_000L &&
+        val merge = !resetPromptEditors && !boundary.separate && key != null && key == lastTypingKey && now - lastTypingAt in 0..750_000_000L &&
             history.cursor == history.entries.lastIndex && history.cursor > 0
         var entries = if (merge) history.entries.dropLast(1) + after else history.entries.take(history.cursor + 1) + after
         // Keep at least the current edit reversible even for an already valid unusually large
@@ -113,7 +121,8 @@ internal class DesktopStudioHistoryRepository(storage: JsonFileStorage,
         val next = DesktopStudioHistoryTimeline(entries, entries.lastIndex)
         val result = transition(history, next) { super.updateDraft(resetPromptEditors) { compactTarget } }
         retiredResources += history.entries.flatMap(::historyResources).toSet() - next.entries.flatMap(::historyResources).toSet()
-        lastTypingKey = key; lastTypingAt = now; breakTyping = false
+        lastTypingKey = if (resetPromptEditors || boundary.discrete) null else key
+        lastTypingAt = now
         result
     }
 

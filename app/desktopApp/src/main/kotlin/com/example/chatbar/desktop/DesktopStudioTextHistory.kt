@@ -9,22 +9,27 @@ import androidx.compose.ui.text.input.TextFieldValue
 
 internal val LocalDesktopStudioTextHistories = staticCompositionLocalOf<DesktopStudioTextHistories?> { null }
 internal val LocalDesktopStudioFieldScope = staticCompositionLocalOf { "studio" }
+internal data class DesktopStudioTextBoundary(val separate: Boolean = false, val discrete: Boolean = false)
 
 /** Stable field keys survive disclosure/role reordering; no text or key handler escapes Studio. */
-internal class DesktopStudioTextHistories(private val onLocalReplay: () -> Unit = {}) {
+internal class DesktopStudioTextHistories {
     private val fields = linkedMapOf<String, DesktopStudioTextHistory>()
     var authorityRevision by mutableLongStateOf(0)
         private set
+    private var boundary = DesktopStudioTextBoundary()
+    fun takeBoundary() = boundary.also { boundary = DesktopStudioTextBoundary() }
     fun field(key: String, text: String): DesktopStudioTextHistory {
         fields[key]?.let { return it }
         if (fields.size >= 256) fields.remove(fields.keys.first())
-        return DesktopStudioTextHistory(text, onReplay = onLocalReplay).also { fields[key] = it }
+        return DesktopStudioTextHistory(text,
+            onReplay = { boundary = DesktopStudioTextBoundary(separate = true, discrete = true) },
+            onTypingBoundary = { boundary = boundary.copy(separate = true) }).also { fields[key] = it }
     }
     fun authorityChanged() { authorityRevision++ }
 }
 
 internal class DesktopStudioTextHistory(text: String, private val clock: () -> Long = System::nanoTime,
-    private val onReplay: () -> Unit = {}) {
+    private val onReplay: () -> Unit = {}, private val onTypingBoundary: () -> Unit = {}) {
     var value by mutableStateOf(TextFieldValue(text, TextRange(text.length)))
         private set
     private val undo = mutableListOf<TextFieldValue>()
@@ -34,9 +39,11 @@ internal class DesktopStudioTextHistory(text: String, private val clock: () -> L
     private var lastAt = 0L
     private var merging = false
     private var compositionOrigin: TextFieldValue? = null
-    fun endTyping() { merging = false; onReplay() }
+    private var settledAuthority: String? = null
+    fun endTyping() { merging = false; onTypingBoundary() }
 
     fun edit(next: TextFieldValue, publish: (String) -> Unit) {
+        settledAuthority = null
         if (next.composition != null) {
             if (compositionOrigin == null) compositionOrigin = value.copy(composition = null)
             value = next; merging = false
@@ -59,7 +66,7 @@ internal class DesktopStudioTextHistory(text: String, private val clock: () -> L
             merging = small; lastAt = now
             value = next; pending += next.text; publish(next.text)
         } else {
-            if (next.selection != value.selection) { merging = false; onReplay() }
+            if (next.selection != value.selection) { merging = false; onTypingBoundary() }
             value = next
         }
     }
@@ -68,11 +75,16 @@ internal class DesktopStudioTextHistory(text: String, private val clock: () -> L
         if (!forced && text == authority) return
         authority = text
         if (!forced) {
-            val index = pending.indexOf(text)
-            if (index >= 0) { repeat(index + 1) { pending.removeAt(0) }; return }
+            val index = pending.indexOfFirst { equivalent(it, text) }
+            if (index >= 0) {
+                repeat(index + 1) { pending.removeAt(0) }
+                if (pending.isEmpty() && settledAuthority == value.text) value = TextFieldValue(text, TextRange(text.length))
+                if (pending.isEmpty()) settledAuthority = null
+                return
+            }
             if (equivalent(value.text, text)) return
         }
-        pending.clear(); merging = false; compositionOrigin = null
+        pending.clear(); merging = false; compositionOrigin = null; settledAuthority = null
         if (text != value.text) {
             undo.clear(); redo.clear()
             value = TextFieldValue(text, TextRange(text.length))
@@ -82,13 +94,27 @@ internal class DesktopStudioTextHistory(text: String, private val clock: () -> L
     fun replay(forward: Boolean, publish: (String) -> Unit): Boolean {
         if (value.composition != null) return false
         val source = if (forward) redo else undo
-        val target = source.removeLastOrNull() ?: return true // Consume locally even at its boundary.
+        var target = source.removeLastOrNull() ?: return true // Consume locally even at its boundary.
+        while (target.text == value.text) target = source.removeLastOrNull() ?: return true
         (if (forward) undo else redo).add(value.copy(composition = null))
-        merging = false; value = target; pending += target.text; onReplay(); publish(target.text)
+        merging = false; settledAuthority = null; value = target; pending += target.text; onReplay(); publish(target.text)
         return true
     }
 
-    fun fork() = DesktopStudioTextHistory(value.text, clock, onReplay).also {
+    /** Numeric blur shows the actual admitted value without erasing earlier field edits. */
+    fun settle(text: String) {
+        if (value.composition != null || text == value.text) return
+        settledAuthority = text; value = TextFieldValue(text, TextRange(text.length)); merging = false
+        // Pending valid writes may still echo after blur. Their final acknowledgement updates
+        // this presentation, while a rejected/invalid edit remains merely a local text attempt.
+    }
+
+    fun applyExpanded(next: TextFieldValue, publish: (String) -> Unit) {
+        if (next.text != value.text) { merging = false; onReplay() }
+        edit(next.copy(composition = null), publish)
+    }
+
+    fun fork() = DesktopStudioTextHistory(value.text, clock).also {
         it.value = value; it.undo.addAll(undo); it.redo.addAll(redo)
     }
 
