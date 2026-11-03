@@ -28,3 +28,6 @@ history5/41667076334在新备份测试可空值跨模块smart cast处编译拒�
 
 
 history7/41672408257精确1076原件4=3PASS+1FAIL/0SKIP：实时第二栏请求、源字选区像素、inline/fullscreen通过；备份越过payload存在检查后，在重开时发现current与timeline不一致。源码追到所选导出按原策略把current.followDefaultNovelAiImageModel投影false，却未对Desktop timeline同样处理。后继对每个committed/pending snapshot执行同样卡/默认模型选择投影，并把历史引用的模型纳入依赖；不清journal、不改恢复一致性断言。备份端到端保留双来源、增加重开前合成字段一致性诊断，下一次只重测该方法与直接受影响selection/merge两suite。
+
+
+完整155原件保留：main369suite2641=2618PASS+3FAIL+20SKIP，proxy5/shared1233/Android HTML586通过。两反推并发例仍反射新子类getDeclaredField(undoMutex)，但原loadUndoDraft/saveUndoDraft锁实际保留在共享父类；改为反射原父类，不改第二次lock暂停、5秒限时、Stop/过期候选拒绝断言。另一项旧字体高度/基线断言揭示helper契约混淆：保留完整source-font rect及原严格断言，另visible source band负责0.3789px行边界裁剪，平台与实际绘制继续用相同行带。后继仅三FAIL+直接glyph两例+当前Studio原生OS关闭复核；native1确已有同名关闭PASS，20而非19来自Stop拆分，不把它误记新增方法。生产helper分工发生真实源码改动，4493/R29/sign19作为已验证但被后继取代的原包保持，不冒用为新源候选。

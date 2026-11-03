@@ -34,6 +34,12 @@ class DesktopStudioTranslatedCaretTest {
                     assertTrue(caret.height < layout.getLineBottom(line) - layout.getLineTop(line), "Annotation leading must not stretch caret")
                     assertEquals(layout.getCursorRect(offset).left, caret.left, .01f)
                     assertEquals(layout.getLineBaseline(line), caret.top + font.getLineBaseline(0), .01f)
+                    val visible = studioPromptSourceBand(layout, offset, font)
+                    assertEquals(caret.left, visible.left, .01f); assertEquals(caret.right, visible.right, .01f)
+                    assertEquals(maxOf(layout.getLineTop(line), caret.top), visible.top, .01f)
+                    assertEquals(minOf(layout.getLineBottom(line), caret.bottom), visible.bottom, .01f)
+                    assertTrue(visible.top >= layout.getLineTop(line) && visible.bottom <= layout.getLineBottom(line))
+                    assertTrue(visible.height <= font.size.height && visible.height < layout.getLineBottom(line) - layout.getLineTop(line))
                 }
                 assertEquals(source, layout.layoutInput.text.text)
             } finally { scene.close() }

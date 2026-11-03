@@ -85,14 +85,18 @@ internal fun studioCanAcceptSuggestion(input: TextFieldValue, candidateCount: In
 internal fun studioPromptCaretRect(layout: TextLayoutResult, offset: Int, glyph: TextLayoutResult): Rect {
     val position = offset.coerceIn(0, layout.layoutInput.text.length)
     val cursor = layout.getCursorRect(position)
-    val line = layout.getLineForOffset(position)
-    val baseline = layout.getLineBaseline(line)
-    val glyphTop = baseline - glyph.getLineBaseline(0)
-    // Font baselines can differ by a fraction of a pixel. The actual field clips that
-    // ascent at its source-line boundary; the IME anchor and custom paint must do so too.
-    val top = glyphTop.coerceIn(layout.getLineTop(line), layout.getLineBottom(line))
-    val bottom = (glyphTop + glyph.size.height).coerceIn(top, layout.getLineBottom(line))
-    return Rect(cursor.left, top, cursor.right, bottom)
+    val baseline = layout.getLineBaseline(layout.getLineForOffset(position))
+    val top = baseline - glyph.getLineBaseline(0)
+    return Rect(cursor.left, top, cursor.right, top + glyph.size.height)
+}
+
+/** The visible part of the source glyph band; annotation leading never participates. */
+internal fun studioPromptSourceBand(layout: TextLayoutResult, offset: Int, glyph: TextLayoutResult): Rect {
+    val rect = studioPromptCaretRect(layout, offset, glyph)
+    val line = layout.getLineForOffset(offset.coerceIn(0, layout.layoutInput.text.length))
+    val top = rect.top.coerceIn(layout.getLineTop(line), layout.getLineBottom(line))
+    val bottom = rect.bottom.coerceIn(top, layout.getLineBottom(line))
+    return Rect(rect.left, top, rect.right, bottom)
 }
 
 /** Raw source remains the editable/IME text; translations are only glyph overlays. */
@@ -119,7 +123,7 @@ internal fun StudioPromptTextEditor(input: TextFieldValue, onChange: (TextFieldV
                     val current = layout?.takeIf { it.layoutInput.text.text == latestInput.text }
                     val origin = coordinates?.takeIf { it.isAttached }?.localToRoot(Offset.Zero)
                     if (current != null && origin != null)
-                        studioPromptCaretRect(current, latestInput.selection.max, latestGlyph).translate(origin)
+                        studioPromptSourceBand(current, latestInput.selection.max, latestGlyph).translate(origin)
                     else request.focusedRectInRoot()
                 }
             })
@@ -148,7 +152,7 @@ internal fun StudioPromptTextEditor(input: TextFieldValue, onChange: (TextFieldV
                     if (current != null) Canvas(Modifier.matchParentSize()) {
                         val path = current.getPathForRange(input.selection.min, input.selection.max)
                         for (line in 0 until current.lineCount) {
-                            val band = studioPromptCaretRect(current, current.getLineStart(line), glyph)
+                            val band = studioPromptSourceBand(current, current.getLineStart(line), glyph)
                             clipRect(top = band.top, bottom = band.bottom) {
                                 drawPath(path, selectionColors.backgroundColor)
                             }
@@ -160,7 +164,7 @@ internal fun StudioPromptTextEditor(input: TextFieldValue, onChange: (TextFieldV
                     StudioPromptAnnotationOverlay(input.text, layout, annotations, Modifier.matchParentSize())
                     val current = layout?.takeIf { it.layoutInput.text.text == input.text }
                     if (focused && input.selection.collapsed && caretVisible && current != null) {
-                        val rect = studioPromptCaretRect(current, input.selection.end, glyph)
+                        val rect = studioPromptSourceBand(current, input.selection.end, glyph)
                         Canvas(Modifier.matchParentSize()) {
                             drawLine(caretColor, Offset(rect.left, rect.top), Offset(rect.left, rect.bottom), strokeWidth = 2.dp.toPx())
                         }

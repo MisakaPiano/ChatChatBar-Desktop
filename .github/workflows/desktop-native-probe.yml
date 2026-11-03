@@ -34,7 +34,7 @@ jobs:
           $testTemp = New-Item -ItemType Directory -Path (Join-Path $probeRoot 'temp') -ErrorAction Stop
           $evidence = New-Item -ItemType Directory -Path (Join-Path $env:RUNNER_TEMP 'ccb-native-probe') -ErrorAction Stop
           @("TEMP=$($testTemp.FullName)", "TMP=$($testTemp.FullName)") | Add-Content $env:GITHUB_ENV -Encoding utf8
-          [ordered]@{ source=(git rev-parse HEAD); run=$env:GITHUB_RUN_ID; graphicalTestMode=$true; userInteractive=[Environment]::UserInteractive; processSession=(Get-Process -Id $PID).SessionId; scope='Only four failed graphical scopes plus separately guarded physical playback; no installer, real provider or user profile' } | ConvertTo-Json | Set-Content (Join-Path $evidence 'source.json') -Encoding utf8
+          [ordered]@{ source=(git rev-parse HEAD); run=$env:GITHUB_RUN_ID; graphicalTestMode=$true; userInteractive=[Environment]::UserInteractive; processSession=(Get-Process -Id $PID).SessionId; scope='Only three full155 failures, directly affected source geometry and current Studio OS-close; no installer, real provider or user profile' } | ConvertTo-Json | Set-Content (Join-Path $evidence 'source.json') -Encoding utf8
       - name: Prepare supported temporary cloud display and record actual audio inventory
         shell: pwsh
         run: ./tools/windows/Set-CloudNativeProbeDisplay.ps1
@@ -45,11 +45,12 @@ jobs:
           CCB_FORMAT_AI_REVIEW_DIR: ${{ runner.temp }}/ccb-native-probe/images
         run: |
           .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=false --no-daemon --stacktrace --console=plain `
-            --tests 'com.example.chatbar.desktop.DesktopFishPickerNativeUxTest.native persistent scrollbar drags current page and explicit page jump preserves request semantics' `
-            --tests 'com.example.chatbar.desktop.DesktopFishPickerNativeUxTest.native Stop is top layer visible and operable during download and generation' `
-            --tests 'com.example.chatbar.desktop.DesktopFishPickerNativeUxTest.native Stop is top layer visible and operable during long Windows playback' `
-            --tests 'com.example.chatbar.desktop.WindowsStudioEdgeDragTest.maximized Studio outer edges remain stationary and restore remains resizable' `
-            --tests 'com.example.chatbar.desktop.WindowsWindowChromeTest.real Compose HWND preserves native contracts and unhooks on dispose'
+            --tests 'com.example.chatbar.desktop.DesktopReverseSceneTest.source or scene replacement while undo save is suspended refuses old candidate at actual draft commit' `
+            --tests 'com.example.chatbar.desktop.DesktopReverseSceneTest.stop or newer scene during original preflight prevents recognition and old confirmation from launching' `
+            --tests com.example.chatbar.desktop.DesktopStudioTranslatedCaretTest `
+            --tests 'com.example.chatbar.desktop.DesktopStudioInputHistorySceneTest.actual platform request uses live moved editor coordinates and preserves composing source text' `
+            --tests 'com.example.chatbar.desktop.DesktopStudioInputHistorySceneTest.rendered selection highlights source glyph band and leaves annotation row unselected' `
+            --tests 'com.example.chatbar.desktop.DesktopDesignParityTest.real Studio auxiliary OS close runs leave semantics'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Restore original temporary runner display
         if: always()

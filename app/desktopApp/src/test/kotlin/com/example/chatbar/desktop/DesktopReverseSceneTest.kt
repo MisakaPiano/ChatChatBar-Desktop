@@ -163,7 +163,7 @@ class DesktopReverseSceneTest {
                 val before = c.repository.loadDraft()
                 // First lock is action's original loadUndoDraft asset inspection; second is
                 // apply's saveUndoDraft, after selection/candidate capture. Pause only the second.
-                val field = c.repository.javaClass.getDeclaredField("undoMutex").also { it.isAccessible = true }
+                val field = com.example.chatbar.data.repository.NovelAiStudioStateRepository::class.java.getDeclaredField("undoMutex").also { it.isAccessible = true }
                 val original = field.get(c.repository) as kotlinx.coroutines.sync.Mutex
                 val locks = java.util.concurrent.atomic.AtomicInteger()
                 val enteredSave = CompletableDeferred<Unit>(); val resumeSave = CompletableDeferred<Unit>()
@@ -194,7 +194,7 @@ class DesktopReverseSceneTest {
             try {
                 val c = setup(f); assertTrue(c.reverseImage(image())); f.idle()
                 val before = c.repository.loadDraft(); val requests = f.requests.size
-                val field = c.repository.javaClass.getDeclaredField("undoMutex").also { it.isAccessible = true }
+                val field = com.example.chatbar.data.repository.NovelAiStudioStateRepository::class.java.getDeclaredField("undoMutex").also { it.isAccessible = true }
                 val original = field.get(c.repository) as kotlinx.coroutines.sync.Mutex
                 val entered = CompletableDeferred<Unit>(); val resume = CompletableDeferred<Unit>()
                 val tracking = object : kotlinx.coroutines.sync.Mutex by original {
