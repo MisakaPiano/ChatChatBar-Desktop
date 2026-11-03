@@ -13,3 +13,11 @@
 S02双语光标、S03官方重置、S04按模型/effort的sampler、S05 V5 effort、S06透明背景、S07人物Prompt展开与正负页签、S08展开编辑窗native chrome、S09账户header融合、S11操作失败具体原因继续，不能因本片两项源码宣称关闭。所有Prompt authority原文保持。
 
 V5能力以NovelAI公开原始资料及实际API字段为依据；文档确认不是实际序列化/资源alpha/预设/历史验证。无需真实Provider调用，不在用户机器重构建或代装。后继公开仍需本版授权。
+
+## S02后继源码（待独立云验）
+
+翻译保持34sp排版以容纳10sp注释；BasicTextField原生光标随这个段落高度伸长，故跨原文/译文。后继只在译文模式按源文字体度量和当前行baseline绘制闪烁光标；原生raw text、selection、composition与输入法数据不替换，不关闭翻译，非翻译光标保持原路径。新增真实文本测量的多行/自动换行/所有偏移及尾部检查；实际焦点/IME/物理截图仍需后续验证。此源码不在458/CI141内，不能混记其结果。
+
+## 当前官网能力来源（实现继续中）
+
+[Effort官方文档](https://docs.novelai.net/en/image/effort/)与[透明背景文档](https://docs.novelai.net/en/image/tags/)已读。匿名读取官方image页及其当时公开JS，版本b94bdee，原URL/字节/SHA只留本机公共参考清单，不抓登录页面/账户。公开代码明确Medium的生成ID为`nai-diffusion-5-full-medium`、inpaint为`nai-diffusion-5-full-medium-inpainting`；透明选项元数据为`tag_hint_transparent_background`，官网还会派生有效正向词。字段存在不等于本应用已接线或真实Provider已验；原Prompt authority不改，后续必须核实际serializer、历史/预设和alpha保留。

@@ -5,6 +5,8 @@ description: Build or migrate ChatBar Android UI using shadcn/ui design principl
 
 # ChatBar shadcn Compose
 
+`StudioPromptTextEditor` keeps raw text as the BasicTextField/IME source and translations as glyph overlays. In translated mode its blinking caret is drawn from source-font metrics at the current source baseline, rather than the enlarged annotation line height; nontranslated caret, selection and IME text remain native. `studioPromptCaretRect` is checked with actual shaped multiline/wrapped text.
+
 `DesktopReversePromptPane` is the actual imported-image reverse surface: editable bounded scene input with the shared caret token, explicit scene confirmation, collapsible transcript/reasoning and a separate final Apply action. Retry recognizes the image again; editing clears only the final candidate. Its420/1100 Scene regression uses the real controller and `CCB_FORMAT_AI_REVIEW_DIR`; no native/provider operation is implied.
 
 Desktop community uses `DesktopCommunityPanel` inside the primary Shell, gated by service status. Its private dialog wraps short content and caps long scroll bodies, fixes title/close/actions, projects errors inside the active dialog, and preserves the original management transfer-conflict overlay. Snapshot preview chunks retain Unicode pairs and the original card creator/version/default image text; publishing and owner deletion retain explicit confirmation. The actual-Panel Scene records420 Chinese dark/1100 English light views with an opaque page background. Its six detail/snapshot/delete images and the one real-Shell route image use `CCB_FORMAT_AI_REVIEW_DIR`; other Shell captures retain their original directory. None invokes native/browser/provider operations.

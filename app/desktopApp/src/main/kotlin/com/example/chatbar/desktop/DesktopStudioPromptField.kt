@@ -13,7 +13,9 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -71,16 +73,52 @@ internal fun StudioPromptAnnotationOverlay(text: String, layout: TextLayoutResul
 internal fun studioCanAcceptSuggestion(input: TextFieldValue, candidateCount: Int): Boolean =
     input.composition == null && input.selection.collapsed && candidateCount > 0
 
-/** The same raw-text editor and glyph overlay are used inline and inside the fullscreen session. */
+/** Use the source font metrics, not the paragraph's extra annotation leading. */
+internal fun studioPromptCaretRect(layout: TextLayoutResult, offset: Int, glyph: TextLayoutResult): Rect {
+    val position = offset.coerceIn(0, layout.layoutInput.text.length)
+    val cursor = layout.getCursorRect(position)
+    val baseline = layout.getLineBaseline(layout.getLineForOffset(position))
+    val top = baseline - glyph.getLineBaseline(0)
+    return Rect(cursor.left, top, cursor.right, top + glyph.size.height)
+}
+
+/** Raw source remains the editable/IME text; translations are only glyph overlays. */
 @Composable
 internal fun StudioPromptTextEditor(input: TextFieldValue, onChange: (TextFieldValue) -> Unit, translated: Boolean,
     annotations: List<NovelAiPromptAnnotation>, modifier: Modifier = Modifier) {
     var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
-    BasicTextField(input, onChange, modifier, cursorBrush = DesktopBootstrapColors.inputCaret, textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp,
-        lineHeight = if (translated) 34.sp else 22.sp,
-        lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Top, LineHeightStyle.Trim.None)),
+    var focused by remember { mutableStateOf(false) }
+    var caretVisible by remember { mutableStateOf(true) }
+    val caretColor = DesktopBootstrapColors.foreground
+    val normalCaret = DesktopBootstrapColors.inputCaret
+    val measurer = rememberTextMeasurer()
+    val glyph = measurer.measure(AnnotatedString("M"), TextStyle(fontSize = 14.sp))
+    LaunchedEffect(focused, translated, input.text, input.selection) {
+        caretVisible = true
+        if (focused && translated && input.selection.collapsed) while (true) {
+            kotlinx.coroutines.delay(500)
+            caretVisible = !caretVisible
+        }
+    }
+    BasicTextField(input, onChange, modifier.onFocusChanged { focused = it.isFocused },
+        cursorBrush = if (translated) SolidColor(Color.Transparent) else normalCaret,
+        textStyle = TextStyle(color = caretColor, fontSize = 14.sp,
+            lineHeight = if (translated) 34.sp else 22.sp,
+            lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Top, LineHeightStyle.Trim.None)),
         onTextLayout = { layout = it }, decorationBox = { inner ->
-            Box { inner(); if (translated) StudioPromptAnnotationOverlay(input.text, layout, annotations, Modifier.matchParentSize()) }
+            Box {
+                inner()
+                if (translated) {
+                    StudioPromptAnnotationOverlay(input.text, layout, annotations, Modifier.matchParentSize())
+                    val current = layout?.takeIf { it.layoutInput.text.text == input.text }
+                    if (focused && input.selection.collapsed && caretVisible && current != null) {
+                        val rect = studioPromptCaretRect(current, input.selection.end, glyph)
+                        Canvas(Modifier.matchParentSize()) {
+                            drawLine(caretColor, Offset(rect.left, rect.top), Offset(rect.left, rect.bottom), strokeWidth = 2.dp.toPx())
+                        }
+                    }
+                }
+            }
         })
 }
 
