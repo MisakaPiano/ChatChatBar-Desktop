@@ -45,6 +45,8 @@ jobs:
           New-Item -ItemType Directory -Path "$env:RUNNER_TEMP/ccb-ui-probe" -Force | Out-Null
           @{ source = (git rev-parse HEAD); run = $env:GITHUB_RUN_ID; scope = 'synthetic selected tests only; no installer, user profile, release or provider calls' } |
             ConvertTo-Json | Set-Content -Encoding utf8 "$env:RUNNER_TEMP/ccb-ui-probe/source.json"
+          .\gradlew.bat :sharedCore:compileTestKotlin :desktopApp:compileTestKotlin --no-daemon --stacktrace --console=plain
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           .\gradlew.bat :sharedCore:test --no-daemon --stacktrace --console=plain `
             --tests com.example.chatbar.domain.image.NovelAiVarietyPlusImportTest `
             --tests com.example.chatbar.domain.image.NovelAiImageModelCapabilityTest `

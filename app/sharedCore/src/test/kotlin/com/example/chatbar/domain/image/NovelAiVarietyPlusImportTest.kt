@@ -8,7 +8,7 @@ class NovelAiVarietyPlusImportTest {
     private fun comment(model: String, sigma: String) = """{"model":"$model","prompt":"Original scene  ","uc":"Original negative  ","width":1024,"height":1024,"steps":28,"sampler":"k_euler_ancestral","skip_cfg_above_sigma":$sigma}"""
     private fun body(settings: NovelAiGenerationSettings, enhance: NovelAiEnhanceRequestOptions? = null) =
         Json.parseToJsonElement(NovelAiImageService().buildRequestBody(NovelAiPromptPlan("Original scene", emptyList()),
-            NovelAiImageSize(1024, 1024), settings, enhance = enhance)).jsonObject.getValue("parameters").jsonObject
+            settings.imageSize(), settings, enhance = enhance)).jsonObject.getValue("parameters").jsonObject
 
     @Test fun `V45 PNG import restores fixed variety enabled and disabled while respecting import selection`() {
         for ((sigma, expected) in listOf("58" to true, "null" to false)) {

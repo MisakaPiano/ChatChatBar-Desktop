@@ -40,7 +40,7 @@ class DesktopStudioVarietyPlusTest {
             }
             fun current() = controller.draft.value!!
             fun parameters() = Json.parseToJsonElement(NovelAiImageService().buildRequestBody(
-                current().toPromptPlan(), NovelAiImageSize(1024, 1024), current().activeSettings)).jsonObject.getValue("parameters").jsonObject
+                current().toPromptPlan(), current().activeSettings.imageSize(), current().activeSettings)).jsonObject.getValue("parameters").jsonObject
             try {
                 scene.frames(); assertTrue(scene.has("Variety+（V+）")); assertFalse(current().activeSettings.varietyPlus)
                 scene.click("Variety+（V+）"); scene.until { current().activeSettings.varietyPlus }
