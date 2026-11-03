@@ -47,3 +47,5 @@ V5能力以NovelAI公开原始资料及实际API字段为依据；文档确认�
 人物Prompt默认紧凑，点击直接聚焦展开，失焦自动收起；可固定展开，正/负页签轮换显示，原启停/删除/排序/位置保留。展开编辑改复用图片工具的原生同色顶栏与最小化/最大化/还原owner，保留临时编辑确认/取消和外部值变化校验，未消费Escape才取消以免抢Tag补全键。新增实际Scene焦点/固定/页签/原文保留及reset最终wire断言，尚待精确云验，native实窗验收单独保留。
 
 另查明一个能到达S11通用失败提示的具体路径：旧footer在没有undo快照时仍启用撤销，而controller将空undo抛给通用action。后继由原repository真实load/save/clear发布可用状态，footer按状态禁用；陈旧调用返回明确无可撤销修改，不变更草稿。新增真实controller空undo/可用/清空断言。此修复不等于已证明私人截图中的那次错误就是空undo，其他触发原因仍未确认。
+
+143精确deda主2589=2569PASS+19SKIP+1FAIL：MomentsController4、MomentsPanel1（含窄宽相册往返）、CharacterEditorController63、Workspace6通过。唯一B1C负断言错误地要求所有“NovelAI Studio”文字都消失，而原`DesktopStudioContentFrame`底部被动状态标题仍合法；后继只核空导航按钮不存在（无OnClick），保留实际诊断进入/返回和历史入口断言。原失败保留。S03/4/7/8与E01/2不在143内。

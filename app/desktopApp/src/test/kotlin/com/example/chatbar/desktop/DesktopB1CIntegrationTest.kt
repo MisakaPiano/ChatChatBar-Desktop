@@ -390,7 +390,9 @@ class DesktopB1CIntegrationTest {
             scene.click("返回 AI 请求日志"); scene.frames()
             assertTrue(scene.has("AI 请求日志")); scene.shot("workspace-diagnostics")
             navigation.navigate(DesktopPrimaryRoute.TOOLS, idle); scene.frames()
-            assertFalse(scene.has("高级 / 诊断")); assertFalse(scene.has("NovelAI Studio"))
+            assertFalse(scene.has("高级 / 诊断"))
+            assertFalse(scene.nodes().any { it.matches("NovelAI Studio") && it.config.contains(SemanticsActions.OnClick) },
+                "Remove the empty navigation button; the existing passive status caption remains valid")
             assertTrue(scene.has("历史")); scene.shot("workspace-tools")
         } finally { scene.close(); f.close() }
     }
