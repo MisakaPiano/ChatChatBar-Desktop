@@ -127,9 +127,9 @@ class DesktopCharacterEditorOrderTest {
     }
     private fun SemanticsNode.text(label: String): Boolean = config.getOrNull(SemanticsProperties.Text)?.any { it.text == label } == true || children.any { it.text(label) }
     private fun SemanticsNode.visible(height: Int) = boundsInRoot.let { it.width > 0f && it.height > 0f && it.top >= 0f && it.bottom <= height.toFloat() }
-    private suspend fun ImageComposeScene.frames() { repeat(5) { render().close(); delay(15) } }
+    private suspend fun ImageComposeScene.frames() { repeat(5) { render(System.nanoTime()).close(); delay(15) } }
     private suspend fun ImageComposeScene.until(condition: ImageComposeScene.() -> Boolean) = withTimeout(5_000) {
-        while (!condition()) { render().close(); delay(15) }; frames()
+        while (!condition()) { render(System.nanoTime()).close(); delay(15) }; frames()
     }
     private suspend fun ImageComposeScene.click(label: String) {
         until { nodes().any { it.text(label) && it.config.contains(SemanticsActions.OnClick) } }
@@ -165,9 +165,10 @@ class DesktopCharacterEditorOrderTest {
                     break
                 }
                 val point = Offset(viewport.right - 10f, viewport.center.y)
-                val delta = if (top < viewport.top) (top - viewport.top) / 48f else (bottom - viewport.bottom) / 48f
+                val distance = if (top < viewport.top) top - viewport.top else bottom - viewport.bottom
+                val delta = if (distance < 0) (distance / 48f).coerceIn(-20f, -1f) else (distance / 48f).coerceIn(1f, 20f)
                 sendPointerEvent(PointerEventType.Move, point)
-                sendPointerEvent(PointerEventType.Scroll, point, scrollDelta = Offset(0f, delta.coerceIn(-20f, 20f)))
+                sendPointerEvent(PointerEventType.Scroll, point, scrollDelta = Offset(0f, delta))
                 frames()
             }
         }
