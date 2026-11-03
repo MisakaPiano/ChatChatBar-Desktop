@@ -4,7 +4,7 @@ import com.example.chatbar.domain.prompt.NovelAiPromptAuthority
 
 /** Request-only V5 options. Original Studio/card/history Prompt text remains untouched. */
 object NovelAiV5GenerationPolicy {
-    private val textMarker = Regex("(?:^|[\\s,.:[\\]{}、。])text:(?!:)", RegexOption.IGNORE_CASE)
+    private val textMarker = Regex("(?:^|[\\s,.:\\[\\]{}、。])text:(?!:)", RegexOption.IGNORE_CASE)
 
     fun transparentPrompt(prompt: NovelAiPromptPlan, enabled: Boolean): NovelAiPromptPlan {
         if (!enabled) return prompt
