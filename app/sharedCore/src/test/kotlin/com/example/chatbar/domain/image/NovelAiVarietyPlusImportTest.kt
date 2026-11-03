@@ -8,7 +8,8 @@ class NovelAiVarietyPlusImportTest {
     private fun comment(model: String, sigma: String) = """{"model":"$model","prompt":"Original scene  ","uc":"Original negative  ","width":1024,"height":1024,"steps":28,"sampler":"k_euler_ancestral","seed":7,"skip_cfg_above_sigma":$sigma}"""
     private fun body(settings: NovelAiGenerationSettings, enhance: NovelAiEnhanceRequestOptions? = null) =
         Json.parseToJsonElement(NovelAiImageService().buildRequestBody(NovelAiPromptPlan("Original scene", emptyList()),
-            settings.imageSize(), settings, enhance = enhance)).jsonObject.getValue("parameters").jsonObject
+            settings.imageSize(), settings, imageGuidance = if (enhance == null) NovelAiPreparedImageGuidance.NONE else
+                NovelAiPreparedImageGuidance(NovelAiGenerationAction.IMAGE_TO_IMAGE, imageBase64 = "synthetic"), enhance = enhance)).jsonObject.getValue("parameters").jsonObject
 
     @Test fun `V45 PNG import restores fixed variety enabled and disabled while respecting import selection`() {
         for ((sigma, expected) in listOf("58" to true, "null" to false)) {
@@ -18,7 +19,7 @@ class NovelAiVarietyPlusImportTest {
             val applied = initial.applyImportedMetadata(metadata, NovelAiStudioMetadataSelection())
             assertEquals(expected, applied.activeSettings.varietyPlus)
             assertEquals(if (expected) JsonPrimitive(58) else JsonNull, body(applied.activeSettings)["skip_cfg_above_sigma"])
-            val skipped = initial.applyImportedMetadata(metadata, NovelAiStudioMetadataSelection(generationSettings = false))
+            val skipped = initial.applyImportedMetadata(metadata, NovelAiStudioMetadataSelection(generationSettings = false, seed = false))
             assertEquals(initial.v45Settings, skipped.v45Settings)
             assertEquals("Original scene  ", applied.basePrompt)
         }

@@ -21,7 +21,7 @@ class DesktopStudioVarietyPlusTest {
     private val edt = object : CoroutineDispatcher() {
         override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
     }
-    @Test fun `actual Studio toggle reaches durable draft request undo preset and history without changing source text`() = runBlocking(edt) {
+    @Test fun `actual Studio toggle reaches durable draft request undo preset and history without changing source text`(): Unit = runBlocking(edt) {
         val parent = Files.createTempDirectory("studio-vplus-")
         val root = parent.resolve("data")
         val app = DesktopAppContainer(DesktopDataRootResolution.Resolved(root, DesktopDataRootProvenance.CLI_OVERRIDE,

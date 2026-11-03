@@ -3,6 +3,8 @@ package com.example.chatbar.desktop
 
 import androidx.compose.runtime.*
 import androidx.compose.ui.ImageComposeScene
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.AnnotatedString
 import com.example.chatbar.data.local.entity.*
@@ -137,24 +139,36 @@ class DesktopCharacterEditorOrderTest {
     }
     private suspend fun ImageComposeScene.setText(label: String, value: String) {
         fun field() = nodes().single { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains(label) == true && it.config.contains(SemanticsActions.SetText) }
-        val scroll = nodes().single { it.config.getOrNull(SemanticsProperties.TestTag) == "character-editor-scroll" }
-        withTimeout(5_000) {
-            while (!field().visible(560)) { scroll.config[SemanticsActions.ScrollBy].action!!.invoke(0f, 60f); frames() }
-        }
+        revealNode("field:$label", 560, ::field)
         val n = field()
         assertTrue(n.visible(560)); assertTrue(n.config[SemanticsActions.SetText].action!!.invoke(AnnotatedString(value))); frames()
     }
     private suspend fun ImageComposeScene.reveal(tag: String, height: Int) {
-        val scroll = nodes().single { it.config.getOrNull(SemanticsProperties.TestTag) == "character-editor-scroll" }
-        val action = scroll.config[SemanticsActions.ScrollBy].action!!
-        assertTrue(action(0f, -1_000_000f)); frames()
+        fun heading(): SemanticsNode {
+            fun flatten(n: SemanticsNode): List<SemanticsNode> = listOf(n) + n.children.flatMap(::flatten)
+            val target = nodes().single { it.config.getOrNull(SemanticsProperties.TestTag) == tag }
+            return flatten(target).first { it.config.contains(SemanticsProperties.Text) }
+        }
+        revealNode(tag, height, ::heading)
+    }
+    private suspend fun ImageComposeScene.revealNode(label: String, height: Int, target: () -> SemanticsNode) {
         withTimeout(6_000) {
             while (true) {
-                val target = nodes().single { it.config.getOrNull(SemanticsProperties.TestTag) == tag }
-                // Each section may exceed the viewport. Its heading must have actual visible bounds.
-                fun visibleChild(n: SemanticsNode): Boolean = n.config.contains(SemanticsProperties.Text) && n.visible(height) || n.children.any(::visibleChild)
-                if (visibleChild(target)) break
-                assertTrue(action(0f, 120f)); frames()
+                val node = target()
+                val scroll = nodes().single { it.config.getOrNull(SemanticsProperties.TestTag) == "character-editor-scroll" }
+                val viewport = scroll.boundsInRoot
+                val top = node.positionInRoot.y; val bottom = top + node.size.height
+                val range = scroll.config[SemanticsProperties.VerticalScrollAxisRange]
+                println("CARD_REVEAL $label top=$top bottom=$bottom viewport=$viewport scroll=${range.value()} max=${range.maxValue()}")
+                if (top >= viewport.top && bottom <= viewport.bottom) {
+                    assertTrue(node.visible(height)); assertEquals(node.size.height.toFloat(), node.boundsInRoot.height, 1f)
+                    break
+                }
+                val point = Offset(viewport.right - 10f, viewport.center.y)
+                val delta = if (top < viewport.top) (top - viewport.top) / 48f else (bottom - viewport.bottom) / 48f
+                sendPointerEvent(PointerEventType.Move, point)
+                sendPointerEvent(PointerEventType.Scroll, point, scrollDelta = Offset(0f, delta.coerceIn(-20f, 20f)))
+                frames()
             }
         }
     }

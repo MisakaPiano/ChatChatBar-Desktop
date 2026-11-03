@@ -202,8 +202,8 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
             StatusText(t(if (communityReadOnly) DesktopUiText.COMMUNITY_READ_ONLY
                 else DesktopUiText.CHARACTER_SAVE_COMMITTED_WARNING))
             StatusText(card.name)
-        } else Column(Modifier.weight(1f).fillMaxWidth().onGloballyPositioned { editorViewportTop = it.positionInRoot().y }
-            .verticalScroll(editorScroll).testTag("character-editor-scroll"),
+        } else Column(Modifier.weight(1f).fillMaxWidth().testTag("character-editor-scroll")
+            .onGloballyPositioned { editorViewportTop = it.positionInRoot().y }.verticalScroll(editorScroll),
             verticalArrangement = Arrangement.spacedBy(14.dp)) {
             controller.cardImages?.let { images -> BootstrapButton("生成卡片封面候选", enabled = controller.canUseCardAi, secondary = true) { images.openCover() } }
             controller.cardAi?.let { ai -> EditorActions {
