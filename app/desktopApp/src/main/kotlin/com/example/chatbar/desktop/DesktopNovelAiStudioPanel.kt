@@ -76,6 +76,7 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
     }
     var imageTools by remember { mutableStateOf<ByteArray?>(null) }
     var metadataFile by remember { mutableStateOf<java.nio.file.Path?>(null) }
+    var metadataPreview by remember { mutableStateOf<NovelAiStudioPngMetadata?>(null) }
     var metadataSelection by remember { mutableStateOf(NovelAiStudioMetadataSelection()) }
     var reverseSource by remember { mutableStateOf<ByteArray?>(null) }
     var viewingIndex by remember { mutableStateOf(0) }
@@ -131,8 +132,9 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
             onDataSettings = onDataSettings?.let { { modelProblemDismissed = true; it() } },
             onDismiss = { modelProblemDismissed = true })
     }
-    val usage by produceState<NovelAiPromptTokenUsage?>(null, d.toPromptPlan(), d.selectedModel) {
-        value = controller.infrastructure.countTokens(d.toPromptPlan(), d.selectedModel)
+    val countingPrompt = NovelAiV5TextPromptPolicy.prepareForRequest(d.toPromptPlan(), d.activeSettings)
+    val usage by produceState<NovelAiPromptTokenUsage?>(null, countingPrompt, d.selectedModel) {
+        value = controller.infrastructure.countTokens(countingPrompt, d.selectedModel)
     }
     val vibeMisses by produceState(0, d.selectedModel, d.imageGuidance, state.results) { value = controller.vibeCacheMisses(d) }
     val cost = runCatching { NovelAiImageCostEstimator.estimate(d.activeSettings, state.account, d.imageGuidance, vibeMisses) }.getOrNull()
@@ -362,7 +364,13 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
                             StudioActions {
                                 StudioAction("更换图片", onClick = ::pickImage)
                                 StudioAction("移除当前图片") { currentImage = null; auxiliary = null; controller.clearReverseCandidate() }
-                                StudioAction("元数据") { metadataFile = path; metadataSelection = NovelAiStudioMetadataSelection() }
+                                StudioAction("元数据") { imageAction {
+                                    val preview = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                        require(java.nio.file.Files.size(path) <= DesktopImageEditing.MAX_BYTES)
+                                        requireNotNull(DesktopImageMetadata.readStudio(path.toString()))
+                                    }
+                                    metadataPreview = preview; metadataFile = path; metadataSelection = NovelAiStudioMetadataSelection()
+                                } }
                                 StudioAction("打码 / 旋转 / 隐私 / 保存") { imageAction { imageTools = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { require(java.nio.file.Files.size(path) <= ApngDisguiseCodec.MAX_OUTPUT_BYTES); java.nio.file.Files.readAllBytes(path) } } }
                                 StudioAction("复制图片") { imageAction { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                                     require(java.nio.file.Files.size(path) <= ApngDisguiseCodec.MAX_OUTPUT_BYTES); copyDesktopImage(java.nio.file.Files.readAllBytes(path), path)
@@ -424,12 +432,7 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
             }
         }) {
             StatusText(path.fileName.toString())
-            StudioToggle("正面 Prompt", metadataSelection.positivePrompt) { metadataSelection = metadataSelection.copy(positivePrompt = !metadataSelection.positivePrompt) }
-            StudioToggle("负面 Prompt", metadataSelection.negativePrompt) { metadataSelection = metadataSelection.copy(negativePrompt = !metadataSelection.negativePrompt) }
-            CompactChoice("角色 Prompt", NovelAiCharacterImportMode.entries, metadataSelection.characterPrompts, { it.displayName }) { metadataSelection = metadataSelection.copy(characterPrompts = it) }
-            StudioToggle("生成参数", metadataSelection.generationSettings) { metadataSelection = metadataSelection.copy(generationSettings = !metadataSelection.generationSettings) }
-            StudioToggle("Seed", metadataSelection.seed) { metadataSelection = metadataSelection.copy(seed = !metadataSelection.seed) }
-            StudioToggle("图像引导", metadataSelection.imageGuidance) { metadataSelection = metadataSelection.copy(imageGuidance = !metadataSelection.imageGuidance) }
+            DesktopStudioMetadataOptions(metadataPreview, metadataSelection) { metadataSelection = it }
         }
     } }
     if (viewing.isNotEmpty()) DesktopImageViewer(viewing, viewingIndex, controller.resources, controller.picker) { viewing = emptyList() }

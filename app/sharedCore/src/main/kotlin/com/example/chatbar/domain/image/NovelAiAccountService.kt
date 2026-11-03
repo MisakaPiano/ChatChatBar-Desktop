@@ -7,7 +7,6 @@ import java.net.ConnectException
 import java.net.UnknownHostException
 import javax.net.ssl.SSLException
 import java.util.concurrent.TimeUnit
-import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.roundToInt
 import kotlinx.serialization.json.Json
@@ -178,16 +177,15 @@ object NovelAiImageCostEstimator {
         } else {
             sourcePixels
         }
-        val pixels = max(requestPixels, MIN_PRICED_PIXELS)
-        val baseCost = ceil(
-            PIXEL_BASE_COST_FACTOR * pixels +
-                PIXEL_STEP_COST_FACTOR * pixels * settings.effectiveSteps
-        ).toInt()
-        val modelCost = if (settings.model == NovelAiImageModel.V5_FULL) {
-            ceil(baseCost * V5_PRICE_MULTIPLIER).toInt()
-        } else {
-            baseCost
-        }.coerceAtLeast(MIN_IMAGE_COST)
+        // High keeps its former minimum canvas and rounding; Medium prices its fractional 23-step base.
+        val strength = if (settings.isMedium) when (imageGuidance.action) {
+            NovelAiGenerationAction.TEXT_TO_IMAGE -> 1.0
+            NovelAiGenerationAction.IMAGE_TO_IMAGE -> imageGuidance.imageToImageStrength.coerceIn(0f, 1f).toString().toDouble()
+            NovelAiGenerationAction.INPAINT -> imageGuidance.inpaintStrength.coerceIn(0f, 1f).toString().toDouble()
+        } else 1.0
+        val modelCost = NovelAiSingleImagePricing.cost(
+            settings, if (settings.isMedium) requestPixels else max(requestPixels, MIN_PRICED_PIXELS), strength
+        )
 
         val freeSampleEligible = account?.isActiveOpus == true &&
             settings.count == 1 &&
@@ -235,10 +233,6 @@ object NovelAiImageCostEstimator {
     private const val MIN_PRICED_PIXELS = 65_536L
     private const val NORMAL_MAX_PIXELS = 1_048_576L
     private const val FREE_MAX_STEPS = 28
-    private const val MIN_IMAGE_COST = 2
-    private const val PIXEL_BASE_COST_FACTOR = 2.951823174884865e-6
-    private const val PIXEL_STEP_COST_FACTOR = 5.753298233447344e-7
-    private const val V5_PRICE_MULTIPLIER = 1.5
     private const val PRECISE_REFERENCE_COST = 5
     private const val VIBE_ENCODING_COST = 2
     private const val FREE_VIBE_COUNT = 4

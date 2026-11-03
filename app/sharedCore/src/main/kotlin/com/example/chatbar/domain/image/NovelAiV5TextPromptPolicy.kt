@@ -16,6 +16,32 @@ object NovelAiV5TextPromptPolicy {
         '‘' to '’'
     )
 
+    /** Shared input for Studio token counting and ordinary final serialization. */
+    fun prepareForRequest(prompt: NovelAiPromptPlan, settings: NovelAiGenerationSettings): NovelAiPromptPlan {
+        val prepared = apply(NovelAiV5GenerationPolicy.transparentPrompt(
+            NovelAiPromptDelimiterPolicy.normalizeForRequest(prompt), settings.effectiveTransparentBackground), settings.model)
+        return if (!settings.isMedium) prepared else prepared.copy(
+            negativePrompt = com.example.chatbar.domain.prompt.NovelAiPromptAuthority.novelAiV5MediumNegativePrompt(prepared.baseCaption),
+            characterCaptions = prepared.characterCaptions.map { it.copy(negativePrompt = "") })
+    }
+
+    /** Exact option-shaped suffix only. Matching it does not prove who authored it;
+     * studio PNG import must obtain an explicit choice before using this result.
+     */
+    fun withoutTransparentBackgroundSuffix(source: String): String? {
+        val chunk = source.substring(0, firstChunkEnd(source))
+        val textStart = explicitTextBlock.find(chunk)?.range?.last?.minus(4) ?: chunk.length
+        val end = chunk.substring(0, textStart).trimEnd { it == ',' || it.isJsWhitespace() }.length
+        val tag = com.example.chatbar.domain.prompt.NovelAiPromptAuthority.NOVELAI_TRANSPARENT_BACKGROUND_TAG
+        val start = end - tag.length
+        if (start < 0 || chunk.substring(start, end) != tag) return null
+        if (start == 0) return source.substring(textStart)
+        var separator = start
+        while (separator > 0 && chunk[separator - 1].isJsWhitespace()) separator--
+        if (separator == 0 || chunk[separator - 1] != ',') return null
+        return source.removeRange(separator - 1, end)
+    }
+
     fun apply(prompt: NovelAiPromptPlan, model: NovelAiImageModel): NovelAiPromptPlan {
         if (model != NovelAiImageModel.V5_FULL) return prompt
         val characterPrompts = prompt.characterCaptions.map { it.prompt }.filter(String::isNotEmpty)
