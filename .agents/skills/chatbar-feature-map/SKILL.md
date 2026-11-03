@@ -7,6 +7,8 @@ Desktop complete Studio generation presets (`.ccbpreset`, preview/confirm/undo a
 
 # ChatBar Feature Map
 
+Long screenshot frames reserve bounded overscan rows and copy only their owned pixel range before encoding. Keep the exact full-versus-stitched pixel regression and bounded/cancellable writes; overscan is independent from the virtual PDF-page background grid. `DesktopStyleGalleryTest` advances `ImageComposeScene` with monotonic timestamps for real scroll animations and requires positive-area visible bounds.
+
 `desktopScreenshotMessageVisible` excludes a reply whose selected content is entirely disabled status/actions. Raster, resource collection and editable Word share it, so no empty reply bubble/header or unused avatar dependency survives the content switches.
 
 `DesktopWordMarkdown` consumes the real `desktopMarkdown` AnnotatedString rather than reparsing user text. Its lossless visible-text/run snapshot carries emphasis, heading sizes and monospace to editable OOXML; the writer rejects mismatched runs. This preserves the existing CommonMark preprocessing, hidden comments, literal code and no-network link/image-alt policy. Reader-specific line wrapping remains distinct from raster capture.

@@ -19,6 +19,7 @@ import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.data.repository.VoiceMessagePlacement
 import com.example.chatbar.domain.chat.*
 import org.jetbrains.skia.EncodedImageFormat
+import org.jetbrains.skia.Bitmap
 import org.jetbrains.skia.Image as SkiaImage
 import java.nio.file.*
 import java.nio.file.Path
@@ -134,6 +135,7 @@ internal object DesktopChatScreenshotRenderer {
             return withContext(edt) {
                 var height=0
                 var top = 0
+                var renderTop = 0
                 var viewportRows = 1
                 val bitmaps = images.mapValues { it.value.toComposeImageBitmap() }
                 val body:@Composable ()->Unit = {
@@ -145,7 +147,7 @@ internal object DesktopChatScreenshotRenderer {
                                 val cropWidth = (width / scale).toInt().coerceIn(1, bitmap.width)
                                 val cropHeight = (pageRows / scale).toInt().coerceIn(1, bitmap.height)
                                 clipRect {
-                                    var y = -(top % pageRows)
+                                    var y = -(renderTop % pageRows)
                                     while (y < size.height) {
                                         drawImage(bitmap, srcOffset = IntOffset((bitmap.width - cropWidth) / 2, (bitmap.height - cropHeight) / 2),
                                             srcSize = IntSize(cropWidth, cropHeight), dstOffset = IntOffset(0, y),
@@ -159,7 +161,7 @@ internal object DesktopChatScreenshotRenderer {
                             // Every viewport shares the full layout's top origin, even when its
                             // height is smaller than the content. The default vertical centering
                             // otherwise shifts each slice before the explicit page translation.
-                            .width(width.dp).wrapContentHeight(align=Alignment.Top, unbounded=true).offset { IntOffset(0, -top) }
+                            .width(width.dp).wrapContentHeight(align=Alignment.Top, unbounded=true).offset { IntOffset(0, -renderTop) }
                             .onSizeChanged { height=it.height })
                         }
                     }
@@ -170,7 +172,8 @@ internal object DesktopChatScreenshotRenderer {
                 check(height > 0) { "截图布局未完成" }
                 val measured=height
                 val maximumRows = minOf(MAX_HEIGHT, (MAX_PIXELS / width).toInt())
-                val rows = if (!paged) measured else pageRows?.also { require(it in 1..maximumRows) } ?: maximumRows
+                val rows = if (!paged) measured else pageRows?.also { require(it in 1..maximumRows) }
+                    ?: (maximumRows - 1024).coerceAtLeast(1)
                 val count = (measured.toLong() + rows - 1) / rows
                 if (count > MAX_PAGES) throw DesktopScreenshotLimitException("PAGE_COUNT", count, MAX_PAGES.toLong())
                 val frames = mutableListOf<DesktopScreenshotPng>()
@@ -179,12 +182,26 @@ internal object DesktopChatScreenshotRenderer {
                 while (top < measured) {
                     currentCoroutineContext().ensureActive()
                     val chunkRows = minOf(rows, measured - top)
-                    viewportRows = chunkRows
+                    // Keep the round-rectangle/text rasterizer away from a viewport edge, then
+                    // copy only exact owned rows. Both surfaces remain individually bounded.
+                    val guard = if (paged) minOf(512, (maximumRows - chunkRows) / 2) else 0
+                    renderTop = (top - guard).coerceAtLeast(0)
+                    viewportRows = minOf(measured, top + chunkRows + guard) - renderTop
                     validatePlan(width, chunkRows)
+                    validatePlan(width, viewportRows)
                     onPage(frames.size + 1, count.toInt())
-                    renderComposeScene(width,chunkRows,content=body).use { image ->
+                    renderComposeScene(width,viewportRows,content=body).use { image ->
                         check(height==measured) { "截图布局发生变化，请重新预览" }
-                        val bytes = checkNotNull(image.encodeToData(EncodedImageFormat.PNG)).use { it.bytes }
+                        currentCoroutineContext().ensureActive()
+                        val bytes = if (viewportRows == chunkRows && renderTop == top)
+                            checkNotNull(image.encodeToData(EncodedImageFormat.PNG)).use { it.bytes }
+                        else Bitmap().use { bitmap ->
+                            check(bitmap.allocN32Pixels(width, chunkRows))
+                            check(image.readPixels(bitmap, 0, top - renderTop))
+                            SkiaImage.makeFromBitmap(bitmap).use { cropped ->
+                                checkNotNull(cropped.encodeToData(EncodedImageFormat.PNG)).use { it.bytes }
+                            }
+                        }
                         captureBytes += bytes.size
                         if (captureBytes > MAX_CAPTURE_BYTES) throw DesktopScreenshotLimitException("CAPTURE_BYTES", captureBytes, MAX_CAPTURE_BYTES)
                         frames += DesktopScreenshotPng(bytes, width, chunkRows, hashes)

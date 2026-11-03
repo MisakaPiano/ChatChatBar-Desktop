@@ -45,24 +45,24 @@ class DesktopStyleGalleryTest {
                 }
                 fun text(n: SemanticsNode, s: String) = n.config.getOrNull(SemanticsProperties.Text)?.any { it.text == s } == true
                 try {
-                    repeat(8) { scene.render().close(); delay(20) }
+                    repeat(8) { scene.render(System.nanoTime()).close(); delay(20) }
                     val jump = nodes().single { text(it, "画风与生图参数") && it.config.contains(SemanticsActions.OnClick) }
                     assertTrue(jump.boundsInRoot.height > 0f && jump.boundsInRoot.top >= 0f && jump.boundsInRoot.bottom <= 900f)
                     assertTrue(jump.config[SemanticsActions.OnClick].action!!.invoke())
                     withTimeout(5_000) {
                         while (nodes().none { text(it, "内置画风图集") && it.boundsInRoot.width > 0f && it.boundsInRoot.height > 0f &&
                                 it.boundsInRoot.top >= 0f && it.boundsInRoot.bottom <= 900f }) {
-                            scene.render().close(); delay(20)
+                            scene.render(System.nanoTime()).close(); delay(20)
                         }
                     }
-                    repeat(15) { scene.render().close(); delay(20) }
+                    repeat(15) { scene.render(System.nanoTime()).close(); delay(20) }
                     assertTrue(nodes().any { text(it, "使用角色专属生图参数") && it.boundsInRoot.width > 0f && it.boundsInRoot.height > 0f &&
                         it.boundsInRoot.top >= 0f && it.boundsInRoot.bottom <= 900f })
                     assertEquals(card, editor.state.value.card); assertFalse(editor.state.value.dirty)
                     assertEquals(card, app.characterRepository.getById(card.id))
                     System.getenv("CCB_FORMAT_AI_REVIEW_DIR")?.let { directory ->
                         val path = Path.of(directory).resolve("style-editor-reachable-$width.png"); Files.createDirectories(path.parent)
-                        scene.render().use { it.encodeToData()!!.use { data -> Files.write(path, data.bytes) } }
+                        scene.render(System.nanoTime()).use { it.encodeToData()!!.use { data -> Files.write(path, data.bytes) } }
                     }
                 } finally { scene.close() }
             } finally { app.close(); check(parent.toFile().deleteRecursively()) }
@@ -84,7 +84,7 @@ class DesktopStyleGalleryTest {
                     assertEquals("asset:${styles[0].previewAssetPath}", reference); image
                 }, { applied = it }, {}, { closed = true })
             }
-            suspend fun frames() { repeat(5) { scene.render().close(); delay(10) } }
+            suspend fun frames() { repeat(5) { scene.render(System.nanoTime()).close(); delay(10) } }
             fun nodes(): List<SemanticsNode> {
                 fun walk(node: SemanticsNode): List<SemanticsNode> = listOf(node) + node.children.flatMap(::walk)
                 return scene.semanticsOwners.flatMap { walk(it.rootSemanticsNode) }
@@ -107,7 +107,7 @@ class DesktopStyleGalleryTest {
                 click("选择画风 v5"); assertNull(applied)
                 System.getenv("CCB_FORMAT_AI_REVIEW_DIR")?.let { directory ->
                     val path = Path.of(directory).resolve("style-gallery-$width.png"); Files.createDirectories(path.parent)
-                    scene.render().use { it.encodeToData()!!.use { data -> Files.write(path, data.bytes) } }
+                    scene.render(System.nanoTime()).use { it.encodeToData()!!.use { data -> Files.write(path, data.bytes) } }
                 }
                 click("确认填入角色卡"); assertEquals(styles[1], applied)
                 click("关闭图集"); assertTrue(closed)

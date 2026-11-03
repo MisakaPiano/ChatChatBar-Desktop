@@ -70,6 +70,13 @@ class DesktopScreenshotPagingTest {
         try {
             assertEquals(full.width, paged.width); assertEquals(full.height, paged.height)
             for (y in 0 until full.height) for (x in 0 until full.width) assertEquals(full.getRGB(x, y), paged.getRGB(x, y), "pixel $x,$y")
+        } catch (failure: Throwable) {
+            System.getenv("CCB_SCREENSHOT_PAGING_REVIEW_DIR")?.let { directory ->
+                val path = Path.of(directory); Files.createDirectories(path)
+                Files.write(path.resolve("failed-full-reference.png"), single.bytes)
+                Files.write(path.resolve("failed-stitched.png"), stitched)
+            }
+            throw failure
         } finally { full.flush(); paged.flush() }
     }
 
