@@ -239,6 +239,9 @@ internal fun StudioGenerationSettings(draft: NovelAiStudioDraft, edit: ((NovelAi
         StudioAction("编辑尺寸", icon = DesktopAppIcons.Edit) { customSize = true }
     }
     StudioChips("", studioAspectOptions(s), s.normalized().aspectRatio.takeUnless { s.usesCustomSize }, { it.displayName }) { value -> change { it.copy(aspectRatio = value, customWidth = null, customHeight = null) } }
+    StudioAction("重置生成参数", icon = DesktopAppIcons.Reset) {
+        change { NovelAiGenerationDefaults.forModel(it.model) }
+    }
     StudioDisclosure("高级设置", studioAdvancedSummary(s)) {
         StudioAdvancedSettings(s, ::change)
     }
@@ -259,7 +262,7 @@ internal fun StudioAdvancedSettings(s: NovelAiGenerationSettings, change: ((Nove
     StudioSlider("Steps", s.steps.toFloat(), 1f, 50f, 1f, 0) { value -> change { it.copy(steps = value.toInt()) } }
     StudioSlider("CFG Scale", s.guidance, 1f, 10f, .1f, 1) { value -> change { it.copy(guidance = value) } }
     StudioSlider("CFG Rescale", s.cfgRescale, 0f, 1f, .05f, 2) { value -> change { it.copy(cfgRescale = value) } }
-    CompactChoice("Sampler", NovelAiSampler.entries, s.sampler, { it.displayName }) { value -> change { it.copy(sampler = value) } }
+    CompactChoice("Sampler", s.model.samplers, s.sampler, { it.displayName }) { value -> change { it.copy(sampler = value) } }
     StudioSwitch("Random Seed", s.seedMode == NovelAiSeedMode.RANDOM) { change { it.copy(seedMode = if (it.seedMode == NovelAiSeedMode.RANDOM) NovelAiSeedMode.FIXED else NovelAiSeedMode.RANDOM) } }
     if (s.seedMode == NovelAiSeedMode.FIXED) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         StatusText("Seed")

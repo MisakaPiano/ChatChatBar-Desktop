@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.semantics.*
@@ -65,6 +66,37 @@ class DesktopCurrentImagePresentationTest {
             render().use { image -> image.encodeToData()!!.use { Files.write(path, it.bytes) } }
         }
     }
+    @Test fun `role prompt auto focus pin and positive negative tabs preserve enabled order and raw text`() = runBlocking(awt) {
+        val f = FinalProductDesignFixture()
+        var draft by mutableStateOf(NovelAiStudioDraft(characters = listOf(
+            NovelAiCharacterPromptDraft(id = "role", prompt = "Synthetic positive", negativePrompt = "Synthetic negative"))))
+        val scene = ImageComposeScene(860, 900) { Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background)) {
+            DesktopStudioCharacters(draft, f.container.novelAiInfrastructure, false) { draft = it(draft) }
+            StudioAction("外部焦点") {}
+        } }
+        try {
+            scene.frames()
+            assertFalse(scene.nodes().any { it.matches("角色正向") })
+            scene.click("展开角色 1 Prompt")
+            assertTrue(scene.nodes().any { it.matches("角色正向") })
+            assertFalse(scene.nodes().any { it.matches("角色负面") })
+            scene.click("负面 Prompt")
+            val field = scene.nodes().single { it.matches("角色负面") && it.config.contains(SemanticsActions.SetText) }
+            assertTrue(field.config[SemanticsActions.SetText].action!!.invoke(AnnotatedString("Edited synthetic negative")))
+            scene.frames()
+            assertEquals("Edited synthetic negative", draft.characters.single().negativePrompt)
+            assertEquals("Synthetic positive", draft.characters.single().prompt)
+            scene.click("固定展开"); scene.click("外部焦点")
+            assertTrue(scene.nodes().any { it.matches("角色负面") })
+            scene.reviewPreview("role-pinned-negative")
+            scene.click("自动收起"); scene.click("外部焦点")
+            assertFalse(scene.nodes().any { it.matches("角色负面") })
+            scene.click("展开角色 1 Prompt"); scene.click("外部焦点")
+            assertFalse(scene.nodes().any { it.matches("角色负面") })
+            assertEquals(listOf("role"), draft.characters.map { it.id }); assertTrue(draft.characters.single().enabled)
+            assertTrue(f.container.taskRuntime.tasks.value.isEmpty())
+        } finally { scene.close(); f.close() }
+    }
     @Test fun `role disable collapse expand and edit remain independent from generation`() = runBlocking(awt) {
         val f = FinalProductDesignFixture()
         var draft by mutableStateOf(NovelAiStudioDraft(basePrompt = "landscape", characters = listOf(NovelAiCharacterPromptDraft(id = "role", prompt = "adult traveler", negativePrompt = "blur"))))
@@ -75,7 +107,7 @@ class DesktopCurrentImagePresentationTest {
             scene.frames(); scene.click("✓")
             assertFalse(draft.characters.single().enabled); assertTrue(draft.activeCharacters.isEmpty())
             assertTrue(scene.nodes().any { it.matches("adult traveler") })
-            scene.click("⌄"); assertTrue(scene.nodes().any { it.matches("角色正向") })
+            scene.click("展开角色 1 Prompt"); assertTrue(scene.nodes().any { it.matches("角色正向") })
             assertFalse(draft.characters.single().enabled)
             scene.shot("role-disabled-expanded")
             scene.click("×"); assertTrue(draft.characters.single().enabled)

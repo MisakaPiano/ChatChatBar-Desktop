@@ -11,6 +11,9 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
@@ -34,7 +37,13 @@ internal fun DesktopStudioCharacters(draft: NovelAiStudioDraft, infrastructure: 
         StudioAction("添加角色", enabled = draft.activeCharacters.size < draft.selectedModel.maxCharacters) { edit { it.copy(characters = it.characters + NovelAiCharacterPromptDraft()) } }
     }
     draft.characters.forEachIndexed { index, character -> key(character.id) {
-        var expanded by remember { mutableStateOf(character.enabled) }
+        var focused by remember { mutableStateOf(false) }
+        var pinned by remember { mutableStateOf(false) }
+        var requestingFocus by remember { mutableStateOf(false) }
+        var focusRevision by remember { mutableStateOf<Long?>(null) }
+        var negative by remember { mutableStateOf(character.negativeExpanded) }
+        val expanded = pinned || focused || requestingFocus
+        fun openEditor() { requestingFocus = true; focusRevision = (focusRevision ?: 0) + 1 }
         fun change(transform: (NovelAiCharacterPromptDraft) -> NovelAiCharacterPromptDraft) = edit { it.copy(characters = it.characters.map { c -> if (c.id == character.id) transform(c) else c }) }
         Column(Modifier.fillMaxWidth().background(if (character.enabled) DesktopBootstrapColors.card else DesktopBootstrapColors.muted)
             .border(1.dp, DesktopBootstrapColors.border).padding(10.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -48,18 +57,28 @@ internal fun DesktopStudioCharacters(draft: NovelAiStudioDraft, infrastructure: 
                     } }
                 }
                 StudioAction(if (character.enabled) "✓" else "×", selected = character.enabled) {
-                    if (character.enabled) expanded = false
                     change { it.copy(enabled = !it.enabled) }
                 }
                 StudioAction("删除", icon = DesktopAppIcons.Delete) { edit { it.copy(characters = it.characters.filterNot { c -> c.id == character.id }) } }
-                StudioAction(if (expanded) "⌃" else "⌄") { expanded = !expanded }
+                StudioAction(if (pinned) "自动收起" else "固定展开", selected = pinned) { pinned = !pinned }
             }
-            Column(Modifier.alpha(if (character.enabled) 1f else .6f)) {
+            Column(Modifier.alpha(if (character.enabled) 1f else .6f)
+                .onFocusChanged { focused = it.hasFocus; if (it.hasFocus) requestingFocus = false }.focusGroup()) {
                 if (expanded) {
-                    StudioPromptField("角色正向", character.prompt, infrastructure, translation) { text -> change { it.copy(prompt = text) } }
-                    StudioPromptField("角色负面", character.negativePrompt, infrastructure, translation) { text -> change { it.copy(negativePrompt = text) } }
+                    StudioChips("", listOf(false, true), negative, { if (it) "负面 Prompt" else "正向 Prompt" }) { value ->
+                        negative = value; openEditor()
+                    }
+                    key(negative) {
+                        StudioPromptField(if (negative) "角色负面" else "角色正向",
+                            if (negative) character.negativePrompt else character.prompt,
+                            infrastructure, translation, focusRevision) { text ->
+                            change { if (negative) it.copy(negativePrompt = text) else it.copy(prompt = text) }
+                        }
+                    }
                     StatusText(character.center?.let { "位置 ${(it.x * 100).roundToInt()}%, ${(it.y * 100).roundToInt()}%" } ?: "位置 · 自动")
-                } else BasicText(character.prompt.ifBlank { "尚未填写正向 Prompt" }, style = TextStyle(color = DesktopBootstrapColors.foreground), maxLines = 3, overflow = TextOverflow.Ellipsis)
+                } else BasicText(character.prompt.ifBlank { "尚未填写正向 Prompt" },
+                    modifier = Modifier.fillMaxWidth().semantics { contentDescription = "展开角色 ${index + 1} Prompt" }.clickable { openEditor() },
+                    style = TextStyle(color = DesktopBootstrapColors.foreground), maxLines = 3, overflow = TextOverflow.Ellipsis)
             }
         }
     } }

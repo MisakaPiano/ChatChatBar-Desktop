@@ -124,12 +124,13 @@ internal fun StudioPromptTextEditor(input: TextFieldValue, onChange: (TextFieldV
 
 @Composable
 internal fun StudioPromptField(label: String, value: String, infrastructure: DesktopNovelAiInfrastructure,
-    translated: Boolean, onChange: (String) -> Unit) = StudioPromptField(label, value,
-    infrastructure.suggestions, infrastructure.translations, translated, onChange)
+    translated: Boolean, focusRevision: Long? = null, onChange: (String) -> Unit) = StudioPromptField(label, value,
+    infrastructure.suggestions, infrastructure.translations, translated, focusRevision, onChange)
 
 @Composable
 internal fun StudioPromptField(label: String, value: String, suggestionService: NovelAiTagSuggestionService,
-    translationService: NovelAiPromptTranslationService, translated: Boolean, onChange: (String) -> Unit) {
+    translationService: NovelAiPromptTranslationService, translated: Boolean, focusRevision: Long? = null,
+    onChange: (String) -> Unit) {
     var input by remember { mutableStateOf(TextFieldValue(value)) }
     var focused by remember { mutableStateOf(false) }
     var fullscreen by remember { mutableStateOf(false) }
@@ -176,7 +177,7 @@ internal fun StudioPromptField(label: String, value: String, suggestionService: 
     fun cancel() { fullscreen = false; input = if (value == openingValue) openingInput else TextFieldValue(value) }
     @Composable fun Editor() {
         val focus = remember { FocusRequester() }
-        if (fullscreen) LaunchedEffect(Unit) { focus.requestFocus() }
+        LaunchedEffect(fullscreen, focusRevision) { if (fullscreen || focusRevision != null) focus.requestFocus() }
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.weight(1f)) { StatusText(label) }
@@ -223,10 +224,11 @@ internal fun StudioPromptField(label: String, value: String, suggestionService: 
             currentAnnotations?.warning?.let { StatusText(it, DesktopBootstrapColors.warning) }
         }
     }
-    if (!fullscreen) Editor() else DialogWindow(onCloseRequest = ::cancel, title = label,
-        icon = desktopImageWindowIcon(), resizable = true,
-        state = rememberDialogState(size = rememberDesktopImageWindowSize(850.dp, 650.dp))) {
-        Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    if (!fullscreen) Editor() else DesktopImageToolWindow(label, ::cancel, width = 850.dp, height = 650.dp,
+        closeOnEscape = false) {
+        Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).onKeyEvent {
+            if (it.type == KeyEventType.KeyDown && it.key == Key.Escape) { cancel(); true } else false
+        }, verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) { Editor() }
             StudioActions {
                 StudioAction("确认") { if (value == openingValue) onChange(input.text); fullscreen = false }

@@ -39,3 +39,9 @@ V5能力以NovelAI公开原始资料及实际API字段为依据；文档确认�
 独立朋友圈相册复用固定官方147的JVM-neutral `MomentAlbumPolicy/State/Filter`：按卡文件夹、搜索、日/月/年日期、数量与私密标记；同名卡按ID分组，已删卡历史仍可见。点击相册项携带postId回到当下完整时间线定位，不用过滤后的索引。新增真实控制器导航/编辑草稿及窄宽实际Panel相册往返检查，官方六项policy内联fixture回归；尚待其精确源码云端结果，不冒记通过。M04保留多版本图片及全资源/传输链仍待实现。
 
 142精确aa4原XML主2587=2567PASS+19SKIP+1FAIL。ManualUndo1、TranslatedCaret1、GlobalDiagnostics1、Workspace6均通过；唯一旧B1C导航用例仍要求Tools存在已明确移走的“高级/诊断”，后继改为实际从Data支持诊断进入HTTP日志/逻辑检查器并返回，同时核Tools历史仍在、旧诊断/空按钮不存在。失败原件保留，不删除导航覆盖或冒认为整轮通过。Linux job、Windows NTFS/native/updater/exit/proxy步骤均success，后继M01-M03不在该轮。
+
+## S03/S04当前模型与S07/S08后继源码（不在143内）
+
+现有V4.5/V5 High增加显式生成参数重置：官网公开frontend b94bdee的两者23steps、CFG5/7、Euler Ancestral、832×1216、随机Seed/单图等；不自动迁移旧设置，不改原Prompt/人物和另一模型参数。Sampler菜单复用已有实际模型白名单，不再从全枚举放出DDIM。Medium及透明背景仍待实际链路实现，不能用该重置宣称覆盖它们。
+
+人物Prompt默认紧凑，点击直接聚焦展开，失焦自动收起；可固定展开，正/负页签轮换显示，原启停/删除/排序/位置保留。展开编辑改复用图片工具的原生同色顶栏与最小化/最大化/还原owner，保留临时编辑确认/取消和外部值变化校验，未消费Escape才取消以免抢Tag补全键。新增实际Scene焦点/固定/页签/原文保留及reset最终wire断言，尚待精确云验，native实窗验收单独保留。
