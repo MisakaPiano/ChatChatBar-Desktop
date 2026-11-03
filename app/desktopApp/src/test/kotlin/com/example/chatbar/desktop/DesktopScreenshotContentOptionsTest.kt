@@ -11,6 +11,22 @@ import org.apache.pdfbox.Loader
 import kotlin.test.*
 
 class DesktopScreenshotContentOptionsTest {
+    @Test fun `excluding the only status leaves no reply header bubble or unused avatar dependency`() = runBlocking {
+        val message = ChatMessage("status-only", "s", MessageRole.ASSISTANT, "```status\n姓名：Synthetic\nState\n```", createdAt = 1, updatedAt = 1)
+        for (segmented in listOf(false, true)) {
+            val state = DesktopPrimaryChatState(assistantSegmentedBubblesEnabled = segmented,
+                selectedCharacter = CharacterCard("card", "Synthetic", avatar = "images/unused-missing.png", createdAt = 1, updatedAt = 1))
+            val request = DesktopScreenshotRequest("Synthetic excluded", state, listOf(message),
+                desktopScreenshotBlockIds(message, segmented).toSet(), contentOptions = DesktopScreenshotContentOptions(false, false))
+            val document = desktopScreenshotDocument(request)
+            assertEquals(listOf(DesktopScreenshotDocumentBlock.Text(request.title, true)), document)
+            val png = DesktopChatScreenshotRenderer.render(request, desktopSemanticColors(ThemeMode.DARK, DefaultThemeColorHsv, false),
+                { error("Excluded avatar must not be loaded") })
+            assertTrue(png.resourceHashes.isEmpty())
+            assertEquals("```status\n姓名：Synthetic\nState\n```", message.content)
+        }
+    }
+
     @Test fun `four independent section choices apply equally to actual raster PDF and editable Word without message mutation`() = runBlocking {
         val content = """
             普通正文中提到行动选项，仍须保留。

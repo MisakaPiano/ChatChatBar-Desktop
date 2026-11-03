@@ -2,8 +2,11 @@ package com.example.chatbar.desktop
 
 import com.example.chatbar.domain.chat.RoleplaySegmentKind
 import com.example.chatbar.domain.chat.roleplaySpeakerHeaderIndexes
+import com.example.chatbar.domain.chat.roleplayImageBlockId
+import com.example.chatbar.domain.chat.roleplayLegacyTextBlockId
+import com.example.chatbar.data.local.entity.ChatMessage
 
-/** Export-local choices; both default on, and included blocks are always fully expanded. */
+/** Export-local choices; all default on, and included blocks are always fully expanded. */
 internal data class DesktopScreenshotContentOptions(
     val includeStatus: Boolean = true,
     val includeActions: Boolean = true,
@@ -25,6 +28,15 @@ internal fun desktopScreenshotIncludes(segment: DesktopPresentedSegment, options
 
 internal fun desktopScreenshotStatusLabel(segment: DesktopPresentedSegment): String =
     if (desktopScreenshotActionBlock(segment)) "行动选项" else "状态栏"
+
+/** An excluded-only reply must not leave an empty bubble/header or read its unused avatar. */
+internal fun desktopScreenshotMessageVisible(message: ChatMessage, presented: DesktopPresentedMessage,
+    selected: Set<String>, options: DesktopScreenshotContentOptions): Boolean =
+    message.images.indices.any { roleplayImageBlockId(message.id, it) in selected } ||
+        presented.segments.any { segment ->
+            val id = if (presented.segmented) segment.blockId else roleplayLegacyTextBlockId(message.id)
+            id in selected && desktopScreenshotIncludes(segment, options)
+        }
 
 /** Preserve shared group boundaries while giving a selected later sentence its own visible header. */
 internal fun desktopScreenshotSpeakerHeaders(presented: DesktopPresentedMessage, selected: Set<String>,

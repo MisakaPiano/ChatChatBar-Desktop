@@ -79,6 +79,7 @@ internal fun desktopScreenshotDocument(request: DesktopScreenshotRequest, colors
         if (request.selected.none { roleplayBlockMessageId(it) == message.id }) return@forEach
         val presented = desktopPresentMessage(message, request.state.selectedCharacter, request.state.globalPlayerName,
             request.state.assistantSegmentedBubblesEnabled, session = request.state.selectedSession)
+        if (!desktopScreenshotMessageVisible(message, presented, request.selected, request.contentOptions)) return@forEach
         val right = message.role == com.example.chatbar.data.local.entity.MessageRole.USER
         val speakerHeaders = desktopScreenshotSpeakerHeaders(presented, request.selected, request.contentOptions)
         if (presented.showWholeMessageHeader) header(presented.speakerLabel, desktopScreenshotHeaderAvatarReference(message, request.state), right)
@@ -138,7 +139,7 @@ internal suspend fun saveDesktopScreenshotPagesVerified(format: DesktopScreensho
     return target.toAbsolutePath().normalize()
 }
 
-/** Editable Word needs selected text/picture evidence, never a background/avatar raster preview. */
+/** Independent Word export captures requested text and image evidence without requiring a PNG preview. */
 internal suspend fun saveDesktopWordDocumentVerified(document: List<DesktopScreenshotDocumentBlock>,
     verifyMessages: suspend () -> Unit, read: (String) -> ByteArray, choose: suspend () -> Path?): Path? {
     verifyMessages()

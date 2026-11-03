@@ -108,6 +108,7 @@ internal object DesktopChatScreenshotRenderer {
                     m.images.forEachIndexed { i,ref->if(roleplayImageBlockId(m.id,i) in request.selected) add(ref) }
                     val presented=desktopPresentMessage(m,request.state.selectedCharacter,request.state.globalPlayerName,
                         request.state.assistantSegmentedBubblesEnabled,session=request.state.selectedSession)
+                    if (!desktopScreenshotMessageVisible(m, presented, request.selected, request.contentOptions)) return@forEach
                     val speakerHeaders = desktopScreenshotSpeakerHeaders(presented, request.selected, request.contentOptions)
                     if (presented.showWholeMessageHeader) desktopScreenshotHeaderAvatarReference(m, request.state)?.let(::add)
                     if(m.role==MessageRole.ASSISTANT) presented.segments.forEachIndexed { index, seg ->
@@ -253,7 +254,7 @@ private fun DesktopScreenshotContent(r:DesktopScreenshotRequest, images:Map<Stri
             val p=desktopPresentMessage(m,r.state.selectedCharacter,r.state.globalPlayerName,r.state.assistantSegmentedBubblesEnabled,session=r.state.selectedSession)
             val speakerHeaders=desktopScreenshotSpeakerHeaders(p,r.selected,r.contentOptions)
             val selectedForMessage=r.selected.filter { roleplayBlockMessageId(it)==m.id }
-            if(selectedForMessage.isNotEmpty()) Box(Modifier.fillMaxWidth().padding(10.dp),
+            if(selectedForMessage.isNotEmpty() && desktopScreenshotMessageVisible(m,p,r.selected,r.contentOptions)) Box(Modifier.fillMaxWidth().padding(10.dp),
                 contentAlignment=if(m.role==MessageRole.USER)Alignment.TopEnd else Alignment.TopStart) {
                 Column(Modifier.fillMaxWidth(if(p.enclosingCard) .86f else 1f),verticalArrangement=Arrangement.spacedBy(7.dp),
                 horizontalAlignment=if(m.role==MessageRole.USER)Alignment.End else Alignment.Start) {
