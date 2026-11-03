@@ -9,7 +9,7 @@ on:
         required: true
         type: string
 env:
-  SOURCE_SHA: ${{ inputs.source_sha || '892b478b17d3bf0943e779d3f14108b750f3355c' }}
+  SOURCE_SHA: ${{ inputs.source_sha || 'f52eeb95b3034ee236afbef25c7766ca15976e9b' }}
 jobs:
   targeted:
     runs-on: ubuntu-24.04
@@ -71,10 +71,12 @@ jobs:
           arch: x86_64
           target: google_apis
           disable-animations: true
+          working-directory: app
           script: |
             test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
-            cd app
             bash ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.imageprompt.NovelAiReviewRegressionTest --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx4g -Dfile.encoding=UTF-8'
+            mkdir -p build/nai-review-evidence
+            adb pull /sdcard/Android/data/com.example.chatbar/files/nai-review-evidence build/nai-review-evidence/
             git diff --exit-code
       - uses: actions/upload-artifact@v4
         if: always()
@@ -83,3 +85,4 @@ jobs:
           path: |
             app/app/build/outputs/androidTest-results/connected/
             app/app/build/reports/androidTests/connected/
+            app/build/nai-review-evidence/
