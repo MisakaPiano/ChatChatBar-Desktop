@@ -33,9 +33,22 @@ internal class DesktopStudioTextHistory(text: String, private val clock: () -> L
     private var authority = text
     private var lastAt = 0L
     private var merging = false
+    private var compositionOrigin: TextFieldValue? = null
     fun endTyping() { merging = false; onReplay() }
 
     fun edit(next: TextFieldValue, publish: (String) -> Unit) {
+        if (next.composition != null) {
+            if (compositionOrigin == null) compositionOrigin = value.copy(composition = null)
+            value = next; merging = false
+            return // IME preedit belongs to the active field, not the durable global draft.
+        }
+        compositionOrigin?.let { origin ->
+            compositionOrigin = null; merging = false
+            if (next.text != origin.text) { undo += origin; redo.clear(); trim(undo) }
+            value = next
+            if (next.text != origin.text) { pending += next.text; onReplay(); publish(next.text) }
+            return
+        }
         if (next.text != value.text) {
             val now = clock()
             val small = desktopStudioSmallTextEdit(value.text, next.text)
@@ -59,7 +72,7 @@ internal class DesktopStudioTextHistory(text: String, private val clock: () -> L
             if (index >= 0) { repeat(index + 1) { pending.removeAt(0) }; return }
             if (equivalent(value.text, text)) return
         }
-        pending.clear(); merging = false
+        pending.clear(); merging = false; compositionOrigin = null
         if (text != value.text) {
             undo.clear(); redo.clear()
             value = TextFieldValue(text, TextRange(text.length))

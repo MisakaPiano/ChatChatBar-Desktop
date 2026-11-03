@@ -129,4 +129,34 @@ class DesktopStudioDraftHistoryTest {
             cleaner.deleteUnreferenced(listOf("images/ref.png")); assertFalse(Files.exists(image))
         } finally { check(root.toFile().deleteRecursively()) }
     }
+
+    @Test fun `large Vibe encoding stays content addressed across durable undo redo`() = runBlocking {
+        val root = Files.createTempDirectory("studio-history-vibe-")
+        try {
+            val storage = JsonFileStorage(root); val r = DesktopStudioHistoryRepository(storage)
+            r.loadDraft(); r.initializeHistory()
+            val encoding = "synthetic-encoding-".repeat(400)
+            r.updateDraft { it.copy(imageGuidance = it.imageGuidance.copy(vibes = listOf(NovelAiVibeReferenceDraft(encodedVibe = encoding)))) }
+            val reference = assertNotNull(r.loadDraft().imageGuidance.vibes.single().encodedVibe)
+            assertTrue(reference.startsWith(NovelAiInlinePayloadStore.PREFIX))
+            val journal = Files.readString(root.resolve("entities/${DesktopStudioHistoryRepository.ENTITY}.json"))
+            assertFalse(journal.contains(encoding)); assertTrue(journal.contains(reference))
+            assertTrue(r.replay(false)); assertTrue(r.replay(true))
+            assertEquals(encoding, NovelAiInlinePayloadStore(root.toFile()).resolve(r.loadDraft().imageGuidance.vibes.single().encodedVibe!!))
+        } finally { check(root.toFile().deleteRecursively()) }
+    }
+
+    @Test fun `history budget never becomes a smaller input limit for an existing valid large text draft`() = runBlocking {
+        val root = Files.createTempDirectory("studio-history-large-text-")
+        try {
+            val storage = JsonFileStorage(root); val r = DesktopStudioHistoryRepository(storage)
+            r.loadDraft(); r.initializeHistory()
+            val large = "a".repeat(3 * 1024 * 1024 + 64)
+            r.updateDraft { it.copy(basePrompt = large) }
+            r.updateDraft { it.copy(extraPrompt = "small separate edit") }
+            assertEquals(large, r.loadDraft().basePrompt)
+            assertTrue(r.replay(false)); assertEquals(large, r.loadDraft().basePrompt)
+            assertEquals("", r.loadDraft().extraPrompt)
+        } finally { check(root.toFile().deleteRecursively()) }
+    }
 }

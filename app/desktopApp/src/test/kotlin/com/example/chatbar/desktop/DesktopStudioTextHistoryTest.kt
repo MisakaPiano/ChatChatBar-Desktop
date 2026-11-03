@@ -59,4 +59,16 @@ class DesktopStudioTextHistoryTest {
         a.edit(TextFieldValue("x" + a.value.text, TextRange(1))) {}
         a.replay(false) {}; assertEquals("a".repeat(200) + "b", a.value.text)
     }
+
+    @Test fun `IME preedit stays local and publishes one committed history step without Latin fragments`() {
+        val a = DesktopStudioTextHistory("source ")
+        val published = mutableListOf<String>()
+        a.edit(TextFieldValue("source n", TextRange(8), TextRange(7, 8)), published::add)
+        a.edit(TextFieldValue("source ni", TextRange(9), TextRange(7, 9)), published::add)
+        assertTrue(published.isEmpty()); assertNotNull(a.value.composition)
+        a.edit(TextFieldValue("source 你", TextRange(8)), published::add)
+        assertEquals(listOf("source 你"), published)
+        a.replay(false, published::add); assertEquals("source ", a.value.text)
+        a.replay(true, published::add); assertEquals("source 你", a.value.text)
+    }
 }

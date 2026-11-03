@@ -86,6 +86,7 @@ internal class DesktopStudioHistoryRepository(storage: JsonFileStorage,
 
     suspend fun initializeHistory() = editHistoryMutex.withLock {
         // The initial default draft must travel with its timeline in a selected backup.
+        loadDraft()
         super.updateDraft(resetPromptEditors = false) { it }
         loaded(snapshot(loadDraft())); Unit
     }
@@ -111,14 +112,17 @@ internal class DesktopStudioHistoryRepository(storage: JsonFileStorage,
         while (entries.size > 2 && (entries.size > MAX_ENTRIES || encodedSize(entries) > budget)) entries = entries.drop(1)
         val next = DesktopStudioHistoryTimeline(entries, entries.lastIndex)
         val result = transition(history, next) { super.updateDraft(resetPromptEditors) { compactTarget } }
-        retiredResources += history.entries.flatMap { it.imageGuidance.ownedAssetPaths() }.toSet() -
-            next.entries.flatMap { it.imageGuidance.ownedAssetPaths() }.toSet()
+        retiredResources += history.entries.flatMap(::historyResources).toSet() - next.entries.flatMap(::historyResources).toSet()
         lastTypingKey = key; lastTypingAt = now; breakTyping = false
         result
     }
 
     private fun encodedSize(entries: List<NovelAiStudioDraft>) =
         storage.json.encodeToString(DesktopStudioHistoryTimeline.serializer(), DesktopStudioHistoryTimeline(entries)).toByteArray().size
+
+    private fun historyResources(draft: NovelAiStudioDraft) = draft.imageGuidance.ownedAssetPaths() +
+        draft.imageGuidance.vibes.mapNotNull { it.encodedVibe?.takeIf { value -> value.startsWith(NovelAiInlinePayloadStore.PREFIX) }
+            ?.removePrefix(NovelAiInlinePayloadStore.PREFIX)?.let { hash -> "novelai-vibe-payloads/$hash" } }
 
     private suspend fun transition(before: DesktopStudioHistoryTimeline, after: DesktopStudioHistoryTimeline,
         write: suspend () -> NovelAiStudioDraft): NovelAiStudioDraft = withContext(NonCancellable) {
@@ -130,7 +134,10 @@ internal class DesktopStudioHistoryRepository(storage: JsonFileStorage,
         } catch (failure: Throwable) {
             // Actual persisted outcome, never an assumed rollback or an erased failure.
             timeline = null
-            try { loaded(snapshot(loadDraft())) } catch (recovery: Throwable) { failure.addSuppressed(recovery) }
+            try {
+                val persisted = requireNotNull(storage.loadSingleton("novelai_studio_draft", NovelAiStudioDraft.serializer()))
+                loaded(snapshot(persisted))
+            } catch (recovery: Throwable) { failure.addSuppressed(recovery) }
             throw failure
         }
     }

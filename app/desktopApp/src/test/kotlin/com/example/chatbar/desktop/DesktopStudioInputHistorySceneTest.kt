@@ -39,7 +39,7 @@ class DesktopStudioInputHistorySceneTest {
         sendKeyEvent(KeyEvent(key, KeyEventType.KeyUp, isCtrlPressed = true)); frames()
     }
 
-    @Test fun `actual focused field Ctrl Z Y stay local and global rebase cannot replay stale field content`() = runBlocking(edt) {
+    @Test fun `actual focused field Ctrl Z Y stay local and global rebase cannot replay stale field content`(): Unit = runBlocking(edt) {
         val registry = DesktopStudioTextHistories()
         val a = registry.field("A", "A"); val b = registry.field("B", "B")
         val focusA = FocusRequester(); val focusB = FocusRequester()
@@ -68,7 +68,7 @@ class DesktopStudioInputHistorySceneTest {
         } finally { scene.close() }
     }
 
-    @Test fun `actual platform request uses live moved editor coordinates and preserves composing source text`() = runBlocking(edt) {
+    @Test fun `actual platform request uses live moved editor coordinates and preserves composing source text`(): Unit = runBlocking(edt) {
         var input by mutableStateOf(TextFieldValue("synthetic source", TextRange(3)))
         var secondInput by mutableStateOf(TextFieldValue("second synthetic person", TextRange(5)))
         var offset by mutableStateOf(20.dp)
@@ -110,7 +110,7 @@ class DesktopStudioInputHistorySceneTest {
         } finally { scene.close() }
     }
 
-    @Test fun `rendered selection highlights source glyph band and leaves annotation row unselected`() = runBlocking(edt) {
+    @Test fun `rendered selection highlights source glyph band and leaves annotation row unselected`(): Unit = runBlocking(edt) {
         val input = TextFieldValue("synthetic source", TextRange(1, 8))
         val scene = ImageComposeScene(420, 120, coroutineContext = edt) {
             CompositionLocalProvider(LocalTextSelectionColors provides TextSelectionColors(Color.Red, Color.Red)) {

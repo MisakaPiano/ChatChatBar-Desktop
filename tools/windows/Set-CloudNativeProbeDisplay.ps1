@@ -51,19 +51,23 @@ public static class CcbCloudDisplay {
             Marshal.WriteInt16(pointer, 70, unchecked((short)ushort.MaxValue));
             if (!EnumDisplaySettingsW(null, index, pointer)) throw new InvalidOperationException("DISPLAY_MODE_UNAVAILABLE_" + index);
             Mode mode = Marshal.PtrToStructure<Mode>(pointer);
-            if (mode.size != publicSize) throw new InvalidOperationException("DISPLAY_RETURNED_SIZE_" + mode.size + "_EXPECTED_" + publicSize);
-            byte[] bytes = new byte[publicSize + mode.driverExtra];
+            // Some display drivers return the older public prefix ending at frequency (188).
+            // dmSize, not our maximum declaration, determines where private driver data starts.
+            if (mode.size != 188 && mode.size != publicSize) throw new InvalidOperationException("DISPLAY_RETURNED_SIZE_" + mode.size + "_SUPPORTED_188_OR_220");
+            byte[] bytes = new byte[mode.size + mode.driverExtra];
             Marshal.Copy(pointer, bytes, 0, bytes.Length);
             return new Record { Public=mode, Bytes=bytes };
         } finally { Marshal.FreeHGlobal(pointer); }
     }
     public static Record FromBytes(byte[] bytes) {
-        if (bytes.Length < 220 || bytes.Length > 220 + ushort.MaxValue) throw new InvalidOperationException("DISPLAY_MODE_SIZE");
-        var pointer = Marshal.AllocHGlobal(bytes.Length);
+        if (bytes.Length < 188 || bytes.Length > 220 + ushort.MaxValue) throw new InvalidOperationException("DISPLAY_MODE_SIZE");
+        int allocation = Math.Max(220, bytes.Length);
+        var pointer = Marshal.AllocHGlobal(allocation);
         try {
+            Marshal.Copy(new byte[allocation], 0, pointer, allocation);
             Marshal.Copy(bytes, 0, pointer, bytes.Length);
             Mode mode = Marshal.PtrToStructure<Mode>(pointer);
-            if (mode.size != 220 || bytes.Length != 220 + mode.driverExtra) throw new InvalidOperationException("DISPLAY_MODE_PRIVATE_SIZE");
+            if ((mode.size != 188 && mode.size != 220) || bytes.Length != mode.size + mode.driverExtra) throw new InvalidOperationException("DISPLAY_MODE_PRIVATE_SIZE");
             return new Record { Public=mode, Bytes=bytes };
         } finally { Marshal.FreeHGlobal(pointer); }
     }
