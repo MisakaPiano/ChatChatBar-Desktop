@@ -24,7 +24,9 @@ class NovelAiTransparencyImportOwnershipTest {
         val params = body.getValue("parameters").jsonObject
         assertEquals("scene", params.getValue("v4_prompt").jsonObject.getValue("caption").jsonObject
             .getValue("base_caption").jsonPrimitive.content)
-        assertFalse(params.getValue("tag_hint_transparent_background").jsonPrimitive.boolean)
+        // Desktop preserves the old High/default wire by omitting disabled option fields.
+        assertFalse(params.containsKey("tag_hint_transparent_background"))
+        assertEquals(3, params.getValue("params_version").jsonPrimitive.int)
     }
 
     @Test fun ambiguousHandwrittenSuffixDefaultsToVerbatimRetention() {

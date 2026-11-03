@@ -46,12 +46,7 @@ jobs:
           @{ source = (git rev-parse HEAD); run = $env:GITHUB_RUN_ID; scope = 'synthetic selected tests only; no installer, user profile, release or provider calls' } |
             ConvertTo-Json | Set-Content -Encoding utf8 "$env:RUNNER_TEMP/ccb-ui-probe/source.json"
           .\gradlew.bat :sharedCore:test --no-daemon --stacktrace --console=plain `
-            --tests com.example.chatbar.domain.image.NovelAiMediumPricingTest `
-            --tests com.example.chatbar.domain.image.NovelAiRequestPromptPreparationTest `
-            --tests com.example.chatbar.domain.image.NovelAiTransparencyImportOwnershipTest `
-            --tests com.example.chatbar.domain.image.NovelAiV5GenerationPolicyTest `
-            --tests com.example.chatbar.domain.image.NovelAiImageCostEstimatorTest `
-            --tests com.example.chatbar.domain.image.NovelAiPostProcessTest
+            --tests com.example.chatbar.domain.image.NovelAiTransparencyImportOwnershipTest.explicitlyManagedSuffixCanBeTurnedOffAfterFullPngRoundTrip
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain `
             --tests com.example.chatbar.desktop.DesktopV5GenerationOptionsTest `

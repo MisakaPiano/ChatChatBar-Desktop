@@ -61,7 +61,7 @@ class DesktopStudioMetadataOwnershipTest {
                 val wire = Json.parseToJsonElement(NovelAiImageService().buildRequestBody(
                     off.toPromptPlan(), off.activeSettings.imageSize(), off.activeSettings)).jsonObject
                 assertEquals("synthetic scene", wire.getValue("input").jsonPrimitive.content)
-                assertFalse(wire.getValue("parameters").jsonObject.getValue("tag_hint_transparent_background").jsonPrimitive.boolean)
+                assertFalse(wire.getValue("parameters").jsonObject.containsKey("tag_hint_transparent_background"))
                 val reopened = DesktopStudioHistoryRepository(JsonFileStorage(root)); reopened.initializeHistory()
                 assertEquals(off, reopened.loadDraft())
                 assertTrue(reopened.replay(false)); assertTrue(reopened.loadDraft().activeSettings.transparentBackground)

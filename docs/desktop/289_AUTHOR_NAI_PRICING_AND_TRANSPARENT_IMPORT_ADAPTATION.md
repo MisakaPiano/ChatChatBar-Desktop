@@ -8,3 +8,6 @@
 - Desktop Medium sampler 原已走固定说明分支，没有 Android CbSelect 单选自动写回问题，不复制 Android UI 补丁。
 
 复用原作者独立 inline 费用、透明归属与 wire fixtures，新增实际 Desktop 选项→PNG导入→落盘→重开→全局undo/redo回归，检查源图片字节未改。精确云端测试待；不调用真实 Provider，不操作真实根，不新增公开授权。
+
+
+ui12/41673515555 shared原35=34PASS+1FAIL/0SKIP，Desktop步骤未执行。唯一失败是原作者fixture期望关闭High透明hint显式false；Desktop原wire关闭选项时省略该hint，basePrompt和v4 caption此前断言已通过。仅把适配fixture改为断言hint不存在及params_version=3，生产请求不改；Desktop新Scene同断言保留旧High wire。后继仅重测该方法及尚未执行的Desktop三suite，34已绿原件复用。
