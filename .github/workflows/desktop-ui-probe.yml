@@ -47,6 +47,7 @@ jobs:
             ConvertTo-Json | Set-Content -Encoding utf8 "$env:RUNNER_TEMP/ccb-ui-probe/source.json"
           .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain `
             --tests com.example.chatbar.desktop.DesktopScreenshotPagingTest `
+            --tests com.example.chatbar.desktop.DesktopScreenshotBubbleMaskTest `
             --tests com.example.chatbar.desktop.DesktopScreenshotContentOptionsTest `
             --tests com.example.chatbar.desktop.DesktopScreenshotLayoutResourcesTest `
             --tests com.example.chatbar.desktop.DesktopWordMarkdownTest `

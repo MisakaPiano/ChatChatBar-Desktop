@@ -9,8 +9,7 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.drawscope.clipRect
@@ -29,6 +28,7 @@ import java.util.UUID
 import kotlinx.coroutines.*
 import javax.swing.SwingUtilities
 import kotlin.coroutines.CoroutineContext
+import kotlin.math.roundToInt
 
 internal data class DesktopScreenshotRequest(
     val title: String, val state: DesktopPrimaryChatState, val messages: List<ChatMessage>,
@@ -135,6 +135,8 @@ internal object DesktopChatScreenshotRenderer {
                 resourcePixels+=image.width.toLong()*image.height;images[ref]=image
             } }
             return withContext(edt) {
+                val bubbleMasks = DesktopScreenshotBubbleMasks()
+                try {
                 var height=0
                 var top = 0
                 var renderTop = 0
@@ -159,7 +161,7 @@ internal object DesktopChatScreenshotRenderer {
                                 }
                             }
                         }) {
-                        DesktopScreenshotContent(request,bitmaps,Modifier
+                        DesktopScreenshotContent(request,bitmaps,bubbleMasks,Modifier
                             // Every viewport shares the full layout's top origin, even when its
                             // height is smaller than the content. The default vertical centering
                             // otherwise shifts each slice before the explicit page translation.
@@ -212,6 +214,7 @@ internal object DesktopChatScreenshotRenderer {
                     yield()
                 }
                 frames.toList()
+                } finally { bubbleMasks.close() }
             }
         } finally { images.values.forEach { it.close() } }
     }
@@ -265,7 +268,8 @@ internal suspend fun saveDesktopScreenshotVerified(png: DesktopScreenshotPng,
 }
 
 @Composable
-private fun DesktopScreenshotContent(r:DesktopScreenshotRequest, images:Map<String,ImageBitmap>,modifier:Modifier) {
+private fun DesktopScreenshotContent(r:DesktopScreenshotRequest, images:Map<String,ImageBitmap>,
+    bubbleMasks: DesktopScreenshotBubbleMasks, modifier:Modifier) {
     val c=LocalDesktopPalette.current
     Column(modifier) {
         BasicText(r.title,Modifier.fillMaxWidth().background(c.card).padding(12.dp),style=TextStyle(color=c.foreground,fontSize=18.sp))
@@ -285,8 +289,8 @@ private fun DesktopScreenshotContent(r:DesktopScreenshotRequest, images:Map<Stri
                     BasicText(p.speakerLabel,Modifier.padding(start=6.dp),style=TextStyle(color=c.mutedForeground,fontSize=12.sp))
                 }
                 Column(Modifier.then(if(p.enclosingCard) Modifier
-                    .background((if(m.role==MessageRole.USER)c.primary else c.card).copy(alpha=.6f),
-                        desktopScreenshotBubbleShape(m.role))
+                    .desktopScreenshotBubbleBackground(m.role,
+                        (if(m.role==MessageRole.USER)c.primary else c.card).copy(alpha=.6f), bubbleMasks)
                     .padding(horizontal=12.dp,vertical=10.dp) else Modifier.fillMaxWidth()), verticalArrangement=Arrangement.spacedBy(7.dp)) {
                 m.images.forEachIndexed { index,ref -> if(roleplayImageBlockId(m.id,index) in r.selected) {
                     val bitmap=images[ref] ?: error("截图图片未加载")
@@ -313,30 +317,58 @@ private fun DesktopScreenshotContent(r:DesktopScreenshotRequest, images:Map<Stri
     }
 }
 
-/** Keep local corner geometry in the path rasterizer. Skia's round-rect fast path can
- * choose different edge coverage after the same bubble is translated into a page surface. */
-private fun desktopScreenshotBubbleShape(role: MessageRole): Shape = object : Shape {
-    private val rounded = RoundedCornerShape(if (role == MessageRole.USER) 10.dp else 3.dp,
-        10.dp, 10.dp, if (role == MessageRole.USER) 3.dp else 10.dp)
-    override fun createOutline(size: Size, layoutDirection: LayoutDirection, density: Density): Outline =
-        when (val outline = rounded.createOutline(size, layoutDirection, density)) {
-            is Outline.Rounded -> Outline.Generic(androidx.compose.ui.graphics.Path().apply {
-                // addRoundRect retains native rrect identity and can re-enter the same shortcut.
-                // Build the equivalent four elliptical arcs explicitly in local coordinates.
-                val r = outline.roundRect
-                val tl = r.topLeftCornerRadius; val tr = r.topRightCornerRadius
-                val br = r.bottomRightCornerRadius; val bl = r.bottomLeftCornerRadius
-                moveTo(r.left + tl.x, r.top)
-                lineTo(r.right - tr.x, r.top)
-                arcTo(Rect(r.right - 2 * tr.x, r.top, r.right, r.top + 2 * tr.y), -90f, 90f, false)
-                lineTo(r.right, r.bottom - br.y)
-                arcTo(Rect(r.right - 2 * br.x, r.bottom - 2 * br.y, r.right, r.bottom), 0f, 90f, false)
-                lineTo(r.left + bl.x, r.bottom)
-                arcTo(Rect(r.left, r.bottom - 2 * bl.y, r.left + 2 * bl.x, r.bottom), 90f, 90f, false)
-                lineTo(r.left, r.top + tl.y)
-                arcTo(Rect(r.left, r.top, r.left + 2 * tl.x, r.top + 2 * tl.y), 180f, 90f, false)
-                close()
-            })
-            else -> outline
+/** Rasterize each small local corner once, independent of the final viewport translation.
+ * Images live only for this capture; even an unexpected radius/color is bounded. */
+internal class DesktopScreenshotBubbleMasks : AutoCloseable {
+    private val images = mutableMapOf<Pair<Int, Int>, SkiaImage>()
+    fun corner(color: Color, radius: Int): ImageBitmap {
+        require(radius in 1..64)
+        val key = color.toArgb() to radius
+        val image = images[key] ?: run {
+            require(images.size < 8)
+            val created = org.jetbrains.skia.Surface.makeRasterN32Premul(radius * 2, radius * 2).use { surface ->
+                surface.canvas.clear(0)
+                org.jetbrains.skia.Paint().use { paint ->
+                    paint.color = key.first; paint.isAntiAlias = true
+                    surface.canvas.drawCircle(radius.toFloat(), radius.toFloat(), radius.toFloat(), paint)
+                }
+                surface.makeImageSnapshot()
+            }
+            images[key] = created
+            created
         }
+        return image.toComposeImageBitmap()
+    }
+    override fun close() { images.values.forEach { it.close() }; images.clear() }
+}
+
+/** Non-overlapping strips plus four pixel-aligned corner quadrants; opacity is applied once. */
+internal fun Modifier.desktopScreenshotBubbleBackground(role: MessageRole, color: Color,
+    masks: DesktopScreenshotBubbleMasks): Modifier = drawBehind {
+    // Match the cached raster's 8-bit premultiplied ink in the straight strips as well.
+    val ink = Color(color.toArgb())
+    val shape = RoundedCornerShape(if (role == MessageRole.USER) 10.dp else 3.dp,
+        10.dp, 10.dp, if (role == MessageRole.USER) 3.dp else 10.dp)
+    val r = (shape.createOutline(size, layoutDirection, this) as Outline.Rounded).roundRect
+    val tl = r.topLeftCornerRadius.x.roundToInt(); val tr = r.topRightCornerRadius.x.roundToInt()
+    val br = r.bottomRightCornerRadius.x.roundToInt(); val bl = r.bottomLeftCornerRadius.x.roundToInt()
+    val w = size.width; val h = size.height
+    val top = maxOf(tl, tr).toFloat(); val bottom = maxOf(bl, br).toFloat()
+    fun fill(left: Float, y: Float, right: Float, end: Float) {
+        if (right > left && end > y) drawRect(ink, Offset(left, y), androidx.compose.ui.geometry.Size(right - left, end - y))
+    }
+    fill(0f, top, w, h - bottom)
+    fill(tl.toFloat(), 0f, w - tr, top)
+    fill(0f, tl.toFloat(), tl.toFloat(), top)
+    fill(w - tr, tr.toFloat(), w, top)
+    fill(bl.toFloat(), h - bottom, w - br, h)
+    fill(0f, h - bottom, bl.toFloat(), h - bl)
+    fill(w - br, h - bottom, w, h - br)
+    fun corner(radius: Int, right: Boolean, lower: Boolean) {
+        if (radius == 0) return
+        drawImage(masks.corner(ink, radius), srcOffset = IntOffset(if (right) radius else 0, if (lower) radius else 0),
+            srcSize = IntSize(radius, radius), dstOffset = IntOffset(if (right) w.roundToInt() - radius else 0,
+                if (lower) h.roundToInt() - radius else 0), dstSize = IntSize(radius, radius), filterQuality = FilterQuality.None)
+    }
+    corner(tl, false, false); corner(tr, true, false); corner(br, true, true); corner(bl, false, true)
 }
