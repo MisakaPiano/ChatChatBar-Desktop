@@ -15,6 +15,8 @@ description: Maintain Desktop complete generation preset files, separate full Pr
 
 ## Separate full Prompt text
 
+Variety+ stays in generation settings (draft, history recipe and full preset), not the separate full-Prompt clipboard. PNG metadata imports include its nullable flag only for V4.5 fixed sigma58/null, leaving unsupported model choices dormant. The actual Studio toggle/controller/preset/undo/final-wire chain is covered by `DesktopStudioVarietyPlusTest`.
+
 Authority direction: Desktop aligns with official CCB; the separate Studio Suite consumes CCB-authoritative formats. `CCB-FULL-PROMPT/1` and the retained ForkAndroid reader are unpublished extensions, not official147 support or a reason to distribute a new phone reader. Preserve original positive-text interchange and label the extension explicitly; no destructive removal of existing source/tests.
 
 `NovelAiStudioFullPromptClipboard` and `DesktopStudioFullPromptExchange` own the distinct `CCB-FULL-PROMPT/1` readable, escaped text format and preview/confirm/original-undo flow. It carries all Prompt fields and ordered role controls/model/natural mode, including the selected model's `useCharacterPositions` control; other generation settings, continuous mode, references and AI design state stay with the target. Original positive clipboard must refuse the new preamble rather than ingest negative/control labels. Configuration is canonical metadata, not model-facing text. Tests `NovelAiStudioFullPromptClipboardTest` compare actual generation payloads and opposite coordinate switches for both models; `DesktopStudioFullPromptExchangeTest` uses the production controller and reusable content. See266; no Android/Suite parser or generic direct-positive-input compatibility claim.

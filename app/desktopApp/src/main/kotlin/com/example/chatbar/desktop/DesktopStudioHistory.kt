@@ -41,6 +41,7 @@ internal fun desktopHistoryRecipeDetails(entry: NovelAiGenerationHistoryEntry, i
         add("数量 / Steps" to "${s.count} / ${s.effectiveSteps}")
         add("CFG / Rescale" to "${s.guidance} / ${s.effectiveCfgRescale}")
         add("Sampler / Seed 模式" to "${s.effectiveSampler.displayName} / ${s.seedMode}")
+        if (s.model.supportsVarietyPlus) add("Variety+" to if (s.varietyPlus) "开启" else "关闭")
         if (s.isMedium) add("负面词使用方式" to "Medium 固定负面词；以下自定义负面词仅保存，未用于本次请求")
         add("画风" to r.stylePrompt); add("基础 Prompt" to r.basePrompt); add("补充 Prompt" to r.extraPrompt)
         add("负面 Prompt" to r.negativePrompt)

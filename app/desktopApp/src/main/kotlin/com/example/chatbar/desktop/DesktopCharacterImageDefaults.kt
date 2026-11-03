@@ -27,17 +27,20 @@ internal fun DesktopCharacterImageDefaults(card: CharacterCard, globalImageModel
             edit { it.copy(defaultImageGenerationSettings = if (it.defaultImageGenerationSettings == null)
                 NovelAiCharacterImageSettings() else null) }
         }
-        card.defaultImageGenerationSettings?.let { parameters ->
-            StudioSlider("Steps", parameters.steps.toFloat(), 1f, 50f, 1f, 0) { value -> change { it.copy(steps = value.toInt()) } }
-            StudioSlider("CFG Scale", parameters.guidance, 1f, 10f, .1f, 1) { value -> change { it.copy(guidance = value) } }
-            StudioSlider("CFG Rescale", parameters.cfgRescale, 0f, 1f, .05f, 2) { value -> change { it.copy(cfgRescale = value) } }
-            if (model == null) StatusText(t(DesktopUiText.CHARACTER_IMAGE_MODEL_PENDING)) else {
-                CompactChoice("Sampler", model.samplers, parameters.sampler.takeIf { it in model.samplers } ?: model.samplers.first(),
-                    { it.displayName }) { value -> change { it.copy(sampler = value) } }
-                if (parameters.sampler !in model.samplers) StatusText(
-                    "${parameters.sampler.displayName} → ${model.samplers.first().displayName} · ${t(DesktopUiText.CHARACTER_IMAGE_SAMPLER_UNAVAILABLE)}")
-                if (model.supportsVarietyPlus) StudioSwitch("Variety+", parameters.varietyPlus) { change { it.copy(varietyPlus = !it.varietyPlus) } }
-            }
+        val parameters = card.defaultImageGenerationSettings ?: NovelAiCharacterImageSettings()
+        if (card.defaultImageGenerationSettings == null) StatusText(t(DesktopUiText.CHARACTER_IMAGE_DEFAULT_PARAMETERS))
+        if (model == null) StatusText(t(DesktopUiText.CHARACTER_IMAGE_MODEL_PENDING)) else {
+            CompactChoice("Sampler", model.samplers, parameters.sampler.takeIf { it in model.samplers } ?: model.samplers.first(),
+                { it.displayName }) { value -> change { it.copy(sampler = value) } }
+            if (parameters.sampler !in model.samplers) StatusText(
+                "${parameters.sampler.displayName} → ${model.samplers.first().displayName} · ${t(DesktopUiText.CHARACTER_IMAGE_SAMPLER_UNAVAILABLE)}")
+        }
+        StudioSlider("Steps", parameters.steps.toFloat(), 1f, 50f, 1f, 0) { value -> change { it.copy(steps = value.toInt()) } }
+        StudioSlider("CFG Scale", parameters.guidance, 1f, 10f, .1f, 1) { value -> change { it.copy(guidance = value) } }
+        StudioSlider("CFG Rescale", parameters.cfgRescale, 0f, 1f, .05f, 2) { value -> change { it.copy(cfgRescale = value) } }
+        if (model?.supportsVarietyPlus == true) StudioSwitch("Variety+", parameters.varietyPlus) { change { it.copy(varietyPlus = !it.varietyPlus) } }
+        if (card.defaultImageGenerationSettings != null) BootstrapButton(t(DesktopUiText.CHARACTER_IMAGE_RESET), secondary = true) {
+            edit { it.copy(defaultImageGenerationSettings = null) }
         }
         StatusText(t(DesktopUiText.CHARACTER_IMAGE_DEFAULTS_NOTE))
     }

@@ -20,7 +20,7 @@ class DesktopStyleGalleryTest {
     private val edt = object : CoroutineDispatcher() {
         override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
     }
-    @Test fun `real card editor shortcut reaches style and per card settings beyond long character body without editing`() = runBlocking(edt) {
+    @Test fun `real card editor shortcut reaches style and expandable parameters before long character body without editing`() = runBlocking(edt) {
         for (width in listOf(420, 1100)) {
             val parent = Files.createTempDirectory("style-editor-ui-")
             val app = DesktopAppContainer(DesktopDataRootResolution.Resolved(parent.resolve("data"),
@@ -56,6 +56,9 @@ class DesktopStyleGalleryTest {
                         }
                     }
                     repeat(15) { scene.render(System.nanoTime()).close(); delay(20) }
+                    val advanced = nodes().first { text(it, "▸ 生图高级设置") && it.config.contains(SemanticsActions.OnClick) }
+                    assertTrue(advanced.config[SemanticsActions.OnClick].action!!.invoke())
+                    repeat(8) { scene.render(System.nanoTime()).close(); delay(20) }
                     assertTrue(nodes().any { text(it, "使用角色专属生图参数") && it.boundsInRoot.width > 0f && it.boundsInRoot.height > 0f &&
                         it.boundsInRoot.top >= 0f && it.boundsInRoot.bottom <= 900f })
                     assertEquals(card, editor.state.value.card); assertFalse(editor.state.value.dirty)

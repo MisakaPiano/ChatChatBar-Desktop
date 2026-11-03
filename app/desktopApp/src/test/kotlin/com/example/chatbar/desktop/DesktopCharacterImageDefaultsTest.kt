@@ -35,7 +35,7 @@ class DesktopCharacterImageDefaultsTest {
                 }
             }
             try {
-                scene.until { has("Sampler · Euler Ancestral ▾") }
+                scene.until { has("Sampler · DPM++ 2M SDE ▾") }
                 assertTrue(scene.has("Variety+")); assertEquals(original, card)
                 global = NovelAiImageModel.V5_FULL
                 scene.until { has("Sampler · DPM++ 2M SDE ▾") }
@@ -53,11 +53,14 @@ class DesktopCharacterImageDefaultsTest {
                     scene.render(System.nanoTime()).use { image -> image.encodeToData()!!.use { Files.write(output, it.bytes) } }
                 }
                 scene.click("使用角色专属生图参数")
-                scene.until { !has("Sampler · DPM++ 2M SDE ▾") }
+                scene.until { has("Sampler · Euler Ancestral ▾") }
                 assertNull(card.defaultImageGenerationSettings)
                 scene.click("使用角色专属生图参数")
                 scene.until { has("Sampler · Euler Ancestral ▾") }
                 assertEquals(NovelAiCharacterImageSettings(), card.defaultImageGenerationSettings)
+                scene.click("恢复默认生图参数")
+                scene.until { !has("恢复默认生图参数") }
+                assertNull(card.defaultImageGenerationSettings)
                 assertEquals(original.name, card.name); assertEquals(original.id, card.id)
             } finally { scene.close() }
         }

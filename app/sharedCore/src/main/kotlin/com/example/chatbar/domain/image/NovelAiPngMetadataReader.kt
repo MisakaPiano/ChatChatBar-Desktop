@@ -92,7 +92,8 @@ object NovelAiPngMetadataReader {
             sampler = imported.sampler ?: NovelAiSampler.EULER_ANCESTRAL,
             useCharacterPositions = imported.useCharacterPositions ?: false,
             effort = imported.effort ?: NovelAiEffort.HIGH,
-            transparentBackground = imported.transparentBackground ?: false
+            transparentBackground = imported.transparentBackground ?: false,
+            varietyPlus = imported.varietyPlus ?: false
         )
         settings.validationError(metadata.characters.size)?.let { error(it) }
         return NovelAiEnhanceSource(
@@ -286,6 +287,12 @@ object NovelAiPngMetadataReader {
             characters = characters,
             hasCharacterPrompts = hasCharacters,
             settings = NovelAiImportedGenerationSettings(
+                varietyPlus = if (modelText.toNovelAiModelOrNull() == NovelAiImageModel.V4_5_FULL) {
+                    when (val sigma = this["skip_cfg_above_sigma"]) {
+                        null, JsonNull -> false
+                        else -> sigma.jsonPrimitive.floatOrNull?.let { if (it == 58f) true else null }
+                    }
+                } else null,
                 effort = when {
                     effortSource.removeSuffix("-inpainting") in V5_MEDIUM_SOURCES -> NovelAiEffort.MEDIUM
                     effortSource.toNovelAiModelOrNull() == NovelAiImageModel.V5_FULL -> NovelAiEffort.HIGH

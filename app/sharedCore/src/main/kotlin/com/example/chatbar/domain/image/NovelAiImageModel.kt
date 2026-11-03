@@ -16,7 +16,7 @@ enum class NovelAiImageModel(
     val supportsVarietyPlus: Boolean get() = this == V4_5_FULL
     val samplers: List<NovelAiSampler> get() = when (this) {
         V4_5_FULL -> listOf(NovelAiSampler.EULER_ANCESTRAL, NovelAiSampler.EULER,
-            NovelAiSampler.DPM_PLUS_PLUS_2S_ANCESTRAL, NovelAiSampler.DPM_PLUS_PLUS_2M,
+            NovelAiSampler.DPM_PLUS_PLUS_2S_ANCESTRAL, NovelAiSampler.DPM_PLUS_PLUS_2M_SDE, NovelAiSampler.DPM_PLUS_PLUS_2M,
             NovelAiSampler.DPM_PLUS_PLUS_SDE)
         V5_FULL -> listOf(NovelAiSampler.EULER_ANCESTRAL, NovelAiSampler.EULER,
             NovelAiSampler.DPM_PLUS_PLUS_2S_ANCESTRAL, NovelAiSampler.DPM_PLUS_PLUS_2M_SDE,
