@@ -98,5 +98,8 @@ class NovelAiV5GenerationPolicyTest {
             assertFalse(p.getValue("v4_negative_prompt").toString().contains("custom"))
         }
         assertFails { NovelAiPngMetadataReader.parseEnhanceComment(comment, "synthetic.png", "NovelAI Diffusion V5 unknown") }
+        val explicitHigh = comment.dropLast(1) + ",\"model\":\"nai-diffusion-5-full\"}"
+        assertEquals(NovelAiEffort.HIGH, NovelAiPngMetadataReader.parseStudioComment(explicitHigh,
+            "synthetic.png", "NovelAI Diffusion V5 93F4BD30")?.settings?.effort)
     }
 }

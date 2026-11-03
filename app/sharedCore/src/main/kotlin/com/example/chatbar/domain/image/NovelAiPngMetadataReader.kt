@@ -246,6 +246,10 @@ object NovelAiPngMetadataReader {
             this["source"]?.jsonPrimitive?.contentOrNull,
             source
         ).joinToString(" ")
+        // An explicit saved model takes precedence over a possibly stale outer PNG Source chunk.
+        val effortSource = (this["model"]?.jsonPrimitive?.contentOrNull
+            ?: this["model_id"]?.jsonPrimitive?.contentOrNull
+            ?: this["source"]?.jsonPrimitive?.contentOrNull ?: source).orEmpty().trim().lowercase()
         val action = when (this["action"]?.jsonPrimitive?.contentOrNull?.lowercase()) {
             NovelAiGenerationAction.IMAGE_TO_IMAGE.apiId -> NovelAiGenerationAction.IMAGE_TO_IMAGE
             NovelAiGenerationAction.INPAINT.apiId -> NovelAiGenerationAction.INPAINT
@@ -283,8 +287,8 @@ object NovelAiPngMetadataReader {
             hasCharacterPrompts = hasCharacters,
             settings = NovelAiImportedGenerationSettings(
                 effort = when {
-                    V5_MEDIUM_SOURCES.any { it in modelText.lowercase() } -> NovelAiEffort.MEDIUM
-                    modelText.toNovelAiModelOrNull() == NovelAiImageModel.V5_FULL -> NovelAiEffort.HIGH
+                    effortSource.removeSuffix("-inpainting") in V5_MEDIUM_SOURCES -> NovelAiEffort.MEDIUM
+                    effortSource.toNovelAiModelOrNull() == NovelAiImageModel.V5_FULL -> NovelAiEffort.HIGH
                     else -> null
                 },
                 transparentBackground = this["tag_hint_transparent_background"]?.jsonPrimitive?.booleanOrNull
