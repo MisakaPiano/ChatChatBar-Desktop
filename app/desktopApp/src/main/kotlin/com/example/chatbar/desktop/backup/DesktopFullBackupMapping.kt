@@ -131,9 +131,10 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
                 }
                 val name = DesktopBackupPolicy.portableEntityName(relative, value)
                 val selectedRecord = selectedRecords?.get(relative)
-                val mapped = if (selectedRecord == null) DesktopBackupPolicy.mapResources(value, ::resource) else {
+                val selectedValue = selectedRecord?.let { plan!!.project(it.file, value) } ?: value
+                val mapped = if (selectedRecord == null) DesktopBackupPolicy.mapResources(selectedValue, ::resource) else {
                     val output = java.io.StringWriter()
-                    BackupJsonStream(value.toString().reader(), output, checkActive = { context.ensureActive() },
+                    BackupJsonStream(selectedValue.toString().reader(), output, checkActive = { context.ensureActive() },
                         replaceValue = { plan!!.replacement(selectedRecord.file, it) }, extraRootFields = plan!!.extraFields(selectedRecord.file)) { path, fields ->
                         resource(plan.resourcePath(selectedRecord.file, path, fields), fields)
                     }.copy()

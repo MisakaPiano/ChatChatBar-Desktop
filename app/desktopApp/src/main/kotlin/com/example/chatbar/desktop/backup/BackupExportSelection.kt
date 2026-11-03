@@ -8,7 +8,7 @@ import java.io.Writer
 import java.security.MessageDigest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.*
 
 data class BackupSettingOption(val id: String, val label: String, val group: String, val fields: Set<String> = emptySet())
 
@@ -194,7 +194,7 @@ class BackupExportCatalog internal constructor(
                 ?: sourceSettings?.string("defaultFormatCardId"))
         }
         val archives = records.filter { it.type == "save_slots" && selection.sessions[it.string("sessionId")]?.archives == true }
-        val studio = if (selection.studioSettings) records.filter { it.type.startsWith("novelai_studio_") || it.type.startsWith("novelai_design_") } else emptyList()
+        val studio = if (selection.studioSettings) records.filter { it.type.startsWith("novelai_studio_") || it.type.startsWith("novelai_design_") || it.type == "desktop_studio_edit_history" } else emptyList()
         val drafts = records.filter { it.type == "edit_drafts" && ("editorDrafts" in selection.globalOptions || it.string("targetId") in selection.characterIds) }
         val dependencyRecords = cards + chats + archives + studio + drafts + if (selection.globalOptions.isNotEmpty()) settings else emptyList()
         fun dependencies(vararg fields: String): Set<String> = dependencyRecords.flatMap { record ->
@@ -267,7 +267,7 @@ class BackupExportCatalog internal constructor(
             }
         }
         return BackupExportPlan(root, selection, selectedRecords, catalogFiles + packages, replacements,
-            chats.associate { it.file.path to sessionFallbacks(it) }, files)
+            chats.associate { it.file.path to sessionFallbacks(it) }, files, sourceSettings?.string("defaultModelId"))
     }
 
     companion object {
@@ -330,8 +330,22 @@ internal class BackupExportPlan(
     val additionalFiles: List<Pair<File, String>>,
     private val replacements: (BackupExportRecord, List<String>) -> String?,
     private val additions: Map<String, Map<String, String>> = emptyMap(),
-    private val files: Map<String, java.nio.file.Path> = emptyMap()
+    private val files: Map<String, java.nio.file.Path> = emptyMap(),
+    private val studioFallbackModelId: String? = null
 ) {
+    /** Apply the same selected-scope projection to every history snapshot as to the live draft. */
+    fun project(file: File, value: JsonObject): JsonObject {
+        if (recordsByPath.getValue(file.path).type != "desktop_studio_edit_history") return value
+        val fields = BackupSettingOptions.fields(selection.globalOptions)
+        fun draft(d: com.example.chatbar.domain.image.NovelAiStudioDraft) = d.copy(
+            importedCharacterCardId = d.importedCharacterCardId?.takeIf { it in selection.characterIds },
+            followDefaultNovelAiImageModel = d.followDefaultNovelAiImageModel && "novelAiImageModel" in fields,
+            aiDesignModelId = d.aiDesignModelId ?: studioFallbackModelId.takeIf { "defaultModelId" !in fields })
+        fun timeline(t: com.example.chatbar.desktop.DesktopStudioHistoryTimeline) = t.copy(entries = t.entries.map(::draft))
+        val journal = backupJson.decodeFromJsonElement(com.example.chatbar.desktop.DesktopStudioHistoryJournal.serializer(), value)
+        return backupJson.encodeToJsonElement(com.example.chatbar.desktop.DesktopStudioHistoryJournal.serializer(),
+            journal.copy(committed = timeline(journal.committed), pending = journal.pending?.let(::timeline))).jsonObject
+    }
     fun replacement(file: File, fields: List<String>): String? = replacements(recordsByPath.getValue(file.path), fields)
     private val recordsByPath = records.associateBy { it.file.path }
     fun extraFields(file: File): Map<String, String> = additions[file.path].orEmpty()

@@ -1,3 +1,7 @@
+当前未公开源码5d4e2f01已适配作者892b的Medium单图费用、透明后缀显式导入选择、token/wire同一准备链，Desktop固定Sampler分支保留。history6原92=90PASS+2FAIL/0SKIP已实际读回：Vibe所选payload遗漏与第二栏0.3789px字形越界；1076e8b1修复后history7/41672408257定向四方法运行，备份端到端同时覆盖当前draft/history-only。作者适配定向ui12/41673515555运行，尚不记通过。原native15完整闭合/混合Stop播放partial和3音频未测、旧完整154/a647证据复用；后继完整CI与私有普通候选待。公开1236/sign18、用户已自更资料重开通过和原N01缺陷记录不变，无后继公开许可，无本机运行或真实根动作。
+
+下方历史保留。
+
 2026-11-04 当前：公开1236/sign18与冻结a647不变，用户自更/资料/重开已明确通过；N01a多步/快捷键与N01b系统IME/双行选区真实缺陷仍按原FAIL留待后继。当前未公开源码b7e313，history4精确a65原88=87PASS+1FAIL（第二字段request几何）；后继history5/41667076334运行中，新增numeric blur/局部历史与排队边界、实际selected备份history-only图片/Vibe回读。native6原4PASS+1SKIP和真实屏幕恢复已核：原19方法中15完整闭合，混合Stop播放partial与3专门音频未测，不把拆分4PASS当16原方法。原作者新共享Medium费用/透明PNG归属/计数顺序问题已登记，待其精确delta下游同步；Desktop Medium sampler固定说明分支不套Android CbSelect缺陷。完整154只对应旧a647应用，不冒用于b7e313；后继必要完整CI/普通候选待，没有新公开许可，也不跑本机或真实根。见288与canonical。
 
 下方历史保留。

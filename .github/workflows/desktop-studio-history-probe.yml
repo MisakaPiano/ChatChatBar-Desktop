@@ -40,9 +40,8 @@ jobs:
             ConvertTo-Json | Set-Content "$env:CCB_STUDIO_HISTORY_REVIEW_DIR/source.json" -Encoding utf8
           .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain `
             --tests 'com.example.chatbar.desktop.DesktopStudioDraftHistoryTest.selected actual backup restores coherent history cursor and history only media through mapping' `
-            --tests 'com.example.chatbar.desktop.DesktopStudioInputHistorySceneTest.actual platform request uses live moved editor coordinates and preserves composing source text' `
-            --tests 'com.example.chatbar.desktop.DesktopStudioInputHistorySceneTest.rendered selection highlights source glyph band and leaves annotation row unselected' `
-            --tests 'com.example.chatbar.desktop.DesktopStudioPresentationTest.inline and fullscreen text editor share annotations and leave request body unchanged'
+            --tests com.example.chatbar.desktop.backup.DesktopBackupSelectionTest `
+            --tests com.example.chatbar.desktop.backup.DesktopMergePreviewTest
           exit $LASTEXITCODE
       - name: Preserve actual results
         if: always()

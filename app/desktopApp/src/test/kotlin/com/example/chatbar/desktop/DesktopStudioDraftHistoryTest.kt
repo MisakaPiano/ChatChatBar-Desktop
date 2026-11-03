@@ -196,7 +196,13 @@ class DesktopStudioDraftHistoryTest {
                         }
                     }
                 }
-                val reopened = DesktopStudioHistoryRepository(JsonFileStorage(target)); reopened.initializeHistory()
+                val restoredStorage = JsonFileStorage(target)
+                val restoredDraft = assertNotNull(restoredStorage.loadSingleton("novelai_studio_draft", NovelAiStudioDraft.serializer()))
+                val restoredJournal = assertNotNull(restoredStorage.loadSingleton(DesktopStudioHistoryRepository.ENTITY, DesktopStudioHistoryJournal.serializer()))
+                assertFalse(restoredDraft.followDefaultNovelAiImageModel)
+                assertEquals(restoredDraft.copy(contentRevision = 0, promptContentRevision = 0, updatedAt = 0),
+                    restoredJournal.committed.current(), "Selected current and timeline must agree; historyOnly=$historyOnly")
+                val reopened = DesktopStudioHistoryRepository(restoredStorage); reopened.initializeHistory()
                 if (historyOnly) {
                     assertNull(reopened.loadDraft().imageGuidance.baseImage)
                     assertTrue(reopened.replay(false))

@@ -25,3 +25,6 @@ native6/41663011157原件实际4PASS+1SKIP：scrollbar、Stop下载/生成、Stu
 
 
 history5/41667076334在新备份测试可空值跨模块smart cast处编译拒绝，0方法；后继使用assertNotNull返回的稳定局部值，原件保留。history6/41668712390原件92=90PASS+2FAIL/0SKIP：第二栏请求身份与焦点正确，rootTop429.6211相对实际栏顶430.0超出0.3789px；后继把原文字形带约束到真实行边界，保持原根位置断言与5秒期限。另一失败为selected映射校验Vibe引用后未登记selectedMedia，导致payload文件遗漏；补登记且端到端覆盖当前draft与history-only两种来源的selected export/read/map/reopen/原编码resolve。后继只定向重测两个FAIL及两个直接受影响glyph场景，90已绿与native6原件复用，绿后补必要整体验证。真实IME人验和后继公开许可仍未取得。
+
+
+history7/41672408257精确1076原件4=3PASS+1FAIL/0SKIP：实时第二栏请求、源字选区像素、inline/fullscreen通过；备份越过payload存在检查后，在重开时发现current与timeline不一致。源码追到所选导出按原策略把current.followDefaultNovelAiImageModel投影false，却未对Desktop timeline同样处理。后继对每个committed/pending snapshot执行同样卡/默认模型选择投影，并把历史引用的模型纳入依赖；不清journal、不改恢复一致性断言。备份端到端保留双来源、增加重开前合成字段一致性诊断，下一次只重测该方法与直接受影响selection/merge两suite。
