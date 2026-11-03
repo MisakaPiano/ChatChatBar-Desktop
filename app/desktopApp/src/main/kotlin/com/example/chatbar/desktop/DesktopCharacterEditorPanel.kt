@@ -131,7 +131,9 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
     val t = LocalDesktopUiStrings.current
     val scope = rememberCoroutineScope()
     var selectedEntry by remember(card.id) { mutableStateOf<String?>(null) }
+    var styleGallery by remember(card.id) { mutableStateOf(false) }
     val momentsFocus = remember(card.id) { BringIntoViewRequester() }
+    val imageSettingsFocus = remember(card.id) { BringIntoViewRequester() }
     var handledMomentsFocus by remember(card.id) { mutableStateOf<Long?>(null) }
     val personFocus = remember(card.id) { BringIntoViewRequester() }
     val personFocusExtent = with(androidx.compose.ui.platform.LocalDensity.current) { 600.dp.toPx() }
@@ -182,6 +184,9 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
             BootstrapButton(t(DesktopUiText.CHARACTER_RETRY_CLEANUP)) {
                 scope.launch { controller.retryCleanup() }
             }
+        }
+        if (!readOnly) BootstrapButton("画风与生图参数", secondary = true) {
+            scope.launch { imageSettingsFocus.bringIntoView(androidx.compose.ui.geometry.Rect(0f, 0f, 1f, 1f)) }
         }
         if (readOnly) {
             controller.promptBudget?.let { DesktopEditorPromptBudget(it, card) }
@@ -247,15 +252,21 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
             }
             EditorSection(t(DesktopUiText.BASIC_SETTING)) {
                 EditorField(t(DesktopUiText.BASIC_SETTING), card.basicSetting, true) { value -> controller.edit { it.copy(basicSetting = value) } }
-                EditorField(t(DesktopUiText.IMAGE_PROMPT), card.defaultImagePrompt, true) { value -> controller.edit { it.copy(defaultImagePrompt = value) } }
-                EditorField(t(DesktopUiText.NEGATIVE_IMAGE_PROMPT), card.defaultImageNegativePrompt, true) { value -> controller.edit { it.copy(defaultImageNegativePrompt = value) } }
                 EditorField(t(DesktopUiText.SYSTEM_PROMPT_FIELD), card.systemPrompt, true) { value -> controller.edit { it.copy(systemPrompt = value) } }
                 EditorField(t(DesktopUiText.POST_HISTORY_FIELD), card.postHistoryInstructions, true) { value -> controller.edit { it.copy(postHistoryInstructions = value) } }
                 EditorField(t(DesktopUiText.MESSAGE_EXAMPLE), card.mesExample, true) { value -> controller.edit { it.copy(mesExample = value) } }
                 EditorField(t(DesktopUiText.CREATOR_NOTES), card.creatorNotes, true) { value -> controller.edit { it.copy(creatorNotes = value) } }
             }
-            EditorSection(t(DesktopUiText.CHARACTER_IMAGE_DEFAULTS)) {
-                DesktopCharacterImageDefaults(card, globalImageModel, controller::edit)
+            Column(Modifier.fillMaxWidth().bringIntoViewRequester(imageSettingsFocus)) {
+                EditorSection("NovelAI 画风与角色专属生图参数") {
+                    EditorActions {
+                        BootstrapButton("内置画风图集", secondary = true) { styleGallery = true }
+                        if (state.stylePromptUndo != null) BootstrapButton("撤销画风填充", secondary = true, onClick = controller::undoStylePreset)
+                    }
+                    EditorField("NovelAI 默认风格提示词（画风）", card.defaultImagePrompt, true) { value -> controller.edit { it.copy(defaultImagePrompt = value) } }
+                    EditorField("NovelAI 默认负面提示词", card.defaultImageNegativePrompt, true) { value -> controller.edit { it.copy(defaultImageNegativePrompt = value) } }
+                    DesktopCharacterImageDefaults(card, globalImageModel, controller::edit)
+                }
             }
             EditorSection(t(DesktopUiText.CHARACTER_WORLD_BOOKS)) {
                 val known = state.worldBooks.map { it.id }.toSet()
@@ -369,6 +380,7 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
     controller.cardAi?.let { DesktopCharacterCardAiOverlay(it) }
     controller.appearanceAi?.let { DesktopCharacterAppearanceOverlay(it) }
     controller.cardImages?.let { DesktopCharacterImageOverlay(it) }
+    if (styleGallery) DesktopStylePresetGallery(controller, card.defaultImagePrompt, !state.busy && !readOnly) { styleGallery = false }
 }
 
 @Composable

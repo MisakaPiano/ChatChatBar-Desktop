@@ -13,6 +13,10 @@ import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.float
+import kotlinx.serialization.json.int
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.*
 import okio.Buffer
@@ -20,6 +24,30 @@ import org.msgpack.core.MessagePack
 import kotlin.test.*
 
 class DesktopMomentImageUsageTest {
+    @Test fun `manual moment regeneration applies card sampling defaults and retains explicit prompt dimensions and stored post`() = runBlocking {
+        val f = Fixture()
+        try {
+            f.prepare(); f.server.enqueue(response(image()))
+            val parameters = NovelAiCharacterImageSettings(steps = 21, guidance = 4.2f, cfgRescale = .25f,
+                sampler = NovelAiSampler.EULER, varietyPlus = true)
+            val card = f.card.copy(defaultImageGenerationSettings = parameters)
+            val result = f.generation.generate(f.post, card, f.session, f.app.settingsRepository.getAppSettings(), f.draft, {}, {})
+            val sent = assertNotNull(f.server.takeRequest(5, TimeUnit.SECONDS))
+            val body = Json.parseToJsonElement(sent.body.readUtf8()).jsonObject
+            val wire = body.getValue("parameters").jsonObject
+            assertEquals(21, wire.getValue("steps").jsonPrimitive.int)
+            assertEquals(4.2f, wire.getValue("scale").jsonPrimitive.float)
+            assertEquals(.25f, wire.getValue("cfg_rescale").jsonPrimitive.float)
+            assertEquals("k_euler", wire.getValue("sampler").jsonPrimitive.content)
+            assertEquals(58, wire.getValue("skip_cfg_above_sigma").jsonPrimitive.int)
+            assertEquals(64, wire.getValue("width").jsonPrimitive.int); assertEquals(64, wire.getValue("height").jsonPrimitive.int)
+            assertEquals(f.draft.baseCaption, body.getValue("input").jsonPrimitive.content)
+            assertTrue(Files.isRegularFile(f.root.resolve(result.path)))
+            assertEquals(f.post, f.app.jsonFileStorage.loadEntity("moment_posts", f.post.id, MomentPost.serializer()))
+            assertEquals(1, f.server.requestCount)
+        } finally { f.close() }
+    }
+
     private class Fixture {
         val parent = Files.createTempDirectory("moment-image-usage-")
         val root = Files.createDirectory(parent.resolve("data"))

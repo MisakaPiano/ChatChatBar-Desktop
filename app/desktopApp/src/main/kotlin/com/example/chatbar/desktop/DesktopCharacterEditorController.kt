@@ -29,12 +29,15 @@ import com.example.chatbar.domain.draft.EditorPostCommitFingerprint
 import com.example.chatbar.domain.chat.SpeakerTagHistoryService
 import com.example.chatbar.data.local.entity.SpeakerTagRename
 import com.example.chatbar.domain.prompt.CharacterNaiPromptDefaults
+import com.example.chatbar.domain.image.*
 import java.nio.file.Path
 import java.util.UUID
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -73,6 +76,7 @@ internal data class DesktopCharacterEditorState(
     val personFocusId: String? = null,
     val personFocusRevision: Long = 0,
     val momentsFocusRevision: Long = 0,
+    val stylePromptUndo: NovelAiStylePromptUndo? = null,
     val documentFocusId: String? = null,
     val documentFocusRevision: Long = 0,
 ) {
@@ -336,6 +340,9 @@ internal class DesktopCharacterEditorController(
         ) else transformed
         if (next == card) return
         _state.value = current.copy(card = next,
+            stylePromptUndo = current.stylePromptUndo?.takeIf {
+                next.defaultImagePrompt == it.appliedPrompt && next.defaultImageNegativePrompt == it.appliedNegativePrompt
+            },
             dirty = current.base == null || next != displayCard(current.base), draftPersisted = false,
             problem = current.problem?.takeIf {
                 it == CharacterEditorProblem.SOURCE_CHANGED || it == CharacterEditorProblem.SOURCE_DELETED
@@ -509,6 +516,39 @@ internal class DesktopCharacterEditorController(
 
     fun imageBytes(reference: String?): ByteArray? = reference?.let {
         runCatching { resources.readImage(it) }.getOrNull()
+    }
+
+    suspend fun loadStyleCatalog(): NovelAiStyleCatalogLoadResult = withContext(Dispatchers.IO) {
+        val raw = try { resources.readDocument("asset:$NOVEL_AI_STYLE_CATALOG_ASSET_PATH") }
+        catch (cancelled: CancellationException) { throw cancelled }
+        catch (_: Exception) { return@withContext NovelAiStyleCatalogLoadResult(fatalError = "内置画风目录无法读取，请检查或修复程序资源") }
+        NovelAiStyleCatalogParser(Json { ignoreUnknownKeys = true }).parse(raw) {
+            resources.readImage("asset:$it"); true
+        }
+    }
+
+    fun applyStylePreset(preset: NovelAiStylePreset): Boolean {
+        if (!canMutate()) return false
+        val current = _state.value
+        val card = current.card ?: return false
+        val fill = NovelAiStylePromptFillState(card.defaultImagePrompt, card.defaultImageNegativePrompt, current.stylePromptUndo)
+            .apply(preset, CharacterNaiPromptDefaults.defaultCharacterNaiNegativePrompt())
+        edit { it.copy(defaultImagePrompt = fill.value, defaultImageNegativePrompt = fill.negativeValue) }
+        val latest = _state.value
+        val savedCard = latest.card ?: return false
+        if (latest.draftSessionId != current.draftSessionId || savedCard.defaultImagePrompt != fill.value ||
+            savedCard.defaultImageNegativePrompt != fill.negativeValue) return false
+        _state.value = latest.copy(stylePromptUndo = fill.undo)
+        return true
+    }
+
+    fun undoStylePreset() {
+        if (!canMutate()) return
+        val current = _state.value
+        val card = current.card ?: return
+        val fill = NovelAiStylePromptFillState(card.defaultImagePrompt, card.defaultImageNegativePrompt, current.stylePromptUndo).undoLastFill()
+        edit { it.copy(defaultImagePrompt = fill.value, defaultImageNegativePrompt = fill.negativeValue) }
+        _state.value = _state.value.copy(stylePromptUndo = null)
     }
 
     private fun stageResource(path: Path, image: Boolean, assign: (CharacterCard, String) -> CharacterCard) {

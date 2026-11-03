@@ -7,6 +7,8 @@ Desktop complete Studio generation presets (`.ccbpreset`, preview/confirm/undo a
 
 # ChatBar Feature Map
 
+Desktop built-in style gallery: `DesktopStylePresetGallery` → `DesktopCharacterEditorController.loadStyleCatalog/applyStylePreset/undoStylePreset`; shared `NovelAiStyleCatalog` is the official parser/filter/fill authority. The card editor's fixed “画风与生图参数” shortcut reaches the grouped original default Prompt and per-card sampling fields. See `chatbar-image-generation-runtime`; generation presets remain a separate feature.
+
 Desktop global AI logs live in Data → support/diagnostics via `DesktopGlobalDiagnostics` and the existing `DesktopTransportDiagnosticsOwner`; the advanced logical Prompt inspector is a separate view there. Studio does not expose the old diagnostics/empty engine tabs. Global projections filter retained scrubbed entries; completed-only deletion uses captured request IDs and preserves running/new rows. Missing template version/task attribution stays unknown, never inferred from request text.
 
 Desktop bundled presets and declared world/default-format dependencies: read `chatbar-desktop-bundled-presets`. This is the manifest/startup/typed recovery/complete suite owner, separate from Studio generation preset exchange.

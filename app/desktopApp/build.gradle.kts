@@ -142,6 +142,7 @@ val syncDesktopModelCatalogResources by tasks.registering(Copy::class) {
         include("presets/characters/**")
         include("presets/world_books/**")
         include("presets/novelai/**", "danbooru/**", "prompt_dictionary/**", "tag_completion/**", "tokenizers/**")
+        include("presets/image_styles/**")
     }
     into(desktopModelCatalogResources.map { it.dir("chatbar-assets") })
 }

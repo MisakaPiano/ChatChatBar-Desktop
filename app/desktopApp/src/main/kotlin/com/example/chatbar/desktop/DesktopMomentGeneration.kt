@@ -138,9 +138,11 @@ internal class DesktopMomentGeneration(
         }
         val size = draft?.imageSize() ?: NovelAiImageSizePolicy.resolve(settings.novelAiImageAspectRatio, NovelAiImageSizePreset.SQUARE)
         val service = NovelAiImageService(imageClientOwner.value, safeErrorsOnly = true)
+        val baseSettings = NovelAiGenerationSettings.legacy(service.newSeed(), model = targetModel)
+        val generationSettings = card?.defaultImageGenerationSettings?.applyTo(baseSettings) ?: baseSettings
         val bytes = GlobalImageGenerationConcurrencyGate.instance.run {
             var final: ByteArray? = null
-            imageEvents(token, plan, size, NovelAiGenerationSettings.legacy(service.newSeed(), model = targetModel)).collect { event ->
+            imageEvents(token, plan, size, generationSettings).collect { event ->
                 when (event) {
                     is NovelAiImageEvent.Final -> { check(final == null); final = event.image }
                     is NovelAiImageEvent.Error -> error("动态图片请求未完成")

@@ -34,6 +34,61 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class DesktopCharacterEditorControllerTest {
+    @Test fun `style loader uses packaged asset authority and reports missing previews and unreadable catalog explicitly`() = runBlocking {
+        val parent = Files.createTempDirectory("style-loader-")
+        var missingCatalog = false
+        val catalogPath = com.example.chatbar.domain.image.NOVEL_AI_STYLE_CATALOG_ASSET_PATH
+        val previewRoot = com.example.chatbar.domain.image.NOVEL_AI_STYLE_PREVIEW_ASSET_ROOT
+        val app = DesktopAppContainer(DesktopDataRootResolution.Resolved(parent.resolve("data"),
+            DesktopDataRootProvenance.CLI_OVERRIDE, parent.resolve("bootstrap.json")),
+            secretStoreFactory = { InMemoryDesktopSecretStore() }, bundledAssets = { path ->
+                when (path) {
+                    "presets/manifest.json" -> """{"entries":[]}""".toByteArray()
+                    catalogPath -> {
+                        check(!missingCatalog)
+                        """{"schemaVersion":1,"styles":[{"styleKey":"synthetic","displayName":"Synthetic","prompt":"Exact  ","previewImage":"missing.png"}]}""".toByteArray()
+                    }
+                    "$previewRoot/missing.png" -> error("synthetic missing image")
+                    else -> error("No other asset permitted")
+                }
+            })
+        try {
+            val loaded = app.characterEditorController.loadStyleCatalog()
+            assertNull(loaded.fatalError); assertEquals("Exact  ", loaded.styles.single().prompt)
+            assertFalse(loaded.styles.single().previewAvailable); assertEquals(1, loaded.errors.size)
+            missingCatalog = true
+            val failed = app.characterEditorController.loadStyleCatalog()
+            assertNotNull(failed.fatalError); assertTrue(failed.styles.isEmpty())
+        } finally { app.close(); check(parent.toFile().deleteRecursively()) }
+    }
+
+    @Test fun `builtin style applies to ordinary draft with exact undo and manual prompt edit invalidation`() = runBlocking {
+        fixture { _, container, controller ->
+            val card = CharacterCard.create("Synthetic style card", greeting = "Hi").copy(
+                defaultImagePrompt = "Manual original", defaultImageNegativePrompt = "Manual negative")
+            container.characterRepository.save(card); controller.openExisting(card.id)
+            val style = com.example.chatbar.domain.image.NovelAiStylePreset(styleKey = "synthetic", displayName = "Synthetic",
+                prompt = "Preset exact  ", negativePrompt = "Preset negative", previewImage = "missing.png")
+            assertTrue(controller.applyStylePreset(style))
+            assertEquals(card, container.characterRepository.getById(card.id))
+            assertEquals(style.prompt, controller.state.value.card!!.defaultImagePrompt)
+            assertEquals(style.negativePrompt, controller.state.value.card!!.defaultImageNegativePrompt)
+            assertNotNull(controller.state.value.stylePromptUndo)
+            controller.undoStylePreset()
+            assertEquals(card.defaultImagePrompt, controller.state.value.card!!.defaultImagePrompt)
+            assertEquals(card.defaultImageNegativePrompt, controller.state.value.card!!.defaultImageNegativePrompt)
+            assertNull(controller.state.value.stylePromptUndo)
+            assertTrue(controller.applyStylePreset(style.copy(negativePrompt = "")))
+            assertEquals(CharacterNaiPromptDefaults.defaultCharacterNaiNegativePrompt(), controller.state.value.card!!.defaultImageNegativePrompt)
+            controller.edit { it.copy(defaultImagePrompt = "Later manual text") }
+            assertNull(controller.state.value.stylePromptUndo)
+            controller.undoStylePreset()
+            assertEquals("Later manual text", controller.state.value.card!!.defaultImagePrompt)
+            assertTrue(controller.save())
+            assertEquals("Later manual text", container.characterRepository.getById(card.id)!!.defaultImagePrompt)
+        }
+    }
+
     @Test fun `moment card switch focus preserves an open dirty draft and refuses a missing exact card`() = runBlocking {
         fixture { _, container, controller ->
             val card = CharacterCard.create("Same title", greeting = "Hi")
