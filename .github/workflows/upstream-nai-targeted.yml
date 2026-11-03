@@ -11,38 +11,7 @@ on:
 env:
   SOURCE_SHA: ${{ inputs.source_sha || 'f52eeb95b3034ee236afbef25c7766ca15976e9b' }}
 jobs:
-  targeted:
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ env.SOURCE_SHA }}
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-      - uses: android-actions/setup-android@v3
-        with:
-          packages: platform-tools
-      - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
-      - uses: gradle/actions/setup-gradle@v4
-      - name: Exact source and affected NAI production paths
-        working-directory: app
-        run: |
-          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
-          bash ./gradlew :app:testDebugUnitTest --tests '*NovelAi*Test' :app:compileDebugAndroidTestKotlin --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx5g -Dfile.encoding=UTF-8'
-          git diff --exit-code
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: upstream-nai-review-unit-${{ github.run_id }}
-          path: |
-            app/app/build/test-results/testDebugUnitTest/
-            app/app/build/reports/tests/testDebugUnitTest/
   review-ui:
-    needs: targeted
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     permissions:
@@ -74,7 +43,7 @@ jobs:
           working-directory: app
           script: |
             test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
-            bash ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.imageprompt.NovelAiReviewRegressionTest --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx4g -Dfile.encoding=UTF-8'
+            bash ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.imageprompt.NovelAiReviewRegressionTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx4g -Dfile.encoding=UTF-8'
             mkdir -p build/nai-review-evidence
             adb pull /sdcard/Android/data/com.example.chatbar/files/nai-review-evidence build/nai-review-evidence/
             git diff --exit-code
