@@ -124,12 +124,14 @@ internal fun StudioPromptTextEditor(input: TextFieldValue, onChange: (TextFieldV
 
 @Composable
 internal fun StudioPromptField(label: String, value: String, infrastructure: DesktopNovelAiInfrastructure,
-    translated: Boolean, focusRevision: Long? = null, onChange: (String) -> Unit) = StudioPromptField(label, value,
-    infrastructure.suggestions, infrastructure.translations, translated, focusRevision, onChange)
+    translated: Boolean, focusRevision: Long? = null, onEditorFocusChanged: ((Boolean) -> Unit)? = null,
+    onExpandedEditorChanged: ((Boolean) -> Unit)? = null, onChange: (String) -> Unit) = StudioPromptField(label, value,
+    infrastructure.suggestions, infrastructure.translations, translated, focusRevision, onEditorFocusChanged, onExpandedEditorChanged, onChange)
 
 @Composable
 internal fun StudioPromptField(label: String, value: String, suggestionService: NovelAiTagSuggestionService,
     translationService: NovelAiPromptTranslationService, translated: Boolean, focusRevision: Long? = null,
+    onEditorFocusChanged: ((Boolean) -> Unit)? = null, onExpandedEditorChanged: ((Boolean) -> Unit)? = null,
     onChange: (String) -> Unit) {
     var input by remember { mutableStateOf(TextFieldValue(value)) }
     var focused by remember { mutableStateOf(false) }
@@ -145,7 +147,7 @@ internal fun StudioPromptField(label: String, value: String, suggestionService: 
             ?.takeIf { NovelAiPromptTranslationParser.activeSegment(input.text, input.selection.end, false)?.kind == NovelAiPromptTranslationSegmentKind.TAG }
     LaunchedEffect(value) {
         if (!fullscreen) input = desktopComposerDraftEcho(input, value)
-        else if (value != openingValue) { fullscreen = false; input = TextFieldValue(value) }
+        else if (value != openingValue) { fullscreen = false; onExpandedEditorChanged?.invoke(false); input = TextFieldValue(value) }
     }
     LaunchedEffect(fragment?.query) { suggestionIndex = 0; dismissedQuery = null }
     val suggestionResult by produceState<Pair<String, TagSuggestionUpdate>?>(null, focused, fragment?.query) {
@@ -174,7 +176,7 @@ internal fun StudioPromptField(label: String, value: String, suggestionService: 
             if (!fullscreen) onChange(result.text)
         }
     }
-    fun cancel() { fullscreen = false; input = if (value == openingValue) openingInput else TextFieldValue(value) }
+    fun cancel() { fullscreen = false; onExpandedEditorChanged?.invoke(false); input = if (value == openingValue) openingInput else TextFieldValue(value) }
     @Composable fun Editor() {
         val focus = remember { FocusRequester() }
         LaunchedEffect(fullscreen, focusRevision) { if (fullscreen || focusRevision != null) focus.requestFocus() }
@@ -182,7 +184,7 @@ internal fun StudioPromptField(label: String, value: String, suggestionService: 
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.weight(1f)) { StatusText(label) }
                 if (!fullscreen) StudioAction("展开", icon = DesktopAppIcons.ExpandComposer) {
-                    openingValue = value; openingInput = input; fullscreen = true
+                    openingValue = value; openingInput = input; fullscreen = true; onExpandedEditorChanged?.invoke(true)
                 }
             }
             Box {
@@ -191,7 +193,9 @@ internal fun StudioPromptField(label: String, value: String, suggestionService: 
                     .background(DesktopBootstrapColors.input).verticalScroll(rememberScrollState()).padding(9.dp)) {
                     StudioPromptTextEditor(input, { next -> inspecting = next.text == input.text; input = next; if (!fullscreen) onChange(next.text) }, translated, currentAnnotations?.annotations.orEmpty(), Modifier.fillMaxWidth()
                         .heightIn(min = if (fullscreen) 320.dp else 70.dp).focusRequester(focus)
-                        .semantics { contentDescription = label }.onFocusChanged { focused = it.isFocused }
+                        .semantics { contentDescription = label }.onFocusChanged {
+                            focused = it.isFocused; onEditorFocusChanged?.invoke(it.isFocused)
+                        }
                         .onPreviewKeyEvent { event ->
                             if (!showSuggestions || event.type != KeyEventType.KeyDown || input.composition != null) false else when (event.key) {
                                 Key.Escape -> { dismissedQuery = fragment?.query; true }
@@ -231,7 +235,7 @@ internal fun StudioPromptField(label: String, value: String, suggestionService: 
         }, verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) { Editor() }
             StudioActions {
-                StudioAction("确认") { if (value == openingValue) onChange(input.text); fullscreen = false }
+                StudioAction("确认") { if (value == openingValue) onChange(input.text); fullscreen = false; onExpandedEditorChanged?.invoke(false) }
                 StudioAction("取消", onClick = ::cancel)
             }
         }

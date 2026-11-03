@@ -47,15 +47,17 @@ class DesktopStyleGalleryTest {
                 try {
                     repeat(8) { scene.render().close(); delay(20) }
                     val jump = nodes().single { text(it, "画风与生图参数") && it.config.contains(SemanticsActions.OnClick) }
-                    assertTrue(jump.boundsInRoot.top >= 0f && jump.boundsInRoot.bottom <= 900f)
+                    assertTrue(jump.boundsInRoot.height > 0f && jump.boundsInRoot.top >= 0f && jump.boundsInRoot.bottom <= 900f)
                     assertTrue(jump.config[SemanticsActions.OnClick].action!!.invoke())
                     withTimeout(5_000) {
-                        while (nodes().none { text(it, "内置画风图集") && it.boundsInRoot.top >= 0f && it.boundsInRoot.bottom <= 900f }) {
+                        while (nodes().none { text(it, "内置画风图集") && it.boundsInRoot.width > 0f && it.boundsInRoot.height > 0f &&
+                                it.boundsInRoot.top >= 0f && it.boundsInRoot.bottom <= 900f }) {
                             scene.render().close(); delay(20)
                         }
                     }
                     repeat(15) { scene.render().close(); delay(20) }
-                    assertTrue(nodes().any { text(it, "使用角色专属生图参数") && it.boundsInRoot.top >= 0f && it.boundsInRoot.bottom <= 900f })
+                    assertTrue(nodes().any { text(it, "使用角色专属生图参数") && it.boundsInRoot.width > 0f && it.boundsInRoot.height > 0f &&
+                        it.boundsInRoot.top >= 0f && it.boundsInRoot.bottom <= 900f })
                     assertEquals(card, editor.state.value.card); assertFalse(editor.state.value.dirty)
                     assertEquals(card, app.characterRepository.getById(card.id))
                     System.getenv("CCB_FORMAT_AI_REVIEW_DIR")?.let { directory ->
@@ -90,7 +92,8 @@ class DesktopStyleGalleryTest {
             fun matches(node: SemanticsNode, label: String) = node.config.getOrNull(SemanticsProperties.ContentDescription)?.contains(label) == true ||
                 node.config.getOrNull(SemanticsProperties.Text)?.any { it.text == label } == true
             suspend fun click(label: String) {
-                val node = nodes().single { matches(it, label) && it.config.contains(SemanticsActions.OnClick) }
+                val node = nodes().single { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains(label) == true &&
+                    it.config.contains(SemanticsActions.OnClick) }
                 assertTrue(node.config[SemanticsActions.OnClick].action!!.invoke()); frames()
             }
             try {

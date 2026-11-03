@@ -40,6 +40,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import kotlin.math.roundToInt
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -133,7 +135,9 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
     var selectedEntry by remember(card.id) { mutableStateOf<String?>(null) }
     var styleGallery by remember(card.id) { mutableStateOf(false) }
     val momentsFocus = remember(card.id) { BringIntoViewRequester() }
-    val imageSettingsFocus = remember(card.id) { BringIntoViewRequester() }
+    val editorScroll = rememberScrollState()
+    var editorViewportTop by remember(card.id) { mutableStateOf(0f) }
+    var imageSettingsTop by remember(card.id) { mutableStateOf(0f) }
     var handledMomentsFocus by remember(card.id) { mutableStateOf<Long?>(null) }
     val personFocus = remember(card.id) { BringIntoViewRequester() }
     val personFocusExtent = with(androidx.compose.ui.platform.LocalDensity.current) { 600.dp.toPx() }
@@ -186,14 +190,16 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
             }
         }
         if (!readOnly) BootstrapButton("画风与生图参数", secondary = true) {
-            scope.launch { imageSettingsFocus.bringIntoView(androidx.compose.ui.geometry.Rect(0f, 0f, 1f, 1f)) }
+            val target = (imageSettingsTop - editorViewportTop + editorScroll.value).roundToInt().coerceIn(0, editorScroll.maxValue)
+            scope.launch { editorScroll.animateScrollTo(target) }
         }
         if (readOnly) {
             controller.promptBudget?.let { DesktopEditorPromptBudget(it, card) }
             StatusText(t(if (communityReadOnly) DesktopUiText.COMMUNITY_READ_ONLY
                 else DesktopUiText.CHARACTER_SAVE_COMMITTED_WARNING))
             StatusText(card.name)
-        } else Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
+        } else Column(Modifier.weight(1f).fillMaxWidth().onGloballyPositioned { editorViewportTop = it.positionInRoot().y }
+            .verticalScroll(editorScroll),
             verticalArrangement = Arrangement.spacedBy(14.dp)) {
             controller.cardImages?.let { images -> BootstrapButton("生成卡片封面候选", enabled = controller.canUseCardAi, secondary = true) { images.openCover() } }
             controller.cardAi?.let { ai -> EditorActions {
@@ -257,7 +263,7 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
                 EditorField(t(DesktopUiText.MESSAGE_EXAMPLE), card.mesExample, true) { value -> controller.edit { it.copy(mesExample = value) } }
                 EditorField(t(DesktopUiText.CREATOR_NOTES), card.creatorNotes, true) { value -> controller.edit { it.copy(creatorNotes = value) } }
             }
-            Column(Modifier.fillMaxWidth().bringIntoViewRequester(imageSettingsFocus)) {
+            Column(Modifier.fillMaxWidth().onGloballyPositioned { imageSettingsTop = it.positionInRoot().y }) {
                 EditorSection("NovelAI 画风与角色专属生图参数") {
                     EditorActions {
                         BootstrapButton("内置画风图集", secondary = true) { styleGallery = true }

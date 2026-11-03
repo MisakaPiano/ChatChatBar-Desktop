@@ -11,7 +11,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -42,8 +41,9 @@ internal fun DesktopStudioCharacters(draft: NovelAiStudioDraft, infrastructure: 
         var pinned by remember { mutableStateOf(false) }
         var requestingFocus by remember { mutableStateOf(false) }
         var focusRevision by remember { mutableStateOf<Long?>(null) }
+        var expandedEditorOpen by remember { mutableStateOf(false) }
         var negative by remember { mutableStateOf(character.negativeExpanded) }
-        val expanded = pinned || focused || requestingFocus
+        val expanded = pinned || focused || requestingFocus || expandedEditorOpen
         fun openEditor() { requestingFocus = true; focusRevision = (focusRevision ?: 0) + 1 }
         fun change(transform: (NovelAiCharacterPromptDraft) -> NovelAiCharacterPromptDraft) = edit { it.copy(characters = it.characters.map { c -> if (c.id == character.id) transform(c) else c }) }
         Column(Modifier.fillMaxWidth().background(if (character.enabled) DesktopBootstrapColors.card else DesktopBootstrapColors.muted)
@@ -64,7 +64,7 @@ internal fun DesktopStudioCharacters(draft: NovelAiStudioDraft, infrastructure: 
                 StudioAction(if (pinned) "自动收起" else "固定展开", selected = pinned) { pinned = !pinned }
             }
             Column(Modifier.alpha(if (character.enabled) 1f else .6f)
-                .onFocusChanged { focused = it.hasFocus; if (it.hasFocus) requestingFocus = false }.focusGroup()) {
+                .focusGroup()) {
                 if (expanded) {
                     StudioChips("", listOf(false, true), negative, { if (it) "负面 Prompt" else "正向 Prompt" }) { value ->
                         negative = value; openEditor()
@@ -72,7 +72,9 @@ internal fun DesktopStudioCharacters(draft: NovelAiStudioDraft, infrastructure: 
                     key(negative) {
                         StudioPromptField(if (negative) "角色负面" else "角色正向",
                             if (negative) character.negativePrompt else character.prompt,
-                            infrastructure, translation, focusRevision) { text ->
+                            infrastructure, translation, focusRevision,
+                            onEditorFocusChanged = { active -> focused = active; if (active) requestingFocus = false },
+                            onExpandedEditorChanged = { open -> expandedEditorOpen = open; if (!open) openEditor() }) { text ->
                             change { if (negative) it.copy(negativePrompt = text) else it.copy(prompt = text) }
                         }
                     }
