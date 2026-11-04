@@ -7,3 +7,5 @@ UI17/4336原18=14PASS/4FAIL/0SKIP保留。账户1/Workspace4/viewer1以及slow�
 新增真实Overlay420×420/1100×640和两编辑模式测试五/四入口行列边界、滚动固定、固定footer、预算/cover/AI原owner打开与style定位、未改card/持久源/未执行task。只补受影响失败/焦点场景与新toolbar/Word，14已过按未变输入复用；公开1237/304/sign19冻结，所有后继绿之前不新冻结可交付包，用户外出仅挂人工验收，继续独立工程，不新增公开许可。
 
 972原UI20/41771483509原件19=18PASS/1FAIL/0SKIP：role5、content-options4、Word8与长卡顺序1通过；新toolbar方法成功打开Token窗口后，测试helper只匹配Text，找不到现有contentDescription图标关闭键而超时。仅补helper匹配可访问名称并确认窗口关闭，生产关闭入口不改，不延长时限/删断言；后继仅补该方法和Word属性顺序新变更，未执行的后续toolbar四组合仍待精确结果。
+
+9c原UI21/41772560318两方法实际1PASS/1FAIL/0SKIP：Word新属性顺序已通过；toolbar继续到预算关闭、封面/改写/补空原owner、画风定位后，在123比较display draft和durable source时失败。既有空负向会在displayCard显示默认值，持久源仍留空；将两者各与操作前对应快照比较，保全“不改draft”和“不改持久源”双断言，不改默认显示/保存政策。

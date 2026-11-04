@@ -83,6 +83,7 @@ class DesktopCharacterEditorOrderTest {
                     greeting = "Synthetic greeting\n".repeat(80), defaultImagePrompt = "Original style",
                     characters = listOf(CharacterInfo("p", "Person", profile = "Original profile")), createdAt = 1, updatedAt = 1)
                 app.characterRepository.save(original)
+                val durable = assertNotNull(app.characterRepository.getById(original.id))
                 val editor = app.characterEditorController; editor.openExisting(original.id)
                 val before = editor.state.value.card
                 val scene = ImageComposeScene(width, height, coroutineContext = edt) {
@@ -120,7 +121,8 @@ class DesktopCharacterEditorOrderTest {
                         editor.cardAi!!.close(); scene.frames()
                     }
                     scene.click("画风与生图参数"); scene.until { nodes().any { it.text("内置画风图集") && it.visible(height) } }
-                    assertEquals(before, editor.state.value.card); assertEquals(before, app.characterRepository.getById(original.id))
+                    assertEquals(before, editor.state.value.card)
+                    assertEquals(durable, app.characterRepository.getById(original.id))
                     assertTrue(app.taskRuntime.tasks.value.isEmpty())
                     System.getenv("CCB_FORMAT_AI_REVIEW_DIR")?.let { directory ->
                         val file = Path.of(directory).resolve("card-tools-${mode.name}-$width.png"); Files.createDirectories(file.parent)
