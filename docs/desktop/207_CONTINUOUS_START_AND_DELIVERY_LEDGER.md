@@ -1,3 +1,7 @@
+2026-11-04 10:43 JST 1237核心N01a实际通过：用户先答“多步正常，两个栏互不干扰”，确认正向三次独立粘贴可CtrlZ/Y三步、负向不变及负向局部撤销；再答“全局三步撤销和重做均符合预期”，确认footer全局Prompt/Steps/临时角色删除的三步逆序恢复与redo，角色原testRole内容恢复。仅这些双层history场景PASS_USER_REPORTED；真实系统IME/选区、展开编辑、无效数字blur尚未由本组验收。U1237资料/草稿/正常退出重开PASS继续，实际路径/hash未知，1236原N01a/N01b失败留历史。原始两回执N01_LOCAL_USER_ACCEPTANCE.json、N01_GLOBAL_USER_ACCEPTANCE.json在r02；公开source304/sign19不变，无代码修改/新测试/构建/发布，协调端唯一入口继续N01b。
+
+下方历史保留。
+
 2026-11-04 10:04 JST 用户已明确反馈“已更新1237，原资料和重开正常”。U1237仅自行应用内更新、原会话与未发送草稿保留、正常退出并从现用入口重开范围PASS_USER_REPORTED；实际安装路径未观察、EXE hash未测，不推断为H根或agent代装。1237 Studio双层撤销/快捷键、真实系统IME及其他功能仍待逐项验收；1236原N01a/N01b FAIL与历史资料/重开PASS保持。公开1237/source304/sign19及原工程/匿名下载证据不变，没有重建、新测试或新版本。根U1237_USER_ACCEPTANCE.json为实际新回执；协调端唯一入口继续N01。
 
 下方历史保留。
