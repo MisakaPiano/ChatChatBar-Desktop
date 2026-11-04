@@ -13,3 +13,5 @@ UI17/4336原18=14PASS/4FAIL/0SKIP保留。账户1/Workspace4/viewer1以及slow�
 5f完整157原toolbar方法已PASS，四组合截图也证明工具常驻及footer；但新method末尾图在动画中仍显示较后内容，发现until使用递归text把含目标的祖先容器也当“图集按钮已可见”。仅将该末尾等待改为真实Text叶节点及完整高度，不改生产滚动或原5秒预算，补窄高420的最终定位图片；原StyleGallery的900高直接Text定位方法在157已PASS。该test-only补验与普通1238包并行，冻结应用仍5f，不重建包/重复完整回归。
 
 更正：fe原UI22虽单方法PASS，实际图片仍在卡底，Text config仍可能命中merged祖先，不能作为最终jump定位证据。改按唯一style tag的未裁剪positionInRoot与实际scroll viewport顶部关系判断，记录滚动值；保原5秒限制及所有回调/资料断言。R34包/private20尚未公开，先不记最终ready，等待严格位置诊断；不修改原UI22的真实PASS/原图片，也不把它扩大成产品定位通过。
+
+捕图时钟另有具体不一致：frames/until及旧order捕图都传System.nanoTime，新toolbar末尾却无参render；同一Scene须保持单调帧时间。末尾也改为显式System.nanoTime，结合raw-tag等待与捕后坐标核对，仅补该方法；生产滚动实现未改，R34/5f原包不重建，是否为捕图原因由新原图和位置日志确认。
