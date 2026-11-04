@@ -1,3 +1,7 @@
+2026-11-04 10:04 JST 用户已明确反馈“已更新1237，原资料和重开正常”。U1237仅自行应用内更新、原会话与未发送草稿保留、正常退出并从现用入口重开范围PASS_USER_REPORTED；实际安装路径未观察、EXE hash未测，不推断为H根或agent代装。1237 Studio双层撤销/快捷键、真实系统IME及其他功能仍待逐项验收；1236原N01a/N01b FAIL与历史资料/重开PASS保持。公开1237/source304/sign19及原工程/匿名下载证据不变，没有重建、新测试或新版本。根U1237_USER_ACCEPTANCE.json为实际新回执；协调端唯一入口继续N01。
+
+下方历史保留。
+
 2026-11-04 公开1237：用户明确答复“允许先公开1237和匹配签名更新19”。已复用冻结304/R31原包公开Release433024800（desktop-v0.1.0-preview.1237→304bd42a），四资产/正文读回通过；签名19已发布到原codex/update-metadata，commit85a80124bc8e920c897e9cdf1cebffcb725d5be2，root1不变。五role在固定commit与公开branch的十次匿名HTTP逐字节一致，完整178544270B安装包匿名流SHA7878dc17270056db5b44db1783d939ac91efa96d2328a4f6b585bd231f109e4a通过，规范LF notes SHA803c8b65bd032a317206ff4834f87cba2153e904701aaf4ee8e55870f747e9e3与签名一致。实际旧client发现/下载/二验复用R32受控云结果，匿名HTTP不是一次新的公网client执行。没有重建/代装或操作真实资料；1237人验待协调端引导用户自行更新，1236资料/重开PASS和N01原FAIL保留。正式1.0、系统中文IME、物理音频4原scope、真实Provider/长聊天/生产合并等仍按具体场景待验。
 
 下方历史保留。
