@@ -1,3 +1,7 @@
+2026-11-04 11:13 JST 1237 N02设置两项部分通过：用户明确答“Effort切换、High参数保留和透明开关均正常”“V+保留、当前模型重置及撤销均正常”。仅SETTINGS_ONLY：Medium有效14 Steps/EA/Rescale0与sampler只读、High自定义Steps/sampler跨Effort保留、透明开关跨Effort保留；V4.5 Steps24/V+跨V5保留、显式reset23/5/0/EA/V+off保留Prompt/角色、立即footer撤回恢复24/V+，V5 High未被该reset影响。实际alpha/Provider/计费及全部sampler未验，当前继续两模型菜单与PNG归属。回执N02_V5_SETTINGS_USER_ACCEPTANCE.json、N02_V45_SETTINGS_USER_ACCEPTANCE.json在r02；N01已定义组通过与旧1236历史保留。仅同步记录，代码/包304/sign19不变，无测试/构建/发布/另发人工问题。
+
+下方历史保留。
+
 2026-11-04 11:07 JST 1237已定义N01交互组真人结果齐：局部/全局history、当前设备真实IME/源选区、展开编辑确认/取消/标题栏关闭与确认后一次footer撤回、V4.5 Steps清空和999失焦恢复最后有效值及先前有效单步CtrlZ/Y均PASS_USER_REPORTED_FOR_DEFINED_CHECKS。新增原话“确认、取消和窗口关闭均正常”“清空、越界恢复和撤销重做均正常”，两回执在r02/N01_EXPANDED_USER_ACCEPTANCE.json、N01_NUMERIC_USER_ACCEPTANCE.json；结合local/global/IME共五原回执。旧1236原FAIL完整保留。expanded局部键盘、数字栏多步未单独测试，不推广全设备/所有Studio/Provider/1.0；U1237资料重开PASS和实际路径/hash未知保持。协调端唯一入口进入N02模型设置，无真实生图或计费验收。本次仅记录，代码/包304/签名19不变，无新测试/构建/发布。
 
 下方历史保留。
