@@ -106,7 +106,7 @@
     "targetReleaseVersion": "1.4.7",
     "targetCommit": "b4fa75d296680f777be095f3121ad0c4db979f17",
     "authority": "User authorized latest official CCB adaptation; Desktop first, separate Studio consumes official interfaces",
-    "status": "selected147_scoped_engineering_verified_public1237_user_acceptance_pending_not_whole_baseline_promotion",
+    "status": "selected147_scoped_engineering_verified_public1237_partial_user_acceptance_new_scoped_failures_successor_validation_pending_not_whole_baseline_promotion",
     "sourceAtRecord": "304bd42a250b062ddaafc4c7dcc55710e94c4e8b",
     "lastCompleteSourceValidation": {
       "commit": "304bd42a250b062ddaafc4c7dcc55710e94c4e8b",
@@ -207,8 +207,8 @@
       },
       {
         "scope": "Whole selected147 compatibility declaration and affected final candidate/user cross-scenario acceptance",
-        "evidence": "216/280/288/289; full156 exact304, native7 sixPASS, R31 final ordinary bytes, R32 signed19 oldclient; private1237 draft433024800",
-        "status": "identified_selected_implementation_closed_private_candidate_ready_human_and_external_pending",
+        "evidence": "216/280/288/289/290-294; public1237/304/sign19 full156/native7/R31/R32; original U1237 and scoped N01-N05 receipts; unpublished5f successor full157 still running",
+        "status": "selected_implementation_engineering_verified_public1237_scoped_passes_and_new_failures_successor_checks_and_human_external_remaining",
         "remainingImplementationIdentified": [],
         "independentVerification": [
           {
@@ -247,11 +247,12 @@
           }
         ],
         "remainingExternalOrHuman": [
-          "User1236 upgrade/data/reopen PASS only; original N01 multistep/IME failures retained until1237 actual retest",
-          "Original three physical audio methods and mixed Stop playback part untested on wave0; real system Chinese IME/DPI/multiscreen separate",
-          "Real Provider and actual long-chat/document-reader appearance",
-          "Real final production merge/interruption/cross-account/old snapshot scenarios only as user chooses",
-          "1237 explicit public test authorization and actual user self-update acceptance pending"
+          "User self-update to1237, original sessions/draft and normal exit/reopen PASS; defined local/global history, numeric/expanded editor and current-device Chinese IME checks PASS at1237 only. Original1236 failures retained as history.",
+          "Original three physical audio methods plus mixed Stop playback part remain NOT_TESTED on wave0; other OS/DPI/IME/multiscreen environments not proven by current-device acceptance.",
+          "1237 scoped N02 settings/menu/managed PNG import+undo, N03 diagnostics/history navigation, N04 order/gallery browsing and N05 selected both-on PNG/PDF save/open PASS; not all generation/default KEEP import/full reader compatibility.",
+          "1237 role-negative tab, inline actions-off exclusion and editable Word narration/dialogue/thought layout remain USER_FAIL until successor actual retest. Word file opens/editable text/reported image placement retained only as subparts.",
+          "Actual Provider outputs/billing, all real long chats and readers, and final production merge/interruption/cross-account/old-snapshot scenarios remain subject to their actual scope and user-selected operations.",
+          "No successor publication authority beyond1237/sign19; user temporarily away, only human questions deferred while authorized engineering/verification/private-candidate preparation continues."
         ],
         "original154HeadlessSkips": {
           "count": 19,
@@ -497,9 +498,24 @@
       "release": 433024800,
       "metadataRevision": 19,
       "metadataCommit": "85a80124bc8e920c897e9cdf1cebffcb725d5be2",
-      "humanAcceptance": "PENDING1237_USER_SELF_UPDATE_AND_N01_RETEST_1236_ORIGINAL_RESULTS_RETAINED",
+      "humanAcceptance": "SCOPED_USER1237_UPGRADE_DEFINED_N01_AND_N02_N03_N04_N05_PARTS_PASS_ROLE_NEGATIVE_ACTION_OFF_WORD_SEMANTIC_LAYOUT_FAIL_NOT_ALL_ACCEPTED",
       "proof": "288; full156/native7/R31/R32 and anonymous complete178544270B/ten roles; public user authority explicit1237 only",
-      "url": "https://github.com/MisakaPiano/ChatChatBar-Desktop/releases/tag/desktop-v0.1.0-preview.1237"
+      "url": "https://github.com/MisakaPiano/ChatChatBar-Desktop/releases/tag/desktop-v0.1.0-preview.1237",
+      "acceptanceSource": "I:/CCB-Desktop-Continuity/updates/20261104-candidate1237-r02-preparation",
+      "acceptanceReceipts": [
+        "U1237_USER_ACCEPTANCE.json",
+        "N01_LOCAL_USER_ACCEPTANCE.json",
+        "N01_GLOBAL_USER_ACCEPTANCE.json",
+        "N01_IME_USER_ACCEPTANCE.json",
+        "N01_EXPANDED_USER_ACCEPTANCE.json",
+        "N01_NUMERIC_USER_ACCEPTANCE.json",
+        "N05_WORD_LAYOUT_FAILURE_USER_FEEDBACK.json",
+        "N05_PNG_SAVE_OPEN_USER_ACCEPTANCE.json",
+        "N05_PDF_SAVE_OPEN_USER_ACCEPTANCE.json",
+        "N04_CARD_EDITOR_ORDER_USER_ACCEPTANCE.json",
+        "N04_STYLE_GALLERY_BROWSE_USER_ACCEPTANCE.json"
+      ],
+      "allUserScopesAccepted": false
     },
     "residualReview": "I:/CCB-Desktop-Continuity/updates/20261103-selected147-residual-closure/OWNER_REVIEW.json",
     "privateCandidate1237": {
@@ -558,6 +574,21 @@
       "anonymousPublicHttpPassed": true,
       "oldClientScope": "R32 controlled cloud cryptographic validation reused; anonymous HTTP is separate transport proof",
       "publicationAuthority": "I:\\CCB-Desktop-Continuity\\updates\\20261104-candidate1237-r02-preparation\\USER_PUBLICATION_AUTHORITY.json"
+    },
+    "activeUnpublishedSuccessor": {
+      "applicationSource": "5f48d70622cc351cdba7487a7b4b90663ffa54af",
+      "fullCi": 41773543279,
+      "fullCiState": "WINDOWS_MAIN_STEP_SUCCESS_OTHER_STEPS_RUNNING_ORIGINAL_XML_PENDING",
+      "sharedOriginalTests": 1239,
+      "androidHtmlTests": 586,
+      "ntfsOriginalPass": 7,
+      "ordinaryCandidateRun": 41775119786,
+      "candidateControl": "999e80589191025e1a359c4ca96c6ed07c22e6f6",
+      "state": "PRIVATE_BUILD_RUNNING_NOT_DELIVERY_READY",
+      "publicationAuthorized": false,
+      "signature20Prepared": false,
+      "humanAcceptance": false,
+      "scope": "290-294 exact fixes; keep public1237 and all original scoped failures"
     }
   }
 }
