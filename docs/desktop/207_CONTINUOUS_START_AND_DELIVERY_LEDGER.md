@@ -1,3 +1,7 @@
+2026-11-04 11:07 JST 1237已定义N01交互组真人结果齐：局部/全局history、当前设备真实IME/源选区、展开编辑确认/取消/标题栏关闭与确认后一次footer撤回、V4.5 Steps清空和999失焦恢复最后有效值及先前有效单步CtrlZ/Y均PASS_USER_REPORTED_FOR_DEFINED_CHECKS。新增原话“确认、取消和窗口关闭均正常”“清空、越界恢复和撤销重做均正常”，两回执在r02/N01_EXPANDED_USER_ACCEPTANCE.json、N01_NUMERIC_USER_ACCEPTANCE.json；结合local/global/IME共五原回执。旧1236原FAIL完整保留。expanded局部键盘、数字栏多步未单独测试，不推广全设备/所有Studio/Provider/1.0；U1237资料重开PASS和实际路径/hash未知保持。协调端唯一入口进入N02模型设置，无真实生图或计费验收。本次仅记录，代码/包304/签名19不变，无新测试/构建/发布。
+
+下方历史保留。
+
 2026-11-04 10:49 JST 1237 N01b真人复测通过：用户明确答“候选框、光标和选区均正常”，覆盖下方inline角色Prompt的中文候选跟随、提交并滚动后重新输入，以及译文注释模式跨行源文字选区。仅当前用户设备/输入法范围PASS_USER_REPORTED；OS/DPI/IME身份未另采集，不推广到全环境。连同既有核心局部/全局history PASS，原1236两项反馈在1237当前环境复测正常，旧1236原FAIL完整保留。展开编辑确认/取消/标题栏关闭边界、无效数字blur仍待，非全部Studio或1.0通过。回执r02/N01_IME_USER_ACCEPTANCE.json；公开source304/sign19不变，无代码修复/新测试/构建/发布，协调端唯一入口继续后续项。
 
 下方历史保留。
