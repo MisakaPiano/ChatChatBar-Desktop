@@ -481,7 +481,7 @@ internal fun DesktopStudioCompactResult(path: java.nio.file.Path?, intermediate:
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             StatusText(if (showingIntermediate) "生成中 · 未保存预览" else "当前图片")
             if (showingIntermediate && path != null) StatusText("先前选择的图片未被本次生成替换")
-            else if (path == null) StatusText("导入图片或生成后查看结果")
+            else if (!showingIntermediate && path == null) StatusText("导入图片或生成后查看结果")
         }
     }
 }

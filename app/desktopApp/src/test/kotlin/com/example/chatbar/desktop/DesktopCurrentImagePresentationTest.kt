@@ -25,6 +25,7 @@ import kotlin.test.*
 class DesktopCurrentImagePresentationTest {
     private val awt = object : CoroutineDispatcher() { override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block) }
     private suspend fun ImageComposeScene.frames() { repeat(6) { render().close(); yield() }; delay(40); render().close() }
+    private suspend fun ImageComposeScene.until(predicate: () -> Boolean) { withTimeout(5000) { while (!predicate()) frames() } }
     private fun ImageComposeScene.nodes(): List<SemanticsNode> {
         fun walk(node: SemanticsNode): List<SemanticsNode> = listOf(node) + node.children.flatMap(::walk)
         return semanticsOwners.flatMap { walk(it.rootSemanticsNode) }
@@ -307,7 +308,7 @@ class DesktopCurrentImagePresentationTest {
             assertTrue(scene.nodes().first { it.config.getOrNull(SemanticsProperties.ContentDescription) == listOf("预览") }.config.contains(SemanticsProperties.Disabled))
             assertTrue(scene.nodes().first { it.matches("图像操作 / 用作") }.config.contains(SemanticsProperties.Disabled))
             assertFalse(scene.nodes().any { it.matches("适应 / 重置") })
-            scene.click("显示图片面板"); delay(350); scene.frames()
+            scene.click("显示图片面板"); scene.until { expanded }
             assertTrue(expanded)
             assertFalse(scene.nodes().any { it.matches("适应 / 重置") })
             savedPath = null; scene.frames()
@@ -333,7 +334,7 @@ class DesktopCurrentImagePresentationTest {
                 assertTrue(open.top < 250)
                 assertTrue(prompt.top < 330)
                 assertEquals(1, scene.nodes().count { it.matches("图像操作 / 用作") })
-                scene.click("显示图片面板")
+                scene.click("显示图片面板"); scene.until { scene.nodes().any { it.matches("收起预览") } }
                 assertTrue(scene.nodes().any { it.matches("收起预览") })
                 assertTrue(scene.nodes().any { it.matches("Studio 内联图片预览") })
                 assertTrue(scene.nodes().any { it.matches("适应 / 重置") })

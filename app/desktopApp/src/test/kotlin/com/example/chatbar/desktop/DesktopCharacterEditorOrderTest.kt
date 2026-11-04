@@ -75,6 +75,61 @@ class DesktopCharacterEditorOrderTest {
         }
     }
 
+    @Test fun `five tool entries stay together above scrolling card content with original callbacks and fixed footer`() = runBlocking(edt) {
+        for (mode in CharacterEditMode.entries) for ((width, height) in listOf(420 to 420, 1100 to 640)) {
+            val parent = Files.createTempDirectory("card-toolbar-"); val app = app(parent)
+            try {
+                val original = CharacterCard("tools", "Synthetic tools", editMode = mode,
+                    greeting = "Synthetic greeting\n".repeat(80), defaultImagePrompt = "Original style",
+                    characters = listOf(CharacterInfo("p", "Person", profile = "Original profile")), createdAt = 1, updatedAt = 1)
+                app.characterRepository.save(original)
+                val editor = app.characterEditorController; editor.openExisting(original.id)
+                val before = editor.state.value.card
+                val scene = ImageComposeScene(width, height, coroutineContext = edt) {
+                    val state by editor.state.collectAsState()
+                    CompositionLocalProvider(LocalDesktopModalActivity provides remember { DesktopModalActivity() }) {
+                        DesktopCharacterEditorOverlay(editor, state)
+                    }
+                }
+                try {
+                    scene.frames()
+                    val labels = listOf("画风与生图参数", "生成卡片封面候选", "字段 Token 估算") +
+                        (if (mode == CharacterEditMode.STRUCTURED) listOf("AI 补全空白") else emptyList()) + "AI 定向改写"
+                    fun button(label: String) = scene.nodes().first { it.text(label) && it.config.contains(SemanticsActions.OnClick) }
+                    val toolbar = scene.nodes().single { it.config.getOrNull(SemanticsProperties.TestTag) == "character-editor-tools" }.boundsInRoot
+                    val positions = labels.associateWith { button(it).boundsInRoot }
+                    positions.values.forEach { rect ->
+                        assertTrue(rect.width > 0 && rect.height > 0 && rect.left >= toolbar.left && rect.right <= toolbar.right)
+                        assertTrue(rect.top >= toolbar.top && rect.bottom <= toolbar.bottom)
+                    }
+                    if (width == 1100) assertEquals(1, positions.values.map { it.top }.distinct().size)
+                    assertTrue(button("保存").visible(height)); assertTrue(button("取消").visible(height))
+                    val scroll = scene.nodes().single { it.config.getOrNull(SemanticsProperties.TestTag) == "character-editor-scroll" }.boundsInRoot
+                    assertTrue(scroll.height > 0)
+                    scene.sendPointerEvent(PointerEventType.Scroll, scroll.center, scrollDelta = Offset(0f, 20f)); scene.frames()
+                    labels.forEach { assertEquals(positions[it], button(it).boundsInRoot) }
+                    scene.click("字段 Token 估算"); scene.until { nodes().any { it.text("编辑字段 Token 估算") } }
+                    scene.click("关闭 Token 估算")
+                    scene.click("生成卡片封面候选"); assertTrue(editor.cardImages!!.state.value.open); editor.cardImages!!.close(); scene.frames()
+                    scene.click("AI 定向改写"); assertTrue(editor.cardAi!!.state.value.open)
+                    assertEquals(com.example.chatbar.domain.card.CharacterCardAiOperation.REWRITE, editor.cardAi!!.state.value.operation)
+                    editor.cardAi!!.close(); scene.frames()
+                    if (mode == CharacterEditMode.STRUCTURED) {
+                        scene.click("AI 补全空白"); assertEquals(com.example.chatbar.domain.card.CharacterCardAiOperation.FILL, editor.cardAi!!.state.value.operation)
+                        editor.cardAi!!.close(); scene.frames()
+                    }
+                    scene.click("画风与生图参数"); scene.until { nodes().any { it.text("内置画风图集") && it.visible(height) } }
+                    assertEquals(before, editor.state.value.card); assertEquals(before, app.characterRepository.getById(original.id))
+                    assertTrue(app.taskRuntime.tasks.value.isEmpty())
+                    System.getenv("CCB_FORMAT_AI_REVIEW_DIR")?.let { directory ->
+                        val file = Path.of(directory).resolve("card-tools-${mode.name}-$width.png"); Files.createDirectories(file.parent)
+                        scene.render().use { image -> image.encodeToData()!!.use { Files.write(file, it.bytes) } }
+                    }
+                } finally { scene.close() }
+            } finally { app.close(); check(parent.toFile().deleteRecursively()) }
+        }
+    }
+
     @Test fun `reordered actual fields retain draft recovery save cancel and all other original content`() = runBlocking(edt) {
         for (mode in CharacterEditMode.entries) {
             val parent = Files.createTempDirectory("card-order-lifecycle-")

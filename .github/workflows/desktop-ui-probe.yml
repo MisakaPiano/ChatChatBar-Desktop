@@ -47,7 +47,13 @@ jobs:
             ConvertTo-Json | Set-Content -Encoding utf8 "$env:RUNNER_TEMP/ccb-ui-probe/source.json"
           .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain `
             --tests com.example.chatbar.desktop.DesktopScreenshotContentOptionsTest `
-            --tests com.example.chatbar.desktop.DesktopScreenshotDocumentsTest
+            --tests com.example.chatbar.desktop.DesktopScreenshotDocumentsTest `
+            --tests 'com.example.chatbar.desktop.DesktopCurrentImagePresentationTest.role*' `
+            --tests 'com.example.chatbar.desktop.DesktopCurrentImagePresentationTest.empty negative*' `
+            --tests 'com.example.chatbar.desktop.DesktopCurrentImagePresentationTest.compact intermediate*' `
+            --tests 'com.example.chatbar.desktop.DesktopCurrentImagePresentationTest.narrow Studio*' `
+            --tests 'com.example.chatbar.desktop.DesktopCharacterEditorOrderTest.five tool entries*' `
+            --tests 'com.example.chatbar.desktop.DesktopCharacterEditorOrderTest.actual long card sections*' 
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Preserve actual reports and synthetic review images
         if: always()

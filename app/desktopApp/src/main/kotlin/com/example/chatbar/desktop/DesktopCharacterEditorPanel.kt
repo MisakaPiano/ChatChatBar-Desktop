@@ -193,9 +193,27 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
                 scope.launch { controller.retryCleanup() }
             }
         }
-        if (!readOnly) BootstrapButton("画风与生图参数", secondary = true) {
-            val target = (imageSettingsTop - editorViewportTop + editorScroll.value).roundToInt().coerceIn(0, editorScroll.maxValue)
-            scope.launch { editorScroll.animateScrollTo(target) }
+        if (!readOnly) FlowRow(Modifier.fillMaxWidth().testTag("character-editor-tools")
+            .background(DesktopBootstrapColors.card, RoundedCornerShape(8.dp))
+            .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp)).padding(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp),
+            itemVerticalAlignment = Alignment.CenterVertically) {
+            StudioAction("画风与生图参数", style = StudioActionStyle.TERTIARY) {
+                val target = (imageSettingsTop - editorViewportTop + editorScroll.value).roundToInt().coerceIn(0, editorScroll.maxValue)
+                scope.launch { editorScroll.animateScrollTo(target) }
+            }
+            controller.cardImages?.let { images -> StudioAction("生成卡片封面候选", enabled = controller.canUseCardAi,
+                style = StudioActionStyle.TERTIARY) { images.openCover() } }
+            controller.cardAi?.let { ai ->
+                controller.promptBudget?.let { DesktopEditorPromptBudget(it, card, toolEntry = true) }
+                if (card.editMode == CharacterEditMode.STRUCTURED)
+                    StudioAction("AI 补全空白", enabled = controller.canUseCardAi, style = StudioActionStyle.TERTIARY) {
+                        ai.open(com.example.chatbar.domain.card.CharacterCardAiOperation.FILL)
+                    }
+                StudioAction("AI 定向改写", enabled = controller.canUseCardAi, style = StudioActionStyle.TERTIARY) {
+                    ai.open(com.example.chatbar.domain.card.CharacterCardAiOperation.REWRITE)
+                }
+            }
         }
         if (readOnly) {
             controller.promptBudget?.let { DesktopEditorPromptBudget(it, card) }
@@ -205,17 +223,6 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
         } else Column(Modifier.weight(1f).fillMaxWidth().testTag("character-editor-scroll")
             .onGloballyPositioned { editorViewportTop = it.positionInRoot().y }.verticalScroll(editorScroll),
             verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            controller.cardImages?.let { images -> BootstrapButton("生成卡片封面候选", enabled = controller.canUseCardAi, secondary = true) { images.openCover() } }
-            controller.cardAi?.let { ai -> EditorActions {
-                controller.promptBudget?.let { DesktopEditorPromptBudget(it, card) }
-                if (card.editMode == CharacterEditMode.STRUCTURED)
-                    BootstrapButton("AI 补全空白", enabled = controller.canUseCardAi) {
-                        ai.open(com.example.chatbar.domain.card.CharacterCardAiOperation.FILL)
-                    }
-                BootstrapButton("AI 定向改写", enabled = controller.canUseCardAi) {
-                    ai.open(com.example.chatbar.domain.card.CharacterCardAiOperation.REWRITE)
-                }
-            } }
             EditorSection(t(DesktopUiText.CHARACTER_CARD_INFORMATION), Modifier.testTag("character-editor-card")) {
                 ImageSlot(t(DesktopUiText.AVATAR_IMAGE), card.avatar,
                     { controller.chooseAvatar(t(DesktopUiText.CHOOSE_IMAGE)) }, controller::clearAvatar, controller, controller::cropAvatar)

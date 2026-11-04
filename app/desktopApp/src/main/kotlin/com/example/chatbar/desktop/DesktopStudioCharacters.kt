@@ -50,7 +50,7 @@ internal fun DesktopStudioCharacters(draft: NovelAiStudioDraft, infrastructure: 
         fun openEditor() { requestingFocus = true; focusRevision = (focusRevision ?: 0) + 1 }
         fun change(transform: (NovelAiCharacterPromptDraft) -> NovelAiCharacterPromptDraft) = edit { it.copy(characters = it.characters.map { c -> if (c.id == character.id) transform(c) else c }) }
         Column(Modifier.fillMaxWidth().background(if (character.enabled) DesktopBootstrapColors.card else DesktopBootstrapColors.muted)
-            .border(1.dp, DesktopBootstrapColors.border).onFocusChanged { focused = it.hasFocus }.focusGroup()
+            .border(1.dp, DesktopBootstrapColors.border)
             .padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp), itemVerticalAlignment = Alignment.CenterVertically) {
@@ -69,7 +69,7 @@ internal fun DesktopStudioCharacters(draft: NovelAiStudioDraft, infrastructure: 
                 StudioAction(if (pinned) "自动收起" else "固定展开", selected = pinned) { pinned = !pinned }
             }
             Column(Modifier.alpha(if (character.enabled) 1f else .6f)
-                .focusGroup()) {
+                .onFocusChanged { focused = it.hasFocus }.focusGroup()) {
                 if (expanded) {
                     key(showNegative) {
                         CompositionLocalProvider(LocalDesktopStudioFieldScope provides "person:${character.id}") {

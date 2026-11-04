@@ -54,7 +54,7 @@ class DesktopScreenshotContentOptionsTest {
             assertTrue(png.resourceHashes.containsKey("images/synthetic-kept.png"))
             val pdf = ByteArrayOutputStream().also { DesktopScreenshotDocuments.pdf(png, it) }.toByteArray()
             Loader.loadPDF(pdf).use { assertTrue(it.numberOfPages >= 1) }
-            val word = ByteArrayOutputStream().also { DesktopScreenshotDocuments.word(doc, emptyMap(), { bytes }, it) }.toByteArray()
+            val word = ByteArrayOutputStream().also { DesktopScreenshotDocuments.word(doc, png.resourceHashes, { bytes }, it) }.toByteArray()
             var xml = ""
             ZipInputStream(word.inputStream()).use { zip -> while (true) {
                 val entry = zip.nextEntry ?: break

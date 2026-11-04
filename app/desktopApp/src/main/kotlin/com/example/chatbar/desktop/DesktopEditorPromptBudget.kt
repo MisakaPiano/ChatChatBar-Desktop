@@ -64,10 +64,11 @@ internal class DesktopEditorBudgetController(private val settings: SettingsRepos
     suspend fun closeAndDrain() { job?.cancelAndJoin(); scope.coroutineContext[Job]?.cancelAndJoin() }
 }
 
-@Composable internal fun DesktopEditorPromptBudget(controller: DesktopEditorBudgetController, entity: Any) {
+@Composable internal fun DesktopEditorPromptBudget(controller: DesktopEditorBudgetController, entity: Any, toolEntry: Boolean = false) {
     var open by remember(controller, entity::class) { mutableStateOf(false) }
     val model by controller.state.collectAsState()
-    BootstrapButton("字段 Token 估算", secondary = true) { open = true }
+    if (toolEntry) StudioAction("字段 Token 估算", style = StudioActionStyle.TERTIARY) { open = true }
+    else BootstrapButton("字段 Token 估算", secondary = true) { open = true }
     if (open) DesktopModalSurface {
         Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.dim).padding(16.dp), contentAlignment = Alignment.Center) {
             Column(Modifier.widthIn(max = 1000.dp).fillMaxWidth().heightIn(max = 820.dp)

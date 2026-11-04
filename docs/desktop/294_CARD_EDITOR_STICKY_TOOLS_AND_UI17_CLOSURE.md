@@ -1,0 +1,7 @@
+# 卡编辑器五工具常驻栏与UI17具体修复
+
+用户明确五个同级入口常驻顶部：画风与生图参数、生成封面候选、字段Token估算、结构化补空、定向改写。正常编辑Overlay使用统一紧凑tertiary工具FlowRow，宽并排窄回流，仍在scroll owner外，保存/取消原footer不改。原cardImages/cardAi/budget存在性、structured-only fill、canUseCardAi启用条件与回调完整保留；不自动AI请求/保存/Prompt变更。只读分支budget沿原按钮。图集浏览与旧顺序人验PASS不等于这次toolbar已人验。
+
+UI17/4336原18=14PASS/4FAIL/0SKIP保留。账户1/Workspace4/viewer1以及slow空负向切换/原role focus实际PASS。具体四项：角色header启停获得whole-card hasFocus导致collapsed被展开，改Prompt内层稳定focus组，保header键盘/原摘要断言；仅中间帧无savedPath错误显示导入提示已修；narrow单击摘要是原combinedClickable延迟事件，实际Workspace同callback待350ms已PASS，单独用例改在原5秒内等待真实收起入口而非40ms抢跑，不force状态；inline Word夹具缺捕获图片哈希，改用刚渲染得到的png.resourceHashes，不放宽writer guard。
+
+新增真实Overlay420×420/1100×640和两编辑模式测试五/四入口行列边界、滚动固定、固定footer、预算/cover/AI原owner打开与style定位、未改card/持久源/未执行task。只补受影响失败/焦点场景与新toolbar/Word，14已过按未变输入复用；公开1237/304/sign19冻结，所有后继绿之前不新冻结可交付包，用户外出仅挂人工验收，继续独立工程，不新增公开许可。
