@@ -87,6 +87,34 @@ class DesktopStudioWorkspaceTest {
         }
     }
 
+    @Test fun `history preview and media actions share one adjacent toolbar in narrow and wide workspace`() = runBlocking(awt) {
+        for (width in listOf(360, 1240)) {
+            var history = 0; var viewer = 0; var media = 0
+            val scene = ImageComposeScene(width, 700) {
+                DesktopStudioWorkspace(previewActions = {
+                    DesktopStudioPrimaryPreviewActions(true, true, { history++ }, { viewer++ }, { media++ })
+                }, compact = {}, editor = { StatusText("Synthetic editor") }, footer = {}, preview = {})
+            }
+            try {
+                scene.frames()
+                fun action(text: String) = scene.nodes().first {
+                    it.config.getOrNull(SemanticsProperties.ContentDescription) == listOf(text) && it.config.contains(SemanticsActions.OnClick)
+                }.boundsInRoot
+                val h = action("历史"); val v = action("预览"); val m = action("图像操作 / 用作")
+                assertEquals(h.top, v.top, 1f); assertEquals(v.top, m.top, 1f)
+                assertTrue(h.right <= v.left && v.right <= m.left)
+                assertTrue(h.left >= 0 && m.right <= width)
+                assertFalse(scene.nodes().any { it.matches("打开预览") })
+                scene.click("历史"); scene.click("预览"); scene.click("图像操作 / 用作")
+                assertEquals(1, history); assertEquals(1, viewer); assertEquals(1, media)
+                System.getenv("CCB_FORMAT_AI_REVIEW_DIR")?.let { directory ->
+                    val file = Path.of(directory).resolve("studio-primary-toolbar-$width.png"); Files.createDirectories(file.parent)
+                    scene.render().use { image -> image.encodeToData()!!.use { Files.write(file, it.bytes) } }
+                }
+            } finally { scene.close() }
+        }
+    }
+
     private val awt = object : CoroutineDispatcher() { override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block) }
     private suspend fun ImageComposeScene.frames() { repeat(8) { render().close(); yield() }; delay(60); render().close() }
     private fun ImageComposeScene.nodes(): List<SemanticsNode> {
@@ -194,13 +222,13 @@ class DesktopStudioWorkspaceTest {
                         scene.click("高级 / 诊断"); scene.shot("wide-diagnostics-$w")
                         assertEquals(pane, scene.bounds("Studio 全高预览面板"))
                         scene.click("NovelAI Studio")
-                        scene.click("预览 · 展开预览 ▾"); scene.click("仅缩略图")
+                        scene.click("布局 · 展开预览 ▾"); scene.click("仅缩略图")
                         assertEquals(116f, scene.bounds("Studio 全高预览面板").width, 1f)
                         // The narrow rail's caption band is covered by the real window buttons.
                         assertEquals(116f, chrome.layout.dragRegions.single().right - chrome.layout.dragRegions.single().left, 1f)
                         scene.shot("wide-rail-$w")
-                        scene.click("展开预览")
-                        scene.click("预览 · 展开预览 ▾"); scene.click("预览专注")
+                        scene.click("显示图片面板"); delay(350); scene.frames()
+                        scene.click("布局 · 展开预览 ▾"); scene.click("预览专注")
                         assertEquals(w.toFloat(), scene.bounds("Studio 全高预览面板").width, 1f)
                         assertPreviewCaption()
                         scene.shot("wide-focus-$w"); scene.click("返回编辑")
@@ -209,7 +237,7 @@ class DesktopStudioWorkspaceTest {
                         assertTrue(scene.bounds("Studio 当前图片摘要").height < 180f)
                         assertTrue(chrome.layout.dragRegions.isEmpty())
                         scene.shot(if (w == 360) "extreme-narrow-collapsed" else "narrow-collapsed")
-                        scene.click("展开预览")
+                        scene.click("显示图片面板"); delay(350); scene.frames()
                         val pane = scene.bounds("Studio 全高预览面板")
                         assertEquals(0f, pane.top, 1f); assertEquals(h.toFloat(), pane.bottom, 1f)
                         assertEquals(w.toFloat(), pane.right, 1f)
@@ -263,11 +291,11 @@ class DesktopStudioWorkspaceTest {
             assertTrue(enlarged > 680f)
             scene.drag(scene.bounds("调整预览宽度").center, Offset(1130f, 400f))
             assertEquals("仅缩略图", state.mode); assertEquals(116f, scene.bounds("Studio 全高预览面板").width, 1f)
-            scene.click("展开预览")
+            scene.click("显示图片面板")
             assertTrue(scene.bounds("Studio 全高预览面板").width >= 300f)
             // Explicit modes keep the last expanded width; drag has intentionally changed it.
             val expandedWidth = scene.bounds("Studio 全高预览面板").width
-            scene.click("预览 · 展开预览 ▾"); scene.click("预览专注"); scene.click("返回编辑")
+            scene.click("布局 · 展开预览 ▾"); scene.click("预览专注"); scene.click("返回编辑")
             assertEquals(expandedWidth, scene.bounds("Studio 全高预览面板").width, 1f)
             assertTrue(scene.nodes().any { it.config.getOrNull(SemanticsProperties.EditableText)?.text == "unsent" })
             scene.constraints = Constraints.fixed(360, 620); scene.frames(); scene.click("展开预览"); scene.click("收起预览")

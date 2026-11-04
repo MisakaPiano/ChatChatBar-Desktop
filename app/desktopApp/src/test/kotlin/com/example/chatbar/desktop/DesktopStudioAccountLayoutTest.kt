@@ -50,7 +50,7 @@ class DesktopStudioAccountLayoutTest {
                     assertTrue(account.left > width / 3f)
                     assertEquals(gear.center.y, reload.center.y, 1f)
                     assertEquals(account.center.y, gear.center.y, 1f)
-                } else assertTrue(reload.top >= account.top)
+                } else assertTrue(reload.center.y >= account.center.y - 1f, "Controls must stay on the account row or wrap below: $width / $account / $reload")
                 scene.click("账户设置测试"); scene.click("刷新")
                 assertEquals(1, settings); assertEquals(1, refresh)
                 assertFalse(scene.nodes().any { it.matches("NovelAI Studio") || it.matches("高级 / 诊断") })

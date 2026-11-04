@@ -262,9 +262,10 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
         if (file != null) { currentImage = file; selectedResult = null; auxiliary = "当前图片"; controller.clearReverseCandidate() }
     } },
         navigation = navigation, captions = captions, diagnostics = diagnostics, chromeRecorder = chromeRecorder,
-        previewActions = { StudioAction("历史", icon = DesktopAppIcons.History) { auxiliary = "历史" } },
-        compact = { expand -> DesktopStudioCompactResult(shownPath, intermediate, false, expand, ::preview,
-            { if (shownPath != null) { currentImage = shownPath; auxiliary = "当前图片"; controller.clearReverseCandidate() } }) },
+        previewActions = { DesktopStudioPrimaryPreviewActions(shownPath != null && intermediate == null,
+            shownPath != null && intermediate == null, { auxiliary = "历史" }, ::preview,
+            { currentImage = shownPath; auxiliary = "当前图片"; controller.clearReverseCandidate() }) },
+        compact = { expand -> DesktopStudioCompactResult(shownPath, intermediate, expand, ::preview) },
         editor = {
             StudioAccountCluster(d.selectedModel, state.accountUi) {
                 StudioAccountActions {
@@ -305,8 +306,7 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
                 onPreview = { viewing = resultPaths; viewingIndex = resultPaths.indexOf(it) }) { selectedResult = it }
             else Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 StudioActions {
-                    DesktopStudioPreviewActions(shownPath != null, intermediate != null, true,
-                        ::preview, { inlineResetRevision++ }, { currentImage = shownPath; auxiliary = "当前图片"; controller.clearReverseCandidate() })
+                    DesktopStudioPreviewActions(shownPath != null, intermediate != null, true) { inlineResetRevision++ }
                 }
                 Box(Modifier.weight(1f).fillMaxWidth()) {
                     if (intermediate != null) DesktopOwnedImage("intermediate-${intermediate.contentHashCode()}", { intermediate }, Modifier.fillMaxSize())
@@ -443,47 +443,45 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
 }
 
 @Composable
+internal fun DesktopStudioPrimaryPreviewActions(hasPreview: Boolean, hasSavedImage: Boolean,
+    onHistory: () -> Unit, onViewer: () -> Unit, onImageActions: () -> Unit) {
+    StudioAction("历史", icon = DesktopAppIcons.History, onClick = onHistory)
+    StudioAction("预览", enabled = hasPreview, icon = DesktopAppIcons.ExpandComposer, onClick = onViewer)
+    StudioAction("图像操作 / 用作", enabled = hasSavedImage, onClick = onImageActions)
+}
+
+@Composable
 internal fun DesktopStudioPreviewActions(hasSavedImage: Boolean, showingIntermediate: Boolean, zoomActive: Boolean,
-    onViewer: () -> Unit, onReset: () -> Unit, onImageActions: () -> Unit) {
+    onReset: () -> Unit) {
     if (showingIntermediate) {
         StatusText("生成中 · 未保存预览")
         if (hasSavedImage) StatusText("先前选择的图片未被本次生成替换")
-    } else if (hasSavedImage) {
-        StudioAction("打开预览", onClick = onViewer)
-        if (zoomActive) StudioAction("适应 / 重置", onClick = onReset)
-        StudioAction("图像操作 / 用作", onClick = onImageActions)
-    }
+    } else if (hasSavedImage && zoomActive) StudioAction("适应 / 重置", onClick = onReset)
 }
 
-/** Narrow summary opens a separate right pane; it never grows an inline vertical image box. */
+/** The compact image remains an entry to the inline pane; primary actions share the toolbar above. */
 @Composable
-internal fun DesktopStudioCompactResult(path: java.nio.file.Path?, intermediate: ByteArray?, expanded: Boolean,
-    onExpand: () -> Unit, onViewer: () -> Unit, onImageActions: () -> Unit) {
+internal fun DesktopStudioCompactResult(path: java.nio.file.Path?, intermediate: ByteArray?,
+    onExpand: () -> Unit, onViewer: () -> Unit) {
     val showingIntermediate = intermediate != null
-    Column(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border).padding(8.dp)
-        .semantics { contentDescription = "Studio 当前图片摘要" }, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.weight(1f)) { StatusText(if (showingIntermediate) "生成中 · 未保存预览" else "当前图片") }
-            StudioAction(if (expanded) "收起预览" else "展开预览", onClick = onExpand)
+    Row(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border).padding(8.dp)
+        .semantics { contentDescription = "Studio 当前图片摘要" }, horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(88.dp).background(DesktopBootstrapColors.muted)
+            .semantics { contentDescription = "显示图片面板" }
+            .desktopViewerEntry(enabled = path != null || showingIntermediate, onClick = onExpand,
+                onOpen = { if (showingIntermediate) onExpand() else if (path != null) onViewer() }),
+            contentAlignment = Alignment.Center) {
+            when {
+                intermediate != null -> DesktopOwnedImage("intermediate-${intermediate.contentHashCode()}", { intermediate }, Modifier.fillMaxSize())
+                path != null -> DesktopOwnedImage(path.toString(), { java.nio.file.Files.readAllBytes(path) }, Modifier.fillMaxSize())
+                else -> StatusText("暂无图片")
+            }
         }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Box(Modifier.size(88.dp).background(DesktopBootstrapColors.muted)
-                .desktopViewerEntry(enabled = path != null || showingIntermediate, onClick = onExpand,
-                    onOpen = { if (showingIntermediate) onExpand() else if (path != null) onViewer() }), contentAlignment = Alignment.Center) {
-                when {
-                    intermediate != null -> DesktopOwnedImage("intermediate-${intermediate.contentHashCode()}", { intermediate }, Modifier.fillMaxSize())
-                    path != null -> DesktopOwnedImage(path.toString(), { java.nio.file.Files.readAllBytes(path) }, Modifier.fillMaxSize())
-                    else -> StatusText("暂无图片")
-                }
-            }
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                if (showingIntermediate) {
-                    if (path != null) StatusText("先前选择的图片未被本次生成替换")
-                } else if (path != null) {
-                    StudioAction("打开预览", onClick = onViewer)
-                    StudioAction("图像操作 / 用作", onClick = onImageActions)
-                } else StatusText("导入图片或生成后查看结果")
-            }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            StatusText(if (showingIntermediate) "生成中 · 未保存预览" else "当前图片")
+            if (showingIntermediate && path != null) StatusText("先前选择的图片未被本次生成替换")
+            else if (path == null) StatusText("导入图片或生成后查看结果")
         }
     }
 }

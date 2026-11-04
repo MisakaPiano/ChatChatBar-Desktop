@@ -93,7 +93,7 @@ internal fun DesktopStudioWorkspace(
                     true, Modifier.width(142.dp)) { state.diagnostics = true }
             }
             if (!wide && !expanded && !state.diagnostics) Column {
-                previewActions?.invoke()
+                StudioActions { previewActions?.invoke() }
                 compact { state.compactExpanded = true }
             }
             Box(Modifier.weight(1f).fillMaxWidth().clipToBounds()) {
@@ -135,12 +135,14 @@ internal fun DesktopStudioWorkspace(
                 .semantics { contentDescription = "Studio 全高预览面板" }
                 .padding(top = if (captions != null || navigation != null) 44.dp else 0.dp)
                 .padding(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                previewActions?.invoke()
-                if (!wide) StudioAction("收起预览") { state.compactExpanded = false }
-                else if (state.mode == "仅缩略图") StudioAction("展开预览") { state.mode = "展开预览" }
-                else StudioActions {
-                    CompactChoice("预览", listOf("展开预览", "仅缩略图", "预览专注"), state.mode, { it }) { state.mode = it }
-                    if (focus) StudioAction("返回编辑") { state.mode = "展开预览" }
+                StudioActions {
+                    previewActions?.invoke()
+                    if (!wide) StudioAction("收起预览") { state.compactExpanded = false }
+                    else if (state.mode == "仅缩略图") StudioAction("显示图片面板") { state.mode = "展开预览" }
+                    else {
+                        CompactChoice("布局", listOf("展开预览", "仅缩略图", "预览专注"), state.mode, { it }) { state.mode = it }
+                        if (focus) StudioAction("返回编辑") { state.mode = "展开预览" }
+                    }
                 }
                 Box(Modifier.weight(1f).fillMaxWidth()) { preview(wide && state.mode == "仅缩略图") }
             }

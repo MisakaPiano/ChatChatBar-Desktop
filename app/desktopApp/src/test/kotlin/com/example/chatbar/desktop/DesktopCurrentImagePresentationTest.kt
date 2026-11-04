@@ -99,6 +99,43 @@ class DesktopCurrentImagePresentationTest {
             assertTrue(f.container.taskRuntime.tasks.value.isEmpty())
         } finally { scene.close(); f.close() }
     }
+    @Test fun `empty negative tab survives slow pointer focus transfer and compact role keeps short and long fields bounded`() = runBlocking(awt) {
+        val f = FinalProductDesignFixture()
+        try {
+            for (width in listOf(360, 760)) {
+                var draft by mutableStateOf(NovelAiStudioDraft(characters = listOf(
+                    NovelAiCharacterPromptDraft(id = "role", prompt = "short synthetic text", negativePrompt = ""))))
+                val scene = ImageComposeScene(width, 900) { Column(Modifier.fillMaxSize()) {
+                    DesktopStudioCharacters(draft, f.container.novelAiInfrastructure, false) { draft = it(draft) }
+                    StudioAction("外部焦点") {}
+                } }
+                try {
+                    scene.frames(); scene.click("展开角色 1 Prompt")
+                    val tab = scene.nodes().first { it.matches("负面 Prompt") && it.config.contains(SemanticsActions.OnClick) }.boundsInRoot.center
+                    scene.sendPointerEvent(PointerEventType.Press, tab, button = PointerButton.Primary)
+                    scene.frames()
+                    scene.sendPointerEvent(PointerEventType.Release, tab, button = PointerButton.Primary); scene.frames()
+                    val negative = scene.nodes().single { it.matches("角色负面") && it.config.contains(SemanticsActions.SetText) }
+                    assertTrue(negative.boundsInRoot.height < 70f)
+                    assertEquals("short synthetic text", draft.characters.single().prompt)
+                    assertTrue(negative.config[SemanticsActions.SetText].action!!.invoke(AnnotatedString("synthetic negative ".repeat(150))))
+                    scene.frames()
+                    val longField = scene.nodes().single { it.matches("角色负面") && it.config.contains(SemanticsActions.SetText) }
+                    assertTrue(longField.boundsInRoot.height <= 220f)
+                    scene.click("正向 Prompt"); scene.click("负面 Prompt")
+                    assertEquals("synthetic negative ".repeat(150), draft.characters.single().negativePrompt)
+                    scene.click("外部焦点")
+                    assertFalse(scene.nodes().any { it.matches("角色负面") })
+                    scene.click("展开角色 1 Prompt"); scene.click("固定展开"); scene.click("负面 Prompt"); scene.click("外部焦点")
+                    assertTrue(scene.nodes().any { it.matches("角色负面") })
+                    System.getenv("CCB_FORMAT_AI_REVIEW_DIR")?.let { directory ->
+                        val file = Path.of(directory).resolve("role-negative-compact-$width.png"); Files.createDirectories(file.parent)
+                        scene.render().use { image -> image.encodeToData()!!.use { Files.write(file, it.bytes) } }
+                    }
+                } finally { scene.close() }
+            }
+        } finally { f.close() }
+    }
     @Test fun `role disable collapse expand and edit remain independent from generation`() = runBlocking(awt) {
         val f = FinalProductDesignFixture()
         var draft by mutableStateOf(NovelAiStudioDraft(basePrompt = "landscape", characters = listOf(NovelAiCharacterPromptDraft(id = "role", prompt = "adult traveler", negativePrompt = "blur"))))
@@ -144,15 +181,15 @@ class DesktopCurrentImagePresentationTest {
                 val scene = ImageComposeScene(width, 900) { DesktopNovelAiStudioPanel(f.container.novelAiStudioController) }
                 try {
                     scene.frames(); repeat(10) { delay(25); scene.frames() }
-                    val preview = scene.nodes().first { it.matches("打开预览") }
+                    val preview = scene.nodes().first { it.matches("预览") && it.config.contains(SemanticsActions.OnClick) }
                     assertTrue(preview.boundsInRoot.top < 280)
                     assertTrue(preview.boundsInRoot.right <= width)
                     if (width > 900) assertTrue(preview.boundsInRoot.left > width / 2)
                     scene.shot("studio-$width")
                     if (width > 900) {
-                        scene.click("预览 · 展开预览 ▾"); scene.click("仅缩略图")
+                        scene.click("布局 · 展开预览 ▾"); scene.click("仅缩略图")
                         scene.shot("studio-filmstrip")
-                        scene.click("展开预览"); scene.click("预览 · 展开预览 ▾"); scene.click("预览专注")
+                        scene.click("显示图片面板"); scene.click("布局 · 展开预览 ▾"); scene.click("预览专注")
                         assertFalse(scene.nodes().any { it.matches("粘贴覆盖") })
                         scene.shot("studio-preview-focus")
                     }
@@ -195,13 +232,13 @@ class DesktopCurrentImagePresentationTest {
                     }
                     assertEquals(true, scene.nodes().first { it.matches("选择结果缩略图 2") }
                         .config.getOrNull(SemanticsProperties.Selected))
-                    scene.click("预览 · 展开预览 ▾"); scene.click("仅缩略图")
+                    scene.click("布局 · 展开预览 ▾"); scene.click("仅缩略图")
                     val rail = scene.nodes().first { it.matches("Studio 全高预览面板") }.boundsInRoot
                     assertEquals(116f, rail.width, 1f)
                     assertTrue(scene.nodes().any { it.matches("竖向结果缩略图滚动条") })
-                    scene.click("展开预览"); scene.click("预览 · 展开预览 ▾"); scene.click("预览专注")
+                    scene.click("显示图片面板"); scene.click("布局 · 展开预览 ▾"); scene.click("预览专注")
                     assertFalse(scene.nodes().any { it.matches("调整预览宽度") })
-                    scene.click("预览 · 预览专注 ▾"); scene.click("展开预览")
+                    scene.click("预览 · 预览专注 ▾"); scene.click("显示图片面板")
                     val restored = scene.nodes().first { it.matches("调整预览宽度") }.boundsInRoot
                     assertEquals(moved.left, restored.left, 2f)
                     assertEquals(true, scene.nodes().first { it.matches("选择结果缩略图 2") }
@@ -233,7 +270,7 @@ class DesktopCurrentImagePresentationTest {
             scene.frames()
             assertTrue(scene.nodes().any { it.matches("生成中 · 未保存预览") })
             assertTrue(scene.nodes().any { it.matches("先前选择的图片未被本次生成替换") })
-            assertFalse(scene.nodes().any { it.matches("打开预览") || it.matches("图像操作 / 用作") || it.matches("适应 / 重置") })
+            assertFalse(scene.nodes().any { it.matches("预览") && it.config.contains(SemanticsActions.OnClick) || it.matches("图像操作 / 用作") || it.matches("适应 / 重置") })
             saved = false; scene.frames()
             assertTrue(scene.nodes().any { it.matches("生成中 · 未保存预览") })
             assertFalse(scene.nodes().any { it.matches("已保存图片") })
@@ -261,8 +298,8 @@ class DesktopCurrentImagePresentationTest {
             assertTrue(scene.nodes().any { it.matches("生成中 · 未保存预览") })
             assertTrue(scene.nodes().any { it.matches("先前选择的图片未被本次生成替换") })
             assertFalse(scene.nodes().any { it.matches("先前已保存图片仍在历史中") })
-            assertFalse(scene.nodes().any { it.matches("打开预览") || it.matches("图像操作 / 用作") || it.matches("适应 / 重置") })
-            scene.click("展开预览")
+            assertFalse(scene.nodes().any { it.matches("预览") && it.config.contains(SemanticsActions.OnClick) || it.matches("图像操作 / 用作") || it.matches("适应 / 重置") })
+            scene.click("显示图片面板")
             assertTrue(scene.nodes().any { it.matches("收起预览") })
             assertFalse(scene.nodes().any { it.matches("适应 / 重置") })
             savedPath = null; scene.frames()
@@ -270,7 +307,7 @@ class DesktopCurrentImagePresentationTest {
             assertFalse(scene.nodes().any { it.matches("暂无图片") || it.matches("导入图片或生成后查看结果") })
             assertEquals(0, viewed); assertEquals(0, used)
             savedPath = path; intermediate = null; scene.frames()
-            assertTrue(scene.nodes().any { it.matches("打开预览") && it.config.getOrNull(SemanticsActions.OnClick) != null })
+            assertTrue(scene.nodes().any { it.matches("预览") && it.config.contains(SemanticsActions.OnClick) && it.config.getOrNull(SemanticsActions.OnClick) != null })
             assertTrue(scene.nodes().any { it.matches("图像操作 / 用作") })
             assertFalse(scene.nodes().any { it.matches("适应 / 重置") })
         } finally { scene.close(); Files.deleteIfExists(path) }
@@ -283,12 +320,12 @@ class DesktopCurrentImagePresentationTest {
             val scene = ImageComposeScene(700, 700) { DesktopNovelAiStudioPanel(f.container.novelAiStudioController) }
             try {
                 repeat(8) { scene.frames(); delay(20) }
-                val open = scene.nodes().first { it.matches("打开预览") }.boundsInRoot
+                val open = scene.nodes().first { it.matches("预览") && it.config.contains(SemanticsActions.OnClick) }.boundsInRoot
                 val prompt = scene.nodes().first { it.matches("Prompt") }.boundsInRoot
                 assertTrue(open.top < 250)
                 assertTrue(prompt.top < 330)
                 assertEquals(1, scene.nodes().count { it.matches("图像操作 / 用作") })
-                scene.click("展开预览")
+                scene.click("显示图片面板")
                 assertTrue(scene.nodes().any { it.matches("收起预览") })
                 assertTrue(scene.nodes().any { it.matches("Studio 内联图片预览") })
                 assertTrue(scene.nodes().any { it.matches("适应 / 重置") })

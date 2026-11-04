@@ -179,13 +179,16 @@ internal fun StudioPromptTextEditor(input: TextFieldValue, onChange: (TextFieldV
 @Composable
 internal fun StudioPromptField(label: String, value: String, infrastructure: DesktopNovelAiInfrastructure,
     translated: Boolean, focusRevision: Long? = null, onEditorFocusChanged: ((Boolean) -> Unit)? = null,
-    onExpandedEditorChanged: ((Boolean) -> Unit)? = null, onChange: (String) -> Unit) = StudioPromptField(label, value,
-    infrastructure.suggestions, infrastructure.translations, translated, focusRevision, onEditorFocusChanged, onExpandedEditorChanged, onChange)
+    onExpandedEditorChanged: ((Boolean) -> Unit)? = null,
+    inlineHeader: (@Composable (onExpand: () -> Unit) -> Unit)? = null, compact: Boolean = false,
+    onChange: (String) -> Unit) = StudioPromptField(label, value,
+    infrastructure.suggestions, infrastructure.translations, translated, focusRevision, onEditorFocusChanged, onExpandedEditorChanged, inlineHeader, compact, onChange)
 
 @Composable
 internal fun StudioPromptField(label: String, value: String, suggestionService: NovelAiTagSuggestionService,
     translationService: NovelAiPromptTranslationService, translated: Boolean, focusRevision: Long? = null,
     onEditorFocusChanged: ((Boolean) -> Unit)? = null, onExpandedEditorChanged: ((Boolean) -> Unit)? = null,
+    inlineHeader: (@Composable (onExpand: () -> Unit) -> Unit)? = null, compact: Boolean = false,
     onChange: (String) -> Unit) {
     val inlineHistory = rememberStudioTextHistory(label, value)
     var expandedHistory by remember { mutableStateOf<DesktopStudioTextHistory?>(null) }
@@ -235,18 +238,20 @@ internal fun StudioPromptField(label: String, value: String, suggestionService: 
         val focus = remember { FocusRequester() }
         LaunchedEffect(fullscreen, focusRevision) { if (fullscreen || focusRevision != null) focus.requestFocus() }
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            fun expand() {
+                openingValue = value; expandedHistory = inlineHistory.fork(); fullscreen = true; onExpandedEditorChanged?.invoke(true)
+            }
+            if (!fullscreen && inlineHeader != null) inlineHeader(::expand)
+            else Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.weight(1f)) { StatusText(label) }
-                if (!fullscreen) StudioAction("展开", icon = DesktopAppIcons.ExpandComposer) {
-                    openingValue = value; expandedHistory = inlineHistory.fork(); fullscreen = true; onExpandedEditorChanged?.invoke(true)
-                }
+                if (!fullscreen) StudioAction("展开", icon = DesktopAppIcons.ExpandComposer, onClick = ::expand)
             }
             Box {
                 Box(Modifier.fillMaxWidth().heightIn(max = if (fullscreen) 450.dp else 220.dp)
                     .border(1.dp, if (focused) DesktopBootstrapColors.primary else DesktopBootstrapColors.border)
                     .background(DesktopBootstrapColors.input).verticalScroll(rememberScrollState()).padding(9.dp)) {
                     StudioPromptTextEditor(input, { next -> inspecting = next.text == input.text; editor.edit(next) { if (!fullscreen) onChange(it) } }, translated, currentAnnotations?.annotations.orEmpty(), Modifier.fillMaxWidth()
-                        .heightIn(min = if (fullscreen) 320.dp else 70.dp).focusRequester(focus)
+                        .heightIn(min = if (fullscreen) 320.dp else if (compact) 0.dp else 70.dp).focusRequester(focus)
                         .semantics { contentDescription = label }.studioTextHistoryKeys(editor) { if (!fullscreen) onChange(it) }.onFocusChanged {
                             focused = it.isFocused; onEditorFocusChanged?.invoke(it.isFocused)
                         }
