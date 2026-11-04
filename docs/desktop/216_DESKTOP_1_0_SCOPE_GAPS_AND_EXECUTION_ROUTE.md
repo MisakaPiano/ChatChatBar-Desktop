@@ -1,3 +1,7 @@
+2026-11-04 公开1237：用户明确答复“允许先公开1237和匹配签名更新19”。已复用冻结304/R31原包公开Release433024800（desktop-v0.1.0-preview.1237→304bd42a），四资产/正文读回通过；签名19已发布到原codex/update-metadata，commit85a80124bc8e920c897e9cdf1cebffcb725d5be2，root1不变。五role在固定commit与公开branch的十次匿名HTTP逐字节一致，完整178544270B安装包匿名流SHA7878dc17270056db5b44db1783d939ac91efa96d2328a4f6b585bd231f109e4a通过，规范LF notes SHA803c8b65bd032a317206ff4834f87cba2153e904701aaf4ee8e55870f747e9e3与签名一致。实际旧client发现/下载/二验复用R32受控云结果，匿名HTTP不是一次新的公网client执行。没有重建/代装或操作真实资料；1237人验待协调端引导用户自行更新，1236资料/重开PASS和N01原FAIL保留。正式1.0、系统中文IME、物理音频4原scope、真实Provider/长聊天/生产合并等仍按具体场景待验。
+
+下方历史保留。
+
 2026-11-04 收尾：私有1237冻结应用304bd42a；完整156/41681820343两job成功，实际checkout c841147f与304完整tree相同。Windows原XML主369suite2641=2621PASS+20SKIP/0FAIL，proxy5/NTFS7/native37/TUF14/exit4通过；shared1233/Android HTML586复用未变化输入的155原件并核156 Linux成功。native7/41681529979六方法全PASS，闭合155原三FAIL，原失败与此前native结果不改写。R31/41681835763普通升级/重开/忙拒绝/独立中文入口及最终549/548文件已核；R32/41685095129冻结公开1233旧client实际15→19完整下载二验通过（受控metadata fetcher，不是匿名公网client或用户安装）。Release433024800/tag desktop-v0.1.0-preview.1237→304保持draft，四资产已上传并读回；本地签名19未公开，公开仍1236/sign18。当前源码补齐Studio双层历史/实时输入几何、所选Vibe资源与历史投影，并适配作者892b Medium费用/透明后缀显式归属/计数准备顺序，见288/289。原15图形方法完整闭合，混合Stop播放与3专门音频仍未测，真实系统IME和本版资料/功能人验待。用户1236自更/资料/重开通过及N01原FAIL分开保留，不操作日常H或真实资料。当前交付工程已备，无新增后继公开授权。
 
 下方历史保留。

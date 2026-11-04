@@ -106,7 +106,7 @@
     "targetReleaseVersion": "1.4.7",
     "targetCommit": "b4fa75d296680f777be095f3121ad0c4db979f17",
     "authority": "User authorized latest official CCB adaptation; Desktop first, separate Studio consumes official interfaces",
-    "status": "selected147_scoped_engineering_verified_private1237_ready_not_whole_baseline_promotion",
+    "status": "selected147_scoped_engineering_verified_public1237_user_acceptance_pending_not_whole_baseline_promotion",
     "sourceAtRecord": "304bd42a250b062ddaafc4c7dcc55710e94c4e8b",
     "lastCompleteSourceValidation": {
       "commit": "304bd42a250b062ddaafc4c7dcc55710e94c4e8b",
@@ -492,13 +492,14 @@
       }
     ],
     "currentPublicDelivery": {
-      "version": "0.1.0-preview.1236",
-      "source": "a647cde57d8cd89dc03e05a5b7acf0be9194c5b6",
-      "release": 432747686,
-      "metadataRevision": 18,
-      "metadataCommit": "14dadbfeed1299cc8d80712b3fd0ac8cb59eed55",
-      "humanAcceptance": "USER1236_UPGRADE_DATA_REOPEN_PASS_ONLY_N01_DEFECTS_RETAINED_SUCCESSOR1237_PENDING",
-      "proof": "286/287; R27 ordinary/final bytes, R28 frozen old-client, anonymous full installer and exact roles"
+      "version": "0.1.0-preview.1237",
+      "source": "304bd42a250b062ddaafc4c7dcc55710e94c4e8b",
+      "release": 433024800,
+      "metadataRevision": 19,
+      "metadataCommit": "85a80124bc8e920c897e9cdf1cebffcb725d5be2",
+      "humanAcceptance": "PENDING1237_USER_SELF_UPDATE_AND_N01_RETEST_1236_ORIGINAL_RESULTS_RETAINED",
+      "proof": "288; full156/native7/R31/R32 and anonymous complete178544270B/ten roles; public user authority explicit1237 only",
+      "url": "https://github.com/MisakaPiano/ChatChatBar-Desktop/releases/tag/desktop-v0.1.0-preview.1237"
     },
     "residualReview": "I:/CCB-Desktop-Continuity/updates/20261103-selected147-residual-closure/OWNER_REVIEW.json",
     "privateCandidate1237": {
@@ -521,6 +522,42 @@
       "userAcceptance": false,
       "dailyInstallation": false,
       "evidence": "I:\\CCB-Desktop-Continuity\\updates\\20261104-candidate1237-r02-preparation\\FROZEN_REVIEW.json"
+    },
+    "publicDeliveryHistory": [
+      {
+        "version": "0.1.0-preview.1236",
+        "source": "a647cde57d8cd89dc03e05a5b7acf0be9194c5b6",
+        "release": 432747686,
+        "metadataRevision": 18,
+        "metadataCommit": "14dadbfeed1299cc8d80712b3fd0ac8cb59eed55",
+        "humanAcceptance": "USER1236_UPGRADE_DATA_REOPEN_PASS_ONLY_N01_DEFECTS_RETAINED_SUCCESSOR1237_PENDING",
+        "proof": "286/287; R27 ordinary/final bytes, R28 frozen old-client, anonymous full installer and exact roles"
+      }
+    ],
+    "publicCandidate1237": {
+      "version": "0.1.0-preview.1237",
+      "source": "304bd42a250b062ddaafc4c7dcc55710e94c4e8b",
+      "release": 433024800,
+      "tag": "desktop-v0.1.0-preview.1237",
+      "draft": false,
+      "public": true,
+      "ordinaryRun": 41681835763,
+      "signedClientRun": 41685095129,
+      "metadataRevision": 19,
+      "metadataPublic": true,
+      "installerBytes": 178544270,
+      "installerSha256": "7878dc17270056db5b44db1783d939ac91efa96d2328a4f6b585bd231f109e4a",
+      "independentBytes": 191748951,
+      "independentSha256": "8a4f9dc73201660e5418c9780ef7f89ffe217b0b04f578dfecc4baed9245735c",
+      "notesRawFileSha256": "d37979324a780610e9b64f38b360138d0194e5c90d620dc177999fe1fe45995b",
+      "notesNormalizedSignedSha256": "803c8b65bd032a317206ff4834f87cba2153e904701aaf4ee8e55870f747e9e3",
+      "userAcceptance": false,
+      "dailyInstallation": false,
+      "evidence": "I:\\CCB-Desktop-Continuity\\updates\\20261104-candidate1237-r02-preparation\\FROZEN_REVIEW.json",
+      "metadataCommit": "85a80124bc8e920c897e9cdf1cebffcb725d5be2",
+      "anonymousPublicHttpPassed": true,
+      "oldClientScope": "R32 controlled cloud cryptographic validation reused; anonymous HTTP is separate transport proof",
+      "publicationAuthority": "I:\\CCB-Desktop-Continuity\\updates\\20261104-candidate1237-r02-preparation\\USER_PUBLICATION_AUTHORITY.json"
     }
   }
 }
