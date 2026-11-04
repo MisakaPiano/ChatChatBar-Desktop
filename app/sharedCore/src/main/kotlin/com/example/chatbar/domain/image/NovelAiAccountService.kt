@@ -178,11 +178,11 @@ object NovelAiImageCostEstimator {
             sourcePixels
         }
         // High keeps its former minimum canvas and rounding; Medium prices its fractional 23-step base.
-        val strength = if (settings.isMedium) when (imageGuidance.action) {
+        val strength = when (imageGuidance.action) {
             NovelAiGenerationAction.TEXT_TO_IMAGE -> 1.0
             NovelAiGenerationAction.IMAGE_TO_IMAGE -> imageGuidance.imageToImageStrength.coerceIn(0f, 1f).toString().toDouble()
             NovelAiGenerationAction.INPAINT -> imageGuidance.inpaintStrength.coerceIn(0f, 1f).toString().toDouble()
-        } else 1.0
+        }
         val modelCost = NovelAiSingleImagePricing.cost(
             settings, if (settings.isMedium) requestPixels else max(requestPixels, MIN_PRICED_PIXELS), strength
         )

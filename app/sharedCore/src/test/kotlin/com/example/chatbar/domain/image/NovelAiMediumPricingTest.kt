@@ -69,11 +69,11 @@ class NovelAiMediumPricingTest {
             NovelAiEnhanceOptions(), opus.copy(v5AllowanceExhausted = true)).anlas)
     }
 
-    @Test fun highAndV45KeepTheirPreviousRoundingAndImg2imgEstimates() {
+    @Test fun highAndV45KeepTheirTextRoundingAndCorrectedImg2imgEstimates() {
         for ((model, expected) in listOf(NovelAiImageModel.V5_FULL to 30, NovelAiImageModel.V4_5_FULL to 20)) {
             val high = settings(steps = 28).copy(model = model, effort = NovelAiEffort.HIGH)
             assertEquals(expected, NovelAiImageCostEstimator.estimate(high, null).anlas)
-            assertEquals(expected, NovelAiImageCostEstimator.estimate(high, null,
+            assertEquals(expected / 2, NovelAiImageCostEstimator.estimate(high, null,
                 NovelAiImageGuidanceDraft(action = NovelAiGenerationAction.IMAGE_TO_IMAGE)).anlas)
             val source = NovelAiEnhanceSource(NovelAiPromptPlan("scene", emptyList()), high, JsonObject(emptyMap()))
             assertEquals(if (model == NovelAiImageModel.V5_FULL) 18 else 12,
@@ -92,4 +92,18 @@ class NovelAiMediumPricingTest {
         assertEquals(confirmed, confirmed.reconcile(initial.copy(anlas = 985)))
     }
 
+    @Test fun correctedHighActionEstimateReconcilesWithoutLeavingAnlasResidue() {
+        for (action in listOf(NovelAiGenerationAction.IMAGE_TO_IMAGE, NovelAiGenerationAction.INPAINT)) {
+            val high = settings(steps = 28).copy(effort = NovelAiEffort.HIGH)
+            val guidance = NovelAiImageGuidanceDraft(action = action, imageToImageStrength = .5f, inpaintStrength = .5f)
+            val estimate = NovelAiImageCostEstimator.estimate(high, null, guidance).anlas
+            assertEquals(15, estimate)
+            val initial = NovelAiAccountUsage(1000, 3, true, 50.0, false)
+            val pending = com.example.chatbar.ui.imageprompt.NovelAiAccountUiState(usage = initial, loading = false)
+                .recordAnlasGeneration(estimate.toLong()).reconcile(initial)
+            assertEquals(985L, pending.displayAnlas); assertEquals(15L, pending.localAnlasSpent)
+            val confirmed = pending.reconcile(initial.copy(anlas = 985))
+            assertEquals(985L, confirmed.displayAnlas); assertEquals(0L, confirmed.localAnlasSpent)
+        }
+    }
 }

@@ -267,7 +267,7 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
             { if (shownPath != null) { currentImage = shownPath; auxiliary = "当前图片"; controller.clearReverseCandidate() } }) },
         editor = {
             StudioAccountCluster(d.selectedModel, state.accountUi) {
-                StudioActions {
+                StudioAccountActions {
                     key(accountReadRetry) { DesktopStudioAccountControl() }
                     StudioAction("刷新", enabled = !state.accountUi.loading, icon = DesktopAppIcons.Refresh,
                         style = StudioActionStyle.TERTIARY) { accountReadRetry++ }

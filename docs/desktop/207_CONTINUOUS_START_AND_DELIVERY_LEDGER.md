@@ -1,3 +1,7 @@
+2026-11-04 未发布后继：Studio仅当前账户/齿轮/刷新右对齐并窄窗回流；额度/进度/创作工具原位置保留。按上游567补High/V45 Img2Img/收费Inpaint估价strength，实际wire不改；定向云验待，见290。公开1237/app304/sign19冻结。1237 PNG选项默认保留预览、完整生图预设导出成功仅对应PREVIEW_ONLY/EXPORT_ONLY人验，实际PNG应用/alpha/计费/预设回导未验。未本机运行/操作真实根，无新公开授权。
+
+下方历史保留。
+
 2026-11-04 11:18 JST 1237 N02菜单真人部分通过：用户明确“两种菜单六项齐全、无DDIM，2M SDE可选”。V4.5 Full/V5 Full High均显示EA/Euler/2S A/2M SDE/2M/SDE，无DDIM新选择项，V4.5 2M SDE试选并恢复，仅MENU_ONLY。与前两SETTINGS_ONLY回执合并后N02整体仍partial，不提升6 sampler真实Provider兼容。根已按PNG_FIXTURE_DELIVERY.json把原15444B/SHA cbfacde0012d9d626111a61bb85d6fdeb6e3875e66cb5c57337682e344ab3abb合成元数据PNG交付用户下载目录；它非NovelAI真实生图，不含用户资料，仅供选项预览，实际导入/透明alpha/计费未验。回执N02_SAMPLER_MENU_USER_ACCEPTANCE.json；N01/U1237与旧1236历史保持，app304/sign19不变，无代码/测试/构建/发布或另发问题。
 
 下方历史保留。

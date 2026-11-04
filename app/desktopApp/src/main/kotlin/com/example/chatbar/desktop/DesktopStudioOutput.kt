@@ -55,6 +55,15 @@ internal fun StudioTokenBar(label: String, count: Int, limit: Int, modifier: Mod
 }
 
 @Composable
+@OptIn(ExperimentalLayoutApi::class)
+internal fun StudioAccountActions(content: @Composable RowScope.() -> Unit) {
+    FlowRow(Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.End),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        itemVerticalAlignment = Alignment.CenterVertically) { content() }
+}
+
+@Composable
 internal fun StudioAccountCluster(model: NovelAiImageModel, account: NovelAiAccountUiState,
     controls: (@Composable () -> Unit)? = null) {
     Column(Modifier.fillMaxWidth().background(DesktopBootstrapColors.card).padding(8.dp),
