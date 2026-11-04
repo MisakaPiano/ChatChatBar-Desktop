@@ -205,7 +205,7 @@ class DesktopUnifiedViewerTest {
         java.nio.file.Files.write(file, bytes)
         var expanded = 0; var opened = 0; var actions = 0
         val scene = ImageComposeScene(700, 240) {
-            DesktopStudioCompactResult(file, null, false, { expanded++ }, { opened++ }, { actions++ })
+            DesktopStudioCompactResult(file, null, { expanded++ }, { opened++ })
         }
         try {
             scene.until { scene.nodes().any { it.label("图片") } }

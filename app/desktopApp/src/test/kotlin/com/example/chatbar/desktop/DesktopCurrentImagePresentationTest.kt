@@ -238,7 +238,7 @@ class DesktopCurrentImagePresentationTest {
                     assertTrue(scene.nodes().any { it.matches("竖向结果缩略图滚动条") })
                     scene.click("显示图片面板"); scene.click("布局 · 展开预览 ▾"); scene.click("预览专注")
                     assertFalse(scene.nodes().any { it.matches("调整预览宽度") })
-                    scene.click("预览 · 预览专注 ▾"); scene.click("显示图片面板")
+                    scene.click("布局 · 预览专注 ▾"); scene.click("展开预览")
                     val restored = scene.nodes().first { it.matches("调整预览宽度") }.boundsInRoot
                     assertEquals(moved.left, restored.left, 2f)
                     assertEquals(true, scene.nodes().first { it.matches("选择结果缩略图 2") }
@@ -261,22 +261,25 @@ class DesktopCurrentImagePresentationTest {
         var saved by mutableStateOf(true)
         var viewed = 0; var reset = 0; var used = 0
         val scene = ImageComposeScene(900, 110) {
-            StudioActions {
-                DesktopStudioPreviewActions(saved, intermediate, true,
-                    { viewed++ }, { reset++ }, { used++ })
+            Column {
+                StudioActions { DesktopStudioPrimaryPreviewActions(saved && !intermediate, saved && !intermediate,
+                    {}, { viewed++ }, { used++ }) }
+                StudioActions { DesktopStudioPreviewActions(saved, intermediate, true) { reset++ } }
             }
         }
         try {
             scene.frames()
             assertTrue(scene.nodes().any { it.matches("生成中 · 未保存预览") })
             assertTrue(scene.nodes().any { it.matches("先前选择的图片未被本次生成替换") })
-            assertFalse(scene.nodes().any { it.matches("预览") && it.config.contains(SemanticsActions.OnClick) || it.matches("图像操作 / 用作") || it.matches("适应 / 重置") })
+            assertTrue(scene.nodes().first { it.config.getOrNull(SemanticsProperties.ContentDescription) == listOf("预览") }.config.contains(SemanticsProperties.Disabled))
+            assertTrue(scene.nodes().first { it.matches("图像操作 / 用作") }.config.contains(SemanticsProperties.Disabled))
+            assertFalse(scene.nodes().any { it.matches("适应 / 重置") })
             saved = false; scene.frames()
             assertTrue(scene.nodes().any { it.matches("生成中 · 未保存预览") })
             assertFalse(scene.nodes().any { it.matches("已保存图片") })
             intermediate = false; saved = true; scene.frames()
             assertFalse(scene.nodes().any { it.matches("已保存图片") })
-            scene.click("打开预览"); scene.click("图像操作 / 用作"); scene.click("适应 / 重置")
+            scene.click("预览"); scene.click("图像操作 / 用作"); scene.click("适应 / 重置")
             assertEquals(1, viewed); assertEquals(1, used); assertEquals(1, reset)
         } finally { scene.close() }
     }
@@ -290,17 +293,22 @@ class DesktopCurrentImagePresentationTest {
         var expanded by mutableStateOf(false)
         var viewed = 0; var used = 0
         val scene = ImageComposeScene(700, 550) {
-            DesktopStudioCompactResult(savedPath, intermediate, expanded, { expanded = !expanded },
-                { viewed++ }, { used++ })
+            Column {
+                StudioActions { DesktopStudioPrimaryPreviewActions(savedPath != null && intermediate == null,
+                    savedPath != null && intermediate == null, {}, { viewed++ }, { used++ }) }
+                DesktopStudioCompactResult(savedPath, intermediate, { expanded = !expanded }, { viewed++ })
+            }
         }
         try {
             scene.frames()
             assertTrue(scene.nodes().any { it.matches("生成中 · 未保存预览") })
             assertTrue(scene.nodes().any { it.matches("先前选择的图片未被本次生成替换") })
             assertFalse(scene.nodes().any { it.matches("先前已保存图片仍在历史中") })
-            assertFalse(scene.nodes().any { it.matches("预览") && it.config.contains(SemanticsActions.OnClick) || it.matches("图像操作 / 用作") || it.matches("适应 / 重置") })
-            scene.click("显示图片面板")
-            assertTrue(scene.nodes().any { it.matches("收起预览") })
+            assertTrue(scene.nodes().first { it.config.getOrNull(SemanticsProperties.ContentDescription) == listOf("预览") }.config.contains(SemanticsProperties.Disabled))
+            assertTrue(scene.nodes().first { it.matches("图像操作 / 用作") }.config.contains(SemanticsProperties.Disabled))
+            assertFalse(scene.nodes().any { it.matches("适应 / 重置") })
+            scene.click("显示图片面板"); delay(350); scene.frames()
+            assertTrue(expanded)
             assertFalse(scene.nodes().any { it.matches("适应 / 重置") })
             savedPath = null; scene.frames()
             assertTrue(scene.nodes().any { it.matches("生成中 · 未保存预览") })

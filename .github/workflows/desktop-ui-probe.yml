@@ -46,7 +46,20 @@ jobs:
           @{ source = (git rev-parse HEAD); run = $env:GITHUB_RUN_ID; scope = 'synthetic selected tests only; no installer, user profile, release or provider calls' } |
             ConvertTo-Json | Set-Content -Encoding utf8 "$env:RUNNER_TEMP/ccb-ui-probe/source.json"
           .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain `
-            --tests com.example.chatbar.desktop.DesktopScreenshotContentOptionsTest
+            --tests com.example.chatbar.desktop.DesktopScreenshotContentOptionsTest `
+            --tests com.example.chatbar.desktop.DesktopStudioAccountLayoutTest `
+            --tests 'com.example.chatbar.desktop.DesktopCurrentImagePresentationTest.role*' `
+            --tests 'com.example.chatbar.desktop.DesktopCurrentImagePresentationTest.empty negative*' `
+            --tests 'com.example.chatbar.desktop.DesktopCurrentImagePresentationTest.studio wide and narrow*' `
+            --tests 'com.example.chatbar.desktop.DesktopCurrentImagePresentationTest.wide Studio*' `
+            --tests 'com.example.chatbar.desktop.DesktopCurrentImagePresentationTest.intermediate preview*' `
+            --tests 'com.example.chatbar.desktop.DesktopCurrentImagePresentationTest.compact intermediate*' `
+            --tests 'com.example.chatbar.desktop.DesktopCurrentImagePresentationTest.narrow Studio*' `
+            --tests 'com.example.chatbar.desktop.DesktopStudioWorkspaceTest.history preview and media*' `
+            --tests 'com.example.chatbar.desktop.DesktopStudioWorkspaceTest.production content frame*' `
+            --tests 'com.example.chatbar.desktop.DesktopStudioWorkspaceTest.actual Studio root*' `
+            --tests 'com.example.chatbar.desktop.DesktopStudioWorkspaceTest.real divider*' `
+            --tests 'com.example.chatbar.desktop.DesktopUnifiedViewerTest.compact*' 
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Preserve actual reports and synthetic review images
         if: always()
