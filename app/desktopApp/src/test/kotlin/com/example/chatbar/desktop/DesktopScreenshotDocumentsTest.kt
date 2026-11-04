@@ -93,6 +93,57 @@ class DesktopScreenshotDocumentsTest {
         reviewDirectory()?.let { Files.write(it.resolve("editable-selection.docx"), result) }
     }
 
+    @Test fun `editable Word keeps narration dialogue thought styles and shared section filtering with embedded media`() {
+        val role = com.example.chatbar.data.local.entity.CharacterInfo("synthetic-role", "Alice", appearanceImage = "images/role.png")
+        val card = com.example.chatbar.data.local.entity.CharacterCard.create("Synthetic card").copy(characters = listOf(role))
+        val raw = "NarrationEditable **bold**<n=\"Alice\"/>[DialogueEditable]()『ThoughtEditable』\n" +
+            "```status\n姓名：Alice\nStatusEditable\n```\n" +
+            "────────────────\n**【行动选项】**\n1. ActionEditableOne\n2. ActionEditableTwo\n────────────────"
+        val message = ChatMessage("styled", "s", MessageRole.ASSISTANT, raw,
+            images = listOf("images/picture.png"), createdAt = 1, updatedAt = 1)
+        val state = DesktopPrimaryChatState(selectedCharacter = card, assistantSegmentedBubblesEnabled = true,
+            chatBubbleFontScale = 1.2f)
+        val colors = desktopSemanticColors(ThemeMode.DARK, com.example.chatbar.domain.appearance.DefaultThemeColorHsv, false)
+        val picture = raster(8, 8).bytes
+        for (include in listOf(false, true)) {
+            val request = DesktopScreenshotRequest("Synthetic styled Word", state, listOf(message),
+                desktopScreenshotBlockIds(message).toSet(), background = "images/background.png",
+                contentOptions = DesktopScreenshotContentOptions(include, include))
+            val blocks = desktopScreenshotDocument(request, colors)
+            val refs = desktopScreenshotDocumentReferences(blocks)
+            assertTrue("images/role.png" in refs && "images/picture.png" in refs && "images/background.png" in refs)
+            val result = ByteArrayOutputStream().also { out ->
+                DesktopScreenshotDocuments.word(blocks, refs.associateWith { hash(picture) }, { picture }, out)
+            }.toByteArray()
+            val parts = entries(result); assertTrue("word/styles.xml" in parts)
+            val doc = xml(parts.getValue("word/document.xml")); val w = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            val paragraphs = doc.getElementsByTagNameNS(w, "p")
+            fun paragraph(token: String) = (0 until paragraphs.length).map { paragraphs.item(it) as org.w3c.dom.Element }
+                .first { token in it.textContent }
+            fun value(p: org.w3c.dom.Element, tag: String, attr: String = "val") =
+                (p.getElementsByTagNameNS(w, tag).item(0) as org.w3c.dom.Element).getAttributeNS(w, attr)
+            val n = paragraph("NarrationEditable"); val d = paragraph("DialogueEditable"); val t = paragraph("ThoughtEditable")
+            assertEquals("CCBNARRATION", value(n, "pStyle")); assertEquals("CCBDIALOGUE", value(d, "pStyle"))
+            assertEquals("CCBTHOUGHT", value(t, "pStyle"))
+            assertEquals(3, listOf(n, d, t).map { value(it, "sz") }.distinct().size)
+            assertNotEquals(value(n, "ind", "left"), value(d, "ind", "left"))
+            assertNotEquals(value(d, "ind", "right"), value(t, "ind", "right"))
+            assertTrue(d.getElementsByTagNameNS(w, "shd").length > 0 && t.getElementsByTagNameNS(w, "shd").length > 0)
+            assertTrue(n.getElementsByTagNameNS(w, "b").length > 0)
+            assertEquals(0, t.getElementsByTagNameNS(w, "i").length, "Inner speech is a semantic paragraph kind, not forced italic")
+            assertEquals(include, "StatusEditable" in doc.documentElement.textContent)
+            assertEquals(include, "ActionEditableOne" in doc.documentElement.textContent)
+            assertTrue(doc.getElementsByTagNameNS("http://schemas.openxmlformats.org/drawingml/2006/picture", "pic").length >= 2)
+            assertTrue("word/header.xml" in parts && parts.keys.any { it.startsWith("word/media/") })
+            val definitions = xml(parts.getValue("word/styles.xml")).getElementsByTagNameNS(w, "style")
+            assertEquals(setOf("CCBNARRATION", "CCBDIALOGUE", "CCBTHOUGHT", "CCBSTATUS"),
+                (0 until definitions.length).map { (definitions.item(it) as org.w3c.dom.Element).getAttributeNS(w, "styleId") }.toSet())
+            parts.filterKeys { it.endsWith(".xml") || it.endsWith(".rels") }.values.forEach { xml(it) }
+            assertEquals(raw, message.content)
+            reviewDirectory()?.let { Files.write(it.resolve("editable-role-kinds-sections$include.docx"), result) }
+        }
+    }
+
     @Test fun `Word refuses unselected or changed resources and never creates an export on either failure`() = runBlocking {
         val original = raster().bytes
         val changed = raster(height = 110).bytes

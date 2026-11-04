@@ -12,6 +12,8 @@ import javax.imageio.ImageIO
 import javax.xml.stream.XMLOutputFactory
 import javax.xml.stream.XMLStreamWriter
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.compositeOver
+import kotlin.math.roundToInt
 import java.awt.AlphaComposite
 import java.awt.RenderingHints
 import java.awt.image.BufferedImage
@@ -38,9 +40,32 @@ internal enum class DesktopScreenshotExportFormat(val label: String, val extensi
 internal fun desktopScreenshotPdfRows(width: Int): Int =
     ((PDRectangle.A4.height - 48f) / ((PDRectangle.A4.width - 48f) / width)).toInt().coerceAtLeast(1)
 
+internal data class DesktopWordSegmentStyle(val kind: RoleplaySegmentKind, val fontSizeSp: Float,
+    val lineHeightSp: Float, val widthFraction: Float, val foregroundArgb: Int?, val fillArgb: Int?)
+
+internal fun desktopWordSegmentStyle(kind: RoleplaySegmentKind, scale: Float,
+    colors: DesktopSemanticColors?): DesktopWordSegmentStyle {
+    val metrics = desktopSegmentMetrics(kind)
+    val safeScale = desktopSafeBubbleFontScale(scale)
+    val foreground = colors?.let { when (kind) {
+        RoleplaySegmentKind.NARRATION -> it.foreground.copy(alpha = .78f).compositeOver(it.background)
+        RoleplaySegmentKind.THOUGHT -> it.mutedForeground
+        else -> it.foreground
+    }.toArgb() }
+    val fill = colors?.let { when (kind) {
+        RoleplaySegmentKind.NARRATION -> null
+        RoleplaySegmentKind.DIALOGUE -> it.card.copy(alpha = .72f).compositeOver(it.background).toArgb()
+        RoleplaySegmentKind.THOUGHT -> it.muted.copy(alpha = .56f).compositeOver(it.background).toArgb()
+        RoleplaySegmentKind.STATUS -> it.muted.copy(alpha = .72f).compositeOver(it.background).toArgb()
+    } }
+    return DesktopWordSegmentStyle(kind, metrics.fontSize * safeScale,
+        (metrics.fontSize + metrics.lineExtra) * safeScale, metrics.widthFraction, foreground, fill)
+}
+
 internal sealed interface DesktopScreenshotDocumentBlock {
     data class Text(val text: String, val heading: Boolean = false, val right: Boolean = false,
-        val runs: List<DesktopWordTextRun> = emptyList()) : DesktopScreenshotDocumentBlock
+        val runs: List<DesktopWordTextRun> = emptyList(),
+        val segmentStyle: DesktopWordSegmentStyle? = null) : DesktopScreenshotDocumentBlock
     data class Picture(val reference: String, val right: Boolean = false) : DesktopScreenshotDocumentBlock
     data class Header(val name: String, val avatar: String, val right: Boolean = false) : DesktopScreenshotDocumentBlock
     data class Appearance(val background: String?, val opacity: Float, val backgroundArgb: Int,
@@ -68,8 +93,8 @@ internal fun desktopScreenshotDocument(request: DesktopScreenshotRequest, colors
     if (colors != null) blocks += DesktopScreenshotDocumentBlock.Appearance(
         request.background?.takeIf { request.contentOptions.includeBackground }, request.state.backgroundOpacity,
         colors.background.toArgb(), colors.foreground.toArgb())
-    fun text(value: String, heading: Boolean = false, right: Boolean = false) {
-        if (value.isNotBlank()) blocks += DesktopScreenshotDocumentBlock.Text(value, heading, right)
+    fun text(value: String, heading: Boolean = false, right: Boolean = false, style: DesktopWordSegmentStyle? = null) {
+        if (value.isNotBlank()) blocks += DesktopScreenshotDocumentBlock.Text(value, heading, right, segmentStyle = style)
     }
     fun header(value: String, avatar: String?, right: Boolean = false) {
         if (avatar == null) text(value, true, right) else blocks += DesktopScreenshotDocumentBlock.Header(value, avatar, right)
@@ -92,11 +117,13 @@ internal fun desktopScreenshotDocument(request: DesktopScreenshotRequest, colors
             if (id in request.selected && desktopScreenshotIncludes(segment, request.contentOptions)) {
                 if (segment.kind == RoleplaySegmentKind.STATUS) {
                     text(desktopScreenshotStatusLabel(segment), true, right)
-                    text(segment.text, right = right)
+                    text(segment.text, right = right, style = desktopWordSegmentStyle(segment.kind, request.state.chatBubbleFontScale, colors))
                 } else {
                     if (index in speakerHeaders) header(segment.speaker?.displayName ?: presented.speakerLabel,
                         desktopPresentedAvatarReference(segment.speaker, request.state.selectedCharacter))
-                    blocks += desktopWordMarkdown(desktopSanitizeRoleplayMarkdown(segment.markdownSource), right)
+                    blocks += desktopWordMarkdown(desktopSanitizeRoleplayMarkdown(segment.markdownSource), right).map { block ->
+                        block.copy(segmentStyle = if (presented.segmented) desktopWordSegmentStyle(segment.kind, request.state.chatBubbleFontScale, colors) else null)
+                    }
                 }
             }
         }
@@ -280,6 +307,7 @@ internal object DesktopScreenshotDocuments {
         val appearance = appearances.singleOrNull()
         val pagePicture = appearance?.let { pageBackground(it, it.background?.let(pictures::getValue), pictures.size + 1) }
         val foreground = appearance?.foregroundArgb?.let { "%06x".format(it and 0xffffff) }
+        val roleStyles = blocks.filterIsInstance<DesktopScreenshotDocumentBlock.Text>().any { it.segmentStyle != null }
         ZipOutputStream(output).use { zip ->
             fun xml(name: String, body: (XMLStreamWriter) -> Unit) {
                 checkCancelled()
@@ -298,6 +326,10 @@ internal object DesktopScreenshotDocuments {
                 }
                 x.writeEmptyElement("Override"); x.writeAttribute("PartName", "/word/document.xml")
                 x.writeAttribute("ContentType", "application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml")
+                if (roleStyles) {
+                    x.writeEmptyElement("Override"); x.writeAttribute("PartName", "/word/styles.xml")
+                    x.writeAttribute("ContentType", "application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml")
+                }
                 if (pagePicture != null) {
                     x.writeEmptyElement("Override"); x.writeAttribute("PartName", "/word/header.xml")
                     x.writeAttribute("ContentType", "application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml")
@@ -312,7 +344,17 @@ internal object DesktopScreenshotDocuments {
             xml("word/_rels/document.xml.rels") { x ->
                 x.writeStartElement("Relationships"); x.writeDefaultNamespace(RELATIONSHIPS)
                 pictures.values.forEach { x.relationship("image${it.id}", "$R/image", "media/image${it.id}.png") }
+                if (roleStyles) x.relationship("roleStyles", "$R/styles", "styles.xml")
                 if (pagePicture != null) x.relationship("pageBackground", "$R/header", "header.xml")
+                x.writeEndElement()
+            }
+            if (roleStyles) xml("word/styles.xml") { x ->
+                x.writeStartElement("w", "styles", W); x.writeNamespace("w", W)
+                for ((kind, name) in listOf(RoleplaySegmentKind.NARRATION to "旁白", RoleplaySegmentKind.DIALOGUE to "对白",
+                    RoleplaySegmentKind.THOUGHT to "内心", RoleplaySegmentKind.STATUS to "状态栏")) {
+                    x.start("w", "style", W); x.attr("w", "type", W, "paragraph"); x.attr("w", "styleId", W, "CCB${kind.name}")
+                    x.empty("w", "name", W); x.attr("w", "val", W, name); x.writeEndElement()
+                }
                 x.writeEndElement()
             }
             xml("word/document.xml") { x ->
@@ -375,21 +417,33 @@ internal object DesktopScreenshotDocuments {
 
     private fun XMLStreamWriter.paragraph(block: DesktopScreenshotDocumentBlock.Text, color: String? = null) {
         start("w", "p", W)
-        alignment(block.right)
+        val style = block.segmentStyle
+        if (style == null) alignment(block.right) else {
+            start("w", "pPr", W)
+            empty("w", "pStyle", W); attr("w", "val", W, "CCB${style.kind.name}")
+            empty("w", "jc", W); attr("w", "val", W, if (block.right) "right" else "left")
+            val gap = (10466 * (1f - style.widthFraction)).roundToInt().coerceAtLeast(0)
+            val left = if (style.kind == RoleplaySegmentKind.DIALOGUE || style.kind == RoleplaySegmentKind.THOUGHT) 720 else gap / 2
+            empty("w", "ind", W); attr("w", "left", W, left.toString()); attr("w", "right", W, (gap - left).coerceAtLeast(0).toString())
+            empty("w", "spacing", W); attr("w", "line", W, (style.lineHeightSp * 15).roundToInt().toString())
+            attr("w", "lineRule", W, "atLeast"); attr("w", "after", W, (desktopSegmentMetrics(style.kind).verticalPadding * 15).toString())
+            style.fillArgb?.let { empty("w", "shd", W); attr("w", "val", W, "clear"); attr("w", "fill", W, "%06x".format(it and 0xffffff)) }
+            writeEndElement()
+        }
         require(block.runs.isEmpty() || block.runs.joinToString("") { it.text } == block.text) { "文档格式化文字快照不一致" }
         val runs = block.runs.ifEmpty { listOf(DesktopWordTextRun(block.text)) }
-        runs.forEach { run -> textRun(run, block.heading, color) }
+        runs.forEach { run -> textRun(run, block.heading, style?.foregroundArgb?.let { "%06x".format(it and 0xffffff) } ?: color, style?.fontSizeSp) }
         writeEndElement()
     }
 
-    private fun XMLStreamWriter.textRun(run: DesktopWordTextRun, heading: Boolean, color: String?) {
+    private fun XMLStreamWriter.textRun(run: DesktopWordTextRun, heading: Boolean, color: String?, baseSizeSp: Float? = null) {
         start("w", "r", W)
         start("w", "rPr", W)
         empty("w", "rFonts", W); attr("w", "eastAsia", W, "Microsoft YaHei"); attr("w", "ascii", W, if (run.code) "Consolas" else "Calibri")
         if (heading || run.bold) empty("w", "b", W)
         if (run.italic) empty("w", "i", W)
         if (color != null) { empty("w", "color", W); attr("w", "val", W, color) }
-        empty("w", "sz", W); attr("w", "val", W, run.fontSizeSp?.let { (it * 1.5f).toInt().coerceAtLeast(2).toString() }
+        empty("w", "sz", W); attr("w", "val", W, (run.fontSizeSp ?: baseSizeSp)?.let { (it * 1.5f).roundToInt().coerceAtLeast(2).toString() }
             ?: if (heading) "26" else "22")
         writeEndElement()
         // XML 1.0 cannot represent isolated controls/surrogates. Keep all valid Chinese/emoji text.
