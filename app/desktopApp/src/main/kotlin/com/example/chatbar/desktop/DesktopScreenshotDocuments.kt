@@ -77,8 +77,8 @@ internal fun desktopScreenshotDocument(request: DesktopScreenshotRequest, colors
     text(request.title, true)
     request.messages.forEach { message ->
         if (request.selected.none { roleplayBlockMessageId(it) == message.id }) return@forEach
-        val presented = desktopPresentMessage(message, request.state.selectedCharacter, request.state.globalPlayerName,
-            request.state.assistantSegmentedBubblesEnabled, session = request.state.selectedSession)
+        val presented = desktopScreenshotProjectMessage(desktopPresentMessage(message, request.state.selectedCharacter, request.state.globalPlayerName,
+            request.state.assistantSegmentedBubblesEnabled, session = request.state.selectedSession), request.contentOptions)
         if (!desktopScreenshotMessageVisible(message, presented, request.selected, request.contentOptions)) return@forEach
         val right = message.role == com.example.chatbar.data.local.entity.MessageRole.USER
         val speakerHeaders = desktopScreenshotSpeakerHeaders(presented, request.selected, request.contentOptions)

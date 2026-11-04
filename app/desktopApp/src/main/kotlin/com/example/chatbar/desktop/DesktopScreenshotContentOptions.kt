@@ -1,6 +1,7 @@
 package com.example.chatbar.desktop
 
 import com.example.chatbar.domain.chat.RoleplaySegmentKind
+import com.example.chatbar.domain.chat.roleplayLongDashRawRanges
 import com.example.chatbar.domain.chat.roleplaySpeakerHeaderIndexes
 import com.example.chatbar.domain.chat.roleplayImageBlockId
 import com.example.chatbar.domain.chat.roleplayLegacyTextBlockId
@@ -23,8 +24,9 @@ internal fun desktopScreenshotActionBlock(segment: DesktopPresentedSegment): Boo
 }
 
 internal fun desktopScreenshotIncludes(segment: DesktopPresentedSegment, options: DesktopScreenshotContentOptions): Boolean =
-    segment.kind != RoleplaySegmentKind.STATUS ||
+    if (segment.kind == RoleplaySegmentKind.STATUS) {
         if (desktopScreenshotActionBlock(segment)) options.includeActions else options.includeStatus
+    } else options.includeActions || segment.text.isNotBlank() || segment.markdownSource.isNotBlank()
 
 internal fun desktopScreenshotStatusLabel(segment: DesktopPresentedSegment): String =
     if (desktopScreenshotActionBlock(segment)) "行动选项" else "状态栏"
@@ -48,4 +50,35 @@ internal fun desktopScreenshotSpeakerHeaders(presented: DesktopPresentedMessage,
         segment.blockId in selected && desktopScreenshotIncludes(segment, options)
     }
     return roleplaySpeakerHeaderIndexes(sources, visible)
+}
+
+/** Reuse the shared long-dash narration boundaries; only explicit action lists are excluded. */
+internal fun desktopScreenshotWithoutInlineActions(text: String): String {
+    val numbered = Regex("^([1-9][0-9]?)[.、)）][ \\t]*(.+)$")
+    fun rule(line: String): Boolean = line.trim().let { it.length >= 3 && it.all { c -> c in "-─━—" } }
+    val excluded = roleplayLongDashRawRanges(text).filter { range ->
+        val lines = text.substring(range).lines().filter(String::isNotBlank).toMutableList()
+        if (lines.firstOrNull()?.let(::rule) == true) lines.removeAt(0)
+        if (lines.lastOrNull()?.let(::rule) == true) lines.removeAt(lines.lastIndex)
+        if (lines.firstOrNull()?.let(::desktopIsActionHeading) != true) return@filter false
+        var ordinal = 1
+        for (line in lines.drop(1)) {
+            val match = numbered.matchEntire(line.trim())
+            if (match != null && match.groupValues[1].toIntOrNull() == ordinal && ordinal <= 20) ordinal++
+            else if (ordinal <= 1 || !(line.startsWith("  ") || line.startsWith("\t"))) return@filter false
+        }
+        ordinal >= 3
+    }
+    return excluded.sortedByDescending { it.first }.fold(text) { value, range -> value.removeRange(range) }
+}
+
+/** One shared immutable projection for raster, PDF and editable Word export. */
+internal fun desktopScreenshotProjectMessage(presented: DesktopPresentedMessage,
+    options: DesktopScreenshotContentOptions): DesktopPresentedMessage {
+    if (options.includeActions) return presented
+    return presented.copy(segments = presented.segments.map { segment ->
+        if (segment.kind == RoleplaySegmentKind.STATUS) segment
+        else segment.copy(text = desktopScreenshotWithoutInlineActions(segment.text),
+            markdownSource = desktopScreenshotWithoutInlineActions(segment.markdownSource))
+    })
 }

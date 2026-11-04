@@ -109,8 +109,8 @@ internal object DesktopChatScreenshotRenderer {
                 request.messages.forEach { m ->
                     if (request.selected.none { roleplayBlockMessageId(it) == m.id }) return@forEach
                     m.images.forEachIndexed { i,ref->if(roleplayImageBlockId(m.id,i) in request.selected) add(ref) }
-                    val presented=desktopPresentMessage(m,request.state.selectedCharacter,request.state.globalPlayerName,
-                        request.state.assistantSegmentedBubblesEnabled,session=request.state.selectedSession)
+                    val presented=desktopScreenshotProjectMessage(desktopPresentMessage(m,request.state.selectedCharacter,request.state.globalPlayerName,
+                        request.state.assistantSegmentedBubblesEnabled,session=request.state.selectedSession), request.contentOptions)
                     if (!desktopScreenshotMessageVisible(m, presented, request.selected, request.contentOptions)) return@forEach
                     val speakerHeaders = desktopScreenshotSpeakerHeaders(presented, request.selected, request.contentOptions)
                     if (presented.showWholeMessageHeader) desktopScreenshotHeaderAvatarReference(m, request.state)?.let(::add)
@@ -274,7 +274,7 @@ private fun DesktopScreenshotContent(r:DesktopScreenshotRequest, images:Map<Stri
     Column(modifier) {
         BasicText(r.title,Modifier.fillMaxWidth().background(c.card).padding(12.dp),style=TextStyle(color=c.foreground,fontSize=18.sp))
         r.messages.forEach { m ->
-            val p=desktopPresentMessage(m,r.state.selectedCharacter,r.state.globalPlayerName,r.state.assistantSegmentedBubblesEnabled,session=r.state.selectedSession)
+            val p=desktopScreenshotProjectMessage(desktopPresentMessage(m,r.state.selectedCharacter,r.state.globalPlayerName,r.state.assistantSegmentedBubblesEnabled,session=r.state.selectedSession), r.contentOptions)
             val speakerHeaders=desktopScreenshotSpeakerHeaders(p,r.selected,r.contentOptions)
             val selectedForMessage=r.selected.filter { roleplayBlockMessageId(it)==m.id }
             if(selectedForMessage.isNotEmpty() && desktopScreenshotMessageVisible(m,p,r.selected,r.contentOptions)) Box(Modifier.fillMaxWidth().padding(10.dp),
