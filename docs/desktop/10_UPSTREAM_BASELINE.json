@@ -106,27 +106,27 @@
     "targetReleaseVersion": "1.4.7",
     "targetCommit": "b4fa75d296680f777be095f3121ad0c4db979f17",
     "authority": "User authorized latest official CCB adaptation; Desktop first, separate Studio consumes official interfaces",
-    "status": "selected147_scoped_engineering_verified_public1237_partial_user_acceptance_new_scoped_failures_successor_validation_pending_not_whole_baseline_promotion",
-    "sourceAtRecord": "304bd42a250b062ddaafc4c7dcc55710e94c4e8b",
+    "status": "selected147_scoped_engineering_verified_private1238_prepared_public1237_partial_acceptance_new_scoped_failures_human_external_remaining_not_whole_baseline_promotion",
+    "sourceAtRecord": "5f48d70622cc351cdba7487a7b4b90663ffa54af",
     "lastCompleteSourceValidation": {
-      "commit": "304bd42a250b062ddaafc4c7dcc55710e94c4e8b",
-      "applicationCommit": "304bd42a250b062ddaafc4c7dcc55710e94c4e8b",
-      "actualCheckout": "c841147f0ccd33ee423af8123b0b2a5c2345da41",
-      "wholeTreeSha": "5c495f712085a082b312dadfc5c6b76ebc00e1ea",
+      "commit": "5f48d70622cc351cdba7487a7b4b90663ffa54af",
+      "applicationCommit": "5f48d70622cc351cdba7487a7b4b90663ffa54af",
+      "actualCheckout": "370ce27648e7dca2d4eee5653353b6ae20c11ed7",
+      "wholeTreeSha": "a8fae96a4c492bf37df6fd87b20eddf963e4c5c8",
       "wholeTreeIdentical": true,
-      "run": 41681820343,
-      "mainTests": 2641,
-      "mainPass": 2621,
+      "run": 41773543279,
+      "mainTests": 2648,
+      "mainPass": 2628,
       "mainSkip": 20,
       "mainFail": 0,
-      "sharedPass": 1233,
+      "sharedPass": 1239,
       "androidHtmlPass": 586,
       "proxyPass": 5,
       "ntfsPass": 7,
       "nativePass": 37,
       "updaterTufPass": 14,
       "exitPass": 4,
-      "sharedAndroidProof": "Unchanged shared/Android/CI inputs reuse155 original XML/HTML;156 Linux terminalSUCCESS",
+      "sharedAndroidProof": "Fresh157 original shared XML and Android HTML, not old report reuse",
       "status": "COMPLETE_NECESSARY_ORIGINALS_PASS_HUMAN_SEPARATE"
     },
     "adoptedRanges": [
@@ -207,7 +207,7 @@
       },
       {
         "scope": "Whole selected147 compatibility declaration and affected final candidate/user cross-scenario acceptance",
-        "evidence": "216/280/288/289/290-294; public1237/304/sign19 full156/native7/R31/R32; original U1237 and scoped N01-N05 receipts; unpublished5f successor full157 still running",
+        "evidence": "216/280/288-295; public1237/304/sign19 with scoped user results; private1238/application5f full157 exact originals, R34 ordinary, R35 private signed20 oldclient, UI23 raw position and capture-clock closure",
         "status": "selected_implementation_engineering_verified_public1237_scoped_passes_and_new_failures_successor_checks_and_human_external_remaining",
         "remainingImplementationIdentified": [],
         "independentVerification": [
@@ -490,6 +490,27 @@
         "exitPass": 4,
         "sharedAndroidProof": "Unchanged153 original actual XML/HTML reused;154 Linux terminal success",
         "applicationDifference": "Test source differs from frozen application only in two Desktop tests and focused workflow"
+      },
+      {
+        "commit": "304bd42a250b062ddaafc4c7dcc55710e94c4e8b",
+        "applicationCommit": "304bd42a250b062ddaafc4c7dcc55710e94c4e8b",
+        "actualCheckout": "c841147f0ccd33ee423af8123b0b2a5c2345da41",
+        "wholeTreeSha": "5c495f712085a082b312dadfc5c6b76ebc00e1ea",
+        "wholeTreeIdentical": true,
+        "run": 41681820343,
+        "mainTests": 2641,
+        "mainPass": 2621,
+        "mainSkip": 20,
+        "mainFail": 0,
+        "sharedPass": 1233,
+        "androidHtmlPass": 586,
+        "proxyPass": 5,
+        "ntfsPass": 7,
+        "nativePass": 37,
+        "updaterTufPass": 14,
+        "exitPass": 4,
+        "sharedAndroidProof": "Unchanged shared/Android/CI inputs reuse155 original XML/HTML;156 Linux terminalSUCCESS",
+        "status": "COMPLETE_NECESSARY_ORIGINALS_PASS_HUMAN_SEPARATE"
       }
     ],
     "currentPublicDelivery": {
@@ -578,17 +599,20 @@
     "activeUnpublishedSuccessor": {
       "applicationSource": "5f48d70622cc351cdba7487a7b4b90663ffa54af",
       "fullCi": 41773543279,
-      "fullCiState": "WINDOWS_MAIN_STEP_SUCCESS_OTHER_STEPS_RUNNING_ORIGINAL_XML_PENDING",
-      "sharedOriginalTests": 1239,
-      "androidHtmlTests": 586,
-      "ntfsOriginalPass": 7,
+      "fullCiState": "PASS_ACTUAL_ORIGINALS_READ",
       "ordinaryCandidateRun": 41775119786,
+      "signedClientRun": 41777490315,
+      "captureRun": 41777278482,
+      "privateMetadataRevision": 20,
       "candidateControl": "999e80589191025e1a359c4ca96c6ed07c22e6f6",
-      "state": "PRIVATE_BUILD_RUNNING_NOT_DELIVERY_READY",
+      "state": "PRIVATE_DRAFT_PREPARED_NOT_PUBLIC_OR_USER_ACCEPTED",
+      "releaseId": 433540317,
+      "draft": true,
       "publicationAuthorized": false,
-      "signature20Prepared": false,
+      "metadataPublic": false,
       "humanAcceptance": false,
-      "scope": "290-294 exact fixes; keep public1237 and all original scoped failures"
+      "cleanup": "AUTOMATIC_REVIEW_REFUSED_PROCESS_NOT_STARTED_0_BYTES_DELETED",
+      "scope": "290-295 exact fixes; original1237 failures remain until actual successor user retest"
     }
   }
 }
