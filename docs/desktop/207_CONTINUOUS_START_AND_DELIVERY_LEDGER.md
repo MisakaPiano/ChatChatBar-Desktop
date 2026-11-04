@@ -1,3 +1,7 @@
+2026-11-04 10:49 JST 1237 N01b真人复测通过：用户明确答“候选框、光标和选区均正常”，覆盖下方inline角色Prompt的中文候选跟随、提交并滚动后重新输入，以及译文注释模式跨行源文字选区。仅当前用户设备/输入法范围PASS_USER_REPORTED；OS/DPI/IME身份未另采集，不推广到全环境。连同既有核心局部/全局history PASS，原1236两项反馈在1237当前环境复测正常，旧1236原FAIL完整保留。展开编辑确认/取消/标题栏关闭边界、无效数字blur仍待，非全部Studio或1.0通过。回执r02/N01_IME_USER_ACCEPTANCE.json；公开source304/sign19不变，无代码修复/新测试/构建/发布，协调端唯一入口继续后续项。
+
+下方历史保留。
+
 2026-11-04 10:43 JST 1237核心N01a实际通过：用户先答“多步正常，两个栏互不干扰”，确认正向三次独立粘贴可CtrlZ/Y三步、负向不变及负向局部撤销；再答“全局三步撤销和重做均符合预期”，确认footer全局Prompt/Steps/临时角色删除的三步逆序恢复与redo，角色原testRole内容恢复。仅这些双层history场景PASS_USER_REPORTED；真实系统IME/选区、展开编辑、无效数字blur尚未由本组验收。U1237资料/草稿/正常退出重开PASS继续，实际路径/hash未知，1236原N01a/N01b失败留历史。原始两回执N01_LOCAL_USER_ACCEPTANCE.json、N01_GLOBAL_USER_ACCEPTANCE.json在r02；公开source304/sign19不变，无代码修改/新测试/构建/发布，协调端唯一入口继续N01b。
 
 下方历史保留。
