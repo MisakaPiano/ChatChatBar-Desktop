@@ -9,3 +9,5 @@ UI17/4336原18=14PASS/4FAIL/0SKIP保留。账户1/Workspace4/viewer1以及slow�
 972原UI20/41771483509原件19=18PASS/1FAIL/0SKIP：role5、content-options4、Word8与长卡顺序1通过；新toolbar方法成功打开Token窗口后，测试helper只匹配Text，找不到现有contentDescription图标关闭键而超时。仅补helper匹配可访问名称并确认窗口关闭，生产关闭入口不改，不延长时限/删断言；后继仅补该方法和Word属性顺序新变更，未执行的后续toolbar四组合仍待精确结果。
 
 9c原UI21/41772560318两方法实际1PASS/1FAIL/0SKIP：Word新属性顺序已通过；toolbar继续到预算关闭、封面/改写/补空原owner、画风定位后，在123比较display draft和durable source时失败。既有空负向会在displayCard显示默认值，持久源仍留空；将两者各与操作前对应快照比较，保全“不改draft”和“不改持久源”双断言，不改默认显示/保存政策。
+
+5f完整157原toolbar方法已PASS，四组合截图也证明工具常驻及footer；但新method末尾图在动画中仍显示较后内容，发现until使用递归text把含目标的祖先容器也当“图集按钮已可见”。仅将该末尾等待改为真实Text叶节点及完整高度，不改生产滚动或原5秒预算，补窄高420的最终定位图片；原StyleGallery的900高直接Text定位方法在157已PASS。该test-only补验与普通1238包并行，冻结应用仍5f，不重建包/重复完整回归。

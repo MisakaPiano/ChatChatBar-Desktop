@@ -120,7 +120,11 @@ class DesktopCharacterEditorOrderTest {
                         scene.click("AI 补全空白"); assertEquals(com.example.chatbar.domain.card.CharacterCardAiOperation.FILL, editor.cardAi!!.state.value.operation)
                         editor.cardAi!!.close(); scene.frames()
                     }
-                    scene.click("画风与生图参数"); scene.until { nodes().any { it.text("内置画风图集") && it.visible(height) } }
+                    scene.click("画风与生图参数")
+                    scene.until { nodes().any {
+                        it.config.getOrNull(SemanticsProperties.Text)?.any { text -> text.text == "内置画风图集" } == true &&
+                            it.visible(height) && it.boundsInRoot.height >= it.size.height - 1f
+                    } }
                     assertEquals(before, editor.state.value.card)
                     assertEquals(durable, app.characterRepository.getById(original.id))
                     assertTrue(app.taskRuntime.tasks.value.isEmpty())
