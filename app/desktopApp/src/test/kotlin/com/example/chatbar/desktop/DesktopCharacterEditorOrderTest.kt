@@ -121,10 +121,15 @@ class DesktopCharacterEditorOrderTest {
                         editor.cardAi!!.close(); scene.frames()
                     }
                     scene.click("画风与生图参数")
-                    scene.until { nodes().any {
-                        it.config.getOrNull(SemanticsProperties.Text)?.any { text -> text.text == "内置画风图集" } == true &&
-                            it.visible(height) && it.boundsInRoot.height >= it.size.height - 1f
-                    } }
+                    scene.until {
+                        val section = nodes().single { it.config.getOrNull(SemanticsProperties.TestTag) == "character-editor-style" }
+                        val viewport = nodes().single { it.config.getOrNull(SemanticsProperties.TestTag) == "character-editor-scroll" }
+                        val rawTop = section.positionInRoot.y
+                        val top = viewport.positionInRoot.y
+                        val value = viewport.config[SemanticsProperties.VerticalScrollAxisRange].value()
+                        println("CARD_TOOL_JUMP mode=$mode width=$width rawTop=$rawTop viewportTop=$top scroll=$value")
+                        rawTop >= top - 1f && rawTop < top + 48f
+                    }
                     assertEquals(before, editor.state.value.card)
                     assertEquals(durable, app.characterRepository.getById(original.id))
                     assertTrue(app.taskRuntime.tasks.value.isEmpty())

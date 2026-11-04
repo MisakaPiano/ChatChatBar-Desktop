@@ -11,3 +11,5 @@ UI17/4336原18=14PASS/4FAIL/0SKIP保留。账户1/Workspace4/viewer1以及slow�
 9c原UI21/41772560318两方法实际1PASS/1FAIL/0SKIP：Word新属性顺序已通过；toolbar继续到预算关闭、封面/改写/补空原owner、画风定位后，在123比较display draft和durable source时失败。既有空负向会在displayCard显示默认值，持久源仍留空；将两者各与操作前对应快照比较，保全“不改draft”和“不改持久源”双断言，不改默认显示/保存政策。
 
 5f完整157原toolbar方法已PASS，四组合截图也证明工具常驻及footer；但新method末尾图在动画中仍显示较后内容，发现until使用递归text把含目标的祖先容器也当“图集按钮已可见”。仅将该末尾等待改为真实Text叶节点及完整高度，不改生产滚动或原5秒预算，补窄高420的最终定位图片；原StyleGallery的900高直接Text定位方法在157已PASS。该test-only补验与普通1238包并行，冻结应用仍5f，不重建包/重复完整回归。
+
+更正：fe原UI22虽单方法PASS，实际图片仍在卡底，Text config仍可能命中merged祖先，不能作为最终jump定位证据。改按唯一style tag的未裁剪positionInRoot与实际scroll viewport顶部关系判断，记录滚动值；保原5秒限制及所有回调/资料断言。R34包/private20尚未公开，先不记最终ready，等待严格位置诊断；不修改原UI22的真实PASS/原图片，也不把它扩大成产品定位通过。
