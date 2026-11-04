@@ -110,6 +110,7 @@ class DesktopCharacterEditorOrderTest {
                     labels.forEach { assertEquals(positions[it], button(it).boundsInRoot) }
                     scene.click("字段 Token 估算"); scene.until { nodes().any { it.text("编辑字段 Token 估算") } }
                     scene.click("关闭 Token 估算")
+                    assertFalse(scene.nodes().any { it.text("编辑字段 Token 估算") })
                     scene.click("生成卡片封面候选"); assertTrue(editor.cardImages!!.state.value.open); editor.cardImages!!.close(); scene.frames()
                     scene.click("AI 定向改写"); assertTrue(editor.cardAi!!.state.value.open)
                     assertEquals(com.example.chatbar.domain.card.CharacterCardAiOperation.REWRITE, editor.cardAi!!.state.value.operation)
@@ -189,8 +190,9 @@ class DesktopCharacterEditorOrderTest {
         while (!condition()) { render(System.nanoTime()).close(); delay(15) }; frames()
     }
     private suspend fun ImageComposeScene.click(label: String) {
-        until { nodes().any { it.text(label) && it.config.contains(SemanticsActions.OnClick) } }
-        val n = nodes().first { it.text(label) && it.config.contains(SemanticsActions.OnClick) }
+        fun SemanticsNode.named() = text(label) || config.getOrNull(SemanticsProperties.ContentDescription)?.contains(label) == true
+        until { nodes().any { it.named() && it.config.contains(SemanticsActions.OnClick) } }
+        val n = nodes().first { it.named() && it.config.contains(SemanticsActions.OnClick) }
         assertFalse(n.config.contains(SemanticsProperties.Disabled))
         assertTrue(n.config[SemanticsActions.OnClick].action!!.invoke()); frames()
     }

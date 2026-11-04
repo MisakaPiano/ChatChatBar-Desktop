@@ -5,3 +5,5 @@
 UI17/4336原18=14PASS/4FAIL/0SKIP保留。账户1/Workspace4/viewer1以及slow空负向切换/原role focus实际PASS。具体四项：角色header启停获得whole-card hasFocus导致collapsed被展开，改Prompt内层稳定focus组，保header键盘/原摘要断言；仅中间帧无savedPath错误显示导入提示已修；narrow单击摘要是原combinedClickable延迟事件，实际Workspace同callback待350ms已PASS，单独用例改在原5秒内等待真实收起入口而非40ms抢跑，不force状态；inline Word夹具缺捕获图片哈希，改用刚渲染得到的png.resourceHashes，不放宽writer guard。
 
 新增真实Overlay420×420/1100×640和两编辑模式测试五/四入口行列边界、滚动固定、固定footer、预算/cover/AI原owner打开与style定位、未改card/持久源/未执行task。只补受影响失败/焦点场景与新toolbar/Word，14已过按未变输入复用；公开1237/304/sign19冻结，所有后继绿之前不新冻结可交付包，用户外出仅挂人工验收，继续独立工程，不新增公开许可。
+
+972原UI20/41771483509原件19=18PASS/1FAIL/0SKIP：role5、content-options4、Word8与长卡顺序1通过；新toolbar方法成功打开Token窗口后，测试helper只匹配Text，找不到现有contentDescription图标关闭键而超时。仅补helper匹配可访问名称并确认窗口关闭，生产关闭入口不改，不延长时限/删断言；后继仅补该方法和Word属性顺序新变更，未执行的后续toolbar四组合仍待精确结果。
