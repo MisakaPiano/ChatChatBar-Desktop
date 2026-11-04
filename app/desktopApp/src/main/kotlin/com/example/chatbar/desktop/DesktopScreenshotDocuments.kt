@@ -421,13 +421,13 @@ internal object DesktopScreenshotDocuments {
         if (style == null) alignment(block.right) else {
             start("w", "pPr", W)
             empty("w", "pStyle", W); attr("w", "val", W, "CCB${style.kind.name}")
-            empty("w", "jc", W); attr("w", "val", W, if (block.right) "right" else "left")
+            style.fillArgb?.let { empty("w", "shd", W); attr("w", "val", W, "clear"); attr("w", "fill", W, "%06x".format(it and 0xffffff)) }
+            empty("w", "spacing", W); attr("w", "line", W, (style.lineHeightSp * 15).roundToInt().toString())
+            attr("w", "lineRule", W, "atLeast"); attr("w", "after", W, (desktopSegmentMetrics(style.kind).verticalPadding * 15).toString())
             val gap = (10466 * (1f - style.widthFraction)).roundToInt().coerceAtLeast(0)
             val left = if (style.kind == RoleplaySegmentKind.DIALOGUE || style.kind == RoleplaySegmentKind.THOUGHT) 720 else gap / 2
             empty("w", "ind", W); attr("w", "left", W, left.toString()); attr("w", "right", W, (gap - left).coerceAtLeast(0).toString())
-            empty("w", "spacing", W); attr("w", "line", W, (style.lineHeightSp * 15).roundToInt().toString())
-            attr("w", "lineRule", W, "atLeast"); attr("w", "after", W, (desktopSegmentMetrics(style.kind).verticalPadding * 15).toString())
-            style.fillArgb?.let { empty("w", "shd", W); attr("w", "val", W, "clear"); attr("w", "fill", W, "%06x".format(it and 0xffffff)) }
+            empty("w", "jc", W); attr("w", "val", W, if (block.right) "right" else "left")
             writeEndElement()
         }
         require(block.runs.isEmpty() || block.runs.joinToString("") { it.text } == block.text) { "文档格式化文字快照不一致" }

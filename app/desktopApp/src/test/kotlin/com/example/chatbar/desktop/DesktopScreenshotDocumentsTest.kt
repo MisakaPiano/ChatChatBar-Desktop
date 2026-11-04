@@ -127,6 +127,12 @@ class DesktopScreenshotDocumentsTest {
             assertEquals("CCBNARRATION", value(n, "pStyle")); assertEquals("CCBDIALOGUE", value(d, "pStyle"))
             assertEquals("CCBTHOUGHT", value(t, "pStyle"))
             assertEquals(3, listOf(n, d, t).map { value(it, "sz") }.distinct().size)
+            for (paragraph in listOf(n, d, t)) {
+                val properties = paragraph.getElementsByTagNameNS(w, "pPr").item(0).childNodes
+                val order = (0 until properties.length).mapNotNull { (properties.item(it) as? org.w3c.dom.Element)?.localName }
+                val ranks = order.map { listOf("pStyle", "shd", "spacing", "ind", "jc").indexOf(it) }
+                assertTrue(ranks.all { it >= 0 }); assertEquals(ranks.sorted(), ranks, "Word pPr schema order")
+            }
             assertNotEquals(value(n, "ind", "left"), value(d, "ind", "left"))
             assertNotEquals(value(d, "ind", "right"), value(t, "ind", "right"))
             assertTrue(d.getElementsByTagNameNS(w, "shd").length > 0 && t.getElementsByTagNameNS(w, "shd").length > 0)

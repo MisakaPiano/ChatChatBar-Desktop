@@ -9,3 +9,5 @@ DOCX实际增加按类型命名paragraph style及有效styles关系/part，段�
 合成角色三类+粗体+状态/长横线行动+头像/图片/背景用例检查真实document/styles/relationships XML、三字号/缩进/背景、可编辑字与内嵌图及内容开关；所有XML可解析、原消息不变。仅受影响Word与共同content-options suite定向待；UI17/4336原结果独立保留，不重复未受影响PNG/PDF/费用/UI或将新Word改动混记旧源。公开1237/304/sign19冻结，无新公开/merge/真实H安装授权。
 
 9436原UI18/41770529860生产编译通过，测试编译因新用例缺ThemeMode import拒绝，0方法执行；后继只补导入并保原全部Word结构/样式/可编辑与资源断言，不把它当排版验证通过。
+
+中断续接核对：2fb原UI19/41771363068同样停于测试ThemeMode import，0方法；972已补该导入，UI20/41771483509继续原运行，不重跑。另将新增语义段落pPr子元素按OOXML顺序写为pStyle/shd/spacing/ind/jc，并由真实生成段落断言顺序；此小修独立于UI20源码，必须另获精确后继Word结果，不能借UI20记通过。用户外出只暂停人工检查，独立工程与私有候选准备继续。
