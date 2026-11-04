@@ -53,7 +53,7 @@ jobs:
             --tests 'com.example.chatbar.desktop.DesktopCurrentImagePresentationTest.compact intermediate*' `
             --tests 'com.example.chatbar.desktop.DesktopCurrentImagePresentationTest.narrow Studio*' `
             --tests 'com.example.chatbar.desktop.DesktopCharacterEditorOrderTest.five tool entries*' `
-            --tests 'com.example.chatbar.desktop.DesktopCharacterEditorOrderTest.actual long card sections*' 
+            --tests 'com.example.chatbar.desktop.DesktopCharacterEditorOrderTest.actual long card sections*'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Preserve actual reports and synthetic review images
         if: always()
