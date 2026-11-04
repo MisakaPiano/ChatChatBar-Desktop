@@ -9,11 +9,11 @@ on:
         required: true
         type: string
 env:
-  SOURCE_SHA: ${{ inputs.source_sha || 'f52eeb95b3034ee236afbef25c7766ca15976e9b' }}
+  SOURCE_SHA: ${{ inputs.source_sha || '567ff1939ec2a5621bbbc8dd7d5f06e079a942b7' }}
 jobs:
-  review-ui:
+  targeted-high-action:
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
+    timeout-minutes: 20
     permissions:
       contents: read
     steps:
@@ -29,29 +29,16 @@ jobs:
           packages: platform-tools
       - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
       - uses: gradle/actions/setup-gradle@v4
-      - name: Enable cloud runner KVM
+      - name: Compile and test only affected pricing and balance paths
+        working-directory: app
         run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-      - uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 35
-          arch: x86_64
-          target: google_apis
-          disable-animations: true
-          working-directory: app
-          script: |
-            test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
-            bash ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.imageprompt.NovelAiReviewRegressionTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx4g -Dfile.encoding=UTF-8'
-            mkdir -p build/nai-review-evidence
-            adb pull /sdcard/Android/data/com.example.chatbar/files/nai-review-evidence build/nai-review-evidence/
-            git diff --exit-code
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          bash ./gradlew :app:testDebugUnitTest --tests '*NovelAiHighActionPricingTest' --tests '*NovelAiImageCostEstimatorTest' --tests '*NovelAiMediumPricingTest' --tests '*NovelAiPostProcessTest' --tests '*NovelAiAccountUiStateTest' --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx5g -Dfile.encoding=UTF-8'
+          git diff --exit-code
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: upstream-nai-review-ui-${{ github.run_id }}
+          name: upstream-nai-high-action-${{ github.run_id }}
           path: |
-            app/app/build/outputs/androidTest-results/connected/
-            app/app/build/reports/androidTests/connected/
-            app/build/nai-review-evidence/
+            app/app/build/test-results/testDebugUnitTest/
+            app/app/build/reports/tests/testDebugUnitTest/
