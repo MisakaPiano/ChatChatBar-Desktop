@@ -1,3 +1,7 @@
+2026-11-04 11:18 JST 1237 N02菜单真人部分通过：用户明确“两种菜单六项齐全、无DDIM，2M SDE可选”。V4.5 Full/V5 Full High均显示EA/Euler/2S A/2M SDE/2M/SDE，无DDIM新选择项，V4.5 2M SDE试选并恢复，仅MENU_ONLY。与前两SETTINGS_ONLY回执合并后N02整体仍partial，不提升6 sampler真实Provider兼容。根已按PNG_FIXTURE_DELIVERY.json把原15444B/SHA cbfacde0012d9d626111a61bb85d6fdeb6e3875e66cb5c57337682e344ab3abb合成元数据PNG交付用户下载目录；它非NovelAI真实生图，不含用户资料，仅供选项预览，实际导入/透明alpha/计费未验。回执N02_SAMPLER_MENU_USER_ACCEPTANCE.json；N01/U1237与旧1236历史保持，app304/sign19不变，无代码/测试/构建/发布或另发问题。
+
+下方历史保留。
+
 2026-11-04 11:13 JST 1237 N02设置两项部分通过：用户明确答“Effort切换、High参数保留和透明开关均正常”“V+保留、当前模型重置及撤销均正常”。仅SETTINGS_ONLY：Medium有效14 Steps/EA/Rescale0与sampler只读、High自定义Steps/sampler跨Effort保留、透明开关跨Effort保留；V4.5 Steps24/V+跨V5保留、显式reset23/5/0/EA/V+off保留Prompt/角色、立即footer撤回恢复24/V+，V5 High未被该reset影响。实际alpha/Provider/计费及全部sampler未验，当前继续两模型菜单与PNG归属。回执N02_V5_SETTINGS_USER_ACCEPTANCE.json、N02_V45_SETTINGS_USER_ACCEPTANCE.json在r02；N01已定义组通过与旧1236历史保留。仅同步记录，代码/包304/sign19不变，无测试/构建/发布/另发人工问题。
 
 下方历史保留。
