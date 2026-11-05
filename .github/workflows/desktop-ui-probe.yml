@@ -45,9 +45,19 @@ jobs:
           New-Item -ItemType Directory -Path "$env:RUNNER_TEMP/ccb-ui-probe" -Force | Out-Null
           @{ source = (git rev-parse HEAD); run = $env:GITHUB_RUN_ID; scope = 'synthetic selected tests only; no installer, user profile, release or provider calls' } |
             ConvertTo-Json | Set-Content -Encoding utf8 "$env:RUNNER_TEMP/ccb-ui-probe/source.json"
-          .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain `
-            --tests 'com.example.chatbar.desktop.DesktopStudioLongPromptFocusTest'
+      - name: Recheck only prepared updater transport and TUF policy after test wrapper correction
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $runtime = Join-Path $env:RUNNER_TEMP 'update-proxy-runtime'
+          python -B tools/desktop/update/prepare_runtime.py --destination "$runtime" --artifact-cache "$env:RUNNER_TEMP/update-proxy-artifacts" --download
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $env:CCB_UPDATE_PROXY_EXPECTED_MODULE_HOME = Join-Path $runtime 'lib'
+          foreach ($test in @('test_proxy_transport.py', 'test_client.py', 'test_version_identity.py')) {
+            & "$runtime/python.exe" -B "tools/desktop/update/$test" -v 2>&1 | Tee-Object -FilePath "$env:RUNNER_TEMP/ccb-ui-probe/$test.txt"
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+          Copy-Item -LiteralPath "$runtime/RUNTIME_MANIFEST.json" -Destination "$env:RUNNER_TEMP/ccb-ui-probe/UPDATER_RUNTIME_MANIFEST.json"
       - name: Preserve actual reports and synthetic review images
         if: always()
         uses: actions/upload-artifact@v4
