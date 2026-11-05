@@ -1,3 +1,15 @@
+2026-11-05 当前后继已完成定向：卡级148原26 scoped方法、备份db2585/r04原92PASS、共享Sampler7/V5三/实际runtime一、正确SpeakerRenamePortable五及509原IME/选区/caret三PASS分源保留。长Prompt最终29cf/41997537464原一方法四场景全部PASS，既有失败/取消各按实际保留；新普通私有1240与必要完整159准备中，非ready/非公开。用户1238自更/资料重开、负向页签、三种PNG过滤组合及Word三类语义/可编辑/图片已分项通过，原1237三FAIL留历史；新长Prompt问题仍待新版本真人复测。私有1239/a7/full158/sign21草稿冻结且不含后继，公开1238/签20不变，无新公开或现用H操作。社区2026-11-05公开GET仍关闭只挂真实联调；正式1.0连续推进、不加Gate，旧拒绝对象不碰。
+
+下方历史保留。
+
+2026-11-05 备份db2585/r04原92PASS与Sampler7+V5三/runtime最新一方法、SpeakerRenamePortable正确类五方法结果分开保留。长Prompt用户已明确基础/角色正向、翻译开关均有；原3b合成四场景outer跳动1FAIL，2cc/8950只修外层后内层整focusable推末尾，后继509按live source-caret+有限viewport转发并保持原内滚。509/r04原IME/源选区/译文caret三PASS，Long首场景点击/内滚/实际caret可见通过，随后测试误设plain CtrlEnd而止；旧1.10.3实际支持CtrlShiftEnd+Right。test-only29cf/r05当前41997537464运行，1509旧事件未等frame版41997300453已取消，不算FAIL/PASS。1238三种新PNG过滤组合各限定通过，Word真人仍待；私有1239/公开1238边界保持。
+
+下方历史保留。
+
+2026-11-05 备份r04/db2585c2/41991271343实际原XML 10suite/92PASS、0FAIL/SKIP；原r02八FAIL保留，nullable typed排除已补，原84/87声线/SaveSlot与真实merge取消/重开/87再导出通过。Sampler复用r02 shared7/V5三方法和r03最新主协程runtime一方法PASS；错包名speaker filter未执行，不冒称通过，下次必要验补实际desktop根类。1238真人新增负向页签与actions关/status开PNG预览限定PASS，旧1237两FAIL留历史；新长Prompt点击页面跳滚反馈待复现，共同字段test-only3b924556/41992055172运行。私有1239/a7/full158/sign21草稿冻结、公开1238/sign20未动；无本机运行或新公开。
+
+下方历史保留。
+
 2026-11-05 87备份固定e7460257已送41988336220；Sampler后继9c1d3e44已送41988590132，分别运行且未判通过。旧JSON/Preset/PNG保持可读，实际body/生成入口才限制有效Sampler；Medium原值、卡既有归一化不改。私有1239/a7/full158/R36/sign21/draft434865066冻结，后继不回填；公开1238/sign20，用户自更、原会话/草稿、重开已实际分项通过，角色负向等功能仍由root唯一收集。阶段清理已完成383139882逻辑B，保留最终成员/小原报告；旧拒绝对象不重试，现用H未操作。
 
 下方历史保留。
