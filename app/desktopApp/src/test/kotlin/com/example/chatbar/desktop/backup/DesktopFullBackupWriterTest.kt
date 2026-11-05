@@ -75,7 +75,7 @@ class DesktopFullBackupWriterTest {
             assertTrue(password.all { it == '\u0000' })
             assertTrue(inspect(output, "synthetic-writer-password".toCharArray()).encrypted)
             val decoded = entries(output, "synthetic-writer-password".toCharArray())
-            assertEquals(86, officialWireJson.decodeFromString(OfficialModernManifest.serializer(),
+            assertEquals(87, officialWireJson.decodeFromString(OfficialModernManifest.serializer(),
                 decoded.getValue("manifest.json").toString(Charsets.UTF_8)).appVersionCode)
             assertFails { inspect(output, "incorrect-synthetic-password".toCharArray()) }
             val damaged = Files.readAllBytes(output).also { it[it.lastIndex] = (it.last().toInt() xor 1).toByte() }

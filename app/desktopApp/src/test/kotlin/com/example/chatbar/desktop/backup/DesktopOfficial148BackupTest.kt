@@ -61,7 +61,7 @@ class DesktopOfficial148BackupTest {
                 val selected = backupJson.decodeFromJsonElement<CharacterCard>(sink.entities.values.single()).defaultImageGenerationSettings!!
                 assertEquals(NovelAiEffort.MEDIUM, selected.effort); assertTrue(selected.transparentBackground)
                 assertEquals(87, DesktopBackupReadOnlyInspector().inspect(path, password()).appVersionCode)
-                DesktopFullBackupStaging.prepare(path, password(), path.parent.resolve("staging")).use { staged ->
+                DesktopFullBackupStaging.prepare(path, password(), Files.createDirectory(path.parent.resolve("staging"))).use { staged ->
                     val output = path.parent.resolve("reexport.cbbackup")
                     DesktopFullBackupWriter.export(staged.files, output, null)
                     val reread = Sink(); val after = DesktopFullBackupSource.verify(output, null, reread)
@@ -88,7 +88,7 @@ class DesktopOfficial148BackupTest {
             val sink = Sink(); val proof = DesktopFullBackupSource.verify(path, null, sink)
             assertEquals(86, proof.manifest.appVersionCode); assertTrue(proof.historicalDesktopV5Settings)
             assertTrue(DesktopBackupReadOnlyInspector().inspect(path, null).historicalDesktopV5Settings)
-            DesktopFullBackupStaging.prepare(path, null, path.parent.resolve("staging")).use { staged ->
+            DesktopFullBackupStaging.prepare(path, null, Files.createDirectory(path.parent.resolve("staging"))).use { staged ->
                 assertTrue(staged.hasDesktopParticipation)
                 val output = path.parent.resolve("migrated.cbbackup")
                 DesktopFullBackupWriter.export(staged.files, output, null)

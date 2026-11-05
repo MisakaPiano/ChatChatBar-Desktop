@@ -9,3 +9,5 @@
 精确旧Desktop名称/code86/v2仅选择已知编码分支，不是来源认证。全部当前typed/路径/资源/凭据准入先成立，且只豁免冻结5f实际可写的NovelAiGenerationSettings两字段；旧码的NovelAiCharacterImageSettings新字段和未知键仍拒绝。按descriptor递归判定，不对普通文字或任意metadata/extensions的同名字做全文拦截。manifest可能最后到，stream记录受限版本标记后再按最终header决定，不收集额外全包JSON。保留原manifest事实，并在文件检查/合并预览显示历史Desktop设置扩展，不说它是官方147可消费的包。
 
 必要定向包括旧84–86和未知83/88、87明/密文、卡类型stream/S0/staging/87再导出、原2407B历史Studio正例、同标签伪造卡字段及未知键反例、真实merge取消/原根保持/新JsonFileStorage读回/87再导出，以及旧84+新87原声和SaveSlot custody重开、朋友圈86+87缺头像保全。原断言不删；新增header支持不能只证明能进预览。结果待精确云端原报告，不调用Provider、不碰现用H，不用未接线synthetic prototype冒充运行入口。
+
+首轮e746生产编译成功、测试漏类型import而0方法；修正后d261/41989426599原共享7PASS，Desktop96=88PASS/8FAIL。新负例揭示nullable角色默认设置descriptor带`?`，原精确类型名没有命中pre87排除；后继保留同一typed规则并识别nullable名，原伪造旧标签负例不删。其余失败为旧“未来87”夹具需推至88、一个modern Writer期望仍86、新staging/scratch父目录未建立及新合并测试在旧RESTART_REQUIRED coordinator继续导出。仅测试改为明确建目录、fresh coordinator模拟重开，保留生产重启拒绝。全部原报告和失败留存，后继备份定向待；Sampler7共享和最新8790/41989819624单方法PASS独立复用，不冒称备份已通过。

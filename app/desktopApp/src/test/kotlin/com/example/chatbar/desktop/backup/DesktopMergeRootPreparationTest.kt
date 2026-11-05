@@ -260,7 +260,7 @@ class DesktopMergeRootPreparationTest {
                         assertTrue(returned.entities.values.any { it["content"] == JsonPrimitive("Computer content") })
                         assertTrue(returned.entities.values.any { it["content"] == JsonPrimitive("Phone content") })
                         val other = Files.createDirectory(base.resolve("reopened-custody-root"))
-                        DesktopFullBackupMapping(other).restoreMerged(returned.files, base.resolve("reopened-custody-work"), BackupPreferences()).use { mapped ->
+                        DesktopFullBackupMapping(other).restoreMerged(returned.files, Files.createDirectory(base.resolve("reopened-custody-work")), BackupPreferences()).use { mapped ->
                             DesktopSaveSlotSourceCustody.validate(mapped.directory)
                             DesktopFullBackupGraphValidation.validate(mapped.directory, futureRoot = other)
                         }

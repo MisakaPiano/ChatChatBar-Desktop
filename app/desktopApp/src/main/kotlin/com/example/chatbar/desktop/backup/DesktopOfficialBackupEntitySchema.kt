@@ -21,21 +21,23 @@ internal object DesktopOfficialBackupEntitySchema {
     private fun versioned(descriptor: SerialDescriptor, value: JsonElement, code: Int, depth: Int, historicalDesktopV5: Boolean) {
         require(depth <= 64)
         if (value == JsonNull) return
-        if (code == 84 && descriptor.serialName == "com.example.chatbar.domain.image.NovelAiSampler") {
+        // Nullable nested card settings retain the same version policy as their non-null type.
+        val typeName = descriptor.serialName.removeSuffix("?")
+        if (code == 84 && typeName == "com.example.chatbar.domain.image.NovelAiSampler") {
             require(value.jsonPrimitive.content != "DPM_PLUS_PLUS_2M_SDE") { "OFFICIAL145_SAMPLER_UNSUPPORTED" }
         }
         when (descriptor.kind) {
             StructureKind.CLASS, StructureKind.OBJECT -> {
                 val obj = value as? JsonObject ?: return // The actual serializer diagnoses its expected type.
-                if (code < 87 && !(historicalDesktopV5 && descriptor.serialName == "com.example.chatbar.domain.image.NovelAiGenerationSettings") && descriptor.serialName in setOf(
+                if (code < 87 && !(historicalDesktopV5 && typeName == "com.example.chatbar.domain.image.NovelAiGenerationSettings") && typeName in setOf(
                         "com.example.chatbar.domain.image.NovelAiCharacterImageSettings",
                         "com.example.chatbar.domain.image.NovelAiGenerationSettings")) {
                     require("effort" !in obj && "transparentBackground" !in obj) { "OFFICIAL_PRE148_V5_OPTIONS_UNSUPPORTED" }
                 }
                 if (code == 84) {
-                    if (descriptor.serialName == "com.example.chatbar.data.local.entity.CharacterCard")
+                    if (typeName == "com.example.chatbar.data.local.entity.CharacterCard")
                         require("defaultImageGenerationSettings" !in obj) { "OFFICIAL145_CARD_FIELD_UNSUPPORTED" }
-                    if (descriptor.serialName == "com.example.chatbar.domain.image.NovelAiGenerationSettings")
+                    if (typeName == "com.example.chatbar.domain.image.NovelAiGenerationSettings")
                         require("varietyPlus" !in obj && "varietyPlusSigma" !in obj) { "OFFICIAL145_SETTINGS_FIELD_UNSUPPORTED" }
                 }
                 obj.forEach { (key, child) ->

@@ -317,11 +317,12 @@ class DesktopMergeImportServiceTest {
                     assertEquals(com.example.chatbar.domain.image.NovelAiEffort.MEDIUM, imported.defaultImageGenerationSettings?.effort)
                     assertEquals(true, imported.defaultImageGenerationSettings?.transparentBackground)
                 }
-                gate.withExclusiveMaintenance {
-                    DesktopFullBackupMapping(target).export(base.resolve("v5-export-work"), 87, StrictBackupZipReader.Limits().expanded).use { exported ->
+                // The old runtime correctly requires restart; a reopened root has a new coordinator.
+                DesktopDataOperationCoordinator().withExclusiveMaintenance {
+                    DesktopFullBackupMapping(target).export(Files.createDirectory(base.resolve("v5-export-work")), 87, StrictBackupZipReader.Limits().expanded).use { exported ->
                         val output = base.resolve("v5-return.cbbackup")
                         DesktopFullBackupWriter.export(exported.files, output, null, exported.preferences)
-                        DesktopFullBackupStaging.prepare(output, null, base.resolve("v5-return-work")).use { returned ->
+                        DesktopFullBackupStaging.prepare(output, null, Files.createDirectory(base.resolve("v5-return-work"))).use { returned ->
                             assertEquals(87, returned.source.manifest.appVersionCode)
                             assertFalse(returned.source.historicalDesktopV5Settings)
                             if (historic) {
