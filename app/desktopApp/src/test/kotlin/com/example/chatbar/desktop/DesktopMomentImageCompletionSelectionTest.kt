@@ -2,7 +2,11 @@
 package com.example.chatbar.desktop
 
 import androidx.compose.runtime.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.ImageComposeScene
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.*
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.*
@@ -82,12 +86,17 @@ class DesktopMomentImageCompletionSelectionTest {
                 val scene = ImageComposeScene(width, 740, coroutineContext = edt) {
                     val state by f.owner.state.collectAsState()
                     val scope = rememberCoroutineScope()
+                    CompositionLocalProvider(LocalDesktopPalette provides desktopSemanticColors(
+                        if (width == 420) ThemeMode.DARK else ThemeMode.LIGHT,
+                        com.example.chatbar.domain.appearance.DefaultThemeColorHsv, false)) {
+                    Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.background)) {
                     DesktopMomentFeedCard(state.posts.single(), f.media, state.busy,
                         onOpenSession = {}, onOpenCard = {}, onPreviewAvatar = {}, onPreviewImage = {},
                         onEdit = {}, onCopy = {}, onLike = {}, onRetry = {}, onGenerateImage = {},
                         onRegenerateImage = {}, onVersions = {}, onSelectVersion = { version ->
                             scope.launch { f.owner.selectImageVersion(f.owner.state.value.posts.single(), version) }
                         }, onDelete = {})
+                    } }
                 }
                 try {
                     var nanos = 0L
