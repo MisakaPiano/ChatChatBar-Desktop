@@ -26,7 +26,7 @@ internal fun DesktopCharacterImageDefaults(card: CharacterCard, globalImageModel
     fun changeSampling(transform: (NovelAiCharacterImageSettings) -> NovelAiCharacterImageSettings) = edit { current ->
         val currentModel = current.defaultNovelAiImageModel ?: currentGlobalModel
         val parameters = current.defaultImageGenerationSettings ?: NovelAiCharacterImageSettings()
-        if (currentModel == null || parameters.applyTo(NovelAiGenerationSettings(model = currentModel)).isMedium) current
+        if (currentModel?.let { parameters.applyTo(NovelAiGenerationSettings(model = it)).isMedium } == true) current
         else current.copy(defaultImageGenerationSettings = transform(parameters))
     }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {

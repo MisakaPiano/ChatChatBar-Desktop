@@ -71,9 +71,10 @@ class DesktopCharacterImageDefaultsTest {
                 steps = 31, guidance = 6.5f, cfgRescale = .4f, varietyPlus = true)
             var card by mutableStateOf(CharacterCard("v5-fixture", "Synthetic V5", defaultNovelAiImageModel = NovelAiImageModel.V5_FULL,
                 defaultImageGenerationSettings = original, createdAt = 1, updatedAt = 1))
+            var global by mutableStateOf<NovelAiImageModel?>(NovelAiImageModel.V4_5_FULL)
             val scene = ImageComposeScene(width, 900, coroutineContext = edt) {
                 Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp)) {
-                    DesktopCharacterImageDefaults(card, NovelAiImageModel.V4_5_FULL) { card = it(card) }
+                    DesktopCharacterImageDefaults(card, global) { card = it(card) }
                 }
             }
             try {
@@ -113,6 +114,14 @@ class DesktopCharacterImageDefaultsTest {
                 scene.click("恢复默认生图参数")
                 scene.until { !has("恢复默认生图参数") }
                 assertNull(card.defaultImageGenerationSettings)
+                global = null
+                card = card.copy(defaultNovelAiImageModel = null)
+                scene.until { nodes().any { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("Steps") == true && it.config.contains(SemanticsActions.SetProgress) } }
+                val unknownSteps = scene.nodes().first { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("Steps") == true && it.config.contains(SemanticsActions.SetProgress) }.config[SemanticsActions.SetProgress].action!!
+                val unknownRescale = scene.nodes().first { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("CFG Rescale") == true && it.config.contains(SemanticsActions.SetProgress) }.config[SemanticsActions.SetProgress].action!!
+                assertTrue(unknownSteps(33f)); assertTrue(unknownRescale(.5f))
+                assertEquals(33, card.defaultImageGenerationSettings?.steps)
+                assertEquals(.5f, card.defaultImageGenerationSettings?.cfgRescale)
             } finally { scene.close() }
         }
     }
