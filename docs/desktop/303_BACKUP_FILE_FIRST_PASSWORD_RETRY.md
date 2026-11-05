@@ -11,3 +11,15 @@
 首轮云端42027040426的原5类52方法PASS，0FAIL/ERROR/SKIP；共享密码框360暗/1100亮合成图已实际查看，显示/隐藏、显式提交、换文件/取消及按钮边界通过。控制器覆盖多次错误后同文件成功、明文、损坏明文、取消/离开，原merge/external恢复边界限定保留；不将这些结果提升成整包或真人通过。
 
 实际工作区使用保留式子页，隐藏不触发面板onDispose。后续修正将密码框提升至有界工作区根层（不在滚动/未测量的保留子页内），离开检查/导入子页明确退役其交互式密码流程，已准备的合并选择、导出和恢复所有权保持。新增420/1100真实工作区合成测试验证弹窗边界和两种离开路径，原52与该后继结果分开登记。没有本机编译、真实资料改写或合并。
+
+## 本轮必要验证与私有交付
+
+R02原24PASS/1FAIL揭示离开回调读到新operation，固定departingOperation后R03的概览取消通过；R03剩余4PASS/1FAIL是合成fixture原CLI来源被原合并准入正确拒绝，随后只改测试为真实BootstrapSettingsStore控制的合成目录。R04构造时误调suspend load/save导致测试未编译，移入已有协程初始化。上述原件保留，不改写为通过。
+
+最终R05/42034446435原2presentation+3recovery=5PASS/0FAIL/ERROR/SKIP，420/1100真实工作区密码框实际审图通过；R01/42027040426原merge17/external11、R02/42029607656原full20按精确未变生产/测试/私有fixture输入复用，共53不同方法。这个分源闭合不是当前源重跑整53，更不是整159或真人通过。普通R43/b598已取消，不能作为最终包。
+
+最终应用dc4756a290d63de418ecdb8fb83ce1516f30bcc2（生产740同体）。R44/42035613143验证普通升级/重开/忙拒绝pointer+manifest不变、独立中文入口548及自身数据锁/程序进程drain；最终manifest549、嵌套JAR身份和六工具CRLF逐项核对。EXE178645791B/SHA bdd5ae53ebf89d0c0951fbbbe00b6bc00f8c0a36a469237bd4db4b39db60dbce；独立ZIP191890622B/SHA1376bb7984ebd7b081067224a605ce1917b91d5279e79c2d170a192c6de7e7c0。真实凭据/custom根忙状态/像素/人验不在该原生范围。
+
+锁定签名runtime8公共依赖/322文件重核后私有签24，root1不变。R45/42038254249由冻结1233旧客户端在受控metadataFetcher下真实15→24 AVAILABLE、完整包下载及二验DOWNLOADED_VERIFIED，notes/root一致；不是公网发现、安装或人验。Release435264418/tag desktop-v0.1.0-preview.1242仍未公开draft，四附件和说明精确读回；公开1241/签23不动。完整私有交接在本地Continuity的20261105-candidate1242-preparation/OWNER_PRIVATE1242_HANDOFF.json。
+
+旧9份重复下载cache1583597262B与本批2份冗余outer370751017B分别被自动批准审查在进程创建前拒绝，只返回blocked by policy，累计实际删除0B，不重试/绕过；所有outer、小原报告、7最终成员、签名和用户资料保留。不把计划字节写作已回收空间。
