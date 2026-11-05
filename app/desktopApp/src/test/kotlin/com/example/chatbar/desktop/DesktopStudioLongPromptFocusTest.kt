@@ -123,6 +123,8 @@ class DesktopStudioLongPromptFocusTest {
                     // Ctrl+End is not mapped by its pinned legacy BasicTextField key policy.
                     scene.sendKeyEvent(KeyEvent(Key.MoveEnd, KeyEventType.KeyDown, isCtrlPressed = true, isShiftPressed = true))
                     scene.sendKeyEvent(KeyEvent(Key.MoveEnd, KeyEventType.KeyUp, isCtrlPressed = true, isShiftPressed = true))
+                    scene.frames()
+                    assertEquals(original.length, field().config[SemanticsProperties.TextSelectionRange].max)
                     scene.sendKeyEvent(KeyEvent(Key.DirectionRight, KeyEventType.KeyDown))
                     scene.sendKeyEvent(KeyEvent(Key.DirectionRight, KeyEventType.KeyUp))
                     scene.frames(35)
