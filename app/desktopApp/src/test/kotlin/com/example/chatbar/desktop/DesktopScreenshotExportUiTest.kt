@@ -91,13 +91,11 @@ class DesktopScreenshotExportUiTest {
                     until { actions("预览 PNG").isNotEmpty() }
                     assertTrue(actions("复制路径").isEmpty())
                     click("预览 PNG")
-                    until { !actions("导出 PNG").single().config.contains(SemanticsProperties.Disabled) && actions("格式 ·").isNotEmpty() }
+                    until { !actions("导出 文档 PDF").single().config.contains(SemanticsProperties.Disabled) && actions("格式 ·").isNotEmpty() }
                     for ((index, format) in DesktopScreenshotExportFormat.entries.withIndex()) {
-                        if (format != DesktopScreenshotExportFormat.PNG) {
-                            click("格式 ·"); until { formatOption(format.label).isNotEmpty() }
-                            formatOption(format.label).single().config[SemanticsActions.OnClick].action!!()
-                            until { actions("导出 ${format.label}").isNotEmpty() }
-                        }
+                        click("格式 ·"); until { formatOption(format.label).isNotEmpty() }
+                        formatOption(format.label).single().config[SemanticsActions.OnClick].action!!()
+                        until { actions("导出 ${format.label}").isNotEmpty() }
                         nextTarget = root.resolve("ui-$width-$index.${format.extension}")
                         click("导出 ${format.label}")
                         until { actions("复制路径").isNotEmpty() }
@@ -120,7 +118,7 @@ class DesktopScreenshotExportUiTest {
                         until { !actions("导出 ${format.label}").single().config.contains(SemanticsProperties.Disabled) && actions("格式 ·").isNotEmpty() && actions("复制路径").isEmpty() }
                     }
                     // Reusing an existing file must fail rather than advertise the prior successful path.
-                    nextTarget = root.resolve("ui-$width-2.docx")
+                    nextTarget = root.resolve("ui-$width-${DesktopScreenshotExportFormat.WORD.ordinal}.docx")
                     val prior = Files.readAllBytes(nextTarget!!)
                     click("导出 Word")
                     until { nodes().any { node -> node.config.getOrNull(SemanticsProperties.Text)?.any { "无法保存 Word" in it.text } == true } }

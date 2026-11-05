@@ -92,7 +92,9 @@ internal object DesktopDocumentPdf {
         private fun glyph(cp: Int, run: DesktopWordTextRun, defaultSize: Float): Glyph {
             val text = String(Character.toChars(cp))
             val font = if (run.code && cp in 32..126) mono else fontByCodepoint.getOrPut(cp) {
-                fonts.firstOrNull { it.hasGlyph(cp) } ?: error("文档字体不支持 Unicode U+${cp.toString(16).uppercase()}")
+                // hasGlyph accepts a PDF character code, not a Unicode code point.
+                fonts.firstOrNull { checkNotNull(it.cmapLookup).getGlyphId(cp) != 0 }
+                    ?: error("文档字体不支持 Unicode U+${cp.toString(16).uppercase()}")
             }
             val size = run.fontSizeSp?.times(.75f) ?: defaultSize
             require(size.isFinite() && size in 4f..72f) { "文档文字尺寸无效" }

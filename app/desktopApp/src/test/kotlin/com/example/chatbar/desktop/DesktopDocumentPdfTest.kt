@@ -115,11 +115,13 @@ class DesktopDocumentPdfTest {
                     {}, { currentPicture }) { currentPicture = image(Color.RED); target }
             }
             assertContentEquals(original, Files.readAllBytes(target))
+            val fresh = parent.resolve("new.pdf")
             val saved = saveDesktopStructuredDocumentVerified(DesktopScreenshotExportFormat.DOCUMENT_PDF, blocks,
-                {}, { picture }) { target }
-            assertEquals(target.toAbsolutePath().normalize(), saved)
-            Loader.loadPDF(Files.readAllBytes(target)).use { assertTrue("中文正文" in PDFTextStripper().getText(it)) }
-            assertEquals(1, Files.list(parent).use { it.count() }.toInt())
+                {}, { picture }) { fresh }
+            assertEquals(fresh.toAbsolutePath().normalize(), saved)
+            Loader.loadPDF(Files.readAllBytes(fresh)).use { assertTrue("中文正文" in PDFTextStripper().getText(it)) }
+            assertContentEquals(original, Files.readAllBytes(target))
+            assertEquals(2, Files.list(parent).use { it.count() }.toInt())
         } finally { check(parent.toFile().deleteRecursively()) }
     }
 
@@ -127,20 +129,26 @@ class DesktopDocumentPdfTest {
         val parent = Files.createTempDirectory("document-pdf-cancel-")
         try {
             val target = parent.resolve("preserved.pdf"); val original = byteArrayOf(1, 2, 3); Files.write(target, original)
+            val cancelled = parent.resolve("cancelled.pdf")
             var checks = 0
             assertFailsWith<CancellationException> {
-                writeDesktopScreenshotFile(target, "pdf", {}) { out ->
+                writeDesktopScreenshotFile(cancelled, "pdf", {}) { out ->
                     DesktopDocumentPdf.write(listOf(DesktopScreenshotDocumentBlock.Text("长篇中文正文。".repeat(4000))), emptyMap(),
                         { error("No media") }, out) { if (++checks == 20) throw CancellationException("Synthetic stop") }
                 }
             }
+            assertEquals(20, checks)
+            assertFalse(Files.exists(cancelled))
             assertContentEquals(original, Files.readAllBytes(target))
-            assertFails {
-                writeDesktopScreenshotFile(target, "pdf", {}) { out ->
+            val unsupported = parent.resolve("unsupported.pdf")
+            val refusal = assertFailsWith<IllegalStateException> {
+                writeDesktopScreenshotFile(unsupported, "pdf", {}) { out ->
                     DesktopDocumentPdf.write(listOf(DesktopScreenshotDocumentBlock.Text("\uDBFF\uDFFF")), emptyMap(),
                         { error("No media") }, out)
                 }
             }
+            assertTrue("U+10FFFF" in refusal.message.orEmpty())
+            assertFalse(Files.exists(unsupported))
             assertContentEquals(original, Files.readAllBytes(target))
             assertEquals(1, Files.list(parent).use { it.count() }.toInt())
         } finally { check(parent.toFile().deleteRecursively()) }
