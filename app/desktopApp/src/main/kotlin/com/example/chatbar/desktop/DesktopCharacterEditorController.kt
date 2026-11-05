@@ -617,7 +617,13 @@ internal class DesktopCharacterEditorController(
         left.map { listOf(it.id, it.fileName, it.filePath, it.fileType, it.addedAt.toString()) } ==
             right.map { listOf(it.id, it.fileName, it.filePath, it.fileType, it.addedAt.toString()) }
 
-    suspend fun save(): Boolean = dataGate.withNormalOperation { saveWithinDataOperation() }
+    suspend fun save(): Boolean {
+        val saved = dataGate.withNormalOperation { saveWithinDataOperation() }
+        // The durable entity/marker commit owns normal admission; the full-reference image
+        // cleaner needs its own exclusive admission, as on the existing recovery/retry path.
+        if (saved) retryCommittedCleanup()
+        return saved
+    }
 
     private suspend fun saveWithinDataOperation(): Boolean {
         flushDraft()
@@ -750,7 +756,6 @@ internal class DesktopCharacterEditorController(
                 draftBasis = markedDraft, dirty = false, busy = false,
                 problem = CharacterEditorProblem.SAVE_COMMITTED_WARNING,
                 detail = cleanupErrors.firstOrNull()?.message)
-            retryCommittedCleanup()
             return true
         } catch (error: Throwable) {
             _state.value = _state.value.copy(busy = false)
