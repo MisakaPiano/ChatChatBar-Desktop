@@ -1,6 +1,6 @@
 # 备份先选文件与同文件密码重试
 
-2026-11-05。用户明确要求导入与检查先选择文件，检测加密后才输入密码，输错可反复尝试同一文件。此后继不混入已公开1241/1f/签23，无后继公开许可；用户当前备份预览验收与程序修改分开记录。
+2026-11-05。用户明确要求导入与检查先选择文件，检测加密后才输入密码，输错可反复尝试同一文件。此功能作为独立1242/dc交付，不改写冻结1241/1f/签23；用户当前备份预览验收与程序修改分开记录。
 
 ## 实现边界
 
@@ -23,3 +23,7 @@ R02原24PASS/1FAIL揭示离开回调读到新operation，固定departingOperatio
 锁定签名runtime8公共依赖/322文件重核后私有签24，root1不变。R45/42038254249由冻结1233旧客户端在受控metadataFetcher下真实15→24 AVAILABLE、完整包下载及二验DOWNLOADED_VERIFIED，notes/root一致；不是公网发现、安装或人验。Release435264418/tag desktop-v0.1.0-preview.1242仍未公开draft，四附件和说明精确读回；公开1241/签23不动。完整私有交接在本地Continuity的20261105-candidate1242-preparation/OWNER_PRIVATE1242_HANDOFF.json。
 
 旧9份重复下载cache1583597262B与本批2份冗余outer370751017B分别被自动批准审查在进程创建前拒绝，只返回blocked by policy，累计实际删除0B，不重试/绕过；所有outer、小原报告、7最终成员、签名和用户资料保留。不把计划字节写作已回收空间。
+
+## 1242实际公开收尾
+
+用户明确答复“允许先公开1242和匹配签名更新24”后，原Release435264418、tag→dc和四个原附件已公开，398B LF发行说明等于已签target。metadata24经原codex/update-metadata普通前进至f796ea4bef340fe4a2f271820f664ccef40293fc，root1未变。实际API/tag/四asset长度与服务器digest、固定commit/默认branch不带query的十次匿名role字节以及完整178645791B匿名安装包流SHA bdd5ae53ebf89d0c0951fbbbe00b6bc00f8c0a36a469237bd4db4b39db60dbce均通过。无重建、重复落盘下载、执行安装器或现用H资料操作。上述私有阶段记录保留为历史，不能将公开等同真人验收；U1242由root唯一收集，最后实际自报仍1241。完整结果见本地OWNER_PUBLIC1242_HANDOFF及COORDINATOR_PUBLIC1242_COMPLETE_REVIEW。
