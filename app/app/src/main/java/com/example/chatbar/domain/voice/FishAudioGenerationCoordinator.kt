@@ -766,7 +766,7 @@ class FishAudioGenerationCoordinator(
         val voices = if (!currentVersionStillVisible) {
             emptyList()
         } else if (playAllMessageVoices) {
-            currentMessage
+            checkNotNull(currentMessage)
                 .let { visibleMessage ->
                     voiceRepository.placementsForMessage(visibleMessage).map { it.voice }
                 }
