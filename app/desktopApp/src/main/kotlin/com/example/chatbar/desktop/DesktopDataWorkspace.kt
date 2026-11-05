@@ -61,8 +61,9 @@ internal fun DesktopDataWorkspace(root: DesktopDataRootSwitchController, full: D
     val page = if (moving) DataPage.LOCATION else if (busy) DataPage.BACKUP else selected
     // Retained panes are not disposed when hidden; retire only their interactive password flow.
     DisposableEffect(page, operation, full, merge) {
+        val departingOperation = operation
         onDispose {
-            if (page == DataPage.BACKUP) when (operation) {
+            if (page == DataPage.BACKUP) when (departingOperation) {
                 BackupPage.CHECK -> full.leavePasswordFlow()
                 BackupPage.IMPORT -> merge?.leavePasswordFlow()
                 else -> Unit
