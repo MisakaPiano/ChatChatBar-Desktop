@@ -16,7 +16,7 @@ internal data class DesktopBackupExportResult(val success: Boolean, val message:
 internal data class DesktopFullBackupState(val busy: Boolean = false, val message: String = "",
     val error: String? = null, val summary: AppBackupSummary? = null,
     val desktopOnly: Boolean = false, val restartRequired: Boolean = false, val catalog: BackupExportCatalog? = null,
-    val exportResult: DesktopBackupExportResult? = null)
+    val exportResult: DesktopBackupExportResult? = null, val passwordRequest: DesktopBackupPasswordRequest? = null)
 
 /** The application owns the operation; leaving the panel cannot abandon a scheduled restore. */
 internal class DesktopFullBackupController(private val service: DesktopFullBackupService,
@@ -31,6 +31,8 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
     private val mutableWork = MutableStateFlow<List<DesktopWorkRow>>(emptyList())
     val workRows = mutableWork.asStateFlow()
     private var prepared: DesktopFullBackupArchive.Prepared? = null
+    private var passwordFile: java.nio.file.Path? = null
+    private var passwordFlowActive = false
 
     fun refreshExportCatalog() = action(null) {
         val catalog = service.catalog()
@@ -58,10 +60,16 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
         "文件校验完成；尚未替换当前数据。请检查摘要后决定是否恢复。"
     }
 
-    fun verifyFile(password: CharArray?) = action(password, task = DesktopBackupTask.INSPECT) { cancelled ->
-        val path = picker.pickOpenFile(TYPE) ?: return@action cancelled("已取消检查")
+    fun verifyFile(password: CharArray?) = verifyFile(password, chooseFile = true)
+    fun retryFilePassword(password: CharArray) = verifyFile(password, chooseFile = false)
+    private fun verifyFile(password: CharArray?, chooseFile: Boolean) = action(password, task = DesktopBackupTask.INSPECT,
+        passwordFlow = true) { cancelled ->
+        val path = if (chooseFile) picker.pickOpenFile(TYPE) else passwordFile
+        if (path == null) { releaseInspection(); return@action cancelled("已取消检查") }
         releaseInspection()
+        passwordFile = path
         val result = service.verifyFile(path, password)
+        passwordFile = null
         mutable.update { it.copy(summary = result.summary, desktopOnly = result.desktopOnly) }
         "文件完整性与格式校验完成；没有导入或替换当前数据。恢复请使用合并预览。" +
             if (result.historicalDesktopV5Settings) " 已保留旧 Desktop 生图设置扩展，不代表官方 1.4.7 支持。" else ""
@@ -75,17 +83,21 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
 
     fun discardInspection() = action(null, cleanupOnly = true) {
         releaseInspection()
-        "已取消恢复，当前数据未改变"
+        if (service.restartRequired) "检查已关闭；已准备的恢复记录仍保留，请正常退出。" else "已取消检查，当前数据未改变"
     }
     private var releaseWhenIdle = false
     fun leavePanel() = synchronized(lock) {
-        if (mutable.value.busy) releaseWhenIdle = true else discardInspection()
+        if (mutable.value.busy) {
+            releaseWhenIdle = true
+            if (passwordFlowActive) operation?.cancel()
+        } else discardInspection()
     }
 
     private suspend fun releaseInspection() {
         prepared?.let { service.release(it) }
         prepared = null
-        mutable.update { it.copy(summary = null, desktopOnly = false) }
+        passwordFile = null
+        mutable.update { it.copy(summary = null, desktopOnly = false, passwordRequest = null) }
     }
     private fun markStopRequested(id: String?) {
         if (id != null) mutableWork.update { rows -> rows.map {
@@ -102,10 +114,12 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun action(password: CharArray?, cleanupOnly: Boolean = false, exporting: Boolean = false,
-        task: DesktopBackupTask? = null, work: suspend ((String) -> String) -> String) {
+        task: DesktopBackupTask? = null, passwordFlow: Boolean = false, work: suspend ((String) -> String) -> String) {
         synchronized(lock) {
             if (closed || mutable.value.busy || service.restartRequired && !cleanupOnly) { password?.fill('\u0000'); return }
-            mutable.update { it.copy(busy = true, error = null, message = "正在准备和核验…", exportResult = null) }
+            mutableWork.update { rows -> rows.map { if (it.phase == DesktopWorkPhase.WAITING) it.copy(phase = DesktopWorkPhase.CANCELLED) else it } }
+            passwordFlowActive = passwordFlow
+            mutable.update { it.copy(busy = true, error = null, message = "正在准备和核验…", exportResult = null, passwordRequest = null) }
             val taskId = task?.let { UUID.randomUUID().toString() }
             activeTaskId = taskId
             var outcome = DesktopWorkPhase.COMPLETED
@@ -156,8 +170,18 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
                             else -> "操作未完成。请检查密码、格式、资源、可用空间及文件名；原文件与证据保留。"
                         }
                     }
-                    mutable.update { it.copy(error = reason, message = "", exportResult =
-                        if (exporting) DesktopBackupExportResult(false, reason) else null) }
+                    val retrySource = passwordFile
+                    if (passwordFlow && retrySource != null && currentCoroutineContext().isActive &&
+                        !service.restartRequired && failure.requestsBackupPasswordRetry()) {
+                        outcome = DesktopWorkPhase.WAITING
+                        mutable.update { it.copy(passwordRequest = DesktopBackupPasswordRequest(retrySource.fileName.toString().take(160),
+                            if ((failure as DesktopFullBackupSource.Refusal).passwordRequired) null else reason),
+                            error = null, message = "等待存档密码；所选文件已保留，当前资料未改变。") }
+                    } else {
+                        passwordFile = null
+                        mutable.update { it.copy(error = reason, message = "", exportResult =
+                            if (exporting) DesktopBackupExportResult(false, reason) else null) }
+                    }
                 } finally {
                     password?.fill('\u0000')
                     // Panel departure does not cancel an application-owned restore transaction.
@@ -167,10 +191,12 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
                             if (releaseWhenIdle) { releaseWhenIdle = false; true }
                             else {
                                 mutable.update { it.copy(busy = false, restartRequired = service.restartRequired) }
+                                passwordFlowActive = false
                                 false
                             }
                         }
                         if (!release) break
+                        if (outcome == DesktopWorkPhase.WAITING) outcome = DesktopWorkPhase.CANCELLED
                         try { releaseInspection() } catch (_: Throwable) {
                             outcome = DesktopWorkPhase.UNCONFIRMED
                             mutable.update { it.copy(error = "临时文件清理尚未确认，已保留异常现场；请勿自行清理恢复记录。") }
@@ -196,6 +222,7 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
         synchronized(lock) { closed = true }
         scope.coroutineContext[Job]!!.cancelAndJoin()
         releaseInspection()
+        mutableWork.update { rows -> rows.map { if (it.phase == DesktopWorkPhase.WAITING) it.copy(phase = DesktopWorkPhase.CANCELLED) else it } }
     }
     companion object { private val TYPE = DesktopFileType("ChatBar 整应用备份", listOf("cbbackup"), "cbbackup") }
 }

@@ -14,6 +14,38 @@ import org.junit.Test
 import kotlin.test.*
 
 class DesktopMergeImportServiceTest {
+    @Test fun `interactive merge keeps encrypted file across repeated passwords and cancels without publishing`() = runBlocking {
+        val bytes = CensusWireFixtures.bytes(encrypted = true, files = records("Phone", "https://phone.invalid/v1"))
+        fixture(archiveBytes = bytes) {
+            var picks = 0
+            val controller = DesktopMergeImportController(service, object : DesktopFilePicker {
+                override fun pickOpenFile(type: DesktopFileType): Path { picks++; return archive }
+                override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? = null
+            }, DesktopDirectoryPicker { error("No commit may be requested") })
+            try {
+                controller.selectFile()
+                withTimeout(10000) { controller.state.first { !it.busy && it.passwordRequest != null } }
+                assertNull(controller.state.value.error); assertFalse(controller.state.value.ready)
+                repeat(2) {
+                    val wrong = "incorrect-password-$it".toCharArray(); controller.retryFilePassword(wrong)
+                    withTimeout(20000) { controller.state.first { !it.busy && it.passwordRequest?.error != null } }
+                    assertEquals(1, picks); assertTrue(wrong.all { it == '\u0000' })
+                }
+                val password = CensusWireFixtures.PASSWORD.toCharArray(); controller.retryFilePassword(password)
+                withTimeout(20000) { controller.state.first { !it.busy && it.ready } }
+                assertEquals(1, picks); assertTrue(password.all { it == '\u0000' })
+                assertNull(controller.state.value.passwordRequest); assertFalse(controller.state.value.restartRequired)
+                controller.discard()
+                withTimeout(10000) { controller.state.first { !it.busy && !it.ready } }
+                controller.selectFile()
+                withTimeout(10000) { controller.state.first { !it.busy && it.passwordRequest != null } }
+                controller.leavePasswordFlow()
+                withTimeout(10000) { controller.state.first { !it.busy && it.passwordRequest == null } }
+                withTimeout(5000) { controller.workRows.first { rows -> rows.none { it.active } } }
+                assertFalse(controller.state.value.restartRequired); assertNull(controller.state.value.destination)
+            } finally { controller.closeAndDrain() }
+        }
+    }
     @Test fun `task center stops only the original merge check and waits for picker cleanup`() = runBlocking<Unit> {
         fixture {
             val firstEntered = CompletableDeferred<Unit>(); val secondEntered = CompletableDeferred<Unit>()

@@ -16,7 +16,8 @@ internal data class DesktopMergeImportState(val busy: Boolean = false, val ready
     val credentials: List<DesktopMergeCredentials.GlobalConflict> = emptyList(),
     val imagePreferencesChoiceRequired: Boolean = false, val message: String = "", val error: String? = null,
     val restartRequired: Boolean = false, val destination: Path? = null, val desktopParticipation: Boolean = false,
-    val failureDetails: String? = null, val historicalDesktopV5Settings: Boolean = false)
+    val failureDetails: String? = null, val historicalDesktopV5Settings: Boolean = false,
+    val passwordRequest: DesktopBackupPasswordRequest? = null)
 
 /** Holds secret-bearing preparation privately; UI state contains only presentation metadata. */
 internal class DesktopMergeImportController(private val service: DesktopMergeImportService,
@@ -33,10 +34,25 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
     private val mutableWork = MutableStateFlow<List<DesktopWorkRow>>(emptyList())
     val workRows = mutableWork.asStateFlow()
     private var preview: DesktopMergeImportService.Preview? = null
+    private var passwordFile: Path? = null
+    private var passwordFlowActive = false
 
     fun inspect(password: CharArray?) { inspectFile(null, password) }
     fun inspectFile(source: Path?, password: CharArray?) = actionJob(password, DesktopMergeTask.INSPECT) { outcome ->
         val path = source ?: picker.pickOpenFile(TYPE) ?: return@actionJob run { outcome(DesktopWorkPhase.CANCELLED); "已取消选择" }
+        passwordFile = null
+        inspectSelectedFile(path, password)
+    }
+    fun selectFile() { inspectPasswordFile(null, true) }
+    fun retryFilePassword(password: CharArray) { inspectPasswordFile(password, false) }
+    private fun inspectPasswordFile(password: CharArray?, chooseFile: Boolean) = actionJob(password, DesktopMergeTask.INSPECT,
+        passwordFlow = true) { outcome ->
+        val path = if (chooseFile) picker.pickOpenFile(TYPE) else passwordFile
+        if (path == null) { passwordFile = null; outcome(DesktopWorkPhase.CANCELLED); return@actionJob "已取消选择" }
+        passwordFile = path
+        inspectSelectedFile(path, password)
+    }
+    private suspend fun inspectSelectedFile(path: Path, password: CharArray?): String {
         preview = null; mutable.update { DesktopMergeImportState(busy = true) }
         val result = service.inspectWithProgress(path, password, ::showProgress)
         preview = result
@@ -44,7 +60,8 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
             conflicts = result.data.conflicts, credentials = result.credentialConflicts,
             imagePreferencesChoiceRequired = result.imagePreferencesChoiceRequired,
             desktopParticipation = result.hasDesktopParticipation, historicalDesktopV5Settings = result.historicalDesktopV5Settings) }
-        "已校验备份。请选择冲突处理方式；电脑当前数据尚未改变。"
+        passwordFile = null
+        return "已校验备份。请选择冲突处理方式；电脑当前数据尚未改变。"
     }
     fun commit(choices: Map<String, DesktopMergePreview.Choice>, credentials: Map<ImportCredentialKind, DesktopMergeCredentials.Choice>,
         imagePreferencesFromPhone: Boolean?, confirmed: Boolean) = action(null, DesktopMergeTask.COMMIT) { outcome ->
@@ -79,9 +96,13 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
     }
     fun discard() { discardExternal() }
     fun discardExternal() = actionJob(null) {
-        service.discard(); preview = null
+        service.discard(); preview = null; passwordFile = null
         mutable.update { DesktopMergeImportState(busy = true) }
         "已取消合并，当前电脑数据未改变"
+    }
+    fun leavePasswordFlow() = synchronized(lock) {
+        if (passwordFlowActive) operation?.cancel()
+        else if (mutable.value.passwordRequest != null) discard()
     }
     private fun markStopRequested(id: String?) {
         if (id != null) mutableWork.update { rows -> rows.map {
@@ -107,9 +128,11 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun actionJob(password: CharArray?, task: DesktopMergeTask? = null,
-        work: suspend ((DesktopWorkPhase) -> Unit) -> String): Job? = synchronized(lock) {
+        passwordFlow: Boolean = false, work: suspend ((DesktopWorkPhase) -> Unit) -> String): Job? = synchronized(lock) {
         if (closed || mutable.value.busy || service.restartRequired) { password?.fill('\u0000'); return@synchronized null }
-        mutable.update { it.copy(busy = true, error = null, failureDetails = null) }
+        mutableWork.update { rows -> rows.map { if (it.phase == DesktopWorkPhase.WAITING) it.copy(phase = DesktopWorkPhase.CANCELLED) else it } }
+        passwordFlowActive = passwordFlow
+        mutable.update { it.copy(busy = true, error = null, failureDetails = null, passwordRequest = null) }
         val taskId = task?.let { UUID.randomUUID().toString() }
         activeTaskId = taskId
         var outcome: DesktopWorkPhase? = null
@@ -125,7 +148,7 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
                 mutable.update { it.copy(message = message) }
             } catch (_: CancellationException) {
                 outcome = DesktopWorkPhase.CANCELLED
-                withContext(NonCancellable) { service.discard() }; preview = null
+                withContext(NonCancellable) { service.discard() }; preview = null; passwordFile = null
                 mutable.update { it.copy(ready = false, message = if (service.restartRequired) "合并提交已进入启动切换阶段，请正常退出。"
                     else "已停止；原电脑目录与手机文件保留。未完成的新目录不会自动清理。") }
             } catch (failure: Throwable) {
@@ -152,11 +175,25 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
                     failure is DesktopTaskDrainTimeoutException -> "生成任务尚未确认停止，请正常退出后重试。"
                     else -> "合并未提交或尚未确认。请检查密码、文件格式、资源、可用空间和所选目录；原始数据与失败现场保留。"
                 }
-                mutable.update { it.copy(ready = retainPreview && preview != null, error = message, message = "", failureDetails = desktopMergeFailureDetails(failure)) }
+                val retrySource = passwordFile
+                if (passwordFlow && retrySource != null && currentCoroutineContext().isActive && outcome != DesktopWorkPhase.UNCONFIRMED &&
+                    !service.restartRequired && failure.requestsBackupPasswordRetry()) {
+                    outcome = DesktopWorkPhase.WAITING
+                    mutable.update { it.copy(ready = false, error = null,
+                        passwordRequest = DesktopBackupPasswordRequest(retrySource.fileName.toString().take(160),
+                            if ((failure as DesktopFullBackupSource.Refusal).passwordRequired) null else message),
+                        message = "等待存档密码；所选文件已保留，当前资料未改变。", failureDetails = null) }
+                } else {
+                    passwordFile = null
+                    mutable.update { it.copy(ready = retainPreview && preview != null, error = message, message = "", failureDetails = desktopMergeFailureDetails(failure)) }
+                }
             } finally {
                 password?.fill('\u0000')
-                mutable.update { it.copy(busy = false, restartRequired = service.restartRequired,
-                    ready = preview != null && !service.restartRequired) }
+                synchronized(lock) {
+                    passwordFlowActive = false
+                    mutable.update { it.copy(busy = false, restartRequired = service.restartRequired,
+                        ready = preview != null && !service.restartRequired) }
+                }
             }
         }
         operation = job
@@ -179,12 +216,14 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
         job
     }
     private fun action(password: CharArray?, task: DesktopMergeTask? = null, work: suspend ((DesktopWorkPhase) -> Unit) -> String) {
-        actionJob(password, task, work)
+        actionJob(password, task, work = work)
     }
     suspend fun closeAndDrain() {
         synchronized(lock) { closed = true }
         scope.coroutineContext[Job]!!.cancelAndJoin()
-        service.discard(); preview = null
+        service.discard(); preview = null; passwordFile = null
+        mutable.update { it.copy(passwordRequest = null) }
+        mutableWork.update { rows -> rows.map { if (it.phase == DesktopWorkPhase.WAITING) it.copy(phase = DesktopWorkPhase.CANCELLED) else it } }
         // Destination ownership belongs to the service, closed only AFTER old repositories drain.
     }
     companion object {

@@ -17,7 +17,6 @@ internal fun DesktopFullBackupPanel(controller: DesktopFullBackupController,
     view: DesktopFullBackupView, exportRequest: Int = 0, onExit: () -> Unit) {
     DisposableEffect(controller) { onDispose { controller.leavePanel() } }
     val state by controller.state.collectAsState()
-    var password by remember { mutableStateOf("") }
     var exportOpen by remember { mutableStateOf(false) }
     LaunchedEffect(exportRequest) { if (exportRequest > 0) { exportOpen = true; controller.refreshExportCatalog() } }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -26,13 +25,12 @@ internal fun DesktopFullBackupPanel(controller: DesktopFullBackupController,
         StatusText("可随备份保存已配置的 API 密钥等凭据；导出不会改变本机目录或凭据。文件检查仅用于核对，不会导入数据。")
         StatusText("包含 Desktop 专有数据时仅支持 Desktop 恢复。Android 双向迁移尚需独立设备验收，不保证所有历史或未来格式可用。")
         if (!state.restartRequired) {
-            if (view != DesktopFullBackupView.EXPORT) BackupPasswordField("备份检查密码（加密文件填写；未加密留空）", password, !state.busy) { password = it }
             ActionRow {
                 if (view != DesktopFullBackupView.CHECK) BootstrapButton("选择导出内容…", enabled = !state.busy) {
                     exportOpen = true; controller.refreshExportCatalog()
                 }
                 if (view != DesktopFullBackupView.EXPORT) BootstrapButton("选择备份并检查…", secondary = true, enabled = !state.busy) {
-                    val secret = password.takeIf { it.isNotEmpty() }?.toCharArray(); password = ""; controller.verifyFile(secret)
+                    controller.verifyFile(null)
                 }
                 if (state.busy) BootstrapButton("停止", secondary = true) { controller.stop() }
             }
@@ -50,6 +48,9 @@ internal fun DesktopFullBackupPanel(controller: DesktopFullBackupController,
             BootstrapButton("正常退出应用", onClick = onExit)
         }
     }
+    state.passwordRequest?.let { request -> DesktopBackupPasswordDialog(request,
+        onPassword = controller::retryFilePassword, onCancel = controller::discardInspection,
+        onChooseFile = { controller.verifyFile(null) }) }
     if (exportOpen) DesktopBackupExportDialog(state, controller::refreshExportCatalog,
         onClose = { exportOpen = false }, onExport = { selection, secret -> controller.export(secret, true, selection) }, onStop = controller::stop)
     state.exportResult?.let { result ->

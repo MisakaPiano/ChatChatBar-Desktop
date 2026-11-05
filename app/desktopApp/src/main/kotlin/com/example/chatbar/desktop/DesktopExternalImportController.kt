@@ -126,7 +126,8 @@ internal class DesktopExternalImportController(
                 observeModel()
             }
             DesktopExternalImportKind.BACKUP -> {
-                check(!merge.state.value.busy && !merge.state.value.ready && !merge.state.value.restartRequired) { "请先处理数据页中已有的备份预览。" }
+                check(!merge.state.value.busy && !merge.state.value.ready && !merge.state.value.restartRequired &&
+                    merge.state.value.passwordRequest == null) { "请先处理数据页中已有的备份检查或密码输入。" }
                 dispatch()
                 awaitDelegated(merge.inspectFile(source.file, password))
                 val result = merge.state.value

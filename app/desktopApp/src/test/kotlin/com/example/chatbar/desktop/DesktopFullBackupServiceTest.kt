@@ -8,6 +8,68 @@ import kotlinx.coroutines.flow.first
 import kotlin.test.*
 
 class DesktopFullBackupServiceTest {
+    @Test fun `file check asks only after encrypted selection and retries same source without changing live data`() = runBlocking {
+        Fixture().use { f ->
+            f.service.release(f.seed())
+            val file = f.base.resolve("saved.cbbackup"); val bytes = Files.readAllBytes(file)
+            val live = Files.readAllBytes(f.settings); var picks = 0
+            val controller = DesktopFullBackupController(f.service, object : DesktopFilePicker {
+                override fun pickOpenFile(type: DesktopFileType): Path { picks++; return file }
+                override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? = null
+            })
+            try {
+                assertNull(controller.state.value.passwordRequest)
+                controller.verifyFile(null)
+                withTimeout(10000) { controller.state.first { !it.busy && it.passwordRequest != null } }
+                assertEquals(1, picks); assertNull(controller.state.value.error)
+                withTimeout(5000) { controller.workRows.first { it.first().phase == DesktopWorkPhase.WAITING } }
+                repeat(2) {
+                    val wrong = "wrong-password-$it".toCharArray()
+                    controller.retryFilePassword(wrong)
+                    withTimeout(20000) { controller.state.first { !it.busy && it.passwordRequest?.error != null } }
+                    assertTrue(wrong.all { it == '\u0000' }); assertEquals(1, picks)
+                    assertFalse(controller.state.value.toString().contains("wrong-password"))
+                }
+                val password = "test-password".toCharArray(); controller.retryFilePassword(password)
+                withTimeout(20000) { controller.state.first { !it.busy && it.summary != null } }
+                withTimeout(5000) { controller.workRows.first { rows -> rows.none { it.active } } }
+                assertTrue(password.all { it == '\u0000' }); assertEquals(1, picks)
+                assertNull(controller.state.value.passwordRequest); assertFalse(f.service.restartRequired)
+                assertContentEquals(live, Files.readAllBytes(f.settings)); assertContentEquals(bytes, Files.readAllBytes(file))
+            } finally { controller.closeAndDrain() }
+        }
+    }
+    @Test fun `password cancellation departure plain file and malformed file retain their distinct check outcomes`() = runBlocking {
+        Fixture().use { f ->
+            f.service.release(f.seed())
+            val encrypted = f.base.resolve("saved.cbbackup"); val plain = f.base.resolve("plain.cbbackup")
+            f.service.export(plain, null)
+            val bad = Files.write(f.base.resolve("bad.cbbackup"), byteArrayOf(1, 2, 3))
+            val live = Files.readAllBytes(f.settings); val sources = ArrayDeque(listOf(encrypted, encrypted, plain, bad))
+            val controller = DesktopFullBackupController(f.service, object : DesktopFilePicker {
+                override fun pickOpenFile(type: DesktopFileType): Path = sources.removeFirst()
+                override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? = null
+            })
+            try {
+                controller.verifyFile(null)
+                withTimeout(10000) { controller.state.first { !it.busy && it.passwordRequest != null } }
+                controller.discardInspection()
+                withTimeout(10000) { controller.state.first { !it.busy && it.passwordRequest == null } }
+                controller.verifyFile(null)
+                withTimeout(10000) { controller.state.first { !it.busy && it.passwordRequest != null } }
+                controller.leavePanel()
+                withTimeout(10000) { controller.state.first { !it.busy && it.passwordRequest == null } }
+                controller.verifyFile(null)
+                withTimeout(10000) { controller.state.first { !it.busy && it.summary != null } }
+                assertNull(controller.state.value.passwordRequest)
+                controller.verifyFile(null)
+                withTimeout(10000) { controller.state.first { !it.busy && it.error != null } }
+                assertNull(controller.state.value.passwordRequest); assertNull(controller.state.value.summary)
+                assertTrue(controller.state.value.error!!.contains("AUTHENTICATION_ZIP"))
+                assertContentEquals(live, Files.readAllBytes(f.settings)); assertFalse(f.service.restartRequired)
+            } finally { controller.closeAndDrain() }
+        }
+    }
     @Test fun `file check retains actual old Desktop V5 options with explicit historical classification`() = runBlocking<Unit> {
         Fixture().use { f ->
             val original = published1238StudioBackup()

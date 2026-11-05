@@ -83,7 +83,7 @@ class DesktopRecoveryWorkspaceTest {
             val routes = listOf(
                 DesktopUiText.RECOVERY_OPEN_EXPORT to "选择导出内容…",
                 DesktopUiText.RECOVERY_OPEN_CHECK to "检查备份文件",
-                DesktopUiText.RECOVERY_OPEN_IMPORT to "加密备份密码（未加密请留空）",
+                DesktopUiText.RECOVERY_OPEN_IMPORT to "导入与合并",
                 DesktopUiText.RECOVERY_OPEN_LOCATION to DesktopUiText.CURRENT_DATA_DIRECTORY.zhCn,
                 DesktopUiText.RECOVERY_OPEN_AUTO to DesktopUiText.BACKUP_MINIMUM.zhCn,
                 DesktopUiText.RECOVERY_OPEN_SUPPORT to "复制基本诊断",
@@ -96,6 +96,7 @@ class DesktopRecoveryWorkspaceTest {
                 assertTrue(reached, "destination=${entry.name}, expected=$expected, visible=" + nodes(scene)
                     .flatMap { it.config.getOrNull(SemanticsProperties.Text).orEmpty() }.joinToString { it.text }.take(4000))
                 assertEquals(0, picks); assertEquals(0, directories); assertEquals(0, exits)
+                if (entry == DesktopUiText.RECOVERY_OPEN_IMPORT) assertTrue(nodes(scene).none { it.config.contains(SemanticsActions.SetText) })
                 assertEquals(initialMerge, c.mergeImportController.state.value)
                 assertTrue(c.mergeImportController.workRows.value.isEmpty())
                 assertTrue(c.fullBackupController.workRows.value.isEmpty())

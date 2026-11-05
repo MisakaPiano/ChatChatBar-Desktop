@@ -12,7 +12,7 @@ import com.example.chatbar.desktop.backup.*
 @Composable
 internal fun DesktopMergeImportPanel(controller: DesktopMergeImportController, onExit: () -> Unit) {
     val state by controller.state.collectAsState()
-    var password by remember { mutableStateOf("") }
+    DisposableEffect(controller) { onDispose { controller.leavePasswordFlow() } }
     var choices by remember(state.conflicts) { mutableStateOf(emptyMap<String, DesktopMergePreview.Choice>()) }
     var credentials by remember(state.credentials) { mutableStateOf(emptyMap<ImportCredentialKind, DesktopMergeCredentials.Choice>()) }
     var imageFromPhone by remember(state.ready) { mutableStateOf<Boolean?>(null) }
@@ -23,10 +23,9 @@ internal fun DesktopMergeImportPanel(controller: DesktopMergeImportController, o
         StatusText("保留电脑现有内容，将手机数据合并到新的独立目录。冲突由你选择，原目录和备份文件保留。")
         StatusText("按官方 1.4.5–1.4.8 格式检查备份，不支持的内容会在提交前拒绝。历史录音和朋友圈原始内容单独保全，不会重新绑定录音版本或执行朋友圈任务。")
         if (!state.restartRequired) {
-            BackupPasswordField("加密备份密码（未加密请留空）", password, !state.busy) { password = it }
             ActionRow {
                 BootstrapButton("选择备份并检查…", enabled = !state.busy) {
-                    val secret = password.takeIf { it.isNotEmpty() }?.toCharArray(); password = ""; controller.inspect(secret)
+                    controller.selectFile()
                 }
                 if (state.busy) BootstrapButton("停止", secondary = true) { controller.stop() }
             }
@@ -106,6 +105,9 @@ internal fun DesktopMergeImportPanel(controller: DesktopMergeImportController, o
         state.destination?.let { StatusText("合并目录：$it") }
         if (state.restartRequired) BootstrapButton("正常退出应用", onClick = onExit)
     }
+    state.passwordRequest?.let { request -> DesktopBackupPasswordDialog(request,
+        onPassword = controller::retryFilePassword, onCancel = controller::discard,
+        onChooseFile = controller::selectFile) }
 }
 private fun mergeChoice(choice: DesktopMergePreview.Choice) = when (choice) {
     DesktopMergePreview.Choice.KEEP_PC -> "保留电脑"
