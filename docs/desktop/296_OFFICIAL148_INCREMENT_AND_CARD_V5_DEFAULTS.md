@@ -9,3 +9,5 @@
 最小补齐在原共享类型加effort/transparentBackground，High/false省略默认值，旧缺字段保留旧语义；applyTo沿原运行链消费。明确采样重置只改sampler/steps/guidance/rescale，保留V5偏好及Variety；原“恢复默认生图参数”仍设null恢复继承。V5卡控件使用Medium有效采样只读说明，不构造可写Sampler回调覆盖High；切V4.5暂停但保留V5偏好，切回恢复。原Core/Package schema与双向映射不另建一套，原Prompt文本不改。
 
 必要定向验证包含inline旧/新字段JSON与真实请求、实际Core导入/导出/复制/覆盖、Desktop JSON和CCB-PNG实际typed往返、420/1100真实控件切换与两种reset。结果待原报告读回；不以代码存在冒称通过，不重跑无关回归、不调用Provider或操作现用H资料。公开1238/app5f/签名20保持冻结；本次未发布后继、非整148兼容或正式baseline提升。
+
+静态复核另发现“隐藏控件”不足以拒绝High时已产生的延后写回：Sampler/Steps/Rescale现在在实际edit闭包中按最新card和全局model重新判定有效Medium。测试保留实际High菜单OnClick和两个SetProgress回调，切Medium后触发再回High核值；V4.5保留Medium偏好时实际Sampler仍可修改。该风险来自源码复核，不冒称用户已重现。

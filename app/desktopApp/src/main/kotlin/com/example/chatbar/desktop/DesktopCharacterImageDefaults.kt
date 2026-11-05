@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.chatbar.data.local.entity.CharacterCard
@@ -17,8 +19,15 @@ import com.example.chatbar.domain.image.NovelAiEffort
 internal fun DesktopCharacterImageDefaults(card: CharacterCard, globalImageModel: NovelAiImageModel?, edit: ((CharacterCard) -> CharacterCard) -> Unit) {
     val t = LocalDesktopUiStrings.current
     val model = card.defaultNovelAiImageModel ?: globalImageModel
+    val currentGlobalModel by rememberUpdatedState(globalImageModel)
     fun change(transform: (NovelAiCharacterImageSettings) -> NovelAiCharacterImageSettings) = edit { current ->
         current.copy(defaultImageGenerationSettings = transform(current.defaultImageGenerationSettings ?: NovelAiCharacterImageSettings()))
+    }
+    fun changeSampling(transform: (NovelAiCharacterImageSettings) -> NovelAiCharacterImageSettings) = edit { current ->
+        val currentModel = current.defaultNovelAiImageModel ?: currentGlobalModel
+        val parameters = current.defaultImageGenerationSettings ?: NovelAiCharacterImageSettings()
+        if (currentModel == null || parameters.applyTo(NovelAiGenerationSettings(model = currentModel)).isMedium) current
+        else current.copy(defaultImageGenerationSettings = transform(parameters))
     }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         CompactChoice(t(DesktopUiText.CHARACTER_IMAGE_MODEL), listOf<NovelAiImageModel?>(null) + NovelAiImageModel.entries,
@@ -43,14 +52,14 @@ internal fun DesktopCharacterImageDefaults(card: CharacterCard, globalImageModel
             }
             if (effective?.isMedium == true) StatusText("Medium 使用 14 Steps、Euler Ancestral 与固定负面词；High 参数和自定义负面词会保留。") else {
                 CompactChoice("Sampler", model.samplers, parameters.sampler.takeIf { it in model.samplers } ?: model.samplers.first(),
-                    { it.displayName }) { value -> change { it.copy(sampler = value) } }
+                    { it.displayName }) { value -> changeSampling { it.copy(sampler = value) } }
                 if (parameters.sampler !in model.samplers) StatusText(
                     "${parameters.sampler.displayName} → ${model.samplers.first().displayName} · ${t(DesktopUiText.CHARACTER_IMAGE_SAMPLER_UNAVAILABLE)}")
             }
         }
-        if (effective?.isMedium != true) StudioSlider("Steps", parameters.steps.toFloat(), 1f, 50f, 1f, 0) { value -> change { it.copy(steps = value.toInt()) } }
+        if (effective?.isMedium != true) StudioSlider("Steps", parameters.steps.toFloat(), 1f, 50f, 1f, 0) { value -> changeSampling { it.copy(steps = value.toInt()) } }
         StudioSlider("CFG Scale", parameters.guidance, 1f, 10f, .1f, 1) { value -> change { it.copy(guidance = value) } }
-        if (effective?.isMedium != true) StudioSlider("CFG Rescale", parameters.cfgRescale, 0f, 1f, .05f, 2) { value -> change { it.copy(cfgRescale = value) } }
+        if (effective?.isMedium != true) StudioSlider("CFG Rescale", parameters.cfgRescale, 0f, 1f, .05f, 2) { value -> changeSampling { it.copy(cfgRescale = value) } }
         if (model?.supportsVarietyPlus == true) StudioSwitch("Variety+", parameters.varietyPlus) { change { it.copy(varietyPlus = !it.varietyPlus) } }
         if (card.defaultImageGenerationSettings != null) BootstrapButton(t(DesktopUiText.CHARACTER_IMAGE_RESET), secondary = true) {
             edit { it.copy(defaultImageGenerationSettings = null) }
