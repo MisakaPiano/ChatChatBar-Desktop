@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.flow
 /** Test-source-only manual fixture. No real transports or credentials; shared Designer/runner/repositories. */
 internal class FinalProductDesignFixture(filePicker: DesktopFilePicker = UnconfiguredDesktopFilePicker,
     overrideDesigner: NovelAiPromptDesigner? = null,
-    provenance: DesktopDataRootProvenance = DesktopDataRootProvenance.CLI_OVERRIDE) {
+    private val provenance: DesktopDataRootProvenance = DesktopDataRootProvenance.CLI_OVERRIDE) {
     @Volatile var failure: DesktopDesignFailure? = null
     val requests = java.util.concurrent.CopyOnWriteArrayList<List<ChatApiMessage>>()
     @Volatile var beforeReply: (suspend (NovelAiTextStage) -> Unit)? = null
@@ -36,17 +36,15 @@ internal class FinalProductDesignFixture(filePicker: DesktopFilePicker = Unconfi
         object : NovelAiTagSearchClient { override suspend fun search(query: String) = NovelAiTagSearchOutcome(query, emptyList()) }),
         NovelAiPromptPostProcessor(emptyList()))
     val root = Files.createTempDirectory("ccb-final-product-local-")
-    init {
+    val container = DesktopAppContainer(DesktopDataRootResolution.Resolved(root.resolve("data"),
+        provenance, root.resolve("bootstrap.json")),
+        secretStoreFactory = { InMemoryDesktopSecretStore() }, novelAiDesigner = overrideDesigner ?: designer, filePicker = filePicker)
+    suspend fun initialize(initializeComposer: Boolean = true) {
         if (provenance == DesktopDataRootProvenance.BOOTSTRAP_CUSTOM) {
             val bootstrap = DesktopBootstrapSettingsStore(root.resolve("bootstrap.json"))
             bootstrap.save((bootstrap.load() as DesktopBootstrapLoadResult.Missing).document,
                 DesktopDataRootSelection.custom(root.resolve("data")))
         }
-    }
-    val container = DesktopAppContainer(DesktopDataRootResolution.Resolved(root.resolve("data"),
-        provenance, root.resolve("bootstrap.json")),
-        secretStoreFactory = { InMemoryDesktopSecretStore() }, novelAiDesigner = overrideDesigner ?: designer, filePicker = filePicker)
-    suspend fun initialize(initializeComposer: Boolean = true) {
         container.modelRepository.saveModel(ModelConfig("local-design", "Local fake design — no network", "https://fixture.invalid", "fake-only-key", "fixture", createdAt = 1))
         container.novelAiStudioController.load()
         container.novelAiStudioController.edit { it.copy(aiDesignModelId = "local-design", basePrompt = "original studio", aiDesignNaturalLanguageMode = true) }
