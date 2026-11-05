@@ -43,6 +43,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -174,6 +176,7 @@ internal class DesktopCharacterEditorController(
     private var pendingDrafts: List<PendingDraft> = emptyList()
     private var pendingRename: PendingRename? = null
     private var pendingObsoleteSource: CharacterCard? = null
+    private val committedCleanupMutex = Mutex()
 
     suspend fun load() {
         val cards = characters.getAll()
@@ -804,7 +807,9 @@ internal class DesktopCharacterEditorController(
         else if (needsCleanDraftCleanup(_state.value)) cleanObsoleteDraft()
     }
 
-    suspend fun retryCommittedCleanup() {
+    suspend fun retryCommittedCleanup() = committedCleanupMutex.withLock { retryCommittedCleanupLocked() }
+
+    private suspend fun retryCommittedCleanupLocked() {
         val before = _state.value
         if (before.card == null || before.dirty) return
         val committed = committedCard ?: return

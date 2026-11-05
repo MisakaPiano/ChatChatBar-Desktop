@@ -5,6 +5,8 @@ description: Maintain ChatBar character-card AI workflows. Use when changing AI 
 
 # ChatBar Character Card AI
 
+The card post-commit retry owner serializes with `committedCleanupMutex`; state and committed identity are re-read after acquiring it. While exclusive cleanup waits for other operations, retain the original committed-warning/marker edit guard. The actual admission test also holds another normal operation and starts a duplicate retry before allowing the next draft.
+
 Desktop normal card save releases its commit's normal data admission before invoking the original `retryCommittedCleanup` owner. The production callback in `DesktopAppContainer` uses `DesktopOwnedImageCleanup` with exclusive admission and a fresh full-reference scan; invoking that callback inside the normal commit would be a prohibited lease upgrade. Existing durable-marker/cache/rename/draft checks and visible genuine cleanup warnings remain. `DesktopCharacterImageSaveAdmissionTest` uses the actual container wiring for nullable/V5/transparent settings, save/reopen and retained versus obsolete image references.
 
 Desktop normal character editing keeps its five tool entries in the fixed `character-editor-tools` FlowRow above the existing scroll owner: image/style jump, cover candidate, field budget, structured-only fill and rewrite. Use the common compact tertiary entry style; keep original owner callbacks/availability and the fixed save/cancel footer. `DesktopEditorPromptBudget(toolEntry=true)` changes only this entry presentation; other editors retain their original button. The style jump measures the actual post-toolbar viewport.

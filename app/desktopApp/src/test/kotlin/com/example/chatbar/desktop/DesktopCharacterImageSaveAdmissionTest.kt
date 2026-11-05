@@ -6,7 +6,7 @@ import com.example.chatbar.domain.image.*
 import java.awt.image.BufferedImage
 import java.nio.file.Files
 import java.nio.file.Path
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 import kotlin.test.*
 
 class DesktopCharacterImageSaveAdmissionTest {
@@ -80,6 +80,45 @@ class DesktopCharacterImageSaveAdmissionTest {
             assertTrue(Files.exists(root.resolve(source.avatar!!)))
             assertTrue(Files.exists(root.resolve(nextImage)))
             assertEquals("not valid JSON", Files.readString(damaged))
+        }
+    }
+
+    @Test fun `waiting postcommit cleanup retains original marker and serializes duplicate retry before another edit`() = runBlocking {
+        fixture { root, app, _ ->
+            val source = card(root)
+            app.characterRepository.save(source)
+            val editor = app.characterEditorController
+            editor.openExisting(source.id)
+            editor.edit { it.copy(creatorNotes = "Ordinary field save") }
+            val entered = CompletableDeferred<Unit>()
+            val release = CompletableDeferred<Unit>()
+            val blocker = launch(Dispatchers.Default) {
+                app.dataOperationCoordinator.withNormalOperation { entered.complete(Unit); release.await() }
+            }
+            entered.await()
+            val saved = async(Dispatchers.Default) { editor.save() }
+            try {
+                withTimeout(5_000) {
+                    while (app.dataOperationCoordinator.state != DesktopDataOperationCoordinatorState.MAINTENANCE_PENDING) delay(10)
+                }
+                assertFalse(saved.isCompleted)
+                assertEquals(CharacterEditorProblem.SAVE_COMMITTED_WARNING, editor.state.value.problem)
+                assertNotNull(editor.state.value.draftBasis)
+                editor.edit { it.copy(creatorNotes = "Must not replace pending save") }
+                assertEquals("Ordinary field save", editor.state.value.card!!.creatorNotes)
+                val retry = async(Dispatchers.Default) { editor.retryCleanup() }
+                release.complete(Unit); blocker.join()
+                assertTrue(withTimeout(5_000) { saved.await() })
+                withTimeout(5_000) { retry.await() }
+                assertNull(editor.state.value.problem, editor.state.value.detail)
+                assertNull(editor.state.value.draftBasis)
+                assertEquals("Ordinary field save", app.characterRepository.getById(source.id)!!.creatorNotes)
+                editor.edit { it.copy(creatorNotes = "Next draft") }
+                editor.flushDraft()
+                assertTrue(editor.state.value.dirty)
+                assertEquals("Next draft", app.editorDraftRepository.getForTarget(EditorDraftType.CHARACTER_CARD, source.id)!!.characterPayload!!.creatorNotes)
+                assertTrue(Files.exists(root.resolve(source.avatar!!)))
+            } finally { release.complete(Unit); blocker.join() }
         }
     }
 
