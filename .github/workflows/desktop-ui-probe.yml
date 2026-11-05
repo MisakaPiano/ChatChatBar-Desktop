@@ -46,8 +46,29 @@ jobs:
           @{ source = (git rev-parse HEAD); run = $env:GITHUB_RUN_ID; scope = 'synthetic selected tests only; no installer, user profile, release or provider calls' } |
             ConvertTo-Json | Set-Content -Encoding utf8 "$env:RUNNER_TEMP/ccb-ui-probe/source.json"
           .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain `
-            --tests 'com.example.chatbar.desktop.DesktopStudioLongPromptFocusTest'
+            --tests 'com.example.chatbar.desktop.DesktopUpdateCheckerTest' `
+            --tests 'com.example.chatbar.desktop.DesktopUpdateNoticesTest' `
+            --tests 'com.example.chatbar.desktop.DesktopProxyPhysicalRoutingTest.*update checker*'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          .\gradlew.bat :sharedCore:test --no-daemon --stacktrace --console=plain `
+            --tests 'com.example.chatbar.domain.ProxyAwareClientTest' `
+            --tests 'com.example.chatbar.domain.ProxyLocalRoutingTest'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          .\gradlew.bat :desktopApp:proxyPackagedRoutingTest -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Validate the prepared isolated updater transport and unchanged trust policy
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $runtime = Join-Path $env:RUNNER_TEMP 'update-proxy-runtime'
+          python -B tools/desktop/update/prepare_runtime.py --destination "$runtime" --artifact-cache "$env:RUNNER_TEMP/update-proxy-artifacts" --download
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $env:CCB_UPDATE_PROXY_EXPECTED_MODULE_HOME = Join-Path $runtime 'lib'
+          foreach ($test in @('test_proxy_transport.py', 'test_client.py', 'test_version_identity.py')) {
+            & "$runtime/python.exe" -B "tools/desktop/update/$test" -v 2>&1 | Tee-Object -FilePath "$env:RUNNER_TEMP/ccb-ui-probe/$test.txt"
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+          Copy-Item -LiteralPath "$runtime/RUNTIME_MANIFEST.json" -Destination "$env:RUNNER_TEMP/ccb-ui-probe/UPDATER_RUNTIME_MANIFEST.json"
       - name: Preserve actual reports and synthetic review images
         if: always()
         uses: actions/upload-artifact@v4
@@ -58,5 +79,7 @@ jobs:
             app/sharedCore/build/reports/tests/test/
             app/desktopApp/build/test-results/test/
             app/desktopApp/build/reports/tests/test/
+            app/desktopApp/build/test-results/proxyPackagedRoutingTest/
+            app/desktopApp/build/reports/tests/proxyPackagedRoutingTest/
             ${{ runner.temp }}/ccb-ui-probe/
           if-no-files-found: error
