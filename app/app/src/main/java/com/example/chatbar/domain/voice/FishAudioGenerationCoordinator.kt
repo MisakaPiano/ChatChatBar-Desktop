@@ -21,10 +21,10 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -69,6 +69,15 @@ data class VoiceGenerationBatchState(
     val createdAt: Long = System.currentTimeMillis()
 )
 
+internal fun VoiceGenerationBatchState.cancelled(): VoiceGenerationBatchState =
+    if (phase == VoiceGenerationPhase.FAILED || phase == VoiceGenerationPhase.CANCELLED) this
+    else copy(phase = VoiceGenerationPhase.CANCELLED, modelStreamText = "")
+
+internal fun VoiceGenerationBatchState.failed(error: Throwable): VoiceGenerationBatchState =
+    if (phase == VoiceGenerationPhase.CANCELLED) this else copy(
+        phase = VoiceGenerationPhase.FAILED, modelStreamText = "",
+        errors = errors + ("batch" to (error.message ?: error.javaClass.simpleName)))
+
 private data class VoiceGenerationTarget(
     val message: ChatMessage,
     val segment: CurrentVoiceSegment,
@@ -109,7 +118,9 @@ class FishAudioGenerationCoordinator(
     private val playback: VoicePlaybackController
 ) {
     private val ttsSlots = Semaphore(5)
-    private val jobs = ConcurrentHashMap<String, Job>()
+    private val jobs = VoiceBatchJobRegistry(scope)
+    private val committer = VoiceGenerationCommitter(chatRepository, voiceRepository,
+        deleteUncommittedAudio = { storage.deleteIfOwned(it) })
     private val pendingTextConfirmations =
         ConcurrentHashMap<String, PendingVoiceTextConfirmation>()
     private val autoPlayMutex = Mutex()
@@ -146,9 +157,10 @@ class FishAudioGenerationCoordinator(
         sessionId: String,
         messageId: String,
         segmentIndex: Int,
-        narratorCharacterId: String? = null
+        narratorCharacterId: String? = null,
+        source: VoiceGenerationSourceSnapshot? = null
     ): String = launchBatch(sessionId, messageId) { batchId, screenGeneration ->
-        val context = loadContext(sessionId, messageId)
+        val context = loadContext(sessionId, messageId, source)
         val target = resolveTargets(context, narratorCharacterId)
             .firstOrNull { it.segment.segmentIndex == segmentIndex }
             ?: error("该段没有可唯一匹配的角色音色")
@@ -164,9 +176,10 @@ class FishAudioGenerationCoordinator(
     fun generateWhole(
         sessionId: String,
         messageId: String,
-        narratorCharacterId: String? = null
+        narratorCharacterId: String? = null,
+        source: VoiceGenerationSourceSnapshot? = null
     ): String = launchBatch(sessionId, messageId) { batchId, screenGeneration ->
-        val context = loadContext(sessionId, messageId)
+        val context = loadContext(sessionId, messageId, source)
         registerAutoPlay(batchId, context, screenGeneration)
         val existing = voiceRepository.listForCurrentVersion(context.message)
         val voicedAnchors = existing.mapNotNull(GeneratedVoiceMessage::anchorId).toSet()
@@ -197,25 +210,38 @@ class FishAudioGenerationCoordinator(
         )
     }
 
-    fun regenerate(voiceId: String, editedTaggedText: String): String {
+    fun regenerate(
+        voiceId: String,
+        editedTaggedText: String,
+        source: VoiceGenerationSourceSnapshot? = null,
+        expectedVoice: GeneratedVoiceMessage? = null
+    ): String {
         val batchId = UUID.randomUUID().toString()
         val screenGeneration = foregroundGeneration.get()
+        val original = expectedVoice ?: voiceRepository.voices.value.firstOrNull { it.id == voiceId }
+        val ownerSessionId = source?.sessionId ?: original?.sessionId.orEmpty()
+        val ownerMessageId = source?.messageId ?: original?.messageId.orEmpty()
         setBatch(
             VoiceGenerationBatchState(
                 id = batchId,
-                sessionId = "",
-                messageId = "",
+                sessionId = ownerSessionId,
+                messageId = ownerMessageId,
                 phase = VoiceGenerationPhase.QUEUED,
                 totalCount = 1
             )
         )
-        val job = scope.launch {
+        jobs.launch(VoiceBatchJobRegistry.Target(batchId, ownerSessionId, ownerMessageId)) {
             try {
                 val existing = voiceRepository.get(voiceId) ?: error("语音消息不存在")
+                check(original != null && existing == original) { "原语音已改变，请重新打开语音操作" }
                 updateBatch(batchId) {
                     it.copy(sessionId = existing.sessionId, messageId = existing.messageId)
                 }
-                val context = loadContext(existing.sessionId, existing.messageId)
+                val context = loadContext(existing.sessionId, existing.messageId, source)
+                val snapshot = source ?: VoiceGenerationSourceSnapshot.capture(context.message)
+                check(existing.messageVersionId == null || existing.messageVersionId == snapshot.versionId) {
+                    "语音来源版本已切换，请重新打开语音操作"
+                }
                 val currentCharacter = VoiceGenerationPolicy.resolveRegenerationCharacter(
                     card = context.card,
                     characterId = existing.characterId
@@ -244,8 +270,8 @@ class FishAudioGenerationCoordinator(
                     )
                 }
                 val artifactId = UUID.randomUUID().toString()
-                val audio = AiBackgroundWorkManager.run(existing.sessionId) {
-                    ttsSlots.withPermit {
+                val replacement = AiBackgroundWorkManager.run(existing.sessionId) {
+                    val audio = ttsSlots.withPermit {
                         fishAudioService.synthesize(
                             apiKey = apiKey,
                             modelId = fishModelId,
@@ -259,39 +285,33 @@ class FishAudioGenerationCoordinator(
                             }
                         }
                     }
+                    val replacement = existing.copy(
+                        messageVersionId = snapshot.versionId,
+                        taggedText = editedTaggedText.trim(),
+                        characterId = currentCharacter.id,
+                        characterName = currentCharacter.name,
+                        voice = currentBinding,
+                        fishModelId = fishModelId,
+                        audioPath = audio.path,
+                        durationMs = audio.durationMs,
+                        byteLength = audio.byteLength,
+                        updatedAt = System.currentTimeMillis()
+                    )
+                    committer.commit(snapshot, replacement, existing)
+                    storage.deleteIfOwned(existing.audioPath)
+                    replacement
                 }
-                val replacement = existing.copy(
-                    taggedText = editedTaggedText.trim(),
-                    characterId = currentCharacter.id,
-                    characterName = currentCharacter.name,
-                    voice = currentBinding,
-                    fishModelId = fishModelId,
-                    audioPath = audio.path,
-                    durationMs = audio.durationMs,
-                    byteLength = audio.byteLength,
-                    updatedAt = System.currentTimeMillis()
-                )
-                try {
-                    voiceRepository.replace(replacement)
-                } catch (error: Throwable) {
-                    storage.deleteIfOwned(audio.path)
-                    throw error
-                }
-                storage.deleteIfOwned(existing.audioPath)
                 removeBatch(batchId)
                 finishAutoPlay(batchId, listOf(replacement))
             } catch (cancelled: CancellationException) {
                 markCancelled(batchId)
-                finishAutoPlay(batchId, null)
+                withContext(NonCancellable) { finishAutoPlay(batchId, null) }
                 throw cancelled
             } catch (error: Throwable) {
                 failBatch(batchId, error)
                 finishAutoPlay(batchId, null)
-            } finally {
-                jobs.remove(batchId)
             }
         }
-        jobs[batchId] = job
         return batchId
     }
 
@@ -303,7 +323,7 @@ class FishAudioGenerationCoordinator(
                 textConfirmations = emptyList()
             )
         }
-        val job = scope.launch {
+        jobs.launch(VoiceBatchJobRegistry.Target(batchId, pending.context.session.id, pending.context.message.id)) {
             try {
                 val confirmedText = if (useAiText) {
                     pending.tagResult.confirmationRequiredById
@@ -329,16 +349,13 @@ class FishAudioGenerationCoordinator(
                 )
             } catch (cancelled: CancellationException) {
                 markCancelled(batchId)
-                finishAutoPlay(batchId, null)
+                withContext(NonCancellable) { finishAutoPlay(batchId, null) }
                 throw cancelled
             } catch (error: Throwable) {
                 failBatch(batchId, error)
                 finishAutoPlay(batchId, null)
-            } finally {
-                jobs.remove(batchId)
             }
         }
-        jobs[batchId] = job
     }
 
     fun cancel(batchId: String) {
@@ -347,7 +364,8 @@ class FishAudioGenerationCoordinator(
             scope.launch { finishAutoPlay(batchId, null) }
             return
         }
-        jobs[batchId]?.cancel()
+        markCancelled(batchId)
+        jobs.cancel(batchId)
     }
 
     suspend fun cancelAndJoinForMessage(sessionId: String, messageId: String) {
@@ -361,7 +379,7 @@ class FishAudioGenerationCoordinator(
     }
 
     fun dismiss(batchId: String) {
-        if (jobs[batchId]?.isActive == true) return
+        if (jobs.isActive(batchId)) return
         removeBatch(batchId)
     }
 
@@ -406,21 +424,18 @@ class FishAudioGenerationCoordinator(
             )
         )
         val screenGeneration = foregroundGeneration.get()
-        val job = scope.launch {
+        jobs.launch(VoiceBatchJobRegistry.Target(batchId, sessionId, messageId)) {
             try {
                 block(batchId, screenGeneration)
             } catch (cancelled: CancellationException) {
                 markCancelled(batchId)
-                finishAutoPlay(batchId, null)
+                withContext(NonCancellable) { finishAutoPlay(batchId, null) }
                 throw cancelled
             } catch (error: Throwable) {
                 failBatch(batchId, error)
                 finishAutoPlay(batchId, null)
-            } finally {
-                jobs.remove(batchId)
             }
         }
-        jobs[batchId] = job
         return batchId
     }
 
@@ -708,13 +723,12 @@ class FishAudioGenerationCoordinator(
                 voiceId = artifactId
             ) { progress -> onBytes(progress.bytesReceived) }
         }
-        try {
-            val currentAnchorId = resolveCurrentAnchorId(target)
+        run {
             val voice = GeneratedVoiceMessage.create(
                 sessionId = target.message.sessionId,
                 messageId = target.message.id,
                 messageVersionId = MessageAlternativeVersionPolicy.activeVersionId(target.message),
-                anchorId = currentAnchorId,
+                anchorId = target.anchorId,
                 sourceOrder = target.sourceOrder,
                 sourceSegmentKind = target.sourceKind,
                 sourceSpeakerName = target.segment.speakerName.orEmpty(),
@@ -729,39 +743,13 @@ class FishAudioGenerationCoordinator(
                 durationMs = audio.durationMs,
                 byteLength = audio.byteLength
             )
-            voiceRepository.save(voice)
+            committer.commit(VoiceGenerationSourceSnapshot.capture(target.message), voice)
             TargetGenerationResult(target, voice = voice)
-        } catch (error: Throwable) {
-            storage.deleteIfOwned(audio.path)
-            throw error
         }
     } catch (cancelled: CancellationException) {
         throw cancelled
     } catch (error: Throwable) {
         TargetGenerationResult(target, error = error.message ?: error.javaClass.simpleName)
-    }
-
-    private suspend fun resolveCurrentAnchorId(target: VoiceGenerationTarget): String? {
-        if (target.anchorId == null) return null
-        val currentMessage = chatRepository.getMessage(
-            target.message.id,
-            target.message.sessionId
-        ) ?: error("消息已删除")
-        val targetVersion = MessageAlternativeVersionPolicy.activeVersion(target.message)
-        val currentVersion = MessageAlternativeVersionPolicy.versions(currentMessage)
-            .firstOrNull { it.id == targetVersion.id }
-            ?: targetVersion
-        val currentAnchors = voiceRepository.ensureAnchorsForVersion(
-            message = currentMessage,
-            messageVersionId = currentVersion.id,
-            content = currentVersion.content
-        )
-        currentAnchors.firstOrNull { it.anchor.id == target.anchorId }?.let { return it.anchor.id }
-        return currentAnchors
-            .filter { it.anchor.sourceOrder <= target.sourceOrder }
-            .maxByOrNull { it.anchor.sourceOrder }
-            ?.anchor
-            ?.id
     }
 
     private suspend fun finishSuccessfulBatch(
@@ -791,10 +779,17 @@ class FishAudioGenerationCoordinator(
         finishAutoPlay(batchId, voices)
     }
 
-    private suspend fun loadContext(sessionId: String, messageId: String): GenerationContext {
+    private suspend fun loadContext(
+        sessionId: String,
+        messageId: String,
+        source: VoiceGenerationSourceSnapshot? = null
+    ): GenerationContext {
         val session = chatRepository.getSession(sessionId) ?: error("会话不存在")
         val message = chatRepository.getMessage(messageId, sessionId) ?: error("消息不存在")
         require(message.role == MessageRole.ASSISTANT) { "只支持助手消息生成语音" }
+        check(source == null || source.matches(message, requireVisible = true)) {
+            "语音来源已改变，请重新选择目标"
+        }
         val card = characterRepository.getById(session.characterCardId) ?: error("角色卡不存在")
         val settings = settingsRepository.getAppSettings()
         val previousUser = chatRepository.getMessages(sessionId)
@@ -941,11 +936,13 @@ class FishAudioGenerationCoordinator(
     }
 
     private suspend fun cancelAndJoinMatching(
-        predicate: (VoiceGenerationBatchState) -> Boolean
+        predicate: (VoiceBatchJobRegistry.Target) -> Boolean
     ) {
-        val targetIds = _batches.value.filter(predicate).map(VoiceGenerationBatchState::id)
+        val targetIds = _batches.value.filter {
+            predicate(VoiceBatchJobRegistry.Target(it.id, it.sessionId, it.messageId))
+        }.map(VoiceGenerationBatchState::id)
         targetIds.forEach(::cancel)
-        targetIds.mapNotNull(jobs::get).joinAll()
+        jobs.cancelAndJoinMatching(predicate)
     }
 
     private fun updateBatch(
@@ -963,19 +960,11 @@ class FishAudioGenerationCoordinator(
     }
 
     private fun failBatch(batchId: String, error: Throwable) {
-        updateBatch(batchId) {
-            it.copy(
-                phase = VoiceGenerationPhase.FAILED,
-                modelStreamText = "",
-                errors = it.errors + ("batch" to (error.message ?: error.javaClass.simpleName))
-            )
-        }
+        updateBatch(batchId) { it.failed(error) }
     }
 
     private fun markCancelled(batchId: String) {
-        updateBatch(batchId) {
-            it.copy(phase = VoiceGenerationPhase.CANCELLED, modelStreamText = "")
-        }
+        updateBatch(batchId) { it.cancelled() }
     }
 
     private data class GenerationContext(

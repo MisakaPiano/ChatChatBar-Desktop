@@ -78,16 +78,19 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
 - Write downloads to `.part`, verify response length and parsable duration, then atomically replace the final MP3.
 - On regeneration, persist the replacement before deleting the previous file. Preserve the old record/file on failure.
 - Cancel and join message/session batches before repository or file deletion so completed network work cannot resurrect deleted voices.
+- Capture `VoiceGenerationSourceSnapshot` when a completed message/segment is selected, including deferred narrator selection. Coordinator admission rechecks the visible version; `VoiceGenerationCommitter` checks the session, message, exact retained version/content and anchor under `ChatRepository.withMessageCommit` immediately before conditional voice persistence. A switch may preserve a result under its original retained version, but never autoplay it as the visible version; rewritten/retired sources reject it. Retire a deleted message before companion cleanup so late commits cannot escape the deletion drain.
+- `VoiceMessageRepository.saveIfUnchanged` compares the persisted voice row, preserving concurrently replaced/deleted voice records. The committer inspects strict entity-read results after a failed save: delete only proven unreferenced new audio; retain referenced or uncertain audio. Do not equate a thrown save with an absent record, and never delete the old regeneration audio on failure.
 - Clean stale `.part` and unreferenced owned audio without touching external files.
 - SaveSlot v8 writes voice metadata as JSONL and copies each audio file through a bounded stream; restore through `FishAudioStorage.restoreArchivedAudioStream`, remap globally owned voice IDs, and delete newly materialized files if pre-commit work fails. Base64 restoration is legacy schema 1–7 compatibility only. Keep character-card package compatibility for older versions.
 
 ## Concurrency, Progress, and Playback
 
 - Share one five-permit TTS semaphore across all batches. Whole-message generation calls translation once when configured, then tags once when required, then synthesizes missing targets concurrently.
+- `VoiceBatchJobRegistry` registers stable session/message identity before lazy job start; message/session drains include queued jobs. Batch cancellation is local and releases that batch's autoplay entry under non-cancellable cleanup. Preserve failed/cancelled terminal status and completed records. Reply and image jobs remain independent; do not add them to voice admission or widen resource limits.
 - `FishAudioService.awaitTtsResponse` uses `retryRejectedVoiceTts` for up to three attempts on explicit HTTP 408/425/429/5xx rejections, honoring Retry-After seconds/HTTP dates with exponential backoff and jitter while holding the slot. Retry diagnostics use the FishAudio log tag. Do not automatically replay ambiguous transport failures or failed audio downloads that may already have been billed.
 - Persist successful targets during partial failure, but do not autoplay any partially failed or cancelled batch.
 - Keep visible batch states for queued, translation/tagging streams, text confirmation, synthesis completion count/bytes, failure, and cancellation.
-- Use shared `AiBackgroundWorkManager` only while model/TTS network work is active. Do not hold a lease for user decisions.
+- Use shared `AiBackgroundWorkManager` during model/TTS work through its short result commit; regeneration also keeps maintenance protection until the replacement is persisted. Do not hold a lease for user decisions.
 - Preserve autoplay order by session timeline and visual voice order. Later messages must not steal playback when earlier batches are pending.
 - Discard autoplay intent when the originating ChatScreen is no longer resumed. Do not replay it on return.
 - Stop active playback when the originating ChatScreen leaves composition. App pause or stop alone only drops autoplay eligibility.
@@ -97,6 +100,7 @@ All abbreviated source paths are under `app/app/src/main/java/com/example/chatba
 ## UI and Tutorial
 
 - Keep voice progress cards visible near the composer rather than below a potentially long message.
+- Completed-row long presses share `completedMessageLongPressActions`; streaming/screenshot-selection rows remain excluded. `ChatMessageActionMenu` and segment mutation flags allow voice/copy/screenshot while a new reply runs, but disable edits/deletion/format repair/regeneration/version switching. ChatViewModel independently guards mutations and carries the source snapshot to the coordinator.
 - Put QQ-style voice bars below their anchor; when segmented bubbles are off, list all voices below the whole text bubble.
 - Keep voice blocks independently selectable for long screenshots.
 - Voice long-press supports tagged-text editing, regeneration, download to the public Download directory, deletion, and experimental standard-QQ native-voice sending. QQ sending uses a temporary state machine, exact `com.tencent.mobileqq:id/press_to_speak_iv` matching, notification-triggered accessibility hold, and dedicated media playback; it never mutates voice/message persistence. Require speaker output, nonzero media volume, user-selected chat and press-to-talk mode; clip at 50 seconds, never guess coordinates/text, and never claim delivery after releasing the button. Download names use the current rendered chat title plus the generation-time character snapshot and download time.

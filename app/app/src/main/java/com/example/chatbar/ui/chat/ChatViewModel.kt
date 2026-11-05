@@ -657,24 +657,33 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
     fun generateVoiceForSegment(
         messageId: String,
         segmentIndex: Int,
-        narratorCharacterId: String? = null
+        narratorCharacterId: String? = null,
+        source: com.example.chatbar.domain.voice.VoiceGenerationSourceSnapshot? = null
     ) {
-        if (canGenerateVoiceForSegment(messageId, segmentIndex)) {
+        val current = _messages.value.firstOrNull { it.id == messageId } ?: return
+        if (current.role != MessageRole.ASSISTANT) return
+        val snapshot = source ?: com.example.chatbar.domain.voice.VoiceGenerationSourceSnapshot.capture(current)
+        if (snapshot.matches(current, requireVisible = true) && canGenerateVoiceForSegment(messageId, segmentIndex)) {
             fishAudioCoordinator.generateSingle(
                 sessionId,
                 messageId,
                 segmentIndex,
-                narratorCharacterId
+                narratorCharacterId,
+                snapshot
             )
         }
     }
 
     fun generateVoiceForMessage(
         messageId: String,
-        narratorCharacterId: String? = null
+        narratorCharacterId: String? = null,
+        source: com.example.chatbar.domain.voice.VoiceGenerationSourceSnapshot? = null
     ) {
-        if (canGenerateVoiceForMessage(messageId)) {
-            fishAudioCoordinator.generateWhole(sessionId, messageId, narratorCharacterId)
+        val current = _messages.value.firstOrNull { it.id == messageId } ?: return
+        if (current.role != MessageRole.ASSISTANT) return
+        val snapshot = source ?: com.example.chatbar.domain.voice.VoiceGenerationSourceSnapshot.capture(current)
+        if (snapshot.matches(current, requireVisible = true) && canGenerateVoiceForMessage(messageId)) {
+            fishAudioCoordinator.generateWhole(sessionId, messageId, narratorCharacterId, snapshot)
         }
     }
 
@@ -709,7 +718,11 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
     }
 
     fun regenerateVoice(voiceId: String, taggedText: String) {
-        fishAudioCoordinator.regenerate(voiceId, taggedText)
+        val voice = voiceMessageRepository.voices.value.firstOrNull { it.id == voiceId } ?: return
+        val message = _messages.value.firstOrNull { it.id == voice.messageId && it.sessionId == voice.sessionId } ?: return
+        if (message.role != MessageRole.ASSISTANT) return
+        fishAudioCoordinator.regenerate(voiceId, taggedText,
+            com.example.chatbar.domain.voice.VoiceGenerationSourceSnapshot.capture(message), voice)
     }
 
     fun deleteVoice(voiceId: String) {
@@ -2068,7 +2081,8 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                     },
                     generatedFromMessageId = anchorMessageId
                 ),
-                anchorMessageId
+                anchorMessageId,
+                requireLiveAnchor = true
             )
         } catch (error: Throwable) {
             withContext(Dispatchers.IO) {
@@ -3492,10 +3506,16 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
     }
 
     fun deleteMessage(messageId: String) {
+        if (_isResponding.value) return
         viewModelScope.launch {
+            if (_isResponding.value) return@launch
             fishAudioCoordinator.cancelAndJoinForMessage(sessionId, messageId)
             val deletedMessage = chatRepository.getMessage(messageId, sessionId)
             selectNeighborWindowAnchor(messageId)
+
+            // Retire the owner before cleaning companions. Late voice commits now either
+            // finish before this deletion (and are cleaned below), or reject a missing owner.
+            chatRepository.deleteMessage(messageId, sessionId)
 
             deletedMessage
                 ?.images
@@ -3508,7 +3528,6 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                 ChatBarApp.instance.fishAudioStorage.deleteIfOwned(voice.audioPath)
             }
             _messages.value = _messages.value.filter { it.id != messageId }
-            chatRepository.deleteMessage(messageId, sessionId)
             refreshMessages()
             enqueueLongTermMemoryAfterMessageDeletion()
 
@@ -3606,8 +3625,10 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
     /**
      */
     fun editMessage(messageId: String, content: String, imagePaths: List<String>) {
+        if (_isResponding.value) return
         viewModelScope.launch {
             val oldMessage = chatRepository.getMessage(messageId, sessionId) ?: return@launch
+            if (_isResponding.value) return@launch
             if (content.isBlank() && imagePaths.isEmpty()) return@launch
 
             applyMessageEdit(
@@ -3625,8 +3646,10 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
         endExclusive: Int,
         replacement: String
     ) {
+        if (_isResponding.value) return
         viewModelScope.launch {
             val oldMessage = chatRepository.getMessage(messageId, sessionId) ?: return@launch
+            if (_isResponding.value) return@launch
             val editOutcome = editRoleplayMessageSegment(
                 message = oldMessage,
                 start = start,
@@ -3776,7 +3799,9 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
     }
 
     fun switchAssistantAlternative(messageId: String, direction: Int) {
+        if (_isResponding.value) return
         viewModelScope.launch {
+            if (_isResponding.value) return@launch
             val message = _messages.value.find { it.id == messageId }
                 ?: chatRepository.getMessage(messageId, sessionId)
                 ?: return@launch

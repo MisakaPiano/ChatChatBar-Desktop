@@ -62,6 +62,32 @@ class JsonFileStorage(private val context: Context) {
         data class ReadError(val cause: IOException) : SingletonReadResult<Nothing>
     }
 
+    internal sealed interface EntityReadResult<out T> {
+        data object Missing : EntityReadResult<Nothing>
+        data class Valid<T>(val value: T) : EntityReadResult<T>
+        data class Uncertain(val cause: Exception) : EntityReadResult<Nothing>
+    }
+
+    /** Ownership checks after a failed save must distinguish missing from unreadable/corrupt data. */
+    @OptIn(ExperimentalSerializationApi::class)
+    internal suspend fun <T : Any> inspectEntity(
+        entityType: String,
+        id: String,
+        serializer: KSerializer<T>
+    ): EntityReadResult<T> = mutexFor(entityType).withStorageAccess {
+        withContext(Dispatchers.IO) {
+            try {
+                java.nio.file.Files.newInputStream(entityFile(entityType, id).toPath()).buffered().use {
+                    EntityReadResult.Valid(json.decodeFromStream(serializer, it))
+                }
+            } catch (_: java.nio.file.NoSuchFileException) {
+                EntityReadResult.Missing
+            } catch (error: Exception) {
+                EntityReadResult.Uncertain(error)
+            }
+        }
+    }
+
     class SingletonReadException(
         val entityType: String,
         val corrupt: Boolean,

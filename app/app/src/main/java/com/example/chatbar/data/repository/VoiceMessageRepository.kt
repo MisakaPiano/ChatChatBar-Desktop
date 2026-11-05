@@ -185,6 +185,36 @@ class VoiceMessageRepository(
 
     suspend fun replace(voice: GeneratedVoiceMessage) = save(voice)
 
+    /** Caller holds the owning message commit lock; recheck voice identity inside this repository's lock. */
+    internal suspend fun saveIfUnchanged(
+        voice: GeneratedVoiceMessage,
+        previous: GeneratedVoiceMessage?,
+        beforeWrite: () -> Unit
+    ): Boolean = mutex.withLock {
+        ensureInitializedLocked()
+        val current = when (val persisted = storage.inspectEntity(VOICE_TYPE, voice.id, GeneratedVoiceMessage.serializer())) {
+            JsonFileStorage.EntityReadResult.Missing -> null
+            is JsonFileStorage.EntityReadResult.Valid -> persisted.value
+            is JsonFileStorage.EntityReadResult.Uncertain -> error("原语音记录无法确认，未覆盖当前结果")
+        }
+        if (current != previous) return@withLock false
+        beforeWrite()
+        storage.saveEntity(VOICE_TYPE, voice.id, voice, GeneratedVoiceMessage.serializer())
+        _voices.value = _voices.value.filterNot { it.id == voice.id } + voice
+        true
+    }
+
+    internal suspend fun inspectGeneratedCommit(voice: GeneratedVoiceMessage): com.example.chatbar.domain.voice.VoiceCommitPersistence =
+        mutex.withLock {
+            when (val persisted = storage.inspectEntity(VOICE_TYPE, voice.id, GeneratedVoiceMessage.serializer())) {
+                JsonFileStorage.EntityReadResult.Missing -> com.example.chatbar.domain.voice.VoiceCommitPersistence.NOT_REFERENCED
+                is JsonFileStorage.EntityReadResult.Valid -> if (persisted.value.audioPath == voice.audioPath) {
+                    com.example.chatbar.domain.voice.VoiceCommitPersistence.REFERENCED
+                } else com.example.chatbar.domain.voice.VoiceCommitPersistence.NOT_REFERENCED
+                is JsonFileStorage.EntityReadResult.Uncertain -> com.example.chatbar.domain.voice.VoiceCommitPersistence.UNKNOWN
+            }
+        }
+
     suspend fun delete(id: String): GeneratedVoiceMessage? = mutex.withLock {
         ensureInitializedLocked()
         val existing = _voices.value.firstOrNull { it.id == id } ?: return@withLock null

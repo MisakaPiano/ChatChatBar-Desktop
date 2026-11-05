@@ -177,7 +177,7 @@ class ChatRepository(private val storage: JsonFileStorage) {
         deleteMessagesForSession(id)
     }
 
-    suspend fun deleteSessionRecord(id: String) {
+    suspend fun deleteSessionRecord(id: String) = messageAppendMutex.withDataAccess {
         storage.deleteEntity<ChatSession>(SESSION_TYPE, id)
         deleteSessionDraft(id)
         deleteScrollPosition(id)
@@ -467,9 +467,13 @@ class ChatRepository(private val storage: JsonFileStorage) {
 
     suspend fun addMessageAfter(
         message: ChatMessage,
-        anchorMessageId: String
+        anchorMessageId: String,
+        requireLiveAnchor: Boolean = false
     ): ChatMessage = messageAppendMutex.withDataAccess {
         val anchor = getMessage(anchorMessageId, message.sessionId)
+        if (requireLiveAnchor) {
+            check(getSession(message.sessionId) != null && anchor != null) { "生图来源消息或会话已删除，未追加过期结果" }
+        }
         val assigned = message.copy(
             sourceTurnId = message.sourceTurnId ?: anchor?.sourceTurnId,
             sourceTurnOrder = message.sourceTurnOrder ?: anchor?.sourceTurnOrder,
@@ -564,6 +568,17 @@ class ChatRepository(private val storage: JsonFileStorage) {
                 )
             }
         }
+    }
+
+    /** Short companion-record commit against a live owner. Never perform network work in [block]. */
+    internal suspend fun <T> withMessageCommit(
+        sessionId: String,
+        messageId: String,
+        block: suspend (ChatMessage) -> T
+    ): T = messageAppendMutex.withDataAccess {
+        check(getSession(sessionId) != null) { "会话已删除" }
+        val current = getMessage(messageId, sessionId) ?: error("消息已删除")
+        block(current)
     }
 
     private suspend fun latestMessage(sessionId: String): ChatMessage? {
@@ -697,12 +712,12 @@ class ChatRepository(private val storage: JsonFileStorage) {
         }
     }
 
-    suspend fun deleteMessagesForSession(sessionId: String): Int {
+    suspend fun deleteMessagesForSession(sessionId: String): Int = messageAppendMutex.withDataAccess {
         val deleted = storage.deleteByIdPrefixUncached(MESSAGE_TYPE, "${sessionId}_")
         storage.deleteEntityUncached(MESSAGE_INDEX_TYPE, sessionId)
         messageIndexes.remove(sessionId)
         storage.deleteEntity<ChatMessageOrderBackup>(MESSAGE_ORDER_BACKUP_TYPE, sessionId)
-        return deleted
+        deleted
     }
 
     /** 批量替换会话消息，避免逐条更新会话预览与反复全量加载。 */
