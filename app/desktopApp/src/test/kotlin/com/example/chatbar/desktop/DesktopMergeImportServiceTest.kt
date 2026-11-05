@@ -3,6 +3,7 @@ package com.example.chatbar.desktop
 import com.example.chatbar.desktop.backup.*
 import com.example.chatbar.desktop.security.*
 import com.example.chatbar.data.local.JsonFileStorage
+import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.repository.ModelRepository
 import com.example.chatbar.data.repository.WindowsSafeModelStorageKeyPolicy
 import java.nio.file.*

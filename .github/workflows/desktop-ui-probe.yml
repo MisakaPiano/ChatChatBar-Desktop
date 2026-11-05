@@ -52,7 +52,19 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain `
             --tests 'com.example.chatbar.desktop.DesktopSamplerAdmissionTest' `
-            --tests 'com.example.chatbar.desktop.DesktopV5GenerationOptionsTest'
+            --tests 'com.example.chatbar.desktop.DesktopV5GenerationOptionsTest' `
+            --tests 'com.example.chatbar.desktop.backup.DesktopOfficial148BackupTest' `
+            --tests 'com.example.chatbar.desktop.backup.DesktopFullBackupSourceTest' `
+            --tests 'com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest' `
+            --tests 'com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest' `
+            --tests 'com.example.chatbar.desktop.backup.DesktopFullBackupWriterTest' `
+            --tests 'com.example.chatbar.desktop.backup.DesktopPreservationStoreTest' `
+            --tests 'com.example.chatbar.desktop.backup.DesktopSaveSlotSourceCustodyTest' `
+            --tests 'com.example.chatbar.desktop.DesktopFullBackupServiceTest' `
+            --tests 'com.example.chatbar.desktop.DesktopMergeImportServiceTest.official87 card and actual published1238 Studio backup merge reopen and reexport without lost options' `
+            --tests 'com.example.chatbar.desktop.backup.DesktopMergeRootPreparationTest.authenticated historical live voice keeps old ID with original custody and current playback exclusion' `
+            --tests 'com.example.chatbar.desktop.backup.DesktopMergeRootPreparationTest.actual root retains image plus original and forked historical package through modern export' `
+            --tests 'com.example.chatbar.desktop.backup.DesktopSpeakerRenamePortableBackupTest'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Preserve actual reports and synthetic review images
         if: always()

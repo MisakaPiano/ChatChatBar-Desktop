@@ -14,12 +14,16 @@ class NovelAiEffectiveSamplerAdmissionTest {
             val json = Json { encodeDefaults = true }
             assertEquals(stored, json.decodeFromString(NovelAiGenerationSettings.serializer(), json.encodeToString(NovelAiGenerationSettings.serializer(), stored)))
             assertNull(stored.validationError(0))
-            val draft = NovelAiStudioDraft(selectedModel = model).withActiveSettings(stored)
+            val draft = if (model == NovelAiImageModel.V4_5_FULL)
+                NovelAiStudioDraft(selectedModel = model, v45Settings = stored)
+            else NovelAiStudioDraft(selectedModel = model, v5Settings = stored)
             val preset = NovelAiGenerationPreset.capture(draft, { it }, { it })
             val restored = json.decodeFromString(NovelAiGenerationPreset.serializer(),
                 json.encodeToString(NovelAiGenerationPreset.serializer(), preset))
             restored.validate()
-            assertEquals(stored, restored.applyTo(NovelAiStudioDraft(), restored.imageGuidance).activeSettings)
+            val reopened = restored.applyTo(NovelAiStudioDraft(), restored.imageGuidance)
+            assertEquals(stored, if (model == NovelAiImageModel.V4_5_FULL) reopened.v45Settings else reopened.v5Settings)
+            assertEquals(NovelAiSampler.EULER_ANCESTRAL, reopened.activeSettings.sampler)
             assertNotNull(stored.requestValidationError(0))
             assertFailsWith<IllegalStateException> { body(stored) }
             assertEquals(NovelAiSampler.DDIM, stored.sampler)
