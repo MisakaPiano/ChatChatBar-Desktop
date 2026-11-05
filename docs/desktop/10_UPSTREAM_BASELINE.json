@@ -652,10 +652,15 @@
     "fullIntegrationRun": 41979164537,
     "privateOrdinaryCandidateRun": 41979164371,
     "candidateVersion": "0.1.0-preview.1239",
-    "status": "TARGETED_ORIGINALS_PASS_FULL_AND_PRIVATE_ORDINARY_IN_PROGRESS_NOT_WHOLE148_COMPATIBILITY",
+    "status": "CARD_SCOPED_FULL158_R36_SIGNED21_PRIVATE1239_DRAFT_READY_WHOLE_BACKUP87_SUCCESSOR_PENDING",
     "evidence": "296_OFFICIAL148_INCREMENT_AND_CARD_V5_DEFAULTS.md",
     "validatedBaselinePromoted": false,
     "public1238Changed": false,
-    "humanAcceptance": false
+    "humanAcceptance": false,
+    "fullIntegrationResult": "Windows2629PASS+20SKIP/0FAIL,shared1240,Android586,proxy5,NTFS7,native37/TUF14/exit4",
+    "privateDraftRelease": 434865066,
+    "privateSignedRevision": 21,
+    "signedOldClientRun": 41982010138,
+    "wholeBackup87Successor": "Known version87 reader/custody chain and truthful modern writer; preserve actual old Desktop86 V5-setting backups with typed legacy profile; worktree unvalidated, separate from frozen1239"
   }
 }
