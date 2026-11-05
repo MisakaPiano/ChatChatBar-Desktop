@@ -589,7 +589,7 @@ internal class DesktopNovelAiStudioController(
         var taskAccount = state.value.account.takeIf { accountIdentity == taskIdentity }
         val launch = resolveDefaultModel()
         require(launch.basePrompt.isNotBlank()) { "请填写基础 Prompt" }
-        launch.activeSettings.validationError(launch.activeCharacters.size)?.let { error(it) }
+        launch.activeSettings.requestValidationError(launch.activeCharacters.size)?.let { error(it) }
         launch.imageGuidance.validationError(launch.selectedModel)?.let { error(it) }
         val id = tasks.launchNovelAi("NovelAI Studio") { report -> withContext(frozen) {
             try {

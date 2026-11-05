@@ -1,0 +1,7 @@
+# Sampler请求准入与旧资料可读性
+
+当前六种Sampler菜单和卡片applyTo归一化约定已有独立实现。缺口在直接读取旧Studio/recipe raw DDIM后，最终NovelAiImageService body和Desktop生成入口没有再次核对模型支持范围；菜单隐藏不能替代请求准入。
+
+新增requestValidationError按effectiveSampler核对model.samplers，用于最终body、Desktop实际生成/免费验证preflight及生成UI状态。原validationError仍供旧完整Preset/PNG结构读取，旧raw设置可以预览、恢复和保留，不自动改写；High/V4.5不支持的raw DDIM在真正生成前明确拒绝。V5 Medium继续用有效EA，休眠的High sampler/steps/rescale原值保留。卡片applyTo既有normalized行为原样。
+
+三个共享方法验证旧JSON和完整Preset往返可读、两模型High最终body拒绝、六种有效wire值、Medium有效EA与原值不变，以及卡归一化分离；Desktop实际runtime方法验证拒绝发生在HTTP与持久化之前。没有Provider调用或Prompt正文修改。87备份e7460257另有精确固定源运行41988336220；本Sampler后继不回填其结果，也不混入私有1239/full158。当前待各自云端原报告。

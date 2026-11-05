@@ -252,7 +252,7 @@ class NovelAiImageService(
             settings.model == NovelAiImageModel.V4_5_FULL ||
                 imageGuidance.preciseReferenceBase64 == null && imageGuidance.vibes.isEmpty()
         ) { "V5 Full 暂不支持精确参考或氛围参考" }
-        settings.validationError(prompt.characterCaptions.size)?.let { error(it) }
+        settings.requestValidationError(prompt.characterCaptions.size)?.let { error(it) }
         val effectivePrompt = if (enhance != null) prompt else NovelAiV5TextPromptPolicy.prepareForRequest(prompt, settings)
         val negative = if (settings.isMedium) com.example.chatbar.domain.prompt.NovelAiPromptAuthority.novelAiV5MediumNegativePrompt(effectivePrompt.baseCaption)
             else if (enhance != null) prompt.negativePrompt else effectivePrompt.effectiveNegativePrompt.trim()

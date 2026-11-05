@@ -256,7 +256,7 @@ internal fun StudioGenerationSettings(draft: NovelAiStudioDraft, edit: ((NovelAi
         StatusText("目标图片数")
         StudioNumericInput("目标图片数", draft.continuousTargetCount.toString(), Modifier.width(80.dp)) { raw -> raw.toIntOrNull()?.takeIf { it > 0 }?.let { value -> edit { it.copy(continuousTargetCount = value) } } }
     }
-    s.validationError(draft.characters.size)?.let { StatusText(it, DesktopBootstrapColors.warning) }
+    s.requestValidationError(draft.characters.size)?.let { StatusText(it, DesktopBootstrapColors.warning) }
     }
     if (customSize) StudioCustomSizeDialog(s, onClose = { customSize = false }) { width, height ->
         change { it.copy(customWidth = width, customHeight = height) }; customSize = false

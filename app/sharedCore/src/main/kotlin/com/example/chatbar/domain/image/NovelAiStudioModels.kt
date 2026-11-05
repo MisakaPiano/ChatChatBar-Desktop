@@ -109,6 +109,10 @@ data class NovelAiGenerationSettings(
         return NovelAiImageSize(dimensions.first, dimensions.second, "${sizeTier.displayName} ${normalized.aspectRatio.displayName}")
     }
 
+    /** Historical settings remain readable; only an actual generation requires current capabilities. */
+    fun requestValidationError(characterCount: Int): String? = validationError(characterCount)
+        ?: if (effectiveSampler !in model.samplers) "当前模型不支持所选 Sampler" else null
+
     fun validationError(characterCount: Int): String? = when {
         sizeValidationError() != null -> sizeValidationError()
         count !in 1..4 -> "生成数量必须在 1–4 之间"

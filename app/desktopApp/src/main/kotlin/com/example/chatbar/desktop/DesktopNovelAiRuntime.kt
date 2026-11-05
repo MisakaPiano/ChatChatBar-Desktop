@@ -31,7 +31,7 @@ internal class DesktopNovelAiRuntime(
                     ?.takeIf { it.isNotBlank() } ?: throw DesktopNovelAiRequestException("请先在应用内安全保存 NovelAI 凭据")
                 // Reject forbidden shapes even before the read-only account request.
                 DesktopNovelAiLivePolicy.requireFree(settings, guidance, NovelAiAccountUsage(0, 3, true, null, false))
-                require(settings.validationError(prompt.characterCaptions.size) == null)
+                require(settings.requestValidationError(prompt.characterCaptions.size) == null)
                 lease.checkReady()
                 val account = try {
                     NovelAiAccountService(client).fetchCancellable(token).also {

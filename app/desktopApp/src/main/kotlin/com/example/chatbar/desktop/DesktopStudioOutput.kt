@@ -22,7 +22,7 @@ import kotlinx.coroutines.launch
 /** Formal input validity plus Desktop readiness/credential presence; account usage is cost data only. */
 internal fun desktopCanGenerate(state: DesktopNovelAiStudioState, draft: NovelAiStudioDraft, busy: Boolean): Boolean =
     state.ready && state.credentialConfigured && !busy && !state.applyingHistory && draft.basePrompt.isNotBlank() &&
-        draft.activeSettings.validationError(draft.activeCharacters.size) == null && draft.imageGuidance.validationError(draft.selectedModel) == null
+        draft.activeSettings.requestValidationError(draft.activeCharacters.size) == null && draft.imageGuidance.validationError(draft.selectedModel) == null
 
 internal fun desktopGenerateLabel(busy: Boolean, credentialConfigured: Boolean, cost: NovelAiGenerationCost?, progress: String = ""): String = when {
     busy -> "停止当前任务" + progress.takeIf { it.matches(Regex("\\d+/\\d+.*")) }?.let { " · $it" }.orEmpty()
