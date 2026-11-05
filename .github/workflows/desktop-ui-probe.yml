@@ -46,7 +46,11 @@ jobs:
           @{ source = (git rev-parse HEAD); run = $env:GITHUB_RUN_ID; scope = 'synthetic selected tests only; no installer, user profile, release or provider calls' } |
             ConvertTo-Json | Set-Content -Encoding utf8 "$env:RUNNER_TEMP/ccb-ui-probe/source.json"
           .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain `
-            --tests 'com.example.chatbar.desktop.DesktopStudioLongPromptFocusTest'
+            --tests 'com.example.chatbar.desktop.DesktopMomentImageCompletionSelectionTest' `
+            --tests 'com.example.chatbar.desktop.DesktopMomentImageVersionsTest' `
+            --tests 'com.example.chatbar.desktop.DesktopMomentImageVersionsPanelTest' `
+            --tests 'com.example.chatbar.desktop.DesktopMomentStoreTest' `
+            --tests 'com.example.chatbar.desktop.backup.DesktopMomentVersionBackupTest'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Preserve actual reports and synthetic review images
         if: always()
