@@ -29,11 +29,24 @@ def main():
     frozen=update/'fixtures/desktop_update_1233.py'
     origin=json.loads(frozen.with_suffix('.origin.json').read_text(encoding='utf-8'))
     require(hashlib.sha256(frozen.read_bytes()).hexdigest()==origin['sha256'],'FROZEN_PUBLIC_CLIENT_BYTES_REQUIRED')
+    old_transport_blob=subprocess.check_output(['git','rev-parse',origin['source']+':tools/desktop/update/github_transport.py'],cwd=control,encoding='utf-8').strip()
+    require(old_transport_blob==origin['unchangedTransportBlob'],'FROZEN_PUBLIC_TRANSPORT_BLOB_REQUIRED')
     old_transport=subprocess.check_output(['git','show',origin['source']+':tools/desktop/update/github_transport.py'],cwd=control)
     current_transport=subprocess.check_output(['git','show','HEAD:tools/desktop/update/github_transport.py'],cwd=control)
-    require(old_transport==current_transport,'ORIGINAL_PUBLIC_TRANSPORT_REQUIRED')
+    # The old client must retain its own dependency even when the candidate evolves.
+    frozen_modules=case/'frozen-public-modules';frozen_modules.mkdir()
+    frozen_transport=frozen_modules/'github_transport.py';frozen_transport.write_bytes(old_transport)
+    require('github_transport' not in sys.modules,'FROZEN_PUBLIC_MODULE_NAMESPACE_REQUIRED')
+    transport_spec=importlib.util.spec_from_file_location('github_transport',frozen_transport)
+    require(transport_spec is not None and transport_spec.loader is not None,'FROZEN_PUBLIC_TRANSPORT_LOADER_REQUIRED')
+    transport=importlib.util.module_from_spec(transport_spec);sys.modules[transport_spec.name]=transport
+    transport_spec.loader.exec_module(transport)
+    require(Path(transport.__file__).resolve()==frozen_transport and frozen_transport.read_bytes()==old_transport,
+            'ORIGINAL_PUBLIC_TRANSPORT_REQUIRED')
     spec=importlib.util.spec_from_file_location('ccb_actual_frozen_public1233_client',frozen)
     client=importlib.util.module_from_spec(spec);sys.modules[spec.name]=client;spec.loader.exec_module(client)
+    require(client.GitHubFetcher is transport.GitHubFetcher and client.endpoints is transport.endpoints,
+            'FROZEN_PUBLIC_TRANSPORT_BINDING_REQUIRED')
     from tuf.ngclient.fetcher import FetcherInterface
     from tuf.api.exceptions import DownloadHTTPError
     from github_transport import endpoints
@@ -83,6 +96,8 @@ def main():
     result=dict(kind='ACTUAL_FROZEN_PUBLIC1233_CLIENT_FINAL_SIGNED_CANDIDATE',passed=True,applicationSource=request['sourceSha'],
         controlSource=subprocess.check_output(['git','rev-parse','HEAD'],cwd=control,encoding='utf-8').strip(),
         frozenClientSource=origin['source'],frozenClientSha256=origin['sha256'],publicTransportUnchanged=True,
+        frozenTransportBlob=old_transport_blob,frozenTransportSha256=hashlib.sha256(old_transport).hexdigest(),
+        loadedFrozenPublicTransport=True,currentTransportMatchesFrozenPublic=current_transport==old_transport,
         version=request['desktopVersion'],priorRevision=before,currentRevision=after,installerBytes=length,installerSha256=expected,
         discovery=discovered['status'],download=downloaded['status'],secondVerification=checked['status'],notesMatch=True,publicRootUnchanged=True,
         privateKeyInputs=False,localMetadataFetcher=True,publicNetworkUpdateDiscovery=False,installerExecuted=False,
