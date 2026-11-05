@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 import github_transport
 from github_transport import GitHubFetcher, SIGNED_PROXY_HOSTS, validate_proxy_routes
+from tuf.api.exceptions import DownloadError
 
 
 class Recorder:
@@ -112,8 +113,9 @@ class UpdateProxyTransportTest(unittest.TestCase):
             with self.assertRaises(ValueError):
                 validate_proxy_routes(invalid)
         fetcher = GitHubFetcher('MisakaPiano/ChatChatBar-Desktop', 'preview', proxy_routes=valid)
-        with self.assertRaises(ValueError):
+        with self.assertRaises(DownloadError) as refused:
             list(fetcher.fetch('https://evil.invalid/fixture'))
+        self.assertIsInstance(refused.exception.__cause__, ValueError)
         expected = os.environ.get('CCB_UPDATE_PROXY_EXPECTED_MODULE_HOME')
         if expected:
             self.assertEqual(Path(expected).resolve(), Path(github_transport.__file__).resolve().parent)
