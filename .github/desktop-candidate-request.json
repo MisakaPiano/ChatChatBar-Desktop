@@ -3,5 +3,21 @@
   "sourceSha": "5f7c8aef85668658feec99131af04cfc1b27e038",
   "desktopVersion": "0.1.0-preview.1243",
   "installerVersion": "0.1.1243",
-  "buildNumber": 1243
+  "buildNumber": 1243,
+  "reuseBuildRun": 42042617523,
+  "reuseRequestCommit": "5f2cd86b5029e511fa209a01ed462b7fb4b521c2",
+  "reuseArtifacts": [
+    {
+      "name": "desktop-candidate-installer",
+      "id": 13423127109,
+      "bytes": 178863815,
+      "sha256": "ea81296bc4d89f7ffdd2677e47036396d6622f01e4bc144320d3334f505dff80"
+    },
+    {
+      "name": "desktop-candidate-independent",
+      "id": 13423992451,
+      "bytes": 191893880,
+      "sha256": "24c341a60563e1101238144be82e1213d9133ea7e2a296c4897c4fa4f4b083b1"
+    }
+  ]
 }

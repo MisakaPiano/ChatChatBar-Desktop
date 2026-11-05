@@ -103,7 +103,14 @@ def cwd(pid):
 
         def read(address, length):
             data = C.create_string_buffer(length)
-            require(kernel.ReadProcessMemory(h, address, data, length, None), 'PROCESS_MEMORY_FAILED')
+            if not kernel.ReadProcessMemory(h, address, data, length, None):
+                error = C.get_last_error()
+                code = W.DWORD()
+                exit_read = bool(kernel.GetExitCodeProcess(h, C.byref(code)))
+                # Keep the original refusal; observe this handle without retrying the read
+                # or accepting an unidentified/exited process as a valid directory.
+                raise RuntimeError(f'PROCESS_MEMORY_FAILED pid={pid} win32={error} '
+                                   f'exitRead={exit_read} exitCode={code.value if exit_read else None}')
             return data.raw
 
         params = int.from_bytes(read(info[1] + 0x20, 8), 'little')
