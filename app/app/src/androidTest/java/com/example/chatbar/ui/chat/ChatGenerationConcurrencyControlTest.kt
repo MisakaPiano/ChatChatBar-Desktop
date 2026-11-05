@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -138,7 +139,8 @@ class ChatGenerationConcurrencyControlTest {
                 }
             }
         }
-        capture("scoped-voice-cancel.png")
+        compose.onNodeWithText("取消").assertIsDisplayed()
+        capture("scoped-voice-cancel.png", compose.onRoot())
         compose.onNodeWithText("取消").performClick()
         runBlocking { a.join() }
         assertTrue(a.isCancelled); assertTrue(b.isActive); assertTrue(image.isActive); assertTrue(reply.isActive)
@@ -162,10 +164,12 @@ class ChatGenerationConcurrencyControlTest {
         assertNull(completedMessageLongPressActions(true, onMessage = {}, onSegment = {}).segment)
     }
 
-    private fun capture(name: String) {
+    private fun capture(name: String, renderedRoot: SemanticsNodeInteraction? = null) {
         compose.waitForIdle()
         val instrumentation = InstrumentationRegistry.getInstrumentation()
-        val bitmap = checkNotNull(instrumentation.uiAutomation.takeScreenshot())
+        // Root capture waits for PixelCopy; UIAutomation may otherwise catch the initial blank window.
+        val bitmap = renderedRoot?.captureToImage()?.asAndroidBitmap()
+            ?: checkNotNull(instrumentation.uiAutomation.takeScreenshot())
         try {
             val folder = File(instrumentation.targetContext.getExternalFilesDir(null), "concurrency-evidence").apply { mkdirs() }
             File(folder, name).outputStream().use { check(bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it)) }
