@@ -1,3 +1,7 @@
+2026-11-05 官方148增量已复用原419326清单核对：567→6f8尾部五提交/七文件无运行或原Prompt正文变化。实际5f映射发现PR卡级Effort/透明/明确采样reset遗漏，Studio已有不代表卡级完整；d6df共享/JSON/PNG/控件定向41977286060运行，e567追加最新card/model写回守卫拒绝旧High采样回调在Medium覆盖，后继尚未验证或打包。详见296及Continuity 20261105-upstream148-incremental-review/OWNER_SELECTED148_MAPPING.json。公开1238/app5f/签20不变，full157只对应5f；正式validated141不提升，真人由root唯一入口按实际回执记录。本机未运行JVM/GUI/Provider，未操作真实H资料。已清理九个旧合成查看副本134885B、原ZIP可恢复；旧五拒绝对象未碰。
+
+下方历史保留。
+
 2026-11-05 公开1238：用户明确答复“允许先公开1238和匹配签名更新20，我应用内更新验收”。已复用冻结应用5f/R34两原包公开Release433540317（desktop-v0.1.0-preview.1238→5f48d706），四资产和notes SHA86a461…05a0已读回；签名20推原codex/update-metadata，commit a1a501a83b0566608336619d48bc99086a115dab，root1不变。固定commit与公开branch五role共十次匿名HTTP字节一致，完整178545695B安装包匿名流SHA56fce39d…cae5通过，未留重复下载/未启动安装或访问H真实资料。旧client实际15→20沿R35受控云原证明，不把匿名HTTP当新旧client运行。full157/R34/UI23原件不重跑、不重建、不合并来源PR。用户已返回，1238自更与具体功能验收由root唯一引导，仍待实际结果；1237分项PASS及role负向/行动off/Word原真人FAIL保持，不因公开提升。正式1.0目标active、T23等具体暂缓保持，本次权限不扩到后继或正式1.0发布；旧5文件/T11拒绝对象未触碰。
 
 下方历史保留。
