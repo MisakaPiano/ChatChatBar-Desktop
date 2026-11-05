@@ -33,7 +33,7 @@ jobs:
         working-directory: app
         run: |
           test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
-          bash ./gradlew :app:testDebugUnitTest :app:compileDebugAndroidTestKotlin --tests '*VoiceGenerationConcurrencyTest' --tests '*VoiceGenerationCommitFailureTest' --tests '*VoiceAnchorPolicyTest' --tests '*VoiceMessageVersionPolicyTest' --tests '*VoiceGenerationPolicyTest' --tests '*MessageAlternativeVersionPolicyTest' --tests '*ChatRepositoryTest' --tests '*LocalDataMaintenanceTest' --tests '*ImageGenerationConcurrencyGateTest' --tests '*AiBackgroundWorkManagerTest' --tests '*ChatImageActionPolicyTest' --tests '*VoicePlaybackQueuePolicyTest' --tests '*FishAudioTagPolicyTest' --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx5g -Dfile.encoding=UTF-8'
+          bash ./gradlew :app:testDebugUnitTest --tests '*VoiceGenerationConcurrencyTest' --tests '*VoiceGenerationCommitFailureTest' --tests '*VoiceAnchorPolicyTest' --tests '*VoiceMessageVersionPolicyTest' --tests '*VoiceGenerationPolicyTest' --tests '*MessageAlternativeVersionPolicyTest' --tests '*ChatRepositoryTest' --tests '*LocalDataMaintenanceTest' --tests '*ImageGenerationConcurrencyGateTest' --tests '*AiBackgroundWorkManagerTest' --tests '*ChatImageActionPolicyTest' --tests '*VoicePlaybackQueuePolicyTest' --tests '*FishAudioTagPolicyTest' :app:compileDebugAndroidTestKotlin --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx5g -Dfile.encoding=UTF-8'
           git diff --exit-code
       - uses: actions/upload-artifact@v4
         if: always()
