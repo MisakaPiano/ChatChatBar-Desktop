@@ -97,6 +97,7 @@ private data class TargetGenerationResult(
 private data class PendingAutoPlay(
     val batchId: String,
     val sessionId: String,
+    val source: VoiceGenerationSourceSnapshot,
     val messageOrder: Long,
     val foregroundGeneration: Long,
     val createdAt: Long,
@@ -252,12 +253,7 @@ class FishAudioGenerationCoordinator(
                 val fishModelId = VoiceGenerationPolicy.resolveFishModelId(
                     settings.fishAudioTtsModelId
                 )
-                registerAutoPlay(
-                    batchId = batchId,
-                    sessionId = existing.sessionId,
-                    messageOrder = context.message.orderKey,
-                    screenGeneration = screenGeneration
-                )
+                registerAutoPlay(batchId, context, screenGeneration)
                 FishAudioTagPolicy.analyze(
                     originalText = existing.effectiveSynthesisText,
                     taggedText = editedTaggedText,
@@ -302,8 +298,8 @@ class FishAudioGenerationCoordinator(
                     storage.deleteIfOwned(existing.audioPath)
                     replacement
                 }
-                removeBatch(batchId)
-                finishAutoPlay(batchId, listOf(replacement))
+                finishSuccessfulBatch(batchId, context, playAllMessageVoices = false,
+                    generatedVoices = listOf(replacement))
             } catch (cancelled: CancellationException) {
                 markCancelled(batchId)
                 withContext(NonCancellable) { finishAutoPlay(batchId, null) }
@@ -765,9 +761,8 @@ class FishAudioGenerationCoordinator(
             context.message.id,
             context.session.id
         )
-        val generatedVersionId = MessageAlternativeVersionPolicy.activeVersionId(context.message)
-        val currentVersionStillVisible = currentMessage != null &&
-            MessageAlternativeVersionPolicy.activeVersionId(currentMessage) == generatedVersionId
+        val currentVersionStillVisible = VoiceGenerationSourceSnapshot.capture(context.message)
+            .matches(currentMessage, requireVisible = true)
         val voices = if (!currentVersionStillVisible) {
             emptyList()
         } else if (playAllMessageVoices) {
@@ -876,25 +871,12 @@ class FishAudioGenerationCoordinator(
         context: GenerationContext,
         screenGeneration: Long
     ) {
-        registerAutoPlay(
-            batchId = batchId,
-            sessionId = context.session.id,
-            messageOrder = context.message.orderKey,
-            screenGeneration = screenGeneration
-        )
-    }
-
-    private suspend fun registerAutoPlay(
-        batchId: String,
-        sessionId: String,
-        messageOrder: Long,
-        screenGeneration: Long
-    ) {
         autoPlayMutex.withLock {
             pendingAutoPlay[batchId] = PendingAutoPlay(
                 batchId = batchId,
-                sessionId = sessionId,
-                messageOrder = messageOrder,
+                sessionId = context.session.id,
+                source = VoiceGenerationSourceSnapshot.capture(context.message),
+                messageOrder = context.message.orderKey,
                 foregroundGeneration = screenGeneration,
                 createdAt = System.currentTimeMillis()
             )
@@ -912,7 +894,7 @@ class FishAudioGenerationCoordinator(
         }
     }
 
-    private fun drainAutoPlayLocked() {
+    private suspend fun drainAutoPlayLocked() {
         while (true) {
             val next = pendingAutoPlay.values.minWithOrNull(
                 compareBy<PendingAutoPlay>(PendingAutoPlay::messageOrder)
@@ -923,7 +905,10 @@ class FishAudioGenerationCoordinator(
             val shouldPlay = next.voices?.isNotEmpty() == true &&
                 foregroundSessionId == next.sessionId &&
                 foregroundGeneration.get() == next.foregroundGeneration
-            if (shouldPlay) playback.enqueueSequence(checkNotNull(next.voices))
+            if (shouldPlay && chatRepository.getSession(next.sessionId) != null &&
+                next.source.matches(chatRepository.getMessage(next.source.messageId, next.sessionId), requireVisible = true)) {
+                playback.enqueueSequence(checkNotNull(next.voices))
+            }
         }
     }
 
