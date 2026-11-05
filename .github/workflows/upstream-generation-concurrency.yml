@@ -9,7 +9,7 @@ on:
         required: true
         type: string
 env:
-  SOURCE_SHA: ${{ inputs.source_sha || '2b2a02f2ba5404a79585c7816f2a18abecda59c7' }}
+  SOURCE_SHA: ${{ inputs.source_sha || '97d08226919b9f2cee9733b3a6cea76c1897faff' }}
 permissions:
   contents: read
 jobs:
@@ -29,12 +29,19 @@ jobs:
           packages: platform-tools
       - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
       - uses: gradle/actions/setup-gradle@v4
-      - name: Compile updated screenshot fixture; reuse unchanged production/JVM evidence
+      - name: Compile fixed08fc integration and run original13 affected test classes
         working-directory: app
         run: |
           test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
-          bash ./gradlew :app:compileDebugAndroidTestKotlin --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx5g -Dfile.encoding=UTF-8'
+          bash ./gradlew :app:testDebugUnitTest --tests '*VoiceGenerationConcurrencyTest' --tests '*VoiceGenerationCommitFailureTest' --tests '*VoiceAnchorPolicyTest' --tests '*VoiceMessageVersionPolicyTest' --tests '*VoiceGenerationPolicyTest' --tests '*MessageAlternativeVersionPolicyTest' --tests '*ChatRepositoryTest' --tests '*LocalDataMaintenanceTest' --tests '*ImageGenerationConcurrencyGateTest' --tests '*AiBackgroundWorkManagerTest' --tests '*ChatImageActionPolicyTest' --tests '*VoicePlaybackQueuePolicyTest' --tests '*FishAudioTagPolicyTest' :app:compileDebugAndroidTestKotlin --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx5g -Dfile.encoding=UTF-8'
           git diff --exit-code
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: concurrency-unit-${{ github.run_id }}
+          path: |
+            app/app/build/test-results/testDebugUnitTest/
+            app/app/build/reports/tests/testDebugUnitTest/
   controls:
     needs: targeted
     runs-on: ubuntu-24.04
