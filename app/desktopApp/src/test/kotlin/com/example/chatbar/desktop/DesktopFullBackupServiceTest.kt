@@ -45,7 +45,7 @@ class DesktopFullBackupServiceTest {
             val encrypted = f.base.resolve("saved.cbbackup"); val plain = f.base.resolve("plain.cbbackup")
             f.service.export(plain, null)
             val bad = Files.write(f.base.resolve("bad.cbbackup"), byteArrayOf(1, 2, 3))
-            val live = Files.readAllBytes(f.settings); val sources = ArrayDeque(listOf(encrypted, encrypted, plain, bad))
+            val live = Files.readAllBytes(f.settings); val sources = ArrayDeque(listOf(encrypted, encrypted, encrypted, plain, bad))
             val controller = DesktopFullBackupController(f.service, object : DesktopFilePicker {
                 override fun pickOpenFile(type: DesktopFileType): Path = sources.removeFirst()
                 override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? = null
@@ -59,6 +59,8 @@ class DesktopFullBackupServiceTest {
                 withTimeout(10000) { controller.state.first { !it.busy && it.passwordRequest != null } }
                 controller.leavePanel()
                 withTimeout(10000) { controller.state.first { !it.busy && it.passwordRequest == null } }
+                controller.verifyFile(null)
+                withTimeout(10000) { controller.state.first { !it.busy && it.passwordRequest != null } }
                 controller.verifyFile(null)
                 withTimeout(10000) { controller.state.first { !it.busy && it.summary != null } }
                 assertNull(controller.state.value.passwordRequest)
