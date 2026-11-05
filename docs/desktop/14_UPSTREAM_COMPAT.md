@@ -1,3 +1,7 @@
+2026-11-06 当前限定兼容与交付记录已校正，见[305](305_SELECTED_SCOPE_REMAINING_AND_CURRENT_EVIDENCE.md)。10.currentAdaptation当前公开为1242/dc/签24，未公开后继1243/5f/签25及完整160、原R46失败/后续R47、R48分别记录；148卡级与整包87/旧Desktop86设置保全已有26/92及正确SpeakerRenamePortable五项限定证据。正式upstream.commit与lastValidatedSync仍141，147目标、固定148目标不变；不把原件通过、限定人验或新本体开发分支提升成整体兼容。
+
+下方历史保留。
+
 2026-11-05 公开1238：用户明确答复“允许先公开1238和匹配签名更新20，我应用内更新验收”。已复用冻结应用5f/R34两原包公开Release433540317（desktop-v0.1.0-preview.1238→5f48d706），四资产和notes SHA86a461…05a0已读回；签名20推原codex/update-metadata，commit a1a501a83b0566608336619d48bc99086a115dab，root1不变。固定commit与公开branch五role共十次匿名HTTP字节一致，完整178545695B安装包匿名流SHA56fce39d…cae5通过，未留重复下载/未启动安装或访问H真实资料。旧client实际15→20沿R35受控云原证明，不把匿名HTTP当新旧client运行。full157/R34/UI23原件不重跑、不重建、不合并来源PR。用户已返回，1238自更与具体功能验收由root唯一引导，仍待实际结果；1237分项PASS及role负向/行动off/Word原真人FAIL保持，不因公开提升。正式1.0目标active、T23等具体暂缓保持，本次权限不扩到后继或正式1.0发布；旧5文件/T11拒绝对象未触碰。
 
 下方历史保留。

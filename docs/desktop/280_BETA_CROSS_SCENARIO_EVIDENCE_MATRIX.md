@@ -1,3 +1,7 @@
+2026-11-06 当前工程与剩余边界见[305](305_SELECTED_SCOPE_REMAINING_AND_CURRENT_EVIDENCE.md)：完整160第二轮Windows374suite2669=2649PASS+20SKIP、proxy5，共享1243/Android586/NTFS7/NSIS37/TUF14/exit4；R47精确1243原包与R48旧client私有25按原范围通过。公开1242/24仍待U1242，私有1243无公发权。原图形15方法、物理音频四scope、具体用户各版结果和原失败分别保留；不为更新矩阵重复测试或扩大兼容。
+
+下方历史保留。
+
 2026-11-05 用户实际授权后，1241/1f原Release435142077和匹配签23已公开；metadata5c7a13bea01474a2c4d744d4c2d22524731bea96/root1，原四资产/270B LF说明/tag/API、固定与默认branch无query匿名十role及完整178575563B安装包流SHA均通过，无重建/代装。1241人验未开始，最后实际自报仍1240；当前147备份合并预览/取消用户还在检查，不记PASS或催更新。公开记录见OWNER_PUBLIC1241_HANDOFF，备份先选文件/按需密码/同文件重试后继连续实施，冻结1241不混改。
 
 下方历史保留。
