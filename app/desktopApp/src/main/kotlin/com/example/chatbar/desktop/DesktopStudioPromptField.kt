@@ -6,6 +6,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.text.selection.LocalTextSelectionColors
 import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.runtime.*
@@ -114,6 +116,13 @@ internal fun StudioPromptTextEditor(input: TextFieldValue, onChange: (TextFieldV
     val latestInput by rememberUpdatedState(input)
     val latestGlyph by rememberUpdatedState(glyph)
     var coordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    val caretRequester = remember { BringIntoViewRequester() }
+    val sourceCaret = layout?.takeIf { it.layoutInput.text.text == input.text }
+        ?.let { studioPromptSourceBand(it, input.selection.max, glyph) }
+    val liveCaret by rememberUpdatedState(sourceCaret)
+    LaunchedEffect(focused, sourceCaret) {
+        if (focused && sourceCaret != null) caretRequester.bringIntoView(sourceCaret)
+    }
     // The legacy adapter caches its field-to-root transform. Query live coordinates when the
     // platform requests the candidate rectangle, including after an ancestor scroll/move.
     val interceptor = remember {
@@ -140,7 +149,8 @@ internal fun StudioPromptTextEditor(input: TextFieldValue, onChange: (TextFieldV
     InterceptPlatformTextInput(interceptor) {
     CompositionLocalProvider(LocalTextSelectionColors provides if (translated)
         TextSelectionColors(selectionColors.handleColor, Color.Transparent) else selectionColors) {
-    BasicTextField(input, onChange, modifier.onFocusChanged { focused = it.isFocused },
+    BasicTextField(input, onChange, modifier.studioPromptCaretBoundary { liveCaret }
+        .bringIntoViewRequester(caretRequester).onFocusChanged { focused = it.isFocused },
         cursorBrush = if (translated) SolidColor(Color.Transparent) else normalCaret,
         textStyle = TextStyle(color = caretColor, fontSize = 14.sp,
             lineHeight = if (translated) 34.sp else 22.sp,

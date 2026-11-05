@@ -48,7 +48,8 @@ jobs:
           .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain `
             --tests 'com.example.chatbar.desktop.DesktopStudioLongPromptFocusTest' `
             --tests 'com.example.chatbar.desktop.DesktopStudioInputHistorySceneTest.actual platform request uses live moved editor coordinates and preserves composing source text' `
-            --tests 'com.example.chatbar.desktop.DesktopSpeakerRenamePortableBackupTest'
+            --tests 'com.example.chatbar.desktop.DesktopStudioInputHistorySceneTest.rendered selection highlights source glyph band and leaves annotation row unselected' `
+            --tests 'com.example.chatbar.desktop.DesktopStudioTranslatedCaretTest'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Preserve actual reports and synthetic review images
         if: always()

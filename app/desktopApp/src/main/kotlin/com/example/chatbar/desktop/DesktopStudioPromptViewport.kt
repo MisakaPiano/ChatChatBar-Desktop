@@ -13,6 +13,25 @@ import androidx.compose.ui.relocation.bringIntoView
 /** The inner scroll owns the long text; ancestors only need its bounded viewport/caret portion. */
 internal fun Modifier.studioPromptViewportBoundary(): Modifier = this.then(StudioPromptViewportElement)
 
+/** Focusable's full long-content bounds must not outrank the current source caret. */
+internal fun Modifier.studioPromptCaretBoundary(caret: () -> Rect?): Modifier = then(StudioPromptCaretElement(caret))
+
+private data class StudioPromptCaretElement(val caret: () -> Rect?) : ModifierNodeElement<StudioPromptCaretNode>() {
+    override fun create() = StudioPromptCaretNode(caret)
+    override fun update(node: StudioPromptCaretNode) { node.caret = caret }
+    override fun InspectorInfo.inspectableProperties() { name = "studioPromptCaretBoundary" }
+}
+
+private class StudioPromptCaretNode(var caret: () -> Rect?) : Modifier.Node(), BringIntoViewModifierNode {
+    override suspend fun bringIntoView(childCoordinates: LayoutCoordinates, boundsProvider: () -> Rect?) {
+        bringIntoView {
+            if (!isAttached || !childCoordinates.isAttached) null else caret() ?: boundsProvider()?.let {
+                it.translate(requireLayoutCoordinates().localPositionOf(childCoordinates, Offset.Zero))
+            }
+        }
+    }
+}
+
 private object StudioPromptViewportElement : ModifierNodeElement<StudioPromptViewportNode>() {
     override fun create() = StudioPromptViewportNode()
     override fun update(node: StudioPromptViewportNode) = Unit
