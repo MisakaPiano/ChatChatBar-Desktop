@@ -16,7 +16,7 @@ class DesktopMomentImageVersionsTest {
             val store = DesktopMomentStore(storage, gate)
             fun image(i: Int): DesktopMomentImageResult {
                 val path = "images/concurrent-$i.png"
-                return DesktopMomentImageResult(path, GeneratedImageMetadata(path, "Scene $i", sizePreset = "SQUARE", width = 2, height = 2),
+                return DesktopMomentImageResult(path, GeneratedImageMetadata(path, "Scene $i", negativePrompt = "Negative", sizePreset = "SQUARE", width = 2, height = 2),
                     "Prompt $i", "Brief $i")
             }
             var post = MomentPost("post", "card", "session", senderName = "Synthetic", text = "Original", scheduledAt = 1, generatedAt = 1)

@@ -26,7 +26,7 @@ class DesktopMomentImageVersionsPanelTest {
         repeat(2) { i ->
             val path = "images/existing-$i.png"
             post = DesktopMomentImageVersions.append(post, DesktopMomentImageResult(path,
-                GeneratedImageMetadata(path, "Scene $i", sizePreset = "SQUARE", width = 2, height = 2), "Prompt $i", "Brief $i"), i + 1L)
+                GeneratedImageMetadata(path, "Scene $i", negativePrompt = "Negative", sizePreset = "SQUARE", width = 2, height = 2), "Prompt $i", "Brief $i"), i + 1L)
         }
         var displayed by mutableStateOf(post)
         val scene = ImageComposeScene(420, 700, coroutineContext = edt) {
