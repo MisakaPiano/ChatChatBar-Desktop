@@ -1,0 +1,87 @@
+name: Upstream generation concurrency checks
+on:
+  push:
+    branches: [ci/upstream-generation-concurrency-20261105]
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Exact contribution commit
+        required: true
+        type: string
+env:
+  SOURCE_SHA: ${{ inputs.source_sha || '453cb8d454d3853d7871398c7f9b830587766857' }}
+permissions:
+  contents: read
+jobs:
+  targeted:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Compile production and control tests; run affected unit tests
+        working-directory: app
+        run: |
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          bash ./gradlew :app:testDebugUnitTest :app:compileDebugAndroidTestKotlin --tests '*VoiceGenerationConcurrencyTest' --tests '*VoiceGenerationCommitFailureTest' --tests '*VoiceAnchorPolicyTest' --tests '*VoiceMessageVersionPolicyTest' --tests '*VoiceGenerationPolicyTest' --tests '*MessageAlternativeVersionPolicyTest' --tests '*ChatRepositoryTest' --tests '*LocalDataMaintenanceTest' --tests '*ImageGenerationConcurrencyGateTest' --tests '*AiBackgroundWorkManagerTest' --tests '*ChatImageActionPolicyTest' --tests '*VoicePlaybackQueuePolicyTest' --tests '*FishAudioTagPolicyTest' --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx5g -Dfile.encoding=UTF-8'
+          git diff --exit-code
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: concurrency-unit-${{ github.run_id }}
+          path: |
+            app/app/build/test-results/testDebugUnitTest/
+            app/app/build/reports/tests/testDebugUnitTest/
+  controls:
+    needs: targeted
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Enable runner virtualization
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          working-directory: app
+          script: |
+            bash ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.chat.ChatGenerationConcurrencyControlTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx4g -Dfile.encoding=UTF-8'
+            mkdir -p build/concurrency-evidence
+            adb pull /sdcard/Android/data/com.example.chatbar/files/concurrency-evidence build/concurrency-evidence/
+            git diff --exit-code
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: concurrency-controls-${{ github.run_id }}
+          path: |
+            app/app/build/outputs/androidTest-results/connected/
+            app/app/build/reports/androidTests/connected/
+            app/build/concurrency-evidence/
