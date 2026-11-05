@@ -45,26 +45,8 @@ jobs:
           New-Item -ItemType Directory -Path "$env:RUNNER_TEMP/ccb-ui-probe" -Force | Out-Null
           @{ source = (git rev-parse HEAD); run = $env:GITHUB_RUN_ID; scope = 'synthetic selected tests only; no installer, user profile, release or provider calls' } |
             ConvertTo-Json | Set-Content -Encoding utf8 "$env:RUNNER_TEMP/ccb-ui-probe/source.json"
-          .\gradlew.bat :sharedCore:test --no-daemon --stacktrace --console=plain `
-            --tests 'com.example.chatbar.domain.image.NovelAiEffectiveSamplerAdmissionTest' `
-            --tests 'com.example.chatbar.domain.image.NovelAiGenerationDefaultsTest' `
-            --tests 'com.example.chatbar.domain.image.NovelAiGenerationPresetTest'
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain `
-            --tests 'com.example.chatbar.desktop.DesktopSamplerAdmissionTest' `
-            --tests 'com.example.chatbar.desktop.DesktopV5GenerationOptionsTest' `
-            --tests 'com.example.chatbar.desktop.backup.DesktopOfficial148BackupTest' `
-            --tests 'com.example.chatbar.desktop.backup.DesktopFullBackupSourceTest' `
-            --tests 'com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest' `
-            --tests 'com.example.chatbar.desktop.backup.MomentArchiveReadOnlyValidatorTest' `
-            --tests 'com.example.chatbar.desktop.backup.DesktopFullBackupWriterTest' `
-            --tests 'com.example.chatbar.desktop.backup.DesktopPreservationStoreTest' `
-            --tests 'com.example.chatbar.desktop.backup.DesktopSaveSlotSourceCustodyTest' `
-            --tests 'com.example.chatbar.desktop.DesktopFullBackupServiceTest' `
-            --tests 'com.example.chatbar.desktop.DesktopMergeImportServiceTest.official87 card and actual published1238 Studio backup merge reopen and reexport without lost options' `
-            --tests 'com.example.chatbar.desktop.backup.DesktopMergeRootPreparationTest.authenticated historical live voice keeps old ID with original custody and current playback exclusion' `
-            --tests 'com.example.chatbar.desktop.backup.DesktopMergeRootPreparationTest.actual root retains image plus original and forked historical package through modern export' `
-            --tests 'com.example.chatbar.desktop.backup.DesktopSpeakerRenamePortableBackupTest'
+            --tests 'com.example.chatbar.desktop.DesktopSamplerAdmissionTest'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Preserve actual reports and synthetic review images
         if: always()

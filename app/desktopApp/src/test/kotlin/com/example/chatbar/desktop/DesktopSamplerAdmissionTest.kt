@@ -5,20 +5,22 @@ import com.example.chatbar.domain.image.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.*
 import okhttp3.OkHttpClient
+import java.io.IOException
+import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.test.*
 
 class DesktopSamplerAdmissionTest {
     @Test fun `actual generation keeps legacy raw preference and uses existing supported normalization before HTTP`() = runBlocking {
         var requests = 0
         var persisted = 0
-        val client = OkHttpClient.Builder().addInterceptor { chain ->
+        val actualSamplers = ConcurrentLinkedQueue<String>()
+        val client = OkHttpClient.Builder().retryOnConnectionFailure(false).addInterceptor { chain ->
             requests++
             val buffer = okio.Buffer()
             chain.request().body!!.writeTo(buffer)
             val body = Json.parseToJsonElement(buffer.readUtf8()).jsonObject
-            assertEquals(NovelAiSampler.EULER_ANCESTRAL.apiId,
-                body.getValue("parameters").jsonObject.getValue("sampler").jsonPrimitive.content)
-            error("Synthetic stop after observing normalized request; no network")
+            actualSamplers.add(body.getValue("parameters").jsonObject.getValue("sampler").jsonPrimitive.content)
+            throw IOException("Synthetic stop after observing normalized request; no network")
         }.build()
         val secrets = InMemoryDesktopSecretStore().apply {
             save(DesktopCredentialKey.NovelAiToken, "synthetic-only-token")
@@ -36,6 +38,7 @@ class DesktopSamplerAdmissionTest {
             assertEquals(raw, if (model == NovelAiImageModel.V4_5_FULL) draft.v45Settings else draft.v5Settings)
         }
         assertEquals(NovelAiImageModel.entries.size, requests)
+        assertEquals(List(NovelAiImageModel.entries.size) { NovelAiSampler.EULER_ANCESTRAL.apiId }, actualSamplers.toList())
         assertEquals(0, persisted)
     }
 }
