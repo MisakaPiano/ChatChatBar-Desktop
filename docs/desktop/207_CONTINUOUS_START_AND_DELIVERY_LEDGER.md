@@ -1,3 +1,7 @@
+2026-11-06 1243/5f已按用户精确授权公开，签25经原root1推至a7b26da0f826420ae4c4251c99a35d0ce3a9433a。Release435354057原四asset/587B LF说明、API/tag/signednotes、fixed/default无query匿名role与完整178650005B匿名流SHA均核对，无重建/安装/现用H操作。1242自更与指定检查/导入密码重试、预览取消和资料重开组已真实通过，不含生产merge；U1243升级/原会话草稿及录音可找到/重开已限定PASS，播放/新生成/并发与选图仍待。已有工程原件复用，人工积累按最新Q01–Q07分组，不逐版重测已过未改组，不新增Gate。详见[306](306_PUBLIC1243_AND_SCOPED_USER_ACCEPTANCE.md)，原失败/20SKIP、validated141、具体暂缓及旧11删除拒绝0B保持。
+
+下方历史保留。
+
 2026-11-06 私有1243并发后继工程交付已备，冻结应用5f7c8aef。完整160第二轮原件通过：Windows374suite2669=2649PASS+20native/physicalSKIP、proxy5；共享1243/Android586、NTFS7、NSIS37/TUF14/exit4，实际PR merge d218树与5f树相同。原首轮依赖reset/504保持；R46原冷目录读取失败不改PASS，R47精确R46两原artifact复验普通升级重开/忙拒绝/冷暖Unicode及独立548通过。最终549/548与JAR/6工具CRLF核对，R48冻结旧1233受控15→25完整下载二验通过，25/root1仍私有。Release435354057未公开draft，四asset/587B LF notes精确读回；公开仍1242/dc/sign24，用户最后自报1241、U1242待root唯一收集，未代装。新包/原小报告保留，旧11清理拒绝0B不重试；无1243公发许可或人验。详见304与Continuity对应OWNER_PRIVATE1243_HANDOFF。
 
 下方历史保留。

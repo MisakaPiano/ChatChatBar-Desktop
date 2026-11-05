@@ -1,3 +1,7 @@
+2026-11-06 1243/5f已按用户精确授权公开，签25经原root1推至a7b26da0f826420ae4c4251c99a35d0ce3a9433a。Release435354057原四asset/587B LF说明、API/tag/signednotes、fixed/default无query匿名role与完整178650005B匿名流SHA均核对，无重建/安装/现用H操作。1242自更与指定检查/导入密码重试、预览取消和资料重开组已真实通过，不含生产merge；U1243升级/原会话草稿及录音可找到/重开已限定PASS，播放/新生成/并发与选图仍待。已有工程原件复用，人工积累按最新Q01–Q07分组，不逐版重测已过未改组，不新增Gate。详见[306](306_PUBLIC1243_AND_SCOPED_USER_ACCEPTANCE.md)，原失败/20SKIP、validated141、具体暂缓及旧11删除拒绝0B保持。
+
+下方历史保留。
+
 2026-11-06 当前工程与剩余边界见[305](305_SELECTED_SCOPE_REMAINING_AND_CURRENT_EVIDENCE.md)：完整160第二轮Windows374suite2669=2649PASS+20SKIP、proxy5，共享1243/Android586/NTFS7/NSIS37/TUF14/exit4；R47精确1243原包与R48旧client私有25按原范围通过。公开1242/24仍待U1242，私有1243无公发权。原图形15方法、物理音频四scope、具体用户各版结果和原失败分别保留；不为更新矩阵重复测试或扩大兼容。
 
 下方历史保留。

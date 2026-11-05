@@ -1,3 +1,7 @@
+2026-11-06 1243/5f已按用户精确授权公开，签25经原root1推至a7b26da0f826420ae4c4251c99a35d0ce3a9433a。Release435354057原四asset/587B LF说明、API/tag/signednotes、fixed/default无query匿名role与完整178650005B匿名流SHA均核对，无重建/安装/现用H操作。1242自更与指定检查/导入密码重试、预览取消和资料重开组已真实通过，不含生产merge；U1243升级/原会话草稿及录音可找到/重开已限定PASS，播放/新生成/并发与选图仍待。已有工程原件复用，人工积累按最新Q01–Q07分组，不逐版重测已过未改组，不新增Gate。详见[306](306_PUBLIC1243_AND_SCOPED_USER_ACCEPTANCE.md)，原失败/20SKIP、validated141、具体暂缓及旧11删除拒绝0B保持。
+
+下方历史保留。
+
 2026-11-06 选定范围余缺已复核，见[305](305_SELECTED_SCOPE_REMAINING_AND_CURRENT_EVIDENCE.md)。当前公开1242/dc/签24、私有1243/5f/签25与完整160原件已分列；未识别新的独立未接线生产项，不从历史PENDING重复开发。实际人验、物理音频/平台、真实Provider、生产合并及社区服务等按具体依赖保留；validated141和既有暂缓不变。10.currentAdaptation与148整包87旧待验描述同步为已有实际证据，不提升整147/148或1.0结论。
 
 下方历史保留。

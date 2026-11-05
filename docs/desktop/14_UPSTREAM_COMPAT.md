@@ -1,3 +1,7 @@
+2026-11-06 1243/5f已按用户精确授权公开，签25经原root1推至a7b26da0f826420ae4c4251c99a35d0ce3a9433a。Release435354057原四asset/587B LF说明、API/tag/signednotes、fixed/default无query匿名role与完整178650005B匿名流SHA均核对，无重建/安装/现用H操作。1242自更与指定检查/导入密码重试、预览取消和资料重开组已真实通过，不含生产merge；U1243升级/原会话草稿及录音可找到/重开已限定PASS，播放/新生成/并发与选图仍待。已有工程原件复用，人工积累按最新Q01–Q07分组，不逐版重测已过未改组，不新增Gate。详见[306](306_PUBLIC1243_AND_SCOPED_USER_ACCEPTANCE.md)，原失败/20SKIP、validated141、具体暂缓及旧11删除拒绝0B保持。
+
+下方历史保留。
+
 2026-11-06 当前限定兼容与交付记录已校正，见[305](305_SELECTED_SCOPE_REMAINING_AND_CURRENT_EVIDENCE.md)。10.currentAdaptation当前公开为1242/dc/签24，未公开后继1243/5f/签25及完整160、原R46失败/后续R47、R48分别记录；148卡级与整包87/旧Desktop86设置保全已有26/92及正确SpeakerRenamePortable五项限定证据。正式upstream.commit与lastValidatedSync仍141，147目标、固定148目标不变；不把原件通过、限定人验或新本体开发分支提升成整体兼容。
 
 下方历史保留。

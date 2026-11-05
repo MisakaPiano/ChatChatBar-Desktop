@@ -102,11 +102,11 @@
     "browserRuntime": false
   },
   "currentAdaptation": {
-    "recordedAt": "2026-11-06T00:26:08.738050+09:00",
+    "recordedAt": "2026-11-06T01:02:52.199163+09:00",
     "targetReleaseVersion": "1.4.7",
     "targetCommit": "b4fa75d296680f777be095f3121ad0c4db979f17",
     "authority": "User authorized latest official CCB adaptation; Desktop first, separate Studio consumes official interfaces",
-    "status": "selected147_scoped_engineering_public1242_private1243_ready_actual_user_and_external_scopes_separate_not_baseline_promotion",
+    "status": "selected147_scoped_engineering_public1243_sign25_verified_prior1242_guided_password_scope_user_pass_not_whole_baseline_promotion",
     "sourceAtRecord": "5f7c8aef85668658feec99131af04cfc1b27e038",
     "lastCompleteSourceValidation": {
       "commit": "5f7c8aef85668658feec99131af04cfc1b27e038",
@@ -209,8 +209,8 @@
       },
       {
         "scope": "Whole selected147 compatibility declaration and affected final candidate/user cross-scenario acceptance",
-        "evidence": "305; current exact full160 and private1243/R47/R48, public1242/sign24; prior native1/2/6/7 and actual version-specific user receipts retained",
-        "status": "selected_scoped_engineering_verified_public1242_and_private1243_ready_actual_user_physical_provider_scenarios_pending",
+        "evidence": "306; public1243/sign25 actual explicit authority and API/default/fixed anonymous bytes; full160/R47/R48 unchanged; actual1242 guided password user scope pass, no production merge",
+        "status": "selected_scoped_engineering_public1243_delivered_actual_q01_q07_and_conditional_scenarios_pending",
         "remainingImplementationIdentified": [],
         "independentVerification": [
           {
@@ -249,13 +249,14 @@
           }
         ],
         "remainingExternalOrHuman": [
-          "1242 current public delivery/sign24 is API/anonymous-byte verified; user self-update and draft/session/reopen result remains pending. Last actual user-reported runtime1241, path/source/executable hash not observed.",
-          "1241 user PASS only for defined self-update/session/draft/reopen, Moments layout/navigation, album and temporary-edit X-cancel; no new-provider generation accepted by these receipts.",
+          "1243 public delivery/sign25 is API/anonymous-byte verified under exact explicit authority; user self-update, original conversations/drafts/recordings findable and normal reopen PASS. Recording playback, new generation, concurrency and Moments concurrent version choice remain separate pending cases. Last reported runtime1243, installation path/source/executable hash not observed.",
+          "1242 user PASS for self-update/session/draft/reopen and listed guided inspection/import-password prompt, wrong/correct same-file retry, preview cancellation and unchanged data/reopen. Actual production merge/all backup formats/devices/provider/concurrency are excluded. Prior1241 defined Moments scope passes retained.",
           "Original1237 role-negative/action-filter/Word-layout failures retained historically; defined1238 successor role-negative, PNG filter combinations and editable Word semantic styles subsequently user-PASS, not all arbitrary long chats/readers.",
           "1240 defined long-Prompt focus/scroll/current-device IME and card V5 draft controls user-PASS; actual displayed147 backup file read-only check/preview/cancel preserved original sessions/draft, not production merge or all148 compatibility.",
           "Original three physical audio methods plus mixed Stop playback part remain untested on wave0; native1/2/6/7 closed15 original graphical methods retain their actual source scopes. Current headless160 twenty skips are not passes.",
           "Actual provider outputs and billing, other OS/DPI/IME/multiscreen and long-run/crash/cross-account/old-snapshot/physical cross-device scenarios retain their individual scope; real production merge/conflicts/credentials remain user choices.",
-          "Community service/login/browser/remote acceptance remains separately pending under the original last-service observation; no duplicate formal-release monitor, automatic source adoption, future publication or formal1.0 permission is inferred."
+          "Community service/login/browser/remote acceptance remains separately pending under the original last-service observation; no duplicate formal-release monitor, automatic source adoption, future publication or formal1.0 permission is inferred.",
+          "Manual backlog is current Q01-Q07 functional groups plus separate conditional environments. Preserve passed unaffected groups and accept remaining cases on latest delivery; no new engineering freeze or per-version repeat requirement."
         ],
         "original154HeadlessSkips": {
           "count": 19,
@@ -517,20 +518,23 @@
       }
     ],
     "currentPublicDelivery": {
-      "version": "0.1.0-preview.1242",
-      "source": "dc4756a290d63de418ecdb8fb83ce1516f30bcc2",
-      "release": 435264418,
-      "metadataRevision": 24,
-      "metadataCommit": "f796ea4bef340fe4a2f271820f664ccef40293fc",
+      "version": "0.1.0-preview.1243",
+      "source": "5f7c8aef85668658feec99131af04cfc1b27e038",
+      "release": 435354057,
+      "metadataRevision": 25,
+      "metadataCommit": "a7b26da0f826420ae4c4251c99a35d0ce3a9433a",
       "rootRevision": 1,
-      "humanAcceptance": "PENDING_U1242_ROOT_ONLY_LAST_USER_REPORTED1241",
+      "humanAcceptance": "U1243_UPGRADE_CONVERSATION_DRAFT_RECORDINGS_FINDABLE_REOPEN_USER_PASS_ONLY_Q01_CONCURRENCY_PENDING",
       "allUserScopesAccepted": false,
-      "proof": "303; scoped53/R44/R45; original four assets and398B LF notes; exact API and anonymous fixed/default roles plus complete installer bytes",
-      "url": "https://github.com/MisakaPiano/ChatChatBar-Desktop/releases/tag/desktop-v0.1.0-preview.1242",
-      "authority": "I:\\CCB-Desktop-Continuity\\updates\\20261105-candidate1242-preparation\\USER_PUBLICATION_AUTHORITY.json",
-      "publicReadback": "I:\\CCB-Desktop-Continuity\\updates\\20261105-candidate1242-preparation\\PUBLICATION1242_RESULT.private.json",
-      "anonymousReadback": "I:\\CCB-Desktop-Continuity\\updates\\20261105-candidate1242-preparation\\PUBLIC_ANONYMOUS_RESULT.json",
-      "agentInstalled": false
+      "proof": "306; full160/R02 scoped58/R47 exact native/R48 controlled client; actual four assets and587B LF notes plus fixed/default anonymous roles and complete installer stream",
+      "url": "https://github.com/MisakaPiano/ChatChatBar-Desktop/releases/tag/desktop-v0.1.0-preview.1243",
+      "authority": "I:\\CCB-Desktop-Continuity\\updates\\20261105-candidate1243-preparation\\USER_PUBLICATION_AUTHORITY.json",
+      "publicReadback": "I:\\CCB-Desktop-Continuity\\updates\\20261105-candidate1243-preparation\\PUBLICATION1243_RESULT.private.json",
+      "anonymousReadback": "I:\\CCB-Desktop-Continuity\\updates\\20261105-candidate1243-preparation\\PUBLIC_ANONYMOUS_RESULT.json",
+      "agentInstalled": false,
+      "userAcceptanceReceipt": "I:/CCB-Desktop-Continuity/updates/20261105-candidate1243-preparation/U1243_USER_ACCEPTANCE.json",
+      "actualLatestUserReportedRuntime": "0.1.0-preview.1243",
+      "installationPathSourceHashObserved": false
     },
     "residualReview": "I:\\CCB-Desktop-Continuity\\updates\\20261106-selected-scope-reconciliation\\OWNER_REVIEW.json",
     "privateCandidate1237": {
@@ -605,6 +609,23 @@
         "anonymousReadback": "I:\\CCB-Desktop-Continuity\\updates\\20261104-candidate1238-r02-preparation\\PUBLIC_ANONYMOUS_RESULT.json",
         "priorVersionAcceptance": "All original1237 scoped PASS and role-negative/actions-off/Word semantic USER_FAIL retained separately; no automatic pass for1238",
         "agentInstalled": false
+      },
+      {
+        "version": "0.1.0-preview.1242",
+        "source": "dc4756a290d63de418ecdb8fb83ce1516f30bcc2",
+        "release": 435264418,
+        "metadataRevision": 24,
+        "metadataCommit": "f796ea4bef340fe4a2f271820f664ccef40293fc",
+        "rootRevision": 1,
+        "humanAcceptance": "U1242_AND_LISTED_GUIDED_PASSWORD_FLOW_USER_PASS_NO_PRODUCTION_MERGE_OR_ALL_FORMATS",
+        "allUserScopesAccepted": false,
+        "proof": "303; scoped53/R44/R45; original four assets and398B LF notes; exact API and anonymous fixed/default roles plus complete installer bytes",
+        "url": "https://github.com/MisakaPiano/ChatChatBar-Desktop/releases/tag/desktop-v0.1.0-preview.1242",
+        "authority": "I:\\CCB-Desktop-Continuity\\updates\\20261105-candidate1242-preparation\\USER_PUBLICATION_AUTHORITY.json",
+        "publicReadback": "I:\\CCB-Desktop-Continuity\\updates\\20261105-candidate1242-preparation\\PUBLICATION1242_RESULT.private.json",
+        "anonymousReadback": "I:\\CCB-Desktop-Continuity\\updates\\20261105-candidate1242-preparation\\PUBLIC_ANONYMOUS_RESULT.json",
+        "agentInstalled": false,
+        "acceptanceSummary": "I:\\CCB-Desktop-Continuity\\updates\\20261105-candidate1242-preparation\\GUIDED_PASSWORD_FLOW1242_USER_ACCEPTANCE_SUMMARY.json"
       }
     ],
     "publicCandidate1237": {
@@ -632,18 +653,7 @@
       "oldClientScope": "R32 controlled cloud cryptographic validation reused; anonymous HTTP is separate transport proof",
       "publicationAuthority": "I:\\CCB-Desktop-Continuity\\updates\\20261104-candidate1237-r02-preparation\\USER_PUBLICATION_AUTHORITY.json"
     },
-    "activeUnpublishedSuccessor": {
-      "version": "0.1.0-preview.1243",
-      "source": "5f7c8aef85668658feec99131af04cfc1b27e038",
-      "release": 435354057,
-      "draft": true,
-      "metadataRevision": 25,
-      "metadataPublic": false,
-      "publicationAuthorized": false,
-      "humanAcceptance": false,
-      "evidence": "304; complete160 plus58 scoped, exact R46 bytes/R47 native and R48 frozen old-client download/second validation",
-      "handoff": "I:\\CCB-Desktop-Continuity\\updates\\20261105-candidate1243-preparation\\OWNER_PRIVATE1243_HANDOFF.json"
-    },
+    "activeUnpublishedSuccessor": null,
     "private1238PreparationBeforePublication": {
       "applicationSource": "5f48d70622cc351cdba7487a7b4b90663ffa54af",
       "fullCi": 41773543279,
@@ -808,8 +818,131 @@
           "signedOldClientRun": 41982010138,
           "wholeBackup87Successor": "Known version87 reader/custody chain and truthful modern writer; preserve actual old Desktop86 V5-setting backups with typed legacy profile; worktree unvalidated, separate from frozen1239"
         }
+      },
+      {
+        "recordedAt": "2026-11-06T01:02:52.199163+09:00",
+        "meaning": "Private1243 before explicit publication and1242 guided password acceptance; current fields supersede pending descriptions only",
+        "status": "selected147_scoped_engineering_public1242_private1243_ready_actual_user_and_external_scopes_separate_not_baseline_promotion",
+        "currentPublicDelivery": {
+          "version": "0.1.0-preview.1242",
+          "source": "dc4756a290d63de418ecdb8fb83ce1516f30bcc2",
+          "release": 435264418,
+          "metadataRevision": 24,
+          "metadataCommit": "f796ea4bef340fe4a2f271820f664ccef40293fc",
+          "rootRevision": 1,
+          "humanAcceptance": "PENDING_U1242_ROOT_ONLY_LAST_USER_REPORTED1241",
+          "allUserScopesAccepted": false,
+          "proof": "303; scoped53/R44/R45; original four assets and398B LF notes; exact API and anonymous fixed/default roles plus complete installer bytes",
+          "url": "https://github.com/MisakaPiano/ChatChatBar-Desktop/releases/tag/desktop-v0.1.0-preview.1242",
+          "authority": "I:\\CCB-Desktop-Continuity\\updates\\20261105-candidate1242-preparation\\USER_PUBLICATION_AUTHORITY.json",
+          "publicReadback": "I:\\CCB-Desktop-Continuity\\updates\\20261105-candidate1242-preparation\\PUBLICATION1242_RESULT.private.json",
+          "anonymousReadback": "I:\\CCB-Desktop-Continuity\\updates\\20261105-candidate1242-preparation\\PUBLIC_ANONYMOUS_RESULT.json",
+          "agentInstalled": false
+        },
+        "activeUnpublishedSuccessor": {
+          "version": "0.1.0-preview.1243",
+          "source": "5f7c8aef85668658feec99131af04cfc1b27e038",
+          "release": 435354057,
+          "draft": true,
+          "metadataRevision": 25,
+          "metadataPublic": false,
+          "publicationAuthorized": false,
+          "humanAcceptance": false,
+          "evidence": "304; complete160 plus58 scoped, exact R46 bytes/R47 native and R48 frozen old-client download/second validation",
+          "handoff": "I:\\CCB-Desktop-Continuity\\updates\\20261105-candidate1243-preparation\\OWNER_PRIVATE1243_HANDOFF.json"
+        },
+        "pendingRanges": [
+          {
+            "scope": "Community Desktop browse/detail/import/Discord return/owner snapshot management/card update and runtime switch",
+            "evidence": "277; exact134 shared11/Core2/Desktop12+7 actual images PASS; R19 ordinary candidate PASS; R20 real Main/registry scoped PASS with descendant NOT_PROVEN; real official OAuth/browser/focus separate",
+            "status": "implemented_scoped_engineering_verified_live_service_oauth_browser_focus_external_pending",
+            "remainingImplementationIdentified": [],
+            "externalConditions": [
+              "Official runtime enabled:false at2026-11-03 23:14JST read-only receipt; prior21:47 observation retained; not permanent closure proof",
+              "Real Discord/browser return/foreground and remote operations require service available and explicit user-controlled login"
+            ],
+            "currentServiceReceipt": "I:/CCB-Desktop-Continuity/updates/20261103-coordinator-community-availability.json"
+          },
+          {
+            "scope": "Whole selected147 compatibility declaration and affected final candidate/user cross-scenario acceptance",
+            "evidence": "305; current exact full160 and private1243/R47/R48, public1242/sign24; prior native1/2/6/7 and actual version-specific user receipts retained",
+            "status": "selected_scoped_engineering_verified_public1242_and_private1243_ready_actual_user_physical_provider_scenarios_pending",
+            "remainingImplementationIdentified": [],
+            "independentVerification": [
+              {
+                "scope": "Original HWND-owner and Studio auxiliary OS-close cases plus unchanged COM prerequisite",
+                "run": 41649134054,
+                "source": "6c434baecc0c809af4237a9a6b288e68ba8ab686",
+                "state": "ORIGINAL3PASS0SKIP_TWO_PREVIOUSLY_SKIPPED_METHODS_CLOSED",
+                "headless": false,
+                "newlyClosedOriginalSkipMethods": 2,
+                "evidence": "I:/CCB-Desktop-Continuity/updates/20261103-owner-native-probe1-review/REVIEW.json"
+              },
+              {
+                "scope": "Remaining14 original graphical cases only, foreground/native guards unchanged",
+                "run": 41650815581,
+                "source": "98aa8c233ed557a49fe6a3b6f05177389215a17e",
+                "state": "ORIGINAL14_10PASS_4FAIL_0SKIP_RETAINED",
+                "headless": false,
+                "excluded": "Prior two closed graphical methods and three physical audio methods",
+                "evidence": "I:/CCB-Desktop-Continuity/updates/20261103-owner-native-probe2-review/REVIEW.json"
+              },
+              {
+                "scope": "Only native2 four affected scopes; mixed Stop physical playback split and guarded",
+                "run": 41663011157,
+                "source": "a65b02af5a14dd55e32083ea6af35847b38a5503",
+                "state": "ACTUAL4PASS1SKIP_3_ORIGINAL_METHODS_FULLY_CLOSED_MIXED_STOP_PARTIAL",
+                "waveOutputDevices": 0,
+                "display": "1024x768 to enumerated1920x1080; test/apply0; restored1024x768/result0; no registry write",
+                "evidence": "I:/CCB-Desktop-Continuity/updates/20261103-studio-history-repair/native6-OWNER_REVIEW.json"
+              },
+              {
+                "scope": "Exact304 six affected font/request/selection/concurrency/OS-close methods",
+                "run": 41681529979,
+                "source": "304bd42a250b062ddaafc4c7dcc55710e94c4e8b",
+                "state": "ACTUAL6PASS_0FAIL_0SKIP_NOT_REAL_SYSTEM_IME",
+                "evidence": "I:/CCB-Desktop-Continuity/updates/20261103-studio-history-repair/native7-OWNER_REVIEW.json"
+              }
+            ],
+            "remainingExternalOrHuman": [
+              "1242 current public delivery/sign24 is API/anonymous-byte verified; user self-update and draft/session/reopen result remains pending. Last actual user-reported runtime1241, path/source/executable hash not observed.",
+              "1241 user PASS only for defined self-update/session/draft/reopen, Moments layout/navigation, album and temporary-edit X-cancel; no new-provider generation accepted by these receipts.",
+              "Original1237 role-negative/action-filter/Word-layout failures retained historically; defined1238 successor role-negative, PNG filter combinations and editable Word semantic styles subsequently user-PASS, not all arbitrary long chats/readers.",
+              "1240 defined long-Prompt focus/scroll/current-device IME and card V5 draft controls user-PASS; actual displayed147 backup file read-only check/preview/cancel preserved original sessions/draft, not production merge or all148 compatibility.",
+              "Original three physical audio methods plus mixed Stop playback part remain untested on wave0; native1/2/6/7 closed15 original graphical methods retain their actual source scopes. Current headless160 twenty skips are not passes.",
+              "Actual provider outputs and billing, other OS/DPI/IME/multiscreen and long-run/crash/cross-account/old-snapshot/physical cross-device scenarios retain their individual scope; real production merge/conflicts/credentials remain user choices.",
+              "Community service/login/browser/remote acceptance remains separately pending under the original last-service observation; no duplicate formal-release monitor, automatic source adoption, future publication or formal1.0 permission is inferred."
+            ],
+            "original154HeadlessSkips": {
+              "count": 19,
+              "subsequentNewlyExecuted": 2,
+              "stillUnexecutedAtProbe2Start": 17,
+              "physicalAudio": 3,
+              "subsequentNewlyExecutedAndFullyClosed": 15,
+              "remainingIncompleteOriginalMethods": 4,
+              "mixedStop": "GUI download/generation PASS; original physical playback part NOT_TESTED",
+              "counting": "native1 two + native2 ten + native6 three; do not count split Stop GUI as original complete method"
+            }
+          }
+        ]
       }
-    ]
+    ],
+    "currentManualAcceptanceBacklog": {
+      "path": "I:\\CCB-Desktop-Continuity\\updates\\20261106-manual-acceptance-backlog\\CURRENT_MANUAL_BACKLOG.json",
+      "groupIds": [
+        "Q01",
+        "Q02",
+        "Q03",
+        "Q04",
+        "Q05",
+        "Q06",
+        "Q07"
+      ],
+      "repeatPolicy": "accept remaining functional cases on latest delivered version; preserve prior version receipts; do not repeat passed unaffected groups just for version numbers",
+      "wholeFeatureManualAudit": false,
+      "conditionalScopesSeparate": true,
+      "latestOverride": "U1243 upgrade/data/reopen now scoped USER_PASS; Q01 concurrency and remaining functional cases still pending, no repeat of passed upgrade merely for backlog status."
+    }
   },
   "latestPinnedUpstreamReview": {
     "recordedAt": "2026-11-05",
