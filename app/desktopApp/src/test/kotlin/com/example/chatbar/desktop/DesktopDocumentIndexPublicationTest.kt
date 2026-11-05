@@ -5,6 +5,7 @@ import com.example.chatbar.desktop.security.InMemoryDesktopSecretStore
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.first
 import kotlin.test.*
 
 class DesktopDocumentIndexPublicationTest {
@@ -31,6 +32,40 @@ class DesktopDocumentIndexPublicationTest {
         suspend fun close() { container.close(); owner.close(); base.toFile().deleteRecursively() }
     }
     private suspend fun fixture(test: suspend (Fixture) -> Unit) { val f = Fixture(); f.seed(); try { test(f) } finally { f.close() } }
+
+    @Test fun `late document stop retains real committed index and shows unconfirmed publication after original journal drains`() = runBlocking { fixture { f ->
+        val entered = CompletableDeferred<Unit>(); val release = java.util.concurrent.CountDownLatch(1)
+        val held = java.util.concurrent.atomic.AtomicBoolean()
+        val sourceBytes = Files.readAllBytes(f.root.resolve("documents/doc.txt"))
+        val service = f.service(journal = DesktopIndexCommitJournal(f.root) {
+            if (held.compareAndSet(false, true)) {
+                entered.complete(Unit); check(release.await(10, java.util.concurrent.TimeUnit.SECONDS))
+            }
+        })
+        val controller = DesktopRagController(f.container.modelRepository, f.container.settingsRepository,
+            index = { card, document, progress -> service.index(card, document, progress) })
+        try {
+            controller.start("card", "doc")
+            withTimeout(5000) { entered.await() }
+            val row = withTimeout(5000) { f.container.taskCenter.state.first { it.rows.any { row -> row.kind == DesktopWorkKind.DOCUMENT && row.active } } }
+                .rows.single { it.kind == DesktopWorkKind.DOCUMENT && it.active }
+            assertTrue(f.container.taskRuntime.requestUserStop(row.id.substringAfter('/')))
+            assertTrue(f.container.taskRuntime.hasDocumentPreparation("card", "doc"))
+            assertTrue(controller.progress.value.getValue("card" to "doc").running)
+            release.countDown()
+            withTimeout(5000) { f.container.taskCenter.state.first { it.rows.any { item -> item.id == row.id && item.phase == DesktopWorkPhase.UNCONFIRMED } } }
+            val stopped = withTimeout(5000) { controller.progress.first { it["card" to "doc"]?.running == false } }.getValue("card" to "doc")
+            assertTrue(stopped.message.contains("待核对")); assertFalse(stopped.message.contains("原有索引保留"))
+            assertTrue(f.container.dataOperationCoordinator.isRestartRequired)
+            assertTrue(f.container.taskRuntime.ownedWork.value.single().publicationUnconfirmed)
+            val durable = f.storage.json.decodeFromString(CharacterCard.serializer(), Files.readString(f.root.resolve("entities/character_cards/card.json")))
+            assertEquals("INDEXED", durable.customDocuments.single().ragStatus)
+            assertFalse(DesktopIndexCommitJournal(f.root).hasPending())
+            assertContentEquals(sourceBytes, Files.readAllBytes(f.root.resolve("documents/doc.txt")))
+            assertEquals(2, Files.list(f.root.resolve("entities/vector_chunks")).use { it.count() }.toInt())
+            assertTrue(f.container.taskCenter.state.value.rows.none { it.canRetry })
+        } finally { release.countDown(); controller.closeAndDrain() }
+    } }
 
     @Test fun `publication preserves unrelated vectors and official retrieval accepts new source`() = runBlocking { fixture { f ->
         val unrelated = VectorChunk("other", ChunkSourceType.DOCUMENT, "other-card", content = "untouched", embedding = listOf(1f, 0f), createdAt = 1)
@@ -61,16 +96,19 @@ class DesktopDocumentIndexPublicationTest {
     } }
 
     @Test fun `publication failure restores every old file and retains unrelated records`() = runBlocking { fixture { f ->
-        f.service().index("card", "doc")
+        val parent = DesktopIndexPublicationEvidence()
+        withContext(parent) { f.service().index("card", "doc") }
         fun inventory() = Files.walk(f.root.resolve("entities")).use { paths -> paths.filter { Files.isRegularFile(it) }.toList()
             .associate { f.root.relativize(it).toString() to Files.readAllBytes(it).toList() } }
         val before = inventory()
-        assertFailsWith<IllegalStateException> { f.service(journal = DesktopIndexCommitJournal(f.root) { index ->
+        withContext(parent) { assertFailsWith<IllegalStateException> { f.service(journal = DesktopIndexCommitJournal(f.root) { index ->
             if (index == 1) error("synthetic failure")
-        }).index("card", "doc") }
+        }).index("card", "doc") } }
         assertEquals(before, inventory())
         assertFalse(DesktopIndexCommitJournal(f.root).hasPending())
         assertEquals(DesktopDataOperationCoordinatorState.OPEN, f.container.dataOperationCoordinator.state)
+        assertFalse(f.container.taskRuntime.ownedWork.value.first().publicationUnconfirmed)
+        assertTrue(parent.mayHaveChanged) // A confirmed child rollback cannot erase an earlier real publication.
     } }
 
     @Test fun `cancellation during embedding leaves no journal and no normal lease`() = runBlocking { fixture { f ->
@@ -80,6 +118,8 @@ class DesktopDocumentIndexPublicationTest {
         f.container.dataOperationCoordinator.withExclusiveMaintenance { }
         assertFalse(DesktopIndexCommitJournal(f.root).hasPending())
         assertEquals(f.card, f.container.characterRepository.getById("card"))
+        assertFalse(f.container.taskRuntime.ownedWork.value.single().publicationUnconfirmed)
+        assertEquals(DesktopTaskStatus.CANCELLED, f.container.taskRuntime.ownedWork.value.single().status)
     } }
 
     @Test fun `startup replays incomplete undo before business and rejects foreign changes`() = runBlocking { fixture { f ->

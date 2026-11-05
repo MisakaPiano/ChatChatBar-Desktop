@@ -171,6 +171,7 @@ fun ImagePromptToolScreen(
     var showMetadataSelection by remember { mutableStateOf(false) }
     var showImageTools by remember { mutableStateOf(false) }
     var showGenerationOptions by remember { mutableStateOf(false) }
+    var showFullPromptExchange by remember { mutableStateOf(false) }
     var sizeEditorSettings by remember { mutableStateOf<NovelAiGenerationSettings?>(null) }
     var showGuidanceEditor by remember { mutableStateOf(false) }
     var guidancePickTarget by remember { mutableStateOf<NovelAiImageUseTarget?>(null) }
@@ -624,6 +625,10 @@ fun ImagePromptToolScreen(
                 Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(ChatBarSpacing.md)
             ) {
+                CbButton("完整 Prompt 文本互换", {
+                    showGenerationOptions = false
+                    showFullPromptExchange = true
+                }, enabled = state.draftLoaded && !state.isBusy && !state.applyingHistory, variant = ButtonVariant.Outline)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     CbText("复制时忽略画风", Modifier.weight(1f))
                     CbSwitch(
@@ -759,6 +764,15 @@ fun ImagePromptToolScreen(
                 }
             }
         )
+    }
+
+    if (showFullPromptExchange) {
+        DisposableEffect(viewModel) { onDispose { viewModel.discardFullPrompt() } }
+        StudioFullPromptTextDialog(state,
+            onCopy = { viewModel.copyFullPrompt { text -> clipboard.setText(buildAnnotatedString { append(text) }) } },
+            onRead = { viewModel.inspectFullPrompt(clipboard.getText()?.text.orEmpty()) },
+            onApply = viewModel::applyFullPrompt, onCancel = viewModel::discardFullPrompt,
+            onClose = { viewModel.discardFullPrompt(); showFullPromptExchange = false })
     }
 
     state.error?.let { error ->

@@ -69,26 +69,30 @@ class DesktopSettingsCredentialPersistencePolicy(
 class DesktopModelCredentialPersistencePolicy(
     private val secretStore: DesktopSecretStore,
     private val operationGate: AppDataOperationGate = NoOpAppDataOperationGate,
+    private val modelExists: suspend (String) -> Boolean = { true },
 ) : ModelCredentialPersistencePolicy {
     override val requireVerifiedEntityDeletion: Boolean = true
 
     private val mutex = Mutex()
     private suspend fun <T> credentialOperation(work: suspend () -> T): T =
         operationGate.withNormalOperation { mutex.withLock { work() } }
+    internal suspend fun <T> withAccountMutation(work: suspend () -> T): T = credentialOperation(work)
 
     override suspend fun hydrate(persisted: ModelConfig): ModelConfig = credentialOperation {
         if (persisted.apiKey.isNotBlank()) {
             throw UnsafeDesktopPlaintextCredentialException("model ${persisted.id}")
         }
-        persisted.copy(
-            apiKey = secretStore.load(DesktopCredentialKey.ModelApiKey(persisted.id)).orEmpty(),
-        )
+        (secretStore as? DesktopAccountStore)?.hydrate(persisted) ?: persisted.copy(
+            apiKey = secretStore.load(DesktopCredentialKey.ModelApiKey(persisted.id)).orEmpty())
     }
 
     override suspend fun persist(
         runtime: ModelConfig,
         persistEntity: suspend (ModelConfig) -> Unit,
     ): ModelConfig = credentialOperation {
+        if (runtime.credentialAccount == null && !modelExists(runtime.id))
+            (secretStore as? DesktopAccountStore)?.detachMissingModel(runtime.id)
+        (secretStore as? DesktopAccountStore)?.requireSameAccount(runtime)
         val desired = runtime.apiKey.takeUnless(String::isBlank)
         credentialTransaction(
             secretStore = secretStore,
@@ -103,6 +107,10 @@ class DesktopModelCredentialPersistencePolicy(
         logicalModelId: String,
         deleteEntity: suspend () -> Unit,
     ) = credentialOperation {
+        if (secretStore is DesktopAccountStore) {
+            secretStore.deleteModelSlot(logicalModelId, deleteEntity)
+            return@credentialOperation
+        }
         credentialTransaction(
             secretStore = secretStore,
             key = DesktopCredentialKey.ModelApiKey(logicalModelId),
@@ -160,7 +168,7 @@ class DesktopEmbeddingCredentialPersistencePolicy(
     }
 }
 
-private suspend fun credentialTransaction(
+internal suspend fun credentialTransaction(
     secretStore: DesktopSecretStore,
     key: DesktopCredentialKey,
     desired: String?,

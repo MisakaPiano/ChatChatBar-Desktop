@@ -53,6 +53,9 @@ import com.example.chatbar.domain.image.NovelAiTagCompletion
 import com.example.chatbar.domain.image.copyPositivePrompt
 import com.example.chatbar.domain.image.clearPrompts
 import com.example.chatbar.domain.image.NovelAiStudioPromptClipboard
+import com.example.chatbar.domain.image.NovelAiStudioFullPromptClipboard
+import com.example.chatbar.domain.image.NovelAiFullPromptContent
+import com.example.chatbar.domain.image.NovelAiFullPromptPreview
 import com.example.chatbar.domain.image.applyImportedMetadata
 import com.example.chatbar.domain.image.novelAiHistoryImages
 import com.example.chatbar.domain.image.ownedAssetPaths
@@ -157,6 +160,9 @@ data class ImagePromptToolUiState(
     val canUndoDraft: Boolean = false,
     val canRedoDraft: Boolean = false,
     val hasHistoryUndo: Boolean = false,
+    val fullPromptPreview: NovelAiFullPromptContent? = null,
+    val fullPromptReading: Boolean = false,
+    val fullPromptCopying: Boolean = false,
     val characterCards: List<CharacterCard> = emptyList(),
     val selectedCharacterCardId: String? = null,
     val models: List<ModelConfig> = emptyList(),
@@ -1462,6 +1468,79 @@ class ImagePromptToolViewModel : ViewModel() {
 
     fun positivePromptForClipboard(): String =
         (repository.draft.value ?: _uiState.value.draft).copyPositivePrompt()
+
+    private var fullPromptCandidate: NovelAiFullPromptPreview? = null
+    private var fullPromptTextJob: Job? = null
+    private var fullPromptGeneration = 0L
+
+    fun copyFullPrompt(onCopied: (String) -> Unit) {
+        val state = _uiState.value
+        if (!state.draftLoaded || state.isBusy || state.applyingHistory) return
+        discardFullPrompt()
+        val generation = fullPromptGeneration
+        val baseline = repository.draft.value ?: state.draft
+        fun effectiveModel(): NovelAiImageModel = NovelAiImageModelResolution.resolve(
+            baseline.selectedModel.takeUnless { baseline.followDefaultNovelAiImageModel },
+            _uiState.value.characterCards.firstOrNull { it.id == baseline.importedCharacterCardId }?.defaultNovelAiImageModel,
+            settingsRepository.currentAppSettings.novelAiImageModel)
+        val selected = effectiveModel()
+        _uiState.update { it.copy(fullPromptCopying = true, error = null) }
+        fullPromptTextJob = viewModelScope.launch {
+            try {
+                val text = withContext(Dispatchers.Default) { NovelAiStudioFullPromptClipboard.encode(baseline.copy(selectedModel = selected)) }
+                if (generation != fullPromptGeneration) return@launch
+                require((repository.draft.value ?: _uiState.value.draft) == baseline && effectiveModel() == selected)
+                onCopied(text) // Main callback; close/cancel/replacement invalidates the old generation first.
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) {
+                if (generation == fullPromptGeneration) _uiState.update { it.copy(error = "完整文本复制未完成，请检查当前工作室内容后重试。") }
+            } finally {
+                if (generation == fullPromptGeneration) _uiState.update { it.copy(fullPromptCopying = false) }
+            }
+        }
+    }
+
+    fun inspectFullPrompt(text: String) {
+        val state = _uiState.value
+        if (!state.draftLoaded || state.isBusy || state.applyingHistory) return
+        discardFullPrompt()
+        val generation = fullPromptGeneration
+        val baseline = repository.draft.value ?: state.draft
+        _uiState.update { it.copy(fullPromptReading = true, error = null) }
+        fullPromptTextJob = viewModelScope.launch {
+            try {
+                val candidate = withContext(Dispatchers.Default) { NovelAiFullPromptPreview.inspect(text, baseline) }
+                if (generation != fullPromptGeneration) return@launch
+                candidate.apply(repository.draft.value ?: _uiState.value.draft)
+                fullPromptCandidate = candidate
+                _uiState.update { it.copy(fullPromptPreview = candidate.content) }
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) {
+                if (generation == fullPromptGeneration) _uiState.update { it.copy(error = "完整文本版本、分段或当前工作室内容不匹配，请重新复制并预览。") }
+            } finally {
+                if (generation == fullPromptGeneration) _uiState.update { it.copy(fullPromptReading = false) }
+            }
+        }
+    }
+
+    fun applyFullPrompt() {
+        val state = _uiState.value
+        val candidate = fullPromptCandidate ?: return
+        if (!state.draftLoaded || state.isBusy || state.applyingHistory || state.fullPromptReading || state.fullPromptCopying) return
+        try {
+            updateDraft(resetPromptEditors = true) { candidate.apply(it) }
+            discardFullPrompt()
+        } catch (_: IllegalArgumentException) {
+            discardFullPrompt()
+            _uiState.update { it.copy(error = "工作室内容已变化，请重新读取完整文本后再确认。") }
+        }
+    }
+
+    fun discardFullPrompt() {
+        fullPromptGeneration++
+        fullPromptTextJob?.cancel(); fullPromptTextJob = null; fullPromptCandidate = null
+        _uiState.update { it.copy(fullPromptPreview = null, fullPromptReading = false, fullPromptCopying = false) }
+    }
 
     fun clearPrompts() {
         updateDraft(resetPromptEditors = true) { draft ->

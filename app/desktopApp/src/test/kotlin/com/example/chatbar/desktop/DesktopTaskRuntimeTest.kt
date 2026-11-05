@@ -17,6 +17,15 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.awaitCancellation
+import com.example.chatbar.domain.chat.StreamEvent
+import com.example.chatbar.domain.chat.MessageFormatRepairPolicy
+import com.example.chatbar.data.repository.ConditionalMessageUpdateResult
+import com.example.chatbar.data.repository.MessageUpdateStage
+import com.example.chatbar.data.local.JsonFileStorage
+import com.example.chatbar.data.local.entity.MessageFormatRepairNoticeKind
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -35,6 +44,119 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class DesktopTaskRuntimeTest {
+    @Test fun `regeneration reserves its exact voice source before dispatcher runs without locking other completed messages`() = runTest {
+        withContainer { container ->
+            val session = prepare(container, "http://127.0.0.1:1/v1")
+            val old = container.chatRepository.getMessages(session).single()
+            val runtime = DesktopTaskRuntime(container.createRealChatRuntime(), dispatcher = StandardTestDispatcher(testScheduler))
+            try {
+                runtime.launchRegeneration(session, old.id)
+                assertTrue(runtime.hasActiveVoiceSourceMutation(session, old.id))
+                assertFalse(runtime.hasActiveVoiceSourceMutation(session, "another-completed-message"))
+                assertFalse(runtime.hasActiveVoiceSourceMutation("another-session", old.id))
+            } finally { runtime.closeAndDrain() }
+            assertEquals(listOf(old), container.chatRepository.getMessages(session))
+        }
+    }
+    @Test fun `completed old reply voice overlaps chat image and Moments while each Stop keeps the other owners running`() = runBlocking {
+        withContainer { container ->
+            ControlledDesktopSseServer("""{"choices":[{"delta":{"content":"reply-held-for-concurrency"}}]}""", holdSeconds = 60).use { server ->
+                val sessionId = prepare(container, server.baseUrl)
+                val chats = container.chatRepository
+                val session = requireNotNull(chats.getSession(sessionId))
+                val card = requireNotNull(container.characterRepository.getById(session.characterCardId))
+                container.characterRepository.save(card.copy(characters = listOf(com.example.chatbar.data.local.entity.CharacterInfo(
+                    "alice", "Alice", fishAudioVoice = com.example.chatbar.data.local.entity.FishAudioVoiceBinding("synthetic-reference", "Synthetic")))))
+                chats.updateSession(session.copy(audiobookModeEnabled = true, longTermMemoryEnabled = false))
+                val old = chats.addMessage(com.example.chatbar.data.local.entity.ChatMessage("old-voice-source", sessionId,
+                    MessageRole.ASSISTANT, "<n=\"Alice\"/>[hello]()", createdAt = 1, updatedAt = 1))
+                container.settingsRepository.updateAppSettings { it.copy(momentsEnabled = true, fishAudioTtsModelId = "s2.1-pro-free") }
+                container.fishAudioCredentials.save("synthetic-not-real")
+                val runtime = container.taskRuntime
+                val chat = runtime.launchChat(sessionId, "new reply")
+                awaitTask(runtime, chat) { it.contentPreview == "reply-held-for-concurrency" }
+                val imageEntered = CompletableDeferred<Unit>()
+                val image = runtime.launchNovelAi("held synthetic image", sessionId, old.id) { _ ->
+                    imageEntered.complete(Unit); awaitCancellation()
+                }
+                withTimeout(5000) { imageEntered.await() }
+                assertFalse(runtime.hasActiveVoiceSourceMutation(sessionId, old.id))
+                val momentEntered = CompletableDeferred<Unit>()
+                val moments = DesktopMomentsController(DesktopMomentStore(container.jsonFileStorage, container.dataOperationCoordinator),
+                    container.settingsRepository, container.characterRepository, chats, container.dataOperationCoordinator, runtime,
+                    DesktopMomentGenerator { _, _, _, _, _, _, _, _, _, _ -> momentEntered.complete(Unit); awaitCancellation() })
+                val fishServer = MockWebServer().also { it.start() }
+                val audio = container.voiceAudioStore
+                val voice = DesktopChatVoiceRuntime(chats, container.characterRepository, container.settingsRepository,
+                    container.effectiveModelResolver, container.voiceRepository, audio, container.fishAudioCredentials,
+                    PreviewOutputFake(), gate = container.dataOperationCoordinator, sourceBusy = runtime::hasActiveVoiceSourceMutation,
+                    transportOverride = DesktopFishVoiceTransport(container.fishAudioCredentials, audio, okhttp3.OkHttpClient(),
+                        fishServer.url("/").toString().trimEnd('/'), { java.time.LocalDate.of(2026, 10, 19) }),
+                    textGateway = com.example.chatbar.domain.voice.FishVoiceTextGateway { _, _, _, _ -> error("No auxiliary request authorized") })
+                try {
+                    withTimeout(5000) { moments.state.first { it.enabled } }
+                    moments.generate(card.id)
+                    withTimeout(5000) { momentEntered.await() }
+                    fishServer.enqueue(MockResponse().setSocketPolicy(okhttp3.mockwebserver.SocketPolicy.NO_RESPONSE))
+                    val batch = assertNotNull(voice.generate(old, "alice"))
+                    assertNotNull(fishServer.takeRequest(5, TimeUnit.SECONDS))
+                    assertEquals(DesktopTaskStatus.RUNNING, task(runtime, chat).status)
+                    assertEquals(DesktopTaskStatus.RUNNING, task(runtime, image).status)
+                    assertTrue(moments.state.value.busy)
+                    voice.coordinator.cancel(batch)
+                    withTimeout(5000) { voice.coordinator.batches.first { rows -> rows.none { it.id == batch &&
+                        it.phase !in setOf(VoiceGenerationPhase.CANCELLED, VoiceGenerationPhase.FAILED) } } }
+                    assertEquals(DesktopTaskStatus.RUNNING, task(runtime, chat).status)
+                    assertEquals(DesktopTaskStatus.RUNNING, task(runtime, image).status)
+                    assertTrue(moments.state.value.busy)
+                    assertTrue(container.voiceRepository.listForSession(sessionId).isEmpty())
+                    moments.stop()
+                    withTimeout(5000) { moments.workRows.first { rows -> rows.isNotEmpty() && rows.none { it.active } } }
+                    assertEquals(DesktopTaskStatus.RUNNING, task(runtime, chat).status)
+                    assertEquals(DesktopTaskStatus.RUNNING, task(runtime, image).status)
+                    assertTrue(runtime.requestUserStop(image))
+                    awaitTask(runtime, image) { it.status == DesktopTaskStatus.USER_STOPPED }
+                    assertEquals(DesktopTaskStatus.RUNNING, task(runtime, chat).status)
+                    assertTrue(runtime.requestUserStop(chat))
+                    awaitTask(runtime, chat) { it.status == DesktopTaskStatus.USER_STOPPED }
+                    assertEquals(old, chats.getMessage(old.id, sessionId))
+                } finally { voice.closeAndDrain(); fishServer.shutdown(); moments.closeAndDrain() }
+            }
+        }
+    }
+    @Test fun `full live text survives bounded summaries and is released on completion stop and error`() = runBlocking {
+        for (outcome in listOf("COMPLETE", "STOP", "ERROR")) withContainer { container ->
+            val content = "complete transient text ".repeat(240)
+            val reasoning = "complete transient reasoning ".repeat(210)
+            val payload = """{"choices":[{"delta":{"content":"$content","reasoning_content":"$reasoning"}}]}"""
+            ControlledDesktopSseServer(payload, holdSeconds = 60).use { server ->
+                val session = prepare(container, server.baseUrl)
+                val runtime = container.taskRuntime
+                val id = runtime.launchChat(session, "synthetic user")
+                withTimeout(8_000) { runtime.activeChatStreams.first { it[id]?.content == content } }
+                assertEquals(reasoning, runtime.activeChatStreams.value[id]?.reasoningContent)
+                assertTrue(task(runtime, id).contentPreview.length < content.length)
+                when (outcome) {
+                    "STOP" -> assertTrue(runtime.requestUserStop(id))
+                    "ERROR" -> server.close()
+                    else -> {
+                        server.sendEvent("""{"choices":[{"delta":{},"finish_reason":"stop"}]}""")
+                        server.sendEvent("[DONE]")
+                    }
+                }
+                val terminal = awaitTask(runtime, id) { it.status != DesktopTaskStatus.RUNNING }
+                assertEquals(when (outcome) {
+                    "STOP" -> DesktopTaskStatus.USER_STOPPED
+                    "ERROR" -> DesktopTaskStatus.FAILED
+                    else -> DesktopTaskStatus.COMPLETED
+                }, terminal.status)
+                withTimeout(5_000) { runtime.activeChatStreams.first { id !in it } }
+                assertTrue(runtime.activeChatStreams.value.isEmpty())
+                assertTrue(terminal.contentPreview.length < content.length)
+            }
+        }
+    }
+
     @Test fun `maintenance drains final writes and blocks new work then resumes after failure`() = runBlocking<Unit> {
         withContainer { container ->
             val runtime = container.taskRuntime
@@ -339,6 +461,56 @@ class DesktopTaskRuntimeTest {
     }
 
     @Test
+    fun `reasoning only length exhaustion fails visibly and retains provider finish reason without retry`() = runBlocking {
+        withContainer { container ->
+            MockWebServer().use { server ->
+                val sessionId = prepare(container, server.url("/v1").toString().trimEnd('/'))
+                server.enqueue(MockResponse().setHeader("Content-Type", "text/event-stream").setBody(
+                    "data: {\"choices\":[{\"delta\":{\"reasoning_content\":\"synthetic reasoning\"}}]}\n\n" +
+                        "data: {\"choices\":[{\"delta\":{},\"finish_reason\":\"length\"}]}\n\n" +
+                        "data: [DONE]\n\n",
+                ))
+                val taskId = container.taskRuntime.launchChat(sessionId, "reasoning-budget-exhausted")
+                val failed = awaitTask(container.taskRuntime, taskId) { it.status == DesktopTaskStatus.FAILED }
+                val diagnostic = container.taskRuntime.diagnostics.entries.value.single()
+                val persisted = container.chatRepository.getMessages(sessionId)
+
+                assertEquals("length", diagnostic.finishReason)
+                assertTrue(failed.message.contains("finish_reason=length"))
+                assertEquals(DesktopTaskStatus.FAILED, diagnostic.status)
+                assertEquals(1, server.requestCount)
+                assertTrue(diagnostic.retryEvents.isEmpty())
+                assertEquals(1, persisted.count { it.role == MessageRole.USER })
+                assertEquals(1, persisted.count { it.content.startsWith("错误:") })
+                assertFalse(persisted.any { it.role == MessageRole.ASSISTANT && it.content.isBlank() })
+                assertFalse(diagnostic.toString().contains("fake-task-key"))
+            }
+        }
+    }
+
+    @Test
+    fun `nonblank length completion retains partial reply and remains ineligible for automatic images`() = runBlocking {
+        withContainer { container ->
+            MockWebServer().use { server ->
+                val sessionId = prepare(container, server.url("/v1").toString().trimEnd('/'))
+                server.enqueue(MockResponse().setHeader("Content-Type", "text/event-stream").setBody(
+                    "data: {\"choices\":[{\"delta\":{\"content\":\"retained partial\"},\"finish_reason\":\"length\"}]}\n\n" +
+                        "data: [DONE]\n\n",
+                ))
+                val taskId = container.taskRuntime.launchChat(sessionId, "partial-at-output-limit")
+                awaitTask(container.taskRuntime, taskId) { it.status == DesktopTaskStatus.COMPLETED }
+                val diagnostic = container.taskRuntime.diagnostics.entries.value.single()
+                val persisted = container.chatRepository.getMessages(sessionId).last()
+                assertEquals("retained partial", persisted.content)
+                assertEquals("length", diagnostic.finishReason)
+                assertEquals(1, server.requestCount)
+                assertNotNull(com.example.chatbar.domain.chat.AutomaticChatImagePolicy.skipReason(
+                    com.example.chatbar.domain.chat.ChatReplyCompletion(finishReason = diagnostic.finishReason), persisted.content))
+            }
+        }
+    }
+
+    @Test
     fun `transport diagnostics retain actual final request and real retry evidence`() = runBlocking {
         withContainer { container ->
             MockWebServer().use { server ->
@@ -393,10 +565,123 @@ class DesktopTaskRuntimeTest {
         }
     }
 
+    @Test fun `inline repair retains chat admission and downstream sees only the committed final text`() = runBlocking {
+        withContainer { c -> MockWebServer().use { server ->
+            val session = prepare(c, server.url("/v1").toString().trimEnd('/'))
+            server.enqueue(success("original"))
+            val entered = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>()
+            val completed = mutableListOf<String>()
+            lateinit var runtime: DesktopTaskRuntime
+            lateinit var repair: DesktopMessageFormatRepairController
+            runtime = DesktopTaskRuntime(c.createRealChatRuntime(), onChatCompleted = { result, _ ->
+                completed += result.assistant.displayContent; null
+            }, postProcessReply = { parent, result, control ->
+                val state = repair.automatic(parent, result, control, DesktopRepairSafetyGate { _, _ -> DesktopRepairSafety.VERIFIED_SAFE })
+                val retained = (state.commit as ConditionalMessageUpdateResult.Success).message
+                DesktopChatPostProcessResult(result.copy(assistant = retained))
+            })
+            repair = DesktopMessageFormatRepairController(c.chatRepository, c.settingsRepository, c.characterRepository,
+                c.formatCardRepository, c.effectiveModelResolver, runtime, stream = {
+                    flow { entered.complete(Unit); release.await(); emit(StreamEvent.Delta("formatted")); emit(StreamEvent.Done) }
+                })
+            try {
+                val task = runtime.launchChat(session, "Next")
+                withTimeout(5000) { entered.await() }
+                assertTrue(runtime.hasActiveSessionTask(session))
+                assertNotNull(runtime.runningRepair(session))
+                assertFailsWith<DesktopTaskAdmissionException> { runtime.launchChat(session, "cannot race") }
+                assertTrue(completed.isEmpty())
+                assertEquals("original", c.chatRepository.getMessages(session).last().displayContent)
+                release.complete(Unit)
+                awaitTask(runtime, task) { it.status == DesktopTaskStatus.COMPLETED }
+                assertEquals(listOf("formatted"), completed)
+                val retained = c.chatRepository.getMessages(session).last()
+                assertEquals("original", retained.formatRepairNotice?.originalContent)
+                assertEquals(MessageFormatRepairNoticeKind.APPLIED, retained.formatRepairNotice?.kind)
+                assertFalse(runtime.hasActiveSessionTask(session)); assertEquals(1, server.requestCount)
+            } finally { runtime.closeAndDrain() }
+        } }
+    }
+
+    @Test fun `parent Stop reaches inline repair without discarding its recoverable retained text`() = runBlocking {
+        withContainer { c -> MockWebServer().use { server ->
+            val session = prepare(c, server.url("/v1").toString().trimEnd('/'))
+            val original = "Original long reply"
+            server.enqueue(success(original))
+            val entered = CompletableDeferred<Unit>()
+            lateinit var runtime: DesktopTaskRuntime
+            lateinit var repair: DesktopMessageFormatRepairController
+            runtime = DesktopTaskRuntime(c.createRealChatRuntime(), postProcessReply = { parent, result, control ->
+                val state = repair.automatic(parent, result, control, DesktopRepairSafetyGate { _, _ -> DesktopRepairSafety.VERIFIED_SAFE })
+                DesktopChatPostProcessResult(result.copy(assistant = (state.commit as ConditionalMessageUpdateResult.Success).message))
+            })
+            repair = DesktopMessageFormatRepairController(c.chatRepository, c.settingsRepository, c.characterRepository,
+                c.formatCardRepository, c.effectiveModelResolver, runtime, stream = {
+                    flow { emit(StreamEvent.Delta("Fix")); entered.complete(Unit); awaitCancellation() }
+                })
+            try {
+                val task = runtime.launchChat(session, "Next")
+                withTimeout(5000) { entered.await() }
+                assertTrue(runtime.requestUserStop(task))
+                awaitTask(runtime, task) { it.status == DesktopTaskStatus.USER_STOPPED }
+                val retained = c.chatRepository.getMessages(session).last()
+                assertEquals(MessageFormatRepairPolicy.progressiveOverlay(original, "Fix"), retained.displayContent)
+                assertEquals(original, retained.formatRepairNotice?.originalContent)
+                assertEquals(MessageFormatRepairNoticeKind.STOPPED, retained.formatRepairNotice?.kind)
+                assertTrue(runtime.repairTasks.value.values.contains(DesktopRepairStatus.STOPPED))
+            } finally { runtime.closeAndDrain() }
+        } }
+    }
+
+    @Test fun `uncertain inline commit blocks downstream and future chat until explicit strict reload acknowledgement`() = runBlocking {
+        withContainer { c -> MockWebServer().use { server ->
+            val session = prepare(c, server.url("/v1").toString().trimEnd('/'))
+            server.enqueue(success("original"))
+            var downstream = 0
+            lateinit var runtime: DesktopTaskRuntime
+            lateinit var repair: DesktopMessageFormatRepairController
+            val uncertain = object : DesktopRepairSafetyGate {
+                override suspend fun check(session: com.example.chatbar.data.local.entity.ChatSession,
+                    message: com.example.chatbar.data.local.entity.ChatMessage) = DesktopRepairSafety.VERIFIED_SAFE
+                override suspend fun submit(session: com.example.chatbar.data.local.entity.ChatSession,
+                    message: com.example.chatbar.data.local.entity.ChatMessage,
+                    write: suspend () -> ConditionalMessageUpdateResult): ConditionalMessageUpdateResult =
+                    ConditionalMessageUpdateResult.CommitUncertain(message.copy(content = "attempted"), MessageUpdateStage.WRITE_INDEX,
+                        java.io.IOException("synthetic"), JsonFileStorage.EntityReadResult.Valid(message))
+            }
+            runtime = DesktopTaskRuntime(c.createRealChatRuntime(), completedHistoryLimit = 2,
+                onChatCompleted = { _, _ -> downstream++; null }, postProcessReply = { parent, result, control ->
+                    val state = repair.automatic(parent, result, control, uncertain)
+                    DesktopChatPostProcessResult(result, blockDownstream = state.status == DesktopRepairStatus.COMMIT_UNCERTAIN)
+                })
+            repair = DesktopMessageFormatRepairController(c.chatRepository, c.settingsRepository, c.characterRepository,
+                c.formatCardRepository, c.effectiveModelResolver, runtime, stream = { flowOf(StreamEvent.Delta("formatted"), StreamEvent.Done) })
+            try {
+                val task = runtime.launchChat(session, "Next")
+                val failed = awaitTask(runtime, task) { it.status == DesktopTaskStatus.FAILED }
+                assertFalse(failed.message.startsWith("Completed"))
+                assertEquals(0, downstream); assertTrue(runtime.hasUnconfirmedRepair(session))
+                assertFailsWith<DesktopTaskAdmissionException> { runtime.launchChat(session, "blocked") }
+                repeat(4) {
+                    val other = runtime.launchFormatRepair("other-session", "fixture") { _, _ -> DesktopRepairStatus.UNCHANGED }
+                    withTimeout(5000) { runtime.repairTasks.first { it[other] == DesktopRepairStatus.UNCHANGED } }
+                }
+                assertTrue(runtime.hasUnconfirmedRepair(session), "History trimming cannot acknowledge uncertainty")
+                val displayed = c.chatRepository.getMessages(session).last()
+                assertTrue(repair.confirmCommitReload(displayed))
+                assertFalse(runtime.hasUnconfirmedRepair(session)); assertEquals("original", displayed.displayContent)
+            } finally { runtime.closeAndDrain() }
+        } }
+    }
+
     private suspend fun prepare(container: DesktopAppContainer, baseUrl: String): String {
         val character = CharacterCard.create("Character", greeting = "Greeting")
         container.characterRepository.save(character)
         val sessionId = container.characterSessionService.createSessionForCharacter(character.id)
+        // These cases own the main/repair transport, not background HEAD maintenance. The
+        // third turn must not race an unrelated memory request for the same response queue.
+        container.chatRepository.updateSession(requireNotNull(container.chatRepository.getSession(sessionId))
+            .copy(longTermMemoryEnabled = false))
         val model = ModelConfig(
             id = "model",
             displayName = "Model",

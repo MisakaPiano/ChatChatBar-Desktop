@@ -26,6 +26,20 @@ internal object DesktopFullBackupGraphValidation {
             } }
         }
         val storage = JsonFileStorage(root)
+        storage.visitEntitiesStrict("moment_posts", MomentPost.serializer()) { key, post ->
+            check(key == post.id)
+            requireMomentStorageId(post.id)
+            DesktopMomentImageVersions.retained(post).forEach { version ->
+                val reference = version.imagePath
+                if (reference.startsWith("images/")) {
+                    val file = root.resolve(reference).normalize()
+                    check(file.startsWith(root.resolve("images")) && Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS)) {
+                        "MOMENT_IMAGE_VERSION_RESOURCE_MISSING"
+                    }
+                    DesktopArchiveFiles.safe(file, false)
+                }
+            }
+        }
         val sessions = hashSetOf<String>()
         val messages = hashMapOf<String, Pair<String, Set<String>>>()
         storage.visitEntitiesStrict("chat_sessions", ChatSession.serializer()) { key, session ->
@@ -90,7 +104,7 @@ internal object DesktopFullBackupGraphValidation {
                 check(reference.fileName.matches(Regex("[A-Za-z0-9_-]{1,128}\\.cbsave")))
                 // Match production SaveSlot Archive's explicit historical custody policy.
                 // Unknown nonblank versions stay historical; all owner/audio/length checks remain.
-                check(DesktopSaveSlotInspector(retainHistoricalVoices = true).inspect(root.resolve("save_slot_packages/${reference.fileName}")).status == SlotInspectStatus.STRUCTURE_VALID)
+                check(DesktopSaveSlotInspector(retainHistoricalVoices = true, retainHistoricalReferences = true).inspect(root.resolve("save_slot_packages/${reference.fileName}")).status == SlotInspectStatus.STRUCTURE_VALID)
             } else check(slot.schemaVersion in 1..7)
         }
     }

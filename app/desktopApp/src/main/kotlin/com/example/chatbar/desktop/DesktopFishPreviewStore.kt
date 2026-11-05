@@ -14,6 +14,7 @@ internal class DesktopFishPreviewStore(private val directory: Path = createDirec
     private val directoryKey = identity(directory, true)
     private val files = linkedMapOf<Path, Any>()
     private val hashes = mutableMapOf<Path, String>()
+    private val audioMeasures = mutableMapOf<Path, Pair<Long, Long>>()
     private var total = 0L
     init { require(maxClipBytes > 0 && maxSessionBytes >= maxClipBytes) }
 
@@ -36,7 +37,7 @@ internal class DesktopFishPreviewStore(private val directory: Path = createDirec
             check(count > 0 && (expected < 0 || expected == count)) { "预览音频不完整" }
         }
         active(); verify(part)
-        DesktopMp3Validation.validate(part, maxClipBytes)
+        val durationMs = DesktopMp3Validation.validate(part, maxClipBytes)
         active(); verifyDirectory()
         val final = directory.resolve("${UUID.randomUUID()}.mp3")
         // No non-atomic fallback and no replacement of another clip.
@@ -44,7 +45,13 @@ internal class DesktopFishPreviewStore(private val directory: Path = createDirec
         files[final] = files.remove(part)!!
         hashes[final] = hash(final)
         verify(final)
+        audioMeasures[final] = durationMs to Files.size(final)
         return final
+    }
+
+    fun measurements(path: Path): Pair<Long, Long> {
+        verify(path)
+        return checkNotNull(audioMeasures[path])
     }
 
     fun verify(path: Path) {
@@ -56,7 +63,7 @@ internal class DesktopFishPreviewStore(private val directory: Path = createDirec
         verifyDirectory()
         for ((path, key) in files.toMap()) {
             check(key == identity(path, false)) { "预览清理身份不一致；文件已保留" }
-            Files.delete(path); files.remove(path); hashes.remove(path)
+            Files.delete(path); files.remove(path); hashes.remove(path); audioMeasures.remove(path)
         }
         // Fails on unknown entries; never delete them to manufacture a clean cache.
         Files.delete(directory)

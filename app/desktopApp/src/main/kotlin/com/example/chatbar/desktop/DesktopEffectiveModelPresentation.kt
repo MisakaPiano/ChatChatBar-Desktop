@@ -28,7 +28,7 @@ internal suspend fun desktopEffectiveModels(resolver: EffectiveModelResolver, ap
         configuredImageId = app.defaultImageModelId,
     )
 
-private fun ModelConfig?.toIdentity() = this?.let { DesktopModelIdentity(it.id, it.displayName) }
+private fun ModelConfig?.toIdentity() = this?.let { DesktopModelIdentity(it.id, it.desktopAccountLabel()) }
 
 internal fun desktopDesignModelChoiceLabel(id: String?, models: List<DesktopPrimaryChoice>, effective: String,
     t: DesktopUiStrings): String =

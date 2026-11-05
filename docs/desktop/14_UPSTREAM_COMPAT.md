@@ -1,3 +1,71 @@
+2026-11-05 公开1238：用户明确答复“允许先公开1238和匹配签名更新20，我应用内更新验收”。已复用冻结应用5f/R34两原包公开Release433540317（desktop-v0.1.0-preview.1238→5f48d706），四资产和notes SHA86a461…05a0已读回；签名20推原codex/update-metadata，commit a1a501a83b0566608336619d48bc99086a115dab，root1不变。固定commit与公开branch五role共十次匿名HTTP字节一致，完整178545695B安装包匿名流SHA56fce39d…cae5通过，未留重复下载/未启动安装或访问H真实资料。旧client实际15→20沿R35受控云原证明，不把匿名HTTP当新旧client运行。full157/R34/UI23原件不重跑、不重建、不合并来源PR。用户已返回，1238自更与具体功能验收由root唯一引导，仍待实际结果；1237分项PASS及role负向/行动off/Word原真人FAIL保持，不因公开提升。正式1.0目标active、T23等具体暂缓保持，本次权限不扩到后继或正式1.0发布；旧5文件/T11拒绝对象未触碰。
+
+下方历史保留。
+
+2026-11-04 本轮私有交付已备：应用冻结5f48d706；完整157实际Windows370suite2648=2628PASS+20SKIP/0FAIL，共享1239/AndroidHTML586、proxy5/NTFS7/native37/TUF14/exit4已核。R34普通升级/重开/忙拒绝/独立548及最终549文件、R35冻结旧client15→20完整下载/二验、UI23真实滚动位置与新图通过；22/157旧toolbar底部捕图由test render默认零时间造成，生产滚动未改、包未重建，原记录保留。Release433540317仍私有draft，匹配签20仅本地/受控云验，公开metadata仍19/85a、公开仍1237；无新公开许可/真人验收/代装。详见295。用户away仅挂人工，1237分项PASS和角色/行动off/Word原三FAIL保持，T23等具体暂缓及正式1.0后续范围不变。阶段清理5个外层ZIP/临时index383128287B被自动批准审查在启动前拒绝，只给blocked by policy；0B删除、不重试，最终包/原报告/所有资料保留，不影响私有交付。
+
+下方历史保留。
+
+2026-11-04 当前续接：公开1237/app304/sign19不变；用户自更、资料/草稿重开和定义N01（含当前设备中文IME）已分项通过，N02设置/菜单/显式MANAGE导入及撤销、N03导航/历史、N04顺序/图集浏览、N05当前选择both-on PNG/PDF保存打开按原范围保留。角色负向页签、行动off过滤、Word旁白/对白/内心同排版是1237原真人FAIL，Word仅文件打开/可编辑和已报图片分项保留，不能记整组PASS。未发布修复应用5f48d706见290–294；必要完整157/41773543279仍在跑，Linux共享1239/Android586与NTFS7原件通过，Windows主步骤SUCCESS尚待完整原XML/其余步骤；普通私有1238 R34/41775119786构建中，不是ready或发布。用户外出仅挂人工题；真实Provider/物理音频原四scope/其他环境/全长聊天/用户选择的生产合并等保持具体待验，validated141/整147不批量提升，无后继公开或代装/真实H操作。
+
+下方历史保留。
+
+1235/9f测试Preview及签名17已按本版明确授权公开，四资产和说明匹配，root1不变；138/R24/R26工程原件范围保持，原1234私有冻结。真人验收由协调端逐项引导；日常H未操作，validated141不自动提升，未执行19项见280。
+
+下方历史保留。
+
+2026-11-03后继：136/35c5216完整原件通过，278辅助模型参数范围实际验证；Memory/RAG cap/thinking/custom继承、120秒RAG期限、角色研究/编辑/图片JSON和Fish翻译/标签的原usage/retry保护均保留。279反推场景两阶段1e6de51c已送137仍待；4731cf5a关联视觉/Stop后补不在137。134社区及R7/R19/R20/R23各原限定证据复用，不批量提升validated141或整147。1234/c2d/sign16冻结，公开1233/15、真人待和日常H UNKNOWN保持。
+
+下方历史保留。
+
+2026-11-03后继源码：固定官方147的辅助任务参数继承补齐见278。Memory planner/summary/repair/episode/head、RAG、角色研究/补全/改写/图片JSON与Fish翻译/标签保持所选模型cap/thinking/custom字段；RAG生产总期限120秒，原Prompt/JSON/重试/取消/usage/保存边界保留。新增真实loopback final-wire与虚拟时钟回归待本片精确云端执行，不在冻结1234/c2d内。私有1234草稿431654495/签名16保持，公开请求由协调端统一等待；公开仍1233/15、日常H UNKNOWN且不操作。135/38da原件完整绿复用，不重做R7/R19/R20/R23。
+
+下方历史保留。
+
+2026-11-03私有交付检查点：私有1234/c2d交付准备完成：134完整原件绿；R19普通升级/重开/独立入口、R20真实AUTH/注册表限定PASS及最终549/548文件与二进制哈希已核。R23/41474923667使用冻结公开1233 updater实际15→16发现、177226066B完整下载和二验通过、说明一致、root1不变；采用云内metadata fetcher，不冒称匿名公网发现。R21/R22错误原件保留，首因为验证请求raw CRLF notes hash与签名LF字符串hash不同，仅修期望hash，五候选/五prior签名及原包未变。Release431654495是未公开1234草稿，四资产尺寸/SHA与说明/tag=c2d已读回，local signed16未发布；58提交/10条说明和四步最短检查已备。公开仍1233/15，1234无公开许可、真人未验，日常H UNKNOWN_UNOPERATED。
+
+下方历史保留。
+
+2026-11-03后补：134/c2d完整绿与私有1234 R19原件通过保持。R20/41471050373复用同一R19原包，最终jpackage Main AUTH实际parent exit0/accepted1/内存信号、真实HKCR/HKCU自有写撤与foreign保留、无journal、假资料和四root资源不变均成立，非SKIP；原回执的helperDescendantsRemaining=0不作证据，后代退出NOT_PROVEN。最终EXE177226066B/ab484c9f…3aca、独立ZIP190448868B/f5863e6c…6b0a及548文件/manifest549/JAR/六控制工具字节已独立核对，58提交已对应10条说明。继续匹配签名16、云端原旧client验包和私有发行草稿；1234公开未获准，公开1233/15与真人待、日常H UNKNOWN保持。
+
+下方历史保留。
+
+2026-11-03当前：134/c2d完整原件通过：主348suite/2572=2553PASS+19SKIP、shared1183/Android586/proxy5/NTFS7/native37/TUF14/exit4，社区12个Desktop新方法与7张实际图已核；133失败原件保留。私有1234 R19/285冻结同源，普通1225→1234升级、重开、冷投递、忙拒绝和独立中文入口实际通过（fresh默认profile限定）。R20/40c复用R19精确原包，只补最终Main AUTH与真实注册表归属，不重编或重做R7三包链；当前待原件，parent wait不能证明后代全退，SKIP不等于PASS。公开仍1233/签名15、真人待，日常H UNKNOWN且不操作，1226历史许可不扩作1234公开许可。
+
+下方历史保留。
+
+# 当前兼容范围 / 2026-11-02
+
+当前主动适配目标为官方 **1.4.7 / `b4fa75d296680f777be095f3121ad0c4db979f17`**。已声明完整验证baseline仍为1.4.1；这是证据边界，不是将最新版适配永久搁置。机器记录见[10](10_UPSTREAM_BASELINE.json)，当前总范围见[216](216_DESKTOP_1_0_SCOPE_GAPS_AND_EXECUTION_ROUTE.md)。
+
+最后完整应用源云端原件为[138](https://github.com/MisakaPiano/ChatChatBar-Desktop/actions/runs/41493893207) / `9f5150db3acbd9e39333c41523101fada4910cb9`：主2563PASS+19SKIP、shared1192、Android586及proxy5/NTFS7/native37/TUF14/exit4通过。反推Desktop8/shared4及旧Reaudit11实际通过，137静态归属FAIL原件保留；社区134/R20的限定范围与130–133原失败历史均保留。1235普通包及更新器结果见207/216，跨场景与19SKIP见[280](280_BETA_CROSS_SCENARIO_EVIDENCE_MATRIX.md)，不批量宣布整147兼容。
+
+| 官方147范围 | 当前Desktop状态与实际证据 |
+| --- | --- |
+| 人物发言标签改名、历史恢复 | 共享9+实际Desktop3在123通过；旧“聊天段落版本未采用”仅是下方历史图片批次的排除说明，不能概括现状。编辑正文采用当前版本policy，125原policy8/repository1限定复用。 |
+| 待完成改名任务与portable数据 | [272](272_SPEAKER_RENAME_PORTABLE_BACKUP_BOUNDARY.md)的5例125通过。选中卡有pending改名时明确拒绝旧reader不能安全重放的portable输出；内部forMerge/raw快照保留。 |
+| 世界书辅助模型、格式修复参数继承 | [271](271_UPSTREAM147_AUXILIARY_MODEL_PARAMETERS.md)，fdb实际HTTP4/Android2在125通过；不是只核helper未核调用。 |
+| Memory/RAG/角色研究与编辑/图片JSON/Fish辅助参数 | [278](278_OFFICIAL147_SELECTED_AUXILIARY_MODEL_PARAMETERS.md)，136/35c完整原件验证所选cap/thinking/custom与RAG120秒，新增共享HTTP4/virtual deadline1、实际DesktopMemory2和原usage方法保留；Prompt不改。 |
+| 图片反推的场景确认 | [279](279_OFFICIAL147_REVERSE_IMAGE_SCENE_CONFIRMATION.md)，138/9f精确Desktop8/共享4及原Reaudit11实际通过，包含关联视觉、原前置Stop/确认点击快照与提交时再编辑拒绝；137唯一静态归属失败原件保留，四图的已看观察按相同Pane blob复用。不是原生/真人或全147通过。 |
+| 角色Package默认生图参数 | [275](275_OFFICIAL147_CHARACTER_PACKAGE_IMAGE_SETTINGS.md)，Core2及实际typed JSON/PNG两原例扩展在127/128通过；schema9不变。 |
+| 预制角色声明的世界书/默认格式 | [274](274_OFFICIAL147_PRESET_DEPENDENCIES.md)，先解析完整依赖再沿原transfer提交。128原共享2及Bootstrap14/Integration3/Recovery6/Suite40通过，含取消重试、已提交ID、严格字节与用户删除不补回。 |
+| 角色编辑器与封面/头像消费这些参数 | [276](276_OFFICIAL147_CHARACTER_IMAGE_DEFAULTS.md)，ec086已实现实际global Flow、可空草稿、模型能力和请求参数；129精确原件实际Desktop4/shared1通过，含420/1100正常编辑与消费两张实图；不是只由Package回读代验。 |
+| SaveSlot/SessionCopy及Memory维护变动 | 原Desktop维护owner对应访问等位，SaveSlot23/DataCoordinator15（123）、gate15/journal3（125）限定复用；不扩称整个ChatRepository或全baseline。 |
+| Moments | 已有共享policy和Desktop时间线/调度/媒体adapter，公开1233与后补受影响路径分别记录。下方早期“尚未采用/P13以后”不是当前事实；真实Provider/用户验收仍与工程检查分开。 |
+| 社区 | [277](277_COMMUNITY_SHARED_CLIENT_AND_DESKTOP_ROUTE.md)，134/c2d的12项实际Desktop新方法及7张生产Pane/Shell图已核，包含root UI、metadata/预览、原typed冲突、快照确认和PKCE/临时versioned EXE返回；130–133原失败保留。R20复用精确1234包的实际Main AUTH/父进程退出与真实注册表自有写撤限定PASS，不证明浏览器调度、全部后代退出或真实OAuth。2026-11-02所读总开关false，真实服务/Discord联调仍待，不当永久不能实现。 |
+
+原用户明确采纳的身份提醒/头像正负词按其原具体授权执行，不借同步改其他Prompt。未发布完整Prompt文本互换保留为Desktop/Fork扩展，不能冒称官方147读取器兼容；独立Studio适配CCB，不继续为新协议追加手机读取器分发任务。
+
+上述逐项通过不代表整体1.4.7、整P18或正式1.0验收完成。公开仍1233/签名15；本段不产生新发布或日常H安装动作。
+
+后继132/2cdb实际shared1183/Android586/NTFS7/native37/TUF14/exit4通过，Desktop生产编译通过；仅两处测试凭据key集合的类型推断使test编译失败，主/proxy/Scene未执行。后继只显式共同key类型，保留完整集合相等断言；131生产nullable及Android smartcast错误已由本源闭合，UI/原生返回/真人结论仍各自待验。
+
+133/515已实际执行Desktop：2551PASS+19SKIP，唯一1FAIL为PortsTest方法非void的JUnit初始化错误，该类两方法未执行；其余社区新增10方法及六张Panel图通过/已核，Shell方法通过但该图未归档。shared1183/Android586和proxy5/NTFS7/native37/TUF14/exit4通过。后继显式Unit、补单一归档路径及预览字段/短内容布局，等待其精确源；不将当前局部通过提升整147或正式1.0。
+
+## 以下为历史阶段记录
+
+下方原有CURRENT/EXACT/PENDING/BLOCKED仅描述各自日期和限定批次。历史内容原样保留，当前冲突以本页首段和10/207/216的当前范围为准；不把早期test-only合同复活为新的执行审批。
+
 **用户权限边界已同步（2026-10-25 JST）。** [权限边界](USER_AUTHORITY_AND_PROJECT_REVIEW_BOUNDARY.md)与[开发原则](01_PROJECT_INSTRUCTIONS.md)记录用户指令：Project 仅做后置阶段性审查；未经用户采纳的新限制仅为建议，不撤销、收窄或暂停已有授权。只暂停真实阻断所影响的动作，其他已授权工作连续推进到 Preview。诊断与修复不自动扩张为真实数据/凭据写入、合并或发布权限；具体动作按已有用户授权执行，不重复索取。真实数据、存档和凭据不上 GitHub，包含 Actions Secrets、日志与产物。
 
 **CURRENT 2026-10-24 / LR3 OFFICIAL SAVE SLOT REFERENCE SEMANTICS (LIMITED):** [187](187_P11_LR3_BOUNDED_PROJECT_ACCEPTANCE.md) independently compared official145 `SaveSlotPackageStorage.Reader.validate` (voice ID/audio resource/count checks, no full voice→message-version closure), official `MessageAlternativeVersionPolicy.append` (retains last `maxVersions`) and `VoiceMessageRepository.listForSession` (session-wide voices), plus official `inferLegacyVersionId` and existing shared methods; the selected official147/code86 source bodies are recorded in [LR3 matrix](evidence/p11-lr3-20261024/P11_LR3_PROJECT_REVIEW_PACKET/SOURCE_VERSION_MATRIX.md). Test-only source-derived synthetic shows historic unknown explicit version can remain structurally official-Reader-readable while Desktop's stricter graph blocks restore. Private real first failing nested set has36 unknown nonblank versions of235, but historic pruning, actual producing APK identity, whole-app integrity and automatic safe rebind are **NOT PROVED**. No upstream bug assertion, direct Prompt edit, code86 full compatibility promotion or schema/baseline change. `D-038 BLOCKED`, G1B/C-A target decision remains [188 DRAFT](188_P11_PRODUCTION_DIRECTION_USER_DECISION_CANDIDATE.md).

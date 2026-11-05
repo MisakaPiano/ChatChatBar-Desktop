@@ -3,6 +3,8 @@ package com.example.chatbar.desktop
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
@@ -11,15 +13,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import kotlinx.coroutines.launch
 
 @Composable
-internal fun DesktopManagementImportAndDrafts(kind: DesktopTransferKind, ids: Set<String>, controller: DesktopManagementController) {
+internal fun DesktopManagementImportAction(kind: DesktopTransferKind, controller: DesktopManagementController) {
     val t = LocalDesktopUiStrings.current
     val scope = rememberCoroutineScope()
     val state by controller.state.collectAsState()
     val transfer by controller.transfer.state.collectAsState()
-    val drafts by controller.drafts.collectAsState(emptyList())
     BootstrapButton(t(when (kind) {
         DesktopTransferKind.CHARACTER -> DesktopUiText.IMPORT_CHARACTER
         DesktopTransferKind.FORMAT -> DesktopUiText.IMPORT_FORMAT
@@ -27,6 +32,46 @@ internal fun DesktopManagementImportAndDrafts(kind: DesktopTransferKind, ids: Se
     }), secondary = true, enabled = !state.busy && !transfer.busy && transfer.pendingConflict == null && transfer.unresolvedTransfer == null) {
         scope.launch { controller.import(kind) }
     }
+}
+
+@Composable internal fun DesktopManagementHeading(title: String) {
+    BasicText(title, style = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 18.sp))
+}
+
+@Composable internal fun DesktopManagementToolbar(search: String, query: String, onQuery: (String) -> Unit,
+    create: String, enabled: Boolean, onCreate: () -> Unit, kind: DesktopTransferKind, management: DesktopManagementController) {
+    @Composable fun Search(modifier: Modifier) {
+        BasicTextField(query, onQuery, modifier.heightIn(min = 48.dp)
+            .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
+            .background(DesktopBootstrapColors.input, RoundedCornerShape(8.dp)).padding(12.dp)
+            .semantics { contentDescription = search }, singleLine = true,
+            cursorBrush = DesktopBootstrapColors.inputCaret,
+            textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp),
+            decorationBox = { inner -> Box { if (query.isEmpty()) StatusText(search); inner() } })
+    }
+    @Composable fun Actions() {
+        BootstrapButton(create, icon = DesktopAppIcons.Add, enabled = enabled, onClick = onCreate)
+        DesktopManagementImportAction(kind, management)
+    }
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        if (maxWidth >= 560.dp) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically) { Search(Modifier.weight(1f)); Actions() }
+        else Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Search(Modifier.fillMaxWidth())
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { Actions() }
+        }
+    }
+}
+
+@Composable
+internal fun DesktopManagementImportAndDrafts(kind: DesktopTransferKind, ids: Set<String>, controller: DesktopManagementController,
+    showImport: Boolean = true) {
+    val t = LocalDesktopUiStrings.current
+    val scope = rememberCoroutineScope()
+    val state by controller.state.collectAsState()
+    val transfer by controller.transfer.state.collectAsState()
+    val drafts by controller.drafts.collectAsState(emptyList())
+    if (showImport) DesktopManagementImportAction(kind, controller)
     state.warning?.let { StatusText(t(it), DesktopBootstrapColors.warning) }
     if (state.characterReferences.isNotEmpty()) StatusText("${t(DesktopUiText.CHARACTERS)}: ${state.characterReferences.joinToString()}")
     if (state.sessionReferences.isNotEmpty()) StatusText("${t(DesktopUiText.SESSIONS)}: ${state.sessionReferences.joinToString()}")

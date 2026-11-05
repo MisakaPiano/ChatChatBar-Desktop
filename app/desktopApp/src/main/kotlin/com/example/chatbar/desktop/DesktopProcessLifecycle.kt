@@ -41,10 +41,10 @@ internal fun runDesktopProcessLifecycle(
     terminate(exitCode)
 }
 
-/** Retry only the documented, resumable writer-drain timeouts, never a failed file transaction. */
+/** Retry only documented writer drains and retained numeric tails, never a failed entity transaction. */
 internal suspend fun closeDesktopWithRecovery(
     close: suspend () -> Unit,
-    awaitRetry: () -> Unit = { DesktopShutdownRecoveryWindow.awaitAction(retryAllowed = true) },
+    awaitRetry: (() -> Unit)? = null,
     observeWait: () -> AutoCloseable = { DesktopShutdownWaitObserver() },
 ) {
     while (true) {
@@ -55,10 +55,14 @@ internal suspend fun closeDesktopWithRecovery(
             return
         } catch (failure: Throwable) {
             val resumable = failure is DesktopTaskDrainTimeoutException ||
-                failure is DesktopDraftDrainTimeoutException || failure is DesktopReadingPositionDrainTimeoutException
+                failure is DesktopDraftDrainTimeoutException || failure is DesktopReadingPositionDrainTimeoutException ||
+                failure is DesktopUsageDrainException
             if (!resumable) throw DesktopUnsafeShutdownException(failure)
             DesktopShutdownTrace.record(DesktopShutdownStage.DRAIN_DEFERRED)
-            try { awaitRetry() } catch (presentationFailure: Throwable) {
+            try {
+                if (awaitRetry != null) awaitRetry()
+                else DesktopShutdownRecoveryWindow.awaitAction(retryAllowed = true, statisticsPending = failure is DesktopUsageDrainException)
+            } catch (presentationFailure: Throwable) {
                 failure.addSuppressed(presentationFailure)
                 throw DesktopUnsafeShutdownException(failure)
             }
@@ -68,10 +72,10 @@ internal suspend fun closeDesktopWithRecovery(
 
 /** Remains visible after Compose disposal; closing this status window minimizes it, never exits. */
 internal object DesktopShutdownRecoveryWindow {
-    fun awaitAction(retryAllowed: Boolean) {
+    fun awaitAction(retryAllowed: Boolean, statisticsPending: Boolean = false) {
         check(!EventQueue.isDispatchThread())
         val retry = CountDownLatch(1)
-        EventQueue.invokeAndWait { present(retryAllowed) { retry.countDown() } }
+        EventQueue.invokeAndWait { present(retryAllowed, statisticsPending = statisticsPending) { retry.countDown() } }
         // An interrupted waiting thread must not release the ownership of unfinished writers.
         while (true) {
             try { retry.await(); return } catch (_: InterruptedException) { /* remain in visible recovery */ }
@@ -79,11 +83,18 @@ internal object DesktopShutdownRecoveryWindow {
     }
 
     /** EDT presentation shared by the real blocking recovery and isolated lifecycle verification. */
-    internal fun present(retryAllowed: Boolean, onRetry: () -> Unit): JFrame {
+    internal fun present(retryAllowed: Boolean, onRetry: () -> Unit): JFrame = present(retryAllowed, false, onRetry)
+
+    internal fun present(retryAllowed: Boolean, statisticsPending: Boolean, onRetry: () -> Unit): JFrame {
         check(EventQueue.isDispatchThread())
         val frame = JFrame("ChatChatBar — 安全关闭 / Safe shutdown")
+        DesktopBrandResources.applyTo(frame)
         val diagnostic = "CCB shutdown: ${if (retryAllowed) "DRAIN_DEFERRED" else "SHUTDOWN_FAILED"}"
-        val message = if (retryAllowed) {
+        val message = if (statisticsPending) {
+            "部分本地用量统计尚未保存，资料目录锁仍保留。请检查磁盘空间或写入权限，再点“重试安全关闭”。\n" +
+                "重试只保存待写统计，不会重新发送AI请求。不要移除资料目录锁。\n\n" +
+                "Local usage records are pending. Restore writable storage, then retry safe shutdown. No AI request is repeated."
+        } else if (retryAllowed) {
             "关闭尚未完成，正在保护数据。请等待后台写入结束后点击“重试安全关闭”。\n" +
                 "不要强制结束进程或移除数据目录锁。\n\n" +
                 "Shutdown is waiting for writers. Retry after work finishes. Do not force quit or remove the data lock."

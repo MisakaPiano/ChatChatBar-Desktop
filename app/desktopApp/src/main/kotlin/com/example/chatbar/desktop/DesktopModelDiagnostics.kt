@@ -22,6 +22,8 @@ internal data class DesktopModelDiagnostic(
     val preset: Boolean,
     val catalogProvider: String?,
     val credentialSource: DesktopCredentialSource,
+    val accountName: String? = null,
+    val accountProvider: String? = null,
 )
 
 internal fun AppSettings.configuredDefaultChatModelId(): String? =
@@ -63,5 +65,7 @@ internal fun desktopModelDiagnostic(
         preset = effective?.sourcePresetKey != null || effective?.id?.startsWith(PRESET_MODEL_ID_PREFIX) == true,
         catalogProvider = catalogProvider?.takeIf { effective?.sourcePresetKey != null },
         credentialSource = source,
+        accountName = effective?.credentialAccount?.name,
+        accountProvider = effective?.credentialAccount?.provider,
     )
 }

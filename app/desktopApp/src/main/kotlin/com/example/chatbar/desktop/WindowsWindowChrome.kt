@@ -18,12 +18,12 @@ import com.sun.jna.win32.StdCallLibrary
 import java.awt.Dimension
 import java.awt.EventQueue
 import java.util.concurrent.ConcurrentHashMap
-import javax.swing.JFrame
+import javax.swing.RootPaneContainer
 
 /** Windows-only, window-owned WndProc bridge. It owns no application/domain lifetime. */
 internal class WindowsWindowChrome private constructor(
-    private val window: JFrame,
-    private val chrome: DesktopWindowChrome,
+    private val window: java.awt.Window,
+    internal val chrome: DesktopWindowChrome,
 ) : AutoCloseable {
     companion object {
         private const val OWNER = "chatbar.windowChrome"
@@ -46,13 +46,14 @@ internal class WindowsWindowChrome private constructor(
         private const val WM_CAPTURECHANGED = 0x215
         private const val WM_CANCELMODE = 0x1F
 
-        fun install(window: JFrame, chrome: DesktopWindowChrome): WindowsWindowChrome {
+        fun install(window: java.awt.Window, chrome: DesktopWindowChrome): WindowsWindowChrome {
             check(DesktopWindowChrome.isWindows)
             check(EventQueue.isDispatchThread()) { "Chrome installation must run on the AWT EDT" }
-            check(window.rootPane.getClientProperty(OWNER) == null) { "Window chrome already installed" }
+            val rootPane = (window as RootPaneContainer).rootPane
+            check(rootPane.getClientProperty(OWNER) == null) { "Window chrome already installed" }
             if (!window.isDisplayable) window.addNotify()
             return WindowsWindowChrome(window, chrome).also { bridge ->
-                window.rootPane.putClientProperty(OWNER, bridge)
+                rootPane.putClientProperty(OWNER, bridge)
                 try { bridge.install() } catch (failure: Throwable) {
                     bridge.close()
                     throw IllegalStateException("Windows title bar installation failed", failure)
@@ -76,7 +77,7 @@ internal class WindowsWindowChrome private constructor(
     internal val installedHookCount get() = hooks.size
 
     private fun install() {
-        window.minimumSize = Dimension(330, 240)
+        window.minimumSize = Dimension(maxOf(330, originalMinimum.width), maxOf(240, originalMinimum.height))
         hook(hwnd, topLevel = true)
         Native.setLastError(0)
         // AWT undecorated peers start as WS_POPUP. Use a real overlapped window for shell/Snap behavior.
@@ -169,8 +170,8 @@ internal class WindowsWindowChrome private constructor(
                     setInt(12, monitor.rcWork.bottom - monitor.rcWork.top)
                     setInt(16, monitor.rcWork.left - monitor.rcMonitor.left)
                     setInt(20, monitor.rcWork.top - monitor.rcMonitor.top)
-                    setInt(24, (330 * api.GetDpiForWindow(h) / 96))
-                    setInt(28, (240 * api.GetDpiForWindow(h) / 96))
+                    setInt(24, (window.minimumSize.width * api.GetDpiForWindow(h) / 96))
+                    setInt(28, (window.minimumSize.height * api.GetDpiForWindow(h) / 96))
                 }
                 return result
             }
@@ -300,7 +301,7 @@ internal class WindowsWindowChrome private constructor(
             user.SetWindowPos(hwnd, null, 0, 0, 0, 0, 0x37)
         }
         window.minimumSize = originalMinimum
-        window.rootPane.putClientProperty(OWNER, null)
+        (window as RootPaneContainer).rootPane.putClientProperty(OWNER, null)
     }
 }
 

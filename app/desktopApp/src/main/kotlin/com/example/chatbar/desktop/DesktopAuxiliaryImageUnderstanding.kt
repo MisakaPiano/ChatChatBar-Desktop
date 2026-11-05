@@ -7,8 +7,17 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.collect
 
 /** Desktop transport adapter; prompts, envelope, resolver and failure policy are shared. */
-internal class DesktopAuxiliaryImageUnderstanding(private val transport: OpenAiStreamingTransport) {
-    suspend fun describe(encoded: String, model: ModelConfig, onDelta: (String) -> Unit): String {
+internal class DesktopAuxiliaryImageUnderstanding(
+    private val transport: OpenAiStreamingTransport,
+    private val diagnostics: DesktopTransportDiagnosticsOwner? = null,
+) {
+    suspend fun describe(encoded: String, model: ModelConfig, onDelta: (String) -> Unit): String =
+        withDesktopAuxiliaryUsage(diagnostics, model, "image-understanding", DesktopPromptDiagnosticContext("IMAGE_DESCRIPTION", "GENERATE")) { log ->
+            describe(encoded, model, onDelta, log)
+        }
+
+    suspend fun describe(encoded: String, model: ModelConfig, onDelta: (String) -> Unit,
+        diagnostics: ProviderTransportDiagnostics): String {
         val messages = AuxiliaryMessageAssembler.assemble(listOf(
             ChatApiMessage.text("system", AuxiliaryPromptAuthority.IMAGE_DESCRIPTION_PROMPT),
             ChatApiMessage.withImage("user", "", encoded),
@@ -17,7 +26,7 @@ internal class DesktopAuxiliaryImageUnderstanding(private val transport: OpenAiS
         var complete = false
         var reasoning = false
         try {
-            transport.streamMainChat(messages, model.forImageDescriptionRequest()).collect { event ->
+            transport.streamMainChat(messages, model.forImageDescriptionRequest(), diagnostics = diagnostics).collect { event ->
                 when (event) {
                     is ProviderStreamEvent.ContentDelta -> { text.append(event.text); onDelta(event.text) }
                     is ProviderStreamEvent.ReasoningDelta -> reasoning = true

@@ -2,6 +2,7 @@ package com.example.chatbar.data.local
 
 import com.example.chatbar.data.operation.AppDataOperationGate
 import com.example.chatbar.data.operation.NoOpAppDataOperationGate
+import com.example.chatbar.domain.image.NovelAiInlinePayloadStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -51,6 +52,35 @@ class JsonFileStorage(
 
     companion object {
         private const val ENTITIES_DIR = "entities"
+        private val COMPACT_STUDIO_TYPES = setOf("novelai_generation_history", "novelai_studio_draft",
+            "novelai_studio_history_undo", "novelai_studio_guidance_checkpoint")
+    }
+
+    private val studioPayloads by lazy { NovelAiInlinePayloadStore(appDataRoot.toFile()) }
+
+    /** Desktop history keeps the same content-addressed references as the current Studio draft. */
+    fun retainStudioPayload(value: String): String = studioPayloads.retain(value)
+
+    private fun openJsonInput(entityType: String, file: File, checkActive: () -> Unit = {}): InputStream {
+        val source = Files.newInputStream(file.toPath())
+        return if (entityType in COMPACT_STUDIO_TYPES) studioPayloads.compactJson(source, checkActive) else source.buffered()
+    }
+
+    private fun rethrowReadFailure(entityType: String, error: Throwable) {
+        if (error is java.util.concurrent.CancellationException) throw error
+        if (entityType in COMPACT_STUDIO_TYPES) {
+            val failure = generateSequence(error as Throwable?) { it.cause }.take(16)
+                .firstOrNull { it is IOException || it is SecurityException }
+            if (failure != null) throw IOException("生图工作室记录读取失败，请检查资源目录后重试", failure)
+        }
+    }
+
+    /** Keep the existing corrupt-file skip policy, but never disguise derived IO as absence. */
+    private inline fun <T> readOrNull(entityType: String, read: () -> T): T? = try {
+        read()
+    } catch (error: Exception) {
+        rethrowReadFailure(entityType, error)
+        null
     }
 
     val json = Json {
@@ -201,23 +231,100 @@ class JsonFileStorage(
         serializer: KSerializer<T>,
     ): EntityReadResult<T> = mutexFor(entityType).withLock {
         withContext(Dispatchers.IO) {
-            val file = appDataRoot.resolve(ENTITIES_DIR).resolve(entityType).resolve("$id.json")
-            val content = try {
-                Files.newInputStream(file).bufferedReader(Charsets.UTF_8).use { it.readText() }
-            } catch (_: NoSuchFileException) {
-                return@withContext EntityReadResult.Missing
-            } catch (error: IOException) {
-                return@withContext EntityReadResult.ReadError(error)
-            } catch (error: SecurityException) {
-                return@withContext EntityReadResult.ReadError(error)
+            readEntityStrictLocked(entityType, id, serializer)
+        }
+    }
+
+    private suspend fun <T : Any> readEntityStrictLocked(
+        entityType: String,
+        id: String,
+        serializer: KSerializer<T>,
+        rejectUnknownFields: Boolean = false,
+    ): EntityReadResult<T> {
+        require(!rejectUnknownFields || entityType !in COMPACT_STUDIO_TYPES)
+        if (entityType in COMPACT_STUDIO_TYPES) return readCompactJsonFile(
+            appDataRoot.resolve(ENTITIES_DIR).resolve(entityType).resolve("$id.json").toFile(), serializer)
+        val file = appDataRoot.resolve(ENTITIES_DIR).resolve(entityType).resolve("$id.json")
+        val content = try {
+            Files.newInputStream(file).bufferedReader(Charsets.UTF_8).use { it.readText() }
+        } catch (_: NoSuchFileException) {
+            return EntityReadResult.Missing
+        } catch (error: IOException) {
+            return EntityReadResult.ReadError(error)
+        } catch (error: SecurityException) {
+            return EntityReadResult.ReadError(error)
+        }
+        return try {
+            EntityReadResult.Valid((if (rejectUnknownFields) Json(json) { ignoreUnknownKeys = false } else json)
+                .decodeFromString(serializer, content))
+        } catch (error: SerializationException) {
+            EntityReadResult.Corrupt(error)
+        } catch (error: IllegalArgumentException) {
+            EntityReadResult.Corrupt(error)
+        }
+    }
+
+    @OptIn(ExperimentalSerializationApi::class)
+    private suspend fun <T : Any> readCompactJsonFile(file: File, serializer: KSerializer<T>): EntityReadResult<T> {
+        // Only the original source open is allowed to produce Missing. Later NoSuchFile failures
+        // can refer to derived payloads and must not permit default singleton replacement.
+        val source = try { Files.newInputStream(file.toPath()) }
+        catch (_: NoSuchFileException) { return EntityReadResult.Missing }
+        catch (error: IOException) { return EntityReadResult.ReadError(error) }
+        catch (error: SecurityException) { return EntityReadResult.ReadError(error) }
+        val context = currentCoroutineContext()
+        return try {
+            source.use { raw -> studioPayloads.compactJson(raw) { context.ensureActive() }.use { input ->
+                EntityReadResult.Valid(json.decodeFromStream(serializer, input))
+            } }
+        } catch (cancelled: java.util.concurrent.CancellationException) { throw cancelled }
+        catch (error: Exception) {
+            val io = generateSequence(error as Throwable?) { it.cause }.take(16)
+                .firstOrNull { it is IOException || it is SecurityException }
+            when {
+                io is Exception -> EntityReadResult.ReadError(io)
+                error is SerializationException || error is IllegalArgumentException -> EntityReadResult.Corrupt(error)
+                else -> throw error
             }
-            try {
-                EntityReadResult.Valid(json.decodeFromString(serializer, content))
-            } catch (error: SerializationException) {
-                EntityReadResult.Corrupt(error)
-            } catch (error: IllegalArgumentException) {
-                EntityReadResult.Corrupt(error)
+        }
+    }
+
+    /** Strict read/transform/replace shares the ordinary writer lock and publishes cache once.
+     * Reuses the streaming replacement rollback; it is not a process-crash transaction journal. */
+    suspend fun <T : Any> mutateEntitiesAtomically(
+        entityType: String,
+        ids: Set<String>,
+        serializer: KSerializer<T>,
+        transform: (Map<String, EntityReadResult<T>>) -> Map<String, T?>,
+    ): Map<String, T?> = mutateEntitiesAtomicallyImpl(entityType, ids, serializer, false, transform)
+
+    /** Metadata maintenance may opt into refusing unknown source fields before a complete typed rewrite. */
+    suspend fun <T : Any> mutateEntitiesAtomicallyStrictFields(entityType: String, ids: Set<String>, serializer: KSerializer<T>,
+        transform: (Map<String, EntityReadResult<T>>) -> Map<String, T?>): Map<String, T?> =
+        mutateEntitiesAtomicallyImpl(entityType, ids, serializer, true, transform)
+
+    private suspend fun <T : Any> mutateEntitiesAtomicallyImpl(entityType: String, ids: Set<String>, serializer: KSerializer<T>,
+        rejectUnknownFields: Boolean, transform: (Map<String, EntityReadResult<T>>) -> Map<String, T?>): Map<String, T?> = mutexFor(entityType).withLock {
+        require(ids.isNotEmpty())
+        withContext(Dispatchers.IO + kotlinx.coroutines.NonCancellable) {
+            val directory = appDataRoot.resolve(ENTITIES_DIR).resolve(entityType).toFile().canonicalFile
+            ids.forEach { id ->
+                require(id.isNotBlank() && File(directory, "$id.json").canonicalFile.parentFile == directory)
             }
+            val originals = ids.associateWith { readEntityStrictLocked(entityType, it, serializer, rejectUnknownFields) }
+            val changes = transform(originals).toMap()
+            require(changes.keys.all { it in ids })
+            if (changes.isEmpty()) return@withContext changes
+            replaceMatchingFilesStreamingLocked(
+                entityType, serializer,
+                currentMatches = { it.nameWithoutExtension in changes },
+                producer = { emit -> changes.forEach { (id, value) -> if (value != null) emit(id, value) } },
+            )
+            val flow = getCacheFlow<T>(entityType)
+            val next = flow.value.toMutableMap()
+            changes.forEach { (id, value) -> if (value == null) next.remove(id) else next[id] = value }
+            flow.value = next
+            changes
         }
     }
 
@@ -234,6 +341,8 @@ class JsonFileStorage(
                     .sortedBy { it.fileName.toString() }
                     .map { path ->
                         val storageId = path.fileName.toString().removeSuffix(".json")
+                        if (entityType in COMPACT_STUDIO_TYPES) return@map EntityFileRead(storageId,
+                            readCompactJsonFile(path.toFile(), serializer))
                         val content = try {
                             Files.newInputStream(path).bufferedReader(Charsets.UTF_8).use { it.readText() }
                         } catch (error: IOException) {
@@ -258,6 +367,33 @@ class JsonFileStorage(
      * The caller validates storage identity/relationships; exceptions invalidate the entire proof.
      * One file is retained at a time. Unknown fields and interrupted/foreign directory entries fail.
      */
+    /** Bounded durable single-record proof. Never creates a directory or repairs an index. */
+    suspend fun <T : Any> readEntityBoundedStrict(entityType: String, id: String, serializer: KSerializer<T>,
+        maximumFileBytes: Int = 8 * 1024 * 1024, validatePath: (Path) -> Unit = {}): EntityReadResult<T> =
+        mutexFor(entityType).withLock {
+            require(entityType.matches(Regex("[a-z_]+")))
+            require(id.isNotBlank() && id.length <= 256 && id !in setOf(".", "..") && id.none { it == '/' || it == '\\' || it.code < 32 })
+            require(maximumFileBytes in 1..8 * 1024 * 1024)
+            withContext(Dispatchers.IO) {
+                try {
+                    val checkedPath: (Path) -> Unit = { path ->
+                        try { validatePath(path) }
+                        catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+                        catch (error: Exception) { throw IOException("Path verification failed", error) }
+                    }
+                    val directory = strictInventoryDirectory(entityType, checkedPath) ?: return@withContext EntityReadResult.Missing
+                    val path = directory.resolve("$id.json")
+                    check(path.parent == directory && path.fileName.toString() == "$id.json") { "Unsafe entity identity" }
+                    EntityReadResult.Valid(decodeStrictInventoryRecord(path, serializer,
+                        Json(json) { ignoreUnknownKeys = false }, maximumFileBytes, checkedPath))
+                } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+                catch (_: NoSuchFileException) { EntityReadResult.Missing }
+                catch (error: SerializationException) { EntityReadResult.Corrupt(error) }
+                catch (error: IllegalArgumentException) { EntityReadResult.Corrupt(error) }
+                catch (error: Exception) { EntityReadResult.ReadError(error) }
+            }
+        }
+
     suspend fun <T : Any> visitEntitiesStrict(
         entityType: String,
         serializer: KSerializer<T>,
@@ -269,56 +405,56 @@ class JsonFileStorage(
         require(maximumFileBytes in 1..8 * 1024 * 1024)
         withContext(Dispatchers.IO) {
             val strictJson = Json(json) { ignoreUnknownKeys = false }
-            val directory = appDataRoot.toAbsolutePath().normalize().resolve(ENTITIES_DIR).resolve(entityType)
-            var ancestor = directory.root
-            for (part in directory) {
-                ancestor = ancestor.resolve(part)
-                val attributes = try {
-                    Files.readAttributes(ancestor, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
-                } catch (_: NoSuchFileException) { return@withContext 0L }
-                if (!attributes.isDirectory || attributes.isSymbolicLink || attributes.isOther)
-                    throw IOException("Unsafe inventory directory")
-                validatePath(ancestor)
-            }
+            val directory = strictInventoryDirectory(entityType, validatePath) ?: return@withContext 0L
             var count = 0L
             Files.newDirectoryStream(directory).use { entries ->
                 for (path in entries) {
                     currentCoroutineContext().ensureActive()
-                    val attributes = Files.readAttributes(path, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
-                    if (!attributes.isRegularFile || attributes.isSymbolicLink || attributes.isOther)
-                        throw IOException("Unsafe inventory entry")
-                    validatePath(path)
                     val name = path.fileName.toString()
-                    if (!name.endsWith(".json") || name.length == 5 || attributes.size() > maximumFileBytes)
-                        throw IOException("Unknown or oversized inventory entry")
-                    val bytes = Files.newInputStream(path, LinkOption.NOFOLLOW_LINKS).use {
-                        it.readNBytes(maximumFileBytes + 1)
-                    }
-                    if (bytes.size > maximumFileBytes) throw IOException("Inventory entry exceeded read budget")
-                    val text = Charsets.UTF_8.newDecoder().decode(java.nio.ByteBuffer.wrap(bytes)).toString()
-                    // Bound decoder recursion for hostile/corrupt read-only inventory records.
-                    // Syntax and field authority still belong exclusively to kotlinx.serialization.
-                    var depth = 0
-                    var quoted = false
-                    var escaped = false
-                    for (character in text) {
-                        if (quoted) {
-                            if (escaped) escaped = false
-                            else if (character == '\\') escaped = true
-                            else if (character == '"') quoted = false
-                        } else when (character) {
-                            '"' -> quoted = true
-                            '{', '[' -> if (++depth > 64) throw IOException("Inventory nesting exceeded read budget")
-                            '}', ']' -> depth--
-                        }
-                    }
-                    val value = strictJson.decodeFromString(serializer, text)
+                    val value = decodeStrictInventoryRecord(path, serializer, strictJson, maximumFileBytes, validatePath)
                     visit(name.removeSuffix(".json"), value)
                     count++
                 }
             }
             count
         }
+    }
+
+    private fun strictInventoryDirectory(entityType: String, validatePath: (Path) -> Unit): Path? {
+        val directory = appDataRoot.toAbsolutePath().normalize().resolve(ENTITIES_DIR).resolve(entityType)
+        var ancestor = directory.root
+        for (part in directory) {
+            ancestor = ancestor.resolve(part)
+            val attributes = try { Files.readAttributes(ancestor, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS) }
+                catch (_: NoSuchFileException) { return null }
+            if (!attributes.isDirectory || attributes.isSymbolicLink || attributes.isOther) throw IOException("Unsafe inventory directory")
+            validatePath(ancestor)
+        }
+        return directory
+    }
+
+    private fun <T : Any> decodeStrictInventoryRecord(path: Path, serializer: KSerializer<T>, strictJson: Json,
+        maximumFileBytes: Int, validatePath: (Path) -> Unit): T {
+        val attributes = Files.readAttributes(path, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+        if (!attributes.isRegularFile || attributes.isSymbolicLink || attributes.isOther) throw IOException("Unsafe inventory entry")
+        validatePath(path)
+        val name = path.fileName.toString()
+        if (!name.endsWith(".json") || name.length == 5 || attributes.size() > maximumFileBytes)
+            throw IOException("Unknown or oversized inventory entry")
+        val bytes = Files.newInputStream(path, LinkOption.NOFOLLOW_LINKS).use { it.readNBytes(maximumFileBytes + 1) }
+        if (bytes.size > maximumFileBytes) throw IOException("Inventory entry exceeded read budget")
+        val text = Charsets.UTF_8.newDecoder().decode(java.nio.ByteBuffer.wrap(bytes)).toString()
+        var depth = 0; var quoted = false; var escaped = false
+        for (character in text) {
+            if (quoted) {
+                if (escaped) escaped = false else if (character == '\\') escaped = true else if (character == '"') quoted = false
+            } else when (character) {
+                '"' -> quoted = true
+                '{', '[' -> if (++depth > 64) throw IOException("Inventory nesting exceeded read budget")
+                '}', ']' -> depth--
+            }
+        }
+        return strictJson.decodeFromString(serializer, text)
     }
 
     /**
@@ -331,13 +467,16 @@ class JsonFileStorage(
         serializer: KSerializer<T>
     ): T? = mutexFor(entityType).withLock {
         withContext(Dispatchers.IO) {
+            val readContext = currentCoroutineContext()
             val file = entityFile(entityType, id)
             if (!file.exists()) return@withContext null
             try {
-                file.inputStream().buffered().use { input ->
+                openJsonInput(entityType, file) { readContext.ensureActive() }.use { input ->
                     json.decodeFromStream(serializer, input)
                 }
+            } catch (cancelled: java.util.concurrent.CancellationException) { throw cancelled
             } catch (e: Exception) {
+                rethrowReadFailure(entityType, e)
                 null
             }
         }
@@ -352,19 +491,22 @@ class JsonFileStorage(
         serializer: KSerializer<T>
     ): List<T> = mutexFor(entityType).withLock {
         withContext(Dispatchers.IO) {
+            val readContext = currentCoroutineContext()
             val dir = entityDir(entityType)
             val entities = mutableMapOf<String, T>()
             dir.listFiles { f -> f.extension == "json" }?.forEach { file ->
                 try {
-                    val entity = file.inputStream().buffered().use { input ->
+                    val entity = openJsonInput(entityType, file) { readContext.ensureActive() }.use { input ->
                         json.decodeFromStream(serializer, input)
                     }
                     entities[file.nameWithoutExtension] = entity
-                } catch (_: Exception) { /* skip corrupt files */ }
+                } catch (cancelled: java.util.concurrent.CancellationException) { throw cancelled
+                } catch (error: Exception) { rethrowReadFailure(entityType, error) /* skip corrupt files */ }
             }
 
             // 初始化缓存
             val flow = getCacheFlow<T>(entityType)
+            readContext.ensureActive()
             flow.value = entities
 
             entities.values.toList()
@@ -383,11 +525,11 @@ class JsonFileStorage(
                 .listFiles { file -> file.extension == "json" }
                 .orEmpty()
                 .mapNotNull { file ->
-                    runCatching {
-                        file.inputStream().buffered().use { input ->
+                    readOrNull(entityType) {
+                        openJsonInput(entityType, file).use { input ->
                             transform(json.decodeFromStream(serializer, input))
                         }
-                    }.getOrNull()
+                    }
                 }
         }
     }
@@ -439,10 +581,11 @@ class JsonFileStorage(
                 .orEmpty()
                 .forEach { file ->
                     val entity = try {
-                        file.inputStream().buffered().use { input ->
+                        openJsonInput(entityType, file).use { input ->
                             json.decodeFromStream(serializer, input)
                         }
-                    } catch (_: Exception) {
+                    } catch (error: Exception) {
+                        rethrowReadFailure(entityType, error)
                         return@forEach
                     }
                     if (predicate(entity)) matches.add(entity)
@@ -463,12 +606,12 @@ class JsonFileStorage(
                 .listFiles { file -> file.extension == "json" }
                 .orEmpty()
                 .forEach { file ->
-                    val entity = runCatching {
-                        file.inputStream().buffered().use { input ->
+                    val entity = readOrNull(entityType) {
+                        openJsonInput(entityType, file).use { input ->
                             @OptIn(ExperimentalSerializationApi::class)
                             json.decodeFromStream(serializer, input)
                         }
-                    }.getOrNull() ?: return@forEach
+                    } ?: return@forEach
                     if (predicate(entity)) action(entity)
                 }
         }
@@ -489,14 +632,37 @@ class JsonFileStorage(
                 }
                 .orEmpty()
                 .mapNotNull { file ->
-                    runCatching {
-                        file.inputStream().buffered().use { input ->
+                    readOrNull(entityType) {
+                        openJsonInput(entityType, file).use { input ->
                             transform(json.decodeFromStream(serializer, input))
                         }
-                    }.getOrNull()
+                    }
                 }
         }
     }
+
+    /** Selected-prefix mutation proof: no index repair, skipped corrupt records, new directory or file-size cap. */
+    @OptIn(ExperimentalSerializationApi::class)
+    suspend fun <T : Any> readEntitiesByPrefixStrict(entityType: String, prefix: String, serializer: KSerializer<T>,
+        validate: (String, T) -> Unit = { _, _ -> }): List<T> =
+        mutexFor(entityType).withLock {
+            require(entityType.matches(Regex("[a-z_]+")) && prefix.isNotBlank() && prefix.none { it == '/' || it == '\\' || it.code < 32 })
+            withContext(Dispatchers.IO) {
+                val directory = strictInventoryDirectory(entityType, {}) ?: return@withContext emptyList()
+                val strict = Json(json) { ignoreUnknownKeys = false }
+                Files.newDirectoryStream(directory).use { entries ->
+                    entries.filter { it.fileName.toString().endsWith(".json") && it.fileName.toString().startsWith(prefix) }
+                        .sortedBy { it.fileName.toString() }.map { path ->
+                            currentCoroutineContext().ensureActive()
+                            val attributes = Files.readAttributes(path, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+                            require(attributes.isRegularFile && !attributes.isSymbolicLink && !attributes.isOther)
+                            Files.newInputStream(path).buffered().use { strict.decodeFromStream(serializer, it) }.also {
+                                validate(path.fileName.toString().removeSuffix(".json"), it)
+                            }
+                        }
+                }
+            }
+        }
 
     /** 按明确存储 ID 读取一批实体；结果顺序与 ids 一致。 */
     @OptIn(ExperimentalSerializationApi::class)
@@ -509,11 +675,11 @@ class JsonFileStorage(
             ids.mapNotNull { id ->
                 val file = entityFile(entityType, id)
                 if (!file.isFile) return@mapNotNull null
-                runCatching {
-                    file.inputStream().buffered().use { input ->
+                readOrNull(entityType) {
+                    openJsonInput(entityType, file).use { input ->
                         json.decodeFromStream(serializer, input)
                     }
-                }.getOrNull()
+                }
             }
         }
     }
@@ -595,12 +761,12 @@ class JsonFileStorage(
             entityType = entityType,
             serializer = serializer,
             currentMatches = { file ->
-                runCatching {
-                    file.inputStream().buffered().use { input ->
+                readOrNull(entityType) {
+                    openJsonInput(entityType, file).use { input ->
                         @OptIn(ExperimentalSerializationApi::class)
                         predicate(json.decodeFromStream(serializer, input))
                     }
-                }.getOrDefault(false)
+                } ?: false
             },
             producer = producer
         )
@@ -686,12 +852,12 @@ class JsonFileStorage(
                 .listFiles { file -> file.extension == "json" }
                 .orEmpty()
                 .count { file ->
-                    val matches = runCatching {
-                        file.inputStream().buffered().use { input ->
+                    val matches = readOrNull(entityType) {
+                        openJsonInput(entityType, file).use { input ->
                             @OptIn(ExperimentalSerializationApi::class)
                             predicate(json.decodeFromStream(serializer, input))
                         }
-                    }.getOrDefault(false)
+                    } ?: false
                     matches && file.delete()
                 }
         }
@@ -748,12 +914,12 @@ class JsonFileStorage(
                 .listFiles { file -> file.extension == "json" }
                 .orEmpty()
                 .mapNotNull { file ->
-                    val matches = runCatching {
-                        file.inputStream().buffered().use { input ->
+                    val matches = readOrNull(entityType) {
+                        openJsonInput(entityType, file).use { input ->
                             @OptIn(ExperimentalSerializationApi::class)
                             predicate(json.decodeFromStream(serializer, input))
                         }
-                    }.getOrDefault(false)
+                    } ?: false
                     file.nameWithoutExtension.takeIf { matches && file.delete() }
                 }
 
@@ -815,7 +981,7 @@ class JsonFileStorage(
         }
     }
 
-    private fun <T : Any> readSingletonOrThrow(entityType: String, serializer: KSerializer<T>): T? {
+    private suspend fun <T : Any> readSingletonOrThrow(entityType: String, serializer: KSerializer<T>): T? {
         val result = readSingleton(singletonFile(entityType), serializer)
         val failure = when (result) {
             is SingletonReadResult.Corrupt -> SingletonReadException(entityType, true, result.cause)
@@ -835,7 +1001,14 @@ class JsonFileStorage(
         return (result as? SingletonReadResult.Valid)?.value
     }
 
-    private fun <T : Any> readSingleton(file: File, serializer: KSerializer<T>): SingletonReadResult<T> {
+    private suspend fun <T : Any> readSingleton(file: File, serializer: KSerializer<T>): SingletonReadResult<T> {
+        if (file.nameWithoutExtension in COMPACT_STUDIO_TYPES) return when (val result = readCompactJsonFile(file, serializer)) {
+            EntityReadResult.Missing -> SingletonReadResult.Missing
+            is EntityReadResult.Valid -> SingletonReadResult.Valid(result.value)
+            is EntityReadResult.Corrupt -> SingletonReadResult.Corrupt(result.cause)
+            is EntityReadResult.ReadError -> SingletonReadResult.ReadError(
+                result.cause as? IOException ?: IOException("无法访问本地文件", result.cause))
+        }
         val content = try {
             Files.newInputStream(file.toPath()).bufferedReader(Charsets.UTF_8).use { it.readText() }
         } catch (_: NoSuchFileException) {

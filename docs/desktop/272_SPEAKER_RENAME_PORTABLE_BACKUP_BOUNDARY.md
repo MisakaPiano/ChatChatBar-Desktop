@@ -1,0 +1,9 @@
+# 272 — 未完成人物改名与旧安卓版导出的局部边界
+
+4e5f本地恢复计划能区分消息before/after，但固定官方147会忽略新增plan/protocol字段，并在启动时无条件重放旧renames列表。链式A→B/B→C首消息已成B、后续写失败，再导入官方147会把它变C；交换A/B也会翻转。此为合成复现目标，不宣称真实用户资料已经发生损坏。
+
+portable导出在清单选择后、资源映射和发布前，仅检查选中的角色卡：任何未完成的pending人物改名会明确拒绝。不会删除/改写任务、伪造完成或猜进度。无关卡可单独选出；非重叠的函数幂等也不足以放行：准备后用户可以把受计划保护的消息编辑为含旧名的新文本，旧端会覆盖这次编辑，而新Desktop必须按指纹拒绝。plan为空或尚未准备也不作为放行依据：清除任务失败后可追加当前新名字的消息，旧端仍会错改。用户可先在Desktop完成原恢复任务后再导出。原data/credentials/export清理和正常选择保留。
+
+对wire84旧v1及wire85/86现代v2面向旧官方consumer的portable导出均启用。内部 `forMerge` 原始源快照、迁移源准备、普通本地raw快照保留完整任务，未加全局snapshot门。内部快照不是给旧安卓版重放任务的兼容承诺。
+
+新增 `DesktopSpeakerRenamePortableBackupTest` 通过真实partial durable写、现代mapping/writer与冻结147 codec构造内部反例；冻结147 task模型在unknown-keys decoder下实际丢弃扩展，再执行冻结原service旧重放代码。fixture原任务/entity源来自固定 `b4fa75d296680f777be095f3121ad0c4db979f17`，仅namespace/class改名，origin.json绑定前后SHA；repo旧直接替换方法仍原实现。真实新旧用户service拒绝有问题的选中导出、无最终文件且源字节保留；内部快照仍保留计划；本地完成后导出成功。另外实核排除受影响卡可导出，非重叠任务在准备后编辑原文同样通过冻结旧reader证明会误改，两个出口均拒绝；尚未prepare也拒绝不明旧重放，清除失败保留空计划后新增当前人物B的消息则通过实际旧reader复现B变C。共5测试方法，反例循环chain/swap及两archive出口。尚待精确源云验，不把源码当实际PASS，不读写真实手机包。

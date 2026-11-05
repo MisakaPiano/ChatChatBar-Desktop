@@ -12,6 +12,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -22,6 +23,9 @@ import kotlinx.coroutines.flow.asStateFlow
 
 enum class DesktopTaskKind { REAL_CHAT, NOVELAI }
 enum class DesktopChatOperation { SEND, REGENERATE }
+
+/** Full active UI text only; excluded from bounded task history and diagnostic records. */
+internal data class DesktopActiveChatStream(val content: String, val reasoningContent: String)
 
 enum class DesktopTaskStatus { RUNNING, COMPLETED, FAILED, USER_STOPPED, CANCELLED }
 
@@ -39,6 +43,7 @@ data class DesktopTaskEntry(
     val operation: DesktopChatOperation = DesktopChatOperation.SEND,
     val targetMessageId: String? = null,
     val canRetry: Boolean = false,
+    val persistedUserMessageId: String? = null,
 )
 
 class DesktopTaskAdmissionException(message: String) : IllegalStateException(message)
@@ -46,6 +51,17 @@ class DesktopTaskAdmissionException(message: String) : IllegalStateException(mes
 class DesktopTaskDrainTimeoutException(message: String) : IllegalStateException(message)
 
 internal data class DesktopRepairTaskIdentity(val taskId: String, val sessionId: String, val messageId: String)
+internal enum class DesktopOwnedWorkKind { DOCUMENT, CARD_DESIGN, CREATIVE, CHARACTER_AI, CHARACTER_APPEARANCE, CHARACTER_IMAGE, WORLD_BOOK_AI }
+internal data class DesktopOwnedWorkEntry(val taskId: String, val kind: DesktopOwnedWorkKind, val createdAt: Long,
+    val status: DesktopTaskStatus = DesktopTaskStatus.RUNNING, val characterId: String? = null,
+    val documentId: String? = null, val draftSessionId: String? = null, val sessionId: String? = null,
+    val publicationUnconfirmed: Boolean = false)
+
+internal data class DesktopChatPostProcessResult(
+    val reply: DesktopRealChatResult,
+    val notice: String? = null,
+    val blockDownstream: Boolean = false,
+)
 
 /** Application-owned jobs. Chat retains request, transport, and persistence ownership. */
 internal class DesktopTaskRuntime(
@@ -55,6 +71,8 @@ internal class DesktopTaskRuntime(
     private val clock: () -> Long = System::currentTimeMillis,
     private val completedHistoryLimit: Int = 40,
     private val onChatCompleted: suspend (DesktopRealChatResult, () -> Boolean) -> String? = { _, _ -> null },
+    private val postProcessReply: suspend (String, DesktopRealChatResult, DesktopChatGenerationControl) -> DesktopChatPostProcessResult =
+        { _, reply, _ -> DesktopChatPostProcessResult(reply) },
 ) {
     init { require(completedHistoryLimit > 0) }
     private val lock = Any()
@@ -63,12 +81,18 @@ internal class DesktopTaskRuntime(
     val imageProgress = DesktopImageTaskProgress(scope)
     private val mutableTasks = MutableStateFlow<List<DesktopTaskEntry>>(emptyList())
     val tasks: StateFlow<List<DesktopTaskEntry>> = mutableTasks.asStateFlow()
+    private val mutableOwnedWork = MutableStateFlow<List<DesktopOwnedWorkEntry>>(emptyList())
+    internal val ownedWork = mutableOwnedWork.asStateFlow()
+    private val mutableActiveChatStreams = MutableStateFlow<Map<String, DesktopActiveChatStream>>(emptyMap())
+    internal val activeChatStreams = mutableActiveChatStreams.asStateFlow()
     private val activeJobs = mutableMapOf<String, Job>()
     private val documentPreparations = mutableMapOf<Pair<String, String>, String>()
+    private val cardDesigns = mutableMapOf<String, String>()
     private val activeSessions = mutableSetOf<String>()
     private val stopControls = mutableMapOf<String, DesktopChatGenerationControl>()
     private val repairControls = mutableMapOf<String, DesktopRepairControl>()
     private val repairSessions = mutableSetOf<String>()
+    private val uncertainRepairs = mutableMapOf<String, DesktopRepairTaskIdentity>()
     private val messageMutations = mutableSetOf<String>()
     private val mutableRepairIdentities = MutableStateFlow<Map<String, DesktopRepairTaskIdentity>>(emptyMap())
     val repairIdentities: StateFlow<Map<String, DesktopRepairTaskIdentity>> = mutableRepairIdentities.asStateFlow()
@@ -85,20 +109,26 @@ internal class DesktopTaskRuntime(
     private var maintenance = false
 
     /** Structured caller child, also registered in the application's existing shutdown drain.
-     * No session admission, task UI/history, retries, source text or embeddings are retained. */
-    suspend fun <T> withDocumentPreparation(characterId: String, documentId: String, work: suspend () -> T): T = coroutineScope {
+     * No session admission or retries. Only body-free identity/status metadata is exposed. */
+    suspend fun <T> withDocumentPreparation(characterId: String, documentId: String,
+        usageContext: DesktopUsageContext = DesktopUsageContext(DesktopUsageSource.CHARACTER_CARD,
+            cardId = characterId, subjectId = documentId), work: suspend () -> T): T = coroutineScope {
         val key = characterId to documentId
+        val publication = DesktopIndexPublicationEvidence(currentCoroutineContext()[DesktopIndexPublicationEvidence])
         val job = synchronized(lock) {
             if (!accepting || maintenance || key in documentPreparations)
                 throw DesktopTaskAdmissionException("Document preparation unavailable")
             val id = UUID.randomUUID().toString()
-            val child = async(start = CoroutineStart.LAZY) { work() }
+            val child = async(DesktopUsageParent(usageContext.copy(taskId = id)) + publication, start = CoroutineStart.LAZY) { work() }
             documentPreparations[key] = id
             activeJobs[id] = child
-            child.invokeOnCompletion {
+            mutableOwnedWork.value = listOf(DesktopOwnedWorkEntry(id, DesktopOwnedWorkKind.DOCUMENT, clock(),
+                characterId = characterId, documentId = documentId, sessionId = usageContext.sessionId)) + mutableOwnedWork.value
+            child.invokeOnCompletion { cause ->
                 synchronized(lock) {
                     activeJobs.remove(id)
                     if (documentPreparations[key] == id) documentPreparations.remove(key)
+                    finishOwnedWork(id, cause, publication.mayHaveChanged)
                 }
             }
             child
@@ -109,6 +139,45 @@ internal class DesktopTaskRuntime(
 
     fun hasDocumentPreparation(characterId: String, documentId: String): Boolean = synchronized(lock) {
         (characterId to documentId) in documentPreparations
+    }
+
+    /** Card creation has no chat/session admission. The caller child still joins maintenance/shutdown. */
+    suspend fun <T> withCardDesign(draftSessionId: String, formatCardCandidate: Boolean = false,
+        publishWorkRow: Boolean = true, creativeKind: DesktopOwnedWorkKind = DesktopOwnedWorkKind.CREATIVE,
+        usageContext: DesktopUsageContext? = null,
+        work: suspend () -> T): T = coroutineScope {
+        require(creativeKind !in setOf(DesktopOwnedWorkKind.DOCUMENT, DesktopOwnedWorkKind.CARD_DESIGN))
+        require(!formatCardCandidate || creativeKind == DesktopOwnedWorkKind.CREATIVE)
+        val job = synchronized(lock) {
+            if (!accepting || maintenance || draftSessionId in cardDesigns)
+                throw DesktopTaskAdmissionException("格式卡生成暂不可用")
+            val id = UUID.randomUUID().toString()
+            val child = async(usageContext?.let { DesktopUsageParent(it.copy(taskId = id)) }
+                ?: kotlin.coroutines.EmptyCoroutineContext, start = CoroutineStart.LAZY) { work() }
+            cardDesigns[draftSessionId] = id
+            activeJobs[id] = child
+            if (publishWorkRow) mutableOwnedWork.value = listOf(DesktopOwnedWorkEntry(id,
+                if (formatCardCandidate) DesktopOwnedWorkKind.CARD_DESIGN else creativeKind, clock(),
+                draftSessionId = draftSessionId)) + mutableOwnedWork.value
+            child.invokeOnCompletion { cause ->
+                synchronized(lock) {
+                    activeJobs.remove(id)
+                    if (cardDesigns[draftSessionId] == id) cardDesigns.remove(draftSessionId)
+                    if (publishWorkRow) finishOwnedWork(id, cause)
+                }
+            }
+            child
+        }
+        job.start()
+        job.await()
+    }
+
+    private fun finishOwnedWork(id: String, cause: Throwable?, publicationMayHaveChanged: Boolean = false) {
+        val status = when (cause) { null -> DesktopTaskStatus.COMPLETED; is CancellationException -> DesktopTaskStatus.CANCELLED; else -> DesktopTaskStatus.FAILED }
+        var completed = 0
+        mutableOwnedWork.value = mutableOwnedWork.value.map { if (it.taskId == id)
+            it.copy(status = status, publicationUnconfirmed = cause != null && publicationMayHaveChanged) else it }
+            .filter { it.status == DesktopTaskStatus.RUNNING || ++completed <= completedHistoryLimit }
     }
 
     fun launchFormatRepair(sessionId: String, messageId: String,
@@ -155,14 +224,65 @@ internal class DesktopTaskRuntime(
     }
 
     private fun finishRepair(id: String, status: DesktopRepairStatus) {
+        if (status == DesktopRepairStatus.COMMIT_UNCERTAIN)
+            mutableRepairIdentities.value[id]?.let { uncertainRepairs[id] = it }
         val entries = mutableRepairTasks.value + (id to status)
         val completed = entries.filterValues { it != DesktopRepairStatus.RUNNING }.keys.toList().takeLast(completedHistoryLimit).toSet()
         mutableRepairTasks.value = entries.filter { it.value == DesktopRepairStatus.RUNNING || it.key in completed }
         mutableRepairIdentities.value = mutableRepairIdentities.value.filterKeys { it in mutableRepairTasks.value }
     }
 
+    fun hasUnconfirmedRepair(sessionId: String): Boolean = synchronized(lock) {
+        uncertainRepairs.values.any { it.sessionId == sessionId }
+    }
+
+    /** Only the repair controller's explicit, strict snapshot confirmation calls this. */
+    fun confirmRepairCommit(taskId: String) = synchronized(lock) { uncertainRepairs.remove(taskId); Unit }
+
+    /** Inline work keeps the parent chat's job and session admission continuously owned. */
+    suspend fun runInlineFormatRepair(parentTaskId: String, result: DesktopRealChatResult,
+        parentControl: DesktopChatGenerationControl,
+        work: suspend (String, DesktopRepairControl) -> DesktopRepairStatus): String {
+        val sessionId = result.assistant.sessionId
+        val id = UUID.randomUUID().toString()
+        val control = DesktopRepairControl()
+        synchronized(lock) {
+            check(activeJobs[parentTaskId] != null && stopControls[parentTaskId] === parentControl &&
+                sessionId in activeSessions && mutableTasks.value.any { it.taskId == parentTaskId &&
+                    it.kind == DesktopTaskKind.REAL_CHAT && it.status == DesktopTaskStatus.RUNNING && it.sessionId == sessionId })
+            check(sessionId !in repairSessions)
+            repairSessions += sessionId
+            repairControls[id] = control
+            mutableRepairIdentities.value += id to DesktopRepairTaskIdentity(id, sessionId, result.assistant.id)
+            mutableRepairTasks.value += id to DesktopRepairStatus.RUNNING
+        }
+        var forwarding: AutoCloseable? = null
+        var status = DesktopRepairStatus.CANCELLED
+        try {
+            forwarding = parentControl.forwardStopTo { control.requestStop() }
+            status = work(id, control)
+            return id
+        }
+        finally {
+            forwarding?.close()
+            synchronized(lock) {
+                repairControls.remove(id)
+                repairSessions.remove(sessionId)
+                finishRepair(id, status)
+            }
+        }
+    }
+
     fun hasActiveSessionTask(sessionId: String): Boolean = synchronized(lock) {
         sessionId in activeSessions || mutableTasks.value.any { it.sessionId == sessionId && it.status == DesktopTaskStatus.RUNNING }
+    }
+
+    /** New replies and image requests do not rewrite a completed old voice source. */
+    fun hasActiveVoiceSourceMutation(sessionId: String, messageId: String): Boolean = synchronized(lock) {
+        !accepting || maintenance || sessionId in messageMutations || runningRepair(sessionId, messageId) != null ||
+            uncertainRepairs.values.any { it.sessionId == sessionId && it.messageId == messageId } ||
+            mutableTasks.value.any { it.kind == DesktopTaskKind.REAL_CHAT && it.status == DesktopTaskStatus.RUNNING &&
+                it.sessionId == sessionId && it.targetMessageId == messageId }
     }
 
     fun runningRepair(sessionId: String, messageId: String? = null): DesktopRepairTaskIdentity? = synchronized(lock) {
@@ -209,7 +329,9 @@ internal class DesktopTaskRuntime(
             throw DesktopTaskAdmissionException("已有图像任务运行，请等待或停止")
         val id = UUID.randomUUID().toString()
         if (retryable) imageRetryCheckpoints[id] = ImageRetryCheckpoint(label, sessionId, targetMessageId, work)
-        val job = scope.launch(start = CoroutineStart.LAZY) {
+        val usageParent = DesktopUsageContext(if (sessionId == null) DesktopUsageSource.OTHER else DesktopUsageSource.CHAT,
+            taskId = id, sessionId = sessionId, subjectId = targetMessageId)
+        val job = scope.launch(DesktopUsageParent(usageParent), start = CoroutineStart.LAZY) {
             update(id) { it.copy(startedAt = clock()) }
             try {
                 work(DesktopImageTaskReporter(
@@ -287,48 +409,70 @@ internal class DesktopTaskRuntime(
         val createdAt = clock()
         synchronized(lock) {
             if (!accepting || maintenance) throw DesktopTaskAdmissionException("Task runtime is closing")
+            if (hasUnconfirmedRepair(sessionId)) throw DesktopTaskAdmissionException("格式修复提交状态未确认，请先重新加载并核对消息")
             if (sessionId in activeSessions || sessionId in messageMutations) {
                 throw DesktopTaskAdmissionException("该会话已有正在生成的回复")
             }
-            val launched = scope.launch(start = CoroutineStart.LAZY) {
+            val launched = scope.launch(DesktopUsageParent(DesktopUsageContext(DesktopUsageSource.CHAT,
+                taskId = taskId, sessionId = sessionId)), start = CoroutineStart.LAZY) {
                 update(taskId) { it.copy(startedAt = clock()) }
                 var recorder: DesktopTransportDiagnosticRecorder? = null
                 var terminalStatus = DesktopTaskStatus.CANCELLED
                 var terminalMessage = "Cancelled"
                 var terminalCompletion: com.example.chatbar.domain.chat.ProviderCompletionMetadata? = null
                 try {
-                    val observer = DesktopRealChatObserver { update ->
-                        val safeContent = recorder?.safeText(update.content)
-                            ?: DesktopDiagnosticScrubber("").text(update.content, PREVIEW_LIMIT)
-                        val safeReasoning = recorder?.safeText(update.reasoningContent)
-                            ?: DesktopDiagnosticScrubber("").text(update.reasoningContent, PREVIEW_LIMIT)
-                        update(taskId) { current ->
-                            current.copy(
-                                contentPreview = safeContent.takeLast(PREVIEW_LIMIT),
-                                reasoningPreview = safeReasoning.takeLast(PREVIEW_LIMIT),
-                                targetMessageId = update.targetMessageId ?: current.targetMessageId,
-                                message = update.status ?: current.message,
-                            )
+                    val observer = object : DesktopRealChatObserver {
+                        override fun onUserMessagePersisted(messageId: String) {
+                            update(taskId) { it.copy(persistedUserMessageId = messageId) }
+                        }
+
+                        override fun onUpdate(update: DesktopRealChatStreamUpdate) {
+                            synchronized(lock) {
+                                if (mutableTasks.value.any { it.taskId == taskId && it.status == DesktopTaskStatus.RUNNING }) {
+                                    mutableActiveChatStreams.value = mutableActiveChatStreams.value +
+                                        (taskId to DesktopActiveChatStream(update.content, update.reasoningContent))
+                                }
+                            }
+                            val safeContent = recorder?.safeText(update.content)
+                                ?: DesktopDiagnosticScrubber("").text(update.content, PREVIEW_LIMIT)
+                            val safeReasoning = recorder?.safeText(update.reasoningContent)
+                                ?: DesktopDiagnosticScrubber("").text(update.reasoningContent, PREVIEW_LIMIT)
+                            update(taskId) { current ->
+                                current.copy(
+                                    contentPreview = safeContent.takeLast(PREVIEW_LIMIT),
+                                    reasoningPreview = safeReasoning.takeLast(PREVIEW_LIMIT),
+                                    targetMessageId = update.targetMessageId ?: current.targetMessageId,
+                                    message = update.status ?: current.message,
+                                )
+                            }
                         }
                     }
                     val diagnosticFactory: (com.example.chatbar.data.local.entity.ModelConfig) ->
                         com.example.chatbar.domain.chat.ProviderTransportDiagnostics = { model ->
-                        diagnostics.begin(taskId, sessionId, model).also { recorder = it }
+                        diagnostics.begin(taskId, sessionId, model,
+                            DesktopUsageContext(DesktopUsageSource.CHAT, taskId = taskId, sessionId = sessionId),
+                            DesktopPromptDiagnosticContext("CHAT", "GENERATE")).also { recorder = it }
                     }
-                    val result = if (messageId == null) {
+                    val generated = if (messageId == null) {
                         realChat.sendText(sessionId, content, observer, control, diagnosticFactory, attachments)
                     } else {
                         realChat.regenerate(sessionId, messageId, observer, control, diagnosticFactory)
                     }
-                    terminalStatus = if (result.failureMessage == null) {
+                    val post = if (generated.failureMessage == null && !control.isStopRequested())
+                        postProcessReply(taskId, generated, control) else DesktopChatPostProcessResult(generated)
+                    val result = post.reply
+                    terminalStatus = if (post.blockDownstream) DesktopTaskStatus.FAILED else if (control.isStopRequested())
+                        DesktopTaskStatus.USER_STOPPED else if (result.failureMessage == null) {
                         DesktopTaskStatus.COMPLETED
                     } else {
                         DesktopTaskStatus.FAILED
                     }
-                    terminalMessage = result.failureMessage ?: result.inputNotice?.let { "Completed · $it" } ?: "Completed"
+                    terminalMessage = if (post.blockDownstream) "格式修复结果待核对；后续自动处理已暂停"
+                        else result.failureMessage ?: result.inputNotice?.let { "Completed · $it" } ?: "Completed"
+                    post.notice?.let { terminalMessage += " · $it" }
                     terminalCompletion = result.completion
                     try {
-                        onChatCompleted(result, control::isStopRequested)?.let { terminalMessage += " · $it" }
+                        if (!post.blockDownstream) onChatCompleted(result, control::isStopRequested)?.let { terminalMessage += " · $it" }
                     } catch (cancelled: CancellationException) { throw cancelled }
                     catch (_: Exception) { terminalMessage += " · 自动生图未启动" }
                 } catch (stopped: DesktopUserStoppedChatException) {
@@ -353,6 +497,7 @@ internal class DesktopTaskRuntime(
                         activeSessions.remove(sessionId)
                         stopControls.remove(taskId)
                         finish(taskId, terminalStatus, safeMessage)
+                        mutableActiveChatStreams.value = mutableActiveChatStreams.value - taskId
                     }
                 }
             }
@@ -367,6 +512,7 @@ internal class DesktopTaskRuntime(
                         sessionId = sessionId,
                         createdAt = createdAt,
                         operation = if (messageId == null) DesktopChatOperation.SEND else DesktopChatOperation.REGENERATE,
+                        targetMessageId = messageId,
                     ),
                 ) + mutableTasks.value,
             )
@@ -379,6 +525,7 @@ internal class DesktopTaskRuntime(
                         stopControls.remove(taskId)
                         finish(taskId, DesktopTaskStatus.CANCELLED, "Cancelled")
                     }
+                    mutableActiveChatStreams.value = mutableActiveChatStreams.value - taskId
                 }
             }
             launched.start()

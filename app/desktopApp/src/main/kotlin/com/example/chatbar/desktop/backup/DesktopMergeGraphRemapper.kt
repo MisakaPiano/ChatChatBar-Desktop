@@ -10,9 +10,13 @@ internal class DesktopMergeGraphRemapper(
     private val identity: DesktopMergeIdentity,
     private val checkActive: () -> Unit = {},
 ) {
-    private val proofs = DesktopMergeMemoryProofs(records, identity, checkActive)
+    // Live memory and each historical archive are independent proof graphs.
+    private val proofs = DesktopMergeMemoryProofs(records.filter { it.type != "save_slots" }, identity, checkActive)
 
     fun rewrite(record: DesktopMergeRecord, mapResource: (String, List<String>) -> String = { value, _ -> value }): JsonObject {
+        val originalValue = record.value
+        val scopedProofs = if (record.type == "save_slots")
+            DesktopMergeMemoryProofs(listOf(DesktopMergeRecord(record.relative, originalValue)), identity, checkActive) else proofs
         fun walk(value: JsonElement, path: List<String>): JsonElement {
             checkActive()
             require(path.size <= 128) { "MERGE_JSON_DEPTH" }
@@ -36,14 +40,14 @@ internal class DesktopMergeGraphRemapper(
                         result[mappedKey] = walk(child, path + key)
                     }
                     val mapped = JsonObject(result)
-                    if (DesktopMergeMemoryProofs.isNode(record, path)) proofs.rewrite(value, mapped) else mapped
+                    if (DesktopMergeMemoryProofs.isNode(record, path)) scopedProofs.rewrite(value, mapped) else mapped
                 }
                 is JsonArray -> JsonArray(value.map { walk(it, path) })
                 is JsonPrimitive -> if (value.isString) JsonPrimitive(identity.string(record, value.content, path)) else value
             }
         }
         // Resource recognition remains the existing official stream policy; arbitrary text is untouched.
-        val rewritten = walk(record.value, emptyList()).jsonObject
+        val rewritten = walk(originalValue, emptyList()).jsonObject
         return backupJson.parseToJsonElement(DesktopBackupPolicy.mapResources(rewritten, mapResource)
             .toString(Charsets.UTF_8)).jsonObject
     }

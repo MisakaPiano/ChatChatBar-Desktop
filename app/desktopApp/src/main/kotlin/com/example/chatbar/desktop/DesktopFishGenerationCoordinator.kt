@@ -23,6 +23,8 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.CancellationException
@@ -70,6 +72,8 @@ data class VoiceGenerationBatchState(
     val completedCount: Int = 0,
     val receivedBytes: Long = 0L,
     val modelStreamText: String = "",
+    val retryNotice: String? = null,
+    val rejectedRetryCount: Int = 0,
     val translationRequested: Boolean = false,
     val taggingSkipped: Boolean = false,
     val textConfirmations: List<VoiceTextConfirmationState> = emptyList(),
@@ -129,21 +133,43 @@ internal class DesktopFishGenerationCoordinator(
         }
         job.start()
     }
-    private fun launchVoiceJob(block: suspend () -> Unit): Job = scope.launch(start = CoroutineStart.LAZY) {
-        operationGate.withNormalOperation { block() }
+    private fun launchVoiceJob(block: suspend () -> Unit): Job {
+        val credential = runCatching { credentials.captureCall() }
+        return scope.launch(start = CoroutineStart.LAZY) {
+            operationGate.withNormalOperation { withContext(credential.getOrThrow()) { block() } }
+        }
     }
     private fun strictFishModel(model: String): String {
         require(model in FishAudioTtsModels.supported) { "所选 Fish 模型已失效；不会自动替换" }
         require(model == FishAudioTtsModels.S2_1_PRO_FREE) { "收费 Fish 模型尚未获得本轮授权" }
         return model
     }
-    private suspend fun <T> networkWork(sessionId: String, block: suspend () -> T): T = block()
+    private suspend fun <T> networkWork(batchId: String, sessionId: String, cardId: String, messageId: String,
+        block: suspend () -> T): T = withContext(DesktopUsageParent(DesktopUsageContext(
+            DesktopUsageSource.CHAT, taskId = batchId, sessionId = sessionId, cardId = cardId, subjectId = messageId))) { block() }
     suspend fun closeAndDrain() = withContext(NonCancellable) {
         val pending = synchronized(admission) { accepting = false; jobs.values.toList().onEach { it.cancel() } }
         pending.joinAll(); pendingTextConfirmations.clear(); clearAutoPlay(); playback.stop()
     }
 
-    private suspend fun persistPublishedVoice(voice: GeneratedVoiceMessage) {
+    private fun sourceVersion(expected: ChatMessage, current: ChatMessage, versionId: String?) = run {
+        check(current.id == expected.id && current.sessionId == expected.sessionId && current.role == expected.role)
+        val captured = if (versionId == null) MessageAlternativeVersionPolicy.activeVersion(expected)
+            else MessageAlternativeVersionPolicy.versions(expected).singleOrNull { it.id == versionId }
+                ?: error("语音来源版本已不存在")
+        val retained = MessageAlternativeVersionPolicy.versions(current).singleOrNull { it.id == captured.id }
+            ?: error("语音来源版本已不存在")
+        check(retained.content == captured.content) { "语音来源正文已变化" }
+        retained
+    }
+
+    private suspend fun persistPublishedVoice(voice: GeneratedVoiceMessage, expected: ChatMessage) =
+        chatRepository.withLockedMessageSnapshot(voice.sessionId, voice.messageId) { current ->
+        val version = sourceVersion(expected, current, voice.messageVersionId)
+        voice.anchorId?.let { anchor ->
+            check(voiceRepository.ensureAnchorsForVersion(current, version.id, version.content)
+                .any { it.anchor.id == anchor }) { "语音来源片段已变化" }
+        }
         try { voiceRepository.save(voice) }
         catch (error: Exception) {
             // A post-write failure is not proof of no commit. Confirm exact durable bytes before
@@ -272,6 +298,7 @@ internal class DesktopFishGenerationCoordinator(
                     it.copy(sessionId = existing.sessionId, messageId = existing.messageId)
                 }
                 val context = loadContext(existing.sessionId, existing.messageId)
+                sourceVersion(context.message, context.message, existing.messageVersionId)
                 val currentCharacter = VoiceGenerationPolicy.resolveRegenerationCharacter(
                     card = context.card,
                     characterId = existing.characterId
@@ -290,7 +317,7 @@ internal class DesktopFishGenerationCoordinator(
                     taggedText = editedTaggedText,
                     mode = FishAudioTagPolicy.markerMode(fishModelId)
                 ).getOrThrow()
-                checkNotNull(credentials.load()) { "Fish Audio API Key 未配置" }
+                checkNotNull(credentials.forCurrentCall()) { "Fish Audio API Key 未配置" }
                 updateBatch(batchId) {
                     it.copy(
                         phase = VoiceGenerationPhase.SYNTHESIZING,
@@ -298,14 +325,18 @@ internal class DesktopFishGenerationCoordinator(
                     )
                 }
                 val artifactId = UUID.randomUUID().toString()
-                val audio = networkWork(existing.sessionId) {
+                val audio = networkWork(batchId, existing.sessionId, context.card.id, existing.messageId) {
                     ttsSlots.withPermit {
                         fishAudioService.synthesize(
                                     modelId = fishModelId,
                             referenceId = currentBinding.referenceId,
                             text = editedTaggedText.trim(),
                             sessionId = existing.sessionId,
-                            voiceId = artifactId
+                            voiceId = artifactId,
+                            onRetry = { attempt, wait -> updateBatch(batchId) {
+                                it.copy(retryNotice = "语音请求暂时被拒绝，${wait / 1000} 秒后重试（${attempt + 1}/3）",
+                                    rejectedRetryCount = it.rejectedRetryCount + 1)
+                            } }
                         ) { progress ->
                             updateBatch(batchId) {
                                 it.copy(receivedBytes = progress.bytesReceived)
@@ -325,7 +356,8 @@ internal class DesktopFishGenerationCoordinator(
                     updatedAt = System.currentTimeMillis()
                 )
                 try {
-                    withContext(NonCancellable) { persistPublishedVoice(replacement) }
+                    currentCoroutineContext().ensureActive()
+                    withContext(NonCancellable) { persistPublishedVoice(replacement, context.message) }
                 } catch (error: Throwable) {
                     releaseArtifact(audio.path)
                     throw error
@@ -434,20 +466,22 @@ internal class DesktopFishGenerationCoordinator(
         voice: GeneratedVoiceMessage,
         orderedVisibleVoices: List<GeneratedVoiceMessage>,
         originGeneration: Long = foregroundGeneration.get(),
+        backgroundControl: Boolean = false,
     ): Job {
         val sequence = VoicePlaybackQueuePolicy.sequenceFrom(voice, orderedVisibleVoices)
         val requestedGeneration = originGeneration
         val admission = playback.admissionToken()
         return scope.launch {
-            if (foregroundSessionId != voice.sessionId || foregroundGeneration.get() != requestedGeneration) return@launch
+            fun eligible() = (backgroundControl || foregroundSessionId == voice.sessionId) && foregroundGeneration.get() == requestedGeneration
+            if (!eligible()) return@launch
             // Recheck inside the autoplay mutex: maintenance/leave may invalidate a click
             // after the initial check while it is waiting to clear the automatic queue.
             val manualGeneration = autoPlayMutex.withLock {
-                if (foregroundSessionId != voice.sessionId || foregroundGeneration.get() != requestedGeneration) null
+                if (!eligible()) null
                 else { pendingAutoPlay.clear(); foregroundGeneration.incrementAndGet() }
             } ?: return@launch
             playback.playSequence(sequence, admission, toggleCurrent = true) {
-                foregroundSessionId == voice.sessionId && foregroundGeneration.get() == manualGeneration
+                (backgroundControl || foregroundSessionId == voice.sessionId) && foregroundGeneration.get() == manualGeneration
             }
         }
     }
@@ -564,7 +598,7 @@ internal class DesktopFishGenerationCoordinator(
                     modelStreamText = ""
                 )
             }
-            val translationResult = networkWork(context.session.id) {
+            val translationResult = networkWork(batchId, context.session.id, context.card.id, context.message.id) {
                 tagService.translate(
                     modelConfig = tagModel,
                     targetLanguage = targetLanguage,
@@ -624,7 +658,7 @@ internal class DesktopFishGenerationCoordinator(
                 errors = errorsById
             )
         }
-        val tagResult = networkWork(context.session.id) {
+        val tagResult = networkWork(batchId, context.session.id, context.card.id, context.message.id) {
             tagService.generate(
                 modelConfig = tagModel,
                 fishModelId = fishModelId,
@@ -711,8 +745,8 @@ internal class DesktopFishGenerationCoordinator(
             finishAutoPlay(batchId, null)
             return
         }
-        checkNotNull(credentials.load()) { "Fish Audio API Key 未配置" }
-        networkWork(context.session.id) {
+        checkNotNull(credentials.forCurrentCall()) { "Fish Audio API Key 未配置" }
+        networkWork(batchId, context.session.id, context.card.id, context.message.id) {
             val bytesByTarget = ConcurrentHashMap<String, Long>()
             val completedTargets = AtomicInteger(0)
             val results = supervisorScope {
@@ -728,6 +762,10 @@ internal class DesktopFishGenerationCoordinator(
                                 synthesisText = synthesisTextById[target.targetId]
                                     ?: target.segment.spokenText,
                                 taggedText = taggedText,
+                                onRetry = { attempt, wait -> updateBatch(batchId) {
+                                    it.copy(retryNotice = "语音请求暂时被拒绝，${wait / 1000} 秒后重试（${attempt + 1}/3）",
+                                        rejectedRetryCount = it.rejectedRetryCount + 1)
+                                } },
                                 onBytes = { bytes ->
                                     bytesByTarget[target.targetId] = bytes
                                     updateBatch(batchId) {
@@ -771,6 +809,7 @@ internal class DesktopFishGenerationCoordinator(
         target: VoiceGenerationTarget,
         synthesisText: String,
         taggedText: String,
+        onRetry: (Int, Long) -> Unit,
         onBytes: (Long) -> Unit
     ): TargetGenerationResult = try {
         val binding = checkNotNull(target.character.fishAudioVoice)
@@ -781,16 +820,17 @@ internal class DesktopFishGenerationCoordinator(
                 referenceId = binding.referenceId,
                 text = taggedText,
                 sessionId = target.message.sessionId,
-                voiceId = artifactId
+                voiceId = artifactId,
+                onRetry = onRetry
             ) { progress -> onBytes(progress.bytesReceived) }
         }
         try {
-            val currentAnchorId = resolveCurrentAnchorId(target)
+            currentCoroutineContext().ensureActive()
             val voice = GeneratedVoiceMessage.create(
                 sessionId = target.message.sessionId,
                 messageId = target.message.id,
                 messageVersionId = MessageAlternativeVersionPolicy.activeVersionId(target.message),
-                anchorId = currentAnchorId,
+                anchorId = target.anchorId,
                 sourceOrder = target.sourceOrder,
                 sourceSegmentKind = target.sourceKind,
                 sourceSpeakerName = target.segment.speakerName.orEmpty(),
@@ -805,7 +845,7 @@ internal class DesktopFishGenerationCoordinator(
                 durationMs = audio.durationMs,
                 byteLength = audio.byteLength
             )
-            withContext(NonCancellable) { persistPublishedVoice(voice) }
+            withContext(NonCancellable) { persistPublishedVoice(voice, target.message) }
             TargetGenerationResult(target, voice = voice)
         } catch (error: Throwable) {
             withContext(NonCancellable) { releaseArtifact(audio.path) }
@@ -815,29 +855,6 @@ internal class DesktopFishGenerationCoordinator(
         throw cancelled
     } catch (error: Throwable) {
         TargetGenerationResult(target, error = error.message ?: error.javaClass.simpleName)
-    }
-
-    private suspend fun resolveCurrentAnchorId(target: VoiceGenerationTarget): String? {
-        if (target.anchorId == null) return null
-        val currentMessage = chatRepository.getMessage(
-            target.message.id,
-            target.message.sessionId
-        ) ?: error("消息已删除")
-        val targetVersion = MessageAlternativeVersionPolicy.activeVersion(target.message)
-        val currentVersion = MessageAlternativeVersionPolicy.versions(currentMessage)
-            .firstOrNull { it.id == targetVersion.id }
-            ?: targetVersion
-        val currentAnchors = voiceRepository.ensureAnchorsForVersion(
-            message = currentMessage,
-            messageVersionId = currentVersion.id,
-            content = currentVersion.content
-        )
-        currentAnchors.firstOrNull { it.anchor.id == target.anchorId }?.let { return it.anchor.id }
-        return currentAnchors
-            .filter { it.anchor.sourceOrder <= target.sourceOrder }
-            .maxByOrNull { it.anchor.sourceOrder }
-            ?.anchor
-            ?.id
     }
 
     private suspend fun finishSuccessfulBatch(
@@ -871,7 +888,8 @@ internal class DesktopFishGenerationCoordinator(
         val session = chatRepository.getSession(sessionId) ?: error("会话不存在")
         val message = chatRepository.getMessage(messageId, sessionId) ?: error("消息不存在")
         require(message.role == MessageRole.ASSISTANT) { "只支持助手消息生成语音" }
-        val card = characterRepository.getById(session.characterCardId) ?: error("角色卡不存在")
+        val originalCard = characterRepository.getById(session.characterCardId) ?: error("角色卡不存在")
+        val card = com.example.chatbar.domain.chat.SessionCharacterParticipationPolicy.effectiveCard(session, originalCard)
         val settings = settingsRepository.getAppSettings()
         val previousUser = chatRepository.getMessages(sessionId)
             .filter { it.role == MessageRole.USER && it.orderKey < message.orderKey }
@@ -1001,8 +1019,15 @@ internal class DesktopFishGenerationCoordinator(
             val shouldPlay = next.voices?.isNotEmpty() == true &&
                 foregroundSessionId == next.sessionId &&
                 foregroundGeneration.get() == next.foregroundGeneration
-            if (shouldPlay) playback.enqueueSequence(checkNotNull(next.voices)) {
-                foregroundSessionId == next.sessionId && foregroundGeneration.get() == next.foregroundGeneration
+            if (shouldPlay) {
+                val accepted = playback.enqueueSequence(checkNotNull(next.voices)) {
+                    foregroundSessionId == next.sessionId && foregroundGeneration.get() == next.foregroundGeneration
+                }
+                if (!accepted && playback.state.value.sessionId?.let { it != next.sessionId } == true) {
+                    val voice = next.voices!!.first()
+                    mutableFeedback.value = DesktopVoiceFeedback(next.sessionId, voice.messageId, voice.id, next.batchId,
+                        "录音已保存；另一会话正在播放，未加入当前播放队列")
+                }
             }
         }
     }
@@ -1030,7 +1055,12 @@ internal class DesktopFishGenerationCoordinator(
         transform: (VoiceGenerationBatchState) -> VoiceGenerationBatchState
     ) {
         _batches.update { current ->
-            current.map { if (it.id == batchId) transform(it) else it }
+            current.map { if (it.id == batchId) {
+                val next = transform(it)
+                if (next.phase in setOf(VoiceGenerationPhase.FAILED, VoiceGenerationPhase.CANCELLED)) {
+                    next.copy(retryNotice = null)
+                } else next
+            } else it }
         }
     }
 

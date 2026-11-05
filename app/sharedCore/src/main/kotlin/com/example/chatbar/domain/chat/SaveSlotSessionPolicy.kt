@@ -2,7 +2,7 @@ package com.example.chatbar.domain.chat
 
 import com.example.chatbar.data.local.entity.*
 
-/** Official SaveSlot session fields. Character identity, title and live runtime are not archive settings. */
+/** Official settings plus Desktop participation/player identity. Card binding, title and runtime stay outside archive settings. */
 object SaveSlotSessionPolicy {
     fun create(session: ChatSession, name: String, description: String?, memorySnapshot: MemorySnapshot?,
         imagePolicy: SaveSlotImagePolicy, includeAudio: Boolean): SaveSlot = SaveSlot.create(
@@ -13,6 +13,8 @@ object SaveSlotSessionPolicy {
         schemaVersion = SaveSlotPackageStorage.SCHEMA_VERSION,
         playerSetting = session.playerSetting,
         playerName = session.playerName,
+        desktopPlayerRole = session.desktopPlayerRole,
+        desktopPlayerAvatar = session.desktopPlayerAvatar,
         supplementarySetting = session.supplementarySetting,
         modelId = session.modelId,
         imageModelId = session.imageModelId,
@@ -26,6 +28,8 @@ object SaveSlotSessionPolicy {
         chatBackground = session.chatBackground,
         audiobookModeEnabled = session.audiobookModeEnabled,
         voiceLanguage = session.voiceLanguage,
+        desktopCharacterParticipation = session.desktopCharacterParticipation,
+        desktopAutoPauseAbsentPeople = session.desktopAutoPauseAbsentPeople,
         longTermMemoryEnabled = session.longTermMemoryEnabled,
         longTermMemory = session.longTermMemory,
         longTermMemoryUpdatedThroughMessageId = session.longTermMemoryUpdatedThroughMessageId,
@@ -42,10 +46,13 @@ object SaveSlotSessionPolicy {
         includeAudio = includeAudio
     )
 
-    fun restore(session: ChatSession, slot: SaveSlot, restoredBackground: String?): ChatSession =
+    fun restore(session: ChatSession, slot: SaveSlot, restoredBackground: String?,
+        restoredPlayerAvatar: String? = null): ChatSession =
     session.copy(
         playerSetting = slot.playerSetting,
         playerName = slot.playerName,
+        desktopPlayerRole = slot.desktopPlayerRole,
+        desktopPlayerAvatar = restoredPlayerAvatar,
         supplementarySetting = slot.supplementarySetting,
         modelId = slot.modelId,
         imageModelId = slot.imageModelId,
@@ -59,6 +66,8 @@ object SaveSlotSessionPolicy {
         chatBackground = restoredBackground,
         audiobookModeEnabled = slot.audiobookModeEnabled,
         voiceLanguage = slot.voiceLanguage,
+        desktopCharacterParticipation = slot.desktopCharacterParticipation,
+        desktopAutoPauseAbsentPeople = slot.desktopAutoPauseAbsentPeople,
         longTermMemoryEnabled = slot.longTermMemoryEnabled,
         longTermMemory = slot.longTermMemory,
         longTermMemoryUpdatedThroughMessageId = slot.longTermMemoryUpdatedThroughMessageId,

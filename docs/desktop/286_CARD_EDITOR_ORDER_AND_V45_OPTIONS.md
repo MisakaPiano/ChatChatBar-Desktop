@@ -1,0 +1,23 @@
+# 角色卡编辑顺序与 V4.5 生图选项
+
+2026-11-03。用户确认画风/参数区原本存在，问题是长卡中位置靠后；不再把它记为整个入口缺失。
+
+编辑顺序对齐固定官方147 `b4fa75d296680f777be095f3121ad0c4db979f17` 的 `CharacterEditScreen.kt:486` 起完整表单：卡名/头像/Bot、开场、背景、朋友圈、基本设定、默认画风/图库及应用撤销、生图高级设置、默认负面、人物模式与工作区、高级设定、文档、格式卡、世界书。桌面备用开场保留在相邻折叠区；字段原文、草稿、保存、取消、锁定与恢复所有者不变。参数默认折叠，展示空覆盖的默认值不产生编辑；编辑参数才建立覆盖，“恢复默认生图参数”仅移除覆盖，不清所选模型。
+
+桌面 Studio 高级参数补 V4.5-only Variety+；卡编辑原来已有该开关，后端原来已有固定 sigma58/null 序列化，不称它们全部缺失。最终规则为 nominal58 或归一化 customSigma 乘实际画布scale。PNG 正有限effectiveSigma除源scale后保留；显式null关闭、缺省为未知，不擅改休眠选择；V5不采纳/重放该V4.5参数。Enhance重新计算一次，完整预设、草稿、历史与原撤销沿既有设置对象保留。
+
+采样器按当前 NovelAI 前端构建 `b94bdee-41520193098-1` 定向补 V4.5 的 DPM++ 2M SDE。两 Full 菜单均六项：`k_euler_ancestral,k_euler,k_dpmpp_2s_ancestral,k_dpmpp_2m_sde,k_dpmpp_2m,k_dpmpp_sde`。不删除旧枚举/历史值，不开放 DDIM；Medium 有效 EA-only 保持。
+
+固定来源：`https://novelai.net/_next/static/chunks/274ff5q_u23hy.js?dpl=b94bdee-41520193098-1`（59,519B，SHA256 `875cacaec9486695b79aa3819f7191d4ef0f3752517336200aa67482468b6980`）的 v4/v5→六项U；模型分组来源 `1qr-_uukhj8ho.js`（2,384,035B，SHA256 `c86de7b60f86da1c96ecc8de60c5a7bace6aea750279733769997401d976196a`）。本机原始只读证据与协调端独立核对保存在连续总账 `updates/20261103-varietyplus-and-suite-sync/`，不上传私人资料。
+
+必要定向验证由 `desktop-editor-probe.yml` 云端执行：实际两模式/窄短与宽窗顺序、滚动可达、字段编辑/取消/草稿重开保存；图库与人物AI原路；实际 Studio 开关→controller→落盘/撤销/预设/历史→最终请求；PNG状态导入与模型隔离，六项实际 wire 和 Medium 限定。源码备妥不等于这些检查已经通过，结果以精确运行原报告为准。
+
+上一源984完整152已终结SUCCESS，属于上一轮导出/V5工作；不能替代本片的定向结果。M04朋友圈多版本图片及完整资源备份恢复见287，已接生产所有者并通过其精确定向检查；不混作本片测试或交付。公开1235/签名17与日常安装不变；无本片真人验收/Provider真实生成或新版本交付结论。
+
+后补官网实际尺寸规则：上游独立源 a678d71c4d720202c0c99af73d8df11e822e2aff 的公开网页/原始包证据可复用，但不代验 Desktop。当前实现新增统一 scale=sqrt(floor(width/8)*floor(height/8)/(104*152))，请求 nominal58 或归一化 customSigma 乘目标 scale；PNG effectiveSigma 除源 scale，历史/预设/JSON保留，Enhance 排除原 sigma 覆盖以免重复计算。此前固定58/仅识别58的本片第一稿描述已由此替代；原失败运行保留。最初待验状态已由下方最终检查点闭合，原失败运行仍保留。
+
+2026-11-03 定向检查点：editor10 / 41633913451，源 b0ce019d8d366d7c7989d3f4b9c4b7c8bde66665，shared12、Desktop73 全PASS且无SKIP。实际长卡两模式/四布局、草稿生命周期与非空负面原文保全均执行。原截图有一张FREEFORM停在顶部，不能作为高级参数区目视证据；后继仅统一截图与滚动的单调时钟，随必要完整检查补核。新尺寸规则两方法已在M04 probe4 shared21中实际通过，完整后继仍核最终源。当前非空负面原文保留；空白默认及最终请求的有效值处理各沿原所有者，不以请求归一化改写编辑原文。
+
+最终检查点：53e40 / 完整154（41642591244）主2598PASS+19SKIP/0FAIL，原人物跳转3与Studio键盘14均通过；定向11另有shared14/Desktop90共104PASS。53e40相对冻结应用a647仅2测试+1workflow，人物跳转要求4组稳定可见且保持原7秒/正bounds；Random Seed按实际Focused标签继续真实Tab/Space，原seed/显隐断言保留。FREEFORM420实际图已目视到style/advanced/null override区。私有1236 R27普通候选与R28签名18旧client完整下载/二验复用原包，不把受控metadata fetcher称作匿名公网发现；公开/Provider/真人另列。
+
+本批1236/sign18已依精确用户授权公开，实际发行/匿名下载结果见287与连续总账；实际应用内容保持a647，测试后继53e40与后续文档提交不冒充重打包。真实Provider/真人验收仍独立，已通过的1235用户组保留。

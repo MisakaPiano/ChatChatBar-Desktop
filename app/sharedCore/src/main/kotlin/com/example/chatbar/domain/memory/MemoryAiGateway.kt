@@ -80,13 +80,10 @@ class MemoryAiRetryException(
     lastFailure
 )
 
-fun shouldDisableMemoryThinking(model: ModelConfig): Boolean =
-    model.supportsDisableThinking || model.baseUrl.contains("siliconflow", ignoreCase = true)
+@Suppress("UNUSED_PARAMETER")
+fun shouldDisableMemoryThinking(model: ModelConfig): Boolean = false
 
-fun ModelConfig.forMemoryCompressionPlanner(): ModelConfig = copy(
-    reasoningEffort = null,
-    enableThinking = null
-)
+fun ModelConfig.forMemoryCompressionPlanner(): ModelConfig = this
 
 interface MemoryAiClient {
     suspend fun episode(
@@ -261,7 +258,6 @@ class MemoryAiGateway(private val chatService: com.example.chatbar.domain.prompt
             ),
             modelConfig = plannerModel,
             disableThinking = shouldDisableMemoryThinking(plannerModel),
-            isolatedTaskParameters = true,
             responseFormatJson = false
         ).trim()
     }
@@ -298,7 +294,6 @@ class MemoryAiGateway(private val chatService: com.example.chatbar.domain.prompt
                         messages = messages,
                         modelConfig = model,
                         disableThinking = shouldDisableMemoryThinking(model),
-                        isolatedTaskParameters = true,
                         responseFormatJson = model.supportsJsonMode
                     )
                 } else {
@@ -308,7 +303,6 @@ class MemoryAiGateway(private val chatService: com.example.chatbar.domain.prompt
                         messages = messages,
                         modelConfig = model,
                         disableThinking = shouldDisableMemoryThinking(model),
-                        isolatedTaskParameters = true,
                         responseFormatJson = model.supportsJsonMode,
                         onDelta = { chunk ->
                             streamed.append(chunk)

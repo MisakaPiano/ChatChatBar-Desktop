@@ -14,6 +14,7 @@ internal class DesktopNovelAiGenerationRuntime(
     private val secrets: DesktopSecretStore,
     private val persist: suspend (List<ByteArray>, NovelAiGenerationRecipe) -> NovelAiGenerationHistoryEntry,
     private val client: OkHttpClient = secureNovelAiClient(),
+    private val diagnostics: DesktopTransportDiagnosticsOwner? = null,
 ) {
     private val mutex = Mutex()
 
@@ -29,17 +30,18 @@ internal class DesktopNovelAiGenerationRuntime(
         promptPlan: NovelAiPromptPlan? = null,
     ): NovelAiGenerationHistoryEntry = mutex.withLock {
         withContext(Dispatchers.IO) {
+            var media: DesktopImageDiagnosticRecorder? = null
             try {
                 require(maxRateLimitRetries in 0..10)
                 val initial = launchDraft.activeSettings
-                require(initial.validationError(launchDraft.activeCharacters.size) == null)
+                require(initial.requestValidationError(launchDraft.activeCharacters.size) == null)
                 val settings = if (initial.seedMode == NovelAiSeedMode.RANDOM) initial.copy(
                     seedMode = NovelAiSeedMode.FIXED,
                     seed = kotlin.random.Random.nextLong(0, initial.maxAllowedBaseSeed + 1),
                 ) else initial
                 val plan = promptPlan ?: launchDraft.toPromptPlan()
                 val recipe = launchDraft.toRecipe(settings)
-                val token = secrets.load(DesktopCredentialKey.NovelAiToken)?.takeIf(String::isNotBlank)
+                val token = secrets.credentialForCall(DesktopCredentialKey.NovelAiToken)?.takeIf(String::isNotBlank)
                     ?: throw DesktopNovelAiRequestException("请先在应用内安全保存 NovelAI 凭据")
                 check(!Json.encodeToString(NovelAiGenerationRecipe.serializer(), recipe).contains(token))
                 fun validate(bytes: ByteArray) {
@@ -48,7 +50,8 @@ internal class DesktopNovelAiGenerationRuntime(
                     DesktopImageEditing.decode(bytes)
                 }
                 val images = mutableListOf<ByteArray>()
-                NovelAiImageService(client, safeErrorsOnly = true).generate(
+                media = beginDesktopImageDiagnostics(diagnostics, secrets, token, settings.requestModel(guidance.action), settings.count)
+                NovelAiImageService(media?.client(client) ?: client, safeErrorsOnly = true).generate(
                     token, plan, requestSize ?: settings.imageSize(), settings, guidance,
                     retryRateLimitsUntilCancelled = retryRateLimitsUntilCancelled, maxRateLimitRetries = maxRateLimitRetries,
                     onRateLimitRetry = onRetry,
@@ -60,6 +63,7 @@ internal class DesktopNovelAiGenerationRuntime(
                         }
                         is NovelAiImageEvent.Final -> {
                             validate(event.image)
+                            media?.validatedImage(event.image.size)
                             val composed = composeResult(event.image)
                             validate(composed)
                             images += composed
@@ -68,12 +72,14 @@ internal class DesktopNovelAiGenerationRuntime(
                     }
                 }
                 check(images.size == settings.count)
+                // Validated network output is independent of a later local commit failure/cancellation.
+                media?.finish(DesktopUsageOutcome.COMPLETED)
                 currentCoroutineContext().ensureActive()
                 // Cancellation before commit saves nothing; an entered durable batch completes atomically.
                 withContext(NonCancellable) { persist(images, recipe) }
-            } catch (_: CancellationException) { throw CancellationException("NovelAI 请求已取消") }
-            catch (safe: DesktopNovelAiRequestException) { throw safe }
-            catch (_: Exception) { throw DesktopNovelAiRequestException("NovelAI 生成或保存失败；未发布不完整批次") }
+            } catch (_: CancellationException) { media?.finish(DesktopUsageOutcome.CANCELLED); throw CancellationException("NovelAI 请求已取消") }
+            catch (safe: DesktopNovelAiRequestException) { media?.finish(DesktopUsageOutcome.FAILED); throw safe }
+            catch (_: Exception) { media?.finish(DesktopUsageOutcome.FAILED); throw DesktopNovelAiRequestException("NovelAI 生成或保存失败；未发布不完整批次") }
         }
     }
 }

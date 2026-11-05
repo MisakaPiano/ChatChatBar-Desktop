@@ -68,12 +68,16 @@ class DesktopPostP8IntegrationTest {
             }finally{scene.close()}
         }
     }
-    @Test fun `effective audiobook controls single line right role choice and hides it when off`():Unit=runBlocking(edt) {
+    @Test fun `effective audiobook controls composer voice choice and timeline has no idle narrator dock`():Unit=runBlocking(edt) {
         DesktopChatVoiceRuntimeTest.Fixture().use{f->
             f.seed();val card=f.characters.getById("card")!!
             for(w in listOf(240,360,1100)) for(enabled in listOf(false,true)) {
                 val state=DesktopPrimaryChatState(selectedSession=f.session.copy(audiobookModeEnabled=enabled),selectedCharacter=card)
-                val scene=ImageComposeScene(w,160){DesktopVoiceDeck(f.runtime,state)}
+                val ui = DesktopVoiceUiSelection().apply { composerExpanded = true }
+                val scene=ImageComposeScene(w,160){ Column {
+                    DesktopVoiceDeck(f.runtime,state)
+                    DesktopComposerVoiceControl(state, ui, f.runtime.effectiveAudiobook(state.selectedSession!!), w.toFloat())
+                } }
                 try {
                     repeat(4){scene.render(System.nanoTime()).close();yield()}
                     val deck=scene.nodes().filter{it.config.getOrNull(SemanticsProperties.ContentDescription)
@@ -112,7 +116,8 @@ class DesktopPostP8IntegrationTest {
             assertEquals(current.id,event.voiceId);assertEquals(current.sessionId,event.sessionId)
             assertTrue(event.text.contains("替换成功"));assertNotEquals(old.audioPath,current.audioPath)
             val requests=f.server.requestCount
-            f.server.enqueue(okhttp3.mockwebserver.MockResponse().setResponseCode(503))
+            // This case checks terminal replacement feedback, not temporary-rejection retry.
+            f.server.enqueue(okhttp3.mockwebserver.MockResponse().setResponseCode(401))
             f.done(f.runtime.generate(f.message,"alice",replace=current,editedTaggedText="hello"))
             assertNull(f.runtime.coordinator.feedback.value)
             assertEquals(requests+1,f.server.requestCount);assertEquals(current,f.repo.get(current.id))

@@ -34,6 +34,212 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class DesktopCharacterEditorControllerTest {
+    @Test fun `nonblank negative source text survives display unrelated dirty save and reopen while request effective value stays separate`() = runBlocking {
+        fixture { _, app, editor ->
+            val raw = "  Synthetic negative  \n"
+            val source = CharacterCard.create("Raw negative", greeting = "Hello").copy(defaultImageNegativePrompt = raw)
+            app.characterRepository.save(source); editor.openExisting(source.id)
+            assertEquals(raw, editor.state.value.card!!.defaultImageNegativePrompt)
+            assertFalse(editor.state.value.dirty)
+            assertEquals(source, app.characterRepository.getById(source.id))
+            editor.edit { it.copy(botName = "Another bot") }; editor.flushDraft(); assertTrue(editor.save())
+            assertEquals(raw, app.characterRepository.getById(source.id)!!.defaultImageNegativePrompt)
+            editor.openExisting(source.id); assertEquals(raw, editor.state.value.card!!.defaultImageNegativePrompt)
+            assertEquals("Synthetic negative", CharacterNaiPromptDefaults.effectiveCharacterNaiNegativePrompt(raw))
+        }
+    }
+
+    @Test fun `style loader uses packaged asset authority and reports missing previews and unreadable catalog explicitly`() = runBlocking {
+        val parent = Files.createTempDirectory("style-loader-")
+        var missingCatalog = false
+        val catalogPath = com.example.chatbar.domain.image.NOVEL_AI_STYLE_CATALOG_ASSET_PATH
+        val previewRoot = com.example.chatbar.domain.image.NOVEL_AI_STYLE_PREVIEW_ASSET_ROOT
+        val app = DesktopAppContainer(DesktopDataRootResolution.Resolved(parent.resolve("data"),
+            DesktopDataRootProvenance.CLI_OVERRIDE, parent.resolve("bootstrap.json")),
+            secretStoreFactory = { InMemoryDesktopSecretStore() }, bundledAssets = { path ->
+                when (path) {
+                    "presets/manifest.json" -> """{"entries":[]}""".toByteArray()
+                    catalogPath -> {
+                        check(!missingCatalog)
+                        """{"schemaVersion":1,"styles":[{"styleKey":"synthetic","displayName":"Synthetic","prompt":"Exact  ","previewImage":"missing.png"}]}""".toByteArray()
+                    }
+                    "$previewRoot/missing.png" -> error("synthetic missing image")
+                    else -> error("No other asset permitted")
+                }
+            })
+        try {
+            val loaded = app.characterEditorController.loadStyleCatalog()
+            assertNull(loaded.fatalError); assertEquals("Exact  ", loaded.styles.single().prompt)
+            assertFalse(loaded.styles.single().previewAvailable); assertEquals(1, loaded.errors.size)
+            missingCatalog = true
+            val failed = app.characterEditorController.loadStyleCatalog()
+            assertNotNull(failed.fatalError); assertTrue(failed.styles.isEmpty())
+        } finally { app.close(); check(parent.toFile().deleteRecursively()) }
+    }
+
+    @Test fun `builtin style applies to ordinary draft with exact undo and manual prompt edit invalidation`() = runBlocking {
+        fixture { _, container, controller ->
+            val card = CharacterCard.create("Synthetic style card", greeting = "Hi").copy(
+                defaultImagePrompt = "Manual original", defaultImageNegativePrompt = "Manual negative")
+            container.characterRepository.save(card); controller.openExisting(card.id)
+            val style = com.example.chatbar.domain.image.NovelAiStylePreset(styleKey = "synthetic", displayName = "Synthetic",
+                prompt = "Preset exact  ", negativePrompt = "Preset negative", previewImage = "missing.png")
+            assertTrue(controller.applyStylePreset(style))
+            assertEquals(card, container.characterRepository.getById(card.id))
+            assertEquals(style.prompt, controller.state.value.card!!.defaultImagePrompt)
+            assertEquals(style.negativePrompt, controller.state.value.card!!.defaultImageNegativePrompt)
+            assertNotNull(controller.state.value.stylePromptUndo)
+            controller.undoStylePreset()
+            assertEquals(card.defaultImagePrompt, controller.state.value.card!!.defaultImagePrompt)
+            assertEquals(card.defaultImageNegativePrompt, controller.state.value.card!!.defaultImageNegativePrompt)
+            assertNull(controller.state.value.stylePromptUndo)
+            assertTrue(controller.applyStylePreset(style.copy(negativePrompt = "")))
+            assertEquals(CharacterNaiPromptDefaults.defaultCharacterNaiNegativePrompt(), controller.state.value.card!!.defaultImageNegativePrompt)
+            controller.edit { it.copy(defaultImagePrompt = "Later manual text") }
+            assertNull(controller.state.value.stylePromptUndo)
+            controller.undoStylePreset()
+            assertEquals("Later manual text", controller.state.value.card!!.defaultImagePrompt)
+            assertTrue(controller.save())
+            assertEquals("Later manual text", container.characterRepository.getById(card.id)!!.defaultImagePrompt)
+        }
+    }
+
+    @Test fun `moment card switch focus preserves an open dirty draft and refuses a missing exact card`() = runBlocking {
+        fixture { _, container, controller ->
+            val card = CharacterCard.create("Same title", greeting = "Hi")
+            val duplicate = CharacterCard.create("Same title", greeting = "Other")
+            container.characterRepository.save(card); container.characterRepository.save(duplicate)
+            controller.openMoments(card.id)
+            assertEquals(card.id, controller.state.value.targetId)
+            assertEquals(1L, controller.state.value.momentsFocusRevision)
+            controller.edit { it.copy(botName = "Unsaved identity") }
+            val draft = controller.state.value.draftSessionId
+            controller.openMoments(card.id)
+            assertEquals(draft, controller.state.value.draftSessionId)
+            assertEquals("Unsaved identity", controller.state.value.card!!.botName)
+            assertEquals(2L, controller.state.value.momentsFocusRevision)
+            assertTrue(controller.state.value.dirty)
+            assertEquals(card, container.characterRepository.getById(card.id))
+            controller.openMoments("missing-card")
+            assertEquals(CharacterEditorProblem.SOURCE_DELETED, controller.state.value.problem)
+            assertEquals(card.id, controller.state.value.targetId)
+            assertEquals(draft, controller.state.value.draftSessionId)
+        }
+    }
+
+    @Test fun `image overrides remain a draft until saved survive reopen and null reset can be discarded or saved`() = runBlocking {
+        fixture { root, app, editor ->
+            val source = CharacterCard.create("Image defaults", greeting = "Hello")
+            app.characterRepository.save(source); editor.openExisting(source.id)
+            val parameters = com.example.chatbar.domain.image.NovelAiCharacterImageSettings(steps = 20,
+                guidance = 5f, cfgRescale = 0.3f, varietyPlus = true)
+            editor.edit { it.copy(defaultNovelAiImageModel = com.example.chatbar.domain.image.NovelAiImageModel.V5_FULL,
+                defaultImageGenerationSettings = parameters) }
+            editor.flushDraft(); assertTrue(editor.state.value.dirty)
+            assertNull(app.characterRepository.getById(source.id)!!.defaultImageGenerationSettings)
+            assertTrue(editor.save())
+            val saved = app.characterRepository.getById(source.id)!!
+            assertEquals(parameters, saved.defaultImageGenerationSettings)
+            assertEquals(com.example.chatbar.domain.image.NovelAiImageModel.V5_FULL, saved.defaultNovelAiImageModel)
+            val reopened = containerFor(root)
+            try {
+                val restored = reopened.characterEditorController
+                restored.openExisting(source.id)
+                assertEquals(parameters, restored.state.value.card!!.defaultImageGenerationSettings)
+                restored.edit { it.copy(defaultNovelAiImageModel = null, defaultImageGenerationSettings = null) }
+                restored.flushDraft(); restored.discard()
+                assertEquals(parameters, reopened.characterRepository.getById(source.id)!!.defaultImageGenerationSettings)
+                restored.openExisting(source.id)
+                restored.edit { it.copy(defaultNovelAiImageModel = null, defaultImageGenerationSettings = null) }
+                assertTrue(restored.save())
+                assertNull(reopened.characterRepository.getById(source.id)!!.defaultImageGenerationSettings)
+                assertNull(reopened.characterRepository.getById(source.id)!!.defaultNovelAiImageModel)
+                restored.openExisting(source.id)
+                restored.edit { it.copy(defaultImageGenerationSettings = parameters.copy(steps = 0)) }
+                assertFalse(restored.save())
+                assertNull(reopened.characterRepository.getById(source.id)!!.defaultImageGenerationSettings)
+            } finally { reopened.close() }
+        }
+    }
+
+    @Test fun `task document focus preserves the current unsaved editor and refuses a missing exact document`() = runBlocking {
+        fixture { _, container, controller ->
+            val card = CharacterCard.create("Same title", greeting = "Hi")
+            container.characterRepository.save(card); controller.openExisting(card.id)
+            controller.addTextDocument("Same name", "First text")
+            controller.addTextDocument("Same name", "Second text")
+            assertTrue(controller.save())
+            val documents = controller.state.value.card!!.customDocuments
+            controller.edit { it.copy(name = "Unsaved name") }
+            val draft = controller.state.value.draftSessionId
+            var missing = 0
+            controller.openDocument(card.id, documents[1].id) { missing++ }
+            assertEquals(documents[1].id, controller.state.value.documentFocusId)
+            assertEquals("Unsaved name", controller.state.value.card!!.name)
+            assertEquals(draft, controller.state.value.draftSessionId); assertTrue(controller.state.value.dirty)
+            assertEquals(card.name, container.characterRepository.getById(card.id)!!.name)
+            controller.openDocument(card.id, "missing") { missing++ }
+            assertEquals(1, missing); assertEquals(documents[1].id, controller.state.value.documentFocusId)
+            controller.openDocument(card.id, documents[0].id) { missing++ }
+            assertEquals(documents[0].id, controller.state.value.documentFocusId)
+            assertEquals(draft, controller.state.value.draftSessionId)
+        }
+    }
+    @Test fun `quick card variant toggle preserves fields and requires ordinary save`() = runBlocking {
+        fixture { _, container, controller ->
+            val person = CharacterInfo.create("Variant person").copy(profile = "kept profile", imagePrompt = "kept prompt")
+            val card = CharacterCard.create("Variant card", greeting = "Hi").copy(characters = listOf(person))
+            container.characterRepository.save(card)
+            controller.openExisting(card.id)
+            controller.setCharacterEntryEnabled(person.id, false)
+            assertTrue(controller.state.value.dirty)
+            assertTrue(container.characterRepository.getById(card.id)!!.characters.single().desktopEnabled)
+            assertTrue(controller.save())
+            assertEquals(person.copy(desktopEnabled = false), container.characterRepository.getById(card.id)!!.characters.single())
+            controller.openExisting(card.id)
+            controller.setCharacterEntryEnabled(person.id, true)
+            assertTrue(controller.save())
+            assertEquals(person, container.characterRepository.getById(card.id)!!.characters.single())
+        }
+    }
+    @Test fun `open person focuses exact ID and keeps same card unsaved edits`() = runBlocking {
+        fixture { _, container, controller ->
+            val first = CharacterInfo.create("First")
+            val second = CharacterInfo.create("Second")
+            val card = CharacterCard.create("Person focus", greeting = "Hi").copy(characters = listOf(first, second))
+            container.characterRepository.save(card)
+            controller.openPerson(card.id, second.id)
+            assertEquals(second.id, controller.state.value.personFocusId)
+            controller.updateCharacter(second.id) { it.copy(profile = "unsaved profile") }
+            val draft = controller.state.value.card
+            controller.openPerson(card.id, first.id)
+            assertEquals(first.id, controller.state.value.personFocusId)
+            assertEquals(draft, controller.state.value.card)
+            assertTrue(controller.state.value.dirty)
+            assertEquals("", container.characterRepository.getById(card.id)!!.characters.last().profile)
+            controller.openPerson(card.id, "missing")
+            assertEquals(CharacterEditorProblem.PERSON_UNAVAILABLE, controller.state.value.problem)
+            assertEquals(draft, controller.state.value.card)
+        }
+    }
+
+    @Test fun `person navigation across cards obeys existing dirty draft leave prompt`() = runBlocking {
+        fixture { _, container, controller ->
+            val p = CharacterInfo.create("Target")
+            val target = CharacterCard.create("Target card", greeting = "Hi").copy(characters = listOf(p))
+            container.characterRepository.save(target)
+            controller.openNew()
+            controller.edit { it.copy(name = "Unsaved card", greeting = "Hi") }
+            val draft = controller.state.value.card
+            controller.openPerson(target.id, p.id)
+            assertTrue(controller.state.value.leavePrompt)
+            assertEquals(draft, controller.state.value.card)
+            assertNull(controller.state.value.personFocusId)
+            controller.continueEditing()
+            assertEquals(draft, controller.state.value.card)
+        }
+    }
+
     @Test fun `avatar book mode switches and name edits preserve every hidden person field`() = runBlocking {
         fixture { _, _, controller ->
             controller.openNew()

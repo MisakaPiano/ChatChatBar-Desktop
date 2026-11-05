@@ -56,6 +56,7 @@ internal data class DesktopPrimaryChatState(
     val selectedCharacter: CharacterCard? = null,
     val selectedCharacterMissing: Boolean = false,
     val messages: List<ChatMessage> = emptyList(),
+    val people: List<DesktopChatPerson> = emptyList(),
     val hasOlderMessages: Boolean = false,
     val hasNewerMessages: Boolean = false,
     val readingPosition: ChatScrollPosition? = null,
@@ -81,6 +82,8 @@ internal data class DesktopPrimaryChatState(
     val formatChoices: List<DesktopPrimaryChoice> = emptyList(),
     val worldBookChoices: List<DesktopPrimaryChoice> = emptyList(),
     val globalPlayerName: String? = null,
+    val globalPlayerAvatar: String? = null,
+    val defaultPlayerAvatar: String? = null,
     val assistantSegmentedBubblesEnabled: Boolean = true,
     val chatBubbleFontScale: Float = 1.0f,
     val alternativeEligibleIds: Set<String> = emptySet(),
@@ -128,10 +131,43 @@ internal class DesktopPrimaryChatController(
     val backgroundLibrary: DesktopCharacterBackgrounds? = null,
     val formatRepair: DesktopMessageFormatRepairController? = null,
     val voices: DesktopChatVoiceRuntime? = null,
+    val residency: DesktopCharacterResidency? = null,
     val memory: DesktopMemoryController? = null,
     val rag: DesktopRagController? = null,
     val saveSlots: DesktopSaveSlotController? = null,
+    val chatUi: DesktopChatUiController? = null,
+    val maintenance: DesktopChatMaintenanceController? = null,
+    private val sessionDeletion: (suspend (String) -> String?)? = null,
+    private val sessionDeletionNotice: () -> String? = { null },
 ) {
+    val canDeleteSessions: Boolean get() = sessionDeletion != null
+    private val deletingSessions = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+
+    suspend fun deleteSession(expected: DesktopPrimarySessionItem): Boolean {
+        val deletion = sessionDeletion ?: return false
+        var deleted = false
+        guarded {
+            draftLock.withLock { stateLock.withLock {
+                check(!state.value.sessionSettingsSaving && !state.value.sessionSettingsDirty) { "请先保存或放弃会话设置草稿，再确认删除。" }
+                check(state.value.sessions.any { it == expected }) { "会话列表已变化，请重新确认删除。" }
+                synchronized(composerLock) { synchronized(readingLock) { deletingSessions += expected.id } }
+                try {
+                    draftPersistence.flush(expected.id)
+                    readingPositions.flush(expected.id)
+                    val warning = deletion(expected.id)
+                    check(chats.getSession(expected.id) == null) { "未能确认会话删除结果，请刷新列表。" }
+                    pendingBySession.remove(expected.id)
+                    refreshSelection()
+                    mutableState.update { it.copy(status = warning ?: "会话及其消息、存档和记忆已删除。", error = null) }
+                    deleted = true
+                } finally {
+                    // Missing sessions remain blocked against stale viewport/composer callbacks.
+                    if (chats.getSession(expected.id) != null) deletingSessions -= expected.id
+                }
+            } }
+        }
+        return deleted
+    }
     private suspend fun <T> withMessageMutation(sessionId: String, messageId: String, block: suspend () -> T): T {
         val result = if (voices == null) taskRuntime.withMessageMutation(sessionId, block)
         else voices.mutateMessage(sessionId, messageId) { taskRuntime.withMessageMutation(sessionId, block) }
@@ -167,6 +203,7 @@ internal class DesktopPrimaryChatController(
     }
 
     fun submitReadingPosition(snapshot: ChatScrollPosition): ChatScrollPosition? = synchronized(readingLock) {
+        if (snapshot.sessionId in deletingSessions) return@synchronized null
         updateMessageWindowAnchor(snapshot.sessionId, snapshot.anchorMessageId)
         readingPositions.submit(snapshot)?.also { accepted ->
             mutableState.update { if (it.selectedSession?.id == accepted.sessionId)
@@ -217,7 +254,7 @@ internal class DesktopPrimaryChatController(
 
     suspend fun refresh() = guarded {
         if (blockDuringSessionSave()) return@guarded
-        stateLock.withLock { refreshSelection() }
+        stateLock.withLock { refreshSelection(); sessionDeletionNotice()?.let { message -> mutableState.update { it.copy(status = message) } } }
     }
 
     /** Caller owns stateLock, including the save's post-commit presentation refresh. */
@@ -351,6 +388,23 @@ internal class DesktopPrimaryChatController(
     suspend fun loadFirstMessageWindow(sessionId: String): String? = replaceReadingWindow(sessionId, first = true)
     suspend fun loadLatestMessageWindow(sessionId: String): String? = replaceReadingWindow(sessionId, first = false)
 
+    /** Navigate within the bounded reading window without replacing the composer or loading all history. */
+    suspend fun revealMessage(sessionId: String, messageId: String): Boolean {
+        var found = false
+        guarded {
+            stateLock.withLock {
+                if (state.value.selectedSession?.id != sessionId) return@withLock
+                val message = chats.getMessage(messageId, sessionId) ?: return@withLock
+                if (message.sessionId != sessionId) return@withLock
+                val page = chats.getInitialMessagePage(sessionId, messageId)
+                if (page.messages.none { it.id == messageId }) return@withLock
+                synchronized(readingLock) { applyMessageWindow(page, messageId, preserveViewport = false) }
+                found = true
+            }
+        }
+        return found
+    }
+
     private suspend fun replaceReadingWindow(sessionId: String, first: Boolean): String? {
         var target: String? = null
         guarded {
@@ -363,6 +417,24 @@ internal class DesktopPrimaryChatController(
             }
         }
         return target
+    }
+
+    suspend fun refreshAfterPersistedUser(sessionId: String, messageId: String) = guarded {
+        stateLock.withLock {
+            if (state.value.selectedSession?.id != sessionId || state.value.messages.any { it.id == messageId }) return@withLock
+            val message = chats.getMessage(messageId, sessionId) ?: error("新消息暂时无法读取")
+            check(message.role == MessageRole.USER && message.sessionId == sessionId)
+            val count = chats.getInitialMessagePage(sessionId).totalMessageCount
+            // Only append to a live tail. A historical reading window retains its page and anchor.
+            // Read the durable entity, never a task/log preview, and leave composer/settings untouched.
+            mutableState.update { current ->
+                if (current.selectedSession?.id != sessionId || current.messages.any { it.id == messageId }) current
+                else current.copy(
+                    messages = if (current.hasNewerMessages) current.messages else current.messages + message,
+                    totalMessageCount = count,
+                )
+            }
+        }
     }
 
     suspend fun refreshAfterTerminalTask(sessionId: String) = guarded {
@@ -554,6 +626,7 @@ internal class DesktopPrimaryChatController(
     fun editComposer(text: String) {
         synchronized(composerLock) {
             val id = state.value.selectedSession?.id ?: return
+            if (id in deletingSessions) return
             pendingComposerClear = null
             try {
                 draftPersistence.submit(id, text)
@@ -562,6 +635,50 @@ internal class DesktopPrimaryChatController(
                 mutableState.update { it.copy(composerDraft = text, error = "Chat draft persistence is closing") }
             }
         }
+    }
+
+    /** A suspended choice lookup must never write into a newer session or replace a newer draft. */
+    internal fun editComposerIfCurrent(sessionId: String?, before: String, after: String): Boolean = synchronized(composerLock) {
+        if (sessionId == null || state.value.selectedSession?.id != sessionId || state.value.composerDraft != before)
+            return@synchronized false
+        try {
+            draftPersistence.submit(sessionId, after)
+            pendingComposerClear = null
+            mutableState.update { it.copy(composerDraft = after, error = null) }
+            true
+        } catch (_: IllegalStateException) {
+            mutableState.update { it.copy(error = "Chat draft persistence is closing") }
+            false
+        }
+    }
+
+    internal suspend fun actionChoiceForDraft(expected: ChatMessage, choice: DesktopActionChoice): String? {
+        var result: String? = null
+        guarded { stateLock.withLock {
+            check(state.value.selectedSession?.id == expected.sessionId &&
+                chats.getMessage(expected.id, expected.sessionId) == expected) { "行动选项已变化，请重新选择" }
+            result = desktopActionChoices(expected).firstOrNull { it == choice }?.text
+            check(result != null) { "行动选项已变化，请重新选择" }
+        } }
+        return result
+    }
+
+    suspend fun setCharacterEnabled(expectedSessionId: String, cardId: String, personId: String, enabled: Boolean) = guarded {
+        if (blockDuringSessionSave()) return@guarded
+        val change: suspend () -> Unit = {
+            taskRuntime.withMessageMutation(expectedSessionId) {
+                stateLock.withLock {
+                    check(state.value.selectedSession?.id == expectedSessionId) { "会话已变化，请重新选择人物" }
+                    val session = requireNotNull(chats.getSession(expectedSessionId))
+                    check(session.characterCardId == cardId) { "角色卡已变化，请重新选择人物" }
+                    val card = requireNotNull(characters.getById(cardId))
+                    val next = com.example.chatbar.domain.chat.SessionCharacterParticipationPolicy.change(session, card, personId, enabled)
+                    chats.saveSessionSettingsDraft(session, next)
+                    refreshSelection()
+                }
+            }
+        }
+        if (voices == null) change() else voices.withCharacterParticipationChange(expectedSessionId, change)
     }
 
     /** Optional flush for tests/callers; normal UI edits already schedule their own persistence. */
@@ -643,6 +760,28 @@ internal class DesktopPrimaryChatController(
         }
     }
 
+    suspend fun chooseSessionPlayerAvatar(followGlobal: Boolean = false) = guarded {
+        val session = state.value.selectedSession ?: return@guarded
+        val bytes = if (followGlobal) null else {
+            val path = imagePicker.pickOpenFile(DesktopFileType("会话玩家头像", listOf("png", "jpg", "jpeg", "webp", "gif"))) ?: return@guarded
+            withContext(Dispatchers.IO) {
+                val prepared = requireNotNull(imageStore).prepare(path)
+                DesktopImageEditing.png(DesktopImageEditing.decode(prepared.bytes, longestSide = 1024))
+            }
+        }
+        val warning = requireNotNull(imageStore).replacePlayerAvatar(session.id, bytes)
+        val saved = requireNotNull(chats.getSession(session.id))
+        stateLock.withLock {
+            if (state.value.selectedSession?.id == session.id) {
+                settingsBaseline = settingsBaseline?.copy(desktopPlayerAvatar = saved.desktopPlayerAvatar)
+                mutableState.update { current -> current.copy(selectedSession = saved,
+                    sessionSettingsDraft = current.sessionSettingsDraft?.copy(desktopPlayerAvatar = saved.desktopPlayerAvatar),
+                    globalPlayerAvatar = com.example.chatbar.domain.chat.PlayerRolePolicy.avatar(saved, current.selectedCharacter, current.defaultPlayerAvatar),
+                    status = warning ?: if (followGlobal) "会话头像已恢复跟随全局" else "会话头像已保存") }
+            }
+        }
+    }
+
     suspend fun setBackgroundOpacity(value: Float) = guarded {
         val saved = settings.updateAppSettings { it.copy(chatBackgroundImageOpacity = value.coerceIn(0f, 1f)) }
         mutableState.update { it.copy(backgroundOpacity = saved.chatBackgroundImageOpacity) }
@@ -678,7 +817,13 @@ internal class DesktopPrimaryChatController(
 
     suspend fun send(): String? = launch(continuation = false)
 
-    suspend fun continueReply(): String? = launch(continuation = true)
+    suspend fun continueReply(): String? = continueReply(state.value.selectedSession?.id)
+
+    suspend fun continueReply(expectedSessionId: String?): String? =
+        expectedSessionId?.let { launch(continuation = true, expectedSessionId = it) }
+
+    suspend fun continueEmptyComposer(expectedSessionId: String?): String? =
+        expectedSessionId?.let { launch(continuation = true, expectedSessionId = it, requireEmptyComposer = true) }
 
     fun stop(taskId: String): Boolean = taskRuntime.requestUserStop(taskId)
 
@@ -866,7 +1011,8 @@ internal class DesktopPrimaryChatController(
         return relinked
     }
 
-    private suspend fun launch(continuation: Boolean): String? {
+    private suspend fun launch(continuation: Boolean, expectedSessionId: String? = null,
+        requireEmptyComposer: Boolean = false): String? {
         var accepted: String? = null
         guarded {
             draftLock.withLock {
@@ -875,6 +1021,11 @@ internal class DesktopPrimaryChatController(
                     snapshot to snapshot.selectedSession?.id?.let(draftPersistence::latestRevision)
                 }
                 val session = current.selectedSession ?: return@withLock
+                if (expectedSessionId != null && session.id != expectedSessionId) return@withLock
+                if (requireEmptyComposer && (current.composerDraft.isNotBlank() || current.pendingImages.isNotEmpty())) {
+                    mutableState.update { it.copy(error = "草稿或附件已变化，请重新发送") }
+                    return@withLock
+                }
                 if (current.selectedCharacterMissing || characters.getById(session.characterCardId) == null) {
                     mutableState.update {
                         it.copy(selectedCharacterMissing = true, error = "Archived session: character is missing")
@@ -981,6 +1132,10 @@ internal class DesktopPrimaryChatController(
             )
             val playerSetting = settings.getPlayerSetting()
             val selectedCharacter = characters.getById(session.characterCardId)
+            val people = if (selectedCharacter?.characters.isNullOrEmpty()) emptyList() else {
+                val timeline = chats.getMessagesReadOnly(id)
+                withContext(Dispatchers.Default) { desktopChatPeople(selectedCharacter, timeline, session) }
+            }
             val modelStatus = models.status(session.modelId, appSettings)
             val effective = models.resolveChatModel(session.modelId, appSettings)
             val diagnostic = desktopModelDiagnostic(
@@ -988,7 +1143,7 @@ internal class DesktopPrimaryChatController(
                 effective?.id?.let { modelRepository?.getModel(it) }, catalogProvider(effective?.sourcePresetKey),
             )
             val modelChoices = models.availableChatModels(appSettings)
-                .map { DesktopPrimaryChoice(it.id, it.displayName) }
+                .map { DesktopPrimaryChoice(it.id, it.desktopAccountLabel()) }
             val effectiveModels = desktopEffectiveModels(models, appSettings)
             val formatChoices = formats.getAll().map { DesktopPrimaryChoice(it.id, it.name) }
             val worldBookChoices = worldBooks.getAll().map { DesktopPrimaryChoice(it.id, it.name) }
@@ -1030,6 +1185,7 @@ internal class DesktopPrimaryChatController(
                             selectedCharacter = selectedCharacter,
                             selectedCharacterMissing = selectedCharacter == null,
                             messages = page.messages,
+                            people = people,
                             hasOlderMessages = page.hasOlder,
                             hasNewerMessages = page.hasNewer,
                             readingPosition = if (sameSession) current.readingPosition else position,
@@ -1053,8 +1209,9 @@ internal class DesktopPrimaryChatController(
                             effectiveModels = effectiveModels,
                             formatChoices = formatChoices,
                             worldBookChoices = worldBookChoices,
-                            globalPlayerName = session.playerName?.takeIf(String::isNotBlank)
-                                ?: playerSetting.playerName.takeIf(String::isNotBlank),
+                            globalPlayerName = com.example.chatbar.domain.chat.PlayerRolePolicy.name(session, selectedCharacter, playerSetting.playerName),
+                            globalPlayerAvatar = com.example.chatbar.domain.chat.PlayerRolePolicy.avatar(session, selectedCharacter, playerSetting.desktopAvatar),
+                            defaultPlayerAvatar = playerSetting.desktopAvatar,
                             assistantSegmentedBubblesEnabled = appSettings.assistantSegmentedBubblesEnabled,
                             chatBubbleFontScale = desktopSafeBubbleFontScale(appSettings.chatBubbleFontScale),
                             alternativeEligibleIds = alternativeEligibleIds,

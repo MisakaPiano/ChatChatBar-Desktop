@@ -8,6 +8,21 @@ import org.junit.Test
 import kotlin.test.*
 
 class DesktopMergeGraphRemapperTest {
+    @Test fun `participation remaps both card key and nested person IDs without rewriting unrelated text`() {
+        val source = record("chat_sessions", obj("""{"id":"s","characterCardId":"id","desktopAutoPauseAbsentPeople":true,"desktopCharacterParticipation":[{"cardId":"id","disabledPersonIds":["p"],"automaticallyPausedPersonIds":["p"]}],"title":"id p"}"""))
+        val ids = DesktopMergeIdentity().apply { bind("chat_sessions", "s", "fork-s"); bind("character_cards", "id", "fork-c"); bind("characters", "p", "fork-p") }
+        assertFalse(ids.declarations(source).any { it.first == "characters" })
+        val result = DesktopMergeGraphRemapper(listOf(source), ids).rewrite(source)
+        assertEquals("fork-s", result.getValue("id").jsonPrimitive.content)
+        assertEquals("fork-c", result.getValue("characterCardId").jsonPrimitive.content)
+        val participation = result.getValue("desktopCharacterParticipation").jsonArray.single().jsonObject
+        assertEquals("fork-c", participation.getValue("cardId").jsonPrimitive.content)
+        assertEquals(listOf("fork-p"), participation.getValue("disabledPersonIds").jsonArray.map { it.jsonPrimitive.content })
+        assertEquals(listOf("fork-p"), participation.getValue("automaticallyPausedPersonIds").jsonArray.map { it.jsonPrimitive.content })
+        assertTrue(result.getValue("desktopAutoPauseAbsentPeople").jsonPrimitive.boolean)
+        assertEquals("id p", result.getValue("title").jsonPrimitive.content)
+    }
+
     private fun obj(text: String) = backupJson.parseToJsonElement(text).jsonObject
     private fun record(type: String, value: JsonObject) = DesktopMergeRecord("entities/$type/item.json", value)
     private fun record(node: MemoryNode) = record("memory_nodes", backupJson.encodeToJsonElement(MemoryNode.serializer(), node).jsonObject)
@@ -70,6 +85,35 @@ class DesktopMergeGraphRemapperTest {
         val nodes = mapper.rewrite(nested).getValue("memory").jsonObject.getValue("nodes").jsonArray.map { decoded(it.jsonObject) }
         assertEquals("Independent coverage prose", nodes[1].coverageUnits.single().text)
         assertEquals(MemoryHashes.parentCoverage(listOf(nodes[0]), nodes[1].coverageUnits), nodes[1].coverageHash)
+    }
+
+    @Test fun `historical archives keep independent versions of the same memory node`() {
+        fun slot(id: String, nodes: List<MemoryNode>) = DesktopMergeRecord("entities/save_slots/$id.json", buildJsonObject {
+            put("id", id); put("memory", buildJsonObject {
+                put("nodes", backupJson.encodeToJsonElement(kotlinx.serialization.builtins.ListSerializer(MemoryNode.serializer()), nodes))
+            })
+        })
+        val current = leaf().copy(content = "Current summary", coverageHash = "current-coverage")
+        val oldA = leaf().copy(content = "First archived summary", coverageHash = "first-coverage")
+        val oldB = leaf().copy(content = "Second archived summary", coverageHash = "second-coverage")
+        val a = slot("a", listOf(oldA, parent("arc", MemoryTier.ARC, oldA)))
+        val b = slot("b", listOf(oldB, parent("arc", MemoryTier.ARC, oldB)))
+        val ids = DesktopMergeIdentity().apply { bind("memory_nodes", "episode", "fork-episode") }
+        val mapper = DesktopMergeGraphRemapper(listOf(record(current), a, b), ids)
+        for ((archive, original) in listOf(a to oldA, b to oldB)) {
+            val nodes = mapper.rewrite(archive).getValue("memory").jsonObject.getValue("nodes").jsonArray.map { decoded(it.jsonObject) }
+            assertEquals(original.content, nodes[0].content)
+            assertEquals(original.coverageHash, nodes[0].coverageHash)
+            assertEquals(nodes[0].coverageHash, nodes[1].coverageUnits.single().text)
+            assertEquals(MemoryHashes.parentCoverage(listOf(nodes[0]), nodes[1].coverageUnits), nodes[1].coverageHash)
+        }
+        assertEquals(current.content, decoded(mapper.rewrite(record(current))).content)
+        val conflict = slot("conflict", listOf(oldA, oldB))
+        assertEquals("MERGE_MEMORY_NODE_CONFLICT", assertFails { mapper.rewrite(conflict) }.message)
+        val missing = slot("missing", listOf(parent("arc", MemoryTier.ARC, oldA)))
+        assertEquals("MERGE_MEMORY_CHILD_MISSING", assertFails { mapper.rewrite(missing) }.message)
+        val cyclic = slot("cyclic", listOf(oldA.copy(childIds = listOf(oldA.id))))
+        assertEquals("MERGE_MEMORY_CYCLE", assertFails { mapper.rewrite(cyclic) }.message)
     }
 
     @Test fun `cyclic missing and conflicting nodes are refused with fixed errors`() {

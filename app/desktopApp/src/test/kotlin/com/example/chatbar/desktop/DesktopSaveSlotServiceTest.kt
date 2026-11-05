@@ -8,9 +8,135 @@ import java.awt.image.BufferedImage
 import java.nio.file.*
 import javax.imageio.ImageIO
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.first
 import kotlin.test.*
 
 class DesktopSaveSlotServiceTest {
+    @Test fun `task center waits for original save slot publication and never calls late stop a rollback`(): Unit = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            val messages = f.chats.getMessagesReadOnly("s")
+            val entered = CompletableDeferred<Unit>(); val release = java.util.concurrent.CountDownLatch(1)
+            val held = java.util.concurrent.atomic.AtomicBoolean()
+            val service = f.service(DesktopSessionCommitJournal(f.root) {
+                if (held.compareAndSet(false, true)) {
+                    entered.complete(Unit); check(release.await(10, java.util.concurrent.TimeUnit.SECONDS))
+                }
+            })
+            val pickerEntered = CompletableDeferred<Unit>(); val pickerRelease = java.util.concurrent.CountDownLatch(1)
+            val picker = object : DesktopFilePicker {
+                override fun pickOpenFile(type: DesktopFileType): Path? = error("NO_IMPORT")
+                override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? {
+                    pickerEntered.complete(Unit); check(pickerRelease.await(10, java.util.concurrent.TimeUnit.SECONDS)); return null
+                }
+            }
+            val controller = DesktopSaveSlotController(service, picker) { error("NO_RESTORE_OR_COPY") }
+            val center = DesktopTaskCenter(); center.watchSaveSlots(controller)
+            try {
+                assertNotNull(controller.openFileContext("s")).join()
+                assertTrue(controller.workRows.value.isEmpty()) // Catalog reads do not create completed operations.
+                controller.create("Synthetic retained slot", SaveSlotImagePolicy.NONE, false)
+                withTimeout(5000) { entered.await() }
+                val row = withTimeout(5000) { center.state.first { it.rows.any { row -> row.active } } }.rows.single()
+                assertEquals(DesktopWorkDetail.SAVE_SLOT, row.target!!.detail); assertEquals("s", row.target!!.sessionId)
+                assertTrue(center.requestStop(row.id))
+                withTimeout(5000) { controller.workRows.first { it.single().stopRequested } }
+                assertTrue(controller.state.value.busy); assertTrue(controller.workRows.value.single().active)
+                controller.closePanel(); assertTrue(controller.revealTaskPanel("s"))
+                assertFalse(controller.revealTaskPanel("other")); assertEquals("s", controller.state.value.sessionId)
+                release.countDown()
+                val finished = withTimeout(5000) { controller.workRows.first { !it.single().active } }.single()
+                assertEquals(DesktopWorkPhase.UNCONFIRMED, finished.phase)
+                assertFalse(finished.canStop); assertFalse(finished.canRetry)
+                val saved = service.list("s").single()
+                assertEquals(messages, f.chats.getMessagesReadOnly("s")); assertEquals("unsent draft", f.chats.getSessionDraft("s"))
+                controller.export(saved)
+                withTimeout(5000) { pickerEntered.await() }
+                assertFalse(controller.stopTask(finished.id)); assertTrue(controller.state.value.busy)
+                pickerRelease.countDown()
+                val cancelled = withTimeout(5000) { controller.workRows.first { it.size == 2 && it.none { row -> row.active } } }.first()
+                assertEquals(DesktopWorkPhase.CANCELLED, cancelled.phase)
+                assertEquals(saved.id, service.list("s").single().id)
+                assertEquals(messages, f.chats.getMessagesReadOnly("s")); assertEquals("unsent draft", f.chats.getSessionDraft("s"))
+            } finally { release.countDown(); pickerRelease.countDown(); controller.closeAndDrain(); center.closeAndDrain() }
+        }
+    }
+
+    @Test fun `save slot task completes only after real creation and import adds library without restoring chat`(): Unit = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            val service = f.service()
+            val picker = object : DesktopFilePicker {
+                override fun pickOpenFile(type: DesktopFileType): Path? = null
+                override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? = null
+            }
+            val controller = DesktopSaveSlotController(service, picker) { error("IMPORT_MUST_NOT_RESTORE") }
+            try {
+                assertNotNull(controller.openFileContext("s")).join()
+                controller.create("Synthetic slot", SaveSlotImagePolicy.NONE, false)
+                val created = withTimeout(5000) { controller.workRows.first { it.single().phase == DesktopWorkPhase.COMPLETED } }.single()
+                val slot = controller.state.value.slots.single()
+                val file = f.root.resolve("task-import.cbsave"); service.export(slot.id, file)
+                val messages = f.chats.getMessagesReadOnly("s"); val draft = f.chats.getSessionDraft("s")
+                assertNotNull(controller.importFile(file)).join()
+                assertEquals(2, controller.state.value.slots.size)
+                assertTrue(controller.workRows.value.all { it.phase == DesktopWorkPhase.COMPLETED && !it.canRetry })
+                assertNotEquals(created.id, controller.workRows.value.first().id)
+                assertEquals(messages, f.chats.getMessagesReadOnly("s")); assertEquals(draft, f.chats.getSessionDraft("s"))
+            } finally { controller.closeAndDrain() }
+        }
+    }
+
+    @Test fun `player role and local avatar survive packaged export import and restored media custody`(): Unit = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            val role = SessionPlayerRole(f.session.characterCardId, "explicit-person", followName = false)
+            f.chats.saveSessionSettingsDraft(f.session, f.session.copy(desktopPlayerRole = role, desktopPlayerAvatar = "images/synthetic.png"))
+            val service = f.service()
+            val slot = service.create("s", "Player", SaveSlotImagePolicy.ORIGINAL, false)
+            assertEquals(role, slot.desktopPlayerRole)
+            val output = f.root.resolve("player.cbsave")
+            service.export(slot.id, output)
+            val imported = service.import(output, "s")
+            val current = f.chats.getSession("s")!!
+            f.chats.saveSessionSettingsDraft(current, current.copy(desktopPlayerRole = null, desktopPlayerAvatar = null))
+            service.restore(imported.id, "s")
+            val restored = f.chats.getSession("s")!!
+            assertEquals(role, restored.desktopPlayerRole)
+            assertNotNull(restored.desktopPlayerAvatar)
+            assertContentEquals(Files.readAllBytes(f.root.resolve("images/synthetic.png")),
+                Files.readAllBytes(f.root.resolve(restored.desktopPlayerAvatar!!)))
+            assertNotEquals("images/synthetic.png", restored.desktopPlayerAvatar)
+            val currentSlot = service.create("s", "Without images", SaveSlotImagePolicy.NONE, false)
+            assertNull(currentSlot.desktopPlayerAvatar)
+            assertEquals(role, currentSlot.desktopPlayerRole)
+        }
+    }
+
+    @Test fun `participation survives real package export import restore with original card scope`() = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            val overrides = listOf(SessionCharacterParticipation(f.session.characterCardId, setOf("disabled-person"), setOf("automatic-person")),
+                SessionCharacterParticipation("other-card", setOf("other-person")))
+            f.chats.saveSessionSettingsDraft(f.session, f.session.copy(desktopCharacterParticipation = overrides, desktopAutoPauseAbsentPeople = true))
+            val service = f.service()
+            val slot = service.create("s", "Participation", SaveSlotImagePolicy.ORIGINAL, false)
+            assertEquals(overrides, slot.desktopCharacterParticipation)
+            assertTrue(slot.desktopAutoPauseAbsentPeople)
+            val output = f.root.resolve("participation.cbsave")
+            service.export(slot.id, output)
+            val imported = service.import(output, "s")
+            assertEquals(overrides, imported.desktopCharacterParticipation)
+            assertTrue(imported.desktopAutoPauseAbsentPeople)
+            val current = f.chats.getSession("s")!!
+            f.chats.saveSessionSettingsDraft(current, current.copy(desktopCharacterParticipation = emptyList(), desktopAutoPauseAbsentPeople = false))
+            service.restore(imported.id, "s")
+            assertEquals(overrides, f.chats.getSession("s")!!.desktopCharacterParticipation)
+            assertTrue(f.chats.getSession("s")!!.desktopAutoPauseAbsentPeople)
+            assertEquals(f.session.characterCardId, f.chats.getSession("s")!!.characterCardId)
+        }
+    }
+
     private class Fixture : AutoCloseable {
         val root = Files.createTempDirectory("desktop-slot-service-")
         val owner = assertIs<DesktopDataRootOwnershipResult.Acquired>(DesktopDataRootOwnership.acquire(
@@ -26,11 +152,12 @@ class DesktopSaveSlotServiceTest {
         val session = ChatSession.create("synthetic-card", "Synthetic").copy(id = "s", longTermMemoryEnabled = false,
             playerName = "Test player", imagePromptPreference = "retain preference")
         val message = SyntheticSaveSlotCorpus.message().copy(images = listOf("images/synthetic.png"))
-        fun service(journal: DesktopSessionCommitJournal = DesktopSessionCommitJournal(root)) = DesktopSaveSlotService(root, gate,
+        fun service(journal: DesktopSessionCommitJournal = DesktopSessionCommitJournal(root),
+            cleanup: suspend (List<String>) -> Unit = {}) = DesktopSaveSlotService(root, gate,
             audio, object : DesktopSessionReservation { override suspend fun <T> run(sessionId: String, operation: suspend () -> T): T = operation() },
             chats, voices, { snapshot }, { reference ->
                 if (Path.of(reference).isAbsolute) DesktopVoiceAudioStore(root).verify(reference) else root.resolve(reference)
-            }, journal)
+            }, journal, cleanup)
         suspend fun seed() {
             chats.createSession(session); chats.addMessage(message); chats.updateSessionDraft("s", "unsent draft")
             val image = BufferedImage(12, 8, BufferedImage.TYPE_INT_RGB)
@@ -38,6 +165,71 @@ class DesktopSaveSlotServiceTest {
             try { ImageIO.write(image, "png", root.resolve("images/synthetic.png").toFile()) } finally { image.flush() }
         }
         override fun close() { runBlocking { focus.closeAndDrain(); gate.closeAndDrain() }; owner.close(); root.toFile().deleteRecursively() }
+    }
+
+    @Test fun `whole session deletion removes its graph and slots while retaining other sessions and shared media`(): Unit = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            val other = f.session.copy(id = "other", title = "Other")
+            f.chats.createSession(other)
+            f.chats.addMessage(f.message.copy(id = "other-message", sessionId = "other"))
+            val resources = DesktopCharacterResourceStore(f.root)
+            val cleanup = DesktopOwnedImageCleanup(f.root, resources, f.gate)
+            val service = f.service(cleanup = cleanup::deleteUnreferenced)
+            val slot = service.create("s", "Delete with owner", SaveSlotImagePolicy.ORIGINAL, false)
+            val otherSlot = service.create("other", "Retained", SaveSlotImagePolicy.ORIGINAL, false)
+            val otherBaseline = assertNotNull(f.chats.getSession("other"))
+            val notice = service.deleteSession("s")
+            assertNull(notice); assertNull(f.chats.getSession("s")); assertTrue(f.chats.getMessagesReadOnly("s").isEmpty())
+            assertEquals("", f.chats.getSessionDraft("s")); assertTrue(service.list("s").isEmpty())
+            assertFalse(Files.exists(f.root.resolve("save_slot_packages/${slot.packageRef!!.fileName}")))
+            assertEquals(otherBaseline, f.chats.getSession("other")); assertEquals(1, f.chats.getMessagesReadOnly("other").size)
+            assertTrue(Files.exists(f.root.resolve("save_slot_packages/${otherSlot.packageRef!!.fileName}")))
+            assertTrue(Files.exists(f.root.resolve("images/synthetic.png")))
+            assertFalse(Files.exists(f.root.resolve("backups/.session-deletion-cleanup/s.json")))
+        }
+    }
+
+    @Test fun `whole deletion rollback preserves graph and committed cleanup failure survives a new owner`(): Unit = runBlocking {
+        Fixture().use { f ->
+            f.seed(); val slot = f.service().create("s", "Keep on failure", SaveSlotImagePolicy.NONE, false)
+            val fail = f.service(DesktopSessionCommitJournal(f.root) { if (it == 1) error("synthetic IO failure") })
+            assertFails { fail.deleteSession("s") }
+            assertNotNull(f.chats.getSession("s")); assertEquals(1, f.chats.getMessagesReadOnly("s").size)
+            assertTrue(Files.exists(f.root.resolve("entities/save_slots/${slot.id}.json")))
+            assertFalse(Files.exists(f.root.resolve("backups/.session-deletion-cleanup/s.json")))
+            assertNotNull(f.service(cleanup = { error("synthetic cleanup failure") }).deleteSession("s"))
+            assertNull(f.chats.getSession("s")); assertTrue(Files.exists(f.root.resolve("backups/.session-deletion-cleanup/s.json")))
+            var candidates: List<String>? = null
+            f.service(cleanup = { candidates = it }).resumeSessionDeletionCleanup()
+            assertTrue("images/synthetic.png" in candidates!!)
+            assertFalse(Files.exists(f.root.resolve("backups/.session-deletion-cleanup/s.json")))
+        }
+    }
+
+    @Test fun `whole deletion collects absolute owned audio and retains external files and shared references`(): Unit = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            val audioStore = DesktopVoiceAudioStore(f.root)
+            val audio = audioStore.persist("s", "owned", fishPreviewMp3().inputStream())
+            val shared = audioStore.persist("s", "shared", fishPreviewMp3().inputStream())
+            val external = f.root.parent.resolve("external-${java.util.UUID.randomUUID()}.mp3")
+            Files.writeString(external, "outside ownership")
+            try {
+                fun voice(id: String, session: String, path: String) = GeneratedVoiceMessage.create(session, f.message.id, "version", "anchor",
+                    0, "DIALOGUE", "Alice", "hello", "hello", "hello", "alice", "Alice",
+                    FishAudioVoiceBinding(referenceId = "fixture", title = "fixture"), "s2.1-pro-free", path, 1300, 20850).copy(id = id)
+                f.voices.save(voice("owned", "s", audio.path)); f.voices.save(voice("shared", "s", shared.path))
+                f.voices.save(voice("external", "s", external.toString()))
+                f.chats.createSession(f.session.copy(id = "other"))
+                val sharedReference = if (System.getProperty("os.name").startsWith("Windows", true)) shared.path.uppercase(java.util.Locale.ROOT) else shared.path
+                f.voices.save(voice("retained", "other", sharedReference))
+                val cleanup = DesktopOwnedImageCleanup(f.root, DesktopCharacterResourceStore(f.root), f.gate, audioStore::deleteIfOwned)
+                assertNull(f.service(cleanup = cleanup::deleteUnreferenced).deleteSession("s"))
+                assertFalse(Files.exists(Path.of(audio.path))); assertTrue(Files.exists(Path.of(shared.path)))
+                assertTrue(Files.exists(external)); assertNotNull(f.voices.get("retained"))
+            } finally { Files.deleteIfExists(external) }
+        }
     }
 
     @Test fun `restore is an atomic graph replacement with safety slot and original resources retained`(): Unit = runBlocking {

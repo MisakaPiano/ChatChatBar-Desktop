@@ -9,6 +9,9 @@ import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.Classpath
@@ -25,6 +28,9 @@ val desktopModelCatalogResources = layout.buildDirectory.dir("generated/desktop-
 // Desktop release identity is independent of the Android version. This does not publish a release.
 val desktopVersion = providers.gradleProperty("desktopVersion").getOrElse("0.1.0-preview.1")
 require(desktopVersion.matches(Regex("[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?")))
+val desktopBuildNumber = providers.gradleProperty("desktopBuildNumber").orNull?.also {
+    require(it.matches(Regex("[1-9][0-9]*")) && it.toIntOrNull() != null) { "DESKTOP_BUILD_NUMBER_INVALID" }
+}
 // Windows compares only three numeric fields; never silently strip Preview identity for installers.
 val explicitInstallerVersion = providers.gradleProperty("desktopInstallerVersion")
 val desktopInstallerVersion = explicitInstallerVersion.getOrElse(desktopVersion.substringBefore('-'))
@@ -115,12 +121,25 @@ abstract class WriteDesktopBuildIdentity : DefaultTask() {
     @get:Input abstract val installerVersion: Property<String>
     @get:Input abstract val installerVersionAssigned: Property<Boolean>
     @get:Input abstract val packagingProfile: Property<String>
+    @get:InputFiles @get:PathSensitive(PathSensitivity.NONE)
+    abstract val promptSources: ConfigurableFileCollection
     @get:OutputDirectory abstract val identityDirectory: DirectoryProperty
 
     @TaskAction
     fun writeIdentity() {
         val directory = identityDirectory.get().asFile.apply { mkdirs() }
+        val sources = promptSources.files.sortedBy { it.name }
+        check(sources.isNotEmpty() && sources.map { it.name }.distinct().size == sources.size)
+        val promptHash = MessageDigest.getInstance("SHA-256")
+        sources.forEach { file ->
+            promptHash.update(file.name.toByteArray(Charsets.UTF_8)); promptHash.update(0.toByte())
+            promptHash.update(file.readText(Charsets.UTF_8).replace("\r\n", "\n").toByteArray(Charsets.UTF_8))
+            promptHash.update(0.toByte())
+        }
+        val promptSha = promptHash.digest().joinToString("") { "%02x".format(it) }
         directory.resolve("desktop-build.properties").writeText("version=${appVersion.get()}\ncommit=${sourceCommit.get()}\ninstallerVersion=${installerVersion.get()}\ninstallerVersionAssigned=${installerVersionAssigned.get()}\npackagingProfile=${packagingProfile.get()}\n")
+        // Installer identity has an exact separate contract; template evidence must not extend it.
+        directory.resolve("desktop-prompt-source.properties").writeText("promptSourceSha256=$promptSha\n")
     }
 }
 val writeDesktopBuildIdentity by tasks.registering(WriteDesktopBuildIdentity::class) {
@@ -129,6 +148,9 @@ val writeDesktopBuildIdentity by tasks.registering(WriteDesktopBuildIdentity::cl
     installerVersion.set(desktopInstallerVersion)
     installerVersionAssigned.set(explicitInstallerVersion.isPresent)
     packagingProfile.set(desktopPackagingProfile)
+    promptSources.from(project(":sharedCore").fileTree("src/main/kotlin/com/example/chatbar/domain/prompt") {
+        include("*.kt")
+    }, rootProject.file("app/src/main/java/com/example/chatbar/domain/prompt/PromptTemplates.kt"))
     identityDirectory.set(desktopBuildResources)
 }
 val syncDesktopModelCatalogResources by tasks.registering(Copy::class) {
@@ -139,6 +161,7 @@ val syncDesktopModelCatalogResources by tasks.registering(Copy::class) {
         include("presets/characters/**")
         include("presets/world_books/**")
         include("presets/novelai/**", "danbooru/**", "prompt_dictionary/**", "tag_completion/**", "tokenizers/**")
+        include("presets/image_styles/**")
     }
     into(desktopModelCatalogResources.map { it.dir("chatbar-assets") })
 }
@@ -179,6 +202,16 @@ tasks.withType<org.gradle.api.tasks.testing.Test>().configureEach {
     }
 }
 
+// Separate reports preserve the original full-suite result while checking packaged production jars.
+tasks.register<org.gradle.api.tasks.testing.Test>("proxyPackagedRoutingTest") {
+    group = "verification"
+    dependsOn("testClasses", "createDistributable")
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    filter { includeTestsMatching("com.example.chatbar.desktop.DesktopProxyPhysicalRoutingTest") }
+    environment("CCB_PROXY_PRODUCTION_IMAGE", layout.buildDirectory.dir("compose/binaries/main/app/$desktopNativeName").get().asFile.absolutePath)
+}
+
 // Deliberately not part of check/test/run; this opt-in runner never accepts a credential.
 tasks.register<JavaExec>("runNovelAiPhase7Smoke") {
     group = "verification"
@@ -211,6 +244,7 @@ dependencies {
     implementation(libs.icons.lucide.cmp)
     implementation(libs.commonmark)
     implementation(libs.jsoup)
+    implementation("org.apache.pdfbox:pdfbox:3.0.8")
     // D-038: selected official v1.4.5 archive codec uses this exact Tink release.
     implementation("com.google.crypto.tink:tink:1.23.0")
     implementation("com.google.code.gson:gson:2.13.2")
@@ -233,7 +267,8 @@ tasks.register<JavaExec>("runPhase7FinalProductFixture") {
 compose.desktop {
     application {
         mainClass = "com.example.chatbar.desktop.MainKt"
-        jvmArgs("-Dchatbar.desktop.applicationHome=\$ROOTDIR")
+        // Java reads the system-proxy opt-in once at VM startup; keep it app-local.
+        jvmArgs("-Dchatbar.desktop.applicationHome=\$ROOTDIR", "-Djava.net.useSystemProxies=true")
 
         nativeDistributions {
             // The packaged runtime must retain JDBC and native-library support for local tag catalogs.
@@ -261,20 +296,64 @@ compose.desktop {
     }
 }
 
+val updaterSources = rootProject.projectDir.parentFile.resolve("tools/desktop/update")
+val updaterInputFiles = fileTree(updaterSources) {
+    include("*.py", "*.cs", "artifacts.json", "update-root.json")
+    exclude("test_*.py")
+}
+val updaterSourceKey = providers.provider {
+    val digest = MessageDigest.getInstance("SHA-256")
+    // Gradle invalidates Exec actions when this recipe changes. Give that recipe a
+    // fresh immutable destination too, rather than re-entering an existing runtime.
+    digest.update("desktopApp/build.gradle.kts".toByteArray(Charsets.UTF_8))
+    digest.update(project.buildFile.readBytes())
+    updaterInputFiles.files.sortedBy { it.name }.forEach { file ->
+        digest.update(file.name.toByteArray(Charsets.UTF_8)); digest.update(file.readBytes())
+    }
+    digest.digest().joinToString("") { "%02x".format(it) }.take(20)
+}
+val updaterRuntimeDirectory = layout.buildDirectory.dir(updaterSourceKey.map { "desktop-updater/$it" })
+val prepareDesktopUpdater by tasks.registering(Exec::class) {
+    group = "distribution"
+    inputs.file(project.buildFile)
+    inputs.files(updaterInputFiles)
+    outputs.dir(updaterRuntimeDirectory)
+    doFirst {
+        commandLine("python", updaterSources.resolve("prepare_runtime.py").absolutePath,
+            "--destination", updaterRuntimeDirectory.get().asFile.absolutePath,
+            "--artifact-cache", layout.buildDirectory.dir("updater-artifact-cache").get().asFile.absolutePath, "--download")
+    }
+}
+val attachDesktopUpdater by tasks.registering(Exec::class) {
+    group = "distribution"
+    dependsOn("createDistributable", prepareDesktopUpdater)
+    doFirst {
+        val command = mutableListOf("python", updaterSources.resolve("attach_runtime.py").absolutePath,
+            "--image", layout.buildDirectory.dir("compose/binaries/main/app/$desktopNativeName").get().asFile.absolutePath,
+            "--runtime", updaterRuntimeDirectory.get().asFile.absolutePath,
+            "--root", updaterSources.resolve("update-root.json").absolutePath,
+            "--version", desktopVersion, "--commit", desktopCommit.get())
+        desktopBuildNumber?.let { command += listOf("--build-number", it) }
+        commandLine(command)
+    }
+}
+
 tasks.register<Exec>("packageNsis") {
     group = "distribution"
-    description = "Build the current-user NSIS Preview installer from an audited app-image"
-    dependsOn(verifyDesktopInstallerIdentity, "createDistributable")
+    description = "Build the current-user NSIS installer from an audited app-image"
+    dependsOn(verifyDesktopInstallerIdentity, attachDesktopUpdater)
     doFirst {
         val compiler = providers.gradleProperty("desktopNsisCompiler").orNull
             ?: error("Supply -PdesktopNsisCompiler=<makensis.exe>")
         val output = providers.gradleProperty("desktopNsisOutput").orNull
             ?: error("Supply a new -PdesktopNsisOutput=<directory>")
         check(desktopPackagingProfile == "desktop") { "NSIS uses the ordinary app-image; installer test identity is independent" }
-        commandLine("python", rootProject.projectDir.parentFile.resolve("tools/desktop/nsis/build_installer.py").absolutePath,
+        val command = mutableListOf("python", rootProject.projectDir.parentFile.resolve("tools/desktop/nsis/build_installer.py").absolutePath,
             "--image", layout.buildDirectory.dir("compose/binaries/main/app/$desktopNativeName").get().asFile.absolutePath,
             "--output", output, "--version", desktopVersion, "--commit", desktopCommit.get(),
             "--installer-version", desktopInstallerVersion,
             "--profile", providers.gradleProperty("desktopNsisProfile").getOrElse("desktop"), "--makensis", compiler)
+        desktopBuildNumber?.let { command += listOf("--build-number", it) }
+        commandLine(command)
     }
 }

@@ -8,9 +8,11 @@ import java.io.File
 import java.util.zip.InflaterInputStream
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.floatOrNull
+import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -73,7 +75,7 @@ object NovelAiPngMetadataReader {
         val modelText = (explicitModel ?: root["source"]?.jsonPrimitive?.contentOrNull ?: source).orEmpty().trim().lowercase()
         val model = when {
             "curated" in modelText || "inpainting" in modelText -> null
-            modelText in ENHANCE_V5_SOURCES -> NovelAiImageModel.V5_FULL
+            modelText in ENHANCE_V5_SOURCES || modelText in V5_MEDIUM_SOURCES -> NovelAiImageModel.V5_FULL
             modelText in ENHANCE_V45_SOURCES -> NovelAiImageModel.V4_5_FULL
             else -> null
         } ?: error("无法准确识别受支持的 Full 模型，请使用 Upscale")
@@ -90,7 +92,11 @@ object NovelAiPngMetadataReader {
             guidance = imported.guidance ?: 6f,
             cfgRescale = imported.cfgRescale ?: 0f,
             sampler = imported.sampler ?: NovelAiSampler.EULER_ANCESTRAL,
-            useCharacterPositions = imported.useCharacterPositions ?: false
+            useCharacterPositions = imported.useCharacterPositions ?: false,
+            effort = imported.effort ?: NovelAiEffort.HIGH,
+            transparentBackground = imported.transparentBackground ?: false,
+            varietyPlus = imported.varietyPlus ?: false,
+            varietyPlusSigma = imported.varietyPlusSigma
         )
         settings.validationError(metadata.characters.size)?.let { error(it) }
         return NovelAiEnhanceSource(
@@ -116,6 +122,9 @@ object NovelAiPngMetadataReader {
     private val ENHANCE_V5_SOURCES = setOf(
         "nai-diffusion-5-full", "novelai diffusion v5 full",
         "novelai diffusion v5 657484a5", "novelai diffusion v5 0adf9ab7"
+    )
+    private val V5_MEDIUM_SOURCES = setOf(
+        "nai-diffusion-5-full-medium", "novelai diffusion v5 93f4bd30", "novelai diffusion v5 70ab5786"
     )
     private val ENHANCE_V45_SOURCES = setOf(
         "nai-diffusion-4-5-full", "novelai diffusion v4.5 full", "diffusionmodelmetaname.naiv4next 4bde2a90",
@@ -241,6 +250,10 @@ object NovelAiPngMetadataReader {
             this["source"]?.jsonPrimitive?.contentOrNull,
             source
         ).joinToString(" ")
+        // An explicit saved model takes precedence over a possibly stale outer PNG Source chunk.
+        val effortSource = (this["model"]?.jsonPrimitive?.contentOrNull
+            ?: this["model_id"]?.jsonPrimitive?.contentOrNull
+            ?: this["source"]?.jsonPrimitive?.contentOrNull ?: source).orEmpty().trim().lowercase()
         val action = when (this["action"]?.jsonPrimitive?.contentOrNull?.lowercase()) {
             NovelAiGenerationAction.IMAGE_TO_IMAGE.apiId -> NovelAiGenerationAction.IMAGE_TO_IMAGE
             NovelAiGenerationAction.INPAINT.apiId -> NovelAiGenerationAction.INPAINT
@@ -277,10 +290,28 @@ object NovelAiPngMetadataReader {
             characters = characters,
             hasCharacterPrompts = hasCharacters,
             settings = NovelAiImportedGenerationSettings(
+                varietyPlus = if (effortSource.toNovelAiModelOrNull() == NovelAiImageModel.V4_5_FULL) {
+                    when (val sigma = this["skip_cfg_above_sigma"]) {
+                        null -> null
+                        JsonNull -> false
+                        else -> sigma.jsonPrimitive.doubleOrNull?.takeIf { it.isFinite() }?.let { it > 0 }
+                    }
+                } else null,
+                varietyPlusSigma = this["skip_cfg_above_sigma"]?.jsonPrimitive?.doubleOrNull
+                    ?.takeIf { it.isFinite() && it > 0 && width >= 8 && height >= 8 &&
+                        effortSource.toNovelAiModelOrNull() == NovelAiImageModel.V4_5_FULL }
+                    ?.div(NovelAiVarietyPlusPolicy.resolutionScale(width, height)),
+                effort = when {
+                    effortSource.removeSuffix("-inpainting") in V5_MEDIUM_SOURCES -> NovelAiEffort.MEDIUM
+                    effortSource.toNovelAiModelOrNull() == NovelAiImageModel.V5_FULL -> NovelAiEffort.HIGH
+                    else -> null
+                },
+                transparentBackground = this["tag_hint_transparent_background"]?.jsonPrimitive?.booleanOrNull
+                    ?: false.takeIf { modelText.toNovelAiModelOrNull() == NovelAiImageModel.V5_FULL },
                 useCharacterPositions = this["v4_prompt"]?.jsonObjectOrNull()
                     ?.get("use_coords")?.jsonPrimitive?.booleanOrNull
                     ?: this["use_coords"]?.jsonPrimitive?.booleanOrNull ?: false,
-                model = modelText.toNovelAiModelOrNull(),
+                model = effortSource.toNovelAiModelOrNull(),
                 sizeTier = matchedSize?.first,
                 aspectRatio = matchedSize?.second,
                 customWidth = width.takeIf { useCustomSize },

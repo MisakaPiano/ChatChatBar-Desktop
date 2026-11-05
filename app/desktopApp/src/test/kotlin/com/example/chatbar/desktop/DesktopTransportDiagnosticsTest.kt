@@ -16,6 +16,33 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class DesktopTransportDiagnosticsTest {
+    @Test fun `budget uses complete wire before scrub and truncation without retaining input in numeric report`() {
+        val owner = DesktopTransportDiagnosticsOwner()
+        val source = "fake-api-secret" + "合成正文".repeat(20_000)
+        val wire = OpenAiChatRequestSerializer.serialize(listOf(ChatApiMessage.text("user", source)), model("fake-api-secret"), true)
+        owner.begin("budget", "session", model("fake-api-secret").copy(desktopContextWindowTokens = 128000))
+            .onRequest(ProviderRequestEvidence("https://example.test/v1/chat/completions", wire))
+        val entry = owner.entries.value.single()
+        assertTrue(entry.requestTruncated)
+        assertEquals(com.example.chatbar.domain.budget.WeightedCharacterTokenEstimator.estimate(source).tokens,
+            entry.requestTextBudget!!.estimatedTextTokens)
+        assertFalse(entry.requestTextBudgetUnavailable)
+        assertEquals(128000L, entry.requestTextBudget!!.target.contextWindowTokens)
+        assertTrue(entry.requestTextBudget!!.estimatedTextContextPercent!! > 0)
+        assertFalse(entry.requestTextBudget.toString().contains("fake-api-secret"))
+        assertFalse(entry.requestTextBudget.toString().contains("合成正文"))
+        assertEquals(null, entry.usage)
+    }
+
+    @Test fun `invalid wire budget remains unavailable rather than invented zero and provider usage stays separate`() {
+        val owner = DesktopTransportDiagnosticsOwner()
+        val recorder = owner.begin("invalid-budget", "session", model("fake-secret"))
+        recorder.onRequest(ProviderRequestEvidence("https://example.test/v1/chat/completions", "{unfinished"))
+        val entry = owner.entries.value.single()
+        assertTrue(entry.requestTextBudgetUnavailable); assertEquals(null, entry.requestTextBudget)
+        assertEquals(null, entry.usage)
+    }
+
     @Test
     fun `retained request is final cleartext serialization and https roles remain untouched`() {
         val owner = DesktopTransportDiagnosticsOwner()
@@ -135,6 +162,40 @@ class DesktopTransportDiagnosticsTest {
         assertTrue(outbound.length > 65_536)
         assertTrue(requireNotNull(owner.entries.value.single().serializedRequestBody).contains("[truncated]"))
         assertTrue(outbound.endsWith("}]}"))
+    }
+
+    @Test fun `clearing one session neither clears others nor resurrects an active cleared log`() {
+        val owner = DesktopTransportDiagnosticsOwner()
+        val cleared = owner.begin("one", "a", model("secret"))
+        owner.begin("two", "b", model("secret"))
+        owner.clear("a")
+        cleared.onResponseChunk("{}", OpenAiSseChunk("late", null))
+        cleared.finish(DesktopTaskStatus.COMPLETED, null, null)
+        assertEquals(listOf("two"), owner.entries.value.map { it.taskId })
+        owner.begin("three", "a", model("secret"))
+        assertEquals(listOf("three"), desktopChatDiagnosticEntries(owner.entries.value, "a").map { it.taskId })
+        assertEquals(listOf("two"), desktopChatDiagnosticEntries(owner.entries.value, "b").map { it.taskId })
+    }
+
+    @Test fun `aggregated output and usage survive chunk eviction while remaining bounded and scrubbed`() {
+        val owner = DesktopTransportDiagnosticsOwner()
+        val recorder = owner.begin("one", "a", model("secret-key"))
+        recorder.onResponseChunk("{}", OpenAiSseChunk("secret-", "reason"))
+        recorder.onResponseChunk("{}", OpenAiSseChunk("key", "ing"))
+        repeat(40) { recorder.onResponseChunk("{}", OpenAiSseChunk("content-$it;", null)) }
+        recorder.onResponseChunk("""{"usage":{"prompt_tokens":123,"completion_tokens":45}}""")
+        val entry = owner.entries.value.single()
+        assertEquals(32, entry.chunks.size)
+        assertTrue(entry.droppedChunkCount > 0)
+        assertTrue(entry.outputText.contains("content-0;"))
+        assertFalse(entry.outputText.contains("secret-key"))
+        assertEquals("reasoning", entry.reasoningText)
+        assertEquals(123, entry.usage?.promptTokens)
+        assertEquals(45, entry.usage?.completionTokens)
+        recorder.onResponseChunk("{}", OpenAiSseChunk("x".repeat(100_000), "y".repeat(100_000)))
+        val capped = owner.entries.value.single()
+        assertTrue(capped.outputTruncated && capped.reasoningTruncated)
+        assertTrue(capped.outputText.length < 66_000 && capped.reasoningText.length < 66_000)
     }
 
     private fun roles(body: String): List<String> = Json.parseToJsonElement(body)

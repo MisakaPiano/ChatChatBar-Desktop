@@ -11,13 +11,20 @@ class DesktopWindowChromeTest {
     private fun hit(x: Float, y: Float, maximized: Boolean = false) =
         DesktopChromeHitTest.hit(x, y, 800f, 600f, 8f, maximized, layout)
 
-    @Test fun `every responsive mode retains four discoverable routes and exactly one selected`() {
+    @Test fun `every responsive mode retains enabled feature routes and exactly one selected`() {
         for (size in DesktopShellSize.entries) for (route in DesktopPrimaryRoute.entries) {
-            val p = desktopTitleBarPresentation(size, route, false)
+            val p = desktopTitleBarPresentation(size, route, false, momentsEnabled = true, communityEnabled = true)
             assertEquals(DesktopPrimaryRoute.entries.toList(), p.routes.map { it.route })
             assertEquals(listOf(route), p.routes.filter { it.selected }.map { it.route })
             assertTrue(p.routes.all { it.enabled })
         }
+    }
+    @Test fun `disabled moments leaves original navigation and enabled moments remains discoverable in compact layout`() {
+        val original = desktopTitleBarPresentation(DesktopShellSize.COMPACT, DesktopPrimaryRoute.CHAT, false)
+        assertEquals(listOf(DesktopPrimaryRoute.CHAT, DesktopPrimaryRoute.MANAGE, DesktopPrimaryRoute.TOOLS, DesktopPrimaryRoute.DATA), original.routes.map { it.route })
+        val enabled = desktopTitleBarPresentation(DesktopShellSize.COMPACT, DesktopPrimaryRoute.MOMENTS, false, momentsEnabled = true)
+        assertEquals(listOf(DesktopPrimaryRoute.MOMENTS), enabled.routes.filter { it.selected }.map { it.route })
+        assertTrue(enabled.minimumContentWidthDp <= 360)
     }
     @Test fun `migration locks routes without removing title bar or caption reserve`() {
         for (size in DesktopShellSize.entries) {

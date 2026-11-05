@@ -1,0 +1,299 @@
+name: Build frozen Desktop candidate
+
+on:
+  push:
+    branches: [feature/phase8-fish-audio, 'codex/desktop-candidate-*']
+    paths: [.github/desktop-candidate-request.json]
+  workflow_dispatch:
+    inputs:
+      sourceSha:
+        description: Exact reviewed application commit; platform CI verified separately (40 lowercase hex)
+        required: true
+        type: string
+      desktopVersion:
+        description: Unpublished candidate version
+        required: true
+        default: 0.1.0-preview.1226
+        type: string
+      installerVersion:
+        description: Three-component Windows installer version
+        required: true
+        default: 0.1.1226
+        type: string
+      buildNumber:
+        description: Monotonic build identity; required for stable or non-legacy prerelease labels
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  candidate:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    env:
+      CCB_CANDIDATE_SOURCE: ${{ inputs.sourceSha }}
+      CCB_CANDIDATE_VERSION: ${{ inputs.desktopVersion }}
+      CCB_CANDIDATE_INSTALLER: ${{ inputs.installerVersion }}
+      CCB_CANDIDATE_BUILD: ${{ inputs.buildNumber }}
+    steps:
+      - name: Enable long-path Git checkout on this runner
+        run: git config --global core.longpaths true
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate explicit inputs
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ('${{ github.event_name }}' -eq 'push') {
+            $request = Get-Content .github/desktop-candidate-request.json -Raw | ConvertFrom-Json
+            if ($request.kind -cne 'CCB_DESKTOP_FROZEN_CLOUD_BUILD_REQUEST') { throw 'BUILD_REQUEST_KIND' }
+            $env:CCB_CANDIDATE_SOURCE = $request.sourceSha
+            $env:CCB_CANDIDATE_VERSION = $request.desktopVersion
+            $env:CCB_CANDIDATE_INSTALLER = $request.installerVersion
+            $env:CCB_CANDIDATE_BUILD = $request.buildNumber
+            if ($null -ne $request.reuseBuildRun) {
+              if ([string]$request.reuseBuildRun -notmatch '^[1-9][0-9]*$') { throw 'REUSE_RUN_REFUSED' }
+              "CCB_REUSE_BUILD_RUN=$($request.reuseBuildRun)" | Add-Content $env:GITHUB_ENV -Encoding utf8
+            }
+          }
+          if ('${{ github.event_name }}' -eq 'push' -and $request.communityAuthOnly -eq $true) {
+            if ($request.communityAuthOnly -isnot [bool] -or $null -eq $request.reuseBuildRun) { throw 'AUTH_ONLY_REQUIRES_EXACT_REUSE' }
+            'CCB_COMMUNITY_AUTH_ONLY=true' | Add-Content $env:GITHUB_ENV -Encoding utf8
+          }
+          if ('${{ github.event_name }}' -eq 'push' -and $request.signedUpdateOnly -eq $true) {
+            if ($request.signedUpdateOnly -isnot [bool] -or $null -eq $request.reuseBuildRun -or $request.communityAuthOnly -eq $true) { throw 'SIGNED_ONLY_REQUIRES_EXACT_REUSE' }
+            'CCB_SIGNED_UPDATE_ONLY=true' | Add-Content $env:GITHUB_ENV -Encoding utf8
+          }
+          if ($env:CCB_CANDIDATE_SOURCE -cnotmatch '^[0-9a-f]{40}$') { throw 'EXACT_SOURCE_REQUIRED' }
+          $identityArgs = @('tools/desktop/update/version_identity.py', '--display', $env:CCB_CANDIDATE_VERSION)
+          if ($env:CCB_CANDIDATE_BUILD) { $identityArgs += @('--build-number', $env:CCB_CANDIDATE_BUILD) }
+          $identity = (& python -B @identityArgs) | ConvertFrom-Json
+          if ($LASTEXITCODE -ne 0 -or !$identity) { throw 'CANDIDATE_RELEASE_IDENTITY_REFUSED' }
+          $env:CCB_CANDIDATE_BUILD = [string]$identity.build
+          $legacy = [regex]::Match($env:CCB_CANDIDATE_VERSION, '^0\.1\.0-preview\.([1-9][0-9]*)$')
+          if ($legacy.Success -and $env:CCB_CANDIDATE_INSTALLER -ne "0.1.$($legacy.Groups[1].Value)") { throw 'INSTALLER_VERSION_MISMATCH' }
+          if ($env:CCB_CANDIDATE_INSTALLER -notmatch '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$') { throw 'INSTALLER_VERSION_REQUIRED' }
+          $numbers = $env:CCB_CANDIDATE_INSTALLER.Split('.') | ForEach-Object { [long]$_ }
+          if ($numbers[0] -gt 255 -or $numbers[1] -gt 255 -or $numbers[2] -gt 65535) { throw 'INSTALLER_VERSION_RANGE' }
+          @("CCB_CANDIDATE_SOURCE=$env:CCB_CANDIDATE_SOURCE", "CCB_CANDIDATE_VERSION=$env:CCB_CANDIDATE_VERSION", "CCB_CANDIDATE_INSTALLER=$env:CCB_CANDIDATE_INSTALLER", "CCB_CANDIDATE_BUILD=$env:CCB_CANDIDATE_BUILD") | Add-Content $env:GITHUB_ENV -Encoding utf8
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: actions/setup-python@v5
+        id: legacyPython
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13.16'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Prepare owned NTFS workspace
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $base = Join-Path ($env:SystemDrive + '\') ('ccbpack-' + [Guid]::NewGuid().ToString('N'))
+          if ([IO.DriveInfo]::new([IO.Path]::GetPathRoot($base)).DriveFormat -ne 'NTFS') { throw 'NTFS_REQUIRED' }
+          New-Item -ItemType Directory -Path $base -ErrorAction Stop | Out-Null
+          $source = Join-Path $base 'source'
+          git worktree add --detach $source $env:CCB_CANDIDATE_SOURCE
+          if ($LASTEXITCODE -ne 0) { throw 'SOURCE_WORKTREE_FAILED' }
+          if ((git -C $source rev-parse HEAD) -cne $env:CCB_CANDIDATE_SOURCE) { throw 'SOURCE_IDENTITY_FAILED' }
+          $output = New-Item -ItemType Directory -Path (Join-Path $base 'output') -ErrorAction Stop
+          $temp = New-Item -ItemType Directory -Path (Join-Path $base 'temp') -ErrorAction Stop
+          @("CCB_BUILD_BASE=$base", "CCB_CI_SOURCE=$source", "CCB_BUILD_OUTPUT=$($output.FullName)", "TEMP=$($temp.FullName)", "TMP=$($temp.FullName)") | Add-Content $env:GITHUB_ENV -Encoding utf8
+
+      - name: Restore exact prior artifacts for native revalidation without rebuilding
+        if: env.CCB_REUSE_BUILD_RUN != ''
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python -B "$env:GITHUB_WORKSPACE/tools/desktop/nsis/restore_cloud_candidate.py"
+          if ($LASTEXITCODE -ne 0) { throw 'RESTORE_CANDIDATE_FAILED' }
+
+      - name: Test image audit guards with tiny synthetic files on both interpreters
+        env:
+          CCB_LEGACY_PYTHON: ${{ steps.legacyPython.outputs.python-path }}
+        run: |
+          $tests = "$env:GITHUB_WORKSPACE/tools/desktop/windows/test_audit_app_image.py"
+          & $env:CCB_LEGACY_PYTHON -B $tests 2>&1 | Tee-Object (Join-Path $env:CCB_BUILD_OUTPUT 'audit-tests-312.log')
+          if ($LASTEXITCODE -ne 0) { throw 'AUDIT_GUARDS_312_FAILED' }
+          python -B $tests 2>&1 | Tee-Object (Join-Path $env:CCB_BUILD_OUTPUT 'audit-tests-313.log')
+          if ($LASTEXITCODE -ne 0) { throw 'AUDIT_GUARDS_313_FAILED' }
+          python -B "$env:GITHUB_WORKSPACE/tools/desktop/nsis/test_native_cwd_policy.py" 2>&1 | Tee-Object (Join-Path $env:CCB_BUILD_OUTPUT 'native-cwd-policy-tests.log')
+          if ($LASTEXITCODE -ne 0) { throw 'NATIVE_CWD_POLICY_FAILED' }
+
+      - name: Reprove path and opened-file metadata identity before packaging
+        env:
+          CCB_LEGACY_PYTHON: ${{ steps.legacyPython.outputs.python-path }}
+        run: |
+          python -B "$env:GITHUB_WORKSPACE/tools/desktop/nsis/metadata_preflight.py"
+          if ($LASTEXITCODE -ne 0) { throw 'FILE_IDENTITY_PREFLIGHT_FAILED' }
+
+      - name: Fetch pinned official NSIS compiler
+        if: env.CCB_REUSE_BUILD_RUN == ''
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $zip = Join-Path $env:CCB_BUILD_BASE 'nsis-3.13.zip'
+          # Publisher checksum: https://sourceforge.net/projects/nsis/files/NSIS%203/3.13/nsis-3.13.zip/download
+          $download = @'
+          import hashlib, json, os, pathlib, shutil, urllib.request
+          base = pathlib.Path(os.environ['CCB_BUILD_BASE'])
+          target = base / 'nsis-3.13.zip'
+          source = 'https://downloads.sourceforge.net/project/nsis/NSIS%203/3.13/nsis-3.13.zip'
+          with urllib.request.urlopen(source, timeout=60) as response, target.open('xb') as output:
+              content_type = response.headers.get('Content-Type')
+              shutil.copyfileobj(response, output)
+          data = target.read_bytes()
+          report = dict(kind='PINNED_PUBLIC_COMPILER_DOWNLOAD', bytes=len(data), sha256=hashlib.sha256(data).hexdigest(),
+                        signature=data[:16].hex(), contentType=content_type, expectedSha256='ba63dffc4410ee89193e1cb5a41989991bd77c61068da17e3156d136b7b0b3d8')
+          (pathlib.Path(os.environ['CCB_BUILD_OUTPUT']) / 'compiler-download.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
+          print(json.dumps(report))
+          '@
+          $download | python -B -
+          if ($LASTEXITCODE -ne 0) { throw 'NSIS_DOWNLOAD_FAILED' }
+          if ((Get-FileHash -Algorithm SHA256 -LiteralPath $zip).Hash.ToLowerInvariant() -cne 'ba63dffc4410ee89193e1cb5a41989991bd77c61068da17e3156d136b7b0b3d8') { throw 'NSIS_ARCHIVE_HASH' }
+          $tools = Join-Path $env:CCB_BUILD_BASE 'tools'
+          Expand-Archive -LiteralPath $zip -DestinationPath $tools
+          $compiler = Join-Path $tools 'nsis-3.13\makensis.exe'
+          if (!(Test-Path -LiteralPath $compiler -PathType Leaf)) { throw 'NSIS_COMPILER_MISSING' }
+          if ((Get-FileHash -Algorithm SHA256 -LiteralPath $compiler).Hash.ToLowerInvariant() -cne '4ec390d0f96f9728507fbc2f4e91311dd90bfc6c8ddfe2159357b3651ae151c0') { throw 'NSIS_COMPILER_HASH' }
+          "CCB_NSIS_COMPILER=$compiler" | Add-Content $env:GITHUB_ENV -Encoding utf8
+
+      - name: Build ordinary installer and independent ZIP from frozen source
+        if: env.CCB_REUSE_BUILD_RUN == ''
+        working-directory: ${{ env.CCB_CI_SOURCE }}/app
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $nsis = Join-Path $env:CCB_BUILD_OUTPUT 'nsis'
+          .\gradlew.bat :desktopApp:verifyDesktopInstallerIdentity :desktopApp:attachDesktopUpdater "-PdesktopVersion=$env:CCB_CANDIDATE_VERSION" "-PdesktopInstallerVersion=$env:CCB_CANDIDATE_INSTALLER" "-PdesktopBuildNumber=$env:CCB_CANDIDATE_BUILD" --no-daemon --no-configuration-cache --console=plain
+          if ($LASTEXITCODE -ne 0) { throw 'FROZEN_IMAGE_BUILD_FAILED' }
+          $image = Join-Path $env:CCB_CI_SOURCE 'app\desktopApp\build\compose\binaries\main\app\ChatChatBarDesktop'
+          # Application source stays frozen. Auditing/packaging tools have their own control commit.
+          python -B "$env:GITHUB_WORKSPACE/tools/desktop/nsis/build_installer.py" --image $image --output $nsis --version $env:CCB_CANDIDATE_VERSION --commit $env:CCB_CANDIDATE_SOURCE --installer-version $env:CCB_CANDIDATE_INSTALLER --build-number $env:CCB_CANDIDATE_BUILD --profile desktop --makensis $env:CCB_NSIS_COMPILER
+          if ($LASTEXITCODE -ne 0) { throw 'ORDINARY_PACKAGE_FAILED' }
+          $archive = Join-Path $env:CCB_BUILD_OUTPUT ("ChatChatBar-Desktop-$env:CCB_CANDIDATE_VERSION-independent-windows-x64.zip")
+          python -B "$env:GITHUB_WORKSPACE/tools/desktop/nsis/build_independent_zip.py" --image $image --destination $archive --version $env:CCB_CANDIDATE_VERSION --commit $env:CCB_CANDIDATE_SOURCE --installer-version $env:CCB_CANDIDATE_INSTALLER
+          if ($LASTEXITCODE -ne 0) { throw 'INDEPENDENT_PACKAGE_FAILED' }
+          $toolFiles = @('tools/desktop/nsis/build_installer.py', 'tools/desktop/nsis/installer_diagnostics.py', 'tools/desktop/nsis/Launcher.cs', 'tools/desktop/nsis/build_independent_zip.py', 'tools/desktop/windows/audit_app_image.py', 'tools/desktop/update/version_identity.py')
+          $toolHashes = @($toolFiles | ForEach-Object { [ordered]@{path=$_; sha256=(Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $env:GITHUB_WORKSPACE $_)).Hash.ToLowerInvariant()} })
+          [ordered]@{kind='FROZEN_APPLICATION_AND_SEPARATE_BUILD_TOOLS'; applicationSource=$env:CCB_CANDIDATE_SOURCE; controlSource=(git -C $env:GITHUB_WORKSPACE rev-parse HEAD); tools=$toolHashes} | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $env:CCB_BUILD_OUTPUT 'package-control.json') -Encoding utf8
+          @("CCB_CANDIDATE_IMAGE=$image", "CCB_CANDIDATE_ARCHIVE=$archive", "CCB_CANDIDATE_NSIS=$nsis") | Add-Content $env:GITHUB_ENV -Encoding utf8
+
+      - name: Frozen public1233 client verifies final signed candidate without installation
+        if: env.CCB_SIGNED_UPDATE_ONLY == 'true'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $python = Join-Path $env:CCB_CANDIDATE_IMAGE 'app\desktop-updater\python.exe'
+          & $python -B "$env:GITHUB_WORKSPACE/tools/desktop/update/validate_signed_candidate.py"
+          if ($LASTEXITCODE -ne 0) { throw 'FINAL_SIGNED_OLD_CLIENT_VALIDATION_FAILED' }
+
+      - name: Actual packaged community AUTH return and temporary registry ownership
+        if: env.CCB_COMMUNITY_AUTH_ONLY == 'true'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $approved = Join-Path $env:CCB_CI_SOURCE 'app\desktopApp\build\preview-continuous-private-20261025'
+          New-Item -ItemType Directory -Path $approved -Force | Out-Null
+          $case = Join-Path $approved 'windows-runtime-nsis-cloud'
+          $program = Join-Path $env:CCB_BUILD_BASE 'installed-auth'
+          $installer = Join-Path $env:CCB_CANDIDATE_NSIS 'ChatChatBar-Setup.exe'
+          python -B "$env:GITHUB_WORKSPACE/tools/desktop/nsis/native_smoke.py" --case $case --image $env:CCB_CANDIDATE_IMAGE --root $program --installer $installer --label auth-fresh --fresh-default-profile --ci-source $env:CCB_CI_SOURCE --allow-owned-update-helper-cwd
+          if ($LASTEXITCODE -ne 0) { throw 'AUTH_CANDIDATE_FRESH_LIFECYCLE_FAILED' }
+          python -B "$env:GITHUB_WORKSPACE/tools/desktop/nsis/community_auth_probe.py" --case $case --root $program
+          if ($LASTEXITCODE -ne 0) { throw 'COMMUNITY_AUTH_NATIVE_PROBE_FAILED' }
+
+      - name: Actual ordinary upgrade and stable-entry lifecycle in fresh runner profile
+        if: env.CCB_COMMUNITY_AUTH_ONLY != 'true' && env.CCB_SIGNED_UPDATE_ONLY != 'true'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $approved = Join-Path $env:CCB_CI_SOURCE 'app\desktopApp\build\preview-continuous-private-20261025'
+          New-Item -ItemType Directory -Path $approved -Force | Out-Null
+          $case = Join-Path $approved 'windows-runtime-nsis-cloud'
+          $program = Join-Path $env:CCB_BUILD_BASE 'installed'
+          $baseline = Join-Path $env:CCB_BUILD_BASE 'baseline1225.exe'
+          Invoke-WebRequest 'https://github.com/MisakaPiano/ChatChatBar-Desktop/releases/download/desktop-v0.1.0-preview.1225/ChatChatBar-Desktop-0.1.0-preview.1225-windows-x64.exe' -OutFile $baseline
+          if ((Get-FileHash -Algorithm SHA256 -LiteralPath $baseline).Hash.ToLowerInvariant() -cne '04a35d64ba9958e305bb247c1f217bbfcd1507fa1753661ee2520e54032a96c0') { throw 'BASELINE_HASH' }
+          $driver = Join-Path $env:GITHUB_WORKSPACE 'tools\desktop\nsis\native_smoke.py'
+          python -B $driver --case $case --image $env:CCB_CANDIDATE_IMAGE --root $program --installer $baseline --label baseline1225 --fresh-default-profile --ci-source $env:CCB_CI_SOURCE --allow-owned-update-helper-cwd
+          if ($LASTEXITCODE -ne 0) { throw 'BASELINE_NATIVE_FAILED' }
+          $old = (Get-Content -LiteralPath (Join-Path $program 'current.txt') -Raw).Trim()
+          $oldManifest = Get-Content -LiteralPath (Join-Path $program "versions\$old\install-manifest.json") -Raw | ConvertFrom-Json
+          if ($oldManifest.version -cne '0.1.0-preview.1225' -or $oldManifest.commit -cne '54008bc17847a30fc53e403f99e8aaa335521cda') { throw 'BASELINE_IDENTITY' }
+          $data = Join-Path $case 'local-appdata\ChatChatBarDesktop'
+          $canary = Join-Path $data 'cloud-native-retained-canary.txt'
+          Set-Content -LiteralPath $canary -Value 'Synthetic retained upgrade canary' -Encoding utf8 -NoNewline
+          $before = (Get-FileHash -Algorithm SHA256 -LiteralPath $canary).Hash
+          $installer = Join-Path $env:CCB_CANDIDATE_NSIS 'ChatChatBar-Setup.exe'
+          python -B $driver --case $case --image $env:CCB_CANDIDATE_IMAGE --root $program --installer $installer --label candidate-upgrade --fresh-default-profile --probe-busy-installer $installer --ci-source $env:CCB_CI_SOURCE --allow-owned-update-helper-cwd --probe-external-files
+          if ($LASTEXITCODE -ne 0) { throw 'CANDIDATE_NATIVE_UPGRADE_FAILED' }
+          $current = (Get-Content -LiteralPath (Join-Path $program 'current.txt') -Raw).Trim()
+          $manifest = Get-Content -LiteralPath (Join-Path $program "versions\$current\install-manifest.json") -Raw | ConvertFrom-Json
+          if ($manifest.version -cne $env:CCB_CANDIDATE_VERSION -or $manifest.commit -cne $env:CCB_CANDIDATE_SOURCE) { throw 'CANDIDATE_IDENTITY' }
+          if ((Get-FileHash -Algorithm SHA256 -LiteralPath $canary).Hash -cne $before) { throw 'CANARY_CHANGED' }
+          python -B $driver --case $case --image $env:CCB_CANDIDATE_IMAGE --root $program --label candidate-reopen --fresh-default-profile --ci-source $env:CCB_CI_SOURCE --allow-owned-update-helper-cwd --probe-external-files
+          if ($LASTEXITCODE -ne 0) { throw 'CANDIDATE_NATIVE_REOPEN_FAILED' }
+          if ((Get-FileHash -Algorithm SHA256 -LiteralPath $canary).Hash -cne $before) { throw 'REOPEN_CANARY_CHANGED' }
+          python -B $driver --case $case --image $env:CCB_CANDIDATE_IMAGE --root $program --label candidate-cold-external --fresh-default-profile --ci-source $env:CCB_CI_SOURCE --allow-owned-update-helper-cwd --probe-external-files --cold-external-file --cold-external-matrix
+          if ($LASTEXITCODE -ne 0) { throw 'CANDIDATE_COLD_EXTERNAL_FAILED' }
+          if ((Get-FileHash -Algorithm SHA256 -LiteralPath $canary).Hash -cne $before) { throw 'COLD_EXTERNAL_CANARY_CHANGED' }
+          [ordered]@{version=$env:CCB_CANDIDATE_VERSION; source=$env:CCB_CANDIDATE_SOURCE; actualNativeUpgrade=$true; stableReopen=$true; runningInstallerRefused=$true; syntheticCanaryRetained=$true; cwdPolicy='Stable program cwd; only inventoried updater image may use runtime cwd, and full Job exit is required'; fakeCredentialRetentionVerified=$false; customDataRootBusyVerified=$false; humanAcceptance=$false; installerRunOnUserMachine=$false} | ConvertTo-Json | Set-Content (Join-Path $case 'scope-result.json') -Encoding utf8
+          "CCB_NATIVE_CASE=$case" | Add-Content $env:GITHUB_ENV -Encoding utf8
+
+      - name: Actual independent Chinese entry and isolated data lifecycle
+        if: env.CCB_COMMUNITY_AUTH_ONLY != 'true' && env.CCB_SIGNED_UPDATE_ONLY != 'true'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $approved = Join-Path $env:CCB_CI_SOURCE 'app\desktopApp\build\preview-continuous-private-20261025'
+          $case = Join-Path $approved 'windows-runtime-independent-cloud'
+          python -B "$env:GITHUB_WORKSPACE/tools/desktop/nsis/independent_smoke.py" --source $env:CCB_CI_SOURCE --archive $env:CCB_CANDIDATE_ARCHIVE --receipt ([IO.Path]::ChangeExtension($env:CCB_CANDIDATE_ARCHIVE, '.json')) --audit "$env:CCB_CANDIDATE_NSIS/app-image-audit.json" --case $case --version $env:CCB_CANDIDATE_VERSION --commit $env:CCB_CANDIDATE_SOURCE --outside-bootstrap "$env:CCB_NATIVE_CASE/local-appdata/ChatChatBarDesktop.bootstrap.json"
+          if ($LASTEXITCODE -ne 0) { throw 'INDEPENDENT_NATIVE_FAILED' }
+
+      - uses: actions/upload-artifact@v4
+        if: always() && env.CCB_BUILD_OUTPUT != '' && env.CCB_REUSE_BUILD_RUN == ''
+        with:
+          name: desktop-candidate-installer
+          compression-level: 0
+          path: |
+            ${{ env.CCB_BUILD_OUTPUT }}/nsis/ChatChatBar-Setup.exe
+            ${{ env.CCB_BUILD_OUTPUT }}/nsis/package.json
+            ${{ env.CCB_BUILD_OUTPUT }}/nsis/install-manifest.json
+            ${{ env.CCB_BUILD_OUTPUT }}/nsis/app-image-audit.json
+            ${{ env.CCB_BUILD_OUTPUT }}/package-control.json
+
+      - uses: actions/upload-artifact@v4
+        if: always() && env.CCB_BUILD_OUTPUT != '' && env.CCB_REUSE_BUILD_RUN == ''
+        with:
+          name: desktop-candidate-independent
+          compression-level: 0
+          path: |
+            ${{ env.CCB_BUILD_OUTPUT }}/*independent-windows-x64.zip
+            ${{ env.CCB_BUILD_OUTPUT }}/*independent-windows-x64.json
+
+      - uses: actions/upload-artifact@v4
+        if: always() && env.CCB_CI_SOURCE != ''
+        with:
+          name: desktop-candidate-native-reports
+          path: |
+            ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-nsis-cloud/*-result.json
+            ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-nsis-cloud/*-running.json
+            ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-nsis-cloud/*-busy-installer.json
+            ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-nsis-cloud/*-external-delivery.json
+            ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-nsis-cloud/*-external-before-launch.json
+            ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-nsis-cloud/*-stderr.log
+            ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-independent-cloud/result.json
+            ${{ env.CCB_BUILD_OUTPUT }}/compiler-download.json
+            ${{ env.CCB_BUILD_OUTPUT }}/metadata-preflight.json
+            ${{ env.CCB_BUILD_OUTPUT }}/audit-tests-*.log
+            ${{ env.CCB_BUILD_OUTPUT }}/native-cwd-policy-tests.log
+            ${{ env.CCB_BUILD_OUTPUT }}/restored-candidate.json
+            ${{ env.CCB_BUILD_OUTPUT }}/signed-client-result.json

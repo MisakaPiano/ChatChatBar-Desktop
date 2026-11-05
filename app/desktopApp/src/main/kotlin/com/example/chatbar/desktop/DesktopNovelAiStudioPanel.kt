@@ -13,6 +13,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import com.example.chatbar.domain.image.*
+import com.example.chatbar.desktop.security.identity
+import com.example.chatbar.desktop.security.DesktopAccountService
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -22,9 +24,41 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
     captions: (@Composable () -> Unit)? = null,
     diagnostics: (@Composable () -> Unit)? = null,
     chromeRecorder: DesktopChromeLayoutRecorder? = null,
+    onDataSettings: (() -> Unit)? = null,
     onModelSettings: (String?) -> Unit = {}) {
+    CompositionLocalProvider(LocalDesktopStudioTextHistories provides controller.textHistories) {
+        DesktopNovelAiStudioContent(controller, navigation, captions, diagnostics, chromeRecorder, onDataSettings, onModelSettings)
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioController,
+    navigation: (@Composable () -> Unit)?, captions: (@Composable () -> Unit)?, diagnostics: (@Composable () -> Unit)?,
+    chromeRecorder: DesktopChromeLayoutRecorder?, onDataSettings: (() -> Unit)?, onModelSettings: (String?) -> Unit) {
     val draft by controller.draft.collectAsState()
     val state by controller.state.collectAsState()
+    val editHistory by controller.repository.historyAvailability.collectAsState()
+    val accounts = LocalDesktopApiAccounts.current
+    val accountRevision = accounts?.store?.revision?.collectAsState()?.value
+    val openedAccountService = accounts?.opened?.collectAsState()?.value
+    var accountReadRetry by remember(controller) { mutableIntStateOf(0) }
+    val accountRead = remember(accounts, accountRevision, accountReadRetry) {
+        readDesktopStudioAccountIdentity { accounts?.store?.identity(DesktopAccountService.NOVELAI) }
+    }
+    val accountIdentity = (accountRead as? DesktopStudioAccountRead.Available)?.identity
+    var usageRevision by remember(controller) { mutableStateOf(accountIdentity) }
+    var processedReadRetry by remember(controller) { mutableIntStateOf(0) }
+    var accountProblemDismissed by remember(controller, accountRevision, accountReadRetry) { mutableStateOf(false) }
+    LaunchedEffect(controller, accounts, accountRevision, accountReadRetry) {
+        val retryRequested = processedReadRetry != accountReadRetry
+        processedReadRetry = accountReadRetry
+        if (accountRead == DesktopStudioAccountRead.Unavailable) controller.invalidateAccount(STUDIO_ACCOUNT_READ_FAILURE)
+        else {
+            if (usageRevision != accountIdentity) { usageRevision = accountIdentity; controller.invalidateAccount() }
+            if (retryRequested) controller.refreshAccount()
+        }
+    }
     val history by controller.history.collectAsState(emptyList())
     val conversations by controller.designRepository.conversations.collectAsState()
     val currentDesignId by controller.designRepository.currentConversationId.collectAsState()
@@ -32,13 +66,24 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
     val tasks by controller.taskEntries.collectAsState()
     val busy = tasks.any { it.kind == DesktopTaskKind.NOVELAI && it.status == DesktopTaskStatus.RUNNING }
     val scope = rememberCoroutineScope()
+    val accountProblemShowing = openedAccountService == null && !accountProblemDismissed &&
+        (accountRead == DesktopStudioAccountRead.Unavailable || state.accountUi.error == STUDIO_ACCOUNT_READ_FAILURE)
+    if (accountProblemShowing) {
+        DesktopStudioCredentialProblem(accounts != null,
+            onRetry = { accountReadRetry++ },
+            onSettings = { accountProblemDismissed = true; accounts?.opened?.compareAndSet(null, DesktopAccountService.NOVELAI) },
+            onDismiss = { accountProblemDismissed = true })
+    }
     var imageTools by remember { mutableStateOf<ByteArray?>(null) }
     var metadataFile by remember { mutableStateOf<java.nio.file.Path?>(null) }
+    var metadataPreview by remember { mutableStateOf<NovelAiStudioPngMetadata?>(null) }
     var metadataSelection by remember { mutableStateOf(NovelAiStudioMetadataSelection()) }
     var reverseSource by remember { mutableStateOf<ByteArray?>(null) }
     var viewingIndex by remember { mutableStateOf(0) }
     var guidanceEditor by remember { mutableStateOf<Triple<ByteArray, ByteArray?, NovelAiFocusedInpaintRegion?>?>(null) }
     var auxiliary by remember { mutableStateOf<String?>(null) }
+    var showingPreset by remember { mutableStateOf(false) }
+    var showingFullPrompt by remember { mutableStateOf(false) }
     DesktopDesignToolLifecycle(controller, auxiliary in setOf("AI 设计", "设计设置", "设计历史"))
     var currentImage by remember { mutableStateOf<java.nio.file.Path?>(null) }
     val clipboardFiles = remember { mutableListOf<java.nio.file.Path>() }
@@ -49,14 +94,16 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
     val workspace = remember { DesktopStudioWorkspaceState() }
     var inlineResetRevision by remember { mutableIntStateOf(0) }
     var importedPreview by remember { mutableStateOf<java.nio.file.Path?>(null) }
-    var redoDraft by remember { mutableStateOf<Pair<NovelAiStudioDraft, NovelAiStudioDraft>?>(null) }
     var viewing by remember { mutableStateOf<List<String>>(emptyList()) }
     var pendingReuse by remember { mutableStateOf<Triple<NovelAiGenerationHistoryEntry, NovelAiGenerationHistoryImage, NovelAiHistoryApplyMode>?>(null) }
     var imageError by remember { mutableStateOf("") }
     var authRevision by remember { mutableStateOf(0) }
     val authentication by produceState(DesktopDesignAuthentication(), draft?.aiDesignModelId, auxiliary, authRevision) { value = controller.designAuthentication() }
     LaunchedEffect(controller) { controller.load(); translation = controller.translationEnabled() }
-    fun edit(change: (NovelAiStudioDraft) -> NovelAiStudioDraft) { scope.launch { controller.edit(change) } }
+    fun edit(change: (NovelAiStudioDraft) -> NovelAiStudioDraft) {
+        val boundary = controller.textHistories.takeBoundary()
+        scope.launch { controller.editFromField(boundary, change) }
+    }
     fun imageAction(work: suspend () -> Unit) { scope.launch {
         try { imageError = ""; work() }
         catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
@@ -69,9 +116,25 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
         return
     }
     val cards by produceState(emptyList<com.example.chatbar.data.local.entity.CharacterCard>(), controller) { value = controller.availableCards() }
-    val models by produceState(emptyList<com.example.chatbar.data.local.entity.ModelConfig>(), controller) { value = controller.availableModels() }
-    val usage by produceState<NovelAiPromptTokenUsage?>(null, d.toPromptPlan(), d.selectedModel) {
-        value = controller.infrastructure.countTokens(d.toPromptPlan(), d.selectedModel)
+    var modelReadRetry by remember(controller) { mutableIntStateOf(0) }
+    var modelProblemDismissed by remember(controller, accountRevision, modelReadRetry) { mutableStateOf(false) }
+    val modelCatalog by produceState<DesktopStudioModelCatalog>(DesktopStudioModelCatalog.Loading,
+        controller, accountRevision, modelReadRetry) {
+        value = DesktopStudioModelCatalog.Loading
+        value = controller.availableModels()
+    }
+    val models = (modelCatalog as? DesktopStudioModelCatalog.Available)?.models.orEmpty()
+    val modelReadFailure = (modelCatalog as? DesktopStudioModelCatalog.Unavailable)?.failure
+    if (modelReadFailure != null && !modelProblemDismissed && !accountProblemShowing && openedAccountService == null) {
+        DesktopStudioModelProblem(modelReadFailure,
+            onRetry = { modelReadRetry++ },
+            onModelSettings = { modelProblemDismissed = true; onModelSettings(null) },
+            onDataSettings = onDataSettings?.let { { modelProblemDismissed = true; it() } },
+            onDismiss = { modelProblemDismissed = true })
+    }
+    val countingPrompt = NovelAiV5TextPromptPolicy.prepareForRequest(d.toPromptPlan(), d.activeSettings)
+    val usage by produceState<NovelAiPromptTokenUsage?>(null, countingPrompt, d.selectedModel) {
+        value = controller.infrastructure.countTokens(countingPrompt, d.selectedModel)
     }
     val vibeMisses by produceState(0, d.selectedModel, d.imageGuidance, state.results) { value = controller.vibeCacheMisses(d) }
     val cost = runCatching { NovelAiImageCostEstimator.estimate(d.activeSettings, state.account, d.imageGuidance, vibeMisses) }.getOrNull()
@@ -98,6 +161,8 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                             val text = java.awt.Toolkit.getDefaultToolkit().systemClipboard.getData(java.awt.datatransfer.DataFlavor.stringFlavor) as? String ?: return@launch
                             controller.replace { NovelAiStudioPromptClipboard.apply(text, it) }
                         } }
+                        if (controller.generationPresetAvailable) StudioAction("生成预设…", enabled = !busy) { showingPreset = true }
+                        StudioAction("完整 Prompt…", enabled = !busy) { showingFullPrompt = true }
                         StudioAction("清空", style = StudioActionStyle.TERTIARY) { scope.launch { controller.clearPrompts() } }
                         StudioToggle("中文注释", translation) { translation = !translation; scope.launch { controller.setTranslation(translation) } }
                     }
@@ -113,19 +178,22 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                         StudioPromptField("补充", d.extraPrompt, controller.infrastructure, translation) { text -> edit { it.copy(extraPrompt = text) } }
                     }
                     StudioDisclosure("基础负面 Prompt") {
-                        StudioPromptField("基础负面 Prompt", d.negativePrompt, controller.infrastructure, translation) { text -> edit { it.copy(negativePrompt = text) } }
+                        if (d.activeSettings.isMedium) StatusText("Medium 使用固定负面词；已保存的自定义负面词将在 High 下恢复。")
+                        else StudioPromptField("基础负面 Prompt", d.negativePrompt, controller.infrastructure, translation) { text -> edit { it.copy(negativePrompt = text) } }
                     }
                     DesktopStudioCharacters(d, controller.infrastructure, translation, ::edit)
                 }
                 "参数" -> {
-                    StudioGenerationSettings(d, ::edit)
+                    CompositionLocalProvider(LocalDesktopStudioFieldScope provides "generation:${d.selectedModel}") {
+                        StudioGenerationSettings(d, ::edit)
+                    }
                 }
                 "设计设置" -> {
                         StudioToggle("V5 自然语言模式", d.aiDesignNaturalLanguageMode) { edit { it.copy(aiDesignNaturalLanguageMode = !it.aiDesignNaturalLanguageMode) } }
                         DesktopDesignModelChoice(d.aiDesignModelId, models, authentication.model) { id ->
                             edit { it.copy(aiDesignModelId = id) }
                         }
-                        DesktopDesignField("额外要求", d.extraRequirement) { value -> scope.launch { controller.setDesignRequirement(value) } }
+                        DesktopDesignField("额外要求", d.extraRequirement) { value -> edit { it.copy(extraRequirement = value) } }
                         StudioAction("完成设置") { auxiliary = "AI 设计" }
                     }
                 "设计历史" -> {
@@ -177,7 +245,13 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
     val owned = selectedResult?.takeIf { it in resultPaths } ?: if (currentImage == null) resultPaths.firstOrNull() else null
     val shownPath = owned?.let(controller.resources::resolveOwnedReference) ?: currentImage
     val intermediate = state.preview.takeIf { busy }
-    fun preview() { if (owned != null) { viewing = resultPaths; viewingIndex = resultPaths.indexOf(owned) } else importedPreview = shownPath }
+    fun previewPath(path: java.nio.file.Path?) {
+        if (path == null) return
+        val index = desktopStudioPreviewIndex(path, resultPaths, controller.resources::resolveOwnedReference)
+        if (index >= 0) { viewing = resultPaths; viewingIndex = index }
+        else importedPreview = path
+    }
+    fun preview() { if (owned != null) { viewing = resultPaths; viewingIndex = resultPaths.indexOf(owned) } else previewPath(shownPath) }
     DesktopStudioWorkspace(workspace,
         modifier = Modifier.desktopImageIngress(!busy, { imageError = "图片导入未完成；当前图片保留" }) { input -> imageAction {
         val file = input.paths.firstOrNull() ?: input.raster?.let { bytes ->
@@ -188,16 +262,27 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
         if (file != null) { currentImage = file; selectedResult = null; auxiliary = "当前图片"; controller.clearReverseCandidate() }
     } },
         navigation = navigation, captions = captions, diagnostics = diagnostics, chromeRecorder = chromeRecorder,
-        compact = { expand -> DesktopStudioCompactResult(shownPath, intermediate, false, expand, ::preview,
-            { if (shownPath != null) { currentImage = shownPath; auxiliary = "当前图片" } }) },
+        previewActions = { DesktopStudioPrimaryPreviewActions(shownPath != null && intermediate == null,
+            shownPath != null && intermediate == null, { auxiliary = "历史" }, ::preview,
+            { currentImage = shownPath; auxiliary = "当前图片"; controller.clearReverseCandidate() }) },
+        compact = { expand -> DesktopStudioCompactResult(shownPath, intermediate, expand, ::preview) },
         editor = {
-            StudioAccountCluster(d.selectedModel, state.accountUi)
+            StudioAccountCluster(d.selectedModel, state.accountUi) {
+                StudioAccountActions {
+                    key(accountReadRetry) { DesktopStudioAccountControl() }
+                    StudioAction("刷新", enabled = !state.accountUi.loading, icon = DesktopAppIcons.Refresh,
+                        style = StudioActionStyle.TERTIARY) { accountReadRetry++ }
+                }
+            }
+            if (modelReadFailure != null) {
+                StatusText(modelReadFailure.text)
+                StudioAction("查看模型读取问题", style = StudioActionStyle.TERTIARY) { modelProblemDismissed = false }
+            }
             StudioActions {
-                StudioAction("刷新", enabled = !state.accountUi.loading, icon = DesktopAppIcons.Refresh, style = StudioActionStyle.TERTIARY) { scope.launch { controller.refreshAccount() } }
                 StudioAction("AI 设计", icon = DesktopAppIcons.Chat) { auxiliary = "AI 设计" }
                 StudioAction("图像引导", icon = DesktopAppIcons.Star) { auxiliary = "图像引导" }
                 StudioAction("导入图片", icon = DesktopAppIcons.ImageAdd, onClick = ::pickImage)
-                StudioAction("历史", icon = DesktopAppIcons.History) { auxiliary = "历史" }
+                DesktopImageLogEntry(controller.imageDiagnostics, state.generationTaskId)
                 StudioAction("设置", icon = DesktopAppIcons.Settings) { auxiliary = "设置" }
             }
             if (state.status.isNotBlank()) StatusText(state.status.takeLast(300))
@@ -208,19 +293,12 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
         footer = {
             DesktopStudioFooter(
                 usage = usage,
-                undoEnabled = !busy,
-                redoEnabled = !busy && redoDraft?.first == d,
+                undoEnabled = !busy && editHistory.undo,
+                redoEnabled = !busy && editHistory.redo,
                 generateLabel = desktopGenerateLabel(busy, state.credentialConfigured, cost, state.status),
                 generateEnabled = busy || desktopCanGenerate(state, d, busy),
-                onUndo = { scope.launch {
-                    val before = controller.draft.value
-                    controller.undo()
-                    val after = controller.draft.value
-                    redoDraft = if (before != null && after != null && before != after) after to before else null
-                } },
-                onRedo = { scope.launch {
-                    redoDraft?.takeIf { it.first == controller.draft.value }?.let { saved -> controller.replace { saved.second } }; redoDraft = null
-                } },
+                onUndo = { scope.launch { controller.undo() } },
+                onRedo = { scope.launch { controller.redo() } },
                 onGenerate = { if (busy) controller.stop() else scope.launch { controller.generate() } })
         },
         preview = { rail ->
@@ -228,8 +306,7 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                 onPreview = { viewing = resultPaths; viewingIndex = resultPaths.indexOf(it) }) { selectedResult = it }
             else Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 StudioActions {
-                    DesktopStudioPreviewActions(shownPath != null, intermediate != null, true,
-                        ::preview, { inlineResetRevision++ }, { currentImage = shownPath; auxiliary = "当前图片" })
+                    DesktopStudioPreviewActions(shownPath != null, intermediate != null, true) { inlineResetRevision++ }
                 }
                 Box(Modifier.weight(1f).fillMaxWidth()) {
                     if (intermediate != null) DesktopOwnedImage("intermediate-${intermediate.contentHashCode()}", { intermediate }, Modifier.fillMaxSize())
@@ -252,6 +329,8 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                 }
             }
         })
+    if (showingPreset) DesktopStudioPresetExchange(controller, busy) { showingPreset = false }
+    if (showingFullPrompt) DesktopStudioFullPromptExchange(controller, busy) { showingFullPrompt = false }
     auxiliary?.let { surface ->
         DesktopImageToolWindow(surface, { auxiliary = null },
             width = when (surface) { "设置", "设计设置" -> 560.dp; "图像引导" -> 680.dp; else -> 980.dp },
@@ -274,14 +353,24 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                         StudioToggle("复制时忽略画风", d.copyPositivePromptIgnoreStyle) { edit { it.copy(copyPositivePromptIgnoreStyle = !it.copyPositivePromptIgnoreStyle) } }
                         StudioToggle("本地中文注释", translation) { translation = !translation; scope.launch { controller.setTranslation(translation) } }
                     } else if (surface == "当前图片") {
+                        if (currentImage == null) {
+                            StatusText("选择图片，或从生成历史打开图片后使用图像工具。")
+                            StudioAction("选择图片", onClick = ::pickImage)
+                        }
                         currentImage?.let { path ->
                             DesktopOwnedImage(path.toString(), { java.nio.file.Files.readAllBytes(path) }, Modifier.fillMaxWidth().height(260.dp)
-                                .desktopViewerEntry(onClick = { importedPreview = path }))
+                                .desktopViewerEntry(onClick = { previewPath(path) }))
                             StatusText(path.fileName.toString())
                             StudioActions {
                                 StudioAction("更换图片", onClick = ::pickImage)
                                 StudioAction("移除当前图片") { currentImage = null; auxiliary = null; controller.clearReverseCandidate() }
-                                StudioAction("元数据") { metadataFile = path; metadataSelection = NovelAiStudioMetadataSelection() }
+                                StudioAction("元数据") { imageAction {
+                                    val preview = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                        require(java.nio.file.Files.size(path) <= DesktopImageEditing.MAX_BYTES)
+                                        requireNotNull(DesktopImageMetadata.readStudio(path.toString()))
+                                    }
+                                    metadataPreview = preview; metadataFile = path; metadataSelection = NovelAiStudioMetadataSelection()
+                                } }
                                 StudioAction("打码 / 旋转 / 隐私 / 保存") { imageAction { imageTools = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { require(java.nio.file.Files.size(path) <= ApngDisguiseCodec.MAX_OUTPUT_BYTES); java.nio.file.Files.readAllBytes(path) } } }
                                 StudioAction("复制图片") { imageAction { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                                     require(java.nio.file.Files.size(path) <= ApngDisguiseCodec.MAX_OUTPUT_BYTES); copyDesktopImage(java.nio.file.Files.readAllBytes(path), path)
@@ -301,29 +390,16 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
                                     currentImage = target; selectedResult = null; controller.clearReverseCandidate()
                                 } }
                             }
-                            StatusText(state.reverseProgress.stage)
-                            if (state.reverseProgress.content.isNotBlank()) {
-                                StatusText("反推过程 / 流式结果")
-                                androidx.compose.foundation.text.selection.SelectionContainer { DesktopMarkdownText(state.reverseProgress.content) }
-                            }
-                            if (state.reverseProgress.reasoning.isNotBlank()) {
-                                var reasoningOpen by remember { mutableStateOf(false) }
-                                StudioAction(if (reasoningOpen) "收起反推思考" else "查看反推思考") { reasoningOpen = !reasoningOpen }
-                                if (reasoningOpen) androidx.compose.foundation.text.selection.SelectionContainer { DesktopMarkdownText(state.reverseProgress.reasoning) }
-                            }
                             if (imageError.isNotEmpty()) StatusText(imageError)
-                            if (busy) StudioAction("停止当前任务") { controller.stop() }
-                            if (!busy && reverseSource != null && state.reverseCandidate == null && state.reverseProgress.stage.isNotBlank())
-                                StudioAction("重试反推") { scope.launch { controller.reverseImage(requireNotNull(reverseSource)) } }
-                    state.reverseCandidate?.let { candidate ->
-                        StatusText("反推候选：${candidate.baseCaption}")
-                        candidate.characterCaptions.forEach { StatusText(it.prompt) }
-                        StudioActions {
-                            StudioAction("应用反推", enabled = !busy) { scope.launch { controller.applyReverseCandidate(); auxiliary = null } }
-                            StudioAction("重试反推", enabled = !busy && reverseSource != null) { scope.launch { reverseSource?.let { controller.reverseImage(it) } } }
-                            StudioAction("返回 / 保留当前 Prompt") { controller.clearReverseCandidate() }
-                        }
-                    }
+                            if (busy && !state.reverseBusy) StudioAction("停止当前任务") { controller.stop() }
+                            DesktopReversePromptPane(state, busy,
+                                onSceneChange = controller::updateReverseSceneDescription,
+                                onConfirm = { scope.launch { controller.confirmReverseSceneDescription() } },
+                                onStop = controller::stopReverse,
+                                onRetry = { scope.launch { reverseSource?.let { controller.reverseImage(it) } } },
+                                retryAvailable = reverseSource != null,
+                                onApply = { scope.launch { if (controller.applyReverseCandidate()) auxiliary = null } },
+                                onDismiss = controller::clearReverseCandidate)
                         }
                     } else section(surface)
                 }
@@ -347,21 +423,16 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
         currentImage = copy; selectedResult = null; auxiliary = "当前图片"; controller.clearReverseCandidate()
     } }) }
     guidanceEditor?.let { DesktopImageToolsDialog(it.first, controller.picker, { guidanceEditor = null }, controller::applyGuidanceEdit, it.second, it.third) }
-    metadataFile?.let { path -> androidx.compose.ui.window.DialogWindow(onCloseRequest = { metadataFile = null }, title = "选择导入的元数据", icon = desktopImageWindowIcon(),
+    metadataFile?.let { path -> androidx.compose.ui.window.DialogWindow(onCloseRequest = { metadataFile = null; metadataPreview = null }, title = "选择导入的元数据", icon = desktopImageWindowIcon(),
         state = androidx.compose.ui.window.rememberDialogState(size = rememberDesktopImageWindowSize(560.dp, 620.dp))) {
         DesktopImageDialogBody(Modifier.background(DesktopBootstrapColors.background).padding(16.dp), footer = {
             StudioActions {
-                StudioAction("导入") { scope.launch { controller.importMetadata(path, metadataSelection); metadataFile = null } }
-                StudioAction("取消") { metadataFile = null }
+                StudioAction("导入") { scope.launch { controller.importMetadata(path, metadataSelection); metadataFile = null; metadataPreview = null } }
+                StudioAction("取消") { metadataFile = null; metadataPreview = null }
             }
         }) {
             StatusText(path.fileName.toString())
-            StudioToggle("正面 Prompt", metadataSelection.positivePrompt) { metadataSelection = metadataSelection.copy(positivePrompt = !metadataSelection.positivePrompt) }
-            StudioToggle("负面 Prompt", metadataSelection.negativePrompt) { metadataSelection = metadataSelection.copy(negativePrompt = !metadataSelection.negativePrompt) }
-            CompactChoice("角色 Prompt", NovelAiCharacterImportMode.entries, metadataSelection.characterPrompts, { it.displayName }) { metadataSelection = metadataSelection.copy(characterPrompts = it) }
-            StudioToggle("生成参数", metadataSelection.generationSettings) { metadataSelection = metadataSelection.copy(generationSettings = !metadataSelection.generationSettings) }
-            StudioToggle("Seed", metadataSelection.seed) { metadataSelection = metadataSelection.copy(seed = !metadataSelection.seed) }
-            StudioToggle("图像引导", metadataSelection.imageGuidance) { metadataSelection = metadataSelection.copy(imageGuidance = !metadataSelection.imageGuidance) }
+            DesktopStudioMetadataOptions(metadataPreview, metadataSelection) { metadataSelection = it }
         }
     } }
     if (viewing.isNotEmpty()) DesktopImageViewer(viewing, viewingIndex, controller.resources, controller.picker) { viewing = emptyList() }
@@ -372,47 +443,45 @@ internal fun DesktopNovelAiStudioPanel(controller: DesktopNovelAiStudioControlle
 }
 
 @Composable
+internal fun DesktopStudioPrimaryPreviewActions(hasPreview: Boolean, hasSavedImage: Boolean,
+    onHistory: () -> Unit, onViewer: () -> Unit, onImageActions: () -> Unit) {
+    StudioAction("历史", icon = DesktopAppIcons.History, onClick = onHistory)
+    StudioAction("预览", enabled = hasPreview, icon = DesktopAppIcons.ExpandComposer, onClick = onViewer)
+    StudioAction("图像操作 / 用作", enabled = hasSavedImage, onClick = onImageActions)
+}
+
+@Composable
 internal fun DesktopStudioPreviewActions(hasSavedImage: Boolean, showingIntermediate: Boolean, zoomActive: Boolean,
-    onViewer: () -> Unit, onReset: () -> Unit, onImageActions: () -> Unit) {
+    onReset: () -> Unit) {
     if (showingIntermediate) {
         StatusText("生成中 · 未保存预览")
         if (hasSavedImage) StatusText("先前选择的图片未被本次生成替换")
-    } else if (hasSavedImage) {
-        StudioAction("打开预览", onClick = onViewer)
-        if (zoomActive) StudioAction("适应 / 重置", onClick = onReset)
-        StudioAction("图像操作 / 用作", onClick = onImageActions)
-    }
+    } else if (hasSavedImage && zoomActive) StudioAction("适应 / 重置", onClick = onReset)
 }
 
-/** Narrow summary opens a separate right pane; it never grows an inline vertical image box. */
+/** The compact image remains an entry to the inline pane; primary actions share the toolbar above. */
 @Composable
-internal fun DesktopStudioCompactResult(path: java.nio.file.Path?, intermediate: ByteArray?, expanded: Boolean,
-    onExpand: () -> Unit, onViewer: () -> Unit, onImageActions: () -> Unit) {
+internal fun DesktopStudioCompactResult(path: java.nio.file.Path?, intermediate: ByteArray?,
+    onExpand: () -> Unit, onViewer: () -> Unit) {
     val showingIntermediate = intermediate != null
-    Column(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border).padding(8.dp)
-        .semantics { contentDescription = "Studio 当前图片摘要" }, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.weight(1f)) { StatusText(if (showingIntermediate) "生成中 · 未保存预览" else "当前图片") }
-            StudioAction(if (expanded) "收起预览" else "展开预览", onClick = onExpand)
+    Row(Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border).padding(8.dp)
+        .semantics { contentDescription = "Studio 当前图片摘要" }, horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(88.dp).background(DesktopBootstrapColors.muted)
+            .semantics { contentDescription = "显示图片面板" }
+            .desktopViewerEntry(enabled = path != null || showingIntermediate, onClick = onExpand,
+                onOpen = { if (showingIntermediate) onExpand() else if (path != null) onViewer() }),
+            contentAlignment = Alignment.Center) {
+            when {
+                intermediate != null -> DesktopOwnedImage("intermediate-${intermediate.contentHashCode()}", { intermediate }, Modifier.fillMaxSize())
+                path != null -> DesktopOwnedImage(path.toString(), { java.nio.file.Files.readAllBytes(path) }, Modifier.fillMaxSize())
+                else -> StatusText("暂无图片")
+            }
         }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Box(Modifier.size(88.dp).background(DesktopBootstrapColors.muted)
-                .desktopViewerEntry(enabled = path != null || showingIntermediate, onClick = onExpand,
-                    onOpen = { if (showingIntermediate) onExpand() else if (path != null) onViewer() }), contentAlignment = Alignment.Center) {
-                when {
-                    intermediate != null -> DesktopOwnedImage("intermediate-${intermediate.contentHashCode()}", { intermediate }, Modifier.fillMaxSize())
-                    path != null -> DesktopOwnedImage(path.toString(), { java.nio.file.Files.readAllBytes(path) }, Modifier.fillMaxSize())
-                    else -> StatusText("暂无图片")
-                }
-            }
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                if (showingIntermediate) {
-                    if (path != null) StatusText("先前选择的图片未被本次生成替换")
-                } else if (path != null) {
-                    StudioAction("打开预览", onClick = onViewer)
-                    StudioAction("图像操作 / 用作", onClick = onImageActions)
-                } else StatusText("导入图片或生成后查看结果")
-            }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            StatusText(if (showingIntermediate) "生成中 · 未保存预览" else "当前图片")
+            if (showingIntermediate && path != null) StatusText("先前选择的图片未被本次生成替换")
+            else if (!showingIntermediate && path == null) StatusText("导入图片或生成后查看结果")
         }
     }
 }
@@ -421,7 +490,7 @@ internal fun DesktopStudioCompactResult(path: java.nio.file.Path?, intermediate:
 internal fun DesktopDesignModelChoice(selected: String?, models: List<com.example.chatbar.data.local.entity.ModelConfig>,
     effectiveName: String, onSelect: (String?) -> Unit) {
     val t = LocalDesktopUiStrings.current
-    val choices = models.map { DesktopPrimaryChoice(it.id, it.displayName) }
+    val choices = models.map { DesktopPrimaryChoice(it.id, it.desktopAccountLabel()) }
     val options = listOf<String?>(null) + choices.map { it.id } +
         listOfNotNull(selected?.takeUnless { id -> choices.any { it.id == id } })
     SearchableChoice("设计模型", options, selected,
@@ -430,10 +499,12 @@ internal fun DesktopDesignModelChoice(selected: String?, models: List<com.exampl
 
 @Composable
 internal fun StudioField(label: String, value: String, onChange: (String) -> Unit) {
+    val editor = rememberStudioTextHistory(label, value)
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         StatusText(label)
-        BasicTextField(value, onChange, Modifier.fillMaxWidth().border(1.dp, DesktopBootstrapColors.border)
-            .background(DesktopBootstrapColors.input).padding(9.dp), textStyle = TextStyle(color = DesktopBootstrapColors.foreground))
+        BasicTextField(editor.value, { editor.edit(it, onChange) }, Modifier.fillMaxWidth()
+            .studioTextHistoryKeys(editor, onChange).border(1.dp, DesktopBootstrapColors.border)
+            .background(DesktopBootstrapColors.input).padding(9.dp), cursorBrush = DesktopBootstrapColors.inputCaret, textStyle = TextStyle(color = DesktopBootstrapColors.foreground))
     }
 }
 @OptIn(ExperimentalLayoutApi::class)
@@ -442,7 +513,7 @@ internal fun StudioActions(content: @Composable RowScope.() -> Unit) {
     FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) { content() }
 }
 @Composable
-internal fun StudioToggle(label: String, selected: Boolean, action: () -> Unit) = StudioSwitch(label, selected, action)
+internal fun StudioToggle(label: String, selected: Boolean, action: () -> Unit) = StudioSwitch(label, selected, action = action)
 @Composable
 internal fun <T> SearchableChoice(label: String, options: List<T>, selected: T?, text: (T) -> String, choose: (T) -> Unit) {
     if (!studioUsesSearchDialog(options.size)) { CompactChoice(label, options, selected, text, choose); return }

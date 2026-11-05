@@ -52,13 +52,7 @@ internal class DesktopChatImages(
 
     private fun import(bytes: ByteArray): String {
         DesktopImageEditing.decode(bytes)
-        val extension = when {
-            bytes.size >= 8 && bytes[0] == 0x89.toByte() && bytes[1] == 0x50.toByte() -> "png"
-            bytes.size >= 3 && bytes[0] == 0xff.toByte() && bytes[1] == 0xd8.toByte() -> "jpg"
-            bytes.size >= 12 && String(bytes, 8, 4, Charsets.US_ASCII) == "WEBP" -> "webp"
-            bytes.size >= 6 && String(bytes, 0, 6, Charsets.US_ASCII) in setOf("GIF87a", "GIF89a") -> "gif"
-            else -> error("仅支持 PNG、APNG、JPEG、WebP、GIF 图片")
-        }
+        val extension = desktopImageResourceExtension(bytes)
         // Copy the encoded source intact, including embedded generation metadata. Raster edits
         // deliberately create a separate PNG; merely attaching a file must not rewrite it.
         return resources.materializeImage(PackagedImage("image.$extension", Base64.getEncoder().encodeToString(bytes)),
@@ -102,6 +96,18 @@ internal class DesktopChatImages(
                 session.chatBackground
             }
         }
+        return cleanupRemoved(listOfNotNull(previous))
+    }
+
+    /** Explicit per-session player image; absence restores the global default. */
+    suspend fun replacePlayerAvatar(sessionId: String, bytes: ByteArray?): String? {
+        val previous = gate.withNormalOperation { withContext(NonCancellable + Dispatchers.IO) {
+            val session = requireNotNull(chats.getSession(sessionId)) { "会话不存在" }
+            val reference = bytes?.let(::import)
+            // A failed/uncertain save keeps the candidate, as it may already be durably referenced.
+            chats.saveSessionSettingsDraft(session, session.copy(desktopPlayerAvatar = reference))
+            session.desktopPlayerAvatar
+        } }
         return cleanupRemoved(listOfNotNull(previous))
     }
 

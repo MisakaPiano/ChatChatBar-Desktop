@@ -39,9 +39,23 @@ import com.composables.icons.lucide.Check
 import com.composables.icons.lucide.Volume2
 import com.composables.icons.lucide.Camera
 import com.composables.icons.lucide.Pause
+import com.composables.icons.lucide.ZoomIn
+import com.composables.icons.lucide.ZoomOut
+import com.composables.icons.lucide.Download
+import com.composables.icons.lucide.FolderOpen
+import com.composables.icons.lucide.Eye
+import com.composables.icons.lucide.EyeOff
+import com.composables.icons.lucide.Heart
 
 /** Formal upstream semantics, with distinct Desktop reading-navigation additions. */
 internal object DesktopAppIcons {
+    val Like: ImageVector get() = Lucide.Heart
+    val ShowSecret: ImageVector get() = Lucide.Eye
+    val HideSecret: ImageVector get() = Lucide.EyeOff
+    val ZoomIn: ImageVector get() = Lucide.ZoomIn
+    val ZoomOut: ImageVector get() = Lucide.ZoomOut
+    val SaveImage: ImageVector get() = Lucide.Download
+    val Folder: ImageVector get() = Lucide.FolderOpen
     val Add: ImageVector get() = Lucide.CirclePlus
     val Edit: ImageVector get() = Lucide.Pencil
     val Star: ImageVector get() = Lucide.Star

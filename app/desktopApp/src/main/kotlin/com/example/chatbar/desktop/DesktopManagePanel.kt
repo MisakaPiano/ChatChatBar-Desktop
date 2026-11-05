@@ -61,6 +61,10 @@ import kotlinx.coroutines.CoroutineStart
 
 private enum class ManageSection { TRANSFER, CHARACTERS, FORMATS, WORLD_BOOKS, MODELS, SETTINGS }
 private enum class ManageSettingsEditor { CHAT_DEFAULTS, PLAYER }
+private enum class ManageSettingsGroup(val label: String) {
+    CONNECTION("模型与连接"), REPLY("回复与记忆"), APPEARANCE("外观与显示"), PLAYER("玩家设定"),
+    IMAGE("图片生成"), VOICE("语音与朗读"), OTHER("朋友圈／备份与其他")
+}
 
 @Composable
 internal fun DesktopNovelAiSettingsPanel(controller: DesktopNovelAiSettingsController,
@@ -76,10 +80,12 @@ internal fun DesktopNovelAiSettingsPanel(controller: DesktopNovelAiSettingsContr
         value = modelSettings.currentEffectiveModels()
     }
     ManageHeading("NovelAI")
+    DesktopApiAccountEntry(com.example.chatbar.desktop.security.DesktopAccountService.NOVELAI)
     StatusText(if (state.credentialPresent) "凭据已保存在 Windows 受保护存储" else "尚未配置 NovelAI 凭据")
     StatusText("仅在本应用中输入凭据。保存不会发送账户查询或生图请求。")
     state.error?.let { StatusText(it, DesktopBootstrapColors.destructive) }
     state.status?.let { StatusText(it) }
+    if (LocalDesktopApiAccounts.current == null) {
     if (replacing) {
         LabeledField("NovelAI Token", draftToken, secret = true) { draftToken = it }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -98,6 +104,7 @@ internal fun DesktopNovelAiSettingsPanel(controller: DesktopNovelAiSettingsContr
         BootstrapButton("确认移除", enabled = !state.busy) { scope.launch { controller.clearCredential(); confirmClear = false } }
         BootstrapButton("保留", secondary = true) { confirmClear = false }
     }
+    }
     ChoiceField("默认 NovelAI 模型", com.example.chatbar.domain.image.NovelAiImageModel.entries,
         state.settings.novelAiImageModel, { it.displayName }) { scope.launch { controller.selectModel(it) } }
     ChoiceField("默认画面比例", listOf("", "1:1", "2:3", "3:2"), state.settings.novelAiImageAspectRatio,
@@ -107,7 +114,7 @@ internal fun DesktopNovelAiSettingsPanel(controller: DesktopNovelAiSettingsContr
         listOfNotNull(configuredDesignId?.takeUnless { id -> models.any { it.id == id } })
     ChoiceField("图片 Prompt 设计模型", designChoices, configuredDesignId,
         { id -> if (id == null) effective.globalImageFallbackLabel(t)
-            else models.firstOrNull { it.id == id }?.displayName ?: "${t(DesktopUiText.SPECIFIED_UNAVAILABLE)} · $id" }) {
+            else models.firstOrNull { it.id == id }?.accountDisplayLabel ?: "${t(DesktopUiText.SPECIFIED_UNAVAILABLE)} · $id" }) {
         scope.launch { controller.selectDesignModel(it) }
     }
     StatusText("${t(DesktopUiText.CURRENT_IMAGE_DESIGN_MODEL)} · ${effective.image?.name ?: t(DesktopUiText.NOT_CONFIGURED)}")
@@ -116,7 +123,7 @@ internal fun DesktopNovelAiSettingsPanel(controller: DesktopNovelAiSettingsContr
     LabeledField("工作室 Prompt 附加要求", preference) { preference = it }
     BootstrapButton("保存附加要求", secondary = true, enabled = !state.busy) { scope.launch { controller.setPreference(preference) } }
     val translate = state.settings.novelAiPromptTranslationConsent == com.example.chatbar.data.local.entity.NovelAiPromptTranslationConsent.ENABLED
-    BootstrapButton(if (translate) "中文注释：已开启" else "中文注释：已关闭", secondary = true) {
+    StudioSwitch("中文注释", translate, enabled = !state.busy) {
         scope.launch { controller.setTranslation(!translate) }
     }
     StatusText("中文注释与标签补全使用本地词库，不会修改原始 Prompt。")
@@ -139,6 +146,16 @@ internal fun DesktopManagePanel(
     novelAiSettingsController: DesktopNovelAiSettingsController,
     onStartCharacterChat: (String) -> Unit = {},
     initialModels: Boolean = false, initialModelId: String? = null, onInitialModelsConsumed: () -> Unit = {},
+    initialPerson: Pair<String, String>? = null, onInitialPersonConsumed: () -> Unit = {},
+    initialMomentCard: Pair<String, Boolean>? = null, onInitialMomentCardConsumed: () -> Unit = {},
+    chatUiController: DesktopChatUiController? = null,
+    networkProxyController: DesktopNetworkProxyController? = null,
+    momentsController: DesktopMomentsController? = null,
+    providerUsage: DesktopProviderUsageOwner? = null,
+    initialImportKind: DesktopExternalImportKind? = null, initialImportTargetId: String? = null,
+    onInitialImportConsumed: () -> Unit = {},
+    initialTaskTarget: DesktopWorkTarget? = null, onInitialTaskConsumed: () -> Unit = {},
+    onTaskTargetUnavailable: () -> Unit = {},
 ) {
     val t = LocalDesktopUiStrings.current
     val uiLanguage by uiLanguageController.language.collectAsState()
@@ -147,6 +164,7 @@ internal fun DesktopManagePanel(
     val languageSaved by uiLanguageController.saved.collectAsState()
     var section by remember { mutableStateOf(ManageSection.TRANSFER) }
     var settingsEditor by remember { mutableStateOf<ManageSettingsEditor?>(null) }
+    var settingsGroup by remember { mutableStateOf(ManageSettingsGroup.CONNECTION) }
     var confirmClearCredential by remember { mutableStateOf(false) }
     val state by modelSettingsController.state.collectAsState()
     val characterState by characterEditorController.state.collectAsState()
@@ -156,12 +174,103 @@ internal fun DesktopManagePanel(
     val transferState by transferController.state.collectAsState()
     transferState.coverExport?.let { DesktopCoverExportDialog(it, transferController) }
     val modelTransferState by modelTemplateController.state.collectAsState()
+    val managementBusy = managementController.state.collectAsState().value.busy
+    fun selectSection(choice: ManageSection, after: () -> Unit = {}) {
+        if (managementController.state.value.busy || transferController.state.value.busy || modelTemplateController.state.value.busy) return
+        val accept = { section = choice; after() }
+        when {
+            section == ManageSection.WORLD_BOOKS && choice != section -> worldBookEditorController.requestLeave(accept)
+            section == ManageSection.FORMATS && choice != section -> formatCardEditorController.requestLeave(accept)
+            section == ManageSection.CHARACTERS && choice != section -> characterEditorController.requestLeave(accept)
+            (section == ManageSection.MODELS || section == ManageSection.SETTINGS) && choice != section ->
+                scope.launch { modelSettingsController.requestLeave(accept) }
+            else -> accept()
+        }
+    }
+    LaunchedEffect(initialTaskTarget, managementBusy, transferState.busy, modelTransferState.busy) {
+        if (managementBusy || transferState.busy || modelTransferState.busy) return@LaunchedEffect
+        initialTaskTarget?.let { target ->
+            if (target.detail == DesktopWorkDetail.FORMAT_DRAFT) {
+                selectSection(ManageSection.FORMATS) {
+                    val draft = target.draftSessionId
+                    if (draft == null || formatCardEditorController.state.value.draftSessionId != draft ||
+                        formatCardEditorController.autoFill?.revealTaskDraft(draft) != true) onTaskTargetUnavailable()
+                }
+            } else if (target.detail in setOf(DesktopWorkDetail.CHARACTER_DRAFT, DesktopWorkDetail.APPEARANCE_DRAFT,
+                    DesktopWorkDetail.CHARACTER_IMAGE_DRAFT)) {
+                selectSection(ManageSection.CHARACTERS) {
+                    val draft = target.draftSessionId
+                    val revealed = if (draft == null || characterEditorController.state.value.draftSessionId != draft) false
+                    else when (target.detail) {
+                        DesktopWorkDetail.CHARACTER_DRAFT -> characterEditorController.cardAi?.revealTaskDraft(draft) == true
+                        DesktopWorkDetail.APPEARANCE_DRAFT -> characterEditorController.appearanceAi?.revealTaskDraft(draft) == true
+                        DesktopWorkDetail.CHARACTER_IMAGE_DRAFT -> characterEditorController.cardImages?.revealTaskDraft(draft) == true
+                        else -> false
+                    }
+                    if (!revealed) onTaskTargetUnavailable()
+                }
+            } else if (target.detail == DesktopWorkDetail.WORLD_BOOK_DRAFT) {
+                selectSection(ManageSection.WORLD_BOOKS) {
+                    val draft = target.draftSessionId
+                    if (draft == null || worldBookEditorController.state.value.draftSessionId != draft ||
+                        worldBookEditorController.ai?.revealTaskDraft(draft) != true) onTaskTargetUnavailable()
+                }
+            } else if (target.cardId != null && target.subjectId != null) {
+                selectSection(ManageSection.CHARACTERS) { scope.launch {
+                    characterEditorController.openDocument(target.cardId, target.subjectId, onTaskTargetUnavailable)
+                } }
+            } else onTaskTargetUnavailable()
+            onInitialTaskConsumed()
+        }
+    }
+    LaunchedEffect(initialImportKind, initialImportTargetId) {
+        initialImportKind?.let { kind ->
+            section = when (kind) {
+                DesktopExternalImportKind.CHARACTER -> ManageSection.CHARACTERS
+                DesktopExternalImportKind.FORMAT -> ManageSection.FORMATS
+                DesktopExternalImportKind.WORLD_BOOK -> ManageSection.WORLD_BOOKS
+                DesktopExternalImportKind.MODEL_TEMPLATE -> ManageSection.MODELS
+                else -> ManageSection.TRANSFER
+            }
+            if (initialImportTargetId != null) when (kind) {
+                DesktopExternalImportKind.CHARACTER -> {
+                    characterEditorController.load()
+                    characterEditorController.state.value.characters.find { it.id == initialImportTargetId }?.let { characterEditorController.search(it.name) }
+                }
+                DesktopExternalImportKind.FORMAT -> {
+                    formatCardEditorController.load()
+                    formatCardEditorController.state.value.cards.find { it.id == initialImportTargetId }?.let { formatCardEditorController.search(it.name) }
+                }
+                DesktopExternalImportKind.WORLD_BOOK -> {
+                    worldBookEditorController.load()
+                    worldBookEditorController.state.value.books.find { it.id == initialImportTargetId }?.let { worldBookEditorController.search(it.name) }
+                }
+                else -> Unit
+            }
+            onInitialImportConsumed()
+        }
+    }
     LaunchedEffect(initialModels, initialModelId) {
         if (initialModels) {
             section = ManageSection.MODELS
             modelSettingsController.loadModels()
             initialModelId?.let { modelSettingsController.startEdit(it) }
             onInitialModelsConsumed()
+        }
+    }
+    LaunchedEffect(initialMomentCard) {
+        initialMomentCard?.let { (cardId, focusSwitch) ->
+            selectSection(ManageSection.CHARACTERS) { scope.launch {
+                if (focusSwitch) characterEditorController.openMoments(cardId) else characterEditorController.openExisting(cardId)
+            } }
+            onInitialMomentCardConsumed()
+        }
+    }
+    LaunchedEffect(initialPerson) {
+        initialPerson?.let { (cardId, personId) ->
+            section = ManageSection.CHARACTERS
+            characterEditorController.openPerson(cardId, personId)
+            onInitialPersonConsumed()
         }
     }
     LaunchedEffect(modelTransferState.pendingTargetId, modelTransferState.deliveryAttempt) {
@@ -189,37 +298,21 @@ internal fun DesktopManagePanel(
         }
     }
     Box(Modifier.fillMaxSize()) {
-    Column(
-        Modifier.fillMaxSize()
-            .background(DesktopBootstrapColors.background)
-            .verticalScroll(rememberScrollState()).padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
-        ManageHeading(t(DesktopUiText.MANAGE))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            ManageSection.entries.forEach { choice ->
-                BootstrapButton(t(when (choice) {
-                    ManageSection.TRANSFER -> DesktopUiText.TRANSFER
-                    ManageSection.CHARACTERS -> DesktopUiText.CHARACTERS
-                    ManageSection.FORMATS -> DesktopUiText.FORMATS
-                    ManageSection.WORLD_BOOKS -> DesktopUiText.WORLD_BOOKS
-                    ManageSection.MODELS -> DesktopUiText.MODELS
-                    ManageSection.SETTINGS -> DesktopUiText.SETTINGS
-                }), secondary = section != choice) {
-                    if (managementController.state.value.busy || transferController.state.value.busy ||
-                        modelTemplateController.state.value.busy) return@BootstrapButton
-                    if (section == ManageSection.WORLD_BOOKS && choice != ManageSection.WORLD_BOOKS) {
-                        worldBookEditorController.requestLeave { section = choice }
-                    } else if (section == ManageSection.FORMATS && choice != ManageSection.FORMATS) {
-                        formatCardEditorController.requestLeave { section = choice }
-                    } else if (section == ManageSection.CHARACTERS && choice != ManageSection.CHARACTERS) {
-                        characterEditorController.requestLeave { section = choice }
-                    } else if ((section == ManageSection.MODELS || section == ManageSection.SETTINGS) && choice != section) {
-                        scope.launch { modelSettingsController.requestLeave { section = choice } }
-                    } else section = choice
-                }
-            }
-        }
+    DesktopWorkspacePage(t(DesktopUiText.MANAGE), ManageSection.entries.map { choice ->
+        DesktopWorkspaceDestination(choice.name, t(when (choice) {
+            ManageSection.TRANSFER -> DesktopUiText.TRANSFER
+            ManageSection.CHARACTERS -> DesktopUiText.CHARACTERS
+            ManageSection.FORMATS -> DesktopUiText.FORMATS
+            ManageSection.WORLD_BOOKS -> DesktopUiText.WORLD_BOOKS
+            ManageSection.MODELS -> DesktopUiText.MODELS
+            ManageSection.SETTINGS -> DesktopUiText.SETTINGS
+        }))
+    }, section.name, onSelect = { id ->
+        val choice = ManageSection.valueOf(id)
+        selectSection(choice)
+    }) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)) {
         if (state.busy) StatusText(t(DesktopUiText.WORKING))
         state.status?.let { StatusText(t.status(it)) }
         state.error?.let { StatusText(t.status(it), DesktopBootstrapColors.destructive) }
@@ -232,7 +325,21 @@ internal fun DesktopManagePanel(
                 action -> scope.launch { action() }
             }
             ManageSection.SETTINGS -> {
-                DesktopNovelAiSettingsPanel(novelAiSettingsController, modelSettingsController, state.availableChatModels)
+                ManageHeading(t(DesktopUiText.SETTINGS))
+                @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+                androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)) { ManageSettingsGroup.entries.forEach { group ->
+                    DesktopWorkspaceNavigationItem(DesktopWorkspaceDestination(group.name, group.label), settingsGroup == group,
+                        true, Modifier.width(144.dp)) { settingsGroup = group }
+                } }
+                Box(Modifier.fillMaxWidth()) {
+                    DesktopRetainedPane(settingsGroup == ManageSettingsGroup.IMAGE) {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            DesktopNovelAiSettingsPanel(novelAiSettingsController, modelSettingsController, state.availableChatModels)
+                        }
+                    }
+                    DesktopRetainedPane(settingsGroup == ManageSettingsGroup.APPEARANCE) {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 ManageHeading(t(DesktopUiText.LANGUAGE))
                 ActionRow {
                     SelectChip(t(DesktopUiText.CHINESE), uiLanguage == DesktopUiLanguage.ZH_CN) {
@@ -261,18 +368,43 @@ internal fun DesktopManagePanel(
                 StatusText(t(DesktopUiText.BUBBLE_FONT_IMMEDIATE))
                 if (state.bubbleFontScaleSaving) StatusText(t(DesktopUiText.WORKING))
                 if (state.bubbleFontScaleError) StatusText(t(DesktopUiText.BUBBLE_FONT_SAVE_FAILED), DesktopBootstrapColors.destructive)
-                DesktopFishGlobalSettings(state, modelSettingsController)
-                DesktopAutomaticBackupSettingsPanel(backupSettingsController)
+
+                        }
+                    }
+                    DesktopRetainedPane(settingsGroup == ManageSettingsGroup.VOICE) {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            chatUiController?.let { DesktopContinuousPlaybackSwitch(it) }
+                            DesktopFishGlobalSettings(state, modelSettingsController)
+                        }
+                    }
+                    DesktopRetainedPane(settingsGroup == ManageSettingsGroup.OTHER) {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            momentsController?.let { DesktopMomentsSettings(it) }
+                            providerUsage?.let { DesktopProviderUsagePanel(it) }
+                            DesktopAutomaticBackupSettingsPanel(backupSettingsController)
+                        }
+                    }
+                    listOf(ManageSettingsGroup.CONNECTION, ManageSettingsGroup.REPLY, ManageSettingsGroup.PLAYER).forEach { area ->
+                        DesktopRetainedPane(settingsGroup == area) {
+                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 DesktopCoreSettingsPanel(
                     state = state,
+                    controller = modelSettingsController,
+                    area = area,
                     onChatDefaults = { settingsEditor = ManageSettingsEditor.CHAT_DEFAULTS },
                     onPlayer = { settingsEditor = ManageSettingsEditor.PLAYER },
                     onCredential = modelSettingsController::openCredentialEditor,
                     onClearCredential = { confirmClearCredential = true },
                     connectionTestController = connectionTestController,
                 )
+                if (area == ManageSettingsGroup.CONNECTION) networkProxyController?.let { DesktopNetworkProxyPanel(it) }
+                            }
+                        }
+                    }
+                }
             }
         }
+    }
     }
     if (section == ManageSection.MODELS && state.editor != null) {
         DesktopModelEditorOverlay(state, modelSettingsController,
@@ -437,6 +569,10 @@ private fun DesktopSettingsDraftOverlay(
                 DesktopFormatRepairModelSetting(state) { value ->
                     controller.editSettings { it.copy(formatRepairModelId = value) }
                 }
+                ToggleField(t(DesktopUiText.AUTOMATIC_FORMAT_CHECK), draft.automaticFormatCheckEnabled) {
+                    controller.editSettings { it.copy(automaticFormatCheckEnabled = !it.automaticFormatCheckEnabled) }
+                }
+                StatusText(t(DesktopUiText.AUTOMATIC_FORMAT_CHECK_NOTE))
             } else {
                 LabeledField(t(DesktopUiText.PLAYER_NAME), draft.playerName) { value ->
                     controller.editSettings { it.copy(playerName = value) }
@@ -565,7 +701,7 @@ private fun DesktopAppearanceSettings(
 }
 
 @Composable
-private fun SelectChip(label: String, selected: Boolean, onClick: () -> Unit) {
+internal fun SelectChip(label: String, selected: Boolean, onClick: () -> Unit) {
     val colors = DesktopBootstrapColors
     Box(Modifier.background(if (selected) colors.accent else colors.card, RoundedCornerShape(8.dp))
         .border(1.dp, if (selected) colors.primary else colors.border, RoundedCornerShape(8.dp))
@@ -654,6 +790,7 @@ internal fun DesktopModelsPanel(
     if (!editorOnly) {
     controller.ragSettings?.let { DesktopRagSettingsPanel(it) }
     ManageHeading(t(DesktopUiText.CHAT_MODELS))
+    DesktopApiAccountEntry()
     modelTemplateController?.let { transfer ->
         val transferState by transfer.state.collectAsState()
         transferState.status?.let { StatusText(t.status(it)) }
@@ -727,7 +864,7 @@ internal fun DesktopModelsPanel(
             BoxWithConstraints(Modifier.fillMaxWidth()) {
                 val badgeMaxWidth = (maxWidth - 56.dp).coerceAtLeast(0.dp)
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    BasicText(model.displayName, modifier = Modifier.weight(1f), maxLines = 1,
+                    BasicText(model.accountDisplayLabel, modifier = Modifier.weight(1f), maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         style = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 19.sp,
                             fontWeight = FontWeight.SemiBold))
@@ -777,6 +914,8 @@ internal fun DesktopModelsPanel(
         LabeledField(t(DesktopUiText.MODEL_ID), draft.modelName) { value ->
             controller.editModel { it.copy(modelName = value) }
         }
+        StatusText(t(DesktopUiText.MODEL_ENDPOINT_NOTE))
+        StatusText(t(DesktopUiText.LOCAL_MODEL_NOTE))
         CredentialField(
             label = t(DesktopUiText.MODEL_API_KEY),
             hasSavedValue = draft.hasSavedCredential,
@@ -823,6 +962,10 @@ internal fun DesktopModelsPanel(
         LabeledField(t(DesktopUiText.MAX_OUTPUT_TOKENS), draft.maxOutputTokens) { value ->
             controller.editModel { it.copy(maxOutputTokens = value.filter(Char::isDigit)) }
         }
+        LabeledField(t(DesktopUiText.MODEL_CONTEXT_CAPACITY), draft.contextWindowTokens) { value ->
+            controller.editModel { it.copy(contextWindowTokens = value) }
+        }
+        StatusText(t(DesktopUiText.MODEL_CONTEXT_CAPACITY_HELP))
         ChoiceField(t(DesktopUiText.OUTPUT_TOKEN_PARAMETER), OutputTokenParameter.entries, draft.outputTokenParameter) { value ->
             controller.editModel { it.copy(outputTokenParameter = value) }
         }
@@ -861,6 +1004,8 @@ internal fun DesktopModelsPanel(
 @Composable
 private fun DesktopCoreSettingsPanel(
     state: DesktopModelSettingsState,
+    controller: DesktopModelSettingsController,
+    area: ManageSettingsGroup,
     onChatDefaults: () -> Unit,
     onPlayer: () -> Unit,
     onCredential: () -> Unit,
@@ -872,7 +1017,10 @@ private fun DesktopCoreSettingsPanel(
         StatusText(t(DesktopUiText.SETTINGS_NOT_LOADED))
         return
     }
+    if (area == ManageSettingsGroup.CONNECTION) {
     ManageHeading(t(DesktopUiText.MODEL_CONNECTION))
+    DesktopApiAccountEntry()
+    if (LocalDesktopApiAccounts.current == null) {
     state.bundledCatalog?.let { StatusText("${it.provider} · ${it.baseUrl}") }
     StatusText("${t(DesktopUiText.GLOBAL_API_KEY)}: ${t(if (draft.hasSavedFallbackCredential)
         DesktopUiText.STORED_SECURELY else DesktopUiText.NOT_CONFIGURED)}")
@@ -882,13 +1030,20 @@ private fun DesktopCoreSettingsPanel(
         if (draft.hasSavedFallbackCredential) BootstrapButton(t(DesktopUiText.CLEAR),
             variant = DesktopActionVariant.DESTRUCTIVE, onClick = onClearCredential)
     }
+    }
     DesktopConnectionTestPanel(connectionTestController, state.credentialDirty)
+    }
+    if (area == ManageSettingsGroup.REPLY) {
     ManageHeading(t(DesktopUiText.CHAT_DEFAULTS))
     StatusText("${t(DesktopUiText.CONTEXT_WINDOW)}: ${draft.defaultContextWindowSize}")
     BootstrapButton(t(DesktopUiText.EDIT), variant = DesktopActionVariant.SECONDARY, onClick = onChatDefaults)
+    }
+    if (area == ManageSettingsGroup.PLAYER) {
     ManageHeading(t(DesktopUiText.PLAYER_SETTING))
+    DesktopPlayerAvatarSetting(controller, state)
     StatusText(draft.playerName.ifBlank { t(DesktopUiText.NOT_CONFIGURED) })
     BootstrapButton(t(DesktopUiText.EDIT), variant = DesktopActionVariant.SECONDARY, onClick = onPlayer)
+    }
     state.status?.let { StatusText(t.status(it)) }
     state.error?.let { StatusText(t.status(it), DesktopBootstrapColors.destructive) }
 }
@@ -916,8 +1071,7 @@ private fun CredentialField(
 
 @Composable
 private fun ToggleField(label: String, value: Boolean, onToggle: () -> Unit) {
-    val t = LocalDesktopUiStrings.current
-    SelectChip("$label: ${t(if (value) DesktopUiText.ON else DesktopUiText.OFF)}", value, onToggle)
+    StudioSwitch(label, value, action = onToggle)
 }
 
 @Composable
@@ -937,7 +1091,7 @@ private fun <T> ChoiceField(
 }
 
 @Composable
-private fun LabeledField(
+internal fun LabeledField(
     label: String,
     value: String,
     secret: Boolean = false,
@@ -963,7 +1117,7 @@ private fun LabeledField(
                 .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
                 .background(DesktopBootstrapColors.input, RoundedCornerShape(8.dp))
                 .padding(10.dp),
-            textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp),
+            cursorBrush = DesktopBootstrapColors.inputCaret, textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp),
             singleLine = !multiline,
             visualTransformation = if (secret) PasswordVisualTransformation() else VisualTransformation.None,
         )

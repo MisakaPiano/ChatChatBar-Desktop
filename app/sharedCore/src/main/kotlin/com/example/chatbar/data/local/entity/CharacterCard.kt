@@ -106,6 +106,7 @@ enum class RagIndexStatus {
  * 单个角色信息
  */
 @Serializable
+@OptIn(ExperimentalSerializationApi::class)
 data class CharacterInfo(
     val id: String,
     val name: String,
@@ -119,7 +120,10 @@ data class CharacterInfo(
     val relationships: String = "",
     val speakingStyle: String = "",
     val imagePrompt: String = "",
-    val fishAudioVoice: FishAudioVoiceBinding? = null
+    val fishAudioVoice: FishAudioVoiceBinding? = null,
+    /** Desktop card variant gate; source text/media remain intact. */
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val desktopEnabled: Boolean = true
 ) {
     companion object {
         @OptIn(ExperimentalUuidApi::class)

@@ -23,6 +23,8 @@ import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 import kotlinx.serialization.encodeToString
 
+internal class AppBackupPasswordRequired : IllegalArgumentException("BACKUP_PASSWORD_REQUIRED")
+
 /** Independent of device Keystore; only small keysets and headers enter memory. */
 internal object AppBackupCodec {
     val magic = "CBBACKUP".toByteArray(Charsets.US_ASCII)
@@ -98,7 +100,7 @@ internal object AppBackupCodec {
             require(envelope.salt == null && envelope.wrappedKey == null) { "存档头无效" }
             return source
         }
-        require(password != null && password.size in 8..1024) { "请输入存档密码（8–1024 个字符）" }
+        if (password == null || password.size !in 8..1024) throw AppBackupPasswordRequired()
         val salt = Base64.getDecoder().decode(requireNotNull(envelope.salt))
         val wrapped = Base64.getDecoder().decode(requireNotNull(envelope.wrappedKey))
         require(salt.size == 32 && wrapped.size in 29..16384) { "存档加密参数损坏" }

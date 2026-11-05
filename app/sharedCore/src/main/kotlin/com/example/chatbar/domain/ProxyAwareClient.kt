@@ -2,34 +2,58 @@ package com.example.chatbar.domain
 
 import java.io.IOException
 import java.net.Inet4Address
+import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.Proxy
 import java.net.ProxySelector
 import java.net.URI
+import java.util.Locale
 import okhttp3.Dns
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import javax.net.SocketFactory
 
 object ProxyAwareClient {
+    /** Optional platform transport hook; Android retains its default socket factory. */
+    @Volatile
+    var platformSocketFactory: SocketFactory? = null
+    /** Desktop loads this once before starting network owners. Android keeps the default. */
+    @Volatile
+    var applicationProxy: ApplicationProxySettings = ApplicationProxySettings()
+    @Volatile
+    var applicationRoutingAvailable: Boolean = true
+
     @Volatile
     var manualProxyHost: String? = null
 
     @Volatile
     var manualProxyPort: Int? = null
 
-    fun builder(): OkHttpClient.Builder = builderWithCleartextPolicy { false }
+    fun builder(proxySettings: () -> ApplicationProxySettings = { applicationProxy }): OkHttpClient.Builder =
+        builderWithCleartextPolicy({ false }, proxySettings)
 
     fun modelApiBuilder(allowCleartextHttp: () -> Boolean): OkHttpClient.Builder =
-        builderWithCleartextPolicy(allowCleartextHttp)
+        builderWithCleartextPolicy(allowCleartextHttp, { applicationProxy })
+
+    fun modelApiBuilder(allowCleartextHttp: () -> Boolean,
+        proxySettings: () -> ApplicationProxySettings): OkHttpClient.Builder =
+        builderWithCleartextPolicy(allowCleartextHttp, proxySettings)
 
     private fun builderWithCleartextPolicy(
         allowCleartextHttp: () -> Boolean,
+        proxySettings: () -> ApplicationProxySettings,
     ): OkHttpClient.Builder {
-        val selector = ProxySelectorDelegate()
+        val selector = ProxySelectorDelegate(proxySettings)
         return OkHttpClient.Builder()
+            .apply { platformSocketFactory?.let { socketFactory(it) } }
+            .eventListenerFactory { call ->
+                call.request().tag(com.example.chatbar.domain.network.HttpConnectionTrace::class.java)
+                    ?: okhttp3.EventListener.NONE
+            }
             .proxySelector(selector)
             .dns(Ipv4FirstDns)
             .addInterceptor { chain ->
+                if (!applicationRoutingAvailable) throw IOException("应用代理设置未能读取，请检查网络设置后重启")
                 val request = chain.request()
                 if (!CleartextHttpPolicy.isAllowed(request.url.isHttps, allowCleartextHttp())) {
                     throw IOException("明文 HTTP 模型 API 已禁用，请在管理 > 设置中开启后重试")
@@ -46,16 +70,30 @@ object ProxyAwareClient {
                 ?: Dns.SYSTEM.lookup(hostname)
     }
 
-    private class ProxySelectorDelegate : ProxySelector() {
+    private class ProxySelectorDelegate(private val proxySettings: () -> ApplicationProxySettings) : ProxySelector() {
         override fun select(uri: URI?): List<Proxy> {
+            if (ProxyBypassPolicy.matches(uri?.host, System.getProperty("http.nonProxyHosts"))) {
+                return listOf(Proxy.NO_PROXY)
+            }
+            val application = proxySettings()
+            when (application.mode) {
+                ApplicationProxyMode.DIRECT -> return listOf(Proxy.NO_PROXY)
+                ApplicationProxyMode.HTTP, ApplicationProxyMode.SOCKS -> return listOf(Proxy(
+                    if (application.mode == ApplicationProxyMode.HTTP) Proxy.Type.HTTP else Proxy.Type.SOCKS,
+                    InetSocketAddress.createUnresolved(application.host, application.port),
+                ))
+                ApplicationProxyMode.SYSTEM -> Unit
+            }
             val host = manualProxyHost
             val port = manualProxyPort
             if (!host.isNullOrBlank() && port != null && port in 1..65535) {
                 return listOf(Proxy(Proxy.Type.HTTP, InetSocketAddress(host, port)))
             }
 
-            val httpHost = System.getProperty("http.proxyHost")
-            val httpPort = System.getProperty("http.proxyPort")?.toIntOrNull()
+            val secureHost = System.getProperty("https.proxyHost")?.takeIf { uri?.scheme.equals("https", true) && it.isNotBlank() }
+            val httpHost = secureHost ?: System.getProperty("http.proxyHost")
+            val httpPort = if (secureHost != null) System.getProperty("https.proxyPort")?.toIntOrNull() ?: 443
+                else System.getProperty("http.proxyPort")?.toIntOrNull()
             if (!httpHost.isNullOrBlank() && httpPort != null && httpPort in 1..65535) {
                 return listOf(Proxy(Proxy.Type.HTTP, InetSocketAddress(httpHost, httpPort)))
             }
@@ -66,11 +104,8 @@ object ProxyAwareClient {
                 return listOf(Proxy(Proxy.Type.SOCKS, InetSocketAddress(socksHost, socksPort)))
             }
 
-            return try {
-                ProxySelector.getDefault()?.select(uri) ?: listOf(Proxy.NO_PROXY)
-            } catch (_: Exception) {
-                listOf(Proxy.NO_PROXY)
-            }
+            // A failed selector must remain a request failure, not an invisible direct route.
+            return ProxySelector.getDefault()?.select(uri) ?: listOf(Proxy.NO_PROXY)
         }
 
         override fun connectFailed(
@@ -78,6 +113,36 @@ object ProxyAwareClient {
             sa: java.net.SocketAddress?,
             ioe: IOException?,
         ) = Unit
+    }
+}
+
+private object ProxyBypassPolicy {
+    private val ipv6Literal = Regex("[0-9a-f:.]+")
+
+    fun matches(host: String?, nonProxyHosts: String?): Boolean {
+        val normalized = host?.let(::normalize)?.takeIf(String::isNotEmpty) ?: return false
+        if (normalized == "localhost" || isLoopbackLiteral(normalized)) return true
+        return nonProxyHosts.orEmpty().split('|').any { entry ->
+            val pattern = normalize(entry.trim())
+            pattern.isNotEmpty() && Regex(
+                pattern.split('*').joinToString(".*") { Regex.escape(it) },
+            ).matches(normalized)
+        }
+    }
+
+    private fun normalize(host: String): String =
+        host.lowercase(Locale.ROOT).removeSurrounding("[", "]").trimEnd('.')
+
+    private fun isLoopbackLiteral(host: String): Boolean {
+        val octets = host.split('.')
+        if (octets.size == 4 && octets.all { octet ->
+                octet.isNotEmpty() && octet.all { it in '0'..'9' } && (octet.toIntOrNull() ?: -1) in 0..255
+            }) return octets.first().toInt() == 127
+        // Resolve numeric IPv6 literals only; bypass decisions must never resolve arbitrary DNS names.
+        val literal = host.substringBefore('%')
+        return ':' in literal && ipv6Literal.matches(literal) && runCatching {
+            InetAddress.getByName(literal).isLoopbackAddress
+        }.getOrDefault(false)
     }
 }
 

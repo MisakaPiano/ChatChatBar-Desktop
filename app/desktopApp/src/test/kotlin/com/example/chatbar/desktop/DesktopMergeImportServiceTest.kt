@@ -3,6 +3,7 @@ package com.example.chatbar.desktop
 import com.example.chatbar.desktop.backup.*
 import com.example.chatbar.desktop.security.*
 import com.example.chatbar.data.local.JsonFileStorage
+import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.repository.ModelRepository
 import com.example.chatbar.data.repository.WindowsSafeModelStorageKeyPolicy
 import java.nio.file.*
@@ -13,6 +14,155 @@ import org.junit.Test
 import kotlin.test.*
 
 class DesktopMergeImportServiceTest {
+    @Test fun `interactive merge keeps encrypted file across repeated passwords and cancels without publishing`() = runBlocking {
+        val bytes = CensusWireFixtures.bytes(encrypted = true, files = records("Phone", "https://phone.invalid/v1"))
+        fixture(archiveBytes = bytes) {
+            var picks = 0
+            val controller = DesktopMergeImportController(service, object : DesktopFilePicker {
+                override fun pickOpenFile(type: DesktopFileType): Path { picks++; return archive }
+                override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? = null
+            }, DesktopDirectoryPicker { error("No commit may be requested") })
+            try {
+                controller.selectFile()
+                withTimeout(10000) { controller.state.first { !it.busy && it.passwordRequest != null } }
+                assertNull(controller.state.value.error); assertFalse(controller.state.value.ready)
+                repeat(2) {
+                    val wrong = "incorrect-password-$it".toCharArray(); controller.retryFilePassword(wrong)
+                    withTimeout(20000) { controller.state.first { !it.busy && it.passwordRequest?.error != null } }
+                    assertEquals(1, picks); assertTrue(wrong.all { it == '\u0000' })
+                }
+                val password = CensusWireFixtures.PASSWORD.toCharArray(); controller.retryFilePassword(password)
+                withTimeout(20000) { controller.state.first { !it.busy && it.ready } }
+                assertEquals(1, picks); assertTrue(password.all { it == '\u0000' })
+                assertNull(controller.state.value.passwordRequest); assertFalse(controller.state.value.restartRequired)
+                controller.discard()
+                withTimeout(10000) { controller.state.first { !it.busy && !it.ready } }
+                controller.selectFile()
+                withTimeout(10000) { controller.state.first { !it.busy && it.passwordRequest != null } }
+                controller.leavePasswordFlow()
+                withTimeout(10000) { controller.state.first { !it.busy && it.passwordRequest == null } }
+                withTimeout(5000) { controller.workRows.first { rows -> rows.none { it.active } } }
+                assertFalse(controller.state.value.restartRequired); assertNull(controller.state.value.destination)
+            } finally { controller.closeAndDrain() }
+        }
+    }
+    @Test fun `task center stops only the original merge check and waits for picker cleanup`() = runBlocking<Unit> {
+        fixture {
+            val firstEntered = CompletableDeferred<Unit>(); val secondEntered = CompletableDeferred<Unit>()
+            val firstRelease = java.util.concurrent.CountDownLatch(1); val secondRelease = java.util.concurrent.CountDownLatch(1)
+            val calls = java.util.concurrent.atomic.AtomicInteger()
+            val picker = object : DesktopFilePicker {
+                override fun pickOpenFile(type: DesktopFileType): Path? {
+                    if (calls.incrementAndGet() == 1) { firstEntered.complete(Unit); check(firstRelease.await(10, java.util.concurrent.TimeUnit.SECONDS)) }
+                    else { secondEntered.complete(Unit); check(secondRelease.await(10, java.util.concurrent.TimeUnit.SECONDS)) }
+                    return null
+                }
+                override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? = null
+            }
+            val controller = DesktopMergeImportController(service, picker, DesktopDirectoryPicker { error("NO_COMMIT") })
+            val center = DesktopTaskCenter(); center.watchMerge(controller)
+            val password = "FAKE_CANCELLED_PASSWORD".toCharArray()
+            try {
+                controller.inspect(password)
+                withTimeout(5000) { firstEntered.await() }
+                val row = withTimeout(5000) { center.state.first { it.rows.any { row -> row.active } } }.rows.single()
+                assertEquals(DesktopWorkKind.MERGE_CHECK, row.kind)
+                assertEquals(DesktopWorkDetail.MERGE_IMPORT, row.target!!.detail)
+                assertFalse(row.canRetry)
+                assertTrue(center.requestStop(row.id))
+                withTimeout(5000) { controller.workRows.first { it.single().stopRequested } }
+                assertTrue(controller.state.value.busy); assertTrue(controller.workRows.value.single().active)
+                firstRelease.countDown()
+                withTimeout(5000) { controller.workRows.first { it.single().phase == DesktopWorkPhase.CANCELLED } }
+                assertTrue(password.all { it == '\u0000' }); assertFalse(controller.state.value.ready)
+                assertFalse(service.restartRequired)
+                val oldId = controller.workRows.value.single().id
+                controller.inspect(null)
+                withTimeout(5000) { secondEntered.await() }
+                assertFalse(controller.stopTask(oldId)); assertTrue(controller.state.value.busy)
+                assertNotEquals(oldId, controller.workRows.value.first().id)
+                secondRelease.countDown()
+                withTimeout(5000) { controller.workRows.first { rows -> rows.size == 2 && rows.none { it.active } } }
+                assertTrue(controller.workRows.value.all { it.phase == DesktopWorkPhase.CANCELLED })
+                assertTrue(controller.workRows.value.none { it.canStop || it.canRetry || it.stopRequested })
+                assertFalse(Files.exists(root.resolve("backups/.merge-import-work")))
+                original.forEach { (relative, bytes) -> assertContentEquals(bytes, Files.readAllBytes(root.resolve(relative))) }
+            } finally { firstRelease.countDown(); secondRelease.countDown(); controller.closeAndDrain(); center.closeAndDrain() }
+        }
+    }
+
+    @Test fun `merge target inside managed installation refuses without losing inspected conflicts or creating a directory`() = runBlocking<Unit> {
+        fixture {
+            val program = Files.createDirectory(base.resolve("program"))
+            val versions = Files.createDirectory(program.resolve("versions"))
+            val home = Files.createDirectory(versions.resolve("fixture-version"))
+            Files.writeString(program.resolve("install-owner.txt"), "ccb-desktop-nsis-v1")
+            val picker = object : DesktopFilePicker {
+                override fun pickOpenFile(type: DesktopFileType) = archive
+                override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? = null
+            }
+            val controller = DesktopMergeImportController(service, picker, DesktopDirectoryPicker { program },
+                applicationHomeResolver = { DesktopApplicationHomeResult.Available(home,
+                    DesktopApplicationHomeProvenance.INJECTED_DEVELOPMENT_TEST) })
+            try {
+                controller.inspect(null)
+                val preview = withTimeout(10_000) { controller.state.first { it.ready && !it.busy } }
+                withTimeout(5000) { controller.workRows.first { it.single().phase == DesktopWorkPhase.COMPLETED } }
+                assertEquals(DesktopWorkKind.MERGE_CHECK, controller.workRows.value.single().kind)
+                val choices = preview.conflicts.associate { it.key to it.choices.first() }
+                val credentials = preview.credentials.associate { it.kind to DesktopMergeCredentials.Choice.KEEP_COMPUTER }
+                repeat(2) {
+                    controller.commit(choices, credentials, true, confirmed = true)
+                    val refused = withTimeout(10_000) { controller.state.first { !it.busy && it.error != null } }
+                    assertTrue(refused.ready); assertFalse(refused.restartRequired)
+                    assertTrue(refused.error!!.contains("程序安装目录")); assertFalse(refused.error!!.contains("密码"))
+                    assertEquals(preview.conflicts, refused.conflicts); assertEquals(preview.credentials, refused.credentials)
+                    assertFalse(Files.exists(assertNotNull(refused.destination)))
+                    assertFalse(service.restartRequired)
+                    withTimeout(5000) { controller.workRows.first { it.first().kind == DesktopWorkKind.MERGE && !it.first().active } }
+                    assertEquals(DesktopWorkPhase.FAILED, controller.workRows.value.first().phase)
+                    assertFalse(controller.workRows.value.first().canRetry)
+                }
+                original.forEach { (relative, bytes) -> assertContentEquals(bytes, Files.readAllBytes(root.resolve(relative))) }
+                assertEquals(root, (DesktopBootstrapSettingsStore(source.bootstrapPath).load() as DesktopBootstrapLoadResult.Loaded).document.selection.customRoot)
+            } finally { controller.closeAndDrain() }
+        }
+    }
+
+    @Test fun `merge diagnostic retains code locations but never exception text or filesystem paths`() {
+        val cause = IllegalArgumentException("SYNTHETIC_API_KEY H:/private/backup.cbbackup")
+        cause.stackTrace = arrayOf(StackTraceElement("com.example.chatbar.desktop.DesktopMergeImportService", "inspect", "DesktopMergeImportService.kt", 123),
+            StackTraceElement("external.Library", "secret", "H:/private/backup.cbbackup", 7))
+        val failure = IllegalStateException("SYNTHETIC_CHAT_CONTENT", cause)
+        failure.addSuppressed(IllegalStateException("SYNTHETIC_PASSWORD"))
+        val details = desktopMergeFailureDetails(failure)
+        assertTrue(details.contains("DesktopMergeImportService.inspect:123"))
+        assertTrue(details.contains("java.lang.IllegalArgumentException"))
+        listOf("SYNTHETIC_API_KEY", "SYNTHETIC_CHAT_CONTENT", "SYNTHETIC_PASSWORD", "H:/private", "external.Library").forEach {
+            assertFalse(details.contains(it))
+        }
+    }
+
+    @Test fun `controller retains bounded failure details when composer flush refuses snapshot`() = runBlocking<Unit> {
+        fixture {
+            val failing = DesktopMergeImportService(source, gate, old, { throw DesktopDraftPersistenceException() }, { it() })
+            val picker = object : DesktopFilePicker {
+                override fun pickOpenFile(type: DesktopFileType) = archive
+                override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? = null
+            }
+            val controller = DesktopMergeImportController(failing, picker, DesktopDirectoryPicker { error("NO_COMMIT") })
+            try {
+                controller.inspect(null)
+                val refused = withTimeout(10_000) { controller.state.first { !it.busy && it.error != null } }
+                assertFalse(refused.ready); assertFalse(refused.restartRequired)
+                assertTrue(refused.error!!.contains("草稿"))
+                assertTrue(refused.failureDetails!!.contains("DesktopDraftPersistenceException"))
+                assertFalse(refused.failureDetails!!.contains("FAKE_PHONE_GLOBAL"))
+                assertFalse(failing.restartRequired)
+            } finally { controller.closeAndDrain(); failing.close() }
+        }
+    }
+
     private val unavailable = DesktopApplicationHomeResult.Unavailable(DesktopApplicationHomeUnavailableReason.PROPERTY_ABSENT)
     private val fake = MergeRootSyntheticProtector
     private class Fixture(val base: Path, val root: Path, val source: DesktopDataRootResolution.Resolved,
@@ -24,7 +174,8 @@ class DesktopMergeImportServiceTest {
         fun keyChoices(p: DesktopMergeImportService.Preview) = p.credentialConflicts.associate { it.kind to DesktopMergeCredentials.Choice.KEEP_COMPUTER }
     }
     private suspend fun fixture(replace: ((Path, Path) -> Unit)? = null,
-        quiesce: suspend (suspend () -> Unit) -> Unit = { it() }, block: suspend Fixture.() -> Unit) {
+        quiesce: suspend (suspend () -> Unit) -> Unit = { it() }, archiveBytes: ByteArray? = null,
+        block: suspend Fixture.() -> Unit) {
         val base = Files.createTempDirectory(Files.createDirectories(Path.of("build/preview-synthetic/merge-service").toAbsolutePath()), "case-")
         val root = Files.createDirectory(base.resolve("pc")); val credentials = Files.createDirectory(base.resolve("credentials"))
         val bootstrap = base.resolve(DesktopDataDirectory.BOOTSTRAP_FILE_NAME)
@@ -36,7 +187,7 @@ class DesktopMergeImportServiceTest {
         val gate = DesktopDataOperationCoordinator()
         val settings = DesktopSettingsStore(root, gate)
         settings.save((settings.load() as DesktopSettingsLoadResult.Missing).document, DesktopSettings())
-        val archive = Files.write(base.resolve("synthetic.cbbackup"), CensusWireFixtures.bytes(
+        val archive = Files.write(base.resolve("synthetic.cbbackup"), archiveBytes ?: CensusWireFixtures.bytes(
             prefs = """{"novelAiToken":"FAKE_PHONE_GLOBAL"}""", files = records("Phone", "https://phone.invalid/v1") +
                 ("entities/model_configs/m.json" to CensusWireFixtures.model(extra = ",\"templateType\":\"OPENAI\"").replace("https://synthetic.invalid/v1", "https://phone.invalid/v1").toByteArray())))
         val old = InMemoryDesktopSecretStore().apply { save(DesktopCredentialKey.ModelApiKey("m"), "FAKE_PC_MODEL"); save(DesktopCredentialKey.NovelAiToken, "FAKE_PC_GLOBAL") }
@@ -107,6 +258,9 @@ class DesktopMergeImportServiceTest {
                 controller.inspect(null); submit(ready())
                 val completed = withTimeout(15000) { controller.state.first { !it.busy && (it.restartRequired || it.error != null) } }
                 assertNull(completed.error); assertTrue(completed.restartRequired)
+                withTimeout(5000) { controller.workRows.first { it.first().kind == DesktopWorkKind.MERGE && !it.first().active } }
+                assertEquals(DesktopWorkPhase.COMPLETED, controller.workRows.value.first().phase)
+                assertFalse(controller.workRows.value.first().canStop)
                 val target = requireNotNull(completed.destination)
                 assertIs<DesktopDataRootOwnershipResult.AlreadyInUse>(DesktopDataRootOwnership.acquire(source.copy(appDataRoot = target)))
                 assertFailsWith<DesktopTaskAdmissionException> { container.taskRuntime.launchNovelAi("late") { error("MUST_NOT_RUN") } }
@@ -161,6 +315,59 @@ class DesktopMergeImportServiceTest {
             assertEquals("FAKE_PC_GLOBAL", newStore.load(DesktopCredentialKey.NovelAiToken))
             assertContentEquals(Files.readAllBytes(root.resolve(DesktopSettingsStore.SETTINGS_FILE_NAME)), Files.readAllBytes(target.resolve(DesktopSettingsStore.SETTINGS_FILE_NAME)))
             original.forEach { (path, bytes) -> assertContentEquals(bytes, Files.readAllBytes(root.resolve(path))) }
+        }
+    }
+
+    @Test fun `official87 card and actual published1238 Studio backup merge reopen and reexport without lost options`() = runBlocking<Unit> {
+        val imageCard = """{"id":"c","name":"Phone","defaultNovelAiImageModel":"V5_FULL","defaultImageGenerationSettings":{"effort":"MEDIUM","transparentBackground":true},"createdAt":1,"updatedAt":1}""".toByteArray()
+        val phone87 = CensusWireFixtures.bytes(version = 2, code = 87, prefs = "{}",
+            files = records("Phone", "https://phone.invalid/v1") + ("entities/character_cards/c.json" to imageCard),
+            scope = OfficialWireScope(emptySet(), 1, 1, 1, 1, 1, false, false, false, false,
+                sessionDefaultChoice = OfficialWireSessionChoice()))
+        for ((bytes, historic) in listOf(published1238StudioBackup() to true, phone87 to false)) {
+            fixture(archiveBytes = bytes) {
+                val cancelled = inspect()
+                val cancelledTarget = base.resolve("v5-cancelled")
+                assertFailsWith<CancellationException> {
+                    service.commitWithProgress(cancelled, cancelledTarget, choices(cancelled), keyChoices(cancelled), true,
+                        progress = { if (it.verifiedFiles > 0) throw CancellationException("SYNTHETIC_V5_CANCEL") })
+                }
+                assertFalse(service.restartRequired)
+                assertEquals(root, (DesktopBootstrapSettingsStore(source.bootstrapPath).load() as DesktopBootstrapLoadResult.Loaded).document.selection.customRoot)
+                assertFails { DesktopFreshRootAuthority(cancelledTarget, credentials, fake).verifyAndResolve() }
+                val p = inspect()
+                assertEquals(historic, p.historicalDesktopV5Settings)
+                val target = base.resolve("merged-v5")
+                assertEquals(DesktopMergeImportService.Publication.COMMITTED, service.commit(p, target, choices(p), keyChoices(p), true))
+                val storage = JsonFileStorage(target)
+                if (historic) {
+                    val draft = assertNotNull(storage.loadSingleton("novelai_studio_draft", com.example.chatbar.domain.image.NovelAiStudioDraft.serializer()))
+                    assertEquals(com.example.chatbar.domain.image.NovelAiEffort.MEDIUM, draft.v5Settings.effort)
+                    assertTrue(draft.v5Settings.transparentBackground)
+                } else {
+                    val imported = storage.loadAll("character_cards", CharacterCard.serializer()).single { it.name == "Phone" }
+                    assertEquals(com.example.chatbar.domain.image.NovelAiEffort.MEDIUM, imported.defaultImageGenerationSettings?.effort)
+                    assertEquals(true, imported.defaultImageGenerationSettings?.transparentBackground)
+                }
+                // The old runtime correctly requires restart; a reopened root has a new coordinator.
+                DesktopDataOperationCoordinator().withExclusiveMaintenance {
+                    DesktopFullBackupMapping(target).export(Files.createDirectory(base.resolve("v5-export-work")), 87, StrictBackupZipReader.Limits().expanded).use { exported ->
+                        val output = base.resolve("v5-return.cbbackup")
+                        DesktopFullBackupWriter.export(exported.files, output, null, exported.preferences)
+                        DesktopFullBackupStaging.prepare(output, null, Files.createDirectory(base.resolve("v5-return-work"))).use { returned ->
+                            assertEquals(87, returned.source.manifest.appVersionCode)
+                            assertFalse(returned.source.historicalDesktopV5Settings)
+                            if (historic) {
+                                val draft = backupJson.decodeFromJsonElement<com.example.chatbar.domain.image.NovelAiStudioDraft>(returned.entities.getValue("entities/novelai_studio_draft.json"))
+                                assertEquals(com.example.chatbar.domain.image.NovelAiEffort.MEDIUM, draft.v5Settings.effort)
+                                assertTrue(draft.v5Settings.transparentBackground)
+                            } else assertTrue(returned.entities.values.any { it["name"] == JsonPrimitive("Phone") &&
+                                it["defaultImageGenerationSettings"]?.jsonObject?.get("transparentBackground") == JsonPrimitive(true) })
+                        }
+                    }
+                }
+                original.forEach { (path, content) -> assertContentEquals(content, Files.readAllBytes(root.resolve(path))) }
+            }
         }
     }
 
@@ -235,6 +442,35 @@ class DesktopMergeImportServiceTest {
             assertTrue(service.restartRequired)
             assertIs<DesktopDataRootOwnershipResult.AlreadyInUse>(DesktopDataRootOwnership.acquire(source.copy(appDataRoot = target)))
             assertFailsWith<DesktopDataOperationRejectedException> { gate.withNormalOperation { error("MUST_NOT_RUN") } }
+        }
+    }
+
+    @Test fun `merge task never turns ambiguous publication into successful import or replay`() = runBlocking<Unit> {
+        fixture(replace = { _, target -> Files.writeString(target, "SYNTHETIC_CORRUPT_POINTER"); error("SYNTHETIC_POSTPUBLICATION_FAILURE") }) {
+            val picker = object : DesktopFilePicker {
+                override fun pickOpenFile(type: DesktopFileType) = archive
+                override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? = null
+            }
+            val controller = DesktopMergeImportController(service, picker, DesktopDirectoryPicker { base },
+                applicationHomeResolver = { unavailable })
+            try {
+                controller.inspect(null)
+                val preview = withTimeout(10000) { controller.state.first { it.ready && !it.busy } }
+                withTimeout(5000) { controller.workRows.first { !it.single().active } }
+                assertEquals(DesktopWorkKind.MERGE_CHECK, controller.workRows.value.single().kind)
+                controller.commit(preview.conflicts.associate { it.key to it.choices.first() },
+                    preview.credentials.associate { it.kind to DesktopMergeCredentials.Choice.KEEP_COMPUTER }, false, true)
+                val finished = withTimeout(15000) { controller.workRows.first { it.first().kind == DesktopWorkKind.MERGE && !it.first().active } }.first()
+                assertEquals(DesktopWorkPhase.UNCONFIRMED, finished.phase)
+                assertFalse(finished.canStop); assertFalse(finished.canRetry)
+                assertTrue(service.restartRequired); assertTrue(controller.state.value.restartRequired)
+                val target = assertNotNull(controller.state.value.destination)
+                assertIs<DesktopDataRootOwnershipResult.AlreadyInUse>(DesktopDataRootOwnership.acquire(source.copy(appDataRoot = target)))
+                assertFalse(controller.stopTask(finished.id))
+                val password = "FAKE_AFTER_PUBLICATION".toCharArray()
+                assertNull(controller.inspectFile(archive, password)); assertTrue(password.all { it == '\u0000' })
+                original.forEach { (relative, bytes) -> assertContentEquals(bytes, Files.readAllBytes(root.resolve(relative))) }
+            } finally { controller.closeAndDrain() }
         }
     }
 

@@ -23,6 +23,101 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class CharacterCardTransferCoreTest {
+    @Test fun `fresh community authority refuses a changed read-only source before allocating resources`() = runTest {
+        val f = fixture()
+        val local = f.core.importNew(completePackage())
+        val sourceA = CharacterCardCommunitySource("A", "2026-01-01", "a".repeat(64), "A")
+        val current = local.copy(communityItemId = "B", communityItemUpdatedAt = "2026-01-02", communityItemSha256 = "b".repeat(64))
+        f.characters.cards[local.id] = current
+        val resources = f.resources.entries.toMap()
+        for (source in listOf(null, sourceA)) {
+            assertFailsWith<IllegalArgumentException> {
+                f.core.overwrite(local.id, completePackage(), communitySource = source,
+                    communityAuthority = CharacterCommunityOverwriteAuthority(if (source == null) null else "A"))
+            }
+            assertEquals(current, f.characters.cards[local.id]); assertEquals(resources, f.resources.entries)
+        }
+    }
+
+    @Test fun `community provenance is in the original atomic commit and duplicates remain local originals`() = runTest {
+        val f = fixture()
+        val source = CharacterCardCommunitySource("remote", "2026-01-01", "a".repeat(64), "Community title")
+        val observation = CharacterTransferObservation()
+        f.characters.failObservedAfterWriteBeforeCallback = true
+        assertFailsWith<CharacterTransferPostCommitException> {
+            f.core.importNew(completePackage(), observation = observation, communitySource = source)
+        }
+        val expected = requireNotNull(observation.expected)
+        assertTrue(expected.isCommunityDownload)
+        assertEquals(expected, f.characters.cards[expected.id])
+        assertEquals(source.sha256, expected.communityItemSha256)
+        f.characters.failObservedAfterWriteBeforeCallback = false
+        val copied = f.core.duplicate(expected.id)
+        assertFalse(copied.isCommunityDownload)
+        assertNull(copied.communityItemId); assertNull(copied.communityItemSha256)
+        val next = source.copy(updatedAt = "2026-01-02", sha256 = "b".repeat(64))
+        val updated = f.core.overwrite(expected.id, completePackage(), communitySource = next)
+        assertEquals(expected.id, updated.id); assertEquals(expected.createdAt, updated.createdAt)
+        assertEquals(next.updatedAt, updated.communityItemUpdatedAt)
+        assertEquals(next.sha256, f.characters.cards[expected.id]!!.communityItemSha256)
+    }
+
+    @Test fun `official147 image settings survive actual package export duplicate and overwrite without schema change`() = runTest {
+        for (model in listOf(com.example.chatbar.domain.image.NovelAiImageModel.V4_5_FULL,
+            com.example.chatbar.domain.image.NovelAiImageModel.V5_FULL)) {
+            val f = fixture()
+            val settings = com.example.chatbar.domain.image.NovelAiCharacterImageSettings(
+                sampler = com.example.chatbar.domain.image.NovelAiSampler.EULER, steps = 24,
+                guidance = 5.5f, cfgRescale = 0.25f, varietyPlus = true,
+                effort = com.example.chatbar.domain.image.NovelAiEffort.MEDIUM, transparentBackground = true)
+            val base = completePackage()
+            val packaged = base.copy(card = base.card.copy(defaultNovelAiImageModel = model,
+                defaultImageGenerationSettings = settings))
+            val imported = f.core.importNew(packaged)
+            assertEquals(settings, imported.defaultImageGenerationSettings)
+            val exported = f.core.decode(f.core.exportJson(imported.id))
+            assertEquals(9, exported.schemaVersion)
+            assertEquals(settings, exported.card.defaultImageGenerationSettings)
+            assertEquals(model, exported.card.defaultNovelAiImageModel)
+            val duplicate = f.core.duplicate(imported.id)
+            assertNotEquals(imported.id, duplicate.id)
+            assertEquals(settings, duplicate.defaultImageGenerationSettings)
+            val replacement = settings.copy(steps = 31, guidance = 6f)
+            val overwritten = f.core.overwrite(imported.id, exported.copy(card = exported.card.copy(defaultImageGenerationSettings = replacement)))
+            assertEquals(imported.id, overwritten.id)
+            assertEquals(replacement, overwritten.defaultImageGenerationSettings)
+            val cleared = f.core.overwrite(imported.id, exported.copy(card = exported.card.copy(defaultImageGenerationSettings = null)))
+            assertNull(cleared.defaultImageGenerationSettings)
+        }
+    }
+
+    @Test fun `legacy absent image settings remain null and invalid147 settings refuse before materializing resources`() = runTest {
+        val f = fixture()
+        val old = f.core.decode("""{"schemaVersion":9,"card":{"name":"legacy"}}""")
+        assertNull(old.card.defaultImageGenerationSettings)
+        val base = completePackage()
+        assertFailsWith<IllegalStateException> {
+            f.core.importNew(base.copy(card = base.card.copy(defaultImageGenerationSettings =
+                com.example.chatbar.domain.image.NovelAiCharacterImageSettings(steps = 0))))
+        }
+        assertTrue(f.characters.cards.isEmpty())
+        assertTrue(f.resources.entries.isEmpty())
+    }
+
+    @Test fun `Desktop variant gate survives export and reimport without removing character data`() = runTest {
+        val f = fixture()
+        val base = completePackage()
+        val source = base.copy(card = base.card.copy(characters = base.card.characters.map { it.copy(desktopEnabled = false) }))
+        val imported = f.core.importNew(source)
+        assertTrue(imported.characters.isNotEmpty())
+        assertTrue(imported.characters.none { it.desktopEnabled })
+        val encoded = f.core.exportJson(imported.id)
+        val decoded = Json { ignoreUnknownKeys = false }.decodeFromString(CharacterCardPackage.serializer(), encoded)
+        assertTrue(decoded.card.characters.none { it.desktopEnabled })
+        val second = fixture().core.importNew(decoded)
+        assertEquals(imported.characters.map { Triple(it.name, it.profile, it.desktopEnabled) },
+            second.characters.map { Triple(it.name, it.profile, it.desktopEnabled) })
+    }
     @Test
     fun `opt-in exact durable evidence preserves committed resources without callback`() = runTest {
         for (overwrite in listOf(false, true)) {

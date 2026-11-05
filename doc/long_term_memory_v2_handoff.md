@@ -1,3 +1,9 @@
+## 2026-11-03 官方147参数继承后补
+
+共享MemoryAiGateway与Desktop普通Memory/RAG请求继承所选模型的输出、思考和custom参数；旧“所有memory请求无输出上限／清思考”是下方历史状态，不再作为当前请求策略。规划/JSON/stream三个出口及修复重试均保留原model。RAG总期限按官方120秒，虚拟时钟测试核边界；原记忆覆盖、state-last journal、来源修复、Prompt、五次输出／三次传输和取消所有权不变。详见docs/desktop/278_OFFICIAL147_SELECTED_AUXILIARY_MODEL_PARAMETERS.md。本片云端待验，不覆盖冻结1234或宣称真实模型结果。
+
+下方历史保留。
+
 # 长期记忆 v2 Handoff
 
 Last updated: 2026-09-16

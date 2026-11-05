@@ -10,34 +10,41 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.catch
 
 /** Provider transport only; uses the shared official auxiliary envelope and task semantics. */
-internal class DesktopNovelAiTextTransport(
-    private val stream: (List<ChatApiMessage>, ModelConfig) -> kotlinx.coroutines.flow.Flow<ProviderStreamEvent>,
+internal class DesktopNovelAiTextTransport private constructor(
+    private val stream: (List<ChatApiMessage>, ModelConfig, ProviderTransportDiagnostics) -> kotlinx.coroutines.flow.Flow<ProviderStreamEvent>,
+    private val diagnostics: DesktopTransportDiagnosticsOwner?,
 ) : NovelAiTextTransport {
-    constructor(transport: OpenAiStreamingTransport) : this({ messages, model -> transport.streamMainChat(messages, model) })
+    constructor(stream: (List<ChatApiMessage>, ModelConfig) -> kotlinx.coroutines.flow.Flow<ProviderStreamEvent>) :
+        this({ messages, model, _ -> stream(messages, model) }, null)
+    constructor(transport: OpenAiStreamingTransport, diagnostics: DesktopTransportDiagnosticsOwner? = null) :
+        this({ messages, model, log -> transport.streamMainChat(messages, model, diagnostics = log) }, diagnostics)
     override fun streamText(stage: NovelAiTextStage, messages: List<ChatApiMessage>, modelConfig: ModelConfig) = flow {
-        val input = AuxiliaryMessageAssembler.assemble(messages, stage == NovelAiTextStage.GENERATE)
-        val text = StringBuilder()
-        var reasoning = false
-        var completed = false
-        stream(input, modelConfig).collect { event ->
-            when (event) {
-                is ProviderStreamEvent.ContentDelta -> { text.append(event.text); emit(StreamEvent.Delta(event.text)) }
-                is ProviderStreamEvent.ReasoningDelta -> { reasoning = true; emit(StreamEvent.ReasoningDelta(event.text)) }
-                is ProviderStreamEvent.Usage -> emit(StreamEvent.Usage(event.usage))
-                is ProviderStreamEvent.Completed -> {
-                    AiTaskRefusalPolicy.failure(text.toString(), event.metadata.finishReason, event.metadata.refused)?.let { throw it }
-                    if (event.metadata.transportFailed || event.metadata.finishReason == "length") throw DesktopDesignException(DesktopDesignFailure.RESPONSE)
-                    if (text.isBlank()) throw AiTaskEmptyResponseException(reasoning)
-                    completed = true
-                    emit(StreamEvent.Done)
-                }
-                is ProviderStreamEvent.Error -> {
-                    AiTaskRefusalPolicy.failure(text.toString(), event.metadata.finishReason, event.metadata.refused)?.let { throw it }
-                    throw DesktopDesignException(desktopDesignProviderFailure(event))
+        withDesktopAuxiliaryUsage(diagnostics, modelConfig, "image-design:${stage.name}",
+            DesktopPromptDiagnosticContext(if (stage == NovelAiTextStage.PLAN) "IMAGE_RESEARCH" else "IMAGE_DESIGN", stage.name)) { log ->
+            val input = AuxiliaryMessageAssembler.assemble(messages, stage == NovelAiTextStage.GENERATE)
+            val text = StringBuilder()
+            var reasoning = false
+            var completed = false
+            stream(input, modelConfig, log).collect { event ->
+                when (event) {
+                    is ProviderStreamEvent.ContentDelta -> { text.append(event.text); emit(StreamEvent.Delta(event.text)) }
+                    is ProviderStreamEvent.ReasoningDelta -> { reasoning = true; emit(StreamEvent.ReasoningDelta(event.text)) }
+                    is ProviderStreamEvent.Usage -> emit(StreamEvent.Usage(event.usage))
+                    is ProviderStreamEvent.Completed -> {
+                        AiTaskRefusalPolicy.failure(text.toString(), event.metadata.finishReason, event.metadata.refused)?.let { throw it }
+                        if (event.metadata.transportFailed || event.metadata.finishReason == "length") throw DesktopDesignException(DesktopDesignFailure.RESPONSE)
+                        if (text.isBlank()) throw AiTaskEmptyResponseException(reasoning)
+                        completed = true
+                        emit(StreamEvent.Done)
+                    }
+                    is ProviderStreamEvent.Error -> {
+                        AiTaskRefusalPolicy.failure(text.toString(), event.metadata.finishReason, event.metadata.refused)?.let { throw it }
+                        throw DesktopDesignException(desktopDesignProviderFailure(event))
+                    }
                 }
             }
+            if (!completed) throw DesktopDesignException(DesktopDesignFailure.RESPONSE)
         }
-        if (!completed) throw DesktopDesignException(DesktopDesignFailure.RESPONSE)
     }.catch { failure ->
         failure.rethrowIfAiTaskTerminalFailure()
         if (failure is AiTaskEmptyResponseException) throw failure

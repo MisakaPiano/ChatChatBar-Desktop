@@ -3,11 +3,15 @@ package com.example.chatbar.desktop
 import com.example.chatbar.data.local.entity.EmbeddingConfig
 import com.example.chatbar.domain.ProxyAwareClient
 import com.example.chatbar.domain.addModelApiAuthorization
+import com.example.chatbar.domain.chat.OpenAiSseParser
 import java.io.Closeable
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.serialization.json.*
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
@@ -25,6 +29,7 @@ internal class DesktopEmbeddingGateway(
         .retryOnConnectionFailure(false).followRedirects(false).followSslRedirects(false)
         .connectTimeout(30, TimeUnit.SECONDS).readTimeout(60, TimeUnit.SECONDS)
         .callTimeout(90, TimeUnit.SECONDS).build(),
+    private val usageSink: ((DesktopUsageRecord) -> Unit)? = null,
 ) : DesktopIndexEmbeddingGateway, Closeable {
     override suspend fun embed(batch: DesktopIndexEmbeddingBatch): List<List<Float>> {
         return embedPinned(batch, null)
@@ -54,9 +59,19 @@ internal class DesktopEmbeddingGateway(
             .addModelApiAuthorization(selected.apiKey)
             .post(oneShot).build()
         beforeRequest()
-        return suspendCancellableCoroutine { continuation ->
+        currentCoroutineContext().ensureActive()
+        val recorder = usageSink?.let { sink ->
+            val scrubber = DesktopDiagnosticScrubber(selected.apiKey)
+            DesktopUsageAttemptRecorder(
+                currentCoroutineContext()[DesktopUsageParent]?.value ?: DesktopUsageContext(DesktopUsageSource.OTHER),
+                scrubber.text(selected.id, DesktopTransportDiagnosticsOwner.SHORT_LIMIT),
+                scrubber.text(selected.modelName, DesktopTransportDiagnosticsOwner.SHORT_LIMIT), null, null, sink)
+        }
+        return try { suspendCancellableCoroutine<List<List<Float>>> { continuation ->
             val call = client.newCall(request)
             continuation.invokeOnCancellation { call.cancel() }
+            if (!continuation.isActive) return@suspendCancellableCoroutine
+            recorder?.attempt(1)
             call.enqueue(object : Callback {
                 override fun onFailure(call: Call, error: IOException) {
                     continuation.resumeWithException(IllegalStateException("向量请求未完成；旧索引已保留"))
@@ -66,7 +81,11 @@ internal class DesktopEmbeddingGateway(
                         check(it.isSuccessful) { "向量服务请求失败（HTTP ${it.code}）；旧索引已保留" }
                         val bytes = requireNotNull(it.body).byteStream().use { input -> input.readNBytes(MAX_RESPONSE + 1) }
                         check(bytes.size <= MAX_RESPONSE) { "向量响应超过安全大小" }
-                        val data = Json.parseToJsonElement(bytes.toString(Charsets.UTF_8)).jsonObject.getValue("data").jsonArray
+                        val root = Json.parseToJsonElement(bytes.toString(Charsets.UTF_8)).jsonObject
+                        // Optional counters cannot change the primary vector protocol. Retain any
+                        // reported usage even when vector correspondence/shape subsequently fails.
+                        runCatching { OpenAiSseParser.parseUsage(root) }.getOrNull()?.let { recorder?.usage(it) }
+                        val data = root.getValue("data").jsonArray
                         check(data.size == batch.pieces.size)
                         val indexed = data.map { value ->
                             val row = value.jsonObject
@@ -85,7 +104,9 @@ internal class DesktopEmbeddingGateway(
                     continuation.resumeWith(result)
                 }
             })
-        }
+        }.also { recorder?.finish(DesktopUsageOutcome.COMPLETED) } }
+        catch (cancelled: CancellationException) { recorder?.finish(DesktopUsageOutcome.CANCELLED); throw cancelled }
+        catch (failure: Exception) { recorder?.finish(DesktopUsageOutcome.FAILED); throw failure }
     }
     override fun close() { client.dispatcher.cancelAll(); client.connectionPool.evictAll(); client.dispatcher.executorService.shutdown() }
     suspend fun closeAndDrain() = kotlinx.coroutines.withContext(kotlinx.coroutines.NonCancellable + kotlinx.coroutines.Dispatchers.IO) {

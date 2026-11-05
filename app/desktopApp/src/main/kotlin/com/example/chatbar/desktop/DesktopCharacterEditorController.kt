@@ -26,17 +26,23 @@ import com.example.chatbar.domain.draft.CharacterEditorDraftUiState
 import com.example.chatbar.domain.draft.CharacterEditorDraftUiStateCodec
 import com.example.chatbar.domain.draft.CharacterEditorPostCommitState
 import com.example.chatbar.domain.draft.EditorPostCommitFingerprint
+import com.example.chatbar.domain.chat.SpeakerTagHistoryService
+import com.example.chatbar.data.local.entity.SpeakerTagRename
 import com.example.chatbar.domain.prompt.CharacterNaiPromptDefaults
+import com.example.chatbar.domain.image.*
 import java.nio.file.Path
 import java.util.UUID
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -46,7 +52,7 @@ internal enum class CharacterEditorProblem {
     NAME_REQUIRED, GREETING_REQUIRED, CHARACTER_NAME_REQUIRED, DUPLICATE_CHARACTER_NAME,
     DUPLICATE_CARD_NAME, SOURCE_CHANGED, SOURCE_DELETED, COMMUNITY_READ_ONLY, SAVE_FAILED,
     DRAFT_FAILED, RESOURCE_FAILED, NEW_DRAFT_EXISTS, DOCUMENT_READ_FAILED, SAVE_COMMITTED_WARNING,
-    CLEAN_DRAFT_WARNING,
+    CLEAN_DRAFT_WARNING, PERSON_UNAVAILABLE,
 }
 
 internal data class DesktopCharacterEditorState(
@@ -67,6 +73,12 @@ internal data class DesktopCharacterEditorState(
     val leavePrompt: Boolean = false,
     val problem: CharacterEditorProblem? = null,
     val detail: String? = null,
+    val personFocusId: String? = null,
+    val personFocusRevision: Long = 0,
+    val momentsFocusRevision: Long = 0,
+    val stylePromptUndo: NovelAiStylePromptUndo? = null,
+    val documentFocusId: String? = null,
+    val documentFocusRevision: Long = 0,
 ) {
     val visibleCharacters: List<CharacterCard> get() = characters.filter {
         it.name.contains(query, ignoreCase = true) ||
@@ -97,7 +109,53 @@ internal class DesktopCharacterEditorController(
     val fishPreview: (() -> DesktopFishPreviewRuntime)? = null,
     private val dataGate: com.example.chatbar.data.operation.AppDataOperationGate = com.example.chatbar.data.operation.NoOpAppDataOperationGate,
     val documentIndex: DesktopRagController? = null,
+    private val speakerHistory: SpeakerTagHistoryService = SpeakerTagHistoryService(characters, chats),
+    val imageModelSettings: kotlinx.coroutines.flow.Flow<com.example.chatbar.domain.image.NovelAiImageModel?> = kotlinx.coroutines.flow.flowOf(null),
 ) {
+    internal var cardAi: DesktopCharacterCardAiController? = null
+    internal var promptBudget: DesktopEditorBudgetController? = null
+    internal var appearanceAi: DesktopCharacterAppearanceController? = null
+    internal var cardImages: DesktopCharacterImageController? = null
+    internal val canUseCardAi: Boolean get() = _state.value.let { s ->
+        s.card != null && !s.busy && s.draftSessionId != null &&
+            !desktopCharacterEditorPresentation(s).readOnly && s.problem !in setOf(
+                CharacterEditorProblem.SOURCE_CHANGED, CharacterEditorProblem.SOURCE_DELETED)
+    }
+
+    internal fun applyCardAi(session: String, basis: CharacterCard, result: CharacterCard): Boolean {
+        val current = _state.value
+        if (!canUseCardAi || current.draftSessionId != session || current.card != basis ||
+            result.id != basis.id || result.createdAt != basis.createdAt) return false
+        edit { result }
+        return _state.value.card == result
+    }
+
+    internal fun stageGeneratedCardImage(session: String, basis: CharacterCard, destination: CharacterCard,
+        personId: String?, image: ByteArray, crop: ByteArray? = null,
+        assign: (CharacterCard) -> Boolean = { applyCardAi(session, basis, it) }): Boolean {
+        if (!canUseCardAi || _state.value.draftSessionId != session || _state.value.card != basis) return false
+        require(destination.id == basis.id && destination.createdAt == basis.createdAt)
+        val staged = mutableListOf<String>()
+        var assignmentEntered = false
+        try {
+            val full = resources.stageImage(session, image).also(staged::add)
+            val next = if (personId == null) {
+                val avatar = crop?.let { resources.stageImage(session, it).also(staged::add) } ?: full
+                destination.copy(avatar = avatar, chatBackground = full)
+            } else {
+                require(destination.characters.count { it.id == personId } == 1)
+                destination.copy(characters = destination.characters.map { if (it.id == personId) it.copy(appearanceImage = full) else it })
+            }
+            assignmentEntered = true
+            if (assign(next)) return true
+            staged.asReversed().forEach(resources::discardNew)
+            return false
+        } catch (error: Throwable) {
+            if (!assignmentEntered) staged.asReversed().forEach { runCatching { resources.discardNew(it) }.onFailure(error::addSuppressed) }
+            throw error
+        }
+    }
+
     private val _state = MutableStateFlow(DesktopCharacterEditorState())
     val state = _state.asStateFlow()
     private val draftMutex = Mutex()
@@ -116,11 +174,14 @@ internal class DesktopCharacterEditorController(
     private var pendingDrafts: List<PendingDraft> = emptyList()
     private var pendingRename: PendingRename? = null
     private var pendingObsoleteSource: CharacterCard? = null
+    private val committedCleanupMutex = Mutex()
 
     suspend fun load() {
-        _state.value = _state.value.copy(
-            characters = characters.getAll(), worldBooks = worlds.getAll(), formatCards = formats.getAll(),
-        )
+        val cards = characters.getAll()
+        val worldBooks = worlds.getAll()
+        val formatCards = formats.getAll()
+        // Catalog reads suspend. Apply them to the latest state so a concurrent open/edit survives.
+        _state.update { it.copy(characters = cards, worldBooks = worldBooks, formatCards = formatCards) }
     }
 
     fun search(query: String) { _state.value = _state.value.copy(query = query) }
@@ -152,6 +213,37 @@ internal class DesktopCharacterEditorController(
         }
     }
 
+    suspend fun openPerson(cardId: String, personId: String) {
+        if (_state.value.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) return
+        if (_state.value.targetId != cardId || _state.value.card == null) {
+            if (deferLeave { scope.launch { openPerson(cardId, personId) } }) return
+            openExisting(cardId)
+        }
+        val current = _state.value
+        val source = characters.getById(cardId)
+        if (current.targetId != cardId || current.card?.characters?.count { it.id == personId } != 1 ||
+            source?.characters?.count { it.id == personId } != 1) {
+            _state.value = current.copy(problem = CharacterEditorProblem.PERSON_UNAVAILABLE)
+            return
+        }
+        // Focus is ephemeral. Do not reload or replace an existing unsaved draft of the same card.
+        _state.value = current.copy(personFocusId = personId, personFocusRevision = current.personFocusRevision + 1)
+    }
+
+    suspend fun openMoments(cardId: String) {
+        if (characters.getById(cardId) == null) {
+            _state.value = _state.value.copy(problem = CharacterEditorProblem.SOURCE_DELETED)
+            return
+        }
+        if (_state.value.targetId != cardId || _state.value.card == null) {
+            if (deferLeave { scope.launch { openMoments(cardId) } }) return
+            openExisting(cardId)
+        }
+        val current = _state.value
+        if (current.targetId == cardId && current.card != null)
+            _state.value = current.copy(momentsFocusRevision = current.momentsFocusRevision + 1)
+    }
+
     suspend fun openExisting(id: String) {
         if (_state.value.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) return
         if (deferLeave { scope.launch { openExisting(id) } }) return
@@ -173,6 +265,21 @@ internal class DesktopCharacterEditorController(
             draftBasis = null, draftSessionId = UUID.randomUUID().toString(), draftPersisted = false,
             dirty = false, problem = if (source.isCommunityDownload) CharacterEditorProblem.COMMUNITY_READ_ONLY else null,
             detail = null)
+    }
+
+    suspend fun openDocument(cardId: String, documentId: String, unavailable: () -> Unit) {
+        if (_state.value.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) return
+        if (_state.value.targetId != cardId || _state.value.card == null) {
+            if (deferLeave { scope.launch { openDocument(cardId, documentId, unavailable) } }) return
+            openExisting(cardId)
+        }
+        val current = _state.value
+        val source = characters.getById(cardId)
+        if (current.targetId != cardId || current.card?.customDocuments?.count { it.id == documentId } != 1 ||
+            source?.customDocuments?.count { it.id == documentId } != 1) {
+            unavailable(); return
+        }
+        _state.value = current.copy(documentFocusId = documentId, documentFocusRevision = current.documentFocusRevision + 1)
     }
 
     private suspend fun restoreCommittedDraft(draft: EditorDraft,
@@ -234,6 +341,9 @@ internal class DesktopCharacterEditorController(
         ) else transformed
         if (next == card) return
         _state.value = current.copy(card = next,
+            stylePromptUndo = current.stylePromptUndo?.takeIf {
+                next.defaultImagePrompt == it.appliedPrompt && next.defaultImageNegativePrompt == it.appliedNegativePrompt
+            },
             dirty = current.base == null || next != displayCard(current.base), draftPersisted = false,
             problem = current.problem?.takeIf {
                 it == CharacterEditorProblem.SOURCE_CHANGED || it == CharacterEditorProblem.SOURCE_DELETED
@@ -251,6 +361,11 @@ internal class DesktopCharacterEditorController(
     }
 
     fun addCharacter() = edit { it.copy(characters = it.characters + CharacterInfo.create("")) }
+
+    fun setCharacterEntryEnabled(id: String, enabled: Boolean) = edit { card ->
+        if (card.editMode != CharacterEditMode.STRUCTURED || card.characters.count { it.id == id } != 1) card
+        else card.copy(characters = card.characters.map { if (it.id == id) it.copy(desktopEnabled = enabled) else it })
+    }
 
     fun updateCharacter(id: String, transform: (CharacterInfo) -> CharacterInfo) = edit { card ->
         card.copy(characters = card.characters.map { if (it.id == id) transform(it) else it })
@@ -404,6 +519,39 @@ internal class DesktopCharacterEditorController(
         runCatching { resources.readImage(it) }.getOrNull()
     }
 
+    suspend fun loadStyleCatalog(): NovelAiStyleCatalogLoadResult = withContext(Dispatchers.IO) {
+        val raw = try { resources.readDocument("asset:$NOVEL_AI_STYLE_CATALOG_ASSET_PATH") }
+        catch (cancelled: CancellationException) { throw cancelled }
+        catch (_: Exception) { return@withContext NovelAiStyleCatalogLoadResult(fatalError = "内置画风目录无法读取，请检查或修复程序资源") }
+        NovelAiStyleCatalogParser(Json { ignoreUnknownKeys = true }).parse(raw) {
+            resources.readImage("asset:$it"); true
+        }
+    }
+
+    fun applyStylePreset(preset: NovelAiStylePreset): Boolean {
+        if (!canMutate()) return false
+        val current = _state.value
+        val card = current.card ?: return false
+        val fill = NovelAiStylePromptFillState(card.defaultImagePrompt, card.defaultImageNegativePrompt, current.stylePromptUndo)
+            .apply(preset, CharacterNaiPromptDefaults.defaultCharacterNaiNegativePrompt())
+        edit { it.copy(defaultImagePrompt = fill.value, defaultImageNegativePrompt = fill.negativeValue) }
+        val latest = _state.value
+        val savedCard = latest.card ?: return false
+        if (latest.draftSessionId != current.draftSessionId || savedCard.defaultImagePrompt != fill.value ||
+            savedCard.defaultImageNegativePrompt != fill.negativeValue) return false
+        _state.value = latest.copy(stylePromptUndo = fill.undo)
+        return true
+    }
+
+    fun undoStylePreset() {
+        if (!canMutate()) return
+        val current = _state.value
+        val card = current.card ?: return
+        val fill = NovelAiStylePromptFillState(card.defaultImagePrompt, card.defaultImageNegativePrompt, current.stylePromptUndo).undoLastFill()
+        edit { it.copy(defaultImagePrompt = fill.value, defaultImageNegativePrompt = fill.negativeValue) }
+        _state.value = _state.value.copy(stylePromptUndo = null)
+    }
+
     private fun stageResource(path: Path, image: Boolean, assign: (CharacterCard, String) -> CharacterCard) {
         if (!canMutate()) return
         val session = _state.value.draftSessionId ?: return
@@ -423,9 +571,11 @@ internal class DesktopCharacterEditorController(
 
     private fun displayCard(card: CharacterCard): CharacterCard = card.copy(
         worldBookIds = CharacterWorldBookBindings.effectiveIds(card),
-        defaultImageNegativePrompt = CharacterNaiPromptDefaults.effectiveCharacterNaiNegativePrompt(
-            card.defaultImageNegativePrompt),
+        defaultImageNegativePrompt = editableNegativePrompt(card.defaultImageNegativePrompt),
     )
+
+    private fun editableNegativePrompt(value: String): String =
+        value.takeUnless(String::isBlank) ?: CharacterNaiPromptDefaults.defaultCharacterNaiNegativePrompt()
 
     private fun documentType(name: String, fallback: String = "txt"): String =
         name.substringAfterLast('.', fallback)
@@ -468,7 +618,13 @@ internal class DesktopCharacterEditorController(
         left.map { listOf(it.id, it.fileName, it.filePath, it.fileType, it.addedAt.toString()) } ==
             right.map { listOf(it.id, it.fileName, it.filePath, it.fileType, it.addedAt.toString()) }
 
-    suspend fun save(): Boolean = dataGate.withNormalOperation { saveWithinDataOperation() }
+    suspend fun save(): Boolean {
+        val saved = dataGate.withNormalOperation { saveWithinDataOperation() }
+        // The durable entity/marker commit owns normal admission; the full-reference image
+        // cleaner needs its own exclusive admission, as on the existing recovery/retry path.
+        if (saved) retryCommittedCleanup()
+        return saved
+    }
 
     private suspend fun saveWithinDataOperation(): Boolean {
         flushDraft()
@@ -521,7 +677,9 @@ internal class DesktopCharacterEditorController(
                 editMode = card.editMode, basicSetting = card.basicSetting,
                 freeformCharacterText = card.freeformCharacterText,
                 defaultImagePrompt = card.defaultImagePrompt,
-                defaultImageNegativePrompt = CharacterNaiPromptDefaults.effectiveCharacterNaiNegativePrompt(card.defaultImageNegativePrompt),
+                defaultNovelAiImageModel = card.defaultNovelAiImageModel,
+                defaultImageGenerationSettings = card.defaultImageGenerationSettings,
+                defaultImageNegativePrompt = editableNegativePrompt(card.defaultImageNegativePrompt),
                 systemPrompt = card.systemPrompt, postHistoryInstructions = card.postHistoryInstructions,
                 mesExample = card.mesExample, creatorNotes = card.creatorNotes,
                 characters = card.characters.filterNot(CharacterPlaceholderPolicy::isEmpty)
@@ -541,8 +699,16 @@ internal class DesktopCharacterEditorController(
                     worlds.save(CharacterWorldBookBindings.independentEmbedded(card)!!)
                 }
             }
-            val (durable, newResources) = resources.materialize(retained)
+            val (materialized, newResources) = resources.materialize(retained)
             created = newResources
+            val oldPeople = source?.characters.orEmpty().associateBy(CharacterInfo::id)
+            val speakerRenames = materialized.characters.mapNotNull { person ->
+                val previous = oldPeople[person.id] ?: return@mapNotNull null
+                if (previous.name.trim().isEmpty() || person.name.trim().isEmpty() || previous.name.trim() == person.name.trim()) null
+                else SpeakerTagRename(person.id, previous.name.trim(), person.name.trim())
+            }
+            val speakerTask = speakerHistory.createTask(materialized.id, materialized.updatedAt, speakerRenames)
+            val durable = materialized.copy(pendingSpeakerRenameTasks = materialized.pendingSpeakerRenameTasks + listOfNotNull(speakerTask))
             val rename = source?.takeIf { it.name != durable.name }
             val markedDraft = try {
                 val activeDraft = persistedDraft ?: error("Character draft missing before durable save")
@@ -591,7 +757,6 @@ internal class DesktopCharacterEditorController(
                 draftBasis = markedDraft, dirty = false, busy = false,
                 problem = CharacterEditorProblem.SAVE_COMMITTED_WARNING,
                 detail = cleanupErrors.firstOrNull()?.message)
-            retryCommittedCleanup()
             return true
         } catch (error: Throwable) {
             _state.value = _state.value.copy(busy = false)
@@ -640,7 +805,9 @@ internal class DesktopCharacterEditorController(
         else if (needsCleanDraftCleanup(_state.value)) cleanObsoleteDraft()
     }
 
-    suspend fun retryCommittedCleanup() {
+    suspend fun retryCommittedCleanup() = committedCleanupMutex.withLock { retryCommittedCleanupLocked() }
+
+    private suspend fun retryCommittedCleanupLocked() {
         val before = _state.value
         if (before.card == null || before.dirty) return
         val committed = committedCard ?: return
@@ -652,8 +819,20 @@ internal class DesktopCharacterEditorController(
             runCatching { rewriteTitles(rename.characterId,
                 rename.oldName, rename.newName) }.exceptionOrNull().also { if (it == null) pendingRename = null }
         }
-        // Keep the recovery marker physically durable until both cache and required rename agree.
-        val semanticReady = cacheReady && pendingRename == null
+        var speakerCard = committed
+        val speakerError = if (cacheReady) runCatching {
+            val sourceCard = requireNotNull(durable)
+            for (task in sourceCard.pendingSpeakerRenameTasks.sortedBy { it.createdAt }) speakerHistory.execute(sourceCard.id, task.id)
+        }.exceptionOrNull() else null
+        if (cacheReady) {
+            val latest = runCatching { characters.getById(committed.id) }.getOrNull()
+            if (latest != null && EditorPostCommitFingerprint.character(json, latest) == EditorPostCommitFingerprint.character(json, committed)) {
+                speakerCard = latest
+                committedCard = latest
+            }
+        }
+        // The existing semantic fingerprint excludes derived/task metadata; retain the marker until all required work agrees.
+        val semanticReady = cacheReady && pendingRename == null && speakerError == null && speakerCard.pendingSpeakerRenameTasks.isEmpty()
         val cleanup = linkedMapOf<PendingDraft, CharacterDraftCleanup>()
         if (semanticReady) for (pending in pendingDrafts.distinct()) {
             val result = cleanupDraftAndAssets(pending.targetId, pending.sessionId)
@@ -675,6 +854,7 @@ internal class DesktopCharacterEditorController(
         } ?: true
         val assetError = cleanup.values.firstNotNullOfOrNull(CharacterDraftCleanup::assetFailure)
         _state.value = before.copy(
+            card = speakerCard, base = speakerCard,
             draftBasis = if (activeRemoved) null else before.draftBasis,
             draftPersisted = !activeRemoved,
             recoveryTargetId = if (recoveryRemoved) null else before.recoveryTargetId,
@@ -685,7 +865,7 @@ internal class DesktopCharacterEditorController(
                 orphanError != null || assetError != null -> CharacterEditorProblem.RESOURCE_FAILED
                 else -> null
             },
-            detail = (durableResult.exceptionOrNull() ?: refreshed.exceptionOrNull() ?: renameError
+            detail = (durableResult.exceptionOrNull() ?: refreshed.exceptionOrNull() ?: renameError ?: speakerError
                 ?: cleanup.values.flatMap { it.draft.errors }.firstOrNull()
                 ?: orphanError ?: assetError)?.message
                 ?: if (!cacheReady) "Committed Character could not be verified" else null,
@@ -711,6 +891,13 @@ internal class DesktopCharacterEditorController(
             else -> null
         }
         if (issue != null) { _state.value = _state.value.copy(problem = issue); return false }
+        val imageIssue = card.defaultImageGenerationSettings?.applyTo(
+            com.example.chatbar.domain.image.NovelAiGenerationSettings(model = card.defaultNovelAiImageModel
+                ?: com.example.chatbar.domain.image.NovelAiImageModel.V4_5_FULL))?.validationError(0)
+        if (imageIssue != null) {
+            _state.value = _state.value.copy(problem = CharacterEditorProblem.SAVE_FAILED, detail = imageIssue)
+            return false
+        }
         return true
     }
 
@@ -802,6 +989,9 @@ internal class DesktopCharacterEditorController(
     }
 
     suspend fun closeAndDrain() {
+        cardAi?.closeAndDrain()
+        appearanceAi?.closeAndDrain()
+        cardImages?.closeAndDrain()
         flushDraft()
         when {
             _state.value.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING -> retryCommittedCleanup()

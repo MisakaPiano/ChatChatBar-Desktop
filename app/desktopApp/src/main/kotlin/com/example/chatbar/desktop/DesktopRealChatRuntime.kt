@@ -18,6 +18,7 @@ import com.example.chatbar.domain.chat.OpenAiStreamingTransport
 import com.example.chatbar.domain.chat.ProviderCompletionMetadata
 import com.example.chatbar.domain.chat.ProviderStreamEvent
 import com.example.chatbar.domain.chat.ProviderTransportDiagnostics
+import com.example.chatbar.domain.chat.ModelResponseTruncatedException
 import com.example.chatbar.domain.model.EffectiveModelResolver
 import com.example.chatbar.domain.model.hasConfiguredAuthentication
 import java.util.concurrent.CancellationException
@@ -45,6 +46,7 @@ data class DesktopRealChatStreamUpdate(
 
 fun interface DesktopRealChatObserver {
     fun onUpdate(update: DesktopRealChatStreamUpdate)
+    fun onUserMessagePersisted(messageId: String) { }
 }
 
 data class DesktopRealChatResult(
@@ -66,13 +68,22 @@ class DesktopChatConfigurationException(message: String) : IllegalStateException
 class DesktopChatGenerationControl {
     private val activeOperation = AtomicReference<Job?>(null)
     private val stopRequested = AtomicBoolean(false)
+    private val stopForward = AtomicReference<(() -> Unit)?>(null)
 
     internal fun isStopRequested(): Boolean = stopRequested.get()
 
     fun requestUserStop(): Boolean {
         stopRequested.set(true)
         activeOperation.get()?.cancel(DesktopUserStoppedChatException())
+        stopForward.get()?.invoke()
         return true
+    }
+
+    /** The same chat admission can hand Stop to a later, independently terminalized stage. */
+    internal fun forwardStopTo(action: () -> Unit): AutoCloseable {
+        check(stopForward.compareAndSet(null, action)) { "停止操作已绑定其他阶段" }
+        if (stopRequested.get()) action()
+        return AutoCloseable { stopForward.compareAndSet(action, null) }
     }
 
     internal fun attach(operation: Job) {
@@ -115,7 +126,7 @@ class DesktopRealChatRuntime internal constructor(
         attachments: List<DesktopPendingImage> = emptyList(),
     ): DesktopRealChatResult = coroutineScope {
         val operation = async(start = CoroutineStart.LAZY) {
-            sendTextOperation(sessionId, content, observer, diagnosticsFactory, attachments)
+            sendTextOperation(sessionId, content, observer, diagnosticsFactory, attachments, control)
         }
         control?.attach(operation)
         try {
@@ -132,6 +143,7 @@ class DesktopRealChatRuntime internal constructor(
         observer: DesktopRealChatObserver,
         diagnosticsFactory: (ModelConfig) -> ProviderTransportDiagnostics,
         attachments: List<DesktopPendingImage>,
+        control: DesktopChatGenerationControl?,
     ): DesktopRealChatResult {
         val turn = resolveTurn(sessionId)
         var preparedContent = content
@@ -168,6 +180,7 @@ class DesktopRealChatRuntime internal constructor(
                     content = content,
                 ),
             )
+            observer.onUserMessagePersisted(persistedUser.id)
             requestPlanner.planPersistedUser(
                 sessionId = sessionId,
                 currentUser = persistedUser,
@@ -177,7 +190,7 @@ class DesktopRealChatRuntime internal constructor(
         }
 
         plan.knowledgeNotice?.let { observer.onUpdate(DesktopRealChatStreamUpdate("", "", status = it)) }
-        return generate(turn, plan, observer, diagnosticsFactory).copy(
+        return generate(turn, plan, observer, diagnosticsFactory, control = control).copy(
             inputNotice = listOfNotNull(inputNotice, plan.knowledgeNotice).joinToString("；").takeIf(String::isNotBlank))
     }
 
@@ -204,7 +217,7 @@ class DesktopRealChatRuntime internal constructor(
             val plan = requestPlanner.planRegeneration(sessionId, target.id, turn.inputs)
             observer.onUpdate(DesktopRealChatStreamUpdate("", "", target.id))
             plan.knowledgeNotice?.let { observer.onUpdate(DesktopRealChatStreamUpdate("", "", target.id, status = it)) }
-            generate(turn, plan, observer, diagnosticsFactory, target).copy(inputNotice = plan.knowledgeNotice)
+            generate(turn, plan, observer, diagnosticsFactory, target, control).copy(inputNotice = plan.knowledgeNotice)
         }
         control?.attach(operation)
         try {
@@ -221,6 +234,7 @@ class DesktopRealChatRuntime internal constructor(
         observer: DesktopRealChatObserver,
         diagnosticsFactory: (ModelConfig) -> ProviderTransportDiagnostics,
         regenerationTarget: ChatMessage? = null,
+        control: DesktopChatGenerationControl? = null,
     ): DesktopRealChatResult {
         val sessionId = plan.session.id
 
@@ -246,16 +260,17 @@ class DesktopRealChatRuntime internal constructor(
             val updated = MessageAlternativeVersionPolicy.append(
                 old, message.content, MessageAlternativeVersionPolicy.newVersionId(old),
             ).copy(reasoningContent = message.reasoningContent, formatRepairNotice = null)
-            chatRepository.updateMessage(updated)
-            return updated
+            return chatRepository.updateMessageReturningSnapshot(updated)
         }
 
         try {
+            val diagnostics = diagnosticsFactory(turn.model)
+            (diagnostics as? DesktopChatPlanDiagnostics)?.onPlan(plan)
             transportFactory(turn.settings.allowCleartextModelApi).streamMainChat(
                 messages = plan.assembly.messages,
                 modelConfig = turn.model,
                 promptCacheKey = plan.assembly.promptCacheKey,
-                diagnostics = diagnosticsFactory(turn.model),
+                diagnostics = diagnostics,
             ).collect { event ->
                 when (event) {
                     is ProviderStreamEvent.ContentDelta -> {
@@ -273,8 +288,11 @@ class DesktopRealChatRuntime internal constructor(
                     )
                     is ProviderStreamEvent.Completed -> {
                         check(completion == null) { "模型流返回了重复完成事件" }
-                        ChatHistoryPromptPolicy.requirePersistableAssistantBody(accumulatedContent)
                         completion = event.metadata
+                        if (accumulatedContent.isBlank() && event.metadata.finishReason == "length") {
+                            throw ModelResponseTruncatedException()
+                        }
+                        ChatHistoryPromptPolicy.requirePersistableAssistantBody(accumulatedContent)
                         val generated =
                             assistantBase.copy(
                                 content = accumulatedContent,
@@ -293,21 +311,23 @@ class DesktopRealChatRuntime internal constructor(
                 assistant = assistant,
                 completion = completion,
             )
-        } catch (stopped: DesktopUserStoppedChatException) {
-            val draft = InterruptedReplyPolicy.persistableDraft(
-                assistantBase.copy(
-                    content = accumulatedContent,
-                    reasoningContent = accumulatedReasoning.takeIf(String::isNotBlank),
-                    updatedAt = System.currentTimeMillis(),
-                ),
-            )
-            if (persistedAssistant == null && draft != null) {
-                withContext(NonCancellable) {
-                    persistedAssistant = persist(draft)
+        } catch (cancelled: CancellationException) {
+            // Cancellation can be delivered as a wrapper rather than the original stop
+            // exception. The operation's explicit stop handle preserves user intent.
+            if (cancelled is DesktopUserStoppedChatException || control?.isStopRequested() == true) {
+                val draft = InterruptedReplyPolicy.persistableDraft(
+                    assistantBase.copy(
+                        content = accumulatedContent,
+                        reasoningContent = accumulatedReasoning.takeIf(String::isNotBlank),
+                        updatedAt = System.currentTimeMillis(),
+                    ),
+                )
+                if (persistedAssistant == null && draft != null) {
+                    withContext(NonCancellable) {
+                        persistedAssistant = persist(draft)
+                    }
                 }
             }
-            throw stopped
-        } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (failure: Throwable) {
             val alreadyPersisted = persistedAssistant

@@ -131,7 +131,7 @@ class FishAudioTagPolicyTest {
     }
 
     @Test
-    fun `batch parser rejects markdown fences and unknown fields`() {
+    fun `batch parser accepts complete markdown fences but rejects unknown fields`() {
         val fenced = service.parseAndValidate(
             """```json
             {"segments":[{"id":"segment-1","ttsText":"[happy]你好，欢迎回来。"}]}
@@ -147,7 +147,8 @@ class FishAudioTagPolicyTest {
             FishAudioMarkerMode.SQUARE
         )
 
-        assertTrue(fenced.taggedTextById.isEmpty())
+        assertEquals("[happy]你好，欢迎回来。", fenced.taggedTextById[input.id])
+        assertTrue(fenced.errorsById.isEmpty())
         assertTrue(unknownField.taggedTextById.isEmpty())
     }
 
@@ -191,7 +192,7 @@ class FishAudioTagPolicyTest {
     }
 
     @Test
-    fun `translation parser rejects markdown and unknown fields`() {
+    fun `translation parser accepts complete markdown but rejects unknown fields`() {
         val fenced = service.parseTranslation(
             """```json
             {"segments":[{"id":"segment-1","translatedText":"Hello."}]}
@@ -205,7 +206,8 @@ class FishAudioTagPolicyTest {
             listOf(input)
         )
 
-        assertTrue(fenced.translatedTextById.isEmpty())
+        assertEquals("Hello.", fenced.translatedTextById[input.id])
+        assertTrue(fenced.errorsById.isEmpty())
         assertTrue(unknownField.translatedTextById.isEmpty())
     }
 }

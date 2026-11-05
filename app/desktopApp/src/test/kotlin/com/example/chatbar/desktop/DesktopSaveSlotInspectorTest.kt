@@ -54,6 +54,55 @@ class DesktopSaveSlotInspectorTest {
         assertFalse(result.toString().contains("Synthetic")); assertFalse(result.toString().contains(file.toString()))
         return result
     }
+    @Test fun historicalMessageHintsAreExplicitlyRetainedWithoutAcceptingContradictoryOwners() = runBlocking { fixture { root ->
+        val derived = SyntheticSaveSlotCorpus.message().copy(generatedFromMessageId = "missing-ancestor")
+        val source = SyntheticSaveSlotCorpus.archive(root.resolve("derived.cbsave"), listOf(derived))
+        assertEquals(SlotInspectCode.REFERENCE, inspect(source).code)
+        val retained = DesktopSaveSlotInspector(retainHistoricalReferences = true).inspect(source)
+        assertEquals(SlotInspectStatus.STRUCTURE_VALID, retained.status)
+        assertEquals(1, retained.counts!!.historicalReferences)
+        assertTrue("HISTORICAL_MESSAGE_REFERENCE_RETAINED_NOT_REBOUND" in retained.limitations)
+        val chunk = VectorChunk("r", ChunkSourceType.CHAT_MEMORY, "s", messageId = "missing", content = "Synthetic", embedding = listOf(0.5f),
+            metadata = mapOf("messageIds" to "missing", "sourceTurnId" to "old-turn"), createdAt = 1)
+        val rag = SyntheticSaveSlotCorpus.archive(root.resolve("rag-history.cbsave"), chunks = listOf(chunk))
+        assertEquals(SlotInspectCode.REFERENCE, inspect(rag).code)
+        assertEquals(SlotInspectStatus.STRUCTURE_VALID, DesktopSaveSlotInspector(retainHistoricalReferences = true).inspect(rag).status)
+        SyntheticSaveSlotCorpus.archive(rag, chunks = listOf(chunk.copy(metadata = mapOf("sessionId" to "original-session"))))
+        val origin = DesktopSaveSlotInspector(retainHistoricalReferences = true).inspect(rag)
+        assertEquals(SlotInspectStatus.STRUCTURE_VALID, origin.status)
+        assertTrue("HISTORICAL_RAG_ORIGIN_SESSION_RETAINED" in origin.limitations)
+        for (invalid in listOf(chunk.copy(sourceId = "other"), chunk.copy(messageId = "m", metadata = mapOf("sourceTurnId" to "wrong")), chunk.copy(messageId = ""))) {
+            SyntheticSaveSlotCorpus.archive(rag, chunks = listOf(invalid))
+            assertTrue(DesktopSaveSlotInspector(retainHistoricalReferences = true).inspect(rag).status != SlotInspectStatus.STRUCTURE_VALID)
+        }
+    } }
+
+    @Test fun streamedRagMayExceedOldEntryAndAggregateBudgetsWithoutWholeListAllocation() = runBlocking {
+        val root = Files.createTempDirectory("slot-streamed-rag-").toAbsolutePath().normalize()
+        try { withTimeout(120_000) {
+            val file = root.resolve("streamed.cbsave")
+            val random = kotlin.random.Random(431)
+            val content = CharArray(32768) { ('a'.code + random.nextInt(26)).toChar() }.concatToString()
+            val count = 2200
+            val manifest = SyntheticSaveSlotCorpus.slot().copy(packageRef = SaveSlotPackageRef("streamed.cbsave", 0, 0, 0, count))
+            val json = Json { encodeDefaults = true }
+            ZipOutputStream(Files.newOutputStream(file)).use { zip ->
+                zip.putNextEntry(ZipEntry("manifest.json")); zip.write(json.encodeToString(SaveSlot.serializer(), manifest).toByteArray()); zip.closeEntry()
+                zip.putNextEntry(ZipEntry("messages.jsonl")); zip.closeEntry()
+                zip.putNextEntry(ZipEntry("rag.jsonl"))
+                repeat(count) { index ->
+                    val chunk = VectorChunk("r" + index, ChunkSourceType.CHAT_MEMORY, "s", content = content, embedding = listOf(0.5f), createdAt = 1)
+                    zip.write(json.encodeToString(VectorChunk.serializer(), chunk).toByteArray()); zip.write(10)
+                }
+                zip.closeEntry(); zip.putNextEntry(ZipEntry("voices.jsonl")); zip.closeEntry()
+            }
+            java.util.zip.ZipFile(file.toFile()).use { zip -> assertTrue(zip.getEntry("rag.jsonl").size > 64L * 1024 * 1024) }
+            val result = inspect(file)
+            assertEquals(SlotInspectStatus.STRUCTURE_VALID, result.status)
+            assertEquals(count, result.counts!!.rag)
+        } } finally { root.toFile().deleteRecursively() }
+    }
+
     @Test fun `content detection ignores extension and valid ZIP archive stays read only`() = runBlocking { fixture { root ->
         val file = SyntheticSaveSlotCorpus.archive(root.resolve("not-json.txt"))
         val result = inspect(file)
@@ -181,9 +230,9 @@ class DesktopSaveSlotInspectorTest {
         assertEquals(SlotInspectStatus.STRUCTURE_VALID, inspect(file).status)
         assertEquals(listOf(file), Files.list(root).use { it.toList() })
     } }
-    @Test fun `legacy oversized audio is rejected before inline decoding`() = runBlocking { fixture { root ->
+    @Test fun `legacy positive audio length must still match after increasing the inline working budget`() = runBlocking { fixture { root ->
         val slot = legacyVoiceSlot(7, mapOf(voice().id to SaveSlotAudioResource("large.mp3", "A".repeat(1_100_000))))
-        assertEquals(SlotInspectCode.BUDGET,
+        assertEquals(SlotInspectCode.COUNTS,
             inspect(SyntheticSaveSlotCorpus.legacy(root.resolve("large-audio.cbsave"), slot)).code)
     } }
     @Test fun `voice requires archived audio and matching message version`() = runBlocking { fixture { root ->
@@ -234,7 +283,9 @@ class DesktopSaveSlotInspectorTest {
     } }
     @Test fun `legacy Base64 and JSONL size budgets avoid whole unbounded decoding`() = runBlocking { fixture { root ->
         val json = root.resolve("large.json")
-        Files.writeString(json, "{\"schemaVersion\":7,\"imageResources\":{\"x\":{\"data\":\"" + "A".repeat(1_100_000) + "\"}}}")
+        java.io.RandomAccessFile(json.toFile(), "rw").use { file ->
+            file.write('{'.code); file.setLength(com.example.chatbar.desktop.backup.DesktopBackupRecords.recordBudget + 1)
+        }
         assertEquals(SlotInspectCode.BUDGET, inspect(json).code)
         val record = SyntheticSaveSlotCorpus.message(text = "x".repeat(1_050_000))
         assertEquals(SlotInspectCode.BUDGET, inspect(SyntheticSaveSlotCorpus.archive(root.resolve("line.cbsave"), listOf(record), stored = true)).code)

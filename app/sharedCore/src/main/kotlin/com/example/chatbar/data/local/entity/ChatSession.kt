@@ -3,6 +3,8 @@ package com.example.chatbar.data.local.entity
 import com.example.chatbar.domain.image.NovelAiImageModel
 import com.example.chatbar.domain.image.NovelAiImageModelResolution
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -22,10 +24,27 @@ data class SourceTurnTombstone(
     val sourceOrder: Long
 )
 
+@Serializable
+@OptIn(ExperimentalSerializationApi::class)
+data class SessionCharacterParticipation(val cardId: String, val disabledPersonIds: Set<String>,
+    @EncodeDefault(EncodeDefault.Mode.NEVER) val automaticallyPausedPersonIds: Set<String> = emptySet()) {
+    init {
+        require(cardId.isNotBlank() && disabledPersonIds.all(String::isNotBlank))
+        require(automaticallyPausedPersonIds.all(String::isNotBlank))
+    }
+}
+
 /**
  * 聊天会话
  */
 @Serializable
+data class SessionPlayerRole(val cardId: String, val personId: String,
+    val followName: Boolean = true, val followAvatar: Boolean = true) {
+    init { require(cardId.isNotBlank() && personId.isNotBlank()) }
+}
+
+@Serializable
+@OptIn(ExperimentalSerializationApi::class)
 data class ChatSession(
     val id: String,
     val characterCardId: String,
@@ -44,6 +63,11 @@ data class ChatSession(
     val supplementarySetting: String? = null, // 补充设定
     val playerName: String? = null,           // 玩家名称覆盖
     val playerSetting: String? = null,        // 个人设定覆盖
+    /** Explicit player role only; equal names never establish this association. */
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val desktopPlayerRole: SessionPlayerRole? = null,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val desktopPlayerAvatar: String? = null,
     val chatBackground: String? = null,
     val imagePromptPreference: String = "",
     val automaticImageGenerationEnabled: Boolean = false,
@@ -51,6 +75,11 @@ data class ChatSession(
     val audiobookModeEnabled: Boolean? = null,
     /** null 表示语音直接使用气泡原文。 */
     val voiceLanguage: String? = null,
+    /** Desktop-only per-card participation; absent legacy data enables every person. */
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val desktopCharacterParticipation: List<SessionCharacterParticipation> = emptyList(),
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val desktopAutoPauseAbsentPeople: Boolean = false,
     val longTermMemoryEnabled: Boolean = true,
     val longTermMemory: String = "",
     val longTermMemoryUpdatedThroughMessageId: String? = null,
@@ -80,6 +109,7 @@ data class ChatSession(
     val createdAt: Long,
     val updatedAt: Long
 ) {
+    init { require(desktopCharacterParticipation.map { it.cardId }.distinct().size == desktopCharacterParticipation.size) }
     fun resolvedNovelAiImageModel(
         characterDefault: NovelAiImageModel?,
         globalDefault: NovelAiImageModel

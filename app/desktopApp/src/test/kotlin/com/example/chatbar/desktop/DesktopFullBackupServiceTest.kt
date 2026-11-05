@@ -8,6 +8,299 @@ import kotlinx.coroutines.flow.first
 import kotlin.test.*
 
 class DesktopFullBackupServiceTest {
+    @Test fun `file check asks only after encrypted selection and retries same source without changing live data`() = runBlocking {
+        Fixture().use { f ->
+            f.service.release(f.seed())
+            val file = f.base.resolve("saved.cbbackup"); val bytes = Files.readAllBytes(file)
+            val live = Files.readAllBytes(f.settings); var picks = 0
+            val controller = DesktopFullBackupController(f.service, object : DesktopFilePicker {
+                override fun pickOpenFile(type: DesktopFileType): Path { picks++; return file }
+                override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? = null
+            })
+            try {
+                assertNull(controller.state.value.passwordRequest)
+                controller.verifyFile(null)
+                withTimeout(10000) { controller.state.first { !it.busy && it.passwordRequest != null } }
+                assertEquals(1, picks); assertNull(controller.state.value.error)
+                withTimeout(5000) { controller.workRows.first { it.first().phase == DesktopWorkPhase.WAITING } }
+                repeat(2) {
+                    val wrong = "wrong-password-$it".toCharArray()
+                    controller.retryFilePassword(wrong)
+                    withTimeout(20000) { controller.state.first { !it.busy && it.passwordRequest?.error != null } }
+                    assertTrue(wrong.all { it == '\u0000' }); assertEquals(1, picks)
+                    assertFalse(controller.state.value.toString().contains("wrong-password"))
+                }
+                val password = "test-password".toCharArray(); controller.retryFilePassword(password)
+                withTimeout(20000) { controller.state.first { !it.busy && it.summary != null } }
+                withTimeout(5000) { controller.workRows.first { rows -> rows.none { it.active } } }
+                assertTrue(password.all { it == '\u0000' }); assertEquals(1, picks)
+                assertNull(controller.state.value.passwordRequest); assertFalse(f.service.restartRequired)
+                assertContentEquals(live, Files.readAllBytes(f.settings)); assertContentEquals(bytes, Files.readAllBytes(file))
+            } finally { controller.closeAndDrain() }
+        }
+    }
+    @Test fun `password cancellation departure plain file and malformed file retain their distinct check outcomes`() = runBlocking {
+        Fixture().use { f ->
+            f.service.release(f.seed())
+            val encrypted = f.base.resolve("saved.cbbackup"); val plain = f.base.resolve("plain.cbbackup")
+            f.service.export(plain, null)
+            val bad = Files.write(f.base.resolve("bad.cbbackup"), byteArrayOf(1, 2, 3))
+            val live = Files.readAllBytes(f.settings); val sources = ArrayDeque(listOf(encrypted, encrypted, encrypted, plain, bad))
+            val controller = DesktopFullBackupController(f.service, object : DesktopFilePicker {
+                override fun pickOpenFile(type: DesktopFileType): Path = sources.removeFirst()
+                override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? = null
+            })
+            try {
+                controller.verifyFile(null)
+                withTimeout(10000) { controller.state.first { !it.busy && it.passwordRequest != null } }
+                controller.discardInspection()
+                withTimeout(10000) { controller.state.first { !it.busy && it.passwordRequest == null } }
+                controller.verifyFile(null)
+                withTimeout(10000) { controller.state.first { !it.busy && it.passwordRequest != null } }
+                controller.leavePanel()
+                withTimeout(10000) { controller.state.first { !it.busy && it.passwordRequest == null } }
+                controller.verifyFile(null)
+                withTimeout(10000) { controller.state.first { !it.busy && it.passwordRequest != null } }
+                controller.verifyFile(null)
+                withTimeout(10000) { controller.state.first { !it.busy && it.summary != null } }
+                assertNull(controller.state.value.passwordRequest)
+                controller.verifyFile(null)
+                withTimeout(10000) { controller.state.first { !it.busy && it.error != null } }
+                assertNull(controller.state.value.passwordRequest); assertNull(controller.state.value.summary)
+                assertTrue(controller.state.value.error!!.contains("AUTHENTICATION_ZIP"))
+                assertContentEquals(live, Files.readAllBytes(f.settings)); assertFalse(f.service.restartRequired)
+            } finally { controller.closeAndDrain() }
+        }
+    }
+    @Test fun `file check retains actual old Desktop V5 options with explicit historical classification`() = runBlocking<Unit> {
+        Fixture().use { f ->
+            val original = published1238StudioBackup()
+            val input = Files.write(f.base.resolve("historical-v5.cbbackup"), original)
+            val checked = f.service.verifyFile(input, null)
+            assertEquals(86, checked.summary.appVersionCode)
+            assertTrue(checked.historicalDesktopV5Settings)
+            assertTrue(checked.desktopOnly)
+            assertContentEquals(original, Files.readAllBytes(input))
+        }
+    }
+    @Test fun `late cancellation cannot label a durably scheduled restore as undone or remove its pending journal`() = runBlocking {
+        Fixture().use { f ->
+            f.service.release(f.seed())
+            val original = Files.readAllBytes(f.settings)
+            val entered = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>()
+            val service = DesktopFullBackupService(f.root, f.gate, DesktopAudioMaintenance({ f.focus }) {},
+                resumeScheduler = { entered.complete(Unit); release.await() })
+            val picker = object : DesktopFilePicker {
+                override fun pickOpenFile(type: DesktopFileType) = f.base.resolve("saved.cbbackup")
+                override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? = null
+            }
+            val controller = DesktopFullBackupController(service, picker)
+            try {
+                controller.inspect("test-password".toCharArray())
+                withTimeout(20000) { controller.state.first { !it.busy && it.summary != null } }
+                controller.restore()
+                withTimeout(20000) { entered.await() }
+                assertTrue(service.restartRequired); assertTrue(DesktopFullBackupCommitJournal(f.root).hasPending())
+                val id = controller.workRows.value.first().id
+                assertTrue(controller.stopTask(id)); assertTrue(controller.workRows.value.first().active)
+                release.complete(Unit)
+                withTimeout(20000) { controller.workRows.first { rows -> rows.first().id == id && !rows.first().active } }
+                assertEquals(DesktopWorkPhase.UNCONFIRMED, controller.workRows.value.first().phase)
+                assertTrue(controller.state.value.restartRequired)
+                assertTrue(DesktopFullBackupCommitJournal(f.root).hasPending())
+                assertContentEquals(original, Files.readAllBytes(f.settings))
+            } finally { release.complete(Unit); controller.closeAndDrain() }
+        }
+    }
+    @Test fun `task center stops the exact backup job only after its picker boundary drains and stale IDs cannot stop the next job`() = runBlocking {
+        Fixture().use { f ->
+            val firstEntered = CompletableDeferred<Unit>(); val secondEntered = CompletableDeferred<Unit>()
+            val firstRelease = java.util.concurrent.CountDownLatch(1); val secondRelease = java.util.concurrent.CountDownLatch(1)
+            val calls = java.util.concurrent.atomic.AtomicInteger()
+            val picker = object : DesktopFilePicker {
+                override fun pickOpenFile(type: DesktopFileType): Path? = null
+                override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? {
+                    if (calls.incrementAndGet() == 1) { firstEntered.complete(Unit); check(firstRelease.await(10, java.util.concurrent.TimeUnit.SECONDS)) }
+                    else { secondEntered.complete(Unit); check(secondRelease.await(10, java.util.concurrent.TimeUnit.SECONDS)) }
+                    return null
+                }
+            }
+            val controller = DesktopFullBackupController(f.service, picker); val center = DesktopTaskCenter()
+            center.watchBackup(controller)
+            val password = "synthetic-password".toCharArray()
+            try {
+                controller.export(password)
+                withTimeout(5000) { firstEntered.await() }
+                val row = withTimeout(5000) { center.state.first { it.rows.any { row -> row.active } } }.rows.single()
+                assertEquals(DesktopWorkDetail.BACKUP_EXPORT, row.target!!.detail)
+                assertTrue(center.requestStop(row.id))
+                withTimeout(5000) { center.state.first { it.rows.single().stopRequested } }
+                withTimeout(5000) { controller.workRows.first { it.single().stopRequested } }
+                assertTrue(controller.state.value.busy); assertTrue(controller.workRows.value.single().active)
+                firstRelease.countDown()
+                withTimeout(5000) { controller.workRows.first { it.single().phase == DesktopWorkPhase.CANCELLED } }
+                assertTrue(password.all { it == '\u0000' }); assertNull(controller.state.value.exportResult)
+                val oldId = controller.workRows.value.single().id
+                controller.export(null)
+                withTimeout(5000) { secondEntered.await() }
+                assertFalse(controller.stopTask(oldId)); assertTrue(controller.state.value.busy)
+                assertNotEquals(oldId, controller.workRows.value.first().id)
+                secondRelease.countDown()
+                withTimeout(5000) { controller.workRows.first { rows -> rows.size == 2 && rows.none { it.active } } }
+                assertTrue(controller.workRows.value.all { it.phase == DesktopWorkPhase.CANCELLED })
+            } finally { firstRelease.countDown(); secondRelease.countDown(); controller.closeAndDrain(); center.closeAndDrain() }
+        }
+    }
+    @Test fun `GUI file check accepts current credential bearing selected exports without preparing replacement or reading protected keys`() = runBlocking {
+        for (encrypted in listOf(false, true)) Fixture().use { f ->
+            Files.createDirectories(f.settings.parent)
+            Files.writeString(f.settings, backupJson.encodeToString(AppSettings.serializer(), AppSettings()))
+            var reads = 0
+            val focus = DesktopAudioFocus()
+            val service = DesktopFullBackupService(f.root, f.gate, DesktopAudioMaintenance({ focus }) {}, secretStore = {
+                object : com.example.chatbar.desktop.security.DesktopSecretStore {
+                    override fun load(key: com.example.chatbar.desktop.security.DesktopCredentialKey): String? {
+                        reads++
+                        return if (key == com.example.chatbar.desktop.security.DesktopCredentialKey.NovelAiToken) "SYNTHETIC_VERIFY_TOKEN" else null
+                    }
+                    override fun save(key: com.example.chatbar.desktop.security.DesktopCredentialKey, secret: String) = error("no key writes")
+                    override fun delete(key: com.example.chatbar.desktop.security.DesktopCredentialKey) = error("no key deletes")
+                }
+            })
+            val file = f.base.resolve("selected.cbbackup")
+            service.exportModern(file, if (encrypted) "synthetic-password".toCharArray() else null, true,
+                AppBackupSelection(globalOptions = setOf("novelAiCredentials")))
+            val original = Files.readAllBytes(file)
+            val exportReads = reads
+            val picker = object : DesktopFilePicker {
+                override fun pickOpenFile(type: DesktopFileType) = file
+                override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? = null
+            }
+            val controller = DesktopFullBackupController(service, picker)
+            try {
+                val password = if (encrypted) "synthetic-password".toCharArray() else null
+                controller.verifyFile(password)
+                val state = withTimeout(20_000) { controller.state.first { !it.busy } }
+                assertNull(state.error)
+                assertEquals(2, state.summary!!.formatVersion)
+                assertEquals(87, state.summary!!.appVersionCode)
+                assertEquals(exportReads, reads)
+                assertTrue(password == null || password.all { it == '\u0000' })
+                assertEquals(0L, Files.list(f.root.resolve("backups/.full-app-work")).use { it.count() })
+                assertContentEquals(original, Files.readAllBytes(file))
+                Files.write(file, byteArrayOf(1), StandardOpenOption.APPEND)
+                controller.verifyFile(if (encrypted) "synthetic-password".toCharArray() else null)
+                val refused = withTimeout(20_000) { controller.state.first { !it.busy } }
+                assertNotNull(refused.error)
+                assertNull(refused.summary)
+                assertFalse(refused.error!!.contains("SYNTHETIC_VERIFY_TOKEN"))
+                assertFalse(service.restartRequired)
+            } finally { controller.closeAndDrain() }
+        }
+    }
+
+    @Test fun `export publishes actual saved path and explicit failure result without overwriting a previous backup`() = runBlocking {
+        Fixture().use { f ->
+            Files.createDirectories(f.settings.parent)
+            Files.writeString(f.settings, backupJson.encodeToString(AppSettings.serializer(), AppSettings()))
+            val destination = f.base.resolve("saved.cbbackup")
+            val picker = object : DesktopFilePicker {
+                override fun pickOpenFile(type: DesktopFileType): Path? = null
+                override fun pickSaveFile(type: DesktopFileType, suggestedName: String) = destination
+            }
+            val controller = DesktopFullBackupController(f.service, picker)
+            try {
+                controller.export(null)
+                val success = withTimeout(20_000) { controller.state.first { !it.busy } }.exportResult!!
+                assertTrue(success.success)
+                assertEquals(destination.toAbsolutePath().normalize(), success.path)
+                val original = Files.readAllBytes(destination)
+                controller.dismissExportResult()
+                assertNull(controller.state.value.exportResult)
+                controller.export(null)
+                val failure = withTimeout(20_000) { controller.state.first { !it.busy } }.exportResult!!
+                assertFalse(failure.success)
+                assertNull(failure.path)
+                assertContentEquals(original, Files.readAllBytes(destination))
+            } finally { controller.closeAndDrain() }
+        }
+    }
+
+    @Test fun `selected modern service reads protected credentials only for requested export and keeps live settings unchanged`() = runBlocking {
+        Fixture().use { f ->
+            Files.createDirectories(f.settings.parent)
+            Files.writeString(f.settings, backupJson.encodeToString(AppSettings.serializer(), AppSettings()))
+            val original = Files.readAllBytes(f.settings)
+            var reads = 0
+            val store = object : com.example.chatbar.desktop.security.DesktopSecretStore {
+                override fun load(key: com.example.chatbar.desktop.security.DesktopCredentialKey): String? {
+                    reads++
+                    return if (key == com.example.chatbar.desktop.security.DesktopCredentialKey.NovelAiToken) "SYNTHETIC_NAI_SERVICE_SECRET" else null
+                }
+                override fun save(key: com.example.chatbar.desktop.security.DesktopCredentialKey, secret: String) = error("Export must not write credentials")
+                override fun delete(key: com.example.chatbar.desktop.security.DesktopCredentialKey) = error("Export must not delete credentials")
+            }
+            val focus = DesktopAudioFocus()
+            val service = DesktopFullBackupService(f.root, f.gate, DesktopAudioMaintenance({ focus }) {}, secretStore = { store })
+            service.exportModern(f.base.resolve("without-secret.cbbackup"), null)
+            assertEquals(0, reads)
+            val choice = AppBackupSelection(globalOptions = setOf("novelAiCredentials"))
+            val output = f.base.resolve("with-secret.cbbackup")
+            service.exportModern(output, null, true, choice)
+            var token: String? = null
+            val result = DesktopFullBackupSource.verify(output, null, object : DesktopFullBackupSource.TentativeSink {
+                override fun entity(path: String, original: kotlinx.serialization.json.JsonObject, raw: ByteArray) {}
+                override fun preferences(original: kotlinx.serialization.json.JsonObject) {
+                    token = (original["novelAiToken"] as kotlinx.serialization.json.JsonPrimitive).content
+                }
+                override fun media(path: String, input: java.io.InputStream) {}
+            })
+            assertEquals("SYNTHETIC_NAI_SERVICE_SECRET", token)
+            assertEquals(setOf("novelAiCredentials"), result.manifest.scope!!.globalOptions)
+            assertTrue(reads > 0); assertContentEquals(original, Files.readAllBytes(f.settings))
+        }
+    }
+    @Test fun `whole backup keeps participation as Desktop extension in legacy and modern envelopes`() = runBlocking {
+        for (modern in listOf(false, true)) Fixture().use { f ->
+            val person = CharacterInfo.create("Synthetic").copy(desktopEnabled = false)
+            val auto = CharacterInfo.create("Automatic")
+            val card = CharacterCard.create("Synthetic card").copy(id = "apiKey", characters = listOf(person, auto))
+            val session = ChatSession.create(card.id, "Synthetic chat").copy(
+                desktopAutoPauseAbsentPeople = true,
+                desktopCharacterParticipation = listOf(SessionCharacterParticipation(card.id, setOf(person.id), setOf(auto.id))))
+            val cardFile = f.root.resolve("entities/character_cards/${card.id}.json")
+            val sessionFile = f.root.resolve("entities/chat_sessions/${session.id}.json")
+            Files.createDirectories(cardFile.parent); Files.createDirectories(sessionFile.parent)
+            Files.writeString(cardFile, backupJson.encodeToString(CharacterCard.serializer(), card))
+            Files.writeString(sessionFile, backupJson.encodeToString(ChatSession.serializer(), session))
+            val original = Files.readAllBytes(sessionFile)
+            val originalCard = Files.readAllBytes(cardFile)
+            val output = f.base.resolve("participation.cbbackup")
+            if (modern) {
+                f.service.exportModern(output, null)
+                DesktopFullBackupStaging.prepare(output, null, Files.createDirectory(f.base.resolve("inspect"))).use { staged ->
+                    val value = staged.entities.getValue("entities/chat_sessions/${session.id}.json")
+                    assertTrue(DesktopBackupPolicy.hasDesktopParticipation(value))
+                    assertEquals(session, backupJson.decodeFromJsonElement(ChatSession.serializer(), value))
+                    val cardValue = staged.entities.getValue("entities/character_cards/${card.id}.json")
+                    assertTrue(DesktopBackupPolicy.hasDesktopParticipation(cardValue))
+                    assertEquals(card, backupJson.decodeFromJsonElement(CharacterCard.serializer(), cardValue))
+                }
+            } else {
+                f.service.export(output, null)
+                f.service.inspect(output, null).use { prepared ->
+                    assertTrue(prepared.desktopOnly)
+                    val value = Files.readString(prepared.files.getValue("entities/chat_sessions/${session.id}.json"))
+                    assertEquals(session, backupJson.decodeFromString(ChatSession.serializer(), value))
+                    val cardValue = Files.readString(prepared.files.getValue("entities/character_cards/${card.id}.json"))
+                    assertEquals(card, backupJson.decodeFromString(CharacterCard.serializer(), cardValue))
+                }
+            }
+            assertContentEquals(original, Files.readAllBytes(sessionFile))
+            assertContentEquals(originalCard, Files.readAllBytes(cardFile))
+        }
+    }
+
     private class Fixture : AutoCloseable {
         val base = Files.createTempDirectory("whole-app-service-")
         val root = Files.createDirectory(base.resolve("root"))
@@ -44,7 +337,7 @@ class DesktopFullBackupServiceTest {
         }
     }
 
-    @Test fun `modern user export preserves code86 fields plain and encrypted without exporting known credentials`() = runBlocking<Unit> {
+    @Test fun `modern user export uses code87 plain and encrypted without exporting known credentials`() = runBlocking<Unit> {
         for (encrypted in listOf(false, true)) Fixture().use { f ->
             val card = f.root.resolve("entities/character_cards/c.json")
             Files.createDirectories(card.parent)
@@ -59,7 +352,7 @@ class DesktopFullBackupServiceTest {
             val readPassword = if (encrypted) "FAKE_MODERN_EXPORT_PASSWORD".toCharArray() else null
             DesktopFullBackupStaging.prepare(output, readPassword, Files.createDirectory(f.base.resolve("inspection"))).use { inspected ->
                 assertEquals(2, inspected.source.manifest.formatVersion)
-                assertEquals(86, inspected.source.manifest.appVersionCode)
+                assertEquals(87, inspected.source.manifest.appVersionCode)
                 assertEquals(encrypted, inspected.source.encrypted)
                 assertEquals(kotlinx.serialization.json.JsonPrimitive(false), inspected.entities.getValue("entities/character_cards/c.json")
                     .getValue("defaultImageGenerationSettings").let { it as kotlinx.serialization.json.JsonObject }.getValue("varietyPlus"))

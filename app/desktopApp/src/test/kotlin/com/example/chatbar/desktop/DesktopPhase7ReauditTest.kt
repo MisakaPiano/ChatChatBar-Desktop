@@ -208,8 +208,10 @@ class DesktopPhase7ReauditTest {
         assertTrue(progress.content.length > 5000)
         val panel = source("DesktopNovelAiStudioPanel.kt")
         assertTrue(Regex("""\("图像引导"(?:,\s*icon = [\w.]+)?\)\s*\{\s*auxiliary = "图像引导"\s*}""").containsMatchIn(panel))
-        assertTrue(panel.contains("DesktopMarkdownText(state.reverseProgress.reasoning)"))
-        assertTrue(panel.contains("DesktopMarkdownText(state.reverseProgress.content)"))
+        assertTrue(panel.contains("DesktopReversePromptPane(state, busy,"))
+        val reverse = source("DesktopReversePromptPane.kt")
+        assertTrue(reverse.contains("DesktopMarkdownText(state.reverseProgress.reasoning)"))
+        assertTrue(reverse.contains("DesktopMarkdownText(state.reverseProgress.content)"))
         assertTrue(panel.contains("DesktopStudioHistory(controller"))
     }
 

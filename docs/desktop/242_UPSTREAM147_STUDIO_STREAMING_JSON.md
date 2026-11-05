@@ -1,0 +1,17 @@
+# 正式1.4.7适配：旧Studio内联编码流式读取
+
+be27／CI84独立Windows shared报告实际7项全PASS（StudioStreaming4／CompactJson3），补齐NTFS派生目录／碰撞／取消语义；Linuxshared1135／Android582也全PASS。该run仍为FAIL：无关新语音用量测试漏import使Desktop测试编译失败，主Desktop／production JAR代理未运行。不得把本页定向GREEN外推整批或其他用例。
+
+192f／CI81完整SUCCESS：Linux共享1116（包含本页新增stream3／storage4）和Android582全PASS，Windows主304suite2399项＝2380PASS＋19SKIP、独立production JAR代理5PASS。Windows这轮仅执行desktopApp测试，没有执行本页7项shared测试；不能写成NTFS新用例通过。后续正常新源云端将单独增加这两个共享suite的Windows定向执行和独立报告，不重跑81。下文待验为当时源码截点。
+
+2026-11-02 JST。后续独立于8b2／CI80及公开1229；本页新增源码尚待精确源云端验证。正式上游baseline保持1.4.1，Prompt未改，不新建付费请求。
+
+旧Studio JSON可在encodedVibe中内联很大的编码。即使请求运行时已能resolve文件引用，普通JSON解码仍先分配完整内联字符串。本次采用拉取式InputStream投影：约2048字符输出窗口、32字符键识别窗口、4096字符编码缓冲；超出后把解码出的编码流式写到既有payload根的自有暂存文件，校验后发布内容寻址文件。输出给实体解码器的是短文件引用，不创建完整JSON副本，不启动后台工作线程，不改写原始JSON。
+
+仅对novelai_generation_history、novelai_studio_draft、novelai_studio_history_undo和novelai_studio_guidance_checkpoint应用。普通字段、包含相似文本的字符串、Unicode和转义语义保持；转义键encoded\u0056ibe也识别。短值保持内联；原始备份和原样复制入口保持源字节，既有备份资源注册和运行时guidance解析复用。
+
+原文件打开和派生阶段分离：只有原文件不存在才是Missing，坏JSON为Corrupt，派生目录不可写／未知内容碰撞／资源IO为ReadError；不能因派生文件失败把单例当默认值覆盖。实际Studio initialize调用loadAll，故Studio读取的派生IO必须明确失败且不发布部分缓存；其他解码列表／查询入口同样不把新IO吞为不存在，取消透传。非Studio既有损坏记录处理不重写。自有暂存关闭和删除各自尝试，清理失败保留在原异常，未知文件不删除。
+
+新增回归覆盖8MiB流式值、小输出和原件SHA保持、转义键／值／普通文本及Unicode、截断／错误转义／取消清理；四种实际storage入口及operation gate、Missing与Corrupt／ReadError、阻止默认覆盖、坏派生目录／内容碰撞和重试。历史回归先加载已知缓存，再增加有效大记录并阻塞派生目录，要求加载与查询明确失败、原文件和缓存保持，移除夹具障碍后重试加载完整列表。
+
+这些测试不是进程堆峰值剖析、断电事务或完整147兼容证明。公开1229和metadata13不变；连接性问题已收到用户转述测试者修复通过，仅关闭该连接待复测，不外推其他业务或全部1.0验收。

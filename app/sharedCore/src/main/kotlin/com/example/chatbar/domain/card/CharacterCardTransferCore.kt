@@ -135,6 +135,7 @@ class CharacterCardTransferCore internal constructor(
         presetKey: String? = null,
         presetVersion: Int? = null,
         observation: CharacterTransferObservation? = null,
+        communitySource: CharacterCardCommunitySource? = null,
     ): CharacterCard = normalOperation {
         val normalizedPackage = packageData.withoutEmptyCharacterPlaceholders()
         normalizedPackage.validateForImport()
@@ -152,6 +153,7 @@ class CharacterCardTransferCore internal constructor(
             presetVersion = presetVersion,
             operation = CharacterTransferPostCommitOperation.IMPORT,
             observation = observation,
+            communitySource = communitySource,
         )
     }
 
@@ -162,10 +164,20 @@ class CharacterCardTransferCore internal constructor(
         presetKey: String? = null,
         presetVersion: Int? = null,
         observation: CharacterTransferObservation? = null,
+        communitySource: CharacterCardCommunitySource? = null,
+        communityAuthority: CharacterCommunityOverwriteAuthority? = null,
     ): CharacterCard = normalOperation {
         val normalizedPackage = packageData.withoutEmptyCharacterPlaceholders()
         normalizedPackage.validateForImport()
         val existing = characters.getById(existingId) ?: error("待覆盖角色卡不存在")
+        communityAuthority?.let {
+            require(existing.communityItemId == it.expectedItemId) { "目标社区来源已变化，请重新选择导入" }
+        }
+        if (communityAuthority != null || communitySource != null) {
+            require(!existing.isCommunityDownload || communitySource?.itemId == existing.communityItemId) {
+                "只读社区角色只能由同来源的明确更新覆盖"
+            }
+        }
         val ledger = MaterializationLedger()
         var committed = false
         val replacement = try {
@@ -177,7 +189,7 @@ class CharacterCardTransferCore internal constructor(
                 presetVersion = presetVersion,
                 createdAt = existing.createdAt,
                 ledger = ledger,
-            )
+            ).let { communitySource?.applyTo(it) ?: it }
         } catch (error: Throwable) {
             rollback(ledger, error)
             throw error
@@ -277,6 +289,7 @@ class CharacterCardTransferCore internal constructor(
         presetVersion: Int? = null,
         operation: CharacterTransferPostCommitOperation,
         observation: CharacterTransferObservation? = null,
+        communitySource: CharacterCardCommunitySource? = null,
     ): CharacterCard {
         val ledger = MaterializationLedger()
         var committed = false
@@ -289,7 +302,7 @@ class CharacterCardTransferCore internal constructor(
                 presetVersion = presetVersion,
                 createdAt = nowMillis(),
                 ledger = ledger,
-            )
+            ).let { communitySource?.applyTo(it) ?: it }
         } catch (error: Throwable) {
             rollback(ledger, error)
             throw error
@@ -384,6 +397,7 @@ class CharacterCardTransferCore internal constructor(
                 speakingStyle = character.speakingStyle,
                 imagePrompt = character.imagePrompt,
                 fishAudioVoice = character.fishAudioVoice,
+                desktopEnabled = character.desktopEnabled,
             )
         }
         return CharacterCardPackage(
@@ -403,6 +417,7 @@ class CharacterCardTransferCore internal constructor(
                     card.defaultImageNegativePrompt,
                 ),
                 defaultNovelAiImageModel = card.defaultNovelAiImageModel,
+                defaultImageGenerationSettings = card.defaultImageGenerationSettings,
                 systemPrompt = card.systemPrompt,
                 postHistoryInstructions = card.postHistoryInstructions,
                 mesExample = card.mesExample,
@@ -502,6 +517,7 @@ class CharacterCardTransferCore internal constructor(
                         speakingStyle = character.speakingStyle,
                         imagePrompt = character.imagePrompt,
                         fishAudioVoice = character.fishAudioVoice,
+                        desktopEnabled = character.desktopEnabled,
                     )
                 },
             ),
@@ -517,6 +533,7 @@ class CharacterCardTransferCore internal constructor(
                 packagedCard.defaultImageNegativePrompt,
             ),
             defaultNovelAiImageModel = packagedCard.defaultNovelAiImageModel,
+            defaultImageGenerationSettings = packagedCard.defaultImageGenerationSettings,
             systemPrompt = packagedCard.systemPrompt,
             postHistoryInstructions = packagedCard.postHistoryInstructions,
             mesExample = packagedCard.mesExample,

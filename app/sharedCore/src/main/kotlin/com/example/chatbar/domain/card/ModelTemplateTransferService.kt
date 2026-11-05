@@ -12,6 +12,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 @Serializable
+@OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
 data class ModelTemplatePackage(
     val schemaVersion: Int = MODEL_TEMPLATE_PACKAGE_SCHEMA_VERSION,
     val exportedAt: Long = System.currentTimeMillis(),
@@ -24,7 +25,9 @@ data class ModelTemplatePackage(
     val reasoningEffort: String? = null,
     val enableThinking: Boolean? = null,
     val maxOutputTokens: Int? = null,
-    val formatPromptPosition: FormatPromptPosition = FormatPromptPosition.BOTH
+    val formatPromptPosition: FormatPromptPosition = FormatPromptPosition.BOTH,
+    @kotlinx.serialization.EncodeDefault(kotlinx.serialization.EncodeDefault.Mode.NEVER)
+    val desktopContextWindowTokens: Long? = null,
 )
 
 const val MODEL_TEMPLATE_PACKAGE_SCHEMA_VERSION = 1
@@ -35,6 +38,7 @@ fun ModelTemplatePackage.validateForImport() {
     }
     require(displayName.isNotBlank()) { "模型模板名称不能为空" }
     require(modelName.isNotBlank()) { "模型名称不能为空" }
+    require(desktopContextWindowTokens == null || desktopContextWindowTokens > 0) { "模型上下文容量必须为正整数" }
 }
 
 /** Opt-in Desktop evidence survives a cancelled dispatcher return after a durable save. */
@@ -63,7 +67,8 @@ class ModelTemplateTransferService(
                 reasoningEffort = model.reasoningEffort,
                 enableThinking = model.enableThinking,
                 maxOutputTokens = model.maxOutputTokens,
-                formatPromptPosition = model.formatPromptPosition
+                formatPromptPosition = model.formatPromptPosition,
+                desktopContextWindowTokens = model.desktopContextWindowTokens,
             )
         )
     }
@@ -109,6 +114,7 @@ class ModelTemplateTransferService(
         reasoningEffort = packageData.reasoningEffort,
         enableThinking = packageData.enableThinking,
         maxOutputTokens = packageData.maxOutputTokens,
+        desktopContextWindowTokens = packageData.desktopContextWindowTokens,
         formatPromptPosition = packageData.formatPromptPosition,
         createdAt = System.currentTimeMillis()
     )

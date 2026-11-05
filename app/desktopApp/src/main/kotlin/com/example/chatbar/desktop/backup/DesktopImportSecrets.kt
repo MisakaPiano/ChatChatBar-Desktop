@@ -49,7 +49,15 @@ internal class DesktopImportSecrets : AutoCloseable {
         val session = value["communitySession"]
         if (session is JsonPrimitive && session.isString && session.content.isNotEmpty()) validateCommunity(session.content)
         add(value, "communitySession", ImportCredentialKind.COMMUNITY, null, DesktopCredentialKey.DormantCommunitySession)
-        return JsonObject(value + mapOf("novelAiToken" to JsonNull, "fishAudioKey" to JsonNull, "communitySession" to JsonNull))
+        val accountFields = mapOf("desktopLlmAccounts" to DesktopAccountService.LLM,
+            "desktopNovelAiAccounts" to DesktopAccountService.NOVELAI, "desktopFishAccounts" to DesktopAccountService.FISH)
+        accountFields.forEach { (field, service) ->
+            if (field !in value) return@forEach // Old official packages have no Desktop account field.
+            val encoded = value[field]?.takeUnless { it == JsonNull }?.jsonPrimitive?.content
+            if (!encoded.isNullOrEmpty()) DesktopAccountStore.decode(encoded, service)
+            add(value, field, accountKind(service), null, DesktopCredentialKey.AccountProfiles(service))
+        }
+        return JsonObject(value + (listOf("novelAiToken", "fishAudioKey", "communitySession") + accountFields.keys).associateWith { JsonNull })
     }
 
     private fun add(obj: JsonObject, field: String, kind: ImportCredentialKind, account: ImportAccountIdentity?, key: DesktopCredentialKey) {

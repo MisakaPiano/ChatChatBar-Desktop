@@ -12,7 +12,7 @@ interface MemoryRagTextClient {
         messages: List<ChatApiMessage>,
         modelConfig: ModelConfig,
         disableThinking: Boolean,
-        isolatedTaskParameters: Boolean = true,
+        isolatedTaskParameters: Boolean = false,
         responseFormatJson: Boolean = false,
     ): String = completeTextStreaming(taskContext, messages, modelConfig, disableThinking,
         isolatedTaskParameters, responseFormatJson) {}
@@ -22,7 +22,7 @@ interface MemoryRagTextClient {
         messages: List<ChatApiMessage>,
         modelConfig: ModelConfig,
         disableThinking: Boolean,
-        isolatedTaskParameters: Boolean = true,
+        isolatedTaskParameters: Boolean = false,
         responseFormatJson: Boolean = false,
         onDelta: (String) -> Unit,
     ): String

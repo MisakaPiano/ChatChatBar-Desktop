@@ -27,8 +27,59 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.test.assertFailsWith
+import kotlin.test.assertContentEquals
 
 class DesktopTypedTransferControllerTest {
+    @Test fun `community imports share original conflicts and only an explicit same-source update can replace a read-only card`() = runTest {
+        withFixture { f ->
+            val data = packageData("Community card")
+            val item = com.example.chatbar.domain.community.CommunityItemDto(id = "remote", type = "character",
+                title = "Community card", sha256 = "a".repeat(64), updatedAt = "2026-01-01").toDomain()
+            fun payload(data: CharacterCardPackage) = com.example.chatbar.domain.community.CommunityImportPayload.Character(data)
+            f.controller.importCommunity(item, payload(data))
+            val imported = f.container.characterRepository.getAll().single()
+            assertTrue(imported.isCommunityDownload); assertEquals(item.id, imported.communityItemId)
+            f.controller.importCharacter(CharacterCardImportRequest(data))
+            assertFalse((f.controller.state.value.pendingConflict as DesktopPendingTransferConflict.Character).overwriteAllowed)
+            f.controller.resolveConflict(DesktopTransferConflictAction.OVERWRITE)
+            assertEquals(imported, f.container.characterRepository.getById(imported.id))
+            f.controller.resolveConflict(DesktopTransferConflictAction.CANCEL)
+            f.controller.importCommunity(item.copy(id = "other"), payload(data))
+            assertFalse((f.controller.state.value.pendingConflict as DesktopPendingTransferConflict.Character).overwriteAllowed)
+            f.controller.resolveConflict(DesktopTransferConflictAction.CANCEL)
+            val changed = data.copy(card = data.card.copy(greeting = "updated"))
+            val next = item.copy(sha256 = "b".repeat(64), updatedAt = "2026-01-02")
+            f.controller.importCommunity(next, payload(changed), updateCharacterId = imported.id)
+            assertTrue((f.controller.state.value.pendingConflict as DesktopPendingTransferConflict.Character).overwriteAllowed)
+            assertEquals(imported, f.container.characterRepository.getById(imported.id))
+            f.controller.resolveConflict(DesktopTransferConflictAction.OVERWRITE)
+            val updated = f.container.characterRepository.getById(imported.id)!!
+            assertEquals("updated", updated.greeting); assertEquals(next.sha256, updated.communityItemSha256)
+            assertEquals(imported.createdAt, updated.createdAt); assertEquals(1, f.container.characterRepository.getAll().size)
+            f.controller.importCommunity(next, payload(changed), updateCharacterId = imported.id)
+            f.container.characterRepository.save(updated.copy(communityItemId = "changed-source"))
+            val current = f.container.characterRepository.getById(imported.id)!!
+            val before = Files.walk(f.root).use { paths -> paths.filter { Files.isRegularFile(it) }.toList().associateWith { Files.readAllBytes(it) } }
+            f.controller.resolveConflict(DesktopTransferConflictAction.OVERWRITE)
+            assertNotNull(f.controller.state.value.error)
+            assertEquals(current, f.container.characterRepository.getById(imported.id))
+            before.forEach { (path, bytes) -> assertContentEquals(bytes, Files.readAllBytes(path)) }
+            f.controller.resolveConflict(DesktopTransferConflictAction.CANCEL)
+            f.container.characterRepository.save(updated)
+            f.controller.importCommunity(next, payload(changed), updateCharacterId = imported.id)
+            f.controller.resolveConflict(DesktopTransferConflictAction.IMPORT_AS_NEW)
+            assertEquals(2, f.container.characterRepository.getAll().size)
+            val ordinary = f.container.characterTransfers.importNew(packageData("Ordinary"))
+            f.controller.importCharacter(CharacterCardImportRequest(packageData("Ordinary", greeting = "replacement")))
+            assertTrue((f.controller.state.value.pendingConflict as DesktopPendingTransferConflict.Character).overwriteAllowed)
+            f.container.characterRepository.save(ordinary.copy(communityItemId = "new-read-only-source"))
+            val guarded = f.container.characterRepository.getById(ordinary.id)!!
+            f.controller.resolveConflict(DesktopTransferConflictAction.OVERWRITE)
+            assertNotNull(f.controller.state.value.error); assertEquals(guarded, f.container.characterRepository.getById(ordinary.id))
+            f.controller.resolveConflict(DesktopTransferConflictAction.CANCEL)
+        }
+    }
+
     @Test
     fun `Format and WorldBook durable postcommit faults consume import decisions without replay`() = runTest {
         withFixture { fixture ->
@@ -214,7 +265,10 @@ class DesktopTypedTransferControllerTest {
     @Test
     fun `Character decoder imports CCB JSON CCB PNG ST JSON and ST PNG`() = runTest {
         withFixture { fixture ->
+            val settings = com.example.chatbar.domain.image.NovelAiCharacterImageSettings(steps = 23, guidance = 6f,
+                cfgRescale = 0.3f, varietyPlus = true)
             val ccb = packageData("CCB JSON").copy(
+                card = packageData("CCB JSON").card.copy(defaultImageGenerationSettings = settings),
                 defaultFormatCard = FormatCardPackage(name = "Embedded format", content = "format"),
                 worldBooks = listOf(WorldBook(id = "embedded", name = "Embedded lore")),
             )
@@ -222,10 +276,12 @@ class DesktopTypedTransferControllerTest {
             val ccbImported = requireNotNull(fixture.container.characterRepository.getAll().firstOrNull { it.name == "CCB JSON" })
             assertNotNull(ccbImported.defaultFormatCardId)
             assertEquals(1, ccbImported.worldBookIds.size)
+            assertEquals(settings, ccbImported.defaultImageGenerationSettings)
 
-            val ccbPng = CharacterCardPngPackageCodec.attach(minimalPng(), packageData("CCB PNG"), fixture.container.transferJson)
+            val ccbPng = CharacterCardPngPackageCodec.attach(minimalPng(), ccb.copy(card = ccb.card.copy(name = "CCB PNG")), fixture.container.transferJson)
             fixture.controller.importCharacter(fixture.write("ccb.png", ccbPng))
             assertTrue(fixture.container.characterRepository.getAll().any { it.name == "CCB PNG" })
+            assertEquals(settings, fixture.container.characterRepository.getAll().single { it.name == "CCB PNG" }.defaultImageGenerationSettings)
 
             fixture.controller.importCharacter(fixture.writeJson("st.json", stV2("ST JSON")))
             assertTrue(fixture.container.characterRepository.getAll().any { it.name == "ST JSON" })
@@ -274,17 +330,23 @@ class DesktopTypedTransferControllerTest {
     @Test
     fun `Character export JSON and rendered CCB PNG round trip through authoritative decoder`() = runTest {
         withFixture { fixture ->
-            val imported = fixture.container.characterTransfers.importNew(packageData("Export"))
+            val settings = com.example.chatbar.domain.image.NovelAiCharacterImageSettings(steps = 22, guidance = 4f,
+                cfgRescale = 0.4f, varietyPlus = true,
+                effort = com.example.chatbar.domain.image.NovelAiEffort.MEDIUM, transparentBackground = true)
+            val packaged = packageData("Export")
+            val imported = fixture.container.characterTransfers.importNew(packaged.copy(card = packaged.card.copy(defaultImageGenerationSettings = settings)))
             val jsonTarget = fixture.root.resolve("out.json")
             fixture.picker.saves.add(jsonTarget)
             fixture.controller.exportCharacterJson(imported.id)
             assertEquals("Export", fixture.container.characterTransfers.decode(Files.readString(jsonTarget)).card.name)
+            assertEquals(settings, fixture.container.characterTransfers.decode(Files.readString(jsonTarget)).card.defaultImageGenerationSettings)
 
             val pngTarget = fixture.root.resolve("out.png")
             fixture.picker.saves.add(pngTarget)
             fixture.controller.exportCharacterPng(imported.id)
             val decoded = fixture.container.characterTransfers.decodePng(Files.readAllBytes(pngTarget))
             assertEquals("Export", requireNotNull(decoded).card.name)
+            assertEquals(settings, decoded.card.defaultImageGenerationSettings)
             assertNotNull(PngTextChunks.extractTextChunk(Files.readAllBytes(pngTarget), PngTextChunks.CHATBAR_CHARACTER_KEYWORD))
         }
     }

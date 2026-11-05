@@ -1,0 +1,25 @@
+# 邀请测试反馈：程序与资料目录重叠的更新预检
+
+当前交付核对：重叠预检、合并预览保留及本次安装器精确诊断已在公开1228／bd684交付，不能当作本轮首次新增。CI78／4fefe7ca的Boundary3、BoundRoot8、Merge13继续通过，R08普通1229 NSIS编译、升级、稳定重开及运行中拒绝安装通过。既有重叠资料根仍需沿应用内资料目录迁移移出整个受管安装根，保留原资料和凭据；预防通过不等于对方已完成现场恢复。另一NEW_VERSION_NOT_READY_OLD_ENTRY_RETAINED保留为独立原因未明事项；对方NAI报告中的1227可启动不证明此前升级或所有数据完整性已恢复。用户要求邀请测试反馈优先、集中一次最短复测，1.4.7及新功能排在收尾后。
+
+CI73／38a9实际失败于格式卡用量归属的一处String ID误用，Desktop测试与Scene未运行；后续NSIS manager与新诊断协议28项、trusted updater8项、native exit handoff4项实际通过。该结果不代替普通NSIS编译／安装窗口验证。格式卡最小类型修正另送下一源；原失败保留。
+
+2026-11-01。用户转述邀请测试者把运行资料目录放在程序文件夹内，安装显示通用“安装未完成”提示。截图只有通用信息；尚无对方准确程序／资料两路径及安装日志，不能仅凭截图确认失败阶段或宣称其数据已核对无损。
+
+后续已收到并只读核对原始本地报告，含多次明确的FAILED PROGRAM_DATA_ROOT_OVERLAP；布局为受管程序根下input中的合并新根，BOOTSTRAP_CUSTOM。这使该条目录重叠失败从推测转为有日志依据；报告原文、真实路径、UUID、数据量和真实会话清单不上GitHub。另一条NEW_VERSION_NOT_READY_OLD_ENTRY_RETAINED独立保留，尚未据此确定旧进程、启动未完成或其他启动错误中的具体原因，不宣称重跑必定解决。
+
+合并导入也走同一destinationPreparer。后续Controller补目标位置预检、准确目录拒绝映射及预览保留：重叠时不创建目录、不进入提交，用户可沿原冲突／凭据选择重新挑位置；界面在选择位置前明确提醒避开安装目录。该增量有实际Controller→service合成用例，尚待新源云端。
+
+已查公开1227／003c：NSIS manager的`ProtectDataRoots`对整个安装根做双向overlap，Prepare阶段会拒绝PROGRAM_DATA_ROOT_OVERLAP并显示该通用弹窗。应用的迁移目标预检只排除当前版本ApplicationHome及其内部，没有覆盖安装根下与versions同级的UserData。这是可定位的预检覆盖差异，安装器保护本身保留。
+
+后续源码增加`DesktopProgramDataBoundary`：从应用的已知Home及NSIS固定owner标识识别受管根，规范化现有祖先后比较相等／双向上下层，避免字符串前缀把program-data误当program内部。目标仍须通过既有空目录、根锁与身份检查；目标冲突在创建或迁移前拒绝。当前数据页提示受管根重叠；确认更新前在IO核对真实数据根，冲突时保留下载、保持应用运行并给出独立目录迁移指引。原安装器、数据权威、凭据fence和最终安装准入均未移除。
+
+恢复复用生产`DesktopDataRootMigrationService`，fresh authority或媒体根会转既有`DesktopBoundRootMigration`，通过真实source/wire proof和发布器重绑凭据，保留旧根与旧凭据。底层naive materializer对bound根的fence不是生产迁移缺失，不能为此重复开发或绕过。目录混入程序文件、未知保管内容或身份不明时仍可能拒绝；不承诺任意混合目录均可自动迁移，也不静默移动、删除或手改bootstrap。具体现场恢复结果仍待测试者确认，原报告不等于已迁移或已恢复；未操作其PC。
+
+迁移保留源，因此不要求input变空或手动删除；不把移动pending-repair或repair-retained当恢复步骤。单独DEFERRED不证明误删，现有Cleanup仍按pin／manifest／receipt／hash检查，未知或修改内容保留。上述为对报告建议的校正，不是用户已执行或实际恢复通过。
+
+新增合成验证覆盖受管根同级UserData、根相等／上层、拒绝前无目标创建、原资料保留并可准备外部目标、同名前缀区分、独立Program/UserData及矛盾owner拒绝。当前为后续工作树，未云端验证或打包；P15用量及P13修正已另源63404／CI71，不冒认其覆盖本页新改动。
+
+74f受管根预检已随3db／CI72实际通过Boundary3及完整Windows2363PASS+19SKIP／0FAIL，bound根既有8项继续通过；仍非邀请用户现场恢复或真人验收。后续d379合并入口保留预览／准确提示，以及本次手动安装器诊断不在72内。
+
+手动安装器后续改为明确的本次调用退出码协议：setup显式请求--diagnostic-exit，manager对白名单拒绝返回独立状态，旧调用仍为2；NSIS直接从ExecWait结果显示中文原因／固定代码／尝试步骤，给出当前环境日志目录，不扫描旧日志最后一行。目录重叠、安装／文件占用、空间不足、readiness分别说明，不把未知异常当确定原因。新原生合成测试检查overlap白名单／legacy2、占用31、readiness27及旧FAILED日志不影响下一次成功；生成NSIS的实际编译与普通候选UI另待，不因Python模板或native tiny测试通过就冒认打包／人验。

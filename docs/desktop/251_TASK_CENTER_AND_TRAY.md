@@ -1,0 +1,65 @@
+2026-11-02 CI103/dd29实际完整SUCCESS，主2477/2458PASS+19SKIP，独立proxy5/NTFS7/shared1135/Android582/native33/updater8/exit4均通过；102两例修后实际PASS，原102FAIL仍保留。实际三报告由协调端唯一下载并复用核SHA/CRC/XML，新Recovery宽窄与Studio三图已核。后续8bac正式媒体与统计分页不由本源代验；原生Tray/通知送达、真人仍分列。
+
+# 任务中心与托盘 / 2026-11-02
+
+2026-11-02 CI102/c358实际320suite/2477=2456PASS+19SKIP+2FAIL；原101两几何例实际通过，4宽title已生成/协调视核；Recovery静态typed/陈旧点击/窄宽/启动恢复marker等通过，六入口导航仍FAIL。原fixture未initialize自动备份，AUTO的effective/draft为空，补禁用计划初始化和准确destination失败信息；透明Recovery截图补生产背景。Studio回图1像素FAIL前zoom/pan/reset已过；保留精确hash/viewport比较，新增实际decoded bitmap的opaque identity等待和前后实图，不用固定帧数冒认加载完成；原bitmap保留/动画不删，仅阻止已取消decoder晚发布。修正单列冻结，不被后续Fish媒体统计WIP牵制。proxy5/NTFS7/shared1135/Android582/native33/updater8/exit4独立PASS，实际3ZIP已复用核SHA/CRC/XML。公开1229/13不变，无H写入/新公开/新签名，本机不编译渲染，10点前不问真人。
+
+2026-11-02 CI101/bdd实际完整FAIL：318suite/2469=2448PASS+19SKIP+2几何FAIL。7个新增scope（文档/历史晚取消、真实Shell创作pin、Moments关闭态/回页、任务提示关闭、Shell帮助草稿保护、双语说明/close）实际PASS，proxy5/NTFS7/shared1135/Android582/native33/updater8/exit4独立通过；实际三ZIP已复用核SHA/CRC/XML，330中文/1100英文帮助图已视核。旧captionGap取到贴邻MINIMIZE边界，改找实际非交叠空白仍断言CAPTION；精确Compose1.10.3主源证实render默认时间0，补测试单调帧时钟，保留原5秒/Data完整可见条件并加失败几何图。production滚动机制未改，标题四图及两例修后仍待新源。fa24恢复支持为另一本地原范围检查点，尚未云验。公开1229/13、私有1230冻结064/local14和1232冻结883/R17保持，无新包/签名/公开/H代装，本机不编译渲染，10点前不问人工。
+
+2026-11-02 CI100/72c64e05 实际FAIL：生产compileKotlin缺 currentCoroutineContext 明确import，main/proxy均未执行且无主报告。独立NTFS7/shared1135/Android582与完成日志native33/updater8/exit4通过，实际两ZIP已复用核SHA/CRC/XML。dbe181d4只补协程import，不换原Job或发布证据；99的Shell基线修正、7a7索引晚取消、9825Moments回页、9c提示入口仍待下一精确源执行。后续本地P17只读当前页帮助含实际Shell/宽窄hit与草稿保护回归，尚未执行，不当成完整首次使用/Recovery Center。公开1229/13、私有1230冻结064/local14与1232冻结883/R17原证保持，无新包/签名/公开/H代装，本机不编译渲染，10:00前不问人工。
+
+CI99/805实际已完成：生产编译修复通过；主2463=2443PASS+19SKIP+1FAIL，唯一新增Shell导航例在142把displayCard自动补默认negative的编辑器对象错当repository原件。此前route/pin/dirty/candidate断言已过；修正为导航前真实repository实体和磁盘bytes双基线，不改Prompt或生产normalize。SaveSlot两新、auto新、Moments清理新、四类creative mapping及原controller新增断言实际PASS；proxy5、NTFS7、shared1135/Android582、native33/updater8/exit4通过。原99失败保留，不能说完整99通过。后补7a7索引边界/9825回页/9c临时提示与本次基线修正待下一源。
+
+补任务中心临时提示的实际关闭入口：原clearError此前只有定义，用户无法清旧导航/操作提示。现在提示旁小×只清中心临时文字，原FAILED/UNCONFIRMED行、工作、恢复证据不变。窄宽Panel断言真实点击后保留全部任务；Moments关闭态→启用后的Shell用例改走真实UI清提示，不再测试内直接clearError。未执行，不由99覆盖。
+
+Moments后续再补安全回原页的MOMENTS_HOME，与精确post定位分开：真实worker行携原session上下文，前往只走原MOMENTS页和离开／modal门禁，不生成或retry；全局关闭时明确目标不可用，不静默落回聊天。真实原worker断言目标，新增完整Shell先拒绝关闭态、启用后打开原页且零生成的合成Scene待新源，不宣称已做具体post滚动定位。
+
+后续RAG发布边界源码已补，尚未云端执行：原DesktopIndexCommitJournal在forced intent后的写入边界只记Job-context证据，原rollback实际成功才清该child标记；父Rag batch按child合并，后一次回滚不抹去先前提交。原TaskRuntime document/history child保持同UUID/Job，possible publication后失败/取消投影UNCONFIRMED；发布前取消、确认回滚分别保留原取消/失败。RagController晚取消不再承诺原索引未变。DocumentIndex原有durable/cache重启核对改NonCancellable完成，修复被取消跳过本应执行的检查；不改事务、索引正文/分轮/配置/自动重试。新增真实doc/history journal写入阻塞后stop，实际新索引保留/源不改/任务待核对；doc需restart、历史照原门禁。既有precommit cancel与整图rollback补元数据断言和父批次证据，待下一精确源，不由99覆盖。
+
+CI98/5d1603ae实际Windows FAIL：production compileKotlin的AppContainer:429遇递归类型推断，Desktop与production proxy测试未执行，Linux成功。不是存档／自动备份／Moments runtime PASS。补snapshot/runtime/taskCenterOwner明确声明类型以截断编译器推断环，原lazy与运行对象保持；后续2cfa创作pin仍待同批新源。97主2457/2438PASS+19SKIP与Merge四例已核实，不覆盖98增量；RAG晚取消元数据另待。
+
+后续本地创作类型／原草稿定位已补：角色卡、外貌识别、封面／头像、世界书沿withCardDesign同child明确kind；默认未分类仍generic且无伪造目标。前往经原Manage离开门禁，仅调用仍匹配原draft/pin的reveal，不刷新模型、重建窗口内容、生成、套用或保存。已变化／主动关闭pin拒绝，不覆盖未保存编辑。四个真实controller原流程追加type／pin／应用后失效断言；中心按原child映射四类目标、新真实Shell跨CHAT→MANAGE保留未保存草稿且不生成的Scene未执行，不由98/冻结1232覆盖。
+
+后续本地Moments补原worker整段投影，等待原NonCancellable图片清理和refresh再终态。按UUID停止该worker，不暂停未来调度。原withCardDesign child仍登记activeJobs和准入／排空，只关重复generic元数据；SKIPPED不冒充已发布成功，retry未发布为FAILED，清理／记录不确定为UNCONFIRMED。正文／reason／checkpoint／receipt不进任务行；未完成固定post定位不造目标。真实检查点停止且清理阻塞时保持活跃、关闭等待，正常清理完成保留FAILED检查点；清理拒绝即使SKIPPED也待核对的新断言待新源云端。CI97/671两作业刚SUCCESS，小报告待核；以上及29a/f137不由97代验。
+
+后续本地自动备份也已补实际executeOnce的只读元数据，非schedulerRunning／delay loop：检查中才活跃；SkippedNotDue撤掉该检查行，不加成功历史或提醒，也不吃掉原40项历史；真实Created才转快照完成，清理warnings为固定提示待核对，不拷路径／异常。没有安全“只停当前copy”的独立接口，因此不放停止／重试，不用停future loop冒充。DATA前往仅选原自动备份页；原调度、stop/join、维护顺序和配置保持。新增连续40skip仍保留真实完成、失败／清理待核对与原阻塞执行不被观察打断的断言未执行，不由97覆盖。SaveSlot本地提交29a729fc也尚未推。
+
+CI96／a9实际三份报告已独立复用核SHA、CRC、XML：317suite／2455＝2436PASS＋19SKIP，production proxy5、NTFS7、shared1135／Android582；完成job日志native33／updater8／exit4均OK。真实Shell忙备份入口、原Job停止旧ID和晚取消journal三项均过。671aabeb已送CI97／41355702193，涵Merge与189提示／设置锁，尚未完成，不拿96覆盖。
+
+后续本地SaveSlot原Job元数据已接创建／导入到列表／导出／恢复／删除／复制／重绑，读取目录／绑定选择不伪造成功任务。沿原CoroutineContext仅记已有journal／文件move开始的发布边界，不改事务；其后失败／取消为UNCONFIRMED，不冒称撤回。按UUID停止，完成等原Job；无自动重放。查看回原会话存档面，同session忙时只打开原窗，不创建或恢复。新增真实journal写入中停止后保留实际存档／会话／草稿、旧ID不影响新导出、成功创建与导入不恢复两项仍未执行；不在CI97或冻结1232内。
+
+剩余自动备份执行owner单列：AutomaticBackupRuntime／Scheduler与手动FullBackupController独立；loop含等待，不能用schedulerRunning当实际备份。后续只观察executeOnce的实际检查／快照，不把idle／SkippedNotDue冒称新备份；无安全单次停止入口则只读，保留原配置／维护／关闭语义。
+
+最新源码补Merge原operation Job投影：检查与结果准备分开命名，固定阶段进度不带路径、冲突、凭据或正文。按行停止检查精确UUID并等原Job清理，旧行不影响下一次；原preview／destination guard／显式冲突与凭据确认保持。目录拒绝为FAILED且preview保留；picker取消为CANCELLED；Publication.INDETERMINATE或restart封存后中断为UNCONFIRMED，不声称撤回或启动已完成。DATA只定位原导入面，不选冲突或提交。新增真实picker阻塞／停止／旧ID、目录拒绝、实际container提交与不确定publication断言待下一源云端。FullBackup也区分导出／检查／恢复准备种类，避免“检查完成”被误解为已导入。CI96／a9两作业已SUCCESS，实际小报告核对另记；本段Merge和189提示／设置锁不由96或1232代验。
+
+当前实证：ed4105／CI95完整成功，主2452＝2433PASS＋19SKIP，受影响14项含修正分页、TaskCenter5、Tray假backend3、Fish实际批次、UTF8 decoder2及窄宽Scene全部通过。实际420／1100图已view，无重叠／遮挡。此结果不涵后补FullBackup／typed modal；a9b9112a／CI96正在验证它们。1232冻结883的普通原生／真实冷4批次和547文件字节核对已过，仍非原生托盘动作／通知送达或真人。189用户提示／设置锁只在后续本地源码。
+
+原216 P15-04的独立后续源码。14dd／CI94实际编译并运行：主2445项2425PASS＋19SKIP＋1FAIL，独立production JAR代理5通过；TaskCenter五项、文档定位及消息精确定位／草稿保留已过，仅消息分页测试假设失败。原fixture连续180条assistant被原仓库正确视为一轮，不会按消息数切断；后补超过MAX_WINDOW_TURNS的真实User/Assistant轮组和稳定时间戳，保留产品turn边界、不延时或改生产分页。后续托盘、UTF8冷交接、Fish及Scene不在14dd，待新源，不混私有1231（冻结5d01）。外部导入fb6／CI93完整成功保持。
+
+DesktopTaskCenter观察现有owner，条目保存固定任务种类、状态、实际目标ID、可用操作和可选真实计数。停止请求只显示等待收尾，原owner终态才停止活跃显示。仅观察到真实活跃→终态才发进程内固定kind/status事件；这还不是Windows通知送达。正文、Prompt、候选及provider异常不被拷成任务条目。
+
+TaskRuntime的文档／格式卡生成原先已登记真实child Job而不在tasks列表；现在同UUID／同Job投影到ownedWork，原准入、父任务和关闭排水保持。真实child completion cause决定终态，候选完成不冒称卡片保存。聊天／生图／修复仍读取原tasks与repair owners；可重试动作仍回原checkpoint门禁。
+
+Memory只观察runningSessions。它包含读/手动操作，不能解释成单次付费AI请求；行停止调用该行session的coordinator.stopAndJoin，保留原恢复/临时准入语义，不调面板当前session.stop，也不调永久删除。该集合退场没有完整成功证明，故不生成成功通知或伪造历史。
+
+应用按lazy owner实际创建时挂观察者，不为任务窗初始化其他业务。关闭观察者不停止未被用户请求停止的工作；AppContainer沿原顺序排空业务，之后关闭观察者。标题栏入口有独立原生点击排除矩形；任务窗避让已有modal/root门禁。会话导航复用原离开/设置守卫。目标上下文名字只在本地显示并有界缓存，与系统通知内容分开。
+
+新增精确导航：CHAT消息经实际归属核对、原有有界页与viewport定位，保留输入草稿；角色文档只在原卡和当前编辑草稿均含精确ID时展开并滚动，同卡不重新加载；格式候选只恢复仍绑定当前草稿的原窗口，不新建或套用候选。MANAGE沿既有分栏离开守卫，传输忙则保留请求待空闲，不静默消费。名称之外保留短任务ID区分重名。新增回归仍待云端。
+
+withCardDesign也被角色／世界书／图片／朋友圈使用，默认只标为创作任务且不伪造格式卡导航；格式卡调用点明确标识。文档owner保存实际usage session，聊天历史索引不误认作角色文档。其他owner的精确类型／导航仍待各owner接线。
+
+后续工作树已加DesktopTrayController及AWT backend：实际attach成功才允许主动隐藏；Window只改visible，不销毁composition或业务。托盘提供打开／任务中心／隐藏／退出；退出仍回原requestClose与排空，X行为保持。提醒只用固定kind/status，本地设置taskNotifications默认开、可取消并走原updateLatest；坏设置不覆盖。系统拒绝提醒可见，提交displayMessage不冒称已送达。AppContainer在既有业务排空后detach，再关任务观察者。三项新假backend回归覆盖不支持时不隐藏、显隐不退任务／明确退出、偏好保留其他字段与初始历史不通知，尚未编译／运行，不由14dd／CI94覆盖。
+
+当前仍待：其他语音／创作／RAG／备份／存档／朋友圈owner接线；托盘源码的云端编译／运行、宽窄Scene与实际原生能力／通知送达。上述不改变已有编辑草稿或默认关闭动作。
+
+后续Fish观察者读取既有batch的真实ID／会话／消息、phase与计数；重试提示只转为等待，不复制流式正文、确认文字或错误。停止只回原cancel(batchId)，不是整会话停止或独立排空证明。成功退掉的batch不伪造完成通知；原文字确认仍在语音界面。新增真实两会话合成HTTP429等待中只停选中批次、另一批与正文保留的回归未执行。跨页MANAGE忙时保留任务窗并明确提示，同页请求继续等空闲；取消离开不自动重跳。
+
+新增窄420／宽1100 Scene检查同名行短号、精确查看／停止选中项、显隐不取消及小关闭按钮，合成图随云端报告上传；停止断言等待实际异步callback，保留原5秒预算。Scene和托盘原生能力、系统实际送达、真人验收仍分别记录。
+
+后续工作树另补FullBackup原operation Job的UUID投影，只观察导出／检查／下次恢复准备；原action准入、密码清零、inspection释放、异常提示和事务保持。terminal在原Job completion后发布；picker取消有明确元数据，不按完成导出；清理未知／已有restart准备时受中断为待核对，不声称撤回耐久恢复。按行停止核精确UUID，旧行不能取消新工作。catalog／离开清理不发任务提醒。DATA定位选择原导出／检查面，不打开picker或自动导出。新增真实controller阻塞picker时停止仍等待原边界、密码清零及旧ID不影响下一工作回归未执行；不在私有1232冻结883／CI95源内。
+
+补齐实际入口可达性：ModalActivity仅区分BACKUP／TASK_CENTER和其余GENERAL，默认语义保持。长数据工作进行时可从导出弹窗小任务按钮打开观察／原停止；期间前往仍明确busy并保持任务窗，不解除导航或事务门禁。空闲导出选择／其余一般弹窗仍延后任务请求，根迁移和restart-required继续阻止。新增真实Shell＋实际BackupExportDialog／真实controller阻塞picker的Scene核入口、原停止等待与导航守卫；不是仅孤立Panel。另在真实journal已经scheduled、resumeScheduler仍NonCancellable收尾时停止，核待核对metadata、pending保留和原件字节不变。两项仍待下一精确源云端，不由95／1232覆盖。
+
+备份原cancel接受后另发owner stopRequested，聚合中心保留该实际信号，真实completion清除。controller／完整Shell检查均等待原owner已接受停止再释放阻塞picker，避免只等中心命令意图便误以为已发给真实Job；预算不延长。
+
+新增未执行回归：真实两文档工作仅停止选中项且等原NonCancellable收尾；观察者关闭不取消格式卡候选child且不保存卡；真实Memory面板在B时只停行A，B工作与两边正文／草稿保持；真实终态通知与停止请求的区别。后续精确源云端验证，不在本机运行JVM。

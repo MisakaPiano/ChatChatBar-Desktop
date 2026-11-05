@@ -21,7 +21,7 @@ internal object DesktopBackupPolicy {
     val roots = BackupDataRegistry.roots + DesktopPreservationStore.ROOT + DesktopSaveSlotSourceCustody.ROOT + DesktopHistoricalVoiceCustody.ROOT
     // These are not portable content. Restore preserves them in the destination.
     val localRoots = setOf("backups", ".ccb-desktop.lock", "desktop-settings.json",
-        "shared-import", "diagnostics", "updates", "prompt_dictionary", "tag_completion")
+        "shared-import", "diagnostics", "updates", "prompt_dictionary", "tag_completion", "auxiliary")
     val schemas: Map<String, KSerializer<*>> = mapOf(
         "app_settings" to AppSettings.serializer(), "player_setting" to PlayerSetting.serializer(),
         "character_cards" to CharacterCard.serializer(), "format_cards" to FormatCard.serializer(),
@@ -29,6 +29,7 @@ internal object DesktopBackupPolicy {
         "embedding_configs" to EmbeddingConfig.serializer(), "embedding_model_config" to EmbeddingConfig.serializer(),
         "retrieval_model_config" to ModelConfig.serializer(),
         "chat_sessions" to ChatSession.serializer(), "chat_messages" to ChatMessage.serializer(),
+        "moment_posts" to MomentPost.serializer(), "moment_tasks" to MomentTask.serializer(),
         "chat_message_indexes" to ChatMessageIndex.serializer(), "chat_message_order_backups" to ChatMessageOrderBackup.serializer(),
         "chat_drafts" to ChatDraft.serializer(), "chat_scroll_positions" to ChatScrollPosition.serializer(),
         "vector_chunks" to VectorChunk.serializer(), "save_slots" to SaveSlot.serializer(),
@@ -39,6 +40,7 @@ internal object DesktopBackupPolicy {
         "generated_voice_messages" to GeneratedVoiceMessage.serializer(), "voice_anchor_states" to VoiceAnchorState.serializer(),
         "novelai_studio_draft" to NovelAiStudioDraft.serializer(), "novelai_studio_history_undo" to NovelAiStudioUndoDraft.serializer(),
         "novelai_studio_guidance_checkpoint" to NovelAiGuidanceEditorCheckpoint.serializer(),
+        "desktop_studio_edit_history" to com.example.chatbar.desktop.DesktopStudioHistoryJournal.serializer(),
         "novelai_generation_history" to NovelAiGenerationHistoryEntry.serializer(),
         "novelai_history_fold_preferences" to NovelAiHistoryFoldPreference.serializer(),
         "novelai_design_conversations" to NovelAiDesignConversation.serializer(),
@@ -50,9 +52,23 @@ internal object DesktopBackupPolicy {
         "world_book_migration_state" to WorldBookMigrationState.serializer(),
         "pending_deletions" to DeletionState.serializer(),
     )
-    private val preferenceSecrets = setOf("novelAiToken", "fishAudioKey", "communitySession")
+    private val preferenceSecrets = setOf("novelAiToken", "fishAudioKey", "communitySession", "desktopLlmAccounts", "desktopNovelAiAccounts", "desktopFishAccounts")
     fun isDesktopOnly(path: String): Boolean = path.startsWith("${DesktopHistoricalVoiceCustody.ROOT}/") || path.startsWith("${DesktopPreservationStore.ROOT}/") || path.startsWith("${DesktopSaveSlotSourceCustody.ROOT}/") ||
         path.startsWith("entities/") && (entityType(path).startsWith("desktop_") || entityType(path) == "retrieval_model_config")
+    fun hasDesktopParticipation(value: JsonObject): Boolean =
+        DesktopMomentBackupExtension.FIELD in value ||
+        value["desktopPlayerRole"] is JsonObject ||
+        (value["desktopPlayerAvatar"] as? JsonPrimitive)?.contentOrNull?.isNotBlank() == true ||
+        (value["desktopAvatar"] as? JsonPrimitive)?.contentOrNull?.isNotBlank() == true ||
+        (value["desktopAutoPauseAbsentPeople"] as? JsonPrimitive)?.booleanOrNull == true ||
+        (value["desktopCharacterParticipation"] as? JsonArray)?.any { entry ->
+            (entry as? JsonObject)?.let { scope ->
+                listOf("disabledPersonIds", "automaticallyPausedPersonIds").any {
+                    (scope[it] as? JsonArray)?.isNotEmpty() == true
+                }
+            } == true } == true ||
+            (value["characters"] as? JsonArray)?.any { person ->
+                ((person as? JsonObject)?.get("desktopEnabled") as? JsonPrimitive)?.booleanOrNull == false } == true
     private val secrets = setOf("apiKey", "siliconFlowApiKey") + preferenceSecrets
     private val json = Json { ignoreUnknownKeys = false; encodeDefaults = true }
 
@@ -65,9 +81,12 @@ internal object DesktopBackupPolicy {
     fun entityType(path: String) = path.removePrefix("entities/").substringBefore('/').removeSuffix(".json")
 
     /** No exception text from parsing is exposed by controllers (it may contain user data). */
-    fun entity(relative: String, bytes: ByteArray, exporting: Boolean, wireVersionCode: Int = 84): JsonObject {
-        require(relative.startsWith("entities/") && relative.endsWith(".json") && bytes.size <= MAX_JSON)
+    fun entity(relative: String, bytes: ByteArray, exporting: Boolean, wireVersionCode: Int = 84, modern: Boolean = false): JsonObject {
+        require(relative.startsWith("entities/") && relative.endsWith(".json"))
+        if (modern) DesktopBackupRecords.requireSize(bytes.size.toLong()) else require(bytes.size <= MAX_JSON)
         val type = entityType(relative)
+        if (!modern && type in setOf("moment_posts", "moment_tasks"))
+            throw DesktopBackupCompatibilityException(DesktopBackupCompatibility.MOMENTS_UNSUPPORTED)
         val serializer = schemas[type] ?: throw DesktopBackupCompatibilityException(
             if (type in setOf("moment_posts", "moment_tasks")) DesktopBackupCompatibility.MOMENTS_UNSUPPORTED
             else DesktopBackupCompatibility.ENTITY_UNSUPPORTED)
@@ -99,6 +118,7 @@ internal object DesktopBackupPolicy {
         } catch (_: SerializationException) {
             throw DesktopBackupCompatibilityException(DesktopBackupCompatibility.ENTITY_SCHEMA_UNSUPPORTED)
         }
+        if (type == "moment_posts") return DesktopMomentBackupExtension.liveRecord(clean)
         return clean
     }
 

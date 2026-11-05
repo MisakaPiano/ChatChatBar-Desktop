@@ -81,7 +81,7 @@ private fun BackupSettingsField(label: String, value: String, enabled: Boolean, 
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         StatusText(label)
         BasicTextField(value, onChange, enabled = enabled, singleLine = true,
-            textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp),
+            cursorBrush = DesktopBootstrapColors.inputCaret, textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp),
             modifier = Modifier.fillMaxWidth().semantics { contentDescription = label }
                 .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
                 .background(DesktopBootstrapColors.input, RoundedCornerShape(8.dp)).padding(10.dp))

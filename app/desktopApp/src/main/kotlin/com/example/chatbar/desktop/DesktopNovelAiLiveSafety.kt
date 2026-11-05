@@ -10,7 +10,7 @@ import kotlinx.serialization.json.*
 /** Phase-specific automation admission. This is not a second image-generation policy. */
 internal object DesktopNovelAiLivePolicy {
     fun requireFree(settings: NovelAiGenerationSettings, guidance: NovelAiPreparedImageGuidance, account: NovelAiAccountUsage) {
-        require(settings.validationError(0) == null) { "生图参数无效" }
+        require(settings.requestValidationError(0) == null) { "生图参数无效" }
         val size = settings.imageSize()
         require(settings.model == NovelAiImageModel.V4_5_FULL && settings.count == 1 && settings.steps in 1..28 &&
             settings.sizeTier == NovelAiSizeTier.NORMAL && settings.aspectRatio == NovelAiAspectRatio.SQUARE &&

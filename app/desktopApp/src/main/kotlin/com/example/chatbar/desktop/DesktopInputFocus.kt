@@ -13,9 +13,39 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 
+internal enum class DesktopModalKind { GENERAL, BACKUP, TASK_CENTER }
+internal class DesktopModalActivity {
+    var count by mutableStateOf(0)
+        private set
+    var backupCount by mutableStateOf(0)
+        private set
+    private var taskCount by mutableStateOf(0)
+    val otherCount get() = count - backupCount - taskCount
+    fun opened(kind: DesktopModalKind = DesktopModalKind.GENERAL) {
+        count++
+        when (kind) { DesktopModalKind.BACKUP -> backupCount++; DesktopModalKind.TASK_CENTER -> taskCount++; else -> Unit }
+    }
+    fun closed(kind: DesktopModalKind = DesktopModalKind.GENERAL) {
+        check(count > 0)
+        when (kind) {
+            DesktopModalKind.BACKUP -> { check(backupCount > 0); backupCount-- }
+            DesktopModalKind.TASK_CENTER -> { check(taskCount > 0); taskCount-- }
+            DesktopModalKind.GENERAL -> check(otherCount > 0)
+        }
+        count--
+    }
+}
+internal val LocalDesktopModalActivity = staticCompositionLocalOf<DesktopModalActivity?> { null }
+
 /** Native Compose focus isolation, retaining in-app bounds and explicit Close/Cancel decisions. */
 @Composable
-internal fun DesktopModalSurface(content: @Composable () -> Unit) {
+internal fun DesktopModalSurface(reportActivity: Boolean = true, kind: DesktopModalKind = DesktopModalKind.GENERAL,
+    content: @Composable () -> Unit) {
+    val activity = LocalDesktopModalActivity.current
+    DisposableEffect(activity, reportActivity, kind) {
+        if (reportActivity) activity?.opened(kind)
+        onDispose { if (reportActivity) activity?.closed(kind) }
+    }
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val width = maxWidth
         val height = maxHeight
@@ -28,10 +58,13 @@ internal fun DesktopModalSurface(content: @Composable () -> Unit) {
 }
 
 internal fun desktopComposerSendKey(
-    key: Key, type: KeyEventType, ctrl: Boolean, input: TextFieldValue, canLaunch: Boolean, send: () -> Unit,
+    key: Key, type: KeyEventType, ctrl: Boolean, input: TextFieldValue, canLaunch: Boolean,
+    mode: DesktopSendKey = DesktopSendKey.CTRL_ENTER, shift: Boolean = false, altOrMeta: Boolean = false,
+    hasAttachments: Boolean = false, send: () -> Unit,
 ): Boolean {
-    if (type != KeyEventType.KeyDown || key != Key.Enter || !ctrl || input.composition != null ||
-        !canLaunch || input.text.isBlank()) return false
+    if (type != KeyEventType.KeyDown || key !in setOf(Key.Enter, Key.NumPadEnter) ||
+        ctrl != (mode == DesktopSendKey.CTRL_ENTER) || shift || altOrMeta || input.composition != null ||
+        !canLaunch || (input.text.isBlank() && !hasAttachments)) return false
     send()
     return true
 }

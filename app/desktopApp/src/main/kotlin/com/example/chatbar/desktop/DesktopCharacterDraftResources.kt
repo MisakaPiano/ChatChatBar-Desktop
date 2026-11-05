@@ -49,6 +49,9 @@ internal class DesktopCharacterDraftResources(
     fun readDocument(reference: String): String =
         if (isDraft(reference)) readText(reference) else durable.readText(reference)
 
+    /** Only for rollback of a newly returned stage reference that was never assigned. */
+    internal fun discardNew(reference: String) { Files.delete(resolveDraft(reference)) }
+
     fun isDraft(reference: String): Boolean = reference.startsWith("draft_assets/")
 
     /** Returns a durable card and every newly written resource for rollback on entity failure. */

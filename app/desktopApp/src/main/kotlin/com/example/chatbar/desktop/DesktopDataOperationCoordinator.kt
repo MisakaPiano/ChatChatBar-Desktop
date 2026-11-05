@@ -24,6 +24,7 @@ internal enum class DesktopDataOperationRejectionReason {
     NORMAL_TO_EXCLUSIVE_UPGRADE,
     NESTED_EXCLUSIVE,
     CLOSE_FROM_ACTIVE_OPERATION,
+    MAINTENANCE_BUSY,
 }
 
 internal class DesktopDataOperationRejectedException(
@@ -79,6 +80,21 @@ internal class DesktopDataOperationCoordinator : AppDataOperationGate {
         }
     }
 
+    /** Opportunistic, bounded source mutations must not wait for maintenance while owning a
+     * message/voice mutex. Reuses an existing admission; otherwise refuses instead of queuing. */
+    suspend fun <T> withImmediateNormalOperation(operation: suspend () -> T): T {
+        val inherited = currentCoroutineContext()[DesktopDataOperationContext]
+        if (inherited?.containsNormalOrExclusive(identity) == true) return operation()
+        val waiter = synchronized(stateLock) {
+            if (currentState != DesktopDataOperationCoordinatorState.OPEN)
+                throw DesktopDataOperationRejectedException(DesktopDataOperationRejectionReason.MAINTENANCE_BUSY,
+                    "数据维护正在进行，本次消息修复未提交")
+            NormalWaiter().also { it.granted = true; activeNormalCount++ }
+        }
+        try { return withContext(inherited.orEmpty().withNormal(identity)) { operation() } }
+        finally { releaseNormal(waiter) }
+    }
+
     suspend fun <T> withExclusiveMaintenance(
         operation: suspend DesktopExclusiveMaintenanceScope.() -> T,
     ): T {
@@ -104,6 +120,21 @@ internal class DesktopDataOperationCoordinator : AppDataOperationGate {
         } finally {
             releaseExclusive(waiter, scope.restartRequired)
         }
+    }
+
+    /** Shutdown-only local diagnostics publication after all producers drain. Keeps normal root
+     * admission closed after a committed switch/restore; never use for entities or new requests. */
+    suspend fun <T> withLocalDiagnosticsShutdownDrain(operation: suspend () -> T): T {
+        val inherited = currentCoroutineContext()[DesktopDataOperationContext]
+        val waiter = synchronized(stateLock) {
+            if (currentState == DesktopDataOperationCoordinatorState.RESTART_REQUIRED) {
+                check(inherited?.containsNormalOrExclusive(identity) != true && !exclusiveActive && activeNormalCount == 0)
+                ExclusiveWaiter().also { it.granted = true; exclusiveActive = true }
+            } else null
+        }
+        if (waiter == null) return withNormalOperation(operation)
+        try { return withContext(inherited.orEmpty().withExclusive(identity)) { operation() } }
+        finally { releaseExclusive(waiter, restartRequired = true) }
     }
 
     suspend fun closeAndDrain() {

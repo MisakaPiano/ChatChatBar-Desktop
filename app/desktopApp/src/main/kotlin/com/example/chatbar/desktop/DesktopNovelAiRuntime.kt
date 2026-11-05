@@ -31,7 +31,7 @@ internal class DesktopNovelAiRuntime(
                     ?.takeIf { it.isNotBlank() } ?: throw DesktopNovelAiRequestException("请先在应用内安全保存 NovelAI 凭据")
                 // Reject forbidden shapes even before the read-only account request.
                 DesktopNovelAiLivePolicy.requireFree(settings, guidance, NovelAiAccountUsage(0, 3, true, null, false))
-                require(settings.validationError(prompt.characterCaptions.size) == null)
+                require(settings.requestValidationError(prompt.characterCaptions.size) == null)
                 lease.checkReady()
                 val account = try {
                     NovelAiAccountService(client).fetchCancellable(token).also {
@@ -78,13 +78,20 @@ internal class DesktopNovelAiRuntime(
     }
 }
 
-internal fun secureNovelAiClient(): OkHttpClient = ProxyAwareClient.builder()
+internal enum class DesktopNovelAiHttpPurpose { GENERATION, VIBE_ENCODING, POST_PROCESS }
+
+internal fun secureNovelAiClient(purpose: DesktopNovelAiHttpPurpose = DesktopNovelAiHttpPurpose.GENERATION): OkHttpClient = ProxyAwareClient.builder()
     .connectTimeout(20, TimeUnit.SECONDS).readTimeout(120, TimeUnit.SECONDS)
     .writeTimeout(30, TimeUnit.SECONDS).callTimeout(180, TimeUnit.SECONDS)
     .retryOnConnectionFailure(false).followRedirects(false).followSslRedirects(false)
     .addInterceptor { chain ->
         val request = chain.request()
         check(request.url.scheme == "https" && request.url.host == "image.novelai.net" && request.url.port == 443)
-        check(request.url.encodedPath in setOf("/user/subscription", "/ai/generate-image-stream"))
+        val paths = when (purpose) {
+            DesktopNovelAiHttpPurpose.GENERATION -> setOf("/user/subscription", "/ai/generate-image-stream")
+            DesktopNovelAiHttpPurpose.VIBE_ENCODING -> setOf("/ai/encode-vibe")
+            DesktopNovelAiHttpPurpose.POST_PROCESS -> setOf("/ai/generate-image-stream", "/ai/upscale")
+        }
+        check(request.url.encodedPath in paths)
         chain.proceed(request)
     }.build()

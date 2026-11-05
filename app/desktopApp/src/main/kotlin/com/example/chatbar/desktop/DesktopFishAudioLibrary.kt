@@ -2,6 +2,8 @@ package com.example.chatbar.desktop
 
 import com.example.chatbar.desktop.security.DesktopCredentialKey
 import com.example.chatbar.desktop.security.DesktopSecretStore
+import com.example.chatbar.desktop.security.credentialForCall
+import com.example.chatbar.desktop.security.DesktopCredentialCall
 import com.example.chatbar.domain.ProxyAwareClient
 import com.example.chatbar.domain.voice.FishAudioApiException
 import com.example.chatbar.domain.voice.FishAudioModelPage
@@ -10,6 +12,7 @@ import com.example.chatbar.domain.voice.FishAudioRequestFactory
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -30,6 +33,14 @@ internal class DesktopFishAudioCredentials(private val secrets: DesktopSecretSto
     }
 
     fun clear() = secrets.delete(DesktopCredentialKey.FishAudioApiKey)
+    suspend fun forCurrentCall(): String? {
+        return secrets.credentialForCall(DesktopCredentialKey.FishAudioApiKey)
+    }
+    fun captureCall(): DesktopCredentialCall = (secrets as? com.example.chatbar.desktop.security.DesktopAccountStore)
+        ?.captureCall(DesktopCredentialKey.FishAudioApiKey, com.example.chatbar.desktop.security.DesktopAccountService.FISH)
+        ?: DesktopCredentialCall(secrets, DesktopCredentialKey.FishAudioApiKey, "legacy", load())
+    suspend fun currentCall(): DesktopCredentialCall = currentCoroutineContext()[DesktopCredentialCall]
+        ?.takeIf { it.owner === secrets && it.credentialKey == DesktopCredentialKey.FishAudioApiKey } ?: captureCall()
 }
 
 /** Catalog only: querying or binding a voice must never implicitly generate a paid preview. */

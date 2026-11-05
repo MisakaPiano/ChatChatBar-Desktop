@@ -1,0 +1,7 @@
+{
+  "source": "2ba39c165cb42ca1b043e5c6b4a504406188c13e",
+  "path": "tools/desktop/nsis/Launcher.cs",
+  "bytes": 50146,
+  "sha256": "50f2df108f15a7c182f0e84d934cac977a9bc1d29492bf102d6501e6d55584ab",
+  "purpose": "Frozen public1233 source for synthetic old file-handler and stable-entry compatibility; never application resources"
+}

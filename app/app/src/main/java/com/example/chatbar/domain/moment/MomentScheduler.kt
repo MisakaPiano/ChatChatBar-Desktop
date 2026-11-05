@@ -33,6 +33,9 @@ class MomentScheduler(
 ) {
     private val appContext = context.applicationContext
     private val mutex = Mutex()
+    private val schedulePreparation = MomentSchedulePreparation(characterRepository::getAll,
+        chatRepository::getAllSessions, momentRepository::getAllPosts, momentRepository::getAllTasks,
+        momentRepository::saveTask)
 
     fun kick(reason: String = "manual") {
         scope.launch {
@@ -75,58 +78,8 @@ class MomentScheduler(
         Log.d(TAG, "Moment future schedules ensured: $reason")
     }
 
-    private suspend fun ensureSchedules(now: Long, settings: AppSettings) {
-        val horizon = now + MomentPolicy.SCHEDULE_HORIZON_MS
-        val cards = characterRepository.getAll()
-            .filter { it.momentsEnabled }
-            .associateBy { it.id }
-        if (cards.isEmpty()) return
-
-        val sessionsByCard = activeSessionsByCard(now)
-        val allPosts = momentRepository.getAllPosts()
-        val allTasks = momentRepository.getAllTasks()
-        val scheduledTimesByCard = cards.keys.associateWith { cardId ->
-            MomentPolicy.scheduledTimesForLimit(
-                posts = allPosts.filter { it.characterCardId == cardId },
-                tasks = allTasks.filter { it.characterCardId == cardId }
-            ).toMutableList()
-        }.toMutableMap()
-        val globalScheduledTimes = MomentPolicy.scheduledTimesForLimit(allPosts, allTasks).toMutableList()
-
-        cards.values.forEach { card ->
-            val session = sessionsByCard[card.id] ?: return@forEach
-            val cardTimes = scheduledTimesByCard.getValue(card.id)
-            var cursor = (cardTimes.maxOrNull() ?: now).coerceAtLeast(now)
-            var guard = 0
-            while (cursor < horizon && guard++ < 128) {
-                val scheduledAt = cursor + MomentPolicy.nextDelayMs(
-                    seed = card.id,
-                    cursorMs = cursor,
-                    minDelayHours = settings.momentsMinDelayHours,
-                    maxDelayHours = settings.momentsMaxDelayHours
-                )
-                cursor = scheduledAt
-                if (scheduledAt > horizon) break
-                val cardDayCount = MomentPolicy.countForDay(cardTimes, scheduledAt)
-                val globalDayCount = MomentPolicy.countForDay(globalScheduledTimes, scheduledAt)
-                if (
-                    cardDayCount >= MomentPolicy.MAX_CARD_POSTS_PER_DAY ||
-                    globalDayCount >= MomentPolicy.MAX_GLOBAL_POSTS_PER_DAY
-                ) {
-                    continue
-                }
-                val task = MomentTask.create(
-                    characterCardId = card.id,
-                    sessionId = session.id,
-                    scheduledAt = scheduledAt,
-                    now = now
-                )
-                momentRepository.saveTask(task)
-                cardTimes += scheduledAt
-                globalScheduledTimes += scheduledAt
-            }
-        }
-    }
+    private suspend fun ensureSchedules(now: Long, settings: AppSettings) =
+        schedulePreparation.ensureSchedules(now, settings)
 
     private suspend fun processDueTasks(now: Long) {
         val tasks = momentRepository.pendingTasksDue(now)
@@ -244,13 +197,6 @@ class MomentScheduler(
             )
         )
     }
-
-    private suspend fun activeSessionsByCard(now: Long): Map<String, ChatSession> =
-        chatRepository.getAllSessions()
-            .asSequence()
-            .filter { MomentPolicy.isRecentlyActive(it.lastMessageTime, now) }
-            .groupBy { it.characterCardId }
-            .mapValues { (_, sessions) -> sessions.maxBy { it.lastMessageTime ?: it.createdAt } }
 
     private suspend fun latestActiveSession(card: CharacterCard, now: Long): ChatSession? =
         chatRepository.getAllSessions()

@@ -22,6 +22,7 @@ internal class DesktopAutomaticChatImages(
     private val resources: DesktopCharacterResourceStore,
     private val gate: DesktopDataOperationCoordinator,
     private val secrets: DesktopSecretStore,
+    private val diagnostics: () -> DesktopTransportDiagnosticsOwner? = { null },
     private val launch: (String, String, suspend ((String) -> Unit) -> Unit) -> String,
 ) {
     suspend fun completed(result: DesktopRealChatResult, stopped: () -> Boolean): String? {
@@ -40,7 +41,8 @@ internal class DesktopAutomaticChatImages(
                 require(eligible(original, stopped))
                 val app = settings.getAppSettings()
                 val current = requireNotNull(chats.getSession(original.sessionId))
-                val card = requireNotNull(characters.getById(current.characterCardId))
+                val originalCard = requireNotNull(characters.getById(current.characterCardId))
+                val card = SessionCharacterParticipationPolicy.effectiveCard(current, originalCard)
                 val model = requireNotNull(resolver.resolveImageModel(current.imageModelId, app))
                 val target = NovelAiImageModelResolution.resolve(current.novelAiImageModel, card.defaultNovelAiImageModel, app.novelAiImageModel)
                 val plan = designer().design(chats.getMessages(original.sessionId), original.id, card, model,
@@ -59,7 +61,7 @@ internal class DesktopAutomaticChatImages(
                         .let { card.defaultImageGenerationSettings?.applyTo(it) ?: it })
                 val runtime = DesktopNovelAiGenerationRuntime(secrets, persist = { bytes, recipe ->
                     persistDesktopChatImages(chats, resources, gate, original, plan, size, bytes, recipe) { eligible(original, stopped) }
-                })
+                }, diagnostics = diagnostics())
                 report.generationStatus("正在生成图片")
                 runtime.generate(draft, maxRateLimitRetries = 10, onIntermediate = { _, step, _ -> report.generationStatus("自动生图 · Step $step") })
                 report("自动图片已保存")

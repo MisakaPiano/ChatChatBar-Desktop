@@ -5,6 +5,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.awt.ComposeWindow
+import androidx.compose.ui.awt.ComposeDialog
 import androidx.compose.ui.unit.dp
 import java.awt.EventQueue
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -124,6 +125,25 @@ internal fun rememberDesktopWindowChrome(window: ComposeWindow, onCloseRequest: 
         val resizing = if (native != null) DesktopNativeResizeOwnership(window) else null
         chrome.platform = native
         onDispose { chrome.platform = null; native?.close(); resizing?.close() }
+    }
+    return chrome
+}
+
+/** Owned image dialogs retain their parent while using real native caption commands. */
+@OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
+@Composable
+internal fun rememberDesktopWindowChrome(window: ComposeDialog, onCloseRequest: () -> Unit): DesktopWindowChrome {
+    val close = rememberUpdatedState(onCloseRequest)
+    val chrome = remember(window) { DesktopWindowChrome { close.value() } }
+    DisposableEffect(window, chrome) {
+        val native = if (DesktopWindowChrome.isWindows) WindowsWindowChrome.install(window, chrome) else null
+        val previous = window.undecoratedResizerThickness
+        if (native != null) window.undecoratedResizerThickness = 0.dp
+        chrome.platform = native
+        onDispose {
+            chrome.platform = null; native?.close()
+            if (native != null) window.undecoratedResizerThickness = previous
+        }
     }
     return chrome
 }

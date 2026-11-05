@@ -5,7 +5,12 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.TooltipArea
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,6 +27,7 @@ import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -40,17 +46,23 @@ internal class DesktopChromeLayoutRecorder(private val chrome: DesktopWindowChro
     private var previewTitle: ChromeRect? = null
     private val routes = mutableMapOf<DesktopPrimaryRoute, ChromeRect>()
     private val captions = mutableMapOf<ChromeHit, ChromeRect>()
+    private var taskCenter: ChromeRect? = null
+    private var help: ChromeRect? = null
     fun root(value: LayoutCoordinates) { width = value.size.width.toFloat(); height = value.size.height.toFloat(); publish() }
     fun title(value: LayoutCoordinates) { title = value.rect(); publish() }
     fun icon(value: LayoutCoordinates) { icon = value.rect(); publish() }
     fun route(route: DesktopPrimaryRoute, value: LayoutCoordinates) { routes[route] = value.rect(); publish() }
     fun caption(hit: ChromeHit, value: LayoutCoordinates) { captions[hit] = value.rect(); publish() }
     fun previewTitle(value: LayoutCoordinates) { previewTitle = value.rect(); publish() }
+    fun taskCenter(value: LayoutCoordinates) { taskCenter = value.rect(); publish() }
+    fun help(value: LayoutCoordinates) { help = value.rect(); publish() }
+    fun clearHelp() { help = null; publish() }
+    fun clearTaskCenter() { taskCenter = null; publish() }
     fun clearPreviewTitle() { previewTitle = null; publish() }
-    fun clearNavigation() { title = null; icon = null; routes.clear(); publish() }
+    fun clearNavigation() { title = null; icon = null; routes.clear(); taskCenter = null; help = null; publish() }
     fun clearCaptions() { captions.clear(); publish() }
     private fun LayoutCoordinates.rect() = boundsInWindow().let { ChromeRect(it.left, it.top, it.right, it.bottom) }
-    private fun publish() { chrome.updateLayout(DesktopChromeLayout(width, height, title, routes.values.toList(), captions.toMap(), icon,
+    private fun publish() { chrome.updateLayout(DesktopChromeLayout(width, height, title, routes.values.toList() + listOfNotNull(taskCenter, help), captions.toMap(), icon,
         listOfNotNull(previewTitle))) }
 }
 
@@ -64,20 +76,32 @@ internal fun DesktopTitleBar(
     recorder: DesktopChromeLayoutRecorder,
     navigationVisible: Boolean = true,
     captionsVisible: Boolean = true,
+    windowTitle: String? = null,
+    updatePending: Boolean = false,
+    momentsEnabled: Boolean = false,
+    momentsUnread: Boolean = false,
+    communityEnabled: Boolean = false,
+    activeTaskCount: Int = 0,
+    onOpenTasks: (() -> Unit)? = null,
+    onOpenHelp: (() -> Unit)? = null,
+    helpEnabled: Boolean = true,
     onNavigate: (DesktopPrimaryRoute) -> Unit,
 ) {
     val colors = LocalDesktopPalette.current
     val t = LocalDesktopUiStrings.current
     val state by chrome.state.collectAsState()
-    val presentation = desktopTitleBarPresentation(shellSize, route, locked)
-    DisposableEffect(recorder, navigationVisible, captionsVisible) {
+    val presentation = desktopTitleBarPresentation(shellSize, route, locked, momentsEnabled, communityEnabled)
+    var routeViewportWidth by remember { mutableStateOf(0) }
+    DisposableEffect(recorder, onOpenTasks != null) { onDispose { recorder.clearTaskCenter() } }
+    DisposableEffect(recorder, onOpenHelp != null) { onDispose { recorder.clearHelp() } }
+    DisposableEffect(recorder, navigationVisible, captionsVisible, windowTitle != null) {
         onDispose {
-            if (navigationVisible) recorder.clearNavigation()
+            if (navigationVisible || windowTitle != null) recorder.clearNavigation()
             if (captionsVisible) recorder.clearCaptions()
         }
     }
     Row(Modifier.fillMaxWidth().height(44.dp).background(colors.card)
-        .then(if (navigationVisible) Modifier.onGloballyPositioned(recorder::title) else Modifier),
+        .then(if (navigationVisible || windowTitle != null) Modifier.onGloballyPositioned(recorder::title) else Modifier),
         verticalAlignment = Alignment.CenterVertically) {
         if (navigationVisible) {
             Row(Modifier.width(if (presentation.showBrandName) 160.dp else 40.dp),
@@ -88,40 +112,87 @@ internal fun DesktopTitleBar(
                 if (presentation.showBrandName) BasicText("ChatChatBar",
                     style = TextStyle(color = colors.foreground, fontSize = 14.sp, fontWeight = FontWeight.SemiBold))
             }
-            presentation.routes.forEach { item ->
-                val label = t(when (item.route) {
-                    DesktopPrimaryRoute.CHAT -> DesktopUiText.CHAT
-                    DesktopPrimaryRoute.MANAGE -> DesktopUiText.MANAGE
-                    DesktopPrimaryRoute.TOOLS -> DesktopUiText.TOOLS
-                    DesktopPrimaryRoute.DATA -> DesktopUiText.DATA
-                })
-                val icon = when (item.route) {
-                    DesktopPrimaryRoute.CHAT -> DesktopAppIcons.Chat
-                    DesktopPrimaryRoute.MANAGE -> DesktopAppIcons.Settings
-                    DesktopPrimaryRoute.TOOLS -> DesktopAppIcons.Tools
-                    DesktopPrimaryRoute.DATA -> DesktopAppIcons.Data
-                }
-                TooltipArea(tooltip = {
-                    Box(Modifier.background(colors.card, RoundedCornerShape(5.dp)).padding(8.dp)) { StatusText(label) }
-                }) {
-                    Row(Modifier.width(presentation.routeWidthDp.dp).height(36.dp)
-                        .onGloballyPositioned { recorder.route(item.route, it) }
-                        .background(if (item.selected) colors.secondary else Color.Transparent, RoundedCornerShape(6.dp))
-                        .semantics { contentDescription = label }
-                        .selectable(item.selected, enabled = item.enabled, role = Role.Tab) { onNavigate(item.route) },
-                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-                        val foreground = (if (item.selected) colors.primary else colors.mutedForeground)
-                            .copy(alpha = if (item.enabled) 1f else 0.5f)
-                        Image(rememberVectorPainter(icon), null, Modifier.size(17.dp), colorFilter = ColorFilter.tint(foreground))
-                        if (presentation.showRouteLabels) {
-                            Spacer(Modifier.width(6.dp))
-                            BasicText(label, style = TextStyle(color = foreground, fontSize = 13.sp), maxLines = 1)
+            // Only routes scroll at the smallest native width; help and captions stay reachable.
+            Row(Modifier.weight(1f).onSizeChanged { routeViewportWidth = it.width }.horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically) {
+                presentation.routes.forEach { item ->
+                    val reveal = remember(item.route) { BringIntoViewRequester() }
+                    LaunchedEffect(item.selected, routeViewportWidth) {
+                        if (item.selected && routeViewportWidth > 0) reveal.bringIntoView()
+                    }
+                    val label = t(when (item.route) {
+                        DesktopPrimaryRoute.CHAT -> DesktopUiText.CHAT
+                        DesktopPrimaryRoute.MOMENTS -> DesktopUiText.MOMENTS
+                        DesktopPrimaryRoute.COMMUNITY -> DesktopUiText.COMMUNITY
+                        DesktopPrimaryRoute.MANAGE -> DesktopUiText.MANAGE
+                        DesktopPrimaryRoute.TOOLS -> DesktopUiText.TOOLS
+                        DesktopPrimaryRoute.DATA -> DesktopUiText.DATA
+                    })
+                    val icon = when (item.route) {
+                        DesktopPrimaryRoute.CHAT -> DesktopAppIcons.Chat
+                        DesktopPrimaryRoute.MOMENTS -> DesktopAppIcons.Star
+                        DesktopPrimaryRoute.COMMUNITY -> DesktopAppIcons.Chat
+                        DesktopPrimaryRoute.MANAGE -> DesktopAppIcons.Settings
+                        DesktopPrimaryRoute.TOOLS -> DesktopAppIcons.Tools
+                        DesktopPrimaryRoute.DATA -> DesktopAppIcons.Data
+                    }
+                    TooltipArea(tooltip = {
+                        Box(Modifier.background(colors.card, RoundedCornerShape(5.dp)).padding(8.dp)) { StatusText(label) }
+                    }) {
+                        Row(Modifier.width(presentation.routeWidthDp.dp).height(36.dp)
+                            .bringIntoViewRequester(reveal)
+                            .onGloballyPositioned { recorder.route(item.route, it) }
+                            .background(if (item.selected) colors.secondary else Color.Transparent, RoundedCornerShape(6.dp))
+                            .semantics { contentDescription = when {
+                                item.route == DesktopPrimaryRoute.DATA && updatePending -> "$label，有新版本"
+                                item.route == DesktopPrimaryRoute.MOMENTS && momentsUnread -> "$label，有新动态"
+                                else -> label
+                            } }
+                            .selectable(item.selected, enabled = item.enabled, role = Role.Tab) { onNavigate(item.route) },
+                            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                            val foreground = (if (item.selected) colors.primary else colors.mutedForeground)
+                                .copy(alpha = if (item.enabled) 1f else 0.5f)
+                            Box {
+                                Image(rememberVectorPainter(icon), null, Modifier.size(17.dp), colorFilter = ColorFilter.tint(foreground))
+                                if (item.route == DesktopPrimaryRoute.DATA && updatePending || item.route == DesktopPrimaryRoute.MOMENTS && momentsUnread)
+                                    Box(Modifier.size(6.dp).align(Alignment.TopEnd).background(
+                                        if (item.route == DesktopPrimaryRoute.MOMENTS) colors.destructive else colors.primary,
+                                        androidx.compose.foundation.shape.CircleShape))
+                            }
+                            if (presentation.showRouteLabels) {
+                                Spacer(Modifier.width(6.dp))
+                                BasicText(label, style = TextStyle(color = foreground, fontSize = 13.sp), maxLines = 1)
+                            }
                         }
                     }
                 }
             }
         }
-        Spacer(Modifier.weight(1f))
+        if (!navigationVisible && windowTitle != null) {
+            Box(Modifier.width(40.dp).fillMaxHeight().onGloballyPositioned(recorder::icon), contentAlignment = Alignment.Center) {
+                Image(painterResource(DesktopBrandResources.LOGO_RESOURCE), "ChatChatBar", Modifier.size(24.dp))
+            }
+            BasicText(windowTitle, Modifier.weight(1f).padding(end = 12.dp), maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                style = TextStyle(color = colors.foreground, fontSize = 13.sp))
+        } else if (!navigationVisible) Spacer(Modifier.weight(1f))
+        if (navigationVisible && onOpenHelp != null) TooltipArea(tooltip = {
+            Box(Modifier.background(colors.card, RoundedCornerShape(5.dp)).padding(8.dp)) { StatusText(t(DesktopUiText.CONTEXT_HELP)) }
+        }) {
+            Box(Modifier.width(32.dp).height(36.dp).onGloballyPositioned(recorder::help)
+                .semantics { contentDescription = t(DesktopUiText.CONTEXT_HELP) }
+                .clickable(enabled = helpEnabled && !locked, role = Role.Button, onClick = onOpenHelp), contentAlignment = Alignment.Center) {
+                Box(Modifier.size(18.dp).border(1.dp, colors.mutedForeground.copy(alpha = if (helpEnabled && !locked) 1f else 0.5f),
+                    androidx.compose.foundation.shape.CircleShape), contentAlignment = Alignment.Center) {
+                    BasicText("?", style = TextStyle(color = colors.mutedForeground.copy(alpha = if (helpEnabled && !locked) 1f else 0.5f), fontSize = 12.sp))
+                }
+            }
+        }
+        if (navigationVisible && onOpenTasks != null) Box(Modifier.width(40.dp).height(36.dp)
+            .onGloballyPositioned(recorder::taskCenter), contentAlignment = Alignment.Center) {
+            DesktopIconAction("任务中心，进行中 $activeTaskCount 项", DesktopAppIcons.History, onClick = onOpenTasks)
+            if (activeTaskCount > 0) Box(Modifier.size(6.dp).align(Alignment.TopEnd).background(colors.primary,
+                androidx.compose.foundation.shape.CircleShape))
+        }
         if (navigationVisible && state.failure != null) BasicText("!", Modifier.padding(4.dp).semantics { contentDescription = state.failure!! },
             style = TextStyle(color = colors.destructive))
         if (captionsVisible && DesktopWindowChrome.isWindows) listOf(ChromeHit.MINIMIZE, ChromeHit.MAXIMIZE, ChromeHit.CLOSE).forEach { hit ->

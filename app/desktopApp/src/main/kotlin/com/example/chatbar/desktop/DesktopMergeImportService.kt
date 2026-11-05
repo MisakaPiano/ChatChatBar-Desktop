@@ -31,7 +31,11 @@ internal class DesktopMergeImportService(
         val data: DesktopMergePreview, internal val desktopSettings: ByteArray?, val modelDetails: Map<String, ModelDetails>) : AutoCloseable {
         val code get() = phone.source.manifest.appVersionCode
         val versionName get() = phone.source.manifest.appVersionName
+        val historicalDesktopV5Settings get() = phone.source.historicalDesktopV5Settings
         val fileCount get() = phone.source.inventory.size
+        val hasDesktopParticipation get() = phone.hasDesktopParticipation ||
+            phone.secrets.metadata.any { it.kind in setOf(ImportCredentialKind.DESKTOP_LLM_ACCOUNTS,
+                ImportCredentialKind.DESKTOP_NOVELAI_ACCOUNTS, ImportCredentialKind.DESKTOP_FISH_ACCOUNTS) && it.state == CredentialFieldState.NONEMPTY }
         val credentialConflicts get() = credentials.globalConflicts
         private val incomingPreferences get() = backupJson.decodeFromJsonElement<InspectionPreferences>(phone.preferences)
         val imagePreferencesChoiceRequired get() = (phone.source.manifest.scope?.globalOptions?.contains("imagePreferences") != false) &&
@@ -81,7 +85,7 @@ internal class DesktopMergeImportService(
                 beforeSnapshot()
                 val result = gate.withExclusiveMaintenance {
                     checkOwnedSource()
-                    val snapshot = mapping.export(workspace, 86, StrictBackupZipReader.Limits().expanded, forMerge = true).also { pc = it }
+                    val snapshot = mapping.export(workspace, 87, StrictBackupZipReader.Limits().expanded, forMerge = true).also { pc = it }
                     val entities = DesktopMergeRootPreparation.computerEntities(snapshot)
                     val captured = DesktopMergeCredentials.capture(entities, phone, oldStore).also { keys = it }
                     val data = DesktopMergePreview.create(entities, phone.entities,
@@ -144,6 +148,7 @@ internal class DesktopMergeImportService(
                         verifiedFiles++
                         if (verifiedFiles == 1 || verifiedFiles % 128 == 0) progress(Progress(Stage.PREPARING_ROOT, verifiedFiles))
                     }
+                    result.use {
                     progress(Progress(Stage.PROTECTING_CREDENTIALS))
                     preview.credentials.writeNewRoot(target, authority, pending, result.plan, selection, credentialChoices, confirmed)
                     val files = result.files.toMutableMap()
@@ -178,6 +183,7 @@ internal class DesktopMergeImportService(
                         requireRestart()
                         committedEvidence = CommitEvidence(snapshot, commit)
                     }
+                    }
                 }
             }
             requireNotNull(publication)
@@ -194,9 +200,10 @@ internal class DesktopMergeImportService(
         try { releaseLocked() } finally { retainedDestination?.close(); retainedDestination = null }
     }
     private fun modelDetails(data: DesktopMergePreview, computer: Map<String, JsonObject>, phone: Map<String, JsonObject>): Map<String, ModelDetails> {
-        fun rows(records: Map<String, JsonObject>, keys: Set<String>): List<String> = records.mapNotNull { (path, value) ->
+        fun rows(records: Map<String, JsonObject>, keys: Set<String>): List<String> = records.keys.mapNotNull { path ->
             val type = DesktopBackupPolicy.entityType(path)
             if (type !in setOf("model_configs", "retrieval_model_config", "embedding_configs", "embedding_model_config")) return@mapNotNull null
+            val value = records.getValue(path)
             fun text(field: String) = value[field]?.jsonPrimitive?.contentOrNull.orEmpty()
             if ("$type:${text("id")}" !in keys) return@mapNotNull null
             // Explicit local UI projection. Never include apiKey, raw JSON, credential relation or a digest.

@@ -169,6 +169,7 @@ class ModelRepository(
         val copy = source.copy(
             id = UUID.randomUUID().toString(),
             displayName = NamePolicy.nextCopyName(source.displayName, _models.value.map { it.displayName }),
+            credentialAccount = null,
             sourcePresetKey = null,
             sourcePresetVersion = null,
             createdAt = System.currentTimeMillis()

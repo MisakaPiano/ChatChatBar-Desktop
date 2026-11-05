@@ -55,6 +55,7 @@ internal fun StudioAction(label: String, enabled: Boolean = true, selected: Bool
     icon: ImageVector? = studioActionIcon(label), style: StudioActionStyle = studioActionStyle(label),
     accessibilityLabel: String = label, onClick: () -> Unit) {
     var focused by remember { mutableStateOf(false) }
+    val focus = remember { FocusRequester() }
     val shape = RoundedCornerShape(6.dp)
     val strong = selected || style == StudioActionStyle.PRIMARY
     val tertiary = style == StudioActionStyle.TERTIARY || style == StudioActionStyle.GHOST
@@ -63,7 +64,8 @@ internal fun StudioAction(label: String, enabled: Boolean = true, selected: Bool
         .background(if (strong) DesktopBootstrapColors.primary else if (tertiary) Color.Transparent else DesktopBootstrapColors.muted, shape)
         .border(1.dp, if (focused) DesktopBootstrapColors.primary else if (!tertiary) DesktopBootstrapColors.border else Color.Transparent, shape)
         .semantics { contentDescription = accessibilityLabel; if (style == StudioActionStyle.CHIP) this.selected = selected }
-        .onFocusChanged { focused = it.isFocused }.clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+        .focusRequester(focus).onFocusChanged { focused = it.isFocused }
+        .clickable(enabled = enabled, role = Role.Button) { focus.requestFocus(); onClick() }
         .padding(horizontal = 8.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(5.dp)) {
         icon?.let { Image(it, null, Modifier.size(16.dp), colorFilter = ColorFilter.tint(color)) }
@@ -84,10 +86,10 @@ internal fun <T> StudioChips(label: String, options: List<T>, selected: T?, text
 }
 
 @Composable
-internal fun StudioSwitch(label: String, selected: Boolean, action: () -> Unit) {
+internal fun StudioSwitch(label: String, selected: Boolean, enabled: Boolean = true, action: () -> Unit) {
     var focused by remember { mutableStateOf(false) }
     Row(Modifier.heightIn(min = 32.dp).border(1.dp, if (focused) DesktopBootstrapColors.primary else Color.Transparent, RoundedCornerShape(6.dp))
-        .onFocusChanged { focused = it.isFocused }.toggleable(value = selected, role = Role.Switch, onValueChange = { action() })
+        .onFocusChanged { focused = it.isFocused }.toggleable(value = selected, enabled = enabled, role = Role.Switch, onValueChange = { action() })
         .padding(4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Box(Modifier.size(28.dp, 16.dp).background(if (selected) DesktopBootstrapColors.primary else DesktopBootstrapColors.muted, RoundedCornerShape(8.dp)).padding(2.dp)) {
             Box(Modifier.align(if (selected) Alignment.CenterEnd else Alignment.CenterStart).size(12.dp)
@@ -112,12 +114,13 @@ internal fun StudioDisclosure(label: String, summary: String = "", initiallyOpen
 /** Popup stays anchored to the trigger; focus/keyboard input belongs to the menu while open. */
 @Composable
 internal fun <T> CompactChoice(label: String, options: List<T>, selected: T?, text: (T) -> String, choose: (T) -> Unit) {
+    val t = LocalDesktopUiStrings.current
     var open by remember { mutableStateOf(false) }
     var index by remember { mutableStateOf(0) }
     val focus = remember { FocusRequester() }
     val list = rememberLazyListState()
     Box {
-        StudioAction("$label · ${options.indexOf(selected).takeIf { it >= 0 }?.let { text(options[it]) } ?: "选择"} ▾") {
+        StudioAction("$label · ${options.indexOf(selected).takeIf { it >= 0 }?.let { text(options[it]) } ?: t(DesktopUiText.SELECT_OPTION)} ▾") {
             index = options.indexOf(selected).coerceAtLeast(0); open = true
         }
         if (open) Popup(popupPositionProvider = StudioPopupPosition,
@@ -196,21 +199,20 @@ internal fun StudioSlider(label: String, value: Float, min: Float, max: Float, s
 
 @Composable
 internal fun StudioNumericInput(label: String, value: String, modifier: Modifier = Modifier, change: (String) -> Unit) {
-    var draft by remember { mutableStateOf(value) }
+    val editor = rememberStudioTextHistory(label, value) { a, b -> a == b || a.toDoubleOrNull()?.let { it == b.toDoubleOrNull() } == true }
     var focused by remember { mutableStateOf(false) }
-    LaunchedEffect(value) { if (!focused || draft.toDoubleOrNull() != value.toDoubleOrNull()) draft = value }
-    BasicTextField(draft, { draft = it; change(it) }, modifier
-        .semantics { contentDescription = label }.onFocusChanged { focused = it.isFocused; if (!focused) draft = value }
+    BasicTextField(editor.value, { editor.edit(it, change) }, modifier.studioTextHistoryKeys(editor, change)
+        .semantics { contentDescription = label }.onFocusChanged { focused = it.isFocused; if (!focused) editor.settle(value) }
         .border(1.dp, if (focused) DesktopBootstrapColors.primary else DesktopBootstrapColors.border, RoundedCornerShape(4.dp))
         .background(DesktopBootstrapColors.input).padding(6.dp), singleLine = true,
-        textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 13.sp))
+        cursorBrush = DesktopBootstrapColors.inputCaret, textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 13.sp))
 }
 
 internal fun studioAspectOptions(settings: NovelAiGenerationSettings) = NovelAiAspectRatio.entries.filterNot {
     settings.sizeTier == NovelAiSizeTier.WALLPAPER && it == NovelAiAspectRatio.SQUARE
 }
 internal fun studioAdvancedSummary(s: NovelAiGenerationSettings): String =
-    "${s.steps} Steps · CFG ${studioNumericText(s.guidance, 1)} / ${studioNumericText(s.cfgRescale, 2)} · ${s.sampler.displayName} · ${if (s.seedMode == NovelAiSeedMode.RANDOM) "Random Seed" else "Seed ${s.seed}"}"
+    "${s.effectiveSteps} Steps · CFG ${studioNumericText(s.guidance, 1)} / ${studioNumericText(s.effectiveCfgRescale, 2)} · ${s.effectiveSampler.displayName} · ${if (s.seedMode == NovelAiSeedMode.RANDOM) "Random Seed" else "Seed ${s.seed}"}"
 
 @Composable
 internal fun StudioGenerationSettings(draft: NovelAiStudioDraft, edit: ((NovelAiStudioDraft) -> NovelAiStudioDraft) -> Unit) {
@@ -222,6 +224,11 @@ internal fun StudioGenerationSettings(draft: NovelAiStudioDraft, edit: ((NovelAi
     CompactChoice("模型", listOf<NovelAiImageModel?>(null) + NovelAiImageModel.entries,
         if (draft.followDefaultNovelAiImageModel) null else draft.selectedModel, { it?.displayName ?: "跟随角色卡 / 全局" }) { model ->
         edit { if (model == null) it.copy(followDefaultNovelAiImageModel = true) else it.copy(selectedModel = model, followDefaultNovelAiImageModel = false) }
+    }
+    if (s.model == NovelAiImageModel.V5_FULL) {
+        StudioChips("Effort", NovelAiEffort.entries, s.effort, { if (it == NovelAiEffort.HIGH) "High" else "Medium" }) { value -> change { it.copy(effort = value) } }
+        StudioSwitch("透明背景", s.transparentBackground) { change { it.copy(transparentBackground = !it.transparentBackground) } }
+        if (s.isMedium) StatusText("Medium 使用 14 Steps、Euler Ancestral 与固定负面词；High 参数和自定义负面词会保留。")
     }
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val size: @Composable () -> Unit = {
@@ -238,6 +245,9 @@ internal fun StudioGenerationSettings(draft: NovelAiStudioDraft, edit: ((NovelAi
         StudioAction("编辑尺寸", icon = DesktopAppIcons.Edit) { customSize = true }
     }
     StudioChips("", studioAspectOptions(s), s.normalized().aspectRatio.takeUnless { s.usesCustomSize }, { it.displayName }) { value -> change { it.copy(aspectRatio = value, customWidth = null, customHeight = null) } }
+    StudioAction("重置生成参数", icon = DesktopAppIcons.Reset) {
+        change { NovelAiGenerationDefaults.forModel(it.model).copy(effort = it.effort, transparentBackground = it.transparentBackground) }
+    }
     StudioDisclosure("高级设置", studioAdvancedSummary(s)) {
         StudioAdvancedSettings(s, ::change)
     }
@@ -246,7 +256,7 @@ internal fun StudioGenerationSettings(draft: NovelAiStudioDraft, edit: ((NovelAi
         StatusText("目标图片数")
         StudioNumericInput("目标图片数", draft.continuousTargetCount.toString(), Modifier.width(80.dp)) { raw -> raw.toIntOrNull()?.takeIf { it > 0 }?.let { value -> edit { it.copy(continuousTargetCount = value) } } }
     }
-    s.validationError(draft.characters.size)?.let { StatusText(it, DesktopBootstrapColors.warning) }
+    s.requestValidationError(draft.characters.size)?.let { StatusText(it, DesktopBootstrapColors.warning) }
     }
     if (customSize) StudioCustomSizeDialog(s, onClose = { customSize = false }) { width, height ->
         change { it.copy(customWidth = width, customHeight = height) }; customSize = false
@@ -255,10 +265,13 @@ internal fun StudioGenerationSettings(draft: NovelAiStudioDraft, edit: ((NovelAi
 
 @Composable
 internal fun StudioAdvancedSettings(s: NovelAiGenerationSettings, change: ((NovelAiGenerationSettings) -> NovelAiGenerationSettings) -> Unit) {
-    StudioSlider("Steps", s.steps.toFloat(), 1f, 50f, 1f, 0) { value -> change { it.copy(steps = value.toInt()) } }
+    if (!s.isMedium) StudioSlider("Steps", s.steps.toFloat(), 1f, 50f, 1f, 0) { value -> change { it.copy(steps = value.toInt()) } }
     StudioSlider("CFG Scale", s.guidance, 1f, 10f, .1f, 1) { value -> change { it.copy(guidance = value) } }
-    StudioSlider("CFG Rescale", s.cfgRescale, 0f, 1f, .05f, 2) { value -> change { it.copy(cfgRescale = value) } }
-    CompactChoice("Sampler", NovelAiSampler.entries, s.sampler, { it.displayName }) { value -> change { it.copy(sampler = value) } }
+    if (!s.isMedium) {
+        StudioSlider("CFG Rescale", s.cfgRescale, 0f, 1f, .05f, 2) { value -> change { it.copy(cfgRescale = value) } }
+        CompactChoice("Sampler", s.model.samplers, s.sampler, { it.displayName }) { value -> change { it.copy(sampler = value) } }
+    } else StatusText("14 Steps · Euler Ancestral · CFG Rescale 0")
+    if (s.model.supportsVarietyPlus) StudioSwitch("Variety+（V+）", s.varietyPlus) { change { it.copy(varietyPlus = !it.varietyPlus) } }
     StudioSwitch("Random Seed", s.seedMode == NovelAiSeedMode.RANDOM) { change { it.copy(seedMode = if (it.seedMode == NovelAiSeedMode.RANDOM) NovelAiSeedMode.FIXED else NovelAiSeedMode.RANDOM) } }
     if (s.seedMode == NovelAiSeedMode.FIXED) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         StatusText("Seed")

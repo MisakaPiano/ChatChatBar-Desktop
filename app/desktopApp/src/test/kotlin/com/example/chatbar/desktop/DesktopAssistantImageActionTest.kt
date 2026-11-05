@@ -16,7 +16,26 @@ import org.msgpack.core.MessagePack
 import kotlin.test.*
 
 class DesktopAssistantImageActionTest {
-    internal class Fixture {
+    @Test fun `chat image design omits disabled person references without changing original card`() = runBlocking {
+        val f = Fixture()
+        try {
+            f.initialize()
+            val first = CharacterInfo.create("ActiveReference_X").copy(imagePrompt = "active_reference_tag_x")
+            val second = CharacterInfo.create("InactiveReference_Y").copy(imagePrompt = "inactive_reference_tag_y")
+            val card = f.c.characterRepository.getById("card")!!.copy(characters = listOf(first, second))
+            f.c.characterRepository.save(card)
+            val session = f.c.chatRepository.getSession("session")!!
+            f.c.chatRepository.saveSessionSettingsDraft(session,
+                com.example.chatbar.domain.chat.SessionCharacterParticipationPolicy.change(session, card, second.id, false))
+            success(f)
+            val contents = f.design.requests.flatten().joinToString("\n") { it.content.toString() }
+            assertTrue("active_reference_tag_x" in contents)
+            assertFalse("inactive_reference_tag_y" in contents)
+            assertEquals(card, f.c.characterRepository.getById(card.id))
+        } finally { f.close() }
+    }
+
+    internal class Fixture(imageClient: OkHttpClient? = null) {
         val design = FinalProductDesignFixture()
         val c = design.container
         val requests = java.util.concurrent.CopyOnWriteArrayList<String>()
@@ -25,7 +44,7 @@ class DesktopAssistantImageActionTest {
             override val catalog = PresetModelCatalog()
             override val modelCatalogVersion: Int? = null
         })
-        val client = OkHttpClient.Builder().addInterceptor { chain ->
+        val client = imageClient ?: OkHttpClient.Builder().addInterceptor { chain ->
             requests += okio.Buffer().also { chain.request().body!!.writeTo(it) }.readUtf8()
             val png = DesktopImageEditing.png(BufferedImage(16, 16, BufferedImage.TYPE_INT_RGB))
             val packer = MessagePack.newDefaultBufferPacker()
@@ -57,6 +76,37 @@ class DesktopAssistantImageActionTest {
     private suspend fun fixture(work: suspend (Fixture) -> Unit) {
         val f = Fixture()
         try { f.initialize(); work(f) } finally { f.close() }
+    }
+    @Test fun `actual temporary chat image runtime records original HTTP attempt in its real session and usage owner`() = runBlocking {
+        okhttp3.mockwebserver.MockWebServer().use { server ->
+            val png = DesktopImageEditing.png(BufferedImage(16, 16, BufferedImage.TYPE_INT_RGB))
+            val packer = MessagePack.newDefaultBufferPacker()
+            packer.packMapHeader(2); packer.packString("event_type"); packer.packString("final")
+            packer.packString("image"); packer.packBinaryHeader(png.size); packer.writePayload(png); packer.close()
+            val frame = packer.toByteArray()
+            server.enqueue(okhttp3.mockwebserver.MockResponse().setBody(okio.Buffer().write(ByteBuffer.allocate(frame.size + 4).putInt(frame.size).put(frame).array())))
+            val client = OkHttpClient.Builder().retryOnConnectionFailure(false).addInterceptor { chain ->
+                chain.proceed(chain.request().newBuilder().url(server.url(chain.request().url.encodedPath)).build())
+            }.build()
+            val f = Fixture(client)
+            try {
+                f.initialize()
+                val id = f.service.generateFromAssistant(f.source)
+                assertEquals(DesktopTaskStatus.COMPLETED, f.terminal(id).status)
+                val log = f.c.taskRuntime.diagnostics.entries.value.single { it.image != null }
+                assertEquals("session", log.sessionId); assertEquals(200, log.image!!.httpStatus)
+                assertEquals(1L, log.image!!.outputImages); assertEquals(1, server.requestCount)
+                withTimeout(5000) {
+                    do { delay(20); f.c.providerUsage.refresh(DesktopUsageQuery(mediaKind = DesktopUsageMediaKind.NAI_IMAGE_GENERATION)) }
+                    while (f.c.providerUsage.state.value.recent.none { it.outcome == DesktopUsageOutcome.COMPLETED })
+                }
+                val row = f.c.providerUsage.state.value.recent.single()
+                assertEquals(id, row.taskId); assertEquals("session", row.sessionId); assertEquals(f.source.id, row.subjectId)
+                assertEquals(DesktopUsageSource.CHAT, row.source); assertEquals(DesktopUsageOutcome.COMPLETED, row.outcome)
+                assertEquals(1L, row.media!!.outputImages)
+                assertEquals(f.source, f.c.chatRepository.getMessage(f.source.id, "session"))
+            } finally { f.close() }
+        }
     }
     private suspend fun success(f: Fixture, requirements: DesktopChatImageRequirements? = null) {
         assertEquals(DesktopChatImagePreflight.READY, f.service.preflight(f.source))

@@ -100,5 +100,567 @@
     "os": "Windows-first",
     "runtime": "Kotlin/JVM + Compose Desktop",
     "browserRuntime": false
+  },
+  "currentAdaptation": {
+    "recordedAt": "2026-11-04",
+    "targetReleaseVersion": "1.4.7",
+    "targetCommit": "b4fa75d296680f777be095f3121ad0c4db979f17",
+    "authority": "User authorized latest official CCB adaptation; Desktop first, separate Studio consumes official interfaces",
+    "status": "selected147_scoped_engineering_verified_public1238_user_acceptance_pending_prior1237_scoped_results_retained_not_whole_baseline_promotion",
+    "sourceAtRecord": "5f48d70622cc351cdba7487a7b4b90663ffa54af",
+    "lastCompleteSourceValidation": {
+      "commit": "5f48d70622cc351cdba7487a7b4b90663ffa54af",
+      "applicationCommit": "5f48d70622cc351cdba7487a7b4b90663ffa54af",
+      "actualCheckout": "370ce27648e7dca2d4eee5653353b6ae20c11ed7",
+      "wholeTreeSha": "a8fae96a4c492bf37df6fd87b20eddf963e4c5c8",
+      "wholeTreeIdentical": true,
+      "run": 41773543279,
+      "mainTests": 2648,
+      "mainPass": 2628,
+      "mainSkip": 20,
+      "mainFail": 0,
+      "sharedPass": 1239,
+      "androidHtmlPass": 586,
+      "proxyPass": 5,
+      "ntfsPass": 7,
+      "nativePass": 37,
+      "updaterTufPass": 14,
+      "exitPass": 4,
+      "sharedAndroidProof": "Fresh157 original shared XML and Android HTML, not old report reuse",
+      "status": "COMPLETE_NECESSARY_ORIGINALS_PASS_HUMAN_SEPARATE"
+    },
+    "adoptedRanges": [
+      {
+        "scope": "Speaker tag rename recovery and pending-source portable export boundary",
+        "evidence": "271/272; shared9 Desktop3 actual123, portable5 actual125",
+        "status": "targeted_behavior_verified"
+      },
+      {
+        "scope": "World-book auxiliary parameters and message-format-repair thinking inheritance",
+        "source": "fdb038133b9544c7cebc1c982efb6468efae1dcf",
+        "evidence": "271; shared HTTP4 Android2 actual125",
+        "status": "targeted_behavior_verified"
+      },
+      {
+        "scope": "Character Package nullable model/image defaults and two-way Core mappings",
+        "source": "0fd79d0a168827760972017cf8cf99449d3bcb03",
+        "evidence": "275; Core2 and typed JSON/PNG2 actual127/128",
+        "status": "targeted_behavior_verified"
+      },
+      {
+        "scope": "Declared preset world/default-format dependencies through startup, typed recovery and Suite",
+        "source": "bcacc269cea691bf548ab5e804ac88e8a55e93b8",
+        "evidence": "274; original shared resolver2 and Bootstrap14/Integration3/Recovery6/Suite40 actual128",
+        "status": "targeted_behavior_verified"
+      },
+      {
+        "scope": "Message-version edit policy and voice repository persistence",
+        "evidence": "Targeted reuse125 policy8/repository1",
+        "status": "targeted_equivalence_reused"
+      },
+      {
+        "scope": "SaveSlotPackageStorage and SessionCopyService maintenance access",
+        "evidence": "Targeted reuse123 SaveSlot23/DataCoordinator15",
+        "status": "targeted_equivalence_reused"
+      },
+      {
+        "scope": "MemoryRepository state-last commit and journal recovery maintenance",
+        "evidence": "Targeted reuse125 gate15/journal3",
+        "status": "targeted_equivalence_reused"
+      },
+      {
+        "scope": "Moments policy and Desktop scheduler/media adapter",
+        "evidence": "231/259/262; actual public1233 and affected post-publication source tests",
+        "status": "implemented_platform_equivalent_user_acceptance_separate"
+      },
+      {
+        "scope": "Character normal editor model/parameter save-reset and cover/avatar effective consumption",
+        "source": "ec0861432a56138d5ccb1685a2e63cc22bc6d703",
+        "run": 41438935426,
+        "evidence": "276; exact129 actual Desktop4/shared1 PASS with two original Scene images",
+        "status": "targeted_behavior_verified"
+      },
+      {
+        "scope": "Selected-model parameters in Memory/RAG/character research and editing/image appearance/Fish translation and tags",
+        "source": "35c5216ba7b3f6356ef2af0f8ac9bfc439b96715",
+        "evidence": "278; actual136 full originals, shared HTTP4+virtual deadline1 and Desktop HTTP2; original usage assertions retained",
+        "status": "targeted_behavior_verified"
+      },
+      {
+        "scope": "Official147 reverse image editable scene confirmation and explicit target-bound candidate apply",
+        "source": "9f5150db3acbd9e39333c41523101fada4910cb9",
+        "evidence": "279; exact138 Desktop8/shared4 and originalReaudit11 actualPASS,137 fourPane views reused by identicalblob; DesignParity6PASS+1SKIP",
+        "status": "targeted_behavior_verified_not_native_or_human"
+      }
+    ],
+    "pendingRanges": [
+      {
+        "scope": "Community Desktop browse/detail/import/Discord return/owner snapshot management/card update and runtime switch",
+        "evidence": "277; exact134 shared11/Core2/Desktop12+7 actual images PASS; R19 ordinary candidate PASS; R20 real Main/registry scoped PASS with descendant NOT_PROVEN; real official OAuth/browser/focus separate",
+        "status": "implemented_scoped_engineering_verified_live_service_oauth_browser_focus_external_pending",
+        "remainingImplementationIdentified": [],
+        "externalConditions": [
+          "Official runtime enabled:false at2026-11-03 23:14JST read-only receipt; prior21:47 observation retained; not permanent closure proof",
+          "Real Discord/browser return/foreground and remote operations require service available and explicit user-controlled login"
+        ],
+        "currentServiceReceipt": "I:/CCB-Desktop-Continuity/updates/20261103-coordinator-community-availability.json"
+      },
+      {
+        "scope": "Whole selected147 compatibility declaration and affected final candidate/user cross-scenario acceptance",
+        "evidence": "216/280/288-295; public1238/app5f/sign20 under explicit authority; full157/R34/R35/UI23 unchanged; actual release/assets/notes and anonymous ten roles/full installer bytes verified; new user acceptance pending",
+        "status": "selected_implementation_scoped_engineering_public1238_delivered_actual_user_and_external_scenarios_pending",
+        "remainingImplementationIdentified": [],
+        "independentVerification": [
+          {
+            "scope": "Original HWND-owner and Studio auxiliary OS-close cases plus unchanged COM prerequisite",
+            "run": 41649134054,
+            "source": "6c434baecc0c809af4237a9a6b288e68ba8ab686",
+            "state": "ORIGINAL3PASS0SKIP_TWO_PREVIOUSLY_SKIPPED_METHODS_CLOSED",
+            "headless": false,
+            "newlyClosedOriginalSkipMethods": 2,
+            "evidence": "I:/CCB-Desktop-Continuity/updates/20261103-owner-native-probe1-review/REVIEW.json"
+          },
+          {
+            "scope": "Remaining14 original graphical cases only, foreground/native guards unchanged",
+            "run": 41650815581,
+            "source": "98aa8c233ed557a49fe6a3b6f05177389215a17e",
+            "state": "ORIGINAL14_10PASS_4FAIL_0SKIP_RETAINED",
+            "headless": false,
+            "excluded": "Prior two closed graphical methods and three physical audio methods",
+            "evidence": "I:/CCB-Desktop-Continuity/updates/20261103-owner-native-probe2-review/REVIEW.json"
+          },
+          {
+            "scope": "Only native2 four affected scopes; mixed Stop physical playback split and guarded",
+            "run": 41663011157,
+            "source": "a65b02af5a14dd55e32083ea6af35847b38a5503",
+            "state": "ACTUAL4PASS1SKIP_3_ORIGINAL_METHODS_FULLY_CLOSED_MIXED_STOP_PARTIAL",
+            "waveOutputDevices": 0,
+            "display": "1024x768 to enumerated1920x1080; test/apply0; restored1024x768/result0; no registry write",
+            "evidence": "I:/CCB-Desktop-Continuity/updates/20261103-studio-history-repair/native6-OWNER_REVIEW.json"
+          },
+          {
+            "scope": "Exact304 six affected font/request/selection/concurrency/OS-close methods",
+            "run": 41681529979,
+            "source": "304bd42a250b062ddaafc4c7dcc55710e94c4e8b",
+            "state": "ACTUAL6PASS_0FAIL_0SKIP_NOT_REAL_SYSTEM_IME",
+            "evidence": "I:/CCB-Desktop-Continuity/updates/20261103-studio-history-repair/native7-OWNER_REVIEW.json"
+          }
+        ],
+        "remainingExternalOrHuman": [
+          "User self-update to1237, original sessions/draft and normal exit/reopen PASS; defined local/global history, numeric/expanded editor and current-device Chinese IME checks PASS at1237 only. Original1236 failures retained as history.",
+          "Original three physical audio methods plus mixed Stop playback part remain NOT_TESTED on wave0; other OS/DPI/IME/multiscreen environments not proven by current-device acceptance.",
+          "1237 scoped N02 settings/menu/managed PNG import+undo, N03 diagnostics/history navigation, N04 order/gallery browsing and N05 selected both-on PNG/PDF save/open PASS; not all generation/default KEEP import/full reader compatibility.",
+          "1237 role-negative tab, inline actions-off exclusion and editable Word narration/dialogue/thought layout remain USER_FAIL until successor actual retest. Word file opens/editable text/reported image placement retained only as subparts.",
+          "Actual Provider outputs/billing, all real long chats and readers, and final production merge/interruption/cross-account/old-snapshot scenarios remain subject to their actual scope and user-selected operations.",
+          "User returned and explicitly authorized public1238/matching20 only; published and verified. Actual1238 self-update and retest remain pending; formal1.0 target active does not authorize future releases or infer human acceptance."
+        ],
+        "original154HeadlessSkips": {
+          "count": 19,
+          "subsequentNewlyExecuted": 2,
+          "stillUnexecutedAtProbe2Start": 17,
+          "physicalAudio": 3,
+          "subsequentNewlyExecutedAndFullyClosed": 15,
+          "remainingIncompleteOriginalMethods": 4,
+          "mixedStop": "GUI download/generation PASS; original physical playback part NOT_TESTED",
+          "counting": "native1 two + native2 ten + native6 three; do not count split Stop GUI as original complete method"
+        }
+      }
+    ],
+    "notOfficialCompatibilityProof": [
+      "Preserved unpublished Desktop/Fork full-Prompt text extension (266/269)",
+      "Path inventory equality or unmodified Android mirror alone",
+      "Synthetic service success as official service/OAuth enablement"
+    ],
+    "historicalObservationMeaning": "upstreamObservation below is the dated2026-10-05 record, not the current target or a continuing instruction to park1.4.7",
+    "validatedBaselineMeaning": "upstream.commit remains the last fully declared baseline; ongoing147 adoption is not deferred indefinitely by that evidence state",
+    "lastAttempt": {
+      "commit": "304bd42a250b062ddaafc4c7dcc55710e94c4e8b",
+      "applicationCommit": "304bd42a250b062ddaafc4c7dcc55710e94c4e8b",
+      "actualCheckout": "c841147f0ccd33ee423af8123b0b2a5c2345da41",
+      "wholeTreeSha": "5c495f712085a082b312dadfc5c6b76ebc00e1ea",
+      "wholeTreeIdentical": true,
+      "run": 41681820343,
+      "mainTests": 2641,
+      "mainPass": 2621,
+      "mainSkip": 20,
+      "mainFail": 0,
+      "sharedPass": 1233,
+      "androidHtmlPass": 586,
+      "proxyPass": 5,
+      "ntfsPass": 7,
+      "nativePass": 37,
+      "updaterTufPass": 14,
+      "exitPass": 4,
+      "sharedAndroidProof": "Unchanged shared/Android/CI inputs reuse155 original XML/HTML;156 Linux terminalSUCCESS",
+      "status": "COMPLETE_NECESSARY_ORIGINALS_PASS_HUMAN_SEPARATE"
+    },
+    "privateCandidate1234": {
+      "source": "c2d3640e3caaa39ffb932823909a883b583e4879",
+      "control": "285ba5d27b6d46c51b83ece13ab11409adb7df0c",
+      "version": "0.1.0-preview.1234",
+      "run": 41466774102,
+      "number": 19,
+      "state": "PRIVATE_DRAFT_FINAL_BYTES_SIGNED16_CLOUD_OLD_CLIENT_PASS",
+      "public": false,
+      "native": "baseline1225 -> upgrade1234 -> stable reopen -> cold external actual exit0, no remaining Job processes, canary preserved",
+      "independent": "actual Chinese entry PASS,548 audited program files,data/lock/program exit and outside bootstrap preserved",
+      "scope": "fresh default synthetic profile; fake credentials/custom-root busy/provider/user H not verified",
+      "packageRecordedInstallerSha256": "ab484c9f1ea02a92f9d6da0cf7438bca6c385eb331a66897ac47923ccdbc3aca",
+      "finalBinaryIndependentRehash": "ACTUAL_OWNER_OUTER_CRC_INNER_548_MANIFEST549_JAR_SIX_CONTROL_TOOLS_PASS",
+      "humanAcceptance": false,
+      "publication": false,
+      "dailyInstallation": false,
+      "authNative": {
+        "run": 41471050373,
+        "number": 20,
+        "control": "40c3aef68cbb7e761ec18141ca81fea178c4095a",
+        "state": "ACTUAL_SCOPED_PASS_WITH_DESCENDANT_CLAIM_EXCLUDED",
+        "rebuild": false,
+        "proofLimit": "helper parent exit alone does not prove descendants exit; ignore late descendants() zero in R20; companion source corrected for future use",
+        "preexistingHandler": "SKIP is not registry PASS",
+        "realOAuthBrowserOrFocus": false,
+        "notSkipped": true,
+        "actualPackagedMain": true,
+        "helperParentExitCode": 0,
+        "acceptedCallbacks": 1,
+        "realOwnedRegistryWriteRemoval": true,
+        "foreignPreserved": true,
+        "memoryOnlyNoJournal": true,
+        "syntheticDataAndRootUnchanged": true,
+        "helperDescendantExit": "NOT_PROVEN",
+        "report": "I:/CCB-Desktop-Continuity/updates/20261103-coordinator-candidate1234-r20-auth-review/REVIEW.json"
+      },
+      "installerBytes": 177226066,
+      "installerSha256": "ab484c9f1ea02a92f9d6da0cf7438bca6c385eb331a66897ac47923ccdbc3aca",
+      "independentBytes": 190448868,
+      "independentSha256": "f5863e6c9266204025b7d5a76b9c7647a039e69126391692a2619bdad4a56b0a",
+      "releaseCoverageCommits": 58,
+      "notesBullets": 10,
+      "localMetadataRevision": 16,
+      "metadataSigned": true,
+      "metadataPublic": false,
+      "draftCreated": true,
+      "signedClientValidation": {
+        "run": 41474923667,
+        "number": 23,
+        "control": "768009ecb635b25d2fa1ec636dd7c88f383b6ca5",
+        "state": "ACTUAL_FROZEN_PUBLIC1233_15_TO16_FULL_DOWNLOAD_SECOND_VERIFY_PASS",
+        "localMetadataFetcher": true,
+        "publicNetworkUpdateDiscovery": false,
+        "installerExecuted": false,
+        "report": "I:\\CCB-Desktop-Continuity\\updates\\20261103-coordinator-candidate1234-r23-signed-review\\REVIEW.json"
+      },
+      "releaseId": 431654495,
+      "draftUrl": "https://github.com/MisakaPiano/ChatChatBar-Desktop/releases/tag/untagged-885a33cc7ac2139a89d9",
+      "draft": true,
+      "assets": [
+        {
+          "name": "ChatChatBar-Desktop-0.1.0-preview.1234-independent-windows-x64.zip",
+          "bytes": 190448868,
+          "sha256": "sha256:f5863e6c9266204025b7d5a76b9c7647a039e69126391692a2619bdad4a56b0a"
+        },
+        {
+          "name": "ChatChatBar-Desktop-0.1.0-preview.1234-independent-windows-x64.zip.sha256",
+          "bytes": 134,
+          "sha256": "sha256:7b15d8f7967d19de13757bc0e07bf83807b712a7c4542d4eeab69d70d2ecb9a2"
+        },
+        {
+          "name": "ChatChatBar-Desktop-0.1.0-preview.1234-windows-x64.exe",
+          "bytes": 177226066,
+          "sha256": "sha256:ab484c9f1ea02a92f9d6da0cf7438bca6c385eb331a66897ac47923ccdbc3aca"
+        },
+        {
+          "name": "ChatChatBar-Desktop-0.1.0-preview.1234-windows-x64.exe.sha256",
+          "bytes": 122,
+          "sha256": "sha256:d1b6c56ec82a27f21e52ad36447b70c2453159f590094ad08c8d506053aa8c24"
+        }
+      ],
+      "previousSignedValidationAttempts": [
+        {
+          "run": 41473460118,
+          "number": 21,
+          "state": "RuntimeError_category_omitted"
+        },
+        {
+          "run": 41474255889,
+          "number": 22,
+          "state": "FINAL_NOTES_REQUIRED_expected_raw_CRLF_vs_signed_LF",
+          "correction": "Expected canonical LF hash only; signed roles and installer unchanged"
+        }
+      ]
+    },
+    "previousAttempts": [
+      {
+        "commit": "515442f6094a5ef10b02b3f028bfdf8c573380db",
+        "run": 41458802100,
+        "status": "TERMINAL_SINGLE_JUNIT_CLASS_INITIALIZATION_ERROR",
+        "mainPass": 2551,
+        "mainSkip": 19,
+        "mainFail": 1,
+        "mainTests": 2571,
+        "desktopCommunityNewMethodsPass": 10,
+        "desktopPortsTwoMethods": "NOT_EXECUTED_CLASS_INVALID_RETURN_TYPE",
+        "sharedPass": 1183,
+        "androidPass": 586,
+        "ntfsPass": 7,
+        "proxyPass": 5,
+        "nativePass": 37,
+        "updaterTufPass": 14,
+        "exitPass": 4,
+        "originalPanelImagesReviewed": 6,
+        "shellMethod": "PASS_IMAGE_NOT_ARCHIVED",
+        "correction": "explicit Unit; snapshot field/layout and capture followups require next exact source"
+      },
+      {
+        "commit": "c2d3640e3caaa39ffb932823909a883b583e4879",
+        "run": 41464861703,
+        "status": "COMPLETE_ORIGINALS_PASS",
+        "desktopCommunityNewMethodsPass": 12,
+        "originalImagesReviewed": 7,
+        "historical": true
+      },
+      {
+        "commit": "4493ed186da10267c053fa3efb5dddd58b7eaa12",
+        "run": 41676176376,
+        "status": "ORIGINAL2618PASS_3FAIL_20SKIP_RETAINED_FIXED_EXACT304",
+        "mainTests": 2641,
+        "mainPass": 2618,
+        "mainFail": 3,
+        "mainSkip": 20
+      }
+    ],
+    "privateCandidate1235": {
+      "source": "9f5150db3acbd9e39333c41523101fada4910cb9",
+      "version": "0.1.0-preview.1235",
+      "ordinaryBuildRun": 41498266081,
+      "signedClientRun": 41504456372,
+      "releaseId": 431856096,
+      "state": "PRIVATE_DRAFT_FINAL_BYTES_SIGNED17_OLD_CLIENT_PASS",
+      "metadataRevision": 17,
+      "publicMetadataRevision": 15,
+      "public": false,
+      "humanAcceptance": false,
+      "dailyHOperation": false
+    },
+    "crossScenarioMatrix": "docs/desktop/280_BETA_CROSS_SCENARIO_EVIDENCE_MATRIX.md",
+    "publicCandidate1235": {
+      "source": "9f5150db3acbd9e39333c41523101fada4910cb9",
+      "version": "0.1.0-preview.1235",
+      "ordinaryBuildRun": 41498266081,
+      "signedClientRun": 41504456372,
+      "releaseId": 431856096,
+      "state": "PUBLIC_TEST_PREVIEW_EXACT_USER_AUTHORITY_MATCHING_SIGNED17",
+      "metadataRevision": 17,
+      "publicMetadataRevision": 15,
+      "public": true,
+      "humanAcceptance": false,
+      "dailyHOperation": false,
+      "metadataPublic": true,
+      "metadataCommit": "d1caf6e1bcb336cb5591b1b45be8150b90ef14a0"
+    },
+    "workspaceAtResidualReview": "6c434baecc0c809af4237a9a6b288e68ba8ab686",
+    "historicalSourceValidation": [
+      {
+        "commit": "9f5150db3acbd9e39333c41523101fada4910cb9",
+        "run": 41493893207,
+        "mainPass": 2563,
+        "mainSkip": 19,
+        "mainFail": 0,
+        "sharedPass": 1192,
+        "androidPass": 586,
+        "proxyPass": 5,
+        "ntfsPass": 7,
+        "nativePass": 37,
+        "updaterTufPass": 14,
+        "exitPass": 4
+      },
+      {
+        "commit": "53e40cea7ff314812d13bf366f766227999aa9c5",
+        "applicationCommit": "a647cde57d8cd89dc03e05a5b7acf0be9194c5b6",
+        "run": 41642591244,
+        "mainPass": 2598,
+        "mainSkip": 19,
+        "mainFail": 0,
+        "sharedPass": 1221,
+        "androidPass": 586,
+        "proxyPass": 5,
+        "ntfsPass": 7,
+        "nativePass": 37,
+        "updaterTufPass": 14,
+        "exitPass": 4,
+        "sharedAndroidProof": "Unchanged153 original actual XML/HTML reused;154 Linux terminal success",
+        "applicationDifference": "Test source differs from frozen application only in two Desktop tests and focused workflow"
+      },
+      {
+        "commit": "304bd42a250b062ddaafc4c7dcc55710e94c4e8b",
+        "applicationCommit": "304bd42a250b062ddaafc4c7dcc55710e94c4e8b",
+        "actualCheckout": "c841147f0ccd33ee423af8123b0b2a5c2345da41",
+        "wholeTreeSha": "5c495f712085a082b312dadfc5c6b76ebc00e1ea",
+        "wholeTreeIdentical": true,
+        "run": 41681820343,
+        "mainTests": 2641,
+        "mainPass": 2621,
+        "mainSkip": 20,
+        "mainFail": 0,
+        "sharedPass": 1233,
+        "androidHtmlPass": 586,
+        "proxyPass": 5,
+        "ntfsPass": 7,
+        "nativePass": 37,
+        "updaterTufPass": 14,
+        "exitPass": 4,
+        "sharedAndroidProof": "Unchanged shared/Android/CI inputs reuse155 original XML/HTML;156 Linux terminalSUCCESS",
+        "status": "COMPLETE_NECESSARY_ORIGINALS_PASS_HUMAN_SEPARATE"
+      }
+    ],
+    "currentPublicDelivery": {
+      "version": "0.1.0-preview.1238",
+      "source": "5f48d70622cc351cdba7487a7b4b90663ffa54af",
+      "release": 433540317,
+      "metadataRevision": 20,
+      "metadataCommit": "a1a501a83b0566608336619d48bc99086a115dab",
+      "rootRevision": 1,
+      "humanAcceptance": "PENDING_USER_SELF_UPDATE_AND_DEFINED1238_RETEST_NOT_INFERRED_FROM_PUBLICATION",
+      "allUserScopesAccepted": false,
+      "proof": "295; unchanged full157/R34/R35/UI23; explicit1238/sign20 authority; anonymous ten role byte comparisons and full178545695B installer HTTP stream match",
+      "url": "https://github.com/MisakaPiano/ChatChatBar-Desktop/releases/tag/desktop-v0.1.0-preview.1238",
+      "authority": "I:\\CCB-Desktop-Continuity\\updates\\20261104-candidate1238-r02-preparation\\USER_PUBLICATION_AUTHORITY.json",
+      "publicReadback": "I:\\CCB-Desktop-Continuity\\updates\\20261104-candidate1238-r02-preparation\\PUBLICATION1238_RESULT.private.json",
+      "anonymousReadback": "I:\\CCB-Desktop-Continuity\\updates\\20261104-candidate1238-r02-preparation\\PUBLIC_ANONYMOUS_RESULT.json",
+      "priorVersionAcceptance": "All original1237 scoped PASS and role-negative/actions-off/Word semantic USER_FAIL retained separately; no automatic pass for1238",
+      "agentInstalled": false
+    },
+    "residualReview": "I:/CCB-Desktop-Continuity/updates/20261103-selected147-residual-closure/OWNER_REVIEW.json",
+    "privateCandidate1237": {
+      "version": "0.1.0-preview.1237",
+      "source": "304bd42a250b062ddaafc4c7dcc55710e94c4e8b",
+      "release": 433024800,
+      "tag": "desktop-v0.1.0-preview.1237",
+      "draft": true,
+      "public": false,
+      "ordinaryRun": 41681835763,
+      "signedClientRun": 41685095129,
+      "metadataRevision": 19,
+      "metadataPublic": false,
+      "installerBytes": 178544270,
+      "installerSha256": "7878dc17270056db5b44db1783d939ac91efa96d2328a4f6b585bd231f109e4a",
+      "independentBytes": 191748951,
+      "independentSha256": "8a4f9dc73201660e5418c9780ef7f89ffe217b0b04f578dfecc4baed9245735c",
+      "notesRawFileSha256": "d37979324a780610e9b64f38b360138d0194e5c90d620dc177999fe1fe45995b",
+      "notesNormalizedSignedSha256": "803c8b65bd032a317206ff4834f87cba2153e904701aaf4ee8e55870f747e9e3",
+      "userAcceptance": false,
+      "dailyInstallation": false,
+      "evidence": "I:\\CCB-Desktop-Continuity\\updates\\20261104-candidate1237-r02-preparation\\FROZEN_REVIEW.json"
+    },
+    "publicDeliveryHistory": [
+      {
+        "version": "0.1.0-preview.1236",
+        "source": "a647cde57d8cd89dc03e05a5b7acf0be9194c5b6",
+        "release": 432747686,
+        "metadataRevision": 18,
+        "metadataCommit": "14dadbfeed1299cc8d80712b3fd0ac8cb59eed55",
+        "humanAcceptance": "USER1236_UPGRADE_DATA_REOPEN_PASS_ONLY_N01_DEFECTS_RETAINED_SUCCESSOR1237_PENDING",
+        "proof": "286/287; R27 ordinary/final bytes, R28 frozen old-client, anonymous full installer and exact roles"
+      },
+      {
+        "version": "0.1.0-preview.1237",
+        "source": "304bd42a250b062ddaafc4c7dcc55710e94c4e8b",
+        "release": 433024800,
+        "metadataRevision": 19,
+        "metadataCommit": "85a80124bc8e920c897e9cdf1cebffcb725d5be2",
+        "humanAcceptance": "SCOPED_USER1237_UPGRADE_DEFINED_N01_AND_N02_N03_N04_N05_PARTS_PASS_ROLE_NEGATIVE_ACTION_OFF_WORD_SEMANTIC_LAYOUT_FAIL_NOT_ALL_ACCEPTED",
+        "proof": "288; full156/native7/R31/R32 and anonymous complete178544270B/ten roles; public user authority explicit1237 only",
+        "url": "https://github.com/MisakaPiano/ChatChatBar-Desktop/releases/tag/desktop-v0.1.0-preview.1237",
+        "acceptanceSource": "I:/CCB-Desktop-Continuity/updates/20261104-candidate1237-r02-preparation",
+        "acceptanceReceipts": [
+          "U1237_USER_ACCEPTANCE.json",
+          "N01_LOCAL_USER_ACCEPTANCE.json",
+          "N01_GLOBAL_USER_ACCEPTANCE.json",
+          "N01_IME_USER_ACCEPTANCE.json",
+          "N01_EXPANDED_USER_ACCEPTANCE.json",
+          "N01_NUMERIC_USER_ACCEPTANCE.json",
+          "N05_WORD_LAYOUT_FAILURE_USER_FEEDBACK.json",
+          "N05_PNG_SAVE_OPEN_USER_ACCEPTANCE.json",
+          "N05_PDF_SAVE_OPEN_USER_ACCEPTANCE.json",
+          "N04_CARD_EDITOR_ORDER_USER_ACCEPTANCE.json",
+          "N04_STYLE_GALLERY_BROWSE_USER_ACCEPTANCE.json"
+        ],
+        "allUserScopesAccepted": false
+      }
+    ],
+    "publicCandidate1237": {
+      "version": "0.1.0-preview.1237",
+      "source": "304bd42a250b062ddaafc4c7dcc55710e94c4e8b",
+      "release": 433024800,
+      "tag": "desktop-v0.1.0-preview.1237",
+      "draft": false,
+      "public": true,
+      "ordinaryRun": 41681835763,
+      "signedClientRun": 41685095129,
+      "metadataRevision": 19,
+      "metadataPublic": true,
+      "installerBytes": 178544270,
+      "installerSha256": "7878dc17270056db5b44db1783d939ac91efa96d2328a4f6b585bd231f109e4a",
+      "independentBytes": 191748951,
+      "independentSha256": "8a4f9dc73201660e5418c9780ef7f89ffe217b0b04f578dfecc4baed9245735c",
+      "notesRawFileSha256": "d37979324a780610e9b64f38b360138d0194e5c90d620dc177999fe1fe45995b",
+      "notesNormalizedSignedSha256": "803c8b65bd032a317206ff4834f87cba2153e904701aaf4ee8e55870f747e9e3",
+      "userAcceptance": false,
+      "dailyInstallation": false,
+      "evidence": "I:\\CCB-Desktop-Continuity\\updates\\20261104-candidate1237-r02-preparation\\FROZEN_REVIEW.json",
+      "metadataCommit": "85a80124bc8e920c897e9cdf1cebffcb725d5be2",
+      "anonymousPublicHttpPassed": true,
+      "oldClientScope": "R32 controlled cloud cryptographic validation reused; anonymous HTTP is separate transport proof",
+      "publicationAuthority": "I:\\CCB-Desktop-Continuity\\updates\\20261104-candidate1237-r02-preparation\\USER_PUBLICATION_AUTHORITY.json"
+    },
+    "activeUnpublishedSuccessor": null,
+    "private1238PreparationBeforePublication": {
+      "applicationSource": "5f48d70622cc351cdba7487a7b4b90663ffa54af",
+      "fullCi": 41773543279,
+      "fullCiState": "PASS_ACTUAL_ORIGINALS_READ",
+      "ordinaryCandidateRun": 41775119786,
+      "signedClientRun": 41777490315,
+      "captureRun": 41777278482,
+      "privateMetadataRevision": 20,
+      "candidateControl": "999e80589191025e1a359c4ca96c6ed07c22e6f6",
+      "state": "PRIVATE_DRAFT_PREPARED_NOT_PUBLIC_OR_USER_ACCEPTED",
+      "releaseId": 433540317,
+      "draft": true,
+      "publicationAuthorized": false,
+      "metadataPublic": false,
+      "humanAcceptance": false,
+      "cleanup": "AUTOMATIC_REVIEW_REFUSED_PROCESS_NOT_STARTED_0_BYTES_DELETED",
+      "scope": "290-295 exact fixes; original1237 failures remain until actual successor user retest"
+    }
+  },
+  "latestPinnedUpstreamReview": {
+    "recordedAt": "2026-11-05",
+    "targetVersion": "1.4.8",
+    "targetCommit": "6f8a09a8bd24c274b08a56cadc37a82380bfe625",
+    "priorAdopted147Commit": "58023edf48f40764c481d1367f62bc048c8a5059",
+    "prHead": "567ff1939ec2a5621bbbc8dd7d5f06e079a942b7",
+    "inventoryRun": 41932616672,
+    "inventoryDesktop": "5f48d70622cc351cdba7487a7b4b90663ffa54af",
+    "incrementAfterPr": "Five commits/seven non-runtime files; no original Prompt body change",
+    "actualGap": "Card default effort/transparentBackground and explicit sampling reset missing in5f, unlike implemented Studio options",
+    "successorSource": "a7ba948aea33be495632e2c4f2936b7334a73cd1",
+    "targetedRuns": [
+      41977286060,
+      41978162288
+    ],
+    "scopedCurrentPass": 26,
+    "fullIntegrationRun": 41979164537,
+    "privateOrdinaryCandidateRun": 41979164371,
+    "candidateVersion": "0.1.0-preview.1239",
+    "status": "CARD_SCOPED_FULL158_R36_SIGNED21_PRIVATE1239_DRAFT_READY_WHOLE_BACKUP87_SUCCESSOR_PENDING",
+    "evidence": "296_OFFICIAL148_INCREMENT_AND_CARD_V5_DEFAULTS.md",
+    "validatedBaselinePromoted": false,
+    "public1238Changed": false,
+    "humanAcceptance": false,
+    "fullIntegrationResult": "Windows2629PASS+20SKIP/0FAIL,shared1240,Android586,proxy5,NTFS7,native37/TUF14/exit4",
+    "privateDraftRelease": 434865066,
+    "privateSignedRevision": 21,
+    "signedOldClientRun": 41982010138,
+    "wholeBackup87Successor": "Known version87 reader/custody chain and truthful modern writer; preserve actual old Desktop86 V5-setting backups with typed legacy profile; worktree unvalidated, separate from frozen1239"
   }
 }

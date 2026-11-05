@@ -58,7 +58,19 @@ android {
         // Fingerprint template source rather than dynamic user inputs. Provider tracks edits for configuration cache.
         val promptSource = providers.fileContents(layout.projectDirectory.file(
             "src/main/java/com/example/chatbar/domain/prompt/PromptTemplates.kt"
-        )).asText.get().replace("\r\n", "\n")
+        )).asText.get().replace("\r\n", "\n") + "\n" + providers.fileContents(
+            project(":sharedCore").layout.projectDirectory.file(
+                "src/main/kotlin/com/example/chatbar/domain/prompt/FormatCardAutoFillPromptAuthority.kt")
+        ).asText.get().replace("\r\n", "\n") + "\n" + providers.fileContents(
+            project(":sharedCore").layout.projectDirectory.file(
+                "src/main/kotlin/com/example/chatbar/domain/prompt/CharacterCardAiPromptAuthority.kt")
+        ).asText.get().replace("\r\n", "\n") + "\n" + providers.fileContents(
+            project(":sharedCore").layout.projectDirectory.file(
+                "src/main/kotlin/com/example/chatbar/domain/prompt/WorldBookAiPromptAuthority.kt")
+        ).asText.get().replace("\r\n", "\n") + "\n" + providers.fileContents(
+            project(":sharedCore").layout.projectDirectory.file(
+                "src/main/kotlin/com/example/chatbar/domain/prompt/MomentPromptAuthority.kt")
+        ).asText.get().replace("\r\n", "\n")
         val promptFingerprint = MessageDigest.getInstance("SHA-256")
             .digest(promptSource.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
         buildConfigField("String", "AI_PROMPT_SOURCE_SHA256", "\"$promptFingerprint\"")
@@ -147,6 +159,7 @@ dependencies {
 
   // Local tests: jUnit, coroutines, Android runner
   testImplementation(libs.junit)
+  testImplementation(libs.okhttp.mockwebserver)
   testImplementation(libs.kotlinx.coroutines.test)
 
   // Instrumented tests: jUnit rules and runners

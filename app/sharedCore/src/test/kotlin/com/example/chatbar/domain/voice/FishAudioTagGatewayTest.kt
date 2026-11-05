@@ -15,7 +15,7 @@ class FishAudioTagGatewayTest {
     @Test fun `migrated prompts and final serialized messages equal frozen official inputs for both tasks`() = runBlocking {
         val captured = mutableListOf<Pair<FishVoiceTextTask, List<ChatApiMessage>>>()
         val service = FishAudioTagService(FishVoiceTextGateway { task, messages, configured, disableThinking ->
-            assertTrue(disableThinking); assertNull(configured.maxOutputTokens)
+            assertFalse(disableThinking); assertEquals(model, configured)
             captured += task to messages
             flowOf(StreamEvent.Delta(if (task == FishVoiceTextTask.TRANSLATE)
                 """{"segments":[{"id":"one","translatedText":"hello"}]}""" else
@@ -35,12 +35,13 @@ class FishAudioTagGatewayTest {
             else OfficialFishPromptGolden.fishAudioVoiceTagUserInput("s2.1-pro-free", FishAudioMarkerMode.SQUARE.description,
                 FishAudioTagPolicy.promptPolicy("s2.1-pro-free"), "synthetic previous", "synthetic response", segments)
             fun body(messages: List<ChatApiMessage>) = OpenAiChatRequestSerializer.serialize(
-                AuxiliaryMessageAssembler.assemble(messages, false), model.withoutOutputTokenLimit(), stream = true,
-                disableThinking = true, isolatedTaskParameters = false)
+                AuxiliaryMessageAssembler.assemble(messages, false), model, stream = true,
+                disableThinking = false, isolatedTaskParameters = false)
             assertEquals(body(listOf(ChatApiMessage.text("system", system.trim()), ChatApiMessage.text("user", user))), body(actual))
             val json = Json.parseToJsonElement(body(actual)).jsonObject
             assertEquals(8, json["messages"]!!.jsonArray.size)
-            assertFalse("max_tokens" in json); assertFalse("max_completion_tokens" in json)
+            assertEquals(12, json.getValue("max_tokens").jsonPrimitive.int)
+            assertFalse("max_completion_tokens" in json)
         }
     }
 

@@ -48,7 +48,8 @@ internal object DesktopHistoricalVoiceCustody {
         beforePublish: suspend () -> Unit): Evidence {
         authority.requirePreparing(pending, root)
         val owners = linkedMapOf<String, Pair<String, ChatMessage>>()
-        for ((path, value) in input.entities) if (DesktopBackupPolicy.entityType(path) == "chat_messages") {
+        for (path in input.entities.keys.filter { DesktopBackupPolicy.entityType(it) == "chat_messages" }) {
+            val value = input.entities.getValue(path)
             val message = backupJson.decodeFromJsonElement<ChatMessage>(value)
             check(owners.put(message.id, path to message) == null) { "HISTORICAL_VOICE_DUPLICATE_OWNER" }
         }
@@ -75,7 +76,8 @@ internal object DesktopHistoricalVoiceCustody {
         }
         for ((record, owner, original) in candidates) {
             val id = plan.identity.value("generated_voice_messages", original.id)
-            val mapped = plan.entities.entries.single { (path, value) -> DesktopBackupPolicy.entityType(path) == "generated_voice_messages" && value["id"]?.jsonPrimitive?.content == id }.value
+            val mapped = plan.entities.keys.filter { DesktopBackupPolicy.entityType(it) == "generated_voice_messages" }
+                .map { plan.entities.getValue(it) }.single { value -> value["id"]?.jsonPrimitive?.content == id }
             val mappedVoice = backupJson.decodeFromJsonElement<GeneratedVoiceMessage>(mapped)
             val bindings = JsonObject(backupJson.encodeToJsonElement(GeneratedVoiceMessage.serializer(), mappedVoice).jsonObject.filterKeys { it in refs })
             check((mappedVoice.anchorId == null) == (original.anchorId == null)) { "HISTORICAL_VOICE_ANCHOR_REBOUND" }
@@ -127,7 +129,7 @@ internal object DesktopHistoricalVoiceCustody {
         check(Files.size(path) <= DesktopBackupPolicy.MAX_JSON)
         val index = backupJson.decodeFromJsonElement<Index>(strict(Files.readAllBytes(path)))
         check(index.version == 1 && index.kind == "historical-live-voice-source" && hashes.matches(index.sourceSha256) &&
-            index.sourceCode in 84..86 && index.sourceFormat in 1..2 && (index.sourceFormat == 2) == (index.sourceScope != null) &&
+            index.sourceCode in 84..87 && index.sourceFormat in 1..2 && (index.sourceFormat == 2) == (index.sourceScope != null) &&
             (index.sourceFormat != 2 || index.sourceCode >= 85)) { "HISTORICAL_VOICE_INDEX_SCHEMA" }
         check(index.records.size in 1..10000 && index.files.size <= DesktopBackupPolicy.MAX_FILES && home.fileName.toString() == sealName(index))
         val files = index.files.associateBy { it.path }; check(files.size == index.files.size)

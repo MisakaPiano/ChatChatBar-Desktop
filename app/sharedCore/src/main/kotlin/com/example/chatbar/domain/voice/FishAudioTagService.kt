@@ -3,12 +3,13 @@ package com.example.chatbar.domain.voice
 import com.example.chatbar.data.local.entity.ModelConfig
 import com.example.chatbar.domain.chat.ChatApiMessage
 import com.example.chatbar.domain.chat.StreamEvent
-import com.example.chatbar.domain.chat.withoutOutputTokenLimit
 import com.example.chatbar.domain.prompt.rethrowIfAiTaskTerminalFailure
 import com.example.chatbar.domain.prompt.FishAudioPromptAuthority
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -19,6 +20,8 @@ enum class FishVoiceTextTask { TRANSLATE, TAG }
 fun interface FishVoiceTextGateway {
     fun streamText(task: FishVoiceTextTask, messages: List<ChatApiMessage>,
         modelConfig: ModelConfig, disableThinking: Boolean): Flow<StreamEvent>
+
+    suspend fun <T> withLogicalRequest(task: FishVoiceTextTask, model: ModelConfig, block: suspend () -> T): T = block()
 }
 
 data class VoiceTagInput(
@@ -72,34 +75,15 @@ class FishAudioTagService(
             assistantResponse = assistantResponse,
             segmentsJson = segmentsJson
         )
-        val raw = StringBuilder()
-        var failure: String? = null
-        chatService.streamText(
-            task = FishVoiceTextTask.TRANSLATE,
-            messages = listOf(
+        return@coroutineScope requestValidated(
+            FishVoiceTextTask.TRANSLATE,
+            listOf(
                 ChatApiMessage.text("system", FishAudioPromptAuthority.FISH_AUDIO_TRANSLATION_SYSTEM.trim()),
                 ChatApiMessage.text("user", userInput)
-            ),
-            modelConfig = modelConfig.withoutOutputTokenLimit(),
-            disableThinking = true
-        ).collect { event ->
-            when (event) {
-                is StreamEvent.Delta -> {
-                    raw.append(event.text)
-                    onDelta(event.text)
-                }
-                is StreamEvent.Error -> failure = event.message
-                else -> Unit
-            }
-        }
-        failure?.let { error ->
-            return@coroutineScope VoiceTranslationBatchResult(
-                translatedTextById = emptyMap(),
-                errorsById = inputs.associate { it.id to error },
-                rawOutput = raw.toString()
-            )
-        }
-        return@coroutineScope parseTranslation(raw.toString(), inputs)
+            ), modelConfig, onDelta
+        ) { raw -> parseTranslation(raw, inputs).also { result ->
+            if (result.translatedTextById.isEmpty()) throw VoiceOutputException("翻译结果未通过校验")
+        } }
     }
 
     suspend fun generate(
@@ -130,36 +114,43 @@ class FishAudioTagService(
             assistantResponse = assistantResponse,
             segmentsJson = segmentsJson
         )
-        val raw = StringBuilder()
-        var failure: String? = null
-        chatService.streamText(
-            task = FishVoiceTextTask.TAG,
-            messages = listOf(
+        return@coroutineScope requestValidated(
+            FishVoiceTextTask.TAG,
+            listOf(
                 ChatApiMessage.text("system", FishAudioPromptAuthority.FISH_AUDIO_VOICE_TAG_SYSTEM.trim()),
                 ChatApiMessage.text("user", userInput)
-            ),
-            modelConfig = modelConfig.withoutOutputTokenLimit(),
-            disableThinking = true
-        ).collect { event ->
-            when (event) {
-                is StreamEvent.Delta -> {
-                    raw.append(event.text)
-                    onDelta(event.text)
-                }
-                is StreamEvent.Error -> failure = event.message
-                else -> Unit
+            ), modelConfig, onDelta
+        ) { raw -> parseAndValidate(raw, inputs, mode).also { result ->
+            if (result.taggedTextById.isEmpty() && result.confirmationRequiredById.isEmpty()) {
+                throw VoiceOutputException("标签结果未通过校验")
+            }
+        } }
+    }
+
+    private suspend fun <T> requestValidated(
+        task: FishVoiceTextTask,
+        messages: List<ChatApiMessage>,
+        modelConfig: ModelConfig,
+        onDelta: (String) -> Unit,
+        parse: (String) -> T,
+    ): T = auxiliarySlots.withPermit {
+        chatService.withLogicalRequest(task, modelConfig) {
+            retryVoiceAuxiliary(onRetry = { _, waitMillis ->
+                onDelta("\n【语音辅助请求暂时失败；${waitMillis / 1000} 秒后重试】\n")
+            }) {
+                val raw = StringBuilder()
+                chatService.streamText(task, messages, modelConfig, disableThinking = false)
+                    .collect { event -> when (event) {
+                        is StreamEvent.Delta -> { raw.append(event.text); onDelta(event.text) }
+                        is StreamEvent.Error -> throw event.asException()
+                        else -> Unit
+                    } }
+                parse(raw.toString())
             }
         }
-        failure?.let { error ->
-            return@coroutineScope VoiceTagBatchResult(
-                taggedTextById = emptyMap(),
-                confirmationRequiredById = emptyMap(),
-                errorsById = inputs.associate { it.id to error },
-                rawOutput = raw.toString()
-            )
-        }
-        return@coroutineScope parseAndValidate(raw.toString(), inputs, mode)
     }
+
+    private companion object { val auxiliarySlots = Semaphore(2) }
 
     fun parseTranslation(
         rawOutput: String,
@@ -168,7 +159,7 @@ class FishAudioTagService(
         val parsed = runCatching {
             strictResponseJson.decodeFromString(
                 VoiceTranslationResponse.serializer(),
-                rawOutput.trim()
+                VoiceJsonEnvelope.unwrap(rawOutput)
             )
         }.getOrElse { error ->
             error.rethrowIfAiTaskTerminalFailure()
@@ -215,7 +206,7 @@ class FishAudioTagService(
         inputs: List<VoiceTagInput>,
         mode: FishAudioMarkerMode
     ): VoiceTagBatchResult {
-        val normalizedJson = rawOutput.trim()
+        val normalizedJson = VoiceJsonEnvelope.unwrap(rawOutput)
         val parsed = runCatching {
             strictResponseJson.decodeFromString(VoiceTagResponse.serializer(), normalizedJson)
         }.getOrElse { error ->

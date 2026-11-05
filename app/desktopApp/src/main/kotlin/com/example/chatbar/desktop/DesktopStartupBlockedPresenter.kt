@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicReference
 import javax.swing.JButton
 import javax.swing.JFrame
 import javax.swing.JPanel
+import javax.swing.JScrollPane
 import javax.swing.JTextArea
 import javax.swing.WindowConstants
 
@@ -23,11 +24,12 @@ internal fun interface DesktopStartupBlockedPresenter {
 internal class DesktopStartupBlockedView(val diagnostic: DesktopStartupDiagnostic) {
     val closeLabel = "关闭 / Close"
     val copyLabel = "复制诊断代码 / Copy diagnostic code"
-    val message = "当前不能启动普通业务。数据没有被自动清空或恢复，请保留现有文件。\n" +
-        "Normal startup is blocked. No automatic data clearing or recovery was performed. Keep existing files.\n" +
+    val message = "当前不能启动普通业务。此窗口不清空或重置资料；已有恢复记录可能已由原启动流程处理，请保留现有文件。\n" +
+        "Normal startup is blocked. This window does not clear or reset data; existing recovery records may already have been handled by the original startup flow. Keep existing files.\n" +
         if (diagnostic.retainedProbe) "可能保留 Portable 探针文件；请保留证据。\nA Portable probe file may remain. Keep the evidence."
         else ""
     val diagnosticText = "CCB STARTUP_BLOCKED ${diagnostic.code}"
+    val guidance = diagnostic.guide.explanation + "\n\n" + diagnostic.guide.nextStep
     fun copyDiagnostic(copy: (String) -> Unit) = copy(diagnosticText)
     fun close(onClose: () -> Unit) = onClose()
 }
@@ -43,15 +45,16 @@ internal object PlatformDesktopStartupBlockedPresenter : DesktopStartupBlockedPr
             try {
                 val view = DesktopStartupBlockedView(diagnostic)
                 frame = JFrame("ChatChatBar — 启动已阻断 / Startup blocked")
+                DesktopBrandResources.applyTo(frame)
                 val window = frame
                 window.defaultCloseOperation = WindowConstants.DISPOSE_ON_CLOSE
                 window.addWindowListener(object : WindowAdapter() {
                     override fun windowClosed(event: WindowEvent) { closed.countDown() }
                 })
-                window.add(JTextArea(view.message + "\n\n" + view.diagnosticText).apply {
+                window.add(JScrollPane(JTextArea(view.message + "\n\n" + view.guidance + "\n\n" + view.diagnosticText).apply {
                     isEditable = false; lineWrap = true; wrapStyleWord = true
                     border = javax.swing.BorderFactory.createEmptyBorder(16, 16, 16, 16)
-                }, BorderLayout.CENTER)
+                }), BorderLayout.CENTER)
                 window.add(JPanel().apply {
                     add(JButton(view.copyLabel).apply { addActionListener {
                         try { view.copyDiagnostic { Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection(it), null) } }
@@ -59,7 +62,8 @@ internal object PlatformDesktopStartupBlockedPresenter : DesktopStartupBlockedPr
                     } })
                     add(JButton(view.closeLabel).apply { addActionListener { view.close { window.dispose() } } })
                 }, BorderLayout.SOUTH)
-                window.setSize(600, 260)
+                window.minimumSize = java.awt.Dimension(520, 280)
+                window.setSize(640, 420)
                 window.setLocationRelativeTo(null)
                 window.isVisible = true
             } catch (problem: Throwable) {

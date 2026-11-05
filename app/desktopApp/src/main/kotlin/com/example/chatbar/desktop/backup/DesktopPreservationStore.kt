@@ -73,9 +73,8 @@ internal object DesktopPreservationStore {
             copy(path, stored)
             records += Record(path, stored, id, type)
             if (type != "moment_posts") continue
-            val post = backupJson.decodeFromJsonElement<MomentPostSnapshot>(value)
-            val references = listOf("senderAvatar" to post.senderAvatar, "imagePath" to post.imagePath,
-                "generatedImageMetadata.imagePath" to post.generatedImageMetadata?.imagePath)
+            val post = DesktopMomentBackupExtension.snapshot(value)
+            val references = DesktopMomentBackupExtension.references(value)
             for ((field, raw) in references) {
                 if (raw.isNullOrBlank()) continue
                 check(raw.startsWith(DesktopBackupPolicy.PREFIX)) { "PRESERVATION_RESOURCE_NOT_IN_ARCHIVE" }
@@ -84,7 +83,7 @@ internal object DesktopPreservationStore {
                 val proof = input.source.inventory[relative]
                 if (proof == null) {
                     val state = when {
-                        field == "senderAvatar" && input.source.manifest.appVersionCode in 85..86 -> EdgeState.HISTORICAL_AVATAR_ABSENT
+                        field == "senderAvatar" && input.source.manifest.appVersionCode in 85..87 -> EdgeState.HISTORICAL_AVATAR_ABSENT
                         field != "senderAvatar" && input.source.manifest.scope?.momentsImages == false -> EdgeState.SOURCE_MEDIA_NOT_SELECTED
                         else -> error("PRESERVATION_MEDIA_MISSING")
                     }
@@ -134,7 +133,7 @@ internal object DesktopPreservationStore {
         val text = java.io.StringWriter()
         BackupJsonStream(raw.inputStream().strictUtf8Reader(), text) { value, _ -> value }.copy()
         val index = backupJson.decodeFromString(Index.serializer(), text.toString())
-        check(index.version == 1 && index.kind == "dormant-official-moments" && index.sourceCode in 84..86)
+        check(index.version == 1 && index.kind == "dormant-official-moments" && index.sourceCode in 84..87)
         check(index.sourceFormatVersion in 1..2 && (index.sourceFormatVersion == 2) == (index.sourceScope != null))
         check(index.sourceFormatVersion != 2 || index.sourceCode >= 85)
         check(index.sourceSha256 == home.fileName.toString() && hashPattern.matches(index.sourceSha256))
@@ -150,6 +149,7 @@ internal object DesktopPreservationStore {
         }
         check(index.records.map { it.type to it.id }.distinct().size == index.records.size)
         val posts = linkedMapOf<String, MomentPostSnapshot>()
+        val postReferences = linkedMapOf<String, List<Pair<String, String?>>>()
         val tasks = mutableListOf<MomentTaskSnapshot>()
         index.records.forEach { record ->
             check(record.type in setOf("moment_posts", "moment_tasks") && record.storedPath in proofs && record.sourcePath.startsWith("entities/${record.type}/"))
@@ -158,8 +158,10 @@ internal object DesktopPreservationStore {
             val writer = java.io.StringWriter()
             Files.newInputStream(path).strictUtf8Reader().use { reader -> BackupJsonStream(reader, writer) { v, _ -> v }.copy() }
             if (record.type == "moment_posts") {
-                val post = backupJson.decodeFromString(MomentPostSnapshot.serializer(), writer.toString())
+                val value = backupJson.parseToJsonElement(writer.toString()).jsonObject
+                val post = DesktopMomentBackupExtension.snapshot(value)
                 check(post.id == record.id); posts[record.sourcePath] = post
+                postReferences[record.sourcePath] = DesktopMomentBackupExtension.references(value)
             } else {
                 val task = backupJson.decodeFromString(MomentTaskSnapshot.serializer(), writer.toString())
                 check(task.id == record.id); tasks += task
@@ -167,8 +169,7 @@ internal object DesktopPreservationStore {
         }
         val postIds = posts.values.mapTo(hashSetOf()) { it.id }
         check(tasks.all { it.postId == null || it.postId in postIds }) { "PRESERVATION_TASK_POST_MISSING" }
-        val expectedEdges = posts.flatMap { (path, post) -> listOf("senderAvatar" to post.senderAvatar,
-            "imagePath" to post.imagePath, "generatedImageMetadata.imagePath" to post.generatedImageMetadata?.imagePath)
+        val expectedEdges = postReferences.flatMap { (path, references) -> references
             .filter { !it.second.isNullOrBlank() }.map { Triple(path, it.first, it.second!!) } }.toSet()
         check(index.edges.map { Triple(it.sourceRecord, it.field, it.sourceReference) }.toSet() == expectedEdges && index.edges.size == expectedEdges.size)
         index.edges.forEach { edge ->
@@ -178,7 +179,7 @@ internal object DesktopPreservationStore {
             edge.storedPath?.let { check(it.startsWith("media/") && it in proofs) }
             when (edge.state) {
                 EdgeState.SOURCE_MEDIA_NOT_SELECTED -> check(index.sourceScope?.momentsImages == false && edge.field != "senderAvatar")
-                EdgeState.HISTORICAL_AVATAR_ABSENT -> check(index.sourceCode in 85..86 && edge.field == "senderAvatar")
+                EdgeState.HISTORICAL_AVATAR_ABSENT -> check(index.sourceCode in 85..87 && edge.field == "senderAvatar")
                 EdgeState.OWNED_COPY_VERIFIED -> Unit
             }
         }

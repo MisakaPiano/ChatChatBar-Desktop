@@ -8,6 +8,14 @@ import javax.imageio.ImageIO
 import kotlin.math.max
 import kotlin.math.roundToInt
 
+internal fun desktopImageResourceExtension(bytes: ByteArray): String = when {
+    bytes.size >= 8 && bytes[0] == 0x89.toByte() && bytes[1] == 0x50.toByte() -> "png"
+    bytes.size >= 3 && bytes[0] == 0xff.toByte() && bytes[1] == 0xd8.toByte() -> "jpg"
+    bytes.size >= 12 && String(bytes, 8, 4, Charsets.US_ASCII) == "WEBP" -> "webp"
+    bytes.size >= 6 && String(bytes, 0, 6, Charsets.US_ASCII) in setOf("GIF87a", "GIF89a") -> "gif"
+    else -> error("仅支持 PNG、APNG、JPEG、WebP、GIF 图片")
+}
+
 /** A transient transform, never an Entity or Package field. Source bytes remain immutable. */
 internal data class DesktopImageTransform(
     val centerX: Float = 0.5f,

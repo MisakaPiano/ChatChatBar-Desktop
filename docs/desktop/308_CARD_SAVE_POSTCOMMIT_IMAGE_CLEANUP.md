@@ -1,0 +1,11 @@
+# 卡片保存后的资源维护准入
+
+用户在1243反馈：启用卡专属生图参数后保存显示“资源处理失败”，重新进入却保留参数；透明开关的两个值均出现。不能将其记为参数丢失，也不能用此前仅草稿UI验收代表保存通过。
+
+生产接线为`DesktopAppContainer`→`DesktopCharacterEditorController.save`→实体及恢复标记提交→`retryCommittedCleanup`→`DesktopOwnedImageCleanup.deleteUnreferenced`。原save包裹普通数据操作，后置清理又申请独占维护，原coordinator按`NORMAL_TO_EXCLUSIVE_UPGRADE`拒绝。专属参数使原卡进入实际保存流程；问题并非V5参数应被删除或开关不可保留。
+
+修正只调整执行顺序：实体和恢复标记仍在原普通准入内提交，释放后调用原后置清理／重试流程。完整实体、缓存、改名、草稿确认、全引用扫描和独占保护保持。真正的引用读取失败继续可见，并保留资源；不吞异常、不无条件显示成功。
+
+后置恢复重试由单一mutex串行；等待独占维护期间保留原`SAVE_COMMITTED_WARNING`和恢复标记，原编辑保护拒绝覆盖。重复重试在取得owner后重新核对当前状态和提交身份，不用早先快照改写后续新草稿。普通字段dirty保存也覆盖同一路径。
+
+`DesktopCharacterImageSaveAdmissionTest`通过实际AppContainer接线，检查专属参数null、V5 High且透明关闭／开启时保存与重新打开，另检查旧图无引用才删除、存在消息引用则保留，以及损坏引用JSON仍报资源失败且保留两图。已有controller恢复／错误测试属于相邻回归。云端结果按实际原件登记；真实1243失败不改写为已通过，后继尚无公开许可。

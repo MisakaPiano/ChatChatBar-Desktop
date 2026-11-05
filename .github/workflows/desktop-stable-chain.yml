@@ -1,0 +1,116 @@
+name: Validate ordinary Desktop stable upgrade chain
+
+on:
+  push:
+    branches: ['codex/desktop-stable-chain-*']
+    paths: [.github/desktop-stable-chain-request.json]
+  workflow_dispatch:
+    inputs:
+      sourceSha:
+        description: Exact application source; no publication or user-profile installation
+        required: true
+        type: string
+      baselineOnly:
+        description: Only reproduce pinned public1233 startup; skip compiler/new builds/upgrades
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  stable-chain:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13.16'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Verify fault authoring preserves ordinary inputs with tiny files
+        run: python -B -m unittest discover -s tools/desktop/nsis -p test_ordinary_stable_chain.py
+      - name: Prepare exact source and fresh owned NTFS paths
+        env:
+          SOURCE_INPUT: ${{ inputs.sourceSha }}
+          BASELINE_INPUT: ${{ inputs.baselineOnly }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $sha = $env:SOURCE_INPUT
+          $baselineOnly = $env:BASELINE_INPUT -ceq 'true'
+          if ('${{ github.event_name }}' -eq 'push') {
+            $request = Get-Content .github/desktop-stable-chain-request.json -Raw | ConvertFrom-Json
+            if ($request.kind -cne 'CCB_CLOUD_ONLY_ORDINARY_STABLE_CHAIN') { throw 'REQUEST_KIND' }
+            $sha = $request.sourceSha
+            $baselineOnly = $request.baselineOnly -eq $true
+          }
+          if ($sha -cnotmatch '^[0-9a-f]{40}$') { throw 'EXACT_SOURCE_REQUIRED' }
+          # Old Framework manager appends its state namespace and 64-char root hash to this profile.
+          # A long CI source/profile namespace can exceed MAX_PATH before any installation/log exists.
+          # New-Item remains collision-refusing; this does not change an installer or its path guards.
+          $base = Join-Path ($env:SystemDrive + '\') ('ccbs-' + [Guid]::NewGuid().ToString('N').Substring(0, 12))
+          if ([IO.DriveInfo]::new([IO.Path]::GetPathRoot($base)).DriveFormat -ne 'NTFS') { throw 'NTFS_REQUIRED' }
+          New-Item -ItemType Directory -Path $base -ErrorAction Stop | Out-Null
+          $source = Join-Path $base 'source'
+          git worktree add --detach $source $sha
+          if ($LASTEXITCODE -ne 0) { throw 'SOURCE_WORKTREE_FAILED' }
+          $output = New-Item -ItemType Directory -Path (Join-Path $base 'output') -ErrorAction Stop
+          $temp = New-Item -ItemType Directory -Path (Join-Path $base 'temp') -ErrorAction Stop
+          @("CCB_BUILD_BASE=$base", "CCB_CI_SOURCE=$source", "CCB_CANDIDATE_SOURCE=$sha", "CCB_BUILD_OUTPUT=$($output.FullName)", "CCB_STABLE_BASELINE_ONLY=$($baselineOnly.ToString().ToLowerInvariant())", "TEMP=$($temp.FullName)", "TMP=$($temp.FullName)") | Add-Content $env:GITHUB_ENV -Encoding utf8
+      - name: Fetch pinned ordinary NSIS compiler
+        if: env.CCB_STABLE_BASELINE_ONLY != 'true'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $zip = Join-Path $env:CCB_BUILD_BASE 'nsis-3.13.zip'
+          # Same pinned URL/TLS and urllib implementation as the successful ordinary candidate pipeline.
+          $download = @'
+          import hashlib, json, os, pathlib, shutil, urllib.request
+          target = pathlib.Path(os.environ['CCB_BUILD_BASE']) / 'nsis-3.13.zip'
+          source = 'https://downloads.sourceforge.net/project/nsis/NSIS%203/3.13/nsis-3.13.zip'
+          with urllib.request.urlopen(source, timeout=60) as response, target.open('xb') as output:
+              content_type = response.headers.get('Content-Type')
+              final_url = response.geturl()
+              shutil.copyfileobj(response, output)
+          data = target.read_bytes()
+          report = dict(kind='PINNED_PUBLIC_COMPILER_DOWNLOAD', bytes=len(data), sha256=hashlib.sha256(data).hexdigest(),
+                        signature=data[:16].hex(), contentType=content_type, finalUrl=final_url,
+                        expectedSha256='ba63dffc4410ee89193e1cb5a41989991bd77c61068da17e3156d136b7b0b3d8')
+          (pathlib.Path(os.environ['CCB_BUILD_OUTPUT']) / 'compiler-download.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
+          print(json.dumps(report))
+          '@
+          $download | python -B -
+          if ($LASTEXITCODE -ne 0) { throw 'COMPILER_DOWNLOAD_FAILED' }
+          if ((Get-FileHash -Algorithm SHA256 -LiteralPath $zip).Hash.ToLowerInvariant() -cne 'ba63dffc4410ee89193e1cb5a41989991bd77c61068da17e3156d136b7b0b3d8') { throw 'COMPILER_ARCHIVE_HASH' }
+          Expand-Archive -LiteralPath $zip -DestinationPath (Join-Path $env:CCB_BUILD_BASE 'tools')
+          $compiler = Join-Path $env:CCB_BUILD_BASE 'tools\nsis-3.13\makensis.exe'
+          if ((Get-FileHash -Algorithm SHA256 -LiteralPath $compiler).Hash.ToLowerInvariant() -cne '4ec390d0f96f9728507fbc2f4e91311dd90bfc6c8ddfe2159357b3651ae151c0') { throw 'COMPILER_HASH' }
+          "CCB_NSIS_COMPILER=$compiler" | Add-Content $env:GITHUB_ENV -Encoding utf8
+      - name: Build ordinary bridge stable and next images then verify native lifecycle
+        run: |
+          $arguments = @('-B', 'tools/desktop/nsis/ordinary_stable_chain.py', '--source', $env:CCB_CI_SOURCE, '--output', $env:CCB_BUILD_OUTPUT)
+          if ($env:CCB_STABLE_BASELINE_ONLY -ceq 'true') { $arguments += '--baseline-only' }
+          else { $arguments += @('--compiler', $env:CCB_NSIS_COMPILER) }
+          & python @arguments
+          if ($LASTEXITCODE -ne 0) { throw 'ORDINARY_STABLE_CHAIN_FAILED' }
+      - uses: actions/upload-artifact@v4
+        if: always() && env.CCB_BUILD_OUTPUT != ''
+        with:
+          name: ordinary-stable-chain-reports
+          path: |
+            ${{ env.CCB_BUILD_OUTPUT }}/compiler-download.json
+            ${{ env.CCB_BUILD_OUTPUT }}/stable-chain-reports/*.json
+            ${{ env.CCB_BUILD_OUTPUT }}/stable-chain-reports/*.log
+            ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-nsis-stable-chain/*-result.json
+            ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-nsis-stable-chain/*-running.json
+            ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-nsis-stable-chain/*-external-delivery.json
+            ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-nsis-stable-chain/*-stderr.log
+            ${{ env.CCB_CI_SOURCE }}/app/desktopApp/build/preview-continuous-private-20261025/windows-runtime-nsis-stable-chain/*-stdout.log

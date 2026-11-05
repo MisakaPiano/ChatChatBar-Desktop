@@ -57,7 +57,8 @@ internal class DesktopRagController(
 
     private fun startWork(key: Pair<String, String>, work: suspend ((Int, Int) -> Unit) -> Int) = synchronized(lock) {
         if (jobs[key]?.isActive == true) return@synchronized
-        val job = scope.launch(start = CoroutineStart.LAZY) {
+        val publication = DesktopIndexPublicationEvidence()
+        val job = scope.launch(publication, start = CoroutineStart.LAZY) {
             mutableProgress.update { it + (key to DesktopIndexProgress(true, message = "准备索引")) }
             try {
                 val count = work { done, total ->
@@ -65,11 +66,14 @@ internal class DesktopRagController(
                 }
                 mutableProgress.update { it + (key to DesktopIndexProgress(false, count, count, if (count == 0) "索引已是最新" else "索引已保存")) }
             } catch (_: CancellationException) {
-                mutableProgress.update { it + (key to DesktopIndexProgress(false, message = "已取消；原有索引保留")) }
+                mutableProgress.update { it + (key to DesktopIndexProgress(false, message = if (publication.mayHaveChanged)
+                    "已停止，索引发布结果待核对；不能确认已撤回写入，请核对结果并按提示重启。" else "已取消；原有索引保留")) }
             } catch (_: DesktopAudioMaintenanceBusyException) {
                 mutableProgress.update { it + (key to DesktopIndexProgress(false, message = "音频正在使用，请停止播放后重试索引")) }
             } catch (_: Exception) {
-                mutableProgress.update { it + (key to DesktopIndexProgress(false, message = "索引未完成；原数据与恢复证据保留，请检查模型或文档后重试")) }
+                mutableProgress.update { it + (key to DesktopIndexProgress(false, message = if (publication.mayHaveChanged)
+                    "索引发布结果待核对；原数据与恢复证据保留，请核对结果并按提示重启。"
+                    else "索引未完成；原数据与恢复证据保留，请检查模型或文档后重试")) }
             }
         }
         jobs[key] = job

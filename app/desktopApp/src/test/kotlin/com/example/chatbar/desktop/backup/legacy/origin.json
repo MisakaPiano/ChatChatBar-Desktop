@@ -1,0 +1,32 @@
+[
+  {
+    "source": "app/app/src/main/java/com/example/chatbar/domain/chat/SpeakerTagHistoryService.kt",
+    "commit": "b4fa75d296680f777be095f3121ad0c4db979f17",
+    "originalSha256": "11bb0cc77107966865b7bd0ebfd21eeb987947b1ebe0f266de295de891656bd7",
+    "testPath": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/legacy/Official147SpeakerTagHistoryService.kt",
+    "testSha256": "ff19b3304594a3621d0b08000e67939adc2ad2c4c3a3124cefdf66faa691c738",
+    "changes": [
+      [
+        "package com.example.chatbar.domain.chat",
+        "package com.example.chatbar.desktop.backup.legacy"
+      ],
+      [
+        "class SpeakerTagHistoryService(",
+        "class Official147SpeakerTagHistoryService("
+      ]
+    ]
+  },
+  {
+    "source": "app/app/src/main/java/com/example/chatbar/data/local/entity/SpeakerTagRenameTask.kt",
+    "commit": "b4fa75d296680f777be095f3121ad0c4db979f17",
+    "originalSha256": "266c0d678f76503d4bfb90d32be1d7e89dbf04c3d419772b0dd900a9e62d61f9",
+    "testPath": "app/desktopApp/src/test/kotlin/com/example/chatbar/desktop/backup/legacy/entity/SpeakerTagRenameTask.kt",
+    "testSha256": "596c48c8d318d35720f1555265810a5fb829fb60a7d8d6413ead3ff052dab7a6",
+    "changes": [
+      [
+        "package com.example.chatbar.data.local.entity",
+        "package com.example.chatbar.desktop.backup.legacy.entity"
+      ]
+    ]
+  }
+]

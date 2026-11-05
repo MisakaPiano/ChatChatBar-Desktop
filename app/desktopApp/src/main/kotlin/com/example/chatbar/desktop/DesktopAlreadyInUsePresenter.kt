@@ -49,14 +49,19 @@ internal interface StartupMessageBoxApi : StdCallLibrary {
 }
 
 internal class WindowsStartupMessagePresenter(
-    private val api: () -> StartupMessageBoxApi = { Native.load("user32", StartupMessageBoxApi::class.java) },
+    private val api: (() -> StartupMessageBoxApi)? = null,
     private val locale: () -> Locale = Locale::getDefault,
 ) : DesktopAlreadyInUsePresenter {
     override fun showAlreadyInUse(appDataRoot: Path) {
         val message = desktopAlreadyInUseMessage(appDataRoot, locale())
         // Startup has no main HWND. MB_OK | MB_ICONINFORMATION | MB_SETFOREGROUND.
-        check(api().MessageBoxW(null, WString(message.text), WString(message.title), 0x10040) != 0) {
-            "Windows startup message could not be displayed (error ${Native.getLastError()})"
+        var messageError = 0
+        val display = { (api?.invoke() ?: Native.load("user32", StartupMessageBoxApi::class.java))
+            .MessageBoxW(null, WString(message.text), WString(message.title), 0x10040).also {
+                if (it == 0) messageError = Native.getLastError()
+            } }
+        check((if (api == null) DesktopNativeDialogBrand.show(display) else display()) != 0) {
+            "Windows startup message could not be displayed (error $messageError)"
         }
     }
 }
@@ -67,8 +72,8 @@ internal object PlatformAlreadyInUsePresenter : DesktopAlreadyInUsePresenter {
             WindowsStartupMessagePresenter().showAlreadyInUse(appDataRoot)
         } else {
             val message = desktopAlreadyInUseMessage(appDataRoot, Locale.getDefault())
-            javax.swing.JOptionPane.showMessageDialog(null, message.text, message.title,
-                javax.swing.JOptionPane.INFORMATION_MESSAGE)
+            val pane = javax.swing.JOptionPane(message.text, javax.swing.JOptionPane.INFORMATION_MESSAGE)
+            pane.createDialog(message.title).apply { DesktopBrandResources.applyTo(this); isVisible = true; dispose() }
         }
     }
 }

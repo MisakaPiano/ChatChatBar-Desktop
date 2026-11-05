@@ -42,6 +42,14 @@ def stamp(value):
     return value.st_dev, value.st_ino, value.st_size, value.st_mtime_ns, value.st_ctime_ns
 
 
+def identity_stamp(value):
+    # Windows path-stat reports creation time as ctime, while newer handle-stat
+    # can report metadata change time. Compare the same creation-time domain
+    # across APIs; keep each API's full stamp for its own before/after check.
+    creation = getattr(value, 'st_birthtime_ns', value.st_ctime_ns) if os.name == 'nt' else value.st_ctime_ns
+    return value.st_dev, value.st_ino, value.st_size, value.st_mtime_ns, creation
+
+
 def private_name(name):
     parts = PurePosixPath(name).parts
     return (any(part.casefold() in PRIVATE_PARTS for part in parts) or
@@ -88,7 +96,8 @@ def audit(image, expected):
         require(before.st_size <= MAX_FILE, 'IMAGE_FILE_LIMIT')
         digest = hashlib.sha256()
         with path.open('rb') as source:
-            require(stamp(os.fstat(source.fileno())) == stamp(before), 'IMAGE_CHANGED')
+            opened = os.fstat(source.fileno())
+            require(identity_stamp(opened) == identity_stamp(before), 'IMAGE_CHANGED')
             for chunk in iter(lambda: source.read(1024 * 1024), b''):
                 digest.update(chunk)
             if relative == 'app/' + product + '.cfg':
@@ -123,7 +132,9 @@ def audit(image, expected):
                             with archive.open(entry) as data:
                                 while data.read(65536):
                                     pass  # EOF validates ZIP CRC without extraction.
-            require(stamp(os.fstat(source.fileno())) == stamp(before), 'IMAGE_CHANGED')
+            after = os.fstat(source.fileno())
+            require(stamp(after) == stamp(opened), 'IMAGE_CHANGED')
+            require(identity_stamp(after) == identity_stamp(before), 'IMAGE_CHANGED')
         require(stamp(regular(path)) == stamp(before), 'IMAGE_CHANGED')
         inventory.append({'path': relative, 'bytes': before.st_size, 'sha256': digest.hexdigest()})
         total += before.st_size

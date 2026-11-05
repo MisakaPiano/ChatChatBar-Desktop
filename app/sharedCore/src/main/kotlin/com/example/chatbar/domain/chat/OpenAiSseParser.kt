@@ -65,9 +65,13 @@ object OpenAiSseParser {
     }
 
     fun parseUsage(data: String): PromptCacheUsage? {
-        val usage = runCatching { json.decodeFromString<JsonObject>(data) }
-            .getOrNull()
-            ?.get("usage") as? JsonObject ?: return null
+        val root = runCatching { json.decodeFromString<JsonObject>(data) }.getOrNull() ?: return null
+        return parseUsage(root)
+    }
+
+    /** Reuse an already-decoded response without reserializing/reparsing its vector payload. */
+    fun parseUsage(root: JsonObject): PromptCacheUsage? {
+        val usage = root["usage"] as? JsonObject ?: return null
         val promptTokens = usage["prompt_tokens"]?.jsonPrimitive?.intOrNull
         val details = usage["prompt_tokens_details"] as? JsonObject
         val cachedTokens = details?.get("cached_tokens")?.jsonPrimitive?.intOrNull

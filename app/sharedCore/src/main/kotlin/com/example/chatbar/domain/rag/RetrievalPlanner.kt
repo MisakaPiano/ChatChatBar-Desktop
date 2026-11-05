@@ -9,6 +9,7 @@ import com.example.chatbar.domain.prompt.MemoryRagTaskStage
 import com.example.chatbar.domain.prompt.rethrowIfAiTaskTerminalFailure
 import com.example.chatbar.domain.prompt.MemoryRagPromptAuthority
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
@@ -19,7 +20,8 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 class RetrievalPlanner(
-    private val chatService: com.example.chatbar.domain.prompt.MemoryRagTextClient
+    private val chatService: com.example.chatbar.domain.prompt.MemoryRagTextClient,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     private val json = Json {
         ignoreUnknownKeys = true
@@ -32,10 +34,10 @@ class RetrievalPlanner(
         contextMessages: List<ChatMessage>,
         characterName: String,
         modelConfig: ModelConfig
-    ): RetrievalPlanResult = withContext(Dispatchers.IO) { chatService.withTaskRun {
+    ): RetrievalPlanResult = withContext(dispatcher) { chatService.withTaskRun {
         val requestModel = modelConfig.forRetrievalPlannerRequest()
         var rawResponse = ""
-        val result = withTimeoutOrNull(15_000L) {
+        val result = withTimeoutOrNull(120_000L) {
             runCatching {
                 rawResponse = chatService.completeText(
                     taskContext = MemoryRagTask(MemoryRagTaskKind.RETRIEVAL_PLAN, MemoryRagTaskStage.PLAN),
@@ -52,7 +54,6 @@ class RetrievalPlanner(
                     ),
                     modelConfig = requestModel,
                     disableThinking = shouldExplicitlyDisableRetrievalPlannerThinking(requestModel),
-                    isolatedTaskParameters = true
                 )
                 val plan = parsePlan(rawResponse)
                 if (plan == null) {
@@ -76,7 +77,7 @@ class RetrievalPlanner(
                 )
             }
         }
-        result ?: RetrievalPlanResult(plan = null, failureReason = "timeout after 15000ms")
+        result ?: RetrievalPlanResult(plan = null, failureReason = "timeout after 120000ms")
     } }
 
     private fun parsePlan(response: String): RetrievalPlan? {
@@ -113,13 +114,10 @@ class RetrievalPlanner(
 
 }
 
-fun ModelConfig.forRetrievalPlannerRequest(): ModelConfig = copy(
-    reasoningEffort = null,
-    enableThinking = null
-)
+fun ModelConfig.forRetrievalPlannerRequest(): ModelConfig = this
 
-fun shouldExplicitlyDisableRetrievalPlannerThinking(model: ModelConfig): Boolean =
-    model.supportsDisableThinking || model.baseUrl.contains("siliconflow", ignoreCase = true)
+@Suppress("UNUSED_PARAMETER")
+fun shouldExplicitlyDisableRetrievalPlannerThinking(model: ModelConfig): Boolean = false
 
 private fun String.removeMarkdownFence(): String {
     return trim()

@@ -1,0 +1,11 @@
+# P15用量接线：语音辅助模型请求
+
+be27／CI84原结果：Linuxshared1135／Android582通过，Windows生产代码编译通过，新VoiceAuxiliaryUsageTest漏PresetModelCatalogSource import使测试编译失败，本页两个实际Desktop gateway／计数测试未运行；后续仅补import重验，原失败保留，不把已有shared或NTFS7通过代替本页运行证据。
+
+2026-11-02 JST。独立于7611／CI82、Moments及公开1229。此增量待精确源云端，不额外请求模型，不修改Prompt、重试／计费许可或二进制音频管线。
+
+原默认FishGateway丢弃TRANSLATE／TAG身份，直接调用streamFishVoice而不传diagnostics；实际coordinator的networkWork也没有数值归属上下文。本次复用DesktopUsageParent、现有诊断数字sink和已有存储／关闭排水，传入真实voice batch、ChatSession、卡片与消息ID。voice:TRANSLATE和voice:TAG只作内存诊断分组，不能冒充会话ID。
+
+共享Gateway增加默认identity的withLogicalRequest范围，不改其他adapter。TagService把一次翻译或标签的完整特征重试包在该范围内；Desktop适配器一次begin并在真实dispatch回调递增attempt。故503后成功是一个逻辑请求／两次网络尝试，翻译和标签分别计数；不能每次重试新建requestId，亦不能仅因同batch就把两类请求合并。失败的无usage尝试保持null，成功报告0保留0，累计usage仍按原attempt覆盖。
+
+真实默认Gateway→合成HTTP→数值记录回归检查翻译／标签两逻辑请求、真实父项与已报告计量，无TTS（改写停在原确认）；另测一次翻译503→成功为一逻辑／两attempt、首项RETRIED且unknown、末项0及完成计量。已有owner存储／失败尾项／重开／关闭证据复用。统计不保存正文或密钥，免费Fish模型边界和关闭先drain生产者后关数字owner保持。音频生成的字符／时长、NAI图片计次、embedding及其他尚未接线来源不据此声称完整覆盖。

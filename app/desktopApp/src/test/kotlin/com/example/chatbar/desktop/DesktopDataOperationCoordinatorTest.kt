@@ -22,6 +22,31 @@ import kotlinx.serialization.builtins.serializer
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DesktopDataOperationCoordinatorTest {
+    @Test fun `immediate normal admission shares outer lease but never queues behind maintenance`() = runTest {
+        val coordinator = DesktopDataOperationCoordinator()
+        val entered = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>()
+        val normal = launch {
+            coordinator.withNormalOperation {
+                entered.complete(Unit); release.await()
+                coordinator.withImmediateNormalOperation { assertTrue(true) }
+            }
+        }
+        entered.await()
+        val exclusive = launch { coordinator.withExclusiveMaintenance {
+            coordinator.withImmediateNormalOperation { assertTrue(true) }
+        } }
+        runCurrent()
+        assertEquals(DesktopDataOperationCoordinatorState.MAINTENANCE_PENDING, coordinator.state)
+        assertEquals(DesktopDataOperationRejectionReason.MAINTENANCE_BUSY,
+            assertFailsWith<DesktopDataOperationRejectedException> {
+                coordinator.withImmediateNormalOperation { error("MUST_NOT_ENTER") }
+            }.reason)
+        release.complete(Unit); normal.join(); exclusive.join()
+        coordinator.withImmediateNormalOperation { assertEquals(DesktopDataOperationCoordinatorState.OPEN, coordinator.state) }
+        coordinator.closeAndDrain()
+        assertFailsWith<DesktopDataOperationRejectedException> { coordinator.withImmediateNormalOperation { error("CLOSED") } }
+    }
+
     @Test
     fun `independent normal operations overlap`() = runTest {
         val coordinator = DesktopDataOperationCoordinator()

@@ -5,6 +5,21 @@ import org.junit.Test
 import kotlin.test.*
 
 class DesktopMergePreviewTest {
+    @Test fun studioHistoryAndDraftUseOneExplicitConflictChoiceRatherThanMixingCursors() {
+        val pc = mapOf("entities/desktop_studio_edit_history.json" to obj("""{"committed":{"entries":[],"cursor":0}}"""),
+            "entities/novelai_studio_draft.json" to obj("""{"basePrompt":"PC"}"""),
+            "entities/novelai_studio_history_undo.json" to obj("""{"draft":{"basePrompt":"old PC"}}"""))
+        val incoming = mapOf("entities/novelai_studio_draft.json" to obj("""{"basePrompt":"phone"}"""))
+        val preview = DesktopMergePreview.create(pc, incoming, emptyMap(), emptyMap())
+        val conflict = preview.conflicts.single()
+        assertEquals("novelai_studio_draft", conflict.category)
+        val useIncoming = preview.select(mapOf(conflict.key to DesktopMergePreview.Choice.TAKE_PHONE))
+        assertTrue(useIncoming.computer.isEmpty())
+        assertEquals(setOf("entities/novelai_studio_draft.json"), useIncoming.phone.single().records.keys)
+        val keepPc = preview.select(mapOf(conflict.key to DesktopMergePreview.Choice.KEEP_PC))
+        assertEquals(pc.keys, keepPc.computer.single().records.keys)
+        assertTrue(keepPc.phone.isEmpty())
+    }
     private fun obj(value: String) = backupJson.parseToJsonElement(value).jsonObject
     private fun card(id: String, name: String, extra: String = "") = "entities/character_cards/$id.json" to obj("""{"id":"$id","name":"$name"$extra}""")
     private fun session(id: String, message: String, text: String) = mapOf(

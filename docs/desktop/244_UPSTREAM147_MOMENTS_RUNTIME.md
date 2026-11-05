@@ -1,0 +1,9 @@
+# 正式1.4.7适配：朋友圈生成与作者编辑
+
+2026-11-02 JST。独立于公开1229、192f的CI81和7611语音提交；此页增量尚待精确源云端。不改五段既有Moment Prompt，正式baseline不提升，不执行导入／旧失败任务，也不产生真实调用。
+
+按固定官方147，普通和调试生成去掉单独时机judge请求及decision.shouldPost／draft.shouldPost阻断。原checkpoint字段保持可读，已有draft／imagePrompt照常续作，即使历史decision为false；历史终态SKIPPED任务不会因此重新入队。原48小时活动、用户启用和本地根绑定调度准入、任务身份、取消／失败占位保存均保持。调试取消／拒绝透传，不能成为成功形态的错误结果。普通和调试的实际生图设置都以legacy基础加card.defaultImageGenerationSettings.applyTo，不另造图片管线。
+
+复用官方MomentPostEditing的角色卡／人物ID和头像优先级、MomentSender值及共享Repository.updatePostContent。Desktop仍通过既有store串行修改／controller刷新保存，更新正文和明确选择的作者；图片、Prompt、时间、点赞、task／post关系保留。编辑窗保留原发布者快照，另列角色卡和编号人物选项；同名人物不按名字去重，历史快照与现卡来源可区分。取消编辑不写入，不修改角色卡姓名或头像。
+
+受影响回归包括普通只请求GENERATE／保留完整三条上下文、旧负判定和shouldPost=false草稿续作、失败／取消不虚构完成checkpoint；新增实际最终生图request body核对卡片sampler／steps／scale／cfg／variety设置、调试仅一次GENERATE及取消透传。共享作者选项／Repository与Desktop store验证稳定ID、同名不同ID、图片和任务关系保留及无效输入不写；原窄宽真实Scene补选作者并保存，原点赞／私密／删除取消仍核对。合成测试不等于真人视觉或实际付费业务验收。

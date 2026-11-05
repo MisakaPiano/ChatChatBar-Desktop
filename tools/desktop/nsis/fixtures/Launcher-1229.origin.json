@@ -1,0 +1,7 @@
+{
+  "source": "4fefe7ca2d1f151e719496f4a0e968250d102e11",
+  "path": "tools/desktop/nsis/Launcher.cs",
+  "bytes": 38795,
+  "sha256": "c32813653a874dd6e487a66da3f0826587ab97a789666c400e7cc79c837f4b23",
+  "purpose": "Frozen public pre-file-activation stable entry source; compiled only in synthetic native compatibility tests, never shipped as application resources"
+}

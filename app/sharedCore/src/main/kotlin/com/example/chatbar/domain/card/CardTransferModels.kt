@@ -37,6 +37,7 @@ data class PackagedCharacterCard(
     val defaultImagePrompt: String = "",
     val defaultImageNegativePrompt: String = "",
     val defaultNovelAiImageModel: NovelAiImageModel? = null,
+    val defaultImageGenerationSettings: com.example.chatbar.domain.image.NovelAiCharacterImageSettings? = null,
     val systemPrompt: String = "",
     val postHistoryInstructions: String = "",
     val mesExample: String = "",
@@ -49,6 +50,7 @@ data class PackagedCharacterCard(
 )
 
 @Serializable
+@OptIn(ExperimentalSerializationApi::class)
 data class PackagedCharacter(
     val name: String,
     val profile: String = "",
@@ -61,7 +63,9 @@ data class PackagedCharacter(
     val relationships: String = "",
     val speakingStyle: String = "",
     val imagePrompt: String = "",
-    val fishAudioVoice: FishAudioVoiceBinding? = null
+    val fishAudioVoice: FishAudioVoiceBinding? = null,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val desktopEnabled: Boolean = true
 )
 
 @Serializable
@@ -80,12 +84,17 @@ data class PackagedImage(
 data class CharacterCardImportRequest(
     val packageData: CharacterCardPackage,
     val presetKey: String? = null,
-    val presetVersion: Int? = null
+    val presetVersion: Int? = null,
+    val communitySource: CharacterCardCommunitySource? = null,
+    val communityAuthority: CharacterCommunityOverwriteAuthority? = null,
 )
 
 fun CharacterCardPackage.validateForImport() {
     require(schemaVersion in 3..9) { "不支持的角色卡 schemaVersion：$schemaVersion" }
     defaultFormatCard?.validateForImport()
+    card.defaultImageGenerationSettings?.applyTo(
+        com.example.chatbar.domain.image.NovelAiGenerationSettings(model = card.defaultNovelAiImageModel ?: NovelAiImageModel.V4_5_FULL)
+    )?.validationError(0)?.let { error(it) }
     require(card.name.isNotBlank()) { "角色卡名称不能为空" }
     require(card.characters.all { it.name.isNotBlank() }) { "人物名称不能为空" }
     require(documents.all { it.fileName.isNotBlank() && it.fileType.isNotBlank() }) { "文档名称和类型不能为空" }

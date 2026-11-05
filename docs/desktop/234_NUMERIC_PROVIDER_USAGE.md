@@ -1,0 +1,25 @@
+# P15 数值用量统计与实际尝试归属
+
+1228固定bd684／CI74与R07已通过并按用户许可公开；数值统计仍为限定覆盖。后续4139／CI75实际Windows2366PASS+19SKIP，AuxiliaryUsage2通过：NAI设计／研究各阶段及链接视觉在实际collect处继承DesktopUsageParent，无确切归属则OTHER／空ID，显式视觉调用不重复捕获；辅助HTTP在生产者／编辑器关闭后、统计owner之前排水。此增量不在1228中。当前后续工作树继续给launchNovelAi传实际task UUID／可选ChatSession与消息归属，独立Studio仍OTHER且不冒用设计会话为ChatSession；新增实际TaskRuntime→HTTP→持久记录用例，尚待新源云端。完整二进制生图／语音／embedding、主聊天另一条视觉路径及编辑器／手动图像精确归属仍待；Prompt、wire和重试均保持。
+
+CI71／63404实际Windows298suite2377项=2357PASS+19SKIP+1FAIL。Capture3／Usage4／Scene1通过，420／1100统计图已读回核对；原P13两项亦通过。唯一既有Regeneration双close用例暴露统计owner重复申请CLOSED gate；后续补串行幂等close、保存失败保留／重试、成功后不重进gate和并发／失败重试合成用例，尚待新源。原失败不回填为绿，边界预检74不由71覆盖。
+
+进一步沿生产关闭链补齐：未保存数值尾项抛专用DesktopUsageDrainException，先保留backup／coordinator／迁移root生命周期，原恢复窗显示存储检查与安全关闭重试；普通实体事务失败仍不自动重试。新测试走实际closeDesktopWithRecovery＋closeDesktopDataRuntimes，在拒写时验证根锁仍持有、gate未关闭，修复合成拒写后仅保存原数值记录并完成一次关闭；不重发AI，也不把CLOSED普通数据门重新打开。
+
+2026-11-01。当前后续源码工作树，尚未云端编译、打包或真人验收；不在公开1227内。P13 cb60的CI69停在两处生产类型错误，3c4已修正送CI70；本页新增P15不由CI70覆盖。
+
+## 已接源码
+
+`DesktopProviderUsage`只持久化独立request／attempt UUID、已知父任务／真实会话／卡标识、实际模型及命名账户标识、时间、结果枚举和数值usage；没有请求URL、Prompt、回复、错误文本、账户名或凭据字段。缺失保持null，报告0保留0；累计SSE替换同attempt计数，重试生成独立attempt，同逻辑request不重复计次。各项Long汇总检查溢出，cache注记不重复加到prompt总量。
+
+共享`ProviderTransportDiagnostics.onAttemptStarted`在真正dispatch前分别标记主聊天每次重试、isolated stream及Moment complete一次尝试；不改请求body、Prompt、模型参数或重试规则。原进程内原文诊断保持独立，清空界面日志不删除正在进行的数值捕获。Moments通过`DesktopUsageParent`传真实MomentTask／session／card，`moments:JUDGE/GENERATE`只用于界面分组。
+
+当前接入聊天、角色卡／格式卡／世界书AI及朋友圈文案／判断／对应调试；Moment图片Prompt设计走独立NAI辅助图谱，仍待接入，不能称所有Moment文本。没有声称已覆盖所有NAI渲染、语音、向量与其他辅助请求。未知供应商／会话／父卡保持未知，不从URL、账户名或界面分组猜归属。管理的其他设置提供时间／来源筛选、总计和按模型／供应商／账户分组；尚非完整任务中心、托盘或收费账单。
+
+后续补图片看外貌的实际Controller父卡／人物／生成任务归属；`Pin.session`经源码核对是编辑草稿session，不是ChatSession，单独存editorSessionId，真实sessionId保持null。其他卡AI同样保留编辑会话与源实体ID，避免已知父项被丢掉或冒认为真实对话；复用实际Controller入口测试，尚待新源。
+
+本地文件位于现有local-only `diagnostics/provider-usage`，强制写入临时文件后原子替换，旧revision不能覆盖新快照，归属不能同ID变更；没有自动删除历史，也不随portable整应用备份迁移。`DesktopProviderUsageOwner`在IO合并待写快照，失败保留本次运行中的最新记录并显示独立保存错误；读失败不伪装为空统计。所有实际生产者排水后再收尾统计。已提交资料切换／恢复的RESTART_REQUIRED使用限定本地diagnostics的独占shutdown drain，普通数据准入保持关闭，完成后仍需重启。
+
+## 待云端验证
+
+内联合成测试覆盖重复／partial／zero／unknown／重试／Long溢出、实际HTTP SSE重试和非流式usage、真实父归属与清日志、原文／密钥不进入数值记录、重开与旧快照拒绝、本地拒写后最新快照重试、RESTART_REQUIRED下统计尾项排水且普通写入仍拒绝，以及420／1100宽度实际统计／来源筛选Scene。未在本机运行Gradle或JVM渲染。新增UI和后续source需要其自身云端结果，不借CI68／70通过。

@@ -1,0 +1,17 @@
+# 私有1239卡级V5交付
+
+应用冻结a7ba948aea33be495632e2c4f2936b7334a73cd1，生产与ad38同体，补齐296的卡级Effort/透明/明确采样reset，并保留High旧值、延后回调与模型未解析时的raw编辑。源及测试范围不包含随后未提交的整包87兼容修复。
+
+完整158/41979164537原checkout e01dbacd56a6b34553f45436f146d52adf2bc8c7与a7完整Git tree同为b2adbda0ad1f6f9cedabda962f317468de246b9d。Windows主370suite2649=2629PASS+20SKIP/0FAIL，单列proxy5；共享214suite1240PASS、Android HTML586、NTFS7、native37/TUF14/exit4原件已核。原20SKIP保留，不提升物理音频、所有平台或真人验收。
+
+普通R36/41979164371控制c5e3797c验证fresh默认假资料1225→1239、忙安装拒绝且pointer/manifest不变、正常关闭重开及冷暖文件投递；独立中文入口548文件、自己data/lock和程序路径进程排空通过，外部bootstrap保持。不是生产资料、三真实凭据、custom-root忙拒绝或所有外部后代证明。
+
+- 最终EXE178551783B，SHA256 `8dfbce31b19e57ce720fd8039623c3062c9c710895aa08ef9253da205114fdac`。
+- 最终独立ZIP191765634B，SHA256 `11a10615215e3daf08e7ac6edfb7021de223735854f39728a94cdf8266743602`。
+- 239B UTF8 LF说明SHA256 `38188e631061035b9cb4727a6bfd58f8341f20d1742588413c9d5685a7654ecd`。
+
+私有签名21沿原root1。R37/41981355704原FINAL_NOTES_REQUIRED失败保留：期望误用raw CRLF摘要，签名内说明已正确是LF；只修期望与final文件规范字节，不改包、不重新签。R03/41982010138控制272de265使用相同R36原两包，冻结公开1233旧client真实15→21发现、完整下载与二验通过，notes/root一致；local metadata fetcher不是匿名公网client执行，不启动安装、不访问H真实资料。
+
+未公开草稿Release434865066，实际tag_name `desktop-v0.1.0-preview.1239`指向a7，草稿页面仍为`untagged-a4fbe9cf80ccbf5e49c9`。四资产尺寸/serverDigest及正文已逐项读回。全部原件、覆盖清单和owner手交在Continuity `updates/20261105-candidate1239-preparation`。先删除三个已完成临时alternate Git索引12607863B；再核对R36两个外层包装中全部七成员与保留payload逐字节相同，并确认R36/R37/R38及当前探针不依赖后，退役两外层370532019B，合计383139882B逻辑临时物。保留所有实际最终EXE/独立ZIP、manifest/audit/control、请求/提交、小native/R38/full158原报告与逐成员退役证明；不宣称仍有原外层压缩字节或能无限期重拉远端artifact。旧五清理/T11拒绝对象及root三拒绝记录未触碰。
+
+公开仍1238/app5f/签20，1239或签21没有公开许可，不能外推前版授权。root唯一收集U1238实际回执；1.0仍active、原明确暂缓保持。后继已发现整包87入口/保全回读与旧Desktop86新生图设置的可恢复性缺口，另源继续处理，不能拿本私有候选冒认整148备份兼容或正式baseline提升。

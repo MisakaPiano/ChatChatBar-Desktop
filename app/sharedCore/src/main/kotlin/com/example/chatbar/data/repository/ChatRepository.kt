@@ -13,6 +13,9 @@ import com.example.chatbar.data.local.entity.ChatSession
 import com.example.chatbar.data.local.entity.MessageRole
 import com.example.chatbar.data.local.entity.MessageFormatRepairNotice
 import com.example.chatbar.data.local.entity.SpeakerTagRename
+import com.example.chatbar.data.local.entity.SpeakerTagRenameTask
+import com.example.chatbar.data.local.entity.SpeakerTagMessageRewrite
+import com.example.chatbar.domain.chat.SpeakerTagRewritePlanPolicy
 import com.example.chatbar.data.local.entity.toIndexEntry
 import com.example.chatbar.domain.chat.ChatMessageOrdering
 import com.example.chatbar.domain.chat.ChatMessageOrderRepairPlan
@@ -135,8 +138,10 @@ class ChatRepository internal constructor(
         sessionSettingsMutex.withLock {
             val latest = getSession(baseline.id) ?: error("会话已不存在")
             val merged = mergeSettingsDraft(ChatSession.serializer(), baseline, draft, latest)
-            updateSessionLocked(merged)
-            merged
+            val normalized = if (merged.desktopAutoPauseAbsentPeople) merged else
+                com.example.chatbar.domain.chat.SessionCharacterParticipationPolicy.withAutomaticPause(merged, false)
+            updateSessionLocked(normalized)
+            normalized
         }
 
     private suspend fun updateSessionLocked(session: ChatSession) {
@@ -473,6 +478,17 @@ class ChatRepository internal constructor(
     suspend fun readSessionDurable(sessionId: String) =
         storage.readEntityStrict(SESSION_TYPE, sessionId, ChatSession.serializer())
 
+    /** Short local publication only. The callback must not do network work or re-enter message mutations. */
+    suspend fun <T> withLockedMessageSnapshot(sessionId: String, messageId: String,
+        publish: suspend (ChatMessage) -> T): T = messageAppendMutex.withLock {
+        val session = readSessionDurable(sessionId)
+        check(session is JsonFileStorage.EntityReadResult.Valid && session.value.id == sessionId) { "消息所属会话已不存在或不可读取" }
+        val message = readMessageDurable(messageId, sessionId)
+        check(message is JsonFileStorage.EntityReadResult.Valid && message.value.id == messageId &&
+            message.value.sessionId == sessionId) { "消息已不存在或不可读取" }
+        publish(message.value)
+    }
+
     suspend fun getMessage(messageId: String, sessionId: String): ChatMessage? {
         return storage.loadEntity(
             MESSAGE_TYPE,
@@ -581,7 +597,10 @@ class ChatRepository internal constructor(
         }
     }
 
-    suspend fun updateMessage(message: ChatMessage) = messageAppendMutex.withLock {
+    suspend fun updateMessage(message: ChatMessage) { updateMessageReturningSnapshot(message) }
+
+    /** Return the exact saved object, including the repository-owned timestamp/order fields. */
+    suspend fun updateMessageReturningSnapshot(message: ChatMessage): ChatMessage = messageAppendMutex.withLock {
         val persisted = getMessage(message.id, message.sessionId)
         val updated = message.copy(
             updatedAt = System.currentTimeMillis(),
@@ -601,6 +620,7 @@ class ChatRepository internal constructor(
                 )
             }
         }
+        updated
     }
 
     /**
@@ -1168,6 +1188,58 @@ class ChatRepository internal constructor(
             }
         }
         updatedCount
+    }
+
+    /** Task-bound replay keeps overlapping/swapped names safe after partial writes or task-clear failure. */
+    suspend fun rewriteSpeakerTagsForTask(task: SpeakerTagRenameTask,
+        persistPlan: suspend (List<SpeakerTagMessageRewrite>) -> Unit): Int =
+        rewriteSpeakerTagsForTask(task, persistPlan) { saveMessageRecord(it) }
+
+    /** Durable per-message observation; a failed observer keeps the already persisted task plan retryable. */
+    suspend fun rewriteSpeakerTagsForTaskObserved(task: SpeakerTagRenameTask,
+        persistPlan: suspend (List<SpeakerTagMessageRewrite>) -> Unit, afterWrite: suspend () -> Unit): Int =
+        rewriteSpeakerTagsForTask(task, persistPlan) { message -> saveMessageRecord(message); afterWrite() }
+
+    internal suspend fun rewriteSpeakerTagsForTask(task: SpeakerTagRenameTask,
+        persistPlan: suspend (List<SpeakerTagMessageRewrite>) -> Unit,
+        write: suspend (ChatMessage) -> Unit): Int = messageAppendMutex.withLock {
+        initialize()
+        val sessions = _sessions.value.filter { it.characterCardId == task.characterCardId }.associateBy { it.id }
+        val messages = sessions.keys.associateWith { sessionId ->
+            storage.readEntitiesByPrefixStrict(MESSAGE_TYPE, "${sessionId}_", ChatMessage.serializer()) { storageId, message ->
+                require(storageId == messageStorageId(sessionId, message.id)) { "历史人物改名存储归属不匹配" }
+            }.also { rows ->
+                require(rows.all { it.sessionId == sessionId } && rows.map { it.id }.distinct().size == rows.size) { "历史人物改名消息归属不匹配" }
+            }.sortedWith(ChatMessage.TimelineComparator).associateBy(ChatMessage::id)
+        }
+        val plan = task.rewritePlan ?: buildList {
+            messages.forEach { (sessionId, rows) -> rows.values.forEach { original ->
+                val rewritten = SpeakerTagRewritePlanPolicy.rewrite(original, task.renames, System.currentTimeMillis())
+                if (rewritten != original) add(SpeakerTagMessageRewrite(sessionId, original.id,
+                    SpeakerTagRewritePlanPolicy.fingerprint(original), SpeakerTagRewritePlanPolicy.fingerprint(rewritten), rewritten.updatedAt))
+            } }
+        }.also { persistPlan(it) }
+        require(plan.map { it.sessionId to it.messageId }.distinct().size == plan.size) { "历史人物改名计划包含重复消息" }
+        val prepared = plan.map { item ->
+            require(item.beforeSha256.matches(Regex("[a-f0-9]{64}")) && item.afterSha256.matches(Regex("[a-f0-9]{64}")))
+            val original = requireNotNull(messages[item.sessionId]?.get(item.messageId)) { "历史人物改名来源已缺失" }
+            when (SpeakerTagRewritePlanPolicy.fingerprint(original)) {
+                item.afterSha256 -> original // Re-save the exact accepted source to reconcile a possible index tail.
+                item.beforeSha256 -> SpeakerTagRewritePlanPolicy.rewrite(original, task.renames, item.updatedAt).also {
+                    require(SpeakerTagRewritePlanPolicy.fingerprint(it) == item.afterSha256) { "历史人物改名计划不匹配" }
+                }
+                else -> error("历史消息已变化，人物改名任务保留待核对")
+            }
+        }
+        prepared.forEach { write(it) }
+        plan.map { it.sessionId }.distinct().forEach { sessionId ->
+            val session = sessions.getValue(sessionId)
+            val replacements = prepared.filter { it.sessionId == sessionId }.associateBy(ChatMessage::id)
+            val latest = messages.getValue(sessionId).values.map { replacements[it.id] ?: it }.lastOrNull()
+            saveSessionSettingsDraft(session, session.copy(lastMessagePreview = latest?.previewText(),
+                lastMessageTime = latest?.createdAt, lastMessageRole = latest?.role))
+        }
+        plan.size
     }
 
     /**

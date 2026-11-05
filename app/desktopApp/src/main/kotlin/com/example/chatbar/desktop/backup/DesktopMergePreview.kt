@@ -56,14 +56,16 @@ internal class DesktopMergePreview private constructor(
         fun create(pcEntities: Map<String, JsonObject>, phoneEntities: Map<String, JsonObject>,
             pcMedia: Map<String, String>, phoneMedia: Map<String, String>, scope: InspectionScope? = null,
             credentialConflicts: Set<String> = emptySet()): DesktopMergePreview {
-            val pc = units(pcEntities, pcMedia, null)
-            val phone = units(phoneEntities, phoneMedia, scope)
+            val groupedStudio = (pcEntities.keys + phoneEntities.keys).any { DesktopBackupPolicy.entityType(it) == "desktop_studio_edit_history" }
+            val pc = units(pcEntities, pcMedia, null, localMoments = true, groupedStudio = groupedStudio)
+            val phone = units(phoneEntities, phoneMedia, scope, groupedStudio = groupedStudio)
             val identical = hashSetOf<String>()
             val conflicts = mutableListOf<Conflict>()
             phone.values.forEach { candidate ->
                 val exact = pc[candidate.key]
                 if (exact != null && exact.signature == candidate.signature && candidate.key !in credentialConflicts) { identical += candidate.key; return@forEach }
-                val sameName = if (candidate.label.isEmpty()) emptyList() else pc.values.filter {
+                // A Moment sender is not a unique post name. Different posts by the same person coexist.
+                val sameName = if (candidate.label.isEmpty() || candidate.category == "moment_posts") emptyList() else pc.values.filter {
                     it.category == candidate.category && it.label == candidate.label && it.key != candidate.key
                 }
                 val ownedCollisions = if (candidate.category == "chat_sessions") pc.values.filter {
@@ -94,19 +96,30 @@ internal class DesktopMergePreview private constructor(
             listOf(it["id"], it["baseUrl"], it["templateType"] ?: JsonPrimitive("OPENAI"), it["modelName"])
         }
 
-        private fun units(records: Map<String, JsonObject>, media: Map<String, String>, scope: InspectionScope?): Map<String, Unit> {
-            val groups = linkedMapOf<String, MutableMap<String, JsonObject>>()
-            fun add(key: String, path: String, value: JsonObject) { check(groups.getOrPut(key) { linkedMapOf() }.put(path, value) == null) }
+        private fun units(records: Map<String, JsonObject>, media: Map<String, String>, scope: InspectionScope?, localMoments: Boolean = false,
+            groupedStudio: Boolean = false): Map<String, Unit> {
+            val groups = linkedMapOf<String, MutableSet<String>>()
+            val settings = linkedMapOf<String, JsonObject>()
+            fun add(key: String, path: String) { check(groups.getOrPut(key) { linkedSetOf() }.add(path)) }
             val sessionIds = records.filterKeys { DesktopBackupPolicy.entityType(it) == "chat_sessions" }.values.map {
                 requireNotNull(it["id"]?.jsonPrimitive?.contentOrNull)
             }.toSet()
             records.forEach { (path, value) ->
                 val type = DesktopBackupPolicy.entityType(path)
-                if (type in setOf("moment_posts", "moment_tasks")) return@forEach // Separate original-byte dormant custody, never live merge units.
+                if (groupedStudio && type in setOf("novelai_studio_draft", "novelai_studio_history_undo",
+                    "novelai_studio_guidance_checkpoint", "desktop_studio_edit_history")) {
+                    add("novelai_studio_draft:entities/novelai_studio_draft.json", path)
+                    return@forEach
+                }
+                // Official incoming Moments retain original-byte dormant custody. Explicit Desktop image
+                // records can be selected as live posts; imported tasks never inherit scheduler admission.
+                if (type == "moment_tasks" && !localMoments || type == "moment_posts" && !localMoments &&
+                    DesktopMomentBackupExtension.FIELD !in value) return@forEach
                 if (type == "app_settings") {
                     val selected = scope?.let { selectedSettingFields(it.globalOptions) }
                     value.filterKeys { selected == null || it in selected }.forEach { (field, setting) ->
-                        add("setting:$field", path, JsonObject(mapOf(field to setting)))
+                        val key = "setting:$field"
+                        settings[key] = JsonObject(mapOf(field to setting)); add(key, path)
                     }
                     return@forEach
                 }
@@ -118,19 +131,23 @@ internal class DesktopMergePreview private constructor(
                 }?.jsonPrimitive?.contentOrNull
                 if (owner != null) {
                     require(owner in sessionIds) { "MERGE_SESSION_OWNER_MISSING" }
-                    add("session:$owner", path, value)
+                    add("session:$owner", path)
                 } else {
                     val id = value["id"]?.jsonPrimitive?.contentOrNull ?: path
-                    add("$type:$id", path, value)
+                    add("$type:$id", path)
                 }
             }
-            return groups.mapValues { (key, items) ->
-                val primary = items.entries.firstOrNull { DesktopBackupPolicy.entityType(it.key) == "chat_sessions" } ?: items.entries.first()
+            return groups.mapValues { (key, paths) ->
+                val items = DesktopBackupRecords.view(paths) { path -> settings[key] ?: records.getValue(path) }
+                val primary = items.entries.firstOrNull { DesktopBackupPolicy.entityType(it.key) == "chat_sessions" ||
+                    groupedStudio && key.startsWith("novelai_studio_draft:") && DesktopBackupPolicy.entityType(it.key) == "novelai_studio_draft" } ?: items.entries.first()
                 val type = if (key.startsWith("setting:")) "app_settings" else DesktopBackupPolicy.entityType(primary.key)
                 val value = primary.value
-                val label = if (type == "app_settings") key.removePrefix("setting:") else
-                    listOf("displayTitleOverride", "displayName", "name", "title").firstNotNullOfOrNull { value[it]?.jsonPrimitive?.contentOrNull }.orEmpty()
-                val canonical = items.toSortedMap().entries.joinToString("\n") { (path, record) ->
+                val label = if (groupedStudio && key.startsWith("novelai_studio_draft:")) "Studio 草稿与编辑历史" else if (type == "app_settings") key.removePrefix("setting:") else
+                    listOf("displayTitleOverride", "displayName", "name", "title", "senderName").firstNotNullOfOrNull { value[it]?.jsonPrimitive?.contentOrNull }.orEmpty()
+                val signature = java.security.MessageDigest.getInstance("SHA-256")
+                items.keys.sorted().forEachIndexed { index, path ->
+                    val record = items.getValue(path)
                     val mapped = DesktopBackupPolicy.mapResources(record) { reference, _ ->
                         if (reference.startsWith(DesktopBackupPolicy.PREFIX)) media[reference.removePrefix(DesktopBackupPolicy.PREFIX)]?.let { "resource-sha256:$it" } ?: reference else reference
                     }
@@ -140,7 +157,8 @@ internal class DesktopMergePreview private constructor(
                             "\npackage-sha256:" + requireNotNull(media["save_slot_packages/$name"]) { "MERGE_PREVIEW_PACKAGE_PROOF_MISSING" }
                         }.orEmpty()
                     } else ""
-                    "$path:${canonical(backupJson.parseToJsonElement(mapped.toString(Charsets.UTF_8)))}$packageProof"
+                    if (index > 0) signature.update(10.toByte())
+                    signature.update(("$path:" + canonical(backupJson.parseToJsonElement(mapped.toString(Charsets.UTF_8))) + packageProof).toByteArray(Charsets.UTF_8))
                 }
                 val messages = items.filterKeys { DesktopBackupPolicy.entityType(it) == "chat_messages" }.values.mapTo(hashSetOf()) {
                     requireNotNull(it["id"]?.jsonPrimitive?.contentOrNull)
@@ -149,8 +167,8 @@ internal class DesktopMergePreview private constructor(
                     val family = DesktopBackupPolicy.entityType(path)
                     record["id"]?.jsonPrimitive?.contentOrNull?.let { family to it }
                 }.toSet() else emptySet()
-                Unit(key, type, label, items.toMap(), DesktopBackupPolicy.digest(canonical.toByteArray()), messages,
-                    type in setOf("chat_sessions", "character_cards", "model_configs", "embedding_configs", "format_cards", "world_books"), ownedIds)
+                Unit(key, type, label, items, signature.digest().joinToString("") { "%02x".format(it) }, messages,
+                    type in setOf("chat_sessions", "character_cards", "model_configs", "embedding_configs", "format_cards", "world_books", "moment_posts"), ownedIds)
             }
         }
 

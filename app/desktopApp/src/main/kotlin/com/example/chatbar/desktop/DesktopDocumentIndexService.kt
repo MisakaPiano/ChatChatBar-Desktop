@@ -85,10 +85,12 @@ internal class DesktopDocumentIndexService(
                 // Read from disk, rebuilding both storage and repository projections after commit.
                 characters.refreshFromStorage()
             } catch (failure: Throwable) {
-                if (journal.hasPending()) requireRestart()
-                // A cache failure after durable commit cannot authorize continued stale operation.
-                val durable = characters.readDurable(characterId)
-                if (durable is JsonFileStorage.EntityReadResult.Valid && durable.value == next) requireRestart()
+                withContext(NonCancellable) {
+                    if (journal.hasPending()) requireRestart()
+                    // This existing safety check must still execute after late user cancellation.
+                    val durable = characters.readDurable(characterId)
+                    if (durable is JsonFileStorage.EntityReadResult.Valid && durable.value == next) requireRestart()
+                }
                 throw failure
             }
         }

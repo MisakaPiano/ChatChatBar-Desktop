@@ -72,6 +72,15 @@ fun parseRoleplayTextSegments(content: String): List<RoleplayTextSegment> {
     return attachRoleplaySpeakerPrefixes(content, segments)
 }
 
+/** Read-only raw boundaries of the existing long-dash narration blocks, for export projections. */
+fun roleplayLongDashRawRanges(content: String): List<IntRange> {
+    val visible = visibleRoleplayText(content)
+    return findLongDashWrappedRanges(visible.text, 0, visible.text.length).mapNotNull { range ->
+        if (range.start >= range.endExclusive || range.endExclusive > visible.rawIndexes.size) null
+        else visible.rawIndexes[range.start]..visible.rawIndexes[range.endExclusive - 1]
+    }
+}
+
 fun stripRoleplaySpeakerMarkers(content: String): String =
     roleplaySpeakerMarkerPattern.replace(content, "")
 

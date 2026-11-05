@@ -10,7 +10,8 @@ internal class DesktopSessionInventory(private val root: Path) {
     suspend fun read(sessionId: String): Map<String, String> {
         require(sessionId.matches(Regex("[A-Za-z0-9_-]{1,128}")))
         val owned = linkedMapOf<String, String>()
-        var bytes = 0L
+        // Only owner identities and hashes survive each record; total JSON is not retained.
+        val recordBudget = com.example.chatbar.desktop.backup.DesktopBackupRecords.recordBudget
         var count = 0
         TYPES.forEach { type ->
             val directory = root.resolve("entities/$type")
@@ -22,9 +23,8 @@ internal class DesktopSessionInventory(private val root: Path) {
                     check(++count <= 40000) { "会话数据清单超过校验预算" }
                     check(file.fileName.toString().matches(Regex("[A-Za-z0-9_-]{1,256}\\.json"))) { "存在未知会话文件；原文件保留" }
                     DesktopArchiveFiles.safe(file, false)
-                    bytes += Files.size(file); check(bytes <= 128L * 1024 * 1024)
-                    check(Files.size(file) <= 8L * 1024 * 1024)
-                    val before = DesktopArchiveFiles.hash(file, 8L * 1024 * 1024)
+                    com.example.chatbar.desktop.backup.DesktopBackupRecords.requireSize(Files.size(file))
+                    val before = DesktopArchiveFiles.hash(file, recordBudget)
                     val value = Json.parseToJsonElement(Files.readString(file)).jsonObject
                     val ownerKey = when (type) { "chat_sessions" -> "id"; "vector_chunks" -> "sourceId"; else -> "sessionId" }
                     val owner = value[ownerKey]?.jsonPrimitive?.contentOrNull
@@ -44,7 +44,7 @@ internal class DesktopSessionInventory(private val root: Path) {
                     }
                     check(id == expectedId) { "会话文件与记录身份不一致；原数据保留" }
                     if (owner == sessionId && (type != "vector_chunks" || value["sourceType"]?.jsonPrimitive?.content == "CHAT_MEMORY")) {
-                        check(DesktopArchiveFiles.hash(file, 8L * 1024 * 1024) == before)
+                        check(DesktopArchiveFiles.hash(file, recordBudget) == before)
                         owned["entities/$type/${file.fileName}"] = before
                     }
                 }

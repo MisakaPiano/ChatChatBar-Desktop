@@ -16,6 +16,7 @@ internal class DesktopNovelAiInfrastructure(
     resolver: EffectiveModelResolver,
     allowCleartextHttp: () -> Boolean,
     private val designerOverride: NovelAiPromptDesigner? = null,
+    diagnostics: DesktopTransportDiagnosticsOwner? = null,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val assets = DesktopNovelAiCatalogAssets(root.resolve("auxiliary/novelai"), openAsset)
@@ -25,8 +26,8 @@ internal class DesktopNovelAiInfrastructure(
     val translations = NovelAiPromptTranslationService(dictionary, tags)
     private val tokenCounter = NovelAiPromptTokenCounter(openAsset)
     private val transport = OpenAiStreamingTransport(allowCleartextHttp)
-    private val text = DesktopNovelAiTextTransport(transport)
-    private val understanding = ImageUnderstandingService(resolver, DesktopAuxiliaryImageUnderstanding(transport)::describe)
+    private val text = DesktopNovelAiTextTransport(transport, diagnostics)
+    private val understanding = ImageUnderstandingService(resolver, DesktopAuxiliaryImageUnderstanding(transport, diagnostics)::describe)
     private val designer by lazy {
         val loaded = NovelAiCodexCatalogParser(Json { ignoreUnknownKeys = true }).parse(
             openAsset(NOVEL_AI_CODEX_ASSET_PATH).bufferedReader().use { it.readText() })
@@ -35,8 +36,12 @@ internal class DesktopNovelAiInfrastructure(
             NovelAiTagResearchService(LlmNovelAiTagSearchPlanner(text), tags, NovelAiCodexSearchEngine(loaded.catalog)),
             NovelAiPromptPostProcessor(loaded.catalog.rewriteRules), { understanding })
     }
-    suspend fun promptDesigner(): NovelAiPromptDesigner = withContext(Dispatchers.IO) { designerOverride ?: designer }
+    internal fun promptDesignerOnIo(): NovelAiPromptDesigner = designerOverride ?: designer
+    suspend fun promptDesigner(): NovelAiPromptDesigner = withContext(Dispatchers.IO) { promptDesignerOnIo() }
     suspend fun countTokens(plan: NovelAiPromptPlan, model: NovelAiImageModel): NovelAiPromptTokenUsage =
         withContext(Dispatchers.IO) { tokenCounter.count(plan, model) }
-    suspend fun closeAndDrain() { scope.coroutineContext[Job]?.cancelAndJoin() }
+    suspend fun closeAndDrain() {
+        scope.coroutineContext[Job]?.cancelAndJoin()
+        transport.closeAndDrain()
+    }
 }

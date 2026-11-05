@@ -45,6 +45,7 @@ internal data class DesktopPrimaryChatBrowserState(
     val characterQuery: String = "",
     val settingsSessionId: String? = null,
     val renameSessionId: String? = null,
+    val deleteSession: DesktopPrimarySessionItem? = null,
     val wideBrowserExpanded: Boolean = true,
 ) {
     fun toggleWideBrowser() = copy(wideBrowserExpanded = !wideBrowserExpanded)

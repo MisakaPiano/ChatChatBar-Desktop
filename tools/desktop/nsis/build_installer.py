@@ -10,6 +10,9 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'windows'))
 from audit_app_image import audit, regular
+from installer_diagnostics import decorate_manager_calls, diagnostic_function
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'update'))
+from version_identity import ReleaseIdentity
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -29,9 +32,8 @@ def quote(value):
     return '"' + value + '"'
 
 
-def build(image, output, version, commit, installer_version, profile, compiler):
-    if not re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+-preview\.[1-9][0-9]*', version):
-        raise ValueError('PREVIEW_VERSION_REQUIRED')
+def build(image, output, version, commit, installer_version, profile, compiler, build_number=None):
+    identity = ReleaseIdentity.create(version, build_number)
     if not re.fullmatch(r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)', installer_version) or any(int(p) > 65535 for p in installer_version.split('.')):
         raise ValueError('WINDOWS_INSTALLER_VERSION_REQUIRED')
     image = image.absolute()
@@ -49,9 +51,10 @@ def build(image, output, version, commit, installer_version, profile, compiler):
     product = 'ccb-desktop-nsis-' + ('synthetic-v1' if profile == 'synthetic' else 'v1')
     folder = 'ChatChatBarDesktopNSIS' + ('Synthetic' if profile == 'synthetic' else '')
     key = folder
-    version_id = version + '-' + commit[:12]
+    version_id = identity.storage_version + '-' + commit[:12]
     required_space = max(805306368, sum(e['bytes'] for e in report['files']) + 67108864)
     launcher = output / 'ChatChatBar.exe'
+    open_bridge = output / 'OpenChatBarFile.exe'
     manager = output / 'install-manager.exe'
     csc = Path(os.environ.get('WINDIR', 'C:/Windows')) / 'Microsoft.NET/Framework64/v4.0.30319/csc.exe'
     args = [str(csc), '/nologo', '/target:winexe', '/platform:x64', '/optimize+',
@@ -63,49 +66,99 @@ def build(image, output, version, commit, installer_version, profile, compiler):
     subprocess.run(args + [str(Path(__file__).with_name('Launcher.cs'))], check=True)
     stable_args = [a for a in args if not a.startswith('/out:')] + ['/out:' + str(launcher), '/define:STABLE']
     subprocess.run(stable_args + [str(Path(__file__).with_name('Launcher.cs'))], check=True)
-    manifest = dict(product=product, version=version, commit=commit, files=[*report['files'],
+    bridge_args = [a for a in args if not a.startswith('/out:')] + ['/out:' + str(open_bridge), '/define:STABLE;OPEN_WITH']
+    subprocess.run(bridge_args + [str(Path(__file__).with_name('Launcher.cs'))], check=True)
+    manifest = dict(product=product, version=version, commit=commit, buildNumber=identity.build,
+                    channel=identity.channel, storageVersion=identity.storage_version, files=[*report['files'],
                     dict(path=manager.name, bytes=manager.stat().st_size, sha256=sha(manager))])
     manifest_path = output / 'install-manifest.json'
     manifest_path.write_text(json.dumps(manifest, indent=2), encoding='utf-8')
     # Explicit file list: no wildcard can pull private or newly appeared files into the installer.
     longest = max(len(e['path'].encode('utf-16-le')) // 2 for e in report['files']) + len(version_id) + 11
-    script = ['Unicode true', '!include "x64.nsh"', 'RequestExecutionLevel user', 'SetCompressor /SOLID lzma',
+    script = ['Unicode true', '!include "x64.nsh"', '!include "nsDialogs.nsh"', 'Var Repair', 'Var RepairCheck', 'Var TargetId',
+              'Var DiagnosticExit', 'Var DiagnosticPhase', 'Var DiagnosticCode', 'Var DiagnosticText', 'Var DiagnosticLog',
+              'RequestExecutionLevel user', 'SetCompressor /SOLID lzma',
               f'VIProductVersion "{installer_version}.0"', f'VIAddVersionKey "ProductName" "{label}"',
               f'VIAddVersionKey "FileDescription" "{label} Installer"',
               f'VIAddVersionKey "ProductVersion" "{version}"', f'VIAddVersionKey "FileVersion" "{installer_version}.0"',
               'SetOverwrite off', f'Name "{label}"', 'OutFile ' + quote(output / 'ChatChatBar-Setup.exe'),
               f'InstallDir "$LOCALAPPDATA\\Programs\\{folder}"',
               f'InstallDirRegKey HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{key}" "InstallLocation"',
-              'Page directory', 'Page instfiles',
+              'Page directory', 'Page custom RepairPage RepairPageLeave', 'Page instfiles',
               'UninstPage uninstConfirm', 'UninstPage instfiles']
+    script += diagnostic_function(folder) + diagnostic_function(folder, uninstall=True)
     for function in ('.onInit', 'un.onInit'):
-        script += [f'Function {function}', 'SetRegView 64',
+        diagnostic = ('un.' if function.startswith('un.') else '') + 'ShowInstallerFailure'
+        script += [f'Function {function}', 'SetRegView 64', 'StrCpy $Repair 0', f'StrCpy $TargetId "{version_id}"',
+                   'StrCpy $DiagnosticExit 0', 'StrCpy $DiagnosticPhase "安装文件或设置"',
                    '${IfNot} ${IsNativeAMD64}', 'SetErrorLevel 2', 'Quit', '${EndIf}',
                    f'System::Call \'kernel32::CreateMutexW(p 0, i 0, w "Local\\{folder}-Extraction") p.r9 ?e\'',
-                   'Pop $0', 'IntCmp $0 183 0 +3 +3', 'SetErrorLevel 2', 'Quit', 'FunctionEnd']
+                   'Pop $0', 'IntCmp $0 183 init_busy init_mutex_ok init_mutex_ok', 'init_busy:',
+                   'StrCpy $DiagnosticExit 22', 'StrCpy $DiagnosticPhase "启动安装"', f'Call {diagnostic}',
+                   'init_mutex_ok:', 'FunctionEnd']
+    script += ['Function RepairPage', 'IfFileExists "$INSTDIR\\install-owner.txt" +2 0', 'Abort',
+               'nsDialogs::Create 1018', 'Pop $0', '${If} $0 == error', 'Abort', '${EndIf}',
+               '${NSD_CreateLabel} 0 0 100% 28u "升级会保留资料。若程序损坏，可以从这份安装包修复程序。"', 'Pop $0',
+               '${NSD_CreateCheckbox} 0 36u 100% 36u "修复已有程序（保留原程序副本，不更改资料与凭据）"', 'Pop $RepairCheck',
+               'nsDialogs::Show', 'FunctionEnd', 'Function RepairPageLeave',
+               '${NSD_GetState} $RepairCheck $Repair', 'FunctionEnd']
     script += ['Section "Install"',
               'StrLen $0 "$INSTDIR"', f'IntOp $0 $0 + {longest}',
+              'StrCmp $Repair 1 0 +2', 'IntOp $0 $0 + 34',
               'IntCmp $0 245 path_ok path_ok failed', 'path_ok:',
               'InitPluginsDir', 'SetOutPath "$PLUGINSDIR"', 'File /oname=manager.exe ' + quote(manager),
-              f'ExecWait \'"$PLUGINSDIR\\manager.exe" --prepare "$INSTDIR" {required_space} --quiet\' $0',
-              'IntCmp $0 0 +2', 'Goto failed',
-              'ClearErrors', 'SetOutPath "$INSTDIR"', 'IfErrors failed', 'File ' + quote(launcher), 'IfErrors failed',
-              'WriteUninstaller "$INSTDIR\\Uninstall.exe"', 'IfErrors failed',
+              'StrCmp $Repair 1 prepare_repair',
+              f'ExecWait \'"$PLUGINSDIR\\manager.exe" --prepare "$INSTDIR" {required_space} --quiet\' $0', 'Goto prepared',
+              'prepare_repair:',
+              f'ExecWait \'"$PLUGINSDIR\\manager.exe" --prepare-repair "$INSTDIR" {required_space} --quiet\' $0',
+              'prepared:', 'IntCmp $0 0 +2', 'Goto failed',
+              # SetOverwrite is a compiler flag; runtime Goto cannot bypass it for ordinary upgrades.
+              # Prepare verified existing receipts; explicit repair retained originals before this point.
+              'SetOverwrite on', 'ClearErrors', 'SetOutPath "$INSTDIR"', 'IfErrors failed',
+              'StrCmp $Repair 1 write_launcher',
+              'IfFileExists "$INSTDIR\\ChatChatBar.exe" launcher_ready 0',
+              'write_launcher:', 'File ' + quote(launcher), 'IfErrors failed', 'launcher_ready:',
+              'StrCmp $Repair 1 write_open_bridge',
+              'IfFileExists "$INSTDIR\\OpenChatBarFile.exe" open_bridge_ready 0',
+              'write_open_bridge:', 'File ' + quote(open_bridge), 'IfErrors failed', 'open_bridge_ready:',
+              # WriteUninstaller uses CREATE_ALWAYS regardless of SetOverwrite off. Prepare has
+              # already verified an existing ordinary root receipt; only explicit repair may replace it.
+              'StrCmp $Repair 1 write_uninstaller',
+              'IfFileExists "$INSTDIR\\Uninstall.exe" uninstaller_ready 0',
+              'write_uninstaller:', 'ClearErrors',
+              'WriteUninstaller "$INSTDIR\\Uninstall.exe"', 'IfErrors failed', 'uninstaller_ready:',
               'ExecWait \'"$PLUGINSDIR\\manager.exe" --register "$INSTDIR" --quiet\' $0',
               'IntCmp $0 0 +2', 'Goto failed',
               'ClearErrors', 'SetOutPath "$PLUGINSDIR"', 'IfErrors failed', 'File ' + quote(manifest_path), 'IfErrors failed',
+              'StrCmp $Repair 1 stage_repair',
               f'ExecWait \'"$PLUGINSDIR\\manager.exe" --stage "$INSTDIR" "{version_id}" "$PLUGINSDIR\\install-manifest.json" --quiet\' $0',
-              'IntCmp $0 10 already_installed',
+              'Goto staged', 'stage_repair:',
+              f'ExecWait \'"$PLUGINSDIR\\manager.exe" --stage-repair "$INSTDIR" "{version_id}" "$PLUGINSDIR\\install-manifest.json" --quiet\' $0',
+              'IntCmp $0 0 +2', 'Goto failed', 'ClearErrors', 'FileOpen $1 "$INSTDIR\\pending-repair.txt" r',
+              'IfErrors failed', 'FileRead $1 $TargetId', 'FileClose $1',
+              'staged:', 'IntCmp $0 10 already_installed',
               'IntCmp $0 0 +2', 'Goto failed']
+    # Validate the variable before NSIS uses it as an extraction path. A mutable
+    # local plan is not allowed to choose a directory, even inside an owned root.
+    script += ['StrCmp $Repair 1 validate_repair_id normal_target_id', 'normal_target_id:',
+               f'StrCmp $TargetId "{version_id}" target_id_valid failed', 'validate_repair_id:',
+               'StrLen $4 $TargetId', f'IntCmp $4 {len(version_id) + 34} repair_prefix failed failed',
+               'repair_prefix:', f'StrCpy $2 $TargetId {len(version_id)}',
+               f'StrCmp $2 "{version_id}" repair_suffix failed', 'repair_suffix:',
+               f'StrCpy $2 $TargetId 2 {len(version_id)}', 'StrCmp $2 "-r" repair_hex_begin failed',
+               'repair_hex_begin:', f'StrCpy $3 {len(version_id) + 2}', 'repair_hex_loop:', 'StrCpy $2 $TargetId 1 $3']
+    script += [f'StrCmp $2 "{character}" repair_hex_valid' for character in '0123456789abcdef']
+    script += ['Goto failed', 'repair_hex_valid:', 'IntOp $3 $3 + 1',
+               'IntCmp $3 $4 target_id_valid repair_hex_loop failed', 'target_id_valid:']
     for e in report['files']:
         relative = Path(e['path'])
         parent = str(relative.parent).replace('/', '\\')
         suffix = '' if parent == '.' else '\\' + parent
-        script += ['ClearErrors', f'SetOutPath "$INSTDIR\\versions\\{version_id}{suffix}"', 'IfErrors failed',
+        script += ['ClearErrors', f'SetOutPath "$INSTDIR\\versions\\$TargetId{suffix}"', 'IfErrors failed',
                    'File ' + quote(image / relative), 'IfErrors failed']
-    script += ['ClearErrors', 'SetOutPath "$INSTDIR\\versions\\' + version_id + '"', 'IfErrors failed', 'File ' + quote(manager), 'IfErrors failed',
+    script += ['ClearErrors', 'SetOutPath "$INSTDIR\\versions\\$TargetId"', 'IfErrors failed', 'File ' + quote(manager), 'IfErrors failed',
                'already_installed:', 'SetOutPath "$INSTDIR"',
-               f'ExecWait \'"$PLUGINSDIR\\manager.exe" --activate "$INSTDIR" "{version_id}" --quiet\' $0',
+               f'ExecWait \'"$PLUGINSDIR\\manager.exe" --activate "$INSTDIR" "$TargetId" --quiet\' $0',
                'IntCmp $0 0 +2', 'Goto failed',
                'ClearErrors',
                f'WriteRegStr HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{key}" "DisplayName" "{label}"',
@@ -123,18 +176,17 @@ def build(image, output, version, commit, installer_version, profile, compiler):
                'ExecWait \'"$PLUGINSDIR\\manager.exe" --cleanup "$INSTDIR" --quiet\' $0',
                'FileOpen $0 "$INSTDIR\\cleanup-status.txt" r', 'FileRead $0 $1', 'FileClose $0',
                'StrCmp $1 "DEFERRED" 0 +2', 'DetailPrint "新版已确认；部分旧程序因占用、改动或未知文件保留。管理记录位于当前用户 LocalAppData 的 ChatChatBarDesktopNSISInstallState。"',
-               'SetErrorLevel 0', 'Goto done', 'failed:', 'SetErrorLevel 2',
-               'IfSilent +2', 'MessageBox MB_OK|MB_ICONSTOP "安装未完成。请检查程序与资料目录是否分离、剩余空间和程序占用；若有启动错误窗口，请先确认关闭。旧入口和用户资料保留。"',
-               'Quit', 'done:', 'SectionEnd', 'Section "Uninstall"',
+               'SetErrorLevel 0', 'Goto done', 'failed:', 'Call ShowInstallerFailure',
+               'done:', 'SectionEnd', 'Section "Uninstall"',
                'InitPluginsDir', 'SetOutPath "$PLUGINSDIR"', 'File /oname=manager.exe ' + quote(manager),
                'ExecWait \'"$PLUGINSDIR\\manager.exe" --uninstall "$INSTDIR" --quiet\' $0',
                'IntCmp $0 0 +2', 'Goto un_failed',
                f'ReadRegStr $0 HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{key}" "InstallLocation"',
                'StrCmp $0 "$INSTDIR" 0 un_failed',
                f'DeleteRegKey HKCU "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{key}"',
-               'SetErrorLevel 0', 'Goto un_done', 'un_failed:', 'SetErrorLevel 2',
-               'IfSilent +2', 'MessageBox MB_OK|MB_ICONEXCLAMATION "部分程序仍在使用或已改动，已保留。请关闭后重试。用户资料不会删除。"',
+               'SetErrorLevel 0', 'Goto un_done', 'un_failed:', 'Call un.ShowInstallerFailure',
                'un_done:', 'SectionEnd']
+    script = decorate_manager_calls(script)
     source = output / 'installer.nsi'
     source.write_text('\n'.join(script) + '\n', encoding='utf-8-sig')
     subprocess.run([str(compiler.absolute()), str(source)], check=True)
@@ -157,6 +209,7 @@ if __name__ == '__main__':
     p.add_argument('--installer-version', required=True)
     p.add_argument('--profile', choices=['desktop', 'synthetic'], default='desktop')
     p.add_argument('--makensis', type=Path, required=True)
+    p.add_argument('--build-number', type=int)
     options = vars(p.parse_args())
     options['compiler'] = options.pop('makensis')
     build(**options)

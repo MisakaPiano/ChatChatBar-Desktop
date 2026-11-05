@@ -1,5 +1,7 @@
 # 146 — Multi-API Account Profiles & Provider Visibility（D-044）
 
+2026-10-30 调度更新：用户已明确把 SF06 纳入当前七项小修并授权实施，旧文下方“只登记／等待 Project”是历史状态，不能收窄此次授权。实现与验证进度见 [210](210_SELECTED_SMALL_FIXES_AFTER_1218.md)；此批仍未发布，不把源码实现等同于真人验收。
+
 日期：2026-10-20 JST
 状态：**USER REQUESTED / REQUIREMENTS CAPTURED / DESIGN & MIGRATION AUDIT PENDING / NOT IMPLEMENTED**。
 

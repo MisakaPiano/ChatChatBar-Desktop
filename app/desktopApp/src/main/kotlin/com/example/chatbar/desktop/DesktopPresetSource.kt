@@ -9,6 +9,7 @@ import com.example.chatbar.domain.card.FormatCardPackage
 import com.example.chatbar.domain.card.FormatCardTransferService
 import com.example.chatbar.domain.card.WorldBookPackage
 import com.example.chatbar.domain.card.WorldBookTransferService
+import com.example.chatbar.domain.card.resolvePresetCharacterDependencies
 import kotlinx.serialization.json.Json
 
 /** One manifest and one bundled asset tree for startup and explicit recovery. */
@@ -25,9 +26,11 @@ internal class DesktopPresetSource(
 
     fun entries(type: PresetType): List<PresetEntry> = entries.filter { it.type == type }
 
-    fun characterPackage(entry: PresetEntry): CharacterCardPackage {
+    suspend fun characterPackage(entry: PresetEntry): CharacterCardPackage {
         requireEntry(entry, PresetType.CHARACTER)
-        return characters.decode(assetReader(entry.file).decodeToString())
+        val packaged = characters.decode(assetReader(entry.file).decodeToString())
+        return resolvePresetCharacterDependencies(packaged, entry, entries,
+            loadWorldBook = { worldBookPackage(it) }, loadFormat = { formatPackage(it) })
     }
 
     fun formatPackage(entry: PresetEntry): FormatCardPackage {

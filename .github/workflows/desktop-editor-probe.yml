@@ -1,0 +1,78 @@
+name: Focused card editor and image options regression
+
+on:
+  push:
+    branches: ['codex/desktop-editor-probe-*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-editor-probe-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  focused:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Enable long-path checkout
+        run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Select a fresh canonical NTFS temporary directory
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $probeRoot = Join-Path ($env:SystemDrive + '\') ('p' + [Guid]::NewGuid().ToString('N').Substring(0, 7))
+          if ([IO.DriveInfo]::new([IO.Path]::GetPathRoot($probeRoot)).DriveFormat -ne 'NTFS') { throw 'DESKTOP_TEST_NTFS_REQUIRED' }
+          New-Item -ItemType Directory -Path $probeRoot -ErrorAction Stop | Out-Null
+          $testTemp = New-Item -ItemType Directory -Path (Join-Path $probeRoot 'temp') -ErrorAction Stop
+          @("TEMP=$($testTemp.FullName)", "TMP=$($testTemp.FullName)") | Add-Content $env:GITHUB_ENV -Encoding utf8
+      - name: Record exact source and run bounded synthetic regressions
+        shell: pwsh
+        working-directory: app
+        env:
+          CCB_SCREENSHOT_PAGING_REVIEW_DIR: ${{ runner.temp }}/ccb-ui-probe/paging
+          CCB_SCREENSHOT_REVIEW_DIR: ${{ runner.temp }}/ccb-ui-probe/export
+          CCB_FORMAT_AI_REVIEW_DIR: ${{ runner.temp }}/ccb-ui-probe/style
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Path "$env:RUNNER_TEMP/ccb-ui-probe" -Force | Out-Null
+          @{ source = (git rev-parse HEAD); run = $env:GITHUB_RUN_ID; scope = 'synthetic selected tests only; no installer, user profile, release or provider calls' } |
+            ConvertTo-Json | Set-Content -Encoding utf8 "$env:RUNNER_TEMP/ccb-ui-probe/source.json"
+          .\gradlew.bat :sharedCore:compileTestKotlin :desktopApp:compileTestKotlin --no-daemon --stacktrace --console=plain
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          .\gradlew.bat :sharedCore:test --no-daemon --stacktrace --console=plain `
+            --tests com.example.chatbar.domain.image.NovelAiVarietyPlusImportTest `
+            --tests com.example.chatbar.domain.image.NovelAiVarietyResolutionTest `
+            --tests com.example.chatbar.domain.image.NovelAiImageModelCapabilityTest `
+            --tests com.example.chatbar.domain.image.NovelAiPngMetadataReaderTest `
+            --tests com.example.chatbar.domain.image.NovelAiV5GenerationPolicyTest
+          $sharedExit = $LASTEXITCODE
+          .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain `
+            --tests com.example.chatbar.desktop.DesktopCharacterEditorOrderTest `
+            --tests com.example.chatbar.desktop.DesktopCharacterImageDefaultsTest `
+            --tests com.example.chatbar.desktop.DesktopCharacterEditorControllerTest `
+            --tests com.example.chatbar.desktop.DesktopCharacterCardAiPanelTest `
+            --tests com.example.chatbar.desktop.DesktopStyleGalleryTest `
+            --tests com.example.chatbar.desktop.DesktopStudioVarietyPlusTest `
+            --tests com.example.chatbar.desktop.DesktopStudioPresentationTest `
+            --tests com.example.chatbar.desktop.DesktopChatPeoplePresentationTest
+          if ($LASTEXITCODE -ne 0 -or $sharedExit -ne 0) { exit 1 }
+      - name: Preserve actual reports and synthetic review images
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-editor-probe-reports
+          path: |
+            app/sharedCore/build/test-results/test/
+            app/sharedCore/build/reports/tests/test/
+            app/desktopApp/build/test-results/test/
+            app/desktopApp/build/reports/tests/test/
+            ${{ runner.temp }}/ccb-ui-probe/
+          if-no-files-found: error

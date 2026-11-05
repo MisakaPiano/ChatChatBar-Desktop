@@ -1,0 +1,14 @@
+---
+name: chatbar-desktop-recovery
+description: Maintain Desktop recovery/support guidance over existing typed owners and pre-container startup refusals.
+---
+
+# Desktop Recovery and Support
+
+- `DesktopRecovery.kt` projects only root-switch, full-backup and merge owner states into area/phase pairs. No repository scan, journal inspection, payload/path/exception text, clipboard dump or health verdict is performed. Backup check, successful export, merge preview, active work and restart preparation remain distinct; restart outranks stale success/error fields.
+- `DesktopDataWorkspace` has the Recovery and support destination. Its six actions select existing export/check/import/location/automatic/update panes only. They do not increment export requests, open pickers, select conflicts or submit work. The callback rereads all original root/backup/merge locks, including restart, so an old enabled click cannot escape a forced operation view. Existing panes retain preparation and choices. Forced backup/root views show the matching fixed owner guidance without removing their original controls.
+- `DesktopStartupDiagnostic` factories assign a fixed `DesktopStartupRecoveryGuide` category alongside the unchanged code. `DesktopStartupBlockedView` shows bilingual explanation/next step; copy still emits only `CCB STARTUP_BLOCKED <code>`. This path uses no Compose, saved language/theme/settings/secrets or business container. Gate selection, ownership, G0, journal recovery, release and refusal behavior are unchanged.
+- Startup refusal can occur after original journal recovery was reached. Do not claim the entire startup performed no recovery or changed no files. The native view itself has only copy/close, scrollable text and the existing brand treatment.
+- Support summary remains `DesktopSupportSummary`'s explicit allowlist, reached on the original version/update page; no general state serialization is added.
+- `DesktopRecoveryTest` covers typed distinctions and fixed diagnostic categories. `DesktopRecoveryWorkspaceTest` covers actual original-pane navigation/no picker/import/provider calls, stale clicks during actual backup and root-controller confirmation/migration/restart, and cloud narrow/wide captures via `CCB_RECOVERY_REVIEW_DIR`. `DesktopStartupGateTest` also injects recovery reaching a real synthetic marker then failing, verifying no repeated recovery/business construction or private failure exposure. These are scoped checks, not proof of whole-root integrity or every physical recovery scenario.
+- Workspace navigation fixtures initialize the original automatic-backup runtime with its disabled plan before expecting effective setting fields. The runtime's NEW state deliberately has no draft/effective settings; waiting frames does not initialize it. Standalone visual fixtures paint the production background so transparency is not mistaken for a product contrast failure.

@@ -22,7 +22,7 @@ import kotlinx.coroutines.launch
 /** Formal input validity plus Desktop readiness/credential presence; account usage is cost data only. */
 internal fun desktopCanGenerate(state: DesktopNovelAiStudioState, draft: NovelAiStudioDraft, busy: Boolean): Boolean =
     state.ready && state.credentialConfigured && !busy && !state.applyingHistory && draft.basePrompt.isNotBlank() &&
-        draft.activeSettings.validationError(draft.activeCharacters.size) == null && draft.imageGuidance.validationError(draft.selectedModel) == null
+        draft.activeSettings.requestValidationError(draft.activeCharacters.size) == null && draft.imageGuidance.validationError(draft.selectedModel) == null
 
 internal fun desktopGenerateLabel(busy: Boolean, credentialConfigured: Boolean, cost: NovelAiGenerationCost?, progress: String = ""): String = when {
     busy -> "停止当前任务" + progress.takeIf { it.matches(Regex("\\d+/\\d+.*")) }?.let { " · $it" }.orEmpty()
@@ -55,8 +55,20 @@ internal fun StudioTokenBar(label: String, count: Int, limit: Int, modifier: Mod
 }
 
 @Composable
-internal fun StudioAccountCluster(model: NovelAiImageModel, account: NovelAiAccountUiState) {
-    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+@OptIn(ExperimentalLayoutApi::class)
+internal fun StudioAccountActions(content: @Composable RowScope.() -> Unit) {
+    FlowRow(Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.End),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        itemVerticalAlignment = Alignment.CenterVertically) { content() }
+}
+
+@Composable
+internal fun StudioAccountCluster(model: NovelAiImageModel, account: NovelAiAccountUiState,
+    controls: (@Composable () -> Unit)? = null) {
+    Column(Modifier.fillMaxWidth().background(DesktopBootstrapColors.card).padding(8.dp),
+        verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        controls?.invoke()
         StudioActions {
             StatusText(model.displayName)
             StatusText(account.displayAnlas?.let { "Anlas $it" } ?: "Anlas —")
@@ -84,6 +96,12 @@ internal fun StudioAccountCluster(model: NovelAiImageModel, account: NovelAiAcco
 /** Presentation projection of the existing history, never a second persistence owner. */
 internal fun desktopStudioFilmstrip(current: List<String>, history: List<NovelAiGenerationHistoryEntry>): List<String> =
     (current.asReversed() + history.sortedByDescending { it.createdAt }.flatMap { it.images.asReversed().map { image -> image.path } }).distinct()
+
+internal fun desktopStudioPreviewIndex(path: java.nio.file.Path, references: List<String>,
+    resolve: (String) -> java.nio.file.Path): Int {
+    val selected = path.toAbsolutePath().normalize()
+    return references.indexOfFirst { resolve(it).toAbsolutePath().normalize() == selected }
+}
 
 /** Only arrival of a new generated path overrides an explicit older selection. */
 internal fun desktopSelectNewResult(selected: String?, previous: List<String>, current: List<String>): String? =

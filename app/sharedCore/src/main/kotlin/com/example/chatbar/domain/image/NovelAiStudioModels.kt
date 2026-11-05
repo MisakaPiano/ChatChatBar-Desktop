@@ -21,6 +21,9 @@ enum class NovelAiSampler(val apiId: String, val displayName: String) {
 enum class NovelAiSeedMode { RANDOM, FIXED }
 
 @Serializable
+enum class NovelAiEffort { HIGH, MEDIUM }
+
+@Serializable
 enum class NovelAiSizeTier(val displayName: String) {
     SMALL("Small"), NORMAL("Normal"), LARGE("Large"), WALLPAPER("Wallpaper")
 }
@@ -45,14 +48,31 @@ data class NovelAiGenerationSettings(
     val cfgRescale: Float = 0f,
     @EncodeDefault(EncodeDefault.Mode.NEVER)
     val varietyPlus: Boolean = false,
+    /** Resolution-independent sigma from imported metadata; null uses the normal toggle default. */
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val varietyPlusSigma: Double? = null,
     val customWidth: Int? = null,
     val customHeight: Int? = null,
-    val useCharacterPositions: Boolean = false
+    val useCharacterPositions: Boolean = false,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val effort: NovelAiEffort = NovelAiEffort.HIGH,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val transparentBackground: Boolean = false
 ) {
+    // Request capabilities suspend incompatible preferences without destroying their saved values.
+    val isMedium: Boolean get() = model == NovelAiImageModel.V5_FULL && effort == NovelAiEffort.MEDIUM
+    val effectiveSteps: Int get() = if (isMedium) 14 else steps
+    val effectiveSampler: NovelAiSampler get() = if (isMedium) NovelAiSampler.EULER_ANCESTRAL else sampler
+    val effectiveCfgRescale: Float get() = if (isMedium) 0f else cfgRescale
+    val effectiveTransparentBackground: Boolean get() = model == NovelAiImageModel.V5_FULL && transparentBackground
+    fun requestModel(action: NovelAiGenerationAction = NovelAiGenerationAction.TEXT_TO_IMAGE): String =
+        model.apiId + (if (isMedium) "-medium" else "") +
+            (if (action == NovelAiGenerationAction.INPAINT) "-inpainting" else "")
     val usesCustomSize: Boolean get() = customWidth != null || customHeight != null
     val maxAllowedBaseSeed: Long get() = MAX_SEED - (count.coerceIn(1, 4) - 1L)
 
     fun normalized(): NovelAiGenerationSettings = copy(
+        sampler = sampler.takeIf { it in model.samplers } ?: NovelAiSampler.EULER_ANCESTRAL,
         aspectRatio = if (sizeTier == NovelAiSizeTier.WALLPAPER && aspectRatio == NovelAiAspectRatio.SQUARE) {
             NovelAiAspectRatio.PORTRAIT
         } else {
@@ -89,10 +109,15 @@ data class NovelAiGenerationSettings(
         return NovelAiImageSize(dimensions.first, dimensions.second, "${sizeTier.displayName} ${normalized.aspectRatio.displayName}")
     }
 
+    /** Historical settings remain readable; only an actual generation requires current capabilities. */
+    fun requestValidationError(characterCount: Int): String? = validationError(characterCount)
+        ?: if (effectiveSampler !in model.samplers) "当前模型不支持所选 Sampler" else null
+
     fun validationError(characterCount: Int): String? = when {
         sizeValidationError() != null -> sizeValidationError()
         count !in 1..4 -> "生成数量必须在 1–4 之间"
         steps !in 1..50 -> "Steps 必须在 1–50 之间"
+        varietyPlusSigma != null && (!varietyPlusSigma.isFinite() || varietyPlusSigma <= 0) -> "Variety+ Sigma 无效"
         guidance !in 1f..10f -> "Guidance 必须在 1.0–10.0 之间"
         cfgRescale !in 0f..1f -> "CFG Rescale 必须在 0.0–1.0 之间"
         seedMode == NovelAiSeedMode.FIXED && seed !in MIN_SEED..maxAllowedBaseSeed -> "当前数量下 Seed 必须在 $MIN_SEED–$maxAllowedBaseSeed 之间"
@@ -253,8 +278,11 @@ fun NovelAiStudioDraft.applyDesignedPromptPlan(
 )
 
 fun NovelAiStudioDraft.applyReversePromptPlan(
-    plan: NovelAiPromptPlan
+    plan: NovelAiPromptPlan,
+    targetImageModel: NovelAiImageModel? = null
 ): NovelAiStudioDraft = copy(
+    selectedModel = targetImageModel ?: selectedModel,
+    followDefaultNovelAiImageModel = if (targetImageModel != null) false else followDefaultNovelAiImageModel,
     basePrompt = plan.baseCaption,
     extraPrompt = "",
     characters = plan.characterCaptions.mapIndexed { index, caption ->

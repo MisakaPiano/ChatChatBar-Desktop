@@ -120,7 +120,7 @@ class DesktopPreservationStoreTest {
 
     @Test fun v2RetainsExactScopeAndDistinguishesUnselectedMediaFromMissingHistoricalAvatar() = runBlocking<Unit> {
         val scope = OfficialWireScope(emptySet(), 0, 0, 0, 0, 0, false, false, false, true, momentsImages = false)
-        fixture(corpus().filterKeys { it.startsWith("entities/") }, code = 86, scope = scope) { root, staged, _ ->
+        for (code in listOf(86, 87)) fixture(corpus().filterKeys { it.startsWith("entities/") }, code = code, scope = scope) { root, staged, _ ->
             val result = DesktopPreservationStore.preserveMoments(staged, root)
             assertEquals(3, result.unavailableSourceMedia); assertEquals(0, result.mediaCopies)
             val raw = Files.readString(root.resolve("${DesktopPreservationStore.ROOT}/${staged.source.sourceHash}/index.json"))

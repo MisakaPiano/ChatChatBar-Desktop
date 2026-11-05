@@ -1,6 +1,11 @@
 package com.example.chatbar.desktop
 
 import androidx.compose.runtime.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.awt.SwingDialog
 import androidx.compose.ui.awt.ComposeDialog
@@ -22,7 +27,7 @@ internal fun desktopScreenshotWindowBounds(parent: Rectangle, workArea: Rectangl
         (parent.y + (parent.height - height) / 2).coerceIn(workArea.y, workArea.y + workArea.height - height), width, height)
 }
 
-/** The native child owns only a workspace-close callback, never application exit/chrome hooks. */
+/** Parent ownership and close scope stay local; native caption commands affect this child only. */
 @Composable
 internal fun DesktopScreenshotWindow(onClose: () -> Unit, content: @Composable () -> Unit, title: String = "聊天截图工作区") {
     // Main already publishes this exact public WindowScope identity. Reuse it without
@@ -47,6 +52,7 @@ internal fun DesktopScreenshotWindow(onClose: () -> Unit, content: @Composable (
                 screen.width - insets.left - insets.right, screen.height - insets.top - insets.bottom)
             ComposeDialog(owner, Dialog.ModalityType.MODELESS, config).apply {
                 this.title = title
+                isUndecorated = DesktopWindowChrome.isWindows
                 defaultCloseOperation = WindowConstants.DO_NOTHING_ON_CLOSE
                 isResizable = true
                 minimumSize = Dimension(minOf(320, area.width), minOf(360, area.height))
@@ -58,5 +64,20 @@ internal fun DesktopScreenshotWindow(onClose: () -> Unit, content: @Composable (
             }
         },
         dispose = { it.dispose() },
-    ) { CompositionLocalProvider(LocalScreenshotOwner provides child) { content() } }
+    ) {
+        CompositionLocalProvider(LocalScreenshotOwner provides child) {
+            val dialog = child
+            if (dialog != null && DesktopWindowChrome.isWindows) {
+                val chrome = rememberDesktopWindowChrome(dialog, onClose)
+                val recorder = remember(chrome) { DesktopChromeLayoutRecorder(chrome) }
+                val colors = LocalDesktopPalette.current
+                SideEffect { chrome.appearance(colors.background.luminance() < .5f) }
+                Column(Modifier.fillMaxSize().background(colors.background).onGloballyPositioned(recorder::root)) {
+                    DesktopTitleBar(DesktopShellSize.COMPACT, DesktopPrimaryRoute.CHAT, false, chrome, recorder,
+                        navigationVisible = false, windowTitle = title, onNavigate = {})
+                    Box(Modifier.weight(1f).fillMaxWidth()) { content() }
+                }
+            } else content()
+        }
+    }
 }

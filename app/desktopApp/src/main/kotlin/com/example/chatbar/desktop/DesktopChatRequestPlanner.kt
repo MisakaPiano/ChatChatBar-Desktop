@@ -4,6 +4,9 @@ import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.local.entity.ChatMessage
 import com.example.chatbar.data.local.entity.ChatSession
 import com.example.chatbar.data.local.entity.MessageRole
+import com.example.chatbar.data.local.entity.ChunkSourceType
+import com.example.chatbar.domain.budget.PromptRenderMeasurement
+import com.example.chatbar.domain.budget.PromptRuntimeBudgetSelection
 import com.example.chatbar.data.repository.CharacterRepository
 import com.example.chatbar.data.repository.ChatRepository
 import com.example.chatbar.data.repository.FormatCardRepository
@@ -139,9 +142,9 @@ internal class DesktopChatRequestPlanner(
         val session = requireNotNull(chatRepository.getSession(sessionId)) { "对话不存在" }
         require(currentUser.sessionId == session.id) { "当前用户消息不属于该对话" }
         require(currentUser.role == MessageRole.USER) { "当前消息必须是USER" }
-        val card = requireNotNull(characterRepository.getById(session.characterCardId)) { "角色卡不存在" }
-        val playerName = session.playerName?.takeIf(String::isNotBlank)
-            ?: inputs.globalPlayerName?.takeIf(String::isNotBlank)
+        val originalCard = requireNotNull(characterRepository.getById(session.characterCardId)) { "角色卡不存在" }
+        val card = com.example.chatbar.domain.chat.SessionCharacterParticipationPolicy.effectiveCard(session, originalCard)
+        val playerName = com.example.chatbar.domain.chat.PlayerRolePolicy.name(session, originalCard, inputs.globalPlayerName)
         val playerSetting = session.playerSetting?.takeIf(String::isNotBlank)
             ?: inputs.globalPlayerSetting?.takeIf(String::isNotBlank)
 
@@ -226,6 +229,7 @@ internal class DesktopChatRequestPlanner(
                 ),
         )
         val knowledge = retrieveKnowledge(card, session, currentUser, contextMessages, inputs, readOnlyRepositoryAccess)
+        val renderMeasurements = mutableListOf<PromptRenderMeasurement>()
         val promptLayers = promptAssembler.assembleCachePromptLayers(
             characterCard = card,
             playerSetting = playerSetting,
@@ -239,6 +243,7 @@ internal class DesktopChatRequestPlanner(
             memoryHeadAndTimeline = null,
             worldBookPrompt = worldBookPlan.prompt,
             worldBookOutlets = worldBookPlan.outlets,
+            renderObserver = renderMeasurements::add,
         )
         val positionedRequirements = joinPromptParts(
             requirements,
@@ -301,6 +306,19 @@ internal class DesktopChatRequestPlanner(
             worldBookDebugLog = worldBookDebugLog,
             currentUserPersisted = currentUserPersisted,
             knowledgeNotice = knowledge.notice,
+            runtimeBudgetSelection = PromptRuntimeBudgetSelection(
+                loadedCandidateMessages = contextCandidates.size,
+                directContextMessages = contextMessages.size,
+                earlierInputMessages = promptGroups.historyMessages.size,
+                previousInputMessages = promptGroups.previousTurnMessages.size,
+                earlierSentMessages = earlierHistory.size,
+                previousSentMessages = previousTurn.size,
+                selectedRagCards = knowledge.cards.size,
+                selectedMemoryRagCards = knowledge.cards.count { it.type == ChunkSourceType.CHAT_MEMORY },
+                worldBook = worldBookPlan.activity,
+                renders = renderMeasurements.toList(),
+                stablePrefixCacheable = assembly.stablePrefixCacheable,
+            ),
         )
     }
 
@@ -342,6 +360,7 @@ internal data class DesktopChatRequestPlan(
     val worldBookDebugLog: List<String>,
     val currentUserPersisted: Boolean,
     val knowledgeNotice: String? = null,
+    val runtimeBudgetSelection: PromptRuntimeBudgetSelection? = null,
 ) {
     fun toFakeRequest(): DesktopFakeChatRequest = DesktopFakeChatRequest(
         sessionId = session.id,

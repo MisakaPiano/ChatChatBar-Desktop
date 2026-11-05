@@ -8,6 +8,7 @@ import com.example.chatbar.data.local.entity.WorldBook
 import com.example.chatbar.data.repository.CharacterRepository
 import com.example.chatbar.data.repository.WorldBookRepository
 import com.example.chatbar.domain.card.CharacterCardTransferCore
+import com.example.chatbar.domain.card.CharacterCardPackage
 import com.example.chatbar.domain.card.CharacterTransferObservation
 import com.example.chatbar.domain.card.WorldBookTransferService
 import kotlinx.coroutines.CancellationException
@@ -83,6 +84,9 @@ internal class DesktopPresetSuiteRestoreService(
                     val durableWorlds = strictWorlds()
                     val initialCard = uniqueCharacter(entry.presetKey, durableCharacters)
                     val initialWorlds = related.associate { it.presetKey to uniqueWorld(it.presetKey, durableWorlds) }
+                    // Resolve declared package dependencies before creating any missing suite member.
+                    // An existing card retains its original default format and original recovery path.
+                    val characterPackage = if (initialCard == null) source.characterPackage(entry) else null
                     // Transfer NamePolicy still uses repository lists; publish only after strict discovery succeeded.
                     characters.refreshFromStorage()
                     worlds.refreshFromStorage()
@@ -100,7 +104,7 @@ internal class DesktopPresetSuiteRestoreService(
                             }
                         }
                         if (card == null) {
-                            card = importCharacter(entry, observed) { originalCancellation = it }
+                            card = importCharacter(entry, requireNotNull(characterPackage), observed) { originalCancellation = it }
                             afterCharacterCreated(requireNotNull(card))
                         }
                         // Defense in depth against external file changes and stale preflight IDs.
@@ -115,7 +119,9 @@ internal class DesktopPresetSuiteRestoreService(
                         check(latest.sourcePresetKey == entry.presetKey) {
                             "Preset Character provenance changed: ${entry.presetKey}"
                         }
-                        var bindingsAdded = 0
+                        // The shared package importer may already bind all declared books atomically.
+                        // Report this restore's initial-to-final declared binding delta, not just the tail write.
+                        val bindingsAdded = (targetIds - initialCard?.worldBookIds.orEmpty().toSet()).size
                         if (targetIds.any { it !in latest.worldBookIds }) {
                             beforeBindingWrite(latest)
                             // A callback may suspend while an external process changes the files.
@@ -131,7 +137,6 @@ internal class DesktopPresetSuiteRestoreService(
                                 "Preset Character provenance changed: ${entry.presetKey}"
                             }
                             val additions = targetIds - current.worldBookIds.toSet()
-                            bindingsAdded = additions.size
                             if (additions.isNotEmpty()) {
                                 val updated = current.copy(worldBookIds = (current.worldBookIds + books.map { it.id }).distinct())
                                 try {
@@ -272,11 +277,11 @@ internal class DesktopPresetSuiteRestoreService(
         }
     }
 
-    private suspend fun importCharacter(entry: PresetEntry, observed: MutableList<Unresolved>,
+    private suspend fun importCharacter(entry: PresetEntry, packaged: CharacterCardPackage, observed: MutableList<Unresolved>,
         rememberCancellation: (CancellationException) -> Unit): CharacterCard {
         val observation = CharacterTransferObservation()
         return try {
-            characterTransfers.importNew(source.characterPackage(entry), presetKey = entry.presetKey,
+            characterTransfers.importNew(packaged, presetKey = entry.presetKey,
                 presetVersion = entry.version, observation = observation).also {
                 observed += Unresolved.Character(it.id, entry.presetKey)
             }

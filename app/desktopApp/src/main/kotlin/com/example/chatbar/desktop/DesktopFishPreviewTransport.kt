@@ -18,6 +18,7 @@ internal class DesktopFishPreviewTransport(
     private val credentials: DesktopFishAudioCredentials,
     client: OkHttpClient = ProxyAwareClient.builder().build(),
     private val baseUrl: String = "https://api.fish.audio",
+    private val diagnostics: DesktopTransportDiagnosticsOwner? = null,
 ) {
     private class Attempts(val count: AtomicInteger = AtomicInteger())
     private val client = client.newBuilder().dispatcher(Dispatcher()).connectionPool(ConnectionPool())
@@ -32,12 +33,17 @@ internal class DesktopFishPreviewTransport(
     private val lock = Any()
     private val calls = mutableMapOf<Call, CompletableDeferred<Unit>>()
     private var closed = false
+    internal val diagnosticOwner get() = diagnostics
+    fun captureCall() = credentials.captureCall()
 
-    suspend fun generate(reference: String, text: String, model: String, store: DesktopFishPreviewStore): Path = DesktopFishTtsAdmission.slots.withPermit {
+    suspend fun generate(reference: String, text: String, model: String, store: DesktopFishPreviewStore,
+        diagnosticSessionId: String = "voice-preview"): Path = DesktopFishTtsAdmission.slots.withPermit {
         require(model == "s2.1-pro-free") { "本切片仅授权 s2.1-pro-free；不会替换其他模型" }
         require(text.isNotBlank() && text.codePointCount(0, text.length) <= 120 && reference.isNotBlank() && reference.length <= 256)
-        val key = try { credentials.load() ?: error("missing") } catch (_: Exception) { error("Fish 安全凭据不可用") }
-        val original = FishAudioRequestFactory.tts(baseUrl, key, model, reference, text.trim())
+        val credential = try { credentials.currentCall() } catch (_: Exception) { error("Fish 安全凭据不可用") }
+        val key = credential.read()?.takeIf(String::isNotBlank) ?: error("Fish 安全凭据不可用")
+        val sent = text.trim()
+        val original = FishAudioRequestFactory.tts(baseUrl, key, model, reference, sent)
         val body = requireNotNull(original.body)
         val request = original.newBuilder().tag(Attempts::class.java, Attempts()).method("POST", object : RequestBody() {
             override fun contentType() = body.contentType()
@@ -45,14 +51,20 @@ internal class DesktopFishPreviewTransport(
             override fun isOneShot() = true
             override fun writeTo(sink: BufferedSink) = body.writeTo(sink)
         }).build()
+        val context = currentCoroutineContext()[DesktopUsageParent]?.value
+            ?: DesktopUsageContext(DesktopUsageSource.VOICE_PREVIEW)
+        val media = diagnostics?.beginFishMedia(diagnosticSessionId, model, key, credential.accountId, context,
+            sent.codePointCount(0, sent.length).toLong())
         val call = client.newCall(request)
         val done = CompletableDeferred<Unit>()
         synchronized(lock) { check(!closed) { "预览连接已关闭" }; calls[call] = done }
         try {
-            return@withPermit suspendCancellableCoroutine { continuation ->
+            val clip = suspendCancellableCoroutine<Path> { continuation ->
                 continuation.invokeOnCancellation { call.cancel() }
                 fun finish() { synchronized(lock) { calls.remove(call) }; done.complete(Unit) }
+                if (!continuation.isActive) { finish(); return@suspendCancellableCoroutine }
                 try {
+                    media?.attemptStarted(request)
                     call.enqueue(object : Callback {
                         override fun onFailure(call: Call, e: IOException) {
                             try { if (continuation.isActive) continuation.resumeWith(Result.failure(IllegalStateException("Fish 预览网络失败"))) }
@@ -61,6 +73,7 @@ internal class DesktopFishPreviewTransport(
                         override fun onResponse(call: Call, response: Response) {
                             try {
                                 response.use {
+                                    media?.response(it.code)
                                     if (!continuation.isActive) return
                                     val result = runCatching {
                                         if (!it.isSuccessful) throw DesktopFishPreviewHttpFailure(it.code)
@@ -80,6 +93,22 @@ internal class DesktopFishPreviewTransport(
                     if (continuation.isActive) continuation.resumeWith(Result.failure(IllegalStateException("Fish 预览连接不可用")))
                 }
             }
+            // Keep the existing callback/body owner alive until completion before closing evidence.
+            withContext(NonCancellable) { done.await() }
+            media?.let {
+                val (durationMs, bytes) = store.measurements(clip)
+                it.audio(durationMs, bytes)
+            }
+            media?.finish(DesktopTaskStatus.COMPLETED)
+            clip
+        } catch (cancelled: CancellationException) {
+            withContext(NonCancellable) { done.await() }
+            media?.finish(DesktopTaskStatus.CANCELLED)
+            throw cancelled
+        } catch (failure: Throwable) {
+            withContext(NonCancellable) { done.await() }
+            media?.finish(DesktopTaskStatus.FAILED)
+            throw failure
         } finally {
             // Cancellation of the coroutine is not proof that callback/body/file I/O has ended.
             withContext(NonCancellable) { done.await() }

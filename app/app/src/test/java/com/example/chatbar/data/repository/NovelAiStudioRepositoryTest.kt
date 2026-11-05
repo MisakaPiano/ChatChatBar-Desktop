@@ -19,6 +19,39 @@ class NovelAiStudioRepositoryTest {
     @get:Rule
     val temp = TemporaryFolder()
 
+    @Test fun `complete Desktop fixture previews without writes then Android draft flush reopen exports identical text`() = runTest {
+        val files = temp.newFolder("full-text-${System.nanoTime()}")
+        val repository = repository(files)
+        val initial = repository.loadDraft()
+        repository.flushLatestDraft()
+        val text = javaClass.getResourceAsStream("/interop/ccb-full-prompt-v1.txt")!!.use { it.readBytes().toString(Charsets.UTF_8) }
+        val preview = com.example.chatbar.domain.image.NovelAiFullPromptPreview.inspect(text, initial)
+        assertEquals(initial, repository.draft.value)
+        assertEquals(initial, repository(files).loadDraft())
+        repository.stageDraft(resetPromptEditors = true) { preview.apply(it) }
+        repository.flushLatestDraft()
+        val reloaded = repository(files).loadDraft()
+        assertEquals(text, com.example.chatbar.domain.image.NovelAiStudioFullPromptClipboard.encode(reloaded))
+        assertEquals(initial.imageGuidance, reloaded.imageGuidance)
+        assertEquals(initial.continuousTargetCount, reloaded.continuousTargetCount)
+        // The original draft history restore uses this same repository stage/flush authority.
+        repository.stageDraft(resetPromptEditors = true) { initial }; repository.flushLatestDraft()
+        assertEquals(initial.basePrompt, repository(files).loadDraft().basePrompt)
+        assertEquals(initial.negativePrompt, repository(files).loadDraft().negativePrompt)
+    }
+
+    @Test fun `complete preview refuses a later Android edit without overwriting it`() = runTest {
+        val files = temp.newFolder("full-text-stale-${System.nanoTime()}")
+        val repository = repository(files)
+        val initial = repository.loadDraft()
+        val text = javaClass.getResourceAsStream("/interop/ccb-full-prompt-v1.txt")!!.use { it.readBytes().toString(Charsets.UTF_8) }
+        val preview = com.example.chatbar.domain.image.NovelAiFullPromptPreview.inspect(text, initial)
+        repository.stageDraft { it.copy(basePrompt = "newer Android edit") }; repository.flushLatestDraft()
+        try { repository.stageDraft { preview.apply(it) }; org.junit.Assert.fail("Stale preview must refuse") }
+        catch (_: IllegalArgumentException) { }
+        assertEquals("newer Android edit", repository(files).loadDraft().basePrompt)
+    }
+
     @Test
     fun `delayed flush persists latest staged revision instead of captured older draft`() = runTest {
         val files = temp.newFolder("latest-${System.nanoTime()}")

@@ -12,6 +12,7 @@ import java.util.UUID
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -25,29 +26,41 @@ internal class DesktopChatVoiceRuntime(
     credentials: DesktopFishAudioCredentials, output: DesktopAudioOutput,
     private val picker: DesktopFilePicker = UnconfiguredDesktopFilePicker,
     private val gate: AppDataOperationGate = NoOpAppDataOperationGate,
-    private val textBusy: (String) -> Boolean = { false },
+    private val sourceBusy: (String, String) -> Boolean = { _, _ -> false },
     transportOverride: DesktopFishVoiceTransport? = null,
     textGateway: FishVoiceTextGateway? = null,
+    private val uiPreferences: kotlinx.coroutines.flow.StateFlow<DesktopChatUiPreferences>? = null,
+    private val diagnostics: DesktopTransportDiagnosticsOwner? = null,
 ) {
     private val textTransport = lazy { OpenAiStreamingTransport { settings.currentAppSettings.allowCleartextModelApi } }
     private val job = SupervisorJob()
     private val scope = CoroutineScope(job + Dispatchers.IO)
     private val mutation = Mutex()
-    private val transport = transportOverride ?: DesktopFishVoiceTransport(credentials, audio)
-    val playback = DesktopVoicePlayback(audio, output, gate)
+    private val transport = transportOverride ?: DesktopFishVoiceTransport(credentials, audio, diagnostics = diagnostics)
+    val playback = DesktopVoicePlayback(audio, output, gate,
+        continuousForSession = uiPreferences?.let { preferences -> { session -> preferences.value.continuousPlaybackFor(session) } })
     val coordinator = DesktopFishGenerationCoordinator(scope, chats, characters, settings, repository, credentials,
-        transport, FishAudioTagService(textGateway ?: FishVoiceTextGateway { _, messages, config, _ ->
-            textTransport.value.streamFishVoice(messages, config)
+        transport, FishAudioTagService(textGateway ?: DesktopFishAuxiliaryGateway(diagnostics) { messages, config, log ->
+            textTransport.value.streamFishVoice(messages, config, log)
         }), models, audio, playback, gate)
     private val mutableNotice = MutableStateFlow<String?>(null)
     val notice = mutableNotice.asStateFlow()
     private var closed = false
     private val foregroundLock = Any()
     @Volatile private var foregroundDrain: Job? = null
+    init { uiPreferences?.let { preferences -> scope.launch {
+        preferences.collect { playback.setContinuousPlayback(it.continuousPlaybackFor(playback.state.value.sessionId)) }
+    } } }
+
+    fun seek(voiceId: String, positionMs: Long) { scope.launch {
+        guarded { playback.seekTo(voiceId, positionMs) }
+    } }
 
     fun effectiveAudiobook(session: ChatSession): Boolean = VoiceGenerationPolicy.audiobookEnabled(session, settings.currentAppSettings)
     fun dismissNotice(expected: String) { mutableNotice.compareAndSet(expected, null) }
+    suspend fun playbackSourceTitle(sessionId: String?): String = sessionId?.let { chats.getSession(it)?.title } ?: "语音播放"
     fun pauseOrClose() { scope.launch { if (playback.state.value.playing) playback.pause() else coordinator.stopPlayback() } }
+    fun pausePlayback() { scope.launch { guarded { playback.pause() } } }
     fun resumePlayback() {
         val token = playbackIntent()
         scope.launch { playback.resume { !closed && playbackIntent() == token } }
@@ -56,7 +69,8 @@ internal class DesktopChatVoiceRuntime(
     fun foreground(sessionId: String?): Job = synchronized(foregroundLock) {
         coordinator.setForegroundSession(sessionId)
         val previous = foregroundDrain
-        scope.launch { previous?.join(); playback.stop() }.also { foregroundDrain = it }
+        // Leaving the chat invalidates late generation/autoplay intent, not existing local audio.
+        scope.launch { previous?.join() }.also { foregroundDrain = it }
     }
 
     suspend fun generate(expected: ChatMessage, narrator: String?, segment: Int? = null,
@@ -65,7 +79,7 @@ internal class DesktopChatVoiceRuntime(
         originGeneration: Long = playbackIntent()): String? = guarded {
         foregroundDrain?.join()
         gate.withNormalOperation { mutation.withLock {
-            check(!closed && !textBusy(expected.sessionId)) { "当前会话仍有文本任务，请稍后操作" }
+            check(!closed && !sourceBusy(expected.sessionId, expected.id)) { "当前消息正在修改，请稍后操作" }
             val current = chats.getMessage(expected.id, expected.sessionId) ?: error("消息已不存在")
             check(current == expected) { "消息已变化；请重新打开语音操作" }
             val session = chats.getSession(current.sessionId) ?: error("会话已不存在")
@@ -101,6 +115,28 @@ internal class DesktopChatVoiceRuntime(
         block()
     }
 
+    suspend fun <T> withCharacterParticipationChange(sessionId: String, block: suspend () -> T): T = mutation.withLock {
+        check(!closed)
+        check(coordinator.batches.value.none { it.sessionId == sessionId && it.phase !in
+            setOf(VoiceGenerationPhase.FAILED, VoiceGenerationPhase.CANCELLED) }) { "语音任务进行中，请完成或停止后再切换人物" }
+        block()
+    }
+
+    /** Automatic presence updates affect future admissions. Existing batches retain their immutable
+     * GenerationContext/targets, confirmation text, bindings and recordings; no cancellation or TTS. */
+    suspend fun withAutomaticParticipationUpdate(block: suspend () -> Unit) = mutation.withLock {
+        check(!closed)
+        block()
+    }
+
+    /** One global voice mutation lease for the complete affected roster; never cancel/replay a synthesis. */
+    suspend fun <T> withSpeakerHistoryMutation(sessionIds: Set<String>, block: suspend () -> T): T = mutation.withLock {
+        check(!closed)
+        check(coordinator.batches.value.none { it.sessionId in sessionIds && it.phase !in
+            setOf(VoiceGenerationPhase.FAILED, VoiceGenerationPhase.CANCELLED) }) { "语音任务进行中，历史人物改名保留待重试" }
+        block()
+    }
+
     /** Called only after the owning chat message was explicitly deleted. */
     suspend fun removeDeletedMessage(sessionId: String, messageId: String) = gate.withNormalOperation {
         check(chats.readMessageDurable(messageId, sessionId) is com.example.chatbar.data.local.JsonFileStorage.EntityReadResult.Missing) { "消息删除状态未知；录音已保留" }
@@ -127,7 +163,11 @@ internal class DesktopChatVoiceRuntime(
     private suspend fun releaseIfUnreferenced(path: String) = withContext(NonCancellable) {
         gate.withNormalOperation { if (!repository.isAudioReferenced(path)) audio.deleteIfOwned(path) else false }
     }
-    suspend fun play(voice: GeneratedVoiceMessage, message: ChatMessage, originGeneration: Long = playbackIntent()) = guarded {
+    suspend fun play(voice: GeneratedVoiceMessage, message: ChatMessage, originGeneration: Long = playbackIntent()) =
+        playExisting(voice, message, originGeneration, backgroundControl = false)
+
+    private suspend fun playExisting(voice: GeneratedVoiceMessage, message: ChatMessage,
+        originGeneration: Long, backgroundControl: Boolean) = guarded {
         foregroundDrain?.join()
         gate.withNormalOperation { mutation.withLock {
             val current = chats.getMessage(message.id, message.sessionId) ?: error("消息已不存在")
@@ -138,10 +178,28 @@ internal class DesktopChatVoiceRuntime(
             val timeline = chats.getMessagesReadOnly(current.sessionId)
             val index = timeline.indexOfFirst { it.id == current.id && it == current }
             check(index >= 0) { "消息已变化；请重新选择" }
-            val visible = timeline.drop(index).filter { it.role == MessageRole.ASSISTANT }
+            val continuous = uiPreferences?.value?.continuousPlaybackFor(current.sessionId) ?: playback.continuousPlayback.value
+            val visible = (if (continuous) timeline.drop(index) else listOf(current))
+                .filter { it.role == MessageRole.ASSISTANT }
                 .flatMap { repository.placementsForMessage(it).map { placement -> placement.voice } }
             check(visible.any { it.id == voice.id })
-            coordinator.playFrom(voice, visible, originGeneration)
+            coordinator.playFrom(voice, visible, originGeneration, backgroundControl)
+        } }
+    }
+    /** Uses current-version repository placements, never a stale queue or a synthesis request. */
+    fun adjacentPlayback(forward: Boolean): Job {
+        val expected = playback.state.value.currentVoiceId
+        val token = playbackIntent()
+        return scope.launch { guarded {
+            val playing = expected?.let { repository.get(it) } ?: return@guarded
+            check(playback.state.value.currentVoiceId == expected) { "当前录音已变化，请重试" }
+            val timeline = chats.getMessagesReadOnly(playing.sessionId).filter { it.role == MessageRole.ASSISTANT }
+            val voices = timeline.flatMap { message -> repository.placementsForMessage(message).map { message to it.voice } }
+            val index = voices.indexOfFirst { it.second == playing }
+            check(index >= 0) { "录音归属或版本已变化；请重新选择" }
+            val target = voices.getOrNull(index + if (forward) 1 else -1)
+            if (target == null) mutableNotice.value = if (forward) "已经是最后一句录音" else "已经是第一句录音"
+            else playExisting(target.second, target.first, token, backgroundControl = true)
         } }
     }
     fun stop() { coordinator.stopPlayback() }

@@ -24,7 +24,7 @@ internal object DesktopMergeSaveSlotPackage {
         DesktopBackupScratch.create(workspace, "merge-slot-catalog-").use { scratch ->
             val original = scratch.directory.resolve("original.cbsave")
             val hash = scratch.copy(source, original, DesktopSaveSlotArchive.MAX_ARCHIVE)
-            check(DesktopSaveSlotInspector(true).inspect(original).status == SlotInspectStatus.STRUCTURE_VALID) { "MERGE_SOURCE_PACKAGE_INVALID" }
+            check(DesktopSaveSlotInspector(retainHistoricalVoices = true, retainHistoricalReferences = true).inspect(original).status == SlotInspectStatus.STRUCTURE_VALID) { "MERGE_SOURCE_PACKAGE_INVALID" }
             ZipFile(original.toFile()).use { zip ->
                 val bytes = zip.getInputStream(requireNotNull(zip.getEntry("manifest.json"))).use { it.readNBytes(256 * 1024 + 1) }
                 check(bytes.size <= 256 * 1024) { "MERGE_PACKAGE_MANIFEST_BUDGET" }
@@ -65,7 +65,7 @@ internal object DesktopMergeSaveSlotPackage {
             val context = currentCoroutineContext()
             val original = scratch.directory.resolve("original.cbsave")
             val hash = scratch.copy(source, original, DesktopSaveSlotArchive.MAX_ARCHIVE)
-            val inspector = DesktopSaveSlotInspector(retainHistoricalVoices = true)
+            val inspector = DesktopSaveSlotInspector(retainHistoricalVoices = true, retainHistoricalReferences = true)
             check(inspector.inspect(original).status == SlotInspectStatus.STRUCTURE_VALID) { "MERGE_SOURCE_PACKAGE_INVALID" }
             val output = scratch.directory.resolve("rewritten.cbsave")
             val oldSlotId = requireNotNull(slot.text("id"))

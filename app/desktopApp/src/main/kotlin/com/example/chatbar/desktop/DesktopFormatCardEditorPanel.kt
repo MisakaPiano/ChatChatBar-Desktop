@@ -1,3 +1,4 @@
+@file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 package com.example.chatbar.desktop
 
 import androidx.compose.foundation.background
@@ -7,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -44,10 +46,10 @@ internal fun DesktopFormatCardManagementPanel(
         settingsController.loadFormatManagement()
     }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        FormatHeading(t(DesktopUiText.FORMAT_MANAGEMENT))
-        FormatField(t(DesktopUiText.SEARCH_FORMATS), state.query) { controller.search(it) }
-        BootstrapButton(t(DesktopUiText.NEW_FORMAT), icon = DesktopAppIcons.Add) { scope.launch { controller.openNew() } }
-        DesktopManagementImportAndDrafts(DesktopTransferKind.FORMAT, state.cards.map { it.id }.toSet(), management)
+        DesktopManagementHeading(t(DesktopUiText.FORMAT_MANAGEMENT))
+        DesktopManagementToolbar(t(DesktopUiText.SEARCH_FORMATS), state.query, controller::search,
+            t(DesktopUiText.NEW_FORMAT), true, { scope.launch { controller.openNew() } }, DesktopTransferKind.FORMAT, management)
+        DesktopManagementImportAndDrafts(DesktopTransferKind.FORMAT, state.cards.map { it.id }.toSet(), management, showImport = false)
         DesktopManagementPresets(DesktopTransferKind.FORMAT,
             state.cards.map { it.sourcePresetKey to it.sourcePresetVersion }, management)
         if (state.visibleCards.isEmpty()) StatusText(t(DesktopUiText.NO_FORMATS))
@@ -83,84 +85,95 @@ internal fun DesktopFormatCardEditorOverlay(controller: DesktopFormatCardEditorC
     val t = LocalDesktopUiStrings.current
     val scope = rememberCoroutineScope()
     val colors = DesktopBootstrapColors
-    DesktopModalSurface { Column(Modifier.fillMaxSize().background(colors.overlay).padding(16.dp)
-        .verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+    DesktopModalSurface { Column(Modifier.fillMaxSize().background(colors.overlay).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
+            verticalArrangement = Arrangement.spacedBy(8.dp)) {
             FormatHeading(t(if (state.targetId == null) DesktopUiText.NEW_FORMAT else DesktopUiText.EDIT_FORMAT))
             BootstrapButton(t(DesktopUiText.CLOSE)) { controller.requestLeave(controller::closeClean) }
         }
-        if (state.dirty) StatusText(t(if (state.draftPersisted) DesktopUiText.RECOVERED_DRAFT
-            else DesktopUiText.DRAFT_SAVING), colors.warning)
-        state.problem?.let { problem ->
-            StatusText(t(problem.uiText()), colors.destructive)
-            if (problem == FormatEditorProblem.INVALID_TOOL) {
-                card.userTools.forEachIndexed { index, tool ->
-                    FormatCardUserToolValidator.validate(tool).takeIf { !it.isValid }?.let {
-                        StatusText("${index + 1}. ${t(toolIssue(tool.type, it.minimumError, it.maximumError))}", colors.destructive)
-                    }
-                }
-            }
-            if (problem == FormatEditorProblem.SOURCE_CHANGED) {
-                BootstrapButton(t(DesktopUiText.OVERWRITE)) { scope.launch { controller.save(forceOverwrite = true) } }
-            }
-            if (problem == FormatEditorProblem.SOURCE_CHANGED || problem == FormatEditorProblem.SOURCE_DELETED) {
-                BootstrapButton(t(DesktopUiText.FORMAT_SAVE_AS_NEW)) { scope.launch { controller.saveAsNew() } }
-            }
-            if (problem == FormatEditorProblem.SAVE_COMMITTED_WARNING ||
-                problem == FormatEditorProblem.CLEAN_DRAFT_WARNING) {
-                BootstrapButton(t(DesktopUiText.CHARACTER_RETRY_CLEANUP)) { scope.launch { controller.retryCleanup() } }
-            }
-        }
-        FormatField(t(DesktopUiText.FORMAT_NAME), card.name) { value -> controller.edit { it.copy(name = value) } }
-        FormatField(t(DesktopUiText.FORMAT_CONTENT), card.content, multiline = true) { value ->
-            controller.edit { it.copy(content = value) }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            StatusText(t(DesktopUiText.FORMAT_DEFAULT_FLAG))
-            BootstrapButton(t(if (card.isDefault) DesktopUiText.ON else DesktopUiText.OFF), secondary = !card.isDefault) {
-                controller.edit { it.copy(isDefault = !it.isDefault) }
-            }
-        }
-        StatusText(t(DesktopUiText.FORMAT_DEFAULT_EXPLANATION))
-        FormatHeading(t(DesktopUiText.FORMAT_TOOLS))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            BootstrapButton(t(DesktopUiText.FORMAT_ADD_RANDOM)) { controller.addTool(FormatCardUserToolType.RANDOM_NUMBER) }
-            BootstrapButton(t(DesktopUiText.FORMAT_ADD_SUFFIX)) { controller.addTool(FormatCardUserToolType.STRONG_PROMPT_SUFFIX) }
-        }
-        card.userTools.forEachIndexed { index, tool ->
-            Column(Modifier.fillMaxWidth().border(1.dp, colors.border, RoundedCornerShape(8.dp)).padding(10.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    StatusText("${index + 1}. ${t(if (tool.type == FormatCardUserToolType.RANDOM_NUMBER)
-                        DesktopUiText.FORMAT_RANDOM else DesktopUiText.FORMAT_SUFFIX)}")
-                    BootstrapButton(t(DesktopUiText.FORMAT_UP), secondary = true) { controller.moveTool(index, -1) }
-                    BootstrapButton(t(DesktopUiText.FORMAT_DOWN), secondary = true) { controller.moveTool(index, 1) }
-                    BootstrapButton(t(DesktopUiText.REMOVE), secondary = true) { controller.removeTool(index) }
-                }
-                when (tool.type) {
-                    FormatCardUserToolType.RANDOM_NUMBER -> {
-                        FormatField(t(DesktopUiText.FORMAT_MIN), tool.minimum) { value ->
-                            controller.updateTool(index) { it.copy(minimum = value) }
-                        }
-                        FormatField(t(DesktopUiText.FORMAT_MAX), tool.maximum) { value ->
-                            controller.updateTool(index) { it.copy(maximum = value) }
+        Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            if (state.dirty) StatusText(t(if (state.draftPersisted) DesktopUiText.RECOVERED_DRAFT
+                else DesktopUiText.DRAFT_SAVING), colors.warning)
+            state.problem?.let { problem ->
+                StatusText(t(problem.uiText()), colors.destructive)
+                if (problem == FormatEditorProblem.INVALID_TOOL) {
+                    card.userTools.forEachIndexed { index, tool ->
+                        FormatCardUserToolValidator.validate(tool).takeIf { !it.isValid }?.let {
+                            StatusText("${index + 1}. ${t(toolIssue(tool.type, it.minimumError, it.maximumError))}", colors.destructive)
                         }
                     }
-                    FormatCardUserToolType.STRONG_PROMPT_SUFFIX -> FormatField(
-                        t(DesktopUiText.FORMAT_SUFFIX_TEXT), tool.text, multiline = true) { value ->
-                        controller.updateTool(index) { it.copy(text = value) }
-                    }
                 }
-                val issue = FormatCardUserToolValidator.validate(tool)
-                if (!issue.isValid) StatusText(t(toolIssue(tool.type, issue.minimumError, issue.maximumError)), colors.destructive)
+                if (problem == FormatEditorProblem.SOURCE_CHANGED) {
+                    BootstrapButton(t(DesktopUiText.OVERWRITE)) { scope.launch { controller.save(forceOverwrite = true) } }
+                }
+                if (problem == FormatEditorProblem.SOURCE_CHANGED || problem == FormatEditorProblem.SOURCE_DELETED) {
+                    BootstrapButton(t(DesktopUiText.FORMAT_SAVE_AS_NEW)) { scope.launch { controller.saveAsNew() } }
+                }
+                if (problem == FormatEditorProblem.SAVE_COMMITTED_WARNING ||
+                    problem == FormatEditorProblem.CLEAN_DRAFT_WARNING) {
+                    BootstrapButton(t(DesktopUiText.CHARACTER_RETRY_CLEANUP)) { scope.launch { controller.retryCleanup() } }
+                }
+            }
+            FormatField(t(DesktopUiText.FORMAT_NAME), card.name) { value -> controller.edit { it.copy(name = value) } }
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                controller.promptBudget?.let { DesktopEditorPromptBudget(it, card) }
+                if (controller.canAutoFill) controller.autoFill?.let { ai ->
+                    BootstrapButton("AI 设计格式卡", secondary = true) { ai.open() }
+                }
+            }
+            FormatField(t(DesktopUiText.FORMAT_CONTENT), card.content, multiline = true) { value ->
+                controller.edit { it.copy(content = value) }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                StatusText(t(DesktopUiText.FORMAT_DEFAULT_FLAG))
+                BootstrapButton(t(if (card.isDefault) DesktopUiText.ON else DesktopUiText.OFF), secondary = !card.isDefault) {
+                    controller.edit { it.copy(isDefault = !it.isDefault) }
+                }
+            }
+            StatusText(t(DesktopUiText.FORMAT_DEFAULT_EXPLANATION))
+            FormatHeading(t(DesktopUiText.FORMAT_TOOLS))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                BootstrapButton(t(DesktopUiText.FORMAT_ADD_RANDOM)) { controller.addTool(FormatCardUserToolType.RANDOM_NUMBER) }
+                BootstrapButton(t(DesktopUiText.FORMAT_ADD_SUFFIX)) { controller.addTool(FormatCardUserToolType.STRONG_PROMPT_SUFFIX) }
+            }
+            card.userTools.forEachIndexed { index, tool ->
+                Column(Modifier.fillMaxWidth().border(1.dp, colors.border, RoundedCornerShape(8.dp)).padding(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        StatusText("${index + 1}. ${t(if (tool.type == FormatCardUserToolType.RANDOM_NUMBER)
+                            DesktopUiText.FORMAT_RANDOM else DesktopUiText.FORMAT_SUFFIX)}")
+                        BootstrapButton(t(DesktopUiText.FORMAT_UP), secondary = true) { controller.moveTool(index, -1) }
+                        BootstrapButton(t(DesktopUiText.FORMAT_DOWN), secondary = true) { controller.moveTool(index, 1) }
+                        BootstrapButton(t(DesktopUiText.REMOVE), secondary = true) { controller.removeTool(index) }
+                    }
+                    when (tool.type) {
+                        FormatCardUserToolType.RANDOM_NUMBER -> {
+                            FormatField(t(DesktopUiText.FORMAT_MIN), tool.minimum) { value ->
+                                controller.updateTool(index) { it.copy(minimum = value) }
+                            }
+                            FormatField(t(DesktopUiText.FORMAT_MAX), tool.maximum) { value ->
+                                controller.updateTool(index) { it.copy(maximum = value) }
+                            }
+                        }
+                        FormatCardUserToolType.STRONG_PROMPT_SUFFIX -> FormatField(
+                            t(DesktopUiText.FORMAT_SUFFIX_TEXT), tool.text, multiline = true) { value ->
+                            controller.updateTool(index) { it.copy(text = value) }
+                        }
+                    }
+                    val issue = FormatCardUserToolValidator.validate(tool)
+                    if (!issue.isValid) StatusText(t(toolIssue(tool.type, issue.minimumError, issue.maximumError)), colors.destructive)
+                }
             }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             BootstrapButton(t(DesktopUiText.SAVE)) { scope.launch { if (controller.save()) controller.closeClean() } }
             BootstrapButton(t(DesktopUiText.CANCEL), secondary = true) { controller.requestLeave(controller::closeClean) }
             BootstrapButton(t(DesktopUiText.DISCARD_DRAFT), secondary = true) { scope.launch { controller.discard() } }
         }
     } }
+    controller.autoFill?.let { DesktopFormatCardAutoFillOverlay(it) }
 }
 
 @Composable
@@ -173,7 +186,7 @@ internal fun DesktopFormatCardLeavePrompt(controller: DesktopFormatCardEditorCon
         Column(Modifier.fillMaxWidth().background(DesktopBootstrapColors.card, RoundedCornerShape(12.dp))
             .padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             FormatHeading(t(DesktopUiText.UNSAVED_CHANGES))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 BootstrapButton(t(DesktopUiText.SAVE_AND_LEAVE)) { scope.launch { controller.saveAndLeave() } }
                 BootstrapButton(t(DesktopUiText.FORMAT_KEEP_DRAFT_AND_LEAVE)) {
                     scope.launch { controller.keepDraftAndLeave() }
@@ -195,7 +208,7 @@ private fun FormatField(label: String, value: String, multiline: Boolean = false
         BasicTextField(value, onChange, Modifier.fillMaxWidth().heightIn(min = if (multiline) 140.dp else 36.dp)
             .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp))
             .background(DesktopBootstrapColors.input, RoundedCornerShape(8.dp)).padding(9.dp),
-            textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp), singleLine = !multiline)
+            cursorBrush = DesktopBootstrapColors.inputCaret, textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp), singleLine = !multiline)
     }
 }
 

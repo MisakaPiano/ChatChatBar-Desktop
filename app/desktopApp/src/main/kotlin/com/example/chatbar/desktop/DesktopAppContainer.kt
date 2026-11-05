@@ -1,5 +1,6 @@
 package com.example.chatbar.desktop
 
+import kotlinx.coroutines.flow.map
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.repository.CharacterRepository
 import com.example.chatbar.data.repository.ChatRepository
@@ -15,6 +16,8 @@ import com.example.chatbar.desktop.security.DesktopModelCredentialPersistencePol
 import com.example.chatbar.desktop.security.DesktopSecretStore
 import com.example.chatbar.desktop.security.DesktopSettingsCredentialPersistencePolicy
 import com.example.chatbar.desktop.security.WindowsSecretStore
+import com.example.chatbar.desktop.security.credentialForCall
+import com.example.chatbar.desktop.security.identity
 import com.example.chatbar.domain.card.AuthoritativeCharacterTransferPromptPolicy
 import com.example.chatbar.domain.card.CharacterCardTransferCore
 import com.example.chatbar.domain.card.CharacterDocumentRagCleanup
@@ -51,24 +54,28 @@ class DesktopAppContainer internal constructor(
         DesktopDocumentRagIndexPreparation(appDataRoot, jsonFileStorage, dataOperationCoordinator, taskRuntime, gateway)
     private val embeddingGatewayOwner = lazy { DesktopEmbeddingGateway(
         config = { requireNotNull(modelRepository.getEmbeddingModel()) { "请先配置向量模型" } },
-        allowCleartext = { settingsRepository.currentAppSettings.allowCleartextModelApi }) }
+        allowCleartext = { settingsRepository.currentAppSettings.allowCleartextModelApi },
+        usageSink = { providerUsage.submit(it) }) }
     internal val embeddingGateway by embeddingGatewayOwner
     private val ragOwner = lazy { DesktopRagController(modelRepository, settingsRepository, historyIndex = { session ->
-        taskRuntime.withDocumentPreparation("chat-memory:$session", "history") {
+        taskRuntime.withDocumentPreparation("chat-memory:$session", "history",
+            usageContext = DesktopUsageContext(DesktopUsageSource.CHAT, sessionId = session)) {
             taskRuntime.withMessageMutation(session) {
                 chatMemoryIndex.rebuild(session, settingsRepository.getAppSettings().defaultContextWindowSize)
             }
         }
-    }) { character, document, progress ->
+    }, index = ::indexDocument) }
+    private suspend fun indexDocument(character: String, document: String, progress: (Int, Int) -> Unit): DesktopDocumentIndexOutcome {
         val config = requireNotNull(modelRepository.getEmbeddingModel()) { "请先配置向量模型" }
-        DesktopDocumentIndexService(appDataRoot, jsonFileStorage, characterRepository, dataOperationCoordinator,
+        return DesktopDocumentIndexService(appDataRoot, jsonFileStorage, characterRepository, dataOperationCoordinator,
             taskRuntime, embeddingGateway.pinned(config), audioMaintenance,
             verifyConfiguration = { embeddingGateway.verify(config) }).index(character, document, progress)
-    } }
+    }
     internal val ragController by ragOwner
     private val memoryRagTransportOwner = lazy { com.example.chatbar.domain.chat.OpenAiStreamingTransport(
         allowCleartextHttp = { settingsRepository.currentAppSettings.allowCleartextModelApi }) }
-    private val memoryRagTextClient by lazy { DesktopMemoryRagTextClient(memoryRagTransportOwner.value) }
+    private val memoryRagTextClient by lazy { DesktopMemoryRagTextClient(memoryRagTransportOwner.value,
+        diagnostics = { taskRuntime.diagnostics }) }
     private val memoryRepository by lazy { com.example.chatbar.data.repository.MemoryRepository(jsonFileStorage,
         strictReads = true, dataGate = dataOperationCoordinator, validatePath = DesktopDocumentRagSource(appDataRoot)::safeWindowsPath) }
     private val memoryService by lazy { com.example.chatbar.domain.memory.LongTermMemoryService(chatRepository,
@@ -76,11 +83,41 @@ class DesktopAppContainer internal constructor(
         contextWindowManager, dataGate = dataOperationCoordinator,
         ensureSourceTurns = DesktopMemorySources(appDataRoot, jsonFileStorage, chatRepository)::ensure) }
     private val memoryOwner = lazy { DesktopMemoryController(jsonFileStorage, chatRepository, settingsRepository,
-        effectiveModelResolver, memoryService, memoryRepository, dataOperationCoordinator) }
+        effectiveModelResolver, memoryService, memoryRepository, dataOperationCoordinator).also { taskCenter.watchMemory(it) } }
     internal val memoryController by memoryOwner
     private val chatMemoryIndex by lazy { DesktopChatMemoryIndex(appDataRoot, jsonFileStorage,
         dataOperationCoordinator, audioMaintenance,
         configuration = { requireNotNull(modelRepository.getEmbeddingModel()) }, gateway = embeddingGateway) }
+    private val chatMaintenanceOwner = lazy { DesktopChatMaintenanceController(chatRepository, dataOperationCoordinator,
+        object : DesktopSessionReservation {
+            override suspend fun <T> run(sessionId: String, operation: suspend () -> T): T =
+                taskRuntime.withMessageMutation(sessionId) {
+                    chatVoiceRuntime.withSessionMaintenance(sessionId) {
+                        memoryController.withSessionQuiesced(sessionId, operation)
+                    }
+                }
+        }, rebuildDocuments = { sessionId, progress ->
+            taskRuntime.withMessageMutation(sessionId) {
+                val card = dataOperationCoordinator.withImmediateNormalOperation {
+                    val session = requireNotNull(chatRepository.getSession(sessionId))
+                    requireNotNull(characterRepository.getById(requireNotNull(session.characterCardId)))
+                }
+                check(card.customDocuments.size <= 64)
+                progress(0, card.customDocuments.size)
+                card.customDocuments.forEachIndexed { index, document ->
+                    indexDocument(card.id, document.id) { _, _ -> }
+                    progress(index + 1, card.customDocuments.size)
+                }
+                card.customDocuments.size
+            }
+        }, detectSourceChanges = { sessionId ->
+            if (chatRepository.getSession(sessionId)?.longTermMemoryEnabled == true)
+                memoryService.refreshForCurrentConditions(sessionId)
+        }, refreshChat = { sessionId ->
+            if (primaryChatControllerOwner.isInitialized() && primaryChatController.state.value.selectedSession?.id == sessionId)
+                primaryChatController.refresh()
+        }) }
+    internal val chatMaintenanceController: DesktopChatMaintenanceController by chatMaintenanceOwner
     private val chatRetrieval by lazy { DesktopChatRetrieval(
         configuration = { modelRepository.getEmbeddingModel() }, settings = { settingsRepository.getAppSettings() },
         documents = documentRagReader::candidates, memories = chatMemoryIndex::candidates,
@@ -110,8 +147,9 @@ class DesktopAppContainer internal constructor(
                 java.nio.file.Path.of(reference).isAbsolute -> voiceAudioStore.verify(reference)
                 else -> characterResourceStore.resolveOwnedReference(reference).also { DesktopArchiveFiles.safe(it, false) }
             }
-        }) }
-    private val saveSlotOwner = lazy { DesktopSaveSlotController(saveSlotService, filePicker) { id -> primaryChatController.selectSession(id) } }
+        }, cleanupDeletedMedia = ownedImageCleanup::deleteUnreferenced) }
+    private val saveSlotOwner = lazy { DesktopSaveSlotController(saveSlotService, filePicker) { id -> primaryChatController.selectSession(id) }
+        .also { taskCenter.watchSaveSlots(it) } }
     internal val saveSlotController by saveSlotOwner
     private val fullBackupOwner = lazy { DesktopFullBackupController(DesktopFullBackupService(
         appDataRoot, dataOperationCoordinator, audioMaintenance,
@@ -119,7 +157,8 @@ class DesktopAppContainer internal constructor(
         pauseScheduler = { check(automaticBackupRuntime.pauseForMaintenance() is DesktopMaintenancePauseResult.Paused) },
         resumeScheduler = { check(automaticBackupRuntime.resumeAfterMaintenance() !is DesktopMaintenanceResumeResult.Failed) },
         asset = bundledAssets,
-    ), filePicker) }
+        secretStore = { desktopSecretStore },
+    ), filePicker).also { taskCenter.watchBackup(it) } }
     internal val fullBackupController by fullBackupOwner
     private fun createMergeService(workspace: Path = appDataRoot.resolve("backups/.merge-import-work"),
         quiesce: suspend (suspend () -> Unit) -> Unit = { work -> taskRuntime.withMaintenance { withBackupIoMaintenance(work) } },
@@ -140,12 +179,16 @@ class DesktopAppContainer internal constructor(
             if (dataOperationCoordinator.isRestartRequired) taskRuntime.stopAccepting()
         } }
     }
-    private val mergeImportOwner = lazy { DesktopMergeImportController(mergeServiceOwner.value, filePicker, directoryPicker) }
+    private val mergeImportOwner = lazy { DesktopMergeImportController(mergeServiceOwner.value, filePicker, directoryPicker)
+        .also { taskCenter.watchMerge(it) } }
     internal val mergeImportController by mergeImportOwner
 
     internal val desktopSecretStore: DesktopSecretStore by lazy {
-        secretStoreFactory(appDataRoot)
+        com.example.chatbar.desktop.security.DesktopAccountStore(secretStoreFactory(appDataRoot))
     }
+    internal val apiAccounts get() = desktopSecretStore as com.example.chatbar.desktop.security.DesktopAccountStore
+    internal val apiAccountController by lazy { DesktopApiAccountController(apiAccounts, modelRepository, dataOperationCoordinator, modelCredentialPolicy,
+        reloadSettings = { settingsRepository.initialize(forceReload = true) }) }
     internal val fishAudioCredentials by lazy { DesktopFishAudioCredentials(desktopSecretStore) }
     private val fishAudioLibraryOwner = lazy { DesktopFishAudioLibrary(fishAudioCredentials) }
     internal val fishAudioLibrary by fishAudioLibraryOwner
@@ -161,11 +204,13 @@ class DesktopAppContainer internal constructor(
     internal val voiceAudioStore by lazy { DesktopVoiceAudioStore(appDataRoot) }
     private val chatVoiceOwner = lazy { DesktopChatVoiceRuntime(chatRepository, characterRepository, settingsRepository,
         effectiveModelResolver, voiceRepository, voiceAudioStore, fishAudioCredentials, audioFocusOwner.value.port(formal = true),
-        picker = filePicker, gate = dataOperationCoordinator,
-        textBusy = { sessionId -> taskRuntime.tasks.value.any { it.sessionId == sessionId && it.status == DesktopTaskStatus.RUNNING } }) }
+        picker = filePicker, gate = dataOperationCoordinator, uiPreferences = chatUiController.state,
+        diagnostics = taskRuntime.diagnostics,
+        sourceBusy = taskRuntime::hasActiveVoiceSourceMutation)
+            .also { taskCenter.watchFish(it.coordinator) } }
     internal val chatVoiceRuntime by chatVoiceOwner
     private val fishPreviewOwner = lazy {
-        DesktopFishPreviewRuntime(DesktopFishPreviewTransport(fishAudioCredentials), output = audioFocusOwner.value.port(),
+        DesktopFishPreviewRuntime(DesktopFishPreviewTransport(fishAudioCredentials, diagnostics = taskRuntime.diagnostics), output = audioFocusOwner.value.port(),
             model = { settingsRepository.currentAppSettings.fishAudioTtsModelId })
     }
     internal val fishPreviewRuntime by fishPreviewOwner
@@ -187,41 +232,91 @@ class DesktopAppContainer internal constructor(
 
     private val novelAiInfrastructureOwner = lazy {
         DesktopNovelAiInfrastructure(appDataRoot, { bundledAssetReader(it).inputStream() }, effectiveModelResolver,
-            allowCleartextHttp = { settingsRepository.currentAppSettings.allowCleartextModelApi }, designerOverride = novelAiDesigner)
+            allowCleartextHttp = { settingsRepository.currentAppSettings.allowCleartextModelApi }, designerOverride = novelAiDesigner,
+            diagnostics = taskRuntime.diagnostics)
     }
     internal val novelAiInfrastructure by novelAiInfrastructureOwner
     internal val novelAiGenerationRuntime by lazy {
         DesktopNovelAiGenerationRuntime(desktopSecretStore,
-            DesktopNovelAiGenerationStore(jsonFileStorage, characterResourceStore, dataOperationCoordinator)::persist)
+            DesktopNovelAiGenerationStore(jsonFileStorage, characterResourceStore, dataOperationCoordinator)::persist,
+            diagnostics = taskRuntime.diagnostics)
     }
 
-    internal val novelAiStudioController by lazy {
+    private val novelAiStudioOwner = lazy {
         DesktopNovelAiStudioController(jsonFileStorage, characterResourceStore, filePicker,
             dataOperationCoordinator, ownedImageCleanup::deleteUnreferenced, novelAiGenerationRuntime,
-            DesktopNovelAiGuidance(appDataRoot, characterResourceStore, desktopSecretStore), taskRuntime,
+            DesktopNovelAiGuidance(appDataRoot, characterResourceStore, desktopSecretStore, dataOperationCoordinator,
+                diagnostics = taskRuntime.diagnostics), taskRuntime,
             novelAiInfrastructure, settingsRepository, effectiveModelResolver, characterRepository,
             account = { com.example.chatbar.domain.image.NovelAiAccountService(secureNovelAiClient()).fetchCancellable(
-                requireNotNull(desktopSecretStore.load(com.example.chatbar.desktop.security.DesktopCredentialKey.NovelAiToken))) },
+                requireNotNull(desktopSecretStore.credentialForCall(com.example.chatbar.desktop.security.DesktopCredentialKey.NovelAiToken))) },
             credentialConfigured = { !desktopSecretStore.load(com.example.chatbar.desktop.security.DesktopCredentialKey.NovelAiToken).isNullOrBlank() },
-            postProcessor = DesktopNovelAiPostProcessor(desktopSecretStore))
+            postProcessor = DesktopNovelAiPostProcessor(desktopSecretStore, diagnostics = taskRuntime.diagnostics),
+            credentialIdentity = { apiAccounts.identity(com.example.chatbar.desktop.security.DesktopAccountService.NOVELAI) },
+            freezeCredential = { apiAccounts.captureCall(com.example.chatbar.desktop.security.DesktopCredentialKey.NovelAiToken,
+                com.example.chatbar.desktop.security.DesktopAccountService.NOVELAI) },
+            presetArchive = DesktopGenerationPresetArchive(appDataRoot, characterResourceStore, dataOperationCoordinator))
     }
+    internal val novelAiStudioController by novelAiStudioOwner
 
     internal val appearanceController by lazy { DesktopAppearanceController(settingsRepository, desktopSettingsStore) }
+    private val modelCredentialPolicy by lazy {
+        DesktopModelCredentialPersistencePolicy(desktopSecretStore, dataOperationCoordinator) { id ->
+            when (modelRepository.readDurableModel(id)) {
+                is JsonFileStorage.EntityReadResult.Valid -> true
+                JsonFileStorage.EntityReadResult.Missing -> false
+                else -> error("MODEL_CREDENTIAL_ENTITY_UNAVAILABLE")
+            }
+        }
+    }
     internal val modelRepository: ModelRepository by lazy {
         ModelRepository(
             storage = jsonFileStorage,
             modelStorageKeyPolicy = WindowsSafeModelStorageKeyPolicy,
-            credentialPersistencePolicy = DesktopModelCredentialPersistencePolicy(desktopSecretStore, dataOperationCoordinator),
+            credentialPersistencePolicy = modelCredentialPolicy,
             embeddingCredentialPersistencePolicy =
                 DesktopEmbeddingCredentialPersistencePolicy(desktopSecretStore, dataOperationCoordinator),
         )
     }
     internal val characterRepository = CharacterRepository(jsonFileStorage)
     internal val chatRepository = ChatRepository(jsonFileStorage)
+    internal val speakerTagHistoryService by lazy {
+        com.example.chatbar.domain.chat.SpeakerTagHistoryService(characterRepository, chatRepository,
+            rewrite = { task, persistPlan ->
+                dataOperationCoordinator.withNormalOperation {
+                    val ids = chatRepository.getAllSessions().filter { it.characterCardId == task.characterCardId }.map { it.id }.sorted()
+                    suspend fun reserve(index: Int): Int = if (index == ids.size)
+                        chatVoiceRuntime.withSpeakerHistoryMutation(ids.toSet()) {
+                            chatRepository.rewriteSpeakerTagsForTask(task, persistPlan)
+                        }
+                    else taskRuntime.withMessageMutation(ids[index]) {
+                        memoryController.withSessionQuiesced(ids[index]) { reserve(index + 1) }
+                    }
+                    audioMaintenance.withMaintenance(false, { dataOperationCoordinator.isRestartRequired }) { reserve(0) }
+                }
+            }, sourcesChanged = { sessions -> sessions.forEach { memoryController.sourceChanged(it) } })
+    }
     internal val editorDraftRepository = EditorDraftRepository(jsonFileStorage)
     internal val formatCardRepository = FormatCardRepository(jsonFileStorage)
+    private val editorBudgetOwner = lazy { DesktopEditorBudgetController(settingsRepository, effectiveModelResolver, dataOperationCoordinator) }
+    private val formatCardAiTransportOwner = lazy { com.example.chatbar.domain.chat.OpenAiStreamingTransport {
+        settingsRepository.currentAppSettings.allowCleartextModelApi
+    } }
+    private val characterResearchSourcesOwner = lazy {
+        DesktopCharacterResearchSources(settingsRepository, effectiveModelResolver) {
+            settingsRepository.currentAppSettings.allowCleartextModelApi
+        }
+    }
+    private val characterImageGenerationOwner = lazy { DesktopCharacterImageGeneration(desktopSecretStore, diagnostics = taskRuntime.diagnostics) }
     private val formatCardEditorOwner = lazy {
-        DesktopFormatCardEditorController(formatCardRepository, editorDraftRepository)
+        DesktopFormatCardEditorController(formatCardRepository, editorDraftRepository).also { editor ->
+            editor.promptBudget = editorBudgetOwner.value
+            editor.autoFill = DesktopFormatCardAutoFillController(editor, characterRepository, settingsRepository,
+                effectiveModelResolver, taskRuntime, dataOperationCoordinator,
+                stream = { _, messages, model, diagnostics ->
+                    formatCardAiTransportOwner.value.streamFormatCardAutoFill(messages, model, diagnostics)
+                })
+        }
     }
     internal val formatCardEditorController by formatCardEditorOwner
     internal val worldBookRepository = WorldBookRepository(jsonFileStorage)
@@ -230,7 +325,8 @@ class DesktopAppContainer internal constructor(
         appDataRoot,
         assetReader = bundledAssetReader,
     )
-    private val ownedImageCleanup = DesktopOwnedImageCleanup(appDataRoot, characterResourceStore, dataOperationCoordinator)
+    private val ownedImageCleanup = DesktopOwnedImageCleanup(appDataRoot, characterResourceStore, dataOperationCoordinator,
+        deleteAudio = { voiceAudioStore.deleteIfOwned(it) })
     internal val chatImages = DesktopChatImages(characterResourceStore, chatRepository, dataOperationCoordinator,
         ownedImageCleanup::deleteUnreferenced)
     private val characterEditorOwner = lazy {
@@ -246,6 +342,8 @@ class DesktopAppContainer internal constructor(
             fishPreview = { fishPreviewRuntime },
             dataGate = dataOperationCoordinator,
             documentIndex = ragController,
+            speakerHistory = speakerTagHistoryService,
+            imageModelSettings = settingsRepository.appSettings.map { it.novelAiImageModel },
             json = jsonFileStorage.json,
             filePicker = filePicker,
             discardObsoleteResources = { previous, _ ->
@@ -255,7 +353,37 @@ class DesktopAppContainer internal constructor(
                     previous.customDocuments.mapTo(this) { it.filePath }
                 })
             },
-        )
+        ).also { editor ->
+            editor.promptBudget = editorBudgetOwner.value
+            editor.cardAi = DesktopCharacterCardAiController(editor, settingsRepository, effectiveModelResolver,
+                taskRuntime, dataOperationCoordinator, stream = { _, stage, messages, model, diagnostics ->
+                    formatCardAiTransportOwner.value.streamCharacterCardCandidate(stage, messages, model, diagnostics)
+                }, streamResearch = { stage, messages, model, diagnostics ->
+                    formatCardAiTransportOwner.value.streamCharacterResearch(stage, messages, model, diagnostics)
+                }, prepareResearch = { request, card, model, options, documents, resume, checkpoint, visible, status, gateway ->
+                    characterResearchSourcesOwner.value.prepare(request, card, model, options, documents,
+                        resume, checkpoint, visible, status, gateway)
+                }, filePicker = filePicker, describeImage = { encoded, model, delta, diagnostics ->
+                    DesktopAuxiliaryImageUnderstanding(formatCardAiTransportOwner.value).describe(encoded, model, delta, diagnostics)
+                })
+            editor.appearanceAi = DesktopCharacterAppearanceController(editor, settingsRepository, effectiveModelResolver,
+                taskRuntime, dataOperationCoordinator, filePicker, stream = { messages, model, diagnostics ->
+                    formatCardAiTransportOwner.value.streamCharacterAppearance(messages, model, diagnostics)
+                })
+            editor.cardImages = DesktopCharacterImageController(editor, settingsRepository, effectiveModelResolver,
+                taskRuntime, dataOperationCoordinator,
+                captureCredential = { apiAccounts.captureCall(com.example.chatbar.desktop.security.DesktopCredentialKey.NovelAiToken,
+                    com.example.chatbar.desktop.security.DesktopAccountService.NOVELAI) },
+                loadRequirement = { com.example.chatbar.data.repository.NovelAiStudioStateRepository(jsonFileStorage).loadDraft().extraRequirement },
+                design = { card, model, hint, requirement, progress ->
+                    novelAiInfrastructure.promptDesigner().designForCharacterCard(card, model,
+                        finalPromptRequirement = requirement, imageContentHint = hint,
+                        playerName = settingsRepository.getPlayerSetting().playerName, onDelta = progress)
+                },
+                generateImage = { plan, size, settings, preview, status ->
+                    characterImageGenerationOwner.value.generate(plan, size, settings, preview, status)
+                })
+        }
     }
     internal val characterEditorController by characterEditorOwner
     internal val transferJson = Json {
@@ -265,7 +393,14 @@ class DesktopAppContainer internal constructor(
     }
     private val worldBookEditorOwner = lazy {
         DesktopWorldBookEditorController(worldBookRepository, editorDraftRepository,
-            characterRepository, transferJson)
+            characterRepository, transferJson).also { editor ->
+            editor.promptBudget = editorBudgetOwner.value
+            editor.ai = DesktopWorldBookAiController(editor, settingsRepository, effectiveModelResolver,
+                taskRuntime, dataOperationCoordinator,
+                stream = { operation, _, messages, model, diagnostics ->
+                    formatCardAiTransportOwner.value.streamWorldBookAi(operation, messages, model, diagnostics)
+                }, research = { gateway -> characterResearchSourcesOwner.value.worldBook(gateway) }, filePicker = filePicker)
+        }
     }
     internal val worldBookEditorController by worldBookEditorOwner
     internal val presetModelCatalogSource by lazy {
@@ -286,6 +421,8 @@ class DesktopAppContainer internal constructor(
     suspend fun initializePersistentState() {
         automaticBackupRuntime.initialize()
         presetBootstrap.initialize()
+        saveSlotService.resumeSessionDeletionCleanup()
+        dataOperationCoordinator.withNormalOperation { speakerTagHistoryService.resumePending() }
     }
     internal val effectiveModelResolver by lazy {
         EffectiveModelResolver(
@@ -305,17 +442,22 @@ class DesktopAppContainer internal constructor(
             presets = presetModelCatalogSource,
             fishCredentials = fishCredentialController,
             ragSettings = ragController,
+            playerImages = DesktopPlayerImages(settingsRepository, characterResourceStore, filePicker,
+                dataOperationCoordinator, ownedImageCleanup::deleteUnreferenced),
         )
     }
     private val appDataSnapshotService = AppDataSnapshotService(appDataRoot)
-    internal val coordinatedSnapshotService = DesktopCoordinatedSnapshotService(
+    internal val coordinatedSnapshotService: DesktopCoordinatedSnapshotService = DesktopCoordinatedSnapshotService(
         delegate = appDataSnapshotService,
         coordinator = dataOperationCoordinator,
         audioMaintenance = audioMaintenance,
     )
     private val desktopSettingsStore = DesktopSettingsStore(appDataRoot, dataOperationCoordinator)
+    internal val networkProxyController = DesktopNetworkProxyController(desktopSettingsStore)
+    internal val chatUiController by lazy { DesktopChatUiController(desktopSettingsStore) }
     internal val uiLanguageController = DesktopUiLanguageController(desktopSettingsStore)
-    val automaticBackupRuntime = DesktopAutomaticBackupRuntime(
+    internal val guideReminderController = DesktopGuideReminderController(desktopSettingsStore)
+    val automaticBackupRuntime: DesktopAutomaticBackupRuntime = DesktopAutomaticBackupRuntime(
         settingsStore = desktopSettingsStore,
         snapshotService = coordinatedSnapshotService,
         coordinator = dataOperationCoordinator,
@@ -344,6 +486,30 @@ class DesktopAppContainer internal constructor(
     internal val characterTransfers: CharacterCardTransferCore = createCharacterTransferCore(characterDocumentRagCleanup)
     internal val formatTransfers = FormatCardTransferService(formatCardRepository, transferJson)
     internal val worldBookTransfers = WorldBookTransferService(worldBookRepository, transferJson)
+    private val communityLock = Any()
+    private var communityOwner: Pair<DesktopTypedTransferController, DesktopCommunityController>? = null
+    internal fun createCommunityController(typed: DesktopTypedTransferController,
+        configuration: com.example.chatbar.domain.community.CommunityConfiguration = com.example.chatbar.domain.community.CommunityConfiguration(
+            "https://rrlxofrrgfnhjfyrqvry.supabase.co", "sb_publishable_J56aQ_JJLnank-dv1olMdg_d87xNQjD"),
+        httpFactory: () -> okhttp3.OkHttpClient = { com.example.chatbar.domain.ProxyAwareClient.builder()
+            .followRedirects(false).followSslRedirects(false).connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(45, java.util.concurrent.TimeUnit.SECONDS).writeTimeout(45, java.util.concurrent.TimeUnit.SECONDS).build() },
+        browse: (java.net.URI) -> Unit = { java.awt.Desktop.getDesktop().browse(it) },
+        loginReturn: DesktopCommunityLoginReturn = UnavailableCommunityLoginReturn,
+    ): DesktopCommunityController = synchronized(communityLock) {
+        communityOwner?.let { check(it.first === typed); return@synchronized it.second }
+        val http = httpFactory()
+        val packages = DesktopCommunityLocalPackages(characterRepository, formatCardRepository, worldBookRepository,
+            characterTransfers, formatTransfers, worldBookTransfers, characterResourceStore, dataOperationCoordinator)
+        lateinit var owner: DesktopCommunityController
+        val client = com.example.chatbar.domain.community.CommunityClient(configuration, packages,
+            DesktopCommunitySessionStore(desktopSecretStore, transferJson), transferJson, http, loadSessionAtStartup = false,
+            warn = { _, _ -> owner.reportWarning() })
+        owner = DesktopCommunityController(client, http, typed, characterRepository, characterTransfers,
+            formatTransfers, worldBookTransfers, dataOperationCoordinator, browse, loginReturn = loginReturn)
+        communityOwner = typed to owner
+        owner
+    }
     internal val presetSuiteRestore by lazy {
         DesktopPresetSuiteRestoreService(presetSource, characterRepository, worldBookRepository,
             characterTransfers, worldBookTransfers, dataOperationCoordinator)
@@ -370,7 +536,12 @@ class DesktopAppContainer internal constructor(
         mainChatRequestAssembler = mainChatRequestAssembler,
         imageEncoder = chatImages::jpegBase64,
         retrieveKnowledge = { card, session, user, context, inputs, readOnly ->
-            chatRetrieval.retrieve(card, session, user, context, inputs, readOnly) },
+            val parent = kotlinx.coroutines.currentCoroutineContext()[DesktopUsageParent]?.value
+                ?: DesktopUsageContext(DesktopUsageSource.CHAT)
+            kotlinx.coroutines.withContext(DesktopUsageParent(parent.copy(source = DesktopUsageSource.CHAT,
+                sessionId = session.id, cardId = card.id, subjectId = user.id))) {
+                chatRetrieval.retrieve(card, session, user, context, inputs, readOnly)
+            } },
         memoryView = { session, readOnly -> memoryController.promptView(session, readOnly) },
     )
     private val promptInspector = DesktopPromptInspector(chatRequestPlanner)
@@ -399,11 +570,52 @@ class DesktopAppContainer internal constructor(
     private val automaticChatImages by lazy {
         DesktopAutomaticChatImages(chatRepository, characterRepository, settingsRepository, effectiveModelResolver,
             novelAiInfrastructure::promptDesigner, characterResourceStore, dataOperationCoordinator, desktopSecretStore,
+            diagnostics = { taskRuntime.diagnostics },
             launch = { sessionId, messageId, work -> taskRuntime.launchNovelAi("自动聊天图片", sessionId, messageId, retryable = true, work = work) })
     }
 
+    internal val characterResidency by lazy {
+        DesktopCharacterResidency(chatRepository, characterRepository, dataOperationCoordinator) { _, change ->
+            chatVoiceRuntime.withAutomaticParticipationUpdate(change)
+        }
+    }
+
+    private val providerUsageOwner = lazy { DesktopProviderUsageOwner(DesktopProviderUsageStore(appDataRoot, dataOperationCoordinator)) }
+    internal val providerUsage by providerUsageOwner
+    private val taskCenterOwner: Lazy<DesktopTaskCenter> = lazy { DesktopTaskCenter(describe = { target ->
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            when {
+                target.sessionId != null -> chatRepository.getSession(target.sessionId)?.title
+                target.cardId != null -> characterRepository.getById(target.cardId)?.let { card ->
+                    val document = target.subjectId?.let { id -> card.customDocuments.firstOrNull { it.id == id } }
+                    if (document != null) "${card.name} · ${document.fileName}" else card.name
+                }
+                target.draftSessionId != null -> when (target.detail) {
+                    DesktopWorkDetail.FORMAT_DRAFT -> if (formatCardEditorOwner.isInitialized()) formatCardEditorController.state.value
+                        .takeIf { it.draftSessionId == target.draftSessionId }?.card?.name else null
+                    DesktopWorkDetail.CHARACTER_DRAFT, DesktopWorkDetail.APPEARANCE_DRAFT, DesktopWorkDetail.CHARACTER_IMAGE_DRAFT ->
+                        if (characterEditorOwner.isInitialized()) characterEditorController.state.value
+                            .takeIf { it.draftSessionId == target.draftSessionId }?.card?.name else null
+                    DesktopWorkDetail.WORLD_BOOK_DRAFT -> if (worldBookEditorOwner.isInitialized()) worldBookEditorController.state.value
+                        .takeIf { it.draftSessionId == target.draftSessionId }?.book?.name else null
+                    else -> null
+                }?.takeIf { it.isNotBlank() }?.let { "$it · 创作草稿" }
+                else -> null
+            }
+        }
+    }).also { it.watchAutomaticBackups(automaticBackupRuntime) } }
+    internal val taskCenter by taskCenterOwner
+    private val trayOwner = lazy { DesktopTrayController(taskCenter, desktopSettingsStore) }
+    internal val taskTray by trayOwner
     internal val taskRuntime: DesktopTaskRuntime by lazy {
-        DesktopTaskRuntime(createRealChatRuntime(), onChatCompleted = { result, stopped ->
+        DesktopTaskRuntime(createRealChatRuntime(), diagnostics = DesktopTransportDiagnosticsOwner(usageSink = { providerUsage.submit(it) }),
+            onChatCompleted = { result, stopped ->
+            val residencyNotice = try { characterResidency.completed(result, stopped) }
+                catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+                catch (_: Exception) {
+                    characterResidency.reportFailure(result.assistant.sessionId, result.assistant.id)
+                    "人物驻场更新未完成，请检查会话人物设置"
+                }
             memoryController.afterReply(result.assistant.sessionId)
             val imageNotice = automaticChatImages.completed(result, stopped)
             val prefs = settingsRepository.getAppSettings()
@@ -414,20 +626,28 @@ class DesktopAppContainer internal constructor(
                 catch (_: DesktopAudioMaintenanceBusyException) { indexNotice = "历史索引暂缓：音频正在使用；下一次回复后重试" }
                 catch (_: Exception) { indexNotice = "历史索引未完成；旧数据保留，请检查向量模型后重试" }
             }
-            listOfNotNull(imageNotice, indexNotice).joinToString("；").takeIf(String::isNotBlank)
-        })
+            listOfNotNull(residencyNotice, imageNotice, indexNotice).joinToString("；").takeIf(String::isNotBlank)
+        }, postProcessReply = { id, result, control -> automaticFormatRepair.completed(id, result, control) })
+            .also { taskCenter.watchRuntime(it) }
     }
 
-    // First production subset proves absence again inside the final exclusive/CAS scope.
+    private val formatRepairSafety by lazy {
+        DesktopFormatRepairSourceSafety(appDataRoot, jsonFileStorage, dataOperationCoordinator, taskRuntime,
+            audioMaintenance, { chatVoiceRuntime }, { memoryController.sourceChanged(it) })
+    }
+    private val automaticFormatRepair by lazy {
+        DesktopAutomaticFormatRepair(settingsRepository, { messageFormatRepairController }, { formatRepairSafety })
+    }
+
     internal val messageFormatRepairController by lazy {
         createMessageFormatRepairController()
     }
 
-    /** Transport-only seam: tests exercise the same production ownership, inventory and CAS scope. */
+    /** Transport-only seam: tests exercise the same production source ownership and CAS scope. */
     internal fun createMessageFormatRepairController(
         stream: ((DesktopRepairRequest) -> kotlinx.coroutines.flow.Flow<com.example.chatbar.domain.chat.StreamEvent>)? = null,
     ): DesktopMessageFormatRepairController {
-        val safety = DesktopFormatRepairDerivedSafety(appDataRoot, jsonFileStorage, dataOperationCoordinator, taskRuntime)
+        val safety = formatRepairSafety
         return if (stream == null) DesktopMessageFormatRepairController(chatRepository, settingsRepository,
             characterRepository, formatCardRepository, effectiveModelResolver, taskRuntime, safety)
         else DesktopMessageFormatRepairController(chatRepository, settingsRepository, characterRepository,
@@ -466,7 +686,12 @@ class DesktopAppContainer internal constructor(
             },
             taskRuntime = taskRuntime,
             imageStore = chatImages,
+            chatUi = chatUiController,
+            maintenance = chatMaintenanceController,
+            sessionDeletion = saveSlotService::deleteSession,
+            sessionDeletionNotice = { saveSlotService.sessionDeletionCleanupNotice },
             voices = chatVoiceRuntime,
+            residency = characterResidency,
             memory = memoryController,
             rag = ragController,
             saveSlots = saveSlotController,
@@ -479,6 +704,33 @@ class DesktopAppContainer internal constructor(
         )
     }
     internal val primaryChatController: DesktopPrimaryChatController by primaryChatControllerOwner
+
+    private val momentDiagnostics = DesktopTransportDiagnosticsOwner(usageSink = { providerUsage.submit(it) })
+    private val momentTransportOwner = lazy { com.example.chatbar.domain.chat.OpenAiStreamingTransport {
+        settingsRepository.currentAppSettings.allowCleartextModelApi
+    } }
+    private val momentImageCleanup by lazy { DesktopMomentImageCleanup(appDataRoot, jsonFileStorage,
+        dataOperationCoordinator, ownedImageCleanup) }
+    private val momentStore by lazy { DesktopMomentStore(jsonFileStorage, dataOperationCoordinator, momentImageCleanup) }
+    private val momentAdmission by lazy { DesktopMomentAdmissionStore(appDataRoot,
+        com.example.chatbar.desktop.security.WindowsSecretRootResolver.resolve(appDataRoot).resolve("moment-runtime")) }
+    private val momentGenerationOwner = lazy { DesktopMomentGeneration(
+        DesktopMomentTextGateway(momentTransportOwner.value, momentDiagnostics), effectiveModelResolver,
+        settingsRepository, desktopSecretStore, { novelAiInfrastructure }, characterResourceStore, momentImageCleanup,
+        { session -> if (session.longTermMemoryEnabled) memoryService.promptView(session.id).fullText else "" },
+        diagnostics = momentDiagnostics) }
+    private val momentsOwner = lazy { DesktopMomentsController(momentStore, settingsRepository,
+        characterRepository, chatRepository, dataOperationCoordinator, taskRuntime,
+        DesktopMomentGenerator { card, session, messages, latest, settings, task, checkpoint, save, progress, cleanup ->
+            momentGenerationOwner.value.generate(card, session, messages, latest, settings, task, checkpoint, save, progress, cleanup)
+        }, momentImageCleanup::finish, momentAdmission, characterResourceStore, filePicker,
+        momentDiagnostics, momentImageCleanup::resume,
+        DesktopMomentImageGenerator { post, card, session, settings, draft, cleanup, progress ->
+            momentGenerationOwner.value.generate(post, card, session, settings, draft, cleanup, progress)
+        }, DesktopMomentDebugGenerator { card, session, messages, latest, settings, task, cleanup ->
+            momentGenerationOwner.value.generate(card, session, messages, latest, settings, task, cleanup)
+        }, momentImageCleanup::prepareCandidate).also { taskCenter.watchMoments(it) } }
+    internal val momentsController by momentsOwner
 
     internal fun createPromptInspectorController(): DesktopPromptInspectorController =
         DesktopPromptInspectorController(
@@ -561,6 +813,11 @@ class DesktopAppContainer internal constructor(
         taskRuntime.stopAccepting()
         closeDesktopDataRuntimes(
             taskRuntimeClose = {
+                synchronized(communityLock) { communityOwner?.second }?.closeAndDrain()
+                if (momentsOwner.isInitialized()) momentsController.closeAndDrain()
+                if (momentGenerationOwner.isInitialized()) momentGenerationOwner.value.closeAndDrain()
+                if (momentTransportOwner.isInitialized()) momentTransportOwner.value.closeAndDrain()
+                if (chatMaintenanceOwner.isInitialized()) chatMaintenanceController.closeAndDrain()
                 if (mergeImportOwner.isInitialized()) mergeImportController.closeAndDrain()
                 if (fullBackupOwner.isInitialized()) fullBackupController.closeAndDrain()
                 if (saveSlotOwner.isInitialized()) saveSlotController.closeAndDrain()
@@ -570,7 +827,6 @@ class DesktopAppContainer internal constructor(
                 if (fishAudioLibraryOwner.isInitialized()) fishAudioLibrary.closeAndDrain()
                 if (fishCredentialOwner.isInitialized()) fishCredentialController.closeAndDrain()
                 if (connectionTestOwner.isInitialized()) connectionTestController.closeAndDrain()
-                if (novelAiInfrastructureOwner.isInitialized()) novelAiInfrastructure.closeAndDrain()
                 if (ragOwner.isInitialized()) ragController.closeAndDrain()
                 taskRuntime.closeAndDrain()
                 if (memoryOwner.isInitialized()) memoryController.closeAndDrain()
@@ -578,10 +834,19 @@ class DesktopAppContainer internal constructor(
                 if (memoryRagTransportOwner.isInitialized()) memoryRagTransportOwner.value.closeAndDrain()
             },
             draftRuntimeClose = {
+                if (novelAiStudioOwner.isInitialized()) novelAiStudioController.closePresetExchange()
                 if (primaryChatControllerOwner.isInitialized()) primaryChatController.closeDraftPersistence()
                 if (characterEditorOwner.isInitialized()) characterEditorController.closeAndDrain()
-                if (formatCardEditorOwner.isInitialized()) formatCardEditorController.closeAndDrain()
                 if (worldBookEditorOwner.isInitialized()) worldBookEditorController.closeAndDrain()
+                if (characterResearchSourcesOwner.isInitialized()) characterResearchSourcesOwner.value.closeAndDrain()
+                if (characterImageGenerationOwner.isInitialized()) characterImageGenerationOwner.value.closeAndDrain()
+                if (formatCardEditorOwner.isInitialized()) formatCardEditorController.closeAndDrain()
+                if (editorBudgetOwner.isInitialized()) editorBudgetOwner.value.closeAndDrain()
+                if (formatCardAiTransportOwner.isInitialized()) formatCardAiTransportOwner.value.closeAndDrain()
+                if (novelAiInfrastructureOwner.isInitialized()) novelAiInfrastructure.closeAndDrain()
+                if (providerUsageOwner.isInitialized()) providerUsage.closeAndDrain()
+                if (trayOwner.isInitialized()) taskTray.closeAndDrain()
+                if (taskCenterOwner.isInitialized()) taskCenter.closeAndDrain()
             },
             runtimeClose = { automaticBackupRuntime.close() },
             coordinatorClose = { dataOperationCoordinator.closeAndDrain() },
@@ -614,6 +879,9 @@ internal suspend fun closeDesktopDataRuntimes(
         throw timeout
     } catch (timeout: DesktopReadingPositionDrainTimeoutException) {
         throw timeout
+    } catch (pending: DesktopUsageDrainException) {
+        // Keep the gate and root ownership alive for the exact retained numeric tail to retry.
+        throw pending
     } catch (error: Throwable) {
         // Ordinary draft failure is reported only after the worker has joined.
         primaryFailure = error

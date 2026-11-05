@@ -1,0 +1,8 @@
+{
+  "source": "2ba39c165cb42ca1b043e5c6b4a504406188c13e",
+  "path": "tools/desktop/update/desktop_update.py",
+  "bytes": 11788,
+  "sha256": "7752dc8538247d8a7cc9e9edf3fc69953d6bdd8ae1340167b93f10cbedb94c61",
+  "purpose": "Frozen public1233 updater source; only synthetic signed bridge compatibility tests, never packaged runtime",
+  "unchangedTransportBlob": "82307b31f10472eb7a4dfc963a7f354e1e2c2dd6"
+}

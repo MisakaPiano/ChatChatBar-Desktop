@@ -129,11 +129,19 @@ internal fun DesktopChatDisclosure(label: String, expansion: DesktopPresentation
 @Composable
 internal fun DesktopChatAlternativeControls(navigation: DesktopAlternativeNavigation, onSelect: (Int) -> Unit) {
     val t = LocalDesktopUiStrings.current
-    Row(Modifier.background(DesktopBootstrapColors.muted, RoundedCornerShape(6.dp)), verticalAlignment = Alignment.CenterVertically) {
-        DesktopChatIconAction(t(DesktopUiText.PREVIOUS_ALTERNATIVE), DesktopAppIcons.Previous, navigation.canPrevious) { onSelect(-1) }
-        BasicText("${navigation.current} / ${navigation.total}",
+    DesktopVersionControls(navigation.current, navigation.total,
+        t(DesktopUiText.PREVIOUS_ALTERNATIVE), t(DesktopUiText.NEXT_ALTERNATIVE), onSelect = onSelect)
+}
+
+/** Shared compact previous/count/next presentation; each caller retains its own selection owner. */
+@Composable
+internal fun DesktopVersionControls(current: Int, total: Int, previousLabel: String, nextLabel: String,
+    enabled: Boolean = true, modifier: Modifier = Modifier, onSelect: (Int) -> Unit) {
+    Row(modifier.background(DesktopBootstrapColors.muted, RoundedCornerShape(6.dp)), verticalAlignment = Alignment.CenterVertically) {
+        DesktopChatIconAction(previousLabel, DesktopAppIcons.Previous, enabled && current > 1) { onSelect(-1) }
+        BasicText("$current / $total",
             style = TextStyle(color = DesktopBootstrapColors.mutedForeground, fontSize = 12.sp))
-        DesktopChatIconAction(t(DesktopUiText.NEXT_ALTERNATIVE), DesktopAppIcons.Next, navigation.canNext) { onSelect(1) }
+        DesktopChatIconAction(nextLabel, DesktopAppIcons.Next, enabled && current < total) { onSelect(1) }
     }
 }
 

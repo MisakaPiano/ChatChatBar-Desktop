@@ -75,11 +75,12 @@ internal object DormantPreservationPreparation {
                         resource(v.audioPath)
                     }
                     DormantKind.MOMENT_POST -> {
-                        val p=backupJson.decodeFromJsonElement<MomentPostSnapshot>(value)
+                        val p=DesktopMomentBackupExtension.snapshot(value.jsonObject)
                         require(p.id.isNotBlank() && ids.add(inputs[i].kind to p.id))
                         require(p.characterCardId in context.cards && p.sessionId in context.sessions)
                         require(p.senderCharacterId == null || p.senderCharacterId in context.senders)
                         posts[p.id]=p;resource(p.senderAvatar);resource(p.imagePath);resource(p.generatedImageMetadata?.imagePath)
+                        DesktopMomentBackupExtension.versions(value.jsonObject).forEach { version -> resource(version.imagePath);resource(version.generatedImageMetadata?.imagePath) }
                     }
                     DormantKind.MOMENT_TASK -> {
                         val t=backupJson.decodeFromJsonElement<MomentTaskSnapshot>(value)

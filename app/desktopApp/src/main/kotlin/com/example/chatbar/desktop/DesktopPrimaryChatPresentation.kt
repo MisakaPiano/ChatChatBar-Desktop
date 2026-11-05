@@ -160,6 +160,9 @@ internal fun desktopPresentedAvatarReference(
 ): String? = speaker?.avatarReference
     ?: card?.avatar?.takeIf { speaker == null || speaker.displayName == card.effectiveBotName }
 
+internal fun desktopStreamingMessage(task: DesktopTaskEntry, stream: DesktopActiveChatStream?): ChatMessage =
+    desktopStreamingMessage(task.sessionId.orEmpty(), task.taskId, stream?.content.orEmpty(), stream?.reasoningContent.orEmpty())
+
 internal fun desktopStreamingMessage(
     sessionId: String,
     taskId: String,
@@ -185,8 +188,7 @@ internal fun desktopRenderSessionText(
     globalPlayerName: String?,
 ): String = PlaceholderRenderer.render(
     text = text,
-    playerName = session.playerName?.takeIf(String::isNotBlank)
-        ?: globalPlayerName?.takeIf(String::isNotBlank),
+    playerName = com.example.chatbar.domain.chat.PlayerRolePolicy.name(session, card, globalPlayerName),
     botName = card?.effectiveBotName ?: session.title,
 )
 
@@ -216,7 +218,7 @@ private fun desktopCopySourceText(
     text: String, session: ChatSession?, card: CharacterCard?, globalPlayerName: String?,
 ): String = PlaceholderRenderer.render(
     text,
-    session?.playerName?.takeIf(String::isNotBlank) ?: globalPlayerName?.takeIf(String::isNotBlank),
+    com.example.chatbar.domain.chat.PlayerRolePolicy.name(session, card, globalPlayerName),
     card?.effectiveBotName ?: session?.title ?: "",
 )
 

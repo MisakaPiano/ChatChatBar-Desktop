@@ -20,13 +20,14 @@ internal object CensusWireFixtures {
         "entities/embedding_model_config.json" to embedding().toByteArray())
     fun bytes(prefs: String = """{"novelAiToken":"$SECRET","fishAudioKey":"$SECRET"}""", files: Map<String, ByteArray> = files(),
         encrypted: Boolean = false, badInventory: Boolean = false, badManifest: Boolean = false,
-        version: Int = 1, code: Int = 84, manifestExtra: String = "", scope: OfficialWireScope? = null): ByteArray {
+        version: Int = 1, code: Int = 84, manifestExtra: String = "", scope: OfficialWireScope? = null,
+        appVersionName: String? = null): ByteArray {
         val preferences = prefs.toByteArray()
         val counts = files.keys.filter { it.startsWith("entities/") }.groupingBy { it.removePrefix("entities/").substringBefore('/').removeSuffix(".json") }.eachCount()
         val manifest = if (version == 1) officialWireJson.encodeToString(Official145Manifest(appVersionCode = code,
-            appVersionName = "1.4.5", createdAt = 1, sourceFilesRoot = "/data/user/0/synthetic.ccb/files", counts = counts,
+            appVersionName = appVersionName ?: "1.4.5", createdAt = 1, sourceFilesRoot = "/data/user/0/synthetic.ccb/files", counts = counts,
             fileCount = files.size + if (badManifest) 1 else 0, totalBytes = files.values.sumOf { it.size.toLong() }, preferencesSha256 = digest(preferences)))
-        else officialWireJson.encodeToString(OfficialModernManifest(formatVersion = 2, appVersionCode = code, appVersionName = "synthetic",
+        else officialWireJson.encodeToString(OfficialModernManifest(formatVersion = 2, appVersionCode = code, appVersionName = appVersionName ?: "synthetic",
             createdAt = 1, sourceFilesRoot = "/data/user/0/synthetic.ccb/files", counts = counts, fileCount = files.size,
             totalBytes = files.values.sumOf { it.size.toLong() }, preferencesSha256 = digest(preferences),
             scope = scope ?: OfficialWireScope(emptySet(), 0, 0, 0, 0, 0, false, false, false, false)))

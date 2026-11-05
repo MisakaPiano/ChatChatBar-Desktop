@@ -14,12 +14,16 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.flow
 
 /** Test-source-only manual fixture. No real transports or credentials; shared Designer/runner/repositories. */
-internal class FinalProductDesignFixture {
+internal class FinalProductDesignFixture(filePicker: DesktopFilePicker = UnconfiguredDesktopFilePicker,
+    overrideDesigner: NovelAiPromptDesigner? = null,
+    private val provenance: DesktopDataRootProvenance = DesktopDataRootProvenance.CLI_OVERRIDE) {
     @Volatile var failure: DesktopDesignFailure? = null
     val requests = java.util.concurrent.CopyOnWriteArrayList<List<ChatApiMessage>>()
+    @Volatile var beforeReply: (suspend (NovelAiTextStage) -> Unit)? = null
     val transport = object : NovelAiTextTransport {
         override fun streamText(stage: NovelAiTextStage, messages: List<ChatApiMessage>, modelConfig: ModelConfig) = flow {
             requests.add(messages)
+            beforeReply?.invoke(stage)
             failure?.let { throw DesktopDesignException(it) }
             val reply = if (stage == NovelAiTextStage.PLAN)
                 """{"sceneDescription":"窗边阅读的成年旅人，柔和阳光。","queries":[]}"""
@@ -33,9 +37,14 @@ internal class FinalProductDesignFixture {
         NovelAiPromptPostProcessor(emptyList()))
     val root = Files.createTempDirectory("ccb-final-product-local-")
     val container = DesktopAppContainer(DesktopDataRootResolution.Resolved(root.resolve("data"),
-        DesktopDataRootProvenance.CLI_OVERRIDE, root.resolve("bootstrap.json")),
-        secretStoreFactory = { InMemoryDesktopSecretStore() }, novelAiDesigner = designer)
+        provenance, root.resolve("bootstrap.json")),
+        secretStoreFactory = { InMemoryDesktopSecretStore() }, novelAiDesigner = overrideDesigner ?: designer, filePicker = filePicker)
     suspend fun initialize(initializeComposer: Boolean = true) {
+        if (provenance == DesktopDataRootProvenance.BOOTSTRAP_CUSTOM) {
+            val bootstrap = DesktopBootstrapSettingsStore(root.resolve("bootstrap.json"))
+            bootstrap.save((bootstrap.load() as DesktopBootstrapLoadResult.Missing).document,
+                DesktopDataRootSelection.custom(root.resolve("data")))
+        }
         container.modelRepository.saveModel(ModelConfig("local-design", "Local fake design — no network", "https://fixture.invalid", "fake-only-key", "fixture", createdAt = 1))
         container.novelAiStudioController.load()
         container.novelAiStudioController.edit { it.copy(aiDesignModelId = "local-design", basePrompt = "original studio", aiDesignNaturalLanguageMode = true) }

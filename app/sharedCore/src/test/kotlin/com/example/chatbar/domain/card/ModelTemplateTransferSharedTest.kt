@@ -21,6 +21,28 @@ import kotlin.test.assertTrue
 class ModelTemplateTransferSharedTest {
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
+    @Test fun optionalDesktopCapacityRoundTripsWithoutCredentialsOrLegacySchemaChanges() = runTest {
+        val root = Files.createTempDirectory("model-capacity-transfer")
+        try {
+            val models = ModelRepository(JsonFileStorage(root))
+            val service = ModelTemplateTransferService(models, json)
+            val original = ModelConfig("source", "Synthetic", "https://example.test/v1", "synthetic-secret", "synthetic",
+                createdAt = 1, desktopContextWindowTokens = 123456)
+            models.saveModel(original)
+            val text = service.exportJson(original.id)
+            assertFalse(text.contains("synthetic-secret"))
+            val decoded = service.decode(text)
+            assertEquals(1, decoded.schemaVersion)
+            assertEquals(123456L, decoded.desktopContextWindowTokens)
+            val imported = service.importNew(decoded)
+            assertEquals(123456L, ModelRepository(JsonFileStorage(root)).getModel(imported.id)!!.desktopContextWindowTokens)
+            assertEquals("", imported.apiKey)
+            assertNull(decoded.copy(desktopContextWindowTokens = null).desktopContextWindowTokens)
+            assertFailsWith<IllegalArgumentException> { decoded.copy(desktopContextWindowTokens = 0).validateForImport() }
+            assertFailsWith<IllegalArgumentException> { decoded.copy(desktopContextWindowTokens = -1).validateForImport() }
+        } finally { root.toFile().deleteRecursively() }
+    }
+
     @Test fun sharedPackageRoundTripValidationAndCredentialExclusion() = runTest {
         val root = Files.createTempDirectory("model-template-shared")
         val models = ModelRepository(JsonFileStorage(root))

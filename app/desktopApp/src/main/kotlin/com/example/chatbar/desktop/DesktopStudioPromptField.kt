@@ -6,6 +6,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.foundation.text.selection.LocalTextSelectionColors
+import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -13,7 +17,15 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.InterceptPlatformTextInput
+import androidx.compose.ui.platform.PlatformTextInputInterceptor
+import androidx.compose.ui.platform.PlatformTextInputMethodRequest
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -71,32 +83,130 @@ internal fun StudioPromptAnnotationOverlay(text: String, layout: TextLayoutResul
 internal fun studioCanAcceptSuggestion(input: TextFieldValue, candidateCount: Int): Boolean =
     input.composition == null && input.selection.collapsed && candidateCount > 0
 
-/** The same raw-text editor and glyph overlay are used inline and inside the fullscreen session. */
+/** Use the source font metrics, not the paragraph's extra annotation leading. */
+internal fun studioPromptCaretRect(layout: TextLayoutResult, offset: Int, glyph: TextLayoutResult): Rect {
+    val position = offset.coerceIn(0, layout.layoutInput.text.length)
+    val cursor = layout.getCursorRect(position)
+    val baseline = layout.getLineBaseline(layout.getLineForOffset(position))
+    val top = baseline - glyph.getLineBaseline(0)
+    return Rect(cursor.left, top, cursor.right, top + glyph.size.height)
+}
+
+/** The visible part of the source glyph band; annotation leading never participates. */
+internal fun studioPromptSourceBand(layout: TextLayoutResult, offset: Int, glyph: TextLayoutResult): Rect {
+    val rect = studioPromptCaretRect(layout, offset, glyph)
+    val line = layout.getLineForOffset(offset.coerceIn(0, layout.layoutInput.text.length))
+    val top = rect.top.coerceIn(layout.getLineTop(line), layout.getLineBottom(line))
+    val bottom = rect.bottom.coerceIn(top, layout.getLineBottom(line))
+    return Rect(rect.left, top, rect.right, bottom)
+}
+
+/** Raw source remains the editable/IME text; translations are only glyph overlays. */
+@OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
 internal fun StudioPromptTextEditor(input: TextFieldValue, onChange: (TextFieldValue) -> Unit, translated: Boolean,
     annotations: List<NovelAiPromptAnnotation>, modifier: Modifier = Modifier) {
     var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
-    BasicTextField(input, onChange, modifier, textStyle = TextStyle(color = DesktopBootstrapColors.foreground, fontSize = 14.sp,
-        lineHeight = if (translated) 34.sp else 22.sp,
-        lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Top, LineHeightStyle.Trim.None)),
+    var focused by remember { mutableStateOf(false) }
+    var caretVisible by remember { mutableStateOf(true) }
+    val caretColor = DesktopBootstrapColors.foreground
+    val normalCaret = DesktopBootstrapColors.inputCaret
+    val measurer = rememberTextMeasurer()
+    val glyph = measurer.measure(AnnotatedString("M"), TextStyle(fontSize = 14.sp))
+    val latestInput by rememberUpdatedState(input)
+    val latestGlyph by rememberUpdatedState(glyph)
+    var coordinates by remember { mutableStateOf<LayoutCoordinates?>(null) }
+    val caretRequester = remember { BringIntoViewRequester() }
+    val sourceCaret = layout?.takeIf { it.layoutInput.text.text == input.text }
+        ?.let { studioPromptSourceBand(it, input.selection.max, glyph) }
+    val liveCaret by rememberUpdatedState(sourceCaret)
+    LaunchedEffect(focused, sourceCaret) {
+        if (focused && sourceCaret != null) caretRequester.bringIntoView(sourceCaret)
+    }
+    // The legacy adapter caches its field-to-root transform. Query live coordinates when the
+    // platform requests the candidate rectangle, including after an ancestor scroll/move.
+    val interceptor = remember {
+        PlatformTextInputInterceptor { request, next ->
+            next.startInputMethod(object : PlatformTextInputMethodRequest by request {
+                override val focusedRectInRoot: () -> Rect? = {
+                    val current = layout?.takeIf { it.layoutInput.text.text == latestInput.text }
+                    val origin = coordinates?.takeIf { it.isAttached }?.localToRoot(Offset.Zero)
+                    if (current != null && origin != null)
+                        studioPromptSourceBand(current, latestInput.selection.max, latestGlyph).translate(origin)
+                    else request.focusedRectInRoot()
+                }
+            })
+        }
+    }
+    val selectionColors = LocalTextSelectionColors.current
+    LaunchedEffect(focused, translated, input.text, input.selection) {
+        caretVisible = true
+        if (focused && translated && input.selection.collapsed) while (true) {
+            kotlinx.coroutines.delay(500)
+            caretVisible = !caretVisible
+        }
+    }
+    InterceptPlatformTextInput(interceptor) {
+    CompositionLocalProvider(LocalTextSelectionColors provides if (translated)
+        TextSelectionColors(selectionColors.handleColor, Color.Transparent) else selectionColors) {
+    BasicTextField(input, onChange, modifier.studioPromptCaretBoundary { liveCaret }
+        .bringIntoViewRequester(caretRequester).onFocusChanged { focused = it.isFocused },
+        cursorBrush = if (translated) SolidColor(Color.Transparent) else normalCaret,
+        textStyle = TextStyle(color = caretColor, fontSize = 14.sp,
+            lineHeight = if (translated) 34.sp else 22.sp,
+            lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Top, LineHeightStyle.Trim.None)),
         onTextLayout = { layout = it }, decorationBox = { inner ->
-            Box { inner(); if (translated) StudioPromptAnnotationOverlay(input.text, layout, annotations, Modifier.matchParentSize()) }
+            Box(Modifier.onGloballyPositioned { coordinates = it }) {
+                if (translated && !input.selection.collapsed) {
+                    val current = layout?.takeIf { it.layoutInput.text.text == input.text }
+                    if (current != null) Canvas(Modifier.matchParentSize()) {
+                        val path = current.getPathForRange(input.selection.min, input.selection.max)
+                        for (line in 0 until current.lineCount) {
+                            val band = studioPromptSourceBand(current, current.getLineStart(line), glyph)
+                            clipRect(top = band.top, bottom = band.bottom) {
+                                drawPath(path, selectionColors.backgroundColor)
+                            }
+                        }
+                    }
+                }
+                inner()
+                if (translated) {
+                    StudioPromptAnnotationOverlay(input.text, layout, annotations, Modifier.matchParentSize())
+                    val current = layout?.takeIf { it.layoutInput.text.text == input.text }
+                    if (focused && input.selection.collapsed && caretVisible && current != null) {
+                        val rect = studioPromptSourceBand(current, input.selection.end, glyph)
+                        Canvas(Modifier.matchParentSize()) {
+                            drawLine(caretColor, Offset(rect.left, rect.top), Offset(rect.left, rect.bottom), strokeWidth = 2.dp.toPx())
+                        }
+                    }
+                }
+            }
         })
+    }
+    }
 }
 
 @Composable
 internal fun StudioPromptField(label: String, value: String, infrastructure: DesktopNovelAiInfrastructure,
-    translated: Boolean, onChange: (String) -> Unit) = StudioPromptField(label, value,
-    infrastructure.suggestions, infrastructure.translations, translated, onChange)
+    translated: Boolean, focusRevision: Long? = null, onEditorFocusChanged: ((Boolean) -> Unit)? = null,
+    onExpandedEditorChanged: ((Boolean) -> Unit)? = null,
+    inlineHeader: (@Composable (onExpand: () -> Unit) -> Unit)? = null, compact: Boolean = false,
+    onChange: (String) -> Unit) = StudioPromptField(label, value,
+    infrastructure.suggestions, infrastructure.translations, translated, focusRevision, onEditorFocusChanged, onExpandedEditorChanged, inlineHeader, compact, onChange)
 
 @Composable
 internal fun StudioPromptField(label: String, value: String, suggestionService: NovelAiTagSuggestionService,
-    translationService: NovelAiPromptTranslationService, translated: Boolean, onChange: (String) -> Unit) {
-    var input by remember { mutableStateOf(TextFieldValue(value)) }
+    translationService: NovelAiPromptTranslationService, translated: Boolean, focusRevision: Long? = null,
+    onEditorFocusChanged: ((Boolean) -> Unit)? = null, onExpandedEditorChanged: ((Boolean) -> Unit)? = null,
+    inlineHeader: (@Composable (onExpand: () -> Unit) -> Unit)? = null, compact: Boolean = false,
+    onChange: (String) -> Unit) {
+    val inlineHistory = rememberStudioTextHistory(label, value)
+    var expandedHistory by remember { mutableStateOf<DesktopStudioTextHistory?>(null) }
+    val editor = expandedHistory ?: inlineHistory
+    val input = editor.value
     var focused by remember { mutableStateOf(false) }
     var fullscreen by remember { mutableStateOf(false) }
     var openingValue by remember { mutableStateOf(value) }
-    var openingInput by remember { mutableStateOf(input) }
     var dismissedQuery by remember { mutableStateOf<String?>(null) }
     var suggestionIndex by remember { mutableStateOf(0) }
     var inspecting by remember { mutableStateOf(true) }
@@ -105,8 +215,7 @@ internal fun StudioPromptField(label: String, value: String, suggestionService: 
         if (inspecting) inspected else NovelAiTagCompletion.activeFragment(input.text, input.selection.end)
             ?.takeIf { NovelAiPromptTranslationParser.activeSegment(input.text, input.selection.end, false)?.kind == NovelAiPromptTranslationSegmentKind.TAG }
     LaunchedEffect(value) {
-        if (!fullscreen) input = desktopComposerDraftEcho(input, value)
-        else if (value != openingValue) { fullscreen = false; input = TextFieldValue(value) }
+        if (fullscreen && value != openingValue) { fullscreen = false; expandedHistory = null; onExpandedEditorChanged?.invoke(false) }
     }
     LaunchedEffect(fragment?.query) { suggestionIndex = 0; dismissedQuery = null }
     val suggestionResult by produceState<Pair<String, TagSuggestionUpdate>?>(null, focused, fragment?.query) {
@@ -131,28 +240,32 @@ internal fun StudioPromptField(label: String, value: String, suggestionService: 
         candidates.getOrNull(index)?.let { tag ->
             val target = inspected ?: fragment ?: return
             val result = NovelAiTagCompletion.replaceTag(input.text, target, tag.name)
-            input = TextFieldValue(result.text, TextRange(result.cursor))
-            if (!fullscreen) onChange(result.text)
+            editor.edit(TextFieldValue(result.text, TextRange(result.cursor))) { if (!fullscreen) onChange(it) }
         }
     }
-    fun cancel() { fullscreen = false; input = if (value == openingValue) openingInput else TextFieldValue(value) }
+    fun cancel() { fullscreen = false; expandedHistory = null; onExpandedEditorChanged?.invoke(false) }
     @Composable fun Editor() {
         val focus = remember { FocusRequester() }
-        if (fullscreen) LaunchedEffect(Unit) { focus.requestFocus() }
+        LaunchedEffect(fullscreen, focusRevision) { if (fullscreen || focusRevision != null) focus.requestFocus() }
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            fun expand() {
+                openingValue = value; expandedHistory = inlineHistory.fork(); fullscreen = true; onExpandedEditorChanged?.invoke(true)
+            }
+            if (!fullscreen && inlineHeader != null) inlineHeader(::expand)
+            else Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.weight(1f)) { StatusText(label) }
-                if (!fullscreen) StudioAction("展开", icon = DesktopAppIcons.ExpandComposer) {
-                    openingValue = value; openingInput = input; fullscreen = true
-                }
+                if (!fullscreen) StudioAction("展开", icon = DesktopAppIcons.ExpandComposer, onClick = ::expand)
             }
             Box {
                 Box(Modifier.fillMaxWidth().heightIn(max = if (fullscreen) 450.dp else 220.dp)
                     .border(1.dp, if (focused) DesktopBootstrapColors.primary else DesktopBootstrapColors.border)
-                    .background(DesktopBootstrapColors.input).verticalScroll(rememberScrollState()).padding(9.dp)) {
-                    StudioPromptTextEditor(input, { next -> inspecting = next.text == input.text; input = next; if (!fullscreen) onChange(next.text) }, translated, currentAnnotations?.annotations.orEmpty(), Modifier.fillMaxWidth()
-                        .heightIn(min = if (fullscreen) 320.dp else 70.dp).focusRequester(focus)
-                        .semantics { contentDescription = label }.onFocusChanged { focused = it.isFocused }
+                    .background(DesktopBootstrapColors.input).studioPromptViewportBoundary()
+                    .verticalScroll(rememberScrollState()).padding(9.dp)) {
+                    StudioPromptTextEditor(input, { next -> inspecting = next.text == input.text; editor.edit(next) { if (!fullscreen) onChange(it) } }, translated, currentAnnotations?.annotations.orEmpty(), Modifier.fillMaxWidth()
+                        .heightIn(min = if (fullscreen) 320.dp else if (compact) 0.dp else 70.dp).focusRequester(focus)
+                        .semantics { contentDescription = label }.studioTextHistoryKeys(editor) { if (!fullscreen) onChange(it) }.onFocusChanged {
+                            focused = it.isFocused; onEditorFocusChanged?.invoke(it.isFocused)
+                        }
                         .onPreviewKeyEvent { event ->
                             if (!showSuggestions || event.type != KeyEventType.KeyDown || input.composition != null) false else when (event.key) {
                                 Key.Escape -> { dismissedQuery = fragment?.query; true }
@@ -185,13 +298,14 @@ internal fun StudioPromptField(label: String, value: String, suggestionService: 
             currentAnnotations?.warning?.let { StatusText(it, DesktopBootstrapColors.warning) }
         }
     }
-    if (!fullscreen) Editor() else DialogWindow(onCloseRequest = ::cancel, title = label,
-        icon = desktopImageWindowIcon(), resizable = true,
-        state = rememberDialogState(size = rememberDesktopImageWindowSize(850.dp, 650.dp))) {
-        Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    if (!fullscreen) Editor() else DesktopImageToolWindow(label, ::cancel, width = 850.dp, height = 650.dp,
+        closeOnEscape = false) {
+        Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).onKeyEvent {
+            if (it.type == KeyEventType.KeyDown && it.key == Key.Escape) { cancel(); true } else false
+        }, verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) { Editor() }
             StudioActions {
-                StudioAction("确认") { if (value == openingValue) onChange(input.text); fullscreen = false }
+                StudioAction("确认") { if (value == openingValue) inlineHistory.applyExpanded(input, onChange); fullscreen = false; expandedHistory = null; onExpandedEditorChanged?.invoke(false) }
                 StudioAction("取消", onClick = ::cancel)
             }
         }

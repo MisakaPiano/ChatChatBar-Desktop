@@ -61,6 +61,19 @@ class ChatRepositoryConditionalUpdateTest {
         roots.forEach { root -> Files.walk(root).use { it.sorted(Comparator.reverseOrder()).forEach(Files::deleteIfExists) } }
     }
 
+    @Test fun `ordinary update receipt is the exact durable snapshot including storage owned fields`() = runTest {
+        val f = fixture()
+        val edited = f.expected.copy(updatedAt = 1, orderKey = -100,
+            content = "new selected body", alternatives = listOf("first", "new selected body", "last"))
+        val saved = f.repo.updateMessageReturningSnapshot(edited)
+        assertEquals(f.expected.orderKey, saved.orderKey)
+        assertTrue(saved.updatedAt > edited.updatedAt)
+        assertEquals(saved, assertIs<JsonFileStorage.EntityReadResult.Valid<ChatMessage>>(f.repo.readMessageDurable("m", "s")).value)
+        assertEquals(edited.alternativeVersionIds, saved.alternativeVersionIds)
+        assertEquals(edited.sourceTurnId, saved.sourceTurnId)
+        assertEquals("new selected body", f.repo.getSession("s")!!.lastMessagePreview)
+    }
+
     @Test fun `notice only preserves divergent base content candidates and metadata with no-op and stale protection`() = runTest {
         val f = fixture()
         f.repo.updateMessage(f.expected.copy(content = "base distinct from selected candidate"))

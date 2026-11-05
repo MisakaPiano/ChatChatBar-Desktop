@@ -1,0 +1,11 @@
+# 275 — 官方147角色Package的默认生图设置保全
+
+127/d700及128/bcacc原件已验证Core非默认参数两新例、typed JSON/PNG两原例扩展通过。本片Package保全已成立，角色正常编辑器/候选消费者是独立276/ec086，正在129验证；不能交叉代验。schema9及原Prompt不变。
+
+## 以下为此前实现与逐次验证记录
+
+固定官方147 b4fa75d296680f777be095f3121ad0c4db979f17的CardTransferModels（SHA256 ce472dc87be51305269e8e7e54dcfca33ec68984f6ae504b7432088b15d49ccc）在原schema9加入nullable defaultImageGenerationSettings；原transfer（d7b02e1b6cb978f8126696907362132c7a6000eabedc49df63b6dbf3aca83e08）导出/落地均copy字段。Desktop内部Entity早已有该字段并用于实际生图，但原共享Package及双映射缺失，不能用cbbackup Entity往返证明角色卡JSON/PNG保全。该缺失是源调用链证实，非已执行用户数据丢失结论。
+
+本片只加原可空字段、原applyTo(所选模型或V4.5默认)→validationError(0)校验及Core两映射，不改schema、Prompt或生图生成策略。旧卡缺字段仍null；有字段的JSON/PNG、复制、覆盖沿同一Core保全。旧官方reader的扩展往返仍不能由当前Desktop读取成功推断。
+
+新增共享两例使用实际Core和inline非默认参数：两模型导入/导出/复制/覆盖及显式null清除；旧schema9缺字段可读，非法steps在资源/Entity写前拒绝。扩展原实际Desktop typed JSON/PNG导入、JSON导出与真实绘制PNG导出两例，校验非默认值；原ST识别、冲突和取消断言保留。后继精确源尚未云验，不归126/a485、公开1233或R6/fdb应用源；不重测整个备份或提升整体147baseline。

@@ -40,6 +40,11 @@ import java.util.concurrent.TimeUnit
 class EmbeddingService(
     allowCleartextHttp: () -> Boolean = { false }
 ) {
+    suspend fun closeAndDrain() = withContext(kotlinx.coroutines.NonCancellable + Dispatchers.IO) {
+        client.dispatcher.cancelAll(); client.connectionPool.evictAll(); client.dispatcher.executorService.shutdown()
+        check(client.dispatcher.executorService.awaitTermination(30, TimeUnit.SECONDS)) { "临时参考文档向量连接尚未排水" }
+    }
+
 
     companion object {
         private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()

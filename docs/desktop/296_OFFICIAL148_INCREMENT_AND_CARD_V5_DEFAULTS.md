@@ -1,0 +1,19 @@
+# 官方1.4.8增量与卡级V5参数补齐
+
+固定比较已采用147提交58023edf48f40764c481d1367f62bc048c8a5059到官方148的6f8a09a8bd24c274b08a56cadc37a82380bfe625。复用41932616672报告原件，artifact13371339251，23134B/SHA a412892357ed357eb69df286e4bdbbf72978d0c123e4f8060d3c32ca8178bc5d；provenance绑定正式141 baseline、148 target和Desktop5f。240路径变化是141→148清单，不是240个新缺陷或兼容结论。
+
+567ff193贡献到6f8仅五提交、七文件：三技能、Android发布workflow、版本元数据、handoff和覆盖清单；没有后加运行源码或原Prompt正文变化。原PR N1–N6的Studio Effort/透明、采样/Variety、默认值、费用与计数/wire共享准备链已有285/286/288–290和full157原验证，继续复用。真实Provider/账单/alpha与真人交互结果仍按原具体范围保留。
+
+本次按实际运行链发现卡级遗漏，不能因Studio已实现就称N1/N2/N4全部覆盖：5f的共享NovelAiCharacterImageSettings仍只有五个旧参数，Desktop卡编辑没有V5 Effort/透明/默认采样控件。官方148卡类型新增两字段及withDefaultSampling，Package/Core直传旧类型会遗漏两字段，卡→Studio/聊天图片/重绘/朋友圈/人物候选均消费applyTo。
+
+最小补齐在原共享类型加effort/transparentBackground，High/false省略默认值，旧缺字段保留旧语义；applyTo沿原运行链消费。明确采样重置只改sampler/steps/guidance/rescale，保留V5偏好及Variety；原“恢复默认生图参数”仍设null恢复继承。V5卡控件使用Medium有效采样只读说明，不构造可写Sampler回调覆盖High；切V4.5暂停但保留V5偏好，切回恢复。原Core/Package schema与双向映射不另建一套，原Prompt文本不改。
+
+必要定向验证包含inline旧/新字段JSON与真实请求、实际Core导入/导出/复制/覆盖、Desktop JSON和CCB-PNG实际typed往返、420/1100真实控件切换与两种reset。结果待原报告读回；不以代码存在冒称通过，不重跑无关回归、不调用Provider或操作现用H资料。公开1238/app5f/签名20保持冻结；本次未发布后继、非整148兼容或正式baseline提升。
+
+静态复核另发现“隐藏控件”不足以拒绝High时已产生的延后写回：Sampler/Steps/Rescale现在在实际edit闭包中按最新card和全局model重新判定有效Medium。测试保留实际High菜单OnClick和两个SetProgress回调，切Medium后触发再回High核值；V4.5保留Medium偏好时实际Sampler仍可修改。该风险来自源码复核，不冒称用户已重现。
+
+## 定向原件读回与未公开候选
+
+r01/41977286060实际d6df原4suite26PASS/0FAIL/SKIP（Core22、shared1、UI2、typed1）；r02/41978162288实际a7原UI2PASS/0FAIL/SKIP含延后旧回调、V4.5可编辑与null模型raw编辑。共享/Core和typed输入未变，保留首轮24与最新UI2合计26 scoped方法；两个物理运行不算28个不同方法。126213B/SHA dc68c1f9e83929d92a700fc2a266af7baf593f2268b83a1c96cce25b5600b187绑定最新原XML/source，420/1100两组件图实际查看，不冒全应用主题或原生人验。
+
+私有候选1239冻结a7ba948aea33be495632e2c4f2936b7334a73cd1（生产ad38同体）；完整158/41979164537、普通R36/41979164371控制c5e3797c运行，未读回前不记ready。公开1238与签20、原Prompt和正式baseline141不变，1238真人由root按实际新回执唯一记录。Suite收到差异但尚未实现且暂停，Desktop不代写或绕过该暂停。

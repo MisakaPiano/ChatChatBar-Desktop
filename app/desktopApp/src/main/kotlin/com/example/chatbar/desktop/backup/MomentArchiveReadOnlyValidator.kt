@@ -7,7 +7,7 @@ import kotlinx.serialization.json.*
 internal class MomentArchiveReadOnlyValidator {
     enum class State { SOURCE_GRAPH_VERIFIED_WITH_SCOPE, UNRESOLVED_DEPENDENCIES, BLOCKED, NOT_APPLICABLE }
     enum class Relation { IN_ARCHIVE, NOT_SELECTED, MISSING, UNKNOWN_SELECTION, CONFLICT, NULL_REFERENCE, SNAPSHOT_ONLY }
-    enum class Field { SENDER_AVATAR, IMAGE_PATH, METADATA_IMAGE_PATH }
+    enum class Field { SENDER_AVATAR, IMAGE_PATH, METADATA_IMAGE_PATH, VERSION_IMAGE_PATH, VERSION_METADATA_IMAGE_PATH }
     enum class LinkField { CARD, SESSION, SENDER, TASK_POST }
     enum class Media { PRESENT, EMPTY, OMITTED_BY_SCOPE, MISSING_AT_SOURCE, MISSING, UNINTERPRETED }
     data class RawIdentity(val sourceSha256: String, val recordSha256: String, val length: Long)
@@ -57,11 +57,13 @@ internal class MomentArchiveReadOnlyValidator {
                     val identity = RawIdentity(sourceHash, record.sha256, record.size)
                     raw += identity // Hash/length of exact authenticated raw bytes, never re-encoded JSON.
                     if (type == "moment_posts") {
-                        val post = backupJson.decodeFromJsonElement<MomentPostSnapshot>(value)
+                        val post = DesktopMomentBackupExtension.snapshot(value)
                         require(post.id.isNotBlank() && posts.put(post.id, post) == null)
                         postIdentities[post.id] = identity
                         val projected = manifest.scope?.momentsImages == false
                         require(!projected || (post.imagePath == null && post.generatedImageMetadata == null))
+                        val versions = DesktopMomentBackupExtension.versions(value)
+                        require(!projected || versions.isEmpty())
                         fun edge(field: Field, reference: String?, omitted: Boolean = false) {
                             val digest = reference?.let { DesktopBackupPolicy.digest(it.toByteArray(Charsets.UTF_8)) }
                             if (reference.isNullOrEmpty()) { edges += Edge(identity, field, digest, if (omitted) Media.OMITTED_BY_SCOPE else Media.EMPTY); return }
@@ -72,12 +74,16 @@ internal class MomentArchiveReadOnlyValidator {
                             require(java.text.Normalizer.isNormalized(target, java.text.Normalizer.Form.NFC))
                             require(foldedResources[target.lowercase(java.util.Locale.ROOT)].let { it == null || it == target })
                             val resource = inventory[target]
-                            val historical = resource == null && field == Field.SENDER_AVATAR && manifest.appVersionCode in 85..86
+                            val historical = resource == null && field == Field.SENDER_AVATAR && manifest.appVersionCode in 85..87
                             edges += Edge(identity, field, digest, when { resource != null -> Media.PRESENT; historical -> Media.MISSING_AT_SOURCE; else -> Media.MISSING }, resource?.sha256, resource?.size)
                         }
                         edge(Field.SENDER_AVATAR, post.senderAvatar)
                         edge(Field.IMAGE_PATH, post.imagePath, projected)
                         edge(Field.METADATA_IMAGE_PATH, post.generatedImageMetadata?.imagePath, projected)
+                        versions.forEach { version ->
+                            edge(Field.VERSION_IMAGE_PATH, version.imagePath)
+                            edge(Field.VERSION_METADATA_IMAGE_PATH, version.generatedImageMetadata?.imagePath)
+                        }
                     } else {
                         val task = backupJson.decodeFromJsonElement<MomentTaskSnapshot>(value)
                         require(task.id.isNotBlank() && tasks.put(task.id, task) == null)

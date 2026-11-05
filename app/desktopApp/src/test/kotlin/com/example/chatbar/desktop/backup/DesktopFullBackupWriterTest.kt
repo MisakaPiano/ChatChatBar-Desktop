@@ -29,15 +29,15 @@ class DesktopFullBackupWriterTest {
         }
     }
 
-    @Test fun `oversized structured input refuses before decoding or producing a file`() = runBlocking {
+    @Test fun `record exceeding the working memory budget refuses before decoding or producing a file`() = runBlocking {
         fixture { base, _ ->
             val oversized = base.resolve("oversized.json")
-            java.io.RandomAccessFile(oversized.toFile(), "rw").use { it.setLength(DesktopBackupPolicy.MAX_JSON + 1L) }
+            java.io.RandomAccessFile(oversized.toFile(), "rw").use { it.setLength(DesktopBackupRecords.recordBudget + 1L) }
             val error = assertFailsWith<DesktopFullBackupWriter.Refusal> {
                 DesktopFullBackupWriter.export(mapOf("entities/character_cards/large.json" to oversized), base.resolve("oversized.cbbackup"), null)
             }
             assertEquals("INPUT", error.stage)
-            assertEquals(DesktopBackupPolicy.MAX_JSON + 1L, Files.size(oversized))
+            assertEquals(DesktopBackupRecords.recordBudget + 1L, Files.size(oversized))
             assertFalse(Files.exists(base.resolve("oversized.cbbackup")))
         }
     }
@@ -50,7 +50,7 @@ class DesktopFullBackupWriterTest {
             val raw = entries(output, null)
             val manifest = officialWireJson.decodeFromString(OfficialModernManifest.serializer(), raw.getValue("manifest.json").toString(Charsets.UTF_8))
             val prefs = officialWireJson.decodeFromString(OfficialModernPreferences.serializer(), raw.getValue("preferences.json").toString(Charsets.UTF_8))
-            assertEquals(2, manifest.formatVersion); assertEquals(86, manifest.appVersionCode)
+            assertEquals(2, manifest.formatVersion); assertEquals(87, manifest.appVersionCode)
             assertEquals(1, manifest.scope!!.characters); assertEquals(0, manifest.scope!!.sessions)
             assertEquals(emptySet(), prefs.retainedPreferences)
             assertFalse("retainedPreferences" in backupJson.parseToJsonElement(raw.getValue("preferences.json").toString(Charsets.UTF_8)).jsonObject)
@@ -75,7 +75,7 @@ class DesktopFullBackupWriterTest {
             assertTrue(password.all { it == '\u0000' })
             assertTrue(inspect(output, "synthetic-writer-password".toCharArray()).encrypted)
             val decoded = entries(output, "synthetic-writer-password".toCharArray())
-            assertEquals(86, officialWireJson.decodeFromString(OfficialModernManifest.serializer(),
+            assertEquals(87, officialWireJson.decodeFromString(OfficialModernManifest.serializer(),
                 decoded.getValue("manifest.json").toString(Charsets.UTF_8)).appVersionCode)
             assertFails { inspect(output, "incorrect-synthetic-password".toCharArray()) }
             val damaged = Files.readAllBytes(output).also { it[it.lastIndex] = (it.last().toInt() xor 1).toByte() }

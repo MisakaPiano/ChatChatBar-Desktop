@@ -14,6 +14,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.LineHeightStyle
@@ -34,7 +35,7 @@ class DesktopStudioPresentationTest {
     private val awt = object : CoroutineDispatcher() {
         override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
     }
-    private suspend fun ImageComposeScene.frames() { repeat(4) { render().close(); yield() } }
+    private suspend fun ImageComposeScene.frames() { repeat(4) { render(System.nanoTime()).close(); yield(); delay(15) } }
     private suspend fun ImageComposeScene.key(key: Key) {
         sendKeyEvent(KeyEvent(key, KeyEventType.KeyDown)); sendKeyEvent(KeyEvent(key, KeyEventType.KeyUp)); frames()
     }
@@ -42,7 +43,7 @@ class DesktopStudioPresentationTest {
         sendPointerEvent(PointerEventType.Press, Offset(x, y), button = PointerButton.Primary)
         sendPointerEvent(PointerEventType.Release, Offset(x, y), button = PointerButton.Primary); frames()
     }
-    private fun ImageComposeScene.shot(name: String) = render().use { image ->
+    private fun ImageComposeScene.shot(name: String) = render(System.nanoTime()).use { image ->
         val path = Path.of("build", "phase7-ux-evidence", "$name.png"); Files.createDirectories(path.parent)
         image.encodeToData()?.use { Files.write(path, it.bytes) }; Unit
     }
@@ -166,8 +167,22 @@ class DesktopStudioPresentationTest {
         }
         try {
             scene.frames(); val randomHeight = height
-            focus.requestFocus(); repeat(7) { scene.key(Key.Tab) }; scene.key(Key.Spacebar)
+            fun nodes(): List<SemanticsNode> {
+                fun walk(node: SemanticsNode): List<SemanticsNode> = listOf(node) + node.children.flatMap(::walk)
+                return scene.semanticsOwners.flatMap { walk(it.rootSemanticsNode) }
+            }
+            fun randomSwitch(): SemanticsNode = nodes().single {
+                it.config.getOrNull(SemanticsProperties.Text)?.any { text -> text.text == "Random Seed" } == true
+            }.let { text -> generateSequence(text) { it.parent }.first { it.config.contains(SemanticsProperties.ToggleableState) } }
+            focus.requestFocus()
+            // Additional options change tab count. Keep actual keyboard activation tied to its focused switch.
+            repeat(nodes().count { it.config.contains(SemanticsProperties.Focused) } + 1) {
+                if (randomSwitch().config.getOrNull(SemanticsProperties.Focused) != true) scene.key(Key.Tab)
+            }
+            assertTrue(randomSwitch().config.getOrNull(SemanticsProperties.Focused) == true)
+            scene.key(Key.Spacebar)
             assertEquals(NovelAiSeedMode.FIXED, settings.seedMode); assertEquals(12345L, settings.seed)
+            assertFalse(settings.varietyPlus)
             assertTrue(height > randomHeight, "Fixed editor should exist only in fixed mode")
             scene.shot("advanced-fixed")
             scene.key(Key.Spacebar); assertEquals(NovelAiSeedMode.RANDOM, settings.seedMode); assertEquals(randomHeight, height)

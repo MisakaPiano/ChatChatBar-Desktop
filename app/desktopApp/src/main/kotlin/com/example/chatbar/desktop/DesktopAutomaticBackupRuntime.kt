@@ -97,6 +97,7 @@ class DesktopAutomaticBackupRuntime internal constructor(
     private val _state = MutableStateFlow(DesktopAutomaticBackupRuntimeState())
     val state: StateFlow<DesktopAutomaticBackupRuntimeState> = _state.asStateFlow()
     private val scheduler = schedulerFactory(::recordEvent)
+    internal val workRows get() = scheduler.workRows
 
     private var currentDocument: DesktopSettingsDocument? = null
     private var mode = DesktopAutomaticBackupRuntimeMode.NEW

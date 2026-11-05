@@ -15,6 +15,7 @@ import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.SemanticsPropertyKey
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
@@ -45,25 +46,35 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+/** Opaque identity of the bitmap actually displayed, not the next requested source or its path. */
+internal val DesktopDecodedImageIdentity = SemanticsPropertyKey<String>("DesktopDecodedImageIdentity")
+internal fun desktopDecodedImageIdentity(reference: String): String = java.util.HexFormat.of().formatHex(
+    java.security.MessageDigest.getInstance("SHA-256").digest(reference.toByteArray(Charsets.UTF_8)))
+
 @Composable
 internal fun DesktopOwnedImage(reference: String, read: (String) -> ByteArray,
     modifier: Modifier = Modifier, crop: Boolean = false, onDimensions: ((IntSize) -> Unit)? = null,
     minimumDisplayWidthPx: Int? = null,
     displayTargetForSource: ((IntSize) -> IntSize)? = null) {
     var error by remember(reference) { mutableStateOf<String?>(null) }
+    val identity = remember(reference) { desktopDecodedImageIdentity(reference) }
     val displayed by produceState<DesktopDisplayedImage?>(null, reference, minimumDisplayWidthPx, displayTargetForSource) {
+        suspend fun publish(image: DesktopDisplayedImage) {
+            currentCoroutineContext().ensureActive()
+            value = image.copy(identity = identity)
+        }
         try {
             withContext(Dispatchers.IO) {
                 val bytes = read(reference)
                 require(bytes.size <= com.example.chatbar.domain.image.ApngDisguiseCodec.MAX_OUTPUT_BYTES)
                 if (playDesktopApng(bytes) { frame, duration ->
-                    value = DesktopDisplayedImage(desktopDisplayBitmap(frame, minimumDisplayWidthPx),
-                        IntSize(frame.width, frame.height)); delay(duration)
+                    publish(DesktopDisplayedImage(desktopDisplayBitmap(frame, minimumDisplayWidthPx),
+                        IntSize(frame.width, frame.height))); delay(duration)
                 }) return@withContext
                 org.jetbrains.skia.Data.makeFromBytes(bytes).use { data ->
                     org.jetbrains.skia.Codec.makeFromData(data).use { codec ->
                         require(codec.width.toLong() * codec.height <= DesktopImageEditing.MAX_PIXELS)
-                        if (codec.frameCount <= 1) value = desktopDisplayBitmap(bytes, minimumDisplayWidthPx, displayTargetForSource)
+                        if (codec.frameCount <= 1) publish(desktopDisplayBitmap(bytes, minimumDisplayWidthPx, displayTargetForSource))
                         else org.jetbrains.skia.Bitmap().use { frame ->
                             check(frame.allocPixels(codec.imageInfo))
                             var loops = 0
@@ -71,8 +82,8 @@ internal fun DesktopOwnedImage(reference: String, read: (String) -> ByteArray,
                                 for (index in 0 until codec.frameCount) {
                                     currentCoroutineContext().ensureActive()
                                     codec.readPixels(frame, index)
-                                    value = DesktopDisplayedImage(org.jetbrains.skia.Image.makeFromBitmap(frame).toComposeImageBitmap(),
-                                        IntSize(codec.width, codec.height))
+                                    publish(DesktopDisplayedImage(org.jetbrains.skia.Image.makeFromBitmap(frame).toComposeImageBitmap(),
+                                        IntSize(codec.width, codec.height)))
                                     delay(codec.getFrameInfo(index).duration.coerceAtLeast(10).toLong())
                                 }
                                 loops++
@@ -89,13 +100,13 @@ internal fun DesktopOwnedImage(reference: String, read: (String) -> ByteArray,
     LaunchedEffect(reference, displayed?.sourceDimensions) {
         displayed?.let { dimensionsChanged?.invoke(it.sourceDimensions) }
     }
-    Box(modifier, contentAlignment = Alignment.Center) {
+    Box(modifier.semantics { displayed?.identity?.let { this[DesktopDecodedImageIdentity] = it } }, contentAlignment = Alignment.Center) {
         displayed?.let { Image(it.bitmap, "图片", Modifier.fillMaxSize(), contentScale = if (crop) ContentScale.Crop else ContentScale.Fit) }
             ?: StatusText(error ?: "正在读取图片…")
     }
 }
 
-private data class DesktopDisplayedImage(val bitmap: ImageBitmap, val sourceDimensions: IntSize)
+private data class DesktopDisplayedImage(val bitmap: ImageBitmap, val sourceDimensions: IntSize, val identity: String? = null)
 
 private fun desktopDisplayBitmap(bytes: ByteArray, minimumDisplayWidthPx: Int?,
     displayTargetForSource: ((IntSize) -> IntSize)?): DesktopDisplayedImage {
@@ -136,12 +147,14 @@ private fun desktopDisplayBitmap(original: java.awt.image.BufferedImage, minimum
 
 @Composable
 internal fun DesktopImageViewer(references: List<String>, initialIndex: Int,
-    resources: DesktopCharacterResourceStore, picker: DesktopFilePicker, onClose: () -> Unit) {
+    resources: DesktopCharacterResourceStore, picker: DesktopFilePicker,
+    extraActions: @Composable RowScope.(String) -> Unit = {}, onClose: () -> Unit) {
     val selection = remember { DesktopViewerSelection(references, initialIndex) }
     val reference = selection.reference ?: return
     val index = selection.index
     val count = selection.references.size
     var resetRevision by remember(reference) { mutableStateOf(0) }
+    val zoom = remember(reference) { DesktopImageZoomState() }
     var status by remember { mutableStateOf<String?>(null) }
     var tools by remember { mutableStateOf<ByteArray?>(null) }
     val scope = rememberCoroutineScope()
@@ -155,33 +168,32 @@ internal fun DesktopImageViewer(references: List<String>, initialIndex: Int,
     tools?.let { DesktopImageToolsDialog(it, picker, { tools = null }) }
     DesktopImageToolWindow("图片 ${index + 1} / $count", onClose, width = 960.dp, height = 800.dp,
         onKey = desktopViewerKeyHandler(selection, onClose)) {
-        Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background),
+            verticalArrangement = Arrangement.spacedBy(4.dp)) {
             DesktopViewerImageRegion(index, count, selection::previous, selection::next, Modifier.weight(1f).fillMaxWidth()) {
-                DesktopImageZoomSurface(reference, resources::readBytes, Modifier.fillMaxSize(), resetRevision)
+                DesktopImageZoomSurface(reference, resources::readBytes, Modifier.fillMaxSize(), resetRevision, zoomState = zoom)
             }
             status?.let { StatusText(it) }
-            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                DesktopViewerPageButtons(selection)
-                BootstrapButton("重置") { resetRevision++ }
-                BootstrapButton("保存 PNG") { act {
+            DesktopImageViewerToolbar(zoom, selection) {
+                ViewerToolbarSeparator()
+                DesktopChatIconAction("保存 PNG", DesktopAppIcons.SaveImage) { act {
                     val target = picker.pickSaveFile(DesktopFileType("PNG", listOf("png")), "image.png") ?: return@act
                     val bytes = resources.readBytes(reference)
                     val png = bytes.size >= 8 && bytes[0] == 0x89.toByte()
                     if (!png) DesktopImageEditing.requireStatic(bytes)
                     DesktopExternalFileWriter.writeBytes(target, if (png) bytes else DesktopImageEditing.png(DesktopImageEditing.decode(bytes)))
                 } }
-                BootstrapButton("复制图片") { act {
+                DesktopChatIconAction("复制图片", DesktopAppIcons.Copy) { act {
                     val bytes = resources.readBytes(reference)
                     copyDesktopImage(bytes, if (reference.startsWith("asset:")) null else resources.resolveOwnedReference(reference))
                 } }
-                BootstrapButton("在文件夹中显示", enabled = !reference.startsWith("asset:")) { act {
+                DesktopChatIconAction("在文件夹中显示", DesktopAppIcons.Folder, enabled = !reference.startsWith("asset:")) { act {
                     resources.readBytes(reference) // Validate regular owned file before handing it to Explorer.
                     val path = resources.resolveOwnedReference(reference)
                     ProcessBuilder("explorer.exe", "/select,", path.toString()).start()
                 } }
-                BootstrapButton("图像工具") { act { tools = resources.readBytes(reference) } }
-                BootstrapButton("关闭", onClick = onClose)
+                DesktopChatIconAction("图像工具", DesktopAppIcons.Tools) { act { tools = resources.readBytes(reference) } }
+                extraActions(reference)
             }
         }
     }
@@ -235,13 +247,10 @@ internal fun DesktopPendingImageStrip(images: List<DesktopPendingImage>, enabled
 /** Pending/imported images have no owned reference yet. Read-only viewer retains original animation. */
 @Composable
 internal fun DesktopTransientImagePreview(reference: String, read: (String) -> ByteArray, onClose: () -> Unit) {
-    var resetRevision by remember(reference) { mutableStateOf(0) }
+    val zoom = remember(reference) { DesktopImageZoomState() }
     DesktopImageToolWindow("图片预览", onClose, width = 960.dp, height = 800.dp) {
-        DesktopImageZoomSurface(reference, read, Modifier.weight(1f).fillMaxWidth(), resetRevision)
-        StudioActions {
-            StudioAction("重置") { resetRevision++ }
-            StudioAction("关闭预览", icon = DesktopAppIcons.Close, onClick = onClose)
-        }
+        DesktopImageZoomSurface(reference, read, Modifier.weight(1f).fillMaxWidth(), zoomState = zoom)
+        DesktopImageViewerToolbar(zoom)
     }
 }
 

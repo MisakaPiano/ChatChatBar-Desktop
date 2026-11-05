@@ -40,6 +40,14 @@ internal class DesktopMergeIdentity(private val copy: Boolean = false,
     fun fieldSpace(record: DesktopMergeRecord, fields: List<String>): String? {
         val field = fields.lastOrNull() ?: return null
         if (opaque(fields)) return null
+        if ("desktopPlayerRole" in fields) {
+            if (field == "cardId") return "character_cards"
+            if (field == "personId") return "characters"
+        }
+        if ("desktopCharacterParticipation" in fields) {
+            if (field == "cardId") return "character_cards"
+            if (field in setOf("disabledPersonIds", "automaticallyPausedPersonIds")) return "characters"
+        }
         if (field == "id") {
             if (fields.size == 1) return record.type.takeUnless { record.singleton && record.type !in setOf("retrieval_model_config", "embedding_model_config") }
             return when (fields.dropLast(1).lastOrNull()) {
@@ -131,6 +139,7 @@ internal class DesktopMergeIdentity(private val copy: Boolean = false,
             "legacyReferenceNodeIds", "pendingRootNodeIds", "addedNodeIds", "removedNodeIds", "snapshotNodeIds", "consumedNodeIds", "resultNodeId",
             "episodeNodeIds", "arcNodeIds", "eraNodeIds", "activeEpisodeNodeIds", "activeArcNodeIds", "activeEraNodeIds", "deleteNodeIds", "currentRevisionId",
             "parentRevisionId", "sourceRevisionId", "targetRevisionId", "deleteRevisionIds", "transactionId", "deleteTransactionIds", "memoryHeadCommitId",
-            "parentCommitId", "sourceId")
+            "parentCommitId", "sourceId", "desktopCharacterParticipation", "cardId", "disabledPersonIds", "automaticallyPausedPersonIds",
+            "desktopPlayerRole", "personId")
     }
 }

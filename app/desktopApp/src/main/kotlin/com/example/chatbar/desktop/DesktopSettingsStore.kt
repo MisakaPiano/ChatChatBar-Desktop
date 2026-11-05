@@ -18,6 +18,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -74,6 +76,7 @@ class DesktopSettingsStore internal constructor(
     private val appDataRoot = appDataRoot.toAbsolutePath().normalize()
     val settingsPath: Path = this.appDataRoot.resolve(SETTINGS_FILE_NAME)
     private val json = Json { prettyPrint = true }
+    private val chatUiJson = Json { ignoreUnknownKeys = true; encodeDefaults = true }
     private val mutationMutex = Mutex()
 
     suspend fun load(): DesktopSettingsLoadResult = operationGate.withNormalOperation {
@@ -204,7 +207,21 @@ class DesktopSettingsStore internal constructor(
         if (COLOR_STYLE in root && root.primitive(COLOR_STYLE) == null) {
             return DesktopSettingsLoadResult.Invalid("Desktop color style is invalid")
         }
+        val chatUi = try {
+            root[CHAT_UI]?.let { chatUiJson.decodeFromJsonElement<DesktopChatUiPreferences>(it) }
+                ?: DesktopChatUiPreferences()
+        } catch (_: Exception) { return DesktopSettingsLoadResult.Invalid("Desktop chat UI preferences are invalid") }
         val settings = DesktopSettings(
+            guideAcknowledgedVersion = if (GUIDE_ACKNOWLEDGED_VERSION !in root) 0 else
+                root.primitive(GUIDE_ACKNOWLEDGED_VERSION)?.intOrNull?.takeIf { it >= 0 }
+                    ?: return DesktopSettingsLoadResult.Invalid("Desktop guide preference is invalid"),
+            taskNotifications = if (TASK_NOTIFICATIONS !in root) true else root.primitive(TASK_NOTIFICATIONS)?.booleanOrNull
+                ?: return DesktopSettingsLoadResult.Invalid("Desktop task notifications preference is invalid"),
+            networkProxy = try {
+                root[NETWORK_PROXY]?.let { chatUiJson.decodeFromJsonElement<com.example.chatbar.domain.ApplicationProxySettings>(it) }
+                    ?: com.example.chatbar.domain.ApplicationProxySettings()
+            } catch (_: Exception) { return DesktopSettingsLoadResult.Invalid("Desktop network proxy settings are invalid") },
+            chatUi = chatUi,
             formatVersion = formatVersion,
             automaticBackup = automaticSettings,
             uiLanguage = when (val language = root.primitive(UI_LANGUAGE)?.content) {
@@ -259,6 +276,15 @@ class DesktopSettingsStore internal constructor(
             put(AUTOMATIC_BACKUP, automatic)
             put(UI_LANGUAGE, JsonPrimitive(settings.uiLanguage.name))
             put(COLOR_STYLE, JsonPrimitive(settings.colorStyle.name))
+            put(TASK_NOTIFICATIONS, JsonPrimitive(settings.taskNotifications))
+            put(GUIDE_ACKNOWLEDGED_VERSION, JsonPrimitive(settings.guideAcknowledgedVersion))
+            val previousProxy = source[NETWORK_PROXY] as? JsonObject
+            put(NETWORK_PROXY, JsonObject(previousProxy.orEmpty() +
+                (chatUiJson.encodeToJsonElement(settings.networkProxy) as JsonObject)))
+            val previousChatUi = source[CHAT_UI] as? JsonObject
+            // Encode defaults as well, so selecting a default can replace a stored non-default.
+            val completeChatUi = chatUiJson.encodeToJsonElement(settings.chatUi) as JsonObject
+            put(CHAT_UI, JsonObject(previousChatUi.orEmpty() + completeChatUi))
         })
     }
 
@@ -304,6 +330,10 @@ class DesktopSettingsStore internal constructor(
         private const val AUTOMATIC_BACKUP = "automaticBackup"
         private const val UI_LANGUAGE = "uiLanguage"
         private const val COLOR_STYLE = "colorStyle"
+        private const val CHAT_UI = "chatUi"
+        private const val NETWORK_PROXY = "networkProxy"
+        private const val TASK_NOTIFICATIONS = "taskNotifications"
+        private const val GUIDE_ACKNOWLEDGED_VERSION = "guideAcknowledgedVersion"
         private const val ENABLED = "enabled"
         private const val MINIMUM_BACKUP_INTERVAL = "minimumBackupInterval"
         private const val MAXIMUM_SNAPSHOT_COUNT = "maximumSnapshotCount"

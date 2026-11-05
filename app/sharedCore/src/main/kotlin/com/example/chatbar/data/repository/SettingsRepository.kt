@@ -114,6 +114,11 @@ class SettingsRepository(
         savePlayerSettingLocked(setting)
     }
 
+    suspend fun updatePlayerSetting(transform: (PlayerSetting) -> PlayerSetting): PlayerSetting = settingsMutex.withLock {
+        savePlayerSettingLocked(transform(getPlayerSettingLocked()))
+        _playerSetting.value
+    }
+
     private suspend fun savePlayerSettingLocked(setting: PlayerSetting) {
         val updated = setting.copy(updatedAt = System.currentTimeMillis())
         storage.saveSingleton(PLAYER_SETTING_TYPE, updated, PlayerSetting.serializer())

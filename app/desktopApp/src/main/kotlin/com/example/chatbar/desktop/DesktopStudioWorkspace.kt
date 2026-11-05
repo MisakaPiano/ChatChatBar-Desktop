@@ -4,6 +4,9 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -24,7 +27,7 @@ internal class DesktopStudioWorkspaceState {
     var compactExpanded by mutableStateOf(false)
     var diagnostics by mutableStateOf(false)
 
-    fun previewWidth(width: Float): Float = when (mode) {
+    fun previewWidth(width: Float, mode: String = this.mode): Float = when (mode) {
         "预览专注" -> width
         "仅缩略图" -> 116f
         else -> (width * fraction).coerceIn(300f, (width - 332f).coerceAtLeast(300f))
@@ -47,18 +50,30 @@ internal fun DesktopStudioWorkspace(
     captions: (@Composable () -> Unit)? = null,
     diagnostics: (@Composable () -> Unit)? = null,
     chromeRecorder: DesktopChromeLayoutRecorder? = null,
+    previewActions: (@Composable () -> Unit)? = null,
     compact: @Composable (onExpand: () -> Unit) -> Unit,
     editor: @Composable () -> Unit,
     footer: @Composable () -> Unit,
     preview: @Composable (rail: Boolean) -> Unit,
 ) {
     val editorScroll = rememberScrollState()
-    BoxWithConstraints(modifier.fillMaxSize().background(DesktopBootstrapColors.background).clipToBounds()) {
+    val diagnosticsFocus = remember { FocusRequester() }
+    LaunchedEffect(state.diagnostics) {
+        if (state.diagnostics) diagnosticsFocus.requestFocus()
+    }
+    BoxWithConstraints(modifier.fillMaxSize().background(DesktopBootstrapColors.background).clipToBounds()
+        .focusRequester(diagnosticsFocus).onKeyEvent { event ->
+            if (state.diagnostics && event.type == KeyEventType.KeyDown && event.key == Key.Escape) {
+                state.diagnostics = false
+                true
+            } else false
+        }.focusable()) {
         val width = maxWidth.value
         val wide = width >= 900f
-        val focus = wide && state.mode == "预览专注"
-        val expanded = wide || state.compactExpanded
-        val previewWidth = if (wide) state.previewWidth(width) else minOf(width, 640f)
+        val focus = wide && state.mode == "预览专注" && !state.diagnostics
+        val expanded = (wide || state.compactExpanded) && (wide || !state.diagnostics)
+        val previewWidth = if (wide) state.previewWidth(width,
+            if (state.diagnostics && state.mode == "预览专注") "展开预览" else state.mode) else minOf(width, 640f)
         val editorWidth = if (wide && !focus) width - previewWidth - 12f else width
         val captionWidth = if (captions != null) 126f else 0f
         val navWidth = if (focus || (!wide && expanded)) minOf(240f, width - captionWidth)
@@ -72,16 +87,27 @@ internal fun DesktopStudioWorkspace(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                StudioAction("NovelAI Studio", selected = !state.diagnostics) { state.diagnostics = false }
-                StudioAction("高级 / 诊断", selected = state.diagnostics) { state.diagnostics = true }
+                DesktopWorkspaceNavigationItem(DesktopWorkspaceDestination("studio", "NovelAI Studio"), !state.diagnostics,
+                    true, Modifier.width(142.dp)) { state.diagnostics = false }
+                DesktopWorkspaceNavigationItem(DesktopWorkspaceDestination("diagnostics", "高级 / 诊断"), state.diagnostics,
+                    true, Modifier.width(142.dp)) { state.diagnostics = true }
             }
-            if (!wide && !expanded && !state.diagnostics) compact { state.compactExpanded = true }
+            if (!wide && !expanded && !state.diagnostics) Column {
+                StudioActions { previewActions?.invoke() }
+                compact { state.compactExpanded = true }
+            }
             Box(Modifier.weight(1f).fillMaxWidth().clipToBounds()) {
                 Column(Modifier.fillMaxSize()
                     .then(if (state.diagnostics) Modifier.alpha(0f).clearAndSetSemantics {} else Modifier)
                     .verticalScroll(editorScroll).padding(12.dp)
                     .semantics { contentDescription = "Studio Prompt 编辑区" }) { editor() }
-                if (state.diagnostics) diagnostics?.invoke()
+                if (state.diagnostics) Column(Modifier.fillMaxSize()) {
+                    Row(Modifier.fillMaxWidth().background(DesktopBootstrapColors.card).padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        StudioAction("返回 Studio") { state.diagnostics = false }
+                    }
+                    Box(Modifier.weight(1f).fillMaxWidth()) { diagnostics?.invoke() }
+                }
             }
             Box(Modifier.fillMaxWidth().background(DesktopBootstrapColors.card)
                 .semantics { contentDescription = "Studio 固定生成栏" }.padding(8.dp), contentAlignment = Alignment.CenterEnd) { footer() }
@@ -109,11 +135,14 @@ internal fun DesktopStudioWorkspace(
                 .semantics { contentDescription = "Studio 全高预览面板" }
                 .padding(top = if (captions != null || navigation != null) 44.dp else 0.dp)
                 .padding(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                if (!wide) StudioAction("收起预览") { state.compactExpanded = false }
-                else if (state.mode == "仅缩略图") StudioAction("展开预览") { state.mode = "展开预览" }
-                else StudioActions {
-                    CompactChoice("预览", listOf("展开预览", "仅缩略图", "预览专注"), state.mode, { it }) { state.mode = it }
-                    if (focus) StudioAction("返回编辑") { state.mode = "展开预览" }
+                StudioActions {
+                    previewActions?.invoke()
+                    if (!wide) StudioAction("收起预览") { state.compactExpanded = false }
+                    else if (state.mode == "仅缩略图") StudioAction("显示图片面板") { state.mode = "展开预览" }
+                    else {
+                        CompactChoice("布局", listOf("展开预览", "仅缩略图", "预览专注"), state.mode, { it }) { state.mode = it }
+                        if (focus) StudioAction("返回编辑") { state.mode = "展开预览" }
+                    }
                 }
                 Box(Modifier.weight(1f).fillMaxWidth()) { preview(wide && state.mode == "仅缩略图") }
             }

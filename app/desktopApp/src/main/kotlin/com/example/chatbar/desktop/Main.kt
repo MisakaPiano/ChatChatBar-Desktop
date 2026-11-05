@@ -17,31 +17,66 @@ import androidx.compose.ui.window.rememberWindowState
 import androidx.compose.ui.window.application
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.collect
 
 /** An incomplete writer drain leaves storage live, so retain its root lock until process exit. */
 private val unsafeShutdownOwnerships = ConcurrentHashMap.newKeySet<DesktopDataRootOwnership>()
 
-fun main() {
+fun main(args: Array<String>) {
     DesktopInstalledProgram.acquire()
-    try { runDesktopProcessLifecycle({ runDesktopMain() }) }
+    try {
+        if (args.firstOrNull() == "--community-auth") {
+            try {
+                require(args.size == 3)
+                val home = requireNotNull((DesktopApplicationHome.resolve() as? DesktopApplicationHomeResult.Available)?.path)
+                val endpoint = java.nio.file.Path.of(args[1])
+                DesktopExternalActivation.validateCommunityDirectory(home, endpoint)
+                DesktopExternalActivation.forwardCommunityCallback(endpoint, args[2])
+                DesktopInstalledProgram.forwarded()
+            } catch (_: Exception) {
+                System.err.println("COMMUNITY_AUTH_RETURN_UNCONFIRMED")
+                if (System.getProperty("os.name").startsWith("Windows") && !java.awt.GraphicsEnvironment.isHeadless()) {
+                    DesktopNativeDialogBrand.show(messageBox = {
+                        com.sun.jna.Native.load("user32", StartupMessageBoxApi::class.java).MessageBoxW(null,
+                            com.sun.jna.WString("社区登录返回尚未确认。请回到原 CCB 窗口查看登录状态，或重新发起登录。"),
+                            com.sun.jna.WString("ChatChatBar — 社区登录"), 0x10030)
+                    })
+                }
+            }
+            return
+        }
+        runDesktopProcessLifecycle({
+        val home = java.nio.file.Path.of(System.getProperty(DesktopApplicationHome.PROPERTY_NAME) ?: System.getProperty("user.dir"))
+        val local = java.nio.file.Path.of(System.getenv("LOCALAPPDATA") ?: System.getProperty("user.home"))
+        runDesktopExternalActivation(args, home, local) { activation ->
+            runDesktopMain(business = { root -> runDesktopBusinessApplication(root, activation) })
+        }
+    }) }
     finally { DesktopInstalledProgram.release() }
 }
 
 /** Tests invoke this exact production ingress, replacing only platform inputs/business UI. */
 internal fun runDesktopMain(
     startup: DesktopStartupGate = DesktopStartupGate(),
-    business: (DesktopDataRootResolution.Resolved) -> Unit = ::runDesktopBusinessApplication,
+    business: (DesktopDataRootResolution.Resolved) -> Unit = { runDesktopBusinessApplication(it) },
 ) {
+    configureDesktopNetworkTransport()
     startup.run(business)
     DesktopShutdownTrace.record(DesktopShutdownStage.MAIN_RETURNED)
 }
 
-private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolution.Resolved) {
+private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolution.Resolved,
+    activation: DesktopExternalActivation? = null) {
+        DesktopWindowsTaskbarPin.configureIdentity()
         val dialogOwner = DesktopDialogOwner()
         DesktopPlatformPickers.create(dialogOwner).use { pickers ->
             val appContainer = DesktopAppContainer(resolvedRoot, filePicker = pickers.files, directoryPicker = pickers.directories)
+            val externalOwner = java.util.concurrent.atomic.AtomicReference<DesktopExternalImportController?>()
             runDesktopApplicationLifecycle(
-                initialize = { appContainer.initializePersistentState() },
+                initialize = { appContainer.networkProxyController.loadAtStartup(); appContainer.initializePersistentState() },
                 applicationBody = {
                     application(exitProcessOnExit = false) {
                         val rootSwitchController = remember {
@@ -57,12 +92,45 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                         val transferController = remember { appContainer.createTypedTransferController() }
                         val modelTemplateController = remember { appContainer.createModelTemplateTransferController() }
                         val managementController = remember { appContainer.createManagementController(transferController) }
+                        val communityController = remember {
+                            val home = (DesktopApplicationHome.resolve() as? DesktopApplicationHomeResult.Available)?.path
+                            val returning = home?.let { DesktopCommunityProtocolReturn(it, activation != null,
+                                activationDirectory = activation?.communityEndpointDirectory) } ?: UnavailableCommunityLoginReturn
+                            appContainer.createCommunityController(transferController, loginReturn = returning).also {
+                                activation?.communityAuthReceiver = it::receiveLoginReturn
+                            }
+                        }
                         val promptInspectorController = remember {
                             appContainer.createPromptInspectorController()
                         }
                         val primaryChatController = remember { appContainer.primaryChatController }
                         val modelSettingsController = remember { appContainer.modelSettingsController }
                         val applicationScope = rememberCoroutineScope()
+                        val externalImports = remember(activation) { activation?.let {
+                            DesktopExternalImportController(it.queue, appContainer.dataOperationCoordinator, transferController,
+                                modelTemplateController, appContainer.mergeImportController, appContainer.saveSlotController,
+                                appContainer.novelAiStudioController, imageBusy = {
+                                    appContainer.taskRuntime.tasks.value.any { task -> task.kind == DesktopTaskKind.NOVELAI && task.status == DesktopTaskStatus.RUNNING }
+                                }, unavailable = {
+                                    rootSwitchController.state.value !is DesktopDataRootSwitchState.Idle ||
+                                        appContainer.fullBackupController.state.value.let { backup -> backup.busy || backup.restartRequired }
+                                })
+                        }.also(externalOwner::set) }
+                        val updateProxySettings = { appContainer.networkProxyController.state.value.saved }
+                        val updater = remember { DesktopUpdateRuntime(applicationScope, dataRoot = resolvedRoot.appDataRoot,
+                            proxySettings = updateProxySettings) }
+                        val modalActivity = remember { DesktopModalActivity() }
+                        val updateNotices = remember {
+                            val identity = DesktopBuildIdentity.load()
+                            val checker = DesktopUpdateChecker(proxySettings = updateProxySettings)
+                            DesktopUpdateNotices(applicationScope, identity.version,
+                                System.getenv("LOCALAPPDATA")?.let { DesktopUpdateNoticeHints(java.nio.file.Path.of(it).resolve("ChatChatBarDesktopUpdates")) },
+                                startupAllowed = System.getProperty("jpackage.app-path") != null,
+                                startupQuery = if (updater.supportsInstall) ({ updater.checkAvailable() }) else null) { previews ->
+                                checker.check(identity.version, previews)
+                            }
+                        }
+                        DisposableEffect(updateNotices) { onDispose { updateNotices.close() } }
                         val backupSettingsController = remember { DesktopAutomaticBackupSettingsController(appContainer.automaticBackupRuntime, applicationScope) }
                         LaunchedEffect(backupSettingsController) { backupSettingsController.observe() }
                         val uiLanguageController = remember { appContainer.uiLanguageController }
@@ -73,9 +141,13 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                         val appearance by appearanceController.state.collectAsState()
                         val navigation = remember { DesktopPrimaryNavigationController() }
                         val windowState = rememberWindowState(width = 1240.dp, height = 800.dp)
+                        val tray = remember { appContainer.taskTray }
+                        val trayState by tray.state.collectAsState()
                         val requestClose: () -> Unit = {
                             DesktopShutdownTrace.record(DesktopShutdownStage.CLOSE_REQUESTED)
                             if (rootSwitchController.requestWindowClose()) {
+                                tray.prepareExit()
+                                activation?.queue?.stopAccepting()
                                 appContainer.taskRuntime.stopAccepting()
                                 exitApplication()
                             }
@@ -83,16 +155,43 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                         }
                         Window(
                             onCloseRequest = requestClose,
+                            visible = trayState.windowVisible,
                             state = windowState,
                             undecorated = DesktopWindowChrome.isWindows,
                             title = "ChatChatBar",
                             icon = painterResource(DesktopBrandResources.LOGO_RESOURCE),
                         ) {
+                            LaunchedEffect(window, tray) {
+                                tray.initialize(onShow = { applicationScope.launch {
+                                    windowState.isMinimized = false
+                                    window.toFront(); window.requestFocus()
+                                } }, onExit = { applicationScope.launch { requestClose() } })
+                            }
                             LaunchedEffect(window) {
                                 while (!window.isShowing) kotlinx.coroutines.delay(50)
                                 DesktopInstalledProgram.ready()
+                                androidx.compose.runtime.withFrameNanos { }
+                                updateNotices.checkOnStartup()
                             }
                             val chrome = rememberDesktopWindowChrome(window, requestClose)
+                            LaunchedEffect(window, activation) {
+                                activation?.queue?.state?.map { it.activation }?.distinctUntilChanged()?.collect { revision ->
+                                    if (revision > 1) {
+                                        tray.show()
+                                        windowState.isMinimized = false
+                                        window.toFront(); window.requestFocus()
+                                    }
+                                }
+                            }
+                            LaunchedEffect(window, activation, "community-return") {
+                                activation?.communityActivation?.collect { revision ->
+                                    if (revision > 0) {
+                                        tray.show()
+                                        windowState.isMinimized = false
+                                        window.toFront(); window.requestFocus()
+                                    }
+                                }
+                            }
                             DisposableEffect(window, dialogOwner) {
                                 dialogOwner.attach(window)
                                 onDispose { dialogOwner.detach(window) }
@@ -106,7 +205,13 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                                 LocalDesktopUiStrings provides DesktopUiStrings(uiLanguage),
                                 LocalDesktopPalette provides palette,
                                 LocalDesktopFishParentWindow provides window,
+                                LocalDesktopUpdater provides updater,
+                                LocalDesktopUpdateNotices provides updateNotices,
+                                LocalDesktopTaskCenter provides appContainer.taskCenter,
+                                LocalDesktopModalActivity provides modalActivity,
+                                LocalDesktopApiAccounts provides appContainer.apiAccountController,
                             ) {
+                                DesktopApiAccountDialog()
                                 DesktopPrimaryShell(
                                     chrome = chrome,
                                     navigation = navigation,
@@ -122,13 +227,24 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                                     formatCardEditorController = appContainer.formatCardEditorController,
                                     worldBookEditorController = appContainer.worldBookEditorController,
                                     uiLanguageController = uiLanguageController,
+                                    guideReminder = appContainer.guideReminderController,
                                     appearanceController = appearanceController,
                                     connectionTestController = appContainer.connectionTestController,
                                     novelAiSettingsController = appContainer.novelAiSettingsController,
                                     novelAiStudioController = appContainer.novelAiStudioController,
+                                    networkProxyController = appContainer.networkProxyController,
+                                    momentsController = appContainer.momentsController,
+                                    communityController = communityController,
+                                    providerUsage = appContainer.providerUsage,
                                     fullBackupController = appContainer.fullBackupController,
                                     mergeImportController = appContainer.mergeImportController,
+                                    externalImportController = externalImports,
+                                    taskCenter = appContainer.taskCenter,
+                                    taskTray = tray,
+                                    onHideToTray = tray::hide,
                                     onExitApplication = {
+                                        tray.prepareExit()
+                                        activation?.queue?.stopAccepting()
                                         appContainer.taskRuntime.stopAccepting()
                                         exitApplication()
                                     },
@@ -139,7 +255,7 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                     DesktopShutdownTrace.record(DesktopShutdownStage.COMPOSE_RETURNED)
                 },
                 close = {
-                    closeDesktopWithRecovery(close = { appContainer.close() })
+                    closeDesktopWithRecovery(close = { externalOwner.get()?.closeAndDrain(); appContainer.close() })
                     DesktopShutdownTrace.record(DesktopShutdownStage.CONTAINER_CLOSED)
                 },
             )

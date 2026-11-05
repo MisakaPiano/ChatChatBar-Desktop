@@ -30,9 +30,14 @@ internal class DesktopMemoryController(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val mutableState = MutableStateFlow(DesktopMemoryState())
     val state = mutableState.asStateFlow()
+    private suspend fun <T> withSessionUsage(sessionId: String, block: suspend () -> T): T {
+        val inherited = currentCoroutineContext()[DesktopUsageParent]?.value?.takeIf { it.sessionId == sessionId }
+        return withContext(DesktopUsageParent((inherited ?: DesktopUsageContext(DesktopUsageSource.CHAT)).copy(
+            source = DesktopUsageSource.CHAT, sessionId = sessionId))) { block() }
+    }
     val coordinator = LongTermMemoryAutoMaintenanceCoordinator(object : MemoryMaintenancePlatform {
         override suspend fun <T> run(sessionId: String, requireValidatedInternet: Boolean, block: suspend () -> T): T =
-            gate.withNormalOperation(block)
+            gate.withNormalOperation { withSessionUsage(sessionId, block) }
     }, scope, chats, settings, models, service)
     val backfill = coordinator.backfillProgress
     val repair = coordinator.sourceRepairProgress
@@ -106,7 +111,7 @@ internal class DesktopMemoryController(
         if (state.value.operationBusy) return
         mutableState.update { it.copy(operationBusy = true, error = null) }
         val job = coordinator.launchSessionAction(id) {
-            try { gate.withNormalOperation { work(id) }; refreshSafely(id) }
+            try { gate.withNormalOperation { withSessionUsage(id) { work(id) } }; refreshSafely(id) }
             catch (cancelled: CancellationException) { throw cancelled }
             catch (_: Exception) { if (state.value.sessionId == id) mutableState.update {
                 it.copy(error = "记忆操作未完成；原数据与恢复记录保留，请检查模型设置或来源后重试") } }

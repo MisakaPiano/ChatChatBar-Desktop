@@ -96,7 +96,15 @@ class DesktopR1LayoutMenuTest {
                     assertFalse(layouts.single().layoutInput.softWrap)
                     if (width == 360) assertTrue(layouts.single().multiParagraph.didExceedMaxLines)
                     val input = nodes(scene).filter { it.config.contains(SemanticsActions.SetText) }
-                    assertTrue(input.any { it.boundsInRoot.height >= 40 && it.boundsInRoot.bottom <= 800 })
+                    val editor = input.maxBy { it.boundsInRoot.bottom }
+                    // The 96dp composer reserves a 40dp toolbar and 20dp text padding.
+                    assertTrue(editor.boundsInRoot.height >= 36 && editor.boundsInRoot.bottom <= 800)
+                    val expand = nodes(scene).single { DesktopUiText.EXPAND_COMPOSER.zhCn in
+                        it.config.getOrNull(SemanticsProperties.ContentDescription).orEmpty() }
+                    assertTrue(editor.boundsInRoot.bottom <= expand.boundsInRoot.top)
+                    assertTrue(editor.config[SemanticsActions.SetText].action!!.invoke(androidx.compose.ui.text.AnnotatedString("Local draft")))
+                    frame(scene)
+                    assertEquals("Local draft", c.state.value.composerDraft)
                     println("R1_LAYOUT viewport=${width}x800 title=${title.boundsInRoot} input=${input.map { it.boundsInRoot }}")
                     saveR1Scene(scene, "chat-$width")
                 } finally { scene.close() }
