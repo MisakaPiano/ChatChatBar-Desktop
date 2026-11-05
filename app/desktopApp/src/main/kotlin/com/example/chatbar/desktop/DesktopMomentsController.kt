@@ -267,7 +267,7 @@ internal class DesktopMomentsController(
                 characters.getById(original.characterCardId) != null) { "原会话或角色卡已变化，本次图片不再写入" }
             store.replaceImage(original, image)?.let(register)
             mutableState.update { it.copy(notice = if (original.imagePath.isNullOrBlank()) "动态图片已保存，正文与点赞保留"
-                else "新图片版本已保存，当前图片保留；可在图片版本中选择使用") }
+                else "新图片版本已保存并切换显示，历史图片版本保留") }
         }
     }
 

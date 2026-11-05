@@ -28,6 +28,7 @@ class DesktopMomentImageVersionsPanelTest {
             post = DesktopMomentImageVersions.append(post, DesktopMomentImageResult(path,
                 GeneratedImageMetadata(path, "Scene $i", negativePrompt = "Negative", sizePreset = "SQUARE", width = 2, height = 2), "Prompt $i", "Brief $i"), i + 1L)
         }
+        post = DesktopMomentImageVersions.select(post, post.desktopImageVersions.first().id)
         var displayed by mutableStateOf(post)
         val scene = ImageComposeScene(420, 700, coroutineContext = edt) {
             DesktopMomentFeedCard(displayed, null, busy = true, onOpenSession = {}, onOpenCard = {}, onPreviewAvatar = {},
@@ -67,6 +68,7 @@ class DesktopMomentImageVersionsPanelTest {
                         GeneratedImageMetadata(path, "Scene $i", negativePrompt = "Negative", sizePreset = "SQUARE", width = 100, height = 100),
                         "Prompt $i", "Brief $i"), i + 1L)
                 }
+                post = DesktopMomentImageVersions.select(post, post.desktopImageVersions.first().id)
                 app.jsonFileStorage.saveEntity("moment_posts", post.id, post, MomentPost.serializer())
                 app.settingsRepository.updateAppSettings { it.copy(momentsEnabled = true) }
                 val controller = DesktopMomentsController(store, app.settingsRepository, app.characterRepository, app.chatRepository,

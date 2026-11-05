@@ -36,7 +36,7 @@ internal object DesktopMomentImageVersions {
         require(before.none { it.imagePath == image.path }) { "新图片路径与保留版本重复" }
         val version = MomentImageVersion(UUID.randomUUID().toString(), image.path, image.imagePrompt, image.metadata, image.imageBrief, now)
         val retained = post.copy(desktopImageVersions = before + version)
-        return (if (post.imagePath.isNullOrBlank()) select(retained, version.id) else retained).copy(updatedAt = now)
+        return select(retained, version.id).copy(updatedAt = now)
     }
 
     fun select(post: MomentPost, versionId: String): MomentPost {

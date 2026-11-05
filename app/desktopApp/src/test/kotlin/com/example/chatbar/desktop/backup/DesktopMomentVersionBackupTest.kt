@@ -43,7 +43,7 @@ class DesktopMomentVersionBackupTest {
                     GeneratedImageMetadata(path, "Scene $i", negativePrompt = "Negative $i", sizePreset = "SQUARE", width = 3, height = 3),
                     "Prompt $i", "Brief $i"), i + 1L)
             }
-            assertEquals("images/v0.png", post.imagePath)
+            assertEquals("images/v2.png", post.imagePath)
             post = DesktopMomentImageVersions.select(post, post.desktopImageVersions.last().id)
             storage.saveEntity("moment_posts", post.id, post, MomentPost.serializer())
             val task = MomentTask.create(card.id, session.id, 1).copy(status = MomentTaskStatus.RUNNING, postId = post.id)

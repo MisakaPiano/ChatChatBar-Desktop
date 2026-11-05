@@ -8,7 +8,7 @@ import kotlinx.coroutines.*
 import kotlin.test.*
 
 class DesktopMomentImageVersionsTest {
-    @Test fun `held image generation appends to latest selection but refuses changed content candidates or deleted post`() = runBlocking {
+    @Test fun `held image generation selects its appended image but refuses changed content candidates or deleted post`() = runBlocking {
         val root = Files.createTempDirectory("moment-version-concurrency-")
         val gate = DesktopDataOperationCoordinator()
         try {
@@ -36,9 +36,10 @@ class DesktopMomentImageVersionsTest {
             assertFalse(generated.isCompleted)
             release.complete(Unit); generated.await()
             val reopened = DesktopMomentStore(JsonFileStorage(root, gate), gate).posts().single()
-            assertEquals(choice.imagePath, reopened.imagePath)
-            assertEquals(choice.imagePrompt, reopened.imagePrompt)
-            assertEquals(choice.generatedImageMetadata, reopened.generatedImageMetadata)
+            assertEquals(image(3).path, reopened.imagePath)
+            assertEquals(image(3).imagePrompt, reopened.imagePrompt)
+            assertEquals(image(3).metadata, reopened.generatedImageMetadata)
+            assertEquals(image(3).imageBrief, reopened.imageBrief)
             assertEquals(4, reopened.desktopImageVersions.size)
             assertEquals(image(3).path, reopened.desktopImageVersions.last().imagePath)
             assertFails { store.replaceImage(selected, image(4)) } // Another append changed the captured candidate set.
@@ -82,7 +83,8 @@ class DesktopMomentImageVersionsTest {
             store = DesktopMomentStore(JsonFileStorage(root, gate), gate, cleanup)
             val all = store.posts().single()
             assertEquals((0..3).map { "images/v$it.png" }, all.desktopImageVersions.map { it.imagePath })
-            assertEquals(old.path, all.imagePath); assertEquals(old.metadata, all.generatedImageMetadata)
+            assertEquals("images/v3.png", all.imagePath)
+            assertEquals(all.desktopImageVersions.last().generatedImageMetadata, all.generatedImageMetadata)
             assertEquals(original.text, all.text); assertTrue(all.userLiked)
             store.selectImage(all, all.desktopImageVersions.last().id)
             val selected = store.posts().single()
