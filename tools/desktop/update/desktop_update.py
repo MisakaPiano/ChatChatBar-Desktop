@@ -168,7 +168,7 @@ class ProgressFetcher(FetcherInterface):
             yield chunk
 
 
-def execute(installed, cache, download=False, verify_file=None, fetcher=None, report=lambda _: None, expected_version=None):
+def execute(installed, cache, download=False, verify_file=None, fetcher=None, report=lambda _: None, expected_version=None, proxy_routes=None):
     cache = safe(cache)
     report({'phase': 'CHECKING'})
     try:
@@ -184,7 +184,7 @@ def execute(installed, cache, download=False, verify_file=None, fetcher=None, re
             metadata = cache / ('metadata' if channel == 'preview' else 'metadata-stable')
             metadata.mkdir(exist_ok=True); safe(metadata)
             had_timestamp = safe(metadata / 'timestamp.json').exists()
-            delegate = fetcher or GitHubFetcher(REPOSITORY, channel, metadata_branch=METADATA_BRANCH)
+            delegate = fetcher or GitHubFetcher(REPOSITORY, channel, metadata_branch=METADATA_BRANCH, proxy_routes=proxy_routes)
             observed = ProgressFetcher(delegate, report)
             metadata_url, target_url = endpoints(REPOSITORY, channel, METADATA_BRANCH)
             updater = Updater(str(metadata), metadata_url, str(downloads), target_url,
@@ -270,13 +270,18 @@ def main():
     parser.add_argument('--download', action='store_true')
     parser.add_argument('--verify-file', type=Path)
     parser.add_argument('--expected-version')
+    parser.add_argument('--proxy-routes')
     args = parser.parse_args()
     package, cache = safe(args.package), safe(args.cache)
     try:
         if cache == package or cache.is_relative_to(package) or package.is_relative_to(cache):
             raise UpdateRejected('UPDATE_CACHE_OVERLAP')
+        if args.proxy_routes is not None and len(args.proxy_routes) > 8192:
+            raise UpdateRejected('UPDATE_PROXY_ROUTES_LIMIT')
+        routes = json.loads(args.proxy_routes) if args.proxy_routes is not None else None
         execute(Installed.load(package), cache, args.download, args.verify_file,
-                report=lambda value: print(json.dumps(value, ensure_ascii=True), flush=True), expected_version=args.expected_version)
+                report=lambda value: print(json.dumps(value, ensure_ascii=True), flush=True),
+                expected_version=args.expected_version, proxy_routes=routes)
         return 0
     except Exception as failure:
         reason = str(failure) if isinstance(failure, UpdateRejected) else type(failure).__name__

@@ -5,6 +5,8 @@ description: Maintain ChatBar update discovery, GitHub Release Notes retrieval a
 
 # ChatBar App Update
 
+Desktop manual release checks use `DesktopUpdateChecker`; installed startup discovery/download/reverification use the separate `DesktopUpdateRuntime` Python TUF helper. Both capture the currently saved application proxy policy for each new operation. `DesktopUpdateNetworkRouting` uses the shared selector and explicit selected-route socket factory; its four permitted HTTPS host routes preserve HTTP/SOCKS/DIRECT types and are passed as noncredential JSON to the helper. `GitHubFetcher` selects urllib3 HTTP CONNECT/PySocks managers per typed destination without changing the existing URL/signature/redirect/attempt controls. PySocks is included in the updater's hash-locked wheels. The physical routing regression covers the checker/default constructor and hot next-request changes in fresh JVMs; its opt-in packaged run verifies actual app-image class origins. `test_proxy_transport.py` verifies real helper CONNECT/SOCKS/TLS first bytes from the prepared runtime, separately from TUF policy tests.
+
 ## Entry Points
 
 - Release lookup and asset selection: `domain/update/AppUpdateChecker.kt`.

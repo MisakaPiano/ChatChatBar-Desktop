@@ -22,7 +22,9 @@ private class DesktopUpdateDataOverlap : IllegalStateException()
 internal class DesktopUpdateRuntime(private val scope: CoroutineScope,
     private val home: Path? = (DesktopApplicationHome.resolve() as? DesktopApplicationHomeResult.Available)?.path,
     private val local: Path? = System.getenv("LOCALAPPDATA")?.let(Path::of),
-    private val dataRoot: Path? = null) {
+    private val dataRoot: Path? = null,
+    private val proxySettings: () -> com.example.chatbar.domain.ApplicationProxySettings = {
+        com.example.chatbar.domain.ProxyAwareClient.applicationProxy }) {
     private val mutable = MutableStateFlow(DesktopUpdateRuntimeState())
     val state = mutable.asStateFlow()
     val supportsInstall: Boolean = runCatching { packageHome(); true }.getOrDefault(false)
@@ -119,7 +121,8 @@ internal class DesktopUpdateRuntime(private val scope: CoroutineScope,
         val runtime = packageHome.resolve("app/desktop-updater")
         val cache = requireNotNull(local).resolve("ChatChatBarDesktopUpdates")
         val args = mutableListOf(runtime.resolve("python.exe").toString(), "-B", runtime.resolve("lib/desktop_update.py").toString(),
-            "--package", packageHome.toString(), "--cache", cache.toString())
+            "--package", packageHome.toString(), "--cache", cache.toString(),
+            "--proxy-routes", DesktopUpdateNetworkRouting.signedRoutes(proxySettings()))
         if (download) args += "--download"
         if (verify != null) args += listOf("--verify-file", verify.toString())
         if (expectedVersion != null) args += listOf("--expected-version", expectedVersion)

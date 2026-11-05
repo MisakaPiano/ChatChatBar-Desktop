@@ -116,11 +116,13 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                                         appContainer.fullBackupController.state.value.let { backup -> backup.busy || backup.restartRequired }
                                 })
                         }.also(externalOwner::set) }
-                        val updater = remember { DesktopUpdateRuntime(applicationScope, dataRoot = resolvedRoot.appDataRoot) }
+                        val updateProxySettings = { appContainer.networkProxyController.state.value.saved }
+                        val updater = remember { DesktopUpdateRuntime(applicationScope, dataRoot = resolvedRoot.appDataRoot,
+                            proxySettings = updateProxySettings) }
                         val modalActivity = remember { DesktopModalActivity() }
                         val updateNotices = remember {
                             val identity = DesktopBuildIdentity.load()
-                            val checker = DesktopUpdateChecker()
+                            val checker = DesktopUpdateChecker(proxySettings = updateProxySettings)
                             DesktopUpdateNotices(applicationScope, identity.version,
                                 System.getenv("LOCALAPPDATA")?.let { DesktopUpdateNoticeHints(java.nio.file.Path.of(it).resolve("ChatChatBarDesktopUpdates")) },
                                 startupAllowed = System.getProperty("jpackage.app-path") != null,

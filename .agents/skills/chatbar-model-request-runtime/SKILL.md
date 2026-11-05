@@ -5,6 +5,8 @@ description: Maintain and diagnose ChatBar model resolution, OpenAI-compatible r
 
 # ChatBar Model Request Runtime
 
+`ProxyAwareClient.builder` and its two-argument `modelApiBuilder` can receive a proxy-settings supplier; the original one-argument model builder retains its default dynamic application policy and trailing-lambda API. Update owners freeze a currently saved policy per new check/helper call, without changing other owners' restart settings. The shared selector still resolves SYSTEM properties/default selector and bypasses loopback; never reinterpret every system route as HTTP. The physical regression now distinguishes NAI from the update checker and verifies typed signed-helper routes separately.
+
 - `ModelConfig.desktopContextWindowTokens` is an optional positive user-declared capacity used by Desktop budget projections, not a transport parameter or enforced context/output cap. Model templates preserve the optional extension and omit its absent default. `OpenAiChatRequestSerializer` remains unchanged; final-wire equality with/without capacity is covered by `PromptBudgetEstimatesTest`. Do not infer this capacity from `maxOutputTokens` or `ChatSession.contextWindowSize`.
 
 - Desktop proxy physical routing uses `DesktopProxyPhysicalRoutingTest`: fresh JVMs load a persisted synthetic root through the production startup ingress, then record actual CONNECT/SOCKS bytes from `secureNovelAiClient`/account requests. `proxyPackagedRoutingTest` builds the production app-image and places its JARs before the test probe, checking actual class origins; its XML is separate from the normal suite. A chosen proxy-selector route alone is not physical-socket evidence. The probe replaces business UI and does not establish native GUI acceptance.

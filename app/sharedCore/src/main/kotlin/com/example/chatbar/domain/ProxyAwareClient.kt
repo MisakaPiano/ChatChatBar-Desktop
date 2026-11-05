@@ -29,15 +29,21 @@ object ProxyAwareClient {
     @Volatile
     var manualProxyPort: Int? = null
 
-    fun builder(): OkHttpClient.Builder = builderWithCleartextPolicy { false }
+    fun builder(proxySettings: () -> ApplicationProxySettings = { applicationProxy }): OkHttpClient.Builder =
+        builderWithCleartextPolicy({ false }, proxySettings)
 
     fun modelApiBuilder(allowCleartextHttp: () -> Boolean): OkHttpClient.Builder =
-        builderWithCleartextPolicy(allowCleartextHttp)
+        builderWithCleartextPolicy(allowCleartextHttp, { applicationProxy })
+
+    fun modelApiBuilder(allowCleartextHttp: () -> Boolean,
+        proxySettings: () -> ApplicationProxySettings): OkHttpClient.Builder =
+        builderWithCleartextPolicy(allowCleartextHttp, proxySettings)
 
     private fun builderWithCleartextPolicy(
         allowCleartextHttp: () -> Boolean,
+        proxySettings: () -> ApplicationProxySettings,
     ): OkHttpClient.Builder {
-        val selector = ProxySelectorDelegate()
+        val selector = ProxySelectorDelegate(proxySettings)
         return OkHttpClient.Builder()
             .apply { platformSocketFactory?.let { socketFactory(it) } }
             .eventListenerFactory { call ->
@@ -64,12 +70,12 @@ object ProxyAwareClient {
                 ?: Dns.SYSTEM.lookup(hostname)
     }
 
-    private class ProxySelectorDelegate : ProxySelector() {
+    private class ProxySelectorDelegate(private val proxySettings: () -> ApplicationProxySettings) : ProxySelector() {
         override fun select(uri: URI?): List<Proxy> {
             if (ProxyBypassPolicy.matches(uri?.host, System.getProperty("http.nonProxyHosts"))) {
                 return listOf(Proxy.NO_PROXY)
             }
-            val application = applicationProxy
+            val application = proxySettings()
             when (application.mode) {
                 ApplicationProxyMode.DIRECT -> return listOf(Proxy.NO_PROXY)
                 ApplicationProxyMode.HTTP, ApplicationProxyMode.SOCKS -> return listOf(Proxy(

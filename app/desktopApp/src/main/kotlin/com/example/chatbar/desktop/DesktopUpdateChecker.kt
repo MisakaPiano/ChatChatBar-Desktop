@@ -2,7 +2,6 @@ package com.example.chatbar.desktop
 
 import java.net.URI
 import java.time.Instant
-import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.*
 import kotlinx.serialization.json.*
 import okhttp3.*
@@ -83,16 +82,19 @@ internal object DesktopUpdatePolicy {
 }
 
 /** Explicit, unauthenticated single check. No provider credentials, redirects, retry or download. */
-internal class DesktopUpdateChecker(private val client: OkHttpClient = OkHttpClient.Builder()
-    .followRedirects(false).followSslRedirects(false).retryOnConnectionFailure(false)
-    .callTimeout(20, TimeUnit.SECONDS).build(),
-    private val endpoint: String = DesktopUpdatePolicy.API) {
+internal class DesktopUpdateChecker(private val client: OkHttpClient? = null,
+    private val endpoint: String = DesktopUpdatePolicy.API,
+    private val proxySettings: () -> com.example.chatbar.domain.ApplicationProxySettings = {
+        com.example.chatbar.domain.ProxyAwareClient.applicationProxy }) {
     suspend fun check(installed: String, includePreview: Boolean): DesktopUpdateResult = withContext(Dispatchers.IO) {
         check(endpoint == DesktopUpdatePolicy.API || URI(endpoint).host in setOf("127.0.0.1", "localhost", "::1"))
         // A GET has no one-shot request body. Bound actual wire attempts at the network layer,
         // including OkHttp's HTTP follow-up paths which retryOnConnectionFailure does not cover.
         val sent = java.util.concurrent.atomic.AtomicBoolean()
-        val singleAttempt = client.newBuilder().addNetworkInterceptor { chain ->
+        val savedProxy = proxySettings()
+        val ownedClient = if (client == null) DesktopUpdateNetworkRouting.client({ savedProxy },
+            URI(endpoint).host in setOf("127.0.0.1", "localhost", "::1")) else null
+        val singleAttempt = (client ?: checkNotNull(ownedClient)).newBuilder().addNetworkInterceptor { chain ->
             if (!sent.compareAndSet(false, true)) throw java.net.ProtocolException("UPDATE_RETRY_DISABLED")
             chain.proceed(chain.request())
         }.build()
@@ -120,7 +122,10 @@ internal class DesktopUpdateChecker(private val client: OkHttpClient = OkHttpCli
                     }
                     DesktopUpdatePolicy.select(output.toByteArray(), installed, includePreview)
                 }
-            } finally { cancellation.cancelAndJoin() }
+            } finally {
+                cancellation.cancelAndJoin()
+                ownedClient?.let { it.connectionPool.evictAll(); it.dispatcher.executorService.shutdown() }
+            }
         }
     }
 }

@@ -89,6 +89,17 @@
       "pypiMetadataUrl": "https://pypi.org/pypi/urllib3/2.8.0/json",
       "licenseExpression": "MIT",
       "kind": "wheel"
+    },
+    {
+      "sha256": "2725bd0a9925919b9b51739eea5f9e2bae91e83288108a9ad338b2e3a4435ee5",
+      "kind": "wheel",
+      "sourceUrl": "https://files.pythonhosted.org/packages/8d/59/b4572118e098ac8e46e399a1dd0f2d85403ce8bbaad9ec79373ed6badaf9/PySocks-1.7.1-py3-none-any.whl",
+      "version": "1.7.1",
+      "name": "PySocks",
+      "fileName": "PySocks-1.7.1-py3-none-any.whl",
+      "pypiMetadataUrl": "https://pypi.org/pypi/PySocks/1.7.1/json",
+      "sizeBytes": 16725,
+      "licenseExpression": "BSD-3-Clause"
     }
   ]
 }
