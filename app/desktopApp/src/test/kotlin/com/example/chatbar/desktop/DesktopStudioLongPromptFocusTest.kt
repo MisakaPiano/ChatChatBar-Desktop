@@ -57,7 +57,7 @@ class DesktopStudioLongPromptFocusTest {
                         Spacer(Modifier.height(400.dp))
                         StudioPromptField(label, raw, suggestions, translations, translated, compact = label == "角色正向") { raw = it }
                         Spacer(Modifier.height(1200.dp))
-                    }, footer = { StatusText("Synthetic footer") }, preview = {})
+                    }, footer = { StudioAction("Synthetic other focus") {} }, preview = {})
                 }
                 try {
                     scene.frames()
@@ -78,6 +78,27 @@ class DesktopStudioLongPromptFocusTest {
                     if (abs(after - before) > 2f) failures += observations.last()
                     assertEquals(original, raw)
                     assertTrue(selection.collapsed && selection.end in 1 until original.length)
+                    val inner = generateSequence(field()) { it.parent }.first { it.config.contains(SemanticsActions.ScrollBy) }
+                    assertNotEquals(outer().id, inner.id, "Inner editor scroll remains independent")
+                    val innerBefore = inner.config[SemanticsProperties.VerticalScrollAxisRange].value()
+                    inner.config[SemanticsActions.ScrollBy].action!!.invoke(0f, 360f)
+                    scene.frames(25)
+                    val innerAfter = inner.config[SemanticsProperties.VerticalScrollAxisRange].value()
+                    assertTrue(innerAfter > innerBefore, "Long text must remain scrollable")
+                    assertEquals(after, outer().config[SemanticsProperties.VerticalScrollAxisRange].value(), 2f)
+                    assertEquals(original, raw)
+                    val other = scene.nodes().single { it.config.getOrNull(SemanticsProperties.Text)?.any { text -> text.text == "Synthetic other focus" } == true }
+                        .let { n -> generateSequence(n) { it.parent }.first { it.config.contains(SemanticsActions.RequestFocus) } }
+                    other.config[SemanticsActions.RequestFocus].action!!.invoke()
+                    outer().config[SemanticsActions.ScrollBy].action!!.invoke(0f, -1000f)
+                    scene.frames(25)
+                    val outsideBefore = outer().config[SemanticsProperties.VerticalScrollAxisRange].value()
+                    field().config[SemanticsActions.RequestFocus].action!!.invoke()
+                    scene.frames(35)
+                    assertTrue(outer().config[SemanticsProperties.VerticalScrollAxisRange].value() > outsideBefore,
+                        "An off-screen editor must still be brought into view")
+                    assertEquals(rect.height, field().boundsInRoot.height, 2f)
+                    assertEquals(original, raw)
                 } finally { scene.close() }
             }
             val destination = System.getenv("CCB_SCREENSHOT_REVIEW_DIR")?.let { Path.of(it).resolve("long-prompt-focus.txt") }

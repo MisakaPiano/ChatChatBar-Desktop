@@ -249,7 +249,8 @@ internal fun StudioPromptField(label: String, value: String, suggestionService: 
             Box {
                 Box(Modifier.fillMaxWidth().heightIn(max = if (fullscreen) 450.dp else 220.dp)
                     .border(1.dp, if (focused) DesktopBootstrapColors.primary else DesktopBootstrapColors.border)
-                    .background(DesktopBootstrapColors.input).verticalScroll(rememberScrollState()).padding(9.dp)) {
+                    .background(DesktopBootstrapColors.input).studioPromptViewportBoundary()
+                    .verticalScroll(rememberScrollState()).padding(9.dp)) {
                     StudioPromptTextEditor(input, { next -> inspecting = next.text == input.text; editor.edit(next) { if (!fullscreen) onChange(it) } }, translated, currentAnnotations?.annotations.orEmpty(), Modifier.fillMaxWidth()
                         .heightIn(min = if (fullscreen) 320.dp else if (compact) 0.dp else 70.dp).focusRequester(focus)
                         .semantics { contentDescription = label }.studioTextHistoryKeys(editor) { if (!fullscreen) onChange(it) }.onFocusChanged {

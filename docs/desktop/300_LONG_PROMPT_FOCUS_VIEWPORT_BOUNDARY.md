@@ -1,0 +1,7 @@
+# 长Prompt焦点与内外层视口
+
+1238用户反馈长Prompt点击后页面大幅上下移动。共同字段原结构为220/450dp外框、内部verticalScroll、无界高度BasicTextField，外层Workspace另有editorScroll。精确Compose1.10.3源码确认焦点同时请求整个focusable与选择位置进入视口；不应删除正常焦点显现，也不能直接删字段内scroll而使注释、自绘源字caret和IME坐标脱离同一滚动空间。
+
+原未修复生产实现的3b924556/41992055172实际组件测试1FAIL：基础/角色标签×中文注释关/开四场景，字段viewport已完整可见，鼠标点击后outer由300分别变368、335、342、339；原文和选区正常。原12114B ZIP/SHA7adc3f9005f8e912bc6b7c38baf67d2e9fb7f6df89e86d2bb05fb0e18aa2e540保留。这是共同字段合成复现，不冒称已确认用户具体字段/环境。
+
+后继仅在字段内scroll外增加现代BringIntoViewModifierNode边界：内部照常处理caret/selection滚动；向祖先传递的是本字段视口内的对应区域，内容暂在视口外则请求完整有限视口。请求仍向上传递，离屏字段仍可正常显现；不冻结Workspace滚动，不改Prompt、历史、输入变换、候选框或选择算法。扩展原测试验证内层仍可独立滚动、离屏字段焦点仍推动外层显现，并复用现有实时IME移动方法；结果待精确云验。另补原工作流误包名未跑到的desktop根SpeakerRenamePortable五方法，不重跑已过备份92/共享7/Sampler1。
