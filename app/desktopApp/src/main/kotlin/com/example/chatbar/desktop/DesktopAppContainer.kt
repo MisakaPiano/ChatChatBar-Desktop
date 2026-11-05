@@ -206,7 +206,7 @@ class DesktopAppContainer internal constructor(
         effectiveModelResolver, voiceRepository, voiceAudioStore, fishAudioCredentials, audioFocusOwner.value.port(formal = true),
         picker = filePicker, gate = dataOperationCoordinator, uiPreferences = chatUiController.state,
         diagnostics = taskRuntime.diagnostics,
-        textBusy = { sessionId -> taskRuntime.tasks.value.any { it.sessionId == sessionId && it.status == DesktopTaskStatus.RUNNING } })
+        sourceBusy = taskRuntime::hasActiveVoiceSourceMutation)
             .also { taskCenter.watchFish(it.coordinator) } }
     internal val chatVoiceRuntime by chatVoiceOwner
     private val fishPreviewOwner = lazy {

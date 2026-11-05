@@ -26,7 +26,7 @@ internal class DesktopChatVoiceRuntime(
     credentials: DesktopFishAudioCredentials, output: DesktopAudioOutput,
     private val picker: DesktopFilePicker = UnconfiguredDesktopFilePicker,
     private val gate: AppDataOperationGate = NoOpAppDataOperationGate,
-    private val textBusy: (String) -> Boolean = { false },
+    private val sourceBusy: (String, String) -> Boolean = { _, _ -> false },
     transportOverride: DesktopFishVoiceTransport? = null,
     textGateway: FishVoiceTextGateway? = null,
     private val uiPreferences: kotlinx.coroutines.flow.StateFlow<DesktopChatUiPreferences>? = null,
@@ -79,7 +79,7 @@ internal class DesktopChatVoiceRuntime(
         originGeneration: Long = playbackIntent()): String? = guarded {
         foregroundDrain?.join()
         gate.withNormalOperation { mutation.withLock {
-            check(!closed && !textBusy(expected.sessionId)) { "当前会话仍有文本任务，请稍后操作" }
+            check(!closed && !sourceBusy(expected.sessionId, expected.id)) { "当前消息正在修改，请稍后操作" }
             val current = chats.getMessage(expected.id, expected.sessionId) ?: error("消息已不存在")
             check(current == expected) { "消息已变化；请重新打开语音操作" }
             val session = chats.getSession(current.sessionId) ?: error("会话已不存在")

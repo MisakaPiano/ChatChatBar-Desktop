@@ -76,7 +76,7 @@ internal fun DesktopMomentFeedCard(post: MomentPost, resources: DesktopCharacter
                             val versions = DesktopMomentImageVersions.retained(post)
                             val current = versions.indexOfFirst { it.imagePath == image }
                             DesktopVersionControls(current + 1, versions.size, "上一张动态图片", "下一张动态图片",
-                                enabled = !busy, modifier = Modifier.testTag("moment-versions-${post.id}")) { delta ->
+                                modifier = Modifier.testTag("moment-versions-${post.id}")) { delta ->
                                 versions.getOrNull(current + delta)?.let { onSelectVersion(it.id) }
                             }
                         }

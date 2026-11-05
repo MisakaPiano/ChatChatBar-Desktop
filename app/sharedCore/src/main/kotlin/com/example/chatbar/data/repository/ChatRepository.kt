@@ -478,6 +478,17 @@ class ChatRepository internal constructor(
     suspend fun readSessionDurable(sessionId: String) =
         storage.readEntityStrict(SESSION_TYPE, sessionId, ChatSession.serializer())
 
+    /** Short local publication only. The callback must not do network work or re-enter message mutations. */
+    suspend fun <T> withLockedMessageSnapshot(sessionId: String, messageId: String,
+        publish: suspend (ChatMessage) -> T): T = messageAppendMutex.withLock {
+        val session = readSessionDurable(sessionId)
+        check(session is JsonFileStorage.EntityReadResult.Valid && session.value.id == sessionId) { "消息所属会话已不存在或不可读取" }
+        val message = readMessageDurable(messageId, sessionId)
+        check(message is JsonFileStorage.EntityReadResult.Valid && message.value.id == messageId &&
+            message.value.sessionId == sessionId) { "消息已不存在或不可读取" }
+        publish(message.value)
+    }
+
     suspend fun getMessage(messageId: String, sessionId: String): ChatMessage? {
         return storage.loadEntity(
             MESSAGE_TYPE,

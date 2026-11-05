@@ -21,6 +21,28 @@ class DesktopMomentImageVersionsPanelTest {
     private val edt = object : CoroutineDispatcher() {
         override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
     }
+    @Test fun `existing image arrows remain usable during generation and one image still disables directions`() = runBlocking(edt) {
+        var post = MomentPost("post", "card", "session", senderName = "Synthetic", text = "Existing post", scheduledAt = 1, generatedAt = 1)
+        repeat(2) { i ->
+            val path = "images/existing-$i.png"
+            post = DesktopMomentImageVersions.append(post, DesktopMomentImageResult(path,
+                GeneratedImageMetadata(path, "Scene $i", sizePreset = "SQUARE", width = 2, height = 2), "Prompt $i", "Brief $i"), i + 1L)
+        }
+        var displayed by mutableStateOf(post)
+        val scene = ImageComposeScene(420, 700, coroutineContext = edt) {
+            DesktopMomentFeedCard(displayed, null, busy = true, onOpenSession = {}, onOpenCard = {}, onPreviewAvatar = {},
+                onPreviewImage = {}, onEdit = {}, onCopy = {}, onLike = {}, onRetry = {}, onGenerateImage = {},
+                onRegenerateImage = {}, onVersions = {}, onSelectVersion = { displayed = DesktopMomentImageVersions.select(displayed, it) }, onDelete = {})
+        }
+        try {
+            scene.frames(); scene.click("下一张动态图片")
+            assertEquals(post.desktopImageVersions[1].imagePath, displayed.imagePath)
+            scene.click("上一张动态图片"); assertEquals(post.imagePath, displayed.imagePath)
+            displayed = displayed.copy(desktopImageVersions = listOf(displayed.desktopImageVersions.first()))
+            scene.frames(); assertTrue(scene.button("上一张动态图片").config.contains(SemanticsProperties.Disabled))
+            assertTrue(scene.button("下一张动态图片").config.contains(SemanticsProperties.Disabled))
+        } finally { scene.close() }
+    }
     @Test fun `actual version panel selects saved candidate and confirms removal in narrow and wide timeline`(): Unit = runBlocking(edt) {
         for (width in listOf(420, 1100)) {
             val parent = Files.createTempDirectory("moment-versions-ui-")

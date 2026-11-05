@@ -263,6 +263,8 @@ internal class DesktopMomentsController(
                 chats.getSession(original.sessionId), prefs, draft, register,
                 ::reportProgress)
             currentCoroutineContext().ensureActive()
+            check(chats.getSession(original.sessionId)?.characterCardId == original.characterCardId &&
+                characters.getById(original.characterCardId) != null) { "原会话或角色卡已变化，本次图片不再写入" }
             store.replaceImage(original, image)?.let(register)
             mutableState.update { it.copy(notice = if (original.imagePath.isNullOrBlank()) "动态图片已保存，正文与点赞保留"
                 else "新图片版本已保存，当前图片保留；可在图片版本中选择使用") }
@@ -330,13 +332,11 @@ internal class DesktopMomentsController(
             val imageReceipts = mutableListOf<String>()
             mutableState.update { it.copy(busy = true, error = null, progress = "正在准备朋友圈", streamedText = "") }
             try {
-                tasksRuntime.withMessageMutation(sessionId) {
-                    tasksRuntime.withCardDesign("moments:$sessionId", publishWorkRow = false) {
-                        gate.withNormalOperation {
-                            if (usageContext == null) work { imageReceipts += it }
-                            else withContext(DesktopUsageParent(usageContext.copy(taskId = workId))) {
-                                work { imageReceipts += it }
-                            }
+                tasksRuntime.withCardDesign("moments:$sessionId", publishWorkRow = false) {
+                    gate.withNormalOperation {
+                        if (usageContext == null) work { imageReceipts += it }
+                        else withContext(DesktopUsageParent(usageContext.copy(taskId = workId))) {
+                            work { imageReceipts += it }
                         }
                     }
                 }
@@ -395,7 +395,8 @@ internal class DesktopMomentsController(
                 prefs, attempt.task, retry?.generationCheckpoint.orEmpty(),
                 { store.checkpoint(attempt, it) }, ::reportProgress, registerImageCleanup)
             currentCoroutineContext().ensureActive()
-            check(settings.getAppSettings().momentsEnabled && characters.getById(card.id)?.momentsEnabled == true)
+            check(settings.getAppSettings().momentsEnabled && characters.getById(card.id)?.momentsEnabled == true &&
+                chats.getSession(session.id)?.characterCardId == card.id)
             when (result) {
                 is MomentGenerationResult.Posted -> store.complete(attempt, result.post)
                 is MomentGenerationResult.Skipped -> if (retry == null) {

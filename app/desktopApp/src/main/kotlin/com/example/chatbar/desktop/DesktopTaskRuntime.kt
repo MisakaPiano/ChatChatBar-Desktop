@@ -277,6 +277,14 @@ internal class DesktopTaskRuntime(
         sessionId in activeSessions || mutableTasks.value.any { it.sessionId == sessionId && it.status == DesktopTaskStatus.RUNNING }
     }
 
+    /** New replies and image requests do not rewrite a completed old voice source. */
+    fun hasActiveVoiceSourceMutation(sessionId: String, messageId: String): Boolean = synchronized(lock) {
+        !accepting || maintenance || sessionId in messageMutations || runningRepair(sessionId, messageId) != null ||
+            uncertainRepairs.values.any { it.sessionId == sessionId && it.messageId == messageId } ||
+            mutableTasks.value.any { it.kind == DesktopTaskKind.REAL_CHAT && it.status == DesktopTaskStatus.RUNNING &&
+                it.sessionId == sessionId && it.targetMessageId == messageId }
+    }
+
     fun runningRepair(sessionId: String, messageId: String? = null): DesktopRepairTaskIdentity? = synchronized(lock) {
         mutableRepairIdentities.value.values.firstOrNull { it.sessionId == sessionId &&
             (messageId == null || it.messageId == messageId) && mutableRepairTasks.value[it.taskId] == DesktopRepairStatus.RUNNING }
@@ -504,6 +512,7 @@ internal class DesktopTaskRuntime(
                         sessionId = sessionId,
                         createdAt = createdAt,
                         operation = if (messageId == null) DesktopChatOperation.SEND else DesktopChatOperation.REGENERATE,
+                        targetMessageId = messageId,
                     ),
                 ) + mutableTasks.value,
             )

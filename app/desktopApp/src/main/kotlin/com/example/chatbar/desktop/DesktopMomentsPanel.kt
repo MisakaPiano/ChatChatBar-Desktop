@@ -171,7 +171,7 @@ internal fun DesktopMomentsPanel(controller: DesktopMomentsController,
                         BootstrapButton("预览版本 ${index + 1}", secondary = true) {
                             viewing = versions.map { it.imagePath }; viewIndex = index
                         }
-                        BootstrapButton("使用版本 ${index + 1}", secondary = post.imagePath != version.imagePath, enabled = !state.busy) {
+                        BootstrapButton("使用版本 ${index + 1}", secondary = post.imagePath != version.imagePath) {
                             act { controller.selectImageVersion(post, version.id) }
                         }
                         if (versions.size > 1) BootstrapButton("移除版本 ${index + 1}", secondary = true, enabled = !state.busy) {

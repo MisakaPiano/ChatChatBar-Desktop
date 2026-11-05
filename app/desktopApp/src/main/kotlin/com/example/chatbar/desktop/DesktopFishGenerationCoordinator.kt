@@ -23,6 +23,8 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.CancellationException
@@ -150,7 +152,24 @@ internal class DesktopFishGenerationCoordinator(
         pending.joinAll(); pendingTextConfirmations.clear(); clearAutoPlay(); playback.stop()
     }
 
-    private suspend fun persistPublishedVoice(voice: GeneratedVoiceMessage) {
+    private fun sourceVersion(expected: ChatMessage, current: ChatMessage, versionId: String?) = run {
+        check(current.id == expected.id && current.sessionId == expected.sessionId && current.role == expected.role)
+        val captured = if (versionId == null) MessageAlternativeVersionPolicy.activeVersion(expected)
+            else MessageAlternativeVersionPolicy.versions(expected).singleOrNull { it.id == versionId }
+                ?: error("语音来源版本已不存在")
+        val retained = MessageAlternativeVersionPolicy.versions(current).singleOrNull { it.id == captured.id }
+            ?: error("语音来源版本已不存在")
+        check(retained.content == captured.content) { "语音来源正文已变化" }
+        retained
+    }
+
+    private suspend fun persistPublishedVoice(voice: GeneratedVoiceMessage, expected: ChatMessage) =
+        chatRepository.withLockedMessageSnapshot(voice.sessionId, voice.messageId) { current ->
+        val version = sourceVersion(expected, current, voice.messageVersionId)
+        voice.anchorId?.let { anchor ->
+            check(voiceRepository.ensureAnchorsForVersion(current, version.id, version.content)
+                .any { it.anchor.id == anchor }) { "语音来源片段已变化" }
+        }
         try { voiceRepository.save(voice) }
         catch (error: Exception) {
             // A post-write failure is not proof of no commit. Confirm exact durable bytes before
@@ -279,6 +298,7 @@ internal class DesktopFishGenerationCoordinator(
                     it.copy(sessionId = existing.sessionId, messageId = existing.messageId)
                 }
                 val context = loadContext(existing.sessionId, existing.messageId)
+                sourceVersion(context.message, context.message, existing.messageVersionId)
                 val currentCharacter = VoiceGenerationPolicy.resolveRegenerationCharacter(
                     card = context.card,
                     characterId = existing.characterId
@@ -336,7 +356,8 @@ internal class DesktopFishGenerationCoordinator(
                     updatedAt = System.currentTimeMillis()
                 )
                 try {
-                    withContext(NonCancellable) { persistPublishedVoice(replacement) }
+                    currentCoroutineContext().ensureActive()
+                    withContext(NonCancellable) { persistPublishedVoice(replacement, context.message) }
                 } catch (error: Throwable) {
                     releaseArtifact(audio.path)
                     throw error
@@ -804,12 +825,12 @@ internal class DesktopFishGenerationCoordinator(
             ) { progress -> onBytes(progress.bytesReceived) }
         }
         try {
-            val currentAnchorId = resolveCurrentAnchorId(target)
+            currentCoroutineContext().ensureActive()
             val voice = GeneratedVoiceMessage.create(
                 sessionId = target.message.sessionId,
                 messageId = target.message.id,
                 messageVersionId = MessageAlternativeVersionPolicy.activeVersionId(target.message),
-                anchorId = currentAnchorId,
+                anchorId = target.anchorId,
                 sourceOrder = target.sourceOrder,
                 sourceSegmentKind = target.sourceKind,
                 sourceSpeakerName = target.segment.speakerName.orEmpty(),
@@ -824,7 +845,7 @@ internal class DesktopFishGenerationCoordinator(
                 durationMs = audio.durationMs,
                 byteLength = audio.byteLength
             )
-            withContext(NonCancellable) { persistPublishedVoice(voice) }
+            withContext(NonCancellable) { persistPublishedVoice(voice, target.message) }
             TargetGenerationResult(target, voice = voice)
         } catch (error: Throwable) {
             withContext(NonCancellable) { releaseArtifact(audio.path) }
@@ -834,29 +855,6 @@ internal class DesktopFishGenerationCoordinator(
         throw cancelled
     } catch (error: Throwable) {
         TargetGenerationResult(target, error = error.message ?: error.javaClass.simpleName)
-    }
-
-    private suspend fun resolveCurrentAnchorId(target: VoiceGenerationTarget): String? {
-        if (target.anchorId == null) return null
-        val currentMessage = chatRepository.getMessage(
-            target.message.id,
-            target.message.sessionId
-        ) ?: error("消息已删除")
-        val targetVersion = MessageAlternativeVersionPolicy.activeVersion(target.message)
-        val currentVersion = MessageAlternativeVersionPolicy.versions(currentMessage)
-            .firstOrNull { it.id == targetVersion.id }
-            ?: targetVersion
-        val currentAnchors = voiceRepository.ensureAnchorsForVersion(
-            message = currentMessage,
-            messageVersionId = currentVersion.id,
-            content = currentVersion.content
-        )
-        currentAnchors.firstOrNull { it.anchor.id == target.anchorId }?.let { return it.anchor.id }
-        return currentAnchors
-            .filter { it.anchor.sourceOrder <= target.sourceOrder }
-            .maxByOrNull { it.anchor.sourceOrder }
-            ?.anchor
-            ?.id
     }
 
     private suspend fun finishSuccessfulBatch(

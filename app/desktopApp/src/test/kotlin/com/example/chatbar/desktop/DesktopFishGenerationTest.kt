@@ -22,6 +22,71 @@ import com.example.chatbar.domain.chat.ChatApiMessage
 import kotlin.test.*
 
 class DesktopFishGenerationTest {
+    @Test fun `late whole and segment audio refuse changed deleted or missing source version after network admission`() = runBlocking {
+        for (whole in listOf(false, true)) for (change in listOf("CONTENT", "MESSAGE", "SESSION", "VERSION")) Fixture().use { f ->
+            f.seed(if (whole) "Whole message narration" else "<n=\"Alice\"/>[hello]()")
+            if (whole) f.settings.updateAppSettings { it.copy(assistantSegmentedBubblesEnabled = false) }
+            val entered = java.util.concurrent.CountDownLatch(1)
+            val release = java.util.concurrent.CountDownLatch(1)
+            f.server.dispatcher = object : okhttp3.mockwebserver.Dispatcher() {
+                override fun dispatch(request: okhttp3.mockwebserver.RecordedRequest): MockResponse {
+                    entered.countDown()
+                    check(release.await(10, java.util.concurrent.TimeUnit.SECONDS))
+                    return f.audio()
+                }
+            }
+            try {
+                val batch = f.coordinator.generateWhole(f.session.id, f.message.id, "alice")
+                withContext(Dispatchers.IO) { check(entered.await(5, java.util.concurrent.TimeUnit.SECONDS)) }
+                val current = checkNotNull(f.chats.getMessage(f.message.id, f.session.id))
+                when (change) {
+                    "CONTENT" -> f.chats.updateMessage(current.copy(content = "Explicitly changed after request"))
+                    "MESSAGE" -> f.chats.deleteMessage(current.id, current.sessionId)
+                    "SESSION" -> f.chats.deleteSession(current.sessionId)
+                    "VERSION" -> f.chats.updateMessage(current.copy(alternatives = emptyList(), alternativeVersionIds = emptyList(),
+                        currentAlternativeVersionId = "different-retained-version"))
+                }
+                release.countDown(); f.done(batch)
+                assertTrue(f.voices.listForSession(f.session.id).isEmpty(), "whole=$whole change=$change")
+                assertEquals(VoiceGenerationPhase.FAILED, f.coordinator.batches.value.single { it.id == batch }.phase)
+                val generated = f.root.resolve("audio/generated")
+                if (Files.exists(generated)) Files.walk(generated).use { paths ->
+                    assertEquals(0L, paths.filter { it.fileName.toString().endsWith(".mp3") }.count())
+                }
+            } finally { release.countDown() }
+        }
+    }
+
+    @Test fun `short source publication lock serializes rewrite deletion and session retirement without network ownership`() = runBlocking {
+        for (change in listOf("CONTENT", "MESSAGE", "SESSION")) Fixture().use { f ->
+            f.seed()
+            val entered = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>()
+            val attempted = CompletableDeferred<Unit>()
+            val publication = async {
+                f.chats.withLockedMessageSnapshot(f.session.id, f.message.id) { current ->
+                    entered.complete(Unit); release.await(); assertEquals(f.message.content, current.content)
+                }
+            }
+            entered.await()
+            val mutation = async {
+                attempted.complete(Unit)
+                when (change) {
+                    "CONTENT" -> f.chats.updateMessage(f.message.copy(content = "Changed"))
+                    "MESSAGE" -> f.chats.deleteMessage(f.message.id, f.session.id)
+                    "SESSION" -> f.chats.deleteSession(f.session.id)
+                }
+            }
+            try {
+                attempted.await(); yield(); assertFalse(mutation.isCompleted)
+                release.complete(Unit); publication.await(); mutation.await()
+                if (change != "CONTENT") {
+                    var called = false
+                    assertFails { f.chats.withLockedMessageSnapshot(f.session.id, f.message.id) { called = true } }
+                    assertFalse(called)
+                }
+            } finally { release.complete(Unit); publication.cancelAndJoin(); mutation.cancelAndJoin() }
+        }
+    }
     @Test fun `task center observes real batches and cancels only the selected waiting voice batch`() = runBlocking {
         Fixture().use { f ->
             f.seed()

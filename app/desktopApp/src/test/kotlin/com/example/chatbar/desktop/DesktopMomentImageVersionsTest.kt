@@ -4,10 +4,53 @@ import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.*
 import java.awt.image.BufferedImage
 import java.nio.file.Files
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 import kotlin.test.*
 
 class DesktopMomentImageVersionsTest {
+    @Test fun `held image generation appends to latest selection but refuses changed content candidates or deleted post`() = runBlocking {
+        val root = Files.createTempDirectory("moment-version-concurrency-")
+        val gate = DesktopDataOperationCoordinator()
+        try {
+            val storage = JsonFileStorage(root, gate)
+            val store = DesktopMomentStore(storage, gate)
+            fun image(i: Int): DesktopMomentImageResult {
+                val path = "images/concurrent-$i.png"
+                return DesktopMomentImageResult(path, GeneratedImageMetadata(path, "Scene $i", sizePreset = "SQUARE", width = 2, height = 2),
+                    "Prompt $i", "Brief $i")
+            }
+            var post = MomentPost("post", "card", "session", senderName = "Synthetic", text = "Original", scheduledAt = 1, generatedAt = 1)
+            repeat(3) { post = DesktopMomentImageVersions.append(post, image(it), it + 1L) }
+            storage.saveEntity("moment_posts", post.id, post, MomentPost.serializer())
+            val entered = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>()
+            val generated = async {
+                val expected = store.imageSource(post)
+                entered.complete(Unit); release.await()
+                store.replaceImage(expected, image(3))
+            }
+            entered.await()
+            val choice = post.desktopImageVersions[1]
+            store.selectImage(post, choice.id)
+            val selected = store.posts().single()
+            assertEquals(choice.imagePath, selected.imagePath)
+            assertFalse(generated.isCompleted)
+            release.complete(Unit); generated.await()
+            val reopened = DesktopMomentStore(JsonFileStorage(root, gate), gate).posts().single()
+            assertEquals(choice.imagePath, reopened.imagePath)
+            assertEquals(choice.imagePrompt, reopened.imagePrompt)
+            assertEquals(choice.generatedImageMetadata, reopened.generatedImageMetadata)
+            assertEquals(4, reopened.desktopImageVersions.size)
+            assertEquals(image(3).path, reopened.desktopImageVersions.last().imagePath)
+            assertFails { store.replaceImage(selected, image(4)) } // Another append changed the captured candidate set.
+            store.edit(post.id, "Explicitly edited text")
+            assertFails { store.replaceImage(reopened, image(4)) }
+            val edited = store.posts().single()
+            assertEquals("Explicitly edited text", edited.text)
+            store.delete(post.id)
+            assertFails { store.replaceImage(edited, image(4)) }
+            assertTrue(store.posts().isEmpty())
+        } finally { gate.closeAndDrain(); check(root.toFile().deleteRecursively()) }
+    }
     @Test fun `actual owner retains four candidates across reopen selection stale completion removal and post deletion`() = runBlocking {
         val root = Files.createTempDirectory("moment-versions-")
         val gate = DesktopDataOperationCoordinator()
@@ -45,16 +88,18 @@ class DesktopMomentImageVersionsTest {
             val selected = store.posts().single()
             assertEquals("images/v3.png", selected.imagePath)
             assertEquals(selected.desktopImageVersions.last().generatedImageMetadata, selected.generatedImageMetadata)
+            store.edit(selected.id, "Explicit edit while a previous generation was pending")
+            val edited = store.posts().single()
             val stale = image(4); val staleReceipt = cleanup.prepareCandidate(stale.path)
             assertFails { store.replaceImage(all, stale) }
             cleanup.finish(staleReceipt)
             assertFalse(Files.exists(root.resolve(stale.path)))
-            assertEquals(selected, store.posts().single())
+            assertEquals(edited, store.posts().single())
             assertTrue((0..3).all { Files.exists(root.resolve("images/v$it.png")) })
             // A second post shares one retained candidate. Removing/deleting the first must keep that resource.
             storage.saveEntity("moment_posts", "other", original.copy(id = "other", imagePath = "images/v1.png",
                 generatedImageMetadata = null, imagePrompt = "Shared", senderAvatar = null), MomentPost.serializer())
-            val receipt = store.removeImage(selected, selected.desktopImageVersions[2].id)
+            val receipt = store.removeImage(edited, edited.desktopImageVersions[2].id)
             cleanup.finish(assertNotNull(receipt))
             assertFalse(Files.exists(root.resolve("images/v2.png")))
             assertTrue(Files.exists(root.resolve(old.path)))

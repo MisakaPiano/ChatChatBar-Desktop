@@ -158,7 +158,15 @@ internal class DesktopMomentStore(
     }
     suspend fun replaceImage(expected: MomentPost, image: DesktopMomentImageResult): String? = mutate {
         val latest = post(expected.id) ?: error("动态已删除，本次图片不再写入")
-        check(sameImageSource(latest, expected)) { "动态或图片已变化，本次图片不再写入" }
+        // Browsing an already-retained version is independent of this captured generation request.
+        // Content/identity and the complete candidate set must still match before an atomic append.
+        val latestVersions = DesktopMomentImageVersions.retained(latest)
+        val expectedVersions = DesktopMomentImageVersions.retained(expected)
+        check(sameImageSource(latest.copy(imagePath = expected.imagePath, imagePrompt = expected.imagePrompt,
+            generatedImageMetadata = expected.generatedImageMetadata, imageBrief = expected.imageBrief,
+            desktopImageVersions = expected.desktopImageVersions), expected) && latestVersions == expectedVersions) {
+            "动态或图片已变化，本次图片不再写入"
+        }
         check(image.metadata.imagePath == image.path)
         // Publish every retained reference in the same atomic post write before the worker's candidate cleanup runs.
         save(DesktopMomentImageVersions.append(latest, image, clock()))

@@ -9,6 +9,9 @@ description: Maintain ChatBar Fish Audio voice generation across API credentials
 
 Keep voice generation independent from chat text, prompt context, and long-term memory. Read the smallest matching path first.
 
+- Desktop voice admission uses `DesktopTaskRuntime.hasActiveVoiceSourceMutation(sessionId,messageId)`, not any running task in the session. Another reply/image may overlap a completed old source; exact regeneration, repair/unknown repair and destructive mutation remain protected. The normal data gate and original batch cancellation still own maintenance/drain.
+- Desktop new and replacement audio publication uses the shared `ChatRepository.withLockedMessageSnapshot` short local callback. It shares the repository's append/update/delete/session-retirement mutex, rereads durable session/message and validates the captured retained version/content plus exact anchor before the original voice save/readback. Whole-message/null-anchor still validates source; missing explicit version/anchor has no fallback. No network or facade mutation/cancel-and-join runs under this mutex. The original complete strict audio-reference inventory continues to preserve uncertain commits.
+
 - Desktop task center observes the same `DesktopFishGenerationCoordinator.batches` only when ChatVoiceRuntime is constructed. Rows carry actual batch/session/message IDs, phase and counts, never tag/model-stream text or errors. Stop dispatches to the original batch `cancel(id)` and confirmation stays in its voice UI. Removed batches do not imply success or a completed-notification/drain proof.
 
 Use `chatbar-model-request-runtime` for shared auxiliary-model resolution or SSE transport, `chatbar-background-work-runtime` for foreground leases, `chatbar-character-card-ai` for auto-fill/rewrite merge behavior, `chatbar-shadcn-compose` for UI changes, and `chatbar-emulator-test` for device playback verification.

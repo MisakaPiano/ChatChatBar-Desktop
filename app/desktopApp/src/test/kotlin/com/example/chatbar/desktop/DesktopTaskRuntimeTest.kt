@@ -44,6 +44,86 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class DesktopTaskRuntimeTest {
+    @Test fun `regeneration reserves its exact voice source before dispatcher runs without locking other completed messages`() = runTest {
+        withContainer { container ->
+            val session = prepare(container, "http://127.0.0.1:1/v1")
+            val old = container.chatRepository.getMessages(session).single()
+            val runtime = DesktopTaskRuntime(container.createRealChatRuntime(), dispatcher = StandardTestDispatcher(testScheduler))
+            try {
+                runtime.launchRegeneration(session, old.id)
+                assertTrue(runtime.hasActiveVoiceSourceMutation(session, old.id))
+                assertFalse(runtime.hasActiveVoiceSourceMutation(session, "another-completed-message"))
+                assertFalse(runtime.hasActiveVoiceSourceMutation("another-session", old.id))
+            } finally { runtime.closeAndDrain() }
+            assertEquals(listOf(old), container.chatRepository.getMessages(session))
+        }
+    }
+    @Test fun `completed old reply voice overlaps chat image and Moments while each Stop keeps the other owners running`() = runBlocking {
+        withContainer { container ->
+            ControlledDesktopSseServer("""{"choices":[{"delta":{"content":"reply-held-for-concurrency"}}]}""", holdSeconds = 60).use { server ->
+                val sessionId = prepare(container, server.baseUrl)
+                val chats = container.chatRepository
+                val session = requireNotNull(chats.getSession(sessionId))
+                val card = requireNotNull(container.characterRepository.getById(session.characterCardId))
+                container.characterRepository.save(card.copy(characters = listOf(com.example.chatbar.data.local.entity.CharacterInfo(
+                    "alice", "Alice", fishAudioVoice = com.example.chatbar.data.local.entity.FishAudioVoiceBinding("synthetic-reference", "Synthetic")))))
+                chats.updateSession(session.copy(audiobookModeEnabled = true, longTermMemoryEnabled = false))
+                val old = chats.addMessage(com.example.chatbar.data.local.entity.ChatMessage("old-voice-source", sessionId,
+                    MessageRole.ASSISTANT, "<n=\"Alice\"/>[hello]()", createdAt = 1, updatedAt = 1))
+                container.settingsRepository.updateAppSettings { it.copy(momentsEnabled = true, fishAudioTtsModelId = "s2.1-pro-free") }
+                container.fishAudioCredentials.save("synthetic-not-real")
+                val runtime = container.taskRuntime
+                val chat = runtime.launchChat(sessionId, "new reply")
+                awaitTask(runtime, chat) { it.contentPreview == "reply-held-for-concurrency" }
+                val imageEntered = CompletableDeferred<Unit>()
+                val image = runtime.launchNovelAi("held synthetic image", sessionId, old.id) { _ ->
+                    imageEntered.complete(Unit); awaitCancellation()
+                }
+                withTimeout(5000) { imageEntered.await() }
+                assertFalse(runtime.hasActiveVoiceSourceMutation(sessionId, old.id))
+                val momentEntered = CompletableDeferred<Unit>()
+                val moments = DesktopMomentsController(DesktopMomentStore(container.jsonFileStorage, container.dataOperationCoordinator),
+                    container.settingsRepository, container.characterRepository, chats, container.dataOperationCoordinator, runtime,
+                    DesktopMomentGenerator { _, _, _, _, _, _, _, _, _, _ -> momentEntered.complete(Unit); awaitCancellation() })
+                val fishServer = MockWebServer().also { it.start() }
+                val audio = container.voiceAudioStore
+                val voice = DesktopChatVoiceRuntime(chats, container.characterRepository, container.settingsRepository,
+                    container.effectiveModelResolver, container.voiceRepository, audio, container.fishAudioCredentials,
+                    PreviewOutputFake(), gate = container.dataOperationCoordinator, sourceBusy = runtime::hasActiveVoiceSourceMutation,
+                    transportOverride = DesktopFishVoiceTransport(container.fishAudioCredentials, audio, okhttp3.OkHttpClient(),
+                        fishServer.url("/").toString().trimEnd('/'), { java.time.LocalDate.of(2026, 10, 19) }),
+                    textGateway = com.example.chatbar.domain.voice.FishVoiceTextGateway { _, _, _, _ -> error("No auxiliary request authorized") })
+                try {
+                    withTimeout(5000) { moments.state.first { it.enabled } }
+                    moments.generate(card.id)
+                    withTimeout(5000) { momentEntered.await() }
+                    fishServer.enqueue(MockResponse().setSocketPolicy(okhttp3.mockwebserver.SocketPolicy.NO_RESPONSE))
+                    val batch = assertNotNull(voice.generate(old, "alice"))
+                    assertNotNull(fishServer.takeRequest(5, TimeUnit.SECONDS))
+                    assertEquals(DesktopTaskStatus.RUNNING, task(runtime, chat).status)
+                    assertEquals(DesktopTaskStatus.RUNNING, task(runtime, image).status)
+                    assertTrue(moments.state.value.busy)
+                    voice.coordinator.cancel(batch)
+                    withTimeout(5000) { voice.coordinator.batches.first { rows -> rows.none { it.id == batch &&
+                        it.phase !in setOf(VoiceGenerationPhase.CANCELLED, VoiceGenerationPhase.FAILED) } } }
+                    assertEquals(DesktopTaskStatus.RUNNING, task(runtime, chat).status)
+                    assertEquals(DesktopTaskStatus.RUNNING, task(runtime, image).status)
+                    assertTrue(moments.state.value.busy)
+                    assertTrue(container.voiceRepository.listForSession(sessionId).isEmpty())
+                    moments.stop()
+                    withTimeout(5000) { moments.workRows.first { rows -> rows.isNotEmpty() && rows.none { it.active } } }
+                    assertEquals(DesktopTaskStatus.RUNNING, task(runtime, chat).status)
+                    assertEquals(DesktopTaskStatus.RUNNING, task(runtime, image).status)
+                    assertTrue(runtime.requestUserStop(image))
+                    awaitTask(runtime, image) { it.status == DesktopTaskStatus.USER_STOPPED }
+                    assertEquals(DesktopTaskStatus.RUNNING, task(runtime, chat).status)
+                    assertTrue(runtime.requestUserStop(chat))
+                    awaitTask(runtime, chat) { it.status == DesktopTaskStatus.USER_STOPPED }
+                    assertEquals(old, chats.getMessage(old.id, sessionId))
+                } finally { voice.closeAndDrain(); fishServer.shutdown(); moments.closeAndDrain() }
+            }
+        }
+    }
     @Test fun `full live text survives bounded summaries and is released on completion stop and error`() = runBlocking {
         for (outcome in listOf("COMPLETE", "STOP", "ERROR")) withContainer { container ->
             val content = "complete transient text ".repeat(240)
