@@ -231,6 +231,7 @@ class FishAudioGenerationCoordinator(
             )
         )
         jobs.launch(VoiceBatchJobRegistry.Target(batchId, ownerSessionId, ownerMessageId)) {
+            if (_batches.value.firstOrNull { it.id == batchId }?.phase == VoiceGenerationPhase.CANCELLED) return@launch
             try {
                 val existing = voiceRepository.get(voiceId) ?: error("语音消息不存在")
                 check(original != null && existing == original) { "原语音已改变，请重新打开语音操作" }
@@ -324,6 +325,7 @@ class FishAudioGenerationCoordinator(
             )
         }
         jobs.launch(VoiceBatchJobRegistry.Target(batchId, pending.context.session.id, pending.context.message.id)) {
+            if (_batches.value.firstOrNull { it.id == batchId }?.phase == VoiceGenerationPhase.CANCELLED) return@launch
             try {
                 val confirmedText = if (useAiText) {
                     pending.tagResult.confirmationRequiredById
@@ -425,6 +427,7 @@ class FishAudioGenerationCoordinator(
         )
         val screenGeneration = foregroundGeneration.get()
         jobs.launch(VoiceBatchJobRegistry.Target(batchId, sessionId, messageId)) {
+            if (_batches.value.firstOrNull { it.id == batchId }?.phase == VoiceGenerationPhase.CANCELLED) return@launch
             try {
                 block(batchId, screenGeneration)
             } catch (cancelled: CancellationException) {

@@ -81,6 +81,19 @@ class VoiceGenerationConcurrencyTest {
         immediate.launch(VoiceBatchJobRegistry.Target("same", "session", "old")) { }.join()
     }
 
+    @Test fun confirmationHandoffWaitsForItsPredecessorAndBothJobsRemainCancellable() = runTest {
+        val jobs = VoiceBatchJobRegistry(backgroundScope)
+        val entered = CompletableDeferred<Unit>(); var synthesisEntered = false
+        val first = jobs.launch(VoiceBatchJobRegistry.Target("same", "session", "old")) {
+            entered.complete(Unit); awaitCancellation()
+        }
+        entered.await()
+        val resumed = jobs.launch(VoiceBatchJobRegistry.Target("same", "session", "old")) { synthesisEntered = true }
+        runCurrent(); assertFalse(synthesisEntered)
+        jobs.cancelAndJoinMatching { it.sessionId == "session" }
+        assertTrue(first.isCancelled); assertTrue(resumed.isCancelled); assertFalse(synthesisEntered)
+    }
+
     @Test fun wholeMessageWithoutAnchorRejectsAnEditDuringSynthesis() = runTest {
         val f = fixture(); val voice = f.voice(); val source = f.snapshot
         f.chats.updateMessage(MessageAlternativeVersionPolicy.editCurrentContent(f.message, "changed"))
