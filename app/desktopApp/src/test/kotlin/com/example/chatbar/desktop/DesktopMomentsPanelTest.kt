@@ -7,6 +7,8 @@ import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.input.pointer.PointerButton
+import androidx.compose.ui.input.pointer.PointerEventType
 import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.desktop.security.InMemoryDesktopSecretStore
 import java.awt.image.BufferedImage
@@ -57,9 +59,11 @@ class DesktopMomentsPanelTest {
             withTimeout(10_000) { view.state.first { it.posts.size == 1 } }
             for (width in listOf(420, 1100)) {
                 val opened = mutableListOf<String>()
+                val openedCards = mutableListOf<Pair<String, Boolean>>()
                 val scene = ImageComposeScene(width, 900, coroutineContext = edt) {
                     Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.background)) {
-                        DesktopMomentsPanel(view, onOpenSession = { opened += it })
+                        DesktopMomentsPanel(view, onOpenSession = { opened += it },
+                            onOpenCard = { id, focusSwitch -> openedCards += id to focusSwitch })
                     }
                 }
                 try {
@@ -86,6 +90,12 @@ class DesktopMomentsPanelTest {
                     click(store.posts().single().senderName)
                     withTimeout(5000) { while (opened.isEmpty()) frames() }
                     assertEquals(listOf("session"), opened)
+                    val author = all().single { it.config.getOrNull(SemanticsProperties.TestTag) == "moment-author-post" }
+                    scene.sendPointerEvent(PointerEventType.Press, author.boundsInRoot.center, button = PointerButton.Secondary)
+                    scene.sendPointerEvent(PointerEventType.Release, author.boundsInRoot.center, button = PointerButton.Secondary)
+                    frames(); click("打开所属角色卡设置")
+                    withTimeout(5000) { while (openedCards.isEmpty()) frames() }
+                    assertEquals(listOf(card.id to false), openedCards)
                     click("朋友圈相册"); frames()
                     assertTrue(all().any { matches(it, "相册分组 ${card.id}") })
                     shot("moments-album-groups-$width.png")

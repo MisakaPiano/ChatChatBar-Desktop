@@ -45,9 +45,11 @@ import com.composables.icons.lucide.Download
 import com.composables.icons.lucide.FolderOpen
 import com.composables.icons.lucide.Eye
 import com.composables.icons.lucide.EyeOff
+import com.composables.icons.lucide.Heart
 
 /** Formal upstream semantics, with distinct Desktop reading-navigation additions. */
 internal object DesktopAppIcons {
+    val Like: ImageVector get() = Lucide.Heart
     val ShowSecret: ImageVector get() = Lucide.Eye
     val HideSecret: ImageVector get() = Lucide.EyeOff
     val ZoomIn: ImageVector get() = Lucide.ZoomIn

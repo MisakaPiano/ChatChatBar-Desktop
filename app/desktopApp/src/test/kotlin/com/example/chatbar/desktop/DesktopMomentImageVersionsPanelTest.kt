@@ -35,9 +35,14 @@ class DesktopMomentImageVersionsPanelTest {
                 Files.createDirectories(root.resolve("images"))
                 for (i in 0..2) {
                     val path = "images/version$i.png"
-                    Files.write(root.resolve(path), DesktopImageEditing.png(BufferedImage(4, 4, BufferedImage.TYPE_INT_ARGB)))
+                    val pixels = BufferedImage(100, 100, BufferedImage.TYPE_INT_RGB)
+                    pixels.createGraphics().let { graphics ->
+                        try { graphics.color = java.awt.Color(40 + i * 60, 120, 170); graphics.fillRect(0, 0, 100, 100)
+                            graphics.color = java.awt.Color.WHITE; graphics.fillOval(25, 25, 50, 50) } finally { graphics.dispose() }
+                    }
+                    Files.write(root.resolve(path), DesktopImageEditing.png(pixels))
                     post = DesktopMomentImageVersions.append(post, DesktopMomentImageResult(path,
-                        GeneratedImageMetadata(path, "Scene $i", negativePrompt = "Negative", sizePreset = "SQUARE", width = 4, height = 4),
+                        GeneratedImageMetadata(path, "Scene $i", negativePrompt = "Negative", sizePreset = "SQUARE", width = 100, height = 100),
                         "Prompt $i", "Brief $i"), i + 1L)
                 }
                 app.jsonFileStorage.saveEntity("moment_posts", post.id, post, MomentPost.serializer())
@@ -48,10 +53,47 @@ class DesktopMomentImageVersionsPanelTest {
                 view = controller
                 withTimeout(5_000) { controller.state.first { it.enabled && it.posts.size == 1 } }
                 val scene = ImageComposeScene(width, 900, coroutineContext = edt) {
-                    Column(Modifier.fillMaxSize()) { DesktopMomentsPanel(controller) }
+                    CompositionLocalProvider(LocalDesktopPalette provides desktopSemanticColors(
+                        if (width == 420) ThemeMode.DARK else ThemeMode.LIGHT,
+                        com.example.chatbar.domain.appearance.DefaultThemeColorHsv, false)) {
+                        Column(Modifier.fillMaxSize()) { DesktopMomentsPanel(controller) }
+                    }
                 }
                 try {
-                    scene.frames(); scene.click("图片版本 3"); scene.frames()
+                    scene.frames()
+                    assertTrue(scene.nodes().any { it.label("1 / 3") })
+                    assertTrue(scene.button("上一张动态图片").config.contains(SemanticsProperties.Disabled))
+                    scene.click("下一张动态图片")
+                    withTimeout(5_000) { while (controller.state.value.posts.single().imagePrompt != "Prompt 1") scene.frames() }
+                    scene.click("下一张动态图片")
+                    withTimeout(5_000) { while (controller.state.value.posts.single().imagePrompt != "Prompt 2") scene.frames() }
+                    scene.frames()
+                    withTimeout(5_000) { while (scene.nodes().none {
+                        it.config.getOrNull(DesktopDecodedImageIdentity) == desktopDecodedImageIdentity("images/version2.png")
+                    }) scene.frames() }
+                    assertTrue(scene.nodes().any { it.label("3 / 3") })
+                    assertTrue(scene.button("下一张动态图片").config.contains(SemanticsProperties.Disabled))
+                    val saved = DesktopMomentStore(app.jsonFileStorage, app.dataOperationCoordinator).posts().single()
+                    assertEquals("Prompt 2", saved.imagePrompt)
+                    assertEquals("Brief 2", saved.imageBrief)
+                    assertEquals(3, saved.desktopImageVersions.size)
+                    scene.click("上一张动态图片")
+                    withTimeout(5_000) { while (controller.state.value.posts.single().imagePrompt != "Prompt 1") scene.frames() }
+                    scene.click("下一张动态图片")
+                    withTimeout(5_000) { while (controller.state.value.posts.single().imagePrompt != "Prompt 2") scene.frames() }
+                    scene.frames()
+                    fun tagged(tag: String) = scene.nodes().single { it.config.getOrNull(SemanticsProperties.TestTag) == tag }.boundsInRoot
+                    val author = tagged("moment-author-post"); val body = tagged("moment-text-post")
+                    val image = tagged("moment-image-post"); val pager = tagged("moment-versions-post")
+                    assertTrue(kotlin.math.abs(author.left - body.left) < 1)
+                    assertTrue(kotlin.math.abs(body.left - image.left) < 1)
+                    assertTrue(pager.top >= image.bottom && pager.right <= width)
+                    for (label in listOf("编辑动态文字", "删除动态", "编辑Prompt重新生成", "动态更多操作")) {
+                        val bounds = scene.button(label).boundsInRoot
+                        assertTrue(bounds.left >= 0 && bounds.right <= width && bounds.height <= 32, label)
+                    }
+                    scene.shot("moment-feed-versions-$width.png")
+                    scene.click("动态更多操作"); scene.click("管理图片版本"); scene.frames()
                     assertTrue(scene.nodes().any { it.label("动态图片版本") })
                     assertTrue(scene.nodes().any { it.label("预览版本 3") })
                     System.getenv("CCB_FORMAT_AI_REVIEW_DIR")?.let { directory ->
@@ -66,6 +108,14 @@ class DesktopMomentImageVersionsPanelTest {
                     scene.click("确认移除版本")
                     withTimeout(5_000) { while (controller.state.value.posts.single().desktopImageVersions.size != 2) scene.frames() }
                     assertEquals("Prompt 2", store.posts().single().imagePrompt)
+                    scene.click("关闭"); scene.frames()
+                    scene.click("动态更多操作"); scene.click("管理图片版本"); scene.frames()
+                    scene.click("移除版本 1"); scene.click("确认移除版本")
+                    withTimeout(5_000) { while (controller.state.value.posts.single().desktopImageVersions.size != 1) scene.frames() }
+                    scene.click("关闭"); scene.frames()
+                    assertTrue(scene.nodes().any { it.label("1 / 1") })
+                    assertTrue(scene.button("上一张动态图片").config.contains(SemanticsProperties.Disabled))
+                    assertTrue(scene.button("下一张动态图片").config.contains(SemanticsProperties.Disabled))
                 } finally { scene.close() }
             } finally { view?.closeAndDrain(); app.close(); check(parent.toFile().deleteRecursively()) }
         }
@@ -77,8 +127,14 @@ class DesktopMomentImageVersionsPanelTest {
     private fun SemanticsNode.label(text: String): Boolean = config.getOrNull(SemanticsProperties.Text)?.any { it.text == text } == true ||
         config.getOrNull(SemanticsProperties.ContentDescription)?.contains(text) == true || children.any { it.label(text) }
     private suspend fun ImageComposeScene.frames() { repeat(6) { render().close(); delay(15) } }
+    private fun ImageComposeScene.button(label: String) = nodes().first { it.label(label) && it.config.contains(SemanticsActions.OnClick) }
+    private fun ImageComposeScene.shot(name: String) { System.getenv("CCB_FORMAT_AI_REVIEW_DIR")?.let { directory ->
+        val file = Path.of(directory).resolve(name); Files.createDirectories(file.parent)
+        render().use { image -> image.encodeToData()!!.use { Files.write(file, it.bytes) } }
+    } }
     private suspend fun ImageComposeScene.click(label: String) {
-        val node = nodes().first { it.label(label) && it.config.contains(SemanticsActions.OnClick) }
+        val node = button(label)
+        assertFalse(node.config.contains(SemanticsProperties.Disabled), label)
         assertTrue(node.boundsInRoot.width > 0 && node.boundsInRoot.height > 0)
         assertTrue(node.config[SemanticsActions.OnClick].action!!.invoke()); frames()
     }

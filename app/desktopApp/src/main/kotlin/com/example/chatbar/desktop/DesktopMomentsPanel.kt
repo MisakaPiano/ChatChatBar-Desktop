@@ -1,10 +1,7 @@
 @file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 package com.example.chatbar.desktop
 
-import androidx.compose.foundation.ContextMenuArea
-import androidx.compose.foundation.ContextMenuItem
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -12,19 +9,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicText
-import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.chatbar.data.local.entity.MomentPost
 import com.example.chatbar.data.local.entity.MomentTask
 import com.example.chatbar.data.local.entity.MomentTaskStatus
@@ -118,15 +109,14 @@ internal fun DesktopMomentsPanel(controller: DesktopMomentsController,
     }
     LaunchedEffect(state.posts.maxOfOrNull { it.generatedAt }) { controller.markViewed() }
     Box(Modifier.fillMaxSize().background(colors.background)) {
-        Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            StudioActions {
-                DesktopManagementHeading("朋友圈")
-                StudioAction("朋友圈相册", icon = DesktopAppIcons.ImageAdd) { showingAlbum = true }
-            }
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                BootstrapButton("生成动态", enabled = state.enabled && !state.busy) { debugGeneration = false; choosingCard = true }
-                BootstrapButton(if (showingTools) "收起操作" else "更多操作", variant = DesktopActionVariant.GHOST) { showingTools = !showingTools }
-                if (state.busy) BootstrapButton("停止生成", secondary = true, onClick = controller::stop)
+        Column(Modifier.widthIn(max = 820.dp).fillMaxSize().align(Alignment.TopCenter).padding(horizontal = 20.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(Modifier.weight(1f)) { DesktopManagementHeading("朋友圈") }
+                StudioAction("生成动态", enabled = state.enabled && !state.busy, icon = DesktopAppIcons.Add) { debugGeneration = false; choosingCard = true }
+                DesktopChatIconAction("朋友圈相册", DesktopAppIcons.ImageAdd) { showingAlbum = true }
+                DesktopChatIconAction(if (showingTools) "收起操作" else "更多操作", DesktopAppIcons.More) { showingTools = !showingTools }
+                if (state.busy) DesktopChatIconAction("停止生成", DesktopAppIcons.Stop, onClick = controller::stop)
             }
             if (showingTools) FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 BootstrapButton(if (state.scheduling) "暂停本机调度" else "恢复本机调度", secondary = true) {
@@ -149,60 +139,23 @@ internal fun DesktopMomentsPanel(controller: DesktopMomentsController,
             if (state.posts.isEmpty()) StatusText("暂无动态。开启后不会因导入旧计划而自动生成。")
             LazyColumn(Modifier.fillMaxWidth().weight(1f), state = timelineScroll) {
                 items(state.posts, key = { it.id }) { post ->
-                    Column(Modifier.fillMaxWidth()) {
-                    Row(Modifier.fillMaxWidth().padding(vertical = 18.dp, horizontal = 4.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        val avatar = post.senderAvatar; val resources = controller.resources
-                        @Composable fun LinkedAuthor(content: @Composable () -> Unit) {
-                            ContextMenuArea(items = { buildList {
-                                add(ContextMenuItem("打开所属角色卡设置") { openLinked(post.id, true) })
-                                add(ContextMenuItem("查看该角色卡朋友圈开关") { openLinked(post.id, true, true) })
-                                if (!avatar.isNullOrBlank()) add(ContextMenuItem("查看头像") { viewing = listOf(avatar); viewIndex = 0 })
-                            } }) { content() }
-                        }
-                        LinkedAuthor {
-                            if (!avatar.isNullOrBlank() && resources != null) DesktopOwnedImage(avatar, resources::readBytes,
-                                Modifier.size(44.dp).clip(RoundedCornerShape(6.dp)).clickable { openLinked(post.id, false) }, crop = true)
-                            else Box(Modifier.size(44.dp).background(colors.secondary, RoundedCornerShape(6.dp))
-                                .clickable { openLinked(post.id, false) }, contentAlignment = Alignment.Center) {
-                                StatusText(post.senderName.take(1))
-                            }
-                        }
-                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            LinkedAuthor { BasicText(post.senderName, modifier = Modifier.clickable { openLinked(post.id, false) },
-                                style = TextStyle(color = colors.primary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)) }
-                            if (post.isPlaceholder) {
-                                StatusText(post.failureReason ?: "生成尚未完成", colors.destructive)
-                                BootstrapButton("从已完成阶段重试", enabled = !state.busy, secondary = true) { act { controller.retry(post) } }
-                            } else {
-                                SelectionContainer { BasicText(post.text, style = TextStyle(color = colors.foreground, fontSize = 14.sp)) }
-                                val image = post.imagePath
-                                if (!image.isNullOrBlank() && resources != null) DesktopOwnedImage(image, resources::readBytes,
-                                    Modifier.sizeIn(maxWidth = 300.dp).fillMaxWidth().aspectRatio(1f).clickable {
-                                        viewing = state.posts.mapNotNull { it.imagePath?.takeIf(String::isNotBlank) }.distinct()
-                                        viewIndex = viewing.indexOf(image).coerceAtLeast(0)
-                                    }, crop = true)
-                                else BootstrapButton("未生成图片 · 点击生成私密配图", enabled = !state.busy,
-                                    variant = DesktopActionVariant.SECONDARY) { confirmingImage = post }
-                            }
-                            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                StatusText(DateTimeFormatter.ofPattern("MM-dd HH:mm").withZone(ZoneId.systemDefault())
-                                    .format(Instant.ofEpochMilli(post.generatedAt)))
-                                if (post.isPrivate) StatusText("仅你可见")
-                                if (!post.isPlaceholder) {
-                                    BootstrapButton("${if (post.userLiked) "已赞" else "赞"} ${post.displayLikeCount}",
-                                        variant = DesktopActionVariant.GHOST) { act { controller.like(post.id) } }
-                                    DesktopIconAction("编辑动态文字", DesktopAppIcons.Edit) { editing = post; editText = post.text }
-                                    DesktopIconAction("复制动态文字", DesktopAppIcons.Copy) { clipboard.setText(AnnotatedString(post.text)) }
-                                    if (!post.imagePath.isNullOrBlank()) BootstrapButton("图片版本 ${DesktopMomentImageVersions.retained(post).size}",
-                                        secondary = true) { versionPostId = post.id }
-                                }
-                                DesktopIconAction("删除动态", DesktopAppIcons.Close) { deleting = post }
-                            }
-                        }
-                    }
-                    Box(Modifier.fillMaxWidth().height(1.dp).background(colors.border))
-                    }
+                    DesktopMomentFeedCard(post, controller.resources, state.busy,
+                        onOpenSession = { openLinked(post.id, false) },
+                        onOpenCard = { focusSwitch -> openLinked(post.id, true, focusSwitch) },
+                        onPreviewAvatar = { post.senderAvatar?.let { viewing = listOf(it); viewIndex = 0 } },
+                        onPreviewImage = {
+                            viewing = state.posts.mapNotNull { it.imagePath?.takeIf(String::isNotBlank) }.distinct()
+                            viewIndex = viewing.indexOf(post.imagePath).coerceAtLeast(0)
+                        },
+                        onEdit = { editing = post; editText = post.text },
+                        onCopy = { clipboard.setText(AnnotatedString(post.text)) },
+                        onLike = { act { controller.like(post.id) } },
+                        onRetry = { act { controller.retry(post) } },
+                        onGenerateImage = { confirmingImage = post },
+                        onRegenerateImage = { act { editingImage = post to controller.imageDraft(post) } },
+                        onVersions = { versionPostId = post.id },
+                        onSelectVersion = { versionId -> act { controller.selectImageVersion(post, versionId) } },
+                        onDelete = { deleting = post })
                 }
             }
         }
