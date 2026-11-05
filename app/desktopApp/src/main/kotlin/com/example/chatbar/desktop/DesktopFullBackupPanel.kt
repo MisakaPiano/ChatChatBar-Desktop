@@ -14,7 +14,7 @@ internal fun DesktopFullBackupPanel(controller: DesktopFullBackupController, onE
 
 @Composable
 internal fun DesktopFullBackupPanel(controller: DesktopFullBackupController,
-    view: DesktopFullBackupView, exportRequest: Int = 0, onExit: () -> Unit) {
+    view: DesktopFullBackupView, exportRequest: Int = 0, showPasswordDialog: Boolean = true, onExit: () -> Unit) {
     DisposableEffect(controller) { onDispose { controller.leavePanel() } }
     val state by controller.state.collectAsState()
     var exportOpen by remember { mutableStateOf(false) }
@@ -48,7 +48,7 @@ internal fun DesktopFullBackupPanel(controller: DesktopFullBackupController,
             BootstrapButton("正常退出应用", onClick = onExit)
         }
     }
-    state.passwordRequest?.let { request -> DesktopBackupPasswordDialog(request,
+    state.passwordRequest?.takeIf { showPasswordDialog }?.let { request -> DesktopBackupPasswordDialog(request,
         onPassword = controller::retryFilePassword, onCancel = controller::discardInspection,
         onChooseFile = { controller.verifyFile(null) }) }
     if (exportOpen) DesktopBackupExportDialog(state, controller::refreshExportCatalog,

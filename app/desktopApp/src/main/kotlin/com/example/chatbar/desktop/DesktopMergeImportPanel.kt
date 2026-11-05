@@ -10,7 +10,7 @@ import androidx.compose.ui.unit.dp
 import com.example.chatbar.desktop.backup.*
 
 @Composable
-internal fun DesktopMergeImportPanel(controller: DesktopMergeImportController, onExit: () -> Unit) {
+internal fun DesktopMergeImportPanel(controller: DesktopMergeImportController, showPasswordDialog: Boolean = true, onExit: () -> Unit) {
     val state by controller.state.collectAsState()
     DisposableEffect(controller) { onDispose { controller.leavePasswordFlow() } }
     var choices by remember(state.conflicts) { mutableStateOf(emptyMap<String, DesktopMergePreview.Choice>()) }
@@ -105,7 +105,7 @@ internal fun DesktopMergeImportPanel(controller: DesktopMergeImportController, o
         state.destination?.let { StatusText("合并目录：$it") }
         if (state.restartRequired) BootstrapButton("正常退出应用", onClick = onExit)
     }
-    state.passwordRequest?.let { request -> DesktopBackupPasswordDialog(request,
+    state.passwordRequest?.takeIf { showPasswordDialog }?.let { request -> DesktopBackupPasswordDialog(request,
         onPassword = controller::retryFilePassword, onCancel = controller::discard,
         onChooseFile = controller::selectFile) }
 }

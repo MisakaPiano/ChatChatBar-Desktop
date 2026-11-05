@@ -86,6 +86,10 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
         if (service.restartRequired) "检查已关闭；已准备的恢复记录仍保留，请正常退出。" else "已取消检查，当前数据未改变"
     }
     private var releaseWhenIdle = false
+    fun leavePasswordFlow() = synchronized(lock) {
+        if (passwordFlowActive) operation?.cancel()
+        else if (mutable.value.passwordRequest != null) discardInspection()
+    }
     fun leavePanel() = synchronized(lock) {
         if (mutable.value.busy) {
             releaseWhenIdle = true

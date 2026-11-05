@@ -59,6 +59,16 @@ internal fun DesktopDataWorkspace(root: DesktopDataRootSwitchController, full: D
         if (imported?.busy == true || imported?.restartRequired == true) operation = BackupPage.IMPORT
     }
     val page = if (moving) DataPage.LOCATION else if (busy) DataPage.BACKUP else selected
+    // Retained panes are not disposed when hidden; retire only their interactive password flow.
+    DisposableEffect(page, operation, full, merge) {
+        onDispose {
+            if (page == DataPage.BACKUP) when (operation) {
+                BackupPage.CHECK -> full.leavePasswordFlow()
+                BackupPage.IMPORT -> merge?.leavePasswordFlow()
+                else -> Unit
+            }
+        }
+    }
     LaunchedEffect(openUpdateRequest) {
         if (openUpdateRequest > 0) { selected = DataPage.UPDATE; onUpdateRequestConsumed() }
     }
@@ -92,11 +102,12 @@ internal fun DesktopDataWorkspace(root: DesktopDataRootSwitchController, full: D
                         DataOperationCard("检查备份文件", "只检查完整性和文件格式，不导入数据。", "检查已有备份") { operation = BackupPage.CHECK }
                     } else BootstrapButton("返回备份概览", secondary = true, enabled = !busy) { operation = BackupPage.OVERVIEW }
                     DesktopRetainedPane(operation == BackupPage.IMPORT) {
-                        merge?.let { DesktopMergeImportPanel(it, onExit) }
+                        merge?.let { DesktopMergeImportPanel(it, showPasswordDialog = false, onExit = onExit) }
                     }
                     DesktopRetainedPane(operation == BackupPage.EXPORT || operation == BackupPage.CHECK) {
                         DesktopFullBackupPanel(full,
-                            if (operation == BackupPage.CHECK) DesktopFullBackupView.CHECK else DesktopFullBackupView.EXPORT, exportRequest, onExit)
+                            if (operation == BackupPage.CHECK) DesktopFullBackupView.CHECK else DesktopFullBackupView.EXPORT,
+                            exportRequest, showPasswordDialog = false, onExit = onExit)
                     }
                 }
             }
@@ -111,6 +122,15 @@ internal fun DesktopDataWorkspace(root: DesktopDataRootSwitchController, full: D
             DesktopRetainedPane(page == DataPage.RECOVERY) { DataWorkspaceScroll {
                 DesktopRecoveryPanel(recovery, !busy && !moving, ::openRecoveryDestination)
             } }
+            // Modal dimensions come from the bounded workspace, not an unmeasured retained/scrolling pane.
+            if (page == DataPage.BACKUP && operation == BackupPage.CHECK) backup.passwordRequest?.let { request ->
+                DesktopBackupPasswordDialog(request, full::retryFilePassword, full::discardInspection) { full.verifyFile(null) }
+            }
+            if (page == DataPage.BACKUP && operation == BackupPage.IMPORT) imported?.passwordRequest?.let { request ->
+                merge?.let { controller ->
+                    DesktopBackupPasswordDialog(request, controller::retryFilePassword, controller::discard, controller::selectFile)
+                }
+            }
         }
     }
 }
