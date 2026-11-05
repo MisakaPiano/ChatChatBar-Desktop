@@ -9,7 +9,7 @@ on:
         required: true
         type: string
 env:
-  SOURCE_SHA: ${{ inputs.source_sha || '453cb8d454d3853d7871398c7f9b830587766857' }}
+  SOURCE_SHA: ${{ inputs.source_sha || 'f85006e002ffb6519dca5f5e4606fac99bebb8aa' }}
 permissions:
   contents: read
 jobs:
