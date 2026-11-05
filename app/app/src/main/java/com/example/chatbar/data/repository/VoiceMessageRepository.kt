@@ -207,10 +207,18 @@ class VoiceMessageRepository(
     internal suspend fun inspectGeneratedCommit(voice: GeneratedVoiceMessage): com.example.chatbar.domain.voice.VoiceCommitPersistence =
         mutex.withLock {
             when (val persisted = storage.inspectEntity(VOICE_TYPE, voice.id, GeneratedVoiceMessage.serializer())) {
-                JsonFileStorage.EntityReadResult.Missing -> com.example.chatbar.domain.voice.VoiceCommitPersistence.NOT_REFERENCED
-                is JsonFileStorage.EntityReadResult.Valid -> if (persisted.value.audioPath == voice.audioPath) {
-                    com.example.chatbar.domain.voice.VoiceCommitPersistence.REFERENCED
-                } else com.example.chatbar.domain.voice.VoiceCommitPersistence.NOT_REFERENCED
+                JsonFileStorage.EntityReadResult.Missing -> {
+                    _voices.value = _voices.value.filterNot { it.id == voice.id }
+                    com.example.chatbar.domain.voice.VoiceCommitPersistence.NOT_REFERENCED
+                }
+                is JsonFileStorage.EntityReadResult.Valid -> {
+                    // A save may reach disk before throwing during cache acknowledgement.
+                    // Keep later playback/deletion in this process consistent with that disk result.
+                    _voices.value = _voices.value.filterNot { it.id == voice.id } + persisted.value
+                    if (persisted.value.audioPath == voice.audioPath) {
+                        com.example.chatbar.domain.voice.VoiceCommitPersistence.REFERENCED
+                    } else com.example.chatbar.domain.voice.VoiceCommitPersistence.NOT_REFERENCED
+                }
                 is JsonFileStorage.EntityReadResult.Uncertain -> com.example.chatbar.domain.voice.VoiceCommitPersistence.UNKNOWN
             }
         }

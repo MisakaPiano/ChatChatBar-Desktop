@@ -35,6 +35,9 @@ class VoiceGenerationCommitFailureTest {
         assertTrue(File(voice.audioPath).isFile); assertTrue(f.removed.isEmpty())
         val reopened = VoiceMessageRepository(f.storage)
         assertEquals(voice.audioPath, reopened.get(voice.id)?.audioPath)
+        assertEquals(voice.audioPath, f.voices.get(voice.id)?.audioPath)
+        assertEquals(listOf(voice.id), f.voices.deleteForMessage("old").map { it.id })
+        assertFalse(f.storage.exists("generated_voice_messages", voice.id))
     }
 
     @Test fun unreadableOrCorruptCommitResultRetainsAudioAndReportsUncertainty() = runTest {

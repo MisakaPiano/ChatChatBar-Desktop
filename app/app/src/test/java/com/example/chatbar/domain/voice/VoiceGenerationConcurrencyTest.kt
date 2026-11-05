@@ -37,7 +37,7 @@ class VoiceGenerationConcurrencyTest {
                 LocalDataMaintenance.enter().use {
                     imageEntered.complete(Unit); release.await()
                     f.chats.addMessageAfter(ChatMessage(id = "image", sessionId = "session", role = MessageRole.ASSISTANT,
-                        content = "", images = listOf("synthetic-owned-image"), createdAt = 2, updatedAt = 2), "old", requireLiveAnchor = true)
+                        content = "", images = listOf("synthetic-owned-image"), generatedFromMessageId = "old", createdAt = 2, updatedAt = 2), "old", requireLiveAnchor = true)
                 }
             }
         }
