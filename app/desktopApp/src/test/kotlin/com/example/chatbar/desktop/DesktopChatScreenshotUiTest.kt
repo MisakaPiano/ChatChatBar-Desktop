@@ -67,13 +67,13 @@ class DesktopChatScreenshotUiTest {
                     assertTrue(preview.boundsInRoot.right<=width)
                     preview.config[SemanticsActions.OnClick].action!!()
                     until{nodes().any{it.config.getOrNull(SemanticsProperties.ContentDescription)?.any{s->s.startsWith("长图预览：")}==true}}
-                    assertTrue(node("导出 PNG").config.contains(SemanticsActions.RequestFocus))
+                    assertTrue(node("导出 文档 PDF").config.contains(SemanticsActions.RequestFocus))
                     println("SCREENSHOT_KEYBOARD width=$width focused=${nodes().filter { it.config.getOrNull(SemanticsProperties.Focused)==true }.map { it.id }}")
                     scene.sendKeyEvent(KeyEvent(Key.Escape,KeyEventType.KeyDown));scene.sendKeyEvent(KeyEvent(Key.Escape,KeyEventType.KeyUp))
                     until{nodes().none{it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("关闭预览")==true}}
-                    assertTrue(node("导出 PNG").config.contains(SemanticsActions.OnClick), "preview Escape retains selection workspace")
+                    assertTrue(node("导出 文档 PDF").config.contains(SemanticsActions.OnClick), "preview Escape retains selection workspace")
                     node("关闭").config[SemanticsActions.OnClick].action!!()
-                    until{nodes().none{it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("导出 PNG")==true}}
+                    until{nodes().none{it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("导出 文档 PDF")==true}}
                     assertTrue(f.requests.isEmpty())
                 }finally{scene.close()}
             }

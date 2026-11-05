@@ -42,7 +42,7 @@ class DesktopScreenshotWorkspaceUiTest {
                 actions("打开截图").single().config[SemanticsActions.OnClick].action!!()
                 until { actions("关闭").isNotEmpty() }
                 assertTrue(actions("全部展开").isNotEmpty(), "workspace must expose bulk expand before preview")
-                assertTrue(actions("导出 PNG").isNotEmpty())
+                assertTrue(actions("导出 文档 PDF").isNotEmpty())
                 assertTrue(f.requests.isEmpty())
             } finally { scene.close() }
         } finally { f.close() }
@@ -74,7 +74,7 @@ class DesktopScreenshotWorkspaceUiTest {
                 actions("打开截图").single().config[SemanticsActions.OnClick].action!!()
                 until { actions("关闭").isNotEmpty() }
                 assertTrue(actions("全部展开").isNotEmpty(), "workspace must expose bulk expand before preview")
-                assertTrue(actions("导出 PNG").isNotEmpty())
+                assertTrue(actions("导出 文档 PDF").isNotEmpty())
                 actions("预览 PNG").single().config[SemanticsActions.OnClick].action!!()
                 until { actions("关闭预览").isNotEmpty() }
                 assertEquals(voice, f.c.voiceRepository.get(voice.id))
@@ -126,14 +126,14 @@ class DesktopScreenshotWorkspaceUiTest {
                     click("适应宽度"); scene.render(System.nanoTime()).close()
                     // The test fixture has no native picker: failure feedback must remain
                     // reachable and retryable without moving the fixed footer offscreen.
-                    click("导出 PNG")
+                    click("导出 文档 PDF")
                     until { nodes().any { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("关闭提示") == true } }
-                    for (label in listOf("返回聊天", "导出 PNG", "关闭")) {
+                    for (label in listOf("返回聊天", "导出 文档 PDF", "关闭")) {
                         val n = action(label)
                         assertTrue(n.boundsInRoot.top >= 0 && n.boundsInRoot.bottom <= height)
                         assertTrue(n.boundsInRoot.left >= 0 && n.boundsInRoot.right <= width)
                     }
-                    assertFalse(action("导出 PNG").config.contains(SemanticsProperties.Disabled))
+                    assertFalse(action("导出 文档 PDF").config.contains(SemanticsProperties.Disabled))
                     click("关闭提示");scene.render(System.nanoTime()).close()
                     val out = Path.of("build/p11-gui-r1-20261022/ui-previews")
                     Files.createDirectories(out)
