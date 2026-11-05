@@ -25,14 +25,14 @@ class DesktopBackupPasswordPresentationTest {
                 override fun pickOpenFile(type: DesktopFileType): Path? { picks++; return source }
                 override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? = error("No export requested")
             }
-            val f = FinalProductDesignFixture(picker); f.initialize(false)
+            val f = FinalProductDesignFixture(picker, provenance = DesktopDataRootProvenance.BOOTSTRAP_CUSTOM); f.initialize(false)
             val c = f.container
             source = Files.write(f.root.resolve("synthetic-encrypted.cbbackup"),
                 com.example.chatbar.desktop.backup.CensusWireFixtures.bytes(encrypted = true))
             val original = Files.readAllBytes(source)
             c.automaticBackupRuntime.initialize()
             val root = DesktopDataRootSwitchController(DesktopDataRootResolution.Resolved(c.appDataRoot,
-                DesktopDataRootProvenance.CLI_OVERRIDE, f.root.resolve("bootstrap.json")),
+                DesktopDataRootProvenance.BOOTSTRAP_CUSTOM, f.root.resolve("bootstrap.json")),
                 DesktopDirectoryPicker { error("No directory change requested") }, { false }, { error("No migration requested") })
             val activity = DesktopModalActivity()
             val scene = ImageComposeScene(width, 800, coroutineContext = edt) {
@@ -66,7 +66,10 @@ class DesktopBackupPasswordPresentationTest {
                 scene.click("选择备份并检查")
                 val leaveImport = scene.button("数据目录").config[SemanticsActions.OnClick].action!!
                 scene.click("选择备份并检查…")
-                withTimeout(15000) { c.mergeImportController.state.first { !it.busy && it.passwordRequest != null } }
+                val imported = withTimeout(15000) { c.mergeImportController.state.first {
+                    !it.busy && (it.passwordRequest != null || it.error != null)
+                } }
+                assertNotNull(imported.passwordRequest, imported.error)
                 scene.frames(); assertEquals(1, activity.backupCount)
                 assertTrue(leaveImport.invoke()); scene.frames()
                 withTimeout(10000) { c.mergeImportController.state.first { !it.busy && it.passwordRequest == null } }
