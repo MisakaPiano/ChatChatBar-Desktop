@@ -198,7 +198,7 @@ class DesktopScreenshotDocumentsTest {
             for (format in DesktopScreenshotExportFormat.entries) {
                 var version = 1
                 val verify: suspend () -> Unit = { check(version == 1) }
-                val target = root.resolve("export.${format.extension}")
+                val target = root.resolve("export-${format.name}.${format.extension}")
                 assertNull(saveDesktopScreenshotDocumentVerified(format, png, document, verify, { error("no images") }) { null })
                 assertFailsWith<IllegalStateException> {
                     saveDesktopScreenshotDocumentVerified(format, png, document, verify, { error("no images") }) { version = 2; target }

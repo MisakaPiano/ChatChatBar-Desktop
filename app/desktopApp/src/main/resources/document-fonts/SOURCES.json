@@ -1,0 +1,35 @@
+[
+  {
+    "file": "NotoSans-Regular.ttf",
+    "bytes": 569208,
+    "sha256": "b85c38ecea8a7cfb39c24e395a4007474fa5a4fc864f6ee33309eb4948d232d5",
+    "source": "https://raw.githubusercontent.com/notofonts/noto-fonts/ffebf8c1ee449e544955a7e813c54f9b73848eac/hinted/ttf/NotoSans/NotoSans-Regular.ttf",
+    "license": "OFL-NotoSans.txt",
+    "copyrights": [
+      "Copyright 2015-2021 Google LLC. All Rights Reserved."
+    ],
+    "modified": false
+  },
+  {
+    "file": "NotoEmoji-Variable.ttf",
+    "bytes": 1982596,
+    "sha256": "de6c18832938afc99caf132b39d6a30a19bac7f2e812e28db2535b4608d27551",
+    "source": "https://raw.githubusercontent.com/google/fonts/eb20e9cf19d97cf579fa3867d729d4222d6c59e1/ofl/notoemoji/NotoEmoji%5Bwght%5D.ttf",
+    "license": "OFL-NotoEmoji.txt",
+    "copyrights": [
+      "Copyright 2013 Google LLC"
+    ],
+    "modified": false
+  },
+  {
+    "file": "DroidSansFallback.ttf",
+    "bytes": 3939852,
+    "sha256": "05d71b179ef97b82cf1bb91cef290c600a510f77f39b4964359e3ef88378c79d",
+    "source": "https://android.googlesource.com/platform/frameworks/base/+/android-4.4_r1/data/fonts/DroidSansFallback.ttf?format=TEXT",
+    "license": "Apache-Droid.txt",
+    "copyrights": [
+      "Digitized data copyright Google Corporation © 2006"
+    ],
+    "modified": false
+  }
+]

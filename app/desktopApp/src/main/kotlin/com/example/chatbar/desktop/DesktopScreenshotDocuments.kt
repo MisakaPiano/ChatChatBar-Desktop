@@ -32,7 +32,8 @@ import org.jetbrains.skia.Image
 import kotlin.math.min
 
 internal enum class DesktopScreenshotExportFormat(val label: String, val extension: String) {
-    PNG("PNG", "png"), PDF("PDF", "pdf"), WORD("Word", "docx");
+    DOCUMENT_PDF("文档 PDF", "pdf"), PNG("PNG", "png"), PDF("截图 PDF", "pdf"), WORD("Word", "docx");
+    val structured: Boolean get() = this == DOCUMENT_PDF || this == WORD
     fun fileName(title: String) = buildChatScreenshotFileName(title).removeSuffix(".png") + ".$extension"
 }
 
@@ -80,7 +81,7 @@ internal fun desktopScreenshotDocumentReferences(blocks: List<DesktopScreenshotD
         is DesktopScreenshotDocumentBlock.Text -> null
     } }.distinct()
 
-private fun desktopWordXmlText(text: String): String = buildString {
+internal fun desktopWordXmlText(text: String): String = buildString {
     text.codePoints().forEach { cp ->
         if (cp == 9 || cp == 10 || cp == 13 || cp in 0x20..0xD7FF || cp in 0xE000..0xFFFD || cp in 0x10000..0x10FFFF)
             appendCodePoint(cp)
@@ -158,6 +159,7 @@ internal suspend fun saveDesktopScreenshotPagesVerified(format: DesktopScreensho
             when (format) {
                 DesktopScreenshotExportFormat.PNG -> writeDesktopScreenshotPngPages(pages, output) { context.ensureActive() }
                 DesktopScreenshotExportFormat.PDF -> DesktopScreenshotDocuments.pdf(pages, output) { context.ensureActive() }
+                DesktopScreenshotExportFormat.DOCUMENT_PDF -> DesktopDocumentPdf.write(document, hashes, read, output) { context.ensureActive() }
                 DesktopScreenshotExportFormat.WORD -> DesktopScreenshotDocuments.word(document, hashes,
                     read, output) { context.ensureActive() }
             }
@@ -168,7 +170,14 @@ internal suspend fun saveDesktopScreenshotPagesVerified(format: DesktopScreensho
 
 /** Independent Word export captures requested text and image evidence without requiring a PNG preview. */
 internal suspend fun saveDesktopWordDocumentVerified(document: List<DesktopScreenshotDocumentBlock>,
-    verifyMessages: suspend () -> Unit, read: (String) -> ByteArray, choose: suspend () -> Path?): Path? {
+    verifyMessages: suspend () -> Unit, read: (String) -> ByteArray, choose: suspend () -> Path?): Path? =
+    saveDesktopStructuredDocumentVerified(DesktopScreenshotExportFormat.WORD, document, verifyMessages, read, choose)
+
+/** Both text documents use the same captured selection, resources and atomic/cancellable writer. */
+internal suspend fun saveDesktopStructuredDocumentVerified(format: DesktopScreenshotExportFormat,
+    document: List<DesktopScreenshotDocumentBlock>, verifyMessages: suspend () -> Unit,
+    read: (String) -> ByteArray, choose: suspend () -> Path?): Path? {
+    require(format.structured)
     verifyMessages()
     val references = desktopScreenshotDocumentReferences(document)
     if (references.size > 40) throw DesktopScreenshotLimitException("RESOURCE_COUNT", references.size.toLong(), 40)
@@ -187,8 +196,10 @@ internal suspend fun saveDesktopWordDocumentVerified(document: List<DesktopScree
     withContext(Dispatchers.IO) {
         val context = currentCoroutineContext()
         DesktopChatScreenshotRenderer.verifyResourceHashes(hashes, read)
-        writeDesktopScreenshotFile(target, "docx", { context.ensureActive() }) { output ->
-            DesktopScreenshotDocuments.word(document, hashes, read, output) { context.ensureActive() }
+        writeDesktopScreenshotFile(target, format.extension, { context.ensureActive() }) { output ->
+            if (format == DesktopScreenshotExportFormat.WORD)
+                DesktopScreenshotDocuments.word(document, hashes, read, output) { context.ensureActive() }
+            else DesktopDocumentPdf.write(document, hashes, read, output) { context.ensureActive() }
         }
     }
     return target.toAbsolutePath().normalize()
@@ -247,10 +258,10 @@ internal object DesktopScreenshotDocuments {
         }
     }
 
-    private data class Picture(val id: Int, val bytes: ByteArray, val width: Int, val height: Int)
+    internal data class Picture(val id: Int, val bytes: ByteArray, val width: Int, val height: Int)
 
     /** One bounded opaque page image; source opacity is composed over the captured app theme. */
-    private fun pageBackground(appearance: DesktopScreenshotDocumentBlock.Appearance, source: Picture?, id: Int): Picture {
+    internal fun pageBackground(appearance: DesktopScreenshotDocumentBlock.Appearance, source: Picture?, id: Int): Picture {
         require(appearance.opacity.isFinite() && appearance.opacity in 0f..1f)
         val page = BufferedImage(640, 905, BufferedImage.TYPE_INT_RGB)
         val graphics = page.createGraphics()
@@ -274,9 +285,9 @@ internal object DesktopScreenshotDocuments {
         } finally { page.flush() }
     }
 
-    /** Minimal OOXML document: real text and embedded PNGs; no macros, external assets, or HTML parts. */
-    fun word(blocks: List<DesktopScreenshotDocumentBlock>, capturedHashes: Map<String, String>,
-        read: (String) -> ByteArray, output: OutputStream, checkCancelled: () -> Unit = {}) {
+    /** Shared bounded exact resource capture for editable Word and selectable document PDF. */
+    internal fun pictures(blocks: List<DesktopScreenshotDocumentBlock>, capturedHashes: Map<String, String>,
+        read: (String) -> ByteArray, checkCancelled: () -> Unit): Map<String, Picture> {
         require(blocks.sumOf { when (it) {
             is DesktopScreenshotDocumentBlock.Text -> it.text.length.toLong()
             is DesktopScreenshotDocumentBlock.Header -> it.name.length.toLong()
@@ -287,7 +298,7 @@ internal object DesktopScreenshotDocuments {
         require(references.size <= 40 && references.all { it in capturedHashes }) { "图片不属于当前预览" }
         var encodedBytes = 0L
         var pixels = 0L
-        val pictures = references.mapIndexed { index, reference ->
+        return references.mapIndexed { index, reference ->
             checkCancelled()
             val bytes = read(reference)
             val hash = java.security.MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
@@ -302,6 +313,12 @@ internal object DesktopScreenshotDocuments {
             }
             reference to picture
         }.toMap()
+    }
+
+    /** Minimal OOXML document: real text and embedded PNGs; no macros, external assets, or HTML parts. */
+    fun word(blocks: List<DesktopScreenshotDocumentBlock>, capturedHashes: Map<String, String>,
+        read: (String) -> ByteArray, output: OutputStream, checkCancelled: () -> Unit = {}) {
+        val pictures = pictures(blocks, capturedHashes, read, checkCancelled)
         val appearances = blocks.filterIsInstance<DesktopScreenshotDocumentBlock.Appearance>()
         require(appearances.size <= 1) { "文档页面外观快照重复" }
         val appearance = appearances.singleOrNull()

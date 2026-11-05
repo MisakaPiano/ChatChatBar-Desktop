@@ -90,7 +90,7 @@ internal fun DesktopScreenshotWorkspace(controller: DesktopPrimaryChatController
     val viewport = remember(png) { png?.let { DesktopScreenshotViewport(it.width, it.height) } }
     var capturedMessages by remember(snapshot) { mutableStateOf<List<ChatMessage>>(emptyList()) }
     var capturedDocument by remember(snapshot) { mutableStateOf<List<DesktopScreenshotDocumentBlock>>(emptyList()) }
-    var exportFormat by remember(snapshot) { mutableStateOf(DesktopScreenshotExportFormat.PNG) }
+    var exportFormat by remember(snapshot) { mutableStateOf(DesktopScreenshotExportFormat.DOCUMENT_PDF) }
     var savedPath by remember(snapshot) { mutableStateOf<Path?>(null) }
     var busy by remember { mutableStateOf(false) }
     var feedback by remember { mutableStateOf<String?>(null) }
@@ -146,19 +146,19 @@ internal fun DesktopScreenshotWorkspace(controller: DesktopPrimaryChatController
                 val choose: suspend () -> Path? = {
                     withContext(Dispatchers.IO) { picker.pickSaveFile(DesktopFileType("${format.label} 文件", listOf(format.extension)), format.fileName(state.selectedSession?.title ?: "聊天")) }
                 }
-                val target = if (format == DesktopScreenshotExportFormat.WORD) {
-                    stage = "EXPORT_WORD_SELECTION"
+                val target = if (format.structured) {
+                    stage = "EXPORT_DOCUMENT_SELECTION"
                     val chosen = orderedChatScreenshotMessages(snapshot.messages, tree.selected, state.assistantSegmentedBubblesEnabled)
                     require(chosen.isNotEmpty())
                     controller.verifyScreenshotMessages(chosen)
-                    stage = "EXPORT_WORD_DOCUMENT"
+                    stage = "EXPORT_DOCUMENT_PROJECTION"
                     val preferred = state.selectedCharacter?.id?.let { controller.backgroundLibrary?.preferred(it) }
                     val background = desktopEffectiveBackground(state.selectedSession?.chatBackground, preferred, state.selectedCharacter?.chatBackground).first
                     val request = DesktopScreenshotRequest(state.selectedSession?.title ?: "聊天", state,
                         chosen, tree.selected, snapshot.voices, background = background, contentOptions = contentOptions)
                     val blocks = withContext(Dispatchers.Default) { desktopScreenshotDocument(request, snapshot.colors) }
-                    stage = "EXPORT_WORD_VERIFY_WRITE"
-                    saveDesktopWordDocumentVerified(blocks, { controller.verifyScreenshotMessages(chosen) }, read, choose)
+                    stage = "EXPORT_DOCUMENT_VERIFY_WRITE"
+                    saveDesktopStructuredDocumentVerified(format, blocks, { controller.verifyScreenshotMessages(chosen) }, read, choose)
                 } else saveDesktopScreenshotPagesVerified(format, checkNotNull(result), document,
                     { controller.verifyScreenshotMessages(capturedMessages) }, read, choose)
                 savedPath = target
@@ -212,7 +212,9 @@ internal fun DesktopScreenshotWorkspace(controller: DesktopPrimaryChatController
         }
         StatusText("所选状态栏和行动选项完整展开导出；与聊天中的折叠状态无关。")
         if (exportFormat == DesktopScreenshotExportFormat.PDF)
-            StatusText("PDF 保留截图外观，当前为图片式页面，无法选择或搜索原文；不嵌入音频。")
+            StatusText("截图 PDF 保留截图外观，当前为图片式页面，无法选择或搜索原文；不嵌入音频。")
+        if (exportFormat == DesktopScreenshotExportFormat.DOCUMENT_PDF)
+            StatusText("文档 PDF 包含可选择、搜索的正文和嵌入图片，沿用 Word 的内容与样式并自动分页；不嵌入音频。")
         if (exportFormat == DesktopScreenshotExportFormat.WORD)
             StatusText("Word 包含可编辑文字和嵌入图片，阅读器会重新排版，与 PNG 预览外观不同；不嵌入音频。")
         DesktopScreenshotSelectionTree(snapshot, tree, !busy, Modifier.weight(1f).fillMaxWidth(),
@@ -227,7 +229,7 @@ internal fun DesktopScreenshotWorkspace(controller: DesktopPrimaryChatController
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             StudioAction("返回聊天", onClick = onClose)
             StudioAction("导出 ${exportFormat.label}", enabled = !busy && tree.selected.isNotEmpty() &&
-                (exportFormat == DesktopScreenshotExportFormat.WORD || png != null), onClick = ::save)
+                (exportFormat.structured || png != null), onClick = ::save)
             StudioAction("关闭", onClick = onClose)
         }
     }

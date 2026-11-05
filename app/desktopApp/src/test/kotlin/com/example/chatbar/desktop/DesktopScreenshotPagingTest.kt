@@ -97,7 +97,7 @@ class DesktopScreenshotPagingTest {
         val root = Files.createTempDirectory("screenshot-paging-fixture-").toAbsolutePath().normalize()
         try {
             DesktopScreenshotExportFormat.entries.forEach { format ->
-                val target = root.resolve("synthetic.${format.extension}")
+                val target = root.resolve("synthetic-${format.name}.${format.extension}")
                 var proofs = 0
                 assertEquals(target, saveDesktopScreenshotPagesVerified(format, frames, document, { proofs++ }, { error("NO_RESOURCE") }) { target })
                 assertEquals(2, proofs); assertTrue(Files.size(target) > 0)
@@ -108,6 +108,11 @@ class DesktopScreenshotPagingTest {
                         finally { reader.dispose() }
                     }
                     DesktopScreenshotExportFormat.PDF -> Loader.loadPDF(target.toFile()).use { assertTrue(it.numberOfPages > frames.size) }
+                    DesktopScreenshotExportFormat.DOCUMENT_PDF -> Loader.loadPDF(target.toFile()).use { pdf ->
+                        val text = org.apache.pdfbox.text.PDFTextStripper().getText(pdf)
+                        messages.forEach { assertTrue("合成消息${it.id.removePrefix("synthetic-")}" in text) }
+                        assertTrue(pdf.numberOfPages > 1)
+                    }
                     DesktopScreenshotExportFormat.WORD -> ZipInputStream(Files.newInputStream(target)).use { zip ->
                         var text = ""
                         while (true) { val entry = zip.nextEntry ?: break
