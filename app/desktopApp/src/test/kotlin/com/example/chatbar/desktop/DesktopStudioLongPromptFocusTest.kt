@@ -119,10 +119,15 @@ class DesktopStudioLongPromptFocusTest {
                     assertTrue(innerAfter > innerBefore, "Long text must remain scrollable")
                     assertEquals(after, outer().config[SemanticsProperties.VerticalScrollAxisRange].value(), 2f)
                     assertEquals(original, raw)
-                    scene.sendKeyEvent(KeyEvent(Key.MoveEnd, KeyEventType.KeyDown, isCtrlPressed = true))
-                    scene.sendKeyEvent(KeyEvent(Key.MoveEnd, KeyEventType.KeyUp, isCtrlPressed = true))
+                    // Compose 1.10.3 Windows maps Ctrl+Shift+End to SELECT_END; plain
+                    // Ctrl+End is not mapped by its pinned legacy BasicTextField key policy.
+                    scene.sendKeyEvent(KeyEvent(Key.MoveEnd, KeyEventType.KeyDown, isCtrlPressed = true, isShiftPressed = true))
+                    scene.sendKeyEvent(KeyEvent(Key.MoveEnd, KeyEventType.KeyUp, isCtrlPressed = true, isShiftPressed = true))
+                    scene.sendKeyEvent(KeyEvent(Key.DirectionRight, KeyEventType.KeyDown))
+                    scene.sendKeyEvent(KeyEvent(Key.DirectionRight, KeyEventType.KeyUp))
                     scene.frames(35)
                     assertEquals(original.length, field().config[SemanticsProperties.TextSelectionRange].end)
+                    assertTrue(field().config[SemanticsProperties.TextSelectionRange].collapsed)
                     assertTrue(inner.config[SemanticsProperties.VerticalScrollAxisRange].value() > innerAfter,
                         "Keyboard navigation to the end must reveal the caret inside the field")
                     assertEquals(after, outer().config[SemanticsProperties.VerticalScrollAxisRange].value(), 2f)
