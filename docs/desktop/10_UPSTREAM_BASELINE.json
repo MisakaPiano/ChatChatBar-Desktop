@@ -632,5 +632,30 @@
       "cleanup": "AUTOMATIC_REVIEW_REFUSED_PROCESS_NOT_STARTED_0_BYTES_DELETED",
       "scope": "290-295 exact fixes; original1237 failures remain until actual successor user retest"
     }
+  },
+  "latestPinnedUpstreamReview": {
+    "recordedAt": "2026-11-05",
+    "targetVersion": "1.4.8",
+    "targetCommit": "6f8a09a8bd24c274b08a56cadc37a82380bfe625",
+    "priorAdopted147Commit": "58023edf48f40764c481d1367f62bc048c8a5059",
+    "prHead": "567ff1939ec2a5621bbbc8dd7d5f06e079a942b7",
+    "inventoryRun": 41932616672,
+    "inventoryDesktop": "5f48d70622cc351cdba7487a7b4b90663ffa54af",
+    "incrementAfterPr": "Five commits/seven non-runtime files; no original Prompt body change",
+    "actualGap": "Card default effort/transparentBackground and explicit sampling reset missing in5f, unlike implemented Studio options",
+    "successorSource": "a7ba948aea33be495632e2c4f2936b7334a73cd1",
+    "targetedRuns": [
+      41977286060,
+      41978162288
+    ],
+    "scopedCurrentPass": 26,
+    "fullIntegrationRun": 41979164537,
+    "privateOrdinaryCandidateRun": 41979164371,
+    "candidateVersion": "0.1.0-preview.1239",
+    "status": "TARGETED_ORIGINALS_PASS_FULL_AND_PRIVATE_ORDINARY_IN_PROGRESS_NOT_WHOLE148_COMPATIBILITY",
+    "evidence": "296_OFFICIAL148_INCREMENT_AND_CARD_V5_DEFAULTS.md",
+    "validatedBaselinePromoted": false,
+    "public1238Changed": false,
+    "humanAcceptance": false
   }
 }

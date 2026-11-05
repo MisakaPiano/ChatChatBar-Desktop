@@ -11,3 +11,9 @@
 必要定向验证包含inline旧/新字段JSON与真实请求、实际Core导入/导出/复制/覆盖、Desktop JSON和CCB-PNG实际typed往返、420/1100真实控件切换与两种reset。结果待原报告读回；不以代码存在冒称通过，不重跑无关回归、不调用Provider或操作现用H资料。公开1238/app5f/签名20保持冻结；本次未发布后继、非整148兼容或正式baseline提升。
 
 静态复核另发现“隐藏控件”不足以拒绝High时已产生的延后写回：Sampler/Steps/Rescale现在在实际edit闭包中按最新card和全局model重新判定有效Medium。测试保留实际High菜单OnClick和两个SetProgress回调，切Medium后触发再回High核值；V4.5保留Medium偏好时实际Sampler仍可修改。该风险来自源码复核，不冒称用户已重现。
+
+## 定向原件读回与未公开候选
+
+r01/41977286060实际d6df原4suite26PASS/0FAIL/SKIP（Core22、shared1、UI2、typed1）；r02/41978162288实际a7原UI2PASS/0FAIL/SKIP含延后旧回调、V4.5可编辑与null模型raw编辑。共享/Core和typed输入未变，保留首轮24与最新UI2合计26 scoped方法；两个物理运行不算28个不同方法。126213B/SHA dc68c1f9e83929d92a700fc2a266af7baf593f2268b83a1c96cce25b5600b187绑定最新原XML/source，420/1100两组件图实际查看，不冒全应用主题或原生人验。
+
+私有候选1239冻结a7ba948aea33be495632e2c4f2936b7334a73cd1（生产ad38同体）；完整158/41979164537、普通R36/41979164371控制c5e3797c运行，未读回前不记ready。公开1238与签20、原Prompt和正式baseline141不变，1238真人由root按实际新回执唯一记录。Suite收到差异但尚未实现且暂停，Desktop不代写或绕过该暂停。
