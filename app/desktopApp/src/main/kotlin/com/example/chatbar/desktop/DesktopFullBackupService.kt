@@ -33,7 +33,7 @@ internal class DesktopFullBackupService(
     /** Legacy v1 compatibility entry retained for existing internal restore regression. */
     suspend fun export(destination: Path, password: CharArray?): String = exportSnapshot(destination, password, false)
 
-    /** User-facing backup supports the current mapped code86 transport and owned preservation domains. */
+    /** User-facing backup supports the current mapped code87 transport and owned preservation domains. */
     suspend fun exportModern(destination: Path, password: CharArray?, includeCredentials: Boolean = false, selection: AppBackupSelection? = null): String =
         exportSnapshot(destination, password, true, includeCredentials, selection)
 
@@ -55,12 +55,12 @@ internal class DesktopFullBackupService(
                         DesktopFullBackupGraphValidation.validate(root)
                     }
                     stage = "FILES"
-                    snapshot = mapping.export(workspace, if (modern) 86 else 84,
+                    snapshot = mapping.export(workspace, if (modern) 87 else 84,
                         if (modern) StrictBackupZipReader.Limits().expanded else DesktopBackupPolicy.MAX_TOTAL, selection = selection)
                     if (includeCredentials) {
                         stage = "CREDENTIALS"
                         val entities = requireNotNull(snapshot).files.filterKeys { it.startsWith("entities/") }.mapValues { (path, file) ->
-                            DesktopBackupPolicy.entity(path, Files.readAllBytes(file), false, 86)
+                            DesktopBackupPolicy.entity(path, Files.readAllBytes(file), false, 87)
                         }
                         credentials = DesktopBackupExportCredentials.capture(requireNotNull(secretStore).invoke(), entities,
                             selection?.globalOptions ?: inspectionGlobalOptions)
@@ -99,7 +99,7 @@ internal class DesktopFullBackupService(
         mutex.withLock { gate.withNormalOperation { ensureWorkspace(); archive.inspect(source, password) } }
     } finally { password?.fill('\u0000') }
 
-    data class FileCheck(val summary: AppBackupSummary, val desktopOnly: Boolean)
+    data class FileCheck(val summary: AppBackupSummary, val desktopOnly: Boolean, val historicalDesktopV5Settings: Boolean = false)
 
     /** Current GUI check authenticates the whole streamed file without preparing legacy replacement. */
     suspend fun verifyFile(source: Path, password: CharArray?): FileCheck = try {
@@ -117,7 +117,7 @@ internal class DesktopFullBackupService(
             }) { context.ensureActive() }
             val m = verified.manifest
             FileCheck(AppBackupSummary(m.formatVersion, m.appVersionCode, m.appVersionName, m.createdAt,
-                m.sourceFilesRoot, m.counts, m.fileCount, m.totalBytes, m.preferencesSha256), desktopOnly)
+                m.sourceFilesRoot, m.counts, m.fileCount, m.totalBytes, m.preferencesSha256), desktopOnly || verified.historicalDesktopV5Settings, verified.historicalDesktopV5Settings)
         } }
     } finally { password?.fill('\u0000') }
 

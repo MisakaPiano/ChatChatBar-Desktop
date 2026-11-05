@@ -74,7 +74,7 @@ internal class MomentArchiveReadOnlyValidator {
                             require(java.text.Normalizer.isNormalized(target, java.text.Normalizer.Form.NFC))
                             require(foldedResources[target.lowercase(java.util.Locale.ROOT)].let { it == null || it == target })
                             val resource = inventory[target]
-                            val historical = resource == null && field == Field.SENDER_AVATAR && manifest.appVersionCode in 85..86
+                            val historical = resource == null && field == Field.SENDER_AVATAR && manifest.appVersionCode in 85..87
                             edges += Edge(identity, field, digest, when { resource != null -> Media.PRESENT; historical -> Media.MISSING_AT_SOURCE; else -> Media.MISSING }, resource?.sha256, resource?.size)
                         }
                         edge(Field.SENDER_AVATAR, post.senderAvatar)

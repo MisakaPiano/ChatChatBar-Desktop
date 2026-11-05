@@ -129,7 +129,7 @@ internal object DesktopHistoricalVoiceCustody {
         check(Files.size(path) <= DesktopBackupPolicy.MAX_JSON)
         val index = backupJson.decodeFromJsonElement<Index>(strict(Files.readAllBytes(path)))
         check(index.version == 1 && index.kind == "historical-live-voice-source" && hashes.matches(index.sourceSha256) &&
-            index.sourceCode in 84..86 && index.sourceFormat in 1..2 && (index.sourceFormat == 2) == (index.sourceScope != null) &&
+            index.sourceCode in 84..87 && index.sourceFormat in 1..2 && (index.sourceFormat == 2) == (index.sourceScope != null) &&
             (index.sourceFormat != 2 || index.sourceCode >= 85)) { "HISTORICAL_VOICE_INDEX_SCHEMA" }
         check(index.records.size in 1..10000 && index.files.size <= DesktopBackupPolicy.MAX_FILES && home.fileName.toString() == sealName(index))
         val files = index.files.associateBy { it.path }; check(files.size == index.files.size)

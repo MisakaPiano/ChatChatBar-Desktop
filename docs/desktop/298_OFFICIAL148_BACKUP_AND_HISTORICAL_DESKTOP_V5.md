@@ -1,0 +1,11 @@
+# 官方148整包与旧Desktop生图设置保全
+
+官方58023edf（147）→6f8a09a8（148）的整个domain/backup和data/local/entity目录零差异，版本码升87；嵌套NovelAiGenerationSettings/NovelAiCharacterImageSettings新增V5选项是已知类型差异。当前普通1239/appa7/full158/sign21仍独立冻结为私有草稿，本后继没有包含在其证据或包内，正式validated141不提升。
+
+已发现入口不止一处：stream与S0 header、entity版本排除、mapping、内部records再读，以及原声/SaveSlot/朋友圈custody回读均曾限制到86。当前后继按精确已知84–87扩展，旧84排除、资源/哈希/预算/取消/账户选择/最终提交规则保持。当前modern export与forMerge PC快照明确宣称87，legacy出口仍84；不默默删除新设置去伪装旧目标可用，旧官方85/86的新卡字段明确拒绝。
+
+历史例外以实际原件重建：冻结公开1238应用5f的生产Writer与原reader，在仅加test/workflow且生产零差分的89b78082/41982120863云端运行，生成2407B/SHA d01775e0695b1413905f98cbf32756061116a5cd3c72e9c13032eba5fb603cc0合成原包。它确为envelope2/code86/旧Desktop147名称，Studio Medium和透明true原已写入，不能让后继拒绝自身既有备份。原包不改；专用interop JSON/base64资源保存原字节及来源，非真实用户资料/凭据，非修改新包header。
+
+精确旧Desktop名称/code86/v2仅选择已知编码分支，不是来源认证。全部当前typed/路径/资源/凭据准入先成立，且只豁免冻结5f实际可写的NovelAiGenerationSettings两字段；旧码的NovelAiCharacterImageSettings新字段和未知键仍拒绝。按descriptor递归判定，不对普通文字或任意metadata/extensions的同名字做全文拦截。manifest可能最后到，stream记录受限版本标记后再按最终header决定，不收集额外全包JSON。保留原manifest事实，并在文件检查/合并预览显示历史Desktop设置扩展，不说它是官方147可消费的包。
+
+必要定向包括旧84–86和未知83/88、87明/密文、卡类型stream/S0/staging/87再导出、原2407B历史Studio正例、同标签伪造卡字段及未知键反例、真实merge取消/原根保持/新JsonFileStorage读回/87再导出，以及旧84+新87原声和SaveSlot custody重开、朋友圈86+87缺头像保全。原断言不删；新增header支持不能只证明能进预览。结果待精确云端原报告，不调用Provider、不碰现用H，不用未接线synthetic prototype冒充运行入口。

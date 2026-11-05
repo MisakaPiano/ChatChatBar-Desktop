@@ -60,7 +60,7 @@ internal class DesktopFullBackupStaging private constructor(
                 context.ensureActive()
                 check(files.keys == verified.inventory.keys)
                 val hashes = files.mapValues { (_, path) -> DesktopArchiveFiles.hash(path, DesktopFullBackupSource.MAX_FILE) }
-                DesktopFullBackupStaging(verified, files.toMap(), DesktopBackupRecords.files(files.filterKeys { it.startsWith("entities/") }, hashes), requireNotNull(preferences), hasDesktopParticipation, secrets, hashes, scratch)
+                DesktopFullBackupStaging(verified, files.toMap(), DesktopBackupRecords.files(files.filterKeys { it.startsWith("entities/") }, hashes), requireNotNull(preferences), hasDesktopParticipation || verified.historicalDesktopV5Settings, secrets, hashes, scratch)
             } catch (failure: Throwable) {
                 secrets.close()
                 try { scratch.close() } catch (cleanup: Throwable) { failure.addSuppressed(cleanup) }

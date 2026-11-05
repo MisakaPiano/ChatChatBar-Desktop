@@ -21,7 +21,7 @@ internal fun DesktopMergeImportPanel(controller: DesktopMergeImportController, o
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         DesktopDataSectionHeading("导入与合并")
         StatusText("保留电脑现有内容，将手机数据合并到新的独立目录。冲突由你选择，原目录和备份文件保留。")
-        StatusText("按官方 1.4.5–1.4.7 格式检查备份，不支持的内容会在提交前拒绝。历史录音和朋友圈原始内容单独保全，不会重新绑定录音版本或执行朋友圈任务。")
+        StatusText("按官方 1.4.5–1.4.8 格式检查备份，不支持的内容会在提交前拒绝。历史录音和朋友圈原始内容单独保全，不会重新绑定录音版本或执行朋友圈任务。")
         if (!state.restartRequired) {
             BackupPasswordField("加密备份密码（未加密请留空）", password, !state.busy) { password = it }
             ActionRow {
@@ -34,6 +34,7 @@ internal fun DesktopMergeImportPanel(controller: DesktopMergeImportController, o
         if (state.ready && !state.restartRequired) {
             StatusText("已校验 ${state.files} 个文件 · 来源 ${state.versionName.take(80)}")
             if (state.desktopParticipation) StatusText("该备份包含 Desktop 扩展（人物／玩家设置、命名账户或动态图片版本）；手机端不保证保留这些内容。", DesktopBootstrapColors.warning)
+            if (state.historicalDesktopV5Settings) StatusText("已保留旧 Desktop 备份中的生图设置扩展；这些设置不代表官方 1.4.7 支持。", DesktopBootstrapColors.warning)
             if (state.conflicts.isEmpty()) StatusText("未发现需要选择的数据冲突。电脑和手机各自独有内容将保留。")
             if (state.conflicts.isNotEmpty()) StatusText("已选择 ${choices.size} / ${state.conflicts.size} 项数据冲突")
             state.conflicts.groupBy { conflict ->

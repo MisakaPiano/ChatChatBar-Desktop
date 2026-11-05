@@ -17,7 +17,8 @@ internal object DesktopFullBackupSource {
         fun media(path: String, input: InputStream)
     }
     class Verified internal constructor(val manifest: InspectionManifest, val inventory: Map<String, AppBackupFileRecord>,
-        val encrypted: Boolean, val sourceHash: String, val sourceBytes: Long) {
+        val encrypted: Boolean, val sourceHash: String, val sourceBytes: Long,
+        val historicalDesktopV5Settings: Boolean = false) {
         override fun toString() = "VerifiedFullBackup(code=${manifest.appVersionCode},files=${inventory.size})"
     }
     class Refusal(val stage: String) : IllegalArgumentException("FULL_BACKUP_SOURCE_$stage") {
@@ -58,6 +59,8 @@ internal object DesktopFullBackupSource {
                 var preferencesHash: String? = null
                 var inventory: Map<String, AppBackupFileRecord>? = null
                 var incompatible84 = false
+                var incompatiblePre148 = false
+                var incompatibleHistoricalDesktopV5 = false
                 val seen = linkedMapOf<String, AppBackupFileRecord>()
                 val entities = linkedMapOf<String, JsonObject>()
                 phase = "AUTHENTICATION_ZIP"
@@ -109,9 +112,15 @@ internal object DesktopFullBackupSource {
                                                 }
                                                 "moment_tasks" -> backupJson.decodeFromJsonElement<MomentTaskSnapshot>(value)
                                                 else -> {
-                                                    DesktopOfficialBackupEntitySchema.validate(type, value, 86)
+                                                    DesktopOfficialBackupEntitySchema.validate(type, value, 87)
                                                     if (!incompatible84) try { DesktopOfficialBackupEntitySchema.validateVersion(type, value, 84) }
                                                     catch (_: Exception) { incompatible84 = true }
+                                                    if (!incompatibleHistoricalDesktopV5) try { DesktopOfficialBackupEntitySchema.validateVersion(type, value, 86) }
+                                                    catch (_: Exception) {
+                                                        incompatiblePre148 = true
+                                                        try { DesktopOfficialBackupEntitySchema.validateVersion(type, value, 86, historicalDesktopV5 = true) }
+                                                        catch (_: Exception) { incompatibleHistoricalDesktopV5 = true }
+                                                    }
                                                 }
                                             }
                                             entities[path] = DesktopBackupRecords.scopeRecord(value)
@@ -138,7 +147,7 @@ internal object DesktopFullBackupSource {
                 }
                 phase = "MANIFEST_INVENTORY"
                 val m = requireNotNull(manifest)
-                require(m.formatVersion == envelope && m.appVersionCode in 84..86 && (envelope != 2 || m.appVersionCode >= 85))
+                require(m.formatVersion == envelope && m.appVersionCode in 84..87 && (envelope != 2 || m.appVersionCode >= 85))
                 require((envelope == 2) == (m.scope != null))
                 if (m.appVersionCode == 84) require("scope" !in manifestFields && "retainedPreferences" !in preferenceFields)
                 require(preferencesHash != null && m.preferencesSha256 == preferencesHash && inventory == seen)
@@ -147,11 +156,13 @@ internal object DesktopFullBackupSource {
                 require(m.counts == counts)
                 phase = "ENTITY_SCHEMA"
                 require(m.appVersionCode != 84 || !incompatible84)
+                val historicalDesktopV5 = incompatiblePre148 && !incompatibleHistoricalDesktopV5 && DesktopBackupVersionProfile.historicalDesktop147(m)
+                require(m.appVersionCode >= 87 || !incompatiblePre148 || historicalDesktopV5)
                 phase = "SELECTION_SCOPE"
                 m.scope?.let { DesktopBackupReadOnlyInspector().scopeReport(it, counts, entities) }
                 active()
                 require(channel.position() == size && Files.size(source) == size)
-                return Verified(m, seen.toMap(), encrypted, hex(digest.digest()), size)
+                return Verified(m, seen.toMap(), encrypted, hex(digest.digest()), size, historicalDesktopV5)
             }
         } catch (cancelled: java.util.concurrent.CancellationException) { throw cancelled
         } catch (failure: StrictBackupZipReader.Refusal) {

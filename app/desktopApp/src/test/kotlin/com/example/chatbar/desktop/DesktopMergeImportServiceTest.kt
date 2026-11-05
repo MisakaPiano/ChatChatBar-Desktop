@@ -141,7 +141,8 @@ class DesktopMergeImportServiceTest {
         fun keyChoices(p: DesktopMergeImportService.Preview) = p.credentialConflicts.associate { it.kind to DesktopMergeCredentials.Choice.KEEP_COMPUTER }
     }
     private suspend fun fixture(replace: ((Path, Path) -> Unit)? = null,
-        quiesce: suspend (suspend () -> Unit) -> Unit = { it() }, block: suspend Fixture.() -> Unit) {
+        quiesce: suspend (suspend () -> Unit) -> Unit = { it() }, archiveBytes: ByteArray? = null,
+        block: suspend Fixture.() -> Unit) {
         val base = Files.createTempDirectory(Files.createDirectories(Path.of("build/preview-synthetic/merge-service").toAbsolutePath()), "case-")
         val root = Files.createDirectory(base.resolve("pc")); val credentials = Files.createDirectory(base.resolve("credentials"))
         val bootstrap = base.resolve(DesktopDataDirectory.BOOTSTRAP_FILE_NAME)
@@ -153,7 +154,7 @@ class DesktopMergeImportServiceTest {
         val gate = DesktopDataOperationCoordinator()
         val settings = DesktopSettingsStore(root, gate)
         settings.save((settings.load() as DesktopSettingsLoadResult.Missing).document, DesktopSettings())
-        val archive = Files.write(base.resolve("synthetic.cbbackup"), CensusWireFixtures.bytes(
+        val archive = Files.write(base.resolve("synthetic.cbbackup"), archiveBytes ?: CensusWireFixtures.bytes(
             prefs = """{"novelAiToken":"FAKE_PHONE_GLOBAL"}""", files = records("Phone", "https://phone.invalid/v1") +
                 ("entities/model_configs/m.json" to CensusWireFixtures.model(extra = ",\"templateType\":\"OPENAI\"").replace("https://synthetic.invalid/v1", "https://phone.invalid/v1").toByteArray())))
         val old = InMemoryDesktopSecretStore().apply { save(DesktopCredentialKey.ModelApiKey("m"), "FAKE_PC_MODEL"); save(DesktopCredentialKey.NovelAiToken, "FAKE_PC_GLOBAL") }
@@ -281,6 +282,58 @@ class DesktopMergeImportServiceTest {
             assertEquals("FAKE_PC_GLOBAL", newStore.load(DesktopCredentialKey.NovelAiToken))
             assertContentEquals(Files.readAllBytes(root.resolve(DesktopSettingsStore.SETTINGS_FILE_NAME)), Files.readAllBytes(target.resolve(DesktopSettingsStore.SETTINGS_FILE_NAME)))
             original.forEach { (path, bytes) -> assertContentEquals(bytes, Files.readAllBytes(root.resolve(path))) }
+        }
+    }
+
+    @Test fun `official87 card and actual published1238 Studio backup merge reopen and reexport without lost options`() = runBlocking<Unit> {
+        val imageCard = """{"id":"c","name":"Phone","defaultNovelAiImageModel":"V5_FULL","defaultImageGenerationSettings":{"effort":"MEDIUM","transparentBackground":true},"createdAt":1,"updatedAt":1}""".toByteArray()
+        val phone87 = CensusWireFixtures.bytes(version = 2, code = 87, prefs = "{}",
+            files = records("Phone", "https://phone.invalid/v1") + ("entities/character_cards/c.json" to imageCard),
+            scope = OfficialWireScope(emptySet(), 1, 1, 1, 1, 1, false, false, false, false,
+                sessionDefaultChoice = OfficialWireSessionChoice()))
+        for ((bytes, historic) in listOf(published1238StudioBackup() to true, phone87 to false)) {
+            fixture(archiveBytes = bytes) {
+                val cancelled = inspect()
+                val cancelledTarget = base.resolve("v5-cancelled")
+                assertFailsWith<CancellationException> {
+                    service.commitWithProgress(cancelled, cancelledTarget, choices(cancelled), keyChoices(cancelled), true,
+                        progress = { if (it.verifiedFiles > 0) throw CancellationException("SYNTHETIC_V5_CANCEL") })
+                }
+                assertFalse(service.restartRequired)
+                assertEquals(root, (DesktopBootstrapSettingsStore(source.bootstrapPath).load() as DesktopBootstrapLoadResult.Loaded).document.selection.customRoot)
+                assertFails { DesktopFreshRootAuthority(cancelledTarget, credentials, fake).verifyAndResolve() }
+                val p = inspect()
+                assertEquals(historic, p.historicalDesktopV5Settings)
+                val target = base.resolve("merged-v5")
+                assertEquals(DesktopMergeImportService.Publication.COMMITTED, service.commit(p, target, choices(p), keyChoices(p), true))
+                val storage = JsonFileStorage(target)
+                if (historic) {
+                    val draft = assertNotNull(storage.loadSingleton("novelai_studio_draft", com.example.chatbar.domain.image.NovelAiStudioDraft.serializer()))
+                    assertEquals(com.example.chatbar.domain.image.NovelAiEffort.MEDIUM, draft.v5Settings.effort)
+                    assertTrue(draft.v5Settings.transparentBackground)
+                } else {
+                    val imported = storage.loadAll("character_cards", CharacterCard.serializer()).single { it.name == "Phone" }
+                    assertEquals(com.example.chatbar.domain.image.NovelAiEffort.MEDIUM, imported.defaultImageGenerationSettings?.effort)
+                    assertEquals(true, imported.defaultImageGenerationSettings?.transparentBackground)
+                }
+                gate.withExclusiveMaintenance {
+                    DesktopFullBackupMapping(target).export(base.resolve("v5-export-work"), 87, StrictBackupZipReader.Limits().expanded).use { exported ->
+                        val output = base.resolve("v5-return.cbbackup")
+                        DesktopFullBackupWriter.export(exported.files, output, null, exported.preferences)
+                        DesktopFullBackupStaging.prepare(output, null, base.resolve("v5-return-work")).use { returned ->
+                            assertEquals(87, returned.source.manifest.appVersionCode)
+                            assertFalse(returned.source.historicalDesktopV5Settings)
+                            if (historic) {
+                                val draft = backupJson.decodeFromJsonElement<com.example.chatbar.domain.image.NovelAiStudioDraft>(returned.entities.getValue("entities/novelai_studio_draft.json"))
+                                assertEquals(com.example.chatbar.domain.image.NovelAiEffort.MEDIUM, draft.v5Settings.effort)
+                                assertTrue(draft.v5Settings.transparentBackground)
+                            } else assertTrue(returned.entities.values.any { it["name"] == JsonPrimitive("Phone") &&
+                                it["defaultImageGenerationSettings"]?.jsonObject?.get("transparentBackground") == JsonPrimitive(true) })
+                        }
+                    }
+                }
+                original.forEach { (path, content) -> assertContentEquals(content, Files.readAllBytes(root.resolve(path))) }
+            }
         }
     }
 

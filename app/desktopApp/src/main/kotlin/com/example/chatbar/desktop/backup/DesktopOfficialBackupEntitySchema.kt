@@ -7,18 +7,18 @@ import kotlinx.serialization.json.*
 /** Shared Entity serializers plus explicit pinned wire-version exclusions, never a second Entity model. */
 @OptIn(ExperimentalSerializationApi::class)
 internal object DesktopOfficialBackupEntitySchema {
-    fun validate(type: String, value: JsonObject, appVersionCode: Int) {
-        require(appVersionCode in 84..86)
+    fun validate(type: String, value: JsonObject, appVersionCode: Int, historicalDesktopV5: Boolean = false) {
+        require(appVersionCode in 84..87)
         val serializer = requireNotNull(DesktopBackupPolicy.schemas[type])
-        versioned(serializer.descriptor, value, appVersionCode, 0)
+        versioned(serializer.descriptor, value, appVersionCode, 0, historicalDesktopV5)
         backupJson.decodeFromJsonElement(serializer, value)
     }
 
-    fun validateVersion(type: String, value: JsonObject, appVersionCode: Int) {
-        versioned(requireNotNull(DesktopBackupPolicy.schemas[type]).descriptor, value, appVersionCode, 0)
+    fun validateVersion(type: String, value: JsonObject, appVersionCode: Int, historicalDesktopV5: Boolean = false) {
+        versioned(requireNotNull(DesktopBackupPolicy.schemas[type]).descriptor, value, appVersionCode, 0, historicalDesktopV5)
     }
 
-    private fun versioned(descriptor: SerialDescriptor, value: JsonElement, code: Int, depth: Int) {
+    private fun versioned(descriptor: SerialDescriptor, value: JsonElement, code: Int, depth: Int, historicalDesktopV5: Boolean) {
         require(depth <= 64)
         if (value == JsonNull) return
         if (code == 84 && descriptor.serialName == "com.example.chatbar.domain.image.NovelAiSampler") {
@@ -27,6 +27,11 @@ internal object DesktopOfficialBackupEntitySchema {
         when (descriptor.kind) {
             StructureKind.CLASS, StructureKind.OBJECT -> {
                 val obj = value as? JsonObject ?: return // The actual serializer diagnoses its expected type.
+                if (code < 87 && !(historicalDesktopV5 && descriptor.serialName == "com.example.chatbar.domain.image.NovelAiGenerationSettings") && descriptor.serialName in setOf(
+                        "com.example.chatbar.domain.image.NovelAiCharacterImageSettings",
+                        "com.example.chatbar.domain.image.NovelAiGenerationSettings")) {
+                    require("effort" !in obj && "transparentBackground" !in obj) { "OFFICIAL_PRE148_V5_OPTIONS_UNSUPPORTED" }
+                }
                 if (code == 84) {
                     if (descriptor.serialName == "com.example.chatbar.data.local.entity.CharacterCard")
                         require("defaultImageGenerationSettings" !in obj) { "OFFICIAL145_CARD_FIELD_UNSUPPORTED" }
@@ -35,11 +40,11 @@ internal object DesktopOfficialBackupEntitySchema {
                 }
                 obj.forEach { (key, child) ->
                     val index = descriptor.getElementIndex(key)
-                    if (index >= 0) versioned(descriptor.getElementDescriptor(index), child, code, depth + 1)
+                    if (index >= 0) versioned(descriptor.getElementDescriptor(index), child, code, depth + 1, historicalDesktopV5)
                 }
             }
-            StructureKind.LIST -> (value as? JsonArray)?.forEach { versioned(descriptor.getElementDescriptor(0), it, code, depth + 1) }
-            StructureKind.MAP -> (value as? JsonObject)?.values?.forEach { versioned(descriptor.getElementDescriptor(1), it, code, depth + 1) }
+            StructureKind.LIST -> (value as? JsonArray)?.forEach { versioned(descriptor.getElementDescriptor(0), it, code, depth + 1, historicalDesktopV5) }
+            StructureKind.MAP -> (value as? JsonObject)?.values?.forEach { versioned(descriptor.getElementDescriptor(1), it, code, depth + 1, historicalDesktopV5) }
             PrimitiveKind.BOOLEAN -> {
                 val primitive = value as? JsonPrimitive ?: return
                 require(!primitive.isString && primitive.booleanOrNull != null) { "OFFICIAL_BOOLEAN_TYPE" }

@@ -24,7 +24,7 @@ class DesktopMergeRootPreparationTest {
         "entities/chat_sessions/$unique.json" to bytes(ChatSession.serializer(), ChatSession(unique, "c", "$label unique", createdAt = 1, updatedAt = 1)),
         "entities/chat_messages/${unique}_${unique}-message.json" to bytes(ChatMessage.serializer(), ChatMessage("$unique-message", unique, MessageRole.USER, "$label unique content", createdAt = 1, updatedAt = 1)))
     private suspend fun fixture(withPackage: Boolean = false, withEmbedding: Boolean = false, withPlanning: Boolean = false, withHistoricalLive: Boolean = false,
-        withImportedPackage: Boolean = false,
+        withImportedPackage: Boolean = false, sourceCode: Int = 84,
         action: suspend (Path, Path, DesktopFullBackupMapping.Export, DesktopFullBackupStaging, DesktopMergePreview.Selection) -> Unit) {
         val base = Files.createTempDirectory(Files.createDirectories(Path.of("build/preview-synthetic/merge-root").toAbsolutePath()), "case-")
         val pcRoot = Files.createDirectory(base.resolve("pc")); val original = records("Computer", "pc-only").toMutableMap()
@@ -86,7 +86,14 @@ class DesktopMergeRootPreparationTest {
                     incoming["images/source.png"] = png
                     incoming["entities/character_cards/c.json"] = bytes(CharacterCard.serializer(), CharacterCard("c", "Phone", avatar = "chatbar-backup-file:images/source.png", createdAt = 1, updatedAt = 1))
                 }
-                val source = Files.write(base.resolve("synthetic.cbbackup"), CensusWireFixtures.bytes(prefs = "{}", files = incoming))
+                val sourceScope = if (sourceCode >= 85) {
+                    val cards = incoming.keys.count { DesktopBackupPolicy.entityType(it) == "character_cards" }
+                    val sessions = incoming.keys.count { DesktopBackupPolicy.entityType(it) == "chat_sessions" }
+                    OfficialWireScope(emptySet(), cards, sessions, sessions, sessions, sessions, false, false, false, false,
+                        sessionDefaultChoice = OfficialWireSessionChoice())
+                } else null
+                val source = Files.write(base.resolve("synthetic.cbbackup"), CensusWireFixtures.bytes(prefs = "{}", files = incoming,
+                    code = sourceCode, version = if (sourceCode >= 85) 2 else 1, scope = sourceScope))
                 val before = Files.readAllBytes(source)
                 DesktopFullBackupStaging.prepare(source, null, work).use { phone ->
                     val pcEntities = DesktopMergeRootPreparation.computerEntities(pc)
@@ -102,7 +109,7 @@ class DesktopMergeRootPreparationTest {
     }
 
     @Test fun `authenticated historical live voice keeps old ID with original custody and current playback exclusion`() = runBlocking<Unit> {
-        fixture(withHistoricalLive = true) { base, _, pc, phone, selected ->
+        for (code in listOf(84, 87)) fixture(withHistoricalLive = true, sourceCode = code) { base, _, pc, phone, selected ->
             val root = Files.createDirectory(base.resolve("merged")); val authority = DesktopFreshRootAuthority(root, Files.createDirectory(base.resolve("credentials")), fake)
             own(root, base).use {
                 val pending = authority.begin()
@@ -230,7 +237,7 @@ class DesktopMergeRootPreparationTest {
     }
 
     @Test fun `actual root retains image plus original and forked historical package through modern export`() = runBlocking<Unit> {
-        fixture(withPackage = true) { base, _, pc, phone, selected ->
+        for (code in listOf(84, 87)) fixture(withPackage = true, sourceCode = code) { base, _, pc, phone, selected ->
             val root = Files.createDirectory(base.resolve("merged")); val authority = DesktopFreshRootAuthority(root, Files.createDirectory(base.resolve("credentials")), fake)
             own(root, base).use {
                 val pending = authority.begin()
@@ -248,9 +255,15 @@ class DesktopMergeRootPreparationTest {
                     val output = base.resolve("merged.cbbackup")
                     DesktopFullBackupWriter.export(exported.files, output, null, exported.preferences)
                     DesktopFullBackupStaging.prepare(output, null, Files.createDirectory(base.resolve("roundtrip"))).use { returned ->
+                        assertEquals(87, returned.source.manifest.appVersionCode)
                         assertTrue(returned.files.keys.any { it.startsWith("${DesktopSaveSlotSourceCustody.ROOT}/") })
                         assertTrue(returned.entities.values.any { it["content"] == JsonPrimitive("Computer content") })
                         assertTrue(returned.entities.values.any { it["content"] == JsonPrimitive("Phone content") })
+                        val other = Files.createDirectory(base.resolve("reopened-custody-root"))
+                        DesktopFullBackupMapping(other).restoreMerged(returned.files, base.resolve("reopened-custody-work"), BackupPreferences()).use { mapped ->
+                            DesktopSaveSlotSourceCustody.validate(mapped.directory)
+                            DesktopFullBackupGraphValidation.validate(mapped.directory, futureRoot = other)
+                        }
                     }
                 }
             }

@@ -8,6 +8,17 @@ import kotlinx.coroutines.flow.first
 import kotlin.test.*
 
 class DesktopFullBackupServiceTest {
+    @Test fun `file check retains actual old Desktop V5 options with explicit historical classification`() = runBlocking<Unit> {
+        Fixture().use { f ->
+            val original = published1238StudioBackup()
+            val input = Files.write(f.base.resolve("historical-v5.cbbackup"), original)
+            val checked = f.service.verifyFile(input, null)
+            assertEquals(86, checked.summary.appVersionCode)
+            assertTrue(checked.historicalDesktopV5Settings)
+            assertTrue(checked.desktopOnly)
+            assertContentEquals(original, Files.readAllBytes(input))
+        }
+    }
     @Test fun `late cancellation cannot label a durably scheduled restore as undone or remove its pending journal`() = runBlocking {
         Fixture().use { f ->
             f.service.release(f.seed())
@@ -108,7 +119,7 @@ class DesktopFullBackupServiceTest {
                 val state = withTimeout(20_000) { controller.state.first { !it.busy } }
                 assertNull(state.error)
                 assertEquals(2, state.summary!!.formatVersion)
-                assertEquals(86, state.summary!!.appVersionCode)
+                assertEquals(87, state.summary!!.appVersionCode)
                 assertEquals(exportReads, reads)
                 assertTrue(password == null || password.all { it == '\u0000' })
                 assertEquals(0L, Files.list(f.root.resolve("backups/.full-app-work")).use { it.count() })
@@ -262,7 +273,7 @@ class DesktopFullBackupServiceTest {
         }
     }
 
-    @Test fun `modern user export preserves code86 fields plain and encrypted without exporting known credentials`() = runBlocking<Unit> {
+    @Test fun `modern user export uses code87 plain and encrypted without exporting known credentials`() = runBlocking<Unit> {
         for (encrypted in listOf(false, true)) Fixture().use { f ->
             val card = f.root.resolve("entities/character_cards/c.json")
             Files.createDirectories(card.parent)
@@ -277,7 +288,7 @@ class DesktopFullBackupServiceTest {
             val readPassword = if (encrypted) "FAKE_MODERN_EXPORT_PASSWORD".toCharArray() else null
             DesktopFullBackupStaging.prepare(output, readPassword, Files.createDirectory(f.base.resolve("inspection"))).use { inspected ->
                 assertEquals(2, inspected.source.manifest.formatVersion)
-                assertEquals(86, inspected.source.manifest.appVersionCode)
+                assertEquals(87, inspected.source.manifest.appVersionCode)
                 assertEquals(encrypted, inspected.source.encrypted)
                 assertEquals(kotlinx.serialization.json.JsonPrimitive(false), inspected.entities.getValue("entities/character_cards/c.json")
                     .getValue("defaultImageGenerationSettings").let { it as kotlinx.serialization.json.JsonObject }.getValue("varietyPlus"))

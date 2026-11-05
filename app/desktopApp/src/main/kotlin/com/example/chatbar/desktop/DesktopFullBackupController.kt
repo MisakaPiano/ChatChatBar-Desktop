@@ -63,7 +63,8 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
         releaseInspection()
         val result = service.verifyFile(path, password)
         mutable.update { it.copy(summary = result.summary, desktopOnly = result.desktopOnly) }
-        "文件完整性与格式校验完成；没有导入或替换当前数据。恢复请使用合并预览。"
+        "文件完整性与格式校验完成；没有导入或替换当前数据。恢复请使用合并预览。" +
+            if (result.historicalDesktopV5Settings) " 已保留旧 Desktop 生图设置扩展，不代表官方 1.4.7 支持。" else ""
     }
 
     fun restore() = action(null, task = DesktopBackupTask.RESTORE_PREPARATION) {

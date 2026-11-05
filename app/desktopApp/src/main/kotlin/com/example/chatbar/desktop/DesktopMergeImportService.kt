@@ -31,6 +31,7 @@ internal class DesktopMergeImportService(
         val data: DesktopMergePreview, internal val desktopSettings: ByteArray?, val modelDetails: Map<String, ModelDetails>) : AutoCloseable {
         val code get() = phone.source.manifest.appVersionCode
         val versionName get() = phone.source.manifest.appVersionName
+        val historicalDesktopV5Settings get() = phone.source.historicalDesktopV5Settings
         val fileCount get() = phone.source.inventory.size
         val hasDesktopParticipation get() = phone.hasDesktopParticipation ||
             phone.secrets.metadata.any { it.kind in setOf(ImportCredentialKind.DESKTOP_LLM_ACCOUNTS,
@@ -84,7 +85,7 @@ internal class DesktopMergeImportService(
                 beforeSnapshot()
                 val result = gate.withExclusiveMaintenance {
                     checkOwnedSource()
-                    val snapshot = mapping.export(workspace, 86, StrictBackupZipReader.Limits().expanded, forMerge = true).also { pc = it }
+                    val snapshot = mapping.export(workspace, 87, StrictBackupZipReader.Limits().expanded, forMerge = true).also { pc = it }
                     val entities = DesktopMergeRootPreparation.computerEntities(snapshot)
                     val captured = DesktopMergeCredentials.capture(entities, phone, oldStore).also { keys = it }
                     val data = DesktopMergePreview.create(entities, phone.entities,

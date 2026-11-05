@@ -28,7 +28,7 @@ internal class DesktopBackupReadOnlyInspector(private val afterAuthentication: (
         val scope: ScopeReport?, val credentials: Set<CredentialCategory>, val uninterpretedEntities: Int,
         val modelRecords: Int, val embeddingRecords: Int, val formatCardRecords: Int,
         val worldBookRecords: Int, val saveSlotPackages: Int, val momentPosts: Int, val momentTasks: Int,
-        val restoreAssessment: RestoreAssessment
+        val restoreAssessment: RestoreAssessment, val historicalDesktopV5Settings: Boolean = false
     ) {
         val formatReadable: Boolean get() = true
         val restoreSupported: Boolean get() = false // This result can NEVER authorize restore.
@@ -171,19 +171,23 @@ internal class DesktopBackupReadOnlyInspector(private val afterAuthentication: (
             }
             stage = "MANIFEST"
             val m = requireNotNull(manifest)
-            require(m.formatVersion == version && m.appVersionCode in 84..86)
+            require(m.formatVersion == version && m.appVersionCode in 84..87)
             require(m.formatVersion in 1..2 && (version != 2 || m.appVersionCode >= 85))
             require(inventory == seen && preferenceHash != null && preferenceHash == m.preferencesSha256)
             require(m.fileCount == seen.size && m.totalBytes == seen.values.sumOf { it.size })
             val counts = seen.keys.filter { it.startsWith("entities/") }.groupingBy(DesktopBackupPolicy::entityType).eachCount()
             require(m.counts == counts)
             stage = "ENTITY_SCHEMA"
+            var historicalDesktopV5 = false
+            val historicalProfile = DesktopBackupVersionProfile.historicalDesktop147(m)
             for ((path, value) in entities) {
                 context.ensureActive()
                 if (DesktopBackupPolicy.entityType(path) in DesktopBackupPolicy.schemas &&
                     DesktopBackupPolicy.entityType(path) !in setOf("moment_posts", "moment_tasks")) {
-                    DesktopOfficialBackupEntitySchema.validate(DesktopBackupPolicy.entityType(path), value, m.appVersionCode)
-                    DesktopBackupPolicy.entity(path, value.toString().toByteArray(), exporting = true, wireVersionCode = m.appVersionCode)
+                    DesktopOfficialBackupEntitySchema.validate(DesktopBackupPolicy.entityType(path), value, m.appVersionCode, historicalDesktopV5 = historicalProfile)
+                    if (historicalProfile) try { DesktopOfficialBackupEntitySchema.validateVersion(DesktopBackupPolicy.entityType(path), value, m.appVersionCode) }
+                    catch (_: Exception) { historicalDesktopV5 = true }
+                    DesktopBackupPolicy.entity(path, value.toString().toByteArray(), exporting = true, wireVersionCode = if (historicalProfile) 87 else m.appVersionCode)
                 }
             }
             stage = "SCOPE"
@@ -197,7 +201,7 @@ internal class DesktopBackupReadOnlyInspector(private val afterAuthentication: (
                 counts.count("embedding_configs") + counts.count("embedding_model_config"), counts.count("format_cards"), counts.count("world_books"),
                 seen.keys.count { it.startsWith("save_slot_packages/") }, counts.count("moment_posts"), counts.count("moment_tasks"),
                 if (version == 1 && m.appVersionCode == 84 && credentials.isEmpty() && uninterpreted == 0)
-                    RestoreAssessment.REQUIRES_EXISTING_V1_PREPARATION else RestoreAssessment.UNSUPPORTED)
+                    RestoreAssessment.REQUIRES_EXISTING_V1_PREPARATION else RestoreAssessment.UNSUPPORTED, historicalDesktopV5)
         } catch (cancelled: CancellationException) { throw cancelled
         } catch (_: Exception) { throw InspectionFailure(stage) // discard causes/parser snippets containing secrets
         } finally { sourceBytes?.fill(0); payload?.fill(0) }
