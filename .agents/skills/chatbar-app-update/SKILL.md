@@ -5,6 +5,8 @@ description: Maintain ChatBar update discovery, GitHub Release Notes retrieval a
 
 # ChatBar App Update
 
+`test_proxy_cli.py` complements first-byte tests: the actual prepared helper CLI consumes application route JSON, discovers synthetic authenticated metadata over locally trusted HTTPS/HTTP CONNECT, follows the original permitted CDN redirect over SOCKS5, downloads a never-executed fixture, and independently re-verifies it. Its process-local synthetic CA does not disable certificate/hostname validation or modify the OS store. This is separate from real GitHub discovery/user acceptance and from `test_client.py`, whose policy fixtures import repository modules.
+
 Desktop manual release checks use `DesktopUpdateChecker`; installed startup discovery/download/reverification use the separate `DesktopUpdateRuntime` Python TUF helper. Both capture the currently saved application proxy policy for each new operation. `DesktopUpdateNetworkRouting` uses the shared selector and explicit selected-route socket factory; its four permitted HTTPS host routes preserve HTTP/SOCKS/DIRECT types and are passed as noncredential JSON to the helper. `GitHubFetcher` selects urllib3 HTTP CONNECT/PySocks managers per typed destination without changing the existing URL/signature/redirect/attempt controls. PySocks is included in the updater's hash-locked wheels. The physical routing regression covers the checker/default constructor and hot next-request changes in fresh JVMs; its opt-in packaged run verifies actual app-image class origins. `test_proxy_transport.py` verifies real helper CONNECT/SOCKS/TLS first bytes from the prepared runtime, separately from TUF policy tests.
 
 ## Entry Points
