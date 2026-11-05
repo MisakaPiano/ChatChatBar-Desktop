@@ -331,7 +331,8 @@ class DesktopTypedTransferControllerTest {
     fun `Character export JSON and rendered CCB PNG round trip through authoritative decoder`() = runTest {
         withFixture { fixture ->
             val settings = com.example.chatbar.domain.image.NovelAiCharacterImageSettings(steps = 22, guidance = 4f,
-                cfgRescale = 0.4f, varietyPlus = true)
+                cfgRescale = 0.4f, varietyPlus = true,
+                effort = com.example.chatbar.domain.image.NovelAiEffort.MEDIUM, transparentBackground = true)
             val packaged = packageData("Export")
             val imported = fixture.container.characterTransfers.importNew(packaged.copy(card = packaged.card.copy(defaultImageGenerationSettings = settings)))
             val jsonTarget = fixture.root.resolve("out.json")

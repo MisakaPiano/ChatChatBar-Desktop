@@ -68,7 +68,8 @@ class CharacterCardTransferCoreTest {
             val f = fixture()
             val settings = com.example.chatbar.domain.image.NovelAiCharacterImageSettings(
                 sampler = com.example.chatbar.domain.image.NovelAiSampler.EULER, steps = 24,
-                guidance = 5.5f, cfgRescale = 0.25f, varietyPlus = true)
+                guidance = 5.5f, cfgRescale = 0.25f, varietyPlus = true,
+                effort = com.example.chatbar.domain.image.NovelAiEffort.MEDIUM, transparentBackground = true)
             val base = completePackage()
             val packaged = base.copy(card = base.card.copy(defaultNovelAiImageModel = model,
                 defaultImageGenerationSettings = settings))

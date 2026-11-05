@@ -65,6 +65,48 @@ class DesktopCharacterImageDefaultsTest {
             } finally { scene.close() }
         }
     }
+    @Test fun `card V5 controls preserve High sampling and suspended options through model changes and explicit reset`() = runBlocking(edt) {
+        for (width in listOf(420, 1100)) {
+            val original = NovelAiCharacterImageSettings(sampler = NovelAiSampler.DPM_PLUS_PLUS_2M_SDE,
+                steps = 31, guidance = 6.5f, cfgRescale = .4f, varietyPlus = true)
+            var card by mutableStateOf(CharacterCard("v5-fixture", "Synthetic V5", defaultNovelAiImageModel = NovelAiImageModel.V5_FULL,
+                defaultImageGenerationSettings = original, createdAt = 1, updatedAt = 1))
+            val scene = ImageComposeScene(width, 900, coroutineContext = edt) {
+                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp)) {
+                    DesktopCharacterImageDefaults(card, NovelAiImageModel.V4_5_FULL) { card = it(card) }
+                }
+            }
+            try {
+                scene.until { has("Sampler · DPM++ 2M SDE ▾") }
+                scene.click("Medium"); scene.click("透明背景")
+                scene.until { !has("Sampler · DPM++ 2M SDE ▾") }
+                assertEquals(original.copy(effort = NovelAiEffort.MEDIUM, transparentBackground = true), card.defaultImageGenerationSettings)
+                scene.click("High")
+                scene.until { has("Sampler · DPM++ 2M SDE ▾") }
+                assertEquals(original.copy(transparentBackground = true), card.defaultImageGenerationSettings)
+                scene.click("Medium")
+                scene.click("生图模型 · V5 Full ▾"); scene.click("V4.5 Full")
+                scene.until { has("Variety+") }
+                assertFalse(scene.has("透明背景"))
+                assertEquals(original.copy(effort = NovelAiEffort.MEDIUM, transparentBackground = true), card.defaultImageGenerationSettings)
+                scene.click("生图模型 · V4.5 Full ▾"); scene.click("V5 Full")
+                scene.until { has("透明背景") }
+                scene.click("使用 NovelAI 默认采样参数")
+                val reset = requireNotNull(card.defaultImageGenerationSettings)
+                assertEquals(23, reset.steps); assertEquals(7f, reset.guidance)
+                assertEquals(0f, reset.cfgRescale); assertEquals(NovelAiSampler.EULER_ANCESTRAL, reset.sampler)
+                assertEquals(NovelAiEffort.MEDIUM, reset.effort); assertTrue(reset.transparentBackground); assertTrue(reset.varietyPlus)
+                val output = System.getenv("CCB_FORMAT_AI_REVIEW_DIR")?.let { Path.of(it).resolve("character-v5-defaults-$width.png") }
+                if (output != null) {
+                    Files.createDirectories(output.parent)
+                    scene.render(System.nanoTime()).use { image -> image.encodeToData()!!.use { Files.write(output, it.bytes) } }
+                }
+                scene.click("恢复默认生图参数")
+                scene.until { !has("恢复默认生图参数") }
+                assertNull(card.defaultImageGenerationSettings)
+            } finally { scene.close() }
+        }
+    }
     private fun ImageComposeScene.nodes(): List<SemanticsNode> {
         fun walk(n: SemanticsNode): List<SemanticsNode> = listOf(n) + n.children.flatMap(::walk)
         return semanticsOwners.flatMap { walk(it.rootSemanticsNode) }
