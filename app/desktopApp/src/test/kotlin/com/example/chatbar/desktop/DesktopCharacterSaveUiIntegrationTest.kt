@@ -20,8 +20,35 @@ class DesktopCharacterSaveUiIntegrationTest {
     private val edt = object : CoroutineDispatcher() {
         override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
     }
+    @Volatile private var diagnosticStage = "not-started"
 
-    @Test fun `parameter only UI save does not inspect unrelated authority or discard its scroll position`() = runBlocking(edt) {
+    private fun mark(stage: String) {
+        diagnosticStage = stage
+        System.getenv("CCB_FORMAT_AI_REVIEW_DIR")?.let { directory ->
+            val path = Path.of(directory).resolve("card-save-stage.txt")
+            Files.createDirectories(path.parent); Files.writeString(path, stage)
+        }
+    }
+
+    private fun <T> diagnosticScenario(block: suspend CoroutineScope.() -> T): T {
+        mark("dispatching-test-to-edt")
+        val timer = java.util.Timer("card-save-test-watchdog", true)
+        timer.schedule(object : java.util.TimerTask() {
+            override fun run() {
+                System.getenv("CCB_FORMAT_AI_REVIEW_DIR")?.let { directory ->
+                    val path = Path.of(directory).resolve("card-save-watchdog.txt")
+                    val dump = Thread.getAllStackTraces().entries.sortedBy { it.key.name }.joinToString("\n\n") {
+                        "${it.key.name} ${it.key.state}\n" + it.value.joinToString("\n")
+                    }
+                    Files.writeString(path, "Stage: $diagnosticStage\n\n$dump")
+                }
+            }
+        }, 15_000)
+        try { return runBlocking(edt, block) }
+        finally { timer.cancel() }
+    }
+
+    @org.junit.Test(timeout = 90_000) fun `parameter only UI save does not inspect unrelated authority or discard its scroll position`() = diagnosticScenario {
         fixture {
             val damaged = damagedAuthority()
             enableParameters()
@@ -39,7 +66,7 @@ class DesktopCharacterSaveUiIntegrationTest {
         }
     }
 
-    @Test fun `actual save callback retains the visible scroll form while postcommit maintenance waits`() = runBlocking(edt) {
+    @org.junit.Test(timeout = 90_000) fun `actual save callback retains the visible scroll form while postcommit maintenance waits`() = diagnosticScenario {
         fixture {
             enableParameters()
             val replacement = image("replacement.png")
@@ -77,7 +104,7 @@ class DesktopCharacterSaveUiIntegrationTest {
         }
     }
 
-    @Test fun `real removed resource failure stays visible and can be retried through the actual UI without another save`() = runBlocking(edt) {
+    @org.junit.Test(timeout = 90_000) fun `real removed resource failure stays visible and can be retried through the actual UI without another save`() = diagnosticScenario {
         fixture {
             val damaged = damagedAuthority()
             enableParameters()
@@ -132,6 +159,7 @@ class DesktopCharacterSaveUiIntegrationTest {
             frames()
         }
         suspend fun click(label: String) {
+            mark("click:$label")
             frames()
             fun containsLabel(node: SemanticsNode): Boolean = text(node, label) || node.children.any(::containsLabel)
             val matching = nodes().filter { containsLabel(it) && it.config.contains(SemanticsActions.OnClick) }
@@ -167,6 +195,7 @@ class DesktopCharacterSaveUiIntegrationTest {
     }
 
     private suspend fun fixture(block: suspend Fixture.() -> Unit) {
+        mark("creating-synthetic-container")
         val parent = Files.createTempDirectory("card-save-ui-integration-")
         val root = parent.resolve("data")
         val app = DesktopAppContainer(DesktopDataRootResolution.Resolved(root, DesktopDataRootProvenance.CLI_OVERRIDE, parent.resolve("bootstrap.json")),
@@ -179,10 +208,19 @@ class DesktopCharacterSaveUiIntegrationTest {
             val card = CharacterCard("synthetic-save-ui", "合成保存验证", greeting = "Synthetic greeting", avatar = reference,
                 editMode = CharacterEditMode.FREEFORM, freeformCharacterText = "合成正文\n".repeat(150),
                 defaultNovelAiImageModel = NovelAiImageModel.V5_FULL, createdAt = 1, updatedAt = 1)
+            mark("saving-synthetic-source")
             app.characterRepository.save(card)
+            mark("opening-existing-editor")
             app.characterEditorController.openExisting(card.id)
+            mark("creating-scene")
             f = Fixture(root, app, card)
+            mark("rendering-first-frames")
             f.frames(); f.block()
-        } finally { f?.scene?.close(); app.close(); check(parent.toFile().deleteRecursively()) }
+        } finally {
+            mark("closing-scene"); f?.scene?.close()
+            mark("closing-synthetic-container"); app.close()
+            mark("removing-synthetic-fixture"); check(parent.toFile().deleteRecursively())
+            mark("fixture-finished")
+        }
     }
 }
