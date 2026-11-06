@@ -78,8 +78,8 @@ class DesktopFishPreviewUsageTest {
         }
     }
 
-    @Test fun `preview rejection broken media and closed admission keep observed HTTP without retries or invented units`() = runBlocking {
-        for (code in listOf(401, 429, 503, 200)) Fixture().use { f ->
+    @Test fun `preview permanent rejection broken media and closed admission keep observed HTTP without replay or invented units`() = runBlocking {
+        for (code in listOf(401, 403, 200)) Fixture().use { f ->
             f.server.enqueue(MockResponse().setResponseCode(code).setHeader("Content-Type", "audio/mpeg")
                 .setHeader("Retry-After", "0").setBody("private-invalid-audio"))
             assertFails { f.transport.generate("voice", "hello", "s2.1-pro-free", f.store) }

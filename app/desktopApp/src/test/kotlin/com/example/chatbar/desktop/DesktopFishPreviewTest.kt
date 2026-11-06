@@ -106,8 +106,8 @@ class DesktopFishPreviewTest {
         }
     }
 
-    @Test fun `HTTP failures including retry after redirect and auth never create a second physical request`() = runBlocking {
-        for (code in listOf(301, 401, 403, 429, 503)) MockWebServer().use { server ->
+    @Test fun `redirect and permanent auth failures never create a second physical request`() = runBlocking {
+        for (code in listOf(301, 401, 403)) MockWebServer().use { server ->
             server.start()
             server.enqueue(MockResponse().setResponseCode(code).setHeader("Retry-After", "0")
                 .setHeader("Location", server.url("/other")).setBody("private synthetic response"))

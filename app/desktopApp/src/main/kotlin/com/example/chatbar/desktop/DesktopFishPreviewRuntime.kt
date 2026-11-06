@@ -75,7 +75,9 @@ internal class DesktopFishPreviewRuntime(
             val owned = store ?: stores().also { store = it }
             val key = CacheKey(DesktopFishPreviewKind.GENERATED, reference, credential.getOrThrow().identity)
             val cached = cache[key]
-            val clip = cached ?: transport.generate(reference, text, selectedModel, owned, diagnosticSessionId).also { cache[key] = it }
+            val clip = cached ?: transport.generate(reference, text, selectedModel, owned, diagnosticSessionId,
+                onRetry = { attempt, wait -> mutable.value = DesktopFishPreviewState(busy = true,
+                    message = "预览请求被暂时拒绝；第 $attempt 次尝试后等待 ${wait}ms 重试") }).also { cache[key] = it }
             play(owned, clip, cached != null, DesktopFishPreviewKind.GENERATED,
                 if (cached != null) "复用本次音色库首次生成的音频；新输入未发送" else "免费预览已生成；不写入聊天或角色绑定")
         } } }
@@ -127,8 +129,8 @@ internal class DesktopFishPreviewRuntime(
                     catch (failure: Exception) {
                         failureObserver(failure)
                         mutable.value = DesktopFishPreviewState(message = if (failure is DesktopFishPreviewHttpFailure)
-                            "Fish 预览失败（HTTP ${failure.status}）；未自动重试" else
-                            "预览失败；请检查模型、凭据、网络或音频设备。未自动重试")
+                            "Fish 预览失败（HTTP ${failure.status}）；已尝试 ${failure.attempts} 次" else
+                            "预览失败；请检查模型、凭据、网络或音频设备。未自动重放不确定的请求")
                     } finally {
                         // Keep the owner on a failed native close so app shutdown cannot release it.
                         try { withContext(NonCancellable) {
