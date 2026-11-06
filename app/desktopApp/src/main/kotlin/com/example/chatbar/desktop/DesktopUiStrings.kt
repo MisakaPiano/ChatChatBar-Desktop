@@ -472,6 +472,8 @@ internal enum class DesktopUiText(val zhCn: String, val en: String) {
     CHARACTER_SAVE_FAILED("角色保存失败；草稿仍保留", "Character save failed; draft retained"),
     CHARACTER_DRAFT_FAILED("草稿保存失败", "Draft save failed"),
     CHARACTER_RESOURCE_FAILED("资源处理失败", "Resource operation failed"),
+    CHARACTER_SAVED_RESOURCE_WARNING("角色卡已保存；旧资源清理未完成，原资源已保留。", "Character saved; old resource cleanup is incomplete and the original resources are retained."),
+    CHARACTER_RETRY_RESOURCE_CLEANUP("重试资源清理", "Retry resource cleanup"),
     CHARACTER_NEW_DRAFT_EXISTS("已有未保存的新角色草稿；请先处理该草稿，再另存当前角色", "An unsaved new Character draft already exists. Handle it before saving this Character as new"),
     CHARACTER_DOCUMENT_READ_FAILED("文档无法读取；不会将其作为空文档覆盖", "Document cannot be read; it will not be overwritten as empty"),
     CHARACTER_SAVE_COMMITTED_WARNING("角色已保存，但后续缓存或清理未完成；请检查草稿状态", "Character saved, but cache or cleanup did not complete; check draft state"),

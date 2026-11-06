@@ -346,12 +346,9 @@ class DesktopAppContainer internal constructor(
             imageModelSettings = settingsRepository.appSettings.map { it.novelAiImageModel },
             json = jsonFileStorage.json,
             filePicker = filePicker,
-            discardObsoleteResources = { previous, _ ->
-                ownedImageCleanup.deleteUnreferenced(buildList {
-                    previous.avatar?.let(::add); previous.chatBackground?.let(::add)
-                    previous.characters.mapNotNullTo(this) { it.appearanceImage }
-                    previous.customDocuments.mapTo(this) { it.filePath }
-                })
+            discardObsoleteResources = { previous, current ->
+                val retained = current.flatMap(::desktopCharacterResourceReferences).toSet()
+                ownedImageCleanup.deleteUnreferenced(desktopCharacterResourceReferences(previous).filterNot(retained::contains))
             },
         ).also { editor ->
             editor.promptBudget = editorBudgetOwner.value

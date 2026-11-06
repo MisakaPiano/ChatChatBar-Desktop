@@ -89,7 +89,8 @@ class DesktopCharacterImageSaveAdmissionTest {
             app.characterRepository.save(source)
             val editor = app.characterEditorController
             editor.openExisting(source.id)
-            editor.edit { it.copy(creatorNotes = "Ordinary field save") }
+            val nextImage = image(root, "waiting-replacement.png")
+            editor.edit { it.copy(creatorNotes = "Ordinary field save", avatar = nextImage) }
             val entered = CompletableDeferred<Unit>()
             val release = CompletableDeferred<Unit>()
             val blocker = launch(Dispatchers.Default) {
@@ -117,7 +118,8 @@ class DesktopCharacterImageSaveAdmissionTest {
                 editor.flushDraft()
                 assertTrue(editor.state.value.dirty)
                 assertEquals("Next draft", app.editorDraftRepository.getForTarget(EditorDraftType.CHARACTER_CARD, source.id)!!.characterPayload!!.creatorNotes)
-                assertTrue(Files.exists(root.resolve(source.avatar!!)))
+                assertFalse(Files.exists(root.resolve(source.avatar!!)))
+                assertTrue(Files.exists(root.resolve(nextImage)))
             } finally { release.complete(Unit); blocker.join() }
         }
     }

@@ -73,6 +73,7 @@ internal data class DesktopCharacterEditorState(
     val leavePrompt: Boolean = false,
     val problem: CharacterEditorProblem? = null,
     val detail: String? = null,
+    val resourceCleanupPending: Boolean = false,
     val personFocusId: String? = null,
     val personFocusRevision: Long = 0,
     val momentsFocusRevision: Long = 0,
@@ -175,6 +176,8 @@ internal class DesktopCharacterEditorController(
     private var pendingRename: PendingRename? = null
     private var pendingObsoleteSource: CharacterCard? = null
     private val committedCleanupMutex = Mutex()
+    private val resourceCleanupCards = linkedSetOf<CharacterCard>()
+    private val resourceCleanupSessions = linkedSetOf<String>()
 
     suspend fun load() {
         val cards = characters.getAll()
@@ -325,6 +328,7 @@ internal class DesktopCharacterEditorController(
     fun edit(transform: (CharacterCard) -> CharacterCard) {
         val current = _state.value
         val card = current.card ?: return
+        if (current.busy) return
         if (!current.dirty && current.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) {
             _state.value = current.copy(problem = CharacterEditorProblem.SAVE_COMMITTED_WARNING)
             return
@@ -346,7 +350,8 @@ internal class DesktopCharacterEditorController(
             },
             dirty = current.base == null || next != displayCard(current.base), draftPersisted = false,
             problem = current.problem?.takeIf {
-                it == CharacterEditorProblem.SOURCE_CHANGED || it == CharacterEditorProblem.SOURCE_DELETED
+                it == CharacterEditorProblem.SOURCE_CHANGED || it == CharacterEditorProblem.SOURCE_DELETED ||
+                    it == CharacterEditorProblem.RESOURCE_FAILED && current.resourceCleanupPending
             }, detail = null)
         scheduleDraft()
     }
@@ -754,7 +759,7 @@ internal class DesktopCharacterEditorController(
             pendingRename = rename?.let { PendingRename(it.id, it.name, durable.name) }
             pendingObsoleteSource = source
             _state.value = _state.value.copy(card = durable, base = durable, targetId = durable.id,
-                draftBasis = markedDraft, dirty = false, busy = false,
+                draftBasis = markedDraft, dirty = false, busy = true,
                 problem = CharacterEditorProblem.SAVE_COMMITTED_WARNING,
                 detail = cleanupErrors.firstOrNull()?.message)
             return true
@@ -802,7 +807,33 @@ internal class DesktopCharacterEditorController(
 
     suspend fun retryCleanup() {
         if (_state.value.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) retryCommittedCleanup()
+        else if (_state.value.resourceCleanupPending) committedCleanupMutex.withLock { retryResourceCleanupLocked() }
         else if (needsCleanDraftCleanup(_state.value)) cleanObsoleteDraft()
+    }
+
+    /** Optional resource maintenance never rewrites a card or borrows an old committed draft. */
+    private suspend fun retryResourceCleanupLocked() {
+        if (resourceCleanupCards.isEmpty() && resourceCleanupSessions.isEmpty()) return
+        var failure: Throwable? = null
+        val currentCards = runCatching { refreshRepository(); characters.getAll() }
+        for (previous in resourceCleanupCards.toList()) {
+            val error = runCatching { discardObsoleteResources(previous, currentCards.getOrThrow()) }.exceptionOrNull()
+            if (error == null) resourceCleanupCards.remove(previous) else if (failure == null) failure = error
+        }
+        for (session in resourceCleanupSessions.toList()) {
+            val error = runCatching {
+                check(session != _state.value.draftSessionId || !_state.value.dirty && _state.value.draftBasis == null) {
+                    "Active draft resource cleanup is deferred"
+                }
+                discardDraftAssets(session)
+            }.exceptionOrNull()
+            if (error == null) resourceCleanupSessions.remove(session) else if (failure == null) failure = error
+        }
+        val pending = resourceCleanupCards.isNotEmpty() || resourceCleanupSessions.isNotEmpty()
+        _state.update { it.copy(resourceCleanupPending = pending,
+            problem = if (pending) it.problem ?: CharacterEditorProblem.RESOURCE_FAILED
+                else it.problem?.takeUnless { issue -> issue == CharacterEditorProblem.RESOURCE_FAILED },
+            detail = if (pending) failure?.message ?: it.detail else if (it.problem == CharacterEditorProblem.RESOURCE_FAILED) null else it.detail) }
     }
 
     suspend fun retryCommittedCleanup() = committedCleanupMutex.withLock { retryCommittedCleanupLocked() }
@@ -853,8 +884,15 @@ internal class DesktopCharacterEditorController(
             cleanup[PendingDraft(it, before.recoverySessionId)]?.removed == true
         } ?: true
         val assetError = cleanup.values.firstNotNullOfOrNull(CharacterDraftCleanup::assetFailure)
+        if (orphanError != null) pendingObsoleteSource?.let(resourceCleanupCards::add)
+        cleanup.filterValues { it.assetFailure != null }.keys.mapNotNull { it.sessionId }.forEach(resourceCleanupSessions::add)
+        val resourcesPending = resourceCleanupCards.isNotEmpty() || resourceCleanupSessions.isNotEmpty()
         _state.value = before.copy(
             card = speakerCard, base = speakerCard,
+            busy = false, resourceCleanupPending = resourcesPending,
+            // A failed retired directory must never be reused by the next editable draft.
+            draftSessionId = if (!blocking && activeRemoved && before.draftSessionId in resourceCleanupSessions)
+                UUID.randomUUID().toString() else before.draftSessionId,
             draftBasis = if (activeRemoved) null else before.draftBasis,
             draftPersisted = !activeRemoved,
             recoveryTargetId = if (recoveryRemoved) null else before.recoveryTargetId,
@@ -862,7 +900,7 @@ internal class DesktopCharacterEditorController(
             characters = refreshed.getOrNull() ?: before.characters,
             problem = when {
                 blocking -> CharacterEditorProblem.SAVE_COMMITTED_WARNING
-                orphanError != null || assetError != null -> CharacterEditorProblem.RESOURCE_FAILED
+                orphanError != null || assetError != null || resourcesPending -> CharacterEditorProblem.RESOURCE_FAILED
                 else -> null
             },
             detail = (durableResult.exceptionOrNull() ?: refreshed.exceptionOrNull() ?: renameError ?: speakerError
@@ -984,7 +1022,8 @@ internal class DesktopCharacterEditorController(
         if (_state.value.dirty) { requestLeave { closeClean() }; return }
         if (needsCleanDraftCleanup(_state.value)) { requestLeave { closeClean() }; return }
         if (_state.value.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) return
-        _state.value = _state.value.copy(card = null, base = null, leavePrompt = false, problem = null)
+        _state.value = _state.value.copy(card = null, base = null, leavePrompt = false,
+            problem = if (_state.value.resourceCleanupPending) CharacterEditorProblem.RESOURCE_FAILED else null)
         leaveAction?.also { leaveAction = null; it() }
     }
 

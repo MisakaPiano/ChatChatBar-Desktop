@@ -87,13 +87,23 @@ class DesktopCharacterSaveUiIntegrationTest {
             frames()
             capture("resource-maintenance-failed")
             assertTrue(nodes().any { text(it, "资源处理失败") || text(it, "角色卡已保存；旧资源清理未完成，原资源已保留。") })
+            editor.edit { it.copy(creatorNotes = "Next unsaved draft") }
+            editor.flushDraft()
+            assertTrue(editor.state.value.dirty)
+            assertTrue(editor.state.value.resourceCleanupPending)
+            frames()
+            assertTrue(nodes().any { text(it, "角色卡已保存；旧资源清理未完成，原资源已保留。") })
+            val nextDraft = app.editorDraftRepository.getForTarget(EditorDraftType.CHARACTER_CARD, card.id)
             // Repair only the synthetic failure, then use the production retry action, not Save.
             Files.delete(damaged)
-            click("重试清理")
+            click("重试资源清理")
             await { editor.state.value.problem == null }
             assertFalse(Files.exists(root.resolve(card.avatar!!)))
             assertTrue(Files.exists(root.resolve(replacement)))
             assertEquals(durable, app.characterRepository.getById(card.id), "Cleanup retry must not rewrite the saved card")
+            assertTrue(editor.state.value.dirty)
+            assertEquals("Next unsaved draft", editor.state.value.card!!.creatorNotes)
+            assertEquals(nextDraft, app.editorDraftRepository.getForTarget(EditorDraftType.CHARACTER_CARD, card.id))
         }
     }
 
@@ -117,7 +127,8 @@ class DesktopCharacterSaveUiIntegrationTest {
         }
         suspend fun click(label: String) {
             frames()
-            val matching = nodes().filter { text(it, label) && it.config.contains(SemanticsActions.OnClick) }
+            fun containsLabel(node: SemanticsNode): Boolean = text(node, label) || node.children.any(::containsLabel)
+            val matching = nodes().filter { containsLabel(it) && it.config.contains(SemanticsActions.OnClick) }
             assertEquals(1, matching.size, "Expected one real clickable: $label")
             assertTrue(matching.single().config[SemanticsActions.OnClick].action!!.invoke())
             frames()

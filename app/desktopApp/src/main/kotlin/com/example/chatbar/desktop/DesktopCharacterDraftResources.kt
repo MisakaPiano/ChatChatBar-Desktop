@@ -124,16 +124,9 @@ internal class DesktopCharacterDraftResources(
     }
 
     fun discardObsolete(previous: CharacterCard, allCurrent: List<CharacterCard>) {
-        val active = allCurrent.flatMap(::references).toSet()
-        references(previous).filterNot { it in active || isDraft(it) || it.startsWith("asset:") }
+        val active = allCurrent.flatMap(::desktopCharacterResourceReferences).toSet()
+        desktopCharacterResourceReferences(previous).filterNot { it in active || isDraft(it) || it.startsWith("asset:") }
             .forEach(durable::deleteOwned)
-    }
-
-    private fun references(card: CharacterCard): List<String> = buildList {
-        card.avatar?.let(::add)
-        card.chatBackground?.let(::add)
-        card.characters.mapNotNullTo(this) { it.appearanceImage }
-        card.customDocuments.mapTo(this) { it.filePath }
     }
 
     private fun stageBytes(sessionId: String, name: String, bytes: ByteArray): String {
@@ -180,4 +173,12 @@ internal class DesktopCharacterDraftResources(
         }
         return path
     }
+}
+
+/** Positive retention evidence only; candidates not retained here still need the full reference authority. */
+internal fun desktopCharacterResourceReferences(card: CharacterCard): List<String> = buildList {
+    card.avatar?.let(::add)
+    card.chatBackground?.let(::add)
+    card.characters.mapNotNullTo(this) { it.appearanceImage }
+    card.customDocuments.mapTo(this) { it.filePath }
 }

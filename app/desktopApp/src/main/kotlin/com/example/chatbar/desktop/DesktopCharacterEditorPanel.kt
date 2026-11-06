@@ -73,7 +73,11 @@ internal fun DesktopCharacterManagementPanel(controller: DesktopCharacterEditorC
     LaunchedEffect(controller) { controller.load() }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         DesktopManagementHeading(t(DesktopUiText.CHARACTER_MANAGEMENT))
-        if (state.card == null) state.problem?.let { StatusText(t(it.uiText()), DesktopBootstrapColors.destructive) }
+        if (state.card == null) state.problem?.let { StatusText(t(if (it == CharacterEditorProblem.RESOURCE_FAILED && state.resourceCleanupPending)
+            DesktopUiText.CHARACTER_SAVED_RESOURCE_WARNING else it.uiText()), DesktopBootstrapColors.destructive) }
+        if (state.card == null && state.resourceCleanupPending) BootstrapButton(t(DesktopUiText.CHARACTER_RETRY_RESOURCE_CLEANUP)) {
+            scope.launch { controller.retryCleanup() }
+        }
         DesktopManagementToolbar(t(DesktopUiText.SEARCH_CHARACTERS), state.query, controller::search,
             t(DesktopUiText.NEW_CHARACTER), !managementState.busy, { scope.launch { controller.openNew() } }, DesktopTransferKind.CHARACTER, management)
         DesktopManagementImportAndDrafts(DesktopTransferKind.CHARACTER, state.characters.map { it.id }.toSet(), management, showImport = false)
@@ -181,19 +185,26 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
         importResult?.let { (created, updated) -> StatusText(t(DesktopUiText.CHARACTER_IMPORT_RESULT)
             .replace("{created}", created.toString()).replace("{updated}", updated.toString())) }
         state.problem?.let { problem ->
-            StatusText(t(problem.uiText()), DesktopBootstrapColors.destructive)
+            if (!(state.busy && problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING))
+                StatusText(t(if (problem == CharacterEditorProblem.RESOURCE_FAILED && state.resourceCleanupPending)
+                    DesktopUiText.CHARACTER_SAVED_RESOURCE_WARNING else problem.uiText()), DesktopBootstrapColors.destructive)
             if (problem == CharacterEditorProblem.SOURCE_CHANGED || problem == CharacterEditorProblem.SOURCE_DELETED ||
                 problem == CharacterEditorProblem.COMMUNITY_READ_ONLY) {
                 BootstrapButton(t(if (problem == CharacterEditorProblem.COMMUNITY_READ_ONLY) DesktopUiText.COPY_AS_NEW
                     else DesktopUiText.SAVE_AS_NEW)) { scope.launch { controller.saveAsNew() } }
             }
         }
+        if (state.resourceCleanupPending && state.problem != CharacterEditorProblem.RESOURCE_FAILED)
+            StatusText(t(DesktopUiText.CHARACTER_SAVED_RESOURCE_WARNING), DesktopBootstrapColors.warning)
+        if (state.resourceCleanupPending) BootstrapButton(t(DesktopUiText.CHARACTER_RETRY_RESOURCE_CLEANUP), enabled = !state.busy) {
+            scope.launch { controller.retryCleanup() }
+        }
         if (presentation.showOrdinaryCleanupRetry || presentation.showCommittedCleanupRetry) {
             BootstrapButton(t(DesktopUiText.CHARACTER_RETRY_CLEANUP)) {
                 scope.launch { controller.retryCleanup() }
             }
         }
-        if (!readOnly) FlowRow(Modifier.fillMaxWidth().testTag("character-editor-tools")
+        if (!readOnly || state.busy && !communityReadOnly) FlowRow(Modifier.fillMaxWidth().testTag("character-editor-tools")
             .background(DesktopBootstrapColors.card, RoundedCornerShape(8.dp))
             .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp)).padding(6.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -215,7 +226,7 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
                 }
             }
         }
-        if (readOnly) {
+        if (communityReadOnly || readOnly && !state.busy) {
             controller.promptBudget?.let { DesktopEditorPromptBudget(it, card) }
             StatusText(t(if (communityReadOnly) DesktopUiText.COMMUNITY_READ_ONLY
                 else DesktopUiText.CHARACTER_SAVE_COMMITTED_WARNING))

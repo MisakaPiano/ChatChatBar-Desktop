@@ -1463,6 +1463,45 @@ class DesktopCharacterEditorControllerTest {
         }
     }
 
+    @Test fun `resource cleanup retry never deletes assets belonging to the next draft or rewrites its card`() = runBlocking {
+        fixture { root, app, _ ->
+            val source = CharacterCard.create("Card", "Hi").copy(creatorNotes = "A")
+            app.characterRepository.save(source)
+            var failAssets = true
+            val resources = DesktopCharacterDraftResources(root, app.characterResourceStore)
+            val controller = editor(app, discardDraftAssets = { session ->
+                if (failAssets) error("retired draft asset is locked") else resources.discardSession(session)
+            })
+            try {
+                controller.openExisting(source.id)
+                val oldSession = controller.state.value.draftSessionId
+                controller.addTextDocument("old.txt", "retired draft")
+                controller.flushDraft()
+                val oldAsset = root.resolve(controller.state.value.card!!.customDocuments.single().filePath)
+                controller.clearDocuments()
+                controller.edit { it.copy(creatorNotes = "B") }
+                assertTrue(controller.save())
+                assertEquals(CharacterEditorProblem.RESOURCE_FAILED, controller.state.value.problem)
+                assertTrue(controller.state.value.resourceCleanupPending)
+                assertNotEquals(oldSession, controller.state.value.draftSessionId)
+                controller.addTextDocument("next.txt", "next unsaved draft")
+                controller.flushDraft()
+                val nextAsset = root.resolve(controller.state.value.card!!.customDocuments.single().filePath)
+                val nextDraft = app.editorDraftRepository.getForTarget(EditorDraftType.CHARACTER_CARD, source.id)
+                val durable = app.characterRepository.getById(source.id)
+                failAssets = false
+                controller.retryCleanup()
+                assertNull(controller.state.value.problem)
+                assertFalse(controller.state.value.resourceCleanupPending)
+                assertTrue(controller.state.value.dirty)
+                assertFalse(Files.exists(oldAsset))
+                assertTrue(Files.exists(nextAsset))
+                assertEquals(nextDraft, app.editorDraftRepository.getForTarget(EditorDraftType.CHARACTER_CARD, source.id))
+                assertEquals(durable, app.characterRepository.getById(source.id))
+            } finally { controller.closeAndDrain() }
+        }
+    }
+
     @Test fun `ordinary cleanup failure stays editable and retries without committed operations`() = runBlocking {
         for (close in listOf(false, true)) fixture { _, app, _ ->
             val source = CharacterCard.create("Card", "Hi").copy(creatorNotes = "A")
