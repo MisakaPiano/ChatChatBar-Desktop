@@ -84,7 +84,9 @@ internal fun DesktopBackupExportDialog(state: DesktopFullBackupState, onRefresh:
                             item { StudioSwitch("生图工作室设置（参数、参考图、草稿、撤销和 AI 设计会话）", choice.studioSettings, !state.busy) { choose(choice.copy(studioSettings = !choice.studioSettings)) } }
                             item { StudioSwitch("生图工作室历史 · ${catalog.historyCount} 个批次", choice.studioHistory, !state.busy) { choose(choice.copy(studioHistory = !choice.studioHistory)) } }
                             if (choice.studioHistory) item { StudioSwitch("包含历史图片", choice.studioHistoryImages, !state.busy) { choose(choice.copy(studioHistoryImages = !choice.studioHistoryImages)) } }
-                            item { StatusText("朋友圈原始内容如已保全，会随完整备份保留；桌面版不把这些内容作为可运行朋友圈。") }
+                            item { StudioSwitch("朋友圈 · ${catalog.momentCount} 条动态（文字、点赞与任务）", choice.moments, !state.busy) { choose(choice.copy(moments = !choice.moments)) } }
+                            if (choice.moments) item { StudioSwitch("包含朋友圈图片", choice.momentsImages, !state.busy) { choose(choice.copy(momentsImages = !choice.momentsImages)) } }
+                            item { StatusText("手机历史保全内容随完整备份保留；导入不会自动运行朋友圈任务。") }
                             item { StatusText("关联模型、格式卡和世界书自动带入。轻量省略聊天图片、语音、会话存档和工作室历史原图。") }
                         }
                         BackupExportPage.SETTINGS -> {

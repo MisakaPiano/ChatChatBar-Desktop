@@ -165,7 +165,7 @@ class BackupExportCatalog internal constructor(
     fun allSelection() = AppBackupSelection(
         BackupSettingOptions.ids, characters.map { it.id }.toSet(),
         sessions.filter { session -> characters.any { it.id == session.characterId } }.associate { it.id to BackupSessionChoice() },
-        studioSettings = true, studioHistory = true, moments = false
+        studioSettings = true, studioHistory = true, moments = true
     )
     fun lightSelection() = allSelection().let { all -> all.copy(
         sessions = all.sessions.mapValues { BackupSessionChoice(images = false, voice = false, archives = false) },
