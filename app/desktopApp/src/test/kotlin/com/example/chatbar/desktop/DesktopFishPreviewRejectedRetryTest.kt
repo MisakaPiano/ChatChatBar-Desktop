@@ -74,8 +74,8 @@ class DesktopFishPreviewRejectedRetryTest {
         }
     }
 
-    @Test fun `redirect authentication accepted bad media and uncertain connection never replay`() = runBlocking {
-        for (status in listOf(301, 401, 403, 200)) Fixture().use { f ->
+    @Test fun `redirect and authentication rejections never replay or write audio`() = runBlocking {
+        for (status in listOf(301, 401, 403)) Fixture().use { f ->
             f.server.enqueue(MockResponse().setResponseCode(status).setHeader("Retry-After", "0")
                 .setHeader("Location", f.server.url("/other")).setHeader("Content-Type", "audio/mpeg").setBody("not mp3"))
             f.server.enqueue(f.audio())
@@ -83,6 +83,27 @@ class DesktopFishPreviewRejectedRetryTest {
             assertEquals(1, f.server.requestCount)
             assertEquals(0L, Files.list(f.directory).use { it.count() })
         }
+    }
+
+    @Test fun `accepted bad media never replays and its owned partial is cleaned only after drain`() = runBlocking {
+        val fixture = Fixture()
+        fixture.use { f ->
+            f.server.enqueue(MockResponse().setHeader("Content-Type", "audio/mpeg").setBody("not mp3"))
+            f.server.enqueue(f.audio())
+            assertFails { f.transport.generate("reference", "hello", "s2.1-pro-free", f.store) }
+            assertEquals(1, f.server.requestCount)
+            val retained = Files.list(f.directory).use { it.toList() }
+            assertEquals(1, retained.size)
+            assertTrue(retained.single().fileName.toString().endsWith(".part"))
+            assertContentEquals("not mp3".toByteArray(), Files.readAllBytes(retained.single()))
+            assertEquals(200, f.latest().single().media?.httpStatus)
+            assertNull(f.latest().single().media?.outputAudioBytes)
+            assertEquals(DesktopUsageOutcome.FAILED, f.latest().single().outcome)
+        }
+        assertFalse(Files.exists(fixture.directory))
+    }
+
+    @Test fun `uncertain connection acceptance never replays the original POST`() = runBlocking {
         Fixture().use { f ->
             f.server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AFTER_REQUEST))
             f.server.enqueue(f.audio())
