@@ -1,62 +1,45 @@
-name: Focused Desktop UI and diagnostic regression
-
+name: Experimental Android facade affected checks
 on:
   push:
     branches: ['codex/desktop-ui-probe-*']
-
 permissions:
   contents: read
-
 concurrency:
   group: desktop-ui-probe-${{ github.ref }}
   cancel-in-progress: true
-
 jobs:
-  focused:
-    runs-on: windows-latest
-    timeout-minutes: 30
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
-      - name: Enable long-path checkout
-        run: git config --global core.longpaths true
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
       - uses: gradle/actions/setup-gradle@v4
-      - name: Select a fresh canonical NTFS temporary directory
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $probeRoot = Join-Path ($env:SystemDrive + '\') ('p' + [Guid]::NewGuid().ToString('N').Substring(0, 7))
-          if ([IO.DriveInfo]::new([IO.Path]::GetPathRoot($probeRoot)).DriveFormat -ne 'NTFS') { throw 'DESKTOP_TEST_NTFS_REQUIRED' }
-          New-Item -ItemType Directory -Path $probeRoot -ErrorAction Stop | Out-Null
-          $testTemp = New-Item -ItemType Directory -Path (Join-Path $probeRoot 'temp') -ErrorAction Stop
-          @("TEMP=$($testTemp.FullName)", "TMP=$($testTemp.FullName)") | Add-Content $env:GITHUB_ENV -Encoding utf8
-      - name: Record exact source and run bounded synthetic regressions
-        shell: pwsh
+      - name: Capture exact source and run only affected facade regressions
         working-directory: app
-        env:
-          CCB_SCREENSHOT_PAGING_REVIEW_DIR: ${{ runner.temp }}/ccb-ui-probe/paging
-          CCB_SCREENSHOT_REVIEW_DIR: ${{ runner.temp }}/ccb-ui-probe/export
-          CCB_FORMAT_AI_REVIEW_DIR: ${{ runner.temp }}/ccb-ui-probe/style
         run: |
-          $ErrorActionPreference = 'Stop'
-          New-Item -ItemType Directory -Path "$env:RUNNER_TEMP/ccb-ui-probe" -Force | Out-Null
-          @{ source = (git rev-parse HEAD); run = $env:GITHUB_RUN_ID; scope = 'synthetic selected tests only; no installer, user profile, release or provider calls' } |
-            ConvertTo-Json | Set-Content -Encoding utf8 "$env:RUNNER_TEMP/ccb-ui-probe/source.json"
-          .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain `
-            --tests 'com.example.chatbar.desktop.DesktopStudioLongPromptFocusTest'
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: Preserve actual reports and synthetic review images
+          mkdir -p "$RUNNER_TEMP/ccb-android-experimental"
+          printf '{"source":"%s","run":"%s","scope":"synthetic affected facade tests only"}\n' "$(git rev-parse HEAD)" "$GITHUB_RUN_ID" > "$RUNNER_TEMP/ccb-android-experimental/source.json"
+          chmod +x gradlew
+          ./gradlew :app:testDebugUnitTest --no-daemon --stacktrace --console=plain \
+            --tests 'com.example.chatbar.domain.chat.StreamingChatServiceThinkingTest' \
+            --tests 'com.example.chatbar.domain.chat.StreamingChatServiceTerminalTest' \
+            --tests 'com.example.chatbar.domain.chat.StreamingChatServiceStreamTextTest' \
+            --tests 'com.example.chatbar.domain.chat.AutomaticChatImagePolicyTest'
+      - name: Preserve exact original reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: desktop-ui-probe-reports
+          name: experimental-android-affected-reports
           path: |
-            app/sharedCore/build/test-results/test/
-            app/sharedCore/build/reports/tests/test/
-            app/desktopApp/build/test-results/test/
-            app/desktopApp/build/reports/tests/test/
-            ${{ runner.temp }}/ccb-ui-probe/
+            app/app/build/test-results/testDebugUnitTest/
+            app/app/build/reports/tests/testDebugUnitTest/
+            ${{ runner.temp }}/ccb-android-experimental/
           if-no-files-found: error
