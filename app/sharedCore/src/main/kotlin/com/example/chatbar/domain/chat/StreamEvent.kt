@@ -6,6 +6,9 @@ sealed class StreamEvent {
     /** 增量文本片段 */
     data class Delta(val text: String) : StreamEvent()
 
+    /** Display-only replacement snapshot. Never append this to the canonical reply. */
+    data class ContentPreview(val text: String) : StreamEvent()
+
     /** 增量思维链片段 */
     data class ReasoningDelta(val text: String) : StreamEvent()
 

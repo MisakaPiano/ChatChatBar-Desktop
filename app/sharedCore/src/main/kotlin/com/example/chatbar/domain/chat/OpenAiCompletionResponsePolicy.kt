@@ -5,11 +5,14 @@ import kotlinx.serialization.json.*
 
 object OpenAiCompletionResponsePolicy {
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
-    fun content(body: String): String {
+    fun content(body: String, experimentalApiMode: Boolean = false): String {
         val obj = json.decodeFromString<JsonObject>(body)
         val message = obj["choices"]?.jsonArray?.firstOrNull()
             ?.jsonObject?.get("message")
             ?.jsonObject
+        if (experimentalApiMode && message != null) {
+            ExperimentalToolReplyDecoder.decodeMessage(message)?.let { return it }
+        }
         val content = message?.get("content")
         val primitiveContent = (content as? JsonPrimitive)?.contentOrNull
         if (primitiveContent != null) return primitiveContent
@@ -44,11 +47,11 @@ object OpenAiCompletionResponsePolicy {
             ?.jsonObject?.get("finish_reason")?.jsonPrimitive?.contentOrNull
     }.getOrNull()
 
-    fun requireCompletion(body: String, onContent: (String) -> Unit = {}): String {
+    fun requireCompletion(body: String, experimentalApiMode: Boolean = false, onContent: (String) -> Unit = {}): String {
         val reason = finishReason(body)
         val refused = AiTaskRefusalPolicy.responseRefused(body)
         AiTaskRefusalPolicy.failure("", reason, refused)?.let { throw it }
-        val content = content(body)
+        val content = content(body, experimentalApiMode)
         onContent(content)
         AiTaskRefusalPolicy.failure(content, reason, refused)?.let { throw it }
         if (reason == "length") throw ModelResponseTruncatedException()

@@ -29,6 +29,7 @@ internal class DesktopAuxiliaryImageUnderstanding(
             transport.streamMainChat(messages, model.forImageDescriptionRequest(), diagnostics = diagnostics).collect { event ->
                 when (event) {
                     is ProviderStreamEvent.ContentDelta -> { text.append(event.text); onDelta(event.text) }
+                    is ProviderStreamEvent.ContentPreview -> Unit // This callback is incremental canonical text.
                     is ProviderStreamEvent.ReasoningDelta -> reasoning = true
                     is ProviderStreamEvent.Completed -> {
                         AiTaskRefusalPolicy.failure(text.toString(), event.metadata.finishReason, event.metadata.refused)?.let { throw it }

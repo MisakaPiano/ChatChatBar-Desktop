@@ -32,7 +32,9 @@ internal class DesktopChatVoiceRuntime(
     private val uiPreferences: kotlinx.coroutines.flow.StateFlow<DesktopChatUiPreferences>? = null,
     private val diagnostics: DesktopTransportDiagnosticsOwner? = null,
 ) {
-    private val textTransport = lazy { OpenAiStreamingTransport { settings.currentAppSettings.allowCleartextModelApi } }
+    private val textTransport = lazy { OpenAiStreamingTransport(
+        experimentalApiModeEnabled = { settings.currentAppSettings.experimentalApiModeEnabled },
+        allowCleartextHttp = { settings.currentAppSettings.allowCleartextModelApi }) }
     private val job = SupervisorJob()
     private val scope = CoroutineScope(job + Dispatchers.IO)
     private val mutation = Mutex()

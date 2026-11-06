@@ -721,4 +721,7 @@ object PromptTemplates {
     fun narrativeModeHistoryReply(body: String, mode: ChatNarrativeMode): String =
         MainChatPromptAuthority.narrativeModeHistoryReply(body, mode)
 
+    const val EXPERIMENTAL_GAME_CONTENT_TOOL_DESCRIPTION = ExperimentalToolPromptAuthority.EXPERIMENTAL_GAME_CONTENT_TOOL_DESCRIPTION
+    const val EXPERIMENTAL_TOOL_USER_TAIL = ExperimentalToolPromptAuthority.EXPERIMENTAL_TOOL_USER_TAIL
+
 }

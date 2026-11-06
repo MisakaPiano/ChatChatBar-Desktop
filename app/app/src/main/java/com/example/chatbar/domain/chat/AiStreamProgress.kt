@@ -48,6 +48,13 @@ class AiStreamProgress : AbstractCoroutineContextElement(Key) {
     }
 
     @Synchronized
+    fun replaceContent(id: String, content: String) {
+        val old = pending[id] ?: return
+        pending[id] = old.copy(content = preview(content), lastUpdateNanos = System.nanoTime())
+        publish()
+    }
+
+    @Synchronized
     fun finish(id: String, status: String) {
         pending[id]?.let { pending[id] = it.copy(active = false, status = status) }
         publish()

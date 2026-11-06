@@ -544,6 +544,10 @@ private fun DesktopSettingsDraftOverlay(
                     controller.editSettings { it.copy(allowCleartextModelApi = !it.allowCleartextModelApi) }
                 }
                 StatusText(t(DesktopUiText.CLEARTEXT_NOTE))
+                ToggleField("实验 API 模式", draft.experimentalApiModeEnabled) {
+                    controller.editSettings { it.copy(experimentalApiModeEnabled = !it.experimentalApiModeEnabled) }
+                }
+                StatusText("默认关闭。开启后通过工具参数传递上下文和接收正文；仅对之后发起的请求生效，接口不支持时请关闭。")
                 LabeledField(t(DesktopUiText.CONTEXT_WINDOW), draft.defaultContextWindowSize) { value ->
                     controller.editSettings { it.copy(defaultContextWindowSize = value.filter(Char::isDigit)) }
                 }

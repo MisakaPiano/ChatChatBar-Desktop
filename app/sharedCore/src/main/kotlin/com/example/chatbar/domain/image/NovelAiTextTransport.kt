@@ -32,6 +32,7 @@ interface NovelAiTextTransport {
                 is StreamEvent.Delta -> { text.append(event.text); onDelta(event.text) }
                 is StreamEvent.ReasoningDelta -> onReasoningDelta(event.text)
                 is StreamEvent.Error -> throw event.asException()
+                is StreamEvent.ContentPreview -> Unit // Display-only; canonical parsing consumes Delta.
                 is StreamEvent.Usage -> Unit
                 StreamEvent.Done -> completed = true
             }

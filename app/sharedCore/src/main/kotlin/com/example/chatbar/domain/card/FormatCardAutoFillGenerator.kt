@@ -98,6 +98,7 @@ internal suspend fun collectFormatCardAutoFillText(
                 is StreamEvent.Error -> throw event.asException()
                 StreamEvent.Done -> completed = true
                 is StreamEvent.ReasoningDelta -> { reasoning.append(event.text); onReasoningText(reasoning.toString()) }
+                is StreamEvent.ContentPreview -> onRawText(event.text)
                 is StreamEvent.Usage -> Unit
             }
         }

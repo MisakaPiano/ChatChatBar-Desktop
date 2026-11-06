@@ -17,6 +17,7 @@ internal class DesktopNovelAiInfrastructure(
     allowCleartextHttp: () -> Boolean,
     private val designerOverride: NovelAiPromptDesigner? = null,
     diagnostics: DesktopTransportDiagnosticsOwner? = null,
+    experimentalApiModeEnabled: () -> Boolean = { false },
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val assets = DesktopNovelAiCatalogAssets(root.resolve("auxiliary/novelai"), openAsset)
@@ -25,7 +26,7 @@ internal class DesktopNovelAiInfrastructure(
     val suggestions = NovelAiTagSuggestionService(tags, dictionary, scope)
     val translations = NovelAiPromptTranslationService(dictionary, tags)
     private val tokenCounter = NovelAiPromptTokenCounter(openAsset)
-    private val transport = OpenAiStreamingTransport(allowCleartextHttp)
+    private val transport = OpenAiStreamingTransport(experimentalApiModeEnabled, allowCleartextHttp)
     private val text = DesktopNovelAiTextTransport(transport, diagnostics)
     private val understanding = ImageUnderstandingService(resolver, DesktopAuxiliaryImageUnderstanding(transport, diagnostics)::describe)
     private val designer by lazy {

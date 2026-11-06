@@ -259,9 +259,9 @@ class ChatBarApp : Application() {
         }
         vectorSearchEngine = VectorSearchEngine()
         
-        streamingChatService = StreamingChatService {
-            settingsRepository.currentAppSettings.allowCleartextModelApi
-        }
+        streamingChatService = StreamingChatService(
+            experimentalApiModeEnabled = { settingsRepository.currentAppSettings.experimentalApiModeEnabled },
+            allowCleartextHttp = { settingsRepository.currentAppSettings.allowCleartextModelApi })
         fishAudioStorage = FishAudioStorage(this)
         fishAudioService = FishAudioService(fishAudioStorage)
         fishAudioTagService = FishAudioTagService(com.example.chatbar.domain.voice.AndroidFishVoiceTextGateway(streamingChatService))

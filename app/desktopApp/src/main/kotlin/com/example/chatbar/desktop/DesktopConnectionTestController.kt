@@ -47,7 +47,7 @@ internal class DesktopConnectionTestController(
                         model = chat?.let { model -> scrubber.text(model.displayName, 512) },
                         endpoint = chat?.let { model -> scrubber.url(model.baseUrl) },
                     ) }
-                    val result = ModelConnectionProbe(app.allowCleartextModelApi).run(
+                    val result = ModelConnectionProbe(app.allowCleartextModelApi, app.experimentalApiModeEnabled).run(
                         chat, embedding, onChatResult = { result -> mutableState.update { it.copy(chat = result) } },
                     )
                     mutableState.update { it.copy(chat = result.chat, embedding = result.embedding) }

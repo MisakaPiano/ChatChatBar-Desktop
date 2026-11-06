@@ -74,6 +74,10 @@ Do not move behavior between these owners without tracing every caller and test.
 - Base cacheability on rendered stable content. An unresolved World Book outlet in stable content disables stable-prefix caching.
 - Keep cache keys aligned with the exact sent prefix through context approval.
 
+## Experimental transport boundary
+
+`ExperimentalToolPromptAuthority` owns the two new neutral protocol literals, exposed through Android `PromptTemplates` facades. Wrapping occurs only after logical request assembly and before final provider adaptation. It preserves the currently approved identity tail/acknowledgement and does not adopt the separate315 proposed edits. Inspect actual wire/context-tool JSON when debugging this mode; an unchanged logical preview does not show transport wrapping.
+
 ## RAG Rendering
 
 - Partition cards by ChunkSourceType, not display labels.

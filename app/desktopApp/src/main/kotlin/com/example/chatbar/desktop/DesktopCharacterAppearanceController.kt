@@ -88,6 +88,7 @@ internal class DesktopCharacterAppearanceController(
                                 is StreamEvent.ReasoningDelta -> { reasoning.append(event.text); mutable.update { it.copy(reasoning = reasoning.toString()) } }
                                 is StreamEvent.Error -> throw event.asException()
                                 StreamEvent.Done -> done = true
+                                is StreamEvent.ContentPreview -> mutable.update { it.copy(raw = event.text) }
                                 is StreamEvent.Usage -> Unit
                             } }
                             check(done && raw.isNotBlank()) { "APPEARANCE_INCOMPLETE" }

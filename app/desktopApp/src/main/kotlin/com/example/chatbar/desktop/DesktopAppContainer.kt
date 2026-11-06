@@ -73,7 +73,8 @@ class DesktopAppContainer internal constructor(
     }
     internal val ragController by ragOwner
     private val memoryRagTransportOwner = lazy { com.example.chatbar.domain.chat.OpenAiStreamingTransport(
-        allowCleartextHttp = { settingsRepository.currentAppSettings.allowCleartextModelApi }) }
+        allowCleartextHttp = { settingsRepository.currentAppSettings.allowCleartextModelApi },
+        experimentalApiModeEnabled = { settingsRepository.currentAppSettings.experimentalApiModeEnabled }) }
     private val memoryRagTextClient by lazy { DesktopMemoryRagTextClient(memoryRagTransportOwner.value,
         diagnostics = { taskRuntime.diagnostics }) }
     private val memoryRepository by lazy { com.example.chatbar.data.repository.MemoryRepository(jsonFileStorage,
@@ -233,7 +234,8 @@ class DesktopAppContainer internal constructor(
     private val novelAiInfrastructureOwner = lazy {
         DesktopNovelAiInfrastructure(appDataRoot, { bundledAssetReader(it).inputStream() }, effectiveModelResolver,
             allowCleartextHttp = { settingsRepository.currentAppSettings.allowCleartextModelApi }, designerOverride = novelAiDesigner,
-            diagnostics = taskRuntime.diagnostics)
+            diagnostics = taskRuntime.diagnostics,
+            experimentalApiModeEnabled = { settingsRepository.currentAppSettings.experimentalApiModeEnabled })
     }
     internal val novelAiInfrastructure by novelAiInfrastructureOwner
     internal val novelAiGenerationRuntime by lazy {
@@ -299,9 +301,9 @@ class DesktopAppContainer internal constructor(
     internal val editorDraftRepository = EditorDraftRepository(jsonFileStorage)
     internal val formatCardRepository = FormatCardRepository(jsonFileStorage)
     private val editorBudgetOwner = lazy { DesktopEditorBudgetController(settingsRepository, effectiveModelResolver, dataOperationCoordinator) }
-    private val formatCardAiTransportOwner = lazy { com.example.chatbar.domain.chat.OpenAiStreamingTransport {
-        settingsRepository.currentAppSettings.allowCleartextModelApi
-    } }
+    private val formatCardAiTransportOwner = lazy { com.example.chatbar.domain.chat.OpenAiStreamingTransport(
+        experimentalApiModeEnabled = { settingsRepository.currentAppSettings.experimentalApiModeEnabled },
+        allowCleartextHttp = { settingsRepository.currentAppSettings.allowCleartextModelApi }) }
     private val characterResearchSourcesOwner = lazy {
         DesktopCharacterResearchSources(settingsRepository, effectiveModelResolver) {
             settingsRepository.currentAppSettings.allowCleartextModelApi
@@ -703,9 +705,9 @@ class DesktopAppContainer internal constructor(
     internal val primaryChatController: DesktopPrimaryChatController by primaryChatControllerOwner
 
     private val momentDiagnostics = DesktopTransportDiagnosticsOwner(usageSink = { providerUsage.submit(it) })
-    private val momentTransportOwner = lazy { com.example.chatbar.domain.chat.OpenAiStreamingTransport {
-        settingsRepository.currentAppSettings.allowCleartextModelApi
-    } }
+    private val momentTransportOwner = lazy { com.example.chatbar.domain.chat.OpenAiStreamingTransport(
+        experimentalApiModeEnabled = { settingsRepository.currentAppSettings.experimentalApiModeEnabled },
+        allowCleartextHttp = { settingsRepository.currentAppSettings.allowCleartextModelApi }) }
     private val momentImageCleanup by lazy { DesktopMomentImageCleanup(appDataRoot, jsonFileStorage,
         dataOperationCoordinator, ownedImageCleanup) }
     private val momentStore by lazy { DesktopMomentStore(jsonFileStorage, dataOperationCoordinator, momentImageCleanup) }

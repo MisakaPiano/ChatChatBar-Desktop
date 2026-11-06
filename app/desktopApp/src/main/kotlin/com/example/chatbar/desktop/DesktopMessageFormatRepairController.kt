@@ -29,7 +29,7 @@ internal fun interface DesktopRepairSafetyGate {
 
 internal class DesktopRepairRequest(
     val formatCard: String?, val segmentedFormat: String?, val original: String,
-    val model: ModelConfig, val allowCleartext: Boolean,
+    val model: ModelConfig, val allowCleartext: Boolean, val experimentalApiMode: Boolean = false,
 )
 
 /** Private in-memory evidence; deliberately has no data-class toString exposing message/exception bodies. */
@@ -77,7 +77,8 @@ internal class DesktopMessageFormatRepairController(
     private val runtime: DesktopTaskRuntime,
     private val safety: DesktopRepairSafetyGate = DesktopRepairSafetyGate { _, _ -> DesktopRepairSafety.UNKNOWN },
     private val stream: (DesktopRepairRequest) -> Flow<StreamEvent> = { request ->
-        OpenAiStreamingTransport { request.allowCleartext }.streamFormatRepair(
+        OpenAiStreamingTransport(experimentalApiModeEnabled = { request.experimentalApiMode },
+            allowCleartextHttp = { request.allowCleartext }).streamFormatRepair(
             request.formatCard, request.segmentedFormat, request.original, request.model,
         )
     },
@@ -225,7 +226,7 @@ internal class DesktopMessageFormatRepairController(
                 try {
                     // Stop collecting at the first trusted transport terminal; do not await an
                     // upstream Flow's post-terminal suspension or accept its late events.
-                    stream(DesktopRepairRequest(format, segmented, original, model, appSettings.allowCleartextModelApi)).firstOrNull { event ->
+                    stream(DesktopRepairRequest(format, segmented, original, model, appSettings.allowCleartextModelApi, appSettings.experimentalApiModeEnabled)).firstOrNull { event ->
                         when (event) {
                             is StreamEvent.Delta -> {
                                 var preview: String? = null
@@ -246,6 +247,12 @@ internal class DesktopMessageFormatRepairController(
                                 true
                             }
                             StreamEvent.Done -> { control.complete(DesktopRepairTerminalKind.DONE); true }
+                            is StreamEvent.ContentPreview -> {
+                                var preview: String? = null
+                                control.acceptDelta { preview = MessageFormatRepairPolicy.progressiveOverlay(original, event.text) }
+                                preview?.let { publish(id, DesktopRepairState(DesktopRepairStatus.RUNNING, it)) }
+                                false
+                            }
                             is StreamEvent.ReasoningDelta, is StreamEvent.Usage -> false
                         }
                     }

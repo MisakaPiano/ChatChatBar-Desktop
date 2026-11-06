@@ -2173,6 +2173,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                             is StreamEvent.Error -> throw IllegalStateException(event.message)
                             StreamEvent.Done -> sawDone = true
                             is StreamEvent.ReasoningDelta,
+                            is StreamEvent.ContentPreview -> Unit // Display-only; canonical parsing consumes Delta.
                             is StreamEvent.Usage -> Unit
                         }
                     }
@@ -2917,6 +2918,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
 
                 // 8. 开启流式响应
                 var accumulatedText = ""
+                var previewText: String? = null
                 var accumulatedReasoning = ""
                 val assistantMsgId = alternativeTargetMessageId ?: java.util.UUID.randomUUID().toString()
                 val streamStartedAt = System.currentTimeMillis()
@@ -2952,6 +2954,14 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                         throw UserStoppedResponseGenerationException()
                     }
                     when (event) {
+                        is StreamEvent.ContentPreview -> {
+                            previewText = event.text.takeIf(String::isNotEmpty)
+                            val shown = previewText ?: accumulatedText
+                            interruptedReplyDraft = _streamingMessage.value?.copy(content = shown,
+                                reasoningContent = accumulatedReasoning.takeIf(String::isNotEmpty),
+                                updatedAt = System.currentTimeMillis())
+                            _streamingMessage.value = interruptedReplyDraft?.copy(content = renderSessionText(shown))
+                        }
                         is StreamEvent.Usage -> Unit
                         is StreamEvent.ReasoningDelta -> {
                             accumulatedReasoning += event.text
@@ -2959,7 +2969,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                                 id = assistantMsgId,
                                 sessionId = sessionId,
                                 role = MessageRole.ASSISTANT,
-                                content = accumulatedText,
+                                content = previewText ?: accumulatedText,
                                 reasoningContent = accumulatedReasoning.takeIf { it.isNotEmpty() },
                                 createdAt = streamCreatedAt,
                                 updatedAt = System.currentTimeMillis(),
@@ -2969,7 +2979,7 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                                 id = assistantMsgId,
                                 sessionId = sessionId,
                                 role = MessageRole.ASSISTANT,
-                                content = renderSessionText(accumulatedText),
+                                content = renderSessionText(previewText ?: accumulatedText),
                                 reasoningContent = accumulatedReasoning.takeIf { it.isNotEmpty() }
                                     ?.let(renderSessionText),
                                 createdAt = streamCreatedAt,
@@ -2978,13 +2988,14 @@ class ChatViewModel(private val sessionId: String) : ViewModel() {
                             )
                         }
                         is StreamEvent.Delta -> {
+                            previewText = null
                             accumulatedText += event.text
                             val renderedAccumulatedText = renderSessionText(accumulatedText)
                             interruptedReplyDraft = ChatMessage(
                                 id = assistantMsgId,
                                 sessionId = sessionId,
                                 role = MessageRole.ASSISTANT,
-                                content = accumulatedText,
+                                content = previewText ?: accumulatedText,
                                 reasoningContent = accumulatedReasoning.takeIf { it.isNotEmpty() },
                                 createdAt = streamCreatedAt,
                                 updatedAt = System.currentTimeMillis(),

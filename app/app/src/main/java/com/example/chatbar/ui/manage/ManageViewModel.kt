@@ -889,7 +889,7 @@ class ManageViewModel : ViewModel() {
                 )
                 val chat = modelResolver.defaultChatModel(current)
                 val embedding = modelResolver.embeddingModel(current)
-                val result = ModelConnectionProbe(allowCleartextModelApi).run(
+                val result = ModelConnectionProbe(allowCleartextModelApi, current.experimentalApiModeEnabled).run(
                     chat, embedding, protect = { operation -> AiBackgroundWorkManager.run("api-test") { operation() } },
                 )
                 fun status(label: String, probe: ConnectionProbeResult): String =

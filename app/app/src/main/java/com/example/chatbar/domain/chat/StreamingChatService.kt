@@ -71,8 +71,10 @@ import kotlin.coroutines.resumeWithException
  * data: [DONE]
  */
 class StreamingChatService(
-    private val allowCleartextHttp: () -> Boolean = { false }
+    private val experimentalApiModeEnabled: () -> Boolean,
+    private val allowCleartextHttp: () -> Boolean,
 ) {
+    constructor(allowCleartextHttp: () -> Boolean = { false }) : this({ false }, allowCleartextHttp)
 
     companion object {
         private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
@@ -93,7 +95,7 @@ class StreamingChatService(
         .writeTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
         .build()
 
-    private val sharedStreamingTransport = OpenAiStreamingTransport(allowCleartextHttp)
+    private val sharedStreamingTransport = OpenAiStreamingTransport(experimentalApiModeEnabled, allowCleartextHttp)
 
     /**
      * 流式聊天补全
@@ -154,6 +156,7 @@ class StreamingChatService(
             ).collect { event ->
                 emit(when (event) {
                     is ProviderStreamEvent.ContentDelta -> StreamEvent.Delta(event.text)
+                    is ProviderStreamEvent.ContentPreview -> StreamEvent.ContentPreview(event.text)
                     is ProviderStreamEvent.ReasoningDelta -> StreamEvent.ReasoningDelta(event.text)
                     is ProviderStreamEvent.Usage -> {
                         mainLogId?.let { DebugLogManager.recordPromptCacheUsage(it, event.usage) }
@@ -164,6 +167,7 @@ class StreamingChatService(
                             finishReason = event.metadata.finishReason,
                             refused = event.metadata.refused,
                             transportFailed = event.metadata.transportFailed,
+                            toolReplyCompleted = event.metadata.toolReplyCompleted,
                         )
                         onReplyCompletion(completion)
                         mainLogId?.let {
@@ -205,6 +209,9 @@ class StreamingChatService(
         isolatedTaskParameters: Boolean = false,
         responseFormatJson: Boolean = false
     ): Flow<StreamEvent> = callbackFlow {
+        val experimental = experimentalApiModeEnabled()
+        val toolDecoder = if (experimental) ExperimentalToolReplyDecoder() else null
+        var previewedOrdinaryText = false
         val context = taskContext?.forRequest()
         val actualMessages = context?.let { AiTaskMessageAssembler.assemble(messages, it) } ?: messages
         val url = "${modelConfig.baseUrl.trimEnd('/')}/chat/completions"
@@ -220,7 +227,8 @@ class StreamingChatService(
             reasoningEffortOverride = reasoningEffort,
             isolatedTaskParameters = isolatedTaskParameters,
             responseFormatJson = responseFormatJson,
-            includeStreamUsage = modelConfig.supportsOpenAiPromptCacheInstrumentation()
+            includeStreamUsage = modelConfig.supportsOpenAiPromptCacheInstrumentation(),
+            experimentalApiMode = experimental,
         )
         val logId = DebugLogManager.startRequest(
             sessionId = context?.taskId ?: java.util.UUID.randomUUID().toString(),
@@ -258,6 +266,21 @@ class StreamingChatService(
         fun complete(eventSource: EventSource) {
             synchronized(lock) {
                 if (closed.get()) return
+                if (toolDecoder != null) try {
+                    val decoded = toolDecoder.finish(validate = !refused && finishReason != "length")
+                    if (previewedOrdinaryText) {
+                        progress?.replaceContent(logId, text.toString())
+                        previewedOrdinaryText = false
+                    }
+                    if (decoded.remainingText.isNotEmpty()) {
+                        text.append(decoded.remainingText)
+                        progress?.append(logId, null, decoded.remainingText)
+                        DebugLogManager.appendResponseChunk(logId, "", decoded.remainingText)
+                        trySend(StreamEvent.Delta(decoded.remainingText))
+                    }
+                } catch (error: Exception) {
+                    fail(eventSource, error); return
+                }
                 val content = text.toString()
                 val rejection = AiTaskRefusalPolicy.failure(content, finishReason, refused)
                 if (rejection != null) {
@@ -292,7 +315,18 @@ class StreamingChatService(
                         return
                     }
                     val delta = try {
-                        OpenAiSseParser.parse(data)
+                        val raw = OpenAiSseParser.parse(data)
+                        if (toolDecoder == null) raw else {
+                            val content = toolDecoder.append(raw.content, raw.toolCalls)
+                            if (!toolDecoder.hasToolCalls && !raw.content.isNullOrEmpty()) {
+                                previewedOrdinaryText = true
+                                progress?.replaceContent(logId, toolDecoder.ordinaryContent)
+                            } else if (toolDecoder.hasToolCalls && previewedOrdinaryText) {
+                                previewedOrdinaryText = false
+                                progress?.replaceContent(logId, text.toString())
+                            }
+                            raw.copy(content = content)
+                        }
                     } catch (error: Exception) {
                         DebugLogManager.appendResponseChunk(logId, data)
                         fail(eventSource, IllegalArgumentException(
@@ -303,7 +337,8 @@ class StreamingChatService(
                     }
                     finishReason = delta.finishReason ?: finishReason
                     refused = refused || delta.refused
-                    if (!delta.content.isNullOrBlank() || !delta.reasoningContent.isNullOrBlank() || delta.finishReason != null) {
+                    if (!delta.content.isNullOrBlank() || !delta.reasoningContent.isNullOrBlank() ||
+                        !delta.toolCalls.isNullOrEmpty() || delta.finishReason != null) {
                         lastMeaningfulEvent = System.nanoTime()
                     }
                     progress?.append(logId, delta.reasoningContent, delta.content)
@@ -417,13 +452,15 @@ class StreamingChatService(
         readTimeoutSeconds: Long? = null,
         taskContext: AiTaskContext? = null
     ): String {
+        val experimental = experimentalApiModeEnabled()
         val context = taskContext?.forRequest()
         val actualMessages = context?.let { AiTaskMessageAssembler.assemble(messages, it) } ?: messages
         val url = "${modelConfig.baseUrl.trimEnd('/')}/chat/completions"
         val requestBody = buildRequestBody(
             messages = actualMessages, modelConfig = modelConfig, stream = false,
             maxTokens = maxTokens, thinkingBudget = thinkingBudget, disableThinking = disableThinking,
-            isolatedTaskParameters = isolatedTaskParameters, responseFormatJson = responseFormatJson
+            isolatedTaskParameters = isolatedTaskParameters, responseFormatJson = responseFormatJson,
+            experimentalApiMode = experimental,
         )
         val logId = DebugLogManager.startRequest(
             sessionId = context?.taskId ?: java.util.UUID.randomUUID().toString(),
@@ -471,7 +508,7 @@ class StreamingChatService(
             val refused = AiTaskRefusalPolicy.responseRefused(body)
             DebugLogManager.recordCompletion(logId, finishReason, refused)
             OpenAiSseParser.parseUsage(body)?.let { DebugLogManager.recordPromptCacheUsage(logId, it) }
-            val content = OpenAiCompletionResponsePolicy.requireCompletion(body) {
+            val content = OpenAiCompletionResponsePolicy.requireCompletion(body, experimentalApiMode = experimental) {
                 DebugLogManager.appendResponseChunk(logId, "", it)
             }
             DebugLogManager.completeRequest(logId)
@@ -513,6 +550,7 @@ class StreamingChatService(
                 is StreamEvent.ReasoningDelta -> onReasoningDelta(event.text)
                 is StreamEvent.Error -> throw event.asException()
                 StreamEvent.Done -> completed = true
+                is StreamEvent.ContentPreview -> Unit // Display-only; canonical parsing consumes Delta.
                 is StreamEvent.Usage -> Unit
             }
         }
@@ -536,7 +574,8 @@ class StreamingChatService(
         includeStreamUsage: Boolean = false,
         disableThinking: Boolean = false,
         isolatedTaskParameters: Boolean = false,
-        responseFormatJson: Boolean = false
+        responseFormatJson: Boolean = false,
+        experimentalApiMode: Boolean = experimentalApiModeEnabled(),
     ): String = OpenAiChatRequestSerializer.serialize(
             messages = messages,
             modelConfig = modelConfig,
@@ -552,6 +591,7 @@ class StreamingChatService(
             disableThinking = disableThinking,
             isolatedTaskParameters = isolatedTaskParameters,
             responseFormatJson = responseFormatJson,
+            experimentalApiMode = experimentalApiMode,
         )
 
     private fun compactImageDescription(text: String): String {

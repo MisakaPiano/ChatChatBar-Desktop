@@ -90,6 +90,7 @@ class CharacterCardCandidateGenerator(private val gateway: CharacterCardAiGatewa
                     is StreamEvent.ReasoningDelta -> { thought.append(event.text); reasoning(stage, thought.toString()) }
                     is StreamEvent.Error -> throw event.asException()
                     StreamEvent.Done -> completed = true
+                    is StreamEvent.ContentPreview -> publish(event.text)
                     is StreamEvent.Usage -> Unit
                 }
             }

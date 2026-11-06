@@ -286,6 +286,7 @@ internal class DesktopCharacterCardAiController(
                                     is StreamEvent.ReasoningDelta -> onReasoning(event.text)
                                     is StreamEvent.Error -> throw event.asException()
                                     StreamEvent.Done -> done = true
+                                    is StreamEvent.ContentPreview -> Unit // Display-only; canonical parsing consumes Delta.
                                     is StreamEvent.Usage -> Unit
                                 } }
                                 check(done && raw.isNotBlank()) { "RESEARCH_STREAM_INCOMPLETE" }

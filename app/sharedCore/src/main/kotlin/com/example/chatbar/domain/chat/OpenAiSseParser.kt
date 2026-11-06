@@ -22,6 +22,7 @@ data class OpenAiSseChunk(
     val reasoningContent: String?,
     val finishReason: String? = null,
     val refused: Boolean = false,
+    val toolCalls: JsonArray? = null,
 )
 
 object OpenAiSseParser {
@@ -61,7 +62,11 @@ object OpenAiSseParser {
             (delta?.get("content") as? JsonArray)?.any { part ->
                 (part as? JsonObject)?.get("type")?.jsonPrimitive?.contentOrNull == "refusal"
             } == true || finishReason == "content_filter"
-        return OpenAiSseChunk(content, reasoning, finishReason, refused)
+        val toolCalls = delta?.get("tool_calls") as? JsonArray
+            ?: (delta?.get("function_call") as? JsonObject)?.let { function ->
+                JsonArray(listOf(JsonObject(mapOf("index" to JsonPrimitive(0), "function" to function))))
+            }
+        return OpenAiSseChunk(content, reasoning, finishReason, refused, toolCalls)
     }
 
     fun parseUsage(data: String): PromptCacheUsage? {

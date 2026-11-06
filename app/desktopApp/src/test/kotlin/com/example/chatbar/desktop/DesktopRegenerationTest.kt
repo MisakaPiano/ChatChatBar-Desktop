@@ -13,6 +13,69 @@ import okhttp3.mockwebserver.*
 import kotlin.test.*
 
 class DesktopRegenerationTest {
+    @Test fun `experimental main request freezes saved setting and persists only canonical tool story`() = runBlocking {
+        fixture { container, server, session, target ->
+            val settings = container.settingsRepository
+            settings.saveAppSettings(settings.getAppSettings().copy(experimentalApiModeEnabled = true))
+            val entered = java.util.concurrent.CountDownLatch(1)
+            val release = java.util.concurrent.CountDownLatch(1)
+            server.dispatcher = object : Dispatcher() {
+                override fun dispatch(request: RecordedRequest): MockResponse {
+                    entered.countDown(); check(release.await(5, TimeUnit.SECONDS))
+                    return MockResponse().setHeader("Content-Type", "text/event-stream").setBody(
+                        """data: {"choices":[{"delta":{"content":"preamble"}}]}
+
+data: {"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"name":"game_content","arguments":"{\"content\":\"canonical story\"}"}}]},"finish_reason":"tool_calls"}]}
+
+data: [DONE]
+
+""")
+                }
+            }
+            val operation = async { container.createRealChatRuntime().regenerate(session, target.id) }
+            try {
+                withContext(Dispatchers.IO) { check(entered.await(5, TimeUnit.SECONDS)) }
+                settings.saveAppSettings(settings.getAppSettings().copy(experimentalApiModeEnabled = false))
+                release.countDown()
+                val result = withTimeout(8000) { operation.await() }
+                assertNull(result.failureMessage)
+                assertEquals(listOf("old-answer", "canonical story"), result.assistant.alternatives)
+                assertTrue(result.completion!!.toolReplyCompleted)
+                val body = Json.parseToJsonElement(server.takeRequest(1, TimeUnit.SECONDS)!!.body.readUtf8()).jsonObject
+                assertTrue("tools" in body)
+                assertFalse(settings.getAppSettings().experimentalApiModeEnabled)
+            } finally { release.countDown(); operation.cancelAndJoin() }
+        }
+    }
+
+    @Test fun `experimental stop retains preview or decoded partial story while ordinary cancellation discards both`() = runBlocking {
+        for (tool in listOf(false, true)) for (stop in listOf(false, true)) fixture { container, _, session, target ->
+            container.settingsRepository.saveAppSettings(container.settingsRepository.getAppSettings().copy(experimentalApiModeEnabled = true))
+            val expected = if (tool) "tool partial" else "ordinary preview"
+            val delta = if (!tool) buildJsonObject { put("content", expected) } else buildJsonObject {
+                put("tool_calls", buildJsonArray { add(buildJsonObject { put("index", 0); put("function", buildJsonObject {
+                    put("name", "game_content"); put("arguments", "{\"content\":\"$expected")
+                }) }) })
+            }
+            val frame = buildJsonObject { put("choices", buildJsonArray { add(buildJsonObject { put("delta", delta) }) }) }.toString()
+            ControlledDesktopSseServer(frame).use { stream ->
+                container.modelRepository.saveModel(container.modelRepository.getModel("model")!!.copy(baseUrl = stream.baseUrl))
+                val control = DesktopChatGenerationControl()
+                assertFailsWith<CancellationException> {
+                    container.createRealChatRuntime().regenerate(session, target.id, observer = DesktopRealChatObserver { update ->
+                        if (update.content == expected) {
+                            if (stop) control.requestUserStop()
+                            throw CancellationException("Synthetic stopped collector")
+                        }
+                    }, control = control)
+                }
+                val saved = container.chatRepository.getMessage(target.id, session)!!
+                if (stop) assertEquals(listOf("old-answer", expected), saved.alternatives)
+                else assertEquals(target, saved)
+            }
+        }
+    }
+
     @Test fun `regeneration captures next reply mode once and retains old and new candidate modes`() = runBlocking {
         fixture { container, server, session, target ->
             container.chatRepository.setNarrativeMode(session, ChatNarrativeMode.ADVANCE)

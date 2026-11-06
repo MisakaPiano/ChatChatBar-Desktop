@@ -20,7 +20,8 @@ data class ConnectionProbeResult(val status: ConnectionProbeStatus, val error: S
 data class ModelConnectionProbeResult(val chat: ConnectionProbeResult, val embedding: ConnectionProbeResult)
 
 /** One ordered operation shared by Android and Desktop. No repositories, persistence or retries. */
-class ModelConnectionProbe(private val allowCleartextHttp: Boolean) {
+class ModelConnectionProbe(private val allowCleartextHttp: Boolean,
+    private val experimentalApiMode: Boolean = false) {
     suspend fun run(
         chat: ModelConfig?,
         embedding: EmbeddingConfig?,
@@ -57,6 +58,7 @@ class ModelConnectionProbe(private val allowCleartextHttp: Boolean) {
             listOf(ChatApiMessage.text("user", ConnectionProbePromptAuthority.CHAT_INPUT)),
             model.withoutOutputTokenLimit(), stream = false,
             allowCleartextHttp = allowCleartextHttp, disableThinking = true,
+            experimentalApiMode = experimentalApiMode,
         )
         val client = ProxyAwareClient.modelApiBuilder { allowCleartextHttp }
             .retryOnConnectionFailure(false)
@@ -89,6 +91,6 @@ class ModelConnectionProbe(private val allowCleartextHttp: Boolean) {
                 }
             })
         }
-        OpenAiCompletionResponsePolicy.requireCompletion(raw)
+        OpenAiCompletionResponsePolicy.requireCompletion(raw, experimentalApiMode = experimentalApiMode)
     }
 }

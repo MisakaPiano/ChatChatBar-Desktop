@@ -28,6 +28,7 @@ internal class DesktopNovelAiTextTransport private constructor(
             stream(input, modelConfig, log).collect { event ->
                 when (event) {
                     is ProviderStreamEvent.ContentDelta -> { text.append(event.text); emit(StreamEvent.Delta(event.text)) }
+                    is ProviderStreamEvent.ContentPreview -> emit(StreamEvent.ContentPreview(event.text))
                     is ProviderStreamEvent.ReasoningDelta -> { reasoning = true; emit(StreamEvent.ReasoningDelta(event.text)) }
                     is ProviderStreamEvent.Usage -> emit(StreamEvent.Usage(event.usage))
                     is ProviderStreamEvent.Completed -> {

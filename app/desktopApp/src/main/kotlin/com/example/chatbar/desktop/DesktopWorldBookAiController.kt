@@ -208,6 +208,7 @@ internal class DesktopWorldBookAiController(
                                     is StreamEvent.ReasoningDelta -> { thought(event.text); publish { it.copy(reasoning = it.reasoning + event.text) } }
                                     is StreamEvent.Error -> throw event.asException()
                                     StreamEvent.Done -> done = true
+                                    is StreamEvent.ContentPreview -> Unit // Display-only; canonical parsing consumes Delta.
                                     is StreamEvent.Usage -> Unit
                                 } }
                                 check(done && raw.isNotBlank()) { "WORLD_BOOK_STREAM_INCOMPLETE" }

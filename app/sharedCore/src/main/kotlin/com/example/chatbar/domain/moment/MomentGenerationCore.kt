@@ -478,6 +478,7 @@ class MomentGenerationCore(
                     )
                 }
                 is StreamEvent.Error -> errorMessage = event.asException()
+                is StreamEvent.ContentPreview -> onProgress(MomentGenerationProgress(phase = phase, message = message, streamedText = event.text))
                 StreamEvent.Done,
                 is StreamEvent.Usage,
                 is StreamEvent.ReasoningDelta -> Unit

@@ -61,10 +61,11 @@ internal fun isolatedFormatRepairStream(
     model: ModelConfig,
     diagnostics: ProviderTransportDiagnostics,
     timing: AuxiliaryStreamTiming = AuxiliaryStreamTiming(),
+    experimentalApiMode: Boolean = false,
  ): Flow<StreamEvent> = isolatedAuxiliaryTextStream(client, allowCleartextHttp, listOf(
     ChatApiMessage.text("system", FormatRepairPromptAuthority.MESSAGE_FORMAT_REPAIR_SYSTEM_PROMPT.trim()),
     ChatApiMessage.text("user", FormatRepairPromptAuthority.messageFormatRepairUserPrompt(formatCard, segmentedBubbleFormat, message)),
-), model, diagnostics, timing, disableThinking = false)
+), model, diagnostics, timing, disableThinking = false, experimentalApiMode = experimentalApiMode)
 
 /** Shared isolated auxiliary transport. Callers own the task's frozen prompt assembly. */
 internal fun isolatedAuxiliaryTextStream(
@@ -81,6 +82,7 @@ internal fun isolatedAuxiliaryTextStream(
     enableThinkingOverride: Boolean? = null,
     maxThinkingTokens: Int? = null,
     reasoningEffortOverride: String? = null,
+    experimentalApiMode: Boolean = false,
 ): Flow<StreamEvent> = callbackFlow {
     require(maximumTextChars > 0)
     val messages = AuxiliaryMessageAssembler.assemble(inputMessages, preservesInputRoles = false)
@@ -93,7 +95,7 @@ internal fun isolatedAuxiliaryTextStream(
         responseFormatJson = responseFormatJson, isolatedTaskParameters = isolatedTaskParameters,
         includeStreamUsage = model.supportsOpenAiPromptCacheInstrumentation(), thinkingBudget = thinkingBudget,
         enableThinkingOverride = enableThinkingOverride, maxThinkingTokens = maxThinkingTokens,
-        reasoningEffortOverride = reasoningEffortOverride)
+        reasoningEffortOverride = reasoningEffortOverride, experimentalApiMode = experimentalApiMode)
     val url = "${model.baseUrl.trimEnd('/')}/chat/completions"
     diagnostics.onRequest(ProviderRequestEvidence(url, body))
     val jsonBody = body.toRequestBody("application/json; charset=utf-8".toMediaType())
@@ -113,6 +115,8 @@ internal fun isolatedAuxiliaryTextStream(
     var refused = false
     var receivedReasoning = false
     val text = StringBuilder()
+    val toolDecoder = if (experimentalApiMode) ExperimentalToolReplyDecoder() else null
+    var previewedOrdinaryText = false
     var lastMeaningful = timing.nanoTime()
     var grace: Job? = null
     var watchdog: Job? = null
@@ -129,9 +133,28 @@ internal fun isolatedAuxiliaryTextStream(
         source.cancel()
     }
     fun complete(source: EventSource) {
+        if (terminal || !isActive) return
+        var toolReplyCompleted = false
+        if (toolDecoder != null) try {
+            val decoded = toolDecoder.finish(validate = !refused && finishReason != "length")
+            if (previewedOrdinaryText) {
+                trySend(StreamEvent.ContentPreview(text.toString()))
+                previewedOrdinaryText = false
+            }
+            if (decoded.remainingText.length > maximumTextChars - text.length) {
+                terminate(source, AiTaskResponseBudgetException()); return
+            }
+            text.append(decoded.remainingText)
+            if (decoded.remainingText.isNotEmpty()) trySend(StreamEvent.Delta(decoded.remainingText))
+            toolReplyCompleted = decoded.toolReplyCompleted
+        } catch (error: Exception) {
+            terminate(source, AuxiliaryProtocolException(AuxiliaryProtocolFailure.MALFORMED_SSE, error)); return
+        }
         val failure = AiTaskRefusalPolicy.failure(text.toString(), finishReason, refused)
             ?: if (finishReason == "length") ModelResponseTruncatedException()
-            else if (finishReason != null && finishReason != "stop") AuxiliaryProtocolException(AuxiliaryProtocolFailure.UNCONFIRMED_FINISH)
+            else if (finishReason != null && finishReason != "stop" &&
+                !(toolReplyCompleted && finishReason in setOf("tool_calls", "function_call")))
+                AuxiliaryProtocolException(AuxiliaryProtocolFailure.UNCONFIRMED_FINISH)
             else if (text.isBlank()) AiTaskEmptyResponseException(receivedReasoning)
             else null
         terminate(source, failure)
@@ -153,7 +176,8 @@ internal fun isolatedAuxiliaryTextStream(
             diagnostics.onResponseChunk(data, chunk)
             finishReason = chunk.finishReason ?: finishReason
             refused = refused || chunk.refused
-            if (!chunk.content.isNullOrBlank() || !chunk.reasoningContent.isNullOrBlank() || chunk.finishReason != null) {
+            if (!chunk.content.isNullOrBlank() || !chunk.reasoningContent.isNullOrBlank() ||
+                !chunk.toolCalls.isNullOrEmpty() || chunk.finishReason != null) {
                 lastMeaningful = timing.nanoTime()
             }
             if (!chunk.reasoningContent.isNullOrBlank()) {
@@ -161,7 +185,23 @@ internal fun isolatedAuxiliaryTextStream(
                 if (emitReasoning) trySend(StreamEvent.ReasoningDelta(chunk.reasoningContent))
             }
             // Reasoning stays separate from candidate/repair JSON and never participates in parsing.
-            chunk.content?.takeIf(String::isNotEmpty)?.let {
+            val content = try {
+                if (toolDecoder == null) chunk.content else {
+                    val decoded = toolDecoder.append(chunk.content, chunk.toolCalls)
+                    if (toolDecoder.ordinaryContent.length > maximumTextChars) throw AiTaskResponseBudgetException()
+                    if (!toolDecoder.hasToolCalls && !chunk.content.isNullOrEmpty()) {
+                        previewedOrdinaryText = true
+                        trySend(StreamEvent.ContentPreview(toolDecoder.ordinaryContent))
+                    } else if (toolDecoder.hasToolCalls && previewedOrdinaryText) {
+                        previewedOrdinaryText = false
+                        trySend(StreamEvent.ContentPreview(text.toString()))
+                    }
+                    decoded
+                }
+            } catch (error: Exception) {
+                terminate(eventSource, error); return@synchronized
+            }
+            content?.takeIf(String::isNotEmpty)?.let {
                 if (it.length > maximumTextChars - text.length) {
                     terminate(eventSource, AiTaskResponseBudgetException())
                     return@synchronized

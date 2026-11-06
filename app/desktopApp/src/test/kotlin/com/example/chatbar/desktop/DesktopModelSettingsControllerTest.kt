@@ -29,6 +29,27 @@ import kotlin.test.assertTrue
 import kotlinx.serialization.json.Json
 
 class DesktopModelSettingsControllerTest {
+    @Test fun `experimental protocol setting defaults off saves and participates in discard and dirty state`() = runBlocking {
+        withFixture { fixture ->
+            val controller = fixture.controller
+            controller.loadSettings()
+            assertFalse(controller.state.value.settings!!.experimentalApiModeEnabled)
+            controller.editSettings { it.copy(experimentalApiModeEnabled = true) }
+            assertTrue(controller.state.value.chatDefaultsDirty)
+            controller.discardChatDefaults()
+            assertFalse(controller.state.value.settings!!.experimentalApiModeEnabled)
+            controller.editSettings { it.copy(experimentalApiModeEnabled = true) }
+            controller.saveAppSettings()
+            assertNull(controller.state.value.error)
+            assertTrue(fixture.container.settingsRepository.getAppSettings().experimentalApiModeEnabled)
+            controller.loadSettings()
+            assertTrue(controller.state.value.settings!!.experimentalApiModeEnabled)
+            controller.editSettings { it.copy(experimentalApiModeEnabled = false) }
+            controller.saveAppSettings()
+            assertFalse(fixture.container.settingsRepository.getAppSettings().experimentalApiModeEnabled)
+            assertFalse(controller.state.value.chatDefaultsDirty)
+        }
+    }
     @Test fun `model capacity persists independently and invalid edits retain the saved value`() = runBlocking {
         withFixture { fixture ->
             val controller = inlinePresetController(fixture)

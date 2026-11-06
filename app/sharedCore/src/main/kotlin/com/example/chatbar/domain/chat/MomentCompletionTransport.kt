@@ -19,10 +19,11 @@ import okio.BufferedSink
 
 /** Debug's original non-streaming request mode, with the same shared serializer and completion policy. */
 internal suspend fun completeMomentRequest(client: OkHttpClient, allowCleartext: Boolean,
-    messages: List<ChatApiMessage>, model: ModelConfig, diagnostics: ProviderTransportDiagnostics): String {
+    messages: List<ChatApiMessage>, model: ModelConfig, diagnostics: ProviderTransportDiagnostics,
+    experimentalApiMode: Boolean = false): String {
     val body = OpenAiChatRequestSerializer.serialize(AuxiliaryMessageAssembler.assemble(messages, false),
         model, stream = false, allowCleartextHttp = allowCleartext,
-        isolatedTaskParameters = false, disableThinking = false)
+        isolatedTaskParameters = false, disableThinking = false, experimentalApiMode = experimentalApiMode)
     val url = "${model.baseUrl.trimEnd('/')}/chat/completions"
     diagnostics.onRequest(ProviderRequestEvidence(url, body))
     val bytes = body.toRequestBody("application/json; charset=utf-8".toMediaType())
@@ -57,5 +58,5 @@ internal suspend fun completeMomentRequest(client: OkHttpClient, allowCleartext:
         })
     }
     diagnostics.onResponseChunk(raw)
-    return OpenAiCompletionResponsePolicy.requireCompletion(raw)
+    return OpenAiCompletionResponsePolicy.requireCompletion(raw, experimentalApiMode = experimentalApiMode)
 }

@@ -23,6 +23,7 @@ object OpenAiChatRequestSerializer {
         disableThinking: Boolean = false,
         isolatedTaskParameters: Boolean = false,
         responseFormatJson: Boolean = false,
+        experimentalApiMode: Boolean = false,
     ): String {
         val legacyThinking = ThinkingRequestPolicy.usesLegacyControls(modelConfig)
         val taskEffort = ThinkingRequestPolicy.taskEffort(
@@ -32,7 +33,7 @@ object OpenAiChatRequestSerializer {
             maxThinkingTokens,
             reasoningEffortOverride,
         )
-        val requestMessages = CleartextHttpChatTemplatePolicy.adaptMessages(
+        val requestMessages = if (experimentalApiMode) messages else CleartextHttpChatTemplatePolicy.adaptMessages(
             messages = messages,
             allowCleartextHttp = allowCleartextHttp,
             baseUrl = modelConfig.baseUrl,
@@ -97,7 +98,8 @@ object OpenAiChatRequestSerializer {
                 put("response_format", buildJsonObject { put("type", "json_object") })
             }
         }
-        return SiliconFlowChatTemplatePolicy.adaptRequest(request, modelConfig).toString()
+        val transport = if (experimentalApiMode) ExperimentalToolChatPolicy.wrap(request, requestMessages) else request
+        return SiliconFlowChatTemplatePolicy.adaptRequest(transport, modelConfig).toString()
     }
 
     private const val PARAM_ENABLE_THINKING = "enable_thinking"

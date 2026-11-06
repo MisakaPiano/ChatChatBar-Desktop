@@ -90,6 +90,7 @@ internal data class DesktopModelEditorDraft(
 internal data class DesktopSettingsDraft(
     val defaultModelId: String? = null,
     val allowCleartextModelApi: Boolean = false,
+    val experimentalApiModeEnabled: Boolean = false,
     val defaultContextWindowSize: String = "20",
     val defaultFormatCardId: String? = null,
     val formatRepairModelId: String? = null,
@@ -206,6 +207,7 @@ internal class DesktopModelSettingsController(
                 settings = DesktopSettingsDraft(
                     defaultModelId = app.defaultModelId,
                     allowCleartextModelApi = app.allowCleartextModelApi,
+                    experimentalApiModeEnabled = app.experimentalApiModeEnabled,
                     defaultContextWindowSize = app.defaultContextWindowSize.toString(),
                     defaultFormatCardId = app.defaultFormatCardId,
                     formatRepairModelId = app.formatRepairModelId,
@@ -493,6 +495,7 @@ internal class DesktopModelSettingsController(
             current.copy(settings = current.settings?.copy(
                 defaultModelId = baseline.defaultModelId,
                 allowCleartextModelApi = baseline.allowCleartextModelApi,
+                experimentalApiModeEnabled = baseline.experimentalApiModeEnabled,
                 defaultContextWindowSize = baseline.defaultContextWindowSize.toString(),
                 defaultFormatCardId = baseline.defaultFormatCardId,
                 formatRepairModelId = baseline.formatRepairModelId,
@@ -577,6 +580,7 @@ internal class DesktopModelSettingsController(
         val edited = baseline.copy(
             defaultModelId = draft.defaultModelId,
             allowCleartextModelApi = draft.allowCleartextModelApi,
+            experimentalApiModeEnabled = draft.experimentalApiModeEnabled,
             defaultContextWindowSize = contextSize,
             defaultFormatCardId = draft.defaultFormatCardId,
             formatRepairModelId = draft.formatRepairModelId,
@@ -824,6 +828,7 @@ private fun DesktopModelEditorDraft.toModelConfig(original: ModelConfig?): Model
 private fun DesktopSettingsDraft.hasChatDefaultsChanges(baseline: AppSettings): Boolean =
     defaultModelId != baseline.defaultModelId ||
         allowCleartextModelApi != baseline.allowCleartextModelApi ||
+        experimentalApiModeEnabled != baseline.experimentalApiModeEnabled ||
         defaultContextWindowSize != baseline.defaultContextWindowSize.toString() ||
         defaultFormatCardId != baseline.defaultFormatCardId ||
         formatRepairModelId != baseline.formatRepairModelId ||
@@ -842,6 +847,8 @@ private fun DesktopSettingsDraft.reconcileAppSettingsSave(
     defaultModelId = if (defaultModelId == submitted.defaultModelId) saved.defaultModelId else defaultModelId,
     allowCleartextModelApi = if (allowCleartextModelApi == submitted.allowCleartextModelApi)
         saved.allowCleartextModelApi else allowCleartextModelApi,
+    experimentalApiModeEnabled = if (experimentalApiModeEnabled == submitted.experimentalApiModeEnabled)
+        saved.experimentalApiModeEnabled else experimentalApiModeEnabled,
     defaultContextWindowSize = if (defaultContextWindowSize == submitted.defaultContextWindowSize)
         saved.defaultContextWindowSize.toString() else defaultContextWindowSize,
     defaultFormatCardId = if (defaultFormatCardId == submitted.defaultFormatCardId)

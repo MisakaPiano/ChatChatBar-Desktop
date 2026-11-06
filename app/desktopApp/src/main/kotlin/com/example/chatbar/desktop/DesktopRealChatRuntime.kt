@@ -251,6 +251,7 @@ class DesktopRealChatRuntime internal constructor(
             content = "",
         )).copy(narrativeMode = plan.session.narrativeMode)
         var accumulatedContent = ""
+        var previewContent: String? = null
         var accumulatedReasoning = ""
         var persistedAssistant: ChatMessage? = null
         var completion: ProviderCompletionMetadata? = null
@@ -273,15 +274,22 @@ class DesktopRealChatRuntime internal constructor(
                 modelConfig = turn.model,
                 promptCacheKey = plan.assembly.promptCacheKey,
                 diagnostics = diagnostics,
+                experimentalApiMode = turn.settings.experimentalApiModeEnabled,
             ).collect { event ->
                 when (event) {
                     is ProviderStreamEvent.ContentDelta -> {
+                        previewContent = null
                         accumulatedContent += event.text
                         observer.onUpdate(DesktopRealChatStreamUpdate(accumulatedContent, accumulatedReasoning, regenerationTarget?.id))
                     }
+                    is ProviderStreamEvent.ContentPreview -> {
+                        previewContent = event.text.takeIf(String::isNotEmpty)
+                        observer.onUpdate(DesktopRealChatStreamUpdate(previewContent ?: accumulatedContent,
+                            accumulatedReasoning, regenerationTarget?.id))
+                    }
                     is ProviderStreamEvent.ReasoningDelta -> {
                         accumulatedReasoning += event.text
-                        observer.onUpdate(DesktopRealChatStreamUpdate(accumulatedContent, accumulatedReasoning, regenerationTarget?.id))
+                        observer.onUpdate(DesktopRealChatStreamUpdate(previewContent ?: accumulatedContent, accumulatedReasoning, regenerationTarget?.id))
                     }
                     is ProviderStreamEvent.Usage -> Unit
                     is ProviderStreamEvent.Error -> throw DesktopProviderChatException(
@@ -319,7 +327,7 @@ class DesktopRealChatRuntime internal constructor(
             if (cancelled is DesktopUserStoppedChatException || control?.isStopRequested() == true) {
                 val draft = InterruptedReplyPolicy.persistableDraft(
                     assistantBase.copy(
-                        content = accumulatedContent,
+                        content = accumulatedContent.ifBlank { previewContent.orEmpty() },
                         reasoningContent = accumulatedReasoning.takeIf(String::isNotBlank),
                         updatedAt = System.currentTimeMillis(),
                     ),

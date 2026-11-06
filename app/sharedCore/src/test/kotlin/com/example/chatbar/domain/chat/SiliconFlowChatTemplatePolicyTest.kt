@@ -111,4 +111,25 @@ class SiliconFlowChatTemplatePolicyTest {
         assertEquals(JsonArray(logical.map { message(it.role, it.content) }),
             Json.parseToJsonElement(target).jsonObject.getValue("messages").jsonArray)
     }
+
+    @Test fun `experimental wrapping precedes provider adaptation and retains native media tools and context`() {
+        val logical = listOf(ChatApiMessage.text("system", "core"),
+            ChatApiMessage.withImage("user", "image input", "synthetic-image"),
+            ChatApiMessage.text("assistant", "reply prefix:"))
+        val sent = Json.parseToJsonElement(OpenAiChatRequestSerializer.serialize(logical,
+            model.copy(customParams = mapOf("enable_thinking" to ParamValue.BooleanValue(true))), stream = true,
+            experimentalApiMode = true)).jsonObject
+        assertEquals(listOf("system", "user"), sent.getValue("messages").jsonArray.map { it.jsonObject.getValue("role").jsonPrimitive.content })
+        assertEquals(logical.first().content, sent.getValue("messages").jsonArray.first().jsonObject["content"])
+        val parts = sent.getValue("messages").jsonArray.last().jsonObject.getValue("content").jsonArray
+        assertEquals(logical[1].content.jsonArray.last(), parts.first())
+        val tools = sent.getValue("tools").jsonArray.map { it.jsonObject.getValue("function").jsonObject }
+        assertEquals(setOf("context", "game_content"), tools.map { it.getValue("name").jsonPrimitive.content }.toSet())
+        val context = tools.single { it.getValue("name").jsonPrimitive.content == "context" }.getValue("description").jsonPrimitive.content
+        val restored = Json.parseToJsonElement(context + "\"}]").jsonArray
+        assertEquals(listOf("user", "assistant"), restored.map { it.jsonObject.getValue("role").jsonPrimitive.content })
+        assertEquals(logical.last().content, restored.last().jsonObject["content"])
+        assertEquals(JsonPrimitive(true), sent["enable_thinking"])
+        assertFalse(sent.containsKey("prefix"))
+    }
 }

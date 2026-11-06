@@ -30,7 +30,7 @@ internal class DesktopAutomaticChatImages(
         val session = chats.getSession(original.sessionId) ?: return null
         if (!session.automaticImageGenerationEnabled) return null
         val evidence = result.completion?.let { ChatReplyCompletion(it.finishReason, it.refused,
-            it.transportFailed || result.failureMessage != null) }
+            it.transportFailed || result.failureMessage != null, it.toolReplyCompleted) }
         val reason = AutomaticChatImagePolicy.skipReason(evidence, original.content)
             ?: AutomaticChatImagePolicy.skipReason(evidence, original.displayContent)
             ?: if (stopped()) "回复已停止" else null

@@ -1254,6 +1254,7 @@ suspend fun collectPromptText(
                 }
             }
             is StreamEvent.Error -> throw event.asException()
+            is StreamEvent.ContentPreview -> onDelta(event.text)
             is StreamEvent.Usage,
             StreamEvent.Done -> Unit
         }

@@ -28,10 +28,12 @@ data class ProviderCompletionMetadata(
     val finishReason: String? = null,
     val refused: Boolean = false,
     val transportFailed: Boolean = false,
+    val toolReplyCompleted: Boolean = false,
 )
 
 sealed interface ProviderStreamEvent {
     data class ContentDelta(val text: String) : ProviderStreamEvent
+    data class ContentPreview(val text: String) : ProviderStreamEvent
     data class ReasoningDelta(val text: String) : ProviderStreamEvent
     data class Usage(val usage: PromptCacheUsage) : ProviderStreamEvent
     data class Completed(val metadata: ProviderCompletionMetadata) : ProviderStreamEvent
@@ -61,8 +63,11 @@ interface ProviderTransportDiagnostics {
 }
 
 class OpenAiStreamingTransport(
-    private val allowCleartextHttp: () -> Boolean = { false },
+    private val experimentalApiModeEnabled: () -> Boolean,
+    private val allowCleartextHttp: () -> Boolean,
 ) {
+    // Preserve the original one-lambda constructor, including trailing-lambda callers.
+    constructor(allowCleartextHttp: () -> Boolean = { false }) : this({ false }, allowCleartextHttp)
     private val client = ProxyAwareClient.modelApiBuilder(allowCleartextHttp)
         .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .readTimeout(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
@@ -87,34 +92,34 @@ class OpenAiStreamingTransport(
         modelConfig: ModelConfig,
         diagnostics: ProviderTransportDiagnostics = ProviderTransportDiagnostics.NONE,
     ): Flow<StreamEvent> = isolatedFormatRepairStream(
-        client, allowCleartextHttp(), formatCard, segmentedBubbleFormat, message, modelConfig, diagnostics,
+        client, allowCleartextHttp(), formatCard, segmentedBubbleFormat, message, modelConfig, diagnostics, experimentalApiMode = experimentalApiModeEnabled(),
     )
 
     /** Fish translation/tagging retains the selected model; the feature owns retries. */
     fun streamFishVoice(messages: List<ChatApiMessage>, modelConfig: ModelConfig,
         diagnostics: ProviderTransportDiagnostics = ProviderTransportDiagnostics.NONE): Flow<StreamEvent> =
         isolatedAuxiliaryTextStream(client, allowCleartextHttp(), messages, modelConfig, diagnostics,
-            isolatedTaskParameters = false, disableThinking = false, protectEnvelope = false)
+            experimentalApiMode = experimentalApiModeEnabled(), isolatedTaskParameters = false, disableThinking = false, protectEnvelope = false)
 
     /** FORMAT_CARD GENERATE/REPAIR retains the model's output cap, thinking and custom parameters. */
     fun streamFormatCardAutoFill(messages: List<ChatApiMessage>, modelConfig: ModelConfig,
         diagnostics: ProviderTransportDiagnostics = ProviderTransportDiagnostics.NONE): Flow<StreamEvent> =
         isolatedAuxiliaryTextStream(client, allowCleartextHttp(), messages, modelConfig, diagnostics,
-            isolatedTaskParameters = false, disableThinking = false, emitReasoning = true, protectEnvelope = false)
+            experimentalApiMode = experimentalApiModeEnabled(), isolatedTaskParameters = false, disableThinking = false, emitReasoning = true, protectEnvelope = false)
 
     /** Character fill/rewrite inherits the selected model for generation and repair. */
     fun streamCharacterCardCandidate(stage: com.example.chatbar.domain.card.CharacterCardAiStage,
         messages: List<ChatApiMessage>, modelConfig: ModelConfig,
         diagnostics: ProviderTransportDiagnostics = ProviderTransportDiagnostics.NONE): Flow<StreamEvent> =
         isolatedAuxiliaryTextStream(client, allowCleartextHttp(), messages, modelConfig, diagnostics,
-            isolatedTaskParameters = false, disableThinking = false, emitReasoning = true, protectEnvelope = false)
+            experimentalApiMode = experimentalApiModeEnabled(), isolatedTaskParameters = false, disableThinking = false, emitReasoning = true, protectEnvelope = false)
 
     fun streamCharacterResearch(stage: com.example.chatbar.domain.search.CharacterResearchAiStage,
         messages: List<ChatApiMessage>, modelConfig: ModelConfig,
         diagnostics: ProviderTransportDiagnostics = ProviderTransportDiagnostics.NONE): Flow<StreamEvent> {
         val policy = com.example.chatbar.domain.search.CharacterResearchAiRequestPolicy.forStage(stage)
         return isolatedAuxiliaryTextStream(client, allowCleartextHttp(), messages, modelConfig, diagnostics,
-            isolatedTaskParameters = false, disableThinking = false, emitReasoning = true, protectEnvelope = false,
+            experimentalApiMode = experimentalApiModeEnabled(), isolatedTaskParameters = false, disableThinking = false, emitReasoning = true, protectEnvelope = false,
             thinkingBudget = policy.thinkingBudget, enableThinkingOverride = policy.enableThinking,
             maxThinkingTokens = policy.maxThinkingTokens, reasoningEffortOverride = policy.reasoningEffort)
     }
@@ -125,7 +130,7 @@ class OpenAiStreamingTransport(
         diagnostics: ProviderTransportDiagnostics = ProviderTransportDiagnostics.NONE): Flow<StreamEvent> {
         return isolatedAuxiliaryTextStream(client, allowCleartextHttp(), messages, modelConfig, diagnostics,
             timing = AuxiliaryStreamTiming(readTimeoutMillis = 120_000, inactivityMillis = 120_000),
-            isolatedTaskParameters = false, disableThinking = false, emitReasoning = true, protectEnvelope = false)
+            experimentalApiMode = experimentalApiModeEnabled(), isolatedTaskParameters = false, disableThinking = false, emitReasoning = true, protectEnvelope = false)
     }
 
     /** Image-to-character text keeps JSON output and 120-second silence while inheriting model parameters. */
@@ -133,7 +138,7 @@ class OpenAiStreamingTransport(
         diagnostics: ProviderTransportDiagnostics = ProviderTransportDiagnostics.NONE): Flow<StreamEvent> =
         isolatedAuxiliaryTextStream(client, allowCleartextHttp(), messages, modelConfig, diagnostics,
             timing = AuxiliaryStreamTiming(readTimeoutMillis = 120_000, inactivityMillis = 120_000),
-            isolatedTaskParameters = false, disableThinking = false, responseFormatJson = true,
+            experimentalApiMode = experimentalApiModeEnabled(), isolatedTaskParameters = false, disableThinking = false, responseFormatJson = true,
             emitReasoning = true, protectEnvelope = false)
 
     /** Memory/RAG callers own their retry policy; exactly one transport request per collection. */
@@ -143,7 +148,7 @@ class OpenAiStreamingTransport(
         isolatedTaskParameters: Boolean = false): Flow<StreamEvent> =
         isolatedAuxiliaryTextStream(client, allowCleartextHttp(), messages,
             if (isolatedTaskParameters) modelConfig.withoutOutputTokenLimit() else modelConfig,
-            diagnostics, isolatedTaskParameters = isolatedTaskParameters, disableThinking = disableThinking,
+            diagnostics, experimentalApiMode = experimentalApiModeEnabled(), isolatedTaskParameters = isolatedTaskParameters, disableThinking = disableThinking,
             protectEnvelope = isolatedTaskParameters,
             responseFormatJson = responseFormatJson, maximumTextChars = 1024 * 1024)
 
@@ -152,11 +157,11 @@ class OpenAiStreamingTransport(
         diagnostics: ProviderTransportDiagnostics = ProviderTransportDiagnostics.NONE): Flow<StreamEvent> =
         isolatedAuxiliaryTextStream(client, allowCleartextHttp(), messages, modelConfig, diagnostics,
             timing = AuxiliaryStreamTiming(readTimeoutMillis = 120_000, inactivityMillis = 120_000),
-            isolatedTaskParameters = false, disableThinking = false, emitReasoning = true, protectEnvelope = false)
+            experimentalApiMode = experimentalApiModeEnabled(), isolatedTaskParameters = false, disableThinking = false, emitReasoning = true, protectEnvelope = false)
 
     suspend fun completeMoment(messages: List<ChatApiMessage>, modelConfig: ModelConfig,
         diagnostics: ProviderTransportDiagnostics = ProviderTransportDiagnostics.NONE): String =
-        completeMomentRequest(client, allowCleartextHttp(), messages, modelConfig, diagnostics)
+        completeMomentRequest(client, allowCleartextHttp(), messages, modelConfig, diagnostics, experimentalApiModeEnabled())
 
     fun streamMainChat(
         messages: List<ChatApiMessage>,
@@ -164,7 +169,9 @@ class OpenAiStreamingTransport(
         promptCacheKey: String? = null,
         maxTokens: Int? = null,
         diagnostics: ProviderTransportDiagnostics = ProviderTransportDiagnostics.NONE,
+        experimentalApiMode: Boolean? = null,
     ): Flow<ProviderStreamEvent> = callbackFlow {
+        val experimental = experimentalApiMode ?: experimentalApiModeEnabled()
         val supportsCacheInstrumentation = modelConfig.supportsOpenAiPromptCacheInstrumentation()
         val url = "${modelConfig.baseUrl.trimEnd('/')}/chat/completions"
         val requestBody = OpenAiChatRequestSerializer.serialize(
@@ -175,6 +182,7 @@ class OpenAiStreamingTransport(
             maxTokens = maxTokens,
             promptCacheKey = promptCacheKey.takeIf { supportsCacheInstrumentation },
             includeStreamUsage = supportsCacheInstrumentation,
+            experimentalApiMode = experimental,
         )
         diagnostics.onRequest(ProviderRequestEvidence(url, requestBody))
 
@@ -198,6 +206,9 @@ class OpenAiStreamingTransport(
                 val terminalDelivered = AtomicBoolean(false)
                 val finishReasonObserved = AtomicBoolean(false)
                 val completion = AtomicReference(ProviderCompletionMetadata())
+                val toolDecoder = if (experimental) ExperimentalToolReplyDecoder() else null
+                var previewedOrdinaryText = false
+                val streamLock = Any()
                 var finishReasonCompletionJob: Job? = null
 
                 fun resumeAttempt() {
@@ -207,109 +218,145 @@ class OpenAiStreamingTransport(
                 }
 
                 fun deliverTerminal(eventSource: EventSource, event: ProviderStreamEvent) {
-                    if (!terminalDelivered.compareAndSet(false, true)) return
-                    shouldStop = true
-                    terminalSent.set(true)
-                    trySend(event)
-                    resumeAttempt()
-                    eventSource.cancel()
+                    synchronized(streamLock) {
+                        if (!terminalDelivered.compareAndSet(false, true)) return
+                        var finalEvent = event
+                        if (toolDecoder != null) {
+                            try {
+                                val evidence = completion.get()
+                                val decoded = toolDecoder.finish(validate = event is ProviderStreamEvent.Completed &&
+                                    !evidence.refused && !evidence.transportFailed && evidence.finishReason != "length")
+                                if (decoded.remainingText.isNotEmpty()) trySend(ProviderStreamEvent.ContentDelta(decoded.remainingText))
+                                if (event is ProviderStreamEvent.Completed) {
+                                    finalEvent = ProviderStreamEvent.Completed(evidence.copy(toolReplyCompleted = decoded.toolReplyCompleted))
+                                }
+                            } catch (error: Exception) {
+                                finalEvent = ProviderStreamEvent.Error("实验模式工具回复解析失败", completion.get(), error)
+                            }
+                        }
+                        shouldStop = true
+                        terminalSent.set(true)
+                        trySend(finalEvent)
+                        resumeAttempt()
+                        eventSource.cancel()
+                    }
                 }
 
                 val listener = object : EventSourceListener() {
                     override fun onEvent(eventSource: EventSource, id: String?, type: String?, data: String) {
-                        if (terminalDelivered.get()) return
-                        if (data.trim() == "[DONE]") {
-                            finishReasonCompletionJob?.cancel()
-                            diagnostics.onResponseChunk(data)
-                            deliverTerminal(eventSource, ProviderStreamEvent.Completed(completion.get()))
-                            return
-                        }
-
-                        val chunk = try {
-                            OpenAiSseParser.parse(data)
-                        } catch (error: Exception) {
-                            diagnostics.onResponseChunk(data)
-                            deliverTerminal(
-                                eventSource,
-                                ProviderStreamEvent.Error(
-                                    message = "解析 SSE 数据失败: ${error.message}",
-                                    metadata = completion.get(),
-                                    cause = error,
-                                ),
-                            )
-                            return
-                        }
-                        completion.updateAndGet { previous ->
-                            previous.copy(
-                                finishReason = chunk.finishReason ?: previous.finishReason,
-                                refused = previous.refused || chunk.refused,
-                            )
-                        }
-                        diagnostics.onResponseChunk(data, chunk)
-                        chunk.reasoningContent?.let { trySend(ProviderStreamEvent.ReasoningDelta(it)) }
-                        chunk.content?.let { trySend(ProviderStreamEvent.ContentDelta(it)) }
-                        OpenAiSseParser.parseUsage(data)?.let { trySend(ProviderStreamEvent.Usage(it)) }
-                        if (chunk.finishReason != null && finishReasonObserved.compareAndSet(false, true)) {
-                            finishReasonCompletionJob = launch {
-                                delay(FINISH_REASON_GRACE_MILLIS)
+                        synchronized(streamLock) {
+                            if (terminalDelivered.get()) return
+                            if (data.trim() == "[DONE]") {
+                                finishReasonCompletionJob?.cancel()
+                                diagnostics.onResponseChunk(data)
                                 deliverTerminal(eventSource, ProviderStreamEvent.Completed(completion.get()))
+                                return
+                            }
+
+                            val chunk = try {
+                                OpenAiSseParser.parse(data)
+                            } catch (error: Exception) {
+                                diagnostics.onResponseChunk(data)
+                                deliverTerminal(
+                                    eventSource,
+                                    ProviderStreamEvent.Error(
+                                        message = "解析 SSE 数据失败: ${error.message}",
+                                        metadata = completion.get(),
+                                        cause = error,
+                                    ),
+                                )
+                                return
+                            }
+                            completion.updateAndGet { previous ->
+                                previous.copy(
+                                    finishReason = chunk.finishReason ?: previous.finishReason,
+                                    refused = previous.refused || chunk.refused,
+                                )
+                            }
+                            diagnostics.onResponseChunk(data, chunk)
+                            chunk.reasoningContent?.let { trySend(ProviderStreamEvent.ReasoningDelta(it)) }
+                            if (toolDecoder == null) chunk.content?.let { trySend(ProviderStreamEvent.ContentDelta(it)) }
+                            else try {
+                                val content = toolDecoder.append(chunk.content, chunk.toolCalls)
+                                if (!toolDecoder.hasToolCalls && !chunk.content.isNullOrEmpty()) {
+                                    previewedOrdinaryText = true
+                                    trySend(ProviderStreamEvent.ContentPreview(toolDecoder.ordinaryContent))
+                                } else if (toolDecoder.hasToolCalls && previewedOrdinaryText) {
+                                    previewedOrdinaryText = false
+                                    trySend(ProviderStreamEvent.ContentPreview(""))
+                                }
+                                content?.let { trySend(ProviderStreamEvent.ContentDelta(it)) }
+                            } catch (error: Exception) {
+                                deliverTerminal(eventSource, ProviderStreamEvent.Error("实验模式工具回复解析失败", completion.get(), error))
+                                return
+                            }
+                            OpenAiSseParser.parseUsage(data)?.let { trySend(ProviderStreamEvent.Usage(it)) }
+                            if (chunk.finishReason != null && finishReasonObserved.compareAndSet(false, true)) {
+                                finishReasonCompletionJob = launch {
+                                    delay(FINISH_REASON_GRACE_MILLIS)
+                                    deliverTerminal(eventSource, ProviderStreamEvent.Completed(completion.get()))
+                                }
                             }
                         }
                     }
 
                     override fun onFailure(eventSource: EventSource, t: Throwable?, response: Response?) {
-                        if (terminalDelivered.get()) {
-                            resumeAttempt()
-                            return
-                        }
-                        if (finishReasonObserved.get()) {
-                            finishReasonCompletionJob?.cancel()
-                            val failedCompletion = completion.updateAndGet { it.copy(transportFailed = true) }
-                            deliverTerminal(eventSource, ProviderStreamEvent.Completed(failedCompletion))
-                            return
-                        }
-                        val body = runCatching { response?.body?.string() }.getOrNull()
-                        if (retryCount < maxRetries && response?.code == 400 && body?.contains("20015") == true) {
-                            retrying = true
-                            retryCount++
-                            diagnostics.onRetry(
-                                retryCount,
-                                "[RETRY #$retryCount] 服务器返回 400/20015，${retryCount}秒后重试...",
-                            )
-                            resumeAttempt()
-                            return
-                        }
-                        val message = buildString {
-                            append("流式请求失败")
-                            response?.let {
-                                append(" (${it.code})")
-                                if (!body.isNullOrBlank()) append(": $body")
+                        synchronized(streamLock) {
+                            if (terminalDelivered.get()) {
+                                resumeAttempt()
+                                return
                             }
-                            t?.let { append(" - ${it.message}") }
-                            if (retryCount > 0) append(" (已重试${retryCount}次)")
+                            if (finishReasonObserved.get()) {
+                                finishReasonCompletionJob?.cancel()
+                                val failedCompletion = completion.updateAndGet { it.copy(transportFailed = true) }
+                                deliverTerminal(eventSource, ProviderStreamEvent.Completed(failedCompletion))
+                                return
+                            }
+                            val body = runCatching { response?.body?.string() }.getOrNull()
+                            if (retryCount < maxRetries && response?.code == 400 && body?.contains("20015") == true) {
+                                retrying = true
+                                retryCount++
+                                diagnostics.onRetry(
+                                    retryCount,
+                                    "[RETRY #$retryCount] 服务器返回 400/20015，${retryCount}秒后重试...",
+                                )
+                                resumeAttempt()
+                                return
+                            }
+                            val message = buildString {
+                                append("流式请求失败")
+                                response?.let {
+                                    append(" (${it.code})")
+                                    if (!body.isNullOrBlank()) append(": $body")
+                                }
+                                t?.let { append(" - ${it.message}") }
+                                if (retryCount > 0) append(" (已重试${retryCount}次)")
+                            }
+                            deliverTerminal(
+                                eventSource,
+                                ProviderStreamEvent.Error(message, completion.get(), t),
+                            )
                         }
-                        deliverTerminal(
-                            eventSource,
-                            ProviderStreamEvent.Error(message, completion.get(), t),
-                        )
                     }
 
                     override fun onClosed(eventSource: EventSource) {
-                        if (retrying || terminalDelivered.get()) {
-                            resumeAttempt()
-                            return
-                        }
-                        finishReasonCompletionJob?.cancel()
-                        if (finishReasonObserved.get()) {
-                            deliverTerminal(eventSource, ProviderStreamEvent.Completed(completion.get()))
-                        } else {
-                            deliverTerminal(
-                                eventSource,
-                                ProviderStreamEvent.Error(
-                                    message = "流式连接已关闭，但未收到 finish_reason 或 [DONE]",
-                                    metadata = completion.get(),
-                                ),
-                            )
+                        synchronized(streamLock) {
+                            if (retrying || terminalDelivered.get()) {
+                                resumeAttempt()
+                                return
+                            }
+                            finishReasonCompletionJob?.cancel()
+                            if (finishReasonObserved.get()) {
+                                deliverTerminal(eventSource, ProviderStreamEvent.Completed(completion.get()))
+                            } else {
+                                deliverTerminal(
+                                    eventSource,
+                                    ProviderStreamEvent.Error(
+                                        message = "流式连接已关闭，但未收到 finish_reason 或 [DONE]",
+                                        metadata = completion.get(),
+                                    ),
+                                )
+                            }
                         }
                     }
                 }
@@ -317,8 +364,12 @@ class OpenAiStreamingTransport(
                 diagnostics.onAttemptStarted(retryCount + 1)
                 val eventSource = EventSources.createFactory(client).newEventSource(request, listener)
                 continuation.invokeOnCancellation {
-                    if (!terminalSent.get()) diagnostics.onCancelled()
-                    eventSource.cancel()
+                    synchronized(streamLock) {
+                        terminalDelivered.set(true)
+                        finishReasonCompletionJob?.cancel()
+                        if (!terminalSent.get()) diagnostics.onCancelled()
+                        eventSource.cancel()
+                    }
                 }
             }
 
