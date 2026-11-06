@@ -42,7 +42,7 @@ class ExperimentalToolTransportTest {
         }
     }
 
-    @Test fun `main replaces ordinary preview with decoded tool text and preserves reasoning and usage`() = runBlocking {
+    @Test fun `main replaces ordinary preview with decoded tool text and preserves reasoning and usage`() = runBlocking<Unit> {
         fixture { server, transport ->
             server.enqueue(sse(ordinary("preamble"),
                 chunk(buildJsonObject { put("reasoning_content", "thought") }),
@@ -70,7 +70,7 @@ class ExperimentalToolTransportTest {
         }
     }
 
-    @Test fun `one long lived owner rereads the flag for new requests and freezes it within each request`() = runBlocking {
+    @Test fun `one long lived owner rereads the flag for new requests and freezes it within each request`() = runBlocking<Unit> {
         MockWebServer().use { server ->
             var enabled = true
             val transport = OpenAiStreamingTransport(experimentalApiModeEnabled = { enabled }, allowCleartextHttp = { true })
@@ -95,7 +95,7 @@ class ExperimentalToolTransportTest {
         }
     }
 
-    @Test fun `ordinary experimental reply is previewed then committed once and default off body is unchanged`() = runBlocking {
+    @Test fun `ordinary experimental reply is previewed then committed once and default off body is unchanged`() = runBlocking<Unit> {
         fixture { server, transport ->
             server.enqueue(sse(ordinary("one"), ordinary("two"), chunk(buildJsonObject {}, "stop"), "[DONE]"))
             val events = transport.streamMainChat(messages, model(server)).toList()
@@ -111,7 +111,7 @@ class ExperimentalToolTransportTest {
         }
     }
 
-    @Test fun `invalid tool fails while length refusal and cancellation never gain valid tool completion`() = runBlocking {
+    @Test fun `invalid tool fails while length refusal and cancellation never gain valid tool completion`() = runBlocking<Unit> {
         fixture { server, transport ->
             for ((name, arguments) in listOf("unknown" to "{\"content\":\"x\"}",
                 "game_content" to "{\"content\":\"incomplete")) {
@@ -140,7 +140,7 @@ class ExperimentalToolTransportTest {
         }
     }
 
-    @Test fun `all isolated production helper producers use the same experimental wire and canonical output`() = runBlocking {
+    @Test fun `all isolated production helper producers use the same experimental wire and canonical output`() = runBlocking<Unit> {
         fixture { server, transport ->
             val model = model(server)
             val producers = listOf<() -> Flow<StreamEvent>>(
@@ -169,7 +169,7 @@ class ExperimentalToolTransportTest {
         }
     }
 
-    @Test fun `auxiliary ordinary completion and invalid tool remain explicit`() = runBlocking {
+    @Test fun `auxiliary ordinary completion and invalid tool remain explicit`() = runBlocking<Unit> {
         fixture { server, transport ->
             server.enqueue(sse(ordinary("plain"), ordinary(" text"), chunk(buildJsonObject {}, "stop"), "[DONE]"))
             val plain = transport.streamFishVoice(messages, model(server)).toList()
@@ -181,7 +181,7 @@ class ExperimentalToolTransportTest {
         }
     }
 
-    @Test fun `decoded tool and ordinary previews retain the auxiliary response budget`() = runBlocking {
+    @Test fun `decoded tool and ordinary previews retain the auxiliary response budget`() = runBlocking<Unit> {
         MockWebServer().use { server ->
             val client = okhttp3.OkHttpClient()
             try {
@@ -201,7 +201,7 @@ class ExperimentalToolTransportTest {
         }
     }
 
-    @Test fun `nonstream Moments and connection probe decode game content without another physical request`() = runBlocking {
+    @Test fun `nonstream Moments and connection probe decode game content without another physical request`() = runBlocking<Unit> {
         fixture { server, transport ->
             fun response() = MockResponse().setHeader("Content-Type", "application/json").setBody("""{"choices":[{"message":{"content":"preamble","tool_calls":[{"function":{"name":"game_content","arguments":"{\"content\":\"answer\"}"}}]},"finish_reason":"tool_calls"}]}""")
             server.enqueue(response())
