@@ -46,7 +46,7 @@ object OpenAiChatRequestSerializer {
             }
         }
 
-        return buildJsonObject {
+        val request = buildJsonObject {
             put("model", modelConfig.modelName)
             put("messages", messagesArray)
             put("stream", stream)
@@ -96,7 +96,8 @@ object OpenAiChatRequestSerializer {
             if (responseFormatJson) {
                 put("response_format", buildJsonObject { put("type", "json_object") })
             }
-        }.toString()
+        }
+        return SiliconFlowChatTemplatePolicy.adaptRequest(request, modelConfig).toString()
     }
 
     private const val PARAM_ENABLE_THINKING = "enable_thinking"

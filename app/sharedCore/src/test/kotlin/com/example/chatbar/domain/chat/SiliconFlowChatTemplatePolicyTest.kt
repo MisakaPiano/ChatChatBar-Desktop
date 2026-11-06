@@ -1,6 +1,8 @@
 package com.example.chatbar.domain.chat
 
 import com.example.chatbar.data.local.entity.ModelConfig
+import com.example.chatbar.data.local.entity.ParamValue
+import com.example.chatbar.domain.prompt.AuxiliaryMessageAssembler
 import kotlinx.serialization.json.*
 import org.junit.Assert.*
 import org.junit.Test
@@ -73,5 +75,40 @@ class SiliconFlowChatTemplatePolicyTest {
                     Json.parseToJsonElement(sent.last().jsonObject.getValue("content").jsonPrimitive.content))
             }
         }
+    }
+
+    @Test fun `real serializer preserves provider controls and every trailing role for stream and completion`() {
+        val config = model.copy(maxOutputTokens = 2048, customParams = mapOf(
+            "enable_thinking" to ParamValue.BooleanValue(true),
+            "thinking_budget" to ParamValue.NumberValue(1024.0)))
+        val logical = listOf(ChatApiMessage.text("system", "core"), ChatApiMessage.text("user", "input"),
+            ChatApiMessage.text("system", "post history"), ChatApiMessage.text("assistant", "ack:"))
+        for (stream in listOf(false, true)) {
+            val sent = Json.parseToJsonElement(OpenAiChatRequestSerializer.serialize(logical, config, stream,
+                promptCacheKey = "synthetic-cache", includeStreamUsage = true)).jsonObject
+            val messages = sent.getValue("messages").jsonArray
+            assertEquals(listOf("system", "user"), messages.map { it.jsonObject.getValue("role").jsonPrimitive.content })
+            val tail = messages.last().jsonObject.getValue("content").jsonPrimitive.content.substringAfter("input\n\n")
+            assertEquals(JsonArray(logical.drop(2).map { message(it.role, it.content) }), Json.parseToJsonElement(tail))
+            assertEquals(JsonPrimitive(true), sent["enable_thinking"])
+            assertEquals(JsonPrimitive(1024), sent["thinking_budget"])
+            assertEquals(JsonPrimitive(2048), sent["max_tokens"])
+            assertEquals(JsonPrimitive("synthetic-cache"), sent["prompt_cache_key"])
+            assertEquals(stream, sent.containsKey("stream_options"))
+            assertFalse(sent.containsKey("prefix"))
+            assertFalse(sent.containsKey("tools"))
+        }
+    }
+
+    @Test fun `existing auxiliary identity tail is retained and non target serialized bytes are unchanged`() {
+        val logical = AuxiliaryMessageAssembler.assemble(listOf(ChatApiMessage.text("system", "synthetic task"),
+            ChatApiMessage.text("user", "synthetic input")), preservesInputRoles = false)
+        assertEquals("user", logical.last().role)
+        val target = OpenAiChatRequestSerializer.serialize(logical, model, stream = true)
+        val otherProvider = OpenAiChatRequestSerializer.serialize(logical,
+            model.copy(baseUrl = "https://provider.example.test/v1"), stream = true)
+        assertEquals(otherProvider, target)
+        assertEquals(JsonArray(logical.map { message(it.role, it.content) }),
+            Json.parseToJsonElement(target).jsonObject.getValue("messages").jsonArray)
     }
 }
