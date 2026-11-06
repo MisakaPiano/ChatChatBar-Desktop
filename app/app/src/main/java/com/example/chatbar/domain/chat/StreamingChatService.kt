@@ -138,6 +138,10 @@ class StreamingChatService(
                     }
                 }
 
+                override fun onDecodedContent(text: String) {
+                    mainLogId?.let { DebugLogManager.appendResponseChunk(it, "", text) }
+                }
+
                 override fun onRetry(retryNumber: Int, message: String) {
                     mainLogId?.let { DebugLogManager.appendResponseChunk(it, message) }
                 }

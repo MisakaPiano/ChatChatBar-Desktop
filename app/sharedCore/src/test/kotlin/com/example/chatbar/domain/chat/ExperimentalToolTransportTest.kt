@@ -48,13 +48,24 @@ class ExperimentalToolTransportTest {
                 chunk(buildJsonObject { put("reasoning_content", "thought") }),
                 tool("{\"content\":\"hel", "game_"), tool("lo\\nworld\"}", "content", "tool_calls"),
                 """{"choices":[],"usage":{"prompt_tokens":7,"completion_tokens":3}}""", "[DONE]"))
-            val events = transport.streamMainChat(messages, model(server)).toList()
+            val decodedLog = StringBuilder()
+            val rawChunks = mutableListOf<String>()
+            val diagnostics = object : ProviderTransportDiagnostics {
+                override fun onDecodedContent(text: String) { decodedLog.append(text) }
+                override fun onResponseChunk(data: String, parsed: OpenAiSseChunk?) {
+                    rawChunks += data
+                    assertTrue(parsed?.content.isNullOrEmpty())
+                }
+            }
+            val events = transport.streamMainChat(messages, model(server), diagnostics = diagnostics).toList()
             assertEquals(listOf("preamble", ""), events.filterIsInstance<ProviderStreamEvent.ContentPreview>().map { it.text })
             assertEquals("hello\nworld", events.filterIsInstance<ProviderStreamEvent.ContentDelta>().joinToString("") { it.text })
             assertEquals("thought", events.filterIsInstance<ProviderStreamEvent.ReasoningDelta>().single().text)
             assertEquals(7, events.filterIsInstance<ProviderStreamEvent.Usage>().single().usage.promptTokens)
             assertTrue(events.filterIsInstance<ProviderStreamEvent.Completed>().single().metadata.toolReplyCompleted)
             assertFalse(events.any { it is ProviderStreamEvent.Error })
+            assertEquals("hello\nworld", decodedLog.toString())
+            assertTrue(rawChunks.any { it.contains("tool_calls") })
             assertTrue("tools" in wire(server)); assertEquals(1, server.requestCount)
         }
     }
@@ -151,7 +162,7 @@ class ExperimentalToolTransportTest {
                 assertEquals(listOf("ignore preamble", ""), events.filterIsInstance<StreamEvent.ContentPreview>().map { it.text })
                 val request = wire(server)
                 assertEquals(listOf("system", "user"), request.getValue("messages").jsonArray.map { it.jsonObject.getValue("role").jsonPrimitive.content })
-                assertEquals(listOf("context", "game_content"), request.getValue("tools").jsonArray.map {
+                assertEquals(listOf("game_content", "context"), request.getValue("tools").jsonArray.map {
                     it.jsonObject.getValue("function").jsonObject.getValue("name").jsonPrimitive.content })
             }
             assertEquals(producers.size, server.requestCount)

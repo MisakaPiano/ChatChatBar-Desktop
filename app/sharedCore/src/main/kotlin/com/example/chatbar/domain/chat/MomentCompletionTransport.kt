@@ -58,5 +58,7 @@ internal suspend fun completeMomentRequest(client: OkHttpClient, allowCleartext:
         })
     }
     diagnostics.onResponseChunk(raw)
-    return OpenAiCompletionResponsePolicy.requireCompletion(raw, experimentalApiMode = experimentalApiMode)
+    return OpenAiCompletionResponsePolicy.requireCompletion(raw, experimentalApiMode = experimentalApiMode).also {
+        if (experimentalApiMode) diagnostics.onDecodedContent(it)
+    }
 }

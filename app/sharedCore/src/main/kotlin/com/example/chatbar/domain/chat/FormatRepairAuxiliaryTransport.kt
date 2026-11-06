@@ -145,7 +145,10 @@ internal fun isolatedAuxiliaryTextStream(
                 terminate(source, AiTaskResponseBudgetException()); return
             }
             text.append(decoded.remainingText)
-            if (decoded.remainingText.isNotEmpty()) trySend(StreamEvent.Delta(decoded.remainingText))
+            if (decoded.remainingText.isNotEmpty()) {
+                diagnostics.onDecodedContent(decoded.remainingText)
+                trySend(StreamEvent.Delta(decoded.remainingText))
+            }
             toolReplyCompleted = decoded.toolReplyCompleted
         } catch (error: Exception) {
             terminate(source, AuxiliaryProtocolException(AuxiliaryProtocolFailure.MALFORMED_SSE, error)); return
@@ -173,7 +176,7 @@ internal fun isolatedAuxiliaryTextStream(
                 terminate(eventSource, AuxiliaryProtocolException(AuxiliaryProtocolFailure.MALFORMED_SSE, error))
                 return@synchronized
             }
-            diagnostics.onResponseChunk(data, chunk)
+            diagnostics.onResponseChunk(data, if (toolDecoder == null) chunk else chunk.copy(content = null))
             finishReason = chunk.finishReason ?: finishReason
             refused = refused || chunk.refused
             if (!chunk.content.isNullOrBlank() || !chunk.reasoningContent.isNullOrBlank() ||
@@ -206,7 +209,9 @@ internal fun isolatedAuxiliaryTextStream(
                     terminate(eventSource, AiTaskResponseBudgetException())
                     return@synchronized
                 }
-                text.append(it); trySend(StreamEvent.Delta(it))
+                text.append(it)
+                if (toolDecoder != null) diagnostics.onDecodedContent(it)
+                trySend(StreamEvent.Delta(it))
             }
             usage?.let { trySend(StreamEvent.Usage(it)) }
             if (refused || finishReason == "length") {

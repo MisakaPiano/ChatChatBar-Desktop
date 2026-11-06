@@ -245,6 +245,14 @@ internal class DesktopTransportDiagnosticRecorder(
         }
     }
 
+    override fun onDecodedContent(text: String) {
+        owner.update(taskId) { entry ->
+            val output = entry.outputText + text
+            entry.copy(outputText = scrubber.text(output, DesktopTransportDiagnosticsOwner.OUTPUT_LIMIT),
+                outputTruncated = entry.outputTruncated || output.length > DesktopTransportDiagnosticsOwner.OUTPUT_LIMIT)
+        }
+    }
+
     override fun onRetry(retryNumber: Int, message: String) {
         owner.update(taskId) { entry ->
             entry.copy(retryEvents = (entry.retryEvents +

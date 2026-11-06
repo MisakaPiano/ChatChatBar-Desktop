@@ -54,6 +54,8 @@ interface ProviderTransportDiagnostics {
     /** Physical network attempt, separate from one serialized logical request and retry notices. */
     fun onAttemptStarted(attemptNumber: Int) = Unit
     fun onResponseChunk(data: String, parsed: OpenAiSseChunk? = null) = Unit
+    /** Canonical text decoded from experimental protocol, separate from raw wire evidence. */
+    fun onDecodedContent(text: String) = Unit
     fun onRetry(retryNumber: Int, message: String) = Unit
     fun onCancelled() = Unit
 
@@ -226,7 +228,10 @@ class OpenAiStreamingTransport(
                                 val evidence = completion.get()
                                 val decoded = toolDecoder.finish(validate = event is ProviderStreamEvent.Completed &&
                                     !evidence.refused && !evidence.transportFailed && evidence.finishReason != "length")
-                                if (decoded.remainingText.isNotEmpty()) trySend(ProviderStreamEvent.ContentDelta(decoded.remainingText))
+                                if (decoded.remainingText.isNotEmpty()) {
+                                    diagnostics.onDecodedContent(decoded.remainingText)
+                                    trySend(ProviderStreamEvent.ContentDelta(decoded.remainingText))
+                                }
                                 if (event is ProviderStreamEvent.Completed) {
                                     finalEvent = ProviderStreamEvent.Completed(evidence.copy(toolReplyCompleted = decoded.toolReplyCompleted))
                                 }
@@ -273,7 +278,7 @@ class OpenAiStreamingTransport(
                                     refused = previous.refused || chunk.refused,
                                 )
                             }
-                            diagnostics.onResponseChunk(data, chunk)
+                            diagnostics.onResponseChunk(data, if (toolDecoder == null) chunk else chunk.copy(content = null))
                             chunk.reasoningContent?.let { trySend(ProviderStreamEvent.ReasoningDelta(it)) }
                             if (toolDecoder == null) chunk.content?.let { trySend(ProviderStreamEvent.ContentDelta(it)) }
                             else try {
@@ -285,7 +290,10 @@ class OpenAiStreamingTransport(
                                     previewedOrdinaryText = false
                                     trySend(ProviderStreamEvent.ContentPreview(""))
                                 }
-                                content?.let { trySend(ProviderStreamEvent.ContentDelta(it)) }
+                                content?.let {
+                                    diagnostics.onDecodedContent(it)
+                                    trySend(ProviderStreamEvent.ContentDelta(it))
+                                }
                             } catch (error: Exception) {
                                 deliverTerminal(eventSource, ProviderStreamEvent.Error("实验模式工具回复解析失败", completion.get(), error))
                                 return
