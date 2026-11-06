@@ -22,6 +22,7 @@ data class DesktopFakeChatInputs(
     /** Only a real generation supplies its already-resolved model; inspectors/fakes cannot invoke retrieval APIs. */
     val retrievalModel: com.example.chatbar.data.local.entity.ModelConfig? = null,
     val capturedNarrativeMode: com.example.chatbar.data.local.entity.ChatNarrativeMode? = null,
+    val previousNarrativeMode: com.example.chatbar.data.local.entity.ChatNarrativeMode? = null,
 )
 
 data class DesktopFakeChatRequest(

@@ -214,7 +214,8 @@ class DesktopRealChatRuntime internal constructor(
             }
             val turn = resolveTurn(sessionId)
             if (selected.id != target.id) chatRepository.deleteMessage(selected.id, sessionId)
-            val plan = requestPlanner.planRegeneration(sessionId, target.id, turn.inputs)
+            val plan = requestPlanner.planRegeneration(sessionId, target.id,
+                turn.inputs.copy(previousNarrativeMode = MessageAlternativeVersionPolicy.activeVersion(target).narrativeMode))
             observer.onUpdate(DesktopRealChatStreamUpdate("", "", target.id))
             plan.knowledgeNotice?.let { observer.onUpdate(DesktopRealChatStreamUpdate("", "", target.id, status = it)) }
             generate(turn, plan, observer, diagnosticsFactory, target, control).copy(inputNotice = plan.knowledgeNotice)

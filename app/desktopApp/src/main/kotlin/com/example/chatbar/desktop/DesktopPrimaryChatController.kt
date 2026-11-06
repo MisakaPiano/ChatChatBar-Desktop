@@ -4,6 +4,7 @@ import kotlinx.coroutines.withContext
 
 import com.example.chatbar.data.local.entity.ChatMessage
 import com.example.chatbar.data.local.entity.ChatSession
+import com.example.chatbar.data.local.entity.ChatNarrativeMode
 import com.example.chatbar.data.local.entity.ChatScrollPosition
 import com.example.chatbar.data.local.entity.ChatMessagePage
 import com.example.chatbar.data.local.entity.CharacterCard
@@ -460,6 +461,17 @@ internal class DesktopPrimaryChatController(
     suspend fun setDisplayTitle(id: String, title: String) = guarded {
         chats.updateSessionDisplayTitle(id, title)
         refresh()
+    }
+
+    suspend fun setNarrativeMode(id: String, mode: ChatNarrativeMode) = guarded {
+        check(state.value.selectedSession?.id == id) { "请重新选择当前会话" }
+        val saved = chats.setNarrativeMode(id, mode)
+        mutableState.update { current ->
+            if (current.selectedSession?.id != id) current else current.copy(
+                selectedSession = current.selectedSession?.copy(narrativeMode = saved.narrativeMode),
+                status = "下一次回复采用${mode.label}",
+            )
+        }
     }
 
     fun editSessionSettings(change: (ChatSession) -> ChatSession) = synchronized(sessionSettingsLock) {

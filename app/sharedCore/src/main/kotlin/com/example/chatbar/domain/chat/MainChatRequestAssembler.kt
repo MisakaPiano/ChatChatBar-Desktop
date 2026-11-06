@@ -15,6 +15,8 @@ data class MainChatRequestAssemblyInput(
     val strongPromptSystemSuffix: String = "",
     val playerName: String? = null,
     val botName: String,
+    val narrativeMode: com.example.chatbar.data.local.entity.ChatNarrativeMode? = null,
+    val previousNarrativeMode: com.example.chatbar.data.local.entity.ChatNarrativeMode? = null,
 )
 
 data class MainChatRequestAssemblyResult(
@@ -35,6 +37,7 @@ enum class MainChatLogicalMessageSource {
     SETTING_REFERENCE,
     SUPPLEMENTARY,
     PLAYER,
+    NARRATIVE_MODE,
     CONTEXT_APPROVAL,
     ARCHIVE,
     CHAT_HISTORY_HEADING,
@@ -47,6 +50,7 @@ enum class MainChatLogicalMessageSource {
     CURRENT_USER,
     POST_HISTORY_END_REQUIREMENTS,
     STRONG_PROMPT_SUFFIX,
+    NARRATIVE_MODE_TAIL,
     POST_USER_ACK,
     FINAL_IDENTITY_REMINDER,
 }
@@ -158,6 +162,10 @@ class MainChatRequestAssembler {
                 stable = true,
             )
         }
+        input.narrativeMode?.let { mode ->
+            addTrace(MainChatLogicalMessageSource.NARRATIVE_MODE,
+                ChatApiMessage.text("system", MainChatPromptAuthority.narrativeModeSystemPrompt(mode)), stable = true)
+        }
         addTrace(
             source = MainChatLogicalMessageSource.CONTEXT_APPROVAL,
             stable = true,
@@ -249,6 +257,11 @@ class MainChatRequestAssembler {
                     MainChatLogicalMessageSource.STRONG_PROMPT_SUFFIX,
                     ChatApiMessage.text("system", input.strongPromptSystemSuffix),
                 )
+            }
+            input.narrativeMode?.let { mode ->
+                addTrace(MainChatLogicalMessageSource.NARRATIVE_MODE_TAIL,
+                    ChatApiMessage.text("system", MainChatPromptAuthority.narrativeModeTailSystemPrompt(mode,
+                        input.previousNarrativeMode ?: com.example.chatbar.data.local.entity.ChatNarrativeMode.FOCUS)))
             }
             addTrace(
                 MainChatLogicalMessageSource.POST_USER_ACK,

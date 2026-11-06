@@ -5,6 +5,7 @@ import com.example.chatbar.data.local.entity.CharacterEditMode
 import com.example.chatbar.data.local.entity.CharacterInfo
 import com.example.chatbar.data.local.entity.ChatMessage
 import com.example.chatbar.data.local.entity.ChatSession
+import com.example.chatbar.data.local.entity.ChatNarrativeMode
 import com.example.chatbar.data.local.entity.MomentPost
 import com.example.chatbar.data.local.entity.MessageRole
 import com.example.chatbar.domain.image.NovelAiImageModel
@@ -711,4 +712,13 @@ object PromptTemplates {
             fishModelId, markerMode, tagPolicy, previousUserMessage, assistantResponse, segmentsJson)
 
     // endregion
+
+    const val FOCUS_NARRATIVE_MODE_SYSTEM_PROMPT = MainChatPromptAuthority.FOCUS_NARRATIVE_MODE_SYSTEM_PROMPT
+    const val ADVANCE_NARRATIVE_MODE_SYSTEM_PROMPT = MainChatPromptAuthority.ADVANCE_NARRATIVE_MODE_SYSTEM_PROMPT
+    fun narrativeModeSystemPrompt(mode: ChatNarrativeMode): String = MainChatPromptAuthority.narrativeModeSystemPrompt(mode)
+    fun narrativeModeTailSystemPrompt(mode: ChatNarrativeMode, previousMode: ChatNarrativeMode): String =
+        MainChatPromptAuthority.narrativeModeTailSystemPrompt(mode, previousMode)
+    fun narrativeModeHistoryReply(body: String, mode: ChatNarrativeMode): String =
+        MainChatPromptAuthority.narrativeModeHistoryReply(body, mode)
+
 }

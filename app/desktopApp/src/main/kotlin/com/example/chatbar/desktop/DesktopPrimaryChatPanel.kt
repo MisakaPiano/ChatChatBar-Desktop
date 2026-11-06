@@ -122,6 +122,7 @@ internal fun DesktopPrimaryChatPanel(
         mutableStateOf(DesktopDiagnosticDisclosure(state.selectedSession?.id))
     }
     var chatDebugOpen by remember(state.selectedSession?.id) { mutableStateOf(false) }
+    var narrativeModeOpen by remember(state.selectedSession?.id) { mutableStateOf(false) }
     var backgroundOpen by remember { mutableStateOf(false) }
     var peopleOpen by remember(state.selectedSession?.id) { mutableStateOf(false) }
     var inspectedPersonId by remember(state.selectedSession?.id) { mutableStateOf<String?>(null) }
@@ -344,6 +345,7 @@ internal fun DesktopPrimaryChatPanel(
                             }) else null,
                         ) {
                             if (selected != null) {
+                                BootstrapButton(selected.narrativeMode.shortLabel + " ▾", secondary = true) { narrativeModeOpen = true }
                                 if (state.people.isNotEmpty() && nextAutoPeopleHidden) CompositionLocalProvider(LocalDesktopChatPeople provides peopleActions) {
                                     DesktopChatPeopleHeader(state.people, controller, preferences.inlineStatuses, setInline,
                                         onManage = { inspectedPersonId = null; peopleOpen = true }, allPeople = preferences.allPeople,
@@ -433,6 +435,11 @@ internal fun DesktopPrimaryChatPanel(
         }
         if (backgroundOpen) DesktopChatBackgroundPanel(controller) { backgroundOpen = false }
         DesktopPeoplePreview(peopleActions)
+        if (narrativeModeOpen) state.selectedSession?.let { session ->
+            DesktopChatNarrativeModeDialog(session.narrativeMode, onSelect = { mode ->
+                scope.launch { controller.setNarrativeMode(session.id, mode) }
+            }, onClose = { narrativeModeOpen = false })
+        }
         if (peopleOpen) DesktopChatPeopleDialog(state.people, inspectedPersonId,
             onSelect = { inspectedPersonId = it },
             onEdit = { card, person -> peopleOpen = false; onEditPerson(card, person) },

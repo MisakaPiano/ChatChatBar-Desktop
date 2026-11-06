@@ -4,6 +4,7 @@ import com.example.chatbar.data.local.entity.AppSettings
 import com.example.chatbar.data.local.entity.CharacterCard
 import com.example.chatbar.data.local.entity.ChatMessage
 import com.example.chatbar.data.local.entity.ChatSession
+import com.example.chatbar.data.local.entity.ChatNarrativeMode
 import com.example.chatbar.data.local.entity.MessageFormatRepairNotice
 import com.example.chatbar.data.local.entity.MessageFormatRepairNoticeKind
 import com.example.chatbar.data.local.entity.MessageRole
@@ -37,6 +38,30 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class DesktopPrimaryChatControllerTest {
+    @Test fun `mode choice preserves unsent composer settings draft and existing messages`() = runBlocking {
+        withContainer { container ->
+            val card = CharacterCard.create("Synthetic mode", greeting = "Greeting")
+            container.characterRepository.save(card); configure(container)
+            val controller = container.primaryChatController
+            controller.refresh(); controller.createSession(card.id)
+            val id = controller.state.value.selectedSession!!.id
+            controller.editComposer("retained unsent draft")
+            controller.editSessionSettings { it.copy(supplementarySetting = "retained unsaved setting") }
+            val draft = controller.state.value.sessionSettingsDraft
+            val messages = controller.state.value.messages
+            controller.setNarrativeMode(id, ChatNarrativeMode.ADVANCE)
+            assertEquals(ChatNarrativeMode.ADVANCE, controller.state.value.selectedSession!!.narrativeMode)
+            assertEquals(draft, controller.state.value.sessionSettingsDraft)
+            assertTrue(controller.state.value.sessionSettingsDirty)
+            assertEquals("retained unsent draft", controller.state.value.composerDraft)
+            assertEquals(messages, controller.state.value.messages)
+            assertTrue(controller.saveSessionSettings())
+            assertEquals(ChatNarrativeMode.ADVANCE, container.chatRepository.getSession(id)!!.narrativeMode)
+            assertEquals("retained unsaved setting", container.chatRepository.getSession(id)!!.supplementarySetting)
+            controller.setNarrativeMode(id, ChatNarrativeMode.FOCUS)
+            assertEquals(messages, controller.state.value.messages)
+        }
+    }
     @Test fun `task message navigation uses the exact bounded history page and preserves composer`() = runBlocking {
         withContainer { container ->
             val card = CharacterCard.create("Same title", greeting = "Greeting")

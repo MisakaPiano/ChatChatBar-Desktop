@@ -463,7 +463,7 @@
     },
     {
       "id": "R144_PREVIEW_RETRY",
-      "disposition": "PENDING",
+      "disposition": "EQUIVALENT",
       "scope": "Generated Fish previews retry explicit408/425/429/5xx at most3; frozen account/body; unknown acceptance and accepted bad body never replay",
       "owners": [
         "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFishPreviewTransport.kt",
@@ -479,11 +479,17 @@
         "r02Failed": 1,
         "r02Reason": "Fixture required immediate deletion of an identity-tracked invalid MP3 partial; existing store closes it after callback drain. No production store change.",
         "r03": 42239641845,
-        "r03State": "RUNNING_NOT_PASS",
+        "r03State": "SCOPED_ENGINEERING_PASS",
         "r03Control": "36b126bcb18d67bde2b0e54282f97b2cc918c57a",
-        "expectedMethods": 32
+        "expectedMethods": 32,
+        "actualTests": 32,
+        "passed": 32,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "proof": "I:/CCB-Desktop-Continuity/updates/20261106-upstream-catchup-to149/OWNER_FISH_R03_ORIGINAL_REVIEW.json"
       },
-      "delivery": "Unreleased; public1244 unchanged"
+      "delivery": "Unreleased; public1244 unchanged; no human/provider claim"
     },
     {
       "id": "R145_COVER_EXPORT",
@@ -513,12 +519,26 @@
     {
       "id": "U149_NARRATIVE_CUSTODY",
       "disposition": "PENDING",
-      "scope": "Session/message/alternatives/SaveSlot/copy modes, generation snapshot, field-scoped concurrent saves"
+      "scope": "Session/message/alternatives/SaveSlot/copy modes, generation snapshot, field-scoped concurrent saves",
+      "implementationSource": "f948c4d175562ea8d6cdc9d68867a613618b1da0",
+      "verification": {
+        "r01": 42245560568,
+        "r01Tests": 59,
+        "r01Passed": 58,
+        "r01Failures": 1,
+        "r01Reason": "Strict old whole-object candidate-mode default expectation superseded; source normalize matches official149.",
+        "r02Control": "f2c4dd8508a37b14a3ed0872be79ee6cdf2e8f5d",
+        "r02State": "RUNNING_NOT_PASS"
+      },
+      "delivery": "Unreleased; UI/new prompt wiring is a separate successor"
     },
     {
       "id": "U149_NARRATIVE_PROMPT",
       "disposition": "PENDING",
-      "scope": "New mode prefixes/tails/history wrapping and request/cache integration; existing tail changes await explicit adoption"
+      "scope": "New mode prefixes/tails/history wrapping and request/cache integration; existing tail changes await explicit adoption",
+      "implementation": "New neutral mode rules/facades+cache/order/history and compact session UI prepared; existing315 literals/tail removals NOT adopted",
+      "verification": "PENDING_AFFECTED_CHECKS",
+      "independentStyleDelta": "NOT_APPLIED"
     },
     {
       "id": "U149_EXPERIMENTAL",
@@ -528,7 +548,10 @@
     {
       "id": "U149_BACKUP88",
       "disposition": "PENDING",
-      "scope": "Strict88 schema/transport/writer plus new fields; pre88 unknown-field protection and historical custody retained"
+      "scope": "Strict88 schema/transport/writer plus new fields; pre88 unknown-field protection and historical custody retained",
+      "implementationSource": "f948c4d175562ea8d6cdc9d68867a613618b1da0",
+      "verification": "Same narrative88 R02 pending; Desktop suites not yet original-proven",
+      "note": "88 strict schema+modern writer+custody implemented together; pre88 new-field presence and unknown89 remain rejected"
     },
     {
       "id": "POST149_PROMPT",
@@ -537,15 +560,25 @@
     },
     {
       "id": "POST149_SILICONFLOW",
-      "disposition": "PENDING",
+      "disposition": "EQUIVALENT",
       "scope": "Only official SiliconFlow DS3.2 ordinary terminal-assistant compatibility; no prefill flag/forced thinking/retry changes",
       "owners": [
         "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/SiliconFlowChatTemplatePolicy.kt"
       ],
-      "implementation": "EXACT_FIXED12E_POLICY_PREPARED_NOT_WIRED",
+      "implementation": "EXACT_FIXED12E_POLICY_WIRED_AFTER_FINAL_ORDINARY_BODY",
       "tests": "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/chat/SiliconFlowChatTemplatePolicyTest.kt",
-      "verification": "NOT_EXECUTED",
-      "ordinaryRequestChanged": false
+      "verification": {
+        "run": 42241093948,
+        "control": "78de578e9ae35dcf11043a150dfef4ab06b11927",
+        "actualTests": 55,
+        "passed": 55,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "scope": "Five policy/final serializer cases plus50 adjacent actual loopback cases; no real target-host/provider acceptance proof"
+      },
+      "ordinaryRequestChanged": "Only scoped serialization; existing Prompt/tails unchanged; future experimental wrapper combo pending",
+      "implementationSource": "407c5c332ebc43562231bd417e4c3f5b40e445f1"
     }
   ],
   "deltas": [

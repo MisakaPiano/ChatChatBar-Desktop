@@ -1,6 +1,7 @@
 package com.example.chatbar.domain.chat
 
 import com.example.chatbar.data.local.entity.ChatMessage
+import com.example.chatbar.data.local.entity.ChatNarrativeMode
 import com.example.chatbar.data.local.entity.MessageRole
 
 enum class ChatHistoryPromptZone {
@@ -9,6 +10,17 @@ enum class ChatHistoryPromptZone {
 }
 
 object ChatHistoryPromptPolicy {
+    fun renderedHistoryText(message: ChatMessage, renderedBody: String): String =
+        if (message.role == MessageRole.ASSISTANT && renderedBody.isNotBlank()) {
+            com.example.chatbar.domain.prompt.MainChatPromptAuthority.narrativeModeHistoryReply(renderedBody,
+                MessageAlternativeVersionPolicy.activeVersion(message).narrativeMode)
+        } else renderedBody
+
+    fun previousNarrativeMode(history: List<ChatMessage>, regenerationTarget: ChatMessage? = null): ChatNarrativeMode =
+        (regenerationTarget ?: history.lastOrNull {
+            it.role == MessageRole.ASSISTANT && it.displayContent.isNotBlank() && it.generatedFromMessageId == null
+        })?.let { MessageAlternativeVersionPolicy.activeVersion(it).narrativeMode } ?: ChatNarrativeMode.FOCUS
+
     fun sourceText(
         message: ChatMessage,
         excludeAssistantStatusFromHistory: Boolean,
