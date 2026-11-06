@@ -134,7 +134,7 @@ class DesktopCharacterSaveUiIntegrationTest {
             editor.edit { it.copy(creatorNotes = "Next unsaved draft") }
             editor.flushDraft()
             assertTrue(editor.state.value.dirty)
-            assertTrue(editor.state.value.resourceCleanupPending)
+            assertEquals(CharacterEditorProblem.RESOURCE_FAILED, editor.state.value.problem)
             frames()
             assertTrue(nodes().any { text(it, "角色卡已保存；旧资源清理未完成，原资源已保留。") })
             val nextDraft = app.editorDraftRepository.getForTarget(EditorDraftType.CHARACTER_CARD, card.id)
