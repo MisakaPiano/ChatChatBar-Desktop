@@ -15,6 +15,25 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class StreamingChatServiceTerminalTest {
+    @Test fun `experimental shared main facade preserves replacement preview and valid tool completion evidence`() = runBlocking {
+        SseTestServer(listOf(
+            """{"choices":[{"delta":{"content":"preamble"}}]}""",
+            """{"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"name":"game_content","arguments":"{\"content\":\"story\"}"}}]},"finish_reason":"tool_calls"}]}""",
+            "[DONE]"
+        )).use { server ->
+            var completion: ChatReplyCompletion? = null
+            val events = withTimeout(5_000) {
+                StreamingChatService(experimentalApiModeEnabled = { true }, allowCleartextHttp = { true }).streamChat(
+                    "synthetic-experimental", listOf(ChatApiMessage.text("user", "hello")), model(server.baseUrl),
+                    onReplyCompletion = { completion = it }).toList()
+            }
+            assertEquals(listOf("preamble", ""), events.filterIsInstance<StreamEvent.ContentPreview>().map { it.text })
+            assertEquals("story", events.filterIsInstance<StreamEvent.Delta>().joinToString("") { it.text })
+            assertEquals(ChatReplyCompletion("tool_calls", toolReplyCompleted = true), completion)
+            assertEquals(1, events.count { it is StreamEvent.Done })
+        }
+    }
+
     @Test
     fun `completion evidence preserves truncation refusal and missing reason`() = runBlocking {
         listOf(

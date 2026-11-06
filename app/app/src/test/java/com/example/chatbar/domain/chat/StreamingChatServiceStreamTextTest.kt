@@ -15,6 +15,25 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class StreamingChatServiceStreamTextTest {
+    @Test fun `experimental auxiliary observer replaces preamble and commits decoded tool text once`() = runBlocking {
+        val progress = AiStreamProgress()
+        StreamTextTestServer(listOf(
+            """{"choices":[{"delta":{"content":"discarded preamble"}}]}""",
+            """{"choices":[{"delta":{"tool_calls":[{"index":0,"function":{"name":"game_content","arguments":"{\"content\":\"story\"}"}}]},"finish_reason":"tool_calls"}]}""",
+            "[DONE]"
+        )).use { server ->
+            val events = withTimeout(5_000) { withContext(progress) {
+                StreamingChatService(experimentalApiModeEnabled = { true }, allowCleartextHttp = { true })
+                    .streamText(listOf(ChatApiMessage.text("user", "hello")), model(server.baseUrl)).toList()
+            } }
+            assertEquals("story", events.filterIsInstance<StreamEvent.Delta>().joinToString("") { it.text })
+            assertEquals(1, events.count { it is StreamEvent.Done })
+            assertFalse(events.any { it is StreamEvent.Error })
+            assertEquals("story", progress.snapshots.value.single().content)
+            assertFalse(progress.snapshots.value.single().active)
+        }
+    }
+
     @Test
     fun `heartbeat without model progress terminates and preserves reasoning`() = runBlocking {
         val progress = AiStreamProgress()
