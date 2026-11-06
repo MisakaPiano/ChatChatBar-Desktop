@@ -20,8 +20,35 @@ class DesktopCharacterSaveUiIntegrationTest {
     private val edt = object : CoroutineDispatcher() {
         override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
     }
+    @Volatile private var diagnosticStage = "not-started"
 
-    @Test fun `parameter only UI save does not inspect unrelated authority or discard its scroll position`() = runBlocking(edt) {
+    private fun mark(stage: String) {
+        diagnosticStage = stage
+        System.getenv("CCB_FORMAT_AI_REVIEW_DIR")?.let { directory ->
+            val path = Path.of(directory).resolve("card-save-stage.txt")
+            Files.createDirectories(path.parent); Files.writeString(path, stage)
+        }
+    }
+
+    private fun <T> diagnosticScenario(block: suspend CoroutineScope.() -> T): T {
+        mark("dispatching-test-to-edt")
+        val timer = java.util.Timer("card-save-test-watchdog", true)
+        timer.schedule(object : java.util.TimerTask() {
+            override fun run() {
+                System.getenv("CCB_FORMAT_AI_REVIEW_DIR")?.let { directory ->
+                    val path = Path.of(directory).resolve("card-save-watchdog.txt")
+                    val dump = Thread.getAllStackTraces().entries.sortedBy { it.key.name }.joinToString("\n\n") {
+                        "${it.key.name} ${it.key.state}\n" + it.value.joinToString("\n")
+                    }
+                    Files.writeString(path, "Stage: $diagnosticStage\n\n$dump")
+                }
+            }
+        }, 15_000)
+        try { return runBlocking(edt, block) }
+        finally { timer.cancel() }
+    }
+
+    @org.junit.Test(timeout = 90_000) fun `parameter only UI save does not inspect unrelated authority or discard its scroll position`() = diagnosticScenario {
         fixture {
             val damaged = damagedAuthority()
             enableParameters()
@@ -39,7 +66,7 @@ class DesktopCharacterSaveUiIntegrationTest {
         }
     }
 
-    @Test fun `actual save callback retains the visible scroll form while postcommit maintenance waits`() = runBlocking(edt) {
+    @org.junit.Test(timeout = 90_000) fun `actual save callback retains the visible scroll form while postcommit maintenance waits`() = diagnosticScenario {
         fixture {
             enableParameters()
             val replacement = image("replacement.png")
@@ -56,22 +83,39 @@ class DesktopCharacterSaveUiIntegrationTest {
             try {
                 click("保存")
                 await { app.dataOperationCoordinator.state == DesktopDataOperationCoordinatorState.MAINTENANCE_PENDING }
-                assertEquals(replacement, app.characterRepository.getById(card.id)!!.avatar)
+                // A fresh repository read would queue behind maintenance while this test still
+                // owns its blocker. Inspect only the known synthetic durable file at this point.
+                val committed = app.jsonFileStorage.json.decodeFromString(CharacterCard.serializer(),
+                    Files.readString(root.resolve("entities/character_cards/${card.id}.json")))
+                assertEquals(replacement, committed.avatar)
                 capture("maintenance-wait")
                 assertTrue(nodes().any { tagged(it, "character-editor-scroll") }, "Committed maintenance must not remove the form")
                 assertEquals(position, scrollPosition(), 2f)
                 editor.edit { it.copy(creatorNotes = "Must not mutate a save in progress") }
                 assertNotEquals("Must not mutate a save in progress", editor.state.value.card!!.creatorNotes)
-            } finally { release.complete(Unit); blocker.join() }
+                val draftRoot = root.resolve("draft_assets")
+                fun draftFiles(): List<String> = if (!Files.exists(draftRoot)) emptyList() else
+                    Files.walk(draftRoot).use { stream -> stream.filter(Files::isRegularFile).map { it.toString() }.sorted().toList() }
+                val stagedBefore = draftFiles()
+                editor.addTextDocument("must-not-stage.txt", "Save is still active")
+                assertEquals(stagedBefore, draftFiles(), "Save protection also covers resource staging")
+            } catch (error: Throwable) {
+                error.printStackTrace(System.err); System.err.flush()
+                throw error
+            } finally {
+                mark("releasing-synthetic-maintenance-blocker")
+                withContext(NonCancellable) { release.complete(Unit); withTimeout(5_000) { blocker.join() } }
+            }
             settled()
             assertNull(editor.state.value.problem, editor.state.value.detail)
+            assertEquals(replacement, app.characterRepository.getById(card.id)!!.avatar)
             assertEquals(position, scrollPosition(), 2f)
             assertFalse(Files.exists(root.resolve(card.avatar!!)))
             assertTrue(Files.exists(root.resolve(replacement)))
         }
     }
 
-    @Test fun `real removed resource failure stays visible and can be retried through the actual UI without another save`() = runBlocking(edt) {
+    @org.junit.Test(timeout = 90_000) fun `real removed resource failure stays visible and can be retried through the actual UI without another save`() = diagnosticScenario {
         fixture {
             val damaged = damagedAuthority()
             enableParameters()
@@ -87,13 +131,23 @@ class DesktopCharacterSaveUiIntegrationTest {
             frames()
             capture("resource-maintenance-failed")
             assertTrue(nodes().any { text(it, "资源处理失败") || text(it, "角色卡已保存；旧资源清理未完成，原资源已保留。") })
+            editor.edit { it.copy(creatorNotes = "Next unsaved draft") }
+            editor.flushDraft()
+            assertTrue(editor.state.value.dirty)
+            assertEquals(CharacterEditorProblem.RESOURCE_FAILED, editor.state.value.problem)
+            frames()
+            assertTrue(nodes().any { text(it, "角色卡已保存；旧资源清理未完成，原资源已保留。") })
+            val nextDraft = app.editorDraftRepository.getForTarget(EditorDraftType.CHARACTER_CARD, card.id)
             // Repair only the synthetic failure, then use the production retry action, not Save.
             Files.delete(damaged)
-            click("重试清理")
+            click("重试资源清理")
             await { editor.state.value.problem == null }
             assertFalse(Files.exists(root.resolve(card.avatar!!)))
             assertTrue(Files.exists(root.resolve(replacement)))
             assertEquals(durable, app.characterRepository.getById(card.id), "Cleanup retry must not rewrite the saved card")
+            assertTrue(editor.state.value.dirty)
+            assertEquals("Next unsaved draft", editor.state.value.card!!.creatorNotes)
+            assertEquals(nextDraft, app.editorDraftRepository.getForTarget(EditorDraftType.CHARACTER_CARD, card.id))
         }
     }
 
@@ -116,8 +170,10 @@ class DesktopCharacterSaveUiIntegrationTest {
             frames()
         }
         suspend fun click(label: String) {
+            mark("click:$label")
             frames()
-            val matching = nodes().filter { text(it, label) && it.config.contains(SemanticsActions.OnClick) }
+            fun containsLabel(node: SemanticsNode): Boolean = text(node, label) || node.children.any(::containsLabel)
+            val matching = nodes().filter { containsLabel(it) && it.config.contains(SemanticsActions.OnClick) }
             assertEquals(1, matching.size, "Expected one real clickable: $label")
             assertTrue(matching.single().config[SemanticsActions.OnClick].action!!.invoke())
             frames()
@@ -150,11 +206,13 @@ class DesktopCharacterSaveUiIntegrationTest {
     }
 
     private suspend fun fixture(block: suspend Fixture.() -> Unit) {
+        mark("creating-synthetic-container")
         val parent = Files.createTempDirectory("card-save-ui-integration-")
         val root = parent.resolve("data")
         val app = DesktopAppContainer(DesktopDataRootResolution.Resolved(root, DesktopDataRootProvenance.CLI_OVERRIDE, parent.resolve("bootstrap.json")),
             secretStoreFactory = { InMemoryDesktopSecretStore() }, bundledAssets = { """{"entries":[]}""".toByteArray() })
         var f: Fixture? = null
+        var primary: Throwable? = null
         try {
             val reference = "images/original.png"
             Files.createDirectories(root.resolve("images"))
@@ -162,10 +220,30 @@ class DesktopCharacterSaveUiIntegrationTest {
             val card = CharacterCard("synthetic-save-ui", "合成保存验证", greeting = "Synthetic greeting", avatar = reference,
                 editMode = CharacterEditMode.FREEFORM, freeformCharacterText = "合成正文\n".repeat(150),
                 defaultNovelAiImageModel = NovelAiImageModel.V5_FULL, createdAt = 1, updatedAt = 1)
+            mark("saving-synthetic-source")
             app.characterRepository.save(card)
+            mark("opening-existing-editor")
             app.characterEditorController.openExisting(card.id)
+            mark("creating-scene")
             f = Fixture(root, app, card)
+            mark("rendering-first-frames")
             f.frames(); f.block()
-        } finally { f?.scene?.close(); app.close(); check(parent.toFile().deleteRecursively()) }
+        } catch (error: Throwable) {
+            primary = error
+            error.printStackTrace(System.err); System.err.flush()
+            System.getenv("CCB_FORMAT_AI_REVIEW_DIR")?.let { directory ->
+                Files.writeString(Path.of(directory).resolve("card-save-original-assertion.txt"), error.stackTraceToString())
+            }
+            throw error
+        } finally {
+            try {
+                mark("closing-scene"); f?.scene?.close()
+                mark("closing-synthetic-container"); app.close()
+                mark("removing-synthetic-fixture"); check(parent.toFile().deleteRecursively())
+                mark("fixture-finished")
+            } catch (cleanup: Throwable) {
+                if (primary == null) throw cleanup else primary.addSuppressed(cleanup)
+            }
+        }
     }
 }
