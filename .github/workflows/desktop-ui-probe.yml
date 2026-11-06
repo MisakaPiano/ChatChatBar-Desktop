@@ -45,8 +45,17 @@ jobs:
           New-Item -ItemType Directory -Path "$env:RUNNER_TEMP/ccb-ui-probe" -Force | Out-Null
           @{ source = (git rev-parse HEAD); run = $env:GITHUB_RUN_ID; scope = 'synthetic selected tests only; no installer, user profile, release or provider calls' } |
             ConvertTo-Json | Set-Content -Encoding utf8 "$env:RUNNER_TEMP/ccb-ui-probe/source.json"
+          .\gradlew.bat :sharedCore:test -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain `
+            --tests 'com.example.chatbar.domain.image.PngOrientationReadingTest' `
+            --tests 'com.example.chatbar.domain.image.ImageMetadataStripperTest' `
+            --tests 'com.example.chatbar.domain.image.PrivacyPngEncoderTest'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain `
-            --tests 'com.example.chatbar.desktop.DesktopStudioLongPromptFocusTest'
+            --tests 'com.example.chatbar.desktop.DesktopPngOrientationTest' `
+            --tests 'com.example.chatbar.desktop.DesktopPhase7ImagesTest' `
+            --tests 'com.example.chatbar.desktop.DesktopPhase7ReauditTest' `
+            --tests 'com.example.chatbar.desktop.DesktopCharacterCardPngRendererTest' `
+            --tests 'com.example.chatbar.desktop.DesktopScreenshotDocumentsTest'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Preserve actual reports and synthetic review images
         if: always()
