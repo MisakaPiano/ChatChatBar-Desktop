@@ -170,7 +170,7 @@ class DesktopFullBackupSourceTest {
 
     @Test fun sourceRefusesV1WithV2ManifestScopeAndFutureVersion() = runBlocking<Unit> {
         for (bytes in listOf(CensusWireFixtures.bytes(version = 2, code = 84),
-            CensusWireFixtures.bytes(code = 88), CensusWireFixtures.bytes(manifestExtra = ",\"scope\":null"))) {
+            CensusWireFixtures.bytes(code = 89), CensusWireFixtures.bytes(manifestExtra = ",\"scope\":null"))) {
             CensusWireFixtures.input(bytes, "stream-version-${CensusWireFixtures.digest(bytes).take(8)}") { source ->
                 assertFailsWith<DesktopFullBackupSource.Refusal> { DesktopFullBackupSource.verify(source, null, Sink()) }
             }

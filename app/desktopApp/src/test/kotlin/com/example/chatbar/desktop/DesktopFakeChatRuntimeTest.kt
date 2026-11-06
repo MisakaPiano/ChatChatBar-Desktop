@@ -215,8 +215,10 @@ class DesktopFakeChatRuntimeTest {
             assertFalse(contents.any { it.contains("GlobalPlayer") || it.contains("global-persona") })
             val strongIndex = contents.indexOf("strong-fixture")
             assertTrue(strongIndex > contents.indexOfFirst { it.contains("trigger original-user") })
-            assertEquals("assistant", request.messages[strongIndex + 1].role)
-            assertEquals("user", request.messages[strongIndex + 2].role)
+            assertEquals("system", request.messages[strongIndex + 1].role)
+            assertEquals("assistant", request.messages[strongIndex + 2].role)
+            assertEquals("user", request.messages[strongIndex + 3].role)
+            assertEquals(strongIndex + 3, request.messages.lastIndex)
             assertTrue("book::entry" in timed)
             assertEquals(request, driver.requests.single())
         }
