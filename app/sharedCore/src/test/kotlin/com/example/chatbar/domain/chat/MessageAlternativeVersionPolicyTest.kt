@@ -1,6 +1,7 @@
 package com.example.chatbar.domain.chat
 
 import com.example.chatbar.data.local.entity.ChatMessage
+import com.example.chatbar.data.local.entity.ChatNarrativeMode
 import com.example.chatbar.data.local.entity.MessageRole
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -87,7 +88,9 @@ class MessageAlternativeVersionPolicyTest {
 
     @Test
     fun `middle edit preserves metadata and siblings through selection and serialization`() {
+        for (modes in listOf(emptyList(), listOf(ChatNarrativeMode.ADVANCE, ChatNarrativeMode.FOCUS, ChatNarrativeMode.ADVANCE))) {
         val original = message(listOf("first", "middle", "last"), listOf("a", "b", "c"), 1, "b").copy(
+            alternativeNarrativeModes = modes,
             images = listOf("owned.png"), reasoningContent = "reasoning", generatedFromMessageId = "source",
             sourceTurnId = "turn", sourceTurnOrder = 4, orderKey = 42,
             formatRepairNotice = com.example.chatbar.data.local.entity.MessageFormatRepairNotice(
@@ -96,13 +99,19 @@ class MessageAlternativeVersionPolicyTest {
                 "owned.png", "caption", negativePrompt = "negative", sizePreset = "fixture", width = 8, height = 8))
         )
         val edited = MessageAlternativeVersionPolicy.editCurrentContent(original, "edited", 30)
-        assertEquals(original.copy(content = "edited", alternatives = listOf("first", "edited", "last"), updatedAt = 30), edited)
+        val expectedModes = modes.ifEmpty { List(3) { ChatNarrativeMode.FOCUS } }
+        assertEquals(original.copy(content = "edited", alternatives = listOf("first", "edited", "last"),
+            alternativeNarrativeModes = expectedModes, updatedAt = 30), edited)
         val other = MessageAlternativeVersionPolicy.select(edited, 2, 31)
+        assertEquals(expectedModes[2], other.narrativeMode)
         val returned = MessageAlternativeVersionPolicy.select(other, 1, 32)
+        assertEquals(edited.copy(updatedAt = 32), returned)
+        assertEquals(modes, original.alternativeNarrativeModes)
         assertEquals("edited", returned.displayContent)
         assertEquals("b", returned.currentAlternativeVersionId)
         val json = kotlinx.serialization.json.Json
         assertEquals(returned, json.decodeFromString(ChatMessage.serializer(), json.encodeToString(ChatMessage.serializer(), returned)))
+        }
     }
 
     @Test
