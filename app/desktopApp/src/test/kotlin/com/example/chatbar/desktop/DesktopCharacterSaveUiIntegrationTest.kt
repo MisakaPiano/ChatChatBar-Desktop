@@ -201,6 +201,7 @@ class DesktopCharacterSaveUiIntegrationTest {
         val app = DesktopAppContainer(DesktopDataRootResolution.Resolved(root, DesktopDataRootProvenance.CLI_OVERRIDE, parent.resolve("bootstrap.json")),
             secretStoreFactory = { InMemoryDesktopSecretStore() }, bundledAssets = { """{"entries":[]}""".toByteArray() })
         var f: Fixture? = null
+        var primary: Throwable? = null
         try {
             val reference = "images/original.png"
             Files.createDirectories(root.resolve("images"))
@@ -216,11 +217,22 @@ class DesktopCharacterSaveUiIntegrationTest {
             f = Fixture(root, app, card)
             mark("rendering-first-frames")
             f.frames(); f.block()
+        } catch (error: Throwable) {
+            primary = error
+            error.printStackTrace(System.err); System.err.flush()
+            System.getenv("CCB_FORMAT_AI_REVIEW_DIR")?.let { directory ->
+                Files.writeString(Path.of(directory).resolve("card-save-original-assertion.txt"), error.stackTraceToString())
+            }
+            throw error
         } finally {
-            mark("closing-scene"); f?.scene?.close()
-            mark("closing-synthetic-container"); app.close()
-            mark("removing-synthetic-fixture"); check(parent.toFile().deleteRecursively())
-            mark("fixture-finished")
+            try {
+                mark("closing-scene"); f?.scene?.close()
+                mark("closing-synthetic-container"); app.close()
+                mark("removing-synthetic-fixture"); check(parent.toFile().deleteRecursively())
+                mark("fixture-finished")
+            } catch (cleanup: Throwable) {
+                if (primary == null) throw cleanup else primary.addSuppressed(cleanup)
+            }
         }
     }
 }
