@@ -1,4 +1,24 @@
 {
+  "latestObservedUpstream149": {
+    "recordedAt": "2026-11-06",
+    "releaseVersion": "1.4.9",
+    "releaseVersionCode": 88,
+    "reviewedCommit": "b20d284a2c006d92d233931a3b83da2dd417df54",
+    "comparedFrom148": "6f8a09a8bd24c274b08a56cadc37a82380bfe625",
+    "commitsAhead": 6,
+    "changedFiles": 58,
+    "desktopPublicSource": "db7ee78387f150be806e79d42c216e3fa8aa9694",
+    "desktopReviewedSource": "0ff5933cd5cac511decac552a29d7d67b9524e75",
+    "status": "READ_ONLY_CONCRETE_GAPS_RECORDED_NOT_ADOPTED_OR_TESTED",
+    "pendingGapIds": ["U149-01", "U149-02", "U149-03", "U149-04", "U149-05", "U149-06", "U149-07"],
+    "criticalImportGap": "Reader admits versionCode84..87;88 reading and new experimental/narrative fields preservation require implementation, not a version-range-only edit",
+    "priorNoIndependentGapMeaning": "Earlier selected147/148 and216/280/273/305 reviews do not cover this149 increment",
+    "evidence": "313_OFFICIAL149_OBSERVED_GAPS.md",
+    "implementationStarted": false,
+    "newVerificationExecuted": false,
+    "promptChanged": false,
+    "validatedBaselinePromoted": false
+  },
   "auditDate": "2026-10-05",
   "upstream": {
     "repository": "SaltyFishOTL/ChatChatBar",
