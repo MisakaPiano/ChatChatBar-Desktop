@@ -258,7 +258,7 @@ class DesktopMergeRootPreparationTest {
                 assertContentEquals(Files.readAllBytes(phone.files.getValue("images/source.png")), Files.readAllBytes(root.resolve(image)))
                 authority.complete(pending, result.files); authority.verifyAndResolve()
                 val exportWork = Files.createDirectory(base.resolve("export-work"))
-                DesktopFullBackupMapping(root).export(exportWork, 86, StrictBackupZipReader.Limits().expanded).use { exported ->
+                DesktopFullBackupMapping(root).export(exportWork, 88, StrictBackupZipReader.Limits().expanded).use { exported ->
                     val output = base.resolve("merged.cbbackup")
                     DesktopFullBackupWriter.export(exported.files, output, null, exported.preferences)
                     DesktopFullBackupStaging.prepare(output, null, Files.createDirectory(base.resolve("roundtrip"))).use { returned ->
