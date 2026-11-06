@@ -471,9 +471,17 @@
       ],
       "implementationSource": "20bc67af03bfdb685756d7dd5099fd63a7b19ad4",
       "verification": {
-        "run": 42238184638,
-        "state": "RUNNING_NOT_PASS",
-        "originalCompileFailureRun": 42237132924
+        "r01": 42237132924,
+        "r01State": "PRODUCTION_COMPILE_FAIL",
+        "r02": 42238184638,
+        "r02OriginalTests": 30,
+        "r02Passed": 29,
+        "r02Failed": 1,
+        "r02Reason": "Fixture required immediate deletion of an identity-tracked invalid MP3 partial; existing store closes it after callback drain. No production store change.",
+        "r03": 42239641845,
+        "r03State": "RUNNING_NOT_PASS",
+        "r03Control": "36b126bcb18d67bde2b0e54282f97b2cc918c57a",
+        "expectedMethods": 32
       },
       "delivery": "Unreleased; public1244 unchanged"
     },
@@ -530,7 +538,14 @@
     {
       "id": "POST149_SILICONFLOW",
       "disposition": "PENDING",
-      "scope": "Only official SiliconFlow DS3.2 ordinary terminal-assistant compatibility; no prefill flag/forced thinking/retry changes"
+      "scope": "Only official SiliconFlow DS3.2 ordinary terminal-assistant compatibility; no prefill flag/forced thinking/retry changes",
+      "owners": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/SiliconFlowChatTemplatePolicy.kt"
+      ],
+      "implementation": "EXACT_FIXED12E_POLICY_PREPARED_NOT_WIRED",
+      "tests": "app/sharedCore/src/test/kotlin/com/example/chatbar/domain/chat/SiliconFlowChatTemplatePolicyTest.kt",
+      "verification": "NOT_EXECUTED",
+      "ordinaryRequestChanged": false
     }
   ],
   "deltas": [
@@ -15665,9 +15680,18 @@
       },
       "scope": "PRODUCTION",
       "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
-      "candidateOwners": [],
-      "behaviorIds": [],
+      "reason": "Exact fixed12e shared neutral adapter prepared; request wiring and execution proof pending.",
+      "candidateOwners": [
+        {
+          "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/SiliconFlowChatTemplatePolicy.kt",
+          "blob": "fe1706a10ddafdc5b900a900fcf889b4420b0a14",
+          "sameAsUpstreamDeltaBlob": true,
+          "evidenceMeaning": "Exact source contents only; not yet wired or executed"
+        }
+      ],
+      "behaviorIds": [
+        "POST149_SILICONFLOW"
+      ],
       "evidence": []
     },
     {
