@@ -732,6 +732,18 @@
     "evidence": [
       "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md",
       "docs/desktop/314_UPSTREAM_CATCHUP_DISPOSITIONS.json"
-    ]
+    ],
+    "pngOrientationSuccessor": {
+      "source": "fa39b24ad72ab44d66e2777f64b7828cd667db14",
+      "beforeRun": 42259077470,
+      "beforePass": 1,
+      "beforeFail": 2,
+      "fixedRun": 42259492759,
+      "fixedSharedPass": 9,
+      "fixedDesktopPass": 36,
+      "rawAlphaRun": 42259960504,
+      "rawAlphaDesktopPass": 11,
+      "evidence": "docs/desktop/317_PNG_ORIENTATION_AND_REUSED_IMAGE_BEHAVIOR_REVIEW.md"
+    }
   }
 }

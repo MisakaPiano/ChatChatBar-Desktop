@@ -1,3 +1,7 @@
+2026-11-07 追齐实际图片链路发现并补齐PNG eXIf方向缺口：修正前R01原三方法1PASS+2业务FAIL；5f补共享有界读取与Desktop像素方向，R02原shared9/Desktop36PASS；fa39仅扩原alpha集成场景，R03原Desktop11PASS，全部0FAIL/ERROR/SKIP。原图/隐写读取与显示旋转分离，隐私输出归一方向1；详见[317](317_PNG_ORIENTATION_AND_REUSED_IMAGE_BEHAVIOR_REVIEW.md)。旧162实际Shift指针等有效证明复用，314新增逐项行为映射但整体complete仍false；ac03143b另区分新建对话图标，定向后继检查待原件。公开1244/db7/签26、A1真人FAIL和315未采纳均保持，无本机运行/真实资料/新包或公发。
+
+下方历史保留。
+
 2026-11-07 本批149实际链路已获分源工程证明：R04/42254873831原shared170PASS、Desktop237PASS+1既有原生图形前置SKIP/0FAIL；Android后继42254880909原36PASS；025全屏模式入口后继42256005681原32PASS。模式字段/候选/SaveSlot/下一轮设置并发、88严格保全及默认关闭实验协议/实际生产者/Stop正文/工具完成证据均有本批原件；旧失败保留。详见[316](316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md)与314，逐提交审阅仍未全部闭合，315已有Prompt组未采纳不动。公开1244/db7/签26及A1真人FAIL保持，无新普通包/安装/用户根操作/公发，本机无编译测试。
 
 下方历史保留。
