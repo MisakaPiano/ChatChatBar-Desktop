@@ -100,7 +100,7 @@ internal class DesktopFishSampleTransport(
                                 // A blocked follow-up is not another send. Preserve only an actually
                                 // received error status from this call, never an IOException's text.
                                 val failure = if (attempt.followUpBlocked.get() && status in 300..599)
-                                    DesktopFishPreviewHttpFailure(status)
+                                    DesktopFishPreviewHttpFailure(status, attempts = 1)
                                 else IllegalStateException("官方样本网络失败；未自动重试")
                                 if (continuation.isActive) continuation.resumeWith(Result.failure(failure))
                             }
@@ -110,7 +110,7 @@ internal class DesktopFishSampleTransport(
                             try { response.use {
                                 if (!continuation.isActive) return
                                 val result = runCatching {
-                                    if (!it.isSuccessful) throw DesktopFishPreviewHttpFailure(it.code)
+                                    if (!it.isSuccessful) throw DesktopFishPreviewHttpFailure(it.code, attempts = 1)
                                     val body = requireNotNull(it.body)
                                     check(body.contentType()?.let { type -> type.type == "audio" && type.subtype in setOf("mpeg", "mp3") } == true) { "官方样本不是受支持的 MP3" }
                                     body.byteStream().use { input -> store.write(input, body.contentLength()) {
