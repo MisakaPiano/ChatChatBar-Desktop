@@ -156,6 +156,7 @@ internal fun DesktopFullComposer(
     ingressModifier: Modifier = Modifier,
     sendKey: DesktopSendKey = DesktopSendKey.CTRL_ENTER,
     onSendKey: (DesktopSendKey) -> Unit = {},
+    narrativeControls: @Composable () -> Unit = {},
     voiceControls: @Composable () -> Unit = {},
 ) {
     val t = LocalDesktopUiStrings.current
@@ -166,6 +167,7 @@ internal fun DesktopFullComposer(
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box(Modifier.weight(1f)) { StatusText(t(DesktopUiText.FULL_COMPOSER), colors.foreground) }
+                narrativeControls()
                 BootstrapButton(t(DesktopUiText.CLOSE), secondary = true, onClick = composer::close)
             }
             configurationMessage?.let { StatusText(t.status(it), colors.warning) }

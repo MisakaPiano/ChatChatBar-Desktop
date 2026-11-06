@@ -522,36 +522,58 @@
       "scope": "Session/message/alternatives/SaveSlot/copy modes, generation snapshot, field-scoped concurrent saves",
       "implementationSource": "f948c4d175562ea8d6cdc9d68867a613618b1da0",
       "verification": {
-        "r01": 42245560568,
-        "r01Tests": 59,
-        "r01Passed": 58,
-        "r01Failures": 1,
-        "r01Reason": "Strict old whole-object candidate-mode default expectation superseded; source normalize matches official149.",
-        "r02Control": "f2c4dd8508a37b14a3ed0872be79ee6cdf2e8f5d",
-        "r02State": "RUNNING_NOT_PASS"
+        "state": "AFFECTED_SUCCESSOR_PENDING_ORIGINAL_RESULTS",
+        "combinedControl": "8ec83285f642f2592cedea2432dd938a22f08559",
+        "androidControl": "7c23f457afca2eb028de90caa58c6083a1061b58",
+        "originalFailureHistoryPreserved": true
       },
-      "delivery": "Unreleased; UI/new prompt wiring is a separate successor"
+      "delivery": "Unreleased; UI/new prompt wiring is a separate successor",
+      "latestImplementation": "2e8bf3b77bf4da9b98967f65e8ab1d3a17d984dd",
+      "currentReview": "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
     },
     {
       "id": "U149_NARRATIVE_PROMPT",
       "disposition": "PENDING",
       "scope": "New mode prefixes/tails/history wrapping and request/cache integration; existing tail changes await explicit adoption",
       "implementation": "New neutral mode rules/facades+cache/order/history and compact session UI prepared; existing315 literals/tail removals NOT adopted",
-      "verification": "PENDING_AFFECTED_CHECKS",
-      "independentStyleDelta": "NOT_APPLIED"
+      "verification": {
+        "state": "AFFECTED_SUCCESSOR_PENDING_ORIGINAL_RESULTS",
+        "combinedControl": "8ec83285f642f2592cedea2432dd938a22f08559",
+        "androidControl": "7c23f457afca2eb028de90caa58c6083a1061b58",
+        "originalFailureHistoryPreserved": true
+      },
+      "independentStyleDelta": "NOT_APPLIED",
+      "latestImplementation": "2e8bf3b77bf4da9b98967f65e8ab1d3a17d984dd",
+      "currentReview": "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
     },
     {
       "id": "U149_EXPERIMENTAL",
       "disposition": "PENDING",
-      "scope": "Default-off all-producer experimental tool transport, streaming replacement, raw stopped drafts, valid complete tool image policy"
+      "scope": "Default-off all-producer experimental tool transport, streaming replacement, raw stopped drafts, valid complete tool image policy",
+      "latestImplementation": "2e8bf3b77bf4da9b98967f65e8ab1d3a17d984dd",
+      "currentReview": "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md",
+      "verification": {
+        "state": "AFFECTED_SUCCESSOR_PENDING_ORIGINAL_RESULTS",
+        "combinedControl": "8ec83285f642f2592cedea2432dd938a22f08559",
+        "androidControl": "7c23f457afca2eb028de90caa58c6083a1061b58",
+        "originalFailureHistoryPreserved": true
+      },
+      "implementation": "Actual main/auxiliary/Moments/probe producers wired; default-off; previews/canonical text separated; stop/source custody and valid-tool completion evidence; decoded diagnostics separate from raw SSE"
     },
     {
       "id": "U149_BACKUP88",
       "disposition": "PENDING",
       "scope": "Strict88 schema/transport/writer plus new fields; pre88 unknown-field protection and historical custody retained",
       "implementationSource": "f948c4d175562ea8d6cdc9d68867a613618b1da0",
-      "verification": "Same narrative88 R02 pending; Desktop suites not yet original-proven",
-      "note": "88 strict schema+modern writer+custody implemented together; pre88 new-field presence and unknown89 remain rejected"
+      "verification": {
+        "state": "AFFECTED_SUCCESSOR_PENDING_ORIGINAL_RESULTS",
+        "combinedControl": "8ec83285f642f2592cedea2432dd938a22f08559",
+        "androidControl": "7c23f457afca2eb028de90caa58c6083a1061b58",
+        "originalFailureHistoryPreserved": true
+      },
+      "note": "88 strict schema+modern writer+custody implemented together; pre88 new-field presence and unknown89 remain rejected",
+      "latestImplementation": "2e8bf3b77bf4da9b98967f65e8ab1d3a17d984dd",
+      "currentReview": "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
     },
     {
       "id": "POST149_PROMPT",

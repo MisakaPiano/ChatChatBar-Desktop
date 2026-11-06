@@ -435,11 +435,6 @@ internal fun DesktopPrimaryChatPanel(
         }
         if (backgroundOpen) DesktopChatBackgroundPanel(controller) { backgroundOpen = false }
         DesktopPeoplePreview(peopleActions)
-        if (narrativeModeOpen) state.selectedSession?.let { session ->
-            DesktopChatNarrativeModeDialog(session.narrativeMode, onSelect = { mode ->
-                scope.launch { controller.setNarrativeMode(session.id, mode) }
-            }, onClose = { narrativeModeOpen = false })
-        }
         if (peopleOpen) DesktopChatPeopleDialog(state.people, inspectedPersonId,
             onSelect = { inspectedPersonId = it },
             onEdit = { card, person -> peopleOpen = false; onEditPerson(card, person) },
@@ -450,6 +445,9 @@ internal fun DesktopPrimaryChatPanel(
         if (composer.expanded) {
             DesktopFullComposer(composer, canLaunch, state.configurationMessage, state.error,
                 sendKey = preferences.sendKey, onSendKey = chooseSendKey,
+                narrativeControls = { state.selectedSession?.let { session ->
+                    BootstrapButton(session.narrativeMode.shortLabel + " ▾", secondary = true) { narrativeModeOpen = true }
+                } },
                 voiceControls = { DesktopComposerVoiceControl(state, voiceUi,
                     state.selectedSession?.let { controller.voices?.effectiveAudiobook(it) } == true) },
                 onDraft = controller::editComposer, onSend = send,
@@ -461,6 +459,11 @@ internal fun DesktopPrimaryChatPanel(
                     onReorder = { id, to -> scope.launch { controller.reorderPendingImage(id, to) } }) },
                 onPickImage = { scope.launch { controller.pickImage() } },
                 ingressModifier = Modifier.desktopImageIngress(canLaunch, controller::imageIngressFailure) { input -> scope.launch { controller.receiveImages(input) } })
+        }
+        if (narrativeModeOpen) state.selectedSession?.let { session ->
+            DesktopChatNarrativeModeDialog(session.narrativeMode, onSelect = { mode ->
+                scope.launch { controller.setNarrativeMode(session.id, mode) }
+            }, onClose = { narrativeModeOpen = false })
         }
         if (composer.continuationPending) DesktopContinuationConfirmation(
             enabled = composer.canClickSend(canLaunch) && !composer.hasAttachments && composer.input.text.isBlank(),
