@@ -29,9 +29,14 @@ internal class DesktopMergeGraphRemapper(
                         // Legacy IDs are derived from the OLD message ID. Pin exactly those identities
                         // before forking; deriving them after the ID change would orphan old voices.
                         val normalized = MessageAlternativeVersionPolicy.normalize(backupJson.decodeFromJsonElement(ChatMessage.serializer(), value))
-                        JsonObject(value + mapOf(
+                        val versions = mapOf(
                             "alternativeVersionIds" to JsonArray(normalized.alternativeVersionIds.map(::JsonPrimitive)),
-                            "currentAlternativeVersionId" to (normalized.currentAlternativeVersionId?.let(::JsonPrimitive) ?: JsonNull)))
+                            "currentAlternativeVersionId" to (normalized.currentAlternativeVersionId?.let(::JsonPrimitive) ?: JsonNull))
+                        val modes = if ("narrativeMode" in value || "alternativeNarrativeModes" in value) mapOf(
+                            "narrativeMode" to JsonPrimitive(normalized.narrativeMode.name),
+                            "alternativeNarrativeModes" to JsonArray(normalized.alternativeNarrativeModes.map { JsonPrimitive(it.name) }))
+                            else emptyMap()
+                        JsonObject(value + versions + modes)
                     } else value
                     val result = linkedMapOf<String, JsonElement>()
                     original.forEach { (key, child) ->

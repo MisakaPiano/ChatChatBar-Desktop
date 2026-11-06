@@ -37,6 +37,12 @@ class DesktopMergeRootPreparationTest {
         own(pcRoot, base).use {
             DesktopFullBackupMapping(pcRoot).export(pcWork, 86, StrictBackupZipReader.Limits().expanded, forMerge = true).use { pc ->
                 val incoming = records("Phone", "phone-only").toMutableMap()
+                if (sourceCode == 88) for ((name, bytes) in incoming.toMap()) {
+                    if (name.startsWith("entities/chat_sessions/")) {
+                        val value = backupJson.parseToJsonElement(bytes.toString(Charsets.UTF_8)).jsonObject
+                        incoming[name] = JsonObject(value + ("narrativeMode" to JsonPrimitive("ADVANCE"))).toString().toByteArray()
+                    }
+                }
                 if (withEmbedding) {
                     incoming["entities/embedding_configs/default.json"] = bytes(EmbeddingConfig.serializer(),
                         EmbeddingConfig("default", "Phone legacy", "https://phone-legacy.invalid/v1", "", "remote"))
@@ -109,7 +115,7 @@ class DesktopMergeRootPreparationTest {
     }
 
     @Test fun `authenticated historical live voice keeps old ID with original custody and current playback exclusion`() = runBlocking<Unit> {
-        for (code in listOf(84, 87)) fixture(withHistoricalLive = true, sourceCode = code) { base, _, pc, phone, selected ->
+        for (code in listOf(84, 87, 88)) fixture(withHistoricalLive = true, sourceCode = code) { base, _, pc, phone, selected ->
             val root = Files.createDirectory(base.resolve("merged")); val authority = DesktopFreshRootAuthority(root, Files.createDirectory(base.resolve("credentials")), fake)
             own(root, base).use {
                 val pending = authority.begin()
@@ -118,6 +124,7 @@ class DesktopMergeRootPreparationTest {
                 DesktopFullBackupGraphValidation.validate(root)
                 val storage = JsonFileStorage(root)
                 val session = result.plan.identity.value("chat_sessions", "s")
+                if (code == 88) assertEquals(ChatNarrativeMode.ADVANCE, ChatRepository(storage).getSession(session)!!.narrativeMode)
                 val historical = com.example.chatbar.data.repository.VoiceMessageRepository(storage, strictReads = true).listForSession(session).single()
                 assertEquals("pruned-live-version", historical.messageVersionId)
                 val message = ChatRepository(storage).getMessagesReadOnly(session).single()
@@ -132,7 +139,7 @@ class DesktopMergeRootPreparationTest {
                 assertTrue(Files.walk(snapshot.directory.resolve("payload/desktop_historical_voice_sources")).use { paths -> paths.filter { Files.isRegularFile(it) && it.fileName.toString().endsWith(".json") }
                     .anyMatch { Files.readAllBytes(it).contentEquals(expected) } })
                 val exportWork = Files.createDirectory(base.resolve("history-export-work"))
-                DesktopFullBackupMapping(root).export(exportWork, 86, StrictBackupZipReader.Limits().expanded).use { exported ->
+                DesktopFullBackupMapping(root).export(exportWork, 88, StrictBackupZipReader.Limits().expanded).use { exported ->
                     val archive = base.resolve("history-return.cbbackup")
                     DesktopFullBackupWriter.export(exported.files, archive, null, exported.preferences)
                     DesktopFullBackupStaging.prepare(archive, null, Files.createDirectory(base.resolve("history-return-work"))).use { returned ->
@@ -237,7 +244,7 @@ class DesktopMergeRootPreparationTest {
     }
 
     @Test fun `actual root retains image plus original and forked historical package through modern export`() = runBlocking<Unit> {
-        for (code in listOf(84, 87)) fixture(withPackage = true, sourceCode = code) { base, _, pc, phone, selected ->
+        for (code in listOf(84, 87, 88)) fixture(withPackage = true, sourceCode = code) { base, _, pc, phone, selected ->
             val root = Files.createDirectory(base.resolve("merged")); val authority = DesktopFreshRootAuthority(root, Files.createDirectory(base.resolve("credentials")), fake)
             own(root, base).use {
                 val pending = authority.begin()

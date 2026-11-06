@@ -1,6 +1,8 @@
 package com.example.chatbar.data.local.entity
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -58,6 +60,7 @@ data class GeneratedImageMetadata(
  * 聊天消息
  */
 @Serializable
+@OptIn(ExperimentalSerializationApi::class)
 data class ChatMessage(
     val id: String,
     val sessionId: String,
@@ -71,6 +74,11 @@ data class ChatMessage(
     val currentAlternativeIndex: Int = 0,
     /** 当前内容版本身份；无 alternatives 时仍保留，供派生资源绑定。 */
     val currentAlternativeVersionId: String? = null,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val narrativeMode: ChatNarrativeMode = ChatNarrativeMode.FOCUS,
+    /** With alternatives in order; missing legacy entries mean FOCUS. */
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val alternativeNarrativeModes: List<ChatNarrativeMode> = emptyList(),
     val reasoningContent: String? = null,              // 思维链内容
     val generatedFromMessageId: String? = null,
     val formatRepairNotice: MessageFormatRepairNotice? = null,

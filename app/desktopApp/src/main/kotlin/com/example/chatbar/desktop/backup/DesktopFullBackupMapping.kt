@@ -61,7 +61,7 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
     /** Call under the real exclusive coordinator: root writers cannot interleave this snapshot. */
     suspend fun export(workspace: Path, wireVersionCode: Int = 84, maximum: Long = DesktopBackupPolicy.MAX_TOTAL,
         forMerge: Boolean = false, selection: AppBackupSelection? = null): Export {
-        require(wireVersionCode in 84..87)
+        require(wireVersionCode in 84..CURRENT_DESKTOP_BACKUP_CODE)
         val proof = inventory(maximum)
         val context = currentCoroutineContext()
         val catalog = selection?.let { BackupExportCatalog.read(root.toFile(), proof.keys.associateWith(root::resolve)) { context.ensureActive() } }
@@ -165,7 +165,7 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
 
     /** Separate modern prepared merge input; never converts a v2 archive into legacy Prepared. */
     internal suspend fun restoreMerged(inputs: Map<String, Path>, workspace: Path, preferences: BackupPreferences): Restore =
-        restoreFiles(inputs, workspace, preferences, 87, StrictBackupZipReader.Limits().expanded)
+        restoreFiles(inputs, workspace, preferences, CURRENT_DESKTOP_BACKUP_CODE, StrictBackupZipReader.Limits().expanded)
 
     private suspend fun restoreFiles(inputs: Map<String, Path>, workspace: Path, preferences: BackupPreferences,
         wireVersionCode: Int, maximum: Long): Restore {

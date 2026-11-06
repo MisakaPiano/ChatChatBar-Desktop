@@ -23,7 +23,7 @@ import kotlin.test.*
 
 class DesktopFishGenerationTest {
     @Test fun `late whole and segment audio refuse changed deleted or missing source version after network admission`() = runBlocking {
-        for (whole in listOf(false, true)) for (change in listOf("CONTENT", "MESSAGE", "SESSION", "VERSION")) Fixture().use { f ->
+        for (whole in listOf(false, true)) for (change in listOf("CONTENT", "MESSAGE", "SESSION", "VERSION", "NARRATIVE_MODE")) Fixture().use { f ->
             f.seed(if (whole) "Whole message narration" else "<n=\"Alice\"/>[hello]()")
             if (whole) f.settings.updateAppSettings { it.copy(assistantSegmentedBubblesEnabled = false) }
             val entered = java.util.concurrent.CountDownLatch(1)
@@ -45,6 +45,7 @@ class DesktopFishGenerationTest {
                     "SESSION" -> f.chats.deleteSession(current.sessionId)
                     "VERSION" -> f.chats.updateMessage(current.copy(alternatives = emptyList(), alternativeVersionIds = emptyList(),
                         currentAlternativeVersionId = "different-retained-version"))
+                    "NARRATIVE_MODE" -> f.chats.updateMessage(current.copy(narrativeMode = ChatNarrativeMode.ADVANCE))
                 }
                 release.countDown(); f.done(batch)
                 assertTrue(f.voices.listForSession(f.session.id).isEmpty(), "whole=$whole change=$change")
@@ -53,6 +54,30 @@ class DesktopFishGenerationTest {
                 if (Files.exists(generated)) Files.walk(generated).use { paths ->
                     assertEquals(0L, paths.filter { it.fileName.toString().endsWith(".mp3") }.count())
                 }
+            } finally { release.countDown() }
+        }
+    }
+
+    @Test fun `changing only the next reply mode preserves old message audio generation`() = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            val entered = java.util.concurrent.CountDownLatch(1)
+            val release = java.util.concurrent.CountDownLatch(1)
+            f.server.dispatcher = object : okhttp3.mockwebserver.Dispatcher() {
+                override fun dispatch(request: okhttp3.mockwebserver.RecordedRequest): MockResponse {
+                    entered.countDown(); check(release.await(5, TimeUnit.SECONDS)); return f.audio()
+                }
+            }
+            try {
+                val batch = f.coordinator.generateWhole(f.session.id, f.message.id, "alice")
+                withContext(Dispatchers.IO) { check(entered.await(5, TimeUnit.SECONDS)) }
+                f.chats.setNarrativeMode(f.session.id, ChatNarrativeMode.ADVANCE)
+                release.countDown()
+                withTimeout(8000) { while (f.voices.listForSession(f.session.id).isEmpty()) delay(10) }
+                assertEquals(ChatNarrativeMode.FOCUS, f.chats.getMessage(f.message.id, f.session.id)!!.narrativeMode)
+                assertEquals(ChatNarrativeMode.ADVANCE, f.chats.getSession(f.session.id)!!.narrativeMode)
+                assertEquals(1, f.server.requestCount)
+                assertFalse(f.coordinator.batches.value.any { it.id == batch && it.phase == VoiceGenerationPhase.FAILED })
             } finally { release.countDown() }
         }
     }

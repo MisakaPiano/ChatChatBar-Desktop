@@ -171,7 +171,7 @@ internal class DesktopBackupReadOnlyInspector(private val afterAuthentication: (
             }
             stage = "MANIFEST"
             val m = requireNotNull(manifest)
-            require(m.formatVersion == version && m.appVersionCode in 84..87)
+            require(m.formatVersion == version && m.appVersionCode in 84..CURRENT_DESKTOP_BACKUP_CODE)
             require(m.formatVersion in 1..2 && (version != 2 || m.appVersionCode >= 85))
             require(inventory == seen && preferenceHash != null && preferenceHash == m.preferencesSha256)
             require(m.fileCount == seen.size && m.totalBytes == seen.values.sumOf { it.size })

@@ -160,6 +160,7 @@ internal class DesktopFishGenerationCoordinator(
         val retained = MessageAlternativeVersionPolicy.versions(current).singleOrNull { it.id == captured.id }
             ?: error("语音来源版本已不存在")
         check(retained.content == captured.content) { "语音来源正文已变化" }
+        check(retained.narrativeMode == captured.narrativeMode) { "语音来源叙事模式已变化" }
         retained
     }
 

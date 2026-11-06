@@ -34,11 +34,11 @@ class DesktopOfficial148BackupTest {
     private val card = """{"id":"c","name":"Synthetic","defaultNovelAiImageModel":"V5_FULL","defaultImageGenerationSettings":{"steps":31,"guidance":6.5,"cfgRescale":0.4,"effort":"MEDIUM","transparentBackground":true},"createdAt":1,"updatedAt":1}"""
     private val cardScope = OfficialWireScope(emptySet(), 1, 0, 0, 0, 0, false, false, false, false)
 
-    @Test fun `known84 through87 stay readable but unknown versions refuse without changing source`() = runBlocking<Unit> {
-        for (code in listOf(83, 84, 85, 86, 87, 88)) {
+    @Test fun `known84 through88 stay readable but unknown versions refuse without changing source`() = runBlocking<Unit> {
+        for (code in listOf(83, 84, 85, 86, 87, 88, 89)) {
             val bytes = CensusWireFixtures.bytes(version = if (code < 85) 1 else 2, code = code, files = emptyMap(), prefs = "{}")
             CensusWireFixtures.input(bytes, "known-version-$code") { path ->
-                if (code in 84..87) {
+                if (code in 84..88) {
                     assertEquals(code, DesktopFullBackupSource.verify(path, null, Sink()).manifest.appVersionCode)
                     assertEquals(code, DesktopBackupReadOnlyInspector().inspect(path, null).appVersionCode)
                 } else {
@@ -65,7 +65,7 @@ class DesktopOfficial148BackupTest {
                     val output = path.parent.resolve("reexport.cbbackup")
                     DesktopFullBackupWriter.export(staged.files, output, null)
                     val reread = Sink(); val after = DesktopFullBackupSource.verify(output, null, reread)
-                    assertEquals(87, after.manifest.appVersionCode)
+                    assertEquals(88, after.manifest.appVersionCode)
                     assertEquals(selected, backupJson.decodeFromJsonElement<CharacterCard>(reread.entities.values.single()).defaultImageGenerationSettings)
                 }
             }
@@ -83,7 +83,7 @@ class DesktopOfficial148BackupTest {
         }
     }
 
-    @Test fun `actual published1238 output remains recoverable and reexports87 without losing Studio choices`() = runBlocking<Unit> {
+    @Test fun `actual published1238 output remains recoverable and reexports88 without losing Studio choices`() = runBlocking<Unit> {
         CensusWireFixtures.input(published1238StudioBackup(), "actual-published1238-v5") { path ->
             val sink = Sink(); val proof = DesktopFullBackupSource.verify(path, null, sink)
             assertEquals(86, proof.manifest.appVersionCode); assertTrue(proof.historicalDesktopV5Settings)
@@ -93,7 +93,7 @@ class DesktopOfficial148BackupTest {
                 val output = path.parent.resolve("migrated.cbbackup")
                 DesktopFullBackupWriter.export(staged.files, output, null)
                 val reread = Sink(); val after = DesktopFullBackupSource.verify(output, null, reread)
-                assertEquals(87, after.manifest.appVersionCode); assertFalse(after.historicalDesktopV5Settings)
+                assertEquals(88, after.manifest.appVersionCode); assertFalse(after.historicalDesktopV5Settings)
                 val draft = backupJson.decodeFromJsonElement<NovelAiStudioDraft>(reread.entities.getValue("entities/novelai_studio_draft.json"))
                 assertEquals(NovelAiEffort.MEDIUM, draft.v5Settings.effort); assertTrue(draft.v5Settings.transparentBackground)
                 assertEquals(backupJson.decodeFromJsonElement<NovelAiStudioDraft>(sink.entities.values.single()), draft)

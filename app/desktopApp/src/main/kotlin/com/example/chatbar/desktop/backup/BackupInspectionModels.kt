@@ -40,6 +40,7 @@ internal val inspectionGlobalOptions = setOf(
     "modelConfigurationMode",
     "siliconFlowApiKey",
     "allowCleartextModelApi",
+    "experimentalApiModeEnabled",
     "defaultEmbeddingId",
     "models",
     "embedding",

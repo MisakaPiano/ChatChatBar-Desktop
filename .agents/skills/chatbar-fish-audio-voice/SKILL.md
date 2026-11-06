@@ -7,6 +7,8 @@ description: Maintain ChatBar Fish Audio voice generation across API credentials
 
 - Desktop confirmed whole-session deletion is composed through the SaveSlot transaction owner and existing voice session maintenance. Generated audio paths remain absolute; `isDesktopOwnedAudioCandidate` admits only canonical files directly under `audio/generated/<session>`, then `DesktopOwnedImageCleanup` proves no remaining entity reference and `DesktopVoiceAudioStore.deleteIfOwned` verifies its receipt. False/refused cleanup retains the persistent private cleanup receipt; external audio and references from another session or legacy slot remain untouched.
 
+Desktop `sourceVersion` also matches the saved version’s narrative mode, alongside ID/content. Changing the session’s next-reply mode does not cancel old message TTS; mutating the same saved version’s mode rejects late publication. `DesktopFishGenerationTest` uses a blocked real response to exercise both cases.
+
 Keep voice generation independent from chat text, prompt context, and long-term memory. Read the smallest matching path first.
 
 - Desktop voice admission uses `DesktopTaskRuntime.hasActiveVoiceSourceMutation(sessionId,messageId)`, not any running task in the session. Another reply/image may overlap a completed old source; exact regeneration, repair/unknown repair and destructive mutation remain protected. The normal data gate and original batch cancellation still own maintenance/drain.

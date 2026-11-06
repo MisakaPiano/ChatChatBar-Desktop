@@ -13,6 +13,28 @@ import okhttp3.mockwebserver.*
 import kotlin.test.*
 
 class DesktopRegenerationTest {
+    @Test fun `regeneration captures next reply mode once and retains old and new candidate modes`() = runBlocking {
+        fixture { container, server, session, target ->
+            container.chatRepository.setNarrativeMode(session, ChatNarrativeMode.ADVANCE)
+            val entered = java.util.concurrent.CountDownLatch(1)
+            val release = java.util.concurrent.CountDownLatch(1)
+            server.dispatcher = object : Dispatcher() {
+                override fun dispatch(request: RecordedRequest): MockResponse {
+                    entered.countDown(); check(release.await(5, TimeUnit.SECONDS)); return success("new-mode-answer")
+                }
+            }
+            val operation = async { container.createRealChatRuntime().regenerate(session, target.id) }
+            try {
+                withContext(Dispatchers.IO) { check(entered.await(5, TimeUnit.SECONDS)) }
+                container.chatRepository.setNarrativeMode(session, ChatNarrativeMode.FOCUS)
+                release.countDown()
+                val result = withTimeout(8000) { operation.await() }
+                assertEquals(ChatNarrativeMode.ADVANCE, result.assistant.narrativeMode)
+                assertEquals(listOf(ChatNarrativeMode.FOCUS, ChatNarrativeMode.ADVANCE), result.assistant.alternativeNarrativeModes)
+                assertEquals(ChatNarrativeMode.FOCUS, container.chatRepository.getSession(session)!!.narrativeMode)
+            } finally { release.countDown(); operation.cancelAndJoin() }
+        }
+    }
     @Test fun `wrapped cancellation after explicit stop retains partial regeneration but generic cancel does not`() = runBlocking {
         for (explicitStop in listOf(false, true)) fixture { container, _, session, target ->
             ControlledDesktopSseServer("""{"choices":[{"delta":{"content":"wrapped-partial"}}]}""").use { stream ->

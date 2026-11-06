@@ -125,7 +125,7 @@ class JsonFileStorage(
     // 每种实体类型的内存缓存 + Flow通知
     private val cacheFlows = ConcurrentHashMap<String, MutableStateFlow<Map<String, Any>>>()
 
-    private suspend fun <T> withNormalOperation(operation: suspend () -> T): T =
+    internal suspend fun <T> withNormalOperation(operation: suspend () -> T): T =
         operationGate.withNormalOperation(operation)
 
     private fun mutexFor(entityType: String): OperationMutex =

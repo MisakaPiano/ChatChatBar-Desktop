@@ -8,7 +8,7 @@ import kotlinx.serialization.json.*
 @OptIn(ExperimentalSerializationApi::class)
 internal object DesktopOfficialBackupEntitySchema {
     fun validate(type: String, value: JsonObject, appVersionCode: Int, historicalDesktopV5: Boolean = false) {
-        require(appVersionCode in 84..87)
+        require(appVersionCode in 84..CURRENT_DESKTOP_BACKUP_CODE)
         val serializer = requireNotNull(DesktopBackupPolicy.schemas[type])
         versioned(serializer.descriptor, value, appVersionCode, 0, historicalDesktopV5)
         backupJson.decodeFromJsonElement(serializer, value)
@@ -29,6 +29,16 @@ internal object DesktopOfficialBackupEntitySchema {
         when (descriptor.kind) {
             StructureKind.CLASS, StructureKind.OBJECT -> {
                 val obj = value as? JsonObject ?: return // The actual serializer diagnoses its expected type.
+                if (code < 88) {
+                    val newFields = when (typeName) {
+                        "com.example.chatbar.data.local.entity.AppSettings" -> setOf("experimentalApiModeEnabled")
+                        "com.example.chatbar.data.local.entity.ChatSession",
+                        "com.example.chatbar.data.local.entity.SaveSlot" -> setOf("narrativeMode")
+                        "com.example.chatbar.data.local.entity.ChatMessage" -> setOf("narrativeMode", "alternativeNarrativeModes")
+                        else -> emptySet()
+                    }
+                    require(obj.keys.none { it in newFields }) { "OFFICIAL_PRE149_FIELDS_UNSUPPORTED" }
+                }
                 if (code < 87 && !(historicalDesktopV5 && typeName == "com.example.chatbar.domain.image.NovelAiGenerationSettings") && typeName in setOf(
                         "com.example.chatbar.domain.image.NovelAiCharacterImageSettings",
                         "com.example.chatbar.domain.image.NovelAiGenerationSettings")) {

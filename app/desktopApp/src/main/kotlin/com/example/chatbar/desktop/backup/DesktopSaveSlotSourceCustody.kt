@@ -22,7 +22,7 @@ internal object DesktopSaveSlotSourceCustody {
         archiveSha256: String, sourceCode: Int, sourceFormat: Int, sourceScope: InspectionScope?,
         beforePublish: suspend () -> Unit = {}): String = withContext(Dispatchers.IO) {
         check(DesktopDataRootOwnership.isHeld(targetRoot)) { "SLOT_CUSTODY_ROOT_NOT_OWNED" }
-        require(hash.matches(archiveSha256) && sourceCode in 84..87 && sourceFormat in 1..2 &&
+        require(hash.matches(archiveSha256) && sourceCode in 84..CURRENT_DESKTOP_BACKUP_CODE && sourceFormat in 1..2 &&
             (sourceFormat == 2) == (sourceScope != null) && (sourceFormat != 2 || sourceCode >= 85)) { "SLOT_CUSTODY_SOURCE_IDENTITY" }
         require(recordPath.startsWith("entities/save_slots/") && recordPath.endsWith(".json")) { "SLOT_CUSTODY_SOURCE_PATH" }
         DesktopBackupPolicy.path(recordPath)
@@ -75,7 +75,7 @@ internal object DesktopSaveSlotSourceCustody {
         val indexPath = home.resolve("index.json"); DesktopArchiveFiles.safe(indexPath, false)
         check(Files.size(indexPath) <= 256 * 1024)
         val index = backupJson.decodeFromJsonElement(Index.serializer(), strict(Files.readAllBytes(indexPath)))
-        check(index.version == 1 && index.kind == "original-save-slot-source" && index.sourceCode in 84..87 &&
+        check(index.version == 1 && index.kind == "original-save-slot-source" && index.sourceCode in 84..CURRENT_DESKTOP_BACKUP_CODE &&
             index.sourceFormat in 1..2 && (index.sourceFormat == 2) == (index.sourceScope != null) &&
             (index.sourceFormat != 2 || index.sourceCode >= 85)) { "SLOT_CUSTODY_INDEX_SCHEMA" }
         check(listOf(index.archiveSha256, index.recordSha256, index.packageSha256).all(hash::matches) && sealName(index) == home.fileName.toString())

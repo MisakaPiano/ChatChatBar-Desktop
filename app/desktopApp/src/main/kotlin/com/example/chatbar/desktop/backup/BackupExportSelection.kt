@@ -26,6 +26,7 @@ object BackupSettingOptions {
         BackupSettingOption("models", "全部模型配置与密钥", "模型与连接"),
         BackupSettingOption("embedding", "全部向量模型配置", "模型与连接"),
         field("defaultFormatCardId", "默认格式卡", "回复与记忆"),
+        field("experimentalApiModeEnabled", "实验 API 模式", "模型与连接"),
         field("automaticFormatCheckEnabled", "自动格式检查", "回复与记忆"),
         field("formatRepairModelId", "格式修复模型", "回复与记忆"),
         field("memoryRagTopK", "记忆检索数量", "回复与记忆"),
@@ -180,7 +181,8 @@ class BackupExportCatalog internal constructor(
         val cards = records.filter { it.type == "character_cards" && it.id in selection.characterIds }
         val chats = records.filter { it.type == "chat_sessions" && it.id in selection.sessions }
         val settingsFields = BackupSettingOptions.fields(selection.globalOptions)
-        val defaultSettings = backupJson.encodeToJsonElement(AppSettings.serializer(), AppSettings()) as JsonObject
+        val defaultSettings = JsonObject((backupJson.encodeToJsonElement(AppSettings.serializer(), AppSettings()) as JsonObject) +
+            ("experimentalApiModeEnabled" to JsonPrimitive(false)))
         val settings = records.filter { it.type == "app_settings" }
         val sourceSettings = settings.firstOrNull()
         val cardsById = cards.associateBy { it.id }

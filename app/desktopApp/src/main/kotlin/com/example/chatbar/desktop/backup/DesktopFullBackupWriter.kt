@@ -11,7 +11,7 @@ import kotlinx.coroutines.*
 import kotlinx.serialization.json.*
 
 /** Writes a frozen mapped snapshot, optionally overlaying an explicitly captured credential snapshot.
- * The selected transport schema is official148/code87/v2, not the Desktop validated upstream baseline.
+ * The selected transport schema is selected official149/code88/v2, not the Desktop validated upstream baseline.
  * Desktop-only domains stay explicit and are never represented as Android full portability.
  */
 internal object DesktopFullBackupWriter {
@@ -53,8 +53,13 @@ internal object DesktopFullBackupWriter {
                         DesktopBackupRecords.requireSize(size)
                         val bytes = Files.readAllBytes(path)
                         try {
-                            val original = DesktopBackupPolicy.entity(name, bytes, false, wireVersionCode = 87, modern = true)
-                            val value = credentials?.entity(name, original) ?: original
+                            val original = DesktopBackupPolicy.entity(name, bytes, false, wireVersionCode = CURRENT_DESKTOP_BACKUP_CODE, modern = true)
+                            val selected = credentials?.entity(name, original) ?: original
+                            // New defaults are omitted in live/legacy entities. The selected modern
+                            // settings transport carries explicit false so merge choices can reset true.
+                            val value = if (DesktopBackupPolicy.entityType(name) == "app_settings" &&
+                                "experimentalApiModeEnabled" !in selected) JsonObject(selected +
+                                    ("experimentalApiModeEnabled" to JsonPrimitive(false))) else selected
                             entities[name] = DesktopBackupRecords.scopeRecord(value)
                             if (value != original || DesktopBackupPolicy.entityType(name) == "moment_posts")
                                 transported[name] = value.toString().toByteArray()
@@ -89,8 +94,8 @@ internal object DesktopFullBackupWriter {
                     desktopNovelAiAccounts = capturedPreferences.desktopNovelAiAccounts,
                     desktopFishAccounts = capturedPreferences.desktopFishAccounts,
                     brushSize = preferences.brushSize, brushType = preferences.brushType)).toByteArray()
-                val manifest = InspectionManifest(formatVersion = 2, appVersionCode = 87,
-                    appVersionName = "CCB Desktop / official 1.4.8 transport compatibility", createdAt = System.currentTimeMillis(),
+                val manifest = InspectionManifest(formatVersion = 2, appVersionCode = CURRENT_DESKTOP_BACKUP_CODE,
+                    appVersionName = "CCB Desktop / official 1.4.9 selected transport compatibility", createdAt = System.currentTimeMillis(),
                     sourceFilesRoot = "desktop-selected-root", counts = counts, fileCount = proof.size,
                     totalBytes = total, preferencesSha256 = DesktopBackupPolicy.digest(prefs), scope = scope)
                 DesktopBackupScratch.create(destination.parent, "backup-modern-output-").use { scratch ->

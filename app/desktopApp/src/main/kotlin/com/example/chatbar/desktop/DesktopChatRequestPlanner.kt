@@ -139,7 +139,9 @@ internal class DesktopChatRequestPlanner(
         regenerationContext: List<ChatMessage>? = null,
         includeCurrentUser: Boolean = true,
     ): DesktopChatRequestPlan {
-        val session = requireNotNull(chatRepository.getSession(sessionId)) { "对话不存在" }
+        val session = requireNotNull(chatRepository.getSession(sessionId)) { "对话不存在" }.let { latest ->
+            inputs.capturedNarrativeMode?.let { latest.copy(narrativeMode = it) } ?: latest
+        }
         require(currentUser.sessionId == session.id) { "当前用户消息不属于该对话" }
         require(currentUser.role == MessageRole.USER) { "当前消息必须是USER" }
         val originalCard = requireNotNull(characterRepository.getById(session.characterCardId)) { "角色卡不存在" }

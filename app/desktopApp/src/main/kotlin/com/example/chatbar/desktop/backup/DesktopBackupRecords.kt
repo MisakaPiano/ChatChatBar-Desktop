@@ -28,7 +28,7 @@ internal object DesktopBackupRecords {
     fun entity(relative: String, file: Path): JsonObject {
         DesktopArchiveFiles.safe(file, false); requireSize(Files.size(file))
         val bytes = Files.readAllBytes(file)
-        try { return DesktopBackupPolicy.entity(relative, bytes, false, 87, modern = true) }
+        try { return DesktopBackupPolicy.entity(relative, bytes, false, CURRENT_DESKTOP_BACKUP_CODE, modern = true) }
         finally { bytes.fill(0) }
     }
     fun files(files: Map<String, Path>, hashes: Map<String, String>? = null): Map<String, JsonObject> =

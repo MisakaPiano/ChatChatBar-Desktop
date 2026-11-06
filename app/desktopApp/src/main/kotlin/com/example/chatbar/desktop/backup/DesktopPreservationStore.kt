@@ -83,7 +83,7 @@ internal object DesktopPreservationStore {
                 val proof = input.source.inventory[relative]
                 if (proof == null) {
                     val state = when {
-                        field == "senderAvatar" && input.source.manifest.appVersionCode in 85..87 -> EdgeState.HISTORICAL_AVATAR_ABSENT
+                        field == "senderAvatar" && input.source.manifest.appVersionCode in 85..CURRENT_DESKTOP_BACKUP_CODE -> EdgeState.HISTORICAL_AVATAR_ABSENT
                         field != "senderAvatar" && input.source.manifest.scope?.momentsImages == false -> EdgeState.SOURCE_MEDIA_NOT_SELECTED
                         else -> error("PRESERVATION_MEDIA_MISSING")
                     }
@@ -133,7 +133,7 @@ internal object DesktopPreservationStore {
         val text = java.io.StringWriter()
         BackupJsonStream(raw.inputStream().strictUtf8Reader(), text) { value, _ -> value }.copy()
         val index = backupJson.decodeFromString(Index.serializer(), text.toString())
-        check(index.version == 1 && index.kind == "dormant-official-moments" && index.sourceCode in 84..87)
+        check(index.version == 1 && index.kind == "dormant-official-moments" && index.sourceCode in 84..CURRENT_DESKTOP_BACKUP_CODE)
         check(index.sourceFormatVersion in 1..2 && (index.sourceFormatVersion == 2) == (index.sourceScope != null))
         check(index.sourceFormatVersion != 2 || index.sourceCode >= 85)
         check(index.sourceSha256 == home.fileName.toString() && hashPattern.matches(index.sourceSha256))
@@ -179,7 +179,7 @@ internal object DesktopPreservationStore {
             edge.storedPath?.let { check(it.startsWith("media/") && it in proofs) }
             when (edge.state) {
                 EdgeState.SOURCE_MEDIA_NOT_SELECTED -> check(index.sourceScope?.momentsImages == false && edge.field != "senderAvatar")
-                EdgeState.HISTORICAL_AVATAR_ABSENT -> check(index.sourceCode in 85..87 && edge.field == "senderAvatar")
+                EdgeState.HISTORICAL_AVATAR_ABSENT -> check(index.sourceCode in 85..CURRENT_DESKTOP_BACKUP_CODE && edge.field == "senderAvatar")
                 EdgeState.OWNED_COPY_VERIFIED -> Unit
             }
         }

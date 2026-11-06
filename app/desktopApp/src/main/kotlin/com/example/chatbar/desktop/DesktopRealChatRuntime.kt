@@ -244,11 +244,11 @@ class DesktopRealChatRuntime internal constructor(
             )
         }
 
-        val assistantBase = regenerationTarget?.copy(content = "", reasoningContent = null) ?: ChatMessage.create(
+        val assistantBase = (regenerationTarget?.copy(content = "", reasoningContent = null) ?: ChatMessage.create(
             sessionId = sessionId,
             role = MessageRole.ASSISTANT,
             content = "",
-        )
+        )).copy(narrativeMode = plan.session.narrativeMode)
         var accumulatedContent = ""
         var accumulatedReasoning = ""
         var persistedAssistant: ChatMessage? = null
@@ -259,6 +259,7 @@ class DesktopRealChatRuntime internal constructor(
             val old = requireNotNull(chatRepository.getMessage(regenerationTarget.id, sessionId)) { "回复不存在" }
             val updated = MessageAlternativeVersionPolicy.append(
                 old, message.content, MessageAlternativeVersionPolicy.newVersionId(old),
+                narrativeMode = message.narrativeMode,
             ).copy(reasoningContent = message.reasoningContent, formatRepairNotice = null)
             return chatRepository.updateMessageReturningSnapshot(updated)
         }
@@ -370,6 +371,7 @@ class DesktopRealChatRuntime internal constructor(
             settings = settings,
             model = model,
             inputs = DesktopFakeChatInputs(
+                capturedNarrativeMode = session.narrativeMode,
                 globalPlayerName = player.playerName.takeIf(String::isNotBlank),
                 globalPlayerSetting = player.globalPersona.takeIf(String::isNotBlank),
                 effectiveContextWindowSize = settings.defaultContextWindowSize,

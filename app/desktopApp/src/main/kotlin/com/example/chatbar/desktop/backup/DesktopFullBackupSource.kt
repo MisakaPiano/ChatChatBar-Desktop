@@ -60,6 +60,7 @@ internal object DesktopFullBackupSource {
                 var inventory: Map<String, AppBackupFileRecord>? = null
                 var incompatible84 = false
                 var incompatiblePre148 = false
+                var incompatiblePre149 = false
                 var incompatibleHistoricalDesktopV5 = false
                 val seen = linkedMapOf<String, AppBackupFileRecord>()
                 val entities = linkedMapOf<String, JsonObject>()
@@ -112,7 +113,9 @@ internal object DesktopFullBackupSource {
                                                 }
                                                 "moment_tasks" -> backupJson.decodeFromJsonElement<MomentTaskSnapshot>(value)
                                                 else -> {
-                                                    DesktopOfficialBackupEntitySchema.validate(type, value, 87)
+                                                    DesktopOfficialBackupEntitySchema.validate(type, value, CURRENT_DESKTOP_BACKUP_CODE)
+                                                    if (!incompatiblePre149) try { DesktopOfficialBackupEntitySchema.validateVersion(type, value, 87) }
+                                                    catch (_: Exception) { incompatiblePre149 = true }
                                                     if (!incompatible84) try { DesktopOfficialBackupEntitySchema.validateVersion(type, value, 84) }
                                                     catch (_: Exception) { incompatible84 = true }
                                                     if (!incompatibleHistoricalDesktopV5) try { DesktopOfficialBackupEntitySchema.validateVersion(type, value, 86) }
@@ -147,7 +150,7 @@ internal object DesktopFullBackupSource {
                 }
                 phase = "MANIFEST_INVENTORY"
                 val m = requireNotNull(manifest)
-                require(m.formatVersion == envelope && m.appVersionCode in 84..87 && (envelope != 2 || m.appVersionCode >= 85))
+                require(m.formatVersion == envelope && m.appVersionCode in 84..CURRENT_DESKTOP_BACKUP_CODE && (envelope != 2 || m.appVersionCode >= 85))
                 require((envelope == 2) == (m.scope != null))
                 if (m.appVersionCode == 84) require("scope" !in manifestFields && "retainedPreferences" !in preferenceFields)
                 require(preferencesHash != null && m.preferencesSha256 == preferencesHash && inventory == seen)
@@ -158,6 +161,7 @@ internal object DesktopFullBackupSource {
                 require(m.appVersionCode != 84 || !incompatible84)
                 val historicalDesktopV5 = incompatiblePre148 && !incompatibleHistoricalDesktopV5 && DesktopBackupVersionProfile.historicalDesktop147(m)
                 require(m.appVersionCode >= 87 || !incompatiblePre148 || historicalDesktopV5)
+                require(m.appVersionCode >= 88 || !incompatiblePre149)
                 phase = "SELECTION_SCOPE"
                 m.scope?.let { DesktopBackupReadOnlyInspector().scopeReport(it, counts, entities) }
                 active()

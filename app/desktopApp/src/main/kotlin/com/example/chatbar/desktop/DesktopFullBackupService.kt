@@ -33,7 +33,7 @@ internal class DesktopFullBackupService(
     /** Legacy v1 compatibility entry retained for existing internal restore regression. */
     suspend fun export(destination: Path, password: CharArray?): String = exportSnapshot(destination, password, false)
 
-    /** User-facing backup supports the current mapped code87 transport and owned preservation domains. */
+    /** User-facing backup supports the current mapped code88 transport and owned preservation domains. */
     suspend fun exportModern(destination: Path, password: CharArray?, includeCredentials: Boolean = false, selection: AppBackupSelection? = null): String =
         exportSnapshot(destination, password, true, includeCredentials, selection)
 
@@ -55,12 +55,12 @@ internal class DesktopFullBackupService(
                         DesktopFullBackupGraphValidation.validate(root)
                     }
                     stage = "FILES"
-                    snapshot = mapping.export(workspace, if (modern) 87 else 84,
+                    snapshot = mapping.export(workspace, if (modern) CURRENT_DESKTOP_BACKUP_CODE else 84,
                         if (modern) StrictBackupZipReader.Limits().expanded else DesktopBackupPolicy.MAX_TOTAL, selection = selection)
                     if (includeCredentials) {
                         stage = "CREDENTIALS"
                         val entities = requireNotNull(snapshot).files.filterKeys { it.startsWith("entities/") }.mapValues { (path, file) ->
-                            DesktopBackupPolicy.entity(path, Files.readAllBytes(file), false, 87)
+                            DesktopBackupPolicy.entity(path, Files.readAllBytes(file), false, CURRENT_DESKTOP_BACKUP_CODE)
                         }
                         credentials = DesktopBackupExportCredentials.capture(requireNotNull(secretStore).invoke(), entities,
                             selection?.globalOptions ?: inspectionGlobalOptions)

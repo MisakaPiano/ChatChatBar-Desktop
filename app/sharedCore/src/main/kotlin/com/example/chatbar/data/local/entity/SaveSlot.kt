@@ -34,6 +34,8 @@ data class SaveSlot(
     @Serializable(with = ReplyLengthSerializer::class)
     val replyLength: Int = DEFAULT_REPLY_LENGTH_CHARS,
     val replyLanguage: String? = null,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val narrativeMode: ChatNarrativeMode = ChatNarrativeMode.FOCUS,
     val roleplayStyle: String? = null,
     val chatBackground: String? = null,
     val audiobookModeEnabled: Boolean? = null,

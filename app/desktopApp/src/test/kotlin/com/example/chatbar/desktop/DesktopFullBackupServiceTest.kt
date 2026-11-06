@@ -183,7 +183,7 @@ class DesktopFullBackupServiceTest {
                 val state = withTimeout(20_000) { controller.state.first { !it.busy } }
                 assertNull(state.error)
                 assertEquals(2, state.summary!!.formatVersion)
-                assertEquals(87, state.summary!!.appVersionCode)
+                assertEquals(88, state.summary!!.appVersionCode)
                 assertEquals(exportReads, reads)
                 assertTrue(password == null || password.all { it == '\u0000' })
                 assertEquals(0L, Files.list(f.root.resolve("backups/.full-app-work")).use { it.count() })
@@ -337,7 +337,7 @@ class DesktopFullBackupServiceTest {
         }
     }
 
-    @Test fun `modern user export uses code87 plain and encrypted without exporting known credentials`() = runBlocking<Unit> {
+    @Test fun `modern user export uses code88 plain and encrypted without exporting known credentials`() = runBlocking<Unit> {
         for (encrypted in listOf(false, true)) Fixture().use { f ->
             val card = f.root.resolve("entities/character_cards/c.json")
             Files.createDirectories(card.parent)
@@ -352,7 +352,7 @@ class DesktopFullBackupServiceTest {
             val readPassword = if (encrypted) "FAKE_MODERN_EXPORT_PASSWORD".toCharArray() else null
             DesktopFullBackupStaging.prepare(output, readPassword, Files.createDirectory(f.base.resolve("inspection"))).use { inspected ->
                 assertEquals(2, inspected.source.manifest.formatVersion)
-                assertEquals(87, inspected.source.manifest.appVersionCode)
+                assertEquals(88, inspected.source.manifest.appVersionCode)
                 assertEquals(encrypted, inspected.source.encrypted)
                 assertEquals(kotlinx.serialization.json.JsonPrimitive(false), inspected.entities.getValue("entities/character_cards/c.json")
                     .getValue("defaultImageGenerationSettings").let { it as kotlinx.serialization.json.JsonObject }.getValue("varietyPlus"))

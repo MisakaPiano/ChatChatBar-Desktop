@@ -12,6 +12,32 @@ import kotlinx.coroutines.flow.first
 import kotlin.test.*
 
 class DesktopSaveSlotServiceTest {
+    @Test fun `narrative mode survives actual slot export import restore duplicate and repository reopen`() = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            f.chats.setNarrativeMode("s", ChatNarrativeMode.ADVANCE)
+            val source = MessageAlternativeVersionPolicy.normalize(f.message).copy(narrativeMode = ChatNarrativeMode.ADVANCE,
+                alternativeNarrativeModes = f.message.alternatives.map { ChatNarrativeMode.ADVANCE })
+            f.chats.updateMessage(source)
+            val service = f.service()
+            val slot = service.create("s", "Narrative", SaveSlotImagePolicy.NONE, false)
+            assertEquals(ChatNarrativeMode.ADVANCE, slot.narrativeMode)
+            val output = f.root.resolve("narrative.cbsave")
+            service.export(slot.id, output)
+            val imported = service.import(output, "s")
+            f.chats.setNarrativeMode("s", ChatNarrativeMode.FOCUS)
+            service.restore(imported.id, "s")
+            assertEquals(ChatNarrativeMode.ADVANCE, f.chats.getSession("s")!!.narrativeMode)
+            val duplicate = service.duplicate("s")
+            val reopened = ChatRepository(JsonFileStorage(f.root))
+            assertEquals(ChatNarrativeMode.ADVANCE, reopened.getSession("s")!!.narrativeMode)
+            assertEquals(ChatNarrativeMode.ADVANCE, reopened.getSession(duplicate.id)!!.narrativeMode)
+            val copied = reopened.getMessagesReadOnly(duplicate.id).single()
+            assertEquals(ChatNarrativeMode.ADVANCE, copied.narrativeMode)
+            assertEquals(source.alternativeNarrativeModes, copied.alternativeNarrativeModes)
+            assertEquals(source.alternativeVersionIds, copied.alternativeVersionIds)
+        }
+    }
     @Test fun `task center waits for original save slot publication and never calls late stop a rollback`(): Unit = runBlocking {
         Fixture().use { f ->
             f.seed()

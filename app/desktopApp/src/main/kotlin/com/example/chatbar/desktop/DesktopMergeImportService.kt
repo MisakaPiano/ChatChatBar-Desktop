@@ -85,7 +85,7 @@ internal class DesktopMergeImportService(
                 beforeSnapshot()
                 val result = gate.withExclusiveMaintenance {
                     checkOwnedSource()
-                    val snapshot = mapping.export(workspace, 87, StrictBackupZipReader.Limits().expanded, forMerge = true).also { pc = it }
+                    val snapshot = mapping.export(workspace, CURRENT_DESKTOP_BACKUP_CODE, StrictBackupZipReader.Limits().expanded, forMerge = true).also { pc = it }
                     val entities = DesktopMergeRootPreparation.computerEntities(snapshot)
                     val captured = DesktopMergeCredentials.capture(entities, phone, oldStore).also { keys = it }
                     val data = DesktopMergePreview.create(entities, phone.entities,

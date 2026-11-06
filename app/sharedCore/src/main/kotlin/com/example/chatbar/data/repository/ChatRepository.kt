@@ -10,6 +10,7 @@ import com.example.chatbar.data.local.entity.ChatMessageOrderBackup
 import com.example.chatbar.data.local.entity.ChatMessageOrderBackupEntry
 import com.example.chatbar.data.local.entity.ChatScrollPosition
 import com.example.chatbar.data.local.entity.ChatSession
+import com.example.chatbar.data.local.entity.ChatNarrativeMode
 import com.example.chatbar.data.local.entity.MessageRole
 import com.example.chatbar.data.local.entity.MessageFormatRepairNotice
 import com.example.chatbar.data.local.entity.SpeakerTagRename
@@ -115,15 +116,32 @@ class ChatRepository internal constructor(
 
     private val sessionSettingsMutex = Mutex()
 
+    private suspend fun <T> Mutex.withDataAccess(operation: suspend () -> T): T =
+        storage.withNormalOperation { withLock { operation() } }
+
     suspend fun updateSession(session: ChatSession) {
-        sessionSettingsMutex.withLock { updateSessionLocked(session) }
+        updateSession(session, restoreNarrativeMode = false)
     }
+
+    suspend fun updateSession(session: ChatSession, restoreNarrativeMode: Boolean) {
+        sessionSettingsMutex.withDataAccess {
+            val latestMode = getSession(session.id)?.narrativeMode
+            updateSessionLocked(if (restoreNarrativeMode || latestMode == null) session
+                else session.copy(narrativeMode = latestMode))
+        }
+    }
+
+    suspend fun setNarrativeMode(sessionId: String, mode: ChatNarrativeMode): ChatSession =
+        sessionSettingsMutex.withDataAccess {
+            val latest = getSession(sessionId) ?: error("会话已不存在")
+            latest.copy(narrativeMode = mode).also { updateSessionLocked(it) }
+        }
 
     suspend fun relinkArchivedSession(
         sessionId: String,
         characterCardId: String,
         characterRepository: CharacterRepository
-    ) = sessionSettingsMutex.withLock {
+    ) = sessionSettingsMutex.withDataAccess {
         val latest = getSession(sessionId) ?: error("对话已不存在")
         check(characterRepository.getById(latest.characterCardId) == null) {
             "本对话已有角色卡，无需重新关联"
@@ -135,7 +153,7 @@ class ChatRepository internal constructor(
     }
 
     suspend fun saveSessionSettingsDraft(baseline: ChatSession, draft: ChatSession): ChatSession =
-        sessionSettingsMutex.withLock {
+        sessionSettingsMutex.withDataAccess {
             val latest = getSession(baseline.id) ?: error("会话已不存在")
             val merged = mergeSettingsDraft(ChatSession.serializer(), baseline, draft, latest)
             val normalized = if (merged.desktopAutoPauseAbsentPeople) merged else
@@ -700,7 +718,7 @@ class ChatRepository internal constructor(
             }
             stage = MessageUpdateStage.WRITE_PREVIEW
             if (loadMessageIndex(sessionId).entries.lastOrNull()?.messageId == messageId) {
-                sessionSettingsMutex.withLock {
+                sessionSettingsMutex.withDataAccess {
                     val session = when (val read = readSessionDurable(sessionId)) {
                         is JsonFileStorage.EntityReadResult.Valid -> read.value
                         JsonFileStorage.EntityReadResult.Missing -> error("Session missing after message commit")

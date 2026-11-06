@@ -5,11 +5,14 @@ import com.example.chatbar.domain.appearance.ThemeColorHistoryPolicy
 import com.example.chatbar.domain.appearance.ThemeColorHsv
 import com.example.chatbar.domain.image.NovelAiImageModel
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 
 /**
  * 应用全局设置
  */
 @Serializable
+@OptIn(ExperimentalSerializationApi::class)
 data class AppSettings(
     val defaultModelId: String? = null,
     val defaultImageModelId: String? = null,
@@ -17,6 +20,8 @@ data class AppSettings(
     val presetDefaultModelKey: String? = null,
     val siliconFlowApiKey: String = "",
     val allowCleartextModelApi: Boolean = false,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val experimentalApiModeEnabled: Boolean = false,
     val defaultEmbeddingId: String? = null,
     val defaultFormatCardId: String? = null,
     val automaticFormatCheckEnabled: Boolean = false,
