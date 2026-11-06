@@ -22,7 +22,10 @@ class DesktopCurrentImageIntegrationTest {
     private fun png(side: Int) = DesktopImageEditing.png(BufferedImage(side, side, BufferedImage.TYPE_INT_ARGB))
     private fun textChunk(png: ByteArray, text: String): ByteArray {
         val payload = ("Comment\u0000" + text).toByteArray()
-        val type = "tEXt".toByteArray()
+        return pngChunk(png, "tEXt", payload)
+    }
+    private fun pngChunk(png: ByteArray, name: String, payload: ByteArray): ByteArray {
+        val type = name.toByteArray(Charsets.US_ASCII)
         val chunk = ByteArrayOutputStream().apply { DataOutputStream(this).apply {
             writeInt(payload.size); write(type); write(payload); writeInt(CRC32().apply { update(type); update(payload) }.value.toInt())
         } }.toByteArray()
@@ -44,10 +47,14 @@ class DesktopCurrentImageIntegrationTest {
         val dir = Files.createTempDirectory("ccb-alpha-local-")
         try {
             val alpha = stealth()
-            for ((ordinary, expected) in listOf(comment("ordinary scene") to "ordinary scene", "invalid" to "alpha scene")) {
-                val path = dir.resolve("source.png"); val source = textChunk(alpha, ordinary); Files.write(path, source)
+            for (orientation in listOf(1, 6)) for ((ordinary, expected) in listOf(comment("ordinary scene") to "ordinary scene", "invalid" to "alpha scene")) {
+                val path = dir.resolve("source.png")
+                val source = textChunk(alpha, ordinary).let { if (orientation == 1) it else
+                    pngChunk(it, "eXIf", ImageMetadataStripper.buildMinimalTiffOrientation(orientation)) }
+                Files.write(path, source)
                 assertEquals(expected, DesktopImageMetadata.readStudio(path.toString())?.positivePrompt)
                 val privacy = DesktopImageMetadata.privacyCopy(source); val target = dir.resolve("private.png"); Files.write(target, privacy)
+                assertEquals(1, ImageMetadataStripper.readOrientation(target.toFile()))
                 assertNull(DesktopImageMetadata.read(target.toString())); assertNull(DesktopImageMetadata.readStudio(target.toString()))
                 val raster = DesktopImageEditing.decode(privacy)
                 assertNull(StealthAlphaMetadata.decode(raster.width, raster.height) { x, y -> raster.getRGB(x, y) ushr 24 })
