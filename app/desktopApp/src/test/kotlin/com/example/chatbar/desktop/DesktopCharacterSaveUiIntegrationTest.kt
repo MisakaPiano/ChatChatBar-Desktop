@@ -62,6 +62,12 @@ class DesktopCharacterSaveUiIntegrationTest {
                 assertEquals(position, scrollPosition(), 2f)
                 editor.edit { it.copy(creatorNotes = "Must not mutate a save in progress") }
                 assertNotEquals("Must not mutate a save in progress", editor.state.value.card!!.creatorNotes)
+                val draftRoot = root.resolve("draft_assets")
+                fun draftFiles(): List<String> = if (!Files.exists(draftRoot)) emptyList() else
+                    Files.walk(draftRoot).use { stream -> stream.filter(Files::isRegularFile).map { it.toString() }.sorted().toList() }
+                val stagedBefore = draftFiles()
+                editor.addTextDocument("must-not-stage.txt", "Save is still active")
+                assertEquals(stagedBefore, draftFiles(), "Save protection also covers resource staging")
             } finally { release.complete(Unit); blocker.join() }
             settled()
             assertNull(editor.state.value.problem, editor.state.value.detail)

@@ -567,6 +567,7 @@ internal class DesktopCharacterEditorController(
 
     private fun canMutate(): Boolean {
         val current = _state.value
+        if (current.busy || current.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) return false
         if (current.base?.isCommunityDownload == true && current.targetId != null) {
             _state.value = current.copy(problem = CharacterEditorProblem.COMMUNITY_READ_ONLY)
             return false
