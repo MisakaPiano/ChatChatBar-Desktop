@@ -43,6 +43,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import kotlin.math.roundToInt
@@ -196,7 +201,8 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
         }
         if (state.resourceCleanupPending && state.problem != CharacterEditorProblem.RESOURCE_FAILED)
             StatusText(t(DesktopUiText.CHARACTER_SAVED_RESOURCE_WARNING), DesktopBootstrapColors.warning)
-        if (state.resourceCleanupPending) BootstrapButton(t(DesktopUiText.CHARACTER_RETRY_RESOURCE_CLEANUP), enabled = !state.busy) {
+        if (state.resourceCleanupPending && !presentation.showCommittedCleanupRetry)
+            BootstrapButton(t(DesktopUiText.CHARACTER_RETRY_RESOURCE_CLEANUP), enabled = !state.busy) {
             scope.launch { controller.retryCleanup() }
         }
         if (presentation.showOrdinaryCleanupRetry || presentation.showCommittedCleanupRetry) {
@@ -204,7 +210,8 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
                 scope.launch { controller.retryCleanup() }
             }
         }
-        if (!readOnly || state.busy && !communityReadOnly) FlowRow(Modifier.fillMaxWidth().testTag("character-editor-tools")
+        if (!communityReadOnly) FlowRow(Modifier.fillMaxWidth().testTag("character-editor-tools")
+            .characterEditorInputGuard(readOnly || state.busy)
             .background(DesktopBootstrapColors.card, RoundedCornerShape(8.dp))
             .border(1.dp, DesktopBootstrapColors.border, RoundedCornerShape(8.dp)).padding(6.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -226,12 +233,13 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
                 }
             }
         }
-        if (communityReadOnly || readOnly && !state.busy) {
+        if (communityReadOnly) {
             controller.promptBudget?.let { DesktopEditorPromptBudget(it, card) }
             StatusText(t(if (communityReadOnly) DesktopUiText.COMMUNITY_READ_ONLY
                 else DesktopUiText.CHARACTER_SAVE_COMMITTED_WARNING))
             StatusText(card.name)
         } else Column(Modifier.weight(1f).fillMaxWidth().testTag("character-editor-scroll")
+            .characterEditorInputGuard(readOnly || state.busy)
             .onGloballyPositioned { editorViewportTop = it.positionInRoot().y }.verticalScroll(editorScroll),
             verticalArrangement = Arrangement.spacedBy(14.dp)) {
             EditorSection(t(DesktopUiText.CHARACTER_CARD_INFORMATION), Modifier.testTag("character-editor-card")) {
@@ -336,7 +344,7 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
                             (current?.takeIf { it.total > 0 }?.let { " ${it.completed}/${it.total}" } ?: ""))
                         if (current?.running == true) BootstrapButton("取消索引", secondary = true) { indexing.cancel(card.id, doc.id) }
                         else BootstrapButton("建立 / 更新索引", secondary = true,
-                            enabled = !state.dirty && !state.busy && state.targetId != null) { indexing.start(card.id, doc.id) }
+                            enabled = !state.dirty && !state.busy && !readOnly && state.targetId != null) { indexing.start(card.id, doc.id) }
                     }
                     BootstrapButton(doc.fileName, secondary = selectedDocument != doc.id) {
                         selectedDocument = if (selectedDocument == doc.id) null else doc.id
@@ -425,6 +433,17 @@ internal fun DesktopCharacterEditorOverlay(controller: DesktopCharacterEditorCon
     controller.cardImages?.let { DesktopCharacterImageOverlay(it) }
     if (styleGallery) DesktopStylePresetGallery(controller, card.defaultImagePrompt, !state.busy && !readOnly) { styleGallery = false }
 }
+
+/** Keep layout/scroll alive while the save owner rejects edits; wheel inspection remains available. */
+private fun Modifier.characterEditorInputGuard(blocked: Boolean): Modifier =
+    onPreviewKeyEvent { blocked }.semantics { if (blocked) disabled() }.pointerInput(blocked) {
+        if (blocked) awaitPointerEventScope {
+            while (true) {
+                val event = awaitPointerEvent(PointerEventPass.Initial)
+                if (event.type != PointerEventType.Scroll) event.changes.forEach { it.consume() }
+            }
+        }
+    }
 
 @Composable
 private fun CharacterImportDialog(controller: DesktopCharacterEditorController,
