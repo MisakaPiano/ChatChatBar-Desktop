@@ -1,5 +1,6 @@
 package com.example.chatbar.desktop
 
+import com.example.chatbar.domain.image.ImageMetadataStripper
 import java.awt.RenderingHints
 import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
@@ -61,7 +62,9 @@ internal object DesktopImageEditing {
                     val sourceWidth = reader.getWidth(0)
                     val sourceHeight = reader.getHeight(0)
                     require(sourceWidth.toLong() * sourceHeight <= MAX_PIXELS) { "图片像素过大" }
-                    val orientation = jpegOrientation(bytes)
+                    val orientation = if (bytes.size >= 8 && bytes[0] == 0x89.toByte() &&
+                        bytes[1] == 0x50.toByte() && bytes[2] == 0x4e.toByte() && bytes[3] == 0x47.toByte())
+                        ImageMetadataStripper.readPngOrientation(bytes) else jpegOrientation(bytes)
                     val orientedWidth = if (orientation >= 5) sourceHeight else sourceWidth
                     val orientedHeight = if (orientation >= 5) sourceWidth else sourceHeight
                     val displayTarget = displayTargetForSource?.invoke(orientedWidth, orientedHeight)

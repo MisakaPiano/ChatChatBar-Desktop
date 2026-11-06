@@ -2,6 +2,7 @@ package com.example.chatbar.domain.image
 
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
+import java.io.ByteArrayInputStream
 import java.io.DataInputStream
 import java.io.File
 import java.io.InputStream
@@ -19,17 +20,7 @@ object ImageMetadataStripper {
             when (format) {
                 ImageFormat.Png -> {
                     input.skipFully(PNG_SIGNATURE.size.toLong())
-                    while (true) {
-                        val length = input.readUnsignedInt()
-                        require(length <= source.length()) { "PNG 数据块长度无效" }
-                        val type = ByteArray(4).also(input::readFully).toString(Charsets.US_ASCII)
-                        if (type == PNG_EXIF_CHUNK) {
-                            require(length <= MAX_EXIF_BYTES) { "图片 EXIF 元数据过大" }
-                            return parseExifOrientation(ByteArray(length.toInt()).also(input::readFully)) ?: NORMAL_ORIENTATION
-                        }
-                        if (type == PNG_END_CHUNK) return NORMAL_ORIENTATION
-                        input.skipFully(length + PNG_CRC_BYTES)
-                    }
+                    return readPngOrientation(input, source.length())
                 }
                 ImageFormat.Jpeg -> {
                     input.skipFully(2)
@@ -48,6 +39,27 @@ object ImageMetadataStripper {
                 }
                 else -> error("暂不支持此图片格式去除元数据")
             }
+        }
+    }
+
+    /** Same bounded orientation-only reader for an already-owned in-memory PNG. */
+    fun readPngOrientation(source: ByteArray): Int = DataInputStream(ByteArrayInputStream(source)).use { input ->
+        val signature = ByteArray(PNG_SIGNATURE.size).also(input::readFully)
+        require(signature.contentEquals(PNG_SIGNATURE)) { "PNG 文件头无效" }
+        readPngOrientation(input, source.size.toLong())
+    }
+
+    private fun readPngOrientation(input: DataInputStream, sourceLength: Long): Int {
+        while (true) {
+            val length = input.readUnsignedInt()
+            require(length <= sourceLength) { "PNG 数据块长度无效" }
+            val type = ByteArray(4).also(input::readFully).toString(Charsets.US_ASCII)
+            if (type == PNG_EXIF_CHUNK) {
+                require(length <= MAX_EXIF_BYTES) { "图片 EXIF 元数据过大" }
+                return parseExifOrientation(ByteArray(length.toInt()).also(input::readFully)) ?: NORMAL_ORIENTATION
+            }
+            if (type == PNG_END_CHUNK) return NORMAL_ORIENTATION
+            input.skipFully(length + PNG_CRC_BYTES)
         }
     }
 
