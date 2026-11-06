@@ -518,29 +518,55 @@
     },
     {
       "id": "U149_NARRATIVE_CUSTODY",
-      "disposition": "PENDING",
+      "disposition": "EQUIVALENT",
       "scope": "Session/message/alternatives/SaveSlot/copy modes, generation snapshot, field-scoped concurrent saves",
       "implementationSource": "f948c4d175562ea8d6cdc9d68867a613618b1da0",
       "verification": {
-        "state": "AFFECTED_SUCCESSOR_PENDING_ORIGINAL_RESULTS",
-        "combinedControl": "8ec83285f642f2592cedea2432dd938a22f08559",
-        "androidControl": "7c23f457afca2eb028de90caa58c6083a1061b58",
-        "originalFailureHistoryPreserved": true
+        "run": 42254873831,
+        "control": "8ec83285f642f2592cedea2432dd938a22f08559",
+        "source": "2e8bf3b77bf4da9b98967f65e8ab1d3a17d984dd",
+        "sharedPass": 170,
+        "desktopPass": 237,
+        "desktopOriginalNativeSkip": 1,
+        "failures": 0,
+        "errors": 0,
+        "proof": "I:/CCB-Desktop-Continuity/updates/20261106-upstream-catchup-to149/catchup-combined-r04-original-review.json"
       },
-      "delivery": "Unreleased; UI/new prompt wiring is a separate successor",
+      "delivery": "Unreleased scoped engineering; not full141+ compatibility, actual provider acceptance or human acceptance",
       "latestImplementation": "2e8bf3b77bf4da9b98967f65e8ab1d3a17d984dd",
       "currentReview": "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
     },
     {
       "id": "U149_NARRATIVE_PROMPT",
-      "disposition": "PENDING",
-      "scope": "New mode prefixes/tails/history wrapping and request/cache integration; existing tail changes await explicit adoption",
+      "disposition": "EQUIVALENT",
+      "scope": "New neutral mode prefixes/tails/history/cache integration and compact/full input UI. Existing315 group is separately pending under POST149_PROMPT.",
       "implementation": "New neutral mode rules/facades+cache/order/history and compact session UI prepared; existing315 literals/tail removals NOT adopted",
       "verification": {
-        "state": "AFFECTED_SUCCESSOR_PENDING_ORIGINAL_RESULTS",
-        "combinedControl": "8ec83285f642f2592cedea2432dd938a22f08559",
-        "androidControl": "7c23f457afca2eb028de90caa58c6083a1061b58",
-        "originalFailureHistoryPreserved": true
+        "newNeutralBehavior": {
+          "run": 42254873831,
+          "control": "8ec83285f642f2592cedea2432dd938a22f08559",
+          "source": "2e8bf3b77bf4da9b98967f65e8ab1d3a17d984dd",
+          "sharedPass": 170,
+          "desktopPass": 237,
+          "desktopOriginalNativeSkip": 1,
+          "failures": 0,
+          "errors": 0,
+          "proof": "I:/CCB-Desktop-Continuity/updates/20261106-upstream-catchup-to149/catchup-combined-r04-original-review.json"
+        },
+        "existing315": "NOT_ADOPTED_NOT_APPLIED",
+        "fullComposerSuccessorControl": "07d7a9845222f6cb000e9c85b66885a81105b8d8",
+        "fullComposerState": "SCOPED32PASS",
+        "fullComposerSuccessor": {
+          "run": 42256005681,
+          "control": "07d7a9845222f6cb000e9c85b66885a81105b8d8",
+          "source": "02546c412317650cd6936e468fa2dbc7871d02d4",
+          "suites": 3,
+          "passed": 32,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "scope": "Exact UI successor compile and adjacent existing composer regressions; not human/native screenshot acceptance"
+        }
       },
       "independentStyleDelta": "NOT_APPLIED",
       "latestImplementation": "2e8bf3b77bf4da9b98967f65e8ab1d3a17d984dd",
@@ -548,32 +574,44 @@
     },
     {
       "id": "U149_EXPERIMENTAL",
-      "disposition": "PENDING",
+      "disposition": "EQUIVALENT",
       "scope": "Default-off all-producer experimental tool transport, streaming replacement, raw stopped drafts, valid complete tool image policy",
       "latestImplementation": "2e8bf3b77bf4da9b98967f65e8ab1d3a17d984dd",
       "currentReview": "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md",
       "verification": {
-        "state": "AFFECTED_SUCCESSOR_PENDING_ORIGINAL_RESULTS",
-        "combinedControl": "8ec83285f642f2592cedea2432dd938a22f08559",
-        "androidControl": "7c23f457afca2eb028de90caa58c6083a1061b58",
-        "originalFailureHistoryPreserved": true
+        "run": 42254873831,
+        "control": "8ec83285f642f2592cedea2432dd938a22f08559",
+        "source": "2e8bf3b77bf4da9b98967f65e8ab1d3a17d984dd",
+        "sharedPass": 170,
+        "desktopPass": 237,
+        "desktopOriginalNativeSkip": 1,
+        "failures": 0,
+        "errors": 0,
+        "proof": "I:/CCB-Desktop-Continuity/updates/20261106-upstream-catchup-to149/catchup-combined-r04-original-review.json"
       },
-      "implementation": "Actual main/auxiliary/Moments/probe producers wired; default-off; previews/canonical text separated; stop/source custody and valid-tool completion evidence; decoded diagnostics separate from raw SSE"
+      "implementation": "Actual main/auxiliary/Moments/probe producers wired; default-off; previews/canonical text separated; stop/source custody and valid-tool completion evidence; decoded diagnostics separate from raw SSE",
+      "delivery": "Unreleased scoped engineering; not full141+ compatibility, actual provider acceptance or human acceptance"
     },
     {
       "id": "U149_BACKUP88",
-      "disposition": "PENDING",
+      "disposition": "EQUIVALENT",
       "scope": "Strict88 schema/transport/writer plus new fields; pre88 unknown-field protection and historical custody retained",
       "implementationSource": "f948c4d175562ea8d6cdc9d68867a613618b1da0",
       "verification": {
-        "state": "AFFECTED_SUCCESSOR_PENDING_ORIGINAL_RESULTS",
-        "combinedControl": "8ec83285f642f2592cedea2432dd938a22f08559",
-        "androidControl": "7c23f457afca2eb028de90caa58c6083a1061b58",
-        "originalFailureHistoryPreserved": true
+        "run": 42254873831,
+        "control": "8ec83285f642f2592cedea2432dd938a22f08559",
+        "source": "2e8bf3b77bf4da9b98967f65e8ab1d3a17d984dd",
+        "sharedPass": 170,
+        "desktopPass": 237,
+        "desktopOriginalNativeSkip": 1,
+        "failures": 0,
+        "errors": 0,
+        "proof": "I:/CCB-Desktop-Continuity/updates/20261106-upstream-catchup-to149/catchup-combined-r04-original-review.json"
       },
       "note": "88 strict schema+modern writer+custody implemented together; pre88 new-field presence and unknown89 remain rejected",
       "latestImplementation": "2e8bf3b77bf4da9b98967f65e8ab1d3a17d984dd",
-      "currentReview": "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      "currentReview": "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md",
+      "delivery": "Unreleased scoped engineering; not full141+ compatibility, actual provider acceptance or human acceptance"
     },
     {
       "id": "POST149_PROMPT",
@@ -5462,11 +5500,13 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Inspected actual final diff: Android APK release resume/tag/upload verification or opt-in Android memory test setup. Desktop owns separate NSIS/signature release and cloud test paths; these are not an additional Desktop runtime feature and are not copied into Desktop publishing identity.",
       "candidateOwners": [],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:doc/image_studio_regression_2026_10_07.md",
@@ -6257,8 +6297,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Inspected actual final diff: Android APK release resume/tag/upload verification or opt-in Android memory test setup. Desktop owns separate NSIS/signature release and cloud test paths; these are not an additional Desktop runtime feature and are not copied into Desktop publishing identity.",
       "candidateOwners": [
         {
           "path": ".github/workflows/release.yml",
@@ -6268,7 +6308,9 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/build.gradle.kts",
@@ -13693,8 +13735,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Inspected actual final diff: Android APK release resume/tag/upload verification or opt-in Android memory test setup. Desktop owns separate NSIS/signature release and cloud test paths; these are not an additional Desktop runtime feature and are not copied into Desktop publishing identity.",
       "candidateOwners": [
         {
           "path": ".github/workflows/release.yml",
@@ -13704,7 +13746,9 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ]
     },
     {
       "id": "5c22fdfaa42e6eccbad4e46dbb32fb6d6ce4ddfa:doc/handoff.md",
@@ -13821,8 +13865,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Inspected actual final diff: Android APK release resume/tag/upload verification or opt-in Android memory test setup. Desktop owns separate NSIS/signature release and cloud test paths; these are not an additional Desktop runtime feature and are not copied into Desktop publishing identity.",
       "candidateOwners": [
         {
           "path": ".github/workflows/release.yml",
@@ -13832,7 +13876,9 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ]
     },
     {
       "id": "6f8a09a8bd24c274b08a56cadc37a82380bfe625:doc/handoff.md",
@@ -13949,8 +13995,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Inspected actual final diff: Android APK release resume/tag/upload verification or opt-in Android memory test setup. Desktop owns separate NSIS/signature release and cloud test paths; these are not an additional Desktop runtime feature and are not copied into Desktop publishing identity.",
       "candidateOwners": [
         {
           "path": ".github/workflows/release.yml",
@@ -13960,7 +14006,9 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ]
     },
     {
       "id": "e9dff76dd2c99c1004c52325e1f29a1a8300e7fc:doc/handoff.md",
@@ -14151,8 +14199,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Actual default-off supplier/request snapshot, shared protocol or preview/canonical consumer mapped; R04 loopback producer and adjacent regressions plus Android R02 facade originals. Platform UI/native/provider acceptance not inferred.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ChatBarApp.kt",
@@ -14161,8 +14209,15 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "U149_EXPERIMENTAL"
+      ],
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ],
+      "resolvedOwnerPaths": [
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppContainer.kt"
+      ]
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:app/app/src/main/java/com/example/chatbar/data/local/entity/AppSettings.kt",
@@ -14178,8 +14233,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Actual default-off supplier/request snapshot, shared protocol or preview/canonical consumer mapped; R04 loopback producer and adjacent regressions plus Android R02 facade originals. Platform UI/native/provider acceptance not inferred.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/AppSettings.kt",
@@ -14188,8 +14243,15 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "U149_EXPERIMENTAL"
+      ],
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ],
+      "resolvedOwnerPaths": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/AppSettings.kt"
+      ]
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:app/app/src/main/java/com/example/chatbar/domain/backup/BackupExportSelection.kt",
@@ -14205,11 +14267,19 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Actual default-off supplier/request snapshot, shared protocol or preview/canonical consumer mapped; R04 loopback producer and adjacent regressions plus Android R02 facade originals. Platform UI/native/provider acceptance not inferred.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "U149_EXPERIMENTAL",
+        "U149_BACKUP88"
+      ],
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ],
+      "resolvedOwnerPaths": [
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/BackupExportSelection.kt"
+      ]
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:app/app/src/main/java/com/example/chatbar/domain/card/CharacterAutoFillService.kt",
@@ -14225,8 +14295,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Actual default-off supplier/request snapshot, shared protocol or preview/canonical consumer mapped; R04 loopback producer and adjacent regressions plus Android R02 facade originals. Platform UI/native/provider acceptance not inferred.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/card/CharacterAutoFillService.kt",
@@ -14235,8 +14305,15 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "U149_EXPERIMENTAL"
+      ],
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ],
+      "resolvedOwnerPaths": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/card/CharacterCardCandidateGenerator.kt"
+      ]
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:app/app/src/main/java/com/example/chatbar/domain/card/CharacterRewriteService.kt",
@@ -14252,8 +14329,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Actual default-off supplier/request snapshot, shared protocol or preview/canonical consumer mapped; R04 loopback producer and adjacent regressions plus Android R02 facade originals. Platform UI/native/provider acceptance not inferred.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/card/CharacterRewriteService.kt",
@@ -14262,8 +14339,15 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "U149_EXPERIMENTAL"
+      ],
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ],
+      "resolvedOwnerPaths": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/card/CharacterCardCandidateGenerator.kt"
+      ]
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:app/app/src/main/java/com/example/chatbar/domain/card/FormatCardAutoFillService.kt",
@@ -14279,8 +14363,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Actual default-off supplier/request snapshot, shared protocol or preview/canonical consumer mapped; R04 loopback producer and adjacent regressions plus Android R02 facade originals. Platform UI/native/provider acceptance not inferred.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/card/FormatCardAutoFillService.kt",
@@ -14289,8 +14373,15 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "U149_EXPERIMENTAL"
+      ],
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ],
+      "resolvedOwnerPaths": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/card/FormatCardAutoFillGenerator.kt"
+      ]
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:app/app/src/main/java/com/example/chatbar/domain/chat/AiStreamProgress.kt",
@@ -14306,8 +14397,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Actual default-off supplier/request snapshot, shared protocol or preview/canonical consumer mapped; R04 loopback producer and adjacent regressions plus Android R02 facade originals. Platform UI/native/provider acceptance not inferred.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/chat/AiStreamProgress.kt",
@@ -14316,8 +14407,15 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "U149_EXPERIMENTAL"
+      ],
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ],
+      "resolvedOwnerPaths": [
+        "app/app/src/main/java/com/example/chatbar/domain/chat/AiStreamProgress.kt"
+      ]
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:app/app/src/main/java/com/example/chatbar/domain/chat/AutomaticChatImagePolicy.kt",
@@ -14333,8 +14431,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Actual default-off supplier/request snapshot, shared protocol or preview/canonical consumer mapped; R04 loopback producer and adjacent regressions plus Android R02 facade originals. Platform UI/native/provider acceptance not inferred.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/AutomaticChatImagePolicy.kt",
@@ -14343,8 +14441,15 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "U149_EXPERIMENTAL"
+      ],
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ],
+      "resolvedOwnerPaths": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/AutomaticChatImagePolicy.kt"
+      ]
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:app/app/src/main/java/com/example/chatbar/domain/chat/ExperimentalToolChatPolicy.kt",
@@ -14360,11 +14465,18 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Actual default-off supplier/request snapshot, shared protocol or preview/canonical consumer mapped; R04 loopback producer and adjacent regressions plus Android R02 facade originals. Platform UI/native/provider acceptance not inferred.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "U149_EXPERIMENTAL"
+      ],
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ],
+      "resolvedOwnerPaths": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/ExperimentalToolChatPolicy.kt"
+      ]
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:app/app/src/main/java/com/example/chatbar/domain/chat/ExperimentalToolReplyDecoder.kt",
@@ -14380,11 +14492,18 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Actual default-off supplier/request snapshot, shared protocol or preview/canonical consumer mapped; R04 loopback producer and adjacent regressions plus Android R02 facade originals. Platform UI/native/provider acceptance not inferred.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "U149_EXPERIMENTAL"
+      ],
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ],
+      "resolvedOwnerPaths": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/ExperimentalToolReplyDecoder.kt"
+      ]
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:app/app/src/main/java/com/example/chatbar/domain/chat/StreamingChatService.kt",
@@ -14400,8 +14519,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Actual default-off supplier/request snapshot, shared protocol or preview/canonical consumer mapped; R04 loopback producer and adjacent regressions plus Android R02 facade originals. Platform UI/native/provider acceptance not inferred.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/chat/StreamingChatService.kt",
@@ -14410,8 +14529,15 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "U149_EXPERIMENTAL"
+      ],
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ],
+      "resolvedOwnerPaths": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/OpenAiStreamingTransport.kt"
+      ]
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiPromptDesigner.kt",
@@ -14427,8 +14553,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Actual default-off supplier/request snapshot, shared protocol or preview/canonical consumer mapped; R04 loopback producer and adjacent regressions plus Android R02 facade originals. Platform UI/native/provider acceptance not inferred.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiPromptDesigner.kt",
@@ -14437,8 +14563,15 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "U149_EXPERIMENTAL"
+      ],
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ],
+      "resolvedOwnerPaths": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiPromptDesigner.kt"
+      ]
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:app/app/src/main/java/com/example/chatbar/domain/moment/MomentGenerationService.kt",
@@ -14454,8 +14587,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Actual default-off supplier/request snapshot, shared protocol or preview/canonical consumer mapped; R04 loopback producer and adjacent regressions plus Android R02 facade originals. Platform UI/native/provider acceptance not inferred.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/moment/MomentGenerationService.kt",
@@ -14464,8 +14597,15 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "U149_EXPERIMENTAL"
+      ],
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ],
+      "resolvedOwnerPaths": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/moment/MomentGenerationCore.kt"
+      ]
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:app/app/src/main/java/com/example/chatbar/domain/prompt/AiTaskRequests.kt",
@@ -14482,7 +14622,7 @@
       },
       "scope": "PRODUCTION",
       "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "reason": "Mixed delta: new neutral feature additions are implemented independently; existing identity/ack/envelope changes require actual adoption, not received; separate style increment excluded. No wholesale file-copy approval.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/prompt/AiTaskRequests.kt",
@@ -14491,8 +14631,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "POST149_PROMPT"
+      ],
+      "evidence": [
+        "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md",
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ]
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:app/app/src/main/java/com/example/chatbar/domain/prompt/PromptTemplates.kt",
@@ -14509,7 +14654,7 @@
       },
       "scope": "PRODUCTION",
       "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "reason": "Mixed delta: new neutral feature additions are implemented independently; existing identity/ack/envelope changes require actual adoption, not received; separate style increment excluded. No wholesale file-copy approval.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/prompt/PromptTemplates.kt",
@@ -14518,8 +14663,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "POST149_PROMPT"
+      ],
+      "evidence": [
+        "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md",
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ]
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:app/app/src/main/java/com/example/chatbar/ui/chat/ChatViewModel.kt",
@@ -14535,8 +14685,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Actual default-off supplier/request snapshot, shared protocol or preview/canonical consumer mapped; R04 loopback producer and adjacent regressions plus Android R02 facade originals. Platform UI/native/provider acceptance not inferred.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/chat/ChatViewModel.kt",
@@ -14545,8 +14695,15 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "U149_EXPERIMENTAL"
+      ],
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ],
+      "resolvedOwnerPaths": [
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopRealChatRuntime.kt"
+      ]
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:app/app/src/main/java/com/example/chatbar/ui/manage/GlobalSettingsScreen.kt",
@@ -14562,8 +14719,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Default-off toggle is in existing chat-defaults model settings overlay; named draft field participates in save/discard/dirty/reconciliation and actual producers read saved settings. Actual controller17 includes new setting lifecycle; not screenshot/human acceptance.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/manage/GlobalSettingsScreen.kt",
@@ -14572,8 +14729,16 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "U149_EXPERIMENTAL"
+      ],
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ],
+      "resolvedOwnerPaths": [
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopManagePanel.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopModelSettingsController.kt"
+      ]
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:app/app/src/main/java/com/example/chatbar/ui/manage/ManageViewModel.kt",
@@ -14589,8 +14754,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Actual default-off supplier/request snapshot, shared protocol or preview/canonical consumer mapped; R04 loopback producer and adjacent regressions plus Android R02 facade originals. Platform UI/native/provider acceptance not inferred.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/manage/ManageViewModel.kt",
@@ -14599,8 +14764,15 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "U149_EXPERIMENTAL"
+      ],
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ],
+      "resolvedOwnerPaths": [
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopConnectionTestController.kt"
+      ]
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:app/app/src/test/java/com/example/chatbar/data/repository/AppSettingsSerializationTest.kt",
@@ -15000,8 +15172,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Reviewed actual149 field/history/version delta against current shared owner and actual Desktop request, concurrency, SaveSlot and backup88 chains; scoped original R04. Existing315 text edits remain separate.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/ChatMessage.kt",
@@ -15010,8 +15182,15 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "U149_NARRATIVE_CUSTODY"
+      ],
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ],
+      "resolvedOwnerPaths": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/ChatMessage.kt"
+      ]
     },
     {
       "id": "286916e34ba3b401b7115d5ea9c9ff096571e607:app/app/src/main/java/com/example/chatbar/data/local/entity/ChatNarrativeMode.kt",
@@ -15027,11 +15206,18 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Reviewed actual149 field/history/version delta against current shared owner and actual Desktop request, concurrency, SaveSlot and backup88 chains; scoped original R04. Existing315 text edits remain separate.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "U149_NARRATIVE_CUSTODY"
+      ],
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ],
+      "resolvedOwnerPaths": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/ChatNarrativeMode.kt"
+      ]
     },
     {
       "id": "286916e34ba3b401b7115d5ea9c9ff096571e607:app/app/src/main/java/com/example/chatbar/data/local/entity/ChatSession.kt",
@@ -15047,8 +15233,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Reviewed actual149 field/history/version delta against current shared owner and actual Desktop request, concurrency, SaveSlot and backup88 chains; scoped original R04. Existing315 text edits remain separate.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/ChatSession.kt",
@@ -15057,8 +15243,15 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "U149_NARRATIVE_CUSTODY"
+      ],
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ],
+      "resolvedOwnerPaths": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/ChatSession.kt"
+      ]
     },
     {
       "id": "286916e34ba3b401b7115d5ea9c9ff096571e607:app/app/src/main/java/com/example/chatbar/data/local/entity/SaveSlot.kt",
@@ -15074,8 +15267,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Reviewed actual149 field/history/version delta against current shared owner and actual Desktop request, concurrency, SaveSlot and backup88 chains; scoped original R04. Existing315 text edits remain separate.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/SaveSlot.kt",
@@ -15084,8 +15277,15 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "U149_NARRATIVE_CUSTODY"
+      ],
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ],
+      "resolvedOwnerPaths": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/SaveSlot.kt"
+      ]
     },
     {
       "id": "286916e34ba3b401b7115d5ea9c9ff096571e607:app/app/src/main/java/com/example/chatbar/data/repository/ChatRepository.kt",
@@ -15101,8 +15301,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Reviewed actual149 field/history/version delta against current shared owner and actual Desktop request, concurrency, SaveSlot and backup88 chains; scoped original R04. Existing315 text edits remain separate.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/ChatRepository.kt",
@@ -15111,8 +15311,15 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "U149_NARRATIVE_CUSTODY"
+      ],
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ],
+      "resolvedOwnerPaths": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/ChatRepository.kt"
+      ]
     },
     {
       "id": "286916e34ba3b401b7115d5ea9c9ff096571e607:app/app/src/main/java/com/example/chatbar/domain/chat/ChatHistoryPromptPolicy.kt",
@@ -15128,8 +15335,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Reviewed actual149 field/history/version delta against current shared owner and actual Desktop request, concurrency, SaveSlot and backup88 chains; scoped original R04. Existing315 text edits remain separate.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/ChatHistoryPromptPolicy.kt",
@@ -15138,8 +15345,15 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "U149_NARRATIVE_PROMPT"
+      ],
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ],
+      "resolvedOwnerPaths": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/ChatHistoryPromptPolicy.kt"
+      ]
     },
     {
       "id": "286916e34ba3b401b7115d5ea9c9ff096571e607:app/app/src/main/java/com/example/chatbar/domain/chat/MessageAlternativeVersionPolicy.kt",
@@ -15155,8 +15369,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Reviewed actual149 field/history/version delta against current shared owner and actual Desktop request, concurrency, SaveSlot and backup88 chains; scoped original R04. Existing315 text edits remain separate.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/MessageAlternativeVersionPolicy.kt",
@@ -15165,8 +15379,15 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "U149_NARRATIVE_CUSTODY"
+      ],
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ],
+      "resolvedOwnerPaths": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/MessageAlternativeVersionPolicy.kt"
+      ]
     },
     {
       "id": "286916e34ba3b401b7115d5ea9c9ff096571e607:app/app/src/main/java/com/example/chatbar/domain/chat/PromptAssembler.kt",
@@ -15182,8 +15403,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Reviewed actual149 field/history/version delta against current shared owner and actual Desktop request, concurrency, SaveSlot and backup88 chains; scoped original R04. Existing315 text edits remain separate.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/PromptAssembler.kt",
@@ -15192,8 +15413,15 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "U149_NARRATIVE_PROMPT"
+      ],
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ],
+      "resolvedOwnerPaths": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/MainChatRequestAssembler.kt"
+      ]
     },
     {
       "id": "286916e34ba3b401b7115d5ea9c9ff096571e607:app/app/src/main/java/com/example/chatbar/domain/prompt/PromptTemplates.kt",
@@ -15209,8 +15437,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Actual286 new neutral mode additions do not remove existing Prompt literals. Desktop compact/full input, retained existing controls and in-dialog mode guidance use platform owners; R04 new request/custody behavior plus exact025 UI successor32 scoped regressions. No new long-press gesture or human acceptance claimed.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/prompt/PromptTemplates.kt",
@@ -15219,8 +15447,18 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "U149_NARRATIVE_PROMPT"
+      ],
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ],
+      "resolvedOwnerPaths": [
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatNarrativeModeDialog.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullComposer.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/prompt/MainChatPromptAuthority.kt"
+      ]
     },
     {
       "id": "286916e34ba3b401b7115d5ea9c9ff096571e607:app/app/src/main/java/com/example/chatbar/ui/chat/ChatNarrativeModeToggle.kt",
@@ -15236,11 +15474,21 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Actual286 new neutral mode additions do not remove existing Prompt literals. Desktop compact/full input, retained existing controls and in-dialog mode guidance use platform owners; R04 new request/custody behavior plus exact025 UI successor32 scoped regressions. No new long-press gesture or human acceptance claimed.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "U149_NARRATIVE_PROMPT"
+      ],
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ],
+      "resolvedOwnerPaths": [
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatNarrativeModeDialog.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullComposer.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/prompt/MainChatPromptAuthority.kt"
+      ]
     },
     {
       "id": "286916e34ba3b401b7115d5ea9c9ff096571e607:app/app/src/main/java/com/example/chatbar/ui/chat/ChatScreen.kt",
@@ -15256,8 +15504,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Actual286 new neutral mode additions do not remove existing Prompt literals. Desktop compact/full input, retained existing controls and in-dialog mode guidance use platform owners; R04 new request/custody behavior plus exact025 UI successor32 scoped regressions. No new long-press gesture or human acceptance claimed.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/chat/ChatScreen.kt",
@@ -15266,8 +15514,18 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "U149_NARRATIVE_PROMPT"
+      ],
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ],
+      "resolvedOwnerPaths": [
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatNarrativeModeDialog.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullComposer.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/prompt/MainChatPromptAuthority.kt"
+      ]
     },
     {
       "id": "286916e34ba3b401b7115d5ea9c9ff096571e607:app/app/src/main/java/com/example/chatbar/ui/chat/ChatViewModel.kt",
@@ -15283,8 +15541,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Actual286 new neutral mode additions do not remove existing Prompt literals. Desktop compact/full input, retained existing controls and in-dialog mode guidance use platform owners; R04 new request/custody behavior plus exact025 UI successor32 scoped regressions. No new long-press gesture or human acceptance claimed.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/chat/ChatViewModel.kt",
@@ -15293,8 +15551,18 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "U149_NARRATIVE_PROMPT"
+      ],
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ],
+      "resolvedOwnerPaths": [
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatNarrativeModeDialog.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullComposer.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/prompt/MainChatPromptAuthority.kt"
+      ]
     },
     {
       "id": "286916e34ba3b401b7115d5ea9c9ff096571e607:app/app/src/main/java/com/example/chatbar/ui/kit/AppIcons.kt",
@@ -15310,8 +15578,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Actual286 new neutral mode additions do not remove existing Prompt literals. Desktop compact/full input, retained existing controls and in-dialog mode guidance use platform owners; R04 new request/custody behavior plus exact025 UI successor32 scoped regressions. No new long-press gesture or human acceptance claimed.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/kit/AppIcons.kt",
@@ -15320,8 +15588,18 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "U149_NARRATIVE_PROMPT"
+      ],
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ],
+      "resolvedOwnerPaths": [
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatNarrativeModeDialog.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullComposer.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/prompt/MainChatPromptAuthority.kt"
+      ]
     },
     {
       "id": "286916e34ba3b401b7115d5ea9c9ff096571e607:app/app/src/main/java/com/example/chatbar/ui/kit/Fields.kt",
@@ -15337,8 +15615,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Actual286 new neutral mode additions do not remove existing Prompt literals. Desktop compact/full input, retained existing controls and in-dialog mode guidance use platform owners; R04 new request/custody behavior plus exact025 UI successor32 scoped regressions. No new long-press gesture or human acceptance claimed.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/kit/Fields.kt",
@@ -15347,8 +15625,18 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "U149_NARRATIVE_PROMPT"
+      ],
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ],
+      "resolvedOwnerPaths": [
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatNarrativeModeDialog.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullComposer.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/prompt/MainChatPromptAuthority.kt"
+      ]
     },
     {
       "id": "286916e34ba3b401b7115d5ea9c9ff096571e607:app/app/src/main/java/com/example/chatbar/ui/kit/Primitives.kt",
@@ -15364,8 +15652,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Actual286 new neutral mode additions do not remove existing Prompt literals. Desktop compact/full input, retained existing controls and in-dialog mode guidance use platform owners; R04 new request/custody behavior plus exact025 UI successor32 scoped regressions. No new long-press gesture or human acceptance claimed.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/kit/Primitives.kt",
@@ -15374,8 +15662,18 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "U149_NARRATIVE_PROMPT"
+      ],
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ],
+      "resolvedOwnerPaths": [
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatNarrativeModeDialog.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullComposer.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/prompt/MainChatPromptAuthority.kt"
+      ]
     },
     {
       "id": "286916e34ba3b401b7115d5ea9c9ff096571e607:app/app/src/main/java/com/example/chatbar/ui/tutorial/TutorialScreen.kt",
@@ -15391,8 +15689,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Actual286 new neutral mode additions do not remove existing Prompt literals. Desktop compact/full input, retained existing controls and in-dialog mode guidance use platform owners; R04 new request/custody behavior plus exact025 UI successor32 scoped regressions. No new long-press gesture or human acceptance claimed.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/tutorial/TutorialScreen.kt",
@@ -15401,8 +15699,18 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "U149_NARRATIVE_PROMPT"
+      ],
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ],
+      "resolvedOwnerPaths": [
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopChatNarrativeModeDialog.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopFullComposer.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/prompt/MainChatPromptAuthority.kt"
+      ]
     },
     {
       "id": "286916e34ba3b401b7115d5ea9c9ff096571e607:app/app/src/test/java/com/example/chatbar/data/repository/ChatRepositoryTest.kt",
@@ -15654,7 +15962,7 @@
       },
       "scope": "PRODUCTION",
       "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "reason": "Mixed delta: new neutral feature additions are implemented independently; existing identity/ack/envelope changes require actual adoption, not received; separate style increment excluded. No wholesale file-copy approval.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/prompt/PromptTemplates.kt",
@@ -15663,8 +15971,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "POST149_PROMPT"
+      ],
+      "evidence": [
+        "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md",
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ]
     },
     {
       "id": "12e420a58d1c097cb996d09dbf0c3e659d4377d6:.agents/skills/chatbar-model-request-runtime/SKILL.md",
@@ -15734,8 +16047,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Exact fixed12e shared neutral adapter prepared; request wiring and execution proof pending.",
+      "disposition": "EQUIVALENT",
+      "reason": "Fixed12e exact target policy with final serializer call after ordinary/experimental wrapping; original55 reused plus actual R04 six policy/serializer cases, including native-media experimental combination. No live provider claim.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/SiliconFlowChatTemplatePolicy.kt",
@@ -15747,7 +16060,13 @@
       "behaviorIds": [
         "POST149_SILICONFLOW"
       ],
-      "evidence": []
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ],
+      "resolvedOwnerPaths": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/SiliconFlowChatTemplatePolicy.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/OpenAiChatRequestSerializer.kt"
+      ]
     },
     {
       "id": "12e420a58d1c097cb996d09dbf0c3e659d4377d6:app/app/src/main/java/com/example/chatbar/domain/chat/StreamingChatService.kt",
@@ -15763,8 +16082,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Fixed12e exact target policy with final serializer call after ordinary/experimental wrapping; original55 reused plus actual R04 six policy/serializer cases, including native-media experimental combination. No live provider claim.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/chat/StreamingChatService.kt",
@@ -15773,8 +16092,16 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "POST149_SILICONFLOW"
+      ],
+      "evidence": [
+        "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md"
+      ],
+      "resolvedOwnerPaths": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/SiliconFlowChatTemplatePolicy.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/chat/OpenAiChatRequestSerializer.kt"
+      ]
     },
     {
       "id": "12e420a58d1c097cb996d09dbf0c3e659d4377d6:app/app/src/test/java/com/example/chatbar/domain/chat/SiliconFlowChatTemplatePolicyTest.kt",
@@ -15823,5 +16150,6 @@
       "behaviorIds": [],
       "evidence": []
     }
-  ]
+  ],
+  "lastReviewedImplementation": "02546c412317650cd6936e468fa2dbc7871d02d4"
 }

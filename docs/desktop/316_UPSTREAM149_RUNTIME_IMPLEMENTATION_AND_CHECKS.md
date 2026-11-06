@@ -28,11 +28,12 @@
 | 实验 R01 / 42253658940 | shared 68 PASS + 1 初始化FAIL；Desktop未执行 | JUnit拒绝两个非void协程测试方法，该类实际案例未执行；2e8明确Unit返回，不改生产 |
 | Android门面 R01 / 42254034796 | 4 XML / 34 PASS | 原相邻门面/终止/思考/自动图检查和编译；不覆盖后继新增案例与诊断hook |
 
-## 当前正在验证
+## 后继原件已核对
 
-- 正常源码 `2e8bf3b77bf4da9b98967f65e8ab1d3a17d984dd` 的受影响合并检查控制为 `8ec83285f642f2592cedea2432dd938a22f08559`，17个shared类、25个Desktop类。实际XML尚待；不是已通过。
-- Android后继控制为 `7c23f457afca2eb028de90caa58c6083a1061b58`，仍是4个受影响类，其中新增两例验证实验门面的预览替换和完成证据。实际XML尚待。
-- 随后的全屏模式入口补充需覆盖当前UI编译/相邻输入控件检查，不能用早期控制证明未包含的后继。
+- 正常源码 `2e8bf3b77bf4da9b98967f65e8ab1d3a17d984dd` 的受影响合并检查：42254873831 / 控制 `8ec83285f642f2592cedea2432dd938a22f08559`，原42 XML，shared17类170 PASS；Desktop25类238项=237 PASS+1原生图形前置SKIP，0 FAIL/ERROR。唯一跳过为 `DesktopDesignParityTest::real Studio auxiliary OS close runs leave semantics`，不算原生窗口验收。
+- Android后继42254880909 / 控制 `7c23f457afca2eb028de90caa58c6083a1061b58`：原4 XML / 36 PASS，0 FAIL/ERROR/SKIP。新增两例实验门面的预览替换和完成证据实际执行。
+- 全屏模式入口后继02546c41经42256005681 / 控制 `07d7a9845222f6cb000e9c85b66885a81105b8d8` 编译及相邻检查：原3 XML / 32 PASS，0 FAIL/ERROR/SKIP，分别为CompactComposerGeometry2、FullComposer17、PrimaryChatPresentation13。不是新增控件的真人或原生截图验收。
+- 合并原件151362B / SHA `cf1850a2b6fc969bbb09c8561afb85c25dc1699bfbcd1eb24fb29abe628693db`；Android后继18891B / SHA `18c1891a585d66e0f9bbcabf1e7f317bd010174632583da70df5316860cddf0d`；UI后继16821B / SHA `b6c1037c8de42c99f46c1d72a4ed2c5d9a221998255d7d42777be985d4bfc747`。均核source.json/ZIP CRC/实际方法，三个范围分开复用，不把重复方法相加成唯一覆盖数。
 
 ## 交付边界
 

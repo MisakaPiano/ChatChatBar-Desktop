@@ -10,7 +10,15 @@
     "desktopPublicSource": "db7ee78387f150be806e79d42c216e3fa8aa9694",
     "desktopReviewedSource": "0ff5933cd5cac511decac552a29d7d67b9524e75",
     "status": "READ_ONLY_CONCRETE_GAPS_RECORDED_NOT_ADOPTED_OR_TESTED",
-    "pendingGapIds": ["U149-01", "U149-02", "U149-03", "U149-04", "U149-05", "U149-06", "U149-07"],
+    "pendingGapIds": [
+      "U149-01",
+      "U149-02",
+      "U149-03",
+      "U149-04",
+      "U149-05",
+      "U149-06",
+      "U149-07"
+    ],
     "criticalImportGap": "Reader admits versionCode84..87;88 reading and new experimental/narrative fields preservation require implementation, not a version-range-only edit",
     "priorNoIndependentGapMeaning": "Earlier selected147/148 and216/280/273/305 reviews do not cover this149 increment",
     "evidence": "313_OFFICIAL149_OBSERVED_GAPS.md",
@@ -682,5 +690,48 @@
     "privateSignedRevision": 21,
     "signedOldClientRun": 41982010138,
     "wholeBackup87Successor": "Known version87 reader/custody chain and truthful modern writer; preserve actual old Desktop86 V5-setting backups with typed legacy profile; worktree unvalidated, separate from frozen1239"
+  },
+  "latestCatchupImplementation": {
+    "dateJst": "2026-11-07",
+    "fixedTarget": "12e420a58d1c097cb996d09dbf0c3e659d4377d6",
+    "source": "2e8bf3b77bf4da9b98967f65e8ab1d3a17d984dd",
+    "scope": "New neutral narrative modes,88 strict custody, default-off experimental tool transport and final SiliconFlow adaptation",
+    "verification": {
+      "run": 42254873831,
+      "control": "8ec83285f642f2592cedea2432dd938a22f08559",
+      "source": "2e8bf3b77bf4da9b98967f65e8ab1d3a17d984dd",
+      "sharedPass": 170,
+      "desktopPass": 237,
+      "desktopOriginalNativeSkip": 1,
+      "failures": 0,
+      "errors": 0,
+      "proof": "I:/CCB-Desktop-Continuity/updates/20261106-upstream-catchup-to149/catchup-combined-r04-original-review.json"
+    },
+    "androidFacade": {
+      "run": 42254880909,
+      "tests": 36,
+      "passed": 36,
+      "failed": 0,
+      "skipped": 0
+    },
+    "fullComposerSuccessor": {
+      "run": 42256005681,
+      "control": "07d7a9845222f6cb000e9c85b66885a81105b8d8",
+      "source": "02546c412317650cd6936e468fa2dbc7871d02d4",
+      "suites": 3,
+      "passed": 32,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "scope": "Exact UI successor compile and adjacent existing composer regressions; not human/native screenshot acceptance"
+    },
+    "existingPrompt315": "NOT_ADOPTED_NOT_APPLIED",
+    "full141PlusDisposition": "IN_PROGRESS_NOT_COMPLETE",
+    "validatedBaselinePromoted": false,
+    "public1244Changed": false,
+    "evidence": [
+      "docs/desktop/316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md",
+      "docs/desktop/314_UPSTREAM_CATCHUP_DISPOSITIONS.json"
+    ]
   }
 }

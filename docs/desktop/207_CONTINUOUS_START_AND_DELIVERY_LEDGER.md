@@ -1,4 +1,4 @@
-2026-11-07 149模式/88严格保全/默认关闭实验传输实际接线继续：已提交到2e8，当前原结果与未通过项、测试修正、两个受影响后继控制详见[316](316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md)。Fish32/普通SiliconFlow55原限定PASS复用；模式合并R03原shared100PASS、Desktop155PASS+1旧导出身份FAIL，实验R01原68PASS+1JUnit初始化FAIL，均保留不冒称整组通过。Android原34PASS不覆盖后继。全屏模式入口另补。公开1244/db7/签26、A1真人FAIL、315未采纳边界不变；未本机编译/安装/真实资料改写或新公发。
+2026-11-07 本批149实际链路已获分源工程证明：R04/42254873831原shared170PASS、Desktop237PASS+1既有原生图形前置SKIP/0FAIL；Android后继42254880909原36PASS；025全屏模式入口后继42256005681原32PASS。模式字段/候选/SaveSlot/下一轮设置并发、88严格保全及默认关闭实验协议/实际生产者/Stop正文/工具完成证据均有本批原件；旧失败保留。详见[316](316_UPSTREAM149_RUNTIME_IMPLEMENTATION_AND_CHECKS.md)与314，逐提交审阅仍未全部闭合，315已有Prompt组未采纳不动。公开1244/db7/签26及A1真人FAIL保持，无新普通包/安装/用户根操作/公发，本机无编译测试。
 
 下方历史保留。
 

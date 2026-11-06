@@ -39,7 +39,7 @@ class DesktopOfficial149BackupTest {
                     assertEquals(88, DesktopFullBackupSource.verify(output, null, reread).manifest.appVersionCode)
                     for ((name, value) in sink.entities) {
                         // Staging removes credentials and deliberately materializes the empty
-                        // singleton key. All source fields and all other entity bytes stay intact.
+                        // singleton key. All source fields and all other entity values stay intact.
                         val expected = if (name == "entities/app_settings.json")
                             JsonObject(value + ("siliconFlowApiKey" to JsonPrimitive(""))) else value
                         assertEquals(expected, reread.entities[name], name)
