@@ -45,8 +45,27 @@ jobs:
           New-Item -ItemType Directory -Path "$env:RUNNER_TEMP/ccb-ui-probe" -Force | Out-Null
           @{ source = (git rev-parse HEAD); run = $env:GITHUB_RUN_ID; scope = 'synthetic selected tests only; no installer, user profile, release or provider calls' } |
             ConvertTo-Json | Set-Content -Encoding utf8 "$env:RUNNER_TEMP/ccb-ui-probe/source.json"
+          .\gradlew.bat :sharedCore:test -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain `
+            --tests 'com.example.chatbar.domain.chat.NarrativeModePersistenceTest' `
+            --tests 'com.example.chatbar.domain.chat.MessageAlternativeVersionPolicyTest' `
+            --tests 'com.example.chatbar.domain.chat.SessionCopyPolicyTest' `
+            --tests 'com.example.chatbar.domain.chat.SaveSlotSerializationTest' `
+            --tests 'com.example.chatbar.data.repository.ChatRepositoryConditionalUpdateTest' `
+            --tests 'com.example.chatbar.data.repository.ChatRepositoryFoundationTest'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain `
-            --tests 'com.example.chatbar.desktop.DesktopStudioLongPromptFocusTest'
+            --tests 'com.example.chatbar.desktop.DesktopNarrativeModeConcurrencyTest' `
+            --tests 'com.example.chatbar.desktop.DesktopRegenerationTest' `
+            --tests 'com.example.chatbar.desktop.DesktopFishGenerationTest' `
+            --tests 'com.example.chatbar.desktop.DesktopSaveSlotServiceTest' `
+            --tests 'com.example.chatbar.desktop.DesktopFullBackupServiceTest' `
+            --tests 'com.example.chatbar.desktop.backup.DesktopOfficial149BackupTest' `
+            --tests 'com.example.chatbar.desktop.backup.DesktopOfficial148BackupTest' `
+            --tests 'com.example.chatbar.desktop.backup.DesktopFullBackupSourceTest' `
+            --tests 'com.example.chatbar.desktop.backup.DesktopFullBackupWriterTest' `
+            --tests 'com.example.chatbar.desktop.backup.DesktopBackupSelectionTest' `
+            --tests 'com.example.chatbar.desktop.backup.DesktopMergeRootPreparationTest' `
+            --tests 'com.example.chatbar.desktop.backup.DesktopMergeGraphRemapperTest'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Preserve actual reports and synthetic review images
         if: always()
