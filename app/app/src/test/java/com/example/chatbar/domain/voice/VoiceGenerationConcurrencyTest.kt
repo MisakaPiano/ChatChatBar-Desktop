@@ -101,6 +101,23 @@ class VoiceGenerationConcurrencyTest {
         assertTrue(f.voices.listForMessage("old").isEmpty()); assertFalse(File(voice.audioPath).exists())
     }
 
+    @Test fun changingNextReplyModeDoesNotInvalidateOldMessageVoice() = runTest {
+        val f = fixture(); val source = f.snapshot; val voice = f.voice()
+        f.chats.setNarrativeMode("session", ChatNarrativeMode.ADVANCE)
+        f.committer.commit(source, voice)
+        assertEquals(ChatNarrativeMode.ADVANCE, f.chats.getSession("session")?.narrativeMode)
+        assertEquals(ChatNarrativeMode.FOCUS, f.chats.getMessage("old", "session")?.narrativeMode)
+        assertEquals(voice.id, f.voices.listForMessage("old").single().id)
+    }
+
+    @Test fun changingSourceVersionModeWithSameIdAndTextRejectsLateVoice() = runTest {
+        val f = fixture(); val source = f.snapshot; val voice = f.voice()
+        f.chats.updateMessage(f.message.copy(narrativeMode = ChatNarrativeMode.ADVANCE))
+        assertTrue(runCatching { f.committer.commit(source, voice) }.exceptionOrNull() is IllegalStateException)
+        assertTrue(f.voices.listForMessage("old").isEmpty())
+        assertFalse(File(voice.audioPath).exists())
+    }
+
     @Test fun deletedMessageAndSessionCannotBeResurrectedByLateVoice() = runTest {
         for (deleteSession in listOf(false, true)) {
             val f = fixture(); val voice = f.voice()
@@ -112,7 +129,8 @@ class VoiceGenerationConcurrencyTest {
 
     @Test fun switchedButRetainedVersionKeepsItsOwnVoiceAndRetiredVersionRejects() = runTest {
         val f = fixture(); val source = f.snapshot
-        val switched = MessageAlternativeVersionPolicy.append(f.message, "second version", "version2")
+        val switched = MessageAlternativeVersionPolicy.append(f.message, "second version", "version2",
+            narrativeMode = ChatNarrativeMode.ADVANCE)
         f.chats.updateMessage(switched)
         assertFalse(source.matches(switched, requireVisible = true))
         val voice = f.voice(); f.committer.commit(source, voice)

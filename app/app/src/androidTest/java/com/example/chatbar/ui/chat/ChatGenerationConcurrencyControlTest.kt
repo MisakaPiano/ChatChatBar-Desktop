@@ -49,11 +49,15 @@ class ChatGenerationConcurrencyControlTest {
             content = if (segmented) "<n=\"Synthetic\"/>[Completed old dialogue]()" else "Completed old message",
             currentAlternativeVersionId = "v1", createdAt = 1, updatedAt = 1)
         runBlocking {
-            chats.createSession(ChatSession(id = "synthetic", characterCardId = "card", title = "synthetic", createdAt = 1, updatedAt = 1))
+            chats.createSession(ChatSession(id = "synthetic", characterCardId = "card", title = "synthetic",
+                narrativeMode = ChatNarrativeMode.ADVANCE, createdAt = 1, updatedAt = 1))
             chats.addMessage(message); voices.initialize()
         }
         val source = VoiceGenerationSourceSnapshot.capture(message)
         val committer = VoiceGenerationCommitter(chats, voices, deleteUncommittedAudio = { File(it).delete() })
+        val frozenReplyMode = runBlocking { requireNotNull(chats.getSession("synthetic")).narrativeMode }
+        var nextMode by mutableStateOf(frozenReplyMode)
+        val modeSave = AtomicReference<Job?>()
         val replyEntered = CompletableDeferred<Unit>(); val voiceEntered = CompletableDeferred<Unit>(); val releaseVoice = CompletableDeferred<Unit>()
         val reply = scope.launch { LocalDataMaintenance.enter().use { replyEntered.complete(Unit); awaitCancellation() } }
         runBlocking { replyEntered.await() }
@@ -81,6 +85,12 @@ class ChatGenerationConcurrencyControlTest {
             ChatBarTheme {
                 Column(Modifier.padding(top = 40.dp)) {
                     CbText("合成新回复运行中")
+                    Box(Modifier.testTag("next-mode")) {
+                        ChatNarrativeModeToggle(nextMode, frozenReplyMode, enabled = true, onSelect = { selected ->
+                            nextMode = selected
+                            modeSave.set(scope.launch { chats.setNarrativeMode("synthetic", selected) })
+                        })
+                    }
                     val handlers = completedMessageLongPressActions(false,
                         onMessage = { showMessage = true }, onSegment = { selectedSegment = it })
                     ChatBubble(message, Modifier.testTag("completed-message"), showMessageMeta = false,
@@ -103,6 +113,11 @@ class ChatGenerationConcurrencyControlTest {
                 }
             }
         }
+        compose.onNodeWithTag("next-mode").performTouchInput { click() }
+        compose.onNodeWithContentDescription("叙事模式，${ChatNarrativeMode.FOCUS.label}")
+            .assert(SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.StateDescription,
+                "本次${frozenReplyMode.shortLabel}，下次${ChatNarrativeMode.FOCUS.shortLabel}"))
+        runBlocking { modeSave.get()!!.join(); assertEquals(ChatNarrativeMode.FOCUS, chats.getSession("synthetic")?.narrativeMode) }
         if (segmented) {
             compose.onNodeWithText("Completed old dialogue").performTouchInput { longClick() }
             compose.onNodeWithContentDescription("编辑本段").assertIsNotEnabled()
@@ -117,10 +132,14 @@ class ChatGenerationConcurrencyControlTest {
         }
         compose.waitUntil(10_000) { voiceEntered.isCompleted }
         assertTrue(reply.isActive); assertTrue(voiceJob.get()!!.isActive); assertEquals(0, mutations.get())
+        assertEquals(ChatNarrativeMode.ADVANCE, frozenReplyMode)
         runBlocking { reply.cancelAndJoin() }
         assertTrue(voiceJob.get()!!.isActive)
         releaseVoice.complete(Unit)
-        runBlocking { voiceJob.get()!!.join(); assertEquals(1, voices.listForMessage("old").size) }
+        runBlocking {
+            voiceJob.get()!!.join(); assertEquals(1, voices.listForMessage("old").size)
+            assertEquals(ChatNarrativeMode.FOCUS, chats.getMessage("old", "synthetic")?.narrativeMode)
+        }
     }
 
     @Test fun productionProgressCardCancelsOnlyItsBatch() {
