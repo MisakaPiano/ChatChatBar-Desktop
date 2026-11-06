@@ -49,10 +49,14 @@ class DesktopMomentVersionBackupTest {
             val task = MomentTask.create(card.id, session.id, 1).copy(status = MomentTaskStatus.RUNNING, postId = post.id)
             storage.saveEntity("moment_tasks", task.id, task, MomentTask.serializer())
             val sourceBytes = Files.readAllBytes(root.resolve("entities/moment_posts/post.json"))
+            val mapping = DesktopFullBackupMapping(root)
+            val catalog = BackupExportCatalog.read(root.toFile(),
+                mapping.inventory(StrictBackupZipReader.Limits().expanded).keys.associateWith(root::resolve)) {}
             for (includeImages in listOf(true, false)) {
                 val work = Files.createDirectory(base.resolve("export-$includeImages"))
-                val selection = AppBackupSelection(characterIds = setOf(card.id), sessions = mapOf(session.id to BackupSessionChoice()),
-                    moments = true, momentsImages = includeImages)
+                // Exercise the same presets used by the ordinary export dialog, rather than
+                // injecting a Moments flag that the user-facing entry cannot currently select.
+                val selection = if (includeImages) catalog.allSelection() else catalog.lightSelection()
                 DesktopFullBackupMapping(root).export(work, 86, StrictBackupZipReader.Limits().expanded, selection = selection).use { snapshot ->
                     if (includeImages) {
                         val mismatched = base.resolve("wrong-scope.cbbackup")
@@ -64,6 +68,7 @@ class DesktopMomentVersionBackupTest {
                     DesktopFullBackupWriter.export(snapshot.files, file, null, selection = selection)
                     DesktopFullBackupStaging.prepare(file, null, Files.createDirectory(base.resolve("inspect-$includeImages"))).use { staged ->
                         assertTrue(staged.hasDesktopParticipation)
+                        assertTrue(staged.source.manifest.scope!!.moments)
                         assertEquals(includeImages, staged.source.manifest.scope!!.momentsImages)
                         val record = staged.entities.getValue("entities/moment_posts/post.json")
                         assertEquals(if (includeImages) 3 else 0, DesktopMomentBackupExtension.versions(record).size)
@@ -108,6 +113,18 @@ class DesktopMomentVersionBackupTest {
                 }
                 assertContentEquals(sourceBytes, Files.readAllBytes(root.resolve("entities/moment_posts/post.json")))
             }
+            val excluded = catalog.allSelection().copy(moments = false)
+            mapping.export(Files.createDirectory(base.resolve("export-excluded")), CURRENT_DESKTOP_BACKUP_CODE,
+                StrictBackupZipReader.Limits().expanded, selection = excluded).use { snapshot ->
+                val file = base.resolve("synthetic-excluded.cbbackup")
+                DesktopFullBackupWriter.export(snapshot.files, file, null, selection = excluded)
+                DesktopFullBackupStaging.prepare(file, null, Files.createDirectory(base.resolve("inspect-excluded"))).use { staged ->
+                    assertFalse(staged.source.manifest.scope!!.moments)
+                    assertTrue(staged.entities.keys.none { it.startsWith("entities/moment_posts/") || it.startsWith("entities/moment_tasks/") })
+                    assertTrue(staged.files.keys.none { it.startsWith("images/") })
+                }
+            }
+            assertContentEquals(sourceBytes, Files.readAllBytes(root.resolve("entities/moment_posts/post.json")))
         } finally { gate.closeAndDrain(); check(base.toFile().deleteRecursively()) }
     }
 }

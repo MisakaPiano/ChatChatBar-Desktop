@@ -24,6 +24,33 @@ class DesktopBackupExportDialogTest {
         val n = nodes(scene).first { it.config.contains(SemanticsActions.OnClick) && matches(it, label) }
         assertFalse(n.config.contains(SemanticsProperties.Disabled)); assertTrue(n.config[SemanticsActions.OnClick].action!!.invoke()); frames(scene)
     }
+    @Test fun `ordinary Moments controls preserve independent image choice through the real export callback`(): Unit = runBlocking(edt) {
+        val root = Files.createTempDirectory("backup-moment-dialog-")
+        try {
+            val post = Files.writeString(root.resolve("post.json"), """{"id":"post","senderName":"Synthetic sender","text":"Synthetic post"}""")
+            val catalog = BackupExportCatalog.read(root.toFile(), mapOf("entities/moment_posts/post.json" to post)) {}
+            for (width in listOf(480, 1100)) for (includeMoments in listOf(true, false)) {
+                var result: AppBackupSelection? = null
+                val scene = ImageComposeScene(width, 900, coroutineContext = edt) {
+                    DesktopBackupExportDialog(DesktopFullBackupState(catalog = catalog), {}, {}, { choice, secret ->
+                        assertNull(secret); result = choice
+                    })
+                }
+                try {
+                    frames(scene)
+                    withTimeout(5000) { do { frames(scene) } while (nodes(scene).none { it.config.contains(SemanticsActions.OnClick) && matches(it, "下一步") && !it.config.contains(SemanticsProperties.Disabled) }) }
+                    click(scene, "包含朋友圈图片")
+                    click(scene, "朋友圈 · 1 条动态（文字、点赞与任务）")
+                    if (includeMoments) click(scene, "朋友圈 · 1 条动态（文字、点赞与任务）")
+                    click(scene, "下一步")
+                    click(scene, "选择保存位置并导出")
+                    assertEquals(includeMoments, requireNotNull(result).moments)
+                    assertFalse(requireNotNull(result).momentsImages)
+                    assertTrue(requireNotNull(result).globalOptions.isNotEmpty())
+                } finally { scene.close() }
+            }
+        } finally { root.toFile().deleteRecursively() }
+    }
     @Test fun `selection presets global options and optional repeated password reach actual export callback within narrow and wide viewport`(): Unit = runBlocking(edt) {
         val root = Files.createTempDirectory("backup-dialog-")
         try {
@@ -64,6 +91,8 @@ class DesktopBackupExportDialogTest {
                     click(scene, "选择保存位置并导出")
                     assertTrue(requireNotNull(result).sessions.values.all { !it.images && !it.voice && !it.archives })
                     assertEquals(BackupSettingOptions.ids, requireNotNull(result).globalOptions)
+                    assertTrue(requireNotNull(result).moments)
+                    assertFalse(requireNotNull(result).momentsImages)
                     assertContentEquals("synthetic-password".toCharArray(), captured)
                     assertTrue(nodes(scene).filter { it.config.contains(SemanticsActions.SetText) }.all { it.config[SemanticsProperties.EditableText].text.isEmpty() })
                     assertTrue(nodes(scene).none { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("隐藏密码") == true })
