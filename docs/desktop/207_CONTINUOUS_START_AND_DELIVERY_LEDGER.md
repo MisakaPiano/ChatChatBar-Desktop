@@ -1,3 +1,7 @@
+2026-11-07 普通备份遗漏本机朋友圈的入口缺口已补：8132仅测试源的R01原4方法=1PASS+3FAIL，3647恢复全选包含动态并补独立图片开关；R02/42263523280原六套47PASS、0FAIL/ERROR/SKIP，实际all/light/off归档、所有旧图版本恢复和手机保全/合并/service护栏均按方法执行。旧失败保留，任务不自动准入。同期ac图标后继32PASS，另12条预制依赖/有界Studio读取/历史删除等具体delta沿原162有效证明复用；详见[318](318_MOMENTS_BACKUP_ENTRY_AND_RETAINED_STATE_REVIEW.md)，314整体仍complete:false。公开1244/db7/签26、A1真人FAIL、315未采纳组不动，无新包/代装/公发或本机JVM、真实资料操作。
+
+下方历史保留。
+
 2026-11-07 追齐实际图片链路发现并补齐PNG eXIf方向缺口：修正前R01原三方法1PASS+2业务FAIL；5f补共享有界读取与Desktop像素方向，R02原shared9/Desktop36PASS；fa39仅扩原alpha集成场景，R03原Desktop11PASS，全部0FAIL/ERROR/SKIP。原图/隐写读取与显示旋转分离，隐私输出归一方向1；详见[317](317_PNG_ORIENTATION_AND_REUSED_IMAGE_BEHAVIOR_REVIEW.md)。旧162实际Shift指针等有效证明复用，314新增逐项行为映射但整体complete仍false；ac03143b另区分新建对话图标，定向后继检查待原件。公开1244/db7/签26、A1真人FAIL和315未采纳均保持，无本机运行/真实资料/新包或公发。
 
 下方历史保留。

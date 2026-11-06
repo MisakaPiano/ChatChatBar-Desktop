@@ -744,6 +744,18 @@
       "rawAlphaRun": 42259960504,
       "rawAlphaDesktopPass": 11,
       "evidence": "docs/desktop/317_PNG_ORIENTATION_AND_REUSED_IMAGE_BEHAVIOR_REVIEW.md"
+    },
+    "momentsBackupEntrySuccessor": {
+      "source": "364727c5bf02b08c20f622c2a0484ce54bba8515",
+      "beforeRun": 42263330923,
+      "beforePass": 1,
+      "beforeFail": 3,
+      "fixedRun": 42263523280,
+      "passed": 47,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "evidence": "docs/desktop/318_MOMENTS_BACKUP_ENTRY_AND_RETAINED_STATE_REVIEW.md"
     }
   }
 }

@@ -44,6 +44,6 @@ R02包含 `PngOrientationReadingTest`、`ImageMetadataStripperTest`、`PrivacyPn
 
 复用原完整162：run42085881455、checkout57011ef9；shared原ZIP SHA256 `94dbb24756e3e03ba2cd96f56f3c4204f13e24a6cf0c109c3941d8e74f4d17a1`，Desktop原ZIP SHA256 `6060fda49658efc08fe19b14d55a83c94ea6731bf430ffc481adac1ccd2af5f3`。本轮已重读对应XML和当前源blob。原图形前置SKIP保持SKIP；新发现的PNG方向缺口以本页R01–R03覆盖，不能用旧162掩盖。
 
-`ac03143beeb79c78a76f78920c66c532271d5391` 另补上游41476f的“新建对话”图标区分：采用同库 `MessageSquarePlus`，角色新增仍为 `CirclePlus`，原点击回调和无障碍描述不变。后继定向编译/既有输入界面检查独立记录，不用图标常量镜像测试充数。
+`ac03143beeb79c78a76f78920c66c532271d5391` 另补上游41476f的“新建对话”图标区分：采用同库 `MessageSquarePlus`，角色新增仍为 `CirclePlus`，原点击回调和无障碍描述不变。后继run42261803705实际编译及原输入界面邻接三套32方法PASS、0FAIL/ERROR/SKIP，原件见318；不用图标常量镜像测试充数，不冒称原生真人验收。
 
 本页均为未交付工程记录。没有本机编译、日常App操作、真实资料改写、Provider调用、新安装包或新公开发布；其余141–148混合差异和已有Prompt组仍逐项保留在314，整体 `complete:false`。

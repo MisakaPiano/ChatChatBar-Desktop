@@ -694,6 +694,59 @@
         "I:\\CCB-Desktop-Continuity\\updates\\20261106-upstream-catchup-to149\\OWNER_STUDIO_EXISTING_BEHAVIOR_REUSED162_REVIEW.json"
       ],
       "verification": "Shared enabled4/import5 and existing Desktop role/Studio methods re-read in original full162; not new execution or human acceptance"
+    },
+    {
+      "id": "REVIEWED_PRESET_INLINE_HISTORY",
+      "disposition": "EQUIVALENT",
+      "scope": "Only individually mapped inline read/preset dependency/history deletion and strict UTF8/JSON stream deltas; mixed backup/UI/Prompt rows remain pending",
+      "evidence": [
+        "docs/desktop/318_MOMENTS_BACKUP_ENTRY_AND_RETAINED_STATE_REVIEW.md",
+        "I:/CCB-Desktop-Continuity/updates/20261106-upstream-catchup-to149/OWNER_PRESET_INLINE_HISTORY_REUSED162_REVIEW.json"
+      ],
+      "verification": "Original selected18 methods in162 reused; current exact owner/caller or explicitly reviewed visibility-only difference. No new full run."
+    },
+    {
+      "id": "R147_NEW_CHAT_ICON",
+      "disposition": "EQUIVALENT",
+      "scope": "Distinct actual new-conversation icon and original callback",
+      "implementationSource": "ac03143beeb79c78a76f78920c66c532271d5391",
+      "verification": {
+        "run": 42261803705,
+        "tests": 32,
+        "passed": 32,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "evidence": [
+        "docs/desktop/318_MOMENTS_BACKUP_ENTRY_AND_RETAINED_STATE_REVIEW.md"
+      ]
+    },
+    {
+      "id": "MOMENTS_ORDINARY_BACKUP_ENTRY",
+      "disposition": "EQUIVALENT",
+      "scope": "Actual default all/light/local-Moments controls, authentication and existing custody/merge guards",
+      "implementationSource": "364727c5bf02b08c20f622c2a0484ce54bba8515",
+      "verification": {
+        "beforeRun": 42263330923,
+        "beforePass": 1,
+        "beforeFail": 3,
+        "beforeErrors": 0,
+        "beforeSkip": 0,
+        "fixedRun": 42263523280,
+        "control": "d2473146817b5fa2210574028793b72a451df448",
+        "source": "364727c5bf02b08c20f622c2a0484ce54bba8515",
+        "tests": 47,
+        "passed": 47,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "state": "SCOPED_ENGINEERING_PASS"
+      },
+      "evidence": [
+        "docs/desktop/318_MOMENTS_BACKUP_ENTRY_AND_RETAINED_STATE_REVIEW.md"
+      ],
+      "delivery": "Unreleased scoped engineering; not official Android full roundtrip or user acceptance"
     }
   ],
   "deltas": [
@@ -4053,8 +4106,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Actual Desktop new-chat entry now uses same Lucide MessageSquarePlus, distinct from CirclePlus for card creation; original callback/content description retained. ac03143b compile/adjacent UI32PASS, not native acceptance.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/home/HomeScreen.kt",
@@ -4063,8 +4116,16 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "R147_NEW_CHAT_ICON"
+      ],
+      "evidence": [
+        "docs/desktop/318_MOMENTS_BACKUP_ENTRY_AND_RETAINED_STATE_REVIEW.md"
+      ],
+      "desktopOwners": [
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPrimaryChatPanel.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopAppIcons.kt"
+      ]
     },
     {
       "id": "550409689df8c51f459fb50b4e04c8ac2fa4bf35:app/app/build.gradle.kts",
@@ -4680,8 +4741,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Actual four Studio read types use bounded lexical compact projection and content-addressed payload owner; original source bytes, failed singleton state and history cache retained. Reused original shared4+3+3; only storage gate helper visibility changed since162, not compact reader bodies.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/JsonFileStorage.kt",
@@ -4690,8 +4751,18 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "REVIEWED_PRESET_INLINE_HISTORY"
+      ],
+      "evidence": [
+        "docs/desktop/318_MOMENTS_BACKUP_ENTRY_AND_RETAINED_STATE_REVIEW.md",
+        "I:/CCB-Desktop-Continuity/updates/20261106-upstream-catchup-to149/OWNER_PRESET_INLINE_HISTORY_REUSED162_REVIEW.json"
+      ],
+      "desktopOwners": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/JsonFileStorage.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiInlinePayloadStore.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiCompactJsonInput.kt"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/main/java/com/example/chatbar/data/local/entity/CharacterCard.kt",
@@ -4734,11 +4805,23 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Actual startup/typed recovery/suite share fixed-target resolver with manifest default-format key; embedded format wins, world provenance/dedup retained, missing dependency refuses before new card write. Original shared2/Desktop3 reused with exact current owner/test blobs.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "REVIEWED_PRESET_INLINE_HISTORY"
+      ],
+      "evidence": [
+        "docs/desktop/318_MOMENTS_BACKUP_ENTRY_AND_RETAINED_STATE_REVIEW.md",
+        "I:/CCB-Desktop-Continuity/updates/20261106-upstream-catchup-to149/OWNER_PRESET_INLINE_HISTORY_REUSED162_REVIEW.json"
+      ],
+      "desktopOwners": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/PresetManifest.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/card/PresetCharacterDependencies.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPresetSource.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPresetBootstrap.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPresetSuiteRestoreService.kt"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/main/java/com/example/chatbar/domain/card/CardTransferModels.kt",
@@ -4943,8 +5026,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Actual startup/typed recovery/suite share fixed-target resolver with manifest default-format key; embedded format wins, world provenance/dedup retained, missing dependency refuses before new card write. Original shared2/Desktop3 reused with exact current owner/test blobs.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/card/PresetCatalogService.kt",
@@ -4953,8 +5036,20 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "REVIEWED_PRESET_INLINE_HISTORY"
+      ],
+      "evidence": [
+        "docs/desktop/318_MOMENTS_BACKUP_ENTRY_AND_RETAINED_STATE_REVIEW.md",
+        "I:/CCB-Desktop-Continuity/updates/20261106-upstream-catchup-to149/OWNER_PRESET_INLINE_HISTORY_REUSED162_REVIEW.json"
+      ],
+      "desktopOwners": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/PresetManifest.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/card/PresetCharacterDependencies.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPresetSource.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPresetBootstrap.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPresetSuiteRestoreService.kt"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/main/java/com/example/chatbar/domain/card/PresetCharacterDependencies.kt",
@@ -4970,8 +5065,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Actual startup/typed recovery/suite share fixed-target resolver with manifest default-format key; embedded format wins, world provenance/dedup retained, missing dependency refuses before new card write. Original shared2/Desktop3 reused with exact current owner/test blobs.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/card/PresetCharacterDependencies.kt",
@@ -4980,8 +5075,20 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "REVIEWED_PRESET_INLINE_HISTORY"
+      ],
+      "evidence": [
+        "docs/desktop/318_MOMENTS_BACKUP_ENTRY_AND_RETAINED_STATE_REVIEW.md",
+        "I:/CCB-Desktop-Continuity/updates/20261106-upstream-catchup-to149/OWNER_PRESET_INLINE_HISTORY_REUSED162_REVIEW.json"
+      ],
+      "desktopOwners": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/PresetManifest.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/card/PresetCharacterDependencies.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPresetSource.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPresetBootstrap.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopPresetSuiteRestoreService.kt"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/main/java/com/example/chatbar/domain/chat/MessageFormatRepairService.kt",
@@ -5105,8 +5212,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Actual four Studio read types use bounded lexical compact projection and content-addressed payload owner; original source bytes, failed singleton state and history cache retained. Reused original shared4+3+3; only storage gate helper visibility changed since162, not compact reader bodies.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiInlinePayloadStore.kt",
@@ -5115,8 +5222,18 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "REVIEWED_PRESET_INLINE_HISTORY"
+      ],
+      "evidence": [
+        "docs/desktop/318_MOMENTS_BACKUP_ENTRY_AND_RETAINED_STATE_REVIEW.md",
+        "I:/CCB-Desktop-Continuity/updates/20261106-upstream-catchup-to149/OWNER_PRESET_INLINE_HISTORY_REUSED162_REVIEW.json"
+      ],
+      "desktopOwners": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/JsonFileStorage.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiInlinePayloadStore.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiCompactJsonInput.kt"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
@@ -7129,11 +7246,19 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Fixed12e entire implementation reviewed: BackupTextIO exact after package adaptation; BackupJsonStream differs only package and provenance comment. Real mapping/writer/inspection continue using it; adjacent original backup88 and preservation checks in316 retain scope. No new transport/restore-mode equivalence inferred.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "REVIEWED_PRESET_INLINE_HISTORY"
+      ],
+      "evidence": [
+        "docs/desktop/318_MOMENTS_BACKUP_ENTRY_AND_RETAINED_STATE_REVIEW.md",
+        "I:/CCB-Desktop-Continuity/updates/20261106-upstream-catchup-to149/OWNER_PRESET_INLINE_HISTORY_REUSED162_REVIEW.json"
+      ],
+      "desktopOwners": [
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/BackupJsonStream.kt"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/backup/BackupPreferenceTransfer.kt",
@@ -7209,11 +7334,19 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Fixed12e entire implementation reviewed: BackupTextIO exact after package adaptation; BackupJsonStream differs only package and provenance comment. Real mapping/writer/inspection continue using it; adjacent original backup88 and preservation checks in316 retain scope. No new transport/restore-mode equivalence inferred.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "REVIEWED_PRESET_INLINE_HISTORY"
+      ],
+      "evidence": [
+        "docs/desktop/318_MOMENTS_BACKUP_ENTRY_AND_RETAINED_STATE_REVIEW.md",
+        "I:/CCB-Desktop-Continuity/updates/20261106-upstream-catchup-to149/OWNER_PRESET_INLINE_HISTORY_REUSED162_REVIEW.json"
+      ],
+      "desktopOwners": [
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/BackupTextIO.kt"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/backup/LocalDataMaintenance.kt",
@@ -8466,8 +8599,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Platform equivalent batch deletion: strict actual selected-entry reads and atomic metadata writer transaction precede exact-candidate reference-aware cleanup, avoiding whole-history eager read. Existing actual controller3 original tests cover later corruption/no partial delete, shared references and generation writer ordering. Caught-error rollback, no crash-journal claim.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/JsonFileStorage.kt",
@@ -8476,8 +8609,18 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "REVIEWED_PRESET_INLINE_HISTORY"
+      ],
+      "evidence": [
+        "docs/desktop/318_MOMENTS_BACKUP_ENTRY_AND_RETAINED_STATE_REVIEW.md",
+        "I:/CCB-Desktop-Continuity/updates/20261106-upstream-catchup-to149/OWNER_PRESET_INLINE_HISTORY_REUSED162_REVIEW.json"
+      ],
+      "desktopOwners": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/JsonFileStorage.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopNovelAiStudioController.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopOwnedImageCleanup.kt"
+      ]
     },
     {
       "id": "1d2850a4ed34fca614ce9809acd48e959d8a9d08:app/app/src/main/java/com/example/chatbar/data/repository/NovelAiStudioRepository.kt",
@@ -8493,8 +8636,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Platform equivalent batch deletion: strict actual selected-entry reads and atomic metadata writer transaction precede exact-candidate reference-aware cleanup, avoiding whole-history eager read. Existing actual controller3 original tests cover later corruption/no partial delete, shared references and generation writer ordering. Caught-error rollback, no crash-journal claim.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/data/repository/NovelAiStudioRepository.kt",
@@ -8503,8 +8646,18 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "REVIEWED_PRESET_INLINE_HISTORY"
+      ],
+      "evidence": [
+        "docs/desktop/318_MOMENTS_BACKUP_ENTRY_AND_RETAINED_STATE_REVIEW.md",
+        "I:/CCB-Desktop-Continuity/updates/20261106-upstream-catchup-to149/OWNER_PRESET_INLINE_HISTORY_REUSED162_REVIEW.json"
+      ],
+      "desktopOwners": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/JsonFileStorage.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopNovelAiStudioController.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopOwnedImageCleanup.kt"
+      ]
     },
     {
       "id": "1d2850a4ed34fca614ce9809acd48e959d8a9d08:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiImageStorage.kt",
@@ -8520,8 +8673,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Platform equivalent batch deletion: strict actual selected-entry reads and atomic metadata writer transaction precede exact-candidate reference-aware cleanup, avoiding whole-history eager read. Existing actual controller3 original tests cover later corruption/no partial delete, shared references and generation writer ordering. Caught-error rollback, no crash-journal claim.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/image/NovelAiImageStorage.kt",
@@ -8530,8 +8683,18 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "REVIEWED_PRESET_INLINE_HISTORY"
+      ],
+      "evidence": [
+        "docs/desktop/318_MOMENTS_BACKUP_ENTRY_AND_RETAINED_STATE_REVIEW.md",
+        "I:/CCB-Desktop-Continuity/updates/20261106-upstream-catchup-to149/OWNER_PRESET_INLINE_HISTORY_REUSED162_REVIEW.json"
+      ],
+      "desktopOwners": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/JsonFileStorage.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopNovelAiStudioController.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopOwnedImageCleanup.kt"
+      ]
     },
     {
       "id": "1d2850a4ed34fca614ce9809acd48e959d8a9d08:app/app/src/main/java/com/example/chatbar/ui/imageprompt/NovelAiHistoryScreen.kt",
@@ -9097,11 +9260,21 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Actual Desktop selection uses official scoped catalog policy with explicit owned-path/media/credential adaptations. Ordinary all/light/cancel Moments gap now fixed and actual callback+authenticated archive/restored store proven in47 scoped successor methods; original phone preservation full-selection and task admission remain separate.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "R146_BACKUP_SELECTION",
+        "MOMENTS_ORDINARY_BACKUP_ENTRY"
+      ],
+      "evidence": [
+        "docs/desktop/318_MOMENTS_BACKUP_ENTRY_AND_RETAINED_STATE_REVIEW.md"
+      ],
+      "desktopOwners": [
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/BackupExportSelection.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopBackupExportDialog.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupMapping.kt"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:app/app/src/main/java/com/example/chatbar/domain/backup/BackupHistoricalResourcePolicy.kt",
@@ -9137,11 +9310,19 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Fixed12e entire implementation reviewed: BackupTextIO exact after package adaptation; BackupJsonStream differs only package and provenance comment. Real mapping/writer/inspection continue using it; adjacent original backup88 and preservation checks in316 retain scope. No new transport/restore-mode equivalence inferred.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "REVIEWED_PRESET_INLINE_HISTORY"
+      ],
+      "evidence": [
+        "docs/desktop/318_MOMENTS_BACKUP_ENTRY_AND_RETAINED_STATE_REVIEW.md",
+        "I:/CCB-Desktop-Continuity/updates/20261106-upstream-catchup-to149/OWNER_PRESET_INLINE_HISTORY_REUSED162_REVIEW.json"
+      ],
+      "desktopOwners": [
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/BackupJsonStream.kt"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:app/app/src/main/java/com/example/chatbar/domain/backup/BackupMergeCatalog.kt",
@@ -9492,11 +9673,21 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Actual Desktop selection uses official scoped catalog policy with explicit owned-path/media/credential adaptations. Ordinary all/light/cancel Moments gap now fixed and actual callback+authenticated archive/restored store proven in47 scoped successor methods; original phone preservation full-selection and task admission remain separate.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "R146_BACKUP_SELECTION",
+        "MOMENTS_ORDINARY_BACKUP_ENTRY"
+      ],
+      "evidence": [
+        "docs/desktop/318_MOMENTS_BACKUP_ENTRY_AND_RETAINED_STATE_REVIEW.md"
+      ],
+      "desktopOwners": [
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/BackupExportSelection.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopBackupExportDialog.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupMapping.kt"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:app/app/src/main/java/com/example/chatbar/ui/manage/GlobalSettingsScreen.kt",
