@@ -6,6 +6,7 @@ import com.composables.icons.lucide.Lucide
 import com.composables.icons.lucide.Pencil
 import com.composables.icons.lucide.Star
 import com.composables.icons.lucide.MessageCircle
+import com.composables.icons.lucide.MessageSquarePlus
 import com.composables.icons.lucide.Settings
 import com.composables.icons.lucide.Wrench
 import com.composables.icons.lucide.Database
@@ -60,6 +61,7 @@ internal object DesktopAppIcons {
     val Edit: ImageVector get() = Lucide.Pencil
     val Star: ImageVector get() = Lucide.Star
     val Chat: ImageVector get() = Lucide.MessageCircle
+    val NewChat: ImageVector get() = Lucide.MessageSquarePlus
     val Settings: ImageVector get() = Lucide.Settings
     val Tools: ImageVector get() = Lucide.Wrench
     val Data: ImageVector get() = Lucide.Database

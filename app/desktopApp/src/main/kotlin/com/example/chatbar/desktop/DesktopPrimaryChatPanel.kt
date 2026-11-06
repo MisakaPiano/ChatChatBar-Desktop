@@ -241,7 +241,7 @@ internal fun DesktopPrimaryChatPanel(
                 ) {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Box(Modifier.weight(1f)) { PrimaryHeading(t(DesktopUiText.SESSIONS)) }
-                        DesktopIconAction(t(DesktopUiText.NEW_CHAT), DesktopAppIcons.Add) { browser = browser.openNewChat() }
+                        DesktopIconAction(t(DesktopUiText.NEW_CHAT), DesktopAppIcons.NewChat) { browser = browser.openNewChat() }
                         DesktopIconAction(t(DesktopUiText.REFRESH), DesktopAppIcons.Refresh) { scope.launch { controller.refresh() } }
                         if (size == DesktopShellSize.COMPACT && compactNavigation.enteredChat && state.selectedSession != null)
                             DesktopIconAction(t(DesktopUiText.HIDE_SESSIONS), DesktopAppIcons.Collapse) {
