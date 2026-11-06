@@ -24,7 +24,7 @@ internal fun DesktopChatNarrativeModeDialog(mode: ChatNarrativeMode,
                 }
                 StatusText("切换用于下一次回复；正在生成的回复保持原来的节奏。")
                 for (choice in ChatNarrativeMode.entries) {
-                    BootstrapButton(choice.label, secondary = choice != mode) { onSelect(choice) }
+                    BootstrapButton((if (choice == mode) "✓ " else "") + choice.label, secondary = choice != mode) { onSelect(choice) }
                     StatusText(when (choice) {
                         ChatNarrativeMode.FOCUS -> "细写眼前的反应和动作，让时间慢下来，留出下一次互动的空间。"
                         ChatNarrativeMode.ADVANCE -> "概括行动的过程，把当前事件推进到结果；遇到需要你决定的新选择时停下。"
