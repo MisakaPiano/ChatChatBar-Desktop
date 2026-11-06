@@ -83,7 +83,11 @@ class DesktopCharacterSaveUiIntegrationTest {
             try {
                 click("保存")
                 await { app.dataOperationCoordinator.state == DesktopDataOperationCoordinatorState.MAINTENANCE_PENDING }
-                assertEquals(replacement, app.characterRepository.getById(card.id)!!.avatar)
+                // A fresh repository read would queue behind maintenance while this test still
+                // owns its blocker. Inspect only the known synthetic durable file at this point.
+                val committed = app.jsonFileStorage.json.decodeFromString(CharacterCard.serializer(),
+                    Files.readString(root.resolve("entities/character_cards/${card.id}.json")))
+                assertEquals(replacement, committed.avatar)
                 capture("maintenance-wait")
                 assertTrue(nodes().any { tagged(it, "character-editor-scroll") }, "Committed maintenance must not remove the form")
                 assertEquals(position, scrollPosition(), 2f)
@@ -95,9 +99,16 @@ class DesktopCharacterSaveUiIntegrationTest {
                 val stagedBefore = draftFiles()
                 editor.addTextDocument("must-not-stage.txt", "Save is still active")
                 assertEquals(stagedBefore, draftFiles(), "Save protection also covers resource staging")
-            } finally { release.complete(Unit); blocker.join() }
+            } catch (error: Throwable) {
+                error.printStackTrace(System.err); System.err.flush()
+                throw error
+            } finally {
+                mark("releasing-synthetic-maintenance-blocker")
+                withContext(NonCancellable) { release.complete(Unit); withTimeout(5_000) { blocker.join() } }
+            }
             settled()
             assertNull(editor.state.value.problem, editor.state.value.detail)
+            assertEquals(replacement, app.characterRepository.getById(card.id)!!.avatar)
             assertEquals(position, scrollPosition(), 2f)
             assertFalse(Files.exists(root.resolve(card.avatar!!)))
             assertTrue(Files.exists(root.resolve(replacement)))
