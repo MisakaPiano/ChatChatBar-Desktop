@@ -14,7 +14,8 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
     data class Export(val directory: Path, val files: Map<String, Path>, val proof: Map<String, String>, val preferences: BackupPreferences,
         private val scratch: DesktopBackupScratch, val credentialFreeSource: Boolean = false,
         val missingHistoricalAvatars: Int = 0,
-        val catalogProof: Map<String, String> = emptyMap()) : AutoCloseable { override fun close() = scratch.close() }
+        val catalogProof: Map<String, String> = emptyMap(),
+        val validationPaths: Set<String>? = null) : AutoCloseable { override fun close() = scratch.close() }
     data class Restore(val directory: Path, val files: Map<String, Path>, val proof: Map<String, String>,
         private val scratch: DesktopBackupScratch) : AutoCloseable { override fun close() = scratch.close() }
 
@@ -186,7 +187,9 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
             "CATALOG_SOURCE_CHANGED_DURING_EXPORT"
         }
         absentAvatars.forEach(DesktopHistoricalMomentAvatarPolicy::requireMissing)
-        return Export(directory, files, proof, preferences, scratch, forMerge, missingHistoricalAvatars, catalogProof)
+        val validationPaths = if (selection != null && selection != requireNotNull(catalog).allSelection())
+            requireNotNull(selectedRecords).keys + selectedMedia else null
+        return Export(directory, files, proof, preferences, scratch, forMerge, missingHistoricalAvatars, catalogProof, validationPaths)
         } catch (error: Throwable) {
             try { scratch.close() } catch (cleanup: Throwable) { error.addSuppressed(cleanup) }
             throw error

@@ -4,6 +4,7 @@ import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.data.repository.ChatRepository
 import com.example.chatbar.desktop.backup.*
+import com.example.chatbar.domain.image.*
 import java.awt.image.BufferedImage
 import java.nio.file.Files
 import java.nio.file.Path
@@ -98,6 +99,38 @@ class DesktopSelectedBackupGraphTest {
             assertFails { f.service.exportModern(output, null, selection = f.good) }
             assertFalse(Files.exists(output))
             assertEquals("Synthetic unclassified user bytes", Files.readString(retained))
+        }
+    }
+
+    @Test fun `explicit image omissions validate selected chat studio and moment metadata without reopening omitted raw image references`() = runBlocking<Unit> {
+        Fixture("none").use { f ->
+            f.seed()
+            val paths = listOf("images/chat.png", "images/history.png", "images/moment.png", "images/older-moment.png")
+            for (relative in paths) Files.write(f.root.resolve(relative), byteArrayOf(1, 2, 3))
+            f.storage.saveEntity("chat_messages", "sb_mb", ChatMessage("mb", "sb", MessageRole.USER, "Retained metadata",
+                images = listOf(paths[0]), createdAt = 1, updatedAt = 1), ChatMessage.serializer())
+            f.storage.saveEntity("novelai_generation_history", "h", NovelAiGenerationHistoryEntry("h",
+                images = listOf(NovelAiGenerationHistoryImage(paths[1])),
+                recipe = NovelAiGenerationRecipe(basePrompt = "Synthetic history", negativePrompt = "Synthetic negative"), createdAt = 1), NovelAiGenerationHistoryEntry.serializer())
+            val post = MomentPost("p", "b", "sb", senderName = "Synthetic", text = "Retained post", imagePath = paths[2],
+                scheduledAt = 1, generatedAt = 1, desktopImageVersions = listOf(
+                    MomentImageVersion("selected", paths[2], createdAt = 1), MomentImageVersion("older", paths[3], createdAt = 1)))
+            f.storage.saveEntity("moment_posts", post.id, post, MomentPost.serializer())
+            val before = DesktopFullBackupMapping(f.root).inventory()
+            val selection = AppBackupSelection(characterIds = setOf("b"), sessions = mapOf("sb" to BackupSessionChoice(images = false)),
+                studioHistory = true, studioHistoryImages = false, moments = true, momentsImages = false)
+            val output = f.base.resolve("metadata.cbbackup")
+            f.service.exportModern(output, null, selection = selection)
+            DesktopFullBackupStaging.prepare(output, null, Files.createDirectory(f.base.resolve("incoming"))).use { incoming ->
+                assertTrue(paths.none { it in incoming.files })
+                val message = backupJson.decodeFromJsonElement(ChatMessage.serializer(), incoming.entities.getValue("entities/chat_messages/sb_mb.json"))
+                assertTrue(message.images.isEmpty())
+                val history = backupJson.decodeFromJsonElement(NovelAiGenerationHistoryEntry.serializer(), incoming.entities.getValue("entities/novelai_generation_history/h.json"))
+                assertTrue(history.images.single().originalOmitted)
+                val restored = backupJson.decodeFromJsonElement(MomentPost.serializer(), incoming.entities.getValue("entities/moment_posts/p.json"))
+                assertEquals(post.text, restored.text); assertNull(restored.imagePath); assertTrue(restored.desktopImageVersions.isEmpty())
+            }
+            assertEquals(before, DesktopFullBackupMapping(f.root).inventory())
         }
     }
 }

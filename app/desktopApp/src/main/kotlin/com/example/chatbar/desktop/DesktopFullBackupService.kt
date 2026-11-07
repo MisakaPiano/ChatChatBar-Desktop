@@ -57,11 +57,15 @@ internal class DesktopFullBackupService(
                         stage = "GRAPH"
                         check(DesktopDataRootOwnership.isHeld(root))
                         check(!DesktopIndexCommitJournal(root).hasPending() && !DesktopSessionCommitJournal(root).hasPending() && !journal.hasPending())
-                        DesktopFullBackupGraphValidation.validate(root)
+                        if (selection == null) DesktopFullBackupGraphValidation.validate(root)
                     }
                     stage = "FILES"
                     snapshot = mapping.export(workspace, if (modern) CURRENT_DESKTOP_BACKUP_CODE else 84,
                         if (modern) StrictBackupZipReader.Limits().expanded else DesktopBackupPolicy.MAX_TOTAL, selection = selection)
+                    if (modern && selection != null) {
+                        stage = "GRAPH"
+                        DesktopFullBackupGraphValidation.validate(root, selectedPaths = requireNotNull(snapshot).validationPaths)
+                    }
                     if (includeCredentials) {
                         stage = "CREDENTIALS"
                         val entities = requireNotNull(snapshot).files.filterKeys { it.startsWith("entities/") }.mapValues { (path, file) ->

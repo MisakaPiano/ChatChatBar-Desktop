@@ -4,19 +4,37 @@ import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy
 import java.nio.file.*
+import kotlinx.serialization.KSerializer
 
 /** Offline staging only. Validate links without opening a model, repairing data or filling defaults. */
 internal object DesktopFullBackupGraphValidation {
     suspend fun validate(root: Path,
         historical: com.example.chatbar.desktop.backup.DesktopHistoricalVoiceCustody.Evidence? = null,
-        futureRoot: Path? = null) {
+        futureRoot: Path? = null, selectedPaths: Set<String>? = null) {
         val localHistory = com.example.chatbar.desktop.backup.DesktopHistoricalVoiceCustody.validate(root)
         val history = if (historical == null) localHistory else localHistory.plus(historical)
         com.example.chatbar.desktop.backup.DesktopPreservationStore.validate(root)
         com.example.chatbar.desktop.backup.DesktopSaveSlotSourceCustody.validate(root)
         val storage = JsonFileStorage(root)
+        suspend fun <T : Any> visit(type: String, serializer: KSerializer<T>, inspect: suspend (String, T) -> Unit) {
+            if (selectedPaths == null) {
+                storage.visitEntitiesStrict(type, serializer, visit = inspect)
+                return
+            }
+            for (relative in selectedPaths.filter { it.startsWith("entities/$type/") }.sorted()) {
+                val name = relative.removePrefix("entities/$type/")
+                check('/' !in name && name.endsWith(".json"))
+                val key = name.removeSuffix(".json")
+                val read = storage.readEntityBoundedStrict(type, key, serializer, validatePath = {
+                    DesktopArchiveFiles.safe(it, Files.isDirectory(it, LinkOption.NOFOLLOW_LINKS))
+                })
+                val value = (read as? JsonFileStorage.EntityReadResult.Valid)?.value
+                    ?: error("SELECTED_BACKUP_ENTITY_UNREADABLE")
+                inspect(key, value)
+            }
+        }
         val postResults = linkedMapOf<String, MutableList<DesktopPostProcessResultRecord>>()
-        storage.visitEntitiesStrict(DesktopPostProcessResults.KEY, DesktopPostProcessResultRecord.serializer()) { key, record ->
+        visit(DesktopPostProcessResults.KEY, DesktopPostProcessResultRecord.serializer()) { key, record ->
             check(key == record.id); record.validateForImport()
             if (record.imagePath.startsWith("images/")) {
                 val shared = postResults.getOrPut(record.imagePath) { mutableListOf() }
@@ -29,6 +47,7 @@ internal object DesktopFullBackupGraphValidation {
             val directory = root.resolve(folder)
             if (!Files.exists(directory)) continue
             Files.walk(directory).use { paths -> paths.filter { Files.isRegularFile(it) }.forEach { file ->
+                if (selectedPaths != null && root.relativize(file).joinToString("/") !in selectedPaths) return@forEach
                 if (file.fileName.toString().substringAfterLast('.', "").lowercase() in setOf("png", "jpg", "jpeg", "gif", "webp")) {
                     val shared = postResults[root.relativize(file).toString().replace('\\', '/')]
                     val result = shared?.firstOrNull { it.operation == com.example.chatbar.domain.image.NovelAiPostProcessTab.ENHANCE.name }
@@ -46,12 +65,12 @@ internal object DesktopFullBackupGraphValidation {
                 }
             } }
         }
-        storage.visitEntitiesStrict("moment_posts", MomentPost.serializer()) { key, post ->
+        visit("moment_posts", MomentPost.serializer()) { key, post ->
             check(key == post.id)
             requireMomentStorageId(post.id)
             DesktopMomentImageVersions.retained(post).forEach { version ->
                 val reference = version.imagePath
-                if (reference.startsWith("images/")) {
+                if (reference.startsWith("images/") && (selectedPaths == null || reference in selectedPaths)) {
                     val file = root.resolve(reference).normalize()
                     check(file.startsWith(root.resolve("images")) && Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS)) {
                         "MOMENT_IMAGE_VERSION_RESOURCE_MISSING"
@@ -62,17 +81,17 @@ internal object DesktopFullBackupGraphValidation {
         }
         val sessions = hashSetOf<String>()
         val messages = hashMapOf<String, Pair<String, Set<String>>>()
-        storage.visitEntitiesStrict("chat_sessions", ChatSession.serializer()) { key, session ->
+        visit("chat_sessions", ChatSession.serializer()) { key, session ->
             check(key == session.id && sessions.add(session.id))
         }
         var versions = 0
-        storage.visitEntitiesStrict("chat_messages", ChatMessage.serializer()) { key, message ->
+        visit("chat_messages", ChatMessage.serializer()) { key, message ->
             check(message.sessionId in sessions && key == "${message.sessionId}_${message.id}")
             val ids = MessageAlternativeVersionPolicy.versions(message).mapTo(hashSetOf()) { it.id }
             versions += ids.size; check(versions <= 80000)
             check(messages.put(message.id, message.sessionId to ids) == null)
         }
-        storage.visitEntitiesStrict("generated_voice_messages", GeneratedVoiceMessage.serializer()) { key, voice ->
+        visit("generated_voice_messages", GeneratedVoiceMessage.serializer()) { key, voice ->
             check(key == voice.id)
             val owner = requireNotNull(messages[voice.messageId]) { "RECORDING_MESSAGE_MISSING" }
             check(owner.first == voice.sessionId) { "RECORDING_SESSION_MISMATCH" }
@@ -90,10 +109,10 @@ internal object DesktopFullBackupGraphValidation {
             }
             // Live-root absolute audio paths are installed later; the staged receipt was verified by its publisher.
         }
-        DesktopSessionInventory(root).read("validation-only") // One pass validates all physical owner names.
+        DesktopSessionInventory(root).read("validation-only", selectedPaths) // Full or selected physical owner evidence.
         val nodes = hashMapOf<String, Pair<String, List<String>>>()
         var edges = 0
-        storage.visitEntitiesStrict("memory_nodes", MemoryNode.serializer()) { key, node ->
+        visit("memory_nodes", MemoryNode.serializer()) { key, node ->
             check(key == node.id && node.sessionId in sessions)
             edges += node.childIds.size; check(edges <= 80000)
             check(nodes.put(node.id, node.sessionId to node.childIds) == null)
@@ -114,11 +133,11 @@ internal object DesktopFullBackupGraphValidation {
                 nodes.getValue(id).second.asReversed().forEach { stack.push(it to false) }
             }
         }
-        storage.visitEntitiesStrict("memory_states", MemorySessionState.serializer()) { key, state ->
+        visit("memory_states", MemorySessionState.serializer()) { key, state ->
             check(key == state.sessionId && state.sessionId in sessions)
             (state.activeNodeIds + state.legacyReferenceNodeIds).forEach { check(nodes[it]?.first == state.sessionId) }
         }
-        storage.visitEntitiesStrict("save_slots", SaveSlot.serializer()) { _, slot ->
+        visit("save_slots", SaveSlot.serializer()) { _, slot ->
             if (slot.schemaVersion == 8) {
                 val reference = requireNotNull(slot.packageRef)
                 check(reference.fileName.matches(Regex("[A-Za-z0-9_-]{1,128}\\.cbsave")))

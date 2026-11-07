@@ -7,7 +7,7 @@ import kotlinx.serialization.json.*
 
 /** Strict ownership inventory; damaged or unrecognized records never become deletion authority. */
 internal class DesktopSessionInventory(private val root: Path) {
-    suspend fun read(sessionId: String): Map<String, String> {
+    suspend fun read(sessionId: String, selectedPaths: Set<String>? = null): Map<String, String> {
         require(sessionId.matches(Regex("[A-Za-z0-9_-]{1,128}")))
         val owned = linkedMapOf<String, String>()
         // Only owner identities and hashes survive each record; total JSON is not retained.
@@ -24,6 +24,8 @@ internal class DesktopSessionInventory(private val root: Path) {
                     check(file.fileName.toString().matches(Regex("[A-Za-z0-9_-]{1,256}\\.json"))) { "存在未知会话文件；原文件保留" }
                     DesktopArchiveFiles.safe(file, false)
                     com.example.chatbar.desktop.backup.DesktopBackupRecords.requireSize(Files.size(file))
+                    val relative = "entities/$type/${file.fileName}"
+                    if (selectedPaths != null && relative !in selectedPaths) continue
                     val before = DesktopArchiveFiles.hash(file, recordBudget)
                     val value = Json.parseToJsonElement(Files.readString(file)).jsonObject
                     val ownerKey = when (type) { "chat_sessions" -> "id"; "vector_chunks" -> "sourceId"; else -> "sessionId" }
@@ -45,7 +47,7 @@ internal class DesktopSessionInventory(private val root: Path) {
                     check(id == expectedId) { "会话文件与记录身份不一致；原数据保留" }
                     if (owner == sessionId && (type != "vector_chunks" || value["sourceType"]?.jsonPrimitive?.content == "CHAT_MEMORY")) {
                         check(DesktopArchiveFiles.hash(file, recordBudget) == before)
-                        owned["entities/$type/${file.fileName}"] = before
+                        owned[relative] = before
                     }
                 }
             }
