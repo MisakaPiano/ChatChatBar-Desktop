@@ -43,6 +43,10 @@ internal object DesktopMergeRootPreparation {
                 }
             }
             checkSelection(selection.computer, pcEntities); checkSelection(selection.phone, phone.entities)
+            checkSelection(selection.replacedComputerUnits.values.toList(), pcEntities)
+            check(selection.replacedComputerUnits.isEmpty() || selection.incomingScope == phone.source.manifest.scope) {
+                "MERGE_RETAINED_SCOPE_CHANGED"
+            }
             val catalog = linkedMapOf<String, DesktopMergeSaveSlotPackage.Catalog>()
             for (unit in selection.phone) for ((path, value) in unit.records) {
                 if (DesktopBackupPolicy.entityType(path) != "save_slots" || value["packageRef"] == null || value["packageRef"] == JsonNull) continue

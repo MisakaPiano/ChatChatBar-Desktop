@@ -10,6 +10,7 @@ internal class DesktopMergePreview private constructor(
     private val incoming: Map<String, Unit>,
     private val identical: Set<String>,
     val pcFingerprint: String,
+    private val sourceScope: InspectionScope?,
 ) {
     enum class Choice { KEEP_PC, TAKE_PHONE, BOTH, SKIP }
     enum class Reason { SAME_ID_DIFFERENT_CONTENT, SAME_NAME, ACCOUNT_IDENTITY, OWNED_ID_COLLISION, CREDENTIAL_CONFLICT }
@@ -25,7 +26,9 @@ internal class DesktopMergePreview private constructor(
     }
     class Selection internal constructor(val computer: List<Unit>, val phone: List<Unit>,
         val forkIncomingUnits: Set<String>, val pcFingerprint: String,
-        val ignoredIncomingUnits: Set<String> = emptySet()) {
+        val ignoredIncomingUnits: Set<String> = emptySet(),
+        val replacedComputerUnits: Map<String, Unit> = emptyMap(),
+        val incomingScope: InspectionScope? = null) {
         override fun toString() = "MergeSelection(pc=${computer.size},phone=${phone.size},forks=${forkIncomingUnits.size})"
     }
 
@@ -34,12 +37,16 @@ internal class DesktopMergePreview private constructor(
         val computer = pc.toMutableMap()
         val phone = incoming.filterKeys { it !in identical }.toMutableMap()
         val forks = hashSetOf<String>()
+        val replaced = linkedMapOf<String, Unit>()
         conflicts.forEach { conflict ->
             val choice = choices.getValue(conflict.key)
             require(choice in conflict.choices) { "MERGE_CHOICE_NOT_APPLICABLE" }
             when (choice) {
                 Choice.KEEP_PC, Choice.SKIP -> phone.remove(conflict.key)
-                Choice.TAKE_PHONE -> conflict.pcKeys.forEach(computer::remove)
+                Choice.TAKE_PHONE -> {
+                    pc[conflict.key]?.let { replaced[conflict.key] = it }
+                    conflict.pcKeys.forEach(computer::remove)
+                }
                 Choice.BOTH -> {
                     // Same-name independent identities stay intact. Any colliding identity needs
                     // a complete dependency remapper, never a filename-only rename.
@@ -48,7 +55,7 @@ internal class DesktopMergePreview private constructor(
             }
         }
         return Selection(computer.values.toList(), phone.values.toList(), forks, pcFingerprint,
-            choices.filterValues { it == Choice.KEEP_PC || it == Choice.SKIP }.keys.toSet())
+            choices.filterValues { it == Choice.KEEP_PC || it == Choice.SKIP }.keys.toSet(), replaced, sourceScope)
     }
 
     companion object {
@@ -89,7 +96,7 @@ internal class DesktopMergePreview private constructor(
             // A PC unit may be named by several incoming conflicts. Conflicting TAKE/BOTH choices
             // are rechecked by the materializer's final dependency graph, not resolved by last write.
             val fingerprint = DesktopBackupPolicy.digest(pc.toSortedMap().entries.joinToString("\n") { "${it.key}:${it.value.signature}" }.toByteArray())
-            return DesktopMergePreview(conflicts, pc, phone, identical, fingerprint)
+            return DesktopMergePreview(conflicts, pc, phone, identical, fingerprint, scope)
         }
 
         private fun account(unit: Unit): List<JsonElement?> = unit.records.values.single().let {

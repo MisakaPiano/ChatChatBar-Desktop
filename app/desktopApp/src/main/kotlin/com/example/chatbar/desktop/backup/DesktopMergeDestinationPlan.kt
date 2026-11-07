@@ -110,9 +110,17 @@ internal class DesktopMergeDestinationPlan private constructor(
                 val mapped = backupJson.parseToJsonElement(DesktopBackupPolicy.mapResources(value) { reference, fields -> resource(pcNames, reference, fields) }.toString(Charsets.UTF_8)).jsonObject
                 add(DesktopMergeRecord(path, value), mapped, unit.category == "app_settings")
             }
-            for (unit in selection.phone) for ((path, value) in unit.records) {
+            for (unit in selection.phone) {
+                val retainedMedia = DesktopMergeRetainedMedia(selection.incomingScope, selection.replacedComputerUnits[unit.key], checkActive)
+                for ((path, value) in unit.records) {
                 checkActive(); val record = DesktopMergeRecord(path, value)
                 var mapped = mapper.rewrite(record) { reference, fields -> resource(phoneNames, reference, fields) }
+                retainedMedia.fields(record)?.let { retained ->
+                    val mappedMedia = backupJson.parseToJsonElement(DesktopBackupPolicy.mapResources(retained) { reference, fields ->
+                        resource(pcNames, reference, fields)
+                    }.toString(Charsets.UTF_8)).jsonObject
+                    mapped = JsonObject(mapped + mappedMedia)
+                }
                 if (record.type == "chat_message_indexes" && "fileFingerprint" in mapped) mapped = JsonObject(mapped + ("fileFingerprint" to JsonPrimitive(0)))
                 if (record in packageSlots || packageSlots.any { it.relative == record.relative }) {
                     val reference = mapped.getValue("packageRef").jsonObject
@@ -121,6 +129,7 @@ internal class DesktopMergeDestinationPlan private constructor(
                         "byteLength" to JsonPrimitive(0))))) // Publisher replaces this with verified output length.
                 }
                 add(record, mapped, unit.category == "app_settings")
+                }
             }
             val packages = packageSlots.map { slot ->
                 val source = requireNotNull(slot.text("packageRef.fileName"))
