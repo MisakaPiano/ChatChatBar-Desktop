@@ -46,13 +46,15 @@ class ModelRepository(
     private val initializationMutex = Mutex()
     private var initialized = false
 
-    suspend fun initialize() = initializationMutex.withLock {
-        if (initialized) return@withLock
-        migrateLegacyPlanningModel()
-        refreshModelCache()
-        refreshEmbeddingCache()
-        refreshEmbeddingModelCache()
-        initialized = true
+    suspend fun initialize() = storage.withNormalOperation {
+        initializationMutex.withLock {
+            if (initialized) return@withLock
+            migrateLegacyPlanningModel()
+            refreshModelCache()
+            refreshEmbeddingCache()
+            refreshEmbeddingModelCache()
+            initialized = true
+        }
     }
 
     private suspend fun refreshModelCache() {
