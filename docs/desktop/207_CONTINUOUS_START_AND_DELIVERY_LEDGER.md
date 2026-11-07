@@ -1,3 +1,7 @@
+2026-11-08 当前fc87：R145原11767B/15c33efc两XML4完整PASS，SHA/CRC/source/空stderr已核；实际图库新2验证read前2并发/详情独立/退出队列取消/失败重开及APNG帧等待让出，原尺寸重组/omitted2邻接通过。R144原320B/b10394df实际FAIL仅source0XML，唯一测试缺getOrNull import；9f只补引用，生产256d不变，原job与ZIP保留，不称业务反例。1d图库维护缺口限定闭合未交付；当前其余维护14/test5及clear-import6支持分源/源码边界已登记，R48有效description6与旧R46/R47/R49失败不混。新R146控1d30/run42404690351只验synthetic typed draft/history各160MiB/256MiB子进程，仍live不提前PASS。314整体false/315实际用户选择保持；公开1244/db7/sign26、四身份全部ID/T11T23/真人原分组不变，无本机JVM/真实根/新包公发，集中完整批次继续。
+
+下方历史保留。
+
 2026-11-08 当前256d：历史网格原先仅采样无并发预算，现独立2名额在bounded读取前准入并贯穿解码/发布；动画原路径保留、帧等待让出、退出/错误释放，完整详情不受图库锁。R144控a1af443/run42403370829仅新实际Compose2+原尺寸/omitted2在云验，未提前PASS；旧像素尺寸结果保留、不称OOM已复现。新增Fish5/SaveSlot4/shared测试9/request-memory9/image维护33支持限定映射只复用原完整方法，不是新功能/新跑；实际透明边界另沿R04、alpha沿R69，原警告保留，315依赖仍pending。314整体false，当前无新包公发/本机JVM/真实根；公开1244/db7/sign26、四身份全部ID/T11T23/真人原分组保持。集中完整批次继续，所有原件失败取消保留。
 
 下方历史保留。
