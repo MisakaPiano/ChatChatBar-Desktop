@@ -54,6 +54,12 @@ internal class DesktopMergePreview private constructor(
                 }
             }
         }
+        for ((key, original) in replaced) {
+            val candidate = phone.getValue(key)
+            val retained = DesktopMergeRetainedMedia(sourceScope, original) {}.missingImageMessages(candidate)
+            if (retained.isNotEmpty()) computer["retained:$key"] = Unit("retained:$key", original.category,
+                original.label, retained, original.signature)
+        }
         return Selection(computer.values.toList(), phone.values.toList(), forks, pcFingerprint,
             choices.filterValues { it == Choice.KEEP_PC || it == Choice.SKIP }.keys.toSet(), replaced, sourceScope)
     }
