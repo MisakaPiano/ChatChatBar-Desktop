@@ -11,3 +11,9 @@ Desktop原数字X/Y以显示时的旧center.copy生成整个坐标，实际Panel
 同区另外两项核对：位置字段原共用默认studio:X/Y历史key，切到恰好同数值的另一人物不会触发authority变化，旧局部undo可能写到新人物。后继沿既有StudioNumericInput的数字等价echo/blur，用model/person scope和key隔离；不改全局或局部历史算法。V5原整数百分比投影把保存的17.3/28.7显示17/29，后继字段和人物摘要采用固定上游的一位小数展示，中心原值不舍入、不改存储。R27专测真实共享history+CtrlZ的人物隔离及序列化草稿重新开编辑器后的显示；原热输入是否保留raw按原echo机制区分，不把roundToInt源码推断成已发生丢字。
 
 默认650dp工具窗还需扣除原标题栏/内边距，固定300dp画布与全部控件直接放在无滚动Column可能将Y或重置压缩。R29以真实DesktopImageToolFrame的650/480高Scene检查实际输入/重置可见高度至少24px及滚动可达，并实际改两轴后重置；不是只检查bottom不越界。后继仅给原控制区增加一个有界垂直滚动body，保留画布/控件和既有标题、输入、历史所有者，不扩大全UI重构。业务旧反例/最终后继待原件，未冒称所有设备已验收。
+
+R25（42345968288/control9045，normalc9f）原3业务FAIL/0ERROR/SKIP：先X90后Y70实际得到(.2,.7)，位置admission在首个model-switched失败，模式/重置在首个自动模式跨模型失败，后两者的旧后续子分支未执行。R26（42346062584/control8ac4，normal239）与R25同原三方法文件blob，原3+Phase7Studio10=13PASS；人物停用/自动模式拒绝及正常正例完整执行。原13不覆盖后续NumericInput/scope改动。
+
+R27（42346307027/controld38b，normal59d）原2业务FAIL：真实CtrlZ将R1旧20写进本来90的R2，以及初次从保存值读出17/29而非17.3/28.7。后继578的R28（42346422487/control3983）同fixture文件，原PositionEditing5+Phase7Studio10+ManualUndo1=16PASS、0FAIL/ERROR/SKIP。原共享history、CtrlZ隔离与返回R1正常undo、序列化草稿重新开编辑器后的两轴小数均完整执行。全局/局部history算法没改。
+
+R25/R26原ZIP分别15795B/SHA `6b89af028b495207b6240a9d2676810c5dad429ad6552fe9e0a13c26e7d0adec`、13048B/SHA `7293d1f3af86988623f6ec103ea5abd5e5fdee04dc2acf190aa901c9552f4160`；R27/R28分别11887B/SHA `011aa40bc7b368b895ac2c7df53710fc6be1f5c9a673a8ae24a8a133c12dda8d`、15418B/SHA `b1c585223e5acc9e98c5ebfaa5bba6a8742e51bccf5627ce00f3c315f356dd77`。四原件SHA/CRC/source/所有XML已核，原失败保留；13与16范围重叠不相加。81a的滚动body改变位置组件后，默认/短高度及整组R30仍需后继原件，不拿16代验当前全部布局。

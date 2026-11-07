@@ -1,0 +1,9 @@
+# 朋友圈正文与发布人物编辑的原证明复用
+
+2026-11-07，核对固定141→12e中的32906a76两个具体增量。官方MomentRepository.updatePostContent允许显式选择发布人物并改正文，空名字/空正文和失败占位拒绝；不改原图片、点赞、私密状态、任务或动态身份。MomentPostEditor以稳定sender key区分同名人物，并允许选择角色卡本身的空person id。
+
+Desktop实际入口为动态“编辑动态文字”→原发布者/角色卡/人物选择→正文→保存，沿DesktopMomentsController.edit到DesktopMomentStore.edit。共享MomentPostEditing.senderOptions保留同名人物不同id与头像优先级，卡级作者可显式清空原人物id/头像。Desktop用原mutate准入重读最新post后只改这些字段，不采用过期全对象覆盖。当前Controller这一edit函数体与原162相等，不据此声称整个Controller相等。
+
+MomentRepository、MomentPostEditing、DesktopMomentStore、DesktopMomentsPanel及三个测试文件共七blob与完整162原source57011e精确相同。原Shared MomentPostEditing两方法、DesktopStore显式作者编辑一方法、DesktopMomentsPanel一方法共4方法逐XML/SHA/CRC已核全PASS：包括真实两宽度UI保存、卡级作者、私密/点赞/图片保留，存储非法输入不改原post，头像与同名选择身份。不是新增4次执行或整个相册/调度/朋友圈验收。回执`OWNER_MOMENT_EDIT_REUSE.json`引用原完整162两ZIP与原方法名，不额外重跑全套。
+
+314只补32906a76的MomentRepository与MomentPostEditor两个具体delta等位，其他朋友圈UI/相册/编辑角色图提示词和整个固定目标仍按各自实际范围继续。用户已经通过的A3图片结果显示保留，不重复追问；本组没有改运行代码、Prompt或用户数据，也没有新包/公发。

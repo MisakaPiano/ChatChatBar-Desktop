@@ -2911,8 +2911,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Actual Desktop modal uses shared stable sender options and invokes original controller/store edit to re-read and change only trimmed text, explicit nullable author/name/avatar. Shared repository and UI/store/test seven blobs exactly match full162; selected original shared2/store1/UI1 methods passed, including same-name ids, card author nulls and two-width actual UI retaining media/private/likes/task identity. Controller edit body is unchanged. Narrow four-method reuse only; no new run, entire album/scheduler/provider or manual acceptance claim.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/MomentRepository.kt",
@@ -2922,7 +2922,10 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "docs/desktop/329_MOMENT_EDIT_OWNER_REUSE.md",
+        "OWNER_MOMENT_EDIT_REUSE.json"
+      ]
     },
     {
       "id": "32906a76f2b85fce68285a146092ad91fd3f75e1:app/app/src/main/java/com/example/chatbar/domain/moment/MomentPostEditing.kt",
@@ -3003,11 +3006,14 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Actual Desktop modal uses shared stable sender options and invokes original controller/store edit to re-read and change only trimmed text, explicit nullable author/name/avatar. Shared repository and UI/store/test seven blobs exactly match full162; selected original shared2/store1/UI1 methods passed, including same-name ids, card author nulls and two-width actual UI retaining media/private/likes/task identity. Controller edit body is unchanged. Narrow four-method reuse only; no new run, entire album/scheduler/provider or manual acceptance claim.",
       "candidateOwners": [],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "docs/desktop/329_MOMENT_EDIT_OWNER_REUSE.md",
+        "OWNER_MOMENT_EDIT_REUSE.json"
+      ]
     },
     {
       "id": "32906a76f2b85fce68285a146092ad91fd3f75e1:app/app/src/main/java/com/example/chatbar/ui/moments/MomentsScreen.kt",
@@ -17614,6 +17620,16 @@
     "matchedMethods": 24,
     "newRuns": 0,
     "currentStorageBodySameExceptHelperVisibility": true,
+    "completeWholeInventory": false
+  },
+  "momentEditReview": {
+    "mappedDeltas": [
+      "32906a76f2b85fce68285a146092ad91fd3f75e1:app/app/src/main/java/com/example/chatbar/data/repository/MomentRepository.kt",
+      "32906a76f2b85fce68285a146092ad91fd3f75e1:app/app/src/main/java/com/example/chatbar/ui/moments/MomentPostEditor.kt"
+    ],
+    "originalRun": 42085881455,
+    "matchedMethods": 4,
+    "newRuns": 0,
     "completeWholeInventory": false
   }
 }
