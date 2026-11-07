@@ -85,7 +85,10 @@ class DesktopMergeRestoreModesTest {
         val p = preview(records, emptyMap(), scope("models", "resources", "themeMode")).modePlan(DesktopBackupRestoreMode.REPLACE_SELECTED)
         DesktopMergeDestinationPlan.create(p.selection, emptyMap(), emptyMap()).use { plan ->
             assertTrue("entities/character_cards/c.json" in plan.entities)
-            assertTrue("entities/model_configs/m.json" in plan.entities && "entities/format_cards/f.json" in plan.entities && "entities/world_books/w.json" in plan.entities)
+            val retained = "${plan.entities.keys}; ${p.warnings}"
+            assertTrue("entities/model_configs/m.json" in plan.entities, "Required model missing: $retained")
+            assertTrue("entities/format_cards/f.json" in plan.entities, "Required format missing: $retained")
+            assertTrue("entities/world_books/w.json" in plan.entities, "Required world book missing: $retained")
             assertFalse("entities/model_configs/unused.json" in plan.entities || "entities/world_books/unused.json" in plan.entities)
             val settings = plan.entities.getValue("entities/app_settings.json")
             assertEquals(1.4, settings["chatBubbleFontScale"]!!.jsonPrimitive.double)
