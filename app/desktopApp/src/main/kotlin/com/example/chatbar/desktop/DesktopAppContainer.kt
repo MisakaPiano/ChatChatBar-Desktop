@@ -351,6 +351,13 @@ class DesktopAppContainer internal constructor(
             },
         ).also { editor ->
             editor.promptBudget = editorBudgetOwner.value
+            editor.imagePromptTools = {
+                DesktopCharacterPromptTools(novelAiInfrastructure.suggestions, novelAiInfrastructure.translations,
+                    settingsRepository.appSettings.map { it.novelAiPromptTranslationConsent == com.example.chatbar.data.local.entity.NovelAiPromptTranslationConsent.ENABLED },
+                    { enabled -> settingsRepository.updateAppSettings { it.copy(novelAiPromptTranslationConsent =
+                        if (enabled) com.example.chatbar.data.local.entity.NovelAiPromptTranslationConsent.ENABLED
+                        else com.example.chatbar.data.local.entity.NovelAiPromptTranslationConsent.DISABLED) } })
+            }
             editor.cardAi = DesktopCharacterCardAiController(editor, settingsRepository, effectiveModelResolver,
                 taskRuntime, dataOperationCoordinator, stream = { _, stage, messages, model, diagnostics ->
                     formatCardAiTransportOwner.value.streamCharacterCardCandidate(stage, messages, model, diagnostics)

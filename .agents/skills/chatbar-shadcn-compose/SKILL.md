@@ -5,6 +5,8 @@ description: Build or migrate ChatBar Android UI using shadcn/ui design principl
 
 # ChatBar shadcn Compose
 
+Structured character detail's image Prompt reuses `StudioPromptField` through `DesktopCharacterImagePromptField`, including local tag candidates, raw-text Chinese overlays and isolated expanded editing. It remains inside `CharacterPersonWorkspace`'s draft/person/detail key; keep the same scoped history and captured-identity publication guard when rearranging this section. The translation toggle changes the existing global display preference, never the stored Prompt text.
+
 Desktop Moments uses `DesktopMomentFeedCard` inside a bounded feed, with author/body/image alignment, an avatar gutter and compact footer actions. `DesktopVersionControls` shares chat alternative arrow/count styling with retained Moment image selection; labels and selection/persistence owners remain caller-specific. Actual-Panel synthetic narrow/wide tests retain screenshots through `CCB_FORMAT_AI_REVIEW_DIR`.
 
 Role cards keep expansion while any child in the stable Prompt editing group (tabs/input/expand) has focus; header enable/order/delete controls must not auto-expand a collapsed Prompt; a disposed positive/negative field must not collapse the card or overwrite group focus. Role inline headers combine tabs, modal expand and position, while generic Prompt fields retain their original minimum; compact role text grows by content under the existing220dp scroll cap. Studio primary history/viewer/media actions share one wrapping workspace toolbar, distinct from the pane layout chooser and fit/reset. Compact thumbnails retain pane-open and viewer-double-click gestures.

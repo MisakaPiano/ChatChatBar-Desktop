@@ -117,6 +117,7 @@ internal class DesktopCharacterEditorController(
     internal var promptBudget: DesktopEditorBudgetController? = null
     internal var appearanceAi: DesktopCharacterAppearanceController? = null
     internal var cardImages: DesktopCharacterImageController? = null
+    internal var imagePromptTools: (() -> DesktopCharacterPromptTools)? = null
     internal val canUseCardAi: Boolean get() = _state.value.let { s ->
         s.card != null && !s.busy && s.draftSessionId != null &&
             !desktopCharacterEditorPresentation(s).readOnly && s.problem !in setOf(
@@ -374,6 +375,16 @@ internal class DesktopCharacterEditorController(
 
     fun updateCharacter(id: String, transform: (CharacterInfo) -> CharacterInfo) = edit { card ->
         card.copy(characters = card.characters.map { if (it.id == id) transform(it) else it })
+    }
+
+    /** Tag/expanded-editor callbacks belong to the captured card draft and person, never current selection. */
+    internal fun updateCharacterImagePrompt(sessionId: String, cardId: String, personId: String, text: String): Boolean {
+        val current = _state.value
+        val card = current.card ?: return false
+        if (current.draftSessionId != sessionId || card.id != cardId || card.editMode != CharacterEditMode.STRUCTURED ||
+            card.characters.count { it.id == personId } != 1) return false
+        updateCharacter(personId) { it.copy(imagePrompt = text) }
+        return _state.value.card?.characters?.singleOrNull { it.id == personId }?.imagePrompt == text
     }
 
     fun removeCharacter(id: String) = edit { card ->

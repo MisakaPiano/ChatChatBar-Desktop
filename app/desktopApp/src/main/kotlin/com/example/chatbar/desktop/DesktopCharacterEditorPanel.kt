@@ -648,7 +648,12 @@ private fun CharacterEntryFields(entry: CharacterInfo, controller: DesktopCharac
     EditorField(t(DesktopUiText.BACKGROUND_FIELD), entry.background, true) { v -> controller.updateCharacter(entry.id) { it.copy(background = v) } }
     EditorField(t(DesktopUiText.RELATIONSHIPS), entry.relationships, true) { v -> controller.updateCharacter(entry.id) { it.copy(relationships = v) } }
     EditorField(t(DesktopUiText.SPEAKING_STYLE), entry.speakingStyle, true) { v -> controller.updateCharacter(entry.id) { it.copy(speakingStyle = v) } }
-    EditorField(t(DesktopUiText.IMAGE_PROMPT), entry.imagePrompt, true) { v -> controller.updateCharacter(entry.id) { it.copy(imagePrompt = v) } }
+    val promptTools = controller.imagePromptTools
+    if (promptTools != null) DesktopCharacterImagePromptField(entry, controller, promptTools)
+    else {
+        StatusText("本地标签辅助未配置；仍可编辑人物提示词", DesktopBootstrapColors.warning)
+        EditorField(t(DesktopUiText.IMAGE_PROMPT), entry.imagePrompt, true) { v -> controller.updateCharacter(entry.id) { it.copy(imagePrompt = v) } }
+    }
     ImageSlot(t(DesktopUiText.APPEARANCE_IMAGE), entry.appearanceImage,
         { controller.chooseAppearance(entry.id, t(DesktopUiText.CHOOSE_IMAGE)) },
         { controller.clearAppearance(entry.id) }, controller, { controller.cropAppearance(entry.id, it) })
