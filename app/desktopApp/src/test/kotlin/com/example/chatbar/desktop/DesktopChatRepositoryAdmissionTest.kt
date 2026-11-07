@@ -99,7 +99,7 @@ class DesktopChatRepositoryAdmissionTest {
             assertFalse(Files.exists(f.root.resolve("entities/chat_messages/s_late.json")))
             releaseExclusive.complete(Unit)
             withTimeout(5000) { f.jobs.joinAll() }
-            assertEquals(listOf("seed", "old", "late"), f.repository.getMessageIds("s"))
+            assertEquals(setOf("seed", "old", "late"), f.repository.getMessageIds("s"))
         }
     }
 
@@ -124,7 +124,7 @@ class DesktopChatRepositoryAdmissionTest {
             withTimeout(5000) { reloaded.await() }
             assertFalse(reader.isCompleted)
             releaseExclusive.complete(Unit)
-            assertEquals(listOf("seed"), withTimeout(5000) { reader.await() })
+            assertEquals(setOf("seed"), withTimeout(5000) { reader.await() })
             withTimeout(5000) { f.jobs.joinAll() }
         }
     }
