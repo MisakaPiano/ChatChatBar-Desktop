@@ -14,7 +14,10 @@ class DesktopMomentStoreTest {
     @Test fun `explicit sender edit keeps post image and task identity including card author with null person id`() = runBlocking {
         val root = Files.createTempDirectory("moment-author-edit-"); val gate = DesktopDataOperationCoordinator()
         try {
-            val store = DesktopMomentStore(JsonFileStorage(root, gate), gate)
+            val storage = JsonFileStorage(root, gate)
+            val store = DesktopMomentStore(storage, gate)
+            val selectedPerson = CharacterInfo.create("Selected").copy(id = "person", appearanceImage = "images/avatar.png")
+            storage.saveEntity("character_cards", card.id, card.copy(characters = listOf(selectedPerson)), CharacterCard.serializer())
             val attempt = store.begin(MomentTask.create(card.id, session.id, 1), card, session)
             store.complete(attempt, attempt.placeholder.copy(isPlaceholder = false, text = "original",
                 imagePath = "images/retained.png", imagePrompt = "retained prompt", userLiked = true))
@@ -25,6 +28,7 @@ class DesktopMomentStoreTest {
             assertEquals(original.copy(text = "edited", senderCharacterId = sender.characterId,
                 senderName = sender.name, senderAvatar = sender.avatar, updatedAt = changed.updatedAt), changed)
             assertEquals(tasks, store.tasks())
+            storage.saveEntity("character_cards", card.id, card.copy(name = "Card", avatar = null), CharacterCard.serializer())
             store.edit(changed.id, changed.text, com.example.chatbar.domain.moment.MomentSender(null, "Card", null))
             val cardAuthored = store.posts().single()
             assertNull(cardAuthored.senderCharacterId); assertNull(cardAuthored.senderAvatar)

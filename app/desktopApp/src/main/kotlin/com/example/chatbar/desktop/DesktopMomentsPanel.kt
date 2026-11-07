@@ -249,7 +249,7 @@ internal fun DesktopMomentsPanel(controller: DesktopMomentsController,
             } }) { sender = it }
             LabeledField("正文", editText, multiline = true) { editText = it }
             BootstrapButton("保存", enabled = editText.isNotBlank() && sender.sender.name.isNotBlank()) {
-                act { controller.edit(post.id, editText, sender.sender); editing = null }
+                act { controller.edit(post.id, editText, sender.sender.takeUnless { sender.key == "original" }); editing = null }
             }
         } }
         deleting?.let { post -> MomentModal("删除这条动态？", { deleting = null }) {

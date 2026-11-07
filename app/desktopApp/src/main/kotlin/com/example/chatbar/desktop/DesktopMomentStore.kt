@@ -138,10 +138,24 @@ internal class DesktopMomentStore(
         val latest = post(id) ?: error("动态已删除")
         check(!latest.isPlaceholder); require(text.isNotBlank())
         require(sender == null || sender.name.isNotBlank())
+        // A selected object is only a stable card/person key, not an authoritative old snapshot.
+        // Null is the editor's explicit original-sender choice and must survive a missing card.
+        val currentSender = sender?.let { selected ->
+            requireMomentStorageId(latest.characterCardId)
+            val card = when (val read = storage.readEntityStrict("character_cards", latest.characterCardId, CharacterCard.serializer())) {
+                is JsonFileStorage.EntityReadResult.Valid -> read.value.also { check(it.id == latest.characterCardId) }
+                JsonFileStorage.EntityReadResult.Missing -> error("所属角色卡已不存在，请保留原发布者或重新选择")
+                else -> error("所属角色卡不可读取；原动态保留")
+            }
+            val key = selected.characterId?.let { "character:$it" } ?: "card"
+            com.example.chatbar.domain.moment.MomentPostEditing.senderOptions(card)
+                .singleOrNull { it.key == key }?.sender ?: error("所选人物已不存在，请重新选择")
+        }
+        require(currentSender == null || currentSender.name.isNotBlank())
         val updated = latest.copy(text = text.trim(),
-            senderCharacterId = if (sender == null) latest.senderCharacterId else sender.characterId,
-            senderName = sender?.name ?: latest.senderName,
-            senderAvatar = if (sender == null) latest.senderAvatar else sender.avatar)
+            senderCharacterId = if (currentSender == null) latest.senderCharacterId else currentSender.characterId,
+            senderName = currentSender?.name ?: latest.senderName,
+            senderAvatar = if (currentSender == null) latest.senderAvatar else currentSender.avatar)
         if (updated != latest) save(updated.copy(updatedAt = clock()))
     }
 
