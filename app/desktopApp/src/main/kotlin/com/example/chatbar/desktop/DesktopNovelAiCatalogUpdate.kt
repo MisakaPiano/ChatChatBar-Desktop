@@ -7,6 +7,7 @@ import java.nio.file.*
 import java.security.MessageDigest
 import java.sql.DriverManager
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.*
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
@@ -14,7 +15,11 @@ import okhttp3.Request
 
 /** Immutable DB/index first, atomic authority pointer last. Old generations remain safe for readers. */
 internal class DesktopNovelAiCatalogUpdate(private val catalog: DesktopNovelAiTagCatalog,
-    private val client: OkHttpClient = ProxyAwareClient.builder().build()) {
+    private val client: OkHttpClient = ProxyAwareClient.builder()
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(60, TimeUnit.SECONDS)
+        .writeTimeout(15, TimeUnit.SECONDS)
+        .build()) {
     suspend fun install(info: DanbooruCatalogUpdateInfo, report: (String) -> Unit) = withContext(Dispatchers.IO) {
         val current = catalog.catalogMetadata() // A corrupt current authority is never overwritten.
         check(current.sourceSha == info.currentMetadata.sourceSha)
