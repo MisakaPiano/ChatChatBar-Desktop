@@ -55,7 +55,8 @@ class DesktopPostProcessResultsTest {
                 val work = Files.createDirectory(base.resolve("export-$mode"))
                 mapping.export(work, CURRENT_DESKTOP_BACKUP_CODE, selection = selection).use { snapshot ->
                     val file = base.resolve("$mode.cbbackup")
-                    DesktopFullBackupWriter.export(snapshot.files, file, null, selection = selection)
+                    try { DesktopFullBackupWriter.export(snapshot.files, file, null, selection = selection) }
+                    catch (failure: Exception) { throw AssertionError("Post-process backup mode=$mode", failure) }
                     DesktopFullBackupStaging.prepare(file, null, Files.createDirectory(base.resolve("inspect-$mode"))).use { staged ->
                         if (mode == "off") {
                             assertTrue(staged.entities.keys.none { it.contains(DesktopPostProcessResults.KEY) })
