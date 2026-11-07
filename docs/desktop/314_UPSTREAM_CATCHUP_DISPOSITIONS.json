@@ -2568,6 +2568,42 @@
       "evidence": [
         "OWNER_FISH_MAINTENANCE5_SUPPORT_SCOPED_REUSE.json"
       ]
+    },
+    {
+      "id": "UPSTREAM_SAVE_SLOT_MAINTENANCE_SUPPORT_D3CF2AA9",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Four full upstream SaveSlot skill-reference deltas only. Actual Desktop SaveSlot service/archive retain original coordinator/journal transactions, bounded256MiB capacity, current-only snapshot and independent whole-backup memory histories. Selected per-session archives/media stay independent of current chat image/voice switches; explicit empty archive families replace while unselected PC packages retain original bytes. Mapping uses declared relative source inventory keys (no filesDir-alias package relativization), package preparation owns validated JSONL identity/proof rewrite and final verified packageRef size. Existing R15 native archive v8/legacy2+narrative actual export/import/restore/duplicate/reopen1 and R08 selected merge/archive1 whole methods reused separately. Current Service/Archive/test whole blobs matchR15; later merge alias/cancel/identity changes keep own scoped receipts, not whole-file equality withR08. Narrative metadata defaults FOCUS and restores via session journal/createSession instead of Android stale updateSession route; no model-facing Prompt315 adoption. No Android device/all-sized package or new human/provider/CI result.",
+      "reviewSource": "0af801e79a771542d99aa2e7c0015e65ea8cbc90",
+      "evidence": [
+        "OWNER_SAVE_SLOT4_MAINTENANCE_SUPPORT_REUSE.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_SAVE_SLOT_MAINTENANCE_SUPPORT_1A692604",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Four full upstream SaveSlot skill-reference deltas only. Actual Desktop SaveSlot service/archive retain original coordinator/journal transactions, bounded256MiB capacity, current-only snapshot and independent whole-backup memory histories. Selected per-session archives/media stay independent of current chat image/voice switches; explicit empty archive families replace while unselected PC packages retain original bytes. Mapping uses declared relative source inventory keys (no filesDir-alias package relativization), package preparation owns validated JSONL identity/proof rewrite and final verified packageRef size. Existing R15 native archive v8/legacy2+narrative actual export/import/restore/duplicate/reopen1 and R08 selected merge/archive1 whole methods reused separately. Current Service/Archive/test whole blobs matchR15; later merge alias/cancel/identity changes keep own scoped receipts, not whole-file equality withR08. Narrative metadata defaults FOCUS and restores via session journal/createSession instead of Android stale updateSession route; no model-facing Prompt315 adoption. No Android device/all-sized package or new human/provider/CI result.",
+      "reviewSource": "0af801e79a771542d99aa2e7c0015e65ea8cbc90",
+      "evidence": [
+        "OWNER_SAVE_SLOT4_MAINTENANCE_SUPPORT_REUSE.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_SAVE_SLOT_MAINTENANCE_SUPPORT_81F54498",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Four full upstream SaveSlot skill-reference deltas only. Actual Desktop SaveSlot service/archive retain original coordinator/journal transactions, bounded256MiB capacity, current-only snapshot and independent whole-backup memory histories. Selected per-session archives/media stay independent of current chat image/voice switches; explicit empty archive families replace while unselected PC packages retain original bytes. Mapping uses declared relative source inventory keys (no filesDir-alias package relativization), package preparation owns validated JSONL identity/proof rewrite and final verified packageRef size. Existing R15 native archive v8/legacy2+narrative actual export/import/restore/duplicate/reopen1 and R08 selected merge/archive1 whole methods reused separately. Current Service/Archive/test whole blobs matchR15; later merge alias/cancel/identity changes keep own scoped receipts, not whole-file equality withR08. Narrative metadata defaults FOCUS and restores via session journal/createSession instead of Android stale updateSession route; no model-facing Prompt315 adoption. No Android device/all-sized package or new human/provider/CI result.",
+      "reviewSource": "0af801e79a771542d99aa2e7c0015e65ea8cbc90",
+      "evidence": [
+        "OWNER_SAVE_SLOT4_MAINTENANCE_SUPPORT_REUSE.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_SAVE_SLOT_MAINTENANCE_SUPPORT_286916E3",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Four full upstream SaveSlot skill-reference deltas only. Actual Desktop SaveSlot service/archive retain original coordinator/journal transactions, bounded256MiB capacity, current-only snapshot and independent whole-backup memory histories. Selected per-session archives/media stay independent of current chat image/voice switches; explicit empty archive families replace while unselected PC packages retain original bytes. Mapping uses declared relative source inventory keys (no filesDir-alias package relativization), package preparation owns validated JSONL identity/proof rewrite and final verified packageRef size. Existing R15 native archive v8/legacy2+narrative actual export/import/restore/duplicate/reopen1 and R08 selected merge/archive1 whole methods reused separately. Current Service/Archive/test whole blobs matchR15; later merge alias/cancel/identity changes keep own scoped receipts, not whole-file equality withR08. Narrative metadata defaults FOCUS and restores via session journal/createSession instead of Android stale updateSession route; no model-facing Prompt315 adoption. No Android device/all-sized package or new human/provider/CI result.",
+      "reviewSource": "0af801e79a771542d99aa2e7c0015e65ea8cbc90",
+      "evidence": [
+        "OWNER_SAVE_SLOT4_MAINTENANCE_SUPPORT_REUSE.json"
+      ]
     }
   ],
   "deltas": [
@@ -9082,8 +9118,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Four full upstream SaveSlot skill-reference deltas only. Actual Desktop SaveSlot service/archive retain original coordinator/journal transactions, bounded256MiB capacity, current-only snapshot and independent whole-backup memory histories. Selected per-session archives/media stay independent of current chat image/voice switches; explicit empty archive families replace while unselected PC packages retain original bytes. Mapping uses declared relative source inventory keys (no filesDir-alias package relativization), package preparation owns validated JSONL identity/proof rewrite and final verified packageRef size. Existing R15 native archive v8/legacy2+narrative actual export/import/restore/duplicate/reopen1 and R08 selected merge/archive1 whole methods reused separately. Current Service/Archive/test whole blobs matchR15; later merge alias/cancel/identity changes keep own scoped receipts, not whole-file equality withR08. Narrative metadata defaults FOCUS and restores via session journal/createSession instead of Android stale updateSession route; no model-facing Prompt315 adoption. No Android device/all-sized package or new human/provider/CI result.",
       "candidateOwners": [
         {
           "path": ".agents/skills/chatbar-save-slot/SKILL.md",
@@ -9092,8 +9128,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_SAVE_SLOT_MAINTENANCE_SUPPORT_D3CF2AA9"
+      ],
+      "evidence": [
+        "OWNER_SAVE_SLOT4_MAINTENANCE_SUPPORT_REUSE.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:.agents/skills/chatbar-shadcn-compose/SKILL.md",
@@ -11789,8 +11830,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Four full upstream SaveSlot skill-reference deltas only. Actual Desktop SaveSlot service/archive retain original coordinator/journal transactions, bounded256MiB capacity, current-only snapshot and independent whole-backup memory histories. Selected per-session archives/media stay independent of current chat image/voice switches; explicit empty archive families replace while unselected PC packages retain original bytes. Mapping uses declared relative source inventory keys (no filesDir-alias package relativization), package preparation owns validated JSONL identity/proof rewrite and final verified packageRef size. Existing R15 native archive v8/legacy2+narrative actual export/import/restore/duplicate/reopen1 and R08 selected merge/archive1 whole methods reused separately. Current Service/Archive/test whole blobs matchR15; later merge alias/cancel/identity changes keep own scoped receipts, not whole-file equality withR08. Narrative metadata defaults FOCUS and restores via session journal/createSession instead of Android stale updateSession route; no model-facing Prompt315 adoption. No Android device/all-sized package or new human/provider/CI result.",
       "candidateOwners": [
         {
           "path": ".agents/skills/chatbar-save-slot/SKILL.md",
@@ -11799,8 +11840,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_SAVE_SLOT_MAINTENANCE_SUPPORT_1A692604"
+      ],
+      "evidence": [
+        "OWNER_SAVE_SLOT4_MAINTENANCE_SUPPORT_REUSE.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:app/app/src/androidTest/java/com/example/chatbar/domain/backup/BackupCredentialTransferTest.kt",
@@ -13034,8 +13080,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Four full upstream SaveSlot skill-reference deltas only. Actual Desktop SaveSlot service/archive retain original coordinator/journal transactions, bounded256MiB capacity, current-only snapshot and independent whole-backup memory histories. Selected per-session archives/media stay independent of current chat image/voice switches; explicit empty archive families replace while unselected PC packages retain original bytes. Mapping uses declared relative source inventory keys (no filesDir-alias package relativization), package preparation owns validated JSONL identity/proof rewrite and final verified packageRef size. Existing R15 native archive v8/legacy2+narrative actual export/import/restore/duplicate/reopen1 and R08 selected merge/archive1 whole methods reused separately. Current Service/Archive/test whole blobs matchR15; later merge alias/cancel/identity changes keep own scoped receipts, not whole-file equality withR08. Narrative metadata defaults FOCUS and restores via session journal/createSession instead of Android stale updateSession route; no model-facing Prompt315 adoption. No Android device/all-sized package or new human/provider/CI result.",
       "candidateOwners": [
         {
           "path": ".agents/skills/chatbar-save-slot/SKILL.md",
@@ -13044,8 +13090,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_SAVE_SLOT_MAINTENANCE_SUPPORT_81F54498"
+      ],
+      "evidence": [
+        "OWNER_SAVE_SLOT4_MAINTENANCE_SUPPORT_REUSE.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "81f5449803698a179549530c404e11018f9a62f8:app/app/src/androidTest/java/com/example/chatbar/domain/backup/BackupSaveSlotCompatibilityTest.kt",
@@ -19439,8 +19490,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Four full upstream SaveSlot skill-reference deltas only. Actual Desktop SaveSlot service/archive retain original coordinator/journal transactions, bounded256MiB capacity, current-only snapshot and independent whole-backup memory histories. Selected per-session archives/media stay independent of current chat image/voice switches; explicit empty archive families replace while unselected PC packages retain original bytes. Mapping uses declared relative source inventory keys (no filesDir-alias package relativization), package preparation owns validated JSONL identity/proof rewrite and final verified packageRef size. Existing R15 native archive v8/legacy2+narrative actual export/import/restore/duplicate/reopen1 and R08 selected merge/archive1 whole methods reused separately. Current Service/Archive/test whole blobs matchR15; later merge alias/cancel/identity changes keep own scoped receipts, not whole-file equality withR08. Narrative metadata defaults FOCUS and restores via session journal/createSession instead of Android stale updateSession route; no model-facing Prompt315 adoption. No Android device/all-sized package or new human/provider/CI result.",
       "candidateOwners": [
         {
           "path": ".agents/skills/chatbar-save-slot/SKILL.md",
@@ -19449,8 +19500,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_SAVE_SLOT_MAINTENANCE_SUPPORT_286916E3"
+      ],
+      "evidence": [
+        "OWNER_SAVE_SLOT4_MAINTENANCE_SUPPORT_REUSE.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "286916e34ba3b401b7115d5ea9c9ff096571e607:.agents/skills/chatbar-shadcn-compose/SKILL.md",

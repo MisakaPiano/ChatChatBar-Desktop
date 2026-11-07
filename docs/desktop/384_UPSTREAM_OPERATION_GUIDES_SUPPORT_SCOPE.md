@@ -25,3 +25,5 @@
 Fish标签JSON围栏1项测试支持由现有gateway3/严格标签1完整方法限域复用，源/test未变；BOM/inline/括号变体只按源码依据，不拆成已跑方法。原8消息wrapper用例未借为7尾新Prompt采纳，315保持实际用户决定边界。原始输出、未知字段/ID拒绝及修改发言确认保持；不重复先前Retry9+3。见 OWNER_FISH_ENVELOPE1_SUPPORT_SCOPED_REUSE.json，0新跑。
 
 5项Fish语音维护文本按既有shared/native owner限定映射，额外复用版本身份/多take重开/显式模型和输出上限3个既有完整方法；旧8消息黄金用例不当7尾Prompt采纳，先前Retry/JSON解析方法不重复计数。Android QQ/无障碍/Keystore不转成Desktop新后台任务或授权；语音迁移沿原类型/命名空间及原字节保全，真人原结果保持。见 OWNER_FISH_MAINTENANCE5_SUPPORT_SCOPED_REUSE.json，0新跑。
+
+4项SaveSlot维护参考已核完整变化：当前快照与全备份记忆历史分开、存档自带媒体独立选择、声明的package逻辑路径及重映射后实际大小、FOCUS默认/叙事数据恢复均沿既有owner。R15 v8/legacy/实际叙事包流程3及R08选择合并原存档1完整方法分源复用，后续alias等另有原scope，不冒称整R08 owner未变。容量256MiB及legacy/native事务边界保持，不借为新Prompt或真实安卓全兼容；见 OWNER_SAVE_SLOT4_MAINTENANCE_SUPPORT_REUSE.json，0新跑。
