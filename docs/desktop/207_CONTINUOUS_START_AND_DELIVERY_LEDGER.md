@@ -1,3 +1,7 @@
+2026-11-08 当前7886：合法documents/draft_assets后缀遗漏a128修正，R113旧两真实FAIL/R114原16081B-a0508968三套12完整PASS已核SHA/CRC/source/唯一XML/空stderr；doc368及Registry1a限域映射、367三存储d3原件复用已提交，314整体false。c03/5466追加Studio selected-empty全族及三modern所选缺失设置默认值/lastSeen归属；默认manual KEEP/SKIP不改，legacy absent scope不获新缺省。R115第一副本原ID期待错，第二scope有效反例；R116整体35XMLPASS+2FAIL，独立Studio第二完整PASS可复用、旧Inspector88拒绝期待失效，不能整体PASS。R117/R118同新Float夹具编译0body，7886只修test，R120cancelled保留。R119校正旧Studio、R121校正旧settings、R122现源12必要方法仍云验，未提前PASS；原ZIP/日志/取消全保留。R108/R110十九/R112两原scope保持，新的empty/默认语义不借旧21覆盖。继续剩余上游完整delta/实际缺口，集中批次不出小包催验。公开1244/db7/sign26、四身份/全部ID/T11T23/真人原分组保持，315其他Prompt等待用户回答，无本机JVM/真实根/公发。
+
+下方历史保留。
+
 2026-11-08 当前b8a工程检查点：已装词库桥R108三新+受影响原两完整PASS；现代模式R110十九有效完整方法与R112两实际仓库方法分源完成，R112原9611B/e76800e2…e9ad8核CRC/source/唯一XML/空stderr。逻辑m用真实Windows-safe ModelRepository读回，必要m/f/w、unused移除及默认字段后m真不存在均通过；旧raw m.json期待错误/空过负断言不借用。R109编译0/R111终态cancel0及全部原ZIP/日志保留。无liveCI。旧启动hook疑点已撤回：实际journal早期verifyAndResolve既有，不加源码/CI。下一继续剩余完整上游delta/具体功能缺口，314仍false；按用户集中批次交付，不出小候选催验。四身份/全部ID/T11T23/315其他未采纳/真人原分组/公开1244 db7 sign26不变，无本机JVM/真实根/新包公发。清理本批4完成描述，四原件保留。
 
 下方历史保留。
