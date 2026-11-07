@@ -73,11 +73,13 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
         return "已校验备份。请选择冲突处理方式；电脑当前数据尚未改变。" +
             DesktopHistoricalMomentAvatarPolicy.warning(result.missingHistoricalAvatars)
     }
-    fun effectiveConflicts(choices: Map<String, DesktopMergePreview.Choice>): List<DesktopMergePreview.Conflict> =
-        preview?.data?.effectiveConflicts(choices) ?: run {
-            check(!mutable.value.ready) { "MERGE_READY_PREVIEW_MISSING" }
-            emptyList()
-        }
+    fun effectiveConflicts(choices: Map<String, DesktopMergePreview.Choice>): List<DesktopMergePreview.Conflict> {
+        val state = mutable.value
+        if (!state.ready || closed) return emptyList()
+        // Disabled presentation can outlive the owned source while inspect/discard is running.
+        if (state.busy) return state.conflicts
+        return requireNotNull(preview) { "MERGE_READY_PREVIEW_MISSING" }.data.effectiveConflicts(choices)
+    }
 
     fun chooseConflict(choices: Map<String, DesktopMergePreview.Choice>, key: String,
         choice: DesktopMergePreview.Choice): Map<String, DesktopMergePreview.Choice> {

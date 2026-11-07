@@ -242,7 +242,8 @@ internal class DesktopMergePreview private constructor(
                 val type = if (key.startsWith("setting:")) "app_settings" else DesktopBackupPolicy.entityType(primary.key)
                 val value = primary.value
                 val label = if (groupedStudio && key.startsWith("novelai_studio_draft:")) "Studio 草稿与编辑历史" else if (type == "app_settings") key.removePrefix("setting:") else
-                    listOf("displayTitleOverride", "displayName", "name", "title", "senderName").firstNotNullOfOrNull { value[it]?.jsonPrimitive?.contentOrNull }.orEmpty()
+                    value["displayTitleOverride"]?.jsonPrimitive?.contentOrNull?.takeIf(String::isNotBlank)
+                        ?: listOf("title", "name", "displayName", "senderName").firstNotNullOfOrNull { value[it]?.jsonPrimitive?.contentOrNull }.orEmpty()
                 val signature = java.security.MessageDigest.getInstance("SHA-256")
                 items.keys.sorted().forEachIndexed { index, path ->
                     val record = items.getValue(path)

@@ -18,7 +18,7 @@ internal fun DesktopMergeImportPanel(controller: DesktopMergeImportController, s
     var imageFromPhone by remember(state.ready) { mutableStateOf<Boolean?>(null) }
     var confirmed by remember(state.ready) { mutableStateOf(false) }
     var detailsOpen by remember(state.failureDetails) { mutableStateOf(false) }
-    val activeConflicts = controller.effectiveConflicts(choices)
+    val activeConflicts = remember(choices, state.ready, state.conflicts) { controller.effectiveConflicts(choices) }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         DesktopDataSectionHeading("导入与合并")
         StatusText("保留电脑现有内容，将手机数据合并到新的独立目录。冲突由你选择，原目录和备份文件保留。")

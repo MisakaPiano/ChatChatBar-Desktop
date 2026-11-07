@@ -13,6 +13,43 @@ class DesktopMergeNamedAdoptionTest {
     private fun session(id: String, card: String, title: String) = "entities/chat_sessions/$id.json" to
         backupJson.encodeToJsonElement(ChatSession.serializer(), ChatSession(id, card, title, createdAt = 1, updatedAt = 1)).jsonObject
 
+    @Test fun `new owners cannot borrow existing embedded identities and an existing fork owns each rewrite once`() {
+        val person = CharacterInfo.create("Existing person").copy(id = "person")
+        val pcCard = CharacterCard("a", "Existing card", characters = listOf(person), createdAt = 1, updatedAt = 1)
+        val newCard = pcCard.copy(id = "b", name = "Entirely new card", characters = listOf(person.copy(name = "New person")))
+        val newSession = ChatSession("t", newCard.id, "Incoming", desktopPlayerRole = SessionPlayerRole(newCard.id, person.id), createdAt = 1, updatedAt = 1)
+        val pc = mapOf("entities/character_cards/a.json" to backupJson.encodeToJsonElement(CharacterCard.serializer(), pcCard).jsonObject)
+        val incoming = mapOf("entities/character_cards/b.json" to backupJson.encodeToJsonElement(CharacterCard.serializer(), newCard).jsonObject,
+            "entities/chat_sessions/t.json" to backupJson.encodeToJsonElement(ChatSession.serializer(), newSession).jsonObject)
+        fun verify(phone: Map<String, JsonObject>, choices: (DesktopMergePreview) -> Map<String, DesktopMergePreview.Choice>) {
+            val original = phone.toString()
+            val preview = DesktopMergePreview.create(pc, phone, emptyMap(), emptyMap())
+            DesktopMergeDestinationPlan.create(preview.select(choices(preview)), emptyMap(), emptyMap()).use { plan ->
+                val kept = plan.entities.getValue("entities/character_cards/a.json")
+                assertEquals(pc.getValue("entities/character_cards/a.json"), kept)
+                val imported = plan.entities.getValue("entities/character_cards/b.json")
+                val rewritten = imported.getValue("characters").jsonArray.single().jsonObject.getValue("id").jsonPrimitive.content
+                assertNotEquals("person", rewritten)
+                val role = plan.entities.getValue("entities/chat_sessions/t.json").getValue("desktopPlayerRole").jsonObject
+                assertEquals(rewritten, role.getValue("personId").jsonPrimitive.content)
+                assertEquals("b", role.getValue("cardId").jsonPrimitive.content)
+            }
+            assertEquals(original, phone.toString())
+        }
+        verify(incoming) { emptyMap() }
+        val forked = incoming + ("entities/character_cards/a.json" to
+            backupJson.encodeToJsonElement(CharacterCard.serializer(), pcCard.copy(name = "Imported fork")).jsonObject)
+        verify(forked) { preview -> preview.conflicts.associate { it.key to DesktopMergePreview.Choice.BOTH } }
+        val blankTitle = session("s", "a", "Daily").let { (path, value) ->
+            path to JsonObject(value + ("displayTitleOverride" to JsonPrimitive(" ")))
+        }
+        val blankPc = pc + blankTitle
+        val titled = mapOf(session("t", "a", "DAILY"))
+        val titlePreview = DesktopMergePreview.create(blankPc, titled, emptyMap(), emptyMap())
+        assertTrue(DesktopMergePreview.Reason.SAME_NAME in titlePreview.conflicts.single().reasons)
+        assertEquals(" ", blankPc.getValue(blankTitle.first).getValue("displayTitleOverride").jsonPrimitive.content)
+    }
+
     @Test fun `adopted and kept named cards preserve explicit person bindings without rewriting names`() {
         val oldPerson = CharacterInfo.create("Alice").copy(id = "pc-person")
         val incomingPerson = oldPerson.copy(id = "phone-person", name = "ＡLICE")

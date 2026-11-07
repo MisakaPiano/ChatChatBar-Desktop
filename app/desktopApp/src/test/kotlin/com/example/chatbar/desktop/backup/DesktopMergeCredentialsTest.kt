@@ -34,6 +34,42 @@ class DesktopMergeCredentialsTest {
     private fun preview(pc: Map<String, JsonObject>, phone: DesktopFullBackupStaging, credentials: DesktopMergeCredentials) =
         DesktopMergePreview.create(pc, phone.entities, emptyMap(), emptyMap(), credentialConflicts = credentials.dataConflictKeys)
 
+    @Test fun `different ID named model choices route protected keys and default references to the explicit target`() = runBlocking<Unit> {
+        for (choice in DesktopMergePreview.Choice.entries) {
+            val base = Files.createTempDirectory(Files.createDirectories(Path.of("build/preview-synthetic/merge-credentials").toAbsolutePath()), "named-")
+            try {
+                val incomingFiles = mapOf("entities/model_configs/phone-model.json" to CensusWireFixtures.model(id = "phone-model", key = "\"SYNTHETIC_PHONE_NAMED_KEY\"").toByteArray(),
+                    "entities/app_settings.json" to """{"defaultModelId":"phone-model"}""".toByteArray())
+                val input = Files.write(base.resolve("named.cbbackup"), CensusWireFixtures.bytes(prefs = "{}", files = incomingFiles))
+                val original = Files.readAllBytes(input)
+                val pc = mapOf("entities/model_configs/pc-model.json" to backupJson.parseToJsonElement(CensusWireFixtures.model(id = "pc-model", key = "null")).jsonObject)
+                val old = FakeStore().apply { values[DesktopCredentialKey.ModelApiKey("pc-model")] = "SYNTHETIC_PC_NAMED_KEY" }
+                val oldValues = old.values.toMap()
+                DesktopFullBackupStaging.prepare(input, null, Files.createDirectory(base.resolve("work"))).use { phone ->
+                    DesktopMergeCredentials.capture(pc, phone, old).use { credentials ->
+                        val preview = preview(pc, phone, credentials)
+                        val conflict = preview.conflicts.single()
+                        assertTrue(DesktopMergePreview.Reason.SAME_NAME in conflict.reasons)
+                        val selected = preview.select(mapOf(conflict.key to choice))
+                        DesktopMergeDestinationPlan.create(selected, emptyMap(), emptyMap()).use { plan ->
+                            val target = if (choice == DesktopMergePreview.Choice.BOTH) "phone-model" else "pc-model"
+                            assertEquals(target, plan.entities.getValue("entities/app_settings.json").getValue("defaultModelId").jsonPrimitive.content)
+                            root(base) { fresh, authority, pending ->
+                                credentials.writeNewRoot(fresh, authority, pending, plan, selected, emptyMap(), true)
+                                assertEquals(if (choice == DesktopMergePreview.Choice.TAKE_PHONE) "SYNTHETIC_PHONE_NAMED_KEY" else "SYNTHETIC_PC_NAMED_KEY",
+                                    pending.store.load(DesktopCredentialKey.ModelApiKey("pc-model")))
+                                assertEquals(if (choice == DesktopMergePreview.Choice.BOTH) "SYNTHETIC_PHONE_NAMED_KEY" else null,
+                                    pending.store.load(DesktopCredentialKey.ModelApiKey("phone-model")))
+                                assertFails { authority.verifyAndResolve() }
+                            }
+                        }
+                    }
+                }
+                assertEquals(oldValues, old.values); assertContentEquals(original, Files.readAllBytes(input))
+            } finally { check(base.toFile().deleteRecursively()) }
+        }
+    }
+
     @Test fun `different model keys participate in keep take and both choices without touching original store`() = runBlocking<Unit> {
         for (choice in listOf(DesktopMergePreview.Choice.KEEP_PC, DesktopMergePreview.Choice.TAKE_PHONE, DesktopMergePreview.Choice.BOTH)) fixture { base, phone, old, pc ->
             val before = old.values.toMap()

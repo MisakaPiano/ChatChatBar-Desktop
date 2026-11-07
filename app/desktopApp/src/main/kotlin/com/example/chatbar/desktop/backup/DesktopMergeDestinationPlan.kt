@@ -33,7 +33,6 @@ internal class DesktopMergeDestinationPlan private constructor(
             try {
             checkActive()
             val identity = DesktopMergeIdentity()
-            DesktopMergeNamedBindings.bind(selection, identity, checkActive)
             require(computerMedia.keys.none { it.startsWith("entities/") } && phoneMedia.keys.none {
                 it.startsWith("entities/") || it.startsWith("save_slot_packages/")
             }) { "MERGE_MEDIA_INPUT_CATEGORY" }
@@ -48,6 +47,7 @@ internal class DesktopMergeDestinationPlan private constructor(
                     require(declarations.size <= 80000) { "MERGE_DECLARATION_BUDGET" }
                 }
             }
+            DesktopMergeNamedBindings.bind(selection, identity, checkActive, declarations)
             // All messages, including historical-only nested ones, share a compact monotonically
             // assigned prefix. Their old lexical order survives equal timestamp/orderKey ties.
             val prefix = UUID.randomUUID().toString().replace("-", "")

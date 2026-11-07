@@ -4,7 +4,7 @@ import java.text.Normalizer
 import java.util.Locale
 import kotlinx.serialization.json.*
 
-/** Typed embedded identities of explicitly matched owners; no text renaming or source mutation. */
+/** Typed identities of selected owners; no text renaming or source mutation. */
 internal object DesktopMergeNamedBindings {
     private val groups = mapOf("characters" to "characters", "customDocuments" to "documents", "entries" to "world_entries",
         "characterBook.entries" to "world_entries", "characterBook" to "world_books")
@@ -21,7 +21,8 @@ internal object DesktopMergeNamedBindings {
         return current.map { it.jsonObject }
     }
 
-    fun bind(selection: DesktopMergePreview.Selection, identity: DesktopMergeIdentity, active: () -> Unit) {
+    fun bind(selection: DesktopMergePreview.Selection, identity: DesktopMergeIdentity, active: () -> Unit,
+        forkDeclarations: Set<Pair<String, String>> = emptySet()) {
         fun owner(unit: DesktopMergePreview.Unit, type: String, id: String): JsonObject {
             val value = unit.records.entries.single { DesktopBackupPolicy.entityType(it.key) == type }.value
             require(unit.category == type && value["id"]?.jsonPrimitive?.contentOrNull == id) { "MERGE_ALIAS_SOURCE_IDENTITY" }
@@ -36,14 +37,9 @@ internal object DesktopMergeNamedBindings {
                 item["id"]?.jsonPrimitive?.contentOrNull?.let { reserved.getValue(type) += it }
             }
         }
-        for (alias in selection.aliases) {
-            active()
-            val source = owner(alias.source, alias.type, alias.sourceId)
-            val target = owner(alias.target, alias.type, alias.targetId)
-            if (alias.sourceId != alias.targetId) identity.bind(alias.type, alias.sourceId, alias.targetId)
-            if (alias.type !in setOf("character_cards", "world_books")) continue
+        fun children(source: JsonObject, target: JsonObject?) {
             for ((path, type) in groups) {
-                val incoming = objects(source, path); val old = objects(target, path)
+                val incoming = objects(source, path); val old = target?.let { objects(it, path) }.orEmpty()
                 val field = if (path == "customDocuments") "fileName" else "name"
                 fun label(item: JsonObject) = name(item[field]?.jsonPrimitive?.contentOrNull.orEmpty())
                 val names = old.groupBy(::label); val counts = incoming.groupingBy(::label).eachCount()
@@ -51,6 +47,7 @@ internal object DesktopMergeNamedBindings {
                 for (item in incoming) {
                     active()
                     val id = item["id"]?.jsonPrimitive?.contentOrNull ?: continue
+                    if (target == null && (type to id) in forkDeclarations) continue
                     val normalized = label(item)
                     val sameName = if (normalized.isNotEmpty() && counts[normalized] == 1) names[normalized]?.singleOrNull()
                         ?.get("id")?.jsonPrimitive?.contentOrNull else null
@@ -63,6 +60,19 @@ internal object DesktopMergeNamedBindings {
                     if (id != result) identity.bind(type, id, result)
                 }
             }
+        }
+        for (alias in selection.aliases) {
+            active()
+            val source = owner(alias.source, alias.type, alias.sourceId)
+            val target = owner(alias.target, alias.type, alias.targetId)
+            if (alias.sourceId != alias.targetId) identity.bind(alias.type, alias.sourceId, alias.targetId)
+            if (alias.type in setOf("character_cards", "world_books")) children(source, target)
+        }
+        val matched = selection.aliases.mapTo(hashSetOf()) { it.source.key }
+        for (unit in selection.phone) {
+            active()
+            if (unit.category !in setOf("character_cards", "world_books") || unit.key in matched || unit.key in selection.forkIncomingUnits) continue
+            children(owner(unit, unit.category, requireNotNull(unit.primaryId)), null)
         }
     }
 }
