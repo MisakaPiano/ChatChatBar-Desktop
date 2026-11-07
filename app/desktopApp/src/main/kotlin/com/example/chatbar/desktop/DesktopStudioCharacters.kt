@@ -17,8 +17,11 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.chatbar.domain.image.*
 import kotlin.math.roundToInt
 
@@ -138,9 +141,12 @@ private fun DesktopCharacterPositionControls(draft: NovelAiStudioDraft, edit: ((
         edit { if (it.selectedModel == openedModel) it.withActiveSettings(it.activeSettings.copy(useCharacterPositions = enabled)) else it }
     }
     StudioChips("启用角色", active.map { it.id }, selected?.id, { id -> "角色 ${draft.characters.indexOfFirst { it.id == id } + 1}" }) { selectedId = it }
-    StatusText(if (draft.selectedModel == NovelAiImageModel.V4_5_FULL) "V4.5 · 5 × 5 网格吸附" else "V5 · 连续坐标")
+    StatusText(if (draft.selectedModel == NovelAiImageModel.V4_5_FULL) "V4.5 · 5 × 5 网格吸附" else "V5 · 连续坐标，网格仅作参考")
     val color = DesktopBootstrapColors.primary
     val border = DesktopBootstrapColors.border
+    val selectedText = DesktopBootstrapColors.primaryForeground
+    val otherText = DesktopBootstrapColors.foreground
+    val textMeasurer = rememberTextMeasurer()
     val requestSize = runCatching { desktopPositionRequestSize(draft) }.getOrNull()
     if (draft.imageGuidance.action == NovelAiGenerationAction.INPAINT)
         StatusText(if (requestSize == null) "请先配置有效的聚焦区域" else "聚焦重绘：位置相对于请求裁剪区域，而非整张原图")
@@ -149,15 +155,21 @@ private fun DesktopCharacterPositionControls(draft: NovelAiStudioDraft, edit: ((
     val ratio = requestSize?.let { it.width.toFloat() / it.height } ?: 1f
     val canvasWidth = minOf(maxWidth.value, maxHeight.value * ratio).dp
     Canvas(Modifier.width(canvasWidth).height(canvasWidth / ratio).background(DesktopBootstrapColors.input).border(1.dp, border)
+        .semantics { contentDescription = "角色位置画布，数字对应角色顺序；可点按或拖动，也可在下方输入百分比" }
         .pointerInput(custom, selected?.id) { detectTapGestures { if (custom && selected != null) currentSetter(DesignedCharacterCenter(it.x / size.width, it.y / size.height)) } }
         .pointerInput(custom, selected?.id) { detectDragGestures { change, _ -> if (custom && selected != null) { change.consume(); currentSetter(DesignedCharacterCenter(change.position.x / size.width, change.position.y / size.height)) } } }) {
-        if (draft.selectedModel == NovelAiImageModel.V4_5_FULL) (1..4).forEach { i ->
+        (1..4).forEach { i ->
             drawLine(border, Offset(size.width * i / 5, 0f), Offset(size.width * i / 5, size.height))
             drawLine(border, Offset(0f, size.height * i / 5), Offset(size.width, size.height * i / 5))
         }
-        active.forEachIndexed { index, role ->
+        active.withIndex().sortedBy { it.value.id == selected?.id }.forEach { (index, role) ->
             val c = NovelAiCharacterPositionPolicy.center(role, index, active.size, draft.selectedModel)
-            drawCircle(if (role.id == selected?.id) color else color.copy(alpha = .4f), if (role.id == selected?.id) 12.dp.toPx() else 8.dp.toPx(), Offset(c.x * size.width, c.y * size.height))
+            val point = Offset(c.x * size.width, c.y * size.height)
+            val chosen = role.id == selected?.id
+            drawCircle(if (chosen) color else color.copy(alpha = .4f), 13.dp.toPx(), point)
+            val label = textMeasurer.measure("${draft.characters.indexOfFirst { it.id == role.id } + 1}",
+                TextStyle(color = if (chosen) selectedText else otherText, fontSize = 12.sp))
+            drawText(label, topLeft = point - Offset(label.size.width / 2f, label.size.height / 2f))
         }
     }
     }

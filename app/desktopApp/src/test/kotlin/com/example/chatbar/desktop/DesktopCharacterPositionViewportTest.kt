@@ -26,7 +26,8 @@ class DesktopCharacterPositionViewportTest {
         for (height in listOf(650, 480)) {
             var draft by mutableStateOf(NovelAiStudioDraft(selectedModel = NovelAiImageModel.V5_FULL,
                 v5Settings = NovelAiGenerationSettings(model = NovelAiImageModel.V5_FULL, useCharacterPositions = true),
-                characters = listOf(NovelAiCharacterPromptDraft(id = "person", prompt = "Synthetic person", center = DesignedCharacterCenter(.2f, .3f)))))
+                characters = listOf(NovelAiCharacterPromptDraft(id = "person", prompt = "Synthetic person", center = DesignedCharacterCenter(.2f, .3f)),
+                    NovelAiCharacterPromptDraft(id = "other", prompt = "Synthetic other", center = DesignedCharacterCenter(.7f, .6f)))))
             val chrome = DesktopWindowChrome {}
             val recorder = DesktopChromeLayoutRecorder(chrome)
             val scene = ImageComposeScene(640, height, coroutineContext = edt) {
@@ -91,11 +92,16 @@ class DesktopCharacterPositionViewportTest {
             }
             try {
                 frames()
+                System.getenv("CCB_FORMAT_AI_REVIEW_DIR")?.let { directory ->
+                    val p = Path.of(directory).resolve("position-numbered-canvas-$height.png"); Files.createDirectories(p.parent)
+                    scene.render(System.nanoTime()).use { image -> image.encodeToData()!!.use { Files.write(p, it.bytes) } }
+                }
                 clickInput("X %"); val x = target("X %")
                 assertTrue(x.config[SemanticsActions.SetText].action!!.invoke(AnnotatedString("25"))); frames()
                 clickInput("Y %"); val y = target("Y %")
                 assertTrue(y.config[SemanticsActions.SetText].action!!.invoke(AnnotatedString("75"))); frames()
-                assertEquals(DesignedCharacterCenter(.25f, .75f), draft.characters.single().center)
+                assertEquals(DesignedCharacterCenter(.25f, .75f), draft.characters.first().center)
+                assertEquals(DesignedCharacterCenter(.7f, .6f), draft.characters[1].center)
                 val reset = reach("均匀重置")
                 System.getenv("CCB_FORMAT_AI_REVIEW_DIR")?.let { directory ->
                     val p = Path.of(directory).resolve("position-controls-reachable-$height.png"); Files.createDirectories(p.parent)
@@ -105,7 +111,7 @@ class DesktopCharacterPositionViewportTest {
                 scene.sendPointerEvent(PointerEventType.Press, resetPoint, button = PointerButton.Primary)
                 scene.sendPointerEvent(PointerEventType.Release, resetPoint, button = PointerButton.Primary)
                 frames()
-                assertNull(draft.characters.single().center)
+                assertTrue(draft.characters.all { it.center == null })
             } finally { scene.close() }
         }
     }
