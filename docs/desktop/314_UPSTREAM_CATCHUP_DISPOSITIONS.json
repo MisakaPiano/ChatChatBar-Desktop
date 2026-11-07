@@ -790,6 +790,39 @@
       "evidence": [
         "docs/desktop/319_MAINTENANCE_ADMISSION_AND_CATALOG_ROUTE_REVIEW.md"
       ]
+    },
+    {
+      "id": "PRICING_AND_EXPLICIT_TRANSPARENCY_IMPORT",
+      "disposition": "EQUIVALENT",
+      "scope": "Only six individually reviewed AccountService/suffix policy/import deltas",
+      "evidence": [
+        "I:\\CCB-Desktop-Continuity\\updates\\20261106-upstream-catchup-to149\\OWNER_PRICING_TRANSPARENCY_REUSED162_REVIEW.json",
+        "docs/desktop/319_MAINTENANCE_ADMISSION_AND_CATALOG_ROUTE_REVIEW.md"
+      ],
+      "verification": "Reused162 shared17 + actualDesktopUI1; ten named owner/test blobs exact. No new execution/provider/human claim."
+    },
+    {
+      "id": "EXTERNAL_BACKUP_PASSWORD_FLOW",
+      "disposition": "EQUIVALENT",
+      "scope": "Previously requested Desktop external queued backup password parity only",
+      "verification": {
+        "productionSource": "72de1730d0c892a1045a7560976531cd5eeed84d",
+        "testSource": "090a8ae00b188045ac3363af9d01d810dd08f7e1",
+        "state": "SCOPED_COMBINED_ORIGINAL_PROOF",
+        "latestRun": 42326000310,
+        "latestControl": "2e51712e1fee0a5a90c97bde2140c7e64aa08854",
+        "latestPass": 18,
+        "originalEntryRun": 42325295256,
+        "originalEntryScope": "Inspector3, password presentation2 and FullBackupService20 reused; original whole run56PASS+1FAIL retained",
+        "successorEntryRun": 42325476756,
+        "successorEntryScope": "ExternalController13 and Host2 PASS, new paused-dispatcher method PASS; original whole run32PASS+1FAIL retained",
+        "scope": "Six named suites58 distinct currently applicable methods across three exact/source-matched originals, not one new58/full regression run. Both old-input iterations and re-export assertions completed in latest18.",
+        "evidence": "docs/desktop/319_MAINTENANCE_ADMISSION_AND_CATALOG_ROUTE_REVIEW.md",
+        "publicChanged": false
+      },
+      "evidence": [
+        "docs/desktop/319_MAINTENANCE_ADMISSION_AND_CATALOG_ROUTE_REVIEW.md"
+      ]
     }
   ],
   "deltas": [
@@ -11053,8 +11086,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Final actual shared pricing/wire path or explicit transparency import semantics reviewed against this exact first-parent delta; later correction supersedes intermediate rounding. Matching original18 methods reused on ten exact named owners/tests. No mixed UI/prompt blanket claim.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiAccountService.kt",
@@ -11063,8 +11096,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "PRICING_AND_EXPLICIT_TRANSPARENCY_IMPORT"
+      ],
+      "evidence": [
+        "docs/desktop/319_MAINTENANCE_ADMISSION_AND_CATALOG_ROUTE_REVIEW.md",
+        "I:\\CCB-Desktop-Continuity\\updates\\20261106-upstream-catchup-to149\\OWNER_PRICING_TRANSPARENCY_REUSED162_REVIEW.json"
+      ]
     },
     {
       "id": "310d475cb6cb0466678fe986cb3850f91005dc77:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiCharacterImageSettings.kt",
@@ -12919,8 +12957,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Final actual shared pricing/wire path or explicit transparency import semantics reviewed against this exact first-parent delta; later correction supersedes intermediate rounding. Matching original18 methods reused on ten exact named owners/tests. No mixed UI/prompt blanket claim.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiAccountService.kt",
@@ -12929,8 +12967,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "PRICING_AND_EXPLICIT_TRANSPARENCY_IMPORT"
+      ],
+      "evidence": [
+        "docs/desktop/319_MAINTENANCE_ADMISSION_AND_CATALOG_ROUTE_REVIEW.md",
+        "I:\\CCB-Desktop-Continuity\\updates\\20261106-upstream-catchup-to149\\OWNER_PRICING_TRANSPARENCY_REUSED162_REVIEW.json"
+      ]
     },
     {
       "id": "892b478b17d3bf0943e779d3f14108b750f3355c:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiImagePostProcessing.kt",
@@ -13047,8 +13090,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Final actual shared pricing/wire path or explicit transparency import semantics reviewed against this exact first-parent delta; later correction supersedes intermediate rounding. Matching original18 methods reused on ten exact named owners/tests. No mixed UI/prompt blanket claim.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioImageImport.kt",
@@ -13057,8 +13100,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "PRICING_AND_EXPLICIT_TRANSPARENCY_IMPORT"
+      ],
+      "evidence": [
+        "docs/desktop/319_MAINTENANCE_ADMISSION_AND_CATALOG_ROUTE_REVIEW.md",
+        "I:\\CCB-Desktop-Continuity\\updates\\20261106-upstream-catchup-to149\\OWNER_PRICING_TRANSPARENCY_REUSED162_REVIEW.json"
+      ]
     },
     {
       "id": "892b478b17d3bf0943e779d3f14108b750f3355c:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiV5TextPromptPolicy.kt",
@@ -13074,8 +13122,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Final actual shared pricing/wire path or explicit transparency import semantics reviewed against this exact first-parent delta; later correction supersedes intermediate rounding. Matching original18 methods reused on ten exact named owners/tests. No mixed UI/prompt blanket claim.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiV5TextPromptPolicy.kt",
@@ -13084,8 +13132,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "PRICING_AND_EXPLICIT_TRANSPARENCY_IMPORT"
+      ],
+      "evidence": [
+        "docs/desktop/319_MAINTENANCE_ADMISSION_AND_CATALOG_ROUTE_REVIEW.md",
+        "I:\\CCB-Desktop-Continuity\\updates\\20261106-upstream-catchup-to149\\OWNER_PRICING_TRANSPARENCY_REUSED162_REVIEW.json"
+      ]
     },
     {
       "id": "892b478b17d3bf0943e779d3f14108b750f3355c:app/app/src/main/java/com/example/chatbar/ui/character/CharacterEditScreen.kt",
@@ -13363,8 +13416,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Final actual shared pricing/wire path or explicit transparency import semantics reviewed against this exact first-parent delta; later correction supersedes intermediate rounding. Matching original18 methods reused on ten exact named owners/tests. No mixed UI/prompt blanket claim.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiAccountService.kt",
@@ -13373,8 +13426,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "PRICING_AND_EXPLICIT_TRANSPARENCY_IMPORT"
+      ],
+      "evidence": [
+        "docs/desktop/319_MAINTENANCE_ADMISSION_AND_CATALOG_ROUTE_REVIEW.md",
+        "I:\\CCB-Desktop-Continuity\\updates\\20261106-upstream-catchup-to149\\OWNER_PRICING_TRANSPARENCY_REUSED162_REVIEW.json"
+      ]
     },
     {
       "id": "567ff1939ec2a5621bbbc8dd7d5f06e079a942b7:app/app/src/test/java/com/example/chatbar/domain/image/NovelAiHighActionPricingTest.kt",
@@ -13578,8 +13636,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Final actual shared pricing/wire path or explicit transparency import semantics reviewed against this exact first-parent delta; later correction supersedes intermediate rounding. Matching original18 methods reused on ten exact named owners/tests. No mixed UI/prompt blanket claim.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiAccountService.kt",
@@ -13588,8 +13646,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "PRICING_AND_EXPLICIT_TRANSPARENCY_IMPORT"
+      ],
+      "evidence": [
+        "docs/desktop/319_MAINTENANCE_ADMISSION_AND_CATALOG_ROUTE_REVIEW.md",
+        "I:\\CCB-Desktop-Continuity\\updates\\20261106-upstream-catchup-to149\\OWNER_PRICING_TRANSPARENCY_REUSED162_REVIEW.json"
+      ]
     },
     {
       "id": "b0fa1a425f24a0abe5adcb3b8f5775598452996e:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiCharacterImageSettings.kt",

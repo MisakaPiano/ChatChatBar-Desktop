@@ -781,6 +781,21 @@
       ],
       "evidence": "docs/desktop/319_MAINTENANCE_ADMISSION_AND_CATALOG_ROUTE_REVIEW.md",
       "scope": "Only Chat/Settings mutex admission order and catalog default route/timeouts plus named affected regressions; later external password changes require independent checks"
+    },
+    "externalBackupPasswordFlow": {
+      "productionSource": "72de1730d0c892a1045a7560976531cd5eeed84d",
+      "testSource": "090a8ae00b188045ac3363af9d01d810dd08f7e1",
+      "state": "SCOPED_COMBINED_ORIGINAL_PROOF",
+      "latestRun": 42326000310,
+      "latestControl": "2e51712e1fee0a5a90c97bde2140c7e64aa08854",
+      "latestPass": 18,
+      "originalEntryRun": 42325295256,
+      "originalEntryScope": "Inspector3, password presentation2 and FullBackupService20 reused; original whole run56PASS+1FAIL retained",
+      "successorEntryRun": 42325476756,
+      "successorEntryScope": "ExternalController13 and Host2 PASS, new paused-dispatcher method PASS; original whole run32PASS+1FAIL retained",
+      "scope": "Six named suites58 distinct currently applicable methods across three exact/source-matched originals, not one new58/full regression run. Both old-input iterations and re-export assertions completed in latest18.",
+      "evidence": "docs/desktop/319_MAINTENANCE_ADMISSION_AND_CATALOG_ROUTE_REVIEW.md",
+      "publicChanged": false
     }
   }
 }

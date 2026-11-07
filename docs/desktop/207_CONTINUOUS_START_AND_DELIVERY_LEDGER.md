@@ -1,3 +1,7 @@
+2026-11-07 外部备份按需密码后继限定通过：b2e2/72de复用merge owner，明文不问密码、加密同一队列文件重复错密/正确到预览、取消/skip与数据页prompt归属均有实际检查；090仅修旧再导出用例的87预期为现代88，R03/42326000310原Merge18PASS、0FAIL/ERROR/SKIP并完整跑完冻结1238与phone87两分支。R01原56PASS+1旧断言FAIL、R02原32PASS+1同FAIL保留；六套58方法是分源匹配组合，不冒称一次新跑58。前批维护/词库原114PASS绑定2e3不改，详319。同期又核6条定价/透明导入delta，复用原162十份精确owner/test和18原PASS；314仍complete:false。公开1244/db7/签26、A1真人FAIL、315未采纳不变；无新包/公发/日常代装或本机JVM、真实资料操作。
+
+下方历史保留。
+
 2026-11-07 数据维护等待环和词库默认网络路径已补：R01/R02新夹具Set/List编译失败保留；R02原shared44PASS。修正夹具后旧生产R03原7方法=2PASS+5FAIL（4个真实准入有界等待、首个默认client断言）；2e3生产R04原13套114PASS=shared44+Desktop70、0FAIL/ERROR/SKIP，CRC/source/原XML已核，详见[319](319_MAINTENANCE_ADMISSION_AND_CATALOG_ROUTE_REVIEW.md)。同文另复核RAG与朋友圈已有owner，原162匹配13方法仅复用，314只补3个平台映射、整体仍false。b2e2/72de另补外部备份按需密码与同队列文件重试、取消/skip及prompt归属，独立云端必要检查中，不属于114结果。公开1244/db7/签26、A1真人FAIL、315未采纳不动；无新包/公发/日常代装或本机JVM、真实资料操作。
 
 下方历史保留。

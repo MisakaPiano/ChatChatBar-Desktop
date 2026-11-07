@@ -48,3 +48,23 @@ R04以包含所有生产修正及15/60/15期限的2e3cc9b1为父；控制676b454
 `b2e2ab39` 复用原merge密码owner，新增selected external path入口，外部队列按需进入PASSWORD。错密重试仍绑定当前item/attempt和controller-private source，取消回同一READY头部；skip先join discard再ack。明文直接进入检查，仍不自动合并。共享password dialog在外部模式不提供另选文件按钮；presentation仅增加归属标志，密码仍仅在原volatile参数/finally清零边界，不进入队列、日志或持久state。数据页不重复承载队列密码窗，也不因自身离开取消它。
 
 `72de1730` 将external owner标志前置到busy发布之前，防数据页离开先于检查dispatcher执行时取消队列工作；新有界dispatcher测试专门覆盖此顺序。外部Host、Controller和原数据页合并/文件检查/密码展示流程正在独立检查；不纳入前述114结果。旧source与后继source、每轮原件分别保留，不依据job运行中状态预记通过。
+
+外部R01（b2e2/control c942b23c/run42325295256）原六套57方法=56PASS+1FAIL、0ERROR/SKIP；R02（72de/control df8008b5/run42325476756）原三套33方法=32PASS+1FAIL、0ERROR/SKIP。R02实际Controller13、Host2与新的暂停dispatcher归属用例通过。两轮唯一失败都在原 `official87 card and actual published1238 Studio backup merge reopen and reexport without lost options` 的现代输出manifest断言：旧预期87、实际88。当前writer明确声明88；测试的第一个冻结1238历史输入已到再导出，但后续选项断言及第二个official87输入迭代尚未跑完，不能从其他通过方法推断它们完成。
+
+`090a8ae0` 仅把这个测试的现代mapping目标与输出断言对齐88，保留输入phone87/冻结1238、取消、重开、选项和源bytes保护。未改变生产解码器、writer或任何旧输入的身份。R03控制2e51712e/run42326000310实际MergeImportService整套18PASS、0FAIL/ERROR/SKIP。该原方法现在完整执行到冻结1238历史分支、第二个official87分支的取消/合并/重开、88再导出、选项及源bytes断言；新的暂停dispatcher归属用例也通过。其余未变域沿R01/R02原件复用。
+
+## 同期待映射的定价与透明导入复核
+
+`OWNER_PRICING_TRANSPARENCY_REUSED162_REVIEW.json` 另核原162两个ZIP哈希/CRC、十份精确未变的owner/caller/test和18个原PASS方法：High pricing5、Medium pricing7、透明导入归属5、实际Desktop metadata Scene1。只映射310/892/567及b0首父合成中六个明确的定价或透明导入delta，不把混合UI/Prompt文件整组关闭。
+
+Medium按23步小数基数每张最终取整；High图生图/重绘使用实际wire strength；额度免费条件和附加费用另计。透明标签只是提示，不是来源证明：默认保留用户原文；明确选择开关管理后，仅移除首块精确后缀，raw文件/metadata保留。实际Scene经原controller选择/导入/关闭透明开关，验证最终wire、重开与undo/redo。它们是旧匹配证明复用，不是本轮新增18PASS或真实服务计费验证；改过的PNG方向adapter另有317检查，不冒称其整blob未变。
+
+外部密码原件均核长度、SHA256、CRC、source.json和逐方法XML：
+
+| 原件 | artifact / 字节 | SHA256 |
+| --- | --- | --- |
+| external-backup-password-r01-original.zip | 13554574604 / 161518 | c4c79a895c4b9a8e177c45871a3b20a873e9e1ee97e49de2482b708a73feea9c |
+| external-backup-password-r02-original.zip | 13555122230 / 21900 | f354703c8ed878e7dce88c08631bb9b8a09ee4f7d62e3e1d8a0e55cd8e78cd3b |
+| external-backup-password-r03-original.zip | 13554803868 / 11737 | c469b7f7034f8d6618969cd2ebd06410cc8cc5e023b9f067785b5288b78be3de |
+
+限定组合证明为六套58个不同方法：R01中未变的Inspector3/密码展示2/FullBackupService20、R02的外部Controller13/Host2、最新R03 Merge18。不是当前HEAD一次新跑58或全回归；R01/R02原整轮FAIL不改绿。原360/1100密码与420/1100工作区图只说明generic/DataWorkspace视觉，不当作外部Host实图或native验收；外部Host另有实际Scene语义交互证明。
