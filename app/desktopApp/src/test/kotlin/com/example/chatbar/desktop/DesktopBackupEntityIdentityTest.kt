@@ -1,0 +1,57 @@
+package com.example.chatbar.desktop
+
+import com.example.chatbar.data.local.JsonFileStorage
+import com.example.chatbar.data.local.entity.*
+import com.example.chatbar.desktop.backup.*
+import java.nio.file.Files
+import kotlinx.coroutines.runBlocking
+import kotlin.test.*
+
+class DesktopBackupEntityIdentityTest {
+    private class Fixture : AutoCloseable {
+        val base = Files.createTempDirectory("backup-entity-identity-")
+        val root = Files.createDirectory(base.resolve("root"))
+        val gate = DesktopDataOperationCoordinator()
+        val focus = DesktopAudioFocus()
+        val resolved = DesktopDataRootResolution.Resolved(root, DesktopDataRootProvenance.CLI_OVERRIDE, base.resolve("bootstrap.json"))
+        val owner = assertIs<DesktopDataRootOwnershipResult.Acquired>(DesktopDataRootOwnership.acquire(resolved)).ownership
+        val service = DesktopFullBackupService(root, gate, DesktopAudioMaintenance({ focus }) {})
+        val storage = JsonFileStorage(root)
+        suspend fun card(key: String, id: String) = storage.saveEntity("character_cards", key,
+            CharacterCard(id, "Synthetic $key", createdAt = 1, updatedAt = 1), CharacterCard.serializer())
+        override fun close() {
+            runBlocking { focus.closeAndDrain(); gate.closeAndDrain() }
+            owner.close(); check(base.toFile().deleteRecursively())
+        }
+    }
+
+    @Test fun `actual service refuses blank and duplicate card identities before publishing without changing source`() = runBlocking<Unit> {
+        for (damage in listOf("duplicate", "blank")) Fixture().use { f ->
+            f.card("first", if (damage == "blank") " " else "same")
+            if (damage == "duplicate") f.card("second", "same")
+            val before = DesktopFullBackupMapping(f.root).inventory()
+            val output = f.base.resolve("refused.cbbackup")
+            assertFails { f.service.exportModern(output, null) }
+            assertFalse(Files.exists(output))
+            assertEquals(before, DesktopFullBackupMapping(f.root).inventory())
+            assertFalse(f.service.restartRequired)
+        }
+    }
+
+    @Test fun `partial selection ignores unselected duplicate identities and equal ids in distinct families are independent`() = runBlocking<Unit> {
+        Fixture().use { f ->
+            f.card("first", "same"); f.card("second", "same"); f.card("good", "good")
+            f.storage.saveEntity("format_cards", "good", FormatCard("good", "Synthetic format", "Synthetic template", createdAt = 1), FormatCard.serializer())
+            f.storage.saveEntity("world_books", "good", WorldBook("good", "Synthetic world"), WorldBook.serializer())
+            val before = DesktopFullBackupMapping(f.root).inventory()
+            val output = f.base.resolve("partial.cbbackup")
+            f.service.exportModern(output, null, selection = AppBackupSelection(characterIds = setOf("good")))
+            f.service.verifyFile(output, null)
+            assertEquals(before, DesktopFullBackupMapping(f.root).inventory())
+            Files.delete(f.root.resolve("entities/character_cards/first.json"))
+            Files.delete(f.root.resolve("entities/character_cards/second.json"))
+            f.service.exportModern(f.base.resolve("distinct-families.cbbackup"), null)
+            f.service.verifyFile(f.base.resolve("distinct-families.cbbackup"), null)
+        }
+    }
+}
