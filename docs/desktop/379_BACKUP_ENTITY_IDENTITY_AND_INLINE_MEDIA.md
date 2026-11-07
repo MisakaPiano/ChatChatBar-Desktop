@@ -1,0 +1,7 @@
+# 备份实体身份与内联媒体
+
+实际Service旧版本会成功导出重复卡编号及同一旧式存档内重复消息。现在在实际所选记录闭包后核对顶层(type,id)，不要求逻辑编号等于物理文件名，也不把人物或不同类型编号混在一起；不同存档可包含相同历史消息。读取、直接Writer及legacy输入同样检查。内联图片/音频文件名不能为空，Base64复用现有流式语法/补位/长度检查，验证输出丢弃，原payload不改；schema8继续走既有package Inspector。
+
+R127/R128旧实际反例与R129四XML18完整方法分源保留；R130重复Input2不另加总。Base64旧R132首empty image实际导出成功，后续未到；R133更新Input1完整通过，Service尾部把正常portable键当原相对键的夹具失败保留；R134修正后实际Service1完整通过。R131取消原0XML保留。045e追加portable键断言仅待R135/最终批次，不冒称R134已执行。所有原ZIP/SHA/CRC/source与完整方法结果见 OWNER_ENTITY_IDENTITY_AND_INLINE_MEDIA_R127_R134_COMPLETE.json。
+
+新的备份/导入中断及终态提示仍在R135必要检查；公开1244、真人验收与整个1.0完成状态保持。

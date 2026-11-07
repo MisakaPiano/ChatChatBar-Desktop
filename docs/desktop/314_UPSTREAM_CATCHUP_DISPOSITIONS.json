@@ -1722,6 +1722,24 @@
       "evidence": [
         "OWNER_BOOTSTRAP_CATALOG_RETENTION_FIVE_DELTAS.json"
       ]
+    },
+    {
+      "id": "BACKUP_VALIDATOR_COMPLETE_D3CF2AA9_ACTUAL_TYPED_SELECTED_IDENTITIES",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete Validator raw delta mapped to shared typed schemas and actual selected Mapping/Writer/Source/legacy inspection plus Graph, catalog and SaveSlot package owners. Invocation-local top-level string (type,id) rejects blank/duplicates without binding physical model names or nested people; inline slot collection IDs are per-slot, and resource filenames/Base64 use existing stream validation. Actual R127/R128 old export counterexamples close via R129 eighteen complete methods; R133 updated input1 and R134 corrected actual Service1 separately close Base64, no method-loop or overlapping reuse sum. Current045e two portable-key assertions await normal batch/R135. Whole Archive/Engine/1.0/public/human remains separate.",
+      "reviewSource": "8ea95f5cb881245d0430ca17f452fbd9aaa32070",
+      "evidence": [
+        "OWNER_ENTITY_IDENTITY_AND_INLINE_MEDIA_R127_R134_COMPLETE.json"
+      ]
+    },
+    {
+      "id": "BACKUP_VALIDATOR_COMPLETE_1A692604_ACTUAL_TYPED_SELECTED_IDENTITIES",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete Validator raw delta mapped to shared typed schemas and actual selected Mapping/Writer/Source/legacy inspection plus Graph, catalog and SaveSlot package owners. Invocation-local top-level string (type,id) rejects blank/duplicates without binding physical model names or nested people; inline slot collection IDs are per-slot, and resource filenames/Base64 use existing stream validation. Actual R127/R128 old export counterexamples close via R129 eighteen complete methods; R133 updated input1 and R134 corrected actual Service1 separately close Base64, no method-loop or overlapping reuse sum. Current045e two portable-key assertions await normal batch/R135. Whole Archive/Engine/1.0/public/human remains separate.",
+      "reviewSource": "8ea95f5cb881245d0430ca17f452fbd9aaa32070",
+      "evidence": [
+        "OWNER_ENTITY_IDENTITY_AND_INLINE_MEDIA_R127_R134_COMPLETE.json"
+      ]
     }
   ],
   "deltas": [
@@ -8738,11 +8756,16 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete Validator raw delta mapped to shared typed schemas and actual selected Mapping/Writer/Source/legacy inspection plus Graph, catalog and SaveSlot package owners. Invocation-local top-level string (type,id) rejects blank/duplicates without binding physical model names or nested people; inline slot collection IDs are per-slot, and resource filenames/Base64 use existing stream validation. Actual R127/R128 old export counterexamples close via R129 eighteen complete methods; R133 updated input1 and R134 corrected actual Service1 separately close Base64, no method-loop or overlapping reuse sum. Current045e two portable-key assertions await normal batch/R135. Whole Archive/Engine/1.0/public/human remains separate.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "BACKUP_VALIDATOR_COMPLETE_D3CF2AA9_ACTUAL_TYPED_SELECTED_IDENTITIES"
+      ],
+      "evidence": [
+        "OWNER_ENTITY_IDENTITY_AND_INLINE_MEDIA_R127_R134_COMPLETE.json",
+        "docs/desktop/379_BACKUP_ENTITY_IDENTITY_AND_INLINE_MEDIA.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/backup/BackupJsonStream.kt",
@@ -10992,11 +11015,16 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete Validator raw delta mapped to shared typed schemas and actual selected Mapping/Writer/Source/legacy inspection plus Graph, catalog and SaveSlot package owners. Invocation-local top-level string (type,id) rejects blank/duplicates without binding physical model names or nested people; inline slot collection IDs are per-slot, and resource filenames/Base64 use existing stream validation. Actual R127/R128 old export counterexamples close via R129 eighteen complete methods; R133 updated input1 and R134 corrected actual Service1 separately close Base64, no method-loop or overlapping reuse sum. Current045e two portable-key assertions await normal batch/R135. Whole Archive/Engine/1.0/public/human remains separate.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "BACKUP_VALIDATOR_COMPLETE_1A692604_ACTUAL_TYPED_SELECTED_IDENTITIES"
+      ],
+      "evidence": [
+        "OWNER_ENTITY_IDENTITY_AND_INLINE_MEDIA_R127_R134_COMPLETE.json",
+        "docs/desktop/379_BACKUP_ENTITY_IDENTITY_AND_INLINE_MEDIA.md"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:app/app/src/main/java/com/example/chatbar/domain/backup/BackupExportSelection.kt",
