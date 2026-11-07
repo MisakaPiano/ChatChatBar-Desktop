@@ -1115,6 +1115,15 @@
       "evidence": [
         "OWNER_CHARACTER_PERSON_TAGS_R71_FINAL_REVIEW.json"
       ]
+    },
+    {
+      "id": "POSTPROCESS_SYNCHRONIZED_DETAIL_COMPARISON",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete148 ImageComparison delta: Desktop shares original fitted bounds/transform and viewport divider clip, increasing ceil(zoom) decode targets. Mouse wheel anchor zoom1..5, pan with bounds, divider drag chosen at initial down, accessible SetProgress and reset replace Android touch gestures. Actual component R72 one method PASS includes different resolutions/slightly different ratio stripe pixel alignment before/after wheel-pan,64px first move divider, actual reset and immutable bytes;two original images viewed. Not Panel use/save,large-output lifetime/native/full themes/provider/human acceptance; those owners remain separately evidenced.",
+      "reviewSource": "4cdc41ce14d26b9da3229193dd8d9fbcb0042305",
+      "evidence": [
+        "OWNER_POST_PROCESS_COMPARISON_R72_FINAL_REVIEW.json"
+      ]
     }
   ],
   "deltas": [
@@ -1905,11 +1914,15 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete148 ImageComparison delta: Desktop shares original fitted bounds/transform and viewport divider clip, increasing ceil(zoom) decode targets. Mouse wheel anchor zoom1..5, pan with bounds, divider drag chosen at initial down, accessible SetProgress and reset replace Android touch gestures. Actual component R72 one method PASS includes different resolutions/slightly different ratio stripe pixel alignment before/after wheel-pan,64px first move divider, actual reset and immutable bytes;two original images viewed. Not Panel use/save,large-output lifetime/native/full themes/provider/human acceptance; those owners remain separately evidenced.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "POSTPROCESS_SYNCHRONIZED_DETAIL_COMPARISON"
+      ],
+      "evidence": [
+        "OWNER_POST_PROCESS_COMPARISON_R72_FINAL_REVIEW.json"
+      ]
     },
     {
       "id": "148b3a9637eadf577afbb4947158dd6f80e17f4f:app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolScreen.kt",
