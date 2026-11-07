@@ -21,7 +21,7 @@ class DesktopGuidanceNumericControlsTest {
     private val edt = object : CoroutineDispatcher() {
         override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
     }
-    @Test fun `actual guidance decimals and undo stay with each Vibe across reorder removal and equivalent information edits`() = runBlocking(edt) {
+    @Test fun `actual guidance decimals and undo stay with each Vibe across reorder removal and equivalent information edits`(): Unit = runBlocking(edt) {
         val parent = Files.createTempDirectory("guidance-numeric-")
         val raster = BufferedImage(32, 32, BufferedImage.TYPE_INT_ARGB)
         val bytes = try { DesktopImageEditing.png(raster) } finally { raster.flush() }
@@ -57,7 +57,7 @@ class DesktopGuidanceNumericControlsTest {
         try {
             frames(); set("强度", 0, "0")
             assertEquals("0", fields("强度")[0].config[SemanticsProperties.EditableText].text)
-            set("强度", 0, "0.35")
+            set("强度", 0, "0."); set("强度", 0, "0.3"); set("强度", 0, "0.35")
             assertEquals(.35f, guidance.vibes[0].strength); assertEquals(.5f, guidance.vibes[1].strength)
             assertEquals(a.encodedVibe, guidance.vibes[0].encodedVibe)
             set("强度", 1, "0.65"); undo("强度", 1)
