@@ -1551,6 +1551,33 @@
       "evidence": [
         "OWNER_REPOSITORY_BACKGROUND_REGISTRY_CATALOG_SEVEN_REUSE.json"
       ]
+    },
+    {
+      "id": "MEDIA_STORAGE_COMPLETE_D3_NOVELAIIMAGESTORAGE",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete d3 maintenance-wrapper delta. Actual generation Store holds normal through materialization/history commit and exact rollback; Studio history deletion commits atomically under normal then reference-aware exclusive cleanup. Session deletion follows actual SaveSlot journal/receipt owner. Reuses original162 actual batch three methods and scoped session evidence; no blanket recursive sweep or whole backup parity.",
+      "reviewSource": "c03da382b77a56885377e5c438ba463f4bc9852b",
+      "evidence": [
+        "OWNER_IMAGE_STUDIO_VOICE_THREE_STORAGE_DELTAS.json"
+      ]
+    },
+    {
+      "id": "MEDIA_STORAGE_COMPLETE_D3_NOVELAISTUDIOASSETSTORAGE",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete d3 maintenance-wrapper delta. Actual Studio metadata/base64, selected file/history guidance and painted-mask apply hold normal+NonCancellable through resource materialization and draft/undo publication. Mask editing remains in memory before apply, and unknown new candidates remain retained. Four actual functions match original162; no Android orphan sweep or100MB Desktop claim.",
+      "reviewSource": "c03da382b77a56885377e5c438ba463f4bc9852b",
+      "evidence": [
+        "OWNER_IMAGE_STUDIO_VOICE_THREE_STORAGE_DELTAS.json"
+      ]
+    },
+    {
+      "id": "MEDIA_STORAGE_COMPLETE_D3_FISHAUDIOSTORAGE",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete d3 maintenance-wrapper delta. Actual UI deletion is Runtime.deleteVoice with normal before mutation; formal job normal covers real transport callback/persist and cancellation join. SaveSlot/session stage and rollback stay in actual service owner. Receipt-verified exact cleanup preserves unknown files and no blanket partial/orphan sweep. Original162 persistence4 plus R04 actual deletion/admission are separate reuse, not new physical audio or whole Coordinator equality.",
+      "reviewSource": "c03da382b77a56885377e5c438ba463f4bc9852b",
+      "evidence": [
+        "OWNER_IMAGE_STUDIO_VOICE_THREE_STORAGE_DELTAS.json"
+      ]
     }
   ],
   "deltas": [
@@ -9084,8 +9111,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete d3 maintenance-wrapper delta. Actual generation Store holds normal through materialization/history commit and exact rollback; Studio history deletion commits atomically under normal then reference-aware exclusive cleanup. Session deletion follows actual SaveSlot journal/receipt owner. Reuses original162 actual batch three methods and scoped session evidence; no blanket recursive sweep or whole backup parity.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/image/NovelAiImageStorage.kt",
@@ -9094,8 +9121,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "MEDIA_STORAGE_COMPLETE_D3_NOVELAIIMAGESTORAGE"
+      ],
+      "evidence": [
+        "OWNER_IMAGE_STUDIO_VOICE_THREE_STORAGE_DELTAS.json",
+        "docs/desktop/367_IMAGE_STUDIO_VOICE_STORAGE_ADMISSION_REUSE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiInlinePayloadStore.kt",
@@ -9143,8 +9175,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete d3 maintenance-wrapper delta. Actual Studio metadata/base64, selected file/history guidance and painted-mask apply hold normal+NonCancellable through resource materialization and draft/undo publication. Mask editing remains in memory before apply, and unknown new candidates remain retained. Four actual functions match original162; no Android orphan sweep or100MB Desktop claim.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/image/NovelAiStudioAssetStorage.kt",
@@ -9153,8 +9185,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "MEDIA_STORAGE_COMPLETE_D3_NOVELAISTUDIOASSETSTORAGE"
+      ],
+      "evidence": [
+        "OWNER_IMAGE_STUDIO_VOICE_THREE_STORAGE_DELTAS.json",
+        "docs/desktop/367_IMAGE_STUDIO_VOICE_STORAGE_ADMISSION_REUSE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/memory/LongTermMemoryAutoMaintenanceCoordinator.kt",
@@ -9453,8 +9490,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete d3 maintenance-wrapper delta. Actual UI deletion is Runtime.deleteVoice with normal before mutation; formal job normal covers real transport callback/persist and cancellation join. SaveSlot/session stage and rollback stay in actual service owner. Receipt-verified exact cleanup preserves unknown files and no blanket partial/orphan sweep. Original162 persistence4 plus R04 actual deletion/admission are separate reuse, not new physical audio or whole Coordinator equality.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/voice/FishAudioStorage.kt",
@@ -9463,8 +9500,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "MEDIA_STORAGE_COMPLETE_D3_FISHAUDIOSTORAGE"
+      ],
+      "evidence": [
+        "OWNER_IMAGE_STUDIO_VOICE_THREE_STORAGE_DELTAS.json",
+        "docs/desktop/367_IMAGE_STUDIO_VOICE_STORAGE_ADMISSION_REUSE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/voice/qq/QqVoiceAccessibilityService.kt",
