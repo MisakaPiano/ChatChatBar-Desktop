@@ -106,4 +106,36 @@ class DesktopCatalogMaintenanceAdmissionTest {
             assertTrue(fixture.app.coordinatedSnapshotService.validateSnapshot(saved.directory).valid)
         } finally { release.countDown(); fixture.close() }
     }
+
+    @Test fun `actual dictionary suggestions protect lazy database installation and refuse synchronous lookup while exclusive maintenance owns the root`() = runBlocking<Unit> {
+        val parent = Files.createTempDirectory("ccb-dictionary-cold-admission-")
+        val source = parent.resolve("words.sqlite")
+        DriverManager.getConnection("jdbc:sqlite:$source").use { db -> db.createStatement().use {
+            it.execute("CREATE TABLE words(word TEXT, meaning TEXT)")
+            it.execute("INSERT INTO words VALUES ('syntheticword', '合成词')")
+        } }
+        val bytes = Files.readAllBytes(source)
+        val sha = MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it.toInt() and 255) }
+        val entered = CountDownLatch(1); val release = CountDownLatch(1)
+        val fixture = Fixture(parent, mapOf("prompt_dictionary/metadata.json" to """{"databaseSha256":"$sha","databaseBytes":${bytes.size}}""".toByteArray(),
+            "prompt_dictionary/ecdict.sqlite.binz" to gzip(bytes))) { name ->
+            if (name == "prompt_dictionary/ecdict.sqlite.binz") { entered.countDown(); check(release.await(15, TimeUnit.SECONDS)) }
+        }
+        val exclusiveRelease = CompletableDeferred<Unit>(); var exclusive: Job? = null
+        try {
+            val result = async(Dispatchers.Default) { fixture.app.novelAiInfrastructure.translations.dictionarySuggestions("syntheticword") }
+            assertTrue(withContext(Dispatchers.IO) { entered.await(8, TimeUnit.SECONDS) })
+            val snapshot = async(Dispatchers.Default) { fixture.app.coordinatedSnapshotService.createSnapshot() }
+            snapshotWaits(fixture.app, snapshot)
+            release.countDown(); assertEquals("syntheticword", withTimeout(10000) { result.await() }.single().name)
+            val saved = withTimeout(10000) { snapshot.await() }; assertTrue(saved.validation.valid)
+            assertContentEquals(bytes, Files.readAllBytes(fixture.root.resolve("auxiliary/novelai/$sha.sqlite")))
+            val maintenanceEntered = CompletableDeferred<Unit>()
+            exclusive = launch(Dispatchers.Default) { fixture.app.dataOperationCoordinator.withExclusiveMaintenance { maintenanceEntered.complete(Unit); exclusiveRelease.await() } }
+            maintenanceEntered.await()
+            assertFailsWith<DesktopDataOperationRejectedException> { fixture.app.novelAiInfrastructure.translations.dictionarySuggestions("syntheticword") }
+            exclusiveRelease.complete(Unit); exclusive.join()
+            assertEquals("syntheticword", fixture.app.novelAiInfrastructure.translations.dictionarySuggestions("syntheticword").single().name)
+        } finally { release.countDown(); exclusiveRelease.complete(Unit); exclusive?.join(); fixture.close() }
+    }
 }

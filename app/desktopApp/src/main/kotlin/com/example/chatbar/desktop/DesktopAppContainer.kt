@@ -232,7 +232,9 @@ class DesktopAppContainer internal constructor(
         DesktopNovelAiInfrastructure(appDataRoot, { bundledAssetReader(it).inputStream() }, effectiveModelResolver,
             allowCleartextHttp = { settingsRepository.currentAppSettings.allowCleartextModelApi }, designerOverride = novelAiDesigner,
             diagnostics = taskRuntime.diagnostics,
-            experimentalApiModeEnabled = { settingsRepository.currentAppSettings.experimentalApiModeEnabled })
+            experimentalApiModeEnabled = { settingsRepository.currentAppSettings.experimentalApiModeEnabled },
+            operationGate = dataOperationCoordinator,
+            synchronousCatalogAccess = { work -> dataOperationCoordinator.withSynchronousNormalOperation(work) })
     }
     internal val novelAiInfrastructure by novelAiInfrastructureOwner
     internal val novelAiGenerationRuntime by lazy {

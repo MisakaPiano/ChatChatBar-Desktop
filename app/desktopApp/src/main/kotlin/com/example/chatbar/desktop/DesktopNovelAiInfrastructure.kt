@@ -18,9 +18,11 @@ internal class DesktopNovelAiInfrastructure(
     private val designerOverride: NovelAiPromptDesigner? = null,
     diagnostics: DesktopTransportDiagnosticsOwner? = null,
     experimentalApiModeEnabled: () -> Boolean = { false },
+    operationGate: com.example.chatbar.data.operation.AppDataOperationGate = com.example.chatbar.data.operation.NoOpAppDataOperationGate,
+    synchronousCatalogAccess: ((() -> Unit) -> Unit) = { it() },
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val assets = DesktopNovelAiCatalogAssets(root.resolve("auxiliary/novelai"), openAsset)
+    private val assets = DesktopNovelAiCatalogAssets(root.resolve("auxiliary/novelai"), operationGate, synchronousCatalogAccess, openAsset)
     val tags = DesktopNovelAiTagCatalog(assets)
     private val dictionary = NovelAiPromptWordDictionary.fromSource(DesktopNovelAiDictionary(assets))
     val suggestions = NovelAiTagSuggestionService(tags, dictionary, scope)

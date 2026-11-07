@@ -1,6 +1,8 @@
 package com.example.chatbar.desktop
 
 import com.example.chatbar.domain.image.*
+import com.example.chatbar.data.operation.AppDataOperationGate
+import com.example.chatbar.data.operation.NoOpAppDataOperationGate
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
@@ -22,12 +24,26 @@ import kotlinx.serialization.json.*
 /** Installs immutable, verified auxiliary databases. No entity/package schema or credentials. */
 internal class DesktopNovelAiCatalogAssets(
     val root: Path,
+    private val operationGate: AppDataOperationGate = NoOpAppDataOperationGate,
+    private val synchronousDataAccess: ((() -> Unit) -> Unit) = { it() },
     val open: (String) -> InputStream,
 ) {
     private val json = Json { ignoreUnknownKeys = true }
     fun metadata(name: String): JsonObject = open(name).bufferedReader().use { json.parseToJsonElement(it.readText()).jsonObject }
 
-    @Synchronized fun install(asset: String, hash: String, bytes: Long, gitBlob: Boolean = false): Path {
+    internal suspend fun <T> withDataAccess(operation: suspend () -> T): T = operationGate.withNormalOperation {
+        withContext(Dispatchers.IO) { operation() }
+    }
+    internal fun <T> withSynchronousDataAccess(operation: () -> T): T {
+        var result: Result<T>? = null
+        synchronousDataAccess { result = runCatching(operation) }
+        return checkNotNull(result).getOrThrow()
+    }
+    fun install(asset: String, hash: String, bytes: Long, gitBlob: Boolean = false): Path =
+        withSynchronousDataAccess { installAdmitted(asset, hash, bytes, gitBlob) }
+
+    /** Only the admitted catalog/dictionary owners call these helpers, including lazy cold installs. */
+    @Synchronized internal fun installAdmitted(asset: String, hash: String, bytes: Long, gitBlob: Boolean = false): Path {
         require(hash.matches(Regex(if (gitBlob) "[a-f0-9]{40}" else "[a-f0-9]{64}")))
         require(bytes in 1..256_000_000)
         Files.createDirectories(root)
@@ -64,10 +80,12 @@ internal class DesktopNovelAiCatalogAssets(
         return target
     }
 
-    fun index(kind: String, source: String): Path {
+    fun index(kind: String, source: String): Path = withSynchronousDataAccess { indexAdmitted(kind, source) }
+
+    internal fun indexAdmitted(kind: String, source: String): Path {
         val meta = metadata("tag_completion/$kind.json")
         check(meta.getValue("format").jsonPrimitive.int == 2 && meta.getValue("source").jsonPrimitive.content == source)
-        return install("tag_completion/$kind.sqlite.binz", meta.getValue("sha256").jsonPrimitive.content,
+        return installAdmitted("tag_completion/$kind.sqlite.binz", meta.getValue("sha256").jsonPrimitive.content,
             meta.getValue("bytes").jsonPrimitive.long)
     }
 }
@@ -115,8 +133,8 @@ internal class DesktopNovelAiTagCatalog(private val assets: DesktopNovelAiCatalo
             } }
             Snapshot(metadata, database, index)
         } else Snapshot(bundled,
-            assets.install("danbooru/tag.sqlite.bundle", bundled.sourceSha, bundled.sourceSizeBytes, gitBlob = true),
-            assets.index("danbooru", bundled.sourceSha))
+            assets.installAdmitted("danbooru/tag.sqlite.bundle", bundled.sourceSha, bundled.sourceSizeBytes, gitBlob = true),
+            assets.indexAdmitted("danbooru", bundled.sourceSha))
         active = next
         return next
     }
@@ -132,24 +150,25 @@ internal class DesktopNovelAiTagCatalog(private val assets: DesktopNovelAiCatalo
     private val cache = object : LinkedHashMap<String, List<NovelAiTagCandidate>>(16, .75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, List<NovelAiTagCandidate>>?) = size > 128
     }
-    override suspend fun catalogMetadata() = withContext(Dispatchers.IO) { snapshot().metadata }
-    override suspend fun search(query: String): NovelAiTagSearchOutcome = withContext(Dispatchers.IO) {
+    internal suspend fun <T> withDataAccess(operation: suspend () -> T): T = assets.withDataAccess(operation)
+    override suspend fun catalogMetadata() = withDataAccess { snapshot().metadata }
+    override suspend fun search(query: String): NovelAiTagSearchOutcome = withDataAccess {
         val normalized = query.normalizeDanbooruTagQuery()
         require(normalized.length in 2..80) { "Danbooru 词条查询长度必须在 2..80 之间" }
         val snapshot = snapshot()
         val key = snapshot.metadata.sourceSha + ":" + normalized.lowercase(Locale.ROOT)
-        synchronized(cache) { cache[key] }?.let { return@withContext NovelAiTagSearchOutcome(normalized, it, fromCache = true) }
+        synchronized(cache) { cache[key] }?.let { return@withDataAccess NovelAiTagSearchOutcome(normalized, it, fromCache = true) }
         val result = DesktopNovelAiSqlDatabase(snapshot.database).use { queryNovelAiCandidates(it, snapshot.metadata.tableName, normalized, MAX_TAG_CANDIDATES_PER_QUERY) }
         currentCoroutineContext().ensureActive()
         synchronized(cache) { cache[key] = result }
         NovelAiTagSearchOutcome(normalized, result)
     }
-    override suspend fun exactChineseTranslations(names: Collection<String>): Map<String, String> = withContext(Dispatchers.IO) {
+    override suspend fun exactChineseTranslations(names: Collection<String>): Map<String, String> = withDataAccess {
         val snapshot = snapshot()
         DesktopNovelAiSqlDatabase(snapshot.database).use { queryNovelAiTranslations(it, snapshot.metadata.tableName, names) }
     }
-    override suspend fun prepareCompletion() = withContext(Dispatchers.IO) { version.value = snapshot().metadata.sourceSha }
-    override suspend fun streamCompletion(query: String, onCandidate: suspend (NovelAiTagCandidate) -> Unit, onWarning: (String) -> Unit) = withContext(Dispatchers.IO) {
+    override suspend fun prepareCompletion() = withDataAccess { version.value = snapshot().metadata.sourceSha }
+    override suspend fun streamCompletion(query: String, onCandidate: suspend (NovelAiTagCandidate) -> Unit, onWarning: (String) -> Unit) = withDataAccess {
         val normalized = query.normalizeDanbooruTagQuery().lowercase(Locale.ROOT)
         if (normalized.isNotBlank()) DesktopNovelAiSqlDatabase(snapshot().index).use { searchSharedRankedIndex(it, normalized, false, onCandidate) }
     }
@@ -158,16 +177,16 @@ internal class DesktopNovelAiTagCatalog(private val assets: DesktopNovelAiCatalo
 internal class DesktopNovelAiDictionary(private val assets: DesktopNovelAiCatalogAssets) : NovelAiDictionarySource {
     private val metadata by lazy { assets.metadata("prompt_dictionary/metadata.json") }
     private val source by lazy { metadata.getValue("databaseSha256").jsonPrimitive.content }
-    private val database by lazy { assets.install("prompt_dictionary/ecdict.sqlite.binz", source, metadata.getValue("databaseBytes").jsonPrimitive.long) }
-    private val index by lazy { assets.index("dictionary", source) }
-    override fun lookup(word: String): String? = DesktopNovelAiSqlDatabase(database).use { db ->
+    private val database by lazy { assets.installAdmitted("prompt_dictionary/ecdict.sqlite.binz", source, metadata.getValue("databaseBytes").jsonPrimitive.long) }
+    private val index by lazy { assets.indexAdmitted("dictionary", source) }
+    override fun lookup(word: String): String? = assets.withSynchronousDataAccess { DesktopNovelAiSqlDatabase(database).use { db ->
         db.rawQuery("SELECT meaning FROM words WHERE word = ?", arrayOf(word)).use { if (it.moveToFirst()) it.getString(0) else null }
-    }
-    override fun search(query: String): List<NovelAiTagCandidate> = DesktopNovelAiSqlDatabase(database).use { db ->
+    } }
+    override fun search(query: String): List<NovelAiTagCandidate> = assets.withSynchronousDataAccess { DesktopNovelAiSqlDatabase(database).use { db ->
         queryNovelAiDictionary(db, query)
-    }
-    override suspend fun prepareCompletion() = withContext(Dispatchers.IO) { index; Unit }
-    override suspend fun streamCompletion(query: String, onCandidate: suspend (NovelAiTagCandidate) -> Unit, onWarning: (String) -> Unit) = withContext(Dispatchers.IO) {
+    } }
+    override suspend fun prepareCompletion() = assets.withDataAccess { index; Unit }
+    override suspend fun streamCompletion(query: String, onCandidate: suspend (NovelAiTagCandidate) -> Unit, onWarning: (String) -> Unit) = assets.withDataAccess {
         DesktopNovelAiSqlDatabase(index).use { searchSharedRankedIndex(it, query, true, onCandidate) }
     }
 }

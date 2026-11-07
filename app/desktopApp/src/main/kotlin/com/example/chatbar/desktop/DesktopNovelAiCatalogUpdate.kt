@@ -20,7 +20,7 @@ internal class DesktopNovelAiCatalogUpdate(private val catalog: DesktopNovelAiTa
         .readTimeout(60, TimeUnit.SECONDS)
         .writeTimeout(15, TimeUnit.SECONDS)
         .build()) {
-    suspend fun install(info: DanbooruCatalogUpdateInfo, report: (String) -> Unit) = withContext(Dispatchers.IO) {
+    suspend fun install(info: DanbooruCatalogUpdateInfo, report: (String) -> Unit) = catalog.withDataAccess {
         val current = catalog.catalogMetadata() // A corrupt current authority is never overwritten.
         check(current.sourceSha == info.currentMetadata.sourceSha)
         catalog.requireDurableMetadata(current)
