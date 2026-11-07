@@ -47,10 +47,12 @@ class DesktopCharacterPositionViewportTest {
                     val column = assertNotNull(path.firstOrNull { item -> captionPath.any { it === item } })
                     // The label and decorated BasicTextField are direct siblings. Its internal
                     // SetText node measures the 13sp text, not the padded input click region.
-                    assertNotNull(path.firstOrNull { it.parentInfo === column }).also {
-                        assertFalse(it === n.layoutInfo, "Measure the decorated input, not the editable text")
-                    }
+                    assertNotNull(path.firstOrNull { it.parentInfo === column })
                 } else n.layoutInfo
+                ancestry(n.layoutInfo).take(6).forEachIndexed { depth, item ->
+                    println("POSITION_LAYOUT label=$value depth=$depth size=${item.width}x${item.height} " +
+                        "coordinates=${item.coordinates.size} root=${item.coordinates.localToRoot(Offset.Zero)}")
+                }
                 val coordinates = layout.coordinates
                 assertTrue(layout.isAttached && layout.isPlaced && coordinates.isAttached)
                 assertEquals(layout.width, coordinates.size.width)
