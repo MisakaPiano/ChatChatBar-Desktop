@@ -1,3 +1,7 @@
+2026-11-07 当前5fb后继：发布人物保存重查已落Store原mutate内：严格当前卡+稳定人物key、失效拒绝、当前姓名/头像，null原发布者保持。R88原12888B/7af38aa0…3a6c4f旧actual首移除人物仍保存FAIL；R89原11276B/adf5cd7a…6c7e11核CRC/source/2XML/空stderr，新Controller完整1+原Store1通过，test整blob旧新相同。5fb追加编辑modal本地安全提示，失败不丢正文，随R90必要编译待核。R90控329bbf旧Preview/Plan同名卡TAKE绑定反例在验，合并域尚未改；下一处理唯一替换保持消费者、会话所属卡域与歧义选择。先前R87 26完整通过保留，四身份/全部ID/T11T23/公开1244/db7/sign26与真人分组不变，314仍false/315其他未采纳，无本机JVM/真实资料/新包/公发。
+
+下方历史保留。
+
 2026-11-07 当前7b后继：历史头像实际Service/Plan/还原/重开/再导出/重复导入及Controller缺失提示已修；R87原21680B/42ac999a…e5bd3核CRC/source/5XML/空stderr，26方法完整PASS(2新avatar+9Plan+12Preview+2版本+1凭据)。R86原12064B/c81bbb4b…5c3c4旧NFKC实际首对重名未识别FAIL，同方法R87完整PASS；R82导出FILES反例、R83/R84编译夹具0body和R85终态cancelled独立保留。十Import/Models完整delta分源复用0新跑，历史头像14行policy限域映射，314仍false。下一精确缺口是Moment新选sender保存时重查当前卡/人物，原发布者snapshot保留。四身份/全部ID/T11T23/公开1244/db7/sign26及真人原分组不变，315其他未采纳，无本机JVM/真实资料/新包/公发。
 
 下方历史保留。
