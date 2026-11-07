@@ -1,3 +1,11 @@
+2026-11-08 当前b8a工程检查点：已装词库桥R108三新+受影响原两完整PASS；现代模式R110十九有效完整方法与R112两实际仓库方法分源完成，R112原9611B/e76800e2…e9ad8核CRC/source/唯一XML/空stderr。逻辑m用真实Windows-safe ModelRepository读回，必要m/f/w、unused移除及默认字段后m真不存在均通过；旧raw m.json期待错误/空过负断言不借用。R109编译0/R111终态cancel0及全部原ZIP/日志保留。无liveCI。旧启动hook疑点已撤回：实际journal早期verifyAndResolve既有，不加源码/CI。下一继续剩余完整上游delta/具体功能缺口，314仍false；按用户集中批次交付，不出小候选催验。四身份/全部ID/T11T23/315其他未采纳/真人原分组/公开1244 db7 sign26不变，无本机JVM/真实根/新包公发。清理本批4完成描述，四原件保留。
+
+下方历史保留。
+
+2026-11-08 当前b8a后继：已装词库桥R108原13325B/75223e3e…60329核CRC/source/两XML/空stderr，新三+受影响cold/update两方法完整PASS，R107字典分源保留。现代三模式/实际Panel/可取消IO预览与实际新根凭据路径已实现。R110原22537B/d7f566f0…e12be四XML/空stderr，21执行=20PASS+1FAIL；可复用19完整合同（Preview12/ModePlan4/原实际Service1/新Lifecycle2）。失败把逻辑m当物理m.json，另默认模型负断言同样可能空过，不据此称依赖丢失或整组PASS。b8a改用实际ModelRepository及格式/世界书读回，R112/42387974086仅补两方法；R111终态cancelled原317B/2a64d249…efa44仅source/0XML保留，R109原317B编译夹具0保留。已更正启动hook疑点：现有StartupGate→FullBackupCommitJournal.recover已先verifyAndResolve，未新增启动源码/CI。新增9完整维护/Registry等delta分源复用，不称全314完成；315其他未采纳/全部ID四身份T11T23/真人原分组与公开1244/db7/sign26不变。按用户集中完整批次交付，无本机JVM/真实根/新包公发；仅清4完成描述2805B，原件保留。
+
+下方历史保留。
+
 2026-11-08 当前55a后继：R107原9807B/23b4a52a…da8c9b核CRC/control source/唯一XML/空stderr，实际cold Tag、Updater与真实snapshot及Dictionary三完整PASS；R105新夹具编译0/R106cancel0原件保留，不称旧运行反例。R104原9386B/bad94aa0…0480b实际Management draft事务/snapshot与普通Entity邻接一完整PASS，R103七项分源复用。四scope差异reuse已在c1f40登记，314整体false。2ca1/55a实现native已装词库→官方pair→新根离线激活、Service导出选范围/估算/PC capture、源版本重查与单独冲突及两侧版本展示；R108/42384333526仅新三+受影响cold/update两方法在验，不提前PASS。下一modern导入模式与其他已知缺口，按最新用户集中全部再交付，不为本切片打包/催人验。公开1244/db7/sign26、真人原分组、全部ID/四身份/T11T23/Prompt315其余未采纳保持；无本机JVM/真实根/新公发。
 
 下方历史保留。
