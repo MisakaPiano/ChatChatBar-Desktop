@@ -30,6 +30,19 @@ internal class DesktopUpdateRuntime(private val scope: CoroutineScope,
     val supportsInstall: Boolean = runCatching { packageHome(); true }.getOrDefault(false)
     private var work: Job? = null
 
+    internal companion object {
+        fun helperArguments(runtime: Path, packageHome: Path, cache: Path,
+            settings: com.example.chatbar.domain.ApplicationProxySettings, download: Boolean = false,
+            verify: Path? = null, expectedVersion: String? = null): List<String> = buildList {
+            addAll(listOf(runtime.resolve("python.exe").toString(), "-B", runtime.resolve("lib/desktop_update.py").toString(),
+                "--package", packageHome.toString(), "--cache", cache.toString(),
+                "--proxy-routes-base64", DesktopUpdateNetworkRouting.signedRoutesArgument(settings)))
+            if (download) add("--download")
+            if (verify != null) addAll(listOf("--verify-file", verify.toString()))
+            if (expectedVersion != null) addAll(listOf("--expected-version", expectedVersion))
+        }
+    }
+
     /** Startup/manual discovery for installed programs authenticates metadata without downloading. */
     suspend fun checkAvailable(): DesktopUpdateResult {
         check(!mutable.value.busy)
@@ -120,12 +133,7 @@ internal class DesktopUpdateRuntime(private val scope: CoroutineScope,
         val packageHome = packageHome()
         val runtime = packageHome.resolve("app/desktop-updater")
         val cache = requireNotNull(local).resolve("ChatChatBarDesktopUpdates")
-        val args = mutableListOf(runtime.resolve("python.exe").toString(), "-B", runtime.resolve("lib/desktop_update.py").toString(),
-            "--package", packageHome.toString(), "--cache", cache.toString(),
-            "--proxy-routes-base64", DesktopUpdateNetworkRouting.signedRoutesArgument(proxySettings()))
-        if (download) args += "--download"
-        if (verify != null) args += listOf("--verify-file", verify.toString())
-        if (expectedVersion != null) args += listOf("--expected-version", expectedVersion)
+        val args = helperArguments(runtime, packageHome, cache, proxySettings(), download, verify, expectedVersion)
         val process = ProcessBuilder(args).directory(runtime.toFile()).redirectErrorStream(true).start()
         coroutineScope {
             val cancellation = launch(start = CoroutineStart.UNDISPATCHED) {

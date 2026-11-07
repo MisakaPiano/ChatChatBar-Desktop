@@ -202,6 +202,14 @@ tasks.withType<org.gradle.api.tasks.testing.Test>().configureEach {
     }
 }
 
+// Explicit cloud-only updater argv/public-target probe; never installed or part of normal tests.
+tasks.register<JavaExec>("verifyUpdateRuntimeArgv") {
+    group = "verification"
+    dependsOn("testClasses")
+    classpath = sourceSets.test.get().runtimeClasspath
+    mainClass.set("com.example.chatbar.desktop.DesktopUpdateRuntimeArgvProbe")
+}
+
 // Separate reports preserve the original full-suite result while checking packaged production jars.
 tasks.register<org.gradle.api.tasks.testing.Test>("proxyPackagedRoutingTest") {
     group = "verification"
