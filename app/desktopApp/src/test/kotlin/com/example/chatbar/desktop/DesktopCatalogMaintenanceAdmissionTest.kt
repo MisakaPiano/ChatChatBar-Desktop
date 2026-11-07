@@ -42,7 +42,7 @@ class DesktopCatalogMaintenanceAdmissionTest {
             })
         suspend fun close() { app.close(); check(parent.toFile().deleteRecursively()) }
     }
-    private fun bundle(parent: Path, source: Path, metadata: DanbooruCatalogMetadata): Map<String, ByteArray> {
+    private suspend fun bundle(parent: Path, source: Path, metadata: DanbooruCatalogMetadata): Map<String, ByteArray> {
         val index = parent.resolve("inline-index.sqlite")
         DesktopNovelAiSqlDatabase(source).use { db -> DesktopNovelAiIndexWriter(index).use {
             buildNovelAiRankedIndex(it, db, "tags", metadata.sourceSha, "danbooru")
