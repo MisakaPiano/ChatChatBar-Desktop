@@ -1230,6 +1230,26 @@
         "OWNER_R79_VALID_PNG_AND_R78_INITIALIZATION_REVIEW.json",
         "docs/desktop/343_VPLUS_EXPLICIT_SWITCH_SIGMA_RESET.md"
       ]
+    },
+    {
+      "id": "STUDIO_SETTINGS_SCREEN_EIGHT_DELTAS",
+      "disposition": "EQUIVALENT",
+      "scope": "Only eight complete ImagePromptToolScreen deltas:148 actualcurrent-image→postprocessPanel/explicituse;8c samplers/V+;54c/c02 transparent;310/3f6 effectiveMedium UI and suspendedHigh;892/b0 bounded metadata options/transparent ownership/defaultreset/sampler/V+composition. Exact R51settingfunction except R79 V+line,originalV5four/resettwo and original162metadataone reused separately;no newrun or wholeStudio/native/human acceptance.",
+      "reviewSource": "71567ae054a6d6ebfa99c336331af7e336cd0a8a",
+      "evidence": [
+        "OWNER_STUDIO_SCREEN_EIGHT_DELTAS_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
+    },
+    {
+      "id": "PNG_READER_DEFAULTS_OMITTED_STORAGE_EIGHT_DELTAS",
+      "disposition": "EQUIVALENT",
+      "scope": "Only five complete54c/310/3f6/c02/b0 PNGReader deltas and b0MissingDefaults/1aOmittedModel/1aDeleteRepo: exact current reader/import/three tests original162 selected9; actualMissingdefaults originalR04two,legacyvalues preserved. Omitted URI excluded by known-owned cleanup after atomicmetadata;R10/R14 reused,not fresh omittedDeleteUI test. R69/R79 separate,0newruns.",
+      "reviewSource": "71567ae054a6d6ebfa99c336331af7e336cd0a8a",
+      "evidence": [
+        "OWNER_READER_STORAGE_EIGHT_DELTAS_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     }
   ],
   "deltas": [
@@ -2080,8 +2100,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only eight complete ImagePromptToolScreen deltas:148 actualcurrent-image→postprocessPanel/explicituse;8c samplers/V+;54c/c02 transparent;310/3f6 effectiveMedium UI and suspendedHigh;892/b0 bounded metadata options/transparent ownership/defaultreset/sampler/V+composition. Exact R51settingfunction except R79 V+line,originalV5four/resettwo and original162metadataone reused separately;no newrun or wholeStudio/native/human acceptance.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolScreen.kt",
@@ -2090,8 +2110,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "STUDIO_SETTINGS_SCREEN_EIGHT_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_STUDIO_SCREEN_EIGHT_DELTAS_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "148b3a9637eadf577afbb4947158dd6f80e17f4f:app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolViewModel.kt",
@@ -6486,8 +6511,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only eight complete ImagePromptToolScreen deltas:148 actualcurrent-image→postprocessPanel/explicituse;8c samplers/V+;54c/c02 transparent;310/3f6 effectiveMedium UI and suspendedHigh;892/b0 bounded metadata options/transparent ownership/defaultreset/sampler/V+composition. Exact R51settingfunction except R79 V+line,originalV5four/resettwo and original162metadataone reused separately;no newrun or wholeStudio/native/human acceptance.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolScreen.kt",
@@ -6496,8 +6521,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "STUDIO_SETTINGS_SCREEN_EIGHT_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_STUDIO_SCREEN_EIGHT_DELTAS_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolViewModel.kt",
@@ -10068,8 +10098,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only five complete54c/310/3f6/c02/b0 PNGReader deltas and b0MissingDefaults/1aOmittedModel/1aDeleteRepo: exact current reader/import/three tests original162 selected9; actualMissingdefaults originalR04two,legacyvalues preserved. Omitted URI excluded by known-owned cleanup after atomicmetadata;R10/R14 reused,not fresh omittedDeleteUI test. R69/R79 separate,0newruns.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/data/repository/NovelAiStudioRepository.kt",
@@ -10078,8 +10108,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "PNG_READER_DEFAULTS_OMITTED_STORAGE_EIGHT_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_READER_STORAGE_EIGHT_DELTAS_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:app/app/src/main/java/com/example/chatbar/domain/backup/AppBackupBootstrap.kt",
@@ -10490,8 +10525,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only five complete54c/310/3f6/c02/b0 PNGReader deltas and b0MissingDefaults/1aOmittedModel/1aDeleteRepo: exact current reader/import/three tests original162 selected9; actualMissingdefaults originalR04two,legacyvalues preserved. Omitted URI excluded by known-owned cleanup after atomicmetadata;R10/R14 reused,not fresh omittedDeleteUI test. R69/R79 separate,0newruns.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
@@ -10500,8 +10535,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "PNG_READER_DEFAULTS_OMITTED_STORAGE_EIGHT_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_READER_STORAGE_EIGHT_DELTAS_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:app/app/src/main/java/com/example/chatbar/domain/moment/MomentMediaRetention.kt",
@@ -11690,8 +11730,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only five complete54c/310/3f6/c02/b0 PNGReader deltas and b0MissingDefaults/1aOmittedModel/1aDeleteRepo: exact current reader/import/three tests original162 selected9; actualMissingdefaults originalR04two,legacyvalues preserved. Omitted URI excluded by known-owned cleanup after atomicmetadata;R10/R14 reused,not fresh omittedDeleteUI test. R69/R79 separate,0newruns.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
@@ -11700,8 +11740,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "PNG_READER_DEFAULTS_OMITTED_STORAGE_EIGHT_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_READER_STORAGE_EIGHT_DELTAS_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "54c84c479a1b8a9eddef6b726681dedc7094efac:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiStudioImageImport.kt",
@@ -11858,8 +11903,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only eight complete ImagePromptToolScreen deltas:148 actualcurrent-image→postprocessPanel/explicituse;8c samplers/V+;54c/c02 transparent;310/3f6 effectiveMedium UI and suspendedHigh;892/b0 bounded metadata options/transparent ownership/defaultreset/sampler/V+composition. Exact R51settingfunction except R79 V+line,originalV5four/resettwo and original162metadataone reused separately;no newrun or wholeStudio/native/human acceptance.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolScreen.kt",
@@ -11868,8 +11913,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "STUDIO_SETTINGS_SCREEN_EIGHT_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_STUDIO_SCREEN_EIGHT_DELTAS_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "54c84c479a1b8a9eddef6b726681dedc7094efac:app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolViewModel.kt",
@@ -12161,8 +12211,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only five complete54c/310/3f6/c02/b0 PNGReader deltas and b0MissingDefaults/1aOmittedModel/1aDeleteRepo: exact current reader/import/three tests original162 selected9; actualMissingdefaults originalR04two,legacyvalues preserved. Omitted URI excluded by known-owned cleanup after atomicmetadata;R10/R14 reused,not fresh omittedDeleteUI test. R69/R79 separate,0newruns.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
@@ -12171,8 +12221,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "PNG_READER_DEFAULTS_OMITTED_STORAGE_EIGHT_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_READER_STORAGE_EIGHT_DELTAS_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "310d475cb6cb0466678fe986cb3850f91005dc77:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiStudioImageImport.kt",
@@ -12302,8 +12357,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only eight complete ImagePromptToolScreen deltas:148 actualcurrent-image→postprocessPanel/explicituse;8c samplers/V+;54c/c02 transparent;310/3f6 effectiveMedium UI and suspendedHigh;892/b0 bounded metadata options/transparent ownership/defaultreset/sampler/V+composition. Exact R51settingfunction except R79 V+line,originalV5four/resettwo and original162metadataone reused separately;no newrun or wholeStudio/native/human acceptance.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolScreen.kt",
@@ -12312,8 +12367,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "STUDIO_SETTINGS_SCREEN_EIGHT_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_STUDIO_SCREEN_EIGHT_DELTAS_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "310d475cb6cb0466678fe986cb3850f91005dc77:app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolViewModel.kt",
@@ -13020,8 +13080,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only five complete54c/310/3f6/c02/b0 PNGReader deltas and b0MissingDefaults/1aOmittedModel/1aDeleteRepo: exact current reader/import/three tests original162 selected9; actualMissingdefaults originalR04two,legacyvalues preserved. Omitted URI excluded by known-owned cleanup after atomicmetadata;R10/R14 reused,not fresh omittedDeleteUI test. R69/R79 separate,0newruns.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
@@ -13030,8 +13090,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "PNG_READER_DEFAULTS_OMITTED_STORAGE_EIGHT_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_READER_STORAGE_EIGHT_DELTAS_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "3f6f1bb5d61492d74c56fa3696b557db514ae77d:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiStudioImageImport.kt",
@@ -13161,8 +13226,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only eight complete ImagePromptToolScreen deltas:148 actualcurrent-image→postprocessPanel/explicituse;8c samplers/V+;54c/c02 transparent;310/3f6 effectiveMedium UI and suspendedHigh;892/b0 bounded metadata options/transparent ownership/defaultreset/sampler/V+composition. Exact R51settingfunction except R79 V+line,originalV5four/resettwo and original162metadataone reused separately;no newrun or wholeStudio/native/human acceptance.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolScreen.kt",
@@ -13171,8 +13236,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "STUDIO_SETTINGS_SCREEN_EIGHT_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_STUDIO_SCREEN_EIGHT_DELTAS_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "3f6f1bb5d61492d74c56fa3696b557db514ae77d:app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolViewModel.kt",
@@ -13348,8 +13418,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only five complete54c/310/3f6/c02/b0 PNGReader deltas and b0MissingDefaults/1aOmittedModel/1aDeleteRepo: exact current reader/import/three tests original162 selected9; actualMissingdefaults originalR04two,legacyvalues preserved. Omitted URI excluded by known-owned cleanup after atomicmetadata;R10/R14 reused,not fresh omittedDeleteUI test. R69/R79 separate,0newruns.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
@@ -13358,8 +13428,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "PNG_READER_DEFAULTS_OMITTED_STORAGE_EIGHT_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_READER_STORAGE_EIGHT_DELTAS_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "c02f8b788db1fd829f55676e0ed23e35fdd10ea1:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiStudioImageImport.kt",
@@ -13516,8 +13591,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only eight complete ImagePromptToolScreen deltas:148 actualcurrent-image→postprocessPanel/explicituse;8c samplers/V+;54c/c02 transparent;310/3f6 effectiveMedium UI and suspendedHigh;892/b0 bounded metadata options/transparent ownership/defaultreset/sampler/V+composition. Exact R51settingfunction except R79 V+line,originalV5four/resettwo and original162metadataone reused separately;no newrun or wholeStudio/native/human acceptance.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolScreen.kt",
@@ -13526,8 +13601,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "STUDIO_SETTINGS_SCREEN_EIGHT_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_STUDIO_SCREEN_EIGHT_DELTAS_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "c02f8b788db1fd829f55676e0ed23e35fdd10ea1:app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolViewModel.kt",
@@ -14356,8 +14436,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only eight complete ImagePromptToolScreen deltas:148 actualcurrent-image→postprocessPanel/explicituse;8c samplers/V+;54c/c02 transparent;310/3f6 effectiveMedium UI and suspendedHigh;892/b0 bounded metadata options/transparent ownership/defaultreset/sampler/V+composition. Exact R51settingfunction except R79 V+line,originalV5four/resettwo and original162metadataone reused separately;no newrun or wholeStudio/native/human acceptance.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolScreen.kt",
@@ -14366,8 +14446,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "STUDIO_SETTINGS_SCREEN_EIGHT_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_STUDIO_SCREEN_EIGHT_DELTAS_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "892b478b17d3bf0943e779d3f14108b750f3355c:app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolViewModel.kt",
@@ -14764,8 +14849,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only five complete54c/310/3f6/c02/b0 PNGReader deltas and b0MissingDefaults/1aOmittedModel/1aDeleteRepo: exact current reader/import/three tests original162 selected9; actualMissingdefaults originalR04two,legacyvalues preserved. Omitted URI excluded by known-owned cleanup after atomicmetadata;R10/R14 reused,not fresh omittedDeleteUI test. R69/R79 separate,0newruns.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/data/repository/NovelAiStudioRepository.kt",
@@ -14774,8 +14859,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "PNG_READER_DEFAULTS_OMITTED_STORAGE_EIGHT_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_READER_STORAGE_EIGHT_DELTAS_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "b0fa1a425f24a0abe5adcb3b8f5775598452996e:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiAccountService.kt",
@@ -14919,8 +15009,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only five complete54c/310/3f6/c02/b0 PNGReader deltas and b0MissingDefaults/1aOmittedModel/1aDeleteRepo: exact current reader/import/three tests original162 selected9; actualMissingdefaults originalR04two,legacyvalues preserved. Omitted URI excluded by known-owned cleanup after atomicmetadata;R10/R14 reused,not fresh omittedDeleteUI test. R69/R79 separate,0newruns.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
@@ -14929,8 +15019,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "PNG_READER_DEFAULTS_OMITTED_STORAGE_EIGHT_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_READER_STORAGE_EIGHT_DELTAS_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "b0fa1a425f24a0abe5adcb3b8f5775598452996e:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiSingleImagePricing.kt",
@@ -15190,8 +15285,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only eight complete ImagePromptToolScreen deltas:148 actualcurrent-image→postprocessPanel/explicituse;8c samplers/V+;54c/c02 transparent;310/3f6 effectiveMedium UI and suspendedHigh;892/b0 bounded metadata options/transparent ownership/defaultreset/sampler/V+composition. Exact R51settingfunction except R79 V+line,originalV5four/resettwo and original162metadataone reused separately;no newrun or wholeStudio/native/human acceptance.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolScreen.kt",
@@ -15200,8 +15295,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "STUDIO_SETTINGS_SCREEN_EIGHT_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_STUDIO_SCREEN_EIGHT_DELTAS_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "b0fa1a425f24a0abe5adcb3b8f5775598452996e:app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolViewModel.kt",
