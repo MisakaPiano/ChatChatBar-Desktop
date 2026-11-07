@@ -98,5 +98,6 @@ object DesktopUpdateRuntimeArgvProbe {
                 put("authenticatedMetadataRevision", 27); put("sourceSha", ready.source)
             }.toString())
         } finally { scope.cancel() }
+        Unit
     }
 }
