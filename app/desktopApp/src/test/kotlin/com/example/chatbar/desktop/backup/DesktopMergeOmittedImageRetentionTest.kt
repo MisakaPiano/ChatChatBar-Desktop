@@ -116,7 +116,7 @@ class DesktopMergeOmittedImageRetentionTest {
                                     val retain = !case.includeImages && case.choice == DesktopMergePreview.Choice.TAKE_PHONE && case.messageId == "m"
                                     assertEquals(if (retain) 1 else 0, restored.images.size, case.toString())
                                     if (retain) {
-                                        assertContentEquals(imageBytes, Files.readAllBytes(Path.of(restored.images.single())))
+                                        assertContentEquals(imageBytes, Files.readAllBytes(root.resolve(restored.images.single())))
                                         assertEquals(restored.images.single(), restored.generatedImageMetadata.single().imagePath)
                                         assertEquals(metadata.baseCaption, restored.generatedImageMetadata.single().baseCaption)
                                         assertEquals(restored, ChatRepository(JsonFileStorage(root)).getMessagesReadOnly(incomingSession).single { it.id == restored.id })
@@ -125,12 +125,12 @@ class DesktopMergeOmittedImageRetentionTest {
                                         assertEquals(2, messages.size)
                                         val kept = messages.single { it.id == "m" }
                                         assertEquals("Computer body", kept.content)
-                                        assertContentEquals(imageBytes, Files.readAllBytes(Path.of(kept.images.single())))
+                                        assertContentEquals(imageBytes, Files.readAllBytes(root.resolve(kept.images.single())))
                                     }
                                     if (case.choice == DesktopMergePreview.Choice.BOTH) {
                                         val kept = ChatRepository(JsonFileStorage(root)).getMessagesReadOnly("s").single()
                                         assertEquals("Computer body", kept.content); assertEquals(1, kept.images.size)
-                                        assertContentEquals(imageBytes, Files.readAllBytes(Path.of(kept.images.single())))
+                                        assertContentEquals(imageBytes, Files.readAllBytes(root.resolve(kept.images.single())))
                                     }
                                     val slots = mutableListOf<SaveSlot>()
                                     JsonFileStorage(root).visitEntitiesStrict("save_slots", SaveSlot.serializer()) { _, value -> slots += value }
