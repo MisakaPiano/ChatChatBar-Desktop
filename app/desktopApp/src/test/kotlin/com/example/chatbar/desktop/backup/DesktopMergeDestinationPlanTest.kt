@@ -10,6 +10,30 @@ import org.junit.Test
 import kotlin.test.*
 
 class DesktopMergeDestinationPlanTest {
+    @Test fun `taking older internal markers preserves completed work while keep and skip remain computer choices`() {
+        val preset = "entities/preset_import_state.json"
+        val migration = "entities/model_configuration_migration.json"
+        val pc = mapOf(preset to obj("""{"seenVersions":{"synthetic-a":7,"synthetic-b":2}}"""), migration to obj("""{"version":4}"""))
+        val phone = mapOf(preset to obj("""{"seenVersions":{"synthetic-a":1,"synthetic-c":3}}"""), migration to obj("""{"version":1}"""))
+        val originalPc = pc.toString(); val originalPhone = phone.toString()
+        for (choice in listOf(DesktopMergePreview.Choice.TAKE_PHONE, DesktopMergePreview.Choice.KEEP_PC, DesktopMergePreview.Choice.SKIP)) {
+            val preview = DesktopMergePreview.create(pc, phone, emptyMap(), emptyMap())
+            assertEquals(2, preview.conflicts.size)
+            DesktopMergeDestinationPlan.create(preview.select(preview.conflicts.associate { it.key to choice }), emptyMap(), emptyMap()).use { plan ->
+                assertEquals(pc.getValue(migration), plan.entities.getValue(migration))
+                assertEquals(if (choice == DesktopMergePreview.Choice.TAKE_PHONE)
+                    obj("""{"seenVersions":{"synthetic-a":7,"synthetic-b":2,"synthetic-c":3}}""") else pc.getValue(preset), plan.entities.getValue(preset))
+            }
+        }
+        val newer = mapOf(preset to obj("""{"seenVersions":{"synthetic-a":9}}"""), migration to obj("""{"version":6}"""))
+        val preview = DesktopMergePreview.create(pc, newer, emptyMap(), emptyMap())
+        DesktopMergeDestinationPlan.create(preview.select(preview.conflicts.associate { it.key to DesktopMergePreview.Choice.TAKE_PHONE }), emptyMap(), emptyMap()).use { plan ->
+            assertEquals(obj("""{"seenVersions":{"synthetic-a":9,"synthetic-b":2}}"""), plan.entities.getValue(preset))
+            assertEquals(newer.getValue(migration), plan.entities.getValue(migration))
+        }
+        assertEquals(originalPc, pc.toString()); assertEquals(originalPhone, phone.toString())
+    }
+
     @Test fun `identical self source with no incoming units does not duplicate retained media`() {
         val records = mapOf("entities/character_cards/c.json" to obj("""{"id":"c","name":"Synthetic","avatar":"chatbar-backup-file:images/same.png"}"""))
         val media = mapOf("images/same.png" to "a".repeat(64),

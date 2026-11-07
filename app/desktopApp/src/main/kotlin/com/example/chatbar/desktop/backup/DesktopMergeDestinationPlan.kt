@@ -137,6 +137,10 @@ internal class DesktopMergeDestinationPlan private constructor(
                     // require the normal repository to rebuild from the actual merged message files.
                     if (record.type == "chat_message_indexes" && record.text("sessionId")?.let { identity.value("chat_sessions", it) } in rebuiltMessageSessions) continue
                     var mapped = mapper.rewrite(record) { reference, fields -> resource(Side.PHONE, path, phoneNames, reference, fields) }
+                    if (record.type in setOf("preset_import_state", "model_configuration_migration")) {
+                        val previous = selection.replacedComputerUnits[unit.key]?.records?.get(path)
+                        mapped = DesktopMergeInternalState.preserveCompleted(record.type, mapped, previous, checkActive)
+                    }
                     retainedMedia.fields(record, mapped)?.let { retained ->
                         val mappedMedia = backupJson.parseToJsonElement(DesktopBackupPolicy.mapResources(retained) { reference, fields ->
                             resource(Side.COMPUTER, path, pcNames, reference, fields)

@@ -40,6 +40,8 @@ internal class DesktopMergeIdentity(private val copy: Boolean = false,
     fun fieldSpace(record: DesktopMergeRecord, fields: List<String>): String? {
         val field = fields.lastOrNull() ?: return null
         if (opaque(fields)) return null
+        if (record.type == "vector_chunks" && record.text("sourceType") == "DOCUMENT" &&
+            fields.size == 2 && fields.first() == "metadata" && field in setOf("documentId", "originalDocId")) return "documents"
         if ("desktopPlayerRole" in fields) {
             if (field == "cardId") return "character_cards"
             if (field == "personId") return "characters"
@@ -92,7 +94,7 @@ internal class DesktopMergeIdentity(private val copy: Boolean = false,
             "memoryHeadCommitId", "parentCommitId" -> "memory_commits"
             "sourceId" -> when {
                 fields.size == 1 && record.type == "vector_chunks" -> when (record.text("sourceType")) {
-                    "CHAT_MEMORY" -> "chat_sessions"; "CHARACTER_SETTING" -> "character_cards"; "DOCUMENT" -> "documents"; else -> null
+                    "CHAT_MEMORY" -> "chat_sessions"; "CHARACTER_SETTING", "DOCUMENT" -> "character_cards"; else -> null
                 }
                 "vectorChunks" in fields -> "chat_sessions"
                 else -> null // Coverage references are handled by the memory proof rewriter.

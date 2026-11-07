@@ -202,8 +202,18 @@ internal class DesktopMergePreview private constructor(
             val sessionIds = records.filterKeys { DesktopBackupPolicy.entityType(it) == "chat_sessions" }.values.map {
                 requireNotNull(it["id"]?.jsonPrimitive?.contentOrNull)
             }.toSet()
+            val cardIds = records.filterKeys { DesktopBackupPolicy.entityType(it) == "character_cards" }.values.map {
+                requireNotNull(it["id"]?.jsonPrimitive?.contentOrNull)
+            }.toSet()
             records.forEach { (path, value) ->
                 val type = DesktopBackupPolicy.entityType(path)
+                if (type == "vector_chunks" && value["sourceType"]?.jsonPrimitive?.contentOrNull in setOf("DOCUMENT", "CHARACTER_SETTING")) {
+                    val card = value["sourceId"]?.jsonPrimitive?.contentOrNull
+                    if (card in cardIds) {
+                        add("character_cards:$card", path)
+                        return@forEach
+                    }
+                }
                 if (groupedStudio && type in setOf("novelai_studio_draft", "novelai_studio_history_undo",
                     "novelai_studio_guidance_checkpoint", "desktop_studio_edit_history")) {
                     add("novelai_studio_draft:entities/novelai_studio_draft.json", path)
@@ -237,7 +247,7 @@ internal class DesktopMergePreview private constructor(
             }
             return groups.mapValues { (key, paths) ->
                 val items = DesktopBackupRecords.view(paths) { path -> settings[key] ?: records.getValue(path) }
-                val primary = items.entries.firstOrNull { DesktopBackupPolicy.entityType(it.key) == "chat_sessions" ||
+                val primary = items.entries.firstOrNull { DesktopBackupPolicy.entityType(it.key) in setOf("chat_sessions", "character_cards") ||
                     groupedStudio && key.startsWith("novelai_studio_draft:") && DesktopBackupPolicy.entityType(it.key) == "novelai_studio_draft" } ?: items.entries.first()
                 val type = if (key.startsWith("setting:")) "app_settings" else DesktopBackupPolicy.entityType(primary.key)
                 val value = primary.value
