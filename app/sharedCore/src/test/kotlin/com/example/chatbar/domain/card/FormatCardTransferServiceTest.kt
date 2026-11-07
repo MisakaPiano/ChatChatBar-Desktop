@@ -193,6 +193,24 @@ class FormatCardTransferServiceTest {
     }
 
     @Test
+    fun `character default reuses edited preset identity without creating or rewriting the dependency`() = runTest {
+        val repository = repository()
+        val existing = FormatCard(id = "edited-preset", name = "Renamed locally", content = "User edited body",
+            userTools = orderedTools(), sourcePresetKey = "synthetic-format", sourcePresetVersion = 1,
+            isDefault = true, createdAt = 123)
+        repository.save(existing)
+        val before = Files.readAllBytes(root.resolve("entities/format_cards/${existing.id}.json"))
+        val reopened = FormatCardTransferService(repository(), json)
+        val creating = mutableListOf<String>()
+        val result = reopened.importCharacterDefaultTracked(FormatCardPackage(name = "Bundled name", content = "New bundled body",
+            sourcePresetKey = "synthetic-format", sourcePresetVersion = 3)) { creating += it }
+        assertEquals(existing, result)
+        assertTrue(creating.isEmpty())
+        assertEquals(listOf(existing), repository().getAll())
+        assertTrue(before.contentEquals(Files.readAllBytes(root.resolve("entities/format_cards/${existing.id}.json"))))
+    }
+
+    @Test
     fun `overwrite preserves local identity default and creation time while replacing transferable fields`() = runTest {
         val repository = repository()
         val transfer = FormatCardTransferService(repository, json)

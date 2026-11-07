@@ -89,6 +89,36 @@ class DesktopPresetDependencyIntegrationTest {
         }
     }
 
+    @Test fun `bootstrap typed recovery and suite reuse an edited format preset with its original identity across reopen`() = runBlocking {
+        for (entry in listOf("bootstrap", "typed", "suite")) {
+            val parent = Files.createTempDirectory("preset-edited-format-$entry-")
+            val files = assets()
+            var app = createApp(parent, files)
+            try {
+                val existing = FormatCard(id = "local-format", name = "User renamed format", content = "User edited body",
+                    userTools = listOf(FormatCardUserToolConfig.randomNumber()), sourcePresetKey = "format",
+                    sourcePresetVersion = 1, createdAt = 12)
+                app.formatCardRepository.save(existing)
+                val path = parent.resolve("data/entities/format_cards/${existing.id}.json")
+                val before = Files.readAllBytes(path)
+                when (entry) {
+                    "bootstrap" -> app.initializePersistentState()
+                    "typed" -> app.createTypedTransferController().recoverPreset(character)
+                    else -> suite(app).restore(character)
+                }
+                val card = app.characterRepository.getAll().single()
+                assertEquals(existing.id, card.defaultFormatCardId, entry)
+                assertEquals(listOf(existing), app.formatCardRepository.getAll(), entry)
+                assertContentEquals(before, Files.readAllBytes(path), entry)
+                app.close(); app = createApp(parent, files)
+                app.initializePersistentState()
+                assertEquals(existing.id, app.characterRepository.getAll().single().defaultFormatCardId, entry)
+                assertEquals(listOf(existing), app.formatCardRepository.getAll(), entry)
+                assertContentEquals(before, Files.readAllBytes(path), entry)
+            } finally { app.close(); parent.toFile().deleteRecursively() }
+        }
+    }
+
     @Test fun `missing declared format refuses source typed recovery and suite before any member is written`() = runBlocking {
         val parent = Files.createTempDirectory("preset-dependency-missing-")
         val app = createApp(parent, assets(includeFormat = false))
