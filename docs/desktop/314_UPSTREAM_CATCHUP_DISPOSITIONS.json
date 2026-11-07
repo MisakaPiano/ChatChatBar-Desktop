@@ -1124,6 +1124,17 @@
       "evidence": [
         "OWNER_POST_PROCESS_COMPARISON_R72_FINAL_REVIEW.json"
       ]
+    },
+    {
+      "id": "CHARACTER_POSITION_ACTUAL_EDITOR_AND_NUMBERED_CANVAS",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete354 three position UI/VM deltas: actual Desktop entry/live edit and original undo replace Android staged dialog; execution-time model/active-person/custom-mode guards and person/model numeric history prevent stale edits, shared actual runtime toPromptPlan retains centers. Original-draft-order numbered canvas, V5 reference grid/V45 snapping and focused-inpaint request aspect implemented. New R73 one actual two-person650/480 pointer/scroll/reset methodPASS and4images viewed; original R30 five numeric/queued/history and original shared five request/import methods reused separately,0rerun of old16. Existing fields remain exact apart from unrelated sampling/omitted helpers and distinct R69 final flag. Not exact Android confirmation interaction, whole Studio, real provider/native child lifecycle/human acceptance.",
+      "reviewSource": "7ba6e66df27b70e3c4c14c8b5c8c29499980d539",
+      "evidence": [
+        "OWNER_POSITION_NUMBERED_UI_R73_FINAL_REVIEW.json",
+        "OWNER_CHARACTER_POSITION_CHAIN_REUSE.json",
+        "OWNER_POSITION_VIEWPORT_FINAL_REVIEW.json"
+      ]
     }
   ],
   "deltas": [
@@ -1392,8 +1403,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete354 three position UI/VM deltas: actual Desktop entry/live edit and original undo replace Android staged dialog; execution-time model/active-person/custom-mode guards and person/model numeric history prevent stale edits, shared actual runtime toPromptPlan retains centers. Original-draft-order numbered canvas, V5 reference grid/V45 snapping and focused-inpaint request aspect implemented. New R73 one actual two-person650/480 pointer/scroll/reset methodPASS and4images viewed; original R30 five numeric/queued/history and original shared five request/import methods reused separately,0rerun of old16. Existing fields remain exact apart from unrelated sampling/omitted helpers and distinct R69 final flag. Not exact Android confirmation interaction, whole Studio, real provider/native child lifecycle/human acceptance.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolScreen.kt",
@@ -1402,8 +1413,14 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "CHARACTER_POSITION_ACTUAL_EDITOR_AND_NUMBERED_CANVAS"
+      ],
+      "evidence": [
+        "OWNER_POSITION_NUMBERED_UI_R73_FINAL_REVIEW.json",
+        "OWNER_CHARACTER_POSITION_CHAIN_REUSE.json",
+        "OWNER_POSITION_VIEWPORT_FINAL_REVIEW.json"
+      ]
     },
     {
       "id": "354f15166d8bc0462cb87d62a0ba4613794560a3:app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolViewModel.kt",
@@ -1419,8 +1436,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete354 three position UI/VM deltas: actual Desktop entry/live edit and original undo replace Android staged dialog; execution-time model/active-person/custom-mode guards and person/model numeric history prevent stale edits, shared actual runtime toPromptPlan retains centers. Original-draft-order numbered canvas, V5 reference grid/V45 snapping and focused-inpaint request aspect implemented. New R73 one actual two-person650/480 pointer/scroll/reset methodPASS and4images viewed; original R30 five numeric/queued/history and original shared five request/import methods reused separately,0rerun of old16. Existing fields remain exact apart from unrelated sampling/omitted helpers and distinct R69 final flag. Not exact Android confirmation interaction, whole Studio, real provider/native child lifecycle/human acceptance.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolViewModel.kt",
@@ -1429,8 +1446,14 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "CHARACTER_POSITION_ACTUAL_EDITOR_AND_NUMBERED_CANVAS"
+      ],
+      "evidence": [
+        "OWNER_POSITION_NUMBERED_UI_R73_FINAL_REVIEW.json",
+        "OWNER_CHARACTER_POSITION_CHAIN_REUSE.json",
+        "OWNER_POSITION_VIEWPORT_FINAL_REVIEW.json"
+      ]
     },
     {
       "id": "354f15166d8bc0462cb87d62a0ba4613794560a3:app/app/src/main/java/com/example/chatbar/ui/imageprompt/NovelAiCharacterPositionEditor.kt",
@@ -1446,11 +1469,17 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete354 three position UI/VM deltas: actual Desktop entry/live edit and original undo replace Android staged dialog; execution-time model/active-person/custom-mode guards and person/model numeric history prevent stale edits, shared actual runtime toPromptPlan retains centers. Original-draft-order numbered canvas, V5 reference grid/V45 snapping and focused-inpaint request aspect implemented. New R73 one actual two-person650/480 pointer/scroll/reset methodPASS and4images viewed; original R30 five numeric/queued/history and original shared five request/import methods reused separately,0rerun of old16. Existing fields remain exact apart from unrelated sampling/omitted helpers and distinct R69 final flag. Not exact Android confirmation interaction, whole Studio, real provider/native child lifecycle/human acceptance.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "CHARACTER_POSITION_ACTUAL_EDITOR_AND_NUMBERED_CANVAS"
+      ],
+      "evidence": [
+        "OWNER_POSITION_NUMBERED_UI_R73_FINAL_REVIEW.json",
+        "OWNER_CHARACTER_POSITION_CHAIN_REUSE.json",
+        "OWNER_POSITION_VIEWPORT_FINAL_REVIEW.json"
+      ]
     },
     {
       "id": "354f15166d8bc0462cb87d62a0ba4613794560a3:app/app/src/test/java/com/example/chatbar/domain/image/NovelAiCharacterPositionTest.kt",

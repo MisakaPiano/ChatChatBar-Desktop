@@ -1,3 +1,7 @@
+2026-11-07 当前7ba6后继：328位置数字／参考网格R73原61659B/b034c887…3f932c唯一两高度方法完整PASS及四图核完，原R30五数值/guard/历史与原shared五请求/导入分源复用，不重跑旧16、不称新11。354三UI/VM限域映射，保留Desktop即时编辑/原undo及排队身份保护。24751两float接线已随R73编译，未新测字段交互。7ba6新增可调整Window展开/返回单viewport共用view、原生关闭/新record隔离及同批费用kind/有效元数据/尺寸信息；Enhance前移服务同一High DDIM拒绝规则，Medium和Upscale保留。R74 native入口+真实旧DDIM PNG两方法待原件，不借R72或R67代验。314仍false/315其余未采纳，四身份/全部ID/T11T23/公开1244/db7/sign26及真人原分组保持，无本机JVM/真实资料/新包/公发。
+
+下方历史保留。
+
 2026-11-07 当前4cdc后继：342同步对比R72原23546B/c27ac7c8…9701fa唯一真实component方法完整PASS、0F/E/S与空stderr，两原fit/201%pan图已查看：不同尺寸略异比例条纹对齐、快拖分界、滚轮/平移/重置/上下限/原bytes均到；仅映射148 ImageComparison一行，不借代Panel保存/use、大图/native真人。Panel异步recordId/bytes保护及Large新定位在0437编译。24751两float复用既有NumericInput，保留范围/finite/busy和来源历史，静态接线待下一必要编译。4cdc补位置数字及V5参考网格，数值/排队保护/历史不改，R73扩展原viewport一方法待核，不重跑旧16。339/340/341限定通过保持，314仍false/315其余未采纳，四身份/全部ID/T11T23/公开1244/db7/sign26及真人原分组保持。又清理8份已完成临时下载描述5530B，全部原件/失败/图片保留；无本机JVM/真实资料/新包/公发。
 
 下方历史保留。
