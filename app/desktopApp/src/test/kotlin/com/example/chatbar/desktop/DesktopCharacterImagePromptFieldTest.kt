@@ -65,7 +65,7 @@ class DesktopCharacterImagePromptFieldTest {
         controller.imagePromptTools = { tools }
         val a = CharacterInfo.create("Synthetic A").copy(id = "a", imagePrompt = "red_hair", profile = "Keep A profile")
         val b = CharacterInfo.create("Synthetic B").copy(id = "b", imagePrompt = "green_eyes", profile = "Keep B profile")
-        val card = CharacterCard("card", "Synthetic card", editMode = CharacterEditMode.STRUCTURED,
+        val card = CharacterCard("card", "Synthetic card", greeting = "Synthetic opening.", editMode = CharacterEditMode.STRUCTURED,
             characters = listOf(a, b), createdAt = 1, updatedAt = 1)
         var hostOpen by mutableStateOf(true)
         var scene: ImageComposeScene? = null
@@ -139,7 +139,7 @@ class DesktopCharacterImagePromptFieldTest {
             assertTrue(oldInline.invoke(AnnotatedString("stale A input"))); frames()
             assertEquals("blue_eyes, smile", controller.state.value.card!!.characters[0].imagePrompt)
             assertEquals(b, controller.state.value.card!!.characters[1])
-            assertTrue(controller.save())
+            assertTrue(controller.save(), "Synthetic card save refused: ${controller.state.value.problem}")
             val saved = app.characterRepository.getById(card.id)!!
             assertEquals("blue_eyes, smile", saved.characters[0].imagePrompt); assertEquals(b, saved.characters[1])
             controller.openNew()
