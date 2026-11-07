@@ -1,4 +1,4 @@
-2026-11-07 备份未选scope继续：323登记同m未选图的实际旧RootPreparation 1FAIL，a029图片字段/PC snapshot复核、987缺失image owner及Moment/history纯plan后继已备；新Map类型推断使R02编译失败/零XML，784修正后R04原件待取，未计业务通过。未选voice/archive及PC被替代版本source custody仍为本组必要依赖，不借图片补修关闭整个MergeEngine。另精确复用codec v1/v2及声明归档key三行，原Source11/Writer9只复用不重复新跑。公开/运行/候选四身份、1244/db7/签26、A1真人FAIL、315未采纳不变。
+2026-11-07 未选媒体后继：323图片/原message owner/SaveSlot已核匹配32方法（R05旧30+R06新2，非一次新32），原路径夹具失败保留。新录音source证明与inert PC原件保全、同fileCount陈旧索引失效及逐记录取消已实现；R08原六套36PASS+1夹具FAIL（多anchor的single()在第一case合并前失败，不是业务反例）。82f修正锚点选择，R09/control0f2d待原件；未将voice或整个MergeEngine计通过。公开/运行/候选四身份、1244/db7/签26、A1真人FAIL、315未采纳不变，无本机JVM/真实资料/新包或发布。
 
 下方历史保留。
 
