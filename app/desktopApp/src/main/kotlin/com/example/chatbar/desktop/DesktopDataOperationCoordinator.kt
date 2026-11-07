@@ -95,6 +95,18 @@ internal class DesktopDataOperationCoordinator : AppDataOperationGate {
         finally { releaseNormal(waiter) }
     }
 
+    /** Short synchronous editor file IO. Never wait with the UI/native picker callback blocked. */
+    fun <T> withSynchronousNormalOperation(operation: () -> T): T {
+        val waiter = synchronized(stateLock) {
+            if (currentState != DesktopDataOperationCoordinatorState.OPEN)
+                throw DesktopDataOperationRejectedException(DesktopDataOperationRejectionReason.MAINTENANCE_BUSY,
+                    "资料维护正在进行，编辑资源未写入；请完成维护后重试")
+            NormalWaiter().also { it.granted = true; activeNormalCount++ }
+        }
+        try { return operation() }
+        finally { releaseNormal(waiter) }
+    }
+
     suspend fun <T> withExclusiveMaintenance(
         operation: suspend DesktopExclusiveMaintenanceScope.() -> T,
     ): T {

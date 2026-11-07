@@ -341,6 +341,7 @@ class DesktopAppContainer internal constructor(
             fishCredentials = fishCredentialController,
             fishPreview = { fishPreviewRuntime },
             dataGate = dataOperationCoordinator,
+            manualResourceAccess = { work -> dataOperationCoordinator.withSynchronousNormalOperation(work) },
             documentIndex = ragController,
             speakerHistory = speakerTagHistoryService,
             imageModelSettings = settingsRepository.appSettings.map { it.novelAiImageModel },

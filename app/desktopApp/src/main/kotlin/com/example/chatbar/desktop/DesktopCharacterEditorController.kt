@@ -112,6 +112,7 @@ internal class DesktopCharacterEditorController(
     val documentIndex: DesktopRagController? = null,
     private val speakerHistory: SpeakerTagHistoryService = SpeakerTagHistoryService(characters, chats),
     val imageModelSettings: kotlinx.coroutines.flow.Flow<com.example.chatbar.domain.image.NovelAiImageModel?> = kotlinx.coroutines.flow.flowOf(null),
+    private val manualResourceAccess: ((() -> Unit) -> Unit) = { it() },
 ) {
     internal var cardAi: DesktopCharacterCardAiController? = null
     internal var promptBudget: DesktopEditorBudgetController? = null
@@ -470,8 +471,10 @@ internal class DesktopCharacterEditorController(
     private fun cropImage(bytes: ByteArray, assign: (CharacterCard, String) -> CharacterCard) {
         if (!canMutate()) return
         val session = _state.value.draftSessionId ?: return
-        runCatching { resources.stageImage(session, bytes) }
-            .onSuccess { ref -> edit { assign(it, ref) } }
+        runCatching { manualResourceAccess {
+            val ref = resources.stageImage(session, bytes)
+            edit { assign(it, ref) }
+        } }
             .onFailure { report(CharacterEditorProblem.RESOURCE_FAILED, it) }
     }
 
@@ -491,26 +494,26 @@ internal class DesktopCharacterEditorController(
     fun addTextDocument(name: String, content: String) {
         if (!canMutate()) return
         val session = _state.value.draftSessionId ?: return
-        runCatching {
+        runCatching { manualResourceAccess {
             val effectiveName = name.ifBlank { "document.txt" }
             val ref = resources.stageText(session, effectiveName, content)
             edit { card -> card.copy(customDocuments = card.customDocuments +
                 DocumentInfo.create(effectiveName, ref, documentType(effectiveName))) }
-        }.onFailure { report(CharacterEditorProblem.RESOURCE_FAILED, it) }
+        } }.onFailure { report(CharacterEditorProblem.RESOURCE_FAILED, it) }
     }
 
     fun editDocument(id: String, name: String, content: String) {
         if (!canMutate()) return
         val session = _state.value.draftSessionId ?: return
         val previous = _state.value.card?.customDocuments?.firstOrNull { it.id == id } ?: return
-        runCatching {
+        runCatching { manualResourceAccess {
             val effectiveName = name.ifBlank { previous.fileName }
             val ref = resources.stageText(session, effectiveName, content)
             edit { card -> card.copy(customDocuments = card.customDocuments.map { doc ->
                 if (doc.id == id) doc.copy(fileName = effectiveName, filePath = ref,
                     fileType = documentType(effectiveName, doc.fileType)) else doc
             }) }
-        }.onFailure { report(CharacterEditorProblem.RESOURCE_FAILED, it) }
+        } }.onFailure { report(CharacterEditorProblem.RESOURCE_FAILED, it) }
     }
 
     fun renameDocument(id: String, name: String) = edit { card ->
@@ -571,8 +574,10 @@ internal class DesktopCharacterEditorController(
     private fun stageResource(path: Path, image: Boolean, assign: (CharacterCard, String) -> CharacterCard) {
         if (!canMutate()) return
         val session = _state.value.draftSessionId ?: return
-        runCatching { resources.stage(session, path, image) }
-            .onSuccess { ref -> edit { assign(it, ref) } }
+        runCatching { manualResourceAccess {
+            val ref = resources.stage(session, path, image)
+            edit { assign(it, ref) }
+        } }
             .onFailure { report(CharacterEditorProblem.RESOURCE_FAILED, it) }
     }
 
@@ -609,7 +614,7 @@ internal class DesktopCharacterEditorController(
         if (_state.value.dirty && !_state.value.draftPersisted) persistDraft()
     }
 
-    private suspend fun persistDraft() = draftMutex.withLock {
+    private suspend fun persistDraft() = dataGate.withNormalOperation { draftMutex.withLock {
         val current = _state.value
         if (!current.dirty || current.draftPersisted) return@withLock
         val card = current.card ?: return@withLock
@@ -623,7 +628,7 @@ internal class DesktopCharacterEditorController(
                 _state.value = _state.value.copy(draftPersisted = true, draftBasis = draft)
             }
         } catch (error: Throwable) { report(CharacterEditorProblem.DRAFT_FAILED, error) }
-    }
+    } }
 
     private fun draftAssets(card: CharacterCard): List<String> = buildList {
         card.avatar?.let(::add); card.chatBackground?.let(::add)
@@ -782,12 +787,12 @@ internal class DesktopCharacterEditorController(
         }
     }
 
-    private suspend fun cleanupDraftAndAssets(targetId: String?, sessionId: String?): CharacterDraftCleanup {
+    private suspend fun cleanupDraftAndAssets(targetId: String?, sessionId: String?): CharacterDraftCleanup = dataGate.withNormalOperation {
         val draft = deleteEditorDraftConfirmed(drafts, EditorDraftType.CHARACTER_CARD, targetId, deleteDraft)
         val assetFailure = if (draft.removed && sessionId != null)
             runCatching { discardDraftAssets(sessionId) }.exceptionOrNull()
         else null
-        return CharacterDraftCleanup(draft, assetFailure)
+        CharacterDraftCleanup(draft, assetFailure)
     }
 
     private fun needsCleanDraftCleanup(current: DesktopCharacterEditorState): Boolean =
@@ -797,7 +802,7 @@ internal class DesktopCharacterEditorController(
                 current.problem == CharacterEditorProblem.CLEAN_DRAFT_WARNING) &&
             current.problem != CharacterEditorProblem.SAVE_COMMITTED_WARNING
 
-    private suspend fun cleanObsoleteDraft(): Boolean = draftMutex.withLock {
+    private suspend fun cleanObsoleteDraft(): Boolean = dataGate.withNormalOperation { draftMutex.withLock {
         val before = _state.value
         if (!needsCleanDraftCleanup(before)) return@withLock true
         val cleanup = cleanupDraftAndAssets(before.targetId, before.draftSessionId)
@@ -815,7 +820,7 @@ internal class DesktopCharacterEditorController(
             problem = cleanup.assetFailure?.let { CharacterEditorProblem.RESOURCE_FAILED },
             detail = cleanup.assetFailure?.message)
         true
-    }
+    } }
 
     suspend fun retryCleanup() {
         if (_state.value.problem == CharacterEditorProblem.SAVE_COMMITTED_WARNING) retryCommittedCleanup()
@@ -833,12 +838,12 @@ internal class DesktopCharacterEditorController(
             if (error == null) resourceCleanupCards.remove(previous) else if (failure == null) failure = error
         }
         for (session in resourceCleanupSessions.toList()) {
-            val error = runCatching {
+            val error = runCatching { dataGate.withNormalOperation {
                 check(session != _state.value.draftSessionId || !_state.value.dirty && _state.value.draftBasis == null) {
                     "Active draft resource cleanup is deferred"
                 }
                 discardDraftAssets(session)
-            }.exceptionOrNull()
+            } }.exceptionOrNull()
             if (error == null) resourceCleanupSessions.remove(session) else if (failure == null) failure = error
         }
         val pending = resourceCleanupCards.isNotEmpty() || resourceCleanupSessions.isNotEmpty()
