@@ -2526,7 +2526,9 @@ class CharacterEditViewModel(
                 defaultFormatCardId = selectedDefaultFormatCardId,
                 characters = charactersList.map { it.copy(name = NamePolicy.normalize(it.name)) },
                 customDocuments = documentsList.toList()
-            ) != base
+            ) != base.copy(
+                defaultImageNegativePrompt = PromptTemplates.effectiveCharacterNaiNegativePrompt(base.defaultImageNegativePrompt)
+            )
         }
     }
 
