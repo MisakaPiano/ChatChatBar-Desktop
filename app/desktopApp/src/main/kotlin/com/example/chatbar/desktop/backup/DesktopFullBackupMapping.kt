@@ -53,8 +53,9 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
                         check(relative.split('/').dropLast(1).none { it.startsWith('.') }) {
                             "UNCLASSIFIED_HIDDEN_BACKUP_ENTRY"
                         }
-                        // Preserve the existing single-file unfinished-publication exclusions.
-                        if (path.fileName.toString().let {
+                        // Document/editor owners preserve user filenames, including these suffixes.
+                        // Other media roots retain their unfinished-publication exclusions.
+                        if (name !in setOf("documents", "draft_assets") && path.fileName.toString().let {
                             it.endsWith(".part") || it.endsWith(".tmp") || it.endsWith(".backup")
                         } || relative == "entities/novelai_prompt_translation_cache.json") return@forEach
                         check(!path.fileName.toString().startsWith('.')) { "UNCLASSIFIED_HIDDEN_BACKUP_ENTRY" }
