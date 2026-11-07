@@ -14,7 +14,7 @@
 
 用户明确答复“允许公开1245和签名更新27”，原回执为 `USER_PUBLIC1245_SIGN27_AUTHORITY.json`。release437826309已原样公开为测试Preview，实际tag为 `desktop-v0.1.0-preview.1245`，目标为4c7源码，包含普通安装器、独立ZIP和两份校验文件。先通过匿名四附件身份／两校验文件及182874532字节完整EXE流哈希检查，再将更新元数据从26切到27；提交为 `7a979b43efa78d6efd9892afdc3a375cc9d03c04`，root1原字节保持。随后匿名核对该提交及公开分支的五份role字节均与签27一致。未替用户安装、未写真实资料或凭据、无人验结论；此授权不是正式1.0发布授权。
 
-公开页：[Desktop 0.1.0-preview.1245](https://github.com/MisakaPiano/ChatChatBar-Desktop/releases/tag/desktop-v0.1.0-preview.1245)。公网匿名传输证明与旧1233客户端原云端受控fetcher密码学证明分列，不能将两者冒称为旧客户端实际公网运行通过。
+公开页：[Desktop 0.1.0-preview.1245](https://github.com/MisakaPiano/ChatChatBar-Desktop/releases/tag/desktop-v0.1.0-preview.1245)。公网匿名传输、旧1233原云端受控fetcher及实际公网运行分别保留证明：最小公网R01在checkout时因Windows长路径失败，尚未进入更新器，原日志／步骤保留；R02只补既有longpaths前置，run42418342130完成。原client7752／原transport blob8230、SHAf842在新合成1233身份及云端空自有cache中，使用未替换的默认GitHubFetcher，实际公网发现27、全量182874532字节下载及二次校验均通过，两份stderr为空。十份commit／branch role字节与签27一致。未重建候选、未重跑完整CI、未运行安装器；不是日常已安装客户端的人验或原生更新交接证明。
 
 验收保持原分组，集中提供一次清单。优先复测角色卡专属参数保存、Studio顶栏、预设窗口重复打开三个原失败项；已通过的参数、菜单、IME、草稿和导出范围不逐版本重置。AI各链和C/D/E未使用范围分别保留，不借其中一项通过替整组验收。
 
@@ -22,6 +22,6 @@
 
 ## 原件与清理
 
-原件、检查结果及最终附件位于 `I:/CCB-Desktop-Continuity/updates/20261108-candidate1245-preparation/`。主要工程回执为 `PRIVATE1245_PACKAGE_NATIVE_REVIEW.json`、`SIGNED_CLIENT_VALIDATION.json`、`FROZEN_REVIEW.json`；历史草稿回执 `RELEASE_DRAFT_RESULT.private.json` 保留。实际公开回执为 `PUBLICATION1245_RESULT.private.json`、`PUBLIC_ASSETS_BEFORE_METADATA.json`、`PUBLIC_ANONYMOUS_RESULT.json`。人验清单为 `manual1245-batch-checklist.md`，工程或公开成功不自动改写真人状态。
+原件、检查结果及最终附件位于 `I:/CCB-Desktop-Continuity/updates/20261108-candidate1245-preparation/`。主要工程回执为 `PRIVATE1245_PACKAGE_NATIVE_REVIEW.json`、`SIGNED_CLIENT_VALIDATION.json`、`FROZEN_REVIEW.json`；历史草稿回执 `RELEASE_DRAFT_RESULT.private.json` 保留。实际公开回执为 `PUBLICATION1245_RESULT.private.json`、`PUBLIC_ASSETS_BEFORE_METADATA.json`、`PUBLIC_ANONYMOUS_RESULT.json`，实际旧client公网原2679字节报告为 `public-live-r02-original.zip`（SHA-256 `b415f08fc3ca206258b3f352bdd49bd48de09b7220328169fc01df14ad78f779`），核对回执 `PUBLIC_LIVE_CLIENT_R02_ORIGINAL_REVIEW.json`。人验清单为 `manual1245-batch-checklist.md`，工程或公开成功不自动改写真人状态。
 
 清理完成下载的临时签名链接描述，以及完整163唯一无用Android debug远端产物13588185048（102774086逻辑字节）。两份1245下载外包装在原hash／CRC、所有成员与已保存最终文件逐项复核且独立复核后退役，共379185953逻辑字节；实际安装器、独立ZIP和各小成员继续保留，远端artifact未改。两份原生／签名原报告ZIP、全部原始测试报告、源码与旧失败／取消证据保留。逻辑文件字节不代表磁盘实际释放量。
