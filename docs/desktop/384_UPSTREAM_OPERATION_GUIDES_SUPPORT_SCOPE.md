@@ -9,3 +9,5 @@
 另10项app-update/release-publish维护文本变化按同一边界登记：Android编译/APK及runTests默认值仍是上游平台说明。Desktop候选与稳定链工作流只产工程证据，release_metadata.py不上传；真实正文核对、不可变身份/冲突拒绝及有界状态重试仍属既有发行owner职责，不从技能文字获得公开权限。原267稳定升级身份与当前1244/sign26范围保持，0新功能/运行/真人结论。逐项raw SHA与blob见 OWNER_RELEASE_UPDATE10_SUPPORT_DISPOSITIONS.json。
 
 5项备份skill/增量恢复reference变化亦只作维护支持：实际选择/资源/身份、准入与新根/保护凭据、类型及记忆重映射分别沿既有owner和分源检查。Android删除执行器与Desktop惰性PC记录的差异明确保留，手机待删除指令不带入；当前Engine检查未因reference读完而通过。上游opt-in大包、设备和发布流程不借为Desktop验证或授权；原生84–88和容量边界保持。见 OWNER_BACKUP5_SUPPORT_DISPOSITIONS.json。
+
+历史范围选择与账户费用4项非Prompt测试支持增量已按原件限域复用：Linux原5个范围方法及2个费用对账方法、Windows实际账户成功/刷新1个方法完整通过，相关测试/策略blob未变；8个既有方法不是8个新跑。组合提交不重复计数，供应商真实费用未验证。原回执计数已更正为6行，其中另2行CurrentTurn依赖315，保持pending，不为通过其期待改Prompt。见 OWNER_UI_POLICY4_SUPPORT_SCOPED_REUSE.json。

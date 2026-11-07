@@ -1,3 +1,7 @@
+2026-11-08 当前8cb后继：R138原14897B/463f32f3三FAIL：删除first35有效旧反例，foldPlan/actual两项更早MERGE_ENTITY_TARGET_ID，未到模式断言。R139原18478B/7e5e956d两XML九执行=原ModePlan6+删除Plan1完整PASS，foldPlan/actual两相同真实ID失败保留。Fold实体只有depth/enabled/type，实际Repository用depth键；8cb只为该注册类别用非负Int层级（省略0）定址，通用缺ID仍拒绝；R140控cd329/run42399309613仅两失败完整方法live，未提前PASS。之前R137最终状态5完整PASS保持。更新发行10/backup5/历史及账户4支持增量已按原scope登记，原回执6行其中CurrentTurn2依赖315仍pending，不当功能数或新跑8。Engine仍唯一非Prompt main待闭合，314整体false。公开1244/db7/sign26、全部ID四身份T11T23、真人原分组保持，无本机JVM/真实根/新包/公发，集中批次继续；原件失败保留。
+
+下方历史保留。
+
 2026-11-08 当前50d8：R135原18848B/565079c1五XML12完整PASS为初始diagnostics路径（含045e portable键实际Service），R136原10035B/76088bfa单XML5为中间子目录；最终R137原10037B/b438f348单XML5完整PASS已核SHA/CRC/source/空stderr，61ee普通backups文件与真实snapshot payload/后更新校验/listSnapshots均完成，重叠不加总22。383两Service完整delta限定等位；380/381四Archive/Transaction、382八release/narrative及384二十六操作文档support已登记，文档0新功能0运行。314仍false，非Prompt main backup只余Engine；发现incoming pending_deletions与UPDATE/COPIES折叠depth两实际缺口，59e最小修复已提交，旧R138/42398485793及新R139/42398514287仍live，不能提前PASS。集中整批继续，不出小包。公开1244/db7/sign26、四身份/全部ID/T11T23/真人分组与315其他未采纳保持；无本机JVM/真实根/公发。全部原件失败取消保留，仅清理已完成下载描述。
 
 下方历史保留。
