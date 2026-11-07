@@ -64,7 +64,7 @@ class DesktopCharacterPositionViewportTest {
                 val origin = coordinates.localToRoot(Offset.Zero)
                 return Rect(origin.x, origin.y, origin.x + layout.width, origin.y + layout.height)
             }
-            suspend fun frames() { repeat(4) { scene.render().close(); delay(20) } }
+            suspend fun frames() { repeat(12) { scene.render(System.nanoTime()).close(); delay(18) } }
             suspend fun reach(value: String): SemanticsNode {
                 repeat(5) {
                     val n = target(value); val b = controlBounds(n, value)
@@ -99,7 +99,7 @@ class DesktopCharacterPositionViewportTest {
                 val reset = reach("均匀重置")
                 System.getenv("CCB_FORMAT_AI_REVIEW_DIR")?.let { directory ->
                     val p = Path.of(directory).resolve("position-controls-reachable-$height.png"); Files.createDirectories(p.parent)
-                    scene.render().use { image -> image.encodeToData()!!.use { Files.write(p, it.bytes) } }
+                    scene.render(System.nanoTime()).use { image -> image.encodeToData()!!.use { Files.write(p, it.bytes) } }
                 }
                 val resetPoint = controlBounds(reset, "均匀重置").center
                 scene.sendPointerEvent(PointerEventType.Press, resetPoint, button = PointerButton.Primary)
