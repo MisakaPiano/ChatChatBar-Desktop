@@ -1,5 +1,11 @@
 # 角色位置即时编辑的排队状态归属
 
+当前结论：默认650与短480窗口的完整可达检查已通过。旧R41/run42349166323实际X/Y点击编辑成功，但重置被挤成1px且没有滚动owner，构成有效业务反例；新R47/run42350290509 viewport一方法完整PASS，包含两个高度的X/Y真实聚焦编辑25/75、滚动到重置并pointer清空。两张当前窗口图已实际审阅。原R30未改的Position5/Studio10/ManualUndo1共16PASS分源保留，不宣称一次新跑17。
+
+中间R29–40失败分别来自内部文字取点、LayoutInfo身份、内外坐标、padding命中假设以及默认render的0L帧时间，全部原件保留，不写成生产滚动失败。固定Compose1.10.3默认render时间经只读class字节确认；最终只修夹具为System.nanoTime并按真实输入框测量。旧无滚动同步反例不依赖动画；旧新完整fixture有这一时钟差异，不声称完全同blob。最终R47整体为6PASS4FAIL，另外四FAIL是图片描述的错误dataURI fixture，非位置FAIL；后继见331。详本地`OWNER_POSITION_VIEWPORT_FINAL_REVIEW.json`和`OWNER_POSITION_GEOMETRY_AND_FRAME_REVIEW.json`，本项不再重复跑。原354其他路径未据此整体提升。
+
+下方历史保留。
+
 2026-11-07，继续354角色位置增量核对。固定上游位置弹窗以打开时的角色/模型快照约束确认；Desktop既有设计是即时编辑，仍保留该方式，不改成弹窗整体确认。
 
 Desktop原数字X/Y以显示时的旧center.copy生成整个坐标，实际Panel将transform异步交给Controller。两轴在草稿回写前连续输入时，后一轴可能恢复前一轴旧值。原位置/自动自定义/均匀重置回调也没有在执行时核对原选中模型，角色被停用或当前已转自动后，旧数字操作仍可改其休眠坐标。

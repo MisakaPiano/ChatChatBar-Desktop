@@ -98,8 +98,14 @@ class DesktopReverseSceneEditorTest {
                 presentation.open { captures++; assertNotNull(c.beginReverseSceneEdit()) }; scene.frames()
                 assertEquals(ticket.original, field().config[SemanticsProperties.EditableText].text)
                 assertTrue(field().config[SemanticsActions.SetText].action!!.invoke(AnnotatedString(edited))); scene.frames()
+                // Closing and reopening can coalesce before Compose removes the old body.
+                scene.click("取消")
+                presentation.open { captures++; assertNotNull(c.beginReverseSceneEdit()) }
+                scene.frames()
+                assertEquals(ticket.original, field().config[SemanticsProperties.EditableText].text)
+                assertTrue(field().config[SemanticsActions.SetText].action!!.invoke(AnnotatedString(edited))); scene.frames()
                 scene.click("应用场景修改"); scene.frames()
-                assertNull(presentation.editor); assertEquals(2, captures); assertEquals(edited, c.state.value.reverseSceneDescription)
+                assertNull(presentation.editor); assertEquals(3, captures); assertEquals(edited, c.state.value.reverseSceneDescription)
                 assertNull(c.state.value.reverseCandidate); assertEquals(draft, c.repository.loadDraft()); assertEquals(count, f.requests.size)
             } finally { scene.close() }
         } finally { f.close() }

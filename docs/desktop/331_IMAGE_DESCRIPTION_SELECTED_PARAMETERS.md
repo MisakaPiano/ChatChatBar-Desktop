@@ -4,4 +4,8 @@
 
 后继只将共享策略改成返回原模型，维持既有消息封装、GENERAL提示词、原生图片位置和终态判断；不改任何Prompt文本、参数优先级、其他stage或重试策略。用户未设置时不添加思考/输出字段；明确配置的思考参数及输出上限别名交给原序列化所有者。Android旧“强制off/none”断言同步为上游新行为，其他任务覆盖/隔离断言保留。
 
-新Desktop测试直接调用实际describe并由MockWebServer读取最终HTTP：默认、legacy/custom、reasoning-only、两种输出别名，保留单次请求、原生图片与消息角色顺序；另核拒绝、截断、终态401和取消/排水。旧R42与后继定向验证待原件，不以新测试源码或已过的其他辅助stage冒充本项通过。无真实Provider调用、日常数据操作、新包或发布。
+新Desktop测试直接调用实际describe并由MockWebServer读取最终HTTP：默认、legacy/custom、reasoning-only、两种输出别名，保留单次请求、原生图片与消息角色顺序；另核拒绝、截断、终态401和取消/排水。无真实Provider调用、日常数据操作、新包或发布。
+
+合法raw-base64同一fixture的原件已核：旧R49/run42350877692为3PASS+3参数业务FAIL，实际legacy/custom字段被清洗、reasoning high变none；后继R48/run42350866514的describe六方法完整PASS，邻接reverse8与初版editor4也通过（原三套18PASS）。共享R44十方法和Android R45十六方法分别通过，不将分源结果冒充一次总数。
+
+三份最后原件与共享/Android原件均核长度、SHA、CRC、source和全部XML，详本地`OWNER_IMAGE_DESCRIPTION_SELECTED_PARAMETERS_FINAL_REVIEW.json`。R49 SHA `b39e04f9c5a130fb3c02cb821d02648a5a7ec249abfa02b76d333644516ae09c`；R48 SHA `ecfe7d72f682349a28065cff7632119742004327c9899fd92d5837fbf735b543`。先前R42/R43漏import编译失败（零XML），R46/R47完整dataURI而非真实raw输入导致的fixture失败全部保留；仅修fixture，未改生产MIME或图片builder。终态/取消的MockWebServer无请求连接警告保留，未冒称stderr全空。只闭合8c StreamingChatService这条参数delta，314整体仍未完成。

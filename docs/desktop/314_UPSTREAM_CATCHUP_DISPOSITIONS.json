@@ -978,6 +978,26 @@
         "OWNER_MOMENT_8C_RUNTIME_REUSE.json",
         "COORDINATOR_MOMENT_8C_JUDGE_AND_CARD_SETTINGS_REUSE.json"
       ]
+    },
+    {
+      "id": "ACTUAL_IMAGE_DESCRIPTION_SELECTED_PARAMETERS",
+      "disposition": "EQUIVALENT",
+      "scope": "Only8c StreamingChatService description policy delta. Actual Desktop describe final HTTP now retains selected model custom/legacy/reasoning fields, output aliases and default absence. R49 legal same raw-base64 fixture has three actual parameter failures and three ordinary/boundary passes; current six complete PASS. Shared10 and Android16 separate originals, not a new summed run. No Prompt/MIME/builder changes, provider or user acceptance.",
+      "reviewSource": "0292a1ccfc26669b81db512d08825084cb9d238a",
+      "evidence": [
+        "docs/desktop/331_IMAGE_DESCRIPTION_SELECTED_PARAMETERS.md",
+        "OWNER_IMAGE_DESCRIPTION_SELECTED_PARAMETERS_FINAL_REVIEW.json"
+      ]
+    },
+    {
+      "id": "REVERSE_SCENE_CONFIRM_MODE_EXPANDED_EDITOR",
+      "disposition": "EQUIVALENT",
+      "scope": "Current old reverse8 from R48 plus current expanded editor4 from R50 separately. R50 replaces matching R48 initial editor4, not 18+4 total. Actual scene pane/callback, ticket/source/busy guards, local draft repeat entry/cancel/apply covered. New native window and whole theme not tested.",
+      "reviewSource": "0292a1ccfc26669b81db512d08825084cb9d238a",
+      "evidence": [
+        "docs/desktop/332_REVERSE_SCENE_EXPANDED_EDITOR.md",
+        "OWNER_REVERSE_SCENE_EDITOR_FINAL_REVIEW.json"
+      ]
     }
   ],
   "deltas": [
@@ -5483,8 +5503,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only8c StreamingChatService description policy delta. Actual Desktop describe final HTTP now retains selected model custom/legacy/reasoning fields, output aliases and default absence. R49 legal same raw-base64 fixture has three actual parameter failures and three ordinary/boundary passes; current six complete PASS. Shared10 and Android16 separate originals, not a new summed run. No Prompt/MIME/builder changes, provider or user acceptance.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/chat/StreamingChatService.kt",
@@ -5493,8 +5513,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "ACTUAL_IMAGE_DESCRIPTION_SELECTED_PARAMETERS"
+      ],
+      "evidence": [
+        "docs/desktop/331_IMAGE_DESCRIPTION_SELECTED_PARAMETERS.md",
+        "OWNER_IMAGE_DESCRIPTION_SELECTED_PARAMETERS_FINAL_REVIEW.json"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiCharacterImageSettings.kt",
@@ -6634,8 +6659,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Current old reverse8 from R48 plus current expanded editor4 from R50 separately. R50 replaces matching R48 initial editor4, not 18+4 total. Actual scene pane/callback, ticket/source/busy guards, local draft repeat entry/cancel/apply covered. New native window and whole theme not tested.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolScreen.kt",
@@ -6644,8 +6669,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "REVERSE_SCENE_CONFIRM_MODE_EXPANDED_EDITOR"
+      ],
+      "evidence": [
+        "docs/desktop/332_REVERSE_SCENE_EXPANDED_EDITOR.md",
+        "OWNER_REVERSE_SCENE_EDITOR_FINAL_REVIEW.json"
+      ]
     },
     {
       "id": "48f90b5c7159f928db4537b8a1ef989e16d839b4:app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolViewModel.kt",
