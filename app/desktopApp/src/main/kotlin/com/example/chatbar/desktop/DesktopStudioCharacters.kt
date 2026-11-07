@@ -29,6 +29,9 @@ internal fun desktopPositionRequestSize(draft: NovelAiStudioDraft): NovelAiImage
         requireNotNull(draft.imageGuidance.focusedInpaintRegion), draft.imageGuidance.focusedInpaintMinimumContext).requestSize
 }
 
+private fun desktopPositionPercent(value: Float): String =
+    ((value * 1000).roundToInt() / 10f).toString().removeSuffix(".0")
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun DesktopStudioCharacters(draft: NovelAiStudioDraft, infrastructure: DesktopNovelAiInfrastructure,
@@ -84,7 +87,7 @@ internal fun DesktopStudioCharacters(draft: NovelAiStudioDraft, infrastructure: 
                                 StudioAction("正向 Prompt", selected = !showNegative) { negative = false; openEditor() }
                                 if (!draft.activeSettings.isMedium) StudioAction("负面 Prompt", selected = showNegative) { negative = true; openEditor() }
                                 StudioAction("展开", icon = DesktopAppIcons.ExpandComposer, onClick = expand)
-                                StatusText(character.center?.let { "位置 ${(it.x * 100).roundToInt()}%, ${(it.y * 100).roundToInt()}%" } ?: "位置 · 自动")
+                                StatusText(character.center?.let { "位置 ${desktopPositionPercent(it.x)}%, ${desktopPositionPercent(it.y)}%" } ?: "位置 · 自动")
                             } }) { text ->
                             change { if (showNegative) it.copy(negativePrompt = text) else it.copy(prompt = text) }
                         }
@@ -153,8 +156,22 @@ internal fun DesktopCharacterPositions(draft: NovelAiStudioDraft, edit: ((NovelA
     selected?.let { role ->
         val center = NovelAiCharacterPositionPolicy.center(role, active.indexOf(role), active.size, draft.selectedModel)
         if (custom) {
-            StudioField("X %", (center.x * 100).roundToInt().toString()) { text -> text.toFloatOrNull()?.takeIf { it.isFinite() }?.let { value -> updateCenter { it.copy(x = value / 100) } } }
-            StudioField("Y %", (center.y * 100).roundToInt().toString()) { text -> text.toFloatOrNull()?.takeIf { it.isFinite() }?.let { value -> updateCenter { it.copy(y = value / 100) } } }
+            key(openedModel, role.id) {
+                CompositionLocalProvider(LocalDesktopStudioFieldScope provides "positions:$openedModel:${role.id}") {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        StatusText("X %")
+                        StudioNumericInput("X %", desktopPositionPercent(center.x), Modifier.fillMaxWidth()) { text ->
+                            text.toFloatOrNull()?.takeIf { it.isFinite() }?.let { value -> updateCenter { it.copy(x = value / 100) } }
+                        }
+                    }
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        StatusText("Y %")
+                        StudioNumericInput("Y %", desktopPositionPercent(center.y), Modifier.fillMaxWidth()) { text ->
+                            text.toFloatOrNull()?.takeIf { it.isFinite() }?.let { value -> updateCenter { it.copy(y = value / 100) } }
+                        }
+                    }
+                }
+            }
         }
     }
     StudioAction("均匀重置", enabled = custom) { edit { current ->
