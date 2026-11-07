@@ -7311,8 +7311,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Desktop live image tools now consume the existing transported brush preference singleton. Normal gate precedes the controller mutex, field-only atomic writes preserve other data, explicit errors retain originals, and displayed dp diameter converts through canvas/density to the existing bounded source radius. Original box-selection/guidance entry retained. R12 original two preference/maintenance/actual-pixel methods PASS; existing R11 window4/Studio10 scoped passes reused, not native acceptance.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/data/local/ImageMaskPreferences.kt",
@@ -7322,7 +7322,11 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "docs/desktop/324_IMAGE_HISTORY_AND_MEMORY_ADMISSION_REUSE.md",
+        "brush-preferences-r12.original.review.json",
+        "merge-brush-r11.original.review.json"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/data/local/JsonFileStorage.kt",
@@ -17530,5 +17534,14 @@
     "selectedMethods": 12,
     "newRuns": 0,
     "wholeRestoreTransactionClosed": false
+  },
+  "imageBrushPreferencesReview": {
+    "mappedDelta": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/data/local/ImageMaskPreferences.kt",
+    "source": "09fd940b",
+    "testOnlySuccessor": "187fd49d6e5fe3ffe6a708f331a847061c92f3ee",
+    "run": 42340347962,
+    "passed": 2,
+    "scope": "Original preference file/maintenance/reopen and actual paint pixels; old center-coordinate fixture failure retained",
+    "nativeAcceptance": false
   }
 }

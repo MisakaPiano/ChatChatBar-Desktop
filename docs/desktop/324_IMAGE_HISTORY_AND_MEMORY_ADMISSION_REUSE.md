@@ -28,7 +28,7 @@ Android在独占维护时拒绝新launch，Desktop在platform/service准入处�
 
 09fd以DesktopImageToolPreferences接通原desktop_backup_preferences文件：normal gate先于controller mutex，逐字段读改原子写入，保留其他字段和未知类型；读失败显式重试，不能覆盖原件。保存直径16..72dp，按实际canvas/density换算原图短边半径，保留绘制引擎0.25半径上限。普通工具在有已保存支持类型时恢复该类型；无偏好及guidance仍保持框选入口。蒙版也采用所选显示笔径；应用/关闭等待已提交偏好写入。原图/undo/redo/其他工具保留。
 
-R11/run42339729760/control4f03原21686B/SHA `b889976af9ac78064296c5b3230f1c3adc3d51dcfb9daa1a0f2e85ca2f86821a`四套17=16PASS+笔刷像素夹具1FAIL；原文件/维护等待/重开/坏JSON方法PASS，Window4与Phase7Studio10全PASS，另一voice方法见323。笔刷点坐标按(1000-1)*0.5落499，夹具却在500中心的圆边断言，不能据此称半径错误。187fd仅修测试中心，原三canvas/density及内外边缘、源pixels断言保留，R12/controld2e516只补两方法，待原件。
+R11/run42339729760/control4f03原21686B/SHA `b889976af9ac78064296c5b3230f1c3adc3d51dcfb9daa1a0f2e85ca2f86821a`四套17=16PASS+笔刷像素夹具1FAIL；原文件/维护等待/重开/坏JSON方法PASS，Window4与Phase7Studio10全PASS，另一voice方法见323。笔刷点坐标按(1000-1)*0.5落499，夹具却在500中心的圆边断言，不能据此称半径错误。187fd仅修测试中心，原三canvas/density及内外边缘、源pixels断言保留。R12/run42340347962/controld2e516原9453B/SHA `01c365b2279f3f94622c21d207d9943acece5048c5ca971132251c7155d21559`已核CRC/source/原XML，两方法2PASS/0FAIL/ERROR/SKIP。与R11原Window4/Studio10依源码匹配复用；不是新一次16或18。d3这条live brush维护delta映射EQUIVALENT，不称所有图片工具或真人验收完成。
 
 ## 元数据历史项完整入口后继
 
