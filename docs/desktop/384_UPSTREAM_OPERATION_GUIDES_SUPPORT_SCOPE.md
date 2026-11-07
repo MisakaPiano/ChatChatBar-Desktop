@@ -17,3 +17,5 @@
 15项存储/Repository测试支持按独立完整diff阅读与原件复用登记：原13个完整方法分属批量回滚、当前有效人物fixture、实际批量删除/草稿/元数据、默认采样/模拟alpha配方重读、实验设置。组合提交和initialize夹具修订不是新功能。Android媒体先暂存与Desktop元数据原子发布后按引用清理的差异保留，不冒称已运行原Android省略图片字面用例。状态文件与payload清理的新集成仍待R141，不从支持映射获得通过；见 OWNER_STORAGE15_SUPPORT_SCOPED_REUSE.json，0新跑。
 
 2项隐私图片shared测试支持已完整核对，复用原3个容器清理和4个像素编码完整方法。容器清理保留压缩像素，只去容器元数据；真正隐私编码会抹除载体平面，不能混称。编码器及测试未变，Stripper仅另域方向读取追加/提取，容器清理段完全相同。不借为Android Bitmap/原导出器或角色卡渲染证明。见 OWNER_PRIVACY2_TEST_SUPPORT_REUSE.json，0新跑。
+
+2项语音重试shared测试支持变化已完整核对，复用原执行9/策略3完整方法，test及策略blob未变。只证明虚拟时间/合成请求的次数、独立预算、Retry-After/抖动、拒绝与取消不重放等原边界，不是付费TTS、真实播放或新Prompt验收。另Fish围栏JSON解析变化仍单列pending。见 OWNER_VOICE_RETRY2_TEST_SUPPORT_REUSE.json，0新跑。

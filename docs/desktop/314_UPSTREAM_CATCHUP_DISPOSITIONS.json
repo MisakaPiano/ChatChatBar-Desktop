@@ -2469,6 +2469,24 @@
       "evidence": [
         "OWNER_COMPLETE_MERGE_ENGINE_WITH_TRANSIENT_R141.json"
       ]
+    },
+    {
+      "id": "UPSTREAM_VOICE_RETRY_TEST_SUPPORT_VOICERETRYEXECUTIONTEST",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Two complete shared retry test-support deltas, not a voice-generation feature change. Original Linux162 execution9/policy3 whole methods and exact test/policy blobs remain unchanged: bounded independent auxiliary transport/output budgets, Retry-After seconds/date and jitter, temporary explicit TTS rejection only, no replay for uncertain IO/permanent/auth/balance/refusal/cancellation, cancellation during wait prevents next attempt. Existing request lambdas/virtual-time synthetic errors are not provider calls, physical audio playback, live billing, credentials or new Prompt acceptance. Twelve existing methods reused, not new12 tests. Fish fenced-JSON parser delta remains separate pending review.",
+      "reviewSource": "9d229ed29df0e07bffb2a06ddf8aef8ea9cf452a",
+      "evidence": [
+        "OWNER_VOICE_RETRY2_TEST_SUPPORT_REUSE.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_VOICE_RETRY_TEST_SUPPORT_VOICERETRYPOLICYTEST",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Two complete shared retry test-support deltas, not a voice-generation feature change. Original Linux162 execution9/policy3 whole methods and exact test/policy blobs remain unchanged: bounded independent auxiliary transport/output budgets, Retry-After seconds/date and jitter, temporary explicit TTS rejection only, no replay for uncertain IO/permanent/auth/balance/refusal/cancellation, cancellation during wait prevents next attempt. Existing request lambdas/virtual-time synthetic errors are not provider calls, physical audio playback, live billing, credentials or new Prompt acceptance. Twelve existing methods reused, not new12 tests. Fish fenced-JSON parser delta remains separate pending review.",
+      "reviewSource": "9d229ed29df0e07bffb2a06ddf8aef8ea9cf452a",
+      "evidence": [
+        "OWNER_VOICE_RETRY2_TEST_SUPPORT_REUSE.json"
+      ]
     }
   ],
   "deltas": [
@@ -5659,11 +5677,16 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Two complete shared retry test-support deltas, not a voice-generation feature change. Original Linux162 execution9/policy3 whole methods and exact test/policy blobs remain unchanged: bounded independent auxiliary transport/output budgets, Retry-After seconds/date and jitter, temporary explicit TTS rejection only, no replay for uncertain IO/permanent/auth/balance/refusal/cancellation, cancellation during wait prevents next attempt. Existing request lambdas/virtual-time synthetic errors are not provider calls, physical audio playback, live billing, credentials or new Prompt acceptance. Twelve existing methods reused, not new12 tests. Fish fenced-JSON parser delta remains separate pending review.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_VOICE_RETRY_TEST_SUPPORT_VOICERETRYEXECUTIONTEST"
+      ],
+      "evidence": [
+        "OWNER_VOICE_RETRY2_TEST_SUPPORT_REUSE.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "ed5d12728331eb9af42ac9ebfe60519f3929782a:app/app/src/test/java/com/example/chatbar/domain/voice/VoiceRetryPolicyTest.kt",
@@ -5679,11 +5702,16 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Two complete shared retry test-support deltas, not a voice-generation feature change. Original Linux162 execution9/policy3 whole methods and exact test/policy blobs remain unchanged: bounded independent auxiliary transport/output budgets, Retry-After seconds/date and jitter, temporary explicit TTS rejection only, no replay for uncertain IO/permanent/auth/balance/refusal/cancellation, cancellation during wait prevents next attempt. Existing request lambdas/virtual-time synthetic errors are not provider calls, physical audio playback, live billing, credentials or new Prompt acceptance. Twelve existing methods reused, not new12 tests. Fish fenced-JSON parser delta remains separate pending review.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_VOICE_RETRY_TEST_SUPPORT_VOICERETRYPOLICYTEST"
+      ],
+      "evidence": [
+        "OWNER_VOICE_RETRY2_TEST_SUPPORT_REUSE.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "1874eb3ee965b232684a205790a8fcc6c1bed9f4:.agents/skills/chatbar-image-generation-runtime/SKILL.md",
