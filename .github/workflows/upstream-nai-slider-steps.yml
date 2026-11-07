@@ -1,0 +1,62 @@
+name: Upstream NAI slider step checks
+on:
+  push:
+    branches: [ci/upstream-nai-slider-steps-20261107]
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  SOURCE_SHA: db798ca6df45dd6d0f962db2d0ece5b1316bd0b0
+jobs:
+  sliders:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+          persist-credentials: false
+      - name: Verify exact contribution source
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Compile and run affected sampling regressions
+        working-directory: app
+        run: |
+          bash ./gradlew :app:testDebugUnitTest --tests '*NovelAiSamplingAlignmentTest' --tests '*NovelAiAdvancedSettingsTest' --tests '*NovelAiImageModelResolutionTest' :app:compileDebugAndroidTestKotlin --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx5g -Dfile.encoding=UTF-8'
+          git diff --exit-code
+      - name: Enable cloud runner KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          working-directory: app
+          script: |
+            test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+            bash ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.chatbar.ui.components.NovelAiSamplingSlidersTest,com.example.chatbar.ui.kit.CbSliderTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true --no-daemon --stacktrace -Dorg.gradle.jvmargs='-Xmx4g -Dfile.encoding=UTF-8'
+            mkdir -p build/nai-slider-evidence
+            adb pull /sdcard/Android/data/com.example.chatbar/files/nai-slider-evidence build/nai-slider-evidence/
+            git diff --exit-code
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: upstream-nai-sliders-${{ github.run_id }}
+          path: |
+            app/app/build/test-results/testDebugUnitTest/
+            app/app/build/reports/tests/testDebugUnitTest/
+            app/app/build/outputs/androidTest-results/connected/
+            app/app/build/reports/androidTests/connected/
+            app/build/nai-slider-evidence/
