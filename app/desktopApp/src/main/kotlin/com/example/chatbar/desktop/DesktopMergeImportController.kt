@@ -51,9 +51,9 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
     private fun inspectPasswordFile(password: CharArray?, chooseFile: Boolean, externalSource: Path? = null,
         requireRetained: Boolean = false): Job? {
         if (externalSource == null && externalPasswordFlow) { password?.fill('\u0000'); return null }
+        if (requireRetained && (!externalPasswordFlow || passwordFile != externalSource)) { password?.fill('\u0000'); return null }
         return actionJob(password, DesktopMergeTask.INSPECT,
-            passwordFlow = true) { outcome ->
-            if (requireRetained) check(externalPasswordFlow && passwordFile == externalSource) { "外部备份检查已取消，请重新检查队列中的文件。" }
+            passwordFlow = true, externalPassword = externalSource != null) { outcome ->
             val path = externalSource ?: if (chooseFile) picker.pickOpenFile(TYPE) else passwordFile
             if (path == null) { passwordFile = null; outcome(DesktopWorkPhase.CANCELLED); return@actionJob "已取消选择" }
             passwordFile = path
@@ -138,10 +138,12 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun actionJob(password: CharArray?, task: DesktopMergeTask? = null,
-        passwordFlow: Boolean = false, work: suspend ((DesktopWorkPhase) -> Unit) -> String): Job? = synchronized(lock) {
+        passwordFlow: Boolean = false, externalPassword: Boolean = false,
+        work: suspend ((DesktopWorkPhase) -> Unit) -> String): Job? = synchronized(lock) {
         if (closed || mutable.value.busy || service.restartRequired) { password?.fill('\u0000'); return@synchronized null }
         mutableWork.update { rows -> rows.map { if (it.phase == DesktopWorkPhase.WAITING) it.copy(phase = DesktopWorkPhase.CANCELLED) else it } }
         passwordFlowActive = passwordFlow
+        if (passwordFlow) externalPasswordFlow = externalPassword
         mutable.update { it.copy(busy = true, error = null, failureDetails = null, passwordRequest = null) }
         val taskId = task?.let { UUID.randomUUID().toString() }
         activeTaskId = taskId

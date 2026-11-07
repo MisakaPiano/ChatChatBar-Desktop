@@ -14,6 +14,44 @@ import org.junit.Test
 import kotlin.test.*
 
 class DesktopMergeImportServiceTest {
+    @Test fun `data pane departure cannot cancel queued external inspection before its dispatcher starts`() = runBlocking {
+        fixture(archiveBytes = CensusWireFixtures.bytes(encrypted = true)) {
+            val entered = CompletableDeferred<Unit>()
+            val release = java.util.concurrent.CountDownLatch(1)
+            val first = java.util.concurrent.atomic.AtomicBoolean(true)
+            val dispatcher = object : CoroutineDispatcher() {
+                override fun dispatch(context: kotlin.coroutines.CoroutineContext, block: Runnable) {
+                    Dispatchers.IO.dispatch(context, Runnable {
+                        if (first.compareAndSet(true, false)) {
+                            entered.complete(Unit)
+                            check(release.await(5, java.util.concurrent.TimeUnit.SECONDS))
+                        }
+                        block.run()
+                    })
+                }
+            }
+            val controller = DesktopMergeImportController(service, object : DesktopFilePicker {
+                override fun pickOpenFile(type: DesktopFileType): Path? = error("Already selected external file")
+                override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path? = error("No export")
+            }, DesktopDirectoryPicker { error("No merge") }, dispatcher = dispatcher)
+            try {
+                val job = assertNotNull(controller.inspectExternalFile(archive))
+                withTimeout(5000) { entered.await() }
+                assertTrue(controller.state.value.busy)
+                controller.leavePasswordFlow()
+                release.countDown()
+                withTimeout(20000) { job.join() }
+                assertFalse(job.isCancelled)
+                assertTrue(controller.state.value.passwordRequest!!.externalQueue)
+                controller.selectFile() // A data-page picker cannot replace this queue-owned source.
+                assertTrue(controller.state.value.passwordRequest!!.externalQueue)
+                assertNotNull(controller.discardExternal()).join()
+                assertNull(controller.state.value.passwordRequest)
+                assertFalse(controller.state.value.ready)
+            } finally { release.countDown(); controller.closeAndDrain() }
+        }
+    }
+
     @Test fun `interactive merge keeps encrypted file across repeated passwords and cancels without publishing`() = runBlocking {
         val bytes = CensusWireFixtures.bytes(encrypted = true, files = records("Phone", "https://phone.invalid/v1"))
         fixture(archiveBytes = bytes) {

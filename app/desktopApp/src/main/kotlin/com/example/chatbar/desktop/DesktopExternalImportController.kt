@@ -162,6 +162,7 @@ internal class DesktopExternalImportController(
     fun retryBackupPassword(password: CharArray) = action(password) {
         requireAdmission()
         check(state.value.kind == DesktopExternalImportKind.BACKUP && state.value.phase == DesktopExternalImportPhase.PASSWORD)
+        check(!merge.state.value.busy && merge.state.value.passwordRequest?.externalQueue == true)
         awaitDelegated(merge.retryExternalFilePassword(requireNotNull(prepared).file, password))
         observeBackupInspection()
     }
