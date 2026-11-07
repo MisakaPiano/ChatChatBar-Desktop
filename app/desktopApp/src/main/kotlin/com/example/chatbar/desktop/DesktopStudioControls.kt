@@ -284,7 +284,7 @@ internal fun StudioAdvancedSettings(s: NovelAiGenerationSettings, change: ((Nove
             change { current -> if (current.isMedium) current else current.copy(sampler = value) }
         }
     } else StatusText("14 Steps · Euler Ancestral · CFG Rescale 0")
-    if (s.model.supportsVarietyPlus) StudioSwitch("Variety+（V+）", s.varietyPlus) { change { it.copy(varietyPlus = !it.varietyPlus) } }
+    if (s.model.supportsVarietyPlus) StudioSwitch("Variety+（V+）", s.varietyPlus) { change { it.copy(varietyPlus = !it.varietyPlus, varietyPlusSigma = null) } }
     StudioSwitch("Random Seed", s.seedMode == NovelAiSeedMode.RANDOM) { change { it.copy(seedMode = if (it.seedMode == NovelAiSeedMode.RANDOM) NovelAiSeedMode.FIXED else NovelAiSeedMode.RANDOM) } }
     if (s.seedMode == NovelAiSeedMode.FIXED) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         StatusText("Seed")

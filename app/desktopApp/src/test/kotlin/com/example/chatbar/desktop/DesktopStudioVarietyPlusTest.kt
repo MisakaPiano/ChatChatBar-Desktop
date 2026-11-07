@@ -8,6 +8,7 @@ import androidx.compose.ui.semantics.*
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.data.repository.NovelAiStudioStateRepository
 import com.example.chatbar.desktop.security.InMemoryDesktopSecretStore
+import com.example.chatbar.domain.card.PngTextChunks
 import com.example.chatbar.domain.image.*
 import java.nio.file.Files
 import java.nio.file.Path
@@ -69,6 +70,30 @@ class DesktopStudioVarietyPlusTest {
                 assertTrue(controller.inspectGenerationPreset(preset)); assertTrue(controller.applyGenerationPreset())
                 assertTrue(current().activeSettings.varietyPlus)
                 assertEquals(enabled.basePrompt, current().basePrompt); assertEquals(enabled.stylePrompt, current().stylePrompt)
+                val raster = java.awt.image.BufferedImage(832, 1216, java.awt.image.BufferedImage.TYPE_INT_ARGB)
+                val customPng = try { PngTextChunks.insertTextChunk(DesktopImageEditing.png(raster), "Comment",
+                    """{"model":"nai-diffusion-4-5-full","width":832,"height":1216,"prompt":"synthetic custom variety","steps":28,"scale":6,"sampler":"k_euler_ancestral","skip_cfg_above_sigma":37}""")
+                } finally { raster.flush() }
+                val importedPath = Files.write(parent.resolve("custom-variety.png"), customPng)
+                controller.importMetadata(importedPath, NovelAiStudioMetadataSelection())
+                scene.until { current().activeSettings.varietyPlusSigma != null }
+                val importedSettings = current().activeSettings
+                assertTrue(importedSettings.varietyPlus)
+                assertEquals(37.0, parameters().getValue("skip_cfg_above_sigma").jsonPrimitive.double, 1e-9)
+                scene.frames()
+                assertEquals(importedSettings, current().activeSettings, "Import and ordinary recomposition preserve custom sigma")
+                assertEquals(importedSettings, NovelAiStudioStateRepository(JsonFileStorage(root)).loadDraft().activeSettings)
+                scene.click("Variety+（V+）"); scene.until { !current().activeSettings.varietyPlus }
+                assertNull(current().activeSettings.varietyPlusSigma)
+                assertEquals(JsonNull, parameters()["skip_cfg_above_sigma"])
+                scene.click("Variety+（V+）"); scene.until { current().activeSettings.varietyPlus }
+                assertNull(current().activeSettings.varietyPlusSigma)
+                assertEquals(58.0, parameters().getValue("skip_cfg_above_sigma").jsonPrimitive.double, 1e-9)
+                assertTrue(controller.undo()); scene.until { !current().activeSettings.varietyPlus }
+                assertTrue(controller.undo()); scene.until { current().activeSettings.varietyPlusSigma != null }
+                assertEquals(importedSettings, current().activeSettings)
+                assertEquals(37.0, parameters().getValue("skip_cfg_above_sigma").jsonPrimitive.double, 1e-9)
+                assertContentEquals(customPng, Files.readAllBytes(importedPath))
                 scene.frames()
                 System.getenv("CCB_FORMAT_AI_REVIEW_DIR")?.let { directory ->
                     val file = Path.of(directory).resolve("studio-variety-plus.png"); Files.createDirectories(file.parent)

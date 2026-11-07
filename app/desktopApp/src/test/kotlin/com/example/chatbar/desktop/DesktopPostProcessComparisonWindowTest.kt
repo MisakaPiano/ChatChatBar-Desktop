@@ -7,7 +7,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.window.ComposeWindow
+import androidx.compose.ui.awt.ComposeWindow
 import com.example.chatbar.desktop.security.*
 import com.example.chatbar.domain.card.PngTextChunks
 import com.example.chatbar.domain.image.*

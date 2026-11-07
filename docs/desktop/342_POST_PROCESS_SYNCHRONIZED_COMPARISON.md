@@ -13,3 +13,5 @@
 固定Screen的“全屏对比”另由 `DesktopPostProcessComparisonWorkspace` 等位：复用可缩放工具窗，一次只挂一个对比视口；展开／返回／关闭共享同一fraction与zoom，尺寸变化按既有边界限位，来源或记录变化关闭旧窗并开始独立视图。R72的数学与像素检查继续复用，新Window入口另作native有界生命周期检查，不重复R67大结果。
 
 同一Screen信息差异一并补齐：保留费用完整kind，区分免费／V5配额／Anlas；显示账户或未知、原图及预计输出尺寸，结果尺寸复用实际解码回调。Enhance显示元数据的有效Steps／Sampler／CFG Rescale，Medium不误示休眠High值。reader允许旧DDIM存储可读，但实际服务requestValidationError拒绝High DDIM，因此Panel只在Enhance前移同一预检、显示明确原因并禁开始；不改reader、计价或请求规则，不阻止独立Upscale，Medium有效EA仍可用。R74新增实际旧DDIM PNG入口的High／Medium及Upscale检查，与新native入口同批；信息文字不逐条建测试。待原件，不提前提升整个148Screen或真人验收。
+
+随后为workspace整体增加 `key(identity)`，来源／记录变化时连同内部已解码图像状态一并卸载，避免只重置view却保留旧图像的produceState值。R74源7ba6尚不含此小包装，随下一必要批次编译；不据旧R74提前宣称此后继已编译。
