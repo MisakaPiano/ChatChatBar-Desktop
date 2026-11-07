@@ -233,7 +233,7 @@ class DesktopBackupReadOnlyInspectorTest {
         val changes: List<(JsonObject) -> JsonObject> = listOf(
             { JsonObject(it - "scope") },
             { JsonObject(it + ("formatVersion" to JsonPrimitive(1))) },
-            { JsonObject(it + ("appVersionCode" to JsonPrimitive(88))) },
+            { JsonObject(it + ("appVersionCode" to JsonPrimitive(CURRENT_DESKTOP_BACKUP_CODE + 1))) },
             { JsonObject(it + ("future" to JsonPrimitive("SYNTHETIC_NEVER_LOG_VALUE"))) },
             { JsonObject(it + ("scope" to JsonObject(it.getValue("scope").jsonObject + ("globalOptions" to JsonArray(listOf(JsonPrimitive("unknown"))))))) },
             { JsonObject(it + ("scope" to JsonObject(it.getValue("scope").jsonObject + ("sessionsWithImages" to JsonPrimitive(1)))) ) }

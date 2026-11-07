@@ -1578,6 +1578,15 @@
       "evidence": [
         "OWNER_IMAGE_STUDIO_VOICE_THREE_STORAGE_DELTAS.json"
       ]
+    },
+    {
+      "id": "REGISTRY_COMPLETE_1A_TYPED_INVENTORY_DOCUMENT_SUFFIX",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete1a registry delta: actual Policy/schema validation covers all40 official stores plus4 Desktop stores; native Mapping inventories registered roots, refuses unknown stores/hidden ancestors/unsafe files rather than silently skipping. Native installed catalog pair uses R108 bridge. Legitimate non-hidden document/draft suffixes now preserved via a128 and R114 actual Service full/selected export→authenticated Source→mapped restore/reopened draft12 complete methods. Android unused Registry.files is not runtime proof; no whole backup closure.",
+      "reviewSource": "5466e6c655e1229dfad1166cbb3d6655c0d7552f",
+      "evidence": [
+        "OWNER_DOCUMENT_SUFFIX_R113_R114_AND_REGISTRY_1A.json"
+      ]
     }
   ],
   "deltas": [
@@ -10752,11 +10761,16 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete1a registry delta: actual Policy/schema validation covers all40 official stores plus4 Desktop stores; native Mapping inventories registered roots, refuses unknown stores/hidden ancestors/unsafe files rather than silently skipping. Native installed catalog pair uses R108 bridge. Legitimate non-hidden document/draft suffixes now preserved via a128 and R114 actual Service full/selected export→authenticated Source→mapped restore/reopened draft12 complete methods. Android unused Registry.files is not runtime proof; no whole backup closure.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "REGISTRY_COMPLETE_1A_TYPED_INVENTORY_DOCUMENT_SUFFIX"
+      ],
+      "evidence": [
+        "OWNER_DOCUMENT_SUFFIX_R113_R114_AND_REGISTRY_1A.json",
+        "docs/desktop/368_DOCUMENT_SUFFIX_BACKUP_AND_REGISTRY_REVIEW.md"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:app/app/src/main/java/com/example/chatbar/domain/backup/BackupEntityValidator.kt",
