@@ -20,6 +20,17 @@ control118739、run42333474020、artifact13558359735原51599B，SHA256 `a9181712
 - 显式reset已有23步/模型CFG，但shared仓库缺singleton仍建立旧28/6草稿。634只在缺singleton时对两个模型用既有GenerationDefaults，保留实体decoder默认、已保存草稿原bytes、准入/锁/缓存/恢复顺序。
 - High界面动作可在effort变化前排队、之后才交给草稿transform。bd8保护sampler，ab840同时保护High-only Steps/CFG Rescale；CFG Scale仍可在Medium变更，显式reset/undo未加限制。新增Scene用例通过真实控件生成四个transform后延迟应用，分别核休眠值、Medium可编辑值及High正向操作；不冒称物理鼠标或真人故障复现。
 
-最初Boundary R01/R02及InitialDefaults R01/R02都被同一个新夹具漏填characterCaptions阻断：四份原归档只有source、零XML，不计业务反例或业务通过。664只补该测试参数。合法对照R03源ee01（父58c，仅两个测试文件与664同blob，旧生产不动）与修正R04源664已排同组有界检查；前者选新三方法，后者shared新3+原13及Desktop原26。延迟控件后继单独按ab840选受影响的八方法。结果待原件，原失败保留。
+最初Boundary R01/R02及InitialDefaults R01/R02都被同一个新夹具漏填characterCaptions阻断：四份原归档只有source、零XML，不计业务反例或业务通过。664只补该测试参数。合法对照R03源ee01（父58c，仅两个测试文件与664同blob，旧生产不动）与修正R04源664已排同组有界检查；前者选新三方法，后者shared新3+原14及Desktop原26。延迟控件后继单独按ab840选受影响的八方法。原件结果已在下方登记，原失败保留。
 
 原件目录：`I:/CCB-Desktop-Continuity/updates/20261106-upstream-catchup-to149/`。314整体仍`complete:false`，未将路径数当功能数，也未用原reset方法代验新首次初始化。
+
+
+## 合法对照与后继原件
+
+R03/control3fc2fb/run42334398038原两套三方法=1PASS+2FAIL、0ERROR/SKIP：首次创建在V4.5旧28/6断言失败，之后的V5和保存重开未到；Unicode在第一个U00A0/HIGH失败，其后分支未到。旧草稿bytes不改一例通过。原19548B/SHA256 `bacf4a7d3e543caa938b929838a0f9337a3db4fd83f534dceafdf1769587683d` 已核CRC/source/全部XML。
+
+R04/control1137f1/run42334403456原八套43PASS、0FAIL/ERROR/SKIP，准确分为shared17（新fresh2+boundary1、原reset1+V5gen5+quote8）与Desktop26（Admission7+Phase7Studio10+DraftHistory9）。此前预估16/42是加总错误，以原XML17/43更正；不是新增一方法。首次初始化和Unicode方法已完整执行，包括两个模型、所有空白边界/High与Medium、关闭或V4.5不变、旧草稿原bytes及新草稿重开。原36700B/SHA256 `aee017f237d600387597691110c13b3a47aeff20e67f0de2d3c45cc70281aec3` 已核CRC/source/全部XML。
+
+延迟UI R01/bd8/control8efa/run42334515719原四套8PASS，只含sampler新场景。R02/ab840/control327b/run42334684173同四套8PASS，新增场景已扩为sampler/Steps/CFG Rescale三个真实控件transform，另核CFG Scale在Medium继续生效和High正向sampler变更；没有机械再跑旧生产对照。两轮原件分别172727B/SHA `7c2e644ed7a94b26ed59f47b33101bdb779eca09bf4d8142df08253862eab94d`、172723B/SHA `c55a569c347ec2be7a23fd075ef666628d4f965e60a400da2fa7eee92d13b529`；CRC/source/全部XML已核，范围重叠不累加为新增16方法。
+
+322后继再精确映射a963缺singleton初始化一行与892/b0采样器控件两行，共20条。V5 helper三条混合路径仍保留未逐字等同的原tag去重差异，不用17/43证明概括关闭。没有Prompt literal变更或整体baseline提升。

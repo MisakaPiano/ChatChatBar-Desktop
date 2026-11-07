@@ -10787,8 +10787,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Missing-singleton creation now uses existing model defaults only; old decoded/saved settings retained. Actual corrected old/new repository counterexample and original43 PASS.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/data/repository/NovelAiStudioRepository.kt",
@@ -10797,8 +10797,16 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_PARAMETER_UI_SUCCESSORS"
+      ],
+      "evidence": [
+        "docs/desktop/322_NAI_PARAMETER_IMPORT_AND_UI_SUCCESSORS.md",
+        "I:\\CCB-Desktop-Continuity\\updates\\20261106-upstream-catchup-to149\\nai-adjacent-r04.original.review.json"
+      ],
+      "desktopOwners": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/NovelAiStudioStateRepository.kt"
+      ]
     },
     {
       "id": "a96313d9ec44244a301fa94f7a0ad6f98cf6350a:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiCharacterImageSettings.kt",
@@ -13662,11 +13670,20 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Desktop equivalent selectors retain supported High menu and effective Medium EA, with current-state guard inside queued transform. Card existing guard and actual Scene delayed actions plus active Guidance/High positive checks original8 PASS.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_PARAMETER_UI_SUCCESSORS"
+      ],
+      "evidence": [
+        "docs/desktop/322_NAI_PARAMETER_IMPORT_AND_UI_SUCCESSORS.md",
+        "I:\\CCB-Desktop-Continuity\\updates\\20261106-upstream-catchup-to149\\nai-sampler-ui-r02.original.review.json"
+      ],
+      "desktopOwners": [
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopStudioControls.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterImageDefaults.kt"
+      ]
     },
     {
       "id": "892b478b17d3bf0943e779d3f14108b750f3355c:app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolScreen.kt",
@@ -14476,11 +14493,20 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Desktop equivalent selectors retain supported High menu and effective Medium EA, with current-state guard inside queued transform. Card existing guard and actual Scene delayed actions plus active Guidance/High positive checks original8 PASS.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_PARAMETER_UI_SUCCESSORS"
+      ],
+      "evidence": [
+        "docs/desktop/322_NAI_PARAMETER_IMPORT_AND_UI_SUCCESSORS.md",
+        "I:\\CCB-Desktop-Continuity\\updates\\20261106-upstream-catchup-to149\\nai-sampler-ui-r02.original.review.json"
+      ],
+      "desktopOwners": [
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopStudioControls.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/DesktopCharacterImageDefaults.kt"
+      ]
     },
     {
       "id": "b0fa1a425f24a0abe5adcb3b8f5775598452996e:app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolScreen.kt",
@@ -17425,8 +17451,14 @@
   },
   "naiParameterReview": {
     "source": "bd8ae253869774973e83c764a5d5b9c0ff905546",
-    "mappedProductionDeltas": 17,
+    "mappedProductionDeltas": 20,
     "proof": "Matched original162 eight suites / 13 existing PASS; first-draft initialization, Unicode boundary and UI successors separate",
-    "review": "docs/desktop/322_NAI_PARAMETER_IMPORT_AND_UI_SUCCESSORS.md"
+    "review": "docs/desktop/322_NAI_PARAMETER_IMPORT_AND_UI_SUCCESSORS.md",
+    "successors": {
+      "source": "ab8409637bb25f42587b52c44f47710dec18f455",
+      "shared17Desktop26Run": 42334403456,
+      "controls8Run": 42334684173,
+      "complete": false
+    }
   }
 }
