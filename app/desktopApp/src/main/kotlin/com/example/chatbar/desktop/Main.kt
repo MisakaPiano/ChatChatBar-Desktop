@@ -210,6 +210,7 @@ private fun runDesktopBusinessApplication(resolvedRoot: DesktopDataRootResolutio
                                 LocalDesktopTaskCenter provides appContainer.taskCenter,
                                 LocalDesktopModalActivity provides modalActivity,
                                 LocalDesktopApiAccounts provides appContainer.apiAccountController,
+                                LocalDesktopImageToolPreferences provides appContainer.imageToolPreferences,
                             ) {
                                 DesktopApiAccountDialog()
                                 DesktopPrimaryShell(
