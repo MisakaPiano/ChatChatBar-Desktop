@@ -5,3 +5,5 @@
 保留原Prompt来源导入和单次replace／全局undo。读取全局设置后，卡有显式模型则选卡模型并停止跟随；卡无模型且草稿跟随全局则选当前全局；卡无模型且手选则保留原模型。最后才把卡参数应用到这一模型的active bank，非active bank保持。未改Prompt原文、Vibe inline载荷、元数据、计价或Provider。
 
 实际Controller定向用例覆盖显式卡模型×原跟随开／关、无卡模型跟随全局、无卡模型保留手选四内部情形，核参数bank／Seed／未改内容、仓库回读、原卡不变及一次undo／redo。不是四个方法或实际出图；R75待原件，其他8c VM Vibe差异不据此关闭。
+
+R75／42363159910在生产compileKotlin停住：跨模块public可空模型属性不能直接smart-cast。原318B／SHA6855e26b…23af14仅source、0XML；改局部cardModel快照保持既定选择顺序。没有运行到测试／账户读取。新DDIM夹具同时改显式合成account／credentialConfigured及空SecretStore，避免下一轮走应用默认账户请求。R76同原四方法继续，未记业务通过或用户验收；不把未成功的取消请求记为cancelled。

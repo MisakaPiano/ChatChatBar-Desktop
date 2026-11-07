@@ -5,3 +5,5 @@
 只在唯一Studio开关的原draft transform加 `varietyPlusSigma=null`；共享导入／JSON／完整预设／历史与未操作时的customSigma继续保留，角色卡applyTo原本已清且不改，计价和序列化算法不改。沿现有持久撤销恢复原自定义值。
 
 在已有实际Studio UI方法追加合法832×1216自定义Sigma PNG导入→无操作保持与仓库回读→点击关闭／开启清Sigma→最终请求回默认58→两步撤销恢复原37请求值及原PNG不变。原方法的草稿／预设／历史／模型邻接保留，仅定向此类；不重跑整个Studio。R75待原件，不提前记通过或旧运行反例。
+
+R75／42363159910在生产compileKotlin停住：跨模块public可空模型属性不能直接smart-cast。原318B／SHA6855e26b…23af14仅source、0XML；改局部cardModel快照保持既定选择顺序。没有运行到测试／账户读取。新DDIM夹具同时改显式合成account／credentialConfigured及空SecretStore，避免下一轮走应用默认账户请求。R76同原四方法继续，未记业务通过或用户验收；不把未成功的取消请求记为cancelled。

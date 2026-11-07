@@ -1,3 +1,7 @@
+2026-11-07 当前ecdfff后继：R75原318B/6855e26b…23af14仅source/0XML，生产compileKotlin因跨模块public可空模型不能smart-cast停住；ecdfff局部cardModel快照修编译，不改已定导入语义。未运行测试或账户loader；取消未成功，GitHub409因当时已terminal failure，不记cancelled。DDIM fixture预先换真实Controller+明确本地合成account/credentialConfigured及空SecretStore，不走应用默认账户请求。R76/42363584677同四方法在验，R74和R75两编译原件/完整日志保留，不当业务FAIL。R69/R71/R72/R73及a963限定复用保持，314仍false/315其余未采纳，四身份/全部ID/T11T23/公开1244/db7/sign26及真人原分组保持；无本机JVM/真实资料/新包/公发。
+
+下方历史保留。
+
 2026-11-07 当前accd后继：R74原318B/723c3a46…a4374d仅source/0XML，compileTestKotlin因新测试ComposeWindow误import停住；完整日志与失败保留，仅改ui.awt，不当业务FAIL。accd后继同批补V+仅显式关/开清customSigma、导入卡先选显式/全局/手动模型再套active bank并保另一bank及原undo；workspace整体key身份卸载旧decoded state。R75/42363159910原native2+Variety实际PNG UI1+卡import实际Controller1在验，不重跑R72/R67/旧位置16。另a963角色默认采样三行实际已有，匹配原shared1/Desktop2分源复用0新跑并限定映射。R69/R71/R72/R73限定通过保留，314仍false/315其余未采纳，四身份/全部ID/T11T23/公开1244/db7/sign26及真人原分组保持；无本机JVM/真实资料/新包/公发。
 
 下方历史保留。
