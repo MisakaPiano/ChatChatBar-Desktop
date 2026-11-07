@@ -929,6 +929,16 @@
         "OWNER_ADOPTED_REMINDER_SINGLE_DELTA_REUSE.json",
         "COORDINATOR_ADOPTED_REMINDER_354_SINGLE_DELTA.json"
       ]
+    },
+    {
+      "id": "METADATA_COMPLETE_FILE_OR_ORIGINAL_ALPHA_CANDIDATE",
+      "disposition": "EQUIVALENT",
+      "scope": "Shared candidate parser retains ordinary metadata precedence and whole-source fallback without cross-channel parameter mixing; Desktop supplies original non-oriented alpha from PNG/WebP. Four exact original162 owner/test blobs plus exact fa39 integration fixture; reused shared3 and actual Desktop2 original methods, no new run.",
+      "reviewSource": "31701669b3709a121c16732d94049ee08ac75330",
+      "evidence": [
+        "docs/desktop/317_PNG_ORIENTATION_AND_REUSED_IMAGE_BEHAVIOR_REVIEW.md",
+        "OWNER_METADATA_CANDIDATE_CHANNEL_REUSE.json"
+      ]
     }
   ],
   "deltas": [
@@ -3239,8 +3249,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Shared candidate parser retains ordinary metadata precedence and whole-source fallback without cross-channel parameter mixing; Desktop supplies original non-oriented alpha from PNG/WebP. Four exact original162 owner/test blobs plus exact fa39 integration fixture; reused shared3 and actual Desktop2 original methods, no new run.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
@@ -3249,8 +3259,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "METADATA_COMPLETE_FILE_OR_ORIGINAL_ALPHA_CANDIDATE"
+      ],
+      "evidence": [
+        "docs/desktop/317_PNG_ORIENTATION_AND_REUSED_IMAGE_BEHAVIOR_REVIEW.md",
+        "OWNER_METADATA_CANDIDATE_CHANNEL_REUSE.json"
+      ]
     },
     {
       "id": "cb9c0f7ae228174af38e1cdbd6fa0a48d1743f49:app/app/src/main/java/com/example/chatbar/domain/image/StealthAlphaMetadata.kt",

@@ -47,3 +47,7 @@ R02包含 `PngOrientationReadingTest`、`ImageMetadataStripperTest`、`PrivacyPn
 `ac03143beeb79c78a76f78920c66c532271d5391` 另补上游41476f的“新建对话”图标区分：采用同库 `MessageSquarePlus`，角色新增仍为 `CirclePlus`，原点击回调和无障碍描述不变。后继run42261803705实际编译及原输入界面邻接三套32方法PASS、0FAIL/ERROR/SKIP，原件见318；不用图标常量镜像测试充数，不冒称原生真人验收。
 
 本页均为未交付工程记录。没有本机编译、日常App操作、真实资料改写、Provider调用、新安装包或新公开发布；其余141–148混合差异和已有Prompt组仍逐项保留在314，整体 `complete:false`。
+# cb9 元数据候选的单项复用 / 2026-11-07
+
+另独读cb9的完整元数据读取增量：普通文本块先作为完整候选，失败后才尝试原始alpha候选；不从两个来源拼参数。当前共享Reader/Stealth解码器、Desktop原始alpha适配和共享测试四blob仍与原162一致；当前Desktop集成fixture与fa39一致。原162的Stealth三方法及方向R03原件中实际PNG优先/失败回退和WebP无ImageIO插件两方法共五项PASS仅分源复用，未新跑。适配读取原尺寸alpha，不先旋转或缩略图重采样；显示方向由独立owner负责。只登记cb9的Reader一条delta，不提升全部图片交互、其他元数据增量或真人验收。逐blob和原ZIP SHA/CRC/XML见本地`OWNER_METADATA_CANDIDATE_CHANNEL_REUSE.json`。
+
