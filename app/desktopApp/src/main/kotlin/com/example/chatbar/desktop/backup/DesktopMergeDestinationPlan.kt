@@ -191,6 +191,10 @@ internal class DesktopMergeDestinationPlan private constructor(
                 val path = "entities/app_settings.json"
                 entities[path] = JsonObject(entities[path].orEmpty() + defaults)
             }
+            if (selection.searchSettingOverrides.isNotEmpty()) {
+                val path = "entities/app_settings.json"
+                entities[path] = JsonObject(entities[path].orEmpty() + selection.searchSettingOverrides)
+            }
             if (selection.mode != DesktopBackupRestoreMode.MERGE_CHOICES && (selection.incomingScope == null ||
                 selection.incomingScope.moments || selection.incomingScope.globalOptions.any { it.startsWith("moments") })) {
                 entities.keys.firstOrNull { DesktopBackupPolicy.entityType(it) == "app_settings" }?.let { path ->

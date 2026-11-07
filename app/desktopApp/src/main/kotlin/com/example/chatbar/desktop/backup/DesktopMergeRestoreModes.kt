@@ -27,7 +27,8 @@ internal object DesktopMergeRestoreModes {
 
     fun plan(pc: Map<String, DesktopMergePreview.Unit>, incoming: Map<String, DesktopMergePreview.Unit>, fingerprint: String,
         scope: InspectionScope?, incomingCatalog: Boolean, mode: DesktopBackupRestoreMode,
-        pcMedia: Map<String, String>, phoneMedia: Map<String, String>, active: () -> Unit): Plan {
+        pcMedia: Map<String, String>, phoneMedia: Map<String, String>, active: () -> Unit,
+        computerSettings: JsonObject?, incomingSettings: JsonObject?): Plan {
         require(mode != DesktopBackupRestoreMode.MERGE_CHOICES)
         val replace = mode == DesktopBackupRestoreMode.REPLACE_SELECTED
         val copies = mode == DesktopBackupRestoreMode.ADD_COPIES
@@ -147,11 +148,14 @@ internal object DesktopMergeRestoreModes {
         if (scope?.studioSettings != false) computer.entries.removeAll { (_, unit) ->
             DesktopBackupPolicy.isStudioSettings(unit.category)
         }
-        val defaultFields = if (scope != null) buildSet {
+        val selectedSettingFields = if (scope != null) buildSet {
             addAll(BackupSettingOptions.fields(scope.globalOptions))
             if (incoming.values.any { it.category == "chat_sessions" }) add("lastSeenChatAt")
             if (scope.moments) add("lastSeenMomentsAt")
-        } - incoming.values.filter { it.category == "app_settings" }.map { it.label }.toSet() else emptySet()
+        } else emptySet()
+        val defaultFields = selectedSettingFields - incoming.values.filter { it.category == "app_settings" }.map { it.label }.toSet()
+        val searchOverrides = DesktopMergeSearchSettings.overrides(computerSettings, incomingSettings, selectedSettingFields,
+            scope != null && (incomingSettings != null || selectedSettingFields.isNotEmpty()))
         // Selected omitted setting fields become defaults before deciding what unselected content still needs.
         computer.entries.removeAll { (key, unit) -> unit.category == "app_settings" && key.removePrefix("setting:") in defaultFields }
         if (replace && scope != null) {
@@ -213,7 +217,7 @@ internal object DesktopMergeRestoreModes {
         val retainCatalog = !(incomingCatalog || replace && selectedTag)
         val selection = DesktopMergePreview.Selection(computer.values.toList(), phone.values.toList(), forks, fingerprint,
             incoming.keys - phone.keys, replaced, scope, voiceSources, aliases, incomingCatalog,
-            mode, renames, retainCatalog, !(replace && scope == null), defaultFields)
+            mode, renames, retainCatalog, !(replace && scope == null), defaultFields, searchOverrides)
         return Plan(selection, added, updated, copied, (pc.keys - computer.keys - replaced.values.map { it.key }.toSet()).size, warnings.toList())
     }
 }
