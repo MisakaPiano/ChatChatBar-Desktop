@@ -1677,6 +1677,51 @@
       "evidence": [
         "OWNER_FOUR_BACKUP_UI_ENTRY_HOST_DELTAS.json"
       ]
+    },
+    {
+      "id": "MERGE_CATALOG_COMPLETE_1A_LAZY_TYPED_METADATA",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete new catalog53-line delta. Actual Desktop lazy per-record disk view derives typed identity/label/singleton metadata and full signatures under record budget; title override fallback and NFKC/trim/Locale.ROOT/80-character numbered copy names map to Preview/RestoreModes/Destination actual consumers. It does not cache whole archive bodies. R124 two complete mode methods reused; original stream metadata vs bounded lazy record implementation is explicit. No whole Engine claim.",
+      "reviewSource": "a3d2ec001bb1335ccb322178651b6fe34182dcaa",
+      "evidence": [
+        "OWNER_BOOTSTRAP_CATALOG_RETENTION_FIVE_DELTAS.json"
+      ]
+    },
+    {
+      "id": "MERGE_RETAINED_MEDIA_COMPLETE_1A_ACTUAL_PC_OWNER",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete new retained-media42-line delta. Actual explicit replaced PC unit supplies scope-unselected matching chat images/metadata, Moment images/metadata/versions, Studio history images; exact type/id/session/card owner and COMPUTER-side resource rewrite prevent crossing forks. Missing prior messages and unselected slot/voice families use retainedSessionRecords and separate voice custody policy. Scoped selected-empty may clear; BOTH keeps independent content. R08 image two whole methods reused; voice failure not borrowed. Current alias/cancellation/postprocess additions retain separate R90/R91/postprocess evidence, not whole-file R08 equality.",
+      "reviewSource": "a3d2ec001bb1335ccb322178651b6fe34182dcaa",
+      "evidence": [
+        "OWNER_BOOTSTRAP_CATALOG_RETENTION_FIVE_DELTAS.json"
+      ]
+    },
+    {
+      "id": "APP_STARTUP_COMPLETE_D3_PRE_REPOSITORY_RESTORE",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete ChatBarApp134-line delta. Actual Main StartupGate recovers whole-backup/index/session journals under root ownership before AppContainer; lifecycle joins persistent initialization before applicationBody/external receiver/Community and lazy Moments owner. App-owned backup Service flushes composer and drains writers before snapshot. Desktop translation service reads current catalog/dictionary and does not persist Android translation-cache entity. Android in-place rollback-after-init is replaced by sealed independent new-root preparation with preserved old root; legacy in-place journal remains internal and is not claimed identical. Existing early authority nine complete checks reused; no new full Main/native runtime proof or previously-existing unrelated migration coverage.",
+      "reviewSource": "a3d2ec001bb1335ccb322178651b6fe34182dcaa",
+      "evidence": [
+        "OWNER_BOOTSTRAP_CATALOG_RETENTION_FIVE_DELTAS.json"
+      ]
+    },
+    {
+      "id": "BOOTSTRAP_COMPLETE_D3CF2AA9_NATIVE_OWNED_ACTIVATION",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete bootstrap delta: actual StartupGate first resolves pending journal and verifies FreshRootAuthority COMPLETE/ACTIVE data/key/namespace binding before repositories. Incomplete/corrupt/changed evidence refuses; normal later ACTIVE edits remain valid. Modern import fully prepares and protects a distinct new root, publishes root selection last, keeps old root and originals. Compatibility is enforced by authenticated versioned Source before preparation; invocation scratch closes via its owner rather than Android global recursive incoming/export cleanup. Legacy v1 journal rollback/commit is distinct and has no production UI restore entry. Original nine authority methods reused with unchanged exact owner/test blobs; no new local JVM, native DPAPI, physical UI or whole Engine claim.",
+      "reviewSource": "a3d2ec001bb1335ccb322178651b6fe34182dcaa",
+      "evidence": [
+        "OWNER_BOOTSTRAP_CATALOG_RETENTION_FIVE_DELTAS.json"
+      ]
+    },
+    {
+      "id": "BOOTSTRAP_COMPLETE_1A692604_NATIVE_OWNED_ACTIVATION",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete bootstrap delta: actual StartupGate first resolves pending journal and verifies FreshRootAuthority COMPLETE/ACTIVE data/key/namespace binding before repositories. Incomplete/corrupt/changed evidence refuses; normal later ACTIVE edits remain valid. Modern import fully prepares and protects a distinct new root, publishes root selection last, keeps old root and originals. Compatibility is enforced by authenticated versioned Source before preparation; invocation scratch closes via its owner rather than Android global recursive incoming/export cleanup. Legacy v1 journal rollback/commit is distinct and has no production UI restore entry. Original nine authority methods reused with unchanged exact owner/test blobs; no new local JVM, native DPAPI, physical UI or whole Engine claim.",
+      "reviewSource": "a3d2ec001bb1335ccb322178651b6fe34182dcaa",
+      "evidence": [
+        "OWNER_BOOTSTRAP_CATALOG_RETENTION_FIVE_DELTAS.json"
+      ]
     }
   ],
   "deltas": [
@@ -8288,8 +8333,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete ChatBarApp134-line delta. Actual Main StartupGate recovers whole-backup/index/session journals under root ownership before AppContainer; lifecycle joins persistent initialization before applicationBody/external receiver/Community and lazy Moments owner. App-owned backup Service flushes composer and drains writers before snapshot. Desktop translation service reads current catalog/dictionary and does not persist Android translation-cache entity. Android in-place rollback-after-init is replaced by sealed independent new-root preparation with preserved old root; legacy in-place journal remains internal and is not claimed identical. Existing early authority nine complete checks reused; no new full Main/native runtime proof or previously-existing unrelated migration coverage.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ChatBarApp.kt",
@@ -8298,8 +8343,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "APP_STARTUP_COMPLETE_D3_PRE_REPOSITORY_RESTORE"
+      ],
+      "evidence": [
+        "OWNER_BOOTSTRAP_CATALOG_RETENTION_FIVE_DELTAS.json",
+        "docs/desktop/378_BACKUP_STARTUP_PLATFORM_OWNERS.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/MainActivity.kt",
@@ -8543,11 +8593,16 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete bootstrap delta: actual StartupGate first resolves pending journal and verifies FreshRootAuthority COMPLETE/ACTIVE data/key/namespace binding before repositories. Incomplete/corrupt/changed evidence refuses; normal later ACTIVE edits remain valid. Modern import fully prepares and protects a distinct new root, publishes root selection last, keeps old root and originals. Compatibility is enforced by authenticated versioned Source before preparation; invocation scratch closes via its owner rather than Android global recursive incoming/export cleanup. Legacy v1 journal rollback/commit is distinct and has no production UI restore entry. Original nine authority methods reused with unchanged exact owner/test blobs; no new local JVM, native DPAPI, physical UI or whole Engine claim.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "BOOTSTRAP_COMPLETE_D3CF2AA9_NATIVE_OWNED_ACTIVATION"
+      ],
+      "evidence": [
+        "OWNER_BOOTSTRAP_CATALOG_RETENTION_FIVE_DELTAS.json",
+        "docs/desktop/378_BACKUP_STARTUP_PLATFORM_OWNERS.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/backup/AppBackupCodec.kt",
@@ -10792,11 +10847,16 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete bootstrap delta: actual StartupGate first resolves pending journal and verifies FreshRootAuthority COMPLETE/ACTIVE data/key/namespace binding before repositories. Incomplete/corrupt/changed evidence refuses; normal later ACTIVE edits remain valid. Modern import fully prepares and protects a distinct new root, publishes root selection last, keeps old root and originals. Compatibility is enforced by authenticated versioned Source before preparation; invocation scratch closes via its owner rather than Android global recursive incoming/export cleanup. Legacy v1 journal rollback/commit is distinct and has no production UI restore entry. Original nine authority methods reused with unchanged exact owner/test blobs; no new local JVM, native DPAPI, physical UI or whole Engine claim.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "BOOTSTRAP_COMPLETE_1A692604_NATIVE_OWNED_ACTIVATION"
+      ],
+      "evidence": [
+        "OWNER_BOOTSTRAP_CATALOG_RETENTION_FIVE_DELTAS.json",
+        "docs/desktop/378_BACKUP_STARTUP_PLATFORM_OWNERS.md"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:app/app/src/main/java/com/example/chatbar/domain/backup/AppBackupCodec.kt",
@@ -11036,11 +11096,16 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete new catalog53-line delta. Actual Desktop lazy per-record disk view derives typed identity/label/singleton metadata and full signatures under record budget; title override fallback and NFKC/trim/Locale.ROOT/80-character numbered copy names map to Preview/RestoreModes/Destination actual consumers. It does not cache whole archive bodies. R124 two complete mode methods reused; original stream metadata vs bounded lazy record implementation is explicit. No whole Engine claim.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "MERGE_CATALOG_COMPLETE_1A_LAZY_TYPED_METADATA"
+      ],
+      "evidence": [
+        "OWNER_BOOTSTRAP_CATALOG_RETENTION_FIVE_DELTAS.json",
+        "docs/desktop/377_MERGE_CATALOG_RETAINED_MEDIA.md"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:app/app/src/main/java/com/example/chatbar/domain/backup/BackupMergeEngine.kt",
@@ -11171,11 +11236,16 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete new retained-media42-line delta. Actual explicit replaced PC unit supplies scope-unselected matching chat images/metadata, Moment images/metadata/versions, Studio history images; exact type/id/session/card owner and COMPUTER-side resource rewrite prevent crossing forks. Missing prior messages and unselected slot/voice families use retainedSessionRecords and separate voice custody policy. Scoped selected-empty may clear; BOTH keeps independent content. R08 image two whole methods reused; voice failure not borrowed. Current alias/cancellation/postprocess additions retain separate R90/R91/postprocess evidence, not whole-file R08 equality.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "MERGE_RETAINED_MEDIA_COMPLETE_1A_ACTUAL_PC_OWNER"
+      ],
+      "evidence": [
+        "OWNER_BOOTSTRAP_CATALOG_RETENTION_FIVE_DELTAS.json",
+        "docs/desktop/377_MERGE_CATALOG_RETAINED_MEDIA.md"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:app/app/src/main/java/com/example/chatbar/domain/deletion/DeletionCoordinator.kt",

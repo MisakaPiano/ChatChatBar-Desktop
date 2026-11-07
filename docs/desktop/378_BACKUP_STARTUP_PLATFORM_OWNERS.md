@@ -1,0 +1,7 @@
+# 备份启动恢复的平台实现
+
+实际Main先取得资料目录所有权，再由StartupGate恢复事务并核验新根的资料、受保护凭据和目录绑定，之后才构造资料库。持久化初始化完成后进入主界面、外部导入与后台功能。未完成准备或证据变化的目录拒绝启动；已激活根允许后续正常编辑。
+
+现代导入使用独立新根、最后发布目录选择并保留旧根，与Android原地改名、初始化失败后回滚及全局scratch清理不是相同机制；旧v1原地journal仍独立保留内部回归，不冒称当前GUI路线。兼容版本由认证Source先判定；Desktop词典翻译不复用Android持久化翻译缓存。
+
+完整d3 ChatBarApp及d3/1a Bootstrap三项差异已核，原162九个authority完整方法及四个未变owner/test blob限定复用；不称整17方法、完整Main/native DPAPI或真人恢复通过。无新增启动hook、无新CI；详见 OWNER_BOOTSTRAP_CATALOG_RETENTION_FIVE_DELTAS.json。

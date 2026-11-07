@@ -1,0 +1,5 @@
+# 合并目录与未选媒体保全
+
+Desktop以逐记录受限磁盘视图获取标签与身份，并在实际Preview、模式规划和目标写入中处理规范化重名/副本；未选媒体只来自明确被替换的PC对象，按原类型、会话与角色身份核对，再用电脑侧资源路径写回。两个存档可共享历史消息身份，互不混入独立分支。Moment多版本与Studio图片保留额外Desktop语义。
+
+完整1a新增53/42行已核，复用R124两完整模式方法和R08两完整图片方法；R08整组另有voice失败，不记整组通过。当前retained owner后续alias/postprocess/cancel改动另有原作用域证据，不能说整文件等于R08。0新运行；详见 OWNER_BOOTSTRAP_CATALOG_RETENTION_FIVE_DELTAS.json。Archive/Validator/Engine独立处理，314整体未完成。
