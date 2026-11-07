@@ -1,3 +1,7 @@
+2026-11-08 当前43a后继：R146原9297B/79beae24单唯一XML1完整PASS，SHA/CRC/source/空stdout-stderr与当前test/storage/payload三blob已核；实际typed draft/history各160MiB在256MiB独立子进程加载/重开、引用去重/原hash不变完成。仅此读取容量，不冒称全App/UI峰值、resolve大请求或GiB加密备份。R145图库新2+邻接2原scope保持；R144编译0XML及全部旧失败取消原件保留。本批70项raw支持（媒体4/备份17/采样29/Android组件14/图像6）已分源映射，0新功能0新跑；R146独立1方法，不将复用加总。314整体false，余36行继续具体核对，315既有用户决定未答范围保持pending。公开1244/db7/sign26、四身份全部ID/T11T23与真人原分组不变，无本机JVM/真实根/新包公发；集中完成整批后再交成熟候选。仅清完成R146下载描述，原ZIP/报告保留。
+
+下方历史保留。
+
 2026-11-08 当前fc87：R145原11767B/15c33efc两XML4完整PASS，SHA/CRC/source/空stderr已核；实际图库新2验证read前2并发/详情独立/退出队列取消/失败重开及APNG帧等待让出，原尺寸重组/omitted2邻接通过。R144原320B/b10394df实际FAIL仅source0XML，唯一测试缺getOrNull import；9f只补引用，生产256d不变，原job与ZIP保留，不称业务反例。1d图库维护缺口限定闭合未交付；当前其余维护14/test5及clear-import6支持分源/源码边界已登记，R48有效description6与旧R46/R47/R49失败不混。新R146控1d30/run42404690351只验synthetic typed draft/history各160MiB/256MiB子进程，仍live不提前PASS。314整体false/315实际用户选择保持；公开1244/db7/sign26、四身份全部ID/T11T23/真人原分组不变，无本机JVM/真实根/新包公发，集中完整批次继续。
 
 下方历史保留。

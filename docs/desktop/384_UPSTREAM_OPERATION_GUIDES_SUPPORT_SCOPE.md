@@ -37,3 +37,13 @@ Fish标签JSON围栏1项测试支持由现有gateway3/严格标签1完整方法�
 其余功能/平台维护14与参数/头像测试5按完整raw范围登记，保留叙事/尾部4项315依赖；社区仅dormant数据保全，不开放服务。图像描述有效6完整方法是R48（原警告保留），不是R46/R47/R49失败原件；复制映射中的R46引用已纠正。Memory/RAG2与头像helper2分源复用、不重复计数，不借为Android字面测试/整体Prompt采纳；现发布者校验另沿R89。见 OWNER_REMAINING_MAINTENANCE14_PARAMETER_AVATAR_TEST5_SUPPORT_REUSE.json，0新跑。
 
 6条Studio清空/卡负面/metadata导入测试参考已按最终规则核对：中间单独恢复按钮被后续清空取代，8c仅固定时间夹具。卡负面清空的完整字段语义是源码核对，不谎称旧StudioModels字面测试已执行；原导入5/default-helper5/真实clear-undo-reopen1/已有负面wire1分源复用。后续Models独立accessor与alpha沿另证据，不写整owner同162。见 OWNER_STUDIO_CLEAR_IMPORT_SIX_TEST_SUPPORT_REUSE.json，0新跑。
+
+4项媒体Android测试参考已核原raw字节：8c两项只是Unit/scroll与定位器变更，不生出新功能；隐私实际callback源码与原编码器/LSB结果分开，不称完成按钮UI两PASS；反推沿R48/R50/R53原scope，不冒称Activity/IME执行。图库预算另有R145，不能借这些旧测试关闭。见 OWNER_MEDIA_FOUR_ANDROID_TEST_SUPPORT_REUSE.json，0新跑。
+
+17项备份测试参考完整raw由协调端核对，A复核原字节SHA与7个当前owner/test blob及选中原XML；现代选范围/空族/向量/嵌套身份/凭据/新根发布沿R08及R119–R143等分别保留。真实Windows DPAPI1与deterministic facade7明确分开；原stream6/Large2不升格为Android35cuts、跨机、junction或opt encrypted1GiB/256m/4GiB已执行。中间coordinator同步分支另沿必要原proof，不写整owner同162。见 OWNER_BACKUP_SEVENTEEN_TEST_SUPPORT_REUSE.json，0新跑。
+
+29条采样/透明/Medium/V+/费用/import测试raw（20独立变化body）完整核对，复用原Linux162/R04/R51/R69/R79分源完整方法，fixture数值类型/时间与merge组合不新增测试。High动作strength后继纠正旧全价期待；legacyDDIM可读/High请求拒绝、native version4/uc、既有case-insensitive去重均显式列为意图差异，不谎称历史Android wire字节完全相同。R51以后V+开关实际修复另沿R79，Controls新增数值helper不改采样reset，不能写整旧UI未变。见 OWNER_SAMPLING_TWENTY_NINE_TEST_SUPPORT_REUSE.json，0新跑。
+
+14项Android组件测试完整raw差异分源复用：主要是定位器/IME/fixture；人物字段实际R71、朋友圈实际R89后台与原生modal源码、图库R14/R145各保留范围。不称R89跑过三项Android UI、不称R145做过全局Coil缓存投毒。见OWNER_FOURTEEN_ANDROID_COMPONENT_TEST_SUPPORT_REUSE.json；0新跑。
+
+最后6项图像测试参考raw已读：inline/typed容量由原compact3/payload3及新R146各保留范围；R146不是resolve大请求/全App峰值。反推新增两项由原Reverse4与R48/R50/R53分源；Medium陈旧写回和透明导入沿R51/162，实际metadata UI只是源码等位，不假称跑过两原生click。f52截图和b0fa合并不重复功能/测试数。见OWNER_IMAGE_FINAL_SIX_TEST_SUPPORT_REUSE.json。
