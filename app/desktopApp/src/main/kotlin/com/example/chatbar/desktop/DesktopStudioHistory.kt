@@ -30,8 +30,8 @@ internal fun desktopHistoryThumbnailTarget(source: IntSize, viewport: IntSize): 
 }
 
 @Composable
-internal fun DesktopHistoryThumbnail(reference: String, read: (String) -> ByteArray, modifier: Modifier) {
-    if (reference.startsWith(com.example.chatbar.domain.chat.OMITTED_SAVE_SLOT_IMAGE_PREFIX)) {
+internal fun DesktopHistoryThumbnail(image: NovelAiGenerationHistoryImage, read: (String) -> ByteArray, modifier: Modifier) {
+    if (image.originalOmitted) {
         Box(modifier, contentAlignment = Alignment.Center) { StatusText("仅元数据") }
         return
     }
@@ -40,7 +40,7 @@ internal fun DesktopHistoryThumbnail(reference: String, read: (String) -> ByteAr
         val viewport = with(density) { IntSize(maxWidth.roundToPx().coerceAtLeast(1), maxHeight.roundToPx().coerceAtLeast(1)) }
         // Stable across selection/status recompositions; a real cell/density change may decode again.
         val decodeTarget = remember(viewport) { { source: IntSize -> desktopHistoryThumbnailTarget(source, viewport) } }
-        DesktopOwnedImage(reference, read, Modifier.fillMaxSize(), displayTargetForSource = decodeTarget)
+        DesktopOwnedImage(image.path, read, Modifier.fillMaxSize(), displayTargetForSource = decodeTarget)
     }
 }
 
@@ -144,8 +144,10 @@ internal fun DesktopStudioHistory(controller: DesktopNovelAiStudioController,
     val albums = remember(filtered, level.foldEnabled, level.foldType) { foldHistoryImages(filtered, level.foldType.takeIf { level.foldEnabled }) }
     fun preview(item: NovelAiHistoryImageItem) {
         highlighted = item
-        val index = filtered.indexOfFirst { it.key == item.key }
-        if (index >= 0) onPreview(filtered.map { it.image.path }, index)
+        if (item.image.originalOmitted) { detail = item; return }
+        val available = filtered.filterNot { it.image.originalOmitted }
+        val index = available.indexOfFirst { it.key == item.key }
+        if (index >= 0) onPreview(available.map { it.image.path }, index)
     }
     val visibleSelections = remember(filtered) { filtered.map { NovelAiHistoryImageSelection(it.entry.id, it.image.path) }.toSet() }
     LaunchedEffect(entries, level) {
@@ -213,7 +215,7 @@ internal fun DesktopStudioHistory(controller: DesktopNovelAiStudioController,
                 }
                 Column(Modifier.border(if (allSelected) 2.dp else 1.dp, if (allSelected) DesktopBootstrapColors.primary else DesktopBootstrapColors.border).padding(6.dp)) {
                     Box {
-                        DesktopHistoryThumbnail(item.image.path, controller.resources::readBytes, Modifier.fillMaxWidth().height(180.dp)
+                        DesktopHistoryThumbnail(item.image, controller.resources::readBytes, Modifier.fillMaxWidth().height(180.dp)
                             .onPointerEvent(PointerEventType.Press) { shift = it.keyboardModifiers.isShiftPressed }
                             .desktopViewerEntry(enabled = preferencesLoaded && !savingPreference, onClick = {
                                 if (shift) select(true)
@@ -261,10 +263,12 @@ internal fun DesktopStudioHistory(controller: DesktopNovelAiStudioController,
 
 
 @Composable
-private fun DesktopHistoryImageDetails(item: NovelAiHistoryImageItem, controller: DesktopNovelAiStudioController,
+internal fun DesktopHistoryImageDetails(item: NovelAiHistoryImageItem, controller: DesktopNovelAiStudioController,
     draft: NovelAiStudioDraft?, onPreview: () -> Unit, onApply: (NovelAiHistoryApplyMode) -> Unit,
     onUse: (NovelAiImageUseTarget) -> Unit) {
-            DesktopOwnedImage(item.image.path, controller.resources::readBytes, Modifier.fillMaxWidth().height(240.dp)
+            if (item.image.originalOmitted) Box(Modifier.fillMaxWidth().height(240.dp), contentAlignment = Alignment.Center) {
+                StatusText("导出时未包含原图 · 参数与 Seed 已保留")
+            } else DesktopOwnedImage(item.image.path, controller.resources::readBytes, Modifier.fillMaxWidth().height(240.dp)
                 .desktopViewerEntry(onClick = onPreview))
             StudioActions { NovelAiHistoryApplyMode.entries.forEach { mode ->
                 val available = desktopHistoryApplyAvailable(item.entry.recipe, mode)
@@ -272,7 +276,7 @@ private fun DesktopHistoryImageDetails(item: NovelAiHistoryImageItem, controller
                     onApply(mode)
                 }
             } }
-            draft?.let { current -> StudioActions { desktopImageUseTargets(current.selectedModel).forEach { target -> BootstrapButton("用作${target.displayName}") { onUse(target) } } } }
+            draft?.let { current -> StudioActions { desktopImageUseTargets(current.selectedModel).forEach { target -> BootstrapButton("用作${target.displayName}", enabled = !item.image.originalOmitted) { onUse(target) } } } }
             SelectionContainer { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 desktopHistoryRecipeDetails(item.entry, item.image).forEach { (label, value) -> StatusText(label); StatusText(value.ifBlank { "（空）" }) }
             } }

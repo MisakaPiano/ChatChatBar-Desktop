@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.example.chatbar.data.local.entity.GeneratedImageMetadata
+import com.example.chatbar.domain.image.NovelAiGenerationHistoryImage
 import com.example.chatbar.data.local.entity.ChatMessage
 import com.example.chatbar.data.local.entity.MessageRole
 import java.awt.image.BufferedImage
@@ -149,7 +150,7 @@ class DesktopMessageImagePresentationTest {
     @Test fun `metadata only history thumbnails never try to open a missing image`() = runBlocking(awt) {
         var reads = 0
         val scene = ImageComposeScene(240, 240) {
-            DesktopHistoryThumbnail(com.example.chatbar.domain.chat.OMITTED_SAVE_SLOT_IMAGE_PREFIX + "synthetic",
+            DesktopHistoryThumbnail(NovelAiGenerationHistoryImage(com.example.chatbar.domain.chat.OMITTED_SAVE_SLOT_IMAGE_PREFIX + "synthetic"),
                 { reads++; error("Omitted image must not be read") }, Modifier.width(180.dp).height(180.dp))
         }
         try {
@@ -180,7 +181,7 @@ class DesktopMessageImagePresentationTest {
         val scene = ImageComposeScene(600, 600) {
             Column {
                 StatusText(label)
-                DesktopHistoryThumbnail("synthetic", { reads++; raw }, Modifier.width(width).height(180.dp))
+                DesktopHistoryThumbnail(NovelAiGenerationHistoryImage("synthetic"), { reads++; raw }, Modifier.width(width).height(180.dp))
             }
         }
         try {
