@@ -38,6 +38,8 @@ class VoiceMessageRepository(
     private val strictReads: Boolean = false,
 ) {
     private val mutex = Mutex()
+    private suspend fun <T> withDataAccess(operation: suspend () -> T): T =
+        storage.withNormalOperation { mutex.withLock { operation() } }
     private val _voices = MutableStateFlow<List<GeneratedVoiceMessage>>(emptyList())
     val voices = _voices.asStateFlow()
     private var anchorsByVersion = emptyMap<VoiceAnchorStateKey, VoiceAnchorState>()
@@ -63,8 +65,8 @@ class VoiceMessageRepository(
     }
 
     suspend fun initialize() {
-        mutex.withLock {
-            if (initialized) return@withLock
+        withDataAccess {
+            if (initialized) return@withDataAccess
             _voices.value = loadVoices()
             anchorsByVersion = loadAnchors()
                 .associateBy { VoiceAnchorStateKey(it.messageId, it.messageVersionId) }
@@ -102,7 +104,7 @@ class VoiceMessageRepository(
     suspend fun readDurable(id: String) = storage.readEntityStrict(VOICE_TYPE, id, GeneratedVoiceMessage.serializer())
 
     /** Explicit refresh after a proven durable voice commit; never resets damaged data. */
-    suspend fun reload() = mutex.withLock {
+    suspend fun reload() = withDataAccess {
         val loaded = loadVoices()
         val anchors = loadAnchors()
         anchorsByVersion = anchors.associateBy { VoiceAnchorStateKey(it.messageId, it.messageVersionId) }
@@ -115,13 +117,13 @@ class VoiceMessageRepository(
         return _voices.value.filter { it.sessionId == sessionId }
     }
 
-    suspend fun snapshotAnchorsForMessages(messageIds: Set<String>): List<VoiceAnchorState> = mutex.withLock {
+    suspend fun snapshotAnchorsForMessages(messageIds: Set<String>): List<VoiceAnchorState> = withDataAccess {
         ensureInitializedLocked()
         anchorsByVersion.values.filter { it.messageId in messageIds }
     }
 
     /** Caller supplies fresh message identities; preserve exact version/segment placement. */
-    suspend fun restoreCopiedAnchors(states: List<VoiceAnchorState>) = mutex.withLock {
+    suspend fun restoreCopiedAnchors(states: List<VoiceAnchorState>) = withDataAccess {
         ensureInitializedLocked()
         states.forEach { state ->
             val key = VoiceAnchorStateKey(state.messageId, state.messageVersionId)
@@ -141,7 +143,7 @@ class VoiceMessageRepository(
         return VoiceMessageVersionPolicy.visibleVoices(message, _voices.value)
     }
 
-    suspend fun ensureAnchors(message: ChatMessage): List<VoiceSegmentAnchor> = mutex.withLock {
+    suspend fun ensureAnchors(message: ChatMessage): List<VoiceSegmentAnchor> = withDataAccess {
         ensureInitializedLocked()
         migrateLegacyVoiceVersionsLocked(message)
         val version = MessageAlternativeVersionPolicy.activeVersion(message)
@@ -152,7 +154,7 @@ class VoiceMessageRepository(
         message: ChatMessage,
         messageVersionId: String,
         content: String
-    ): List<VoiceSegmentAnchor> = mutex.withLock {
+    ): List<VoiceSegmentAnchor> = withDataAccess {
         ensureInitializedLocked()
         migrateLegacyVoiceVersionsLocked(message)
         ensureVersionAnchorsLocked(message, messageVersionId, content)
@@ -224,7 +226,7 @@ class VoiceMessageRepository(
             )
     }
 
-    suspend fun save(voice: GeneratedVoiceMessage) = mutex.withLock {
+    suspend fun save(voice: GeneratedVoiceMessage) = withDataAccess {
         ensureInitializedLocked()
         storage.saveEntity(VOICE_TYPE, voice.id, voice, GeneratedVoiceMessage.serializer())
         _voices.value = _voices.value.filterNot { it.id == voice.id } + voice
@@ -232,15 +234,15 @@ class VoiceMessageRepository(
 
     suspend fun replace(voice: GeneratedVoiceMessage) = save(voice)
 
-    suspend fun delete(id: String): GeneratedVoiceMessage? = mutex.withLock {
+    suspend fun delete(id: String): GeneratedVoiceMessage? = withDataAccess {
         ensureInitializedLocked()
-        val existing = _voices.value.firstOrNull { it.id == id } ?: return@withLock null
+        val existing = _voices.value.firstOrNull { it.id == id } ?: return@withDataAccess null
         storage.deleteEntity<GeneratedVoiceMessage>(VOICE_TYPE, id)
         _voices.value = _voices.value.filterNot { it.id == id }
         existing
     }
 
-    suspend fun deleteForMessage(messageId: String): List<GeneratedVoiceMessage> = mutex.withLock {
+    suspend fun deleteForMessage(messageId: String): List<GeneratedVoiceMessage> = withDataAccess {
         ensureInitializedLocked()
         val removed = _voices.value.filter { it.messageId == messageId }
         removed.forEach { storage.deleteEntity<GeneratedVoiceMessage>(VOICE_TYPE, it.id) }
@@ -253,7 +255,7 @@ class VoiceMessageRepository(
         removed
     }
 
-    suspend fun deleteForSession(sessionId: String): List<GeneratedVoiceMessage> = mutex.withLock {
+    suspend fun deleteForSession(sessionId: String): List<GeneratedVoiceMessage> = withDataAccess {
         ensureInitializedLocked()
         val removed = _voices.value.filter { it.sessionId == sessionId }
         val messageIds = buildSet {
@@ -276,7 +278,7 @@ class VoiceMessageRepository(
     suspend fun restoreForSession(
         sessionId: String,
         voices: List<GeneratedVoiceMessage>
-    ) = mutex.withLock {
+    ) = withDataAccess {
         ensureInitializedLocked()
         val old = _voices.value.filter { it.sessionId == sessionId }
         old.forEach { storage.deleteEntity<GeneratedVoiceMessage>(VOICE_TYPE, it.id) }
