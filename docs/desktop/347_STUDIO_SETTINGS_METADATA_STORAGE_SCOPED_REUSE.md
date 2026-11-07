@@ -22,3 +22,9 @@ d3 InlinePayloadStore完整差异只有两处Android维护wrapper。Desktop的�
 ## 十项导入与模型完整差异补核
 
 54c／310／3f6／c02／b0 的 ImageImport 与 Models 十个完整 raw delta 已逐项读并对应当前 owner。ImageImport／ImageModel／GenerationDefaults 仍逐 blob 匹配原162；Models 对原162只有四项采样重置 helper 和 omitted accessor，不声称整文件相同。Medium 约束放在实际 prepareForRequest／serializer，保留原High偏好；默认false／High省略编码与默认值相同。Reader/原R04、R69六线、R79两UI和R51 reset 各按原源复用，不重跑、不累计成新测试。仅这十项 EQUIVALENT，314整体仍false，Prompt315和真人结论保持。详见 OWNER_NAI_IMPORT_MODELS_TEN_DELTAS_REUSE.json。
+
+## 十项服务与V5文本策略完整差异
+
+Ten complete54c/310/3f6/c02/892/b0 Service/Account/TextPolicy deltas only: shared request-only text preparation and explicit PNG suffix ownership, Medium effective14/EA/rescale0/Heavy UC with empty role UC while dormant High prefs survive, actual final V5 straight_alpha and transparency fields, V45 sigma scales once. Exact current owners match each prior source; original R04 text8+whitespace1, R69wire6 and162 High5/Medium7 prices reused separately. Corrected fractional23-step per-sample pricing replaces obsolete simple14-step charge. Desktop params_version4 vsHigh/off3 and case-insensitive first-chunk tag dedup are explicit differences; no stored text or unadopted315 Prompt edits, provider billing or whole lifecycle claim.
+
+已逐完整rawdelta阅读并核当前service／policy／account／pricing精确owner与选定原XML/SHA/CRC，0新跑。实际Enhance reader只投影允许字段，Medium角色UC不回放，V5 straight_alpha在最终参数写入，V45 Sigma只按画布缩放一次并拒绝无穷值。源文件的PromptTemplates依赖由既有authority桥接，不借此改315其他字串。没有费用／透明结果真实provider验收，314整体false。详见 OWNER_NAI_SERVICE_POLICY_TEN_DELTAS_REUSE.json。

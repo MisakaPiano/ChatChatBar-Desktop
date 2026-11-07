@@ -1371,6 +1371,33 @@
       "evidence": [
         "OWNER_PREFERENCE_EXTERNAL_FOUR_DELTAS_REUSE.json"
       ]
+    },
+    {
+      "id": "POSTPROCESS_VM_CONTROLS_TWO_COMPLETE_148_DELTAS",
+      "disposition": "EQUIVALENT",
+      "scope": "Entire148 VM/Controls deltas mapped to actual keyed Desktop source pane, numeric options/admission/cost, credential/account/task-owned processing, exact-source stop and durable results before callback. Existing R56 selected4/R58successor2/R67large1/R81held-input1 separately reused; original R56 failure retained. Desktop Upscale default, finite0..1 options, no swipe recognizer/global unrelated-work lock/VM cancellation are intentional. No fresh native busy-tab/provider/human acceptance.",
+      "reviewSource": "6a1353c19ab6bdf845d794874927c2963f173c18",
+      "evidence": [
+        "OWNER_POSTPROCESS_PLATFORM_FOUR_DELTAS_REUSE.json"
+      ]
+    },
+    {
+      "id": "BACKUP_PLATFORM_ENTRY_TWO_COMPLETE_D3_DELTAS",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Entire d3 Manifest/MainActivity platform entry deltas only: content-first existing external FIFO and backup Controller/Host, root ownership/StartupGate recovery before business initialization, app-owned backup actors and explicit exit/drain. Exact source owners/original startup3/request2/lifecycle3 reused. No installed Windows MIME association/Android foreground service, whole ChatBarApp134/bootstrap transaction or legacy in-place rollback-equivalence claim.",
+      "reviewSource": "6a1353c19ab6bdf845d794874927c2963f173c18",
+      "evidence": [
+        "OWNER_POSTPROCESS_PLATFORM_FOUR_DELTAS_REUSE.json"
+      ]
+    },
+    {
+      "id": "NAI_SERVICE_POLICY_TEN_COMPLETE_DELTAS",
+      "disposition": "EQUIVALENT",
+      "scope": "Ten complete54c/310/3f6/c02/892/b0 Service/Account/TextPolicy deltas only: shared request-only text preparation and explicit PNG suffix ownership, Medium effective14/EA/rescale0/Heavy UC with empty role UC while dormant High prefs survive, actual final V5 straight_alpha and transparency fields, V45 sigma scales once. Exact current owners match each prior source; original R04 text8+whitespace1, R69wire6 and162 High5/Medium7 prices reused separately. Corrected fractional23-step per-sample pricing replaces obsolete simple14-step charge. Desktop params_version4 vsHigh/off3 and case-insensitive first-chunk tag dedup are explicit differences; no stored text or unadopted315 Prompt edits, provider billing or whole lifecycle claim.",
+      "reviewSource": "6a1353c19ab6bdf845d794874927c2963f173c18",
+      "evidence": [
+        "OWNER_NAI_SERVICE_POLICY_TEN_DELTAS_REUSE.json"
+      ]
     }
   ],
   "deltas": [
@@ -2253,8 +2280,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Entire148 VM/Controls deltas mapped to actual keyed Desktop source pane, numeric options/admission/cost, credential/account/task-owned processing, exact-source stop and durable results before callback. Existing R56 selected4/R58successor2/R67large1/R81held-input1 separately reused; original R56 failure retained. Desktop Upscale default, finite0..1 options, no swipe recognizer/global unrelated-work lock/VM cancellation are intentional. No fresh native busy-tab/provider/human acceptance.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolViewModel.kt",
@@ -2263,8 +2290,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "POSTPROCESS_VM_CONTROLS_TWO_COMPLETE_148_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_POSTPROCESS_PLATFORM_FOUR_DELTAS_REUSE.json",
+        "docs/desktop/355_POSTPROCESS_PLATFORM_ENTRY_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "148b3a9637eadf577afbb4947158dd6f80e17f4f:app/app/src/main/java/com/example/chatbar/ui/imageprompt/NovelAiPostProcessScreen.kt",
@@ -2309,8 +2341,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Entire148 VM/Controls deltas mapped to actual keyed Desktop source pane, numeric options/admission/cost, credential/account/task-owned processing, exact-source stop and durable results before callback. Existing R56 selected4/R58successor2/R67large1/R81held-input1 separately reused; original R56 failure retained. Desktop Upscale default, finite0..1 options, no swipe recognizer/global unrelated-work lock/VM cancellation are intentional. No fresh native busy-tab/provider/human acceptance.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/kit/Controls.kt",
@@ -2319,8 +2351,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "POSTPROCESS_VM_CONTROLS_TWO_COMPLETE_148_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_POSTPROCESS_PLATFORM_FOUR_DELTAS_REUSE.json",
+        "docs/desktop/355_POSTPROCESS_PLATFORM_ENTRY_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "148b3a9637eadf577afbb4947158dd6f80e17f4f:app/app/src/test/java/com/example/chatbar/domain/image/NovelAiPostProcessTest.kt",
@@ -7925,8 +7962,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Entire d3 Manifest/MainActivity platform entry deltas only: content-first existing external FIFO and backup Controller/Host, root ownership/StartupGate recovery before business initialization, app-owned backup actors and explicit exit/drain. Exact source owners/original startup3/request2/lifecycle3 reused. No installed Windows MIME association/Android foreground service, whole ChatBarApp134/bootstrap transaction or legacy in-place rollback-equivalence claim.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/AndroidManifest.xml",
@@ -7935,8 +7972,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "BACKUP_PLATFORM_ENTRY_TWO_COMPLETE_D3_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_POSTPROCESS_PLATFORM_FOUR_DELTAS_REUSE.json",
+        "docs/desktop/355_POSTPROCESS_PLATFORM_ENTRY_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/ChatBarApp.kt",
@@ -7979,8 +8021,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Entire d3 Manifest/MainActivity platform entry deltas only: content-first existing external FIFO and backup Controller/Host, root ownership/StartupGate recovery before business initialization, app-owned backup actors and explicit exit/drain. Exact source owners/original startup3/request2/lifecycle3 reused. No installed Windows MIME association/Android foreground service, whole ChatBarApp134/bootstrap transaction or legacy in-place rollback-equivalence claim.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/MainActivity.kt",
@@ -7989,8 +8031,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "BACKUP_PLATFORM_ENTRY_TWO_COMPLETE_D3_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_POSTPROCESS_PLATFORM_FOUR_DELTAS_REUSE.json",
+        "docs/desktop/355_POSTPROCESS_PLATFORM_ENTRY_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/data/local/ImageMaskPreferences.kt",
@@ -11919,8 +11966,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Ten complete54c/310/3f6/c02/892/b0 Service/Account/TextPolicy deltas only: shared request-only text preparation and explicit PNG suffix ownership, Medium effective14/EA/rescale0/Heavy UC with empty role UC while dormant High prefs survive, actual final V5 straight_alpha and transparency fields, V45 sigma scales once. Exact current owners match each prior source; original R04 text8+whitespace1, R69wire6 and162 High5/Medium7 prices reused separately. Corrected fractional23-step per-sample pricing replaces obsolete simple14-step charge. Desktop params_version4 vsHigh/off3 and case-insensitive first-chunk tag dedup are explicit differences; no stored text or unadopted315 Prompt edits, provider billing or whole lifecycle claim.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageService.kt",
@@ -11929,8 +11976,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_SERVICE_POLICY_TEN_COMPLETE_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_NAI_SERVICE_POLICY_TEN_DELTAS_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "54c84c479a1b8a9eddef6b726681dedc7094efac:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
@@ -12050,8 +12102,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Ten complete54c/310/3f6/c02/892/b0 Service/Account/TextPolicy deltas only: shared request-only text preparation and explicit PNG suffix ownership, Medium effective14/EA/rescale0/Heavy UC with empty role UC while dormant High prefs survive, actual final V5 straight_alpha and transparency fields, V45 sigma scales once. Exact current owners match each prior source; original R04 text8+whitespace1, R69wire6 and162 High5/Medium7 prices reused separately. Corrected fractional23-step per-sample pricing replaces obsolete simple14-step charge. Desktop params_version4 vsHigh/off3 and case-insensitive first-chunk tag dedup are explicit differences; no stored text or unadopted315 Prompt edits, provider billing or whole lifecycle claim.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiV5TextPromptPolicy.kt",
@@ -12060,8 +12112,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_SERVICE_POLICY_TEN_COMPLETE_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_NAI_SERVICE_POLICY_TEN_DELTAS_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "54c84c479a1b8a9eddef6b726681dedc7094efac:app/app/src/main/java/com/example/chatbar/domain/prompt/PromptTemplates.kt",
@@ -12423,8 +12480,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Ten complete54c/310/3f6/c02/892/b0 Service/Account/TextPolicy deltas only: shared request-only text preparation and explicit PNG suffix ownership, Medium effective14/EA/rescale0/Heavy UC with empty role UC while dormant High prefs survive, actual final V5 straight_alpha and transparency fields, V45 sigma scales once. Exact current owners match each prior source; original R04 text8+whitespace1, R69wire6 and162 High5/Medium7 prices reused separately. Corrected fractional23-step per-sample pricing replaces obsolete simple14-step charge. Desktop params_version4 vsHigh/off3 and case-insensitive first-chunk tag dedup are explicit differences; no stored text or unadopted315 Prompt edits, provider billing or whole lifecycle claim.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageService.kt",
@@ -12433,8 +12490,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_SERVICE_POLICY_TEN_COMPLETE_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_NAI_SERVICE_POLICY_TEN_DELTAS_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "310d475cb6cb0466678fe986cb3850f91005dc77:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
@@ -13219,8 +13281,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Ten complete54c/310/3f6/c02/892/b0 Service/Account/TextPolicy deltas only: shared request-only text preparation and explicit PNG suffix ownership, Medium effective14/EA/rescale0/Heavy UC with empty role UC while dormant High prefs survive, actual final V5 straight_alpha and transparency fields, V45 sigma scales once. Exact current owners match each prior source; original R04 text8+whitespace1, R69wire6 and162 High5/Medium7 prices reused separately. Corrected fractional23-step per-sample pricing replaces obsolete simple14-step charge. Desktop params_version4 vsHigh/off3 and case-insensitive first-chunk tag dedup are explicit differences; no stored text or unadopted315 Prompt edits, provider billing or whole lifecycle claim.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiAccountService.kt",
@@ -13229,8 +13291,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_SERVICE_POLICY_TEN_COMPLETE_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_NAI_SERVICE_POLICY_TEN_DELTAS_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "3f6f1bb5d61492d74c56fa3696b557db514ae77d:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiCharacterImageSettings.kt",
@@ -13315,8 +13382,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Ten complete54c/310/3f6/c02/892/b0 Service/Account/TextPolicy deltas only: shared request-only text preparation and explicit PNG suffix ownership, Medium effective14/EA/rescale0/Heavy UC with empty role UC while dormant High prefs survive, actual final V5 straight_alpha and transparency fields, V45 sigma scales once. Exact current owners match each prior source; original R04 text8+whitespace1, R69wire6 and162 High5/Medium7 prices reused separately. Corrected fractional23-step per-sample pricing replaces obsolete simple14-step charge. Desktop params_version4 vsHigh/off3 and case-insensitive first-chunk tag dedup are explicit differences; no stored text or unadopted315 Prompt edits, provider billing or whole lifecycle claim.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageService.kt",
@@ -13325,8 +13392,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_SERVICE_POLICY_TEN_COMPLETE_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_NAI_SERVICE_POLICY_TEN_DELTAS_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "3f6f1bb5d61492d74c56fa3696b557db514ae77d:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
@@ -13676,8 +13748,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Ten complete54c/310/3f6/c02/892/b0 Service/Account/TextPolicy deltas only: shared request-only text preparation and explicit PNG suffix ownership, Medium effective14/EA/rescale0/Heavy UC with empty role UC while dormant High prefs survive, actual final V5 straight_alpha and transparency fields, V45 sigma scales once. Exact current owners match each prior source; original R04 text8+whitespace1, R69wire6 and162 High5/Medium7 prices reused separately. Corrected fractional23-step per-sample pricing replaces obsolete simple14-step charge. Desktop params_version4 vsHigh/off3 and case-insensitive first-chunk tag dedup are explicit differences; no stored text or unadopted315 Prompt edits, provider billing or whole lifecycle claim.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageService.kt",
@@ -13686,8 +13758,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_SERVICE_POLICY_TEN_COMPLETE_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_NAI_SERVICE_POLICY_TEN_DELTAS_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "c02f8b788db1fd829f55676e0ed23e35fdd10ea1:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
@@ -13807,8 +13884,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Ten complete54c/310/3f6/c02/892/b0 Service/Account/TextPolicy deltas only: shared request-only text preparation and explicit PNG suffix ownership, Medium effective14/EA/rescale0/Heavy UC with empty role UC while dormant High prefs survive, actual final V5 straight_alpha and transparency fields, V45 sigma scales once. Exact current owners match each prior source; original R04 text8+whitespace1, R69wire6 and162 High5/Medium7 prices reused separately. Corrected fractional23-step per-sample pricing replaces obsolete simple14-step charge. Desktop params_version4 vsHigh/off3 and case-insensitive first-chunk tag dedup are explicit differences; no stored text or unadopted315 Prompt edits, provider billing or whole lifecycle claim.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiV5TextPromptPolicy.kt",
@@ -13817,8 +13894,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_SERVICE_POLICY_TEN_COMPLETE_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_NAI_SERVICE_POLICY_TEN_DELTAS_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "c02f8b788db1fd829f55676e0ed23e35fdd10ea1:app/app/src/main/java/com/example/chatbar/domain/prompt/PromptTemplates.kt",
@@ -14554,8 +14636,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Ten complete54c/310/3f6/c02/892/b0 Service/Account/TextPolicy deltas only: shared request-only text preparation and explicit PNG suffix ownership, Medium effective14/EA/rescale0/Heavy UC with empty role UC while dormant High prefs survive, actual final V5 straight_alpha and transparency fields, V45 sigma scales once. Exact current owners match each prior source; original R04 text8+whitespace1, R69wire6 and162 High5/Medium7 prices reused separately. Corrected fractional23-step per-sample pricing replaces obsolete simple14-step charge. Desktop params_version4 vsHigh/off3 and case-insensitive first-chunk tag dedup are explicit differences; no stored text or unadopted315 Prompt edits, provider billing or whole lifecycle claim.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageService.kt",
@@ -14564,8 +14646,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_SERVICE_POLICY_TEN_COMPLETE_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_NAI_SERVICE_POLICY_TEN_DELTAS_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "892b478b17d3bf0943e779d3f14108b750f3355c:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiSingleImagePricing.kt",
@@ -15295,8 +15382,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Ten complete54c/310/3f6/c02/892/b0 Service/Account/TextPolicy deltas only: shared request-only text preparation and explicit PNG suffix ownership, Medium effective14/EA/rescale0/Heavy UC with empty role UC while dormant High prefs survive, actual final V5 straight_alpha and transparency fields, V45 sigma scales once. Exact current owners match each prior source; original R04 text8+whitespace1, R69wire6 and162 High5/Medium7 prices reused separately. Corrected fractional23-step per-sample pricing replaces obsolete simple14-step charge. Desktop params_version4 vsHigh/off3 and case-insensitive first-chunk tag dedup are explicit differences; no stored text or unadopted315 Prompt edits, provider billing or whole lifecycle claim.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageService.kt",
@@ -15305,8 +15392,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_SERVICE_POLICY_TEN_COMPLETE_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_NAI_SERVICE_POLICY_TEN_DELTAS_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "b0fa1a425f24a0abe5adcb3b8f5775598452996e:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
@@ -15463,8 +15555,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Ten complete54c/310/3f6/c02/892/b0 Service/Account/TextPolicy deltas only: shared request-only text preparation and explicit PNG suffix ownership, Medium effective14/EA/rescale0/Heavy UC with empty role UC while dormant High prefs survive, actual final V5 straight_alpha and transparency fields, V45 sigma scales once. Exact current owners match each prior source; original R04 text8+whitespace1, R69wire6 and162 High5/Medium7 prices reused separately. Corrected fractional23-step per-sample pricing replaces obsolete simple14-step charge. Desktop params_version4 vsHigh/off3 and case-insensitive first-chunk tag dedup are explicit differences; no stored text or unadopted315 Prompt edits, provider billing or whole lifecycle claim.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiV5TextPromptPolicy.kt",
@@ -15473,8 +15565,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_SERVICE_POLICY_TEN_COMPLETE_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_NAI_SERVICE_POLICY_TEN_DELTAS_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "b0fa1a425f24a0abe5adcb3b8f5775598452996e:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiVarietyPlusPolicy.kt",

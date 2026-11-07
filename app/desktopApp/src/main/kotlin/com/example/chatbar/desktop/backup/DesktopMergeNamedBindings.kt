@@ -75,15 +75,16 @@ internal object DesktopMergeNamedBindings {
             children(owner(unit, unit.category, requireNotNull(unit.primaryId)), null)
         }
         val retainedVectorIds = hashSetOf<String>()
-        for (unit in selection.computer) for ((path, value) in unit.records) {
+        for (unit in selection.computer) for (path in unit.records.keys) {
             active()
-            if (DesktopBackupPolicy.entityType(path) == "vector_chunks")
-                value["id"]?.jsonPrimitive?.contentOrNull?.let(retainedVectorIds::add)
+            if (DesktopBackupPolicy.entityType(path) != "vector_chunks") continue
+            unit.records.getValue(path)["id"]?.jsonPrimitive?.contentOrNull?.let(retainedVectorIds::add)
         }
-        for (unit in selection.phone) for ((path, value) in unit.records) {
+        for (unit in selection.phone) for (path in unit.records.keys) {
             active()
-            if (DesktopBackupPolicy.entityType(path) != "vector_chunks" ||
-                value["sourceType"]?.jsonPrimitive?.contentOrNull !in setOf("DOCUMENT", "CHARACTER_SETTING")) continue
+            if (DesktopBackupPolicy.entityType(path) != "vector_chunks") continue
+            val value = unit.records.getValue(path)
+            if (value["sourceType"]?.jsonPrimitive?.contentOrNull !in setOf("DOCUMENT", "CHARACTER_SETTING")) continue
             val id = requireNotNull(value["id"]?.jsonPrimitive?.contentOrNull)
             if (id in retainedVectorIds && ("vector_chunks" to id) !in forkDeclarations)
                 identity.bind("vector_chunks", id, identity.fresh("vector_chunks", id))
