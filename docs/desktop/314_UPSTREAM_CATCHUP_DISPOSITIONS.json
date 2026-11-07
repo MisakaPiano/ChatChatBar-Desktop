@@ -2307,6 +2307,141 @@
       "evidence": [
         "OWNER_CHARACTER_POSITION_ENABLED4_TEST_SUPPORT_REUSE.json"
       ]
+    },
+    {
+      "id": "UPSTREAM_STORAGE_TEST_SUPPORT_E5F7F1C0D5EC1EE3",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Fifteen upstream test-support deltas read independently and exact raw hashes/lines revalidated, not fifteen product functions. Original thirteen selected whole methods reused separately: Linux batch rollback3; corrected actual Moment StoreR89 one (not old162 fixture); Windows native batch3/draft1/metadata1; R51 reset2 and simulated alpha/recipe1; R04 experimental setting1. Original ZIP digests/CRC/unique selected XML/empty stderr rechecked. Composition commits and initialize-only fixture corrections are not new behaviors. Native metadata-first atomic commit plus exact-reference cleanup differs from Android media-first staging; upstream omitted-image literal deletion test not claimed executed. Settings default-off/save/discard proof does not adopt Prompt315. Newly added status file versus payload cleanup integration remains independently pending R141; no support-derived whole feature PASS, new run, package or human result.",
+      "reviewSource": "ccda3c573be67fd282204de739ce8e7298de373e",
+      "evidence": [
+        "OWNER_STORAGE15_SUPPORT_SCOPED_REUSE.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_STORAGE_TEST_SUPPORT_4DD7AA77586908D9",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Fifteen upstream test-support deltas read independently and exact raw hashes/lines revalidated, not fifteen product functions. Original thirteen selected whole methods reused separately: Linux batch rollback3; corrected actual Moment StoreR89 one (not old162 fixture); Windows native batch3/draft1/metadata1; R51 reset2 and simulated alpha/recipe1; R04 experimental setting1. Original ZIP digests/CRC/unique selected XML/empty stderr rechecked. Composition commits and initialize-only fixture corrections are not new behaviors. Native metadata-first atomic commit plus exact-reference cleanup differs from Android media-first staging; upstream omitted-image literal deletion test not claimed executed. Settings default-off/save/discard proof does not adopt Prompt315. Newly added status file versus payload cleanup integration remains independently pending R141; no support-derived whole feature PASS, new run, package or human result.",
+      "reviewSource": "ccda3c573be67fd282204de739ce8e7298de373e",
+      "evidence": [
+        "OWNER_STORAGE15_SUPPORT_SCOPED_REUSE.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_STORAGE_TEST_SUPPORT_B9D46787AC4E13A3",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Fifteen upstream test-support deltas read independently and exact raw hashes/lines revalidated, not fifteen product functions. Original thirteen selected whole methods reused separately: Linux batch rollback3; corrected actual Moment StoreR89 one (not old162 fixture); Windows native batch3/draft1/metadata1; R51 reset2 and simulated alpha/recipe1; R04 experimental setting1. Original ZIP digests/CRC/unique selected XML/empty stderr rechecked. Composition commits and initialize-only fixture corrections are not new behaviors. Native metadata-first atomic commit plus exact-reference cleanup differs from Android media-first staging; upstream omitted-image literal deletion test not claimed executed. Settings default-off/save/discard proof does not adopt Prompt315. Newly added status file versus payload cleanup integration remains independently pending R141; no support-derived whole feature PASS, new run, package or human result.",
+      "reviewSource": "ccda3c573be67fd282204de739ce8e7298de373e",
+      "evidence": [
+        "OWNER_STORAGE15_SUPPORT_SCOPED_REUSE.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_STORAGE_TEST_SUPPORT_1B0DFF7FC9D576BF",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Fifteen upstream test-support deltas read independently and exact raw hashes/lines revalidated, not fifteen product functions. Original thirteen selected whole methods reused separately: Linux batch rollback3; corrected actual Moment StoreR89 one (not old162 fixture); Windows native batch3/draft1/metadata1; R51 reset2 and simulated alpha/recipe1; R04 experimental setting1. Original ZIP digests/CRC/unique selected XML/empty stderr rechecked. Composition commits and initialize-only fixture corrections are not new behaviors. Native metadata-first atomic commit plus exact-reference cleanup differs from Android media-first staging; upstream omitted-image literal deletion test not claimed executed. Settings default-off/save/discard proof does not adopt Prompt315. Newly added status file versus payload cleanup integration remains independently pending R141; no support-derived whole feature PASS, new run, package or human result.",
+      "reviewSource": "ccda3c573be67fd282204de739ce8e7298de373e",
+      "evidence": [
+        "OWNER_STORAGE15_SUPPORT_SCOPED_REUSE.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_STORAGE_TEST_SUPPORT_FD8FE48C62EA387B",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Fifteen upstream test-support deltas read independently and exact raw hashes/lines revalidated, not fifteen product functions. Original thirteen selected whole methods reused separately: Linux batch rollback3; corrected actual Moment StoreR89 one (not old162 fixture); Windows native batch3/draft1/metadata1; R51 reset2 and simulated alpha/recipe1; R04 experimental setting1. Original ZIP digests/CRC/unique selected XML/empty stderr rechecked. Composition commits and initialize-only fixture corrections are not new behaviors. Native metadata-first atomic commit plus exact-reference cleanup differs from Android media-first staging; upstream omitted-image literal deletion test not claimed executed. Settings default-off/save/discard proof does not adopt Prompt315. Newly added status file versus payload cleanup integration remains independently pending R141; no support-derived whole feature PASS, new run, package or human result.",
+      "reviewSource": "ccda3c573be67fd282204de739ce8e7298de373e",
+      "evidence": [
+        "OWNER_STORAGE15_SUPPORT_SCOPED_REUSE.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_STORAGE_TEST_SUPPORT_F0159757257664F7",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Fifteen upstream test-support deltas read independently and exact raw hashes/lines revalidated, not fifteen product functions. Original thirteen selected whole methods reused separately: Linux batch rollback3; corrected actual Moment StoreR89 one (not old162 fixture); Windows native batch3/draft1/metadata1; R51 reset2 and simulated alpha/recipe1; R04 experimental setting1. Original ZIP digests/CRC/unique selected XML/empty stderr rechecked. Composition commits and initialize-only fixture corrections are not new behaviors. Native metadata-first atomic commit plus exact-reference cleanup differs from Android media-first staging; upstream omitted-image literal deletion test not claimed executed. Settings default-off/save/discard proof does not adopt Prompt315. Newly added status file versus payload cleanup integration remains independently pending R141; no support-derived whole feature PASS, new run, package or human result.",
+      "reviewSource": "ccda3c573be67fd282204de739ce8e7298de373e",
+      "evidence": [
+        "OWNER_STORAGE15_SUPPORT_SCOPED_REUSE.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_STORAGE_TEST_SUPPORT_339744EA46859A38",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Fifteen upstream test-support deltas read independently and exact raw hashes/lines revalidated, not fifteen product functions. Original thirteen selected whole methods reused separately: Linux batch rollback3; corrected actual Moment StoreR89 one (not old162 fixture); Windows native batch3/draft1/metadata1; R51 reset2 and simulated alpha/recipe1; R04 experimental setting1. Original ZIP digests/CRC/unique selected XML/empty stderr rechecked. Composition commits and initialize-only fixture corrections are not new behaviors. Native metadata-first atomic commit plus exact-reference cleanup differs from Android media-first staging; upstream omitted-image literal deletion test not claimed executed. Settings default-off/save/discard proof does not adopt Prompt315. Newly added status file versus payload cleanup integration remains independently pending R141; no support-derived whole feature PASS, new run, package or human result.",
+      "reviewSource": "ccda3c573be67fd282204de739ce8e7298de373e",
+      "evidence": [
+        "OWNER_STORAGE15_SUPPORT_SCOPED_REUSE.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_STORAGE_TEST_SUPPORT_98F151CFC75A0B64",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Fifteen upstream test-support deltas read independently and exact raw hashes/lines revalidated, not fifteen product functions. Original thirteen selected whole methods reused separately: Linux batch rollback3; corrected actual Moment StoreR89 one (not old162 fixture); Windows native batch3/draft1/metadata1; R51 reset2 and simulated alpha/recipe1; R04 experimental setting1. Original ZIP digests/CRC/unique selected XML/empty stderr rechecked. Composition commits and initialize-only fixture corrections are not new behaviors. Native metadata-first atomic commit plus exact-reference cleanup differs from Android media-first staging; upstream omitted-image literal deletion test not claimed executed. Settings default-off/save/discard proof does not adopt Prompt315. Newly added status file versus payload cleanup integration remains independently pending R141; no support-derived whole feature PASS, new run, package or human result.",
+      "reviewSource": "ccda3c573be67fd282204de739ce8e7298de373e",
+      "evidence": [
+        "OWNER_STORAGE15_SUPPORT_SCOPED_REUSE.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_STORAGE_TEST_SUPPORT_751ED67635FF9AC3",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Fifteen upstream test-support deltas read independently and exact raw hashes/lines revalidated, not fifteen product functions. Original thirteen selected whole methods reused separately: Linux batch rollback3; corrected actual Moment StoreR89 one (not old162 fixture); Windows native batch3/draft1/metadata1; R51 reset2 and simulated alpha/recipe1; R04 experimental setting1. Original ZIP digests/CRC/unique selected XML/empty stderr rechecked. Composition commits and initialize-only fixture corrections are not new behaviors. Native metadata-first atomic commit plus exact-reference cleanup differs from Android media-first staging; upstream omitted-image literal deletion test not claimed executed. Settings default-off/save/discard proof does not adopt Prompt315. Newly added status file versus payload cleanup integration remains independently pending R141; no support-derived whole feature PASS, new run, package or human result.",
+      "reviewSource": "ccda3c573be67fd282204de739ce8e7298de373e",
+      "evidence": [
+        "OWNER_STORAGE15_SUPPORT_SCOPED_REUSE.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_STORAGE_TEST_SUPPORT_1A9A3A02093CD4EE",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Fifteen upstream test-support deltas read independently and exact raw hashes/lines revalidated, not fifteen product functions. Original thirteen selected whole methods reused separately: Linux batch rollback3; corrected actual Moment StoreR89 one (not old162 fixture); Windows native batch3/draft1/metadata1; R51 reset2 and simulated alpha/recipe1; R04 experimental setting1. Original ZIP digests/CRC/unique selected XML/empty stderr rechecked. Composition commits and initialize-only fixture corrections are not new behaviors. Native metadata-first atomic commit plus exact-reference cleanup differs from Android media-first staging; upstream omitted-image literal deletion test not claimed executed. Settings default-off/save/discard proof does not adopt Prompt315. Newly added status file versus payload cleanup integration remains independently pending R141; no support-derived whole feature PASS, new run, package or human result.",
+      "reviewSource": "ccda3c573be67fd282204de739ce8e7298de373e",
+      "evidence": [
+        "OWNER_STORAGE15_SUPPORT_SCOPED_REUSE.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_STORAGE_TEST_SUPPORT_84F682BAADF1F3F3",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Fifteen upstream test-support deltas read independently and exact raw hashes/lines revalidated, not fifteen product functions. Original thirteen selected whole methods reused separately: Linux batch rollback3; corrected actual Moment StoreR89 one (not old162 fixture); Windows native batch3/draft1/metadata1; R51 reset2 and simulated alpha/recipe1; R04 experimental setting1. Original ZIP digests/CRC/unique selected XML/empty stderr rechecked. Composition commits and initialize-only fixture corrections are not new behaviors. Native metadata-first atomic commit plus exact-reference cleanup differs from Android media-first staging; upstream omitted-image literal deletion test not claimed executed. Settings default-off/save/discard proof does not adopt Prompt315. Newly added status file versus payload cleanup integration remains independently pending R141; no support-derived whole feature PASS, new run, package or human result.",
+      "reviewSource": "ccda3c573be67fd282204de739ce8e7298de373e",
+      "evidence": [
+        "OWNER_STORAGE15_SUPPORT_SCOPED_REUSE.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_STORAGE_TEST_SUPPORT_D7CA165652812C52",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Fifteen upstream test-support deltas read independently and exact raw hashes/lines revalidated, not fifteen product functions. Original thirteen selected whole methods reused separately: Linux batch rollback3; corrected actual Moment StoreR89 one (not old162 fixture); Windows native batch3/draft1/metadata1; R51 reset2 and simulated alpha/recipe1; R04 experimental setting1. Original ZIP digests/CRC/unique selected XML/empty stderr rechecked. Composition commits and initialize-only fixture corrections are not new behaviors. Native metadata-first atomic commit plus exact-reference cleanup differs from Android media-first staging; upstream omitted-image literal deletion test not claimed executed. Settings default-off/save/discard proof does not adopt Prompt315. Newly added status file versus payload cleanup integration remains independently pending R141; no support-derived whole feature PASS, new run, package or human result.",
+      "reviewSource": "ccda3c573be67fd282204de739ce8e7298de373e",
+      "evidence": [
+        "OWNER_STORAGE15_SUPPORT_SCOPED_REUSE.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_STORAGE_TEST_SUPPORT_D7D1A6515411C6A4",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Fifteen upstream test-support deltas read independently and exact raw hashes/lines revalidated, not fifteen product functions. Original thirteen selected whole methods reused separately: Linux batch rollback3; corrected actual Moment StoreR89 one (not old162 fixture); Windows native batch3/draft1/metadata1; R51 reset2 and simulated alpha/recipe1; R04 experimental setting1. Original ZIP digests/CRC/unique selected XML/empty stderr rechecked. Composition commits and initialize-only fixture corrections are not new behaviors. Native metadata-first atomic commit plus exact-reference cleanup differs from Android media-first staging; upstream omitted-image literal deletion test not claimed executed. Settings default-off/save/discard proof does not adopt Prompt315. Newly added status file versus payload cleanup integration remains independently pending R141; no support-derived whole feature PASS, new run, package or human result.",
+      "reviewSource": "ccda3c573be67fd282204de739ce8e7298de373e",
+      "evidence": [
+        "OWNER_STORAGE15_SUPPORT_SCOPED_REUSE.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_STORAGE_TEST_SUPPORT_30BAF6B5F01588CE",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Fifteen upstream test-support deltas read independently and exact raw hashes/lines revalidated, not fifteen product functions. Original thirteen selected whole methods reused separately: Linux batch rollback3; corrected actual Moment StoreR89 one (not old162 fixture); Windows native batch3/draft1/metadata1; R51 reset2 and simulated alpha/recipe1; R04 experimental setting1. Original ZIP digests/CRC/unique selected XML/empty stderr rechecked. Composition commits and initialize-only fixture corrections are not new behaviors. Native metadata-first atomic commit plus exact-reference cleanup differs from Android media-first staging; upstream omitted-image literal deletion test not claimed executed. Settings default-off/save/discard proof does not adopt Prompt315. Newly added status file versus payload cleanup integration remains independently pending R141; no support-derived whole feature PASS, new run, package or human result.",
+      "reviewSource": "ccda3c573be67fd282204de739ce8e7298de373e",
+      "evidence": [
+        "OWNER_STORAGE15_SUPPORT_SCOPED_REUSE.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_STORAGE_TEST_SUPPORT_72AA6A42BE43055E",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Fifteen upstream test-support deltas read independently and exact raw hashes/lines revalidated, not fifteen product functions. Original thirteen selected whole methods reused separately: Linux batch rollback3; corrected actual Moment StoreR89 one (not old162 fixture); Windows native batch3/draft1/metadata1; R51 reset2 and simulated alpha/recipe1; R04 experimental setting1. Original ZIP digests/CRC/unique selected XML/empty stderr rechecked. Composition commits and initialize-only fixture corrections are not new behaviors. Native metadata-first atomic commit plus exact-reference cleanup differs from Android media-first staging; upstream omitted-image literal deletion test not claimed executed. Settings default-off/save/discard proof does not adopt Prompt315. Newly added status file versus payload cleanup integration remains independently pending R141; no support-derived whole feature PASS, new run, package or human result.",
+      "reviewSource": "ccda3c573be67fd282204de739ce8e7298de373e",
+      "evidence": [
+        "OWNER_STORAGE15_SUPPORT_SCOPED_REUSE.json"
+      ]
     }
   ],
   "deltas": [
@@ -4643,8 +4778,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Fifteen upstream test-support deltas read independently and exact raw hashes/lines revalidated, not fifteen product functions. Original thirteen selected whole methods reused separately: Linux batch rollback3; corrected actual Moment StoreR89 one (not old162 fixture); Windows native batch3/draft1/metadata1; R51 reset2 and simulated alpha/recipe1; R04 experimental setting1. Original ZIP digests/CRC/unique selected XML/empty stderr rechecked. Composition commits and initialize-only fixture corrections are not new behaviors. Native metadata-first atomic commit plus exact-reference cleanup differs from Android media-first staging; upstream omitted-image literal deletion test not claimed executed. Settings default-off/save/discard proof does not adopt Prompt315. Newly added status file versus payload cleanup integration remains independently pending R141; no support-derived whole feature PASS, new run, package or human result.",
       "candidateOwners": [
         {
           "path": "app/app/src/test/java/com/example/chatbar/data/repository/MomentRepositoryTest.kt",
@@ -4653,8 +4788,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_STORAGE_TEST_SUPPORT_E5F7F1C0D5EC1EE3"
+      ],
+      "evidence": [
+        "OWNER_STORAGE15_SUPPORT_SCOPED_REUSE.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "32906a76f2b85fce68285a146092ad91fd3f75e1:app/app/src/test/java/com/example/chatbar/domain/image/NovelAiCharacterEnabledTest.kt",
@@ -11186,11 +11326,16 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Fifteen upstream test-support deltas read independently and exact raw hashes/lines revalidated, not fifteen product functions. Original thirteen selected whole methods reused separately: Linux batch rollback3; corrected actual Moment StoreR89 one (not old162 fixture); Windows native batch3/draft1/metadata1; R51 reset2 and simulated alpha/recipe1; R04 experimental setting1. Original ZIP digests/CRC/unique selected XML/empty stderr rechecked. Composition commits and initialize-only fixture corrections are not new behaviors. Native metadata-first atomic commit plus exact-reference cleanup differs from Android media-first staging; upstream omitted-image literal deletion test not claimed executed. Settings default-off/save/discard proof does not adopt Prompt315. Newly added status file versus payload cleanup integration remains independently pending R141; no support-derived whole feature PASS, new run, package or human result.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_STORAGE_TEST_SUPPORT_4DD7AA77586908D9"
+      ],
+      "evidence": [
+        "OWNER_STORAGE15_SUPPORT_SCOPED_REUSE.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "1d2850a4ed34fca614ce9809acd48e959d8a9d08:app/app/src/test/java/com/example/chatbar/data/repository/NovelAiStudioRepositoryTest.kt",
@@ -11206,8 +11351,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Fifteen upstream test-support deltas read independently and exact raw hashes/lines revalidated, not fifteen product functions. Original thirteen selected whole methods reused separately: Linux batch rollback3; corrected actual Moment StoreR89 one (not old162 fixture); Windows native batch3/draft1/metadata1; R51 reset2 and simulated alpha/recipe1; R04 experimental setting1. Original ZIP digests/CRC/unique selected XML/empty stderr rechecked. Composition commits and initialize-only fixture corrections are not new behaviors. Native metadata-first atomic commit plus exact-reference cleanup differs from Android media-first staging; upstream omitted-image literal deletion test not claimed executed. Settings default-off/save/discard proof does not adopt Prompt315. Newly added status file versus payload cleanup integration remains independently pending R141; no support-derived whole feature PASS, new run, package or human result.",
       "candidateOwners": [
         {
           "path": "app/app/src/test/java/com/example/chatbar/data/repository/NovelAiStudioRepositoryTest.kt",
@@ -11216,8 +11361,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_STORAGE_TEST_SUPPORT_B9D46787AC4E13A3"
+      ],
+      "evidence": [
+        "OWNER_STORAGE15_SUPPORT_SCOPED_REUSE.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "1d2850a4ed34fca614ce9809acd48e959d8a9d08:doc/handoff.md",
@@ -12310,8 +12460,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Fifteen upstream test-support deltas read independently and exact raw hashes/lines revalidated, not fifteen product functions. Original thirteen selected whole methods reused separately: Linux batch rollback3; corrected actual Moment StoreR89 one (not old162 fixture); Windows native batch3/draft1/metadata1; R51 reset2 and simulated alpha/recipe1; R04 experimental setting1. Original ZIP digests/CRC/unique selected XML/empty stderr rechecked. Composition commits and initialize-only fixture corrections are not new behaviors. Native metadata-first atomic commit plus exact-reference cleanup differs from Android media-first staging; upstream omitted-image literal deletion test not claimed executed. Settings default-off/save/discard proof does not adopt Prompt315. Newly added status file versus payload cleanup integration remains independently pending R141; no support-derived whole feature PASS, new run, package or human result.",
       "candidateOwners": [
         {
           "path": "app/app/src/test/java/com/example/chatbar/data/repository/NovelAiStudioRepositoryTest.kt",
@@ -12320,8 +12470,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_STORAGE_TEST_SUPPORT_1B0DFF7FC9D576BF"
+      ],
+      "evidence": [
+        "OWNER_STORAGE15_SUPPORT_SCOPED_REUSE.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:app/app/src/test/java/com/example/chatbar/domain/backup/BackupArchiveTest.kt",
@@ -13181,8 +13336,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Fifteen upstream test-support deltas read independently and exact raw hashes/lines revalidated, not fifteen product functions. Original thirteen selected whole methods reused separately: Linux batch rollback3; corrected actual Moment StoreR89 one (not old162 fixture); Windows native batch3/draft1/metadata1; R51 reset2 and simulated alpha/recipe1; R04 experimental setting1. Original ZIP digests/CRC/unique selected XML/empty stderr rechecked. Composition commits and initialize-only fixture corrections are not new behaviors. Native metadata-first atomic commit plus exact-reference cleanup differs from Android media-first staging; upstream omitted-image literal deletion test not claimed executed. Settings default-off/save/discard proof does not adopt Prompt315. Newly added status file versus payload cleanup integration remains independently pending R141; no support-derived whole feature PASS, new run, package or human result.",
       "candidateOwners": [
         {
           "path": "app/app/src/test/java/com/example/chatbar/data/repository/NovelAiStudioRepositoryTest.kt",
@@ -13191,8 +13346,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_STORAGE_TEST_SUPPORT_FD8FE48C62EA387B"
+      ],
+      "evidence": [
+        "OWNER_STORAGE15_SUPPORT_SCOPED_REUSE.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "a96313d9ec44244a301fa94f7a0ad6f98cf6350a:app/app/src/test/java/com/example/chatbar/domain/image/NovelAiSamplingAlignmentTest.kt",
@@ -13579,8 +13739,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Fifteen upstream test-support deltas read independently and exact raw hashes/lines revalidated, not fifteen product functions. Original thirteen selected whole methods reused separately: Linux batch rollback3; corrected actual Moment StoreR89 one (not old162 fixture); Windows native batch3/draft1/metadata1; R51 reset2 and simulated alpha/recipe1; R04 experimental setting1. Original ZIP digests/CRC/unique selected XML/empty stderr rechecked. Composition commits and initialize-only fixture corrections are not new behaviors. Native metadata-first atomic commit plus exact-reference cleanup differs from Android media-first staging; upstream omitted-image literal deletion test not claimed executed. Settings default-off/save/discard proof does not adopt Prompt315. Newly added status file versus payload cleanup integration remains independently pending R141; no support-derived whole feature PASS, new run, package or human result.",
       "candidateOwners": [
         {
           "path": "app/app/src/test/java/com/example/chatbar/data/repository/NovelAiStudioRepositoryTest.kt",
@@ -13589,8 +13749,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_STORAGE_TEST_SUPPORT_F0159757257664F7"
+      ],
+      "evidence": [
+        "OWNER_STORAGE15_SUPPORT_SCOPED_REUSE.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "54c84c479a1b8a9eddef6b726681dedc7094efac:app/app/src/test/java/com/example/chatbar/domain/image/NovelAiImageRetryTest.kt",
@@ -14061,8 +14226,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Fifteen upstream test-support deltas read independently and exact raw hashes/lines revalidated, not fifteen product functions. Original thirteen selected whole methods reused separately: Linux batch rollback3; corrected actual Moment StoreR89 one (not old162 fixture); Windows native batch3/draft1/metadata1; R51 reset2 and simulated alpha/recipe1; R04 experimental setting1. Original ZIP digests/CRC/unique selected XML/empty stderr rechecked. Composition commits and initialize-only fixture corrections are not new behaviors. Native metadata-first atomic commit plus exact-reference cleanup differs from Android media-first staging; upstream omitted-image literal deletion test not claimed executed. Settings default-off/save/discard proof does not adopt Prompt315. Newly added status file versus payload cleanup integration remains independently pending R141; no support-derived whole feature PASS, new run, package or human result.",
       "candidateOwners": [
         {
           "path": "app/app/src/test/java/com/example/chatbar/data/repository/NovelAiStudioRepositoryTest.kt",
@@ -14071,8 +14236,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_STORAGE_TEST_SUPPORT_339744EA46859A38"
+      ],
+      "evidence": [
+        "OWNER_STORAGE15_SUPPORT_SCOPED_REUSE.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "310d475cb6cb0466678fe986cb3850f91005dc77:app/app/src/test/java/com/example/chatbar/domain/image/NovelAiMediumEffortTest.kt",
@@ -14474,8 +14644,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Fifteen upstream test-support deltas read independently and exact raw hashes/lines revalidated, not fifteen product functions. Original thirteen selected whole methods reused separately: Linux batch rollback3; corrected actual Moment StoreR89 one (not old162 fixture); Windows native batch3/draft1/metadata1; R51 reset2 and simulated alpha/recipe1; R04 experimental setting1. Original ZIP digests/CRC/unique selected XML/empty stderr rechecked. Composition commits and initialize-only fixture corrections are not new behaviors. Native metadata-first atomic commit plus exact-reference cleanup differs from Android media-first staging; upstream omitted-image literal deletion test not claimed executed. Settings default-off/save/discard proof does not adopt Prompt315. Newly added status file versus payload cleanup integration remains independently pending R141; no support-derived whole feature PASS, new run, package or human result.",
       "candidateOwners": [
         {
           "path": "app/app/src/test/java/com/example/chatbar/data/repository/NovelAiStudioRepositoryTest.kt",
@@ -14484,8 +14654,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_STORAGE_TEST_SUPPORT_98F151CFC75A0B64"
+      ],
+      "evidence": [
+        "OWNER_STORAGE15_SUPPORT_SCOPED_REUSE.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "cbff39022dd3041957e590c48e140c9e431dc88f:app/app/src/test/java/com/example/chatbar/data/repository/NovelAiStudioRepositoryTest.kt",
@@ -14501,8 +14676,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Fifteen upstream test-support deltas read independently and exact raw hashes/lines revalidated, not fifteen product functions. Original thirteen selected whole methods reused separately: Linux batch rollback3; corrected actual Moment StoreR89 one (not old162 fixture); Windows native batch3/draft1/metadata1; R51 reset2 and simulated alpha/recipe1; R04 experimental setting1. Original ZIP digests/CRC/unique selected XML/empty stderr rechecked. Composition commits and initialize-only fixture corrections are not new behaviors. Native metadata-first atomic commit plus exact-reference cleanup differs from Android media-first staging; upstream omitted-image literal deletion test not claimed executed. Settings default-off/save/discard proof does not adopt Prompt315. Newly added status file versus payload cleanup integration remains independently pending R141; no support-derived whole feature PASS, new run, package or human result.",
       "candidateOwners": [
         {
           "path": "app/app/src/test/java/com/example/chatbar/data/repository/NovelAiStudioRepositoryTest.kt",
@@ -14511,8 +14686,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_STORAGE_TEST_SUPPORT_751ED67635FF9AC3"
+      ],
+      "evidence": [
+        "OWNER_STORAGE15_SUPPORT_SCOPED_REUSE.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "9797fd259d98962e9f5be88179f5f6f418aa6839:app/app/src/test/java/com/example/chatbar/domain/image/NovelAiMediumEffortTest.kt",
@@ -14963,8 +15143,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Fifteen upstream test-support deltas read independently and exact raw hashes/lines revalidated, not fifteen product functions. Original thirteen selected whole methods reused separately: Linux batch rollback3; corrected actual Moment StoreR89 one (not old162 fixture); Windows native batch3/draft1/metadata1; R51 reset2 and simulated alpha/recipe1; R04 experimental setting1. Original ZIP digests/CRC/unique selected XML/empty stderr rechecked. Composition commits and initialize-only fixture corrections are not new behaviors. Native metadata-first atomic commit plus exact-reference cleanup differs from Android media-first staging; upstream omitted-image literal deletion test not claimed executed. Settings default-off/save/discard proof does not adopt Prompt315. Newly added status file versus payload cleanup integration remains independently pending R141; no support-derived whole feature PASS, new run, package or human result.",
       "candidateOwners": [
         {
           "path": "app/app/src/test/java/com/example/chatbar/data/repository/NovelAiStudioRepositoryTest.kt",
@@ -14973,8 +15153,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_STORAGE_TEST_SUPPORT_1A9A3A02093CD4EE"
+      ],
+      "evidence": [
+        "OWNER_STORAGE15_SUPPORT_SCOPED_REUSE.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "3f6f1bb5d61492d74c56fa3696b557db514ae77d:app/app/src/test/java/com/example/chatbar/domain/image/NovelAiMediumEffortTest.kt",
@@ -15361,8 +15546,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Fifteen upstream test-support deltas read independently and exact raw hashes/lines revalidated, not fifteen product functions. Original thirteen selected whole methods reused separately: Linux batch rollback3; corrected actual Moment StoreR89 one (not old162 fixture); Windows native batch3/draft1/metadata1; R51 reset2 and simulated alpha/recipe1; R04 experimental setting1. Original ZIP digests/CRC/unique selected XML/empty stderr rechecked. Composition commits and initialize-only fixture corrections are not new behaviors. Native metadata-first atomic commit plus exact-reference cleanup differs from Android media-first staging; upstream omitted-image literal deletion test not claimed executed. Settings default-off/save/discard proof does not adopt Prompt315. Newly added status file versus payload cleanup integration remains independently pending R141; no support-derived whole feature PASS, new run, package or human result.",
       "candidateOwners": [
         {
           "path": "app/app/src/test/java/com/example/chatbar/data/repository/NovelAiStudioRepositoryTest.kt",
@@ -15371,8 +15556,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_STORAGE_TEST_SUPPORT_84F682BAADF1F3F3"
+      ],
+      "evidence": [
+        "OWNER_STORAGE15_SUPPORT_SCOPED_REUSE.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "c02f8b788db1fd829f55676e0ed23e35fdd10ea1:app/app/src/test/java/com/example/chatbar/domain/image/NovelAiImageRetryTest.kt",
@@ -15774,8 +15964,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Fifteen upstream test-support deltas read independently and exact raw hashes/lines revalidated, not fifteen product functions. Original thirteen selected whole methods reused separately: Linux batch rollback3; corrected actual Moment StoreR89 one (not old162 fixture); Windows native batch3/draft1/metadata1; R51 reset2 and simulated alpha/recipe1; R04 experimental setting1. Original ZIP digests/CRC/unique selected XML/empty stderr rechecked. Composition commits and initialize-only fixture corrections are not new behaviors. Native metadata-first atomic commit plus exact-reference cleanup differs from Android media-first staging; upstream omitted-image literal deletion test not claimed executed. Settings default-off/save/discard proof does not adopt Prompt315. Newly added status file versus payload cleanup integration remains independently pending R141; no support-derived whole feature PASS, new run, package or human result.",
       "candidateOwners": [
         {
           "path": "app/app/src/test/java/com/example/chatbar/data/repository/NovelAiStudioRepositoryTest.kt",
@@ -15784,8 +15974,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_STORAGE_TEST_SUPPORT_D7CA165652812C52"
+      ],
+      "evidence": [
+        "OWNER_STORAGE15_SUPPORT_SCOPED_REUSE.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "e4d7997c05f77e31b8650935830acc583c112f89:app/app/src/test/java/com/example/chatbar/domain/image/NovelAiCombinedOptionsTest.kt",
@@ -16216,8 +16411,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Fifteen upstream test-support deltas read independently and exact raw hashes/lines revalidated, not fifteen product functions. Original thirteen selected whole methods reused separately: Linux batch rollback3; corrected actual Moment StoreR89 one (not old162 fixture); Windows native batch3/draft1/metadata1; R51 reset2 and simulated alpha/recipe1; R04 experimental setting1. Original ZIP digests/CRC/unique selected XML/empty stderr rechecked. Composition commits and initialize-only fixture corrections are not new behaviors. Native metadata-first atomic commit plus exact-reference cleanup differs from Android media-first staging; upstream omitted-image literal deletion test not claimed executed. Settings default-off/save/discard proof does not adopt Prompt315. Newly added status file versus payload cleanup integration remains independently pending R141; no support-derived whole feature PASS, new run, package or human result.",
       "candidateOwners": [
         {
           "path": "app/app/src/test/java/com/example/chatbar/data/repository/NovelAiStudioRepositoryTest.kt",
@@ -16226,8 +16421,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_STORAGE_TEST_SUPPORT_D7D1A6515411C6A4"
+      ],
+      "evidence": [
+        "OWNER_STORAGE15_SUPPORT_SCOPED_REUSE.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "892b478b17d3bf0943e779d3f14108b750f3355c:app/app/src/test/java/com/example/chatbar/domain/image/NovelAiMediumPricingTest.kt",
@@ -17108,8 +17308,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Fifteen upstream test-support deltas read independently and exact raw hashes/lines revalidated, not fifteen product functions. Original thirteen selected whole methods reused separately: Linux batch rollback3; corrected actual Moment StoreR89 one (not old162 fixture); Windows native batch3/draft1/metadata1; R51 reset2 and simulated alpha/recipe1; R04 experimental setting1. Original ZIP digests/CRC/unique selected XML/empty stderr rechecked. Composition commits and initialize-only fixture corrections are not new behaviors. Native metadata-first atomic commit plus exact-reference cleanup differs from Android media-first staging; upstream omitted-image literal deletion test not claimed executed. Settings default-off/save/discard proof does not adopt Prompt315. Newly added status file versus payload cleanup integration remains independently pending R141; no support-derived whole feature PASS, new run, package or human result.",
       "candidateOwners": [
         {
           "path": "app/app/src/test/java/com/example/chatbar/data/repository/NovelAiStudioRepositoryTest.kt",
@@ -17118,8 +17318,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_STORAGE_TEST_SUPPORT_30BAF6B5F01588CE"
+      ],
+      "evidence": [
+        "OWNER_STORAGE15_SUPPORT_SCOPED_REUSE.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "b0fa1a425f24a0abe5adcb3b8f5775598452996e:app/app/src/test/java/com/example/chatbar/domain/image/NovelAiAdvancedSettingsTest.kt",
@@ -18698,11 +18903,16 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Fifteen upstream test-support deltas read independently and exact raw hashes/lines revalidated, not fifteen product functions. Original thirteen selected whole methods reused separately: Linux batch rollback3; corrected actual Moment StoreR89 one (not old162 fixture); Windows native batch3/draft1/metadata1; R51 reset2 and simulated alpha/recipe1; R04 experimental setting1. Original ZIP digests/CRC/unique selected XML/empty stderr rechecked. Composition commits and initialize-only fixture corrections are not new behaviors. Native metadata-first atomic commit plus exact-reference cleanup differs from Android media-first staging; upstream omitted-image literal deletion test not claimed executed. Settings default-off/save/discard proof does not adopt Prompt315. Newly added status file versus payload cleanup integration remains independently pending R141; no support-derived whole feature PASS, new run, package or human result.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_STORAGE_TEST_SUPPORT_72AA6A42BE43055E"
+      ],
+      "evidence": [
+        "OWNER_STORAGE15_SUPPORT_SCOPED_REUSE.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:app/app/src/test/java/com/example/chatbar/domain/chat/AutomaticChatImagePolicyTest.kt",
