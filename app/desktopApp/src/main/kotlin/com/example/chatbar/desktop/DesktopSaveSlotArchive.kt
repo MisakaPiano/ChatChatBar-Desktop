@@ -22,14 +22,17 @@ internal class DesktopSaveSlotArchive(private val workspace: Path) {
     internal class CapacityRefused(val stage: String) : IllegalStateException("SAVE_SLOT_CAPACITY_$stage")
     private val json = Json { ignoreUnknownKeys = false; encodeDefaults = true }
     internal data class Prepared(val directory: Path, val file: Path, val slot: SaveSlot, val sha256: String,
-        val format: SlotInspectFormat, val historicalVoices: Int = 0)
+        val format: SlotInspectFormat, val historicalVoices: Int = 0,
+        val ownedWork: DesktopSaveSlotOwnedWork? = null,
+        val temporaryAssets: List<DesktopSaveSlotTemporaryAsset> = emptyList())
 
     suspend fun prepare(source: Path): Prepared = withContext(Dispatchers.IO) {
         requireCapacity(source, "INPUT")
-        val work = newWork()
+        val owned = newWork()
+        val work = owned.directory
         val staged = work.resolve("source.archive")
         val hash = DesktopArchiveFiles.copyNew(source, staged, MAX_ARCHIVE)
-        inspect(work, staged, hash)
+        inspect(owned, staged, hash)
     }
 
     suspend fun verify(prepared: Prepared) {
@@ -44,14 +47,15 @@ internal class DesktopSaveSlotArchive(private val workspace: Path) {
         rag: suspend (suspend (VectorChunk) -> Unit) -> Unit,
         voices: List<GeneratedVoiceMessage>, mediaSource: (String) -> Path,
         progress: (String) -> Unit = {}): Prepared = withContext(Dispatchers.IO) {
-        val work = newWork()
+        val owned = newWork()
+        val work = owned.directory
         val codec = SaveSlotPackageStorage(work.toFile(), ::compressImage, mediaSource = { reference ->
             mediaSource(reference).also { DesktopArchiveFiles.safe(it, false) }.toFile()
         }, maximumImportBytes = MAX_ARCHIVE)
         val created = codec.createPackage(slot, imagePolicy, audio, messages, rag, voices, progress)
         val file = work.resolve("save_slot_packages").resolve(requireNotNull(created.packageRef).fileName)
         requireCapacity(file, "CAPTURE")
-        inspect(work, file, DesktopArchiveFiles.hash(file, MAX_ARCHIVE))
+        inspect(owned, file, DesktopArchiveFiles.hash(file, MAX_ARCHIVE))
     }
 
     suspend fun export(prepared: Prepared, destination: Path) = withContext(Dispatchers.IO) {
@@ -67,7 +71,7 @@ internal class DesktopSaveSlotArchive(private val workspace: Path) {
         check(DesktopArchiveFiles.hash(destination, MAX_ARCHIVE) == prepared.sha256)
     }
 
-    private suspend fun inspect(work: Path, file: Path, hash: String): Prepared {
+    private suspend fun inspect(owned: DesktopSaveSlotOwnedWork, file: Path, hash: String): Prepared {
         // Production restore retains explicit old identities plus the immutable original package.
         // Default structure-only diagnostic admission remains strict.
         val result = DesktopSaveSlotInspector(retainHistoricalVoices = true, retainHistoricalReferences = true).inspect(file)
@@ -81,13 +85,10 @@ internal class DesktopSaveSlotArchive(private val workspace: Path) {
             json.decodeFromString(SaveSlot.serializer(), Files.readString(file))
         }
         check(DesktopArchiveFiles.hash(file, MAX_ARCHIVE) == hash)
-        return Prepared(work, file, slot, hash, result.format, result.counts?.historicalVoices ?: 0)
+        return Prepared(owned.directory, file, slot, hash, result.format, result.counts?.historicalVoices ?: 0, owned)
     }
 
-    private fun newWork(): Path {
-        DesktopArchiveFiles.safe(workspace, true)
-        return Files.createDirectory(workspace.toAbsolutePath().normalize().resolve("slot-${UUID.randomUUID()}"))
-    }
+    private fun newWork() = DesktopSaveSlotOwnedWork.create(workspace)
 
     private fun requireCapacity(file: Path, stage: String) {
         DesktopArchiveFiles.safe(file, false)

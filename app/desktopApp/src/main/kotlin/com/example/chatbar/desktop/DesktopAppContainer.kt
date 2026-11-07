@@ -135,21 +135,17 @@ class DesktopAppContainer internal constructor(
                 }
         }, chatRepository, voiceRepository, memoryService::snapshot, mediaSource = { reference ->
             when {
-                reference.startsWith("asset:") -> {
-                    val bytes = characterResourceStore.readScreenshotImageBytes(reference)
-                    val directory = appDataRoot.resolve("backups/.save-slot-assets")
-                    DesktopArchiveFiles.safe(directory.parent, true)
-                    java.nio.file.Files.createDirectories(directory)
-                    DesktopArchiveFiles.safe(directory, true)
-                    val extension = reference.substringAfterLast('.', "png").lowercase().takeIf { it in setOf("png", "jpg", "jpeg", "gif", "webp") } ?: "png"
-                    directory.resolve("${java.util.UUID.randomUUID()}.$extension").also {
-                        java.nio.file.Files.write(it, bytes, java.nio.file.StandardOpenOption.CREATE_NEW)
-                    }
-                }
+                reference.startsWith("asset:") -> error("SAVE_SLOT_ASSET_REQUIRES_CAPTURE_OWNER")
                 java.nio.file.Path.of(reference).isAbsolute -> voiceAudioStore.verify(reference)
                 else -> characterResourceStore.resolveOwnedReference(reference).also { DesktopArchiveFiles.safe(it, false) }
             }
-        }, cleanupDeletedMedia = ownedImageCleanup::deleteUnreferenced) }
+        }, cleanupDeletedMedia = ownedImageCleanup::deleteUnreferenced, temporaryAsset = { reference ->
+            if (!reference.startsWith("asset:")) null else {
+                val bytes = characterResourceStore.readScreenshotImageBytes(reference)
+                val extension = reference.substringAfterLast('.', "png").lowercase().takeIf { it in setOf("png", "jpg", "jpeg", "gif", "webp") } ?: "png"
+                DesktopSaveSlotTemporaryAsset.create(appDataRoot, bytes, extension)
+            }
+        }) }
     private val saveSlotOwner = lazy { DesktopSaveSlotController(saveSlotService, filePicker) { id -> primaryChatController.selectSession(id) }
         .also { taskCenter.watchSaveSlots(it) } }
     internal val saveSlotController by saveSlotOwner

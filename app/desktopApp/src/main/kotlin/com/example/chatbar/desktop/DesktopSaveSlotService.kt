@@ -29,6 +29,7 @@ internal class DesktopSaveSlotService(
     private val mediaSource: suspend (String) -> Path,
     private val journal: DesktopSessionCommitJournal = DesktopSessionCommitJournal(root),
     private val cleanupDeletedMedia: suspend (List<String>) -> Unit = {},
+    private val temporaryAsset: suspend (String) -> DesktopSaveSlotTemporaryAsset? = { null },
 ) {
     private val mutex = Mutex()
     private val storage = JsonFileStorage(root, gate)
@@ -36,6 +37,38 @@ internal class DesktopSaveSlotService(
     private val workspace = root.resolve("backups/.save-slot-work")
     @Volatile var sessionDeletionCleanupNotice: String? = null
         private set
+    @Volatile var completedWorkCleanupNotice: String? = null
+        private set
+
+    /** Only an actually returned publication/export authorizes releasing this invocation's work.
+     * Failure/cancellation never enters cleanup; done journal names are not success evidence. */
+    private suspend fun <T> completePrepared(vararg prepared: DesktopSaveSlotArchive.Prepared,
+        operation: suspend () -> T): T {
+        completedWorkCleanupNotice = null
+        val receipts = prepared.distinctBy { it.directory }.map { item ->
+            try { requireNotNull(item.ownedWork).seal() }
+            catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { completedWorkCleanupNotice = "部分准备文件未能确认清理，文件仍保留。"; null }
+        }
+        val result = operation()
+        currentCoroutineContext().ensureActive()
+        withContext(NonCancellable + Dispatchers.IO) {
+            try {
+                gate.withImmediateNormalOperation {
+                    check(!journal.hasPending()) { "SAVE_SLOT_JOURNAL_STILL_PENDING" }
+                    receipts.filterNotNull().forEach { receipt ->
+                        try { receipt.release() }
+                        catch (_: Exception) { completedWorkCleanupNotice = "部分准备文件未能确认清理，文件仍保留。" }
+                    }
+                    prepared.flatMap { it.temporaryAssets }.distinctBy { it.file }.forEach { asset ->
+                        try { asset.release() }
+                        catch (_: Exception) { completedWorkCleanupNotice = "部分准备文件未能确认清理，文件仍保留。" }
+                    }
+                }
+            } catch (_: Exception) { completedWorkCleanupNotice = "部分准备文件未能确认清理，文件仍保留。" }
+        }
+        return result
+    }
 
     /** Confirmed whole-session deletion uses the existing recoverable graph publication. */
     suspend fun deleteSession(sessionId: String): String? = withContext(Dispatchers.IO) { mutex.withLock {
@@ -159,8 +192,10 @@ internal class DesktopSaveSlotService(
         reservation.run(sessionId) {
             val capture = capture(sessionId, name, imagePolicy, includeAudio, progress)
             val addition = libraryAddition(capture.prepared, sessionId)
-            publish(capture.sourceId, capture.proof, null, emptyMap(), addition.second)
-            addition.first
+            completePrepared(capture.prepared) {
+                publish(capture.sourceId, capture.proof, null, emptyMap(), addition.second)
+                addition.first
+            }
         }
     }
 
@@ -171,14 +206,16 @@ internal class DesktopSaveSlotService(
             check(baseline.containsKey("entities/chat_sessions/$sessionId.json"))
             val prepared = gate.withNormalOperation { archive.prepare(source) }
             val addition = libraryAddition(prepared, sessionId)
-            publish(sessionId, baseline, null, emptyMap(), addition.second)
-            addition.first
+            completePrepared(prepared) {
+                publish(sessionId, baseline, null, emptyMap(), addition.second)
+                addition.first
+            }
         }
     }
 
     suspend fun export(slotId: String, destination: Path) = mutex.withLock {
         val prepared = gate.withNormalOperation { prepareLibrary(slotId) }
-        archive.export(prepared, destination)
+        completePrepared(prepared) { archive.export(prepared, destination) }
     }
 
     /** Confirmed deletion affects a catalog record and, only after a complete reference proof, its package. */
@@ -235,8 +272,10 @@ internal class DesktopSaveSlotService(
             val before = libraryAddition(safety.prepared, sessionId)
             val prepared = gate.withNormalOperation { prepareLibrary(slotId) }
             val plan = planner.prepare(archive, prepared, safety.session)
-            publish(sessionId, safety.proof, plan, safety.proof, before.second)
-            plan.session
+            completePrepared(safety.prepared, prepared) {
+                publish(sessionId, safety.proof, plan, safety.proof, before.second)
+                plan.session
+            }
         }
     }
 
@@ -255,8 +294,10 @@ internal class DesktopSaveSlotService(
                 Files.writeString(path, storage.json.encodeToString(ChatDraft.serializer(), ChatDraft(target.id, source.draft)), StandardOpenOption.CREATE_NEW)
                 extras["entities/chat_drafts/${target.id}.json"] = path
             }
-            publish(sessionId, source.proof, plan, emptyMap(), extras)
-            plan.session
+            completePrepared(source.prepared) {
+                publish(sessionId, source.proof, plan, emptyMap(), extras)
+                plan.session
+            }
         }
     }
 
@@ -282,11 +323,13 @@ internal class DesktopSaveSlotService(
             Files.writeString(path, storage.json.encodeToString(ChatSession.serializer(), rebound), StandardOpenOption.CREATE_NEW)
             val relative = "entities/chat_sessions/$sessionId.json"
             additions[relative] = path
-            publish(sessionId, before.proof, null, mapOf(relative to before.proof.getValue(relative)), additions,
-                refreshSessionId = sessionId) {
-                resourceProof.forEach { (key, hash) -> check(DesktopArchiveFiles.hash(root.resolve(key), 8L * 1024 * 1024) == hash) }
+            completePrepared(before.prepared) {
+                publish(sessionId, before.proof, null, mapOf(relative to before.proof.getValue(relative)), additions,
+                    refreshSessionId = sessionId) {
+                    resourceProof.forEach { (key, hash) -> check(DesktopArchiveFiles.hash(root.resolve(key), 8L * 1024 * 1024) == hash) }
+                }
+                rebound
             }
-            rebound
         }
     }
 
@@ -308,11 +351,14 @@ internal class DesktopSaveSlotService(
             storage.json.decodeFromString(GeneratedVoiceMessage.serializer(), Files.readString(root.resolve(it)))
         } else emptyList()
         val sources = linkedMapOf<String, Path>()
+        val temporaryAssets = mutableListOf<DesktopSaveSlotTemporaryAsset>()
         if (images != SaveSlotImagePolicy.NONE) {
             suspend fun include(reference: String) {
                 if (reference.startsWith(OMITTED_SAVE_SLOT_IMAGE_PREFIX) || reference in sources) return
                 check(sources.size < 20000)
-                sources[reference] = mediaSource(reference)
+                val asset = temporaryAsset(reference)
+                if (asset != null) temporaryAssets += asset
+                sources[reference] = asset?.file ?: mediaSource(reference)
             }
             chats.forEachMessage(sessionId) { message -> message.images.forEach { include(it) } }
             session.chatBackground?.let { include(it) }
@@ -327,7 +373,8 @@ internal class DesktopSaveSlotService(
             { sources.getValue(it) }, progress)
         check(inventory.read(sessionId) == proof) { "会话在保存期间变化，请重试" }
         sources.forEach { (ref, path) -> check(DesktopArchiveFiles.hash(path, DesktopSaveSlotArchive.MAX_ARCHIVE) == mediaProof.getValue(ref)) }
-        Capture(sessionId, session, chats.getSessionDraft(sessionId), messageIds, proof, prepared)
+        Capture(sessionId, session, chats.getSessionDraft(sessionId), messageIds, proof,
+            prepared.copy(temporaryAssets = temporaryAssets.toList()))
     }
 
     private suspend fun libraryAddition(prepared: DesktopSaveSlotArchive.Prepared, sessionId: String): Pair<SaveSlot, Map<String, Path>> {

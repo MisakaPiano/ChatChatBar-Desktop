@@ -121,7 +121,7 @@ internal class DesktopSaveSlotController(private val service: DesktopSaveSlotSer
                     currentCoroutineContext().ensureActive()
                     val message = work(id)
                     val slots = service.list(id)
-                    mutable.update { it.copy(slots = slots, message = message) }
+                    mutable.update { it.copy(slots = slots, message = message + service.completedWorkCleanupNotice?.let { notice -> "；$notice" }.orEmpty()) }
                 } catch (_: CancellationException) {
                     outcome = if (evidence.publicationAttempted) DesktopWorkPhase.UNCONFIRMED else DesktopWorkPhase.CANCELLED
                     mutable.update { it.copy(message = "已停止；已完成的存档保留，未确认的数据不会自动清理") }

@@ -179,11 +179,12 @@ class DesktopSaveSlotServiceTest {
             playerName = "Test player", imagePromptPreference = "retain preference")
         val message = SyntheticSaveSlotCorpus.message().copy(images = listOf("images/synthetic.png"))
         fun service(journal: DesktopSessionCommitJournal = DesktopSessionCommitJournal(root),
-            cleanup: suspend (List<String>) -> Unit = {}) = DesktopSaveSlotService(root, gate,
+            cleanup: suspend (List<String>) -> Unit = {},
+            temporaryAsset: suspend (String) -> DesktopSaveSlotTemporaryAsset? = { null }) = DesktopSaveSlotService(root, gate,
             audio, object : DesktopSessionReservation { override suspend fun <T> run(sessionId: String, operation: suspend () -> T): T = operation() },
             chats, voices, { snapshot }, { reference ->
                 if (Path.of(reference).isAbsolute) DesktopVoiceAudioStore(root).verify(reference) else root.resolve(reference)
-            }, journal, cleanup)
+            }, journal, cleanup, temporaryAsset)
         suspend fun seed() {
             chats.createSession(session); chats.addMessage(message); chats.updateSessionDraft("s", "unsent draft")
             val image = BufferedImage(12, 8, BufferedImage.TYPE_INT_RGB)
@@ -313,6 +314,79 @@ class DesktopSaveSlotServiceTest {
             assertEquals("retain preference", duplicate.imagePromptPreference)
             assertEquals(before, DesktopSessionInventory(f.root).read("s"))
             assertEquals(DesktopDataOperationCoordinatorState.OPEN, f.gate.state)
+        }
+    }
+
+    @Test fun `successful archive operations release only current owned work and retain library exports and old evidence`() = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            val work = Files.createDirectories(f.root.resolve("backups/.save-slot-work"))
+            val old = Files.createDirectory(work.resolve("slot-old-evidence"))
+            val retained = Files.writeString(old.resolve("keep.txt"), "old evidence")
+            val originalImage = Files.readAllBytes(f.root.resolve("images/synthetic.png"))
+            val service = f.service()
+            fun clean() {
+                assertEquals(listOf(old), Files.list(work).use { it.toList() })
+                assertEquals("old evidence", Files.readString(retained))
+                assertNull(service.completedWorkCleanupNotice)
+            }
+            val slot = service.create("s", "Synthetic", SaveSlotImagePolicy.ORIGINAL, true); clean()
+            val output = f.root.resolve("export.cbsave")
+            service.export(slot.id, output); clean()
+            val exported = Files.readAllBytes(output)
+            val imported = service.import(output, "s"); clean()
+            service.restore(imported.id, "s"); clean()
+            val copied = service.duplicate("s"); clean()
+            assertNotNull(f.chats.getSession(copied.id))
+            f.chats.getMessages(copied.id).flatMap { it.images }.forEach { reference ->
+                val path = Path.of(reference).let { if (it.isAbsolute) it else f.root.resolve(it) }
+                assertContentEquals(originalImage, Files.readAllBytes(path))
+            }
+            f.storage.saveEntity("character_cards", "new-card", CharacterCard.create("Synthetic").copy(id = "new-card"), CharacterCard.serializer())
+            service.rebind("s", "new-card", emptyList()); clean()
+            assertTrue(service.list("s").isNotEmpty())
+            assertContentEquals(exported, Files.readAllBytes(output))
+            assertContentEquals(originalImage, Files.readAllBytes(f.root.resolve("images/synthetic.png")))
+        }
+    }
+
+    @Test fun `unknown work added after sealing retains preparation but never turns a committed copy into failure`() = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            var foreign: Path? = null
+            f.drain = {
+                val home = Files.list(f.root.resolve("backups/.save-slot-work")).use { it.findFirst().orElseThrow() }
+                foreign = Files.writeString(home.resolve("foreign.txt"), "retain unknown")
+            }
+            val service = f.service()
+            val copied = service.duplicate("s")
+            assertNotNull(f.chats.getSession(copied.id))
+            assertEquals("retain unknown", Files.readString(assertNotNull(foreign)))
+            assertNotNull(service.completedWorkCleanupNotice)
+            assertFalse(DesktopSessionCommitJournal(f.root).hasPending())
+            assertTrue(Files.exists(f.root.resolve("images/synthetic.png")))
+        }
+    }
+
+    @Test fun `owned bundled asset copies are released after success and retained after source change refusal`() = runBlocking {
+        Fixture().use { f ->
+            f.seed()
+            f.chats.updateSession(f.session.copy(chatBackground = "asset:synthetic.png"))
+            val home = Files.createDirectories(f.root.resolve("backups/.save-slot-assets"))
+            val old = Files.writeString(home.resolve("old.txt"), "retain old")
+            val bytes = Files.readAllBytes(f.root.resolve("images/synthetic.png"))
+            val service = f.service(temporaryAsset = { reference ->
+                if (reference.startsWith("asset:")) DesktopSaveSlotTemporaryAsset.create(f.root, bytes, "png") else null
+            })
+            service.create("s", "Synthetic asset", SaveSlotImagePolicy.ORIGINAL, false)
+            assertEquals(listOf(old), Files.list(home).use { it.toList() })
+            f.drain = { f.chats.updateSessionDraft("s", "late source edit") }
+            assertFails { service.duplicate("s") }
+            val preserved = Files.list(home).use { it.filter { path -> path != old }.toList() }
+            assertEquals(1, preserved.size); assertContentEquals(bytes, Files.readAllBytes(preserved.single()))
+            assertEquals("retain old", Files.readString(old))
+            assertContentEquals(bytes, Files.readAllBytes(f.root.resolve("images/synthetic.png")))
+            assertEquals(1, f.chats.getAllSessions().size)
         }
     }
 
