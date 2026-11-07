@@ -25,3 +25,5 @@ R76／42363584677生产编译已过，compileTestKotlin指出Disabled语义标�
 R77实际nativeWindow一个方法完整PASS：展开／返回／resize保留fraction与201%zoom、一次仅一个viewport、原生关闭回面板、新record关闭旧窗并以新decoded身份重置。原图已查看，详 `OWNER_R77_WINDOW_CARD_AND_PNG_FIXTURE_REVIEW.json`。同run卡import另1PASS；DDIM和V+两新PNG缺v4 caption及legacy uc／seed完整结构而失败，均未到相应新增操作，不当产品回归。只补合法v4_prompt结构并让import返回值立即断言，R79仅重跑失败两方法；Window／Card及R72不重跑。
 
 R79／42364653605原24862B／SHA37a2e364…9fdcbd已核CRC、source及全部2XML和空stderr。合法旧DDIM PNG实际Panel唯一方法完整PASS：High只禁Enhance并显原因，Medium有效EA可用，独立Upscale可用，原bytes不变、任务空。V+另1PASS分开；native展开继续复用R77唯一方法、同步像素继续复用R72唯一方法，不重跑、不把它们称同一全跑。当前Panel／测试匹配R79源，Strength／Noise接线已编译；不冒称已新测两字段交互或真人验收。
+
+后继348的实际换图输入身份R81一个方法完整PASS；整来源Panel key(path)，不只guard结果record。R79内层body除默认IO注入外相同，已有DDIM准入、R77 native展开及R72几何继续各按原源复用。完整148 Screen163行已逐项对应：Desktop鼠标交互／可调整窗、文件保存与复制、既有0–1数值范围、导航后app-owned任务继续等平台差异明确，不宣称Android像素级或整个149兼容。

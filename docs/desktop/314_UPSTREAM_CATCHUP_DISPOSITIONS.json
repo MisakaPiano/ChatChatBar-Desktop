@@ -1270,6 +1270,20 @@
         "OWNER_TOKEN_VM_AND_INLINE_D3_REUSE.json",
         "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
       ]
+    },
+    {
+      "id": "POSTPROCESS_SCREEN_148_SCOPED_DESKTOP_WORKSPACE",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete163-line new148 Screen: actualsource/tabs/staticrestriction/metadata/scales/magnitudes/numerics/costkind/account/progress/exactstop/resultparameterstale/save/copy/explicituse and synchronizedcomparison/reset/resizablewindow. Separate originalR56/R58/R67/R72/R77/R79 and R81 proofs retained,not one new fullsuite. Desktop uses mouse zoom/pan and file/copy actions,original validated0..1 numeric range rather than Androidslider .01..99,application-owned jobs survive navigation. These platform/runtime differences explicit;not pixelidenticalAndroidorwhole149/provider/human acceptance.",
+      "reviewSource": "e175a635b2cddcb4412d5e004738ce7f9798b05a",
+      "evidence": [
+        "OWNER_POSTPROCESS_SOURCE_R81_FINAL_REVIEW.json",
+        "OWNER_POSTPROCESS_RESULTS_FINAL_REVIEW.json",
+        "OWNER_R79_VALID_PNG_AND_R78_INITIALIZATION_REVIEW.json",
+        "OWNER_R77_WINDOW_CARD_AND_PNG_FIXTURE_REVIEW.json",
+        "OWNER_POST_PROCESS_COMPARISON_R72_FINAL_REVIEW.json",
+        "docs/desktop/348_POST_PROCESS_INPUT_IDENTITY.md"
+      ]
     }
   ],
   "deltas": [
@@ -2179,11 +2193,20 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete163-line new148 Screen: actualsource/tabs/staticrestriction/metadata/scales/magnitudes/numerics/costkind/account/progress/exactstop/resultparameterstale/save/copy/explicituse and synchronizedcomparison/reset/resizablewindow. Separate originalR56/R58/R67/R72/R77/R79 and R81 proofs retained,not one new fullsuite. Desktop uses mouse zoom/pan and file/copy actions,original validated0..1 numeric range rather than Androidslider .01..99,application-owned jobs survive navigation. These platform/runtime differences explicit;not pixelidenticalAndroidorwhole149/provider/human acceptance.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "POSTPROCESS_SCREEN_148_SCOPED_DESKTOP_WORKSPACE"
+      ],
+      "evidence": [
+        "OWNER_POSTPROCESS_SOURCE_R81_FINAL_REVIEW.json",
+        "OWNER_POSTPROCESS_RESULTS_FINAL_REVIEW.json",
+        "OWNER_R79_VALID_PNG_AND_R78_INITIALIZATION_REVIEW.json",
+        "OWNER_R77_WINDOW_CARD_AND_PNG_FIXTURE_REVIEW.json",
+        "OWNER_POST_PROCESS_COMPARISON_R72_FINAL_REVIEW.json",
+        "docs/desktop/348_POST_PROCESS_INPUT_IDENTITY.md"
+      ]
     },
     {
       "id": "148b3a9637eadf577afbb4947158dd6f80e17f4f:app/app/src/main/java/com/example/chatbar/ui/kit/Controls.kt",
