@@ -19,3 +19,5 @@
 R74／42362529739在compileTestKotlin停住：新测试ComposeWindow错误import包导致连锁引用错误；原318B／SHA723c3a46…a4374d仅source、0XML，完整job日志保留。未运行窗口或DDIM方法，不当业务FAIL。仅纠正test import为ui.awt；R75同native环境继续原两方法，并同批新增343／344受影响入口验证，不重跑R72／R67。
 
 R75／42363159910在生产compileKotlin停住：跨模块public可空模型属性不能直接smart-cast。原318B／SHA6855e26b…23af14仅source、0XML；改局部cardModel快照保持既定选择顺序。没有运行到测试／账户读取。新DDIM夹具同时改显式合成account／credentialConfigured及空SecretStore，避免下一轮走应用默认账户请求。R76同原四方法继续，未记业务通过或用户验收；不把未成功的取消请求记为cancelled。
+
+R76／42363584677生产编译已过，compileTestKotlin指出Disabled语义标记类型为Unit、不能与Boolean比较。原316B／SHA0afebff8…2dd059仅source、0XML；三处检查改为既有config.contains模式，仅修测试。R74也包含这一独立错误，不能全部归为ComposeWindow连锁；原日志保留。新增两类其余窗口／语义／PNG／模型和undo接口已对既有调用重新核对，R77同原四方法继续。
