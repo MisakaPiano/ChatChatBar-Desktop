@@ -23,8 +23,8 @@ class DesktopMergeOmittedVoiceRetentionTest {
         data class Case(val sourceVersion: String?, val voiceVersion: String?, val targetVersion: String?,
             val targetContent: String, val targetId: String = "m", val live: Boolean,
             val targetRole: MessageRole = MessageRole.ASSISTANT)
-        val oldText = "Alice：『synthetic old line』"
-        val newText = "Alice：『synthetic replacement line』"
+        val oldText = "Synthetic narration.\n<n=\"Alice\"/>[synthetic old line]()"
+        val newText = "Synthetic narration.\n<n=\"Alice\"/>[synthetic replacement line]()"
         val cases = listOf(Case("pc", "pc", "pc", oldText, live = true),
             Case("pc", "pc", "phone", newText, live = false),
             Case("pc", "pc", "pc", newText, live = false),
@@ -130,6 +130,8 @@ class DesktopMergeOmittedVoiceRetentionTest {
                 }
                 assertContentEquals(sourceBytes, Files.readAllBytes(source)); assertContentEquals(audioBytes, Files.readAllBytes(Path.of(audio.path)))
                 original.forEach { (path, raw) -> assertContentEquals(raw, Files.readAllBytes(pcRoot.resolve(path))) }
+            } catch (failure: Throwable) {
+                throw AssertionError("Synthetic merge case: $case", failure)
             } finally { check(base.toFile().deleteRecursively()) }
         }
     }
