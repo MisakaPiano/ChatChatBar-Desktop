@@ -7,3 +7,5 @@
 实际Controller定向用例覆盖显式卡模型×原跟随开／关、无卡模型跟随全局、无卡模型保留手选四内部情形，核参数bank／Seed／未改内容、仓库回读、原卡不变及一次undo／redo。不是四个方法或实际出图；R75待原件，其他8c VM Vibe差异不据此关闭。
 
 R75／42363159910在生产compileKotlin停住：跨模块public可空模型属性不能直接smart-cast。原318B／SHA6855e26b…23af14仅source、0XML；改局部cardModel快照保持既定选择顺序。没有运行到测试／账户读取。新DDIM夹具同时改显式合成account／credentialConfigured及空SecretStore，避免下一轮走应用默认账户请求。R76同原四方法继续，未记业务通过或用户验收；不把未成功的取消请求记为cancelled。
+
+R77／42363952850原28151B／SHA477a87d8…b41d59已独核CRC/source/全部3XML与空stderr，actual importCard唯一方法完整PASS，四内部模型分支及bank／Seed／仓库／一次undo-redo全部走到，原生产Controller及test匹配当前。原native展开Window另一个方法亦PASS，但该run另外两个无效PNG夹具FAIL保留，不称整run通过。8c VM剩余Vibe resolve／retain两hunk沿原162匹配四blob及真实加密import→mockwire两方法分源复用、0新跑；实际generate把retainedGuidance给history、prepared.guidance给请求已读。仅对应这一完整8c delta可限域等位，其他VM版本仍分别处理。

@@ -1,3 +1,7 @@
+2026-11-07 当前3fd7后继：R77原28151B/477a87d8…b41d59全部3XML/空stderr已核：真实nativeWindow1完整PASS及原图已view，actual卡import1完整PASS含四内部情形与undo；另外DDIM/V+两无效PNG夹具缺完整v4caption或legacy uc+seed，reader拒绝/导入false后超时，未到新增操作，不当业务FAIL。只补合法v4_prompt并立即assert返回，R79仅失败两方法；Window/Card及R72/R67不重跑。8c VM卡模型/参数与Vibe两hunk分源有效证据合并限定映射，Vibe原2复用0新跑。355e图像引导7float/Context复用数值组件及Vibe身份history隔离，R78一实际body小数/CtrlZ/重排移除方法在验；regen Guidance低影响一致性接线不声称旧sampler从UI可达。314仍false/315其余未采纳，四身份/全部ID/T11T23/公开1244/db7/sign26与真人原分组保持，无本机JVM/真实资料/新包/公发。
+
+下方历史保留。
+
 2026-11-07 当前7bf1后继：R76原316B/0afebff8…2dd059仅source/0XML，生产编译已过而新DDIM测试把Disabled的Unit标记当Boolean比较，三处改config.contains；R74也含此独立错误，不全部归窗口import连锁，说明已纠正。只修test，新增接口已按既有窗口/PNG/语义/模型/undo调用核对。R77/42363952850同native2+Variety实际UI1+卡import实际Controller1在验；所有编译原件/完整日志保留，不作运行业务FAIL。R69/R71/R72/R73有效限定结果不重跑。314仍false/315其余未采纳，四身份/全部ID/T11T23/公开1244/db7/sign26与真人原分组保持，无本机JVM/真实资料/新包/公发。
 
 下方历史保留。

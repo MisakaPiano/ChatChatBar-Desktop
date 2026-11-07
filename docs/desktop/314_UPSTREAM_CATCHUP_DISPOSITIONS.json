@@ -1144,6 +1144,16 @@
       "evidence": [
         "OWNER_CHARACTER_SAMPLING_RESET_A963_REUSE.json"
       ]
+    },
+    {
+      "id": "STUDIO_CARD_MODEL_ORDER_AND_RETAINED_VIBE_VM_8C",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete8c VM raw delta only: explicit card model stops global following,else inherited global/manual model selected before active-bank card parameters; actual R77 Controller one method four internal cases verifies banks/Seed/disk/unchanged sources/one undo-redo. Remaining inline Vibe resolve/retain hunks map actual Guidance→retained history/prepared wire; four matching original162 owner/test blobs and two encrypted-import/mock-wire methods reused separately,0new Vibe runs. Not whole VM across versions,real provider or user acceptance; R77 invalid PNG failures remain separate.",
+      "reviewSource": "3fd76029c5c59d9036e1c22324270cd715f8d5e8",
+      "evidence": [
+        "OWNER_R77_WINDOW_CARD_AND_PNG_FIXTURE_REVIEW.json",
+        "OWNER_VIBE_INLINE_8C_VM_REUSE.json"
+      ]
     }
   ],
   "deltas": [
@@ -6391,8 +6401,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete8c VM raw delta only: explicit card model stops global following,else inherited global/manual model selected before active-bank card parameters; actual R77 Controller one method four internal cases verifies banks/Seed/disk/unchanged sources/one undo-redo. Remaining inline Vibe resolve/retain hunks map actual Guidance→retained history/prepared wire; four matching original162 owner/test blobs and two encrypted-import/mock-wire methods reused separately,0new Vibe runs. Not whole VM across versions,real provider or user acceptance; R77 invalid PNG failures remain separate.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolViewModel.kt",
@@ -6401,8 +6411,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "STUDIO_CARD_MODEL_ORDER_AND_RETAINED_VIBE_VM_8C"
+      ],
+      "evidence": [
+        "OWNER_R77_WINDOW_CARD_AND_PNG_FIXTURE_REVIEW.json",
+        "OWNER_VIBE_INLINE_8C_VM_REUSE.json"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/main/java/com/example/chatbar/ui/manage/ManageScreen.kt",
