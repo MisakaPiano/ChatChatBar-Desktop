@@ -59,10 +59,11 @@ class DesktopMergeOmittedImageRetentionTest {
     }
 
     @Test fun `actual selected merge retains omitted matching images without crossing fork or message identity`() = runBlocking<Unit> {
-        data class Case(val includeImages: Boolean, val choice: DesktopMergePreview.Choice, val messageId: String = "m")
+        data class Case(val includeImages: Boolean, val choice: DesktopMergePreview.Choice, val messageId: String = "m", val includeArchives: Boolean = true)
         for (case in listOf(Case(false, DesktopMergePreview.Choice.TAKE_PHONE),
             Case(true, DesktopMergePreview.Choice.TAKE_PHONE), Case(false, DesktopMergePreview.Choice.BOTH),
-            Case(false, DesktopMergePreview.Choice.TAKE_PHONE, "new-message"))) {
+            Case(false, DesktopMergePreview.Choice.TAKE_PHONE, "new-message"),
+            Case(true, DesktopMergePreview.Choice.TAKE_PHONE, includeArchives = false))) {
             val base = Files.createTempDirectory(Files.createDirectories(Path.of("build/preview-synthetic/omitted-media").toAbsolutePath()), "case-")
             try {
                 val pcRoot = Files.createDirectory(base.resolve("pc"))
@@ -76,14 +77,19 @@ class DesktopMergeOmittedImageRetentionTest {
                     sizePreset = "synthetic", width = 2, height = 2)
                 val message = ChatMessage("m", "s", MessageRole.USER, "Computer body", images = listOf(image.toString()),
                     generatedImageMetadata = listOf(metadata), createdAt = 1, updatedAt = 1)
+                val packagePath = pcRoot.resolve("save_slot_packages/synthetic.cbsave"); Files.createDirectories(packagePath.parent)
+                SyntheticSaveSlotCorpus.archive(packagePath)
+                val packageBytes = Files.readAllBytes(packagePath)
+                val slot = SyntheticSaveSlotCorpus.slot().copy(packageRef = SaveSlotPackageRef("synthetic.cbsave", 1, byteLength = packageBytes.size.toLong()))
                 val original = mapOf("entities/character_cards/c.json" to card, "entities/chat_sessions/s.json" to session,
-                    "entities/chat_messages/s_m.json" to bytes(ChatMessage.serializer(), message))
+                    "entities/chat_messages/s_m.json" to bytes(ChatMessage.serializer(), message),
+                    "entities/save_slots/slot.json" to bytes(SaveSlot.serializer(), slot))
                 for ((path, raw) in original) { val target = pcRoot.resolve(path); Files.createDirectories(target.parent); Files.write(target, raw) }
                 val incoming = mapOf("entities/character_cards/c.json" to card, "entities/chat_sessions/s.json" to session,
                     "entities/chat_messages/s_${case.messageId}.json" to bytes(ChatMessage.serializer(),
                         ChatMessage(case.messageId, "s", MessageRole.USER, "Phone body", createdAt = 1, updatedAt = 2)))
-                val scope = OfficialWireScope(emptySet(), 1, 1, if (case.includeImages) 1 else 0, 1, 1,
-                    false, false, false, false, sessionDefaultChoice = OfficialWireSessionChoice(images = case.includeImages))
+                val scope = OfficialWireScope(emptySet(), 1, 1, if (case.includeImages) 1 else 0, 1, if (case.includeArchives) 1 else 0,
+                    false, false, false, false, sessionDefaultChoice = OfficialWireSessionChoice(images = case.includeImages, archives = case.includeArchives))
                 val source = Files.write(base.resolve("synthetic.cbbackup"), CensusWireFixtures.bytes(prefs = "{}", files = incoming,
                     code = 88, version = 2, scope = scope))
                 val sourceBytes = Files.readAllBytes(source)
@@ -126,12 +132,23 @@ class DesktopMergeOmittedImageRetentionTest {
                                         assertEquals("Computer body", kept.content); assertEquals(1, kept.images.size)
                                         assertContentEquals(imageBytes, Files.readAllBytes(Path.of(kept.images.single())))
                                     }
+                                    val slots = mutableListOf<SaveSlot>()
+                                    JsonFileStorage(root).visitEntitiesStrict("save_slots", SaveSlot.serializer()) { _, value -> slots += value }
+                                    val keepArchive = !case.includeArchives || case.choice == DesktopMergePreview.Choice.BOTH
+                                    assertEquals(if (keepArchive) 1 else 0, slots.size, case.toString())
+                                    if (keepArchive) {
+                                        assertEquals(slot, slots.single())
+                                        val restoredPackage = root.resolve("save_slot_packages").resolve(slots.single().packageRef!!.fileName)
+                                        assertContentEquals(packageBytes, Files.readAllBytes(restoredPackage))
+                                        assertEquals(1, DesktopSaveSlotInspector(true).inspect(restoredPackage).counts?.messages)
+                                    }
                                 }
                             }
                         }
                     }
                 }
                 assertContentEquals(sourceBytes, Files.readAllBytes(source)); assertContentEquals(imageBytes, Files.readAllBytes(image))
+                assertContentEquals(packageBytes, Files.readAllBytes(packagePath))
                 original.forEach { (path, raw) -> assertContentEquals(raw, Files.readAllBytes(pcRoot.resolve(path))) }
             } finally { check(base.toFile().deleteRecursively()) }
         }

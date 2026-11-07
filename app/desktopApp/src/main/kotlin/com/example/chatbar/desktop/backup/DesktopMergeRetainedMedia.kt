@@ -20,7 +20,7 @@ internal class DesktopMergeRetainedMedia(
         }
     }
 
-    fun missingImageMessages(incoming: DesktopMergePreview.Unit): Map<String, JsonObject> {
+    fun retainedSessionRecords(incoming: DesktopMergePreview.Unit): Map<String, JsonObject> {
         val selected = scope ?: return emptyMap()
         val sessions = incoming.records.filterKeys { DesktopBackupPolicy.entityType(it) == "chat_sessions" }.values
             .mapNotNull { it["id"]?.jsonPrimitive?.contentOrNull }.toSet()
@@ -35,7 +35,16 @@ internal class DesktopMergeRetainedMedia(
                     ?: (selected.sessionsWithImages == selected.sessions)
                 session in sessions && !imagesSelected && (value["images"] as? JsonArray)?.isNotEmpty() == true
             }
-        }.values.toSet()
+        }.values.toMutableSet()
+        records.forEach { (path, value) ->
+            if (DesktopBackupPolicy.entityType(path) == "save_slots") {
+                val session = value["sessionId"]?.jsonPrimitive?.contentOrNull
+                val archivesSelected = (selected.sessionChoices[session] ?: selected.sessionDefaultChoice)?.archives
+                    ?: incoming.records.any { (incomingPath, item) -> DesktopBackupPolicy.entityType(incomingPath) == "save_slots" &&
+                        item["sessionId"] == value["sessionId"] }
+                if (session in sessions && !archivesSelected) retained += path
+            }
+        }
         return DesktopBackupRecords.view(retained) { records.getValue(it) }
     }
 

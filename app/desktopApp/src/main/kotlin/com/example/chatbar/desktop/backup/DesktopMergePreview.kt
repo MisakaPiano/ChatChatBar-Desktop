@@ -56,7 +56,7 @@ internal class DesktopMergePreview private constructor(
         }
         for ((key, original) in replaced) {
             val candidate = phone.getValue(key)
-            val retained = DesktopMergeRetainedMedia(sourceScope, original) {}.missingImageMessages(candidate)
+            val retained = DesktopMergeRetainedMedia(sourceScope, original) {}.retainedSessionRecords(candidate)
             if (retained.isNotEmpty()) computer["retained:$key"] = Unit("retained:$key", original.category,
                 original.label, retained, original.signature)
         }
