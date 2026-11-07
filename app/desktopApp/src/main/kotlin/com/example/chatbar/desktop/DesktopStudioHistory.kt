@@ -30,17 +30,20 @@ internal fun desktopHistoryThumbnailTarget(source: IntSize, viewport: IntSize): 
 }
 
 @Composable
-internal fun DesktopHistoryThumbnail(image: NovelAiGenerationHistoryImage, read: (String) -> ByteArray, modifier: Modifier) {
+internal fun DesktopHistoryThumbnail(image: NovelAiGenerationHistoryImage, read: (String) -> ByteArray, modifier: Modifier,
+    decodeAdmission: DesktopImageDecodeAdmission? = null) {
     if (image.originalOmitted) {
         Box(modifier, contentAlignment = Alignment.Center) { StatusText("仅元数据") }
         return
     }
+    val admission = decodeAdmission ?: remember { DesktopImageDecodeAdmission() }
     val density = LocalDensity.current
     BoxWithConstraints(modifier) {
         val viewport = with(density) { IntSize(maxWidth.roundToPx().coerceAtLeast(1), maxHeight.roundToPx().coerceAtLeast(1)) }
         // Stable across selection/status recompositions; a real cell/density change may decode again.
         val decodeTarget = remember(viewport) { { source: IntSize -> desktopHistoryThumbnailTarget(source, viewport) } }
-        DesktopOwnedImage(image.path, read, Modifier.fillMaxSize(), displayTargetForSource = decodeTarget)
+        DesktopOwnedImage(image.path, read, Modifier.fillMaxSize(), displayTargetForSource = decodeTarget,
+            decodeAdmission = admission)
     }
 }
 
@@ -93,6 +96,7 @@ internal fun DesktopStudioHistory(controller: DesktopNovelAiStudioController,
     val state by controller.state.collectAsState()
     val draft by controller.draft.collectAsState()
     val scope = rememberCoroutineScope()
+    val thumbnailAdmission = remember(controller) { DesktopImageDecodeAdmission() }
     var preferences by remember { mutableStateOf(emptyMap<Int, NovelAiHistoryFoldPreference>()) }
     var preferencesLoaded by remember { mutableStateOf(false) }
     var savingPreference by remember { mutableStateOf(false) }
@@ -223,7 +227,7 @@ internal fun DesktopStudioHistory(controller: DesktopNovelAiStudioController,
                 }
                 Column(Modifier.border(if (allSelected) 2.dp else 1.dp, if (allSelected) DesktopBootstrapColors.primary else DesktopBootstrapColors.border).padding(6.dp)) {
                     Box {
-                        DesktopHistoryThumbnail(item.image, controller.resources::readBytes, Modifier.fillMaxWidth().height(180.dp)
+                        DesktopHistoryThumbnail(item.image, { controller.resources.readScreenshotImageBytes(it) }, Modifier.fillMaxWidth().height(180.dp)
                             .onPointerEvent(PointerEventType.Press) { shift = it.keyboardModifiers.isShiftPressed }
                             .desktopViewerEntry(enabled = preferencesLoaded && !savingPreference, onClick = {
                                 if (shift) select(true)
@@ -232,7 +236,7 @@ internal fun DesktopStudioHistory(controller: DesktopNovelAiStudioController,
                                     levels = levels + NovelAiHistoryLevel(scope = album.images.map { it.key }.toSet(), label = album.label,
                                         foldEnabled = pref?.enabled ?: false, foldType = pref?.type ?: NovelAiHistoryFoldType.FULL)
                                 } else preview(item)
-                            }, onOpen = { if (shift) select(true) else preview(item) }))
+                            }, onOpen = { if (shift) select(true) else preview(item) }), decodeAdmission = thumbnailAdmission)
                         Box(Modifier.align(Alignment.TopEnd).background(DesktopBootstrapColors.card).padding(3.dp)) {
                             StatusText(if (allSelected) "✓" else if (album.images.size > 1) "${album.images.size} 张" else "")
                         }

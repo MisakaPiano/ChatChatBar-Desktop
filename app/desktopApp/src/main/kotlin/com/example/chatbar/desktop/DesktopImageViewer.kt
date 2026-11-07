@@ -55,24 +55,28 @@ internal fun desktopDecodedImageIdentity(reference: String): String = java.util.
 internal fun DesktopOwnedImage(reference: String, read: (String) -> ByteArray,
     modifier: Modifier = Modifier, crop: Boolean = false, onDimensions: ((IntSize) -> Unit)? = null,
     minimumDisplayWidthPx: Int? = null, postProcessOutput: Boolean = false,
-    contentScale: ContentScale? = null, displayTargetForSource: ((IntSize) -> IntSize)? = null) {
+    contentScale: ContentScale? = null, displayTargetForSource: ((IntSize) -> IntSize)? = null,
+    decodeAdmission: DesktopImageDecodeAdmission? = null) {
     var error by remember(reference) { mutableStateOf<String?>(null) }
     val identity = remember(reference) { desktopDecodedImageIdentity(reference) }
-    val displayed by produceState<DesktopDisplayedImage?>(null, reference, minimumDisplayWidthPx, displayTargetForSource, postProcessOutput) {
+    val displayed by produceState<DesktopDisplayedImage?>(null, reference, minimumDisplayWidthPx, displayTargetForSource, postProcessOutput, decodeAdmission) {
         suspend fun publish(image: DesktopDisplayedImage) {
             currentCoroutineContext().ensureActive()
             value = image.copy(identity = identity)
         }
         try {
-            withContext(Dispatchers.IO) {
+            suspend fun load(lease: DesktopImageDecodeAdmission.Lease?) {
+                currentCoroutineContext().ensureActive()
                 val bytes = read(reference)
+                currentCoroutineContext().ensureActive()
                 require(bytes.size <= com.example.chatbar.domain.image.ApngDisguiseCodec.MAX_OUTPUT_BYTES)
                 if (postProcessOutput) DesktopPostProcessRaster.decode(bytes,
                     com.example.chatbar.domain.image.NovelAiPostProcessTab.UPSCALE, longestSide = 256).flush()
                 if (playDesktopApng(bytes) { frame, duration ->
                     publish(DesktopDisplayedImage(desktopDisplayBitmap(frame, minimumDisplayWidthPx),
-                        IntSize(frame.width, frame.height))); delay(duration)
-                }) return@withContext
+                        IntSize(frame.width, frame.height)))
+                    if (lease == null) delay(duration) else lease.awaitFrame(duration)
+                }) return
                 org.jetbrains.skia.Data.makeFromBytes(bytes).use { data ->
                     org.jetbrains.skia.Codec.makeFromData(data).use { codec ->
                         require(codec.width.toLong() * codec.height <= DesktopImageEditing.MAX_PIXELS)
@@ -86,13 +90,17 @@ internal fun DesktopOwnedImage(reference: String, read: (String) -> ByteArray,
                                     codec.readPixels(frame, index)
                                     publish(DesktopDisplayedImage(org.jetbrains.skia.Image.makeFromBitmap(frame).toComposeImageBitmap(),
                                         IntSize(codec.width, codec.height)))
-                                    delay(codec.getFrameInfo(index).duration.coerceAtLeast(10).toLong())
+                                    val duration = codec.getFrameInfo(index).duration.coerceAtLeast(10).toLong()
+                                    if (lease == null) delay(duration) else lease.awaitFrame(duration)
                                 }
                                 loops++
                             } while (codec.repetitionCount < 0 || loops <= codec.repetitionCount)
                         }
                     }
                 }
+            }
+            withContext(Dispatchers.IO) {
+                if (decodeAdmission == null) load(null) else decodeAdmission.load { load(this) }
             }
         }
         catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
