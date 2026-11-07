@@ -5,3 +5,5 @@
 上次操作记录只含固定类别、阶段和随机票据，普通文件放在backups下。重开可显示未确认/失败或已知完成/取消，不自动重试、删除或恢复；提示记录写入失败也不能把已完成的导出改报失败。实际子进程硬退出/重读、控制器真实结果、晚回调隔离及真实快照排除/列表均已检查。
 
 R135原12完整方法为初始路径，R136原5为中间子目录，R137原5才覆盖最终普通文件及listSnapshots；重叠不累计22项。各原ZIP、SHA、source、CRC、唯一XML与完整方法见 OWNER_BACKUP_SERVICE_TWO_DELTAS_AND_STATUS_R135_R137.json。045e内联媒体portable键断言也由R135实际Service完整方法覆盖，不冒称R134已跑。Engine临时删除/折叠偏好后续仍待R138/R139；未产生新包、公开或真人验收结论。
+
+后续ccda严格读取记录增加有界UTF8、重复key/精确字段集验证，并与实际payload清理关联。R141选中Journal5及原Custody3完整通过；R143仅新实际文件cleanup2完整通过。有效固定metadata不挡无引用文件清理，真实实体引用/坏记录/未知backup保护保持；此前512内联夹具失败及cancelled有2已执行失败的R142全部保留，不当生产反例。详见 OWNER_BACKUP_STATUS_CLEANUP_R143_COMPLETE.json。
