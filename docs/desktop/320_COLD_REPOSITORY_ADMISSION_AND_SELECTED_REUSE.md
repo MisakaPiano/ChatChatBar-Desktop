@@ -44,3 +44,13 @@ c71把这些持久化锁置于normal准入之后，保留pending/committed journ
 354的四条角色位置运行delta另已核：shared request builder、metadata reader、import、draft/recipe模型、position policy及原测试六份blob相对162精确未变。原 `NovelAiCharacterPositionTest` 五方法全PASS，覆盖正负共享坐标/各层use_coords、自动与空角色关闭定位、V4.5网格/V5连续坐标、序列化/历史恢复/重排、PNG导入与未勾选保留。Desktop现有位置编辑器经controller edit持久化且保留实际请求画布比例；这里只映射运行链四行，未把源码查看当新指针UI测试，也不关闭已有Prompt或三个Android UI混合delta。原件回执 `OWNER_CHARACTER_POSITION_CHAIN_REUSE.json`。
 
 ed5其余FishAudioModels/Android Service两条由共享类型和实际Desktop `DesktopFishVoiceTransport` 等位承接。transport、类型及原 `DesktopFishRejectedRetryTest` 三份blob精确未变；原四方法通过真实loopback HTTP检查429明确拒绝后的同body/冻结凭据重试、401及已接受坏音频不重放、backoff取消、POST后断连未知接受不重放。原四PASS见 `OWNER_FORMAL_TTS_REJECTION_REUSE.json`，和共享policy15及试听32各自分源，不冒称新19/全语音一次运行或付费服务验收。
+
+## 后续七条精确映射
+
+`OWNER_CARD_MEMORY_STARTUP_REUSE.json` 另复核七条，仍无新增运行：
+
+- 8c的CharacterCard/Package/transfer三行：实际共享Core双向copy默认生图设置、按所选模型验证，旧缺省null和非法值在资源写前拒绝；五份owner/test blob和原Core22/Desktop typed JSON/PNG2一致。仅复用其中明确参数保全的两条Core方法及两条实际Desktop集成范围，275已有原边界，不改schema或已有Prompt。
+- 8c的MemoryAiGateway/RetrievalPlanner两行：模型identity原样继承、关闭强制disable/isolation，planner保留120秒上限。当前四个owner与316已测2e8精确相同，原实际Memory/RAG wire2方法通过。两个条目是前述research较近证明的具体映射，不是额外再跑两例。
+- d3的两个QQ服务行只新增备份启动ready后attach/启动及未初始化player保护；Desktop先StartupGate、再await initializePersistentState，之后才构造business/voice/external owner，实际lifecycle方法及三份owner/test保持原162身份。原StartupGate21和ProcessLifecycle15方法匹配通过。只给这两条新增启动guard平台等位，不把QQ自动发语音全功能标为N/A/已验，也不从启动证明推导MP3保存或手动转交。
+
+本轮320两组共22个delta，314整体仍未完成。原有公开、候选、运行身份和真人FAIL均保持。

@@ -883,6 +883,33 @@
       "evidence": [
         "OWNER_FORMAL_TTS_REJECTION_REUSE.json"
       ]
+    },
+    {
+      "id": "CARD_DEFAULT_IMAGE_SETTINGS_TRANSPORT",
+      "disposition": "EQUIVALENT",
+      "scope": "Nullable per-card image settings survive actual Core package/materialize, JSON/PNG import/export, duplicate and overwrite; selected model validation rejects invalid settings before resources. Five exact owner/test blobs, original Core22/Desktop2 suites reused with two specific settings methods; schema unchanged, no all-card UI claim.",
+      "reviewSource": "f9f3285f640b07511f6775002f34bade21e0d71a",
+      "evidence": [
+        "OWNER_CARD_MEMORY_STARTUP_REUSE.json"
+      ]
+    },
+    {
+      "id": "MEMORY_RETRIEVAL_SELECTED_PARAMETERS",
+      "disposition": "EQUIVALENT",
+      "scope": "Selected model identity/thinking/effort/custom controls remain on actual memory/RAG wire; no forced disable or isolated parameters. Retrieval retains120000ms bound. Current four owners match tested149 source2e8; original actual DesktopMemorySelectedModelParameters2 reused, not new run.",
+      "reviewSource": "f9f3285f640b07511f6775002f34bade21e0d71a",
+      "evidence": [
+        "OWNER_CARD_MEMORY_STARTUP_REUSE.json"
+      ]
+    },
+    {
+      "id": "DESKTOP_SERVICE_READINESS_EQUIVALENCE",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Only this d3 delta adds backup-readiness attachment/start/teardown guards. Desktop StartupGate and lifecycle await persistent initialization before business/voice/external owners; original Startup21/Lifecycle15 reused with exact method and three test/owner blobs. No full QQ auto-send equivalence or MP3 sharing validation claim.",
+      "reviewSource": "f9f3285f640b07511f6775002f34bade21e0d71a",
+      "evidence": [
+        "OWNER_CARD_MEMORY_STARTUP_REUSE.json"
+      ]
     }
   ],
   "deltas": [
@@ -4964,8 +4991,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Nullable per-card image settings survive actual Core package/materialize, JSON/PNG import/export, duplicate and overwrite; selected model validation rejects invalid settings before resources. Five exact owner/test blobs, original Core22/Desktop2 suites reused with two specific settings methods; schema unchanged, no all-card UI claim.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/entity/CharacterCard.kt",
@@ -4974,8 +5001,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "CARD_DEFAULT_IMAGE_SETTINGS_TRANSPORT"
+      ],
+      "evidence": [
+        "docs/desktop/320_COLD_REPOSITORY_ADMISSION_AND_SELECTED_REUSE.md",
+        "OWNER_CARD_MEMORY_STARTUP_REUSE.json"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/main/java/com/example/chatbar/data/local/entity/PresetModels.kt",
@@ -5023,8 +5055,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Nullable per-card image settings survive actual Core package/materialize, JSON/PNG import/export, duplicate and overwrite; selected model validation rejects invalid settings before resources. Five exact owner/test blobs, original Core22/Desktop2 suites reused with two specific settings methods; schema unchanged, no all-card UI claim.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/card/CardTransferModels.kt",
@@ -5033,8 +5065,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "CARD_DEFAULT_IMAGE_SETTINGS_TRANSPORT"
+      ],
+      "evidence": [
+        "docs/desktop/320_COLD_REPOSITORY_ADMISSION_AND_SELECTED_REUSE.md",
+        "OWNER_CARD_MEMORY_STARTUP_REUSE.json"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/main/java/com/example/chatbar/domain/card/CharacterAppearanceImageService.kt",
@@ -5136,8 +5173,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Nullable per-card image settings survive actual Core package/materialize, JSON/PNG import/export, duplicate and overwrite; selected model validation rejects invalid settings before resources. Five exact owner/test blobs, original Core22/Desktop2 suites reused with two specific settings methods; schema unchanged, no all-card UI claim.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/card/CharacterCardTransferService.kt",
@@ -5146,8 +5183,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "CARD_DEFAULT_IMAGE_SETTINGS_TRANSPORT"
+      ],
+      "evidence": [
+        "docs/desktop/320_COLD_REPOSITORY_ADMISSION_AND_SELECTED_REUSE.md",
+        "OWNER_CARD_MEMORY_STARTUP_REUSE.json"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/main/java/com/example/chatbar/domain/card/CharacterRewriteService.kt",
@@ -5521,8 +5563,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Selected model identity/thinking/effort/custom controls remain on actual memory/RAG wire; no forced disable or isolated parameters. Retrieval retains120000ms bound. Current four owners match tested149 source2e8; original actual DesktopMemorySelectedModelParameters2 reused, not new run.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/memory/MemoryAiGateway.kt",
@@ -5531,8 +5573,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "MEMORY_RETRIEVAL_SELECTED_PARAMETERS"
+      ],
+      "evidence": [
+        "docs/desktop/320_COLD_REPOSITORY_ADMISSION_AND_SELECTED_REUSE.md",
+        "OWNER_CARD_MEMORY_STARTUP_REUSE.json"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/main/java/com/example/chatbar/domain/moment/MomentGenerationService.kt",
@@ -5575,8 +5622,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Selected model identity/thinking/effort/custom controls remain on actual memory/RAG wire; no forced disable or isolated parameters. Retrieval retains120000ms bound. Current four owners match tested149 source2e8; original actual DesktopMemorySelectedModelParameters2 reused, not new run.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/rag/RetrievalPlanner.kt",
@@ -5585,8 +5632,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "MEMORY_RETRIEVAL_SELECTED_PARAMETERS"
+      ],
+      "evidence": [
+        "docs/desktop/320_COLD_REPOSITORY_ADMISSION_AND_SELECTED_REUSE.md",
+        "OWNER_CARD_MEMORY_STARTUP_REUSE.json"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/main/java/com/example/chatbar/domain/search/CharacterResearchPlanner.kt",
@@ -8295,8 +8347,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Only this d3 delta adds backup-readiness attachment/start/teardown guards. Desktop StartupGate and lifecycle await persistent initialization before business/voice/external owners; original Startup21/Lifecycle15 reused with exact method and three test/owner blobs. No full QQ auto-send equivalence or MP3 sharing validation claim.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/voice/qq/QqVoiceAccessibilityService.kt",
@@ -8305,8 +8357,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "DESKTOP_SERVICE_READINESS_EQUIVALENCE"
+      ],
+      "evidence": [
+        "docs/desktop/320_COLD_REPOSITORY_ADMISSION_AND_SELECTED_REUSE.md",
+        "OWNER_CARD_MEMORY_STARTUP_REUSE.json"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/voice/qq/QqVoiceTransferService.kt",
@@ -8322,8 +8379,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Only this d3 delta adds backup-readiness attachment/start/teardown guards. Desktop StartupGate and lifecycle await persistent initialization before business/voice/external owners; original Startup21/Lifecycle15 reused with exact method and three test/owner blobs. No full QQ auto-send equivalence or MP3 sharing validation claim.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/voice/qq/QqVoiceTransferService.kt",
@@ -8332,8 +8389,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "DESKTOP_SERVICE_READINESS_EQUIVALENCE"
+      ],
+      "evidence": [
+        "docs/desktop/320_COLD_REPOSITORY_ADMISSION_AND_SELECTED_REUSE.md",
+        "OWNER_CARD_MEMORY_STARTUP_REUSE.json"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/ui/character/CharacterEditViewModel.kt",
