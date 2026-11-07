@@ -1,0 +1,7 @@
+# 图片描述沿用所选模型参数 / 2026-11-07
+
+8c4ba52b的StreamingChatService文件增量只有一项：`forImageDescriptionRequest`由强制关闭/移除思考字段改为原样返回模型，固定12e仍如此。Desktop实际`DesktopAuxiliaryImageUnderstanding.describe`调用共享同名策略后走`streamMainChat`，而共享策略仍是旧清洗逻辑。因此已选legacy预算、custom思考字段或reasoning effort会在该实际生产者中丢失。原appearance参数测试走另一条`streamCharacterAppearance`，不能证明这个调用。
+
+后继只将共享策略改成返回原模型，维持既有消息封装、GENERAL提示词、原生图片位置和终态判断；不改任何Prompt文本、参数优先级、其他stage或重试策略。用户未设置时不添加思考/输出字段；明确配置的思考参数及输出上限别名交给原序列化所有者。Android旧“强制off/none”断言同步为上游新行为，其他任务覆盖/隔离断言保留。
+
+新Desktop测试直接调用实际describe并由MockWebServer读取最终HTTP：默认、legacy/custom、reasoning-only、两种输出别名，保留单次请求、原生图片与消息角色顺序；另核拒绝、截断、终态401和取消/排水。旧R42与后继定向验证待原件，不以新测试源码或已过的其他辅助stage冒充本项通过。无真实Provider调用、日常数据操作、新包或发布。

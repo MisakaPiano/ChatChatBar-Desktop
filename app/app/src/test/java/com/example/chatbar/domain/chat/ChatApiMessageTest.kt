@@ -9,7 +9,7 @@ import org.junit.Test
 
 class ImageDescriptionModelPolicyTest {
     @Test
-    fun `image description request disables thinking params`() {
+    fun `image description request retains selected thinking params`() {
         val model = modelConfig(
             customParams = mapOf(
                 "enable_thinking" to ParamValue.BooleanValue(true),
@@ -24,13 +24,13 @@ class ImageDescriptionModelPolicyTest {
 
         val sanitized = model.forImageDescriptionRequest()
 
-        assertEquals(ParamValue.BooleanValue(false), sanitized.customParams["enable_thinking"])
-        assertFalse(sanitized.customParams.containsKey("thinking_budget"))
-        assertFalse(sanitized.customParams.containsKey("max_thinking_tokens"))
-        assertFalse(sanitized.customParams.containsKey("reasoning_effort"))
+        assertEquals(ParamValue.BooleanValue(true), sanitized.customParams["enable_thinking"])
+        assertEquals(ParamValue.NumberValue(1024.0), sanitized.customParams["thinking_budget"])
+        assertEquals(ParamValue.NumberValue(128.0), sanitized.customParams["max_thinking_tokens"])
+        assertEquals(ParamValue.StringValue("high"), sanitized.customParams["reasoning_effort"])
         assertEquals(ParamValue.NumberValue(0.7), sanitized.customParams["temperature"])
-        assertEquals(false, sanitized.enableThinking)
-        assertNull(sanitized.reasoningEffort)
+        assertEquals(true, sanitized.enableThinking)
+        assertEquals("high", sanitized.reasoningEffort)
     }
 
     @Test

@@ -119,14 +119,14 @@ class StreamingChatServiceThinkingTest {
     }
 
     @Test
-    fun `image description converts configured effort to none`() {
+    fun `image description retains configured effort`() {
         val model = dynamicModel().copy(
             customParams = mapOf("reasoning_effort" to ParamValue.StringValue("high"))
         ).forImageDescriptionRequest()
         val body = Json.parseToJsonElement(StreamingChatService().buildRequestBody(
             listOf(ChatApiMessage.text("user", "image")), model, false
         )).jsonObject
-        assertEquals("none", body.getValue("reasoning_effort").jsonPrimitive.content)
+        assertEquals("high", body.getValue("reasoning_effort").jsonPrimitive.content)
         assertTrue(ThinkingRequestPolicy.legacyKeys.none { it in body })
     }
 
