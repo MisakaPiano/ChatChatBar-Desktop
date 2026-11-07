@@ -27,6 +27,12 @@ internal fun interface DesktopMomentGenerator {
 
 internal data class DesktopMomentLink(val id: String?, val error: String? = null)
 
+internal data class DesktopMomentAlbumSelection(
+    val filter: MomentAlbumFilter = MomentAlbumFilter(),
+    val granularity: MomentAlbumDateGranularity = MomentAlbumDateGranularity.DAY,
+    val selectedDate: java.time.LocalDate? = null,
+)
+
 internal data class DesktopMomentsState(
     val enabled: Boolean = false, val autoImages: Boolean = true, val scheduling: Boolean = false,
     val minHours: Int = 2, val maxHours: Int = 13, val posts: List<MomentPost> = emptyList(),
@@ -35,6 +41,7 @@ internal data class DesktopMomentsState(
     val viewedThrough: Long = 0L,
     val streamedText: String = "",
     val debug: MomentDebugGenerationResult? = null,
+    val albumSelection: DesktopMomentAlbumSelection = DesktopMomentAlbumSelection(),
 ) {
     val unread: Boolean get() = posts.any { !it.isPlaceholder && it.generatedAt > viewedThrough }
 }
@@ -63,6 +70,9 @@ internal class DesktopMomentsController(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val mutableState = MutableStateFlow(DesktopMomentsState())
     val state = mutableState.asStateFlow()
+    fun updateAlbumSelection(change: (DesktopMomentAlbumSelection) -> DesktopMomentAlbumSelection) {
+        mutableState.update { it.copy(albumSelection = change(it.albumSelection)) }
+    }
     private val lock = Any()
     private val admissionMutex = Mutex()
     private var accepting = true

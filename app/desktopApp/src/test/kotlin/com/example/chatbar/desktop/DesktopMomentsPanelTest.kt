@@ -58,6 +58,8 @@ class DesktopMomentsPanelTest {
             controller = view
             withTimeout(10_000) { view.state.first { it.posts.size == 1 } }
             for (width in listOf(420, 1100)) {
+                // Each viewport case starts a fresh filter; normal navigation now deliberately retains it.
+                view.updateAlbumSelection { DesktopMomentAlbumSelection() }
                 val opened = mutableListOf<String>()
                 val openedCards = mutableListOf<Pair<String, Boolean>>()
                 val scene = ImageComposeScene(width, 900, coroutineContext = edt) {

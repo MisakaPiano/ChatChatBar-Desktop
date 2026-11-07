@@ -25,9 +25,9 @@ class DesktopMomentAlbumNavigationStateTest {
         val app = DesktopAppContainer(DesktopDataRootResolution.Resolved(root, DesktopDataRootProvenance.CLI_OVERRIDE,
             parent.resolve("bootstrap.json")), secretStoreFactory = { InMemoryDesktopSecretStore() })
         val store = DesktopMomentStore(app.jsonFileStorage, app.dataOperationCoordinator)
-        val controller = DesktopMomentsController(store, app.settingsRepository, app.characterRepository,
+        val controller by lazy { DesktopMomentsController(store, app.settingsRepository, app.characterRepository,
             app.chatRepository, app.dataOperationCoordinator, app.taskRuntime,
-            DesktopMomentGenerator { _, _, _, _, _, _, _, _, _, _ -> error("Album navigation must not generate") })
+            DesktopMomentGenerator { _, _, _, _, _, _, _, _, _, _ -> error("Album navigation must not generate") }) }
         val firstDate = LocalDate.of(2026, 11, 10)
         suspend fun seed() {
             for (card in listOf("a", "b")) {

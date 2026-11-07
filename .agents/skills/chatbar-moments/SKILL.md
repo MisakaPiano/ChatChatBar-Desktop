@@ -21,6 +21,8 @@ Also read `chatbar-novelai-prompt` before changing NovelAI prompt construction, 
 
 ## Product Rules
 
+- Desktop album search/date/granularity/group/card selection lives in the controller's runtime-only `DesktopMomentAlbumSelection`. Removing the album while locating a post or leaving its workspace must not recreate defaults; no new disk preference is introduced. The actual album keeps `rememberLazyGridState` and resets it on logical filter changes, even if the matched post list stays equal. Navigation still passes only the original post ID through `MomentAlbumPolicy.timelineIndex`; query changes never edit posts. `DesktopMomentAlbumNavigationStateTest` exercises the actual parent Panel round trip and a scrolled unchanged-result query.
+
 - Global `momentsEnabled` defaults false. When off, hide root 朋友圈 Tab and do not generate.
 - Global `momentsImagesEnabled` defaults true (auto image generation). When off, or when NovelAI Token/image model is unavailable, posts are text-only and generated with the pure-text prompt.
 - Character `momentsEnabled` defaults true. Existing persisted characters with explicit false stay disabled.

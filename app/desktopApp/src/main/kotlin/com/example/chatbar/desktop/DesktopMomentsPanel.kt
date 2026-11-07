@@ -97,6 +97,7 @@ internal fun DesktopMomentsPanel(controller: DesktopMomentsController,
     }
     if (showingAlbum) {
         DesktopMomentAlbum(state.posts, state.cards.associate { it.id to it.name }, controller.resources,
+            state.albumSelection, controller::updateAlbumSelection,
             onClose = { showingAlbum = false }, onPost = { id -> focusPostId = id; showingAlbum = false })
         return
     }

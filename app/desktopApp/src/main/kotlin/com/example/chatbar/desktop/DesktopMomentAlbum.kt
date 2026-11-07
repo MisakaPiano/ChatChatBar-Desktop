@@ -16,41 +16,48 @@ import java.time.LocalDate
 
 /** Independent Moments album; its only navigation payload is the original post ID. */
 @Composable internal fun DesktopMomentAlbum(posts: List<MomentPost>, cardNames: Map<String, String>,
-    resources: DesktopCharacterResourceStore?, onClose: () -> Unit, onPost: (String) -> Unit) {
-    var filter by remember { mutableStateOf(MomentAlbumFilter()) }
-    var granularity by remember { mutableStateOf(MomentAlbumDateGranularity.DAY) }
-    var selectedDate by remember { mutableStateOf("全部日期") }
+    resources: DesktopCharacterResourceStore?, selection: DesktopMomentAlbumSelection,
+    change: ((DesktopMomentAlbumSelection) -> DesktopMomentAlbumSelection) -> Unit,
+    onClose: () -> Unit, onPost: (String) -> Unit) {
+    val filter = selection.filter
+    val granularity = selection.granularity
+    val selectedDate = selection.selectedDate?.toString() ?: "全部日期"
+    val gridState = rememberLazyGridState()
+    LaunchedEffect(filter) { gridState.scrollToItem(0) }
     val state = remember(posts, cardNames, filter) { MomentAlbumPolicy.build(posts, cardNames, filter) }
-    fun applyDate(text: String, kind: MomentAlbumDateGranularity = granularity) {
-        selectedDate = text
+    fun applyDate(text: String, kind: MomentAlbumDateGranularity? = null) {
         val date = runCatching { LocalDate.parse(text) }.getOrNull()
-        filter = filter.copy(date = date?.let { MomentAlbumDateFilter(it.year, it.monthValue, it.dayOfMonth, kind) })
+        change { current ->
+            val nextKind = kind ?: current.granularity
+            current.copy(selectedDate = date, granularity = nextKind,
+                filter = current.filter.copy(date = date?.let { MomentAlbumDateFilter(it.year, it.monthValue, it.dayOfMonth, nextKind) }))
+        }
     }
     Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)) {
         StudioActions {
             StudioAction(if (filter.characterCardId == null) "返回朋友圈" else "返回相册分组") {
-                if (filter.characterCardId == null) onClose() else filter = filter.copy(characterCardId = null)
+                if (filter.characterCardId == null) onClose() else change { it.copy(filter = it.filter.copy(characterCardId = null)) }
             }
             ManageHeading(state.selectedCardName ?: "朋友圈相册")
         }
-        StudioField("搜索相册", filter.query) { filter = filter.copy(query = it) }
+        StudioField("搜索相册", filter.query) { text -> change { it.copy(filter = it.filter.copy(query = text)) } }
         StudioActions {
-            StudioToggle("按角色卡分组", filter.groupByCard) { filter = filter.copy(groupByCard = !filter.groupByCard, characterCardId = null) }
+            StudioToggle("按角色卡分组", filter.groupByCard) { change { it.copy(filter = it.filter.copy(groupByCard = !it.filter.groupByCard, characterCardId = null)) } }
             CompactChoice("日期", listOf("全部日期") + state.dates.map { it.toString() }, selectedDate, { it }) { applyDate(it) }
             CompactChoice("日期范围", MomentAlbumDateGranularity.entries, granularity, {
                 when (it) { MomentAlbumDateGranularity.DAY -> "按日"; MomentAlbumDateGranularity.MONTH -> "按月"; MomentAlbumDateGranularity.YEAR -> "按年" }
-            }) { granularity = it; applyDate(selectedDate, it) }
+            }) { applyDate(selectedDate, it) }
         }
         StatusText("${state.posts.size} 条 · ${state.groups.size} 组 · 点击动态返回原朋友圈")
-        LazyVerticalGrid(GridCells.Adaptive(160.dp), Modifier.weight(1f).fillMaxWidth(),
+        LazyVerticalGrid(GridCells.Adaptive(160.dp), Modifier.weight(1f).fillMaxWidth(), state = gridState,
             horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             if (filter.groupByCard && filter.characterCardId == null) {
                 items(state.groups, key = { it.characterCardId }) { group ->
                     val cover = group.posts.firstOrNull { !it.imagePath.isNullOrBlank() } ?: group.posts.first()
                     AlbumTile(cover, group.name, "${group.posts.size} 条 · 分组" +
                         if (group.posts.any { it.isPrivate }) " · 含私密动态" else "", resources,
-                        "相册分组 ${group.characterCardId}") { filter = filter.copy(characterCardId = group.characterCardId) }
+                        "相册分组 ${group.characterCardId}") { change { it.copy(filter = it.filter.copy(characterCardId = group.characterCardId)) } }
                 }
             } else items(state.posts, key = { it.id }) { post ->
                 AlbumTile(post, post.senderName, MomentAlbumPolicy.date(post.generatedAt).toString(), resources,
