@@ -81,16 +81,16 @@ class DesktopBackupEntityIdentityTest {
             f.card("card", "card")
             val original = SaveSlot(schemaVersion = 7, id = "slot", sessionId = "s", name = "Synthetic media", createdAt = 1)
             for (audio in listOf(false, true)) for (data in listOf("", "not-base64!", "A===", "AA==A")) {
-                val slot = if (audio) original.copy(audioResources = mapOf("resource" to SaveSlotAudioResource("resource.mp3", data)))
-                    else original.copy(imageResources = mapOf("resource" to SaveSlotImageResource("resource.png", data)))
+                val slot = if (audio) original.copy(audioResources = mapOf("audio/resource.mp3" to SaveSlotAudioResource("resource.mp3", data)))
+                    else original.copy(imageResources = mapOf("images/resource.png" to SaveSlotImageResource("resource.png", data)))
                 f.storage.saveEntity("save_slots", slot.id, slot, SaveSlot.serializer())
                 val before = DesktopFullBackupMapping(f.root).inventory()
                 val refused = f.base.resolve("bad-media.cbbackup")
                 assertFails { f.service.exportModern(refused, null) }
                 assertFalse(Files.exists(refused)); assertEquals(before, DesktopFullBackupMapping(f.root).inventory())
             }
-            val valid = original.copy(imageResources = mapOf("resource" to SaveSlotImageResource("resource.png", "YQ==")),
-                audioResources = mapOf("sound" to SaveSlotAudioResource("resource.mp3", "Yg==")))
+            val valid = original.copy(imageResources = mapOf("images/resource.png" to SaveSlotImageResource("resource.png", "YQ==")),
+                audioResources = mapOf("audio/resource.mp3" to SaveSlotAudioResource("resource.mp3", "Yg==")))
             f.storage.saveEntity("save_slots", valid.id, valid, SaveSlot.serializer())
             val before = DesktopFullBackupMapping(f.root).inventory()
             val output = f.base.resolve("valid-media.cbbackup")
