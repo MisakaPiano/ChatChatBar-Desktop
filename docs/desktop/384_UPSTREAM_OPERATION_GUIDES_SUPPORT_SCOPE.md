@@ -5,3 +5,5 @@
 文档中的构建、不自动测试、APK安装或公开发布指示仅是上游历史内容，不改变用户对本项目的授权；作者的设备与发行结果不借作本项目证据。叙事及模型规则继续受315真实用户答复约束。没有通过文档整理改Prompt、安装身份或真人结论。Service实际状态结果见383，Engine临时删除/折叠偏好仍待自己的检查，不从指南获得PASS。
 
 逐项来源与边界见 OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json；0新增运行、0新增功能，314整体仍false。
+
+另10项app-update/release-publish维护文本变化按同一边界登记：Android编译/APK及runTests默认值仍是上游平台说明。Desktop候选与稳定链工作流只产工程证据，release_metadata.py不上传；真实正文核对、不可变身份/冲突拒绝及有界状态重试仍属既有发行owner职责，不从技能文字获得公开权限。原267稳定升级身份与当前1244/sign26范围保持，0新功能/运行/真人结论。逐项raw SHA与blob见 OWNER_RELEASE_UPDATE10_SUPPORT_DISPOSITIONS.json。

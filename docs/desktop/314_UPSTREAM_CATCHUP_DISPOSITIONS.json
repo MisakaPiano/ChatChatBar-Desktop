@@ -2100,6 +2100,96 @@
       "evidence": [
         "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json"
       ]
+    },
+    {
+      "id": "UPSTREAM_RELEASE_UPDATE_SUPPORT_B34F0BCD24171B29",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Complete upstream skill-text maintenance-support delta, independently read and exact raw diff verified; not invocation as Desktop authority. Android compilation/APK/runTests defaults remain platform-specific reference. Actual native candidate/stable-chain workflows produce engineering evidence; release_metadata.py signs/hash-binds separate update metadata and never uploads. Notes-body readback, immutable identity/collision refusal and bounded remote-state-aware retry remain existing publication-owner responsibilities under actual user authority, not ten new client functions or new publishing permission. Proxy failures do not justify global proxy/credential changes. Original267 stable identity and current1244/sign26 retain their original scopes; no new runtime/human/publication result.",
+      "reviewSource": "87cc5fc14de124c1c3716bdaff885cee94043a00",
+      "evidence": [
+        "OWNER_RELEASE_UPDATE10_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_RELEASE_UPDATE_SUPPORT_D0BCFB00B172DF98",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Complete upstream skill-text maintenance-support delta, independently read and exact raw diff verified; not invocation as Desktop authority. Android compilation/APK/runTests defaults remain platform-specific reference. Actual native candidate/stable-chain workflows produce engineering evidence; release_metadata.py signs/hash-binds separate update metadata and never uploads. Notes-body readback, immutable identity/collision refusal and bounded remote-state-aware retry remain existing publication-owner responsibilities under actual user authority, not ten new client functions or new publishing permission. Proxy failures do not justify global proxy/credential changes. Original267 stable identity and current1244/sign26 retain their original scopes; no new runtime/human/publication result.",
+      "reviewSource": "87cc5fc14de124c1c3716bdaff885cee94043a00",
+      "evidence": [
+        "OWNER_RELEASE_UPDATE10_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_RELEASE_UPDATE_SUPPORT_E72E6B49CDAA8E2B",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Complete upstream skill-text maintenance-support delta, independently read and exact raw diff verified; not invocation as Desktop authority. Android compilation/APK/runTests defaults remain platform-specific reference. Actual native candidate/stable-chain workflows produce engineering evidence; release_metadata.py signs/hash-binds separate update metadata and never uploads. Notes-body readback, immutable identity/collision refusal and bounded remote-state-aware retry remain existing publication-owner responsibilities under actual user authority, not ten new client functions or new publishing permission. Proxy failures do not justify global proxy/credential changes. Original267 stable identity and current1244/sign26 retain their original scopes; no new runtime/human/publication result.",
+      "reviewSource": "87cc5fc14de124c1c3716bdaff885cee94043a00",
+      "evidence": [
+        "OWNER_RELEASE_UPDATE10_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_RELEASE_UPDATE_SUPPORT_F262B39D4BCF35BF",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Complete upstream skill-text maintenance-support delta, independently read and exact raw diff verified; not invocation as Desktop authority. Android compilation/APK/runTests defaults remain platform-specific reference. Actual native candidate/stable-chain workflows produce engineering evidence; release_metadata.py signs/hash-binds separate update metadata and never uploads. Notes-body readback, immutable identity/collision refusal and bounded remote-state-aware retry remain existing publication-owner responsibilities under actual user authority, not ten new client functions or new publishing permission. Proxy failures do not justify global proxy/credential changes. Original267 stable identity and current1244/sign26 retain their original scopes; no new runtime/human/publication result.",
+      "reviewSource": "87cc5fc14de124c1c3716bdaff885cee94043a00",
+      "evidence": [
+        "OWNER_RELEASE_UPDATE10_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_RELEASE_UPDATE_SUPPORT_CE75FC54612C22EF",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Complete upstream skill-text maintenance-support delta, independently read and exact raw diff verified; not invocation as Desktop authority. Android compilation/APK/runTests defaults remain platform-specific reference. Actual native candidate/stable-chain workflows produce engineering evidence; release_metadata.py signs/hash-binds separate update metadata and never uploads. Notes-body readback, immutable identity/collision refusal and bounded remote-state-aware retry remain existing publication-owner responsibilities under actual user authority, not ten new client functions or new publishing permission. Proxy failures do not justify global proxy/credential changes. Original267 stable identity and current1244/sign26 retain their original scopes; no new runtime/human/publication result.",
+      "reviewSource": "87cc5fc14de124c1c3716bdaff885cee94043a00",
+      "evidence": [
+        "OWNER_RELEASE_UPDATE10_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_RELEASE_UPDATE_SUPPORT_D017EEA60C9F3110",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Complete upstream skill-text maintenance-support delta, independently read and exact raw diff verified; not invocation as Desktop authority. Android compilation/APK/runTests defaults remain platform-specific reference. Actual native candidate/stable-chain workflows produce engineering evidence; release_metadata.py signs/hash-binds separate update metadata and never uploads. Notes-body readback, immutable identity/collision refusal and bounded remote-state-aware retry remain existing publication-owner responsibilities under actual user authority, not ten new client functions or new publishing permission. Proxy failures do not justify global proxy/credential changes. Original267 stable identity and current1244/sign26 retain their original scopes; no new runtime/human/publication result.",
+      "reviewSource": "87cc5fc14de124c1c3716bdaff885cee94043a00",
+      "evidence": [
+        "OWNER_RELEASE_UPDATE10_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_RELEASE_UPDATE_SUPPORT_26F77631267D5769",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Complete upstream skill-text maintenance-support delta, independently read and exact raw diff verified; not invocation as Desktop authority. Android compilation/APK/runTests defaults remain platform-specific reference. Actual native candidate/stable-chain workflows produce engineering evidence; release_metadata.py signs/hash-binds separate update metadata and never uploads. Notes-body readback, immutable identity/collision refusal and bounded remote-state-aware retry remain existing publication-owner responsibilities under actual user authority, not ten new client functions or new publishing permission. Proxy failures do not justify global proxy/credential changes. Original267 stable identity and current1244/sign26 retain their original scopes; no new runtime/human/publication result.",
+      "reviewSource": "87cc5fc14de124c1c3716bdaff885cee94043a00",
+      "evidence": [
+        "OWNER_RELEASE_UPDATE10_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_RELEASE_UPDATE_SUPPORT_A4372111BEB89DA4",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Complete upstream skill-text maintenance-support delta, independently read and exact raw diff verified; not invocation as Desktop authority. Android compilation/APK/runTests defaults remain platform-specific reference. Actual native candidate/stable-chain workflows produce engineering evidence; release_metadata.py signs/hash-binds separate update metadata and never uploads. Notes-body readback, immutable identity/collision refusal and bounded remote-state-aware retry remain existing publication-owner responsibilities under actual user authority, not ten new client functions or new publishing permission. Proxy failures do not justify global proxy/credential changes. Original267 stable identity and current1244/sign26 retain their original scopes; no new runtime/human/publication result.",
+      "reviewSource": "87cc5fc14de124c1c3716bdaff885cee94043a00",
+      "evidence": [
+        "OWNER_RELEASE_UPDATE10_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_RELEASE_UPDATE_SUPPORT_A71C208CB301F5E5",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Complete upstream skill-text maintenance-support delta, independently read and exact raw diff verified; not invocation as Desktop authority. Android compilation/APK/runTests defaults remain platform-specific reference. Actual native candidate/stable-chain workflows produce engineering evidence; release_metadata.py signs/hash-binds separate update metadata and never uploads. Notes-body readback, immutable identity/collision refusal and bounded remote-state-aware retry remain existing publication-owner responsibilities under actual user authority, not ten new client functions or new publishing permission. Proxy failures do not justify global proxy/credential changes. Original267 stable identity and current1244/sign26 retain their original scopes; no new runtime/human/publication result.",
+      "reviewSource": "87cc5fc14de124c1c3716bdaff885cee94043a00",
+      "evidence": [
+        "OWNER_RELEASE_UPDATE10_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_RELEASE_UPDATE_SUPPORT_47CAA39DCA182795",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Complete upstream skill-text maintenance-support delta, independently read and exact raw diff verified; not invocation as Desktop authority. Android compilation/APK/runTests defaults remain platform-specific reference. Actual native candidate/stable-chain workflows produce engineering evidence; release_metadata.py signs/hash-binds separate update metadata and never uploads. Notes-body readback, immutable identity/collision refusal and bounded remote-state-aware retry remain existing publication-owner responsibilities under actual user authority, not ten new client functions or new publishing permission. Proxy failures do not justify global proxy/credential changes. Original267 stable identity and current1244/sign26 retain their original scopes; no new runtime/human/publication result.",
+      "reviewSource": "87cc5fc14de124c1c3716bdaff885cee94043a00",
+      "evidence": [
+        "OWNER_RELEASE_UPDATE10_SUPPORT_DISPOSITIONS.json"
+      ]
     }
   ],
   "deltas": [
@@ -8266,8 +8356,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Complete upstream skill-text maintenance-support delta, independently read and exact raw diff verified; not invocation as Desktop authority. Android compilation/APK/runTests defaults remain platform-specific reference. Actual native candidate/stable-chain workflows produce engineering evidence; release_metadata.py signs/hash-binds separate update metadata and never uploads. Notes-body readback, immutable identity/collision refusal and bounded remote-state-aware retry remain existing publication-owner responsibilities under actual user authority, not ten new client functions or new publishing permission. Proxy failures do not justify global proxy/credential changes. Original267 stable identity and current1244/sign26 retain their original scopes; no new runtime/human/publication result.",
       "candidateOwners": [
         {
           "path": ".agents/skills/chatbar-app-update/SKILL.md",
@@ -8276,8 +8366,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_RELEASE_UPDATE_SUPPORT_B34F0BCD24171B29"
+      ],
+      "evidence": [
+        "OWNER_RELEASE_UPDATE10_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:.agents/skills/chatbar-background-work-runtime/SKILL.md",
@@ -8482,8 +8577,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Complete upstream skill-text maintenance-support delta, independently read and exact raw diff verified; not invocation as Desktop authority. Android compilation/APK/runTests defaults remain platform-specific reference. Actual native candidate/stable-chain workflows produce engineering evidence; release_metadata.py signs/hash-binds separate update metadata and never uploads. Notes-body readback, immutable identity/collision refusal and bounded remote-state-aware retry remain existing publication-owner responsibilities under actual user authority, not ten new client functions or new publishing permission. Proxy failures do not justify global proxy/credential changes. Original267 stable identity and current1244/sign26 retain their original scopes; no new runtime/human/publication result.",
       "candidateOwners": [
         {
           "path": ".agents/skills/chatbar-release-publish/SKILL.md",
@@ -8492,8 +8587,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_RELEASE_UPDATE_SUPPORT_D0BCFB00B172DF98"
+      ],
+      "evidence": [
+        "OWNER_RELEASE_UPDATE10_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:.agents/skills/chatbar-save-slot/SKILL.md",
@@ -10595,8 +10695,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Complete upstream skill-text maintenance-support delta, independently read and exact raw diff verified; not invocation as Desktop authority. Android compilation/APK/runTests defaults remain platform-specific reference. Actual native candidate/stable-chain workflows produce engineering evidence; release_metadata.py signs/hash-binds separate update metadata and never uploads. Notes-body readback, immutable identity/collision refusal and bounded remote-state-aware retry remain existing publication-owner responsibilities under actual user authority, not ten new client functions or new publishing permission. Proxy failures do not justify global proxy/credential changes. Original267 stable identity and current1244/sign26 retain their original scopes; no new runtime/human/publication result.",
       "candidateOwners": [
         {
           "path": ".agents/skills/chatbar-release-publish/SKILL.md",
@@ -10605,8 +10705,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_RELEASE_UPDATE_SUPPORT_E72E6B49CDAA8E2B"
+      ],
+      "evidence": [
+        "OWNER_RELEASE_UPDATE10_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "c90718420b8c82b298eceee5ae1665773ac120cb:doc/handoff.md",
@@ -12302,8 +12407,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Complete upstream skill-text maintenance-support delta, independently read and exact raw diff verified; not invocation as Desktop authority. Android compilation/APK/runTests defaults remain platform-specific reference. Actual native candidate/stable-chain workflows produce engineering evidence; release_metadata.py signs/hash-binds separate update metadata and never uploads. Notes-body readback, immutable identity/collision refusal and bounded remote-state-aware retry remain existing publication-owner responsibilities under actual user authority, not ten new client functions or new publishing permission. Proxy failures do not justify global proxy/credential changes. Original267 stable identity and current1244/sign26 retain their original scopes; no new runtime/human/publication result.",
       "candidateOwners": [
         {
           "path": ".agents/skills/chatbar-release-publish/SKILL.md",
@@ -12312,8 +12417,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_RELEASE_UPDATE_SUPPORT_F262B39D4BCF35BF"
+      ],
+      "evidence": [
+        "OWNER_RELEASE_UPDATE10_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "979cb505958dffb1b6d64a8de657434f198ffa96:doc/app_backup_manual_acceptance.md",
@@ -17229,8 +17339,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Complete upstream skill-text maintenance-support delta, independently read and exact raw diff verified; not invocation as Desktop authority. Android compilation/APK/runTests defaults remain platform-specific reference. Actual native candidate/stable-chain workflows produce engineering evidence; release_metadata.py signs/hash-binds separate update metadata and never uploads. Notes-body readback, immutable identity/collision refusal and bounded remote-state-aware retry remain existing publication-owner responsibilities under actual user authority, not ten new client functions or new publishing permission. Proxy failures do not justify global proxy/credential changes. Original267 stable identity and current1244/sign26 retain their original scopes; no new runtime/human/publication result.",
       "candidateOwners": [
         {
           "path": ".agents/skills/chatbar-app-update/SKILL.md",
@@ -17239,8 +17349,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_RELEASE_UPDATE_SUPPORT_CE75FC54612C22EF"
+      ],
+      "evidence": [
+        "OWNER_RELEASE_UPDATE10_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "5c22fdfaa42e6eccbad4e46dbb32fb6d6ce4ddfa:.agents/skills/chatbar-release-publish/SKILL.md",
@@ -17256,8 +17371,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Complete upstream skill-text maintenance-support delta, independently read and exact raw diff verified; not invocation as Desktop authority. Android compilation/APK/runTests defaults remain platform-specific reference. Actual native candidate/stable-chain workflows produce engineering evidence; release_metadata.py signs/hash-binds separate update metadata and never uploads. Notes-body readback, immutable identity/collision refusal and bounded remote-state-aware retry remain existing publication-owner responsibilities under actual user authority, not ten new client functions or new publishing permission. Proxy failures do not justify global proxy/credential changes. Original267 stable identity and current1244/sign26 retain their original scopes; no new runtime/human/publication result.",
       "candidateOwners": [
         {
           "path": ".agents/skills/chatbar-release-publish/SKILL.md",
@@ -17266,8 +17381,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_RELEASE_UPDATE_SUPPORT_D017EEA60C9F3110"
+      ],
+      "evidence": [
+        "OWNER_RELEASE_UPDATE10_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "5c22fdfaa42e6eccbad4e46dbb32fb6d6ce4ddfa:.github/workflows/release.yml",
@@ -17369,8 +17489,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Complete upstream skill-text maintenance-support delta, independently read and exact raw diff verified; not invocation as Desktop authority. Android compilation/APK/runTests defaults remain platform-specific reference. Actual native candidate/stable-chain workflows produce engineering evidence; release_metadata.py signs/hash-binds separate update metadata and never uploads. Notes-body readback, immutable identity/collision refusal and bounded remote-state-aware retry remain existing publication-owner responsibilities under actual user authority, not ten new client functions or new publishing permission. Proxy failures do not justify global proxy/credential changes. Original267 stable identity and current1244/sign26 retain their original scopes; no new runtime/human/publication result.",
       "candidateOwners": [
         {
           "path": ".agents/skills/chatbar-app-update/SKILL.md",
@@ -17379,8 +17499,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_RELEASE_UPDATE_SUPPORT_26F77631267D5769"
+      ],
+      "evidence": [
+        "OWNER_RELEASE_UPDATE10_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "6f8a09a8bd24c274b08a56cadc37a82380bfe625:.agents/skills/chatbar-release-publish/SKILL.md",
@@ -17396,8 +17521,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Complete upstream skill-text maintenance-support delta, independently read and exact raw diff verified; not invocation as Desktop authority. Android compilation/APK/runTests defaults remain platform-specific reference. Actual native candidate/stable-chain workflows produce engineering evidence; release_metadata.py signs/hash-binds separate update metadata and never uploads. Notes-body readback, immutable identity/collision refusal and bounded remote-state-aware retry remain existing publication-owner responsibilities under actual user authority, not ten new client functions or new publishing permission. Proxy failures do not justify global proxy/credential changes. Original267 stable identity and current1244/sign26 retain their original scopes; no new runtime/human/publication result.",
       "candidateOwners": [
         {
           "path": ".agents/skills/chatbar-release-publish/SKILL.md",
@@ -17406,8 +17531,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_RELEASE_UPDATE_SUPPORT_A4372111BEB89DA4"
+      ],
+      "evidence": [
+        "OWNER_RELEASE_UPDATE10_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "6f8a09a8bd24c274b08a56cadc37a82380bfe625:.github/workflows/release.yml",
@@ -17509,8 +17639,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Complete upstream skill-text maintenance-support delta, independently read and exact raw diff verified; not invocation as Desktop authority. Android compilation/APK/runTests defaults remain platform-specific reference. Actual native candidate/stable-chain workflows produce engineering evidence; release_metadata.py signs/hash-binds separate update metadata and never uploads. Notes-body readback, immutable identity/collision refusal and bounded remote-state-aware retry remain existing publication-owner responsibilities under actual user authority, not ten new client functions or new publishing permission. Proxy failures do not justify global proxy/credential changes. Original267 stable identity and current1244/sign26 retain their original scopes; no new runtime/human/publication result.",
       "candidateOwners": [
         {
           "path": ".agents/skills/chatbar-app-update/SKILL.md",
@@ -17519,8 +17649,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_RELEASE_UPDATE_SUPPORT_A71C208CB301F5E5"
+      ],
+      "evidence": [
+        "OWNER_RELEASE_UPDATE10_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "e9dff76dd2c99c1004c52325e1f29a1a8300e7fc:.agents/skills/chatbar-release-publish/SKILL.md",
@@ -17536,8 +17671,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Complete upstream skill-text maintenance-support delta, independently read and exact raw diff verified; not invocation as Desktop authority. Android compilation/APK/runTests defaults remain platform-specific reference. Actual native candidate/stable-chain workflows produce engineering evidence; release_metadata.py signs/hash-binds separate update metadata and never uploads. Notes-body readback, immutable identity/collision refusal and bounded remote-state-aware retry remain existing publication-owner responsibilities under actual user authority, not ten new client functions or new publishing permission. Proxy failures do not justify global proxy/credential changes. Original267 stable identity and current1244/sign26 retain their original scopes; no new runtime/human/publication result.",
       "candidateOwners": [
         {
           "path": ".agents/skills/chatbar-release-publish/SKILL.md",
@@ -17546,8 +17681,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_RELEASE_UPDATE_SUPPORT_47CAA39DCA182795"
+      ],
+      "evidence": [
+        "OWNER_RELEASE_UPDATE10_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "e9dff76dd2c99c1004c52325e1f29a1a8300e7fc:.github/workflows/release.yml",
