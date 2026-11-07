@@ -9,6 +9,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsNode
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.unit.dp
 import com.example.chatbar.domain.image.NovelAiGenerationHistoryImage
 import kotlinx.coroutines.*
