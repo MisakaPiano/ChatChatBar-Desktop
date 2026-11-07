@@ -126,10 +126,10 @@ internal class DesktopChatVoiceRuntime(
 
     /** Automatic presence updates affect future admissions. Existing batches retain their immutable
      * GenerationContext/targets, confirmation text, bindings and recordings; no cancellation or TTS. */
-    suspend fun withAutomaticParticipationUpdate(block: suspend () -> Unit) = mutation.withLock {
+    suspend fun withAutomaticParticipationUpdate(block: suspend () -> Unit) = gate.withNormalOperation { mutation.withLock {
         check(!closed)
         block()
-    }
+    } }
 
     /** One global voice mutation lease for the complete affected roster; never cancel/replay a synthesis. */
     suspend fun <T> withSpeakerHistoryMutation(sessionIds: Set<String>, block: suspend () -> T): T = mutation.withLock {
@@ -155,13 +155,13 @@ internal class DesktopChatVoiceRuntime(
             gate.withNormalOperation { repository.deleteForSession(sessionId).forEach { releaseIfUnreferenced(it.audioPath) } }
     }
 
-    suspend fun deleteVoice(expected: GeneratedVoiceMessage) = guarded {
+    suspend fun deleteVoice(expected: GeneratedVoiceMessage) = guarded { gate.withNormalOperation {
         mutateMessage(expected.sessionId, expected.messageId) {
             check(repository.get(expected.id) == expected) { "录音已变化；请重新确认" }
             repository.delete(expected.id)?.let { releaseIfUnreferenced(it.audioPath) }
             mutableNotice.value = "已删除所选录音"
         }
-    }
+    } }
     private suspend fun releaseIfUnreferenced(path: String) = withContext(NonCancellable) {
         gate.withNormalOperation { if (!repository.isAudioReferenced(path)) audio.deleteIfOwned(path) else false }
     }

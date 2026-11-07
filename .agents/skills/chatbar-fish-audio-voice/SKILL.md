@@ -5,6 +5,8 @@ description: Maintain ChatBar Fish Audio voice generation across API credentials
 
 # ChatBar Fish Audio Voice
 
+- Desktop automatic participation updates and explicit single-recording deletion admit normal data work before the voice mutation mutex. `DesktopVoiceMutationAdmissionTest` pauses the actual generation entry after admission and drives actual residency completion/deletion around queued maintenance. Generic `mutateMessage` and session/speaker maintenance keep their own callback boundaries: image/session cleanup callbacks can acquire exclusive scopes and must not inherit a blanket normal lease.
+
 - Desktop confirmed whole-session deletion is composed through the SaveSlot transaction owner and existing voice session maintenance. Generated audio paths remain absolute; `isDesktopOwnedAudioCandidate` admits only canonical files directly under `audio/generated/<session>`, then `DesktopOwnedImageCleanup` proves no remaining entity reference and `DesktopVoiceAudioStore.deleteIfOwned` verifies its receipt. False/refused cleanup retains the persistent private cleanup receipt; external audio and references from another session or legacy slot remain untouched.
 
 Desktop `sourceVersion` also matches the saved version’s narrative mode, alongside ID/content. Changing the session’s next-reply mode does not cancel old message TTS; mutating the same saved version’s mode rejects late publication. `DesktopFishGenerationTest` uses a blocked real response to exercise both cases.
