@@ -1,3 +1,7 @@
+2026-11-07 语音与格式修复实际缺口继续补齐：格式修复旧请求缺所选max_tokens已由新1FAIL复现，53dec后原四套34PASS且消息封装/Prompt/TLS/terminal原边界保留；语音驻场/删录音旧两等待FAIL，b3后原八套81PASS，d569手动人物开关及命名暂停后继原三套54PASS（重叠不相加），详321。另确认界面独立placementsForMessage会写新回复anchor；0f4暖repo/旧录音真实play反例和984共享仓库gate-before-mutex后继正在云验，未借81/54代验。320后继合计22条复用映射，321再精确映射8c四个参数delta，314仍complete:false。公开1244/db7/签26、A1真人FAIL、315未采纳不变，无新包/公发、日常代装、本机JVM或真实资料操作。
+
+下方历史保留。
+
 2026-11-07 冷模型与Studio仓库准入后继限定通过：模型旧生产R01原4PASS+1等待FAIL，5c77后R02原shared8+Desktop32=40PASS；Studio旧生产R01原5PASS+2仓库等待FAIL，c71的R02因模块internal可见性编译失败/无XML，a914以protected窄入口修正，R03原六套33PASS、0FAIL/ERROR/SKIP。普通编辑/预设共用controller action mutex，不能把仓库反例称普通UI实复现，具体调用链纠正与原件见320。7c5988aa另精确登记15条research/候选编辑/角色位置/正式TTS delta，复用原件而非新增重跑，314整体仍complete:false。公开1244/db7/签26、A1真人FAIL、315未采纳不动；无新包/公发/日常代装、本机JVM或真实资料操作。
 
 下方历史保留。

@@ -1,5 +1,7 @@
 # 271 — 1.4.7 世界书与格式修复参数接线
 
+2026-11-07后继说明：本页“Desktop保留isolated字段过滤”是旧阶段实现记录，不代表用户要求该参数例外。实际请求反例已确认格式修复遗漏所选cap/temperature等；53dec将参数继承与消息envelope保护分开，原四套34PASS，详321。下方保留原实现与当时验证范围，不把旧20PASS改写为已验证当前参数语义。
+
 固定上游147 `b4fa75d296680f777be095f3121ad0c4db979f17` 对比141：世界书生成/修复不再传 `isolatedTaskParameters=true`；检索规划/摘要同时取消 `enableThinking=false`、`reasoningEffort=low`；消息格式修复仅取消 `disableThinking=true`。这是模型请求参数变化，原Prompt文字不变。Desktop此前shared移植仍保留141规则，不能仅以Android路径/文件存在称147完成。
 
 本片按原授权适配：`streamWorldBookAi` 与本Fork `AndroidWorldBookAiGateway` 采用所选模型的输出上限、思考/effort、自定义参数；仍用原operation/stage、模型/provider解析、任务封装和120秒socket/inactivity预算。CREATE/FILL的生成及JSON修复、RESEARCH规划和BRIEF摘要均走同一原transport；不引入额外请求/重试/模型或新Prompt。

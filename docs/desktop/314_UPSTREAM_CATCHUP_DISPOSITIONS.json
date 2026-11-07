@@ -910,6 +910,15 @@
       "evidence": [
         "OWNER_CARD_MEMORY_STARTUP_REUSE.json"
       ]
+    },
+    {
+      "id": "REPAIR_CARD_AND_VOICE_SELECTED_MODEL_CONTROLS",
+      "disposition": "EQUIVALENT",
+      "scope": "Only8c removed fixed card thinking budgets, forced repair thinking-disable and Fish output-cap stripping. Actual Desktop candidate GENERATE/REPAIR and Fish gateway preserve selected model controls; format now separately inherits model parameters while retaining its protected envelope. R02 actual34PASS includes SelectedAux4/new repair1; current five selected owners/caller blobs match tested53dec. No whole card-flow/Prompt or arbitrary conflicting output-alias sanitization claim.",
+      "reviewSource": "98484d71c0b73fd4668c57656cb75dc1d9a8b96c",
+      "evidence": [
+        "OWNER_REPAIR_AND_AUXILIARY_PARAMETER_REVIEW.json"
+      ]
     }
   ],
   "deltas": [
@@ -5119,8 +5128,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only8c removed fixed card thinking budgets, forced repair thinking-disable and Fish output-cap stripping. Actual Desktop candidate GENERATE/REPAIR and Fish gateway preserve selected model controls; format now separately inherits model parameters while retaining its protected envelope. R02 actual34PASS includes SelectedAux4/new repair1; current five selected owners/caller blobs match tested53dec. No whole card-flow/Prompt or arbitrary conflicting output-alias sanitization claim.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/card/CharacterAutoFillService.kt",
@@ -5129,8 +5138,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "REPAIR_CARD_AND_VOICE_SELECTED_MODEL_CONTROLS"
+      ],
+      "evidence": [
+        "docs/desktop/321_VOICE_MUTATION_ADMISSION_AND_REPAIR_PARAMETERS.md",
+        "OWNER_REPAIR_AND_AUXILIARY_PARAMETER_REVIEW.json"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/main/java/com/example/chatbar/domain/card/CharacterCardPngRenderer.kt",
@@ -5205,8 +5219,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only8c removed fixed card thinking budgets, forced repair thinking-disable and Fish output-cap stripping. Actual Desktop candidate GENERATE/REPAIR and Fish gateway preserve selected model controls; format now separately inherits model parameters while retaining its protected envelope. R02 actual34PASS includes SelectedAux4/new repair1; current five selected owners/caller blobs match tested53dec. No whole card-flow/Prompt or arbitrary conflicting output-alias sanitization claim.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/card/CharacterRewriteService.kt",
@@ -5215,8 +5229,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "REPAIR_CARD_AND_VOICE_SELECTED_MODEL_CONTROLS"
+      ],
+      "evidence": [
+        "docs/desktop/321_VOICE_MUTATION_ADMISSION_AND_REPAIR_PARAMETERS.md",
+        "OWNER_REPAIR_AND_AUXILIARY_PARAMETER_REVIEW.json"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/main/java/com/example/chatbar/domain/card/FormatCardTransferService.kt",
@@ -5337,8 +5356,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only8c removed fixed card thinking budgets, forced repair thinking-disable and Fish output-cap stripping. Actual Desktop candidate GENERATE/REPAIR and Fish gateway preserve selected model controls; format now separately inherits model parameters while retaining its protected envelope. R02 actual34PASS includes SelectedAux4/new repair1; current five selected owners/caller blobs match tested53dec. No whole card-flow/Prompt or arbitrary conflicting output-alias sanitization claim.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/chat/MessageFormatRepairService.kt",
@@ -5347,8 +5366,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "REPAIR_CARD_AND_VOICE_SELECTED_MODEL_CONTROLS"
+      ],
+      "evidence": [
+        "docs/desktop/321_VOICE_MUTATION_ADMISSION_AND_REPAIR_PARAMETERS.md",
+        "OWNER_REPAIR_AND_AUXILIARY_PARAMETER_REVIEW.json"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/main/java/com/example/chatbar/domain/chat/StreamingChatService.kt",
@@ -5750,8 +5774,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only8c removed fixed card thinking budgets, forced repair thinking-disable and Fish output-cap stripping. Actual Desktop candidate GENERATE/REPAIR and Fish gateway preserve selected model controls; format now separately inherits model parameters while retaining its protected envelope. R02 actual34PASS includes SelectedAux4/new repair1; current five selected owners/caller blobs match tested53dec. No whole card-flow/Prompt or arbitrary conflicting output-alias sanitization claim.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/voice/FishAudioTagService.kt",
@@ -5760,8 +5784,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "REPAIR_CARD_AND_VOICE_SELECTED_MODEL_CONTROLS"
+      ],
+      "evidence": [
+        "docs/desktop/321_VOICE_MUTATION_ADMISSION_AND_REPAIR_PARAMETERS.md",
+        "OWNER_REPAIR_AND_AUXILIARY_PARAMETER_REVIEW.json"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/main/java/com/example/chatbar/domain/worldbook/WorldBookAiService.kt",
