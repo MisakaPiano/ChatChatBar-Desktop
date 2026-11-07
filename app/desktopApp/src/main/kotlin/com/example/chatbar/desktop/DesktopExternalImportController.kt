@@ -5,7 +5,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
 
-internal enum class DesktopExternalImportPhase { CHECKING, READY, CONFLICT, PREVIEW, COMPLETE, UNCERTAIN, ERROR, RESTART }
+internal enum class DesktopExternalImportPhase { CHECKING, READY, PASSWORD, CONFLICT, PREVIEW, COMPLETE, UNCERTAIN, ERROR, RESTART }
 internal data class DesktopExternalImportState(val item: DesktopExternalFile? = null, val kind: DesktopExternalImportKind = DesktopExternalImportKind.UNKNOWN,
     val phase: DesktopExternalImportPhase = DesktopExternalImportPhase.CHECKING, val busy: Boolean = false,
     val message: String = "", val shown: Boolean = true, val canChooseType: Boolean = false, val targetId: String? = null,
@@ -98,7 +98,7 @@ internal class DesktopExternalImportController(
         mutable.update { it.copy(kind = kind, imageTargets = targets, message = "类型已选择，请确认导入位置。") }
     }
     fun retryInspection() = action {
-        check(state.value.phase != DesktopExternalImportPhase.UNCERTAIN)
+        check(state.value.phase !in setOf(DesktopExternalImportPhase.UNCERTAIN, DesktopExternalImportPhase.PASSWORD))
         if (prepared == null) state.value.item?.let { inspectHead(it) }
         else mutable.update { it.copy(phase = DesktopExternalImportPhase.READY, message = "可以重新检查或导入当前文件。") }
     }
@@ -129,10 +129,8 @@ internal class DesktopExternalImportController(
                 check(!merge.state.value.busy && !merge.state.value.ready && !merge.state.value.restartRequired &&
                     merge.state.value.passwordRequest == null) { "请先处理数据页中已有的备份检查或密码输入。" }
                 dispatch()
-                awaitDelegated(merge.inspectFile(source.file, password))
-                val result = merge.state.value
-                check(result.ready) { result.error ?: result.message }
-                mutable.update { it.copy(phase = DesktopExternalImportPhase.PREVIEW, message = "备份已检查，尚未合并。请到数据页选择冲突和保存位置；也可结束此项检查。") }
+                awaitDelegated(merge.inspectExternalFile(source.file, password))
+                observeBackupInspection()
             }
             DesktopExternalImportKind.SAVE_SLOT -> {
                 check(!saves.state.value.busy) { "请先完成当前存档操作。" }
@@ -159,6 +157,31 @@ internal class DesktopExternalImportController(
                     message = "${studio.state.value.status}。图片应用结果尚未确认，请到 Studio 核对；不会自动重发。") }
             }
             DesktopExternalImportKind.UNKNOWN -> error("请选择正确类型，再使用对应的严格检查。")
+        }
+    }
+    fun retryBackupPassword(password: CharArray) = action(password) {
+        requireAdmission()
+        check(state.value.kind == DesktopExternalImportKind.BACKUP && state.value.phase == DesktopExternalImportPhase.PASSWORD)
+        awaitDelegated(merge.retryExternalFilePassword(requireNotNull(prepared).file, password))
+        observeBackupInspection()
+    }
+    fun cancelBackupPassword() = action {
+        check(state.value.kind == DesktopExternalImportKind.BACKUP && state.value.phase == DesktopExternalImportPhase.PASSWORD)
+        check(!merge.state.value.busy && merge.state.value.passwordRequest?.externalQueue == true)
+        awaitDelegated(merge.discardExternal())
+        check(merge.state.value.passwordRequest == null)
+        mutable.update { it.copy(phase = DesktopExternalImportPhase.READY,
+            message = "已取消密码输入；当前文件仍在队列，可以重新检查或跳过。现有资料未改变。") }
+    }
+    private fun observeBackupInspection() {
+        val result = merge.state.value
+        if (result.passwordRequest?.externalQueue == true) {
+            mutable.update { it.copy(phase = DesktopExternalImportPhase.PASSWORD,
+                message = "此备份已加密，等待密码；当前文件仍在队列，尚未合并。") }
+        } else {
+            check(result.ready) { result.error ?: result.message }
+            mutable.update { it.copy(phase = DesktopExternalImportPhase.PREVIEW,
+                message = "备份已检查，尚未合并。请到数据页选择冲突和保存位置；也可结束此项检查。") }
         }
     }
     fun resolve(choice: DesktopTransferConflictAction) = action {
@@ -214,7 +237,7 @@ internal class DesktopExternalImportController(
     fun skip(confirmedUncertain: Boolean = false) = action {
         check(state.value.phase != DesktopExternalImportPhase.UNCERTAIN || confirmedUncertain)
         check(!merge.state.value.restartRequired) { "合并已进入启动切换阶段，请正常重启；不会继续导入后面的文件。" }
-        if (state.value.phase == DesktopExternalImportPhase.PREVIEW) {
+        if (state.value.phase in setOf(DesktopExternalImportPhase.PREVIEW, DesktopExternalImportPhase.PASSWORD)) {
             check(!merge.state.value.busy)
             awaitDelegated(merge.discardExternal())
             check(!merge.state.value.ready)

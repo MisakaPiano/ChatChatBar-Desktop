@@ -55,7 +55,12 @@ internal fun DesktopExternalImportHost(controller: DesktopExternalImportControll
         return
     }
     val item = state.item ?: return
-    var password by remember(item.id) { mutableStateOf("") }
+    if (state.phase == DesktopExternalImportPhase.PASSWORD && !state.busy) {
+        merge.passwordRequest?.takeIf { it.externalQueue }?.let { request ->
+            DesktopBackupPasswordDialog(request, controller::retryBackupPassword, controller::cancelBackupPassword, null)
+        }
+        return
+    }
     var sessionId by remember(item.id) { mutableStateOf<String?>(null) }
     var imageTarget by remember(item.id) { mutableStateOf(NovelAiImageUseTarget.IMAGE_TO_IMAGE) }
     var previewImage by remember(item.id) { mutableStateOf(false) }
@@ -89,7 +94,6 @@ internal fun DesktopExternalImportHost(controller: DesktopExternalImportControll
                             }
                         }
                     }
-                    if (state.kind == DesktopExternalImportKind.BACKUP) BackupPasswordField("备份密码（未加密留空）", password, !state.busy) { password = it }
                     if (state.kind == DesktopExternalImportKind.SAVE_SLOT) {
                         StatusText("选择接收存档的会话。只加入存档列表，不恢复或替换聊天。")
                         Column(Modifier.fillMaxWidth().heightIn(max = 180.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -109,8 +113,7 @@ internal fun DesktopExternalImportHost(controller: DesktopExternalImportControll
                     BootstrapButton(if (state.kind == DesktopExternalImportKind.BACKUP) "检查备份" else "导入当前文件",
                         enabled = !state.busy && state.kind != DesktopExternalImportKind.UNKNOWN &&
                             (state.kind != DesktopExternalImportKind.SAVE_SLOT || sessionId != null)) {
-                        val secret = password.takeIf { it.isNotEmpty() }?.toCharArray(); password = ""
-                        controller.import(sessionId, secret, imageTarget)
+                        controller.import(sessionId, imageTarget = imageTarget)
                     }
                 }
                 if (state.phase == DesktopExternalImportPhase.CONFLICT) {

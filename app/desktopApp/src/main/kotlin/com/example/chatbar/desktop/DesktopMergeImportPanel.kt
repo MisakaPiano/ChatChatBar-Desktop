@@ -105,7 +105,7 @@ internal fun DesktopMergeImportPanel(controller: DesktopMergeImportController, s
         state.destination?.let { StatusText("合并目录：$it") }
         if (state.restartRequired) BootstrapButton("正常退出应用", onClick = onExit)
     }
-    state.passwordRequest?.takeIf { showPasswordDialog }?.let { request -> DesktopBackupPasswordDialog(request,
+    state.passwordRequest?.takeIf { showPasswordDialog && !it.externalQueue }?.let { request -> DesktopBackupPasswordDialog(request,
         onPassword = controller::retryFilePassword, onCancel = controller::discard,
         onChooseFile = controller::selectFile) }
 }

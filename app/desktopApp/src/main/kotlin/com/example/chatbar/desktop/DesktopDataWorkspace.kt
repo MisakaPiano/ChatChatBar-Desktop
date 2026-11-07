@@ -127,7 +127,7 @@ internal fun DesktopDataWorkspace(root: DesktopDataRootSwitchController, full: D
             if (page == DataPage.BACKUP && operation == BackupPage.CHECK) backup.passwordRequest?.let { request ->
                 DesktopBackupPasswordDialog(request, full::retryFilePassword, full::discardInspection) { full.verifyFile(null) }
             }
-            if (page == DataPage.BACKUP && operation == BackupPage.IMPORT) imported?.passwordRequest?.let { request ->
+            if (page == DataPage.BACKUP && operation == BackupPage.IMPORT) imported?.passwordRequest?.takeUnless { it.externalQueue }?.let { request ->
                 merge?.let { controller ->
                     DesktopBackupPasswordDialog(request, controller::retryFilePassword, controller::discard, controller::selectFile)
                 }

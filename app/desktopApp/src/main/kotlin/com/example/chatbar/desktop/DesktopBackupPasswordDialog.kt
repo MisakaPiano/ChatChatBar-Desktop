@@ -13,7 +13,8 @@ import com.example.chatbar.desktop.backup.DesktopFullBackupSource
 import com.example.chatbar.desktop.backup.DesktopBackupScratchCleanupException
 
 /** No password or source path enters presentation state or task metadata. */
-internal data class DesktopBackupPasswordRequest(val fileName: String, val error: String? = null)
+internal data class DesktopBackupPasswordRequest(val fileName: String, val error: String? = null,
+    val externalQueue: Boolean = false)
 
 internal fun Throwable.requestsBackupPasswordRetry(): Boolean = this is DesktopFullBackupSource.Refusal &&
     encrypted == true && stage == "AUTHENTICATION_ZIP" &&
@@ -21,7 +22,7 @@ internal fun Throwable.requestsBackupPasswordRetry(): Boolean = this is DesktopF
 
 @Composable
 internal fun DesktopBackupPasswordDialog(request: DesktopBackupPasswordRequest,
-    onPassword: (CharArray) -> Unit, onCancel: () -> Unit, onChooseFile: () -> Unit) {
+    onPassword: (CharArray) -> Unit, onCancel: () -> Unit, onChooseFile: (() -> Unit)?) {
     var password by remember(request) { mutableStateOf("") }
     DesktopModalSurface(kind = DesktopModalKind.BACKUP) {
         Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.dim).padding(20.dp), contentAlignment = Alignment.Center) {
@@ -40,7 +41,7 @@ internal fun DesktopBackupPasswordDialog(request: DesktopBackupPasswordRequest,
                     BootstrapButton("解锁并继续检查", enabled = password.length in 8..1024) {
                         val secret = password.toCharArray(); password = ""; onPassword(secret)
                     }
-                    BootstrapButton("选择其他文件", secondary = true) { password = ""; onChooseFile() }
+                    onChooseFile?.let { choose -> BootstrapButton("选择其他文件", secondary = true) { password = ""; choose() } }
                     BootstrapButton("取消", secondary = true) { password = ""; onCancel() }
                 }
             }

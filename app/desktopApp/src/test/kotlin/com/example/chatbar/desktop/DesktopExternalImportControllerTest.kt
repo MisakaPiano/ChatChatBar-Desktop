@@ -154,11 +154,22 @@ class DesktopExternalImportControllerTest {
         val next = f.format("next.json", "Next", "Not imported")
         val settings = f.app.settingsRepository.getAppSettings()
         f.submit(file, next); val external = f.open(); external.await(DesktopExternalImportPhase.READY)
-        external.import(); external.await(DesktopExternalImportPhase.ERROR)
+        external.import(); external.await(DesktopExternalImportPhase.PASSWORD)
         assertEquals(2, f.queue.state.value.files.size)
-        external.retryInspection(); external.await(DesktopExternalImportPhase.READY)
+        val item = external.state.value.item!!.id
+        assertTrue(f.app.mergeImportController.state.value.passwordRequest!!.externalQueue)
+        // Leaving an unrelated data pane must not retire this queue-owned prompt.
+        f.app.mergeImportController.leavePasswordFlow()
+        for (wrong in listOf("wrong-password-one", "wrong-password-two")) {
+            val secret = wrong.toCharArray()
+            external.retryBackupPassword(secret); external.await(DesktopExternalImportPhase.PASSWORD, 20000)
+            assertTrue(secret.all { it == '\u0000' })
+            assertNotNull(f.app.mergeImportController.state.value.passwordRequest?.error)
+            assertEquals(item, external.state.value.item!!.id)
+            assertEquals(2, f.queue.state.value.files.size)
+        }
         val password = CensusWireFixtures.PASSWORD.toCharArray()
-        external.import(password = password); external.await(DesktopExternalImportPhase.PREVIEW, 20000)
+        external.retryBackupPassword(password); external.await(DesktopExternalImportPhase.PREVIEW, 20000)
         assertTrue(password.all { it == '\u0000' })
         assertTrue(f.app.mergeImportController.state.value.ready)
         assertFalse(f.app.mergeImportController.state.value.restartRequired)
@@ -173,6 +184,39 @@ class DesktopExternalImportControllerTest {
                 "nextHead=${f.queue.state.value.files.firstOrNull()?.path == next}, mergeReady=${f.app.mergeImportController.state.value.ready}", timeout)
         }
         assertFalse(f.app.mergeImportController.state.value.ready)
+    } }
+
+    @Test fun `plaintext backup reaches preview without a password request or second file picker`() = runBlocking { fixture { f ->
+        val bytes = CensusWireFixtures.bytes()
+        val file = Files.write(f.root.resolve("plain.cbbackup"), bytes)
+        f.submit(file); val external = f.open(); external.await(DesktopExternalImportPhase.READY)
+        val item = external.state.value.item!!.id
+        external.import(); external.await(DesktopExternalImportPhase.PREVIEW, 20000)
+        assertNull(f.app.mergeImportController.state.value.passwordRequest)
+        assertEquals(item, f.queue.state.value.files.single().id)
+        assertTrue(f.app.mergeImportController.state.value.ready)
+        assertFalse(f.app.mergeImportController.state.value.restartRequired)
+        assertContentEquals(bytes, Files.readAllBytes(file))
+        external.skip(); withTimeout(5000) { f.queue.state.first { it.files.isEmpty() } }
+    } }
+
+    @Test fun `cancelled backup password keeps the same queued file ready and skip releases its retained prompt`() = runBlocking { fixture { f ->
+        val bytes = CensusWireFixtures.bytes(encrypted = true)
+        val file = Files.write(f.root.resolve("encrypted.cbbackup"), bytes)
+        val next = f.format("next.json", "Next", "Not imported")
+        f.submit(file, next); val external = f.open(); external.await(DesktopExternalImportPhase.READY)
+        val item = external.state.value.item!!.id
+        external.import(); external.await(DesktopExternalImportPhase.PASSWORD)
+        external.cancelBackupPassword(); external.await(DesktopExternalImportPhase.READY)
+        assertEquals(item, external.state.value.item!!.id)
+        assertNull(f.app.mergeImportController.state.value.passwordRequest)
+        assertFalse(f.app.mergeImportController.state.value.ready)
+        external.import(); external.await(DesktopExternalImportPhase.PASSWORD)
+        external.skip()
+        withTimeout(5000) { external.state.first { it.item?.path == next && !it.busy } }
+        assertNull(f.app.mergeImportController.state.value.passwordRequest)
+        assertTrue(f.app.formatCardRepository.getAll().isEmpty())
+        assertContentEquals(bytes, Files.readAllBytes(file))
     } }
 
     @Test fun `archive file uses the explicit receiving session without restoring its messages or draft`() = runBlocking { fixture { f ->

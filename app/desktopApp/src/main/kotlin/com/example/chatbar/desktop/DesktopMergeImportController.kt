@@ -36,6 +36,7 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
     private var preview: DesktopMergeImportService.Preview? = null
     private var passwordFile: Path? = null
     private var passwordFlowActive = false
+    @Volatile private var externalPasswordFlow = false
 
     fun inspect(password: CharArray?) { inspectFile(null, password) }
     fun inspectFile(source: Path?, password: CharArray?) = actionJob(password, DesktopMergeTask.INSPECT) { outcome ->
@@ -45,12 +46,20 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
     }
     fun selectFile() { inspectPasswordFile(null, true) }
     fun retryFilePassword(password: CharArray) { inspectPasswordFile(password, false) }
-    private fun inspectPasswordFile(password: CharArray?, chooseFile: Boolean) = actionJob(password, DesktopMergeTask.INSPECT,
-        passwordFlow = true) { outcome ->
-        val path = if (chooseFile) picker.pickOpenFile(TYPE) else passwordFile
-        if (path == null) { passwordFile = null; outcome(DesktopWorkPhase.CANCELLED); return@actionJob "已取消选择" }
-        passwordFile = path
-        inspectSelectedFile(path, password)
+    fun inspectExternalFile(source: Path, password: CharArray? = null) = inspectPasswordFile(password, false, source)
+    fun retryExternalFilePassword(source: Path, password: CharArray) = inspectPasswordFile(password, false, source, true)
+    private fun inspectPasswordFile(password: CharArray?, chooseFile: Boolean, externalSource: Path? = null,
+        requireRetained: Boolean = false): Job? {
+        if (externalSource == null && externalPasswordFlow) { password?.fill('\u0000'); return null }
+        return actionJob(password, DesktopMergeTask.INSPECT,
+            passwordFlow = true) { outcome ->
+            if (requireRetained) check(externalPasswordFlow && passwordFile == externalSource) { "外部备份检查已取消，请重新检查队列中的文件。" }
+            val path = externalSource ?: if (chooseFile) picker.pickOpenFile(TYPE) else passwordFile
+            if (path == null) { passwordFile = null; outcome(DesktopWorkPhase.CANCELLED); return@actionJob "已取消选择" }
+            passwordFile = path
+            externalPasswordFlow = externalSource != null
+            inspectSelectedFile(path, password)
+        }
     }
     private suspend fun inspectSelectedFile(path: Path, password: CharArray?): String {
         preview = null; mutable.update { DesktopMergeImportState(busy = true) }
@@ -101,6 +110,7 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
         "已取消合并，当前电脑数据未改变"
     }
     fun leavePasswordFlow() = synchronized(lock) {
+        if (externalPasswordFlow) return@synchronized
         if (passwordFlowActive) operation?.cancel()
         else if (mutable.value.passwordRequest != null) discard()
     }
@@ -181,7 +191,8 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
                     outcome = DesktopWorkPhase.WAITING
                     mutable.update { it.copy(ready = false, error = null,
                         passwordRequest = DesktopBackupPasswordRequest(retrySource.fileName.toString().take(160),
-                            if ((failure as DesktopFullBackupSource.Refusal).passwordRequired) null else message),
+                            if ((failure as DesktopFullBackupSource.Refusal).passwordRequired) null else message,
+                            externalQueue = externalPasswordFlow),
                         message = "等待存档密码；所选文件已保留，当前资料未改变。", failureDetails = null) }
                 } else {
                     passwordFile = null
@@ -191,6 +202,7 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
                 password?.fill('\u0000')
                 synchronized(lock) {
                     passwordFlowActive = false
+                    if (passwordFile == null) externalPasswordFlow = false
                     mutable.update { it.copy(busy = false, restartRequired = service.restartRequired,
                         ready = preview != null && !service.restartRequired) }
                 }
