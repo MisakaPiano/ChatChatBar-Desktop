@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.*
 private enum class DesktopMergeTask(val kind: DesktopWorkKind, val label: String) {
     INSPECT(DesktopWorkKind.MERGE_CHECK, "检查合并备份"), COMMIT(DesktopWorkKind.MERGE, "准备合并结果")
 }
+internal data class DesktopMergeModeSummary(val added: Int, val updated: Int, val copied: Int, val removed: Int, val warnings: List<String>)
 
 internal data class DesktopMergeImportState(val busy: Boolean = false, val ready: Boolean = false,
     val code: Int = 0, val files: Int = 0, val versionName: String = "",
@@ -18,7 +19,9 @@ internal data class DesktopMergeImportState(val busy: Boolean = false, val ready
     val imagePreferencesChoiceRequired: Boolean = false, val message: String = "", val error: String? = null,
     val restartRequired: Boolean = false, val destination: Path? = null, val desktopParticipation: Boolean = false,
     val failureDetails: String? = null, val historicalDesktopV5Settings: Boolean = false,
-    val passwordRequest: DesktopBackupPasswordRequest? = null)
+    val passwordRequest: DesktopBackupPasswordRequest? = null,
+    val mode: DesktopBackupRestoreMode = DesktopBackupRestoreMode.MERGE_CHOICES,
+    val modePlanning: Boolean = false, val modeSummary: DesktopMergeModeSummary? = null, val modeError: String? = null)
 
 /** Holds secret-bearing preparation privately; UI state contains only presentation metadata. */
 internal class DesktopMergeImportController(private val service: DesktopMergeImportService,
@@ -31,6 +34,8 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
     private val lock = Any()
     private var closed = false
     private var operation: Job? = null
+    private var modeOperation: Job? = null
+    private var modeGeneration = 0L
     private var activeTaskId: String? = null
     private val mutableWork = MutableStateFlow<List<DesktopWorkRow>>(emptyList())
     val workRows = mutableWork.asStateFlow()
@@ -81,6 +86,30 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
         if (state.busy) return state.conflicts
         return requireNotNull(preview) { "MERGE_READY_PREVIEW_MISSING" }.data.effectiveConflicts(choices)
     }
+    fun selectMode(mode: DesktopBackupRestoreMode) = synchronized(lock) {
+        if (!mutable.value.ready || mutable.value.busy || closed || service.restartRequired) return@synchronized
+        val captured = requireNotNull(preview)
+        modeOperation?.cancel(); val generation = ++modeGeneration
+        mutable.update { it.copy(mode = mode, modePlanning = mode != DesktopBackupRestoreMode.MERGE_CHOICES, modeSummary = null, modeError = null) }
+        if (mode == DesktopBackupRestoreMode.MERGE_CHOICES) return@synchronized
+        modeOperation = scope.launch {
+            try {
+                val plan = service.previewMode(captured, mode)
+                synchronized(lock) {
+                    if (!closed && preview === captured && generation == modeGeneration && !mutable.value.busy)
+                        mutable.update { it.copy(modePlanning = false, modeSummary = DesktopMergeModeSummary(plan.added, plan.updated, plan.copied, plan.removed, plan.warnings)) }
+                }
+            } catch (_: CancellationException) {
+                // A newer mode or an owner action supersedes this projection; never publish stale state.
+            } catch (failure: Throwable) {
+                synchronized(lock) {
+                    if (!closed && preview === captured && generation == modeGeneration && !mutable.value.busy)
+                        mutable.update { it.copy(modePlanning = false, modeSummary = null, modeError = "此导入方案未能完成计算，请重新选择模式或重新检查备份；当前资料未改变。",
+                            failureDetails = desktopMergeFailureDetails(failure)) }
+                }
+            }
+        }
+    }
 
     fun chooseConflict(choices: Map<String, DesktopMergePreview.Choice>, key: String,
         choice: DesktopMergePreview.Choice): Map<String, DesktopMergePreview.Choice> {
@@ -95,8 +124,10 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
     }
 
     fun commit(choices: Map<String, DesktopMergePreview.Choice>, credentials: Map<ImportCredentialKind, DesktopMergeCredentials.Choice>,
-        imagePreferencesFromPhone: Boolean?, confirmed: Boolean) = action(null, DesktopMergeTask.COMMIT) { outcome ->
+        imagePreferencesFromPhone: Boolean?, confirmed: Boolean,
+        mode: DesktopBackupRestoreMode = DesktopBackupRestoreMode.MERGE_CHOICES) = action(null, DesktopMergeTask.COMMIT) { outcome ->
         check(confirmed)
+        check(mode == mutable.value.mode && (mode == DesktopBackupRestoreMode.MERGE_CHOICES || mutable.value.modeSummary != null)) { "MERGE_MODE_PREVIEW_REQUIRED" }
         val selected = requireNotNull(preview)
         val parent = directories.pickDirectory() ?: return@action run { outcome(DesktopWorkPhase.CANCELLED); "已取消选择合并目录，可以重新选择" }
         val target = parent.resolve("ChatChatBar-merged-${UUID.randomUUID()}")
@@ -114,7 +145,7 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
             mutable.update { it.copy(error = refused) }
             return@action "原检查结果与冲突选择已保留，可以重新选择合并位置。"
         }
-        when (service.commitWithProgress(selected, target, choices, credentials, confirmed, imagePreferencesFromPhone, ::showProgress)) {
+        when (service.commitModeWithProgress(selected, target, choices, credentials, confirmed, imagePreferencesFromPhone, mode, ::showProgress)) {
             DesktopMergeImportService.Publication.COMMITTED -> {
                 outcome(DesktopWorkPhase.COMPLETED)
                 "合并已完成准备。请正常退出，再次启动将打开包含两边内容的新目录。原电脑目录与手机文件保留。"
@@ -163,10 +194,11 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
         passwordFlow: Boolean = false, externalPassword: Boolean = false,
         work: suspend ((DesktopWorkPhase) -> Unit) -> String): Job? = synchronized(lock) {
         if (closed || mutable.value.busy || service.restartRequired) { password?.fill('\u0000'); return@synchronized null }
+        modeOperation?.cancel(); modeGeneration++
         mutableWork.update { rows -> rows.map { if (it.phase == DesktopWorkPhase.WAITING) it.copy(phase = DesktopWorkPhase.CANCELLED) else it } }
         passwordFlowActive = passwordFlow
         if (passwordFlow) externalPasswordFlow = externalPassword
-        mutable.update { it.copy(busy = true, error = null, failureDetails = null, passwordRequest = null) }
+        mutable.update { it.copy(busy = true, error = null, failureDetails = null, passwordRequest = null, modePlanning = false) }
         val taskId = task?.let { UUID.randomUUID().toString() }
         activeTaskId = taskId
         var outcome: DesktopWorkPhase? = null

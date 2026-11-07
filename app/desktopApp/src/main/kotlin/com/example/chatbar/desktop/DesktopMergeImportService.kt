@@ -22,6 +22,7 @@ internal class DesktopMergeImportService(
     private val freshAuthority: (Path) -> DesktopFreshRootAuthority = { DesktopFreshRootAuthority(it) },
     private val asset: (String) -> ByteArray = { error("BUNDLED_ASSET_UNAVAILABLE") },
     private val workspace: Path = source.appDataRoot.resolve("backups/.merge-import-work"),
+    private val beforeModePlan: suspend (DesktopBackupRestoreMode) -> Unit = {},
 ) {
     class ModelDetails internal constructor(val computer: List<String>, val phone: List<String>, val notice: String? = null) {
         override fun toString() = "MergeModelDetails(REDACTED)"
@@ -72,6 +73,15 @@ internal class DesktopMergeImportService(
 
     suspend fun inspect(path: Path, password: CharArray?): Preview = inspectWithProgress(path, password) {}
 
+    suspend fun previewMode(preview: Preview, mode: DesktopBackupRestoreMode): DesktopMergeRestoreModes.Plan = mutex.withLock {
+        check(!closed && !restartRequired && prepared === preview) { "MERGE_PREVIEW_EXPIRED" }
+        withContext(Dispatchers.IO) {
+            beforeModePlan(mode)
+            val context = currentCoroutineContext()
+            preview.data.modePlan(mode) { context.ensureActive() }
+        }
+    }
+
     suspend fun inspectWithProgress(path: Path, password: CharArray?, progress: (Progress) -> Unit): Preview = try {
         mutex.withLock {
             check(!closed && !restartRequired) { "MERGE_IMPORT_UNAVAILABLE" }
@@ -112,12 +122,22 @@ internal class DesktopMergeImportService(
 
     suspend fun commitWithProgress(preview: Preview, destination: Path, choices: Map<String, DesktopMergePreview.Choice>,
         credentialChoices: Map<ImportCredentialKind, DesktopMergeCredentials.Choice>, confirmed: Boolean,
-        imagePreferencesFromPhone: Boolean? = null, progress: (Progress) -> Unit): Publication = mutex.withLock {
+        imagePreferencesFromPhone: Boolean? = null, progress: (Progress) -> Unit): Publication =
+        commitModeWithProgress(preview, destination, choices, credentialChoices, confirmed, imagePreferencesFromPhone,
+            DesktopBackupRestoreMode.MERGE_CHOICES, progress)
+
+    suspend fun commitModeWithProgress(preview: Preview, destination: Path, choices: Map<String, DesktopMergePreview.Choice>,
+        credentialChoices: Map<ImportCredentialKind, DesktopMergeCredentials.Choice>, confirmed: Boolean,
+        imagePreferencesFromPhone: Boolean?, mode: DesktopBackupRestoreMode, progress: (Progress) -> Unit): Publication = mutex.withLock {
         check(!closed && !restartRequired && prepared === preview) { "MERGE_PREVIEW_EXPIRED" }
         check(confirmed) { "MERGE_EXPLICIT_CONFIRMATION_REQUIRED" }
         committedEvidence = null
         val context = currentCoroutineContext()
-        val selection = preview.data.select(choices) { context.ensureActive() }
+        val selection = if (mode == DesktopBackupRestoreMode.MERGE_CHOICES) preview.data.select(choices) { context.ensureActive() }
+            else {
+                require(choices.isEmpty()) { "MERGE_MODE_CHANGED_CLEAR_CHOICES" }
+                preview.data.modePlan(mode) { context.ensureActive() }.selection
+            }
         val preferences = preview.selectedPreferences(imagePreferencesFromPhone)
         // Destination is never a current root or a silently reused nonempty directory.
         val destinationHandle = when (val prepared = destinationPreparer.prepare(source, destination)) {

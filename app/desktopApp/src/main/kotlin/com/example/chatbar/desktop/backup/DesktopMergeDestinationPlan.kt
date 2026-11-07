@@ -47,6 +47,25 @@ internal class DesktopMergeDestinationPlan private constructor(
                     require(declarations.size <= 80000) { "MERGE_DECLARATION_BUDGET" }
                 }
             }
+            if (selection.mode == DesktopBackupRestoreMode.ADD_COPIES) for (unit in selection.phone) for ((path, value) in unit.records) {
+                checkActive()
+                val record = DesktopMergeRecord(path, value)
+                if (record.type != "edit_drafts") declarations += identity.declarations(record, checkActive)
+                if (record.type == "edit_drafts") record.text("draftSessionId")?.let { declarations += "draft_sessions" to it }
+                require(declarations.size <= 80000) { "MERGE_DECLARATION_BUDGET" }
+            }
+            if (selection.mode != DesktopBackupRestoreMode.MERGE_CHOICES) {
+                val retainedMessages = hashSetOf<String>()
+                for (unit in selection.computer) for (path in unit.records.keys) {
+                    checkActive()
+                    if (DesktopBackupPolicy.entityType(path) == "chat_messages")
+                        unit.records.getValue(path)["id"]?.jsonPrimitive?.contentOrNull?.let(retainedMessages::add)
+                }
+                for (record in phone) if (record.type == "chat_messages") {
+                    checkActive()
+                    record.text("id")?.takeIf { it in retainedMessages }?.let { declarations += "chat_messages" to it }
+                }
+            }
             DesktopMergeNamedBindings.bind(selection, identity, checkActive, declarations)
             // All messages, including historical-only nested ones, share a compact monotonically
             // assigned prefix. Their old lexical order survives equal timestamp/orderKey ties.
@@ -138,6 +157,14 @@ internal class DesktopMergeDestinationPlan private constructor(
                     // require the normal repository to rebuild from the actual merged message files.
                     if (record.type == "chat_message_indexes" && record.text("sessionId")?.let { identity.value("chat_sessions", it) } in rebuiltMessageSessions) continue
                     var mapped = mapper.rewrite(record) { reference, fields -> resource(Side.PHONE, path, phoneNames, reference, fields) }
+                    selection.renamedIncomingUnits[unit.key]?.takeIf { record.type == unit.category }?.let { name ->
+                        val field = when (record.type) {
+                            "chat_sessions" -> "displayTitleOverride"
+                            "model_configs", "retrieval_model_config", "embedding_configs", "embedding_model_config" -> "displayName"
+                            else -> "name"
+                        }
+                        mapped = JsonObject(mapped + (field to JsonPrimitive(name)))
+                    }
                     if (record.type in setOf("preset_import_state", "model_configuration_migration")) {
                         val previous = selection.replacedComputerUnits[unit.key]?.records?.get(path)
                         mapped = DesktopMergeInternalState.preserveCompleted(record.type, mapped, previous, checkActive)
@@ -156,6 +183,18 @@ internal class DesktopMergeDestinationPlan private constructor(
                             "byteLength" to JsonPrimitive(0))))) // Publisher replaces this with verified output length.
                     }
                     add(record, mapped, unit.category == "app_settings")
+                }
+            }
+            if (selection.defaultSettingFields.isNotEmpty()) {
+                val defaults = backupJson.encodeToJsonElement(com.example.chatbar.data.local.entity.AppSettings.serializer(),
+                    com.example.chatbar.data.local.entity.AppSettings()).jsonObject.filterKeys { it in selection.defaultSettingFields }
+                val path = "entities/app_settings.json"
+                entities[path] = JsonObject(entities[path].orEmpty() + defaults)
+            }
+            if (selection.mode != DesktopBackupRestoreMode.MERGE_CHOICES && (selection.incomingScope == null ||
+                selection.incomingScope.moments || selection.incomingScope.globalOptions.any { it.startsWith("moments") })) {
+                entities.keys.firstOrNull { DesktopBackupPolicy.entityType(it) == "app_settings" }?.let { path ->
+                    entities[path] = JsonObject(entities.getValue(path) + ("momentsAutoStartConfirmed" to JsonPrimitive(false)))
                 }
             }
             val packages = packageSlots.map { slot ->

@@ -13,6 +13,7 @@ internal class DesktopMergePreview private constructor(
     private val sourceScope: InspectionScope?,
     private val incomingCatalog: Boolean,
     private val catalogConflict: Boolean,
+    private val pcMedia: Map<String, String>, private val phoneMedia: Map<String, String>,
 ) {
     enum class Choice { KEEP_PC, TAKE_PHONE, BOTH, SKIP }
     enum class Reason { SAME_ID_DIFFERENT_CONTENT, SAME_NAME, ACCOUNT_IDENTITY, OWNED_ID_COLLISION, CREDENTIAL_CONFLICT, TARGET_IDENTITY }
@@ -41,12 +42,19 @@ internal class DesktopMergePreview private constructor(
         val incomingScope: InspectionScope? = null,
         val computerVoiceSources: List<DesktopMergeVoiceSourcePolicy.Source> = emptyList(),
         val aliases: List<Alias> = emptyList(),
-        val catalogFromPhone: Boolean = false) {
+        val catalogFromPhone: Boolean = false,
+        val mode: DesktopBackupRestoreMode = DesktopBackupRestoreMode.MERGE_CHOICES,
+        val renamedIncomingUnits: Map<String, String> = emptyMap(),
+        val retainComputerCatalog: Boolean = true,
+        val keepComputerMedia: Boolean = true,
+        val defaultSettingFields: Set<String> = emptySet()) {
         override fun toString() = "MergeSelection(pc=${computer.size},phone=${phone.size},forks=${forkIncomingUnits.size})"
     }
 
     private data class CardDomain(val incomingCopy: Boolean, val id: String, val forked: Boolean = false)
     val conflicts: List<Conflict> get() = effectiveConflicts(emptyMap())
+    fun modePlan(mode: DesktopBackupRestoreMode, checkActive: () -> kotlin.Unit = {}): DesktopMergeRestoreModes.Plan =
+        DesktopMergeRestoreModes.plan(pc, incoming, pcFingerprint, sourceScope, incomingCatalog, mode, pcMedia, phoneMedia, checkActive)
 
     private fun incomingDomain(type: String, id: String?, choices: Map<String, Choice>): CardDomain? {
         if (id == null) return null
@@ -222,7 +230,7 @@ internal class DesktopMergePreview private constructor(
             val needsChoice = hasIncoming && localCatalog.isNotEmpty() && localCatalog != importedCatalog
             if (needsChoice) conflicts += Conflict(CATALOG_KEY, "已安装标签库", "tagCatalog",
                 setOf(Reason.SAME_ID_DIFFERENT_CONTENT), setOf(Choice.KEEP_PC, Choice.TAKE_PHONE, Choice.SKIP), emptySet())
-            return DesktopMergePreview(conflicts, pc, phone, identical, fingerprint, scope, hasIncoming, needsChoice)
+            return DesktopMergePreview(conflicts, pc, phone, identical, fingerprint, scope, hasIncoming, needsChoice, pcMedia.toMap(), phoneMedia.toMap())
         }
 
         private fun account(unit: Unit): List<JsonElement?> = unit.records.values.single().let {
@@ -259,7 +267,10 @@ internal class DesktopMergePreview private constructor(
                 if (type == "moment_tasks" && !localMoments || type == "moment_posts" && !localMoments &&
                     DesktopMomentBackupExtension.FIELD !in value) return@forEach
                 if (type == "app_settings") {
-                    val selected = scope?.let { selectedSettingFields(it.globalOptions) }
+                    val selected = scope?.let { selectedSettingFields(it.globalOptions) + buildSet {
+                        if (it.sessions > 0) add("lastSeenChatAt")
+                        if (it.moments) add("lastSeenMomentsAt")
+                    } }
                     value.filterKeys { selected == null || it in selected }.forEach { (field, setting) ->
                         val key = "setting:$field"
                         settings[key] = JsonObject(mapOf(field to setting)); add(key, path)

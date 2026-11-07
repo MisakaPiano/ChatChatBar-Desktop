@@ -59,7 +59,8 @@ internal object DesktopMergeRootPreparation {
             }
             val context = currentCoroutineContext()
             val catalogPaths = DesktopNovelAiCatalogTransfer.wirePaths
-            val selectedPcMedia = pcMedia.filterKeys { !selection.catalogFromPhone || it !in catalogPaths }
+            val selectedPcMedia = pcMedia.filterKeys { selection.keepComputerMedia &&
+                (it !in catalogPaths || selection.retainComputerCatalog && !selection.catalogFromPhone) }
             val selectedPhoneMedia = phoneMedia.filterKeys { selection.catalogFromPhone || it !in catalogPaths }
             val plan = DesktopMergeDestinationPlan.create(selection, selectedPcMedia, selectedPhoneMedia, catalog, workspace,
                 phone.source.manifest.appVersionCode) { context.ensureActive() }.also { preparedPlan = it }
