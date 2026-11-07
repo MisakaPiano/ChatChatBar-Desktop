@@ -188,7 +188,7 @@ internal class DesktopMergePreview private constructor(
             pcMedia: Map<String, String>, phoneMedia: Map<String, String>, scope: InspectionScope? = null,
             credentialConflicts: Set<String> = emptySet()): DesktopMergePreview {
             val groupedStudio = (pcEntities.keys + phoneEntities.keys).any { DesktopBackupPolicy.entityType(it) == "desktop_studio_edit_history" }
-            val pc = units(pcEntities, pcMedia, null, localMoments = true, groupedStudio = groupedStudio)
+            val pc = units(pcEntities, pcMedia, null, computerSide = true, groupedStudio = groupedStudio)
             val phone = units(phoneEntities, phoneMedia, scope, groupedStudio = groupedStudio)
             val identical = hashSetOf<String>()
             val conflicts = mutableListOf<Conflict>()
@@ -246,7 +246,7 @@ internal class DesktopMergePreview private constructor(
             listOf(it["id"], it["baseUrl"], it["templateType"] ?: JsonPrimitive("OPENAI"), it["modelName"])
         }
 
-        private fun units(records: Map<String, JsonObject>, media: Map<String, String>, scope: InspectionScope?, localMoments: Boolean = false,
+        private fun units(records: Map<String, JsonObject>, media: Map<String, String>, scope: InspectionScope?, computerSide: Boolean = false,
             groupedStudio: Boolean = false): Map<String, Unit> {
             val groups = linkedMapOf<String, MutableSet<String>>()
             val settings = linkedMapOf<String, JsonObject>()
@@ -259,6 +259,8 @@ internal class DesktopMergePreview private constructor(
             }.toSet()
             records.forEach { (path, value) ->
                 val type = DesktopBackupPolicy.entityType(path)
+                // Device-local deferred deletion commands cannot gain authority over imported owners.
+                if (type == "pending_deletions" && !computerSide) return@forEach
                 if (type == "vector_chunks" && value["sourceType"]?.jsonPrimitive?.contentOrNull in setOf("DOCUMENT", "CHARACTER_SETTING")) {
                     val card = value["sourceId"]?.jsonPrimitive?.contentOrNull
                     if (card in cardIds) {
@@ -273,7 +275,7 @@ internal class DesktopMergePreview private constructor(
                 }
                 // Official incoming Moments retain original-byte dormant custody. Explicit Desktop image
                 // records can be selected as live posts; imported tasks never inherit scheduler admission.
-                if (type == "moment_tasks" && !localMoments || type == "moment_posts" && !localMoments &&
+                if (type == "moment_tasks" && !computerSide || type == "moment_posts" && !computerSide &&
                     DesktopMomentBackupExtension.FIELD !in value) return@forEach
                 if (type == "app_settings") {
                     val selected = scope?.let { selectedSettingFields(it.globalOptions) + buildSet {

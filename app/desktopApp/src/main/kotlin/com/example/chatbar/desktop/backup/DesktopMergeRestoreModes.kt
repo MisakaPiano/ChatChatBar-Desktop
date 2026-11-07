@@ -84,6 +84,12 @@ internal object DesktopMergeRestoreModes {
                 .filter { it.records.size == 1 }.groupBy { content(it, false) } }[content(candidate, true)].orEmpty()
         for (candidate in order) {
             active()
+            // Existing device display preferences survive update/copy; scoped replacement clears
+            // the selected history family later. Default manual merge retains its explicit choices.
+            if (!replace && candidate.category == "novelai_history_fold_preferences" && candidate.key in pc) {
+                phone.remove(candidate.key)
+                continue
+            }
             val primary = candidate.records.entries.firstOrNull { DesktopBackupPolicy.entityType(it.key) == candidate.category }
             val record = primary?.let { DesktopMergeRecord(it.key, it.value) }
             val singleton = candidate.category == "app_settings" || record?.singleton == true ||
