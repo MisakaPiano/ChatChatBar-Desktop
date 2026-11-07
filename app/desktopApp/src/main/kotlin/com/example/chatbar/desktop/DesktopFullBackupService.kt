@@ -31,14 +31,19 @@ internal class DesktopFullBackupService(
     }
 
     /** Legacy v1 compatibility entry retained for existing internal restore regression. */
-    suspend fun export(destination: Path, password: CharArray?): String = exportSnapshot(destination, password, false)
+    suspend fun export(destination: Path, password: CharArray?): String = exportSnapshot(destination, password, false).sha256
 
     /** User-facing backup supports the current mapped code88 transport and owned preservation domains. */
     suspend fun exportModern(destination: Path, password: CharArray?, includeCredentials: Boolean = false, selection: AppBackupSelection? = null): String =
-        exportSnapshot(destination, password, true, includeCredentials, selection)
+        exportModernWithReport(destination, password, includeCredentials, selection).sha256
+
+    data class ExportResult(val sha256: String, val missingHistoricalAvatars: Int)
+
+    suspend fun exportModernWithReport(destination: Path, password: CharArray?, includeCredentials: Boolean = false,
+        selection: AppBackupSelection? = null): ExportResult = exportSnapshot(destination, password, true, includeCredentials, selection)
 
     private suspend fun exportSnapshot(destination: Path, password: CharArray?, modern: Boolean, includeCredentials: Boolean = false,
-        selection: AppBackupSelection? = null): String = try {
+        selection: AppBackupSelection? = null): ExportResult = try {
         mutex.withLock {
             var snapshot: DesktopFullBackupMapping.Export? = null
             var credentials: DesktopBackupExportCredentials? = null
@@ -69,9 +74,10 @@ internal class DesktopFullBackupService(
             }
             // Slow compression/encryption is outside exclusive. It reads only the frozen staging copy.
             requireNotNull(snapshot).let {
-                if (modern) DesktopFullBackupWriter.export(it.files, destination, password,
+                val hash = if (modern) DesktopFullBackupWriter.export(it.files, destination, password,
                     if (selection == null || "imagePreferences" in selection.globalOptions) it.preferences else BackupPreferences(), credentials, selection)
                 else archive.export(it.files, destination, root.toString(), password, it.preferences)
+                ExportResult(hash, it.missingHistoricalAvatars)
             }
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (failure: DesktopFullBackupWriter.Refusal) { throw failure }
@@ -99,7 +105,8 @@ internal class DesktopFullBackupService(
         mutex.withLock { gate.withNormalOperation { ensureWorkspace(); archive.inspect(source, password) } }
     } finally { password?.fill('\u0000') }
 
-    data class FileCheck(val summary: AppBackupSummary, val desktopOnly: Boolean, val historicalDesktopV5Settings: Boolean = false)
+    data class FileCheck(val summary: AppBackupSummary, val desktopOnly: Boolean, val historicalDesktopV5Settings: Boolean = false,
+        val missingHistoricalAvatars: Int = 0)
 
     /** Current GUI check authenticates the whole streamed file without preparing legacy replacement. */
     suspend fun verifyFile(source: Path, password: CharArray?): FileCheck = try {
@@ -117,7 +124,8 @@ internal class DesktopFullBackupService(
             }) { context.ensureActive() }
             val m = verified.manifest
             FileCheck(AppBackupSummary(m.formatVersion, m.appVersionCode, m.appVersionName, m.createdAt,
-                m.sourceFilesRoot, m.counts, m.fileCount, m.totalBytes, m.preferencesSha256), desktopOnly || verified.historicalDesktopV5Settings, verified.historicalDesktopV5Settings)
+                m.sourceFilesRoot, m.counts, m.fileCount, m.totalBytes, m.preferencesSha256), desktopOnly || verified.historicalDesktopV5Settings,
+                verified.historicalDesktopV5Settings, verified.missingHistoricalAvatars)
         } }
     } finally { password?.fill('\u0000') }
 

@@ -18,7 +18,7 @@ internal object DesktopFullBackupSource {
     }
     class Verified internal constructor(val manifest: InspectionManifest, val inventory: Map<String, AppBackupFileRecord>,
         val encrypted: Boolean, val sourceHash: String, val sourceBytes: Long,
-        val historicalDesktopV5Settings: Boolean = false) {
+        val historicalDesktopV5Settings: Boolean = false, val missingHistoricalAvatars: Int = 0) {
         override fun toString() = "VerifiedFullBackup(code=${manifest.appVersionCode},files=${inventory.size})"
     }
     class Refusal(val stage: String) : IllegalArgumentException("FULL_BACKUP_SOURCE_$stage") {
@@ -64,6 +64,7 @@ internal object DesktopFullBackupSource {
                 var incompatibleHistoricalDesktopV5 = false
                 val seen = linkedMapOf<String, AppBackupFileRecord>()
                 val entities = linkedMapOf<String, JsonObject>()
+                val historicalAvatarReferences = mutableListOf<String>()
                 phase = "AUTHENTICATION_ZIP"
                 AppBackupCodec.decryptingForInspection(input, password) { version, protected -> envelope = version; encrypted = protected; sourceEncrypted = protected }.use { plain ->
                     StrictBackupZipReader.walk(plain, active = active) { name, raw ->
@@ -110,6 +111,10 @@ internal object DesktopFullBackupSource {
                                                 "moment_posts" -> {
                                                     if (DesktopMomentBackupExtension.FIELD in value) incompatible84 = true
                                                     DesktopMomentBackupExtension.snapshot(value)
+                                                    value["senderAvatar"]?.jsonPrimitive?.contentOrNull
+                                                        ?.takeIf { it.startsWith(DesktopBackupPolicy.PREFIX) }?.let {
+                                                            historicalAvatarReferences += DesktopBackupPolicy.path(it.removePrefix(DesktopBackupPolicy.PREFIX))
+                                                        }
                                                 }
                                                 "moment_tasks" -> backupJson.decodeFromJsonElement<MomentTaskSnapshot>(value)
                                                 else -> {
@@ -166,7 +171,9 @@ internal object DesktopFullBackupSource {
                 m.scope?.let { DesktopBackupReadOnlyInspector().scopeReport(it, counts, entities) }
                 active()
                 require(channel.position() == size && Files.size(source) == size)
-                return Verified(m, seen.toMap(), encrypted, hex(digest.digest()), size, historicalDesktopV5)
+                val missingAvatars = if (m.appVersionCode in 85..CURRENT_DESKTOP_BACKUP_CODE)
+                    historicalAvatarReferences.count { it.startsWith("images/") && it !in seen } else 0
+                return Verified(m, seen.toMap(), encrypted, hex(digest.digest()), size, historicalDesktopV5, missingAvatars)
             }
         } catch (cancelled: java.util.concurrent.CancellationException) { throw cancelled
         } catch (failure: StrictBackupZipReader.Refusal) {

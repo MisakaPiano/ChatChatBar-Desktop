@@ -42,8 +42,9 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
 
     fun export(password: CharArray?, includeCredentials: Boolean = false, selection: AppBackupSelection? = null) = action(password, exporting = true, task = DesktopBackupTask.EXPORT) { cancelled ->
         val path = picker.pickSaveFile(TYPE, "ChatBar.cbbackup") ?: return@action cancelled("已取消保存，可以重新选择目标")
-        service.exportModern(path, password, includeCredentials, selection)
-        val message = if (includeCredentials) "备份已按所选范围导出，包含所选凭据及关联模型密钥。" else "备份已导出至新文件，不含 API 密钥等凭据。"
+        val result = service.exportModernWithReport(path, password, includeCredentials, selection)
+        val message = (if (includeCredentials) "备份已按所选范围导出，包含所选凭据及关联模型密钥。" else "备份已导出至新文件，不含 API 密钥等凭据。") +
+            DesktopHistoricalMomentAvatarPolicy.warning(result.missingHistoricalAvatars)
         mutable.update { it.copy(exportResult = DesktopBackupExportResult(true, message, path.toAbsolutePath().normalize())) }
         message
     }
@@ -72,7 +73,8 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
         passwordFile = null
         mutable.update { it.copy(summary = result.summary, desktopOnly = result.desktopOnly) }
         "文件完整性与格式校验完成；没有导入或替换当前数据。恢复请使用合并预览。" +
-            if (result.historicalDesktopV5Settings) " 已保留旧 Desktop 生图设置扩展，不代表官方 1.4.7 支持。" else ""
+            (if (result.historicalDesktopV5Settings) " 已保留旧 Desktop 生图设置扩展，不代表官方 1.4.7 支持。" else "") +
+            DesktopHistoricalMomentAvatarPolicy.warning(result.missingHistoricalAvatars)
     }
 
     fun restore() = action(null, task = DesktopBackupTask.RESTORE_PREPARATION) {

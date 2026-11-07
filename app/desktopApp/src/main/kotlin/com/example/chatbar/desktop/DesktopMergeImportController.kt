@@ -70,7 +70,8 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
             imagePreferencesChoiceRequired = result.imagePreferencesChoiceRequired,
             desktopParticipation = result.hasDesktopParticipation, historicalDesktopV5Settings = result.historicalDesktopV5Settings) }
         passwordFile = null
-        return "已校验备份。请选择冲突处理方式；电脑当前数据尚未改变。"
+        return "已校验备份。请选择冲突处理方式；电脑当前数据尚未改变。" +
+            DesktopHistoricalMomentAvatarPolicy.warning(result.missingHistoricalAvatars)
     }
     fun commit(choices: Map<String, DesktopMergePreview.Choice>, credentials: Map<ImportCredentialKind, DesktopMergeCredentials.Choice>,
         imagePreferencesFromPhone: Boolean?, confirmed: Boolean) = action(null, DesktopMergeTask.COMMIT) { outcome ->

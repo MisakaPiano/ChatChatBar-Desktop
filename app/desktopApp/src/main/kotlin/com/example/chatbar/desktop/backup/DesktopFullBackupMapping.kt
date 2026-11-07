@@ -12,7 +12,8 @@ import kotlinx.serialization.json.*
 /** Maps only registered resource fields, preserving logical IDs, versions, source turns and order. */
 internal class DesktopFullBackupMapping(private val root: Path, private val asset: (String) -> ByteArray = { error("BUNDLED_ASSET_UNAVAILABLE") }) {
     data class Export(val directory: Path, val files: Map<String, Path>, val proof: Map<String, String>, val preferences: BackupPreferences,
-        private val scratch: DesktopBackupScratch, val credentialFreeSource: Boolean = false) : AutoCloseable { override fun close() = scratch.close() }
+        private val scratch: DesktopBackupScratch, val credentialFreeSource: Boolean = false,
+        val missingHistoricalAvatars: Int = 0) : AutoCloseable { override fun close() = scratch.close() }
     data class Restore(val directory: Path, val files: Map<String, Path>, val proof: Map<String, String>,
         private val scratch: DesktopBackupScratch) : AutoCloseable { override fun close() = scratch.close() }
 
@@ -82,6 +83,8 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
         var preferences = BackupPreferences()
         var entityType = ""
         var entityLabel = ""
+        var missingHistoricalAvatars = 0
+        val absentAvatars = linkedSetOf<Path>()
         fun resource(value: String, fields: List<String>): String {
             if (value.startsWith("chatbar-vibe-file:")) {
                 val hash = value.removePrefix("chatbar-vibe-file:")
@@ -103,9 +106,17 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
                 }
                 return DesktopBackupPolicy.PREFIX + relative
             }
-            val relative = DesktopBackupPolicy.sourceRelative(value, root) ?: return value
+            val historicalAvatar = DesktopHistoricalMomentAvatarPolicy.allows(entityType, fields, wireVersionCode)
+            val external = if (historicalAvatar) DesktopHistoricalMomentAvatarPolicy.missingExternal(value, root) else null
+            val relative = external?.first ?: DesktopBackupPolicy.sourceRelative(value, root) ?: return value
             val inline = entityType == "pending_deletions" || fields.any { it in setOf("imageResources", "audioResources", "pendingDeletedAssets") }
-            if (relative !in proof && !inline) throw DesktopBackupMissingResource(entityLabel, relative.substringAfterLast('/'))
+            if (relative !in proof && !inline) {
+                if (!historicalAvatar || !relative.startsWith("images/")) throw DesktopBackupMissingResource(entityLabel, relative.substringAfterLast('/'))
+                val absent = external?.second ?: root.resolve(relative)
+                DesktopHistoricalMomentAvatarPolicy.requireMissing(absent)
+                absentAvatars.add(absent)
+                missingHistoricalAvatars++
+            }
             if (relative in proof) selectedMedia += relative
             return DesktopBackupPolicy.PREFIX + relative
         }
@@ -153,7 +164,8 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
             }
         }
         check(inventory(maximum) == proof) { "SOURCE_CHANGED_DURING_EXPORT" }
-        return Export(directory, files, proof, preferences, scratch, forMerge)
+        absentAvatars.forEach(DesktopHistoricalMomentAvatarPolicy::requireMissing)
+        return Export(directory, files, proof, preferences, scratch, forMerge, missingHistoricalAvatars)
         } catch (error: Throwable) {
             try { scratch.close() } catch (cleanup: Throwable) { error.addSuppressed(cleanup) }
             throw error
@@ -194,7 +206,13 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
                 value.startsWith("chatbar-save-slot-") || value.startsWith("chatbar-vibe-file:")) return value
             check(value.startsWith(DesktopBackupPolicy.PREFIX)) { "UNMAPPED_SOURCE_DEVICE_PATH" }
             val original = DesktopBackupPolicy.path(value.removePrefix(DesktopBackupPolicy.PREFIX))
-            val destination = destinations[original]
+            val destination = destinations[original] ?: if (original.startsWith("images/") &&
+                DesktopHistoricalMomentAvatarPolicy.allows(entityType, fields, wireVersionCode)) {
+                val absent = DesktopBackupPolicy.desktopName(original)
+                check(destinations.values.none { it.equals(absent, ignoreCase = true) }) { "HISTORICAL_AVATAR_TARGET_COLLISION" }
+                DesktopHistoricalMomentAvatarPolicy.requireMissing(root.resolve(absent))
+                absent
+            } else null
             if (destination == null && (entityType == "pending_deletions" || fields.any { it in setOf("imageResources", "audioResources", "pendingDeletedAssets") })) {
                 return root.resolve(DesktopBackupPolicy.desktopName(original)).toString()
             }

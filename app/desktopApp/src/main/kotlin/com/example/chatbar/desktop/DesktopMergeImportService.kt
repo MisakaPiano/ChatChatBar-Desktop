@@ -33,6 +33,7 @@ internal class DesktopMergeImportService(
         val versionName get() = phone.source.manifest.appVersionName
         val historicalDesktopV5Settings get() = phone.source.historicalDesktopV5Settings
         val fileCount get() = phone.source.inventory.size
+        val missingHistoricalAvatars get() = phone.source.missingHistoricalAvatars + computer.missingHistoricalAvatars
         val hasDesktopParticipation get() = phone.hasDesktopParticipation ||
             phone.secrets.metadata.any { it.kind in setOf(ImportCredentialKind.DESKTOP_LLM_ACCOUNTS,
                 ImportCredentialKind.DESKTOP_NOVELAI_ACCOUNTS, ImportCredentialKind.DESKTOP_FISH_ACCOUNTS) && it.state == CredentialFieldState.NONEMPTY }

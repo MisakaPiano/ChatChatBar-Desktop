@@ -56,7 +56,8 @@ internal object DesktopMergeRootPreparation {
                 catalog[path] = DesktopMergeSaveSlotPackage.catalog(requireNotNull(phone.files["save_slot_packages/$packageName"]), slot, workspace)
             }
             val context = currentCoroutineContext()
-            val plan = DesktopMergeDestinationPlan.create(selection, pcMedia, phoneMedia, catalog, workspace) { context.ensureActive() }.also { preparedPlan = it }
+            val plan = DesktopMergeDestinationPlan.create(selection, pcMedia, phoneMedia, catalog, workspace,
+                phone.source.manifest.appVersionCode) { context.ensureActive() }.also { preparedPlan = it }
             var expectedBytes = 0L
             for (file in computer.files.values + phone.files.values) expectedBytes += Files.size(file)
             check(Files.getFileStore(targetRoot).usableSpace >= expectedBytes * 3 + (32L shl 20)) { "MERGE_PREPARATION_SPACE" }

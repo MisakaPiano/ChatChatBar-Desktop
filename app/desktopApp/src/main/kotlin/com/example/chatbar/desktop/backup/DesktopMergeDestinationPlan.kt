@@ -27,7 +27,8 @@ internal class DesktopMergeDestinationPlan private constructor(
     companion object {
         fun create(selection: DesktopMergePreview.Selection, computerMedia: Map<String, String>, phoneMedia: Map<String, String>,
             catalogs: Map<String, DesktopMergeSaveSlotPackage.Catalog> = emptyMap(),
-            recordWorkspace: java.nio.file.Path? = null, checkActive: () -> Unit = {}): DesktopMergeDestinationPlan {
+            recordWorkspace: java.nio.file.Path? = null, incomingCode: Int = 84,
+            checkActive: () -> Unit = {}): DesktopMergeDestinationPlan {
             val recordScratch = recordWorkspace?.let { DesktopBackupScratch.create(it, "merge-records-") }
             try {
             checkActive()
@@ -82,16 +83,24 @@ internal class DesktopMergeDestinationPlan private constructor(
                 phoneNames[path] = if (selection.phone.isEmpty() && computerMedia[path] == hash)
                     pcNames.getValue(path) else addMedia(Side.PHONE, path, hash)
             }
-            fun resource(names: Map<String, String>, value: String, fields: List<String>): String {
+            val missingNames = linkedMapOf<Pair<Side, String>, String>()
+            fun resource(side: Side, entity: String, sourceNames: Map<String, String>, value: String, fields: List<String>): String {
                 if (value.startsWith("chatbar-save-slot-") || value.startsWith("https:") || value.startsWith("http:") || value.isBlank()) return value
                 if (value.startsWith("chatbar-vibe-file:")) {
                     val path = "novelai-vibe-payloads/" + value.removePrefix("chatbar-vibe-file:")
-                    require(names[path] == path) { "MERGE_VIBE_REFERENCE" }; return value
+                    require(sourceNames[path] == path) { "MERGE_VIBE_REFERENCE" }; return value
                 }
                 require(value.startsWith(DesktopBackupPolicy.PREFIX)) { "MERGE_RESOURCE_NOT_PORTABLE" }
-                val relative = value.removePrefix(DesktopBackupPolicy.PREFIX)
+                val relative = DesktopBackupPolicy.path(value.removePrefix(DesktopBackupPolicy.PREFIX))
                 // Pending cleanup references are not permission to synthesize or select a different file.
-                val mapped = names[relative] ?: error("MERGE_RESOURCE_NOT_SELECTED")
+                val mapped = sourceNames[relative] ?: if (relative.startsWith("images/") && DesktopHistoricalMomentAvatarPolicy.allows(
+                    entity, fields, if (side == Side.COMPUTER) CURRENT_DESKTOP_BACKUP_CODE else incomingCode)) {
+                    missingNames.getOrPut(side to relative) {
+                        val absent = "images/missing-avatar-" + DesktopBackupPolicy.digest("$side:$relative".toByteArray(Charsets.UTF_8)) + ".bin"
+                        require(names.add(absent.lowercase())) { "MERGE_MISSING_AVATAR_COLLISION" }
+                        absent
+                    }
+                } else error("MERGE_RESOURCE_NOT_SELECTED")
                 return DesktopBackupPolicy.PREFIX + mapped
             }
             fun add(record: DesktopMergeRecord, mapped: JsonObject, settings: Boolean) {
@@ -114,7 +123,7 @@ internal class DesktopMergeDestinationPlan private constructor(
             }
             for (unit in selection.computer) for ((path, value) in unit.records) {
                 checkActive()
-                val mapped = backupJson.parseToJsonElement(DesktopBackupPolicy.mapResources(value) { reference, fields -> resource(pcNames, reference, fields) }.toString(Charsets.UTF_8)).jsonObject
+                val mapped = backupJson.parseToJsonElement(DesktopBackupPolicy.mapResources(value) { reference, fields -> resource(Side.COMPUTER, path, pcNames, reference, fields) }.toString(Charsets.UTF_8)).jsonObject
                 add(DesktopMergeRecord(path, value), mapped, unit.category == "app_settings")
             }
             for (unit in selection.phone) {
@@ -124,10 +133,10 @@ internal class DesktopMergeDestinationPlan private constructor(
                     // A zero fingerprint still admits equal-count stale indexes. Extra retained owners
                     // require the normal repository to rebuild from the actual merged message files.
                     if (record.type == "chat_message_indexes" && record.text("sessionId") in rebuiltMessageSessions) continue
-                    var mapped = mapper.rewrite(record) { reference, fields -> resource(phoneNames, reference, fields) }
+                    var mapped = mapper.rewrite(record) { reference, fields -> resource(Side.PHONE, path, phoneNames, reference, fields) }
                     retainedMedia.fields(record)?.let { retained ->
                         val mappedMedia = backupJson.parseToJsonElement(DesktopBackupPolicy.mapResources(retained) { reference, fields ->
-                            resource(pcNames, reference, fields)
+                            resource(Side.COMPUTER, path, pcNames, reference, fields)
                         }.toString(Charsets.UTF_8)).jsonObject
                         mapped = JsonObject(mapped + mappedMedia)
                     }
