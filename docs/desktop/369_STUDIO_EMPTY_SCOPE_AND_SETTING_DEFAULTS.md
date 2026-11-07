@@ -1,0 +1,9 @@
+# Studio 空范围与所选设置默认值
+
+完成两项实际导入缺口：导出明确保留“已选Studio设置但记录为空”；更新、复制、按范围替换三模式按此范围替换Studio设置整族（含Desktop编辑历史），不改未选生成历史。三种模式对勾选范围内缺失的AppSettings字段采用类型默认值，包括整个设置记录缺失；有会话导入/已选朋友圈时分别处理lastSeen。默认手动合并仍服从用户KEEP/SKIP/TAKE，legacy无scope不获得新缺省。
+
+当前R122原20328B/1772c3ed…e1d28：五XML、12完整PASS、0失败/错误/跳过、空stderr，SHA/CRC/source已核。包含真实Service→Writer→认证Source→模式预览→受保护新根发布→实际仓库重开，原PC/备份保全；新Studio first1、missingSettings2、Inspector完整1、受影响ModePlan6/Lifecycle2。Studio6与settings9内部分支不拆计数，原有重叠方法不累加；R116独立Studio第二完整方法分源复用。
+
+有效旧反例：校正同fixture的R119原13709B/dfa7abaa…3522a两FAIL分别停在selected-empty标志及Desktop-only history默认标志；R121原13038B/fcfff427…f1038一个真实FAIL停在缺省theme保留DARK，另一manual/legacy方法PASS。后续未达分支不扩大为旧失败。
+
+原R115/116副本ID期待错误、R116把已支持88当未知版本的期待错误分别保留；R117/R118新Float夹具编译0body与R120终态cancel0保留，不能称业务回归失败。当前用例按实际copy ID与CURRENT+1核对，未修改正确生产行为迎合测试。R116整体35XMLPASS+2FAIL，不能称37PASS。全部原件和源边界详见 OWNER_STUDIO_SETTINGS_SCOPE_R119_R121_R122_COMPLETE.json。尚非整个Engine/314/正式1.0或真人验收结论；集中批次交付规则不变。
