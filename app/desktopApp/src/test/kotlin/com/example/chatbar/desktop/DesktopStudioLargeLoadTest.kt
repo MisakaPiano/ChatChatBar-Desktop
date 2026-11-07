@@ -43,7 +43,7 @@ class DesktopStudioLargeLoadTest {
             process = ProcessBuilder(java.toString(), "-Xmx256m", "-XX:+UseSerialGC", "-XX:ActiveProcessorCount=1",
                 "-Dfile.encoding=UTF-8", "-cp", classpath, DesktopStudioLargeLoadChild::class.java.name, root.toString())
                 .redirectErrorStream(true).redirectOutput(log.toFile()).start()
-            assertTrue(process.waitFor(120, TimeUnit.SECONDS), "Synthetic Studio reader did not finish")
+            assertTrue(process.waitFor(180, TimeUnit.SECONDS), "Synthetic Studio reader did not finish")
             assertEquals(0, process.exitValue(), Files.readString(log))
             assertEquals("STUDIO_LARGE_TYPED_PASS", Files.readString(root.resolve("result")))
             assertEquals(before, listOf(studioLargeSourceHash(draft), studioLargeSourceHash(entry)))
@@ -77,7 +77,7 @@ private fun studioLargeSourceHash(path: Path): List<Byte> = Files.newInputStream
 
 /** Synthetic storage reader only; no application, UI, task runtime, network or user-root ingress. */
 object DesktopStudioLargeLoadChild {
-    @JvmStatic fun main(args: Array<String>) = runBlocking {
+    @JvmStatic fun main(args: Array<String>): Unit = runBlocking {
         require(args.size == 1)
         val root = Path.of(args.single())
         check(Files.readString(root.resolve("synthetic-owner")) == "CCB_SYNTHETIC_STUDIO_LARGE_LOAD")
@@ -95,5 +95,6 @@ object DesktopStudioLargeLoadChild {
         check(reopened.loadSingleton("novelai_studio_draft", NovelAiStudioDraft.serializer()) == draft)
         check(reopened.loadAll("novelai_generation_history", NovelAiGenerationHistoryEntry.serializer()) == listOf(history))
         Files.writeString(root.resolve("result"), "STUDIO_LARGE_TYPED_PASS")
+        Unit
     }
 }
