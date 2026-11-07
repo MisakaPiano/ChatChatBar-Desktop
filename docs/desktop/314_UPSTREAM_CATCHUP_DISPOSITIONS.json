@@ -1848,6 +1848,258 @@
       "evidence": [
         "OWNER_EIGHT_RELEASE_NARRATIVE_SUPPORT_DELTAS.json"
       ]
+    },
+    {
+      "id": "BACKUP_SERVICE_COMPLETE_D3CF2AA9_ACTUAL_NATIVE_FLOW",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete d3/1a Service deltas mapped to actual native selection/catalog/optional password and same-file retry, strict streamed inspection, explicit manual choices and modern mode previews, progress/cancellation join, frozen-source recheck, safe export publication and independent-root credential/activation owners. Fixed typed previous-operation records now survive process exit without granting recovery/retry/deletion authority; journal IO failure cannot relabel completed export/publication. R135 twelve whole methods include actual export, modern lifecycle, Recovery and inline portable-key assertions at its initial diagnostics path; R136 five at intermediate backups subdirectory; R137 five at final ordinary backups files additionally exercise actual snapshot payload exclusion and listing. These overlap, not22 new tests. Aggregate stage/file progress is native UI equivalence, not Android per-category count equality. Default MERGE_CHOICES, legacy in-place journal vs modern new-root publication, dormant official Moments and84..88 limits remain distinct. Engine final transient/fold work remains pending R138/R139; no whole1.0 or human acceptance claim.",
+      "reviewSource": "59e178d1d1eb739ba6ff07da64bebb3dc654aa5c",
+      "evidence": [
+        "OWNER_BACKUP_SERVICE_TWO_DELTAS_AND_STATUS_R135_R137.json"
+      ]
+    },
+    {
+      "id": "BACKUP_SERVICE_COMPLETE_1A692604_ACTUAL_NATIVE_FLOW",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete d3/1a Service deltas mapped to actual native selection/catalog/optional password and same-file retry, strict streamed inspection, explicit manual choices and modern mode previews, progress/cancellation join, frozen-source recheck, safe export publication and independent-root credential/activation owners. Fixed typed previous-operation records now survive process exit without granting recovery/retry/deletion authority; journal IO failure cannot relabel completed export/publication. R135 twelve whole methods include actual export, modern lifecycle, Recovery and inline portable-key assertions at its initial diagnostics path; R136 five at intermediate backups subdirectory; R137 five at final ordinary backups files additionally exercise actual snapshot payload exclusion and listing. These overlap, not22 new tests. Aggregate stage/file progress is native UI equivalence, not Android per-category count equality. Default MERGE_CHOICES, legacy in-place journal vs modern new-root publication, dormant official Moments and84..88 limits remain distinct. Engine final transient/fold work remains pending R138/R139; no whole1.0 or human acceptance claim.",
+      "reviewSource": "59e178d1d1eb739ba6ff07da64bebb3dc654aa5c",
+      "evidence": [
+        "OWNER_BACKUP_SERVICE_TWO_DELTAS_AND_STATUS_R135_R137.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_OPERATION_GUIDE_SUPPORT_5E4F914BD284EF66",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
+      "reviewSource": "59e178d1d1eb739ba6ff07da64bebb3dc654aa5c",
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_OPERATION_GUIDE_SUPPORT_BF8F5D6EF2EBE0E3",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
+      "reviewSource": "59e178d1d1eb739ba6ff07da64bebb3dc654aa5c",
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_OPERATION_GUIDE_SUPPORT_1BD1314A88854F7C",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
+      "reviewSource": "59e178d1d1eb739ba6ff07da64bebb3dc654aa5c",
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_OPERATION_GUIDE_SUPPORT_92F3F3CFFA292C04",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
+      "reviewSource": "59e178d1d1eb739ba6ff07da64bebb3dc654aa5c",
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_OPERATION_GUIDE_SUPPORT_B1BD2D7D06A32F1A",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
+      "reviewSource": "59e178d1d1eb739ba6ff07da64bebb3dc654aa5c",
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_OPERATION_GUIDE_SUPPORT_38277688F8BCA2CE",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
+      "reviewSource": "59e178d1d1eb739ba6ff07da64bebb3dc654aa5c",
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_OPERATION_GUIDE_SUPPORT_6514269B33091548",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
+      "reviewSource": "59e178d1d1eb739ba6ff07da64bebb3dc654aa5c",
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_OPERATION_GUIDE_SUPPORT_92CECB9F91410BBD",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
+      "reviewSource": "59e178d1d1eb739ba6ff07da64bebb3dc654aa5c",
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_OPERATION_GUIDE_SUPPORT_CAF4EC5A0C9C271E",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
+      "reviewSource": "59e178d1d1eb739ba6ff07da64bebb3dc654aa5c",
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_OPERATION_GUIDE_SUPPORT_7DEEC32416660FEA",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
+      "reviewSource": "59e178d1d1eb739ba6ff07da64bebb3dc654aa5c",
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_OPERATION_GUIDE_SUPPORT_E8B96AFFEE2913E4",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
+      "reviewSource": "59e178d1d1eb739ba6ff07da64bebb3dc654aa5c",
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_OPERATION_GUIDE_SUPPORT_3B22850848A0A3A5",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
+      "reviewSource": "59e178d1d1eb739ba6ff07da64bebb3dc654aa5c",
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_OPERATION_GUIDE_SUPPORT_15D36C301819A11A",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
+      "reviewSource": "59e178d1d1eb739ba6ff07da64bebb3dc654aa5c",
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_OPERATION_GUIDE_SUPPORT_2483E2053B359074",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
+      "reviewSource": "59e178d1d1eb739ba6ff07da64bebb3dc654aa5c",
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_OPERATION_GUIDE_SUPPORT_A00860B769B1DE65",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
+      "reviewSource": "59e178d1d1eb739ba6ff07da64bebb3dc654aa5c",
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_OPERATION_GUIDE_SUPPORT_9007158CB80CE075",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
+      "reviewSource": "59e178d1d1eb739ba6ff07da64bebb3dc654aa5c",
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_OPERATION_GUIDE_SUPPORT_6486EE08233EA799",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
+      "reviewSource": "59e178d1d1eb739ba6ff07da64bebb3dc654aa5c",
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_OPERATION_GUIDE_SUPPORT_C17F22FBDF8EF110",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
+      "reviewSource": "59e178d1d1eb739ba6ff07da64bebb3dc654aa5c",
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_OPERATION_GUIDE_SUPPORT_64FEF0EC424BDE96",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
+      "reviewSource": "59e178d1d1eb739ba6ff07da64bebb3dc654aa5c",
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_OPERATION_GUIDE_SUPPORT_FA0273A8CBB5C214",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
+      "reviewSource": "59e178d1d1eb739ba6ff07da64bebb3dc654aa5c",
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_OPERATION_GUIDE_SUPPORT_C8C89510F26F6AF4",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
+      "reviewSource": "59e178d1d1eb739ba6ff07da64bebb3dc654aa5c",
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_OPERATION_GUIDE_SUPPORT_7B6FB17DEDFE7D2B",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
+      "reviewSource": "59e178d1d1eb739ba6ff07da64bebb3dc654aa5c",
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_OPERATION_GUIDE_SUPPORT_AF02A514FA5BB639",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
+      "reviewSource": "59e178d1d1eb739ba6ff07da64bebb3dc654aa5c",
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_OPERATION_GUIDE_SUPPORT_DFDEB38F086712A8",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
+      "reviewSource": "59e178d1d1eb739ba6ff07da64bebb3dc654aa5c",
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_OPERATION_GUIDE_SUPPORT_84B27A73337974D5",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
+      "reviewSource": "59e178d1d1eb739ba6ff07da64bebb3dc654aa5c",
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_OPERATION_GUIDE_SUPPORT_A1A9967417E3F801",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
+      "reviewSource": "59e178d1d1eb739ba6ff07da64bebb3dc654aa5c",
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json"
+      ]
     }
   ],
   "deltas": [
@@ -7523,11 +7775,16 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_OPERATION_GUIDE_SUPPORT_5E4F914BD284EF66"
+      ],
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "48f90b5c7159f928db4537b8a1ef989e16d839b4:.agents/skills/chatbar-image-generation-runtime/SKILL.md",
@@ -7797,11 +8054,16 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_OPERATION_GUIDE_SUPPORT_BF8F5D6EF2EBE0E3"
+      ],
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "bbc4907cac79397be882af4ccef91aec7d397d0c:.agents/skills/chatbar-character-card-ai/SKILL.md",
@@ -8799,11 +9061,16 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete d3/1a Service deltas mapped to actual native selection/catalog/optional password and same-file retry, strict streamed inspection, explicit manual choices and modern mode previews, progress/cancellation join, frozen-source recheck, safe export publication and independent-root credential/activation owners. Fixed typed previous-operation records now survive process exit without granting recovery/retry/deletion authority; journal IO failure cannot relabel completed export/publication. R135 twelve whole methods include actual export, modern lifecycle, Recovery and inline portable-key assertions at its initial diagnostics path; R136 five at intermediate backups subdirectory; R137 five at final ordinary backups files additionally exercise actual snapshot payload exclusion and listing. These overlap, not22 new tests. Aggregate stage/file progress is native UI equivalence, not Android per-category count equality. Default MERGE_CHOICES, legacy in-place journal vs modern new-root publication, dormant official Moments and84..88 limits remain distinct. Engine final transient/fold work remains pending R138/R139; no whole1.0 or human acceptance claim.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "BACKUP_SERVICE_COMPLETE_D3CF2AA9_ACTUAL_NATIVE_FLOW"
+      ],
+      "evidence": [
+        "OWNER_BACKUP_SERVICE_TWO_DELTAS_AND_STATUS_R135_R137.json",
+        "docs/desktop/383_BACKUP_SERVICE_STATUS_AND_NATIVE_FLOW.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/backup/BackupArchive.kt",
@@ -10241,11 +10508,16 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_OPERATION_GUIDE_SUPPORT_1BD1314A88854F7C"
+      ],
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:doc/handoff.md",
@@ -10261,8 +10533,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
       "candidateOwners": [
         {
           "path": "doc/handoff.md",
@@ -10271,8 +10543,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_OPERATION_GUIDE_SUPPORT_92F3F3CFFA292C04"
+      ],
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "1198a13cf3008de1358b8a69aa5e40b64797c8d9:app/app/build.gradle.kts",
@@ -10345,8 +10622,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
       "candidateOwners": [
         {
           "path": "doc/handoff.md",
@@ -10355,8 +10632,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_OPERATION_GUIDE_SUPPORT_B1BD2D7D06A32F1A"
+      ],
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "1d2850a4ed34fca614ce9809acd48e959d8a9d08:.agents/skills/chatbar-app-backup/SKILL.md",
@@ -10694,8 +10976,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
       "candidateOwners": [
         {
           "path": "doc/handoff.md",
@@ -10704,8 +10986,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_OPERATION_GUIDE_SUPPORT_38277688F8BCA2CE"
+      ],
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "1d2850a4ed34fca614ce9809acd48e959d8a9d08:doc/image_history_regression_2026_10_12.md",
@@ -10721,11 +11008,16 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_OPERATION_GUIDE_SUPPORT_6514269B33091548"
+      ],
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:.agents/skills/chatbar-app-backup/SKILL.md",
@@ -11068,11 +11360,16 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete d3/1a Service deltas mapped to actual native selection/catalog/optional password and same-file retry, strict streamed inspection, explicit manual choices and modern mode previews, progress/cancellation join, frozen-source recheck, safe export publication and independent-root credential/activation owners. Fixed typed previous-operation records now survive process exit without granting recovery/retry/deletion authority; journal IO failure cannot relabel completed export/publication. R135 twelve whole methods include actual export, modern lifecycle, Recovery and inline portable-key assertions at its initial diagnostics path; R136 five at intermediate backups subdirectory; R137 five at final ordinary backups files additionally exercise actual snapshot payload exclusion and listing. These overlap, not22 new tests. Aggregate stage/file progress is native UI equivalence, not Android per-category count equality. Default MERGE_CHOICES, legacy in-place journal vs modern new-root publication, dormant official Moments and84..88 limits remain distinct. Engine final transient/fold work remains pending R138/R139; no whole1.0 or human acceptance claim.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "BACKUP_SERVICE_COMPLETE_1A692604_ACTUAL_NATIVE_FLOW"
+      ],
+      "evidence": [
+        "OWNER_BACKUP_SERVICE_TWO_DELTAS_AND_STATUS_R135_R137.json",
+        "docs/desktop/383_BACKUP_SERVICE_STATUS_AND_NATIVE_FLOW.md"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:app/app/src/main/java/com/example/chatbar/domain/backup/BackupArchive.kt",
@@ -11893,11 +12190,16 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_OPERATION_GUIDE_SUPPORT_92CECB9F91410BBD"
+      ],
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:doc/app_backup_manual_acceptance.md",
@@ -11913,11 +12215,16 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_OPERATION_GUIDE_SUPPORT_CAF4EC5A0C9C271E"
+      ],
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:doc/handoff.md",
@@ -11933,8 +12240,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
       "candidateOwners": [
         {
           "path": "doc/handoff.md",
@@ -11943,8 +12250,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_OPERATION_GUIDE_SUPPORT_7DEEC32416660FEA"
+      ],
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "9841e2f216ec6de5f19ecbcdd53e9a0c0ee3ad3d:app/app/build.gradle.kts",
@@ -12017,11 +12329,16 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_OPERATION_GUIDE_SUPPORT_E8B96AFFEE2913E4"
+      ],
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "979cb505958dffb1b6d64a8de657434f198ffa96:doc/handoff.md",
@@ -12037,8 +12354,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
       "candidateOwners": [
         {
           "path": "doc/handoff.md",
@@ -12047,8 +12364,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_OPERATION_GUIDE_SUPPORT_3B22850848A0A3A5"
+      ],
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "81f5449803698a179549530c404e11018f9a62f8:.agents/skills/chatbar-app-backup/SKILL.md",
@@ -12181,11 +12503,16 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_OPERATION_GUIDE_SUPPORT_15D36C301819A11A"
+      ],
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "81f5449803698a179549530c404e11018f9a62f8:doc/app_backup_manual_acceptance.md",
@@ -12201,11 +12528,16 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_OPERATION_GUIDE_SUPPORT_2483E2053B359074"
+      ],
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "81f5449803698a179549530c404e11018f9a62f8:doc/handoff.md",
@@ -12221,8 +12553,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
       "candidateOwners": [
         {
           "path": "doc/handoff.md",
@@ -12231,8 +12563,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_OPERATION_GUIDE_SUPPORT_A00860B769B1DE65"
+      ],
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "b4fa75d296680f777be095f3121ad0c4db979f17:app/app/build.gradle.kts",
@@ -12278,11 +12615,16 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_OPERATION_GUIDE_SUPPORT_9007158CB80CE075"
+      ],
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "58023edf48f40764c481d1367f62bc048c8a5059:doc/handoff.md",
@@ -12298,8 +12640,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
       "candidateOwners": [
         {
           "path": "doc/handoff.md",
@@ -12308,8 +12650,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_OPERATION_GUIDE_SUPPORT_6486EE08233EA799"
+      ],
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "fc77c44284e84d075810072379f5d5fe407b47ac:app/app/src/test/java/com/example/chatbar/domain/image/NovelAiSamplingAlignmentTest.kt",
@@ -16795,8 +17142,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
       "candidateOwners": [
         {
           "path": "doc/handoff.md",
@@ -16805,8 +17152,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_OPERATION_GUIDE_SUPPORT_C17F22FBDF8EF110"
+      ],
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "b031c0861c1fc8951d1f0602877dab7cb9972fd8:doc/release_1_4_8_coverage.md",
@@ -16960,8 +17312,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
       "candidateOwners": [
         {
           "path": "doc/handoff.md",
@@ -16970,8 +17322,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_OPERATION_GUIDE_SUPPORT_64FEF0EC424BDE96"
+      ],
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "5c22fdfaa42e6eccbad4e46dbb32fb6d6ce4ddfa:doc/release_1_4_8_coverage.md",
@@ -17095,8 +17452,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
       "candidateOwners": [
         {
           "path": "doc/handoff.md",
@@ -17105,8 +17462,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_OPERATION_GUIDE_SUPPORT_FA0273A8CBB5C214"
+      ],
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "6f8a09a8bd24c274b08a56cadc37a82380bfe625:doc/release_1_4_8_coverage.md",
@@ -17230,8 +17592,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
       "candidateOwners": [
         {
           "path": "doc/handoff.md",
@@ -17240,8 +17602,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_OPERATION_GUIDE_SUPPORT_C8C89510F26F6AF4"
+      ],
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "e9dff76dd2c99c1004c52325e1f29a1a8300e7fc:doc/release_1_4_8_coverage.md",
@@ -17282,8 +17649,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
       "candidateOwners": [
         {
           "path": "doc/handoff.md",
@@ -17292,8 +17659,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_OPERATION_GUIDE_SUPPORT_7B6FB17DEDFE7D2B"
+      ],
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "986a39ecb505142e4441267c38ad5f6bf64c08dd:doc/release_1_4_8_coverage.md",
@@ -18226,8 +18598,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
       "candidateOwners": [
         {
           "path": "doc/handoff.md",
@@ -18236,8 +18608,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_OPERATION_GUIDE_SUPPORT_AF02A514FA5BB639"
+      ],
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "286916e34ba3b401b7115d5ea9c9ff096571e607:.agents/skills/chatbar-feature-map/SKILL.md",
@@ -19061,8 +19438,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
       "candidateOwners": [
         {
           "path": "doc/handoff.md",
@@ -19071,8 +19448,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_OPERATION_GUIDE_SUPPORT_DFDEB38F086712A8"
+      ],
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "286916e34ba3b401b7115d5ea9c9ff096571e607:doc/release_1_4_9_coverage.md",
@@ -19143,8 +19525,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
       "candidateOwners": [
         {
           "path": "doc/handoff.md",
@@ -19153,8 +19535,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_OPERATION_GUIDE_SUPPORT_84B27A73337974D5"
+      ],
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "b20d284a2c006d92d233931a3b83da2dd417df54:doc/release_1_4_9_coverage.md",
@@ -19371,8 +19758,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Upstream documentation-support delta, independently read in full per commit and exact raw diff revalidated. Studio/reverse/history behavior points to existing native controller/Scene/history/thumbnail/batch-operation evidence; backup scope/manual guidance points to selected closure/media projection, explicit MERGE_CHOICES plus optional modern modes, protected credentials/new-root transaction and retained original-byte domains. Author compile/APK/redeploy/device/release facts and instructions are historical source content, not Desktop checks, new execution permission or human acceptance. Narrative/experimental/DS3.2 model-facing text remains under315 actual user decision; no Prompt adoption through handoff text. No new distinct product feature, no new runtime test, no universal compatibility claim. Service383 completed; Engine transient/fold checks remain pending their exact runs.",
       "candidateOwners": [
         {
           "path": "doc/handoff.md",
@@ -19381,8 +19768,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_OPERATION_GUIDE_SUPPORT_A1A9967417E3F801"
+      ],
+      "evidence": [
+        "OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     }
   ],
   "lastReviewedImplementation": "02546c412317650cd6936e468fa2dbc7871d02d4",
