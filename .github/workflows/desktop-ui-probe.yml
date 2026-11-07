@@ -46,13 +46,15 @@ jobs:
           @{ source = (git rev-parse HEAD); run = $env:GITHUB_RUN_ID; scope = 'synthetic selected tests only; no installer, user profile, release or provider calls' } |
             ConvertTo-Json | Set-Content -Encoding utf8 "$env:RUNNER_TEMP/ccb-ui-probe/source.json"
           .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain `
-            --tests 'com.example.chatbar.desktop.DesktopStudioLongPromptFocusTest'
+            --tests 'com.example.chatbar.desktop.backup.DesktopInstalledCatalogTransferTest' `
+            --tests 'com.example.chatbar.desktop.DesktopCatalogMaintenanceAdmissionTest.actual application cold catalog installation retains admission through both databases before a real snapshot' `
+            --tests 'com.example.chatbar.desktop.DesktopCatalogMaintenanceAdmissionTest.actual catalog updater holds download index publication and cleanup until the real snapshot can capture the new authority'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Preserve actual reports and synthetic review images
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: desktop-ui-probe-reports
+          name: installed-catalog-transfer-r108-reports
           path: |
             app/sharedCore/build/test-results/test/
             app/sharedCore/build/reports/tests/test/
