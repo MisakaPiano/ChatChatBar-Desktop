@@ -237,6 +237,7 @@ internal fun DesktopMomentsPanel(controller: DesktopMomentsController,
             }
         } }
         editing?.let { post -> MomentModal("编辑动态", { editing = null }) {
+            var editError by remember(post.id) { mutableStateOf(false) }
             val originalSender = MomentSender(post.senderCharacterId, post.senderName, post.senderAvatar)
             val original = MomentSenderOption("original", originalSender)
             var sender by remember(post.id) { mutableStateOf(original) }
@@ -248,8 +249,16 @@ internal fun DesktopMomentsPanel(controller: DesktopMomentsController,
                 else -> "人物 ${people.indexOf(option)} · ${option.sender.name}"
             } }) { sender = it }
             LabeledField("正文", editText, multiline = true) { editText = it }
+            if (editError) StatusText("未能确认保存结果。正文草稿仍保留；请重新选择发布人物，或关闭后重开核对并重试。", colors.destructive)
             BootstrapButton("保存", enabled = editText.isNotBlank() && sender.sender.name.isNotBlank()) {
-                act { controller.edit(post.id, editText, sender.sender.takeUnless { sender.key == "original" }); editing = null }
+                editError = false
+                act {
+                    try {
+                        controller.edit(post.id, editText, sender.sender.takeUnless { sender.key == "original" })
+                        editing = null
+                    } catch (cancelled: CancellationException) { throw cancelled }
+                    catch (_: Exception) { editError = true }
+                }
             }
         } }
         deleting?.let { post -> MomentModal("删除这条动态？", { deleting = null }) {
