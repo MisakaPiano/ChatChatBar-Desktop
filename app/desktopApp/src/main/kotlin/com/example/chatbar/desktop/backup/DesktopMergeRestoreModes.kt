@@ -147,8 +147,11 @@ internal object DesktopMergeRestoreModes {
         if (scope?.studioSettings != false) computer.entries.removeAll { (_, unit) ->
             DesktopBackupPolicy.isStudioSettings(unit.category)
         }
-        val defaultFields = if (replace && scope != null) BackupSettingOptions.fields(scope.globalOptions) -
-            incoming.values.filter { it.category == "app_settings" }.map { it.label }.toSet() else emptySet()
+        val defaultFields = if (scope != null) buildSet {
+            addAll(BackupSettingOptions.fields(scope.globalOptions))
+            if (incoming.values.any { it.category == "chat_sessions" }) add("lastSeenChatAt")
+            if (scope.moments) add("lastSeenMomentsAt")
+        } - incoming.values.filter { it.category == "app_settings" }.map { it.label }.toSet() else emptySet()
         // Selected omitted setting fields become defaults before deciding what unselected content still needs.
         computer.entries.removeAll { (key, unit) -> unit.category == "app_settings" && key.removePrefix("setting:") in defaultFields }
         if (replace && scope != null) {
