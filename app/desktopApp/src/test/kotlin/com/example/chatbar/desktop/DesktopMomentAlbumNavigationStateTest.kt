@@ -57,8 +57,9 @@ class DesktopMomentAlbumNavigationStateTest {
         val node = nodes().first { it.has(label) && it.config.contains(SemanticsActions.OnClick) }
         assertTrue(node.config[SemanticsActions.OnClick].action!!.invoke())
     }
-    private fun ImageComposeScene.search() = nodes().first {
-        it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("搜索相册") == true && it.config.contains(SemanticsActions.SetText)
+    private fun ImageComposeScene.search(): SemanticsNode {
+        assertTrue(nodes().any { it.has("搜索相册") })
+        return nodes().single { it.config.contains(SemanticsActions.SetText) }
     }
     private suspend fun ImageComposeScene.frames() { repeat(12) { render(System.nanoTime()).close(); delay(18) } }
     private fun ImageComposeScene.grid() = nodes().single {
