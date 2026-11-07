@@ -7,6 +7,7 @@ import com.example.chatbar.data.local.entity.ChatSession
 import com.example.chatbar.data.local.entity.MessageRole
 import com.example.chatbar.data.repository.ChatRepository
 import com.example.chatbar.data.repository.SettingsRepository
+import com.example.chatbar.data.repository.ModelRepository
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlinx.coroutines.*
@@ -14,6 +15,39 @@ import kotlinx.serialization.json.Json
 import kotlin.test.*
 
 class DesktopChatRepositoryAdmissionTest {
+    @Test fun `admitted cold model initialization drains before a later model list reader during maintenance`(): Unit = runBlocking {
+        fixture { f ->
+            // Empty/new roots need not open a conversation or the model page at startup.
+            val models = ModelRepository(f.storage)
+            val releaseOld = CompletableDeferred<Unit>()
+            val initialized = CompletableDeferred<Unit>()
+            val exclusiveEntered = CompletableDeferred<Unit>()
+            val releaseExclusive = CompletableDeferred<Unit>()
+            val sessionBytes = Files.readAllBytes(f.root.resolve("entities/chat_sessions/s.json"))
+            f.keep(launch(start = CoroutineStart.UNDISPATCHED) {
+                f.gate.withNormalOperation {
+                    releaseOld.await()
+                    // Account mutation initializes its model repository under this same lease.
+                    assertTrue(models.getAllModels().isEmpty())
+                    initialized.complete(Unit)
+                }
+            })
+            f.keep(launch(start = CoroutineStart.UNDISPATCHED) {
+                f.gate.withExclusiveMaintenance { exclusiveEntered.complete(Unit); releaseExclusive.await() }
+            })
+            assertEquals(DesktopDataOperationCoordinatorState.MAINTENANCE_PENDING, f.gate.state)
+            val reader = f.keep(async(start = CoroutineStart.UNDISPATCHED) { models.getAllModels() })
+            assertFalse(reader.isCompleted)
+            releaseOld.complete(Unit)
+            withTimeout(5000) { initialized.await(); exclusiveEntered.await() }
+            assertFalse(reader.isCompleted)
+            assertContentEquals(sessionBytes, Files.readAllBytes(f.root.resolve("entities/chat_sessions/s.json")))
+            releaseExclusive.complete(Unit)
+            assertTrue(withTimeout(5000) { reader.await() }.isEmpty())
+            withTimeout(5000) { f.jobs.joinAll() }
+        }
+    }
+
     @Test fun `admitted settings refresh drains before a later settings reader during maintenance`(): Unit = runBlocking {
         fixture { f ->
             val settings = SettingsRepository(f.storage)
