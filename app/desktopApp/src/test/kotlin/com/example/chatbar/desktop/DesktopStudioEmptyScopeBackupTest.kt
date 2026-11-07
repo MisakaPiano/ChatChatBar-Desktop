@@ -17,7 +17,7 @@ class DesktopStudioEmptyScopeBackupTest {
         ("entities/$type" + (id?.let { "/$it" } ?: "") + ".json") to backupJson.encodeToString(serializer, value).toByteArray()
 
     @Test fun `actual selected empty studio scope replaces only settings family through each modern new root mode`() = runBlocking<Unit> {
-        for (selected in listOf(false, true)) for (mode in listOf(DesktopBackupRestoreMode.UPDATE_EXISTING,
+        for (selected in listOf(true, false)) for (mode in listOf(DesktopBackupRestoreMode.UPDATE_EXISTING,
             DesktopBackupRestoreMode.ADD_COPIES, DesktopBackupRestoreMode.REPLACE_SELECTED)) {
             val base = Files.createTempDirectory("studio-empty-scope-")
             val pc = Files.createDirectory(base.resolve("pc")); val phone = Files.createDirectory(base.resolve("phone"))
@@ -72,7 +72,11 @@ class DesktopStudioEmptyScopeBackupTest {
                     merge.commitModeWithProgress(preview, destination, emptyMap(), emptyMap(), true, false, mode) {})
                 DesktopFreshRootAuthority(destination, keys, MergeRootSyntheticProtector).verifyAndResolve()
                 val reopened = JsonFileStorage(destination)
-                assertNotNull(reopened.loadEntity("character_cards", incomingCard.id, CharacterCard.serializer()))
+                val importedCards = mutableListOf<CharacterCard>()
+                reopened.visitEntitiesStrict("character_cards", CharacterCard.serializer()) { _, card -> importedCards += card }
+                assertEquals(incomingCard.name, importedCards.single().name)
+                if (mode != DesktopBackupRestoreMode.ADD_COPIES) assertEquals(incomingCard.id, importedCards.single().id)
+                else assertNotEquals(incomingCard.id, importedCards.single().id)
                 for ((relative, bytes) in settings) {
                     assertEquals(!selected, Files.exists(destination.resolve(relative)), relative)
                     if (!selected) assertContentEquals(bytes, Files.readAllBytes(destination.resolve(relative)))
