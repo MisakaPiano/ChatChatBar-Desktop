@@ -47,3 +47,5 @@ Fish标签JSON围栏1项测试支持由现有gateway3/严格标签1完整方法�
 14项Android组件测试完整raw差异分源复用：主要是定位器/IME/fixture；人物字段实际R71、朋友圈实际R89后台与原生modal源码、图库R14/R145各保留范围。不称R89跑过三项Android UI、不称R145做过全局Coil缓存投毒。见OWNER_FOURTEEN_ANDROID_COMPONENT_TEST_SUPPORT_REUSE.json；0新跑。
 
 最后6项图像测试参考raw已读：inline/typed容量由原compact3/payload3及新R146各保留范围；R146不是resolve大请求/全App峰值。反推新增两项由原Reverse4与R48/R50/R53分源；Medium陈旧写回和透明导入沿R51/162，实际metadata UI只是源码等位，不假称跑过两原生click。f52截图和b0fa合并不重复功能/测试数。见OWNER_IMAGE_FINAL_SIX_TEST_SUPPORT_REUSE.json。
+
+最后11项非图像unit raw限域复用完成：sender/预设依赖/候选编辑/媒体保全、自动图完成证据、HTTP尾部/实验传输/硅基适配及叙事独立存储各沿原范围。R01/R35原失败保留；DS32 supplied-envelope适配不等于采纳新7消息应用封装，HTTP尾部只是源码复核。7个mixed测试与SceneHistory继续315依赖；剩25 raw不是25个新缺失功能。见OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json；0新跑。

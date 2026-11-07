@@ -4185,6 +4185,116 @@
         "OWNER_IMAGE_FINAL_SIX_TEST_SUPPORT_REUSE.json",
         "OWNER_SAMPLING_TWENTY_NINE_TEST_SUPPORT_REUSE.json"
       ]
+    },
+    {
+      "id": "UPSTREAM_FINAL_NONIMAGE_TEST_SUPPORT_EDDA4FBC5A71284B",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Exact shared sender options retain stable IDs, same-name distinct identities and character appearance/card-avatar fallback; original162 sender and actual repository tests separately verified. Only eleven scoped support-reference raw deltas; no new product behavior or runtime executions. Shared sender/dependencies/versions and native format import/media retention retain original separate scopes. DS32 supplied-envelope adapter is independent of adopting the changed seven-message application envelope; generic HTTP-tail is source reviewed, not a new dedicated runtime method. Current repository/storage/cleanup later changes keep their separate evidence; exact test hashes never mean blanket owner equality. R01/R35 actual failures remain. Seven mixed tail/narrative files and the SceneHistory envelope delta remain315-dependent.",
+      "reviewSource": "a13c1e12132bc6960f13eec9d71f1b18ec49a2a8",
+      "evidence": [
+        "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
+        "COORDINATOR_EIGHTEEN_NONIMAGE_UNIT_RAW_SUPPORT_REVIEW.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_FINAL_NONIMAGE_TEST_SUPPORT_91ACD96A09B2F088",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Edit selected/middle/legacy/plain candidate without collapsing siblings or stable IDs. Current8 methods include full metadata/source immutability/serialization and segment-edit preservation. R01 original whole-object legacy narrative list expectation FAIL retained; R04 actual8 complete PASS is current-test blob match. Only eleven scoped support-reference raw deltas; no new product behavior or runtime executions. Shared sender/dependencies/versions and native format import/media retention retain original separate scopes. DS32 supplied-envelope adapter is independent of adopting the changed seven-message application envelope; generic HTTP-tail is source reviewed, not a new dedicated runtime method. Current repository/storage/cleanup later changes keep their separate evidence; exact test hashes never mean blanket owner equality. R01/R35 actual failures remain. Seven mixed tail/narrative files and the SceneHistory envelope delta remain315-dependent.",
+      "reviewSource": "a13c1e12132bc6960f13eec9d71f1b18ec49a2a8",
+      "evidence": [
+        "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
+        "COORDINATOR_EIGHTEEN_NONIMAGE_UNIT_RAW_SUPPORT_REVIEW.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_FINAL_NONIMAGE_TEST_SUPPORT_A1D0B98AA473E8A4",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Android Markdown test expectation changes only: segment editing preserves both candidate texts and IDs. Native shared actual segment method covers this core; no Android Compose execution or full native pointer-editor claim. Only eleven scoped support-reference raw deltas; no new product behavior or runtime executions. Shared sender/dependencies/versions and native format import/media retention retain original separate scopes. DS32 supplied-envelope adapter is independent of adopting the changed seven-message application envelope; generic HTTP-tail is source reviewed, not a new dedicated runtime method. Current repository/storage/cleanup later changes keep their separate evidence; exact test hashes never mean blanket owner equality. R01/R35 actual failures remain. Seven mixed tail/narrative files and the SceneHistory envelope delta remain315-dependent.",
+      "reviewSource": "a13c1e12132bc6960f13eec9d71f1b18ec49a2a8",
+      "evidence": [
+        "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
+        "COORDINATOR_EIGHTEEN_NONIMAGE_UNIT_RAW_SUPPORT_REVIEW.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_FINAL_NONIMAGE_TEST_SUPPORT_20059F6574CD2E62",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Same preset provenance reuses user-edited format rather than create/overwrite. OriginalR35 real identity FAIL retained; actualR37 character-default method completes persisted/reopened repository plus unchanged bytes. Current importCharacterDefaultTracked implementation inspected; later observed-ingress additions mean no blanket whole-file source equality. Only eleven scoped support-reference raw deltas; no new product behavior or runtime executions. Shared sender/dependencies/versions and native format import/media retention retain original separate scopes. DS32 supplied-envelope adapter is independent of adopting the changed seven-message application envelope; generic HTTP-tail is source reviewed, not a new dedicated runtime method. Current repository/storage/cleanup later changes keep their separate evidence; exact test hashes never mean blanket owner equality. R01/R35 actual failures remain. Seven mixed tail/narrative files and the SceneHistory envelope delta remain315-dependent.",
+      "reviewSource": "a13c1e12132bc6960f13eec9d71f1b18ec49a2a8",
+      "evidence": [
+        "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
+        "COORDINATOR_EIGHTEEN_NONIMAGE_UNIT_RAW_SUPPORT_REVIEW.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_FINAL_NONIMAGE_TEST_SUPPORT_620EBFC2716A5F06",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Actual shared resolver includes declared world/format preset identity and version, keeps embedded dependency and refuses missing declaration before import. Original162 actual2 complete PASS, current resolver and test bound. Only eleven scoped support-reference raw deltas; no new product behavior or runtime executions. Shared sender/dependencies/versions and native format import/media retention retain original separate scopes. DS32 supplied-envelope adapter is independent of adopting the changed seven-message application envelope; generic HTTP-tail is source reviewed, not a new dedicated runtime method. Current repository/storage/cleanup later changes keep their separate evidence; exact test hashes never mean blanket owner equality. R01/R35 actual failures remain. Seven mixed tail/narrative files and the SceneHistory envelope delta remain315-dependent.",
+      "reviewSource": "a13c1e12132bc6960f13eec9d71f1b18ec49a2a8",
+      "evidence": [
+        "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
+        "COORDINATOR_EIGHTEEN_NONIMAGE_UNIT_RAW_SUPPORT_REVIEW.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_FINAL_NONIMAGE_TEST_SUPPORT_E5D97A82DF06BD74",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Native cleanup retains historical post avatar, selected image and every retained image version; only unreferenced exact owned candidates removed under exclusive gate. Existing162 Windows MomentImageVersions2 scope reused; current generic cleanup includes later strict journal exemption, separately verifiedR143. No new Android card-deletion UI experiment. Only eleven scoped support-reference raw deltas; no new product behavior or runtime executions. Shared sender/dependencies/versions and native format import/media retention retain original separate scopes. DS32 supplied-envelope adapter is independent of adopting the changed seven-message application envelope; generic HTTP-tail is source reviewed, not a new dedicated runtime method. Current repository/storage/cleanup later changes keep their separate evidence; exact test hashes never mean blanket owner equality. R01/R35 actual failures remain. Seven mixed tail/narrative files and the SceneHistory envelope delta remain315-dependent.",
+      "reviewSource": "a13c1e12132bc6960f13eec9d71f1b18ec49a2a8",
+      "evidence": [
+        "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
+        "COORDINATOR_EIGHTEEN_NONIMAGE_UNIT_RAW_SUPPORT_REVIEW.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_FINAL_NONIMAGE_TEST_SUPPORT_4945B4D88F147EB6",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Automatic image eligibility requires nonblank canonical content and actual complete tool evidence; length/refusal/transport failure rejected. ActualR04 ExperimentalToolTransport named eligibility whole method reused. Only eleven scoped support-reference raw deltas; no new product behavior or runtime executions. Shared sender/dependencies/versions and native format import/media retention retain original separate scopes. DS32 supplied-envelope adapter is independent of adopting the changed seven-message application envelope; generic HTTP-tail is source reviewed, not a new dedicated runtime method. Current repository/storage/cleanup later changes keep their separate evidence; exact test hashes never mean blanket owner equality. R01/R35 actual failures remain. Seven mixed tail/narrative files and the SceneHistory envelope delta remain315-dependent.",
+      "reviewSource": "a13c1e12132bc6960f13eec9d71f1b18ec49a2a8",
+      "evidence": [
+        "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
+        "COORDINATOR_EIGHTEEN_NONIMAGE_UNIT_RAW_SUPPORT_REVIEW.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_FINAL_NONIMAGE_TEST_SUPPORT_2F38A46049F1070F",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Generic HTTP adaptation preserves an original assistant tail and text; only later system roles adapt for cleartext. Current actual function read; no adoption of changed application tail. R04 serializer/protocol sources unchanged, not a newly executed dedicated HTTP-tail method. Only eleven scoped support-reference raw deltas; no new product behavior or runtime executions. Shared sender/dependencies/versions and native format import/media retention retain original separate scopes. DS32 supplied-envelope adapter is independent of adopting the changed seven-message application envelope; generic HTTP-tail is source reviewed, not a new dedicated runtime method. Current repository/storage/cleanup later changes keep their separate evidence; exact test hashes never mean blanket owner equality. R01/R35 actual failures remain. Seven mixed tail/narrative files and the SceneHistory envelope delta remain315-dependent.",
+      "reviewSource": "a13c1e12132bc6960f13eec9d71f1b18ec49a2a8",
+      "evidence": [
+        "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
+        "COORDINATOR_EIGHTEEN_NONIMAGE_UNIT_RAW_SUPPORT_REVIEW.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_FINAL_NONIMAGE_TEST_SUPPORT_19406527CC5E5B57",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Entire289-line Android transport fixture read. Actual nativeR04 transport9 covers preview vs canonical nonduplication, replacing preamble, reasoning/usage, completion validation, truncation/refusal/cancel, request mode freezing, nonstream helpers; loops are not new method counts. Current test/transport policy/decoder hashes equal originalR04 normal source. Only eleven scoped support-reference raw deltas; no new product behavior or runtime executions. Shared sender/dependencies/versions and native format import/media retention retain original separate scopes. DS32 supplied-envelope adapter is independent of adopting the changed seven-message application envelope; generic HTTP-tail is source reviewed, not a new dedicated runtime method. Current repository/storage/cleanup later changes keep their separate evidence; exact test hashes never mean blanket owner equality. R01/R35 actual failures remain. Seven mixed tail/narrative files and the SceneHistory envelope delta remain315-dependent.",
+      "reviewSource": "a13c1e12132bc6960f13eec9d71f1b18ec49a2a8",
+      "evidence": [
+        "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
+        "COORDINATOR_EIGHTEEN_NONIMAGE_UNIT_RAW_SUPPORT_REVIEW.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_FINAL_NONIMAGE_TEST_SUPPORT_6AAD5130C2513D4F",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Narrative mode storage ownership independent of new prompt text: stale whole session and settings draft preserve new mode, explicit restore changes it. ActualR04 persistence5 and Desktop deterministic gate1 reused; not equivalence of exact Android coroutine fixture. Current persistence/concurrency bodies read; no production prompt adoption. Only eleven scoped support-reference raw deltas; no new product behavior or runtime executions. Shared sender/dependencies/versions and native format import/media retention retain original separate scopes. DS32 supplied-envelope adapter is independent of adopting the changed seven-message application envelope; generic HTTP-tail is source reviewed, not a new dedicated runtime method. Current repository/storage/cleanup later changes keep their separate evidence; exact test hashes never mean blanket owner equality. R01/R35 actual failures remain. Seven mixed tail/narrative files and the SceneHistory envelope delta remain315-dependent.",
+      "reviewSource": "a13c1e12132bc6960f13eec9d71f1b18ec49a2a8",
+      "evidence": [
+        "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
+        "COORDINATOR_EIGHTEEN_NONIMAGE_UNIT_RAW_SUPPORT_REVIEW.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_FINAL_NONIMAGE_TEST_SUPPORT_D4A176D4D0D42E5C",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Entire144-line file read. ActualR04 DS32 adapter6 preserve supplied logical roles/text, image parts, controls, idempotence, host/model boundaries and ordering after experimental wrap. Native supplied auxiliary logical envelope keeps existing identity tail; upstream new7-envelope memory subassertion is not claimed adopted. Adapter itself is envelope-agnostic and current source/test exactR04. Only eleven scoped support-reference raw deltas; no new product behavior or runtime executions. Shared sender/dependencies/versions and native format import/media retention retain original separate scopes. DS32 supplied-envelope adapter is independent of adopting the changed seven-message application envelope; generic HTTP-tail is source reviewed, not a new dedicated runtime method. Current repository/storage/cleanup later changes keep their separate evidence; exact test hashes never mean blanket owner equality. R01/R35 actual failures remain. Seven mixed tail/narrative files and the SceneHistory envelope delta remain315-dependent.",
+      "reviewSource": "a13c1e12132bc6960f13eec9d71f1b18ec49a2a8",
+      "evidence": [
+        "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
+        "COORDINATOR_EIGHTEEN_NONIMAGE_UNIT_RAW_SUPPORT_REVIEW.json"
+      ]
     }
   ],
   "deltas": [
@@ -6724,11 +6834,21 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Exact shared sender options retain stable IDs, same-name distinct identities and character appearance/card-avatar fallback; original162 sender and actual repository tests separately verified. Only eleven scoped support-reference raw deltas; no new product behavior or runtime executions. Shared sender/dependencies/versions and native format import/media retention retain original separate scopes. DS32 supplied-envelope adapter is independent of adopting the changed seven-message application envelope; generic HTTP-tail is source reviewed, not a new dedicated runtime method. Current repository/storage/cleanup later changes keep their separate evidence; exact test hashes never mean blanket owner equality. R01/R35 actual failures remain. Seven mixed tail/narrative files and the SceneHistory envelope delta remain315-dependent.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_FINAL_NONIMAGE_TEST_SUPPORT_EDDA4FBC5A71284B"
+      ],
+      "evidence": [
+        "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
+        "COORDINATOR_EIGHTEEN_NONIMAGE_UNIT_RAW_SUPPORT_REVIEW.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md",
+        "COORDINATOR_PRESET_FORMAT_R35_R37_ORIGINAL_REVIEW.json",
+        "COORDINATOR_MOMENT_MEDIA_RETENTION_1A_REUSE.json",
+        "COORDINATOR_STATUS_PAYLOAD_CLEANUP_R143_FINAL_COMPLETE_REVIEW.json",
+        "COORDINATOR_REQUEST_RUNTIME_SIX_SUPPORT_DELTAS_SCOPED_REUSE.json"
+      ]
     },
     {
       "id": "cb9c0f7ae228174af38e1cdbd6fa0a48d1743f49:.agents/skills/chatbar-image-generation-runtime/SKILL.md",
@@ -7257,11 +7377,21 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Edit selected/middle/legacy/plain candidate without collapsing siblings or stable IDs. Current8 methods include full metadata/source immutability/serialization and segment-edit preservation. R01 original whole-object legacy narrative list expectation FAIL retained; R04 actual8 complete PASS is current-test blob match. Only eleven scoped support-reference raw deltas; no new product behavior or runtime executions. Shared sender/dependencies/versions and native format import/media retention retain original separate scopes. DS32 supplied-envelope adapter is independent of adopting the changed seven-message application envelope; generic HTTP-tail is source reviewed, not a new dedicated runtime method. Current repository/storage/cleanup later changes keep their separate evidence; exact test hashes never mean blanket owner equality. R01/R35 actual failures remain. Seven mixed tail/narrative files and the SceneHistory envelope delta remain315-dependent.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_FINAL_NONIMAGE_TEST_SUPPORT_91ACD96A09B2F088"
+      ],
+      "evidence": [
+        "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
+        "COORDINATOR_EIGHTEEN_NONIMAGE_UNIT_RAW_SUPPORT_REVIEW.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md",
+        "COORDINATOR_PRESET_FORMAT_R35_R37_ORIGINAL_REVIEW.json",
+        "COORDINATOR_MOMENT_MEDIA_RETENTION_1A_REUSE.json",
+        "COORDINATOR_STATUS_PAYLOAD_CLEANUP_R143_FINAL_COMPLETE_REVIEW.json",
+        "COORDINATOR_REQUEST_RUNTIME_SIX_SUPPORT_DELTAS_SCOPED_REUSE.json"
+      ]
     },
     {
       "id": "559f83f0c1011a7fa4b8e0f64d5b2ea147544e59:app/app/src/test/java/com/example/chatbar/ui/components/ChatBubbleMarkdownTest.kt",
@@ -7277,8 +7407,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Android Markdown test expectation changes only: segment editing preserves both candidate texts and IDs. Native shared actual segment method covers this core; no Android Compose execution or full native pointer-editor claim. Only eleven scoped support-reference raw deltas; no new product behavior or runtime executions. Shared sender/dependencies/versions and native format import/media retention retain original separate scopes. DS32 supplied-envelope adapter is independent of adopting the changed seven-message application envelope; generic HTTP-tail is source reviewed, not a new dedicated runtime method. Current repository/storage/cleanup later changes keep their separate evidence; exact test hashes never mean blanket owner equality. R01/R35 actual failures remain. Seven mixed tail/narrative files and the SceneHistory envelope delta remain315-dependent.",
       "candidateOwners": [
         {
           "path": "app/app/src/test/java/com/example/chatbar/ui/components/ChatBubbleMarkdownTest.kt",
@@ -7287,8 +7417,18 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_FINAL_NONIMAGE_TEST_SUPPORT_A1D0B98AA473E8A4"
+      ],
+      "evidence": [
+        "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
+        "COORDINATOR_EIGHTEEN_NONIMAGE_UNIT_RAW_SUPPORT_REVIEW.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md",
+        "COORDINATOR_PRESET_FORMAT_R35_R37_ORIGINAL_REVIEW.json",
+        "COORDINATOR_MOMENT_MEDIA_RETENTION_1A_REUSE.json",
+        "COORDINATOR_STATUS_PAYLOAD_CLEANUP_R143_FINAL_COMPLETE_REVIEW.json",
+        "COORDINATOR_REQUEST_RUNTIME_SIX_SUPPORT_DELTAS_SCOPED_REUSE.json"
+      ]
     },
     {
       "id": "559f83f0c1011a7fa4b8e0f64d5b2ea147544e59:app/app/src/test/java/com/example/chatbar/ui/imageprompt/NovelAiHistorySelectionPolicyTest.kt",
@@ -10031,11 +10171,21 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Same preset provenance reuses user-edited format rather than create/overwrite. OriginalR35 real identity FAIL retained; actualR37 character-default method completes persisted/reopened repository plus unchanged bytes. Current importCharacterDefaultTracked implementation inspected; later observed-ingress additions mean no blanket whole-file source equality. Only eleven scoped support-reference raw deltas; no new product behavior or runtime executions. Shared sender/dependencies/versions and native format import/media retention retain original separate scopes. DS32 supplied-envelope adapter is independent of adopting the changed seven-message application envelope; generic HTTP-tail is source reviewed, not a new dedicated runtime method. Current repository/storage/cleanup later changes keep their separate evidence; exact test hashes never mean blanket owner equality. R01/R35 actual failures remain. Seven mixed tail/narrative files and the SceneHistory envelope delta remain315-dependent.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_FINAL_NONIMAGE_TEST_SUPPORT_20059F6574CD2E62"
+      ],
+      "evidence": [
+        "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
+        "COORDINATOR_EIGHTEEN_NONIMAGE_UNIT_RAW_SUPPORT_REVIEW.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md",
+        "COORDINATOR_PRESET_FORMAT_R35_R37_ORIGINAL_REVIEW.json",
+        "COORDINATOR_MOMENT_MEDIA_RETENTION_1A_REUSE.json",
+        "COORDINATOR_STATUS_PAYLOAD_CLEANUP_R143_FINAL_COMPLETE_REVIEW.json",
+        "COORDINATOR_REQUEST_RUNTIME_SIX_SUPPORT_DELTAS_SCOPED_REUSE.json"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/test/java/com/example/chatbar/domain/card/PresetCharacterDependenciesTest.kt",
@@ -10051,11 +10201,21 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Actual shared resolver includes declared world/format preset identity and version, keeps embedded dependency and refuses missing declaration before import. Original162 actual2 complete PASS, current resolver and test bound. Only eleven scoped support-reference raw deltas; no new product behavior or runtime executions. Shared sender/dependencies/versions and native format import/media retention retain original separate scopes. DS32 supplied-envelope adapter is independent of adopting the changed seven-message application envelope; generic HTTP-tail is source reviewed, not a new dedicated runtime method. Current repository/storage/cleanup later changes keep their separate evidence; exact test hashes never mean blanket owner equality. R01/R35 actual failures remain. Seven mixed tail/narrative files and the SceneHistory envelope delta remain315-dependent.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_FINAL_NONIMAGE_TEST_SUPPORT_620EBFC2716A5F06"
+      ],
+      "evidence": [
+        "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
+        "COORDINATOR_EIGHTEEN_NONIMAGE_UNIT_RAW_SUPPORT_REVIEW.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md",
+        "COORDINATOR_PRESET_FORMAT_R35_R37_ORIGINAL_REVIEW.json",
+        "COORDINATOR_MOMENT_MEDIA_RETENTION_1A_REUSE.json",
+        "COORDINATOR_STATUS_PAYLOAD_CLEANUP_R143_FINAL_COMPLETE_REVIEW.json",
+        "COORDINATOR_REQUEST_RUNTIME_SIX_SUPPORT_DELTAS_SCOPED_REUSE.json"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/test/java/com/example/chatbar/domain/chat/ChatApiMessageTest.kt",
@@ -15046,11 +15206,21 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Native cleanup retains historical post avatar, selected image and every retained image version; only unreferenced exact owned candidates removed under exclusive gate. Existing162 Windows MomentImageVersions2 scope reused; current generic cleanup includes later strict journal exemption, separately verifiedR143. No new Android card-deletion UI experiment. Only eleven scoped support-reference raw deltas; no new product behavior or runtime executions. Shared sender/dependencies/versions and native format import/media retention retain original separate scopes. DS32 supplied-envelope adapter is independent of adopting the changed seven-message application envelope; generic HTTP-tail is source reviewed, not a new dedicated runtime method. Current repository/storage/cleanup later changes keep their separate evidence; exact test hashes never mean blanket owner equality. R01/R35 actual failures remain. Seven mixed tail/narrative files and the SceneHistory envelope delta remain315-dependent.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_FINAL_NONIMAGE_TEST_SUPPORT_E5D97A82DF06BD74"
+      ],
+      "evidence": [
+        "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
+        "COORDINATOR_EIGHTEEN_NONIMAGE_UNIT_RAW_SUPPORT_REVIEW.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md",
+        "COORDINATOR_PRESET_FORMAT_R35_R37_ORIGINAL_REVIEW.json",
+        "COORDINATOR_MOMENT_MEDIA_RETENTION_1A_REUSE.json",
+        "COORDINATOR_STATUS_PAYLOAD_CLEANUP_R143_FINAL_COMPLETE_REVIEW.json",
+        "COORDINATOR_REQUEST_RUNTIME_SIX_SUPPORT_DELTAS_SCOPED_REUSE.json"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:doc/app_backup_data_scope.md",
@@ -21741,8 +21911,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Automatic image eligibility requires nonblank canonical content and actual complete tool evidence; length/refusal/transport failure rejected. ActualR04 ExperimentalToolTransport named eligibility whole method reused. Only eleven scoped support-reference raw deltas; no new product behavior or runtime executions. Shared sender/dependencies/versions and native format import/media retention retain original separate scopes. DS32 supplied-envelope adapter is independent of adopting the changed seven-message application envelope; generic HTTP-tail is source reviewed, not a new dedicated runtime method. Current repository/storage/cleanup later changes keep their separate evidence; exact test hashes never mean blanket owner equality. R01/R35 actual failures remain. Seven mixed tail/narrative files and the SceneHistory envelope delta remain315-dependent.",
       "candidateOwners": [
         {
           "path": "app/app/src/test/java/com/example/chatbar/domain/chat/AutomaticChatImagePolicyTest.kt",
@@ -21751,8 +21921,18 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_FINAL_NONIMAGE_TEST_SUPPORT_4945B4D88F147EB6"
+      ],
+      "evidence": [
+        "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
+        "COORDINATOR_EIGHTEEN_NONIMAGE_UNIT_RAW_SUPPORT_REVIEW.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md",
+        "COORDINATOR_PRESET_FORMAT_R35_R37_ORIGINAL_REVIEW.json",
+        "COORDINATOR_MOMENT_MEDIA_RETENTION_1A_REUSE.json",
+        "COORDINATOR_STATUS_PAYLOAD_CLEANUP_R143_FINAL_COMPLETE_REVIEW.json",
+        "COORDINATOR_REQUEST_RUNTIME_SIX_SUPPORT_DELTAS_SCOPED_REUSE.json"
+      ]
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:app/app/src/test/java/com/example/chatbar/domain/chat/AuxiliaryTaskTransportTest.kt",
@@ -21769,7 +21949,7 @@
       },
       "scope": "SUPPORT",
       "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "reason": "Raw changes expected roles from8 to7 by removing trailing identity user. Internal fixture helper visibility is incidental; existing8-role original checks cannot prove or authorize new7-role assembly. Actual user315 decision pending; prior narrow authorizations and ordinary existing Prompt text remain.",
       "candidateOwners": [
         {
           "path": "app/app/src/test/java/com/example/chatbar/domain/chat/AuxiliaryTaskTransportTest.kt",
@@ -21779,7 +21959,11 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
+        "COORDINATOR_EIGHTEEN_NONIMAGE_UNIT_RAW_SUPPORT_REVIEW.json",
+        "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md"
+      ]
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:app/app/src/test/java/com/example/chatbar/domain/chat/CleartextHttpChatTemplatePolicyTest.kt",
@@ -21795,8 +21979,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Generic HTTP adaptation preserves an original assistant tail and text; only later system roles adapt for cleartext. Current actual function read; no adoption of changed application tail. R04 serializer/protocol sources unchanged, not a newly executed dedicated HTTP-tail method. Only eleven scoped support-reference raw deltas; no new product behavior or runtime executions. Shared sender/dependencies/versions and native format import/media retention retain original separate scopes. DS32 supplied-envelope adapter is independent of adopting the changed seven-message application envelope; generic HTTP-tail is source reviewed, not a new dedicated runtime method. Current repository/storage/cleanup later changes keep their separate evidence; exact test hashes never mean blanket owner equality. R01/R35 actual failures remain. Seven mixed tail/narrative files and the SceneHistory envelope delta remain315-dependent.",
       "candidateOwners": [
         {
           "path": "app/app/src/test/java/com/example/chatbar/domain/chat/CleartextHttpChatTemplatePolicyTest.kt",
@@ -21805,8 +21989,18 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_FINAL_NONIMAGE_TEST_SUPPORT_2F38A46049F1070F"
+      ],
+      "evidence": [
+        "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
+        "COORDINATOR_EIGHTEEN_NONIMAGE_UNIT_RAW_SUPPORT_REVIEW.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md",
+        "COORDINATOR_PRESET_FORMAT_R35_R37_ORIGINAL_REVIEW.json",
+        "COORDINATOR_MOMENT_MEDIA_RETENTION_1A_REUSE.json",
+        "COORDINATOR_STATUS_PAYLOAD_CLEANUP_R143_FINAL_COMPLETE_REVIEW.json",
+        "COORDINATOR_REQUEST_RUNTIME_SIX_SUPPORT_DELTAS_SCOPED_REUSE.json"
+      ]
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:app/app/src/test/java/com/example/chatbar/domain/chat/ExperimentalToolChatTest.kt",
@@ -21823,10 +22017,14 @@
       },
       "scope": "SUPPORT",
       "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "reason": "Entire222-line new file read. Independent request wrapping/media/context/cache/decoder behavior maps actual currentR04 protocol12; first whole test requires changed auxiliary assistant tail/open string and remains315-dependent. Do not close mixed raw file from generic transport success. Actual user315 decision pending; prior narrow authorizations and ordinary existing Prompt text remain.",
       "candidateOwners": [],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
+        "COORDINATOR_EIGHTEEN_NONIMAGE_UNIT_RAW_SUPPORT_REVIEW.json",
+        "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md"
+      ]
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:app/app/src/test/java/com/example/chatbar/domain/chat/ExperimentalToolTransportTest.kt",
@@ -21842,11 +22040,21 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Entire289-line Android transport fixture read. Actual nativeR04 transport9 covers preview vs canonical nonduplication, replacing preamble, reasoning/usage, completion validation, truncation/refusal/cancel, request mode freezing, nonstream helpers; loops are not new method counts. Current test/transport policy/decoder hashes equal originalR04 normal source. Only eleven scoped support-reference raw deltas; no new product behavior or runtime executions. Shared sender/dependencies/versions and native format import/media retention retain original separate scopes. DS32 supplied-envelope adapter is independent of adopting the changed seven-message application envelope; generic HTTP-tail is source reviewed, not a new dedicated runtime method. Current repository/storage/cleanup later changes keep their separate evidence; exact test hashes never mean blanket owner equality. R01/R35 actual failures remain. Seven mixed tail/narrative files and the SceneHistory envelope delta remain315-dependent.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_FINAL_NONIMAGE_TEST_SUPPORT_19406527CC5E5B57"
+      ],
+      "evidence": [
+        "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
+        "COORDINATOR_EIGHTEEN_NONIMAGE_UNIT_RAW_SUPPORT_REVIEW.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md",
+        "COORDINATOR_PRESET_FORMAT_R35_R37_ORIGINAL_REVIEW.json",
+        "COORDINATOR_MOMENT_MEDIA_RETENTION_1A_REUSE.json",
+        "COORDINATOR_STATUS_PAYLOAD_CLEANUP_R143_FINAL_COMPLETE_REVIEW.json",
+        "COORDINATOR_REQUEST_RUNTIME_SIX_SUPPORT_DELTAS_SCOPED_REUSE.json"
+      ]
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:app/app/src/test/java/com/example/chatbar/domain/image/NovelAiSceneHistoryTest.kt",
@@ -21863,7 +22071,7 @@
       },
       "scope": "SUPPORT",
       "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "reason": "Entire raw body reviewed: removes final user role, expected ordinary envelope8->7 and renames repair expectation. This explicitly depends315 user adoption; no independent runtime defect, old8 checks do not prove new7.",
       "candidateOwners": [
         {
           "path": "app/app/src/test/java/com/example/chatbar/domain/image/NovelAiSceneHistoryTest.kt",
@@ -21873,7 +22081,10 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
+        "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md"
+      ]
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:app/app/src/test/java/com/example/chatbar/domain/prompt/AiTaskRequestsTest.kt",
@@ -21890,7 +22101,7 @@
       },
       "scope": "SUPPORT",
       "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "reason": "Expected8->7 auxiliary envelope/sublist and assistant-tail rename explicitly depend on315 adoption; retained old8 tests are not equivalence evidence for new expectation. Actual user315 decision pending; prior narrow authorizations and ordinary existing Prompt text remain.",
       "candidateOwners": [
         {
           "path": "app/app/src/test/java/com/example/chatbar/domain/prompt/AiTaskRequestsTest.kt",
@@ -21900,7 +22111,11 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
+        "COORDINATOR_EIGHTEEN_NONIMAGE_UNIT_RAW_SUPPORT_REVIEW.json",
+        "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md"
+      ]
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:app/app/src/test/java/com/example/chatbar/ui/chat/CurrentTurnMessageOrderTest.kt",
@@ -21917,7 +22132,7 @@
       },
       "scope": "SUPPORT",
       "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "reason": "Deletes final identity user and shifts system/assistant ordering, adds experimental tail assertion. Generic transport wrapping can be reused independently but actual new tail ordering remains315 pending. Actual user315 decision pending; prior narrow authorizations and ordinary existing Prompt text remain.",
       "candidateOwners": [
         {
           "path": "app/app/src/test/java/com/example/chatbar/ui/chat/CurrentTurnMessageOrderTest.kt",
@@ -21927,7 +22142,11 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
+        "COORDINATOR_EIGHTEEN_NONIMAGE_UNIT_RAW_SUPPORT_REVIEW.json",
+        "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md"
+      ]
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:doc/handoff.md",
@@ -22669,8 +22888,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Narrative mode storage ownership independent of new prompt text: stale whole session and settings draft preserve new mode, explicit restore changes it. ActualR04 persistence5 and Desktop deterministic gate1 reused; not equivalence of exact Android coroutine fixture. Current persistence/concurrency bodies read; no production prompt adoption. Only eleven scoped support-reference raw deltas; no new product behavior or runtime executions. Shared sender/dependencies/versions and native format import/media retention retain original separate scopes. DS32 supplied-envelope adapter is independent of adopting the changed seven-message application envelope; generic HTTP-tail is source reviewed, not a new dedicated runtime method. Current repository/storage/cleanup later changes keep their separate evidence; exact test hashes never mean blanket owner equality. R01/R35 actual failures remain. Seven mixed tail/narrative files and the SceneHistory envelope delta remain315-dependent.",
       "candidateOwners": [
         {
           "path": "app/app/src/test/java/com/example/chatbar/data/repository/ChatRepositoryTest.kt",
@@ -22679,8 +22898,18 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_FINAL_NONIMAGE_TEST_SUPPORT_6AAD5130C2513D4F"
+      ],
+      "evidence": [
+        "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
+        "COORDINATOR_EIGHTEEN_NONIMAGE_UNIT_RAW_SUPPORT_REVIEW.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md",
+        "COORDINATOR_PRESET_FORMAT_R35_R37_ORIGINAL_REVIEW.json",
+        "COORDINATOR_MOMENT_MEDIA_RETENTION_1A_REUSE.json",
+        "COORDINATOR_STATUS_PAYLOAD_CLEANUP_R143_FINAL_COMPLETE_REVIEW.json",
+        "COORDINATOR_REQUEST_RUNTIME_SIX_SUPPORT_DELTAS_SCOPED_REUSE.json"
+      ]
     },
     {
       "id": "286916e34ba3b401b7115d5ea9c9ff096571e607:app/app/src/test/java/com/example/chatbar/domain/chat/ChatNarrativeModeTest.kt",
@@ -22697,10 +22926,14 @@
       },
       "scope": "SUPPORT",
       "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "reason": "Entire102-line file read. Independent legacy FOCUS/default, per-version select/edit/prune/copy and SaveSlot persistence map currentR04 persistence5/versions8. History wrapper and mode text/tail assertions require315; mixed file remains pending. Actual user315 decision pending; prior narrow authorizations and ordinary existing Prompt text remain.",
       "candidateOwners": [],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
+        "COORDINATOR_EIGHTEEN_NONIMAGE_UNIT_RAW_SUPPORT_REVIEW.json",
+        "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md"
+      ]
     },
     {
       "id": "286916e34ba3b401b7115d5ea9c9ff096571e607:app/app/src/test/java/com/example/chatbar/domain/chat/PromptAssemblerCharacterModeTest.kt",
@@ -22717,10 +22950,14 @@
       },
       "scope": "SUPPORT",
       "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "reason": "Cached/uncached/combined prompt assembly adds mode system sections and separates memory layer; actual new prompt layering depends315. Dormant helper tests do not authorize production wiring. Actual user315 decision pending; prior narrow authorizations and ordinary existing Prompt text remain.",
       "candidateOwners": [],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
+        "COORDINATOR_EIGHTEEN_NONIMAGE_UNIT_RAW_SUPPORT_REVIEW.json",
+        "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md"
+      ]
     },
     {
       "id": "286916e34ba3b401b7115d5ea9c9ff096571e607:app/app/src/test/java/com/example/chatbar/ui/chat/CurrentTurnMessageOrderTest.kt",
@@ -22737,7 +22974,7 @@
       },
       "scope": "SUPPORT",
       "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "reason": "Cache identity and stable/tail ordering assertions now include narrative systems. Dormant request helper proof retained but actual new production message layers remain315 pending. Actual user315 decision pending; prior narrow authorizations and ordinary existing Prompt text remain.",
       "candidateOwners": [
         {
           "path": "app/app/src/test/java/com/example/chatbar/ui/chat/CurrentTurnMessageOrderTest.kt",
@@ -22747,7 +22984,11 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
+        "COORDINATOR_EIGHTEEN_NONIMAGE_UNIT_RAW_SUPPORT_REVIEW.json",
+        "docs/desktop/315_UPSTREAM149_PROMPT_REVIEW.md"
+      ]
     },
     {
       "id": "286916e34ba3b401b7115d5ea9c9ff096571e607:doc/chat_narrative_modes.md",
@@ -23099,11 +23340,21 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Entire144-line file read. ActualR04 DS32 adapter6 preserve supplied logical roles/text, image parts, controls, idempotence, host/model boundaries and ordering after experimental wrap. Native supplied auxiliary logical envelope keeps existing identity tail; upstream new7-envelope memory subassertion is not claimed adopted. Adapter itself is envelope-agnostic and current source/test exactR04. Only eleven scoped support-reference raw deltas; no new product behavior or runtime executions. Shared sender/dependencies/versions and native format import/media retention retain original separate scopes. DS32 supplied-envelope adapter is independent of adopting the changed seven-message application envelope; generic HTTP-tail is source reviewed, not a new dedicated runtime method. Current repository/storage/cleanup later changes keep their separate evidence; exact test hashes never mean blanket owner equality. R01/R35 actual failures remain. Seven mixed tail/narrative files and the SceneHistory envelope delta remain315-dependent.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_FINAL_NONIMAGE_TEST_SUPPORT_D4A176D4D0D42E5C"
+      ],
+      "evidence": [
+        "OWNER_FINAL_ELEVEN_NONIMAGE_TEST_SUPPORT_REUSE.json",
+        "COORDINATOR_EIGHTEEN_NONIMAGE_UNIT_RAW_SUPPORT_REVIEW.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md",
+        "COORDINATOR_PRESET_FORMAT_R35_R37_ORIGINAL_REVIEW.json",
+        "COORDINATOR_MOMENT_MEDIA_RETENTION_1A_REUSE.json",
+        "COORDINATOR_STATUS_PAYLOAD_CLEANUP_R143_FINAL_COMPLETE_REVIEW.json",
+        "COORDINATOR_REQUEST_RUNTIME_SIX_SUPPORT_DELTAS_SCOPED_REUSE.json"
+      ]
     },
     {
       "id": "12e420a58d1c097cb996d09dbf0c3e659d4377d6:doc/handoff.md",
