@@ -35,7 +35,7 @@ class DesktopVoiceRepositoryAdmissionTest {
             val audioBytes = Files.readAllBytes(Path.of(recording.audioPath))
             val next = f.chats.addMessage(ChatMessage("new-reply", f.session.id, MessageRole.ASSISTANT,
                 "<n=\"Alice\"/>[later reply]()", createdAt = 2, updatedAt = 2))
-            assertTrue(f.repo.snapshotAnchorsForMessages(listOf(next.id)).isEmpty())
+            assertTrue(f.repo.snapshotAnchorsForMessages(setOf(next.id)).isEmpty())
             f.runtime.foreground(f.session.id).join()
             val requests = f.server.requestCount
             gate.armed.set(true)
@@ -58,7 +58,7 @@ class DesktopVoiceRepositoryAdmissionTest {
             releaseExclusive.complete(Unit)
             assertTrue(withTimeout(5000) { late.await() }.isEmpty())
             f.runtime.stopForMaintenance(); withTimeout(5000) { playback.join(); jobs.joinAll() }
-            val anchor = f.repo.snapshotAnchorsForMessages(listOf(next.id)).single()
+            val anchor = f.repo.snapshotAnchorsForMessages(setOf(next.id)).single()
             assertEquals(next.id, anchor.messageId)
             assertEquals(MessageAlternativeVersionPolicy.activeVersionId(next), anchor.messageVersionId)
             assertEquals(next, f.chats.getMessage(next.id, f.session.id))
