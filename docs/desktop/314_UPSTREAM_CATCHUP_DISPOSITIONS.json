@@ -1106,6 +1106,15 @@
       "evidence": [
         "OWNER_MANAGE_EXPORT_COVER_8C_DIALOG_REVIEW.json"
       ]
+    },
+    {
+      "id": "CHARACTER_PERSON_LOCAL_TAG_AND_EXPANDED_EDITOR",
+      "disposition": "EQUIVALENT",
+      "scope": "Only complete329 CharacterEditScreen person-prompt delta: actual structured-person entry reuses existing local catalog/tag annotations/global display preference and isolated expanded field. Native actual entry R71 one complete methodPASS including save/readback, person/card callback isolation; R70 invalid mandatory greeting fixture failure retained. Desktop inline popover is platform-equivalent, not exact Android pinned assistance-bar layout or short-footer/human acceptance. No model Prompt edits/provider calls.",
+      "reviewSource": "0437a01bf9d6e6c7beb81b08bf740151b1470b40",
+      "evidence": [
+        "OWNER_CHARACTER_PERSON_TAGS_R71_FINAL_REVIEW.json"
+      ]
     }
   ],
   "deltas": [
@@ -3205,8 +3214,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only complete329 CharacterEditScreen person-prompt delta: actual structured-person entry reuses existing local catalog/tag annotations/global display preference and isolated expanded field. Native actual entry R71 one complete methodPASS including save/readback, person/card callback isolation; R70 invalid mandatory greeting fixture failure retained. Desktop inline popover is platform-equivalent, not exact Android pinned assistance-bar layout or short-footer/human acceptance. No model Prompt edits/provider calls.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/character/CharacterEditScreen.kt",
@@ -3215,8 +3224,12 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "CHARACTER_PERSON_LOCAL_TAG_AND_EXPANDED_EDITOR"
+      ],
+      "evidence": [
+        "OWNER_CHARACTER_PERSON_TAGS_R71_FINAL_REVIEW.json"
+      ]
     },
     {
       "id": "32906a76f2b85fce68285a146092ad91fd3f75e1:app/app/src/main/java/com/example/chatbar/ui/moments/MomentPostEditor.kt",
