@@ -5,6 +5,36 @@ import org.junit.Test
 import kotlin.test.*
 
 class DesktopMergePreviewTest {
+    @Test fun normalizedNamesRequireExplicitChoiceWithoutChangingRawLabelsOrOtherCategories() {
+        for ((computerName, incomingName) in listOf("Alice" to "alice", "Ａlice" to "Alice", " Alice " to "Alice",
+            "Café" to "Cafe\u0301", "I" to "i")) {
+            val pc = mapOf(card("pc", computerName))
+            val incoming = mapOf(card("phone", incomingName))
+            val plan = preview(pc, incoming)
+            val conflict = plan.conflicts.single()
+            assertEquals(setOf(DesktopMergePreview.Reason.SAME_NAME), conflict.reasons)
+            assertFails { plan.select(emptyMap()) }
+            val both = plan.select(mapOf(conflict.key to DesktopMergePreview.Choice.BOTH))
+            assertEquals(computerName, both.computer.single().records.values.single().getValue("name").jsonPrimitive.content)
+            assertEquals(incomingName, both.phone.single().records.values.single().getValue("name").jsonPrimitive.content)
+            assertTrue(both.forkIncomingUnits.isEmpty())
+            assertEquals(pc, both.computer.single().records)
+            assertEquals(incoming, both.phone.single().records)
+        }
+        assertTrue(preview(mapOf(card("pc", "  ")), mapOf(card("phone", " "))).conflicts.isEmpty())
+        val otherCategory = mapOf("entities/format_cards/f.json" to obj("""{"id":"f","name":"alice"}"""))
+        assertTrue(preview(mapOf(card("pc", "Alice")), otherCategory).conflicts.isEmpty())
+        fun moment(id: String, name: String) = "entities/moment_posts/$id.json" to obj(
+            """{"id":"$id","characterCardId":"c","sessionId":"s","senderName":"$name","text":"Synthetic","scheduledAt":1,"generatedAt":1,"desktopImageVersions":[]}""")
+        assertTrue(preview(mapOf(moment("pc", "Alice")), mapOf(moment("phone", "alice"))).conflicts.isEmpty())
+        val ambiguous = preview(mapOf(card("one", "Alice"), card("two", "ＡLICE")), mapOf(card("phone", " alice ")))
+        assertEquals(1, ambiguous.conflicts.size)
+        assertFails { ambiguous.select(emptyMap()) }
+        val both = ambiguous.select(mapOf(ambiguous.conflicts.single().key to DesktopMergePreview.Choice.BOTH))
+        assertEquals(2, both.computer.size)
+        assertEquals(1, both.phone.size)
+    }
+
     @Test fun studioHistoryAndDraftUseOneExplicitConflictChoiceRatherThanMixingCursors() {
         val pc = mapOf("entities/desktop_studio_edit_history.json" to obj("""{"committed":{"entries":[],"cursor":0}}"""),
             "entities/novelai_studio_draft.json" to obj("""{"basePrompt":"PC"}"""),
