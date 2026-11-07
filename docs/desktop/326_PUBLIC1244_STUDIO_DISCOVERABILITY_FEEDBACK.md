@@ -11,3 +11,5 @@ B2初次反馈是入口不易发现；后续用户明确完整生成预设可用
 R18（42342909490/controlcff779/normal930e）原5套24方法=23PASS、1既有原生桌面前置SKIP、0FAIL/ERROR。账户未知/已加载余额与会员各220/360/600/640/1100共10合成场景、左右操作点击在原布局方法中全部执行；已实际查看loaded600及220/360图。宽时同区并排，窄时信息先于回流控制，原进度和账户语义保留。PresetExchange原1方法完成预览/取消/确认/撤销，但它仅测Content、working/closing固定false，不能证明最新真实窗口外层与同页再次打开问题已修；此缺陷继续定位和专门后继验证，不借原PASS代验。
 
 原ZIP137232B，SHA256 `5deef6df021aca24f58cc4b02619b4de07861273a97e301a934d13cb35f5f732`，CRC/source/逐XML已核。R16/R17同一DSL编译失败且零XML，930e将BoxWithConstraints宽度先捕获再进入Row后执行R18，旧原件保留。生成审图素材只用人工合成账户/状态，不以用户截图作测试夹具。下一批成熟候选集中复测失败与受影响部分，不新发逐项问题或重复已通过项。公开1244/签26保持，不代装、不操作现用真实资料。
+
+外层回归R19（42343842566/controlab79）原1FAIL/0SKIP；system-err显示首个FullPanel的T5读取收到通用JSON假asset，发生Not in GZIP format后界面协程退出，不能当作用户同条件重复入口业务反例。d82将夹具限定为仅presets路径使用inline空manifest，分词器/其他类型委托实际asset reader，不读取预制preset内容、不跳过token producer、不放宽等待，并记录每次open序号。实际Studio入口→实际Exchange Window的R22原生后继待原件；生产预设逻辑尚未猜改，用户FAIL仍待解决。

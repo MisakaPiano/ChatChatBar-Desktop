@@ -2,7 +2,9 @@
 
 2026-11-07。固定上游12e的NovelAiPostProcessFiles.encode只在orientation为NORMAL时原PNG直传。Desktop原PostProcessor先按eXIf纠正预览尺寸，但Upscale的size=null分支仍发送原PNG；非方形旋转图的请求栅格尺寸与本地expected2x可能不一致，镜像图也没有物理归一。这是源码分支不一致；真实供应商是否如何处理该元数据尚未实测，不将推测写成实际服务端错误。
 
-合成回归通过真实PostProcessor→loopback HTTP读取image base64，直接用ImageIO读取原栅格而不自动旋转，核对orientation6/8/2的独立角标像素、宽高、alpha和不再携带二次方向；另一方法检查orientation1透明PNG原字节直传。返回合成正确2x响应，检查原输入不变、每次只有一个请求。旧生产R20待原件，后继仅在PNG原样分支增加方向前提，非正常方向直接编码已纠正raster；Enhance、普通PNG、非PNG、额度、受保护路由和重试语义保留。
+合成回归通过真实PostProcessor→loopback HTTP读取image base64，直接用ImageIO读取原栅格而不自动旋转，核对orientation6/8/2的独立角标像素、宽高、alpha和不再携带二次方向；另一方法检查orientation1透明PNG原字节直传。返回合成正确2x响应，检查原输入不变、每次只有一个请求。后继仅在PNG原样分支增加方向前提，非正常方向直接编码已纠正raster；Enhance、普通PNG、非PNG、额度、受保护路由和重试语义保留。
+
+旧生产R20（42343985121，normaladea/control d4eb）原2方法=普通透明1PASS、方向1业务FAIL：orientation6原请求栅格64×96而期望96×64。后继R21（42344062744，normale54/controlfd9b）同测试文件blob，原Usage5、EndpointPolicy3、PngOrientation3共11PASS、0FAIL/ERROR/SKIP；6/8/2全部实际请求检查完成，原Enhance、Vibe及请求护栏亦执行。R20原ZIP13095B SHA `9f7f6a6816b0bef79e9934602294e44c1001afe22e7d50034a04390874e64e03`；R21原ZIP14800B SHA `11ed2cebf985fc59506a7a9b92836e5d9303beaf81673ace3f7ad8526388c7d1`。SHA/CRC/source/所有XML逐方法已核，失败原件保留，本地回执`OWNER_UPSCALE_ORIENTATION_R20_R21_REVIEW.json`。当前d82的处理器及三测试blob与e54相等，不冒称一次全仓验证。
 
 本组不使用真实图片/凭据/供应商，不在本机运行JVM，不创建安装包或发布。其他148b路径与完整上游处置未因此闭合。
 

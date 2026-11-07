@@ -5,16 +5,21 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.awt.ComposeWindow
-import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.semantics.*
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.rememberWindowState
 import com.example.chatbar.desktop.security.InMemoryDesktopSecretStore
 import java.awt.event.WindowEvent
+import java.awt.Robot
+import java.awt.event.InputEvent
 import java.nio.file.Files
 import java.nio.file.Path
 import javax.swing.SwingUtilities
 import kotlinx.coroutines.*
 import kotlin.coroutines.CoroutineContext
 import kotlin.test.*
+import kotlin.math.roundToInt
 
 /** Actual Studio entry and actual exchange window; Content-only callbacks cannot prove reopening. */
 class DesktopStudioPresetWindowLifecycleTest {
@@ -43,6 +48,9 @@ class DesktopStudioPresetWindowLifecycleTest {
         val bad = Files.write(parent.resolve("invalid.ccbpreset"), byteArrayOf(1, 2, 3))
         var scene: ImageComposeScene? = null
         var opening = 0
+        var hostOpen by mutableStateOf(true)
+        val hostTitle = "CCB synthetic preset lifecycle Studio"
+        val robot = Robot().apply { isAutoWaitForIdle = false }
         fun walk(node: SemanticsNode): List<SemanticsNode> = listOf(node) + node.children.flatMap(::walk)
         fun matches(node: SemanticsNode, label: String) =
             node.config.getOrNull(SemanticsProperties.ContentDescription)?.contains(label) == true ||
@@ -60,17 +68,26 @@ class DesktopStudioPresetWindowLifecycleTest {
         }
         fun windows() = java.awt.Window.getWindows().filterIsInstance<ComposeWindow>()
             .filter { it.title == "生成预设" && it.isDisplayable }
+        fun host() = java.awt.Window.getWindows().filterIsInstance<ComposeWindow>()
+            .single { it.title == hostTitle && it.isDisplayable }
+        suspend fun pointer(window: ComposeWindow, node: SemanticsNode) {
+            window.toFront(); window.requestFocus()
+            val position = node.positionOnScreen
+            val x = (position.x + node.boundsInRoot.width / 2).roundToInt()
+            val y = (position.y + node.boundsInRoot.height / 2).roundToInt()
+            assertTrue(window.bounds.contains(x, y), "Synthetic native target outside its own window")
+            robot.mouseMove(x, y); robot.mousePress(InputEvent.BUTTON1_DOWN_MASK); robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK)
+            settle()
+        }
         suspend fun open(): ComposeWindow {
             opening++
             println("PRESET_WINDOW_OPEN attempt=$opening")
             settle()
-            val entry = assertNotNull(scene).semanticsOwners.flatMap { walk(it.rootSemanticsNode) }.single {
+            val entry = nodes(host()).single {
                 matches(it, "生成预设…") && it.config.contains(SemanticsActions.OnClick)
             }
             assertFalse(entry.config.contains(SemanticsProperties.Disabled), "Same-page preset entry disabled")
-            val point = entry.boundsInRoot.center
-            assertNotNull(scene).sendPointerEvent(PointerEventType.Press, point, button = PointerButton.Primary)
-            assertNotNull(scene).sendPointerEvent(PointerEventType.Release, point, button = PointerButton.Primary)
+            pointer(host(), entry)
             await("Actual preset window did not reopen on the same Studio page, attempt=$opening") {
                 windows().size == 1 && windows().single().isShowing && action(windows().single(), "导出当前生成预设") != null
             }
@@ -79,8 +96,7 @@ class DesktopStudioPresetWindowLifecycleTest {
         suspend fun click(window: ComposeWindow, label: String) {
             val button = assertNotNull(action(window, label), label)
             assertFalse(button.config.contains(SemanticsProperties.Disabled), label)
-            assertTrue(button.config[SemanticsActions.OnClick].action!!.invoke(), label)
-            settle()
+            pointer(window, button)
         }
         suspend fun idle(window: ComposeWindow) = await("Exchange working flag did not reset") {
             action(window, "导出当前生成预设")?.config?.contains(SemanticsProperties.Disabled) == false &&
@@ -96,11 +112,27 @@ class DesktopStudioPresetWindowLifecycleTest {
             assertTrue(controller.exportGenerationPreset(source))
             assertTrue(controller.edit { it.copy(basePrompt = "Retained target draft") })
             val original = Files.readAllBytes(root.resolve("entities/novelai_studio_draft.json"))
-            scene = ImageComposeScene(1520, 1000, coroutineContext = edt) { DesktopNovelAiStudioPanel(controller) }
+            scene = ImageComposeScene(1, 1, coroutineContext = edt) {
+                if (hostOpen) Window(onCloseRequest = { hostOpen = false }, title = hostTitle,
+                    state = rememberWindowState(width = 1300.dp, height = 850.dp)) { DesktopNovelAiStudioPanel(controller) }
+            }
+            await("Actual native Studio host did not initialize") {
+                java.awt.Window.getWindows().filterIsInstance<ComposeWindow>().any {
+                    it.title == hostTitle && it.isShowing && nodes(it).any { node -> matches(node, "生成预设…") }
+                }
+            }
 
             close(open())
             close(open(), native = true)
             var window = open()
+            window.extendedState = java.awt.Frame.ICONIFIED
+            await("Synthetic preset child did not minimize") { window.extendedState and java.awt.Frame.ICONIFIED != 0 }
+            val existing = window
+            window = open()
+            assertSame(existing, window, "Opening an existing child must not discard preview or operation ownership")
+            await("Repeated Studio entry did not restore its existing minimized preset window") {
+                window.extendedState and java.awt.Frame.ICONIFIED == 0 && window.isActive
+            }
             click(window, "导入生成预设…"); idle(window) // File chooser cancelled.
             click(window, "导出当前生成预设"); idle(window)
             input = bad
@@ -127,6 +159,7 @@ class DesktopStudioPresetWindowLifecycleTest {
             close(open())
             assertTrue(app.taskRuntime.tasks.value.isEmpty())
         } finally {
+            hostOpen = false
             scene?.close()
             repeat(3) { yield(); delay(20) }
             app.close()
