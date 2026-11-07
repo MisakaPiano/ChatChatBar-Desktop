@@ -2,6 +2,12 @@
 
 2026-11-07，固定141→12e继续。当前普通候选、公开1244/db7/签26、A1真人FAIL及315未采纳不动；本批没有本机JVM、真实资料、代装或发布。
 
+## 会话复制的已有完整发布边界
+
+d3 SessionCopyService的增量是把整次复制包在维护访问中，避免全应用迁移看到半复制结果。Desktop实际Controller进入DesktopSaveSlotService.duplicate，经原voice/task/memory session reservation后，在normal内capture完整源proof；planner只写离线workspace，不发布live记录。提交前先drain audio，再exclusive核完整sourceProof、target空和plan字节，最后由recoverable session journal原子发布。准备阶段允许另一次备份看到完整旧状态，提交后看到完整新状态；源变化则拒绝。这是不同事务形状的平台等位，不应机械再包最外层normal，否则会出现normal→exclusive升级拒绝。
+
+`OWNER_SESSION_COPY_ADMISSION_REUSE.json`重核service/plan/journal/SessionCopyPolicy四个owner blob与原162完全相同，并核三个原测试body及Fixture未变（当前测试只另加316的narrative方法，未称全测试blob相同）。原162 ZIP/SHA/CRC/指定XML三方法PASS，覆盖版本/source turn/draft/settings、准备后源改变与取消、图片/音频/当前记忆独立身份。只复用不新跑，实际Container session reservation和Controller调用另核；将d3这一维护delta映射EQUIVALENT，不提升全部复制/恢复或真实用户验收。
+
 ## 历史图片的实际后继
 
 1d2850上游HistoryThumbnail按实际显示边长缩小解码。Desktop网格原已限制静态预览最长边1600，并非全原图无界读取；但180dp网格没有传显示目标。d877的DesktopHistoryThumbnail按实际格子宽高与density生成稳定的Fit目标，复用原DesktopOwnedImage/有方向读取。选择和状态重组不更换目标lambda；格子或density改变才重解码。原大图预览、详情及资源原文不改，动画既有路径未宣称同步缩小解码。

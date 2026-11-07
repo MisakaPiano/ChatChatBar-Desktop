@@ -7912,8 +7912,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Actual Desktop duplicate captures under normal admission, prepares only in an offline workspace, then drains audio and verifies full source/empty target/plan under exclusive admission before recoverable journal commit. Existing voice/task/memory session reservation remains. Four owner blobs and three original method bodies/proofs reused; no blanket outer normal lease or whole-copy/native acceptance claim.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/chat/SessionCopyService.kt",
@@ -7923,7 +7923,10 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "docs/desktop/324_IMAGE_HISTORY_AND_MEMORY_ADMISSION_REUSE.md",
+        "OWNER_SESSION_COPY_ADMISSION_REUSE.json"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/community/CommunityService.kt",
@@ -17561,5 +17564,11 @@
     "successorRun": 42340654767,
     "successorPassed": 4,
     "scope": "Current four successor methods plus source-matched old29=33 history methods, not one new33 or31+4. Static decode Fit adaptation; animations retain existing separate path."
+  },
+  "sessionCopyAdmissionReview": {
+    "mappedDelta": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/chat/SessionCopyService.kt",
+    "originalRun": 42085881455,
+    "matchedMethods": 3,
+    "newRuns": 0
   }
 }
