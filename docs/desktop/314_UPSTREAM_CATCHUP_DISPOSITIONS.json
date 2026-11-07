@@ -2190,6 +2190,51 @@
       "evidence": [
         "OWNER_RELEASE_UPDATE10_SUPPORT_DISPOSITIONS.json"
       ]
+    },
+    {
+      "id": "UPSTREAM_BACKUP_REFERENCE_SUPPORT_21896D69CD255622",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Complete upstream backup-maintenance reference delta; exact raw changes revalidated against independent complete reading. Actual native Registry/Selection/Mapping/Writer/Source/Inspector and selected graph/identity/inline methods own format, while data gate/frozen sources/Controllers own admission and actual R1375 owns final operation status. Preview/modern modes/typed identity/memory/draft/SaveSlot/settings/retained media keep separately scoped originals. Native protected independent root/early authority is distinct from Android in-place XML/Keystore route; PC pending deletion bytes remain inert without an executor, incoming commands excluded by59e with exact R138/R139 still pending. Upstream opt-in1GiB/device/redeploy instructions are not Desktop proof or new authority. Declared84..88 and native resource/record limits remain. No new feature/run/public/human result and Engine not closed from support text.",
+      "reviewSource": "8a7390116e0c44b7fc4bf7a2875f1a1a25e2d1e3",
+      "evidence": [
+        "OWNER_BACKUP5_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_BACKUP_REFERENCE_SUPPORT_C46C5552F90CDE62",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Complete upstream backup-maintenance reference delta; exact raw changes revalidated against independent complete reading. Actual native Registry/Selection/Mapping/Writer/Source/Inspector and selected graph/identity/inline methods own format, while data gate/frozen sources/Controllers own admission and actual R1375 owns final operation status. Preview/modern modes/typed identity/memory/draft/SaveSlot/settings/retained media keep separately scoped originals. Native protected independent root/early authority is distinct from Android in-place XML/Keystore route; PC pending deletion bytes remain inert without an executor, incoming commands excluded by59e with exact R138/R139 still pending. Upstream opt-in1GiB/device/redeploy instructions are not Desktop proof or new authority. Declared84..88 and native resource/record limits remain. No new feature/run/public/human result and Engine not closed from support text.",
+      "reviewSource": "8a7390116e0c44b7fc4bf7a2875f1a1a25e2d1e3",
+      "evidence": [
+        "OWNER_BACKUP5_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_BACKUP_REFERENCE_SUPPORT_F0311FE58B903CAD",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Complete upstream backup-maintenance reference delta; exact raw changes revalidated against independent complete reading. Actual native Registry/Selection/Mapping/Writer/Source/Inspector and selected graph/identity/inline methods own format, while data gate/frozen sources/Controllers own admission and actual R1375 owns final operation status. Preview/modern modes/typed identity/memory/draft/SaveSlot/settings/retained media keep separately scoped originals. Native protected independent root/early authority is distinct from Android in-place XML/Keystore route; PC pending deletion bytes remain inert without an executor, incoming commands excluded by59e with exact R138/R139 still pending. Upstream opt-in1GiB/device/redeploy instructions are not Desktop proof or new authority. Declared84..88 and native resource/record limits remain. No new feature/run/public/human result and Engine not closed from support text.",
+      "reviewSource": "8a7390116e0c44b7fc4bf7a2875f1a1a25e2d1e3",
+      "evidence": [
+        "OWNER_BACKUP5_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_BACKUP_REFERENCE_SUPPORT_CBC52B72EF1592C9",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Complete upstream backup-maintenance reference delta; exact raw changes revalidated against independent complete reading. Actual native Registry/Selection/Mapping/Writer/Source/Inspector and selected graph/identity/inline methods own format, while data gate/frozen sources/Controllers own admission and actual R1375 owns final operation status. Preview/modern modes/typed identity/memory/draft/SaveSlot/settings/retained media keep separately scoped originals. Native protected independent root/early authority is distinct from Android in-place XML/Keystore route; PC pending deletion bytes remain inert without an executor, incoming commands excluded by59e with exact R138/R139 still pending. Upstream opt-in1GiB/device/redeploy instructions are not Desktop proof or new authority. Declared84..88 and native resource/record limits remain. No new feature/run/public/human result and Engine not closed from support text.",
+      "reviewSource": "8a7390116e0c44b7fc4bf7a2875f1a1a25e2d1e3",
+      "evidence": [
+        "OWNER_BACKUP5_SUPPORT_DISPOSITIONS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_BACKUP_REFERENCE_SUPPORT_F7614063128D99BF",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Complete upstream backup-maintenance reference delta; exact raw changes revalidated against independent complete reading. Actual native Registry/Selection/Mapping/Writer/Source/Inspector and selected graph/identity/inline methods own format, while data gate/frozen sources/Controllers own admission and actual R1375 owns final operation status. Preview/modern modes/typed identity/memory/draft/SaveSlot/settings/retained media keep separately scoped originals. Native protected independent root/early authority is distinct from Android in-place XML/Keystore route; PC pending deletion bytes remain inert without an executor, incoming commands excluded by59e with exact R138/R139 still pending. Upstream opt-in1GiB/device/redeploy instructions are not Desktop proof or new authority. Declared84..88 and native resource/record limits remain. No new feature/run/public/human result and Engine not closed from support text.",
+      "reviewSource": "8a7390116e0c44b7fc4bf7a2875f1a1a25e2d1e3",
+      "evidence": [
+        "OWNER_BACKUP5_SUPPORT_DISPOSITIONS.json"
+      ]
     }
   ],
   "deltas": [
@@ -8336,11 +8381,16 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Complete upstream backup-maintenance reference delta; exact raw changes revalidated against independent complete reading. Actual native Registry/Selection/Mapping/Writer/Source/Inspector and selected graph/identity/inline methods own format, while data gate/frozen sources/Controllers own admission and actual R1375 owns final operation status. Preview/modern modes/typed identity/memory/draft/SaveSlot/settings/retained media keep separately scoped originals. Native protected independent root/early authority is distinct from Android in-place XML/Keystore route; PC pending deletion bytes remain inert without an executor, incoming commands excluded by59e with exact R138/R139 still pending. Upstream opt-in1GiB/device/redeploy instructions are not Desktop proof or new authority. Declared84..88 and native resource/record limits remain. No new feature/run/public/human result and Engine not closed from support text.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_BACKUP_REFERENCE_SUPPORT_21896D69CD255622"
+      ],
+      "evidence": [
+        "OWNER_BACKUP5_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:.agents/skills/chatbar-app-update/SKILL.md",
@@ -10759,11 +10809,16 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Complete upstream backup-maintenance reference delta; exact raw changes revalidated against independent complete reading. Actual native Registry/Selection/Mapping/Writer/Source/Inspector and selected graph/identity/inline methods own format, while data gate/frozen sources/Controllers own admission and actual R1375 owns final operation status. Preview/modern modes/typed identity/memory/draft/SaveSlot/settings/retained media keep separately scoped originals. Native protected independent root/early authority is distinct from Android in-place XML/Keystore route; PC pending deletion bytes remain inert without an executor, incoming commands excluded by59e with exact R138/R139 still pending. Upstream opt-in1GiB/device/redeploy instructions are not Desktop proof or new authority. Declared84..88 and native resource/record limits remain. No new feature/run/public/human result and Engine not closed from support text.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_BACKUP_REFERENCE_SUPPORT_C46C5552F90CDE62"
+      ],
+      "evidence": [
+        "OWNER_BACKUP5_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "1d2850a4ed34fca614ce9809acd48e959d8a9d08:.agents/skills/chatbar-image-generation-runtime/SKILL.md",
@@ -11138,11 +11193,16 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Complete upstream backup-maintenance reference delta; exact raw changes revalidated against independent complete reading. Actual native Registry/Selection/Mapping/Writer/Source/Inspector and selected graph/identity/inline methods own format, while data gate/frozen sources/Controllers own admission and actual R1375 owns final operation status. Preview/modern modes/typed identity/memory/draft/SaveSlot/settings/retained media keep separately scoped originals. Native protected independent root/early authority is distinct from Android in-place XML/Keystore route; PC pending deletion bytes remain inert without an executor, incoming commands excluded by59e with exact R138/R139 still pending. Upstream opt-in1GiB/device/redeploy instructions are not Desktop proof or new authority. Declared84..88 and native resource/record limits remain. No new feature/run/public/human result and Engine not closed from support text.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_BACKUP_REFERENCE_SUPPORT_F0311FE58B903CAD"
+      ],
+      "evidence": [
+        "OWNER_BACKUP5_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:.agents/skills/chatbar-app-backup/references/incremental-restore.md",
@@ -11158,11 +11218,16 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Complete upstream backup-maintenance reference delta; exact raw changes revalidated against independent complete reading. Actual native Registry/Selection/Mapping/Writer/Source/Inspector and selected graph/identity/inline methods own format, while data gate/frozen sources/Controllers own admission and actual R1375 owns final operation status. Preview/modern modes/typed identity/memory/draft/SaveSlot/settings/retained media keep separately scoped originals. Native protected independent root/early authority is distinct from Android in-place XML/Keystore route; PC pending deletion bytes remain inert without an executor, incoming commands excluded by59e with exact R138/R139 still pending. Upstream opt-in1GiB/device/redeploy instructions are not Desktop proof or new authority. Declared84..88 and native resource/record limits remain. No new feature/run/public/human result and Engine not closed from support text.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_BACKUP_REFERENCE_SUPPORT_CBC52B72EF1592C9"
+      ],
+      "evidence": [
+        "OWNER_BACKUP5_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:.agents/skills/chatbar-fish-audio-voice/SKILL.md",
@@ -12496,11 +12561,16 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Complete upstream backup-maintenance reference delta; exact raw changes revalidated against independent complete reading. Actual native Registry/Selection/Mapping/Writer/Source/Inspector and selected graph/identity/inline methods own format, while data gate/frozen sources/Controllers own admission and actual R1375 owns final operation status. Preview/modern modes/typed identity/memory/draft/SaveSlot/settings/retained media keep separately scoped originals. Native protected independent root/early authority is distinct from Android in-place XML/Keystore route; PC pending deletion bytes remain inert without an executor, incoming commands excluded by59e with exact R138/R139 still pending. Upstream opt-in1GiB/device/redeploy instructions are not Desktop proof or new authority. Declared84..88 and native resource/record limits remain. No new feature/run/public/human result and Engine not closed from support text.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_BACKUP_REFERENCE_SUPPORT_F7614063128D99BF"
+      ],
+      "evidence": [
+        "OWNER_BACKUP5_SUPPORT_DISPOSITIONS.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "81f5449803698a179549530c404e11018f9a62f8:.agents/skills/chatbar-save-slot/SKILL.md",

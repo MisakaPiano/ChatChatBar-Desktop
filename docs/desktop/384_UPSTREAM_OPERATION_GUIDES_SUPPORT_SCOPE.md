@@ -7,3 +7,5 @@
 逐项来源与边界见 OWNER_DOCUMENTATION26_SUPPORT_DISPOSITIONS.json；0新增运行、0新增功能，314整体仍false。
 
 另10项app-update/release-publish维护文本变化按同一边界登记：Android编译/APK及runTests默认值仍是上游平台说明。Desktop候选与稳定链工作流只产工程证据，release_metadata.py不上传；真实正文核对、不可变身份/冲突拒绝及有界状态重试仍属既有发行owner职责，不从技能文字获得公开权限。原267稳定升级身份与当前1244/sign26范围保持，0新功能/运行/真人结论。逐项raw SHA与blob见 OWNER_RELEASE_UPDATE10_SUPPORT_DISPOSITIONS.json。
+
+5项备份skill/增量恢复reference变化亦只作维护支持：实际选择/资源/身份、准入与新根/保护凭据、类型及记忆重映射分别沿既有owner和分源检查。Android删除执行器与Desktop惰性PC记录的差异明确保留，手机待删除指令不带入；当前Engine检查未因reference读完而通过。上游opt-in大包、设备和发布流程不借为Desktop验证或授权；原生84–88和容量边界保持。见 OWNER_BACKUP5_SUPPORT_DISPOSITIONS.json。
