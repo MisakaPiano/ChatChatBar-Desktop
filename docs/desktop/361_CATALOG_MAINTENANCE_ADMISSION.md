@@ -1,11 +1,11 @@
 # 辅助词库与快照的准入
 
-固定d3为catalog download/install/publication增加维护受理。Desktop实际Studio.installCatalog→app-owned任务→CatalogUpdate.install此前未进入data gate，cold assets install也未受理；真实目录auxiliary/novelai会被AppDataSnapshotService整根复制，automatic/coordinated快照只取data exclusive而不排空这类任务。原排序或代理测试不能证明这种准入。R105以实际AppContainer Tag cold metadata和实际Updater持有源读取/下载，交叉真实CoordinatedSnapshot，旧两个方法待原件，不称已经损坏数据。
+固定d3为catalog download/install/publication增加维护受理。Desktop实际Studio.installCatalog→app-owned任务→CatalogUpdate.install此前未进入data gate，cold assets install也未受理；真实目录auxiliary/novelai会被AppDataSnapshotService整根复制，automatic/coordinated快照只取data exclusive而不排空这类任务。原排序或代理测试不能证明这种准入。R105以实际AppContainer Tag cold metadata和实际Updater持有源读取/下载，交叉真实CoordinatedSnapshot，R105原318B为新合成夹具的挂起构建编译错误，0XML/0body，不能称旧运行反例或已经损坏数据；R106因同已知夹具错误取消，原320B/0XML保留。
 
 AppContainer现把同coordinator的async normal及短同步准入注入基础设施Assets。Tag全部public suspend入口、整个Update.install（含清理）先normal，再现有monitor/IO。cold Tag的两个库/索引都在该owner内；internal installAdmitted/indexAdmitted仅在已经受理的Tag/Dictionary owner调用。同步Dictionary lookup/search持短同步lease，async completion先normal；public Assets.install/index仍有自受理默认入口。默认NoOp供独立纯夹具，生产显式绑定真实coordinator。
 
 不使用ThreadLocal借外部lease，不在admitted async内部套无上下文同步入口而误拒绝pending维护；不把下载排在snapshot之后还允许authority写入跨越exclusive。原proxy策略、Git-blob/hash、schema/计数校验、排名/过滤/翻译和authority-last atomic提交保持。open仍是Assets最后一个参数，现有trailing lambda构造保持兼容。没有修改模型Prompt。
 
-必要实际验证仅三方法：真实cold Tag两个文件与快照完整性；真实Updater下载/排名索引/active authority/清理与快照；真实应用Dictionary suggestions的cold SQLite安装、同步维护拒绝及正常重试。全用inline合成SQLite/GZIP和HTTP interceptor，不读产品预制资产、不调用provider。旧排行/代理有效证据分源复用，不重跑。当前待原件，无本机JVM/真实根/新包/公开或真人验收。
+必要实际验证仅三方法：真实cold Tag两个文件与快照完整性；真实Updater下载/排名索引/active authority/清理与快照；真实应用Dictionary suggestions的cold SQLite安装、同步维护拒绝及正常重试。全用inline合成SQLite/GZIP和HTTP interceptor，不读产品预制资产、不调用provider。旧排行/代理有效证据分源复用，不重跑。b5bb仅把夹具helper改为suspend；R107原9807B/SHA256 23b4a52a637433910221b71ee5a3437232f179df71f06df21925ca6ccada8c9b核CRC/source/唯一XML/空stderr，三实际方法完整PASS。证据见OWNER_CATALOG_R107_COMPLETE_REVIEW.json；没有本机JVM/真实根/新包/公开或真人验收。
 
 另有已安装tag库wire路径与native auxiliary目录缺少激活/导出桥，以及modern replace/update/add-copies模式差异，独立保留后继；不能用本次准入证明它们已完成。

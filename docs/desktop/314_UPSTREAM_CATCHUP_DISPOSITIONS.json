@@ -1434,6 +1434,42 @@
       "evidence": [
         "OWNER_HISTORY_MEDIA_R100_VALID_SIX_REVIEW.json"
       ]
+    },
+    {
+      "id": "EDITOR_DRAFT_ASSET_COMPLETE_D3_ACTUAL_ADMISSION",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete d3 EditorDraftAssetService write-admission delta: production manual stage/crop/text uses short sync admission after chooser; generated image apply and materialize/rollback retain existing normal owners. Draft delete/session cleanup and Management Draft confirmation share normal through physical cleanup; normal is before draft mutex. Current only two DraftResources production constructions/call graphs verified. R103 new3+existing save4 complete and R104 actual Management→CoordinatedSnapshot1 complete, separately sourced. Entity Core deletion remains outside Draft normal and is checked. No raw utility race inference, blanket root/full-backup or native/human claim.",
+      "reviewSource": "8afa20bcb025cbab0d77ad0f375cd12f28e0a1bf",
+      "evidence": [
+        "OWNER_EDITOR_ASSET_FULL_D3_R103_R104_REVIEW.json"
+      ]
+    },
+    {
+      "id": "IMAGE_PROCESS_STORAGE_COMPLETE_D3_PLATFORM_REUSE",
+      "disposition": "EQUIVALENT",
+      "scope": "Desktop tools operate on supplied bytes/BufferedImage and copy before paint; disguise produces ByteArrayOutputStream; restore uses invocation-local Files.createTempFile OS temporary paths and exact temporary cleanup, not appDataRoot/images/image-processing. Explicit apply to Studio uses gated importGuidance/applyGuidanceEdit; explicit Save invokes external file writer. Brush settings belong separate already-gated preferences owner, not a processing cache. No Desktop hidden app-root processing output cache requiring Android guard.",
+      "reviewSource": "b5bb71056f220f87df1289aae00d75ce65899bcb",
+      "evidence": [
+        "OWNER_IMAGE_SCREENSHOT_SHARED_HOST_THREE_D3_REUSE.json"
+      ]
+    },
+    {
+      "id": "LONG_SCREENSHOT_STORAGE_COMPLETE_D3_PLATFORM_REUSE",
+      "disposition": "EQUIVALENT",
+      "scope": "ChatScreenshotHost captures explicit timeline and source identities, renders memory PNG/document models. saveDesktopScreenshotPagesVerified/saveDesktopStructuredDocumentVerified verifies messages and resource hashes before and after explicit picker; writes only chosen file. Android app-files screenshot share cache has no Desktop auto-root-write equivalent. No new screenshot compatibility/visual acceptance inferred.",
+      "reviewSource": "b5bb71056f220f87df1289aae00d75ce65899bcb",
+      "evidence": [
+        "OWNER_IMAGE_SCREENSHOT_SHARED_HOST_THREE_D3_REUSE.json"
+      ]
+    },
+    {
+      "id": "SHARED_IMPORT_BACKUP_HOST_COMPLETE_D3_REUSE",
+      "disposition": "EQUIVALENT",
+      "scope": "Actual backup-magic queue routes to dedicated password/retry/explicit preview; ordinary shared Host suppressed for dedicated password, backup not a typed-resource import. Existing Controller3+Host2 complete methods reused from failed-overall R02; no modern replacement/add-copies claim.",
+      "reviewSource": "b5bb71056f220f87df1289aae00d75ce65899bcb",
+      "evidence": [
+        "OWNER_IMAGE_SCREENSHOT_SHARED_HOST_THREE_D3_REUSE.json"
+      ]
     }
   ],
   "deltas": [
@@ -8819,8 +8855,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete d3 EditorDraftAssetService write-admission delta: production manual stage/crop/text uses short sync admission after chooser; generated image apply and materialize/rollback retain existing normal owners. Draft delete/session cleanup and Management Draft confirmation share normal through physical cleanup; normal is before draft mutex. Current only two DraftResources production constructions/call graphs verified. R103 new3+existing save4 complete and R104 actual Management→CoordinatedSnapshot1 complete, separately sourced. Entity Core deletion remains outside Draft normal and is checked. No raw utility race inference, blanket root/full-backup or native/human claim.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/draft/EditorDraftAssetService.kt",
@@ -8829,8 +8865,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "EDITOR_DRAFT_ASSET_COMPLETE_D3_ACTUAL_ADMISSION"
+      ],
+      "evidence": [
+        "OWNER_EDITOR_ASSET_FULL_D3_R103_R104_REVIEW.json",
+        "docs/desktop/360_CHARACTER_MANUAL_DRAFT_ADMISSION.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/image/DanbooruTagCatalog.kt",
@@ -8905,8 +8946,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Desktop tools operate on supplied bytes/BufferedImage and copy before paint; disguise produces ByteArrayOutputStream; restore uses invocation-local Files.createTempFile OS temporary paths and exact temporary cleanup, not appDataRoot/images/image-processing. Explicit apply to Studio uses gated importGuidance/applyGuidanceEdit; explicit Save invokes external file writer. Brush settings belong separate already-gated preferences owner, not a processing cache. No Desktop hidden app-root processing output cache requiring Android guard.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/image/ImageProcessingService.kt",
@@ -8915,8 +8956,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "IMAGE_PROCESS_STORAGE_COMPLETE_D3_PLATFORM_REUSE"
+      ],
+      "evidence": [
+        "OWNER_IMAGE_SCREENSHOT_SHARED_HOST_THREE_D3_REUSE.json",
+        "docs/desktop/362_IMAGE_SCREENSHOT_SHARED_HOST_STORAGE_REUSE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiImageStorage.kt",
@@ -9404,8 +9450,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "ChatScreenshotHost captures explicit timeline and source identities, renders memory PNG/document models. saveDesktopScreenshotPagesVerified/saveDesktopStructuredDocumentVerified verifies messages and resource hashes before and after explicit picker; writes only chosen file. Android app-files screenshot share cache has no Desktop auto-root-write equivalent. No new screenshot compatibility/visual acceptance inferred.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/chat/ChatLongScreenshot.kt",
@@ -9414,8 +9460,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "LONG_SCREENSHOT_STORAGE_COMPLETE_D3_PLATFORM_REUSE"
+      ],
+      "evidence": [
+        "OWNER_IMAGE_SCREENSHOT_SHARED_HOST_THREE_D3_REUSE.json",
+        "docs/desktop/362_IMAGE_SCREENSHOT_SHARED_HOST_STORAGE_REUSE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/ui/chat/ChatViewModel.kt",
@@ -9505,8 +9556,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Actual backup-magic queue routes to dedicated password/retry/explicit preview; ordinary shared Host suppressed for dedicated password, backup not a typed-resource import. Existing Controller3+Host2 complete methods reused from failed-overall R02; no modern replacement/add-copies claim.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/shared/SharedImportHost.kt",
@@ -9515,8 +9566,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "SHARED_IMPORT_BACKUP_HOST_COMPLETE_D3_REUSE"
+      ],
+      "evidence": [
+        "OWNER_IMAGE_SCREENSHOT_SHARED_HOST_THREE_D3_REUSE.json",
+        "docs/desktop/362_IMAGE_SCREENSHOT_SHARED_HOST_STORAGE_REUSE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/test/java/com/example/chatbar/domain/backup/BackupArchiveTest.kt",
