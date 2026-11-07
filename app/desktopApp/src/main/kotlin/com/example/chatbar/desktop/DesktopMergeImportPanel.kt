@@ -21,7 +21,7 @@ internal fun DesktopMergeImportPanel(controller: DesktopMergeImportController, s
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         DesktopDataSectionHeading("导入与合并")
         StatusText("保留电脑现有内容，将手机数据合并到新的独立目录。冲突由你选择，原目录和备份文件保留。")
-        StatusText("按官方 1.4.5–1.4.8 格式检查备份，不支持的内容会在提交前拒绝。历史录音和朋友圈原始内容单独保全，不会重新绑定录音版本或执行朋友圈任务。")
+        StatusText("按官方 1.4.5–1.4.9 已适配的备份格式检查，不支持的内容会在提交前拒绝。历史录音和朋友圈原始内容单独保全，不会重新绑定录音版本或执行朋友圈任务。")
         if (!state.restartRequired) {
             ActionRow {
                 BootstrapButton("选择备份并检查…", enabled = !state.busy) {
