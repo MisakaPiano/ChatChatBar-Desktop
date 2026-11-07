@@ -23,3 +23,5 @@ R75／42363159910在生产compileKotlin停住：跨模块public可空模型属�
 R76／42363584677生产编译已过，compileTestKotlin指出Disabled语义标记类型为Unit、不能与Boolean比较。原316B／SHA0afebff8…2dd059仅source、0XML；三处检查改为既有config.contains模式，仅修测试。R74也包含这一独立错误，不能全部归为ComposeWindow连锁；原日志保留。新增两类其余窗口／语义／PNG／模型和undo接口已对既有调用重新核对，R77同原四方法继续。
 
 R77实际nativeWindow一个方法完整PASS：展开／返回／resize保留fraction与201%zoom、一次仅一个viewport、原生关闭回面板、新record关闭旧窗并以新decoded身份重置。原图已查看，详 `OWNER_R77_WINDOW_CARD_AND_PNG_FIXTURE_REVIEW.json`。同run卡import另1PASS；DDIM和V+两新PNG缺v4 caption及legacy uc／seed完整结构而失败，均未到相应新增操作，不当产品回归。只补合法v4_prompt结构并让import返回值立即断言，R79仅重跑失败两方法；Window／Card及R72不重跑。
+
+R79／42364653605原24862B／SHA37a2e364…9fdcbd已核CRC、source及全部2XML和空stderr。合法旧DDIM PNG实际Panel唯一方法完整PASS：High只禁Enhance并显原因，Medium有效EA可用，独立Upscale可用，原bytes不变、任务空。V+另1PASS分开；native展开继续复用R77唯一方法、同步像素继续复用R72唯一方法，不重跑、不把它们称同一全跑。当前Panel／测试匹配R79源，Strength／Noise接线已编译；不冒称已新测两字段交互或真人验收。

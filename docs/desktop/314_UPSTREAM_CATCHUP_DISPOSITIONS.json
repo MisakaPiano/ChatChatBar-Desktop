@@ -1154,6 +1154,82 @@
         "OWNER_R77_WINDOW_CARD_AND_PNG_FIXTURE_REVIEW.json",
         "OWNER_VIBE_INLINE_8C_VM_REUSE.json"
       ]
+    },
+    {
+      "id": "CHARACTER_NAI_UI_SEVEN_DELTAS",
+      "disposition": "EQUIVALENT",
+      "scope": "Only seven complete CharacterEditScreen deltas: advanced model/sampling location,nullable card settings and dirty detection,capability-aware sampler/V+,High/Medium suspension,transparent and reset. Actual original widget/helpers/test blobs match; original shared1/Desktop2/R06 separately reused. Original1244 human saveFAIL retained.",
+      "reviewSource": "b1a261bcf71c7d681ae48729e29478a8a023b179",
+      "evidence": [
+        "OWNER_SCOPED_REUSE_R79_REVIEW.json",
+        "COORDINATOR_CHARACTER_NAI_UI_SEVEN_DELTAS_REUSE.json",
+        "docs/desktop/346_SCOPED_EXISTING_UI_HISTORY_MOMENT_REUSE.md"
+      ]
+    },
+    {
+      "id": "HISTORY_RANGE_THUMBNAIL_DELETION_559_1D2",
+      "disposition": "EQUIVALENT",
+      "scope": "Only four complete559/1d2 Screen/VM deltas: actual Shift-range/anchor/reset,stable cell decoding and synchronous delete latch/frozen requested selections. Original pointer method,R14four and R10one reused separately; new UI latch source-reviewed,not newly rapid-click tested.",
+      "reviewSource": "b1a261bcf71c7d681ae48729e29478a8a023b179",
+      "evidence": [
+        "OWNER_SCOPED_REUSE_R79_REVIEW.json",
+        "COORDINATOR_HISTORY_559_1D2_SCREEN_VM_REUSE.json",
+        "docs/desktop/346_SCOPED_EXISTING_UI_HISTORY_MOMENT_REUSE.md"
+      ]
+    },
+    {
+      "id": "MOMENT_MEDIA_RETENTION_1A",
+      "disposition": "EQUIVALENT",
+      "scope": "Only complete newMomentMediaRetention helper semantics: exact known-candidate cleanup strictly retains all entity references including post avatar/current/all versions. Three current owners/test exact original162,two complete version/concurrency methods reused;no new card-delete UI execution.",
+      "reviewSource": "b1a261bcf71c7d681ae48729e29478a8a023b179",
+      "evidence": [
+        "OWNER_SCOPED_REUSE_R79_REVIEW.json",
+        "COORDINATOR_MOMENT_MEDIA_RETENTION_1A_REUSE.json",
+        "docs/desktop/346_SCOPED_EXISTING_UI_HISTORY_MOMENT_REUSE.md"
+      ]
+    },
+    {
+      "id": "MOMENT_CARD_PARAMETERS_VM_8C",
+      "disposition": "EQUIVALENT",
+      "scope": "Only two-line8c MomentsVM delta: normal/debug core and manualDesktop generation apply card settings before request. Original normal6/manual1 distinct sources,current manual owners exact. Not new7/ContentPreview coverage/wholeMoments.",
+      "reviewSource": "b1a261bcf71c7d681ae48729e29478a8a023b179",
+      "evidence": [
+        "OWNER_SCOPED_REUSE_R79_REVIEW.json",
+        "COORDINATOR_MOMENT_VM_8C_PARAMETERS_REUSE.json",
+        "docs/desktop/346_SCOPED_EXISTING_UI_HISTORY_MOMENT_REUSE.md"
+      ]
+    },
+    {
+      "id": "POSTPROCESS_STATIC_DECODE_148",
+      "disposition": "EQUIVALENT",
+      "scope": "Only complete148 oriented-decoder visibility and static output pixel allowance deltas: shared Desktop oriented decoder,32MP static allowance with separate animation path and output-only100MiB ownership. R21direction/R67actual9MP source proofs reused,not new12.58MP exact boundary.",
+      "reviewSource": "b1a261bcf71c7d681ae48729e29478a8a023b179",
+      "evidence": [
+        "OWNER_SCOPED_REUSE_R79_REVIEW.json",
+        "COORDINATOR_POSTPROCESS_148_STATIC_DECODE_REUSE.json",
+        "docs/desktop/346_SCOPED_EXISTING_UI_HISTORY_MOMENT_REUSE.md"
+      ]
+    },
+    {
+      "id": "POSTPROCESS_SERVICE_148",
+      "disposition": "EQUIVALENT",
+      "scope": "Only complete148 ImageService delta: optionalEnhance/no connection retry/literal caption and negative/oneimg2img/V5max/original params/seed-1. Current full owner diff from162 only separately-testedstraight_alpha; original7 reuse,not later wholeService deltas or paid provider.",
+      "reviewSource": "b1a261bcf71c7d681ae48729e29478a8a023b179",
+      "evidence": [
+        "OWNER_SCOPED_REUSE_R79_REVIEW.json",
+        "COORDINATOR_POSTPROCESS_148_SERVICE_REUSE.json",
+        "docs/desktop/346_SCOPED_EXISTING_UI_HISTORY_MOMENT_REUSE.md"
+      ]
+    },
+    {
+      "id": "VPLUS_EXPLICIT_CUSTOM_SIGMA_RESET_UI",
+      "disposition": "EQUIVALENT",
+      "scope": "Only complete a678/d21e Studio V+ switch one-line deltas: explicit off/on clears customSigma,passive imported value remains,actualR79 one complete UI/durable/final-wire/undo methodPASS. Does not close other service deltas or human acceptance.",
+      "reviewSource": "b1a261bcf71c7d681ae48729e29478a8a023b179",
+      "evidence": [
+        "OWNER_R79_VALID_PNG_AND_R78_INITIALIZATION_REVIEW.json",
+        "docs/desktop/343_VPLUS_EXPLICIT_SWITCH_SIGMA_RESET.md"
+      ]
     }
   ],
   "deltas": [
@@ -1756,8 +1832,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only complete148 oriented-decoder visibility and static output pixel allowance deltas: shared Desktop oriented decoder,32MP static allowance with separate animation path and output-only100MiB ownership. R21direction/R67actual9MP source proofs reused,not new12.58MP exact boundary.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/image/ImageProcessingService.kt",
@@ -1766,8 +1842,14 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "POSTPROCESS_STATIC_DECODE_148"
+      ],
+      "evidence": [
+        "OWNER_SCOPED_REUSE_R79_REVIEW.json",
+        "COORDINATOR_POSTPROCESS_148_STATIC_DECODE_REUSE.json",
+        "docs/desktop/346_SCOPED_EXISTING_UI_HISTORY_MOMENT_REUSE.md"
+      ]
     },
     {
       "id": "148b3a9637eadf577afbb4947158dd6f80e17f4f:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiImagePostProcessing.kt",
@@ -1820,8 +1902,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only complete148 ImageService delta: optionalEnhance/no connection retry/literal caption and negative/oneimg2img/V5max/original params/seed-1. Current full owner diff from162 only separately-testedstraight_alpha; original7 reuse,not later wholeService deltas or paid provider.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageService.kt",
@@ -1830,8 +1912,14 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "POSTPROCESS_SERVICE_148"
+      ],
+      "evidence": [
+        "OWNER_SCOPED_REUSE_R79_REVIEW.json",
+        "COORDINATOR_POSTPROCESS_148_SERVICE_REUSE.json",
+        "docs/desktop/346_SCOPED_EXISTING_UI_HISTORY_MOMENT_REUSE.md"
+      ]
     },
     {
       "id": "148b3a9637eadf577afbb4947158dd6f80e17f4f:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
@@ -1905,8 +1993,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only complete148 oriented-decoder visibility and static output pixel allowance deltas: shared Desktop oriented decoder,32MP static allowance with separate animation path and output-only100MiB ownership. R21direction/R67actual9MP source proofs reused,not new12.58MP exact boundary.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/image/NovelAiStudioAssetStorage.kt",
@@ -1915,8 +2003,14 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "POSTPROCESS_STATIC_DECODE_148"
+      ],
+      "evidence": [
+        "OWNER_SCOPED_REUSE_R79_REVIEW.json",
+        "COORDINATOR_POSTPROCESS_148_STATIC_DECODE_REUSE.json",
+        "docs/desktop/346_SCOPED_EXISTING_UI_HISTORY_MOMENT_REUSE.md"
+      ]
     },
     {
       "id": "148b3a9637eadf577afbb4947158dd6f80e17f4f:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiUpscaleService.kt",
@@ -3852,8 +3946,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only four complete559/1d2 Screen/VM deltas: actual Shift-range/anchor/reset,stable cell decoding and synchronous delete latch/frozen requested selections. Original pointer method,R14four and R10one reused separately; new UI latch source-reviewed,not newly rapid-click tested.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/imageprompt/NovelAiHistoryScreen.kt",
@@ -3862,8 +3956,14 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "HISTORY_RANGE_THUMBNAIL_DELETION_559_1D2"
+      ],
+      "evidence": [
+        "OWNER_SCOPED_REUSE_R79_REVIEW.json",
+        "COORDINATOR_HISTORY_559_1D2_SCREEN_VM_REUSE.json",
+        "docs/desktop/346_SCOPED_EXISTING_UI_HISTORY_MOMENT_REUSE.md"
+      ]
     },
     {
       "id": "559f83f0c1011a7fa4b8e0f64d5b2ea147544e59:app/app/src/main/java/com/example/chatbar/ui/imageprompt/NovelAiHistoryViewModel.kt",
@@ -3879,8 +3979,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only four complete559/1d2 Screen/VM deltas: actual Shift-range/anchor/reset,stable cell decoding and synchronous delete latch/frozen requested selections. Original pointer method,R14four and R10one reused separately; new UI latch source-reviewed,not newly rapid-click tested.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/imageprompt/NovelAiHistoryViewModel.kt",
@@ -3889,8 +3989,14 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "HISTORY_RANGE_THUMBNAIL_DELETION_559_1D2"
+      ],
+      "evidence": [
+        "OWNER_SCOPED_REUSE_R79_REVIEW.json",
+        "COORDINATOR_HISTORY_559_1D2_SCREEN_VM_REUSE.json",
+        "docs/desktop/346_SCOPED_EXISTING_UI_HISTORY_MOMENT_REUSE.md"
+      ]
     },
     {
       "id": "559f83f0c1011a7fa4b8e0f64d5b2ea147544e59:app/app/src/main/java/com/example/chatbar/ui/tutorial/TutorialScreen.kt",
@@ -6254,8 +6360,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only seven complete CharacterEditScreen deltas: advanced model/sampling location,nullable card settings and dirty detection,capability-aware sampler/V+,High/Medium suspension,transparent and reset. Actual original widget/helpers/test blobs match; original shared1/Desktop2/R06 separately reused. Original1244 human saveFAIL retained.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/character/CharacterEditScreen.kt",
@@ -6264,8 +6370,14 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "CHARACTER_NAI_UI_SEVEN_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_SCOPED_REUSE_R79_REVIEW.json",
+        "COORDINATOR_CHARACTER_NAI_UI_SEVEN_DELTAS_REUSE.json",
+        "docs/desktop/346_SCOPED_EXISTING_UI_HISTORY_MOMENT_REUSE.md"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/main/java/com/example/chatbar/ui/character/CharacterEditViewModel.kt",
@@ -6464,8 +6576,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only two-line8c MomentsVM delta: normal/debug core and manualDesktop generation apply card settings before request. Original normal6/manual1 distinct sources,current manual owners exact. Not new7/ContentPreview coverage/wholeMoments.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/moments/MomentsViewModel.kt",
@@ -6474,8 +6586,14 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "MOMENT_CARD_PARAMETERS_VM_8C"
+      ],
+      "evidence": [
+        "OWNER_SCOPED_REUSE_R79_REVIEW.json",
+        "COORDINATOR_MOMENT_VM_8C_PARAMETERS_REUSE.json",
+        "docs/desktop/346_SCOPED_EXISTING_UI_HISTORY_MOMENT_REUSE.md"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/test/java/com/example/chatbar/domain/card/FormatCardTransferServiceTest.kt",
@@ -9551,8 +9669,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only four complete559/1d2 Screen/VM deltas: actual Shift-range/anchor/reset,stable cell decoding and synchronous delete latch/frozen requested selections. Original pointer method,R14four and R10one reused separately; new UI latch source-reviewed,not newly rapid-click tested.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/imageprompt/NovelAiHistoryScreen.kt",
@@ -9561,8 +9679,14 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "HISTORY_RANGE_THUMBNAIL_DELETION_559_1D2"
+      ],
+      "evidence": [
+        "OWNER_SCOPED_REUSE_R79_REVIEW.json",
+        "COORDINATOR_HISTORY_559_1D2_SCREEN_VM_REUSE.json",
+        "docs/desktop/346_SCOPED_EXISTING_UI_HISTORY_MOMENT_REUSE.md"
+      ]
     },
     {
       "id": "1d2850a4ed34fca614ce9809acd48e959d8a9d08:app/app/src/main/java/com/example/chatbar/ui/imageprompt/NovelAiHistoryThumbnail.kt",
@@ -9602,8 +9726,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only four complete559/1d2 Screen/VM deltas: actual Shift-range/anchor/reset,stable cell decoding and synchronous delete latch/frozen requested selections. Original pointer method,R14four and R10one reused separately; new UI latch source-reviewed,not newly rapid-click tested.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/imageprompt/NovelAiHistoryViewModel.kt",
@@ -9612,8 +9736,14 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "HISTORY_RANGE_THUMBNAIL_DELETION_559_1D2"
+      ],
+      "evidence": [
+        "OWNER_SCOPED_REUSE_R79_REVIEW.json",
+        "COORDINATOR_HISTORY_559_1D2_SCREEN_VM_REUSE.json",
+        "docs/desktop/346_SCOPED_EXISTING_UI_HISTORY_MOMENT_REUSE.md"
+      ]
     },
     {
       "id": "1d2850a4ed34fca614ce9809acd48e959d8a9d08:app/app/src/test/java/com/example/chatbar/data/local/JsonFileStorageSafetyTest.kt",
@@ -10387,11 +10517,17 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only complete newMomentMediaRetention helper semantics: exact known-candidate cleanup strictly retains all entity references including post avatar/current/all versions. Three current owners/test exact original162,two complete version/concurrency methods reused;no new card-delete UI execution.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "MOMENT_MEDIA_RETENTION_1A"
+      ],
+      "evidence": [
+        "OWNER_SCOPED_REUSE_R79_REVIEW.json",
+        "COORDINATOR_MOMENT_MEDIA_RETENTION_1A_REUSE.json",
+        "docs/desktop/346_SCOPED_EXISTING_UI_HISTORY_MOMENT_REUSE.md"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:app/app/src/main/java/com/example/chatbar/ui/character/CharacterEditViewModel.kt",
@@ -11689,8 +11825,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only seven complete CharacterEditScreen deltas: advanced model/sampling location,nullable card settings and dirty detection,capability-aware sampler/V+,High/Medium suspension,transparent and reset. Actual original widget/helpers/test blobs match; original shared1/Desktop2/R06 separately reused. Original1244 human saveFAIL retained.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/character/CharacterEditScreen.kt",
@@ -11699,8 +11835,14 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "CHARACTER_NAI_UI_SEVEN_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_SCOPED_REUSE_R79_REVIEW.json",
+        "COORDINATOR_CHARACTER_NAI_UI_SEVEN_DELTAS_REUSE.json",
+        "docs/desktop/346_SCOPED_EXISTING_UI_HISTORY_MOMENT_REUSE.md"
+      ]
     },
     {
       "id": "54c84c479a1b8a9eddef6b726681dedc7094efac:app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolScreen.kt",
@@ -12127,8 +12269,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only seven complete CharacterEditScreen deltas: advanced model/sampling location,nullable card settings and dirty detection,capability-aware sampler/V+,High/Medium suspension,transparent and reset. Actual original widget/helpers/test blobs match; original shared1/Desktop2/R06 separately reused. Original1244 human saveFAIL retained.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/character/CharacterEditScreen.kt",
@@ -12137,8 +12279,14 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "CHARACTER_NAI_UI_SEVEN_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_SCOPED_REUSE_R79_REVIEW.json",
+        "COORDINATOR_CHARACTER_NAI_UI_SEVEN_DELTAS_REUSE.json",
+        "docs/desktop/346_SCOPED_EXISTING_UI_HISTORY_MOMENT_REUSE.md"
+      ]
     },
     {
       "id": "310d475cb6cb0466678fe986cb3850f91005dc77:app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolScreen.kt",
@@ -12549,8 +12697,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only complete a678/d21e Studio V+ switch one-line deltas: explicit off/on clears customSigma,passive imported value remains,actualR79 one complete UI/durable/final-wire/undo methodPASS. Does not close other service deltas or human acceptance.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolScreen.kt",
@@ -12559,8 +12707,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "VPLUS_EXPLICIT_CUSTOM_SIGMA_RESET_UI"
+      ],
+      "evidence": [
+        "OWNER_R79_VALID_PNG_AND_R78_INITIALIZATION_REVIEW.json",
+        "docs/desktop/343_VPLUS_EXPLICIT_SWITCH_SIGMA_RESET.md"
+      ]
     },
     {
       "id": "a678d71c4d720202c0c99af73d8df11e822e2aff:app/app/src/test/java/com/example/chatbar/domain/image/NovelAiAdvancedSettingsTest.kt",
@@ -12975,8 +13128,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only seven complete CharacterEditScreen deltas: advanced model/sampling location,nullable card settings and dirty detection,capability-aware sampler/V+,High/Medium suspension,transparent and reset. Actual original widget/helpers/test blobs match; original shared1/Desktop2/R06 separately reused. Original1244 human saveFAIL retained.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/character/CharacterEditScreen.kt",
@@ -12985,8 +13138,14 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "CHARACTER_NAI_UI_SEVEN_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_SCOPED_REUSE_R79_REVIEW.json",
+        "COORDINATOR_CHARACTER_NAI_UI_SEVEN_DELTAS_REUSE.json",
+        "docs/desktop/346_SCOPED_EXISTING_UI_HISTORY_MOMENT_REUSE.md"
+      ]
     },
     {
       "id": "3f6f1bb5d61492d74c56fa3696b557db514ae77d:app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolScreen.kt",
@@ -13324,8 +13483,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only seven complete CharacterEditScreen deltas: advanced model/sampling location,nullable card settings and dirty detection,capability-aware sampler/V+,High/Medium suspension,transparent and reset. Actual original widget/helpers/test blobs match; original shared1/Desktop2/R06 separately reused. Original1244 human saveFAIL retained.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/character/CharacterEditScreen.kt",
@@ -13334,8 +13493,14 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "CHARACTER_NAI_UI_SEVEN_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_SCOPED_REUSE_R79_REVIEW.json",
+        "COORDINATOR_CHARACTER_NAI_UI_SEVEN_DELTAS_REUSE.json",
+        "docs/desktop/346_SCOPED_EXISTING_UI_HISTORY_MOMENT_REUSE.md"
+      ]
     },
     {
       "id": "c02f8b788db1fd829f55676e0ed23e35fdd10ea1:app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolScreen.kt",
@@ -13746,8 +13911,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only complete a678/d21e Studio V+ switch one-line deltas: explicit off/on clears customSigma,passive imported value remains,actualR79 one complete UI/durable/final-wire/undo methodPASS. Does not close other service deltas or human acceptance.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolScreen.kt",
@@ -13756,8 +13921,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "VPLUS_EXPLICIT_CUSTOM_SIGMA_RESET_UI"
+      ],
+      "evidence": [
+        "OWNER_R79_VALID_PNG_AND_R78_INITIALIZATION_REVIEW.json",
+        "docs/desktop/343_VPLUS_EXPLICIT_SWITCH_SIGMA_RESET.md"
+      ]
     },
     {
       "id": "d21e0be5a12339f910306651c658d348e89303ba:app/app/src/test/java/com/example/chatbar/domain/image/NovelAiAdvancedSettingsTest.kt",
@@ -14124,8 +14294,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only seven complete CharacterEditScreen deltas: advanced model/sampling location,nullable card settings and dirty detection,capability-aware sampler/V+,High/Medium suspension,transparent and reset. Actual original widget/helpers/test blobs match; original shared1/Desktop2/R06 separately reused. Original1244 human saveFAIL retained.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/character/CharacterEditScreen.kt",
@@ -14134,8 +14304,14 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "CHARACTER_NAI_UI_SEVEN_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_SCOPED_REUSE_R79_REVIEW.json",
+        "COORDINATOR_CHARACTER_NAI_UI_SEVEN_DELTAS_REUSE.json",
+        "docs/desktop/346_SCOPED_EXISTING_UI_HISTORY_MOMENT_REUSE.md"
+      ]
     },
     {
       "id": "892b478b17d3bf0943e779d3f14108b750f3355c:app/app/src/main/java/com/example/chatbar/ui/components/NovelAiSamplerSelect.kt",
@@ -14952,8 +15128,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only seven complete CharacterEditScreen deltas: advanced model/sampling location,nullable card settings and dirty detection,capability-aware sampler/V+,High/Medium suspension,transparent and reset. Actual original widget/helpers/test blobs match; original shared1/Desktop2/R06 separately reused. Original1244 human saveFAIL retained.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/character/CharacterEditScreen.kt",
@@ -14962,8 +15138,14 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "CHARACTER_NAI_UI_SEVEN_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_SCOPED_REUSE_R79_REVIEW.json",
+        "COORDINATOR_CHARACTER_NAI_UI_SEVEN_DELTAS_REUSE.json",
+        "docs/desktop/346_SCOPED_EXISTING_UI_HISTORY_MOMENT_REUSE.md"
+      ]
     },
     {
       "id": "b0fa1a425f24a0abe5adcb3b8f5775598452996e:app/app/src/main/java/com/example/chatbar/ui/components/NovelAiSamplerSelect.kt",

@@ -9,3 +9,5 @@
 R75／42363159910在生产compileKotlin停住：跨模块public可空模型属性不能直接smart-cast。原318B／SHA6855e26b…23af14仅source、0XML；改局部cardModel快照保持既定选择顺序。没有运行到测试／账户读取。新DDIM夹具同时改显式合成account／credentialConfigured及空SecretStore，避免下一轮走应用默认账户请求。R76同原四方法继续，未记业务通过或用户验收；不把未成功的取消请求记为cancelled。
 
 R77在新PNG导入处超时：样本只有prompt且缺v4 caption／legacy uc+seed，正式reader识别不到完整NovelAI结构，import实际拒绝；未到新增关／开动作，不能当V+产品回归。仅补合法v4_prompt.caption结构、先assert导入返回值，R79定向后继；reader及产品不为过夹具放宽。
+
+R79／42364653605原24862B／SHA37a2e364…9fdcbd已独核全部2XML及空stderr，实际Studio V+唯一扩展方法完整PASS：合法PNG导入自定义37，无操作与落盘保持；关／开清Sigma并恢复最终默认58，两次全局撤销恢复导入37，原PNG不变，原预设／历史／模型邻接也到。原图已view，仅合成body不当整页外观验收。R77无效PNG失败保留，不称已观察产品旧失败；只对应a678／d21e的开关这一完整delta，其他service字段分源处理。
