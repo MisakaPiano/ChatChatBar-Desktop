@@ -3,7 +3,7 @@ package com.example.chatbar.desktop.backup
 import kotlinx.serialization.json.*
 
 /** One archive/capture only; logical IDs are independent of physical storage filenames. */
-internal class DesktopBackupEntityIdentities {
+internal class DesktopBackupEntityIdentities(private val checkActive: () -> Unit = {}) {
     private val seen = hashSetOf<Pair<String, String>>()
 
     fun observe(path: String, value: JsonObject) {
@@ -37,6 +37,12 @@ internal class DesktopBackupEntityIdentities {
                     "BACKUP_INLINE_RESOURCE_FILENAME_INVALID"
                 }
             }
+        }
+        // Reuse the pinned stream's Base64 syntax/padding/length checks. Its validation
+        // skeleton is discarded; neither the original JSON nor resource bytes are rewritten.
+        if (listOf("imageResources", "audioResources").any { (slot[it] as? JsonObject)?.isNotEmpty() == true }) {
+            BackupJsonStream(slot.toString().reader(), java.io.Writer.nullWriter(), validationSkeleton = true,
+                checkActive = checkActive) { path, _ -> path }.copy()
         }
     }
 }

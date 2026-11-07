@@ -38,7 +38,8 @@ internal object DesktopFullBackupWriter {
                 require(preferences.desktopLlmAccounts == null && preferences.desktopNovelAiAccounts == null && preferences.desktopFishAccounts == null)
                 require(preferences.brushSize.isFinite() && preferences.brushSize > 0 && preferences.brushType.length <= 100)
                 val entities = linkedMapOf<String, JsonObject>()
-                val identities = DesktopBackupEntityIdentities()
+                val context = currentCoroutineContext()
+                val identities = DesktopBackupEntityIdentities { context.ensureActive() }
                 val proof = linkedMapOf<String, AppBackupFileRecord>()
                 val sourceProof = linkedMapOf<String, String>()
                 val transported = linkedMapOf<String, ByteArray>()

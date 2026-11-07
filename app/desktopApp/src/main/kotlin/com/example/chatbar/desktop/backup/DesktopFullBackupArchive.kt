@@ -39,7 +39,7 @@ internal class DesktopFullBackupArchive(private val workspace: Path, private val
         fun checkActive() = context.ensureActive()
         // First pass has no plaintext disk sink. Credential/unknown-store rejection happens here.
         val seen = linkedMapOf<String, AppBackupFileRecord>()
-        val identities = DesktopBackupEntityIdentities()
+        val identities = DesktopBackupEntityIdentities { context.ensureActive() }
         var summary: AppBackupSummary? = null
         var preferences: BackupPreferences? = null
         var preferenceHash: String? = null

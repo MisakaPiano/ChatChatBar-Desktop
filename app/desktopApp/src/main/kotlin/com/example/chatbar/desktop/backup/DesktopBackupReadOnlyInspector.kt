@@ -89,7 +89,7 @@ internal class DesktopBackupReadOnlyInspector(private val afterAuthentication: (
             val central = InspectionZipDirectory.read(payload)
             val seen = linkedMapOf<String, AppBackupFileRecord>()
             val entities = linkedMapOf<String, JsonObject>()
-            val identities = DesktopBackupEntityIdentities()
+            val identities = DesktopBackupEntityIdentities { context.ensureActive() }
             var manifest: InspectionManifest? = null
             var preferenceHash: String? = null
             var inventory: Map<String, AppBackupFileRecord>? = null

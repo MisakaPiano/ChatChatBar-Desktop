@@ -101,7 +101,7 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
         var preferences = BackupPreferences()
         var entityType = ""
         var entityLabel = ""
-        val identities = DesktopBackupEntityIdentities()
+        val identities = DesktopBackupEntityIdentities { context.ensureActive() }
         var missingHistoricalAvatars = 0
         val absentAvatars = linkedSetOf<Path>()
         fun resource(value: String, fields: List<String>): String {

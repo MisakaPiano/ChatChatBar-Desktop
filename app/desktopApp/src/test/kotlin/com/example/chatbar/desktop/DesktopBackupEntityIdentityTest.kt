@@ -85,6 +85,11 @@ class DesktopBackupEntityIdentityTest {
                     else original.copy(imageResources = mapOf("images/resource.png" to SaveSlotImageResource("resource.png", data)))
                 f.storage.saveEntity("save_slots", slot.id, slot, SaveSlot.serializer())
                 val before = DesktopFullBackupMapping(f.root).inventory()
+                if (!audio && data.isEmpty()) {
+                    val partial = f.base.resolve("unselected-bad-slot.cbbackup")
+                    f.service.exportModern(partial, null, selection = AppBackupSelection(characterIds = setOf("card")))
+                    f.service.verifyFile(partial, null)
+                }
                 val refused = f.base.resolve("bad-media.cbbackup")
                 assertFails { f.service.exportModern(refused, null) }
                 assertFalse(Files.exists(refused)); assertEquals(before, DesktopFullBackupMapping(f.root).inventory())

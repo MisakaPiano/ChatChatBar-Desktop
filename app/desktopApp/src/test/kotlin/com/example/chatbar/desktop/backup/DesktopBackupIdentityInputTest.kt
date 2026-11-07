@@ -88,16 +88,26 @@ class DesktopBackupIdentityInputTest {
                 JsonObject(slot + ("messages" to JsonArray(listOf(slot.getValue("messages").jsonArray.single(), slot.getValue("messages").jsonArray.single())))),
                 JsonObject(slot + ("vectorChunks" to JsonArray(listOf(repeated, repeated)))),
                 JsonObject(slot + ("imageResources" to buildJsonObject { put("image", buildJsonObject { put("fileName", " "); put("data", "") }) })),
-                JsonObject(slot + ("audioResources" to buildJsonObject { put("audio", buildJsonObject { put("fileName", ""); put("data", "") }) })))
+                JsonObject(slot + ("audioResources" to buildJsonObject { put("audio", buildJsonObject { put("fileName", ""); put("data", "") }) }))) +
+                listOf("", "not-base64!", "A===", "AA==A").flatMap { data -> listOf("imageResources", "audioResources").map { field ->
+                    JsonObject(slot + (field to buildJsonObject { put("images/resource.png", buildJsonObject { put("fileName", "resource.png"); put("data", data) }) }))
+                } }
             for ((index, value) in variants.withIndex()) {
                 val input = wire(root, "bad-inline-$index", mapOf("entities/save_slots/slot.json" to value))
                 assertFailsWith<DesktopFullBackupSource.Refusal> { DesktopFullBackupSource.verify(input, null, sink) }
                 assertFailsWith<DesktopBackupReadOnlyInspector.InspectionFailure> { DesktopBackupReadOnlyInspector().inspect(input, null) }
+                val legacy = wire(root, "legacy-inline-$index", mapOf("entities/save_slots/slot.json" to value), legacy = true)
+                val archive = DesktopFullBackupArchive(Files.createDirectory(root.resolve("legacy-work-$index")))
+                assertFails { archive.inspect(legacy, null).use {} }
             }
             val valid = wire(root, "independent-slots", mapOf("entities/save_slots/slot.json" to slot,
                 "entities/save_slots/second.json" to JsonObject(slot + ("id" to JsonPrimitive("second")))))
             DesktopFullBackupSource.verify(valid, null, sink)
             assertTrue(DesktopBackupReadOnlyInspector().inspect(valid, null).formatReadable)
+            val media = JsonObject(slot + ("imageResources" to buildJsonObject { put("images/resource.png", buildJsonObject { put("fileName", "resource.png"); put("data", "YQ==") }) }))
+            val validMedia = wire(root, "valid-inline-media", mapOf("entities/save_slots/slot.json" to media))
+            DesktopFullBackupSource.verify(validMedia, null, sink)
+            assertTrue(DesktopBackupReadOnlyInspector().inspect(validMedia, null).formatReadable)
         } finally { check(root.toFile().deleteRecursively()) }
     }
 }
