@@ -46,13 +46,14 @@ jobs:
           @{ source = (git rev-parse HEAD); run = $env:GITHUB_RUN_ID; scope = 'synthetic selected tests only; no installer, user profile, release or provider calls' } |
             ConvertTo-Json | Set-Content -Encoding utf8 "$env:RUNNER_TEMP/ccb-ui-probe/source.json"
           .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain `
-            --tests 'com.example.chatbar.desktop.DesktopStudioLongPromptFocusTest'
+            --tests 'com.example.chatbar.desktop.backup.DesktopMergeNamedAdoptionTest' `
+            --tests 'com.example.chatbar.desktop.backup.DesktopMergeCredentialsTest.different ID named model choices route protected keys and default references to the explicit target'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Preserve actual reports and synthetic review images
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: desktop-ui-probe-reports
+          name: merge-adoption-r92-reports
           path: |
             app/sharedCore/build/test-results/test/
             app/sharedCore/build/reports/tests/test/
