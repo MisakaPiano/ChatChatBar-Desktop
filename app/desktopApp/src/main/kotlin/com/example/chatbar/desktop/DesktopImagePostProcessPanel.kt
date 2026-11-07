@@ -14,7 +14,14 @@ import java.nio.file.Path
 import kotlinx.coroutines.*
 
 @Composable
-internal fun DesktopImagePostProcessPanel(path: Path, controller: DesktopNovelAiStudioController, onUse: (ByteArray) -> Unit) {
+internal fun DesktopImagePostProcessPanel(path: Path, controller: DesktopNovelAiStudioController,
+    inputDispatcher: CoroutineDispatcher = Dispatchers.IO, onUse: (ByteArray) -> Unit) {
+    key(path) { DesktopImagePostProcessSourcePanel(path, controller, inputDispatcher, onUse) }
+}
+
+@Composable
+private fun DesktopImagePostProcessSourcePanel(path: Path, controller: DesktopNovelAiStudioController,
+    inputDispatcher: CoroutineDispatcher, onUse: (ByteArray) -> Unit) {
     val state by controller.state.collectAsState()
     val tasks by controller.taskEntries.collectAsState()
     val busy = tasks.any { it.kind == DesktopTaskKind.NOVELAI && it.status == DesktopTaskStatus.RUNNING }
@@ -32,7 +39,7 @@ internal fun DesktopImagePostProcessPanel(path: Path, controller: DesktopNovelAi
         catch (_: Exception) { status = "后处理记录读取失败；原记录保留，请重开后重试" }
     }
     val input by produceState<Pair<ByteArray, Pair<Int, Int>>?>(null, path) {
-        value = withContext(Dispatchers.IO) { try {
+        value = withContext(inputDispatcher) { try {
             if (Files.size(path) > DesktopImageEditing.MAX_BYTES) {
                 sourceError = "图片超过后处理输入大小上限；原图和已保存结果保留，不能继续增强或放大"
                 return@withContext null
