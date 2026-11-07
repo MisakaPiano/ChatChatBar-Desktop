@@ -1,0 +1,5 @@
+# 恢复事务的新根路线
+
+完整d3新增216行与1a prepared/incoming可选stage差异已核。Desktop现代默认导入保留旧根，在新根完成数据和受保护凭据验证后才发布启动选择；不可确认的发布保留现场并封住旧写入，未完成的新根不能启动。与Android原地改名及初始化后回滚的机制差异明确保留。legacy原地journal仍独立保留旧/新哈希证据及部分写入回滚，不作为当前GUI路线。
+
+原162 journal4/process3完整方法与另外authority9及现有实际modern生命周期2按各自来源复用，0新跑、不加总新16/18。早期hook既有，没有新增启动逻辑或实际用户迁移。详见 OWNER_ARCHIVE_TRANSACTION_FOUR_COMPLETE_DELTAS.json；Service中断提示仍有独立必要检查，314整体未完成。

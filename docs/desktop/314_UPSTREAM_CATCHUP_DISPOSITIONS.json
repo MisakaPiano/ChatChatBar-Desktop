@@ -1740,6 +1740,114 @@
       "evidence": [
         "OWNER_ENTITY_IDENTITY_AND_INLINE_MEDIA_R127_R134_COMPLETE.json"
       ]
+    },
+    {
+      "id": "BACKUPARCHIVE_COMPLETE_D3CF2AA9_NATIVE_OWNERS",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete archive delta: actual modern Writer/Source/Staging plus Mapping use selected closure/projection, registered resources, inventory/hash/count/CRC/envelope/AEAD EOF and authenticated self-check before no-replace publication; relative/portable paths and Vibe hash references stay typed. Current credentials require explicit selection and protected transport; incoming retainedPreferences is forbidden. Historical missing Moment avatars retain stable identity and warning, not fabricated bytes. Desktop materializes managed imported resources before backup instead of reading Android content URIs during export; unknown/external roots refuse rather than omission. Supported84..88 and bounded record/ZIP limits remain explicit. Legacy Archive unchanged except invocation ID/inline guard; original162 twelve complete archive methods plus R129 Writer9/Input2 and R133/R134 updated Base64 methods are separate reuse. No whole-graph/human/Android universal compatibility claim from file-check.",
+      "reviewSource": "973d829026b1efec6271ca91e353c0d304a2c582",
+      "evidence": [
+        "OWNER_ARCHIVE_TRANSACTION_FOUR_COMPLETE_DELTAS.json"
+      ]
+    },
+    {
+      "id": "BACKUPRESTORETRANSACTION_COMPLETE_D3CF2AA9_NATIVE_OWNERS",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete restore transaction delta: modern Desktop confirms choices, freezes/rechecks both sources, writes data and protected credentials into owned PREPARING independent root, verifies complete proof, then CAS-publishes root selection in noncancellable section; indeterminate publication seals writers/retains target, originals remain. Startup authority rejects incomplete/cloned/changed roots before repositories. Owned stages replace Android prepared/incoming name switch; no arbitrary stage path. Legacy in-place journal remains separate synced intent/old-next hash/rollback evidence, no normal GUI replacement route and no Android rollback-after-all-init equivalence claimed. Original162 unchanged journal4/process3 and separate authority9 reused, plus actual modern R124 lifecycle2; no new native/human run.",
+      "reviewSource": "973d829026b1efec6271ca91e353c0d304a2c582",
+      "evidence": [
+        "OWNER_ARCHIVE_TRANSACTION_FOUR_COMPLETE_DELTAS.json"
+      ]
+    },
+    {
+      "id": "BACKUPARCHIVE_COMPLETE_1A692604_NATIVE_OWNERS",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete archive delta: actual modern Writer/Source/Staging plus Mapping use selected closure/projection, registered resources, inventory/hash/count/CRC/envelope/AEAD EOF and authenticated self-check before no-replace publication; relative/portable paths and Vibe hash references stay typed. Current credentials require explicit selection and protected transport; incoming retainedPreferences is forbidden. Historical missing Moment avatars retain stable identity and warning, not fabricated bytes. Desktop materializes managed imported resources before backup instead of reading Android content URIs during export; unknown/external roots refuse rather than omission. Supported84..88 and bounded record/ZIP limits remain explicit. Legacy Archive unchanged except invocation ID/inline guard; original162 twelve complete archive methods plus R129 Writer9/Input2 and R133/R134 updated Base64 methods are separate reuse. No whole-graph/human/Android universal compatibility claim from file-check.",
+      "reviewSource": "973d829026b1efec6271ca91e353c0d304a2c582",
+      "evidence": [
+        "OWNER_ARCHIVE_TRANSACTION_FOUR_COMPLETE_DELTAS.json"
+      ]
+    },
+    {
+      "id": "BACKUPRESTORETRANSACTION_COMPLETE_1A692604_NATIVE_OWNERS",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete restore transaction delta: modern Desktop confirms choices, freezes/rechecks both sources, writes data and protected credentials into owned PREPARING independent root, verifies complete proof, then CAS-publishes root selection in noncancellable section; indeterminate publication seals writers/retains target, originals remain. Startup authority rejects incomplete/cloned/changed roots before repositories. Owned stages replace Android prepared/incoming name switch; no arbitrary stage path. Legacy in-place journal remains separate synced intent/old-next hash/rollback evidence, no normal GUI replacement route and no Android rollback-after-all-init equivalence claimed. Original162 unchanged journal4/process3 and separate authority9 reused, plus actual modern R124 lifecycle2; no new native/human run.",
+      "reviewSource": "973d829026b1efec6271ca91e353c0d304a2c582",
+      "evidence": [
+        "OWNER_ARCHIVE_TRANSACTION_FOUR_COMPLETE_DELTAS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_RELEASE_GUIDE_SUPPORT_B031C086_148",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Complete upstream documentation/coverage delta only. Version148 sampler/Effort/alpha/V+/defaults/cost/metadata and149 session/alternative/storage/transport mechanisms retain their own Desktop implementation evidence; this support mapping adds no runtime feature or new PASS. Existing narrative/model-facing Prompt text and independent writing-style changes remain pending actual user adoption/excluded as recorded in315. Author Android compile-only/runTests=false/device redeploy/release results are not Desktop evidence or authorization; do not execute those guide instructions or copy APK identity into Desktop.",
+      "reviewSource": "973d829026b1efec6271ca91e353c0d304a2c582",
+      "evidence": [
+        "OWNER_EIGHT_RELEASE_NARRATIVE_SUPPORT_DELTAS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_RELEASE_GUIDE_SUPPORT_5C22FDFA_148",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Complete upstream documentation/coverage delta only. Version148 sampler/Effort/alpha/V+/defaults/cost/metadata and149 session/alternative/storage/transport mechanisms retain their own Desktop implementation evidence; this support mapping adds no runtime feature or new PASS. Existing narrative/model-facing Prompt text and independent writing-style changes remain pending actual user adoption/excluded as recorded in315. Author Android compile-only/runTests=false/device redeploy/release results are not Desktop evidence or authorization; do not execute those guide instructions or copy APK identity into Desktop.",
+      "reviewSource": "973d829026b1efec6271ca91e353c0d304a2c582",
+      "evidence": [
+        "OWNER_EIGHT_RELEASE_NARRATIVE_SUPPORT_DELTAS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_RELEASE_GUIDE_SUPPORT_6F8A09A8_148",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Complete upstream documentation/coverage delta only. Version148 sampler/Effort/alpha/V+/defaults/cost/metadata and149 session/alternative/storage/transport mechanisms retain their own Desktop implementation evidence; this support mapping adds no runtime feature or new PASS. Existing narrative/model-facing Prompt text and independent writing-style changes remain pending actual user adoption/excluded as recorded in315. Author Android compile-only/runTests=false/device redeploy/release results are not Desktop evidence or authorization; do not execute those guide instructions or copy APK identity into Desktop.",
+      "reviewSource": "973d829026b1efec6271ca91e353c0d304a2c582",
+      "evidence": [
+        "OWNER_EIGHT_RELEASE_NARRATIVE_SUPPORT_DELTAS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_RELEASE_GUIDE_SUPPORT_E9DFF76D_148",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Complete upstream documentation/coverage delta only. Version148 sampler/Effort/alpha/V+/defaults/cost/metadata and149 session/alternative/storage/transport mechanisms retain their own Desktop implementation evidence; this support mapping adds no runtime feature or new PASS. Existing narrative/model-facing Prompt text and independent writing-style changes remain pending actual user adoption/excluded as recorded in315. Author Android compile-only/runTests=false/device redeploy/release results are not Desktop evidence or authorization; do not execute those guide instructions or copy APK identity into Desktop.",
+      "reviewSource": "973d829026b1efec6271ca91e353c0d304a2c582",
+      "evidence": [
+        "OWNER_EIGHT_RELEASE_NARRATIVE_SUPPORT_DELTAS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_RELEASE_GUIDE_SUPPORT_986A39EC_148",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Complete upstream documentation/coverage delta only. Version148 sampler/Effort/alpha/V+/defaults/cost/metadata and149 session/alternative/storage/transport mechanisms retain their own Desktop implementation evidence; this support mapping adds no runtime feature or new PASS. Existing narrative/model-facing Prompt text and independent writing-style changes remain pending actual user adoption/excluded as recorded in315. Author Android compile-only/runTests=false/device redeploy/release results are not Desktop evidence or authorization; do not execute those guide instructions or copy APK identity into Desktop.",
+      "reviewSource": "973d829026b1efec6271ca91e353c0d304a2c582",
+      "evidence": [
+        "OWNER_EIGHT_RELEASE_NARRATIVE_SUPPORT_DELTAS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_RELEASE_GUIDE_SUPPORT_286916E3_NARRATIVE",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Complete upstream documentation/coverage delta only. Version148 sampler/Effort/alpha/V+/defaults/cost/metadata and149 session/alternative/storage/transport mechanisms retain their own Desktop implementation evidence; this support mapping adds no runtime feature or new PASS. Existing narrative/model-facing Prompt text and independent writing-style changes remain pending actual user adoption/excluded as recorded in315. Author Android compile-only/runTests=false/device redeploy/release results are not Desktop evidence or authorization; do not execute those guide instructions or copy APK identity into Desktop.",
+      "reviewSource": "973d829026b1efec6271ca91e353c0d304a2c582",
+      "evidence": [
+        "OWNER_EIGHT_RELEASE_NARRATIVE_SUPPORT_DELTAS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_RELEASE_GUIDE_SUPPORT_286916E3_149",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Complete upstream documentation/coverage delta only. Version148 sampler/Effort/alpha/V+/defaults/cost/metadata and149 session/alternative/storage/transport mechanisms retain their own Desktop implementation evidence; this support mapping adds no runtime feature or new PASS. Existing narrative/model-facing Prompt text and independent writing-style changes remain pending actual user adoption/excluded as recorded in315. Author Android compile-only/runTests=false/device redeploy/release results are not Desktop evidence or authorization; do not execute those guide instructions or copy APK identity into Desktop.",
+      "reviewSource": "973d829026b1efec6271ca91e353c0d304a2c582",
+      "evidence": [
+        "OWNER_EIGHT_RELEASE_NARRATIVE_SUPPORT_DELTAS.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_RELEASE_GUIDE_SUPPORT_B20D284A_149",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Complete upstream documentation/coverage delta only. Version148 sampler/Effort/alpha/V+/defaults/cost/metadata and149 session/alternative/storage/transport mechanisms retain their own Desktop implementation evidence; this support mapping adds no runtime feature or new PASS. Existing narrative/model-facing Prompt text and independent writing-style changes remain pending actual user adoption/excluded as recorded in315. Author Android compile-only/runTests=false/device redeploy/release results are not Desktop evidence or authorization; do not execute those guide instructions or copy APK identity into Desktop.",
+      "reviewSource": "973d829026b1efec6271ca91e353c0d304a2c582",
+      "evidence": [
+        "OWNER_EIGHT_RELEASE_NARRATIVE_SUPPORT_DELTAS.json"
+      ]
     }
   ],
   "deltas": [
@@ -8711,11 +8819,16 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete archive delta: actual modern Writer/Source/Staging plus Mapping use selected closure/projection, registered resources, inventory/hash/count/CRC/envelope/AEAD EOF and authenticated self-check before no-replace publication; relative/portable paths and Vibe hash references stay typed. Current credentials require explicit selection and protected transport; incoming retainedPreferences is forbidden. Historical missing Moment avatars retain stable identity and warning, not fabricated bytes. Desktop materializes managed imported resources before backup instead of reading Android content URIs during export; unknown/external roots refuse rather than omission. Supported84..88 and bounded record/ZIP limits remain explicit. Legacy Archive unchanged except invocation ID/inline guard; original162 twelve complete archive methods plus R129 Writer9/Input2 and R133/R134 updated Base64 methods are separate reuse. No whole-graph/human/Android universal compatibility claim from file-check.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "BACKUPARCHIVE_COMPLETE_D3CF2AA9_NATIVE_OWNERS"
+      ],
+      "evidence": [
+        "OWNER_ARCHIVE_TRANSACTION_FOUR_COMPLETE_DELTAS.json",
+        "docs/desktop/380_BACKUP_ARCHIVE_NATIVE_EQUIVALENCE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/backup/BackupDataRegistry.kt",
@@ -8857,11 +8970,16 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete restore transaction delta: modern Desktop confirms choices, freezes/rechecks both sources, writes data and protected credentials into owned PREPARING independent root, verifies complete proof, then CAS-publishes root selection in noncancellable section; indeterminate publication seals writers/retains target, originals remain. Startup authority rejects incomplete/cloned/changed roots before repositories. Owned stages replace Android prepared/incoming name switch; no arbitrary stage path. Legacy in-place journal remains separate synced intent/old-next hash/rollback evidence, no normal GUI replacement route and no Android rollback-after-all-init equivalence claimed. Original162 unchanged journal4/process3 and separate authority9 reused, plus actual modern R124 lifecycle2; no new native/human run.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "BACKUPRESTORETRANSACTION_COMPLETE_D3CF2AA9_NATIVE_OWNERS"
+      ],
+      "evidence": [
+        "OWNER_ARCHIVE_TRANSACTION_FOUR_COMPLETE_DELTAS.json",
+        "docs/desktop/381_BACKUP_TRANSACTION_NATIVE_EQUIVALENCE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/backup/BackupTextIO.kt",
@@ -10970,11 +11088,16 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete archive delta: actual modern Writer/Source/Staging plus Mapping use selected closure/projection, registered resources, inventory/hash/count/CRC/envelope/AEAD EOF and authenticated self-check before no-replace publication; relative/portable paths and Vibe hash references stay typed. Current credentials require explicit selection and protected transport; incoming retainedPreferences is forbidden. Historical missing Moment avatars retain stable identity and warning, not fabricated bytes. Desktop materializes managed imported resources before backup instead of reading Android content URIs during export; unknown/external roots refuse rather than omission. Supported84..88 and bounded record/ZIP limits remain explicit. Legacy Archive unchanged except invocation ID/inline guard; original162 twelve complete archive methods plus R129 Writer9/Input2 and R133/R134 updated Base64 methods are separate reuse. No whole-graph/human/Android universal compatibility claim from file-check.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "BACKUPARCHIVE_COMPLETE_1A692604_NATIVE_OWNERS"
+      ],
+      "evidence": [
+        "OWNER_ARCHIVE_TRANSACTION_FOUR_COMPLETE_DELTAS.json",
+        "docs/desktop/380_BACKUP_ARCHIVE_NATIVE_EQUIVALENCE.md"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:app/app/src/main/java/com/example/chatbar/domain/backup/BackupDataRegistry.kt",
@@ -11244,11 +11367,16 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete restore transaction delta: modern Desktop confirms choices, freezes/rechecks both sources, writes data and protected credentials into owned PREPARING independent root, verifies complete proof, then CAS-publishes root selection in noncancellable section; indeterminate publication seals writers/retains target, originals remain. Startup authority rejects incomplete/cloned/changed roots before repositories. Owned stages replace Android prepared/incoming name switch; no arbitrary stage path. Legacy in-place journal remains separate synced intent/old-next hash/rollback evidence, no normal GUI replacement route and no Android rollback-after-all-init equivalence claimed. Original162 unchanged journal4/process3 and separate authority9 reused, plus actual modern R124 lifecycle2; no new native/human run.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "BACKUPRESTORETRANSACTION_COMPLETE_1A692604_NATIVE_OWNERS"
+      ],
+      "evidence": [
+        "OWNER_ARCHIVE_TRANSACTION_FOUR_COMPLETE_DELTAS.json",
+        "docs/desktop/381_BACKUP_TRANSACTION_NATIVE_EQUIVALENCE.md"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:app/app/src/main/java/com/example/chatbar/domain/backup/BackupRetainedMedia.kt",
@@ -16694,11 +16822,16 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Complete upstream documentation/coverage delta only. Version148 sampler/Effort/alpha/V+/defaults/cost/metadata and149 session/alternative/storage/transport mechanisms retain their own Desktop implementation evidence; this support mapping adds no runtime feature or new PASS. Existing narrative/model-facing Prompt text and independent writing-style changes remain pending actual user adoption/excluded as recorded in315. Author Android compile-only/runTests=false/device redeploy/release results are not Desktop evidence or authorization; do not execute those guide instructions or copy APK identity into Desktop.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_RELEASE_GUIDE_SUPPORT_B031C086_148"
+      ],
+      "evidence": [
+        "OWNER_EIGHT_RELEASE_NARRATIVE_SUPPORT_DELTAS.json",
+        "docs/desktop/382_UPSTREAM_RELEASE_NARRATIVE_DOCUMENT_BOUNDARIES.md"
+      ]
     },
     {
       "id": "24bda4eb04a10cfb59abf6dd533d42fd93876e91:app/app/build.gradle.kts",
@@ -16854,11 +16987,16 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Complete upstream documentation/coverage delta only. Version148 sampler/Effort/alpha/V+/defaults/cost/metadata and149 session/alternative/storage/transport mechanisms retain their own Desktop implementation evidence; this support mapping adds no runtime feature or new PASS. Existing narrative/model-facing Prompt text and independent writing-style changes remain pending actual user adoption/excluded as recorded in315. Author Android compile-only/runTests=false/device redeploy/release results are not Desktop evidence or authorization; do not execute those guide instructions or copy APK identity into Desktop.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_RELEASE_GUIDE_SUPPORT_5C22FDFA_148"
+      ],
+      "evidence": [
+        "OWNER_EIGHT_RELEASE_NARRATIVE_SUPPORT_DELTAS.json",
+        "docs/desktop/382_UPSTREAM_RELEASE_NARRATIVE_DOCUMENT_BOUNDARIES.md"
+      ]
     },
     {
       "id": "6f8a09a8bd24c274b08a56cadc37a82380bfe625:.agents/skills/chatbar-app-update/SKILL.md",
@@ -16984,11 +17122,16 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Complete upstream documentation/coverage delta only. Version148 sampler/Effort/alpha/V+/defaults/cost/metadata and149 session/alternative/storage/transport mechanisms retain their own Desktop implementation evidence; this support mapping adds no runtime feature or new PASS. Existing narrative/model-facing Prompt text and independent writing-style changes remain pending actual user adoption/excluded as recorded in315. Author Android compile-only/runTests=false/device redeploy/release results are not Desktop evidence or authorization; do not execute those guide instructions or copy APK identity into Desktop.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_RELEASE_GUIDE_SUPPORT_6F8A09A8_148"
+      ],
+      "evidence": [
+        "OWNER_EIGHT_RELEASE_NARRATIVE_SUPPORT_DELTAS.json",
+        "docs/desktop/382_UPSTREAM_RELEASE_NARRATIVE_DOCUMENT_BOUNDARIES.md"
+      ]
     },
     {
       "id": "e9dff76dd2c99c1004c52325e1f29a1a8300e7fc:.agents/skills/chatbar-app-update/SKILL.md",
@@ -17114,11 +17257,16 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Complete upstream documentation/coverage delta only. Version148 sampler/Effort/alpha/V+/defaults/cost/metadata and149 session/alternative/storage/transport mechanisms retain their own Desktop implementation evidence; this support mapping adds no runtime feature or new PASS. Existing narrative/model-facing Prompt text and independent writing-style changes remain pending actual user adoption/excluded as recorded in315. Author Android compile-only/runTests=false/device redeploy/release results are not Desktop evidence or authorization; do not execute those guide instructions or copy APK identity into Desktop.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_RELEASE_GUIDE_SUPPORT_E9DFF76D_148"
+      ],
+      "evidence": [
+        "OWNER_EIGHT_RELEASE_NARRATIVE_SUPPORT_DELTAS.json",
+        "docs/desktop/382_UPSTREAM_RELEASE_NARRATIVE_DOCUMENT_BOUNDARIES.md"
+      ]
     },
     {
       "id": "986a39ecb505142e4441267c38ad5f6bf64c08dd:doc/handoff.md",
@@ -17161,11 +17309,16 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Complete upstream documentation/coverage delta only. Version148 sampler/Effort/alpha/V+/defaults/cost/metadata and149 session/alternative/storage/transport mechanisms retain their own Desktop implementation evidence; this support mapping adds no runtime feature or new PASS. Existing narrative/model-facing Prompt text and independent writing-style changes remain pending actual user adoption/excluded as recorded in315. Author Android compile-only/runTests=false/device redeploy/release results are not Desktop evidence or authorization; do not execute those guide instructions or copy APK identity into Desktop.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_RELEASE_GUIDE_SUPPORT_986A39EC_148"
+      ],
+      "evidence": [
+        "OWNER_EIGHT_RELEASE_NARRATIVE_SUPPORT_DELTAS.json",
+        "docs/desktop/382_UPSTREAM_RELEASE_NARRATIVE_DOCUMENT_BOUNDARIES.md"
+      ]
     },
     {
       "id": "08fc3c77587cd49ff5fadf22b3b53f241f534f3a:.agents/skills/chatbar-model-request-runtime/SKILL.md",
@@ -18883,11 +19036,16 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Complete upstream documentation/coverage delta only. Version148 sampler/Effort/alpha/V+/defaults/cost/metadata and149 session/alternative/storage/transport mechanisms retain their own Desktop implementation evidence; this support mapping adds no runtime feature or new PASS. Existing narrative/model-facing Prompt text and independent writing-style changes remain pending actual user adoption/excluded as recorded in315. Author Android compile-only/runTests=false/device redeploy/release results are not Desktop evidence or authorization; do not execute those guide instructions or copy APK identity into Desktop.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_RELEASE_GUIDE_SUPPORT_286916E3_NARRATIVE"
+      ],
+      "evidence": [
+        "OWNER_EIGHT_RELEASE_NARRATIVE_SUPPORT_DELTAS.json",
+        "docs/desktop/382_UPSTREAM_RELEASE_NARRATIVE_DOCUMENT_BOUNDARIES.md"
+      ]
     },
     {
       "id": "286916e34ba3b401b7115d5ea9c9ff096571e607:doc/handoff.md",
@@ -18930,11 +19088,16 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Complete upstream documentation/coverage delta only. Version148 sampler/Effort/alpha/V+/defaults/cost/metadata and149 session/alternative/storage/transport mechanisms retain their own Desktop implementation evidence; this support mapping adds no runtime feature or new PASS. Existing narrative/model-facing Prompt text and independent writing-style changes remain pending actual user adoption/excluded as recorded in315. Author Android compile-only/runTests=false/device redeploy/release results are not Desktop evidence or authorization; do not execute those guide instructions or copy APK identity into Desktop.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_RELEASE_GUIDE_SUPPORT_286916E3_149"
+      ],
+      "evidence": [
+        "OWNER_EIGHT_RELEASE_NARRATIVE_SUPPORT_DELTAS.json",
+        "docs/desktop/382_UPSTREAM_RELEASE_NARRATIVE_DOCUMENT_BOUNDARIES.md"
+      ]
     },
     {
       "id": "a369fb3e049b36c83ca7b146f3999052587eed7c:app/app/build.gradle.kts",
@@ -19007,11 +19170,16 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Complete upstream documentation/coverage delta only. Version148 sampler/Effort/alpha/V+/defaults/cost/metadata and149 session/alternative/storage/transport mechanisms retain their own Desktop implementation evidence; this support mapping adds no runtime feature or new PASS. Existing narrative/model-facing Prompt text and independent writing-style changes remain pending actual user adoption/excluded as recorded in315. Author Android compile-only/runTests=false/device redeploy/release results are not Desktop evidence or authorization; do not execute those guide instructions or copy APK identity into Desktop.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_RELEASE_GUIDE_SUPPORT_B20D284A_149"
+      ],
+      "evidence": [
+        "OWNER_EIGHT_RELEASE_NARRATIVE_SUPPORT_DELTAS.json",
+        "docs/desktop/382_UPSTREAM_RELEASE_NARRATIVE_DOCUMENT_BOUNDARIES.md"
+      ]
     },
     {
       "id": "fcfd1dc7d365b86064eadd4db5c5e6f52e40e1e2:app/app/src/main/java/com/example/chatbar/domain/prompt/PromptTemplates.kt",
