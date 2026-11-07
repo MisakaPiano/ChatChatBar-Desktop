@@ -60,7 +60,7 @@ internal class DesktopFullBackupService(
                     if (includeCredentials) {
                         stage = "CREDENTIALS"
                         val entities = requireNotNull(snapshot).files.filterKeys { it.startsWith("entities/") }.mapValues { (path, file) ->
-                            DesktopBackupPolicy.entity(path, Files.readAllBytes(file), false, CURRENT_DESKTOP_BACKUP_CODE)
+                            DesktopBackupPolicy.entity(path, Files.readAllBytes(file), false, CURRENT_DESKTOP_BACKUP_CODE, modern = modern)
                         }
                         credentials = DesktopBackupExportCredentials.capture(requireNotNull(secretStore).invoke(), entities,
                             selection?.globalOptions ?: inspectionGlobalOptions)
