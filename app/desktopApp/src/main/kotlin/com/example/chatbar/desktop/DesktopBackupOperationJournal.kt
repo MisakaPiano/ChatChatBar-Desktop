@@ -8,13 +8,14 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 /** Local presentation evidence only. Never grants restore, retry, cleanup or key authority. */
-internal class DesktopBackupOperationJournal(root: Path, private val lane: Lane) {
+internal class DesktopBackupOperationJournal(private val root: Path, private val lane: Lane) {
     enum class Lane { BACKUP, MERGE }
     @Serializable enum class Kind { EXPORT, CHECK, RESTORE, MERGE_CHECK, MERGE_COMMIT }
     @Serializable enum class Phase { RUNNING, WAITING, PREVIEW, RESTART, COMPLETE, CANCELLED, FAILED, UNCONFIRMED }
     data class Ticket internal constructor(internal val id: String, internal val kind: Kind)
     @Serializable private data class Record(val version: Int = 1, val id: String, val kind: Kind, val phase: Phase)
-    private val directory = root.resolve("diagnostics")
+    private val backupHome = root.resolve("backups")
+    private val directory = backupHome.resolve("operation-status")
     private val file = directory.resolve("backup-operation-${lane.name.lowercase()}.json")
     private val json = Json { encodeDefaults = true; ignoreUnknownKeys = false }
 
@@ -62,6 +63,8 @@ internal class DesktopBackupOperationJournal(root: Path, private val lane: Lane)
     }
 
     private fun read(): Record? {
+        if (!Files.exists(backupHome, LinkOption.NOFOLLOW_LINKS)) return null
+        DesktopArchiveFiles.safe(backupHome, true)
         if (!Files.exists(directory, LinkOption.NOFOLLOW_LINKS)) return null
         DesktopArchiveFiles.safe(directory, true)
         if (!Files.exists(file, LinkOption.NOFOLLOW_LINKS)) return null
@@ -74,7 +77,8 @@ internal class DesktopBackupOperationJournal(root: Path, private val lane: Lane)
     }
 
     private fun write(record: Record) {
-        DesktopArchiveFiles.safe(directory.parent, true)
+        DesktopArchiveFiles.safe(root, true)
+        Files.createDirectories(backupHome); DesktopArchiveFiles.safe(backupHome, true)
         Files.createDirectories(directory); DesktopArchiveFiles.safe(directory, true)
         if (Files.exists(file, LinkOption.NOFOLLOW_LINKS)) DesktopArchiveFiles.safe(file, false)
         val bytes = json.encodeToString(Record.serializer(), record).toByteArray()

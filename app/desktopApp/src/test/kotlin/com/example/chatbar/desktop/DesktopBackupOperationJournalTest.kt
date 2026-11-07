@@ -31,13 +31,14 @@ class DesktopBackupOperationJournalTest {
         try {
             val source = Files.writeString(base.resolve("original"), "SYNTHETIC_PRIVATE_NEVER_LOG")
             child(base, "halt", 73)
-            val marker = base.resolve("diagnostics/backup-operation-backup.json")
+            val marker = base.resolve("backups/operation-status/backup-operation-backup.json")
             val original = Files.readAllBytes(marker)
             assertFalse(original.toString(Charsets.UTF_8).contains("SYNTHETIC_PRIVATE_NEVER_LOG"))
             child(base, "read", 0)
             assertContentEquals(original, Files.readAllBytes(marker))
             assertEquals("SYNTHETIC_PRIVATE_NEVER_LOG", Files.readString(source))
-            assertFalse(Files.exists(base.resolve("backups")))
+            assertFalse(Files.exists(base.resolve("backups/.restore-app.tmp")))
+            assertFalse(Files.exists(base.resolve("entities")))
         } finally { check(base.toFile().deleteRecursively()) }
     }
 
@@ -71,7 +72,7 @@ class DesktopBackupOperationJournalTest {
                 override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path {
                     picked++
                     // Make only the auxiliary completion write fail, after RUNNING was recorded.
-                    val marker = f.root.resolve("diagnostics/backup-operation-backup.json")
+                    val marker = f.root.resolve("backups/operation-status/backup-operation-backup.json")
                     Files.move(marker, f.base.resolve("retained-status.json"))
                     Files.createDirectory(marker)
                     return output
@@ -112,6 +113,25 @@ class DesktopBackupOperationJournalTest {
                 assertNull(DesktopBackupOperationJournal(f.root, DesktopBackupOperationJournal.Lane.MERGE).previousNotice())
                 assertFalse(service.restartRequired)
             } finally { controller.closeAndDrain(); service.close() }
+        }
+    }
+
+    @Test fun `status records remain outside the real snapshot payload and later updates do not invalidate it`() = runBlocking<Unit> {
+        Fixture().use { f ->
+            val settings = f.root.resolve("entities/app_settings.json")
+            Files.createDirectories(settings.parent); Files.writeString(settings, "{}")
+            val ticket = f.journal.begin(DesktopBackupOperationJournal.Kind.EXPORT)
+            val snapshots = com.example.chatbar.data.snapshot.AppDataSnapshotService(f.root)
+            val snapshot = f.gate.withExclusiveMaintenance { snapshots.createSnapshot() }
+            assertTrue(snapshot.validation.valid)
+            val payload = snapshot.directory.resolve(com.example.chatbar.data.snapshot.AppDataSnapshotService.PAYLOAD_DIRECTORY_NAME)
+            val files = Files.walk(payload).use { paths -> paths.filter { Files.isRegularFile(it) }
+                .map { payload.relativize(it).joinToString("/") }.toList().toSet() }
+            assertEquals(setOf("entities/app_settings.json"), files)
+            f.journal.finish(ticket, DesktopBackupOperationJournal.Phase.COMPLETE)
+            assertTrue(snapshots.validateSnapshot(snapshot.directory).valid)
+            assertEquals("{}", Files.readString(settings))
+            assertTrue(Files.isRegularFile(f.root.resolve("backups/operation-status/backup-operation-backup.json")))
         }
     }
 
