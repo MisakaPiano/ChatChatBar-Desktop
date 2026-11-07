@@ -1,6 +1,7 @@
 package com.example.chatbar.desktop
 
 import com.example.chatbar.domain.image.*
+import com.example.chatbar.domain.ProxyAwareClient
 import com.example.chatbar.domain.update.DanbooruCatalogUpdateInfo
 import java.nio.file.*
 import java.security.MessageDigest
@@ -13,7 +14,7 @@ import okhttp3.Request
 
 /** Immutable DB/index first, atomic authority pointer last. Old generations remain safe for readers. */
 internal class DesktopNovelAiCatalogUpdate(private val catalog: DesktopNovelAiTagCatalog,
-    private val client: OkHttpClient = OkHttpClient()) {
+    private val client: OkHttpClient = ProxyAwareClient.builder().build()) {
     suspend fun install(info: DanbooruCatalogUpdateInfo, report: (String) -> Unit) = withContext(Dispatchers.IO) {
         val current = catalog.catalogMetadata() // A corrupt current authority is never overwritten.
         check(current.sourceSha == info.currentMetadata.sourceSha)

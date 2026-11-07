@@ -27,6 +27,11 @@ class DesktopNovelAiCatalogUpdateTest {
         try {
             val (source, metadata) = database(root, "routing")
             Files.move(source, root.resolve("${metadata.sourceSha}.sqlite"))
+            DesktopNovelAiSqlDatabase(root.resolve("${metadata.sourceSha}.sqlite")).use { db ->
+                DesktopNovelAiIndexWriter(root.resolve("index-${metadata.sourceSha}.sqlite")).use { writer ->
+                    buildNovelAiRankedIndex(writer, db, "tags", metadata.sourceSha, "danbooru")
+                }
+            }
             val pointer = root.resolve("active-catalog.json")
             val original = Json.encodeToString(DanbooruCatalogMetadata.serializer(), metadata)
             Files.writeString(pointer, original)

@@ -1,5 +1,6 @@
 package com.example.chatbar.domain.update
 import com.example.chatbar.domain.image.DanbooruCatalogMetadata
+import com.example.chatbar.domain.ProxyAwareClient
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.*
@@ -32,7 +33,7 @@ data class DanbooruCatalogUpdateInfo(
 class SharedDanbooruCatalogUpdateChecker(
     private val catalog: com.example.chatbar.domain.image.NovelAiTagLookup,
     private val userAgent: String,
-    private val client: OkHttpClient = OkHttpClient.Builder()
+    private val client: OkHttpClient = ProxyAwareClient.builder()
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(20, TimeUnit.SECONDS)
         .writeTimeout(10, TimeUnit.SECONDS)

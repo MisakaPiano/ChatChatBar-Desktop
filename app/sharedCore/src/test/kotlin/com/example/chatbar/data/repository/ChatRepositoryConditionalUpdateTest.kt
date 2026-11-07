@@ -18,6 +18,10 @@ import kotlinx.coroutines.test.runCurrent
 class ChatRepositoryConditionalUpdateTest {
     private val roots = mutableListOf<Path>()
     private class Gate : AppDataOperationGate {
+        // Calls include the outer message admission and nested index admission.
+        // A warm-cache repair reads message/session at 2/3, writes message at 4,
+        // admits/writes index at 5/6, then admits/reads/writes preview at 7/8/9.
+        // Failure readback immediately follows the injected physical stage.
         val count = AtomicInteger()
         var hook: suspend (Int, Boolean) -> Unit = { _, _ -> }
         override suspend fun <T> withNormalOperation(operation: suspend () -> T): T {
@@ -91,7 +95,7 @@ class ChatRepositoryConditionalUpdateTest {
     }
 
     @Test fun `notice only cancellation at write and index retains bounded uncertain readback evidence`() = runTest {
-        for (call in listOf(3, 4)) {
+        for (call in listOf(4, 6)) {
             val f = fixture(readbackMillis = 50)
             f.repo.updateMessage(f.expected.copy(content = "legacy base differs"))
             val expected = assertNotNull(f.repo.getMessage("m", "s"))
@@ -117,7 +121,7 @@ class ChatRepositoryConditionalUpdateTest {
             job.join()
             assertTrue(readReleased.isCompleted)
             assertOriginalError(cancellation, result.cause)
-            assertEquals(if (call == 3) MessageUpdateStage.WRITE_MESSAGE else MessageUpdateStage.WRITE_INDEX, result.stage)
+            assertEquals(if (call == 4) MessageUpdateStage.WRITE_MESSAGE else MessageUpdateStage.WRITE_INDEX, result.stage)
             assertEquals(expected.copy(formatRepairNotice = notice, updatedAt = result.attempted.updatedAt), result.attempted)
             assertIs<TimeoutCancellationException>(assertIs<JsonFileStorage.EntityReadResult.ReadError>(result.durableMessage).cause)
             assertEquals(call + 1, f.gate.count.get())
@@ -297,7 +301,7 @@ class ChatRepositoryConditionalUpdateTest {
 
     @Test fun `two concurrent repairs serialize and at most one commits`() = runTest {
         val f = fixture(); val entered = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>()
-        f.gate.arm { n, after -> if (n == 3 && !after) { entered.complete(Unit); release.await() } }
+        f.gate.arm { n, after -> if (n == 4 && !after) { entered.complete(Unit); release.await() } }
         val first = async { f.repair("first repair") }
         entered.await()
         val second = async(start = CoroutineStart.UNDISPATCHED) { f.repair("second repair") }
@@ -310,7 +314,7 @@ class ChatRepositoryConditionalUpdateTest {
 
     @Test fun `ordinary edit holding message mutex completes before old repair validation`() = runTest {
         val f = fixture(); val entered = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>()
-        f.gate.arm { n, after -> if (n == 2 && !after) { entered.complete(Unit); release.await() } }
+        f.gate.arm { n, after -> if (n == 3 && !after) { entered.complete(Unit); release.await() } }
         val edit = async { f.repo.updateMessage(f.expected.copy(content = "user edit", alternatives = listOf("first", "user edit", "last"))) }
         entered.await()
         val repair = async(start = CoroutineStart.UNDISPATCHED) { f.repair() }
@@ -321,18 +325,18 @@ class ChatRepositoryConditionalUpdateTest {
     }
 
     @Test fun `write failure before commit is distinct from post-write index and preview failures`() = runTest {
-        for ((call, after) in listOf(3 to false, 3 to true, 4 to false, 5 to false, 6 to false)) {
+        for ((call, after) in listOf(4 to false, 4 to true, 5 to false, 7 to false, 8 to false)) {
             val f = fixture(); val before = snapshot(f.root)
             f.gate.arm { n, done -> if (n == call && done == after) throw IOException("synthetic operation failure") }
             val result = withContext(Dispatchers.Default) { f.repair() }
             f.gate.arm()
-            if (call == 3 && !after) {
+            if (call == 4 && !after) {
                 assertIs<ConditionalMessageUpdateResult.StorageFailure>(result)
                 assertEquals(before, snapshot(f.root))
             } else {
                 val uncertain = assertIs<ConditionalMessageUpdateResult.CommitUncertain>(result)
                 assertIs<IOException>(uncertain.cause)
-                assertEquals(when(call) { 3 -> MessageUpdateStage.WRITE_MESSAGE; 4 -> MessageUpdateStage.WRITE_INDEX; else -> MessageUpdateStage.WRITE_PREVIEW }, uncertain.stage)
+                assertEquals(when(call) { 4 -> MessageUpdateStage.WRITE_MESSAGE; 5 -> MessageUpdateStage.WRITE_INDEX; else -> MessageUpdateStage.WRITE_PREVIEW }, uncertain.stage)
                 assertEquals("fixed", assertIs<JsonFileStorage.EntityReadResult.Valid<ChatMessage>>(uncertain.durableMessage).value.displayContent)
                 assertEquals("fixed", ChatRepository(JsonFileStorage(f.root)).getMessage("m", "s")?.displayContent)
                 assertEquals("middle", f.repo.getSession("s")?.lastMessagePreview)
@@ -344,7 +348,7 @@ class ChatRepositoryConditionalUpdateTest {
     @Test fun `unreadable readback after attempted write is uncertain not rollback`() = runTest {
         val f = fixture()
         f.gate.arm { n, after ->
-            if ((n == 3 && after) || (n == 4 && !after)) throw IOException("synthetic readback failure")
+            if ((n == 4 && after) || (n == 5 && !after)) throw IOException("synthetic readback failure")
         }
         val result = assertIs<ConditionalMessageUpdateResult.CommitUncertain>(f.repair())
         assertIs<JsonFileStorage.EntityReadResult.ReadError>(result.durableMessage)
@@ -368,7 +372,7 @@ class ChatRepositoryConditionalUpdateTest {
         for (afterWrite in listOf(false, true)) {
             val f = fixture(readbackMillis = 1_000)
             val failure = IOException("synthetic write failure")
-            f.gate.arm { n, after -> if (n == 3 && after == afterWrite) throw failure }
+            f.gate.arm { n, after -> if (n == 4 && after == afterWrite) throw failure }
             // Real IO uses a real dispatcher here; do not auto-advance a virtual deadline past it.
             val result = withContext(Dispatchers.Default) { f.repair() }
             if (afterWrite) {
@@ -393,8 +397,8 @@ class ChatRepositoryConditionalUpdateTest {
             val released = CompletableDeferred<Unit>()
             val maintenance = CompletableDeferred<Unit>()
             f.gate.arm { n, after ->
-                if (n == 3 && after == afterWrite) throw failure
-                if (n == 4 && !after) {
+                if (n == 4 && after == afterWrite) throw failure
+                if (n == 5 && !after) {
                     entered.complete(Unit)
                     try { maintenance.await() } finally { released.complete(Unit) }
                 }
@@ -411,7 +415,7 @@ class ChatRepositoryConditionalUpdateTest {
             assertEquals(MessageUpdateStage.WRITE_MESSAGE, uncertain.stage)
             assertEquals("fixed", uncertain.attempted.displayContent)
             assertIs<TimeoutCancellationException>(assertIs<JsonFileStorage.EntityReadResult.ReadError>(uncertain.durableMessage).cause)
-            assertEquals(4, f.gate.count.get()) // No retry or second write.
+            assertEquals(5, f.gate.count.get()) // No retry or second write.
             assertIndexCacheInvalidated(f)
             val durable = assertIs<JsonFileStorage.EntityReadResult.Valid<ChatMessage>>(f.repo.readMessageDurable("m", "s")).value
             assertEquals(if (afterWrite) "fixed" else "middle", durable.displayContent)
@@ -434,8 +438,8 @@ class ChatRepositoryConditionalUpdateTest {
         val outcome = CompletableDeferred<ConditionalMessageUpdateResult>()
         val writeFinished = CompletableDeferred<Unit>()
         f.gate.arm { n, after ->
-            if (n == 3 && after) { writeFinished.complete(Unit); awaitCancellation() }
-            if (n == 4 && !after) {
+            if (n == 4 && after) { writeFinished.complete(Unit); awaitCancellation() }
+            if (n == 5 && !after) {
                 entered.complete(Unit)
                 try { awaitCancellation() } finally { released.complete(Unit) }
             }
@@ -454,7 +458,7 @@ class ChatRepositoryConditionalUpdateTest {
         assertOriginalError(cancellation, uncertain.cause)
         assertEquals(MessageUpdateStage.WRITE_MESSAGE, uncertain.stage)
         assertIs<TimeoutCancellationException>(assertIs<JsonFileStorage.EntityReadResult.ReadError>(uncertain.durableMessage).cause)
-        assertEquals(4, f.gate.count.get())
+        assertEquals(5, f.gate.count.get())
         assertIndexCacheInvalidated(f)
         val durable = assertIs<JsonFileStorage.EntityReadResult.Valid<ChatMessage>>(f.repo.readMessageDurable("m", "s")).value
         assertEquals(uncertain.attempted, durable)
@@ -470,14 +474,14 @@ class ChatRepositoryConditionalUpdateTest {
         val failure = IOException("synthetic post-write failure")
         val rejected = IllegalStateException("synthetic maintenance admission rejected")
         f.gate.arm { n, after ->
-            if (n == 3 && after) throw failure
-            if (n == 4 && !after) throw rejected
+            if (n == 4 && after) throw failure
+            if (n == 5 && !after) throw rejected
         }
         val uncertain = assertIs<ConditionalMessageUpdateResult.CommitUncertain>(f.repair())
         assertSame(failure, uncertain.cause)
         assertOriginalError(rejected, assertIs<JsonFileStorage.EntityReadResult.ReadError>(uncertain.durableMessage).cause)
         assertEquals(MessageUpdateStage.WRITE_MESSAGE, uncertain.stage)
-        assertEquals(4, f.gate.count.get())
+        assertEquals(5, f.gate.count.get())
         assertIndexCacheInvalidated(f)
         assertEquals(uncertain.attempted, assertIs<JsonFileStorage.EntityReadResult.Valid<ChatMessage>>(
             f.repo.readMessageDurable("m", "s")).value)
@@ -487,7 +491,7 @@ class ChatRepositoryConditionalUpdateTest {
         val f = fixture(readbackMillis = 50)
         val entered = CompletableDeferred<Unit>()
         val release = CompletableDeferred<Unit>()
-        f.gate.arm { n, after -> if (n == 3 && !after) { entered.complete(Unit); release.await() } }
+        f.gate.arm { n, after -> if (n == 4 && !after) { entered.complete(Unit); release.await() } }
         val repair = async { f.repair() }
         entered.await()
         advanceTimeBy(500); runCurrent()
@@ -511,7 +515,7 @@ class ChatRepositoryConditionalUpdateTest {
 
     @Test fun `batch deletion waits for conditional write and cannot leave a resurrected message`() = runTest {
         val f = fixture(); val entered = CompletableDeferred<Unit>(); val release = CompletableDeferred<Unit>()
-        f.gate.arm { n, after -> if (n == 3 && !after) { entered.complete(Unit); release.await() } }
+        f.gate.arm { n, after -> if (n == 4 && !after) { entered.complete(Unit); release.await() } }
         val repair = async { f.repair() }; entered.await()
         val deletion = async(start = CoroutineStart.UNDISPATCHED) { f.repo.deleteSession("s") }
         assertFalse(deletion.isCompleted)

@@ -21,6 +21,9 @@ class SettingsRepository(
 ) {
     private val settingsMutex = Mutex()
 
+    private suspend fun <T> withDataAccess(operation: suspend () -> T): T =
+        storage.withNormalOperation { settingsMutex.withLock { operation() } }
+
     companion object {
         private const val APP_SETTINGS_TYPE = "app_settings"
         private const val PLAYER_SETTING_TYPE = "player_setting"
@@ -39,18 +42,18 @@ class SettingsRepository(
 
     private var initialized = false
 
-    suspend fun initialize(forceReload: Boolean = false) = settingsMutex.withLock {
-        if (initialized && !forceReload) return@withLock
+    suspend fun initialize(forceReload: Boolean = false) = withDataAccess {
+        if (initialized && !forceReload) return@withDataAccess
         _appSettings.value = getAppSettingsLocked()
         _playerSetting.value = getPlayerSettingLocked()
         initialized = true
         _isInitialized.value = true
     }
 
-    suspend fun getAppSettings(): AppSettings = settingsMutex.withLock { getAppSettingsLocked() }
+    suspend fun getAppSettings(): AppSettings = withDataAccess { getAppSettingsLocked() }
 
     /** Read an existing singleton without materializing defaults or persisting read-time migrations. */
-    suspend fun readExistingAppSettings(): AppSettings? = settingsMutex.withLock {
+    suspend fun readExistingAppSettings(): AppSettings? = withDataAccess {
         storage.loadSingleton(APP_SETTINGS_TYPE, AppSettings.serializer())
             ?.let { credentialPersistencePolicy.hydrate(it) }
             ?.withCurrentWebSearchDefaults()
@@ -65,12 +68,12 @@ class SettingsRepository(
     }
 
     suspend fun saveAppSettings(settings: AppSettings) {
-        settingsMutex.withLock { saveAppSettingsLocked(settings) }
+        withDataAccess { saveAppSettingsLocked(settings) }
     }
 
     suspend fun updateAppSettings(transform: (AppSettings) -> AppSettings): AppSettings {
         initialize()
-        return settingsMutex.withLock {
+        return withDataAccess {
             saveAppSettingsLocked(transform(_appSettings.value))
             _appSettings.value
         }
@@ -103,18 +106,18 @@ class SettingsRepository(
         }
     }
 
-    suspend fun getPlayerSetting(): PlayerSetting = settingsMutex.withLock { getPlayerSettingLocked() }
+    suspend fun getPlayerSetting(): PlayerSetting = withDataAccess { getPlayerSettingLocked() }
 
     private suspend fun getPlayerSettingLocked(): PlayerSetting {
         return storage.loadSingleton(PLAYER_SETTING_TYPE, PlayerSetting.serializer())
             ?: PlayerSetting().also { savePlayerSettingLocked(it) }
     }
 
-    suspend fun savePlayerSetting(setting: PlayerSetting) = settingsMutex.withLock {
+    suspend fun savePlayerSetting(setting: PlayerSetting) = withDataAccess {
         savePlayerSettingLocked(setting)
     }
 
-    suspend fun updatePlayerSetting(transform: (PlayerSetting) -> PlayerSetting): PlayerSetting = settingsMutex.withLock {
+    suspend fun updatePlayerSetting(transform: (PlayerSetting) -> PlayerSetting): PlayerSetting = withDataAccess {
         savePlayerSettingLocked(transform(getPlayerSettingLocked()))
         _playerSetting.value
     }
