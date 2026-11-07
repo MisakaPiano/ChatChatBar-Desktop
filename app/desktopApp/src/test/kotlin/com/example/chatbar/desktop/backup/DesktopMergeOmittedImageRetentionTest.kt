@@ -1,0 +1,91 @@
+package com.example.chatbar.desktop.backup
+
+import com.example.chatbar.data.local.JsonFileStorage
+import com.example.chatbar.data.local.entity.*
+import com.example.chatbar.data.repository.ChatRepository
+import com.example.chatbar.desktop.*
+import java.nio.file.Files
+import java.nio.file.Path
+import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.json.*
+import kotlin.test.*
+
+class DesktopMergeOmittedImageRetentionTest {
+    private fun <T> bytes(serializer: KSerializer<T>, value: T) =
+        backupJson.encodeToJsonElement(serializer, value).toString().toByteArray(Charsets.UTF_8)
+    private fun own(root: Path, base: Path) = (DesktopDataRootOwnership.acquire(DesktopDataRootResolution.Resolved(root,
+        DesktopDataRootProvenance.CLI_OVERRIDE, base.resolve("bootstrap.json"))) as DesktopDataRootOwnershipResult.Acquired).ownership
+
+    @Test fun `actual selected merge retains omitted matching images without crossing fork or message identity`() = runBlocking<Unit> {
+        data class Case(val includeImages: Boolean, val choice: DesktopMergePreview.Choice, val messageId: String = "m")
+        for (case in listOf(Case(false, DesktopMergePreview.Choice.TAKE_PHONE),
+            Case(true, DesktopMergePreview.Choice.TAKE_PHONE), Case(false, DesktopMergePreview.Choice.BOTH),
+            Case(false, DesktopMergePreview.Choice.TAKE_PHONE, "new-message"))) {
+            val base = Files.createTempDirectory(Files.createDirectories(Path.of("build/preview-synthetic/omitted-media").toAbsolutePath()), "case-")
+            try {
+                val pcRoot = Files.createDirectory(base.resolve("pc"))
+                val image = pcRoot.resolve("images/old.png"); Files.createDirectories(image.parent)
+                val raster = java.awt.image.BufferedImage(2, 2, java.awt.image.BufferedImage.TYPE_INT_ARGB)
+                try { raster.setRGB(0, 0, 0xff336699.toInt()); javax.imageio.ImageIO.write(raster, "png", image.toFile()) } finally { raster.flush() }
+                val imageBytes = Files.readAllBytes(image)
+                val card = bytes(CharacterCard.serializer(), CharacterCard("c", "Synthetic", createdAt = 1, updatedAt = 1))
+                val session = bytes(ChatSession.serializer(), ChatSession("s", "c", "Synthetic", createdAt = 1, updatedAt = 1))
+                val metadata = GeneratedImageMetadata(image.toString(), "synthetic original caption", negativePrompt = "synthetic exclusions",
+                    sizePreset = "synthetic", width = 2, height = 2)
+                val message = ChatMessage("m", "s", MessageRole.USER, "Computer body", images = listOf(image.toString()),
+                    generatedImageMetadata = listOf(metadata), createdAt = 1, updatedAt = 1)
+                val original = mapOf("entities/character_cards/c.json" to card, "entities/chat_sessions/s.json" to session,
+                    "entities/chat_messages/s_m.json" to bytes(ChatMessage.serializer(), message))
+                for ((path, raw) in original) { val target = pcRoot.resolve(path); Files.createDirectories(target.parent); Files.write(target, raw) }
+                val incoming = mapOf("entities/character_cards/c.json" to card, "entities/chat_sessions/s.json" to session,
+                    "entities/chat_messages/s_${case.messageId}.json" to bytes(ChatMessage.serializer(),
+                        ChatMessage(case.messageId, "s", MessageRole.USER, "Phone body", createdAt = 1, updatedAt = 2)))
+                val scope = OfficialWireScope(emptySet(), 1, 1, if (case.includeImages) 1 else 0, 1, 1,
+                    false, false, false, false, sessionDefaultChoice = OfficialWireSessionChoice(images = case.includeImages))
+                val source = Files.write(base.resolve("synthetic.cbbackup"), CensusWireFixtures.bytes(prefs = "{}", files = incoming,
+                    code = 88, version = 2, scope = scope))
+                val sourceBytes = Files.readAllBytes(source)
+                own(pcRoot, base).use {
+                    DesktopFullBackupMapping(pcRoot).export(Files.createDirectory(base.resolve("pc-work")), 88,
+                        StrictBackupZipReader.Limits().expanded, forMerge = true).use { pc ->
+                        DesktopFullBackupStaging.prepare(source, null, Files.createDirectory(base.resolve("phone-work"))).use { phone ->
+                            val pcMedia = pc.proof.filterKeys { !it.startsWith("entities/") }
+                            val phoneMedia = phone.source.inventory.filterKeys { !it.startsWith("entities/") }.mapValues { it.value.sha256 }
+                            val preview = DesktopMergePreview.create(DesktopMergeRootPreparation.computerEntities(pc), phone.entities,
+                                pcMedia, phoneMedia, phone.source.manifest.scope)
+                            val selected = preview.select(preview.conflicts.associate { it.key to case.choice })
+                            val root = Files.createDirectory(base.resolve("merged"))
+                            val authority = DesktopFreshRootAuthority(root, Files.createDirectory(base.resolve("credentials")), MergeRootSyntheticProtector)
+                            own(root, base).use {
+                                val pending = authority.begin()
+                                DesktopMergeRootPreparation.prepare(root, authority, pending, pc, phone, selected,
+                                    Files.createDirectory(base.resolve("prepare-work"))).use { result ->
+                                    authority.complete(pending, result.files); authority.verifyAndResolve()
+                                    val incomingSession = result.plan.identity.value("chat_sessions", "s")
+                                    val restored = ChatRepository(JsonFileStorage(root)).getMessagesReadOnly(incomingSession).single()
+                                    assertEquals("Phone body", restored.content)
+                                    val retain = !case.includeImages && case.choice == DesktopMergePreview.Choice.TAKE_PHONE && case.messageId == "m"
+                                    assertEquals(if (retain) 1 else 0, restored.images.size, case.toString())
+                                    if (retain) {
+                                        assertContentEquals(imageBytes, Files.readAllBytes(Path.of(restored.images.single())))
+                                        assertEquals(restored.images.single(), restored.generatedImageMetadata.single().imagePath)
+                                        assertEquals(metadata.baseCaption, restored.generatedImageMetadata.single().baseCaption)
+                                        assertEquals(restored, ChatRepository(JsonFileStorage(root)).getMessagesReadOnly(incomingSession).single())
+                                    }
+                                    if (case.choice == DesktopMergePreview.Choice.BOTH) {
+                                        val kept = ChatRepository(JsonFileStorage(root)).getMessagesReadOnly("s").single()
+                                        assertEquals("Computer body", kept.content); assertEquals(1, kept.images.size)
+                                        assertContentEquals(imageBytes, Files.readAllBytes(Path.of(kept.images.single())))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                assertContentEquals(sourceBytes, Files.readAllBytes(source)); assertContentEquals(imageBytes, Files.readAllBytes(image))
+                original.forEach { (path, raw) -> assertContentEquals(raw, Files.readAllBytes(pcRoot.resolve(path))) }
+            } finally { check(base.toFile().deleteRecursively()) }
+        }
+    }
+}
