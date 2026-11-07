@@ -23,7 +23,7 @@ internal fun desktopRecoveryStatuses(root: DesktopDataRootSwitchState, backup: D
     DesktopRecoveryStatus(DesktopRecoveryArea.BACKUP, when {
         backup.restartRequired -> DesktopRecoveryPhase.RESTART
         backup.busy -> DesktopRecoveryPhase.RUNNING
-        backup.error != null -> DesktopRecoveryPhase.ATTENTION
+        backup.error != null || backup.operationNotice != null -> DesktopRecoveryPhase.ATTENTION
         backup.summary != null -> DesktopRecoveryPhase.CHECKED
         backup.exportResult?.success == true -> DesktopRecoveryPhase.EXPORTED
         else -> DesktopRecoveryPhase.IDLE
@@ -32,7 +32,7 @@ internal fun desktopRecoveryStatuses(root: DesktopDataRootSwitchState, backup: D
         merge == null -> DesktopRecoveryPhase.UNAVAILABLE
         merge.restartRequired -> DesktopRecoveryPhase.RESTART
         merge.busy -> DesktopRecoveryPhase.RUNNING
-        merge.error != null -> DesktopRecoveryPhase.ATTENTION
+        merge.error != null || merge.operationNotice != null -> DesktopRecoveryPhase.ATTENTION
         merge.ready -> DesktopRecoveryPhase.PREVIEW
         else -> DesktopRecoveryPhase.IDLE
     }),

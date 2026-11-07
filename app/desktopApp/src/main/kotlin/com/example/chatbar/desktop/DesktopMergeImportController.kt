@@ -21,15 +21,18 @@ internal data class DesktopMergeImportState(val busy: Boolean = false, val ready
     val failureDetails: String? = null, val historicalDesktopV5Settings: Boolean = false,
     val passwordRequest: DesktopBackupPasswordRequest? = null,
     val mode: DesktopBackupRestoreMode = DesktopBackupRestoreMode.MERGE_CHOICES,
-    val modePlanning: Boolean = false, val modeSummary: DesktopMergeModeSummary? = null, val modeError: String? = null)
+    val modePlanning: Boolean = false, val modeSummary: DesktopMergeModeSummary? = null, val modeError: String? = null,
+    val operationNotice: String? = null)
 
 /** Holds secret-bearing preparation privately; UI state contains only presentation metadata. */
 internal class DesktopMergeImportController(private val service: DesktopMergeImportService,
     private val picker: DesktopFilePicker, private val directories: DesktopDirectoryPicker,
     dispatcher: CoroutineDispatcher = Dispatchers.IO,
-    private val applicationHomeResolver: () -> DesktopApplicationHomeResult = DesktopApplicationHome::resolve) {
+    private val applicationHomeResolver: () -> DesktopApplicationHomeResult = DesktopApplicationHome::resolve,
+    private val operationJournal: DesktopBackupOperationJournal? = null) {
     private val scope = CoroutineScope(SupervisorJob() + dispatcher)
-    private val mutable = MutableStateFlow(DesktopMergeImportState())
+    private val mutable = MutableStateFlow(DesktopMergeImportState(operationNotice = operationJournal?.previousNotice()))
+    private var journalTicket: DesktopBackupOperationJournal.Ticket? = null
     val state = mutable.asStateFlow()
     private val lock = Any()
     private var closed = false
@@ -68,7 +71,7 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
         }
     }
     private suspend fun inspectSelectedFile(path: Path, password: CharArray?): String {
-        preview = null; mutable.update { DesktopMergeImportState(busy = true) }
+        preview = null; mutable.update { DesktopMergeImportState(busy = true, operationNotice = it.operationNotice) }
         val result = service.inspectWithProgress(path, password, ::showProgress)
         preview = result
         mutable.update { it.copy(ready = true, code = result.code, files = result.fileCount, versionName = result.versionName, modelDetails = result.modelDetails, catalogDetails = result.catalogDetails,
@@ -202,6 +205,7 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
         val taskId = task?.let { UUID.randomUUID().toString() }
         activeTaskId = taskId
         var outcome: DesktopWorkPhase? = null
+        var statusTicket: DesktopBackupOperationJournal.Ticket? = null
         if (task != null && taskId != null) mutableWork.update { rows ->
             (listOf(DesktopWorkRow(taskId, task.kind, DesktopWorkPhase.RUNNING, System.currentTimeMillis(),
                 target = DesktopWorkTarget(DesktopPrimaryRoute.DATA, detail = DesktopWorkDetail.MERGE_IMPORT),
@@ -210,6 +214,11 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
         val job = scope.launch(start = CoroutineStart.ATOMIC) {
             try {
                 currentCoroutineContext().ensureActive()
+                if (task != null) recordStatus {
+                    operationJournal?.begin(if (task == DesktopMergeTask.COMMIT) DesktopBackupOperationJournal.Kind.MERGE_COMMIT
+                        else DesktopBackupOperationJournal.Kind.MERGE_CHECK)?.let { statusTicket = it; journalTicket = it }
+                    mutable.update { it.copy(operationNotice = null) }
+                }
                 val message = work { outcome = it }
                 mutable.update { it.copy(message = message) }
             } catch (_: CancellationException) {
@@ -257,6 +266,20 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
             } finally {
                 password?.fill('\u0000')
                 synchronized(lock) {
+                    recordStatus {
+                        (if (task != null) statusTicket else journalTicket)?.let { ticket ->
+                            if (task == null) operationJournal?.abandonPreview(ticket)
+                            else operationJournal?.finish(ticket, when {
+                                service.restartRequired -> DesktopBackupOperationJournal.Phase.RESTART
+                                outcome == DesktopWorkPhase.UNCONFIRMED -> DesktopBackupOperationJournal.Phase.UNCONFIRMED
+                                outcome == DesktopWorkPhase.CANCELLED -> DesktopBackupOperationJournal.Phase.CANCELLED
+                                outcome == DesktopWorkPhase.FAILED -> DesktopBackupOperationJournal.Phase.FAILED
+                                mutable.value.passwordRequest != null -> DesktopBackupOperationJournal.Phase.WAITING
+                                preview != null -> DesktopBackupOperationJournal.Phase.PREVIEW
+                                else -> DesktopBackupOperationJournal.Phase.COMPLETE
+                            })
+                        }
+                    }
                     passwordFlowActive = false
                     if (passwordFile == null) externalPasswordFlow = false
                     mutable.update { it.copy(busy = false, restartRequired = service.restartRequired,
@@ -290,9 +313,15 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
         synchronized(lock) { closed = true }
         scope.coroutineContext[Job]!!.cancelAndJoin()
         service.discard(); preview = null; passwordFile = null
+        recordStatus { journalTicket?.let { operationJournal?.abandonPreview(it) } }
         mutable.update { it.copy(passwordRequest = null) }
         mutableWork.update { rows -> rows.map { if (it.phase == DesktopWorkPhase.WAITING) it.copy(phase = DesktopWorkPhase.CANCELLED) else it } }
         // Destination ownership belongs to the service, closed only AFTER old repositories drain.
+    }
+    private inline fun recordStatus(write: () -> Unit) {
+        try { write() } catch (_: Exception) {
+            mutable.update { it.copy(operationNotice = DesktopBackupOperationJournal.STATUS_UNAVAILABLE) }
+        }
     }
     companion object {
         private val TYPE = DesktopFileType("ChatBar 整应用备份", listOf("cbbackup"), "cbbackup")

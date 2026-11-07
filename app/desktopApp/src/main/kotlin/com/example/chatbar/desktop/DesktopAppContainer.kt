@@ -156,7 +156,7 @@ class DesktopAppContainer internal constructor(
         resumeScheduler = { check(automaticBackupRuntime.resumeAfterMaintenance() !is DesktopMaintenanceResumeResult.Failed) },
         asset = bundledAssets,
         secretStore = { desktopSecretStore },
-    ), filePicker).also { taskCenter.watchBackup(it) } }
+    ), filePicker, operationJournal = DesktopBackupOperationJournal(appDataRoot, DesktopBackupOperationJournal.Lane.BACKUP)).also { taskCenter.watchBackup(it) } }
     internal val fullBackupController by fullBackupOwner
     private fun createMergeService(workspace: Path = appDataRoot.resolve("backups/.merge-import-work"),
         quiesce: suspend (suspend () -> Unit) -> Unit = { work -> taskRuntime.withMaintenance { withBackupIoMaintenance(work) } },
@@ -177,7 +177,8 @@ class DesktopAppContainer internal constructor(
             if (dataOperationCoordinator.isRestartRequired) taskRuntime.stopAccepting()
         } }
     }
-    private val mergeImportOwner = lazy { DesktopMergeImportController(mergeServiceOwner.value, filePicker, directoryPicker)
+    private val mergeImportOwner = lazy { DesktopMergeImportController(mergeServiceOwner.value, filePicker, directoryPicker,
+        operationJournal = DesktopBackupOperationJournal(appDataRoot, DesktopBackupOperationJournal.Lane.MERGE))
         .also { taskCenter.watchMerge(it) } }
     internal val mergeImportController by mergeImportOwner
 

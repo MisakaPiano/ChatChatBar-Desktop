@@ -16,13 +16,16 @@ internal data class DesktopBackupExportResult(val success: Boolean, val message:
 internal data class DesktopFullBackupState(val busy: Boolean = false, val message: String = "",
     val error: String? = null, val summary: AppBackupSummary? = null,
     val desktopOnly: Boolean = false, val restartRequired: Boolean = false, val catalog: BackupExportCatalog? = null,
-    val exportResult: DesktopBackupExportResult? = null, val passwordRequest: DesktopBackupPasswordRequest? = null)
+    val exportResult: DesktopBackupExportResult? = null, val passwordRequest: DesktopBackupPasswordRequest? = null,
+    val operationNotice: String? = null)
 
 /** The application owns the operation; leaving the panel cannot abandon a scheduled restore. */
 internal class DesktopFullBackupController(private val service: DesktopFullBackupService,
-    private val picker: DesktopFilePicker, dispatcher: CoroutineDispatcher = Dispatchers.IO) {
+    private val picker: DesktopFilePicker, dispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val operationJournal: DesktopBackupOperationJournal? = null) {
     private val scope = CoroutineScope(SupervisorJob() + dispatcher)
-    private val mutable = MutableStateFlow(DesktopFullBackupState())
+    private val mutable = MutableStateFlow(DesktopFullBackupState(operationNotice = operationJournal?.previousNotice()))
+    private var journalTicket: DesktopBackupOperationJournal.Ticket? = null
     val state = mutable.asStateFlow()
     private val lock = Any()
     private var closed = false
@@ -129,6 +132,7 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
             val taskId = task?.let { UUID.randomUUID().toString() }
             activeTaskId = taskId
             var outcome = DesktopWorkPhase.COMPLETED
+            var statusTicket: DesktopBackupOperationJournal.Ticket? = null
             if (task != null && taskId != null) mutableWork.update { rows ->
                 (listOf(DesktopWorkRow(taskId, task.kind, DesktopWorkPhase.RUNNING, System.currentTimeMillis(),
                     target = DesktopWorkTarget(DesktopPrimaryRoute.DATA, detail = task.detail),
@@ -138,6 +142,14 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
             operation = scope.launch(start = CoroutineStart.ATOMIC) {
                 try {
                     currentCoroutineContext().ensureActive()
+                    if (task != null) recordStatus {
+                        operationJournal?.begin(when (task) {
+                            DesktopBackupTask.EXPORT -> DesktopBackupOperationJournal.Kind.EXPORT
+                            DesktopBackupTask.INSPECT -> DesktopBackupOperationJournal.Kind.CHECK
+                            DesktopBackupTask.RESTORE_PREPARATION -> DesktopBackupOperationJournal.Kind.RESTORE
+                        })?.let { statusTicket = it; journalTicket = it }
+                        mutable.update { it.copy(operationNotice = null) }
+                    }
                     val message = work { message -> outcome = DesktopWorkPhase.CANCELLED; message }
                     currentCoroutineContext().ensureActive()
                     mutable.update { it.copy(message = message) }
@@ -196,6 +208,20 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
                         val release = synchronized(lock) {
                             if (releaseWhenIdle) { releaseWhenIdle = false; true }
                             else {
+                                recordStatus {
+                                    (if (task != null) statusTicket else if (cleanupOnly) journalTicket else null)?.let { ticket ->
+                                        if (cleanupOnly) operationJournal?.abandonPreview(ticket)
+                                        else operationJournal?.finish(ticket, when {
+                                            service.restartRequired -> DesktopBackupOperationJournal.Phase.RESTART
+                                            outcome == DesktopWorkPhase.UNCONFIRMED -> DesktopBackupOperationJournal.Phase.UNCONFIRMED
+                                            outcome == DesktopWorkPhase.CANCELLED -> DesktopBackupOperationJournal.Phase.CANCELLED
+                                            outcome == DesktopWorkPhase.FAILED -> DesktopBackupOperationJournal.Phase.FAILED
+                                            mutable.value.passwordRequest != null -> DesktopBackupOperationJournal.Phase.WAITING
+                                            prepared != null -> DesktopBackupOperationJournal.Phase.PREVIEW
+                                            else -> DesktopBackupOperationJournal.Phase.COMPLETE
+                                        })
+                                    }
+                                }
                                 mutable.update { it.copy(busy = false, restartRequired = service.restartRequired) }
                                 passwordFlowActive = false
                                 false
@@ -228,7 +254,13 @@ internal class DesktopFullBackupController(private val service: DesktopFullBacku
         synchronized(lock) { closed = true }
         scope.coroutineContext[Job]!!.cancelAndJoin()
         releaseInspection()
+        recordStatus { journalTicket?.let { operationJournal?.abandonPreview(it) } }
         mutableWork.update { rows -> rows.map { if (it.phase == DesktopWorkPhase.WAITING) it.copy(phase = DesktopWorkPhase.CANCELLED) else it } }
+    }
+    private inline fun recordStatus(write: () -> Unit) {
+        try { write() } catch (_: Exception) {
+            mutable.update { it.copy(operationNotice = DesktopBackupOperationJournal.STATUS_UNAVAILABLE) }
+        }
     }
     companion object { private val TYPE = DesktopFileType("ChatBar 整应用备份", listOf("cbbackup"), "cbbackup") }
 }

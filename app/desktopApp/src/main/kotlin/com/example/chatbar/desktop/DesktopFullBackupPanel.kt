@@ -21,6 +21,7 @@ internal fun DesktopFullBackupPanel(controller: DesktopFullBackupController,
     LaunchedEffect(exportRequest) { if (exportRequest > 0) { exportOpen = true; controller.refreshExportCatalog() } }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         DesktopDataSectionHeading(when (view) { DesktopFullBackupView.EXPORT -> "导出备份"; DesktopFullBackupView.CHECK -> "检查备份文件"; else -> "备份导出与文件检查" })
+        state.operationNotice?.let { StatusText(it, DesktopBootstrapColors.warning) }
         StatusText("备份角色、聊天、版本、记忆、图片、录音、存档和独立保全内容。恢复和手机迁移请返回备份概览，选择“导入与合并”。")
         StatusText("可随备份保存已配置的 API 密钥等凭据；导出不会改变本机目录或凭据。文件检查仅用于核对，不会导入数据。")
         StatusText("包含 Desktop 专有数据时仅支持 Desktop 恢复。Android 双向迁移尚需独立设备验收，不保证所有历史或未来格式可用。")
