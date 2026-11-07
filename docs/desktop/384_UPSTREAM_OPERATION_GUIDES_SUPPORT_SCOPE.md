@@ -11,3 +11,5 @@
 5项备份skill/增量恢复reference变化亦只作维护支持：实际选择/资源/身份、准入与新根/保护凭据、类型及记忆重映射分别沿既有owner和分源检查。Android删除执行器与Desktop惰性PC记录的差异明确保留，手机待删除指令不带入；当前Engine检查未因reference读完而通过。上游opt-in大包、设备和发布流程不借为Desktop验证或授权；原生84–88和容量边界保持。见 OWNER_BACKUP5_SUPPORT_DISPOSITIONS.json。
 
 历史范围选择与账户费用4项非Prompt测试支持增量已按原件限域复用：Linux原5个范围方法及2个费用对账方法、Windows实际账户成功/刷新1个方法完整通过，相关测试/策略blob未变；8个既有方法不是8个新跑。组合提交不重复计数，供应商真实费用未验证。原回执计数已更正为6行，其中另2行CurrentTurn依赖315，保持pending，不为通过其期待改Prompt。见 OWNER_UI_POLICY4_SUPPORT_SCOPED_REUSE.json。
+
+生图角色坐标与启用状态4项测试支持变化已核完整内容，复用Linux原5+4个完整方法，最终shared测试与c69/329对应且未变；坐标和导入owner亦未变。Models/请求层后续只有另域三处追加，不冒称整文件相同。只证明DTO/排序/过滤及离线请求字段等原作用域，不借为真实生图、角色条目注入或真人界面验收。见 OWNER_CHARACTER_POSITION_ENABLED4_TEST_SUPPORT_REUSE.json，0新跑。

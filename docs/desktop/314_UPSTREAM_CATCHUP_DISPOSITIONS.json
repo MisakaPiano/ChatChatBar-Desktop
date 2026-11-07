@@ -2271,6 +2271,42 @@
       "evidence": [
         "OWNER_UI_POLICY4_SUPPORT_SCOPED_REUSE.json"
       ]
+    },
+    {
+      "id": "UPSTREAM_CHARACTER_IMAGE_TEST_SUPPORT_354F1516_NOVELAICHARACTERPOSITIONTEST",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Four complete test-support deltas: position DTO/history/order/coordinate flags/clamping/metadata selection and enabled-role persistence/filter/order/zero-active request. Final shared tests exactly match c69/329 and unchanged Linux162 run source; original five position plus four enabled whole methods PASS reused. PositionPolicy and StudioImageImport unchanged since that run. Models and ImageService later differ only by default-sampling helper, omitted-history-image helper and guided V5 straight_alpha; these are outside the nine selected method inputs, separately proved, not whole-file equality. c69 only Boolean-to-OFF API adaptation and329 fixes deterministic updatedAt. Domain request construction has no provider call; no native full-window/avatar/card-participation/human proof inferred and no Prompt-template edits.",
+      "reviewSource": "7b259d469bf7e4daf6f4f951691908203f4ded37",
+      "evidence": [
+        "OWNER_CHARACTER_POSITION_ENABLED4_TEST_SUPPORT_REUSE.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_CHARACTER_IMAGE_TEST_SUPPORT_C69AFE2F_NOVELAICHARACTERPOSITIONTEST",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Four complete test-support deltas: position DTO/history/order/coordinate flags/clamping/metadata selection and enabled-role persistence/filter/order/zero-active request. Final shared tests exactly match c69/329 and unchanged Linux162 run source; original five position plus four enabled whole methods PASS reused. PositionPolicy and StudioImageImport unchanged since that run. Models and ImageService later differ only by default-sampling helper, omitted-history-image helper and guided V5 straight_alpha; these are outside the nine selected method inputs, separately proved, not whole-file equality. c69 only Boolean-to-OFF API adaptation and329 fixes deterministic updatedAt. Domain request construction has no provider call; no native full-window/avatar/card-participation/human proof inferred and no Prompt-template edits.",
+      "reviewSource": "7b259d469bf7e4daf6f4f951691908203f4ded37",
+      "evidence": [
+        "OWNER_CHARACTER_POSITION_ENABLED4_TEST_SUPPORT_REUSE.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_CHARACTER_IMAGE_TEST_SUPPORT_01B6B729_NOVELAICHARACTERENABLEDTEST",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Four complete test-support deltas: position DTO/history/order/coordinate flags/clamping/metadata selection and enabled-role persistence/filter/order/zero-active request. Final shared tests exactly match c69/329 and unchanged Linux162 run source; original five position plus four enabled whole methods PASS reused. PositionPolicy and StudioImageImport unchanged since that run. Models and ImageService later differ only by default-sampling helper, omitted-history-image helper and guided V5 straight_alpha; these are outside the nine selected method inputs, separately proved, not whole-file equality. c69 only Boolean-to-OFF API adaptation and329 fixes deterministic updatedAt. Domain request construction has no provider call; no native full-window/avatar/card-participation/human proof inferred and no Prompt-template edits.",
+      "reviewSource": "7b259d469bf7e4daf6f4f951691908203f4ded37",
+      "evidence": [
+        "OWNER_CHARACTER_POSITION_ENABLED4_TEST_SUPPORT_REUSE.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_CHARACTER_IMAGE_TEST_SUPPORT_32906A76_NOVELAICHARACTERENABLEDTEST",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Four complete test-support deltas: position DTO/history/order/coordinate flags/clamping/metadata selection and enabled-role persistence/filter/order/zero-active request. Final shared tests exactly match c69/329 and unchanged Linux162 run source; original five position plus four enabled whole methods PASS reused. PositionPolicy and StudioImageImport unchanged since that run. Models and ImageService later differ only by default-sampling helper, omitted-history-image helper and guided V5 straight_alpha; these are outside the nine selected method inputs, separately proved, not whole-file equality. c69 only Boolean-to-OFF API adaptation and329 fixes deterministic updatedAt. Domain request construction has no provider call; no native full-window/avatar/card-participation/human proof inferred and no Prompt-template edits.",
+      "reviewSource": "7b259d469bf7e4daf6f4f951691908203f4ded37",
+      "evidence": [
+        "OWNER_CHARACTER_POSITION_ENABLED4_TEST_SUPPORT_REUSE.json"
+      ]
     }
   ],
   "deltas": [
@@ -2631,11 +2667,16 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Four complete test-support deltas: position DTO/history/order/coordinate flags/clamping/metadata selection and enabled-role persistence/filter/order/zero-active request. Final shared tests exactly match c69/329 and unchanged Linux162 run source; original five position plus four enabled whole methods PASS reused. PositionPolicy and StudioImageImport unchanged since that run. Models and ImageService later differ only by default-sampling helper, omitted-history-image helper and guided V5 straight_alpha; these are outside the nine selected method inputs, separately proved, not whole-file equality. c69 only Boolean-to-OFF API adaptation and329 fixes deterministic updatedAt. Domain request construction has no provider call; no native full-window/avatar/card-participation/human proof inferred and no Prompt-template edits.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_CHARACTER_IMAGE_TEST_SUPPORT_354F1516_NOVELAICHARACTERPOSITIONTEST"
+      ],
+      "evidence": [
+        "OWNER_CHARACTER_POSITION_ENABLED4_TEST_SUPPORT_REUSE.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "1a4e5a14aa1c741f5288e2ad39d1b9b4344053d9:.agents/skills/chatbar-image-generation-runtime/SKILL.md",
@@ -3893,11 +3934,16 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Four complete test-support deltas: position DTO/history/order/coordinate flags/clamping/metadata selection and enabled-role persistence/filter/order/zero-active request. Final shared tests exactly match c69/329 and unchanged Linux162 run source; original five position plus four enabled whole methods PASS reused. PositionPolicy and StudioImageImport unchanged since that run. Models and ImageService later differ only by default-sampling helper, omitted-history-image helper and guided V5 straight_alpha; these are outside the nine selected method inputs, separately proved, not whole-file equality. c69 only Boolean-to-OFF API adaptation and329 fixes deterministic updatedAt. Domain request construction has no provider call; no native full-window/avatar/card-participation/human proof inferred and no Prompt-template edits.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_CHARACTER_IMAGE_TEST_SUPPORT_01B6B729_NOVELAICHARACTERENABLEDTEST"
+      ],
+      "evidence": [
+        "OWNER_CHARACTER_POSITION_ENABLED4_TEST_SUPPORT_REUSE.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "c69afe2fe30576ff410b5d060e0d652fc061edd1:.agents/skills/chatbar-image-generation-runtime/SKILL.md",
@@ -4014,11 +4060,16 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Four complete test-support deltas: position DTO/history/order/coordinate flags/clamping/metadata selection and enabled-role persistence/filter/order/zero-active request. Final shared tests exactly match c69/329 and unchanged Linux162 run source; original five position plus four enabled whole methods PASS reused. PositionPolicy and StudioImageImport unchanged since that run. Models and ImageService later differ only by default-sampling helper, omitted-history-image helper and guided V5 straight_alpha; these are outside the nine selected method inputs, separately proved, not whole-file equality. c69 only Boolean-to-OFF API adaptation and329 fixes deterministic updatedAt. Domain request construction has no provider call; no native full-window/avatar/card-participation/human proof inferred and no Prompt-template edits.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_CHARACTER_IMAGE_TEST_SUPPORT_C69AFE2F_NOVELAICHARACTERPOSITIONTEST"
+      ],
+      "evidence": [
+        "OWNER_CHARACTER_POSITION_ENABLED4_TEST_SUPPORT_REUSE.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "c69afe2fe30576ff410b5d060e0d652fc061edd1:app/app/src/test/java/com/example/chatbar/domain/image/NovelAiStudioImageImportTest.kt",
@@ -4619,11 +4670,16 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Four complete test-support deltas: position DTO/history/order/coordinate flags/clamping/metadata selection and enabled-role persistence/filter/order/zero-active request. Final shared tests exactly match c69/329 and unchanged Linux162 run source; original five position plus four enabled whole methods PASS reused. PositionPolicy and StudioImageImport unchanged since that run. Models and ImageService later differ only by default-sampling helper, omitted-history-image helper and guided V5 straight_alpha; these are outside the nine selected method inputs, separately proved, not whole-file equality. c69 only Boolean-to-OFF API adaptation and329 fixes deterministic updatedAt. Domain request construction has no provider call; no native full-window/avatar/card-participation/human proof inferred and no Prompt-template edits.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_CHARACTER_IMAGE_TEST_SUPPORT_32906A76_NOVELAICHARACTERENABLEDTEST"
+      ],
+      "evidence": [
+        "OWNER_CHARACTER_POSITION_ENABLED4_TEST_SUPPORT_REUSE.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "32906a76f2b85fce68285a146092ad91fd3f75e1:app/app/src/test/java/com/example/chatbar/domain/moment/MomentPostEditingTest.kt",
