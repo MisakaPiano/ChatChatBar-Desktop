@@ -1,3 +1,7 @@
+2026-11-07 预设原生后继已核：旧R23实际native主窗/Robot到attempt4，在已有最小化child唤回处1业务FAIL、stderr空；3ade后R24同fixture原四套7PASS/0FAIL/ERROR/SKIP，attempt1–6完成同实例还原、close/原生X、取消/坏包/导出/apply/undo/同页再开。R19假asset给T5的首开夹具失败与R22有效旧关闭重开1PASS分别保留，不能拼成用户确切根因。326工程分支闭合待下一集中交付，原1244真人FAIL未提升。327方向原旧1PASS1FAIL/新11PASS、325匹配34与R18原23PASS/1native前置SKIP保持；原共享7与存储准入24仅复用。T17/T24当前摘要已校准1244/sign26及已有分组PASS/未测，四身份/T11/T23/315未采纳/141→12e active保持，无新包、公发、本机JVM或用户资料操作。
+
+下方历史保留。
+
 2026-11-07 后继3ade：327的Upscale方向旧R20原1PASS+1业务FAIL（orientation6 raw64×96/expected96×64），同fixture后继R21原三套11PASS、0FAIL/ERROR/SKIP，6/8/2实际wire像素/alpha/尺寸与普通透明原bytes/原护栏已核；原七shared后处理及存储准入原24方法分源复用，不计新跑或总和。326真实预设R19夹具误给T5 JSON造成首开失败，原件保留；修资源R22原1PASS完成关闭/取消/坏包/导出/apply/undo/同页重开，非用户重复失效反例。R23补native主窗/Robot与已有最小化child唤回旧源；3ade显式激活保留原window/preview/job与busy/关闭保护，R24后继待原件。R18原23PASS/1native前置SKIP及325匹配34保持。公开仍1244/db7/签26，A2/A3/A4/B1/B3及B2可用回执保留，A1/Header/B2重复入口真人FAIL与未交付后继分开，CDE未测，315未采纳和141→12e active。无本机JVM/真实资料/新包/公发；仅清理四份完成下载请求2745B，全部原件/失败/当前资料保留。
 
 下方历史保留。

@@ -17598,7 +17598,14 @@
     "originalRun": 42085881455,
     "matchedMethods": 7,
     "newRuns": 0,
-    "desktopOrientationWire": "PENDING_R20_R21",
+    "desktopOrientationWire": {
+      "state": "SCOPED11PASS_OLD1BUSINESS_FAIL_RETAINED",
+      "normal": "e54af8ac9fa45135a3fbbd8149af1023c4b29aed",
+      "oldRun": 42343985121,
+      "newRun": 42344062744,
+      "proof": "OWNER_UPSCALE_ORIENTATION_R20_R21_REVIEW.json",
+      "whole148bUiClosed": false
+    },
     "completeWholeInventory": false
   },
   "storageMaintenanceAdmissionReview": {

@@ -15,3 +15,11 @@ R18（42342909490/controlcff779/normal930e）原5套24方法=23PASS、1既有原
 外层回归R19（42343842566/controlab79）原1FAIL/0SKIP；system-err显示首个FullPanel的T5读取收到通用JSON假asset，发生Not in GZIP format后界面协程退出，不能当作用户同条件重复入口业务反例。d82将夹具限定为仅presets路径使用inline空manifest，分词器/其他类型委托实际asset reader，不读取预制preset内容、不跳过token producer、不放宽等待，并记录每次open序号。实际Studio入口→实际Exchange Window的R22原生后继待原件；生产预设逻辑尚未猜改，用户FAIL仍待解决。
 
 进一步源码分支：原主入口只有`showingPreset=true`，已存在但被遮挡/最小化的Window再次收到true不会还原置前。用户当次未说明是否灰掉或被遮挡，因此这只是明确存在且可能吻合症状的分支，不能推定其真实根因。692c的R23将主窗也改为真实native Window并用限定窗口内的Robot点击，先确认实际关闭/再开，再检验最小化旧child后主入口唤回同一实例。3ade仅增加预设显式activation revision，Window按该信号还原并下一frame请求置前；默认未传信号的其他工具窗不触发，不移除busy、working/closing、取消join、预览/确认或原草稿保护。R24同夹具及原Controller/Content/工具窗native关闭方法待原件，不先宣告用户问题闭合。
+
+## 原生窗口后继结果
+
+R22原件（42344551307，normald82/control996455）1PASS/0SKIP，实际关闭/原生X、chooser取消、无效导入、预览取消、导出、应用、undo及同页重开全部执行；因此有效dispose后重建没有复现用户失效。R23（42344939398，normal692c/control4b1d）原1实际FAIL/0SKIP，stdout为attempt1–4且stderr空，失败正是已有最小化child再点主入口不能还原；其后I/O阶段没有执行，不把R22拼成一次完整旧链。
+
+R24（42345020110，normal3ade/control225f）与R23同一夹具blob，原4套7PASS、0FAIL/ERROR/SKIP，全部stderr空。真实native主窗/Robot点击与子窗完成attempt1–6，最小化后唤回同一实例，再完成chooser取消、坏包、预览取消、导出、明确apply/undo及重开。原Controller4/Content1/普通工具native关闭1亦通过，原进行中保护和默认工具窗行为保留。仅缺陷分支工程闭合，用户1244当时确切原因仍未知、原USER_FAIL等待成熟批次实际复测，不代装或单独发包。
+
+R23原ZIP11687B SHA256 `7dd97ea983764c75250fd2dba244277bb732ae056acdb3ea04adce6fe755f65c`；R24原ZIP16454B SHA256 `f12dbf952b6ea6669fce6f84d2d394b210de9c44477697c6e9ebdb4b454ff0a4`，SHA/CRC/source/全部XML及stdout/stderr已核。本地`OWNER_PRESET_WINDOW_R23_R24_REVIEW.json`同时保留R19夹具失败与R22有效路径结果；四原件分开，不相加为新增10项。
