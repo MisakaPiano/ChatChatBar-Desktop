@@ -84,10 +84,11 @@ internal fun StudioAccountCluster(model: NovelAiImageModel, account: NovelAiAcco
     Column(Modifier.fillMaxWidth().background(DesktopBootstrapColors.card).padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(3.dp)) {
         BoxWithConstraints(Modifier.fillMaxWidth()) {
+            val controlsWidth = (maxWidth * .55f).coerceAtMost(360.dp)
             if (controls != null && maxWidth >= 480.dp) Row(Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Box(Modifier.weight(1f)) { information() }
-                Box(Modifier.width((maxWidth * .55f).coerceAtMost(360.dp))) { controls() }
+                Box(Modifier.width(controlsWidth)) { controls() }
             } else Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 information()
                 controls?.invoke()
