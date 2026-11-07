@@ -1135,6 +1135,15 @@
         "OWNER_CHARACTER_POSITION_CHAIN_REUSE.json",
         "OWNER_POSITION_VIEWPORT_FINAL_REVIEW.json"
       ]
+    },
+    {
+      "id": "CHARACTER_DEFAULT_SAMPLING_ACTION_SCOPED_REUSE",
+      "disposition": "EQUIVALENT",
+      "scope": "Onlya963 CharacterEditScreen added3-line explicit default-sampling action. Existing Desktop defaults component calls unchanged card helper through original draft owner, resetting4sampling fields and preserving effort/transparency/variety. Own exact current/original162 UI/entity/default/helper/test blobs and original shared1/Desktop2 reports verified,0new runs. Prior coordinator-retained1240 user button receipt separate; no current card-save human acceptance or entire Screen claim.",
+      "reviewSource": "accd1dc5684daeee673cefe1d1ec4c102762f6d9",
+      "evidence": [
+        "OWNER_CHARACTER_SAMPLING_RESET_A963_REUSE.json"
+      ]
     }
   ],
   "deltas": [
@@ -11334,8 +11343,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Onlya963 CharacterEditScreen added3-line explicit default-sampling action. Existing Desktop defaults component calls unchanged card helper through original draft owner, resetting4sampling fields and preserving effort/transparency/variety. Own exact current/original162 UI/entity/default/helper/test blobs and original shared1/Desktop2 reports verified,0new runs. Prior coordinator-retained1240 user button receipt separate; no current card-save human acceptance or entire Screen claim.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/character/CharacterEditScreen.kt",
@@ -11344,8 +11353,12 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "CHARACTER_DEFAULT_SAMPLING_ACTION_SCOPED_REUSE"
+      ],
+      "evidence": [
+        "OWNER_CHARACTER_SAMPLING_RESET_A963_REUSE.json"
+      ]
     },
     {
       "id": "a96313d9ec44244a301fa94f7a0ad6f98cf6350a:app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolScreen.kt",

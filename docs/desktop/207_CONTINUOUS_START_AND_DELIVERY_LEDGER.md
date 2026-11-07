@@ -1,3 +1,7 @@
+2026-11-07 当前accd后继：R74原318B/723c3a46…a4374d仅source/0XML，compileTestKotlin因新测试ComposeWindow误import停住；完整日志与失败保留，仅改ui.awt，不当业务FAIL。accd后继同批补V+仅显式关/开清customSigma、导入卡先选显式/全局/手动模型再套active bank并保另一bank及原undo；workspace整体key身份卸载旧decoded state。R75/42363159910原native2+Variety实际PNG UI1+卡import实际Controller1在验，不重跑R72/R67/旧位置16。另a963角色默认采样三行实际已有，匹配原shared1/Desktop2分源复用0新跑并限定映射。R69/R71/R72/R73限定通过保留，314仍false/315其余未采纳，四身份/全部ID/T11T23/公开1244/db7/sign26及真人原分组保持；无本机JVM/真实资料/新包/公发。
+
+下方历史保留。
+
 2026-11-07 当前7ba6后继：328位置数字／参考网格R73原61659B/b034c887…3f932c唯一两高度方法完整PASS及四图核完，原R30五数值/guard/历史与原shared五请求/导入分源复用，不重跑旧16、不称新11。354三UI/VM限域映射，保留Desktop即时编辑/原undo及排队身份保护。24751两float接线已随R73编译，未新测字段交互。7ba6新增可调整Window展开/返回单viewport共用view、原生关闭/新record隔离及同批费用kind/有效元数据/尺寸信息；Enhance前移服务同一High DDIM拒绝规则，Medium和Upscale保留。R74 native入口+真实旧DDIM PNG两方法待原件，不借R72或R67代验。314仍false/315其余未采纳，四身份/全部ID/T11T23/公开1244/db7/sign26及真人原分组保持，无本机JVM/真实资料/新包/公发。
 
 下方历史保留。
