@@ -1,0 +1,7 @@
+# 实际所选闭包的部分备份校验
+
+原现代Service先核整个根，即使明确只导出好卡也会被未选坏图或孤立消息挡住。b80e由实际Mapping冻结捕获返回所选原始records/media路径，在同一exclusive内核对所选图；null或精确全选仍核完整根。选中entity在decode前筛选，图片和Moment原引用按实际media闭包处理。SessionInventory保留物理文件名/safe/count、入选身份和内容校验；全源inventory/hash/大小上限/hidden/link/custody全选边界不取消。a519再把exact path筛选移至解析预算之前，未扩大Graph既有单记录界限。
+
+旧R125原13293B/4cce9338…c00b9：actual partial首分支在GRAPH失败，后续orphan/恢复未到；两拒绝方法PASS。当前R126原14652B/d9ef626d…9bc4a三XML10完整PASS、空stderr，SHA/CRC/source已核：新4、Mapping5、实际Service现代plain/encrypted1。新实际导出/认证Source/恢复/ChatRepository重开、坏图与孤立消息、选坏/full/all无输出、未选聊天/Studio/朋友圈历史原图只带元数据、hidden/unknown字节保留均按断言执行；内部循环不拆方法。
+
+R126 source为b80e；a519单行筛选/预算次序后继另作源码核对，最终集中批次正常编译仍保留，不称已证明大单条。原前三test body与新增第四方法区分，拒绝用例不额外声称已核具体错误分类。详见 OWNER_SELECTED_GRAPH_R125_R126_COMPLETE_REVIEW.json；整个Archive/Engine/314与正式发布仍未关闭，无真人/真实资料操作。
