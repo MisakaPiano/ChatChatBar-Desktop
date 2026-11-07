@@ -2,6 +2,10 @@ package com.example.chatbar.desktop.backup
 
 import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.data.repository.EditorDraftRepository
+import com.example.chatbar.data.repository.ModelRepository
+import com.example.chatbar.data.repository.WindowsSafeModelStorageKeyPolicy
+import com.example.chatbar.data.local.JsonFileStorage
+import java.nio.file.Files
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.*
@@ -15,6 +19,16 @@ class DesktopMergeRestoreModesTest {
     private fun scope(vararg options: String, studio: Boolean = false) = InspectionScope(options.toSet(), 0, 0, 0, 0, 0, false, studio, false, false)
     private fun preview(pc: Map<String, JsonObject>, incoming: Map<String, JsonObject>, scope: InspectionScope? = null) =
         DesktopMergePreview.create(pc, incoming, emptyMap(), emptyMap(), scope)
+    private suspend fun readPlan(plan: DesktopMergeDestinationPlan, action: suspend (JsonFileStorage, ModelRepository) -> Unit) {
+        val root = Files.createTempDirectory("ccb-modern-mode-repository-")
+        try {
+            for ((relative, value) in plan.entities) {
+                val file = root.resolve(relative); Files.createDirectories(file.parent); Files.writeString(file, value.toString())
+            }
+            val storage = JsonFileStorage(root)
+            action(storage, ModelRepository(storage, modelStorageKeyPolicy = WindowsSafeModelStorageKeyPolicy))
+        } finally { check(root.toFile().deleteRecursively()) }
+    }
 
     @Test fun `copies freshen identical and unique owners embedded people messages and pending drafts while ordinary merge remains unchanged`() = runBlocking<Unit> {
         val person = CharacterInfo.create("Person").copy(id = "person")
@@ -72,24 +86,26 @@ class DesktopMergeRestoreModesTest {
         }
     }
 
-    @Test fun `scoped empty replace clears only selected collections and keeps transitive dependencies of retained content`() {
+    @Test fun `scoped empty replace clears only selected collections and keeps transitive dependencies of retained content`() = runBlocking<Unit> {
         val card = CharacterCard("c", "Retained", defaultFormatCardId = "f", worldBookIds = listOf("w"), createdAt = 1, updatedAt = 1)
         val records = mapOf(entity("character_cards", "c", CharacterCard.serializer(), card),
             entity("chat_sessions", "s", ChatSession.serializer(), ChatSession("s", "c", "Retained session", modelId = "m", createdAt = 1, updatedAt = 1)),
             "entities/model_configs/m.json" to backupJson.parseToJsonElement("""{"id":"m","displayName":"Needed","baseUrl":"https://synthetic.invalid/v1","apiKey":"","modelName":"model","createdAt":1}""").jsonObject,
             "entities/model_configs/unused.json" to backupJson.parseToJsonElement("""{"id":"unused","displayName":"Unused","baseUrl":"https://synthetic.invalid/v1","apiKey":"","modelName":"model","createdAt":1}""").jsonObject,
-            "entities/format_cards/f.json" to backupJson.parseToJsonElement("""{"id":"f","name":"Needed format","createdAt":1,"updatedAt":1}""").jsonObject,
+            entity("format_cards", "f", FormatCard.serializer(), FormatCard("f", "Needed format", "Synthetic format", createdAt = 1)),
             "entities/world_books/w.json" to backupJson.parseToJsonElement("""{"id":"w","name":"Needed book","createdAt":1,"updatedAt":1}""").jsonObject,
             "entities/world_books/unused.json" to backupJson.parseToJsonElement("""{"id":"unused","name":"Unused book","createdAt":1,"updatedAt":1}""").jsonObject,
             "entities/app_settings.json" to buildJsonObject { put("themeMode", "DARK"); put("chatBubbleFontScale", 1.4) })
         val p = preview(records, emptyMap(), scope("models", "resources", "themeMode")).modePlan(DesktopBackupRestoreMode.REPLACE_SELECTED)
         DesktopMergeDestinationPlan.create(p.selection, emptyMap(), emptyMap()).use { plan ->
             assertTrue("entities/character_cards/c.json" in plan.entities)
-            val retained = "${plan.entities.keys}; ${p.warnings}"
-            assertTrue("entities/model_configs/m.json" in plan.entities, "Required model missing: $retained")
-            assertTrue("entities/format_cards/f.json" in plan.entities, "Required format missing: $retained")
-            assertTrue("entities/world_books/w.json" in plan.entities, "Required world book missing: $retained")
-            assertFalse("entities/model_configs/unused.json" in plan.entities || "entities/world_books/unused.json" in plan.entities)
+            readPlan(plan) { storage, models ->
+                assertEquals("m", assertNotNull(models.getModel("m")).id)
+                assertNull(models.getModel("unused"))
+                assertNotNull(storage.loadEntity("format_cards", "f", FormatCard.serializer()))
+                assertNotNull(storage.loadEntity("world_books", "w", WorldBook.serializer()))
+                assertNull(storage.loadEntity("world_books", "unused", WorldBook.serializer()))
+            }
             val settings = plan.entities.getValue("entities/app_settings.json")
             assertEquals(1.4, settings["chatBubbleFontScale"]!!.jsonPrimitive.double)
             assertEquals(backupJson.encodeToJsonElement(AppSettings.serializer(), AppSettings()).jsonObject["themeMode"], settings["themeMode"])
@@ -138,12 +154,12 @@ class DesktopMergeRestoreModesTest {
         }
     }
 
-    @Test fun `selected absent default model field no longer preserves a dependency while copies count new and duplicate identities separately`() {
+    @Test fun `selected absent default model field no longer preserves a dependency while copies count new and duplicate identities separately`() = runBlocking<Unit> {
         val pc = mapOf("entities/model_configs/m.json" to backupJson.parseToJsonElement("""{"id":"m","displayName":"Old","baseUrl":"https://synthetic.invalid/v1","apiKey":"","modelName":"model","createdAt":1}""").jsonObject,
             "entities/app_settings.json" to buildJsonObject { put("defaultModelId", "m"); put("chatBubbleFontScale", 1.3) })
         val result = preview(pc, emptyMap(), scope("models", "defaultModelId")).modePlan(DesktopBackupRestoreMode.REPLACE_SELECTED)
         DesktopMergeDestinationPlan.create(result.selection, emptyMap(), emptyMap()).use { plan ->
-            assertFalse("entities/model_configs/m.json" in plan.entities)
+            readPlan(plan) { _, models -> assertNull(models.getModel("m")) }
             assertEquals(JsonNull, plan.entities.getValue("entities/app_settings.json")["defaultModelId"])
             assertEquals(1.3, plan.entities.getValue("entities/app_settings.json")["chatBubbleFontScale"]!!.jsonPrimitive.double)
         }
