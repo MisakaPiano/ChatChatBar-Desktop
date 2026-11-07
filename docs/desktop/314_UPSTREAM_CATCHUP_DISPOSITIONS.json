@@ -2442,6 +2442,24 @@
       "evidence": [
         "OWNER_STORAGE15_SUPPORT_SCOPED_REUSE.json"
       ]
+    },
+    {
+      "id": "UPSTREAM_PRIVACY_TEST_SUPPORT_IMAGEMETADATASTRIPPERTEST",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Two complete privacy test-support changes: renamed container-only PNG/JPEG/WebP cleanup tests preserve compressed image/color chunks and do not claim pixel privacy; new encoder tests erase entire alpha/RGB carrier LSB planes including damaged signatures, preserve transparency endpoints/dimensions/minimal orientation, retain source pixels and validate bounded chunked PNG output. Exact final shared tests/PrivacyPngEncoder unchanged sinceLinux162; original3 container+4 encoder whole methods reused. Stripper later adds/extracts bounded PNG orientation-only read, while entire container-cleanup suffix remains byte-identical to that run. No Android exporter/bitmap/card-renderer or native full-window proof borrowed from these shared tests, no new runtime/provider/human result.",
+      "reviewSource": "6211f860c6fc3bc18f3b4e03200493ce06df4ebb",
+      "evidence": [
+        "OWNER_PRIVACY2_TEST_SUPPORT_REUSE.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_PRIVACY_TEST_SUPPORT_PRIVACYPNGENCODERTEST",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Two complete privacy test-support changes: renamed container-only PNG/JPEG/WebP cleanup tests preserve compressed image/color chunks and do not claim pixel privacy; new encoder tests erase entire alpha/RGB carrier LSB planes including damaged signatures, preserve transparency endpoints/dimensions/minimal orientation, retain source pixels and validate bounded chunked PNG output. Exact final shared tests/PrivacyPngEncoder unchanged sinceLinux162; original3 container+4 encoder whole methods reused. Stripper later adds/extracts bounded PNG orientation-only read, while entire container-cleanup suffix remains byte-identical to that run. No Android exporter/bitmap/card-renderer or native full-window proof borrowed from these shared tests, no new runtime/provider/human result.",
+      "reviewSource": "6211f860c6fc3bc18f3b4e03200493ce06df4ebb",
+      "evidence": [
+        "OWNER_PRIVACY2_TEST_SUPPORT_REUSE.json"
+      ]
     }
   ],
   "deltas": [
@@ -3711,11 +3729,16 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Two complete privacy test-support changes: renamed container-only PNG/JPEG/WebP cleanup tests preserve compressed image/color chunks and do not claim pixel privacy; new encoder tests erase entire alpha/RGB carrier LSB planes including damaged signatures, preserve transparency endpoints/dimensions/minimal orientation, retain source pixels and validate bounded chunked PNG output. Exact final shared tests/PrivacyPngEncoder unchanged sinceLinux162; original3 container+4 encoder whole methods reused. Stripper later adds/extracts bounded PNG orientation-only read, while entire container-cleanup suffix remains byte-identical to that run. No Android exporter/bitmap/card-renderer or native full-window proof borrowed from these shared tests, no new runtime/provider/human result.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_PRIVACY_TEST_SUPPORT_IMAGEMETADATASTRIPPERTEST"
+      ],
+      "evidence": [
+        "OWNER_PRIVACY2_TEST_SUPPORT_REUSE.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "b6d68320b02a564afe4582bdc5f25978a57f4ea9:app/app/src/test/java/com/example/chatbar/domain/image/PrivacyPngEncoderTest.kt",
@@ -3731,11 +3754,16 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Two complete privacy test-support changes: renamed container-only PNG/JPEG/WebP cleanup tests preserve compressed image/color chunks and do not claim pixel privacy; new encoder tests erase entire alpha/RGB carrier LSB planes including damaged signatures, preserve transparency endpoints/dimensions/minimal orientation, retain source pixels and validate bounded chunked PNG output. Exact final shared tests/PrivacyPngEncoder unchanged sinceLinux162; original3 container+4 encoder whole methods reused. Stripper later adds/extracts bounded PNG orientation-only read, while entire container-cleanup suffix remains byte-identical to that run. No Android exporter/bitmap/card-renderer or native full-window proof borrowed from these shared tests, no new runtime/provider/human result.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_PRIVACY_TEST_SUPPORT_PRIVACYPNGENCODERTEST"
+      ],
+      "evidence": [
+        "OWNER_PRIVACY2_TEST_SUPPORT_REUSE.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "01b6b729496fef4ba6114decd799a015d79d13d0:.agents/skills/chatbar-image-generation-runtime/SKILL.md",

@@ -15,3 +15,5 @@
 生图角色坐标与启用状态4项测试支持变化已核完整内容，复用Linux原5+4个完整方法，最终shared测试与c69/329对应且未变；坐标和导入owner亦未变。Models/请求层后续只有另域三处追加，不冒称整文件相同。只证明DTO/排序/过滤及离线请求字段等原作用域，不借为真实生图、角色条目注入或真人界面验收。见 OWNER_CHARACTER_POSITION_ENABLED4_TEST_SUPPORT_REUSE.json，0新跑。
 
 15项存储/Repository测试支持按独立完整diff阅读与原件复用登记：原13个完整方法分属批量回滚、当前有效人物fixture、实际批量删除/草稿/元数据、默认采样/模拟alpha配方重读、实验设置。组合提交和initialize夹具修订不是新功能。Android媒体先暂存与Desktop元数据原子发布后按引用清理的差异保留，不冒称已运行原Android省略图片字面用例。状态文件与payload清理的新集成仍待R141，不从支持映射获得通过；见 OWNER_STORAGE15_SUPPORT_SCOPED_REUSE.json，0新跑。
+
+2项隐私图片shared测试支持已完整核对，复用原3个容器清理和4个像素编码完整方法。容器清理保留压缩像素，只去容器元数据；真正隐私编码会抹除载体平面，不能混称。编码器及测试未变，Stripper仅另域方向读取追加/提取，容器清理段完全相同。不借为Android Bitmap/原导出器或角色卡渲染证明。见 OWNER_PRIVACY2_TEST_SUPPORT_REUSE.json，0新跑。
