@@ -7,6 +7,7 @@ import java.nio.channels.FileChannel
 import java.nio.file.*
 import java.nio.file.attribute.BasicFileAttributes
 import java.security.MessageDigest
+import com.sun.nio.file.ExtendedOpenOption
 import kotlinx.coroutines.*
 import kotlinx.serialization.encodeToString
 
@@ -160,17 +161,23 @@ internal class DesktopHistoryBatchExport(
                     if (old != null) {
                         same(old)
                         val backup = Displaced(destination, work.resolve("original-$index"))
-                        Files.move(destination, backup.file)
-                        displaced += backup
-                        backup.proof = proof(backup.file).also { owned[backup.file] = it }
+                        withContext(NonCancellable) {
+                            Files.move(destination, backup.file)
+                            displaced += backup
+                            backup.proof = proof(backup.file).also { owned[backup.file] = it }
+                        }
                         // A racing change is retained as the displaced original and rolled back.
                         check(backup.proof!!.let { it.key == old.key && it.hash == old.hash && it.size == old.size })
                     }
-                    FileChannel.open(destination, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE).use { channel ->
+                    val options = mutableSetOf<OpenOption>(StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)
+                    if (windows) options += setOf(ExtendedOpenOption.NOSHARE_DELETE, ExtendedOpenOption.NOSHARE_WRITE)
+                    FileChannel.open(destination, options).use { channel ->
                         unknownPublication = true
-                        val key = identity(destination, false)
-                        written += Written(destination, key, staged[index])
-                        unknownPublication = false
+                        withContext(NonCancellable) {
+                            // The Windows handle denies replacement until this new file ID is journaled.
+                            written += Written(destination, identity(destination, false), staged[index])
+                            unknownPublication = false
+                        }
                         check(DesktopArchiveFiles.read(staged[index].path, staged[index].size) { bytes, count ->
                             val buffer = ByteBuffer.wrap(bytes, 0, count)
                             while (buffer.hasRemaining()) channel.write(buffer)

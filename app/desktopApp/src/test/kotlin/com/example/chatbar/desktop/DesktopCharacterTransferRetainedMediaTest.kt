@@ -28,7 +28,7 @@ class DesktopCharacterTransferRetainedMediaTest {
             app.characterRepository.save(source)
             app.characterRepository.save(CharacterCard("other", "Other", avatar = source.chatBackground, greeting = "Other greeting", createdAt = 1, updatedAt = 1))
             val session = ChatSession("session", source.id, "Synthetic session", createdAt = 1, updatedAt = 1)
-            app.chatRepository.saveSession(session)
+            app.chatRepository.createSession(session)
             val store = DesktopMomentStore(app.jsonFileStorage, app.dataOperationCoordinator)
             val attempt = store.begin(MomentTask("task", source.id, session.id, 1, createdAt = 1), source, session)
             store.complete(attempt, attempt.placeholder.copy(text = "Historical text", imagePath = source.avatar, isPlaceholder = false))
