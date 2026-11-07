@@ -3,12 +3,17 @@ package com.example.chatbar.desktop
 import com.example.chatbar.desktop.security.*
 import com.example.chatbar.domain.image.*
 import java.awt.image.BufferedImage
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.io.DataOutputStream
 import java.nio.ByteBuffer
 import java.nio.file.Files
 import java.security.MessageDigest
 import java.util.Base64
 import java.util.Collections
 import java.util.concurrent.TimeUnit
+import java.util.zip.CRC32
+import javax.imageio.ImageIO
 import kotlinx.coroutines.*
 import kotlinx.serialization.json.*
 import okhttp3.OkHttpClient
@@ -55,6 +60,68 @@ class DesktopImageProcessingUsageTest {
         pack.packString("image"); pack.packBinaryHeader(bytes.size); pack.writePayload(bytes); pack.close()
         val body = pack.toByteArray()
         return MockResponse().setBody(Buffer().write(ByteBuffer.allocate(body.size + 4).putInt(body.size).put(body).array()))
+    }
+
+    private fun markedPng(orientation: Int): ByteArray {
+        val image = BufferedImage(64, 96, BufferedImage.TYPE_INT_ARGB)
+        for (y in 0 until 96) for (x in 0 until 64) image.setRGB(x, y,
+            (0x80000000L or (x.toLong() shl 16) or (y.toLong() shl 8) or 0x55L).toInt())
+        val png = DesktopImageEditing.png(image)
+        val type = "eXIf".toByteArray(Charsets.US_ASCII)
+        val payload = ImageMetadataStripper.buildMinimalTiffOrientation(orientation)
+        val chunk = ByteArrayOutputStream().apply { DataOutputStream(this).apply {
+            writeInt(payload.size); write(type); write(payload)
+            writeInt(CRC32().apply { update(type); update(payload) }.value.toInt())
+        } }.toByteArray()
+        return png.copyOfRange(0, png.size - 12) + chunk + png.copyOfRange(png.size - 12, png.size)
+    }
+
+    @Test fun `upscale wire physically normalizes non square PNG rotation and mirror before declaring expected output`() = runBlocking {
+        val f = Fixture()
+        try {
+            for ((orientation, expectedCorners) in listOf(
+                6 to listOf(0 to 95, 0 to 0, 63 to 95, 63 to 0),
+                8 to listOf(63 to 0, 63 to 95, 0 to 0, 0 to 95),
+                2 to listOf(63 to 0, 0 to 0, 63 to 95, 0 to 95))) {
+                val source = markedPng(orientation)
+                val original = source.copyOf()
+                val (w, h) = if (orientation >= 5) 96 to 64 else 64 to 96
+                val result = DesktopImageEditing.png(BufferedImage(w * 2, h * 2, BufferedImage.TYPE_INT_ARGB))
+                f.server.enqueue(response(NovelAiPostProcessTab.UPSCALE, result))
+                assertContentEquals(result, DesktopNovelAiPostProcessor(f.secrets, f.client).process(source,
+                    NovelAiPostProcessTab.UPSCALE, null, NovelAiEnhanceOptions(), null) {})
+                val request = assertNotNull(f.server.takeRequest(5, TimeUnit.SECONDS))
+                assertEquals("/ai/upscale", request.path)
+                val wire = Base64.getDecoder().decode(Json.parseToJsonElement(request.body.readUtf8()).jsonObject
+                    .getValue("image").jsonPrimitive.content)
+                val raster = assertNotNull(ImageIO.read(ByteArrayInputStream(wire))) // Raw wire pixels, no EXIF rotation.
+                assertEquals(w to h, raster.width to raster.height, "orientation=$orientation wire dimensions")
+                assertEquals(1, ImageMetadataStripper.readPngOrientation(wire), "No second rotation at receiver")
+                val actualCorners = listOf(raster.getRGB(0, 0), raster.getRGB(w - 1, 0),
+                    raster.getRGB(0, h - 1), raster.getRGB(w - 1, h - 1))
+                assertEquals(expectedCorners.map { (x, y) -> (0x80000000L or (x.toLong() shl 16) or
+                    (y.toLong() shl 8) or 0x55L).toInt() }, actualCorners, "orientation=$orientation wire pixels/alpha")
+                assertContentEquals(original, source)
+            }
+            assertEquals(3, f.server.requestCount)
+        } finally { f.close() }
+    }
+
+    @Test fun `upscale ordinary transparent PNG retains exact source bytes on wire`() = runBlocking {
+        val f = Fixture()
+        try {
+            val source = markedPng(1)
+            val output = DesktopImageEditing.png(BufferedImage(128, 192, BufferedImage.TYPE_INT_ARGB))
+            f.server.enqueue(response(NovelAiPostProcessTab.UPSCALE, output))
+            assertContentEquals(output, DesktopNovelAiPostProcessor(f.secrets, f.client).process(source,
+                NovelAiPostProcessTab.UPSCALE, null, NovelAiEnhanceOptions(), null) {})
+            val request = assertNotNull(f.server.takeRequest(5, TimeUnit.SECONDS))
+            val wire = Base64.getDecoder().decode(Json.parseToJsonElement(request.body.readUtf8()).jsonObject
+                .getValue("image").jsonPrimitive.content)
+            assertContentEquals(source, wire)
+            assertEquals(0x80000055.toInt(), assertNotNull(ImageIO.read(ByteArrayInputStream(wire))).getRGB(0, 0))
+            assertEquals(1, f.server.requestCount)
+        } finally { f.close() }
     }
 
     @Test fun `original enhance and upscale have separate units and immutable actual parent without implicit retry`() = runBlocking {
