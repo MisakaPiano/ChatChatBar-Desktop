@@ -325,7 +325,7 @@ class ChatRepositoryConditionalUpdateTest {
     }
 
     @Test fun `write failure before commit is distinct from post-write index and preview failures`() = runTest {
-        for ((call, after) in listOf(4 to false, 4 to true, 5 to false, 7 to false, 8 to false)) {
+        for ((call, after) in listOf(4 to false, 4 to true, 5 to false, 6 to false, 7 to false, 8 to false, 9 to false)) {
             val f = fixture(); val before = snapshot(f.root)
             f.gate.arm { n, done -> if (n == call && done == after) throw IOException("synthetic operation failure") }
             val result = withContext(Dispatchers.Default) { f.repair() }
@@ -336,7 +336,7 @@ class ChatRepositoryConditionalUpdateTest {
             } else {
                 val uncertain = assertIs<ConditionalMessageUpdateResult.CommitUncertain>(result)
                 assertIs<IOException>(uncertain.cause)
-                assertEquals(when(call) { 4 -> MessageUpdateStage.WRITE_MESSAGE; 5 -> MessageUpdateStage.WRITE_INDEX; else -> MessageUpdateStage.WRITE_PREVIEW }, uncertain.stage)
+                assertEquals(when(call) { 4 -> MessageUpdateStage.WRITE_MESSAGE; 5, 6 -> MessageUpdateStage.WRITE_INDEX; else -> MessageUpdateStage.WRITE_PREVIEW }, uncertain.stage)
                 assertEquals("fixed", assertIs<JsonFileStorage.EntityReadResult.Valid<ChatMessage>>(uncertain.durableMessage).value.displayContent)
                 assertEquals("fixed", ChatRepository(JsonFileStorage(f.root)).getMessage("m", "s")?.displayContent)
                 assertEquals("middle", f.repo.getSession("s")?.lastMessagePreview)
