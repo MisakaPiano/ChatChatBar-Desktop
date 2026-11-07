@@ -1398,6 +1398,33 @@
       "evidence": [
         "OWNER_NAI_SERVICE_POLICY_TEN_DELTAS_REUSE.json"
       ]
+    },
+    {
+      "id": "SLOT_PACKAGE_STORAGE_FULL_D3_ADMISSION_REUSE",
+      "disposition": "EQUIVALENT",
+      "scope": "Desktop service capture/prepare uses normal admission, publication/deletion uses audio drain plus exclusive proof recheck; owned codec staging never directly mutates live library. R15 original34 selected methods reused, no new run or generic codec wrapper claim.",
+      "reviewSource": "2cc1927652e923ebf93d7be1db5d185c822fa35d",
+      "evidence": [
+        "OWNER_SLOT_PRIVACY_COMMUNITY_THREE_D3_REUSE.json"
+      ]
+    },
+    {
+      "id": "IMAGE_PRIVACY_FULL_D3_ADMISSION_REUSE",
+      "disposition": "EQUIVALENT",
+      "scope": "Desktop strip/privacyCopy processes already loaded bytes into an in-memory PNG, with no managed-root cache file to protect. Explicit callback/Save As remains caller-owned. R03 one selected privacy method reused; its suite stderr warning remains, not claimed empty/native dialog validation.",
+      "reviewSource": "2cc1927652e923ebf93d7be1db5d185c822fa35d",
+      "evidence": [
+        "OWNER_SLOT_PRIVACY_COMMUNITY_THREE_D3_REUSE.json"
+      ]
+    },
+    {
+      "id": "COMMUNITY_SESSION_FULL_D3_ADMISSION_REUSE",
+      "disposition": "EQUIVALENT",
+      "scope": "Desktop CommunityController owned action holds same gate around client session persistence/signout to protected SessionStore; original162 selected Controller3/Store1 reused. No new login, public service readiness, signout-backup race or whole Community acceptance.",
+      "reviewSource": "2cc1927652e923ebf93d7be1db5d185c822fa35d",
+      "evidence": [
+        "OWNER_SLOT_PRIVACY_COMMUNITY_THREE_D3_REUSE.json"
+      ]
     }
   ],
   "deltas": [
@@ -8654,8 +8681,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Desktop service capture/prepare uses normal admission, publication/deletion uses audio drain plus exclusive proof recheck; owned codec staging never directly mutates live library. R15 original34 selected methods reused, no new run or generic codec wrapper claim.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/chat/SaveSlotPackageStorage.kt",
@@ -8670,8 +8697,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "SLOT_PACKAGE_STORAGE_FULL_D3_ADMISSION_REUSE"
+      ],
+      "evidence": [
+        "OWNER_SLOT_PRIVACY_COMMUNITY_THREE_D3_REUSE.json",
+        "docs/desktop/359_SLOT_PRIVACY_COMMUNITY_ADMISSION_REUSE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/chat/SessionCopyService.kt",
@@ -8719,8 +8751,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Desktop CommunityController owned action holds same gate around client session persistence/signout to protected SessionStore; original162 selected Controller3/Store1 reused. No new login, public service readiness, signout-backup race or whole Community acceptance.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/community/CommunityService.kt",
@@ -8729,8 +8761,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "COMMUNITY_SESSION_FULL_D3_ADMISSION_REUSE"
+      ],
+      "evidence": [
+        "OWNER_SLOT_PRIVACY_COMMUNITY_THREE_D3_REUSE.json",
+        "docs/desktop/359_SLOT_PRIVACY_COMMUNITY_ADMISSION_REUSE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/deletion/DeletionCoordinator.kt",
@@ -8827,8 +8864,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Desktop strip/privacyCopy processes already loaded bytes into an in-memory PNG, with no managed-root cache file to protect. Explicit callback/Save As remains caller-owned. R03 one selected privacy method reused; its suite stderr warning remains, not claimed empty/native dialog validation.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/image/ImagePrivacyExporter.kt",
@@ -8837,8 +8874,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "IMAGE_PRIVACY_FULL_D3_ADMISSION_REUSE"
+      ],
+      "evidence": [
+        "OWNER_SLOT_PRIVACY_COMMUNITY_THREE_D3_REUSE.json",
+        "docs/desktop/359_SLOT_PRIVACY_COMMUNITY_ADMISSION_REUSE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/image/ImageProcessingService.kt",
