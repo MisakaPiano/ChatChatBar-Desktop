@@ -44,13 +44,18 @@ class DesktopStudioAccountLayoutTest {
                     assertTrue(rect.left >= 8f && rect.right <= width - 8f + 1f, "$width: $rect")
                 }
                 assertEquals(width - 8f, reload.right, 1f)
-                assertTrue(allowance.top >= maxOf(account.bottom, gear.bottom, reload.bottom))
                 assertEquals(8f, allowance.left, 1f)
                 if (width >= 640) {
                     assertTrue(account.left > width / 3f)
                     assertEquals(gear.center.y, reload.center.y, 1f)
                     assertEquals(account.center.y, gear.center.y, 1f)
-                } else assertTrue(reload.center.y >= account.center.y - 1f, "Controls must stay on the account row or wrap below: $width / $account / $reload")
+                    assertTrue(allowance.top < reload.bottom && reload.top < allowance.bottom,
+                        "Quota and controls share the compact information region: $width / $allowance / $reload")
+                    assertTrue(scene.node("V5 额度未知").boundsInRoot.bottom <= 84f, "No separate empty account row: $width")
+                } else {
+                    assertTrue(allowance.bottom <= minOf(account.top, gear.top, reload.top) + 1f)
+                    assertTrue(reload.center.y >= account.center.y - 1f, "Controls wrap after information: $width / $account / $reload")
+                }
                 scene.click("账户设置测试"); scene.click("刷新")
                 assertEquals(1, settings); assertEquals(1, refresh)
                 assertFalse(scene.nodes().any { it.matches("NovelAI Studio") || it.matches("高级 / 诊断") })

@@ -5,6 +5,8 @@ description: Maintain ChatBar image-generation and image-processing runtime acro
 
 # ChatBar Image Generation Runtime
 
+`StudioAccountCluster` keeps quota/membership on the left and the existing account/settings/refresh controls on the right within one compact region when content width allows. Compact widths stack information before the wrapping controls; do not restore a standalone blank account row. Quota/error/progress semantics and the protected account/refresh owner remain unchanged.
+
 Desktop Studio history grid uses `DesktopHistoryThumbnail` with a remembered decode target derived from the actual cell size and density. Selection/status recomposition must not restart decoding; full image/detail previews keep independent targets. Static decoding preserves orientation-correct source dimensions and immutable bytes. History delete confirmation sets a synchronous local submitting latch before launching and freezes the visible selection passed to the controller; retain atomic record validation and reference-aware cleanup.
 
 Shared `NovelAiGenerationHistoryImage.originalOmitted` classifies metadata-only history output. The thumbnail and detail placeholder perform no image read; clicking the thumbnail opens recipe details, full galleries filter omitted outputs, and use-as-image actions are disabled. Recipe/Seed reuse still follows its own guidance-source conditions rather than being disabled merely because the output image is omitted.

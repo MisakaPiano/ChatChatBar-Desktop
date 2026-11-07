@@ -63,7 +63,7 @@ internal fun ColumnScope.DesktopStudioPresetExchangeContent(preview: DesktopGene
     StatusText("包括正负词、角色位置与开关、两种模型参数、连续生成设置及参考图／编码资源。账户、AI 设计对话和本机卡片绑定不会导出。")
     StudioActions {
         StudioAction("导出当前生成预设", enabled = !working && !closing && !businessBusy, onClick = onExport)
-        StudioAction("选择预设并预览", enabled = !working && !closing && !businessBusy, onClick = onInspect)
+        StudioAction("导入生成预设…", enabled = !working && !closing && !businessBusy, onClick = onInspect)
         if (working) StudioAction("停止文件操作", onClick = onStop)
         StudioAction(if (closing) "正在关闭…" else "关闭", enabled = !closing, onClick = onClose)
     }

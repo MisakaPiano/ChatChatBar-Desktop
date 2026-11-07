@@ -66,21 +66,35 @@ internal fun StudioAccountActions(content: @Composable RowScope.() -> Unit) {
 @Composable
 internal fun StudioAccountCluster(model: NovelAiImageModel, account: NovelAiAccountUiState,
     controls: (@Composable () -> Unit)? = null) {
+    val usage = account.effectiveUsage.takeIf { account.error == null }
+    val percent = usage?.v5AllowancePercent?.takeIf { it.isFinite() }?.coerceIn(0.0, 100.0)
+    val exhausted = usage?.v5AllowanceExhausted == true
+    val information: @Composable () -> Unit = {
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            StudioActions {
+                StatusText(model.displayName)
+                StatusText(account.displayAnlas?.let { "Anlas $it" } ?: "Anlas —")
+                account.approximateV5Images?.let { StatusText("V5 约 $it 张") }
+                if (account.loading) StatusText("正在刷新账户…")
+            }
+            if (model == NovelAiImageModel.V5_FULL) StatusText(if (percent == null) "V5 Opus · 额度未知" else
+                "V5 Opus ${percent.toInt()}% · 约 ${account.approximateV5Images ?: "—"} 张" + if (exhausted) " · 已用尽" else "")
+        }
+    }
     Column(Modifier.fillMaxWidth().background(DesktopBootstrapColors.card).padding(8.dp),
         verticalArrangement = Arrangement.spacedBy(3.dp)) {
-        controls?.invoke()
-        StudioActions {
-            StatusText(model.displayName)
-            StatusText(account.displayAnlas?.let { "Anlas $it" } ?: "Anlas —")
-            account.approximateV5Images?.let { StatusText("V5 约 $it 张") }
-            if (account.loading) StatusText("正在刷新账户…")
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
+            if (controls != null && maxWidth >= 480.dp) Row(Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Box(Modifier.weight(1f)) { information() }
+                Box(Modifier.width((maxWidth * .55f).coerceAtMost(360.dp))) { controls() }
+            } else Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                information()
+                controls?.invoke()
+            }
         }
         account.error?.let { StatusText(it, DesktopBootstrapColors.warning) }
         if (model == NovelAiImageModel.V5_FULL) {
-            val usage = account.effectiveUsage.takeIf { account.error == null }
-            val percent = usage?.v5AllowancePercent?.takeIf { it.isFinite() }?.coerceIn(0.0, 100.0)
-            val exhausted = usage?.v5AllowanceExhausted == true
-            StatusText(if (percent == null) "V5 Opus · 额度未知" else "V5 Opus ${percent.toInt()}% · 约 ${account.approximateV5Images ?: "—"} 张" + if (exhausted) " · 已用尽" else "")
             Box(Modifier.fillMaxWidth().height(8.dp).border(1.dp, DesktopBootstrapColors.border)
                 .background(DesktopBootstrapColors.muted).semantics {
                     contentDescription = if (percent == null) "V5 额度未知" else "V5 额度 ${percent.toInt()}%"
