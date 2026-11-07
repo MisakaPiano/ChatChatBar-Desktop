@@ -18,10 +18,18 @@ Android在独占维护时拒绝新launch，Desktop在platform/service准入处�
 
 `OWNER_MEMORY_ADMISSION_REUSE.json`重新核八个owner/test blob与原162完全相同，原ZIP长度/SHA/CRC及四套XML重读：共享journal3、registry5、DesktopSafety4、Lifecycle6，共18既有PASS，0新运行。只据此将d3这三条维护delta映射EQUIVALENT；全314仍complete:false。
 
-另已核旧式同根恢复journal在startup/apply前verifyEvidence、指纹与回滚，原四方法可复用；其中foreign+staged篡改测试复用了已有foreign条件，不能称两个篡改分支独立通过。现代新根还需其独立完整证据，因此PreparedSeal整条暂不因这份旧式局部证明关闭。
+另已核旧式同根恢复journal在startup/apply前verifyEvidence、指纹与回滚，原四方法可复用；其中foreign+staged篡改测试复用了已有foreign条件，不能称两个篡改分支独立通过。现代新根后补独立已有证明：FreshRootAuthority.complete与首次verifyAndResolve都核全部文件集合/hash，filesHash与root身份绑定在受保护context中，首次ACTIVE前必核，ACTIVE后允许普通编辑。实际MergeImport的complete先于bootstrap切换；StartupGate的journal恢复先于business仓库，active-isolated-import分支回到verifyAndResolve。
+
+`OWNER_PREPARED_SEAL_REUSE.json`重核journal/test与authority/test/startup五blob精确未变，原162 ZIP/SHA/CRC与旧式4、authority原17方法中指定8个cold-byte/context/首次激活/后续普通编辑方法均PASS。12个原方法只复用，不计新运行；排除native opt-in及contract-only假的root preparation。加上本组实际RootPreparation原10PASS的独立范围，可将d3 BackupPreparedSeal这一窄功能映射EQUIVALENT；不关闭整条RestoreTransaction或宣称实际停电耐久、真实凭据/用户验收。
 
 ## 尚待的真实编辑器偏好
 
 官方ImageMaskPreferences保存brushSizeDp 16..72（默认36）及Mosaic/Black/White，实际按显示画布比例把直径换成原图半径。Desktop工具原画笔是原图短边归一化，backup36不能直接套入。
 
-09fd以DesktopImageToolPreferences接通原desktop_backup_preferences文件：normal gate先于controller mutex，逐字段读改原子写入，保留其他字段和未知类型；读失败显式重试，不能覆盖原件。保存直径16..72dp，按实际canvas/density换算原图短边半径，保留绘制引擎0.25半径上限。普通工具在有已保存支持类型时恢复该类型；无偏好及guidance仍保持框选入口。蒙版也采用所选显示笔径；应用/关闭等待已提交偏好写入。原图/undo/redo/其他工具保留。R11/control4f03含原文件字段保全、独占维护期间等待、重开、坏JSON拒绝及实际paint像素测试与原图像工具回归，尚待原件，未计PASS。
+09fd以DesktopImageToolPreferences接通原desktop_backup_preferences文件：normal gate先于controller mutex，逐字段读改原子写入，保留其他字段和未知类型；读失败显式重试，不能覆盖原件。保存直径16..72dp，按实际canvas/density换算原图短边半径，保留绘制引擎0.25半径上限。普通工具在有已保存支持类型时恢复该类型；无偏好及guidance仍保持框选入口。蒙版也采用所选显示笔径；应用/关闭等待已提交偏好写入。原图/undo/redo/其他工具保留。
+
+R11/run42339729760/control4f03原21686B/SHA `b889976af9ac78064296c5b3230f1c3adc3d51dcfb9daa1a0f2e85ca2f86821a`四套17=16PASS+笔刷像素夹具1FAIL；原文件/维护等待/重开/坏JSON方法PASS，Window4与Phase7Studio10全PASS，另一voice方法见323。笔刷点坐标按(1000-1)*0.5落499，夹具却在500中心的圆边断言，不能据此称半径错误。187fd仅修测试中心，原三canvas/density及内外边缘、源pixels断言保留，R12/controld2e516只补两方法，待原件。
+
+## 元数据历史项完整入口后继
+
+1a692还要求遗漏原图仅保留配方时不读不存在的路径。282f先补缩略占位；5c852补共享originalOmitted属性（原定义直移）、普通gallery过滤、点击进入配方详情、详情占位和用作图像禁用。仅输出图遗漏不禁止参数/Seed复用，recipe source条件独立。R13只对应先前缩略占位两方法，R14/control01eee5补当前完整入口四方法；各自待原件，未借31旧PASS提升这些后继。
