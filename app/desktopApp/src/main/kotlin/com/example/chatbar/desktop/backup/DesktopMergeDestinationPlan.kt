@@ -222,6 +222,15 @@ internal class DesktopMergeDestinationPlan private constructor(
                 return "entities/${record.type}/default.json"
             if (record.singleton) return DesktopBackupPolicy.desktopName(record.relative, mapped)
             val key = when (record.type) {
+                "novelai_history_fold_preferences" -> {
+                    // The repository keys this ID-less record by depth; omitted depth defaults to 0.
+                    val depth = mapped["depth"]?.let { value ->
+                        require(value is JsonPrimitive && !value.isString) { "MERGE_HISTORY_FOLD_DEPTH" }
+                        requireNotNull(value.intOrNull) { "MERGE_HISTORY_FOLD_DEPTH" }
+                    } ?: 0
+                    require(depth >= 0) { "MERGE_HISTORY_FOLD_DEPTH" }
+                    depth.toString()
+                }
                 "chat_messages" -> requireNotNull(string("sessionId")) + "_" + requireNotNull(string("id"))
                 "voice_anchor_states" -> {
                     val message = requireNotNull(string("messageId")); val version = string("messageVersionId")

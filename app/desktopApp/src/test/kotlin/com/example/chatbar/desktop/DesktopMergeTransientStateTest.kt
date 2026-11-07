@@ -60,6 +60,11 @@ class DesktopMergeTransientStateTest {
                 assertEquals(if (selected) emptyMap() else pc, plan.entities)
             }
         }
+        val omittedDefault = mapOf("entities/novelai_history_fold_preferences/0.json" to JsonObject(emptyMap()))
+        DesktopMergeDestinationPlan.create(selection(preview(emptyMap(), omittedDefault), DesktopBackupRestoreMode.UPDATE_EXISTING),
+            emptyMap(), emptyMap()).use { plan ->
+            assertEquals(omittedDefault, plan.entities)
+        }
     }
 
     @Test fun `actual authenticated import publishes the fold policy without incoming deletion commands and keeps both source sides unchanged`() = runBlocking<Unit> {
