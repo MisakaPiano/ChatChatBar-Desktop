@@ -2514,6 +2514,15 @@
       "evidence": [
         "OWNER_ANDROID_IMAGE3_SUPPORT_SCOPED_REUSE.json"
       ]
+    },
+    {
+      "id": "UPSTREAM_FISH_TAG_ENVELOPE_TEST_SUPPORT_ED5D",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "One complete Fish tag-parser test-support delta mapped to current actual gateway strict parsing: complete unambiguous Markdown JSON envelope may unwrap; incomplete/mixed/trailing/multiple/unknown fields and invalid IDs still refuse, changed spoken text still needs confirmation, raw output stays original. Independent complete source/test review plus exact unchanged source/test blobs and original Linux162 actual gateway3+strict tag1 whole methods reused. BOM/inline/braces variants are source review, not extra exact executed upstream methods. Frozen8 legacy-message test is not used as upstream7-tail adoption; Prompt315 still pending actual user decision. No new retry counts, provider call, real audio rerun, new feature or human/public result.",
+      "reviewSource": "a51a61a5f04fa45fb4ff97f3dd845c636accf7e9",
+      "evidence": [
+        "OWNER_FISH_ENVELOPE1_SUPPORT_SCOPED_REUSE.json"
+      ]
     }
   ],
   "deltas": [
@@ -5687,8 +5696,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "One complete Fish tag-parser test-support delta mapped to current actual gateway strict parsing: complete unambiguous Markdown JSON envelope may unwrap; incomplete/mixed/trailing/multiple/unknown fields and invalid IDs still refuse, changed spoken text still needs confirmation, raw output stays original. Independent complete source/test review plus exact unchanged source/test blobs and original Linux162 actual gateway3+strict tag1 whole methods reused. BOM/inline/braces variants are source review, not extra exact executed upstream methods. Frozen8 legacy-message test is not used as upstream7-tail adoption; Prompt315 still pending actual user decision. No new retry counts, provider call, real audio rerun, new feature or human/public result.",
       "candidateOwners": [
         {
           "path": "app/app/src/test/java/com/example/chatbar/domain/voice/FishAudioTagPolicyTest.kt",
@@ -5697,8 +5706,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_FISH_TAG_ENVELOPE_TEST_SUPPORT_ED5D"
+      ],
+      "evidence": [
+        "OWNER_FISH_ENVELOPE1_SUPPORT_SCOPED_REUSE.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "ed5d12728331eb9af42ac9ebfe60519f3929782a:app/app/src/test/java/com/example/chatbar/domain/voice/VoiceRetryExecutionTest.kt",

@@ -21,3 +21,5 @@
 2项语音重试shared测试支持变化已完整核对，复用原执行9/策略3完整方法，test及策略blob未变。只证明虚拟时间/合成请求的次数、独立预算、Retry-After/抖动、拒绝与取消不重放等原边界，不是付费TTS、真实播放或新Prompt验收。另Fish围栏JSON解析变化仍单列pending。见 OWNER_VOICE_RETRY2_TEST_SUPPORT_REUSE.json，0新跑。
 
 3项Android图片instrumentation支持由现有shared/native原10个完整方法限域等位：隐私/stealth7、真实桌面Comment/alpha/WebP2、独立蓝色封面导出且卡与package不变1。R03选中套件保留一条本地MockWebServer WARNING，不写成空stderr或供应商故障；Bitmap回收、全部chunk及非法输出路径字面instrumentation未借名通过，动画仍有原生边界。与先前方法重叠不算新10项；见 OWNER_ANDROID_IMAGE3_SUPPORT_SCOPED_REUSE.json，0新跑。
+
+Fish标签JSON围栏1项测试支持由现有gateway3/严格标签1完整方法限域复用，源/test未变；BOM/inline/括号变体只按源码依据，不拆成已跑方法。原8消息wrapper用例未借为7尾新Prompt采纳，315保持实际用户决定边界。原始输出、未知字段/ID拒绝及修改发言确认保持；不重复先前Retry9+3。见 OWNER_FISH_ENVELOPE1_SUPPORT_SCOPED_REUSE.json，0新跑。
