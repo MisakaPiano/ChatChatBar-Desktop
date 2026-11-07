@@ -269,10 +269,14 @@ internal fun StudioGenerationSettings(draft: NovelAiStudioDraft, edit: ((NovelAi
 
 @Composable
 internal fun StudioAdvancedSettings(s: NovelAiGenerationSettings, change: ((NovelAiGenerationSettings) -> NovelAiGenerationSettings) -> Unit) {
-    if (!s.isMedium) StudioSlider("Steps", s.steps.toFloat(), 1f, 50f, 1f, 0) { value -> change { it.copy(steps = value.toInt()) } }
+    if (!s.isMedium) StudioSlider("Steps", s.steps.toFloat(), 1f, 50f, 1f, 0) { value ->
+        change { current -> if (current.isMedium) current else current.copy(steps = value.toInt()) }
+    }
     StudioSlider("CFG Scale", s.guidance, 1f, 10f, .1f, 1) { value -> change { it.copy(guidance = value) } }
     if (!s.isMedium) {
-        StudioSlider("CFG Rescale", s.cfgRescale, 0f, 1f, .05f, 2) { value -> change { it.copy(cfgRescale = value) } }
+        StudioSlider("CFG Rescale", s.cfgRescale, 0f, 1f, .05f, 2) { value ->
+            change { current -> if (current.isMedium) current else current.copy(cfgRescale = value) }
+        }
         CompactChoice("Sampler", s.model.samplers, s.sampler, { it.displayName }) { value ->
             change { current -> if (current.isMedium) current else current.copy(sampler = value) }
         }

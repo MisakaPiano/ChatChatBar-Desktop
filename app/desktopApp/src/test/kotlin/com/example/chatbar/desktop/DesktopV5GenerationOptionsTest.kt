@@ -96,8 +96,9 @@ class DesktopV5GenerationOptionsTest {
     private val edt = object : CoroutineDispatcher() {
         override fun dispatch(context: CoroutineContext, block: Runnable) = SwingUtilities.invokeLater(block)
     }
-    @Test fun `queued High sampler UI action cannot overwrite dormant choice after switching to Medium`() = runBlocking(edt) {
-        val high = NovelAiGenerationSettings(model = NovelAiImageModel.V5_FULL, sampler = NovelAiSampler.DPM_PLUS_PLUS_2M)
+    @Test fun `queued High-only UI actions cannot overwrite dormant choices after switching to Medium`() = runBlocking(edt) {
+        val high = NovelAiGenerationSettings(model = NovelAiImageModel.V5_FULL, sampler = NovelAiSampler.DPM_PLUS_PLUS_2M,
+            steps = 37, cfgRescale = .4f)
         var settings by mutableStateOf(high)
         val queued = mutableListOf<(NovelAiGenerationSettings) -> NovelAiGenerationSettings>()
         val scene = ImageComposeScene(560, 1000, coroutineContext = edt) {
@@ -112,15 +113,29 @@ class DesktopV5GenerationOptionsTest {
             assertTrue(n.boundsInRoot.width > 0 && n.boundsInRoot.height > 0)
             assertTrue(n.config[SemanticsActions.OnClick].action!!.invoke())
         }
+        fun slide(label: String, value: Float) {
+            val n = scene.semanticsOwners.flatMap { nodes(it.rootSemanticsNode) }.first {
+                it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains(label) == true &&
+                    it.config.contains(SemanticsActions.SetProgress)
+            }
+            assertTrue(n.boundsInRoot.width > 0 && n.boundsInRoot.height > 0)
+            assertTrue(n.config[SemanticsActions.SetProgress].action!!.invoke(value))
+        }
         try {
             frames(); click("Sampler · DPM++ 2M ▾"); frames(); click("Euler")
-            assertEquals(1, queued.size)
+            frames(); slide("Steps", 19f); slide("CFG Rescale", .8f); slide("CFG Scale", 4f)
+            assertEquals(4, queued.size)
             settings = settings.copy(effort = NovelAiEffort.MEDIUM)
             frames()
-            settings = queued.single()(settings)
-            assertEquals(high.copy(effort = NovelAiEffort.MEDIUM), settings)
+            for (change in queued.take(3)) {
+                settings = change(settings)
+                assertEquals(high.copy(effort = NovelAiEffort.MEDIUM), settings)
+            }
             assertEquals(NovelAiSampler.EULER_ANCESTRAL, settings.effectiveSampler)
             assertEquals(high, settings.copy(effort = NovelAiEffort.HIGH))
+            settings = queued.last()(settings)
+            assertEquals(high.copy(effort = NovelAiEffort.MEDIUM, guidance = 4f), settings)
+            assertEquals(NovelAiSampler.EULER, queued.first()(high).sampler)
         } finally { scene.close() }
     }
 
