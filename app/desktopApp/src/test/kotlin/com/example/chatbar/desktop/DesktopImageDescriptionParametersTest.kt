@@ -2,6 +2,7 @@ package com.example.chatbar.desktop
 
 import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.domain.chat.*
+import com.example.chatbar.domain.prompt.AiTaskRefusalException
 import kotlinx.coroutines.*
 import kotlinx.serialization.json.*
 import okhttp3.mockwebserver.*
