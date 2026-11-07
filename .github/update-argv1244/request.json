@@ -1,0 +1,8 @@
+{
+  "kind": "SYNTHETIC_WINDOWS_PROCESSBUILDER_ARGV_OBSERVATION",
+  "originalSource": "db7ee78387f150be806e79d42c216e3fa8aa9694",
+  "applicationParent": "fb049dd41fbd62286c3c3923b7955a35b40ccc31",
+  "noNetwork": true,
+  "noUserData": true,
+  "noApplicationRun": true
+}

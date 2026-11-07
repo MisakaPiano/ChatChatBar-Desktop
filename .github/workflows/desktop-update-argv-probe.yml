@@ -1,0 +1,47 @@
+name: Inspect original1244 Windows update argv boundary
+on:
+  push:
+    branches: ['codex/desktop-update-argv-1244-*']
+    paths: ['.github/update-argv1244/request.json']
+permissions:
+  contents: read
+jobs:
+  argv:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - name: Enable Windows long-path checkout
+        shell: pwsh
+        run: git config --global core.longpaths true
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Prepare only isolated hash-locked updater runtime
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $base=Join-Path 'C:\' ('ccbargv-'+[guid]::NewGuid().ToString('N'))
+          if(Test-Path -LiteralPath $base){throw 'NEW_BASE_REQUIRED'}
+          New-Item -ItemType Directory -Path $base|Out-Null
+          New-Item -ItemType Directory -Path argv-reports|Out-Null
+          "CCB_ARGV_PROBE_BASE=$base"|Add-Content $env:GITHUB_ENV -Encoding utf8
+          python -B tools/desktop/update/prepare_runtime.py --destination (Join-Path $base 'runtime') --artifact-cache (Join-Path $base 'artifacts') --download 1>argv-reports/runtime-stdout.log 2>argv-reports/runtime-stderr.log
+          if($LASTEXITCODE -ne 0){throw 'RUNTIME_PREPARE_FAILED'}
+      - name: Observe actual Java ProcessBuilder versus Python subprocess
+        shell: pwsh
+        run: |
+          $python=Join-Path $env:CCB_ARGV_PROBE_BASE 'runtime\python.exe'
+          & $python -B .github/update-argv1244/inspect-jvm-argv.py 1>argv-reports/probe-stdout.log 2>argv-reports/probe-stderr.log
+          if($LASTEXITCODE -ne 0){throw 'ARGV_OBSERVATION_FAILED'}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: desktop-update1244-jvm-argv-reports
+          path: argv-reports/*
