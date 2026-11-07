@@ -968,6 +968,16 @@
         "OWNER_CHAT_EDIT_559_SINGLE_DELTA_REUSE.json",
         "COORDINATOR_CHAT_EDIT_559_SINGLE_DELTA_REUSE.json"
       ]
+    },
+    {
+      "id": "MOMENT_DIRECT_GENERATION_AND_CARD_IMAGE_SETTINGS",
+      "disposition": "EQUIVALENT",
+      "scope": "Shared core already removes separate judge and shouldPost gates in normal/debug while retaining completed checkpoint reuse, and applies card defaults to normal/debug image settings. Two exact original162 test blobs, core differs only by a later ContentPreview progress branch not exercised here; original Core4+147Runtime2 PASS reused, including actual normal final NAI wire and debug cancellation. No new run or whole Moments/preview claim.",
+      "reviewSource": "3a9969d820a1193c7f1d52ebac0e1a7efa478757",
+      "evidence": [
+        "OWNER_MOMENT_8C_RUNTIME_REUSE.json",
+        "COORDINATOR_MOMENT_8C_JUDGE_AND_CARD_SETTINGS_REUSE.json"
+      ]
     }
   ],
   "deltas": [
@@ -5779,8 +5789,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Shared core already removes separate judge and shouldPost gates in normal/debug while retaining completed checkpoint reuse, and applies card defaults to normal/debug image settings. Two exact original162 test blobs, core differs only by a later ContentPreview progress branch not exercised here; original Core4+147Runtime2 PASS reused, including actual normal final NAI wire and debug cancellation. No new run or whole Moments/preview claim.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/moment/MomentGenerationService.kt",
@@ -5789,8 +5799,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "MOMENT_DIRECT_GENERATION_AND_CARD_IMAGE_SETTINGS"
+      ],
+      "evidence": [
+        "OWNER_MOMENT_8C_RUNTIME_REUSE.json",
+        "COORDINATOR_MOMENT_8C_JUDGE_AND_CARD_SETTINGS_REUSE.json"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/main/java/com/example/chatbar/domain/rag/RetrievalPlanner.kt",
