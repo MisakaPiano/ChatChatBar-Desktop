@@ -44,7 +44,7 @@ internal class DesktopMergeRetainedMedia(
         val incoming = record.value
         val identity = key(record.type, incoming) ?: return null
         val old = paths[identity]?.let(records::getValue) ?: return null
-        val fields = when (record.type) {
+        val fields: Map<String, JsonElement> = when (record.type) {
             "chat_messages" -> {
                 val session = incoming["sessionId"]?.jsonPrimitive?.contentOrNull ?: return null
                 val images = (selected.sessionChoices[session] ?: selected.sessionDefaultChoice)?.images
