@@ -5415,8 +5415,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Model-capability sampling list/legacy normalization; V4.5-only Variety+ wire, PNG optional flag and selected import, nullable character override apply. Final sigma behavior is supplied by subsequent mapped deltas. Source/delta review plus matching original162 proof; no new run or whole-target compatibility.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiCharacterImageSettings.kt",
@@ -5425,8 +5425,23 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_SAMPLING_AND_SIGMA_REUSE"
+      ],
+      "evidence": [
+        "docs/desktop/322_NAI_PARAMETER_IMPORT_AND_UI_SUCCESSORS.md",
+        "I:\\CCB-Desktop-Continuity\\updates\\20261106-upstream-catchup-to149\\OWNER_NAI_SAMPLING_AND_SIGMA_REUSE.json"
+      ],
+      "desktopOwners": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageModel.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiCharacterImageSettings.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiGenerationDefaults.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiVarietyPlusPolicy.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioImageImport.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageService.kt"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiImageService.kt",
@@ -5442,8 +5457,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Model-capability sampling list/legacy normalization; V4.5-only Variety+ wire, PNG optional flag and selected import, nullable character override apply. Final sigma behavior is supplied by subsequent mapped deltas. Source/delta review plus matching original162 proof; no new run or whole-target compatibility.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageService.kt",
@@ -5452,8 +5467,23 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_SAMPLING_AND_SIGMA_REUSE"
+      ],
+      "evidence": [
+        "docs/desktop/322_NAI_PARAMETER_IMPORT_AND_UI_SUCCESSORS.md",
+        "I:\\CCB-Desktop-Continuity\\updates\\20261106-upstream-catchup-to149\\OWNER_NAI_SAMPLING_AND_SIGMA_REUSE.json"
+      ],
+      "desktopOwners": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageModel.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiCharacterImageSettings.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiGenerationDefaults.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiVarietyPlusPolicy.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioImageImport.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageService.kt"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiInlinePayloadStore.kt",
@@ -5506,8 +5536,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Model-capability sampling list/legacy normalization; V4.5-only Variety+ wire, PNG optional flag and selected import, nullable character override apply. Final sigma behavior is supplied by subsequent mapped deltas. Source/delta review plus matching original162 proof; no new run or whole-target compatibility.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
@@ -5516,8 +5546,23 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_SAMPLING_AND_SIGMA_REUSE"
+      ],
+      "evidence": [
+        "docs/desktop/322_NAI_PARAMETER_IMPORT_AND_UI_SUCCESSORS.md",
+        "I:\\CCB-Desktop-Continuity\\updates\\20261106-upstream-catchup-to149\\OWNER_NAI_SAMPLING_AND_SIGMA_REUSE.json"
+      ],
+      "desktopOwners": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageModel.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiCharacterImageSettings.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiGenerationDefaults.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiVarietyPlusPolicy.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioImageImport.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageService.kt"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiStudioImageImport.kt",
@@ -5533,8 +5578,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Model-capability sampling list/legacy normalization; V4.5-only Variety+ wire, PNG optional flag and selected import, nullable character override apply. Final sigma behavior is supplied by subsequent mapped deltas. Source/delta review plus matching original162 proof; no new run or whole-target compatibility.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioImageImport.kt",
@@ -5543,8 +5588,23 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_SAMPLING_AND_SIGMA_REUSE"
+      ],
+      "evidence": [
+        "docs/desktop/322_NAI_PARAMETER_IMPORT_AND_UI_SUCCESSORS.md",
+        "I:\\CCB-Desktop-Continuity\\updates\\20261106-upstream-catchup-to149\\OWNER_NAI_SAMPLING_AND_SIGMA_REUSE.json"
+      ],
+      "desktopOwners": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageModel.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiCharacterImageSettings.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiGenerationDefaults.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiVarietyPlusPolicy.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioImageImport.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageService.kt"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
@@ -5560,8 +5620,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Model-capability sampling list/legacy normalization; V4.5-only Variety+ wire, PNG optional flag and selected import, nullable character override apply. Final sigma behavior is supplied by subsequent mapped deltas. Source/delta review plus matching original162 proof; no new run or whole-target compatibility.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
@@ -5570,8 +5630,23 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_SAMPLING_AND_SIGMA_REUSE"
+      ],
+      "evidence": [
+        "docs/desktop/322_NAI_PARAMETER_IMPORT_AND_UI_SUCCESSORS.md",
+        "I:\\CCB-Desktop-Continuity\\updates\\20261106-upstream-catchup-to149\\OWNER_NAI_SAMPLING_AND_SIGMA_REUSE.json"
+      ],
+      "desktopOwners": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageModel.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiCharacterImageSettings.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiGenerationDefaults.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiVarietyPlusPolicy.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioImageImport.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageService.kt"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/main/java/com/example/chatbar/domain/memory/MemoryAiGateway.kt",
@@ -10739,8 +10814,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Explicit model sampling reset uses current model defaults while preserving saved/hidden options. The separate missing-singleton repository change is NOT covered by this reused reset proof; it has a new actual counterexample and successor pending. Source/delta review plus matching original162 proof; no new run or whole-target compatibility.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiCharacterImageSettings.kt",
@@ -10749,8 +10824,23 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_SAMPLING_AND_SIGMA_REUSE"
+      ],
+      "evidence": [
+        "docs/desktop/322_NAI_PARAMETER_IMPORT_AND_UI_SUCCESSORS.md",
+        "I:\\CCB-Desktop-Continuity\\updates\\20261106-upstream-catchup-to149\\OWNER_NAI_SAMPLING_AND_SIGMA_REUSE.json"
+      ],
+      "desktopOwners": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageModel.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiCharacterImageSettings.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiGenerationDefaults.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiVarietyPlusPolicy.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioImageImport.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageService.kt"
+      ]
     },
     {
       "id": "a96313d9ec44244a301fa94f7a0ad6f98cf6350a:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
@@ -10766,8 +10856,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Explicit model sampling reset uses current model defaults while preserving saved/hidden options. The separate missing-singleton repository change is NOT covered by this reused reset proof; it has a new actual counterexample and successor pending. Source/delta review plus matching original162 proof; no new run or whole-target compatibility.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
@@ -10776,8 +10866,23 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_SAMPLING_AND_SIGMA_REUSE"
+      ],
+      "evidence": [
+        "docs/desktop/322_NAI_PARAMETER_IMPORT_AND_UI_SUCCESSORS.md",
+        "I:\\CCB-Desktop-Continuity\\updates\\20261106-upstream-catchup-to149\\OWNER_NAI_SAMPLING_AND_SIGMA_REUSE.json"
+      ],
+      "desktopOwners": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageModel.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiCharacterImageSettings.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiGenerationDefaults.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiVarietyPlusPolicy.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioImageImport.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageService.kt"
+      ]
     },
     {
       "id": "a96313d9ec44244a301fa94f7a0ad6f98cf6350a:app/app/src/main/java/com/example/chatbar/ui/character/CharacterEditScreen.kt",
@@ -11718,8 +11823,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Resolution-independent finite positive sigma from PNG, normalized by source latent canvas and scaled once for actual final canvas; imported custom sigma survives draft JSON/history/preset; card apply clears imported sigma; Enhance cannot replay raw source sigma. Source/delta review plus matching original162 proof; no new run or whole-target compatibility.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiCharacterImageSettings.kt",
@@ -11728,8 +11833,23 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_SAMPLING_AND_SIGMA_REUSE"
+      ],
+      "evidence": [
+        "docs/desktop/322_NAI_PARAMETER_IMPORT_AND_UI_SUCCESSORS.md",
+        "I:\\CCB-Desktop-Continuity\\updates\\20261106-upstream-catchup-to149\\OWNER_NAI_SAMPLING_AND_SIGMA_REUSE.json"
+      ],
+      "desktopOwners": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageModel.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiCharacterImageSettings.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiGenerationDefaults.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiVarietyPlusPolicy.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioImageImport.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageService.kt"
+      ]
     },
     {
       "id": "a678d71c4d720202c0c99af73d8df11e822e2aff:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiImageService.kt",
@@ -11745,8 +11865,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Resolution-independent finite positive sigma from PNG, normalized by source latent canvas and scaled once for actual final canvas; imported custom sigma survives draft JSON/history/preset; card apply clears imported sigma; Enhance cannot replay raw source sigma. Source/delta review plus matching original162 proof; no new run or whole-target compatibility.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageService.kt",
@@ -11755,8 +11875,23 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_SAMPLING_AND_SIGMA_REUSE"
+      ],
+      "evidence": [
+        "docs/desktop/322_NAI_PARAMETER_IMPORT_AND_UI_SUCCESSORS.md",
+        "I:\\CCB-Desktop-Continuity\\updates\\20261106-upstream-catchup-to149\\OWNER_NAI_SAMPLING_AND_SIGMA_REUSE.json"
+      ],
+      "desktopOwners": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageModel.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiCharacterImageSettings.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiGenerationDefaults.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiVarietyPlusPolicy.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioImageImport.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageService.kt"
+      ]
     },
     {
       "id": "a678d71c4d720202c0c99af73d8df11e822e2aff:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
@@ -11772,8 +11907,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Resolution-independent finite positive sigma from PNG, normalized by source latent canvas and scaled once for actual final canvas; imported custom sigma survives draft JSON/history/preset; card apply clears imported sigma; Enhance cannot replay raw source sigma. Source/delta review plus matching original162 proof; no new run or whole-target compatibility.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
@@ -11782,8 +11917,23 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_SAMPLING_AND_SIGMA_REUSE"
+      ],
+      "evidence": [
+        "docs/desktop/322_NAI_PARAMETER_IMPORT_AND_UI_SUCCESSORS.md",
+        "I:\\CCB-Desktop-Continuity\\updates\\20261106-upstream-catchup-to149\\OWNER_NAI_SAMPLING_AND_SIGMA_REUSE.json"
+      ],
+      "desktopOwners": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageModel.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiCharacterImageSettings.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiGenerationDefaults.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiVarietyPlusPolicy.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioImageImport.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageService.kt"
+      ]
     },
     {
       "id": "a678d71c4d720202c0c99af73d8df11e822e2aff:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiStudioImageImport.kt",
@@ -11799,8 +11949,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Resolution-independent finite positive sigma from PNG, normalized by source latent canvas and scaled once for actual final canvas; imported custom sigma survives draft JSON/history/preset; card apply clears imported sigma; Enhance cannot replay raw source sigma. Source/delta review plus matching original162 proof; no new run or whole-target compatibility.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioImageImport.kt",
@@ -11809,8 +11959,23 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_SAMPLING_AND_SIGMA_REUSE"
+      ],
+      "evidence": [
+        "docs/desktop/322_NAI_PARAMETER_IMPORT_AND_UI_SUCCESSORS.md",
+        "I:\\CCB-Desktop-Continuity\\updates\\20261106-upstream-catchup-to149\\OWNER_NAI_SAMPLING_AND_SIGMA_REUSE.json"
+      ],
+      "desktopOwners": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageModel.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiCharacterImageSettings.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiGenerationDefaults.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiVarietyPlusPolicy.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioImageImport.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageService.kt"
+      ]
     },
     {
       "id": "a678d71c4d720202c0c99af73d8df11e822e2aff:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
@@ -11826,8 +11991,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Resolution-independent finite positive sigma from PNG, normalized by source latent canvas and scaled once for actual final canvas; imported custom sigma survives draft JSON/history/preset; card apply clears imported sigma; Enhance cannot replay raw source sigma. Source/delta review plus matching original162 proof; no new run or whole-target compatibility.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
@@ -11836,8 +12001,23 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_SAMPLING_AND_SIGMA_REUSE"
+      ],
+      "evidence": [
+        "docs/desktop/322_NAI_PARAMETER_IMPORT_AND_UI_SUCCESSORS.md",
+        "I:\\CCB-Desktop-Continuity\\updates\\20261106-upstream-catchup-to149\\OWNER_NAI_SAMPLING_AND_SIGMA_REUSE.json"
+      ],
+      "desktopOwners": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageModel.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiCharacterImageSettings.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiGenerationDefaults.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiVarietyPlusPolicy.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioImageImport.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageService.kt"
+      ]
     },
     {
       "id": "a678d71c4d720202c0c99af73d8df11e822e2aff:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiVarietyPlusPolicy.kt",
@@ -12830,8 +13010,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Merge composition of the same Variety+ sigma changes onto V5 option settings; V5 still omits V4.5 sigma, and effort/transparency fields survive the same import/draft structures. Not an additional new feature or fresh run. Source/delta review plus matching original162 proof; no new run or whole-target compatibility.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiCharacterImageSettings.kt",
@@ -12840,8 +13020,23 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_SAMPLING_AND_SIGMA_REUSE"
+      ],
+      "evidence": [
+        "docs/desktop/322_NAI_PARAMETER_IMPORT_AND_UI_SUCCESSORS.md",
+        "I:\\CCB-Desktop-Continuity\\updates\\20261106-upstream-catchup-to149\\OWNER_NAI_SAMPLING_AND_SIGMA_REUSE.json"
+      ],
+      "desktopOwners": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageModel.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiCharacterImageSettings.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiGenerationDefaults.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiVarietyPlusPolicy.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioImageImport.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageService.kt"
+      ]
     },
     {
       "id": "d21e0be5a12339f910306651c658d348e89303ba:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiImageService.kt",
@@ -12857,8 +13052,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Merge composition of the same Variety+ sigma changes onto V5 option settings; V5 still omits V4.5 sigma, and effort/transparency fields survive the same import/draft structures. Not an additional new feature or fresh run. Source/delta review plus matching original162 proof; no new run or whole-target compatibility.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageService.kt",
@@ -12867,8 +13062,23 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_SAMPLING_AND_SIGMA_REUSE"
+      ],
+      "evidence": [
+        "docs/desktop/322_NAI_PARAMETER_IMPORT_AND_UI_SUCCESSORS.md",
+        "I:\\CCB-Desktop-Continuity\\updates\\20261106-upstream-catchup-to149\\OWNER_NAI_SAMPLING_AND_SIGMA_REUSE.json"
+      ],
+      "desktopOwners": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageModel.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiCharacterImageSettings.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiGenerationDefaults.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiVarietyPlusPolicy.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioImageImport.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageService.kt"
+      ]
     },
     {
       "id": "d21e0be5a12339f910306651c658d348e89303ba:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
@@ -12884,8 +13094,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Merge composition of the same Variety+ sigma changes onto V5 option settings; V5 still omits V4.5 sigma, and effort/transparency fields survive the same import/draft structures. Not an additional new feature or fresh run. Source/delta review plus matching original162 proof; no new run or whole-target compatibility.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
@@ -12894,8 +13104,23 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_SAMPLING_AND_SIGMA_REUSE"
+      ],
+      "evidence": [
+        "docs/desktop/322_NAI_PARAMETER_IMPORT_AND_UI_SUCCESSORS.md",
+        "I:\\CCB-Desktop-Continuity\\updates\\20261106-upstream-catchup-to149\\OWNER_NAI_SAMPLING_AND_SIGMA_REUSE.json"
+      ],
+      "desktopOwners": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageModel.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiCharacterImageSettings.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiGenerationDefaults.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiVarietyPlusPolicy.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioImageImport.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageService.kt"
+      ]
     },
     {
       "id": "d21e0be5a12339f910306651c658d348e89303ba:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiStudioImageImport.kt",
@@ -12911,8 +13136,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Merge composition of the same Variety+ sigma changes onto V5 option settings; V5 still omits V4.5 sigma, and effort/transparency fields survive the same import/draft structures. Not an additional new feature or fresh run. Source/delta review plus matching original162 proof; no new run or whole-target compatibility.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioImageImport.kt",
@@ -12921,8 +13146,23 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_SAMPLING_AND_SIGMA_REUSE"
+      ],
+      "evidence": [
+        "docs/desktop/322_NAI_PARAMETER_IMPORT_AND_UI_SUCCESSORS.md",
+        "I:\\CCB-Desktop-Continuity\\updates\\20261106-upstream-catchup-to149\\OWNER_NAI_SAMPLING_AND_SIGMA_REUSE.json"
+      ],
+      "desktopOwners": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageModel.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiCharacterImageSettings.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiGenerationDefaults.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiVarietyPlusPolicy.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioImageImport.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageService.kt"
+      ]
     },
     {
       "id": "d21e0be5a12339f910306651c658d348e89303ba:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
@@ -12938,8 +13178,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Merge composition of the same Variety+ sigma changes onto V5 option settings; V5 still omits V4.5 sigma, and effort/transparency fields survive the same import/draft structures. Not an additional new feature or fresh run. Source/delta review plus matching original162 proof; no new run or whole-target compatibility.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
@@ -12948,8 +13188,23 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_SAMPLING_AND_SIGMA_REUSE"
+      ],
+      "evidence": [
+        "docs/desktop/322_NAI_PARAMETER_IMPORT_AND_UI_SUCCESSORS.md",
+        "I:\\CCB-Desktop-Continuity\\updates\\20261106-upstream-catchup-to149\\OWNER_NAI_SAMPLING_AND_SIGMA_REUSE.json"
+      ],
+      "desktopOwners": [
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageModel.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiCharacterImageSettings.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiGenerationDefaults.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiVarietyPlusPolicy.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioImageImport.kt",
+        "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageService.kt"
+      ]
     },
     {
       "id": "d21e0be5a12339f910306651c658d348e89303ba:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiVarietyPlusPolicy.kt",
@@ -17167,5 +17422,11 @@
     "fixedR02": 42259492759,
     "rawAlphaR03": 42259960504,
     "reviewedAdditionalDeltas": 37
+  },
+  "naiParameterReview": {
+    "source": "bd8ae253869774973e83c764a5d5b9c0ff905546",
+    "mappedProductionDeltas": 17,
+    "proof": "Matched original162 eight suites / 13 existing PASS; first-draft initialization, Unicode boundary and UI successors separate",
+    "review": "docs/desktop/322_NAI_PARAMETER_IMPORT_AND_UI_SUCCESSORS.md"
   }
 }

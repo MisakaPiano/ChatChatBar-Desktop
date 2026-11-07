@@ -1,3 +1,7 @@
+2026-11-07 NAI相邻增量继续：322精确登记17条参数/导入/sigma既有等位与原162八套13PASS复用；1b角色开关原19PASS/1既有native前置SKIP，实际360/760图已核。另补Unicode透明标签边界、首次缺草稿默认及High-only延迟UI变更三个具体缺口；最初四轮因同一新夹具漏参数编译失败/零XML，664修夹具后合法旧/新对照与ab840控件后继仍待原件，不记业务通过。314整体false；公开1244/db7/签26、A1真人FAIL、315未采纳不变，无新包/代装/本机JVM或真实资料操作。
+
+下方历史保留。
+
 2026-11-07 语音仓库后继与具体候选切换检查完成：Repo R01/R02两处新测试List/Set编译失败保留，仅R02原shared1PASS；9e4修正同一测试blob后，旧生产af12/control71f R03原1个5秒等待FAIL，新生产control ec1b R04原九套Desktop55PASS、0FAIL/ERROR/SKIP，实际暖repo/新anchor UI reader和旧play准备成立，不冒称声卡/冷启动。4ffc另补normal-only候选切换，Mutation R04原Admission4+Runtime9+Primary42=55PASS；此前34/81/54分源保留不相加，详321。混合编辑/图片清理回调仍留具体源码候选，不泛化全局锁序闭合。当前继续NAI导入/模型参数/UI相邻增量；314整体false，公开1244/db7/签26、A1真人FAIL、315未采纳不动，无新包/公发、日常代装、本机JVM或真实资料操作。
 
 下方历史保留。
