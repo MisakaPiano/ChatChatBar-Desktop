@@ -33,7 +33,7 @@ internal class DesktopMergePreview private constructor(
         override fun toString() = "MergeSelection(pc=${computer.size},phone=${phone.size},forks=${forkIncomingUnits.size})"
     }
 
-    fun select(choices: Map<String, Choice>, checkActive: () -> Unit = {}): Selection {
+    fun select(choices: Map<String, Choice>, checkActive: () -> kotlin.Unit = {}): Selection {
         require(choices.keys == conflicts.mapTo(hashSetOf()) { it.key }) { "MERGE_EXPLICIT_CHOICES_REQUIRED" }
         val computer = pc.toMutableMap()
         val phone = incoming.filterKeys { it !in identical }.toMutableMap()
