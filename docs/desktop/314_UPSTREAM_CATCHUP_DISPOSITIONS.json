@@ -1623,6 +1623,24 @@
       "evidence": [
         "OWNER_CHAT_VM_COMPLETE_D3_SIX_WRAPPERS_REUSE.json"
       ]
+    },
+    {
+      "id": "BACKUP_MODELS_COMPLETE_D3CF2AA9_DTO_STATE_ADAPTER",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete Models deltas only. Legacy v1 DTOs remain separate from modern InspectionManifest/Scope/Preferences with authenticated code84..88/envelope/scope/inventory rules. Desktop explicit session choices/default encode the same effective scope, named-account extension is optional, incoming retainedPreferences stays empty. Actual controllers provide cancellation/progress/error/restart and cancellable mode preview counts/warnings with explicit confirmation; Desktop totals+explicit conflict units differ from Android per-category count presentation. R116 selected Writer9, R122 corrected Inspector1 and actual mode/controller proofs reused by their own scope; not whole archive/Engine or new UI physical proof.",
+      "reviewSource": "e30cac1027e552ecf7f07a002b8191ae79d2eebc",
+      "evidence": [
+        "OWNER_BACKUP_MODELS_TWO_COMPLETE_DELTA_REUSE.json"
+      ]
+    },
+    {
+      "id": "BACKUP_MODELS_COMPLETE_1A692604_DTO_STATE_ADAPTER",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete Models deltas only. Legacy v1 DTOs remain separate from modern InspectionManifest/Scope/Preferences with authenticated code84..88/envelope/scope/inventory rules. Desktop explicit session choices/default encode the same effective scope, named-account extension is optional, incoming retainedPreferences stays empty. Actual controllers provide cancellation/progress/error/restart and cancellable mode preview counts/warnings with explicit confirmation; Desktop totals+explicit conflict units differ from Android per-category count presentation. R116 selected Writer9, R122 corrected Inspector1 and actual mode/controller proofs reused by their own scope; not whole archive/Engine or new UI physical proof.",
+      "reviewSource": "e30cac1027e552ecf7f07a002b8191ae79d2eebc",
+      "evidence": [
+        "OWNER_BACKUP_MODELS_TWO_COMPLETE_DELTA_REUSE.json"
+      ]
     }
   ],
   "deltas": [
@@ -8539,11 +8557,16 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete Models deltas only. Legacy v1 DTOs remain separate from modern InspectionManifest/Scope/Preferences with authenticated code84..88/envelope/scope/inventory rules. Desktop explicit session choices/default encode the same effective scope, named-account extension is optional, incoming retainedPreferences stays empty. Actual controllers provide cancellation/progress/error/restart and cancellable mode preview counts/warnings with explicit confirmation; Desktop totals+explicit conflict units differ from Android per-category count presentation. R116 selected Writer9, R122 corrected Inspector1 and actual mode/controller proofs reused by their own scope; not whole archive/Engine or new UI physical proof.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "BACKUP_MODELS_COMPLETE_D3CF2AA9_DTO_STATE_ADAPTER"
+      ],
+      "evidence": [
+        "OWNER_BACKUP_MODELS_TWO_COMPLETE_DELTA_REUSE.json",
+        "docs/desktop/373_BACKUP_MODEL_SCOPE_STATE_ADAPTERS.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/backup/AppBackupService.kt",
@@ -10773,11 +10796,16 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete Models deltas only. Legacy v1 DTOs remain separate from modern InspectionManifest/Scope/Preferences with authenticated code84..88/envelope/scope/inventory rules. Desktop explicit session choices/default encode the same effective scope, named-account extension is optional, incoming retainedPreferences stays empty. Actual controllers provide cancellation/progress/error/restart and cancellable mode preview counts/warnings with explicit confirmation; Desktop totals+explicit conflict units differ from Android per-category count presentation. R116 selected Writer9, R122 corrected Inspector1 and actual mode/controller proofs reused by their own scope; not whole archive/Engine or new UI physical proof.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "BACKUP_MODELS_COMPLETE_1A692604_DTO_STATE_ADAPTER"
+      ],
+      "evidence": [
+        "OWNER_BACKUP_MODELS_TWO_COMPLETE_DELTA_REUSE.json",
+        "docs/desktop/373_BACKUP_MODEL_SCOPE_STATE_ADAPTERS.md"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:app/app/src/main/java/com/example/chatbar/domain/backup/AppBackupService.kt",
