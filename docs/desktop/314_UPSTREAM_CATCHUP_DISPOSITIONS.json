@@ -1048,6 +1048,18 @@
         "docs/desktop/337_POST_PROCESS_LARGE_OUTPUT_PATH.md",
         "OWNER_LARGE_POST_PROCESS_RESULT_FINAL_REVIEW.json"
       ]
+    },
+    {
+      "id": "ALBUM_RUNTIME_FILTER_GRID_AND_ORIGINAL_ID_LOCATE",
+      "disposition": "EQUIVALENT",
+      "scope": "Only07eb production UI/state deltas. Desktop parent entry retains Controller runtime query/date/granularity/group/card; shared policy builds results, original postID locates current timeline and highlights3.5sec, missing ID visible refusal. Desktop UI uses always-visible search and available-date/granularity choices rather than Android icon/calendar presentation. R61 two actual parent retention/grid methods, R60 unchanged narrow/wide Panel1, R68 actual highlight replacement/expiry1 and R65 unchanged deleted-ID1 are separate originals, not one fresh5 or whole commit/full149/user acceptance.",
+      "reviewSource": "7af7d491e7750499d2d951ff89f33d42d110fe4b",
+      "evidence": [
+        "docs/desktop/335_MOMENT_ALBUM_RETAINED_FILTER_STATE.md",
+        "docs/desktop/338_MOMENT_ALBUM_LOCATE_HIGHLIGHT.md",
+        "OWNER_ALBUM_NAVIGATION_FINAL_REVIEW.json",
+        "OWNER_ALBUM_LOCATE_HIGHLIGHT_FINAL_REVIEW.json"
+      ]
     }
   ],
   "deltas": [
@@ -2843,11 +2855,18 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only07eb production UI/state deltas. Desktop parent entry retains Controller runtime query/date/granularity/group/card; shared policy builds results, original postID locates current timeline and highlights3.5sec, missing ID visible refusal. Desktop UI uses always-visible search and available-date/granularity choices rather than Android icon/calendar presentation. R61 two actual parent retention/grid methods, R60 unchanged narrow/wide Panel1, R68 actual highlight replacement/expiry1 and R65 unchanged deleted-ID1 are separate originals, not one fresh5 or whole commit/full149/user acceptance.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "ALBUM_RUNTIME_FILTER_GRID_AND_ORIGINAL_ID_LOCATE"
+      ],
+      "evidence": [
+        "docs/desktop/335_MOMENT_ALBUM_RETAINED_FILTER_STATE.md",
+        "docs/desktop/338_MOMENT_ALBUM_LOCATE_HIGHLIGHT.md",
+        "OWNER_ALBUM_NAVIGATION_FINAL_REVIEW.json",
+        "OWNER_ALBUM_LOCATE_HIGHLIGHT_FINAL_REVIEW.json"
+      ]
     },
     {
       "id": "07ebfaf14a34b82de517b08709589a621b92dcb2:app/app/src/main/java/com/example/chatbar/ui/moments/MomentsScreen.kt",
@@ -2863,8 +2882,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only07eb production UI/state deltas. Desktop parent entry retains Controller runtime query/date/granularity/group/card; shared policy builds results, original postID locates current timeline and highlights3.5sec, missing ID visible refusal. Desktop UI uses always-visible search and available-date/granularity choices rather than Android icon/calendar presentation. R61 two actual parent retention/grid methods, R60 unchanged narrow/wide Panel1, R68 actual highlight replacement/expiry1 and R65 unchanged deleted-ID1 are separate originals, not one fresh5 or whole commit/full149/user acceptance.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/moments/MomentsScreen.kt",
@@ -2873,8 +2892,15 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "ALBUM_RUNTIME_FILTER_GRID_AND_ORIGINAL_ID_LOCATE"
+      ],
+      "evidence": [
+        "docs/desktop/335_MOMENT_ALBUM_RETAINED_FILTER_STATE.md",
+        "docs/desktop/338_MOMENT_ALBUM_LOCATE_HIGHLIGHT.md",
+        "OWNER_ALBUM_NAVIGATION_FINAL_REVIEW.json",
+        "OWNER_ALBUM_LOCATE_HIGHLIGHT_FINAL_REVIEW.json"
+      ]
     },
     {
       "id": "07ebfaf14a34b82de517b08709589a621b92dcb2:app/app/src/main/java/com/example/chatbar/ui/moments/MomentsViewModel.kt",
@@ -2890,8 +2916,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only07eb production UI/state deltas. Desktop parent entry retains Controller runtime query/date/granularity/group/card; shared policy builds results, original postID locates current timeline and highlights3.5sec, missing ID visible refusal. Desktop UI uses always-visible search and available-date/granularity choices rather than Android icon/calendar presentation. R61 two actual parent retention/grid methods, R60 unchanged narrow/wide Panel1, R68 actual highlight replacement/expiry1 and R65 unchanged deleted-ID1 are separate originals, not one fresh5 or whole commit/full149/user acceptance.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/moments/MomentsViewModel.kt",
@@ -2900,8 +2926,15 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "ALBUM_RUNTIME_FILTER_GRID_AND_ORIGINAL_ID_LOCATE"
+      ],
+      "evidence": [
+        "docs/desktop/335_MOMENT_ALBUM_RETAINED_FILTER_STATE.md",
+        "docs/desktop/338_MOMENT_ALBUM_LOCATE_HIGHLIGHT.md",
+        "OWNER_ALBUM_NAVIGATION_FINAL_REVIEW.json",
+        "OWNER_ALBUM_LOCATE_HIGHLIGHT_FINAL_REVIEW.json"
+      ]
     },
     {
       "id": "07ebfaf14a34b82de517b08709589a621b92dcb2:app/app/src/test/java/com/example/chatbar/domain/moment/MomentAlbumPolicyTest.kt",
