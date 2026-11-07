@@ -42,8 +42,11 @@ open class NovelAiStudioStateRepository(
     val undoAvailable: StateFlow<Boolean> = _undoAvailable.asStateFlow()
     protected val historyMutex = Mutex()
 
+    protected suspend fun <T> withStudioDataAccess(operation: suspend () -> T): T =
+        storage.withNormalOperation(operation)
+
     private suspend fun <T> Mutex.withDataAccess(operation: suspend () -> T): T =
-        storage.withNormalOperation { withLock { operation() } }
+        withStudioDataAccess { withLock { operation() } }
 
     suspend fun initialize() {
         storage.loadAll(HISTORY_ENTITY, NovelAiGenerationHistoryEntry.serializer())

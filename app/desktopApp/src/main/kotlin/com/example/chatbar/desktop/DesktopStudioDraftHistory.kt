@@ -43,7 +43,7 @@ internal class DesktopStudioHistoryRepository(storage: JsonFileStorage,
 ) : NovelAiStudioStateRepository(storage) {
     private val editHistoryMutex = Mutex()
     private suspend fun <T> withEditHistoryDataAccess(operation: suspend () -> T): T =
-        storage.withNormalOperation { editHistoryMutex.withLock { operation() } }
+        withStudioDataAccess { editHistoryMutex.withLock { operation() } }
     private val available = MutableStateFlow(DesktopStudioHistoryAvailability())
     val historyAvailability = available.asStateFlow()
     private var timeline: DesktopStudioHistoryTimeline? = null
