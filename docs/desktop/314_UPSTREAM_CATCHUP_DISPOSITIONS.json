@@ -7401,8 +7401,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Desktop injected normal data gate protects journal/recovery and state/archive/head locks; actual platform.run protects the five automatic producers. Session reservation quiesces jobs before destructive work, and shutdown joins them before gate drain. Desktop waiting admission differs from Android launch refusal. Exact owner/test blobs reuse original18 scoped methods; no new run.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/data/repository/MemoryRepository.kt",
@@ -7412,7 +7412,10 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "docs/desktop/324_IMAGE_HISTORY_AND_MEMORY_ADMISSION_REUSE.md",
+        "OWNER_MEMORY_ADMISSION_REUSE.json"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/data/security/FishAudioCredentialStore.kt",
@@ -8172,8 +8175,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Desktop injected normal data gate protects journal/recovery and state/archive/head locks; actual platform.run protects the five automatic producers. Session reservation quiesces jobs before destructive work, and shutdown joins them before gate drain. Desktop waiting admission differs from Android launch refusal. Exact owner/test blobs reuse original18 scoped methods; no new run.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/memory/LongTermMemoryAutoMaintenanceCoordinator.kt",
@@ -8189,7 +8192,10 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "docs/desktop/324_IMAGE_HISTORY_AND_MEMORY_ADMISSION_REUSE.md",
+        "OWNER_MEMORY_ADMISSION_REUSE.json"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/memory/LongTermMemoryService.kt",
@@ -8205,8 +8211,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Desktop injected normal data gate protects journal/recovery and state/archive/head locks; actual platform.run protects the five automatic producers. Session reservation quiesces jobs before destructive work, and shutdown joins them before gate drain. Desktop waiting admission differs from Android launch refusal. Exact owner/test blobs reuse original18 scoped methods; no new run.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/memory/LongTermMemoryService.kt",
@@ -8222,7 +8228,10 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "docs/desktop/324_IMAGE_HISTORY_AND_MEMORY_ADMISSION_REUSE.md",
+        "OWNER_MEMORY_ADMISSION_REUSE.json"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/moment/MomentAlarmReceiver.kt",
@@ -17500,5 +17509,16 @@
     "originalMethods": 20,
     "overlap": "Writer9 also supplies alias proof, not new29 or all merge",
     "wholeMergeComplete": false
+  },
+  "memoryMaintenanceReview": {
+    "mappedDeltas": [
+      "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/data/repository/MemoryRepository.kt",
+      "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/memory/LongTermMemoryAutoMaintenanceCoordinator.kt",
+      "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/memory/LongTermMemoryService.kt"
+    ],
+    "originalRun": 42085881455,
+    "matchedMethods": 18,
+    "newRuns": 0,
+    "completeWholeInventory": false
   }
 }

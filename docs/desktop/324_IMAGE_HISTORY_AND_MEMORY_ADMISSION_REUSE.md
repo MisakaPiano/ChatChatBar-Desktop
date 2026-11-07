@@ -1,0 +1,25 @@
+# 历史缩略图与记忆维护准入
+
+2026-11-07，固定141→12e继续。当前普通候选、公开1244/db7/签26、A1真人FAIL及315未采纳不动；本批没有本机JVM、真实资料、代装或发布。
+
+## 历史图片的实际后继
+
+1d2850上游HistoryThumbnail按实际显示边长缩小解码。Desktop网格原已限制静态预览最长边1600，并非全原图无界读取；但180dp网格没有传显示目标。d877的DesktopHistoryThumbnail按实际格子宽高与density生成稳定的Fit目标，复用原DesktopOwnedImage/有方向读取。选择和状态重组不更换目标lambda；格子或density改变才重解码。原大图预览、详情及资源原文不改，动画既有路径未宣称同步缩小解码。
+
+原controller action mutex能避免并发删坏文件，但UI确认点击在launch前没有提交状态，可重复排队，后一次读到空选择后显示失败。d877在确认点击处同步门闩并冻结当时可见selection，controller仍在原action内原子核记录、替换和引用清理。选择点击在提交中不变更目标；不扩成全局生成busy，不删除原校验。
+
+必要后继检查包括实际缩略图Compose加载/重组读取次数、不同viewport的实际解码尺寸与源bytes不变，以及原历史宽窄布局/选择/预览/cleanup。history-thumbnail-r01包含e2d取消回调的已知类型遮蔽，结果独立保留；c588修复后与合并依赖统一R10/control b088云端，当前待原件，不计PASS。
+
+## 已有记忆维护安全行为复用
+
+d3的MemoryRepository变更保护整个journal commit/recovery，LongTermMemoryService保护state/archive/head锁，AutoMaintenance变更在launch前取得维护准入。Desktop既有共享repository/service已注入同一个dataOperationCoordinator：journal处理及三个session锁外持normal，实际Container和DesktopMemoryController的platform.run保护五条自动维护生产路径。删除/恢复先通过session reservation停止并join对应记忆任务，退出先join memory scope再drain gate。
+
+Android在独占维护时拒绝新launch，Desktop在platform/service准入处等待或因restart/close拒绝；属于平台等位，不称API或字节完全相同。不能从共享registry测试单独推断实际Desktop调用链；上述Container/platform/service源码另行核对。
+
+`OWNER_MEMORY_ADMISSION_REUSE.json`重新核八个owner/test blob与原162完全相同，原ZIP长度/SHA/CRC及四套XML重读：共享journal3、registry5、DesktopSafety4、Lifecycle6，共18既有PASS，0新运行。只据此将d3这三条维护delta映射EQUIVALENT；全314仍complete:false。
+
+另已核旧式同根恢复journal在startup/apply前verifyEvidence、指纹与回滚，原四方法可复用；其中foreign+staged篡改测试复用了已有foreign条件，不能称两个篡改分支独立通过。现代新根还需其独立完整证据，因此PreparedSeal整条暂不因这份旧式局部证明关闭。
+
+## 尚待的真实编辑器偏好
+
+官方ImageMaskPreferences保存brushSizeDp 16..72（默认36）及Mosaic/Black/White，实际按显示画布比例把直径换成原图半径。Desktop工具现画笔是原图短边归一化，backup36不能直接套入。现只确认备份偏好已有保全/合并选择，但实际编辑器尚未消费该持久化字段。后继须复用同一偏好文件、normal gate和原子写入，保留其他字段；先确定显示单位与框选/蒙版入口的现有意图，不机械复制数值。
