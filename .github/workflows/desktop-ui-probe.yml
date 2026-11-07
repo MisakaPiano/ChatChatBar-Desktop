@@ -1,62 +1,64 @@
-name: Focused Desktop UI and diagnostic regression
-
+name: Verify Windows updater argv fix through actual Kotlin runtime
 on:
   push:
-    branches: ['codex/desktop-ui-probe-*']
-
+    branches: ['codex/desktop-ui-probe-updateargvfix-*']
 permissions:
   contents: read
-
-concurrency:
-  group: desktop-ui-probe-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  focused:
+  fixed:
     runs-on: windows-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - name: Enable long-path checkout
+        shell: pwsh
         run: git config --global core.longpaths true
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - uses: gradle/actions/setup-gradle@v4
-      - name: Select a fresh canonical NTFS temporary directory
+      - name: Prepare isolated updater and fresh test directories
         shell: pwsh
         run: |
-          $ErrorActionPreference = 'Stop'
-          $probeRoot = Join-Path ($env:SystemDrive + '\') ('p' + [Guid]::NewGuid().ToString('N').Substring(0, 7))
-          if ([IO.DriveInfo]::new([IO.Path]::GetPathRoot($probeRoot)).DriveFormat -ne 'NTFS') { throw 'DESKTOP_TEST_NTFS_REQUIRED' }
-          New-Item -ItemType Directory -Path $probeRoot -ErrorAction Stop | Out-Null
-          $testTemp = New-Item -ItemType Directory -Path (Join-Path $probeRoot 'temp') -ErrorAction Stop
-          @("TEMP=$($testTemp.FullName)", "TMP=$($testTemp.FullName)") | Add-Content $env:GITHUB_ENV -Encoding utf8
-      - name: Record exact source and run bounded synthetic regressions
+          $ErrorActionPreference='Stop'
+          $base=Join-Path 'C:\' ('ccbargvfix-'+[guid]::NewGuid().ToString('N'))
+          if(Test-Path -LiteralPath $base){throw 'NEW_BASE_REQUIRED'}
+          New-Item -ItemType Directory -Path $base|Out-Null
+          New-Item -ItemType Directory -Path (Join-Path $base 'reports')|Out-Null
+          New-Item -ItemType Directory -Path (Join-Path $base 'temp')|Out-Null
+          "CCB_ARGV_FIX_BASE=$base"|Add-Content $env:GITHUB_ENV -Encoding utf8
+          "TEMP=$base\temp"|Add-Content $env:GITHUB_ENV -Encoding utf8
+          "TMP=$base\temp"|Add-Content $env:GITHUB_ENV -Encoding utf8
+          @{source=(git rev-parse HEAD);kind='cloud-only synthetic update argv correction'}|ConvertTo-Json|Set-Content (Join-Path $base 'reports/source.json') -Encoding utf8
+          python -B tools/desktop/update/prepare_runtime.py --destination (Join-Path $base 'runtime') --artifact-cache (Join-Path $base 'artifacts') --download 1>(Join-Path $base 'reports/runtime-stdout.log') 2>(Join-Path $base 'reports/runtime-stderr.log')
+          if($LASTEXITCODE -ne 0){throw 'RUNTIME_PREPARE_FAILED'}
+      - name: Verify actual Java prepared CLI and retained TUF policy
+        shell: pwsh
+        run: |
+          $python=Join-Path $env:CCB_ARGV_FIX_BASE 'runtime/python.exe'
+          & $python -B .github/update-argv-fix/verify-fixed-argv.py 1>(Join-Path $env:CCB_ARGV_FIX_BASE 'reports/helper-stdout.log') 2>(Join-Path $env:CCB_ARGV_FIX_BASE 'reports/helper-stderr.log')
+          if($LASTEXITCODE -ne 0){throw 'HELPER_REGRESSION_FAILED'}
+      - name: Compile affected Kotlin and exercise actual runtime on fixed public1245 target
         shell: pwsh
         working-directory: app
-        env:
-          CCB_SCREENSHOT_PAGING_REVIEW_DIR: ${{ runner.temp }}/ccb-ui-probe/paging
-          CCB_SCREENSHOT_REVIEW_DIR: ${{ runner.temp }}/ccb-ui-probe/export
-          CCB_FORMAT_AI_REVIEW_DIR: ${{ runner.temp }}/ccb-ui-probe/style
         run: |
-          $ErrorActionPreference = 'Stop'
-          New-Item -ItemType Directory -Path "$env:RUNNER_TEMP/ccb-ui-probe" -Force | Out-Null
-          @{ source = (git rev-parse HEAD); run = $env:GITHUB_RUN_ID; scope = 'synthetic selected tests only; no installer, user profile, release or provider calls' } |
-            ConvertTo-Json | Set-Content -Encoding utf8 "$env:RUNNER_TEMP/ccb-ui-probe/source.json"
-          .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain `
-            --tests 'com.example.chatbar.desktop.DesktopStudioLongPromptFocusTest'
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: Preserve actual reports and synthetic review images
+          .\gradlew.bat :desktopApp:test --tests 'com.example.chatbar.desktop.DesktopNetworkProxyTest' --tests 'com.example.chatbar.desktop.DesktopProxyPhysicalRoutingTest' :desktopApp:verifyUpdateRuntimeArgv -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain
+          if($LASTEXITCODE -ne 0){exit $LASTEXITCODE}
+      - name: Stage small reports on the checkout volume
         if: always()
-        uses: actions/upload-artifact@v4
+        shell: pwsh
+        run: |
+          $reports=Join-Path $env:CCB_ARGV_FIX_BASE 'reports'
+          if(Test-Path -LiteralPath $reports){Copy-Item -LiteralPath $reports -Destination (Join-Path $env:GITHUB_WORKSPACE 'argv-fix-reports') -Recurse}
+      - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: desktop-ui-probe-reports
+          name: desktop-update-argv-fix-r03-reports
           path: |
-            app/sharedCore/build/test-results/test/
-            app/sharedCore/build/reports/tests/test/
+            argv-fix-reports/
             app/desktopApp/build/test-results/test/
-            app/desktopApp/build/reports/tests/test/
-            ${{ runner.temp }}/ccb-ui-probe/
           if-no-files-found: error
