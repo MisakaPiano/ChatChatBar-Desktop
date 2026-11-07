@@ -109,6 +109,10 @@ internal class DesktopChatVoiceRuntime(
             block()
         }
 
+    /** Only callbacks confined to normal data access; resource cleanup keeps mutateMessage. */
+    suspend fun <T> mutateNormalMessage(sessionId: String, messageId: String, block: suspend () -> T): T =
+        gate.withNormalOperation { mutateMessage(sessionId, messageId, block) }
+
     /** P11 reserves the existing mutation owner while draining generation and native playback. */
     suspend fun <T> withSessionMaintenance(sessionId: String, block: suspend () -> T): T = mutation.withLock {
         check(!closed)

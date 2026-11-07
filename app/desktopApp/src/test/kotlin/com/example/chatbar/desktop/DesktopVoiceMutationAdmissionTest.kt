@@ -3,6 +3,7 @@ package com.example.chatbar.desktop
 import com.example.chatbar.data.local.entity.*
 import com.example.chatbar.data.operation.AppDataOperationGate
 import com.example.chatbar.domain.chat.SessionCharacterParticipationPolicy
+import com.example.chatbar.domain.chat.MessageAlternativeVersionPolicy
 import java.nio.file.Files
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.*
@@ -34,7 +35,12 @@ class DesktopVoiceMutationAdmissionTest {
         cycle(deleteRecording = false, manualParticipation = true)
     }
 
-    private suspend fun cycle(deleteRecording: Boolean, manualParticipation: Boolean = false) = coroutineScope {
+    @Test fun `normal message mutation preserves sibling versions while admitted work drains for maintenance`(): Unit = runBlocking {
+        cycle(deleteRecording = false, normalMessage = true)
+    }
+
+    private suspend fun cycle(deleteRecording: Boolean, manualParticipation: Boolean = false,
+        normalMessage: Boolean = false) = coroutineScope {
         val owner = DesktopDataOperationCoordinator()
         val gate = PausedGate(owner)
         val f = DesktopChatVoiceRuntimeTest.Fixture(gate)
@@ -43,6 +49,8 @@ class DesktopVoiceMutationAdmissionTest {
         val releaseExclusive = CompletableDeferred<Unit>()
         try {
             f.seed()
+            if (normalMessage) f.message = f.chats.updateMessageReturningSnapshot(MessageAlternativeVersionPolicy.normalize(
+                f.message.copy(alternatives = listOf(f.message.content, "<n=\"Alice\"/>[another version]()"))))
             val card = assertNotNull(f.characters.getById("card"))
             val disabled = SessionCharacterParticipationPolicy.change(f.session, card, "alice", false)
             val recording = if (deleteRecording) {
@@ -67,6 +75,10 @@ class DesktopVoiceMutationAdmissionTest {
             assertEquals(DesktopDataOperationCoordinatorState.MAINTENANCE_PENDING, owner.state)
             val late = launch(start = CoroutineStart.UNDISPATCHED) {
                 if (recording != null) f.runtime.deleteVoice(recording)
+                else if (normalMessage) f.runtime.mutateNormalMessage(f.session.id, f.message.id) {
+                    val current = assertNotNull(f.chats.getMessage(f.message.id, f.session.id))
+                    f.chats.updateMessage(MessageAlternativeVersionPolicy.select(current, 1))
+                }
                 else if (manualParticipation) f.runtime.withCharacterParticipationChange(f.session.id) {
                     val current = assertNotNull(f.chats.getSession(f.session.id))
                     f.chats.saveSessionSettingsDraft(current, SessionCharacterParticipationPolicy.change(current, card, "alice", true))
@@ -86,6 +98,12 @@ class DesktopVoiceMutationAdmissionTest {
             if (recording != null) {
                 assertNull(f.repo.get(recording.id))
                 assertFalse(Files.exists(java.nio.file.Path.of(recording.audioPath)))
+            } else if (normalMessage) {
+                val changed = assertNotNull(f.chats.getMessage(f.message.id, f.session.id))
+                assertEquals(1, changed.currentAlternativeIndex)
+                assertEquals(f.message.alternatives, changed.alternatives)
+                assertEquals(f.message.alternativeVersionIds, changed.alternativeVersionIds)
+                assertTrue(residency.notices.value.isEmpty())
             } else {
                 assertTrue(SessionCharacterParticipationPolicy.isEnabled(assertNotNull(f.chats.getSession(f.session.id)), card, "alice"))
                 if (manualParticipation) assertTrue(residency.notices.value.isEmpty())

@@ -176,6 +176,13 @@ internal class DesktopPrimaryChatController(
         return result
     }
 
+    private suspend fun <T> withNormalMessageMutation(sessionId: String, messageId: String, block: suspend () -> T): T {
+        val result = if (voices == null) taskRuntime.withMessageMutation(sessionId, block)
+        else voices.mutateNormalMessage(sessionId, messageId) { taskRuntime.withMessageMutation(sessionId, block) }
+        memory?.sourceChanged(sessionId)
+        return result
+    }
+
     private val pendingBySession = mutableMapOf<String, List<DesktopPendingImage>>()
     private val stateLock = Mutex()
     private val draftLock = Mutex()
@@ -890,13 +897,13 @@ internal class DesktopPrimaryChatController(
 
     suspend fun selectAssistantAlternative(messageId: String, direction: Int) = guarded {
         val session = state.value.selectedSession ?: return@guarded
-        withMessageMutation(session.id, messageId) {
-            val message = chats.getMessage(messageId, session.id) ?: return@withMessageMutation
-            if (message.role != MessageRole.ASSISTANT || message.alternatives.size <= 1) return@withMessageMutation
+        withNormalMessageMutation(session.id, messageId) {
+            val message = chats.getMessage(messageId, session.id) ?: return@withNormalMessageMutation
+            if (message.role != MessageRole.ASSISTANT || message.alternatives.size <= 1) return@withNormalMessageMutation
             val size = settings.getAppSettings().defaultContextWindowSize.coerceAtLeast(0)
-            if (messageId !in eligibleAlternativeIds(session.id, size)) return@withMessageMutation
+            if (messageId !in eligibleAlternativeIds(session.id, size)) return@withNormalMessageMutation
             val next = (message.currentAlternativeIndex + direction).coerceIn(0, message.alternatives.lastIndex)
-            if (next == message.currentAlternativeIndex) return@withMessageMutation
+            if (next == message.currentAlternativeIndex) return@withNormalMessageMutation
             chats.updateMessage(MessageAlternativeVersionPolicy.select(message, next))
         }
         refreshAfterTerminalTask(session.id)
