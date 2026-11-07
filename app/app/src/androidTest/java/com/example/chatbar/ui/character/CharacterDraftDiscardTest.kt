@@ -37,6 +37,7 @@ class CharacterDraftDiscardTest {
     fun awaitDependencies() = runBlocking {
         app = ApplicationProvider.getApplicationContext()
         withTimeout(30_000) { app.dependenciesReady.first { it } }
+        Unit
     }
 
     @After
