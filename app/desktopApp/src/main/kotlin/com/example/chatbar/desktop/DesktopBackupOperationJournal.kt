@@ -14,8 +14,9 @@ internal class DesktopBackupOperationJournal(private val root: Path, private val
     @Serializable enum class Phase { RUNNING, WAITING, PREVIEW, RESTART, COMPLETE, CANCELLED, FAILED, UNCONFIRMED }
     data class Ticket internal constructor(internal val id: String, internal val kind: Kind)
     @Serializable private data class Record(val version: Int = 1, val id: String, val kind: Kind, val phase: Phase)
-    private val backupHome = root.resolve("backups")
-    private val directory = backupHome.resolve("operation-status")
+    // Ordinary files in the existing infrastructure root: excluded from data snapshots,
+    // and never mistaken for a snapshot directory by the backup browser.
+    private val directory = root.resolve("backups")
     private val file = directory.resolve("backup-operation-${lane.name.lowercase()}.json")
     private val json = Json { encodeDefaults = true; ignoreUnknownKeys = false }
 
@@ -63,8 +64,6 @@ internal class DesktopBackupOperationJournal(private val root: Path, private val
     }
 
     private fun read(): Record? {
-        if (!Files.exists(backupHome, LinkOption.NOFOLLOW_LINKS)) return null
-        DesktopArchiveFiles.safe(backupHome, true)
         if (!Files.exists(directory, LinkOption.NOFOLLOW_LINKS)) return null
         DesktopArchiveFiles.safe(directory, true)
         if (!Files.exists(file, LinkOption.NOFOLLOW_LINKS)) return null
@@ -78,7 +77,6 @@ internal class DesktopBackupOperationJournal(private val root: Path, private val
 
     private fun write(record: Record) {
         DesktopArchiveFiles.safe(root, true)
-        Files.createDirectories(backupHome); DesktopArchiveFiles.safe(backupHome, true)
         Files.createDirectories(directory); DesktopArchiveFiles.safe(directory, true)
         if (Files.exists(file, LinkOption.NOFOLLOW_LINKS)) DesktopArchiveFiles.safe(file, false)
         val bytes = json.encodeToString(Record.serializer(), record).toByteArray()

@@ -31,7 +31,7 @@ class DesktopBackupOperationJournalTest {
         try {
             val source = Files.writeString(base.resolve("original"), "SYNTHETIC_PRIVATE_NEVER_LOG")
             child(base, "halt", 73)
-            val marker = base.resolve("backups/operation-status/backup-operation-backup.json")
+            val marker = base.resolve("backups/backup-operation-backup.json")
             val original = Files.readAllBytes(marker)
             assertFalse(original.toString(Charsets.UTF_8).contains("SYNTHETIC_PRIVATE_NEVER_LOG"))
             child(base, "read", 0)
@@ -72,7 +72,7 @@ class DesktopBackupOperationJournalTest {
                 override fun pickSaveFile(type: DesktopFileType, suggestedName: String): Path {
                     picked++
                     // Make only the auxiliary completion write fail, after RUNNING was recorded.
-                    val marker = f.root.resolve("backups/operation-status/backup-operation-backup.json")
+                    val marker = f.root.resolve("backups/backup-operation-backup.json")
                     Files.move(marker, f.base.resolve("retained-status.json"))
                     Files.createDirectory(marker)
                     return output
@@ -130,8 +130,9 @@ class DesktopBackupOperationJournalTest {
             assertEquals(setOf("entities/app_settings.json"), files)
             f.journal.finish(ticket, DesktopBackupOperationJournal.Phase.COMPLETE)
             assertTrue(snapshots.validateSnapshot(snapshot.directory).valid)
+            assertEquals(listOf(snapshot.name), snapshots.listSnapshots().map { it.name })
             assertEquals("{}", Files.readString(settings))
-            assertTrue(Files.isRegularFile(f.root.resolve("backups/operation-status/backup-operation-backup.json")))
+            assertTrue(Files.isRegularFile(f.root.resolve("backups/backup-operation-backup.json")))
         }
     }
 
