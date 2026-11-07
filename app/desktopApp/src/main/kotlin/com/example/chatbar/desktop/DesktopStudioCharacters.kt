@@ -62,7 +62,9 @@ internal fun DesktopStudioCharacters(draft: NovelAiStudioDraft, infrastructure: 
                         current.copy(characters = list)
                     } }
                 }
-                StudioAction(if (character.enabled) "✓" else "×", selected = character.enabled) {
+                StudioSwitch("", character.enabled, Modifier.semantics {
+                    contentDescription = "角色 ${index + 1} 参与生图"
+                }) {
                     change { it.copy(enabled = !it.enabled) }
                 }
                 StudioAction("删除", icon = DesktopAppIcons.Delete) { edit { it.copy(characters = it.characters.filterNot { c -> c.id == character.id }) } }

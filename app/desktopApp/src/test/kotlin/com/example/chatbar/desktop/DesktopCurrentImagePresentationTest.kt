@@ -144,13 +144,16 @@ class DesktopCurrentImagePresentationTest {
             DesktopStudioCharacters(draft, f.container.novelAiInfrastructure, false) { draft = it(draft) }
         } }
         try {
-            scene.frames(); scene.click("✓")
+            scene.frames()
+            assertEquals(Role.Switch, scene.nodes().single { it.matches("角色 1 参与生图") && it.config.contains(SemanticsActions.OnClick) }
+                .config[SemanticsProperties.Role])
+            scene.click("角色 1 参与生图")
             assertFalse(draft.characters.single().enabled); assertTrue(draft.activeCharacters.isEmpty())
             assertTrue(scene.nodes().any { it.matches("adult traveler") })
             scene.click("展开角色 1 Prompt"); assertTrue(scene.nodes().any { it.matches("角色正向") })
             assertFalse(draft.characters.single().enabled)
             scene.shot("role-disabled-expanded")
-            scene.click("×"); assertTrue(draft.characters.single().enabled)
+            scene.click("角色 1 参与生图"); assertTrue(draft.characters.single().enabled)
             assertEquals("adult traveler", draft.toPromptPlan().characterCaptions.single().prompt)
         } finally { scene.close(); f.close() }
     }
