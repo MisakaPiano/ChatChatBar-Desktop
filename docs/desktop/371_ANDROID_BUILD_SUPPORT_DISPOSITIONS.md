@@ -1,0 +1,5 @@
+# Android 构建支持项的桌面处理
+
+逐条核对11个完整raw delta：八项只改Android发行版本身份，一项只加AndroidJUnitRunner，另两项为Tink Android依赖声明。Desktop保留独立安装/发行身份和JVM/Compose测试入口；实际备份Codec已使用JVM Tink1.23.0及StreamingAead，不向Windows添加Android运行包。
+
+八个版本delta均核只含baseVersionCode/versionName，runner和依赖逐新增行核对，前后blob与raw SHA记录在 OWNER_ELEVEN_BUILD_SUPPORT_DELTA_REUSE.json。实际明文/加密Writer/Source沿R114及R116所选Writer9分源复用；R116整体失败记录保持。0新跑，不新增功能或测试分母，也不因为support数量触发全项目重测。314整体false。

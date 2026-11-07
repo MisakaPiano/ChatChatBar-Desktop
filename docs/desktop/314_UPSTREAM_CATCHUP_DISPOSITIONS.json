@@ -2636,8 +2636,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Adds AndroidJUnitRunner solely to Android instrumented-test wiring; Desktop uses JVM/Compose native test runner, not an Android APK runner.",
       "candidateOwners": [
         {
           "path": "app/app/build.gradle.kts",
@@ -2647,7 +2647,10 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "OWNER_ELEVEN_BUILD_SUPPORT_DELTA_REUSE.json",
+        "docs/desktop/371_ANDROID_BUILD_SUPPORT_DISPOSITIONS.md"
+      ]
     },
     {
       "id": "b6d68320b02a564afe4582bdc5f25978a57f4ea9:app/app/src/androidTest/java/com/example/chatbar/domain/image/ImagePrivacyExporterTest.kt",
@@ -4134,8 +4137,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Only Android baseVersionCode/versionName increments 81/1.4.2 through88/1.4.9. Desktop has independent version/installer identity and modern wire profile code88; do not relabel Desktop as Android or rebuild/publish APK.",
       "candidateOwners": [
         {
           "path": "app/app/build.gradle.kts",
@@ -4145,7 +4148,10 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "OWNER_ELEVEN_BUILD_SUPPORT_DELTA_REUSE.json",
+        "docs/desktop/371_ANDROID_BUILD_SUPPORT_DISPOSITIONS.md"
+      ]
     },
     {
       "id": "559f83f0c1011a7fa4b8e0f64d5b2ea147544e59:.agents/skills/chatbar-fish-audio-voice/SKILL.md",
@@ -4546,8 +4552,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Only Android baseVersionCode/versionName increments 81/1.4.2 through88/1.4.9. Desktop has independent version/installer identity and modern wire profile code88; do not relabel Desktop as Android or rebuild/publish APK.",
       "candidateOwners": [
         {
           "path": "app/app/build.gradle.kts",
@@ -4557,7 +4563,10 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "OWNER_ELEVEN_BUILD_SUPPORT_DELTA_REUSE.json",
+        "docs/desktop/371_ANDROID_BUILD_SUPPORT_DISPOSITIONS.md"
+      ]
     },
     {
       "id": "ed5d12728331eb9af42ac9ebfe60519f3929782a:.agents/skills/chatbar-fish-audio-voice/SKILL.md",
@@ -5224,8 +5233,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Only Android baseVersionCode/versionName increments 81/1.4.2 through88/1.4.9. Desktop has independent version/installer identity and modern wire profile code88; do not relabel Desktop as Android or rebuild/publish APK.",
       "candidateOwners": [
         {
           "path": "app/app/build.gradle.kts",
@@ -5235,7 +5244,10 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "OWNER_ELEVEN_BUILD_SUPPORT_DELTA_REUSE.json",
+        "docs/desktop/371_ANDROID_BUILD_SUPPORT_DISPOSITIONS.md"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:.agents/skills/chatbar-character-card-ai/SKILL.md",
@@ -8111,8 +8123,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Official adds tink-android1.23.0; actual Desktop desktopApp/build.gradle.kts249 uses JVM com.google.crypto.tink:tink:1.23.0 and actual AppBackupCodec imports/calls StreamingAead. Do not add Android runtime package to Windows.",
       "candidateOwners": [
         {
           "path": "app/app/build.gradle.kts",
@@ -8122,7 +8134,10 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "OWNER_ELEVEN_BUILD_SUPPORT_DELTA_REUSE.json",
+        "docs/desktop/371_ANDROID_BUILD_SUPPORT_DISPOSITIONS.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/androidTest/java/com/example/chatbar/domain/backup/BackupCredentialTransferTest.kt",
@@ -9917,8 +9932,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Official adds tink-android1.23.0; actual Desktop desktopApp/build.gradle.kts249 uses JVM com.google.crypto.tink:tink:1.23.0 and actual AppBackupCodec imports/calls StreamingAead. Do not add Android runtime package to Windows.",
       "candidateOwners": [
         {
           "path": "app/gradle/libs.versions.toml",
@@ -9928,7 +9943,10 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "OWNER_ELEVEN_BUILD_SUPPORT_DELTA_REUSE.json",
+        "docs/desktop/371_ANDROID_BUILD_SUPPORT_DISPOSITIONS.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:doc/app_backup_manual_acceptance.md",
@@ -9991,8 +10009,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Only Android baseVersionCode/versionName increments 81/1.4.2 through88/1.4.9. Desktop has independent version/installer identity and modern wire profile code88; do not relabel Desktop as Android or rebuild/publish APK.",
       "candidateOwners": [
         {
           "path": "app/app/build.gradle.kts",
@@ -10002,7 +10020,10 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "OWNER_ELEVEN_BUILD_SUPPORT_DELTA_REUSE.json",
+        "docs/desktop/371_ANDROID_BUILD_SUPPORT_DISPOSITIONS.md"
+      ]
     },
     {
       "id": "c90718420b8c82b298eceee5ae1665773ac120cb:.agents/skills/chatbar-release-publish/SKILL.md",
@@ -11615,8 +11636,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Only Android baseVersionCode/versionName increments 81/1.4.2 through88/1.4.9. Desktop has independent version/installer identity and modern wire profile code88; do not relabel Desktop as Android or rebuild/publish APK.",
       "candidateOwners": [
         {
           "path": "app/app/build.gradle.kts",
@@ -11626,7 +11647,10 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "OWNER_ELEVEN_BUILD_SUPPORT_DELTA_REUSE.json",
+        "docs/desktop/371_ANDROID_BUILD_SUPPORT_DISPOSITIONS.md"
+      ]
     },
     {
       "id": "979cb505958dffb1b6d64a8de657434f198ffa96:.agents/skills/chatbar-release-publish/SKILL.md",
@@ -11900,8 +11924,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Only Android baseVersionCode/versionName increments 81/1.4.2 through88/1.4.9. Desktop has independent version/installer identity and modern wire profile code88; do not relabel Desktop as Android or rebuild/publish APK.",
       "candidateOwners": [
         {
           "path": "app/app/build.gradle.kts",
@@ -11911,7 +11935,10 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "OWNER_ELEVEN_BUILD_SUPPORT_DELTA_REUSE.json",
+        "docs/desktop/371_ANDROID_BUILD_SUPPORT_DISPOSITIONS.md"
+      ]
     },
     {
       "id": "58023edf48f40764c481d1367f62bc048c8a5059:doc/app_backup_manual_acceptance.md",
@@ -16491,8 +16518,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Only Android baseVersionCode/versionName increments 81/1.4.2 through88/1.4.9. Desktop has independent version/installer identity and modern wire profile code88; do not relabel Desktop as Android or rebuild/publish APK.",
       "candidateOwners": [
         {
           "path": "app/app/build.gradle.kts",
@@ -16502,7 +16529,10 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "OWNER_ELEVEN_BUILD_SUPPORT_DELTA_REUSE.json",
+        "docs/desktop/371_ANDROID_BUILD_SUPPORT_DISPOSITIONS.md"
+      ]
     },
     {
       "id": "5c22fdfaa42e6eccbad4e46dbb32fb6d6ce4ddfa:.agents/skills/chatbar-app-update/SKILL.md",
@@ -18724,8 +18754,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Only Android baseVersionCode/versionName increments 81/1.4.2 through88/1.4.9. Desktop has independent version/installer identity and modern wire profile code88; do not relabel Desktop as Android or rebuild/publish APK.",
       "candidateOwners": [
         {
           "path": "app/app/build.gradle.kts",
@@ -18735,7 +18765,10 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "OWNER_ELEVEN_BUILD_SUPPORT_DELTA_REUSE.json",
+        "docs/desktop/371_ANDROID_BUILD_SUPPORT_DISPOSITIONS.md"
+      ]
     },
     {
       "id": "b20d284a2c006d92d233931a3b83da2dd417df54:doc/handoff.md",
