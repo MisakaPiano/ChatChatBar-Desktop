@@ -1,3 +1,7 @@
+2026-11-07 后继81a/bffaa：328位置旧R25三业务FAIL/新239 R26原13PASS；旧R27真实人物CtrlZ串角色与小数初显两业务FAIL/新578 R28原16PASS（Position5+Studio10+ManualUndo1），SHA/CRC/source/XML已核，重叠不加总。81a另给位置控件原内容加有界scroll；R29默认650/短480旧可达反例及R30当前整组待原件，不用16代验新增布局。329另复核朋友圈编辑原七owner/test blob及Controller.edit体、原shared2/store1/UI1共4方法等位复用，只补两个delta不改运行。预设R23旧有效1FAIL/R24原native7PASS、方向旧1PASS1FAIL/新11PASS、存档匹配34及R18原23PASS1native前置SKIP保持分源。Suite已确认只读收参考、未实施；T17/T24已校准1244/sign26，已有真人PASS/原FAIL/未测分开。四身份/T11/T23/315未采纳/141→12e active不变，无新包、公发、本机JVM或用户根操作。
+
+下方历史保留。
+
 2026-11-07 预设原生后继已核：旧R23实际native主窗/Robot到attempt4，在已有最小化child唤回处1业务FAIL、stderr空；3ade后R24同fixture原四套7PASS/0FAIL/ERROR/SKIP，attempt1–6完成同实例还原、close/原生X、取消/坏包/导出/apply/undo/同页再开。R19假asset给T5的首开夹具失败与R22有效旧关闭重开1PASS分别保留，不能拼成用户确切根因。326工程分支闭合待下一集中交付，原1244真人FAIL未提升。327方向原旧1PASS1FAIL/新11PASS、325匹配34与R18原23PASS/1native前置SKIP保持；原共享7与存储准入24仅复用。T17/T24当前摘要已校准1244/sign26及已有分组PASS/未测，四身份/T11/T23/315未采纳/141→12e active保持，无新包、公发、本机JVM或用户资料操作。
 
 下方历史保留。
