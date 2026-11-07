@@ -1,3 +1,7 @@
+2026-11-07 冷模型与Studio仓库准入后继限定通过：模型旧生产R01原4PASS+1等待FAIL，5c77后R02原shared8+Desktop32=40PASS；Studio旧生产R01原5PASS+2仓库等待FAIL，c71的R02因模块internal可见性编译失败/无XML，a914以protected窄入口修正，R03原六套33PASS、0FAIL/ERROR/SKIP。普通编辑/预设共用controller action mutex，不能把仓库反例称普通UI实复现，具体调用链纠正与原件见320。7c5988aa另精确登记15条research/候选编辑/角色位置/正式TTS delta，复用原件而非新增重跑，314整体仍complete:false。公开1244/db7/签26、A1真人FAIL、315未采纳不动；无新包/公发/日常代装、本机JVM或真实资料操作。
+
+下方历史保留。
+
 2026-11-07 外部备份按需密码后继限定通过：b2e2/72de复用merge owner，明文不问密码、加密同一队列文件重复错密/正确到预览、取消/skip与数据页prompt归属均有实际检查；090仅修旧再导出用例的87预期为现代88，R03/42326000310原Merge18PASS、0FAIL/ERROR/SKIP并完整跑完冻结1238与phone87两分支。R01原56PASS+1旧断言FAIL、R02原32PASS+1同FAIL保留；六套58方法是分源匹配组合，不冒称一次新跑58。前批维护/词库原114PASS绑定2e3不改，详319。同期又核6条定价/透明导入delta，复用原162十份精确owner/test和18原PASS；314仍complete:false。公开1244/db7/签26、A1真人FAIL、315未采纳不变；无新包/公发/日常代装或本机JVM、真实资料操作。
 
 下方历史保留。
