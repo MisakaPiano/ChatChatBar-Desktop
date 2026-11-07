@@ -17,7 +17,8 @@ class DesktopMergeTransientStateTest {
     private fun fold(depth: Int, enabled: Boolean) = "entities/novelai_history_fold_preferences/$depth.json" to
         backupJson.encodeToJsonElement(NovelAiHistoryFoldPreference.serializer(),
             NovelAiHistoryFoldPreference(depth, enabled, NovelAiHistoryFoldType.DAY)).jsonObject
-    private fun scope(history: Boolean) = InspectionScope(emptySet(), 0, 0, 0, 0, 0, false, false, history, false)
+    private fun scope(history: Boolean) = InspectionScope(emptySet(), 0, 0, 0, 0, 0,
+        studioSettings = false, studioHistory = history, studioHistoryImages = false, moments = false)
     private fun preview(pc: Map<String, JsonObject>, incoming: Map<String, JsonObject>, history: Boolean = true) =
         DesktopMergePreview.create(pc, incoming, emptyMap(), emptyMap(), scope(history))
     private fun selection(preview: DesktopMergePreview, mode: DesktopBackupRestoreMode) =
@@ -79,7 +80,8 @@ class DesktopMergeTransientStateTest {
                 val path = pc.resolve(relative); Files.createDirectories(path.parent); Files.write(path, bytes)
             }
             val incoming = mapOf(fold(0, false), fold(1, false), deletion("phone")).mapValues { it.value.toString().toByteArray() }
-            val wireScope = OfficialWireScope(emptySet(), 0, 0, 0, 0, 0, false, false, true, false)
+            val wireScope = OfficialWireScope(emptySet(), 0, 0, 0, 0, 0,
+                studioSettings = false, studioHistory = true, studioHistoryImages = false, moments = false)
             val archiveBytes = CensusWireFixtures.bytes(prefs = "{}", files = incoming, code = 88, version = 2, scope = wireScope)
             val archive = Files.write(base.resolve("incoming.cbbackup"), archiveBytes)
             val gate = DesktopDataOperationCoordinator()

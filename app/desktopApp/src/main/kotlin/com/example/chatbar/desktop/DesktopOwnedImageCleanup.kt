@@ -31,7 +31,8 @@ internal class DesktopOwnedImageCleanup(
                 if (payloadCleanup && Files.exists(root.resolve("backups"), LinkOption.NOFOLLOW_LINKS)) {
                     DesktopArchiveFiles.safe(root.resolve("backups"), true)
                     Files.newDirectoryStream(root.resolve("backups")).use { backups ->
-                        require(backups.all { it.fileName.toString() in setOf(".studio-preset-import", ".studio-preset-custody") }) {
+                        require(backups.all { it.fileName.toString() in setOf(".studio-preset-import", ".studio-preset-custody") ||
+                            DesktopBackupOperationJournal.isResourceFreeStatusFile(root, it) }) {
                             "编码清理待核对：其他备份引用尚未确认，文件与归属记录保留"
                         }
                     }

@@ -1,11 +1,14 @@
 package com.example.chatbar.desktop
 
+import com.example.chatbar.desktop.backup.BackupJsonStream
+import com.example.chatbar.desktop.backup.strictUtf8Reader
+import java.io.Writer
 import java.nio.ByteBuffer
 import java.nio.channels.FileChannel
 import java.nio.file.*
 import java.util.UUID
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.*
 
 /** Local presentation evidence only. Never grants restore, retry, cleanup or key authority. */
 internal class DesktopBackupOperationJournal(private val root: Path, private val lane: Lane) {
@@ -70,7 +73,11 @@ internal class DesktopBackupOperationJournal(private val root: Path, private val
         DesktopArchiveFiles.safe(file, false)
         val bytes = Files.newInputStream(file, StandardOpenOption.READ, LinkOption.NOFOLLOW_LINKS).use { it.readNBytes(2049) }
         require(bytes.size in 1..2048)
-        return json.decodeFromString(Record.serializer(), bytes.toString(Charsets.UTF_8)).also {
+        val text = bytes.inputStream().strictUtf8Reader().use { it.readText() }
+        BackupJsonStream(text.reader(), Writer.nullWriter()) { value, _ -> value }.copy()
+        val value = json.parseToJsonElement(text).jsonObject
+        require(value.keys == setOf("version", "id", "kind", "phase"))
+        return json.decodeFromJsonElement(Record.serializer(), value).also {
             require(it.version == 1 && UUID.fromString(it.id).toString() == it.id)
         }
     }
@@ -100,5 +107,13 @@ internal class DesktopBackupOperationJournal(private val root: Path, private val
 
     companion object {
         const val STATUS_UNAVAILABLE = "操作状态记录未能保存或读取。请直接核对本次结果和已有恢复提示；这条提醒不代表备份、导入或恢复已经失败。"
+
+        /** Recognizes fixed resource-free metadata only; the cleanup owner still proves non-use. */
+        fun isResourceFreeStatusFile(root: Path, candidate: Path): Boolean {
+            val lane = Lane.entries.firstOrNull {
+                candidate == root.resolve("backups/backup-operation-${it.name.lowercase()}.json")
+            } ?: return false
+            return try { DesktopBackupOperationJournal(root, lane).read() != null } catch (_: Exception) { false }
+        }
     }
 }
