@@ -4,8 +4,6 @@ import com.example.chatbar.domain.prompt.NovelAiPromptAuthority
 
 /** Request-only V5 options. Original Studio/card/history Prompt text remains untouched. */
 object NovelAiV5GenerationPolicy {
-    private val textMarker = Regex("(?:^|[\\s,.:\\[\\]{}、。])text:(?!:)", RegexOption.IGNORE_CASE)
-
     fun transparentPrompt(prompt: NovelAiPromptPlan, enabled: Boolean): NovelAiPromptPlan {
         if (!enabled) return prompt
         val source = prompt.baseCaption
@@ -18,13 +16,13 @@ object NovelAiV5GenerationPolicy {
             else index++
         }
         val first = source.substring(0, boundary)
-        val marker = textMarker.find(first)
-        val beforeText = first.substring(0, marker?.range?.first ?: first.length).trimEnd { it.isWhitespace() || it == ',' }
+        val textStart = NovelAiV5TextPromptPolicy.explicitTextStart(first) ?: first.length
+        val beforeText = first.substring(0, textStart).trimEnd { NovelAiV5TextPromptPolicy.isRequestWhitespace(it) || it == ',' }
         val tag = NovelAiPromptAuthority.NOVELAI_TRANSPARENT_BACKGROUND_TAG
         // Imported PNG captions can already include the derived hint. Retain their original text.
-        if (beforeText.split(',').any { it.trim().equals(tag, ignoreCase = true) }) return prompt
+        if (beforeText.split(',').any { it.trim(NovelAiV5TextPromptPolicy::isRequestWhitespace).equals(tag, ignoreCase = true) }) return prompt
         val prefix = if (beforeText.isEmpty()) tag else "$beforeText, $tag"
-        val text = marker?.let { ", " + first.substring(it.range.last - 4) }.orEmpty()
+        val text = if (textStart < first.length) ", " + first.substring(textStart) else ""
         return prompt.copy(baseCaption = prefix + text + source.substring(boundary))
     }
 }

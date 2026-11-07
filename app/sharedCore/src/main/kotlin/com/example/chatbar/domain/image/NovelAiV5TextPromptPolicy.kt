@@ -16,6 +16,10 @@ object NovelAiV5TextPromptPolicy {
         '‘' to '’'
     )
 
+    internal fun explicitTextStart(source: String): Int? = explicitTextBlock.find(source)?.range?.last?.minus(4)
+
+    internal fun isRequestWhitespace(character: Char): Boolean = whitespace.matches(character.toString())
+
     /** Shared input for Studio token counting and ordinary final serialization. */
     fun prepareForRequest(prompt: NovelAiPromptPlan, settings: NovelAiGenerationSettings): NovelAiPromptPlan {
         val prepared = apply(NovelAiV5GenerationPolicy.transparentPrompt(
@@ -111,5 +115,5 @@ object NovelAiV5TextPromptPolicy {
         return result
     }
 
-    private fun Char.isJsWhitespace(): Boolean = whitespace.matches(toString())
+    private fun Char.isJsWhitespace(): Boolean = isRequestWhitespace(this)
 }
