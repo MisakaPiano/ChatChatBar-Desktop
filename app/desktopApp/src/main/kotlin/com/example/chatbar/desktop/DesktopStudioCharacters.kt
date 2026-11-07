@@ -107,6 +107,14 @@ internal fun DesktopStudioCharacters(draft: NovelAiStudioDraft, infrastructure: 
 
 @Composable
 internal fun DesktopCharacterPositions(draft: NovelAiStudioDraft, edit: ((NovelAiStudioDraft) -> NovelAiStudioDraft) -> Unit) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        DesktopCharacterPositionControls(draft, edit)
+    }
+}
+
+@Composable
+private fun DesktopCharacterPositionControls(draft: NovelAiStudioDraft, edit: ((NovelAiStudioDraft) -> NovelAiStudioDraft) -> Unit) {
     val active = draft.activeCharacters
     var selectedId by remember { mutableStateOf(active.firstOrNull()?.id) }
     val selected = active.firstOrNull { it.id == selectedId } ?: active.firstOrNull()
