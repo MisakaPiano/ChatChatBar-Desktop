@@ -10,16 +10,18 @@ import javax.swing.SwingUtilities
 fun interface DesktopDirectoryPicker {
     /** Returns an absolute normalized directory selection, or null when the user cancels. */
     fun pickDirectory(): Path?
+    fun pickDirectory(title: String): Path? = pickDirectory()
 }
 
 class SwingDesktopDirectoryPicker(
     private val parent: Component? = null,
 ) : DesktopDirectoryPicker {
-    override fun pickDirectory(): Path? {
+    override fun pickDirectory(): Path? = pickDirectory("Choose a new ChatChatBar data directory")
+    override fun pickDirectory(title: String): Path? {
         val selected = AtomicReference<Path?>()
         val showPicker = Runnable {
             val chooser = JFileChooser().apply {
-                dialogTitle = "Choose a new ChatChatBar data directory"
+                dialogTitle = title
                 fileSelectionMode = JFileChooser.DIRECTORIES_ONLY
                 isAcceptAllFileFilterUsed = false
             }

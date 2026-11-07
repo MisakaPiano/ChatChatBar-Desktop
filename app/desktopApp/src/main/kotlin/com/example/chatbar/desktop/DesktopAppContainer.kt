@@ -254,7 +254,8 @@ class DesktopAppContainer internal constructor(
             credentialIdentity = { apiAccounts.identity(com.example.chatbar.desktop.security.DesktopAccountService.NOVELAI) },
             freezeCredential = { apiAccounts.captureCall(com.example.chatbar.desktop.security.DesktopCredentialKey.NovelAiToken,
                 com.example.chatbar.desktop.security.DesktopAccountService.NOVELAI) },
-            presetArchive = DesktopGenerationPresetArchive(appDataRoot, characterResourceStore, dataOperationCoordinator))
+            presetArchive = DesktopGenerationPresetArchive(appDataRoot, characterResourceStore, dataOperationCoordinator),
+            directoryPicker = directoryPicker)
     }
     internal val novelAiStudioController by novelAiStudioOwner
 

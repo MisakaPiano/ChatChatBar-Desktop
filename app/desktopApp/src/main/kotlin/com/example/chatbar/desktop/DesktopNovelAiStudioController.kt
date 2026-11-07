@@ -87,8 +87,10 @@ internal class DesktopNovelAiStudioController(
     private val credentialIdentity: () -> String = { "legacy" },
     private val freezeCredential: () -> kotlin.coroutines.CoroutineContext = { kotlin.coroutines.EmptyCoroutineContext },
     private val presetArchive: DesktopGenerationPresetArchive? = null,
+    directoryPicker: DesktopDirectoryPicker = DesktopDirectoryPicker { null },
 ) {
     val repository = DesktopStudioHistoryRepository(storage)
+    val historyExport = DesktopHistoryBatchExportController(DesktopHistoryBatchExport(storage, resources, coordinator, directoryPicker))
     val postProcessResults = DesktopPostProcessResults(storage, resources, coordinator)
     val textHistories = DesktopStudioTextHistories()
     val imageDiagnostics get() = tasks.diagnostics

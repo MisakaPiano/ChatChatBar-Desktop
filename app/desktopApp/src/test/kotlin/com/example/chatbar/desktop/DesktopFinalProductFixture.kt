@@ -16,7 +16,8 @@ import kotlinx.coroutines.flow.flow
 /** Test-source-only manual fixture. No real transports or credentials; shared Designer/runner/repositories. */
 internal class FinalProductDesignFixture(filePicker: DesktopFilePicker = UnconfiguredDesktopFilePicker,
     overrideDesigner: NovelAiPromptDesigner? = null,
-    private val provenance: DesktopDataRootProvenance = DesktopDataRootProvenance.CLI_OVERRIDE) {
+    private val provenance: DesktopDataRootProvenance = DesktopDataRootProvenance.CLI_OVERRIDE,
+    directoryPicker: DesktopDirectoryPicker = DesktopDirectoryPicker { null }) {
     @Volatile var failure: DesktopDesignFailure? = null
     val requests = java.util.concurrent.CopyOnWriteArrayList<List<ChatApiMessage>>()
     @Volatile var beforeReply: (suspend (NovelAiTextStage) -> Unit)? = null
@@ -38,7 +39,8 @@ internal class FinalProductDesignFixture(filePicker: DesktopFilePicker = Unconfi
     val root = Files.createTempDirectory("ccb-final-product-local-")
     val container = DesktopAppContainer(DesktopDataRootResolution.Resolved(root.resolve("data"),
         provenance, root.resolve("bootstrap.json")),
-        secretStoreFactory = { InMemoryDesktopSecretStore() }, novelAiDesigner = overrideDesigner ?: designer, filePicker = filePicker)
+        secretStoreFactory = { InMemoryDesktopSecretStore() }, novelAiDesigner = overrideDesigner ?: designer, filePicker = filePicker,
+        directoryPicker = directoryPicker)
     suspend fun initialize(initializeComposer: Boolean = true) {
         if (provenance == DesktopDataRootProvenance.BOOTSTRAP_CUSTOM) {
             val bootstrap = DesktopBootstrapSettingsStore(root.resolve("bootstrap.json"))

@@ -101,6 +101,7 @@ internal fun DesktopStudioHistory(controller: DesktopNovelAiStudioController,
     var highlighted by remember { mutableStateOf<NovelAiHistoryImageItem?>(null) }
     var confirmDelete by remember { mutableStateOf(false) }
     var deleting by remember { mutableStateOf(false) }
+    var exportSelection by remember { mutableStateOf<List<NovelAiHistoryImageSelection>?>(null) }
     var problem by remember { mutableStateOf("") }
     var selectionState by remember { mutableStateOf(NovelAiHistorySelection()) }
     var lastSelectedAlbum by remember { mutableStateOf<String?>(null) }
@@ -151,6 +152,7 @@ internal fun DesktopStudioHistory(controller: DesktopNovelAiStudioController,
     }
     val visibleSelections = remember(filtered) { filtered.map { NovelAiHistoryImageSelection(it.entry.id, it.image.path) }.toSet() }
     LaunchedEffect(entries, level) {
+        if (exportSelection != null) return@LaunchedEffect
         selectionState = NovelAiHistorySelection(); lastSelectedAlbum = null
         controller.setHistorySelection(emptySet())
         confirmDelete = false
@@ -181,6 +183,9 @@ internal fun DesktopStudioHistory(controller: DesktopNovelAiStudioController,
         }
         if (problem.isNotBlank()) StatusText(problem, DesktopBootstrapColors.warning)
         StudioActions {
+            BootstrapButton("批量保存", enabled = state.selected.isNotEmpty() && !deleting) {
+                if (controller.historyExport.close()) exportSelection = state.selected.toList()
+            }
             BootstrapButton("删除选中 ${state.selected.size}", enabled = state.selected.isNotEmpty() && !deleting) { confirmDelete = true }
             if (confirmDelete) {
                 BootstrapButton("确认删除所选图片", enabled = !deleting, variant = DesktopActionVariant.DESTRUCTIVE) {
@@ -250,6 +255,7 @@ internal fun DesktopStudioHistory(controller: DesktopNovelAiStudioController,
     }
 
     }
+    exportSelection?.let { selected -> DesktopHistoryBatchExportDialog(controller.historyExport, selected) { exportSelection = null } }
     detail?.let { item -> DesktopImageToolWindow("历史图片与完整配方", { detail = null }) {
         Column(Modifier.fillMaxSize().background(DesktopBootstrapColors.background).padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             BootstrapButton("返回历史") { detail = null }

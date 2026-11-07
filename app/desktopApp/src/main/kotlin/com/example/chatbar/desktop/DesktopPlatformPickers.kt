@@ -43,6 +43,7 @@ internal class WindowsNativeFilePicker(private val service: WindowsCommonItemDia
 
 internal class WindowsNativeDirectoryPicker(private val service: WindowsCommonItemDialog) : DesktopDirectoryPicker {
     override fun pickDirectory(): Path? = service.pick(DesktopDialogRequest(DesktopDialogKind.FOLDER))
+    override fun pickDirectory(title: String): Path? = service.pick(DesktopDialogRequest(DesktopDialogKind.FOLDER, title = title))
 }
 
 internal class DesktopPlatformPickers private constructor(
