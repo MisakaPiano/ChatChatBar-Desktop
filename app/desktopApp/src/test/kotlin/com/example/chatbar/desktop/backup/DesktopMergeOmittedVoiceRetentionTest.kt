@@ -43,8 +43,8 @@ class DesktopMergeOmittedVoiceRetentionTest {
                 val message = ChatMessage("m", "s", MessageRole.ASSISTANT, oldText,
                     currentAlternativeVersionId = case.sourceVersion, createdAt = 1, updatedAt = 1)
                 val anchors = VoiceAnchorPolicy.initialState("m", oldText, case.voiceVersion, "s", includeNarration = true)
-                val anchor = anchors.anchors.single()
-                val voice = GeneratedVoiceMessage.create("s", "m", case.voiceVersion, anchor.id, 0, anchor.segmentKind,
+                val anchor = anchors.anchors.single { it.segmentKind == "DIALOGUE" }
+                val voice = GeneratedVoiceMessage.create("s", "m", case.voiceVersion, anchor.id, anchor.sourceOrder, anchor.segmentKind,
                     anchor.speakerName.orEmpty(), anchor.sourceText, anchor.sourceText, anchor.sourceText,
                     "c", "Synthetic", FishAudioVoiceBinding("synthetic", "Synthetic"), "s2.1-pro-free",
                     audio.path, audio.durationMs, audio.byteLength).copy(id = "voice")
