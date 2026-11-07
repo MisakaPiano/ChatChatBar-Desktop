@@ -71,6 +71,12 @@ data class NovelAiGenerationSettings(
     val usesCustomSize: Boolean get() = customWidth != null || customHeight != null
     val maxAllowedBaseSeed: Long get() = MAX_SEED - (count.coerceIn(1, 4) - 1L)
 
+    fun withDefaultSampling(): NovelAiGenerationSettings =
+        NovelAiGenerationDefaults.forModel(model).let { defaults ->
+            copy(steps = defaults.steps, guidance = defaults.guidance,
+                cfgRescale = defaults.cfgRescale, sampler = defaults.sampler)
+        }
+
     fun normalized(): NovelAiGenerationSettings = copy(
         sampler = sampler.takeIf { it in model.samplers } ?: NovelAiSampler.EULER_ANCESTRAL,
         aspectRatio = if (sizeTier == NovelAiSizeTier.WALLPAPER && aspectRatio == NovelAiAspectRatio.SQUARE) {

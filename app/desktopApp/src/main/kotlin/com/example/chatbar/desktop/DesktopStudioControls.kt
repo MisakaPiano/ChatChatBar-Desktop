@@ -269,6 +269,9 @@ internal fun StudioGenerationSettings(draft: NovelAiStudioDraft, edit: ((NovelAi
 
 @Composable
 internal fun StudioAdvancedSettings(s: NovelAiGenerationSettings, change: ((NovelAiGenerationSettings) -> NovelAiGenerationSettings) -> Unit) {
+    StudioAction("使用 NovelAI 默认采样参数", icon = DesktopAppIcons.Reset) {
+        change { it.withDefaultSampling() }
+    }
     if (!s.isMedium) StudioSlider("Steps", s.steps.toFloat(), 1f, 50f, 1f, 0) { value ->
         change { current -> if (current.isMedium) current else current.copy(steps = value.toInt()) }
     }
