@@ -52,8 +52,8 @@ internal data class DesktopReversePromptProgress(val stage: String = "", val con
         stage = Regex("【([^】]+)】").findAll(value).lastOrNull()?.groupValues?.get(1) ?: "正在理解图片")
 }
 
-/** One runtime-only expanded editor; replacing/stopping/revising the source invalidates it. */
-internal data class DesktopReverseSceneEdit(val revision: Long, val original: String)
+/** Each new opening has reference identity; reactivating that opening retains its local edits. */
+internal class DesktopReverseSceneEdit(val revision: Long, val original: String)
 
 /** Runtime-only input ownership; never serialized with the Studio draft or conversation. */
 internal data class DesktopDesignComposerState(
