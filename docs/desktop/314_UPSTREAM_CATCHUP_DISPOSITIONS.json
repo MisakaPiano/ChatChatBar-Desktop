@@ -1614,6 +1614,15 @@
       "evidence": [
         "OWNER_CHARACTER_TRANSFER_EDITOR_THREE_DELTA_REUSE.json"
       ]
+    },
+    {
+      "id": "CHAT_VM_COMPLETE_D3_SIX_TRANSACTION_ADMISSION_WRAPPERS",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete d3 six maintenance wrappers only; raw2364 lines reduce to100 semantic lines and quoted/raw/char literals remain unchanged per independent full token review. Actual Desktop response and attachments persist through short storage normal transactions, slot publication uses exclusive source proof/journal/refresh, cleanup releases normal before exclusive full-reference checks, new-root publication separately quiesces runtime. Desktop does not copy Android whole-network lease timing. Original162 three actual slot methods and matched functions reused; no whole ChatVM/runtime/Prompt claim.",
+      "reviewSource": "b6a6c14d42a1911bd2b074265abbf2b6467cfcf6",
+      "evidence": [
+        "OWNER_CHAT_VM_COMPLETE_D3_SIX_WRAPPERS_REUSE.json"
+      ]
     }
   ],
   "deltas": [
@@ -9706,8 +9715,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete d3 six maintenance wrappers only; raw2364 lines reduce to100 semantic lines and quoted/raw/char literals remain unchanged per independent full token review. Actual Desktop response and attachments persist through short storage normal transactions, slot publication uses exclusive source proof/journal/refresh, cleanup releases normal before exclusive full-reference checks, new-root publication separately quiesces runtime. Desktop does not copy Android whole-network lease timing. Original162 three actual slot methods and matched functions reused; no whole ChatVM/runtime/Prompt claim.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/chat/ChatViewModel.kt",
@@ -9716,8 +9725,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "CHAT_VM_COMPLETE_D3_SIX_TRANSACTION_ADMISSION_WRAPPERS"
+      ],
+      "evidence": [
+        "OWNER_CHAT_VM_COMPLETE_D3_SIX_WRAPPERS_REUSE.json",
+        "docs/desktop/372_CHAT_RESPONSE_SLOT_IMAGE_ADMISSION_REUSE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/ui/manage/AppBackupHost.kt",
