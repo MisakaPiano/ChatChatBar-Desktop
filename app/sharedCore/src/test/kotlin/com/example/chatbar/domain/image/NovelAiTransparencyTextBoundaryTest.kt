@@ -10,7 +10,7 @@ class NovelAiTransparencyTextBoundaryTest {
         val service = NovelAiImageService()
         val tag = NovelAiPromptAuthority.NOVELAI_TRANSPARENT_BACKGROUND_TAG
         for (separator in whitespace) {
-            val source = NovelAiPromptPlan(baseCaption = "scene${separator}teXt: literal caption | later chunk")
+            val source = NovelAiPromptPlan(baseCaption = "scene${separator}teXt: literal caption | later chunk", characterCaptions = emptyList())
             for (effort in NovelAiEffort.entries) {
                 val settings = NovelAiGenerationSettings(model = NovelAiImageModel.V5_FULL,
                     effort = effort, transparentBackground = true)
