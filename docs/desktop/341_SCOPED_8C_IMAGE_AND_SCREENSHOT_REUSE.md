@@ -1,0 +1,10 @@
+# 341 角色生图参数、导出封面与截图的限定复核
+
+本次逐条读取8c4ba52b的四份完整首父差异、实际Desktop调用链，并独核原报告SHA／CRC／选中XML。314仅对应四行改为EQUIVALENT，整体仍未完成；不推断整个ChatViewModel／CharacterEditViewModel／截图维护已追齐。
+
+- 聊天生图：上游仅一行在最终请求前应用卡内参数。Desktop自动生图、手动重新设计和初始编辑参数均已有同样投影，实际runtime把投影结果交服务及诊断。复用已有typed projection证明，最终V5字段由独立R69六方法证明；不冒称原测试执行了整条聊天生图请求。
+- 编辑卡与头像／封面：完整差异涉及参数state、载入、仅参数草稿、payload、保存以及有效模型／重试签名。Desktop整体typed card保留这些字段，实际生成使用有效模型及可空卡参数；签名包含来源卡、模型和参数。原162头像／封面一个方法与R06草稿保存回读一个方法分源复用。当前新增Tag入口由340的独立后继负责，真人旧1244保存FAIL仍待交付后复验。
+- Android长截图只新增四个import和两个ViewTree owner调用。Desktop独立Compose渲染器没有Android View owner依赖；生产／测试blob匹配原162，复用LIGHT／DARK选段与整条真实PNG方法一项。不是全截图或d3维护证明。
+- 管理页导出封面差异仅涉及每次重置、选择临时替换图、预览与恢复背景。Desktop已具有这些入口；cbd47d42补的是恢复背景时同时复位三项裁剪值，保留其他封面选项与撤销／重做。原实际controller／renderer／writer一方法继续复用；修改后的Dialog只作这三字段静态复核，不再宣称整个Dialog与原162完全相同。
+
+四项均0新增测试运行。证据为本地 `OWNER_CHAT_IMAGE_CARD_PARAMS_8C_SOURCE_REUSE.json`、`OWNER_CHARACTER_EDITOR_IMAGE_SETTINGS_8C_REUSE.json`、`OWNER_SCREENSHOT_8C_VIEW_OWNER_REUSE.json`、`OWNER_MANAGE_EXPORT_COVER_8C_DIALOG_REVIEW.json`。不更改Prompt、现用程序、真实资料或公开发行身份。

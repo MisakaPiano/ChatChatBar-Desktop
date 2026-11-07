@@ -1070,6 +1070,42 @@
         "OWNER_CHARACTER_EFFORT_TRANSPARENCY_ENTITY_REUSE.json",
         "COORDINATOR_CHARACTER_EFFORT_TRANSPARENCY_ENTITY_REUSE.json"
       ]
+    },
+    {
+      "id": "SCREENSHOT_ANDROID_VIEW_OWNER_DESKTOP_EQUIVALENCE",
+      "disposition": "EQUIVALENT",
+      "scope": "Only4 imports and2 Android ComposeView ViewTree lifecycle/saved-state owner setter calls added; no shared export content change. DesktopChatScreenshotRenderer directly renders frozen request content through Compose Desktop renderComposeScene and consumes bounded Skia image with use; no Android ComposeView, Activity, LifecycleOwner or saved-state-owner lookup involved. Existing pure desktop producer remains applicable. Images and bubble masks closed in finally. Exact unchanged renderer/test and one original LIGHT/DARK actual PNG method reused;0new runs. Not whole screenshot, d3 maintenance or full baseline.",
+      "reviewSource": "c7086ee08e3e3862962da65a1ee14e8ccffc5376",
+      "evidence": [
+        "OWNER_SCREENSHOT_8C_VIEW_OWNER_REUSE.json"
+      ]
+    },
+    {
+      "id": "CHAT_IMAGE_CARD_PARAMETERS_REQUEST_PROJECTION",
+      "disposition": "EQUIVALENT",
+      "scope": "Only8c single card-settings request projection delta. Source-proven actual callers + exact existing typed projection proof, not retroactive claim of an actual full chat-card request test. Actual automatic/manual settings pass card.applyTo into runtime/service and diagnostics. Typed projection and distinct R69 final-wire evidence reused; not a full chat-card request test or other ChatViewModel delta.",
+      "reviewSource": "c7086ee08e3e3862962da65a1ee14e8ccffc5376",
+      "evidence": [
+        "OWNER_CHAT_IMAGE_CARD_PARAMS_8C_SOURCE_REUSE.json"
+      ]
+    },
+    {
+      "id": "CHARACTER_IMAGE_SETTINGS_EDITOR_AVATAR_PAYLOAD",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete8c image-settings state/load/dirty draft/payload/save and avatar/cover actual model/parameter/retry signature delta. Whole typed card owns existing values, original avatar/cover one method and R06 draft/save/reopen one method reused separately after exact owner/test review. Existing editor methods unchanged;new Tag callbacks separate R70/R71.0new runs, no real provider/human save acceptance.",
+      "reviewSource": "c7086ee08e3e3862962da65a1ee14e8ccffc5376",
+      "evidence": [
+        "OWNER_CHARACTER_EDITOR_IMAGE_SETTINGS_8C_REUSE.json"
+      ]
+    },
+    {
+      "id": "MANAGE_TRANSIENT_EXPORT_COVER_DIALOG",
+      "disposition": "EQUIVALENT",
+      "scope": "Entire8c ManageScreen delta only export cover: per-draft reset, choose validated transient replacement, preview replacement and restore card background/crop. Existing Desktop dialog already had restore; cbd47d42 resets only three crop fields when restoring. Options/history/explicit export and original card/package preserved. No new button or whole current dialog original162 equality claim; three-field reversible change static reviewed only.",
+      "reviewSource": "c7086ee08e3e3862962da65a1ee14e8ccffc5376",
+      "evidence": [
+        "OWNER_MANAGE_EXPORT_COVER_8C_DIALOG_REVIEW.json"
+      ]
     }
   ],
   "deltas": [
@@ -6171,8 +6207,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete8c image-settings state/load/dirty draft/payload/save and avatar/cover actual model/parameter/retry signature delta. Whole typed card owns existing values, original avatar/cover one method and R06 draft/save/reopen one method reused separately after exact owner/test review. Existing editor methods unchanged;new Tag callbacks separate R70/R71.0new runs, no real provider/human save acceptance.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/character/CharacterEditViewModel.kt",
@@ -6181,8 +6217,12 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "CHARACTER_IMAGE_SETTINGS_EDITOR_AVATAR_PAYLOAD"
+      ],
+      "evidence": [
+        "OWNER_CHARACTER_EDITOR_IMAGE_SETTINGS_8C_REUSE.json"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/main/java/com/example/chatbar/ui/chat/ChatLongScreenshot.kt",
@@ -6198,8 +6238,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only4 imports and2 Android ComposeView ViewTree lifecycle/saved-state owner setter calls added; no shared export content change. DesktopChatScreenshotRenderer directly renders frozen request content through Compose Desktop renderComposeScene and consumes bounded Skia image with use; no Android ComposeView, Activity, LifecycleOwner or saved-state-owner lookup involved. Existing pure desktop producer remains applicable. Images and bubble masks closed in finally. Exact unchanged renderer/test and one original LIGHT/DARK actual PNG method reused;0new runs. Not whole screenshot, d3 maintenance or full baseline.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/chat/ChatLongScreenshot.kt",
@@ -6208,8 +6248,12 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "SCREENSHOT_ANDROID_VIEW_OWNER_DESKTOP_EQUIVALENCE"
+      ],
+      "evidence": [
+        "OWNER_SCREENSHOT_8C_VIEW_OWNER_REUSE.json"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/main/java/com/example/chatbar/ui/chat/ChatViewModel.kt",
@@ -6225,8 +6269,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only8c single card-settings request projection delta. Source-proven actual callers + exact existing typed projection proof, not retroactive claim of an actual full chat-card request test. Actual automatic/manual settings pass card.applyTo into runtime/service and diagnostics. Typed projection and distinct R69 final-wire evidence reused; not a full chat-card request test or other ChatViewModel delta.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/chat/ChatViewModel.kt",
@@ -6235,8 +6279,12 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "CHAT_IMAGE_CARD_PARAMETERS_REQUEST_PROJECTION"
+      ],
+      "evidence": [
+        "OWNER_CHAT_IMAGE_CARD_PARAMS_8C_SOURCE_REUSE.json"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolScreen.kt",
@@ -6306,8 +6354,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Entire8c ManageScreen delta only export cover: per-draft reset, choose validated transient replacement, preview replacement and restore card background/crop. Existing Desktop dialog already had restore; cbd47d42 resets only three crop fields when restoring. Options/history/explicit export and original card/package preserved. No new button or whole current dialog original162 equality claim; three-field reversible change static reviewed only.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/manage/ManageScreen.kt",
@@ -6316,8 +6364,12 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "MANAGE_TRANSIENT_EXPORT_COVER_DIALOG"
+      ],
+      "evidence": [
+        "OWNER_MANAGE_EXPORT_COVER_8C_DIALOG_REVIEW.json"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/main/java/com/example/chatbar/ui/moments/MomentsViewModel.kt",
