@@ -4,4 +4,8 @@
 
 原缺口：编辑窗口捕获的MomentSender可在卡人物移除后直接存入动态。现在仅其卡／人物稳定key用于选择；当前卡严格读取、未找到或歧义拒绝、当前姓名与头像在原mutation admission内保存。原发布者传null，不因卡缺失强制重绑。正文、图像、点赞、任务与post identity不变。
 
-R89只两方法，不称重新运行Panel／Guide或真人验收。5fb的modal本地错误提示不输出异常原文，也不通过关闭编辑窗掩盖失败；R90编译事实待核。329 Screen／VM完整差异的等位归档等待此尾项，不借这两方法整体提升整个朋友圈或Prompt315。详见 OWNER_MOMENT_SELECTED_AUTHOR_R89_FINAL_REVIEW.json。
+R89只两方法，不称重新运行Panel／Guide或真人验收。5fb的modal本地错误提示不输出异常原文，也不通过关闭编辑窗掩盖失败；R90原件已核必要生产编译通过，未新增UI运行验收。329 Screen／VM完整差异的等位归档等待此尾项，不借这两方法整体提升整个朋友圈或Prompt315。详见 OWNER_MOMENT_SELECTED_AUTHOR_R89_FINAL_REVIEW.json。
+
+## 完整路径差异限定归档
+
+329 Screen/VM两项现含选中人物保存重查及本地安全错误提示，原共享编辑与实际Panel证明分源复用，R89 Controller/Store补证，R90仅必要编译、不冒充新UI运行。另三项教程copy已按Desktop实际手势补全并编译；bbc AvatarPolicy单项依此前用户明确采纳的头像字串与原162两方法映射。六项逐完整rawdelta核对与精确owner，0新跑，不提升其他Prompt315或整个朋友圈，314整体仍false。详见 OWNER_GUIDE_MOMENT_AVATAR_SIX_DELTAS_REUSE.json。

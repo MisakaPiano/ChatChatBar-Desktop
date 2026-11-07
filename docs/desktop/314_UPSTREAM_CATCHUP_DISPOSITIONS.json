@@ -1308,6 +1308,69 @@
         "OWNER_HISTORICAL_AVATAR_R82_R83_R84_REVIEW.json",
         "docs/desktop/349_HISTORICAL_MOMENT_AVATAR_TRANSFER.md"
       ]
+    },
+    {
+      "id": "GUIDE_THREE_DESKTOP_CONTENT_DELTAS",
+      "disposition": "EQUIVALENT",
+      "scope": "Three complete guide copy deltas mapped to actual bilingual DesktopUiStrings topics: privacy metadata+pixel LSB PNG warning/source retained/old reclean/APNG separate; Select then Shift visible image/album range and reset; pencil author/text editor Save or close cancel. Desktop gestures replace Android long press. Actual97d copy compiled R87; static reader and prior functional proofs reused, no new render or copy-mirroring tests.",
+      "reviewSource": "0a43ef461e06627253d0653cfba90de86c53a9e4",
+      "evidence": [
+        "OWNER_GUIDE_MOMENT_AVATAR_SIX_DELTAS_REUSE.json"
+      ]
+    },
+    {
+      "id": "MOMENT_AUTHOR_EDITOR_TWO_COMPLETE_DELTAS",
+      "disposition": "EQUIVALENT",
+      "scope": "329 Screen/VM complete explicit author/text edit deltas: existing pencil/modal/save/cancel and original sender remain; latest card and stable selected person re-resolved under Store mutation admission, invalid selected author refuses visibly without losing draft. Original shared2/actualPanel1 reused, original Store case successor R89 and same actual Controller full R89 method separately prove the new guard; modal local fixed hint compiled R90. No whole Moments album/scheduler/provider or fresh human acceptance.",
+      "reviewSource": "0a43ef461e06627253d0653cfba90de86c53a9e4",
+      "evidence": [
+        "OWNER_GUIDE_MOMENT_AVATAR_SIX_DELTAS_REUSE.json"
+      ]
+    },
+    {
+      "id": "APPROVED_AVATAR_NEGATIVE_HELPER_ONE_DELTA",
+      "disposition": "EQUIVALENT",
+      "scope": "Only bbc CharacterAvatarImagePolicy negative helper delta: selected negative retained plus explicitly user-adopted avatar suffix, fixed512 square and empty role captions. Desktop named authority replaces PromptTemplates helper; exact162 policy/authority/test and two original methods reused. No new provider image, no whole bbc PromptTemplates or other315 adoption.",
+      "reviewSource": "0a43ef461e06627253d0653cfba90de86c53a9e4",
+      "evidence": [
+        "OWNER_GUIDE_MOMENT_AVATAR_SIX_DELTAS_REUSE.json"
+      ]
+    },
+    {
+      "id": "CREDENTIAL_STORES_MAINTENANCE_THREE_D3_COMPLETE_DELTAS",
+      "disposition": "EQUIVALENT",
+      "scope": "Two complete d3 credential-store deltas and LocalDataMaintenance only: actual container credential editor/account gates, strict protected read/export capture, separate fresh-root protected writes and FIFO normal/exclusive admission. Windows DPAPI/root injection replace Android Keystore/keyAlias; missing incoming merge keys do not clear PC. Exact162 owners/tests and original selected store7/cloudDPAPI1/editor refusal1/gate15 reused separately, no new runs, no all-background-service or full restore-lifecycle claim.",
+      "reviewSource": "0a43ef461e06627253d0653cfba90de86c53a9e4",
+      "evidence": [
+        "OWNER_CREDENTIAL_MAINTENANCE_THREE_D3_DELTAS_REUSE.json"
+      ]
+    },
+    {
+      "id": "MERGE_IDENTITY_MEMORY_TWO_COMPLETE_1A_DELTAS",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete1a typed identity and memory-proof files only: typed declarations/references/map keys, opaque text exclusions, stable version/source-turn identities and independent historical proof graphs. Bounded lazy records/shared iterative child-first hashes replace Android scratch spools. Exact162 identity/proofs/test and original9 complete GraphRemapper methods reused. Current mapper differs only in narrative mode preservation, outside this old proof; singleton embedding remains intentionally distinct. Not whole Engine/Catalog or production merge acceptance.",
+      "reviewSource": "0a43ef461e06627253d0653cfba90de86c53a9e4",
+      "evidence": [
+        "OWNER_MERGE_IDENTITY_MEMORY_TWO_DELTAS_REUSE.json"
+      ]
+    },
+    {
+      "id": "PREFERENCE_TRANSFER_TWO_COMPLETE_D3_1A_DELTAS",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete d3/1a preference transfer only: selected protected snapshot and strict extraction, dormant Community, selected image brush preferences through actual Service Preview.selectedPreferences/RootPreparation/Mapping into fresh root. Atomic Desktop gated writes replace SharedPreferences flush. Incoming retainedPreferences rejected; excluded/missing keys preserve PC under merge. Exact unchanged owners/tests and original selected credential/preference methods reused, other brush/Service proofs separate; no new full production merge/whole restore acceptance.",
+      "reviewSource": "0a43ef461e06627253d0653cfba90de86c53a9e4",
+      "evidence": [
+        "OWNER_PREFERENCE_EXTERNAL_FOUR_DELTAS_REUSE.json"
+      ]
+    },
+    {
+      "id": "EXTERNAL_BACKUP_CLASSIFICATION_TWO_COMPLETE_D3_DELTAS",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete d3 classifier/coordinator deltas only: magic-first streaming backup route before ordinary typed limits, actual external queue password/preview delegated to merge, typed bounded staging/cancellation and explicit skip ownership. Desktop32MiB ordinary and4GiB backup bounds differ from Android100MB/contentURI/foreground-service; no actual4GiB fixture. Exact R02 caller blobs and prior Inspector3/Controller4 complete methods reused, unrelated original failures and R03Service18 separate; no Windows file association/native/human acceptance.",
+      "reviewSource": "0a43ef461e06627253d0653cfba90de86c53a9e4",
+      "evidence": [
+        "OWNER_PREFERENCE_EXTERNAL_FOUR_DELTAS_REUSE.json"
+      ]
     }
   ],
   "deltas": [
@@ -2527,8 +2590,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Three complete guide copy deltas mapped to actual bilingual DesktopUiStrings topics: privacy metadata+pixel LSB PNG warning/source retained/old reclean/APNG separate; Select then Shift visible image/album range and reset; pencil author/text editor Save or close cancel. Desktop gestures replace Android long press. Actual97d copy compiled R87; static reader and prior functional proofs reused, no new render or copy-mirroring tests.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/tutorial/TutorialScreen.kt",
@@ -2537,8 +2600,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "GUIDE_THREE_DESKTOP_CONTENT_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_GUIDE_MOMENT_AVATAR_SIX_DELTAS_REUSE.json",
+        "docs/desktop/350_MOMENT_SELECTED_AUTHOR_SAVE_REVALIDATION.md"
+      ]
     },
     {
       "id": "b6d68320b02a564afe4582bdc5f25978a57f4ea9:app/app/src/test/java/com/example/chatbar/domain/image/ImageMetadataStripperTest.kt",
@@ -3515,8 +3583,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "329 Screen/VM complete explicit author/text edit deltas: existing pencil/modal/save/cancel and original sender remain; latest card and stable selected person re-resolved under Store mutation admission, invalid selected author refuses visibly without losing draft. Original shared2/actualPanel1 reused, original Store case successor R89 and same actual Controller full R89 method separately prove the new guard; modal local fixed hint compiled R90. No whole Moments album/scheduler/provider or fresh human acceptance.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/moments/MomentsScreen.kt",
@@ -3525,8 +3593,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "MOMENT_AUTHOR_EDITOR_TWO_COMPLETE_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_GUIDE_MOMENT_AVATAR_SIX_DELTAS_REUSE.json",
+        "docs/desktop/350_MOMENT_SELECTED_AUTHOR_SAVE_REVALIDATION.md"
+      ]
     },
     {
       "id": "32906a76f2b85fce68285a146092ad91fd3f75e1:app/app/src/main/java/com/example/chatbar/ui/moments/MomentsViewModel.kt",
@@ -3542,8 +3615,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "329 Screen/VM complete explicit author/text edit deltas: existing pencil/modal/save/cancel and original sender remain; latest card and stable selected person re-resolved under Store mutation admission, invalid selected author refuses visibly without losing draft. Original shared2/actualPanel1 reused, original Store case successor R89 and same actual Controller full R89 method separately prove the new guard; modal local fixed hint compiled R90. No whole Moments album/scheduler/provider or fresh human acceptance.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/moments/MomentsViewModel.kt",
@@ -3552,8 +3625,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "MOMENT_AUTHOR_EDITOR_TWO_COMPLETE_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_GUIDE_MOMENT_AVATAR_SIX_DELTAS_REUSE.json",
+        "docs/desktop/350_MOMENT_SELECTED_AUTHOR_SAVE_REVALIDATION.md"
+      ]
     },
     {
       "id": "32906a76f2b85fce68285a146092ad91fd3f75e1:app/app/src/main/java/com/example/chatbar/ui/tutorial/TutorialScreen.kt",
@@ -3569,8 +3647,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Three complete guide copy deltas mapped to actual bilingual DesktopUiStrings topics: privacy metadata+pixel LSB PNG warning/source retained/old reclean/APNG separate; Select then Shift visible image/album range and reset; pencil author/text editor Save or close cancel. Desktop gestures replace Android long press. Actual97d copy compiled R87; static reader and prior functional proofs reused, no new render or copy-mirroring tests.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/tutorial/TutorialScreen.kt",
@@ -3579,8 +3657,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "GUIDE_THREE_DESKTOP_CONTENT_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_GUIDE_MOMENT_AVATAR_SIX_DELTAS_REUSE.json",
+        "docs/desktop/350_MOMENT_SELECTED_AUTHOR_SAVE_REVALIDATION.md"
+      ]
     },
     {
       "id": "32906a76f2b85fce68285a146092ad91fd3f75e1:app/app/src/test/java/com/example/chatbar/data/repository/MomentRepositoryTest.kt",
@@ -4104,8 +4187,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Three complete guide copy deltas mapped to actual bilingual DesktopUiStrings topics: privacy metadata+pixel LSB PNG warning/source retained/old reclean/APNG separate; Select then Shift visible image/album range and reset; pencil author/text editor Save or close cancel. Desktop gestures replace Android long press. Actual97d copy compiled R87; static reader and prior functional proofs reused, no new render or copy-mirroring tests.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/tutorial/TutorialScreen.kt",
@@ -4114,8 +4197,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "GUIDE_THREE_DESKTOP_CONTENT_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_GUIDE_MOMENT_AVATAR_SIX_DELTAS_REUSE.json",
+        "docs/desktop/350_MOMENT_SELECTED_AUTHOR_SAVE_REVALIDATION.md"
+      ]
     },
     {
       "id": "559f83f0c1011a7fa4b8e0f64d5b2ea147544e59:app/app/src/test/java/com/example/chatbar/domain/chat/MessageAlternativeVersionPolicyTest.kt",
@@ -7284,8 +7372,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only bbc CharacterAvatarImagePolicy negative helper delta: selected negative retained plus explicitly user-adopted avatar suffix, fixed512 square and empty role captions. Desktop named authority replaces PromptTemplates helper; exact162 policy/authority/test and two original methods reused. No new provider image, no whole bbc PromptTemplates or other315 adoption.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/CharacterAvatarImagePolicy.kt",
@@ -7294,8 +7382,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "APPROVED_AVATAR_NEGATIVE_HELPER_ONE_DELTA"
+      ],
+      "evidence": [
+        "OWNER_GUIDE_MOMENT_AVATAR_SIX_DELTAS_REUSE.json",
+        "docs/desktop/350_MOMENT_SELECTED_AUTHOR_SAVE_REVALIDATION.md"
+      ]
     },
     {
       "id": "bbc4907cac79397be882af4ccef91aec7d397d0c:app/app/src/main/java/com/example/chatbar/domain/prompt/PromptTemplates.kt",
@@ -8040,8 +8133,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Two complete d3 credential-store deltas and LocalDataMaintenance only: actual container credential editor/account gates, strict protected read/export capture, separate fresh-root protected writes and FIFO normal/exclusive admission. Windows DPAPI/root injection replace Android Keystore/keyAlias; missing incoming merge keys do not clear PC. Exact162 owners/tests and original selected store7/cloudDPAPI1/editor refusal1/gate15 reused separately, no new runs, no all-background-service or full restore-lifecycle claim.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/data/security/FishAudioCredentialStore.kt",
@@ -8050,8 +8143,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "CREDENTIAL_STORES_MAINTENANCE_THREE_D3_COMPLETE_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_CREDENTIAL_MAINTENANCE_THREE_D3_DELTAS_REUSE.json",
+        "docs/desktop/352_CREDENTIAL_MAINTENANCE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/data/security/NovelAiCredentialStore.kt",
@@ -8067,8 +8165,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Two complete d3 credential-store deltas and LocalDataMaintenance only: actual container credential editor/account gates, strict protected read/export capture, separate fresh-root protected writes and FIFO normal/exclusive admission. Windows DPAPI/root injection replace Android Keystore/keyAlias; missing incoming merge keys do not clear PC. Exact162 owners/tests and original selected store7/cloudDPAPI1/editor refusal1/gate15 reused separately, no new runs, no all-background-service or full restore-lifecycle claim.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/data/security/NovelAiCredentialStore.kt",
@@ -8077,8 +8175,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "CREDENTIAL_STORES_MAINTENANCE_THREE_D3_COMPLETE_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_CREDENTIAL_MAINTENANCE_THREE_D3_DELTAS_REUSE.json",
+        "docs/desktop/352_CREDENTIAL_MAINTENANCE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/backup/AppBackupBootstrap.kt",
@@ -8272,11 +8375,16 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete d3/1a preference transfer only: selected protected snapshot and strict extraction, dormant Community, selected image brush preferences through actual Service Preview.selectedPreferences/RootPreparation/Mapping into fresh root. Atomic Desktop gated writes replace SharedPreferences flush. Incoming retainedPreferences rejected; excluded/missing keys preserve PC under merge. Exact unchanged owners/tests and original selected credential/preference methods reused, other brush/Service proofs separate; no new full production merge/whole restore acceptance.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "PREFERENCE_TRANSFER_TWO_COMPLETE_D3_1A_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_PREFERENCE_EXTERNAL_FOUR_DELTAS_REUSE.json",
+        "docs/desktop/353_PREFERENCE_EXTERNAL_BACKUP_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/backup/BackupPreparedSeal.kt",
@@ -8363,11 +8471,16 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Two complete d3 credential-store deltas and LocalDataMaintenance only: actual container credential editor/account gates, strict protected read/export capture, separate fresh-root protected writes and FIFO normal/exclusive admission. Windows DPAPI/root injection replace Android Keystore/keyAlias; missing incoming merge keys do not clear PC. Exact162 owners/tests and original selected store7/cloudDPAPI1/editor refusal1/gate15 reused separately, no new runs, no all-background-service or full restore-lifecycle claim.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "CREDENTIAL_STORES_MAINTENANCE_THREE_D3_COMPLETE_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_CREDENTIAL_MAINTENANCE_THREE_D3_DELTAS_REUSE.json",
+        "docs/desktop/352_CREDENTIAL_MAINTENANCE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/backup/LocalDataTransferForegroundService.kt",
@@ -8430,8 +8543,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete d3 classifier/coordinator deltas only: magic-first streaming backup route before ordinary typed limits, actual external queue password/preview delegated to merge, typed bounded staging/cancellation and explicit skip ownership. Desktop32MiB ordinary and4GiB backup bounds differ from Android100MB/contentURI/foreground-service; no actual4GiB fixture. Exact R02 caller blobs and prior Inspector3/Controller4 complete methods reused, unrelated original failures and R03Service18 separate; no Windows file association/native/human acceptance.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/card/SharedImportClassifier.kt",
@@ -8440,8 +8553,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "EXTERNAL_BACKUP_CLASSIFICATION_TWO_COMPLETE_D3_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_PREFERENCE_EXTERNAL_FOUR_DELTAS_REUSE.json",
+        "docs/desktop/353_PREFERENCE_EXTERNAL_BACKUP_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/card/SharedImportCoordinator.kt",
@@ -8457,8 +8575,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete d3 classifier/coordinator deltas only: magic-first streaming backup route before ordinary typed limits, actual external queue password/preview delegated to merge, typed bounded staging/cancellation and explicit skip ownership. Desktop32MiB ordinary and4GiB backup bounds differ from Android100MB/contentURI/foreground-service; no actual4GiB fixture. Exact R02 caller blobs and prior Inspector3/Controller4 complete methods reused, unrelated original failures and R03Service18 separate; no Windows file association/native/human acceptance.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/card/SharedImportCoordinator.kt",
@@ -8467,8 +8585,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "EXTERNAL_BACKUP_CLASSIFICATION_TWO_COMPLETE_D3_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_PREFERENCE_EXTERNAL_FOUR_DELTAS_REUSE.json",
+        "docs/desktop/353_PREFERENCE_EXTERNAL_BACKUP_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/chat/SaveSlotPackageStorage.kt",
@@ -10476,11 +10599,16 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete1a typed identity and memory-proof files only: typed declarations/references/map keys, opaque text exclusions, stable version/source-turn identities and independent historical proof graphs. Bounded lazy records/shared iterative child-first hashes replace Android scratch spools. Exact162 identity/proofs/test and original9 complete GraphRemapper methods reused. Current mapper differs only in narrative mode preservation, outside this old proof; singleton embedding remains intentionally distinct. Not whole Engine/Catalog or production merge acceptance.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "MERGE_IDENTITY_MEMORY_TWO_COMPLETE_1A_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_MERGE_IDENTITY_MEMORY_TWO_DELTAS_REUSE.json",
+        "docs/desktop/351_NAMED_MERGE_BINDINGS_AND_DEPENDENT_CONFLICTS.md"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:app/app/src/main/java/com/example/chatbar/domain/backup/BackupMergeMemory.kt",
@@ -10496,11 +10624,16 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete1a typed identity and memory-proof files only: typed declarations/references/map keys, opaque text exclusions, stable version/source-turn identities and independent historical proof graphs. Bounded lazy records/shared iterative child-first hashes replace Android scratch spools. Exact162 identity/proofs/test and original9 complete GraphRemapper methods reused. Current mapper differs only in narrative mode preservation, outside this old proof; singleton embedding remains intentionally distinct. Not whole Engine/Catalog or production merge acceptance.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "MERGE_IDENTITY_MEMORY_TWO_COMPLETE_1A_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_MERGE_IDENTITY_MEMORY_TWO_DELTAS_REUSE.json",
+        "docs/desktop/351_NAMED_MERGE_BINDINGS_AND_DEPENDENT_CONFLICTS.md"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:app/app/src/main/java/com/example/chatbar/domain/backup/BackupPreferenceTransfer.kt",
@@ -10516,11 +10649,16 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete d3/1a preference transfer only: selected protected snapshot and strict extraction, dormant Community, selected image brush preferences through actual Service Preview.selectedPreferences/RootPreparation/Mapping into fresh root. Atomic Desktop gated writes replace SharedPreferences flush. Incoming retainedPreferences rejected; excluded/missing keys preserve PC under merge. Exact unchanged owners/tests and original selected credential/preference methods reused, other brush/Service proofs separate; no new full production merge/whole restore acceptance.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "PREFERENCE_TRANSFER_TWO_COMPLETE_D3_1A_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_PREFERENCE_EXTERNAL_FOUR_DELTAS_REUSE.json",
+        "docs/desktop/353_PREFERENCE_EXTERNAL_BACKUP_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:app/app/src/main/java/com/example/chatbar/domain/backup/BackupRestoreTransaction.kt",
