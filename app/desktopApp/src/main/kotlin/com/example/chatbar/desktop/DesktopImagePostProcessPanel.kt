@@ -50,11 +50,21 @@ internal fun DesktopImagePostProcessPanel(path: Path, controller: DesktopNovelAi
     StudioChips("图片处理", NovelAiPostProcessTab.entries, tab, { it.label }) { if (!busy) tab = it }
     val dimensions = input?.second
     val recipe = source
-    val cost = dimensions?.let { (w, h) -> if (tab == NovelAiPostProcessTab.UPSCALE) NovelAiPostProcessPolicy.upscaleCost(w, h)
-        else recipe?.let { runCatching { NovelAiPostProcessPolicy.enhanceCost(it, w, h, options, state.account).anlas }.getOrNull() } }
+    val cost = dimensions?.let { (w, h) -> if (tab == NovelAiPostProcessTab.UPSCALE)
+        NovelAiPostProcessPolicy.upscaleCost(w, h)?.let { NovelAiGenerationCost(NovelAiGenerationChargeKind.ANLAS, it) }
+        else recipe?.let { runCatching { NovelAiPostProcessPolicy.enhanceCost(it, w, h, options, state.account) }.getOrNull() } }
+    val enhanceIssue = if (tab == NovelAiPostProcessTab.ENHANCE)
+        recipe?.settings?.requestValidationError(recipe.prompt.characterCaptions.size) else null
+    val expectedSize = dimensions?.let { (w, h) -> runCatching {
+        if (tab == NovelAiPostProcessTab.UPSCALE) IntSize(w * 2, h * 2)
+        else NovelAiPostProcessPolicy.outputSize(w, h, options.scale).let { IntSize(it.width, it.height) }
+    }.getOrNull() }
+    dimensions?.let { StatusText("原图 ${it.first} × ${it.second}" + (expectedSize?.let { size -> " · 预计输出 ${size.width} × ${size.height}" } ?: "")) }
     if (tab == NovelAiPostProcessTab.ENHANCE) {
         if (recipe == null) StatusText("缺少受支持的完整生成元数据；Enhance 不可用，可选择 Upscale", DesktopBootstrapColors.warning)
         else if (dimensions != null) {
+            StatusText("${recipe.settings.model.displayName} · Steps ${recipe.settings.effectiveSteps} · Guidance ${recipe.settings.guidance}")
+            StatusText("${recipe.settings.effectiveSampler.displayName} · CFG Rescale ${recipe.settings.effectiveCfgRescale} · 使用图片元数据")
             val scales = NovelAiPostProcessPolicy.scales(dimensions.first, dimensions.second, recipe.settings.model)
             StudioChips("倍率", scales, options.scale, { it.label }) { if (!busy) options = options.copy(scale = it) }
             StudioChips("增强幅度", (1..5).toList(), options.magnitude, { it.toString() }) { if (!busy) options = options.withMagnitude(it) }
@@ -71,10 +81,16 @@ internal fun DesktopImagePostProcessPanel(path: Path, controller: DesktopNovelAi
         }
     } else StatusText("2× Upscale · 不改变 Studio 模型 · 超过 3,145,728 输入像素时不可用")
     if (sourceError.isNotEmpty()) StatusText(sourceError, DesktopBootstrapColors.warning)
-    StatusText(cost?.let { "预计 $it Anlas" } ?: "费用 / 输入资格不可用")
+    enhanceIssue?.let { StatusText("Enhance 不可用：$it；可切换 Upscale", DesktopBootstrapColors.warning) }
+    StatusText(cost?.let { when (it.kind) {
+        NovelAiGenerationChargeKind.FREE -> "预计免费"
+        NovelAiGenerationChargeKind.V5_ALLOWANCE -> "预计使用 V5 配额"
+        NovelAiGenerationChargeKind.ANLAS -> "预计 ${it.anlas} Anlas"
+    } } ?: "费用 / 输入资格不可用")
+    StatusText(state.account?.let { "账户余额 ${it.anlas} Anlas" } ?: "账户信息暂不可用，费用以服务端结算为准")
     val validScale = tab == NovelAiPostProcessTab.UPSCALE || recipe != null && dimensions != null && options.scale in NovelAiPostProcessPolicy.scales(dimensions.first, dimensions.second, recipe.settings.model)
     StudioAction(if (ownBusy) "停止" else if (busy) "其他图像任务运行中" else tab.label,
-        enabled = ownBusy || (!busy && state.postProcessError == null && state.credentialConfigured && input != null && cost != null && cost <= 140 && validScale)) {
+        enabled = ownBusy || (!busy && state.postProcessError == null && state.credentialConfigured && input != null && cost != null && cost.anlas <= 140 && validScale && enhanceIssue == null)) {
         if (ownBusy) ownTaskId?.let(controller::stopPostProcess) else scope.launch {
             val selected = tab; val selectedOptions = options
             controller.postProcess(requireNotNull(input).first, selected, recipe, selectedOptions,
@@ -100,13 +116,16 @@ internal fun DesktopImagePostProcessPanel(path: Path, controller: DesktopNovelAi
             catch (cancelled: CancellationException) { throw cancelled }
             catch (_: Exception) { status = "此结果图片不可读或备份未包含图片；记录和来源保留" } }
     }
+    var resultDimensions by remember(record?.id) { mutableStateOf<IntSize?>(null) }
+    val resultZoom = remember(record?.id) { DesktopImageZoomState() }
     result?.takeIf { it.first == record?.id }?.second?.let { output ->
         if (record?.sourceSha256 != sourceHash) StatusText("所选为其他来源的已保存结果；不会覆盖当前来源")
         if (record != null && !record.matches(tab, options)) StatusText("参数已更改；预览仍是上次结果")
         val original = input?.takeIf { record?.sourceSha256 == sourceHash }
-        if (original != null) DesktopPostProcessComparison("${path}-${record?.id}", original.first, output,
-            IntSize(original.second.first, original.second.second), Modifier.fillMaxWidth().height(365.dp))
-        else DesktopImageZoomSurface("after-${record?.id}", { output }, Modifier.fillMaxWidth().height(330.dp), postProcessOutput = true)
+        if (original != null) DesktopPostProcessComparisonWorkspace("${path}-${record?.id}", original.first, output,
+            IntSize(original.second.first, original.second.second)) { resultDimensions = it }
+        else DesktopImageZoomSurface("after-${record?.id}", { output }, Modifier.fillMaxWidth().height(330.dp), postProcessOutput = true, zoomState = resultZoom)
+        (if (original != null) resultDimensions else resultZoom.sourceSize.takeUnless { it == IntSize.Zero })?.let { StatusText("已保存结果 ${it.width} × ${it.height}") }
         StatusText(if (original != null) "左：原图 · 右：处理结果" else "已保存的处理结果")
         StudioActions {
             StudioAction("用作当前导入图片", enabled = !busy) { onUse(output) }

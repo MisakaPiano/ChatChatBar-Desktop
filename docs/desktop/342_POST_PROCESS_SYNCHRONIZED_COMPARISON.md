@@ -9,3 +9,7 @@
 定向用例用不同像素尺寸／略异比例的合成色块与条纹，实际渲染采样检查双层对齐，实际pointer拖分界、滚轮、平移、点击重置及上下限，保留原bytes，并提供fit与zoom/pan图。R72／42361148434原23546B、SHAc27ac7c8…9701fa已独核CRC/source/全部XML及空stderr，唯一实际component方法完整PASS、0FAIL/ERROR/SKIP；fit和201%平移两原图已查看，条纹对齐、分界固定于viewport。详本地 `OWNER_POST_PROCESS_COMPARISON_R72_FINAL_REVIEW.json`。不重复大噪声R67、真实Provider或整个后处理生命周期。原大结果测试只更新实际producer identity定位，其余断言保留，新组件不由旧R67代验。
 
 同区Strength／Noise改接已有StudioNumericInput，保留标签及finite／0–1／busy约束、默认值和费用算法。数值等价echo保留“0”等继续输入态，失焦按既有settle恢复最后合法值；使用当前来源的局部历史scope。只作既有组件的接线，随下次必要编译，不为简单范围条件写镜像测试或重跑Studio。R72源0437不含此后继，不冒称该run覆盖后继编译。
+
+固定Screen的“全屏对比”另由 `DesktopPostProcessComparisonWorkspace` 等位：复用可缩放工具窗，一次只挂一个对比视口；展开／返回／关闭共享同一fraction与zoom，尺寸变化按既有边界限位，来源或记录变化关闭旧窗并开始独立视图。R72的数学与像素检查继续复用，新Window入口另作native有界生命周期检查，不重复R67大结果。
+
+同一Screen信息差异一并补齐：保留费用完整kind，区分免费／V5配额／Anlas；显示账户或未知、原图及预计输出尺寸，结果尺寸复用实际解码回调。Enhance显示元数据的有效Steps／Sampler／CFG Rescale，Medium不误示休眠High值。reader允许旧DDIM存储可读，但实际服务requestValidationError拒绝High DDIM，因此Panel只在Enhance前移同一预检、显示明确原因并禁开始；不改reader、计价或请求规则，不阻止独立Upscale，Medium有效EA仍可用。R74新增实际旧DDIM PNG入口的High／Medium及Upscale检查，与新native入口同批；信息文字不逐条建测试。待原件，不提前提升整个148Screen或真人验收。

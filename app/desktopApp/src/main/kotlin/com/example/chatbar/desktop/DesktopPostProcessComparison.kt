@@ -59,7 +59,8 @@ internal class DesktopPostProcessComparisonState {
 /** Source-fitted bounds and transform are shared; result clipping remains in viewport coordinates. */
 @Composable
 internal fun DesktopPostProcessComparison(identity: String, original: ByteArray, result: ByteArray,
-    sourceSize: IntSize, modifier: Modifier = Modifier, state: DesktopPostProcessComparisonState? = null) {
+    sourceSize: IntSize, modifier: Modifier = Modifier, state: DesktopPostProcessComparisonState? = null,
+    onResultDimensions: ((IntSize) -> Unit)? = null) {
     val view = state ?: remember(identity) { DesktopPostProcessComparisonState() }
     val density = LocalDensity.current
     val halfHit = with(density) { 20.dp.toPx() }
@@ -108,7 +109,8 @@ internal fun DesktopPostProcessComparison(identity: String, original: ByteArray,
                 }, contentAlignment = Alignment.Center) {
                     DesktopOwnedImage("comparison-$identity-$suffix", { bytes },
                         Modifier.size(with(density) { fitted.x.coerceAtLeast(1f).toDp() }, with(density) { fitted.y.coerceAtLeast(1f).toDp() }),
-                        postProcessOutput = output, displayTargetForSource = target, contentScale = ContentScale.FillBounds)
+                        postProcessOutput = output, displayTargetForSource = target, contentScale = ContentScale.FillBounds,
+                        onDimensions = if (output) onResultDimensions else null)
                 }
             }
             Layer(original, "source", false)
