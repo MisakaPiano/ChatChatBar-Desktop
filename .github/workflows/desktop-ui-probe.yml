@@ -46,13 +46,17 @@ jobs:
           @{ source = (git rev-parse HEAD); run = $env:GITHUB_RUN_ID; scope = 'synthetic selected tests only; no installer, user profile, release or provider calls' } |
             ConvertTo-Json | Set-Content -Encoding utf8 "$env:RUNNER_TEMP/ccb-ui-probe/source.json"
           .\gradlew.bat :desktopApp:test -PdesktopTestHeadless=true --no-daemon --stacktrace --console=plain `
-            --tests 'com.example.chatbar.desktop.DesktopStudioLongPromptFocusTest'
+            --tests 'com.example.chatbar.desktop.DesktopMissingSettingScopeTest' `
+            --tests 'com.example.chatbar.desktop.DesktopStudioEmptyScopeBackupTest.actual selected empty studio scope replaces only settings family through each modern new root mode' `
+            --tests 'com.example.chatbar.desktop.backup.DesktopBackupReadOnlyInspectorTest.bad scope unknown metadata and incompatible identities fail closed without payload in errors' `
+            --tests 'com.example.chatbar.desktop.backup.DesktopMergeRestoreModesTest' `
+            --tests 'com.example.chatbar.desktop.DesktopMergeModeLifecycleTest'
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Preserve actual reports and synthetic review images
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: desktop-ui-probe-reports
+          name: missing-settings-r122-reports
           path: |
             app/sharedCore/build/test-results/test/
             app/sharedCore/build/reports/tests/test/
