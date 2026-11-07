@@ -1250,6 +1250,26 @@
         "OWNER_READER_STORAGE_EIGHT_DELTAS_REUSE.json",
         "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
       ]
+    },
+    {
+      "id": "STUDIO_TOKEN_PREPARATION_VM_SIX",
+      "disposition": "EQUIVALENT",
+      "scope": "Six complete VM deltas only change scheduled-count request preparation. Actual DesktopPanel prepares with same model/settings helper before infrastructure IOcount; serializer ordinary uses same helper. Policies match R04 normal664; original8 unchanged test methods plus R04 actualwhitespace-boundary1 and distinctR69 effectiveMedium wire proof reused,not fresh actualPanelcount execution or all raw policy deltas. Existing broader case-insensitive duplicate-transparent handling retained,not byte-exact official helper parity.",
+      "reviewSource": "e3b24697b182067d253afe83c6ad8408dc91f0f0",
+      "evidence": [
+        "OWNER_TOKEN_VM_AND_INLINE_D3_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
+    },
+    {
+      "id": "INLINE_PAYLOAD_CALLER_MAINTENANCE_D3",
+      "disposition": "EQUIVALENT",
+      "scope": "Only d3 wrappers semantic equivalence. Not all storage/backup/inline history paths or crash/powerloss proof. Standalonehelper tests are not realapp admission; actualcallers are listed. No newrun/provider/data operation. Actual three production owners traced through existing normal-operation gates; originalstream4/Vibe2 reused,not standalonehelper assumption.",
+      "reviewSource": "e3b24697b182067d253afe83c6ad8408dc91f0f0",
+      "evidence": [
+        "OWNER_TOKEN_VM_AND_INLINE_D3_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     }
   ],
   "deltas": [
@@ -8671,8 +8691,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only d3 wrappers semantic equivalence. Not all storage/backup/inline history paths or crash/powerloss proof. Standalonehelper tests are not realapp admission; actualcallers are listed. No newrun/provider/data operation. Actual three production owners traced through existing normal-operation gates; originalstream4/Vibe2 reused,not standalonehelper assumption.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiInlinePayloadStore.kt",
@@ -8681,8 +8701,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "INLINE_PAYLOAD_CALLER_MAINTENANCE_D3"
+      ],
+      "evidence": [
+        "OWNER_TOKEN_VM_AND_INLINE_D3_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiStudioAssetStorage.kt",
@@ -11935,8 +11960,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Six complete VM deltas only change scheduled-count request preparation. Actual DesktopPanel prepares with same model/settings helper before infrastructure IOcount; serializer ordinary uses same helper. Policies match R04 normal664; original8 unchanged test methods plus R04 actualwhitespace-boundary1 and distinctR69 effectiveMedium wire proof reused,not fresh actualPanelcount execution or all raw policy deltas. Existing broader case-insensitive duplicate-transparent handling retained,not byte-exact official helper parity.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolViewModel.kt",
@@ -11945,8 +11970,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "STUDIO_TOKEN_PREPARATION_VM_SIX"
+      ],
+      "evidence": [
+        "OWNER_TOKEN_VM_AND_INLINE_D3_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "54c84c479a1b8a9eddef6b726681dedc7094efac:app/app/src/test/java/com/example/chatbar/data/repository/NovelAiStudioRepositoryTest.kt",
@@ -12389,8 +12419,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Six complete VM deltas only change scheduled-count request preparation. Actual DesktopPanel prepares with same model/settings helper before infrastructure IOcount; serializer ordinary uses same helper. Policies match R04 normal664; original8 unchanged test methods plus R04 actualwhitespace-boundary1 and distinctR69 effectiveMedium wire proof reused,not fresh actualPanelcount execution or all raw policy deltas. Existing broader case-insensitive duplicate-transparent handling retained,not byte-exact official helper parity.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolViewModel.kt",
@@ -12399,8 +12429,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "STUDIO_TOKEN_PREPARATION_VM_SIX"
+      ],
+      "evidence": [
+        "OWNER_TOKEN_VM_AND_INLINE_D3_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "310d475cb6cb0466678fe986cb3850f91005dc77:app/app/src/test/java/com/example/chatbar/data/repository/NovelAiStudioRepositoryTest.kt",
@@ -13258,8 +13293,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Six complete VM deltas only change scheduled-count request preparation. Actual DesktopPanel prepares with same model/settings helper before infrastructure IOcount; serializer ordinary uses same helper. Policies match R04 normal664; original8 unchanged test methods plus R04 actualwhitespace-boundary1 and distinctR69 effectiveMedium wire proof reused,not fresh actualPanelcount execution or all raw policy deltas. Existing broader case-insensitive duplicate-transparent handling retained,not byte-exact official helper parity.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolViewModel.kt",
@@ -13268,8 +13303,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "STUDIO_TOKEN_PREPARATION_VM_SIX"
+      ],
+      "evidence": [
+        "OWNER_TOKEN_VM_AND_INLINE_D3_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "3f6f1bb5d61492d74c56fa3696b557db514ae77d:app/app/src/test/java/com/example/chatbar/data/repository/NovelAiStudioRepositoryTest.kt",
@@ -13623,8 +13663,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Six complete VM deltas only change scheduled-count request preparation. Actual DesktopPanel prepares with same model/settings helper before infrastructure IOcount; serializer ordinary uses same helper. Policies match R04 normal664; original8 unchanged test methods plus R04 actualwhitespace-boundary1 and distinctR69 effectiveMedium wire proof reused,not fresh actualPanelcount execution or all raw policy deltas. Existing broader case-insensitive duplicate-transparent handling retained,not byte-exact official helper parity.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolViewModel.kt",
@@ -13633,8 +13673,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "STUDIO_TOKEN_PREPARATION_VM_SIX"
+      ],
+      "evidence": [
+        "OWNER_TOKEN_VM_AND_INLINE_D3_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "c02f8b788db1fd829f55676e0ed23e35fdd10ea1:app/app/src/test/java/com/example/chatbar/data/repository/NovelAiStudioRepositoryTest.kt",
@@ -14468,8 +14513,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Six complete VM deltas only change scheduled-count request preparation. Actual DesktopPanel prepares with same model/settings helper before infrastructure IOcount; serializer ordinary uses same helper. Policies match R04 normal664; original8 unchanged test methods plus R04 actualwhitespace-boundary1 and distinctR69 effectiveMedium wire proof reused,not fresh actualPanelcount execution or all raw policy deltas. Existing broader case-insensitive duplicate-transparent handling retained,not byte-exact official helper parity.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolViewModel.kt",
@@ -14478,8 +14523,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "STUDIO_TOKEN_PREPARATION_VM_SIX"
+      ],
+      "evidence": [
+        "OWNER_TOKEN_VM_AND_INLINE_D3_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "892b478b17d3bf0943e779d3f14108b750f3355c:app/app/src/test/java/com/example/chatbar/data/repository/NovelAiStudioRepositoryTest.kt",
@@ -15317,8 +15367,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Six complete VM deltas only change scheduled-count request preparation. Actual DesktopPanel prepares with same model/settings helper before infrastructure IOcount; serializer ordinary uses same helper. Policies match R04 normal664; original8 unchanged test methods plus R04 actualwhitespace-boundary1 and distinctR69 effectiveMedium wire proof reused,not fresh actualPanelcount execution or all raw policy deltas. Existing broader case-insensitive duplicate-transparent handling retained,not byte-exact official helper parity.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolViewModel.kt",
@@ -15327,8 +15377,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "STUDIO_TOKEN_PREPARATION_VM_SIX"
+      ],
+      "evidence": [
+        "OWNER_TOKEN_VM_AND_INLINE_D3_REUSE.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "b0fa1a425f24a0abe5adcb3b8f5775598452996e:app/app/src/test/java/com/example/chatbar/data/repository/NovelAiStudioRepositoryTest.kt",
