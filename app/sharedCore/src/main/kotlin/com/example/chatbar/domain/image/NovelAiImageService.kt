@@ -352,6 +352,7 @@ class NovelAiImageService(
                     put("color_correct", false)
                     put("extra_noise_seed", (settings.seed - 1L) and 0xffff_ffffL)
                 }
+                if (settings.model == NovelAiImageModel.V5_FULL) put("straight_alpha", true)
                 when (imageGuidance.action) {
                     NovelAiGenerationAction.IMAGE_TO_IMAGE -> {
                         put("image", requireNotNull(imageGuidance.imageBase64) { "图生图缺少基图" })

@@ -14,6 +14,22 @@ class NovelAiV5GenerationPolicyTest {
         enhance: NovelAiEnhanceRequestOptions? = null) = Json.parseToJsonElement(NovelAiImageService().buildRequestBody(
             prompt, settings.imageSize(), settings, guidance, enhance)).jsonObject
 
+    @Test fun `V5 final requests keep straight alpha for both efforts and transparency states without changing V45`() {
+        for (model in NovelAiImageModel.entries) for (effort in NovelAiEffort.entries) for (transparent in listOf(false, true)) {
+            val settings = high.copy(model = model, effort = effort, transparentBackground = transparent)
+            for (action in NovelAiGenerationAction.entries) {
+                val guidance = NovelAiPreparedImageGuidance.NONE.copy(action = action, imageBase64 = "AA==", maskBase64 = "AA==")
+                val parameters = body(settings, guidance = guidance).getValue("parameters").jsonObject
+                if (model == NovelAiImageModel.V5_FULL) assertEquals(true, parameters.getValue("straight_alpha").jsonPrimitive.boolean)
+                else assertFalse("straight_alpha" in parameters)
+                if (model == NovelAiImageModel.V5_FULL && effort == NovelAiEffort.HIGH && !transparent) {
+                    assertEquals(3, parameters.getValue("params_version").jsonPrimitive.int)
+                    assertFalse("tag_hint_transparent_background" in parameters)
+                }
+            }
+        }
+    }
+
     @Test fun `Medium enforces actual sampling model and UC without destroying High preferences`() {
         val medium = high.copy(effort = NovelAiEffort.MEDIUM)
         val wire = body(medium); val p = wire.getValue("parameters").jsonObject
@@ -97,6 +113,7 @@ class NovelAiV5GenerationPolicyTest {
                 NovelAiPreparedImageGuidance.NONE.copy(action = NovelAiGenerationAction.IMAGE_TO_IMAGE, imageBase64 = "AA=="),
                 NovelAiEnhanceRequestOptions(false, enhance.parameters)).getValue("parameters").jsonObject
             assertEquals(14, p.getValue("steps").jsonPrimitive.int)
+            assertTrue(p.getValue("straight_alpha").jsonPrimitive.boolean)
             assertFalse(p.getValue("v4_negative_prompt").toString().contains("custom"))
         }
         assertFails { NovelAiPngMetadataReader.parseEnhanceComment(comment, "synthetic.png", "NovelAI Diffusion V5 unknown") }
