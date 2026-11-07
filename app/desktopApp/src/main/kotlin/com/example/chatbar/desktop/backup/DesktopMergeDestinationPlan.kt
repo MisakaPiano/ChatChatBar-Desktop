@@ -84,6 +84,7 @@ internal class DesktopMergeDestinationPlan private constructor(
                     pcNames.getValue(path) else addMedia(Side.PHONE, path, hash)
             }
             val missingNames = linkedMapOf<Pair<Side, String>, String>()
+            val reservedMissingNames = hashSetOf<String>()
             fun resource(side: Side, entity: String, sourceNames: Map<String, String>, value: String, fields: List<String>): String {
                 if (value.startsWith("chatbar-save-slot-") || value.startsWith("https:") || value.startsWith("http:") || value.isBlank()) return value
                 if (value.startsWith("chatbar-vibe-file:")) {
@@ -96,8 +97,9 @@ internal class DesktopMergeDestinationPlan private constructor(
                 val mapped = sourceNames[relative] ?: if (relative.startsWith("images/") && DesktopHistoricalMomentAvatarPolicy.allows(
                     entity, fields, if (side == Side.COMPUTER) CURRENT_DESKTOP_BACKUP_CODE else incomingCode)) {
                     missingNames.getOrPut(side to relative) {
-                        val absent = "images/missing-avatar-" + DesktopBackupPolicy.digest("$side:$relative".toByteArray(Charsets.UTF_8)) + ".bin"
-                        require(names.add(absent.lowercase())) { "MERGE_MISSING_AVATAR_COLLISION" }
+                        val absent = DesktopHistoricalMomentAvatarPolicy.portableMissingIdentity(relative)
+                        if (reservedMissingNames.add(absent))
+                            require(names.add(absent.lowercase())) { "MERGE_MISSING_AVATAR_COLLISION" }
                         absent
                     }
                 } else error("MERGE_RESOURCE_NOT_SELECTED")

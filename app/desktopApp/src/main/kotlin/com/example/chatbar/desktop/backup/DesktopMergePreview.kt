@@ -83,8 +83,11 @@ internal class DesktopMergePreview private constructor(
                 val exact = pc[candidate.key]
                 if (exact != null && exact.signature == candidate.signature && candidate.key !in credentialConflicts) { identical += candidate.key; return@forEach }
                 // A Moment sender is not a unique post name. Different posts by the same person coexist.
-                val sameName = if (candidate.label.isEmpty() || candidate.category == "moment_posts") emptyList() else pc.values.filter {
-                    it.category == candidate.category && it.label == candidate.label && it.key != candidate.key
+                val normalizedName = java.text.Normalizer.normalize(candidate.label.trim(), java.text.Normalizer.Form.NFKC).lowercase(java.util.Locale.ROOT)
+                val sameName = if (normalizedName.isEmpty() || candidate.category == "moment_posts") emptyList() else pc.values.filter {
+                    it.category == candidate.category &&
+                        java.text.Normalizer.normalize(it.label.trim(), java.text.Normalizer.Form.NFKC).lowercase(java.util.Locale.ROOT) == normalizedName &&
+                        it.key != candidate.key
                 }
                 val ownedCollisions = if (candidate.category == "chat_sessions") pc.values.filter {
                     it.category == "chat_sessions" && it.key != candidate.key && it.ownedIds.any(candidate.ownedIds::contains)
@@ -166,8 +169,13 @@ internal class DesktopMergePreview private constructor(
                 val signature = java.security.MessageDigest.getInstance("SHA-256")
                 items.keys.sorted().forEachIndexed { index, path ->
                     val record = items.getValue(path)
-                    val mapped = DesktopBackupPolicy.mapResources(record) { reference, _ ->
-                        if (reference.startsWith(DesktopBackupPolicy.PREFIX)) media[reference.removePrefix(DesktopBackupPolicy.PREFIX)]?.let { "resource-sha256:$it" } ?: reference else reference
+                    val mapped = DesktopBackupPolicy.mapResources(record) { reference, fields ->
+                        if (reference.startsWith(DesktopBackupPolicy.PREFIX)) {
+                            val relative = reference.removePrefix(DesktopBackupPolicy.PREFIX)
+                            media[relative]?.let { "resource-sha256:$it" } ?: if (relative.startsWith("images/") &&
+                                DesktopHistoricalMomentAvatarPolicy.allows(path, fields, CURRENT_DESKTOP_BACKUP_CODE))
+                                DesktopBackupPolicy.PREFIX + DesktopHistoricalMomentAvatarPolicy.portableMissingIdentity(relative) else reference
+                        } else reference
                     }
                     val packageProof = if (DesktopBackupPolicy.entityType(path) == "save_slots") {
                         (record["packageRef"] as? JsonObject)?.get("fileName")?.jsonPrimitive?.contentOrNull?.let { name ->

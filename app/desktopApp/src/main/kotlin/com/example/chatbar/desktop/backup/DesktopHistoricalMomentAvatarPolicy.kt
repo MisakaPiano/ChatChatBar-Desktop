@@ -7,6 +7,15 @@ import java.nio.file.Path
 
 /** Only an already absent top-level historical post avatar may remain absent in modern transport. */
 internal object DesktopHistoricalMomentAvatarPolicy {
+    private val missingIdentity = Regex("images/missing-avatar-[a-f0-9]{64}\\.bin")
+
+    fun portableMissingIdentity(relative: String): String {
+        DesktopBackupPolicy.path(relative)
+        require(relative.startsWith("images/"))
+        return if (missingIdentity.matches(relative)) relative else
+            "images/missing-avatar-${DesktopBackupPolicy.digest(relative.toByteArray(Charsets.UTF_8))}.bin"
+    }
+
     fun allows(entity: String, fields: List<String>, code: Int): Boolean =
         code in 85..CURRENT_DESKTOP_BACKUP_CODE &&
             entity.removePrefix("entities/").substringBefore('/').removeSuffix(".json") == "moment_posts" &&

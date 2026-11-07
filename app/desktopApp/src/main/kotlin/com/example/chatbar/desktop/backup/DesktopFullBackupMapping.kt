@@ -116,6 +116,7 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
                 DesktopHistoricalMomentAvatarPolicy.requireMissing(absent)
                 absentAvatars.add(absent)
                 missingHistoricalAvatars++
+                return DesktopBackupPolicy.PREFIX + DesktopHistoricalMomentAvatarPolicy.portableMissingIdentity(relative)
             }
             if (relative in proof) selectedMedia += relative
             return DesktopBackupPolicy.PREFIX + relative
@@ -208,7 +209,7 @@ internal class DesktopFullBackupMapping(private val root: Path, private val asse
             val original = DesktopBackupPolicy.path(value.removePrefix(DesktopBackupPolicy.PREFIX))
             val destination = destinations[original] ?: if (original.startsWith("images/") &&
                 DesktopHistoricalMomentAvatarPolicy.allows(entityType, fields, wireVersionCode)) {
-                val absent = DesktopBackupPolicy.desktopName(original)
+                val absent = DesktopHistoricalMomentAvatarPolicy.portableMissingIdentity(original)
                 check(destinations.values.none { it.equals(absent, ignoreCase = true) }) { "HISTORICAL_AVATAR_TARGET_COLLISION" }
                 DesktopHistoricalMomentAvatarPolicy.requireMissing(root.resolve(absent))
                 absent

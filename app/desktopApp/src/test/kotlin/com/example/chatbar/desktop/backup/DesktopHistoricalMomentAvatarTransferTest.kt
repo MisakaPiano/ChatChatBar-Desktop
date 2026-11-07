@@ -165,6 +165,11 @@ class DesktopHistoricalMomentAvatarTransferTest {
                                         .exportModern(next, null)
                                     DesktopFullBackupStaging.prepare(next, null, Files.createDirectory(base.resolve("recheck-$suffix"))).use {
                                         assertEquals(2, it.entities.keys.count { path -> path.startsWith("entities/moment_posts/") })
+                                        val mediaAgain = it.source.inventory.filterKeys { path -> !path.startsWith("entities/") }.mapValues { row -> row.value.sha256 }
+                                        val repeated = DesktopMergePreview.create(it.entities, staged.entities, mediaAgain, incomingMedia,
+                                            staged.source.manifest.scope)
+                                        assertTrue(repeated.conflicts.isEmpty())
+                                        assertTrue(repeated.select(emptyMap()).phone.isEmpty())
                                     }
                                 } finally { restoredGate.closeAndDrain() }
                             }
