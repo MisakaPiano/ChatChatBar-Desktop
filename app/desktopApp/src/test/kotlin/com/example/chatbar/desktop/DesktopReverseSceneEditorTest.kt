@@ -7,7 +7,6 @@ import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import java.nio.file.Files
 import java.nio.file.Path
@@ -70,26 +69,37 @@ class DesktopReverseSceneEditorTest {
         try {
             val c = setup(f); val ticket = assertNotNull(c.beginReverseSceneEdit())
             val draft = c.repository.loadDraft(); val count = f.requests.size
-            var value by mutableStateOf(TextFieldValue(ticket.original))
-            var open by mutableStateOf(true)
+            val presentation = DesktopReverseSceneEditorPresentation()
+            var captures = 0
+            presentation.open { captures++; ticket }
+            var observedActivation = 0
             val edited = (1..45).joinToString("\n") { "Synthetic scene line $it" }
             val scene = ImageComposeScene(760, 620, coroutineContext = edt) {
-                if (open) Box(Modifier.fillMaxSize().padding(12.dp)) {
-                    DesktopReverseSceneEditorContent(value, { value = it }, false, "",
-                        { assertTrue(c.applyReverseSceneEdit(ticket, value.text)); open = false }, { open = false })
+                presentation.editor?.let { active ->
+                    Box(Modifier.fillMaxSize().padding(12.dp)) {
+                        val activation = presentation.activationRevision
+                        SideEffect { observedActivation = activation }
+                        DesktopReverseSceneEditorBody(active, false,
+                            { assertTrue(c.applyReverseSceneEdit(active, it)); true }, presentation::close)
+                    }
                 }
             }
             fun field() = scene.nodes().first { it.config.getOrNull(SemanticsProperties.ContentDescription)?.contains("展开的反推场景描述") == true &&
                 it.config.contains(SemanticsActions.SetText) }
             try {
                 scene.frames(); assertTrue(field().config[SemanticsActions.SetText].action!!.invoke(AnnotatedString(edited))); scene.frames()
+                presentation.open { captures++; error("An existing editor must not recapture its source") }; scene.frames()
+                assertEquals(1, captures); assertEquals(2, observedActivation)
+                assertEquals(edited, field().config[SemanticsProperties.EditableText].text)
                 scene.shot("reverse-expanded-scene.png")
                 scene.click("取消"); scene.frames()
                 assertEquals(ticket.original, c.state.value.reverseSceneDescription)
                 assertEquals(draft, c.repository.loadDraft()); assertEquals(count, f.requests.size)
-                value = TextFieldValue(edited); open = true; scene.frames()
+                presentation.open { captures++; assertNotNull(c.beginReverseSceneEdit()) }; scene.frames()
+                assertEquals(ticket.original, field().config[SemanticsProperties.EditableText].text)
+                assertTrue(field().config[SemanticsActions.SetText].action!!.invoke(AnnotatedString(edited))); scene.frames()
                 scene.click("应用场景修改"); scene.frames()
-                assertFalse(open); assertEquals(edited, c.state.value.reverseSceneDescription)
+                assertNull(presentation.editor); assertEquals(2, captures); assertEquals(edited, c.state.value.reverseSceneDescription)
                 assertNull(c.state.value.reverseCandidate); assertEquals(draft, c.repository.loadDraft()); assertEquals(count, f.requests.size)
             } finally { scene.close() }
         } finally { f.close() }

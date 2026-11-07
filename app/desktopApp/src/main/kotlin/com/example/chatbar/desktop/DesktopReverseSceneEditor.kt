@@ -11,16 +11,36 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 
+internal class DesktopReverseSceneEditorPresentation {
+    var editor by mutableStateOf<DesktopReverseSceneEdit?>(null)
+        private set
+    var activationRevision by mutableIntStateOf(0)
+        private set
+
+    fun open(source: () -> DesktopReverseSceneEdit?) {
+        if (editor == null) editor = source()
+        if (editor != null) activationRevision++
+    }
+    fun close() { editor = null }
+}
+
 @Composable
 internal fun DesktopReverseSceneEditor(editor: DesktopReverseSceneEdit, busy: Boolean,
+    onApply: (String) -> Boolean, onCancel: () -> Unit, activationRevision: Int) {
+    DesktopImageToolWindow("编辑反推场景", onCancel, width = 760.dp, height = 620.dp,
+        activationRevision = activationRevision) {
+        DesktopReverseSceneEditorBody(editor, busy, onApply, onCancel)
+    }
+}
+
+@Composable
+internal fun DesktopReverseSceneEditorBody(editor: DesktopReverseSceneEdit, busy: Boolean,
     onApply: (String) -> Boolean, onCancel: () -> Unit) {
     var value by remember(editor) { mutableStateOf(TextFieldValue(editor.original)) }
     var error by remember(editor) { mutableStateOf("") }
-    DesktopImageToolWindow("编辑反推场景", onCancel, width = 760.dp, height = 620.dp) {
-        DesktopReverseSceneEditorContent(value, { value = it }, busy, error,
-            onApply = { if (onApply(value.text)) onCancel() else error = "场景已变化，本次编辑未应用；请关闭后重新打开" },
-            onCancel = onCancel)
-    }
+    DesktopReverseSceneEditorContent(value, { value = it }, busy, error,
+        onApply = { if (onApply(value.text)) onCancel() else error = "场景已变化，本次编辑未应用；请关闭后重新打开" },
+        onCancel = onCancel)
 }
 
 @Composable
