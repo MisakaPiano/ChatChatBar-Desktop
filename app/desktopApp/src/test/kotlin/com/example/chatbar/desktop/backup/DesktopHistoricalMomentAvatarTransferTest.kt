@@ -52,12 +52,12 @@ class DesktopHistoricalMomentAvatarTransferTest {
                 } finally { controller.closeAndDrain() }
                 val image = DesktopImageEditing.png(BufferedImage(3, 2, BufferedImage.TYPE_INT_ARGB))
                 val missingVersion = DesktopMomentImageVersions.append(post, DesktopMomentImageResult("images/version.png",
-                    GeneratedImageMetadata("images/version.png", "Synthetic", sizePreset = "SQUARE", width = 3, height = 2), "Synthetic", "Synthetic"), 2)
+                    GeneratedImageMetadata("images/version.png", "Synthetic", negativePrompt = "Synthetic negative", sizePreset = "SQUARE", width = 3, height = 2), "Synthetic", "Synthetic"), 2)
                 val directory = Files.createDirectories(root.resolve("images/directory"))
                 val external = base.resolve("unrelated.png"); Files.write(external, image)
                 val failures = listOf(
                     post.copy(imagePath = "images/body.png"),
-                    post.copy(generatedImageMetadata = GeneratedImageMetadata("images/metadata.png", "Synthetic", sizePreset = "SQUARE", width = 3, height = 2)),
+                    post.copy(generatedImageMetadata = GeneratedImageMetadata("images/metadata.png", "Synthetic", negativePrompt = "Synthetic negative", sizePreset = "SQUARE", width = 3, height = 2)),
                     missingVersion,
                     post.copy(senderAvatar = root.relativize(directory).joinToString("/")),
                     post.copy(senderAvatar = external.toAbsolutePath().toString()))
