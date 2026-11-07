@@ -36,7 +36,10 @@ internal fun DesktopImagePostProcessPanel(path: Path, controller: DesktopNovelAi
     }
     val input by produceState<Pair<ByteArray, Pair<Int, Int>>?>(null, path) {
         value = withContext(Dispatchers.IO) { try {
-            require(Files.size(path) <= DesktopImageEditing.MAX_BYTES)
+            if (Files.size(path) > DesktopImageEditing.MAX_BYTES) {
+                sourceError = "图片超过后处理输入大小上限；原图和已保存结果保留，不能继续增强或放大"
+                return@withContext null
+            }
             val bytes = Files.readAllBytes(path); DesktopImageEditing.requireStatic(bytes)
             val raster = DesktopImageEditing.decode(bytes)
             source = runCatching { DesktopImageMetadata.readEnhance(path.toString()) }.getOrNull()

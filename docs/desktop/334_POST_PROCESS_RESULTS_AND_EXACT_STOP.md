@@ -17,3 +17,6 @@ R55原10方法=8PASS+2FAIL：原BackupSelection5、Store清理/坏记录保全1�
 最终局部原件已核：合法旧R57实际请求完成、页面已关闭，但记录期望1实际0，构成保存缺口业务反例（后续重开未走）；原R54误停其他owner为另一业务反例。新R56=5PASS+1旧整页夹具FAIL：离页完成/磁盘记录/新Controller重开和新Pane保存入口、同源取消、其他owner保全、捕获旧Stop不干预新任务四方法完整通过，保留PC图片的真实目的地映射一方法通过。唯一失败的整页fixture将T5当普通JSON，stderr明确Not in GZIP format；892b仅分流测试资源。R58/run42354136160两方法完整PASS，补齐真实整页坏历史提示/重试与all/light/off导出、文件校验、映射还原/新存储实例读取。R55原Store清理/坏记录保全一方法另按同源复用，当前五Lifetime+两Store+一Retention为分源匹配八方法，不是一次新跑八；原选择五方法另外复用。
 
 原ZIP均核长度/SHA/CRC/source/所有XML并保留失败与NO_RESPONSE取消的MockWebServer警告。R56 SHA `ec850894ec7a15424fec61d31e2fa95045529599d2511db4fdaea0c2039a9532`；R57 `1949bf764679a9424b1b8cf9d59d1c6f4f11cdfb45a54c0bcdd73bec808cf853`；R58 `be5184d09c5d0e259344248617f543368f460b1b2ab77218566eb669492a3a90`。详本地`OWNER_POSTPROCESS_RESULTS_FINAL_REVIEW.json`。只闭合148b PostProcessFiles这一适配差异，其他UI差异不批量提升。仍是已有32MiB/像素边界，不冒称Android100MiB相同；检查包括新Controller/新JsonFileStorage及还原文件，未运行整进程重启、原生窗、真实Provider或用户数据。
+
+
+后继337另外补齐输出专用100MiB及真实大PNG窗口／备份链路，原32MiB限定是本文件八方法的历史证明范围；当前能力与R67原件见337，不用八个旧方法冒充容量通过。

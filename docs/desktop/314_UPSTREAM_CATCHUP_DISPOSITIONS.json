@@ -1038,6 +1038,16 @@
         "OWNER_MOSAIC_PRIVACY_B6_REUSE.json",
         "COORDINATOR_MOSAIC_PRIVACY_B6_SCOPED_REUSE.json"
       ]
+    },
+    {
+      "id": "POSTPROCESS_LARGE_OUTPUT_BUDGET_AND_ACTUAL_USE",
+      "disposition": "EQUIVALENT",
+      "scope": "Output-only100MiB static PNG/operation pixel authority across actual processor, durable results, native/current/inline/transient previews and copy; only typed digest-bound backup refs gain larger raster budget. R67 actual loopback valid3000x3000 noisy PNG greater32MiB passes new Controller/native preview/save/explicit use/current image/actual Service backup/mapped restore/new Store. Ordinary input/screenshot/default decode and unregistered large image rejection remain. Exact100MiB boundary not exercised, no live provider/full process/user acceptance. Old small-result lifetime8 stay separate reused scope; not one new9.",
+      "reviewSource": "e5549225d58b85d31f7165a57ac1f5921743553c",
+      "evidence": [
+        "docs/desktop/337_POST_PROCESS_LARGE_OUTPUT_PATH.md",
+        "OWNER_LARGE_POST_PROCESS_RESULT_FINAL_REVIEW.json"
+      ]
     }
   ],
   "deltas": [
@@ -1744,14 +1754,17 @@
       },
       "scope": "PRODUCTION",
       "disposition": "EQUIVALENT",
-      "reason": "Only148b PostProcessFiles adapter: existing Desktop byte/size/static/orientation/alpha validations plus immutable durable PNG records, exact task/source Stop, source/draft preservation and explicit use. Desktop retains32MiB/raster bounds rather than claiming Android100MiB exact limits. Current matched Lifetime5/Store2/retention1 come from R56four+retention1, R58bad-historyUI+actualall/light/offbackup, and R55Store1; separate originals, not one new8 run. Original BackupSelection5 is reused. No native/full-process restart, provider, user or whole148b acceptance.",
+      "reason": "Only148b PostProcessFiles Desktop adapter. Durable/exact Stop/source-preserving scope retains its separate original8 methods; later337 closes output capacity scope: Output-only100MiB static PNG/operation pixel authority across actual processor, durable results, native/current/inline/transient previews and copy; only typed digest-bound backup refs gain larger raster budget. R67 actual loopback valid3000x3000 noisy PNG greater32MiB passes new Controller/native preview/save/explicit use/current image/actual Service backup/mapped restore/new Store. Ordinary input/screenshot/default decode and unregistered large image rejection remain. Exact100MiB boundary not exercised, no live provider/full process/user acceptance. Old small-result lifetime8 stay separate reused scope; not one new9.",
       "candidateOwners": [],
       "behaviorIds": [
-        "POSTPROCESS_DURABLE_VALIDATED_PNG_AND_OWNED_LIFETIME"
+        "POSTPROCESS_DURABLE_VALIDATED_PNG_AND_OWNED_LIFETIME",
+        "POSTPROCESS_LARGE_OUTPUT_BUDGET_AND_ACTUAL_USE"
       ],
       "evidence": [
         "docs/desktop/334_POST_PROCESS_RESULTS_AND_EXACT_STOP.md",
-        "OWNER_POSTPROCESS_RESULTS_FINAL_REVIEW.json"
+        "OWNER_POSTPROCESS_RESULTS_FINAL_REVIEW.json",
+        "docs/desktop/337_POST_PROCESS_LARGE_OUTPUT_PATH.md",
+        "OWNER_LARGE_POST_PROCESS_RESULT_FINAL_REVIEW.json"
       ]
     },
     {
