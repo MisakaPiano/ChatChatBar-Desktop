@@ -134,4 +134,18 @@ class DesktopMergeRestoreModesTest {
             assertTrue(ambiguous.warnings.isNotEmpty())
         }
     }
+
+    @Test fun `selected absent default model field no longer preserves a dependency while copies count new and duplicate identities separately`() {
+        val pc = mapOf("entities/model_configs/m.json" to backupJson.parseToJsonElement("""{"id":"m","displayName":"Old","baseUrl":"https://synthetic.invalid/v1","apiKey":"","modelName":"model","createdAt":1}""").jsonObject,
+            "entities/app_settings.json" to buildJsonObject { put("defaultModelId", "m"); put("chatBubbleFontScale", 1.3) })
+        val result = preview(pc, emptyMap(), scope("models", "defaultModelId")).modePlan(DesktopBackupRestoreMode.REPLACE_SELECTED)
+        DesktopMergeDestinationPlan.create(result.selection, emptyMap(), emptyMap()).use { plan ->
+            assertFalse("entities/model_configs/m.json" in plan.entities)
+            assertEquals(JsonNull, plan.entities.getValue("entities/app_settings.json")["defaultModelId"])
+            assertEquals(1.3, plan.entities.getValue("entities/app_settings.json")["chatBubbleFontScale"]!!.jsonPrimitive.double)
+        }
+        val copy = preview(mapOf(card("same", "Same")), mapOf(card("same", "Same"), card("unique", "Unique")))
+            .modePlan(DesktopBackupRestoreMode.ADD_COPIES)
+        assertEquals(1, copy.added); assertEquals(1, copy.copied)
+    }
 }

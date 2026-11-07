@@ -77,6 +77,10 @@ internal object DesktopMergeRestoreModes {
             return DesktopBackupPolicy.digest(canonical(JsonObject(value - setOf("id", "updatedAt"))).toByteArray())
         }
         val contentMatches = hashMapOf<String, Map<String, List<DesktopMergePreview.Unit>>>()
+        val fingerprintTypes = setOf("moment_posts", "moment_tasks", "novelai_generation_history", "desktop_image_post_process_results")
+        fun matchingContent(candidate: DesktopMergePreview.Unit): List<DesktopMergePreview.Unit> =
+            contentMatches.getOrPut(candidate.category) { pcByCategory[candidate.category].orEmpty()
+                .filter { it.records.size == 1 }.groupBy { content(it, false) } }[content(candidate, true)].orEmpty()
         for (candidate in order) {
             active()
             val primary = candidate.records.entries.firstOrNull { DesktopBackupPolicy.entityType(it.key) == candidate.category }
@@ -105,10 +109,9 @@ internal object DesktopMergeRestoreModes {
                 ambiguous = matches.size > 1 || matches.isNotEmpty() && sources > 1
                 if (!ambiguous) target = matches.singleOrNull()
             }
-            if (target == null && !copies && !replace && candidate.category in setOf("moment_posts", "moment_tasks", "novelai_generation_history", "desktop_image_post_process_results") &&
+            if (target == null && !copies && !replace && candidate.category in fingerprintTypes &&
                 candidate.records.size == 1) {
-                val matches = contentMatches.getOrPut(candidate.category) { pcByCategory[candidate.category].orEmpty()
-                    .filter { it.records.size == 1 }.groupBy { content(it, false) } }[content(candidate, true)].orEmpty()
+                val matches = matchingContent(candidate)
                 ambiguous = matches.size > 1
                 if (!ambiguous) target = matches.singleOrNull()
             }
@@ -127,8 +130,11 @@ internal object DesktopMergeRestoreModes {
                 val canCopy = candidate.primaryId != null && !singleton && candidate.category != "edit_drafts"
                 val colliding = (candidate.category to candidate.primaryId) in pcIds
                 if (canCopy && (copies || ambiguous || colliding)) forks += candidate.key
-                if (canCopy && (copies || ambiguous)) copied++ else added++
                 val names = usedNames.getOrPut(domain(candidate, true)) { hashSetOf() }
+                val duplicateName = candidate.category in named && normalize(candidate.label) in names
+                val duplicateContent = copies && !colliding && candidate.category in fingerprintTypes && candidate.records.size == 1 &&
+                    pcByCategory[candidate.category].orEmpty().isNotEmpty() && matchingContent(candidate).isNotEmpty()
+                if (canCopy && (ambiguous || copies && (colliding || duplicateName || duplicateContent))) copied++ else added++
                 if (candidate.category in named && !replace &&
                     (ambiguous || normalize(candidate.label) in names || copies && colliding))
                     renames[candidate.key] = copyName(candidate.label, names)
@@ -136,6 +142,10 @@ internal object DesktopMergeRestoreModes {
                 if (ambiguous) warnings += "重名目标不唯一，保留原内容并新增副本：${candidate.label.take(100)}"
             }
         }
+        val defaultFields = if (replace && scope != null) BackupSettingOptions.fields(scope.globalOptions) -
+            incoming.values.filter { it.category == "app_settings" }.map { it.label }.toSet() else emptySet()
+        // Selected omitted setting fields become defaults before deciding what unselected content still needs.
+        computer.entries.removeAll { (key, unit) -> unit.category == "app_settings" && key.removePrefix("setting:") in defaultFields }
         if (replace && scope != null) {
             val selectedTypes = buildSet {
                 if (scope.moments) addAll(listOf("moment_posts", "moment_tasks"))
@@ -173,7 +183,7 @@ internal object DesktopMergeRestoreModes {
                         unit.category in setOf("novelai_generation_history", "desktop_image_post_process_results") && !scope.studioHistoryImages) &&
                         (unit.category to unit.primaryId) !in incomingIds &&
                         unit.records.values.any { value -> listOf("imagePath", "images").any { field -> value[field]?.let { it != JsonNull && it != JsonArray(emptyList()) && it != JsonPrimitive("") } == true } }
-                    if (unit.category to unit.primaryId in required || omittedOriginal) {
+                    if (unit.primaryId?.let { (unit.category to it) in required } == true || omittedOriginal) {
                         removable.remove(unit.key); references(unit); changed = true
                         warnings += "保留未选内容仍需的依赖或原图记录：${unit.label.take(100)}"
                     }
@@ -193,9 +203,6 @@ internal object DesktopMergeRestoreModes {
         }
         val selectedTag = scope?.globalOptions?.contains("tagCatalog") ?: true
         val retainCatalog = !(incomingCatalog || replace && selectedTag)
-        val defaultFields = if (replace && scope != null) BackupSettingOptions.fields(scope.globalOptions) -
-            incoming.values.filter { it.category == "app_settings" }.map { it.label }.toSet() else emptySet()
-        computer.entries.removeAll { (key, unit) -> unit.category == "app_settings" && key.removePrefix("setting:") in defaultFields }
         val selection = DesktopMergePreview.Selection(computer.values.toList(), phone.values.toList(), forks, fingerprint,
             incoming.keys - phone.keys, replaced, scope, voiceSources, aliases, incomingCatalog,
             mode, renames, retainCatalog, !(replace && scope == null), defaultFields)
