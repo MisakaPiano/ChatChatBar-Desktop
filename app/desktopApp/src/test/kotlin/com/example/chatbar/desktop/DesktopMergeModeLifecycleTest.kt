@@ -41,7 +41,8 @@ class DesktopMergeModeLifecycleTest {
         val oldStore = InMemoryDesktopSecretStore().apply { save(DesktopCredentialKey.ModelApiKey("m"), "FAKE_PC_MODEL") }
         val service = DesktopMergeImportService(source, gate, oldStore, {}, { it() },
             DesktopMigrationDestinationPreparer({ unavailable }, DesktopDataRootOwnership::acquire),
-            DesktopBootstrapAuthorityTransaction(applicationHomeResolver = { unavailable }, portableRootResolver = DesktopPortableRootResolver()),
+            DesktopBootstrapAuthorityTransaction(storeFactory = { DesktopBootstrapSettingsStore(it) },
+                applicationHomeResolver = { unavailable }, portableRootResolver = DesktopPortableRootResolver()),
             freshAuthority = { DesktopFreshRootAuthority(it, keys, MergeRootSyntheticProtector) }, beforeModePlan = beforeMode)
         try { action(base, source, archive, service, pc, keys) }
         finally {
