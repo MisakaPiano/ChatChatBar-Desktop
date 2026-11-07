@@ -8,6 +8,8 @@ import com.example.chatbar.data.local.entity.MessageRole
 import com.example.chatbar.data.repository.ChatRepository
 import com.example.chatbar.data.repository.SettingsRepository
 import com.example.chatbar.data.repository.ModelRepository
+import com.example.chatbar.data.repository.NovelAiStudioStateRepository
+import com.example.chatbar.domain.image.NovelAiStudioDraft
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlinx.coroutines.*
@@ -15,6 +17,78 @@ import kotlinx.serialization.json.Json
 import kotlin.test.*
 
 class DesktopChatRepositoryAdmissionTest {
+    @Test fun `admitted cold Studio draft read drains before a later cold reader during maintenance`(): Unit = runBlocking {
+        fixture { f ->
+            val repository = NovelAiStudioStateRepository(f.storage)
+            val releaseOld = CompletableDeferred<Unit>()
+            val loaded = CompletableDeferred<NovelAiStudioDraft>()
+            val exclusiveEntered = CompletableDeferred<Unit>()
+            val releaseExclusive = CompletableDeferred<Unit>()
+            f.keep(launch(start = CoroutineStart.UNDISPATCHED) {
+                f.gate.withNormalOperation { releaseOld.await(); loaded.complete(repository.loadDraft()) }
+            })
+            f.keep(launch(start = CoroutineStart.UNDISPATCHED) {
+                f.gate.withExclusiveMaintenance { exclusiveEntered.complete(Unit); releaseExclusive.await() }
+            })
+            assertEquals(DesktopDataOperationCoordinatorState.MAINTENANCE_PENDING, f.gate.state)
+            val reader = f.keep(async(start = CoroutineStart.UNDISPATCHED) { repository.loadDraft() })
+            assertFalse(reader.isCompleted)
+            releaseOld.complete(Unit)
+            val expected = withTimeout(5000) { loaded.await().also { exclusiveEntered.await() } }
+            assertFalse(reader.isCompleted)
+            assertFalse(Files.exists(f.root.resolve("entities/novelai_studio_draft.json")))
+            releaseExclusive.complete(Unit)
+            assertEquals(expected, withTimeout(5000) { reader.await() })
+            withTimeout(5000) { f.jobs.joinAll() }
+        }
+    }
+
+    @Test fun `admitted Studio history publication drains before a later edit and keeps both fields and replay`(): Unit = runBlocking {
+        fixture { f ->
+            val repository = DesktopStudioHistoryRepository(f.storage)
+            repository.initializeHistory()
+            val releaseOld = CompletableDeferred<Unit>()
+            val published = CompletableDeferred<Unit>()
+            val exclusiveEntered = CompletableDeferred<Unit>()
+            val releaseExclusive = CompletableDeferred<Unit>()
+            f.keep(launch(start = CoroutineStart.UNDISPATCHED) {
+                f.gate.withNormalOperation {
+                    releaseOld.await()
+                    repository.updateDraft { it.copy(extraRequirement = "admitted requirement") }
+                    published.complete(Unit)
+                }
+            })
+            f.keep(launch(start = CoroutineStart.UNDISPATCHED) {
+                f.gate.withExclusiveMaintenance { exclusiveEntered.complete(Unit); releaseExclusive.await() }
+            })
+            assertEquals(DesktopDataOperationCoordinatorState.MAINTENANCE_PENDING, f.gate.state)
+            val late = f.keep(async(start = CoroutineStart.UNDISPATCHED) {
+                repository.updateDraft { it.copy(basePrompt = "later prompt") }
+            })
+            releaseOld.complete(Unit)
+            withTimeout(5000) { published.await(); exclusiveEntered.await() }
+            assertFalse(late.isCompleted)
+            val durable = Json.decodeFromString(NovelAiStudioDraft.serializer(),
+                Files.readString(f.root.resolve("entities/novelai_studio_draft.json")))
+            assertEquals("admitted requirement", durable.extraRequirement)
+            assertEquals("", durable.basePrompt)
+            releaseExclusive.complete(Unit)
+            val saved = withTimeout(5000) { late.await() }
+            assertEquals("admitted requirement", saved.extraRequirement)
+            assertEquals("later prompt", saved.basePrompt)
+            withTimeout(5000) { f.jobs.joinAll() }
+            val reopened = DesktopStudioHistoryRepository(f.storage)
+            reopened.initializeHistory()
+            assertEquals("later prompt", reopened.loadDraft().basePrompt)
+            assertTrue(reopened.replay(false))
+            assertEquals("", reopened.loadDraft().basePrompt)
+            assertEquals("admitted requirement", reopened.loadDraft().extraRequirement)
+            assertTrue(reopened.replay(true))
+            assertEquals("later prompt", reopened.loadDraft().basePrompt)
+            assertEquals("admitted requirement", reopened.loadDraft().extraRequirement)
+        }
+    }
+
     @Test fun `admitted cold model initialization drains before a later model list reader during maintenance`(): Unit = runBlocking {
         fixture { f ->
             // Empty/new roots need not open a conversation or the model page at startup.
