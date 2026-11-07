@@ -109,7 +109,7 @@ class DesktopPostProcessComparisonWindowTest {
             assertTrue(controller.load())
             for (medium in listOf(false, true)) {
                 val model = if (medium) "nai-diffusion-5-full-medium" else "nai-diffusion-5-full"
-                val comment = """{"model":"$model","width":64,"height":64,"prompt":"synthetic scene","steps":28,"scale":6,"sampler":"ddim_v3","cfg_rescale":0}"""
+                val comment = """{"model":"$model","width":64,"height":64,"v4_prompt":{"caption":{"base_caption":"synthetic scene","char_captions":[]}},"steps":28,"scale":6,"sampler":"ddim_v3","cfg_rescale":0}"""
                 val raster = BufferedImage(64, 64, BufferedImage.TYPE_INT_ARGB)
                 val bytes = try { PngTextChunks.insertTextChunk(DesktopImageEditing.png(raster), "Comment", comment) } finally { raster.flush() }
                 val path = Files.write(parent.resolve("synthetic-$medium.png"), bytes)

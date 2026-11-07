@@ -72,10 +72,10 @@ class DesktopStudioVarietyPlusTest {
                 assertEquals(enabled.basePrompt, current().basePrompt); assertEquals(enabled.stylePrompt, current().stylePrompt)
                 val raster = java.awt.image.BufferedImage(832, 1216, java.awt.image.BufferedImage.TYPE_INT_ARGB)
                 val customPng = try { PngTextChunks.insertTextChunk(DesktopImageEditing.png(raster), "Comment",
-                    """{"model":"nai-diffusion-4-5-full","width":832,"height":1216,"prompt":"synthetic custom variety","steps":28,"scale":6,"sampler":"k_euler_ancestral","skip_cfg_above_sigma":37}""")
+                    """{"model":"nai-diffusion-4-5-full","width":832,"height":1216,"v4_prompt":{"caption":{"base_caption":"synthetic custom variety","char_captions":[]}},"steps":28,"scale":6,"sampler":"k_euler_ancestral","skip_cfg_above_sigma":37}""")
                 } finally { raster.flush() }
                 val importedPath = Files.write(parent.resolve("custom-variety.png"), customPng)
-                controller.importMetadata(importedPath, NovelAiStudioMetadataSelection())
+                assertTrue(controller.importMetadata(importedPath, NovelAiStudioMetadataSelection()), controller.state.value.status)
                 scene.until { current().activeSettings.varietyPlusSigma != null }
                 val importedSettings = current().activeSettings
                 assertTrue(importedSettings.varietyPlus)
