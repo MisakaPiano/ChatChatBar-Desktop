@@ -15,7 +15,9 @@ class DesktopVoiceMutationAdmissionTest {
         val entered = CompletableDeferred<Unit>()
         val release = CompletableDeferred<Unit>()
         override suspend fun <T> withNormalOperation(operation: suspend () -> T): T = owner.withNormalOperation {
-            if (armed.compareAndSet(true, false)) { entered.complete(Unit); release.await() }
+            if (currentCoroutineContext()[CoroutineName]?.name == "admitted-generation" && armed.compareAndSet(true, false)) {
+                entered.complete(Unit); release.await()
+            }
             operation()
         }
     }
@@ -28,7 +30,11 @@ class DesktopVoiceMutationAdmissionTest {
         cycle(deleteRecording = true)
     }
 
-    private suspend fun cycle(deleteRecording: Boolean) = coroutineScope {
+    @Test fun `manual participation facade waits outside voice mutation without cancelling admitted work`(): Unit = runBlocking {
+        cycle(deleteRecording = false, manualParticipation = true)
+    }
+
+    private suspend fun cycle(deleteRecording: Boolean, manualParticipation: Boolean = false) = coroutineScope {
         val owner = DesktopDataOperationCoordinator()
         val gate = PausedGate(owner)
         val f = DesktopChatVoiceRuntimeTest.Fixture(gate)
@@ -50,7 +56,7 @@ class DesktopVoiceMutationAdmissionTest {
                 f.runtime.withAutomaticParticipationUpdate(change)
             }
             gate.armed.set(true)
-            val old = async(start = CoroutineStart.UNDISPATCHED) {
+            val old = async(CoroutineName("admitted-generation"), start = CoroutineStart.UNDISPATCHED) {
                 // It must still traverse the actual runtime gate/mutex, then safely reject stale UI.
                 f.runtime.generate(f.message.copy(content = "stale expected content"), "alice")
             }.also(jobs::add)
@@ -61,6 +67,10 @@ class DesktopVoiceMutationAdmissionTest {
             assertEquals(DesktopDataOperationCoordinatorState.MAINTENANCE_PENDING, owner.state)
             val late = launch(start = CoroutineStart.UNDISPATCHED) {
                 if (recording != null) f.runtime.deleteVoice(recording)
+                else if (manualParticipation) f.runtime.withCharacterParticipationChange(f.session.id) {
+                    val current = assertNotNull(f.chats.getSession(f.session.id))
+                    f.chats.saveSessionSettingsDraft(current, SessionCharacterParticipationPolicy.change(current, card, "alice", true))
+                }
                 else residency.completed(DesktopRealChatResult(
                     f.message.copy(id = "synthetic-user", role = MessageRole.USER), false, f.message, null)) { false }
             }.also(jobs::add)
@@ -78,7 +88,8 @@ class DesktopVoiceMutationAdmissionTest {
                 assertFalse(Files.exists(java.nio.file.Path.of(recording.audioPath)))
             } else {
                 assertTrue(SessionCharacterParticipationPolicy.isEnabled(assertNotNull(f.chats.getSession(f.session.id)), card, "alice"))
-                assertTrue(residency.notices.value[f.session.id]?.text?.contains("Alice") == true)
+                if (manualParticipation) assertTrue(residency.notices.value.isEmpty())
+                else assertTrue(residency.notices.value[f.session.id]?.text?.contains("Alice") == true)
             }
         } finally {
             withContext(NonCancellable) {

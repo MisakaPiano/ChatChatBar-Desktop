@@ -117,12 +117,12 @@ internal class DesktopChatVoiceRuntime(
         block()
     }
 
-    suspend fun <T> withCharacterParticipationChange(sessionId: String, block: suspend () -> T): T = mutation.withLock {
+    suspend fun <T> withCharacterParticipationChange(sessionId: String, block: suspend () -> T): T = gate.withNormalOperation { mutation.withLock {
         check(!closed)
         check(coordinator.batches.value.none { it.sessionId == sessionId && it.phase !in
             setOf(VoiceGenerationPhase.FAILED, VoiceGenerationPhase.CANCELLED) }) { "语音任务进行中，请完成或停止后再切换人物" }
         block()
-    }
+    } }
 
     /** Automatic presence updates affect future admissions. Existing batches retain their immutable
      * GenerationContext/targets, confirmation text, bindings and recordings; no cancellation or TTS. */
