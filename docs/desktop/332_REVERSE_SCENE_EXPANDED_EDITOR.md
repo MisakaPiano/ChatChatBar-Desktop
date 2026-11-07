@@ -1,6 +1,6 @@
 # 反推模式标识与展开场景编辑 / 2026-11-07
 
-后继边界检查：同一Compose帧内取消后立即重开时，结构相等的旧票据可能保留已取消本地文字。新打开改用独立引用身份，唤回已有窗口仍复用原实例；revision/原文准入不变。旧源单方法与后继四方法原件待核，不提前记业务复现或后继通过。
+后继边界检查：同一Compose帧内取消后立即重开时，结构相等的旧票据可能保留已取消本地文字。新打开改用独立引用身份，唤回已有窗口仍复用原实例；revision/原文准入不变。旧R52/run42351921685实际一方法FAIL：45行已取消文字仍留在重开的Body；后继84f的R53/run42351969065同fixture四方法完整PASS、0FAIL/ERROR/SKIP。两原件SHA分别`d89582948fed87d86d59a5825fdb5d71ec65762917ad127563ee7ed98891463c`与`1bf69ddfa56a3b6aa8f86c8bc9808be1768868718baa02bfe604f7893b84e9d8`，长度/CRC/source/全XML已核，详本地`OWNER_SCENE_CANCEL_REOPEN_FINAL_REVIEW.json`。当前editor结果以R53替换前R50匹配，旧结果不加总。
 
 48f90b5c的两阶段识图/确认与目标模型应用已有Desktop实现；固定上游界面还显示自然语言V5/结构化Tag模式并可展开编辑场景。Desktop图片工具原来缺少这两处入口。新Pane从实际Studio草稿接收模式，场景标题旁提供展开；窗口复用既有`DesktopImageToolWindow`的标题、图标、调整大小和关闭行为。
 

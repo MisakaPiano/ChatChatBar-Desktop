@@ -998,6 +998,26 @@
         "docs/desktop/332_REVERSE_SCENE_EXPANDED_EDITOR.md",
         "OWNER_REVERSE_SCENE_EDITOR_FINAL_REVIEW.json"
       ]
+    },
+    {
+      "id": "REVERSE_SCENE_DOMAIN_AND_ACTUAL_TARGET_APPLICATION",
+      "disposition": "EQUIVALENT",
+      "scope": "Only48f scene recognition/explicit edited-scene confirmation/target image model application in actual Desktop controller. Shared4 old tests emit Delta only; later ContentPreview is excluded. Unused repository facade is not actual target owner; no change needed. New editor ticket identity and UI lifecycle are separately pending R52/R53, not covered by this reuse.",
+      "reviewSource": "84f36101bf87007ba3b356586de3b49da9505abe",
+      "evidence": [
+        "docs/desktop/332_REVERSE_SCENE_EXPANDED_EDITOR.md",
+        "OWNER_REVERSE_SCENE_DOMAIN_REUSE.json"
+      ]
+    },
+    {
+      "id": "STUDIO_EXPLICIT_SAMPLING_ONLY_RESET",
+      "disposition": "EQUIVALENT",
+      "scope": "Onlya963 Studio explicit sampling-only reset: four stored sampling values change; Seed/size/count/V+/sigma/Effort/transparency/positions/other-model settings/all Prompt preserved. Actual UI to Controller durable reopen/global undo-redo covers V4.5, V5 High and Medium; original broad reset remains broad. Current7PASS=Sampling2+V5Options4+Variety1, not whole Studio or human/provider acceptance.",
+      "reviewSource": "84f36101bf87007ba3b356586de3b49da9505abe",
+      "evidence": [
+        "docs/desktop/333_STUDIO_SAMPLING_ONLY_RESET.md",
+        "OWNER_STUDIO_SAMPLING_RESET_FINAL_REVIEW.json"
+      ]
     }
   ],
   "deltas": [
@@ -6578,8 +6598,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only48f scene recognition/explicit edited-scene confirmation/target image model application in actual Desktop controller. Shared4 old tests emit Delta only; later ContentPreview is excluded. Unused repository facade is not actual target owner; no change needed. New editor ticket identity and UI lifecycle are separately pending R52/R53, not covered by this reuse.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/data/repository/NovelAiStudioRepository.kt",
@@ -6588,8 +6608,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "REVERSE_SCENE_DOMAIN_AND_ACTUAL_TARGET_APPLICATION"
+      ],
+      "evidence": [
+        "docs/desktop/332_REVERSE_SCENE_EXPANDED_EDITOR.md",
+        "OWNER_REVERSE_SCENE_DOMAIN_REUSE.json"
+      ]
     },
     {
       "id": "48f90b5c7159f928db4537b8a1ef989e16d839b4:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiPromptDesigner.kt",
@@ -6605,8 +6630,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only48f scene recognition/explicit edited-scene confirmation/target image model application in actual Desktop controller. Shared4 old tests emit Delta only; later ContentPreview is excluded. Unused repository facade is not actual target owner; no change needed. New editor ticket identity and UI lifecycle are separately pending R52/R53, not covered by this reuse.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiPromptDesigner.kt",
@@ -6615,8 +6640,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "REVERSE_SCENE_DOMAIN_AND_ACTUAL_TARGET_APPLICATION"
+      ],
+      "evidence": [
+        "docs/desktop/332_REVERSE_SCENE_EXPANDED_EDITOR.md",
+        "OWNER_REVERSE_SCENE_DOMAIN_REUSE.json"
+      ]
     },
     {
       "id": "48f90b5c7159f928db4537b8a1ef989e16d839b4:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
@@ -6632,8 +6662,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only48f scene recognition/explicit edited-scene confirmation/target image model application in actual Desktop controller. Shared4 old tests emit Delta only; later ContentPreview is excluded. Unused repository facade is not actual target owner; no change needed. New editor ticket identity and UI lifecycle are separately pending R52/R53, not covered by this reuse.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
@@ -6642,8 +6672,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "REVERSE_SCENE_DOMAIN_AND_ACTUAL_TARGET_APPLICATION"
+      ],
+      "evidence": [
+        "docs/desktop/332_REVERSE_SCENE_EXPANDED_EDITOR.md",
+        "OWNER_REVERSE_SCENE_DOMAIN_REUSE.json"
+      ]
     },
     {
       "id": "48f90b5c7159f928db4537b8a1ef989e16d839b4:app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolScreen.kt",
@@ -6691,8 +6726,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Only48f scene recognition/explicit edited-scene confirmation/target image model application in actual Desktop controller. Shared4 old tests emit Delta only; later ContentPreview is excluded. Unused repository facade is not actual target owner; no change needed. New editor ticket identity and UI lifecycle are separately pending R52/R53, not covered by this reuse.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolViewModel.kt",
@@ -6701,8 +6736,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "REVERSE_SCENE_DOMAIN_AND_ACTUAL_TARGET_APPLICATION"
+      ],
+      "evidence": [
+        "docs/desktop/332_REVERSE_SCENE_EXPANDED_EDITOR.md",
+        "OWNER_REVERSE_SCENE_DOMAIN_REUSE.json"
+      ]
     },
     {
       "id": "48f90b5c7159f928db4537b8a1ef989e16d839b4:app/app/src/test/java/com/example/chatbar/domain/image/NovelAiTagResearchServiceTest.kt",
@@ -11057,7 +11097,7 @@
       },
       "scope": "PRODUCTION",
       "disposition": "EQUIVALENT",
-      "reason": "Explicit model sampling reset uses current model defaults while preserving saved/hidden options. The separate missing-singleton repository change is NOT covered by this reused reset proof; it has a new actual counterexample and successor pending. Source/delta review plus matching original162 proof; no new run or whole-target compatibility.",
+      "reason": "Explicit model sampling reset uses current model defaults while preserving saved/hidden options. The separate missing-singleton repository change is NOT covered by this reused reset proof; it has a new actual counterexample and successor pending. Source/delta review plus matching original162 proof; no new run or whole-target compatibility. Successor R51 additionally verifies actual Studio withDefaultSampling four-field-only behavior and durable undo, beyond prior card/default proof.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
@@ -11067,11 +11107,14 @@
         }
       ],
       "behaviorIds": [
-        "NAI_SAMPLING_AND_SIGMA_REUSE"
+        "NAI_SAMPLING_AND_SIGMA_REUSE",
+        "STUDIO_EXPLICIT_SAMPLING_ONLY_RESET"
       ],
       "evidence": [
         "docs/desktop/322_NAI_PARAMETER_IMPORT_AND_UI_SUCCESSORS.md",
-        "I:\\CCB-Desktop-Continuity\\updates\\20261106-upstream-catchup-to149\\OWNER_NAI_SAMPLING_AND_SIGMA_REUSE.json"
+        "I:\\CCB-Desktop-Continuity\\updates\\20261106-upstream-catchup-to149\\OWNER_NAI_SAMPLING_AND_SIGMA_REUSE.json",
+        "docs/desktop/333_STUDIO_SAMPLING_ONLY_RESET.md",
+        "OWNER_STUDIO_SAMPLING_RESET_FINAL_REVIEW.json"
       ],
       "desktopOwners": [
         "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiImageModel.kt",
@@ -11125,8 +11168,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Onlya963 Studio explicit sampling-only reset: four stored sampling values change; Seed/size/count/V+/sigma/Effort/transparency/positions/other-model settings/all Prompt preserved. Actual UI to Controller durable reopen/global undo-redo covers V4.5, V5 High and Medium; original broad reset remains broad. Current7PASS=Sampling2+V5Options4+Variety1, not whole Studio or human/provider acceptance.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/imageprompt/ImagePromptToolScreen.kt",
@@ -11135,8 +11178,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "STUDIO_EXPLICIT_SAMPLING_ONLY_RESET"
+      ],
+      "evidence": [
+        "docs/desktop/333_STUDIO_SAMPLING_ONLY_RESET.md",
+        "OWNER_STUDIO_SAMPLING_RESET_FINAL_REVIEW.json"
+      ]
     },
     {
       "id": "a96313d9ec44244a301fa94f7a0ad6f98cf6350a:app/app/src/test/java/com/example/chatbar/data/repository/NovelAiStudioRepositoryTest.kt",
