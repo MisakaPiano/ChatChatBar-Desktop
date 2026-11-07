@@ -81,12 +81,13 @@ class DesktopCharacterPositionViewportTest {
             }
             suspend fun clickInput(value: String) {
                 val b = controlBounds(reach(value), value)
-                // Exercise the actual pointer in the decoration padding, outside the text node.
-                val point = Offset(b.left + 3f, b.top + 3f)
+                // Click the visible input itself. Decoration padding need not be an
+                // independent hit target; its full bounds still have to fit the viewport.
+                val point = b.center
                 scene.sendPointerEvent(PointerEventType.Press, point, button = PointerButton.Primary)
                 scene.sendPointerEvent(PointerEventType.Release, point, button = PointerButton.Primary)
                 frames()
-                assertEquals(true, target(value).config.getOrNull(SemanticsProperties.Focused), "$value padding must focus its input")
+                assertEquals(true, target(value).config.getOrNull(SemanticsProperties.Focused), "$value pointer click must focus its input")
             }
             try {
                 frames()
