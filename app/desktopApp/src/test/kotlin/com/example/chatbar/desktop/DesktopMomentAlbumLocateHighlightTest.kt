@@ -47,7 +47,11 @@ class DesktopMomentAlbumLocateHighlightTest {
     private fun ImageComposeScene.selectedIds() = nodes().filter { it.config.getOrNull(SemanticsProperties.Selected) == true }
         .mapNotNull { it.config.getOrNull(SemanticsProperties.TestTag)?.removePrefix("moment-post-") }.toSet()
     private suspend fun ImageComposeScene.locate(id: String) {
-        click("朋友圈相册"); frames(); click("相册分组 card"); frames(); click("返回朋友圈动态 $id"); frames()
+        click("朋友圈相册"); frames()
+        if (nodes().any { it.has("相册分组 card") && it.config.contains(SemanticsActions.OnClick) }) {
+            click("相册分组 card"); frames()
+        }
+        click("返回朋友圈动态 $id"); frames()
         withTimeout(5_000) { while (selectedIds() != setOf(id)) frames() }
     }
     private fun ImageComposeScene.shot(name: String) { System.getenv("CCB_FORMAT_AI_REVIEW_DIR")?.let { folder ->

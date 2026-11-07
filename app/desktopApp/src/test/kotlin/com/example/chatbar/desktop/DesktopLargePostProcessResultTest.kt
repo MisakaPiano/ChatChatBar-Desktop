@@ -93,7 +93,7 @@ class DesktopLargePostProcessResultTest {
 
             val scene = ImageComposeScene(1450, 1300, coroutineContext = edt) { DesktopNovelAiStudioPanel(reopened) }
             try {
-                scene.frames(); scene.click("导入图片"); scene.frames(); scene.click("Enhance / Upscale")
+                scene.frames(); scene.click("导入图片"); scene.frames(); scene.click("▸ Enhance / Upscale")
                 val resultIdentity = desktopDecodedImageIdentity("after-${output.contentHashCode()}")
                 withTimeout(20_000) { while (scene.nodes().none { it.config.getOrNull(DesktopDecodedImageIdentity) == resultIdentity }) scene.frames() }
                 scene.click("保存 PNG")
