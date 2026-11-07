@@ -26,7 +26,11 @@ internal class DesktopNovelAiPostProcessor(private val secrets: DesktopSecretSto
                 NovelAiPostProcessPolicy.requestSize(width, height, options.scale)
             } else { requireNotNull(NovelAiPostProcessPolicy.upscaleCost(width, height)); null }
             val flatten = tab == NovelAiPostProcessTab.ENHANCE && source?.settings?.model == NovelAiImageModel.V4_5_FULL
-            val encodedBytes = if (size == null && bytes.size > 8 && bytes[0] == 0x89.toByte()) bytes else {
+            val encodedBytes = if (size == null && bytes.size > 8 && bytes[0] == 0x89.toByte()) {
+                // PNG pass-through is valid only when its stored pixels already match the oriented
+                // preview/expected output dimensions. Re-encode the decoded raster once otherwise.
+                if (ImageMetadataStripper.readPngOrientation(bytes) == 1) bytes else DesktopImageEditing.png(raster)
+            } else {
                 val out = java.awt.image.BufferedImage(size?.width ?: width, size?.height ?: height,
                     if (flatten) java.awt.image.BufferedImage.TYPE_INT_RGB else java.awt.image.BufferedImage.TYPE_INT_ARGB)
                 out.createGraphics().let { g -> try {

@@ -1,0 +1,7 @@
+# Upscale请求的PNG方向一致性
+
+2026-11-07。固定上游12e的NovelAiPostProcessFiles.encode只在orientation为NORMAL时原PNG直传。Desktop原PostProcessor先按eXIf纠正预览尺寸，但Upscale的size=null分支仍发送原PNG；非方形旋转图的请求栅格尺寸与本地expected2x可能不一致，镜像图也没有物理归一。这是源码分支不一致；真实供应商是否如何处理该元数据尚未实测，不将推测写成实际服务端错误。
+
+合成回归通过真实PostProcessor→loopback HTTP读取image base64，直接用ImageIO读取原栅格而不自动旋转，核对orientation6/8/2的独立角标像素、宽高、alpha和不再携带二次方向；另一方法检查orientation1透明PNG原字节直传。返回合成正确2x响应，检查原输入不变、每次只有一个请求。旧生产R20待原件，后继仅在PNG原样分支增加方向前提，非正常方向直接编码已纠正raster；Enhance、普通PNG、非PNG、额度、受保护路由和重试语义保留。
+
+本组不使用真实图片/凭据/供应商，不在本机运行JVM，不创建安装包或发布。其他148b路径与完整上游处置未因此闭合。
