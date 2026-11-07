@@ -146,6 +146,20 @@ class DesktopMessageImagePresentationTest {
         assertEquals(80, decoded.height)
     }
 
+    @Test fun `metadata only history thumbnails never try to open a missing image`() = runBlocking(awt) {
+        var reads = 0
+        val scene = ImageComposeScene(240, 240) {
+            DesktopHistoryThumbnail(com.example.chatbar.domain.chat.OMITTED_SAVE_SLOT_IMAGE_PREFIX + "synthetic",
+                { reads++; error("Omitted image must not be read") }, Modifier.width(180.dp).height(180.dp))
+        }
+        try {
+            scene.frames()
+            assertTrue(scene.nodes().any { it.label("仅元数据") })
+            assertEquals(0, reads)
+            assertTrue(scene.nodes().none { it.config.getOrNull(DesktopDecodedImageIdentity) != null })
+        } finally { scene.close() }
+    }
+
     @Test fun `history thumbnails decode for their actual cell and keep stable requests during recomposition`() = runBlocking(awt) {
         val raw = png(2048, 1536)
         val before = raw.copyOf()

@@ -31,6 +31,10 @@ internal fun desktopHistoryThumbnailTarget(source: IntSize, viewport: IntSize): 
 
 @Composable
 internal fun DesktopHistoryThumbnail(reference: String, read: (String) -> ByteArray, modifier: Modifier) {
+    if (reference.startsWith(com.example.chatbar.domain.chat.OMITTED_SAVE_SLOT_IMAGE_PREFIX)) {
+        Box(modifier, contentAlignment = Alignment.Center) { StatusText("仅元数据") }
+        return
+    }
     val density = LocalDensity.current
     BoxWithConstraints(modifier) {
         val viewport = with(density) { IntSize(maxWidth.roundToPx().coerceAtLeast(1), maxHeight.roundToPx().coerceAtLeast(1)) }
