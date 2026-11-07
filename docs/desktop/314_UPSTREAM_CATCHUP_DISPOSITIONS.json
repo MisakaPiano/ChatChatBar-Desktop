@@ -2487,6 +2487,33 @@
       "evidence": [
         "OWNER_VOICE_RETRY2_TEST_SUPPORT_REUSE.json"
       ]
+    },
+    {
+      "id": "UPSTREAM_ANDROID_IMAGE_TEST_SUPPORT_018E8644F542A0FE",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Three Android image-test support deltas mapped to existing native/shared behavior, not Android instrumentation executed onWindows. Complete independent changed-text/fixture review plus original10 selected whole methods: shared privacy4/stealth3, actual Desktop ordinaryComment/alpha fallback+WebP2, actual independent visible blue-cover transfer1 without entity/package changes. Android Bitmap lifecycle/recycle, all chunk variants/invalid filesystem instrumentation and every UI action are not claimed. R03 selected suite has a real local MockWebServer did-not-make-request WARNING; preserve nonempty stderr, selected local methods PASS, no provider error inferred. Existing method overlap with prior receipts not counted as new10; zero newCI/provider/public/human results.",
+      "reviewSource": "6bae8cd136b3b89b54d34ef8f3749e5dc74c3cbe",
+      "evidence": [
+        "OWNER_ANDROID_IMAGE3_SUPPORT_SCOPED_REUSE.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_ANDROID_IMAGE_TEST_SUPPORT_DE20652D37A28B0A",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Three Android image-test support deltas mapped to existing native/shared behavior, not Android instrumentation executed onWindows. Complete independent changed-text/fixture review plus original10 selected whole methods: shared privacy4/stealth3, actual Desktop ordinaryComment/alpha fallback+WebP2, actual independent visible blue-cover transfer1 without entity/package changes. Android Bitmap lifecycle/recycle, all chunk variants/invalid filesystem instrumentation and every UI action are not claimed. R03 selected suite has a real local MockWebServer did-not-make-request WARNING; preserve nonempty stderr, selected local methods PASS, no provider error inferred. Existing method overlap with prior receipts not counted as new10; zero newCI/provider/public/human results.",
+      "reviewSource": "6bae8cd136b3b89b54d34ef8f3749e5dc74c3cbe",
+      "evidence": [
+        "OWNER_ANDROID_IMAGE3_SUPPORT_SCOPED_REUSE.json"
+      ]
+    },
+    {
+      "id": "UPSTREAM_ANDROID_IMAGE_TEST_SUPPORT_4DEA05641DB0DBD7",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "scope": "Three Android image-test support deltas mapped to existing native/shared behavior, not Android instrumentation executed onWindows. Complete independent changed-text/fixture review plus original10 selected whole methods: shared privacy4/stealth3, actual Desktop ordinaryComment/alpha fallback+WebP2, actual independent visible blue-cover transfer1 without entity/package changes. Android Bitmap lifecycle/recycle, all chunk variants/invalid filesystem instrumentation and every UI action are not claimed. R03 selected suite has a real local MockWebServer did-not-make-request WARNING; preserve nonempty stderr, selected local methods PASS, no provider error inferred. Existing method overlap with prior receipts not counted as new10; zero newCI/provider/public/human results.",
+      "reviewSource": "6bae8cd136b3b89b54d34ef8f3749e5dc74c3cbe",
+      "evidence": [
+        "OWNER_ANDROID_IMAGE3_SUPPORT_SCOPED_REUSE.json"
+      ]
     }
   ],
   "deltas": [
@@ -3544,11 +3571,16 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Three Android image-test support deltas mapped to existing native/shared behavior, not Android instrumentation executed onWindows. Complete independent changed-text/fixture review plus original10 selected whole methods: shared privacy4/stealth3, actual Desktop ordinaryComment/alpha fallback+WebP2, actual independent visible blue-cover transfer1 without entity/package changes. Android Bitmap lifecycle/recycle, all chunk variants/invalid filesystem instrumentation and every UI action are not claimed. R03 selected suite has a real local MockWebServer did-not-make-request WARNING; preserve nonempty stderr, selected local methods PASS, no provider error inferred. Existing method overlap with prior receipts not counted as new10; zero newCI/provider/public/human results.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_ANDROID_IMAGE_TEST_SUPPORT_018E8644F542A0FE"
+      ],
+      "evidence": [
+        "OWNER_ANDROID_IMAGE3_SUPPORT_SCOPED_REUSE.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "b6d68320b02a564afe4582bdc5f25978a57f4ea9:app/app/src/androidTest/java/com/example/chatbar/ui/components/ImageMosaicEditorPrivacyTest.kt",
@@ -4937,11 +4969,16 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Three Android image-test support deltas mapped to existing native/shared behavior, not Android instrumentation executed onWindows. Complete independent changed-text/fixture review plus original10 selected whole methods: shared privacy4/stealth3, actual Desktop ordinaryComment/alpha fallback+WebP2, actual independent visible blue-cover transfer1 without entity/package changes. Android Bitmap lifecycle/recycle, all chunk variants/invalid filesystem instrumentation and every UI action are not claimed. R03 selected suite has a real local MockWebServer did-not-make-request WARNING; preserve nonempty stderr, selected local methods PASS, no provider error inferred. Existing method overlap with prior receipts not counted as new10; zero newCI/provider/public/human results.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_ANDROID_IMAGE_TEST_SUPPORT_DE20652D37A28B0A"
+      ],
+      "evidence": [
+        "OWNER_ANDROID_IMAGE3_SUPPORT_SCOPED_REUSE.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "cb9c0f7ae228174af38e1cdbd6fa0a48d1743f49:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiPngMetadataReader.kt",
@@ -6449,8 +6486,8 @@
         "afterMode": "100644"
       },
       "scope": "SUPPORT",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "PLATFORM_SPECIFIC_SUPPORT",
+      "reason": "Three Android image-test support deltas mapped to existing native/shared behavior, not Android instrumentation executed onWindows. Complete independent changed-text/fixture review plus original10 selected whole methods: shared privacy4/stealth3, actual Desktop ordinaryComment/alpha fallback+WebP2, actual independent visible blue-cover transfer1 without entity/package changes. Android Bitmap lifecycle/recycle, all chunk variants/invalid filesystem instrumentation and every UI action are not claimed. R03 selected suite has a real local MockWebServer did-not-make-request WARNING; preserve nonempty stderr, selected local methods PASS, no provider error inferred. Existing method overlap with prior receipts not counted as new10; zero newCI/provider/public/human results.",
       "candidateOwners": [
         {
           "path": "app/app/src/androidTest/java/com/example/chatbar/domain/card/CharacterCardPngRendererInstrumentedTest.kt",
@@ -6459,8 +6496,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "UPSTREAM_ANDROID_IMAGE_TEST_SUPPORT_4DEA05641DB0DBD7"
+      ],
+      "evidence": [
+        "OWNER_ANDROID_IMAGE3_SUPPORT_SCOPED_REUSE.json",
+        "docs/desktop/384_UPSTREAM_OPERATION_GUIDES_SUPPORT_SCOPE.md"
+      ]
     },
     {
       "id": "8c4ba52ba445a148c2991c68a6356431dc5a3efe:app/app/src/androidTest/java/com/example/chatbar/domain/memory/LongTermMemoryScopedCommitTest.kt",

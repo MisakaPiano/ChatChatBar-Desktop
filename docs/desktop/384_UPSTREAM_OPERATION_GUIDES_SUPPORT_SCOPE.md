@@ -19,3 +19,5 @@
 2项隐私图片shared测试支持已完整核对，复用原3个容器清理和4个像素编码完整方法。容器清理保留压缩像素，只去容器元数据；真正隐私编码会抹除载体平面，不能混称。编码器及测试未变，Stripper仅另域方向读取追加/提取，容器清理段完全相同。不借为Android Bitmap/原导出器或角色卡渲染证明。见 OWNER_PRIVACY2_TEST_SUPPORT_REUSE.json，0新跑。
 
 2项语音重试shared测试支持变化已完整核对，复用原执行9/策略3完整方法，test及策略blob未变。只证明虚拟时间/合成请求的次数、独立预算、Retry-After/抖动、拒绝与取消不重放等原边界，不是付费TTS、真实播放或新Prompt验收。另Fish围栏JSON解析变化仍单列pending。见 OWNER_VOICE_RETRY2_TEST_SUPPORT_REUSE.json，0新跑。
+
+3项Android图片instrumentation支持由现有shared/native原10个完整方法限域等位：隐私/stealth7、真实桌面Comment/alpha/WebP2、独立蓝色封面导出且卡与package不变1。R03选中套件保留一条本地MockWebServer WARNING，不写成空stderr或供应商故障；Bitmap回收、全部chunk及非法输出路径字面instrumentation未借名通过，动画仍有原生边界。与先前方法重叠不算新10项；见 OWNER_ANDROID_IMAGE3_SUPPORT_SCOPED_REUSE.json，0新跑。
