@@ -54,4 +54,25 @@ class DesktopBackupEntityIdentityTest {
             f.service.verifyFile(f.base.resolve("distinct-families.cbbackup"), null)
         }
     }
+
+    @Test fun `actual service refuses duplicate inline slot messages but separate slots may retain the same historical message`() = runBlocking<Unit> {
+        Fixture().use { f ->
+            f.card("card", "card")
+            f.storage.saveEntity("chat_sessions", "session", ChatSession("session", "card", "Synthetic session", createdAt = 1, updatedAt = 1), ChatSession.serializer())
+            val message = ChatMessage("message", "session", MessageRole.USER, "Synthetic history", createdAt = 1, updatedAt = 1)
+            val slot = SaveSlot(schemaVersion = 7, id = "first", sessionId = "session", name = "Synthetic slot", messages = listOf(message, message), createdAt = 1)
+            f.storage.saveEntity("save_slots", slot.id, slot, SaveSlot.serializer())
+            val before = DesktopFullBackupMapping(f.root).inventory()
+            val refused = f.base.resolve("inline-refused.cbbackup")
+            assertFails { f.service.exportModern(refused, null) }
+            assertFalse(Files.exists(refused))
+            assertEquals(before, DesktopFullBackupMapping(f.root).inventory())
+            val valid = slot.copy(messages = listOf(message))
+            f.storage.saveEntity("save_slots", valid.id, valid, SaveSlot.serializer())
+            f.storage.saveEntity("save_slots", "second", valid.copy(id = "second"), SaveSlot.serializer())
+            val output = f.base.resolve("separate-slots.cbbackup")
+            f.service.exportModern(output, null)
+            f.service.verifyFile(output, null)
+        }
+    }
 }
