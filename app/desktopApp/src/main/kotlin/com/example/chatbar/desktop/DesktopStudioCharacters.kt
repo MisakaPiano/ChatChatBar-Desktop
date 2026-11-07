@@ -108,12 +108,23 @@ internal fun DesktopCharacterPositions(draft: NovelAiStudioDraft, edit: ((NovelA
     var selectedId by remember { mutableStateOf(active.firstOrNull()?.id) }
     val selected = active.firstOrNull { it.id == selectedId } ?: active.firstOrNull()
     val custom = draft.activeSettings.useCharacterPositions
-    fun setCenter(point: DesignedCharacterCenter) {
-        val center = NovelAiCharacterPositionPolicy.normalize(point, draft.selectedModel)
-        edit { current -> current.copy(characters = current.characters.map { if (it.id == selected?.id) it.copy(center = center) else it }) }
+    val openedModel = draft.selectedModel
+    fun updateCenter(change: (DesignedCharacterCenter) -> DesignedCharacterCenter) {
+        val personId = selected?.id ?: return
+        edit { current ->
+            val activeNow = current.activeCharacters
+            val index = activeNow.indexOfFirst { it.id == personId }
+            if (current.selectedModel != openedModel || !current.activeSettings.useCharacterPositions || index < 0) current
+            else {
+                val before = NovelAiCharacterPositionPolicy.center(activeNow[index], index, activeNow.size, openedModel)
+                val center = NovelAiCharacterPositionPolicy.normalize(change(before), openedModel)
+                current.copy(characters = current.characters.map { if (it.id == personId) it.copy(center = center) else it })
+            }
+        }
     }
+    fun setCenter(point: DesignedCharacterCenter) = updateCenter { point }
     StudioChips("定位", listOf(false, true), custom, { if (it) "自定义" else "自动" }) { enabled ->
-        edit { it.withActiveSettings(it.activeSettings.copy(useCharacterPositions = enabled)) }
+        edit { if (it.selectedModel == openedModel) it.withActiveSettings(it.activeSettings.copy(useCharacterPositions = enabled)) else it }
     }
     StudioChips("启用角色", active.map { it.id }, selected?.id, { id -> "角色 ${draft.characters.indexOfFirst { it.id == id } + 1}" }) { selectedId = it }
     StatusText(if (draft.selectedModel == NovelAiImageModel.V4_5_FULL) "V4.5 · 5 × 5 网格吸附" else "V5 · 连续坐标")
@@ -142,9 +153,12 @@ internal fun DesktopCharacterPositions(draft: NovelAiStudioDraft, edit: ((NovelA
     selected?.let { role ->
         val center = NovelAiCharacterPositionPolicy.center(role, active.indexOf(role), active.size, draft.selectedModel)
         if (custom) {
-            StudioField("X %", (center.x * 100).roundToInt().toString()) { text -> text.toFloatOrNull()?.takeIf { it.isFinite() }?.let { setCenter(center.copy(x = it / 100)) } }
-            StudioField("Y %", (center.y * 100).roundToInt().toString()) { text -> text.toFloatOrNull()?.takeIf { it.isFinite() }?.let { setCenter(center.copy(y = it / 100)) } }
+            StudioField("X %", (center.x * 100).roundToInt().toString()) { text -> text.toFloatOrNull()?.takeIf { it.isFinite() }?.let { value -> updateCenter { it.copy(x = value / 100) } } }
+            StudioField("Y %", (center.y * 100).roundToInt().toString()) { text -> text.toFloatOrNull()?.takeIf { it.isFinite() }?.let { value -> updateCenter { it.copy(y = value / 100) } } }
         }
     }
-    StudioAction("均匀重置", enabled = custom) { edit { current -> current.copy(characters = current.characters.map { if (it.enabled) it.copy(center = null) else it }) } }
+    StudioAction("均匀重置", enabled = custom) { edit { current ->
+        if (current.selectedModel != openedModel || !current.activeSettings.useCharacterPositions) current
+        else current.copy(characters = current.characters.map { if (it.enabled) it.copy(center = null) else it })
+    } }
 }
