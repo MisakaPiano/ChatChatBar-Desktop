@@ -260,6 +260,75 @@ class DesktopFullBackupServiceTest {
             assertTrue(reads > 0); assertContentEquals(original, Files.readAllBytes(f.settings))
         }
     }
+    @Test fun `modern credentials include retained Moments without changing source or protected values`() = runBlocking<Unit> {
+        Fixture().use { f ->
+            val storage = com.example.chatbar.data.local.JsonFileStorage(f.root, f.gate)
+            val card = CharacterCard("card", "Synthetic card", createdAt = 1, updatedAt = 1)
+            val session = ChatSession("session", card.id, "Synthetic session", createdAt = 1, updatedAt = 1)
+            val post = MomentPost("post", card.id, session.id, senderName = "Synthetic sender",
+                text = "Synthetic retained Moment", scheduledAt = 1, generatedAt = 1)
+            val task = MomentTask.create(card.id, session.id, 1).copy(status = MomentTaskStatus.COMPLETED, postId = post.id)
+            Files.createDirectories(f.settings.parent)
+            Files.writeString(f.settings, backupJson.encodeToString(AppSettings.serializer(), AppSettings()))
+            storage.saveEntity("character_cards", card.id, card, CharacterCard.serializer())
+            storage.saveEntity("chat_sessions", session.id, session, ChatSession.serializer())
+            storage.saveEntity("moment_posts", post.id, post, MomentPost.serializer())
+            storage.saveEntity("moment_tasks", task.id, task, MomentTask.serializer())
+            fun liveBytes() = Files.walk(f.root.resolve("entities")).use { paths -> paths.filter(Files::isRegularFile)
+                .toList().associate { f.root.relativize(it).toString() to Files.readAllBytes(it).toList() } }
+            val original = liveBytes()
+            val values = mapOf(com.example.chatbar.desktop.security.DesktopCredentialKey.NovelAiToken to "SYNTHETIC_MOMENT_EXPORT_TOKEN")
+            val reads = mutableListOf<com.example.chatbar.desktop.security.DesktopCredentialKey>()
+            val store = object : com.example.chatbar.desktop.security.DesktopSecretStore {
+                override fun load(key: com.example.chatbar.desktop.security.DesktopCredentialKey): String? {
+                    reads += key
+                    return values[key]
+                }
+                override fun save(key: com.example.chatbar.desktop.security.DesktopCredentialKey, secret: String) = error("Export must not write credentials")
+                override fun delete(key: com.example.chatbar.desktop.security.DesktopCredentialKey) = error("Export must not delete credentials")
+            }
+            val service = DesktopFullBackupService(f.root, f.gate, DesktopAudioMaintenance({ f.focus }) {}, secretStore = { store })
+            val choice = AppBackupSelection(globalOptions = setOf("novelAiCredentials"), characterIds = setOf(card.id),
+                sessions = mapOf(session.id to BackupSessionChoice()), moments = true)
+            for (encrypted in listOf(false, true)) for (includeCredentials in listOf(false, true)) {
+                reads.clear()
+                val output = f.base.resolve("moments-$encrypted-$includeCredentials.cbbackup")
+                val password = if (encrypted) "SYNTHETIC_MOMENT_PASSWORD".toCharArray() else null
+                service.exportModern(output, password, includeCredentials, choice)
+                assertTrue(password == null || password.all { it == '\u0000' })
+                assertEquals(includeCredentials, reads.isNotEmpty())
+                if (includeCredentials) assertTrue(com.example.chatbar.desktop.security.DesktopCredentialKey.NovelAiToken in reads)
+                val exported = Files.readAllBytes(output)
+                var token: String? = null
+                val records = mutableMapOf<String, kotlinx.serialization.json.JsonObject>()
+                val verified = DesktopFullBackupSource.verify(output,
+                    if (encrypted) "SYNTHETIC_MOMENT_PASSWORD".toCharArray() else null,
+                    object : DesktopFullBackupSource.TentativeSink {
+                        override fun entity(path: String, original: kotlinx.serialization.json.JsonObject, raw: ByteArray) { records[path] = original }
+                        override fun preferences(original: kotlinx.serialization.json.JsonObject) {
+                            val value = original["novelAiToken"] as? kotlinx.serialization.json.JsonPrimitive
+                            token = value?.takeUnless { it is kotlinx.serialization.json.JsonNull }?.content
+                        }
+                        override fun media(path: String, input: java.io.InputStream) { error("Synthetic text-only fixture has no media") }
+                    })
+                assertEquals(CURRENT_DESKTOP_BACKUP_CODE, verified.manifest.appVersionCode)
+                assertTrue(verified.manifest.scope!!.moments)
+                assertEquals(choice.globalOptions, verified.manifest.scope!!.globalOptions)
+                assertEquals(if (includeCredentials) values.values.single() else null, token)
+                assertEquals(post.text, DesktopMomentBackupExtension.snapshot(records.getValue("entities/moment_posts/post.json")).text)
+                assertTrue("entities/moment_tasks/${task.id}.json" in records)
+                assertEquals(original, liveBytes())
+                assertContentEquals(exported, Files.readAllBytes(output))
+                assertEquals("SYNTHETIC_MOMENT_EXPORT_TOKEN", store.load(com.example.chatbar.desktop.security.DesktopCredentialKey.NovelAiToken))
+                assertEquals(0L, Files.list(f.root.resolve("backups/.full-app-work")).use { it.count() })
+            }
+            val legacy = f.base.resolve("legacy.cbbackup")
+            val refusal = assertFailsWith<DesktopBackupCompatibilityException> { service.export(legacy, null) }
+            assertEquals(DesktopBackupCompatibility.MOMENTS_UNSUPPORTED, refusal.kind)
+            assertFalse(Files.exists(legacy))
+            assertEquals(original, liveBytes())
+        }
+    }
     @Test fun `whole backup keeps participation as Desktop extension in legacy and modern envelopes`() = runBlocking {
         for (modern in listOf(false, true)) Fixture().use { f ->
             val person = CharacterInfo.create("Synthetic").copy(desktopEnabled = false)
