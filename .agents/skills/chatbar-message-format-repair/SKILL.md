@@ -23,6 +23,7 @@ Use chatbar-model-request-runtime for provider/request failures and chatbar-long
 - Shared FormatRepairPromptContractTest uses fixed 1.4.1 golden resources plus the D-036 auxiliary confirmation exception at message index 3; source-ledger.json records provenance/hashes without reproducing the superseded exception text. Policy and serialization tests run in sharedCore; Android Prompt tests verify the facade and FORMAT_REPAIR/REPAIR adapter.
 
 - Desktop/native transport entry is shared `OpenAiStreamingTransport.streamFormatRepair`; `FormatRepairAuxiliaryTransport` owns the single envelope and typed stream terminal checks. It does not implement task Stop, notices, persistence, or UI.
+- Repair request envelope isolation is separate from model parameters: inherit the selected output cap, sampling/stop and thinking/custom controls while protecting the assembled messages/model/stream. `FormatRepairSelectedModelParametersTest` checks real HTTP for legacy thinking and reasoning-only models; the existing golden, TLS, cancellation and stream-terminal suite retains its scope.
 
 
 ## Desktop Ownership

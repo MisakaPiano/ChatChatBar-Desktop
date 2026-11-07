@@ -91,13 +91,13 @@ class FormatRepairAuxiliaryTransportTest {
         }
     }
 
-    @Test fun `HTTP uses exact golden request with optional authentication and immutable isolated parameters`() = runBlocking<Unit> {
+    @Test fun `HTTP uses exact golden request with optional authentication and immutable selected parameters`() = runBlocking<Unit> {
         MockWebServer().use { server ->
             for (key in listOf("", "fixture-key")) {
                 server.enqueue(response(payload(), "[DONE]"))
                 val original = model(server).copy(apiKey=key, enableThinking=true, reasoningEffort="high", maxOutputTokens=77,
                     customParams=mapOf("temperature" to ParamValue.NumberValue(0.9), "stop" to ParamValue.StringValue("STOP"),
-                        "max_completion_tokens" to ParamValue.NumberValue(88.0), "reasoning_effort" to ParamValue.StringValue("high"),
+                        "max_tokens" to ParamValue.NumberValue(88.0), "reasoning_effort" to ParamValue.StringValue("high"),
                         "thinking_budget" to ParamValue.NumberValue(99.0),
                         "messages" to ParamValue.StringValue("unrelated history"),
                         "model" to ParamValue.StringValue("wrong-model"), "stream" to ParamValue.BooleanValue(false)))
@@ -111,7 +111,11 @@ class FormatRepairAuxiliaryTransportTest {
                 assertTrue(body.getValue("stream").jsonPrimitive.boolean)
                 assertTrue(body.getValue("enable_thinking").jsonPrimitive.boolean)
                 assertEquals("high", body.getValue("reasoning_effort").jsonPrimitive.content)
-                for (removed in listOf("temperature", "stop", "max_tokens", "max_completion_tokens", "thinking_budget")) assertFalse(removed in body, removed)
+                assertEquals(0.9, body.getValue("temperature").jsonPrimitive.double)
+                assertEquals("STOP", body.getValue("stop").jsonPrimitive.content)
+                assertEquals(77, body.getValue("max_tokens").jsonPrimitive.int)
+                assertFalse("max_completion_tokens" in body)
+                assertEquals(99, body.getValue("thinking_budget").jsonPrimitive.int)
                 assertEquals(77, original.maxOutputTokens); assertEquals(true, original.enableThinking)
             }
             assertEquals(2, server.requestCount)
