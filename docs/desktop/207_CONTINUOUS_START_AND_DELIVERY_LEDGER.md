@@ -1,3 +1,7 @@
+2026-11-08 当前fb4后继：Engine647行已由385/OWNER_COMPLETE_MERGE_ENGINE_WITH_TRANSIENT_R141限定等位，R139原Mode6/删除1与R141实际Plan/认证新根发布重读2分源完成；R140两错scope期待FAIL保留，不改正确replace。R141原21721B/c4d57b0a四XML12执行=Engine2+严格Journal5+原Custody3十完整PASS，另cleanup2因512样本内联为夹具失败。R142原13137B/69d48138终态cancelled却有1XML2个PREFIX前置失败，不写0body；retainStream也沿4096门槛。9d229只改8192实际文件样本，保留PREFIX/真实字节，生产ccda不变；R143控bbd322/run42400952069仅cleanup2仍live，未提前PASS。314非Prompt main已限定映射，其他support/测试与315十Prompt仍待；不等于整1.0完成。更多存储/隐私/重试等支持仅复用既有原scope，R03MockWebServer警告不隐藏。公开1244/db7/sign26、四身份全部ID/T11T23、真人分组保持，无本机JVM/真实根/新包公发，集中批次继续；所有原件失败取消保留。
+
+下方历史保留。
+
 2026-11-08 当前8cb后继：R138原14897B/463f32f3三FAIL：删除first35有效旧反例，foldPlan/actual两项更早MERGE_ENTITY_TARGET_ID，未到模式断言。R139原18478B/7e5e956d两XML九执行=原ModePlan6+删除Plan1完整PASS，foldPlan/actual两相同真实ID失败保留。Fold实体只有depth/enabled/type，实际Repository用depth键；8cb只为该注册类别用非负Int层级（省略0）定址，通用缺ID仍拒绝；R140控cd329/run42399309613仅两失败完整方法live，未提前PASS。之前R137最终状态5完整PASS保持。更新发行10/backup5/历史及账户4支持增量已按原scope登记，原回执6行其中CurrentTurn2依赖315仍pending，不当功能数或新跑8。Engine仍唯一非Prompt main待闭合，314整体false。公开1244/db7/sign26、全部ID四身份T11T23、真人原分组保持，无本机JVM/真实根/新包/公发，集中批次继续；原件失败保留。
 
 下方历史保留。
