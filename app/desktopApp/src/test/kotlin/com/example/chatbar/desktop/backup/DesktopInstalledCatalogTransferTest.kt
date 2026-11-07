@@ -124,6 +124,18 @@ class DesktopInstalledCatalogTransferTest {
                 val phoneRoot = Files.createDirectory(base.resolve("phone-root")); portable(phoneRoot, other)
                 DesktopFullBackupMapping(phoneRoot).export(work, 88, StrictBackupZipReader.Limits().expanded).use { export ->
                     val archive = base.resolve("catalog.cbbackup"); DesktopFullBackupWriter.export(export.files, archive, null)
+                    own(root, base).use {
+                        val actual = DesktopMergeImportService(DesktopDataRootResolution.Resolved(root,
+                            DesktopDataRootProvenance.BOOTSTRAP_CUSTOM, base.resolve("bootstrap.json")), DesktopDataOperationCoordinator(),
+                            com.example.chatbar.desktop.security.InMemoryDesktopSecretStore(), {}, { it() })
+                        try {
+                            val inspected = actual.inspect(archive, null)
+                            val details = assertNotNull(inspected.catalogDetails)
+                            assertTrue(details.computer.single().contains(old.second.sourceSha.take(12)))
+                            assertTrue(details.phone.single().contains(other.second.sourceSha.take(12)))
+                            assertTrue(details.computer.single().contains("10000"))
+                        } finally { actual.close() }
+                    }
                     DesktopFullBackupStaging.prepare(archive, null, work).use { phone ->
                         val p = preview(pc, phone); val conflict = p.conflicts.single()
                         assertEquals(DesktopMergePreview.CATALOG_KEY, conflict.key)

@@ -51,9 +51,10 @@ internal fun DesktopMergeImportPanel(controller: DesktopMergeImportController, s
                 if (conflict.targetPcKey == null && DesktopMergePreview.Reason.SAME_NAME in conflict.reasons)
                     StatusText("存在多个同名目标，不会覆盖多个条目；请选择保留电脑、跳过或两份都保留。", DesktopBootstrapColors.warning)
                 if (conflict.category == "edit_drafts") StatusText("同一编辑目标已有未保存草稿，请选择保留哪一份；卡片的处理方式不会自动决定草稿来源。")
-                state.modelDetails[conflict.key]?.let { details ->
+                (if (conflict.key == DesktopMergePreview.CATALOG_KEY) state.catalogDetails else state.modelDetails[conflict.key])?.let { details ->
                     details.computer.forEach { StatusText("电脑：$it") }
                     details.phone.forEach { StatusText("手机：$it") }
+                    details.notice?.let { StatusText(it) }
                 }
                 ActionRow {
                     conflict.choices.forEach { choice ->

@@ -23,12 +23,13 @@ internal class DesktopMergeImportService(
     private val asset: (String) -> ByteArray = { error("BUNDLED_ASSET_UNAVAILABLE") },
     private val workspace: Path = source.appDataRoot.resolve("backups/.merge-import-work"),
 ) {
-    class ModelDetails internal constructor(val computer: List<String>, val phone: List<String>) {
+    class ModelDetails internal constructor(val computer: List<String>, val phone: List<String>, val notice: String? = null) {
         override fun toString() = "MergeModelDetails(REDACTED)"
     }
     class Preview internal constructor(internal val phone: DesktopFullBackupStaging,
         internal val computer: DesktopFullBackupMapping.Export, internal val credentials: DesktopMergeCredentials,
-        val data: DesktopMergePreview, internal val desktopSettings: ByteArray?, val modelDetails: Map<String, ModelDetails>) : AutoCloseable {
+        val data: DesktopMergePreview, internal val desktopSettings: ByteArray?, val modelDetails: Map<String, ModelDetails>,
+        val catalogDetails: ModelDetails? = null) : AutoCloseable {
         val code get() = phone.source.manifest.appVersionCode
         val versionName get() = phone.source.manifest.appVersionName
         val historicalDesktopV5Settings get() = phone.source.historicalDesktopV5Settings
@@ -93,7 +94,8 @@ internal class DesktopMergeImportService(
                         snapshot.files.filterKeys { !it.startsWith("entities/") }.mapValues { DesktopArchiveFiles.hash(it.value, DesktopFullBackupSource.MAX_FILE) },
                         phone.source.inventory.filterKeys { !it.startsWith("entities/") }.mapValues { it.value.sha256 },
                         phone.source.manifest.scope, captured.dataConflictKeys)
-                    Preview(phone, snapshot, captured, data, readDesktopSettings(), modelDetails(data, entities, phone.entities))
+                    Preview(phone, snapshot, captured, data, readDesktopSettings(), modelDetails(data, entities, phone.entities),
+                        catalogDetails(snapshot.files, phone.files))
                 }
                 prepared = result
                 result
@@ -215,6 +217,20 @@ internal class DesktopMergeImportService(
             val pc = rows(computer, conflict.pcKeys); val incoming = rows(phone, setOf(conflict.key))
             if (pc.isEmpty() && incoming.isEmpty()) null else conflict.key to ModelDetails(pc, incoming)
         }.toMap()
+    }
+    internal fun catalogDetails(computer: Map<String, Path>, phone: Map<String, Path>): ModelDetails? {
+        fun metadata(files: Map<String, Path>): com.example.chatbar.domain.image.DanbooruCatalogMetadata? {
+            val manifest = files[DesktopNovelAiCatalogTransfer.METADATA] ?: return null
+            return DesktopNovelAiCatalogTransfer.validate(requireNotNull(files[DesktopNovelAiCatalogTransfer.DATABASE]), manifest).metadata
+        }
+        val pc = metadata(computer); val incoming = metadata(phone)
+        if (pc == null && incoming == null) return null
+        fun rows(value: com.example.chatbar.domain.image.DanbooruCatalogMetadata?): List<String> = value?.let {
+            listOf("版本 ${it.sourceSha.take(12)} · ${it.sourceCommitTime.take(160).ifBlank { "时间未记录" }} · ${it.rowCount} 条")
+        }.orEmpty()
+        val notice = if (pc != null && incoming != null && pc.sourceSha == incoming.sourceSha && pc != incoming)
+            "词库原件版本相同，记录的时间或其他版本信息不同。" else null
+        return ModelDetails(rows(pc), rows(incoming), notice)
     }
     private fun releaseLocked() { prepared?.let { prepared = null; it.close() } }
     private fun checkOwnedSource() {

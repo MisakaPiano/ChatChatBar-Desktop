@@ -13,6 +13,7 @@ private enum class DesktopMergeTask(val kind: DesktopWorkKind, val label: String
 internal data class DesktopMergeImportState(val busy: Boolean = false, val ready: Boolean = false,
     val code: Int = 0, val files: Int = 0, val versionName: String = "",
     val modelDetails: Map<String, DesktopMergeImportService.ModelDetails> = emptyMap(), val conflicts: List<DesktopMergePreview.Conflict> = emptyList(),
+    val catalogDetails: DesktopMergeImportService.ModelDetails? = null,
     val credentials: List<DesktopMergeCredentials.GlobalConflict> = emptyList(),
     val imagePreferencesChoiceRequired: Boolean = false, val message: String = "", val error: String? = null,
     val restartRequired: Boolean = false, val destination: Path? = null, val desktopParticipation: Boolean = false,
@@ -65,7 +66,7 @@ internal class DesktopMergeImportController(private val service: DesktopMergeImp
         preview = null; mutable.update { DesktopMergeImportState(busy = true) }
         val result = service.inspectWithProgress(path, password, ::showProgress)
         preview = result
-        mutable.update { it.copy(ready = true, code = result.code, files = result.fileCount, versionName = result.versionName, modelDetails = result.modelDetails,
+        mutable.update { it.copy(ready = true, code = result.code, files = result.fileCount, versionName = result.versionName, modelDetails = result.modelDetails, catalogDetails = result.catalogDetails,
             conflicts = result.data.conflicts, credentials = result.credentialConflicts,
             imagePreferencesChoiceRequired = result.imagePreferencesChoiceRequired,
             desktopParticipation = result.hasDesktopParticipation, historicalDesktopV5Settings = result.historicalDesktopV5Settings) }
