@@ -161,7 +161,6 @@ class CharacterDraftDiscardTest {
     private suspend fun fixture(): CharacterCard {
         val card = CharacterCard.create("Synthetic discard regression", "Synthetic greeting").copy(
             momentsEnabled = false,
-            defaultImageNegativePrompt = "synthetic negative",
             defaultNovelAiImageModel = NovelAiImageModel.V5_FULL,
             defaultImageGenerationSettings = NovelAiCharacterImageSettings(guidance = 6.75321f, cfgRescale = 0.257891f)
         )
