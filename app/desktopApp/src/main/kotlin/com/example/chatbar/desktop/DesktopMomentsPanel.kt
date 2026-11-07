@@ -24,6 +24,7 @@ import com.example.chatbar.domain.moment.MomentSender
 import com.example.chatbar.domain.moment.MomentSenderOption
 import com.example.chatbar.domain.moment.MomentPostEditing
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZoneId
@@ -67,6 +68,7 @@ internal fun DesktopMomentsPanel(controller: DesktopMomentsController,
     var error by remember { mutableStateOf<String?>(null) }
     var showingAlbum by remember { mutableStateOf(false) }
     var focusPostId by remember { mutableStateOf<String?>(null) }
+    var highlightedPostId by remember { mutableStateOf<String?>(null) }
     val timelineScroll = rememberLazyListState()
     var choosingCard by remember { mutableStateOf(false) }
     var debugGeneration by remember { mutableStateOf(false) }
@@ -95,6 +97,9 @@ internal fun DesktopMomentsPanel(controller: DesktopMomentsController,
         if (link.id == null) error = link.error
         else if (cardSettings) onOpenCard(link.id, focusSwitch) else onOpenSession(link.id)
     }
+    LaunchedEffect(highlightedPostId) {
+        if (highlightedPostId != null) { delay(3500); highlightedPostId = null }
+    }
     if (showingAlbum) {
         DesktopMomentAlbum(state.posts, state.cards.associate { it.id to it.name }, controller.resources,
             state.albumSelection, controller::updateAlbumSelection,
@@ -104,7 +109,10 @@ internal fun DesktopMomentsPanel(controller: DesktopMomentsController,
     LaunchedEffect(focusPostId, state.posts) {
         focusPostId?.let { id ->
             val index = com.example.chatbar.domain.moment.MomentAlbumPolicy.timelineIndex(state.posts, id)
-            if (index >= 0) timelineScroll.scrollToItem(index) else error = "该动态已删除或不可用"
+            if (index >= 0) {
+                timelineScroll.scrollToItem(index)
+                highlightedPostId = id
+            } else error = "该动态已删除或不可用"
             focusPostId = null
         }
     }
@@ -141,6 +149,7 @@ internal fun DesktopMomentsPanel(controller: DesktopMomentsController,
             LazyColumn(Modifier.fillMaxWidth().weight(1f), state = timelineScroll) {
                 items(state.posts, key = { it.id }) { post ->
                     DesktopMomentFeedCard(post, controller.resources, state.busy,
+                        highlighted = highlightedPostId == post.id,
                         onOpenSession = { openLinked(post.id, false) },
                         onOpenCard = { focusSwitch -> openLinked(post.id, true, focusSwitch) },
                         onPreviewAvatar = { post.senderAvatar?.let { viewing = listOf(it); viewIndex = 0 } },

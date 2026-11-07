@@ -11,6 +11,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -25,6 +27,7 @@ import java.time.format.DateTimeFormatter
 /** Presentation only: image choices, author routes and mutations stay with their existing owners. */
 @Composable
 internal fun DesktopMomentFeedCard(post: MomentPost, resources: DesktopCharacterResourceStore?, busy: Boolean,
+    highlighted: Boolean = false,
     onOpenSession: () -> Unit, onOpenCard: (Boolean) -> Unit, onPreviewAvatar: () -> Unit,
     onPreviewImage: () -> Unit, onEdit: () -> Unit, onCopy: () -> Unit, onLike: () -> Unit,
     onRetry: () -> Unit, onGenerateImage: () -> Unit, onRegenerateImage: () -> Unit,
@@ -39,7 +42,8 @@ internal fun DesktopMomentFeedCard(post: MomentPost, resources: DesktopCharacter
             if (!avatar.isNullOrBlank()) add(ContextMenuItem("查看头像", onPreviewAvatar))
         } }) { content() }
     }
-    Column(Modifier.fillMaxWidth().testTag("moment-post-${post.id}")) {
+    Column(Modifier.fillMaxWidth().testTag("moment-post-${post.id}").semantics { selected = highlighted }
+        .then(if (highlighted) Modifier.border(2.dp, colors.primary, RoundedCornerShape(8.dp)) else Modifier)) {
         Row(Modifier.fillMaxWidth().padding(vertical = 22.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             LinkedAuthor {
                 val avatarModifier = Modifier.size(44.dp).clip(RoundedCornerShape(8.dp))
