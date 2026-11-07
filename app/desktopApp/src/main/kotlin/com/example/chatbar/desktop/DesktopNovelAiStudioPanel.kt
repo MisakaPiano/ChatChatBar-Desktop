@@ -93,6 +93,7 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
     DesktopDesignToolLifecycle(controller, auxiliary in setOf("AI 设计", "设计设置", "设计历史"))
     var currentImage by remember { mutableStateOf<java.nio.file.Path?>(null) }
     val clipboardFiles = remember { mutableListOf<java.nio.file.Path>() }
+    val postProcessImages = remember { mutableStateListOf<java.nio.file.Path>() }
     val latestBusy by rememberUpdatedState(busy)
     DisposableEffect(controller) { onDispose { if (!latestBusy) clipboardFiles.forEach { runCatching { java.nio.file.Files.deleteIfExists(it) } } } }
     var selectedResult by remember { mutableStateOf<String?>(null) }
@@ -322,7 +323,7 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
                     else if (shownPath != null) DesktopImageZoomSurface(shownPath.toString(),
                         { java.nio.file.Files.readAllBytes(shownPath) },
                         Modifier.fillMaxSize().semantics { contentDescription = "Studio 内联图片预览" }, inlineResetRevision,
-                        onOpenViewer = ::preview)
+                        onOpenViewer = ::preview, postProcessOutput = shownPath in postProcessImages)
                     else Box(Modifier.fillMaxSize().background(DesktopBootstrapColors.muted), contentAlignment = Alignment.Center) {
                         StatusText("导入图片或生成后，在这里预览与复用")
                     }
@@ -368,7 +369,7 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
                         }
                         currentImage?.let { path ->
                             DesktopOwnedImage(path.toString(), { java.nio.file.Files.readAllBytes(path) }, Modifier.fillMaxWidth().height(260.dp)
-                                .desktopViewerEntry(onClick = { previewPath(path) }))
+                                .desktopViewerEntry(onClick = { previewPath(path) }), postProcessOutput = path in postProcessImages)
                             StatusText(path.fileName.toString())
                             StudioActions {
                                 StudioAction("更换图片", onClick = ::pickImage)
@@ -382,7 +383,8 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
                                 } }
                                 StudioAction("打码 / 旋转 / 隐私 / 保存") { imageAction { imageTools = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { require(java.nio.file.Files.size(path) <= ApngDisguiseCodec.MAX_OUTPUT_BYTES); java.nio.file.Files.readAllBytes(path) } } }
                                 StudioAction("复制图片") { imageAction { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                                    require(java.nio.file.Files.size(path) <= ApngDisguiseCodec.MAX_OUTPUT_BYTES); copyDesktopImage(java.nio.file.Files.readAllBytes(path), path)
+                                    require(java.nio.file.Files.size(path) <= ApngDisguiseCodec.MAX_OUTPUT_BYTES)
+                                    copyDesktopImage(java.nio.file.Files.readAllBytes(path), path, postProcessOutput = path in postProcessImages)
                                 } } }
                                 StudioAction("反推 Prompt", enabled = !busy) { imageAction {
                                     reverseSource = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { require(java.nio.file.Files.size(path) <= DesktopImageEditing.MAX_BYTES); java.nio.file.Files.readAllBytes(path) }
@@ -396,6 +398,7 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
                                     val target = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                                         java.nio.file.Files.createTempFile("ccb-postprocess-", ".png").also { java.nio.file.Files.write(it, bytes); clipboardFiles.add(it) }
                                     }
+                                    postProcessImages.add(target)
                                     currentImage = target; selectedResult = null; controller.clearReverseCandidate()
                                 } }
                             }
@@ -450,7 +453,7 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
     importedPreview?.let { path -> DesktopTransientImagePreview(path.toString(), {
         require(java.nio.file.Files.size(path) <= ApngDisguiseCodec.MAX_OUTPUT_BYTES)
         java.nio.file.Files.readAllBytes(path)
-    }) { importedPreview = null } }
+    }, postProcessOutput = path in postProcessImages) { importedPreview = null } }
 }
 
 @Composable

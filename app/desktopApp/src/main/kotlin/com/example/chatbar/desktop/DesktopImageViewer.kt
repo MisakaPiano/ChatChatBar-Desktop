@@ -54,11 +54,11 @@ internal fun desktopDecodedImageIdentity(reference: String): String = java.util.
 @Composable
 internal fun DesktopOwnedImage(reference: String, read: (String) -> ByteArray,
     modifier: Modifier = Modifier, crop: Boolean = false, onDimensions: ((IntSize) -> Unit)? = null,
-    minimumDisplayWidthPx: Int? = null,
+    minimumDisplayWidthPx: Int? = null, postProcessOutput: Boolean = false,
     displayTargetForSource: ((IntSize) -> IntSize)? = null) {
     var error by remember(reference) { mutableStateOf<String?>(null) }
     val identity = remember(reference) { desktopDecodedImageIdentity(reference) }
-    val displayed by produceState<DesktopDisplayedImage?>(null, reference, minimumDisplayWidthPx, displayTargetForSource) {
+    val displayed by produceState<DesktopDisplayedImage?>(null, reference, minimumDisplayWidthPx, displayTargetForSource, postProcessOutput) {
         suspend fun publish(image: DesktopDisplayedImage) {
             currentCoroutineContext().ensureActive()
             value = image.copy(identity = identity)
@@ -67,6 +67,8 @@ internal fun DesktopOwnedImage(reference: String, read: (String) -> ByteArray,
             withContext(Dispatchers.IO) {
                 val bytes = read(reference)
                 require(bytes.size <= com.example.chatbar.domain.image.ApngDisguiseCodec.MAX_OUTPUT_BYTES)
+                if (postProcessOutput) DesktopPostProcessRaster.decode(bytes,
+                    com.example.chatbar.domain.image.NovelAiPostProcessTab.UPSCALE, longestSide = 256).flush()
                 if (playDesktopApng(bytes) { frame, duration ->
                     publish(DesktopDisplayedImage(desktopDisplayBitmap(frame, minimumDisplayWidthPx),
                         IntSize(frame.width, frame.height))); delay(duration)
@@ -74,7 +76,7 @@ internal fun DesktopOwnedImage(reference: String, read: (String) -> ByteArray,
                 org.jetbrains.skia.Data.makeFromBytes(bytes).use { data ->
                     org.jetbrains.skia.Codec.makeFromData(data).use { codec ->
                         require(codec.width.toLong() * codec.height <= DesktopImageEditing.MAX_PIXELS)
-                        if (codec.frameCount <= 1) publish(desktopDisplayBitmap(bytes, minimumDisplayWidthPx, displayTargetForSource))
+                        if (codec.frameCount <= 1) publish(desktopDisplayBitmap(bytes, minimumDisplayWidthPx, displayTargetForSource, postProcessOutput))
                         else org.jetbrains.skia.Bitmap().use { frame ->
                             check(frame.allocPixels(codec.imageInfo))
                             var loops = 0
@@ -109,14 +111,14 @@ internal fun DesktopOwnedImage(reference: String, read: (String) -> ByteArray,
 private data class DesktopDisplayedImage(val bitmap: ImageBitmap, val sourceDimensions: IntSize, val identity: String? = null)
 
 private fun desktopDisplayBitmap(bytes: ByteArray, minimumDisplayWidthPx: Int?,
-    displayTargetForSource: ((IntSize) -> IntSize)?): DesktopDisplayedImage {
+    displayTargetForSource: ((IntSize) -> IntSize)?, postProcessOutput: Boolean = false): DesktopDisplayedImage {
     var source: IntSize? = null
     val decoded = DesktopImageEditing.decode(bytes, longestSide = 1600,
         minimumDisplayWidth = minimumDisplayWidthPx,
         onSourceDimensions = { width, height -> source = IntSize(width, height) },
         displayTargetForSource = displayTargetForSource?.let { target ->
             { width, height -> target(IntSize(width, height)).let { it.width to it.height } }
-        })
+        }, maximumBytes = if (postProcessOutput) DesktopPostProcessRaster.MAX_BYTES else DesktopImageEditing.MAX_BYTES)
     val orientedSource = requireNotNull(source)
     val target = displayTargetForSource?.invoke(orientedSource)
     return DesktopDisplayedImage(if (target == null) desktopDisplayBitmap(decoded, minimumDisplayWidthPx)
@@ -246,10 +248,11 @@ internal fun DesktopPendingImageStrip(images: List<DesktopPendingImage>, enabled
 
 /** Pending/imported images have no owned reference yet. Read-only viewer retains original animation. */
 @Composable
-internal fun DesktopTransientImagePreview(reference: String, read: (String) -> ByteArray, onClose: () -> Unit) {
+internal fun DesktopTransientImagePreview(reference: String, read: (String) -> ByteArray,
+    postProcessOutput: Boolean = false, onClose: () -> Unit) {
     val zoom = remember(reference) { DesktopImageZoomState() }
     DesktopImageToolWindow("图片预览", onClose, width = 960.dp, height = 800.dp) {
-        DesktopImageZoomSurface(reference, read, Modifier.weight(1f).fillMaxWidth(), zoomState = zoom)
+        DesktopImageZoomSurface(reference, read, Modifier.weight(1f).fillMaxWidth(), zoomState = zoom, postProcessOutput = postProcessOutput)
         DesktopImageViewerToolbar(zoom)
     }
 }
@@ -362,12 +365,14 @@ internal fun DesktopMessageImages(message: com.example.chatbar.data.local.entity
 }
 
 /** Animated data is copied as its original file; static images also expose native image flavor. */
-internal fun copyDesktopImage(bytes: ByteArray, file: java.nio.file.Path? = null) {
-    java.awt.Toolkit.getDefaultToolkit().systemClipboard.setContents(desktopImageTransferable(bytes, file), null)
+internal fun copyDesktopImage(bytes: ByteArray, file: java.nio.file.Path? = null, postProcessOutput: Boolean = false) {
+    java.awt.Toolkit.getDefaultToolkit().systemClipboard.setContents(desktopImageTransferable(bytes, file, postProcessOutput), null)
 }
 
-internal fun desktopImageTransferable(bytes: ByteArray, file: java.nio.file.Path? = null): java.awt.datatransfer.Transferable {
-    val bitmap = if (runCatching { DesktopImageEditing.requireStatic(bytes) }.isSuccess) DesktopImageEditing.decode(bytes) else null
+internal fun desktopImageTransferable(bytes: ByteArray, file: java.nio.file.Path? = null,
+    postProcessOutput: Boolean = false): java.awt.datatransfer.Transferable {
+    val bitmap = if (postProcessOutput) DesktopPostProcessRaster.decode(bytes, com.example.chatbar.domain.image.NovelAiPostProcessTab.UPSCALE)
+        else if (runCatching { DesktopImageEditing.requireStatic(bytes) }.isSuccess) DesktopImageEditing.decode(bytes) else null
     require(bitmap != null || file != null) { "动画请先保存原始文件" }
     val imageFlavor = java.awt.datatransfer.DataFlavor.imageFlavor
     val fileFlavor = java.awt.datatransfer.DataFlavor.javaFileListFlavor

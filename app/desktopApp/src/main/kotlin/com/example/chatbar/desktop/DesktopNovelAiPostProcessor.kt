@@ -64,14 +64,14 @@ internal class DesktopNovelAiPostProcessor(private val secrets: DesktopSecretSto
                 is NovelAiImageEvent.Intermediate -> progress("正在增强 · ${(event.progress * 100).toInt()}%")
             } }
             val output = requireNotNull(result)
-            require(output.size in 8..DesktopImageEditing.MAX_BYTES && output[0] == 0x89.toByte() && output[1] == 0x50.toByte())
+            require(output.size in 8..DesktopPostProcessRaster.MAX_BYTES)
             check(!output.toString(Charsets.ISO_8859_1).contains(token))
-            DesktopImageEditing.requireStatic(output)
-            val decoded = DesktopImageEditing.decode(output)
+            val decoded = DesktopPostProcessRaster.decode(output, tab)
             require(decoded.width.toLong() * decoded.height <= NovelAiPostProcessPolicy.MAX_PIXELS * if (tab == NovelAiPostProcessTab.UPSCALE) 4 else 1)
             val expected = if (tab == NovelAiPostProcessTab.UPSCALE) NovelAiImageSize(width * 2, height * 2, "Upscale")
                 else size.takeUnless { options.scale == NovelAiEnhanceScale.MAX }
             if (expected != null) require(decoded.width == expected.width && decoded.height == expected.height)
+            decoded.flush()
             media?.validatedImage(output.size)
             media?.finish(DesktopUsageOutcome.COMPLETED)
             currentCoroutineContext().ensureActive()

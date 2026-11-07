@@ -102,7 +102,7 @@ internal fun DesktopImagePostProcessPanel(path: Path, controller: DesktopNovelAi
             }
             DesktopOwnedImage("after-${output.contentHashCode()}", { output }, Modifier.fillMaxSize().drawWithContent {
                 clipRect(left = if (record?.sourceSha256 == sourceHash) size.width * split else 0f) { this@drawWithContent.drawContent() }
-            })
+            }, postProcessOutput = true)
             Box(Modifier.fillMaxHeight().fillMaxWidth(split).border(1.dp, DesktopBootstrapColors.primary))
         }
         StatusText(if (record?.sourceSha256 == sourceHash) "左：原图 · 右：处理结果 · 拖动比较" else "已保存的处理结果")
@@ -111,7 +111,7 @@ internal fun DesktopImagePostProcessPanel(path: Path, controller: DesktopNovelAi
             StudioAction("保存 PNG") { scope.launch { try {
                 controller.picker.pickSaveFile(DesktopFileType("PNG", listOf("png")), "processed.png")?.let { target -> withContext(Dispatchers.IO) { DesktopExternalFileWriter.writeBytes(target, output) } }
             } catch (_: Exception) { status = "保存失败；结果保留" } } }
-            StudioAction("复制图片") { scope.launch { try { withContext(Dispatchers.IO) { copyDesktopImage(output, null) } } catch (_: Exception) { status = "复制失败；结果保留" } } }
+            StudioAction("复制图片") { scope.launch { try { withContext(Dispatchers.IO) { copyDesktopImage(output, null, postProcessOutput = true) } } catch (_: Exception) { status = "复制失败；结果保留" } } }
         }
     }
 }

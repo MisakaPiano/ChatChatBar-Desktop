@@ -58,8 +58,7 @@ internal class DesktopPostProcessResults(private val storage: JsonFileStorage,
     suspend fun persist(input: ByteArray, output: ByteArray, tab: NovelAiPostProcessTab,
         options: NovelAiEnhanceOptions): DesktopPostProcessResultRecord = gate.withNormalOperation {
         mutex.withLock { withContext(NonCancellable + Dispatchers.IO) {
-            DesktopImageEditing.requireStatic(output)
-            require(output.size in 8..DesktopImageEditing.MAX_BYTES && output[0] == 0x89.toByte() && output[1] == 0x50.toByte())
+            DesktopPostProcessRaster.decode(output, tab, longestSide = 256).flush()
             val id = UUID.randomUUID().toString(); val time = System.currentTimeMillis()
             check(storage.readEntityStrict(KEY, id, DesktopPostProcessResultRecord.serializer()) == EntityReadResult.Missing)
             var path: String? = null
@@ -84,7 +83,10 @@ internal class DesktopPostProcessResults(private val storage: JsonFileStorage,
         check(storage.readEntityStrict(KEY, record.id, DesktopPostProcessResultRecord.serializer()) == EntityReadResult.Valid(record))
         validate(record)
         require(!record.imagePath.startsWith(OMITTED_SAVE_SLOT_IMAGE_PREFIX)) { "备份未包含此图片" }
-        resources.readScreenshotImageBytes(record.imagePath, DesktopImageEditing.MAX_BYTES).also { check(digest(it) == record.imageSha256); DesktopImageEditing.requireStatic(it) }
+        resources.readPostProcessImageBytes(record.imagePath).also {
+            check(digest(it) == record.imageSha256)
+            DesktopPostProcessRaster.decode(it, NovelAiPostProcessTab.valueOf(record.operation), longestSide = 256).flush()
+        }
     } }
 
     private fun validate(record: DesktopPostProcessResultRecord) {

@@ -45,6 +45,13 @@ internal class DesktopCharacterResourceStore(
     /** Screenshot reads reject oversized owned inputs before allocating their full contents. */
     internal fun readScreenshotImageBytes(reference: String, maximumBytes: Int = 32 * 1024 * 1024): ByteArray {
         require(maximumBytes in 1..32 * 1024 * 1024)
+        return readBoundedImageBytes(reference, maximumBytes)
+    }
+
+    internal fun readPostProcessImageBytes(reference: String): ByteArray =
+        readBoundedImageBytes(reference, DesktopPostProcessRaster.MAX_BYTES)
+
+    private fun readBoundedImageBytes(reference: String, maximumBytes: Int): ByteArray {
         if (reference.startsWith(ASSET_PREFIX)) return readAsset(reference).also { require(it.size <= maximumBytes) }
         require(reference.startsWith("$IMAGES_DIRECTORY/")) { "截图仅接受 owned 图片引用" }
         val path = requireReadableOwnedFile(reference)

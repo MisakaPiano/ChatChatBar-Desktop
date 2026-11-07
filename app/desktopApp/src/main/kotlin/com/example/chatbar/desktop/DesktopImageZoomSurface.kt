@@ -36,7 +36,8 @@ internal class DesktopImageZoomState {
 /** Same animation-preserving interaction surface for owned and transient image collections. */
 @Composable
 internal fun DesktopImageZoomSurface(reference: String, read: (String) -> ByteArray, modifier: Modifier = Modifier,
-    resetRevision: Int = 0, onOpenViewer: (() -> Unit)? = null, zoomState: DesktopImageZoomState? = null) {
+    resetRevision: Int = 0, onOpenViewer: (() -> Unit)? = null, zoomState: DesktopImageZoomState? = null,
+    postProcessOutput: Boolean = false) {
     val view = zoomState ?: remember(reference, resetRevision) { DesktopImageZoomState() }
     var transform by view::transform
     var size by remember { mutableStateOf(androidx.compose.ui.unit.IntSize.Zero) }
@@ -75,6 +76,6 @@ internal fun DesktopImageZoomSurface(reference: String, read: (String) -> ByteAr
         } } }) {
         DesktopOwnedImage(reference, read, Modifier.fillMaxSize().graphicsLayer {
             scaleX = transform.zoom; scaleY = transform.zoom; translationX = transform.pan.x; translationY = transform.pan.y
-        }, onDimensions = { dimensions = it })
+        }, onDimensions = { dimensions = it }, postProcessOutput = postProcessOutput)
     }
 }

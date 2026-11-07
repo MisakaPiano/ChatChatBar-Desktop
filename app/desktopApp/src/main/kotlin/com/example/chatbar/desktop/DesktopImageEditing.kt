@@ -51,8 +51,10 @@ internal object DesktopImageEditing {
 
     fun decode(bytes: ByteArray, longestSide: Int? = null, minimumDisplayWidth: Int? = null,
         onSourceDimensions: ((Int, Int) -> Unit)? = null,
+        maximumBytes: Int = MAX_BYTES, maximumPixels: Long = MAX_PIXELS,
         displayTargetForSource: ((Int, Int) -> Pair<Int, Int>)? = null): BufferedImage {
-        require(bytes.size in 1..MAX_BYTES) { "图片大小超过 32 MB" }
+        require(maximumBytes in 1..100 * 1024 * 1024 && maximumPixels in 1..MAX_PIXELS)
+        require(bytes.size in 1..maximumBytes) { "图片超过当前操作大小限制" }
         ImageIO.createImageInputStream(ByteArrayInputStream(bytes)).use { input ->
             val readers = ImageIO.getImageReaders(input)
             if (readers.hasNext()) {
@@ -61,7 +63,7 @@ internal object DesktopImageEditing {
                     reader.input = input
                     val sourceWidth = reader.getWidth(0)
                     val sourceHeight = reader.getHeight(0)
-                    require(sourceWidth.toLong() * sourceHeight <= MAX_PIXELS) { "图片像素过大" }
+                    require(sourceWidth > 0 && sourceHeight > 0 && sourceWidth.toLong() * sourceHeight <= maximumPixels) { "图片像素过大" }
                     val orientation = if (bytes.size >= 8 && bytes[0] == 0x89.toByte() &&
                         bytes[1] == 0x50.toByte() && bytes[2] == 0x4e.toByte() && bytes[3] == 0x47.toByte())
                         ImageMetadataStripper.readPngOrientation(bytes) else jpegOrientation(bytes)
@@ -89,7 +91,7 @@ internal object DesktopImageEditing {
         }
         // Skia supplies Desktop WebP support; bounds are checked before rasterization.
         org.jetbrains.skia.Image.makeFromEncoded(bytes).use { image ->
-            require(image.width.toLong() * image.height <= MAX_PIXELS) { "图片像素过大" }
+            require(image.width.toLong() * image.height <= maximumPixels) { "图片像素过大" }
             val png = requireNotNull(image.encodeToData(org.jetbrains.skia.EncodedImageFormat.PNG))
             return png.use {
                 val decoded = requireNotNull(ImageIO.read(ByteArrayInputStream(it.bytes))) { "无法解码图片" }

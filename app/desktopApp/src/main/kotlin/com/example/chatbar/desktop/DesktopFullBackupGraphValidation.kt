@@ -14,18 +14,38 @@ internal object DesktopFullBackupGraphValidation {
         val history = if (historical == null) localHistory else localHistory.plus(historical)
         com.example.chatbar.desktop.backup.DesktopPreservationStore.validate(root)
         com.example.chatbar.desktop.backup.DesktopSaveSlotSourceCustody.validate(root)
+        val storage = JsonFileStorage(root)
+        val postResults = linkedMapOf<String, MutableList<DesktopPostProcessResultRecord>>()
+        storage.visitEntitiesStrict(DesktopPostProcessResults.KEY, DesktopPostProcessResultRecord.serializer()) { key, record ->
+            check(key == record.id); record.validateForImport()
+            if (record.imagePath.startsWith("images/")) {
+                val shared = postResults.getOrPut(record.imagePath) { mutableListOf() }
+                check(shared.all { it.imageSha256 == record.imageSha256 })
+                shared += record
+            }
+        }
         // Decode one bounded image at a time. Hash-valid corrupt media must not become a live resource.
         for (folder in listOf("images", "draft_assets")) {
             val directory = root.resolve(folder)
             if (!Files.exists(directory)) continue
             Files.walk(directory).use { paths -> paths.filter { Files.isRegularFile(it) }.forEach { file ->
                 if (file.fileName.toString().substringAfterLast('.', "").lowercase() in setOf("png", "jpg", "jpeg", "gif", "webp")) {
-                    check(Files.size(file) <= DesktopImageEditing.MAX_BYTES)
-                    DesktopImageEditing.decode(Files.readAllBytes(file), longestSide = 256).flush()
+                    val shared = postResults[root.relativize(file).toString().replace('\\', '/')]
+                    val result = shared?.firstOrNull { it.operation == com.example.chatbar.domain.image.NovelAiPostProcessTab.ENHANCE.name }
+                        ?: shared?.firstOrNull()
+                    if (result == null) {
+                        check(Files.size(file) <= DesktopImageEditing.MAX_BYTES)
+                        DesktopImageEditing.decode(Files.readAllBytes(file), longestSide = 256).flush()
+                    } else {
+                        check(Files.size(file) <= DesktopPostProcessRaster.MAX_BYTES)
+                        val bytes = Files.readAllBytes(file)
+                        check(DesktopPostProcessResults.digest(bytes) == result.imageSha256)
+                        DesktopPostProcessRaster.decode(bytes,
+                            com.example.chatbar.domain.image.NovelAiPostProcessTab.valueOf(result.operation), longestSide = 256).flush()
+                    }
                 }
             } }
         }
-        val storage = JsonFileStorage(root)
         storage.visitEntitiesStrict("moment_posts", MomentPost.serializer()) { key, post ->
             check(key == post.id)
             requireMomentStorageId(post.id)
