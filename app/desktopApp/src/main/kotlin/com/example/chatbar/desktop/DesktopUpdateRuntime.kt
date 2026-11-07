@@ -122,7 +122,7 @@ internal class DesktopUpdateRuntime(private val scope: CoroutineScope,
         val cache = requireNotNull(local).resolve("ChatChatBarDesktopUpdates")
         val args = mutableListOf(runtime.resolve("python.exe").toString(), "-B", runtime.resolve("lib/desktop_update.py").toString(),
             "--package", packageHome.toString(), "--cache", cache.toString(),
-            "--proxy-routes", DesktopUpdateNetworkRouting.signedRoutes(proxySettings()))
+            "--proxy-routes-base64", DesktopUpdateNetworkRouting.signedRoutesArgument(proxySettings()))
         if (download) args += "--download"
         if (verify != null) args += listOf("--verify-file", verify.toString())
         if (expectedVersion != null) args += listOf("--expected-version", expectedVersion)

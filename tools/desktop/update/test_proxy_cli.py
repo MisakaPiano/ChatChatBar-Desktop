@@ -1,5 +1,6 @@
 """Prepared helper CLI: real verified TLS through HTTP and SOCKS, synthetic signed TUF only."""
 from datetime import datetime, timedelta, timezone
+import base64
 import hashlib
 import importlib.util
 import json
@@ -161,8 +162,16 @@ class PreparedUpdaterProxyCliTest(unittest.TestCase):
                     host='127.0.0.1', port=socks.port if host == 'release-assets.githubusercontent.com' else http.port)
                     for host in github_transport.SIGNED_PROXY_HOSTS}
                 environment = dict(os.environ, SSL_CERT_FILE=str(ca))
+                route_json = json.dumps(routes, separators=(',', ':'))
+                encoded_routes = base64.b64encode(route_json.encode('utf-8')).decode('ascii')
                 command = [sys.executable, '-B', str(module_home / 'desktop_update.py'), '--package', str(package),
-                    '--cache', str(root / 'cache'), '--proxy-routes', json.dumps(routes)]
+                    '--cache', str(root / 'cache'), '--proxy-routes-base64', encoded_routes]
+                # An opt-in cloud harness invokes this exact command through Java ProcessBuilder.
+                # The ordinary test still uses the isolated prepared Python CLI directly.
+                java_classpath = os.environ.get('CCB_UPDATE_PROXY_JAVA_CLASSPATH')
+                if java_classpath:
+                    command = [str(Path(os.environ['JAVA_HOME']) / 'bin/java.exe'), '-cp', java_classpath,
+                        'UpdateCommandBridge', *command]
 
                 def execute(*extra):
                     result = subprocess.run(command + list(extra), env=environment, capture_output=True, text=True, timeout=30)
@@ -177,6 +186,12 @@ class PreparedUpdaterProxyCliTest(unittest.TestCase):
                 self.assertEqual(repository.payload, Path(downloaded['installer']).read_bytes())
                 checked = execute('--verify-file', downloaded['installer'], '--expected-version', expected)
                 self.assertEqual('DOWNLOADED_VERIFIED', checked['status']); self.assertEqual(downloaded['sha256'], checked['sha256'])
+                # Retain compatibility for direct Python callers using the legacy JSON option.
+                legacy = [sys.executable, '-B', str(module_home / 'desktop_update.py'), '--package', str(package),
+                    '--cache', str(root / 'legacy-cache'), '--proxy-routes', route_json]
+                legacy_result = subprocess.run(legacy, env=environment, capture_output=True, text=True, timeout=30)
+                self.assertEqual(0, legacy_result.returncode, legacy_result.stdout + legacy_result.stderr)
+                self.assertEqual('AVAILABLE', json.loads(legacy_result.stdout.splitlines()[-1])['status'])
                 self.assertIn('raw.githubusercontent.com', http.hosts); self.assertIn('github.com', http.hosts)
                 self.assertEqual(['release-assets.githubusercontent.com'], socks.hosts)
                 self.assertEqual([], http.errors); self.assertEqual([], socks.errors)

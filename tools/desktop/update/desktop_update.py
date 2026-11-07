@@ -6,6 +6,8 @@ receipts and downloaded installers cannot introduce a trust root. No data access
 from contextlib import contextmanager
 from dataclasses import dataclass
 import argparse
+import base64
+import binascii
 import hashlib
 import json
 import os
@@ -263,6 +265,34 @@ def execute(installed, cache, download=False, verify_file=None, fetcher=None, re
         return result
 
 
+def parse_proxy_routes(raw=None, encoded=None):
+    if raw is not None and encoded is not None:
+        raise UpdateRejected('UPDATE_PROXY_ROUTES_INVALID')
+    if encoded is not None:
+        if len(encoded) > 10924:
+            raise UpdateRejected('UPDATE_PROXY_ROUTES_LIMIT')
+        try:
+            data = base64.b64decode(encoded, validate=True)
+            if len(data) > 8192:
+                raise UpdateRejected('UPDATE_PROXY_ROUTES_LIMIT')
+            # Refuse noncanonical encodings rather than guessing at malformed argv.
+            if base64.b64encode(data).decode('ascii') != encoded:
+                raise UpdateRejected('UPDATE_PROXY_ROUTES_INVALID')
+            raw = data.decode('utf-8')
+        except (ValueError, binascii.Error, UnicodeError) as error:
+            if isinstance(error, UpdateRejected):
+                raise
+            raise UpdateRejected('UPDATE_PROXY_ROUTES_INVALID') from error
+    if raw is None:
+        return None
+    if len(raw) > 8192:
+        raise UpdateRejected('UPDATE_PROXY_ROUTES_LIMIT')
+    try:
+        return json.loads(raw)
+    except (ValueError, UnicodeError) as error:
+        raise UpdateRejected('UPDATE_PROXY_ROUTES_INVALID') from error
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--package', type=Path, required=True)
@@ -270,15 +300,15 @@ def main():
     parser.add_argument('--download', action='store_true')
     parser.add_argument('--verify-file', type=Path)
     parser.add_argument('--expected-version')
-    parser.add_argument('--proxy-routes')
+    routes_group = parser.add_mutually_exclusive_group()
+    routes_group.add_argument('--proxy-routes')
+    routes_group.add_argument('--proxy-routes-base64')
     args = parser.parse_args()
     package, cache = safe(args.package), safe(args.cache)
     try:
         if cache == package or cache.is_relative_to(package) or package.is_relative_to(cache):
             raise UpdateRejected('UPDATE_CACHE_OVERLAP')
-        if args.proxy_routes is not None and len(args.proxy_routes) > 8192:
-            raise UpdateRejected('UPDATE_PROXY_ROUTES_LIMIT')
-        routes = json.loads(args.proxy_routes) if args.proxy_routes is not None else None
+        routes = parse_proxy_routes(args.proxy_routes, args.proxy_routes_base64)
         execute(Installed.load(package), cache, args.download, args.verify_file,
                 report=lambda value: print(json.dumps(value, ensure_ascii=True), flush=True),
                 expected_version=args.expected_version, proxy_routes=routes)

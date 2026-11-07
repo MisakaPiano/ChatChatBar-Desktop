@@ -6,6 +6,23 @@ import kotlinx.coroutines.runBlocking
 import kotlin.test.*
 
 class DesktopNetworkProxyTest {
+    @Test fun `signed helper argument preserves compact typed routes without Windows quotes`() = synchronized(ProxyAwareClient) {
+        val available = ProxyAwareClient.applicationRoutingAvailable
+        try {
+            ProxyAwareClient.applicationRoutingAvailable = true
+            val settings = ApplicationProxySettings(ApplicationProxyMode.SOCKS, "::1", 1080)
+            val expected = DesktopUpdateNetworkRouting.signedRoutes(settings)
+            val argument = DesktopUpdateNetworkRouting.signedRoutesArgument(settings)
+            assertFalse(argument.contains('"'))
+            assertFalse(argument.any(Char::isWhitespace))
+            assertEquals(expected, String(java.util.Base64.getDecoder().decode(argument), Charsets.UTF_8))
+            val routes = kotlinx.serialization.json.Json.parseToJsonElement(expected)
+            assertEquals(4, (routes as kotlinx.serialization.json.JsonObject).size)
+            assertTrue(expected.contains("SOCKS"))
+            assertTrue(expected.contains("::1"))
+        } finally { ProxyAwareClient.applicationRoutingAvailable = available }
+    }
+
     @Test fun `saved proxy is outside Program and applies only after startup while other field owners survive`() = synchronized(ProxyAwareClient) {
         runBlocking {
             val root = Files.createTempDirectory("network-settings-")

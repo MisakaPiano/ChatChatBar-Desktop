@@ -5,6 +5,7 @@ import com.example.chatbar.domain.ProxyAwareClient
 import java.net.InetSocketAddress
 import java.net.Proxy
 import java.net.URI
+import java.util.Base64
 import java.util.concurrent.TimeUnit
 import kotlinx.serialization.json.*
 import okhttp3.OkHttpClient
@@ -13,6 +14,13 @@ import okhttp3.OkHttpClient
 internal object DesktopUpdateNetworkRouting {
     val signedHosts = listOf("raw.githubusercontent.com", "github.com",
         "release-assets.githubusercontent.com", "objects.githubusercontent.com")
+
+    /** Quote-free argv survives Windows ProcessBuilder/CRT without changing the route document. */
+    fun signedRoutesArgument(settings: ApplicationProxySettings): String {
+        val bytes = signedRoutes(settings).toByteArray(Charsets.UTF_8)
+        require(bytes.size <= 8192) { "UPDATE_PROXY_ROUTES_LIMIT" }
+        return Base64.getEncoder().encodeToString(bytes)
+    }
 
     fun client(settings: () -> ApplicationProxySettings, allowLoopbackHttp: Boolean = false): OkHttpClient =
         ProxyAwareClient.modelApiBuilder({ allowLoopbackHttp }, settings)
