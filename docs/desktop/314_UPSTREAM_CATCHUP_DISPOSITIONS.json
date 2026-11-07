@@ -1587,6 +1587,33 @@
       "evidence": [
         "OWNER_DOCUMENT_SUFFIX_R113_R114_AND_REGISTRY_1A.json"
       ]
+    },
+    {
+      "id": "CARD_TRANSFER_COMPLETE_D3_ACTUAL_CORE_ADMISSION",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete d3 four-mutation access wrappers. Actual Desktop Core duplicate/import/overwrite/delete own shared normal admission through materialization/entity commit and exact rollback; postcommit cleanup releases normal before reference-aware exclusive maintenance, retaining history and warning on uncertain authority. Actual container injects same gate; R100 Gate/Store→Core and R101 actual cleanup reused. No Android Service runtime or whole card feature claim.",
+      "reviewSource": "3065cf6832c2b3893ede8ce2bf0b2a68ebdc5776",
+      "evidence": [
+        "OWNER_CHARACTER_TRANSFER_EDITOR_THREE_DELTA_REUSE.json"
+      ]
+    },
+    {
+      "id": "CHARACTER_EDITOR_COMPLETE_D3_TRANSIENT_CUSTODY",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete d3 transient-image deletion access wrapper. Desktop unapplied generated image/crop candidates stay in memory; explicit apply owns normal+NonCancellable through stageGeneratedCardImage and exact newly-staged rollback. Persisted draft cleanup owns normal, durable retired media uses full-reference exclusive cleanup after commit. No disk transient to sweep on candidate close; original162 apply function and R103 actual editor postcommit proofs reused, not a new transient-race test.",
+      "reviewSource": "3065cf6832c2b3893ede8ce2bf0b2a68ebdc5776",
+      "evidence": [
+        "OWNER_CHARACTER_TRANSFER_EDITOR_THREE_DELTA_REUSE.json"
+      ]
+    },
+    {
+      "id": "CHARACTER_EDITOR_COMPLETE_1A_MOMENT_MEDIA_RETENTION",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete1a historical Moment media retention extraction. Actual editor save commits then injected AppContainer cleanup tests full persisted reference authority including Moment snapshots, preserving shared and uncertain media. R103 actual editor callback/save methods and R100 actual MomentStore→same reference cleaner plus R101 warnings reused separately; no new whole editor or physical interruption claim.",
+      "reviewSource": "3065cf6832c2b3893ede8ce2bf0b2a68ebdc5776",
+      "evidence": [
+        "OWNER_CHARACTER_TRANSFER_EDITOR_THREE_DELTA_REUSE.json"
+      ]
     }
   ],
   "deltas": [
@@ -8767,8 +8794,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete d3 four-mutation access wrappers. Actual Desktop Core duplicate/import/overwrite/delete own shared normal admission through materialization/entity commit and exact rollback; postcommit cleanup releases normal before reference-aware exclusive maintenance, retaining history and warning on uncertain authority. Actual container injects same gate; R100 Gate/Store→Core and R101 actual cleanup reused. No Android Service runtime or whole card feature claim.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/domain/card/CharacterCardTransferService.kt",
@@ -8777,8 +8804,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "CARD_TRANSFER_COMPLETE_D3_ACTUAL_CORE_ADMISSION"
+      ],
+      "evidence": [
+        "OWNER_CHARACTER_TRANSFER_EDITOR_THREE_DELTA_REUSE.json",
+        "docs/desktop/370_CHARACTER_TRANSFER_EDITOR_RETENTION_REUSE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/card/SharedImportClassifier.kt",
@@ -9595,8 +9627,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete d3 transient-image deletion access wrapper. Desktop unapplied generated image/crop candidates stay in memory; explicit apply owns normal+NonCancellable through stageGeneratedCardImage and exact newly-staged rollback. Persisted draft cleanup owns normal, durable retired media uses full-reference exclusive cleanup after commit. No disk transient to sweep on candidate close; original162 apply function and R103 actual editor postcommit proofs reused, not a new transient-race test.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/character/CharacterEditViewModel.kt",
@@ -9605,8 +9637,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "CHARACTER_EDITOR_COMPLETE_D3_TRANSIENT_CUSTODY"
+      ],
+      "evidence": [
+        "OWNER_CHARACTER_TRANSFER_EDITOR_THREE_DELTA_REUSE.json",
+        "docs/desktop/370_CHARACTER_TRANSFER_EDITOR_RETENTION_REUSE.md"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/ui/chat/ChatLongScreenshot.kt",
@@ -11135,8 +11172,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete1a historical Moment media retention extraction. Actual editor save commits then injected AppContainer cleanup tests full persisted reference authority including Moment snapshots, preserving shared and uncertain media. R103 actual editor callback/save methods and R100 actual MomentStore→same reference cleaner plus R101 warnings reused separately; no new whole editor or physical interruption claim.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/character/CharacterEditViewModel.kt",
@@ -11145,8 +11182,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "CHARACTER_EDITOR_COMPLETE_1A_MOMENT_MEDIA_RETENTION"
+      ],
+      "evidence": [
+        "OWNER_CHARACTER_TRANSFER_EDITOR_THREE_DELTA_REUSE.json",
+        "docs/desktop/370_CHARACTER_TRANSFER_EDITOR_RETENTION_REUSE.md"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:app/app/src/main/java/com/example/chatbar/ui/imageprompt/NovelAiHistoryScreen.kt",
