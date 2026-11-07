@@ -958,6 +958,16 @@
       "evidence": [
         "OWNER_EXPORT_ONLY_COVER_REUSE.json"
       ]
+    },
+    {
+      "id": "CURRENT_MESSAGE_EDIT_RETAINS_SIBLING_ALTERNATIVES",
+      "disposition": "EQUIVALENT",
+      "scope": "The entire upstream ChatViewModel delta is collapseToEditedContent -> editCurrentContent. Actual Desktop whole-message/image+text/segment paths use the preserving shared policy. Five exact owner/test blobs match original sources; shared8 and Desktop3 selected original methods reused separately, including selected edit/switch/reopen, stale/delete/image-only. No new run or whole ChatVM/RAG/memory parity claim.",
+      "reviewSource": "06cbf302c24f8a8c7e9d81c6bb1c3c9bd116e5d8",
+      "evidence": [
+        "OWNER_CHAT_EDIT_559_SINGLE_DELTA_REUSE.json",
+        "COORDINATOR_CHAT_EDIT_559_SINGLE_DELTA_REUSE.json"
+      ]
     }
   ],
   "deltas": [
@@ -3528,8 +3538,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "The entire upstream ChatViewModel delta is collapseToEditedContent -> editCurrentContent. Actual Desktop whole-message/image+text/segment paths use the preserving shared policy. Five exact owner/test blobs match original sources; shared8 and Desktop3 selected original methods reused separately, including selected edit/switch/reopen, stale/delete/image-only. No new run or whole ChatVM/RAG/memory parity claim.",
       "candidateOwners": [
         {
           "path": "app/app/src/main/java/com/example/chatbar/ui/chat/ChatViewModel.kt",
@@ -3538,8 +3548,13 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "CURRENT_MESSAGE_EDIT_RETAINS_SIBLING_ALTERNATIVES"
+      ],
+      "evidence": [
+        "OWNER_CHAT_EDIT_559_SINGLE_DELTA_REUSE.json",
+        "COORDINATOR_CHAT_EDIT_559_SINGLE_DELTA_REUSE.json"
+      ]
     },
     {
       "id": "559f83f0c1011a7fa4b8e0f64d5b2ea147544e59:app/app/src/main/java/com/example/chatbar/ui/imageprompt/NovelAiHistoryFilter.kt",
