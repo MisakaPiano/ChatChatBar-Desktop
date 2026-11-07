@@ -58,8 +58,16 @@ internal fun DesktopImagePostProcessPanel(path: Path, controller: DesktopNovelAi
             val scales = NovelAiPostProcessPolicy.scales(dimensions.first, dimensions.second, recipe.settings.model)
             StudioChips("倍率", scales, options.scale, { it.label }) { if (!busy) options = options.copy(scale = it) }
             StudioChips("增强幅度", (1..5).toList(), options.magnitude, { it.toString() }) { if (!busy) options = options.withMagnitude(it) }
-            StudioField("Strength 0–1", options.strength.toString()) { text -> if (!busy) text.toFloatOrNull()?.takeIf { it.isFinite() && it in 0f..1f }?.let { options = options.copy(strength = it) } }
-            StudioField("Noise 0–1", options.noise.toString()) { text -> if (!busy) text.toFloatOrNull()?.takeIf { it.isFinite() && it in 0f..1f }?.let { options = options.copy(noise = it) } }
+            CompositionLocalProvider(LocalDesktopStudioFieldScope provides "postprocess:$path") {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    StatusText("Strength 0–1")
+                    StudioNumericInput("Strength 0–1", options.strength.toString(), Modifier.fillMaxWidth()) { text -> if (!busy) text.toFloatOrNull()?.takeIf { it.isFinite() && it in 0f..1f }?.let { options = options.copy(strength = it) } }
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    StatusText("Noise 0–1")
+                    StudioNumericInput("Noise 0–1", options.noise.toString(), Modifier.fillMaxWidth()) { text -> if (!busy) text.toFloatOrNull()?.takeIf { it.isFinite() && it in 0f..1f }?.let { options = options.copy(noise = it) } }
+                }
+            }
         }
     } else StatusText("2× Upscale · 不改变 Studio 模型 · 超过 3,145,728 输入像素时不可用")
     if (sourceError.isNotEmpty()) StatusText(sourceError, DesktopBootstrapColors.warning)
