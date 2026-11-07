@@ -1284,6 +1284,30 @@
         "OWNER_POST_PROCESS_COMPARISON_R72_FINAL_REVIEW.json",
         "docs/desktop/348_POST_PROCESS_INPUT_IDENTITY.md"
       ]
+    },
+    {
+      "id": "NAI_IMPORT_MODELS_TEN_COMPLETE_PATH_DELTAS",
+      "disposition": "EQUIVALENT",
+      "scope": "Nullable effort/transparency and selected import, custom Sigma presence, explicit suffix ownership, Medium effective14/Euler/0 and request-only heavy negative/empty roles,6model samplers and central23/5/7 reset. Actual request owner prepareForRequest/serializer keeps saved preferences; High/false default omission intentionally differs in encoding. Only ten complete path deltas, not full provider/whole149/human acceptance.",
+      "reviewSource": "7b6483ac89f9c3df72680f00b9407a6aa9f64cac",
+      "evidence": [
+        "OWNER_NAI_IMPORT_MODELS_TEN_DELTAS_REUSE.json",
+        "OWNER_READER_STORAGE_EIGHT_DELTAS_REUSE.json",
+        "OWNER_R79_VALID_PNG_AND_R78_INITIALIZATION_REVIEW.json",
+        "OWNER_SCOPED_REUSE_R79_REVIEW.json",
+        "OWNER_V5_STRAIGHT_ALPHA_R69_FINAL_REVIEW.json"
+      ]
+    },
+    {
+      "id": "HISTORICAL_MOMENT_AVATAR_MODERN_TRANSFER_AND_WARNING",
+      "disposition": "EQUIVALENT",
+      "scope": "Complete14-line historical resource policy/report delta: exact modern top-level Moment senderAvatar already absent is retained with stable missing image identity and count-only warning in actual Service/Plan/restore; Desktop keeps strict registered-image paths, known absence and unsafe-path refusal. Original R82 actual export failure and R87 actual transfer/control methods; no whole BackupArchive/Engine or Android/human parity claim.",
+      "reviewSource": "7b6483ac89f9c3df72680f00b9407a6aa9f64cac",
+      "evidence": [
+        "OWNER_HISTORICAL_AVATAR_AND_NAMES_R87_FINAL_REVIEW.json",
+        "OWNER_HISTORICAL_AVATAR_R82_R83_R84_REVIEW.json",
+        "docs/desktop/349_HISTORICAL_MOMENT_AVATAR_TRANSFER.md"
+      ]
     }
   ],
   "deltas": [
@@ -10358,11 +10382,17 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Complete14-line historical resource policy/report delta: exact modern top-level Moment senderAvatar already absent is retained with stable missing image identity and count-only warning in actual Service/Plan/restore; Desktop keeps strict registered-image paths, known absence and unsafe-path refusal. Original R82 actual export failure and R87 actual transfer/control methods; no whole BackupArchive/Engine or Android/human parity claim.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "HISTORICAL_MOMENT_AVATAR_MODERN_TRANSFER_AND_WARNING"
+      ],
+      "evidence": [
+        "OWNER_HISTORICAL_AVATAR_AND_NAMES_R87_FINAL_REVIEW.json",
+        "OWNER_HISTORICAL_AVATAR_R82_R83_R84_REVIEW.json",
+        "docs/desktop/349_HISTORICAL_MOMENT_AVATAR_TRANSFER.md"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:app/app/src/main/java/com/example/chatbar/domain/backup/BackupJsonStream.kt",
@@ -11810,8 +11840,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Nullable effort/transparency and selected import, custom Sigma presence, explicit suffix ownership, Medium effective14/Euler/0 and request-only heavy negative/empty roles,6model samplers and central23/5/7 reset. Actual request owner prepareForRequest/serializer keeps saved preferences; High/false default omission intentionally differs in encoding. Only ten complete path deltas, not full provider/whole149/human acceptance.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioImageImport.kt",
@@ -11820,8 +11850,17 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_IMPORT_MODELS_TEN_COMPLETE_PATH_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_NAI_IMPORT_MODELS_TEN_DELTAS_REUSE.json",
+        "OWNER_READER_STORAGE_EIGHT_DELTAS_REUSE.json",
+        "OWNER_R79_VALID_PNG_AND_R78_INITIALIZATION_REVIEW.json",
+        "OWNER_SCOPED_REUSE_R79_REVIEW.json",
+        "OWNER_V5_STRAIGHT_ALPHA_R69_FINAL_REVIEW.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "54c84c479a1b8a9eddef6b726681dedc7094efac:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
@@ -11837,8 +11876,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Nullable effort/transparency and selected import, custom Sigma presence, explicit suffix ownership, Medium effective14/Euler/0 and request-only heavy negative/empty roles,6model samplers and central23/5/7 reset. Actual request owner prepareForRequest/serializer keeps saved preferences; High/false default omission intentionally differs in encoding. Only ten complete path deltas, not full provider/whole149/human acceptance.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
@@ -11847,8 +11886,17 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_IMPORT_MODELS_TEN_COMPLETE_PATH_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_NAI_IMPORT_MODELS_TEN_DELTAS_REUSE.json",
+        "OWNER_READER_STORAGE_EIGHT_DELTAS_REUSE.json",
+        "OWNER_R79_VALID_PNG_AND_R78_INITIALIZATION_REVIEW.json",
+        "OWNER_SCOPED_REUSE_R79_REVIEW.json",
+        "OWNER_V5_STRAIGHT_ALPHA_R69_FINAL_REVIEW.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "54c84c479a1b8a9eddef6b726681dedc7094efac:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiV5TextPromptPolicy.kt",
@@ -12296,8 +12344,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Nullable effort/transparency and selected import, custom Sigma presence, explicit suffix ownership, Medium effective14/Euler/0 and request-only heavy negative/empty roles,6model samplers and central23/5/7 reset. Actual request owner prepareForRequest/serializer keeps saved preferences; High/false default omission intentionally differs in encoding. Only ten complete path deltas, not full provider/whole149/human acceptance.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioImageImport.kt",
@@ -12306,8 +12354,17 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_IMPORT_MODELS_TEN_COMPLETE_PATH_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_NAI_IMPORT_MODELS_TEN_DELTAS_REUSE.json",
+        "OWNER_READER_STORAGE_EIGHT_DELTAS_REUSE.json",
+        "OWNER_R79_VALID_PNG_AND_R78_INITIALIZATION_REVIEW.json",
+        "OWNER_SCOPED_REUSE_R79_REVIEW.json",
+        "OWNER_V5_STRAIGHT_ALPHA_R69_FINAL_REVIEW.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "310d475cb6cb0466678fe986cb3850f91005dc77:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
@@ -12323,8 +12380,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Nullable effort/transparency and selected import, custom Sigma presence, explicit suffix ownership, Medium effective14/Euler/0 and request-only heavy negative/empty roles,6model samplers and central23/5/7 reset. Actual request owner prepareForRequest/serializer keeps saved preferences; High/false default omission intentionally differs in encoding. Only ten complete path deltas, not full provider/whole149/human acceptance.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
@@ -12333,8 +12390,17 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_IMPORT_MODELS_TEN_COMPLETE_PATH_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_NAI_IMPORT_MODELS_TEN_DELTAS_REUSE.json",
+        "OWNER_READER_STORAGE_EIGHT_DELTAS_REUSE.json",
+        "OWNER_R79_VALID_PNG_AND_R78_INITIALIZATION_REVIEW.json",
+        "OWNER_SCOPED_REUSE_R79_REVIEW.json",
+        "OWNER_V5_STRAIGHT_ALPHA_R69_FINAL_REVIEW.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "310d475cb6cb0466678fe986cb3850f91005dc77:app/app/src/main/java/com/example/chatbar/domain/prompt/PromptTemplates.kt",
@@ -13170,8 +13236,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Nullable effort/transparency and selected import, custom Sigma presence, explicit suffix ownership, Medium effective14/Euler/0 and request-only heavy negative/empty roles,6model samplers and central23/5/7 reset. Actual request owner prepareForRequest/serializer keeps saved preferences; High/false default omission intentionally differs in encoding. Only ten complete path deltas, not full provider/whole149/human acceptance.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioImageImport.kt",
@@ -13180,8 +13246,17 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_IMPORT_MODELS_TEN_COMPLETE_PATH_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_NAI_IMPORT_MODELS_TEN_DELTAS_REUSE.json",
+        "OWNER_READER_STORAGE_EIGHT_DELTAS_REUSE.json",
+        "OWNER_R79_VALID_PNG_AND_R78_INITIALIZATION_REVIEW.json",
+        "OWNER_SCOPED_REUSE_R79_REVIEW.json",
+        "OWNER_V5_STRAIGHT_ALPHA_R69_FINAL_REVIEW.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "3f6f1bb5d61492d74c56fa3696b557db514ae77d:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
@@ -13197,8 +13272,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Nullable effort/transparency and selected import, custom Sigma presence, explicit suffix ownership, Medium effective14/Euler/0 and request-only heavy negative/empty roles,6model samplers and central23/5/7 reset. Actual request owner prepareForRequest/serializer keeps saved preferences; High/false default omission intentionally differs in encoding. Only ten complete path deltas, not full provider/whole149/human acceptance.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
@@ -13207,8 +13282,17 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_IMPORT_MODELS_TEN_COMPLETE_PATH_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_NAI_IMPORT_MODELS_TEN_DELTAS_REUSE.json",
+        "OWNER_READER_STORAGE_EIGHT_DELTAS_REUSE.json",
+        "OWNER_R79_VALID_PNG_AND_R78_INITIALIZATION_REVIEW.json",
+        "OWNER_SCOPED_REUSE_R79_REVIEW.json",
+        "OWNER_V5_STRAIGHT_ALPHA_R69_FINAL_REVIEW.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "3f6f1bb5d61492d74c56fa3696b557db514ae77d:app/app/src/main/java/com/example/chatbar/domain/prompt/PromptTemplates.kt",
@@ -13513,8 +13597,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Nullable effort/transparency and selected import, custom Sigma presence, explicit suffix ownership, Medium effective14/Euler/0 and request-only heavy negative/empty roles,6model samplers and central23/5/7 reset. Actual request owner prepareForRequest/serializer keeps saved preferences; High/false default omission intentionally differs in encoding. Only ten complete path deltas, not full provider/whole149/human acceptance.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioImageImport.kt",
@@ -13523,8 +13607,17 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_IMPORT_MODELS_TEN_COMPLETE_PATH_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_NAI_IMPORT_MODELS_TEN_DELTAS_REUSE.json",
+        "OWNER_READER_STORAGE_EIGHT_DELTAS_REUSE.json",
+        "OWNER_R79_VALID_PNG_AND_R78_INITIALIZATION_REVIEW.json",
+        "OWNER_SCOPED_REUSE_R79_REVIEW.json",
+        "OWNER_V5_STRAIGHT_ALPHA_R69_FINAL_REVIEW.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "c02f8b788db1fd829f55676e0ed23e35fdd10ea1:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
@@ -13540,8 +13633,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Nullable effort/transparency and selected import, custom Sigma presence, explicit suffix ownership, Medium effective14/Euler/0 and request-only heavy negative/empty roles,6model samplers and central23/5/7 reset. Actual request owner prepareForRequest/serializer keeps saved preferences; High/false default omission intentionally differs in encoding. Only ten complete path deltas, not full provider/whole149/human acceptance.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
@@ -13550,8 +13643,17 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_IMPORT_MODELS_TEN_COMPLETE_PATH_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_NAI_IMPORT_MODELS_TEN_DELTAS_REUSE.json",
+        "OWNER_READER_STORAGE_EIGHT_DELTAS_REUSE.json",
+        "OWNER_R79_VALID_PNG_AND_R78_INITIALIZATION_REVIEW.json",
+        "OWNER_SCOPED_REUSE_R79_REVIEW.json",
+        "OWNER_V5_STRAIGHT_ALPHA_R69_FINAL_REVIEW.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "c02f8b788db1fd829f55676e0ed23e35fdd10ea1:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiV5TextPromptPolicy.kt",
@@ -15151,8 +15253,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Nullable effort/transparency and selected import, custom Sigma presence, explicit suffix ownership, Medium effective14/Euler/0 and request-only heavy negative/empty roles,6model samplers and central23/5/7 reset. Actual request owner prepareForRequest/serializer keeps saved preferences; High/false default omission intentionally differs in encoding. Only ten complete path deltas, not full provider/whole149/human acceptance.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioImageImport.kt",
@@ -15161,8 +15263,17 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_IMPORT_MODELS_TEN_COMPLETE_PATH_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_NAI_IMPORT_MODELS_TEN_DELTAS_REUSE.json",
+        "OWNER_READER_STORAGE_EIGHT_DELTAS_REUSE.json",
+        "OWNER_R79_VALID_PNG_AND_R78_INITIALIZATION_REVIEW.json",
+        "OWNER_SCOPED_REUSE_R79_REVIEW.json",
+        "OWNER_V5_STRAIGHT_ALPHA_R69_FINAL_REVIEW.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "b0fa1a425f24a0abe5adcb3b8f5775598452996e:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
@@ -15178,8 +15289,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Nullable effort/transparency and selected import, custom Sigma presence, explicit suffix ownership, Medium effective14/Euler/0 and request-only heavy negative/empty roles,6model samplers and central23/5/7 reset. Actual request owner prepareForRequest/serializer keeps saved preferences; High/false default omission intentionally differs in encoding. Only ten complete path deltas, not full provider/whole149/human acceptance.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/domain/image/NovelAiStudioModels.kt",
@@ -15188,8 +15299,17 @@
           "evidenceMeaning": "Content/path candidate only; not runtime or behavioral proof"
         }
       ],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "NAI_IMPORT_MODELS_TEN_COMPLETE_PATH_DELTAS"
+      ],
+      "evidence": [
+        "OWNER_NAI_IMPORT_MODELS_TEN_DELTAS_REUSE.json",
+        "OWNER_READER_STORAGE_EIGHT_DELTAS_REUSE.json",
+        "OWNER_R79_VALID_PNG_AND_R78_INITIALIZATION_REVIEW.json",
+        "OWNER_SCOPED_REUSE_R79_REVIEW.json",
+        "OWNER_V5_STRAIGHT_ALPHA_R69_FINAL_REVIEW.json",
+        "docs/desktop/347_STUDIO_SETTINGS_METADATA_STORAGE_SCOPED_REUSE.md"
+      ]
     },
     {
       "id": "b0fa1a425f24a0abe5adcb3b8f5775598452996e:app/app/src/main/java/com/example/chatbar/domain/image/NovelAiV5TextPromptPolicy.kt",

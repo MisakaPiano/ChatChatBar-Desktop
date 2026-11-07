@@ -18,3 +18,7 @@
 d3 InlinePayloadStore完整差异只有两处Android维护wrapper。Desktop的三生产构造owner已追：JsonFileStorage的entity operation gate覆盖完整读取／压缩，history snapshot在withEditHistoryDataAccess→withStudioDataAccess准入；Guidance.prepare持原normal gate，完整预设的export／inspect／materialize也各持原gate。保留JVM-neutral helper及原调用者准入，避免混入Android单例；当前JsonFileStorage对原162仅withNormalOperation可见性改变。原stream四与实际Vibe两方法匹配分源复用，不冒称新执行所有维护竞态／断电证明。
 
 记录 `OWNER_TOKEN_VM_AND_INLINE_D3_REUSE.json`，七完整delta、0新运行。新发现的后处理换图输入身份另见348，未用这些复用项提前提升它。
+
+## 十项导入与模型完整差异补核
+
+54c／310／3f6／c02／b0 的 ImageImport 与 Models 十个完整 raw delta 已逐项读并对应当前 owner。ImageImport／ImageModel／GenerationDefaults 仍逐 blob 匹配原162；Models 对原162只有四项采样重置 helper 和 omitted accessor，不声称整文件相同。Medium 约束放在实际 prepareForRequest／serializer，保留原High偏好；默认false／High省略编码与默认值相同。Reader/原R04、R69六线、R79两UI和R51 reset 各按原源复用，不重跑、不累计成新测试。仅这十项 EQUIVALENT，314整体仍false，Prompt315和真人结论保持。详见 OWNER_NAI_IMPORT_MODELS_TEN_DELTAS_REUSE.json。
