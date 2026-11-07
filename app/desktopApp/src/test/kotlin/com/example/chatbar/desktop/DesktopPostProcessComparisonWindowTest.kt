@@ -126,13 +126,13 @@ class DesktopPostProcessComparisonWindowTest {
                 try {
                     await("Independent Upscale must remain available for readable DDIM PNG") {
                         scene.nodes().any { it.config.getOrNull(SemanticsProperties.Text)?.any { text -> text.text.startsWith("原图 64") } == true } &&
-                            submit(NovelAiPostProcessTab.UPSCALE.label).config.getOrNull(SemanticsProperties.Disabled) != true }
+                            !submit(NovelAiPostProcessTab.UPSCALE.label).config.contains(SemanticsProperties.Disabled) }
                     assertTrue(scene.nodes().action(NovelAiPostProcessTab.ENHANCE.label)!!.config[SemanticsActions.OnClick].action!!.invoke()); frames()
                     if (medium) {
-                        assertTrue(submit(NovelAiPostProcessTab.ENHANCE.label).config.getOrNull(SemanticsProperties.Disabled) != true)
+                        assertFalse(submit(NovelAiPostProcessTab.ENHANCE.label).config.contains(SemanticsProperties.Disabled))
                         assertNull(metadata.settings.requestValidationError(metadata.prompt.characterCaptions.size))
                     } else {
-                        assertEquals(true, submit(NovelAiPostProcessTab.ENHANCE.label).config.getOrNull(SemanticsProperties.Disabled))
+                        assertTrue(submit(NovelAiPostProcessTab.ENHANCE.label).config.contains(SemanticsProperties.Disabled))
                         assertTrue(scene.nodes().any { it.config.getOrNull(SemanticsProperties.Text)?.any { text -> text.text.contains("Enhance 不可用") } == true })
                     }
                     assertTrue(app.taskRuntime.tasks.value.isEmpty(), "No provider task may be admitted by inspection")
