@@ -53,7 +53,11 @@ class DesktopCharacterPositionViewportTest {
                     println("POSITION_LAYOUT label=$value depth=$depth size=${item.width}x${item.height} " +
                         "coordinates=${item.coordinates.size} root=${item.coordinates.localToRoot(Offset.Zero)}")
                 }
-                val coordinates = layout.coordinates
+                // LayoutInfo.coordinates exposes the inner coordinator, while width/height
+                // include layout modifiers. Select this same item's outer measured coordinator.
+                val coordinates = layout.getModifierInfo().map { it.coordinates }.firstOrNull {
+                    it.size.width == layout.width && it.size.height == layout.height
+                } ?: layout.coordinates
                 assertTrue(layout.isAttached && layout.isPlaced && coordinates.isAttached)
                 assertEquals(layout.width, coordinates.size.width)
                 assertEquals(layout.height, coordinates.size.height)
