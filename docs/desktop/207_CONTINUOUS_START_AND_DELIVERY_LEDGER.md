@@ -1,3 +1,7 @@
+2026-11-07 当前631后继：内部marker仅TAKE取完成版本高值；文档/设定向量随卡选择，DOCUMENT owner按真实card语义、两DocId精确映射，BOTH/新卡缓存ID碰撞独立。R93原12679B/1fef9513…c92ac核CRC/source/2XML/空stderr，Plan10+实际RAG1完整PASS；R94原9344B/6099416f…7da5核CRC/source/1XML/空stderr，扩展实际RAG1碰撞两子例完整PASS，重叠不加总。631后继只先keys/type后取向量value，避免解析长聊天，需后续正常候选编译，不另开重复CI。另14完整rawdelta精确分源复用限域映射，0新跑；本轮合计29映射非新测试。清理已完成R93/R94临时下载描述1397B，2原ZIP保留。Engine/Catalog仍pending，下一核编辑器草稿target与持久化key关联。四身份/全部ID/T11T23/公开1244/db7/sign26与真人分组不变，315其余未采纳，无本机JVM/真实根/新包/公发。
+
+下方历史保留。
+
 2026-11-07 当前0a43后继：R92原12128B/bd83269d…fe284核SHA/CRC/source/2XML/空stderr，Named5+新不同ID账户保护写入1完整PASS，四显式选择均验证default引用与新根密钥；新人物ID碰撞、BOTH只重写一次、空白会话别名回退通过。R91原28 PASS与R92有重叠Named4，不累加为34独立测试；R90旧首断言FAIL保留。15完整rawdelta分源复用限域映射，0新跑；314整体false/315其余不变。仅清理5份已完成签名下载描述3414B，5原ZIP/全部失败记录保留。四身份/全部ID/T11T23/公开1244/db7/sign26与真人分组保持，无本机JVM/真实根/新包/公发。下一继续剩余完整路径差异，Engine/Catalog未整体关闭。
 
 下方历史保留。
