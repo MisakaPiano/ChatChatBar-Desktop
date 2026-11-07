@@ -2,6 +2,7 @@
 package com.example.chatbar.desktop
 
 import androidx.compose.ui.ImageComposeScene
+import androidx.compose.ui.awt.ComposeWindow
 import androidx.compose.ui.semantics.*
 import com.example.chatbar.data.local.JsonFileStorage
 import com.example.chatbar.desktop.backup.*
@@ -29,6 +30,10 @@ class DesktopLargePostProcessResultTest {
         fun walk(n: SemanticsNode): List<SemanticsNode> = listOf(n) + n.children.flatMap(::walk)
         return semanticsOwners.flatMap { walk(it.rootSemanticsNode) }
     }
+    private fun ComposeWindow.nodes(): List<SemanticsNode> {
+        fun walk(n: SemanticsNode): List<SemanticsNode> = listOf(n) + n.children.flatMap(::walk)
+        return semanticsOwners.flatMap { walk(it.rootSemanticsNode) }
+    }
     private suspend fun ImageComposeScene.frames() { repeat(4) { render(System.nanoTime()).close(); delay(20) } }
     private fun SemanticsNode.has(label: String): Boolean =
         config.getOrNull(SemanticsProperties.Text)?.any { it.text == label } == true ||
@@ -37,8 +42,13 @@ class DesktopLargePostProcessResultTest {
         val node = nodes().last { it.has(label) && it.config.contains(SemanticsActions.OnClick) }
         assertTrue(node.config[SemanticsActions.OnClick].action!!.invoke())
     }
+    private fun ComposeWindow.click(label: String) {
+        val node = nodes().last { it.has(label) && it.config.contains(SemanticsActions.OnClick) }
+        assertTrue(node.config[SemanticsActions.OnClick].action!!.invoke())
+    }
 
     @Test fun `valid noisy large response survives actual request reopen preview explicit use save and whole backup without widening inputs`() = runBlocking(edt) {
+        requireDesktopGraphicsForNativeTest()
         val parent = Files.createTempDirectory("large-post-process-")
         val resolved = DesktopDataRootResolution.Resolved(Files.createDirectory(parent.resolve("data")), DesktopDataRootProvenance.CLI_OVERRIDE,
             parent.resolve("bootstrap.json"))
@@ -93,18 +103,28 @@ class DesktopLargePostProcessResultTest {
 
             val scene = ImageComposeScene(1450, 1300, coroutineContext = edt) { DesktopNovelAiStudioPanel(reopened) }
             try {
-                scene.frames(); scene.click("导入图片"); scene.frames(); scene.click("▸ Enhance / Upscale")
+                scene.frames(); scene.click("导入图片")
+                var window: ComposeWindow? = null
+                withTimeout(10_000) {
+                    while (window == null) {
+                        scene.frames()
+                        window = java.awt.Window.getWindows().filterIsInstance<ComposeWindow>()
+                            .singleOrNull { it.title == "当前图片" && it.isShowing }
+                    }
+                }
+                val child = requireNotNull(window)
+                child.click("▸ Enhance / Upscale")
                 val resultIdentity = desktopDecodedImageIdentity("after-${output.contentHashCode()}")
-                withTimeout(20_000) { while (scene.nodes().none { it.config.getOrNull(DesktopDecodedImageIdentity) == resultIdentity }) scene.frames() }
-                scene.click("保存 PNG")
+                withTimeout(20_000) { while (child.nodes().none { it.config.getOrNull(DesktopDecodedImageIdentity) == resultIdentity }) scene.frames() }
+                child.click("保存 PNG")
                 withTimeout(10_000) { while (!Files.exists(saved)) scene.frames() }
                 assertContentEquals(output, Files.readAllBytes(saved))
-                scene.click("用作当前导入图片")
+                child.click("用作当前导入图片")
                 var imported: Path? = null
                 withTimeout(20_000) {
                     while (imported == null) {
                         scene.frames()
-                        val name = scene.nodes().flatMap { it.config.getOrNull(SemanticsProperties.Text).orEmpty() }
+                        val name = child.nodes().flatMap { it.config.getOrNull(SemanticsProperties.Text).orEmpty() }
                             .map { it.text }.firstOrNull { it.startsWith("ccb-postprocess-") && it.endsWith(".png") }
                         if (name != null) imported = Path.of(System.getProperty("java.io.tmpdir")).resolve(name)
                     }
@@ -116,6 +136,10 @@ class DesktopLargePostProcessResultTest {
                     val file = Path.of(folder).resolve("large-post-process-used-current-image.png")
                     Files.createDirectories(file.parent)
                     scene.render(System.nanoTime()).use { image -> image.encodeToData()!!.use { Files.write(file, it.bytes) } }
+                    child.toFront()
+                    val screenshot = java.awt.Robot().createScreenCapture(child.bounds)
+                    try { javax.imageio.ImageIO.write(screenshot, "png", Path.of(folder).resolve("large-post-process-native-current-image.png").toFile()) }
+                    finally { screenshot.flush() }
                 }
             } finally { scene.close() }
             assertContentEquals(input, Files.readAllBytes(source)); assertEquals(draft, reopened.repository.loadDraft())
