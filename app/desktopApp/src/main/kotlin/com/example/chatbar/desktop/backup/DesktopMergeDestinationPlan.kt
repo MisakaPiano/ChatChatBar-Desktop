@@ -105,6 +105,9 @@ internal class DesktopMergeDestinationPlan private constructor(
                     entities[destination] = mapped
                 }
             }
+            val rebuiltMessageSessions = selection.computer.filter { it.key.startsWith("retained:") }
+                .flatMap { unit -> unit.records.filterKeys { DesktopBackupPolicy.entityType(it) == "chat_messages" }.values }
+                .mapNotNull { it["sessionId"]?.jsonPrimitive?.contentOrNull }.toSet()
             for (unit in selection.computer) for ((path, value) in unit.records) {
                 checkActive()
                 val mapped = backupJson.parseToJsonElement(DesktopBackupPolicy.mapResources(value) { reference, fields -> resource(pcNames, reference, fields) }.toString(Charsets.UTF_8)).jsonObject
@@ -114,6 +117,9 @@ internal class DesktopMergeDestinationPlan private constructor(
                 val retainedMedia = DesktopMergeRetainedMedia(selection.incomingScope, selection.replacedComputerUnits[unit.key], checkActive)
                 for ((path, value) in unit.records) {
                     checkActive(); val record = DesktopMergeRecord(path, value)
+                    // A zero fingerprint still admits equal-count stale indexes. Extra retained owners
+                    // require the normal repository to rebuild from the actual merged message files.
+                    if (record.type == "chat_message_indexes" && record.text("sessionId") in rebuiltMessageSessions) continue
                     var mapped = mapper.rewrite(record) { reference, fields -> resource(phoneNames, reference, fields) }
                     retainedMedia.fields(record)?.let { retained ->
                         val mappedMedia = backupJson.parseToJsonElement(DesktopBackupPolicy.mapResources(retained) { reference, fields ->

@@ -8,6 +8,7 @@ internal class DesktopMergeRetainedMedia(
     computer: DesktopMergePreview.Unit?,
     checkActive: () -> Unit,
 ) {
+    class SessionRecords(val records: Map<String, JsonObject>, val voiceSources: List<DesktopMergeVoiceSourcePolicy.Source>)
     private val records = computer?.records.orEmpty()
     private val paths = buildMap {
         records.keys.forEach { path ->
@@ -20,11 +21,11 @@ internal class DesktopMergeRetainedMedia(
         }
     }
 
-    fun retainedSessionRecords(incoming: DesktopMergePreview.Unit): Map<String, JsonObject> {
-        val selected = scope ?: return emptyMap()
+    fun retainedSessionRecords(incoming: DesktopMergePreview.Unit): SessionRecords {
+        val selected = scope ?: return SessionRecords(emptyMap(), emptyList())
         val sessions = incoming.records.filterKeys { DesktopBackupPolicy.entityType(it) == "chat_sessions" }.values
             .mapNotNull { it["id"]?.jsonPrimitive?.contentOrNull }.toSet()
-        if (sessions.isEmpty()) return emptyMap()
+        if (sessions.isEmpty()) return SessionRecords(emptyMap(), emptyList())
         val incomingMessages = incoming.records.filterKeys { DesktopBackupPolicy.entityType(it) == "chat_messages" }.values
             .mapNotNull { key("chat_messages", it) }.toSet()
         val retained = paths.filter { (identity, path) ->
@@ -45,7 +46,25 @@ internal class DesktopMergeRetainedMedia(
                 if (session in sessions && !archivesSelected) retained += path
             }
         }
-        return DesktopBackupRecords.view(retained) { records.getValue(it) }
+        val owners = DesktopMergeRecord.from(records).filter { it.type == "chat_messages" }
+            .associateBy { it.text("sessionId") to it.text("id") }
+        val incomingOwners = DesktopMergeRecord.from(incoming.records).filter { it.type == "chat_messages" }
+            .associateBy { it.text("sessionId") to it.text("id") }
+        val voiceSources = mutableListOf<DesktopMergeVoiceSourcePolicy.Source>()
+        for (record in DesktopMergeRecord.from(records).filter { it.type in setOf("generated_voice_messages", "voice_anchor_states") }) {
+            val session = record.text("sessionId")
+            val voiceSelected = (selected.sessionChoices[session] ?: selected.sessionDefaultChoice)?.voice
+                ?: incoming.records.any { (path, value) -> DesktopBackupPolicy.entityType(path) in setOf("generated_voice_messages", "voice_anchor_states") &&
+                    value["sessionId"]?.jsonPrimitive?.contentOrNull == session }
+            if (session !in sessions || voiceSelected) continue
+            val owner = requireNotNull(owners[session to record.text("messageId")]) { "MERGE_RETAINED_VOICE_OWNER_MISSING" }
+            val incomingOwner = incomingOwners[session to record.text("messageId")]
+            val target = incomingOwner ?: owner.also { retained += it.relative }
+            if (DesktopMergeVoiceSourcePolicy.canRetainLive(record.type, record.value, owner.value, target.value)) retained += record.relative
+            else voiceSources += DesktopMergeVoiceSourcePolicy.Source(record, owner, target,
+                if (incomingOwner == null) DesktopMergeDestinationPlan.Side.COMPUTER else DesktopMergeDestinationPlan.Side.PHONE)
+        }
+        return SessionRecords(DesktopBackupRecords.view(retained) { records.getValue(it) }, voiceSources)
     }
 
     fun fields(record: DesktopMergeRecord): JsonObject? {

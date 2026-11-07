@@ -108,6 +108,7 @@ internal object DesktopMergeRootPreparation {
                     }
                 }
             }
+            DesktopComputerVoiceCustody.preserve(computer, phone, selection, targetRoot, authority, pending)
             DesktopPreservationStore.preserveMoments(phone, targetRoot)
             phone.verifyUnchanged()
             for ((path, file) in computer.files) check(DesktopArchiveFiles.hash(file, DesktopFullBackupSource.MAX_FILE) == computerProof.getValue(path)) { "MERGE_COMPUTER_SNAPSHOT_CHANGED" }

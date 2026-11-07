@@ -28,7 +28,8 @@ internal class DesktopMergePreview private constructor(
         val forkIncomingUnits: Set<String>, val pcFingerprint: String,
         val ignoredIncomingUnits: Set<String> = emptySet(),
         val replacedComputerUnits: Map<String, Unit> = emptyMap(),
-        val incomingScope: InspectionScope? = null) {
+        val incomingScope: InspectionScope? = null,
+        val computerVoiceSources: List<DesktopMergeVoiceSourcePolicy.Source> = emptyList()) {
         override fun toString() = "MergeSelection(pc=${computer.size},phone=${phone.size},forks=${forkIncomingUnits.size})"
     }
 
@@ -54,14 +55,16 @@ internal class DesktopMergePreview private constructor(
                 }
             }
         }
+        val voiceSources = mutableListOf<DesktopMergeVoiceSourcePolicy.Source>()
         for ((key, original) in replaced) {
             val candidate = phone.getValue(key)
             val retained = DesktopMergeRetainedMedia(sourceScope, original) {}.retainedSessionRecords(candidate)
-            if (retained.isNotEmpty()) computer["retained:$key"] = Unit("retained:$key", original.category,
-                original.label, retained, original.signature)
+            if (retained.records.isNotEmpty()) computer["retained:$key"] = Unit("retained:$key", original.category,
+                original.label, retained.records, original.signature)
+            voiceSources += retained.voiceSources
         }
         return Selection(computer.values.toList(), phone.values.toList(), forks, pcFingerprint,
-            choices.filterValues { it == Choice.KEEP_PC || it == Choice.SKIP }.keys.toSet(), replaced, sourceScope)
+            choices.filterValues { it == Choice.KEEP_PC || it == Choice.SKIP }.keys.toSet(), replaced, sourceScope, voiceSources)
     }
 
     companion object {

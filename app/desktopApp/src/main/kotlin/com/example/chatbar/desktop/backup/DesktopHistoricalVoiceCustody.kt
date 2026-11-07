@@ -118,8 +118,11 @@ internal object DesktopHistoricalVoiceCustody {
             val index = home.resolve("index.json"); DesktopArchiveFiles.safe(index, false)
             check(Files.size(index) <= DesktopBackupPolicy.MAX_JSON)
             val kind = strict(Files.readAllBytes(index))["kind"]?.jsonPrimitive?.content
-            result = result.plus(if (kind == DesktopSlotHistoricalVoiceCustody.KIND)
-                DesktopSlotHistoricalVoiceCustody.validateSeal(home) else validateSeal(home).second)
+            result = result.plus(when (kind) {
+                DesktopSlotHistoricalVoiceCustody.KIND -> DesktopSlotHistoricalVoiceCustody.validateSeal(home)
+                DesktopComputerVoiceCustody.KIND -> DesktopComputerVoiceCustody.validateSeal(home)
+                else -> validateSeal(home).second
+            })
         } }
         return result
     }

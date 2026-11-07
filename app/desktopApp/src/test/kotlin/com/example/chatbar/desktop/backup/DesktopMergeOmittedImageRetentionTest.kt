@@ -85,9 +85,12 @@ class DesktopMergeOmittedImageRetentionTest {
                     "entities/chat_messages/s_m.json" to bytes(ChatMessage.serializer(), message),
                     "entities/save_slots/slot.json" to bytes(SaveSlot.serializer(), slot))
                 for ((path, raw) in original) { val target = pcRoot.resolve(path); Files.createDirectories(target.parent); Files.write(target, raw) }
-                val incoming = mapOf("entities/character_cards/c.json" to card, "entities/chat_sessions/s.json" to session,
+                val incoming = linkedMapOf("entities/character_cards/c.json" to card, "entities/chat_sessions/s.json" to session,
                     "entities/chat_messages/s_${case.messageId}.json" to bytes(ChatMessage.serializer(),
                         ChatMessage(case.messageId, "s", MessageRole.USER, "Phone body", createdAt = 1, updatedAt = 2)))
+                if (case.messageId != "m") incoming["entities/chat_message_indexes/s.json"] = bytes(ChatMessageIndex.serializer(),
+                    ChatMessageIndex("s", entries = listOf(ChatMessageIndexEntry(case.messageId, MessageRole.USER, 0, 1),
+                        ChatMessageIndexEntry("stale-deleted-message", MessageRole.USER, 1, 1)), fileCount = 2, fileFingerprint = 0))
                 val scope = OfficialWireScope(emptySet(), 1, 1, if (case.includeImages) 1 else 0, 1, if (case.includeArchives) 1 else 0,
                     false, false, false, false, sessionDefaultChoice = OfficialWireSessionChoice(images = case.includeImages, archives = case.includeArchives))
                 val source = Files.write(base.resolve("synthetic.cbbackup"), CensusWireFixtures.bytes(prefs = "{}", files = incoming,
@@ -126,6 +129,7 @@ class DesktopMergeOmittedImageRetentionTest {
                                         val kept = messages.single { it.id == "m" }
                                         assertEquals("Computer body", kept.content)
                                         assertContentEquals(imageBytes, Files.readAllBytes(root.resolve(kept.images.single())))
+                                        assertEquals(setOf("m", case.messageId), ChatRepository(JsonFileStorage(root)).getMessages(incomingSession).map { it.id }.toSet())
                                     }
                                     if (case.choice == DesktopMergePreview.Choice.BOTH) {
                                         val kept = ChatRepository(JsonFileStorage(root)).getMessagesReadOnly("s").single()
