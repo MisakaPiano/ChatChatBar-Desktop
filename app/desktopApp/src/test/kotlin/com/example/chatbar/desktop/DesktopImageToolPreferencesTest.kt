@@ -57,8 +57,9 @@ class DesktopImageToolPreferencesTest {
             Triple(IntSize(400, 400), 2f, 90), Triple(IntSize(400, 400), 1f, 45))) {
             val radius = desktopBrushRadius(36f, canvas, density)
             val painted = DesktopImageTools.paint(source, listOf(.5f to .5f), radius, 0xff000000.toInt())
-            assertEquals(0xff000000.toInt(), painted.getRGB(500 + expectedRadius - 1, 500))
-            assertEquals(0, painted.getRGB(500 + expectedRadius + 1, 500))
+            // A normalized midpoint maps to floor(.5 * (1000 - 1)) = 499.
+            assertEquals(0xff000000.toInt(), painted.getRGB(499 + expectedRadius - 1, 499))
+            assertEquals(0, painted.getRGB(499 + expectedRadius + 1, 499))
         }
         assertContentEquals(before, source.pixels())
     }
