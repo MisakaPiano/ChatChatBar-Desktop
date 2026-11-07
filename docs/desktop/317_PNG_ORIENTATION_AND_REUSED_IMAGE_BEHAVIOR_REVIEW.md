@@ -50,4 +50,3 @@ R02包含 `PngOrientationReadingTest`、`ImageMetadataStripperTest`、`PrivacyPn
 # cb9 元数据候选的单项复用 / 2026-11-07
 
 另独读cb9的完整元数据读取增量：普通文本块先作为完整候选，失败后才尝试原始alpha候选；不从两个来源拼参数。当前共享Reader/Stealth解码器、Desktop原始alpha适配和共享测试四blob仍与原162一致；当前Desktop集成fixture与fa39一致。原162的Stealth三方法及方向R03原件中实际PNG优先/失败回退和WebP无ImageIO插件两方法共五项PASS仅分源复用，未新跑。适配读取原尺寸alpha，不先旋转或缩略图重采样；显示方向由独立owner负责。只登记cb9的Reader一条delta，不提升全部图片交互、其他元数据增量或真人验收。逐blob和原ZIP SHA/CRC/XML见本地`OWNER_METADATA_CANDIDATE_CHANNEL_REUSE.json`。
-

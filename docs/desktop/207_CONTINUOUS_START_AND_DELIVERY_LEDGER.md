@@ -1,3 +1,7 @@
+2026-11-07 当前94413：位置R30其余16PASS保留，R29–32为取点/布局身份夹具失败，不作业务布局反例；只读固定Compose后改取同item完整modifier坐标，实际padding pointer聚焦/滚动可达R38/R39待原件。另cd1eff补8c同源预制格式依赖复用，保留已编辑格式/身份/原bytes，普通无同源冲突仍两份保留；旧R35/后继R36 Desktop与R37 shared待原件，330未记PASS。354已明确采纳单句仅补现状映射，0 Prompt改动；cb9候选读取原shared3+Desktop2分源复用，0新跑。其余315未采纳，314整体false，1244/db7/sign26和真人分组PASS/FAIL/未测及四身份/T11/T23保持；无本机JVM、用户根操作、新包或公发。
+
+下方历史保留。
+
 2026-11-07 后继81a/bffaa：328位置旧R25三业务FAIL/新239 R26原13PASS；旧R27真实人物CtrlZ串角色与小数初显两业务FAIL/新578 R28原16PASS（Position5+Studio10+ManualUndo1），SHA/CRC/source/XML已核，重叠不加总。81a另给位置控件原内容加有界scroll；R29默认650/短480旧可达反例及R30当前整组待原件，不用16代验新增布局。329另复核朋友圈编辑原七owner/test blob及Controller.edit体、原shared2/store1/UI1共4方法等位复用，只补两个delta不改运行。预设R23旧有效1FAIL/R24原native7PASS、方向旧1PASS1FAIL/新11PASS、存档匹配34及R18原23PASS1native前置SKIP保持分源。Suite已确认只读收参考、未实施；T17/T24已校准1244/sign26，已有真人PASS/原FAIL/未测分开。四身份/T11/T23/315未采纳/141→12e active不变，无新包、公发、本机JVM或用户根操作。
 
 下方历史保留。
