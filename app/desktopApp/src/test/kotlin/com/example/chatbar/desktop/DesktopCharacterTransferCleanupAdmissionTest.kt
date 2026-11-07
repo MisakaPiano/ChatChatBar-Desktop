@@ -18,14 +18,15 @@ class DesktopCharacterTransferCleanupAdmissionTest {
                 val image = root.resolve("images/retired.png"); Files.createDirectories(image.parent); Files.writeString(image, "original-retired-image")
                 app.characterRepository.save(CharacterCard("source", "Synthetic", greeting = "Greeting", avatar = "images/retired.png", createdAt = 1, updatedAt = 1))
                 if (unreadable) {
-                    val bad = root.resolve("entities/unknown_authority/broken.json"); Files.createDirectories(bad.parent); Files.writeString(bad, "invalid-json")
+                    val bad = root.resolve("entities/unknown_authority/broken.json"); Files.createDirectories(bad.parent); Files.writeString(bad, "{")
+                    assertFails { kotlinx.serialization.json.Json.parseToJsonElement(Files.readString(bad)) }
                     val management = app.createManagementController(app.createTypedTransferController())
                     management.requestDelete(DesktopTransferKind.CHARACTER, "source", "Synthetic")
                     management.confirmDeletion()
                     assertNull(app.characterRepository.getById("source"))
                     assertEquals(DesktopUiText.MANAGE_DELETE_COMMITTED, management.state.value.warning)
                     assertNull(management.state.value.error); assertNull(management.state.value.pendingDeletion)
-                    assertEquals("original-retired-image", Files.readString(image)); assertEquals("invalid-json", Files.readString(bad))
+                    assertEquals("original-retired-image", Files.readString(image)); assertEquals("{", Files.readString(bad))
                 } else {
                     val entered = CompletableDeferred<Unit>()
                     blocker = launch(Dispatchers.Default) { app.dataOperationCoordinator.withNormalOperation { entered.complete(Unit); release.await() } }
