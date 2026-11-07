@@ -33,12 +33,23 @@ internal class DesktopHistoryBatchExport(
     private data class Written(val path: Path, val key: Any, val staged: Proof)
     private data class Displaced(val destination: Path, val file: Path, var proof: Proof? = null)
 
-    private fun directoryKey(path: Path): Any {
-        DesktopArchiveFiles.safe(path, true)
+    private data class WindowsIdentity(val volume: Long, val id: String, val created: Long)
+    private fun DesktopDocumentIndexReadEvidence.Stamp.identity() = WindowsIdentity(volume, id, created)
+    private val windows get() = System.getProperty("os.name").startsWith("Windows")
+    private suspend fun identity(path: Path, directory: Boolean): Any {
+        DesktopArchiveFiles.safe(path, directory)
+        if (windows) return DesktopDocumentIndexReadEvidence({}, extendedPaths = true).observe(path, directory).identity()
         return requireNotNull(Files.readAttributes(path, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS).fileKey())
     }
+    private suspend fun directoryKey(path: Path): Any = identity(path, true)
     private suspend fun proof(path: Path): Proof {
         DesktopArchiveFiles.safe(path, false)
+        if (windows) {
+            val evidence = DesktopDocumentIndexReadEvidence({}, extendedPaths = true)
+            val stamp = evidence.observe(path, false)
+            val read = evidence.read(path, stamp) { _, _ -> }
+            return Proof(path, stamp.identity(), stamp.size, read.file.sha256, stamp.modified)
+        }
         val stamp = Files.readAttributes(path, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
         val digest = DesktopArchiveFiles.hash(path, stamp.size())
         val after = Files.readAttributes(path, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
@@ -157,7 +168,7 @@ internal class DesktopHistoryBatchExport(
                     }
                     FileChannel.open(destination, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE).use { channel ->
                         unknownPublication = true
-                        val key = requireNotNull(Files.readAttributes(destination, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS).fileKey())
+                        val key = identity(destination, false)
                         written += Written(destination, key, staged[index])
                         unknownPublication = false
                         check(DesktopArchiveFiles.read(staged[index].path, staged[index].size) { bytes, count ->

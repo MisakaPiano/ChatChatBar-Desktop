@@ -811,6 +811,7 @@ class DesktopAppContainer internal constructor(
         ragCleanup = ragCleanup,
         json = transferJson,
         operationGate = dataOperationCoordinator,
+        postCommitResourceCleanup = ownedImageCleanup::deleteUnreferenced,
     )
 
     suspend fun close() {

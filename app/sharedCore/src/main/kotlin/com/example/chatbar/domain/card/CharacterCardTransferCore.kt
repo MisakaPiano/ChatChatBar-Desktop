@@ -67,6 +67,7 @@ class CharacterCardTransferCore internal constructor(
     private val ioDispatcher: CoroutineDispatcher,
     private val nowMillis: () -> Long,
     private val newId: () -> String,
+    private val postCommitResourceCleanup: (suspend (List<String>) -> Unit)? = null,
 ) {
     constructor(
         characterRepository: CharacterRepository,
@@ -78,6 +79,7 @@ class CharacterCardTransferCore internal constructor(
         json: Json,
         operationGate: AppDataOperationGate = NoOpAppDataOperationGate,
         ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+        postCommitResourceCleanup: (suspend (List<String>) -> Unit)? = null,
     ) : this(
         characters = RepositoryCharacterTransferStore(characterRepository),
         worldBooks = RepositoryWorldBookTransferStore(worldBookRepository),
@@ -90,6 +92,7 @@ class CharacterCardTransferCore internal constructor(
         ioDispatcher = ioDispatcher,
         nowMillis = System::currentTimeMillis,
         newId = { UUID.randomUUID().toString() },
+        postCommitResourceCleanup = postCommitResourceCleanup,
     )
 
     suspend fun prepareExport(id: String): CharacterCardExport = normalOperation {
@@ -166,7 +169,7 @@ class CharacterCardTransferCore internal constructor(
         observation: CharacterTransferObservation? = null,
         communitySource: CharacterCardCommunitySource? = null,
         communityAuthority: CharacterCommunityOverwriteAuthority? = null,
-    ): CharacterCard = normalOperation {
+    ): CharacterCard = retiringOperation(CharacterTransferPostCommitOperation.OVERWRITE, existingId) { deferred -> normalOperation {
         val normalizedPackage = packageData.withoutEmptyCharacterPlaceholders()
         normalizedPackage.validateForImport()
         val existing = characters.getById(existingId) ?: error("待覆盖角色卡不存在")
@@ -215,6 +218,7 @@ class CharacterCardTransferCore internal constructor(
             cleanupOwnedResources(
                 card = existing,
                 preserveReferences = replacement.ownedResourceReferences(),
+                deferResources = deferred,
             )
         }
         if (persistenceFailure != null) {
@@ -235,10 +239,10 @@ class CharacterCardTransferCore internal constructor(
             )
         }
         replacement
-    }
+    } }
 
     /** Entity deletion is the commit point; owned-resource/RAG cleanup is post-commit and never resurrects it. */
-    suspend fun deleteCard(id: String) = normalOperation {
+    suspend fun deleteCard(id: String) = retiringOperation(CharacterTransferPostCommitOperation.DELETE, id) { deferred -> normalOperation {
         val previous = characters.getById(id)
         var committed = false
         var persistenceFailure: Throwable? = null
@@ -250,7 +254,7 @@ class CharacterCardTransferCore internal constructor(
         }
 
         val cleanupFailure = withContext(NonCancellable) {
-            previous?.let { cleanupOwnedResources(it) }
+            previous?.let { cleanupOwnedResources(it, deferResources = deferred) }
         }
         if (persistenceFailure != null) {
             cleanupFailure?.let(persistenceFailure::addSuppressed)
@@ -268,6 +272,33 @@ class CharacterCardTransferCore internal constructor(
                 message = "角色卡删除已提交，但 owned resource 或 RAG 清理失败",
                 cause = cleanupFailure,
             )
+        }
+    } }
+
+    /** Desktop cleanup needs exclusive reference custody after this commit's normal lease is released. */
+    private suspend fun <T> retiringOperation(kind: CharacterTransferPostCommitOperation, id: String,
+        operation: suspend (((List<String>) -> Unit)?) -> T): T {
+        val cleanup = postCommitResourceCleanup ?: return operation(null)
+        val retired = linkedSetOf<String>()
+        var primary: Throwable? = null
+        try {
+            return operation { retired.addAll(it) }
+        } catch (failure: Throwable) {
+            primary = failure
+            throw failure
+        } finally {
+            if (retired.isNotEmpty()) {
+                val failure = withContext(NonCancellable) { runCatching { cleanup(retired.toList()) }.exceptionOrNull() }
+                if (failure != null) {
+                    val original = primary
+                    if (original is CharacterTransferPostCommitException) original.addSuppressed(failure)
+                    else {
+                        original?.addSuppressed(failure)
+                        throw CharacterTransferPostCommitException(kind, id,
+                            "角色卡操作已提交，但提交后资源清理未完成；原文件保留", original ?: failure)
+                    }
+                }
+            }
         }
     }
 
@@ -604,11 +635,12 @@ class CharacterCardTransferCore internal constructor(
     private suspend fun cleanupOwnedResources(
         card: CharacterCard,
         preserveReferences: Set<String> = emptySet(),
+        deferResources: ((List<String>) -> Unit)? = null,
     ): Throwable? {
         var primary: Throwable? = null
-        card.ownedResourceReferences()
-            .filterNot(preserveReferences::contains)
-            .forEach { reference ->
+        val retired = card.ownedResourceReferences().filterNot(preserveReferences::contains)
+        if (deferResources != null) deferResources(retired)
+        else retired.forEach { reference ->
                 try {
                     resources.deleteOwned(reference)
                 } catch (error: Throwable) {

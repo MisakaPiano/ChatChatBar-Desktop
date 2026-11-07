@@ -9,3 +9,5 @@ Android的纯命名对象移至sharedCore，包名与对象正文不改。Deskto
 界面关闭与标题修改会清除旧预览，不能用旧目录或名称确认。选择和原草稿/历史不写入；modal打开时历史刷新不清空选择，失败/取消可保留继续操作。原详情、相册、Shift范围选择、删除和单张操作保留。中英教程说明批量保存及仅元数据能力边界。
 
 必要云端验证待实际原件：实际文件流式复制/显式同名选择/全选前置拒绝/预览失效/失败取消回滚/外部改动保全，及普通历史页打开modal、后续同名选择、保存与原草稿/选择保持。只用合成文件和内存凭据，不运行本机JVM、真实根或provider；尚未PASS、未发布。
+
+R97原15816B、SHA256 58f55fac8fe6ef61bbf846653568d6c2bd41ba1c0fe5f9e1ec907791c034f03f核CRC/source/2XML：生产编译通过，Engine3均在首次正常源proof因Windows BasicFileAttributes.fileKey为空而失败；各后续发布/回滚情形未达到。Scene1在prepare后等待plan超时；未称按钮行为本身失败。后继复用项目现有native volume/file ID和同句柄流式hash，不降低身份约束。另修普通选择callback按Shared keys的点击次序投影为LinkedHashSet，保留Shift/相册内部顺序；实际Scene改为逆序选两张并核对预览与最终原字节。后继仍待原件，不提前PASS。

@@ -5,6 +5,8 @@ description: Maintain ChatBar character-card AI workflows. Use when changing AI 
 
 # ChatBar Character Card AI
 
+Desktop's shared `CharacterCardTransferCore` injection also supplies `postCommitResourceCleanup` for typed overwrite and deletion. Capture retired references only after the entity commit, keep document-RAG cleanup in its normal operation, then release that lease before `DesktopOwnedImageCleanup` takes exclusive full-reference custody. Historical Moment sender avatars/images, other cards, messages and drafts can retain the original files. Default/Android Core cleanup stays inline when this optional callback is absent; materialization rollback remains exact-new-resource cleanup. A failed postcommit reference scan reports the existing committed-transfer warning, never restores the old entity or treats the commit as a failed save.
+
 The card post-commit retry owner serializes with `committedCleanupMutex`; state and committed identity are re-read after acquiring it. While exclusive cleanup waits for other operations, retain the original committed-warning/marker edit guard. The actual admission test also holds another normal operation and starts a duplicate retry before allowing the next draft.
 
 The maintenance-wait UI fixture must not request a new normal repository read while it owns the blocker: that read correctly queues behind the exclusive waiter and prevents the test from releasing itself. Inspect only its known synthetic durable entity JSON during the wait, then recheck through the production repository after release. Keep the stage/independent daemon stack/original-exception diagnostics and failure deadline; no-case timeouts are not business reproduction.

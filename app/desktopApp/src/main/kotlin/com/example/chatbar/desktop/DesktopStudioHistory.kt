@@ -216,7 +216,10 @@ internal fun DesktopStudioHistory(controller: DesktopNovelAiStudioController,
                     val input = selectionState.copy(rangeAnchorKey = if (range) lastSelectedAlbum else null)
                     selectionState = NovelAiHistorySelectionPolicy.selectAlbum(input, albums, album.key, false)
                     lastSelectedAlbum = album.key.takeIf { !range && album.images.all { it.key in selectionState.keys } }
-                    controller.setHistorySelection(filtered.filter { it.key in selectionState.keys }.map { NovelAiHistoryImageSelection(it.entry.id, it.image.path) }.toSet())
+                    val byKey = filtered.associateBy { it.key }
+                    controller.setHistorySelection(selectionState.keys.mapNotNull { key -> byKey[key]?.let {
+                        NovelAiHistoryImageSelection(it.entry.id, it.image.path)
+                    } }.toCollection(linkedSetOf()))
                 }
                 Column(Modifier.border(if (allSelected) 2.dp else 1.dp, if (allSelected) DesktopBootstrapColors.primary else DesktopBootstrapColors.border).padding(6.dp)) {
                     Box {

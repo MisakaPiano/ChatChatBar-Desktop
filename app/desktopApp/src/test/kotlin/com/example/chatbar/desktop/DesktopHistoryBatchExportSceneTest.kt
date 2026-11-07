@@ -25,7 +25,9 @@ class DesktopHistoryBatchExportSceneTest {
     private suspend fun frames(scene: ImageComposeScene) { repeat(5) { scene.render(System.nanoTime()).close(); yield(); delay(10) } }
     private suspend fun until(scene: ImageComposeScene, condition: () -> Boolean) = withTimeout(8000) { do { frames(scene) } while (!condition()) }
     private suspend fun click(scene: ImageComposeScene, label: String) {
-        val found = nodes(scene).first { text(it, label) }
+        clickNode(scene, nodes(scene).first { text(it, label) })
+    }
+    private suspend fun clickNode(scene: ImageComposeScene, found: SemanticsNode) {
         val target = generateSequence(found) { it.parent }.first { it.config.contains(SemanticsActions.OnClick) }
         assertFalse(target.config.contains(SemanticsProperties.Disabled)); assertTrue(target.config[SemanticsActions.OnClick].action!!.invoke()); frames(scene)
     }
@@ -52,9 +54,13 @@ class DesktopHistoryBatchExportSceneTest {
             }
             try {
                 until(scene) { nodes(scene).count { text(it, "选择") } >= 2 }
-                click(scene, "选择"); click(scene, "选择")
+                val originalOrder = controller.history.first().flatMap { entry -> entry.images.map { entry.id to it.path } }
+                // The ordinary selection callback must retain clicks, not re-sort by gallery order.
+                clickNode(scene, nodes(scene).filter { text(it, "选择") }[1])
+                click(scene, "选择")
                 assertEquals(2, controller.state.value.selected.size)
                 val selected = controller.state.value.selected.toList()
+                assertEquals(listOf(originalOrder[1], originalOrder[0]), selected.map { it.entryId to it.imagePath })
                 click(scene, "批量保存")
                 nodes(scene).last { it.config.contains(SemanticsActions.SetText) }.config[SemanticsActions.SetText].action!!.invoke(AnnotatedString("demo")); frames(scene)
                 Files.writeString(out.resolve("demo_1.png"), "old-one"); Files.writeString(out.resolve("demo_2.png"), "old-two")
