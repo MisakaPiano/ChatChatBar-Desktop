@@ -1,3 +1,7 @@
+2026-11-07 后继3ade：327的Upscale方向旧R20原1PASS+1业务FAIL（orientation6 raw64×96/expected96×64），同fixture后继R21原三套11PASS、0FAIL/ERROR/SKIP，6/8/2实际wire像素/alpha/尺寸与普通透明原bytes/原护栏已核；原七shared后处理及存储准入原24方法分源复用，不计新跑或总和。326真实预设R19夹具误给T5 JSON造成首开失败，原件保留；修资源R22原1PASS完成关闭/取消/坏包/导出/apply/undo/同页重开，非用户重复失效反例。R23补native主窗/Robot与已有最小化child唤回旧源；3ade显式激活保留原window/preview/job与busy/关闭保护，R24后继待原件。R18原23PASS/1native前置SKIP及325匹配34保持。公开仍1244/db7/签26，A2/A3/A4/B1/B3及B2可用回执保留，A1/Header/B2重复入口真人FAIL与未交付后继分开，CDE未测，315未采纳和141→12e active。无本机JVM/真实资料/新包/公发；仅清理四份完成下载请求2745B，全部原件/失败/当前资料保留。
+
+下方历史保留。
+
 2026-11-07 R18后继原件已核：normal930e/controlcff779/run42342909490，5套24方法=23PASS+1既有native前置SKIP、0FAIL/ERROR；325按R15未改30+当前4匹配34方法，326账户未知/已加载各五宽度共10场景并实际审loaded600/220/360图，预设Content原1PASS。R16/R17同一DSL编译失败零XML保留。用户最新B2回执确认完整生成预设可用，但同页按钮操作一次后失效、切页才恢复；这不被Content的固定working/closing=false证明，新增实际入口/Window生命周期后继待验证。A2/A3/A4/B1/B3原真人PASS保留，A1旧1244USER_FAIL/77PASS补修未交付、CDE未测保持。314整体false，四身份/公开1244/db7/签26/315未采纳不变，无本机JVM/真实根/新包或发布。
 
 下方历史保留。

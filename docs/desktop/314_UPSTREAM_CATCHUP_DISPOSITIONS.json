@@ -7348,8 +7348,8 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Actual Desktop container injects the real coordinator into shared JsonFileStorage. Every entity/singleton OperationMutex admits normal work before per-entity locking, preserving nested cross-entity access during pending maintenance and independent entity concurrency. Current storage body differs from original162 only by helper private-to-internal visibility; four gate/test blobs exact and original shared9 plus Desktop15 methods re-read with SHA/CRC, no new run. This maps only the storage admission delta, not every producer or whole backup engine.",
       "candidateOwners": [
         {
           "path": "app/sharedCore/src/main/kotlin/com/example/chatbar/data/local/JsonFileStorage.kt",
@@ -7359,7 +7359,10 @@
         }
       ],
       "behaviorIds": [],
-      "evidence": []
+      "evidence": [
+        "docs/desktop/324_IMAGE_HISTORY_AND_MEMORY_ADMISSION_REUSE.md",
+        "OWNER_STORAGE_MAINTENANCE_ADMISSION_REUSE.json"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/data/repository/ChatRepository.kt",
@@ -17596,6 +17599,14 @@
     "matchedMethods": 7,
     "newRuns": 0,
     "desktopOrientationWire": "PENDING_R20_R21",
+    "completeWholeInventory": false
+  },
+  "storageMaintenanceAdmissionReview": {
+    "mappedDelta": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/data/local/JsonFileStorage.kt",
+    "originalRun": 42085881455,
+    "matchedMethods": 24,
+    "newRuns": 0,
+    "currentStorageBodySameExceptHelperVisibility": true,
     "completeWholeInventory": false
   }
 }

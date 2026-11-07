@@ -13,3 +13,5 @@ R18（42342909490/controlcff779/normal930e）原5套24方法=23PASS、1既有原
 原ZIP137232B，SHA256 `5deef6df021aca24f58cc4b02619b4de07861273a97e301a934d13cb35f5f732`，CRC/source/逐XML已核。R16/R17同一DSL编译失败且零XML，930e将BoxWithConstraints宽度先捕获再进入Row后执行R18，旧原件保留。生成审图素材只用人工合成账户/状态，不以用户截图作测试夹具。下一批成熟候选集中复测失败与受影响部分，不新发逐项问题或重复已通过项。公开1244/签26保持，不代装、不操作现用真实资料。
 
 外层回归R19（42343842566/controlab79）原1FAIL/0SKIP；system-err显示首个FullPanel的T5读取收到通用JSON假asset，发生Not in GZIP format后界面协程退出，不能当作用户同条件重复入口业务反例。d82将夹具限定为仅presets路径使用inline空manifest，分词器/其他类型委托实际asset reader，不读取预制preset内容、不跳过token producer、不放宽等待，并记录每次open序号。实际Studio入口→实际Exchange Window的R22原生后继待原件；生产预设逻辑尚未猜改，用户FAIL仍待解决。
+
+进一步源码分支：原主入口只有`showingPreset=true`，已存在但被遮挡/最小化的Window再次收到true不会还原置前。用户当次未说明是否灰掉或被遮挡，因此这只是明确存在且可能吻合症状的分支，不能推定其真实根因。692c的R23将主窗也改为真实native Window并用限定窗口内的Robot点击，先确认实际关闭/再开，再检验最小化旧child后主入口唤回同一实例。3ade仅增加预设显式activation revision，Window按该信号还原并下一frame请求置前；默认未传信号的其他工具窗不触发，不移除busy、working/closing、取消join、预览/确认或原草稿保护。R24同夹具及原Controller/Content/工具窗native关闭方法待原件，不先宣告用户问题闭合。
