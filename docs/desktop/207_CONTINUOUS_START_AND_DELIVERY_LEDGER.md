@@ -1,3 +1,7 @@
+2026-11-07 备份未选scope继续：323登记同m未选图的实际旧RootPreparation 1FAIL，a029图片字段/PC snapshot复核、987缺失image owner及Moment/history纯plan后继已备；新Map类型推断使R02编译失败/零XML，784修正后R04原件待取，未计业务通过。未选voice/archive及PC被替代版本source custody仍为本组必要依赖，不借图片补修关闭整个MergeEngine。另精确复用codec v1/v2及声明归档key三行，原Source11/Writer9只复用不重复新跑。公开/运行/候选四身份、1244/db7/签26、A1真人FAIL、315未采纳不变。
+
+下方历史保留。
+
 2026-11-07 NAI合法后继已核原件：R03旧生产三方法1PASS+2实际FAIL；R04八套43PASS=shared17+Desktop26，ab840延迟High专属控件后继原四套8PASS，0FAIL/ERROR/SKIP，重叠分列；最初四轮新夹具编译失败保留/不记业务反例。322共20条精确映射，参与开关另原19PASS/1native前置SKIP。当前继续备份未选媒体真实scope候选：a029先补同身份TAKE_PHONE的图片字段与PC快照复核，新实际root反例/后继待原件；缺失消息owner、未选voice/archive家族尚待完整处理，不声称整个MergeEngine追齐。公开1244/db7/签26、A1真人FAIL、315未采纳不动，无新包/代装、本机JVM或真实资料操作。
 
 下方历史保留。

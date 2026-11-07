@@ -7502,11 +7502,21 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Desktop existing explicit modern v2 writer / authenticated v1-v2 inspection codec with original crypto/AAD, separate strict legacy v1 restore. Exact codec blob and original Source11/Writer9 reused; not whole restore/merge parity.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "BACKUP_CODEC_DECLARED_PATH_REUSE"
+      ],
+      "evidence": [
+        "docs/desktop/323_MERGE_UNSELECTED_MEDIA_AND_SOURCE_CUSTODY.md",
+        "I:\\CCB-Desktop-Continuity\\updates\\20261106-upstream-catchup-to149\\OWNER_BACKUP_CODEC_AND_ALIAS_REUSE.json"
+      ],
+      "desktopOwners": [
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/AppBackupCodec.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupSource.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupWriter.kt"
+      ]
     },
     {
       "id": "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/backup/AppBackupModels.kt",
@@ -9560,11 +9570,21 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Desktop existing explicit modern v2 writer / authenticated v1-v2 inspection codec with original crypto/AAD, separate strict legacy v1 restore. Exact codec blob and original Source11/Writer9 reused; not whole restore/merge parity.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "BACKUP_CODEC_DECLARED_PATH_REUSE"
+      ],
+      "evidence": [
+        "docs/desktop/323_MERGE_UNSELECTED_MEDIA_AND_SOURCE_CUSTODY.md",
+        "I:\\CCB-Desktop-Continuity\\updates\\20261106-upstream-catchup-to149\\OWNER_BACKUP_CODEC_AND_ALIAS_REUSE.json"
+      ],
+      "desktopOwners": [
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/AppBackupCodec.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupSource.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupWriter.kt"
+      ]
     },
     {
       "id": "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:app/app/src/main/java/com/example/chatbar/domain/backup/AppBackupModels.kt",
@@ -10559,11 +10579,21 @@
         "afterMode": "100644"
       },
       "scope": "PRODUCTION",
-      "disposition": "PENDING",
-      "reason": "Actual delta needs behavior/owner mapping; existing scoped evidence is reused below, not reset or inferred from path equality.",
+      "disposition": "EQUIVALENT",
+      "reason": "Declared logical archive key drives existing Desktop writer while mapped canonical physical source is only read. Exact key-writing loop and original Writer9 reused; not a native junction test or whole backup parity.",
       "candidateOwners": [],
-      "behaviorIds": [],
-      "evidence": []
+      "behaviorIds": [
+        "BACKUP_CODEC_DECLARED_PATH_REUSE"
+      ],
+      "evidence": [
+        "docs/desktop/323_MERGE_UNSELECTED_MEDIA_AND_SOURCE_CUSTODY.md",
+        "I:\\CCB-Desktop-Continuity\\updates\\20261106-upstream-catchup-to149\\OWNER_BACKUP_CODEC_AND_ALIAS_REUSE.json"
+      ],
+      "desktopOwners": [
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/AppBackupCodec.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupSource.kt",
+        "app/desktopApp/src/main/kotlin/com/example/chatbar/desktop/backup/DesktopFullBackupWriter.kt"
+      ]
     },
     {
       "id": "81f5449803698a179549530c404e11018f9a62f8:app/app/src/test/java/com/example/chatbar/domain/backup/BackupExportSelectionTest.kt",
@@ -17460,5 +17490,15 @@
       "controls8Run": 42334684173,
       "complete": false
     }
+  },
+  "backupCodecAliasReview": {
+    "mappedDeltas": [
+      "d3cf2aa9afe5a60cfec0f61d602c1edf3059009a:app/app/src/main/java/com/example/chatbar/domain/backup/AppBackupCodec.kt",
+      "1a692604dd4d5fd8e290ed5b5525c13598d8b02d:app/app/src/main/java/com/example/chatbar/domain/backup/AppBackupCodec.kt",
+      "81f5449803698a179549530c404e11018f9a62f8:app/app/src/main/java/com/example/chatbar/domain/backup/BackupArchive.kt"
+    ],
+    "originalMethods": 20,
+    "overlap": "Writer9 also supplies alias proof, not new29 or all merge",
+    "wholeMergeComplete": false
   }
 }

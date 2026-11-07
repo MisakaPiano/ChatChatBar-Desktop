@@ -65,7 +65,7 @@ internal class DesktopMergePreview private constructor(
     }
 
     companion object {
-        /** Scope filters AppSettings fields: omitted/unselected values must not reset computer settings. */
+        /** Scope governs settings projection and preservation of explicitly unselected media. */
         fun create(pcEntities: Map<String, JsonObject>, phoneEntities: Map<String, JsonObject>,
             pcMedia: Map<String, String>, phoneMedia: Map<String, String>, scope: InspectionScope? = null,
             credentialConflicts: Set<String> = emptySet()): DesktopMergePreview {

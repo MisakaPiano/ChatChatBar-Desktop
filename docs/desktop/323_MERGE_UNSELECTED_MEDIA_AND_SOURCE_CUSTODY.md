@@ -1,0 +1,29 @@
+# 合并时未选媒体与原始归属保全
+
+2026-11-07，固定141→12e后继。NAI组的20条映射与43/8/19+1SKIP分源结果见322。本组尚未完成，不改公开1244/db7/签26、A1真人FAIL、315已有Prompt未采纳；没有本机JVM、日常程序/真实资料操作或新包。
+
+## 已复用的三个窄增量
+
+81f的BackupArchive变化是按声明relative key写归档，不能从canonical物理source倒推filesDir相对路径。Desktop现代writer原本以Map<String,Path>的声明key写`files/key`，物理文件只供读取。实际writer循环相对原162精确未变；原writer九方法含不同物理源名与逻辑归档key、plain/password实际输出与验证。
+
+d3初始AppBackupCodec与1a v2更新由Desktop同一codec等位承接：CBBACKUP magic、PBKDF2 SHA256/600000/256、32B salt、AES-GCM keyset封装、Tink流加密及对应AAD保留。Desktop显式区分旧v1写/恢复与现代v2写和v1/v2检查，现代Source真实调用decryptingForInspection，不因legacy decoder只接v1就误报v2缺失。严格header/typed按需密码保留。
+
+`OWNER_BACKUP_CODEC_AND_ALIAS_REUSE.json` 重核codec原blob、writer声明key循环、原162两套XML与归档SHA/CRC。原Source11+Writer9共20PASS只复用；writer9与alias证明重叠，不相加为29。当前测试相对原件只改未知未来88→89及现代manifest87→88，149 transport字段另由316证明。这里只关闭上述三条delta，不关闭整个备份或MergeEngine。
+
+## 已确认的图片引用缺口
+
+Desktop原预览只用scope筛AppSettings；TAKE_PHONE移除完整冲突PC unit，plan再写incoming records。保留PC媒体文件不等于保留消息中的引用。官方REPLACE_ALL不是Desktop TAKE_PHONE的直接同义词；此处按已认证的未选媒体范围与同身份替换实际语义修复，不声称用户真实数据已丢失。
+
+db912仅加合成实际RootPreparation反例。R01/control4fd62/run42335102018原13004B/SHA256 `185af47804dd1408c645e22690aad93a915d81c43e995d0c8c51871f26f7770c`，长度/CRC/source/XML已核；实际一方法FAIL：同m、images=false、TAKE_PHONE后expected1/actual0。后续loop分支及最后原件bytes断言未执行，不扩大其证明。
+
+a029保存lazy PC replacement unit及incoming scope。RootPreparation在其从ordinary PC selection移除后仍复核其records与全PC fingerprint，并核scope等于当前authenticated source。plan先按incoming映射正文，再按PC资源侧映射被保留的图片字段。只对同message+session、同Desktop Moment+card/session（含完整图片版本）及同history ID生效；BOTH、新身份和不同owner不串图。未标记的手机Moments仍是dormant custody。
+
+987进一步保留incoming缺失、但包含未选原图的同session PC消息，正文/身份/图片归属作为独立原记录保留；新message按exactID读取并核不继承旧图。新合成root场景完整通过时才可覆盖该分支。新增纯plan场景核Desktop Moment多版本/owner隔离及Studio history图范围，不能称它们已从真实包恢复。
+
+R02/control2b660/run42335273962原318B/SHA256 `2a39ceaa10ab7868f9686b1120b549c78fdf0baa0aa64e0f06826d51dd23ed07`仅source/零XML；job128290682562因新字段Map类型推断编译失败，非业务FAIL。784把局部字段类型明确为Map<String,JsonElement>，对应后继R04/control8e55已排；R03若受同一编译错误阻断也按编译结论保留，不当新反例。当前结果待原件。
+
+## 完整scope的后续依赖，尚未完成
+
+12e BackupMergeEngine还按未选voice保留generated_voice_messages/voice_anchor_states，按未选archives保留save_slots，并保留旧录音/未选图仍引用的缺失message owner。图片补修不关闭这些行。
+
+直接复制PC录音元数据可能把旧版本挂到incoming不同正文；目标缺version时GraphValidation要求精确source custody。现HistoricalVoiceCustody仅从phone incomingRecords建立“原owner已不存在该version”的旧pruned seal，不能用来冒充“被替代PC的原本有效版本”。继续复用其Evidence/bindingHash消费边界，核明确的PC snapshot来源/旧owner-version/audio hash与目标版本差异；不放宽旧seal判定或GraphValidation，不把旧录音自动当新正文可播放。已historical的PC来源也必须沿原有效seal保留。未选SaveSlot还需连原owner与package引用/资源一起保全。对应实现与必要合成验证继续，本组整体保持未完成。
