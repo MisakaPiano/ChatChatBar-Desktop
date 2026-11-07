@@ -18,6 +18,8 @@ internal object DesktopBackupPolicy {
     const val MAX_FILE = 256L * 1024 * 1024
     const val MAX_TOTAL = 512L * 1024 * 1024
     const val MAX_FILES = 40000
+    fun isStudioSettings(type: String): Boolean = type.startsWith("novelai_studio_") ||
+        type.startsWith("novelai_design_") || type == "desktop_studio_edit_history"
     val roots = BackupDataRegistry.roots + DesktopPreservationStore.ROOT + DesktopSaveSlotSourceCustody.ROOT + DesktopHistoricalVoiceCustody.ROOT
     // These are not portable content. Restore preserves them in the destination.
     val localRoots = setOf("backups", ".ccb-desktop.lock", "desktop-settings.json",

@@ -142,6 +142,11 @@ internal object DesktopMergeRestoreModes {
                 if (ambiguous) warnings += "重名目标不唯一，保留原内容并新增副本：${candidate.label.take(100)}"
             }
         }
+        // Modern restore modes replace the selected Studio settings family, even when empty.
+        // Ordinary MERGE_CHOICES keeps its separate explicit per-unit decisions.
+        if (scope?.studioSettings != false) computer.entries.removeAll { (_, unit) ->
+            DesktopBackupPolicy.isStudioSettings(unit.category)
+        }
         val defaultFields = if (replace && scope != null) BackupSettingOptions.fields(scope.globalOptions) -
             incoming.values.filter { it.category == "app_settings" }.map { it.label }.toSet() else emptySet()
         // Selected omitted setting fields become defaults before deciding what unselected content still needs.

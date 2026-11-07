@@ -196,7 +196,7 @@ class BackupExportCatalog internal constructor(
                 ?: sourceSettings?.string("defaultFormatCardId"))
         }
         val archives = records.filter { it.type == "save_slots" && selection.sessions[it.string("sessionId")]?.archives == true }
-        val studio = if (selection.studioSettings) records.filter { it.type.startsWith("novelai_studio_") || it.type.startsWith("novelai_design_") || it.type == "desktop_studio_edit_history" } else emptyList()
+        val studio = if (selection.studioSettings) records.filter { DesktopBackupPolicy.isStudioSettings(it.type) } else emptyList()
         val drafts = records.filter { it.type == "edit_drafts" && ("editorDrafts" in selection.globalOptions || it.string("targetId") in selection.characterIds) }
         val dependencyRecords = cards + chats + archives + studio + drafts + if (selection.globalOptions.isNotEmpty()) settings else emptyList()
         fun dependencies(vararg fields: String): Set<String> = dependencyRecords.flatMap { record ->
