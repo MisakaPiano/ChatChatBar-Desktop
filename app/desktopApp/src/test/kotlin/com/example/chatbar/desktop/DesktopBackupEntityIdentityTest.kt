@@ -102,7 +102,9 @@ class DesktopBackupEntityIdentityTest {
             f.service.exportModern(output, null); f.service.verifyFile(output, null)
             DesktopFullBackupStaging.prepare(output, null, Files.createDirectory(f.base.resolve("incoming-media"))).use { incoming ->
                 val restored = backupJson.decodeFromJsonElement(SaveSlot.serializer(), incoming.entities.getValue("entities/save_slots/slot.json"))
-                assertEquals(valid.imageResources, restored.imageResources); assertEquals(valid.audioResources, restored.audioResources)
+                // Resource-map keys are deliberately rebased to transport references by Mapping.
+                assertEquals(valid.imageResources.values.toList(), restored.imageResources.values.toList())
+                assertEquals(valid.audioResources.values.toList(), restored.audioResources.values.toList())
             }
             assertEquals(before, DesktopFullBackupMapping(f.root).inventory())
         }
