@@ -74,5 +74,19 @@ internal object DesktopMergeNamedBindings {
             if (unit.category !in setOf("character_cards", "world_books") || unit.key in matched || unit.key in selection.forkIncomingUnits) continue
             children(owner(unit, unit.category, requireNotNull(unit.primaryId)), null)
         }
+        val retainedVectorIds = hashSetOf<String>()
+        for (unit in selection.computer) for ((path, value) in unit.records) {
+            active()
+            if (DesktopBackupPolicy.entityType(path) == "vector_chunks")
+                value["id"]?.jsonPrimitive?.contentOrNull?.let(retainedVectorIds::add)
+        }
+        for (unit in selection.phone) for ((path, value) in unit.records) {
+            active()
+            if (DesktopBackupPolicy.entityType(path) != "vector_chunks" ||
+                value["sourceType"]?.jsonPrimitive?.contentOrNull !in setOf("DOCUMENT", "CHARACTER_SETTING")) continue
+            val id = requireNotNull(value["id"]?.jsonPrimitive?.contentOrNull)
+            if (id in retainedVectorIds && ("vector_chunks" to id) !in forkDeclarations)
+                identity.bind("vector_chunks", id, identity.fresh("vector_chunks", id))
+        }
     }
 }

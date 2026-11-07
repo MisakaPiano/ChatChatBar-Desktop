@@ -57,6 +57,25 @@ class DesktopMergeDocumentRagTest {
                 } finally { check(base.toFile().deleteRecursively()) }
             }
         }
+        for (name in listOf("SHARED", "Entirely new card")) {
+            val colliding = linkedMapOf(chunk("pc-doc", "b", "q"), card("b", name, "q"))
+            val preview = DesktopMergePreview.create(pc, colliding, emptyMap(), emptyMap())
+            DesktopMergeDestinationPlan.create(preview.select(preview.conflicts.associate { it.key to DesktopMergePreview.Choice.BOTH }), emptyMap(), emptyMap()).use { plan ->
+                val base = Files.createTempDirectory(Files.createDirectories(Path.of("build/preview-synthetic/merge-document-rag").toAbsolutePath()), "collision-")
+                try {
+                    for ((relative, value) in plan.entities) {
+                        val destination = base.resolve(relative); Files.createDirectories(destination.parent)
+                        Files.writeString(destination, value.toString())
+                    }
+                    val repository = RagRepository(JsonFileStorage(base))
+                    assertEquals(setOf("pc-doc", "memory"), repository.getChunksForRetrieval("a", "s").map { it.id }.toSet())
+                    val added = repository.getChunksForRetrieval("b", null).single()
+                    assertNotEquals("pc-doc", added.id)
+                    assertEquals("q", added.metadata["documentId"]); assertEquals("q", added.metadata["originalDocId"])
+                    assertEquals("a", repository.getChunkById("pc-doc")!!.sourceId)
+                } finally { check(base.toFile().deleteRecursively()) }
+            }
+        }
         assertEquals(pcBefore, pc.toString()); assertEquals(phoneBefore, phone.toString())
     }
 }
