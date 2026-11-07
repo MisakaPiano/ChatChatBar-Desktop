@@ -8,7 +8,7 @@
 
 原controller action mutex能避免并发删坏文件，但UI确认点击在launch前没有提交状态，可重复排队，后一次读到空选择后显示失败。d877在确认点击处同步门闩并冻结当时可见selection，controller仍在原action内原子核记录、替换和引用清理。选择点击在提交中不变更目标；不扩成全局生成busy，不删除原校验。
 
-必要后继检查包括实际缩略图Compose加载/重组读取次数、不同viewport的实际解码尺寸与源bytes不变，以及原历史宽窄布局/选择/预览/cleanup。history-thumbnail-r01包含e2d取消回调的已知类型遮蔽，结果独立保留；c588修复后与合并依赖统一R10/control b088云端，当前待原件，不计PASS。
+R10/run42339203621/control b088原38373B/SHA `7018f9100fb66fae3645e9bd224de69566d41c79b4dabc5a33e5fa633fbeb5c3`已核CRC/source/九套XML：68方法=67PASS+1录音夹具FAIL。图片Presentation20（含新实际缩略图解码/重组）、HistoryWorkspace1、Phase7Studio10（含冻结选择实际删除/原cleanup）共31PASS，0FAIL/ERROR/SKIP；本组不因另一套voice夹具失败抹去这31的实际证明，也不将九套统称全通过。history-thumbnail-r01继承e2d取消回调遮蔽，零XML编译失败单独保留，c588已修复。
 
 ## 已有记忆维护安全行为复用
 
@@ -22,4 +22,6 @@ Android在独占维护时拒绝新launch，Desktop在platform/service准入处�
 
 ## 尚待的真实编辑器偏好
 
-官方ImageMaskPreferences保存brushSizeDp 16..72（默认36）及Mosaic/Black/White，实际按显示画布比例把直径换成原图半径。Desktop工具现画笔是原图短边归一化，backup36不能直接套入。现只确认备份偏好已有保全/合并选择，但实际编辑器尚未消费该持久化字段。后继须复用同一偏好文件、normal gate和原子写入，保留其他字段；先确定显示单位与框选/蒙版入口的现有意图，不机械复制数值。
+官方ImageMaskPreferences保存brushSizeDp 16..72（默认36）及Mosaic/Black/White，实际按显示画布比例把直径换成原图半径。Desktop工具原画笔是原图短边归一化，backup36不能直接套入。
+
+09fd以DesktopImageToolPreferences接通原desktop_backup_preferences文件：normal gate先于controller mutex，逐字段读改原子写入，保留其他字段和未知类型；读失败显式重试，不能覆盖原件。保存直径16..72dp，按实际canvas/density换算原图短边半径，保留绘制引擎0.25半径上限。普通工具在有已保存支持类型时恢复该类型；无偏好及guidance仍保持框选入口。蒙版也采用所选显示笔径；应用/关闭等待已提交偏好写入。原图/undo/redo/其他工具保留。R11/control4f03含原文件字段保全、独占维护期间等待、重开、坏JSON拒绝及实际paint像素测试与原图像工具回归，尚待原件，未计PASS。
