@@ -105,9 +105,13 @@ internal class DesktopMergeDestinationPlan private constructor(
                     entities[destination] = mapped
                 }
             }
-            val rebuiltMessageSessions = selection.computer.filter { it.key.startsWith("retained:") }
-                .flatMap { unit -> unit.records.filterKeys { DesktopBackupPolicy.entityType(it) == "chat_messages" }.values }
-                .mapNotNull { it["sessionId"]?.jsonPrimitive?.contentOrNull }.toSet()
+            val rebuiltMessageSessions = buildSet<String> {
+                for (unit in selection.computer.filter { it.key.startsWith("retained:") }) for (path in unit.records.keys) {
+                    checkActive()
+                    if (DesktopBackupPolicy.entityType(path) == "chat_messages")
+                        unit.records.getValue(path)["sessionId"]?.jsonPrimitive?.contentOrNull?.let(::add)
+                }
+            }
             for (unit in selection.computer) for ((path, value) in unit.records) {
                 checkActive()
                 val mapped = backupJson.parseToJsonElement(DesktopBackupPolicy.mapResources(value) { reference, fields -> resource(pcNames, reference, fields) }.toString(Charsets.UTF_8)).jsonObject

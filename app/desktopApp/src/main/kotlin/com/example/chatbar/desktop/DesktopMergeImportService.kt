@@ -113,7 +113,8 @@ internal class DesktopMergeImportService(
         check(!closed && !restartRequired && prepared === preview) { "MERGE_PREVIEW_EXPIRED" }
         check(confirmed) { "MERGE_EXPLICIT_CONFIRMATION_REQUIRED" }
         committedEvidence = null
-        val selection = preview.data.select(choices)
+        val context = currentCoroutineContext()
+        val selection = preview.data.select(choices) { context.ensureActive() }
         val preferences = preview.selectedPreferences(imagePreferencesFromPhone)
         // Destination is never a current root or a silently reused nonempty directory.
         val destinationHandle = when (val prepared = destinationPreparer.prepare(source, destination)) {

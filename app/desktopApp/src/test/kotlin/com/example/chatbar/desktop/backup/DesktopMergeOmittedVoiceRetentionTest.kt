@@ -91,6 +91,7 @@ class DesktopMergeOmittedVoiceRetentionTest {
                                         val kept = voices.listForCurrentVersion(owner).single()
                                         assertEquals(voice.sourceText, kept.sourceText)
                                         assertContentEquals(audioBytes, Files.readAllBytes(Path.of(kept.audioPath)))
+                                        if (case.targetId != "m") assertTrue(voices.listForCurrentVersion(messages.single { it.id == case.targetId }).isEmpty())
                                     } else {
                                         assertTrue(voices.listForCurrentVersion(messages.single()).isEmpty())
                                         val custody = root.resolve(DesktopHistoricalVoiceCustody.ROOT)

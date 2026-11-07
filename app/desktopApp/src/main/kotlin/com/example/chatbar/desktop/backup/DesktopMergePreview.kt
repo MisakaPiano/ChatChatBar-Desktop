@@ -33,13 +33,14 @@ internal class DesktopMergePreview private constructor(
         override fun toString() = "MergeSelection(pc=${computer.size},phone=${phone.size},forks=${forkIncomingUnits.size})"
     }
 
-    fun select(choices: Map<String, Choice>): Selection {
+    fun select(choices: Map<String, Choice>, checkActive: () -> Unit = {}): Selection {
         require(choices.keys == conflicts.mapTo(hashSetOf()) { it.key }) { "MERGE_EXPLICIT_CHOICES_REQUIRED" }
         val computer = pc.toMutableMap()
         val phone = incoming.filterKeys { it !in identical }.toMutableMap()
         val forks = hashSetOf<String>()
         val replaced = linkedMapOf<String, Unit>()
         conflicts.forEach { conflict ->
+            checkActive()
             val choice = choices.getValue(conflict.key)
             require(choice in conflict.choices) { "MERGE_CHOICE_NOT_APPLICABLE" }
             when (choice) {
@@ -57,8 +58,9 @@ internal class DesktopMergePreview private constructor(
         }
         val voiceSources = mutableListOf<DesktopMergeVoiceSourcePolicy.Source>()
         for ((key, original) in replaced) {
+            checkActive()
             val candidate = phone.getValue(key)
-            val retained = DesktopMergeRetainedMedia(sourceScope, original) {}.retainedSessionRecords(candidate)
+            val retained = DesktopMergeRetainedMedia(sourceScope, original, checkActive).retainedSessionRecords(candidate)
             if (retained.records.isNotEmpty()) computer["retained:$key"] = Unit("retained:$key", original.category,
                 original.label, retained.records, original.signature)
             voiceSources += retained.voiceSources
