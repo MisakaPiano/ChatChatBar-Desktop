@@ -1,0 +1,7 @@
+# 两侧研究设置独立迁移后合并
+
+旧版设置携带独立兼容标志。仅迁移最终合并对象，会让旧来源的值误用本机标志，或在重开时重置刚选择的值。b6a6保留raw settings与source witness，使用既有withCurrentWebSearchDefaults分别转换两侧，再只按勾选范围组合七个研究设置字段；默认值先落、派生转换后落。手动合并、无设置活动、legacy无scope语义保持。
+
+R123旧原13097B/8beb6182…18a00：actual方法在65行PC5/source0所选bool期待true实false；后续版本/模式/重开未到，另一manual/noactivity/legacy完整PASS。当前R124原18340B/38920cae…e66f4四XML12完整PASS、空stderr，SHA/CRC/source已核：新实际Search2及受影响Missing2/Mode6/Lifecycle2。实际Service认证输入、预览、新根发布及SettingsRepository重开读回已达，读取后不发生二次改写，两源/备份原文不变。内部12场景不拆方法，旧重叠结果不相加。
+
+详情 OWNER_SEARCH_SETTINGS_R123_R124_COMPLETE_REVIEW.json。新的部分导出Graph缺口b80e另有R125/R126待验，不能借本12盖章；314整体仍false，集中批次不出小包。
