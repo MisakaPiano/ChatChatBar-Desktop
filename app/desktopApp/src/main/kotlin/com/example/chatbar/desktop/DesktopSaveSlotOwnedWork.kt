@@ -15,6 +15,12 @@ internal class DesktopSaveSlotOwnedWork private constructor(val directory: Path,
         suspend fun release() {
             check(inventory(home) == files) { "SAVE_SLOT_WORK_CHANGED" }
             for ((path, stamp) in files.entries.sortedByDescending { it.key.nameCount }) {
+                var ancestor = path.parent
+                while (ancestor != null && ancestor.startsWith(home)) {
+                    val expected = files.getValue(ancestor)
+                    check(expected.directory && identity(ancestor, true) == expected.key) { "SAVE_SLOT_WORK_REPLACED" }
+                    ancestor = ancestor.parent
+                }
                 check(identity(path, stamp.directory) == stamp.key) { "SAVE_SLOT_WORK_REPLACED" }
                 Files.delete(path) // Unknown children refuse deletion; no follow-links recursive delete.
             }
@@ -69,7 +75,8 @@ internal class DesktopSaveSlotTemporaryAsset private constructor(val file: Path,
         check(DesktopSaveSlotOwnedWork.identity(file.parent, true) == parentKey &&
             DesktopSaveSlotOwnedWork.identity(file, false) == fileKey)
         check(DesktopArchiveFiles.hash(file, DesktopImageEditing.MAX_BYTES.toLong()) == hash) { "SAVE_SLOT_TEMP_ASSET_CHANGED" }
-        check(DesktopSaveSlotOwnedWork.identity(file, false) == fileKey)
+        check(DesktopSaveSlotOwnedWork.identity(file.parent, true) == parentKey &&
+            DesktopSaveSlotOwnedWork.identity(file, false) == fileKey)
         Files.delete(file)
     }
     companion object {
