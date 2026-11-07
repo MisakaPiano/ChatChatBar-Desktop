@@ -75,6 +75,10 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
             onDismiss = { accountProblemDismissed = true })
     }
     var imageTools by remember { mutableStateOf<ByteArray?>(null) }
+    var reverseSceneEditor by remember(controller) { mutableStateOf<DesktopReverseSceneEdit?>(null) }
+    reverseSceneEditor?.let { editor ->
+        DesktopReverseSceneEditor(editor, busy, { controller.applyReverseSceneEdit(editor, it) }, { reverseSceneEditor = null })
+    }
     var metadataFile by remember { mutableStateOf<java.nio.file.Path?>(null) }
     var metadataPreview by remember { mutableStateOf<NovelAiStudioPngMetadata?>(null) }
     var metadataSelection by remember { mutableStateOf(NovelAiStudioMetadataSelection()) }
@@ -402,7 +406,9 @@ private fun DesktopNovelAiStudioContent(controller: DesktopNovelAiStudioControll
                                 onRetry = { scope.launch { reverseSource?.let { controller.reverseImage(it) } } },
                                 retryAvailable = reverseSource != null,
                                 onApply = { scope.launch { if (controller.applyReverseCandidate()) auxiliary = null } },
-                                onDismiss = controller::clearReverseCandidate)
+                                onDismiss = controller::clearReverseCandidate,
+                                naturalLanguage = d.aiDesignNaturalLanguageMode,
+                                onExpandScene = { reverseSceneEditor = controller.beginReverseSceneEdit() })
                         }
                     } else section(surface)
                 }

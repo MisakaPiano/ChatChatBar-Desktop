@@ -52,6 +52,9 @@ internal data class DesktopReversePromptProgress(val stage: String = "", val con
         stage = Regex("【([^】]+)】").findAll(value).lastOrNull()?.groupValues?.get(1) ?: "正在理解图片")
 }
 
+/** One runtime-only expanded editor; replacing/stopping/revising the source invalidates it. */
+internal data class DesktopReverseSceneEdit(val revision: Long, val original: String)
+
 /** Runtime-only input ownership; never serialized with the Studio draft or conversation. */
 internal data class DesktopDesignComposerState(
     val initialized: Boolean = false,
@@ -717,6 +720,22 @@ internal class DesktopNovelAiStudioController(
             val encoded = Base64.getEncoder().encodeToString(bytes)
             startReverse(launch, null, encoded, expectedRevision)
         }
+    }
+
+    fun beginReverseSceneEdit(): DesktopReverseSceneEdit? = synchronized(reverseLock) {
+        val selection = reverseSelection ?: return@synchronized null
+        val scene = state.value.reverseSceneDescription ?: return@synchronized null
+        if (state.value.reverseBusy) null else DesktopReverseSceneEdit(selection.revision, scene)
+    }
+
+    fun applyReverseSceneEdit(editor: DesktopReverseSceneEdit, text: String): Boolean = synchronized(reverseLock) {
+        if (state.value.reverseBusy || reverseSelection?.revision != editor.revision ||
+            state.value.reverseSceneDescription != editor.original) {
+            status("场景已变化，本次编辑未应用；请重新打开编辑器")
+            return@synchronized false
+        }
+        if (text != editor.original) updateReverseSceneDescription(text)
+        true
     }
 
     fun updateReverseSceneDescription(text: String) = synchronized(reverseLock) {

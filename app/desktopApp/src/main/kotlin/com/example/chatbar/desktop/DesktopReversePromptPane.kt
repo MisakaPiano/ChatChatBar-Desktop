@@ -17,11 +17,17 @@ internal fun DesktopReversePromptPane(
     state: DesktopNovelAiStudioState, busy: Boolean,
     onSceneChange: (String) -> Unit, onConfirm: () -> Unit, onStop: () -> Unit,
     onRetry: () -> Unit, retryAvailable: Boolean, onApply: () -> Unit, onDismiss: () -> Unit,
+    naturalLanguage: Boolean = false, onExpandScene: (() -> Unit)? = null,
 ) {
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        StatusText(if (naturalLanguage) "反推模式：自然语言 · V5" else "反推模式：结构化 Tag")
         if (state.reverseProgress.stage.isNotBlank()) StatusText(state.reverseProgress.stage)
         state.reverseSceneDescription?.let { scene ->
-            StatusText("场景描述 · 可编辑，确认后生成 Prompt")
+            Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                Box(Modifier.weight(1f)) { StatusText("场景描述 · 可编辑，确认后生成 Prompt") }
+                onExpandScene?.let { expand -> StudioAction("展开", enabled = !busy,
+                    icon = DesktopAppIcons.ExpandComposer, accessibilityLabel = "展开反推场景描述", onClick = expand) }
+            }
             BasicTextField(scene, onSceneChange,
                 Modifier.fillMaxWidth().heightIn(min = 90.dp, max = 210.dp)
                     .border(1.dp, DesktopBootstrapColors.border).background(DesktopBootstrapColors.input)
